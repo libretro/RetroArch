@@ -1079,9 +1079,10 @@ jobs:
         working-directory: samples/tasks/core_trust_runtime
         run: |
           set -eu
-          # RetroArch's trust store: the startup load, saves and
-          # snapshots put on another thread. TEST_KEY=0 has no keys at
-          # all; LOAD_CHECK=0 is the tree's default build.
+          # RetroArch's trust store: the startup load, saves, snapshots
+          # put on another thread and the seed. TEST_KEY=0 has no keys at
+          # all; LOAD_CHECK=0 is the tree's default build, without the
+          # seed.
           make clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              make -j$(nproc) SANITIZER=address,undefined \
              RUNNER="timeout 600" check

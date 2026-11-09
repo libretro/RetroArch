@@ -1,5 +1,9 @@
 /* Copyright (C) 2026 The RetroArch team
  * SPDX-License-Identifier: GPL-3.0-or-later */
+#if defined(__linux__) && !defined(_XOPEN_SOURCE)
+/* symlink; strict C89 hides it */
+#define _XOPEN_SOURCE 700
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,9 +15,15 @@
 #include <rthreads/rthreads.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <retro_dirent.h>
+#ifndef _WIN32
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 #include "../../../core_trust_runtime.h"
 #include "../../../runloop.h"
+#include "../../../tasks/tasks_internal.h"
 
 #define TMP_DIR "core_trust_runtime_test_tmp"
 
@@ -77,19 +87,67 @@ static unsigned osd_shown(enum msg_hash_enums msg)
    return n;
 }
 
+/* The shared I/O window: a floor of one item per open, then
+ * window_items more; 0 is a window already spent */
+static unsigned window_items = 1000000;
+static unsigned window_left;
+#ifdef HAVE_CORE_LOAD_CHECK
+static unsigned window_opens;
+#endif
+
+void task_nbio_slice_open(nbio_budget_t *b)
+{
+   b->floor    = 1;
+   window_left = window_items;
+#ifdef HAVE_CORE_LOAD_CHECK
+   window_opens++;
+#endif
+}
+
+void task_nbio_slice_close(nbio_budget_t *b)
+{
+   (void)b;
+}
+
+bool task_nbio_slice_within_budget(void *ud, size_t avail, size_t len)
+{
+   nbio_budget_t *b = (nbio_budget_t*)ud;
+   (void)avail;
+   (void)len;
+   if (b->floor)
+   {
+      b->floor = 0;
+      return true;
+   }
+   if (!window_left)
+      return false;
+   window_left--;
+   return true;
+}
+
+/* The queue runs on its own thread: tests run again with it, under
+ * other names */
+static bool task_thread;
+
 static char tmp_path[256];
 static const char *tmp(const char *name)
 {
-   fill_pathname_join_special(tmp_path, TMP_DIR, name, sizeof(tmp_path));
+   char base[64];
+   strlcpy(base, task_thread ? "thread_" : "", sizeof(base));
+   strlcat(base, name, sizeof(base));
+   fill_pathname_join_special(tmp_path, TMP_DIR, base, sizeof(tmp_path));
    return tmp_path;
 }
 
-/* The queue is unthreaded: each check runs every task's handler once
- * and retires what finished */
+/* Unthreaded, each check runs every task's handler once and retires
+ * what finished; threaded, the wait retires every task */
 static void pump(unsigned n)
 {
-   while (n--)
-      task_queue_check();
+   if (task_thread)
+      task_queue_wait(NULL, NULL);
+   else
+      while (n--)
+         task_queue_check();
 }
 
 static void fake_check(struct core_check *c, const char *name,
@@ -391,6 +449,411 @@ static void test_test_key_notice(void)
    core_trust_runtime_deinit();
 }
 
+/* A "core": size bytes (at least 2), the first two the tag, so no two
+ * tags hash alike */
+static bool put_file(const char *path, unsigned tag, size_t size)
+{
+   uint8_t *buf = (uint8_t*)malloc(size);
+   size_t i;
+   bool ok;
+   if (!buf)
+      return false;
+   for (i = 0; i < size; i++)
+      buf[i] = (uint8_t)(i * 7 + 1);
+   buf[0] = (uint8_t)tag;
+   buf[1] = (uint8_t)(tag >> 8);
+   ok = filestream_write_file(path, buf, (int64_t)size);
+   free(buf);
+   return ok;
+}
+
+static void file_sha(const char *path, uint8_t *sha256)
+{
+   core_file_t *f = core_file_open(path);
+   struct core_hash h;
+   memset(sha256, 0, CORE_SHA256_LEN);
+   if (f && core_hash_init(&h))
+   {
+      while (core_hash_step(&h, f) > 0);
+      core_hash_final(&h, sha256);
+   }
+   core_file_close(f);
+}
+
+static bool trusted(const char *path)
+{
+   uint8_t sha256[CORE_SHA256_LEN];
+   core_trust_set_t *s = core_trust_runtime_get();
+   bool has;
+   file_sha(path, sha256);
+   has = s && core_trust_has_hash(s, sha256);
+   core_trust_set_put(s);
+   return has;
+}
+
+static unsigned store_flags(void)
+{
+   core_trust_set_t *s = core_trust_runtime_get();
+   unsigned flags      = s ? core_trust_flags(s) : 0;
+   core_trust_set_put(s);
+   return flags;
+}
+
+#ifdef HAVE_CORE_LOAD_CHECK
+static bool seed_running(void *data)
+{
+   (void)data;
+   return core_trust_runtime_seed_pending();
+}
+
+static void pump_seed(void)
+{
+   unsigned n = 0;
+   if (task_thread)
+      task_queue_wait(seed_running, NULL);
+   while (core_trust_runtime_seed_pending() && n++ < 100000)
+      task_queue_check();
+   pump(2);
+}
+#endif
+
+static void test_seed_walk(void)
+{
+   char dir[256], a[256], b[256], c[256], other[256], sub[256], store[256];
+   char in_sub[256];
+   strlcpy(dir, tmp("seed"), sizeof(dir));
+   strlcpy(store, tmp("seed_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(a, dir, "a_libretro.core", sizeof(a));
+   fill_pathname_join_special(b, dir, "b_libretro.core", sizeof(b));
+   fill_pathname_join_special(c, dir, "c_libretro.CORE", sizeof(c));
+   fill_pathname_join_special(other, dir, "readme.txt", sizeof(other));
+   fill_pathname_join_special(sub, dir, "d_libretro.core", sizeof(sub));
+   fill_pathname_join_special(in_sub, sub, "e_libretro.core", sizeof(in_sub));
+   CHECK(put_file(a, 1, 1000));
+   CHECK(put_file(b, 2, 3 * 65536 + 1));
+   CHECK(put_file(c, 3, 10));
+   CHECK(put_file(other, 4, 10));
+   CHECK(path_mkdir(sub));
+   osd_count = 0;
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+#ifdef HAVE_CORE_LOAD_CHECK
+   CHECK(core_trust_runtime_seed_pending());
+   CHECK(core_trust_runtime_seed_covers(a));
+   CHECK(!core_trust_runtime_seed_covers(store));
+   CHECK(!core_trust_runtime_seed_covers(in_sub));
+   pump_seed();
+   CHECK(!core_trust_runtime_seed_pending());
+   CHECK(!core_trust_runtime_seed_covers(a));
+   CHECK(trusted(a));
+   CHECK(trusted(b));
+   CHECK(trusted(c));
+   CHECK(!trusted(other));
+   CHECK(store_flags() & CORE_TRUST_SEEDED);
+   CHECK(store_flags() & CORE_TRUST_NOTICE_SHOWN);
+   /* Queued until messages can show, then once */
+   CHECK(osd_shown(MSG_CORE_TRUST_SEEDED) == 0);
+   core_trust_runtime_notify();
+   core_trust_runtime_notify();
+   CHECK(osd_shown(MSG_CORE_TRUST_SEEDED) == 1);
+   core_trust_runtime_deinit();
+   CHECK(disk_flags(store) & CORE_TRUST_SEEDED);
+   /* Once only */
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(!core_trust_runtime_seed_pending());
+   core_trust_runtime_notify();
+   CHECK(osd_shown(MSG_CORE_TRUST_SEEDED) == 1);
+#else
+   CHECK(!core_trust_runtime_seed_pending());
+   CHECK(!core_trust_runtime_seed_covers(a));
+   pump(8);
+   CHECK(!trusted(a));
+   CHECK(!(store_flags() & CORE_TRUST_SEEDED));
+#endif
+   core_trust_runtime_deinit();
+}
+
+#ifdef HAVE_CORE_LOAD_CHECK
+static void test_seed_paced(void)
+{
+   char dir[256], core[256];
+   unsigned opens;
+   strlcpy(dir, tmp("paced"), sizeof(dir));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(core, dir, "p_libretro.core", sizeof(core));
+   CHECK(put_file(core, 5, 3 * 65536 + 1));
+   /* A spent window: one step per call, and still a step */
+   window_items = 0;
+   window_opens = 0;
+   CHECK(core_trust_runtime_init(tmp("paced_store"), dir, "core"));
+   pump(1);
+   CHECK(core_trust_runtime_seed_pending());
+   pump_seed();
+   opens = window_opens;
+   /* opendir, the entry, four reads and the end: at least six calls */
+   CHECK(opens >= 6);
+   CHECK(trusted(core));
+   core_trust_runtime_deinit();
+   /* A wide window: done in one or two calls */
+   window_items = 1000000;
+   window_opens = 0;
+   CHECK(core_trust_runtime_init(tmp("paced_store2"), dir, "core"));
+   pump_seed();
+   CHECK(window_opens <= 2);
+   core_trust_runtime_deinit();
+}
+
+static void test_seed_cap(void)
+{
+   char dir[256], core[256], name[32];
+   unsigned i, n = 0;
+   strlcpy(dir, tmp("cap"), sizeof(dir));
+   CHECK(path_mkdir(dir));
+   for (i = 0; i <= CORE_TRUST_MAX_HASHES; i++)
+   {
+      sprintf(name, "%03u_libretro.core", i);
+      fill_pathname_join_special(core, dir, name, sizeof(core));
+      CHECK(put_file(core, 100 + i, 8));
+   }
+   CHECK(core_trust_runtime_init(tmp("cap_store"), dir, "core"));
+   pump_seed();
+   for (i = 0; i <= CORE_TRUST_MAX_HASHES; i++)
+   {
+      sprintf(name, "%03u_libretro.core", i);
+      fill_pathname_join_special(core, dir, name, sizeof(core));
+      if (trusted(core))
+         n++;
+   }
+   CHECK(n == CORE_TRUST_MAX_HASHES);
+   CHECK(store_flags() & CORE_TRUST_SEEDED);
+   core_trust_runtime_deinit();
+}
+
+/* A symlink in the folder to a core outside it, or to a folder: passed
+ * over, and the walk goes on */
+static void test_seed_symlink(void)
+{
+#ifndef _WIN32
+   char dir[256], outside[256], lnk[256], dirlnk[256], own[256];
+   strlcpy(dir, tmp("symlink"), sizeof(dir));
+   strlcpy(outside, tmp("outside.core"), sizeof(outside));
+   CHECK(path_mkdir(dir));
+   CHECK(put_file(outside, 7, 4096));
+   fill_pathname_join_special(lnk, dir, "link_libretro.core", sizeof(lnk));
+   fill_pathname_join_special(dirlnk, dir, "dir_libretro.core",
+         sizeof(dirlnk));
+   fill_pathname_join_special(own, dir, "own_libretro.core", sizeof(own));
+   CHECK(symlink("../outside.core", lnk) == 0);
+   CHECK(symlink("..", dirlnk) == 0);
+   CHECK(put_file(own, 8, 4096));
+   CHECK(core_trust_runtime_init(tmp("symlink_store"), dir, "core"));
+   pump_seed();
+   CHECK(!trusted(outside));
+   CHECK(trusted(own));
+   CHECK(store_flags() & CORE_TRUST_SEEDED);
+   core_trust_runtime_deinit();
+#endif
+}
+
+static void test_seed_cancel(void)
+{
+   char dir[256], core[256], store[256];
+   strlcpy(dir, tmp("cancel"), sizeof(dir));
+   strlcpy(store, tmp("cancel_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(core, dir, "x_libretro.core", sizeof(core));
+   CHECK(put_file(core, 6, 3 * 65536));
+   window_items = 0;
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   pump(1);
+   /* As quit does */
+   task_queue_reset();
+   pump(4);
+   window_items = 1000000;
+   CHECK(!core_trust_runtime_seed_pending());
+   CHECK(!(store_flags() & CORE_TRUST_SEEDED));
+   CHECK(!trusted(core));
+   core_trust_runtime_deinit();
+   /* Seeded on the next run instead */
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(core_trust_runtime_seed_pending());
+   pump_seed();
+   CHECK(trusted(core));
+   core_trust_runtime_deinit();
+}
+
+static void test_seed_unreadable_and_off(void)
+{
+   char dir[256], core[256], store[256];
+   strlcpy(dir, tmp("off"), sizeof(dir));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(core, dir, "o_libretro.core", sizeof(core));
+   CHECK(put_file(core, 7, 100));
+   /* A store that can't be read never seeds */
+   strlcpy(store, tmp("off_dir_store"), sizeof(store));
+   CHECK(path_mkdir(store));
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(!core_trust_runtime_seed_pending());
+   core_trust_runtime_deinit();
+   /* Checks off still seeds, so turning them on later finds it trusted */
+   strlcpy(store, tmp("off_store"), sizeof(store));
+   CHECK(write_store(store, CORE_TRUST_CHECK_OFF));
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(core_trust_runtime_seed_pending());
+   pump_seed();
+   CHECK(trusted(core));
+   core_trust_runtime_deinit();
+}
+
+/* A store that already showed the notice seeds without it */
+static void test_seed_notice_shown(void)
+{
+   char dir[256], core[256], store[256];
+   strlcpy(dir, tmp("shown"), sizeof(dir));
+   strlcpy(store, tmp("shown_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(core, dir, "n_libretro.core", sizeof(core));
+   CHECK(put_file(core, 8, 100));
+   CHECK(write_store(store, CORE_TRUST_NOTICE_SHOWN));
+   osd_count = 0;
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(core_trust_runtime_seed_pending());
+   pump_seed();
+   core_trust_runtime_notify();
+   CHECK(store_flags() & CORE_TRUST_SEEDED);
+   CHECK(osd_shown(MSG_CORE_TRUST_SEEDED) == 0);
+   CHECK(trusted(core));
+   core_trust_runtime_deinit();
+}
+
+/* Nothing found, or no folder: seeded, and nothing to tell */
+static void test_seed_nothing(void)
+{
+   char dir[256], store[256];
+   unsigned i;
+   strlcpy(dir, tmp("empty"), sizeof(dir));
+   CHECK(path_mkdir(dir));
+   for (i = 0; i < 2; i++)
+   {
+      strlcpy(store, tmp(i ? "no_folder_store" : "empty_store"),
+            sizeof(store));
+      osd_count = 0;
+      CHECK(core_trust_runtime_init(store,
+               i ? tmp("no_folder") : dir, "core"));
+      CHECK(core_trust_runtime_seed_pending());
+      pump_seed();
+      core_trust_runtime_notify();
+      CHECK(!core_trust_runtime_seed_pending());
+      CHECK(store_flags() & CORE_TRUST_SEEDED);
+      CHECK(!(store_flags() & CORE_TRUST_NOTICE_SHOWN));
+      CHECK(osd_shown(MSG_CORE_TRUST_SEEDED) == 0);
+      core_trust_runtime_deinit();
+   }
+}
+
+/* A store with no room left trusts nothing new, so says nothing */
+static void test_seed_full(void)
+{
+   char dir[256], core[256], store[256];
+   core_trust_t *t = core_trust_new();
+   struct core_check c;
+   size_t len      = 0;
+   uint8_t *buf;
+   unsigned i, n = 0;
+   strlcpy(dir, tmp("full"), sizeof(dir));
+   strlcpy(store, tmp("full_store"), sizeof(store));
+   for (i = 0; i < CORE_TRUST_MAX_HASHES; i++)
+   {
+      fake_check(&c, "f_libretro.core", 0x51, CORE_CHECK_UNSIGNED);
+      c.rec.sha256[0] = (uint8_t)i;
+      c.rec.sha256[1] = (uint8_t)(i >> 8);
+      if (core_trust_always(t, &c))
+         n++;
+   }
+   CHECK(n == CORE_TRUST_MAX_HASHES);
+   buf = core_trust_serialize(t, &len);
+   CHECK(buf && filestream_write_file(store, buf, (int64_t)len));
+   free(buf);
+   core_trust_free(t);
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(core, dir, "f_libretro.core", sizeof(core));
+   CHECK(put_file(core, 11, 100));
+   osd_count = 0;
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(core_trust_runtime_seed_pending());
+   pump_seed();
+   core_trust_runtime_notify();
+   CHECK(!trusted(core));
+   CHECK(store_flags() & CORE_TRUST_SEEDED);
+   CHECK(!(store_flags() & CORE_TRUST_NOTICE_SHOWN));
+   CHECK(osd_shown(MSG_CORE_TRUST_SEEDED) == 0);
+   core_trust_runtime_deinit();
+}
+
+/* A folder that is there but can't be opened is seeded once it can */
+static void test_seed_unopened(void)
+{
+#ifdef _WIN32
+   printf("note: test_seed_unopened skipped, no unopenable folder here\n");
+#else
+   char dir[256], core[256], store[256];
+   struct RDIR *probe;
+   strlcpy(dir, tmp("locked"), sizeof(dir));
+   strlcpy(store, tmp("locked_store"), sizeof(store));
+   /* Left at 000 by a run cut short here */
+   chmod(dir, 0755);
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(core, dir, "l_libretro.core", sizeof(core));
+   CHECK(put_file(core, 9, 100));
+   chmod(dir, 0);
+   if ((probe = retro_opendir(dir)))
+   {
+      retro_closedir(probe);
+      chmod(dir, 0755);
+      printf("note: test_seed_unopened skipped, %s opens anyway\n", dir);
+      return;
+   }
+   osd_count = 0;
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(core_trust_runtime_seed_pending());
+   pump_seed();
+   core_trust_runtime_notify();
+   CHECK(!core_trust_runtime_seed_pending());
+   CHECK(!(store_flags() & CORE_TRUST_SEEDED));
+   CHECK(osd_shown(MSG_CORE_TRUST_SEEDED) == 0);
+   core_trust_runtime_deinit();
+   chmod(dir, 0755);
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(core_trust_runtime_seed_pending());
+   pump_seed();
+   CHECK(store_flags() & CORE_TRUST_SEEDED);
+   CHECK(trusted(core));
+   core_trust_runtime_deinit();
+#endif
+}
+
+/* A seed that ends after its store is gone leaves the next store alone */
+static void test_seed_gen(void)
+{
+   char dir[256], core[256], store[256];
+   strlcpy(dir, tmp("gen"), sizeof(dir));
+   strlcpy(store, tmp("gen_store2"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(core, dir, "g_libretro.core", sizeof(core));
+   CHECK(put_file(core, 10, 100));
+   window_items = 0;
+   CHECK(core_trust_runtime_init(tmp("gen_store1"), dir, "core"));
+   pump(1);
+   core_trust_runtime_deinit();
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
+   pump(64);
+   window_items = 1000000;
+   CHECK(!(store_flags() & CORE_TRUST_SEEDED));
+   CHECK(!trusted(core));
+   core_trust_runtime_deinit();
+}
+#endif
+
 int main(void)
 {
    size_t num_keys = 0;
@@ -415,6 +878,26 @@ int main(void)
       test_apply_always();
       test_snapshot_threads();
       test_test_key_notice();
+      test_seed_walk();
+#ifdef HAVE_CORE_LOAD_CHECK
+      test_seed_paced();
+      test_seed_cap();
+      test_seed_symlink();
+      test_seed_cancel();
+      test_seed_unreadable_and_off();
+      test_seed_notice_shown();
+      test_seed_nothing();
+      test_seed_full();
+      test_seed_unopened();
+      test_seed_gen();
+#endif
+      /* The worker's side of a save and of the seed */
+      task_queue_deinit();
+      task_queue_init(true, NULL);
+      task_thread = true;
+      test_saves_chained();
+      test_seed_walk();
+      task_thread = false;
    }
    task_queue_deinit();
    printf("%u checks, %u failures\n", checks, failures);
