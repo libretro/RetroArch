@@ -5936,8 +5936,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
       /* A custom driver runs in MoltenVK's place, loader or not:
        * MoltenVK speaks loader interface 5, and the loader's direct
-       * driver loading needs 7. */
-      if ((vulkan_library = vulkan_custom_driver_open_no_loader(true)))
+       * driver loading needs 7. SDL3 makes its surface through its own
+       * Vulkan library, so vk_sdl3 gets the system driver. */
+      if ((vulkan_library = vulkan_custom_driver_open_no_loader(
+                  type != VULKAN_WSI_SDL3)))
       {
          vulkan_library_custom = true;
          custom_driver         = true;

@@ -34500,6 +34500,10 @@ MSG_HASH(
    "Custom Vulkan driver lacks features RetroArch needs. Using the system driver."
    )
 MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_SDL3_UNSUPPORTED,
+   "The SDL3 context driver can't use a custom Vulkan driver on macOS. Using the system driver."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Lowest"
    )

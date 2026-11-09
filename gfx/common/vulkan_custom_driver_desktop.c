@@ -285,8 +285,13 @@ dylib_t vulkan_custom_driver_open(void)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: it crashed in an earlier start with core \"%s\".\n",
             req.path, req.core);
    if (msg == VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED)
+#ifdef __APPLE__
+      RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: the vk_sdl3 context driver makes its surface through its own Vulkan library.\n",
+            req.path);
+#else
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: the Vulkan loader has no VK_LUNARG_direct_driver_loading.\n",
             req.path);
+#endif
    if (handle)
    {
       custom_driver_desktop_st.handle = (dylib_t)handle;
