@@ -97,8 +97,6 @@ static void test_sig(void)
    uint8_t digest[CORE_SHA256_LEN];
    uint8_t id[CORE_SIG_KEY_ID_LEN];
    size_t n = sizeof(fx_sig_good);
-   size_t count;
-   const uint8_t *keys;
    uint8_t *short_sig;
    sha(fx_core, FX_CORE_SIZE, core_sha);
 
@@ -181,10 +179,6 @@ static void test_sig(void)
    sha(fx_core, FX_CORE_SIZE, digest);
    fx_core[FX_CORE_SIZE / 2] ^= 0x80;
    CHECK(verify(fx_sig_good, n, FX_NAME, digest, 2) == CORE_CHECK_MODIFIED);
-
-   /* What core_signing_keys.h lists */
-   keys = core_sig_builtin_keys(&count);
-   CHECK(count == CORE_SIGNING_KEYS_COUNT && (keys == NULL) == (count == 0));
 }
 
 static char tmp_path[256];
@@ -1965,6 +1959,29 @@ static void clean(void)
    path_rmdir(TMP_DIR);
 }
 
+static void test_builtin_keys(void)
+{
+   uint8_t core_sha[CORE_SHA256_LEN];
+   struct core_sig sig;
+   size_t n         = 99;
+   const uint8_t *k = core_sig_builtin_keys(&n);
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   CHECK(n == CORE_SIGNING_KEYS_COUNT + 1);
+   CHECK(k && !memcmp(k + (n - 1) * CORE_SIG_KEY_LEN, fx_key1,
+            CORE_SIG_KEY_LEN));
+   /* The fixtures are signed with test key 1: a test-key build runs them */
+   sha(fx_core, FX_CORE_SIZE, core_sha);
+   CHECK(core_sig_parse(&sig, fx_sig_good, sizeof(fx_sig_good)));
+   CHECK(k && core_sig_verify(&sig, FX_NAME, core_sha, k, n)
+         == CORE_CHECK_OK);
+#else
+   (void)core_sha;
+   (void)sig;
+   CHECK(n == CORE_SIGNING_KEYS_COUNT);
+   CHECK((k != NULL) == (CORE_SIGNING_KEYS_COUNT > 0));
+#endif
+}
+
 int main(int argc, char *argv[])
 {
    /* FAIL lines survive a crash or a sanitizer exit */
@@ -1979,6 +1996,7 @@ int main(int argc, char *argv[])
       return 1;
    }
    test_sig();
+   test_builtin_keys();
    test_identity();
    test_trust();
    test_trust_newest_full();

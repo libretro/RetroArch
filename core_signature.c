@@ -12,17 +12,28 @@
 #include "core_signature.h"
 #include "core_signing_keys.h"
 
-#if CORE_SIGNING_KEYS_COUNT > 0
-static const uint8_t core_signing_keys[CORE_SIGNING_KEYS_COUNT][CORE_SIG_KEY_LEN] =
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+#define CORE_SIGNING_KEYS_ALL (CORE_SIGNING_KEYS_COUNT + 1)
+#else
+#define CORE_SIGNING_KEYS_ALL CORE_SIGNING_KEYS_COUNT
+#endif
+
+#if CORE_SIGNING_KEYS_ALL > 0
+static const uint8_t core_signing_keys[CORE_SIGNING_KEYS_ALL][CORE_SIG_KEY_LEN] =
 {
-   CORE_SIGNING_KEYS_LIST
+#if CORE_SIGNING_KEYS_COUNT > 0
+   CORE_SIGNING_KEYS_LIST,
+#endif
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   CORE_SIGNING_TEST_KEY
+#endif
 };
 #endif
 
 const uint8_t *core_sig_builtin_keys(size_t *num_keys)
 {
-#if CORE_SIGNING_KEYS_COUNT > 0
-   *num_keys = CORE_SIGNING_KEYS_COUNT;
+#if CORE_SIGNING_KEYS_ALL > 0
+   *num_keys = CORE_SIGNING_KEYS_ALL;
    return core_signing_keys[0];
 #else
    *num_keys = 0;
