@@ -18083,6 +18083,39 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
          port, device, idx, id);
 }
 
+void input_driver_bind_capture_keys(unsigned joy_idx, uint32_t *down)
+{
+   static uint16_t keys[RETROK_LAST];
+   /* no key is a hotkey's: each is read as the port's own */
+   static const uint8_t bind[RETROK_LAST] = {0};
+   input_driver_state_t *input_st         = &input_driver_st;
+   unsigned b;
+
+   if (input_st->current_driver->keys_down)
+   {
+      /* bit n is keys[n], so with each key its own number @down is
+       * written as it is kept */
+      if (!keys[RETROK_LAST - 1])
+         for (b = 0; b < RETROK_LAST; b++)
+            keys[b] = (uint16_t)b;
+      input_st->current_driver->keys_down(input_st->current_data, 0,
+            keys, bind, RETROK_LAST, down);
+      down[0] &= ~((1u << RETROK_BACKSPACE) - 1);
+#ifdef WEBOS
+      /* the remote's Back answers only a read of the key by itself */
+      if (input_driver_bind_capture_state(joy_idx, 0,
+               RETRO_DEVICE_KEYBOARD, 0, RETROK_BACKSPACE))
+         down[RETROK_BACKSPACE >> 5] |= (1u << (RETROK_BACKSPACE & 31));
+#endif
+      return;
+   }
+
+   for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
+      if (input_driver_bind_capture_state(joy_idx, 0,
+               RETRO_DEVICE_KEYBOARD, 0, b))
+         down[b >> 5] |= (1u << (b & 31));
+}
+
 /* A controller as the controller has it - its own buttons, axes and
  * hats, not the RetroPad's - for the capture of a bind. The menu read
  * the joypad drivers for this itself, and polled them; it asks here.
@@ -18092,7 +18125,7 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
  * mask of its directions held OR-ed in. With @poll the joypad driver
  * is polled first, as the capture does once a frame. */
 void input_driver_capture_pad(unsigned pad, bool poll,
-      bool *buttons, unsigned num_buttons,
+      uint32_t *buttons, unsigned num_buttons,
       int16_t *axes, unsigned num_axes,
       uint16_t *hats, unsigned num_hats)
 {
@@ -18110,7 +18143,8 @@ void input_driver_capture_pad(unsigned pad, bool poll,
 
       if (buttons)
          for (i = 0; i < num_buttons; i++)
-            buttons[i] = joypad->button(pad, (uint16_t)i);
+            if (joypad->button(pad, (uint16_t)i))
+               buttons[i >> 5] |= (1u << (i & 31));
 
       if (axes)
          for (i = 0; i < num_axes; i++)

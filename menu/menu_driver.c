@@ -1739,6 +1739,29 @@ static bool menu_bind_is_trigger(const struct menu_bind_state *state)
    return id == RETRO_DEVICE_ID_JOYPAD_L2 || id == RETRO_DEVICE_ID_JOYPAD_R2;
 }
 
+/* The lowest bit of @now not in @before (NULL: none), or @count bits
+ * past the end for none. */
+static unsigned menu_bind_first_bit(const uint32_t *now,
+      const uint32_t *before, unsigned words)
+{
+   unsigned w;
+   for (w = 0; w < words; w++)
+   {
+      uint32_t bits = before ? (now[w] & ~before[w]) : now[w];
+      if (bits)
+      {
+         unsigned b = w * 32;
+         while (!(bits & 1))
+         {
+            bits >>= 1;
+            b++;
+         }
+         return b;
+      }
+   }
+   return words * 32;
+}
+
 static bool menu_input_key_bind_poll_find_hold_pad(
       struct menu_bind_state *new_state,
       struct retro_keybind *output,
@@ -1748,13 +1771,9 @@ static bool menu_input_key_bind_poll_find_hold_pad(
    const struct menu_bind_state_port *n =
       &new_state->state[new_state->now][p];
 
-   for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
+   b = menu_bind_first_bit(n->keys, NULL, ARRAY_SIZE(n->keys));
+   if (b < RETROK_LAST)
    {
-      bool found = n->keys[b];
-
-      if (!found)
-         continue;
-
       RETRO_KEYBIND_SET_KEY(output, (enum retro_key)b);
       new_state->from_keys = true;
       return true;
@@ -1762,7 +1781,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
    {
-      bool found = n->mouse_buttons[b];
+      bool found = BIT32_GET(n->mouse_buttons, b);
 
       if (!found)
          continue;
@@ -1784,13 +1803,9 @@ static bool menu_input_key_bind_poll_find_hold_pad(
       }
    }
 
-   for (b = 0; b < MENU_MAX_BUTTONS; b++)
+   b = menu_bind_first_bit(n->buttons, NULL, ARRAY_SIZE(n->buttons));
+   if (b < MENU_MAX_BUTTONS)
    {
-      bool found = n->buttons[b];
-
-      if (!found)
-         continue;
-
       /* L2 and R2: a trigger that is a button and an axis is bound
        * to its axis, which is analog */
       if (menu_bind_is_trigger(new_state))
@@ -1883,13 +1898,9 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
    const struct menu_bind_state_port *o =
       &new_state->state[!new_state->now][p];
 
-   for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
+   b = menu_bind_first_bit(n->keys, o->keys, ARRAY_SIZE(n->keys));
+   if (b < RETROK_LAST)
    {
-      bool found = n->keys[b] && !o->keys[b];
-
-      if (!found)
-         continue;
-
       RETRO_KEYBIND_SET_KEY(output, (enum retro_key)b);
       new_state->from_keys = true;
       return true;
@@ -1897,7 +1908,7 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
 
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
    {
-      bool found = n->mouse_buttons[b] && !o->mouse_buttons[b];
+      bool found = BIT32_GET(n->mouse_buttons, b) && !BIT32_GET(o->mouse_buttons, b);
 
       if (!found)
          continue;
@@ -1919,13 +1930,9 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       }
    }
 
-   for (b = 0; b < MENU_MAX_BUTTONS; b++)
+   b = menu_bind_first_bit(n->buttons, o->buttons, ARRAY_SIZE(n->buttons));
+   if (b < MENU_MAX_BUTTONS)
    {
-      bool found = n->buttons[b] && !o->buttons[b];
-
-      if (!found)
-         continue;
-
       /* L2 and R2: a trigger that is a button and an axis is bound
        * to its axis, which is analog */
       if (menu_bind_is_trigger(new_state))
@@ -3875,21 +3882,14 @@ static void menu_input_key_bind_poll_bind_state(
        */
       for (b = 2; b < MENU_MAX_MBUTTONS; b++)
       {
-         ports[port].mouse_buttons[b] =
-            input_driver_bind_capture_state(
+         if (input_driver_bind_capture_state(
                   joy_idx,
                   state->user,
-                  RETRO_DEVICE_MOUSE, 0, b);
+                  RETRO_DEVICE_MOUSE, 0, b))
+            BIT32_SET(ports[port].mouse_buttons, b);
       }
 
-      for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
-      {
-         ports[port].keys[b] =
-            input_driver_bind_capture_state(
-                  joy_idx,
-                  0,
-                  RETRO_DEVICE_KEYBOARD, 0, b);
-      }
+      input_driver_bind_capture_keys(joy_idx, ports[port].keys);
    }
 
    state->skip                = timed_out;

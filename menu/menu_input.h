@@ -154,9 +154,10 @@ struct menu_bind_state_port
 {
    int16_t axes[MENU_MAX_AXES];
    uint16_t hats[MENU_MAX_HATS];
-   bool mouse_buttons[MENU_MAX_MBUTTONS];
-   bool buttons[MENU_MAX_BUTTONS];
-   bool keys[RETROK_LAST];
+   /* bits */
+   uint32_t mouse_buttons;
+   uint32_t buttons[(MENU_MAX_BUTTONS + 31) / 32];
+   uint32_t keys[(RETROK_LAST + 31) / 32];
 };
 
 struct menu_bind_axis_state

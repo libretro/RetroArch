@@ -1432,6 +1432,9 @@ int16_t input_driver_device_state(unsigned port,
       unsigned device, unsigned idx, unsigned id);
 int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
       unsigned device, unsigned idx, unsigned id);
+/* Every key down, a bit per key in @down, which the caller has cleared
+ * and holds RETROK_LAST bits. */
+void input_driver_bind_capture_keys(unsigned joy_idx, uint32_t *down);
 
 /* Port 0's mouse and first touch, read from the driver once per poll,
  * so every reader in a frame sees one state and a wheel notch once. */
@@ -1632,7 +1635,7 @@ const input_pointer_view_t *input_driver_pointer_view(void);
  * down, @axes with each axis's position, @hats with the directions
  * held OR-ed in. @poll polls the joypad drivers first. */
 void input_driver_capture_pad(unsigned pad, bool poll,
-      bool *buttons, unsigned num_buttons,
+      uint32_t *buttons, unsigned num_buttons,
       int16_t *axes, unsigned num_axes,
       uint16_t *hats, unsigned num_hats);
 

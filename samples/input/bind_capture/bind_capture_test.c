@@ -36,9 +36,11 @@ static input_pointer_frame_t frames[MAX_USERS];
 static uint32_t driver_mice[MAX_USERS];
 static uint32_t pad_buttons[MAX_USERS];
 static int16_t pad_rest[MAX_USERS];
+static unsigned pad_high;
 static uint16_t own_hot_key[MAX_USERS][HOTKEYS];
 static uint32_t own_hot_axis[MAX_USERS][HOTKEYS];
 static unsigned driver_mouse_reads;
+static unsigned driver_key;
 
 settings_t *config_get_ptr(void)
 {
@@ -148,12 +150,26 @@ static int16_t driver_state(void *data,
       driver_mouse_reads++;
       return id < 32 && ((driver_mice[info->joy_idx] >> id) & 1);
    }
+   if (device == RETRO_DEVICE_KEYBOARD)
+      return id == driver_key;
    return 0;
+}
+
+static void driver_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   for (i = 0; i < count; i++)
+      if (keys[i] == driver_key)
+         down[i >> 5] |= (1u << (i & 31));
 }
 
 static int32_t pad_button(unsigned pad, uint16_t id)
 {
    CHECK(pad < MAX_USERS);
+   if (pad_high && id == pad_high)
+      return 1;
    return id < 32 && ((pad_buttons[pad] >> id) & 1);
 }
 
@@ -193,6 +209,7 @@ static void reset(void)
    memset(driver_mice, 0, sizeof(driver_mice));
    memset(pad_buttons, 0, sizeof(pad_buttons));
    memset(pad_rest, 0, sizeof(pad_rest));
+   pad_high = 0;
    for (i = 0; i < MAX_USERS; i++)
    {
       input_config_binds[i]                = binds[i];
@@ -220,6 +237,7 @@ static void reset(void)
    input_driver_st.primary_joypad       = &joypad;
    menu_driver_state.driver_data        = &menu;
    driver_mouse_reads                   = 0;
+   driver_key                           = 0;
    input_pointer_frames_clear();
 }
 
@@ -355,6 +373,37 @@ static void test_hotkey_sharer(void)
    CHECK(key == 5);
 }
 
+/* A key down, read one by one or all at once; a code below the first
+ * key is none. */
+static void test_keys(bool at_once)
+{
+   reset();
+   if (at_once)
+      driver.keys_down = driver_keys_down;
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_B));
+   driver_key = RETROK_BACKSPACE - 1;
+   CHECK(!bind_step());
+   driver_key = RETROK_x;
+   CHECK(bind_step());
+   CHECK(RETRO_KEYBIND_KEY(&binds[0][RETRO_DEVICE_ID_JOYPAD_B]) == RETROK_x);
+   driver_key = 0;
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_A));
+   driver_key = RETROK_LAST - 1;
+   CHECK(bind_step());
+   CHECK(RETRO_KEYBIND_KEY(&binds[0][RETRO_DEVICE_ID_JOYPAD_A])
+         == RETROK_LAST - 1);
+}
+
+/* the highest button there is, among the bits */
+static void test_last_button(void)
+{
+   reset();
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_B));
+   pad_high = MENU_MAX_BUTTONS - 1;
+   CHECK(bind_step());
+   CHECK(binds[0][RETRO_DEVICE_ID_JOYPAD_B].joykey == MENU_MAX_BUTTONS - 1);
+}
+
 int main(void)
 {
    test_mouse_frames();
@@ -362,6 +411,9 @@ int main(void)
    test_reassigned_pad(1, 0);
    test_reassigned_pad(0, MAX_USERS - 1);
    test_hotkey_sharer();
+   test_keys(false);
+   test_keys(true);
+   test_last_button();
    if (failures)
       return 1;
    puts("PASS bind_capture_test");

@@ -10,6 +10,7 @@ for path, names in (
     ('input/input_driver.c', (
         'input_driver_has_device_state',
         'input_driver_bind_capture_state',
+        'input_driver_bind_capture_keys',
         'input_driver_capture_pad',
         'input_driver_set_wait_input_release',
         'input_driver_waiting_input_release',
@@ -21,6 +22,7 @@ for path, names in (
         'input_config_hotkey_bind_own')),
     ('menu/menu_driver.c', (
         'menu_bind_is_trigger',
+        'menu_bind_first_bit',
         'menu_input_key_bind_poll_find_hold_pad',
         'menu_input_key_bind_poll_find_hold',
         'menu_input_key_bind_poll_find_trigger_pad',
