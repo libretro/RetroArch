@@ -5549,9 +5549,7 @@ bool menu_input_key_bind_set_mode(
    binds->from_keys                    = false;
 
    menu_input_key_bind_poll_bind_get_rested_axes(binds);
-   menu_input_key_bind_poll_bind_state(
-         settings->uints.input_joypad_index[binds->port],
-         binds, false);
+   menu_input_key_bind_poll_bind_state(binds->port, binds, false);
 
    current_usec                        = cpu_features_get_time_usec();
 
@@ -5658,8 +5656,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 
       new_binds.from      = new_binds.port;
       new_binds.from_keys = false;
-      menu_input_key_bind_poll_bind_state(
-            settings->uints.input_joypad_index[new_binds.port],
+      menu_input_key_bind_poll_bind_state(new_binds.port,
             &new_binds, timed_out);
 
       /* Wait until keys and buttons are released */
