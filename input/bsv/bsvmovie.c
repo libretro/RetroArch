@@ -167,6 +167,7 @@ static bool bsv_movie_peek_frame_info(bsv_movie_t *movie, uint8_t *token, uint64
          /* Read compressed encoded size */
          if (intfstream_read(movie->file, &(state_length), sizeof(uint32_t)) != sizeof(uint32_t))
             goto end;
+         state_length = swap_if_big32(state_length);
          /* Seek past the state data */
          if (intfstream_seek(movie->file, state_length, SEEK_CUR) < 0)
             goto end;
