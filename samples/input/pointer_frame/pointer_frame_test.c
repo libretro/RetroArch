@@ -321,6 +321,11 @@ static void test_flags(void)
  * calls are input_driver.c's. */
 #include "input/drivers/android_pointers.h"
 
+input_pointer_frame_t *input_driver_pointers_lend(void)
+{
+   return input_pointers.frame;
+}
+
 void input_driver_publish_window_pointers(
       const input_pointer_frame_t *frames,
       const input_video_window_t *windows,

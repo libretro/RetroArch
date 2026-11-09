@@ -840,7 +840,7 @@ bool SDL_webOSCursorVisibility(bool visible)
  * in the air is a pointer that is not pressed. */
 static void sdl3_publish_pointers(sdl3_input_t *sdl)
 {
-   input_pointer_frame_t frame;
+   input_pointer_frame_t *frame = input_driver_pointers_lend();
    uint32_t touch_pos[SDL3_MAX_TOUCH];
    unsigned touches = 0;
    unsigned present = 0;
@@ -873,9 +873,9 @@ static void sdl3_publish_pointers(sdl3_input_t *sdl)
       buttons |= INPUT_POINTER_HWHEEL_UP;
    if (sdl->mouse_wl)
       buttons |= INPUT_POINTER_HWHEEL_DOWN;
-   frame.pos     = VIDEO_POS_PACK((int)sdl->mouse_abs_x, (int)sdl->mouse_abs_y);
-   frame.rel     = sdl->mouse_delta;
-   frame.buttons = (uint16_t)buttons;
+   frame->pos     = VIDEO_POS_PACK((int)sdl->mouse_abs_x, (int)sdl->mouse_abs_y);
+   frame->rel     = sdl->mouse_delta;
+   frame->buttons = (uint16_t)buttons;
 
    if (sdl->num_touches > 0)
    {
@@ -903,7 +903,7 @@ static void sdl3_publish_pointers(sdl3_input_t *sdl)
       down         = sdl->pen_down ? 1 : 0;
    }
 
-   input_driver_publish_pointers(&frame, 1,
+   input_driver_publish_pointers(frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
          | INPUT_POINTERS_GUN_BUTTONS_BOUND
          | INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT

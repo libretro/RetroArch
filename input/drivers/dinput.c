@@ -451,7 +451,7 @@ static void dinput_poll(void *data)
  * the mouse, which stands for one touch: its left button. */
 static void dinput_publish_pointers(struct dinput_input *di)
 {
-   input_pointer_frame_t frame;
+   input_pointer_frame_t *frame = input_driver_pointers_lend();
    uint32_t touch_pos[DINPUT_MAX_POINTERS];
    int order[DINPUT_MAX_POINTERS];
    unsigned i, n    = 0;
@@ -475,9 +475,9 @@ static void dinput_publish_pointers(struct dinput_input *di)
       buttons |= INPUT_POINTER_HWHEEL_UP;
    if (di->flags & DINP_FLAG_MOUSE_HWD_BTN)
       buttons |= INPUT_POINTER_HWHEEL_DOWN;
-   frame.pos     = di->mouse_pos;
-   frame.rel     = di->mouse_rel;
-   frame.buttons = (uint16_t)buttons;
+   frame->pos     = di->mouse_pos;
+   frame->rel     = di->mouse_rel;
+   frame->buttons = (uint16_t)buttons;
 
    /* the touches that are down, earliest first: a handful, so an
     * insertion as each is taken is enough */
@@ -499,7 +499,7 @@ static void dinput_publish_pointers(struct dinput_input *di)
       n++;
    }
 
-   input_driver_publish_pointers(&frame, 1,
+   input_driver_publish_pointers(frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
          | INPUT_POINTERS_GUN_AT_TOUCH | INPUT_POINTERS_GUN_BUTTONS_BOUND);
    /* each one listed is there, and down */

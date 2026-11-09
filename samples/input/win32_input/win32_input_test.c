@@ -30,6 +30,12 @@ uintptr_t video_driver_window_get(void) { return (uintptr_t)test_window; }
 static input_pointer_frame_t last_frame;
 static unsigned              last_flags;
 static unsigned              frames_published;
+input_pointer_frame_t *input_driver_pointers_lend(void)
+{
+   static input_pointer_frame_t lent[MAX_USERS];
+   return lent;
+}
+
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
 {

@@ -17,6 +17,12 @@
 bool input_config_get_sdl3_system_keyboard(void) { return false; }
 bool input_driver_keyboard_line_enabled(void) { return false; }
 bool input_driver_poll_viewport(struct video_viewport *vp) { (void)vp; return false; }
+input_pointer_frame_t *input_driver_pointers_lend(void)
+{
+   static input_pointer_frame_t lent[MAX_USERS];
+   return lent;
+}
+
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags) { (void)frames; (void)count; (void)flags; }
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,

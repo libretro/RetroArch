@@ -113,7 +113,7 @@ static void input_wl_poll(void *data)
     * answers for the mouse, the pointer and the lightgun's aim. The
     * motion and the wheel are taken here, once, for every reader. */
    {
-      input_pointer_frame_t frame;
+      input_pointer_frame_t *frame = input_driver_pointers_lend();
       uint32_t touch_pos[MAX_TOUCHES];
       unsigned present = 0;
       unsigned down    = 0;
@@ -137,9 +137,9 @@ static void input_wl_poll(void *data)
          buttons |= INPUT_POINTER_HWHEEL_UP;
       if (wl->mouse.wl)
          buttons |= INPUT_POINTER_HWHEEL_DOWN;
-      frame.pos        = wl->mouse.pos;
-      frame.rel        = wl->mouse.delta;
-      frame.buttons    = (uint16_t)buttons;
+      frame->pos        = wl->mouse.pos;
+      frame->rel        = wl->mouse.delta;
+      frame->buttons    = (uint16_t)buttons;
       wl->mouse.delta  = 0;
       wl->mouse.wu     = false;
       wl->mouse.wd     = false;
@@ -158,7 +158,7 @@ static void input_wl_poll(void *data)
             down      |= (1 << id);
       }
       /* the one mouse is every port's; it stands for three touches */
-      input_driver_publish_pointers(&frame, 1,
+      input_driver_publish_pointers(frame, 1,
             INPUT_POINTERS_MOUSE_3_TOUCHES);
       input_driver_publish_touches(touch_pos, MAX_TOUCHES, present, down);
    }

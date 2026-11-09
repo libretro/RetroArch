@@ -355,7 +355,7 @@ static void sdl2_poll_mouse(sdl2_input_t *sdl)
  * port's, and the mouse stands for one touch, its left button. */
 static void sdl2_publish_pointers(sdl2_input_t *sdl)
 {
-   input_pointer_frame_t frame;
+   input_pointer_frame_t *frame = input_driver_pointers_lend();
    unsigned buttons = 0;
 
    if (sdl->mouse_l)
@@ -376,9 +376,9 @@ static void sdl2_publish_pointers(sdl2_input_t *sdl)
       buttons |= INPUT_POINTER_HWHEEL_UP;
    if (sdl->mouse_wl)
       buttons |= INPUT_POINTER_HWHEEL_DOWN;
-   frame.pos     = sdl->mouse_abs;
-   frame.rel     = sdl->mouse_rel;
-   frame.buttons = (uint16_t)buttons;
+   frame->pos     = sdl->mouse_abs;
+   frame->rel     = sdl->mouse_rel;
+   frame->buttons = (uint16_t)buttons;
    /* a notch is this frame's: it was kept until the next turn of the
     * wheel, and read as held for as long */
    sdl->mouse_wu = 0;
@@ -386,7 +386,7 @@ static void sdl2_publish_pointers(sdl2_input_t *sdl)
    sdl->mouse_wl = 0;
    sdl->mouse_wr = 0;
 
-   input_driver_publish_pointers(&frame, 1,
+   input_driver_publish_pointers(frame, 1,
          INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT);
 }
 

@@ -100,15 +100,15 @@ static void win32_input_free(void *data)
 
 static void win32_input_poll(void *data)
 {
-   input_pointer_frame_t frame;
+   input_pointer_frame_t *frame = input_driver_pointers_lend();
    POINT pt;
    win32_input_t *w32 = (win32_input_t*)data;
    HWND hwnd          = (HWND)video_driver_window_get();
    bool focused       = hwnd && GetForegroundWindow() == hwnd;
 
-   frame.pos     = w32->mouse_pos;
-   frame.rel     = VIDEO_POS_PACK(0, 0);
-   frame.buttons = 0;
+   frame->pos     = w32->mouse_pos;
+   frame->rel     = VIDEO_POS_PACK(0, 0);
+   frame->buttons = 0;
 
    if (!focused)
    {
@@ -125,24 +125,24 @@ static void win32_input_poll(void *data)
       uint32_t pos = VIDEO_POS_PACK(pt.x, pt.y);
 
       if (w32->have_pos)
-         frame.rel  = VIDEO_POS_PACK(
+         frame->rel  = VIDEO_POS_PACK(
                pt.x - VIDEO_POS_X(w32->mouse_pos),
                pt.y - VIDEO_POS_Y(w32->mouse_pos));
       w32->mouse_pos = pos;
       w32->have_pos  = true;
-      frame.pos      = pos;
+      frame->pos      = pos;
 
       if (GetAsyncKeyState(swapped ? VK_RBUTTON : VK_LBUTTON) & 0x8000)
-         frame.buttons |= INPUT_POINTER_LEFT;
+         frame->buttons |= INPUT_POINTER_LEFT;
       if (GetAsyncKeyState(swapped ? VK_LBUTTON : VK_RBUTTON) & 0x8000)
-         frame.buttons |= INPUT_POINTER_RIGHT;
+         frame->buttons |= INPUT_POINTER_RIGHT;
       if (GetAsyncKeyState(VK_MBUTTON) & 0x8000)
-         frame.buttons |= INPUT_POINTER_MIDDLE;
+         frame->buttons |= INPUT_POINTER_MIDDLE;
    }
 
    /* The mouse is the port's whose Mouse Index is 0; the pointer and
     * the lightgun's aim are every port's. */
-   input_driver_publish_pointers(&frame, 1,
+   input_driver_publish_pointers(frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
          | INPUT_POINTERS_GUN_BUTTONS_BOUND);
 }
