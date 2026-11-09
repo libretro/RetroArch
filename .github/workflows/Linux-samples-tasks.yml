@@ -24,6 +24,7 @@ on:
       - 'samples/tasks/content_prefetch/**'
       - 'samples/tasks/core_backup/**'
       - 'samples/tasks/core_install_check/**'
+      - 'samples/tasks/core_load_check/**'
       - 'samples/tasks/core_signature/**'
       - 'samples/tasks/core_trust_runtime/**'
       - 'samples/tasks/core_updater/**'
@@ -74,6 +75,7 @@ on:
       - 'samples/tasks/content_prefetch/**'
       - 'samples/tasks/core_backup/**'
       - 'samples/tasks/core_install_check/**'
+      - 'samples/tasks/core_load_check/**'
       - 'samples/tasks/core_signature/**'
       - 'samples/tasks/core_trust_runtime/**'
       - 'samples/tasks/core_updater/**'
@@ -1162,6 +1164,25 @@ jobs:
           make clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              make -j$(nproc) SANITIZER=address,undefined \
              RUNNER="timeout 600" check
+          make clean
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -j$(nproc) CC=x86_64-w64-mingw32-gcc \
+             RUNNER="timeout 600 wine" check
+          make clean
+
+      - name: Build and run core_load_check_test (ASan + UBSan, TSan, mingw-w64)
+        shell: bash
+        working-directory: samples/tasks/core_load_check
+        run: |
+          set -eu
+          # The load check: the gate every core open goes through, the
+          # check task, the slot that binds a pass to the file checked,
+          # and the startup check in place.
+          make clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make -j$(nproc) SANITIZER=address,undefined \
+             RUNNER="timeout 600" check
+          make clean && TSAN_OPTIONS=halt_on_error=1 \
+             make -j$(nproc) SANITIZER=thread RUNNER="timeout 600" check
           make clean
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -j$(nproc) CC=x86_64-w64-mingw32-gcc \

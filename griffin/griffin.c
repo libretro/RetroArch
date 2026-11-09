@@ -1646,6 +1646,10 @@ FRONTEND
 #include "../core_signature_io.c"
 #include "../core_trust_runtime.c"
 #include "../core_install_check.c"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../core_load_file.c"
+#include "../core_load_check.c"
+#endif
 #endif
 #include "../core_option_manager.c"
 

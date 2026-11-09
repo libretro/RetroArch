@@ -406,6 +406,8 @@ ifeq ($(HAVE_DYNAMIC), 1)
                     core_install_check.o
          ifeq ($(HAVE_CORE_LOAD_CHECK), 1)
             DEFINES += -DHAVE_CORE_LOAD_CHECK
+            OBJ     += core_load_check.o \
+                       core_load_file.o
          endif
          ifeq ($(HAVE_CORE_SIGNING_TEST_KEY), 1)
             DEFINES += -DHAVE_CORE_SIGNING_TEST_KEY
