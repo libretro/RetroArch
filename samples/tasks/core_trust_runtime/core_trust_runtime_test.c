@@ -125,6 +125,62 @@ bool task_nbio_slice_within_budget(void *ud, size_t avail, size_t len)
    return true;
 }
 
+static unsigned menu_opens;
+static bool menu_can_open = true;
+
+void menu_core_warning_open(void)
+{
+   menu_opens++;
+}
+
+bool menu_core_warning_can_open(void)
+{
+   return menu_can_open;
+}
+
+struct warn_seen
+{
+   struct core_check c;
+   char path[64];
+   void *userdata;
+   enum core_warning_choice choice;
+   unsigned calls;
+   bool push_again;
+   bool again_pushed;
+};
+
+static struct warn_seen seen;
+
+static void warn_cb(enum core_warning_choice choice,
+      const struct core_check *c, const char *core_path, void *userdata)
+{
+   seen.calls++;
+   seen.choice   = choice;
+   seen.c        = *c;
+   seen.userdata = userdata;
+   seen.path[0]  = '\0';
+   CHECK(core_path);
+   if (core_path)
+      strlcpy(seen.path, core_path, sizeof(seen.path));
+   if (seen.push_again)
+   {
+      seen.push_again   = false;
+      seen.again_pushed = core_warning_push(c, CORE_WARNING_INSTALL,
+            core_path, warn_cb, NULL);
+   }
+}
+
+static bool choices_are(enum core_warning_choice a, int b, int c)
+{
+   enum core_warning_choice got[CORE_WARNING_CHOICES_MAX];
+   unsigned n    = core_warning_choices(got);
+   unsigned want = b < 0 ? 1 : c < 0 ? 2 : 3;
+   return   n == want
+         && got[0] == a
+         && (n < 2 || (int)got[1] == b)
+         && (n < 3 || (int)got[2] == c);
+}
+
 /* The queue runs on its own thread: tests run again with it, under
  * other names */
 static bool task_thread;
@@ -224,6 +280,8 @@ static void test_inactive(void)
    CHECK(!core_trust_runtime_apply(&c));
    pump(4);
    CHECK(!path_is_valid(tmp("inactive")));
+   CHECK(!core_warning_push(&c, CORE_WARNING_LOAD, "/c/a_libretro.so",
+            warn_cb, NULL));
    core_trust_runtime_deinit();
 }
 
@@ -854,6 +912,161 @@ static void test_seed_gen(void)
 }
 #endif
 
+static void test_warning(void)
+{
+   static int ua, ub;
+   struct core_check c, d;
+   enum core_warning_kind kind;
+   enum core_check_result result;
+   unsigned serial;
+   CHECK(core_trust_runtime_init(tmp("warning"), NULL, NULL));
+   memset(&seen, 0, sizeof(seen));
+   menu_opens = 0;
+   /* Nothing to warn about */
+   fake_check(&c, "w_libretro.so", 0x21, CORE_CHECK_OK);
+   CHECK(!core_warning_push(&c, CORE_WARNING_LOAD, "/c/w_libretro.so",
+            warn_cb, &ua));
+   CHECK(menu_opens == 0);
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(core_warning_serial() == 0);
+   CHECK(choices_are(CORE_WARNING_CANCEL, -1, -1));
+   fake_check(&c, "w_libretro.so", 0x21, CORE_CHECK_UNSIGNED);
+   CHECK(!core_warning_push(&c, CORE_WARNING_LOAD, NULL, warn_cb, &ua));
+   CHECK(!core_warning_push(&c, CORE_WARNING_LOAD, "/c/w_libretro.so",
+            NULL, &ua));
+   CHECK(!core_warning_pending(NULL, NULL));
+   /* A menu that can't show it (the null driver) */
+   menu_can_open = false;
+   CHECK(!core_warning_push(&c, CORE_WARNING_LOAD, "/c/w_libretro.so",
+            warn_cb, &ua));
+   menu_can_open = true;
+   CHECK(menu_opens == 0 && seen.calls == 0);
+   CHECK(!core_warning_pending(NULL, NULL));
+   /* A load */
+   fake_check(&c, "w_libretro.so", 0x21, CORE_CHECK_UNSIGNED);
+   CHECK(core_warning_push(&c, CORE_WARNING_LOAD, "/c/w_libretro.so",
+            warn_cb, &ua));
+   CHECK(menu_opens == 1);
+   CHECK(core_warning_pending(&kind, &result));
+   CHECK(kind == CORE_WARNING_LOAD && result == CORE_CHECK_UNSIGNED);
+   CHECK(choices_are(CORE_WARNING_CANCEL, CORE_WARNING_LOAD_ONCE,
+            CORE_WARNING_ALWAYS_TRUST));
+   /* Refused, it leaves the pending request alone */
+   menu_can_open = false;
+   CHECK(!core_warning_push(&c, CORE_WARNING_INSTALL, "/c/x_libretro.so",
+            warn_cb, &ub));
+   menu_can_open = true;
+   CHECK(seen.calls == 0 && core_warning_pending(&kind, NULL));
+   CHECK(kind == CORE_WARNING_LOAD);
+   CHECK(!core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   CHECK(seen.calls == 0 && core_warning_pending(NULL, NULL));
+   CHECK(core_warning_choose(CORE_WARNING_ALWAYS_TRUST));
+   CHECK(seen.calls == 1 && seen.choice == CORE_WARNING_ALWAYS_TRUST);
+   CHECK(seen.userdata == &ua);
+   CHECK(string_is_equal(seen.path, "/c/w_libretro.so"));
+   CHECK(!memcmp(&seen.c, &c, sizeof(c)));
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(!core_warning_choose(CORE_WARNING_CANCEL));
+   /* An install: a newer push cancels the older one */
+   fake_check(&c, "i_libretro.so", 0x22, CORE_CHECK_MODIFIED);
+   CHECK(core_warning_push(&c, CORE_WARNING_INSTALL, "/c/i_libretro.so",
+            warn_cb, &ua));
+   CHECK(choices_are(CORE_WARNING_CANCEL, CORE_WARNING_INSTALL_AND_TRUST, -1));
+   serial = core_warning_serial();
+   CHECK(serial != 0);
+   fake_check(&d, "j_libretro.so", 0x23, CORE_CHECK_ERROR);
+   CHECK(core_warning_push(&d, CORE_WARNING_LOAD, "/c/j_libretro.so",
+            warn_cb, &ub));
+   CHECK(seen.calls == 2 && seen.choice == CORE_WARNING_CANCEL);
+   CHECK(seen.userdata == &ua);
+   CHECK(string_is_equal(seen.path, "/c/i_libretro.so"));
+   CHECK(seen.c.result == CORE_CHECK_MODIFIED);
+   /* The screen's rows for the older request no longer count */
+   CHECK(core_warning_serial() != serial && core_warning_serial() != 0);
+   /* ERROR: Cancel only */
+   CHECK(choices_are(CORE_WARNING_CANCEL, -1, -1));
+   CHECK(!core_warning_choose(CORE_WARNING_LOAD_ONCE));
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   CHECK(seen.calls == 3 && seen.userdata == &ub);
+   CHECK(core_warning_serial() == 0);
+   /* The callback may push again: the slot is free by then */
+   CHECK(core_warning_push(&c, CORE_WARNING_INSTALL, "/c/i_libretro.so",
+            warn_cb, &ua));
+   seen.push_again = true;
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   CHECK(seen.calls == 4 && core_warning_pending(&kind, NULL));
+   CHECK(kind == CORE_WARNING_INSTALL);
+   CHECK(seen.again_pushed);
+   /* Quit cancels what is still pending, and takes no new request */
+   seen.push_again = true;
+   menu_opens      = 0;
+   core_trust_runtime_deinit();
+   CHECK(seen.calls == 5 && seen.choice == CORE_WARNING_CANCEL);
+   CHECK(!seen.again_pushed);
+   CHECK(menu_opens == 0);
+   CHECK(!core_warning_pending(NULL, NULL));
+}
+
+/* A CANCEL that chooses, from inside the push that replaced it */
+static unsigned cancel_choose_calls;
+static bool cancel_chose;
+
+static void cancel_choose_cb(enum core_warning_choice choice,
+      const struct core_check *c, const char *core_path, void *userdata)
+{
+   (void)c;
+   (void)core_path;
+   (void)userdata;
+   cancel_choose_calls++;
+   if (choice == CORE_WARNING_CANCEL)
+      cancel_chose = core_warning_choose(CORE_WARNING_CANCEL);
+}
+
+static void test_warning_choose_from_cancel(void)
+{
+   struct core_check a, b;
+   CHECK(core_trust_runtime_init(tmp("cancel_choose"), NULL, NULL));
+   memset(&seen, 0, sizeof(seen));
+   cancel_choose_calls = 0;
+   cancel_chose        = true;
+   fake_check(&a, "a_libretro.so", 0x41, CORE_CHECK_UNSIGNED);
+   fake_check(&b, "b_libretro.so", 0x42, CORE_CHECK_UNSIGNED);
+   CHECK(core_warning_push(&a, CORE_WARNING_LOAD, "/c/a_libretro.so",
+            cancel_choose_cb, NULL));
+   CHECK(core_warning_push(&b, CORE_WARNING_LOAD, "/c/b_libretro.so",
+            warn_cb, NULL));
+   CHECK(cancel_choose_calls == 1);
+   CHECK(!cancel_chose);
+   /* B is still the push's to answer */
+   CHECK(seen.calls == 0);
+   CHECK(core_warning_pending(NULL, NULL));
+   CHECK(core_warning_choose(CORE_WARNING_LOAD_ONCE));
+   CHECK(seen.calls == 1 && seen.choice == CORE_WARNING_LOAD_ONCE);
+   core_trust_runtime_deinit();
+}
+
+static void test_warning_text(void)
+{
+   struct core_check a, b;
+   CHECK(core_warning_reason(CORE_CHECK_UNSIGNED) == MSG_CORE_WARNING_UNSIGNED);
+   CHECK(core_warning_reason(CORE_CHECK_MODIFIED) == MSG_CORE_WARNING_MODIFIED);
+   CHECK(core_warning_reason(CORE_CHECK_OLDER) == MSG_CORE_WARNING_OLDER);
+   CHECK(core_warning_reason(CORE_CHECK_UNKNOWN_KEY)
+         == MSG_CORE_WARNING_UNKNOWN_KEY);
+   CHECK(core_warning_reason(CORE_CHECK_ERROR) == MSG_CORE_WARNING_ERROR);
+   fake_check(&a, "s_libretro.so", 0x31, CORE_CHECK_UNSIGNED);
+   fake_check(&b, "s_libretro.so", 0x31, CORE_CHECK_UNSIGNED);
+   CHECK(core_warning_same_core(&a, &b));
+   b.rec.sha256[31] ^= 1;
+   CHECK(!core_warning_same_core(&a, &b));
+   fake_check(&b, "t_libretro.so", 0x31, CORE_CHECK_UNSIGNED);
+   CHECK(!core_warning_same_core(&a, &b));
+   /* A check that never hashed matches nothing */
+   fake_check(&a, "s_libretro.so", 0, CORE_CHECK_ERROR);
+   fake_check(&b, "s_libretro.so", 0, CORE_CHECK_ERROR);
+   CHECK(!core_warning_same_core(&a, &b));
+}
+
 int main(void)
 {
    size_t num_keys = 0;
@@ -891,6 +1104,9 @@ int main(void)
       test_seed_unopened();
       test_seed_gen();
 #endif
+      test_warning();
+      test_warning_choose_from_cancel();
+      test_warning_text();
       /* The worker's side of a save and of the seed */
       task_queue_deinit();
       task_queue_init(true, NULL);

@@ -120,6 +120,9 @@ GENERIC_DEFERRED_PUSH(deferred_push_information_list,               DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_information,                    DISPLAYLIST_INFORMATION)
 GENERIC_DEFERRED_PUSH(deferred_archive_action_detect_core,          DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE)
 GENERIC_DEFERRED_PUSH(deferred_archive_action,                      DISPLAYLIST_ARCHIVE_ACTION)
+#ifdef HAVE_CORE_SIGNATURES
+GENERIC_DEFERRED_PUSH(deferred_core_warning,                        DISPLAYLIST_CORE_WARNING)
+#endif
 GENERIC_DEFERRED_PUSH(deferred_push_core_counters,                  DISPLAYLIST_PERFCOUNTERS_CORE)
 GENERIC_DEFERRED_PUSH(deferred_push_frontend_counters,              DISPLAYLIST_PERFCOUNTERS_FRONTEND)
 GENERIC_DEFERRED_PUSH(deferred_push_core_cheat_options,             DISPLAYLIST_OPTIONS_CHEATS)
@@ -895,6 +898,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, deferred_push_file_browser_select_sideload_core},
       {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE, deferred_archive_action_detect_core},
       {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION, deferred_archive_action},
+#ifdef HAVE_CORE_SIGNATURES
+      {MENU_ENUM_LABEL_DEFERRED_CORE_WARNING, deferred_core_warning},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE, deferred_archive_open_detect_core},
       {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN, deferred_archive_open},
 #ifdef HAVE_NETWORKING
@@ -947,6 +953,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_KICK_LIST, deferred_push_accounts_kick_list },
          { MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE, deferred_archive_action_detect_core },
          { MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION, deferred_archive_action },
+#ifdef HAVE_CORE_SIGNATURES
+         { MENU_ENUM_LABEL_DEFERRED_CORE_WARNING, deferred_core_warning },
+#endif
          { MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE, deferred_archive_open_detect_core },
          { MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN, deferred_archive_open },
          { MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, deferred_push_history_list },

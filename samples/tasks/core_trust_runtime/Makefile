@@ -3,10 +3,10 @@ include ../../sample_objdir.mk
 TARGET := core_trust_runtime_test
 
 # RetroArch's trust store (core_trust_runtime.c): the startup load,
-# saves, snapshots put on another thread and the seed. TEST_KEY=0 is
-# a build with no keys at all, LOAD_CHECK=0 one without the load
-# check, as the tree builds by default; the seed exists only with it,
-# so the harness builds it.
+# saves, snapshots put on another thread, the seed and the Security
+# Warning's requests. TEST_KEY=0 is a build with no keys at all,
+# LOAD_CHECK=0 one without the load check, as the tree builds by
+# default; the seed exists only with it, so the harness builds it.
 # Linux and mingw-w64.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
