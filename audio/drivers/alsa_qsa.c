@@ -328,6 +328,55 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t len)
    return _len;
 }
 
+/* The full staging block to the device, once, without waiting. True
+ * when it went; a refused block stays staged for the next try. */
+static bool alsa_qsa_flush(alsa_qsa_t *alsa, bool *fatal)
+{
+   snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm,
+         alsa->buffer, alsa->buf_size);
+   if (frames > 0)
+   {
+      alsa->buffer_ptr = 0;
+      return true;
+   }
+   if (frames != -EAGAIN)
+   {
+      int ret = check_pcm_status(alsa, SND_PCM_CHANNEL_PLAYBACK);
+      if (ret == -EPROTO || ret == -EBADF)
+         *fatal = true;
+   }
+   return false;
+}
+
+static size_t alsa_qsa_write_begin(void *data, size_t len, void **region)
+{
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
+   bool fatal       = false;
+   size_t span;
+   *region          = NULL;
+   if (     alsa->buffer_ptr >= alsa->buf_size
+         && !alsa_qsa_flush(alsa, &fatal))
+      return 0;
+   span  = alsa->buf_size - alsa->buffer_ptr;
+   if (span > len)
+      span = len;
+   span &= ~(size_t)3;
+   if (span)
+      *region = alsa->buffer + alsa->buffer_ptr;
+   return span;
+}
+
+static ssize_t alsa_qsa_write_end(void *data, size_t len)
+{
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
+   bool fatal       = false;
+   len             &= ~(size_t)3;
+   alsa->buffer_ptr += (unsigned)len;
+   if (alsa->buffer_ptr >= alsa->buf_size)
+      alsa_qsa_flush(alsa, &fatal);
+   return fatal ? -1 : (ssize_t)len;
+}
+
 static bool alsa_qsa_stop(void *data)
 {
    alsa_qsa_t *alsa = (alsa_qsa_t*)data;
@@ -465,5 +514,11 @@ audio_driver_t audio_alsa = {
    NULL, /* write_raw */
    NULL, /* wait_writable */
    NULL, /* frames_consumed */
-   alsa_qsa_underruns
+   alsa_qsa_underruns,
+   NULL, /* layout */
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   alsa_qsa_write_begin,
+   alsa_qsa_write_end
 };

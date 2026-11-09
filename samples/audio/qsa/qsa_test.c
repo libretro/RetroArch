@@ -128,6 +128,39 @@ int main(void)
       CHECK(tries < 512, "non-blocking writes never returned short on a full device");
    }
 
+   printf("   a lent span reaches the device\n");
+   {
+      void  *span = NULL;
+      size_t got, placed = 0, sent_before;
+      unsigned spins = 0;
+      drv->set_nonblock_state(h, true);
+      qsa_mock_drain(1u << 24);
+      sent_before = qsa_mock_written();
+      /* Through a whole staging block and past it */
+      while (placed <= drv->buffer_size(h) && spins++ < 4096)
+      {
+         got = drv->write_begin(h, 1023, &span);
+         if (!got)
+         {
+            qsa_mock_drain(1u << 24);
+            continue;
+         }
+         CHECK(span != NULL && !(got % 4) && got <= 1023,
+               "a lent span of %u bytes", (unsigned)got);
+         memset(span, 0x5a, got);
+         CHECK(drv->write_end(h, got) == (ssize_t)got,
+               "write_end did not take %u bytes", (unsigned)got);
+         placed += got;
+      }
+      CHECK(placed > drv->buffer_size(h), "only %u bytes lent", (unsigned)placed);
+      CHECK(qsa_mock_written() > sent_before,
+            "a full staging block lent never reached the device");
+      /* Abandoned, nothing is taken */
+      got = drv->write_begin(h, 4, &span);
+      if (got)
+         CHECK(drv->write_end(h, 0) == 0, "an abandoned lend took bytes");
+   }
+
    printf("   stop pauses and start resumes\n");
    drv->set_nonblock_state(h, false);
    CHECK(drv->stop(h), "stop");
