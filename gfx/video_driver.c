@@ -6960,14 +6960,12 @@ void video_driver_cached_frame_invalidate(void)
  * the cached pointer is one of its own allocations. */
 void video_driver_cached_frame_retire(void)
 {
-#ifdef HAVE_THREADS
    {
       size_t keeper = retro_atomic_load_acquire_size(
             &video_driver_st.frame_cache_keeper);
-      if (keeper && keeper == (size_t)sthread_get_current_thread_id())
+      if (keeper && keeper == VIDEO_CACHE_KEEPER)
          return;
    }
-#endif
    video_driver_cached_frame_invalidate();
 #ifdef FRAME_CACHE_HAZARDS
    /* Bump first, then scan: a reader that armed before the bump is
@@ -9481,6 +9479,9 @@ void video_driver_frame(const void *data, unsigned width,
 #if defined(HAVE_VIDEO_FILTER) && defined(HAVE_THREADS)
    bool filter_deferred           = false;
 #endif
+#ifdef HAVE_VIDEO_FILTER
+   bool filter_lent               = false;
+#endif
    video_driver_state_t *video_st = &video_driver_st;
    const video_driver_t *vid      = video_st->current_video;
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
@@ -10047,10 +10048,17 @@ void video_driver_frame(const void *data, unsigned width,
             &output_dims, dims);
 
       output_pitch = VIDEO_SCALE_W(output_dims) * video_st->state_out_bpp;
-      if (!(output = video_driver_filter_lend(video_st->poke,
+      retro_atomic_store_release_size(&video_st->frame_cache_keeper,
+            VIDEO_CACHE_KEEPER);
+      if ((output = video_driver_filter_lend(video_st->poke,
                   video_st->data, output_dims, video_st->state_out_bpp,
                   &output_pitch)))
+         filter_lent = true;
+      else
+      {
          output    = video_st->state_buffer;
+         retro_atomic_store_release_size(&video_st->frame_cache_keeper, 0);
+      }
 
       rarch_softfilter_process(video_st->state_filter,
             output, output_pitch,
@@ -10211,6 +10219,11 @@ void video_driver_frame(const void *data, unsigned width,
          video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
       else
          video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
+
+#ifdef HAVE_VIDEO_FILTER
+      if (filter_lent)
+         retro_atomic_store_release_size(&video_st->frame_cache_keeper, 0);
+#endif
 
 #ifdef HAVE_THREADS
       /* Under the wrapper the video thread is the presenter and

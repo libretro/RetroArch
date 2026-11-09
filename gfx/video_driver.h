@@ -1826,10 +1826,9 @@ typedef struct
     * the main thread only, once the wrapper is built and once it has
     * been torn down and the thread joined. */
    bool thread_wrapper_active;
-#ifdef HAVE_THREADS
-   /* The id of a thread whose retires leave the cached frame be */
+   /* VIDEO_CACHE_KEEPER of a thread whose retires leave the cached frame
+    * be: drawing a filter into lent memory, in which it never lies */
    retro_atomic_size_t frame_cache_keeper;
-#endif
 #if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
    /* Only the backend without pointer atomics has a lock here, and
     * only for the window-title fallback protocol; on every other
@@ -2594,6 +2593,12 @@ float video_driver_get_aspect_ratio(void);
 /* The aspect ratio, as the bits of the float in an atomic word. A
  * union, not a cast through a pointer, so it stays inside what the
  * standard allows and MSVC's aliasing rules. */
+#ifdef HAVE_THREADS
+#define VIDEO_CACHE_KEEPER ((size_t)sthread_get_current_thread_id())
+#else
+#define VIDEO_CACHE_KEEPER ((size_t)1)
+#endif
+
 /* Where a software filter draws: memory the driver lends, read back at
  * cached speed as filters may, in the format and size of the frames it
  * makes. NULL when there is none; *pitch is then left alone. */

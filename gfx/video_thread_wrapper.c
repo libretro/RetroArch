@@ -2270,16 +2270,18 @@ static void video_thread_filter(thread_video_t *lend_thr, void *filter,
    rarch_softfilter_get_output_size((rarch_softfilter_t*)filter,
          &out_dims, *dims);
    out_pitch = VIDEO_SCALE_W(out_dims) * out_bpp;
-   /* Remaking its frame texture for this, a driver retires the cached
-    * frame. That is the main thread's, and never in this memory. */
+   /* A driver retires the cached frame as it remakes or copies out the
+    * memory it lends. That frame is the main thread's, and never in
+    * this memory: kept until the driver has the frame. */
    if (lend_thr)
    {
       video_driver_state_t *video_st = lend_thr->video_st;
       retro_atomic_store_release_size(&video_st->frame_cache_keeper,
-            (size_t)sthread_get_current_thread_id());
+            VIDEO_CACHE_KEEPER);
       lent = video_driver_filter_lend(lend_thr->poke, lend_thr->driver_data,
             out_dims, out_bpp, &out_pitch);
-      retro_atomic_store_release_size(&video_st->frame_cache_keeper, 0);
+      if (!lent)
+         retro_atomic_store_release_size(&video_st->frame_cache_keeper, 0);
    }
    if (lent)
       buffer = lent;
@@ -3027,6 +3029,11 @@ static void video_thread_loop(void *data)
                      *thr->frame.slot[slot].msg
                         ? thr->frame.slot[slot].msg : NULL,
                      video_info);
+#ifdef HAVE_VIDEO_FILTER
+                  if (thr->frame.slot[slot].filter_bpp)
+                     retro_atomic_store_release_size(
+                           &thr->video_st->frame_cache_keeper, 0);
+#endif
                   if (dupe_hw_slot >= 0)
                      video_thread_hw_after_frame(thr, dupe_hw_slot);
                   /* Read from the driver's frame memory where it lies:

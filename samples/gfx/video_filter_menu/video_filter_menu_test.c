@@ -559,6 +559,9 @@ static bool lend_frame(void *data, const void *frame, unsigned dims,
 {
    lend_seen       = frame;
    lend_seen_pitch = pitch;
+   /* As a driver does when it copies out the memory it lent */
+   if (frame == lend_mem)
+      video_driver_cached_frame_retire();
    return lend_inner(data, frame, dims, frame_count, pitch, msg, video_info);
 }
 
@@ -575,6 +578,9 @@ static void lane_filter_lent(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned had = failures;
+   unsigned info_dims;
+   size_t info_pitch;
+   bool info_cpu;
    size_t i;
    bool drawn   = false;
 
@@ -614,6 +620,8 @@ static void lane_filter_lent(void)
    for (i = 0; i < sizeof(lend_mem) / sizeof(lend_mem[0]); i++)
       drawn = drawn || lend_mem[i];
    CHECK(drawn, "and the picture is there");
+   CHECK(video_driver_cached_frame_info(&info_dims, &info_pitch, &info_cpu),
+         "and the driver's retire leaves the core's cached frame");
 
    lend_flags = 0;
    lend_drain();
