@@ -2909,6 +2909,37 @@ again:
    }
 }
 
+/* The game audio a mix is summed onto without having been copied to
+ * the mix first. The first voice to mix reads it in place of the mix;
+ * what it leaves is copied across before the next voice. */
+static const int16_t *mix_base;
+static const int16_t *mix_base_start;
+static int16_t       *mix_base_dst;
+static size_t         mix_base_samples;
+
+static INLINE const int16_t *audio_mixer_base_take(const int16_t *buffer,
+      size_t samples)
+{
+   const int16_t *in;
+   if (!mix_base)
+      return buffer;
+   in        = mix_base;
+   mix_base += samples;
+   return in;
+}
+
+static void audio_mixer_base_flush(void)
+{
+   size_t done;
+   if (!mix_base)
+      return;
+   done = (size_t)(mix_base - mix_base_start);
+   if (done < mix_base_samples)
+      memcpy(mix_base_dst + done, mix_base,
+            (mix_base_samples - done) * sizeof(int16_t));
+   mix_base = NULL;
+}
+
 static void audio_mixer_mix_wav_s16(int16_t* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       int32_t gain_q16)
@@ -2920,14 +2951,16 @@ static void audio_mixer_mix_wav_s16(int16_t* buffer, size_t num_frames,
       * 2 - voice->types.wav.position;
    const int16_t* pcm               = sound->types.wav.pcm_s16 +
       voice->types.wav.position;
+   const int16_t* in;
 
 again:
    if (pcm_available < buf_free)
    {
       voice->mixed_frames += pcm_available / 2;
+      in = audio_mixer_base_take(buffer, pcm_available);
       for (i = pcm_available; i != 0; i--)
       {
-         *buffer = audio_mixer_sat_s16((int32_t)*buffer
+         *buffer = audio_mixer_sat_s16((int32_t)*in++
                + audio_mixer_gain_s16(*pcm++, gain_q16));
          buffer++;
       }
@@ -2951,9 +2984,10 @@ again:
    }
    else
    {
+      in = audio_mixer_base_take(buffer, buf_free);
       for (i = buf_free; i != 0; i--)
       {
-         *buffer = audio_mixer_sat_s16((int32_t)*buffer
+         *buffer = audio_mixer_sat_s16((int32_t)*in++
                + audio_mixer_gain_s16(*pcm++, gain_q16));
          buffer++;
       }
@@ -3086,15 +3120,16 @@ again:
       }
       else
       {
-         memcpy(voice->types.stream.buffer, temp_buffer,
-               temp_samples * sizeof(float));
          voice->types.stream.samples = temp_samples;
       }
 
       voice->types.stream.position = 0;
    }
 
-   pcm = voice->types.stream.buffer + voice->types.stream.position;
+   /* With no resampler the samples are read where they were decoded */
+   pcm = (voice->types.stream.resampler
+         ? voice->types.stream.buffer : temp_buffer)
+      + voice->types.stream.position;
 
    if (voice->types.stream.samples < buf_free)
    {
@@ -3127,6 +3162,7 @@ static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
    int i;
    struct resampler_data_int16 info;
    int16_t *temp_buffer  = voice->types.stream.decode_buf_s16;
+   const int16_t *in;
    unsigned buf_free     = (unsigned)(num_frames * 2);
    unsigned temp_samples = 0;
    int16_t *pcm          = NULL;
@@ -3222,22 +3258,22 @@ again:
             voice->types.stream.samples = voice->types.stream.buf_samples;
       }
       else
-      {
-         memcpy(voice->types.stream.buffer_s16, temp_buffer,
-               temp_samples * sizeof(int16_t));
          voice->types.stream.samples = temp_samples;
-      }
       voice->types.stream.position = 0;
    }
 
-   pcm = voice->types.stream.buffer_s16 + voice->types.stream.position;
+   /* With no resampler the samples are read where they were decoded */
+   pcm = (voice->types.stream.resampler_int16.data
+         ? voice->types.stream.buffer_s16 : temp_buffer)
+      + voice->types.stream.position;
 
    if (voice->types.stream.samples < buf_free)
    {
       voice->mixed_frames += voice->types.stream.samples / 2;
+      in = audio_mixer_base_take(buffer, voice->types.stream.samples);
       for (i = voice->types.stream.samples; i != 0; i--)
       {
-         *buffer = audio_mixer_sat_s16((int32_t)*buffer
+         *buffer = audio_mixer_sat_s16((int32_t)*in++
                + audio_mixer_gain_s16(*pcm++, gain_q16));
          buffer++;
       }
@@ -3247,9 +3283,10 @@ again:
       goto again;
    }
 
+   in = audio_mixer_base_take(buffer, buf_free);
    for (i = buf_free; i != 0; --i)
    {
-      *buffer = audio_mixer_sat_s16((int32_t)*buffer
+      *buffer = audio_mixer_sat_s16((int32_t)*in++
             + audio_mixer_gain_s16(*pcm++, gain_q16));
       buffer++;
    }
@@ -3368,6 +3405,17 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
    }
 }
 
+void audio_mixer_mix_s16_over(int16_t *dst, const int16_t *base,
+      size_t num_frames, int32_t gain_override, bool override)
+{
+   mix_base         = base;
+   mix_base_start   = base;
+   mix_base_dst     = dst;
+   mix_base_samples = num_frames * 2;
+   audio_mixer_mix_s16(dst, num_frames, gain_override, override);
+   audio_mixer_base_flush();
+}
+
 void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
       int32_t gain_override, bool override)
 {
@@ -3459,6 +3507,7 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
             break;
       }
 
+      audio_mixer_base_flush();
       audio_mixer_feed_publish(voice);
       audio_mixer_voice_disown(voice);
    }

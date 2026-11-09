@@ -169,6 +169,12 @@ void audio_mixer_mix_s16(int16_t *buffer, size_t num_frames,
 {
    (void)buffer; (void)num_frames; (void)gain_override; (void)override;
 }
+void audio_mixer_mix_s16_over(int16_t *dst, const int16_t *base,
+      size_t num_frames, int32_t gain_override, bool override)
+{
+   memcpy(dst, base, num_frames * 2 * sizeof(int16_t));
+   audio_mixer_mix_s16(dst, num_frames, gain_override, override);
+}
 
 void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)
 {

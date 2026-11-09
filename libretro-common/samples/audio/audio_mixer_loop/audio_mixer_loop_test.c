@@ -575,6 +575,54 @@ static int check_feed_bound(const uint8_t *lpcm, size_t len)
 
 /* ------------------------------------------------------------------ */
 
+/* The mix summed over audio in place of a copy of it: the sample for
+ * sample the same as copying it across first, whether the voice runs to
+ * the end of the mix, ends inside it, or there is none. */
+static int check_mix_over(void)
+{
+   enum { FRAMES = 64, SAMPLES = 128 };
+   static int16_t base[SAMPLES], copied[SAMPLES], over[SAMPLES];
+   size_t size = 0;
+   unsigned char *wav;
+   audio_mixer_sound_t *snd;
+   audio_mixer_voice_t *voice;
+   unsigned k, lens[3];
+   int bad = 0, c;
+
+   for (k = 0; k < SAMPLES; k++)
+      base[k] = (int16_t)(k * 311 - 12000);
+   /* no voice */
+   audio_mixer_mix_s16_over(over, base, FRAMES, 0x10000, false);
+   bad += memcmp(over, base, sizeof(base)) != 0;
+
+   lens[0] = 400; lens[1] = 20; lens[2] = 7;
+   for (c = 0; c < 3; c++)
+   {
+      if (!(wav = make_wav(lens[c], MIX_RATE, &size)))
+         return 1;
+      if (!(snd = audio_mixer_load_wav(wav, size, NULL,
+                  RESAMPLER_QUALITY_DONTCARE, true)))
+         return 1;
+      free(wav);
+      voice = audio_mixer_play_s16(snd, false, 0x10000, NULL,
+            RESAMPLER_QUALITY_DONTCARE, NULL);
+      memcpy(copied, base, sizeof(base));
+      audio_mixer_mix_s16(copied, FRAMES, 0x10000, false);
+      audio_mixer_stop(voice);
+      voice = audio_mixer_play_s16(snd, false, 0x10000, NULL,
+            RESAMPLER_QUALITY_DONTCARE, NULL);
+      audio_mixer_mix_s16_over(over, base, FRAMES, 0x10000, false);
+      bad += memcmp(over, copied, sizeof(over)) != 0;
+      audio_mixer_stop(voice);
+      audio_mixer_destroy(snd);
+   }
+   if (bad)
+      printf("FAIL  mix over audio differs from mix over a copy: %d\n", bad);
+   else
+      printf("ok    mix over audio matches a copy, voice or none\n");
+   return bad != 0;
+}
+
 int main(void)
 {
    unsigned char       *wav      = NULL;
@@ -605,6 +653,9 @@ int main(void)
    }
 
    audio_mixer_init(MIX_RATE);
+
+   current_case = "mix over audio";
+   fails += check_mix_over();
 
    printf("1. audio_transfer: a WAV stream replays after a seek to 0\n");
    current_case = "case 1 (WAV seek contract)";

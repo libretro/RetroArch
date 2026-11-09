@@ -225,6 +225,12 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
 void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
       int32_t gain_override, bool override);
 
+/* The same, with @base (num_frames * 2 samples) in place of what @dst
+ * holds: the sum lands in @dst, and @base is not copied there first.
+ * @base and @dst may not overlap. */
+void audio_mixer_mix_s16_over(int16_t *dst, const int16_t *base,
+      size_t num_frames, int32_t gain_override, bool override);
+
 bool audio_mixer_has_float_voices(void);
 
 bool audio_mixer_has_s16_voices(void);

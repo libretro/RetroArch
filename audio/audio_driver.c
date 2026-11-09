@@ -3992,6 +3992,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          /* The master gain already applied on the way into the output
           * scratch (see the unity branch). */
          bool gained          = false;
+#ifdef HAVE_AUDIOMIXER
+         const int16_t *mix_over = NULL;
+#endif
          bool     synth_on    = midi_driver_synth_active()
                && audio_st->synth_buf && audio_st->input_data_int16;
          /* Writable view of the input for the synth sum and the DSP
@@ -4125,6 +4128,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                      rs_frames * 2, audio_volume_gain);
                gained = true;
             }
+#ifdef HAVE_AUDIOMIXER
+            /* Summed with the voices straight into the scratch, below */
+            else if (aflags & AUDIO_FLAG_MIXER_ACTIVE)
+               mix_over = rs_in;
+#endif
             else
                memcpy(audio_st->output_samples_int16, rs_in,
                      (size_t)rs_frames * 2 * sizeof(int16_t));
@@ -4259,8 +4267,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                   mixer_gain                       = audio_st->mixer_volume_gain;
                }
 
-               audio_mixer_mix_s16(ob, out_frames,
-                     GAIN_TO_Q16(mixer_gain), override);
+               if (mix_over)
+                  audio_mixer_mix_s16_over(ob, mix_over, out_frames,
+                        GAIN_TO_Q16(mixer_gain), override);
+               else
+                  audio_mixer_mix_s16(ob, out_frames,
+                        GAIN_TO_Q16(mixer_gain), override);
                if (audio_mixer_has_float_voices())
                   audio_mixer_fold_float_voices_into_s16(ob,
                         audio_st->output_samples_buf, out_frames,
