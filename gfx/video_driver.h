@@ -1821,6 +1821,10 @@ typedef struct
    gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
    struct rarch_dir_shader_list dir_shader_list;         /* ptr alignment */
+   /* VIDEO_CACHE_KEEPER of a thread whose retires leave the cached frame
+    * be: drawing a filter into lent memory, in which it never lies.
+    * Without threads the one thread is keeper 1 */
+   retro_atomic_size_t frame_cache_keeper;
 #ifdef HAVE_THREADS
    /* Whether the threaded video wrapper is installed. Its own storage
     * rather than a bit in ::flags, because the video thread reads it
@@ -1829,9 +1833,6 @@ typedef struct
     * the main thread only, once the wrapper is built and once it has
     * been torn down and the thread joined. */
    bool thread_wrapper_active;
-   /* VIDEO_CACHE_KEEPER of a thread whose retires leave the cached frame
-    * be: drawing a filter into lent memory, in which it never lies */
-   retro_atomic_size_t frame_cache_keeper;
 #if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
    /* Only the backend without pointer atomics has a lock here, and
     * only for the window-title fallback protocol; on every other
