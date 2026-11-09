@@ -46,7 +46,7 @@
 
 #include "rslc_share.h"
 
-#ifdef RSLC_EXTENDED
+#if defined(RSLC_EXTENDED) && !defined(RSLC_NO_DXBC)
 
 /* ------------------------------------------------------------------ */
 /* Tokens                                                              */
@@ -5051,4 +5051,4 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
    return true;
 }
 
-#endif /* RSLC_EXTENDED */
+#endif /* RSLC_EXTENDED && !RSLC_NO_DXBC */

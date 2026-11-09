@@ -51,7 +51,9 @@
  * storage buffers with the atomic builtins (SPIR-V and GLSL only).
  * Without it
  * none of that is accepted, nothing is compiled in for it, and every
- * destination is word for word what it was.  MSL has no form of the
+ * destination is word for word what it was. RSLC_NO_DXBC omits the
+ * Direct3D bytecode backend from an extended build; other destinations
+ * are unchanged. MSL has no form of the
  * extended samplers or of a third block yet and refuses them. */
 
 #include <stdint.h>

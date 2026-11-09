@@ -129,6 +129,7 @@ jobs:
             rslc_test
             rslc_build_test
             rslc_ext_test
+            rslc_plane_test
             s16_to_float_test
             float_to_s16_test
             float_to_s32_test
@@ -1428,6 +1429,19 @@ jobs:
             t=$(sed -nE 's/^TARGET[[:space:]]*:?=[[:space:]]*//p' "$d/Makefile")
             ( cd "$d" && make clean && make CC=x86_64-w64-mingw32-gcc all && timeout 120 wine "./$t.exe" && make clean )
           done
+
+      - name: Build and run shader compiler samples under Wine
+        shell: bash
+        working-directory: libretro-common/samples/gfx
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          for d in rslc rslc_build rslc_ext; do
+            ( cd "$d" && make clean && make CC=x86_64-w64-mingw32-gcc all && timeout 120 wine "./${d}_test.exe" && make clean )
+          done
+          ( cd rslc_ext && make CC=x86_64-w64-mingw32-gcc rslc_plane_test && timeout 120 wine ./rslc_plane_test.exe && make clean )
 
       - name: Build and run the mapped read-ahead test under Wine
         shell: bash

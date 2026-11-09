@@ -4558,6 +4558,8 @@ static const char *pr_image_format(unsigned fmt)
       case RSLC_IMGFMT_RGBA16F:  return "rgba16f";
       case RSLC_IMGFMT_R32F:     return "r32f";
       case RSLC_IMGFMT_RGBA8:    return "rgba8";
+      case RSLC_IMGFMT_RG8:      return "rg8";
+      case RSLC_IMGFMT_R8:       return "r8";
       case RSLC_IMGFMT_RGBA32I:  return "rgba32i";
       case RSLC_IMGFMT_RGBA16I:  return "rgba16i";
       case RSLC_IMGFMT_RGBA8I:   return "rgba8i";
@@ -6710,6 +6712,17 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
                   NULL, pr->vars[k]->line);
             return false;
          }
+   if (p->es)
+      for (k = 1; k < pr->nvars; k++)
+      {
+         const struct rslc_var *v = pr->vars[k];
+         if (v->storage == RSLC_ST_IMAGE &&
+               (v->type->cols == RSLC_IMGFMT_R8 || v->type->cols == RSLC_IMGFMT_RG8))
+         {
+            rslc_err(c, "glsl es: no r8 or rg8 storage image format", NULL, v->line);
+            return false;
+         }
+      }
    if (p->hlsl && c->stage == RSLC_STAGE_COMPUTE)
    {
       uint32_t k;
@@ -7360,7 +7373,7 @@ static bool rslc_rm_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
             "ivec2 rarch_rect_m = rarch_rect_i - rarch_rect_q * rarch_rect_n;\n"
             "rarch_rect_m = ivec2("
             "rarch_rect_m.x < 0 ? rarch_rect_m.x + rarch_rect_n.x : rarch_rect_m.x, "
-            "rarch_rect_m.y < 0 ? rarch_rect_m.y + rarch_rect_n.y : rarch_rect_m.y);\n"
+            "rarch_rect_m.y < 0 ? rarch_rect_m.y + rarch_rect_n.y : rarch_rect_m.y);\n") && rslc_rm_text(r, b,
             "return ivec2("
             "rarch_rect_m.x >= rarch_rect_n.x ? rarch_rect_m.x - rarch_rect_n.x : rarch_rect_m.x, "
             "rarch_rect_m.y >= rarch_rect_n.y ? rarch_rect_m.y - rarch_rect_n.y : rarch_rect_m.y);\n}\n");

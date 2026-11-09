@@ -1,6 +1,7 @@
 include ../../sample_objdir.mk
 
 TARGET := rslc_ext_test
+TARGET_TEST := rslc_plane_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -28,7 +29,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_TEST)
 
 # every object sees both headers, so a layout change rebuilds all of them
 $(OBJS): $(LIBRETRO_COMM_DIR)/include/gfx/shaders/rslc.h $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_share.h
@@ -45,7 +46,17 @@ $(TARGET): $(OBJS)
 
 # The SPIR-V it writes also goes through spirv-val when that is installed;
 # the subgroup stage is SPIR-V 1.3, Vulkan 1.1's.
-check: $(TARGET)
+# Separate objects keep the optional backend out of this compiler mode.
+rslc_plane_test: rslc_plane_test.c $(filter-out rslc_ext_test.c,$(SOURCES)) $(LIBRETRO_COMM_DIR)/include/gfx/shaders/rslc.h $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_share.h
+	$(CC) $(filter-out -Wno-overlength-strings,$(CFLAGS)) -Werror -Wframe-larger-than=2048 -DRSLC_NO_DXBC -o $@ $(filter %.c,$^) $(LDFLAGS) $(LDLIBS)
+
+plane-check: rslc_plane_test
+	@mkdir -p $(SAMPLE_OBJDIR)
+	./rslc_plane_test $(SAMPLE_OBJDIR)/planes
+	@if command -v spirv-val >/dev/null 2>&1; then spirv-val --target-env vulkan1.1 $(SAMPLE_OBJDIR)/planes.spv; fi
+	@if command -v glslangValidator >/dev/null 2>&1; then glslangValidator -S comp $(SAMPLE_OBJDIR)/planes.glsl; fi
+
+check: $(TARGET) plane-check
 	./$(TARGET) obj
 	@if command -v spirv-val >/dev/null 2>&1; then \
 		for f in obj/*.spv; do \
@@ -56,6 +67,6 @@ check: $(TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(OBJS)
 
-.PHONY: all check clean
+.PHONY: all check plane-check clean

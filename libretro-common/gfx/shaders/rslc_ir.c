@@ -1020,6 +1020,7 @@ enum spv_section
 #define SPV_VERSION_1_0      0x00010000u
 #define SPV_CAP_SHADER       1
 #define SPV_CAP_IMAGEQUERY   50
+#define SPV_CAP_STORAGEIMAGEEXTENDED 49
 #define SPV_CAP_SAMPLEDBUFFER 46
 #define SPV_CAP_SAMPLED1D    43
 #define SPV_CAP_SAMPLEDCUBEARRAY 45
@@ -1250,6 +1251,7 @@ struct spv_emit
    uint32_t             cur_label;    /* current block's label, 0 = terminated */
    uint32_t             entry_label;
    bool                 need_imagequery;
+   bool                 need_storageimageextended;
    bool                 need_inputattachment;
    bool                 need_groupnonuniform;
    bool                 need_groupnonuniformarith;
@@ -1645,6 +1647,8 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
          ti = &e->tinfo[t->id];
          w[0] = id; w[1] = s; w[2] = 1 /* 2D */; w[3] = 0;
          w[4] = t->kind == RSLC_TY_IMAGE2DARRAY; w[5] = 0; w[6] = 2; w[7] = t->cols;
+         if (t->cols == RSLC_IMGFMT_R8 || t->cols == RSLC_IMGFMT_RG8)
+            e->need_storageimageextended = true;
          if (!spv_inst(e, SPV_SEC_TYPES, SpvOpTypeImage, w, 8))
             return 0;
          ti->img = id;
@@ -5183,6 +5187,9 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    if (e->need_imagequery && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_IMAGEQUERY))
       return false;
+   if (e->need_storageimageextended &&
+         !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_STORAGEIMAGEEXTENDED))
+      return false;
 #ifdef RSLC_EXTENDED
    if (e->need_inputattachment
          && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_INPUTATTACHMENT))
@@ -5402,7 +5409,12 @@ bool rslc_emit_dst(struct rslc_ctx *c, struct rslc_result *result)
          return false;
 #ifdef RSLC_EXTENDED
       case RSLC_DST_DXBC:
+#ifdef RSLC_NO_DXBC
+         rslc_err(c, "built without the Direct3D bytecode backend", NULL, 0);
+         return false;
+#else
          return rslc_emit_dxbc(c, result);
+#endif
 #endif
       default:
          break;

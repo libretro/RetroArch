@@ -286,6 +286,8 @@ enum rslc_tkind
 #define RSLC_IMGFMT_RGBA16F  2
 #define RSLC_IMGFMT_R32F     3
 #define RSLC_IMGFMT_RGBA8    4
+#define RSLC_IMGFMT_RG8      13
+#define RSLC_IMGFMT_R8       15
 #define RSLC_IMGFMT_RGBA32I  21
 #define RSLC_IMGFMT_RGBA16I  22
 #define RSLC_IMGFMT_RGBA8I   23
@@ -702,7 +704,7 @@ struct rslc_ctx
    struct rslc_prog        prog;
    const char             *src;        /* the stage source, for token text */
    char                   *synth;      /* preprocessor-made spellings */
-   const char             *files[RSLC_MAX_FILES];
+   const char            **files;
    uint32_t                nsyms;
    uint32_t                syms_cap;
    uint32_t                ntoks;
