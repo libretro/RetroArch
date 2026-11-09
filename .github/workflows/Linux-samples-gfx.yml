@@ -2186,6 +2186,7 @@ jobs:
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d_failure_paths/lend.py
           python3 samples/gfx/d3d_failure_paths/lend_gpu.py
           python3 samples/gfx/d3d_failure_paths/sw_lend_gpu.py
+          python3 samples/gfx/d3d_failure_paths/sw_lend10_gpu.py
 
       - name: D3D9 HLSL failed locks (Linux and mingw + Wine)
         run: |

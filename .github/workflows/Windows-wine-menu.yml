@@ -176,6 +176,8 @@ jobs:
             xvfb-run -a python3 samples/gfx/d3d_failure_paths/lend_gpu.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
             xvfb-run -a python3 samples/gfx/d3d_failure_paths/sw_lend_gpu.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D10=1 \
+            xvfb-run -a python3 samples/gfx/d3d_failure_paths/sw_lend10_gpu.py
 
       - name: A core writing into the framebuffer d3d9_hlsl lends it (Wine)
         shell: bash
@@ -187,6 +189,8 @@ jobs:
             -o ../../../harness_core.dll harness_core.c)
           python3 samples/gfx/menu_wine/swfb.py ./retroarch.exe \
             ./harness_core.dll "$RUNNER_TEMP/menu-wine/swfb" d3d9_hlsl
+          python3 samples/gfx/menu_wine/swfb.py ./retroarch.exe \
+            ./harness_core.dll "$RUNNER_TEMP/menu-wine/swfb-d3d10" d3d10
 
       - name: D3D9 textures and frame memory on a Direct3D9Ex device and a plain one (Wine)
         shell: bash

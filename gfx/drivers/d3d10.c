@@ -78,6 +78,8 @@
 
 #define D3D10_MAX_GPU_COUNT 16
 
+#define D3D10_SW_LEND_SLOTS 3
+
 enum d3d10_video_flags
 {
    D3D10_ST_FLAG_VSYNC               = (1 << 0),
@@ -344,6 +346,23 @@ typedef struct
       DXGI_FORMAT     format;
       bool            active;
    } sw_direct;
+   /* Software frames the core renders straight into, without a copy on
+    * the CPU: staging textures lent through
+    * get_current_software_framebuffer, mapped READ_WRITE (host cached)
+    * without waiting, and copied on the GPU into chain.history[0] when
+    * the frame is pushed from one. A slot stays mapped until then, and
+    * only that copy unmaps it, retiring the cached frame that points
+    * into it. `last` is the slot the last pushed frame came from, not
+    * lent again while it may be the cached frame. */
+   struct
+   {
+      D3D10Texture2D         staging[D3D10_SW_LEND_SLOTS];
+      D3D10_MAPPED_TEXTURE2D mapped[D3D10_SW_LEND_SLOTS];
+      unsigned               mapped_bits;
+      unsigned               last;
+      unsigned               dims;
+      DXGI_FORMAT            format;
+   } sw_lend;
    /* Views: the stock chain draws each straight from the frame; a
     * preset each through a chain of its own, whose history a software
     * frame's view is written straight into. The canvas holds both eyes
@@ -657,6 +676,155 @@ static bool d3d10_sw_direct_upload(d3d10_video_t *d3d10,
    dxgi_copy(width, height, d3d10->format, pitch, frame,
          tex->desc.Format, mapped.RowPitch, mapped.pData);
    tex->handle->lpVtbl->Unmap(tex->handle, 0);
+   return true;
+}
+
+/* The lent slots go, unmapped first. A cached frame may point into a
+ * mapped one, so it is retired before the memory goes. */
+static void d3d10_sw_lend_release(d3d10_video_t *d3d10)
+{
+   unsigned i;
+   if (d3d10->sw_lend.mapped_bits)
+      video_driver_cached_frame_retire();
+   for (i = 0; i < D3D10_SW_LEND_SLOTS; i++)
+   {
+      if (d3d10->sw_lend.mapped_bits & (1u << i))
+         d3d10->sw_lend.staging[i]->lpVtbl->Unmap(
+               d3d10->sw_lend.staging[i], 0);
+      Release(d3d10->sw_lend.staging[i]);
+      d3d10->sw_lend.staging[i] = NULL;
+   }
+   d3d10->sw_lend.mapped_bits = 0;
+   d3d10->sw_lend.dims        = 0;
+   d3d10->sw_lend.last        = 0;
+}
+
+/* Lends the core a staging slot to render its frame into, where the
+ * frame can go into chain.history[0] by a copy on the GPU, and only a
+ * slot the GPU is done copying from: one still busy is passed over and
+ * none is waited for. Declined when the row pitch is not the frame's
+ * tight pitch, as cores tend to ignore fb->pitch. */
+static bool d3d10_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   d3d10_video_t   *d3d10 = (d3d10_video_t*)data;
+   d3d10_texture_t *hist;
+   unsigned bpp, dims, k;
+
+   if (     !d3d10 || !fb || !d3d10->device
+         || (     d3d10->format != DXGI_FORMAT_B8G8R8X8_UNORM
+               && d3d10->format != DXGI_FORMAT_B5G6R5_UNORM))
+      return false;
+   hist = &d3d10->chain.history[0];
+   bpp  = (d3d10->format == DXGI_FORMAT_B5G6R5_UNORM) ? 2 : 4;
+   dims = VIDEO_SCALE_PACK(fb->width, fb->height);
+   if (     !hist->handle
+         || hist->desc.Format != d3d10->format
+         || hist->desc.Width  != fb->width
+         || hist->desc.Height != fb->height)
+      return false;
+
+   if (     d3d10->sw_lend.dims   != dims
+         || d3d10->sw_lend.format != d3d10->format)
+   {
+      D3D10_TEXTURE2D_DESC desc = hist->desc;
+      d3d10_sw_lend_release(d3d10);
+      desc.MipLevels          = 1;
+      desc.ArraySize          = 1;
+      desc.SampleDesc.Count   = 1;
+      desc.SampleDesc.Quality = 0;
+      desc.BindFlags          = 0;
+      desc.MiscFlags          = 0;
+      desc.Usage              = D3D10_USAGE_STAGING;
+      /* Read as well: a core may read back what it rendered */
+      desc.CPUAccessFlags     = D3D10_CPU_ACCESS_READ | D3D10_CPU_ACCESS_WRITE;
+      for (k = 0; k < D3D10_SW_LEND_SLOTS; k++)
+      {
+         d3d10->device->lpVtbl->CreateTexture2D(d3d10->device, &desc,
+               NULL, &d3d10->sw_lend.staging[k]);
+         if (!d3d10->sw_lend.staging[k])
+         {
+            d3d10_sw_lend_release(d3d10);
+            return false;
+         }
+      }
+      d3d10->sw_lend.dims   = dims;
+      d3d10->sw_lend.format = d3d10->format;
+   }
+
+   for (k = 1; k < D3D10_SW_LEND_SLOTS; k++)
+   {
+      unsigned slot = (d3d10->sw_lend.last + k) % D3D10_SW_LEND_SLOTS;
+      unsigned bit  = 1u << slot;
+      if (!(d3d10->sw_lend.mapped_bits & bit))
+      {
+         if (FAILED(d3d10->sw_lend.staging[slot]->lpVtbl->Map(
+                     d3d10->sw_lend.staging[slot], 0,
+                     D3D10_MAP_READ_WRITE, D3D10_MAP_FLAG_DO_NOT_WAIT,
+                     &d3d10->sw_lend.mapped[slot])))
+            continue;
+         d3d10->sw_lend.mapped_bits |= bit;
+      }
+      if (d3d10->sw_lend.mapped[slot].RowPitch != fb->width * bpp)
+         return false;
+      fb->data         = d3d10->sw_lend.mapped[slot].pData;
+      fb->pitch        = d3d10->sw_lend.mapped[slot].RowPitch;
+      fb->format       = (bpp == 4)
+         ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+      fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
+      return true;
+   }
+   return false;
+}
+
+/* The slot @frame was rendered into, or -1 for a frame from anywhere
+ * else; remembered as the one the cached frame may now point into. */
+static int d3d10_sw_lend_find(d3d10_video_t *d3d10, const void *frame,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   unsigned k;
+   if (     !d3d10->sw_lend.mapped_bits
+         || d3d10->sw_lend.dims != VIDEO_SCALE_PACK(width, height))
+      return -1;
+   for (k = 0; k < D3D10_SW_LEND_SLOTS; k++)
+      if (     (d3d10->sw_lend.mapped_bits & (1u << k))
+            && d3d10->sw_lend.mapped[k].pData    == frame
+            && d3d10->sw_lend.mapped[k].RowPitch == pitch)
+      {
+         d3d10->sw_lend.last = k;
+         return (int)k;
+      }
+   return -1;
+}
+
+/* A frame pushed from lent slot @slot into chain.history[0], copied
+ * there on the GPU. Unmapped for the copy, so the cached frame, which
+ * points into the slot, is retired: a redraw draws history[0] as it
+ * stands. False when history[0] no longer takes it. */
+static bool d3d10_sw_lend_push(d3d10_video_t *d3d10, int slot,
+      unsigned width, unsigned height)
+{
+   D3D10_BOX box;
+   d3d10_texture_t *hist = &d3d10->chain.history[0];
+   if (     slot < 0
+         || !hist->handle
+         || hist->desc.Format != d3d10->sw_lend.format
+         || hist->desc.Width  != width
+         || hist->desc.Height != height)
+      return false;
+   box.left   = 0;
+   box.top    = 0;
+   box.front  = 0;
+   box.right  = width;
+   box.bottom = height;
+   box.back   = 1;
+   d3d10->sw_lend.staging[slot]->lpVtbl->Unmap(
+         d3d10->sw_lend.staging[slot], 0);
+   d3d10->sw_lend.mapped_bits &= ~(1u << slot);
+   video_driver_cached_frame_retire();
+   d3d10->device->lpVtbl->CopySubresourceRegion(d3d10->device,
+         (D3D10Resource)hist->handle, 0, 0, 0, 0,
+         (D3D10Resource)d3d10->sw_lend.staging[slot], 0, &box);
    return true;
 }
 
@@ -2565,6 +2733,7 @@ static void d3d10_gfx_free(void* data)
 
    d3d10_release_texture(&d3d10->chain.history[0]);
    d3d10_release_texture(&d3d10->sw_direct.texture);
+   d3d10_sw_lend_release(d3d10);
    d3d10_views_release(d3d10);
    d3d10_record_free(d3d10);
    Release(d3d10->frame.ubo);
@@ -4211,6 +4380,7 @@ static bool d3d10_gfx_frame(
    bool views                     = false;
    bool views_blend               = false;
    bool views_direct              = false;
+   bool lent                      = false;
    bool views_per_eye             = false;
    bool views_ui                  = false;
    bool one_subframe              = black_frame_insertion || nonblock_state
@@ -4346,12 +4516,17 @@ static bool d3d10_gfx_frame(
          d3d10->flags &= ~D3D10_ST_FLAG_RESIZE_RTS;
       }
 
+      /* Rendered into a lent slot: copied on the GPU, drawn from
+       * history[0]. Views may read the frame, so it stays mapped. */
+      lent = !views && frame != RETRO_HW_FRAME_BUFFER_VALID
+         && d3d10_sw_lend_push(d3d10, d3d10_sw_lend_find(d3d10, frame,
+                  width, height, pitch), width, height);
       /* Without a preset a software frame is drawn from where it was
        * written; a preset's passes read frame.texture[0]. */
-      d3d10->sw_direct.active = !d3d10->chain.shader_preset
+      d3d10->sw_direct.active = !lent && !d3d10->chain.shader_preset
          && frame != RETRO_HW_FRAME_BUFFER_VALID
          && d3d10_sw_direct_upload(d3d10, width, height, pitch, frame);
-      if (     !d3d10->sw_direct.active
+      if (     !lent && !d3d10->sw_direct.active
             && frame != RETRO_HW_FRAME_BUFFER_VALID
             && d3d10->chain.history[0].staging)
          d3d10_update_texture(
@@ -5496,7 +5671,7 @@ static const video_poke_interface_t d3d10_poke_interface = {
    win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d10_gfx_get_current_shader,
-   NULL, /* get_current_software_framebuffer */
+   d3d10_get_current_software_framebuffer,
 #if 0
    d3d10_get_hw_render_interface,
 #else
