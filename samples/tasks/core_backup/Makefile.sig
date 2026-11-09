@@ -8,16 +8,20 @@ TARGET := core_backup_sig_test
 # Core backups and restores with core signatures: a backup keeps the
 # core's .sig, a restore or Install or Restore a Core is checked before
 # it replaces a core. TEST_KEY=0 is a build with no keys at all.
+# PLAY=1 (Linux) builds the task and this test as for a Play Store
+# build, against the test's play feature delivery.
 # Linux and mingw-w64; no compression, so no zlib.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 TEST_KEY          ?= 1
+PLAY              ?= 0
 
 SOURCES := core_backup_sig_test.c \
            $(REPO_ROOT)/tasks/task_core_backup.c \
            $(REPO_ROOT)/tasks/task_nbio_slice.c \
            $(REPO_ROOT)/core_backup.c \
            $(REPO_ROOT)/core_install_check.c \
+           $(REPO_ROOT)/core_trust_runtime.c \
            $(REPO_ROOT)/core_signature.c \
            $(REPO_ROOT)/core_signature_io.c \
            $(LIBRETRO_COMM_DIR)/crypto/pk.c \
@@ -62,12 +66,22 @@ ifeq ($(TEST_KEY),1)
    CFLAGS += -DHAVE_CORE_SIGNING_TEST_KEY
 endif
 LIBS += -lm
+# The slice clock, so a lane can cancel a restore part-way through its
+# check
+LDFLAGS += -Wl,--wrap=cpu_features_get_time_usec
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+# Only these two, which share the menu's ANDROID layout; the others
+# hand msg_hash values only to the stand-in, which ignores them
+ifeq ($(PLAY),1)
+core_backup_sig_test.o $(call sample_objs,$(REPO_ROOT)/tasks/task_core_backup.o): \
+   CFLAGS += -DANDROID
 endif
 
 all: $(TARGET)$(EXE)

@@ -890,7 +890,7 @@ static void test_restore_round_trip(void)
    g_clock_step = BACKUP_TICK_BUDGET_US * 2;
 
    task_queue_init(false, NULL);
-   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
+   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded, true, NULL))
    {
       char cp[1024];
       enum core_backup_type bt = core_backup_get_core_path(g_last_backup,
@@ -1030,7 +1030,7 @@ static void test_restore_stopped_part_way(bool cancel)
    g_clock_step = BACKUP_TICK_BUDGET_US * 2;
 
    task_queue_init(false, NULL);
-   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
+   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded, true, NULL))
    {
       CHECK(0, "%s: task_push_core_restore refused", lane);
       task_queue_deinit();
@@ -1117,7 +1117,7 @@ static void test_restore_through_symlink(void)
    g_clock_step = 0;
 
    task_queue_init(false, NULL);
-   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
+   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded, true, NULL))
       CHECK(0, "symlink: task_push_core_restore refused");
    else
    {

@@ -39,6 +39,7 @@
 
 #ifdef HAVE_CORE_SIGNATURES
 #include "../core_install_check.h"
+#include "../core_trust_runtime.h"
 #endif
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
@@ -96,8 +97,20 @@ enum core_backup_status
    CORE_RESTORE_CHECK_CRC,
    CORE_RESTORE_PRE_ITERATE,
    CORE_RESTORE_ITERATE,
+   CORE_RESTORE_CHECK,
    CORE_RESTORE_END
 };
+
+#ifdef HAVE_CORE_SIGNATURES
+/* How a checked restore ended, for its callback on the main thread */
+enum core_restore_outcome
+{
+   CORE_RESTORE_OUTCOME_NONE = 0,
+   CORE_RESTORE_OUTCOME_INSTALLED,
+   CORE_RESTORE_OUTCOME_TRUSTED,
+   CORE_RESTORE_OUTCOME_WARN
+};
+#endif
 
 typedef struct core_backup_handle
 {
@@ -149,6 +162,19 @@ typedef struct core_backup_handle
    enum core_backup_status status;
    bool crc_match;
    bool success;
+#ifdef HAVE_CORE_SIGNATURES
+   /* A checked restore: the store as the push saw it (NULL: today's
+    * restore), the folder it stages in, and for Install and Trust the
+    * check the user was warned about */
+   core_trust_set_t *trust;
+   struct core_check *warned;
+   char *dir_libretro;
+   char *staging_dir;
+   struct core_install_check check;
+   enum core_restore_outcome outcome;
+   bool check_begun;
+   bool own_backup;
+#endif
 } core_backup_handle_t;
 
 /*********************/
@@ -261,6 +287,15 @@ static void free_core_backup_handle(core_backup_handle_t *backup_handle)
    free(backup_handle->staged_path);
    backup_handle->staged_path      = NULL;
 
+#ifdef HAVE_CORE_SIGNATURES
+   core_install_check_free(&backup_handle->check);
+   if (backup_handle->trust)
+      core_trust_set_put(backup_handle->trust);
+   free(backup_handle->warned);
+   free(backup_handle->dir_libretro);
+   free(backup_handle->staging_dir);
+#endif
+
    core_backup_handle_release_io(backup_handle);
 
    free(backup_handle);
@@ -296,6 +331,98 @@ static bool core_restore_set_write_paths(core_backup_handle_t *backup_handle)
    memcpy(backup_handle->core_tmp_path + _len, ".tmp", sizeof(".tmp"));
    return true;
 }
+
+#if defined(ANDROID)
+static bool core_restore_pfd_installed(
+      const core_backup_handle_t *backup_handle)
+{
+   return play_feature_delivery_enabled()
+      && play_feature_delivery_core_installed(
+            path_basename(backup_handle->core_path));
+}
+
+/* A Play Store build deletes a core installed through play feature
+ * delivery before replacing it. False, the task's error set, when it
+ * can't. */
+static bool core_restore_pfd_delete(retro_task_t *task,
+      core_backup_handle_t *backup_handle)
+{
+   if (     core_restore_pfd_installed(backup_handle)
+         && !play_feature_delivery_delete(
+               path_basename(backup_handle->core_path)))
+   {
+      RARCH_ERR("[Core Restore] Failed to delete existing play feature delivery core: \"%s\".\n",
+            backup_handle->core_path);
+      task_free_error(task);
+      task_set_error(task, strdup("Failed to delete existing play feature delivery core."));
+      return false;
+   }
+   return true;
+}
+#endif
+
+#ifdef HAVE_CORE_SIGNATURES
+/* A checked restore's own folder beside the file it replaces, apart
+ * from the updater's .staging */
+#define CORE_RESTORE_STAGING_EXT ".restore"
+
+/* A checked restore writes the core under its own name, so its .sig's
+ * name matches, into .<core>.restore beside the file it replaces */
+static bool core_restore_set_staged_paths(core_backup_handle_t *backup_handle)
+{
+   size_t _len;
+   char *buf;
+   char *leaf;
+   const char *name = path_basename_nocompression(backup_handle->core_path);
+#if defined(ANDROID)
+   /* A Play-installed core links into the read-only APK and is deleted
+    * only once this one passes: staged beside the link it replaces */
+   if (core_restore_pfd_installed(backup_handle))
+   {
+      if (!(backup_handle->core_target_path =
+               strdup(backup_handle->core_path)))
+         return false;
+   }
+   else
+#endif
+   if (!core_restore_set_write_paths(backup_handle))
+      return false;
+   free(backup_handle->core_tmp_path);
+   backup_handle->core_tmp_path = NULL;
+   /* A link to a file of another name can't be checked as this core */
+   if (!string_is_equal(path_basename_nocompression(
+               backup_handle->core_target_path), name))
+   {
+      RARCH_ERR("[Core Restore] Cannot check \"%s\": it links to a file of another name.\n",
+            backup_handle->core_path);
+      return false;
+   }
+   if (!(buf = (char*)malloc(2 * PATH_MAX_LENGTH)))
+      return false;
+   leaf    = buf + PATH_MAX_LENGTH;
+   leaf[0] = '.';
+   _len    = 1 + strlcpy(leaf + 1, name, PATH_MAX_LENGTH - 1);
+   if (_len >= PATH_MAX_LENGTH)
+   {
+      free(buf);
+      return false;
+   }
+   strlcpy(leaf + _len, CORE_RESTORE_STAGING_EXT, PATH_MAX_LENGTH - _len);
+   fill_pathname_parent_dir(buf, backup_handle->core_target_path,
+         PATH_MAX_LENGTH);
+   if ((backup_handle->staging_dir = (char*)malloc(PATH_MAX_LENGTH)))
+   {
+      fill_pathname_join_special(backup_handle->staging_dir, buf, leaf,
+            PATH_MAX_LENGTH);
+      if ((backup_handle->core_tmp_path = (char*)malloc(PATH_MAX_LENGTH)))
+         fill_pathname_join_special(backup_handle->core_tmp_path,
+               backup_handle->staging_dir, name, PATH_MAX_LENGTH);
+   }
+   free(buf);
+   return backup_handle->core_tmp_path
+      && path_mkdir(backup_handle->staging_dir);
+}
+#endif
 
 /* Runs at retirement, on the thread that retires the queue, after the
  * callback and once the task can no longer be found: the first point
@@ -1139,6 +1266,85 @@ void *task_push_core_backup_install(
 /* Core Restore */
 /****************/
 
+#ifdef HAVE_CORE_SIGNATURES
+/* What Install and Trust needs to run the restore again */
+typedef struct
+{
+   struct core_check warned;
+   char *backup_path;
+   char *dir_libretro;
+   char *core_name;
+   enum core_backup_type backup_type;
+   bool own_backup;
+} core_restore_request_t;
+
+static void core_restore_request_free(core_restore_request_t *req)
+{
+   free(req->backup_path);
+   free(req->dir_libretro);
+   free(req->core_name);
+   free(req);
+}
+
+static void core_restore_failed_msg(enum core_backup_type backup_type,
+      const char *core_name, bool flush)
+{
+   size_t _len;
+   char msg[128];
+   _len = strlcpy(msg,
+         (backup_type == CORE_BACKUP_TYPE_ARCHIVE)
+         ? msg_hash_to_str(MSG_CORE_RESTORATION_FAILED)
+         : msg_hash_to_str(MSG_CORE_INSTALLATION_FAILED),
+         sizeof(msg));
+   _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+   runloop_msg_queue_push(msg, _len, 1, 100, flush, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+/* Main thread. CANCEL only lets go. */
+static void core_restore_warning_cb(enum core_warning_choice choice,
+      const struct core_check *c, const char *core_path, void *userdata)
+{
+   core_restore_request_t *req = (core_restore_request_t*)userdata;
+   (void)c;
+   (void)core_path;
+   if (choice == CORE_WARNING_INSTALL_AND_TRUST)
+   {
+      bool core_loaded = false;
+      /* Unflushed: a refusal may have put its reason up already */
+      if (!task_push_core_restore(req->backup_path, req->dir_libretro,
+               &core_loaded, req->own_backup, &req->warned))
+         core_restore_failed_msg(req->backup_type, req->core_name, false);
+   }
+   core_restore_request_free(req);
+}
+
+static void core_restore_warn(core_backup_handle_t *backup_handle)
+{
+   core_restore_request_t *req = (core_restore_request_t*)
+      calloc(1, sizeof(*req));
+   if (req)
+   {
+      req->warned       = backup_handle->check.c;
+      req->own_backup   = backup_handle->own_backup;
+      req->backup_type  = backup_handle->backup_type;
+      req->backup_path  = strdup(backup_handle->backup_path);
+      req->dir_libretro = strdup(backup_handle->dir_libretro);
+      req->core_name    = strdup(backup_handle->core_name);
+      if (     req->backup_path
+            && req->dir_libretro
+            && req->core_name
+            && core_warning_push(&req->warned, CORE_WARNING_INSTALL,
+                  backup_handle->core_path, core_restore_warning_cb, req))
+         return;
+      core_restore_request_free(req);
+   }
+   /* No screen to ask on: not installed */
+   core_restore_failed_msg(backup_handle->backup_type,
+         backup_handle->core_name, true);
+}
+#endif
+
 static void cb_task_core_restore(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -1147,13 +1353,100 @@ static void cb_task_core_restore(
     * > This must be done on the main thread
     * > Forced: a core file changed on disk */
    bool refresh = true;
+#ifdef HAVE_CORE_SIGNATURES
+   /* Still attached: task_core_backup_cleanup() runs after this */
+   core_backup_handle_t *backup_handle = (core_backup_handle_t*)task->state;
+#endif
    command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    /* Force reload of contentless cores icons */
    menu_contentless_cores_free();
 #endif
+
+#ifdef HAVE_CORE_SIGNATURES
+   if (backup_handle)
+      switch (backup_handle->outcome)
+      {
+         case CORE_RESTORE_OUTCOME_INSTALLED:
+            core_trust_runtime_apply(&backup_handle->check.c);
+            break;
+         case CORE_RESTORE_OUTCOME_TRUSTED:
+            core_trust_runtime_always(&backup_handle->check.c);
+            break;
+         case CORE_RESTORE_OUTCOME_WARN:
+            core_restore_warn(backup_handle);
+            break;
+         default:
+            break;
+      }
+#endif
 }
+
+#ifdef HAVE_CORE_SIGNATURES
+/* Installs what passed, or what Install and Trust was asked for; leaves
+ * anything else to the Security Warning, from the callback */
+static void core_restore_checked(retro_task_t *task,
+      core_backup_handle_t *backup_handle)
+{
+   const struct core_check *c        = &backup_handle->check.c;
+   enum core_restore_outcome outcome = CORE_RESTORE_OUTCOME_INSTALLED;
+   backup_handle->status             = CORE_RESTORE_END;
+   if (c->result != CORE_CHECK_OK)
+   {
+      /* The user decides on the main thread; nothing waits here */
+      if (!backup_handle->warned)
+      {
+         backup_handle->outcome = CORE_RESTORE_OUTCOME_WARN;
+         task_set_flags(task, RETRO_TASK_FLG_MUTE, true);
+         return;
+      }
+      if (     c->result == CORE_CHECK_ERROR
+            || !core_warning_same_core(backup_handle->warned, c))
+      {
+         RARCH_ERR("[Core Restore] Not the core the warning was about: \"%s\".\n",
+               backup_handle->backup_path);
+         task_free_error(task);
+         task_set_error(task, strdup("Core changed since the warning."));
+         return;
+      }
+      outcome = CORE_RESTORE_OUTCOME_TRUSTED;
+      /* Trusted by its hash: a .sig that failed would read as changed
+       * once the hash leaves the store */
+      if (c->result != CORE_CHECK_OLDER)
+         core_install_drop_sig(backup_handle->core_tmp_path);
+   }
+#if defined(ANDROID)
+   /* Only once it passed: a refusal keeps the Play-installed core */
+   if (!core_restore_pfd_delete(task, backup_handle))
+      return;
+#endif
+   if (!core_install_commit(backup_handle->core_tmp_path,
+            backup_handle->core_target_path, &backup_handle->check.c))
+   {
+      RARCH_ERR("[Core Restore] Failed to replace core file: \"%s\".\n",
+            backup_handle->core_target_path);
+      task_free_error(task);
+      task_set_error(task, strdup("Failed to replace core file."));
+      return;
+   }
+   backup_handle->outcome = outcome;
+   backup_handle->success = true;
+}
+
+/* A trusted restore is checked before it replaces the core, with the
+ * .sig kept beside what was picked */
+static bool core_restore_to_check(core_backup_handle_t *backup_handle)
+{
+   if (!backup_handle->trust)
+      return false;
+   core_install_drop_sig(backup_handle->core_tmp_path);
+   core_install_copy_sig(backup_handle->backup_path,
+         backup_handle->core_tmp_path);
+   backup_handle->status = CORE_RESTORE_CHECK;
+   return true;
+}
+#endif
 
 static void task_core_restore_handler(retro_task_t *task)
 {
@@ -1403,21 +1696,14 @@ static void task_core_restore_handler(retro_task_t *task)
              * play feature delivery, must delete
              * the existing core before attempting
              * to write any data */
-            if (play_feature_delivery_enabled())
+            if (
+#ifdef HAVE_CORE_SIGNATURES
+                     !backup_handle->trust &&
+#endif
+                     !core_restore_pfd_delete(task, backup_handle))
             {
-               const char *core_filename = path_basename(
-                     backup_handle->core_path);
-
-               if (    play_feature_delivery_core_installed(core_filename)
-                   && !play_feature_delivery_delete(core_filename))
-               {
-                  RARCH_ERR("[Core Restore] Failed to delete existing play feature delivery core: \"%s\".\n",
-                        backup_handle->core_path);
-                  task_free_error(task);
-                  task_set_error(task, strdup("Failed to delete existing play feature delivery core."));
-                  backup_handle->status = CORE_RESTORE_END;
-                  break;
-               }
+               backup_handle->status = CORE_RESTORE_END;
+               break;
             }
 #endif
             /* Open the temporary beside the core for writing; a
@@ -1425,7 +1711,13 @@ static void task_core_restore_handler(retro_task_t *task)
              * An uncompressed backup - what installing a core update
              * leaves, or any backup where they are not compressed - is
              * a plain copy, done by the VFS copy into that temporary. */
+#ifdef HAVE_CORE_SIGNATURES
+            if (backup_handle->trust
+                  ? core_restore_set_staged_paths(backup_handle)
+                  : core_restore_set_write_paths(backup_handle))
+#else
             if (core_restore_set_write_paths(backup_handle))
+#endif
             {
                if (path_is_valid(backup_handle->core_tmp_path))
                   filestream_delete(backup_handle->core_tmp_path);
@@ -1498,6 +1790,10 @@ static void task_core_restore_handler(retro_task_t *task)
                   task_free_error(task);
                   task_set_error(task, strdup("Failed to open core file."));
                }
+#ifdef HAVE_CORE_SIGNATURES
+               else if (core_restore_to_check(backup_handle))
+                  break;
+#endif
                /* Complete: only now does it replace the core */
                else if (filestream_rename(backup_handle->core_tmp_path,
                         backup_handle->core_target_path) != 0)
@@ -1589,6 +1885,11 @@ static void task_core_restore_handler(retro_task_t *task)
                free(backup_handle->core_file);
                backup_handle->core_file   = NULL;
 
+#ifdef HAVE_CORE_SIGNATURES
+               if (core_restore_to_check(backup_handle))
+                  break;
+#endif
+
                /* Complete: only now does it replace the core */
                if (filestream_rename(backup_handle->core_tmp_path,
                         backup_handle->core_target_path) != 0)
@@ -1611,10 +1912,48 @@ static void task_core_restore_handler(retro_task_t *task)
                   (int8_t)((backup_handle->file_data_read * 100) / backup_handle->backup_file_size));
          }
          break;
+#ifdef HAVE_CORE_SIGNATURES
+      case CORE_RESTORE_CHECK:
+         {
+            nbio_budget_t budget;
+            bool done = false;
+            if (!backup_handle->check_begun)
+            {
+               backup_handle->check_begun = true;
+               if (!core_install_check_begin(&backup_handle->check,
+                        backup_handle->trust, backup_handle->core_tmp_path,
+                        backup_handle->core_target_path))
+               {
+                  core_restore_checked(task, backup_handle);
+                  break;
+               }
+            }
+            task_nbio_slice_open(&budget);
+            while (!done && task_nbio_slice_within_budget(&budget, 0, 0))
+               done = core_install_check_step(&backup_handle->check);
+            task_nbio_slice_close(&budget);
+            if (!done)
+               break; /* resume next tick */
+            core_install_check_end(&backup_handle->check,
+                  backup_handle->trust, backup_handle->core_tmp_path,
+                  backup_handle->own_backup ? CORE_CHECK_ALLOW_OLDER : 0);
+            core_restore_checked(task, backup_handle);
+         }
+         break;
+#endif
       case CORE_RESTORE_END:
          {
             size_t _len;
             char task_title[128];
+
+#ifdef HAVE_CORE_SIGNATURES
+            /* The Security Warning says what happened */
+            if (backup_handle->outcome == CORE_RESTORE_OUTCOME_WARN)
+            {
+               task_set_progress(task, 100);
+               goto task_finished;
+            }
+#endif
 
             /* Set final task title */
             task_free_title(task);
@@ -1659,6 +1998,10 @@ task_finished:
    if (backup_handle)
    {
       core_backup_handle_release_io(backup_handle);
+#ifdef HAVE_CORE_SIGNATURES
+      /* Closed before its files go (Windows) */
+      core_install_check_free(&backup_handle->check);
+#endif
 
       /* Failed or cancelled part-way: the core was never touched,
        * and the partial temporary (closed above) goes */
@@ -1666,13 +2009,25 @@ task_finished:
             && backup_handle->core_tmp_path
             && path_is_valid(backup_handle->core_tmp_path))
          filestream_delete(backup_handle->core_tmp_path);
+#ifdef HAVE_CORE_SIGNATURES
+      /* Whatever a checked restore left staged goes, and its folder */
+      if (backup_handle->staging_dir)
+      {
+         if (     backup_handle->core_tmp_path
+               && path_is_valid(backup_handle->core_tmp_path))
+            filestream_delete(backup_handle->core_tmp_path);
+         if (backup_handle->core_tmp_path)
+            core_install_drop_sig(backup_handle->core_tmp_path);
+         path_rmdir(backup_handle->staging_dir);
+      }
+#endif
    }
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
-      bool *core_loaded)
+      bool *core_loaded, bool own_backup, const struct core_check *warned)
 {
    size_t _len;
    enum core_backup_type backup_type;
@@ -1787,6 +2142,28 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    backup_handle->backup_file                = NULL;
    backup_handle->backup_list                = NULL;
    backup_handle->status                     = CORE_RESTORE_GET_CORE_CRC;
+
+#ifdef HAVE_CORE_SIGNATURES
+   /* Read here, on the main thread; NULL with the feature inactive */
+   backup_handle->own_backup = own_backup;
+   if ((backup_handle->trust = core_trust_runtime_get()))
+   {
+      if (!(backup_handle->dir_libretro = strdup(dir_libretro)))
+         goto error;
+      if (warned)
+      {
+         if (!(backup_handle->warned = (struct core_check*)
+                  malloc(sizeof(*warned))))
+            goto error;
+         *backup_handle->warned = *warned;
+      }
+   }
+   else if (core_trust_runtime_active())
+      goto error;
+#else
+   (void)own_backup;
+   (void)warned;
+#endif
 
    /* Create task */
    if (!(task = task_init()))
