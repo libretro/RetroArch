@@ -393,7 +393,7 @@ OBJ += \
        runtime_file.o \
        disk_index_file.o
 
-# Core signatures: libretro's keys and the trust store.
+# Core signatures: libretro's keys, the trust store and its warning.
 # HAVE_CORE_LOAD_CHECK adds the check at every core load.
 ifeq ($(HAVE_DYNAMIC), 1)
    ifeq ($(HAVE_CRYPTO), 1)

@@ -95,6 +95,9 @@
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
 #include "../../gfx/common/vulkan_custom_driver.h"
 #endif
+#ifdef HAVE_CORE_SIGNATURES
+#include "../../core_trust_runtime.h"
+#endif
 #include "../../manual_content_scan.h"
 #ifdef __MACH__
 #include <TargetConditionals.h>
@@ -1671,6 +1674,16 @@ int generic_action_ok_displaylist_push(
             strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
+#ifdef HAVE_CORE_SIGNATURES
+      case ACTION_OK_DL_CORE_WARNING:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_CORE_WARNING_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_WARNING;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+#endif
       case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
          parent_dir[0]  = '\0';
 
@@ -6654,6 +6667,67 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
    return generic_action_ok_command(CMD_EVENT_CLOSE_CONTENT);
 }
 
+#ifdef HAVE_CORE_SIGNATURES
+/* entry_idx: the serial of the request the row was built for */
+static int action_ok_core_warning_choose(enum core_warning_choice choice,
+      size_t entry_idx)
+{
+   enum core_warning_choice choices[CORE_WARNING_CHOICES_MAX];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned serial            = core_warning_serial();
+   unsigned n                 = core_warning_choices(choices);
+   unsigned i                 = 0;
+   size_t selection;
+   while (i < n && choices[i] != choice)
+      i++;
+   /* A newer request than the one shown: show it instead */
+   if (entry_idx != serial || i == n)
+   {
+      menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+      return 0;
+   }
+   /* Popped first: the callback may change the menu stack */
+   selection = menu_st->selection_ptr;
+   menu_entries_pop_stack(&selection, 0, 1);
+   menu_st->selection_ptr = selection;
+   if (serial)
+      core_warning_choose(choice);
+   return 0;
+}
+
+static int action_ok_core_warning_cancel(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_core_warning_choose(CORE_WARNING_CANCEL, entry_idx);
+}
+
+static int action_ok_core_warning_install_trust(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST,
+         entry_idx);
+}
+
+static int action_ok_core_warning_load_once(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_core_warning_choose(CORE_WARNING_LOAD_ONCE, entry_idx);
+}
+
+static int action_ok_core_warning_always_trust(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_core_warning_choose(CORE_WARNING_ALWAYS_TRUST, entry_idx);
+}
+
+static int action_ok_core_warning_text(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return 0;
+}
+#endif
+
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_cheat_apply_changes,      CMD_EVENT_CHEATS_APPLY)
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_save_new_config,          CMD_EVENT_MENU_SAVE_CONFIG)
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_save_main_config,         CMD_EVENT_MENU_SAVE_MAIN_CONFIG)
@@ -10149,6 +10223,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_OPEN_ARCHIVE,                        action_ok_open_archive},
          {MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,            action_ok_load_archive_detect_core},
          {MENU_ENUM_LABEL_LOAD_ARCHIVE,                        action_ok_load_archive},
+#ifdef HAVE_CORE_SIGNATURES
+         {MENU_ENUM_LABEL_CORE_WARNING_CANCEL,                 action_ok_core_warning_cancel},
+         {MENU_ENUM_LABEL_CORE_WARNING_INSTALL_TRUST,          action_ok_core_warning_install_trust},
+         {MENU_ENUM_LABEL_CORE_WARNING_LOAD_ONCE,              action_ok_core_warning_load_once},
+         {MENU_ENUM_LABEL_CORE_WARNING_ALWAYS_TRUST,           action_ok_core_warning_always_trust},
+#endif
          {MENU_ENUM_LABEL_CUSTOM_BIND_ALL,                     action_ok_lookup_setting},
          {MENU_ENUM_LABEL_SAVE_STATE,                          action_ok_save_state},
          {MENU_ENUM_LABEL_LOAD_STATE,                          action_ok_load_state},
@@ -11088,6 +11168,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_OK(cbs, action_ok_core_lock);
             break;
+#ifdef HAVE_CORE_SIGNATURES
+         case MENU_SETTING_CORE_WARNING_TEXT:
+            BIND_ACTION_OK(cbs, action_ok_core_warning_text);
+            break;
+#endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
             BIND_ACTION_OK(cbs, action_ok_core_set_standalone_exempt);
             break;

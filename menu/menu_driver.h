@@ -181,6 +181,8 @@ enum menu_settings_type
    MENU_SETTING_ACTION_RESET,
    MENU_SETTING_ACTION_CORE_LOCK,
    MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT,
+   MENU_SETTING_ACTION_CORE_WARNING,
+   MENU_SETTING_CORE_WARNING_TEXT,
    MENU_SETTING_ACTION_CORE_DELETE,
    MENU_SETTING_ACTION_FAVORITES_DIR, /* "Start Directory" */
    MENU_SETTING_STRING_OPTIONS,
@@ -890,6 +892,10 @@ size_t menu_playlists_tab_random_selection(size_t selection);
 void menu_dialog_confirm_set(struct menu_state *menu_st,
       unsigned msg, unsigned cmd);
 void menu_dialog_confirm_clear(struct menu_state *menu_st);
+#ifdef HAVE_CORE_SIGNATURES
+/* Pushes or refreshes the Security Warning when one is waiting */
+bool menu_core_warning_iterate(struct menu_state *menu_st);
+#endif
 
 #if defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING) && defined(HAVE_COMPRESSION) && defined(HAVE_CONFIGFILE)
 void menu_first_run_download_start(void);

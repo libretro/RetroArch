@@ -36,6 +36,11 @@ on:
       - 'samples/menu/setting_command/**'
       - 'samples/menu/core_info_page/**'
       - 'samples/menu/load_content_filter/**'
+      - 'samples/menu/core_warning/**'
+      - 'core_trust_runtime.c'
+      - 'core_trust_runtime.h'
+      - 'core_signature.c'
+      - 'core_signing_keys.h'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -61,6 +66,11 @@ on:
       - 'samples/menu/setting_command/**'
       - 'samples/menu/core_info_page/**'
       - 'samples/menu/load_content_filter/**'
+      - 'samples/menu/core_warning/**'
+      - 'core_trust_runtime.c'
+      - 'core_trust_runtime.h'
+      - 'core_signature.c'
+      - 'core_signing_keys.h'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -438,6 +448,18 @@ jobs:
           samples/menu/load_content_filter/build.sh
           ./samples/menu/load_content_filter/load_content_filter_test
           make -C samples/menu/load_content_filter clean
+
+      - name: Build and run core_warning_test
+        shell: bash
+        run: |
+          set -eu
+          # The Security Warning answers only the request it shows: OK
+          # on the rows of an older request chooses nothing for a newer
+          # one, and a pending request's screen comes back after a tab
+          # switch flushes the stack.
+          samples/menu/core_warning/build.sh
+          ./samples/menu/core_warning/core_warning_test
+          make -C samples/menu/core_warning clean
 
       - name: Build and run explore_build_test
         shell: bash

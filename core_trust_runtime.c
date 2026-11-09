@@ -26,6 +26,8 @@ static struct
    /* Changed since the last write that went through */
    bool unsaved;
    bool notify_ready;
+   /* Deinit is cancelling the warning: no new one */
+   bool closing;
    bool seed_pending;
    bool seed_notice;
    bool seed_key_ok;
@@ -35,6 +37,19 @@ static struct
 #endif
    char path[PATH_MAX_LENGTH];
 } core_trust_rt;
+
+static struct
+{
+   struct core_check c;
+   char *path;
+   core_warning_cb_t cb;
+   void *userdata;
+   enum core_warning_kind kind;
+   unsigned serial;
+   bool pending;
+   /* A newer push is running the replaced request's CANCEL */
+   bool cancelling;
+} core_warning_req;
 
 struct core_trust_save
 {
@@ -392,6 +407,9 @@ void core_trust_runtime_deinit(void)
    unsigned gen = core_trust_rt.gen + 1;
    if (!core_trust_rt.t)
       return;
+   core_trust_rt.closing = true;
+   if (core_warning_req.pending)
+      core_warning_choose(CORE_WARNING_CANCEL);
    /* At quit, as retroarch.cfg is: the queue is drained by now,
     * within the drain's limit */
    if (     core_trust_rt.unsaved
@@ -491,4 +509,146 @@ bool core_trust_runtime_seed_covers(const char *core_path)
          && core_path
          && core_folder_key_with(core_path, true, key)
          && !memcmp(key, core_trust_rt.seed_key, CORE_SHA256_LEN);
+}
+
+bool core_warning_push(const struct core_check *c,
+      enum core_warning_kind kind, const char *core_path,
+      core_warning_cb_t cb, void *userdata)
+{
+#ifdef HAVE_MENU
+   struct core_check old_c;
+   char *path;
+   char *old_path;
+   core_warning_cb_t old_cb;
+   void *old_userdata;
+   bool had;
+   if (     !core_trust_rt.t
+         || core_trust_rt.closing
+         || !c
+         || !cb
+         || !core_path
+         || c->result == CORE_CHECK_OK
+         || !menu_core_warning_can_open()
+         || !(path = strdup(core_path)))
+      return false;
+   had          = core_warning_req.pending;
+   old_c        = core_warning_req.c;
+   old_path     = core_warning_req.path;
+   old_cb       = core_warning_req.cb;
+   old_userdata = core_warning_req.userdata;
+   core_warning_req.c        = *c;
+   core_warning_req.path     = path;
+   core_warning_req.cb       = cb;
+   core_warning_req.userdata = userdata;
+   core_warning_req.kind     = kind;
+   core_warning_req.pending  = true;
+   if (!++core_warning_req.serial)
+      core_warning_req.serial++;
+   menu_core_warning_open();
+   if (had)
+   {
+      core_warning_req.cancelling = true;
+      old_cb(CORE_WARNING_CANCEL, &old_c, old_path, old_userdata);
+      core_warning_req.cancelling = false;
+      free(old_path);
+   }
+   return true;
+#else
+   (void)c;
+   (void)kind;
+   (void)core_path;
+   (void)cb;
+   (void)userdata;
+   return false;
+#endif
+}
+
+bool core_warning_pending(enum core_warning_kind *kind,
+      enum core_check_result *result)
+{
+   if (!core_warning_req.pending)
+      return false;
+   if (kind)
+      *kind = core_warning_req.kind;
+   if (result)
+      *result = core_warning_req.c.result;
+   return true;
+}
+
+unsigned core_warning_serial(void)
+{
+   return core_warning_req.pending ? core_warning_req.serial : 0;
+}
+
+unsigned core_warning_choices(enum core_warning_choice *choices)
+{
+   unsigned n   = 0;
+   choices[n++] = CORE_WARNING_CANCEL;
+   /* Nothing was hashed, so there is nothing to trust */
+   if (     !core_warning_req.pending
+         || core_warning_req.c.result == CORE_CHECK_ERROR)
+      return n;
+   if (core_warning_req.kind == CORE_WARNING_INSTALL)
+      choices[n++] = CORE_WARNING_INSTALL_AND_TRUST;
+   else
+   {
+      choices[n++] = CORE_WARNING_LOAD_ONCE;
+      choices[n++] = CORE_WARNING_ALWAYS_TRUST;
+   }
+   return n;
+}
+
+bool core_warning_choose(enum core_warning_choice choice)
+{
+   enum core_warning_choice choices[CORE_WARNING_CHOICES_MAX];
+   struct core_check c;
+   core_warning_cb_t cb;
+   void *userdata;
+   char *path;
+   unsigned n;
+   unsigned i = 0;
+   /* What is pending then is the newer request, not the one cancelled */
+   if (!core_warning_req.pending || core_warning_req.cancelling)
+      return false;
+   n = core_warning_choices(choices);
+   while (i < n && choices[i] != choice)
+      i++;
+   if (i == n)
+      return false;
+   c        = core_warning_req.c;
+   path     = core_warning_req.path;
+   cb       = core_warning_req.cb;
+   userdata = core_warning_req.userdata;
+   core_warning_req.pending = false;
+   core_warning_req.path    = NULL;
+   cb(choice, &c, path, userdata);
+   free(path);
+   return true;
+}
+
+enum msg_hash_enums core_warning_reason(enum core_check_result result)
+{
+   switch (result)
+   {
+      case CORE_CHECK_UNSIGNED:
+         return MSG_CORE_WARNING_UNSIGNED;
+      case CORE_CHECK_MODIFIED:
+         return MSG_CORE_WARNING_MODIFIED;
+      case CORE_CHECK_OLDER:
+         return MSG_CORE_WARNING_OLDER;
+      case CORE_CHECK_UNKNOWN_KEY:
+         return MSG_CORE_WARNING_UNKNOWN_KEY;
+      default:
+         break;
+   }
+   return MSG_CORE_WARNING_ERROR;
+}
+
+bool core_warning_same_core(const struct core_check *warned,
+      const struct core_check *now)
+{
+   static const uint8_t none[CORE_SHA256_LEN];
+   return   memcmp(warned->rec.sha256, none, CORE_SHA256_LEN)
+         && !memcmp(warned->rec.sha256, now->rec.sha256, CORE_SHA256_LEN)
+         && string_is_equal(warned->rec.name, now->rec.name);
 }
