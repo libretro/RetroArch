@@ -106,6 +106,25 @@ int main(void)
       }
    }
 
+   /* A span of the buffer being filled: published by write_end, whole
+    * frames, and a full buffer goes to the service. */
+   audout_mock_play(BUFFERS);
+   {
+      void  *span = NULL;
+      size_t room = drv->write_avail(h);
+      size_t got  = drv->write_begin(h, chunk * 2 + 3, &span);
+      CHECK(got && got <= chunk && got % 4 == 0 && span != NULL,
+            "a span of one buffer", got, chunk);
+      if (got && span)
+      {
+         memset(span, 0x5a, got);
+         CHECK(drv->write_end(h, got) == (ssize_t)got,
+               "write_end takes the span", got, got);
+         CHECK(room - drv->write_avail(h) == got, "the room goes down by it",
+               room - drv->write_avail(h), got);
+      }
+   }
+
    /* Blocking: with nothing released, the write waits for the service
     * to play buffers out and takes everything. */
    drv->set_nonblock_state(h, false);

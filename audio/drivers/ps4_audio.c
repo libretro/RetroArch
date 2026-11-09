@@ -379,6 +379,41 @@ static ssize_t ps4_audio_write(void *data, const void *s, size_t len)
    return len;
 }
 
+static size_t ps4_audio_write_begin(void *data, size_t len, void **region)
+{
+   ps4_audio_t *ps4      = (ps4_audio_t*)data;
+   uint16_t write_pos = (uint16_t)
+         retro_atomic_load_relaxed_int(&ps4->write_pos);
+   size_t frames      = len / ps4->frame_bytes;
+   size_t room;
+   *region            = NULL;
+   if (!retro_atomic_load_acquire_int(&ps4->running))
+      return 0;
+   room = RING_FREE(write_pos, (uint16_t)
+         retro_atomic_load_acquire_int(&ps4->read_pos), ps4->ring);
+   if (frames > room)
+      frames = room;
+   if (frames > (size_t)(ps4->ring - write_pos))
+      frames = ps4->ring - write_pos;
+   if (!frames)
+      return 0;
+   *region = ps4->buffer + (size_t)write_pos * ps4->frame_bytes;
+   return frames * ps4->frame_bytes;
+}
+
+static ssize_t ps4_audio_write_end(void *data, size_t len)
+{
+   ps4_audio_t *ps4      = (ps4_audio_t*)data;
+   uint16_t write_pos = (uint16_t)
+         retro_atomic_load_relaxed_int(&ps4->write_pos);
+   size_t frames      = len / ps4->frame_bytes;
+   write_pos          = (uint16_t)(write_pos + frames);
+   if (write_pos >= ps4->ring)
+      write_pos      -= ps4->ring;
+   retro_atomic_store_release_int(&ps4->write_pos, write_pos);
+   return (ssize_t)(frames * ps4->frame_bytes);
+}
+
 static bool ps4_audio_alive(void *data)
 {
    ps4_audio_t* ps4 = (ps4_audio_t*)data;
@@ -552,5 +587,10 @@ audio_driver_t audio_ps4 = {
    ps4_wait_writable,
    ps4_frames_consumed,
    ps4_underruns,
-   ps4_layout
+   ps4_layout,
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   ps4_audio_write_begin,
+   ps4_audio_write_end
 };

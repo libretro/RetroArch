@@ -357,6 +357,41 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
    return len;
 }
 
+static size_t psp_audio_write_begin(void *data, size_t len, void **region)
+{
+   psp_audio_t *psp      = (psp_audio_t*)data;
+   uint16_t write_pos = (uint16_t)
+         retro_atomic_load_relaxed_int(&psp->write_pos);
+   size_t frames      = len / sizeof(uint32_t);
+   size_t room;
+   *region            = NULL;
+   if (!retro_atomic_load_acquire_int(&psp->running))
+      return 0;
+   room = RING_FREE(write_pos, (uint16_t)
+         retro_atomic_load_acquire_int(&psp->read_pos), psp->ring);
+   if (frames > room)
+      frames = room;
+   if (frames > (size_t)(psp->ring - write_pos))
+      frames = psp->ring - write_pos;
+   if (!frames)
+      return 0;
+   *region = psp->buffer_u32 + write_pos;
+   return frames * sizeof(uint32_t);
+}
+
+static ssize_t psp_audio_write_end(void *data, size_t len)
+{
+   psp_audio_t *psp      = (psp_audio_t*)data;
+   uint16_t write_pos = (uint16_t)
+         retro_atomic_load_relaxed_int(&psp->write_pos);
+   size_t frames      = len / sizeof(uint32_t);
+   write_pos          = (uint16_t)(write_pos + frames);
+   if (write_pos >= psp->ring)
+      write_pos      -= psp->ring;
+   retro_atomic_store_release_int(&psp->write_pos, write_pos);
+   return (ssize_t)(frames * sizeof(uint32_t));
+}
+
 static bool psp_audio_alive(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
@@ -523,5 +558,11 @@ audio_driver_t audio_psp = {
    NULL, /* write_raw */
    psp_wait_writable,
    psp_frames_consumed,
-   psp_underruns
+   psp_underruns,
+   NULL, /* layout */
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   psp_audio_write_begin,
+   psp_audio_write_end
 };

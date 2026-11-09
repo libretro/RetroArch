@@ -170,6 +170,33 @@ static void test_dsp(void)
    wrote = drv->write(h, big, 1023);
    CHECK(wrote % FRAME_BYTES == 0, "a write takes whole frames", wrote, 1020);
 
+   /* A span lent out of the ring: inside it, whole frames, published
+    * by write_end and not before, stopped short of the ring's end. */
+   {
+      void  *span = NULL;
+      size_t got, room;
+      mock_sample_pos = 1000;
+      drv->set_nonblock_state(h, true);
+      for (i = 0; i < 6; i++)
+      {
+         mock_sample_pos = (mock_sample_pos + RING_FRAMES / 2)
+            & (RING_FRAMES - 1);
+         room = drv->write_avail(h);
+         got  = drv->write_begin(h, 1023, &span);
+         if (!got)
+            continue;
+         CHECK(span != NULL && got % FRAME_BYTES == 0 && got <= 1023,
+               "a lent span is whole frames", got, 1020);
+         CHECK(drv->write_avail(h) == room, "nothing published yet",
+               drv->write_avail(h), room);
+         memset(span, 0x5a, got);
+         CHECK(drv->write_end(h, got) == (ssize_t)got,
+               "write_end publishes the span", got, got);
+         CHECK(room - drv->write_avail(h) == got, "the room goes down by it",
+               room - drv->write_avail(h), got);
+      }
+   }
+
    drv->free(h);
 }
 

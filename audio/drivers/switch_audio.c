@@ -203,6 +203,41 @@ static ssize_t switch_audio_write(void *data, const void *s, size_t len)
    return (ssize_t)written;
 }
 
+/* The buffer being filled, for a whole-frame span of what is left */
+static size_t switch_audio_write_begin(void *data, size_t len, void **region)
+{
+   switch_audio_t *swa = (switch_audio_t*)data;
+   size_t span;
+   *region             = NULL;
+   if (!swa || switch_audio_acquire_buffer(swa, false) <= 0)
+      return 0;
+   span = swa->chunk - swa->current_buffer->data_size;
+   if (span > len)
+      span = len;
+   span &= ~(size_t)3;
+   if (span)
+      *region = ((uint8_t*)swa->current_buffer->buffer)
+         + swa->current_buffer->data_size;
+   return span;
+}
+
+static ssize_t switch_audio_write_end(void *data, size_t len)
+{
+   switch_audio_t *swa = (switch_audio_t*)data;
+   len &= ~(size_t)3;
+   if (!swa->current_buffer)
+      return 0;
+   swa->current_buffer->data_size += len;
+   if (swa->current_buffer->data_size >= swa->chunk)
+   {
+      swa->current_buffer->buffer_size = switch_audio_capacity();
+      if (switch_audio_ipc_output_append_buffer(swa, swa->current_buffer) != 0)
+         return -1;
+      swa->current_buffer = NULL;
+   }
+   return (ssize_t)len;
+}
+
 static bool switch_audio_stop(void *data)
 {
    switch_audio_t *swa = (switch_audio_t*) data;
@@ -366,5 +401,13 @@ audio_driver_t audio_switch = {
    switch_audio_write_avail,
    switch_audio_buffer_size, /* buffer_size */
    NULL, /* write_raw */
-   switch_audio_wait_writable
+   switch_audio_wait_writable,
+   NULL, /* frames_consumed */
+   NULL, /* underruns */
+   NULL, /* layout */
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   switch_audio_write_begin,
+   switch_audio_write_end
 };

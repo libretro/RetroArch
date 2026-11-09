@@ -54,6 +54,8 @@ static uint32_t              writer_seq;
 static unsigned long         writer_frames;
 static unsigned long         writer_refused;
 static unsigned              writer_deliver;
+/* Into the span the ring lends instead of through write() */
+static bool                  writer_lend;
 
 /* Frames carrying a running count, so the device can tell whether the
  * window it was handed continues the last one. */
@@ -67,6 +69,29 @@ static void writer_thread(void *unused)
       unsigned i;
       ssize_t  wrote;
       unsigned n = writer_deliver ? writer_deliver : WRITE_FRAMES;
+      if (writer_lend)
+      {
+         unsigned placed = 0;
+         while (placed < n && retro_atomic_load_acquire_int(&writer_go))
+         {
+            void    *span = NULL;
+            size_t   got  = drv->write_begin(handle,
+                  (n - placed) * sizeof(uint32_t), &span);
+            if (!got)
+            {
+               writer_refused++;
+               usleep(50);
+               continue;
+            }
+            for (i = 0; i < got / sizeof(uint32_t); i++)
+               ((uint32_t*)span)[i] = writer_seq + placed + i;
+            placed += (unsigned)(drv->write_end(handle, got)
+                  / (ssize_t)sizeof(uint32_t));
+         }
+         writer_seq    += placed;
+         writer_frames += placed;
+         continue;
+      }
       for (i = 0; i < n; i++)
          chunk[i] = writer_seq + i;
 
@@ -357,6 +382,12 @@ int main(void)
    bad |= exercise(&audio_psp,  "psp");
    bad |= exercise(&audio_psp2, "vita");
    bad |= exercise(&audio_ps4,  "ps4");
+   /* The same streams into the span each ring lends */
+   writer_lend = true;
+   bad |= exercise(&audio_psp,  "psp");
+   bad |= exercise(&audio_psp2, "vita");
+   bad |= exercise(&audio_ps4,  "ps4");
+   writer_lend = false;
    bad |= check_worker_failure(&audio_psp,  "psp");
    bad |= check_worker_failure(&audio_psp2, "vita");
    bad |= check_worker_failure(&audio_ps4,  "ps4");

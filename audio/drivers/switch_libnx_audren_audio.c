@@ -305,30 +305,29 @@ static ssize_t libnx_audren_audio_get_free_wavebuf_idx(libnx_audren_t* aud)
    return -1;
 }
 
-static size_t libnx_audren_audio_append(
-      libnx_audren_t* aud, const void *s, size_t len)
+/* The wave buffer being filled, a free one taken if there is none */
+static bool libnx_audren_audio_current(libnx_audren_t *aud)
 {
-   void *dstbuf     = NULL;
    ssize_t free_idx = -1;
 
-   if (!aud->current_wavebuf)
-   {
-      free_idx = libnx_audren_audio_get_free_wavebuf_idx(aud);
-      if (free_idx == -1)
-         return 0;
+   if (aud->current_wavebuf)
+      return true;
 
-      aud->current_wavebuf = &aud->wavebufs[free_idx];
-      aud->current_pool_ptr = aud->mempool + (free_idx * aud->buffer_size);
-      aud->current_size = 0;
-   }
+   free_idx = libnx_audren_audio_get_free_wavebuf_idx(aud);
+   if (free_idx == -1)
+      return false;
 
-   if (len > aud->buffer_size - aud->current_size)
-      len = aud->buffer_size - aud->current_size;
+   aud->current_wavebuf = &aud->wavebufs[free_idx];
+   aud->current_pool_ptr = aud->mempool + (free_idx * aud->buffer_size);
+   aud->current_size = 0;
+   return true;
+}
 
-   dstbuf = aud->current_pool_ptr + aud->current_size;
-   memcpy(dstbuf, s, len);
-   armDCacheFlush(dstbuf, len);
-
+/* @len more bytes of the current buffer are written: flushed, and the
+ * buffer goes to the renderer once it is full. */
+static void libnx_audren_audio_advance(libnx_audren_t *aud, size_t len)
+{
+   armDCacheFlush(aud->current_pool_ptr + aud->current_size, len);
    aud->current_size += len;
 
    if (aud->current_size == aud->buffer_size)
@@ -340,8 +339,50 @@ static size_t libnx_audren_audio_append(
       aud->current_wavebuf = NULL;
    }
    libnx_audren_audio_publish_room(aud);
+}
+
+static size_t libnx_audren_audio_append(
+      libnx_audren_t* aud, const void *s, size_t len)
+{
+   if (!libnx_audren_audio_current(aud))
+      return 0;
+
+   if (len > aud->buffer_size - aud->current_size)
+      len = aud->buffer_size - aud->current_size;
+
+   memcpy(aud->current_pool_ptr + aud->current_size, s, len);
+   libnx_audren_audio_advance(aud, len);
 
    return len;
+}
+
+static size_t libnx_audren_audio_write_begin(void *data, size_t len,
+      void **region)
+{
+   libnx_audren_t *aud = (libnx_audren_t*)data;
+   size_t span;
+   *region             = NULL;
+   if (!aud)
+      return 0;
+   libnx_audren_audio_claim(aud);
+   if (!libnx_audren_audio_current(aud))
+      return 0;
+   span = aud->buffer_size - aud->current_size;
+   if (span > len)
+      span = len;
+   span &= ~(size_t)3;
+   if (span)
+      *region = aud->current_pool_ptr + aud->current_size;
+   return span;
+}
+
+static ssize_t libnx_audren_audio_write_end(void *data, size_t len)
+{
+   libnx_audren_t *aud = (libnx_audren_t*)data;
+   len &= ~(size_t)3;
+   if (len && aud->current_wavebuf)
+      libnx_audren_audio_advance(aud, len);
+   return (ssize_t)len;
 }
 
 static ssize_t libnx_audren_audio_write(void *data,
@@ -545,5 +586,10 @@ audio_driver_t audio_switch_libnx_audren = {
    libnx_audren_audio_wait_writable,
    NULL, /* frames_consumed */
    NULL, /* underruns */
-   libnx_audren_audio_layout
+   libnx_audren_audio_layout,
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   libnx_audren_audio_write_begin,
+   libnx_audren_audio_write_end
 };

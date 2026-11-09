@@ -158,6 +158,24 @@ static void lane_one_thread_nonblock(void)
          "write_avail() on the writer's thread did not see the renderer play",
          room_later, room_full);
 
+   /* The same through the span the wave buffer lends */
+   for (i = 0; i < 40; i++)
+   {
+      void  *span = NULL;
+      size_t got  = audio_switch_libnx_audren.write_begin(drv, 1023, &span);
+      if (!got)
+      {
+         sleep_us(2000);
+         continue;
+      }
+      CHECK(span != NULL && got % 4 == 0 && got <= 1023,
+            "a lent span is whole frames", got, 1020);
+      memset(span, 0, got);
+      CHECK(audio_switch_libnx_audren.write_end(drv, got) == (ssize_t)got,
+            "write_end takes the span", got, got);
+      took += got;
+   }
+
    /* And the writes go on: a frame's worth at a time for a second. */
    for (i = 0; i < 500; i++)
    {

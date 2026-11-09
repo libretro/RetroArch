@@ -334,6 +334,39 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
    return len;
 }
 
+static size_t ctr_dsp_audio_write_begin(void *data, size_t len, void **region)
+{
+   ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
+   uint32_t sample_pos  = ndspChnGetSamplePos(ctr->channel);
+   uint32_t gap         = (sample_pos - ctr->pos) & CTR_DSP_AUDIO_COUNT_MASK;
+   size_t frames        = (len > CTR_DSP_AUDIO_SIZE / 2
+         ? CTR_DSP_AUDIO_SIZE / 2 : len) >> 2;
+   *region              = NULL;
+   /* The margins the write waits out; never waited for here */
+   if (     gap < (CTR_DSP_AUDIO_COUNT >> 2)
+         || ((ctr->pos - sample_pos) & CTR_DSP_AUDIO_COUNT_MASK)
+            < (CTR_DSP_AUDIO_COUNT >> 4))
+      return 0;
+   if (frames > gap)
+      frames = gap;
+   if (frames > (size_t)(CTR_DSP_AUDIO_COUNT - ctr->pos))
+      frames = CTR_DSP_AUDIO_COUNT - ctr->pos;
+   if (!frames)
+      return 0;
+   *region = ctr->dsp_buf.data_pcm8 + (ctr->pos << 2);
+   return frames << 2;
+}
+
+static ssize_t ctr_dsp_audio_write_end(void *data, size_t len)
+{
+   ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
+   len &= ~(size_t)3;
+   DSP_FlushDataCache(ctr->dsp_buf.data_pcm8 + (ctr->pos << 2), len);
+   ctr->pos += len >> 2;
+   ctr->pos &= CTR_DSP_AUDIO_COUNT_MASK;
+   return (ssize_t)len;
+}
+
 static bool ctr_dsp_audio_stop(void *data)
 {
    ctr_dsp_audio_t* ctr = (ctr_dsp_audio_t*)data;
@@ -458,5 +491,8 @@ audio_driver_t audio_ctr_dsp = {
    NULL, /* underruns */
    NULL, /* layout */
    NULL, /* frames_consumed_fallback */
-   ctr_dsp_audio_device_clock_ppm
+   ctr_dsp_audio_device_clock_ppm,
+   NULL, /* thread_grant */
+   ctr_dsp_audio_write_begin,
+   ctr_dsp_audio_write_end
 };
