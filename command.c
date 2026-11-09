@@ -47,6 +47,9 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#ifdef HAVE_CORE_SIGNATURES
+#include "core_trust_runtime.h"
+#endif
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -1332,6 +1335,9 @@ static struct
    bool               has_index;
    bool               has_from;
    bool               lost;
+#ifdef HAVE_CORE_SIGNATURES
+   bool               refused;
+#endif
    /* the list the index was given in: how deep, and its label */
    size_t             depth;
    char               list[64];
@@ -1506,6 +1512,14 @@ unsigned command_menu_action(unsigned action)
    char               where[sizeof(command_menu_st.list)];
    if (!command_menu_st.pending || command_menu_st.frames < 2)
       return action;
+#ifdef HAVE_CORE_SIGNATURES
+   if (menu_core_warning_user_only())
+   {
+      command_menu_st.has_index = false;
+      command_menu_st.refused   = true;
+      return action;
+   }
+#endif
    /* a request is input, as a press is: no screensaver comes over it,
     * and one up takes the press that ends it */
    menu_st->input_last_time_us = menu_st->current_time_us;
@@ -1561,6 +1575,17 @@ void command_menu_iterated(void)
          && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
       return;
    command_menu_st.pending = false;
+#ifdef HAVE_CORE_SIGNATURES
+   if (command_menu_st.refused)
+   {
+      command_menu_st.refused = false;
+      command_deferred_send(&command_menu_st.deferred,
+            "MENU ERROR only the user can answer this screen\n",
+            STRLEN_CONST("MENU ERROR only the user can answer this "
+               "screen\n"), true);
+      return;
+   }
+#endif
    if (command_menu_st.lost)
    {
       command_menu_st.lost = false;
@@ -1753,6 +1778,9 @@ bool command_menu(command_t *cmd, const char *arg)
    command_menu_st.depth     = command_menu_where(command_menu_st.list,
          sizeof(command_menu_st.list));
    command_menu_st.lost      = false;
+#ifdef HAVE_CORE_SIGNATURES
+   command_menu_st.refused   = false;
+#endif
    command_menu_st.frames    = 2;
    command_menu_st.pending   = true;
    command_deferred_take(&command_menu_st.deferred, cmd);

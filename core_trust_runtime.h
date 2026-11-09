@@ -105,6 +105,10 @@ bool core_warning_same_core(const struct core_check *warned,
 void menu_core_warning_open(void);
 /* The menu's: false when its driver shows no screens (null) */
 bool menu_core_warning_can_open(void);
+/* The menu's: the warning is pending or the turn-off confirm is up,
+ * which only the user's own input answers: not a command interface or
+ * the network pad */
+bool menu_core_warning_user_only(void);
 
 RETRO_END_DECLS
 
