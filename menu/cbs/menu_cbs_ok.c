@@ -6621,6 +6621,8 @@ static int action_ok_dialog_init(struct menu_state *menu_st)
 
 error:
    menu_displaylist_info_free(&info);
+   /* Never shown, it can't take a later OK */
+   menu_dialog_confirm_clear(menu_st);
    return -1;
 }
 
