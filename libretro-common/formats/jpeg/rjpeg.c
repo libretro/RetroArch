@@ -4518,7 +4518,7 @@ static int rjpeg_resample_setup(rjpeg_jpeg *j, rjpeg_resample *res)
 /* Emit output rows until *cur_row reaches stop_row (clamped to the
  * image height), advancing the per-component resample cursors.
  *
- * For the dominant 4:2:0 colour case a fused kernel upsamples chroma
+ * For 4:2:0 and 4:2:2 colour a fused kernel upsamples chroma
  * and colour-converts in one pass, so the Cb/Cr rows are never
  * materialised; the fused near/far row pointers must be captured
  * BEFORE the resample loop advances ystep, which is why they are
@@ -4539,7 +4539,9 @@ static void rjpeg_output_rows(rjpeg_jpeg *z, rjpeg_resample *res,
          && z->upsample_YCbCr_to_BGRA_kernel
          && decode_n >= 3
          && res[1].hs == 2
-         && res[1].vs == 2);
+         && res[2].hs == 2
+         && res[1].vs == res[2].vs
+         && (res[1].vs == 1 || res[1].vs == 2));
 
    if (stop_row > z->img_y)
       stop_row = z->img_y;
@@ -4564,6 +4566,13 @@ static void rjpeg_output_rows(rjpeg_jpeg *z, rjpeg_resample *res,
          fused_cb_far  = fused_y_bot1 ? r1->line0 : r1->line1;
          fused_cr_near = fused_y_bot2 ? r2->line1 : r2->line0;
          fused_cr_far  = fused_y_bot2 ? r2->line0 : r2->line1;
+         /* 4:2:2: near == far reduces the kernel's vertical filter to
+          * a no-op, leaving exactly rjpeg_resample_row_h_2. */
+         if (r1->vs == 1)
+         {
+            fused_cb_far = fused_cb_near;
+            fused_cr_far = fused_cr_near;
+         }
       }
 
       for (k = 0; k < decode_n; ++k)
