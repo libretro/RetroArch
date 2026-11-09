@@ -4081,7 +4081,24 @@ enum menu_first_run_dl
 /* A directory that is configured but missing or empty */
 static bool menu_first_run_dir_missing(const char *dir)
 {
-   return *dir && (!path_is_directory(dir) || path_is_empty_directory(dir));
+   char ozone[PATH_MAX_LENGTH];
+
+   if (!*dir)
+      return false;
+
+   if (!path_is_directory(dir) || path_is_empty_directory(dir))
+      return true;
+
+#ifdef HAVE_OZONE
+   if (string_is_equal(path_basename(dir), "assets"))
+   {
+      // xmb or ozone check as UWP has a empty wallpapers directory
+      fill_pathname_join_special(ozone, dir, "ozone", sizeof(ozone));
+      return !path_is_directory(ozone) || path_is_empty_directory(ozone);
+   }
+#endif
+
+   return false;
 }
 
 /* On a first run the directory usually does not exist yet, so ask the
