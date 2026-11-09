@@ -1864,7 +1864,8 @@ jobs:
           # backend.
           SDL3_VER=3.2.20
           if [ ! -f /opt/sdl3/lib/pkgconfig/sdl3.pc ]; then
-             curl -sL -o /tmp/sdl3.tar.gz \
+             curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 10 \
+                -o /tmp/sdl3.tar.gz \
                 "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VER/SDL3-$SDL3_VER.tar.gz"
              tar -C /tmp -xzf /tmp/sdl3.tar.gz
              cmake -S "/tmp/SDL3-$SDL3_VER" -B /tmp/sdl3-build -G Ninja \
