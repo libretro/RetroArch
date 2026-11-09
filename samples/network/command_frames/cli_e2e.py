@@ -34,9 +34,9 @@ def main():
             path.mkdir()
             env['XDG_' + kind + '_HOME'] = str(path)
 
-        def run(value, expected):
+        def launch(arguments, expected):
             result = subprocess.run(
-                command + ['-v', '-c', 'retroarch.cfg', '--command=' + value],
+                command + ['-v', '-c', 'retroarch.cfg'] + arguments,
                 cwd=work, env=env, stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 timeout=30)
@@ -46,6 +46,9 @@ def main():
                     expected, result.returncode, output))
             return output
 
+        def run(value, expected):
+            return launch(['--command=' + value], expected)
+
         output = run('E2E_NOT_A_COMMAND', 1)
         if 'not recognized' not in output:
             raise AssertionError('missing invalid-command diagnostic\n' + output)
@@ -54,6 +57,8 @@ def main():
         print('[pass] empty command exits with an error')
         run('x' * 4096, 1)
         print('[pass] oversized command exits with an error')
+        launch(['--menu', 'missing.bin'], 1)
+        print('[pass] argument error before the task queue exits cleanly')
 
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver:
             receiver.bind(('127.0.0.1', 0))

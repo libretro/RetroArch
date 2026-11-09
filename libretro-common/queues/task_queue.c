@@ -4128,6 +4128,8 @@ bool task_queue_push(retro_task_t *task)
 
 void task_queue_wait(retro_task_condition_fn_t cond, void* data)
 {
+   if (!impl_current)
+      return;
    impl_current->wait(cond, data);
 }
 
@@ -4175,6 +4177,8 @@ bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
 
 void task_queue_reset(void)
 {
+   if (!impl_current)
+      return;
    /* Held pushes are cancelled with the queued tasks. */
    task_queue_push_deferred();
    impl_current->reset();
