@@ -285,8 +285,114 @@ static void metadata(void)
    assert(vaapi_av1_pool_close(&pool) && allocated == closed_fds);
 }
 
+static rav1_grain_t grain_original, grain_request;
+static void grain_lifecycle(unsigned depth)
+{
+   vaapi_av1_decoder_t *decoder;
+   vaapi_frame_view_t view;
+   vaapi_hevc_export_t taken;
+   unsigned before, i;
+   grain_setup(depth, 21);
+   sequence.color_primaries = sequence.transfer_characteristics =
+      sequence.matrix_coefficients = 1;
+   sequence.chroma_sample_position = 2;
+   picture.grain.params.seed = 1234;
+   picture.grain.params.ar_coeff_lag = 3;
+   picture.grain.params.num_points[0] = 2;
+   picture.grain.params.point_value[0][1] = 255;
+   picture.grain.params.point_scaling[0][0] = 64;
+   picture.grain.params.point_scaling[0][1] = 128;
+   for (i = 1; i < 3; i++)
+   {
+      picture.grain.params.num_points[i] = 1;
+      picture.grain.params.point_scaling[i][0] = 80;
+      picture.grain.params.ar_coeffs[i][24] = -128;
+      picture.grain.params.chroma_mult[i - 1] = 20;
+      picture.grain.params.chroma_luma_mult[i - 1] = 30;
+      picture.grain.params.chroma_offset[i - 1] = 100;
+   }
+   grain_original = picture.grain.params;
+   memset(&decoder_ops, 0, sizeof(decoder_ops));
+   memset(frames, 0, sizeof(frames));
+   memset(fds, 0, sizeof(fds));
+   allocated = closed_fds = 0;
+   identity_fault = false;
+   assert(vaapi_av1_decoder_open(&pool, &sequence, NULL, &exports, &decoder_ops));
+   decoder = (vaapi_av1_decoder_t *)decoder_ops.decoder;
+   completion[1] = VA_STATUS_ERROR_TIMEDOUT;
+   assert(!submit());
+   memset(&unchanged, 0xa5, sizeof(unchanged));
+   memcpy(&frames[0], &unchanged, sizeof(unchanged));
+   before = native_syncs;
+#define GRAIN_BAD(change) \
+   do { \
+      grain_request = grain_original; \
+      change; \
+      assert(decoder_ops.output(decoder, 0, &grain_request, &frames[0]) < 0); \
+      assert(!memcmp(&frames[0], &unchanged, sizeof(unchanged)) && !allocated); \
+      assert(native_syncs == before); \
+   } while (0)
+   GRAIN_BAD(grain_request.seed++);
+   GRAIN_BAD(grain_request.apply = 0);
+   GRAIN_BAD(grain_request.scaling_shift++);
+   GRAIN_BAD(grain_request.ar_coeff_lag--);
+   GRAIN_BAD(grain_request.ar_coeff_shift++);
+   GRAIN_BAD(grain_request.scale_shift++);
+   GRAIN_BAD(grain_request.overlap = 1);
+   GRAIN_BAD(grain_request.clip_to_restricted_range = 1);
+   GRAIN_BAD(grain_request.point_value[0][1]--);
+   GRAIN_BAD(grain_request.point_scaling[1][0]++);
+   GRAIN_BAD(grain_request.ar_coeffs[0][23]++);
+   GRAIN_BAD(grain_request.ar_coeffs[1][24]++);
+   GRAIN_BAD(grain_request.chroma_mult[0]++);
+   GRAIN_BAD(grain_request.chroma_luma_mult[1]++);
+   GRAIN_BAD(grain_request.chroma_offset[1]++);
+#undef GRAIN_BAD
+   assert(decoder_ops.output(decoder, 0, &grain_original, &frames[0]) == 1);
+   assert(!allocated && !memcmp(&frames[0], &unchanged, sizeof(unchanged)));
+   completion[1] = VA_STATUS_SUCCESS;
+   assert(!decoder_ops.output(decoder, 0, &grain_original, &frames[0]));
+   assert(!decoder_ops.output(decoder, 0, &grain_original, &frames[1]));
+   assert(pool.exports[1] == 2 && allocated == 2);
+   assert(fd_surface[7] == 2 && fd_surface[8] == 2);
+   assert(vaapi_frame_claim(frames[0].owner, frames[0].done,
+         frames[0].done_value, frames[0].image, &view));
+   assert(view.source->slot == 1 && view.chroma_position == 2);
+   memset(&taken, 0, sizeof(taken));
+   assert(vaapi_frame_take(frames[0].owner, frames[0].done,
+         frames[0].done_value, &taken));
+   picture.grain.params.seed = 9999;
+   grain_request = grain_original;
+   grain_request.point_value[2][13] = 42;
+   grain_request.ar_coeffs[0][24] = 127;
+   assert(!decoder_ops.output(decoder, 0, &grain_request, &frames[2]));
+   video_hw_frame_abandon(&frames[2]);
+   assert(vaapi_av1_decoder_poll(decoder) >= 0);
+   grain_next(1, 0);
+   grain_request = picture.grain.params;
+   assert(!submit() && !decoder_ops.output(decoder, 1, &grain_request, &frames[3]));
+   assert(pool.mapping[1] == 2 && pool.outputs[2] == 3);
+   grain_next(0, 1);
+   assert(!submit() && !decoder_ops.output(decoder, 0, &grain_request, &frames[4]));
+   assert(pool.mapping[0] == 0 && pool.outputs[0] == 4);
+   assert(vaapi_export_current(&taken) && taken.slot == 1);
+   assert(decoder_ops.output(decoder, 0, &grain_original, &frames[5]) < 0);
+   assert(vaapi_av1_decoder_detach(&decoder_ops) == decoder);
+   assert(!vaapi_av1_decoder_retire(decoder));
+   video_hw_frame_abandon(&frames[1]);
+   video_hw_frame_abandon(&frames[3]);
+   video_hw_frame_abandon(&frames[4]);
+   video_hw_frame_abandon(&frames[0]);
+   assert(!vaapi_av1_decoder_retire(decoder));
+   assert(vaapi_frame_finish(frames[0].owner, frames[0].done,
+         frames[0].done_value, &taken));
+   assert(vaapi_av1_decoder_retire(decoder));
+   assert(allocated == closed_fds && vaapi_av1_pool_close(&pool));
+}
 int main(void)
 {
+   grain_lifecycle(8);
+   grain_lifecycle(10);
    lifecycle(8);
    lifecycle(10);
    busy();

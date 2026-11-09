@@ -12,6 +12,7 @@ struct vaapi_av1_decoder
    vaapi_av1_pool_t *pool;
    vaapi_frame_pool_t *frames;
    rav1_sequence_t sequence;
+   rav1_grain_t grain[32];
    video_color_metadata_t color;
    unsigned widths[32], heights[32];
    bool closed, failed;
@@ -31,7 +32,7 @@ static bool vaapi_av1_decoder_color(const rav1_sequence_t *sequence,
       const video_color_metadata_t *container, video_color_metadata_t *out)
 {
    unsigned range;
-   if (!vaapi_av1_sequence_valid(sequence) || sequence->film_grain_params_present)
+   if (!vaapi_av1_sequence_valid(sequence))
       return false;
    memset(out, 0, sizeof(*out));
    if (container)
@@ -91,6 +92,9 @@ static int vaapi_av1_decoder_decode(void *opaque,
    else if (!result)
    {
       physical = decoder->pool->mapping[picture->slot];
+      /* Parser storage is reused before repeat output. */
+      decoder->grain[physical] = picture->grain.params;
+      physical = (int)decoder->pool->outputs[physical];
       decoder->widths[physical] = picture->setup.size.upscaled_width;
       decoder->heights[physical] = picture->setup.size.height;
    }
@@ -113,6 +117,41 @@ static const vaapi_export_owner_ops_t vaapi_av1_decoder_ownership = {
       vaapi_av1_decoder_acquire, vaapi_av1_decoder_current,
       vaapi_av1_decoder_release};
 
+static bool vaapi_av1_decoder_grain(const rav1_grain_t *a,
+      const rav1_grain_t *b)
+{
+   unsigned plane, count;
+   if (a->apply != b->apply)
+      return false;
+   if (!a->apply)
+      return true;
+   if (!vaapi_av1_grain_valid(a) || a->seed != b->seed ||
+       a->chroma_scaling_from_luma != b->chroma_scaling_from_luma ||
+       a->scaling_shift != b->scaling_shift || a->ar_coeff_lag != b->ar_coeff_lag ||
+       a->ar_coeff_shift != b->ar_coeff_shift || a->scale_shift != b->scale_shift ||
+       a->overlap != b->overlap ||
+       a->clip_to_restricted_range != b->clip_to_restricted_range ||
+       memcmp(a->num_points, b->num_points, sizeof(a->num_points)))
+      return false;
+   for (plane = 0; plane < 3; plane++)
+   {
+      if (memcmp(a->point_value[plane], b->point_value[plane], a->num_points[plane]) ||
+          memcmp(a->point_scaling[plane], b->point_scaling[plane], a->num_points[plane]))
+         return false;
+      count = 2 * a->ar_coeff_lag * (a->ar_coeff_lag + 1) +
+         (plane && a->num_points[0]);
+      if ((a->num_points[plane] || (plane && a->chroma_scaling_from_luma)) &&
+          memcmp(a->ar_coeffs[plane], b->ar_coeffs[plane], count))
+         return false;
+      if (plane && a->num_points[plane] &&
+          (a->chroma_mult[plane - 1] != b->chroma_mult[plane - 1] ||
+           a->chroma_luma_mult[plane - 1] != b->chroma_luma_mult[plane - 1] ||
+           a->chroma_offset[plane - 1] != b->chroma_offset[plane - 1]))
+         return false;
+   }
+   return true;
+}
+
 static int vaapi_av1_decoder_output(void *opaque, unsigned slot,
       const rav1_grain_t *grain, video_hw_frame_t *out)
 {
@@ -120,21 +159,21 @@ static int vaapi_av1_decoder_output(void *opaque, unsigned slot,
    const video_color_metadata_t *color;
    unsigned physical, yuv = 0;
    int mapped;
-   if (!decoder || decoder->closed || !grain || grain->apply || !out
+   if (!decoder || decoder->closed || !grain || !out
          || !decoder->pool->active
-         || slot >= decoder->pool->logical_slots
-         || vaapi_av1_decoder_poll(decoder) < 0)
+         || slot >= decoder->pool->logical_slots)
       return -1;
    mapped = decoder->pool->mapping[slot];
-   if (mapped < 0)
+   if (mapped < 0 || !vaapi_av1_decoder_grain(grain, &decoder->grain[mapped])
+         || vaapi_av1_decoder_poll(decoder) < 0)
       return -1;
-   physical = (unsigned)mapped;
+   physical = decoder->pool->outputs[mapped];
    if (decoder->pending.active && decoder->pending.slot != physical)
       return 1;
    if (!decoder->pending.active)
    {
       if (!(decoder->pool->ready & (UINT32_C(1) << physical)))
-         return decoder->pool->transactions[physical].active ? 1 : -1;
+         return decoder->pool->transactions[mapped].active ? 1 : -1;
       if (!vaapi_export_open(&decoder->pending, decoder->pool,
                 decoder->pool->session, &vaapi_av1_decoder_ownership,
                 physical, &decoder->exports))
@@ -162,6 +201,7 @@ bool vaapi_av1_decoder_open(vaapi_av1_pool_t *pool,
    video_color_metadata_t resolved;
    const vaapi_av1_session_t *session;
    if (!pool || !pool->active || pool->broken || !ops || ops->decoder
+         || (sequence && sequence->film_grain_params_present && !pool->grain)
          || !exports || !exports->surface || !exports->cloexec
          || !exports->close || !exports->identity
          || !vaapi_av1_decoder_color(sequence, color, &resolved))
