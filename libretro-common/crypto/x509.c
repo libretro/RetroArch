@@ -669,13 +669,23 @@ int x509_verify_ecdsa_digest(const struct x509_cert *key,
          || der_read_uint(&sv, &s, &sl) != 0
          || rl > n || sl > n || sv.p != sv.end)
       return -1;
-   memset(rb, 0, n);
-   memset(sb, 0, n);
-   memcpy(rb + n - rl, r, rl);
-   memcpy(sb + n - sl, s, sl);
+   /* A full-width r or s is lent straight from the signature; only a
+    * shorter one needs a left-padded copy. */
+   if (rl < n)
+   {
+      memset(rb, 0, n - rl);
+      memcpy(rb + n - rl, r, rl);
+      r = rb;
+   }
+   if (sl < n)
+   {
+      memset(sb, 0, n - sl);
+      memcpy(sb + n - sl, s, sl);
+      s = sb;
+   }
    if (n == 32)
-      return p256_ecdsa_verify(key->ec_point, digest, digest_len, rb, sb);
-   return p384_ecdsa_verify(key->ec_point, digest, digest_len, rb, sb);
+      return p256_ecdsa_verify(key->ec_point, digest, digest_len, r, s);
+   return p384_ecdsa_verify(key->ec_point, digest, digest_len, r, s);
 }
 
 int x509_verify_signature(const struct x509_cert *c,
