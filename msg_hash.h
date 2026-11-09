@@ -9396,6 +9396,9 @@ enum msg_hash_enums
 #if defined(_WIN32)
    MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS,
 #endif
+#if defined(__APPLE__)
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_MACOS,
+#endif
    /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group enum rows (see settings/settings_def_video_hdr_toggles.h, settings/settings_def_video_stereo.h and settings/settings_def_video_headset.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS

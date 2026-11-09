@@ -7695,6 +7695,12 @@ MSG_HASH(
    "Use another Vulkan driver: pick its .json, usually beside its .dll.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: --vulkan-driver=system"
    )
 #endif
+#if defined(__APPLE__)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_MACOS,
+   "Use another Vulkan driver: pick its .json, from Homebrew's etc/vulkan/icd.d, a MoltenVK release or the Vulkan SDK.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: open -a RetroArch --args --vulkan-driver=system"
+   )
+#endif
 /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group (see settings_def_video_hdr_toggles.h, settings_def_video_stereo.h and settings_def_video_headset.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
