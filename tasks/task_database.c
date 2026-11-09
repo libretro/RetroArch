@@ -613,12 +613,11 @@ typedef struct manual_scan_handle
    playlist_dedup_t *flush_dedup;
    logiqx_dat_t *dat_file;
    struct string_list *m3u_list;
-   /* The CLEAN pass's path scratch, the content folder with its
+   /* The CLEAN pass's buffers, one allocation of three
+    * PATH_MAX_LENGTH runs: path scratch, the content folder with its
     * symlinks resolved ("" if that fails or changes nothing) and the
-    * last folder outside it looked in. */
-   char *clean_path;
-   char *clean_root;
-   char *clean_dir;
+    * last folder outside it looked in. NULL until an entry needs it. */
+   char *clean_buf;
    playlist_config_t playlist_config; /* size_t alignment */
    size_t playlist_size;
    size_t playlist_index;
@@ -4808,22 +4807,10 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       manual_scan->file_exts_list = NULL;
    }
 
-   if (manual_scan->clean_path)
+   if (manual_scan->clean_buf)
    {
-      free(manual_scan->clean_path);
-      manual_scan->clean_path = NULL;
-   }
-
-   if (manual_scan->clean_root)
-   {
-      free(manual_scan->clean_root);
-      manual_scan->clean_root = NULL;
-   }
-
-   if (manual_scan->clean_dir)
-   {
-      free(manual_scan->clean_dir);
-      manual_scan->clean_dir = NULL;
+      free(manual_scan->clean_buf);
+      manual_scan->clean_buf = NULL;
    }
 
    /* A cancelled task can die mid-walk or mid-DAT-read; the
@@ -5818,59 +5805,64 @@ static bool manual_scan_clean_drop(manual_scan_handle_t *manual_scan,
    const char *dir = manual_scan->task_config->content_dir;
    const char *ext = NULL;
    char *s         = NULL;
+   char *root      = NULL;
+   char *last_dir  = NULL;
    char *delim     = NULL;
    bool inside     = false;
+   bool valid      = false;
 
    if (!path || !*path)
       return true;
-   if (!manual_scan->clean_root)
-   {
-      /* Entries are saved with their symlinks resolved */
-      if (!(manual_scan->clean_root = (char*)malloc(PATH_MAX_LENGTH)))
-         return false;
-      strlcpy(manual_scan->clean_root, dir, PATH_MAX_LENGTH);
-      if (   !path_resolve_realpath(manual_scan->clean_root,
-               PATH_MAX_LENGTH, true)
-          ||  string_is_equal(manual_scan->clean_root, dir))
-         *manual_scan->clean_root = '\0';
-   }
-   if (   !manual_scan->clean_path
-       && !(manual_scan->clean_path = (char*)malloc(PATH_MAX_LENGTH)))
+
+   /* Nearly every entry stops here, with no copy of its path and no
+    * look at the content folder. */
+   valid = playlist_content_path_is_valid(path);
+   if (   valid
+       && (   !manual_scan->file_exts_list
+           || !(ext = path_get_extension(path))
+           ||  string_list_find_elem_prefix(manual_scan->file_exts_list,
+                  ".", ext)))
       return false;
-   s = manual_scan->clean_path;
+
+   if (!manual_scan->clean_buf)
+   {
+      if (!(manual_scan->clean_buf = (char*)calloc(3, PATH_MAX_LENGTH)))
+         return false;
+      /* Entries are saved with their symlinks resolved */
+      root = manual_scan->clean_buf + PATH_MAX_LENGTH;
+      strlcpy(root, dir, PATH_MAX_LENGTH);
+      if (   !path_resolve_realpath(root, PATH_MAX_LENGTH, true)
+          ||  string_is_equal(root, dir))
+         *root = '\0';
+   }
+   s        = manual_scan->clean_buf;
+   root     = s    + PATH_MAX_LENGTH;
+   last_dir = root + PATH_MAX_LENGTH;
    fill_pathname_expand_special(s, path, PATH_MAX_LENGTH);
    if ((delim = (char*)path_get_archive_delim(s)))
       *delim = '\0';
    inside =    manual_scan_path_in_dir(s, dir)
-            || manual_scan_path_in_dir(s, manual_scan->clean_root);
+            || manual_scan_path_in_dir(s, root);
 
-   if (!playlist_content_path_is_valid(path))
+   /* There, with an extension the scan does not list */
+   if (valid)
+      return inside;
+
+   /* Inside entries interleave with outside ones in a sorted
+    * playlist, so the content folder keeps its own state. */
+   if (inside)
    {
-      /* Inside entries interleave with outside ones in a sorted
-       * playlist, so the content folder keeps its own state. */
-      if (inside)
-      {
-         if (manual_scan->clean_content_state == MANUAL_SCAN_DIR_UNKNOWN)
-            manual_scan->clean_content_state = manual_scan_probe_dir(dir);
-         return manual_scan->clean_content_state == MANUAL_SCAN_DIR_FILLED;
-      }
-      if (   !manual_scan->clean_dir
-          && !(manual_scan->clean_dir = (char*)calloc(1, PATH_MAX_LENGTH)))
-         return false;
-      path_basedir(s);
-      if (!string_is_equal(s, manual_scan->clean_dir))
-      {
-         strlcpy(manual_scan->clean_dir, s, PATH_MAX_LENGTH);
-         manual_scan->clean_dir_state = manual_scan_probe_dir(s);
-      }
-      return manual_scan->clean_dir_state == MANUAL_SCAN_DIR_FILLED;
+      if (manual_scan->clean_content_state == MANUAL_SCAN_DIR_UNKNOWN)
+         manual_scan->clean_content_state = manual_scan_probe_dir(dir);
+      return manual_scan->clean_content_state == MANUAL_SCAN_DIR_FILLED;
    }
-
-   return     inside
-          &&  manual_scan->file_exts_list
-          &&  (ext = path_get_extension(path))
-          && !string_list_find_elem_prefix(manual_scan->file_exts_list,
-                ".", ext);
+   path_basedir(s);
+   if (!string_is_equal(s, last_dir))
+   {
+      strlcpy(last_dir, s, PATH_MAX_LENGTH);
+      manual_scan->clean_dir_state = manual_scan_probe_dir(s);
+   }
+   return manual_scan->clean_dir_state == MANUAL_SCAN_DIR_FILLED;
 }
 
 /* What an ITERATE step leaves for the tick to do. */
@@ -7417,7 +7409,6 @@ static void dbscan_load_handler(retro_task_t *task)
    if (prep->load == DBSCAN_LOAD_OK)
    {
       const char *dir = playlist_get_scan_content_dir(prep->playlist);
-      char *expanded  = NULL;
 
       /* A playlist that does not parse has no settings to read. */
       if (!playlist_scan_refresh_enabled(prep->playlist))
@@ -7445,13 +7436,15 @@ static void dbscan_load_handler(retro_task_t *task)
             prep->smb_reason = scan_smb_failure_reason(dir);
 #endif
       }
-      else if ((expanded = (char*)malloc(PATH_MAX_LENGTH)))
+      /* A file has no contents to count */
+      else if (prep->fs->content_stat & RETRO_VFS_STAT_IS_DIRECTORY)
       {
-         fill_pathname_expand_special(expanded, dir, PATH_MAX_LENGTH);
+         char expanded[PATH_MAX_LENGTH];
+
+         fill_pathname_expand_special(expanded, dir, sizeof(expanded));
          /* A mount point left behind with its drive unplugged */
          if (manual_scan_probe_dir(expanded) == MANUAL_SCAN_DIR_EMPTY)
             prep->load = DBSCAN_LOAD_FOLDER_EMPTY;
-         free(expanded);
       }
    }
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
