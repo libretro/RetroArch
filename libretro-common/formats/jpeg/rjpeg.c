@@ -369,6 +369,9 @@ struct rjpeg_jpeg_s
    rjpeg_huffman huff_dc[4];     /* unsigned int alignment */
    rjpeg_huffman huff_ac[4];     /* unsigned int alignment */
    int16_t fast_ac[4][1 << FAST_BITS];
+   unsigned char huff_dc_defined;
+   unsigned char huff_ac_defined;
+   unsigned char dequant_defined;
    unsigned char  marker;        /* marker seen while filling entropy buffer */
    uint8_t dequant[4][64];
 };
@@ -2581,6 +2584,7 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
                for (i = 0; i < 64; ++i)
                   z->dequant[t][rjpeg_jpeg_dezigzag[i]] = RJPEG_GET8(z);
             }
+            z->dequant_defined |= (unsigned char)(1U << t);
             L -= 65;
          }
          return L == 0;
@@ -2658,7 +2662,12 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
                   v[i] = RJPEG_GET8(z);
             }
             if (tc != 0)
+            {
                rjpeg_build_fast_ac(z->fast_ac[th], z->huff_ac + th);
+               z->huff_ac_defined |= (unsigned char)(1U << th);
+            }
+            else
+               z->huff_dc_defined |= (unsigned char)(1U << th);
             L -= n;
          }
          return L == 0;
@@ -2776,6 +2785,38 @@ static int rjpeg_process_scan_header(rjpeg_jpeg *z)
       z->spec_end = 63;
    }
 
+   for (i = 0; i < z->scan_n; ++i)
+   {
+      int which = z->order[i];
+      unsigned char tq = (unsigned char)(1U << z->img_comp[which].tq);
+      unsigned char hd = (unsigned char)(1U << z->img_comp[which].hd);
+      unsigned char ha = (unsigned char)(1U << z->img_comp[which].ha);
+
+      if (!z->progressive)
+      {
+         if (!(z->dequant_defined & tq) ||
+               !(z->huff_dc_defined & hd) ||
+               !(z->huff_ac_defined & ha))
+            return 0;
+      }
+      else if (z->spec_start == 0)
+      {
+         if (z->succ_high == 0 && !(z->huff_dc_defined & hd))
+            return 0;
+      }
+      else if (!(z->huff_ac_defined & ha))
+         return 0;
+   }
+
+   return 1;
+}
+
+static int rjpeg_has_quantization_tables(const rjpeg_jpeg *j)
+{
+   int i;
+   for (i = 0; i < j->img_n; ++i)
+      if (!(j->dequant_defined & (1U << j->img_comp[i].tq)))
+         return 0;
    return 1;
 }
 
@@ -3143,7 +3184,11 @@ static int rjpeg_decode_jpeg_image(rjpeg_jpeg *j)
    }
 
    if (j->progressive)
+   {
+      if (!rjpeg_has_quantization_tables(j))
+         return 0;
       rjpeg_jpeg_finish(j);
+   }
    return 1;
 }
 
@@ -4333,14 +4378,16 @@ bool rjpeg_start(rjpeg_t *rjpeg)
    if (!j)
       return false;
 
-   /* Zero only fields that need init — saves zeroing ~18 KB of
-    * Huffman tables that build_huffman will fully overwrite. */
+   /* Zero only fields that need init. The definition masks below guard
+    * the table contents until the corresponding marker initializes them. */
    memset(j->img_comp, 0, sizeof(j->img_comp));
    j->code_bits = 0; j->code_buffer = 0;
    j->nomore = 0; j->progressive = 0;
    j->scan_n = 0; j->eob_run = 0;
    j->marker = RJPEG_MARKER_NONE;
    j->restart_interval = 0; j->todo = 0;
+   j->huff_dc_defined = 0; j->huff_ac_defined = 0;
+   j->dequant_defined = 0;
    j->comp_arena = NULL; j->comp_arena_size = 0;
    j->plane_ring = 1;   /* iterative: fused decode may ring the planes */
    j->img_n = 0;
@@ -5180,6 +5227,11 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
 
          if (m == JPEG_MARKER_EOI)
          {
+            if (!rjpeg_has_quantization_tables(j))
+            {
+               rjpeg->iter_state = RJPEG_ITER_ERROR;
+               return false;
+            }
             /* All scans consumed - transition to IDCT phase, which
              * emits the output as it goes (see FINISH_PROG): the
              * planes may be ring-sized, so there is no later pass that
@@ -5429,6 +5481,8 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          j->scan_n = 0; j->eob_run = 0;
          j->marker = RJPEG_MARKER_NONE;
          j->restart_interval = 0; j->todo = 0;
+         j->huff_dc_defined = 0; j->huff_ac_defined = 0;
+         j->dequant_defined = 0;
          j->comp_arena = NULL; j->comp_arena_size = 0;
          j->plane_ring = 0;   /* monolithic: full planes required */
 
