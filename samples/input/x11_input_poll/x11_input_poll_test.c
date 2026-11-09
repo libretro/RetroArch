@@ -99,6 +99,12 @@ void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor,
 static input_pointer_frame_t published[MAX_USERS];
 static unsigned published_count;
 static unsigned publishes;
+input_pointer_frame_t *input_driver_pointers_lend(void)
+{
+   static input_pointer_frame_t lent[MAX_USERS];
+   return lent;
+}
+
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
 {

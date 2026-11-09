@@ -860,7 +860,7 @@ static void x_input_poll_devices(void *data)
  * mouse, the pointer and the lightgun's aim from it. */
 static void x_input_poll(void *data)
 {
-   input_pointer_frame_t frame[MAX_MOUSE_IDX];
+   input_pointer_frame_t *frame = input_driver_pointers_lend();
    x11_input_t *x11 = (x11_input_t*)data;
    unsigned count   = 1;
    unsigned i;

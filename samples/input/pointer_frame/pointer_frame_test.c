@@ -697,6 +697,19 @@ static void test_android_gun_fingers(void)
          "Android, a main window that shows no screen: a tap there is on nothing");
 }
 
+/* Frames a driver wrote in place are published as they are. */
+static void test_lent_frames(void)
+{
+   input_pointer_frame_t *lent = input_pointers.frame;
+   memset(lent, 0, 2 * sizeof(*lent));
+   lent[1].buttons = INPUT_POINTER_RIGHT;
+   input_pointer_frames_set(lent, NULL, 2, 0);
+   CHECK(input_pointers.count == 2
+      && rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == 1
+      && rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == 0,
+      "frames written in place are read as published");
+}
+
 int main(void)
 {
    input_pointer_frame_t f[2];
@@ -1188,6 +1201,7 @@ int main(void)
    test_flags();
    test_android_answers();
    test_android_gun_fingers();
+   test_lent_frames();
    if (failures)
    {
       printf("FAIL pointer_frame_test: %u failure(s)\n", failures);

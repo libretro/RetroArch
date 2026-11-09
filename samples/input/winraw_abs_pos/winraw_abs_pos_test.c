@@ -135,6 +135,12 @@ bool video_driver_translate_coord_viewport(struct video_viewport *vp,
    return false;
 }
 /* The driver hands its mice and touches to the frontend at its poll. */
+input_pointer_frame_t *input_driver_pointers_lend(void)
+{
+   static input_pointer_frame_t lent[MAX_USERS];
+   return lent;
+}
+
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
 { (void)frames; (void)count; (void)flags; }

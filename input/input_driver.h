@@ -1542,6 +1542,10 @@ enum input_pointers_flags
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags);
 
+/* The frontend's own MAX_USERS frames: a driver with several mice
+ * writes them at its poll and publishes them, and nothing is copied. */
+input_pointer_frame_t *input_driver_pointers_lend(void);
+
 /* The window a device or a touch is in: 0 the main window, else a
  * screen's own, with the generation it was made with. */
 typedef struct input_video_window

@@ -1978,7 +1978,7 @@ error:
  * the frontend now knows and this asks. */
 static void winraw_publish_pointers(winraw_input_t *wr)
 {
-   input_pointer_frame_t frame[MAX_USERS];
+   input_pointer_frame_t *frame         = input_driver_pointers_lend();
    uint32_t touch_pos[16];
    unsigned i;
    unsigned touches                     = 0;

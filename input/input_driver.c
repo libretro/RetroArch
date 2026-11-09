@@ -2269,6 +2269,11 @@ void input_driver_publish_pointers(const input_pointer_frame_t *frames,
    input_pointer_frames_set(frames, NULL, count, flags);
 }
 
+input_pointer_frame_t *input_driver_pointers_lend(void)
+{
+   return input_pointers.frame;
+}
+
 #ifdef HAVE_VIDEO_WINDOWS
 void input_driver_publish_window_pointers(
       const input_pointer_frame_t *frames,

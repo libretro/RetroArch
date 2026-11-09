@@ -85,7 +85,9 @@ static void input_pointer_frames_set(const input_pointer_frame_t *frames,
 {
    if (count > MAX_USERS)
       count = MAX_USERS;
-   memcpy(input_pointers.frame, frames, count * sizeof(*frames));
+   /* written in place by a driver the frames were lent to */
+   if (frames != input_pointers.frame)
+      memcpy(input_pointers.frame, frames, count * sizeof(*frames));
 #ifdef HAVE_VIDEO_WINDOWS
    input_pointers.in_window     = (uint16_t)input_pointer_windows_set(
          input_pointers.window, windows, count);
