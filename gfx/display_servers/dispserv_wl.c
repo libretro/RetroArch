@@ -19,6 +19,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+#include <features/features_cpu.h>
 
 #include <poll.h>
 #include <wayland-client.h>
@@ -36,6 +37,11 @@
 #include "../common/mutter_displayconfig.h"
 #include "../common/wayland_kwin_output.h"
 #include "../common/wayland_wlr_output.h"
+
+/* Upper bound for the wait on the compositor's output management
+ * protocols at startup, only reached when the compositor offers one
+ * of them but never completes its output list */
+#define WL_DISPSERV_OUTPUTS_TIMEOUT_MS 100
 
 typedef struct
 {
@@ -210,6 +216,37 @@ void wl_display_server_report_lease(void *data)
 #endif
 }
 
+/* Wait until KWin or wlroots compositor has described its outputs.
+ * This way if an Hz switch is requested via command line, so right
+ * after the startup, it will find the mode list ready.
+ * wait at most WL_DISPSERV_OUTPUTS_TIMEOUT_MS msecs anyway.
+ */
+
+static void wl_display_server_wait_outputs(dispserv_wl_t *serv)
+{
+   retro_time_t start, timeout_us;
+
+   /* Receives the globals, which binds the protocols */
+   if (wl_display_roundtrip(serv->dpy) < 0)
+      return;
+
+   /* Neither protocol offered: nothing to wait for */
+   if (!serv->kwin.management && !serv->wlr.manager)
+      return;
+
+   start      = cpu_features_get_time_usec();
+   timeout_us = (retro_time_t)WL_DISPSERV_OUTPUTS_TIMEOUT_MS * 1000;
+
+   while (!kwin_outputs_ready(&serv->kwin)
+       && !wlr_outputs_ready(&serv->wlr))
+   {
+      if (wl_display_roundtrip(serv->dpy) < 0)
+         break;
+      if ((cpu_features_get_time_usec() - start) >= timeout_us)
+         break;
+   }
+}
+
 static void *wl_display_server_init(void)
 {
    dispserv_wl_t *serv = (dispserv_wl_t*)calloc(1, sizeof(*serv));
@@ -227,6 +264,8 @@ static void *wl_display_server_init(void)
    wl_registry_add_listener(serv->registry, &registry_listener, serv);
 
    wl_display_flush(serv->dpy);
+
+   wl_display_server_wait_outputs(serv);
 
 #ifdef RARCH_HAVE_MUTTER_DC
    /* Starts the Mutter worker; its answer is read at each call. */
