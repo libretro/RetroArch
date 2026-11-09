@@ -12334,14 +12334,14 @@ static void smb_kind_lane(const char *root, bool threaded)
    smb_stub_detail  = "";
    smb_stub_live    = true;
 
-   /* Unknown kind: set_menu_content_dir, get_task_config and the
-    * directory flag stat it. */
+   /* Unknown kind: set_menu_content_dir and get_task_config stat it;
+    * the directory flag comes from the config they made. */
    manual_content_scan_reset_settings();
    n  = smb_kind_scan(dir,  SMB_KIND_DBSCAN);
    n2 = smb_kind_scan(file, SMB_KIND_DBSCAN);
    sprintf(what, "smb kind %s: unknown kind stats the path", q);
    sprintf(detail, "folder %d, file %d", n, n2);
-   check(n == 3 && n2 == 3, what, detail);
+   check(n == 2 && n2 == 2, what, detail);
 
    /* Scan Directory, Scan File.  Only a folder push opens the
     * folder. */
@@ -12512,7 +12512,7 @@ static void smb_kind_lane(const char *root, bool threaded)
    sprintf(detail, "%d, %d stats, same %d, new %d, old %d", n, n2,
          files_equal(ref, lpl), file_contains(lpl, "01_alpha.bin"),
          file_contains(lpl, "00_old.bin"));
-   check(   ok && n == 3 && n2 == 0 && files_equal(ref, lpl)
+   check(   ok && n == 2 && n2 == 0 && files_equal(ref, lpl)
          && file_contains(lpl, "01_alpha.bin")
          && file_contains(lpl, "00_old.bin")
          && !scan_record(lpl, line, p, sizeof(p), &ran), what, detail);
