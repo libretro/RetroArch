@@ -320,7 +320,7 @@ static int write_db_archives(const char *path, bool unsized)
    int   i;
 
    memset(&body, 0, sizeof(body));
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < (int)(sizeof(roms) / sizeof(roms[0])); i++)
    {
       char    name[32];
       uint8_t crc[4];
