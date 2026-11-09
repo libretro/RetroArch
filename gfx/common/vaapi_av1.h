@@ -61,6 +61,54 @@ static INLINE bool vaapi_av1_delta(int value)
    return value >= -64 && value <= 63;
 }
 
+static INLINE bool vaapi_av1_global_valid(unsigned type, const int32_t *m)
+{
+   if (type > RAV1_GLOBAL_AFFINE || m[0] < -4194304 || m[0] > 4194304
+         || m[1] < -4194304 || m[1] > 4194304)
+      return false;
+   if (type <= RAV1_GLOBAL_TRANSLATION)
+      return m[2] == 65536 && !m[3] && !m[4] && m[5] == 65536
+            && (type || (!m[0] && !m[1]));
+   if (m[2] < 57344 || m[2] > 73728 || m[5] < 57344 || m[5] > 73728
+         || m[3] < -8192 || m[3] > 8192 || m[4] < -8192 || m[4] > 8192
+         || m[0] % 1024 || m[1] % 1024 || m[2] % 2 || m[3] % 2
+         || m[4] % 2 || m[5] % 2)
+      return false;
+   return type != RAV1_GLOBAL_ROTZOOM || (m[4] == -m[3] && m[5] == m[2]);
+}
+
+static INLINE int32_t vaapi_av1_round_signed(int64_t value, unsigned shift)
+{
+   int64_t half = (int64_t)1 << (shift - 1);
+   return value < 0 ? -(int32_t)((-value + half) >> shift)
+                    : (int32_t)((value + half) >> shift);
+}
+
+/* AV1 7.11.3.6/7: validated linear coefficients bound every intermediate.
+ * Rounded reciprocal division reproduces all 257 normative Div_Lut entries. */
+static INLINE unsigned vaapi_av1_global_invalid(const int32_t *m)
+{
+   unsigned shift = m[2] >= 65536 ? 16 : 15;
+   unsigned fraction = ((unsigned)m[2] - (1u << shift)
+         + (1u << (shift - 9))) >> (shift - 8);
+   unsigned denominator = 256 + fraction;
+   unsigned reciprocal = (4194304u + denominator / 2) / denominator;
+   int32_t a, b, c, d;
+   a = vaapi_av1_round_signed(m[2] - 65536, 6) * 64;
+   b = vaapi_av1_round_signed(m[3], 6) * 64;
+   c = vaapi_av1_round_signed(
+         (int64_t)m[4] * 65536 * reciprocal, shift + 14);
+   d = m[5] - 65536 - vaapi_av1_round_signed(
+         (int64_t)m[3] * m[4] * reciprocal, shift + 14);
+   c = vaapi_av1_round_signed(c, 6) * 64;
+   d = vaapi_av1_round_signed(d, 6) * 64;
+   if (a < 0) a = -a;
+   if (b < 0) b = -b;
+   if (c < 0) c = -c;
+   if (d < 0) d = -d;
+   return 4 * a + 7 * b >= 65536 || 4 * c + 4 * d >= 65536;
+}
+
 static INLINE bool vaapi_av1_tools_valid(const rav1_hw_picture_t *p)
 {
    static const int maxima[8] = {255, 63, 63, 63, 63, 7, 0, 0};
@@ -114,17 +162,15 @@ static INLINE bool vaapi_av1_tools_valid(const rav1_hw_picture_t *p)
       return false;
    for (i = 0; i < 7; i++)
    {
-      const int32_t *m = p->motion.global.params[i];
-      if (p->motion.global.type[i] > RAV1_GLOBAL_TRANSLATION || m[2] != 65536 ||
-          m[3] || m[4] || m[5] != 65536 || m[0] < -4194304 || m[0] > 4194304 ||
-          m[1] < -4194304 || m[1] > 4194304 ||
-          (!p->motion.global.type[i] && (m[0] || m[1])))
+      if ((p->header.frame_is_intra && p->motion.global.type[i])
+            || !vaapi_av1_global_valid(p->motion.global.type[i],
+                p->motion.global.params[i]))
          return false;
    }
    return true;
 }
 
-/* Main 8/10-bit FRAME OBUs; grain and affine global models are declined.
+/* Main 8/10-bit FRAME OBUs; film grain is declined.
  * Caller storage must not alias borrowed views. No VA calls or leases;
  * admission failure preserves both output buffers. */
 static INLINE bool
@@ -319,6 +365,8 @@ vaapi_av1_picture(vaapi_av1_params_t *out, VASliceParameterBufferAV1 *slices,
    {
       v->ref_frame_idx[i] = (uint8_t)p->setup.ref_frame_idx[i];
       v->wm[i].wmtype = (VAAV1TransformationType)p->motion.global.type[i];
+      v->wm[i].invalid = p->motion.global.type[i] > RAV1_GLOBAL_TRANSLATION
+            ? (uint8_t)vaapi_av1_global_invalid(p->motion.global.params[i]) : 0;
       for (j = 0; j < 6; j++)
          v->wm[i].wmmat[j] = p->motion.global.params[i][j];
    }

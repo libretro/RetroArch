@@ -9,7 +9,7 @@ static rav1_hw_session_t session;
 static vaapi_av1_params_t params, before;
 static VASliceParameterBufferAV1 slices[4096], saved[4096];
 static VASurfaceID surfaces[32];
-static unsigned failures, frames;
+static unsigned failures, frames, models[4], invalid_models;
 static const uint8_t bytes[] = {0x32, 8, 0, 0, 0, 0, 0, 0, 0, 0};
 #define CHECK(x)                                                               \
    do                                                                          \
@@ -301,6 +301,98 @@ static void test_bounds(void)
    }
 }
 
+static void test_global(void)
+{
+   unsigned i;
+   reset();
+   picture.header.frame_type = RAV1_FRAME_INTER;
+   picture.header.frame_is_intra = 0;
+   picture.header.primary_ref_frame = 0;
+   picture.setup.valid_mask = 255;
+   for (i = 0; i < 8; i++)
+   {
+      picture.reference_slots[i] = i + 1;
+      picture.reference_info[i].valid = 1;
+   }
+   for (i = 0; i < 7; i++) picture.setup.ref_frame_idx[i] = i;
+   picture.motion.global.type[0] = RAV1_GLOBAL_ROTZOOM;
+   picture.motion.global.params[0][0] = 1024;
+   picture.motion.global.params[0][1] = -2048;
+   picture.motion.global.params[0][2] = picture.motion.global.params[0][5] = 65538;
+   picture.motion.global.params[0][3] = 2;
+   picture.motion.global.params[0][4] = -2;
+   CHECK(vaapi_av1_picture(&params, slices, 4096, bytes, sizeof(bytes), &seq,
+         &picture, surfaces, 32));
+   CHECK(params.picture.wm[0].wmtype == VAAV1TransformationRotzoom
+         && !params.picture.wm[0].invalid);
+   for (i = 0; i < 6; i++)
+      CHECK(params.picture.wm[0].wmmat[i] == picture.motion.global.params[0][i]);
+   picture.motion.global.params[0][5] = 65536;
+   reject();
+   picture.motion.global.type[0] = RAV1_GLOBAL_AFFINE;
+   picture.motion.global.params[0][2] = 73728;
+   picture.motion.global.params[0][3] = 8192;
+   picture.motion.global.params[0][4] = -8192;
+   picture.motion.global.params[0][5] = 57344;
+   CHECK(vaapi_av1_picture(&params, slices, 4096, bytes, sizeof(bytes), &seq,
+         &picture, surfaces, 32));
+   CHECK(params.picture.wm[0].wmtype == VAAV1TransformationAffine
+         && params.picture.wm[0].invalid == 1);
+   picture.motion.global.params[0][0] = picture.motion.global.params[0][1] = 0;
+   picture.motion.global.params[0][2] = 57604;
+   picture.motion.global.params[0][3] = -3794;
+   picture.motion.global.params[0][4] = 7902;
+   picture.motion.global.params[0][5] = 57624;
+   CHECK(vaapi_av1_picture(&params, slices, 4096, bytes, sizeof(bytes), &seq,
+         &picture, surfaces, 32));
+   CHECK(!params.picture.wm[0].invalid);
+   picture.motion.global.params[0][2]++;
+   reject();
+   picture.motion.global.params[0][2] = 65536;
+   picture.motion.global.params[0][4] = -8194;
+   reject();
+   picture.motion.global.params[0][4] = 0;
+   picture.motion.global.params[0][0] = 1025;
+   reject();
+}
+
+static uint32_t global_seed;
+static uint32_t global_word(void)
+{
+   global_seed = global_seed * UINT32_C(1664525) + UINT32_C(1013904223);
+   return global_seed;
+}
+static void global_corpus(void)
+{
+   int32_t m[6];
+   uint32_t hash = UINT32_C(2166136261);
+   unsigned i, type, invalid, bad = 0;
+   global_seed = UINT32_C(0x734a11);
+   for (i = 0; i < 200000; i++)
+   {
+      type = 2 + (global_word() & 1);
+      m[0] = ((int)(global_word() % 8193) - 4096) * 1024;
+      m[1] = ((int)(global_word() % 8193) - 4096) * 1024;
+      m[2] = 57344 + (int)(global_word() % 8193) * 2;
+      m[3] = -8192 + (int)(global_word() % 8193) * 2;
+      m[4] = -8192 + (int)(global_word() % 8193) * 2;
+      m[5] = 57344 + (int)(global_word() % 8193) * 2;
+      if (type == RAV1_GLOBAL_ROTZOOM)
+      {
+         m[4] = -m[3];
+         m[5] = m[2];
+      }
+      CHECK(vaapi_av1_global_valid(type, m));
+      invalid = vaapi_av1_global_invalid(m);
+      CHECK(invalid <= 1);
+      bad += invalid;
+      hash = (hash ^ (invalid + type * 2)) * UINT32_C(16777619);
+   }
+   /* Frozen normative table oracle, including signed rounding and clipping. */
+   CHECK(bad == 32519);
+   CHECK(hash == UINT32_C(0x4169ab20));
+}
+
 static int map(void *owner, const uint8_t *packet, size_t size,
                const rav1_sequence_t *s, const rav1_hw_picture_t *p)
 {
@@ -314,6 +406,11 @@ static int map(void *owner, const uint8_t *packet, size_t size,
    for (i = 0; i < params.tile_count; i++)
       CHECK(slices[i].slice_data_size && slices[i].slice_data_offset < size &&
             slices[i].slice_data_size <= size - slices[i].slice_data_offset);
+   for (i = 0; i < 7; i++)
+   {
+      models[p->motion.global.type[i]]++;
+      invalid_models += params.picture.wm[i].invalid;
+   }
    frames++;
    return 0;
 }
@@ -386,6 +483,8 @@ static int inspect(const char *path)
    }
    CHECK(ret == 0 && frames);
    free(data);
+   printf("AV1 global identity=%u translation=%u rotzoom=%u affine=%u invalid=%u\n",
+         models[0], models[1], models[2], models[3], invalid_models);
    printf("AV1 VA typed parsed pictures=%u failures=%u\n", frames, failures);
    return failures ? 1 : 0;
 }
@@ -395,6 +494,8 @@ int main(int argc, char **argv)
       return inspect(argv[1]);
    manual();
    test_inter();
+   test_global();
+   global_corpus();
    test_bounds();
    printf("AV1 VA parameters: %u failures\n", failures);
    return failures ? 1 : 0;
