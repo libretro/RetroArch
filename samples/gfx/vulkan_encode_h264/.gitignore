@@ -12,3 +12,7 @@
 /encoder_test.exe
 /worker_test
 /worker_test.exe
+/capture_test
+/capture_test.exe
+/capture_shader_test
+/capture_shader_test.exe
