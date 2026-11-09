@@ -712,17 +712,45 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
             core_self_find(&self) ? &self : NULL);
 }
 
+char *core_sig_path(const char *path)
+{
+   size_t path_len = strlen(path);
+   char *sig_path  = (char*)malloc(path_len + sizeof(".sig"));
+   if (sig_path)
+   {
+      memcpy(sig_path, path, path_len);
+      memcpy(sig_path + path_len, ".sig", sizeof(".sig"));
+   }
+   return sig_path;
+}
+
+int64_t core_sig_read(const char *path, uint8_t *sig)
+{
+   int64_t got     = 0;
+   int64_t sig_len = -1;
+   core_file_t *f  = NULL;
+   char *sig_path  = core_sig_path(path);
+   if (sig_path && (f = core_file_open(sig_path)))
+   {
+      for (sig_len = 0; sig_len < CORE_SIG_MAX_LEN + 1; sig_len += got)
+         if ((got = core_file_read(f, sig + (size_t)sig_len,
+                     CORE_SIG_MAX_LEN + 1 - (size_t)sig_len)) <= 0)
+            break;
+      core_file_close(f);
+      if (got < 0)
+         sig_len = -1;
+   }
+   free(sig_path);
+   return sig_len;
+}
+
 void core_check_hashed(const core_trust_set_t *s,
       const uint8_t *keys, size_t num_keys, struct core_hash *h, int step,
       const char *path, unsigned flags, struct core_check *c)
 {
    uint8_t sig[CORE_SIG_MAX_LEN + 1];
    uint8_t sha256[CORE_SHA256_LEN];
-   int64_t got      = 0;
-   int64_t sig_len  = -1;
-   size_t path_len  = strlen(path);
-   char *sig_path   = NULL;
-   core_file_t *f   = NULL;
+   int64_t sig_len;
    if (step < 0 || h->done != c->rec.id.size)
    {
       core_hash_free(h);
@@ -730,23 +758,7 @@ void core_check_hashed(const core_trust_set_t *s,
       return;
    }
    core_hash_final(h, sha256);
-   /* <core>.sig, read no further than the longest valid one */
-   if ((sig_path = (char*)malloc(path_len + sizeof(".sig"))))
-   {
-      memcpy(sig_path, path, path_len);
-      memcpy(sig_path + path_len, ".sig", sizeof(".sig"));
-      if ((f = core_file_open(sig_path)))
-      {
-         for (sig_len = 0; (size_t)sig_len < sizeof(sig); sig_len += got)
-            if ((got = core_file_read(f, sig + (size_t)sig_len,
-                        sizeof(sig) - (size_t)sig_len)) <= 0)
-               break;
-         core_file_close(f);
-         if (got < 0)
-            sig_len = 0;
-      }
-      free(sig_path);
-   }
+   sig_len = core_sig_read(path, sig);
    core_check_finish(s, keys, num_keys, sha256,
          sig_len < 0 ? NULL : sig, sig_len < 0 ? 0 : (size_t)sig_len,
          flags, c);
