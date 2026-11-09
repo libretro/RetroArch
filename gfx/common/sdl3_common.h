@@ -75,6 +75,18 @@ typedef struct _sdl3_video
    struct video_viewport vp;
    video_info_t video;
 
+   /* The frame texture while it is locked and lent to the core.
+    * scratch holds a window of it pushed at another size or pitch. */
+   struct
+   {
+      void    *pixels;
+      uint8_t *scratch;
+      size_t   scratch_size;
+      size_t   pitch;
+      unsigned dims;
+      unsigned declined_dims;
+   } sw_lend;
+
    sdl3_tex_t frame; /* ptr alignment */
    sdl3_tex_t menu;  /* ptr alignment */
 
