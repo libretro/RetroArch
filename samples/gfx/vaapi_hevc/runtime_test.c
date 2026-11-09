@@ -17,7 +17,7 @@ static vaapi_hevc_runtime_t exports;
 static unsigned loads, unloads, lookups, fd_closes, display_calls, init_calls,
       term_calls;
 static unsigned missing_symbol, failed_load, term_failures;
-static int fd_live, display_live, driver_live, node_kind, display_fail,
+static int fd_live, display_live, driver_live, node_render, display_fail,
       init_fail, bad_version, fd_value;
 static int node_open(const char *path, unsigned major_id, unsigned minor_id)
 {
@@ -36,8 +36,8 @@ static void node_close(int fd)
 static dylib_t load(const char *name)
 {
    static const char *const names[] = {
-         "libva.so.2", "libva-drm.so.2", "libdrm.so.2"};
-   assert(fd_live && loads < 3 && !strcmp(name, names[loads]));
+         "libva.so.2", "libva-drm.so.2"};
+   assert(fd_live && loads < 2 && !strcmp(name, names[loads]));
    if (failed_load == loads + 1)
       return NULL;
    loads++;
@@ -51,17 +51,17 @@ static void unload(dylib_t lib)
 }
 static VADisplay get_display(int fd)
 {
-   assert(fd_live && fd == fd_value && loads == 3 && !unloads);
+   assert(fd_live && fd == fd_value && loads == 2 && !unloads);
    display_calls++;
    if (display_fail)
       return NULL;
    display_live = 1;
    return (VADisplay)(uintptr_t)1;
 }
-static int node_type(int fd)
+static bool node_is_render(int fd)
 {
-   assert(fd_live && fd == fd_value);
-   return node_kind;
+   assert(fd_live && fd == fd_value && loads == 2);
+   return node_render != 0;
 }
 static VAStatus initialize(VADisplay display, int *major_out, int *minor_out)
 {
@@ -120,7 +120,6 @@ static function_t symbol(dylib_t lib, const char *name)
    EXPORTED("vaGetDisplayDRM", get_display, 2)
    EXPORTED("vaInitialize", initialize, 1)
    EXPORTED("vaTerminate", terminate, 1)
-   EXPORTED("drmGetNodeTypeFromFd", node_type, 3)
    EXPORTED("vaMaxNumProfiles", session.ops.max_profiles, 1)
    EXPORTED("vaQueryConfigProfiles", session.ops.profiles, 1)
    EXPORTED("vaMaxNumEntrypoints", session.ops.max_entrypoints, 1)
@@ -138,7 +137,7 @@ static function_t symbol(dylib_t lib, const char *name)
    return NULL;
 }
 static const vaapi_hevc_runtime_io_t io = {
-      node_open, node_close, load, symbol, unload};
+      node_open, node_close, node_is_render, load, symbol, unload};
 static void runtime_reset(void)
 {
    assert(!runtime.active && !fd_live && !display_live && !driver_live);
@@ -150,11 +149,10 @@ static void runtime_reset(void)
    exports.get_display = get_display;
    exports.initialize  = initialize;
    exports.terminate   = terminate;
-   exports.node_type   = node_type;
    loads = unloads = lookups = fd_closes = display_calls = init_calls =
          term_calls                                      = 0;
    missing_symbol = failed_load = term_failures = 0;
-   node_kind                                    = VAAPI_HEVC_RENDER_NODE;
+   node_render                                  = 1;
    display_fail = init_fail = bad_version = 0;
    fd_value                               = 7;
 }
@@ -168,12 +166,12 @@ static void runtime_cases(void)
    unsigned i, before;
    runtime_reset();
    assert(runtime_open() && runtime.ready && runtime.session.ready
-         && lookups == 22);
+         && lookups == 21);
    assert(vaapi_hevc_runtime_close(&runtime) && term_calls == 1
-         && fd_closes == 1 && unloads == 3);
+         && fd_closes == 1 && unloads == 2);
    assert(vaapi_hevc_runtime_close(&runtime) && term_calls == 1
          && fd_closes == 1);
-   for (i = 1; i <= 22; i++)
+   for (i = 1; i <= 21; i++)
    {
       runtime_reset();
       missing_symbol = i;
@@ -181,7 +179,7 @@ static void runtime_cases(void)
       assert(vaapi_hevc_runtime_close(&runtime) && loads == unloads
             && fd_closes == 1);
    }
-   for (i = 1; i <= 3; i++)
+   for (i = 1; i <= 2; i++)
    {
       runtime_reset();
       failed_load = i;
@@ -190,7 +188,7 @@ static void runtime_cases(void)
             && fd_closes == 1);
    }
    runtime_reset();
-   node_kind = 0;
+   node_render = 0;
    assert(!runtime_open() && !display_calls);
    assert(vaapi_hevc_runtime_close(&runtime) && !term_calls);
    runtime_reset();

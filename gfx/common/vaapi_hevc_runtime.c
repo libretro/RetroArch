@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
+#include "vaapi_drm_node.h"
 #define VAAPI_HEVC_NATIVE_RUNTIME 1
 static int vaapi_hevc_open_node(
       const char *path, unsigned major_id, unsigned minor_id)
@@ -45,7 +46,8 @@ bool vaapi_hevc_runtime_open(vaapi_hevc_runtime_t *r, const char *path,
 {
 #ifdef VAAPI_HEVC_NATIVE_RUNTIME
    static const vaapi_hevc_runtime_io_t io = {vaapi_hevc_open_node,
-         vaapi_hevc_close_node, dylib_load, dylib_proc, dylib_close};
+         vaapi_hevc_close_node, vaapi_drm_fd_is_render_node, dylib_load,
+         dylib_proc, dylib_close};
    return vaapi_hevc_runtime_open_with_io(r, path, major_id, minor_id, width,
          height, depth, slots, slice_mode, &io);
 #else
@@ -75,7 +77,8 @@ static bool vaapi_runtime_open_with_io(vaapi_hevc_runtime_t *r,
       return false;
 #endif
    if ((vp9 && av1) || !r || r->active || !path || !*path || !io
-         || !io->open_node || !io->close_node || !io->load || !io->symbol
+         || !io->open_node || !io->close_node || !io->render_node || !io->load
+         || !io->symbol
          || !io->unload || width < (frame ? 1u : 8u)
          || width > (av1 ? 65536u : 65535u) || height < (frame ? 1u : 8u)
          || height > (av1 ? 65536u : 65535u)
@@ -101,9 +104,6 @@ static bool vaapi_runtime_open_with_io(vaapi_hevc_runtime_t *r,
    r->va_drm = r->io.load("libva-drm.so.2");
    if (!r->va_drm)
       return false;
-   r->drm = r->io.load("libdrm.so.2");
-   if (!r->drm)
-      return false;
 #define VAAPI_HEVC_LOAD(member, library, name)                                 \
    do                                                                          \
    {                                                                           \
@@ -115,7 +115,6 @@ static bool vaapi_runtime_open_with_io(vaapi_hevc_runtime_t *r,
    VAAPI_HEVC_LOAD(get_display, va_drm, "vaGetDisplayDRM");
    VAAPI_HEVC_LOAD(initialize, va, "vaInitialize");
    VAAPI_HEVC_LOAD(terminate, va, "vaTerminate");
-   VAAPI_HEVC_LOAD(node_type, drm, "drmGetNodeTypeFromFd");
    VAAPI_HEVC_LOAD(session.ops.max_profiles, va, "vaMaxNumProfiles");
    VAAPI_HEVC_LOAD(session.ops.profiles, va, "vaQueryConfigProfiles");
    VAAPI_HEVC_LOAD(session.ops.max_entrypoints, va, "vaMaxNumEntrypoints");
@@ -137,7 +136,7 @@ static bool vaapi_runtime_open_with_io(vaapi_hevc_runtime_t *r,
    VAAPI_HEVC_LOAD(submit.sync, va, "vaSyncSurface2");
 #undef VAAPI_HEVC_LOAD
    r->error = VA_STATUS_ERROR_INVALID_DISPLAY;
-   if (r->node_type(r->fd) != VAAPI_HEVC_RENDER_NODE)
+   if (!r->io.render_node(r->fd))
       return false;
    r->display = r->get_display(r->fd);
    if (!r->display)
@@ -187,7 +186,8 @@ bool vaapi_vp9_runtime_open(vaapi_vp9_runtime_t *r, const char *path,
 {
 #ifdef VAAPI_HEVC_NATIVE_RUNTIME
    static const vaapi_vp9_runtime_io_t io = {vaapi_hevc_open_node,
-         vaapi_hevc_close_node, dylib_load, dylib_proc, dylib_close};
+         vaapi_hevc_close_node, vaapi_drm_fd_is_render_node, dylib_load,
+         dylib_proc, dylib_close};
    return vaapi_vp9_runtime_open_with_io(
          r, path, major_id, minor_id, width, height, depth, slots, &io);
 #else
@@ -217,7 +217,8 @@ bool vaapi_av1_runtime_open(vaapi_av1_runtime_t *r, const char *path,
 {
 #ifdef VAAPI_HEVC_NATIVE_RUNTIME
    static const vaapi_av1_runtime_io_t io = {vaapi_hevc_open_node,
-         vaapi_hevc_close_node, dylib_load, dylib_proc, dylib_close};
+         vaapi_hevc_close_node, vaapi_drm_fd_is_render_node, dylib_load,
+         dylib_proc, dylib_close};
    return vaapi_av1_runtime_open_with_io(
          r, path, major_id, minor_id, width, height, depth, slots, &io);
 #else
@@ -261,8 +262,6 @@ bool vaapi_hevc_runtime_close(vaapi_hevc_runtime_t *r)
       }
       r->display = NULL;
    }
-   if (r->drm)
-      r->io.unload(r->drm);
    if (r->va_drm)
       r->io.unload(r->va_drm);
    if (r->va)

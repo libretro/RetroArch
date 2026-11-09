@@ -5,7 +5,8 @@ VULKAN_LIBS := -lvulkan-1
 VAAPI_CFLAGS ?= $(shell pkg-config --cflags libva)
 else
 VULKAN_LIBS := -lvulkan
-VAAPI_CFLAGS ?= $(shell pkg-config --cflags libva libdrm)
+VAAPI_CFLAGS ?= $(shell pkg-config --cflags libva)
+ABI_CFLAGS ?= $(patsubst -I%,-isystem %,$(shell pkg-config --cflags libdrm))
 endif
 CFLAGS += -DHAVE_DYLIB -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long \
  -Wframe-larger-than=2048 -I../../../libretro-common/include -I../../../gfx/include $(VAAPI_CFLAGS)
@@ -75,8 +76,8 @@ backend_nothreads_test$(EXE): backend_disabled_test.c ../../../gfx/common/vaapi_
 	$(CC) $(CFLAGS) backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c -o $@ $(LDFLAGS) -lm
 backend_volatile_test$(EXE): backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS -DRETRO_ATOMIC_FORCE_VOLATILE -DRETRO_ATOMIC_SUPPRESS_WARNING backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c -o $@ $(LDFLAGS) -lm
-node_test$(EXE): node_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h
-	$(CC) $(CFLAGS) -DHAVE_THREADS -ffunction-sections -fdata-sections node_test.c -o $@ $(LDFLAGS) -Wl,--gc-sections
+node_test$(EXE): node_test.c ../../../gfx/common/vaapi_drm_node.h
+	$(CC) $(CFLAGS) -D_DEFAULT_SOURCE node_test.c -o $@ $(LDFLAGS)
 
 backend_test$(EXE): backend_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h ../../../gfx/drivers/vulkan_vaapi_backend.h ../../../gfx/common/vulkan_drm_identity.h $(BACKEND_SOURCES)
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS -D_DEFAULT_SOURCE -pthread backend_test.c $(BACKEND_SOURCES) -o $@ $(LDFLAGS) -lm
@@ -138,7 +139,7 @@ native_probe: native_probe.c ../../../gfx/common/vaapi_hevc_export.c ../../../gf
 session_test$(EXE): session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
 	$(CC) $(CFLAGS) session_test.c -o $@ $(LDFLAGS)
 abi-check: abi.c ../../../gfx/common/vaapi_hevc_session.h
-	$(CC) $(CFLAGS) -fsyntax-only abi.c
+	$(CC) $(CFLAGS) $(ABI_CFLAGS) -fsyntax-only abi.c
 test$(EXE): test.c ../../../gfx/common/vaapi_hevc_packet.h ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../gfx/common/vaapi_hevc.h \
  ../../../libretro-common/include/formats/rh265.h \
  ../../../libretro-common/formats/h265/rh265.c \
@@ -247,7 +248,7 @@ native_decode: weighted_data.h
 
 NATIVE_IMPORT_SOURCES := ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../libretro-common/formats/image/image_yuv_blit.c
 native_import: $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) native_import.h native_import_gpu.h native_rgb.h native_pixels.h weighted_data.h rh265_test.o
-	$(CC) $(CFLAGS) -DNATIVE_VULKAN_IMPORT $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) rh265_test.o -o $@ $(LDFLAGS) -ldl -lva -lvulkan -ldrm -lm
+	$(CC) $(CFLAGS) -DNATIVE_VULKAN_IMPORT $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) rh265_test.o -o $@ $(LDFLAGS) -ldl -lva -lvulkan -lm
 native-import-check: native_import
 	./native_import "$(VAAPI_RENDER_NODE)"
 .PHONY: native-import-check

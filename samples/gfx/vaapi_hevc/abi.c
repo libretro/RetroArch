@@ -24,11 +24,6 @@ void vaapi_hevc_export_sdk_signature(vaapi_hevc_export_ops_t *ops)
 {
    ops->surface = vaExportSurfaceHandle;
 }
-#ifdef __linux__
-#include <xf86drm.h>
-typedef char vaapi_render_node_matches_sdk
-      [(VAAPI_HEVC_RENDER_NODE == DRM_NODE_RENDER) ? 1 : -1];
-#endif
 void vaapi_hevc_runtime_sdk_signatures(vaapi_hevc_runtime_t *runtime)
 {
    runtime->submit.create  = vaCreateBuffer;
@@ -42,9 +37,6 @@ void vaapi_hevc_runtime_sdk_signatures(vaapi_hevc_runtime_t *runtime)
 #endif
    runtime->initialize = vaInitialize;
    runtime->terminate  = vaTerminate;
-#ifdef __linux__
-   runtime->node_type = drmGetNodeTypeFromFd;
-#endif
 }
 #ifdef __linux__
 #include <drm_fourcc.h>

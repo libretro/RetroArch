@@ -276,7 +276,7 @@ static void owner_failures(void)
    owner_sequence.film_grain_params_present = 0;
    owner_alloc_fail = 1;
    assert(!owner_open() && !owner && !loads);
-   for (i = 1; i <= 3; i++)
+   for (i = 1; i <= 2; i++)
    {
       owner_setup(8);
       failed_load = i;

@@ -12,61 +12,8 @@
 #include <rthreads/retro_eventcount.h>
 
 #ifndef VAAPI_HEVC_NODE_PATH
-#define VAAPI_HEVC_NODE_PATH vaapi_hevc_backend_node_path
-#if defined(__linux__) && !defined(__ANDROID__) && defined(NEED_DYNAMIC)
-#include <sys/sysmacros.h>
-#include <xf86drm.h>
-
-static bool vaapi_hevc_backend_node_path(
-      unsigned major_id, unsigned minor_id, char *path, size_t capacity)
-{
-   dylib_t library = dylib_load("libdrm.so.2");
-   int (*get_device)(dev_t, uint32_t, drmDevicePtr *);
-   void (*free_device)(drmDevicePtr *);
-   drmDevicePtr device = NULL;
-   function_t symbol;
-   size_t length;
-   bool result = false;
-   if (!library)
-      return false;
-   symbol = dylib_proc(library, "drmGetDeviceFromDevId");
-   if (!symbol || sizeof(symbol) != sizeof(get_device))
-      goto finish;
-   memcpy(&get_device, &symbol, sizeof(get_device));
-   symbol = dylib_proc(library, "drmFreeDevice");
-   if (!symbol || sizeof(symbol) != sizeof(free_device))
-      goto finish;
-   memcpy(&free_device, &symbol, sizeof(free_device));
-   if (!get_device(makedev(major_id, minor_id), 0, &device) && device)
-   {
-      if ((device->available_nodes & (1 << DRM_NODE_RENDER)) && device->nodes
-            && device->nodes[DRM_NODE_RENDER])
-      {
-         length = strlen(device->nodes[DRM_NODE_RENDER]);
-         if (length && length < capacity)
-         {
-            memcpy(path, device->nodes[DRM_NODE_RENDER], length + 1);
-            result = true;
-         }
-      }
-   }
-   if (device)
-      free_device(&device);
-finish:
-   dylib_close(library);
-   return result;
-}
-#else
-static bool vaapi_hevc_backend_node_path(
-      unsigned major_id, unsigned minor_id, char *path, size_t capacity)
-{
-   (void)major_id;
-   (void)minor_id;
-   (void)path;
-   (void)capacity;
-   return false;
-}
-#endif
+#include "vaapi_drm_node.h"
+#define VAAPI_HEVC_NODE_PATH vaapi_drm_render_path
 #endif
 
 typedef struct vaapi_hevc_backend_session

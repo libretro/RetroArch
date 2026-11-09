@@ -1,7 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team.
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../../../gfx/common/vaapi_hevc_vulkan_frame.h"
-#include <xf86drm.h>
 
 static VkInstance import_instance;
 static VkPhysicalDevice import_gpu;
@@ -15,7 +14,7 @@ static PFN_vkDestroyDebugUtilsMessengerEXT import_destroy_messenger;
 
 static bool native_import_open(unsigned major_id, unsigned minor_id)
 {
-   drmDevicePtr drm = NULL;
+   static char render_path[32];
    static struct stat status;
    static VkPhysicalDevice devices[32];
    static VkQueueFamilyProperties families[64];
@@ -37,16 +36,10 @@ static bool native_import_open(unsigned major_id, unsigned minor_id)
    unsigned i, family;
    uint32_t count = 32, queues;
    float priority = 1;
-   bool render;
-   if (drmGetDeviceFromDevId(makedev(major_id, minor_id), 0, &drm) || !drm)
-      return false;
-   render = (drm->available_nodes & (1 << DRM_NODE_RENDER)) && drm->nodes
-         && drm->nodes[DRM_NODE_RENDER]
-         && !stat(drm->nodes[DRM_NODE_RENDER], &status)
-         && S_ISCHR(status.st_mode) && major(status.st_rdev) == major_id
-         && minor(status.st_rdev) == minor_id;
-   drmFreeDevice(&drm);
-   if (!render)
+   sprintf(render_path, "/dev/dri/renderD%u", minor_id);
+   if (stat(render_path, &status) || !S_ISCHR(status.st_mode)
+         || major(status.st_rdev) != major_id
+         || minor(status.st_rdev) != minor_id)
       return false;
    memset(&app, 0, sizeof(app));
    app.sType      = VK_STRUCTURE_TYPE_APPLICATION_INFO;

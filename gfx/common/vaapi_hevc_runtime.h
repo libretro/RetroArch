@@ -5,15 +5,12 @@
 #include "vaapi_hevc_submit.h"
 #include <dynamic/dylib.h>
 RETRO_BEGIN_DECLS
-enum
-{
-   VAAPI_HEVC_RENDER_NODE = 2
-};
 typedef struct vaapi_hevc_runtime_io
 {
    /* Returns an owned CLOEXEC character-device FD matching the renderer IDs. */
    int (*open_node)(const char *, unsigned, unsigned);
    void (*close_node)(int);
+   bool (*render_node)(int);
    dylib_t (*load)(const char *);
    function_t (*symbol)(dylib_t, const char *);
    void (*unload)(dylib_t);
@@ -23,12 +20,11 @@ typedef struct vaapi_hevc_runtime
    vaapi_hevc_session_t session;
    vaapi_hevc_submit_ops_t submit;
    vaapi_hevc_runtime_io_t io;
-   dylib_t va, va_drm, drm;
+   dylib_t va, va_drm;
    VADisplay display;
    VADisplay (*get_display)(int);
    VAStatus (*initialize)(VADisplay, int *, int *);
    VAStatus (*terminate)(VADisplay);
-   int (*node_type)(int);
    VAStatus error;
    int fd, major_version, minor_version;
    bool active, ready, closing, terminating, terminated;

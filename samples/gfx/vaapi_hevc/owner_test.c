@@ -107,7 +107,7 @@ static function_t owner_symbol(dylib_t lib, const char *name)
 }
 
 static const vaapi_hevc_runtime_io_t owner_io = {
-      owner_node_open, node_close, load, owner_symbol, unload};
+      owner_node_open, node_close, node_is_render, load, owner_symbol, unload};
 
 static void owner_reset(unsigned bits)
 {
@@ -140,7 +140,7 @@ static bool owner_open(void)
 static void owner_failures(unsigned bits)
 {
    unsigned i;
-   for (i = 1; i <= 22; i++)
+   for (i = 1; i <= 21; i++)
    {
       owner_reset(bits);
       missing_symbol = i;
@@ -148,7 +148,7 @@ static void owner_failures(unsigned bits)
       assert(vaapi_hevc_owner_retire(test_owner));
       assert(loads == unloads && !fd_live && !driver_live && !display_live);
    }
-   for (i = 1; i <= 3; i++)
+   for (i = 1; i <= 2; i++)
    {
       owner_reset(bits);
       failed_load = i;
@@ -167,11 +167,11 @@ static void owner_failures(unsigned bits)
    owner_reset(bits);
    assert(!vaapi_hevc_owner_open_with_io(&test_owner, "/render-test", 226, 128,
          &owner_params, &owner_color, 0, 4, 4096, &owner_io, NULL, &owner_ops));
-   assert(test_owner && !owner_ops.decoder && loads == 3);
+   assert(test_owner && !owner_ops.decoder && loads == 2);
    assert(vaapi_hevc_owner_retire(test_owner) && !fd_live);
    owner_reset(bits);
    owner_params.crop_left = 1;
-   assert(!owner_open() && test_owner && !owner_ops.decoder && loads == 3);
+   assert(!owner_open() && test_owner && !owner_ops.decoder && loads == 2);
    assert(vaapi_hevc_owner_retire(test_owner) && !fd_live && !driver_live);
    owner_reset(bits);
    owner_yuv = IMAGE_YUV_FLAG_VU;

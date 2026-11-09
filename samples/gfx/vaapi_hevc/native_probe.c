@@ -35,8 +35,7 @@ int main(void)
    assert(!stat("/dev/null", &status));
    assert(!vaapi_hevc_runtime_open(&runtime, "/dev/null", major(status.st_rdev),
          minor(status.st_rdev), 64, 64, 8, 4, VA_DEC_SLICE_MODE_NORMAL));
-   assert(runtime.fd >= 0 && runtime.va && runtime.va_drm && runtime.drm
-         && !runtime.display);
+   assert(runtime.fd >= 0 && runtime.va && runtime.va_drm && !runtime.display);
    assert(fcntl(runtime.fd, F_GETFD) & FD_CLOEXEC);
    /* Binding-only fixture: no display has been initialized. */
    binding       = runtime;
