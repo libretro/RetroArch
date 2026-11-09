@@ -52,6 +52,8 @@ typedef struct kwin_output_device
     * only updates `current` some time after applying, so a request made
     * in that window must be compared against this, not against `current` */
    struct kde_output_device_mode_v2 *requested;
+   /* The newest request; only its answer ends the pending state */
+   struct kde_output_configuration_v2 *latest_config;
    kwin_output_mode_t               *modes;
    unsigned                          nmodes;
    unsigned                          capacity;

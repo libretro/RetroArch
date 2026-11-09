@@ -99,8 +99,6 @@ static void kwin_output_device_current_mode(void *data,
    kwin_output_device_t *dev = (kwin_output_device_t*)data;
    (void)obj;
    dev->current = mode;
-   if (dev->requested == mode)
-      dev->requested = NULL;
 }
 
 static void kwin_output_device_mode(void *data,
@@ -194,8 +192,11 @@ static void kwin_output_configuration_applied(void *data,
       struct kde_output_configuration_v2 *obj)
 {
    kwin_output_device_t *dev = (kwin_output_device_t*)data;
-   if (dev)
-      dev->requested = NULL;
+   if (dev->latest_config == obj)
+   {
+      dev->latest_config = NULL;
+      dev->requested     = NULL;
+   }
    RARCH_LOG("[Wayland] KWin applied the mode switch.\n");
    kde_output_configuration_v2_destroy(obj);
 }
@@ -204,8 +205,11 @@ static void kwin_output_configuration_failed(void *data,
       struct kde_output_configuration_v2 *obj)
 {
    kwin_output_device_t *dev = (kwin_output_device_t*)data;
-   if (dev)
-      dev->requested = NULL;
+   if (dev->latest_config == obj)
+   {
+      dev->latest_config = NULL;
+      dev->requested     = NULL;
+   }
    RARCH_WARN("[Wayland] KWin refused the mode switch.\n");
    kde_output_configuration_v2_destroy(obj);
 }
@@ -536,16 +540,19 @@ bool kwin_outputs_set_mode(kwin_outputs_t *kw, const char *connector,
 {
    int pick;
    struct kde_output_configuration_v2 *config;
+   struct kde_output_device_mode_v2 *target;
    const kwin_output_mode_t *best = NULL;
    kwin_output_device_t *dev      = NULL;
 
    if (!kw || !kw->management || !(dev = kwin_pick(kw, connector)))
       return false;
+   /* What the output will be once pending requests land */
+   target = dev->requested ? dev->requested : dev->current;
    if (!width || !height)
    {
       unsigned i;
       for (i = 0; i < dev->nmodes; i++)
-         if (dev->modes[i].mode == dev->current)
+         if (dev->modes[i].mode == target)
          {
             if (!width)
                width  = (unsigned)dev->modes[i].width;
@@ -561,8 +568,7 @@ bool kwin_outputs_set_mode(kwin_outputs_t *kw, const char *connector,
       return false;
    }
    best = &dev->modes[pick];
-   /* What the output will be once pending requests land, else what it is */
-   if (best->mode == (dev->requested ? dev->requested : dev->current))
+   if (best->mode == target)
       return true;
 
    if (!(config = kde_output_management_v2_create_configuration(
@@ -572,7 +578,8 @@ bool kwin_outputs_set_mode(kwin_outputs_t *kw, const char *connector,
          &kwin_output_configuration_listener, dev);
    kde_output_configuration_v2_mode(config, dev->device, best->mode);
    kde_output_configuration_v2_apply(config);
-   dev->requested = best->mode;
+   dev->requested     = best->mode;
+   dev->latest_config = config;
    RARCH_LOG("[Wayland] Asked KWin for %dx%d at %.3f Hz on %s.\n",
          best->width, best->height, (float)best->refresh_mhz / 1000.0f,
          dev->name[0] ? dev->name : "its output");
