@@ -5441,8 +5441,13 @@ static void d3d9_hlsl_ensure_compiler(void)
          dll = LoadLibraryA(names[i]);
       if (dll)
       {
-         d3d9_pCompile    = (PFN_D3DCOMPILE)GetProcAddress(dll, "D3DCompile");
-         d3d9_pPreprocess = (PFN_D3DPREPROCESS)GetProcAddress(dll, "D3DPreprocess");
+         /* Through void (*)(void), which casts to any function pointer
+          * without -Wcast-function-type taking FARPROC's () for a
+          * mismatch */
+         d3d9_pCompile    = (PFN_D3DCOMPILE)(void (*)(void))
+            GetProcAddress(dll, "D3DCompile");
+         d3d9_pPreprocess = (PFN_D3DPREPROCESS)(void (*)(void))
+            GetProcAddress(dll, "D3DPreprocess");
          if (d3d9_pCompile)
          {
             RARCH_LOG("[D3D9 HLSL] Loaded D3DCompile from %s.\n", names[i]);
