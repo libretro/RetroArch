@@ -695,7 +695,8 @@ void vulkan_context_finish_frames(gfx_ctx_vulkan_data_t *vk);
 #ifdef __APPLE__
 /* Returns the version string of the MoltenVK implementation in use,
  * captured at Vulkan context creation. Returns an empty string if no
- * Vulkan context has been initialized yet. */
+ * Vulkan context has been initialized yet, or if its driver is not
+ * MoltenVK. */
 const char *vulkan_get_moltenvk_version(void);
 #endif
 
