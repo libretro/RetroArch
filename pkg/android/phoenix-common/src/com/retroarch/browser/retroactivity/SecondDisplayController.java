@@ -71,7 +71,10 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   /* android_second_shared_t's layout: filled just before the native
    * call that names it, read in place there */
   private static final int SHARED_TOUCHES_MAX = 16;
-  private static final int SHARED_SIZE        = SHARED_TOUCHES_MAX * 8;
+  private static final int SHARED_DISPLAYS_AT = SHARED_TOUCHES_MAX * 8;
+  private static final int SHARED_DISPLAYS_MAX = 8;
+  private static final int SHARED_SIZE        =
+      SHARED_DISPLAYS_AT + SHARED_DISPLAYS_MAX * 16;
   private static final ByteBuffer SHARED = ByteBuffer
       .allocateDirect(SHARED_SIZE).order(ByteOrder.nativeOrder());
   private static final int REFOCUS_FIRST_MS   = 250;
@@ -664,13 +667,20 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
 
   private void publish(DisplayList list)
   {
-    int[] flags = list.flags.clone();
-    for (int i = 0; i < flags.length; i++)
-      if (failedIds.get(list.ids[i]))
-        flags[i] |= FLAG_REFUSED;
+    int count = Math.min(list.ids.length, SHARED_DISPLAYS_MAX);
+    for (int i = 0; i < count; i++)
+    {
+      int at = SHARED_DISPLAYS_AT + i * 16;
+      int w  = list.widths[i];
+      int h  = list.heights[i];
+      SHARED.putInt(at, list.ids[i]);
+      SHARED.putInt(at + 4, list.connections[i]);
+      SHARED.putInt(at + 8, failedIds.get(list.ids[i])
+          ? list.flags[i] | FLAG_REFUSED : list.flags[i]);
+      SHARED.putInt(at + 12, w > 0 && h > 0 ? (w << 16) | h : 0);
+    }
     published = list;
-    nativeDisplaysChanged(list.ids, list.connections, flags, list.widths,
-        list.heights, list.names, list.models);
+    nativeDisplaysChanged(count, list.names, list.models);
   }
 
   private void showOn(int displayId)
@@ -961,8 +971,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     }
   }
 
-  static native void nativeDisplaysChanged(int[] ids, int[] connections,
-      int[] flags, int[] widths, int[] heights, String[] names,
+  static native void nativeDisplaysChanged(int count, String[] names,
       String[] models);
   static native int nativeSurfaceChanged(Surface surface, int width,
       int height, int request);

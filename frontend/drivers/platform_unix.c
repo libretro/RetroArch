@@ -373,6 +373,9 @@ typedef struct android_second_shared
 {
    /* For each pointer: VIDEO_POS_PACK, then id << 1 | down */
    int32_t touches[MAX_TOUCH * 2];
+   /* For each display: id, connection, ANDROID_DISPLAY_ flags, and
+    * VIDEO_SCALE_PACK of its size, 0 where unknown */
+   int32_t displays[VIDEO_WINDOW_DISPLAYS_MAX * 4];
 } android_second_shared_t;
 
 static android_second_shared_t *android_second_shared = NULL;
@@ -399,60 +402,42 @@ static void android_jni_string_at(JNIEnv *env, jobjectArray strings,
 }
 
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeDisplaysChanged(
-      JNIEnv *env, jclass clazz, jintArray ids, jintArray connections,
-      jintArray flags, jintArray widths, jintArray heights,
-      jobjectArray names, jobjectArray models)
+      JNIEnv *env, jclass clazz, jint count, jobjectArray names,
+      jobjectArray models)
 {
    video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
-   jint id[VIDEO_WINDOW_DISPLAYS_MAX];
-   jint conn[VIDEO_WINDOW_DISPLAYS_MAX];
-   jint bits[VIDEO_WINDOW_DISPLAYS_MAX];
-   jint w[VIDEO_WINDOW_DISPLAYS_MAX];
-   jint h[VIDEO_WINDOW_DISPLAYS_MAX];
-   jsize i, count;
+   jint i;
    struct android_app *android_app = g_android_early;
+   const android_second_shared_t *shared = android_second_shared;
 
-   if (     !android_app || !ids || !connections || !flags || !widths
-         || !heights || !names || !models)
+   if (!android_app || !shared || !names || !models)
       return;
-   count = (*env)->GetArrayLength(env, connections);
    if (count > VIDEO_WINDOW_DISPLAYS_MAX)
       count = VIDEO_WINDOW_DISPLAYS_MAX;
-   if (     (*env)->GetArrayLength(env, ids)     < count
-         || (*env)->GetArrayLength(env, flags)   < count
-         || (*env)->GetArrayLength(env, widths)  < count
-         || (*env)->GetArrayLength(env, heights) < count
-         || (*env)->GetArrayLength(env, names)   < count
-         || (*env)->GetArrayLength(env, models)  < count)
-      return;
-   (*env)->GetIntArrayRegion(env, ids, 0, count, id);
-   (*env)->GetIntArrayRegion(env, connections, 0, count, conn);
-   (*env)->GetIntArrayRegion(env, flags, 0, count, bits);
-   (*env)->GetIntArrayRegion(env, widths, 0, count, w);
-   (*env)->GetIntArrayRegion(env, heights, 0, count, h);
 
    for (i = 0; i < count; i++)
    {
       video_window_display_t *d = &list[i];
+      const int32_t *fields     = &shared->displays[i * 4];
+      int32_t bits              = fields[2];
       memset(d, 0, sizeof(*d));
       d->ordinal    = (unsigned)i + 1;
-      d->id         = id[i];
-      d->connection = (conn[i] >= 0
-            && conn[i] <= VIDEO_WINDOW_CONNECTION_TRANSITIVE)
-         ? (unsigned)conn[i] : VIDEO_WINDOW_CONNECTION_UNKNOWN;
-      d->own        = (bits[i] & ANDROID_DISPLAY_OWN)      != 0;
-      d->valid      = (bits[i] & ANDROID_DISPLAY_VALID)    != 0;
-      d->on         = (bits[i] & ANDROID_DISPLAY_ON)       != 0;
-      d->is_private = (bits[i] & ANDROID_DISPLAY_PRIVATE)  != 0;
-      d->physical   = (bits[i] & ANDROID_DISPLAY_PHYSICAL) != 0;
-      d->refused    = (bits[i] & ANDROID_DISPLAY_REFUSED)  != 0;
-      d->is_default = (bits[i] & ANDROID_DISPLAY_DEFAULT)  != 0;
-      d->type       = (bits[i] & ANDROID_DISPLAY_EXTERNAL)
+      d->id         = fields[0];
+      d->connection = (fields[1] >= 0
+            && fields[1] <= VIDEO_WINDOW_CONNECTION_TRANSITIVE)
+         ? (unsigned)fields[1] : VIDEO_WINDOW_CONNECTION_UNKNOWN;
+      d->own        = (bits & ANDROID_DISPLAY_OWN)      != 0;
+      d->valid      = (bits & ANDROID_DISPLAY_VALID)    != 0;
+      d->on         = (bits & ANDROID_DISPLAY_ON)       != 0;
+      d->is_private = (bits & ANDROID_DISPLAY_PRIVATE)  != 0;
+      d->physical   = (bits & ANDROID_DISPLAY_PHYSICAL) != 0;
+      d->refused    = (bits & ANDROID_DISPLAY_REFUSED)  != 0;
+      d->is_default = (bits & ANDROID_DISPLAY_DEFAULT)  != 0;
+      d->type       = (bits & ANDROID_DISPLAY_EXTERNAL)
          ? VIDEO_WINDOW_TYPE_EXTERNAL
-         : (bits[i] & ANDROID_DISPLAY_INTERNAL)
+         : (bits & ANDROID_DISPLAY_INTERNAL)
          ? VIDEO_WINDOW_TYPE_INTERNAL : VIDEO_WINDOW_TYPE_UNKNOWN;
-      d->dims       = (w[i] > 0 && h[i] > 0)
-         ? VIDEO_SCALE_PACK(w[i], h[i]) : 0;
+      d->dims       = (unsigned)fields[3];
       android_jni_string_at(env, names, i, d->name, sizeof(d->name));
       android_jni_string_at(env, models, i, d->model, sizeof(d->model));
    }
