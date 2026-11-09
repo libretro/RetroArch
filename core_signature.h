@@ -326,9 +326,14 @@ void core_check_finish(const core_trust_set_t *s,
       const uint8_t *keys, size_t num_keys,
       const uint8_t *sha256, const uint8_t *sig_buf, size_t sig_len,
       unsigned flags, struct core_check *c);
+/* core_check_finish() once h has read the core at path to its end
+ * (step 0) or failed (step -1), with path's .sig. Frees what h holds. */
+void core_check_hashed(const core_trust_set_t *s,
+      const uint8_t *keys, size_t num_keys, struct core_hash *h, int step,
+      const char *path, unsigned flags, struct core_check *c);
 /* The whole check in one call, hashing without a pause. It opens path
  * itself, so it suits a file nothing else can replace (a staged install,
- * tests); a load check runs core_check_quick() and core_check_finish() on
+ * tests); a load check runs core_check_quick() and core_check_hashed() on
  * the file it loads from. */
 enum core_check_result core_check_file(const core_trust_set_t *s,
       const uint8_t *keys, size_t num_keys,
