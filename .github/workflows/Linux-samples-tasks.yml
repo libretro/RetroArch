@@ -1062,9 +1062,13 @@ jobs:
              RUNNER="timeout 600" check
           make clean && TSAN_OPTIONS=halt_on_error=1 \
              make -j$(nproc) SANITIZER=thread RUNNER="timeout 600" check
+          # As configure --enable-core_signing_test_key builds it
+          make clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make -j$(nproc) SANITIZER=address,undefined TEST_KEY=1 \
+             RUNNER="timeout 600" check
           make clean
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
-          make -j$(nproc) CC=x86_64-w64-mingw32-gcc \
+          make -j$(nproc) CC=x86_64-w64-mingw32-gcc TEST_KEY=1 \
              RUNNER="timeout 600 wine" check
           make clean
 
