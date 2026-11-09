@@ -1157,8 +1157,9 @@ static size_t menu_action_setting_disp_set_label_core_content_entry(
 {
    const char *alt = list->list[i].alt
       ? list->list[i].alt : list->list[i].path;
-   /* Content downloader will store a "[#]" in the entry
-    * label when the file already exists in the download directory. */
+   /* The Content and Core System Files Downloaders store a "[#]" in
+    * the entry label when the file is in the download directory or
+    * listed in its MENU_CONTENT_DOWNLOADS_RECORD. */
    const char *entry_label = list->list[i].label;
    *s = '\0';
    *w = 0;
@@ -2514,6 +2515,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry_url);
          break;
       case FILE_TYPE_DOWNLOAD_CORE_CONTENT: /* URL entries */
+      case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
 #ifdef HAVE_NETWORKING
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_content_entry);
