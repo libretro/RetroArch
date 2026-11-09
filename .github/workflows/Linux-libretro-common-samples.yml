@@ -628,7 +628,7 @@ jobs:
           }
           if ! check; then
             for suffix in xma pcm; do
-              curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
+              curl --fail --location --retry 8 --retry-all-errors --retry-max-time 300 \
                 --connect-timeout 10 --max-time 45 \
                 "https://fate-suite.ffmpeg.org/xma2/xma2-multistream-tail.$suffix" \
                 -o "$fixture/input.$suffix"

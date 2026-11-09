@@ -131,7 +131,7 @@ jobs:
           SDL2_NAME: ${{ steps.sdl2.outputs.name }}
         run: |
           mkdir -p /tmp/sdl2-prebuilt
-          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 \
+          curl -fsSL --retry 8 --retry-all-errors --retry-max-time 300 \
             --connect-timeout 30 -o "/tmp/sdl2-prebuilt/$SDL2_NAME" "$SDL2_URL"
 
       - name: Restore ccache
