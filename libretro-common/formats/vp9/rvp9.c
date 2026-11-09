@@ -1528,6 +1528,14 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
    return rb.error ? -1 : 0;
 }
 
+/* The compressed header has to be present, lie inside the frame, and
+ * leave at least one byte of tile data behind it. */
+static int rvp9_first_partition_fits(const rvp9_hdr *hd, size_t len)
+{
+   return hd->first_partition_size && hd->uncomp_size < len
+      && (size_t)hd->first_partition_size < len - hd->uncomp_size;
+}
+
 int rvp9_parse_frame_header(const uint8_t *data, size_t len,
       const rvp9_hdr *previous, const int *ref_dims, rvp9_hdr *out)
 {
@@ -1537,9 +1545,7 @@ int rvp9_parse_frame_header(const uint8_t *data, size_t len,
    else memset(out, 0, sizeof(*out));
    ret = rvp9_parse_uncompressed(data, len, out, ref_dims);
    if (ret) return ret;
-   if (out->w <= 0 || out->h <= 0 || !out->first_partition_size
-         || out->uncomp_size >= len
-         || (size_t)out->first_partition_size >= len - out->uncomp_size)
+   if (out->w <= 0 || out->h <= 0 || !rvp9_first_partition_fits(out, len))
       return -1;
    return 0;
 }

@@ -45,6 +45,43 @@ static size_t inter_header(unsigned selected, unsigned slot, int explicit_size)
    return (bit_pos + 7) / 8;
 }
 
+static size_t key_header(int ten_bit, unsigned partition_size)
+{
+   memset(packet, 0, sizeof(packet));
+   bit_pos = 0;
+   bits(2, 2); bits(ten_bit ? 1 : 0, 2); bits(0, 1); /* profile 0 or 2 */
+   bits(0, 1); bits(1, 1); bits(1, 1); /* key, show, resilient */
+   bits(0x49, 8); bits(0x83, 8); bits(0x42, 8);
+   if (ten_bit) bits(0, 1);
+   bits(1, 3); bits(0, 1);           /* color space, range */
+   bits(63, 16); bits(63, 16); bits(0, 1); /* size, render size */
+   bits(0, 2);                       /* context */
+   bits(0, 6); bits(0, 3); bits(0, 1); /* loop filter */
+   bits(0, 8); bits(0, 3);           /* quantizer and deltas */
+   bits(0, 1); bits(0, 1);           /* segmentation, tile rows */
+   bits(partition_size, 16);
+   return (bit_pos + 7) / 8;
+}
+
+/* A compressed header that does not fit must be refused before any
+ * allocation, on both the 8-bit and the high-bit-depth path. */
+static int truncated_partition_tests(rvp9_dec *d)
+{
+   int ten_bit, show;
+   size_t len;
+   for (ten_bit = 0; ten_bit < 2; ten_bit++)
+   {
+      len = key_header(ten_bit, 1024);  /* runs past the frame */
+      if (rvp9_decode_frame(d, packet, len + 1, &show) != -12) return 1;
+      len = key_header(ten_bit, 8);     /* leaves no tile data */
+      if (rvp9_decode_frame(d, packet, len + 8, &show) != -12) return 1;
+      len = key_header(ten_bit, 0);     /* absent */
+      if (rvp9_decode_frame(d, packet, len + 8, &show) != -12) return 1;
+      if (d->buf_y) return 1;
+   }
+   return 0;
+}
+
 int main(void)
 {
    rvp9_dec *d = (rvp9_dec*)calloc(1, sizeof(*d));
@@ -90,6 +127,7 @@ int main(void)
    len = inter_header(0, 0, 1);
    if (rvp9_parse_uncompressed(packet, len, &hd, NULL) || hd.w != 64 || hd.h != 48)
       return 6;
+   if (truncated_partition_tests(d)) return 9;
    free(d);
    puts("VP9 reference-slot size tests passed (21 selections)");
    return 0;

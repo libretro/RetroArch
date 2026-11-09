@@ -2547,9 +2547,8 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
          if (d->fbs[fb].w != hd->w || d->fbs[fb].h != hd->h) return -6;
       }
 
-   if (!hd->first_partition_size || hd->uncomp_size >= len
-         || (size_t)hd->first_partition_size >= len - hd->uncomp_size)
-      return -1;
+   /* Before anything is allocated or read from the payload. */
+   if (!rvp9_first_partition_fits(hd, len)) return -12;
 
    d->mi_cols = hd->mi_cols;
    d->mi_rows = hd->mi_rows;
@@ -2778,7 +2777,6 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
     * every superblock row of every tile, which is what confines them
     * to the tile. */
    tile_off = hd->uncomp_size + hd->first_partition_size;
-   if (tile_off >= len) return -12;
 
    memset(d->above_seg, 0, d->mi_cols + 8);
    for (i = 0; i < 3; i++)
