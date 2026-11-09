@@ -1746,8 +1746,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 {
    unsigned a, b, h;
    const struct menu_bind_state_port *n =
-      (const struct menu_bind_state_port*)
-      &new_state->state[p];
+      &new_state->state[new_state->now][p];
 
    for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
    {
@@ -1851,7 +1850,6 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 }
 
 static bool menu_input_key_bind_poll_find_hold(
-      unsigned max_users,
       struct menu_bind_state *new_state,
       struct retro_keybind *output)
 {
@@ -1859,10 +1857,10 @@ static bool menu_input_key_bind_poll_find_hold(
    {
       unsigned i;
 
+      /* only the slots polled can have anything held */
       for (i = 0; i < MAX_USERS; i++)
       {
-         if (     (i < max_users || i == new_state->port
-                  || ((new_state->listen >> i) & 1))
+         if (     (i == new_state->port || ((new_state->listen >> i) & 1))
                && menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
          {
             new_state->from = i;
@@ -1875,16 +1873,15 @@ static bool menu_input_key_bind_poll_find_hold(
 }
 
 static bool menu_input_key_bind_poll_find_trigger_pad(
-      struct menu_bind_state *state,
       struct menu_bind_state *new_state,
       struct retro_keybind *output,
       unsigned p)
 {
    unsigned a, b, h;
-   const struct menu_bind_state_port *n = (const struct menu_bind_state_port*)
-      &new_state->state[p];
-   const struct menu_bind_state_port *o = (const struct menu_bind_state_port*)
-      &state->state[p];
+   const struct menu_bind_state_port *n =
+      &new_state->state[new_state->now][p];
+   const struct menu_bind_state_port *o =
+      &new_state->state[!new_state->now][p];
 
    for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
    {
@@ -1931,7 +1928,7 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
 
       /* L2 and R2: a trigger that is a button and an axis is bound
        * to its axis, which is analog */
-      if (menu_bind_is_trigger(state))
+      if (menu_bind_is_trigger(new_state))
       {
          uint32_t joyaxis = menu_bind_trigger_axis(n->axes,
                new_state->axis_state[p].rested_axes, MENU_MAX_AXES);
@@ -2014,21 +2011,19 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
 }
 
 static bool menu_input_key_bind_poll_find_trigger(
-      unsigned max_users,
-      struct menu_bind_state *state,
       struct menu_bind_state *new_state,
       struct retro_keybind *output)
 {
-   if (state && new_state)
+   if (new_state)
    {
       unsigned i;
 
+      /* only the slots polled can have anything pressed */
       for (i = 0; i < MAX_USERS; i++)
       {
-         if (     (i < max_users || i == new_state->port
-                  || ((new_state->listen >> i) & 1))
+         if (     (i == new_state->port || ((new_state->listen >> i) & 1))
                && menu_input_key_bind_poll_find_trigger_pad(
-                  state, new_state, output, i))
+                  new_state, output, i))
          {
             new_state->from = i;
             return true;
@@ -3859,8 +3854,14 @@ static void menu_input_key_bind_poll_bind_state(
    unsigned b;
    bool state_inited                       = input_driver_has_device_state();
    unsigned port                           = state->port;
+   struct menu_bind_state_port *ports;
 
-   memset(state->state, 0, sizeof(state->state));
+   /* last frame's stays as it is, to be compared with */
+   state->now                              = !state->now;
+   ports                                   = state->state[state->now];
+   for (b = 0; b < MAX_USERS; b++)
+      if (b == port || ((state->listen >> b) & 1))
+         memset(&ports[b], 0, sizeof(ports[b]));
 
    if (state_inited)
    {
@@ -3874,7 +3875,7 @@ static void menu_input_key_bind_poll_bind_state(
        */
       for (b = 2; b < MENU_MAX_MBUTTONS; b++)
       {
-         state->state[port].mouse_buttons[b] =
+         ports[port].mouse_buttons[b] =
             input_driver_bind_capture_state(
                   joy_idx,
                   state->user,
@@ -3883,7 +3884,7 @@ static void menu_input_key_bind_poll_bind_state(
 
       for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
       {
-         state->state[port].keys[b] =
+         ports[port].keys[b] =
             input_driver_bind_capture_state(
                   joy_idx,
                   0,
@@ -3895,16 +3896,16 @@ static void menu_input_key_bind_poll_bind_state(
 
    /* the controller itself: polled, then read as it has it */
    input_driver_capture_pad(port, true,
-         state->state[port].buttons, MENU_MAX_BUTTONS,
-         state->state[port].axes,    MENU_MAX_AXES,
-         state->state[port].hats,    MENU_MAX_HATS);
+         ports[port].buttons, MENU_MAX_BUTTONS,
+         ports[port].axes,    MENU_MAX_AXES,
+         ports[port].hats,    MENU_MAX_HATS);
    /* and for a hotkey, the controllers sharing its core port */
    for (b = 0; b < MAX_USERS; b++)
       if (b != port && ((state->listen >> b) & 1))
          input_driver_capture_pad(b, false,
-               state->state[b].buttons, MENU_MAX_BUTTONS,
-               state->state[b].axes,    MENU_MAX_AXES,
-               state->state[b].hats,    MENU_MAX_HATS);
+               ports[b].buttons, MENU_MAX_BUTTONS,
+               ports[b].axes,    MENU_MAX_AXES,
+               ports[b].hats,    MENU_MAX_HATS);
 }
 
 MENU_NOINLINE static int menu_dialog_iterate(
@@ -5548,6 +5549,9 @@ bool menu_input_key_bind_set_mode(
    binds->from                         = binds->port;
    binds->from_keys                    = false;
 
+   /* neither what was held nor what was locked in the capture before */
+   memset(binds->state, 0, sizeof(binds->state));
+   memset(binds->axis_state, 0, sizeof(binds->axis_state));
    menu_input_key_bind_poll_bind_get_rested_axes(binds);
    menu_input_key_bind_poll_bind_state(binds->port, binds, false);
 
@@ -5647,17 +5651,17 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 
    {
       bool complete                         = false;
-      struct menu_bind_state new_binds      = *_binds;
+      bool skipped                          = _binds->skip;
       unsigned bind_index                   = _binds->begin - MENU_SETTINGS_BIND_BEGIN;
-      const struct retro_keybind *old_binds = input_config_bind(new_binds.out_user, bind_index);
+      const struct retro_keybind *old_binds = input_config_bind(_binds->out_user, bind_index);
       unsigned old_key                      = RETRO_KEYBIND_KEY(old_binds);
 
       input_driver_set_keyboard_mapping_blocked(false);
 
-      new_binds.from      = new_binds.port;
-      new_binds.from_keys = false;
-      menu_input_key_bind_poll_bind_state(new_binds.port,
-            &new_binds, timed_out);
+      _binds->from      = _binds->port;
+      _binds->from_keys = false;
+      menu_input_key_bind_poll_bind_state(_binds->port,
+            _binds, timed_out);
 
       /* Wait until keys and buttons are released */
       if (input_driver_waiting_input_release())
@@ -5665,24 +5669,22 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          if (input_bind_hold_us)
          {
             if (!menu_input_key_bind_poll_find_hold(
-                  settings->uints.input_max_users,
-                  &new_binds, &(new_binds.buffer)))
+                  _binds, &(_binds->buffer)))
                input_driver_set_wait_input_release(false);
          }
          else
          {
             if (!menu_input_key_bind_poll_find_trigger(
-                  settings->uints.input_max_users,
-                  _binds, &new_binds, &(new_binds.buffer)))
+                  _binds, &(_binds->buffer)))
                input_driver_set_wait_input_release(false);
          }
 
          if (!input_driver_waiting_input_release())
          {
             /* Reset timeout */
-            new_binds.timer_timeout.timeout_us  = input_bind_timeout_us;
-            new_binds.timer_timeout.current     = current_time;
-            new_binds.timer_timeout.timeout_end = current_time + input_bind_timeout_us;
+            _binds->timer_timeout.timeout_us  = input_bind_timeout_us;
+            _binds->timer_timeout.current     = current_time;
+            _binds->timer_timeout.timeout_end = current_time + input_bind_timeout_us;
          }
          else
             snprintf(bind->s, bind->len,
@@ -5699,80 +5701,78 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       {
          /* Keep resetting bind during the hold period,
           * or we'll potentially bind joystick and mouse, etc. */
-         new_binds.buffer                       = *input_config_bind(
-               new_binds.out_user, new_binds.out_id);
+         _binds->buffer                       = *input_config_bind(
+               _binds->out_user, _binds->out_id);
 
          if (menu_input_key_bind_poll_find_hold(
-               settings->uints.input_max_users,
-               &new_binds, &new_binds.buffer))
+               _binds, &_binds->buffer))
          {
             char hold_label[NAME_MAX_LENGTH];
 
             hold_label[0]                       = '\0';
 
             /* Inhibit timeout */
-            new_binds.timer_timeout.timeout_us  = input_bind_timeout_us;
-            new_binds.timer_timeout.current     = current_time;
-            new_binds.timer_timeout.timeout_end = current_time + input_bind_timeout_us;
+            _binds->timer_timeout.timeout_us  = input_bind_timeout_us;
+            _binds->timer_timeout.current     = current_time;
+            _binds->timer_timeout.timeout_end = current_time + input_bind_timeout_us;
 
             /* Run hold timer */
-            new_binds.timer_hold.current        = current_time;
-            new_binds.timer_hold.timeout_us     = new_binds.timer_hold.timeout_end - current_time;
+            _binds->timer_hold.current        = current_time;
+            _binds->timer_hold.timeout_us     = _binds->timer_hold.timeout_end - current_time;
 
             /* Transient bind under capture: it lives on the stack and has
              * no entry in the label arrays, so it carries no labels. */
             input_config_get_bind_string(settings, hold_label,
-                  &new_binds.buffer, NULL, NULL, NULL, sizeof(hold_label));
+                  &_binds->buffer, NULL, NULL, NULL, sizeof(hold_label));
 
             snprintf(bind->s, bind->len,
                   "%s..\n(%s %1.1f %s)\n \n%s\n   %s%s",
                   msg_hash_to_str(MSG_INPUT_BIND_PRESS),
                   msg_hash_to_str(MSG_INPUT_BIND_HOLD),
-                  ((float)new_binds.timer_hold.timeout_us / 1000000),
+                  ((float)_binds->timer_hold.timeout_us / 1000000),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS),
                   input_config_bind_map_get_desc(bind_id),
                   hold_label,
                   heard);
 
             /* Hold complete? */
-            if (new_binds.timer_hold.timeout_us <= 0)
+            if (_binds->timer_hold.timeout_us <= 0)
                complete = true;
          }
          else
          {
             /* Reset hold countdown */
-            new_binds.timer_hold.timeout_us     = input_bind_hold_us;
-            new_binds.timer_hold.current        = current_time;
-            new_binds.timer_hold.timeout_end    = current_time + input_bind_hold_us;
+            _binds->timer_hold.timeout_us     = input_bind_hold_us;
+            _binds->timer_hold.current        = current_time;
+            _binds->timer_hold.timeout_end    = current_time + input_bind_hold_us;
          }
       }
-      else if ((new_binds.skip && !_binds->skip)
+      else if ((_binds->skip && !skipped)
             || menu_input_key_bind_poll_find_trigger(
-               settings->uints.input_max_users,
-               _binds, &new_binds, &(new_binds.buffer)))
+               _binds, &(_binds->buffer)))
          complete = true;
 
       if (complete)
       {
          /* Always stop binding when not binding all */
-         bool stop_binding                   = new_binds.order == 0 && new_binds.begin == new_binds.last;
+         bool stop_binding                   = _binds->order == 0 && _binds->begin == _binds->last;
 
          /* Update bind */
          /* a sharing controller's press goes to its own bind, and that
           * of user 1's pad or the hotkey user's does where it has its
           * own for the hotkey; keys, mouse buttons and the rest go to
           * the set */
-         if (     !new_binds.skip
-               && !new_binds.from_keys
-               && input_config_hotkey_bind_own(new_binds.from,
-                     new_binds.out_id))
+         if (     !_binds->skip
+               && !_binds->from_keys
+               && input_config_hotkey_bind_own(_binds->from,
+                     _binds->out_id))
          {
             /* refused with the controller still connected only when
              * the list is full */
-            if (     !input_config_plays_as_set_hotkey(new_binds.from,
-                        new_binds.out_id, new_binds.buffer.joykey,
-                        new_binds.buffer.joyaxis)
-                  && input_config_get_device_name(new_binds.from))
+            if (     !input_config_plays_as_set_hotkey(_binds->from,
+                        _binds->out_id, _binds->buffer.joykey,
+                        _binds->buffer.joyaxis)
+                  && input_config_get_device_name(_binds->from))
             {
                const char *msg = msg_hash_to_str(MSG_INPUT_PLAYS_AS_FULL);
                runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
@@ -5786,14 +5786,14 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
              * here: the write is counted as a change when it is made,
              * and no address is carried from the frame the capture
              * began in */
-            *input_config_bind_edit(new_binds.out_user, new_binds.out_id)
-                                             = new_binds.buffer;
+            *input_config_bind_edit(_binds->out_user, _binds->out_id)
+                                             = _binds->buffer;
 
          /* Update keyboard mapping bits */
-         if (RETRO_KEYBIND_KEY(&new_binds.buffer))
+         if (RETRO_KEYBIND_KEY(&_binds->buffer))
          {
             input_keyboard_mapping_bits(0, old_key);
-            input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(&new_binds.buffer));
+            input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(&_binds->buffer));
          }
 
          /* Avoid new binds triggering things right away. */
@@ -5801,10 +5801,10 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          input_driver_hold_held_input();
 
          /* Use human readable order instead */
-         new_binds.order++;
-         new_binds.begin = MENU_SETTINGS_BIND_BEGIN + input_config_bind_order[new_binds.order];
+         _binds->order++;
+         _binds->begin = MENU_SETTINGS_BIND_BEGIN + input_config_bind_order[_binds->order];
 
-         if (     new_binds.order > ARRAY_SIZE(input_config_bind_order) - 1
+         if (     _binds->order > ARRAY_SIZE(input_config_bind_order) - 1
                || stop_binding)
          {
             input_driver_set_keyboard_press_cb(NULL, NULL);
@@ -5816,20 +5816,19 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          input_driver_set_wait_input_release(true);
 
          /* Next bind */
-         new_binds.out_user                  = new_binds.user;
-         new_binds.out_id                    =
-            input_config_bind_order[new_binds.order];
-         new_binds.buffer = *input_config_bind(
-               new_binds.out_user, new_binds.out_id);
-         new_binds.timer_hold   .timeout_us  = input_bind_hold_us;
-         new_binds.timer_hold   .current     = current_time;
-         new_binds.timer_hold   .timeout_end = current_time + input_bind_hold_us;
-         new_binds.timer_timeout.timeout_us  = input_bind_timeout_us;
-         new_binds.timer_timeout.current     = current_time;
-         new_binds.timer_timeout.timeout_end = current_time + input_bind_timeout_us;
+         _binds->out_user                  = _binds->user;
+         _binds->out_id                    =
+            input_config_bind_order[_binds->order];
+         _binds->buffer = *input_config_bind(
+               _binds->out_user, _binds->out_id);
+         _binds->timer_hold   .timeout_us  = input_bind_hold_us;
+         _binds->timer_hold   .current     = current_time;
+         _binds->timer_hold   .timeout_end = current_time + input_bind_hold_us;
+         _binds->timer_timeout.timeout_us  = input_bind_timeout_us;
+         _binds->timer_timeout.current     = current_time;
+         _binds->timer_timeout.timeout_end = current_time + input_bind_timeout_us;
       }
 
-      *(_binds) = new_binds;
    }
 
    /* Pointer input must be inhibited on each

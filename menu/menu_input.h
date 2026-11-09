@@ -185,7 +185,8 @@ struct menu_bind_state
    unsigned out_id;
    struct retro_keybind buffer;
 
-   struct menu_bind_state_port state[MAX_USERS];
+   /* this frame's and the last, in turn: [now] is this frame's */
+   struct menu_bind_state_port state[2][MAX_USERS];
    struct menu_bind_axis_state axis_state[MAX_USERS];
 
    unsigned begin;
@@ -197,6 +198,8 @@ struct menu_bind_state
     * as bits, and the slot the press came from */
    uint32_t listen;
    unsigned from;
+
+   unsigned now;
 
    bool skip;
    /* the press was a key's or a mouse button's, not the pad's */
