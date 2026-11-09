@@ -69,6 +69,8 @@ jobs:
           make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
           make -C libretro-common/samples/formats/h265 rh265_slice_info_test CC=${{ matrix.cc }} SANITIZER=address,undefined
           libretro-common/samples/formats/h265/rh265_slice_info_test
+      - name: Vulkan H264 encoder parameter contracts
+        run: make -C samples/gfx/vulkan_encode_h264 check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Execute sampled-plane conversion, foreign ownership and native pixel oracle
         run: ASAN_OPTIONS=detect_leaks=0 make -C samples/gfx/vaapi_hevc gpu-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Opaque VA producer and renderer return publication under TSan
@@ -86,6 +88,7 @@ jobs:
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/gfx/vaapi_hevc clean
           make -j2 -C samples/gfx/vaapi_hevc check CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe VAAPI_CFLAGS="-isystem $sdk" LDFLAGS=-static RUNNER=wine
+          make -C samples/gfx/vulkan_encode_h264 check CC=x86_64-w64-mingw32-gcc EXE=.exe LDFLAGS=-static RUNNER=wine
 
   metal-frame-lease:
     runs-on: ubuntu-latest
