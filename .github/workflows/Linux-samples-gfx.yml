@@ -2189,6 +2189,7 @@ jobs:
           python3 samples/gfx/d3d_failure_paths/sw_lend10_gpu.py
           python3 samples/gfx/d3d_failure_paths/sw_lend_sdl2.py
           python3 samples/gfx/d3d_failure_paths/sw_lend_sdl3.py
+          python3 samples/gfx/d3d_failure_paths/sw_lend_dingux.py
 
       - name: D3D9 HLSL failed locks (Linux and mingw + Wine)
         run: |

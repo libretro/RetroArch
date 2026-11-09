@@ -104,6 +104,9 @@ struct sdl_rs90_video
    bool menu_active;
    bool was_in_menu;
    bool mode_valid;
+   /* The back buffer lent to the core, and its lock */
+   void *sw_lend;
+   bool sw_lend_locked;
    /* What the last frame said the softfilter should be: set_filtering()
     * runs on the video thread under the threaded wrapper, and reading
     * the setting there races the menu writing it. */
@@ -715,6 +718,9 @@ static void sdl_rs90_gfx_free(void *data)
    if (!vid)
       return;
 
+   if (vid->sw_lend_locked)
+      SDL_UnlockSurface(vid->screen);
+
    if (vid->osd_font)
       bitmapfont_free_lut(vid->osd_font);
 
@@ -996,6 +1002,57 @@ static void sdl_rs90_blit_frame32(sdl_rs90_video_t *vid,
       vid->scale_frame32(vid, src, width, height, src_pitch);
 }
 
+/* Lends the back buffer itself where the frame is the surface: at
+ * its size and tight pitch, outside the menu. Write only, it is video
+ * memory. The surface stays locked until the frame comes. */
+static bool sdl_rs90_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
+   unsigned bpp;
+
+   if (     !vid || !fb || !vid->screen
+         || (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
+         || vid->menu_active || vid->was_in_menu || !vid->mode_valid)
+      return false;
+   bpp = vid->rgb32 ? 4 : 2;
+   if (     fb->width != SDL_RS90_WIDTH || fb->height != SDL_RS90_HEIGHT || vid->content_width != fb->width || vid->content_height != fb->height
+         || (unsigned)vid->screen->pitch != fb->width * bpp)
+      return false;
+   if (SDL_MUSTLOCK(vid->screen) && !vid->sw_lend_locked)
+   {
+      if (SDL_LockSurface(vid->screen) < 0)
+         return false;
+      vid->sw_lend_locked = true;
+   }
+   vid->sw_lend     = vid->screen->pixels;
+   fb->data         = vid->sw_lend;
+   fb->pitch        = vid->screen->pitch;
+   fb->format       = vid->rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->memory_flags = 0;
+   return true;
+}
+
+/* The frame has come: true when it is the loan, already on the surface.
+ * The cached frame then names the back buffer, which is about to be
+ * flipped away from. */
+static bool sdl_rs90_sw_lend_take(sdl_rs90_video_t *vid, const void *frame,
+      unsigned pitch)
+{
+   bool lent = frame && frame == vid->sw_lend
+      && pitch == (unsigned)vid->screen->pitch;
+   if (vid->sw_lend_locked)
+   {
+      SDL_UnlockSurface(vid->screen);
+      vid->sw_lend_locked = false;
+   }
+   if (lent)
+      video_driver_cached_frame_retire();
+   vid->sw_lend = NULL;
+   return lent;
+}
+
 static bool sdl_rs90_gfx_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -1003,6 +1060,7 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
    unsigned width = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
    sdl_rs90_video_t* vid = (sdl_rs90_video_t*)data;
+   bool lent             = false;
 #ifdef HAVE_MENU
    bool menu_is_alive    = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -1015,6 +1073,8 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
     *   core skips a frame) */
    if (unlikely(!vid || (!frame && !vid->menu_active)))
       return true;
+
+   lent = sdl_rs90_sw_lend_take(vid, frame, pitch);
 
    /* Travels with the frame, for set_filtering() and
     * apply_state_changes() to read rather than the settings the menu
@@ -1067,10 +1127,10 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
          if (likely(frame))
          {
             /* Blit frame to SDL surface */
-            if (vid->rgb32)
+            if (!lent && vid->rgb32)
                sdl_rs90_blit_frame32(vid, (uint32_t*)frame,
                      width, height, pitch);
-            else
+            else if (!lent)
                sdl_rs90_blit_frame16(vid, (uint16_t*)frame,
                      width, height, pitch);
          }
@@ -1350,7 +1410,7 @@ static const video_poke_interface_t sdl_rs90_poke_interface = {
    NULL, /* show_mouse */
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
-   NULL, /* get_current_software_framebuffer */
+   sdl_rs90_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
