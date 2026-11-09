@@ -51,6 +51,10 @@
  *    its copy, writing to that end does not raise EPIPE.
  * 3. The global present with no connectors, and the global absent
  *    altogether, are each reported, and neither is an error.
+ * 4. Where the compositor offers wlroots output management, the mode
+ *    list is there on the first call after init, whether the heads
+ *    come with the bind or a while after it; a manager that never
+ *    lists a head holds init up for a bounded time only.
  */
 
 #include <stdio.h>
@@ -60,6 +64,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 #include <pthread.h>
 
 #include <boolean.h>
@@ -68,6 +73,7 @@
 #include <wayland-server-core.h>
 
 #include "drm-lease-v1-server-protocol.h"
+#include "wlr-output-management-unstable-v1-server-protocol.h"
 
 #include "../../../gfx/video_display_server.h"
 #include "../../../gfx/common/wayland_drm_lease.h"
@@ -138,6 +144,8 @@ struct comp
    bool                 released;
    bool                 client_gone;
    bool                 device_bound;
+   struct wl_resource  *wlr_mgr;
+   struct wl_event_source *wlr_timer;
    bool                 grant;      /* answer a request, or refuse it */
    bool                 revoke;     /* ...then take it back again */
    char                 requested[64];
@@ -307,6 +315,113 @@ static void device_bind(struct wl_client *client, void *data,
    wp_drm_lease_device_v1_send_done(res);
 }
 
+/* ---- wlroots output management ---- */
+
+enum wlr_offer
+{
+   WLR_NONE = 0,
+   WLR_HEADS_AT_BIND,  /* the head comes with the bind */
+   WLR_HEADS_LATER,    /* the bind is answered empty, the head later */
+   WLR_NO_HEADS        /* the bind is answered empty, and stays so */
+};
+
+static enum wlr_offer wlr_offer;
+
+/* Heads and modes are released by the client from version 3 */
+static void wlr_res_destroy(struct wl_client *client,
+      struct wl_resource *resource)
+{
+   wl_resource_destroy(resource);
+}
+
+static const struct zwlr_output_head_v1_interface wlr_head_impl = {
+   wlr_res_destroy
+};
+static const struct zwlr_output_mode_v1_interface wlr_mode_impl = {
+   wlr_res_destroy
+};
+
+static void wlr_mgr_create_configuration(struct wl_client *client,
+      struct wl_resource *resource, uint32_t id, uint32_t serial)
+{
+   wl_resource_create(client, &zwlr_output_configuration_v1_interface,
+         wl_resource_get_version(resource), id);
+}
+
+static void wlr_mgr_stop(struct wl_client *client,
+      struct wl_resource *resource) { }
+
+static const struct zwlr_output_manager_v1_interface wlr_mgr_impl = {
+   wlr_mgr_create_configuration,
+   wlr_mgr_stop
+};
+
+static void wlr_send_head(struct wl_resource *mgr)
+{
+   static const int32_t mhz[2] = { 60000, 50000 };
+   int i;
+   struct wl_client   *client = wl_resource_get_client(mgr);
+   uint32_t            ver    = wl_resource_get_version(mgr);
+   struct wl_resource *head   = wl_resource_create(client,
+         &zwlr_output_head_v1_interface, ver, 0);
+   struct wl_resource *cur    = NULL;
+
+   wl_resource_set_implementation(head, &wlr_head_impl, NULL, NULL);
+   zwlr_output_manager_v1_send_head(mgr, head);
+   zwlr_output_head_v1_send_name(head, "DP-1");
+   for (i = 0; i < 2; i++)
+   {
+      struct wl_resource *mode = wl_resource_create(client,
+            &zwlr_output_mode_v1_interface, ver, 0);
+      wl_resource_set_implementation(mode, &wlr_mode_impl, NULL, NULL);
+      zwlr_output_head_v1_send_mode(head, mode);
+      zwlr_output_mode_v1_send_size(mode, 1920, 1080);
+      zwlr_output_mode_v1_send_refresh(mode, mhz[i]);
+      if (!cur)
+         cur = mode;
+   }
+   zwlr_output_head_v1_send_enabled(head, 1);
+   zwlr_output_head_v1_send_current_mode(head, cur);
+}
+
+static int wlr_heads_later(void *data)
+{
+   if (comp.wlr_mgr)
+   {
+      wlr_send_head(comp.wlr_mgr);
+      zwlr_output_manager_v1_send_done(comp.wlr_mgr, 2);
+   }
+   return 0;
+}
+
+static void wlr_mgr_gone(struct wl_resource *resource)
+{
+   if (comp.wlr_mgr == resource)
+      comp.wlr_mgr = NULL;
+}
+
+static void wlr_mgr_bind(struct wl_client *client, void *data,
+      uint32_t version, uint32_t id)
+{
+   struct wl_resource *mgr = wl_resource_create(client,
+         &zwlr_output_manager_v1_interface, version, id);
+   if (!mgr)
+      return;
+   wl_resource_set_implementation(mgr, &wlr_mgr_impl, NULL, wlr_mgr_gone);
+   comp.wlr_mgr = mgr;
+   if (wlr_offer == WLR_HEADS_AT_BIND)
+      wlr_send_head(mgr);
+   zwlr_output_manager_v1_send_done(mgr, 1);
+   /* Later than the client's roundtrips, sooner than its waits end */
+   if (wlr_offer == WLR_HEADS_LATER)
+   {
+      comp.wlr_timer = wl_event_loop_add_timer(
+            wl_display_get_event_loop(comp.dpy), wlr_heads_later, NULL);
+      if (comp.wlr_timer)
+         wl_event_source_timer_update(comp.wlr_timer, 30);
+   }
+}
+
 static void *comp_thread(void *arg)
 {
    wl_display_run(comp.dpy);
@@ -328,6 +443,9 @@ static bool comp_start(int nconn, bool offer_global)
       return false;
    if (offer_global && !wl_global_create(comp.dpy,
             &wp_drm_lease_device_v1_interface, 1, NULL, device_bind))
+      return false;
+   if (wlr_offer != WLR_NONE && !wl_global_create(comp.dpy,
+            &zwlr_output_manager_v1_interface, 4, NULL, wlr_mgr_bind))
       return false;
 
    setenv("WAYLAND_DISPLAY", comp.socket, 1);
@@ -376,6 +494,10 @@ static void finish(void *serv)
       dispserv_wl.destroy(serv);
    comp_stop();
    pthread_join(comp_tid, NULL);
+   if (comp.wlr_timer)
+      wl_event_source_remove(comp.wlr_timer);
+   /* A client whose hangup the loop had not read yet is still listed */
+   wl_display_destroy_clients(comp.dpy);
    wl_display_destroy(comp.dpy);
    if (comp.fd_write >= 0)
       close(comp.fd_write);
@@ -466,6 +588,86 @@ static void test_no_global(void)
    finish(serv);
 }
 
+/* ---- the output modes, right after init ---- */
+
+static double ms_since(const struct timespec *t0)
+{
+   struct timespec t1;
+   clock_gettime(CLOCK_MONOTONIC, &t1);
+   return (t1.tv_sec - t0->tv_sec) * 1000.0
+        + (t1.tv_nsec - t0->tv_nsec) / 1000000.0;
+}
+
+/* Runs inside wl_display_run(): once it has, a terminate is seen */
+static bool comp_running;
+
+static void comp_mark_running(void *data)
+{
+   __atomic_store_n(&comp_running, true, __ATOMIC_RELEASE);
+}
+
+/* init, then the list at once, as a refresh rate switch made at
+ * startup asks for it; no other call in between */
+static void wlr_case(const char *title, enum wlr_offer offer,
+      bool want_list)
+{
+   void *serv;
+   void *list;
+   unsigned len = 0;
+   double took;
+   struct timespec t0;
+
+   printf("\n-- %s --\n", title);
+   log_count = 0;
+   wlr_offer = offer;
+   if (!comp_start(0, false))
+   {
+      printf("[FAIL] could not start the test compositor\n");
+      exit(1);
+   }
+   comp_running = false;
+   wl_event_loop_add_idle(wl_display_get_event_loop(comp.dpy),
+         comp_mark_running, NULL);
+   pthread_create(&comp_tid, NULL, comp_thread, NULL);
+   while (!__atomic_load_n(&comp_running, __ATOMIC_ACQUIRE))
+      usleep(1000);
+
+   clock_gettime(CLOCK_MONOTONIC, &t0);
+   serv = dispserv_wl.init();
+   took = ms_since(&t0);
+   list = serv ? dispserv_wl.get_resolution_list(serv, &len) : NULL;
+
+   check("the display server came up", serv != NULL);
+   if (want_list)
+      check("the first call after init lists the head's two modes",
+            list && len == 2);
+   else
+      check("there is nothing to list", !list && !len);
+   check("init was held up for a bounded time only", took < 1000.0);
+   free(list);
+
+   finish(serv);
+   wlr_offer = WLR_NONE;
+}
+
+static void test_wlr_heads_at_bind(void)
+{
+   wlr_case("output management, the head with the bind",
+         WLR_HEADS_AT_BIND, true);
+}
+
+static void test_wlr_heads_later(void)
+{
+   wlr_case("output management, the head after the bind",
+         WLR_HEADS_LATER, true);
+}
+
+static void test_wlr_no_heads(void)
+{
+   wlr_case("output management that never lists a head",
+         WLR_NO_HEADS, false);
+}
+
 /* ---- the lease itself ---- */
 
 /* Bring the compositor up without the display server: the lease
@@ -490,6 +692,10 @@ static void lease_comp_stop(void)
    wayland_drm_lease_release();
    comp_stop();
    pthread_join(comp_tid, NULL);
+   if (comp.wlr_timer)
+      wl_event_source_remove(comp.wlr_timer);
+   /* A client whose hangup the loop had not read yet is still listed */
+   wl_display_destroy_clients(comp.dpy);
    wl_display_destroy(comp.dpy);
    if (comp.fd_write >= 0)
       close(comp.fd_write);
@@ -647,6 +853,10 @@ int main(int argc, char **argv)
    test_two_connectors();
    test_global_without_connectors();
    test_no_global();
+
+   test_wlr_heads_at_bind();
+   test_wlr_heads_later();
+   test_wlr_no_heads();
 
    test_lease_acquire_and_release();
    test_lease_monitor_index();

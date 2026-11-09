@@ -37,6 +37,15 @@
 #include "../common/wayland_kwin_output.h"
 #include "../common/wayland_wlr_output.h"
 
+/* Roundtrips within which a compositor describes the outputs it has:
+ * the globals, then the bound objects' state, then the devices KWin's
+ * output registry (version 21) announces */
+#define WL_DISPSERV_DESCRIBE_ROUNDTRIPS 3
+/* A compositor that offers output management but lists no output yet
+ * is given this many waits of WL_DISPSERV_OUTPUT_WAIT_MS each */
+#define WL_DISPSERV_OUTPUT_WAITS        5
+#define WL_DISPSERV_OUTPUT_WAIT_MS      20
+
 typedef struct
 {
    struct wl_display    *dpy;
@@ -210,6 +219,62 @@ void wl_display_server_report_lease(void *data)
 #endif
 }
 
+static bool wl_display_server_outputs_ready(const dispserv_wl_t *serv)
+{
+   return kwin_outputs_ready(&serv->kwin) || wlr_outputs_ready(&serv->wlr);
+}
+
+/* Has KWin's or wlroots' output management describe its outputs before
+ * init returns, so a refresh rate switch made right after startup finds
+ * the mode list. Compositors offering neither cost one roundtrip. */
+static void wl_display_server_wait_outputs(dispserv_wl_t *serv)
+{
+   unsigned i;
+
+   if (wl_display_roundtrip(serv->dpy) < 0)
+      return;
+   if (!serv->kwin.management && !serv->wlr.manager)
+      return;
+
+   for (i = 1; i < WL_DISPSERV_DESCRIBE_ROUNDTRIPS; i++)
+   {
+      if (wl_display_server_outputs_ready(serv))
+         return;
+      if (wl_display_roundtrip(serv->dpy) < 0)
+         return;
+   }
+
+   /* The compositor has no output to describe yet: take its events as
+    * they come, for a bounded number of waits */
+   for (i = 0; i < WL_DISPSERV_OUTPUT_WAITS; i++)
+   {
+      struct pollfd pfd;
+
+      if (wl_display_server_outputs_ready(serv))
+         return;
+      if (wl_display_flush(serv->dpy) < 0)
+         return;
+      if (wl_display_prepare_read(serv->dpy) != 0)
+      {
+         if (wl_display_dispatch_pending(serv->dpy) < 0)
+            return;
+         continue;
+      }
+      pfd.fd      = wl_display_get_fd(serv->dpy);
+      pfd.events  = POLLIN;
+      pfd.revents = 0;
+      if (poll(&pfd, 1, WL_DISPSERV_OUTPUT_WAIT_MS) > 0)
+      {
+         if (wl_display_read_events(serv->dpy) < 0)
+            return;
+      }
+      else
+         wl_display_cancel_read(serv->dpy);
+      if (wl_display_dispatch_pending(serv->dpy) < 0)
+         return;
+   }
+}
+
 static void *wl_display_server_init(void)
 {
    dispserv_wl_t *serv = (dispserv_wl_t*)calloc(1, sizeof(*serv));
@@ -232,6 +297,8 @@ static void *wl_display_server_init(void)
    /* Starts the Mutter worker; its answer is read at each call. */
    mutter_displayconfig_available();
 #endif
+
+   wl_display_server_wait_outputs(serv);
 
    return serv;
 }
