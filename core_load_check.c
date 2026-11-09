@@ -14,6 +14,7 @@
 #include "core_trust_runtime.h"
 #include "msg_hash.h"
 #include "runloop.h"
+#include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 #include "verbosity.h"
 #ifdef ANDROID
@@ -65,6 +66,28 @@ enum core_load_stage
    CORE_LOAD_STAGE_DONE
 };
 
+enum core_load_park_state
+{
+   CORE_LOAD_PARK_NONE = 0,
+   CORE_LOAD_PARK_SEED,
+   CORE_LOAD_PARK_CHECK,
+   CORE_LOAD_PARK_USER,
+   CORE_LOAD_PARK_IDLE
+};
+
+/* A refused user-started load, waiting to run again */
+struct core_load_park
+{
+   struct core_check c;
+   core_file_t *f;              /* the file the user is asked about */
+   void *userdata;
+   core_load_rerun_t rerun;
+   core_load_rerun_t free_cb;
+   char path[PATH_MAX_LENGTH];
+   enum core_load_park_state state;
+   unsigned serial;
+};
+
 /* Opens the checked file on a worker: the loader maps the core and
  * runs its constructors off the frame loop */
 struct core_load_open_task
@@ -80,6 +103,7 @@ struct core_load_open_task
 
 static struct
 {
+   struct core_load_park park;
    struct core_load_slot slot;    /* the latest check */
    struct core_load_slot loaded;  /* the core loaded last */
    struct core_load_slot quick;   /* the last quick pass */
@@ -100,6 +124,8 @@ static struct
    bool stage_refused;
    bool stage_moved;              /* its re-check was logged */
    bool startup;
+   bool notified;
+   bool refusal_held;
    bool refused_seed;  /* refused only until the seed is done */
    bool running;  /* loaded and not yet unloaded */
 } core_load_rt;
@@ -108,8 +134,10 @@ static struct
  * file, and a quiet result never replaces its slot */
 static bool core_load_check_waited(const char *path)
 {
-   return core_load_rt.stage == CORE_LOAD_STAGE_CHECK
-      && string_is_equal(core_load_rt.stage_path, path);
+   return (core_load_rt.stage == CORE_LOAD_STAGE_CHECK
+         && string_is_equal(core_load_rt.stage_path, path))
+      ||  (core_load_rt.park.state == CORE_LOAD_PARK_CHECK
+         && string_is_equal(core_load_rt.park.path, path));
 }
 
 static void core_load_slot_clear(struct core_load_slot *sl)
@@ -348,6 +376,7 @@ static void core_load_check_handler(retro_task_t *task)
 static void core_load_check_stage_result(const char *path, bool pass);
 static void core_load_check_stage_start(void);
 static void core_load_check_stage_file_drop(void);
+static void core_load_park_result(const char *path, bool checked);
 
 static void core_load_check_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -367,6 +396,7 @@ static void core_load_check_cb(retro_task_t *task, void *task_data,
    if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
    {
       core_load_check_stage_result(t->path, false);
+      core_load_park_result(t->path, false);
       return;
    }
    user = core_load_check_waited(t->path);
@@ -394,6 +424,7 @@ static void core_load_check_cb(retro_task_t *task, void *task_data,
    core_load_slot_set(&core_load_rt.slot, t->path, &t->c, &t->f, user);
    core_load_slot_keep_store(&core_load_rt.slot, &t->s);
    core_load_check_stage_result(t->path, core_load_rt.slot.pass);
+   core_load_park_result(t->path, true);
 }
 
 static void core_load_check_cleanup(retro_task_t *task)
@@ -730,6 +761,234 @@ static void core_load_check_stage_result(const char *path, bool pass)
    core_load_check_stage_settle(pass, CORE_LOAD_GRANT_SLOT);
 }
 
+static void core_load_park_drop(void)
+{
+   struct core_load_park *p = &core_load_rt.park;
+   unsigned serial          = p->serial;
+   core_file_close(p->f);
+   if (p->free_cb)
+      p->free_cb(p->userdata);
+   memset(p, 0, sizeof(*p));
+   p->serial                = serial;
+}
+
+/* Ended as the user's Cancel ends it: a warning up for it closes
+ * through its own Cancel, which drops the park */
+static void core_load_park_cancel(void)
+{
+   if (core_load_rt.park.state == CORE_LOAD_PARK_USER)
+      core_warning_choose(CORE_WARNING_CANCEL);
+   if (core_load_rt.park.state != CORE_LOAD_PARK_NONE)
+      core_load_park_drop();
+}
+
+static void core_load_check_refusal_shown(void)
+{
+   const char *msg = msg_hash_to_str(MSG_CORE_LOAD_REFUSED_NO_MENU);
+   runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+}
+
+/* No screen to ask on. The load ends, saying how to approve it. */
+static void core_load_check_refusal(const char *path,
+      enum core_check_result result)
+{
+   RARCH_WARN("[Core] Not loading \"%s\": %s Start RetroArch once with a menu driver and choose Always Trust to approve it.\n",
+         path, msg_hash_to_str(core_warning_reason(result)));
+   if (core_load_rt.notified)
+      core_load_check_refusal_shown();
+   else
+      core_load_rt.refusal_held = true;
+}
+
+static void core_load_park_choice(enum core_warning_choice choice,
+      const struct core_check *c, const char *core_path, void *userdata)
+{
+   struct core_load_park *p = &core_load_rt.park;
+   unsigned serial          = *(unsigned*)userdata;
+   (void)core_path;
+   free(userdata);
+   /* A newer push runs this with CANCEL inside itself, its request
+    * already in the warning's slot: only our own park may go, and
+    * nothing here pushes or chooses. The re-run starts from the frame
+    * loop. */
+   if (serial != p->serial || p->state != CORE_LOAD_PARK_USER)
+      return;
+   /* Either way the re-run opens only the file the user was asked
+    * about: core_load_park_rerun() binds the pass to it */
+   switch (choice)
+   {
+      case CORE_WARNING_LOAD_ONCE:
+         p->state = CORE_LOAD_PARK_IDLE;
+         break;
+      case CORE_WARNING_ALWAYS_TRUST:
+         /* Not recorded, so this once */
+         if (!core_trust_runtime_always(c))
+         {
+            const char *msg = msg_hash_to_str(MSG_CORE_LOAD_TRUST_LIST_FULL);
+            RARCH_WARN("[Core] Could not trust \"%s\" for good: loading it once.\n",
+                  p->path);
+            runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         }
+         p->state = CORE_LOAD_PARK_IDLE;
+         break;
+      default:
+         /* Pending inside a CANCEL only for a newer push's request */
+         if (core_warning_pending(NULL, NULL))
+            RARCH_WARN("[Core] Not loading \"%s\": another Security Warning replaced its warning.\n",
+                  p->path);
+         core_load_park_drop();
+         break;
+   }
+}
+
+/* The parked core has its answer: run again, or ask */
+static void core_load_park_answer(void)
+{
+   struct core_load_park *p = &core_load_rt.park;
+   unsigned *token;
+   if (p->c.result == CORE_CHECK_OK)
+   {
+      p->state = CORE_LOAD_PARK_IDLE;
+      return;
+   }
+   p->state = CORE_LOAD_PARK_USER;
+   if ((token = (unsigned*)malloc(sizeof(*token))))
+   {
+      *token = p->serial;
+      if (core_warning_push(&p->c, CORE_WARNING_LOAD, p->path,
+               core_load_park_choice, token))
+         return;
+      free(token);
+   }
+   core_load_check_refusal(p->path, p->c.result);
+   core_load_park_drop();
+}
+
+/* The park takes the slot's file g; the slot keeps the answer */
+static void core_load_park_take_slot(core_file_t *g, bool lent)
+{
+   struct core_load_park *p = &core_load_rt.park;
+   p->c = core_load_rt.slot.c;
+   if (lent)
+      core_load_rt.slot.f = NULL;
+   p->f = g;
+   core_load_park_answer();
+}
+
+/* In order: the quick check, a pass the slot holds, the seed's wait, a
+ * refusal the slot holds for this file and store, or a check task */
+static void core_load_park_start(void)
+{
+   struct core_load_park *p = &core_load_rt.park;
+   core_trust_set_t *s      = core_trust_runtime_get();
+   core_file_t *f           = NULL;
+   core_file_t *g           = NULL;   /* the slot's file */
+   bool lent                = false;
+   /* Unopenable: dropped, so core_load_check_park() returns false */
+   if (     !s
+         || !core_load_check_file_path(p->path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path))
+         || !(f = core_file_open(core_load_rt.check_path)))
+   {
+      core_load_park_drop();
+      goto end;
+   }
+   if (core_check_quick(s, f, core_load_rt.check_path, &p->c))
+   {
+      p->f = f;
+      f    = NULL;
+      core_load_park_answer();
+      goto end;
+   }
+   if (core_load_slot_is(&core_load_rt.slot, p->path))
+      g = core_load_slot_file(&core_load_rt.slot, core_load_rt.check_path,
+            &lent);
+   if (g && core_load_rt.slot.pass)
+   {
+      core_load_park_take_slot(g, lent);
+      g = NULL;
+      goto end;
+   }
+   if (     core_trust_runtime_seed_pending()
+         && core_trust_runtime_seed_covers(p->path))
+   {
+      p->state = CORE_LOAD_PARK_SEED;
+      goto end;
+   }
+   /* Only the file hashed may be answered, so g must be held or bound
+    * by its ctime */
+   if (     g
+         && (lent || core_load_rt.slot.c.rec.id.ctime_kept)
+         && core_load_slot_refusal_holds(s))
+   {
+      core_load_park_take_slot(g, lent);
+      g = NULL;
+      goto end;
+   }
+   if (core_load_slot_is(&core_load_rt.slot, p->path))
+   {
+      /* Replaced, or the store changed, since its check */
+      if (lent)
+         g = NULL;
+      core_load_slot_clear(&core_load_rt.slot);
+   }
+   p->state = CORE_LOAD_PARK_CHECK;
+   /* No check will answer: the load won't run */
+   if (!core_load_check_push(f, p->path, core_load_rt.check_path, &p->c))
+      core_load_park_drop();
+   f = NULL;
+end:
+   if (g && !lent)
+      core_file_close(g);
+   core_file_close(f);
+   core_trust_set_put(s);
+}
+
+/* checked: false for a check cancelled before its verdict */
+static void core_load_park_result(const char *path, bool checked)
+{
+   struct core_load_park *p = &core_load_rt.park;
+   if (     p->state != CORE_LOAD_PARK_CHECK
+         || !string_is_equal(p->path, path))
+      return;
+   if (!checked)
+   {
+      core_load_park_drop();
+      return;
+   }
+   /* The stage's re-check of a moved file cleared it: joined */
+   if (!core_load_slot_is(&core_load_rt.slot, path))
+   {
+      core_load_park_start();
+      return;
+   }
+   p->c                = core_load_rt.slot.c;
+   p->f                = core_load_rt.slot.f;
+   core_load_rt.slot.f = NULL;
+   core_load_park_answer();
+}
+
+static void core_load_park_rerun(void)
+{
+   struct core_load_park *p  = &core_load_rt.park;
+   core_load_rerun_t rerun   = p->rerun;
+   core_load_rerun_t free_cb = p->free_cb;
+   void *userdata            = p->userdata;
+   /* The pass for the re-run's open, bound to the file checked: kept
+    * open for a refused result (the user chose), else by identity */
+   core_load_slot_set(&core_load_rt.slot, p->path, &p->c, &p->f, true);
+   core_load_rt.slot.pass    = true;
+   p->free_cb                = NULL;
+   core_load_park_drop();
+   /* Only the re-run's own open may refuse it again */
+   core_load_rt.refused[0]   = '\0';
+   rerun(userdata);
+   if (free_cb)
+      free_cb(userdata);
+}
+
 /* The startup load runs every stage in one pass before the frame loop
  * (rarch_main), so nothing can wait for a task: the core is hashed in
  * place. Unreachable once the frame loop runs. */
@@ -900,6 +1159,10 @@ void core_load_check_loaded(void)
 {
    struct core_load_slot *from = NULL;
    core_load_rt.running        = true;
+   /* A load while a park waits, the same core's too: the re-run would
+    * replace that session. The park's own re-run dropped it first. */
+   if (core_load_rt.park.state != CORE_LOAD_PARK_NONE)
+      core_load_park_cancel();
    /* Any other pass the slot keeps, such as a Load Once whose re-run
     * only probed, ends when a core loads */
    if (     core_load_rt.slot.pass
@@ -926,6 +1189,13 @@ void core_load_check_loaded(void)
    }
    else if (!core_load_rt.loaded.f)
       core_load_rt.loaded.pass = false;
+}
+
+void core_load_check_builtin_loaded(void)
+{
+   /* Opened for no library: a probe's grant isn't this load's */
+   core_load_rt.granted = CORE_LOAD_GRANT_NONE;
+   core_load_check_loaded();
 }
 
 void core_load_check_unloaded(void)
@@ -1023,16 +1293,82 @@ void core_load_check_stage_cancel(void)
    core_load_rt.stage_gen++;
 }
 
+bool core_load_check_park(const char *path, core_load_rerun_t rerun,
+      core_load_rerun_t free_cb, void *userdata)
+{
+   struct core_load_park *p = &core_load_rt.park;
+   if (!core_trust_runtime_active() || !rerun || !path)
+      return false;
+#ifdef ANDROID
+   /* Checked as the open will be: the real path, in the app's folders */
+   if (!android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      return false;
+   path = core_load_rt.check_path;
+#endif
+   if (p->state != CORE_LOAD_PARK_NONE)
+      core_load_park_drop();
+   core_load_abs(path, p->path, sizeof(p->path));
+   /* Before the start can push: the older request's CANCEL, run inside
+    * that push, must not match this park */
+   p->serial++;
+   p->rerun    = rerun;
+   /* Set once parked: a drop during the start leaves userdata to the
+    * caller (nothing re-runs before the next frame) */
+   p->free_cb  = NULL;
+   p->userdata = userdata;
+   core_load_park_start();
+   if (p->state == CORE_LOAD_PARK_NONE)
+      return false;
+   p->free_cb  = free_cb;
+   if (     p->state == CORE_LOAD_PARK_SEED
+         || p->state == CORE_LOAD_PARK_CHECK)
+      core_load_check_osd_checking(p->path);
+   return true;
+}
+
+void core_load_check_iterate(void)
+{
+   switch (core_load_rt.park.state)
+   {
+      case CORE_LOAD_PARK_SEED:
+         if (!core_trust_runtime_seed_pending())
+            core_load_park_start();
+         break;
+      case CORE_LOAD_PARK_IDLE:
+         /* A refused staged load ends its own way first */
+         if (!task_content_load_pending())
+            core_load_park_rerun();
+         break;
+      default:
+         break;
+   }
+}
+
+void core_load_check_notify(void)
+{
+   core_load_rt.notified = true;
+   if (core_load_rt.refusal_held)
+   {
+      core_load_rt.refusal_held = false;
+      core_load_check_refusal_shown();
+   }
+}
+
 void core_load_check_deinit(void)
 {
    core_load_check_stage_cancel();
+   if (core_load_rt.park.state != CORE_LOAD_PARK_NONE)
+      core_load_park_drop();
    core_load_rt.gen++;
    core_load_slot_clear(&core_load_rt.slot);
    core_load_slot_clear(&core_load_rt.loaded);
    core_load_slot_clear(&core_load_rt.quick);
-   core_load_rt.checking[0] = '\0';
-   core_load_rt.refused[0]  = '\0';
-   core_load_rt.granted     = CORE_LOAD_GRANT_NONE;
-   core_load_rt.startup     = false;
-   core_load_rt.running     = false;
+   core_load_rt.checking[0]  = '\0';
+   core_load_rt.refused[0]   = '\0';
+   core_load_rt.granted      = CORE_LOAD_GRANT_NONE;
+   core_load_rt.startup      = false;
+   core_load_rt.notified     = false;
+   core_load_rt.refusal_held = false;
+   core_load_rt.running      = false;
 }

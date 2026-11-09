@@ -6813,6 +6813,11 @@ bool runloop_event_init_core(
    if (!runloop_init_libretro_symbols(runloop_st,
             type, &runloop_st->current_core, NULL, NULL))
       return false;
+#ifdef HAVE_CORE_LOAD_CHECK
+   /* A plain core's load tells the check itself */
+   if (type != CORE_TYPE_PLAIN && type != CORE_TYPE_DUMMY)
+      core_load_check_builtin_loaded();
+#endif
 #ifdef HAVE_RUNAHEAD
    /* Remember last core type created, so creating a
     * secondary core will know what core type to use. */
