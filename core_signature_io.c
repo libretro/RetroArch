@@ -712,41 +712,24 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
             core_self_find(&self) ? &self : NULL);
 }
 
-enum core_check_result core_check_file(const core_trust_set_t *s,
-      const uint8_t *keys, size_t num_keys,
+void core_check_hashed(const core_trust_set_t *s,
+      const uint8_t *keys, size_t num_keys, struct core_hash *h, int step,
       const char *path, unsigned flags, struct core_check *c)
 {
    uint8_t sig[CORE_SIG_MAX_LEN + 1];
    uint8_t sha256[CORE_SHA256_LEN];
-   struct core_hash h;
    int64_t got      = 0;
    int64_t sig_len  = -1;
    size_t path_len  = strlen(path);
    char *sig_path   = NULL;
-   int step         = -1;
-   core_file_t *f   = core_file_open(path);
-   if (!f || core_check_quick(s, f, path, c))
+   core_file_t *f   = NULL;
+   if (step < 0 || h->done != c->rec.id.size)
    {
-      if (!f)
-      {
-         memset(c, 0, sizeof(*c));
-         c->result = CORE_CHECK_ERROR;
-      }
-      core_file_close(f);
-      return c->result;
-   }
-   if (core_hash_init(&h))
-      do
-         step = core_hash_step(&h, f);
-      while (step > 0);
-   core_file_close(f);
-   if (step < 0 || h.done != c->rec.id.size)
-   {
-      core_hash_free(&h);
+      core_hash_free(h);
       c->result = CORE_CHECK_ERROR;
-      return c->result;
+      return;
    }
-   core_hash_final(&h, sha256);
+   core_hash_final(h, sha256);
    /* <core>.sig, read no further than the longest valid one */
    if ((sig_path = (char*)malloc(path_len + sizeof(".sig"))))
    {
@@ -767,5 +750,30 @@ enum core_check_result core_check_file(const core_trust_set_t *s,
    core_check_finish(s, keys, num_keys, sha256,
          sig_len < 0 ? NULL : sig, sig_len < 0 ? 0 : (size_t)sig_len,
          flags, c);
+}
+
+enum core_check_result core_check_file(const core_trust_set_t *s,
+      const uint8_t *keys, size_t num_keys,
+      const char *path, unsigned flags, struct core_check *c)
+{
+   struct core_hash h;
+   int step       = -1;
+   core_file_t *f = core_file_open(path);
+   if (!f || core_check_quick(s, f, path, c))
+   {
+      if (!f)
+      {
+         memset(c, 0, sizeof(*c));
+         c->result = CORE_CHECK_ERROR;
+      }
+      core_file_close(f);
+      return c->result;
+   }
+   if (core_hash_init(&h))
+      do
+         step = core_hash_step(&h, f);
+      while (step > 0);
+   core_file_close(f);
+   core_check_hashed(s, keys, num_keys, &h, step, path, flags, c);
    return c->result;
 }
