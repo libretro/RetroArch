@@ -1072,7 +1072,6 @@ static int rjpeg_jpeg_decode_block_prog_dc(
       int diff = 0;
 
       /* first scan for DC coefficient, must be first */
-      memset(data,0,64*sizeof(data[0])); /* 0 all the ac values now */
       t       = rjpeg_jpeg_huff_decode(j, hdc);
       /* huff_decode returns -1 on a bad code, and a corrupt table can
        * yield a category above 15; both are out-of-range indices for
@@ -3012,7 +3011,8 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
          arena_size = (arena_size + 15) & ~(size_t)15;
       }
 
-      arena = (uint8_t*)malloc(arena_size);
+      /* A scan may never reach a coefficient. */
+      arena = (uint8_t*)calloc(1, arena_size);
       if (!arena)
          return 0;
 
@@ -3069,7 +3069,10 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
          arena_size = (arena_size + 15) & ~(size_t)15;
       }
 
-      arena = (uint8_t*)malloc(arena_size);
+      /* Whole planes can outlive a stream that never scans them; a
+       * ring is only used when one scan covers every component. */
+      arena = (uint8_t*)(z->plane_ring ? malloc(arena_size)
+            : calloc(1, arena_size));
       if (!arena)
          return 0;
 
@@ -4761,7 +4764,9 @@ static int rjpeg_plane_ring_undo(rjpeg_jpeg *z)
       arena_size = (arena_size + 15) & ~(size_t)15;
    }
 
-   arena = (uint8_t*)malloc(arena_size);
+   /* Grayscale's only scan fills its plane. */
+   arena = (uint8_t*)(z->img_n == 1 ? malloc(arena_size)
+         : calloc(1, arena_size));
    if (!arena)
       return 0;
 

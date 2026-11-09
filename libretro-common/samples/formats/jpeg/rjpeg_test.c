@@ -294,6 +294,12 @@ static const unsigned char rjpeg_tiny_progressive[] = {
    TINY_SOS(0, 0), 0x7f, TINY_SOS(1, 63), 0x7f, 0xff, 0xd9
 };
 
+/* No DC scan: every coefficient must read as zero. */
+static const unsigned char rjpeg_tiny_ac_only[] = {
+   0xff, 0xd8, TINY_DQT, TINY_SOF(0xc2), TINY_DHT(0x10),
+   TINY_SOS(1, 63), 0x7f, 0xff, 0xd9
+};
+
 static int failures;
 
 static void check(int cond, const char *what)
@@ -552,6 +558,26 @@ static void test_undefined_tables(void)
          0xdb, -1), 0, "interleaved stream without DQT rejected");
 }
 
+static void test_unscanned_coefficients(void)
+{
+   uint32_t want[64];
+   uint64_t sum;
+   int      m;
+
+   printf("unscanned_coefficients\n");
+   for (m = 0; m < 64; m++)
+      want[m] = 0xff808080u;
+   sum = fnv((const unsigned char*)want, sizeof(want));
+   for (m = 0; m <= 1; m++)
+   {
+      unsigned w = 0, h = 0;
+      int      ok = 0;
+      uint64_t got = decode_whole(rjpeg_tiny_ac_only,
+            sizeof(rjpeg_tiny_ac_only), m, &w, &h, &ok);
+      check(ok && got == sum, "coefficients no scan wrote are zero");
+   }
+}
+
 int main(void)
 {
    test_sync_matches_iterative();
@@ -562,6 +588,7 @@ int main(void)
          sizeof(rjpeg_bad_dc_progressive), "bad_dc_category_progressive");
    test_truncation_never_faults();
    test_undefined_tables();
+   test_unscanned_coefficients();
 
    if (failures)
       printf("\n%d check(s) failed\n", failures);
