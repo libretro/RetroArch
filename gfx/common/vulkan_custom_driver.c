@@ -829,7 +829,8 @@ void *vulkan_custom_driver_session_open(vulkan_custom_driver_session_t *s,
       if (!(slot->handle = s->load(s->load_data, req->path, key,
             &slot->meta, &err)))
       {
-         if (err == VULKAN_CUSTOM_DRIVER_MSG_INVALID)
+         if (     err == VULKAN_CUSTOM_DRIVER_MSG_INVALID
+               || err == VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED)
             p->invalid = true;
          else
          {
@@ -908,7 +909,8 @@ enum vulkan_custom_driver_msg vulkan_custom_driver_session_picked(
       return VULKAN_CUSTOM_DRIVER_MSG_RESTART;
    p->invalid  = false;
    p->shown   &= ~((1u << VULKAN_CUSTOM_DRIVER_MSG_INVALID)
-               |  (1u << VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED));
+               |  (1u << VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED)
+               |  (1u << VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED));
    return VULKAN_CUSTOM_DRIVER_MSG_NONE;
 }
 

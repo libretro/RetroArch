@@ -7,6 +7,9 @@
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#ifdef __APPLE__
+#include <sys/xattr.h>
+#endif
 #endif
 
 #include <boolean.h>
@@ -207,6 +210,27 @@ void *vulkan_custom_driver_platform_load(void *data, const char *path,
       return NULL;
    }
 
+#ifdef __APPLE__
+   /* Never opened: dlopen() of a quarantined library waits on
+    * Gatekeeper's prompt, and Vulkan init with it. */
+   if (getxattr(custom_driver_desktop_st.library, "com.apple.quarantine",
+            NULL, 0, 0, 0) >= 0)
+   {
+      path_resolve_realpath(custom_driver_desktop_st.library,
+            sizeof(custom_driver_desktop_st.library), true);
+      /* The command is pasted into a shell, which expands nothing
+       * inside single quotes. */
+      if (strchr(custom_driver_desktop_st.library, '\''))
+         RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: \"%s\" is quarantined; clear its com.apple.quarantine attribute.\n",
+               path, custom_driver_desktop_st.library);
+      else
+         RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: \"%s\" is quarantined. To clear it: xattr -d com.apple.quarantine '%s'\n",
+               path, custom_driver_desktop_st.library,
+               custom_driver_desktop_st.library);
+      *msg = VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED;
+      return NULL;
+   }
+#endif
    /* The library's constructors run in the open. */
    vulkan_custom_driver_glue_mark(path, glue->core);
    if (!(handle = custom_driver_dlopen(custom_driver_desktop_st.library)))

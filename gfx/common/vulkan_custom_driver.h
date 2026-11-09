@@ -82,7 +82,8 @@ enum vulkan_custom_driver_msg
    VULKAN_CUSTOM_DRIVER_MSG_RESTART,
    VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED,
    VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED,  /* desktop FAILED: the headset runtime */
-   VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES /* desktop FAILED: extensions, interface */
+   VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES, /* desktop FAILED: extensions, interface */
+   VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED       /* macOS INVALID: the library is quarantined */
 };
 
 /* Crash state: one "<core>\t<zip or .json path>\n" line per driver that
@@ -107,7 +108,8 @@ size_t vulkan_custom_driver_trust_add(char *trust, size_t len, size_t cap,
 
 /* Loads the driver at path, on Android into the extraction dir named by
  * key. Returns its handle with *meta filled in, or NULL with *msg set to
- * VULKAN_CUSTOM_DRIVER_MSG_INVALID (bad package) or _FAILED. */
+ * VULKAN_CUSTOM_DRIVER_MSG_INVALID (bad package), _QUARANTINED (macOS:
+ * off until picked again, as INVALID) or _FAILED. */
 typedef void *(*vulkan_custom_driver_load_t)(void *data, const char *path,
       uint32_t key, struct vulkan_custom_driver_meta *meta,
       enum vulkan_custom_driver_msg *msg);

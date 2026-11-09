@@ -63,6 +63,9 @@ void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg)
       case VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES:
          id = MSG_VULKAN_CUSTOM_DRIVER_MISSING_FEATURES;
          break;
+      case VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED:
+         id = MSG_VULKAN_CUSTOM_DRIVER_QUARANTINED;
+         break;
       default:
          return;
    }
