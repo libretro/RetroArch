@@ -3309,6 +3309,7 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
          free(mp4->still_fp16);
          mp4->still_fp16 = NULL;
          if (     mp4->want_fp16
+               && mp4->stream->width <= SIZE_MAX / 8 / mp4->stream->height
                && rmp4_video_stream_is_hdr(mp4->stream)
                && (mp4->still_fp16 = (uint16_t*)malloc(
                      (size_t)mp4->stream->width

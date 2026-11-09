@@ -1060,6 +1060,48 @@ static int terminal_stream(void)
    return 0;
 }
 
+static void integer32(unsigned id, unsigned bytes, uint32_t v)
+{
+   size_t marker = start(id, bytes);
+   file[used++] = (uint8_t)(v >> 24); file[used++] = (uint8_t)(v >> 16);
+   file[used++] = (uint8_t)(v >> 8); file[used++] = (uint8_t)v;
+   finish(marker);
+}
+
+/* Sizes that fit 4 bytes a pixel, but wrap at the 8 of an HDR still. */
+static int still_size_limit(void)
+{
+   size_t m, segment, tracks, track, video, colour, cluster, n;
+   uint32_t w = sizeof(size_t) > 4 ? 0x80000000u : 0x10000u;
+   uint32_t h = sizeof(size_t) > 4 ? 0x40000000u : 8193u;
+   unsigned tries, width = 0, height = 0;
+   void *out = NULL;
+   rwebm_video_t *webm = rwebm_video_alloc();
+   CHECK(webm);
+   used = 0;
+   m = start(0x1a45dfa3, 4); finish(m);
+   segment = start(0x18538067, 4);
+   tracks = start(0x1654ae6b, 4); track = start(0xae, 1);
+   integer(0xd7, 1, 1); integer(0x83, 1, 1);
+   m = start(0x86, 1); memcpy(file + used, "V_VP9", 5); used += 5; finish(m);
+   video = start(0xe0, 1); integer32(0xb0, 1, w); integer32(0xba, 1, h);
+   colour = start(0x55b0, 2); integer(0x55ba, 2, 16); finish(colour);
+   finish(video); finish(track); finish(tracks);
+   cluster = start(0x1f43b675, 4); integer(0xe7, 1, 0);
+   n = coded(1, 1); block(0, 0x80, packet, n);
+   finish(cluster); finish(segment);
+   CHECK(rwebm_video_set_buf_ptr(webm, file, used));
+   rwebm_video_set_want_fp16(webm, 1);
+   for (tries = 0; tries < 100
+         && webm->still_stage != RWEBM_VIDEO_STILL_DECODE; tries++)
+      CHECK(rwebm_video_process_image(webm, &out, used, &width, &height, true)
+            == IMAGE_PROCESS_NEXT);
+   CHECK(webm->still_stage == RWEBM_VIDEO_STILL_DECODE);
+   CHECK(!webm->still_fp16 && !webm->stream->want_fp16);
+   rwebm_video_free(webm);
+   return 0;
+}
+
 int main(void)
 {
    rwebm_video_stream_t *s;
@@ -1221,6 +1263,7 @@ int main(void)
    CHECK(!block_references(1));
    CHECK(!block_additions());
    CHECK(!text_durations());
+   CHECK(!still_size_limit());
    CHECK(!filtered_payload(1, 0));
    CHECK(!filtered_payload(1, 1));
    CHECK(!filtered_payload(2, 0));

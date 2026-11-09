@@ -3744,6 +3744,7 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
          free(webm->still_fp16);
          webm->still_fp16 = NULL;
          if (     webm->want_fp16
+               && webm->stream->width <= SIZE_MAX / 8 / webm->stream->height
                && rwebm_video_stream_is_hdr(webm->stream)
                && (webm->still_fp16 = (uint16_t*)malloc(
                      (size_t)webm->stream->width
