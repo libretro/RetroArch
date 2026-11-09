@@ -4541,15 +4541,11 @@ static void video_driver_windows_place(video_driver_state_t *video_st,
 #endif
    video_windows_place(&video_st->windows_host, in, route);
 #ifdef ANDROID
+   /* An ordinal is its display's place in the list, from 1 */
    if (route->move)
-   {
-      unsigned i;
-      int id = -1;
-      for (i = 0; i < count; i++)
-         if (list[i].ordinal == route->move)
-            id = list[i].id;
-      android_activity_move_request(id, route->move_seq);
-   }
+      android_activity_move_request(
+            route->move <= count ? list[route->move - 1].id : -1,
+            route->move_seq);
 #endif
    /* A redraw reuses the stored route; it must not ask again */
    route->move     = 0;

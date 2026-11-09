@@ -33,6 +33,7 @@ import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseBooleanArray;
+import android.util.SparseIntArray;
 import android.view.Choreographer;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -90,6 +91,9 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private static Method getType;
   private static boolean getTypeLooked;
   private static boolean getTypeLogged;
+  /* FLAG_EXTERNAL, FLAG_INTERNAL or 0 by display id: a reflected call
+   * crosses into the runtime, and a display's type never changes */
+  private static final SparseIntArray typeFlagsById = new SparseIntArray();
 
   private final RetroActivityCommon activity;
   private final DisplayManager displayManager;
@@ -925,6 +929,18 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   /* FLAG_EXTERNAL or FLAG_INTERNAL as the hidden Display.getType() says,
    * 0 where it cannot be read */
   private static int typeFlags(Display display)
+  {
+    int id     = display.getDisplayId();
+    int cached = typeFlagsById.get(id, -1);
+    int flags;
+    if (cached >= 0)
+      return cached;
+    flags = readTypeFlags(display);
+    typeFlagsById.put(id, flags);
+    return flags;
+  }
+
+  private static int readTypeFlags(Display display)
   {
     int type;
     try

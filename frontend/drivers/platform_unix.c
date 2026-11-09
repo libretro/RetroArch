@@ -327,6 +327,7 @@ void android_activity_move_request(int display_id, unsigned move)
       return;
    /* Not asked is a failure placement hears of on the next frame */
    if (     !android_app->moveToDisplay
+         || display_id < 0
          || !(env = jni_thread_getenv()))
    {
       retro_atomic_store_release_int(
