@@ -50,6 +50,12 @@ else
    ifeq ($(shell uname -s),Darwin)
       LIBS += -framework CoreFoundation
    endif
+   ifeq ($(shell uname -s),Linux)
+      # no_ctime_fs.c: a filesystem that doesn't keep ctime, for the
+      # held-core tests
+      SOURCES += no_ctime_fs.c
+      LDFLAGS += -Wl,--wrap=fstatfs -Wl,--wrap=fstatfs64
+   endif
 endif
 
 CFLAGS += -Wall -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) \
@@ -83,9 +89,10 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-# core_signature's test library, built twice, told apart by
+# core_signature's test library, built three times, told apart by
 # core_load_test_id()
-TEST_LIBS := core_load_check_test_a$(LIB_EXT) core_load_check_test_b$(LIB_EXT)
+TEST_LIBS := core_load_check_test_a$(LIB_EXT) core_load_check_test_b$(LIB_EXT) \
+             core_load_check_test_c$(LIB_EXT)
 
 all: $(TARGET)$(EXE) $(TEST_LIBS)
 
@@ -94,6 +101,9 @@ core_load_check_test_a$(LIB_EXT): ../core_signature/core_load_lib.c
 
 core_load_check_test_b$(LIB_EXT): ../core_signature/core_load_lib.c
 	$(CC) -shared $(LIB_FLAGS) -DCORE_LOAD_ID=2 -o $@ $<
+
+core_load_check_test_c$(LIB_EXT): ../core_signature/core_load_lib.c
+	$(CC) -shared $(LIB_FLAGS) -DCORE_LOAD_ID=3 -o $@ $<
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -112,7 +122,8 @@ check: all
 clean:
 	rm -rf $(SAMPLE_OBJDIR) core_load_check_test_tmp
 	rm -f $(TARGET) $(TARGET).exe $(OBJS) core_load_check_test_a.so \
-	      core_load_check_test_b.so core_load_check_test_a.dll \
-	      core_load_check_test_b.dll
+	      core_load_check_test_b.so core_load_check_test_c.so \
+	      core_load_check_test_a.dll core_load_check_test_b.dll \
+	      core_load_check_test_c.dll
 
 .PHONY: all check clean

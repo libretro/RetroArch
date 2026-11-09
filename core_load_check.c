@@ -68,6 +68,7 @@ static struct
    unsigned gen;
    bool startup;
    bool refused_seed;  /* refused only until the seed is done */
+   bool running;  /* loaded and not yet unloaded */
 } core_load_rt;
 
 /* A user-facing request waits for path's check: its refusal keeps the
@@ -234,6 +235,18 @@ static core_file_t *core_load_slot_file(const struct core_load_slot *sl,
       return f;
    core_file_close(f);
    return NULL;
+}
+
+/* The core loaded last, while its held file or its identity binds its
+ * pass: the file to open it from (*lent: the record's own), or NULL */
+static core_file_t *core_load_loaded_file(const char *path, bool *lent)
+{
+   *lent = false;
+   if (     !core_load_slot_is(&core_load_rt.loaded, path)
+         || !core_load_rt.loaded.pass)
+      return NULL;
+   return core_load_slot_file(&core_load_rt.loaded,
+         core_load_rt.check_path, lent);
 }
 
 static void core_load_slot_set(struct core_load_slot *sl, const char *path,
@@ -450,10 +463,9 @@ enum core_load_gate core_load_check_open(const char *path, dylib_t *lib)
 #endif
       goto end;
    }
-   /* The running core, opened again for its system info */
-   if (     core_load_slot_is(&core_load_rt.loaded, path)
-         && (g = core_load_slot_file(&core_load_rt.loaded,
-               core_load_rt.check_path, &lent)))
+   /* The core loaded last, opened again for its system info or its
+    * reload */
+   if ((g = core_load_loaded_file(path, &lent)))
    {
       *lib                 = core_load_file(g, path);
       core_load_rt.granted = CORE_LOAD_GRANT_LOADED;
@@ -561,6 +573,12 @@ bool core_load_check_refused_seed(const char *path)
 void core_load_check_loaded(void)
 {
    struct core_load_slot *from = NULL;
+   core_load_rt.running        = true;
+   /* Any other pass the slot keeps, such as a Load Once whose re-run
+    * only probed, ends when a core loads */
+   if (     core_load_rt.slot.pass
+         && core_load_rt.granted != CORE_LOAD_GRANT_SLOT)
+      core_load_slot_clear(&core_load_rt.slot);
    if (core_load_rt.granted == CORE_LOAD_GRANT_LOADED)
       return;
    core_load_slot_clear(&core_load_rt.loaded);
@@ -573,17 +591,37 @@ void core_load_check_loaded(void)
       return;
    core_load_rt.loaded = *from;
    memset(from, 0, sizeof(*from));
-   /* Loaded: the identity binds it from now on, where it can */
-   if (core_load_rt.loaded.f && core_load_rt.loaded.c.rec.id.ctime_kept)
+   /* Loaded: the identity binds it from now on where it can, else only
+    * its held file; with neither, no probe passes on it */
+   if (core_load_rt.loaded.c.rec.id.ctime_kept)
    {
       core_file_close(core_load_rt.loaded.f);
       core_load_rt.loaded.f = NULL;
    }
+   else if (!core_load_rt.loaded.f)
+      core_load_rt.loaded.pass = false;
 }
 
 void core_load_check_unloaded(void)
 {
-   core_load_slot_clear(&core_load_rt.loaded);
+   core_load_rt.running = false;
+   /* Kept while it passes, Load Once too: the reload after Close
+    * Content and menu or driver init pass it */
+   if (!core_load_rt.loaded.pass)
+      core_load_slot_clear(&core_load_rt.loaded);
+}
+
+void core_load_check_release_held(void)
+{
+   core_file_close(core_load_rt.loaded.f);
+   core_load_rt.loaded.f    = NULL;
+   core_load_rt.loaded.pass = false;
+   /* A running core's record stays for run-ahead's source */
+   if (!core_load_rt.running)
+      core_load_slot_clear(&core_load_rt.loaded);
+   /* A pass or a refusal: no kept file may block the task */
+   if (core_load_rt.slot.f)
+      core_load_slot_clear(&core_load_rt.slot);
 }
 
 void core_load_check_set_startup(bool on)
@@ -601,4 +639,5 @@ void core_load_check_deinit(void)
    core_load_rt.refused[0]  = '\0';
    core_load_rt.granted     = CORE_LOAD_GRANT_NONE;
    core_load_rt.startup     = false;
+   core_load_rt.running     = false;
 }
