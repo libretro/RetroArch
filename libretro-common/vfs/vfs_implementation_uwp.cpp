@@ -531,6 +531,50 @@ int retro_vfs_restrict_permissions_impl(const char* path)
     return 0;
 }
 
+/* MoveFileFromAppW cannot replace an existing file, so a destination in
+ * the way is moved aside, the source moved into place, and the moved-aside
+ * copy deleted only then - or put back if the source could not be moved.
+ * A leftover aside from an interrupted run is removed only when it is in
+ * the way, and never if it is the source being restored. */
+static bool uwp_move_file_replacing(const std::wstring &old_path,
+      const std::wstring &new_path)
+{
+    WIN32_FILE_ATTRIBUTE_DATA target_info;
+    std::wstring aside;
+
+    /* Names differing only in case are one file here: moving it aside
+     * would take the source along. */
+    if (     _wcsicmp(old_path.c_str(), new_path.c_str()) != 0
+          && GetFileAttributesExFromAppW(new_path.c_str(),
+                GetFileExInfoStandard, &target_info)
+          && target_info.dwFileAttributes != INVALID_FILE_ATTRIBUTES
+          && target_info.dwFileAttributes != 0
+          && !(target_info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+    {
+        aside = new_path + L".old";
+        if (_wcsicmp(aside.c_str(), old_path.c_str()) == 0)
+            aside += L"2";
+        /* All three return nonzero on success. */
+        if (     !MoveFileFromAppW(new_path.c_str(), aside.c_str())
+              && (     !DeleteFileFromAppW(aside.c_str())
+                    || !MoveFileFromAppW(new_path.c_str(), aside.c_str())))
+            return false;
+    }
+
+    if (!MoveFileFromAppW(old_path.c_str(), new_path.c_str()))
+    {
+        if (!aside.empty())
+            MoveFileFromAppW(aside.c_str(), new_path.c_str());
+        return false;
+    }
+
+    if (!aside.empty())
+        DeleteFileFromAppW(aside.c_str());
+    /* Set ACL */
+    uwp_set_acl(new_path.c_str(), L"S-1-15-2-1");
+    return true;
+}
+
 /* The first run parameter is used to avoid error checking
  * when doing recursion.
  * Unlike the initial implementation, this can move folders
@@ -548,7 +592,7 @@ static int uwp_move_path(
 
     if (firstrun)
     {
-        WIN32_FILE_ATTRIBUTE_DATA lpFileInfo, targetfileinfo;
+        WIN32_FILE_ATTRIBUTE_DATA lpFileInfo;
         bool parent_dir_exists = false;
 
         /* Make sure that parent path exists */
@@ -587,31 +631,8 @@ static int uwp_move_path(
                 }
                 else
                 {
-                    /* The file that we want to move exists so we can copy it now
-                     * check if target file already exists. */
-                   if (GetFileAttributesExFromAppW(
-                            new_path.wstring().c_str(),
-                            GetFileExInfoStandard,
-                            &targetfileinfo))
-                    {
-                        if (
-                                 targetfileinfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES
-                              && targetfileinfo.dwFileAttributes != 0
-                              && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
-                        {
-                            /* DeleteFileFromAppW returns nonzero on
-                             * success; MoveFileFromAppW cannot replace
-                             * an existing destination. */
-                            if (!DeleteFileFromAppW(new_path.wstring().c_str()))
-                                return -1;
-                        }
-                    }
-
-                    if (!MoveFileFromAppW(old_path.wstring().c_str(),
-                             new_path.wstring().c_str()))
+                    if (!uwp_move_file_replacing(old_path.wstring(), new_path.wstring()))
                         return -1;
-                    /* Set ACL */
-                    uwp_set_acl(new_path.wstring().c_str(), L"S-1-15-2-1");
                 }
             }
             else
@@ -654,34 +675,8 @@ static int uwp_move_path(
                 }
                 else
                 {
-                   WIN32_FILE_ATTRIBUTE_DATA targetfileinfo;
-                   /* The file that we want to move exists so we can copy
-                    * it now.
-                    * Check if target file already exists. */
-                   if (GetFileAttributesExFromAppW(temp_new.wstring().c_str(),
-                            GetFileExInfoStandard, &targetfileinfo))
-                   {
-                      if (
-                               (targetfileinfo.dwFileAttributes !=
-                                INVALID_FILE_ATTRIBUTES)
-                            && (targetfileinfo.dwFileAttributes != 0)
-                            && (!(targetfileinfo.dwFileAttributes
-                                  & FILE_ATTRIBUTE_DIRECTORY)))
-                      {
-                         /* Nonzero is success. */
-                         if (!DeleteFileFromAppW(temp_new.wstring().c_str()))
-                            fail = true;
-                      }
-                   }
-
-                   if (!MoveFileFromAppW(temp_old.wstring().c_str(),
-                            temp_new.wstring().c_str()))
+                   if (!uwp_move_file_replacing(temp_old.wstring(), temp_new.wstring()))
                       fail = true;
-                   /* Set ACL - this step sucks or at least used to
-                    * before I made a whole function
-                    * Don't know if we actually "need" to set the ACL
-                    * though */
-                   uwp_set_acl(temp_new.wstring().c_str(), L"S-1-15-2-1");
                 }
              }
           } while (FindNextFile(searchResults, &findDataResult));
