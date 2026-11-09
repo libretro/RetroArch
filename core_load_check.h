@@ -49,6 +49,18 @@ void core_load_check_release_held(void);
 void core_load_check_set_startup(bool on);
 void core_load_check_deinit(void);
 
+/* The check stage of a staged load (runloop_core_preload_*), path as
+ * the core stage opens it. False: no trust store. */
+bool core_load_check_stage_begin(const char *path);
+/* Polled each frame: true once the core stage may run */
+bool core_load_check_stage_ready(void);
+/* The stage's core was refused */
+bool core_load_check_stage_refused(void);
+/* The library a worker opened from the checked file, or NULL; ends the
+ * stage */
+dylib_t core_load_check_stage_take(const char *path);
+void core_load_check_stage_cancel(void);
+
 RETRO_END_DECLS
 
 #endif

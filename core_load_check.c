@@ -12,6 +12,8 @@
 #include "core_load_check.h"
 #include "core_load_file.h"
 #include "core_trust_runtime.h"
+#include "msg_hash.h"
+#include "runloop.h"
 #include "tasks/tasks_internal.h"
 #include "verbosity.h"
 #ifdef ANDROID
@@ -54,18 +56,49 @@ enum core_load_grant
    CORE_LOAD_GRANT_LOADED
 };
 
+enum core_load_stage
+{
+   CORE_LOAD_STAGE_NONE = 0,
+   CORE_LOAD_STAGE_SEED,
+   CORE_LOAD_STAGE_CHECK,
+   CORE_LOAD_STAGE_OPEN,
+   CORE_LOAD_STAGE_DONE
+};
+
+/* Opens the checked file on a worker: the loader maps the core and
+ * runs its constructors off the frame loop */
+struct core_load_open_task
+{
+   struct core_identity id;   /* the file checked */
+   core_file_t *f;
+   char *path;
+   char *check_path;
+   dylib_t lib;
+   unsigned gen;
+   bool moved;                /* not the file checked any more */
+};
+
 static struct
 {
    struct core_load_slot slot;    /* the latest check */
    struct core_load_slot loaded;  /* the core loaded last */
    struct core_load_slot quick;   /* the last quick pass */
    struct core_check c;
+   core_file_t *stage_f;          /* the checked file the open uses */
+   dylib_t stage_lib;
    char path[PATH_MAX_LENGTH];
    char check_path[PATH_MAX_LENGTH];
    char refused[PATH_MAX_LENGTH];
    char checking[PATH_MAX_LENGTH];
+   char stage_path[PATH_MAX_LENGTH];
+   enum core_load_stage stage;
+   enum core_load_grant stage_grant;
    enum core_load_grant granted;
    unsigned gen;
+   unsigned stage_gen;
+   bool stage_lent;               /* stage_f is the slot's own */
+   bool stage_refused;
+   bool stage_moved;              /* its re-check was logged */
    bool startup;
    bool refused_seed;  /* refused only until the seed is done */
    bool running;  /* loaded and not yet unloaded */
@@ -75,8 +108,8 @@ static struct
  * file, and a quiet result never replaces its slot */
 static bool core_load_check_waited(const char *path)
 {
-   (void)path;
-   return false;
+   return core_load_rt.stage == CORE_LOAD_STAGE_CHECK
+      && string_is_equal(core_load_rt.stage_path, path);
 }
 
 static void core_load_slot_clear(struct core_load_slot *sl)
@@ -312,6 +345,10 @@ static void core_load_check_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
+static void core_load_check_stage_result(const char *path, bool pass);
+static void core_load_check_stage_start(void);
+static void core_load_check_stage_file_drop(void);
+
 static void core_load_check_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
@@ -325,9 +362,13 @@ static void core_load_check_cb(retro_task_t *task, void *task_data,
       return;
    if (string_is_equal(core_load_rt.checking, t->path))
       core_load_rt.checking[0] = '\0';
-   /* Its hash may not have ended: no verdict */
+   /* Its hash may not have ended: no verdict, and a load waiting on it
+    * is refused */
    if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+   {
+      core_load_check_stage_result(t->path, false);
       return;
+   }
    user = core_load_check_waited(t->path);
    if (!core_trust_runtime_apply(&t->c))
       RARCH_WARN("[Core] Could not record the check of \"%s\".\n",
@@ -352,6 +393,7 @@ static void core_load_check_cb(retro_task_t *task, void *task_data,
       return;
    core_load_slot_set(&core_load_rt.slot, t->path, &t->c, &t->f, user);
    core_load_slot_keep_store(&core_load_rt.slot, &t->s);
+   core_load_check_stage_result(t->path, core_load_rt.slot.pass);
 }
 
 static void core_load_check_cleanup(retro_task_t *task)
@@ -364,8 +406,9 @@ static void core_load_check_cleanup(retro_task_t *task)
 }
 
 /* Hashes f (which it takes) in a task; the result goes to the slot.
- * A check of path already running is joined instead. */
-static void core_load_check_push(core_file_t *f, const char *path,
+ * A check of path already running is joined instead. False: no check
+ * will answer. */
+static bool core_load_check_push(core_file_t *f, const char *path,
       const char *check_path, const struct core_check *c)
 {
    struct core_load_check_task *t = NULL;
@@ -373,12 +416,12 @@ static void core_load_check_push(core_file_t *f, const char *path,
    if (string_is_equal(core_load_rt.checking, path))
    {
       core_file_close(f);
-      return;
+      return true;
    }
    if (!(t = (struct core_load_check_task*)calloc(1, sizeof(*t))))
    {
       core_file_close(f);
-      return;
+      return false;
    }
    t->f          = f;
    t->c          = *c;
@@ -393,7 +436,7 @@ static void core_load_check_push(core_file_t *f, const char *path,
          || !(task = task_init()))
    {
       core_load_check_task_free(t);
-      return;
+      return false;
    }
    task->handler  = core_load_check_handler;
    task->callback = core_load_check_cb;
@@ -402,6 +445,289 @@ static void core_load_check_push(core_file_t *f, const char *path,
    task->flags   |= RETRO_TASK_FLG_MUTE;
    strlcpy(core_load_rt.checking, path, sizeof(core_load_rt.checking));
    task_queue_push(task);
+   return true;
+}
+
+static void core_load_check_osd_checking(const char *path)
+{
+   char msg[NAME_MAX_LENGTH + 64];
+   size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CHECKING_CORE),
+         sizeof(msg));
+   if (_len < sizeof(msg))
+      strlcpy(msg + _len, path_basename_nocompression(path),
+            sizeof(msg) - _len);
+   runloop_msg_queue_push(msg, strlen(msg), 1, 180, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+/* Worker: loaded by path outside Android, so only while the path still
+ * names the file checked, unchanged, which o->f holds; on Android from
+ * o->f, so only while it is unchanged. A pass with checks off records
+ * no identity: nothing to compare. */
+static bool core_load_open_names(const struct core_load_open_task *o)
+{
+   struct core_identity none;
+#ifndef ANDROID
+   core_file_t *f = NULL;
+   bool same;
+#endif
+   memset(&none, 0, sizeof(none));
+   if (core_identity_equal(&o->id, &none))
+      return true;
+#ifdef ANDROID
+   return core_load_same_held(&o->id, o->f);
+#else
+   same = (f = core_file_open(o->check_path))
+      && core_load_same_held(&o->id, f);
+   core_file_close(f);
+   return same;
+#endif
+}
+
+/* Once a stage: a file that keeps moving is checked again each time */
+static void core_load_check_stage_moved(void)
+{
+   if (!core_load_rt.stage_moved)
+      RARCH_LOG("[Core] \"%s\" changed after its check: checking it again.\n",
+            core_load_rt.stage_path);
+   core_load_rt.stage_moved = true;
+}
+
+static void core_load_open_handler(retro_task_t *task)
+{
+   struct core_load_open_task *o = (struct core_load_open_task*)
+      task->state;
+   o->moved = !core_load_open_names(o);
+   if (!o->moved)
+      o->lib = core_load_file(o->f, o->path);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void core_load_open_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   struct core_load_open_task *o = (struct core_load_open_task*)
+      task->state;
+   (void)task_data;
+   (void)user_data;
+   (void)err;
+   /* Superseded: the cleanup closes both */
+   if (     !o
+         || o->gen != core_load_rt.stage_gen
+         || core_load_rt.stage != CORE_LOAD_STAGE_OPEN)
+      return;
+   if (o->moved)
+   {
+      /* Its pass went with the file: the path is checked again */
+      core_load_check_stage_file_drop();
+      core_load_check_stage_moved();
+      core_load_check_stage_start();
+      return;
+   }
+   core_load_rt.stage_lib = o->lib;
+   core_load_rt.stage_f   = o->f;
+   o->lib                 = NULL;
+   o->f                   = NULL;
+   core_load_rt.stage     = CORE_LOAD_STAGE_DONE;
+}
+
+static void core_load_open_cleanup(retro_task_t *task)
+{
+   struct core_load_open_task *o = (struct core_load_open_task*)
+      task->state;
+   if (!o)
+      return;
+   if (o->lib)
+      dylib_close(o->lib);
+   core_file_close(o->f);
+   free(o->path);
+   free(o->check_path);
+   free(o);
+   task->state = NULL;
+}
+
+static void core_load_check_stage_open(void)
+{
+   struct core_load_open_task *o = NULL;
+   retro_task_t *task            = NULL;
+   if (     !core_load_rt.stage_f
+         || !core_load_check_file_path(core_load_rt.stage_path,
+            core_load_rt.check_path, sizeof(core_load_rt.check_path))
+         || !(o = (struct core_load_open_task*)calloc(1, sizeof(*o))))
+      return;
+   if (     !(o->path       = strdup(core_load_rt.stage_path))
+         || !(o->check_path = strdup(core_load_rt.check_path))
+         || !(task          = task_init()))
+   {
+      free(o->path);
+      free(o->check_path);
+      free(o);
+      return;
+   }
+   o->id                = (core_load_rt.stage_grant == CORE_LOAD_GRANT_SLOT
+         ? &core_load_rt.slot : &core_load_rt.quick)->c.rec.id;
+   o->f                 = core_load_rt.stage_f;
+   o->gen               = core_load_rt.stage_gen;
+   core_load_rt.stage_f = NULL;
+   task->handler        = core_load_open_handler;
+   task->callback       = core_load_open_cb;
+   task->cleanup        = core_load_open_cleanup;
+   task->state          = o;
+   task->flags         |= RETRO_TASK_FLG_MUTE;
+   core_load_rt.stage   = CORE_LOAD_STAGE_OPEN;
+   task_queue_push(task);
+}
+
+/* The stage's file back to the slot that lent it, else closed */
+static void core_load_check_stage_file_drop(void)
+{
+   if (     core_load_rt.stage_lent
+         && core_load_slot_is(&core_load_rt.slot, core_load_rt.stage_path)
+         && !core_load_rt.slot.f)
+   {
+      if (core_load_rt.stage_f)
+      {
+         core_load_rt.slot.f  = core_load_rt.stage_f;
+         core_load_rt.stage_f = NULL;
+      }
+      /* It went with a superseded open: no pass without its file */
+      else
+         core_load_slot_clear(&core_load_rt.slot);
+   }
+   core_file_close(core_load_rt.stage_f);
+   core_load_rt.stage_f    = NULL;
+   core_load_rt.stage_lent = false;
+}
+
+/* The stage's core has its answer: with a worker, a pass opens there
+ * from the file checked */
+static void core_load_check_stage_settle(bool pass,
+      enum core_load_grant grant)
+{
+   bool lent                  = false;
+   core_load_rt.stage         = CORE_LOAD_STAGE_DONE;
+   core_load_rt.stage_refused = !pass;
+   core_load_rt.stage_grant   = grant;
+   /* Else the core stage opens it */
+   if (!pass || !task_queue_is_threaded())
+   {
+      core_load_check_stage_file_drop();
+      return;
+   }
+   if (grant == CORE_LOAD_GRANT_SLOT && !core_load_rt.stage_f)
+   {
+      if (core_load_rt.slot.f)
+      {
+         /* The pass's own file, back to the slot at the take */
+         core_load_rt.stage_f    = core_load_rt.slot.f;
+         core_load_rt.slot.f     = NULL;
+         core_load_rt.stage_lent = true;
+      }
+      else if (core_load_check_file_path(core_load_rt.stage_path,
+               core_load_rt.check_path, sizeof(core_load_rt.check_path))
+            && !(core_load_rt.stage_f = core_load_slot_file(
+                  &core_load_rt.slot, core_load_rt.check_path, &lent)))
+      {
+         /* Changed since its check: checked again */
+         core_load_check_stage_moved();
+         core_load_check_stage_start();
+         return;
+      }
+   }
+   core_load_check_stage_open();
+}
+
+/* In order: the quick check, a pass the slot holds, the seed's wait, a
+ * refusal the slot holds for this file and store, or a check task */
+static void core_load_check_stage_start(void)
+{
+   const char *path    = core_load_rt.stage_path;
+   core_trust_set_t *s = core_trust_runtime_get();
+   core_file_t *f      = NULL;
+   core_file_t *g      = NULL;   /* a record's file */
+   bool lent           = false;
+   /* No store, no file the check can vouch for, the core loaded last
+    * (the gate passes it from its record: nothing to hash or keep), or
+    * a file that can't be opened: the core stage's own open answers */
+   if (     !s
+         || !core_load_check_file_path(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path))
+         || (g = core_load_loaded_file(path, &lent))
+         || !(f = core_file_open(core_load_rt.check_path)))
+   {
+      core_load_rt.stage = CORE_LOAD_STAGE_DONE;
+      goto end;
+   }
+   if (core_check_quick(s, f, core_load_rt.check_path, &core_load_rt.c))
+   {
+      bool pass = (core_load_rt.c.result == CORE_CHECK_OK);
+      if (pass)
+      {
+         core_load_slot_clear(&core_load_rt.quick);
+         core_load_rt.quick.c    = core_load_rt.c;
+         core_load_rt.quick.used = true;
+         core_load_rt.quick.pass = true;
+         strlcpy(core_load_rt.quick.path, path,
+               sizeof(core_load_rt.quick.path));
+         core_load_rt.stage_f    = f;
+         f                       = NULL;
+      }
+      core_load_check_stage_settle(pass, CORE_LOAD_GRANT_QUICK);
+      goto end;
+   }
+   if (core_load_slot_is(&core_load_rt.slot, path))
+      g = core_load_slot_file(&core_load_rt.slot, core_load_rt.check_path,
+            &lent);
+   if (g && core_load_rt.slot.pass)
+   {
+      /* The file the gate would open it from */
+      core_load_rt.stage_f    = g;
+      core_load_rt.stage_lent = lent;
+      if (lent)
+         core_load_rt.slot.f  = NULL;
+      g                       = NULL;
+      core_load_check_stage_settle(true, CORE_LOAD_GRANT_SLOT);
+      goto end;
+   }
+   /* The seed may trust it; that it covers it is only a guess */
+   if (     core_trust_runtime_seed_pending()
+         && core_trust_runtime_seed_covers(path))
+   {
+      core_load_rt.stage = CORE_LOAD_STAGE_SEED;
+      goto end;
+   }
+   if (g && core_load_slot_refusal_holds(s))
+   {
+      core_load_check_stage_settle(false, CORE_LOAD_GRANT_SLOT);
+      goto end;
+   }
+   if (core_load_slot_is(&core_load_rt.slot, path))
+   {
+      /* Replaced, or the store changed, since its check */
+      if (lent)
+         g = NULL;
+      core_load_slot_clear(&core_load_rt.slot);
+   }
+   core_load_rt.stage = CORE_LOAD_STAGE_CHECK;
+   /* No check will answer: refused, as a cancelled one is */
+   if (!core_load_check_push(f, path, core_load_rt.check_path,
+            &core_load_rt.c))
+      core_load_check_stage_settle(false, CORE_LOAD_GRANT_SLOT);
+   f = NULL;
+end:
+   /* A lent g went to the stage or stays its record's */
+   if (g && !lent)
+      core_file_close(g);
+   core_file_close(f);
+   core_trust_set_put(s);
+}
+
+static void core_load_check_stage_result(const char *path, bool pass)
+{
+   if (     core_load_rt.stage != CORE_LOAD_STAGE_CHECK
+         || !string_is_equal(core_load_rt.stage_path, path))
+      return;
+   core_load_check_stage_settle(pass, CORE_LOAD_GRANT_SLOT);
 }
 
 /* The startup load runs every stage in one pass before the frame loop
@@ -629,8 +955,77 @@ void core_load_check_set_startup(bool on)
    core_load_rt.startup = on;
 }
 
+bool core_load_check_stage_begin(const char *path)
+{
+   if (!core_trust_runtime_active())
+      return false;
+   core_load_check_stage_cancel();
+   /* Only an open after this counts as this load's refusal */
+   core_load_rt.refused[0] = '\0';
+   core_load_abs(path, core_load_rt.stage_path,
+         sizeof(core_load_rt.stage_path));
+   core_load_check_stage_start();
+   if (     core_load_rt.stage == CORE_LOAD_STAGE_SEED
+         || core_load_rt.stage == CORE_LOAD_STAGE_CHECK)
+      core_load_check_osd_checking(core_load_rt.stage_path);
+   return true;
+}
+
+bool core_load_check_stage_ready(void)
+{
+   if (     core_load_rt.stage == CORE_LOAD_STAGE_SEED
+         && !core_trust_runtime_seed_pending())
+      core_load_check_stage_start();
+   return core_load_rt.stage == CORE_LOAD_STAGE_DONE
+      ||  core_load_rt.stage == CORE_LOAD_STAGE_NONE;
+}
+
+bool core_load_check_stage_refused(void)
+{
+   return core_load_rt.stage == CORE_LOAD_STAGE_DONE
+      &&  core_load_rt.stage_refused;
+}
+
+dylib_t core_load_check_stage_take(const char *path)
+{
+   dylib_t lib = NULL;
+   if (core_load_rt.stage == CORE_LOAD_STAGE_DONE && core_load_rt.stage_lib)
+   {
+      core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+      if (string_is_equal(core_load_rt.path, core_load_rt.stage_path))
+      {
+         lib                    = core_load_rt.stage_lib;
+         core_load_rt.stage_lib = NULL;
+         /* Not a grant a probe made while it opened */
+         core_load_rt.granted   = CORE_LOAD_GRANT_NONE;
+         if (core_load_slot_is(
+                  core_load_rt.stage_grant == CORE_LOAD_GRANT_SLOT
+                  ? &core_load_rt.slot : &core_load_rt.quick,
+                  core_load_rt.stage_path))
+            core_load_rt.granted = core_load_rt.stage_grant;
+      }
+   }
+   core_load_check_stage_cancel();
+   return lib;
+}
+
+void core_load_check_stage_cancel(void)
+{
+   if (core_load_rt.stage_lib)
+   {
+      dylib_close(core_load_rt.stage_lib);
+      core_load_rt.stage_lib = NULL;
+   }
+   core_load_check_stage_file_drop();
+   core_load_rt.stage_refused = false;
+   core_load_rt.stage_moved   = false;
+   core_load_rt.stage         = CORE_LOAD_STAGE_NONE;
+   core_load_rt.stage_gen++;
+}
+
 void core_load_check_deinit(void)
 {
+   core_load_check_stage_cancel();
    core_load_rt.gen++;
    core_load_slot_clear(&core_load_rt.slot);
    core_load_slot_clear(&core_load_rt.loaded);
