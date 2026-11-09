@@ -7033,7 +7033,9 @@ typedef struct
    bool begun;
    bool failed;              /* LIST, PATH: out of memory */
 #ifdef HAVE_SMBCLIENT
-   struct string_list *smb_down; /* LOAD, PATH: the chain's, copied */
+   /* LOAD, PATH: the chain's, lent: a chain runs one task at a time
+    * and changes it only in that task's callback. */
+   const struct string_list *smb_down;
    char smb_share[256];      /* LOAD: the share it found down */
    bool smb_up;              /* LOAD: the chain's, then what it found */
    bool smb_root;            /* LOAD: a refresh-all's first load */
@@ -7047,6 +7049,10 @@ typedef struct
    char *name;
    char *dir;            /* its saved content folder */
    char *key;            /* NULL: it runs alone */
+#ifdef HAVE_SMBCLIENT
+   char *smb_detail;     /* what a refused share names, or NULL */
+   enum msg_hash_enums smb_reason; /* why its smb:// folder is not there */
+#endif
    enum dbscan_load_status load;
    bool done;            /* ran in an earlier playlist's group */
 } dbscan_refresh_t;
@@ -7109,6 +7115,9 @@ static void dbscan_chain_free_refreshes(dbscan_chain_t *chain)
       free(chain->refreshes[i].name);
       free(chain->refreshes[i].dir);
       free(chain->refreshes[i].key);
+#ifdef HAVE_SMBCLIENT
+      free(chain->refreshes[i].smb_detail);
+#endif
    }
    free(chain->refreshes);
    chain->refreshes = NULL;
@@ -7308,6 +7317,43 @@ static void dbscan_chain_refresh_error(const dbscan_chain_t *chain,
       if (chain->cli_output)
          fprintf(stderr, "%s: %s\n", name, reason);
    }
+}
+
+/* Why a load or a kept record found its folder not there. */
+#ifdef HAVE_SMBCLIENT
+#define DBSCAN_SMB_WHY(s) (s)->smb_reason, (s)->smb_detail
+#else
+#define DBSCAN_SMB_WHY(s) MSG_UNKNOWN, NULL
+#endif
+
+/* The line for a refresh whose folder @dir is not there: @reason, an
+ * MSG_SCAN_SMB_* with @detail, says why when anything is known. */
+static void dbscan_chain_skip_missing(const dbscan_chain_t *chain,
+      const char *name, const char *dir, enum msg_hash_enums reason,
+      const char *detail)
+{
+#ifdef HAVE_SMBCLIENT
+   if (reason != MSG_UNKNOWN)
+   {
+      char text[320];
+
+      /* English, whatever the UI language; the folder takes the
+       * brackets. */
+      if (detail && *detail)
+         snprintf(text, sizeof(text), "skipped: %s %s",
+               msg_hash_to_str_us(reason), detail);
+      else
+         snprintf(text, sizeof(text), "skipped: %s",
+               msg_hash_to_str_us(reason));
+      dbscan_chain_refresh_error(chain, name, text, dir);
+      return;
+   }
+#else
+   (void)reason;
+   (void)detail;
+#endif
+   dbscan_chain_refresh_error(chain, name,
+         "skipped: content folder not found", dir);
 }
 
 static void dbscan_chain_next(dbscan_chain_t *chain);
@@ -7754,6 +7800,7 @@ static char *dbscan_refresh_key(const dbscan_prep_t *prep,
 {
    char own[NAME_MAX_LENGTH];
    size_t i, dlen, _len;
+   size_t name_len   = strlen(prep->name);
    playlist_t *pl    = prep->playlist;
    unsigned flags    = ov ? ov->flags : 0;
    bool recursive    = playlist_get_scan_search_recursively(pl)
@@ -7773,11 +7820,12 @@ static char *dbscan_refresh_key(const dbscan_prep_t *prep,
    char *key         = NULL;
    bool installed    = false;
 
+   /* Once per playlist on the main thread: compared in place */
    for (i = 0; !installed && i < rdb_list->size; i++)
    {
-      fill_pathname(own, path_basename(rdb_list->elems[i].data), "",
-            sizeof(own));
-      installed = string_is_equal(own, prep->name);
+      const char *base = path_basename(rdb_list->elems[i].data);
+      installed        = !strncmp(base, prep->name, name_len)
+            && string_is_equal_case_insensitive(base + name_len, ".rdb");
    }
    /* As a group saves it; fill_pathname() would cut a dotted name. */
    strlcpy(own, prep->name, sizeof(own));
@@ -8056,12 +8104,18 @@ static void dbscan_chain_keep_loaded(dbscan_chain_t *chain,
    r->load = prep->load;
    if (r->load == DBSCAN_LOAD_NO_SETTINGS)
       return;
-   /* Out of memory it runs alone.  A missing folder keeps it: its
-    * group skips with one line. */
+#ifdef HAVE_SMBCLIENT
+   r->smb_reason = prep->smb_reason;
+   if (*prep->smb_detail)
+      r->smb_detail = strdup(prep->smb_detail);
+#endif
+   /* Out of memory it runs alone.  A missing or empty folder keeps it:
+    * its group skips with one line, and without a second load. */
    if (   dir && (r->dir = strdup(dir))
        && chain->rdb_list
        && (   r->load == DBSCAN_LOAD_OK
-           || r->load == DBSCAN_LOAD_FOLDER_MISSING))
+           || r->load == DBSCAN_LOAD_FOLDER_MISSING
+           || r->load == DBSCAN_LOAD_FOLDER_EMPTY))
       r->key = dbscan_refresh_key(prep, chain->rdb_list,
             chain->items[chain->next - 1].overrides);
    r->name    = prep->name;
@@ -8158,28 +8212,9 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
          dbscan_chain_fold(chain, arg, TASK_DBSCAN_FAILED, NULL);
          break;
       case DBSCAN_LOAD_FOLDER_MISSING:
-#ifdef HAVE_SMBCLIENT
-         if (prep->smb_reason != MSG_UNKNOWN)
-         {
-            char reason[320];
-
-            /* English, whatever the UI language; the folder takes the
-             * brackets. */
-            if (*prep->smb_detail)
-               snprintf(reason, sizeof(reason), "skipped: %s %s",
-                     msg_hash_to_str_us(prep->smb_reason),
-                     prep->smb_detail);
-            else
-               snprintf(reason, sizeof(reason), "skipped: %s",
-                     msg_hash_to_str_us(prep->smb_reason));
-            dbscan_chain_refresh_error(chain, *name, reason,
-                  playlist_get_scan_content_dir(prep->playlist));
-         }
-         else
-#endif
-            dbscan_chain_refresh_error(chain, *name,
-                  "skipped: content folder not found",
-                  playlist_get_scan_content_dir(prep->playlist));
+         dbscan_chain_skip_missing(chain, *name,
+               playlist_get_scan_content_dir(prep->playlist),
+               DBSCAN_SMB_WHY(prep));
          dbscan_chain_fold(chain, *name, TASK_DBSCAN_SKIPPED, NULL);
          break;
       case DBSCAN_LOAD_FOLDER_EMPTY:
@@ -8217,9 +8252,6 @@ static void dbscan_prep_state_free(dbscan_prep_t *prep)
    free(prep->ov_dat);
    free(prep->path);
    free(prep->detail);
-#ifdef HAVE_SMBCLIENT
-   string_list_free(prep->smb_down);
-#endif
    free(prep);
 }
 
@@ -8241,29 +8273,6 @@ static bool dbscan_prep_take_overrides(dbscan_prep_t *prep,
       return false;
    if (ov->dat && !(prep->ov_dat = strdup(ov->dat)))
       return false;
-   return true;
-}
-
-/* Copies the shares the chain found down into @prep, for its worker;
- * false out of memory. */
-static bool dbscan_prep_take_smb_down(dbscan_prep_t *prep,
-      const dbscan_chain_t *chain)
-{
-#ifdef HAVE_SMBCLIENT
-   size_t i;
-   union string_list_elem_attr attr;
-
-   if (!chain->smb_down)
-      return true;
-   /* Not string_list_clone(): it makes "", every share, NULL. */
-   if (!(prep->smb_down = string_list_new()))
-      return false;
-   attr.i = 0;
-   for (i = 0; i < chain->smb_down->size; i++)
-      if (!string_list_append(prep->smb_down,
-            chain->smb_down->elems[i].data, attr))
-         return false;
-#endif
    return true;
 }
 
@@ -8310,10 +8319,12 @@ static dbscan_prep_t *dbscan_prep_load_new(dbscan_chain_t *chain)
    if (!prep)
       return NULL;
    prep->kind = DBSCAN_PREP_LOAD;
+#ifdef HAVE_SMBCLIENT
+   prep->smb_down = chain->smb_down;
+#endif
    if (   !(prep->name = (char*)malloc(NAME_MAX_LENGTH))
        || !dbscan_prep_take_overrides(prep,
-            &chain->items[chain->next - 1])
-       || !dbscan_prep_take_smb_down(prep, chain))
+            &chain->items[chain->next - 1]))
    {
       dbscan_prep_state_free(prep);
       return NULL;
@@ -8409,9 +8420,11 @@ static bool dbscan_chain_push_path(dbscan_chain_t *chain,
    if (prep)
    {
       prep->kind = DBSCAN_PREP_PATH;
+#ifdef HAVE_SMBCLIENT
+      prep->smb_down = chain->smb_down;
+#endif
       if (   !(prep->arg = strdup(item->arg))
-          || !dbscan_prep_take_overrides(prep, item)
-          || !dbscan_prep_take_smb_down(prep, chain))
+          || !dbscan_prep_take_overrides(prep, item))
       {
          dbscan_prep_state_free(prep);
          prep = NULL;
@@ -8466,8 +8479,13 @@ static bool dbscan_chain_run_refresh(dbscan_chain_t *chain, size_t i)
          dbscan_chain_fold(chain, name, TASK_DBSCAN_FAILED, NULL);
          break;
       case DBSCAN_LOAD_FOLDER_MISSING:
+         dbscan_chain_skip_missing(chain, name, r->dir,
+               DBSCAN_SMB_WHY(r));
+         dbscan_chain_fold(chain, name, TASK_DBSCAN_SKIPPED, NULL);
+         break;
+      case DBSCAN_LOAD_FOLDER_EMPTY:
          dbscan_chain_refresh_error(chain, name,
-               "skipped: content folder not found", r->dir);
+               "skipped: content folder empty", r->dir);
          dbscan_chain_fold(chain, name, TASK_DBSCAN_SKIPPED, NULL);
          break;
       default:
