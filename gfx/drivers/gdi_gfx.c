@@ -1946,7 +1946,7 @@ static bool gdi_font_get_line_metrics(void *data,
 static void gdi_font_render_line(
       gdi_raster_t *font, HDC dst_dc,
       const char *msg, size_t msg_len,
-      int line_x, int line_y, float scale,
+      int line_x, int line_y, float scale, float scale_x,
       enum text_alignment text_align,
       uint8_t r, uint8_t g, uint8_t b, uint8_t a,
       int viewport_width, int viewport_height)
@@ -2044,7 +2044,7 @@ static void gdi_font_render_line(
       (void)(line); \
       (void)(count); \
       (void)(bytes); \
-      line_w = (int)((line_width) * scale); \
+      line_w = (int)((line_width) * scale_x); \
       if (text_align == TEXT_ALIGN_RIGHT) \
          line_x -= line_w; \
       else if (text_align == TEXT_ALIGN_CENTER) \
@@ -2082,11 +2082,11 @@ static void gdi_font_render_line(
       if (plain_white) \
       { \
          int gx, gy, gw, gh; \
-         gw = (int)((float)VIDEO_SCALE_W((gl)->dims) * scale); \
+         gw = (int)((float)VIDEO_SCALE_W((gl)->dims) * scale_x); \
          gh = (int)((float)VIDEO_SCALE_H((gl)->dims) * scale); \
          if (gw > 0 && gh > 0) \
          { \
-            gx = line_x + x_offset + (int)((float)(gl)->draw_offset_x * scale); \
+            gx = line_x + x_offset + (int)((float)(gl)->draw_offset_x * scale_x); \
             gy = line_y           + (int)((float)(gl)->draw_offset_y * scale); \
             AlphaBlend(dst_dc, gx, gy, gw, gh, \
                   atlas_dc, \
@@ -2099,9 +2099,9 @@ static void gdi_font_render_line(
       { \
          int gx_dst, gy_dst, gw, gh; \
          int gx_src, gy_src; \
-         gw     = (int)((float)VIDEO_SCALE_W((gl)->dims) * scale); \
+         gw     = (int)((float)VIDEO_SCALE_W((gl)->dims) * scale_x); \
          gh     = (int)((float)VIDEO_SCALE_H((gl)->dims) * scale); \
-         gx_dst = x_offset + (int)((float)(gl)->draw_offset_x * scale); \
+         gx_dst = x_offset + (int)((float)(gl)->draw_offset_x * scale_x); \
          gy_dst = (metrics ? (int)(metrics->ascender * scale + 0.5f) : 0) \
                 + (int)((float)(gl)->draw_offset_y * scale); \
          gx_src = (int)VIDEO_SCALE_W((gl)->atlas_pos); \
@@ -2159,7 +2159,7 @@ static void gdi_font_render_line(
             } \
          } \
       } \
-      x_offset += (int)((float)(gl)->advance_x * scale); \
+      x_offset += (int)((float)(gl)->advance_x * scale_x); \
    } while (0)
 #define FONT_LAYOUT_LINE_END() \
    do \
@@ -2202,7 +2202,7 @@ static void gdi_font_render_line(
  * text run, with its top-left at (pixel_x, pixel_y). */
 static void gdi_font_render_runs(gdi_raster_t *font, HDC dst_dc,
       const char *line, size_t line_len, int pixel_x, int pixel_y,
-      float scale, enum text_alignment text_align,
+      float scale, float x_scale, enum text_alignment text_align,
       int drop_x, int drop_y, float drop_mod, float drop_alpha,
       unsigned r, unsigned g, unsigned b, unsigned a,
       unsigned width, unsigned height)
@@ -2223,13 +2223,14 @@ static void gdi_font_render_runs(gdi_raster_t *font, HDC dst_dc,
       /* params->drop_y in the GL/D3D drivers is "up", we want
        * "down" on a top-down surface, so subtract. */
       gdi_font_render_line(font, dst_dc, line, line_len,
-            pixel_x + drop_x, pixel_y - drop_y, scale, text_align,
+            pixel_x + (int)(drop_x * x_scale), pixel_y - drop_y,
+            scale, scale * x_scale, text_align,
             (uint8_t)dr, (uint8_t)dg, (uint8_t)db, (uint8_t)da,
             (int)width, (int)height);
    }
 
    gdi_font_render_line(font, dst_dc, line, line_len,
-         pixel_x, pixel_y, scale, text_align,
+         pixel_x, pixel_y, scale, scale * x_scale, text_align,
          (uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a,
          (int)width, (int)height);
 }
@@ -2339,7 +2340,8 @@ static void gdi_font_render_msg(
 #define FONT_LAYOUT_ALIGNED 0
 #define FONT_LAYOUT_SKIP(line, bytes) \
       (gdi_font_render_runs(font, dst_dc, fl_m, (bytes), pixel_x, \
-            pixel_y + (line) * line_h, scale, text_align, drop_x, drop_y, \
+            pixel_y + (line) * line_h, scale, rp.x_scale, text_align, \
+            drop_x, drop_y, \
             drop_mod, drop_alpha, r, g, b, a, width, height), 1)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
       do \

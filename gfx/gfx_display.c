@@ -1159,23 +1159,27 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,
       unsigned video_dims)
 {
-   gfx_display_ctx_draw_t stretched;
    gfx_display_t *p_disp = disp_get_ptr();
    gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
-   if (draw && gfx_display_stretched(p_disp, video_dims))
+   if (!dispctx || !dispctx->draw || !draw)
+      return;
+   if (gfx_display_stretched(p_disp, video_dims))
    {
-      int x          = VIDEO_POS_X(draw->pos);
-      int x1         = gfx_display_stretch_x(p_disp, video_dims,
-            x + (int)VIDEO_SCALE_W(draw->dims));
-      x              = gfx_display_stretch_x(p_disp, video_dims, x);
-      stretched      = *draw;
-      stretched.pos  = VIDEO_POS_PACK(x, VIDEO_POS_Y(draw->pos));
-      stretched.dims = VIDEO_SCALE_PACK(x1 - x, VIDEO_SCALE_H(draw->dims));
-      draw           = &stretched;
-      video_dims     = p_disp->output_dims;
+      /* Lent stretched for the call, and put back */
+      unsigned pos  = draw->pos;
+      unsigned dims = draw->dims;
+      int x         = VIDEO_POS_X(pos);
+      int x1        = gfx_display_stretch_x(p_disp, video_dims,
+            x + (int)VIDEO_SCALE_W(dims));
+      x             = gfx_display_stretch_x(p_disp, video_dims, x);
+      draw->pos     = VIDEO_POS_PACK(x, VIDEO_POS_Y(pos));
+      draw->dims    = VIDEO_SCALE_PACK(x1 - x, VIDEO_SCALE_H(dims));
+      dispctx->draw(draw, userdata, p_disp->output_dims);
+      draw->pos     = pos;
+      draw->dims    = dims;
+      return;
    }
-   if (dispctx && dispctx->draw && draw)
-      dispctx->draw(draw, userdata, video_dims);
+   dispctx->draw(draw, userdata, video_dims);
 }
 
 void gfx_display_draw_quad(

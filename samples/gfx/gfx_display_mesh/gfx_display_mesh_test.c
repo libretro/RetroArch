@@ -14,7 +14,9 @@
  *              under its pipeline id, over the background's state,
  *              with the effect coordinates naming the mesh it is
  *              drawn over; a mesh with no positions draws no effect.
- *  quads-only  a driver that takes no strips is handed nothing. */
+ *  quads-only  a driver that takes no strips is handed nothing.
+ *  stretch     with an output size set, quads and draws laid out at
+ *              another width reach the driver across the output's. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,12 +40,16 @@ void RARCH_ERR(const char *f, ...)  { (void)f; }
 
 static float    rec_xy[4096], rec_uv[4096], rec_col[8192];
 static unsigned rec_vertices, rec_draws, rec_pipeline_calls, rec_pipeline_id;
+static unsigned rec_pos, rec_dims, rec_vd;
 static uintptr_t rec_texture;
 
 static void rec_draw(gfx_display_ctx_draw_t *d, void *data, unsigned vd)
 {
-   (void)data; (void)vd;
+   (void)data;
    rec_draws++;
+   rec_pos      = d->pos;
+   rec_dims     = d->dims;
+   rec_vd       = vd;
    rec_texture  = d->texture;
    rec_vertices = d->coords ? d->coords->vertices : 0;
    if (d->coords && d->coords->vertex && rec_vertices <= 2048)
@@ -243,6 +249,48 @@ int main(void)
    gfx_display_mesh_free(mesh);
    p_disp->dispctx = NULL;
    gfx_display_free();
+
+   /* stretch: laid out at 320 wide, drawn across 2560 */
+   {
+      const unsigned layout = VIDEO_SCALE_PACK(320, 240);
+      const unsigned output = VIDEO_SCALE_PACK(2560, 240);
+      gfx_display_ctx_draw_t d;
+      struct video_coords co;
+
+      memset(&d, 0, sizeof(d));
+      memset(&co, 0, sizeof(co));
+      co.vertices                  = 4;
+      co.color                     = white;
+      d.coords                     = &co;
+      d.pos                        = VIDEO_POS_PACK(-1, 20);
+      d.dims                       = VIDEO_SCALE_PACK(3, 40);
+      rec_ctx.handles_vertex_strip = false;
+      gfx_display_set_output_dims(p_disp, output);
+
+      reset();
+      gfx_display_draw_quad(p_disp, NULL, layout, 10, 20,
+            VIDEO_SCALE_PACK(30, 40), layout, white, NULL);
+      CHECK(rec_draws == 1 && rec_vd == output, "a quad reaches the driver at the output size");
+      CHECK(rec_pos == VIDEO_POS_PACK(80, 180), "its x is stretched and its y is not");
+      CHECK(rec_dims == VIDEO_SCALE_PACK(240, 40), "and so is its width");
+
+      reset();
+      gfx_display_draw(&rec_ctx, &d, NULL, layout);
+      CHECK(rec_vd == output && rec_pos == VIDEO_POS_PACK(-8, 20)
+            && rec_dims == VIDEO_SCALE_PACK(24, 40),
+            "a draw is stretched, from left of the screen too");
+      CHECK(d.pos == VIDEO_POS_PACK(-1, 20) && d.dims == VIDEO_SCALE_PACK(3, 40),
+            "and the caller's draw is as it was");
+      CHECK(gfx_display_output_dims(p_disp, layout) == output, "the driver is handed the output size");
+      CHECK(gfx_display_output_dims(p_disp, output) == output, "drawing at the output size stretches nothing");
+
+      gfx_display_set_output_dims(p_disp, 0);
+      reset();
+      gfx_display_draw(&rec_ctx, &d, NULL, layout);
+      CHECK(rec_vd == layout && rec_dims == VIDEO_SCALE_PACK(3, 40), "cleared, nothing is stretched");
+      CHECK(gfx_display_output_dims(p_disp, layout) == layout, "and the size is passed through");
+      rec_ctx.handles_vertex_strip = true;
+   }
 
    if (fails)
    {

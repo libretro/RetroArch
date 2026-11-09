@@ -4270,7 +4270,8 @@ float video_driver_ui_display_aspect(void)
 #ifdef HAVE_MODELINE
    video_driver_state_t *video_st = &video_driver_st;
    if (     retro_atomic_load_acquire_int(&video_st->crt_switching_active)
-         && video_st->crt_switch_st.gen)
+         && video_st->crt_switch_st.gen
+         && strcmp(video_st->crt_switch_st.gen->monitor, "lcd"))
       return (float)video_st->crt_switch_st.gen->monitor_aspect;
 #endif
    return 0.0f;

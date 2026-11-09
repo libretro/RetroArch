@@ -411,6 +411,25 @@ static void test_media_startup(void)
    gfx_widgets_deinit(false);
 }
 
+static void test_layout_dims(void)
+{
+   const float crt = 4.0f / 3.0f;
+   CHECK(gfx_widgets_layout_dims(VIDEO_SCALE_PACK(2560, 240), crt)
+         == VIDEO_SCALE_PACK(320, 240), "a super resolution lays out at 4:3");
+   CHECK(gfx_widgets_layout_dims(VIDEO_SCALE_PACK(1920, 224), crt)
+         == VIDEO_SCALE_PACK(299, 224), "whatever its line count");
+   CHECK(gfx_widgets_layout_dims(VIDEO_SCALE_PACK(2560, 480), crt)
+         == VIDEO_SCALE_PACK(640, 480), "or an interlaced one");
+   CHECK(gfx_widgets_layout_dims(VIDEO_SCALE_PACK(256, 224), crt)
+         == VIDEO_SCALE_PACK(256, 224), "a native mode is left alone");
+   CHECK(gfx_widgets_layout_dims(VIDEO_SCALE_PACK(384, 224), crt)
+         == VIDEO_SCALE_PACK(384, 224), "a wide native mode too");
+   CHECK(gfx_widgets_layout_dims(VIDEO_SCALE_PACK(1920, 1080), crt)
+         == VIDEO_SCALE_PACK(1920, 1080), "a 16:9 panel is left alone");
+   CHECK(gfx_widgets_layout_dims(VIDEO_SCALE_PACK(2560, 240), 0.0f)
+         == VIDEO_SCALE_PACK(2560, 240), "no aspect, no change");
+}
+
 int main(void)
 {
    task_queue_init(false, NULL);
@@ -425,6 +444,7 @@ int main(void)
    test_modal_scale();
 #endif
    test_media_startup();
+   test_layout_dims();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
 

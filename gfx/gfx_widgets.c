@@ -1380,11 +1380,16 @@ static void gfx_widgets_layout(
 
 unsigned gfx_widgets_layout_dims(unsigned dims, float display_aspect)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
+   unsigned layout_width;
    if (display_aspect <= 0.0f || !height)
       return dims;
-   return VIDEO_SCALE_PACK((unsigned)(height * display_aspect + 0.5f),
-         height);
+   layout_width    = (unsigned)(height * display_aspect + 0.5f);
+   /* Native modes, panels and other windows are left as they are */
+   if (layout_width * 2 > width)
+      return dims;
+   return VIDEO_SCALE_PACK(layout_width, height);
 }
 
 /* The scale the widgets lay out at, from the settings: worked out on

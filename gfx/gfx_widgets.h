@@ -553,7 +553,8 @@ void gfx_widgets_iterate_main(void);
 #endif
 
 /* dims at display_aspect, same height: what the widgets lay out at
- * when the output's pixels are not square; dims when it is 0 */
+ * at a super resolution; dims when display_aspect is 0 or dims is
+ * less than twice that wide */
 unsigned gfx_widgets_layout_dims(unsigned dims, float display_aspect);
 
 /* The scale the widgets lay out at, from the settings, for @dims */
