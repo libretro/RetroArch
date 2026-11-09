@@ -232,6 +232,46 @@ static size_t waveout_buffer_size(void *data)
    return WAVEOUT_BLOCKS * wo->block_bytes;
 }
 
+/* The block being filled, whole, to the device */
+static bool waveout_submit(waveout_t *wo)
+{
+   WAVEHDR *hdr        = &wo->hdr[wo->cur];
+   hdr->dwBufferLength = (DWORD)wo->block_bytes;
+   hdr->dwFlags       &= ~WHDR_DONE;
+   if (waveOutWrite(wo->hwo, hdr, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
+      return false;
+   wo->cur   = (wo->cur + 1) % WAVEOUT_BLOCKS;
+   wo->queued++;
+   wo->fill  = 0;
+   return true;
+}
+
+static size_t waveout_write_begin(void *data, size_t len, void **region)
+{
+   waveout_t *wo = (waveout_t*)data;
+   size_t span;
+   *region       = NULL;
+   waveout_reclaim(wo);
+   if (wo->queued >= WAVEOUT_BLOCKS)
+      return 0;
+   span = wo->block_bytes - wo->fill;
+   if (span > len)
+      span = len;
+   span -= span % wo->frame_bytes;
+   if (span)
+      *region = wo->hdr[wo->cur].lpData + wo->fill;
+   return span;
+}
+
+static ssize_t waveout_write_end(void *data, size_t len)
+{
+   waveout_t *wo = (waveout_t*)data;
+   wo->fill     += len;
+   if (wo->fill == wo->block_bytes && !waveout_submit(wo))
+      return -1;
+   return (ssize_t)len;
+}
+
 static ssize_t waveout_write(void *data, const void *s, size_t len)
 {
    waveout_t *wo     = (waveout_t*)data;
@@ -269,15 +309,9 @@ static ssize_t waveout_write(void *data, const void *s, size_t len)
 
       if (wo->fill == wo->block_bytes)
       {
-         WAVEHDR *hdr        = &wo->hdr[wo->cur];
-         hdr->dwBufferLength = (DWORD)wo->block_bytes;
-         hdr->dwFlags       &= ~WHDR_DONE;
-         if (waveOutWrite(wo->hwo, hdr, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
+         if (!waveout_submit(wo))
             return -1;
-         wo->cur   = (wo->cur + 1) % WAVEOUT_BLOCKS;
-         wo->queued++;
-         wo->fill  = 0;
-         waits     = 0;
+         waits = 0;
       }
    }
 
@@ -376,5 +410,10 @@ audio_driver_t audio_waveout = {
    waveout_wait_writable,
    waveout_frames_consumed,
    NULL, /* underruns */
-   waveout_layout
+   waveout_layout,
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   waveout_write_begin,
+   waveout_write_end
 };

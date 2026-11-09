@@ -365,6 +365,54 @@ static void *audioworklet_init(const char *device, unsigned rate,
    return audioworklet;
 }
 
+static size_t audioworklet_write_begin(void *data, size_t len, void **region)
+{
+   audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
+   void  *ptr = NULL;
+   size_t max_write, span;
+   *region    = NULL;
+   if (!audioworklet->driver_running || !audioworklet_resume_ctx(audioworklet))
+      return 0;
+   max_write = audioworklet_room(audioworklet);
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+   if (audioworklet->nonblock)
+   {
+      if (max_write > audioworklet->write_avail_diff)
+         max_write -= audioworklet->write_avail_diff;
+      else
+         max_write = 0;
+   }
+#endif
+   span = retro_spsc_write_begin(&audioworklet->ring, &ptr);
+   if (span > max_write)
+      span = max_write;
+   if (span > len)
+      span = len;
+   span -= span % (2 * sizeof(float));
+   if (!span || !ptr)
+   {
+      retro_spsc_write_end(&audioworklet->ring, 0);
+      return 0;
+   }
+   *region = ptr;
+   return span;
+}
+
+static ssize_t audioworklet_write_end(void *data, size_t len)
+{
+   audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
+   len -= len % (2 * sizeof(float));
+   retro_spsc_write_end(&audioworklet->ring, len);
+#if defined(EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK) && defined(EMSCRIPTEN_AUDIO_FAKE_BLOCK)
+   if (audioworklet_room(audioworklet) < audioworklet->write_avail_diff)
+   {
+      audioworklet->block_requested = true;
+      platform_emscripten_enter_fake_block(1);
+   }
+#endif
+   return (ssize_t)len;
+}
+
 static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
 {
    size_t avail;
@@ -658,5 +706,11 @@ audio_driver_t audio_audioworklet = {
    NULL, /* write_raw */
    NULL, /* wait_writable */
    NULL, /* frames_consumed */
-   audioworklet_underruns
+   audioworklet_underruns,
+   NULL, /* layout */
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   audioworklet_write_begin,
+   audioworklet_write_end
 };

@@ -1011,6 +1011,7 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./asio_ring_test
           echo "[pass] asio_ring_test (ASan)"
+          python3 asio_lend.py
 
       - name: Build and run asio_teardown_test (TSan, ASan, MinGW under wine)
         shell: bash

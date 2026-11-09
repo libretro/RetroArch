@@ -101,6 +101,28 @@ int main(void)
    CHECK(log_lines == 0, "the write path logs nothing", log_lines, 0);
    retro_spsc_free(&aw.ring);
 
+   /* A span of the ring: whole frames, published by write_end, and
+    * nothing lent once the ring is full. */
+   {
+      void  *span = NULL;
+      size_t got;
+      setup(&aw, true);
+      got = audioworklet_write_begin(&aw, 125 * FRAME + 3, &span);
+      CHECK(got == 125 * FRAME && span != NULL, "a span of whole frames",
+            got, 125 * FRAME);
+      CHECK(retro_spsc_read_avail(&aw.ring) == 0, "nothing published yet",
+            retro_spsc_read_avail(&aw.ring), 0);
+      memset(span, 0, got);
+      CHECK(audioworklet_write_end(&aw, got) == (ssize_t)got,
+            "write_end publishes it", got, got);
+      CHECK(retro_spsc_read_avail(&aw.ring) == got, "the ring holds it",
+            retro_spsc_read_avail(&aw.ring), got);
+      audioworklet_write(&aw, samples, sizeof(samples));
+      CHECK(audioworklet_write_begin(&aw, FRAME, &span) == 0 && !span,
+            "a full ring lends nothing", 0, 0);
+      retro_spsc_free(&aw.ring);
+   }
+
    if (failures)
    {
       printf("[fail] audioworklet_test: %u check(s) failed\n", failures);

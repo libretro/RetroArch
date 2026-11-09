@@ -1909,17 +1909,9 @@ error:
  * and shutdown is not raised for that. */
 #define ASIO_WAIT_LAPS 8
 
-static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
+/* A latency change the driver announced, read from the writer's side */
+static void asio_pick_up_latencies(ra_asio_t *ad)
 {
-   ra_asio_t *ad      = (ra_asio_t *)data;
-   const char *src    = (const char *)buf;
-   size_t written     = 0;
-   int64_t wait_us    = 1000;
-   int laps           = ASIO_WAIT_LAPS;
-
-   if (!ad || retro_atomic_load_acquire_int(&ad->shutdown))
-      return -1;
-
    if (retro_atomic_load_acquire_int(&ad->latencies_changed))
    {
       long in_lat = 0, out_lat = 0;
@@ -1932,6 +1924,53 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
          audio_driver_set_device_latency(asio_device_frames(ad));
       }
    }
+}
+
+static size_t ra_asio_write_begin(void *data, size_t len, void **region)
+{
+   ra_asio_t *ad = (ra_asio_t *)data;
+   void  *ptr    = NULL;
+   size_t room, span;
+   *region       = NULL;
+   if (!ad || retro_atomic_load_acquire_int(&ad->shutdown))
+      return 0;
+   asio_pick_up_latencies(ad);
+   room = asio_ring_room(ad);
+   span = retro_spsc_write_begin(&ad->ring, &ptr);
+   if (span > room)
+      span = room;
+   if (span > len)
+      span = len;
+   span = asio_ring_align_bytes(span, ad->channels);
+   if (!span || !ptr)
+   {
+      retro_spsc_write_end(&ad->ring, 0);
+      return 0;
+   }
+   *region = ptr;
+   return span;
+}
+
+static ssize_t ra_asio_write_end(void *data, size_t len)
+{
+   ra_asio_t *ad = (ra_asio_t *)data;
+   len = asio_ring_align_bytes(len, ad->channels);
+   retro_spsc_write_end(&ad->ring, len);
+   return (ssize_t)len;
+}
+
+static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
+{
+   ra_asio_t *ad      = (ra_asio_t *)data;
+   const char *src    = (const char *)buf;
+   size_t written     = 0;
+   int64_t wait_us    = 1000;
+   int laps           = ASIO_WAIT_LAPS;
+
+   if (!ad || retro_atomic_load_acquire_int(&ad->shutdown))
+      return -1;
+
+   asio_pick_up_latencies(ad);
 
    /* Bound for the blocking wait below, one device period.  Both
     * operands are fixed for the lifetime of the COM object, so this is
@@ -2271,7 +2310,10 @@ audio_driver_t audio_asio = {
    ra_asio_underruns,
    asio_layout,
    NULL, /* frames_consumed_fallback */
-   ra_asio_device_clock_ppm
+   ra_asio_device_clock_ppm,
+   NULL, /* thread_grant */
+   ra_asio_write_begin,
+   ra_asio_write_end
 };
 
 /* Called from the menu to open the ASIO driver's control panel.

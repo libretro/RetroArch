@@ -180,6 +180,34 @@ int main(void)
    }
    requested_layout = AUDIO_LAYOUT_STEREO;
 
+   /* The block being filled, lent: whole frames, counted once published,
+    * and a full block goes to the device. */
+   if ((wo = audio_waveout.init(NULL, RATE, LATENCY, &new_rate)))
+   {
+      void  *span = NULL;
+      size_t got, before;
+      audio_waveout.set_nonblock_state(wo, true);
+      for (n = 0; n < 40; n++)
+      {
+         before = audio_waveout.write_avail(wo);
+         got    = audio_waveout.write_begin(wo, 4001, &span);
+         if (!got)
+            break;
+         CHECK(span && !(got % 4) && got <= 4001,
+               "a lent span of %u bytes", (unsigned)got);
+         memset(span, 0, got);
+         CHECK(audio_waveout.write_end(wo, got) == (ssize_t)got,
+               "write_end did not take %u bytes", (unsigned)got);
+         CHECK(audio_waveout.write_avail(wo) <= before,
+               "room grew after a lend, %u to %u", (unsigned)before,
+               (unsigned)audio_waveout.write_avail(wo));
+      }
+      Sleep(200);
+      CHECK(audio_waveout.frames_consumed(wo) > 0,
+            "the device played none of what was lent");
+      audio_waveout.free(wo);
+   }
+
    if (failures)
    {
       printf("%d failure(s)\n", failures);
