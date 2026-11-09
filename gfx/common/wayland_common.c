@@ -1862,6 +1862,18 @@ void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
    }
 }
 
+bool wl_video_windows_not_main(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface)
+{
+   unsigned i;
+   if (surface == wl->surface)
+      return false;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (retro_atomic_load_acquire_size(&wl_video_window_ids[i].surface))
+         return true;
+   return false;
+}
+
 /* What was queued, a loss the queue had no room for, then where the
  * focus is now: the last is what the window ends up with. */
 static void wl_video_windows_take_focus(void)

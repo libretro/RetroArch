@@ -102,6 +102,14 @@ static void sdl3_window_save_position(SDL_Window *win)
 /* Secondary screens' windows, by screen */
 static sdl3_video_window_t *sdl3_video_windows[RETRO_VIDEO_VIEWS_MAX];
 static unsigned sdl3_video_window_count;
+/* By screen, its window and SDL's ID for it, which the input driver
+ * tells a screen's window by on the frontend's thread */
+static retro_atomic_size_t sdl3_video_window_wins[RETRO_VIDEO_VIEWS_MAX];
+static retro_atomic_int_t  sdl3_video_window_ids[RETRO_VIDEO_VIEWS_MAX];
+/* The IDs of the windows destroyed last: what is still queued for one
+ * is a screen's too. SDL 3 never gives an ID out again. */
+static retro_atomic_int_t  sdl3_video_window_gone[RETRO_VIDEO_VIEWS_MAX];
+static unsigned sdl3_video_window_gone_next;
 
 /* The displays last published for the screens' Display setting and
  * their ids, on the context's thread. dirty: enumerate again;
@@ -1333,6 +1341,10 @@ bool sdl3_video_window_create(void *owner, SDL_WindowFlags flags,
    window->configured    = true;
    sdl3_video_windows[request->screen] = state;
    sdl3_video_window_count++;
+   retro_atomic_store_release_size(&sdl3_video_window_wins[request->screen],
+         (size_t)(uintptr_t)state->win);
+   retro_atomic_store_release_int(&sdl3_video_window_ids[request->screen],
+         (int)state->id);
 
    sdl3_window_set_icon(state->win);
    /* the main window keeps the focus */
@@ -1409,9 +1421,26 @@ unsigned sdl3_video_window_poll(void *owner, video_window_event_t *events,
 
 static bool SDLCALL sdl3_video_window_unqueue(void *data, SDL_Event *event)
 {
+   SDL_WindowID id = *(const SDL_WindowID*)data;
+   switch (event->type)
+   {
+      case SDL_EVENT_MOUSE_MOTION:
+         return event->motion.windowID != id;
+      case SDL_EVENT_MOUSE_BUTTON_DOWN:
+      case SDL_EVENT_MOUSE_BUTTON_UP:
+         return event->button.windowID != id;
+      case SDL_EVENT_MOUSE_WHEEL:
+         return event->wheel.windowID != id;
+      default:
+         break;
+   }
+   /* Every pen event starts as the proximity one */
+   if (     event->type >= SDL_EVENT_PEN_PROXIMITY_IN
+         && event->type <= SDL_EVENT_PEN_AXIS)
+      return event->pproximity.windowID != id;
    return    event->type < SDL_EVENT_WINDOW_FIRST
           || event->type > SDL_EVENT_WINDOW_LAST
-          || event->window.windowID != *(const SDL_WindowID*)data;
+          || event->window.windowID != id;
 }
 
 void sdl3_video_window_destroy(void *owner, video_window_native_t *window)
@@ -1427,11 +1456,36 @@ void sdl3_video_window_destroy(void *owner, video_window_native_t *window)
    sdl3_video_window_count--;
    id = state->id;
    SDL_DestroyWindow(state->win);
+   /* the input gate's last, so a poll on another thread fails closed */
+   retro_atomic_store_release_size(
+         &sdl3_video_window_wins[state->common.request.screen], 0);
+   retro_atomic_store_release_int(
+         &sdl3_video_window_gone[sdl3_video_window_gone_next], (int)id);
+   sdl3_video_window_gone_next = (sdl3_video_window_gone_next + 1)
+      % RETRO_VIDEO_VIEWS_MAX;
+   retro_atomic_store_release_int(
+         &sdl3_video_window_ids[state->common.request.screen], 0);
    /* nor is what is still queued for it, which the main window's
     * handling would take */
    SDL_FilterEvents(sdl3_video_window_unqueue, &id);
    free(state);
    memset(window, 0, sizeof(*window));
+}
+
+bool sdl3_video_window_is_screen(const SDL_Window *win, SDL_WindowID id)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (     (win && retro_atomic_load_acquire_size(
+                  &sdl3_video_window_wins[i]) == (size_t)(uintptr_t)win)
+            || (id  && (SDL_WindowID)retro_atomic_load_acquire_int(
+                  &sdl3_video_window_ids[i]) == id))
+         return true;
+   for (i = 0; id && i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if ((SDL_WindowID)retro_atomic_load_acquire_int(
+               &sdl3_video_window_gone[i]) == id)
+         return true;
+   return false;
 }
 
 void sdl3_video_windows_free(void *owner,

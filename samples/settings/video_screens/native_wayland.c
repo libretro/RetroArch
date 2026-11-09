@@ -394,6 +394,167 @@ static void native_wl_flood(gfx_ctx_wayland_data_t *wl,
    native_wl_input(wl, true);
 }
 
+/* The pointer's place, its wheel and touches are the main window's
+ * alone: over the screen's window they leave the main window's as
+ * they were, while relative motion is still taken. Handed to the seat's
+ * handlers as libwayland would, the frontend's thread stopped; the
+ * seat's state is put back after. */
+static void native_wl_pointer(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface)
+{
+   uint32_t pos;
+   input_ctx_wayland_data_t input;
+   struct wl_surface *other;
+   int touches;
+   wl_fixed_t x = wl_fixed_from_int(70);
+   wl_fixed_t y = wl_fixed_from_int(90);
+   native_wl_input(wl, false);
+   input   = wl->input;
+   touches = wl->num_active_touches;
+
+   pointer_listener.enter(wl, wl->wl_pointer, 1, wl->surface,
+         wl_fixed_from_int(10), wl_fixed_from_int(20));
+   pos = wl->input.mouse.pos;
+   pointer_listener.motion(wl, wl->wl_pointer, 0,
+         wl_fixed_from_int(30), wl_fixed_from_int(40));
+   CHECK(wl->input.mouse.pos != pos);
+   pos = wl->input.mouse.pos;
+   pointer_listener.leave(wl, wl->wl_pointer, 2, wl->surface);
+
+   pointer_listener.enter(wl, wl->wl_pointer, 3, surface,
+         wl_fixed_from_int(50), wl_fixed_from_int(60));
+   CHECK(wl->input.mouse.pos == pos);
+   pointer_listener.motion(wl, wl->wl_pointer, 0, x, y);
+   CHECK(wl->input.mouse.pos == pos);
+   wl->input.mouse.delta = 0;
+   relative_pointer_listener.relative_motion(wl, NULL, 0, 0,
+         wl_fixed_from_int(5), wl_fixed_from_int(6),
+         wl_fixed_from_int(5), wl_fixed_from_int(6));
+   CHECK(wl->input.mouse.delta == VIDEO_POS_PACK(5, 6));
+#ifdef WL_POINTER_FRAME_SINCE_VERSION
+   pointer_listener.axis_discrete(wl, wl->wl_pointer,
+         WL_POINTER_AXIS_VERTICAL_SCROLL, -1);
+   pointer_listener.frame(wl, wl->wl_pointer);
+   CHECK(!wl->input.mouse.wu && !wl->input.mouse.wd);
+#endif
+   touch_listener.down(wl, NULL, 4, 0, surface, 7, x, y);
+   CHECK(wl->num_active_touches == touches);
+   touch_listener.up(wl, NULL, 5, 0, 7);
+   pointer_listener.leave(wl, wl->wl_pointer, 6, surface);
+
+   /* Nor over another of the client's surfaces, as a libdecor title
+    * bar is, or one libwayland no longer knows */
+   other = wl_compositor_create_surface(wl->compositor);
+   pointer_listener.enter(wl, wl->wl_pointer, 11, other, x, y);
+   CHECK(wl->input.mouse.pos == pos);
+   pointer_listener.motion(wl, wl->wl_pointer, 0, x, y);
+   CHECK(wl->input.mouse.pos == pos);
+#ifdef WL_POINTER_FRAME_SINCE_VERSION
+   pointer_listener.axis_discrete(wl, wl->wl_pointer,
+         WL_POINTER_AXIS_VERTICAL_SCROLL, -1);
+   pointer_listener.frame(wl, wl->wl_pointer);
+   CHECK(!wl->input.mouse.wu && !wl->input.mouse.wd);
+#endif
+   touch_listener.down(wl, NULL, 12, 0, other, 7, x, y);
+   CHECK(wl->num_active_touches == touches);
+   touch_listener.up(wl, NULL, 13, 0, 7);
+   pointer_listener.leave(wl, wl->wl_pointer, 14, other);
+   pointer_listener.enter(wl, wl->wl_pointer, 15, NULL, x, y);
+   CHECK(wl->input.mouse.pos == pos);
+   pointer_listener.leave(wl, wl->wl_pointer, 16, NULL);
+
+   /* Nor a click over the screen's window once the main window's surface
+    * has entered an output */
+   pointer_listener.enter(wl, wl->wl_pointer, 17, surface, x, y);
+   wl_surface_listener.enter(wl, wl->surface, NULL);
+   pointer_listener.button(wl, wl->wl_pointer, 18, 0, BTN_LEFT,
+         WL_POINTER_BUTTON_STATE_PRESSED);
+   CHECK(!wl->input.mouse.left);
+   pointer_listener.button(wl, wl->wl_pointer, 19, 0, BTN_LEFT,
+         WL_POINTER_BUTTON_STATE_RELEASED);
+   pointer_listener.leave(wl, wl->wl_pointer, 20, surface);
+
+   /* The same over the main window is taken */
+   pointer_listener.enter(wl, wl->wl_pointer, 7, wl->surface, x, y);
+   CHECK(wl->input.mouse.pos != pos);
+#ifdef WL_POINTER_FRAME_SINCE_VERSION
+   pointer_listener.axis_discrete(wl, wl->wl_pointer,
+         WL_POINTER_AXIS_VERTICAL_SCROLL, -1);
+   pointer_listener.frame(wl, wl->wl_pointer);
+   CHECK(wl->input.mouse.wu);
+#endif
+   touch_listener.down(wl, NULL, 8, 0, wl->surface, 7, x, y);
+   CHECK(wl->num_active_touches == touches + 1);
+   touch_listener.up(wl, NULL, 9, 0, 7);
+   CHECK(wl->num_active_touches == touches);
+   pointer_listener.leave(wl, wl->wl_pointer, 10, wl->surface);
+   wl_surface_destroy(other);
+
+   wl->input = input;
+   native_wl_input(wl, true);
+}
+
+/* The last screen's window destroyed with the pointer over it: motion
+ * and wheel still on their way for it are not the main window's */
+static void native_wl_pointer_gone(const gfx_ctx_driver_t *ctx, void *data,
+      gfx_ctx_wayland_data_t *wl, video_window_native_t *window)
+{
+   uint32_t pos;
+   input_ctx_wayland_data_t input;
+   native_wl_input(wl, false);
+   input = wl->input;
+   pointer_listener.enter(wl, wl->wl_pointer, 1, wl->surface,
+         wl_fixed_from_int(10), wl_fixed_from_int(20));
+   pos   = wl->input.mouse.pos;
+   pointer_listener.leave(wl, wl->wl_pointer, 2, wl->surface);
+   pointer_listener.enter(wl, wl->wl_pointer, 3,
+         (struct wl_surface*)window->surface,
+         wl_fixed_from_int(50), wl_fixed_from_int(60));
+   ctx->windows->destroy(data, window);
+   pointer_listener.motion(wl, wl->wl_pointer, 0,
+         wl_fixed_from_int(70), wl_fixed_from_int(90));
+   CHECK(wl->input.mouse.pos == pos);
+#ifdef WL_POINTER_FRAME_SINCE_VERSION
+   pointer_listener.axis_discrete(wl, wl->wl_pointer,
+         WL_POINTER_AXIS_VERTICAL_SCROLL, -1);
+   pointer_listener.frame(wl, wl->wl_pointer);
+   CHECK(!wl->input.mouse.wu && !wl->input.mouse.wd);
+#endif
+   pointer_listener.leave(wl, wl->wl_pointer, 4, NULL);
+   wl->input = input;
+   native_wl_input(wl, true);
+}
+
+/* With no screen's window open, another surface is taken as before,
+ * but not one libwayland no longer knows */
+static void native_wl_pointer_alone(gfx_ctx_wayland_data_t *wl)
+{
+   uint32_t pos;
+   input_ctx_wayland_data_t input;
+   struct wl_surface *other = wl_compositor_create_surface(wl->compositor);
+   native_wl_input(wl, false);
+   input = wl->input;
+   pointer_listener.enter(wl, wl->wl_pointer, 1, wl->surface,
+         wl_fixed_from_int(10), wl_fixed_from_int(20));
+   pos   = wl->input.mouse.pos;
+   pointer_listener.leave(wl, wl->wl_pointer, 2, wl->surface);
+   pointer_listener.enter(wl, wl->wl_pointer, 3, other,
+         wl_fixed_from_int(70), wl_fixed_from_int(90));
+   CHECK(wl->input.mouse.pos != pos);
+   pos   = wl->input.mouse.pos;
+   pointer_listener.leave(wl, wl->wl_pointer, 4, other);
+   pointer_listener.enter(wl, wl->wl_pointer, 5, NULL,
+         wl_fixed_from_int(30), wl_fixed_from_int(40));
+   CHECK(wl->input.mouse.pos == pos);
+   pointer_listener.motion(wl, wl->wl_pointer, 0,
+         wl_fixed_from_int(50), wl_fixed_from_int(60));
+   CHECK(wl->input.mouse.pos == pos);
+   pointer_listener.leave(wl, wl->wl_pointer, 6, NULL);
+   wl_surface_destroy(other);
+   wl->input = input;
+   native_wl_input(wl, true);
+}
+
 /* Runs 'script' (KWin's, NULL for none) and pumps until the window's
  * keyboard focus is 'focused' and the event saying so arrived */
 static void native_wl_wait_focus(const gfx_ctx_driver_t *ctx, void *data,
@@ -1441,6 +1602,8 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_window_drain(ctx, data, request);
    CHECK(native_wl_main_intact(wl, &main_window));
 
+   native_wl_pointer(wl, (struct wl_surface*)window->surface);
+
    /* Closing the focused window takes its focus with it */
    native_wl_focus(ctx, data, request, window);
    native_wl_close_focused(ctx, data, request, window);
@@ -1459,8 +1622,9 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_wl_flood(wl, (struct wl_surface*)window->surface, 100, true, true,
          true);
    last = request->generation;
-   ctx->windows->destroy(data, window);
+   native_wl_pointer_gone(ctx, data, wl, window);
    CHECK(window->state == NULL && window->surface == NULL);
+   native_wl_pointer_alone(wl);
    request->generation = video_driver_window_generation();
    CHECK(request->generation > last);
    CHECK(ctx->windows->create(data, request, window));

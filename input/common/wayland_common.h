@@ -258,6 +258,9 @@ typedef struct input_ctx_wayland_data
       bool axis_discrete;
       bool last_valid;
       bool focus;
+      /* Its place and wheel not taken, decided at enter: what is in
+       * flight for a window that has gone stays out */
+      bool gated;
       bool left, right, middle, side, extra;
       bool wu, wd, wl, wr;
    } mouse;
@@ -466,6 +469,10 @@ void flush_wayland_fd(void *data);
  * the context. Called on whichever thread handles the seat's events. */
 void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
       struct wl_surface *surface, bool focused);
+/* Whether a secondary screen's window is open and the surface is not
+ * the main window's: a screen's, or a decoration's. Any thread. */
+bool wl_video_windows_not_main(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface);
 /* An output's properties changed: secondary screens' windows on it
  * take its scale again. On the thread that runs the context. */
 void wl_video_windows_rescale(void);

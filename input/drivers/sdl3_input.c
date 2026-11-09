@@ -89,6 +89,16 @@ typedef struct sdl3_input
       float x;
       float y;
    } touches[SDL3_MAX_TOUCH];
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Fingers down on a screen's window, until they lift */
+   int num_screen_fingers;
+   struct
+   {
+      SDL_TouchID touch;
+      SDL_FingerID finger;
+      bool missed; /* the last read did not list it */
+   } screen_fingers[SDL3_MAX_TOUCH];
+#endif
 
    /* Pen/stylus state, handled through SDL_EVENT_PEN_*. */
    bool pen_in_proximity;
@@ -507,7 +517,9 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
    float density;
    float dx = 0.0f;
    float dy = 0.0f;
-   SDL_MouseButtonFlags btn = SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
+   float ax = 0.0f;
+   float ay = 0.0f;
+   SDL_MouseButtonFlags btn = SDL_GetMouseState(&ax, &ay);
    SDL_GetRelativeMouseState(&dx, &dy);
 
    sdl->mouse_rel_x += dx;
@@ -526,9 +538,18 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
    sdl->mouse_rel_x -= (float)VIDEO_POS_X(sdl->mouse_delta);
    sdl->mouse_rel_y -= (float)VIDEO_POS_Y(sdl->mouse_delta);
 
-   density = sdl3_window_pixel_density(sdl);
-   sdl->mouse_abs_x *= density;
-   sdl->mouse_abs_y *= density;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Over a screen's window, its place and clicks would reach the menu
+    * as the main window's: only the motion is taken there */
+   if (sdl3_video_window_is_screen(SDL_GetMouseFocus(), 0))
+      btn = 0;
+   else
+#endif
+   {
+      density = sdl3_window_pixel_density(sdl);
+      sdl->mouse_abs_x = ax * density;
+      sdl->mouse_abs_y = ay * density;
+   }
 
    sdl->mouse_l = (SDL_BUTTON_MASK(SDL_BUTTON_LEFT) & btn) != 0;
    sdl->mouse_r = (SDL_BUTTON_MASK(SDL_BUTTON_RIGHT) & btn) != 0;
@@ -536,6 +557,92 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
    sdl->mouse_b4 = (SDL_BUTTON_MASK(SDL_BUTTON_X1) & btn) != 0;
    sdl->mouse_b5 = (SDL_BUTTON_MASK(SDL_BUTTON_X2) & btn) != 0;
 }
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* Takes the finger events, keeping the fingers that went down on a
+ * screen's window: they would reach the menu and the core as the main
+ * window's. True when there were any. */
+static bool sdl3_take_fingers(sdl3_input_t *sdl)
+{
+   SDL_Event event;
+   bool took = false;
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT,
+         SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED) > 0)
+   {
+      int i;
+      took = true;
+      if (event.type == SDL_EVENT_FINGER_MOTION)
+         continue;
+      for (i = 0; i < sdl->num_screen_fingers; i++)
+         if (     sdl->screen_fingers[i].touch  == event.tfinger.touchID
+               && sdl->screen_fingers[i].finger == event.tfinger.fingerID)
+         {
+            sdl->screen_fingers[i] =
+               sdl->screen_fingers[--sdl->num_screen_fingers];
+            break;
+         }
+      /* Only a touchscreen's: no other finger is counted */
+      if (     event.type == SDL_EVENT_FINGER_DOWN
+            && sdl->num_screen_fingers < SDL3_MAX_TOUCH
+            && event.tfinger.touchID != SDL_PEN_TOUCHID
+            && sdl3_video_window_is_screen(NULL, event.tfinger.windowID)
+            && SDL_GetTouchDeviceType(event.tfinger.touchID)
+               == SDL_TOUCH_DEVICE_DIRECT)
+      {
+         i = sdl->num_screen_fingers++;
+         sdl->screen_fingers[i].touch  = event.tfinger.touchID;
+         sdl->screen_fingers[i].finger = event.tfinger.fingerID;
+         sdl->screen_fingers[i].missed = false;
+      }
+   }
+   return took;
+}
+
+/* The finger's place in the screen fingers, -1 when it is none */
+static int sdl3_screen_finger(const sdl3_input_t *sdl,
+      SDL_TouchID touch, SDL_FingerID finger)
+{
+   int i;
+   for (i = 0; i < sdl->num_screen_fingers; i++)
+      if (     sdl->screen_fingers[i].touch  == touch
+            && sdl->screen_fingers[i].finger == finger)
+         return i;
+   return -1;
+}
+
+/* The screen fingers on @touch, as bits */
+static unsigned sdl3_screen_fingers_on(const sdl3_input_t *sdl,
+      SDL_TouchID touch)
+{
+   int i;
+   unsigned bits = 0;
+   for (i = 0; i < sdl->num_screen_fingers; i++)
+      if (sdl->screen_fingers[i].touch == touch)
+         bits |= 1u << i;
+   return bits;
+}
+
+/* Lets go of the screen fingers of the devices read (@scanned) that
+ * two reads running did not list (@held): one read can miss a finger
+ * the video thread's pump is changing */
+static void sdl3_screen_fingers_drop(sdl3_input_t *sdl, unsigned scanned,
+      unsigned held)
+{
+   int i;
+   for (i = sdl->num_screen_fingers - 1; i >= 0; i--)
+   {
+      if (!(scanned & (1u << i)))
+         continue;
+      if (held & (1u << i))
+         sdl->screen_fingers[i].missed = false;
+      else if (!sdl->screen_fingers[i].missed)
+         sdl->screen_fingers[i].missed = true;
+      else
+         sdl->screen_fingers[i] =
+            sdl->screen_fingers[--sdl->num_screen_fingers];
+   }
+}
+#endif
 
 /* Snapshot the active fingers across all touchscreens. Polling
  * SDL_GetTouchFingers avoids tracking finger-id lifetimes through
@@ -546,6 +653,12 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
    int num_devices = 0;
    int num_direct = 0;
    SDL_TouchID *devices     = NULL;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Screen fingers on the devices read, and those SDL still has: a
+    * window gone may never send the others' lift */
+   unsigned scanned = 0;
+   unsigned held    = 0;
+#endif
 
    /* Without finger events the fingers last read still hold, so the
     * lists SDL allocates are only asked for when one moves. */
@@ -554,6 +667,9 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
          && !SDL_HasEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED))
       return;
 
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl3_take_fingers(sdl);
+#endif
    sdl->num_touches = 0;
 
    /* Skip the per-frame device query on touch-less setups; re-probe
@@ -593,9 +709,22 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
 
       if (!(fingers = SDL_GetTouchFingers(devices[i], &num_fingers)))
          continue;
+#ifdef HAVE_VIDEO_WINDOWS
+      scanned |= sdl3_screen_fingers_on(sdl, devices[i]);
+#endif
 
-      for (j = 0; j < num_fingers && sdl->num_touches < SDL3_MAX_TOUCH; j++)
+      for (j = 0; j < num_fingers; j++)
       {
+#ifdef HAVE_VIDEO_WINDOWS
+         int k = sdl3_screen_finger(sdl, devices[i], fingers[j]->id);
+         if (k >= 0)
+         {
+            held |= 1u << k;
+            continue;
+         }
+#endif
+         if (sdl->num_touches >= SDL3_MAX_TOUCH)
+            continue;
          sdl->touches[sdl->num_touches].x = fingers[j]->x;
          sdl->touches[sdl->num_touches].y = fingers[j]->y;
          sdl->num_touches++;
@@ -605,6 +734,9 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
    }
 
    SDL_free(devices);
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl3_screen_fingers_drop(sdl, scanned, held);
+#endif
    sdl->touch_read = true;
 
    /* Count touchscreens only, so a machine whose sole touch device is
@@ -621,6 +753,18 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT,
          SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS) > 0)
    {
+#ifdef HAVE_VIDEO_WINDOWS
+      /* Over a screen's window the pen has left the main window. Every
+       * pen event starts as a proximity event does. */
+      if (sdl3_video_window_is_screen(NULL, event.pproximity.windowID))
+      {
+         sdl->pen_in_proximity = false;
+         sdl->pen_down         = false;
+         sdl->pen_b1           = false;
+         sdl->pen_b2           = false;
+         continue;
+      }
+#endif
       switch (event.type)
       {
          case SDL_EVENT_PEN_PROXIMITY_IN:
@@ -1086,6 +1230,10 @@ static void sdl3_input_poll(void *data)
          float wx = event.wheel.x;
          float wy = event.wheel.y;
 #endif
+#ifdef HAVE_VIDEO_WINDOWS
+         if (sdl3_video_window_is_screen(NULL, event.wheel.windowID))
+            continue;
+#endif
 
          /* FLIPPED = "natural" scrolling: SDL delivers inverted
           * signs and expects the caller to negate them. */
@@ -1106,7 +1254,14 @@ static void sdl3_input_poll(void *data)
    /* Fingers are reported as pointer input from polled state
     * (sdl3_poll_touch / SDL_GetTouchFingers), rather than these
     * events, so flush the finger events. */
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Taken instead: under threaded video the video thread may have
+    * queued a screen's finger since sdl3_poll_touch. */
+   if (sdl3_take_fingers(sdl))
+      sdl->touch_read = false;
+#else
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED);
+#endif
 
    sdl3_poll_pen(sdl);
 

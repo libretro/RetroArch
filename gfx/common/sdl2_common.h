@@ -248,6 +248,9 @@ void sdl2_video_window_update(void *owner, video_window_native_t *window,
 unsigned sdl2_video_window_poll(void *owner, video_window_event_t *events,
       unsigned capacity);
 void sdl2_video_window_destroy(void *owner, video_window_native_t *window);
+/* Any thread: whether the window, or the window SDL gives this ID,
+ * is a secondary screen's; NULL and 0 are none */
+bool sdl2_video_window_is_screen(const SDL_Window *win, Uint32 id);
 /* Hands each window 'owner' still has to 'destroy'. */
 void sdl2_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window));

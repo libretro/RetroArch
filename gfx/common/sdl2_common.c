@@ -87,6 +87,10 @@ void sdl2_set_handles(void *data, enum rarch_display_type display_type)
 /* Secondary screens' windows, by screen */
 static sdl2_video_window_t *sdl2_video_windows[RETRO_VIDEO_VIEWS_MAX];
 static unsigned sdl2_video_window_count;
+/* By screen, its window and SDL's ID for it, which the input driver
+ * tells a screen's window by on the frontend's thread */
+static retro_atomic_size_t sdl2_video_window_wins[RETRO_VIDEO_VIEWS_MAX];
+static retro_atomic_int_t  sdl2_video_window_ids[RETRO_VIDEO_VIEWS_MAX];
 
 /* The displays last published for the screens' Display setting, on the
  * context's thread. dirty: enumerate again; own_dirty: the main window
@@ -696,6 +700,10 @@ bool sdl2_video_window_create(void *owner, SDL_Window *primary,
    window->configured    = true;
    sdl2_video_windows[request->screen] = state;
    sdl2_video_window_count++;
+   retro_atomic_store_release_size(&sdl2_video_window_wins[request->screen],
+         (size_t)(uintptr_t)state->win);
+   retro_atomic_store_release_int(&sdl2_video_window_ids[request->screen],
+         (int)state->id);
 
 #ifdef SDL_HINT_WINDOW_NO_ACTIVATION_WHEN_SHOWN
    /* the main window keeps the focus */
@@ -781,8 +789,22 @@ unsigned sdl2_video_window_poll(void *owner, video_window_event_t *events,
 
 static int SDLCALL sdl2_video_window_unqueue(void *data, SDL_Event *event)
 {
-   return    event->type != SDL_WINDOWEVENT
-          || event->window.windowID != *(const Uint32*)data;
+   Uint32 id = *(const Uint32*)data;
+   switch (event->type)
+   {
+      case SDL_WINDOWEVENT:
+         return event->window.windowID != id;
+      case SDL_MOUSEMOTION:
+         return event->motion.windowID != id;
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+         return event->button.windowID != id;
+      case SDL_MOUSEWHEEL:
+         return event->wheel.windowID != id;
+      default:
+         break;
+   }
+   return 1;
 }
 
 void sdl2_video_window_destroy(void *owner, video_window_native_t *window)
@@ -798,11 +820,28 @@ void sdl2_video_window_destroy(void *owner, video_window_native_t *window)
    sdl2_video_window_count--;
    id = state->id;
    SDL_DestroyWindow(state->win);
+   /* the input gate's last, so a poll on another thread fails closed */
+   retro_atomic_store_release_size(
+         &sdl2_video_window_wins[state->common.request.screen], 0);
+   retro_atomic_store_release_int(
+         &sdl2_video_window_ids[state->common.request.screen], 0);
    /* nor is what is still queued for it, which the main window's
     * handling would take */
    SDL_FilterEvents(sdl2_video_window_unqueue, &id);
    free(state);
    memset(window, 0, sizeof(*window));
+}
+
+bool sdl2_video_window_is_screen(const SDL_Window *win, Uint32 id)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (     (win && retro_atomic_load_acquire_size(
+                  &sdl2_video_window_wins[i]) == (size_t)(uintptr_t)win)
+            || (id  && (Uint32)retro_atomic_load_acquire_int(
+                  &sdl2_video_window_ids[i]) == id))
+         return true;
+   return false;
 }
 
 void sdl2_video_windows_free(void *owner,
