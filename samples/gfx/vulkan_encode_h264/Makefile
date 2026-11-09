@@ -8,7 +8,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: params_test$(EXE) session_test$(EXE) picture_test$(EXE) submit_test$(EXE) pool_test$(EXE) encoder_test$(EXE)
+all: params_test$(EXE) session_test$(EXE) picture_test$(EXE) submit_test$(EXE) pool_test$(EXE) encoder_test$(EXE) worker_test$(EXE)
 params_test$(EXE): params_test.c $(RA)/gfx/common/vulkan_encode_h264_params.h $(RA)/gfx/include/vk_video/vulkan_video_codec_h264std.h
 	$(CC) $(CFLAGS) params_test.c -o $@ $(LDFLAGS)
 session_test$(EXE): session_test.c $(RA)/gfx/common/vulkan_encode_h264_session.c $(RA)/gfx/common/vulkan_encode_h264_session.h $(RA)/gfx/common/vulkan_encode_h264_params.h
@@ -21,6 +21,8 @@ pool_test$(EXE): pool_test.c $(RA)/gfx/common/vulkan_encode_pool.c $(RA)/gfx/com
 	$(CC) $(CFLAGS) pool_test.c -o $@ $(LDFLAGS)
 encoder_test$(EXE): encoder_test.c $(RA)/gfx/common/vulkan_encode_h264.c $(RA)/gfx/common/vulkan_encode_h264.h $(RA)/gfx/common/vulkan_encode_pool.h $(RA)/gfx/common/vulkan_encode_h264_submit.h $(RA)/gfx/common/vulkan_encode_h264_picture.h $(RA)/gfx/common/vulkan_encode_h264_session.h $(RA)/gfx/common/vulkan_encode_h264_params.h
 	$(CC) $(CFLAGS) encoder_test.c -o $@ $(LDFLAGS)
+worker_test$(EXE): worker_test.c $(RA)/record/record_gpu_worker_vulkan.c $(RA)/record/record_gpu_worker_vulkan.h $(RA)/record/record_gpu_queue.c $(RA)/record/record_gpu_queue.h $(RA)/libretro-common/queues/retro_spsc.c $(RA)/gfx/common/vulkan_encode_h264.h $(RA)/gfx/common/vulkan_encode_pool.h $(RA)/gfx/common/vulkan_encode_h264_submit.h $(RA)/gfx/common/vulkan_encode_h264_picture.h $(RA)/gfx/common/vulkan_encode_h264_session.h $(RA)/gfx/common/vulkan_encode_h264_params.h
+	$(CC) $(CFLAGS) worker_test.c $(RA)/record/record_gpu_worker_vulkan.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c -o $@ $(LDFLAGS)
 check: all
 	$(RUNNER) ./params_test$(EXE)
 	$(RUNNER) ./session_test$(EXE)
@@ -28,6 +30,7 @@ check: all
 	$(RUNNER) ./submit_test$(EXE)
 	$(RUNNER) ./pool_test$(EXE)
 	$(RUNNER) ./encoder_test$(EXE)
+	$(RUNNER) ./worker_test$(EXE)
 clean:
-	rm -f params_test params_test.exe session_test session_test.exe picture_test picture_test.exe submit_test submit_test.exe pool_test pool_test.exe encoder_test encoder_test.exe
+	rm -f params_test params_test.exe session_test session_test.exe picture_test picture_test.exe submit_test submit_test.exe pool_test pool_test.exe encoder_test encoder_test.exe worker_test worker_test.exe
 .PHONY: all check clean
