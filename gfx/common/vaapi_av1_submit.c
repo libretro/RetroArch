@@ -15,7 +15,8 @@ bool vaapi_av1_submit_start(vaapi_av1_submit_t *t, const vaapi_av1_session_t *s,
    static const VABufferType types[3] = {VAPictureParameterBufferType,
                                          VASliceParameterBufferType,
                                          VASliceDataBufferType};
-   bool found = false;
+   bool found = false, display_found = false;
+   VASurfaceID display;
    if (!t || t->active || !s || !s->ready || s->closing || !ops ||
        !ops->create || !ops->destroy || !ops->begin || !ops->render ||
        !ops->end || !ops->sync || !s->display || s->context == VA_INVALID_ID ||
@@ -30,8 +31,11 @@ bool vaapi_av1_submit_start(vaapi_av1_submit_t *t, const vaapi_av1_session_t *s,
        !p->picture.seq_info_fields.fields.subsampling_x ||
        !p->picture.seq_info_fields.fields.subsampling_y ||
        p->picture.seq_info_fields.fields.mono_chrome ||
-       p->picture.film_grain_info.film_grain_info_fields.bits.apply_grain ||
-       p->picture.current_display_picture != VA_INVALID_SURFACE ||
+       (p->picture.film_grain_info.film_grain_info_fields.bits.apply_grain !=
+        (unsigned)(p->picture.current_display_picture != VA_INVALID_SURFACE)) ||
+       (p->picture.film_grain_info.film_grain_info_fields.bits.apply_grain &&
+        !p->picture.seq_info_fields.fields.film_grain_params_present) ||
+       p->picture.current_display_picture == p->target ||
        p->picture.pic_info_fields.bits.large_scale_tile ||
        p->picture.anchor_frames_num || p->picture.anchor_frames_list ||
        !p->picture.tile_cols || p->picture.tile_cols > 64 ||
@@ -68,17 +72,22 @@ bool vaapi_av1_submit_start(vaapi_av1_submit_t *t, const vaapi_av1_session_t *s,
              p->picture.ref_frame_map[p->picture.ref_frame_idx[i]] ==
                 VA_INVALID_SURFACE)
             return false;
+   display = p->picture.current_display_picture;
    for (i = 0; i < s->slots; i++)
+   {
       if (s->surfaces[i] == p->target)
          found = true;
-   if (!found)
+      if (s->surfaces[i] == display)
+         display_found = true;
+   }
+   if (!found || (display != VA_INVALID_SURFACE && !display_found))
       return false;
    for (i = 0; i < 8; i++)
    {
       VASurfaceID ref = p->picture.ref_frame_map[i];
       if (ref == VA_INVALID_SURFACE)
          continue;
-      if (ref == p->target)
+      if (ref == p->target || ref == display)
          return false;
       found = false;
       for (j = 0; j < s->slots; j++)
@@ -134,6 +143,8 @@ bool vaapi_av1_submit_start(vaapi_av1_submit_t *t, const vaapi_av1_session_t *s,
    t->error = t->ops.end(t->display, s->context);
    if (t->error != VA_STATUS_SUCCESS)
       return false;
+   if (display != VA_INVALID_SURFACE)
+      t->surface = display;
    t->submitted = true;
    t->poisoned = false;
    return true;

@@ -11,7 +11,7 @@ static vaapi_av1_params_t params;
 static VASliceParameterBufferAV1 slices[2];
 static uint8_t packet[128];
 static unsigned calls, created, dropped, fault, empty, duplicate, drop_fault;
-static unsigned live[3], begun, rendered, ended, synced;
+static unsigned live[3], begun, rendered, ended, synced, grain_mode;
 static VAStatus completion;
 
 static VAStatus create(VADisplay display, VAContextID context,
@@ -85,7 +85,8 @@ static VAStatus end(VADisplay display, VAContextID context)
 
 static VAStatus sync_surface(VADisplay display, VASurfaceID target, uint64_t ns)
 {
-   assert(display == session.display && target == params.target && !ns &&
+   assert(display == session.display && target == (params.picture.current_display_picture != VA_INVALID_SURFACE
+             ? params.picture.current_display_picture : params.target) && !ns &&
           ended);
    synced++;
    calls++;
@@ -129,6 +130,12 @@ static void reset(unsigned depth)
    params.tile_count = 2;
    for (i = 0; i < 8; i++)
       params.picture.ref_frame_map[i] = i ? VA_INVALID_SURFACE : 1;
+   if (grain_mode)
+   {
+      params.picture.seq_info_fields.fields.film_grain_params_present = 1;
+      params.picture.film_grain_info.film_grain_info_fields.bits.apply_grain = 1;
+      params.picture.current_display_picture = 11;
+   }
    memset(slices, 0, sizeof(slices));
    slices[0].slice_data_flag = slices[1].slice_data_flag =
       VA_SLICE_DATA_FLAG_ALL;
@@ -249,6 +256,17 @@ static void invalid(void)
    BAD(params.picture.film_grain_info.film_grain_info_fields.bits.apply_grain =
           1);
    BAD(params.picture.current_display_picture = 1);
+   BAD(params.picture.film_grain_info.film_grain_info_fields.bits.apply_grain = 1;
+       params.picture.current_display_picture = 11);
+   BAD(params.picture.seq_info_fields.fields.film_grain_params_present = 1;
+       params.picture.film_grain_info.film_grain_info_fields.bits.apply_grain = 1;
+       params.picture.current_display_picture = 12);
+   BAD(params.picture.seq_info_fields.fields.film_grain_params_present = 1;
+       params.picture.film_grain_info.film_grain_info_fields.bits.apply_grain = 1;
+       params.picture.current_display_picture = 13);
+   BAD(params.picture.seq_info_fields.fields.film_grain_params_present = 1;
+       params.picture.film_grain_info.film_grain_info_fields.bits.apply_grain = 1;
+       params.picture.current_display_picture = 1);
    BAD(params.picture.current_frame = 1);
    BAD(params.picture.pic_info_fields.bits.large_scale_tile = 1);
    BAD(params.picture.anchor_frames_num = 1);
@@ -334,6 +352,12 @@ int main(void)
    failures(10);
    retirement(8);
    retirement(10);
+   grain_mode = 1;
+   failures(8);
+   failures(10);
+   retirement(8);
+   retirement(10);
+   grain_mode = 0;
    invalid();
    puts("PASS: AV1 buffer submission, zero-timeout completion and failure "
         "retirement");

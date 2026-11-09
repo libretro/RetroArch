@@ -13,7 +13,7 @@ typedef vaapi_hevc_submit_ops_t vaapi_av1_submit_ops_t;
 #if RARCH_VAAPI_AV1_PARAMS_AVAILABLE
 /* Decoder owner only. Create copies the prepared parameters, tiles and packet.
  * False can retain partial buffers or poison the transaction; retire before
- * reuse. */
+ * reuse. Completion tracks the final display surface when grain is applied. */
 bool vaapi_av1_submit_start(vaapi_av1_submit_t *transaction,
                             const vaapi_av1_session_t *session,
                             const vaapi_av1_submit_ops_t *ops,
