@@ -2366,6 +2366,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_REMAP_FILE_FLUSH:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH:
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
+      case MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK:
       case MENU_ENUM_LABEL_CORE_LOCK:
       case MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT:
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
