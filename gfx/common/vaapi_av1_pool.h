@@ -15,16 +15,20 @@ typedef struct vaapi_av1_pool
    vaapi_av1_params_t params;
    VASliceParameterBufferAV1 slices[4096];
    uint64_t generation[32], next_generation;
-   uint32_t reads[32], valid, ready;
-   unsigned exports[32], logical_slots;
+   uint32_t reads[32], writes[32], valid, ready;
+   unsigned exports[32], outputs[32], logical_slots;
    int mapping[32];
-   bool active, broken;
+   bool active, broken, grain;
 } vaapi_av1_pool_t;
 
 /* Cold-allocated, initially zeroed storage. Owner thread only, including lease
  * returns from renderer retirement. Session/bindings outlive close. Logical
  * DPB slots are renamed when older exported incarnations remain held. */
 bool vaapi_av1_pool_init(vaapi_av1_pool_t *pool,
+      const vaapi_av1_session_t *session, const vaapi_av1_submit_ops_t *ops,
+      unsigned logical_slots);
+/* Grain retains separate reference/display pairs; at least 18 native slots. */
+bool vaapi_av1_pool_init_grain(vaapi_av1_pool_t *pool,
       const vaapi_av1_session_t *session, const vaapi_av1_submit_ops_t *ops,
       unsigned logical_slots);
 uint32_t vaapi_av1_pool_held(const vaapi_av1_pool_t *pool);

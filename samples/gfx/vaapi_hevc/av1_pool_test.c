@@ -360,8 +360,194 @@ static void invalid(void)
    assert(!vaapi_av1_pool_init(&pool, &session, &ops, 10));
 }
 
+static void grain_next(unsigned logical, int previous)
+{
+   next(logical, previous);
+   picture.grain.params.apply = 1;
+   picture.grain.params.scaling_shift = 8;
+   picture.grain.params.ar_coeff_shift = 6;
+}
+static void grain_setup(unsigned depth, unsigned slots)
+{
+   setup(depth, slots);
+   assert(vaapi_av1_pool_close(&pool));
+   assert(vaapi_av1_pool_init_grain(&pool, &session, &ops, 10));
+   sequence.film_grain_params_present = 1;
+   grain_next(0, -1);
+}
+static void grain_renaming(unsigned depth)
+{
+   uint64_t first, repeat;
+   grain_setup(depth, 21);
+   assert(!decode() && pool.mapping[0] == 0 && pool.outputs[0] == 1);
+   assert(observed.current_frame == 1 && observed.current_display_picture == 2);
+   completion[1] = VA_STATUS_ERROR_TIMEDOUT;
+   assert(vaapi_av1_pool_poll(&pool, 0) == 1 && native_syncs == 1);
+   assert(vaapi_av1_pool_poll(&pool, 1) == 1 && native_syncs == 2);
+   assert(!(pool.ready & 3) && !vaapi_av1_pool_acquire(&pool, 1, &first));
+   completion[1] = VA_STATUS_SUCCESS;
+   assert(!vaapi_av1_pool_poll(&pool, 1) && (pool.ready & 3) == 3 && dropped == 3);
+   assert(vaapi_av1_pool_acquire(&pool, 1, &first));
+   assert(vaapi_av1_pool_acquire(&pool, 1, &repeat) && first == repeat);
+   grain_next(1, 0);
+   assert(!decode() && pool.mapping[1] == 2 && pool.outputs[2] == 3);
+   assert(observed.ref_frame_map[0] == 1 && pool.reads[2] == 3);
+   assert(!vaapi_av1_pool_poll(&pool, 2));
+   grain_next(0, 1);
+   assert(!decode() && pool.mapping[0] == 0 && pool.outputs[0] == 4);
+   assert(observed.ref_frame_map[0] == 3);
+   assert(!vaapi_av1_pool_poll(&pool, 4));
+   assert(vaapi_av1_pool_current(&pool, 1, first) && pool.exports[1] == 2);
+   assert(!vaapi_av1_pool_close(&pool));
+   assert(!vaapi_av1_pool_terminated(&pool, session.display));
+   assert(vaapi_av1_pool_release(&pool, 1, first));
+   assert(vaapi_av1_pool_release(&pool, 1, repeat));
+   assert(!vaapi_av1_pool_release(&pool, 1, first));
+   assert(vaapi_av1_pool_close(&pool));
+}
+static void grain_eight_references(void)
+{
+   unsigned i, j, before;
+   uint64_t generation;
+   int mapping[32];
+   grain_setup(10, 18);
+   for (i = 0; i < 8; i++)
+   {
+      grain_next(i, -1);
+      for (j = 0; j < i; j++)
+      {
+         picture.reference_slots[j] = (int)j;
+         picture.reference_info[j].valid = 1;
+      }
+      assert(!decode() && pool.mapping[i] == (int)(i * 2));
+      assert(pool.outputs[i * 2] == i * 2 + 1);
+      assert(!vaapi_av1_pool_poll(&pool, i * 2));
+   }
+   grain_next(8, -1);
+   picture.header.frame_type = RAV1_FRAME_INTER;
+   picture.header.frame_is_intra = 0;
+   picture.header.primary_ref_frame = 0;
+   picture.setup.valid_mask = 255;
+   for (i = 0; i < 8; i++)
+   {
+      picture.reference_slots[i] = (int)i;
+      picture.reference_info[i].valid = 1;
+   }
+   for (i = 0; i < 7; i++) picture.setup.ref_frame_idx[i] = i;
+   assert(!decode() && pool.mapping[8] == 16 && pool.outputs[16] == 17);
+   assert(pool.reads[16] == 65535 && pool.writes[16] == 196608);
+   for (i = 0; i < 8; i++) assert(observed.ref_frame_map[i] == i * 2 + 1);
+   completion[17] = VA_STATUS_ERROR_TIMEDOUT;
+   assert(vaapi_av1_pool_poll(&pool, 16) == 1);
+   grain_next(0, -1);
+   before = calls;
+   generation = pool.next_generation;
+   memcpy(mapping, pool.mapping, sizeof(mapping));
+   assert(decode() == 1 && calls == before && generation == pool.next_generation);
+   assert(!memcmp(mapping, pool.mapping, sizeof(mapping)));
+   completion[17] = VA_STATUS_SUCCESS;
+   assert(!vaapi_av1_pool_poll(&pool, 17));
+   assert(!decode() && pool.mapping[0] == 0 && pool.outputs[0] == 1);
+   assert(!vaapi_av1_pool_poll(&pool, 0));
+   assert(vaapi_av1_pool_close(&pool));
+}
+static void grain_capacity(void)
+{
+   uint64_t tickets[32], generation;
+   unsigned i, before;
+   int mapping[32];
+   grain_setup(8, 32);
+   for (i = 0; i < 16; i++)
+   {
+      grain_next(i % 10, -1);
+      assert(!decode() && pool.mapping[i % 10] == (int)(i * 2));
+      assert(!vaapi_av1_pool_poll(&pool, i * 2));
+      assert(vaapi_av1_pool_acquire(&pool, i * 2, &tickets[i * 2]));
+      assert(vaapi_av1_pool_acquire(&pool, i * 2 + 1, &tickets[i * 2 + 1]));
+   }
+   assert(vaapi_av1_pool_held(&pool) == UINT32_MAX);
+   assert(vaapi_av1_pool_release(&pool, 0, tickets[0]));
+   before = calls;
+   generation = pool.next_generation;
+   memcpy(mapping, pool.mapping, sizeof(mapping));
+   grain_next(9, -1);
+   assert(decode() == 1 && calls == before && pool.next_generation == generation);
+   assert(!memcmp(mapping, pool.mapping, sizeof(mapping)));
+   assert(vaapi_av1_pool_release(&pool, 1, tickets[1]));
+   assert(!decode() && pool.mapping[9] == 0 && pool.outputs[0] == 1);
+   assert(!vaapi_av1_pool_poll(&pool, 0));
+   assert(!vaapi_av1_pool_current(&pool, 0, tickets[0]));
+   assert(!vaapi_av1_pool_current(&pool, 1, tickets[1]));
+   for (i = 2; i < 32; i++) assert(vaapi_av1_pool_release(&pool, i, tickets[i]));
+   assert(vaapi_av1_pool_close(&pool));
+}
+static void grain_failures(void)
+{
+   uint64_t ticket;
+   unsigned before;
+   grain_setup(8, 21);
+   assert(!decode());
+   drop_fault = 101;
+   assert(!vaapi_av1_pool_poll(&pool, 0) && dropped == 2);
+   assert(pool.writes[0] == 3 && (vaapi_av1_pool_held(&pool) & 3) == 3);
+   grain_next(1, -1);
+   assert(!decode() && pool.mapping[1] == 2 && pool.outputs[2] == 3);
+   assert(!vaapi_av1_pool_poll(&pool, 2));
+   before = native_syncs;
+   drop_fault = 0;
+   assert(!vaapi_av1_pool_poll(&pool, 1) && native_syncs == before && !pool.writes[0]);
+   assert(vaapi_av1_pool_close(&pool));
+   grain_setup(10, 21);
+   fault = 1000;
+   assert(decode() < 0 && pool.broken && pool.writes[0] == 3);
+   assert((vaapi_av1_pool_held(&pool) & 3) == 3);
+   before = calls;
+   assert(vaapi_av1_pool_poll(&pool, 1) < 0 && calls == before);
+   assert(!vaapi_av1_pool_close(&pool));
+   assert(vaapi_av1_pool_terminated(&pool, session.display));
+   grain_setup(10, 21);
+   assert(!decode() && !vaapi_av1_pool_poll(&pool, 0));
+   assert(vaapi_av1_pool_acquire(&pool, 1, &ticket));
+   grain_next(1, 0);
+   assert(!decode());
+   completion[3] = VA_STATUS_ERROR_DECODING_ERROR;
+   assert(vaapi_av1_pool_poll(&pool, 3) < 0 && pool.broken);
+   assert(!(pool.valid & 12) && !(pool.ready & 12));
+   assert(vaapi_av1_pool_current(&pool, 1, ticket));
+   assert(!vaapi_av1_pool_terminated(&pool, session.display));
+   assert(vaapi_av1_pool_release(&pool, 1, ticket));
+   assert(vaapi_av1_pool_terminated(&pool, session.display));
+}
+static void grain_modes(void)
+{
+   uint64_t ticket;
+   setup(8, 21);
+   sequence.film_grain_params_present = 1;
+   grain_next(0, -1);
+   assert(decode() < 0 && !calls);
+   assert(vaapi_av1_pool_close(&pool));
+   session.slots = 17;
+   assert(!vaapi_av1_pool_init_grain(&pool, &session, &ops, 10));
+   session.slots = 21;
+   assert(vaapi_av1_pool_init_grain(&pool, &session, &ops, 10));
+   assert(!decode() && !vaapi_av1_pool_poll(&pool, 0));
+   assert(vaapi_av1_pool_acquire(&pool, 0, &ticket));
+   next(1, -1);
+   assert(!decode() && pool.mapping[1] == 1 && pool.outputs[1] == 1);
+   assert(pool.mapping[0] == -1);
+   assert(vaapi_av1_pool_current(&pool, 0, ticket));
+   assert(!vaapi_av1_pool_poll(&pool, 1));
+   assert(vaapi_av1_pool_release(&pool, 0, ticket));
+   assert(vaapi_av1_pool_close(&pool));
+}
 int main(void)
 {
+   grain_renaming(8);
+   grain_renaming(10);
+   grain_eight_references();
+   grain_capacity();
+   grain_failures();
+   grain_modes();
    rename_exports(8);
    rename_exports(10);
    reads();
