@@ -109,6 +109,96 @@ static INLINE unsigned vaapi_av1_global_invalid(const int32_t *m)
    return 4 * a + 7 * b >= 65536 || 4 * c + 4 * d >= 65536;
 }
 
+static INLINE bool vaapi_av1_grain_valid(const rav1_grain_t *g)
+{
+   unsigned plane, i;
+   if (g->apply > 1)
+      return false;
+   if (!g->apply)
+      return true;
+   if (g->seed > 65535 || g->scaling_shift < 8 || g->scaling_shift > 11 ||
+       g->ar_coeff_lag > 3 || g->ar_coeff_shift < 6 || g->ar_coeff_shift > 9 ||
+       g->scale_shift > 3 ||
+       (g->chroma_scaling_from_luma | g->overlap |
+        g->clip_to_restricted_range) > 1 ||
+       (!g->num_points[1] != !g->num_points[2]) ||
+       ((g->chroma_scaling_from_luma || !g->num_points[0]) &&
+        (g->num_points[1] || g->num_points[2])))
+      return false;
+   for (plane = 0; plane < 3; plane++)
+   {
+      if (g->num_points[plane] > (plane ? 10 : 14))
+         return false;
+      for (i = 1; i < g->num_points[plane]; i++)
+         if (g->point_value[plane][i] <= g->point_value[plane][i - 1])
+            return false;
+   }
+   for (plane = 0; plane < 2; plane++)
+      if (g->chroma_mult[plane] > 255 || g->chroma_luma_mult[plane] > 255 ||
+          g->chroma_offset[plane] > 511)
+         return false;
+   return true;
+}
+
+/* Writes directly into the caller's zeroed parameter buffer. */
+static INLINE void vaapi_av1_grain(VAFilmGrainStructAV1 *v,
+                                   const rav1_grain_t *g)
+{
+   unsigned i, count = 2 * g->ar_coeff_lag * (g->ar_coeff_lag + 1);
+   v->film_grain_info_fields.bits.apply_grain = 1;
+   v->film_grain_info_fields.bits.chroma_scaling_from_luma =
+      g->chroma_scaling_from_luma;
+   v->film_grain_info_fields.bits.grain_scaling_minus_8 = g->scaling_shift - 8;
+   v->film_grain_info_fields.bits.ar_coeff_lag = g->ar_coeff_lag;
+   v->film_grain_info_fields.bits.ar_coeff_shift_minus_6 = g->ar_coeff_shift - 6;
+   v->film_grain_info_fields.bits.grain_scale_shift = g->scale_shift;
+   v->film_grain_info_fields.bits.overlap_flag = g->overlap;
+   v->film_grain_info_fields.bits.clip_to_restricted_range =
+      g->clip_to_restricted_range;
+   v->grain_seed = (uint16_t)g->seed;
+   v->num_y_points = g->num_points[0];
+   v->num_cb_points = g->num_points[1];
+   v->num_cr_points = g->num_points[2];
+   for (i = 0; i < g->num_points[0]; i++)
+   {
+      v->point_y_value[i] = g->point_value[0][i];
+      v->point_y_scaling[i] = g->point_scaling[0][i];
+   }
+   for (i = 0; i < g->num_points[1]; i++)
+   {
+      v->point_cb_value[i] = g->point_value[1][i];
+      v->point_cb_scaling[i] = g->point_scaling[1][i];
+   }
+   for (i = 0; i < g->num_points[2]; i++)
+   {
+      v->point_cr_value[i] = g->point_value[2][i];
+      v->point_cr_scaling[i] = g->point_scaling[2][i];
+   }
+   for (i = 0; i < count; i++)
+      if (g->num_points[0])
+         v->ar_coeffs_y[i] = g->ar_coeffs[0][i];
+   count += g->num_points[0] != 0;
+   for (i = 0; i < count; i++)
+   {
+      if (g->num_points[1] || g->chroma_scaling_from_luma)
+         v->ar_coeffs_cb[i] = g->ar_coeffs[1][i];
+      if (g->num_points[2] || g->chroma_scaling_from_luma)
+         v->ar_coeffs_cr[i] = g->ar_coeffs[2][i];
+   }
+   if (g->num_points[1])
+   {
+      v->cb_mult = (uint8_t)g->chroma_mult[0];
+      v->cb_luma_mult = (uint8_t)g->chroma_luma_mult[0];
+      v->cb_offset = (uint16_t)g->chroma_offset[0];
+   }
+   if (g->num_points[2])
+   {
+      v->cr_mult = (uint8_t)g->chroma_mult[1];
+      v->cr_luma_mult = (uint8_t)g->chroma_luma_mult[1];
+      v->cr_offset = (uint16_t)g->chroma_offset[1];
+   }
+}
+
 static INLINE bool vaapi_av1_tools_valid(const rav1_hw_picture_t *p)
 {
    static const int maxima[8] = {255, 63, 63, 63, 63, 7, 0, 0};
@@ -120,7 +210,7 @@ static INLINE bool vaapi_av1_tools_valid(const rav1_hw_picture_t *p)
        !vaapi_av1_delta(q->delta_q_v_ac) || q->tx_mode > 2 ||
        q->delta_q_res > 3 || q->delta_lf_res > 3 ||
        q->loop_filter_sharpness > 7 || q->cdef_bits > 3 ||
-       q->cdef_damping < 3 || q->cdef_damping > 6 || p->grain.params.apply ||
+       q->cdef_damping < 3 || q->cdef_damping > 6 ||
        (q->using_qmatrix | q->segmentation_enabled |
         q->segmentation_update_map | q->segmentation_temporal_update |
         q->segmentation_update_data | q->delta_q_present | q->delta_lf_present |
@@ -170,14 +260,15 @@ static INLINE bool vaapi_av1_tools_valid(const rav1_hw_picture_t *p)
    return true;
 }
 
-/* Main 8/10-bit FRAME OBUs; film grain is declined.
+/* Main 8/10-bit FRAME OBUs; grain requires a separate display surface.
  * Caller storage must not alias borrowed views. No VA calls or leases;
  * admission failure preserves both output buffers. */
 static INLINE bool
-vaapi_av1_picture(vaapi_av1_params_t *out, VASliceParameterBufferAV1 *slices,
+vaapi_av1_picture_display(vaapi_av1_params_t *out, VASliceParameterBufferAV1 *slices,
                   unsigned capacity, const uint8_t *packet, size_t size,
                   const rav1_sequence_t *s, const rav1_hw_picture_t *p,
-                  const VASurfaceID *surfaces, unsigned slots)
+                  const VASurfaceID *surfaces, unsigned slots,
+                  VASurfaceID display_surface)
 {
    VADecPictureParameterBufferAV1 *v;
    const rav1_picture_t *q;
@@ -219,7 +310,10 @@ vaapi_av1_picture(vaapi_av1_params_t *out, VASliceParameterBufferAV1 *slices,
         p->setup.allow_intrabc | p->setup.allow_high_precision_mv |
         p->setup.motion_mode_switchable | p->setup.use_ref_frame_mvs |
         p->setup.disable_frame_end_update_cdf | p->tiles.uniform_spacing) > 1 ||
-       !vaapi_av1_tools_valid(p) ||
+       !vaapi_av1_tools_valid(p) || !vaapi_av1_grain_valid(&p->grain.params) ||
+       (p->grain.params.apply && (!s->film_grain_params_present ||
+        !(p->header.show_frame || p->header.showable_frame))) ||
+       (p->grain.params.apply != (unsigned)(display_surface != VA_INVALID_SURFACE)) ||
        rav1_obu_next(&obu, packet, size, &offset, true) != 1 ||
        offset != size || obu.type != 6 || obu.temporal_id || obu.spatial_id)
       return false;
@@ -248,9 +342,13 @@ vaapi_av1_picture(vaapi_av1_params_t *out, VASliceParameterBufferAV1 *slices,
       return false;
    for (i = 0; i < slots; i++)
       if (surfaces[i] != VA_INVALID_SURFACE)
+      {
+         if (surfaces[i] == display_surface)
+            return false;
          for (j = 0; j < i; j++)
             if (surfaces[i] == surfaces[j])
                return false;
+      }
    if (surfaces[p->slot] == VA_INVALID_SURFACE)
       return false;
    for (i = 0; i < 8; i++)
@@ -339,7 +437,9 @@ vaapi_av1_picture(vaapi_av1_params_t *out, VASliceParameterBufferAV1 *slices,
    v->seq_info_fields.fields.film_grain_params_present =
       s->film_grain_params_present;
    v->current_frame = out->target = surfaces[p->slot];
-   v->current_display_picture = VA_INVALID_SURFACE;
+   v->current_display_picture = display_surface;
+   if (p->grain.params.apply)
+      vaapi_av1_grain(&v->film_grain_info, &p->grain.params);
    v->frame_width_minus1 = (uint16_t)(p->setup.size.upscaled_width - 1);
    v->frame_height_minus1 = (uint16_t)(p->setup.size.height - 1);
    v->primary_ref_frame = (uint8_t)p->header.primary_ref_frame;
@@ -461,6 +561,16 @@ vaapi_av1_picture(vaapi_av1_params_t *out, VASliceParameterBufferAV1 *slices,
       slices[i].tile_column = (uint16_t)tile.column;
    }
    return true;
+}
+
+static INLINE bool
+vaapi_av1_picture(vaapi_av1_params_t *out, VASliceParameterBufferAV1 *slices,
+                  unsigned capacity, const uint8_t *packet, size_t size,
+                  const rav1_sequence_t *s, const rav1_hw_picture_t *p,
+                  const VASurfaceID *surfaces, unsigned slots)
+{
+   return vaapi_av1_picture_display(out, slices, capacity, packet, size, s, p,
+                                    surfaces, slots, VA_INVALID_SURFACE);
 }
 #else
 #define RARCH_VAAPI_AV1_PARAMS_AVAILABLE 0

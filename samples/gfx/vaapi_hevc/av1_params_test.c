@@ -66,6 +66,130 @@ static void reject(void)
    CHECK(!memcmp(&params, &before, sizeof(params)));
    CHECK(!memcmp(slices, saved, sizeof(slices)));
 }
+static void grain_reset(void)
+{
+   rav1_grain_t *g;
+   unsigned plane, i;
+   reset();
+   seq.film_grain_params_present = 1;
+   g = &picture.grain.params;
+   g->apply = g->overlap = g->clip_to_restricted_range = 1;
+   g->seed = 65535;
+   g->scaling_shift = 11;
+   g->ar_coeff_lag = 3;
+   g->ar_coeff_shift = 9;
+   g->scale_shift = 3;
+   for (plane = 0; plane < 3; plane++)
+   {
+      g->num_points[plane] = plane ? 10 : 14;
+      for (i = 0; i < 14; i++)
+      {
+         g->point_value[plane][i] = (uint8_t)(i * 17);
+         g->point_scaling[plane][i] = (uint8_t)(255 - i);
+      }
+      for (i = 0; i < 25; i++)
+         g->ar_coeffs[plane][i] = (int8_t)(i % 2 ? 127 : -128);
+   }
+   for (plane = 0; plane < 2; plane++)
+   {
+      g->chroma_mult[plane] = 255;
+      g->chroma_luma_mult[plane] = 254;
+      g->chroma_offset[plane] = 511;
+   }
+}
+static void grain_reject(VASurfaceID display)
+{
+   memset(&params, 0xa5, sizeof(params));
+   memset(slices, 0x5a, sizeof(slices));
+   before = params;
+   memcpy(saved, slices, sizeof(saved));
+   CHECK(!vaapi_av1_picture_display(&params, slices, 4096, bytes,
+         sizeof(bytes), &seq, &picture, surfaces, 32, display));
+   CHECK(!memcmp(&params, &before, sizeof(params)));
+   CHECK(!memcmp(slices, saved, sizeof(slices)));
+}
+static void test_grain(void)
+{
+   VAFilmGrainStructAV1 *v = &params.picture.film_grain_info;
+   rav1_grain_t *g = &picture.grain.params;
+   unsigned i, plane;
+   grain_reset();
+   CHECK(vaapi_av1_picture_display(&params, slices, 4096, bytes,
+         sizeof(bytes), &seq, &picture, surfaces, 32, 999));
+   CHECK(params.target == 100 && params.picture.current_frame == 100 &&
+         params.picture.current_display_picture == 999);
+   CHECK(v->film_grain_info_fields.value == 0xffd && v->grain_seed == 65535);
+   CHECK(v->num_y_points == 14 && v->num_cb_points == 10 &&
+         v->num_cr_points == 10);
+   CHECK(v->point_y_value[13] == 221 && v->point_y_scaling[13] == 242 &&
+         v->point_cb_value[9] == 153 && v->point_cr_scaling[9] == 246);
+   CHECK(v->ar_coeffs_y[23] == 127 && v->ar_coeffs_cb[24] == -128 &&
+         v->ar_coeffs_cr[24] == -128);
+   CHECK(v->cb_mult == 255 && v->cr_mult == 255 && v->cb_luma_mult == 254 &&
+         v->cr_luma_mult == 254 && v->cb_offset == 511 && v->cr_offset == 511);
+   for (i = 0; i < VA_PADDING_LOW; i++)
+      CHECK(!v->va_reserved[i]);
+   reject();
+   grain_reject(VA_INVALID_SURFACE);
+   for (i = 0; i < 32; i++)
+      grain_reject(surfaces[i]);
+   grain_reset(); seq.film_grain_params_present = 0; grain_reject(999);
+   grain_reset(); picture.header.show_frame = 0; grain_reject(999);
+   grain_reset(); picture.header.show_frame = 0;
+   picture.header.showable_frame = 1;
+   CHECK(vaapi_av1_picture_display(&params, slices, 4096, bytes,
+         sizeof(bytes), &seq, &picture, surfaces, 32, 999));
+   grain_reset(); g->apply = 2; grain_reject(999);
+   grain_reset(); g->seed = 65536; grain_reject(999);
+   grain_reset(); g->scaling_shift = 7; grain_reject(999);
+   grain_reset(); g->scaling_shift = 12; grain_reject(999);
+   grain_reset(); g->ar_coeff_lag = 4; grain_reject(999);
+   grain_reset(); g->ar_coeff_shift = 5; grain_reject(999);
+   grain_reset(); g->ar_coeff_shift = 10; grain_reject(999);
+   grain_reset(); g->scale_shift = 4; grain_reject(999);
+   grain_reset(); g->overlap = 2; grain_reject(999);
+   grain_reset(); g->clip_to_restricted_range = 2; grain_reject(999);
+   grain_reset(); g->chroma_scaling_from_luma = 2; grain_reject(999);
+   grain_reset(); g->chroma_scaling_from_luma = 1; grain_reject(999);
+   grain_reset(); g->num_points[0] = 0; grain_reject(999);
+   grain_reset(); g->num_points[1] = 0; grain_reject(999);
+   grain_reset(); g->num_points[2] = 0; grain_reject(999);
+   for (plane = 0; plane < 3; plane++)
+   {
+      grain_reset(); g->num_points[plane] = plane ? 11 : 15;
+      grain_reject(999);
+      grain_reset(); g->point_value[plane][1] = g->point_value[plane][0];
+      grain_reject(999);
+      grain_reset(); g->point_value[plane][1] = 0;
+      g->point_value[plane][0] = 1; grain_reject(999);
+   }
+   for (plane = 0; plane < 2; plane++)
+   {
+      grain_reset(); g->chroma_mult[plane] = 256; grain_reject(999);
+      grain_reset(); g->chroma_luma_mult[plane] = 256; grain_reject(999);
+      grain_reset(); g->chroma_offset[plane] = 512; grain_reject(999);
+   }
+   grain_reset();
+   g->num_points[1] = g->num_points[2] = 0;
+   g->num_points[0] = 1;
+   g->chroma_scaling_from_luma = 1;
+   g->ar_coeff_lag = 0;
+   CHECK(vaapi_av1_picture_display(&params, slices, 4096, bytes,
+         sizeof(bytes), &seq, &picture, surfaces, 32, 999));
+   CHECK(!v->ar_coeffs_y[0] && v->ar_coeffs_cb[0] == -128 &&
+         v->ar_coeffs_cr[0] == -128 && !v->ar_coeffs_cb[1] &&
+         !v->point_y_value[1] && !v->point_cb_scaling[0] && !v->cb_mult);
+   g->num_points[0] = 0;
+   CHECK(vaapi_av1_picture_display(&params, slices, 4096, bytes,
+         sizeof(bytes), &seq, &picture, surfaces, 32, 999));
+   CHECK(!v->ar_coeffs_cb[0]);
+   g->apply = 0;
+   grain_reject(999);
+   CHECK(vaapi_av1_picture(&params, slices, 4096, bytes, sizeof(bytes), &seq,
+         &picture, surfaces, 32));
+   for (i = 0; i < sizeof(*v); i++)
+      CHECK(!((const uint8_t *)v)[i]);
+}
 static void manual(void)
 {
    static const uint8_t tiled[] = {0x32, 8,    0,    0,    1,
@@ -493,6 +617,7 @@ int main(int argc, char **argv)
    if (argc == 2)
       return inspect(argv[1]);
    manual();
+   test_grain();
    test_inter();
    test_global();
    global_corpus();
