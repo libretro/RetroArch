@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/numero.git
+Branch: master
+Rev: 867c40ad9cdfe5295e0be81e0a17b16964a4a33e

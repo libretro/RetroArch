@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/vircon32-libretro.git
+Branch: main
+Rev: d8a92430e887286b4e5351916ef0bd35d8cb40e8

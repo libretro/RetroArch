@@ -1,0 +1,105 @@
+This file contains the license agreement on individual file in the blueMSX
+source tree.
+
+blueMSX was originally derived from fMSX but now it is free from all
+fMSX source. All source used in blueMSX is either under BSD license,
+GPL or freeware.
+
+Most files are developed within the blueMSX project but some have their
+origin from other sources. All blueMSX developed code is released under
+a BSD style license but some of the other code is released under other
+license. Most notable are source from:
+
+- openMSX    released under GPL license
+
+Technical information needed to develop blueMSX has sometimes been found
+in the source code and documentation of other emulators. These emulators
+are:
+
+- openMSX
+- BRMSX
+- RuMSX
+- RedMSX
+- MESS
+- fMSX-SDL  
+- no$msx
+
+The following paragraph contains the license for the blueMSX created source files:
+
+**  This software is provided 'as-is', without any express or implied
+**  warranty.  In no event will the authors be held liable for any damages
+**  arising from the use of this software.
+**
+**  Permission is granted to anyone to use this software for any purpose,
+**  including commercial applications, and to alter it and redistribute it
+**  freely, subject to the following restrictions:
+**
+**  1. The origin of this software must not be misrepresented; you must not
+**     claim that you wrote the original software. If you use this software
+**     in a product, an acknowledgment in the product documentation would be
+**     appreciated but is not required.
+**  2. Altered source versions must be plainly marked as such, and must not be
+**     misrepresented as being the original software.
+**  3. This notice may not be removed or altered from any source distribution.
+
+
+The tree below shows all source code files in the blueMSX, their origin and license.
+blueMSX files that have been implemented using information from other emulators
+are not explicitly shown. The files developed by the blueMSX team under BSD license
+are not shown in this tree.
+
+
+\\---blueMSX
+    |   
+    \---Src
+        |       
+        |       Fmopl.c                 fMSXSDL - GPL
+        |       Fmopl.h                 fMSXSDL - GPL
+        |       OpenMsxYM2413.cpp       openMSX - GPL
+        |       OpenMsxYM2413.h         openMSX - GPL
+        |       OpenMsxYMF262.cpp       openMSX - GPL
+        |       OpenMsxYMF262.h         openMSX - GPL
+        |       OpenMsxYMF278.cpp       openMSX - GPL
+        |       OpenMsxYMF278.h         openMSX - GPL
+        |       Ymdeltat.c              fMSXSDL - GPL
+        |       Ymdeltat.h              fMSXSDL - GPL
+        |       
+        +---TinyXML
+        |       tinystr.cpp             3rd party - ZLIB
+        |       TinyStr.h               3rd party - ZLIB
+        |       tinyxml.cpp             3rd party - ZLIB
+        |       tinyxml.h               3rd party - ZLIB
+        |       tinyxmlerror.cpp        3rd party - ZLIB
+        |       tinyxmlparser.cpp       3rd party - ZLIB
+        |       
+        +---Unzip
+        |       crypt.h                 3rd party - ZLIB
+        |       ioapi.c                 3rd party - ZLIB
+        |       ioapi.h                 3rd party - ZLIB
+        |       iowin32.c               3rd party - ZLIB
+        |       iowin32.h               3rd party - ZLIB
+        |       miniunz.c               3rd party - ZLIB
+        |       minizip.c               3rd party - ZLIB
+        |       unzip.c                 3rd party - ZLIB
+        |       unzip.h                 3rd party - ZLIB
+        |       zconf.h                 3rd party - ZLIB
+        |       zip.c                   3rd party - ZLIB
+        |       zip.h                   3rd party - ZLIB
+        |       ziphelper.c             3rd party - ZLIB
+        |       ziphelper.h             3rd party - ZLIB
+        |       zlib.h                  3rd party - ZLIB
+        |       
+        +---VideoChips
+        |       V9938.c                 Alex Wulms - Freeware
+        |       V9938.h                 Alex Wulms - Freeware
+        |       
+        +---VideoRender
+        |       Scale2x.h               ? - BSD
+        |       Scale3x.h               ? - BSD
+        |       Scalebit.c              ? - BSD
+        |       Scalebit.h              ? - BSD
+        |       
+        |       
+        \---Z80
+                R800Dasm.c              openMSX - GPL
+                

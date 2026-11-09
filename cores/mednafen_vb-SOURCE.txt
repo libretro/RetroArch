@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/beetle-vb-libretro.git
+Branch: master
+Rev: 8f837ebc077afdd6652efb2827fd8308a07113ca

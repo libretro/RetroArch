@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/gambatte-libretro.git
+Branch: master
+Rev: 6924c76ba03dadddc6e97fa3660f3d3bc08faa94

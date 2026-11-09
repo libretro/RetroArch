@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/beetle-pce-fast-libretro.git
+Branch: master
+Rev: 7e9b257b8a591cb7e00f9e55371edba19db9799c

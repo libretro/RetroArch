@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/fuse-libretro.git
+Branch: master
+Rev: cad85b7b1b864c65734f71aa4a510b6f6536881c

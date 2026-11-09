@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/mojozork.git
+Branch: main
+Rev: 029446ba0e637f4c270ffc44d17919fe4ab94ad7

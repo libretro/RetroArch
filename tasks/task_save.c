@@ -462,8 +462,13 @@ static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
    size->total_size   = 8 + 8 + CONTENT_ALIGN_SIZE(info_size) + 8;
 #ifdef HAVE_CHEEVOS
    /* 8-byte block header + content */
-   if ((size->cheevos_size = rcheevos_get_serialize_size()) > 0)
-      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size);
+   if (!rewind)
+   {
+      if ((size->cheevos_size = rcheevos_get_serialize_size()) > 0)
+         size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size);
+   }
+   else
+      size->cheevos_size = 0;
 #endif
 #ifdef HAVE_BSV_MOVIE
    /* 8-byte block header + content */
@@ -558,6 +563,11 @@ static bool content_write_serialized_state(void* buffer,
       if (rcheevos_get_serialized_data(output + 8))
       {
          CONTENT_ZERO_PADDING(output + 8, size->cheevos_size);
+         output += CONTENT_ALIGN_SIZE(size->cheevos_size) + 8;
+      }
+      else
+      {
+         memset(output + 8, 0, CONTENT_ALIGN_SIZE(size->cheevos_size));
          output += CONTENT_ALIGN_SIZE(size->cheevos_size) + 8;
       }
    }
@@ -1010,10 +1020,6 @@ static void task_load_handler(retro_task_t *task)
          goto end;
    }
 
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
-#endif
 
    /* Same budgeted-quanta scheme as the save handler; see the comment
     * on SAVE_STATE_TICK_BUDGET_US. */
@@ -1338,10 +1344,6 @@ static void content_load_state_cb(retro_task_t *task,
    _len = load_data->size;
    buf  = load_data->data;
 
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      goto error;
-#endif
 
    RARCH_LOG("[State] %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),

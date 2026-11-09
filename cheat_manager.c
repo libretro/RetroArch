@@ -65,18 +65,6 @@ unsigned cheat_manager_get_size(void)
    return cheat_st->size;
 }
 
-#ifdef HAVE_CHEEVOS
-static void cheat_manager_pause_cheevos(void)
-{
-   char msg[128];
-   size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT), sizeof(msg));
-   rcheevos_pause_hardcore();
-   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("[Cheats] %s\n", msg);
-}
-#endif
-
 void cheat_manager_apply_cheats(bool notification_show_cheats_applied)
 {
    unsigned i, idx           = 0;
@@ -111,11 +99,6 @@ void cheat_manager_apply_cheats(bool notification_show_cheats_applied)
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
       RARCH_LOG("[Cheats] %s\n", msg);
    }
-
-#ifdef HAVE_CHEEVOS
-   if (idx != 0 && rcheevos_hardcore_active())
-      cheat_manager_pause_cheevos();
-#endif
 }
 
 void cheat_manager_set_code(unsigned i, const char *str)
@@ -1681,9 +1664,7 @@ void cheat_manager_apply_retro_cheats(void)
    unsigned int bits           = 8;
    unsigned int curr_val       = 0;
    bool run_cheat              = true;
-#ifdef HAVE_CHEEVOS
-   bool cheat_applied          = false;
-#endif
+
    cheat_manager_t   *cheat_st = &cheat_manager_state;
 
    if ((!cheat_st->cheats))
@@ -1774,9 +1755,7 @@ void cheat_manager_apply_retro_cheats(void)
 
       if (set_value)
       {
-#ifdef HAVE_CHEEVOS
-         cheat_applied = true;
-#endif
+
          for (repeat_iter = 1; repeat_iter <= cheat_st->cheats[i].repeat_count; repeat_iter++)
          {
             switch (bytes_per_item)
@@ -1865,11 +1844,6 @@ void cheat_manager_apply_retro_cheats(void)
          }
       }
    }
-
-#ifdef HAVE_CHEEVOS
-   if (cheat_applied && rcheevos_hardcore_active())
-      cheat_manager_pause_cheevos();
-#endif
 }
 
 void cheat_manager_match_action(enum cheat_match_action_type match_action, unsigned int target_match_idx, unsigned int *address, unsigned int *address_mask,

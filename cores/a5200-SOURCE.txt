@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/a5200.git
+Branch: master
+Rev: 526404072821bb2021fab16f8c5dbbca300512c8

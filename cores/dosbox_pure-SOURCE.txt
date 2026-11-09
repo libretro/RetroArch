@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/dosbox-pure.git
+Branch: main
+Rev: e8cb6683e8539757644d84278cf4deb2b0d0debc

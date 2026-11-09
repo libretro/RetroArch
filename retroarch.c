@@ -3348,15 +3348,6 @@ bool command_event(enum event_command cmd, void *data)
    switch (cmd)
    {
       case CMD_EVENT_LOAD_FILES:
-#ifdef HAVE_CHEEVOS
-         if (rcheevos_hardcore_active())
-         {
-            const char *_msg = msg_hash_to_str(MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE);
-            runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, true, NULL,
-                                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-            return false;
-         }
-#endif
          return event_load_save_files(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED);
       case CMD_EVENT_SAVE_FILES:
          return event_save_files(
@@ -3732,15 +3723,6 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_LOAD_STATE:
          {
-#ifdef HAVE_CHEEVOS
-            if (rcheevos_hardcore_active())
-            {
-               const char *_msg = msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE);
-               runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-               return false;
-            }
-#endif
 #ifdef HAVE_NETWORKING
             if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
                return false;
@@ -3996,6 +3978,7 @@ bool command_event(enum event_command cmd, void *data)
             video_driver_state_t *video_st  = video_state_get_ptr();
             rarch_system_info_t *sys_info   = &runloop_st->system;
             uint8_t flags                   = content_get_flags();
+            bool was_core_running           = (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
 
             runloop_st->flags              &= ~RUNLOOP_FLAG_CORE_RUNNING;
 
@@ -4005,6 +3988,7 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Save auto state */
             if (     settings->bools.savestate_auto_save
+                  && was_core_running
                   && runloop_st->current_core_type != CORE_TYPE_DUMMY)
                command_event_save_auto_state();
 
@@ -4262,10 +4246,6 @@ bool command_event(enum event_command cmd, void *data)
 
             if (core_type_is_dummy)
                return false;
-#ifdef HAVE_CHEEVOS
-            if (rcheevos_hardcore_active())
-               return false;
-#endif
 #ifdef HAVE_NETWORKING
             if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
                return false;
@@ -9568,8 +9548,12 @@ bool retroarch_main_quit(void)
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
       if (   settings->bools.savestate_auto_save
+          && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
           && runloop_st->current_core_type != CORE_TYPE_DUMMY)
+      {
          command_event_save_auto_state();
+         runloop_st->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
+      }
 
       /* If any save states are in progress, wait
        * until all tasks are complete (otherwise

@@ -4784,34 +4784,28 @@ static bool event_init_content(
     * if cheevos_enable and cheevos_hardcode_mode_enable
     * are true.
     */
-#ifdef HAVE_CHEEVOS
-   if (     !cheevos_enable
-         || !cheevos_hardcore_mode_enable)
+#ifdef HAVE_BSV_MOVIE
+   /* Ignore entry state if we're doing bsv playback (we do want it
+      for bsv recording though) */
+   if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
 #endif
    {
-#ifdef HAVE_BSV_MOVIE
-      /* Ignore entry state if we're doing bsv playback (we do want it
-         for bsv recording though) */
-      if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
-#endif
+      if (     entry_state_load
+            && !command_event_load_entry_state(settings))
       {
-         if (     entry_state_load
-               && !command_event_load_entry_state(settings))
-         {
-            /* Loading the state failed, reset entry slot */
-            runloop_st->entry_state_slot = -1;
-         }
+         /* Loading the state failed, reset entry slot */
+         runloop_st->entry_state_slot = -1;
       }
+   }
 
 #ifdef HAVE_BSV_MOVIE
-      /* Ignore autoload state if we're doing bsv playback or recording */
-      if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
+   /* Ignore autoload state if we're doing bsv playback or recording */
+   if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
 #endif
-      {
-         if (     runloop_st->entry_state_slot < 0
-               && settings->bools.savestate_auto_load)
-            command_event_load_auto_state();
-      }
+   {
+      if (     runloop_st->entry_state_slot < 0
+            && settings->bools.savestate_auto_load)
+         command_event_load_auto_state();
    }
 
 #ifdef HAVE_BSV_MOVIE
@@ -7115,8 +7109,6 @@ static enum runloop_state_enum runloop_check_state(
    /* Make sure not to evaluate this before calling menu_driver_iterate
     * as that may change its value */
    cheevos_hardcore_active = rcheevos_hardcore_active();
-
-   if (!cheevos_hardcore_active)
 #endif
    {
       /* Check rewind hotkey */
@@ -7127,10 +7119,14 @@ static enum runloop_state_enum runloop_check_state(
          char s[128];
          bool rewinding      = false;
          static bool old_rewind_pressed = false;
+         static bool has_rewound_this_press = false;
          bool rewind_pressed = BIT256_GET(current_bits, RARCH_REWIND);
          unsigned t          = 0;
 
          s[0]                = '\0';
+
+         if (!rewind_pressed)
+            has_rewound_this_press = false;
 
 #ifdef HAVE_MENU
          /* Don't allow rewinding while menu is active */
@@ -7142,6 +7138,7 @@ static enum runloop_state_enum runloop_check_state(
          if (     runloop_paused
                && rewind_pressed
                && old_rewind_pressed
+               && has_rewound_this_press
                && !runloop_st->run_frames_and_pause)
          {
             cbs->poll_cb();
@@ -7160,6 +7157,9 @@ static enum runloop_state_enum runloop_check_state(
 #endif
                ,
                s, sizeof(s), &t);
+
+         if (rewinding)
+            has_rewound_this_press = true;
 
          if (rewind_pressed != old_rewind_pressed)
          {
@@ -7277,7 +7277,6 @@ static enum runloop_state_enum runloop_check_state(
             }
          }
       }
-      else /* frame advance not allowed in hardcore */
 #endif
       {
          frameadvance_pressed = BIT256_GET(current_bits, RARCH_FRAMEADVANCE);
@@ -7322,11 +7321,7 @@ static enum runloop_state_enum runloop_check_state(
          if (!frameadvance_trigger)
 #endif
             focused = false;
-#ifdef HAVE_CHEEVOS
-         else if (!cheevos_hardcore_active)
-#else
          else
-#endif
             runloop_paused = false;
 
          /* Drop to RUNLOOP_STATE_POLLED_AND_SLEEP if frameadvance is triggered */
@@ -7521,9 +7516,6 @@ static enum runloop_state_enum runloop_check_state(
       video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
 #endif
 
-#ifdef HAVE_CHEEVOS
-   if (!cheevos_hardcore_active)
-#endif
    {
       {
          /* Check slowmotion hotkeys */

@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/mgba.git
+Branch: master
+Rev: c758314a639aa0066e7b65a8341448181b73c804

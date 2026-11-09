@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/scummvm.git
+Branch: master
+Rev: 686cdd13719b92554fa46b264c512ca7deec7a96

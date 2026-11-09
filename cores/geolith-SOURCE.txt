@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/geolith-libretro.git
+Branch: master
+Rev: 96b2b5fd4ef9f205bc5e23cb7dbf123e04e13de0

@@ -555,7 +555,18 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             content_ctx_info_t content_info = {0};
 
             if (data->current.core_loaded)
-               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+            {
+               bool load_dummy_core = false;
+               settings_t *settings = config_get_ptr();
+               bool old_auto_save   = settings->bools.savestate_auto_save;
+
+               /* Do not auto-save state when restarting core for netplay */
+               settings->bools.savestate_auto_save = false;
+
+               command_event(CMD_EVENT_UNLOAD_CORE, &load_dummy_core);
+
+               settings->bools.savestate_auto_save = old_auto_save;
+            }
 
             RARCH_LOG("[Lobby] Loading core \"%s\" with content file \"%s\".\n",
                data->core, content_path);
@@ -602,7 +613,17 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
 
 #ifdef HAVE_DYNAMIC
             if (data->current.core_loaded)
-               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+            {
+               bool load_dummy_core = false;
+               settings_t *settings = config_get_ptr();
+               bool old_auto_save   = settings->bools.savestate_auto_save;
+
+               settings->bools.savestate_auto_save = false;
+
+               command_event(CMD_EVENT_UNLOAD_CORE, &load_dummy_core);
+
+               settings->bools.savestate_auto_save = old_auto_save;
+            }
 
             RARCH_LOG("[Lobby] Loading core \"%s\" with subsystem \"%s\".\n",
                data->core, subsystem);
@@ -656,7 +677,17 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             content_ctx_info_t content_info = {0};
 
             if (data->current.core_loaded)
-               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+            {
+               bool load_dummy_core = false;
+               settings_t *settings = config_get_ptr();
+               bool old_auto_save   = settings->bools.savestate_auto_save;
+
+               settings->bools.savestate_auto_save = false;
+
+               command_event(CMD_EVENT_UNLOAD_CORE, &load_dummy_core);
+
+               settings->bools.savestate_auto_save = old_auto_save;
+            }
 
             RARCH_LOG("[Lobby] Loading contentless core \"%s\".\n", data->core);
 
@@ -688,7 +719,15 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             {
 #ifdef HAVE_DYNAMIC
                const char *_msg;
-               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+               bool load_dummy_core = false;
+               settings_t *settings = config_get_ptr();
+               bool old_auto_save   = settings->bools.savestate_auto_save;
+
+               settings->bools.savestate_auto_save = false;
+
+               command_event(CMD_EVENT_UNLOAD_CORE, &load_dummy_core);
+
+               settings->bools.savestate_auto_save = old_auto_save;
 
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 

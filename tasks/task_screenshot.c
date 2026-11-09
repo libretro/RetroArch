@@ -717,7 +717,13 @@ static bool screenshot_dump(
       return false;
    }
 
-   return screenshot_dump_direct(state);
+   {
+      bool ret = screenshot_dump_direct(state);
+      if (state->userbuf)
+         free(state->userbuf);
+      free(state);
+      return ret;
+   }
 }
 
 static bool take_screenshot_viewport(
@@ -1016,10 +1022,16 @@ bool take_screenshot(
    uint32_t runloop_flags         = runloop_get_flags();
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
-   bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
-   bool supports_vp_read          = video_st->current_video->read_viewport
-         && (video_st->current_video->viewport_info);
+   bool video_gpu_screenshot;
+   bool supports_vp_read;
    bool prefer_vp_read            = false;
+
+   if (!video_st || !video_st->current_video)
+      return false;
+
+   video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
+   supports_vp_read          = video_st->current_video->read_viewport
+         && (video_st->current_video->viewport_info);
    if (supports_vp_read)
    {
       /* Use VP read screenshots if it's a HW context core

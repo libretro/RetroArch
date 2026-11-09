@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/libretro-uae.git
+Branch: master
+Rev: 0043cf9c061bd9b81dbc1869c2761017139cfc63

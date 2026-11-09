@@ -1937,10 +1937,6 @@ bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame)
 {
    if (!input_st->bsv_movie_state_handle)
       return false;
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return false;
-#endif
    if (!movie_find_checkpoint_before(input_st->bsv_movie_state_handle, frame, true,
                &input_st->bsv_movie_state.seek_target_pos,
                &input_st->bsv_movie_state.seek_target_frame))
@@ -1958,10 +1954,6 @@ bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
          || (!input_st->bsv_movie_state_handle->playback && !paused)
          || input_st->bsv_movie_state_handle->version == 0)
       return false;
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return false;
-#endif
    input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_NEXT_CHECKPOINT;
    return true;
 }
@@ -1971,10 +1963,6 @@ bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st)
    if (  !input_st->bsv_movie_state_handle
        || input_st->bsv_movie_state_handle->version == 0)
       return false;
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return false;
-#endif
    input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_PREV_CHECKPOINT;
    return true;
 }

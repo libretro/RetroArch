@@ -240,7 +240,7 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
 
       for (; i + 8 <= len; i += 8)
       {
-         uint16x8_t Y0, U0, V0, Y1, R0, G0, G1, B0, B2;
+         uint16x8_t Y0, U0, V0, Y1, R0, G0, G1, B_0, B_2;
          int16x8_t  R2, G4;
          uint8x8_t  r8, b8;
          uint8x8x4_t px;
@@ -254,14 +254,14 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
          R0 = RWEBP_MH8(V0, c26149);
          G0 = RWEBP_MH8(U0, c6419);
          G1 = RWEBP_MH8(V0, c13320);
-         B0 = RWEBP_MH8(U0, c33050);
+         B_0 = RWEBP_MH8(U0, c33050);
 #undef RWEBP_MH8
          R2 = vaddq_s16(vsubq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(14234)),
                         vreinterpretq_s16_u16(R0));
          G4 = vsubq_s16(vaddq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(8708)),
                         vreinterpretq_s16_u16(vaddq_u16(G0, G1)));
-         B2 = vqsubq_u16(vqaddq_u16(B0, Y1), vdupq_n_u16(17685));
-         b8 = vqmovn_u16(vshrq_n_u16(B2, 6));
+         B_2 = vqsubq_u16(vqaddq_u16(B_0, Y1), vdupq_n_u16(17685));
+         b8 = vqmovn_u16(vshrq_n_u16(B_2, 6));
          r8 = vqshrun_n_s16(R2, 6);
          px.val[0] = swap_rb ? r8 : b8;                /* b (or r) */
          px.val[1] = vqshrun_n_s16(G4, 6);             /* g        */

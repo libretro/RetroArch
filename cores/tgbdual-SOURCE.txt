@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/tgbdual-libretro.git
+Branch: master
+Rev: 933707c0ba8f12360f6d79712f735a917713709a

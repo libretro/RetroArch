@@ -2351,8 +2351,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
     * load the actual content. Can differ per mode. */
    sys_info->load_no_content = false;
    retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
-   task_queue_deinit();
-   retroarch_init_task_queue();
 
    /* Loads content into currently selected core. */
    if ((ret = content_load(content_info, p_content)))

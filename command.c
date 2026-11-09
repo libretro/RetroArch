@@ -73,15 +73,6 @@
 
 static void command_post_state_loaded(void)
 {
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-   {
-      const char *_msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED);
-      rcheevos_pause_hardcore();
-      runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-#endif
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
@@ -937,9 +928,6 @@ bool command_seek_replay(command_t *cmd, const char *arg)
       ret = false;
    if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
       ret = false;
-#ifdef HAVE_CHEEVOS
-   ret = !rcheevos_hardcore_active();
-#endif
    if (ret)
       ret = movie_seek_to_frame(input_st, frame);
    if (ret)
@@ -1046,12 +1034,6 @@ bool command_write_ram(command_t *cmd, const char *arg)
 
    if (!data)
       return false;
-
-   if (rcheevos_hardcore_active())
-   {
-      RARCH_LOG("[Command] Achievements hardcore mode disabled by WRITE_CORE_RAM.\n");
-      rcheevos_pause_hardcore();
-   }
 
    while (*arg)
    {
@@ -1475,13 +1457,6 @@ bool command_write_memory(command_t *cmd, const char *arg)
       snprintf(reply_at, sizeof(reply) - strlen(reply) - 1,
             " %u\n", (unsigned)(data - start));
 
-#ifdef HAVE_CHEEVOS
-      if (rcheevos_hardcore_active())
-      {
-         RARCH_LOG("[Command] Achievements hardcore mode disabled by WRITE_CORE_MEMORY.\n");
-         rcheevos_pause_hardcore();
-      }
-#endif
    }
 
    cmd->replier(cmd, reply, strlen(reply));
@@ -1772,10 +1747,6 @@ bool command_event_load_entry_state(settings_t *settings)
    /* No early save-capability gate here: content_load_state() decides,
     * and an existing entry-state file outranks stale metadata. */
 
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return false;
-#endif
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return false;
@@ -1821,10 +1792,6 @@ bool command_event_load_auto_state(void)
    /* No early save-capability gate here: content_load_state() decides,
     * and an existing .auto state file outranks stale metadata. */
 
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return false;
-#endif
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return false;

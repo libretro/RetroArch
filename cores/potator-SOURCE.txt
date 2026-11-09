@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/potator.git
+Branch: master
+Rev: ad87bc6068ef126e48339b440465fb0bf5a2794f

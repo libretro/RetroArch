@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/libretro-vecx.git
+Branch: master
+Rev: 841229a6a81a0461d08af6488f252dcec5266c6a

@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/beetle-wswan-libretro.git
+Branch: master
+Rev: 2aeb47d3a58bf0360c686f842d9bb5bd201306fe

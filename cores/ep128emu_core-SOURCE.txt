@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/ep128emu.git
+Branch: core
+Rev: edc6da073ec4e6120edfe6d063e49415f21bbdf4

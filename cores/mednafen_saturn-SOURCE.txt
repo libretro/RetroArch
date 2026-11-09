@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/beetle-saturn-libretro.git
+Branch: master
+Rev: ccba5265f60f8e64a1984c9d14d383606193ea6a

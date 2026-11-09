@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/virtualxt.git
+Branch: release
+Rev: 9614331da8f2c4a763b376f6e50a411f03e686f7

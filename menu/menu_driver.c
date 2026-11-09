@@ -4622,7 +4622,7 @@ void menu_entries_get_core_title(char *s, size_t len)
       (sysinfo && sysinfo->library_version)
       ? sysinfo->library_version
       : "";
-   size_t _len = strlcpy(s, PACKAGE_VERSION, len);
+   size_t _len = snprintf(s, len, "NavOS %s", PACKAGE_VERSION);
 #if defined(_MSC_VER)
    _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
 #endif

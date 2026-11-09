@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/beetle-supergrafx-libretro.git
+Branch: master
+Rev: a776133c34ae8da5daf7d9ccb43e3e292e2b07b0

@@ -805,6 +805,17 @@ void rcheevos_pause_hardcore(void)
       rcheevos_toggle_hardcore_paused();
 }
 
+#ifdef HAVE_THREADS
+static bool rcheevos_badge_task_retriever(retro_task_t *task, void *data)
+{
+   retro_task_t **task_ptr = (retro_task_t **)data;
+   *task_ptr = task;
+   return true;
+}
+#endif
+
+void rcheevos_download_next_badge(retro_task_t *task);
+
 bool rcheevos_unload(void)
 {
    const bool was_loaded = rcheevos_is_game_loaded();
@@ -818,6 +829,28 @@ bool rcheevos_unload(void)
     * queued_command. The atomic store synchronizes with the
     * acquire-load on the bg thread. */
    retro_atomic_inc_int(&rcheevos_locals.load_generation);
+
+   {
+      task_retriever_data_t retrieve_data;
+      task_retriever_info_t *current;
+
+      retrieve_data.list         = NULL;
+      retrieve_data.handler      = rcheevos_download_next_badge;
+      retrieve_data.func         = rcheevos_badge_task_retriever;
+      retrieve_data.element_size = sizeof(retro_task_t*);
+
+      task_queue_retrieve(&retrieve_data);
+
+      current = retrieve_data.list;
+      while (current)
+      {
+         retro_task_t **task_ptr = (retro_task_t**)current->data;
+         if (task_ptr && *task_ptr)
+            task_queue_cancel_task(*task_ptr);
+         current = current->next;
+      }
+      task_queue_retriever_info_free(retrieve_data.list);
+   }
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -907,15 +940,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
          return;
       }
 
-#ifdef HAVE_CHEATS
-      /* If one or more emulator managed cheats is active, abort */
-      cheat_manager_apply_cheats(notification_show_cheats_applied);
-      if (!locals->hardcore_allowed)
-      {
-         locals->hardcore_being_enabled = false;
-         return;
-      }
-#endif
+
 
       if (rcheevos_is_game_loaded())
       {
@@ -928,22 +953,6 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
          rcheevos_enforce_hardcore_settings();
       }
 
-      /* deinit rewind */
-      if (rewind_enable)
-      {
-#ifdef HAVE_THREADS
-         if (!task_is_on_main_thread())
-         {
-            /* have to "schedule" this.
-             * CMD_EVENT_REWIND_DEINIT should
-             * only be called on the main thread */
-            retro_atomic_store_release_int(&rcheevos_locals.queued_command,
-                  CMD_EVENT_REWIND_DEINIT);
-         }
-         else
-#endif
-            command_event(CMD_EVENT_REWIND_DEINIT, NULL);
-      }
 
       locals->hardcore_being_enabled = false;
       rc_client_set_hardcore_enabled(locals->client, 1);
@@ -1020,62 +1029,6 @@ void rcheevos_validate_config_settings(void)
 
    if (!rcheevos_hardcore_active())
       return;
-
-   /* this adds a sleep to every frame. if the value is high enough that a
-    * single frame takes more than 1/60th of a second to evaluate, render,
-    * and sleep, then the real framerate is less than 60fps. with vsync on,
-    * it'll wait for the next vsync event, effectively halfing the fps. the
-    * auto setting should achieve the most accurate frame rate anyway, so
-    * disallow any manual values */
-   if (    !settings->bools.video_frame_delay_auto
-         && settings->uints.video_frame_delay != 0)
-   {
-      const char* error = msg_hash_to_str(
-            MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n",
-            msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY));
-      rcheevos_pause_hardcore();
-
-      runloop_msg_queue_push(error, strlen(error), 0, 4 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-      return;
-   }
-
-   /* this specifies how many vsync events should occur for each rendered
-    * frame. if vsync is on for a 60Hz monitor and swap_interval is 2 (only
-    * update every other vsync), only 30fps will be generated. for a 144Hz
-    * monitor, a value of 2 will generate 72fps, which is still faster than
-    * the expected 60fps, so the user should really be using auto (0).
-    * allow 1 even though that could be potentially abused on monitors
-    * running at less than 60Hz because 1 is the default value - many users
-    * wouldn't know how to change it to auto. */
-   if (settings->uints.video_swap_interval > 1)
-   {
-      const char* error = msg_hash_to_str(
-            MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n",
-            msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL));
-      rcheevos_pause_hardcore();
-
-      runloop_msg_queue_push(error, strlen(error), 0, 4 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-      return;
-   }
-
-   /* this causes N blank frames to be rendered between real frames, thus
-    * can slow down the actual number of rendered frames per second. */
-   if (settings->uints.video_black_frame_insertion > 0)
-   {
-      const char* error = msg_hash_to_str(
-            MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n",
-            msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION));
-      rcheevos_pause_hardcore();
-
-      runloop_msg_queue_push(error, strlen(error), 0, 4 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-      return;
-   }
 
    if (!sysinfo->library_name)
       return;
@@ -1563,6 +1516,12 @@ static void rcheevos_client_login_callback(int result,
 
 void rcheevos_download_next_badge(retro_task_t* task)
 {
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+
    /* progress: 0 = unlocked images for achievements player hasn't earned
     *           1 = locked images for achievements player hasn't earned
     *           2 = unlocked images for achievements player has earned

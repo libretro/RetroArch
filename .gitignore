@@ -300,3 +300,85 @@ gfx/drivers/rsx_shaders/modern_opaque.fpo
 gfx/drivers/rsx_shaders/modern_opaque.vpo
 pkg/psl1ght/pkg/USRDIR/shaders_cg/
 !pkg/psl1ght/pkg/USRDIR/system/
+
+# ---------------------------------------------------------------
+# NavOS additions
+# ---------------------------------------------------------------
+
+# Scratch / debug output from development sessions
+/full_diff.txt
+/clean_diff.txt
+/hardcore_search.txt
+/build.txt
+/crash_script.gdb
+*.log
+*.gdb
+/*.bundle
+*.patch.bak
+
+# Personal saves and backups
+/saves backup/
+/Navin backup/
+/states/
+/screenshots/
+/recordings/
+/logs/
+*.srm
+*.sav
+*.state
+*.state[0-9]*
+*.auto
+
+# Local runtime configuration (contains account tokens and personal paths).
+# NOTE: /retroarch.cfg is tracked upstream as a sample; never commit a
+# locally generated copy. Use: git update-index --skip-worktree retroarch.cfg
+/retroarch.default.cfg
+/retroarch_qt.cfg
+/qt.conf
+/generic_gamepad.vdf
+/steam_input_manifest.vdf
+/mist/steam_appid.txt
+/downloads/manifest.local
+/downloads/manifest.server
+/cores/core_info.refresh
+/playlists/
+/thumbnails/
+/system/
+/cheats/
+/config/
+/autoconfig/
+/database/
+/bearer/
+/iconengines/
+/imageformats/
+/platforms/windows/
+
+# Prebuilt Windows runtime libraries and cores (redistribution needs separate license review)
+*.dll
+*.exe
+
+# Android build output, caches and machine-specific / signing settings
+pkg/android/**/build/
+pkg/android/**/.gradle/
+pkg/android/**/.cxx/
+pkg/android/**/*.apk
+pkg/android/**/*.aab
+pkg/android/**/local.properties
+pkg/android/**/gradle-daemon-jvm.properties
+pkg/android/**/keystore.properties
+pkg/android/**/google-services.json
+*.jks
+*.keystore
+*.p12
+.gradle/
+
+# IDE / OS / temp
+.idea/
+*.iml
+.vs/
+.vscode/
+*.tmp
+*.swp
+*~
+Thumbs.db
+Desktop.ini

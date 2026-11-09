@@ -1,0 +1,3 @@
+Repo: https://git.libretro.com/libretro/gpsp.git
+Branch: master
+Rev: 74db5e5c73020626a1118b97d3735b5636d65d9d

@@ -1,0 +1,36 @@
+NavOS RetroArch - NOTICE  (DRAFT FOR HUMAN REVIEW)
+
+This repository is a modified version of RetroArch.
+
+Upstream project
+  RetroArch, https://github.com/libretro/RetroArch
+  Copyright (c) the RetroArch / libretro team and contributors.
+  Licensed under the GNU General Public License, version 3 (see COPYING).
+  Individual files keep their original copyright notices and license headers,
+  which have not been altered. See AUTHORS.h and the upstream commit history
+  for authorship.
+
+NavOS modifications
+  The NavOS changes are limited to the files listed in README.NavOS.md and
+  are distributed under the same license as the files they modify (GPLv3).
+  NavOS is not affiliated with, endorsed by, or supported by the libretro
+  team or by RetroAchievements.
+
+  [REVIEW: the NavOS copyright holder line is intentionally left blank.
+   Fill in the legal name you want to appear, if any.]
+
+Third-party material
+  - cores/*-LICENSE.txt and cores/*-SOURCE.txt: license texts and source
+    pointers for libretro cores that NavOS builds were packaged with. The core
+    binaries themselves are NOT part of this repository.
+  - mist/mist-LICENSE.txt, mist/mist-ThirdPartyLicenses.txt: license files for
+    the Steam integration library.
+  - deps/ and libretro-common/: bundled upstream third-party code, each with
+    its own license as provided upstream.
+
+Open questions (not decided here)
+  1. Redistribution terms of any prebuilt cores or DLLs shipped in NavOS
+     binary releases (each core has its own license and source obligations).
+  2. Whether the Steam-related license files should remain in this repository.
+  3. How RetroAchievements policy applies to a build that removes Hardcore
+     Mode restrictions (see README.NavOS.md, "Policy notice").
