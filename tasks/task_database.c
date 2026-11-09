@@ -5420,7 +5420,13 @@ static bool manual_scan_begin_setup(retro_task_t *task,
                   manual_scan->content_list);
 
          if (!manual_scan->content_iter)
+         {
+            const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            manual_scan->fail_msg = _msg;
             return true;
+         }
       }
       else
       {
@@ -6872,8 +6878,7 @@ static bool task_manual_content_scan_push(
    if (manual_scan->task_config->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH)
       manual_scan->flags |= DB_HANDLE_FLAG_USE_FIRST_MATCH_ONLY;
 
-   if (manual_content_scan_content_stat(manual_scan->task_config->content_dir)
-         & RETRO_VFS_STAT_IS_DIRECTORY)
+   if (!manual_scan->task_config->content_is_file)
       manual_scan->flags |= DB_HANDLE_FLAG_IS_DIRECTORY;
 #endif 
 

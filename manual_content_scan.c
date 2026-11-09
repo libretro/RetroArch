@@ -2284,6 +2284,10 @@ bool manual_content_scan_content_list_iter_new(
 
    if (path_is_directory(task_config->content_dir))
    {
+      /* An expected file that has since become a folder */
+      if (task_config->content_is_file)
+         return false;
+
       if (!(*list = string_list_new()))
          return false;
 
