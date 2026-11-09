@@ -5747,6 +5747,74 @@ static bool vulkan_context_custom_driver_ok(gfx_ctx_vulkan_data_t *vk,
 }
 #endif
 
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && defined(__APPLE__)
+/* The vk_icdGetInstanceProcAddr of the driver opened in MoltenVK's place. */
+static PFN_vkGetInstanceProcAddr vulkan_custom_icd_gipa;
+
+/* The loader lists layers itself and never asks a driver: without one
+ * there are none. */
+static VKAPI_ATTR VkResult VKAPI_CALL vulkan_custom_icd_instance_layers(
+      uint32_t *count, VkLayerProperties *props)
+{
+   (void)props;
+   *count = 0;
+   return VK_SUCCESS;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL vulkan_custom_icd_device_layers(
+      VkPhysicalDevice gpu, uint32_t *count, VkLayerProperties *props)
+{
+   (void)gpu;
+   (void)props;
+   *count = 0;
+   return VK_SUCCESS;
+}
+
+/* The driver's entry points, and the loader's layer answers where the
+ * driver has none (KosmicKrisp): the symbol wrapper requires both. */
+static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vulkan_custom_icd_proc_addr(
+      VkInstance instance, const char *name)
+{
+   PFN_vkVoidFunction fn;
+   /* As a loader does: a core that fetches it again keeps the layer
+    * answers. */
+   if (string_is_equal(name, "vkGetInstanceProcAddr"))
+      return (PFN_vkVoidFunction)vulkan_custom_icd_proc_addr;
+   fn = vulkan_custom_icd_gipa(instance, name);
+   if (fn)
+      return fn;
+   if (string_is_equal(name, "vkEnumerateInstanceLayerProperties"))
+      return (PFN_vkVoidFunction)vulkan_custom_icd_instance_layers;
+   if (string_is_equal(name, "vkEnumerateDeviceLayerProperties"))
+      return (PFN_vkVoidFunction)vulkan_custom_icd_device_layers;
+   return NULL;
+}
+
+/* A driver opened without a loader is spoken to as a loader would: the
+ * interface first, then everything through its vk_icdGetInstanceProcAddr. */
+static PFN_vkGetInstanceProcAddr vulkan_custom_icd_no_loader(dylib_t lib)
+{
+   uint32_t version                 = VULKAN_CUSTOM_ICD_INTERFACE;
+   PFN_vkGetInstanceProcAddr gipa   = (PFN_vkGetInstanceProcAddr)
+      dylib_proc(lib, "vk_icdGetInstanceProcAddr");
+   vulkan_icd_negotiate_t negotiate = (vulkan_icd_negotiate_t)
+      dylib_proc(lib, "vk_icdNegotiateLoaderICDInterfaceVersion");
+   if (!negotiate && gipa)
+      negotiate = (vulkan_icd_negotiate_t)gipa(VK_NULL_HANDLE,
+            "vk_icdNegotiateLoaderICDInterfaceVersion");
+   if (!gipa || !negotiate || negotiate(&version) != VK_SUCCESS)
+   {
+      RARCH_WARN("[Vulkan] Custom driver does not negotiate a loader interface.\n");
+      vulkan_custom_driver_reason(VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
+      return NULL;
+   }
+   RARCH_LOG("[Vulkan] Custom driver runs without the Vulkan loader, interface %u.\n",
+         (unsigned)version);
+   vulkan_custom_icd_gipa = gipa;
+   return vulkan_custom_icd_proc_addr;
+}
+#endif
+
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
 /* The custom driver failed before its surface: init once more. Its path
  * is now off for the session, so this one gets the system driver. */
@@ -5775,11 +5843,14 @@ static bool vulkan_context_init_system(gfx_ctx_vulkan_data_t *vk,
    }
 #ifndef ANDROID
    /* With no instance to destroy, the loader still holds the drivers it
-    * preloaded next to the custom one: unload it before the retry. */
+    * preloaded next to the custom one: unload it before the retry. A
+    * driver opened in MoltenVK's place is failed()'s to close. */
    if (vulkan_library)
    {
-      dylib_close(vulkan_library);
-      vulkan_library = NULL;
+      if (!vulkan_library_custom)
+         dylib_close(vulkan_library);
+      vulkan_library        = NULL;
+      vulkan_library_custom = false;
    }
 #endif
    vulkan_custom_driver_failed();
@@ -5837,6 +5908,16 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    vulkan_custom_icd = NULL;
    if (cached_instance_vk)
       vulkan_custom_driver_kept();
+#ifdef __APPLE__
+   /* A failed init can leave its driver open: open() decides again. */
+   else if (vulkan_library)
+   {
+      if (!vulkan_library_custom)
+         dylib_close(vulkan_library);
+      vulkan_library        = NULL;
+      vulkan_library_custom = false;
+   }
+#endif
 #endif
 #endif
 
@@ -5852,13 +5933,24 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          int use_mab                      = settings->bools.video_use_metal_arg_buffers;
          setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", use_mab ? "1" : "0", 1);
       }
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+      /* A custom driver runs in MoltenVK's place, loader or not:
+       * MoltenVK speaks loader interface 5, and the loader's direct
+       * driver loading needs 7. */
+      if ((vulkan_library = vulkan_custom_driver_open_no_loader(true)))
+      {
+         vulkan_library_custom = true;
+         custom_driver         = true;
+      }
+#endif
       /* Try Vulkan loader first (enables validation layers if installed).
        * Falls back to MoltenVK directly if loader not available. The
        * loads are attempted in order without an availability check: a
        * dylib_load that cannot succeed on an older OS fails and falls
        * through exactly as the check would have, and a plain C file
        * has no business carrying clang's availability runtime. */
-      vulkan_library = dylib_load("libvulkan.dylib");
+      if (!vulkan_library)
+         vulkan_library = dylib_load("libvulkan.dylib");
       if (!vulkan_library)
          vulkan_library = dylib_load("MoltenVK");
       if (!vulkan_library)
@@ -5880,6 +5972,15 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    GetInstanceProcAddr =
       (PFN_vkGetInstanceProcAddr)dylib_proc(vulkan_library, "vkGetInstanceProcAddr");
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && defined(__APPLE__)
+   if (vulkan_library_custom)
+   {
+      GetInstanceProcAddr = vulkan_custom_icd_no_loader(vulkan_library);
+      /* It said why; no loader is involved. */
+      if (!GetInstanceProcAddr && custom_driver)
+         return vulkan_context_init_system(vk, type);
+   }
+#endif
 
    if (!GetInstanceProcAddr)
    {
@@ -5903,8 +6004,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
-#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
-   /* After the loader: open() asks it for direct driver loading. */
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID) && !defined(__APPLE__)
+   /* After the loader: open() asks it for direct driver loading. macOS
+    * opened it above, in MoltenVK's place. */
    if (!cached_instance_vk)
    {
       dylib_t custom = vulkan_custom_driver_open();

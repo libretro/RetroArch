@@ -39,6 +39,9 @@ static struct
    bool probed;
    bool supported;
    bool opened;                   /* a custom library was loaded */
+#ifdef __APPLE__
+   bool no_loader_supported;      /* open_no_loader()'s answer for supported() */
+#endif
 } custom_driver_desktop_st;
 
 /* The module holding addr: its base on Linux, its HMODULE on Windows.
@@ -303,6 +306,19 @@ void vulkan_custom_driver_failed(void)
       custom_driver_close(handle);
 }
 
+#ifdef __APPLE__
+/* The driver runs in MoltenVK's place: there is no loader to ask. */
+bool vulkan_custom_driver_supported(void)
+{
+   return custom_driver_desktop_st.no_loader_supported;
+}
+
+dylib_t vulkan_custom_driver_open_no_loader(bool supported)
+{
+   custom_driver_desktop_st.no_loader_supported = supported;
+   return vulkan_custom_driver_open();
+}
+#else
 /* Asks the loader the system Vulkan library loaded, once per process:
  * call it after vulkan_symbol_wrapper_load_global_symbols(). The probe
  * loads every installed driver, so it runs before any custom library
@@ -331,6 +347,7 @@ bool vulkan_custom_driver_supported(void)
    free(props);
    return custom_driver_desktop_st.supported;
 }
+#endif
 
 void vulkan_custom_driver_set_safe_mode(bool safe_mode)
 {

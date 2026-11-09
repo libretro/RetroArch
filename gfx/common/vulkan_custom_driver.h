@@ -235,10 +235,11 @@ bool vulkan_custom_driver_patch_soname(uint8_t *elf, size_t len,
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
 /* Glue: vulkan_custom_driver_glue.c with vulkan_custom_driver_android.c,
- * or _desktop.c on Linux and Windows. Context init and surface creation
- * call open, kept, failed, started and current; the menu and the
- * frontend call the rest. */
-/* Desktop: returns the ICD library, after the loader's global symbols load. */
+ * or _desktop.c on Linux, Windows and macOS. Context init and surface
+ * creation call open, kept, failed, started and current; the menu and
+ * the frontend call the rest. */
+/* Desktop: returns the ICD library, after the loader's global symbols
+ * load; macOS: through open_no_loader(), before any Vulkan library. */
 dylib_t vulkan_custom_driver_open(void);                /* NULL: the system driver */
 /* Desktop: closes the ICD library, so instance and device are destroyed first. */
 void    vulkan_custom_driver_failed(void);              /* current custom driver failed */
@@ -247,7 +248,7 @@ void    vulkan_custom_driver_kept(void);                /* a kept instance is us
 bool    vulkan_custom_driver_current(void);             /* this init opened a custom driver, not started yet */
 bool    vulkan_custom_driver_mesa(void);                /* the driver open() returned is Mesa */
 /* Desktop: valid only during Vulkan init. */
-bool    vulkan_custom_driver_supported(void);           /* Adreno and API >= 28; desktop: the loader loads drivers directly */
+bool    vulkan_custom_driver_supported(void);           /* Adreno and API >= 28; desktop: the loader loads drivers directly; macOS: open_no_loader()'s answer */
 bool    vulkan_custom_driver_crashed(const char *path); /* off for the running core after a crash */
 void    vulkan_custom_driver_picked(const char *path);  /* trusts path; clears its crash state and INVALID mark */
 void    vulkan_custom_driver_set_safe_mode(bool safe_mode); /* true: system driver until the process ends */
@@ -259,6 +260,12 @@ bool    vulkan_custom_driver_device(function_t queue_submit);
 /* Desktop: why this init's custom driver is failing; failed() shows it
  * in place of FAILED. */
 void    vulkan_custom_driver_reason(enum vulkan_custom_driver_msg msg);
+#ifdef __APPLE__
+/* macOS: open() before any Vulkan library, the driver to run in
+ * MoltenVK's place, loader or not. supported is supported()'s answer:
+ * false refuses the driver as unsupported. */
+dylib_t vulkan_custom_driver_open_no_loader(bool supported);
+#endif
 #endif
 /* Between the glue files. vulkan_custom_driver_glue.c holds the state
  * both platforms share; its crash state and marker are in
