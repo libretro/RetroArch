@@ -30,6 +30,8 @@ KDE_CODE := kde-output-device-v2-protocol.c kde-output-management-v2-protocol.c
 WLR_XML  := $(REPO_ROOT)/deps/wayland-protocols/wlr
 WLR_HDRS := $(REPO_ROOT)/gfx/common/wayland/wlr-output-management-unstable-v1.h
 WLR_CODE := wlr-output-management-unstable-v1-protocol.c
+# ...and its server side, for the test compositor's output manager
+WLR_SRV  := wlr-output-management-unstable-v1-server-protocol.h
 SOURCES := wayland_drm_lease_test.c \
            drm-lease-v1-protocol.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_wl.c \
@@ -94,7 +96,9 @@ $(REPO_ROOT)/gfx/common/wayland/wlr-%.h: $(WLR_XML)/wlr-%.xml
 	wayland-scanner client-header $< $@
 wlr-%-protocol.c: $(WLR_XML)/wlr-%.xml
 	wayland-scanner private-code $< $@
-$(OBJS): $(KDE_HDRS) $(WLR_HDRS)
+wlr-%-server-protocol.h: $(WLR_XML)/wlr-%.xml
+	wayland-scanner server-header $< $@
+$(OBJS): $(KDE_HDRS) $(WLR_HDRS) $(WLR_SRV)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -104,6 +108,6 @@ check: $(TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS) $(GENERATED) $(KDE_CODE) $(WLR_CODE)
+	rm -f $(TARGET) $(OBJS) $(GENERATED) $(KDE_CODE) $(WLR_CODE) $(WLR_SRV)
 
 .PHONY: all check clean

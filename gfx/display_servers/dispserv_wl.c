@@ -19,7 +19,6 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
-#include <features/features_cpu.h>
 
 #include <poll.h>
 #include <wayland-client.h>
@@ -38,10 +37,14 @@
 #include "../common/wayland_kwin_output.h"
 #include "../common/wayland_wlr_output.h"
 
-/* Upper bound for the wait on the compositor's output management
- * protocols at startup, only reached when the compositor offers one
- * of them but never completes its output list */
-#define WL_DISPSERV_OUTPUTS_TIMEOUT_MS 100
+/* Roundtrips within which a compositor describes the outputs it has:
+ * the globals, then the bound objects' state, then the devices KWin's
+ * output registry (version 21) announces */
+#define WL_DISPSERV_DESCRIBE_ROUNDTRIPS 3
+/* A compositor that offers output management but lists no output yet
+ * is given this many waits of WL_DISPSERV_OUTPUT_WAIT_MS each */
+#define WL_DISPSERV_OUTPUT_WAITS        5
+#define WL_DISPSERV_OUTPUT_WAIT_MS      20
 
 typedef struct
 {
@@ -216,34 +219,59 @@ void wl_display_server_report_lease(void *data)
 #endif
 }
 
-/* Wait until KWin or wlroots compositor has described its outputs.
- * This way if an Hz switch is requested via command line, so right
- * after the startup, it will find the mode list ready.
- * wait at most WL_DISPSERV_OUTPUTS_TIMEOUT_MS msecs anyway.
- */
+static bool wl_display_server_outputs_ready(const dispserv_wl_t *serv)
+{
+   return kwin_outputs_ready(&serv->kwin) || wlr_outputs_ready(&serv->wlr);
+}
 
+/* Has KWin's or wlroots' output management describe its outputs before
+ * init returns, so a refresh rate switch made right after startup finds
+ * the mode list. Compositors offering neither cost one roundtrip. */
 static void wl_display_server_wait_outputs(dispserv_wl_t *serv)
 {
-   retro_time_t start, timeout_us;
+   unsigned i;
 
-   /* Receives the globals, which binds the protocols */
    if (wl_display_roundtrip(serv->dpy) < 0)
       return;
-
-   /* Neither protocol offered: nothing to wait for */
    if (!serv->kwin.management && !serv->wlr.manager)
       return;
 
-   start      = cpu_features_get_time_usec();
-   timeout_us = (retro_time_t)WL_DISPSERV_OUTPUTS_TIMEOUT_MS * 1000;
-
-   while (!kwin_outputs_ready(&serv->kwin)
-       && !wlr_outputs_ready(&serv->wlr))
+   for (i = 1; i < WL_DISPSERV_DESCRIBE_ROUNDTRIPS; i++)
    {
+      if (wl_display_server_outputs_ready(serv))
+         return;
       if (wl_display_roundtrip(serv->dpy) < 0)
-         break;
-      if ((cpu_features_get_time_usec() - start) >= timeout_us)
-         break;
+         return;
+   }
+
+   /* The compositor has no output to describe yet: take its events as
+    * they come, for a bounded number of waits */
+   for (i = 0; i < WL_DISPSERV_OUTPUT_WAITS; i++)
+   {
+      struct pollfd pfd;
+
+      if (wl_display_server_outputs_ready(serv))
+         return;
+      if (wl_display_flush(serv->dpy) < 0)
+         return;
+      if (wl_display_prepare_read(serv->dpy) != 0)
+      {
+         if (wl_display_dispatch_pending(serv->dpy) < 0)
+            return;
+         continue;
+      }
+      pfd.fd      = wl_display_get_fd(serv->dpy);
+      pfd.events  = POLLIN;
+      pfd.revents = 0;
+      if (poll(&pfd, 1, WL_DISPSERV_OUTPUT_WAIT_MS) > 0)
+      {
+         if (wl_display_read_events(serv->dpy) < 0)
+            return;
+      }
+      else
+         wl_display_cancel_read(serv->dpy);
+      if (wl_display_dispatch_pending(serv->dpy) < 0)
+         return;
    }
 }
 
@@ -265,12 +293,12 @@ static void *wl_display_server_init(void)
 
    wl_display_flush(serv->dpy);
 
-   wl_display_server_wait_outputs(serv);
-
 #ifdef RARCH_HAVE_MUTTER_DC
    /* Starts the Mutter worker; its answer is read at each call. */
    mutter_displayconfig_available();
 #endif
+
+   wl_display_server_wait_outputs(serv);
 
    return serv;
 }
