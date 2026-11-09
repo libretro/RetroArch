@@ -38,7 +38,7 @@
  *     the ids left to the driver, touch slots; and a touch read over
  *     its own window's client area;
  * 17. Android's publication against the driver's own answers before
- *     it published (989ba0b1df), finger by finger;
+ *     it published, finger by finger;
  * 18. the driver's own lightgun buttons: a tap on a main window that
  *     shows no screen counts no finger, one in the letterbox does. */
 #include <stdio.h>
@@ -311,6 +311,9 @@ static void test_flags(void)
    CHECK( input_pointer_window_touch(1, 1, &pos, &down)
       &&  pos == VIDEO_POS_PACK(-0x8000, -0x8000) && !down,
          "outside its window: -0x8000; a lifted touch is not down");
+   input_pointer_touches_set(touch, NULL, 3, 7, 1);
+   CHECK(!input_pointer_window_touch(1, 0, &pos, &down),
+         "a publication without windows has no window touches");
    shown_window = 0;
    CHECK(!input_pointer_window_touch(1, 0, &pos, &down),
          "a window that has not shown has no touches");
@@ -346,17 +349,17 @@ void input_driver_publish_window_touches(const uint32_t *pos,
    input_pointer_touches_set(pos, windows, count, present, down);
 }
 
-/* Before the publication (989ba0b1df) the driver kept each touch placed
+/* Before the publication the driver kept each touch placed
  * three ways, as its event came. The same fingers go to both. */
-struct today_pointer
+struct was_pointer
 {
    uint32_t pos;
    uint32_t confined_pos;
    uint32_t full_pos;
 };
 
-static struct today_pointer today_main[16], today_second[16];
-static unsigned today_count, today_second_count;
+static struct was_pointer was_main[16], was_second[16];
+static unsigned was_count, was_second_count;
 static struct input_pointer now_main[16], now_second[16];
 static unsigned now_count, now_second_count;
 static input_video_window_t now_window;
@@ -370,9 +373,9 @@ static void finger_place(unsigned i, int x, int y)
    if (video_driver_get_viewport_info(&vp))
    {
       video_driver_translate_coord_viewport(&vp, x, y,
-            &today_main[i].confined_pos, &today_main[i].full_pos, false);
+            &was_main[i].confined_pos, &was_main[i].full_pos, false);
       video_driver_translate_coord_viewport(&vp, x, y,
-            &today_main[i].pos, &today_main[i].full_pos, true);
+            &was_main[i].pos, &was_main[i].full_pos, true);
    }
    now_main[i].pos    = VIDEO_POS_PACK(x, y);
    now_main[i].placed = true;
@@ -386,8 +389,8 @@ static void fingers_move(unsigned n, const int *xy)
    for (i = 0; i < n; i++)
    {
       finger_place(i, xy[2 * i], xy[2 * i + 1]);
-      if (today_count < i + 1)
-         today_count = i + 1;
+      if (was_count < i + 1)
+         was_count = i + 1;
       if (now_count < i + 1)
          now_count   = i + 1;
    }
@@ -396,12 +399,12 @@ static void fingers_move(unsigned n, const int *xy)
 /* Finger @i up: the slots above shift down */
 static void finger_up(unsigned i)
 {
-   memmove(&today_main[i], &today_main[i + 1],
-         (16 - i - 1) * sizeof(today_main[0]));
+   memmove(&was_main[i], &was_main[i + 1],
+         (16 - i - 1) * sizeof(was_main[0]));
    memmove(&now_main[i], &now_main[i + 1],
          (16 - i - 1) * sizeof(now_main[0]));
-   if (today_count)
-      today_count--;
+   if (was_count)
+      was_count--;
    if (now_count)
       now_count--;
 }
@@ -412,39 +415,39 @@ static void finger_up(unsigned i)
 static void second_place(unsigned i, int x, int y)
 {
    if (!video_driver_translate_window_point(1, 5, x, y, false,
-            &today_second[i].confined_pos))
-      today_second[i].confined_pos = VIDEO_POS_PACK(-0x8000, -0x8000);
+            &was_second[i].confined_pos))
+      was_second[i].confined_pos = VIDEO_POS_PACK(-0x8000, -0x8000);
    if (!video_driver_translate_window_point(1, 5, x, y, true,
-            &today_second[i].pos))
-      today_second[i].pos = VIDEO_POS_PACK(-0x8000, -0x8000);
-   today_second[i].full_pos = VIDEO_POS_PACK(-0x8000, -0x8000);
+            &was_second[i].pos))
+      was_second[i].pos = VIDEO_POS_PACK(-0x8000, -0x8000);
+   was_second[i].full_pos = VIDEO_POS_PACK(-0x8000, -0x8000);
    now_second[i].pos        = VIDEO_POS_PACK(x, y);
    now_second[i].placed     = true;
    now_window.window        = 1;
    now_window.generation    = 5;
-   if (i == today_second_count)
+   if (i == was_second_count)
    {
-      today_second_count++;
+      was_second_count++;
       now_second_count++;
    }
 }
 
 static void second_up(unsigned i)
 {
-   memmove(&today_second[i], &today_second[i + 1],
-         (today_second_count - i - 1) * sizeof(today_second[0]));
+   memmove(&was_second[i], &was_second[i + 1],
+         (was_second_count - i - 1) * sizeof(was_second[0]));
    memmove(&now_second[i], &now_second[i + 1],
          (now_second_count - i - 1) * sizeof(now_second[0]));
-   today_second_count--;
+   was_second_count--;
    now_second_count--;
 }
 
-/* android_input_state() before the publication (989ba0b1df), for what
+/* android_input_state() before the publication, for what
  * the publication answers: the pointer, the screen pointer, the second
  * display's and a touch's lightgun aim */
-static int16_t today_state(unsigned device, unsigned idx, unsigned id)
+static int16_t was_state(unsigned device, unsigned idx, unsigned id)
 {
-   const struct today_pointer *p = (idx < 16) ? &today_main[idx] : NULL;
+   const struct was_pointer *p = (idx < 16) ? &was_main[idx] : NULL;
    switch (device)
    {
       case RETRO_DEVICE_LIGHTGUN:
@@ -459,7 +462,7 @@ static int16_t today_state(unsigned device, unsigned idx, unsigned id)
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (id == RETRO_DEVICE_ID_POINTER_COUNT)
-            return (int16_t)today_count;
+            return (int16_t)was_count;
          if (!p)
             return 0;
          switch (id)
@@ -474,7 +477,7 @@ static int16_t today_state(unsigned device, unsigned idx, unsigned id)
                {
                   uint32_t at = (device == RARCH_DEVICE_POINTER_SCREEN)
                      ? p->full_pos : p->pos;
-                  return idx < today_count
+                  return idx < was_count
                      && VIDEO_POS_X(at) != -0x8000
                      && VIDEO_POS_Y(at) != -0x8000;
                }
@@ -487,10 +490,10 @@ static int16_t today_state(unsigned device, unsigned idx, unsigned id)
          return 0;
       case RARCH_DEVICE_POINTER_SECOND:
          if (id == RETRO_DEVICE_ID_POINTER_COUNT)
-            return (int16_t)today_second_count;
-         if (idx >= today_second_count)
+            return (int16_t)was_second_count;
+         if (idx >= was_second_count)
             return 0;
-         p = &today_second[idx];
+         p = &was_second[idx];
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
@@ -550,7 +553,7 @@ static unsigned android_compare(const char *what)
             for (i = 0; i < 5; i++)
             {
                int16_t got  = rd(port, devices[d], idx, ids[i]);
-               int16_t want = today_state(devices[d], idx, ids[i]);
+               int16_t want = was_state(devices[d], idx, ids[i]);
                if (got != want && !bad++)
                   printf("  %s: device %x idx %u id %u reads %d, was %d\n",
                         what, devices[d], idx, ids[i], got, want);
@@ -561,7 +564,7 @@ static unsigned android_compare(const char *what)
             int16_t got  = rd(port, RETRO_DEVICE_LIGHTGUN, idx, gun[i]);
             int16_t want = (mouse_used
                   && gun[i] != RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN)
-               ? -2 : today_state(RETRO_DEVICE_LIGHTGUN, idx, gun[i]);
+               ? -2 : was_state(RETRO_DEVICE_LIGHTGUN, idx, gun[i]);
             if (got != want && !bad++)
                printf("  %s: lightgun idx %u id %u reads %d, was %d\n",
                      what, idx, gun[i], got, want);
@@ -571,9 +574,9 @@ static unsigned android_compare(const char *what)
       {
          uint32_t pos  = 1;
          uint32_t want = VIDEO_POS_PACK(
-               today_state(RETRO_DEVICE_POINTER, idx,
+               was_state(RETRO_DEVICE_POINTER, idx,
                   RETRO_DEVICE_ID_POINTER_X),
-               today_state(RETRO_DEVICE_POINTER, idx,
+               was_state(RETRO_DEVICE_POINTER, idx,
                   RETRO_DEVICE_ID_POINTER_Y));
          if (     (  !input_pointer_frame_pos(port, RETRO_DEVICE_POINTER,
                         idx, &pos)
@@ -589,11 +592,11 @@ static unsigned android_compare(const char *what)
             uint32_t pos  = 1;
             int down      = input_pointer_frame_finger(port, devices[d],
                   idx, &pos);
-            int16_t want  = today_state(devices[d], idx,
+            int16_t want  = was_state(devices[d], idx,
                   RETRO_DEVICE_ID_POINTER_PRESSED);
             uint32_t at   = VIDEO_POS_PACK(
-                  today_state(devices[d], idx, RETRO_DEVICE_ID_POINTER_X),
-                  today_state(devices[d], idx, RETRO_DEVICE_ID_POINTER_Y));
+                  was_state(devices[d], idx, RETRO_DEVICE_ID_POINTER_X),
+                  was_state(devices[d], idx, RETRO_DEVICE_ID_POINTER_Y));
             if (     (down != want || (want && pos != at))
                   && !bad++)
                printf("  %s: device %x finger %u reads %d at %08x, was %d"
@@ -613,12 +616,12 @@ static void test_android_answers(void)
    unsigned i;
    uint32_t pos = 0;
 
-   memset(today_main, 0, sizeof(today_main));
-   memset(today_second, 0, sizeof(today_second));
+   memset(was_main, 0, sizeof(was_main));
+   memset(was_second, 0, sizeof(was_second));
    memset(now_main, 0, sizeof(now_main));
    memset(now_second, 0, sizeof(now_second));
    memset(&now_window, 0, sizeof(now_window));
-   today_count = today_second_count = 0;
+   was_count = was_second_count = 0;
    now_count   = now_second_count   = 0;
    mouse_used  = false;
 

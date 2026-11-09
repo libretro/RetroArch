@@ -7923,7 +7923,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
-   "Where this screen goes when it is Separate. Auto picks a second display. The display RetroArch is on keeps the screen attached."
+   "Where this screen goes when it has a window of its own. Auto picks a second display. The display RetroArch is on keeps the screen attached."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_DISPLAY,

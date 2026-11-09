@@ -180,18 +180,67 @@ static void test_display_key(void)
    CHECK(!strcmp(small, "aaaaa"));
    video_windows_display_key(d, 1, small, sizeof(small));
    CHECK(!strcmp(small, "aaa 2"));
+   /* Sizes 0 to 3: nothing past the size, ended inside it, no room for
+    * a count */
+   strcpy(d[0].name, "HDMI");
+   strcpy(d[1].name, "HDMI");
+   for (i = 0; i < 4; i++)
+   {
+      memset(small, '#', sizeof(small));
+      video_windows_display_key(d, 1, small, i);
+      CHECK(small[i] == '#');
+      if (i)
+      {
+         CHECK(strlen(small) == i - 1);
+         CHECK(!strncmp(small, "HDMI", i - 1));
+      }
+   }
+   /* Two unnamed displays: the second keys by its count alone */
+   d[0].name[0] = d[1].name[0] = '\0';
+   video_windows_display_key(d, 0, key, sizeof(key));
+   CHECK(!strcmp(key, ""));
+   video_windows_display_key(d, 1, key, sizeof(key));
+   CHECK(!strcmp(key, " 2"));
+   /* A 63-character name, the longest a key holds, keys whole */
+   for (i = 0; i < VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1; i++)
+      d[0].name[i] = 'b';
+   d[0].name[i] = '\0';
+   strcpy(d[1].name, "Screen-2");
+   video_windows_display_key(d, 0, key, sizeof(key));
+   CHECK(strlen(key) == VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1);
+   CHECK(!strcmp(key, d[0].name));
 }
 
-/* The record the display list's JNI frame holds eight of */
+/* Eight records sit on the display list's JNI frame: a field that
+ * grows them is a choice, not an accident */
 static void test_display_record(void)
 {
-   video_window_display_t d;
-   memset(&d, 0, sizeof(d));
-   d.is_default = true;
-   CHECK(d.is_default);
-   /* is_default fits in padding: the eight records the JNI frame
-    * holds keep their size */
-   CHECK(sizeof(video_window_display_t) == 116);
+   CHECK(sizeof(video_window_display_t) == 120);
+}
+
+/* Auto falls back on the display marked default */
+static void test_display_default(void)
+{
+   video_window_display_t d[2];
+   video_windows_place_in_t in;
+   video_windows_host_t host;
+   video_windows_route_t r;
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
+   d[1].physical   = false;
+   d[1].is_default = true;
+   memset(&in, 0, sizeof(in));
+   memset(&host, 0, sizeof(host));
+   in.displays  = d;
+   in.count     = 2;
+   in.menu_open = true;
+   video_windows_host_reset(&host);
+   video_windows_place(&host, &in, &r);
+   CHECK(r.menu == 2);
+   d[1].is_default = false;
+   video_windows_host_reset(&host);
+   video_windows_place(&host, &in, &r);
+   CHECK(r.menu == 1);
 }
 
 #define PLACE_MENU VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)
@@ -571,9 +620,64 @@ static void test_place_where(void)
    CHECK(place_r.menu == 2 && placed(3, 1u, 2u, 0u, 0));
 }
 
+/* Auto's monitor: the platform's type where it gives one, else the
+ * connection, else a product name off the default display. */
+static void test_place_external(void)
+{
+   /* Typed external: Game Screen 1 and the menu on the monitor, Game
+    * Screen 2 on the default display */
+   place_reset(1, 3);
+   place_d[0].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   place_d[1].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   place_d[2].type = VIDEO_WINDOW_TYPE_EXTERNAL;
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 3 && place_r.target[1] == 1);
+   CHECK(place_r.menu == 3);
+   /* Typed internal: never, whatever its connection and name */
+   place_reset(1, 3);
+   place_d[2].type       = VIDEO_WINDOW_TYPE_INTERNAL;
+   place_d[2].connection = VIDEO_WINDOW_CONNECTION_DIRECT;
+   strcpy(place_d[2].model, "LG HDR 4K");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 1 && place_r.target[1] == 2);
+   /* Untyped on an unknown connection: the named display is the
+    * monitor, the unnamed panel below it is not */
+   place_reset(1, 3);
+   strcpy(place_d[2].model, "LG HDR 4K");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 3 && place_r.target[1] == 1);
+   /* A one-screen phone and a named monitor: Game Screen 2 stays off
+    * the monitor */
+   place_reset(1, 2);
+   strcpy(place_d[1].model, "LG HDR 4K");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 2 && place_r.target[1] == 1);
+   /* A named default display is never the monitor */
+   place_reset(1, 2);
+   strcpy(place_d[0].model, "AMOLED");
+   strcpy(place_d[1].model, "LG HDR 4K");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 2 && place_r.target[1] == 1);
+   /* Nor one without product info, typed and named or not */
+   place_reset(1, 3);
+   place_d[1].physical = false;
+   place_d[1].type     = VIDEO_WINDOW_TYPE_EXTERNAL;
+   strcpy(place_d[1].model, "Cast");
+   place_d[2].type     = VIDEO_WINDOW_TYPE_EXTERNAL;
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 3 && place_r.target[1] == 1);
+}
+
 /* When RetroArch moves, and the order its windows come and go in */
 static void test_place_moves(void)
 {
+   unsigned seq;
    /* place: main window's display */
    /* Cocoon starts RetroArch on the bottom panel: it moves to the menu's
     * display, the top one, and the bottom one is free */
@@ -842,9 +946,9 @@ static void test_place_moves(void)
    CHECK(place_r.keep == 2 && place_host.moving == 2);
    place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
    strcpy(place_menu, "DP Screen");
-   place_in.move_failed = true;
+   place_in.failed_move = place_host.move_seq;
    place_at(200000);
-   place_in.move_failed = false;
+   place_in.failed_move = 0;
    CHECK(place_r.move == 3 && !place_r.keep);
 
    /* place: menu open and close never move */
@@ -890,10 +994,53 @@ static void test_place_moves(void)
    place_at(VIDEO_WINDOWS_MOVE_USEC + 200000);
    CHECK(placed(0, 0u, 0u, 0u, 1) && !place_host.unable);
    /* One the platform could not start: given up at once */
-   place_in.move_failed = true;
+   place_in.failed_move = place_r.move_seq;
    place_at(VIDEO_WINDOWS_MOVE_USEC + 300000);
    CHECK(placed(0, 0u, 0u, 0u, 0) && place_host.unable == 1u);
-   place_in.move_failed = false;
+   place_in.failed_move = 0;
+   /* A display unplugged and back that a stalled app thread hears as
+    * one list: its new id makes it a new list */
+   place_reset(2, 3);
+   place_at(0);
+   place_at(VIDEO_WINDOWS_MOVE_USEC);
+   CHECK(place_host.unable == 1u);
+   place_d[0].id = 5;
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 100000);
+   CHECK(placed(0, 0u, 0u, 0u, 1) && !place_host.unable);
+   /* A failure names its move: a late one for a move given up on ends
+    * no later move */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 2));
+   seq = place_r.move_seq;
+   CHECK(seq && seq == place_host.move_seq);
+   place_in.count = 2;
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 2) && place_r.move_seq != seq);
+   place_in.failed_move = seq;
+   place_at(200000);
+   place_in.failed_move = 0;
+   CHECK(place_host.moving == 2 && !place_host.unable);
+   place_in.failed_move = place_host.move_seq;
+   place_at(300000);
+   place_in.failed_move = 0;
+   CHECK(!place_host.moving && place_host.unable == 2u);
+   /* Numbers wrap inside a Java int and outlast a reset, so a failure
+    * from before the reset ends no move after it */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_host.move_seq   = 0x7fffffffu;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 2) && place_r.move_seq == 1);
+   video_windows_host_reset(&place_host);
+   CHECK(place_host.move_seq == 1);
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 2) && place_r.move_seq == 2);
+   place_in.failed_move = 1;
+   place_at(200000);
+   place_in.failed_move = 0;
+   CHECK(place_host.moving == 2 && !place_host.unable);
    /* A Presentation that never shows: the move after the time */
    place_reset(2, 3);
    place_in.menu_follows = 1;
@@ -1123,6 +1270,18 @@ static void test_place_moves(void)
    place_at(5033333);
    CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
    CHECK(place_host.make == 1);
+}
+
+/* A display listed without an ordinal is never Auto's, even listed
+ * after the panel it would replace */
+static void test_place_no_ordinal(void)
+{
+   place_reset(1, 3);
+   test_display(&place_d[2], 0, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
+   strcpy(place_d[2].name, "No Ordinal");
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(place_r.menu == 2);
 }
 
 static void test_selected_layout(void)
@@ -1609,8 +1768,11 @@ int main(void)
    test_windows_attached();
    test_display_key();
    test_display_record();
+   test_display_default();
    test_place_where();
+   test_place_external();
    test_place_moves();
+   test_place_no_ordinal();
    test_selected_layout();
    test_second_output_touch();
    test_window_events();

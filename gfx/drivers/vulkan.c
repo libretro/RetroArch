@@ -458,6 +458,9 @@ typedef struct vk
        * when the image goes there */
       unsigned ui_direct;
       const char *ui_msg;
+      /* This frame: views an up window with no free image shows,
+       * copied all the same for a later repeat */
+      unsigned copy;
    } windows;
 #endif
 #ifdef HAVE_OPENXR
@@ -6825,8 +6828,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 }
 
 /* Frees the view chains from index first on, the headset's too, and
- * with first 0 the headset's whole-frame chains. */
-static void vulkan_views_free_chains(vk_t *vk, unsigned first)
+ * with frame the headset's whole-frame chains. */
+static void vulkan_views_free_chains(vk_t *vk, unsigned first, bool frame)
 {
    unsigned i;
    for (i = first; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -6852,7 +6855,7 @@ static void vulkan_views_free_chains(vk_t *vk, unsigned first)
 #endif
    }
 #ifdef HAVE_OPENXR
-   if (!first)
+   if (frame)
    {
       if (vk->xr.frame_chain)
          vulkan_filter_chain_free(vk->xr.frame_chain);
@@ -6998,7 +7001,7 @@ static void vulkan_views_build_chains(vk_t *vk)
 static void vulkan_views_set_preset(vk_t *vk, const char *path)
 {
    strlcpy(vk->views.preset, path ? path : "", sizeof(vk->views.preset));
-   vulkan_views_free_chains(vk, 0);
+   vulkan_views_free_chains(vk, 0, true);
    vulkan_views_build_chains(vk);
 }
 
@@ -7649,7 +7652,7 @@ static void vulkan_free(void *data)
       if (vk->filter_chain_default)
          vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain_default);
 
-      vulkan_views_free_chains(vk, 0);
+      vulkan_views_free_chains(vk, 0, true);
 
       /* Whatever the context, not only with HDR: the retained image is
        * the presenter's, not the HDR path's. */
@@ -11351,6 +11354,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    const gfx_ctx_window_driver_t *ctx = vk->ctx_driver
       ? vk->ctx_driver->windows : NULL;
 
+   vk->windows.copy = 0;
    if (!ctx)
       return;
    if (vk->windows.held.live)
@@ -11444,14 +11448,21 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       if (state < 0)
       {
          RARCH_WARN("[Vulkan] A screen window can't be drawn. "
-               "Its screens go back to the main window.\n");
+               "What it shows stays in the main window.\n");
          vulkan_window_attach(vk, f, w);
          continue;
       }
       /* No free image is no failure: its last image stays */
       win->flags |= VK_WINDOW_FLAG_UP;
       if (!state)
+      {
+         if (screens && new_frame)
+            for (i = 0; i < video_info->views.num_views; i++)
+               if (f->window_screens[w]
+                     & (1u << video_info->views.views[i].screen))
+                  vk->windows.copy |= 1u << i;
          continue;
+      }
 
       if (screens)
       {
@@ -11649,7 +11660,7 @@ static void vulkan_windows_present(vk_t *vk,
          if (win->output.flags & VK_OUTPUT_FLAG_LOST)
          {
             RARCH_WARN("[Vulkan] A screen window's surface is gone. "
-                  "Its screens go back to the main window.\n");
+                  "What it shows stays in the main window.\n");
             vulkan_window_attach(vk, f, w);
          }
          continue;
@@ -13221,6 +13232,9 @@ static bool vulkan_frame(void *data, const void *frame,
       for (i = 0; i < video_info->views.num_views; i++)
          if (view_chains[i])
             copy_views |= 1u << i;
+#ifdef HAVE_VIDEO_WINDOWS
+      copy_views |= vk->windows.copy;
+#endif
    }
 #ifdef HAVE_OPENXR
    /* The headset's views and its tracked eyes come from the same
@@ -16806,18 +16820,21 @@ static bool vulkan_texture_lend_ready(void *data, uintptr_t id,
 
 static void vulkan_set_view_count(void *data, unsigned count)
 {
-   unsigned i, j;
+   unsigned i, j, had;
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->context)
       return;
+   had                    = vk->views.chains.count;
    vk->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
-   vulkan_views_free_chains(vk, vk->views.chains.count);
+   vulkan_views_free_chains(vk, vk->views.chains.count, false);
    /* Frames in flight may still read the copies. */
    for (i = 0; i < vk->num_swapchain_images; i++)
       for (j = vk->views.chains.count; j < RETRO_VIDEO_VIEWS_MAX; j++)
          vulkan_texture_defer_copy(vk, &vk->swapchain[i].view_images[j]);
    vk->views.copied &= (1u << vk->views.chains.count) - 1u;
-   vulkan_views_build_chains(vk);
+   /* The threaded wrapper applies a shrink with the main thread running */
+   if (vk->views.chains.count > had)
+      vulkan_views_build_chains(vk);
 }
 
 #ifdef HAVE_OPENXR

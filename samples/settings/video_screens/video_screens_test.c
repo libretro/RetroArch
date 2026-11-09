@@ -1945,7 +1945,7 @@ static bool menu_test_cancel(uint16_t buttons, bool back)
    return menu_state_get_ptr()->input_state.cancel_inhibit;
 }
 
-/* The menu in the Presentation (00 I3): its touches over that window at
+/* The menu in the Presentation: its touches over that window at
  * the menu layer's size, none of the main window's; RGUI through its
  * framebuffer as it is fitted to the layer */
 static void test_window_menu_touch_window(void)
@@ -2250,6 +2250,48 @@ static void test_window_menu_touch_window(void)
    settings->bools.menu_mouse_enable    = saved_mouse;
    settings->bools.input_overlay_enable = saved_overlay;
    window_test_end();
+}
+
+/* The menu going into another window is no mouse move: the view keeps
+ * the mouse where it last was */
+static void test_window_menu_mouse_kept(void)
+{
+   static input_driver_t driver;
+   input_pointer_frame_t frame;
+   uint32_t none_pos              = 0;
+   uint32_t at;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   input_driver_t *saved_driver   = input_st->current_driver;
+   video_window_ui_target_t saved = video_st->windows_ui[VIDEO_WINDOW_UI_MENU];
+   memset(&driver, 0, sizeof(driver));
+   driver.input_state       = menu_test_input_state;
+   driver.ident             = "menu_mouse_test";
+   input_st->current_driver = &driver;
+   memset(&frame, 0, sizeof(frame));
+   frame.pos = VIDEO_POS_PACK(200, 100);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   input_driver_publish_window_pointers(&frame, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND
+         | INPUT_POINTERS_POINTER_IDS_BY_DRIVER);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   input_driver_poll_devices();
+   at = input_driver_pointer_view()->mouse_pos;
+   CHECK(at == VIDEO_POS_PACK(200, 100));
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   frame.pos = VIDEO_POS_PACK(300, 150);
+   input_driver_publish_window_pointers(&frame, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND
+         | INPUT_POINTERS_POINTER_IDS_BY_DRIVER);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   input_driver_poll_devices();
+   CHECK(input_driver_pointer_view()->mouse_pos == at);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU] = saved;
+   input_st->current_driver = saved_driver;
+   input_driver_publish_window_pointers(&frame, NULL, 0, 0);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   input_driver_poll_devices();
 }
 
 /* Screens by name, as on the Thor; a main window with no screen keeps
@@ -2775,6 +2817,56 @@ static void test_window_ui_targets(void)
    menu_st->flags                     = saved_menu;
    video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
          NULL, NULL, 0, 0);
+   window_test_end();
+}
+
+/* A Presentation made on another display waits for itself: the menu
+ * stays laid out for it instead of falling back at once */
+static void test_window_ui_wait_moved(void)
+{
+   video_window_display_t displays[3];
+   video_views_layout_t layout;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   window_test_display(&displays[2], 3, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-3");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 3);
+   video_driver_clear_views();
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   video_driver_window_layout_screens(&window_test_seen, 0,
+         VIDEO_SCALE_PACK(1000, 900), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 7, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1000, 900));
+   window_test_run();
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   strlcpy(settings->arrays.video_screen_display[1], "Screen-3",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.display == 3);
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   settings->arrays.video_screen_display[1][0] = '\0';
+   settings->uints.video_menu_follows          = 0;
+   menu_st->flags                              = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   /* The list test_window_ui_targets() left for the later tests */
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
    window_test_end();
 }
 
@@ -4710,12 +4802,14 @@ int main(int argc, char **argv)
    test_window_shown_moved();
    test_window_shown_reinit();
    test_window_ui_targets();
+   test_window_ui_wait_moved();
    test_window_turned();
    test_window_turned_touch();
    test_window_turned_display();
    test_window_turned_waiting();
    test_window_pointer_mapping();
    test_window_menu_touch_window();
+   test_window_menu_mouse_kept();
    test_window_generation();
    test_window_ui_layer_dims();
 #ifdef HAVE_GFX_WIDGETS

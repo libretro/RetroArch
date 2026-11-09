@@ -29,7 +29,12 @@
  *               fallback icon and the core's own; both are freed at
  *               deinit.
  *
- * Usage: menu_icon_ownership_test ozone|xmb|materialui|contentless
+ *   rgui        The framebuffer RGUI uploads is held by the video
+ *               driver. A video reinit with the menu up starts a
+ *               driver without it, and nothing in the menu changes to
+ *               redraw it: the next upload must still reach the new one.
+ *
+ * Usage: menu_icon_ownership_test ozone|xmb|materialui|contentless|rgui
  *
  * Requires a completed non-Qt build, same as the other menu harnesses:
  *
@@ -120,6 +125,19 @@ static void harness_unload_texture(void *data, bool threaded, uintptr_t id)
    fprintf(stderr, "unload of a handle not live: %p\n", (void*)id);
 }
 
+static unsigned frame_uploads;
+
+static void harness_set_texture_frame(void *data, const void *frame,
+      bool rgb32, unsigned dims, float alpha)
+{
+   (void)data;
+   (void)frame;
+   (void)rgb32;
+   (void)dims;
+   (void)alpha;
+   frame_uploads++;
+}
+
 static const video_poke_interface_t harness_poke = {
    NULL, /* get_flags */
    harness_load_texture,
@@ -134,7 +152,7 @@ static const video_poke_interface_t harness_poke = {
    NULL, /* get_proc_address */
    NULL, /* set_aspect_ratio */
    NULL, /* apply_state_changes */
-   NULL, /* set_texture_frame */
+   harness_set_texture_frame,
    NULL, /* set_texture_enable */
    NULL, /* set_osd_msg */
    NULL, /* show_mouse */
@@ -258,6 +276,7 @@ static bool fixture_make(const char *menu_driver)
     * contentless lane runs on ozone */
    const char *ident = string_is_equal(menu_driver, "materialui") ? "glui"
          : string_is_equal(menu_driver, "contentless") ? "ozone"
+         : string_is_equal(menu_driver, "rgui") ? "rgui"
          : "xmb";
    if (string_is_equal(menu_driver, "ozone"))
       ident = "ozone";
@@ -524,9 +543,10 @@ int main(int argc, char *argv[])
    if (     !string_is_equal(menu_driver, "ozone")
          && !string_is_equal(menu_driver, "xmb")
          && !string_is_equal(menu_driver, "materialui")
-         && !string_is_equal(menu_driver, "contentless"))
+         && !string_is_equal(menu_driver, "contentless")
+         && !string_is_equal(menu_driver, "rgui"))
    {
-      fprintf(stderr, "usage: %s ozone|xmb|materialui|contentless\n",
+      fprintf(stderr, "usage: %s ozone|xmb|materialui|contentless|rgui\n",
             argv[0]);
       return 2;
    }
@@ -600,6 +620,19 @@ int main(int argc, char *argv[])
       run_tasks();
       one_frame();
    }
+   else if (string_is_equal(menu_driver, "rgui"))
+   {
+      unsigned had;
+      one_frame();
+      menu_st->driver_ctx->set_texture(menu_st->userdata);
+      driver_uninit(DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET);
+      drivers_init(config_get_ptr(), DRIVER_VIDEO_MASK,
+            DRIVER_LIFETIME_RESET, false);
+      had = frame_uploads;
+      menu_st->driver_ctx->set_texture(menu_st->userdata);
+      CHECK(frame_uploads > had,
+            "the video driver made by the reinit never got the menu framebuffer");
+   }
    else
    {
       /* The first frame draws the sidebar with the playlist's icon
@@ -629,7 +662,9 @@ int main(int argc, char *argv[])
    CHECK(live_count == 0,
          "%u texture(s) still live after deinit (%u loaded, %u unloaded)",
          live_count, loads, unloads);
-   CHECK(loads > 0, "fixture: the menu loaded no texture at all");
+   /* RGUI draws into its own framebuffer and loads none */
+   CHECK(loads > 0 || string_is_equal(menu_driver, "rgui"),
+         "fixture: the menu loaded no texture at all");
 
    fixture_remove();
 

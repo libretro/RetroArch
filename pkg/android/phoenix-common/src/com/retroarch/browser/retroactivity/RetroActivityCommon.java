@@ -1945,15 +1945,15 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
-   * Moves this Activity onto display ordinal of the last published
-   * list. Called from native code on any thread; posts to the UI
-   * thread and returns.
+   * Moves this Activity onto the display whose id is displayId; move
+   * numbers the move. Called from native code on any thread; posts to
+   * the UI thread and returns.
    */
-  public void moveToDisplay(final int ordinal) {
+  public void moveToDisplay(final int displayId, final int move) {
     runOnUiThread(new Runnable() {
       @Override public void run() {
         if (secondDisplay != null)
-          secondDisplay.moveTo(ordinal);
+          secondDisplay.moveTo(displayId, move);
       }
     });
   }
@@ -1977,6 +1977,14 @@ public class RetroActivityCommon extends NativeActivity
         keyboardEditText.setVisibility(View.GONE);
       }
     });
+  }
+
+  @TargetApi(29)
+  @Override
+  public void onTopResumedActivityChanged(boolean top) {
+    super.onTopResumedActivityChanged(top);
+    if (secondDisplay != null)
+      secondDisplay.onTopResumedChanged(top);
   }
 
   /* On a one-focus system the IME refuses the field while another

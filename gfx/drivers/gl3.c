@@ -471,7 +471,7 @@ static void gl3_set_viewport(gl3_t *gl,
       unsigned dims,
       bool force_full,   bool allow_rotate);
 #ifdef HAVE_SLANG
-static void gl3_views_free_chains(gl3_t *gl, unsigned first);
+static void gl3_views_free_chains(gl3_t *gl, unsigned first, bool frame);
 static void gl3_views_free_copies(gl3_t *gl, unsigned first);
 /* What a frame's placement draws read */
 struct gl3_views_draw
@@ -2420,7 +2420,7 @@ static void gl3_destroy_resources(gl3_t *gl)
    gl->filter_chain_default = NULL;
 
 #ifdef HAVE_SLANG
-   gl3_views_free_chains(gl, 0);
+   gl3_views_free_chains(gl, 0, true);
    gl3_views_free_copies(gl, 0);
    if (gl->views.read_fbo)
       glDeleteFramebuffers(1, &gl->views.read_fbo);
@@ -3086,8 +3086,9 @@ static bool gl3_init_default_filter_chain(gl3_t *gl)
    return true;
 }
 
-/* Frees the view chains from index first on. */
-static void gl3_views_free_chains(gl3_t *gl, unsigned first)
+/* Frees the view chains from index first on, and with frame the
+ * headset's whole-frame chains. */
+static void gl3_views_free_chains(gl3_t *gl, unsigned first, bool frame)
 {
    unsigned i;
    video_views_chains_t *set = &gl->views.chains;
@@ -3112,7 +3113,7 @@ static void gl3_views_free_chains(gl3_t *gl, unsigned first)
 #endif
    }
 #ifdef HAVE_GL3_XR
-   if (!first)
+   if (frame)
    {
       if (gl->xr.frame_chain)
          gl3_filter_chain_free(gl->xr.frame_chain);
@@ -3195,7 +3196,7 @@ static void gl3_views_build_chains(gl3_t *gl)
 static void gl3_views_set_preset(gl3_t *gl, const char *path)
 {
    strlcpy(gl->views.preset, path ? path : "", sizeof(gl->views.preset));
-   gl3_views_free_chains(gl, 0);
+   gl3_views_free_chains(gl, 0, true);
    gl3_views_build_chains(gl);
 }
 
@@ -8912,15 +8913,19 @@ static retro_time_t gl3_get_last_present_wait(void *data, bool *shown)
 #ifdef HAVE_SLANG
 static void gl3_set_view_count(void *data, unsigned count)
 {
+   unsigned had;
    gl3_t *gl = (gl3_t*)data;
    if (!gl)
       return;
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+   had                    = gl->views.chains.count;
    gl->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
-   gl3_views_free_chains(gl, gl->views.chains.count);
+   gl3_views_free_chains(gl, gl->views.chains.count, false);
    gl3_views_free_copies(gl, gl->views.chains.count);
-   gl3_views_build_chains(gl);
+   /* The threaded wrapper applies a shrink with the main thread running */
+   if (gl->views.chains.count > had)
+      gl3_views_build_chains(gl);
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
          && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);

@@ -3755,19 +3755,29 @@ void video_driver_hw_request_restore(const struct video_hw_request *req)
 /* The idle logo, loaded the first frame it is wanted; app thread */
 static gfx_surface_t *video_driver_windows_logo = NULL;
 
-/* The logo from the widgets' icon set, once the widgets know where it
- * is. Its own frame keeps the path off the frame function's stack. */
+/* The logo from the widgets' icon set: their path, or with the widgets
+ * off the same path built from the assets directory. Its own frame
+ * keeps the path off the frame function's stack. */
 static VIDEO_NOINLINE void video_driver_windows_logo_load(void)
 {
    char path[PATH_MAX_LENGTH];
-   const char *dir = dispwidget_get_ptr()->monochrome_png_path;
-   if (!*dir)
+   const char *dir    = dispwidget_get_ptr()->monochrome_png_path;
+   const char *assets = config_get_ptr()->paths.directory_assets;
+   if (!*dir && !*assets)
       return;
    video_driver_windows_logo = gfx_surface_new_still(
          gfx_display_texture_filter());
    if (!video_driver_windows_logo)
       return;
-   fill_pathname_join_special(path, dir, "retroarch.png", sizeof(path));
+   if (*dir)
+      fill_pathname_join_special(path, dir, "retroarch.png", sizeof(path));
+   else
+   {
+      fill_pathname_join_special(path, assets, "xmb", sizeof(path));
+      fill_pathname_join_special(path, path, "monochrome", sizeof(path));
+      fill_pathname_join_special(path, path, "png", sizeof(path));
+      fill_pathname_join_special(path, path, "retroarch.png", sizeof(path));
+   }
    gfx_surface_submit_path(video_driver_windows_logo, path,
          gfx_surface_wants_rgba());
 }
@@ -3848,11 +3858,9 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
-#if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
    /* No driver follows to take what this one left up */
    if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
-      android_windows_release_kept();
-#endif
+      VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
    video_driver_set_hdr_output_mode(0);
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
@@ -4519,7 +4527,7 @@ static void video_driver_windows_place(video_driver_state_t *video_st,
       : video_st->views.num_views ? video_st->views.num_screens : 1;
    in->mapless        = running && !video_st->views.num_views;
    in->switching      = runloop_st->content_switching;
-   in->move_failed    = false;
+   in->failed_move    = 0;
 #ifdef ANDROID
    {
       unsigned i;
@@ -4528,16 +4536,24 @@ static void video_driver_windows_place(video_driver_state_t *video_st,
          routed = list[i].own;
       /* Reading clears it; placement hears it only with an own display */
       if (routed)
-         in->move_failed = android_activity_move_failed();
+         in->failed_move = android_activity_move_failed();
    }
 #endif
    video_windows_place(&video_st->windows_host, in, route);
 #ifdef ANDROID
    if (route->move)
-      android_activity_move_request(route->move);
+   {
+      unsigned i;
+      int id = -1;
+      for (i = 0; i < count; i++)
+         if (list[i].ordinal == route->move)
+            id = list[i].id;
+      android_activity_move_request(id, route->move_seq);
+   }
 #endif
    /* A redraw reuses the stored route; it must not ask again */
-   route->move = 0;
+   route->move     = 0;
+   route->move_seq = 0;
 }
 
 /* App thread: the snapshot's UI targets are those this frame was laid
@@ -4569,6 +4585,12 @@ static void video_driver_windows_ui(video_driver_state_t *video_st,
             & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS);
    }
    out->window_ui[VIDEO_WINDOWS_PRESENTATION] = use;
+   /* A Presentation on another display gets its own wait */
+   if (route->display != video_st->windows_ui_display)
+   {
+      video_st->windows_ui_display = route->display;
+      video_st->windows_ui_asked   = 0;
+   }
    /* 1 once shown, so a later loss falls back at once */
    if (!use)
       video_st->windows_ui_asked = 0;
@@ -4798,7 +4820,8 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
       }
    }
 #ifdef HAVE_VIDEO_WINDOWS
-   /* With or without views: the menu and the idle logo use them too */
+   /* With or without views: it also places the menu and decides the
+    * idle logo */
    video_info->windows = video_driver_windows_frame(video_st, settings,
          flags.flags, redraw, now);
 #else
