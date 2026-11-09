@@ -1983,6 +1983,16 @@ bool manual_content_scan_is_single_playlist(void)
                 != MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO;
 }
 
+/* @name is a whole name: a dot in it is not an extension to replace
+ * (Tiger - Game.com, VTech - V.Smile). */
+static void manual_content_scan_set_lpl_name(char *s, const char *name,
+      size_t len)
+{
+   size_t _len = strlcpy(s, name, len);
+   if (_len < len)
+      strlcpy_lit(s + _len, ".lpl", len - _len);
+}
+
 /* Parses current manual content scan settings,
  * and extracts all information required to configure
  * a manual content scan task.
@@ -2089,11 +2099,9 @@ bool manual_content_scan_get_task_config(
    /* Store database name and playlist path, depending on scan settings */
    /* Old manual scan method: db name == target playlist */
 
-   strlcpy(
+   manual_content_scan_set_lpl_name(
          task_config->database_name,
          task_config->system_name,
-         sizeof(task_config->database_name));
-   strlcat(task_config->database_name, ".lpl",
          sizeof(task_config->database_name));
 
    /* ...which can in turn be used to generate the
@@ -2117,11 +2125,9 @@ bool manual_content_scan_get_task_config(
       /* Pass the selected DB name to the task if there is one */
       if (scan_settings.db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
       {
-         strlcpy(
+         manual_content_scan_set_lpl_name(
                task_config->database_name,
                scan_system_name_database,
-               sizeof(task_config->database_name));
-         strlcat(task_config->database_name, ".lpl",
                sizeof(task_config->database_name));
       }
       /* Or make it empty (auto DB select case). The omit_db_ref is handled elsewhere. */
@@ -2131,11 +2137,9 @@ bool manual_content_scan_get_task_config(
          if (scan_settings.system_name_type == MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO)
             task_config->playlist_file[0] = '\0';
          /* Abuse dat_file_path for a convenient placeholder value */
-         strlcpy(
+         manual_content_scan_set_lpl_name(
                task_config->dat_file_path,
                scan_system_name_content_dir,
-               sizeof(task_config->dat_file_path));
-         strlcat(task_config->dat_file_path, ".lpl",
                sizeof(task_config->dat_file_path));
       }
    }
