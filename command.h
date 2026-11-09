@@ -190,6 +190,8 @@ enum event_command
    CMD_EVENT_MENU_SAVE_CONFIG,
    /* Starts the first-run asset downloads. */
    CMD_EVENT_MENU_FIRST_RUN_DOWNLOAD,
+   /* Turns the core signature checks off, after the confirm */
+   CMD_EVENT_CORE_SIGNATURE_CHECK_OFF,
    CMD_EVENT_MENU_SAVE_AS_CONFIG,
    CMD_EVENT_MENU_SAVE_MAIN_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,

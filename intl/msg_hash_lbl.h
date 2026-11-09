@@ -3125,6 +3125,10 @@ MSG_HASH(
    "core_lock"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK,
+   "core_signature_check"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT,
    "core_set_standalone_exempt"
    )

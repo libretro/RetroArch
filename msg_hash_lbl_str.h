@@ -767,6 +767,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_AUDIO_MIXER_MUTE_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_AUDIO_MIXER_MUTE)
 #define MENU_ENUM_LABEL_MENU_SCROLL_FAST_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_MENU_SCROLL_FAST)
 #define MENU_ENUM_LABEL_CORE_LOCK_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_CORE_LOCK)
+#define MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK)
 #define MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT)
 #define MENU_ENUM_LABEL_CORE_DELETE_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_CORE_DELETE)
 #define MENU_ENUM_LABEL_GOTO_FAVORITES_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_GOTO_FAVORITES)
@@ -2549,6 +2550,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_AUDIO_MIXER_MUTE_STR "audio_mixer_mute_enable"
 #define MENU_ENUM_LABEL_MENU_SCROLL_FAST_STR "menu_scroll_fast"
 #define MENU_ENUM_LABEL_CORE_LOCK_STR "core_lock"
+#define MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK_STR "core_signature_check"
 #define MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT_STR "core_set_standalone_exempt"
 #define MENU_ENUM_LABEL_CORE_DELETE_STR "core_delete"
 #define MENU_ENUM_LABEL_GOTO_FAVORITES_STR "goto_favorites"

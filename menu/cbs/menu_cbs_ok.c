@@ -6728,6 +6728,30 @@ static int action_ok_core_warning_text(const char *path,
 {
    return 0;
 }
+
+int action_ok_core_signature_check(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *msg;
+   switch (core_trust_runtime_toggle_checks())
+   {
+      /* Always asks, whatever menu_show_confirm says */
+      case CORE_TRUST_TOGGLE_CONFIRM_OFF:
+         menu_dialog_confirm_set(menu_st,
+               MSG_CORE_SIGNATURE_CHECK_OFF_CONFIRM,
+               CMD_EVENT_CORE_SIGNATURE_CHECK_OFF);
+         return action_ok_dialog_init(menu_st);
+      case CORE_TRUST_TOGGLE_READ_ONLY:
+         msg = msg_hash_to_str(MSG_CORE_TRUST_READ_ONLY);
+         runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         break;
+      default:
+         break;
+   }
+   return 0;
+}
 #endif
 
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_cheat_apply_changes,      CMD_EVENT_CHEATS_APPLY)
@@ -11173,6 +11197,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_CORE_SIGNATURES
          case MENU_SETTING_CORE_WARNING_TEXT:
             BIND_ACTION_OK(cbs, action_ok_core_warning_text);
+            break;
+         case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
+            BIND_ACTION_OK(cbs, action_ok_core_signature_check);
             break;
 #endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:

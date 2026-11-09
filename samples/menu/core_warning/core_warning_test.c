@@ -13,7 +13,11 @@
  *    nothing over it, and a request answered before its screen came
  *    up leaves no screen;
  *  - a menu driver that shows no screens (null) takes no request, and
- *    a screen it can't push back doesn't take the frame.
+ *    a screen it can't push back doesn't take the frame;
+ *  - Settings > Core > Check Core Signatures: Off asks even with
+ *    confirmations off and Back keeps the checks; On and Start ask
+ *    nothing; a read-only store changes nothing; an inactive one hides
+ *    the row.
  *
  * Requires a completed non-Qt build:
  *
@@ -35,6 +39,7 @@
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
+#include <features/features_cpu.h>
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
@@ -42,6 +47,9 @@
 #include "../../../command.h"
 #include "../../../frontend/frontend_driver.h"
 #include "../../../frontend/frontend.h"
+#include "../../../gfx/gfx_animation.h"
+#include "../../../gfx/gfx_display.h"
+#include "../../../menu/menu_cbs.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../msg_hash.h"
@@ -330,6 +338,96 @@ static void lane_null(void)
          "null: Cancel didn't answer the request");
 }
 
+static void push_core_settings(void)
+{
+   generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
+         ACTION_OK_DL_CORE_SETTINGS_LIST);
+   pump(3);
+}
+
+/* The row is an On/Off switch showing value; false with no row */
+static bool setting_shows(enum msg_hash_enums value)
+{
+   menu_entry_t entry;
+   size_t i = row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK);
+   if (i == NO_ROW)
+      return false;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+   menu_entry_get(&entry, 0, i, NULL, true);
+   return   entry.setting_type == ST_BOOL
+         && string_is_equal(entry.value, msg_hash_to_str(value));
+}
+
+/* The confirm takes its answer from the menu's own input */
+static void answer(enum menu_action action)
+{
+   menu_driver_iterate(menu_state_get_ptr(), disp_get_ptr(), anim_get_ptr(),
+         config_get_ptr(), action, cpu_features_get_time_usec());
+   pump(3);
+}
+
+static void lane_setting(const char *dir)
+{
+   char path[512];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   configuration_set_bool(settings, settings->bools.menu_show_confirm,
+         false);
+   if (!core_trust_runtime_checks_on())
+      core_trust_runtime_set_checks(true);
+   push_core_settings();
+   CHECK(setting_shows(MENU_ENUM_LABEL_VALUE_ON),
+         "setting: the row doesn't show an On switch");
+   ok_on(row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK));
+   CHECK(menu_st->dialog_st.confirm_cmd == CMD_EVENT_CORE_SIGNATURE_CHECK_OFF,
+         "setting: Off didn't ask");
+   CHECK(core_trust_runtime_checks_on(),
+         "setting: Off didn't wait for the answer");
+   answer(MENU_ACTION_CANCEL);
+   CHECK(!menu_st->dialog_st.confirm_cmd,
+         "setting: Back left the confirm open");
+   CHECK(core_trust_runtime_checks_on(), "setting: Back turned the checks off");
+   ok_on(row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK));
+   answer(MENU_ACTION_OK);
+   CHECK(!core_trust_runtime_checks_on(), "setting: OK left the checks on");
+   CHECK(setting_shows(MENU_ENUM_LABEL_VALUE_OFF),
+         "setting: the row doesn't show Off");
+   act_on(row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK), MENU_ACTION_START);
+   CHECK(core_trust_runtime_checks_on(), "setting: Start didn't reset to On");
+   CHECK(!menu_st->dialog_st.confirm_cmd, "setting: Start asked");
+   core_trust_runtime_set_checks(false);
+   ok_on(row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK));
+   CHECK(core_trust_runtime_checks_on(), "setting: On didn't turn them on");
+   CHECK(!menu_st->dialog_st.confirm_cmd, "setting: On asked");
+
+   /* Every change went to the harness's own store */
+   task_queue_wait(NULL, NULL);
+   strlcpy(path, dir, sizeof(path));
+   strlcat(path, "/core_trust", sizeof(path));
+   CHECK(path_is_valid(path), "setting: the harness's store wasn't written");
+
+   /* A store that couldn't be read */
+   core_trust_runtime_deinit();
+   strlcpy(path, dir, sizeof(path));
+   strlcat(path, "/unreadable_store", sizeof(path));
+   CHECK(path_mkdir(path), "fixture: can't make the unreadable store");
+   CHECK(core_trust_runtime_init(path, NULL, NULL)
+         && core_trust_runtime_read_only(),
+         "fixture: the store isn't read-only");
+   push_core_settings();
+   ok_on(row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK));
+   CHECK(setting_shows(MENU_ENUM_LABEL_VALUE_ON),
+         "setting: read-only changed the checks or hid the row");
+   CHECK(!menu_st->dialog_st.confirm_cmd, "setting: read-only asked");
+   core_trust_runtime_deinit();
+   path_rmdir(path);
+
+   push_core_settings();
+   CHECK(row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK) == NO_ROW,
+         "setting: the row shows with the store inactive");
+}
+
 int main(int argc, char *argv[])
 {
    char dir[400];
@@ -408,6 +506,7 @@ int main(int argc, char *argv[])
       lane_flush();
       lane_back();
       lane_null();
+      lane_setting(dir);
    }
 
    main_exit(NULL);

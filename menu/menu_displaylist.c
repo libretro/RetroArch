@@ -14835,6 +14835,15 @@ unsigned menu_displaylist_build_list(
             /* core_manager_list has no backing setting, so it cannot
              * be a PARSE_ACTION array entry; the raw append above is
              * the only mechanism for settingless action rows today. */
+#ifdef HAVE_CORE_SIGNATURES
+            if (     core_trust_runtime_active()
+                  && menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SIGNATURE_CHECK),
+                     MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK_STR,
+                     MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK,
+                     MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK, 0, 0, NULL))
+               count++;
+#endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {

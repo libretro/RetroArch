@@ -4671,6 +4671,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_REMAP_FILE_FLUSH:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_FILE]);
+      case MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK:
       case MENU_ENUM_LABEL_CORE_LOCK:
       case MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_CORE]);
