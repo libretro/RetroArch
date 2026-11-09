@@ -31,6 +31,7 @@ static const uint8_t owner_packet[] = {0x32, 8, 0, 0, 0, 0, 0, 0, 0, 0};
 static unsigned owner_buffers, owner_drops, owner_syncs, owner_fds, owner_closes;
 static unsigned owner_create_fail, owner_begin_fail;
 static VAStatus owner_completion;
+static unsigned owner_grain_mode;
 
 static int owner_node(const char *path, unsigned major_id, unsigned minor_id)
 {
@@ -118,7 +119,7 @@ static VAStatus owner_end(VADisplay d, VAContextID context)
 }
 static VAStatus owner_sync(VADisplay d, VASurfaceID target, uint64_t timeout)
 {
-   assert(d == owner->runtime.display && target == 100 && !timeout);
+   assert(d == owner->runtime.display && target == 100 + owner_grain_mode && !timeout);
    owner_syncs++;
    return owner_completion;
 }
@@ -127,7 +128,7 @@ static VAStatus owner_export(VADisplay d, VASurfaceID target,
 {
    VADRMPRIMESurfaceDescriptor *v = (VADRMPRIMESurfaceDescriptor *)output;
    unsigned pitch = depth == 10 ? 128 : 64;
-   assert(d == owner->runtime.display && target == 100 && !owner_fds);
+   assert(d == owner->runtime.display && target == 100 + owner_grain_mode && !owner_fds);
    assert(memory == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2
          && flags == (VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS));
    owner_fds = 1;
@@ -176,7 +177,7 @@ static void owner_setup(unsigned bits)
    owner_runtime = &owner_dummy;
    depth = bits;
    runtime_reset();
-   expected_slots = 12;
+   expected_slots = owner_grain_mode ? 21 : 12;
    owner_io = io;
    owner_io.open_node = owner_node;
    exports.session.ops.profiles = owner_profiles;
@@ -197,6 +198,7 @@ static void owner_setup(unsigned bits)
    memset(&owner_picture, 0, sizeof(owner_picture));
    memset(&owner_sequence, 0, sizeof(owner_sequence));
    owner_sequence.bit_depth = bits;
+   owner_sequence.film_grain_params_present = owner_grain_mode;
    owner_sequence.operating_point_count = 1;
    owner_sequence.subsampling_x = owner_sequence.subsampling_y = 1;
    owner_sequence.max_width = owner_sequence.max_height = 64;
@@ -214,6 +216,10 @@ static void owner_setup(unsigned bits)
    owner_picture.tiles.layout.columns = owner_picture.tiles.layout.rows = 1;
    owner_picture.tiles.mi_col_starts[1] = owner_picture.tiles.mi_row_starts[1] = 16;
    owner_picture.picture.cdef_damping = 3;
+   owner_picture.grain.params.apply = owner_grain_mode;
+   owner_picture.grain.params.scaling_shift = 8;
+   owner_picture.grain.params.ar_coeff_shift = 6;
+   owner_grain = owner_picture.grain.params;
    for (i = 0; i < 8; i++) owner_picture.reference_slots[i] = -1;
    for (i = 0; i < 7; i++)
       owner_picture.motion.global.params[i][2] = owner_picture.motion.global.params[i][5] = 65536;
@@ -232,7 +238,7 @@ static void owner_lifecycle(unsigned bits, bool claimed)
    vaapi_frame_view_t view;
    vaapi_hevc_export_t taken;
    owner_setup(bits);
-   assert(owner_open() && owner->runtime.session.slots == 12);
+   assert(owner_open() && owner->runtime.session.slots == expected_slots);
    assert(!vaapi_av1_owner_retire(owner));
    assert(owner_ops.decode(owner, owner_packet, 129, &owner_sequence, &owner_picture) < 0 && !owner_buffers);
    assert(!owner_ops.decode(owner, owner_packet, sizeof(owner_packet), &owner_sequence, &owner_picture));
@@ -265,7 +271,7 @@ static void owner_failures(void)
 {
    unsigned i;
    owner_setup(8);
-   owner_sequence.film_grain_params_present = 1;
+   owner_sequence.film_grain_params_present = 2;
    assert(!owner_open() && !owner && !loads && !owner_allocations);
    owner_sequence.film_grain_params_present = 0;
    owner_alloc_fail = 1;
@@ -309,6 +315,11 @@ int main(void)
    owner_lifecycle(8, false);
    owner_lifecycle(10, true);
    owner_failures();
+   owner_grain_mode = 1;
+   owner_lifecycle(8, false);
+   owner_lifecycle(10, true);
+   owner_failures();
+   owner_grain_mode = 0;
    assert(!vaapi_av1_owner_detach(NULL) && vaapi_av1_owner_retire(NULL));
    puts("PASS: AV1 native owner, held renderer frames, partial startup and termination retry");
    return 0;

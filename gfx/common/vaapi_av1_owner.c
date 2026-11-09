@@ -50,7 +50,6 @@ bool vaapi_av1_owner_open_with_io(vaapi_av1_owner_t **out, const char *path,
          || slots < 9 || slots > 32 || max_input < 128
          || max_input > 64u * 1024u * 1024u
          || !vaapi_av1_sequence_valid(sequence)
-         || sequence->film_grain_params_present
          || sequence->max_width > 65535 || sequence->max_height > 65535
          || ((sequence->max_width | sequence->max_height) & 1))
       return false;
@@ -60,6 +59,9 @@ bool vaapi_av1_owner_open_with_io(vaapi_av1_owner_t **out, const char *path,
    *out = owner;
    owner->max_input = max_input;
    physical = slots > 29 ? 32 : slots + 3;
+   /* Eight reference pairs, a target pair and three retained displays. */
+   if (sequence->film_grain_params_present && physical < 21)
+      physical = 21;
    if (io)
       opened = vaapi_av1_runtime_open_with_io(&owner->runtime, path, major_id,
             minor_id, sequence->max_width, sequence->max_height,
@@ -68,8 +70,11 @@ bool vaapi_av1_owner_open_with_io(vaapi_av1_owner_t **out, const char *path,
       opened = vaapi_av1_runtime_open(&owner->runtime, path, major_id, minor_id,
             sequence->max_width, sequence->max_height,
             sequence->bit_depth, physical);
-   if (!opened || !vaapi_av1_pool_init(&owner->pool, &owner->runtime.session,
-             &owner->runtime.submit, slots))
+   if (!opened || !(sequence->film_grain_params_present
+         ? vaapi_av1_pool_init_grain(&owner->pool, &owner->runtime.session,
+               &owner->runtime.submit, slots)
+         : vaapi_av1_pool_init(&owner->pool, &owner->runtime.session,
+               &owner->runtime.submit, slots)))
       return false;
    if (exports)
       native_exports = *exports;
