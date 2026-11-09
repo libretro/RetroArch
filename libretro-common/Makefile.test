@@ -474,6 +474,8 @@ unit-tests:
 	# Build and execute tests in order, to avoid coverage file collision
 	$(CC) $(TEST_UNIT_CFLAGS) test/formats/rxml_oom_test.c -o test/formats/rxml_oom_test
 	test/formats/rxml_oom_test
+	$(CC) $(TEST_UNIT_CFLAGS) test/formats/rxml_write_test.c -o test/formats/rxml_write_test
+	test/formats/rxml_write_test
 	# string
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) $(LIBCHECK_LIBS) -o $(TEST_STDSTRING)
 	$(TEST_STDSTRING)
@@ -681,7 +683,12 @@ win32-wine-check:
 	   -lws2_32 -liphlpapi -ladvapi32 -o test/file/test_keychain_win32.exe || exit 1; \
 	$(WINE) test/file/test_keychain_win32.exe || exit 1; \
 	echo "ok:   keychain suite as a Windows binary under Wine"; \
-	rm -f test/crypto/test_crypto_win32.exe test/file/test_keychain_win32.exe
+	$(MINGW_CC) -static -O2 -Iinclude -Wall test/formats/rxml_write_test.c \
+	   -o test/formats/rxml_write_test_win32.exe || exit 1; \
+	$(WINE) test/formats/rxml_write_test_win32.exe || exit 1; \
+	echo "ok:   rxml writer as a Windows binary under Wine"; \
+	rm -f test/crypto/test_crypto_win32.exe test/file/test_keychain_win32.exe \
+	   test/formats/rxml_write_test_win32.exe
 
 # The Windows wait paths under Wine, which no Linux build takes: the
 # eventcount on each of its sleep tiers, then the eventcount's condition

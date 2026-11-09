@@ -136,6 +136,40 @@ struct rxml_node *rxml_root_node(rxml_document_t *doc);
 
 const char *rxml_node_attrib(struct rxml_node *node, const char *attrib);
 
+/* Writer.  Builds a document in memory: elements are opened, given
+ * attributes and text, and closed in document order, and the result is
+ * taken with rxml_writer_data.  Text and attribute values are escaped
+ * so that rxml parses them back unchanged.  A call that cannot give
+ * well-formed output (a second root element, an attribute after the
+ * element's content, text outside an element, a close with nothing
+ * open, a missing or tag-breaking name) or an allocation failure stops
+ * the writer: later calls do nothing and rxml_writer_data returns NULL.
+ *
+ * @indent: written once per level before each element on a line of
+ * its own (e.g. "\t"); NULL writes the document on one line. */
+typedef struct rxml_writer rxml_writer_t;
+
+rxml_writer_t *rxml_writer_new(const char *indent);
+void rxml_writer_free(rxml_writer_t *w);
+
+/* <?xml version="1.0" encoding="UTF-8"?> - only as the first output */
+void rxml_write_declaration(rxml_writer_t *w);
+void rxml_write_open(rxml_writer_t *w, const char *name);
+/* Only before the open element's text and children */
+void rxml_write_attrib(rxml_writer_t *w, const char *name, const char *value);
+void rxml_write_text(rxml_writer_t *w, const char *text);
+void rxml_write_close(rxml_writer_t *w);
+/* <name>text</name>, or <name /> for NULL or empty text */
+void rxml_write_element(rxml_writer_t *w, const char *name, const char *text);
+/* @node and everything under it, e.g. a parsed document written back
+ * with changes made around it */
+void rxml_write_node(rxml_writer_t *w, const struct rxml_node *node);
+
+/* The document, NUL-terminated, owned by the writer; NULL when the
+ * writer stopped or the root element is not yet closed */
+const char *rxml_writer_data(rxml_writer_t *w, size_t *len);
+int rxml_writer_failed(const rxml_writer_t *w);
+
 RETRO_END_DECLS
 
 #endif

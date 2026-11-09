@@ -282,6 +282,7 @@ gfx/common/wayland/wlr-output-management-unstable-v1.h
 # test is <dir>_test; nothing built there is source.
 samples/**/*_test
 libretro-common/test/formats/rxml_oom_test
+libretro-common/test/formats/rxml_write_test
 samples/**/*_test_*
 # the media harnesses' link arguments and up-to-date keys
 samples/menu/*_media/link.args

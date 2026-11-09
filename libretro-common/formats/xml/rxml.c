@@ -38,7 +38,8 @@
  * What it does not implement: DTD interpretation (a DOCTYPE
  * declaration is skipped, so internally defined entities and attribute
  * defaults have no effect), namespace processing (prefixes stay part
- * of the name), validation, non-UTF-8 encodings, and serialisation.
+ * of the name), validation and non-UTF-8 encodings.  Writing a document
+ * is the writer's at the end of this file (rxml_writer_new).
  *
  * This replaces the previously vendored yxml push parser (deps/yxml)
  * with a direct span scanner over the input string, written from
@@ -1909,6 +1910,400 @@ const char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
    return NULL;
 }
 
+/* Writer -------------------------------------------------------------
+ *
+ * The output is built in one growing buffer.  The names of the open
+ * elements are not copied: each frame keeps the offset of its name in
+ * the output, where its start tag already wrote it, and an offset
+ * stays good when the buffer moves.  An error (allocation, or a call
+ * that cannot make well-formed output) is sticky: every later call
+ * does nothing and rxml_writer_data returns NULL. */
+
+#define RXML_W_TAG_OPEN 1 /* start tag not yet closed with '>' */
+#define RXML_W_CHILDREN 2 /* has element children */
+
+struct rxml_writer_frame
+{
+   const struct rxml_node *node; /* rxml_write_node's element */
+   size_t name_off;
+   size_t name_len;
+   unsigned flags;
+};
+
+struct rxml_writer
+{
+   char *buf;
+   size_t len;
+   size_t cap;
+   struct rxml_writer_frame *frames;
+   size_t depth;
+   size_t frames_cap;
+   char *indent;
+   size_t indent_len;
+   int error;
+   int pretty;
+   int root_done;
+};
+
+RXML_COLD static int rxml_w_grow(rxml_writer_t *w, size_t extra)
+{
+   size_t cap = w->cap ? w->cap : 256;
+   char *buf;
+   if (extra > (size_t)-1 - w->len - 1)
+      return 0;
+   while (cap < w->len + extra + 1)
+   {
+      if (cap > (size_t)-1 / 2)
+      {
+         cap = w->len + extra + 1;
+         break;
+      }
+      cap *= 2;
+   }
+   if (!(buf = (char*)realloc(w->buf, cap)))
+      return 0;
+   w->buf = buf;
+   w->cap = cap;
+   return 1;
+}
+
+static void rxml_w_put(rxml_writer_t *w, const char *s, size_t n)
+{
+   if (w->error)
+      return;
+   if (w->len + n + 1 > w->cap && !rxml_w_grow(w, n))
+   {
+      w->error = 1;
+      return;
+   }
+   memcpy(w->buf + w->len, s, n);
+   w->len += n;
+}
+
+static void rxml_w_puts(rxml_writer_t *w, const char *s)
+{
+   rxml_w_put(w, s, strlen(s));
+}
+
+/* A newline and the indent of @depth levels, when pretty printing */
+static void rxml_w_newline(rxml_writer_t *w, size_t depth)
+{
+   if (!w->pretty)
+      return;
+   rxml_w_put(w, "\n", 1);
+   while (depth--)
+      rxml_w_put(w, w->indent, w->indent_len);
+}
+
+/* @s escaped for character data, or for a double-quoted attribute
+ * value when @attrib is set.  Runs that need nothing are copied
+ * whole.  '&' and '<' always need a reference, and '>' too, so that
+ * "]]>" never appears; in an attribute '"' does, and so do tab, line
+ * feed and carriage return, which a parser would otherwise normalise
+ * to spaces.  In character data a carriage return is written as a
+ * reference too, as a parser turns a raw one into a line feed.  The
+ * other control characters, which XML 1.0 has no place for, are
+ * written as references as well, so they at least come back through
+ * rxml unchanged. */
+static void rxml_w_escaped(rxml_writer_t *w, const char *s, int attrib)
+{
+   const char *run = s;
+   for (;; s++)
+   {
+      unsigned char c = (unsigned char)*s;
+      const char *ref = NULL;
+      char num[6];
+      if (!c)
+         break;
+      if (c >= 0x20)
+      {
+         if (c == '&')
+            ref = "&amp;";
+         else if (c == '<')
+            ref = "&lt;";
+         else if (c == '>')
+            ref = "&gt;";
+         else if (c == '"' && attrib)
+            ref = "&quot;";
+         else
+            continue;
+      }
+      else if (!attrib && (c == '\n' || c == '\t'))
+         continue;
+      else
+      {
+         size_t i = 2;
+         num[0]   = '&';
+         num[1]   = '#';
+         if (c >= 10)
+            num[i++] = (char)('0' + c / 10);
+         num[i++] = (char)('0' + c % 10);
+         num[i++] = ';';
+         num[i]   = '\0';
+         ref      = num;
+      }
+      rxml_w_put(w, run, (size_t)(s - run));
+      rxml_w_puts(w, ref);
+      run = s + 1;
+   }
+   rxml_w_put(w, run, (size_t)(s - run));
+}
+
+/* Close the start tag of the innermost open element, if still open */
+static void rxml_w_seal(rxml_writer_t *w)
+{
+   struct rxml_writer_frame *f;
+   if (!w->depth)
+      return;
+   f = &w->frames[w->depth - 1];
+   if (f->flags & RXML_W_TAG_OPEN)
+   {
+      rxml_w_put(w, ">", 1);
+      f->flags &= ~RXML_W_TAG_OPEN;
+   }
+}
+
+/* A name is not checked against the XML grammar, but it has to be
+ * there and must not end the tag it is written into. */
+static int rxml_w_name_ok(const char *name)
+{
+   if (!name || !*name)
+      return 0;
+   for (; *name; name++)
+   {
+      unsigned char c = (unsigned char)*name;
+      if (c <= 0x20 || c == '<' || c == '>' || c == '/' || c == '='
+            || c == '"' || c == '\'' || c == '&')
+         return 0;
+   }
+   return 1;
+}
+
+rxml_writer_t *rxml_writer_new(const char *indent)
+{
+   rxml_writer_t *w = (rxml_writer_t*)calloc(1, sizeof(*w));
+   if (!w)
+      return NULL;
+   if (indent)
+   {
+      size_t n = strlen(indent);
+      if (!(w->indent = (char*)malloc(n + 1)))
+      {
+         free(w);
+         return NULL;
+      }
+      memcpy(w->indent, indent, n + 1);
+      w->indent_len = n;
+      w->pretty     = 1;
+   }
+   return w;
+}
+
+void rxml_writer_free(rxml_writer_t *w)
+{
+   if (!w)
+      return;
+   free(w->buf);
+   free(w->frames);
+   free(w->indent);
+   free(w);
+}
+
+void rxml_write_declaration(rxml_writer_t *w)
+{
+   if (w->error)
+      return;
+   if (w->len)
+   {
+      w->error = 1;
+      return;
+   }
+   rxml_w_puts(w, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+}
+
+void rxml_write_open(rxml_writer_t *w, const char *name)
+{
+   struct rxml_writer_frame *f;
+   if (w->error)
+      return;
+   if (!rxml_w_name_ok(name) || (!w->depth && w->root_done))
+   {
+      /* no name, or a second root element */
+      w->error = 1;
+      return;
+   }
+   if (w->depth == w->frames_cap)
+   {
+      size_t cap = w->frames_cap ? w->frames_cap * 2 : 16;
+      struct rxml_writer_frame *frames;
+      if (cap > (size_t)-1 / sizeof(*frames) || !(frames =
+               (struct rxml_writer_frame*)realloc(w->frames,
+                  cap * sizeof(*frames))))
+      {
+         w->error = 1;
+         return;
+      }
+      w->frames     = frames;
+      w->frames_cap = cap;
+   }
+   if (w->depth)
+   {
+      rxml_w_seal(w);
+      w->frames[w->depth - 1].flags |= RXML_W_CHILDREN;
+   }
+   if (w->len)
+      rxml_w_newline(w, w->depth);
+   rxml_w_put(w, "<", 1);
+   f           = &w->frames[w->depth];
+   f->name_off = w->len;
+   f->name_len = strlen(name);
+   f->flags    = RXML_W_TAG_OPEN;
+   f->node     = NULL;
+   rxml_w_put(w, name, f->name_len);
+   if (!w->error)
+      w->depth++;
+}
+
+void rxml_write_attrib(rxml_writer_t *w, const char *name, const char *value)
+{
+   if (w->error)
+      return;
+   if (!w->depth || !(w->frames[w->depth - 1].flags & RXML_W_TAG_OPEN)
+         || !rxml_w_name_ok(name) || !value)
+   {
+      w->error = 1;
+      return;
+   }
+   rxml_w_put(w, " ", 1);
+   rxml_w_puts(w, name);
+   rxml_w_put(w, "=\"", 2);
+   rxml_w_escaped(w, value, 1);
+   rxml_w_put(w, "\"", 1);
+}
+
+void rxml_write_text(rxml_writer_t *w, const char *text)
+{
+   if (w->error)
+      return;
+   if (!w->depth || !text)
+   {
+      w->error = 1;
+      return;
+   }
+   if (!*text)
+      return;
+   rxml_w_seal(w);
+   rxml_w_escaped(w, text, 0);
+}
+
+void rxml_write_close(rxml_writer_t *w)
+{
+   struct rxml_writer_frame *f;
+   if (w->error)
+      return;
+   if (!w->depth)
+   {
+      w->error = 1;
+      return;
+   }
+   f = &w->frames[w->depth - 1];
+   if (f->flags & RXML_W_TAG_OPEN)
+      rxml_w_put(w, " />", 3);
+   else
+   {
+      size_t off = f->name_off;
+      size_t n   = f->name_len;
+      if (f->flags & RXML_W_CHILDREN)
+         rxml_w_newline(w, w->depth - 1);
+      rxml_w_put(w, "</", 2);
+      /* reserve before copying from the buffer into itself */
+      if (!w->error && w->len + n + 2 > w->cap && !rxml_w_grow(w, n + 1))
+         w->error = 1;
+      rxml_w_put(w, w->buf + off, n);
+      rxml_w_put(w, ">", 1);
+   }
+   if (w->error)
+      return;
+   if (!--w->depth)
+   {
+      w->root_done = 1;
+      rxml_w_newline(w, 0);
+   }
+}
+
+void rxml_write_element(rxml_writer_t *w, const char *name, const char *text)
+{
+   rxml_write_open(w, name);
+   if (text)
+      rxml_write_text(w, text);
+   rxml_write_close(w);
+}
+
+void rxml_write_node(rxml_writer_t *w, const struct rxml_node *node)
+{
+   /* Iterative, the writer's own element stack keeping each open
+    * element's node: a document as deep as the parser allows does not
+    * run this off the C stack. */
+   const struct rxml_node *n = node;
+   size_t base;
+   if (w->error)
+      return;
+   if (!n)
+   {
+      w->error = 1;
+      return;
+   }
+   base = w->depth;
+   for (;;)
+   {
+      const struct rxml_attrib_node *a;
+      rxml_write_open(w, n->name);
+      if (w->error)
+         return;
+      w->frames[w->depth - 1].node = n;
+      for (a = n->attrib; a; a = a->next)
+         rxml_write_attrib(w, a->attrib, a->value ? a->value : "");
+      if (n->data)
+         rxml_write_text(w, n->data);
+      if (w->error)
+         return;
+      if (n->children)
+      {
+         n = n->children;
+         continue;
+      }
+      /* Close this element, then each ancestor it was the last child
+       * of, up to the next sibling - or back where it started. */
+      for (;;)
+      {
+         rxml_write_close(w);
+         if (w->error || w->depth == base)
+            return;
+         if (n->next)
+         {
+            n = n->next;
+            break;
+         }
+         n = w->frames[w->depth - 1].node;
+      }
+   }
+}
+
+const char *rxml_writer_data(rxml_writer_t *w, size_t *len)
+{
+   if (w->error || w->depth || !w->root_done)
+      return NULL;
+   w->buf[w->len] = '\0';
+   if (len)
+      *len = w->len;
+   return w->buf;
+}
+
+int rxml_writer_failed(const rxml_writer_t *w)
+{
+   return w->error;
+}
+
 /* Keep the single-translation-unit (griffin) namespace clean. */
 #undef RXML_CN
 #undef RXML_CNS
@@ -1917,6 +2312,8 @@ const char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
 #undef RXML_CAS
 #undef RXML_NAME_BUDGET
 #undef RXML_COLD
+#undef RXML_W_TAG_OPEN
+#undef RXML_W_CHILDREN
 #undef RXML_NOINLINE
 #undef rxml_is_name
 #undef rxml_is_namestart
