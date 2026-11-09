@@ -14,6 +14,9 @@
  *    up leaves no screen;
  *  - a menu driver that shows no screens (null) takes no request, and
  *    a screen it can't push back doesn't take the frame;
+ *  - a command interface's buttons and MENU requests and the network
+ *    pad answer neither the warning nor the turn-off confirm, and
+ *    still move the cursor with neither up;
  *  - Settings > Core > Check Core Signatures: Off asks even with
  *    confirmations off and Back keeps the checks; On and Start ask
  *    nothing; a read-only store changes nothing; an inactive one hides
@@ -338,6 +341,180 @@ static void lane_null(void)
          "null: Cancel didn't answer the request");
 }
 
+/* Synthetic input: a command interface (its buttons and MENU requests)
+ * and the network pad. The pad's poll reads no socket with every user
+ * off, so remote_st_ptr holds what the frame sees. */
+#ifdef HAVE_COMMAND
+static command_t syn_cmd;
+static int syn_slot = -1;
+static unsigned syn_cmd_press;
+static char syn_reply[160];
+
+static void syn_cmd_poll(command_t *cmd)
+{
+   unsigned i;
+   for (i = 0; i < 16; i++)
+      if (syn_cmd_press & (1u << i))
+         cmd->state[i] = true;
+   syn_cmd_press = 0;
+}
+
+static void syn_cmd_reply(command_t *cmd, const char *data, size_t len)
+{
+   (void)cmd;
+   if (len >= sizeof(syn_reply))
+      len = sizeof(syn_reply) - 1;
+   memcpy(syn_reply, data, len);
+   syn_reply[len] = '\0';
+}
+#endif
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+static char syn_remote;
+static bool syn_remote_users[MAX_USERS];
+#endif
+
+static void synthetic_install(void)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+#ifdef HAVE_COMMAND
+   int j;
+   memset(&syn_cmd, 0, sizeof(syn_cmd));
+   syn_cmd.poll    = syn_cmd_poll;
+   syn_cmd.replier = syn_cmd_reply;
+   for (j = 0; j < MAX_CMD_DRIVERS && syn_slot < 0; j++)
+      if (!input_st->command[j])
+         syn_slot = j;
+   CHECK(syn_slot >= 0, "fixture: no free command slot");
+   if (syn_slot >= 0)
+      input_st->command[syn_slot] = &syn_cmd;
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   {
+      settings_t *settings = config_get_ptr();
+      unsigned i;
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         syn_remote_users[i] = settings->bools.network_remote_enable_user[i];
+         settings->bools.network_remote_enable_user[i] = false;
+      }
+      CHECK(!input_st->remote, "fixture: a network pad is open");
+      input_st->remote = (input_remote_t*)&syn_remote;
+   }
+#endif
+   (void)input_st;
+}
+
+static void synthetic_remove(void)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+#ifdef HAVE_COMMAND
+   if (syn_slot >= 0)
+      input_st->command[syn_slot] = NULL;
+   syn_slot = -1;
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   {
+      settings_t *settings = config_get_ptr();
+      unsigned i;
+      input_st->remote = NULL;
+      for (i = 0; i < MAX_USERS; i++)
+         settings->bools.network_remote_enable_user[i] = syn_remote_users[i];
+   }
+#endif
+   (void)input_st;
+}
+
+/* A frame with buttons down on the command interface, then frames
+ * with them up */
+static void press_cmd(unsigned buttons)
+{
+#ifdef HAVE_COMMAND
+   syn_cmd_press = buttons;
+#endif
+   pump(1);
+   pump(3);
+}
+
+static void press_remote(unsigned buttons)
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   input_st->remote_st_ptr.buttons[0] = buttons;
+   pump(1);
+   input_st->remote_st_ptr.buttons[0] = 0;
+#endif
+   pump(3);
+}
+
+/* A MENU request; true when it was refused */
+static bool menu_request(const char *arg)
+{
+#ifdef HAVE_COMMAND
+   syn_reply[0] = '\0';
+   command_menu(&syn_cmd, arg);
+   pump(4);
+   return string_starts_with(syn_reply, "MENU ERROR");
+#else
+   return true;
+#endif
+}
+
+#define BUTTON(id) (1u << (id))
+
+static void lane_synthetic(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   struct core_check a;
+   char arg[32];
+   size_t i;
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   pump(3);
+   memset(&seen_a, 0, sizeof(seen_a));
+   fake_check(&a, "a_libretro.so", 0x48, CORE_CHECK_UNSIGNED);
+   CHECK(core_warning_push(&a, CORE_WARNING_LOAD, "/cores/a_libretro.so",
+            warn_cb, &seen_a), "fixture: push refused");
+   pump(3);
+   CHECK(shown(), "synthetic: the screen is not shown");
+   i = row(MENU_ENUM_LABEL_CORE_WARNING_LOAD_ONCE);
+   menu_st->selection_ptr = i;
+   press_cmd(BUTTON(RETRO_DEVICE_ID_JOYPAD_A));
+   CHECK(seen_a.calls == 0, "synthetic: a command's A answered the warning");
+   menu_st->selection_ptr = i;
+   press_remote(BUTTON(RETRO_DEVICE_ID_JOYPAD_A));
+   CHECK(seen_a.calls == 0,
+         "synthetic: the network pad's A answered the warning");
+   sprintf(arg, "a %u", (unsigned)i);
+   CHECK(menu_request(arg), "synthetic: a MENU request wasn't refused");
+   CHECK(seen_a.calls == 0, "synthetic: a MENU request answered the warning");
+   menu_st->selection_ptr = row(MENU_ENUM_LABEL_CORE_WARNING_CANCEL);
+   press_cmd(BUTTON(RETRO_DEVICE_ID_JOYPAD_DOWN));
+   press_remote(BUTTON(RETRO_DEVICE_ID_JOYPAD_DOWN));
+   CHECK(menu_request("down"), "synthetic: MENU down wasn't refused");
+   CHECK(cursor_on_cancel(), "synthetic: Down moved the cursor");
+   CHECK(shown() && seen_a.calls == 0, "synthetic: the screen went away");
+   ok_on(row(MENU_ENUM_LABEL_CORE_WARNING_CANCEL));
+   pump(3);
+   CHECK(seen_a.calls == 1 && seen_a.choice == CORE_WARNING_CANCEL,
+         "synthetic: the user's Cancel didn't answer");
+
+   /* Nothing pending: the same input drives the menu */
+   CHECK(!shown(), "synthetic: the screen stayed after Cancel");
+   menu_st->selection_ptr = 0;
+   press_cmd(BUTTON(RETRO_DEVICE_ID_JOYPAD_DOWN));
+#ifdef HAVE_COMMAND
+   CHECK(menu_st->selection_ptr == 1, "synthetic: a command's Down did nothing");
+   CHECK(!menu_request("down"), "synthetic: MENU down was refused");
+   CHECK(menu_st->selection_ptr == 2, "synthetic: MENU down did nothing");
+#endif
+   menu_st->selection_ptr = 0;
+   press_remote(BUTTON(RETRO_DEVICE_ID_JOYPAD_DOWN));
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   CHECK(menu_st->selection_ptr == 1,
+         "synthetic: the network pad's Down did nothing");
+#endif
+}
+
 static void push_core_settings(void)
 {
    generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
@@ -384,6 +561,16 @@ static void lane_setting(const char *dir)
          "setting: Off didn't ask");
    CHECK(core_trust_runtime_checks_on(),
          "setting: Off didn't wait for the answer");
+   press_cmd(BUTTON(RETRO_DEVICE_ID_JOYPAD_A));
+   CHECK(menu_st->dialog_st.confirm_cmd == CMD_EVENT_CORE_SIGNATURE_CHECK_OFF,
+         "setting: a command's A answered the confirm");
+   press_remote(BUTTON(RETRO_DEVICE_ID_JOYPAD_A));
+   CHECK(menu_st->dialog_st.confirm_cmd == CMD_EVENT_CORE_SIGNATURE_CHECK_OFF,
+         "setting: the network pad's A answered the confirm");
+   CHECK(menu_request("a"), "setting: a MENU request wasn't refused");
+   CHECK(core_trust_runtime_checks_on()
+         && menu_st->dialog_st.confirm_cmd == CMD_EVENT_CORE_SIGNATURE_CHECK_OFF,
+         "setting: synthetic input answered the confirm");
    answer(MENU_ACTION_CANCEL);
    CHECK(!menu_st->dialog_st.confirm_cmd,
          "setting: Back left the confirm open");
@@ -506,7 +693,10 @@ int main(int argc, char *argv[])
       lane_flush();
       lane_back();
       lane_null();
+      synthetic_install();
+      lane_synthetic();
       lane_setting(dir);
+      synthetic_remove();
    }
 
    main_exit(NULL);
