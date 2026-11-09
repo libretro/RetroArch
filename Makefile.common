@@ -393,6 +393,24 @@ OBJ += \
        runtime_file.o \
        disk_index_file.o
 
+# Core signatures: libretro's keys.
+# HAVE_CORE_LOAD_CHECK adds the check at every core load.
+ifeq ($(HAVE_DYNAMIC), 1)
+   ifeq ($(HAVE_CRYPTO), 1)
+      ifeq ($(HAVE_CORE_SIGNATURES), 1)
+         DEFINES += -DHAVE_CORE_SIGNATURES
+         OBJ     += core_signature.o \
+                    core_signature_io.o
+         ifeq ($(HAVE_CORE_LOAD_CHECK), 1)
+            DEFINES += -DHAVE_CORE_LOAD_CHECK
+         endif
+         ifeq ($(HAVE_CORE_SIGNING_TEST_KEY), 1)
+            DEFINES += -DHAVE_CORE_SIGNING_TEST_KEY
+         endif
+      endif
+   endif
+endif
+
 ifeq ($(HAVE_SCREENSHOTS), 1)
    DEFINES += -DHAVE_SCREENSHOTS
    OBJ     += tasks/task_screenshot.o

@@ -578,6 +578,10 @@ check_val '' FLAC '-lFLAC' '' flac '' '' false
 
 check_enabled SSL RETROSSL 'retro ssl' 'ssl is' false
 check_enabled CRYPTO RETROSSL 'retro ssl' 'crypto is' false
+check_enabled DYNAMIC CORE_SIGNATURES 'core signatures' 'dynamic loading is' false
+check_enabled CRYPTO CORE_SIGNATURES 'core signatures' 'crypto is' false
+check_enabled CORE_SIGNATURES CORE_LOAD_CHECK 'core load check' 'core signatures is' false
+check_enabled CORE_SIGNATURES CORE_SIGNING_TEST_KEY 'core signing test key' 'core signatures is' false
 check_enabled SSL MBEDTLS 'system mbedtls' 'ssl is' false
 check_enabled SSL BEARSSL 'system bearssl' 'ssl is' false
 

@@ -17,6 +17,11 @@ HAVE_SAF := 1
 # but sockets; the NFSv3/v4 client and its nfs:// backend likewise.
 HAVE_CRYPTO   := 1
 HAVE_KEYCHAIN := 1
+HAVE_CORE_SIGNATURES := 1
+# ndk-build HAVE_CORE_LOAD_CHECK=1 to check every core as it loads
+HAVE_CORE_LOAD_CHECK := 0
+# ndk-build HAVE_CORE_SIGNING_TEST_KEY=1 for test builds only
+HAVE_CORE_SIGNING_TEST_KEY := 0
 HAVE_RETROSSL := 1
 HAVE_RETROSMB := 1
 HAVE_RETRONFS := 1
@@ -96,6 +101,15 @@ ifeq ($(HAVE_CRYPTO),1)
    endif
    ifeq ($(HAVE_RETROSMB),1)
       DEFINES += -DHAVE_SMBCLIENT -DHAVE_RETROSMB
+   endif
+   ifeq ($(HAVE_CORE_SIGNATURES),1)
+      DEFINES += -DHAVE_CORE_SIGNATURES
+      ifeq ($(HAVE_CORE_LOAD_CHECK),1)
+         DEFINES += -DHAVE_CORE_LOAD_CHECK
+      endif
+      ifeq ($(HAVE_CORE_SIGNING_TEST_KEY),1)
+         DEFINES += -DHAVE_CORE_SIGNING_TEST_KEY
+      endif
    endif
 endif
 
