@@ -401,7 +401,8 @@ ifeq ($(HAVE_DYNAMIC), 1)
          DEFINES += -DHAVE_CORE_SIGNATURES
          OBJ     += core_signature.o \
                     core_signature_io.o \
-                    core_trust_runtime.o
+                    core_trust_runtime.o \
+                    core_install_check.o
          ifeq ($(HAVE_CORE_LOAD_CHECK), 1)
             DEFINES += -DHAVE_CORE_LOAD_CHECK
          endif

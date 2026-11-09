@@ -23,6 +23,7 @@ on:
       - 'samples/tasks/cloudsync/**'
       - 'samples/tasks/content_prefetch/**'
       - 'samples/tasks/core_backup/**'
+      - 'samples/tasks/core_install_check/**'
       - 'samples/tasks/core_signature/**'
       - 'samples/tasks/core_trust_runtime/**'
       - 'samples/tasks/core_updater/**'
@@ -72,6 +73,7 @@ on:
       - 'samples/tasks/cloudsync/**'
       - 'samples/tasks/content_prefetch/**'
       - 'samples/tasks/core_backup/**'
+      - 'samples/tasks/core_install_check/**'
       - 'samples/tasks/core_signature/**'
       - 'samples/tasks/core_trust_runtime/**'
       - 'samples/tasks/core_updater/**'
@@ -1090,6 +1092,22 @@ jobs:
           make clean && make -j$(nproc) LOAD_CHECK=0 RUNNER="timeout 600" check
           make clean && TSAN_OPTIONS=halt_on_error=1 \
              make -j$(nproc) SANITIZER=thread RUNNER="timeout 600" check
+          make clean
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -j$(nproc) CC=x86_64-w64-mingw32-gcc \
+             RUNNER="timeout 600 wine" check
+          make clean
+
+      - name: Build and run core_install_check_test (ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: samples/tasks/core_install_check
+        run: |
+          set -eu
+          # A core staged for install: its check, its .sig and the move
+          # into place, as the updater and restores use them.
+          make clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make -j$(nproc) SANITIZER=address,undefined \
+             RUNNER="timeout 600" check
           make clean
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -j$(nproc) CC=x86_64-w64-mingw32-gcc \
