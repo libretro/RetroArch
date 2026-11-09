@@ -240,6 +240,10 @@ bool android_get_vfs_authorized_locations(
 #include "configuration.h"
 #include "list_special.h"
 #include "core_option_manager.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "core_load_check.h"
+#include "core_trust_runtime.h"
+#endif
 #ifdef HAVE_CHEATS
 #include "cheat_manager.h"
 #endif
@@ -839,7 +843,9 @@ void libretro_get_environment_info(
    runloop_st->flags &= ~RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
 }
 
-dylib_t runloop_core_dylib_load(const char *path, bool quiet)
+/* No check: where there is no trust store or checks are off, or on a
+ * worker whose core the main thread found none for. Any thread. */
+dylib_t runloop_core_dylib_open(const char *path, bool quiet)
 {
 #if defined(ANDROID)
    /* Another app's intent can name the core.  The resolved path that
@@ -859,6 +865,32 @@ dylib_t runloop_core_dylib_load(const char *path, bool quiet)
 #else
    return dylib_load(path);
 #endif
+}
+
+/* Main thread: every core is opened here, once it is checked */
+dylib_t runloop_core_dylib_load(const char *path, bool quiet)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   dylib_t lib = NULL;
+#if defined(ANDROID)
+   /* The check reads the real path the open uses */
+   char real_path[PATH_MAX_LENGTH];
+   if (!android_core_path_resolve(path, real_path, sizeof(real_path)))
+      return runloop_core_dylib_open(path, quiet);
+   path = real_path;
+#endif
+   switch (core_load_check_open(path, &lib))
+   {
+      case CORE_LOAD_GATE_OPENED:
+         return lib;
+      case CORE_LOAD_GATE_REFUSED:
+         dylib_error();
+         return NULL;
+      case CORE_LOAD_GATE_OFF:
+         break;
+   }
+#endif
+   return runloop_core_dylib_open(path, quiet);
 }
 
 /* Whether the core path is resolved through symlinks before it is
@@ -912,7 +944,7 @@ static void core_preload_task_handler(retro_task_t *task)
    core_preload_handle_t *h = task ? (core_preload_handle_t*)task->state : NULL;
    /* The open: the one thing off the main thread */
    if (h && h->path)
-      h->lib = runloop_core_dylib_load(h->path, true);
+      h->lib = runloop_core_dylib_open(h->path, true);
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
@@ -990,6 +1022,12 @@ bool runloop_core_preload_begin(void)
    core_preload_handle_t *h    = NULL;
    const char            *path = path_get(RARCH_PATH_CORE);
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   /* The open waits for the core's check */
+   if (core_trust_runtime_active())
+      return false;
+#endif
+
    /* Only a plain core named by the push, and only with a worker to
     * open it on: inline, the open would run on this thread at the next
     * check, which is the synchronous path. */
@@ -1065,15 +1103,24 @@ static dylib_t load_dynamic_core(const char *path, char *s,
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(s, len, resolve_symlinks);
-#if defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
-   {
-      dylib_t pre = core_preload_take(path);
-      if (pre)
-         return pre;
-   }
+#if defined(HAVE_CORE_LOAD_CHECK) && defined(_WIN32)
+   /* As given: _wfullpath drops the '.' the check refuses */
+   if (!core_trust_runtime_active() || !core_load_verbatim_dot(s))
 #endif
-   return runloop_core_dylib_load(path, false);
+      path_resolve_realpath(s, len, resolve_symlinks);
+   {
+      dylib_t lib = NULL;
+#if defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
+      lib = core_preload_take(path);
+#endif
+      if (!lib)
+         lib = runloop_core_dylib_load(path, false);
+#ifdef HAVE_CORE_LOAD_CHECK
+      if (lib)
+         core_load_check_loaded();
+#endif
+      return lib;
+   }
 }
 
 /* @live is set when @path opened the library already loaded as the
@@ -5078,7 +5125,13 @@ bool libretro_get_system_info(
       core_probe_capture = NULL;
       if (!lib)
       {
-         const char *err = dylib_error();
+         const char *err = NULL;
+#ifdef HAVE_CORE_LOAD_CHECK
+         /* Refused by the load check: already logged */
+         if (core_load_check_refused(path))
+            return false;
+#endif
+         err = dylib_error();
          RARCH_ERR("[Core] %s: \"%s\"\n",
                msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
                path);
@@ -5436,6 +5489,9 @@ static void uninit_libretro_symbols(
 #ifdef HAVE_DYNAMIC
    if (lib_handle_local)
       dylib_close(lib_handle_local);
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_unloaded();
+#endif
 #endif
 
 #ifdef HAVE_OPENXR

@@ -256,6 +256,9 @@
 #ifdef HAVE_CORE_SIGNATURES
 #include "core_trust_runtime.h"
 #endif
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "core_load_check.h"
+#endif
 
 /* RetroArch provides its own entry point (main, below) and runloop,
  * creates its own Win32 window (gfx/common/win32_common.c), and
@@ -7073,6 +7076,9 @@ void main_exit(void *args)
    /* A blocking cloud sync driver's worker: one bounded wait on the
     * way out, so no driver call runs into the teardown below. */
    cloud_sync_deinit(1000);
+#endif
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_deinit();
 #endif
 #ifdef HAVE_CORE_SIGNATURES
    core_trust_runtime_deinit();

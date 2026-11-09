@@ -130,7 +130,7 @@ dylib_t dylib_load(const char *path)
    return (dylib_t)(uintptr_t)(0x1000 + ++lib_loads);
 }
 
-dylib_t runloop_core_dylib_load(const char *path, bool quiet)
+dylib_t runloop_core_dylib_open(const char *path, bool quiet)
 {
    return dylib_load(path);
 }
