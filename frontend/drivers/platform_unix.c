@@ -365,6 +365,18 @@ static void android_second_surface_term(struct android_app *android_app)
       android_app_write_cmd(android_app, APP_CMD_SECOND_WINDOW_CHANGED);
 }
 
+/* Filled by SecondDisplayController on the UI thread just before the
+ * native call that names it and read in place during that call, so
+ * what it holds crosses JNI with nothing copied. The Java class's
+ * SHARED_ sizes follow this layout. */
+typedef struct android_second_shared
+{
+   /* For each pointer: VIDEO_POS_PACK, then id << 1 | down */
+   int32_t touches[MAX_TOUCH * 2];
+} android_second_shared_t;
+
+static android_second_shared_t *android_second_shared = NULL;
+
 /* Element @i of @strings into @s, "" for none */
 static void android_jni_string_at(JNIEnv *env, jobjectArray strings,
       jsize i, char *s, size_t len)
@@ -528,51 +540,74 @@ static void android_second_wake(struct android_app *android_app)
       ALooper_wake(looper);
 }
 
-/* For each pointer of a touch on the second display. Downs and moves
- * keep room in the ring for every finger's up. */
-JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeTouch(
-      JNIEnv *env, jclass clazz, jint pointer_id, jint x, jint y,
-      jboolean down, jint generation)
+/* A MotionEvent's pointers, read where Java wrote them: one crossing
+ * and one wake for the event, whatever its finger count. Downs and
+ * moves keep room in the ring for every finger's up. */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeTouches(
+      JNIEnv *env, jclass clazz, jint count, jint generation)
 {
    /* Ids whose last record written was a down; UI thread only */
    static uint32_t down_ids        = 0;
    android_second_touch_t touch;
-   uint32_t bit;
    size_t room;
+   jint i;
+   bool wrote                      = false;
    struct android_app *android_app = g_android_early;
+   const android_second_shared_t *shared = android_second_shared;
 
-   if (!android_app)
+   if (!android_app || !shared)
       return;
-#ifdef DEBUG_ANDROID_INPUT
-   RARCH_LOG("[RA Input] Second display touch id=%d x=%d y=%d down=%d"
-         " surface=%d\n", (int)pointer_id, (int)x, (int)y,
-         (int)(down != JNI_FALSE), (int)generation);
-#endif
-   /* MotionEvent ids are 0-31 */
-   if (pointer_id < 0 || pointer_id > 31)
-      return;
-   bit  = (uint32_t)1 << pointer_id;
+   if (count > MAX_TOUCH)
+      count = MAX_TOUCH;
    room = retro_spsc_write_avail(&android_app->second_display.touches);
-   if (down != JNI_FALSE)
+   for (i = 0; i < count; i++)
    {
-      if (room < (MAX_TOUCH + 1) * sizeof(touch))
-         return;
-      down_ids |= bit;
+      uint32_t bit;
+      int32_t word     = shared->touches[i * 2 + 1];
+      int32_t id       = word >> 1;
+      bool down        = (word & 1) != 0;
+#ifdef DEBUG_ANDROID_INPUT
+      RARCH_LOG("[RA Input] Second display touch id=%d pos=%08x down=%d"
+            " surface=%d\n", (int)id, (unsigned)shared->touches[i * 2],
+            (int)down, (int)generation);
+#endif
+      /* MotionEvent ids are 0-31 */
+      if (id < 0 || id > 31)
+         continue;
+      bit = (uint32_t)1 << id;
+      if (down)
+      {
+         if (room < (MAX_TOUCH + 1) * sizeof(touch))
+            continue;
+         down_ids |= bit;
+      }
+      else
+      {
+         if (!(down_ids & bit) || room < sizeof(touch))
+            continue;
+         down_ids &= ~bit;
+      }
+      touch.pointer_id = id;
+      touch.pos        = (uint32_t)shared->touches[i * 2];
+      touch.generation = generation;
+      touch.down       = down;
+      retro_spsc_write(&android_app->second_display.touches, &touch,
+            sizeof(touch));
+      room            -= sizeof(touch);
+      wrote            = true;
    }
-   else
-   {
-      if (!(down_ids & bit) || room < sizeof(touch))
-         return;
-      down_ids &= ~bit;
-   }
-   touch.pointer_id = pointer_id;
-   touch.x          = x;
-   touch.y          = y;
-   touch.generation = generation;
-   touch.down       = (down != JNI_FALSE);
-   retro_spsc_write(&android_app->second_display.touches, &touch,
-         sizeof(touch));
-   android_second_wake(android_app);
+   if (wrote)
+      android_second_wake(android_app);
+}
+
+/* The memory the two sides share, once per Activity */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeShare(
+      JNIEnv *env, jclass clazz, jobject buffer)
+{
+   if ((*env)->GetDirectBufferCapacity(env, buffer)
+         >= (jlong)sizeof(android_second_shared_t))
+      android_second_shared = (android_second_shared_t*)
+         (*env)->GetDirectBufferAddress(env, buffer);
 }
 
 /* Java could not start move @move, which

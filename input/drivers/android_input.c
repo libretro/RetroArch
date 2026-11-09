@@ -1191,7 +1191,7 @@ static void android_input_poll_second_touches(android_input_t *android,
          android->second_pointer_id[i] = touch.pointer_id;
          android->second_pointer_count++;
       }
-      android->second_pointer[i].pos    = VIDEO_POS_PACK(touch.x, touch.y);
+      android->second_pointer[i].pos    = touch.pos;
       android->second_pointer[i].placed = true;
       android->second_window            = window;
       android->second_generation        = generation;

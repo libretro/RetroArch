@@ -181,8 +181,7 @@ struct android_input_reader
 typedef struct android_second_touch
 {
    int32_t pointer_id;
-   int32_t x;          /* surface pixels */
-   int32_t y;
+   uint32_t pos;       /* surface pixels, VIDEO_POS_PACK */
    int32_t generation; /* nativeSurfaceChanged()'s, for the surface */
    int32_t down;
 } android_second_touch_t;

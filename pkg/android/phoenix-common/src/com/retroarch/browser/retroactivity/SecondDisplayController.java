@@ -44,6 +44,8 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -66,6 +68,12 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static final int FLAG_INTERNAL = 256;
 
   private static final String TAG = "RetroArch";
+  /* android_second_shared_t's layout: filled just before the native
+   * call that names it, read in place there */
+  private static final int SHARED_TOUCHES_MAX = 16;
+  private static final int SHARED_SIZE        = SHARED_TOUCHES_MAX * 8;
+  private static final ByteBuffer SHARED = ByteBuffer
+      .allocateDirect(SHARED_SIZE).order(ByteOrder.nativeOrder());
   private static final int REFOCUS_FIRST_MS   = 250;
   private static final int REFOCUS_RETRY_MS   = 250;
   private static final int REFOCUS_TIMEOUT_MS = 1000;
@@ -221,6 +229,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     this.activity  = activity;
     displayManager = (DisplayManager)
         activity.getSystemService(Context.DISPLAY_SERVICE);
+    nativeShare(SHARED);
   }
 
   void onStart()
@@ -876,7 +885,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     {
       int action = e.getActionMasked();
       int index  = e.getActionIndex();
-      int count  = e.getPointerCount();
+      int count  = Math.min(e.getPointerCount(), SHARED_TOUCHES_MAX);
       int g      = generation;
       if (g <= 0)
         return true;
@@ -885,9 +894,11 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         boolean up = action == MotionEvent.ACTION_UP
             || action == MotionEvent.ACTION_CANCEL
             || (action == MotionEvent.ACTION_POINTER_UP && i == index);
-        nativeTouch(e.getPointerId(i), (int)e.getX(i), (int)e.getY(i),
-            !up, g);
+        SHARED.putInt(i * 8, ((int)e.getX(i) << 16)
+            | ((int)e.getY(i) & 0xffff));
+        SHARED.putInt(i * 8 + 4, (e.getPointerId(i) << 1) | (up ? 0 : 1));
       }
+      nativeTouches(count, g);
       return true;
     }
 
@@ -956,7 +967,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static native int nativeSurfaceChanged(Surface surface, int width,
       int height, int request);
   static native void nativeSurfaceDestroyed();
-  static native void nativeTouch(int pointerId, int x, int y,
-      boolean down, int generation);
+  static native void nativeShare(ByteBuffer shared);
+  static native void nativeTouches(int count, int generation);
   static native void nativeMoveFailed(int move);
 }
