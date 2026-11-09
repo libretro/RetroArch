@@ -190,6 +190,16 @@ MENU_CASES = [
 # border pulses. A menu laid out for one eye differs in over 200000.
 MENU_DIFF_MAX = 20000
 
+# RGUI is drawn in the picture's rectangle, not the whole window: a 4:3
+# picture on the 5:3 screen leaves 160-pixel black strips either side.
+# (name, map option, settings, points)
+MENU_FIT_CASE = ('no-map-rgui-fit', 'none',
+                 {'aspect_ratio_index': '0', 'menu_driver': 'rgui',
+                  'rgui_menu_color_theme': '4', 'rgui_particle_effect': '0',
+                  'menu_timedate_enable': 'false'}, [])
+MENU_FIT_DRIVERS = ('d3d10', 'd3d11', 'd3d12')
+MENU_FIT_STRIP = 150
+
 # The menu draws its own cursor where it has the pointer: with a per-eye
 # UI, at the pointer in the copy it is over and at the matching place in
 # the other. Each case holds the pointer at two window points on one menu
@@ -1334,6 +1344,25 @@ def run_menu_case(retroarch, root, driver, case):
     return errors
 
 
+def run_menu_fit_case(retroarch, root, driver, case):
+    """RGUI over a picture narrower than the window stays inside it."""
+    errors = run_case(retroarch, root, driver, case, menu=True)
+    path = os.path.join(root, '%s-%s' % (driver, case[0]), 'menu.png')
+    if errors or not os.path.exists(path):
+        return errors or ['no menu screenshot']
+    w, h, bpp, rows = read_png(path)
+    lit = 0
+    for x in list(range(MENU_FIT_STRIP)) + list(range(w - MENU_FIT_STRIP, w)):
+        for y in range(h):
+            if max(rows[y][x * bpp:x * bpp + 3]) > TOLERANCE:
+                lit += 1
+    if lit:
+        errors.append('%d lit pixels in the strips beside the picture' % lit)
+    if max(rows[h // 2][w // 2 * bpp:(w // 2 + 40) * bpp]) <= TOLERANCE:
+        errors.append('nothing drawn in the middle of the screen')
+    return errors
+
+
 def cursor_pixels(rows, others, bpp):
     """Where one screen has the cursor and the other doesn't: the white
     pixels that differ. The box around the row under the pointer pulses
@@ -1656,6 +1685,11 @@ def driver_jobs(retroarch, root, driver):
         errors = run_menu_case(retroarch, root, driver, case)
         return report('%s/%s' % (driver, case[0]), errors), bool(errors)
 
+    def menu_fit():
+        errors = run_menu_fit_case(retroarch, root, driver, MENU_FIT_CASE)
+        return report('%s/%s' % (driver, MENU_FIT_CASE[0]), errors), \
+            bool(errors)
+
     def pointer(menu, case):
         errors = run_pointer_case(retroarch, root, driver, menu, case)
         return report('%s/%s-%s' % (driver, case[0], menu), errors), \
@@ -1691,6 +1725,8 @@ def driver_jobs(retroarch, root, driver):
              for c in (MEMORY_CASES if driver in MEMORY_HW and not XVFB
                        else []) if wanted(c[0])]
     jobs += [lambda c=c: menu_case(c) for c in MENU_CASES if wanted(c[0])]
+    if driver in MENU_FIT_DRIVERS and wanted(MENU_FIT_CASE[0]):
+        jobs.append(menu_fit)
     jobs += [lambda m=m, c=c: pointer(m, c) for m in sorted(POINTER_MENUS)
              for c in POINTER_CASES
              if wanted(c[0]) and driver not in NO_POINTER_DRIVERS]

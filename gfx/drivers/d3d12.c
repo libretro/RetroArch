@@ -9353,6 +9353,11 @@ static void d3d12_menu_texture_draw(d3d12_video_t *d3d12)
          cmd->lpVtbl->RSSetViewports(cmd, 1, &menu_vp);
          cmd->lpVtbl->RSSetScissorRects(cmd, 1, &menu_sc);
       }
+      else
+      {
+         cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->frame.viewport);
+         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->frame.scissorRect);
+      }
 
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
             d3d12->menu.texture.gpu_descriptor[0]);

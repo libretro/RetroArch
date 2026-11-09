@@ -7160,6 +7160,8 @@ static void d3d11_menu_texture_draw(d3d11_video_t *d3d11)
          menu_vp.MaxDepth = 1.0f;
          context->lpVtbl->RSSetViewports(context, 1, &menu_vp);
       }
+      else
+         context->lpVtbl->RSSetViewports(context, 1, &d3d11->frame.viewport);
 
       {
          d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND];
