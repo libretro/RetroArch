@@ -1048,9 +1048,9 @@ static void test_xr_edit_rows(void)
    settings->bools.video_openxr_enable = false;
 }
 
-/* Laser Beam is on Settings > Input > Controllers, not with the
- * headset's rows: Edit Mode Only unless the config says otherwise; the
- * menu steps through its values. */
+/* Laser Beam is on Settings > Input > Controllers > Headset Controls,
+ * not with the headset's rows: Edit Mode Only unless the config says
+ * otherwise; the menu steps through its values. */
 static void test_xr_laser_beam_row(void)
 {
    settings_t *settings = config_get_ptr();

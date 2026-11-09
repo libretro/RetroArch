@@ -328,19 +328,23 @@ static void lane_headset_rows(void)
    set_driver(HEADSET_DRIVER);
 }
 
-/* The headset's input rows are the last rows of Settings > Input >
- * Controllers, in order, and none of them is among its video rows; a
- * hotplug's rebuild keeps the cursor on its row, not at its index;
- * under a driver without a headset path there are none. */
+/* The headset's input rows, in Settings > Input > Controllers >
+ * Headset Controls. */
+static const char *const headset_input_rows[] = {
+   MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR,
+   MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR,
+   MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM_STR,
+   MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS_STR,
+   MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON_STR,
+   MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH_STR };
+
+/* Settings > Input > Controllers ends with Headset Controls, and none
+ * of the headset's input rows is among its rows or the headset's video
+ * rows; a hotplug's rebuild keeps the cursor on it, not at its index;
+ * under a driver without a headset path it is not listed. */
 static void lane_controller_layout(void)
 {
-   static const char *const rows[] = {
-      MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH_STR };
+   const char *hc = MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS_STR;
    file_list_t *buf;
    unsigned i;
    int r;
@@ -348,44 +352,38 @@ static void lane_controller_layout(void)
 
    set_driver(HEADSET_DRIVER);
    open_stereo_list();
-   for (i = 0; i < ARRAY_SIZE(rows); i++)
-      CHECK(row(rows[i]) < 0, "%s is listed with the headset's video rows",
-            rows[i]);
+   for (i = 0; i < ARRAY_SIZE(headset_input_rows); i++)
+      CHECK(row(headset_input_rows[i]) < 0,
+            "%s is listed with the headset's video rows",
+            headset_input_rows[i]);
    open_controllers_list();
    buf = selection_buf();
-   for (i = 0; i < ARRAY_SIZE(rows); i++)
-   {
-      r = row(rows[i]);
-      CHECK(buf && r >= 0
-            && (size_t)r == buf->size - ARRAY_SIZE(rows) + i,
-            "%s is row %d of the %u of Controllers", rows[i], r,
-            buf ? (unsigned)buf->size : 0);
-   }
+   r   = row(hc);
+   CHECK(buf && r >= 0 && (size_t)r == buf->size - 1,
+         "Headset Controls is row %d of the %u of Controllers", r,
+         buf ? (unsigned)buf->size : 0);
+   for (i = 0; i < ARRAY_SIZE(headset_input_rows); i++)
+      CHECK(row(headset_input_rows[i]) < 0, "%s is listed in Controllers",
+            headset_input_rows[i]);
 
-   /* A controller connecting puts a row above them, as Separate does. */
-   for (i = 0; i < ARRAY_SIZE(rows); i++)
-   {
-      open_controllers_list();
-      r                      = row(rows[i]);
-      menu_st->selection_ptr = (r > 0) ? (size_t)r : 0;
-      input_config_set_device_name(0, "Test Pad");
-      rebuild_as_hotplug();
-      r = row(rows[i]);
-      CHECK(r == (int)i + 1 && menu_st->selection_ptr == i + 1,
-            "a row added above %s took the cursor (cursor %u, row %d)",
-            rows[i], (unsigned)menu_st->selection_ptr, r);
-      input_config_clear_device_name(0);
-      rebuild_as_hotplug();
-      r = row(rows[i]);
-      CHECK(r == (int)i && menu_st->selection_ptr == i,
-            "the cursor left %s when the row above went (cursor %u, row %d)",
-            rows[i], (unsigned)menu_st->selection_ptr, r);
-   }
+   /* A controller connecting puts a row above it, as Separate does. */
+   menu_st->selection_ptr = (r > 0) ? (size_t)r : 0;
+   input_config_set_device_name(0, "Test Pad");
+   rebuild_as_hotplug();
+   r = row(hc);
+   CHECK(r == 1 && menu_st->selection_ptr == 1,
+         "a row added above Headset Controls took the cursor "
+         "(cursor %u, row %d)", (unsigned)menu_st->selection_ptr, r);
+   input_config_clear_device_name(0);
+   rebuild_as_hotplug();
+   r = row(hc);
+   CHECK(r == 0 && menu_st->selection_ptr == 0,
+         "the cursor left Headset Controls when the row above went "
+         "(cursor %u, row %d)", (unsigned)menu_st->selection_ptr, r);
 
    set_driver(NO_PATH_DRIVER);
    open_controllers_list();
-   for (i = 0; i < ARRAY_SIZE(rows); i++)
-      CHECK(row(rows[i]) < 0, "%s is listed under " NO_PATH_DRIVER, rows[i]);
+   CHECK(row(hc) < 0, "Headset Controls is listed under " NO_PATH_DRIVER);
    set_driver(HEADSET_DRIVER);
 }
 
@@ -1225,6 +1223,86 @@ static void press_ok(int i)
    run_frame();
 }
 
+/* OK on Headset Controls opens the headset's input rows, in order; a
+ * rebuild there leaves the cursor on its row; after a pick in Layout's
+ * dropdown, Cancel puts it back on Headset Controls though a
+ * controller's row went in above; Controllers opened afresh later
+ * starts at its top. */
+static void lane_headset_controls(void)
+{
+   char s[256];
+   size_t depth;
+   unsigned i;
+   int r;
+   file_list_t *buf;
+   const char *label          = NULL;
+   const char *hc             = MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS_STR;
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   set_driver(HEADSET_DRIVER);
+   open_controllers_list();
+   r = row(hc);
+   CHECK(r >= 0, "fixture: no Headset Controls row in Controllers");
+   if (r < 0)
+      return;
+   row_sublabel((size_t)r, s, sizeof(s));
+   CHECK(string_is_equal(s, "Layout, laser pointer and touch settings "
+            "for the headset's controllers."),
+         "Headset Controls' sublabel is \"%s\"", s);
+
+   depth = stack_depth();
+   press_ok(r);
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+   CHECK(stack_depth() == depth + 1 && label && string_is_equal(label,
+            MENU_ENUM_LABEL_DEFERRED_INPUT_HEADSET_CONTROLS_LIST_STR),
+         "OK on Headset Controls opened \"%s\"", label ? label : "");
+   buf = selection_buf();
+   CHECK(buf && buf->size == ARRAY_SIZE(headset_input_rows),
+         "Headset Controls has %u rows, not %u",
+         buf ? (unsigned)buf->size : 0,
+         (unsigned)ARRAY_SIZE(headset_input_rows));
+   for (i = 0; i < ARRAY_SIZE(headset_input_rows); i++)
+      CHECK(row(headset_input_rows[i]) == (int)i,
+            "%s is row %d of Headset Controls, not %u",
+            headset_input_rows[i], row(headset_input_rows[i]), i);
+
+   for (i = 0; i < ARRAY_SIZE(headset_input_rows); i++)
+   {
+      menu_st->selection_ptr = i;
+      input_config_set_device_name(0, "Test Pad");
+      rebuild_as_hotplug();
+      CHECK(menu_st->selection_ptr == i
+            && row(headset_input_rows[i]) == (int)i,
+            "a rebuild of Headset Controls took the cursor off %s "
+            "(cursor %u)", headset_input_rows[i],
+            (unsigned)menu_st->selection_ptr);
+      input_config_clear_device_name(0);
+      rebuild_as_hotplug();
+   }
+
+   /* a pick in Layout's dropdown, then the controllers reconnecting */
+   menu_st->selection_ptr = 0;
+   press(MENU_ACTION_OK);
+   press_ok(0);
+   CHECK(stack_depth() == depth + 1 && row(headset_input_rows[0]) == 0,
+         "a pick in Layout's dropdown did not go back to Headset Controls");
+   input_config_set_device_name(0, "Test Pad");
+   press(MENU_ACTION_CANCEL);
+   r = row(hc);
+   CHECK(stack_depth() == depth && r == 1 && menu_st->selection_ptr == 1,
+         "Cancel out of Headset Controls left the cursor on row %u, "
+         "not on Headset Controls' row %d",
+         (unsigned)menu_st->selection_ptr, r);
+
+   press_ok(r);
+   open_stereo_list();
+   open_controllers_list();
+   CHECK(menu_st->selection_ptr == 0,
+         "Controllers opened after Headset Controls and another list "
+         "put the cursor on row %u", (unsigned)menu_st->selection_ptr);
+   input_config_clear_device_name(0);
+}
+
 /* After @how, Port 1 Controls lists B alone (@on_b) or A and B, A's
  * or B's row "This port", in its Controllers, with the cursor left on
  * Device Index (@cursor). */
@@ -1959,6 +2037,7 @@ int main(int argc, char *argv[])
    lane_on_other_driver();
    lane_headset_rows();
    lane_controller_layout();
+   lane_headset_controls();
    lane_placement();
    lane_touch_rows();
    lane_touch_button_offered();

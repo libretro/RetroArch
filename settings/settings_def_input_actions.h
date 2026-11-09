@@ -20,6 +20,10 @@ S_ACTION(INPUT_CONTROLLERS,
       "input_controllers",
       "Controllers",
       "Choose which player each connected controller plays as.")
+S_ACTION(INPUT_HEADSET_CONTROLS,
+      "input_headset_controls",
+      "Headset Controls",
+      "Layout, laser pointer and touch settings for the headset's controllers.")
 S_ACTION(INPUT_TURBO_FIRE_SETTINGS,
       "input_turbo_fire_settings",
       "Turbo Fire",

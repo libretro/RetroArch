@@ -8050,33 +8050,9 @@ static bool menu_displaylist_refresh(struct menu_state *menu_st, file_list_t *li
    return true;
 }
 
-/* The first headset row's plays_as_row: past every controller row's,
- * so the two cannot mix. */
-#define PLAYS_AS_ROW_LAYOUT (MAX_INPUT_DEVICES + MAX_USERS + 1)
-
-/* The headset's rows at the end of Settings > Input > Controllers, in
- * order, or NULL past them. */
-static const char *menu_displaylist_headset_row(unsigned i)
-{
-   switch (i)
-   {
-      case 0:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR;
-      case 1:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR;
-      case 2:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM_STR;
-      case 3:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS_STR;
-      case 4:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON_STR;
-      case 5:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH_STR;
-      default:
-         break;
-   }
-   return NULL;
-}
+/* Headset Controls' plays_as_row: past every controller row's, so the
+ * two cannot mix. */
+#define PLAYS_AS_ROW_HEADSET (MAX_INPUT_DEVICES + MAX_USERS + 1)
 
 /* Put the cursor back on the Controllers or Port N Controls >
  * Controllers (@page) row in plays_as_row: the rows go in port order,
@@ -8104,11 +8080,10 @@ static void menu_displaylist_restore_plays_as_row(
    }
    for (i = 0; menu->plays_as_row && i < list->size; i++)
    {
-      if (menu->plays_as_row >= PLAYS_AS_ROW_LAYOUT)
+      if (menu->plays_as_row == PLAYS_AS_ROW_HEADSET)
       {
-         const char *row = menu_displaylist_headset_row(
-               menu->plays_as_row - PLAYS_AS_ROW_LAYOUT);
-         if (!row || !string_is_equal(list->list[i].label, row))
+         if (!string_is_equal(list->list[i].label,
+                  MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS_STR))
             continue;
       }
       else if (list->list[i].type
@@ -8158,14 +8133,9 @@ static void menu_displaylist_keep_plays_as_row(
    if (     type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
          && type <  MENU_SETTINGS_INPUT_PLAYS_AS_END)
       menu->plays_as_row = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1;
-   else
-   {
-      unsigned r;
-      const char *row;
-      for (r = 0; (row = menu_displaylist_headset_row(r)); r++)
-         if (string_is_equal(list->list[sel].label, row))
-            menu->plays_as_row = PLAYS_AS_ROW_LAYOUT + r;
-   }
+   else if (string_is_equal(list->list[sel].label,
+            MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS_STR))
+      menu->plays_as_row = PLAYS_AS_ROW_HEADSET;
 }
 
 #ifdef HAVE_NETWORKING
@@ -9488,7 +9458,7 @@ static unsigned menu_displaylist_parse_input_plays_as_add_list(
 
 /* Settings > Input > Controllers: the connected controllers in port
  * order, then those past Max Users, then the Plays As entries of the
- * controllers that are gone, then the headset's rows. */
+ * controllers that are gone, then Headset Controls. */
 static unsigned menu_displaylist_parse_input_controllers(
       file_list_t *list, settings_t *settings)
 {
@@ -9511,33 +9481,11 @@ static unsigned menu_displaylist_parse_input_controllers(
          count++;
    }
 #ifdef HAVE_OPENXR
-   if (video_driver_has_headset_path(settings->arrays.video_driver))
-   {
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_LASER,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH,
-               PARSE_ONLY_BOOL, false) == 0)
-         count++;
-   }
+   if (     video_driver_has_headset_path(settings->arrays.video_driver)
+         && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+               MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS,
+               PARSE_ACTION, false) == 0)
+      count++;
 #endif
    return count;
 }
@@ -9923,6 +9871,22 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_INPUT_CONTROLLERS_LIST:
          count = menu_displaylist_parse_input_controllers(list, settings);
          break;
+#ifdef HAVE_OPENXR
+      case DISPLAYLIST_INPUT_HEADSET_CONTROLS_LIST:
+         {
+            static const menu_displaylist_settings_row_t headset_rows[] = {
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH, PARSE_ONLY_BOOL, false },
+            };
+            count = menu_displaylist_parse_settings_rows(list, settings,
+                  headset_rows, (unsigned)ARRAY_SIZE(headset_rows));
+         }
+         break;
+#endif
       case DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST:
          {
             unsigned user;
@@ -15688,13 +15652,23 @@ static bool menu_displaylist_ctl_internal(
          && menu_st->driver_ctx->list_push(menu_st->driver_data,
             menu_st->userdata, info, type) == 0);
 
-   /* any other list shown in the menu replaces Port N Controls >
-    * Controllers */
-   if (     type != DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST
-         && menu_st->driver_data
+   if (     menu_st->driver_data
          && info->list == MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(
                menu_st, 0))
-      menu_st->driver_data->plays_as_page = 0;
+   {
+      menu_handle_t *menu = menu_st->driver_data;
+      /* any other list shown in the menu replaces Port N Controls >
+       * Controllers */
+      if (type != DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST)
+         menu->plays_as_page = 0;
+      /* back on Controllers, the cursor goes to Headset Controls
+       * wherever the controllers above have moved it */
+      if (type == DISPLAYLIST_INPUT_HEADSET_CONTROLS_LIST)
+         menu->plays_as_row = PLAYS_AS_ROW_HEADSET;
+      else if (   type != DISPLAYLIST_INPUT_CONTROLLERS_LIST
+               && menu->plays_as_row == PLAYS_AS_ROW_HEADSET)
+         menu->plays_as_row = 0;
+   }
 
    if (!push_list)
    {
@@ -18029,6 +18003,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_SHADER_PRESET_MANAGER:
          case DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST:
          case DISPLAYLIST_INPUT_CONTROLLERS_LIST:
+         case DISPLAYLIST_INPUT_HEADSET_CONTROLS_LIST:
          case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
          case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:

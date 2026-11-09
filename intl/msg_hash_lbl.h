@@ -906,6 +906,10 @@ MSG_HASH(
    "deferred_input_controllers_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_INPUT_HEADSET_CONTROLS_LIST,
+   "deferred_input_headset_controls_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST,
    "deferred_input_hotkey_binds"
    )

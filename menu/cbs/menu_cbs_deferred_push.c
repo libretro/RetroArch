@@ -255,6 +255,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_list,          DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_settings,      DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS)
 GENERIC_DEFERRED_PUSH(deferred_push_input_retropad_binds_list,        DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_controllers_list,           DISPLAYLIST_INPUT_CONTROLLERS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_input_headset_controls_list,      DISPLAYLIST_INPUT_HEADSET_CONTROLS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
@@ -820,6 +821,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST, deferred_push_input_port_controllers_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST, deferred_push_input_retropad_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST, deferred_push_input_controllers_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_HEADSET_CONTROLS_LIST, deferred_push_input_headset_controls_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST, deferred_push_input_hotkey_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS, deferred_push_quick_menu_override_options},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST, deferred_push_accounts_youtube_list},
