@@ -515,6 +515,7 @@ static void sdl_views_render(sdl_video_t *vid,
             layout->stereo_mode);
 }
 
+#ifdef HAVE_MENU
 /* The menu, laid out at one eye's UI size, into each eye's area, with
  * its alpha */
 static void sdl_views_menu(sdl_video_t *vid, const video_views_layout_t *layout)
@@ -546,6 +547,7 @@ static void sdl_views_menu(sdl_video_t *vid, const video_views_layout_t *layout)
       SDL_BlitSurface(vid->views.ui, NULL, vid->screen, &r);
    }
 }
+#endif
 
 /* @msg in each eye's area, through a surface over that part of the
  * window surface */
@@ -685,7 +687,9 @@ static bool sdl_gfx_focus(void *data)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
+#ifndef HAVE_X11
 static bool sdl_gfx_suspend_screensaver(void *data, bool enable) { return false; }
+#endif
 /* TODO/FIXME - implement */
 static bool sdl_gfx_has_windowed(void *data) { return true; }
 

@@ -2540,10 +2540,12 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
 
    windowed_full         = settings->bools.video_windowed_fullscreen;
 
-   full_x                = (windowed_full || VIDEO_SCALE_W(info->dims)  == 0) ?
-      (mon_rect.right  - mon_rect.left) : VIDEO_SCALE_W(info->dims);
-   full_y                = (windowed_full || VIDEO_SCALE_H(info->dims) == 0) ?
-      (mon_rect.bottom - mon_rect.top)  : VIDEO_SCALE_H(info->dims);
+   full_x                = (windowed_full || VIDEO_SCALE_W(info->dims)  == 0)
+      ? (unsigned)(mon_rect.right  - mon_rect.left)
+      : VIDEO_SCALE_W(info->dims);
+   full_y                = (windowed_full || VIDEO_SCALE_H(info->dims) == 0)
+      ? (unsigned)(mon_rect.bottom - mon_rect.top)
+      : VIDEO_SCALE_H(info->dims);
 #else
    {
       unsigned full_dims;
@@ -3435,7 +3437,9 @@ static bool d3d8_frame(void *data, const void *frame,
    unsigned frame_width = VIDEO_SCALE_W(dims);
    unsigned frame_height = VIDEO_SCALE_H(dims);
    D3DVIEWPORT8 screen_vp;
+#ifdef HAVE_OVERLAY
    unsigned i                          = 0;
+#endif
    d3d8_video_t *d3d                    = (d3d8_video_t*)data;
    unsigned width                      = VIDEO_SCALE_W(video_info->dims);
    unsigned height                     = VIDEO_SCALE_H(video_info->dims);
