@@ -1053,6 +1053,28 @@ jobs:
           make clean
           echo "[pass] core_backup_io_test (TSan)"
 
+      - name: Build and run core_backup_sig_test (ASan + UBSan, TSan, mingw-w64)
+        shell: bash
+        working-directory: samples/tasks/core_backup
+        run: |
+          set -eu
+          # Backups keep the core's .sig; restores and Install or Restore
+          # a Core are checked before they replace a core. TEST_KEY=0 has
+          # no keys at all: today's restore.
+          make -f Makefile.sig clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make -f Makefile.sig -j$(nproc) SANITIZER=address,undefined \
+             RUNNER="timeout 600" check
+          make -f Makefile.sig clean && make -f Makefile.sig -j$(nproc) \
+             TEST_KEY=0 RUNNER="timeout 600" check
+          make -f Makefile.sig clean && TSAN_OPTIONS=halt_on_error=1 \
+             make -f Makefile.sig -j$(nproc) SANITIZER=thread \
+             RUNNER="timeout 600" check
+          make -f Makefile.sig clean
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -f Makefile.sig -j$(nproc) CC=x86_64-w64-mingw32-gcc \
+             RUNNER="timeout 600 wine" check
+          make -f Makefile.sig clean
+
       - name: Build and run core_signature_test (ASan + UBSan, TSan, mingw-w64)
         shell: bash
         working-directory: samples/tasks/core_signature
