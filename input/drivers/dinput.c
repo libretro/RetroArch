@@ -452,7 +452,7 @@ static void dinput_poll(void *data)
 static void dinput_publish_pointers(struct dinput_input *di)
 {
    input_pointer_frame_t *frame = input_driver_pointers_lend();
-   uint32_t touch_pos[DINPUT_MAX_POINTERS];
+   uint32_t *touch_pos = input_driver_touches_lend();
    int order[DINPUT_MAX_POINTERS];
    unsigned i, n    = 0;
    unsigned buttons = 0;

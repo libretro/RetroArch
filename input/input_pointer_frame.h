@@ -113,7 +113,9 @@ static void input_pointer_touches_set(const uint32_t *pos,
    if (count > INPUT_TOUCHES_MAX)
       count = INPUT_TOUCHES_MAX;
    all = (count < 32) ? (((uint32_t)1 << count) - 1) : 0xffffffffu;
-   memcpy(input_pointers.touch_pos, pos, count * sizeof(*pos));
+   /* written in place by a driver the places were lent to */
+   if (pos != input_pointers.touch_pos)
+      memcpy(input_pointers.touch_pos, pos, count * sizeof(*pos));
 #ifdef HAVE_VIDEO_WINDOWS
    input_pointers.touch_in_window = input_pointer_windows_set(
          input_pointers.touch_window, windows, count);

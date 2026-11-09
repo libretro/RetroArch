@@ -326,6 +326,11 @@ input_pointer_frame_t *input_driver_pointers_lend(void)
    return input_pointers.frame;
 }
 
+uint32_t *input_driver_touches_lend(void)
+{
+   return input_pointers.touch_pos;
+}
+
 void input_driver_publish_window_pointers(
       const input_pointer_frame_t *frames,
       const input_video_window_t *windows,
@@ -713,6 +718,13 @@ static void test_lent_frames(void)
       && rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == 1
       && rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == 0,
       "frames written in place are read as published");
+
+   input_pointers.touch_pos[0] = VIDEO_POS_PACK(12, 34);
+   input_pointer_touches_set(input_pointers.touch_pos, NULL, 1, 1, 1);
+   CHECK(input_pointers.touch_count == 1
+      && input_pointers.touch_pos[0] == VIDEO_POS_PACK(12, 34)
+      && input_pointers.touch_down == 1,
+      "places written in place are read as published");
 }
 
 int main(void)

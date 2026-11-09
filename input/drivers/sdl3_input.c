@@ -841,7 +841,7 @@ bool SDL_webOSCursorVisibility(bool visible)
 static void sdl3_publish_pointers(sdl3_input_t *sdl)
 {
    input_pointer_frame_t *frame = input_driver_pointers_lend();
-   uint32_t touch_pos[SDL3_MAX_TOUCH];
+   uint32_t *touch_pos = input_driver_touches_lend();
    unsigned touches = 0;
    unsigned present = 0;
    unsigned down    = 0;

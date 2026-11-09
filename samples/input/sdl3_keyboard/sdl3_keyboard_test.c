@@ -25,6 +25,12 @@ input_pointer_frame_t *input_driver_pointers_lend(void)
 
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags) { (void)frames; (void)count; (void)flags; }
+uint32_t *input_driver_touches_lend(void)
+{
+   static uint32_t lent[32];
+   return lent;
+}
+
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down) { (void)pos; (void)count; (void)present; (void)down; }
 void input_driver_set_native_keyboard_available(bool available) { (void)available; }

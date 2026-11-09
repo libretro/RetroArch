@@ -2311,6 +2311,11 @@ void input_driver_publish_touch_contacts(const uint32_t *contacts,
    input_touch_contact_count = count;
 }
 
+uint32_t *input_driver_touches_lend(void)
+{
+   return input_pointers.touch_pos;
+}
+
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down)
 {

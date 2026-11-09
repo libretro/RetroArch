@@ -1602,6 +1602,9 @@ unsigned input_driver_pointer_read_as(unsigned i);
  * buttons (input/common/overlay_contact.h). */
 void input_driver_publish_touch_contacts(const uint32_t *contacts,
       const int16_t *angles, unsigned count);
+/* The frontend's own INPUT_TOUCHES_MAX places: a driver writes them at
+ * its poll and publishes them, and nothing is copied. */
+uint32_t *input_driver_touches_lend(void);
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down);
 

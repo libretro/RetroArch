@@ -81,7 +81,7 @@ static INLINE void android_pointers_publish(const android_pointers_t *p)
 {
    input_pointer_frame_t *frame = input_driver_pointers_lend();
    input_video_window_t windows[ANDROID_POINTERS_MAX];
-   uint32_t pos[ANDROID_POINTERS_MAX];
+   uint32_t *pos    = input_driver_touches_lend();
    unsigned present = 0;
    unsigned down    = 0;
    unsigned count   = 0;

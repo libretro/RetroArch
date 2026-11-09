@@ -114,7 +114,7 @@ static void input_wl_poll(void *data)
     * motion and the wheel are taken here, once, for every reader. */
    {
       input_pointer_frame_t *frame = input_driver_pointers_lend();
-      uint32_t touch_pos[MAX_TOUCHES];
+      uint32_t *touch_pos = input_driver_touches_lend();
       unsigned present = 0;
       unsigned down    = 0;
       unsigned buttons = 0;
