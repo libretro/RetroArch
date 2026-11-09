@@ -11700,8 +11700,11 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_RIGHT:
       case MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_TOP:
       case MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_BOTTOM:
-         video_display_server_set_screen_orientation(
-               (enum rotation)settings->uints.screen_orientation);
+         {
+            /* ui_cocoatouch.m */
+            void cocoa_request_layout(void);
+            cocoa_request_layout();
+         }
          break;
 #endif
       case MENU_ENUM_LABEL_SCREEN_ORIENTATION:

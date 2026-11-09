@@ -103,9 +103,6 @@ void rarch_stop_draw_observer(void);
 UINavigationControllerDelegate> {
     UIView *_renderView;
     apple_view_type_t _vt;
-#if TARGET_OS_IOS
-    float _screenMargins[4];
-#endif
 }
 
 /* Explicit retain / copy qualifiers so these properties are correct
@@ -124,7 +121,6 @@ UINavigationControllerDelegate> {
 
 - (void)showGameView;
 #if TARGET_OS_IOS
-- (void)setScreenLayout:(NSData *)layout;
 - (void)layoutRenderView;
 #endif
 - (void)supportOtherAudioSessions;

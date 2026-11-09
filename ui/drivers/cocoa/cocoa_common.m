@@ -821,7 +821,7 @@ retro_time_t cocoa_last_vblank_time(void)
          return;
 
       /* Check if we're in multitasking mode (Split View or Slide Over)
-       * by comparing our view size to the full screen size */
+       * by comparing our window size to the full screen size */
       RAScreen *screen     = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
       if (!screen)
          return;
@@ -830,13 +830,16 @@ retro_time_t cocoa_last_vblank_time(void)
       if (!window)
          window = [[UIApplication sharedApplication] delegate].window;
 
-      CGRect screenSize    = window ? window.bounds : [screen bounds];
+      CGRect screenBounds  = [screen bounds];
+      CGRect screenSize    = window ? window.bounds : screenBounds;
 
       if (ios_running_on_ipad())
       {
-         CGRect currentBounds = self.view.bounds;
-         bool isMultitasking  = (currentBounds.size.width < screenSize.size.width ||
-                                 currentBounds.size.height < screenSize.size.height);
+         /* Split View, Slide Over and Stage Manager make the window
+          * smaller than the screen; the view always fills its window,
+          * so it is the window that has to be compared. */
+         bool isMultitasking  = (screenSize.size.width  < screenBounds.size.width ||
+                                 screenSize.size.height < screenBounds.size.height);
 
          /* In multitasking mode, don't override the frame - let iOS handle it */
          if (isMultitasking)

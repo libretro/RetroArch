@@ -253,6 +253,12 @@ bool ios_running_on_ipad(void)
 }
 
 /* Input helpers: This is kept here because it needs ObjC */
+/* Main thread only; the next layout pass applies the current settings */
+void cocoa_request_layout(void)
+{
+   [[CocoaView get].view setNeedsLayout];
+}
+
 static void handle_touch_event(NSArray* touches)
 {
 #if !TARGET_OS_TV
@@ -823,34 +829,34 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
 }
 
 #if TARGET_OS_IOS
-- (void)setScreenLayout:(NSData *)layout
+/* Whole device pixels, so the layer is not resampled at a fractional
+ * position or size. Config files are not range checked; clamp here. */
+static CGFloat cocoa_margin_points(float percent, CGFloat extent, CGFloat scale)
 {
-   float values[4];
-   if ([layout length] != sizeof(values))
-      return;
-   [layout getBytes:values length:sizeof(values)];
-   memcpy(_screenMargins, values, sizeof(_screenMargins));
-   [[CocoaView get].view setNeedsLayout];
+   return round(extent * fminf(fmaxf(percent, 0), 25) / 100 * scale) / scale;
 }
 
 - (void)layoutRenderView
 {
    CGRect bounds;
-   CGFloat left, right, top, bottom;
-   if (!_renderView)
+   CGFloat scale, left, right, top, bottom;
+   settings_t *settings = config_get_ptr();
+   if (!_renderView || !settings)
       return;
    bounds = [CocoaView get].view.bounds;
    if (bounds.size.width <= 0 || bounds.size.height <= 0)
       return;
-   left   = bounds.size.width  * fminf(fmaxf(_screenMargins[0], 0), 25) / 100;
-   right  = bounds.size.width  * fminf(fmaxf(_screenMargins[1], 0), 25) / 100;
-   top    = bounds.size.height * fminf(fmaxf(_screenMargins[2], 0), 25) / 100;
-   bottom = bounds.size.height * fminf(fmaxf(_screenMargins[3], 0), 25) / 100;
+   scale  = [_renderView contentScaleFactor];
+   if (scale <= 0)
+      scale = 1;
+   left   = cocoa_margin_points(settings->floats.video_ios_margin_left,   bounds.size.width,  scale);
+   right  = cocoa_margin_points(settings->floats.video_ios_margin_right,  bounds.size.width,  scale);
+   top    = cocoa_margin_points(settings->floats.video_ios_margin_top,    bounds.size.height, scale);
+   bottom = cocoa_margin_points(settings->floats.video_ios_margin_bottom, bounds.size.height, scale);
    _renderView.frame = CGRectMake(bounds.origin.x + left,
          bounds.origin.y + top, bounds.size.width - left - right,
          bounds.size.height - top - bottom);
 }
-
 #endif
 
 - (apple_view_type_t)viewType { return _vt; }
@@ -1642,12 +1648,14 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
                           defaultRegion:(UIPointerRegion *)defaultRegion API_AVAILABLE(ios(13.4))
 {
    CGPoint location;
+   CGFloat scale;
    if (cocoa_input_mouse_grabbed())
       return nil;
    location = [request location];
+   scale    = [apple_platform.renderView contentScaleFactor];
    cocoa_input_pointer_at(
-         (int16_t)(location.x * [apple_platform.renderView contentScaleFactor]),
-         (int16_t)(location.y * [apple_platform.renderView contentScaleFactor]));
+         (int16_t)(location.x * scale),
+         (int16_t)(location.y * scale));
    return [UIPointerRegion regionWithRect:[apple_platform.renderView bounds] identifier:@"game view"];
 }
 #endif
