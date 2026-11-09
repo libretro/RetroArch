@@ -228,12 +228,15 @@ static int mdev_read_blocking(void *buf, size_t size)
    return (int)done;
 }
 
+static void *last_read_buf;
+
 static int mdev_read(void *d, void *m, void *buf, size_t size)
 {
    size_t have, take, i;
    int16_t *out = (int16_t*)buf;
    (void)d; (void)m;
 
+   last_read_buf = buf;
    if (mdev_blocking)
       return mdev_read_blocking(buf, size);
 
@@ -624,6 +627,64 @@ static void resampler_choice_case(void)
  * int16 stereo - must leave in the ring exactly what the stage used to
  * produce on its own and copy in, sample for sample, the samples it
  * reports and no more. */
+/* 16-bit at the rate asked for: the device reads straight into the
+ * ring, a span at a time, and a full ring still drains it. */
+static void direct_read_case(void)
+{
+   static retro_microphone_t mic;
+   static int16_t scratch[256];
+   microphone_driver_state_t *mic_st = microphone_state_get_ptr();
+   int16_t got[32];
+   size_t frames, k;
+   unsigned bad = 0;
+   int16_t first;
+
+   memset(&mic, 0, sizeof(mic));
+   if (!retro_spsc_init(&mic.outgoing_samples, 64))
+      abort();
+   mic.outgoing_size            = 64;
+   mic.effective_params.rate    = 48000;
+   mic.actual_params.rate       = 48000;
+   mic.worker_sample_size       = sizeof(int16_t);
+   mic.microphone_context       = (void*)&mic;
+   mic_st->driver               = &clocked_mic;
+   mic_st->driver_context       = (void*)&mic;
+   mic_st->input_frames         = scratch;
+   mic_st->input_frames_length  = sizeof(scratch);
+
+   retro_atomic_store_release_size(&dev_avail, 4096);
+   first  = dev_pattern;
+   frames = microphone_driver_flush(mic_st, &mic, 16);
+   if (frames != 16 || last_read_buf == scratch)
+      bad++;
+   if (retro_spsc_read(&mic.outgoing_samples, got, 32) != 32)
+      bad++;
+   for (k = 0; k < 16; k++)
+      if (got[k] != (int16_t)(first + 1 + k))
+         bad++;
+
+   /* The ring full: read into the frontend's buffer, the device drained */
+   retro_spsc_write(&mic.outgoing_samples, got, 32);
+   retro_spsc_write(&mic.outgoing_samples, got, 32);
+   retro_atomic_store_release_size(&dev_avail, 32);
+   microphone_driver_flush(mic_st, &mic, 16);
+   if (last_read_buf != scratch
+         || retro_atomic_load_acquire_size(&dev_avail) != 0)
+      bad++;
+
+   mic_st->driver         = NULL;
+   mic_st->driver_context = NULL;
+   mic_st->input_frames   = NULL;
+   retro_spsc_free(&mic.outgoing_samples);
+   if (bad)
+   {
+      printf("FAIL: %u checks of the direct read\n", bad);
+      failures++;
+   }
+   else
+      printf("mic direct read: into the ring, and a full ring drains the device\n");
+}
+
 static void enqueue_case(void)
 {
    retro_microphone_t mic;
@@ -685,6 +746,7 @@ int main(int argc, char **argv)
       return 1;
 
    enqueue_case();
+   direct_read_case();
 
    printf("threaded microphone capture against a clocked device,"
          " %.0f s per setting, %g fps core\n", seconds, FPS);

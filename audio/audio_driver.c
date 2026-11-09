@@ -12708,12 +12708,45 @@ static size_t microphone_driver_flush(
 #endif
    size_t bytes_to_read = MIN(mic_st->input_frames_length, num_frames * sample_size);
    size_t frames_to_enqueue;
-   int bytes_read       = mic_st->driver->read(
+   int bytes_read;
+
+   /* 16-bit at the requested rate has nothing to change: the device
+    * reads straight into the ring. With no room, the read below still
+    * drains it. */
+   if (     sample_size == sizeof(int16_t)
+         && fabs((double)microphone->effective_params.rate
+            / (double)microphone->actual_params.rate - 1.0) < 1e-8)
+   {
+      void  *span = NULL;
+      size_t want = retro_spsc_write_begin(&microphone->outgoing_samples, &span);
+      size_t room = microphone_outgoing_room(microphone);
+      if (want > room)
+         want = room;
+      if (want > num_frames * sizeof(int16_t))
+         want = num_frames * sizeof(int16_t);
+      want &= ~(size_t)1;
+      if (want && span)
+      {
+         bytes_read = mic_st->driver->read(mic_st->driver_context,
+               microphone->microphone_context, span, want);
+         if (bytes_read < 0)
+            bytes_read = 0;
+         if ((size_t)bytes_read > want)
+            bytes_read = (int)want;
+         bytes_read &= ~1;
+         retro_spsc_write_end(&microphone->outgoing_samples,
+               (size_t)bytes_read);
+         return (size_t)bytes_read / sizeof(int16_t);
+      }
+      retro_spsc_write_end(&microphone->outgoing_samples, 0);
+   }
+
+   /* First, get the most recent mic data */
+   bytes_read = mic_st->driver->read(
          mic_st->driver_context,
          microphone->microphone_context,
          mic_st->input_frames,
          bytes_to_read);
-   /* First, get the most recent mic data */
 
    if (bytes_read <= 0)
       return 0;
