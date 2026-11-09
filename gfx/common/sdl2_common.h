@@ -75,6 +75,18 @@ typedef struct _sdl2_video
    sdl2_tex_t menu;  /* ptr alignment */
    sdl2_tex_t font;  /* ptr alignment */
 
+   /* The frame texture while it is locked and lent to the core.
+    * scratch holds a window of it pushed at another size or pitch. */
+   struct
+   {
+      void    *pixels;
+      uint8_t *scratch;
+      size_t   scratch_size;
+      size_t   pitch;
+      unsigned dims;
+      unsigned declined_dims;
+   } sw_lend;
+
    SDL_Window *window;
    SDL_Renderer *renderer;
 
