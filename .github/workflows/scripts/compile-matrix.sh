@@ -876,7 +876,7 @@ android_clang "android clang/aarch64: camera" "-Itools/platform_stubs/android -D
 # core_signature_io.c's Android branch, otherwise compiled only inside
 # griffin on the Android job
 CORESIG_ANDROID="-Itools/platform_stubs/android -DHAVE_CRYPTO -DHAVE_DYNAMIC -DHAVE_CORE_SIGNATURES -DHAVE_CORE_LOAD_CHECK -DRARCH_INTERNAL -D_GNU_SOURCE -include tools/platform_stubs/android/jni.h"
-for tu in core_signature.c core_signature_io.c core_trust_runtime.c; do
+for tu in core_signature.c core_signature_io.c core_trust_runtime.c core_install_check.c; do
    android_clang "android clang/aarch64: $tu" "$CORESIG_ANDROID" "$tu"
    check "android: $tu" "-DANDROID -D__ANDROID__ $CORESIG_ANDROID $CDECL" "$tu"
 done
