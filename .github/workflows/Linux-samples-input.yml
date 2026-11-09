@@ -543,6 +543,15 @@ jobs:
           make clean
           echo "[pass] bind_trigger_axis_test (ASan)"
 
+      - name: Build and run bind_capture_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -C samples/input/bind_capture clean check SANITIZER=address,undefined
+          make -C samples/input/bind_capture clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/bind_capture clean
+
       - name: Build and run hotkey_menu_test (ASan + UBSan, mingw + Wine)
         shell: bash
         run: |
