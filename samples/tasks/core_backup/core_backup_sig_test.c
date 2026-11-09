@@ -1,9 +1,14 @@
 /* Copyright (C) 2026 The RetroArch team
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
-/* Core backups with core signatures (tasks/task_core_backup.c): a
- * backup keeps the core's .sig beside it, and pruning drops it. Against
- * the shipping backup task. Linux and mingw-w64. */
+/* Core backups and restores with core signatures
+ * (tasks/task_core_backup.c): a backup keeps the core's .sig beside
+ * it; a restore or Install or Restore a Core is checked before it
+ * replaces a core, and anything but a pass goes to the Security
+ * Warning, whose Install and Trust installs only the file it showed.
+ * Against the shipping backup task and trust store. Linux and
+ * mingw-w64; TEST_KEY=0 has no keys, so today's restore; PLAY=1
+ * (Linux) is a Play Store build. */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -18,10 +23,12 @@
 #include <retro_timers.h>
 #include <streams/file_stream.h>
 #include <encodings/crc32.h>
+#include <lrc_hash.h>
 
 #include "../../../command.h"
 #include "../../../core_backup.h"
 #include "../../../core_info.h"
+#include "../../../core_trust_runtime.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../msg_hash.h"
 #include "../../../retroarch.h"
@@ -29,6 +36,10 @@
 #include "../../../tasks/tasks_internal.h"
 #include "../../../verbosity.h"
 #include "../core_signature/core_signature_fixtures.h"
+
+#if defined(ANDROID)
+#include <unistd.h>
+#endif
 
 #define TMP_DIR "core_backup_sig_test_tmp"
 
@@ -120,12 +131,33 @@ struct menu_state *menu_state_get_ptr(void)
 
 void menu_contentless_cores_free(void) { }
 
+/* The slice clock, wrapped (Makefile.sig): a step of 0 is the real
+ * clock; any other spends a slice's budget at its first look, so a
+ * task does one work item per tick */
+static retro_time_t g_clock_now;
+static retro_time_t g_clock_step;
+
+retro_time_t __real_cpu_features_get_time_usec(void);
+
+retro_time_t __wrap_cpu_features_get_time_usec(void)
+{
+   if (!g_clock_step)
+      return __real_cpu_features_get_time_usec();
+   return g_clock_now += g_clock_step;
+}
+
 /* core_trust_default_path's folder, here the test's own */
 bool fill_pathname_application_data(char *s, size_t len)
 {
    strlcpy(s, TMP_DIR, len);
    return true;
 }
+
+/* The menu's side of the Security Warning */
+static bool g_can_open = true;
+void menu_core_warning_open(void) { }
+bool menu_core_warning_can_open(void) { return g_can_open; }
+bool menu_core_warning_user_only(void) { return false; }
 
 /* ---- helpers ---- */
 
@@ -136,6 +168,31 @@ static char g_core[300];
 static char g_core_sig[300];
 static char g_core_old[310];
 static char g_backups[300];
+static char g_downloads[256];
+static char g_restore_dir[300];
+/* A core installed before each restore lane */
+static uint8_t g_old[4096];
+
+#if defined(ANDROID)
+/* Play feature delivery; deleting a core removes its link */
+static char g_apk_core[300];
+static bool g_pfd_enabled;
+static bool g_pfd_installed;
+static int  g_pfd_deletes;
+bool play_feature_delivery_enabled(void) { return g_pfd_enabled; }
+bool play_feature_delivery_core_installed(const char *core_file)
+{
+   return g_pfd_installed && !strcmp(core_file, FX_NAME);
+}
+bool play_feature_delivery_delete(const char *core_file)
+{
+   g_pfd_deletes++;
+   if (!play_feature_delivery_core_installed(core_file) || unlink(g_core))
+      return false;
+   g_pfd_installed = false;
+   return true;
+}
+#endif
 
 static void fx_make_core(void)
 {
@@ -249,6 +306,86 @@ static void backup(enum core_backup_mode mode, size_t history)
             g_assets, true, NULL, NULL) != NULL);
    pump();
 }
+
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+static void sha(const uint8_t *data, size_t len, uint8_t *out)
+{
+   struct sha256_state st;
+   sha256_stream_init(&st, 0);
+   sha256_stream_update(&st, data, len);
+   sha256_stream_final(&st, out);
+}
+#endif
+
+/* A backup as RetroArch names it, holding data, sig beside it */
+static void make_backup(char *path, size_t len, const char *dir,
+      const uint8_t *data, size_t size, const uint8_t *sig, size_t sig_len)
+{
+   static unsigned stamp = 0;
+   char name[128];
+   char s[300];
+   sprintf(name, "%s.20261109T1200%02u.%08lx.0.lcbk", FX_NAME,
+         stamp++ % 60, (unsigned long)encoding_crc32(0, data, size));
+   fill_pathname_join_special(path, dir, name, len);
+   put(path, data, size);
+   sig_of(path, s, sizeof(s));
+   if (path_is_valid(s))
+      filestream_delete(s);
+   if (sig)
+      put(s, sig, sig_len);
+}
+
+static void install_old(void)
+{
+   put(g_core, g_old, sizeof(g_old));
+   if (path_is_valid(g_core_sig))
+      filestream_delete(g_core_sig);
+}
+
+static bool restore(const char *b, bool own_backup)
+{
+   bool loaded = false;
+   bool pushed = task_push_core_restore(b, g_cores, &loaded, own_backup,
+         NULL);
+   pump();
+   return pushed;
+}
+
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+static uint64_t newest(void)
+{
+   uint8_t key[CORE_SHA256_LEN];
+   uint64_t t          = 0;
+   core_trust_set_t *s = core_trust_runtime_get();
+   if (s && core_folder_key(g_core, key))
+      t = core_trust_newest(s, key, FX_NAME);
+   if (s)
+      core_trust_set_put(s);
+   return t;
+}
+
+static bool trusted(const uint8_t *data, size_t len)
+{
+   uint8_t digest[CORE_SHA256_LEN];
+   bool ok             = false;
+   core_trust_set_t *s = core_trust_runtime_get();
+   sha(data, len, digest);
+   if (s)
+   {
+      ok = core_trust_has_hash(s, digest);
+      core_trust_set_put(s);
+   }
+   return ok;
+}
+
+static bool warning(enum core_check_result want)
+{
+   enum core_warning_kind kind;
+   enum core_check_result result;
+   return core_warning_pending(&kind, &result)
+      && kind == CORE_WARNING_INSTALL && result == want;
+}
+#endif
 
 /* ---- backups ---- */
 
@@ -450,20 +587,410 @@ static void test_backed_up_install_drops_sig(void)
    path_rmdir(staging);
 }
 
+/* ---- restores ---- */
+
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+static void test_restore_signed(void)
+{
+   char b[300];
+   printf("[restore a signed backup]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   CHECK(restore(b, true));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_good, sizeof(fx_sig_good)));
+   CHECK(!path_is_directory(g_restore_dir));
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(newest() == FX_TIME);
+}
+
+/* RetroArch's own backup may be older than the newest build seen */
+static void test_restore_own_older(void)
+{
+   char b[300];
+   printf("[restore an older own backup]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_older, sizeof(fx_sig_older));
+   CHECK(restore(b, true));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_older, sizeof(fx_sig_older)));
+   CHECK(!core_warning_pending(NULL, NULL));
+   /* The newest build seen stays */
+   CHECK(newest() == FX_TIME);
+}
+
+static bool first_task(retro_task_t *task, void *user_data)
+{
+   *(retro_task_t**)user_data = task;
+   return true;
+}
+
+/* Cancelled while the staged copy is hashed: the hash file is closed
+ * before the staged files go (Windows), and the core is kept */
+static void test_cancel_during_check(void)
+{
+   task_finder_data_t find_data;
+   retro_task_t *task = NULL;
+   bool loaded        = false;
+   char b[300];
+   char bsig[300];
+   char tmp_sig[300];
+   int i;
+   printf("[restore cancelled during its check]\n");
+   install_old();
+   put(g_core_sig, fx_sig_older, sizeof(fx_sig_older));
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   fill_pathname_join_special(tmp_sig, g_restore_dir, FX_NAME ".sig",
+         sizeof(tmp_sig));
+   g_clock_step = 1000000;
+   CHECK(task_push_core_restore(b, g_cores, &loaded, true, NULL));
+   /* Copied beside the staged core as the check is entered */
+   for (i = 0; i < 1000 && !path_is_valid(tmp_sig); i++)
+      task_queue_check();
+   /* Opens the staged core and hashes one chunk of several */
+   task_queue_check();
+   find_data.func     = first_task;
+   find_data.userdata = &task;
+   task_queue_find(&find_data);
+   CHECK(i < 1000 && task);
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   if (task)
+      task_queue_cancel_task(task);
+   g_clock_step = 0;
+   pump();
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(same(g_core_sig, fx_sig_older, sizeof(fx_sig_older)));
+   CHECK(!path_is_directory(g_restore_dir));
+   CHECK(!core_warning_pending(NULL, NULL));
+   sig_of(b, bsig, sizeof(bsig));
+   filestream_delete(bsig);
+   filestream_delete(b);
+}
+
+/* Install or Restore a Core: a picked .lcbk isn't RetroArch's own */
+static void test_install_older_warns(void)
+{
+   char b[300];
+   printf("[install an older .lcbk: warning, Cancel]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_older, sizeof(fx_sig_older));
+   CHECK(restore(b, false));
+   CHECK(warning(CORE_CHECK_OLDER));
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(!path_is_directory(g_restore_dir));
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   pump();
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+}
+
+/* A backup made before core signatures has no .sig */
+static void test_unsigned_install_and_trust(void)
+{
+   static uint8_t data[3000];
+   char b[300];
+   printf("[unsigned backup: Install and Trust]\n");
+   memset(data, 0x22, sizeof(data));
+   install_old();
+   put(g_core_sig, fx_sig_good, sizeof(fx_sig_good));
+   make_backup(b, sizeof(b), g_backups, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, true));
+   CHECK(warning(CORE_CHECK_UNSIGNED));
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   CHECK(same(g_core, data, sizeof(data)));
+   CHECK(!path_is_valid(g_core_sig));
+   CHECK(trusted(data, sizeof(data)));
+   CHECK(!core_warning_pending(NULL, NULL));
+}
+
+/* Install and Trust installs only the file the warning showed */
+static void test_changed_after_warning(void)
+{
+   static uint8_t data[3000];
+   static uint8_t swapped[3000];
+   char b[300];
+   int errs = g_err_count;
+   printf("[changed after the warning]\n");
+   memset(data, 0x33, sizeof(data));
+   memset(swapped, 0x44, sizeof(swapped));
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, false));
+   CHECK(warning(CORE_CHECK_UNSIGNED));
+   put(b, swapped, sizeof(swapped));
+   g_err_expected = true;
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   g_err_expected = false;
+   CHECK(g_err_count == errs + 1);
+   CHECK(strstr(g_err_last, "Not the core the warning was about"));
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(!trusted(data, sizeof(data)));
+   CHECK(!trusted(swapped, sizeof(swapped)));
+   CHECK(!path_is_directory(g_restore_dir));
+}
+
+/* Trusted by its hash: the .sig that failed isn't placed beside it */
+static void test_trust_drops_failed_sig(void)
+{
+   char b[300];
+   printf("[unknown key: Install and Trust]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_key2, sizeof(fx_sig_key2));
+   CHECK(restore(b, false));
+   CHECK(warning(CORE_CHECK_UNKNOWN_KEY));
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(!path_is_valid(g_core_sig));
+   CHECK(trusted(fx_core, FX_CORE_SIZE));
+   CHECK(!path_is_directory(g_restore_dir));
+}
+
+static void test_checks_off(void)
+{
+   static uint8_t data[3000];
+   char b[300];
+   printf("[checks off]\n");
+   memset(data, 0x55, sizeof(data));
+   CHECK(core_trust_runtime_set_checks(false));
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, false));
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(same(g_core, data, sizeof(data)));
+   CHECK(core_trust_runtime_set_checks(true));
+}
+
+/* No menu to ask on: nothing installed, and the user is told */
+static void test_no_screen(void)
+{
+   static uint8_t data[3000];
+   char b[300];
+   int osd = g_osd_count;
+   printf("[no screen to ask on]\n");
+   memset(data, 0x66, sizeof(data));
+   g_can_open = false;
+   install_old();
+   make_backup(b, sizeof(b), g_backups, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, true));
+   g_can_open = true;
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(g_osd_count == osd + 1);
+}
+
+/* Install and Trust that can't run the restore again says so */
+static void test_trust_backup_gone(void)
+{
+   static uint8_t data[3000];
+   char b[300];
+   int osd;
+   printf("[Install and Trust, backup gone]\n");
+   memset(data, 0x99, sizeof(data));
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, false));
+   CHECK(warning(CORE_CHECK_UNSIGNED));
+   filestream_delete(b);
+   osd = g_osd_count;
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   CHECK(g_osd_count == osd + 1);
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(!trusted(data, sizeof(data)));
+}
+
+/* Trusted by its hash (test_trust_drops_failed_sig): a .sig placed
+ * beside a restored core must still verify on its own */
+static void test_hash_pass_restores(void)
+{
+   char b[300];
+   printf("[trusted hash: restore, bad .sig]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_key2, sizeof(fx_sig_key2));
+   CHECK(restore(b, true));
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(!path_is_valid(g_core_sig));
+   CHECK(!path_is_directory(g_restore_dir));
+
+   printf("[trusted hash: Install or Restore a Core, bad .sig]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_key2, sizeof(fx_sig_key2));
+   CHECK(restore(b, false));
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(!path_is_valid(g_core_sig));
+
+   printf("[trusted hash: Install or Restore a Core, good .sig]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   CHECK(restore(b, false));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_good, sizeof(fx_sig_good)));
+}
+
+/* Install and Trust on OLDER: that .sig verified, so it stays. Needs a
+ * store where fx_core isn't trusted by its hash */
+static void test_install_older_trust(void)
+{
+   char b[300];
+   printf("[install an older .lcbk: Install and Trust]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_older, sizeof(fx_sig_older));
+   CHECK(restore(b, false));
+   CHECK(warning(CORE_CHECK_OLDER));
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_older, sizeof(fx_sig_older)));
+   CHECK(trusted(fx_core, FX_CORE_SIZE));
+   CHECK(newest() == FX_TIME);
+}
+
+#if defined(ANDROID)
+/* ---- a Play Store build ---- */
+
+/* A core play feature delivery installed: a link to g_old in the APK's
+ * read-only lib folder, under another name */
+static void install_play(void)
+{
+   char lib[300];
+   fill_pathname_join_special(lib, TMP_DIR, "lib", sizeof(lib));
+   path_mkdir(lib);
+   fill_pathname_join_special(g_apk_core, lib, "libtest.so",
+         sizeof(g_apk_core));
+   put(g_apk_core, g_old, sizeof(g_old));
+   unlink(g_core);
+   if (path_is_valid(g_core_sig))
+      filestream_delete(g_core_sig);
+   CHECK(symlink("../lib/libtest.so", g_core) == 0);
+   g_pfd_enabled   = true;
+   g_pfd_installed = true;
+}
+
+static void uninstall_play(void)
+{
+   unlink(g_core);
+   g_pfd_enabled   = false;
+   g_pfd_installed = false;
+}
+
+/* Staged beside the link, which goes only once the core passed */
+static void test_play_restore(void)
+{
+   char b[300];
+   int deletes = g_pfd_deletes;
+   printf("[Play-installed core: restore a signed backup]\n");
+   install_play();
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   CHECK(restore(b, true));
+   CHECK(g_pfd_deletes == deletes + 1);
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_good, sizeof(fx_sig_good)));
+   CHECK(same(g_apk_core, g_old, sizeof(g_old)));
+   CHECK(!path_is_directory(g_restore_dir));
+   CHECK(!core_warning_pending(NULL, NULL));
+   uninstall_play();
+}
+
+static void test_play_cancel_keeps_core(void)
+{
+   static uint8_t data[3000];
+   char b[300];
+   int deletes = g_pfd_deletes;
+   printf("[Play-installed core: warning, Cancel]\n");
+   memset(data, 0x88, sizeof(data));
+   install_play();
+   make_backup(b, sizeof(b), g_downloads, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, false));
+   CHECK(warning(CORE_CHECK_UNSIGNED));
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   pump();
+   CHECK(g_pfd_deletes == deletes);
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(!path_is_directory(g_restore_dir));
+   uninstall_play();
+}
+
+/* A link play feature delivery didn't make is still refused */
+static void test_other_link_refused(void)
+{
+   char b[300];
+   int errs    = g_err_count;
+   int deletes = g_pfd_deletes;
+   printf("[link to a file of another name: refused]\n");
+   install_play();
+   g_pfd_installed = false;
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   g_err_expected = true;
+   CHECK(restore(b, true));
+   g_err_expected = false;
+   CHECK(g_err_count > errs);
+   CHECK(g_pfd_deletes == deletes);
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(same(g_apk_core, g_old, sizeof(g_old)));
+   CHECK(!core_warning_pending(NULL, NULL));
+   uninstall_play();
+}
+#endif
+#else
+/* No keys: today's restore, nothing checked */
+static void test_inactive(void)
+{
+   static uint8_t data[3000];
+   char b[300];
+   char tmp[300];
+   printf("[no keys: today's restore]\n");
+   memset(data, 0x77, sizeof(data));
+   install_old();
+   make_backup(b, sizeof(b), g_backups, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, true));
+   CHECK(!core_warning_pending(NULL, NULL));
+   CHECK(same(g_core, data, sizeof(data)));
+   CHECK(!path_is_directory(g_restore_dir));
+   strlcpy(tmp, g_core, sizeof(tmp));
+   strlcat(tmp, ".tmp", sizeof(tmp));
+   CHECK(!path_is_valid(tmp));
+}
+#endif
+
 int main(void)
 {
+   char store[300];
    setvbuf(stdout, NULL, _IONBF, 0);
    path_mkdir(TMP_DIR);
    fill_pathname_join_special(g_cores, TMP_DIR, "cores", sizeof(g_cores));
    fill_pathname_join_special(g_assets, TMP_DIR, "assets", sizeof(g_assets));
+   fill_pathname_join_special(g_downloads, TMP_DIR, "downloads",
+         sizeof(g_downloads));
    fill_pathname_join_special(g_core, g_cores, FX_NAME, sizeof(g_core));
    sig_of(g_core, g_core_sig, sizeof(g_core_sig));
    strlcpy(g_core_old, g_core_sig, sizeof(g_core_old));
    strlcat(g_core_old, ".old", sizeof(g_core_old));
    fill_pathname_join_special(g_backups, g_assets,
          "core_backups/test_libretro", sizeof(g_backups));
+   fill_pathname_join_special(g_restore_dir, g_cores,
+         "." FX_NAME ".restore", sizeof(g_restore_dir));
+   fill_pathname_join_special(store, TMP_DIR, "store", sizeof(store));
    path_mkdir(g_cores);
    path_mkdir(g_backups);
+   path_mkdir(g_downloads);
+   memset(g_old, 0x11, sizeof(g_old));
    fx_make_core();
 
    task_queue_init(false, NULL);
@@ -475,12 +1002,46 @@ int main(void)
    test_move_fails_stray();
    test_move_fails_cancelled();
    test_backed_up_install_drops_sig();
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   CHECK(core_trust_runtime_init(store, g_cores, "so"));
+   test_restore_signed();
+   test_restore_own_older();
+   test_cancel_during_check();
+   test_install_older_warns();
+   test_unsigned_install_and_trust();
+   test_changed_after_warning();
+   test_trust_drops_failed_sig();
+   test_checks_off();
+   test_no_screen();
+   test_trust_backup_gone();
+   test_hash_pass_restores();
+   /* A new store: fx_core trusted by nothing but its .sig again */
+   install_old();
+   core_trust_runtime_deinit();
+   fill_pathname_join_special(store, TMP_DIR, "store2", sizeof(store));
+   CHECK(core_trust_runtime_init(store, g_cores, "so"));
+   pump();
+   test_restore_signed();
+   test_install_older_trust();
+#if defined(ANDROID)
+   test_play_restore();
+   test_play_cancel_keeps_core();
+   test_other_link_refused();
+#endif
+#else
+   CHECK(!core_trust_runtime_init(store, g_cores, "so"));
+   test_inactive();
+#endif
    pump();
    task_queue_deinit();
 
-   /* A backup's .sig copy on the task thread */
+   /* The .sig copy and the restore's check on the task thread */
    task_queue_init(true, NULL);
    test_backup_keeps_sig();
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   test_restore_signed();
+#endif
+   core_trust_runtime_deinit();
    pump();
    task_queue_deinit();
    task_queue_unset_threaded();
