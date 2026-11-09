@@ -295,10 +295,13 @@ static void video_views_fit(const video_views_layout_params_t *p,
    unsigned ch   = VIDEO_SCALE_H(cdims);
    bool vertical = (p->screen_layout != VIDEO_SCREEN_LAYOUT_HORIZONTAL);
 
+   if (count == 1 && p->fold_top && p->fold_top < ch)
+      ch = p->fold_top;
+
    if (count == 1 && p->stretch && !p->scale_integer)
    {
       fit[first].pos  = VIDEO_POS_PACK(0, 0);
-      fit[first].dims = cdims;
+      fit[first].dims = VIDEO_SCALE_PACK(cw, ch);
       return;
    }
 

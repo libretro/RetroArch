@@ -275,6 +275,41 @@ static int rect_is(const video_views_rect_t *r, int x, int y,
    return 0;
 }
 
+/* A display folded across its width: one screen stays above the fold,
+ * two keep their seam on the middle of the display. */
+static void test_layout_fold(void)
+{
+   video_views_map_t map;
+   video_views_layout_params_t p;
+   video_views_layout_t l;
+
+   map_ds(&map);
+   params_init(&p, &map, 600, 800);
+   p.fold_top = 380;
+
+   /* Both screens: the fold takes nothing from them. */
+   video_views_layout(&p, &l);
+   CHECK(l.num_placements == 2);
+   CHECK(VIDEO_SCALE_H(l.placements[0].dst.dims) == 400);
+   CHECK(VIDEO_POS_Y(l.placements[1].dst.pos) == 400);
+
+   /* One screen: 256x192 into 600x380, aspect kept. */
+   p.exclude_screens = 2;
+   video_views_layout(&p, &l);
+   CHECK(l.num_placements == 1);
+   CHECK(rect_is(&l.placements[0].dst, 47, 0, 506, 380));
+
+   /* Stretched, it still stops at the fold. */
+   p.stretch = true;
+   video_views_layout(&p, &l);
+   CHECK(rect_is(&l.placements[0].dst, 0, 0, 600, 380));
+
+   /* Flat: the whole display again. */
+   p.fold_top = 0;
+   video_views_layout(&p, &l);
+   CHECK(rect_is(&l.placements[0].dst, 0, 0, 600, 800));
+}
+
 static void test_layout_screens(void)
 {
    video_views_map_t map;
@@ -1397,6 +1432,7 @@ int main(void)
    test_layout_screens();
    test_layout_stereo();
    test_layout_one_screen();
+   test_layout_fold();
    test_clip();
    test_map_point();
    test_ui_point();

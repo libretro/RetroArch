@@ -270,6 +270,9 @@ typedef struct video_views_layout_params
    const video_views_rect_t *custom_vp;
    float single_aspect;
    bool stretch;
+   /* One included screen keeps above this row of a display folded across
+    * its width; 0 when it lies flat. */
+   unsigned fold_top;
    unsigned dims;
    unsigned stereo_mode;
    unsigned screen_layout;

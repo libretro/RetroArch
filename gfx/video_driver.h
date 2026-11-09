@@ -1780,7 +1780,9 @@ typedef struct video_window_displays
 #if defined(RARCH_MOBILE)
 #define VIDEO_VP_SLOT_BIAS_PORTRAIT_X 8
 #define VIDEO_VP_SLOT_BIAS_PORTRAIT_Y 9
-#define VIDEO_VP_PARAM_SLOTS 10
+#define VIDEO_VP_SLOT_FOLD 10
+#define VIDEO_VP_SLOT_FOLD_SCREENS 11
+#define VIDEO_VP_PARAM_SLOTS 12
 #else
 #define VIDEO_VP_PARAM_SLOTS 8
 #endif
@@ -1948,6 +1950,10 @@ typedef struct
     * and read under the same seq discipline as the overlay viewport. */
    retro_atomic_int_t vp_params_seq;
    retro_atomic_int_t vp_params_bits[16];
+#if defined(RARCH_MOBILE)
+   /* See video_driver_set_display_fold(); main thread. */
+   unsigned display_fold;
+#endif
    /* The content scale the viewport maths produced, both axes in one
     * word - width in the high half, height in the low, the layout the
     * threaded wrapper's scale_packed already carries this value in, so
@@ -2247,6 +2253,14 @@ void video_driver_update_viewport(struct video_viewport* vp,
       bool force_full, bool keep_aspect, bool y_down);
 
 void video_driver_apply_state_changes(void);
+
+#if defined(RARCH_MOBILE)
+/* A display folded across its width: rows @top to @bottom of the window
+ * are the fold, 0 and 0 when it lies flat. The game keeps above the fold,
+ * unless its frame stacks two screens, which then take one side each.
+ * Main thread. */
+void video_driver_set_display_fold(unsigned top, unsigned bottom);
+#endif
 
 void video_driver_cached_frame(void);
 
