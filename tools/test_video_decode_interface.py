@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 The RetroArch team
-"""Exercise the actual runloop decode callbacks and v1/v2/v3 negotiation.
+"""Exercise the actual runloop decode callbacks and v1-v4 negotiation.
 
 Uses the checked hardware backend from rh264_hw_test and a generated H.264
 stream. Requires ffmpeg/libx264 and a C compiler. Builds on Linux and MinGW;
@@ -50,7 +50,13 @@ static void negotiation(void) {
   unsigned char *v2=(unsigned char*)malloc(prefix+64); assert(v2);
   memset(v2,0xa5,prefix+64);((struct retro_video_decode_interface*)v2)->interface_version=2;
   assert(query(v2));for(i=0;i<64;i++) assert(v2[prefix+i]==0xa5);free(v2);}
- current.interface_version=4; assert(!query(&current));
+ {size_t prefix=offsetof(struct retro_video_decode_interface,set_tag);
+  unsigned char *v3=(unsigned char*)malloc(prefix+64); assert(v3);
+  memset(v3,0xa5,prefix+64);((struct retro_video_decode_interface*)v3)->interface_version=3;
+  assert(query(v3));for(i=0;i<64;i++) assert(v3[prefix+i]==0xa5);free(v3);}
+ memset(&current,0,sizeof(current));
+ current.interface_version=4; assert(query(&current)); assert(current.set_tag && current.get_tag);
+ current.interface_version=5; assert(!query(&current));
  assert(!query(NULL));
 }
 
@@ -74,7 +80,15 @@ static void take_gpu(struct retro_video_decode_interface *iface,void *decoder) {
  assert(iface->get_gpu_frame(decoder,&duplicate)==-1 && readbacks==before);
  gpu.abandon(gpu.owner,gpu.done,gpu.done_value);
 }
-static int decode_stream(const char *path,int deferred) {
+/* A picture handed out names its own sample: times rising, each once. */
+static void tag_check(struct retro_video_decode_interface *iface,void *decoder,
+ const int64_t *pts,int samples,unsigned char *tagged,int64_t *last,int shown) {
+ uint64_t k=iface->get_tag(decoder);
+ assert(k<(uint64_t)samples && !tagged[k]);
+ assert(!shown || pts[k]>*last);
+ tagged[k]=1;*last=pts[k];
+}
+static int decode_stream(const char *path,int deferred,int tags) {
  struct retro_video_decode_interface iface;
  struct retro_video_decode_frame frame;
  rmp4_t *movie;
@@ -83,6 +97,7 @@ static int decode_stream(const char *path,int deferred) {
  uint8_t *bytes,*au;
  size_t size,pos,headers=0,au_size;
  int stream=-1,i,nal_length,shown=0,result,draining=0,busy=0;
+ int64_t pts[256],last_pts=0; unsigned char tagged[256];
  void *decoder;
  bytes=slurp(path,&size);assert(bytes);
  movie=rmp4_open_memory(bytes,size);assert(movie);
@@ -97,7 +112,8 @@ static int decode_stream(const char *path,int deferred) {
  assert(pos<track->codec_private_size);
  {int count=track->codec_private[pos++];for(i=0;i<count;i++)
   headers+=parameter(au+headers,track->codec_private,&pos,track->codec_private_size);}
- memset(&iface,0,sizeof(iface));iface.interface_version=deferred==2?3:deferred?2:1;assert(query(&iface));
+ memset(&iface,0,sizeof(iface));iface.interface_version=tags?4:deferred==2?3:deferred?2:1;assert(query(&iface));
+ memset(tagged,0,sizeof(tagged));
  memset(&fake,0,sizeof(fake));readbacks=0;cur_sample=0;
  fake_ops.api=VIDEO_HW_API_VULKAN;
  rh264_set_hw_backend(&fake_ops);decoder=iface.open();assert(decoder);
@@ -106,6 +122,8 @@ static int decode_stream(const char *path,int deferred) {
   result=rmp4_read_packet(movie,&packet);
   if(result!=1) {draining=1;break;}
   if(packet.track!=stream) continue;
+  assert(cur_sample<256);pts[cur_sample]=packet.timestamp;
+  if(tags) iface.set_tag(decoder,(uint64_t)cur_sample);
   au_size=headers;headers=0;pos=0;
   while(pos<packet.size) {
    size_t n=0;
@@ -134,7 +152,9 @@ static int decode_stream(const char *path,int deferred) {
       assert(iface.get_frame(decoder,&frame)==1 && readbacks==before+1);
      }
     }
-    assert(deferred==2 || (frame.planes[0] && frame.planes[0][0]==19));shown++;
+    assert(deferred==2 || (frame.planes[0] && frame.planes[0][0]==19));
+    if(tags) tag_check(&iface,decoder,pts,cur_sample+1,tagged,&last_pts,shown);
+    shown++;
    }
   }
   cur_sample++;
@@ -157,7 +177,9 @@ static int decode_stream(const char *path,int deferred) {
     assert(iface.get_frame(decoder,&frame)==1 && readbacks==before+1);
    }
   }
-  assert((deferred==2 || frame.planes[0]) && frame.hardware);shown++;
+  assert((deferred==2 || frame.planes[0]) && frame.hardware);
+  if(tags) tag_check(&iface,decoder,pts,cur_sample,tagged,&last_pts,shown);
+  shown++;
  }
  if(deferred) {
   assert(iface.get_frame(decoder,&frame)==-1);
@@ -165,17 +187,19 @@ static int decode_stream(const char *path,int deferred) {
  }
  assert(!fake.errors && readbacks==(deferred==2?0:shown));
  if(deferred==2) assert(fake.abandoned==shown);
+ if(tags) for(i=0;i<cur_sample;i++) assert(tagged[i]);
  if(deferred) assert(busy>0);
  iface.close(decoder);assert(fake.closed);
  rmp4_close(movie);free(bytes);free(au);rh264_set_hw_backend(NULL);
  return shown;
 }
 int main(int argc,char **argv) {
- int eager,deferred,gpu;
+ int eager,deferred,gpu,tagged;
  assert(argc==2);negotiation();
- eager=decode_stream(argv[1],0);deferred=decode_stream(argv[1],1);
- gpu=decode_stream(argv[1],2);assert(eager==deferred && eager==gpu && eager==24);
- printf("PASS: v1/v2 allocation canaries, v3 GPU leases with zero CPU readbacks, %d eager/deferred Annex-B outputs, cached materialization, busy retries and EOF\n",eager);
+ eager=decode_stream(argv[1],0,0);deferred=decode_stream(argv[1],1,0);
+ gpu=decode_stream(argv[1],2,0);assert(eager==deferred && eager==gpu && eager==24);
+ tagged=decode_stream(argv[1],0,1);assert(tagged==24);
+ printf("PASS: v1/v2/v3 allocation canaries, v4 tags in presentation order, v3 GPU leases with zero CPU readbacks, %d eager/deferred Annex-B outputs, cached materialization, busy retries and EOF\n",eager);
  return 0;
 }
 '''

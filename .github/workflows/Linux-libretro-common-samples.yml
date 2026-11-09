@@ -662,6 +662,14 @@ jobs:
           ffmpeg -hide_banner -loglevel error -i "$fixture" -pix_fmt yuv420p -f rawvideo -y "$reference"
           ./rdvd_h262_test "$fixture" "$reference"
 
+      - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
+        if: matrix.group == 'codecs'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_video_decode_interface.py
+          python3 tools/test_video_decode_interface.py --sanitize
+
       - name: Compile-test retro_atomic.h from a C++11 TU
         if: matrix.group == 'core'
         shell: bash

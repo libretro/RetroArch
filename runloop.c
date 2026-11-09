@@ -2061,6 +2061,16 @@ static int runloop_video_decode_get_gpu_frame(void *decoder,
    return 1;
 }
 
+static void runloop_video_decode_set_tag(void *decoder, uint64_t tag)
+{
+   rh264_video_set_tag((rh264_video*)decoder, tag);
+}
+
+static uint64_t runloop_video_decode_get_tag(void *decoder)
+{
+   return rh264_video_tag((rh264_video*)decoder);
+}
+
 static void runloop_video_decode_close(void *decoder)
 {
    rh264_video_close((rh264_video*)decoder);
@@ -3401,6 +3411,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
             if (iface->interface_version >= 3)
                iface->get_gpu_frame = runloop_video_decode_get_gpu_frame;
+            if (iface->interface_version >= 4)
+            {
+               iface->set_tag = runloop_video_decode_set_tag;
+               iface->get_tag = runloop_video_decode_get_tag;
+            }
             return true;
          }
 #else

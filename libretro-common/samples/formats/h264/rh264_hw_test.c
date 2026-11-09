@@ -17,7 +17,11 @@
  * own: every sample's presentation time is in the MP4, so the shown
  * pictures' times must rise and every sample must be shown - which the
  * software decoder of the same stream must do as well, picture for
- * picture. Streams from x264 cover CAVLC and CABAC, B-pyramids
+ * picture. Each sample is tagged with its index (rh264_video_set_tag),
+ * and the tag each picture comes out with must name a sample of its
+ * own: presentation times rising, every sample named once - on both
+ * paths, which hand pictures out in another order than they went in.
+ * Streams from x264 cover CAVLC and CABAC, B-pyramids
  * (adaptive reference marking), several references, weighted
  * prediction, slices, open GOPs and cropping; with catch-up on, the
  * non-reference pictures are passed over on both paths alike. An
@@ -280,7 +284,24 @@ typedef struct
    int failed;                  /* a decode or drain refused            */
    int order[MAX_SAMPLES];      /* hw: decode index of each shown       */
    int materialized;
+   int tags_bad;                /* a tag named no sample, out of order, or twice */
+   int64_t tag_pts;             /* the last tag's sample's time         */
+   uint8_t tagged[MAX_SAMPLES]; /* samples a shown picture's tag named  */
 } result_t;
+
+/* The picture just handed out names its own sample. */
+static void tag_shown(rh264_video *v, result_t *res)
+{
+   uint64_t k = rh264_video_tag(v);
+   if (     k >= (uint64_t)res->n || k >= MAX_SAMPLES || res->tagged[k]
+         || (res->shown && res->pts[k] <= res->tag_pts))
+   {
+      res->tags_bad++;
+      return;
+   }
+   res->tagged[k] = 1;
+   res->tag_pts   = res->pts[k];
+}
 
 static int deferred_output(rh264_video *v, result_t *res)
 {
@@ -379,6 +400,7 @@ static int decode(const char *mp4, int hw, int skip_lo, int skip_hi,
       if (res->n < MAX_SAMPLES)
          res->pts[res->n] = pkt.timestamp;
       cur_sample = res->n;
+      rh264_video_set_tag(v, (uint64_t)res->n);
       rh264_video_set_skip_nonref(v,
             res->n >= skip_lo && res->n < skip_hi);
       {
@@ -401,6 +423,7 @@ static int decode(const char *mp4, int hw, int skip_lo, int skip_hi,
       {
          if (hw >= 3 && deferred_output(v, res) != 0)
          { res->failed = 1; break; }
+         tag_shown(v, res);
          res->shown++;
       }
    }
@@ -413,6 +436,7 @@ static int decode(const char *mp4, int hw, int skip_lo, int skip_hi,
          break;
       if (hw >= 3 && deferred_output(v, res) != 0)
       { res->failed = 1; break; }
+      tag_shown(v, res);
       res->shown++;
    }
    if (hw >= 2)
@@ -518,6 +542,8 @@ static void hw_case(const char *name, const char *src, int frames,
    decode(mp4, 1, -1, -1, 1, &hw);
    snprintf(label, sizeof(label), "%s: software shows every sample", name);
    check(label, !sw.failed && sw.shown == sw.n && sw.n == frames);
+   snprintf(label, sizeof(label), "%s: each picture's tag names its sample", name);
+   check(label, !sw.tags_bad && !hw.tags_bad);
    snprintf(label, sizeof(label), "%s: %s", name,
          expect_hw ? "decodes on the backend" : "stays in software");
    check(label, hw.hw == expect_hw);

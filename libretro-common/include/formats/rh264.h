@@ -104,6 +104,13 @@ int rh264_video_set_extradata(rh264_video *v, const uint8_t *avcc, size_t len);
 /* 2 on hardware backpressure: retry with the same live data and length. */
 int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len);
 
+/* A caller's value for the picture the next rh264_video_decode opens,
+ * given back with that picture by rh264_video_tag once it is handed out:
+ * with B pictures the output is not the input's order. A field pair
+ * keeps its first field's. 0 until set. */
+void rh264_video_set_tag(rh264_video *v, uint64_t tag);
+uint64_t rh264_video_tag(const rh264_video *v);
+
 /* Hand out the next pending picture in display order without feeding more
  * data, for end of stream. Returns 0 when a picture became available through
  * rh264_video_plane, -1 when nothing is pending. */

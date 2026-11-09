@@ -5199,6 +5199,7 @@ typedef struct rh264_pic_ctx
    rh264_frame refs[RH264_MAX_REFS * 2 + 2];
    int         nrefs;
    int         alloc_w, alloc_h;  /* geometry the context's frame is for */
+   uint64_t  pic_tag;           /* the caller's tag when it opened    */
    int       pic_open;
    int       saw_switching;
    int       pic_kind;          /* 1 IDR-I, 2 recovery-I, 3 P, 4 B    */
@@ -5346,6 +5347,8 @@ struct rh264_video
     * gen counts IDRs: POC restarts at an IDR, and every picture after it in
     * decode order also follows it in output order (8.2.1). */
    rh264_frame out[RH264_OUT_SLOTS];
+   uint64_t   out_tag[RH264_OUT_SLOTS];
+   uint64_t   tag;              /* rh264_video_set_tag's, for the next picture */
    int        out_poc[RH264_OUT_SLOTS];
    int        out_gen[RH264_OUT_SLOTS];
    int        out_used[RH264_OUT_SLOTS];
@@ -9239,6 +9242,7 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
       rh264_frame_copy_planes(&v->out[slot], &v->cur->f);
    v->out[slot].w = v->cur->f.w; v->out[slot].h = v->cur->f.h;
    v->out_poc[slot] = poc; v->out_gen[slot] = v->idr_gen;
+   v->out_tag[slot] = v->cur->pic_tag;
    v->out_used[slot] = 1;  v->out_len++;
    /* An IDR arriving with nothing pending can leave at once: no picture
     * after it in decode order may precede it in output order. Otherwise
@@ -9444,6 +9448,7 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       else if (fld) { v->pair_open=1; v->pair_frame_num=sh.frame_num;
                       v->pair_poc=v->last_poc; }
       else v->pair_open=0;
+      if (!(fld && second)) v->cur->pic_tag = v->tag;
       v->cur->pic_open = 1; v->cur->pic_kind = 1; v->cur->pic_ref = nri;
       v->cur->pic_end = 0;  v->cur->pic_nslices = 0;
       v->cur->f.rows_deblocked = 0;
@@ -9787,6 +9792,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       else if (fld) { v->pair_open=1; v->pair_frame_num=sh->frame_num;
                       v->pair_poc=v->last_poc; }
       else v->pair_open=0;
+      if (!(fld && second)) v->cur->pic_tag = v->tag;
       v->cur->pic_open = 1; v->cur->pic_kind = kind; v->cur->pic_ref = nri;
       v->cur->pic_end = 0;  v->cur->pic_nslices = 0;
       v->cur->f.rows_deblocked = 0;
@@ -10508,6 +10514,7 @@ typedef struct rh264_hw
    size_t bs_len, bs_cap;
    uint32_t offs[RH264_MAX_SLICES];
    unsigned nslices;
+   uint64_t pic_tag, shown_tag;
    int pic_open, skip, slot;
    int frame_num, idr_pic_id, idr, ref, intra;
    int poc[2];
@@ -10515,6 +10522,7 @@ typedef struct rh264_hw
    int dpb_hw[RH264_MAX_REFS];
    int dpb_poc2[RH264_MAX_REFS][2];
    /* pictures waiting to be shown */
+   uint64_t out_tag[RH264_OUT_SLOTS];
    int out_slot[RH264_OUT_SLOTS];
    int out_poc[RH264_OUT_SLOTS];
    int out_gen[RH264_OUT_SLOTS];
@@ -10756,6 +10764,7 @@ static int rh264_hw_show(rh264_video *v, int i)
    rh264_hw *hw     = v->hw;
    video_hw_frame_t shown;
    int r;
+   hw->shown_tag    = hw->out_tag[i];
    if (v->hw_readback)
    {
       hw->have_cpu    = 0;
@@ -10800,6 +10809,7 @@ static int rh264_hw_out_push(rh264_video *v, int poc, int is_idr)
    if (slot < 0)
       return -1;
    hw->out_slot[slot] = hw->slot;
+   hw->out_tag[slot]  = hw->pic_tag;
    hw->out_poc[slot]  = poc;
    hw->out_gen[slot]  = v->idr_gen;
    hw->out_used[slot] = 1;
@@ -10999,6 +11009,7 @@ static int rh264_hw_slice(rh264_video *v, const uint8_t *nal, size_t len,
          return -1;
       hw->bs_len   = 0;
       hw->nslices  = 0;
+      hw->pic_tag  = v->tag;
       hw->pic_open = 1;
    }
    else if (!hw->pic_open)
@@ -11476,6 +11487,21 @@ int rh264_video_get_color(const rh264_video *v, rh264_video_color_t *out)
    return 0;
 }
 
+void rh264_video_set_tag(rh264_video *v, uint64_t tag)
+{
+   if (v)
+      v->tag = tag;
+}
+
+uint64_t rh264_video_tag(const rh264_video *v)
+{
+   if (!v)
+      return 0;
+   if (v->hw)
+      return v->hw->shown_tag;
+   return v->out_show >= 0 ? v->out_tag[v->out_show] : 0;
+}
+
 int rh264_video_bit_depth(const rh264_video *v)
 {
    const rh264_frame *f;
@@ -11677,7 +11703,7 @@ int rh264_video_drain(rh264_video *v)
  * neither is written while shared. */
 
 #define RH264_STATE_MAGIC   0x53343652u   /* "R64S" */
-#define RH264_STATE_VERSION 1u
+#define RH264_STATE_VERSION 2u   /* 2: the output queue's tags */
 
 typedef struct
 {
@@ -11898,6 +11924,9 @@ static void rh264_state_run(rh264_state_io *io, rh264_video *v)
       uint32_t want[6];
       memcpy(want, hdr, sizeof(want));
       rh264_state_bytes(io, hdr, sizeof(hdr));
+      /* version 1 is version 2 without the tags */
+      if (!io->fail && hdr[1] == 1u)
+         want[1] = 1u;
       if (io->fail || memcmp(hdr, want, sizeof(hdr)))
       {
          io->fail = 1;
@@ -11974,6 +12003,10 @@ static void rh264_state_run(rh264_state_io *io, rh264_video *v)
    RH264_ST(io, v->poc_bot);
    RH264_ST(io, v->out_poc);
    RH264_ST(io, v->out_gen);
+   if (hdr[1] >= 2u)
+      RH264_ST(io, v->out_tag);
+   else
+      memset(v->out_tag, 0, sizeof(v->out_tag));
    RH264_ST(io, v->out_used);
    RH264_ST(io, v->out_len);
    RH264_ST(io, v->out_show);

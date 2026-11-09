@@ -3182,13 +3182,13 @@ struct retro_vr_frame_state {
 #define RETRO_ENVIRONMENT_GET_VR_HEAD_POSE (98 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /* Frontend H.264 decoding to CPU-readable 8-bit YUV 4:2:0 planes.
- * Versions 1, 2 and 3 are supported. Initialize the version before querying.
+ * Versions 1 to 4 are supported. Initialize the version before querying.
  * Version 1 writes only the original prefix through close. Calls for each decoder
  * are serialized by the core; close all decoders before context teardown.
  * Unsupported frontends return false. Input is one Annex-B access unit.
  * Planes remain valid until decode, drain or close. */
 #define RETRO_ENVIRONMENT_GET_VIDEO_DECODE_INTERFACE (99 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-#define RETRO_VIDEO_DECODE_INTERFACE_VERSION 3
+#define RETRO_VIDEO_DECODE_INTERFACE_VERSION 4
 #define RETRO_VIDEO_DECODE_DEFER_PLANES (1u << 0)
 
 struct retro_video_decode_frame
@@ -3249,6 +3249,11 @@ struct retro_video_decode_interface
     * 2 busy (retry later), -1 unavailable/error. CPU get_frame remains
     * valid until decode/drain. Failed calls acquire no lease. */
    int (*get_gpu_frame)(void *decoder, struct retro_video_decode_gpu_frame *frame);
+   /* Version 4: set_tag gives the picture the next decode/decode_ex opens
+    * a value, which get_tag returns once decode or drain hands that
+    * picture out: output is in display order, not the input's. */
+   void (*set_tag)(void *decoder, uint64_t tag);
+   uint64_t (*get_tag)(void *decoder);
 };
 
 

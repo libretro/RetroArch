@@ -19,6 +19,10 @@
  *   S5  a decoder that loaded a state saves it again byte for byte,
  *       as run-ahead and rewind compare states.
  *
+ * Every unit is tagged with its index, and a picture shown is compared
+ * with its tag: a loaded decoder gives the pictures it holds the tags
+ * they went in with.
+ *
  * The clips cover B pictures and pyramids, several references,
  * long-term-free sliding windows over a long GOP, CABAC and CAVLC,
  * several slices, weighted prediction, macroblock pairs, 10 bits.
@@ -154,6 +158,7 @@ typedef struct
    int      n;
    int      call[2048];
    uint64_t hash[2048];
+   uint64_t tag[2048];
 } shown_t;
 
 static void shown_add(shown_t *s, rh264_video *h, int call)
@@ -177,6 +182,7 @@ static void shown_add(shown_t *s, rh264_video *h, int call)
    {
       s->call[s->n] = call;
       s->hash[s->n] = x;
+      s->tag[s->n]  = rh264_video_tag(h);
    }
    s->n++;
 }
@@ -204,7 +210,9 @@ static int dec_run(rh264_video *h, const clip_t *c, int from, int to, shown_t *s
    int i, d = 0;
    for (i = from; i < to; i++)
    {
-      int r = rh264_video_decode(h, c->data[i], c->size[i]);
+      int r;
+      rh264_video_set_tag(h, (uint64_t)i);
+      r = rh264_video_decode(h, c->data[i], c->size[i]);
       if (r < 0)
          return -1;
       if (r == 1)
@@ -226,7 +234,8 @@ static int shown_same(const shown_t *a, const shown_t *b, int from)
       return 0;
    }
    for (i = from; i < a->n; i++)
-      if ((g_timing && a->call[i] != b->call[i]) || a->hash[i] != b->hash[i])
+      if (     (g_timing && a->call[i] != b->call[i])
+            || a->hash[i] != b->hash[i] || a->tag[i] != b->tag[i])
       {
          if (getenv("RH264_STATE_TRACE"))
             fprintf(stderr, "  picture %d: call %d hash %016llx, expected call %d hash %016llx\n",
@@ -251,7 +260,8 @@ static int shown_from(const shown_t *b, const shown_t *ref, int first)
       return 0;
    for (i = 0; i < b->n; i++)
       if ((g_timing && b->call[i] != ref->call[first + i])
-            || b->hash[i] != ref->hash[first + i])
+            || b->hash[i] != ref->hash[first + i]
+            || b->tag[i] != ref->tag[first + i])
       {
          if (getenv("RH264_STATE_TRACE"))
             fprintf(stderr, "  picture %d: call %d hash %016llx, expected call %d hash %016llx\n",
