@@ -259,7 +259,7 @@ clean:
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
 	rm -f rbuf_fault.txt vfs_readahead_fixture.bin vfs_prefetch_offthread.bin
 	rm -f vfs_view_fixture.bin vfs_view_update.bin vfs_view_empty.bin
-	rm -f rename_replace.bin rename_replace.bin.old rename_replace.bin.tmp
+	rm -f rename_replace.bin rename_replace.bin.old rename_replace.bin.old2 rename_replace.bin.tmp RENAME_REPLACE.BIN.OLD
 	rm -f close_result.bin close_result_w.bin
 	rm -f bulk_select.bin bulk_select_w.bin bulk_roundtrip.bin \
 		bulk_short.bin bulk_shrank.bin bulk_error.bin \

@@ -17,6 +17,12 @@
  *               stop the replacement and is gone afterwards.
  *   refused   - when the replacement cannot be renamed into place,
  *               the old file is put back unchanged.
+ *   restore   - renaming "<target>.old" onto "<target>", as when a
+ *               backup is restored, does not delete the source by
+ *               taking it for a leftover aside.
+ *   restore_case - the same when only the letter case differs, as
+ *               FAT volumes treat those as one name; a leftover aside
+ *               is not touched.
  *   frontend  - under a frontend VFS whose rename refuses an existing
  *               destination, as the libretro VFS API allows, an
  *               existing file is still replaced.
@@ -52,6 +58,8 @@ static unsigned failures = 0;
 #define TARGET   "rename_replace.bin"
 #define ASIDE    TARGET ".old"
 #define TEMP     TARGET ".tmp"
+#define ASIDE2   TARGET ".old2"
+#define UPPER    "RENAME_REPLACE.BIN.OLD"
 
 /* Wrapped libc */
 
@@ -180,6 +188,8 @@ static void clean(void)
    __real_remove(TARGET);
    __real_remove(ASIDE);
    __real_remove(TEMP);
+   __real_remove(ASIDE2);
+   __real_remove(UPPER);
 }
 
 int main(void)
@@ -231,6 +241,30 @@ int main(void)
    CHECK(content_is(TARGET, v3), "a refused replacement lost the old file");
    CHECK(!exists(ASIDE) && !exists(TEMP),
          "a refused replacement left a file beside the target");
+
+   /* restore: the source is named as the aside would be */
+   put(TARGET, "current");
+   put(ASIDE, "backup");
+   reset_counts();
+   CHECK(retro_vfs_file_rename_impl(ASIDE, TARGET) == 0,
+         "restoring a .old file failed");
+   print_counts("restore");
+   CHECK(content_is(TARGET, "backup"), "restore lane content wrong");
+   CHECK(!exists(ASIDE) && !exists(ASIDE2),
+         "restore lane left a file beside the target");
+
+   /* restore_case */
+   put(TARGET, "current");
+   put(ASIDE, "stale");
+   put(UPPER, "backup");
+   CHECK(retro_vfs_file_rename_impl(UPPER, TARGET) == 0,
+         "restoring a .OLD file failed");
+   CHECK(content_is(TARGET, "backup"), "restore_case lane content wrong");
+   CHECK(content_is(ASIDE, "stale"), "restore_case lane touched the aside");
+   CHECK(!exists(UPPER) && !exists(ASIDE2),
+         "restore_case lane left a file beside the target");
+   printf("[restore_case] source matched regardless of case\n");
+   __real_remove(ASIDE);
 
    /* frontend */
    install_frontend_vfs();
