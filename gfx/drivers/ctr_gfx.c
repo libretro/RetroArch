@@ -127,6 +127,8 @@ extern const u8 ctr_sprite_shbin[];
 extern const u32 ctr_sprite_shbin_size;
 
 
+#define CTR_SW_LEND_SLOTS 2
+
 typedef struct ctr_video
 {
    struct
@@ -217,6 +219,16 @@ typedef struct ctr_video
    /* overlay[].texture are the overlay pack's (load_textures) */
    bool overlay_borrowed;
 #endif
+   /* Linear buffers lent to the core, in turn: the GPU copies a frame
+    * out of the one it was drawn in after that frame has been pushed,
+    * so the next is drawn in the other. */
+   struct
+   {
+      void    *buffer[CTR_SW_LEND_SLOTS];
+      unsigned dims;
+      unsigned next;
+   } sw_lend;
+
    bool rgb32;
    bool vsync;
    bool smooth;
@@ -2108,6 +2120,60 @@ static void* ctr_init(const video_info_t* video)
 #define CTR_INSPECT_MEMORY_USAGE
 #endif
 
+/* The lent buffers go; the cached frame may name one, so it goes first */
+static void ctr_sw_lend_release(ctr_video_t *ctr)
+{
+   unsigned i;
+   if (ctr->sw_lend.buffer[0])
+      video_driver_cached_frame_retire();
+   for (i = 0; i < CTR_SW_LEND_SLOTS; i++)
+   {
+      linearFree(ctr->sw_lend.buffer[i]);
+      ctr->sw_lend.buffer[i] = NULL;
+   }
+   ctr->sw_lend.dims = 0;
+}
+
+/* Linear memory at the tight pitch, the GPU's own copy taking it from
+ * there (ctr_frame): the frame is never copied by the CPU. Declined
+ * for a pitch that path does not take. */
+static bool ctr_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   ctr_video_t *ctr = (ctr_video_t*)data;
+   unsigned bpp, dims, i;
+   size_t pitch;
+
+   if (!ctr || !fb || !fb->width || !fb->height)
+      return false;
+   bpp   = ctr->rgb32 ? 4 : 2;
+   pitch = (size_t)fb->width * bpp;
+   if (     (pitch & 0xF) || pitch <= 0x40
+         || fb->width  > ctr->texture_width
+         || fb->height > ctr->texture_height)
+      return false;
+   dims = VIDEO_SCALE_PACK(fb->width, fb->height);
+   if (ctr->sw_lend.dims != dims)
+   {
+      ctr_sw_lend_release(ctr);
+      for (i = 0; i < CTR_SW_LEND_SLOTS; i++)
+         if (!(ctr->sw_lend.buffer[i] = linearMemAlign(pitch * fb->height, 128)))
+         {
+            ctr_sw_lend_release(ctr);
+            return false;
+         }
+      ctr->sw_lend.dims = dims;
+      ctr->sw_lend.next = 0;
+   }
+   fb->data         = ctr->sw_lend.buffer[ctr->sw_lend.next];
+   fb->pitch        = pitch;
+   fb->format       = ctr->rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
+   ctr->sw_lend.next = (ctr->sw_lend.next + 1) % CTR_SW_LEND_SLOTS;
+   return true;
+}
+
 static bool ctr_frame(void* data, const void* frame,
       unsigned dims,
       uint64_t frame_count,
@@ -2758,6 +2824,7 @@ static void ctr_free(void* data)
    }
    free(ctr->bottom_textures);
    linearFree(ctr->display_list);
+   ctr_sw_lend_release(ctr);
    linearFree(ctr->texture_linear);
    linearFree(ctr->texture_swizzled);
    linearFree(ctr->frame_coords);
@@ -3336,7 +3403,7 @@ static const video_poke_interface_t ctr_poke_interface = {
    NULL, /* show_mouse */
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
-   NULL, /* get_current_software_framebuffer */
+   ctr_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
