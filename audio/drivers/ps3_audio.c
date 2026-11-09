@@ -255,6 +255,39 @@ static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
    return len;
 }
 
+static size_t ps3_audio_write_begin(void *data, size_t len, void **region)
+{
+   ps3_audio_t *aud = data;
+   void *ptr        = NULL;
+   size_t fb        = aud->channels * sizeof(float);
+   size_t room, span;
+   *region          = NULL;
+   if (!aud->started || retro_atomic_load_acquire_int(&aud->quit_thread))
+      return 0;
+   room = ps3_audio_write_avail(aud);
+   span = retro_spsc_write_begin(&aud->ring, &ptr);
+   if (span > room)
+      span = room;
+   if (span > len)
+      span = len;
+   span -= span % fb;
+   if (!span || !ptr)
+   {
+      retro_spsc_write_end(&aud->ring, 0);
+      return 0;
+   }
+   *region = ptr;
+   return span;
+}
+
+static ssize_t ps3_audio_write_end(void *data, size_t len)
+{
+   ps3_audio_t *aud = data;
+   len -= len % (aud->channels * sizeof(float));
+   retro_spsc_write_end(&aud->ring, len);
+   return (ssize_t)len;
+}
+
 static bool ps3_audio_stop(void *data)
 {
    ps3_audio_t *aud = data;
@@ -394,5 +427,10 @@ audio_driver_t audio_ps3 = {
    ps3_audio_wait_writable,
    NULL, /* frames_consumed */
    ps3_audio_underruns,
-   ps3_audio_layout
+   ps3_audio_layout,
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   ps3_audio_write_begin,
+   ps3_audio_write_end
 };

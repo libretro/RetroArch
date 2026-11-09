@@ -108,6 +108,49 @@ static int check_blocking_write(void)
    return bad;
 }
 
+/* The span the ring lends: written where it lies, published by
+ * write_end, whole frames only, and it reaches the device. */
+static int check_lend(void)
+{
+   unsigned new_rate = 0;
+   void    *h, *span;
+   size_t   got, fb, blocks;
+   int      bad = 0;
+
+   mock_device_reset();
+   if (!(h = drv->init(NULL, 48000, 64, &new_rate)))
+      return 1;
+   drv->start(h, false);
+   fb  = 2 * sizeof(float);
+   got = drv->write_begin(h, 256 * fb + 3, &span);
+   if (!got || !span || got % fb || got > 256 * fb)
+   {
+      printf("FAIL  write_begin lent %lu bytes\n", (unsigned long)got);
+      bad = 1;
+   }
+   else
+   {
+      memset(span, 0x3f, got);
+      if (drv->write_end(h, got + 1) != (ssize_t)got)
+      {
+         printf("FAIL  write_end did not publish whole frames\n");
+         bad = 1;
+      }
+   }
+   blocks = MOCK_READ(mock_blocks);
+   while (!bad && MOCK_READ(mock_blocks) < blocks + 2)
+      usleep(200);
+   if (!bad && drv->write_begin(h, fb, &span) && drv->write_end(h, 0) != 0)
+   {
+      printf("FAIL  an abandoned lend published something\n");
+      bad = 1;
+   }
+   if (!bad)
+      printf("ok    a lent span reaches the device\n");
+   drv->free(h);
+   return bad;
+}
+
 /* Teardown while the output thread is running: the write of quit_thread
  * against that thread's read of it. */
 static int check_teardown_flag(void)
@@ -141,6 +184,7 @@ int main(void)
    setvbuf(stdout, NULL, _IONBF, 0);
    printf("ps3_ring: the blocking write holds the cond's mutex, and teardown crosses two threads\n");
    bad |= check_blocking_write();
+   bad |= check_lend();
    bad |= check_teardown_flag();
    printf(bad ? "ps3_ring: FAILED\n" : "ps3_ring: ok\n");
    return bad;

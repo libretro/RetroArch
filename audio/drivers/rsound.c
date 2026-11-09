@@ -198,6 +198,40 @@ error:
  * covers a server that fails; this covers one that merely stops. */
 #define RSOUND_WAIT_LAPS 8
 
+#define RS_FRAME_BYTES (2 * sizeof(int16_t))
+
+static size_t rs_write_begin(void *data, size_t len, void **region)
+{
+   rsd_t *rsd = (rsd_t*)data;
+   void *ptr  = NULL;
+   size_t room, span;
+   *region    = NULL;
+   if (retro_atomic_load_acquire_int(&rsd->has_error))
+      return 0;
+   room = rs_ring_room(rsd);
+   span = retro_spsc_write_begin(&rsd->ring, &ptr);
+   if (span > room)
+      span = room;
+   if (span > len)
+      span = len;
+   span -= span % RS_FRAME_BYTES;
+   if (!span || !ptr)
+   {
+      retro_spsc_write_end(&rsd->ring, 0);
+      return 0;
+   }
+   *region = ptr;
+   return span;
+}
+
+static ssize_t rs_write_end(void *data, size_t len)
+{
+   rsd_t *rsd = (rsd_t*)data;
+   len       -= len % RS_FRAME_BYTES;
+   retro_spsc_write_end(&rsd->ring, len);
+   return (ssize_t)len;
+}
+
 static ssize_t rs_write(void *data, const void *buf, size_t len)
 {
    size_t _len;
@@ -397,5 +431,11 @@ audio_driver_t audio_rsound = {
    NULL, /* write_raw */
    rs_wait_writable,
    NULL, /* frames_consumed */
-   rs_underruns
+   rs_underruns,
+   NULL, /* layout */
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   rs_write_begin,
+   rs_write_end
 };

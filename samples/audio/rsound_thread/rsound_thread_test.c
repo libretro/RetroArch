@@ -18,6 +18,7 @@
 #include <retro_atomic.h>
 
 #include "../../../audio/librsound.c"
+#include "../../../audio/drivers/rsound.c"
 
 static unsigned failures;
 #define CHECK(cond, ...) \
@@ -133,6 +134,38 @@ static void stream(rsound_t *rd, enum ending how, bool race, unsigned salt)
 
 #define ROUNDS 300
 
+/* A span lent out of the ring: written where it lies, published by
+ * write_end, partial frames not, nothing while the stream has failed. */
+static void check_lend(void)
+{
+   static rsd_t rsd;
+   int16_t      out[64];
+   void        *span;
+   size_t       got, i;
+
+   memset(&rsd, 0, sizeof(rsd));
+   if (!retro_spsc_init(&rsd.ring, 4096))
+      return;
+   rsd.fifo_size = 4096;
+   got = audio_rsound.write_begin(&rsd, 64 * 2 + 3, &span);
+   CHECK(span && got == 64 * 2, "the lend");
+   for (i = 0; i < got / 2; i++)
+      ((int16_t*)span)[i] = (int16_t)(i * 3);
+   CHECK(audio_rsound.write_end(&rsd, got + 1) == (ssize_t)got, "the lend");
+   CHECK(retro_spsc_read_avail(&rsd.ring) == got, "the lend");
+   CHECK(retro_spsc_read(&rsd.ring, out, got) == got, "the lend");
+   for (i = 0; i < got / 2; i++)
+      CHECK(out[i] == (int16_t)(i * 3), "the lend");
+
+   got = audio_rsound.write_begin(&rsd, 64, &span);
+   CHECK(audio_rsound.write_end(&rsd, 0) == 0, "the lend");
+   CHECK(retro_spsc_read_avail(&rsd.ring) == 0, "the lend");
+
+   retro_atomic_store_release_int(&rsd.has_error, 1);
+   CHECK(audio_rsound.write_begin(&rsd, 64, &span) == 0 && !span, "the lend");
+   retro_spsc_free(&rsd.ring);
+}
+
 int main(void)
 {
    rsound_t *rd;
@@ -141,6 +174,8 @@ int main(void)
    signal(SIGALRM, watchdog);
    signal(SIGPIPE, SIG_IGN);
    alarm(120);
+
+   check_lend();
 
    if (rsd_init(&rd) < 0)
    {

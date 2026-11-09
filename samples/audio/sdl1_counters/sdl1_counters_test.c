@@ -126,6 +126,37 @@ int main(void)
    CHECK(under_fed <= FPS / 2, "%u underruns while the driver was being fed",
          (unsigned)under_fed);
 
+   /* The same stream through the span the ring lends: what is written
+    * there is what the device plays, with no copy. */
+   if (!d->write_begin || !d->write_end)
+      CHECK(false, "the driver lends no span");
+   else
+   {
+      size_t under_before = d->underruns(ctx);
+      for (i = 0; i < FPS / 4; i++)
+      {
+         void  *span  = NULL;
+         size_t done  = 0;
+         while (done < block)
+         {
+            size_t got = d->write_begin(ctx, block - done, &span);
+            if (!got)
+               break;
+            CHECK(span != NULL, "a lent length with no span");
+            CHECK(got % (CHANNELS * sizeof(int16_t)) == 0,
+                  "%u bytes is not whole frames", (unsigned)got);
+            memset(span, 0, got);
+            CHECK(d->write_end(ctx, got) == (ssize_t)got,
+                  "write_end did not publish %u bytes", (unsigned)got);
+            done += got;
+         }
+         nap_ns(1000000000L / FPS);
+      }
+      CHECK(d->underruns(ctx) - under_before <= FPS / 8,
+            "%u underruns while fed through the lend",
+            (unsigned)(d->underruns(ctx) - under_before));
+   }
+
    /* Now starve it. The fifo drains, and every period after that is
     * one the device asked for and did not get. */
    consumed_fed  += consumed_open;

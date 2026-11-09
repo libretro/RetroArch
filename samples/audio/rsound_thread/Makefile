@@ -8,7 +8,10 @@ CORE_DIR := ../../..
 LRC      := $(CORE_DIR)/libretro-common
 
 SOURCES := rsound_thread_test.c \
+           ../latency_contract/stubs_retroarch.c \
            $(LRC)/rthreads/rthreads.c \
+           $(LRC)/rthreads/retro_eventcount.c \
+           $(LRC)/queues/retro_spsc.c \
            $(LRC)/compat/compat_strl.c
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE -DHAVE_THREADS \
            -I$(CORE_DIR) -I$(LRC)/include

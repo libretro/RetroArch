@@ -276,6 +276,42 @@ static void *sdl1_audio_init(const char *device,
    return sdl;
 }
 
+static size_t sdl1_audio_frame_bytes(const sdl1_audio_t *sdl)
+{
+   return (size_t)sdl->device_spec.channels
+      * (SDL_AUDIO_BITSIZE(sdl->device_spec.format) / 8);
+}
+
+static size_t sdl1_audio_write_begin(void *data, size_t len, void **region)
+{
+   sdl1_audio_t *sdl = (sdl1_audio_t*)data;
+   void *ptr         = NULL;
+   size_t room, span;
+   *region           = NULL;
+   room = sdl1_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
+   span = retro_spsc_write_begin(&sdl->speaker_ring, &ptr);
+   if (span > room)
+      span = room;
+   if (span > len)
+      span = len;
+   span -= span % sdl1_audio_frame_bytes(sdl);
+   if (!span || !ptr)
+   {
+      retro_spsc_write_end(&sdl->speaker_ring, 0);
+      return 0;
+   }
+   *region = ptr;
+   return span;
+}
+
+static ssize_t sdl1_audio_write_end(void *data, size_t len)
+{
+   sdl1_audio_t *sdl = (sdl1_audio_t*)data;
+   len -= len % sdl1_audio_frame_bytes(sdl);
+   retro_spsc_write_end(&sdl->speaker_ring, len);
+   return (ssize_t)len;
+}
+
 static ssize_t sdl1_audio_write(void *data, const void *s, size_t len)
 {
    size_t _len       = 0;
@@ -516,5 +552,10 @@ audio_driver_t audio_sdl1 = {
    sdl1_audio_wait_writable,
    sdl1_audio_frames_consumed,
    sdl1_audio_underruns,
-   sdl1_audio_layout
+   sdl1_audio_layout,
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   sdl1_audio_write_begin,
+   sdl1_audio_write_end
 };
