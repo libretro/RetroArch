@@ -33850,6 +33850,10 @@ MSG_HASH(
    "Some of RetroArch's downloadable files (menu assets, controller profiles, core info, databases) are missing.\n\nDownload them now? This needs an internet connection.\n\nThey can be updated later from the Online Updater."
    )
 MSG_HASH(
+   MSG_CORE_SIGNING_TEST_KEY,
+   "This build trusts a test signing key: cores anyone can sign will run. Not for everyday use."
+   )
+MSG_HASH(
    MSG_TO,
    "to"
    )

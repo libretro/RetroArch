@@ -393,14 +393,15 @@ OBJ += \
        runtime_file.o \
        disk_index_file.o
 
-# Core signatures: libretro's keys.
+# Core signatures: libretro's keys and the trust store.
 # HAVE_CORE_LOAD_CHECK adds the check at every core load.
 ifeq ($(HAVE_DYNAMIC), 1)
    ifeq ($(HAVE_CRYPTO), 1)
       ifeq ($(HAVE_CORE_SIGNATURES), 1)
          DEFINES += -DHAVE_CORE_SIGNATURES
          OBJ     += core_signature.o \
-                    core_signature_io.o
+                    core_signature_io.o \
+                    core_trust_runtime.o
          ifeq ($(HAVE_CORE_LOAD_CHECK), 1)
             DEFINES += -DHAVE_CORE_LOAD_CHECK
          endif
