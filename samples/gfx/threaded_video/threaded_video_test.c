@@ -5844,14 +5844,16 @@ static vshrink_event_t               vshrink_log[VSHRINK_LOG];
 static retro_atomic_int_t            vshrink_logged;
 static unsigned                      vshrink_count; /* the video thread's */
 /* The frame that holds until a count is in the mailbox, and the one
- * that holds until vshrink_release; the count plus one whose set holds
- * once until a count is in the mailbox. VSHRINK_HOLD_USEC at most. */
+ * that holds until vshrink_release; the count plus one whose set raises
+ * vshrink_set_held when it reaches the driver. VSHRINK_HOLD_USEC at
+ * most. */
 static retro_atomic_int_t            vshrink_hold_cmd;
 static retro_atomic_int_t            vshrink_hold_release;
 static retro_atomic_int_t            vshrink_release;
 static retro_atomic_int_t            vshrink_held;
 static retro_atomic_int_t            vshrink_hold_set;
 static retro_atomic_int_t            vshrink_set_held;
+static retro_atomic_int_t            vshrink_between;
 
 static void vshrink_note(char kind, unsigned value, unsigned views)
 {
@@ -5891,7 +5893,6 @@ static void vshrink_set_view_count(void *data, unsigned count)
    {
       retro_atomic_store_release_int(&vshrink_hold_set, 0);
       retro_atomic_store_release_int(&vshrink_set_held, 1);
-      vshrink_wait_cmd();
    }
    vshrink_count = count;
    /* Whether a frame's slot was still held when it reached the driver */
@@ -5931,6 +5932,18 @@ static bool vshrink_frame(void *data, const void *frame,
 }
 
 static uintptr_t vshrink_noop(void *data) { (void)data; return 0; }
+
+/* Video thread, queued: holds a pass between frames - its ring free,
+ * nothing claimed - until a count is in the mailbox. The pass read the
+ * mailbox before it ran this, so the count is taken on the next pass,
+ * after that pass claims the oldest frame pushed meanwhile. */
+static uintptr_t vshrink_hold_between(void *data)
+{
+   (void)data;
+   retro_atomic_store_release_int(&vshrink_between, 1);
+   vshrink_wait_cmd();
+   return 0;
+}
 
 /* The log's index of an event, or -1 */
 static int vshrink_find(char kind, unsigned value)
@@ -6028,9 +6041,12 @@ static void vshrink_case(const char *name, video_frame_info_t *info,
 }
 
 /* A shrink 3 -> 1 handled with one frame claimed and one pending:
- * the shrink 3 -> 2 that waits for 'first + 1' holds in the driver
- * until 'first + 2' and 'first + 3' fill the ring and the count is in
- * the mailbox. With 'grow', 'first + 2' holds until a grow to 3 is in
+ * once the shrink 3 -> 2 that waits for 'first + 1' has reached the
+ * driver, a pass between frames holds until 'first + 2' and
+ * 'first + 3' fill the ring and the count is in the mailbox. The shrink
+ * reaches the driver before 'first + 1' gives back its slot, so the
+ * hold cannot be there: the ring would have room for only one of the
+ * two. With 'grow', 'first + 2' holds until a grow to 3 is in
  * the mailbox, which cancels the shrink still waiting for 'first + 3'. */
 static void vshrink_older_case(const char *name, video_frame_info_t *info,
       uint32_t *pixels, unsigned first, bool grow)
@@ -6051,6 +6067,7 @@ static void vshrink_older_case(const char *name, video_frame_info_t *info,
    retro_atomic_store_release_int(&vshrink_logged, 0);
    retro_atomic_store_release_int(&vshrink_held, 0);
    retro_atomic_store_release_int(&vshrink_set_held, 0);
+   retro_atomic_store_release_int(&vshrink_between, 0);
    retro_atomic_store_release_int(&vshrink_release, 0);
    retro_atomic_store_release_int(&vshrink_hold_cmd, (int)first);
    retro_atomic_store_release_int(&vshrink_hold_release,
@@ -6065,6 +6082,10 @@ static void vshrink_older_case(const char *name, video_frame_info_t *info,
    video->poke->set_view_count(video->data, 2);
    CHECK(vshrink_wait_flag(&vshrink_set_held),
          "%s: the shrink to 2 never reached the driver", name);
+   video_thread_wait_idle();
+   CHECK(video_thread_run_queued(vshrink_hold_between, NULL)
+         && vshrink_wait_flag(&vshrink_between),
+         "%s: the video thread never held between frames", name);
    vshrink_push(info, pixels, p1, 2);
    vshrink_push(info, pixels, p2, 2);
    video->poke->set_view_count(video->data, 1);
@@ -11180,6 +11201,7 @@ end:
 }
 #endif
 
+#if defined(HAVE_VULKAN) || (defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND))
 /* Within @tol in each channel */
 static bool planar_close(uint32_t a, uint32_t b, unsigned tol)
 {
@@ -11192,6 +11214,7 @@ static bool planar_close(uint32_t a, uint32_t b, unsigned tol)
    }
    return true;
 }
+#endif
 
 /* Planar surfaces on the real driver, direct and threaded, I420 from
  * the caller's padded planes and NV12 from a slot, at an odd size. A
