@@ -33854,6 +33854,10 @@ MSG_HASH(
    "This build trusts a test signing key: cores anyone can sign will run. Not for everyday use."
    )
 MSG_HASH(
+   MSG_CORE_TRUST_SEEDED,
+   "RetroArch now checks core signatures. Your cores stay trusted; Update Installed Cores gets signed ones."
+   )
+MSG_HASH(
    MSG_TO,
    "to"
    )

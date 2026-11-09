@@ -110,6 +110,7 @@
 
 #if defined(ANDROID)
 #include <android/api-level.h>
+#include "frontend/drivers/platform_unix.h"
 #endif
 
 #ifdef HAVE_PRESENCE
@@ -10001,9 +10002,16 @@ bool retroarch_main_init_core(int argc, char *argv[],
    /* Before the first core is opened, -L's and launcher intents' too */
    {
       char core_ext[16];
-      frontend_driver_get_core_extension(core_ext, sizeof(core_ext));
-      core_trust_runtime_init(NULL, g_defaults.dirs[DEFAULT_DIR_CORE],
-            core_ext);
+#ifdef ANDROID
+      /* The app's own folder, never the one an intent extra names: none,
+       * and no seed this launch, when it couldn't be read */
+      const char *seed_dir = android_app_cores_dir();
+#else
+      const char *seed_dir = g_defaults.dirs[DEFAULT_DIR_CORE];
+#endif
+      if (!frontend_driver_get_core_extension(core_ext, sizeof(core_ext)))
+         core_ext[0] = '\0';
+      core_trust_runtime_init(NULL, seed_dir, core_ext);
    }
 #endif
 
