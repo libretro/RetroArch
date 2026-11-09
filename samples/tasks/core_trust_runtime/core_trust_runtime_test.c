@@ -282,6 +282,7 @@ static void test_inactive(void)
    CHECK(!path_is_valid(tmp("inactive")));
    CHECK(!core_warning_push(&c, CORE_WARNING_LOAD, "/c/a_libretro.so",
             warn_cb, NULL));
+   CHECK(core_trust_runtime_toggle_checks() == CORE_TRUST_TOGGLE_READ_ONLY);
    core_trust_runtime_deinit();
 }
 
@@ -349,6 +350,26 @@ static void test_load_unreadable(void)
    pump(4);
    core_trust_runtime_deinit();
    CHECK(path_is_directory(path));
+}
+
+static void test_toggle(void)
+{
+   char path[256];
+   strlcpy(path, tmp("toggle"), sizeof(path));
+   CHECK(core_trust_runtime_init(path, NULL, NULL));
+   CHECK(core_trust_runtime_toggle_checks() == CORE_TRUST_TOGGLE_CONFIRM_OFF);
+   CHECK(core_trust_runtime_checks_on());
+   CHECK(core_trust_runtime_set_checks(false));
+   CHECK(core_trust_runtime_toggle_checks() == CORE_TRUST_TOGGLE_DONE);
+   CHECK(core_trust_runtime_checks_on());
+   pump(4);
+   core_trust_runtime_deinit();
+   strlcpy(path, tmp("toggle_dir"), sizeof(path));
+   CHECK(path_mkdir(path));
+   CHECK(core_trust_runtime_init(path, NULL, NULL));
+   CHECK(core_trust_runtime_toggle_checks() == CORE_TRUST_TOGGLE_READ_ONLY);
+   CHECK(core_trust_runtime_checks_on());
+   core_trust_runtime_deinit();
 }
 
 /* NULL: the default path, a file of its own with the test key, or
@@ -1085,6 +1106,7 @@ int main(void)
       test_load_good();
       test_load_damaged();
       test_load_unreadable();
+      test_toggle();
       test_default_path();
       test_saves_chained();
       test_deinit_writes();

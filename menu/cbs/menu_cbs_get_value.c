@@ -38,6 +38,9 @@
 #ifdef HAVE_CHEATS
 #include "../../cheat_manager.h"
 #endif
+#ifdef HAVE_CORE_SIGNATURES
+#include "../../core_trust_runtime.h"
+#endif
 #include "../../performance_counters.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
@@ -807,6 +810,24 @@ static size_t menu_action_setting_disp_set_label_core_set_standalone_exempt(
    *w  = (unsigned)_len;
    return _len;
 }
+
+#ifdef HAVE_CORE_SIGNATURES
+static size_t menu_action_setting_disp_set_label_core_signature_check(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   size_t _len = strlcpy(s, msg_hash_to_str(core_trust_runtime_checks_on()
+            ? MENU_ENUM_LABEL_VALUE_ON : MENU_ENUM_LABEL_VALUE_OFF), len);
+   if (path)
+      strlcpy(s2, path, len2);
+   *w = (unsigned)_len;
+   return _len;
+}
+#endif
 
 static size_t menu_action_setting_disp_set_label_input_desc(
       file_list_t* list,
@@ -2534,6 +2555,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_lock);
          break;
+#ifdef HAVE_CORE_SIGNATURES
+      case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_core_signature_check);
+         break;
+#endif
       case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_set_standalone_exempt);

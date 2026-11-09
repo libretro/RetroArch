@@ -5682,6 +5682,11 @@ bool command_event(enum event_command cmd, void *data)
          menu_first_run_download_start();
 #endif
          break;
+      case CMD_EVENT_CORE_SIGNATURE_CHECK_OFF:
+#ifdef HAVE_CORE_SIGNATURES
+         core_trust_runtime_set_checks(false);
+#endif
+         break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          /* Same as at quit: the companion's live layout first. */
          ui_companion_event_command(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);

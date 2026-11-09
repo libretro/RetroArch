@@ -456,7 +456,8 @@ jobs:
           # The Security Warning answers only the request it shows: OK
           # on the rows of an older request chooses nothing for a newer
           # one, and a pending request's screen comes back after a tab
-          # switch flushes the stack.
+          # switch flushes the stack. Turning Check Core Signatures off
+          # always asks first.
           samples/menu/core_warning/build.sh
           ./samples/menu/core_warning/core_warning_test
           make -C samples/menu/core_warning clean

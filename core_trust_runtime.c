@@ -494,6 +494,16 @@ bool core_trust_runtime_set_checks(bool on)
    return true;
 }
 
+enum core_trust_toggle core_trust_runtime_toggle_checks(void)
+{
+   if (!core_trust_rt.t || core_trust_rt.read_only)
+      return CORE_TRUST_TOGGLE_READ_ONLY;
+   if (core_trust_runtime_checks_on())
+      return CORE_TRUST_TOGGLE_CONFIRM_OFF;
+   core_trust_runtime_set_checks(true);
+   return CORE_TRUST_TOGGLE_DONE;
+}
+
 bool core_trust_runtime_seed_pending(void)
 {
    return core_trust_rt.seed_pending;

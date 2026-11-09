@@ -1481,6 +1481,14 @@ MSG_HASH(
    "Prevent modification of the currently installed core. May be used to avoid unwanted updates when content requires a specific core version (e.g. Arcade ROM sets) or the core's own save state format changes."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SIGNATURE_CHECK,
+   "Check Core Signatures"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SIGNATURE_CHECK,
+   "Warn before running a core that libretro didn't sign or that has changed since."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Exclude From 'Contentless Cores' Menu"
    )
@@ -33912,6 +33920,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_SIGNATURE_DOWNLOAD_OLDER,
    "Core download is older than one already used; installed core kept."
+   )
+MSG_HASH(
+   MSG_CORE_SIGNATURE_CHECK_OFF_CONFIRM,
+   "Turning this off lets RetroArch run cores that may have been tampered with, including ones downloaded by the Online Updater. Only do this if you build or install cores yourself and understand the risk."
+   )
+MSG_HASH(
+   MSG_CORE_TRUST_READ_ONLY,
+   "This can't be changed now: RetroArch couldn't read its list of trusted cores."
    )
 MSG_HASH(
    MSG_TO,

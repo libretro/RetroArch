@@ -567,6 +567,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          switch (entry->type)
          {
             case MENU_SETTING_ACTION_CORE_LOCK:
+            case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
                entry->setting_type  = ST_BOOL;
                break;
             default:

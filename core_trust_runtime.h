@@ -37,6 +37,17 @@ bool core_trust_runtime_always(const struct core_check *c);
 bool core_trust_runtime_checks_on(void);
 /* False, changing nothing, when inactive or read-only */
 bool core_trust_runtime_set_checks(bool on);
+
+enum core_trust_toggle
+{
+   CORE_TRUST_TOGGLE_DONE = 0,
+   CORE_TRUST_TOGGLE_CONFIRM_OFF,
+   CORE_TRUST_TOGGLE_READ_ONLY
+};
+
+/* The setting's OK: turns checks on at once; turning them off waits
+ * for the user to confirm */
+enum core_trust_toggle core_trust_runtime_toggle_checks(void);
 /* True from startup until the seed has recorded what it found (builds
  * with the load check only) */
 bool core_trust_runtime_seed_pending(void);
