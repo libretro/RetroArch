@@ -96,6 +96,7 @@
 #include "../../gfx/common/vulkan_custom_driver.h"
 #endif
 #ifdef HAVE_CORE_SIGNATURES
+#include "../../core_install_check.h"
 #include "../../core_trust_runtime.h"
 #endif
 #include "../../manual_content_scan.h"
@@ -9542,6 +9543,9 @@ static int action_ok_core_delete_backup(const char *path,
    /* Delete backup file (if it exists) */
    if (path_is_valid(backup_path))
       filestream_delete(backup_path);
+#ifdef HAVE_CORE_SIGNATURES
+   core_install_drop_sig(backup_path);
+#endif
    /* Refresh menu */
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
