@@ -265,6 +265,7 @@ int main(void)
       d.pos                        = VIDEO_POS_PACK(-1, 20);
       d.dims                       = VIDEO_SCALE_PACK(3, 40);
       rec_ctx.handles_vertex_strip = false;
+      p_disp->dispctx              = &rec_ctx;
       gfx_display_set_output_dims(p_disp, output);
 
       reset();
@@ -290,6 +291,7 @@ int main(void)
       CHECK(rec_vd == layout && rec_dims == VIDEO_SCALE_PACK(3, 40), "cleared, nothing is stretched");
       CHECK(gfx_display_output_dims(p_disp, layout) == layout, "and the size is passed through");
       rec_ctx.handles_vertex_strip = true;
+      p_disp->dispctx              = NULL;
    }
 
    if (fails)
