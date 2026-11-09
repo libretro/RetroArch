@@ -110,6 +110,9 @@ void win32_window_release_kept(void);
 
 #include "../command.h"
 #include "../core_info.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../core_load_check.h"
+#endif
 #include "../content.h"
 #include "../core.h"
 #include "../configuration.h"
@@ -2542,8 +2545,14 @@ static bool content_load(content_ctx_info_t *info,
       return true;
    }
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_set_startup(true);
+#endif
    while (job->stage != CONTENT_LOAD_STAGE_NONE)
       content_load_step(job, p_content);
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_set_startup(false);
+#endif
    return content_load_job_result;
 }
 

@@ -1055,8 +1055,11 @@ void runloop_core_preload_cancel(void);
 
 #ifdef HAVE_DYNAMIC
 /* dylib_load() for a core; on Android only from the app's own folders.
- * @quiet: a worker's open, whose refusal the main thread's open logs */
+ * Main thread only: the load check comes first. */
 dylib_t runloop_core_dylib_load(const char *path, bool quiet);
+/* As above, unchecked, on any thread.
+ * @quiet: a worker's open, whose refusal the main thread's open logs */
+dylib_t runloop_core_dylib_open(const char *path, bool quiet);
 
 /* Frees the records libretro_get_system_info() keeps of the cores it
  * has asked; the next question reads them back from disk. */

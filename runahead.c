@@ -53,6 +53,9 @@
 #include "paths.h"
 #include "runloop.h"
 #include "verbosity.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "core_trust_runtime.h"
+#endif
 
 /* ===== BEGIN runahead dense input cache =====
  * The last value each input tuple returned, for the dirty comparison
@@ -755,7 +758,7 @@ static void runahead_copy_task_handler(retro_task_t *task)
        * on while the loader maps the copy. A copy that will not
        * open is still published; the main thread's own open of it
        * then reports why. */
-      h->lib      = runloop_core_dylib_load(h->out_path, true);
+      h->lib      = runloop_core_dylib_open(h->out_path, true);
    }
    else
    {
@@ -1048,6 +1051,12 @@ static enum runahead_copy_status secondary_core_create(
          || (!runloop_st->load_content_info)
          || ( runloop_st->load_content_info->special))
       return RUNAHEAD_COPY_UNAVAILABLE;
+
+#ifdef HAVE_CORE_LOAD_CHECK
+   /* The copy would load unchecked */
+   if (core_trust_runtime_active())
+      return RUNAHEAD_COPY_UNAVAILABLE;
+#endif
 
    /* The core binary is duplicated by a task; until the copy
     * completes this reports PENDING and the caller runs the
