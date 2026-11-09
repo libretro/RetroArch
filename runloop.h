@@ -1048,7 +1048,8 @@ bool libretro_get_system_info(
  * previous core is closed; the core stage then takes the handle.
  * begin returns false when there is no worker to open it on (the core
  * stage opens it itself), ready is true once no open is in flight,
- * cancel drops an untaken handle. */
+ * cancel drops an untaken handle. With a trust store the stage is the
+ * core's check, worker or not (core_load_check_stage_begin). */
 bool runloop_core_preload_begin(void);
 bool runloop_core_preload_ready(void);
 void runloop_core_preload_cancel(void);

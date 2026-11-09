@@ -909,6 +909,55 @@ static bool load_dynamic_core_resolves_symlinks(void)
 #endif
 }
 
+#ifdef HAVE_CORE_LOAD_CHECK
+/* With a trust store the preload stage is the core's check, with or
+ * without a worker, and the open moves to a worker only from the file
+ * the check passed. Any core path but a built-in core's: a playlist
+ * Run sets no explicit core type. */
+static bool runloop_core_check_begin(void)
+{
+   const char *path = path_get(RARCH_PATH_CORE);
+#if defined(ANDROID)
+   char real_path[PATH_MAX_LENGTH];
+#endif
+   if (     !path || !*path
+         || (     (runloop_state.flags & RUNLOOP_FLAG_HAS_SET_CORE)
+               &&  runloop_state.explicit_current_core_type
+                  != CORE_TYPE_PLAIN))
+      return false;
+   /* The path load_dynamic_core() opens, resolved the same way */
+#ifdef _WIN32
+   if (!core_load_verbatim_dot(path))
+#endif
+   {
+      path_resolve_realpath(path_get_ptr(RARCH_PATH_CORE),
+            path_get_realsize(RARCH_PATH_CORE),
+            load_dynamic_core_resolves_symlinks());
+   }
+   path = path_get(RARCH_PATH_CORE);
+#if defined(ANDROID)
+   /* The check reads the real path, as the open does */
+   if (!android_core_path_resolve(path, real_path, sizeof(real_path)))
+      return false;
+   path = real_path;
+#endif
+   return core_load_check_stage_begin(path);
+}
+
+static dylib_t runloop_core_check_take(const char *path)
+{
+#if defined(ANDROID)
+   char real_path[PATH_MAX_LENGTH];
+   if (android_core_path_resolve(path, real_path, sizeof(real_path)))
+      return core_load_check_stage_take(real_path);
+   core_load_check_stage_cancel();
+   return NULL;
+#else
+   return core_load_check_stage_take(path);
+#endif
+}
+#endif
+
 /* ---- the core's library, opened ahead of the load ----
  *
  * Mapping a core and running its constructors is the system loader's
@@ -1023,9 +1072,8 @@ bool runloop_core_preload_begin(void)
    const char            *path = path_get(RARCH_PATH_CORE);
 
 #ifdef HAVE_CORE_LOAD_CHECK
-   /* The open waits for the core's check */
    if (core_trust_runtime_active())
-      return false;
+      return runloop_core_check_begin();
 #endif
 
    /* Only a plain core named by the push, and only with a worker to
@@ -1071,11 +1119,18 @@ bool runloop_core_preload_begin(void)
 
 bool runloop_core_preload_ready(void)
 {
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (core_trust_runtime_active())
+      return core_load_check_stage_ready();
+#endif
    return !core_preload_pending;
 }
 
 void runloop_core_preload_cancel(void)
 {
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_stage_cancel();
+#endif
    core_preload_reset();
 }
 #endif
@@ -1112,6 +1167,10 @@ static dylib_t load_dynamic_core(const char *path, char *s,
       dylib_t lib = NULL;
 #if defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
       lib = core_preload_take(path);
+#endif
+#ifdef HAVE_CORE_LOAD_CHECK
+      if (!lib && core_trust_runtime_active())
+         lib = runloop_core_check_take(path);
 #endif
       if (!lib)
          lib = runloop_core_dylib_load(path, false);
@@ -1171,11 +1230,33 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 #endif
 
 #if !(defined(HAVE_DYNAMIC) && defined(HAVE_THREADS))
-/* No worker to open the library on: the core stage loads it
- * (or links it statically), so the preload stage has nothing to do. */
-bool runloop_core_preload_begin(void)  { return false; }
-bool runloop_core_preload_ready(void)  { return true; }
-void runloop_core_preload_cancel(void) { }
+/* No worker to open the library on: the core stage loads it (or links
+ * it statically), so the preload stage has nothing to do but the
+ * core's check */
+bool runloop_core_preload_begin(void)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (core_trust_runtime_active())
+      return runloop_core_check_begin();
+#endif
+   return false;
+}
+
+bool runloop_core_preload_ready(void)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (core_trust_runtime_active())
+      return core_load_check_stage_ready();
+#endif
+   return true;
+}
+
+void runloop_core_preload_cancel(void)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_stage_cancel();
+#endif
+}
 #endif
 
 static void runloop_update_runtime_log(

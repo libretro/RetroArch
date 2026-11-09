@@ -63,10 +63,12 @@ CFLAGS += -Wall -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) \
           -DHAVE_DYNAMIC -DHAVE_MENU -DHAVE_CORE_SIGNATURES \
           -DHAVE_CORE_LOAD_CHECK -DHAVE_CORE_SIGNING_TEST_KEY
 
-# Counts the hashes the check starts; Darwin's ld has no --wrap
+# Counts the hashes the check starts, and moves a core between its
+# check and its pass; Darwin's ld has no --wrap
 ifneq ($(shell uname -s),Darwin)
    CFLAGS  += -DCOUNT_HASHES
-   LDFLAGS += -Wl,--wrap=core_hash_init
+   LDFLAGS += -Wl,--wrap=core_hash_init \
+              -Wl,--wrap=core_trust_runtime_apply
 endif
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
