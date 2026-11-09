@@ -2,8 +2,9 @@
  * device: a core renders frame after frame into the lent staging slots,
  * each pushed frame reaches chain.history[0] through the GPU copy and
  * nothing else, the slot the cached frame may point into is never lent
- * straight back, every push retires the cached frame, a frame at a size
- * history[0] does not have is declined, and the slots go unmapped. */
+ * straight back, every push retires the cached frame, a window pushed
+ * from inside a larger loan reaches history[0] at its own size, and the
+ * slots go unmapped. */
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _WIN32
@@ -98,7 +99,7 @@ int main(void)
    for (frame = 0; frame < 120; frame++)
    {
       int slot;
-      unsigned x, y;
+      unsigned x, y, lx = 1, ly = 1;
       memset(&fb, 0, sizeof(fb));
       fb.width = W; fb.height = H;
       if (!d3d11_get_current_software_framebuffer(&v, &fb))
@@ -113,12 +114,13 @@ int main(void)
          for (x = 0; x < W; x++)
             ((uint32_t*)((uint8_t*)fb.data + (size_t)y * fb.pitch))[x] =
                (frame * 2654435761u + y * W + x) & 0x00ffffffu;
-      slot = d3d11_sw_lend_find(&v, fb.data, W, H, (unsigned)fb.pitch);
-      CHECK(slot >= 0);
+      slot = d3d11_sw_lend_find(&v, fb.data, W, H, (unsigned)fb.pitch,
+            &lx, &ly);
+      CHECK(slot >= 0 && !lx && !ly);
       /* the slot the cached frame may point into is not lent straight back */
       CHECK((unsigned)slot != last);
       last = (unsigned)slot;
-      CHECK(d3d11_sw_lend_push(&v, v.context, slot, W, H));
+      CHECK(d3d11_sw_lend_push(&v, v.context, slot, 0, 0, W, H));
       CHECK(!(v.sw_lend.mapped_bits & (1u << slot)));
       CHECK(retired == ++lends);
       if (!(frame % 10))
@@ -129,12 +131,40 @@ int main(void)
    CHECK(lends >= 100);
 
    /* A frame pushed from anywhere else is not the lend's */
-   CHECK(d3d11_sw_lend_find(&v, readback, W, H, W * 4) < 0);
-   /* A size history[0] does not have yet is declined */
+   {
+      unsigned lx, ly;
+      CHECK(d3d11_sw_lend_find(&v, readback, W, H, W * 4, &lx, &ly) < 0);
+   }
+   /* A loan larger than history[0], the frame pushed as a window inside
+    * it, as a core cropping its overscan does: found at its offset and
+    * copied into history[0] at the window's size */
+   {
+      unsigned tries, x, y, lx = 0, ly = 0;
+      int slot = -1;
+      bool got = false;
+      for (tries = 0; tries < 50 && !got; tries++)
+      {
+         memset(&fb, 0, sizeof(fb));
+         fb.width = W + 64; fb.height = H + 8;
+         got = d3d11_get_current_software_framebuffer(&v, &fb);
+      }
+      CHECK(got && fb.pitch == (W + 64) * 4);
+      for (y = 0; y < H; y++)
+         for (x = 0; x < W; x++)
+            ((uint32_t*)((uint8_t*)fb.data + (size_t)(y + 4) * fb.pitch))[x + 32] =
+               (frame * 2654435761u + y * W + x) & 0x00ffffffu;
+      slot = d3d11_sw_lend_find(&v, (uint8_t*)fb.data + 4 * fb.pitch + 32 * 4,
+            W, H, (unsigned)fb.pitch, &lx, &ly);
+      CHECK(slot >= 0 && lx == 32 && ly == 4);
+      /* A window running past the loan is not the lend's */
+      CHECK(d3d11_sw_lend_find(&v, (uint8_t*)fb.data + 4 * fb.pitch + 96 * 4,
+            W, H, (unsigned)fb.pitch, &lx, &ly) < 0);
+      CHECK(d3d11_sw_lend_push(&v, v.context, slot, lx, ly, W, H));
+      CHECK(verify(&v, readback, frame));
+   }
    memset(&fb, 0, sizeof(fb));
-   fb.width = W + 16; fb.height = H;
-   CHECK(!d3d11_get_current_software_framebuffer(&v, &fb));
-   /* So is a hardware-rendering core */
+   fb.height = H;
+   /* A hardware-rendering core is declined */
    v.flags = D3D11_ST_FLAG_HW_IFACE_ENABLE;
    fb.width = W;
    CHECK(!d3d11_get_current_software_framebuffer(&v, &fb));

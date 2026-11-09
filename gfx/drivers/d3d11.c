@@ -5867,10 +5867,10 @@ static bool d3d11_get_current_software_framebuffer(void *data,
    hist = &d3d11->chain.history[0];
    bpp  = d3d11_format_bytes(d3d11->format);
    dims = VIDEO_SCALE_PACK(fb->width, fb->height);
+   /* The loan is the size asked for, which history[0] need not be: a
+    * core may push a window inside it, history[0] at the window's size */
    if (     !hist->handle
-         || hist->desc.Format != d3d11->format
-         || hist->desc.Width  != fb->width
-         || hist->desc.Height != fb->height)
+         || hist->desc.Format != d3d11->format)
       return false;
 
    if (     d3d11->sw_lend.dims   != dims
@@ -5878,6 +5878,8 @@ static bool d3d11_get_current_software_framebuffer(void *data,
    {
       D3D11_TEXTURE2D_DESC desc = hist->desc;
       d3d11_sw_lend_release(d3d11);
+      desc.Width              = fb->width;
+      desc.Height             = fb->height;
       desc.MipLevels          = 1;
       desc.ArraySize          = 1;
       desc.SampleDesc.Count   = 1;
@@ -5928,22 +5930,39 @@ static bool d3d11_get_current_software_framebuffer(void *data,
 
 /* The lent slot @frame was pushed from, or -1 for a frame from
  * anywhere else; the slot is remembered as the one the cached frame
- * may now point into. */
+ * may now point into. The frame may be a window inside the slot, as a
+ * core cropping its overscan pushes one: *x and *y say where it starts. */
 static int d3d11_sw_lend_find(d3d11_video_t *d3d11, const void *frame,
-      unsigned width, unsigned height, unsigned pitch)
+      unsigned width, unsigned height, unsigned pitch,
+      unsigned *x, unsigned *y)
 {
    unsigned k;
-   if (     !d3d11->sw_lend.mapped_bits
-         || d3d11->sw_lend.dims != VIDEO_SCALE_PACK(width, height))
+   unsigned lend_w = VIDEO_SCALE_W(d3d11->sw_lend.dims);
+   unsigned lend_h = VIDEO_SCALE_H(d3d11->sw_lend.dims);
+   unsigned bpp    = d3d11_format_bytes(d3d11->sw_lend.format);
+   if (!d3d11->sw_lend.mapped_bits || !width || !height || !bpp)
       return -1;
    for (k = 0; k < D3D11_SW_LEND_SLOTS; k++)
-      if (     (d3d11->sw_lend.mapped_bits & (1u << k))
-            && d3d11->sw_lend.mapped[k].pData    == frame
-            && d3d11->sw_lend.mapped[k].RowPitch == pitch)
-      {
-         d3d11->sw_lend.last = k;
-         return (int)k;
-      }
+   {
+      const uint8_t *base;
+      size_t off;
+      if (     !(d3d11->sw_lend.mapped_bits & (1u << k))
+            || d3d11->sw_lend.mapped[k].RowPitch != pitch)
+         continue;
+      base = (const uint8_t*)d3d11->sw_lend.mapped[k].pData;
+      if ((const uint8_t*)frame < base)
+         continue;
+      off = (size_t)((const uint8_t*)frame - base);
+      if (     off >= (size_t)pitch * lend_h
+            || (off % pitch) % bpp
+            || (off % pitch) / bpp + width  > lend_w
+            || off / pitch         + height > lend_h)
+         continue;
+      *x = (unsigned)((off % pitch) / bpp);
+      *y = (unsigned)(off / pitch);
+      d3d11->sw_lend.last = k;
+      return (int)k;
+   }
    return -1;
 }
 
@@ -5952,7 +5971,8 @@ static int d3d11_sw_lend_find(d3d11_video_t *d3d11, const void *frame,
  * points into the slot, is retired: a redraw draws history[0] as it
  * stands. False when history[0] no longer takes it. */
 static bool d3d11_sw_lend_push(d3d11_video_t *d3d11,
-      D3D11DeviceContext ctx, int slot, unsigned width, unsigned height)
+      D3D11DeviceContext ctx, int slot, unsigned x, unsigned y,
+      unsigned width, unsigned height)
 {
    D3D11_BOX box;
    d3d11_texture_t *hist = &d3d11->chain.history[0];
@@ -5962,11 +5982,11 @@ static bool d3d11_sw_lend_push(d3d11_video_t *d3d11,
          || hist->desc.Width  != width
          || hist->desc.Height != height)
       return false;
-   box.left   = 0;
-   box.top    = 0;
+   box.left   = x;
+   box.top    = y;
    box.front  = 0;
-   box.right  = width;
-   box.bottom = height;
+   box.right  = x + width;
+   box.bottom = y + height;
    box.back   = 1;
    ctx->lpVtbl->Unmap(ctx,
          (D3D11Resource)d3d11->sw_lend.staging[slot], 0);
@@ -7246,6 +7266,8 @@ static bool d3d11_gfx_frame_body(
    bool sw_pending                = false;
    /* The lent slot it was rendered into, or -1 */
    int sw_lend_slot               = -1;
+   unsigned sw_lend_x             = 0;
+   unsigned sw_lend_y             = 0;
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
    unsigned n;
@@ -7642,7 +7664,7 @@ static bool d3d11_gfx_frame_body(
       {
          sw_pending   = true;
          sw_lend_slot = d3d11_sw_lend_find(d3d11, frame,
-               width, height, pitch);
+               width, height, pitch, &sw_lend_x, &sw_lend_y);
       }
    }
 
@@ -7667,7 +7689,8 @@ static bool d3d11_gfx_frame_body(
       sw_pending = false;
       /* Rendered into a lent slot: copied on the GPU, drawn from
        * history[0] like any staged frame */
-      if (d3d11_sw_lend_push(d3d11, context, sw_lend_slot, width, height))
+      if (d3d11_sw_lend_push(d3d11, context, sw_lend_slot,
+               sw_lend_x, sw_lend_y, width, height))
          ;
       else if ((   !(d3d11->chain.shader_preset && video_info->shader_active)
                 || d3d11_preset_reads_in_place(d3d11, NULL,
