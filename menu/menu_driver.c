@@ -4081,25 +4081,30 @@ enum menu_first_run_dl
 /* A directory that is configured but missing or empty */
 static bool menu_first_run_dir_missing(const char *dir)
 {
+   return *dir && (!path_is_directory(dir) || path_is_empty_directory(dir));
+}
+
+#ifdef HAVE_UPDATE_ASSETS
+/* A UWP install holds an assets directory with only an empty
+ * wallpapers folder in it, so a look at the top level alone calls
+ * it complete.  Where Ozone is built in, its own folder is the one
+ * to ask: when that has files the parent has them too, so the
+ * parent needs no look of its own. */
+static bool menu_first_run_assets_missing(const char *dir)
+{
+#ifdef HAVE_OZONE
    char ozone[PATH_MAX_LENGTH];
 
    if (!*dir)
       return false;
 
-   if (!path_is_directory(dir) || path_is_empty_directory(dir))
-      return true;
-
-#ifdef HAVE_OZONE
-   if (string_is_equal(path_basename(dir), "assets"))
-   {
-      // xmb or ozone check as UWP has a empty wallpapers directory
-      fill_pathname_join_special(ozone, dir, "ozone", sizeof(ozone));
-      return !path_is_directory(ozone) || path_is_empty_directory(ozone);
-   }
+   fill_pathname_join_special(ozone, dir, "ozone", sizeof(ozone));
+   return menu_first_run_dir_missing(ozone);
+#else
+   return menu_first_run_dir_missing(dir);
 #endif
-
-   return false;
 }
+#endif
 
 /* On a first run the directory usually does not exist yet, so ask the
  * nearest existing parent.  An unknown answer (-1) does not hold the
@@ -4124,7 +4129,7 @@ static uint8_t menu_first_run_scan(settings_t *settings)
 {
    uint8_t mask = 0;
 #ifdef HAVE_UPDATE_ASSETS
-   if (     menu_first_run_dir_missing(settings->paths.directory_assets)
+   if (     menu_first_run_assets_missing(settings->paths.directory_assets)
          && menu_first_run_has_space(settings->paths.directory_assets,
             ASSETS_ZIP_PLUS_DECOMPRESSION_SIZE))
       mask |= MENU_FIRST_RUN_DL_ASSETS;
