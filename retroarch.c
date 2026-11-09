@@ -252,6 +252,10 @@
 #include "ai/game_ai.h"
 #endif
 
+#ifdef HAVE_CORE_SIGNATURES
+#include "core_trust_runtime.h"
+#endif
+
 /* RetroArch provides its own entry point (main, below) and runloop,
  * creates its own Win32 window (gfx/common/win32_common.c), and
  * initialises SDL subsystems explicitly (SDL_Init/SDL_InitSubSystem
@@ -7064,6 +7068,9 @@ void main_exit(void *args)
     * way out, so no driver call runs into the teardown below. */
    cloud_sync_deinit(1000);
 #endif
+#ifdef HAVE_CORE_SIGNATURES
+   core_trust_runtime_deinit();
+#endif
 
    video_driver_restore_cached(settings);
 
@@ -9990,6 +9997,15 @@ bool retroarch_main_init_core(int argc, char *argv[],
       retroarch_init_task_queue();
    else
       retroarch_task_queue_configure();
+#ifdef HAVE_CORE_SIGNATURES
+   /* Before the first core is opened, -L's and launcher intents' too */
+   {
+      char core_ext[16];
+      frontend_driver_get_core_extension(core_ext, sizeof(core_ext));
+      core_trust_runtime_init(NULL, g_defaults.dirs[DEFAULT_DIR_CORE],
+            core_ext);
+   }
+#endif
 
    {
       const char    *fullpath  = p_rarch->path_content;
@@ -10220,6 +10236,9 @@ bool retroarch_main_init_drivers(bool staged,
 
    drivers_init(settings, init_flags,
          (enum driver_lifetime_flags)init_lifetime, verbosity_enabled);
+#ifdef HAVE_CORE_SIGNATURES
+   core_trust_runtime_notify();
+#endif
 #ifdef HAVE_COMMAND
    input_driver_refresh_command(input_st, settings);
 #endif

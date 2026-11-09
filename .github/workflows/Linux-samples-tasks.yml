@@ -24,6 +24,7 @@ on:
       - 'samples/tasks/content_prefetch/**'
       - 'samples/tasks/core_backup/**'
       - 'samples/tasks/core_signature/**'
+      - 'samples/tasks/core_trust_runtime/**'
       - 'samples/tasks/core_updater/**'
       - 'samples/tasks/database/**'
       - 'samples/tasks/decompress/**'
@@ -72,6 +73,7 @@ on:
       - 'samples/tasks/content_prefetch/**'
       - 'samples/tasks/core_backup/**'
       - 'samples/tasks/core_signature/**'
+      - 'samples/tasks/core_trust_runtime/**'
       - 'samples/tasks/core_updater/**'
       - 'samples/tasks/database/**'
       - 'samples/tasks/decompress/**'
@@ -1069,6 +1071,27 @@ jobs:
           make clean
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -j$(nproc) CC=x86_64-w64-mingw32-gcc TEST_KEY=1 \
+             RUNNER="timeout 600 wine" check
+          make clean
+
+      - name: Build and run core_trust_runtime_test (ASan + UBSan, TSan, mingw-w64)
+        shell: bash
+        working-directory: samples/tasks/core_trust_runtime
+        run: |
+          set -eu
+          # RetroArch's trust store: the startup load, saves and
+          # snapshots put on another thread. TEST_KEY=0 has no keys at
+          # all; LOAD_CHECK=0 is the tree's default build.
+          make clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make -j$(nproc) SANITIZER=address,undefined \
+             RUNNER="timeout 600" check
+          make clean && make -j$(nproc) TEST_KEY=0 RUNNER="timeout 600" check
+          make clean && make -j$(nproc) LOAD_CHECK=0 RUNNER="timeout 600" check
+          make clean && TSAN_OPTIONS=halt_on_error=1 \
+             make -j$(nproc) SANITIZER=thread RUNNER="timeout 600" check
+          make clean
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -j$(nproc) CC=x86_64-w64-mingw32-gcc \
              RUNNER="timeout 600 wine" check
           make clean
 
