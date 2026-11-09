@@ -36,6 +36,9 @@
 #include "../core_info.h"
 #include "../core_backup.h"
 #include "tasks_internal.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../core_load_check.h"
+#endif
 
 #ifdef HAVE_CORE_SIGNATURES
 #include "../core_install_check.h"
@@ -2196,6 +2199,10 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    }
    else
       *core_loaded = false;
+
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_release_held();
+#endif
 
    /* Push task */
    task_queue_push(task);

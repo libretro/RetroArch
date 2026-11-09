@@ -99,6 +99,9 @@
 #include "../../core_install_check.h"
 #include "../../core_trust_runtime.h"
 #endif
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../../core_load_check.h"
+#endif
 #include "../../manual_content_scan.h"
 #ifdef __MACH__
 #include <TargetConditionals.h>
@@ -9641,6 +9644,10 @@ static int action_ok_core_delete(const char *path,
    if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
       generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_release_held();
+#endif
+
    /* Delete core file */
 #if defined(ANDROID)
    /* If this is a Play Store build and the
@@ -9961,6 +9968,9 @@ static int action_ok_core_steam_uninstall(
    core_dlc = steam_get_core_dlc_by_name(core_dlc_list, label);
    if (core_dlc == NULL) return 0;
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_release_held();
+#endif
    steam_uninstall_core_dlc(core_dlc);
 
    return 0;

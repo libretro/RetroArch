@@ -13,6 +13,7 @@
 #include <dynamic/dylib.h>
 #include <file/file_path.h>
 #include <queues/task_queue.h>
+#include <retro_dirent.h>
 #include <retro_timers.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
@@ -181,7 +182,8 @@ static void drain(void)
    pump(2);
 }
 
-/* Test library a or b as TMP_DIR/cores/<name>, a new file each time.
+/* Test library a, b or c (no test trusts c) as TMP_DIR/cores/<name>, a
+ * new file each time.
  * The old file is moved aside, not deleted: a freed inode handed to the
  * new file, with the same size inside one coarse timestamp tick, would
  * give it the old identity. False while a held handle keeps the old
@@ -196,7 +198,9 @@ static bool put_core(char *s, const char *name, char which)
    sprintf(s, TMP_DIR "/cores/%s", name);
    if (!filestream_read_file(which == 'a'
             ? "core_load_check_test_a" LIB_EXT
-            : "core_load_check_test_b" LIB_EXT, &buf, &len))
+            : which == 'b'
+            ? "core_load_check_test_b" LIB_EXT
+            : "core_load_check_test_c" LIB_EXT, &buf, &len))
       return false;
    sprintf(aside, TMP_DIR "/cores/aside_%u", ++aside_n);
    if (!path_is_valid(s) || !filestream_rename(s, aside))
@@ -650,6 +654,177 @@ static void test_deinit_drops(void)
    stop();
 }
 
+#ifdef __linux__
+extern int no_ctime_fs;
+
+/* Open descriptors, to see a held file */
+static unsigned open_fds(void)
+{
+   unsigned n     = 0;
+   struct RDIR *d = retro_opendir("/proc/self/fd");
+   if (!d)
+      return 0;
+   while (retro_readdir(d))
+      n++;
+   retro_closedir(d);
+   return n;
+}
+#endif
+
+#if defined(_WIN32) || defined(__linux__)
+/* A load the user waits on (the startup one): its pass keeps its file
+ * where no identity binds it */
+static void load_waited(const char *path, int id)
+{
+   dylib_t lib = NULL;
+   core_load_check_set_startup(true);
+   CHECK(core_load_check_open(path, &lib) == CORE_LOAD_GATE_OPENED);
+   core_load_check_set_startup(false);
+   CHECK(lib_id(lib) == id);
+   core_load_check_loaded();
+   if (lib)
+      dylib_close(lib);
+}
+#endif
+
+/* Where no identity binds a pass, the core loaded last keeps its file:
+ * its automatic probes pass, any other core's don't, until another core
+ * loads or a release, which closes every file the slots keep */
+static void test_held_loaded(void)
+{
+#if defined(_WIN32) || defined(__linux__)
+   dylib_t lib = NULL;
+   char a[256];
+   char b[256];
+   char c[256];
+#ifdef __linux__
+   unsigned fds;
+   no_ctime_fs = 1;
+#endif
+   start(false);
+   CHECK(put_core(a, "held_a_libretro" LIB_EXT, 'a'));
+   CHECK(trust(a));
+   CHECK(put_core(a, "held_a_libretro" LIB_EXT, 'a'));
+   CHECK(put_core(b, "held_b_libretro" LIB_EXT, 'b'));
+   CHECK(trust(b));
+   CHECK(put_core(b, "held_b_libretro" LIB_EXT, 'b'));
+   CHECK(put_core(c, "held_c_libretro" LIB_EXT, 'c'));
+#ifdef __linux__
+   fds = open_fds();
+#endif
+   load_waited(a, 1);
+   core_load_check_unloaded();
+   /* Close Content's reload, menu or driver init: a probe of the core
+    * loaded last passes while its file is held */
+   CHECK(core_load_check_open(a, &lib) == CORE_LOAD_GATE_OPENED);
+   CHECK(lib_id(lib) == 1);
+   CHECK(queued() == 0);
+   core_load_check_loaded();
+   if (lib)
+      dylib_close(lib);
+   lib = NULL;
+   core_load_check_unloaded();
+#ifdef _WIN32
+   CHECK(!put_core(a, "held_a_libretro" LIB_EXT, 'a'));
+#else
+   CHECK(open_fds() == fds + 1);
+#endif
+   /* Any other core: refused quietly, checked in the background */
+   CHECK(core_load_check_open(b, &lib) == CORE_LOAD_GATE_REFUSED);
+   CHECK(core_load_check_refused(b));
+   CHECK(queued() == 1);
+   drain();
+   /* Loading another core releases the first one's file */
+   load_waited(b, 2);
+#ifdef _WIN32
+   CHECK(put_core(a, "held_a_libretro" LIB_EXT, 'a'));
+#else
+   CHECK(open_fds() == fds + 1);
+#endif
+   CHECK(core_load_check_open(a, &lib) == CORE_LOAD_GATE_REFUSED);
+   CHECK(queued() == 1);
+   drain();
+   /* A refusal the startup load waited on keeps its file in the slot */
+   core_load_check_set_startup(true);
+   CHECK(core_load_check_open(c, &lib) == CORE_LOAD_GATE_REFUSED);
+   core_load_check_set_startup(false);
+#ifdef _WIN32
+   CHECK(!put_core(c, "held_c_libretro" LIB_EXT, 'c'));
+#else
+   CHECK(open_fds() == fds + 2);
+#endif
+   /* Before the Core Updater or Core Manager touches a core, here while
+    * b still runs: its record stays, but nothing binds a probe now, and
+    * no file stays open */
+   core_load_check_release_held();
+#ifdef _WIN32
+   CHECK(put_core(c, "held_c_libretro" LIB_EXT, 'c'));
+#else
+   CHECK(open_fds() == fds);
+#endif
+   CHECK(core_load_check_open(b, &lib) == CORE_LOAD_GATE_REFUSED);
+   CHECK(queued() == 1);
+   drain();
+#ifdef _WIN32
+   CHECK(put_core(b, "held_b_libretro" LIB_EXT, 'b'));
+#endif
+   core_load_check_unloaded();
+   stop();
+#ifdef __linux__
+   no_ctime_fs = 0;
+#endif
+#endif
+}
+
+/* Loaded by path, the held core passes only while its path still names
+ * the held file: a folder above it swapped for another isn't that file */
+static void test_held_path_moved(void)
+{
+#if defined(_WIN32) || defined(__linux__)
+   dylib_t lib = NULL;
+   char a[256];
+   char core[256];
+   void *buf   = NULL;
+   int64_t len = 0;
+#ifdef __linux__
+   no_ctime_fs = 1;
+#endif
+   start(false);
+   CHECK(put_core(a, "moved_libretro" LIB_EXT, 'a'));
+   CHECK(trust(a));
+   strlcpy(core, TMP_DIR "/moved/moved_libretro" LIB_EXT, sizeof(core));
+   path_mkdir(TMP_DIR "/moved");
+   CHECK(filestream_read_file("core_load_check_test_a" LIB_EXT, &buf, &len));
+   CHECK(buf && filestream_write_file(core, buf, len));
+   free(buf);
+   buf = NULL;
+   load_waited(core, 1);
+   core_load_check_unloaded();
+   /* Windows can refuse to move a folder holding an open file; a
+    * junction above it can still be pointed elsewhere */
+   if (filestream_rename(TMP_DIR "/moved", TMP_DIR "/moved_aside"))
+      printf("note: a folder holding an open file can't be moved here, "
+            "not checked\n");
+   else
+   {
+      path_mkdir(TMP_DIR "/moved");
+      CHECK(filestream_read_file("core_load_check_test_c" LIB_EXT, &buf,
+               &len));
+      CHECK(buf && filestream_write_file(core, buf, len));
+      free(buf);
+      CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_REFUSED);
+      CHECK(lib_id(lib) == 0);
+      CHECK(queued() == 1);
+      if (lib)
+         dylib_close(lib);
+   }
+   stop();
+#ifdef __linux__
+   no_ctime_fs = 0;
+#endif
+#endif
+}
+
 #ifdef _WIN32
 /* \\?\ + the absolute form of rel, and suffix */
 static void verbatim_path(char *s, size_t len, const char *rel,
@@ -740,6 +915,8 @@ int main(void)
    test_cancelled();
    test_seed_probe();
    test_unopenable();
+   test_held_loaded();
+   test_held_path_moved();
 #ifdef _WIN32
    test_verbatim_dot();
 #endif

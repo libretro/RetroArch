@@ -37,7 +37,13 @@ bool core_load_check_refused(const char *path);
 bool core_load_check_refused_seed(const char *path);
 /* The core the last core_load_check_open() opened is now running */
 void core_load_check_loaded(void);
+/* Its pass outlives the unload while its held file or its identity
+ * binds it, until another core loads or a release */
 void core_load_check_unloaded(void);
+/* Before a task replaces, deletes or restores a core file: ends the
+ * pass of the core loaded last and closes every file a record keeps.
+ * Never from a worker. */
+void core_load_check_release_held(void);
 /* While the startup load runs before the frame loop: a core the quick
  * check doesn't pass is checked whole, in place */
 void core_load_check_set_startup(bool on);
