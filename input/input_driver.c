@@ -18044,9 +18044,15 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
+   int16_t held;
    input_driver_state_t *input_st          = &input_driver_st;
    settings_t *settings                    = config_get_ptr();
    const input_device_driver_t *joypad     = input_st->primary_joypad;
+
+   /* a driver that publishes its mice does not answer for them */
+   if (     device == RETRO_DEVICE_MOUSE
+         && input_pointer_frame_read(port, device, idx, id, &held))
+      return held;
 
    if (joy_idx >= MAX_USERS)
       joy_idx                 = 0;

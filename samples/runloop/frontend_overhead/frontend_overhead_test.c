@@ -6885,6 +6885,42 @@ static void lane_bind_all_device_index(void)
  * 0 for none */
 static unsigned bm_held[2];
 
+/* How the stand-in driver has its mice. Every shipping driver publishes
+ * them at its poll and says nothing about a mouse from its input_state;
+ * BM_ANSWERS is the shape they had before, and Android's. */
+enum bm_how
+{
+   BM_ANSWERS = 0,
+   BM_PUBLISHES_BY_PORT,        /* a mouse a port: X11, Wayland, SDL */
+   BM_PUBLISHES_BY_MOUSE_INDEX  /* raw input's: user 1 on Mouse Index 1 */
+};
+static enum bm_how bm_how_now;
+static void (*bm_real_poll)(void *data);
+
+static uint16_t bm_buttons(unsigned held)
+{
+   switch (held)
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:  return INPUT_POINTER_LEFT;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT: return INPUT_POINTER_RIGHT;
+      default:                          break;
+   }
+   return 0;
+}
+
+static void bm_poll(void *data)
+{
+   input_pointer_frame_t f[3];
+   bool by_index = bm_how_now == BM_PUBLISHES_BY_MOUSE_INDEX;
+   if (bm_real_poll)
+      bm_real_poll(data);
+   memset(f, 0, sizeof(f));
+   f[by_index ? 1 : 0].buttons = bm_buttons(bm_held[0]);
+   f[2].buttons                = bm_buttons(bm_held[1]);
+   input_driver_publish_pointers(f, 3,
+         by_index ? INPUT_POINTERS_BY_MOUSE_INDEX : 0);
+}
+
 static int16_t bm_input_state(void *data,
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
@@ -6893,7 +6929,8 @@ static int16_t bm_input_state(void *data,
 {
    unsigned held = 0;
    (void)data; (void)joypad; (void)joypad_info; (void)binds; (void)idx;
-   if ((device & RETRO_DEVICE_MASK) != RETRO_DEVICE_MOUSE)
+   if (   (device & RETRO_DEVICE_MASK) != RETRO_DEVICE_MOUSE
+       || bm_how_now != BM_ANSWERS)
       return 0;
    if (port == 0)
       held = bm_held[0];
@@ -6905,10 +6942,10 @@ static int16_t bm_input_state(void *data,
 
 /* A mouse bind for user 1 on slot 3 is heard from user 1's mouse: a
  * click on user 3's is not taken for user 1's B, and one on user 1's
- * is. */
-static void lane_bind_mouse_device_index(void)
-{
+ * is - whether the driver answers for its mice or publishes them. */
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+static void bind_mouse_device_index_run(enum bm_how how, const char *shape)
+{
    static input_driver_t bm_input;
    unsigned i;
    unsigned had                   = failures;
@@ -6920,6 +6957,7 @@ static void lane_bind_mouse_device_index(void)
    struct retro_keybind saved1    = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B];
    unsigned saved_index           = settings->uints.input_joypad_index[0];
    unsigned saved_pad             = syn_pad_index;
+   unsigned saved_mouse           = settings->uints.input_mouse_index[0];
 
    if (!b1 || !joypad_real || !saved_input)
    {
@@ -6935,6 +6973,14 @@ static void lane_bind_mouse_device_index(void)
    input_st->primary_joypad = &syn_joypad;
    bm_input                 = *saved_input;
    bm_input.input_state     = bm_input_state;
+   bm_how_now               = how;
+   if (how != BM_ANSWERS)
+   {
+      bm_real_poll          = saved_input->poll;
+      bm_input.poll         = bm_poll;
+   }
+   if (how == BM_PUBLISHES_BY_MOUSE_INDEX)
+      settings->uints.input_mouse_index[0] = 1;
    bm_held[0]               = 0;
    bm_held[1]               = 0;
    input_st->current_driver = &bm_input;
@@ -6989,15 +7035,32 @@ static void lane_bind_mouse_device_index(void)
    input_st->current_driver = saved_input;
    input_st->primary_joypad = joypad_real;
    settings->uints.input_joypad_index[0] = saved_index;
+   settings->uints.input_mouse_index[0]  = saved_mouse;
    input_driver_deadzones_refresh();
    syn_pad_index            = saved_pad;
    input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B] = saved1;
    binds_written_by_a_lane();
+   if (how != BM_ANSWERS)
+   {
+      input_pointer_frame_t none;
+      memset(&none, 0, sizeof(none));
+      input_driver_publish_pointers(&none, 0, 0);
+   }
    run_loop_frames(2);
 
    if (failures == had)
-      printf("[pass] bind mouse: with user 1 on slot 3, a click on user 1's"
-            " mouse is bound and one on user 3's is not\n");
+      printf("[pass] bind mouse (%s): with user 1 on slot 3, a click on"
+            " user 1's mouse is bound and one on user 3's is not\n", shape);
+}
+#endif
+
+static void lane_bind_mouse_device_index(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+   bind_mouse_device_index_run(BM_ANSWERS, "driver answers");
+   bind_mouse_device_index_run(BM_PUBLISHES_BY_PORT, "published by port");
+   bind_mouse_device_index_run(BM_PUBLISHES_BY_MOUSE_INDEX,
+         "published by Mouse Index");
 #else
    printf("[skip] bind mouse: needs the test drivers and the menu\n");
 #endif
