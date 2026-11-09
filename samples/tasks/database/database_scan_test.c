@@ -12329,9 +12329,10 @@ static void smb_kind_lane(const char *root, bool threaded)
       goto fixture;
    refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
    n2 = smb_kind_chain(items, out, err, &ran);
+   /* Refresh All loads the playlist again to run it. */
    sprintf(what, "smb kind %s: --scan-refresh and refresh-all", q);
-   sprintf(detail, "%d, %d (want %d)", n, n2, task_n);
-   check(ok && ran && n == task_n && n2 == task_n, what, detail);
+   sprintf(detail, "%d, %d (want %d, %d)", n, n2, task_n, 2 * task_n);
+   check(ok && ran && n == task_n && n2 == 2 * task_n, what, detail);
 
    /* A picked file is one still once a chain has put the settings
     * back. */
@@ -13942,8 +13943,8 @@ static void refresh_group_lane(const char *root, const char *pl_dir,
    /* Beta's folder is there but empty. */
    check(   ran && chain_seen == 2
          && chain_saw(0, "Test Alpha", TASK_DBSCAN_SKIPPED, -1)
-         && chain_saw(1, "Test Beta", TASK_DBSCAN_FAILED, 0)
-         && chain_totals.skipped == 1 && chain_totals.failed == 1, what,
+         && chain_saw(1, "Test Beta", TASK_DBSCAN_SKIPPED, -1)
+         && chain_totals.skipped == 2 && chain_totals.failed == 0, what,
          detail);
 
    /* The listing, two loads, then the pair's second load fails. */
