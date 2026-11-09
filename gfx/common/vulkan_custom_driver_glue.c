@@ -45,6 +45,8 @@ void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg)
       case VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED:
 #ifdef ANDROID
          id = MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED;
+#elif defined(__APPLE__)
+         id = MSG_VULKAN_CUSTOM_DRIVER_SDL3_UNSUPPORTED;
 #else
          id = MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED_LOADER;
 #endif
