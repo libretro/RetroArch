@@ -271,6 +271,29 @@ static const unsigned char rjpeg_bad_dc_progressive[] = {
    0x78, 0xc9, 0x98, 0xdb, 0xf7, 0x44, 0xfa, 0x67, 0xff, 0xd9,
 };
 
+/* 8x8 grayscale streams, every code one bit long.  All tables come
+ * before the first SOS so drop_segments() can remove them. */
+#define TINY_ONES8 1, 1, 1, 1, 1, 1, 1, 1
+#define TINY_DQT 0xff, 0xdb, 0x00, 0x43, 0x00, \
+   TINY_ONES8, TINY_ONES8, TINY_ONES8, TINY_ONES8, \
+   TINY_ONES8, TINY_ONES8, TINY_ONES8, TINY_ONES8
+#define TINY_SOF(m) 0xff, (m), 0x00, 0x0b, 0x08, 0x00, 0x08, 0x00, 0x08, \
+   0x01, 0x01, 0x11, 0x00
+#define TINY_DHT(tc) 0xff, 0xc4, 0x00, 0x14, (tc), \
+   1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x00
+#define TINY_SOS(ss, se) 0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00, \
+   (ss), (se), 0x00
+
+static const unsigned char rjpeg_tiny_baseline[] = {
+   0xff, 0xd8, TINY_DQT, TINY_SOF(0xc0), TINY_DHT(0x00), TINY_DHT(0x10),
+   TINY_SOS(0, 63), 0x3f, 0xff, 0xd9
+};
+
+static const unsigned char rjpeg_tiny_progressive[] = {
+   0xff, 0xd8, TINY_DQT, TINY_SOF(0xc2), TINY_DHT(0x00), TINY_DHT(0x10),
+   TINY_SOS(0, 0), 0x7f, TINY_SOS(1, 63), 0x7f, 0xff, 0xd9
+};
+
 static int failures;
 
 static void check(int cond, const char *what)
@@ -469,6 +492,66 @@ static void test_truncation_never_faults(void)
          decoded, rejected, (int)len - 1);
 }
 
+/* Copy a stream without its segments of type marker, or only the one
+ * whose first payload byte is match when match >= 0. */
+static size_t drop_segments(unsigned char *dst, const unsigned char *src,
+      size_t len, unsigned char marker, int match)
+{
+   size_t in = 2, out = 2;
+
+   memcpy(dst, src, 2);
+   while (in + 4 <= len && src[in] == 0xff && src[in + 1] != 0xda)
+   {
+      size_t seg = 2 + (((size_t)src[in + 2] << 8) | src[in + 3]);
+      if (src[in + 1] != marker || (match >= 0 && src[in + 4] != match))
+      {
+         memcpy(dst + out, src + in, seg);
+         out += seg;
+      }
+      in += seg;
+   }
+   memcpy(dst + out, src + in, len - in);
+   return out + (len - in);
+}
+
+static void expect_decode(const unsigned char *jpg, size_t len, int want,
+      const char *what)
+{
+   int m;
+
+   for (m = 0; m <= 1; m++)
+   {
+      unsigned w = 0, h = 0;
+      int      ok = 0;
+      decode_whole(jpg, len, m, &w, &h, &ok);
+      check(ok == want, what);
+   }
+}
+
+static void test_tables_on(const unsigned char *jpg, size_t len)
+{
+   static unsigned char buf[4096];
+
+   expect_decode(jpg, len, 1, "complete stream decodes");
+   expect_decode(buf, drop_segments(buf, jpg, len, 0xdb, -1), 0,
+         "missing quantization table rejected");
+   expect_decode(buf, drop_segments(buf, jpg, len, 0xc4, 0x00), 0,
+         "missing DC Huffman table rejected");
+   expect_decode(buf, drop_segments(buf, jpg, len, 0xc4, 0x10), 0,
+         "missing AC Huffman table rejected");
+}
+
+static void test_undefined_tables(void)
+{
+   static unsigned char buf[4096];
+
+   printf("undefined_tables\n");
+   test_tables_on(rjpeg_tiny_baseline, sizeof(rjpeg_tiny_baseline));
+   test_tables_on(rjpeg_tiny_progressive, sizeof(rjpeg_tiny_progressive));
+   expect_decode(buf, drop_segments(buf, rjpeg_valid, sizeof(rjpeg_valid),
+         0xdb, -1), 0, "interleaved stream without DQT rejected");
+}
+
 int main(void)
 {
    test_sync_matches_iterative();
@@ -478,6 +561,7 @@ int main(void)
    test_bad_dc_category(rjpeg_bad_dc_progressive,
          sizeof(rjpeg_bad_dc_progressive), "bad_dc_category_progressive");
    test_truncation_never_faults();
+   test_undefined_tables();
 
    if (failures)
       printf("\n%d check(s) failed\n", failures);
