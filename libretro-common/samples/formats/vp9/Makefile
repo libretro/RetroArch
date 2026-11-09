@@ -6,7 +6,7 @@ ifeq ($(shell uname -s),Darwin)
 CFLAGS += -D_DARWIN_C_SOURCE
 GC_SECTIONS := -Wl,-dead_strip
 endif
-TARGETS := rmp4_vp9_hw_stream_test rwebm_language_test rmp4_vp9_config_test rvp9_config_test rvp9_reference_test rvp9_hw_session_test rvp9_hw_segments_test rwebm_hw_stream_test
+TARGETS := rmp4_vp9_hw_stream_test rwebm_language_test rwebm_lacing_test rmp4_vp9_config_test rvp9_config_test rvp9_reference_test rvp9_hw_session_test rvp9_hw_segments_test rwebm_hw_stream_test
 THREADS ?= 1
 PIXEL_FLAGS :=
 PIXEL_SOURCES :=
@@ -84,8 +84,12 @@ rwebm_hw_stream_test: rwebm_hw_stream_test.c $(WEBM_SOURCES) ../../../formats/we
 rwebm_language_test: rwebm_language_test.c ../../../formats/webm/rwebm.c ../../../include/formats/rwebm.h
 	$(CC) $(CFLAGS) rwebm_language_test.c ../../../formats/webm/rwebm.c -o $@ $(LDFLAGS) -lm
 
+rwebm_lacing_test: rwebm_lacing_test.c ../../../formats/webm/rwebm.c ../../../include/formats/rwebm.h
+	$(CC) $(CFLAGS) rwebm_lacing_test.c ../../../formats/webm/rwebm.c -o $@ $(LDFLAGS) -lm
+
 check: $(TARGETS)
 	./rwebm_language_test
+	./rwebm_lacing_test
 	./rmp4_vp9_hw_stream_test
 	./rmp4_vp9_config_test
 	./rvp9_config_test

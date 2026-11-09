@@ -1305,9 +1305,10 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                const uint8_t *fp = frame + 1;
                const uint8_t *fend = frame + frame_len;
                int      k;
-               uint32_t sizes[256];
-               if (nframes > 256)
-               { r.p = body + sz; continue; }
+               /* Built in place: any earlier lace is fully drained or
+                * abandoned by now, and lace_count stays put until this
+                * table has validated. */
+               uint32_t *sizes = webm->lace_frame;
                if (lace_type == 1) /* Xiph */
                {
                   int bad = 0;
@@ -1322,7 +1323,7 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                   if (bad)
                   { r.p = body + sz; continue; }
                }
-               else if (lace_type == 3) /* EBML */
+               else if (lace_type == 3 && nframes > 1) /* EBML */
                {
                   ebml_reader lr; int lok = 0;
                   uint64_t first;
@@ -1338,17 +1339,16 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                   {
                      /* signed vint delta; decode as vint then unbias */
                      const uint8_t *sp = lr.p;
-                     uint8_t fb; int len = 1; uint8_t m = 0x80;
                      int64_t bias, val;
                      uint64_t raw;
-                     if (sp >= lr.end) { bad = 1; break; }
-                     fb = *sp;
-                     while (len <= 8 && !(fb & m)) { m >>= 1; len++; }
                      raw  = ebml_read_vint(&lr, 1, &lok);
                      if (!lok) { bad = 1; break; }
-                     bias = (int64_t)((((uint64_t)1) << (7 * len - 1)) - 1);
+                     bias = (int64_t)((((uint64_t)1)
+                           << (7 * (int)(lr.p - sp) - 1)) - 1);
                      val  = prev + ((int64_t)raw - bias);
-                     if (val < 0) { bad = 1; break; }
+                     /* Bounded before the narrowing below can hide it. */
+                     if (val < 0 || (uint64_t)val > (uint64_t)(fend - lr.p))
+                     { bad = 1; break; }
                      sizes[k] = (uint32_t)val;
                      prev = val;
                   }
@@ -1356,41 +1356,31 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                   { r.p = body + sz; continue; }
                   fp = lr.p;
                }
-               else /* fixed-size (lace_type == 2) */
+               else /* fixed-size, or a lone EBML frame with no size table */
                {
-                  uint32_t each;
-                  if (nframes <= 0 || fend < fp)
-                  { r.p = body + sz; continue; }
-                  each = (uint32_t)((size_t)(fend - fp) / (size_t)nframes);
+                  uint32_t each = (uint32_t)((size_t)(fend - fp)
+                        / (size_t)nframes);
                   for (k = 0; k < nframes; k++)
                      sizes[k] = each;
                }
                /* last frame size = remainder */
                {
-                  uint32_t used = 0;
                   const uint8_t *data_start = fp;
                   const uint8_t *cursor;
                   int j;
                   if (lace_type != 2)
                   {
                      size_t avail = (size_t)(fend - data_start);
-                     for (k = 0; k < nframes - 1; k++) used += sizes[k];
-                     if ((size_t)used > avail)
+                     size_t used  = 0;
+                     /* Every frame must lie within [data_start, fend).
+                      * Compare with what is left: a running total can
+                      * wrap back into range on a 32-bit size_t. */
+                     for (k = 0; k < nframes - 1
+                           && sizes[k] <= avail - used; k++)
+                        used += sizes[k];
+                     if (k < nframes - 1)
                      { r.p = body + sz; continue; }
                      sizes[nframes - 1] = (uint32_t)(avail - used);
-                  }
-                  /* Every frame must lie within [data_start, fend). */
-                  {
-                     size_t total = 0;
-                     int bad = 0;
-                     for (k = 0; k < nframes; k++)
-                     {
-                        total += sizes[k];
-                        if (total > (size_t)(fend - data_start))
-                        { bad = 1; break; }
-                     }
-                     if (bad)
-                     { r.p = body + sz; continue; }
                   }
                   cursor = data_start;
                   webm->lace_count = nframes;
@@ -1415,7 +1405,6 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                            &webm->lace_keyframe) : 0;
                   for (j = 0; j < nframes; j++)
                   {
-                     webm->lace_frame[j]     = sizes[j];
                      webm->lace_frame_ptr[j] = cursor;
                      cursor += sizes[j];
                   }
