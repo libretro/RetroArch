@@ -8762,6 +8762,12 @@ static enum runloop_state_enum runloop_check_state(
          return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
 
+#ifdef HAVE_CORE_SIGNATURES
+      if (     !runloop_st->content_switching
+            && menu_core_warning_iterate(menu_st))
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
+#endif
+
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
       {
 #ifdef HAVE_NETWORKING

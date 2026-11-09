@@ -95,6 +95,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef HAVE_CORE_SIGNATURES
+#include "../core_trust_runtime.h"
+#endif
+
 #ifdef HAVE_COCOATOUCH
 #include "../ui/drivers/cocoa/apple_platform.h"
 #include <compat/strl.h>
@@ -9934,3 +9938,63 @@ void menu_dialog_confirm(struct menu_state *menu_st)
    menu_st->dialog_st.pending_cmd = menu_st->dialog_st.confirm_cmd;
    menu_dialog_confirm_reset(menu_st);
 }
+
+#ifdef HAVE_CORE_SIGNATURES
+static bool menu_core_warning_waiting = false;
+
+void menu_core_warning_open(void)
+{
+   menu_core_warning_waiting = true;
+   /* Before the menu driver exists it waits for the first menu frame */
+   if (     !(menu_driver_state.flags & MENU_ST_FLAG_ALIVE)
+         && menu_driver_state.driver_data)
+      retroarch_menu_running();
+}
+
+bool menu_core_warning_can_open(void)
+{
+   const char *ident = menu_driver_ident();
+   /* Before the drivers are chosen: the one the config names */
+   if (!ident)
+      ident = config_get_ptr()->arrays.menu_driver;
+   return !string_is_equal(ident, "null");
+}
+
+bool menu_core_warning_iterate(struct menu_state *menu_st)
+{
+   const char *menu_label = NULL;
+   bool on_top;
+   /* Pending decides: a stack flush (a tab switch) can take the screen
+    * away, and an answer can come before the screen does */
+   if (!core_warning_pending(NULL, NULL))
+   {
+      menu_core_warning_waiting = false;
+      return false;
+   }
+   if (!menu_st->entries.list)
+      return false;
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   on_top = string_is_equal(menu_label,
+         MENU_ENUM_LABEL_DEFERRED_CORE_WARNING_STR);
+   if (!menu_core_warning_waiting && on_top)
+      return false;
+   menu_core_warning_waiting = false;
+   if (on_top)
+   {
+      menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+   }
+   else
+   {
+      generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
+            ACTION_OK_DL_CORE_WARNING);
+      /* A push that didn't land must not take the frame */
+      menu_label = NULL;
+      menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+      if (!string_is_equal(menu_label,
+               MENU_ENUM_LABEL_DEFERRED_CORE_WARNING_STR))
+         return false;
+   }
+   return true;
+}
+#endif

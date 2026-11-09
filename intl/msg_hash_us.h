@@ -1080,6 +1080,26 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
    "Load Archive"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_WARNING,
+   "Security Warning"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL,
+   "Cancel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_WARNING_INSTALL_TRUST,
+   "Install and Trust"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_WARNING_LOAD_ONCE,
+   "Load Once"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_WARNING_ALWAYS_TRUST,
+   "Always Trust This Core"
+   )
 
 /* Main Menu > Load Content > Playlists */
 
@@ -33856,6 +33876,42 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_TRUST_SEEDED,
    "RetroArch now checks core signatures. Your cores stay trusted; Update Installed Cores gets signed ones."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_UNSIGNED,
+   "This core isn't signed by libretro."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_MODIFIED,
+   "This core has been changed since libretro signed it."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_OLDER,
+   "This is an older version of the core than one you've used before. Older versions can have security problems."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_UNKNOWN_KEY,
+   "This core is signed with a key RetroArch doesn't know."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_ERROR,
+   "RetroArch couldn't read this core to check it."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_FULL_ACCESS,
+   "Cores are programs with full access to your device and files. Only continue if you built this core yourself or got it from someone you trust."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_TURN_OFF,
+   "You can turn these checks off in Settings > Core > Check Core Signatures."
+   )
+MSG_HASH(
+   MSG_CORE_SIGNATURE_DOWNLOAD_FAILED,
+   "Core download failed the signature check and was not installed."
+   )
+MSG_HASH(
+   MSG_CORE_SIGNATURE_DOWNLOAD_OLDER,
+   "Core download is older than one already used; installed core kept."
    )
 MSG_HASH(
    MSG_TO,

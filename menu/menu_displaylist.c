@@ -172,6 +172,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef HAVE_CORE_SIGNATURES
+#include "../core_trust_runtime.h"
+#endif
+
 #ifdef _3DS
 #include <3ds/services/cfgu.h> /* CFGU_GetSystemModel */
 #endif
@@ -15686,6 +15690,89 @@ static bool menu_displaylist_keyboard_index(const rarch_setting_t *setting)
        && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST;
 }
 
+#ifdef HAVE_CORE_SIGNATURES
+/* No driver wraps a label, so short rows that fit every one */
+#define CORE_WARNING_LINE 40
+
+static unsigned menu_displaylist_core_warning_text(file_list_t *list,
+      enum msg_hash_enums msg)
+{
+   char wrapped[1024];
+   const char *text = msg_hash_to_str(msg);
+   char *line       = wrapped;
+   unsigned count   = 0;
+   char *nl;
+   if (!word_wrap(wrapped, sizeof(wrapped), text, strlen(text),
+            CORE_WARNING_LINE, 100, 0))
+      strlcpy(wrapped, text, sizeof(wrapped));
+   while (line)
+   {
+      if ((nl = strchr(line, '\n')))
+         *nl++ = '\0';
+      if (*line && menu_entries_append(list, line,
+               MENU_ENUM_LABEL_CORE_WARNING_TEXT_STR,
+               MENU_ENUM_LABEL_CORE_WARNING_TEXT,
+               MENU_SETTING_CORE_WARNING_TEXT, 0, 0, NULL))
+         count++;
+      line = nl;
+   }
+   return count;
+}
+
+static unsigned menu_displaylist_parse_core_warning(file_list_t *list)
+{
+   enum core_warning_choice choices[CORE_WARNING_CHOICES_MAX];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   enum core_check_result result;
+   unsigned count             = 0;
+   bool pending               = core_warning_pending(NULL, &result);
+   unsigned serial            = core_warning_serial();
+   unsigned cancel_at;
+   unsigned n;
+   unsigned i;
+   if (pending)
+   {
+      count += menu_displaylist_core_warning_text(list,
+            core_warning_reason(result));
+      count += menu_displaylist_core_warning_text(list,
+            MSG_CORE_WARNING_FULL_ACCESS);
+   }
+   cancel_at = count;
+   n         = core_warning_choices(choices);
+   for (i = 0; i < n; i++)
+   {
+      enum msg_hash_enums label = MENU_ENUM_LABEL_CORE_WARNING_CANCEL;
+      enum msg_hash_enums value = MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL;
+      switch (choices[i])
+      {
+         case CORE_WARNING_INSTALL_AND_TRUST:
+            label = MENU_ENUM_LABEL_CORE_WARNING_INSTALL_TRUST;
+            value = MENU_ENUM_LABEL_VALUE_CORE_WARNING_INSTALL_TRUST;
+            break;
+         case CORE_WARNING_LOAD_ONCE:
+            label = MENU_ENUM_LABEL_CORE_WARNING_LOAD_ONCE;
+            value = MENU_ENUM_LABEL_VALUE_CORE_WARNING_LOAD_ONCE;
+            break;
+         case CORE_WARNING_ALWAYS_TRUST:
+            label = MENU_ENUM_LABEL_CORE_WARNING_ALWAYS_TRUST;
+            value = MENU_ENUM_LABEL_VALUE_CORE_WARNING_ALWAYS_TRUST;
+            break;
+         default:
+            break;
+      }
+      if (menu_entries_append(list, msg_hash_to_str(value),
+               msg_hash_to_str(label), label,
+               MENU_SETTING_ACTION_CORE_WARNING, 0, serial, NULL))
+         count++;
+   }
+   if (pending)
+      count += menu_displaylist_core_warning_text(list,
+            MSG_CORE_WARNING_TURN_OFF);
+   menu_st->selection_ptr = cancel_at;
+   return count;
+}
+#endif
+
 static bool menu_displaylist_ctl_internal(
       enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
@@ -17736,6 +17823,13 @@ static bool menu_displaylist_ctl_internal(
 #endif
             info->flags    |= MD_FLAG_NEED_PUSH;
             break;
+#ifdef HAVE_CORE_SIGNATURES
+         case DISPLAYLIST_CORE_WARNING:
+            menu_entries_clear(info->list);
+            count        = menu_displaylist_parse_core_warning(info->list);
+            info->flags |= MD_FLAG_NEED_PUSH;
+            break;
+#endif
          case DISPLAYLIST_PLAYLIST_MANAGER_LIST:
             menu_entries_clear(info->list);
             count = menu_displaylist_parse_playlist_manager_list(info->list, settings);
