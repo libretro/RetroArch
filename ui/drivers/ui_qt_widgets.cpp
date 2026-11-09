@@ -5085,80 +5085,11 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 #endif
 #endif
 
-/* Thumbnail downloads. URLs, .partial handling, the pack extraction
- * and the file replacement rules are the companion core's
- * (companion_core_thumbnail_download / _pack_download); Qt keeps the
- * queues, counters and progress dialogs. Results arrive through the
- * driver's callback table as onCoreThumbnailDownloaded /
- * onCoreThumbnailPackFinished. */
-
-/* ---- Thumbnail Pack Download ---- */
-
-void MainWindow::onThumbnailPackDownloadCanceled()
-{
-   companion_core_download_cancel(ui_companion_qt_core());
-}
-
-void MainWindow::downloadAllThumbnails(QString system, QUrl url)
-{
-   QByteArray systemArray = system.toUtf8();
-
-   (void)url; /* the server layout is the core's */
-
-   if (!companion_core_thumbnail_pack_download(ui_companion_qt_core(),
-            systemArray.constData()))
-   {
-      RARCH_ERR("[Qt] Failed to start thumbnail pack download.\n");
-      return;
-   }
-
-   m_thumbnailPackDownloadProgressDialog->setWindowModality(Qt::NonModal);
-   m_thumbnailPackDownloadProgressDialog->setMinimumDuration(0);
-   m_thumbnailPackDownloadProgressDialog->setRange(0, 0);
-   m_thumbnailPackDownloadProgressDialog->setAutoClose(true);
-   m_thumbnailPackDownloadProgressDialog->setAutoReset(true);
-   m_thumbnailPackDownloadProgressDialog->setValue(0);
-   m_thumbnailPackDownloadProgressDialog->setLabelText(
-         QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
-   m_thumbnailPackDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
-   m_thumbnailPackDownloadProgressDialog->show();
-}
-
-void MainWindow::onCoreThumbnailPackFinished(int result)
-{
-   m_thumbnailPackDownloadProgressDialog->cancel();
-
-   switch ((enum companion_download_result)result)
-   {
-      case COMPANION_DL_OK:
-         RARCH_LOG("[Qt] Thumbnail pack extracted successfully.\n");
-         emit showInfoMessageDeferred(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
-         updateVisibleItems();
-         emit itemChanged(); /* reload thumbnail image */
-         return;
-      case COMPANION_DL_ERR_NETWORK:
-         emit showErrorMessageDeferred(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR));
-         return;
-      case COMPANION_DL_ERR_RENAME:
-         emit showErrorMessageDeferred(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
-         return;
-      case COMPANION_DL_ERR_DELETE:
-         emit showErrorMessageDeferred(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE));
-         return;
-      case COMPANION_DL_ERR_ARCHIVE_EMPTY:
-         emit showErrorMessageDeferred("Error: Archive is empty.");
-         return;
-      case COMPANION_DL_ERR_EXTRACT:
-      case COMPANION_DL_ERR_WRITE:
-      default:
-         emit showErrorMessageDeferred(msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
-         return;
-   }
-}
+/* Thumbnail downloads. URLs, .partial handling and the file
+ * replacement rules are the companion core's
+ * (companion_core_thumbnail_download); Qt keeps the queues, counters
+ * and progress dialogs. Results arrive through the driver's callback
+ * table as onCoreThumbnailDownloaded. */
 
 /* ---- Single Thumbnail Download ---- */
 
@@ -7997,13 +7928,11 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QMenu> menu;
    QScopedPointer<QMenu> associateMenu;
    QScopedPointer<QMenu> hiddenPlaylistsMenu;
-   QScopedPointer<QMenu> downloadAllThumbnailsMenu;
    QScopedPointer<QAction> hideAction;
    QScopedPointer<QAction> newPlaylistAction;
    QScopedPointer<QAction> deletePlaylistAction;
    QScopedPointer<QAction> renamePlaylistAction;
-   QScopedPointer<QAction> downloadAllThumbnailsEntireSystemAction;
-   QScopedPointer<QAction> downloadAllThumbnailsThisPlaylistAction;
+   QScopedPointer<QAction> downloadAllThumbnailsAction;
    QPointer<QAction> selectedAction;
    QPoint cursorPos                    = QCursor::pos();
    settings_t *settings                = config_get_ptr();
@@ -8148,25 +8077,9 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    if (!specialPlaylist)
    {
-      downloadAllThumbnailsMenu.reset(new QMenu(
-		msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS), this));
-      downloadAllThumbnailsMenu->setObjectName("downloadAllThumbnailsMenu");
-
-      downloadAllThumbnailsThisPlaylistAction.reset(
-		      new QAction(msg_hash_to_str(
-		MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST),
-			      downloadAllThumbnailsMenu.data()));
-      downloadAllThumbnailsEntireSystemAction.reset(
-		      new QAction(msg_hash_to_str(
-		MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM),
-			      downloadAllThumbnailsMenu.data()));
-
-      downloadAllThumbnailsMenu->addAction(
-		      downloadAllThumbnailsThisPlaylistAction.data());
-      downloadAllThumbnailsMenu->addAction(
-		      downloadAllThumbnailsEntireSystemAction.data());
-
-      menu->addMenu(downloadAllThumbnailsMenu.data());
+      downloadAllThumbnailsAction.reset(new QAction(msg_hash_to_str(
+		MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS), this));
+      menu->addAction(downloadAllThumbnailsAction.data());
    }
 
    selectedAction = menu->exec(cursorPos);
@@ -8255,18 +8168,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          }
       }
    }
-   else if (selectedItem && !specialPlaylist && selectedAction->parent() == downloadAllThumbnailsMenu.data())
-   {
-      if (selectedAction == downloadAllThumbnailsEntireSystemAction.data())
-      {
-         int row = m_listWidget->row(selectedItem);
-
-         if (row >= 0)
-            downloadAllThumbnails(currentPlaylistFileInfo.completeBaseName());
-      }
-      else if (selectedAction == downloadAllThumbnailsThisPlaylistAction.data())
-         downloadPlaylistThumbnails(currentPlaylistPath);
-   }
+   else if (selectedItem && selectedAction == downloadAllThumbnailsAction.data())
+      downloadPlaylistThumbnails(currentPlaylistPath);
 
    setCoreActions();
 }

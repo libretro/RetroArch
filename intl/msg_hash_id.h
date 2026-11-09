@@ -433,7 +433,6 @@ static const struct
    char s_7534cfc9[9];
    char s_5f15f7a7[11];
    char s_6d08238d[5];
-   char s_033bf99f[15];
    char s_8076aea7[17];
    char s_725702e3[16];
    char s_20e22740[46];
@@ -1415,7 +1414,6 @@ static const struct
    "&Bantuan",
    "Pengaturan",
    "Nama",
-   "Galat Jejaring",
    "Daftar Main Baru",
    "Pangkalan Data:",
    "(dipisah spasi; termasuk semua secara bawaan)",
@@ -2020,7 +2018,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26728u
+      (sizeof(msg_hash_id_blob) == (26713u
 #ifdef HAVE_MIST
        + 10u
 #endif
@@ -2550,7 +2548,6 @@ static const msg_hash_id_t msg_hash_id_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,

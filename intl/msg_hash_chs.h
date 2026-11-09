@@ -1752,7 +1752,6 @@ static const struct
    char s_a38500d8[12];
    char s_9544161a[7];
    char s_76ac1944[22];
-   char s_ded7e809[25];
    char s_d8820ed7[31];
    char s_4c11d465[16];
    char s_50a04cd9[16];
@@ -1760,8 +1759,6 @@ static const struct
    char s_11121f30[13];
    char s_01badaa0[13];
    char s_6127cc52[22];
-   char s_9d52f73c[13];
-   char s_bc30b87a[13];
    char s_2fd5302f[37];
    char s_2dff21ec[24];
    char s_a2a28187[16];
@@ -1823,7 +1820,6 @@ static const struct
    char s_f24476fa[7];
    char s_97d90c67[7];
    char s_6d08238d[7];
-   char s_033bf99f[13];
    char s_8076aea7[13];
    char s_a00583cf[13];
    char s_e8a86d57[10];
@@ -1863,7 +1859,6 @@ static const struct
    char s_b71e6907[13];
    char s_d725639f[13];
    char s_ea5b5020[17];
-   char s_fef383d2[25];
    char s_4707850d[7];
    char s_cbddcf50[13];
    char s_9abb40fc[16];
@@ -7536,7 +7531,6 @@ static const struct
    "<\350\257\242\351\227\256\346\210\221>",
    "\347\211\210\346\234\254",
    "\346\227\240\346\263\225\345\210\240\351\231\244\346\226\207\344\273\266\343\200\202",
-   "\346\227\240\346\263\225\351\207\215\345\221\275\345\220\215\346\226\207\344\273\266\343\200\202",
    "\346\233\264\346\226\260\345\210\227\350\241\250\346\235\241\347\233\256\346\227\266\345\207\272"
    "\351\224\231\343\200\202",
    "\345\275\223\345\211\215\347\235\200\350\211\262\345\231\250",
@@ -7545,8 +7539,6 @@ static const struct
    "\345\210\240\351\231\244\345\210\227\350\241\250",
    "\344\270\215\345\206\215\346\230\276\347\244\272",
    "\344\270\213\350\275\275\346\211\200\346\234\211\347\274\251\347\225\245\345\233\276",
-   "\346\225\264\344\270\252\347\263\273\347\273\237",
-   "\344\273\205\346\255\244\345\210\227\350\241\250",
    "\344\270\200\344\270\252\344\270\213\350\275\275\350\277\233\347\250\213\345\267\262\345\234\250"
    "\350\277\233\350\241\214\344\270\255\343\200\202",
    "\346\210\220\345\212\237\357\274\232%1 \345\244\261\350\264\245\357\274\232%2",
@@ -7620,7 +7612,6 @@ static const struct
    "\344\270\213\347\247\273",
    "\344\270\212\347\247\273",
    "\345\220\215\347\247\260",
-   "\347\275\221\347\273\234\351\224\231\350\257\257",
    "\346\226\260\345\273\272\345\210\227\350\241\250",
    "\345\210\227\350\241\250\346\235\241\347\233\256",
    "\346\240\270\345\277\203\357\274\232",
@@ -7675,7 +7666,6 @@ static const struct
    "\346\270\270\346\210\217\345\210\227\350\241\250",
    "\345\214\205\350\243\205\345\260\201\351\235\242",
    "\346\240\207\345\277\227\357\274\210logo\357\274\211",
-   "\347\274\251\347\225\245\345\233\276\344\270\213\350\275\275\346\210\220\345\212\237\343\200\202",
    "\346\210\252\345\261\217",
    "\350\265\267\345\247\213\345\261\217\345\271\225",
    "\346\233\264\346\226\260\345\244\261\350\264\245\343\200\202",
@@ -15005,7 +14995,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_chs_blob_check[
-      (sizeof(msg_hash_chs_blob) == (182763u
+      (sizeof(msg_hash_chs_blob) == (182674u
 #ifdef ANDROID
        + 220u
 #endif
@@ -17325,7 +17315,6 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -17333,8 +17322,6 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -17396,7 +17383,6 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -17436,7 +17422,6 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,

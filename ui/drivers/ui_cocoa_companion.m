@@ -561,7 +561,6 @@ static const companion_callbacks_t cc_callbacks = {
    cc_on_notify_refresh,
    cc_on_scan_finished,
    NULL, /* on_thumbnail_downloaded */
-   NULL, /* on_thumbnail_pack_finished */
    cc_on_browse_changed
 };
 

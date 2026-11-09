@@ -12245,7 +12245,6 @@ static void materialui_list_insert(void *userdata,
             node->icon_texture_index = MUI_TEXTURE_SETTINGS;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
-         case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
          case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:
             node->icon_texture_index = MUI_TEXTURE_IMAGE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;

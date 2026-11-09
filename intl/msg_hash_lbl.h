@@ -312,10 +312,6 @@ MSG_HASH(
    "cb_core_system_files_list"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD,
-   "cb_core_thumbnails_download"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD,
    "cb_core_updater_download"
    )

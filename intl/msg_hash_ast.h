@@ -448,14 +448,11 @@ static const struct
    char s_a38500d8[12];
    char s_9544161a[9];
    char s_76ac1944[35];
-   char s_ded7e809[32];
    char s_4c11d465[20];
    char s_b893853f[11];
    char s_11121f30[21];
    char s_01badaa0[18];
    char s_6127cc52[23];
-   char s_9d52f73c[15];
-   char s_bc30b87a[14];
    char s_2fd5302f[31];
    char s_a2a28187[19];
    char s_6d034072[7];
@@ -514,7 +511,6 @@ static const struct
    char s_094e2bc9[6];
    char s_b71e6907[8];
    char s_d725639f[10];
-   char s_fef383d2[41];
    char s_a9dc9f21[91];
    char s_6c786a36[27];
    char s_6d0ca7a7[6];
@@ -1463,14 +1459,11 @@ static const struct
    "<Entrugame>",
    "Versi\303\263n",
    "Nun se pudo desaniciar el ficheru.",
-   "Nun se pudo renomar el ficheru.",
    "Asolombrador actual",
    "Desaniciar",
    "Desaniciar la llista",
    "Nun volver amosar",
    "Baxar toles miniatures",
-   "De tol sistema",
-   "D'esta llista",
    "X\303\241 hai una descarga en cursu.",
    "Baxar la miniatura",
    "Editar",
@@ -1529,7 +1522,6 @@ static const struct
    "Xubir",
    "Llistes",
    "Car\303\241tula",
-   "Les miniatures bax\303\241ronse correutamente.",
    "RetroArch anov\303\263se correutamente. Reanicia l'aplicaci\303\263n pa que los cambeos faigan e"
    "feutu.",
    "Anovar RetroArch (nightly)",
@@ -2086,7 +2078,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24571u
+      (sizeof(msg_hash_ast_blob) == (24469u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2608,14 +2600,11 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_EDIT,
@@ -2674,7 +2663,6 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_VIEW,

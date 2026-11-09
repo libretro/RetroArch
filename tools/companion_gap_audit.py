@@ -29,7 +29,7 @@ FEATS = [
  ("Playlist context: hidden list",    r"hiddenPlaylistsMenu", r"rebuildHiddenMenu", r"IDM_CW_UNHIDE_FIRST"),
  ("Playlist context: new playlist",   r"newPlaylistAction", r"createPlaylistNamed", r"IDM_CW_NEW_PLAYLIST"),
  ("Playlist context: delete playlist",r"deletePlaylistAction", r"deletePlaylistAtPath", r"IDM_CW_DELETE_PLAYLIST"),
- ("Playlist context: download thumbnails", r"thumbnailPack|DOWNLOAD_THUMBNAILS", r"thumbnail_pack|downloadThumbnails", r"thumbnail_pack|DOWNLOAD_THUMB"),
+ ("Playlist context: download thumbnails", r"downloadAllThumbnails|DOWNLOAD_THUMBNAILS", r"downloadThumbnails", r"DOWNLOAD_THUMB"),
  ("Entry context: set core association", r"SET_CORE_ASSOCIATION|associat", r"associateCore", r"associate|ASSOCIATION"),
  ("Entry context: delete entry",      r"deletePlaylistItem|DELETE_ENTRY|deleteEntry", r"deleteEntry", r"delete_entry|DELETE_ENTRY"),
  ("Drag & drop files onto playlist",  r"onPlaylistFilesDropped", r"acceptDrop", r"WM_DROPFILES"),

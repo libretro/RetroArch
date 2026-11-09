@@ -1708,7 +1708,6 @@ static const struct
    char s_9433fa60[13];
    char s_9544161a[7];
    char s_76ac1944[34];
-   char s_ded7e809[34];
    char s_d8820ed7[42];
    char s_4c11d465[17];
    char s_50a04cd9[15];
@@ -1716,8 +1715,6 @@ static const struct
    char s_11121f30[23];
    char s_01badaa0[24];
    char s_6127cc52[29];
-   char s_9d52f73c[14];
-   char s_bc30b87a[20];
    char s_2fd5302f[26];
    char s_2dff21ec[32];
    char s_a2a28187[21];
@@ -1777,7 +1774,6 @@ static const struct
    char s_f24476fa[16];
    char s_97d90c67[15];
    char s_6d08238d[7];
-   char s_033bf99f[12];
    char s_8076aea7[20];
    char s_a00583cf[26];
    char s_e8a86d57[7];
@@ -1815,7 +1811,6 @@ static const struct
    char s_094e2bc9[5];
    char s_b71e6907[15];
    char s_d725639f[13];
-   char s_fef383d2[37];
    char s_4707850d[18];
    char s_cbddcf50[19];
    char s_9abb40fc[23];
@@ -6797,7 +6792,6 @@ static const struct
    "Vo\304\276by jadra",
    "Verzia",
    "S\303\272bor sa nepodarilo odstr\303\241ni\305\245.",
-   "S\303\272bor sa nepodarilo premenova\305\245.",
    "Chyba pri aktualiz\303\241cii polo\305\276ky zoznamu.",
    "Aktu\303\241lny shader",
    "Vlastn\303\241 t\303\251ma",
@@ -6805,8 +6799,6 @@ static const struct
    "Vymaza\305\245 hrac\303\255 zoznam",
    "Nabud\303\272ce nezobrazova\305\245",
    "Stiahnu\305\245 v\305\241etky miniat\303\272ry",
-   "Cel\303\275 syst\303\251m",
-   "Tento hrac\303\255 zoznam",
    "S\305\245ahovanie u\305\276 prebieha.",
    "\303\232spe\305\241n\303\251: %1 Ne\303\272spe\305\241n\303\251: %2",
    "Stiahnu\305\245 miniat\303\272ru",
@@ -6866,7 +6858,6 @@ static const struct
    "Posun\303\272\305\245 nadol",
    "Posun\303\272\305\245 hore",
    "N\303\241zov",
-   "Chyba siete",
    "Nov\303\275 hrac\303\255 zoznam",
    "Polo\305\276ka hracieho zoznamy",
    "Jadro:",
@@ -6913,7 +6904,6 @@ static const struct
    "Hore",
    "Hracie zoznamy",
    "Obal krabice",
-   "N\303\241h\304\276ady boli \303\272spe\305\241ne stiahnut\303\251.",
    "Sn\303\255mka obrazovky",
    "Tituln\303\241 obrazovka",
    "Aktualiz\303\241cia zlyhala.",
@@ -11468,7 +11458,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (227838u
+      (sizeof(msg_hash_sk_blob) == (227721u
 #ifdef ANDROID
        + 389u
 #endif
@@ -13741,7 +13731,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -13749,8 +13738,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -13810,7 +13797,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -13847,7 +13833,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,

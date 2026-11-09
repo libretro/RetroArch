@@ -567,13 +567,11 @@ public slots:
    void showDocs();
    /* companion core download results (see ui_companion_qt_core_callbacks) */
    void onCoreThumbnailDownloaded(QString system, QString title, QString path, bool success);
-   void onCoreThumbnailPackFinished(int result);
    void onBrowseChanged();
    void onSingleThumbnailDownloadFinishedInternal(QString system, QString title, QString path, bool success);
    void onPlaylistThumbnailDownloadFinishedInternal(QString path, bool success);
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
-   void downloadAllThumbnails(QString system, QUrl url = QUrl());
    void downloadPlaylistThumbnails(QString playlistPath);
    void downloadNextPlaylistThumbnail(QString system, QString title, QString type, QUrl url = QUrl());
    void changeThumbnailType(ThumbnailType type);
@@ -620,8 +618,6 @@ private slots:
 
    void onThumbnailDownloadCanceled();
    void onDownloadThumbnail(QString system, QString title);
-
-   void onThumbnailPackDownloadCanceled();
 
    void onPlaylistThumbnailDownloadCanceled();
 
@@ -715,8 +711,6 @@ private:
 
    QProgressDialog *m_thumbnailDownloadProgressDialog;
    QStringList m_pendingThumbnailDownloadTypes;
-
-   QProgressDialog *m_thumbnailPackDownloadProgressDialog;
 
    QProgressDialog *m_playlistThumbnailDownloadProgressDialog;
    QList<QHash<QString, QString> > m_pendingPlaylistThumbnails;
