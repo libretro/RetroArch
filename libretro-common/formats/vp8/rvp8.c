@@ -2015,7 +2015,7 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
       if (data[3]!=0x9D || data[4]!=0x01 || data[5]!=0x2A) return -1;
       w = (data[6]|(data[7]<<8)) & 0x3FFF;
       h = (data[8]|(data[9]<<8)) & 0x3FFF;
-      if (!w || !h || w > 16384 || h > 16384) return -1;
+      if (!w || !h) return -1;
       p0 = data + 10;
    }
    else
