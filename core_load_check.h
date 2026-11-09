@@ -35,8 +35,12 @@ bool core_load_verbatim_dot(const char *path);
 bool core_load_check_refused(const char *path);
 /* That refusal waits only for the first run's seed */
 bool core_load_check_refused_seed(const char *path);
-/* The core the last core_load_check_open() opened is now running */
+/* The core the last core_load_check_open() opened is now running. A
+ * waiting park ends, as the user's Cancel would end it. */
 void core_load_check_loaded(void);
+/* A built-in core is now running: it ends what another core's load
+ * ends */
+void core_load_check_builtin_loaded(void);
 /* Its pass outlives the unload while its held file or its identity
  * binds it, until another core loads or a release */
 void core_load_check_unloaded(void);
@@ -60,6 +64,28 @@ bool core_load_check_stage_refused(void);
  * stage */
 dylib_t core_load_check_stage_take(const char *path);
 void core_load_check_stage_cancel(void);
+
+typedef void (*core_load_rerun_t)(void *userdata);
+
+/* Parks a user-started load the check holds back. It re-runs once the
+ * core passes, or after the user picks Load Once or Always Trust on
+ * the Security Warning. With no menu to ask, the refusal message is
+ * shown, or held until the drivers are up.
+ * True: free_cb(userdata) runs once, after the re-run or when the
+ * request is dropped; it may run inside a warning's CANCEL, so it must
+ * not push or choose a warning. A newer park replaces it, and any
+ * other load ends it, the same core's too.
+ * False: nothing taken (no runtime, the core can't be opened, or the
+ * park ended at once). Park only after core_load_check_refused(): a
+ * false then means the user was told (barring out of memory or the
+ * file going between the gate and the park), so the caller adds no
+ * load error beyond its failed probe's. */
+bool core_load_check_park(const char *path, core_load_rerun_t rerun,
+      core_load_rerun_t free_cb, void *userdata);
+/* Each frame: the parked request's waits */
+void core_load_check_iterate(void);
+/* The drivers are up: a message held for them shows */
+void core_load_check_notify(void);
 
 RETRO_END_DECLS
 
