@@ -160,6 +160,8 @@ struct image_loader
    unsigned height;
    enum image_type_enum type;
    enum image_loader_state state;
+   void *keep_source;     /* the data_transfer holding buf, or NULL */
+   bool  source_kept;     /* the image took it */
    uint8_t phase;  /* 0: the transfer, 1: the pixels */
    bool pix10;
    bool fp16;
@@ -277,6 +279,27 @@ void image_loader_set_abort(image_loader_t *l,
    l->abort_ud     = ud;
 }
 
+void image_loader_keep_source(image_loader_t *l, void *dt)
+{
+   if (l)
+      l->keep_source = dt;
+}
+
+bool image_loader_source_kept(const image_loader_t *l)
+{
+   return l && l->source_kept;
+}
+
+static void texture_compressed_free(struct texture_compressed *tc)
+{
+   if (tc->source)
+      data_transfer_free((data_transfer_t*)tc->source);
+   else
+      free(tc->storage);
+   free(tc->mips);
+   free(tc);
+}
+
 /* The transfer is through: valid, and either the compressed payload
  * the caller asked for is copied out, or the pixels are next. */
 static enum image_loader_state image_loader_transferred(image_loader_t *l)
@@ -288,19 +311,26 @@ static enum image_loader_state image_loader_transferred(image_loader_t *l)
    if (     l->req.want_compressed
          && image_transfer_get_gpu_layout(l->xfer, l->type, l->len, &lay))
    {
-      /* The source copied, so the mip pointers outlive the caller's
-       * buffer; the CPU decode is deferred to image_texture_realize_rgba */
+      /* The source kept or copied, so the mip pointers outlive the
+       * caller's buffer; the CPU decode is deferred to
+       * image_texture_realize_rgba */
       struct texture_compressed *tc = (struct texture_compressed*)
          calloc(1, sizeof(*tc));
       if (tc)
       {
          tc->mips    = (struct texture_mip*)
             malloc((size_t)lay.num_mips * sizeof(*tc->mips));
-         tc->storage = malloc(l->len);
+         tc->storage = l->keep_source ? (void*)l->buf : malloc(l->len);
          if (tc->mips && tc->storage)
          {
             unsigned i;
-            memcpy(tc->storage, l->buf, l->len);
+            if (l->keep_source)
+            {
+               tc->source     = l->keep_source;
+               l->source_kept = true;
+            }
+            else
+               memcpy(tc->storage, l->buf, l->len);
             tc->storage_len = l->len;
             tc->num_mips    = lay.num_mips;
             tc->format      = lay.format;
@@ -318,7 +348,8 @@ static enum image_loader_state image_loader_transferred(image_loader_t *l)
             l->height     = lay.height[0];
             return IMAGE_LOADER_DONE;
          }
-         free(tc->storage);
+         if (!l->keep_source)
+            free(tc->storage);
          free(tc->mips);
          free(tc);
          /* Out of memory for the copy: the CPU decode below instead */
@@ -436,11 +467,7 @@ void image_loader_free(image_loader_t *l)
    if (l->xfer)
       image_transfer_free(l->xfer, l->type);
    if (l->compressed)
-   {
-      free(l->compressed->storage);
-      free(l->compressed->mips);
-      free(l->compressed);
-   }
+      texture_compressed_free(l->compressed);
    free(l->pixels);
    free(l);
 }
@@ -457,7 +484,8 @@ static void image_texture_clear(struct texture_image *img)
    img->fp16          = false;
 }
 
-static bool image_texture_load_buffer_probe(struct texture_image *out_img,
+static bool image_texture_load_buffer_probe(data_transfer_t *keep,
+      bool *kept, struct texture_image *out_img,
       enum image_type_enum type, const void *ptr, size_t len,
       const image_texture_request_t *req,
       bool (*should_abort)(void *ud), void *abort_ud, int *png_probe)
@@ -475,12 +503,15 @@ static bool image_texture_load_buffer_probe(struct texture_image *out_img,
       return false;
    }
    image_loader_set_abort(l, should_abort, abort_ud);
+   image_loader_keep_source(l, keep);
    if (!image_loader_start(l, ptr, len, len))
    {
       image_loader_free(l);
       return false;
    }
    st = image_loader_step(l, NULL, 0);
+   if (kept)
+      *kept = image_loader_source_kept(l);
    if (st == IMAGE_LOADER_DONE && image_loader_finish(l, out_img))
    {
       if (png_probe)
@@ -498,7 +529,7 @@ bool image_texture_load_buffer_request(struct texture_image *out_img,
       const image_texture_request_t *req,
       bool (*should_abort)(void *ud), void *abort_ud)
 {
-   return image_texture_load_buffer_probe(out_img, type, ptr, len, req,
+   return image_texture_load_buffer_probe(NULL, NULL, out_img, type, ptr, len, req,
          should_abort, abort_ud, NULL);
 }
 
@@ -533,17 +564,18 @@ bool image_texture_load_request_ex(struct texture_image *out_img,
       {
          size_t file_len    = 0;
          const uint8_t *ptr = NULL;
+         bool kept          = false;
+         bool loaded;
 
          data_transfer_iterate(dt, 0);
          ptr = data_transfer_ptr(dt, &file_len);
-         if (data_transfer_complete(dt) && ptr && file_len
-               && image_texture_load_buffer_probe(out_img, type,
-                     ptr, file_len, req, should_abort, ud, png_probe))
-         {
+         loaded = data_transfer_complete(dt) && ptr && file_len
+            && image_texture_load_buffer_probe(dt, &kept, out_img, type,
+                  ptr, file_len, req, should_abort, ud, png_probe);
+         if (!kept)
             data_transfer_free(dt);
+         if (loaded)
             return true;
-         }
-         data_transfer_free(dt);
       }
    }
    if (out_img)
@@ -574,9 +606,7 @@ void image_texture_free(struct texture_image *img)
 
    if (img->compressed)
    {
-      free(img->compressed->storage);
-      free(img->compressed->mips);
-      free(img->compressed);
+      texture_compressed_free(img->compressed);
       img->compressed = NULL;
    }
    if (img->pixels)

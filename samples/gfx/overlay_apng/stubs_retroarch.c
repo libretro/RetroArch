@@ -94,3 +94,7 @@ bool video_thread_lend_get(int idx, void **mem, size_t *pitch)
 }
 
 bool video_thread_lend_ready(int idx) { (void)idx; return true; }
+
+/* Only an image loaded from a file with a compressed payload owns one */
+#include <formats/data_transfer.h>
+void data_transfer_free(data_transfer_t *dt) { (void)dt; }

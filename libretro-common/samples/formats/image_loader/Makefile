@@ -19,6 +19,7 @@ SOURCES := image_loader_test.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
            $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
+           $(LIBRETRO_COMM_DIR)/formats/dds/rdds.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_scale.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
@@ -42,7 +43,7 @@ SOURCES := image_loader_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0 -DHAVE_RPNG -DHAVE_THREADS \
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0 -DHAVE_RPNG -DHAVE_RDDS -DHAVE_THREADS \
           -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)

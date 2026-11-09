@@ -202,6 +202,57 @@ static bool abort_now(void *ud)
    return true;
 }
 
+/* A compressed image read from a file keeps the bytes it was read
+ * into; one from a caller's buffer takes a copy of them. */
+static void check_compressed_source(void)
+{
+   static uint8_t dds[128 + 8];
+   static const char *path = "image_loader_keep.dds";
+   struct texture_image img;
+   image_texture_request_t req;
+   FILE *f;
+
+   memset(dds, 0, sizeof(dds));
+   memcpy(dds, "DDS ", 4);
+   dds[4]  = 124;
+   dds[8]  = 0x07; dds[9] = 0x10; /* caps, height, width, pixel format */
+   dds[12] = 4;                   /* height */
+   dds[16] = 4;                   /* width */
+   dds[76] = 32;                  /* pixel format size */
+   dds[80] = 4;                   /* fourcc */
+   memcpy(dds + 84, "DXT1", 4);
+   memset(dds + 128, 0x5a, 8);
+
+   memset(&req, 0, sizeof(req));
+   req.want_compressed = true;
+
+   memset(&img, 0, sizeof(img));
+   CHECK(image_texture_load_buffer_request(&img, IMAGE_TYPE_DDS, dds,
+            sizeof(dds), &req, NULL, NULL) && img.compressed,
+         "a DDS from a buffer gives its compressed payload");
+   if (img.compressed)
+      CHECK(!img.compressed->source && img.compressed->storage != dds,
+            "and copies it: the buffer is the caller's");
+   image_texture_free(&img);
+
+   if (!(f = fopen(path, "wb")))
+      return;
+   fwrite(dds, 1, sizeof(dds), f);
+   fclose(f);
+   memset(&img, 0, sizeof(img));
+   CHECK(image_texture_load_request(&img, path, &req, NULL, NULL)
+         && img.compressed, "a DDS from a file gives its compressed payload");
+   if (img.compressed)
+   {
+      CHECK(img.compressed->source != NULL,
+            "and keeps the bytes it was read into");
+      CHECK(!memcmp(img.compressed->mips[0].data, dds + 128, 8),
+            "where the first mip lies");
+   }
+   image_texture_free(&img);
+   remove(path);
+}
+
 int main(void)
 {
    size_t len = 0, apng_len = 0;
@@ -210,6 +261,8 @@ int main(void)
    struct texture_image ref, img;
    image_texture_request_t req;
    image_loader_t *l;
+
+   check_compressed_source();
 
    memset(&ref, 0, sizeof(ref));
    memset(&req, 0, sizeof(req));

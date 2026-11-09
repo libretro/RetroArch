@@ -168,12 +168,14 @@ struct texture_mip
 };
 
 /* Owned, self-contained compressed payload carried on a texture_image.
- * storage holds a private copy of the source file (so the mip pointers
- * outlive the loader's buffer) and doubles as the input for the CPU
+ * storage holds the source file (so the mip pointers outlive the
+ * loader's buffer), a private copy or, with source set, the
+ * data_transfer it was read into, and doubles as the input for the CPU
  * decode fallback in image_texture_realize_rgba(). */
 struct texture_compressed
 {
    void                    *storage;
+   void                    *source;
    size_t                   storage_len;
    struct texture_mip      *mips;
    unsigned                 num_mips;
@@ -291,6 +293,12 @@ image_loader_t *image_loader_new(enum image_type_enum type,
  * when the decoder refused the start. */
 bool image_loader_start(image_loader_t *l, const void *buf, size_t len,
       size_t avail);
+
+/* @dt holds the bytes given to image_loader_start, and may be kept
+ * instead of copied should the image be a compressed payload. Afterwards
+ * image_loader_source_kept() says whether the image now owns @dt. */
+void image_loader_keep_source(image_loader_t *l, void *dt);
+bool image_loader_source_kept(const image_loader_t *l);
 
 /* More of the file has arrived: the first @avail bytes are resident
  * ((size_t)-1: all of them). */
