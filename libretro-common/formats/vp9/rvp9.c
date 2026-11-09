@@ -1752,7 +1752,7 @@ static int rvp9_parse_compressed_intra(const uint8_t *data, size_t sz,
    static const int band_ctx[RVP9_COEF_BANDS] = { 3, 6, 6, 6, 6, 6 };
    static const int biggest_tx[5] = { 0, 1, 2, 3, 3 };
 
-   rvp9_br_init(&r, data, sz);
+   if (rvp9_br_init(&r, data, sz)) return -1;
 
    if (hd->lossless)
       tx_mode = 0;

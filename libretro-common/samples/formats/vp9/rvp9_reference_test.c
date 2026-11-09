@@ -82,6 +82,25 @@ static int truncated_partition_tests(rvp9_dec *d)
    return 0;
 }
 
+/* The compressed header starts with a marker bit that must be zero. */
+static int marker_bit_tests(void)
+{
+   int ten_bit;
+   for (ten_bit = 0; ten_bit < 2; ten_bit++)
+   {
+      int show, result;
+      size_t len = key_header(ten_bit, 8);
+      rvp9_dec *d = (rvp9_dec*)calloc(1, sizeof(*d));
+      if (!d) return 1;
+      packet[len] = 0x80;
+      result = rvp9_decode_frame(d, packet, len + 9, &show);
+      rvp9_free(d);
+      free(d);
+      if (result != -11) return 1;
+   }
+   return 0;
+}
+
 int main(void)
 {
    rvp9_dec *d = (rvp9_dec*)calloc(1, sizeof(*d));
@@ -128,6 +147,7 @@ int main(void)
    if (rvp9_parse_uncompressed(packet, len, &hd, NULL) || hd.w != 64 || hd.h != 48)
       return 6;
    if (truncated_partition_tests(d)) return 9;
+   if (marker_bit_tests()) return 10;
    free(d);
    puts("VP9 reference-slot size tests passed (21 selections)");
    return 0;
