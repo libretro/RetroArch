@@ -586,13 +586,10 @@ bool manual_content_scan_set_menu_content_dir_kind(const char *content_dir,
 
 int manual_content_scan_content_stat(const char *path)
 {
-#ifdef HAVE_SMBCLIENT
-   if (   scan_content_kind != MANUAL_CONTENT_SCAN_PATH_UNKNOWN
-       && string_starts_with_size(path, "smb://", STRLEN_CONST("smb://")))
+   if (scan_content_kind != MANUAL_CONTENT_SCAN_PATH_UNKNOWN)
       return scan_content_kind == MANUAL_CONTENT_SCAN_PATH_FOLDER
          ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY
          : RETRO_VFS_STAT_IS_VALID;
-#endif
    return path_stat(path);
 }
 
@@ -2310,6 +2307,9 @@ bool manual_content_scan_content_list_iter_new(
       }
       return true;
    }
+
+   if (!task_config->content_is_file)
+      return false;
 
    /* A plain-file content dir needs no walk: the list
     * is complete here and *iter stays NULL. */
