@@ -26,7 +26,7 @@ static retro_atomic_int_t gate, polls, destroyed, opened, entered, hold;
 static pthread_t caller;
 static int path_fail, color_fail, native_fail, allocation_fail;
 static int event_fail, attr_fail, detach_fail, thread_fail, notify_race;
-static unsigned paths, seen_position, test_slots = 9;
+static unsigned paths, seen_position, seen_grain, test_slots = 9;
 static video_color_metadata_t seen_color;
 static unsigned seen_major, seen_minor;
 
@@ -76,6 +76,7 @@ bool vaapi_av1_owner_open(vaapi_av1_owner_t **out, const char *path,
          && max_input == 4096 && !strcmp(path, "/dev/dri/renderD128")
          && major_id == seen_major && minor_id == seen_minor);
    seen_position = p->chroma_sample_position;
+   seen_grain = p->film_grain_params_present;
    seen_container = color != NULL;
    memset(&seen_color, 0, sizeof(seen_color));
    if (color) seen_color = *color;
@@ -285,8 +286,13 @@ static void check_config(void)
          &test_color, 9, &ops) && seen_position == 2);
    backend.offer.close(&ops);
    wait_value(&backend.active, 0);
-   before = (unsigned)retro_atomic_load_acquire_int(&opened);
    params.film_grain_params_present = 1;
+   assert(backend.offer.open_config(backend.offer.user, &params, NULL,
+         &test_color, 9, &ops) && seen_grain == 1);
+   backend.offer.close(&ops);
+   wait_value(&backend.active, 0);
+   before = (unsigned)retro_atomic_load_acquire_int(&opened);
+   params.film_grain_params_present = 2;
    assert(!backend.offer.open_config(backend.offer.user, &params, NULL,
          &test_color, 9, &ops));
    params.film_grain_params_present = 0;

@@ -160,8 +160,7 @@ static bool vaapi_av1_backend_open_config(void *opaque,
    int epoch, active, result;
    (void)sequence_obu;
    if (!ops || ops->decoder || !backend || slots < 9 || slots > 32
-         || !vaapi_av1_sequence_valid(sequence)
-         || sequence->film_grain_params_present)
+         || !vaapi_av1_sequence_valid(sequence))
       return false;
    epoch = retro_atomic_load_acquire_int(&backend->epoch);
    if (epoch <= 0 || !(epoch & 1))
