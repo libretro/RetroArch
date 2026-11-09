@@ -57,6 +57,9 @@ def main():
         print('[pass] empty command exits with an error')
         run('x' * 4096, 1)
         print('[pass] oversized command exits with an error')
+        run('VERSION;;99999', 1)
+        run('VERSION;;notaport', 1)
+        print('[pass] invalid port exits with an error')
         launch(['--menu', 'missing.bin'], 1)
         print('[pass] argument error before the task queue exits cleanly')
 

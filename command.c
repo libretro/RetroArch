@@ -1997,9 +1997,14 @@ bool command_network_send(const char *cmd_)
 
    if (port_str && *port_str)
    {
-      unsigned long val = strtoul(port_str, NULL, 0);
-      if (val > 0 && val <= 0xFFFF)
-         port = (uint16_t)val;
+      char *end;
+      unsigned long val = strtoul(port_str, &end, 0);
+      if (*end || !val || val > 0xFFFF)
+      {
+         RARCH_ERR("[NetCMD] Invalid port \"%s\".\n", port_str);
+         return false;
+      }
+      port = (uint16_t)val;
    }
 
    RARCH_LOG("[NetCMD] %s: \"%s\" to %s:%hu.\n",
