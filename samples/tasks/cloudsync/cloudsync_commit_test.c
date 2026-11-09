@@ -18,8 +18,21 @@ static void *test_malloc(size_t size)
    return malloc(size);
 }
 
+/* Whether a rename into the backup directory fails as one across
+ * volumes does, or out of a SAF tree on Android. */
+static int across_volumes;
+#include <streams/file_stream.h>
+static int test_rename(const char *old_path, const char *new_path)
+{
+   if (across_volumes && strstr(new_path, "cloud_backups"))
+      return -1;
+   return filestream_rename(old_path, new_path);
+}
+
 #define malloc test_malloc
+#define filestream_rename test_rename
 #include "../../../tasks/task_cloudsync.c"
+#undef filestream_rename
 #undef malloc
 
 static const char *directory = "cloudsync_commit_test_files";
@@ -230,6 +243,10 @@ int main(void)
       lane(t != 0, false, false, true, false);
       lane(t != 0, true, true, false, false);
       lane(t != 0, true, false, false, false);
+      across_volumes = 1;
+      lane(t != 0, false, false, false, false);
+      lane(t != 0, true, false, false, false);
+      across_volumes = 0;
    }
    puts(failures ? "FAIL cloudsync_commit_test" : "PASS cloudsync_commit_test");
    return failures ? 1 : 0;

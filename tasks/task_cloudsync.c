@@ -1136,9 +1136,22 @@ static bool task_cloud_sync_backup_file(struct item_file *file,
 
    if (!path_mkdir(new_dir))
       RARCH_ERR(CSPFX "Could not create backup directory \"%s\".\n", new_dir);
-   else if (filestream_rename(file->path, new_path) != 0)
+   else if (filestream_rename(file->path, new_path) == 0)
+      ok = true;
+   /* A rename cannot cross volumes, or leave a SAF tree on Android, and
+    * the backups live under the assets directory wherever saves are.
+    * This runs on the task thread, so a blocking copy holds up nothing. */
+   else if (filestream_copy(file->path, new_path) != 0)
       RARCH_ERR(CSPFX "Could not back \"%s\" up to \"%s\".\n",
             file->path, new_path);
+   /* The caller needs the local file gone; a backup of a file that is
+    * still there would only pile up. */
+   else if (filestream_delete(file->path) != 0)
+   {
+      filestream_delete(new_path);
+      RARCH_ERR(CSPFX "Could not remove \"%s\" after backing it up.\n",
+            file->path);
+   }
    else
       ok = true;
 
