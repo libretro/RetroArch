@@ -37,6 +37,8 @@ static uint32_t driver_mice[MAX_USERS];
 static uint32_t pad_buttons[MAX_USERS];
 static int16_t pad_rest[MAX_USERS];
 static unsigned pad_high;
+static input_bits_t pad_bits;
+static unsigned pad_button_reads;
 static uint16_t own_hot_key[MAX_USERS][HOTKEYS];
 static uint32_t own_hot_axis[MAX_USERS][HOTKEYS];
 static unsigned driver_mouse_reads;
@@ -45,6 +47,11 @@ static unsigned driver_key;
 settings_t *config_get_ptr(void)
 {
    return &settings;
+}
+
+bool string_is_equal(const char *a, const char *b)
+{
+   return strcmp(a, b) == 0;
 }
 
 retro_time_t cpu_features_get_time_usec(void)
@@ -136,6 +143,9 @@ unsigned input_mouse_port_index(unsigned port)
 
 #include "input/input_pointer_frame.h"
 
+#undef RARCH_LOG
+#define RARCH_LOG(...) do { } while (0)
+
 /* These paths are not used by the menu's mouse and key capture. */
 #define input_joypad_from_keys(input, data, blocked, port, id) 0
 #define input_analog_from_keys(input, data, port, idx, id) 0
@@ -168,9 +178,16 @@ static void driver_keys_down(void *data, unsigned port,
 static int32_t pad_button(unsigned pad, uint16_t id)
 {
    CHECK(pad < MAX_USERS);
+   if (id < MENU_MAX_BUTTONS)
+      pad_button_reads++;
    if (pad_high && id == pad_high)
       return 1;
    return id < 32 && ((pad_buttons[pad] >> id) & 1);
+}
+
+static void pad_get_buttons(unsigned pad, input_bits_t *state)
+{
+   *state = pad_bits;
 }
 
 static int16_t pad_axis(unsigned pad, uint32_t axis)
@@ -210,6 +227,8 @@ static void reset(void)
    memset(pad_buttons, 0, sizeof(pad_buttons));
    memset(pad_rest, 0, sizeof(pad_rest));
    pad_high = 0;
+   memset(&pad_bits, 0, sizeof(pad_bits));
+   pad_button_reads = 0;
    for (i = 0; i < MAX_USERS; i++)
    {
       input_config_binds[i]                = binds[i];
@@ -404,6 +423,41 @@ static void test_last_button(void)
    CHECK(binds[0][RETRO_DEVICE_ID_JOYPAD_B].joykey == MENU_MAX_BUTTONS - 1);
 }
 
+/* A driver checked to answer get_buttons() as button() is read at
+ * once, and only as far as the buttons bound go; any other is read a
+ * button at a time, whatever get_buttons() it has. */
+static void test_get_buttons(void)
+{
+   static input_device_driver_t checked, other;
+
+   reset();
+   checked                        = joypad;
+   checked.ident                  = "udev";
+   checked.get_buttons            = pad_get_buttons;
+   input_driver_st.primary_joypad = &checked;
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_B));
+   pad_button_reads = 0;
+   BIT256_SET(pad_bits, MENU_MAX_BUTTONS);
+   BIT256_SET(pad_bits, 255);
+   CHECK(!bind_step());
+   BIT256_SET(pad_bits, MENU_MAX_BUTTONS - 1);
+   CHECK(bind_step());
+   CHECK(binds[0][RETRO_DEVICE_ID_JOYPAD_B].joykey == MENU_MAX_BUTTONS - 1);
+   CHECK(pad_button_reads == 0);
+
+   reset();
+   other                          = joypad;
+   other.ident                    = "unchecked";
+   other.get_buttons              = pad_get_buttons;
+   input_driver_st.primary_joypad = &other;
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_B));
+   BIT256_SET(pad_bits, 9);
+   pad_buttons[0] = 1 << 7;
+   CHECK(bind_step());
+   CHECK(binds[0][RETRO_DEVICE_ID_JOYPAD_B].joykey == 7);
+   CHECK(pad_button_reads > 0);
+}
+
 int main(void)
 {
    test_mouse_frames();
@@ -414,6 +468,7 @@ int main(void)
    test_keys(false);
    test_keys(true);
    test_last_button();
+   test_get_buttons();
    if (failures)
       return 1;
    puts("PASS bind_capture_test");

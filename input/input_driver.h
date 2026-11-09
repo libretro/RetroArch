@@ -1635,7 +1635,7 @@ const input_pointer_view_t *input_driver_pointer_view(void);
  * down, @axes with each axis's position, @hats with the directions
  * held OR-ed in. @poll polls the joypad drivers first. */
 void input_driver_capture_pad(unsigned pad, bool poll,
-      uint32_t *buttons, unsigned num_buttons,
+      input_bits_t *buttons, unsigned num_buttons,
       int16_t *axes, unsigned num_axes,
       uint16_t *hats, unsigned num_hats);
 

@@ -18125,7 +18125,7 @@ void input_driver_bind_capture_keys(unsigned joy_idx, uint32_t *down)
  * mask of its directions held OR-ed in. With @poll the joypad driver
  * is polled first, as the capture does once a frame. */
 void input_driver_capture_pad(unsigned pad, bool poll,
-      uint32_t *buttons, unsigned num_buttons,
+      input_bits_t *buttons, unsigned num_buttons,
       int16_t *axes, unsigned num_axes,
       uint16_t *hats, unsigned num_hats)
 {
@@ -18142,9 +18142,22 @@ void input_driver_capture_pad(unsigned pad, bool poll,
          joypad->poll();
 
       if (buttons)
-         for (i = 0; i < num_buttons; i++)
-            if (joypad->button(pad, (uint16_t)i))
-               buttons[i >> 5] |= (1u << (i & 31));
+      {
+         /* a driver checked to answer the same either way writes them
+          * all at once, where they are kept */
+         if (joypad->get_buttons && input_snapshot_driver_checked(joypad))
+         {
+            joypad->get_buttons(pad, buttons);
+            /* only the first @num_buttons are asked for */
+            for (i = num_buttons >> 5; i < ARRAY_SIZE(buttons->data); i++)
+               buttons->data[i] &= (i == (num_buttons >> 5))
+                  ? ((1u << (num_buttons & 31)) - 1) : 0;
+         }
+         else
+            for (i = 0; i < num_buttons; i++)
+               if (joypad->button(pad, (uint16_t)i))
+                  BIT256_SET_PTR(buttons, i);
+      }
 
       if (axes)
          for (i = 0; i < num_axes; i++)

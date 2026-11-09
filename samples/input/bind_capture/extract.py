@@ -11,6 +11,7 @@ for path, names in (
         'input_driver_has_device_state',
         'input_driver_bind_capture_state',
         'input_driver_bind_capture_keys',
+        'input_snapshot_driver_checked',
         'input_driver_capture_pad',
         'input_driver_set_wait_input_release',
         'input_driver_waiting_input_release',

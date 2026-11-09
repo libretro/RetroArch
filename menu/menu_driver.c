@@ -1803,7 +1803,8 @@ static bool menu_input_key_bind_poll_find_hold_pad(
       }
    }
 
-   b = menu_bind_first_bit(n->buttons, NULL, ARRAY_SIZE(n->buttons));
+   b = menu_bind_first_bit(n->buttons.data, NULL,
+         ARRAY_SIZE(n->buttons.data));
    if (b < MENU_MAX_BUTTONS)
    {
       /* L2 and R2: a trigger that is a button and an axis is bound
@@ -1930,7 +1931,8 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       }
    }
 
-   b = menu_bind_first_bit(n->buttons, o->buttons, ARRAY_SIZE(n->buttons));
+   b = menu_bind_first_bit(n->buttons.data, o->buttons.data,
+         ARRAY_SIZE(n->buttons.data));
    if (b < MENU_MAX_BUTTONS)
    {
       /* L2 and R2: a trigger that is a button and an axis is bound
@@ -3896,14 +3898,14 @@ static void menu_input_key_bind_poll_bind_state(
 
    /* the controller itself: polled, then read as it has it */
    input_driver_capture_pad(port, true,
-         ports[port].buttons, MENU_MAX_BUTTONS,
+         &ports[port].buttons, MENU_MAX_BUTTONS,
          ports[port].axes,    MENU_MAX_AXES,
          ports[port].hats,    MENU_MAX_HATS);
    /* and for a hotkey, the controllers sharing its core port */
    for (b = 0; b < MAX_USERS; b++)
       if (b != port && ((state->listen >> b) & 1))
          input_driver_capture_pad(b, false,
-               ports[b].buttons, MENU_MAX_BUTTONS,
+               &ports[b].buttons, MENU_MAX_BUTTONS,
                ports[b].axes,    MENU_MAX_AXES,
                ports[b].hats,    MENU_MAX_HATS);
 }

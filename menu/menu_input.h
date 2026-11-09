@@ -156,7 +156,7 @@ struct menu_bind_state_port
    uint16_t hats[MENU_MAX_HATS];
    /* bits */
    uint32_t mouse_buttons;
-   uint32_t buttons[(MENU_MAX_BUTTONS + 31) / 32];
+   input_bits_t buttons;
    uint32_t keys[(RETROK_LAST + 31) / 32];
 };
 
