@@ -111,9 +111,18 @@ static bool media_history_image_check(struct menu_state *menu_st,
    HISTORY_CHECK("Images list shows both entries", rows == 2);
    if (!ok)
       return false;
-   /* From the sidebar into the list, as a user does */
+   /* OK in the sidebar only moves into the list, like any other playlist;
+    * Back returns to the sidebar and Right moves into the list as well. */
    if (tab)
+   {
+      media_history_pump(menu_st, draw, MENU_ACTION_OK, 8);
+      HISTORY_CHECK("OK on the sidebar tab does not open the viewer",
+            !showing(menu_st->userdata));
+      if (showing(menu_st->userdata))
+         return false;
+      media_history_pump(menu_st, draw, MENU_ACTION_CANCEL, 8);
       media_history_pump(menu_st, draw, MENU_ACTION_RIGHT, 8);
+   }
 
    /* The older entry: the fixture */
    menu_st->selection_ptr = 1;

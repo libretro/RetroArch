@@ -192,6 +192,7 @@ static bool test_history_tab(void *data)
    for (i = 0; i <= v->system_tab_end; i++)
       if (v->tabs[i] == OZONE_SYSTEM_TAB_IMAGES)
       {
+         ozone_go_to_sidebar(v, true, (uintptr_t)v);
          ozone_sidebar_goto(v, i);
          return true;
       }
