@@ -600,25 +600,50 @@ jobs:
             exit 1
           fi
 
+      # fate-suite.ffmpeg.org times out or resets connections now and
+      # then; the two files never change (their sha256s are checked), so
+      # one good download is kept in the Actions cache.
+      - name: Restore the XMA2 reference fixture
+        if: matrix.group == 'formats'
+        id: xma2_fixture
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/xma2-fixture
+          key: xma2-multistream-tail-9f0a3fbee3f2-154755c1d14c
+
       - name: Compare native XMA2 startup and multistream tail against reference PCM
         if: matrix.group == 'formats'
         shell: bash
         working-directory: libretro-common/samples/formats/wma
         run: |
           set -euo pipefail
-          fixture=$(mktemp -d)
-          trap 'rm -rf "$fixture"' EXIT
-          for suffix in xma pcm; do
-            curl --fail --location --retry 2 --connect-timeout 10 --max-time 45 \
-              "https://fate-suite.ffmpeg.org/xma2/xma2-multistream-tail.$suffix" \
-              -o "$fixture/input.$suffix"
-          done
-          printf '%s  %s\n' \
-            9f0a3fbee3f2da4833b3e385905e1edebacf086c53a2e5eb358941e74fc67d80 "$fixture/input.xma" \
-            154755c1d14cddcc497ceef2996a98c3ee9c054735a8fe6d5c1d790cf93981cf "$fixture/input.pcm" | sha256sum -c -
+          fixture="$HOME/xma2-fixture"
+          mkdir -p "$fixture"
+          check() {
+            printf '%s  %s\n' \
+              9f0a3fbee3f2da4833b3e385905e1edebacf086c53a2e5eb358941e74fc67d80 "$fixture/input.xma" \
+              154755c1d14cddcc497ceef2996a98c3ee9c054735a8fe6d5c1d790cf93981cf "$fixture/input.pcm" \
+              | sha256sum --quiet -c - 2>/dev/null
+          }
+          if ! check; then
+            for suffix in xma pcm; do
+              curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
+                --connect-timeout 10 --max-time 45 \
+                "https://fate-suite.ffmpeg.org/xma2/xma2-multistream-tail.$suffix" \
+                -o "$fixture/input.$suffix"
+            done
+            check || { echo "XMA2 fixture does not match its sha256s"; exit 1; }
+          fi
           make -j2 file-reference SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
             ./rwma_file_reference "$fixture/input.xma" "$fixture/input.pcm"
+
+      - name: Save the XMA2 reference fixture
+        if: matrix.group == 'formats' && steps.xma2_fixture.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/xma2-fixture
+          key: xma2-multistream-tail-9f0a3fbee3f2-154755c1d14c
 
       - name: Parse a generated DVD VOB with the native readers
         if: matrix.group == 'formats'
