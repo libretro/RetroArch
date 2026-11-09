@@ -3,9 +3,10 @@ include ../../sample_objdir.mk
 TARGET := core_trust_runtime_test
 
 # RetroArch's trust store (core_trust_runtime.c): the startup load,
-# saves and snapshots put on another thread. TEST_KEY=0 is a build
-# with no keys at all, LOAD_CHECK=0 one without the load check, as
-# the tree builds by default.
+# saves, snapshots put on another thread and the seed. TEST_KEY=0 is
+# a build with no keys at all, LOAD_CHECK=0 one without the load
+# check, as the tree builds by default; the seed exists only with it,
+# so the harness builds it.
 # Linux and mingw-w64.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
@@ -81,11 +82,17 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET)$(EXE): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 
+# test_seed_unopened's folder, should a run stop while it is mode 000
+UNLOCK := if [ -d core_trust_runtime_test_tmp/locked ]; then \
+             chmod 755 core_trust_runtime_test_tmp/locked; fi
+
 check: all
+	@$(UNLOCK)
 	rm -rf core_trust_runtime_test_tmp
 	$(RUNNER) ./$(TARGET)$(EXE)
 
 clean:
+	@$(UNLOCK)
 	rm -rf $(SAMPLE_OBJDIR) core_trust_runtime_test_tmp
 	rm -f $(TARGET) $(TARGET).exe $(OBJS)
 

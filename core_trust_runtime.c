@@ -2,13 +2,20 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #include <stdlib.h>
 #include <string.h>
+#if defined(HAVE_CORE_LOAD_CHECK) && !defined(_WIN32)
+#include <sys/stat.h>
+#endif
 
 #include <compat/strl.h>
+#include <file/file_path.h>
 #include <queues/task_queue.h>
+#include <retro_dirent.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #include "core_trust_runtime.h"
 #include "runloop.h"
+#include "tasks/tasks_internal.h"
 
 static struct
 {
@@ -19,6 +26,10 @@ static struct
    /* Changed since the last write that went through */
    bool unsaved;
    bool notify_ready;
+   bool seed_pending;
+   bool seed_notice;
+   bool seed_key_ok;
+   uint8_t seed_key[CORE_SHA256_LEN];
 #ifdef HAVE_CORE_SIGNING_TEST_KEY
    bool test_key_shown;
 #endif
@@ -130,7 +141,198 @@ static void core_trust_runtime_show(void)
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
    }
 #endif
+   if (core_trust_rt.seed_notice)
+   {
+      const char *msg = msg_hash_to_str(MSG_CORE_TRUST_SEEDED);
+      core_trust_rt.seed_notice = false;
+      runloop_msg_queue_push(msg, strlen(msg), 1, 600, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 }
+
+#ifdef HAVE_CORE_LOAD_CHECK
+struct core_trust_seed
+{
+   struct core_hash h;
+   char dir[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+   char ext[16];
+   struct RDIR *rdir;
+   core_file_t *f;
+   core_trust_set_t *set;
+   /* At most CORE_TRUST_MAX_HASHES: no more can be trusted. The check
+    * is built in found[num_found], counted once it hashed in full */
+   struct core_check *found;
+   unsigned num_found;
+   unsigned gen;
+   bool opened;
+   /* The folder is there but couldn't be opened: seeded at a later start */
+   bool unopened;
+   bool done;
+};
+
+/* One read, one directory entry or the folder's open: false when the
+ * walk is over */
+static bool core_trust_seed_step(struct core_trust_seed *sd)
+{
+   const char *name;
+   struct core_check *c = &sd->found[sd->num_found];
+   if (sd->f)
+   {
+      uint8_t sha256[CORE_SHA256_LEN];
+      int step = core_hash_step(&sd->h, sd->f);
+      if (step > 0)
+         return true;
+      if (step == 0 && sd->h.done == c->rec.id.size)
+      {
+         core_hash_final(&sd->h, sha256);
+         core_check_finish(sd->set, NULL, 0, sha256, NULL, 0, 0, c);
+         sd->num_found++;
+      }
+      else
+         core_hash_free(&sd->h);
+      core_file_close(sd->f);
+      sd->f = NULL;
+      return sd->num_found < CORE_TRUST_MAX_HASHES;
+   }
+   if (!sd->opened)
+   {
+      sd->opened = true;
+      if (!(sd->rdir = retro_opendir(sd->dir)))
+         sd->unopened = path_is_valid(sd->dir);
+      return sd->rdir != NULL;
+   }
+   if (!sd->rdir || !retro_readdir(sd->rdir))
+      return false;
+   if (     !(name = retro_dirent_get_name(sd->rdir))
+         || retro_dirent_is_dir(sd->rdir, NULL)
+         || !string_is_equal_noncase(path_get_extension(name), sd->ext))
+      return true;
+   fill_pathname_join_special(sd->path, sd->dir, name, sizeof(sd->path));
+#ifndef _WIN32
+   {
+      /* What a symlink names lives outside the folder */
+      struct stat st;
+      if (lstat(sd->path, &st) != 0 || !S_ISREG(st.st_mode))
+         return true;
+   }
+#endif
+   memset(c, 0, sizeof(*c));
+   strlcpy(c->rec.name, name, sizeof(c->rec.name));
+   /* Not a regular file, or gone: core_file_open refuses it */
+   if (!(sd->f = core_file_open(sd->path)))
+      return true;
+   if (     !core_file_identity(sd->f, &c->rec.id)
+         || !core_hash_init(&sd->h))
+   {
+      core_file_close(sd->f);
+      sd->f = NULL;
+   }
+   return true;
+}
+
+static void core_trust_seed_handler(retro_task_t *task)
+{
+   struct core_trust_seed *sd = (struct core_trust_seed*)task->state;
+   nbio_budget_t budget;
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+   task_nbio_slice_open(&budget);
+   while (task_nbio_slice_within_budget(&budget, 0, 0))
+   {
+      if (!core_trust_seed_step(sd))
+      {
+         sd->done = !sd->unopened;
+         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+         break;
+      }
+   }
+   task_nbio_slice_close(&budget);
+}
+
+static void core_trust_seed_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   struct core_trust_seed *sd = (struct core_trust_seed*)task->state;
+   core_trust_set_t *before;
+   unsigned i;
+   unsigned trusted           = 0;
+   if (!core_trust_rt.t || sd->gen != core_trust_rt.gen)
+      return;
+   core_trust_rt.seed_pending = false;
+   /* Cancelled at quit, or the folder unopened: seeded on a later run */
+   if (!sd->done)
+      return;
+   before = core_trust_get(core_trust_rt.t);
+   for (i = 0; i < sd->num_found; i++)
+      if (core_trust_always(core_trust_rt.t, &sd->found[i]))
+         trusted++;
+   core_trust_set_flag(core_trust_rt.t, CORE_TRUST_SEEDED, true);
+   if (     trusted
+         && !(core_trust_runtime_flags() & CORE_TRUST_NOTICE_SHOWN))
+   {
+      core_trust_set_flag(core_trust_rt.t, CORE_TRUST_NOTICE_SHOWN, true);
+      core_trust_rt.seed_notice = true;
+   }
+   core_trust_runtime_changed(before);
+   core_trust_runtime_show();
+}
+
+static void core_trust_seed_cleanup(retro_task_t *task)
+{
+   struct core_trust_seed *sd = (struct core_trust_seed*)task->state;
+   if (sd->f)
+   {
+      core_hash_free(&sd->h);
+      core_file_close(sd->f);
+   }
+   if (sd->rdir)
+      retro_closedir(sd->rdir);
+   core_trust_set_put(sd->set);
+   free(sd->found);
+   free(sd);
+   task->state = NULL;
+}
+
+static void core_trust_seed_start(const char *seed_dir,
+      const char *core_ext)
+{
+   struct core_trust_seed *sd;
+   retro_task_t *task = NULL;
+   if (     core_trust_rt.read_only
+         || string_is_empty(seed_dir)
+         || string_is_empty(core_ext)
+         || (core_trust_runtime_flags() & CORE_TRUST_SEEDED)
+         || !(sd = (struct core_trust_seed*)calloc(1, sizeof(*sd))))
+      return;
+   if (     !(sd->found = (struct core_check*)malloc(
+               CORE_TRUST_MAX_HASHES * sizeof(*sd->found)))
+         || !(task = task_init()))
+   {
+      free(sd->found);
+      free(sd);
+      return;
+   }
+   strlcpy(sd->dir, seed_dir, sizeof(sd->dir));
+   strlcpy(sd->ext, core_ext, sizeof(sd->ext));
+   sd->set = core_trust_get(core_trust_rt.t);
+   sd->gen = core_trust_rt.gen;
+   /* Any name: the key is of the folder holding it */
+   fill_pathname_join_special(sd->path, seed_dir, "core", sizeof(sd->path));
+   core_trust_rt.seed_key_ok  = core_folder_key_with(sd->path, true,
+         core_trust_rt.seed_key);
+   core_trust_rt.seed_pending = true;
+   task->state    = sd;
+   task->handler  = core_trust_seed_handler;
+   task->callback = core_trust_seed_cb;
+   task->cleanup  = core_trust_seed_cleanup;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
+}
+#endif
 
 static bool core_trust_runtime_default_path(char *s, size_t len)
 {
@@ -175,8 +377,12 @@ bool core_trust_runtime_init(const char *path, const char *seed_dir,
    else
       core_trust_rt.read_only = core_trust_load_file(core_trust_rt.t,
             core_trust_rt.path) == CORE_TRUST_LOAD_UNREADABLE;
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_trust_seed_start(seed_dir, core_ext);
+#else
    (void)seed_dir;
    (void)core_ext;
+#endif
    return true;
 }
 
@@ -268,4 +474,21 @@ bool core_trust_runtime_set_checks(bool on)
    }
    core_trust_runtime_changed(before);
    return true;
+}
+
+bool core_trust_runtime_seed_pending(void)
+{
+   return core_trust_rt.seed_pending;
+}
+
+bool core_trust_runtime_seed_covers(const char *core_path)
+{
+   uint8_t key[CORE_SHA256_LEN];
+   /* The per-folder rule everywhere: Android's core_folder_key() gives
+    * every folder one key */
+   return   core_trust_rt.seed_pending
+         && core_trust_rt.seed_key_ok
+         && core_path
+         && core_folder_key_with(core_path, true, key)
+         && !memcmp(key, core_trust_rt.seed_key, CORE_SHA256_LEN);
 }

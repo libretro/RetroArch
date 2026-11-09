@@ -37,6 +37,11 @@ bool core_trust_runtime_always(const struct core_check *c);
 bool core_trust_runtime_checks_on(void);
 /* False, changing nothing, when inactive or read-only */
 bool core_trust_runtime_set_checks(bool on);
+/* True from startup until the seed has recorded what it found (builds
+ * with the load check only) */
+bool core_trust_runtime_seed_pending(void);
+/* The seed is pending and core_path sits directly in its folder */
+bool core_trust_runtime_seed_covers(const char *core_path);
 
 RETRO_END_DECLS
 
