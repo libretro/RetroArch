@@ -2297,17 +2297,16 @@ bool input_driver_poll_viewport(struct video_viewport *vp)
    return true;
 }
 
-static uint32_t input_touch_contacts[16];
-static int16_t  input_touch_angles[16];
-static unsigned input_touch_contact_count;
+/* lent by the driver until its next poll, or its free */
+static const uint32_t *input_touch_contacts;
+static const int16_t  *input_touch_angles;
+static unsigned        input_touch_contact_count;
 
 void input_driver_publish_touch_contacts(const uint32_t *contacts,
       const int16_t *angles, unsigned count)
 {
-   if (count > ARRAY_SIZE(input_touch_contacts))
-      count = ARRAY_SIZE(input_touch_contacts);
-   memcpy(input_touch_contacts, contacts, count * sizeof(*contacts));
-   memcpy(input_touch_angles,   angles,   count * sizeof(*angles));
+   input_touch_contacts      = contacts;
+   input_touch_angles        = angles;
    input_touch_contact_count = count;
 }
 
@@ -10489,6 +10488,8 @@ void input_driver_free_with_video(const void *video_data)
       return;
    }
 
+   /* the driver's contacts go with it */
+   input_touch_contact_count = 0;
    if (input_st->current_driver)
       if (input_st->current_driver->free)
          input_st->current_driver->free(input_st->current_data);

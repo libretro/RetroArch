@@ -1600,6 +1600,8 @@ unsigned input_driver_pointer_read_as(unsigned i);
  * radian, 0 upright and positive clockwise. From the driver's poll;
  * none is had again until the next. For the overlay's D-pad and face
  * buttons (input/common/overlay_contact.h). */
+/* @contacts and @angles are read where they are, and stay the driver's:
+ * they must last until its next poll. */
 void input_driver_publish_touch_contacts(const uint32_t *contacts,
       const int16_t *angles, unsigned count);
 /* The frontend's own INPUT_TOUCHES_MAX places: a driver writes them at
