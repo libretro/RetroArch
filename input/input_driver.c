@@ -18037,9 +18037,10 @@ int16_t input_driver_device_state(unsigned port,
          port, device, idx, id);
 }
 
-/* The same for the capture of a bind, which reads the mouse buttons
- * and the keys with the frontend's binds and the pad @joy_idx in
- * hand, as it always has. Only while input_driver_has_device_state(). */
+/* The same for the capture of a bind. A mouse is read from the pointer
+ * frame first, as input_driver_device_state() does; the driver is asked
+ * only where no frame holds it, with the frontend's binds and the pad
+ * @joy_idx in hand. Only while input_driver_has_device_state(). */
 int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {

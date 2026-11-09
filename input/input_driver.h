@@ -1417,8 +1417,9 @@ void input_driver_set_platform_menu_button(bool held);
  *
  * input_driver_device_state(): a mouse, a pointer or a key; no binds
  * go to the driver.
- * input_driver_bind_capture_state(): the same with the frontend's
- * binds and the pad @joy_idx, as the capture of a bind reads them. */
+ * input_driver_bind_capture_state(): what the capture of a bind reads.
+ * A mouse comes from the pointer frame first; where no frame holds it,
+ * the driver is asked with the frontend's binds and the pad @joy_idx. */
 bool input_driver_has_device_state(void);
 
 /* A device's position in one call, packed with VIDEO_POS_PACK: the X and Y of a mouse
