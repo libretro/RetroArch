@@ -1313,6 +1313,24 @@ jobs:
           par_wait
           rm -f sibling_asan sibling_mingw.exe
 
+      - name: Build and run resampler state test (C89, ASan + UBSan, MinGW)
+        working-directory: samples/audio/resampler_state
+        run: |
+          # state() saved mid-stream and loaded into another instance
+          # continues the stream bit for bit, stages and crossfade
+          # included; a load of the wrong size is refused.
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
+          make clean
+          make TARGET=state_asan SANITIZER=address,undefined
+          make TARGET=state_mingw CC=x86_64-w64-mingw32-gcc
+          par "resampler_state_test (ASan)" ./state_asan
+          par "resampler_state_test (MinGW, wine)" env WINEDEBUG=-all \
+            timeout 300 wine ./state_mingw.exe
+          par_wait
+          rm -f state_asan state_mingw.exe
+
       - name: Build and run mic_handshake_test (ASan + UBSan)
         working-directory: samples/audio/mic_handshake
         run: |

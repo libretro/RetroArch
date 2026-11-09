@@ -1337,6 +1337,59 @@ static void resampler_sinc_reset(void *data)
    resamp->fade_left  = 0;
 }
 
+/* The stream state: main_buffer whole (every ring, the shadow's, the
+ * blocks), then the clocks and counters of the instance, each stage
+ * and the shadow. The tables are configuration and stay. */
+#define SINC_STATE_WORDS (6 + 2 * (SINC_DEC_STAGES + 1))
+
+static size_t resampler_sinc_state(void *data, void *buf, size_t len,
+      int write)
+{
+   rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)data;
+   uint32_t w[SINC_STATE_WORDS];
+   size_t ring, size;
+   unsigned s;
+   if (!re)
+      return 0;
+   ring = sizeof(float) * sinc_state_elems(re->taps, re->dec[0].taps);
+   size = ring + sizeof(w);
+   if (!buf)
+      return size;
+   if (len != size)
+      return 0;
+   if (write)
+   {
+      memcpy(re->main_buffer, buf, ring);
+      memcpy(w, (const unsigned char*)buf + ring, sizeof(w));
+      re->ptr         = w[0];
+      re->time        = w[1];
+      re->dec_stages  = w[2];
+      re->fade_left   = w[3];
+      re->fade_stages = w[4];
+      re->fade_len    = w[5];
+      for (s = 0; s <= SINC_DEC_STAGES; s++)
+      {
+         re->dec[s].ptr  = w[6 + 2 * s];
+         re->dec[s].time = w[7 + 2 * s];
+      }
+      return size;
+   }
+   w[0] = re->ptr;
+   w[1] = re->time;
+   w[2] = re->dec_stages;
+   w[3] = re->fade_left;
+   w[4] = re->fade_stages;
+   w[5] = re->fade_len;
+   for (s = 0; s <= SINC_DEC_STAGES; s++)
+   {
+      w[6 + 2 * s] = re->dec[s].ptr;
+      w[7 + 2 * s] = re->dec[s].time;
+   }
+   memcpy(buf, re->main_buffer, ring);
+   memcpy((unsigned char*)buf + ring, w, sizeof(w));
+   return size;
+}
+
 /* Clean rings, and a clock that takes input before it emits: a joining
  * path then produces no output ahead of the frames it was given. */
 static void sinc_dec_restart(rarch_sinc_resampler_t *stage)
@@ -2029,7 +2082,8 @@ retro_resampler_t sinc_resampler = {
    resampler_sinc_reset,
    RESAMPLER_CAP_QUALITY | RESAMPLER_CAP_HQ_OVERSAMPLE,
    resampler_sinc_sibling,
-   resampler_sinc_fit
+   resampler_sinc_fit,
+   resampler_sinc_state
 };
 
 #if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)

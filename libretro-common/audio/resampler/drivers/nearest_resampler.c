@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <float.h>
 
@@ -94,6 +95,23 @@ static void resampler_nearest_reset(void *re_)
       re->fraction = 0;
 }
 
+static size_t resampler_nearest_state(void *re_, void *buf, size_t len,
+      int write)
+{
+   rarch_nearest_resampler_t *re = (rarch_nearest_resampler_t*)re_;
+   if (!re)
+      return 0;
+   if (!buf)
+      return sizeof(re->fraction);
+   if (len != sizeof(re->fraction))
+      return 0;
+   if (write)
+      memcpy(&re->fraction, buf, sizeof(re->fraction));
+   else
+      memcpy(buf, &re->fraction, sizeof(re->fraction));
+   return sizeof(re->fraction);
+}
+
 /* process()'s clock run without the copies. Exact only where float
  * arithmetic is: a build that keeps floats wider or reorders them could
  * land a step on the other side of 1, so it answers 0 for the bound. */
@@ -139,5 +157,6 @@ retro_resampler_t nearest_resampler = {
    resampler_nearest_reset,
    0,
    NULL,
-   resampler_nearest_fit
+   resampler_nearest_fit,
+   resampler_nearest_state
 };

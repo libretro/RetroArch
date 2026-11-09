@@ -179,6 +179,16 @@ typedef void *(*resampler_sibling_t)(void *data);
 typedef size_t (*resampler_fit_t)(void *data, double ratio,
       size_t max_output, size_t max_input);
 
+/* The stream's state as bytes, for a savestate: everything reset()
+ * forgets, nothing of the configuration. With @buf NULL, the size.
+ * Otherwise copies the state out to @buf (@write 0) or in from it
+ * (@write 1) and returns the bytes moved, or 0 when @len is not the
+ * size, which leaves the stream as it was: a state from an instance of
+ * another configuration is refused, and the caller resets instead. The
+ * instance read into has the configuration the state came from. */
+typedef size_t (*resampler_state_t)(void *data, void *buf, size_t len,
+      int write);
+
 /* What a backend reads of the settings the frontend exposes. One that
  * reads neither leaves this zero, and the frontend has no control to
  * offer for it. */
@@ -215,6 +225,10 @@ typedef struct retro_resampler
    /* Optional; last, so a backend that does not set it is NULL here, and
     * the caller sizes its output from a bound instead. */
    resampler_fit_t      fit;
+
+   /* Optional; NULL where the stream cannot be saved, and the caller
+    * resets it on restore. */
+   resampler_state_t    state;
 } retro_resampler_t;
 
 typedef struct audio_frame_float
