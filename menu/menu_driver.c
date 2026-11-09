@@ -9961,6 +9961,13 @@ bool menu_core_warning_can_open(void)
    return !string_is_equal(ident, "null");
 }
 
+bool menu_core_warning_user_only(void)
+{
+   return core_warning_pending(NULL, NULL)
+      || menu_driver_state.dialog_st.confirm_cmd
+         == CMD_EVENT_CORE_SIGNATURE_CHECK_OFF;
+}
+
 bool menu_core_warning_iterate(struct menu_state *menu_st)
 {
    const char *menu_label = NULL;

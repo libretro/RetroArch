@@ -95,6 +95,9 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
+#ifdef HAVE_CORE_SIGNATURES
+#include "../core_trust_runtime.h"
+#endif
 #endif
 
 #include "../accessibility.h"
@@ -14371,6 +14374,11 @@ static unsigned input_pad_buttons_other_sources(
    /* Only process key presses related to game input if using Remote RetroPad */
    if (input_st->remote)
       held |= (unsigned)(input_st->remote_st_ptr.buttons[0] & 0xffff);
+#endif
+
+#if defined(HAVE_MENU) && defined(HAVE_CORE_SIGNATURES)
+   if (held && menu_core_warning_user_only())
+      held = 0;
 #endif
 
    input_st->system_buttons_not_overlay |= (uint16_t)held;
