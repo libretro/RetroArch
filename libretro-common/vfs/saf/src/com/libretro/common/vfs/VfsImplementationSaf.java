@@ -290,11 +290,75 @@ public final class VfsImplementationSaf
    }
 
    /**
+    * Move a document to another directory, returning its URI if it ended up there named exactly name or null if not.
+    * A null URI from DocumentsContract means the move failed.
+    */
+   private static Uri moveDocumentExact(ContentResolver content, Uri fileUri, Uri fromUri, Uri toUri, String name) {
+      if (Build.VERSION.SDK_INT < 24)
+         return null;
+
+      final Uri movedUri;
+      try
+      {
+         movedUri = DocumentsContract.moveDocument(content, fileUri, fromUri, toUri);
+      }
+      catch (FileNotFoundException | RuntimeException e)
+      {
+         return null;
+      }
+
+      if (movedUri == null)
+         return null;
+
+      if (hasName(content, movedUri, name))
+         return movedUri;
+
+      try
+      {
+         DocumentsContract.moveDocument(content, movedUri, toUri, fromUri);
+      }
+      catch (FileNotFoundException | RuntimeException e)
+      {}
+
+      return null;
+   }
+
+   /**
+    * Move a document to another directory under a new name, returning whether or not it got there.
+    * A provider can only move a document under the name it already has, so this takes a move and a rename.
+    * The name is changed first, unless newName is taken in the source directory; on failure the document is put back.
+    */
+   private static boolean moveAndRenameDocument(ContentResolver content, Uri fileUri, Uri fromUri, Uri toUri, String oldName, String newName) {
+      if (oldName.equals(newName))
+         return moveDocumentExact(content, fileUri, fromUri, toUri, newName) != null;
+
+      final Uri renamedUri = renameDocumentExact(content, fileUri, newName, oldName);
+      if (renamedUri != null)
+      {
+         if (moveDocumentExact(content, renamedUri, fromUri, toUri, newName) != null)
+            return true;
+
+         renameDocumentExact(content, renamedUri, oldName, newName);
+         return false;
+      }
+
+      final Uri movedUri = moveDocumentExact(content, fileUri, fromUri, toUri, oldName);
+      if (movedUri == null)
+         return false;
+
+      if (renameDocumentExact(content, movedUri, newName, oldName) != null)
+         return true;
+
+      moveDocumentExact(content, movedUri, toUri, fromUri, oldName);
+      return false;
+   }
+
+   /**
     * Rename a Storage Access Framework file, replacing the destination if it exists, returning whether or not the operation succeeded.
-    * Both paths must be in the same directory.
+    * Moving between directories needs API level 24 and a provider that supports moves.
     * Storage Access Framework has no atomic replace, so an existing destination is first renamed to the destination path with ".old" appended,
     * and is only deleted once the file has been renamed into its place; if that fails, the destination is restored.
-    * Each provider call below is a Binder transaction, by far the largest cost here: replacing a file takes four and creating one takes two.
+    * Each provider call below is a Binder transaction, by far the largest cost here: replacing a file takes four and creating one takes two, plus one for a move or two for a move under a new name in place of the rename.
     * @param content the content resolver returned by getContentResolver()
     * @param tree the URI returned by the ACTION_OPEN_DOCUMENT_TREE intent action
     * @param oldPath path of the file to rename, relative to the root directory of the tree
@@ -317,14 +381,19 @@ public final class VfsImplementationSaf
          return new SafStat(content, tree, oldPath, false).getIsOpen();
 
       // Both paths are canonical now, so they can be taken apart without going back to the filesystem
-      final int slash = oldPath.lastIndexOf('/');
+      final int oldSlash = oldPath.lastIndexOf('/');
+      final int newSlash = newPath.lastIndexOf('/');
 
-      if (slash != newPath.lastIndexOf('/') || !oldPath.regionMatches(0, newPath, 0, slash)
-            || slash + 1 == oldPath.length() || slash + 1 == newPath.length())
+      if (oldSlash + 1 == oldPath.length() || newSlash + 1 == newPath.length())
          return false;
 
-      final String oldName = oldPath.substring(slash + 1);
-      final String newName = newPath.substring(slash + 1);
+      final boolean sameDirectory = oldSlash == newSlash && oldPath.regionMatches(0, newPath, 0, oldSlash);
+
+      if (!sameDirectory && Build.VERSION.SDK_INT < 24)
+         return false;
+
+      final String oldName = oldPath.substring(oldSlash + 1);
+      final String newName = newPath.substring(newSlash + 1);
       final Uri newUri = getDocumentUri(treeUri, newPath);
       String asideName = null;
       Uri asideUri = null;
@@ -336,14 +405,14 @@ public final class VfsImplementationSaf
             return false;
 
          // The source may itself be called "<destination>.old", and must not be mistaken for a leftover
-         asideName = newName.concat(".old").equals(oldName) ? newName.concat(".old2") : newName.concat(".old");
+         asideName = newPath.concat(".old").equals(oldPath) ? newName.concat(".old2") : newName.concat(".old");
 
          asideUri = renameDocumentExact(content, newUri, asideName, newName);
          if (asideUri == null)
          {
             // Most likely a leftover from an earlier rename that could not clean up, which is rare enough to only look for now.
             // Deleting a directory would delete everything in it, so anything but a file stays where it is.
-            final Uri leftoverUri = getDocumentUri(treeUri, newPath.substring(0, slash + 1).concat(asideName));
+            final Uri leftoverUri = getDocumentUri(treeUri, newPath.substring(0, newSlash + 1).concat(asideName));
             final String leftoverMimeType = queryMimeType(content, leftoverUri);
 
             if (leftoverMimeType == null || leftoverMimeType.equals(Document.MIME_TYPE_DIR))
@@ -364,7 +433,18 @@ public final class VfsImplementationSaf
          }
       }
 
-      if (renameDocumentExact(content, getDocumentUri(treeUri, oldPath), newName, oldName) != null)
+      final Uri oldUri = getDocumentUri(treeUri, oldPath);
+      final boolean placed;
+
+      if (sameDirectory)
+         placed = renameDocumentExact(content, oldUri, newName, oldName) != null;
+      else
+         placed = moveAndRenameDocument(content, oldUri,
+               getDocumentUri(treeUri, oldSlash == 0 ? "/" : oldPath.substring(0, oldSlash)),
+               getDocumentUri(treeUri, newSlash == 0 ? "/" : newPath.substring(0, newSlash)),
+               oldName, newName);
+
+      if (placed)
       {
          if (asideUri != null)
          {

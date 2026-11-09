@@ -105,7 +105,7 @@ int retro_vfs_file_remove_saf(const char *tree, const char *path);
 
 /*
  * Rename a file, replacing the destination if it exists, returning 0 if successful or -1 if not.
- * Both paths must be in the same tree and the same directory.
+ * Both paths must be in the same tree. Moving between directories needs API level 24 and a provider that supports moves.
  * The replacement is not atomic, but an existing destination is only deleted once the file has been moved into its place.
  */
 int retro_vfs_file_rename_saf(const char *old_tree, const char *old_path, const char *new_tree, const char *new_path);
