@@ -2447,6 +2447,7 @@ static void netplay_bsv_input(netplay_t *netplay,
 {
    unsigned i;
    bsv_movie_t *movie;
+   uint16_t id_le = swap_if_big16((uint16_t)id);
    if (     !(netplay->flags & NETPLAY_FLAG_BSV_CAPTURING)
          || !(movie = input_driver_netplay_bsv_recording()))
       return;
@@ -2455,8 +2456,8 @@ static void netplay_bsv_input(netplay_t *netplay,
    for (i = 0; i < movie->input_event_count; i++)
    {
       const bsv_input_data_t *event = &movie->input_events[i];
-      if (event->port == port && event->device == device
-            && event->idx == idx && swap_if_big16(event->id) == id)
+      if (event->id == id_le && event->port == port
+            && event->device == device && event->idx == idx)
          return;
    }
    if (movie->input_event_count >= ARRAY_SIZE(movie->input_events))

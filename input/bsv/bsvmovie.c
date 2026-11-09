@@ -539,40 +539,41 @@ void bsv_movie_frame_rewind(input_driver_state_t *input_st)
 void bsv_movie_push_key_event(bsv_movie_t *movie,
       uint8_t down, uint16_t mod, uint32_t code, uint32_t character)
 {
-   bsv_key_data_t data;
-   data.down                                 = down;
-   data._padding                             = 0;
-   data.mod                                  = swap_if_big16(mod);
-   data.code                                 = swap_if_big32(code);
-   data.character                            = swap_if_big32(character);
+   bsv_key_data_t *data;
    /* A frame's events are staged in fixed arrays; drop what does not
     * fit rather than write past them. */
    if (movie->key_event_count >= ARRAY_SIZE(movie->key_events))
       return;
-   movie->key_events[movie->key_event_count] = data;
-   movie->key_event_count++;
+   data            = &movie->key_events[movie->key_event_count++];
+   data->down      = down;
+   data->_padding  = 0;
+   data->mod       = swap_if_big16(mod);
+   data->code      = swap_if_big32(code);
+   data->character = swap_if_big32(character);
 }
 
 void bsv_movie_push_input_event(bsv_movie_t *movie,
      uint8_t port, uint8_t dev, uint8_t idx, uint16_t id, int16_t val)
 {
-   bsv_input_data_t data;
-   data.port                          = port;
-   data.device                        = dev;
-   data.idx                           = idx;
-   data._padding                      = 0;
-   data.id                            = swap_if_big16(id);
-   data.value                         = swap_if_big16(val);
+   bsv_input_data_t *data;
    if (movie->input_event_count >= ARRAY_SIZE(movie->input_events))
       return;
-   movie->input_events[movie->input_event_count] = data;
-   movie->input_event_count++;
+   data           = &movie->input_events[movie->input_event_count++];
+   data->port     = port;
+   data->device   = dev;
+   data->idx      = idx;
+   data->_padding = 0;
+   data->id       = swap_if_big16(id);
+   data->value    = swap_if_big16(val);
 }
 
 bool bsv_movie_handle_read_input_event(bsv_movie_t *movie,
      uint8_t port, uint8_t dev, uint8_t idx, uint16_t id, int16_t* val)
 {
    int i;
+   /* Events hold their id little-endian: convert the query once
+    * rather than every event it is compared against. */
+   uint16_t id_le = swap_if_big16(id);
    /* if movie is old, just read two bytes and hope for the best */
    if (movie->version == 0)
    {
@@ -582,13 +583,14 @@ bool bsv_movie_handle_read_input_event(bsv_movie_t *movie,
    }
    for (i = 0; i < movie->input_event_count; i++)
    {
-      bsv_input_data_t evt = movie->input_events[i];
-      if (   (evt.port   == port)
-          && (evt.device == dev)
-          && (evt.idx    == idx)
-          && (swap_if_big16(evt.id) == id))
+      const bsv_input_data_t *evt = &movie->input_events[i];
+      /* id first: it is what differs most between a frame's events */
+      if (   (evt->id     == id_le)
+          && (evt->port   == port)
+          && (evt->device == dev)
+          && (evt->idx    == idx))
       {
-         *val = swap_if_big16(evt.value);
+         *val = swap_if_big16(evt->value);
          return true;
       }
    }
@@ -987,7 +989,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
    /* Start by reading key event */
    if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
    {
-      int i;
+      size_t len;
       /* key_events is a fixed-size bsv_key_data_t[128] (input_driver.h
        * line ~259); key_event_count is uint8_t and read straight from
        * the .bsv file with no inherent bound (max 255).  Pre-this-patch
@@ -1007,17 +1009,17 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
             bsv_movie_set_end();
          return false;
       }
-      for (i = 0; i < handle->key_event_count; i++)
+      /* The array has the file's layout: read the events straight in */
+      len = handle->key_event_count * sizeof(bsv_key_data_t);
+      if (     len
+            && intfstream_read(handle->file, handle->key_events, len)
+               != (int64_t)len)
       {
-         if (intfstream_read(handle->file, &(handle->key_events[i]),
-                  sizeof(bsv_key_data_t)) != sizeof(bsv_key_data_t))
-         {
-            /* Unnatural EOF */
-            RARCH_ERR("[Replay] Keyboard replay ran out of keyboard inputs too early\n");
-            if (end_movie)
-               bsv_movie_set_end();
-            return false;
-         }
+         /* Unnatural EOF */
+         RARCH_ERR("[Replay] Keyboard replay ran out of keyboard inputs too early\n");
+         if (end_movie)
+            bsv_movie_set_end();
+         return false;
       }
    }
    else
@@ -1032,7 +1034,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
    {
       if (intfstream_read(handle->file, &(handle->input_event_count), 2) == 2)
       {
-         int i;
+         size_t len;
          handle->input_event_count = swap_if_big16(handle->input_event_count);
          /* Same shape as the key_event_count check above: input_events
           * is bsv_input_data_t[512] (input_driver.h line ~260) but
@@ -1055,17 +1057,16 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
                bsv_movie_set_end();
             return false;
          }
-         for (i = 0; i < handle->input_event_count; i++)
+         len = handle->input_event_count * sizeof(bsv_input_data_t);
+         if (     len
+               && intfstream_read(handle->file, handle->input_events, len)
+                  != (int64_t)len)
          {
-            if (intfstream_read(handle->file, &(handle->input_events[i]),
-                     sizeof(bsv_input_data_t)) != sizeof(bsv_input_data_t))
-            {
-               /* Unnatural EOF */
-               RARCH_ERR("[Replay] Input replay ran out of inputs too early\n");
-               if (end_movie)
-                  bsv_movie_set_end();
-               return false;
-            }
+            /* Unnatural EOF */
+            RARCH_ERR("[Replay] Input replay ran out of inputs too early\n");
+            if (end_movie)
+               bsv_movie_set_end();
+            return false;
          }
       }
       else
@@ -1223,7 +1224,6 @@ static void bsv_movie_next_frame_internal(input_driver_state_t *input_st,
 
    if (!handle->playback && !(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_SEEKING))
    {
-      int i;
       uint16_t evt_count     = swap_if_big16(handle->input_event_count);
       size_t last_pos        = handle->frame_pos[(MAX(handle->frame_counter,2)-2) & handle->frame_mask];
       size_t cur_pos         = intfstream_tell(handle->file);
@@ -1233,16 +1233,16 @@ static void bsv_movie_next_frame_internal(input_driver_state_t *input_st,
       intfstream_write(handle->file, &back_distance, sizeof(uint32_t));
       /* write key events, frame is over */
       intfstream_write(handle->file, &(handle->key_event_count), 1);
-      for (i = 0; i < handle->key_event_count; i++)
-         intfstream_write(handle->file, &(handle->key_events[i]),
-               sizeof(bsv_key_data_t));
+      if (handle->key_event_count)
+         intfstream_write(handle->file, handle->key_events,
+               handle->key_event_count * sizeof(bsv_key_data_t));
       /* Zero out key events when playing back or recording */
       handle->key_event_count = 0;
       /* write input events, frame is over */
       intfstream_write(handle->file, &evt_count, 2);
-      for (i = 0; i < handle->input_event_count; i++)
-         intfstream_write(handle->file, &(handle->input_events[i]),
-               sizeof(bsv_input_data_t));
+      if (handle->input_event_count)
+         intfstream_write(handle->file, handle->input_events,
+               handle->input_event_count * sizeof(bsv_input_data_t));
       /* Zero out input events when playing back or recording */
       handle->input_event_count = 0;
 
@@ -1779,15 +1779,14 @@ void bsv_movie_poll(input_driver_state_t *input_st)
    if (runloop_key_event_is_frontend())
    {
       int i;
-      bsv_key_data_t k;
       for (i = 0; i < handle->key_event_count; i++)
       {
+         const bsv_key_data_t *k = &handle->key_events[i];
 #ifdef HAVE_CHEEVOS
          rcheevos_pause_hardcore();
 #endif
-         k = handle->key_events[i];
-         input_keyboard_event(k.down, swap_if_big32(k.code),
-               swap_if_big32(k.character), swap_if_big16(k.mod),
+         input_keyboard_event(k->down, swap_if_big32(k->code),
+               swap_if_big32(k->character), swap_if_big16(k->mod),
                RETRO_DEVICE_KEYBOARD);
       }
       /* Have to clear here so we don't double-apply key events */
