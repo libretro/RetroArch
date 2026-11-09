@@ -41,6 +41,12 @@ endif
 CFLAGS += -Wall -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) \
           -DHAVE_CRYPTO -DHAVE_THREADS
 
+# TEST_KEY=1: as configure --enable-core_signing_test_key builds it
+TEST_KEY ?= 0
+ifeq ($(TEST_KEY),1)
+   CFLAGS += -DHAVE_CORE_SIGNING_TEST_KEY
+endif
+
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # libretro-common is built as the tree builds it; core_signature*.c and
