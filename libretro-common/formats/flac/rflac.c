@@ -3320,6 +3320,12 @@ static uint32_t rflac__decode_subframe_wide(rflac_bs* bs, rflac_frame* frame,
    if (!rflac__read_subframe_header(bs, pSubframe))
       return 0;
 
+   /* Predictor warm-up samples must fit in the frame's sample block. */
+   if ((pSubframe->subframeType == RFLAC_SUBFRAME_FIXED ||
+        pSubframe->subframeType == RFLAC_SUBFRAME_LPC) &&
+       pSubframe->lpcOrder > frame->header.blockSizeInPCMFrames)
+      return 0;
+
    if (pSubframe->wastedBitsPerSample >= subframeBitsPerSample)
       return 0;
    subframeBitsPerSample -= pSubframe->wastedBitsPerSample;
@@ -3347,6 +3353,12 @@ static uint32_t rflac__decode_subframe(rflac_bs* bs, rflac_frame* frame,
    uint32_t subframeBitsPerSample;
    rflac_subframe* pSubframe = frame->subframes + subframeIndex;
    if (!rflac__read_subframe_header(bs, pSubframe))
+      return 0;
+
+   /* Predictor warm-up samples must fit in the frame's sample block. */
+   if ((pSubframe->subframeType == RFLAC_SUBFRAME_FIXED ||
+        pSubframe->subframeType == RFLAC_SUBFRAME_LPC) &&
+       pSubframe->lpcOrder > frame->header.blockSizeInPCMFrames)
       return 0;
 
    /* Side channels require an extra bit per sample. Took a while to figure that
