@@ -8,7 +8,8 @@
  * with stem hints and a hintmask in the square.
  *
  * Checked: the character map (format 4 and 12), advances, vertical
- * metrics and kerning; each glyph's control box and outline; that a
+ * metrics and kerning; each glyph's control box and outline; TrueType
+ * points as stored and a composite's components; that a
  * rendered square covers its area exactly and a circle its area to
  * within the flattening, at sub-pixel offsets too; that both fonts draw
  * the square byte for byte the same; the 16-bit output; and that every
@@ -192,6 +193,9 @@ static void test_font(const char *name, const uint8_t *data, size_t size,
 
    if (is_cff)
    {
+      check("stored points and components: TrueType only",
+            rtt_glyph_points(&f, 1, NULL, NULL, NULL, NULL, 0, 0, NULL) == -1
+            && rtt_glyph_components(&f, 3, NULL, 0) == -1);
       check("no vertical metrics", !rtt_glyph_vmetrics(&f, 1, &adv, &lsb)
             && !rtt_vhea_metrics(&f, NULL, NULL, NULL));
       check("no kerning", rtt_kerning(&f, 1, 2) == 0);
@@ -199,6 +203,28 @@ static void test_font(const char *name, const uint8_t *data, size_t size,
    else
    {
       int asc = 0, desc = 0;
+      rtt_component_t comp[4];
+      int32_t xs[16], ys[16];
+      uint8_t on[16];
+      uint16_t ends[4];
+      int ncont = 0;
+      check("stored points: the square's four corners, one contour",
+            rtt_glyph_points(&f, 1, xs, ys, on, ends, 16, 4, &ncont) == 4
+            && ncont == 1 && ends[0] == 3 && on[0] && on[3]
+            && xs[0] == 100 && ys[0] == 0 && xs[2] == 700 && ys[2] == 600);
+      check("stored points: counts alone, and a composite refused",
+            rtt_glyph_points(&f, 2, NULL, NULL, NULL, NULL, 0, 0, &ncont) > 8
+            && ncont == 1
+            && rtt_glyph_points(&f, 3, xs, ys, on, ends, 16, 4, &ncont) == -1
+            && rtt_glyph_points(&f, 2, xs, ys, on, ends, 4, 4, &ncont) == -1);
+      check("components: the square, then a half-size one at (800, 100)",
+            rtt_glyph_components(&f, 3, comp, 4) == 2
+            && comp[0].glyph == 1 && comp[0].xx == 0x4000 && (comp[0].flags & 2)
+            && comp[1].glyph == 1 && comp[1].arg1 == 800 && comp[1].arg2 == 100
+            && comp[1].xx == 0x2000 && comp[1].yy == 0x2000
+            && comp[1].xy == 0 && comp[1].yx == 0);
+      check("components: a simple glyph has none",
+            rtt_glyph_components(&f, 1, comp, 4) == 0);
       check("vertical metrics", rtt_glyph_vmetrics(&f, 1, &adv, &lsb)
             && adv == 900 && lsb == 200 && rtt_glyph_vmetrics(&f, 2, &adv, &lsb)
             && adv == 1000 && lsb == 100);

@@ -184,6 +184,33 @@ void rtt_set_flatness(rtt_font_t *f, float px);
 int rtt_glyph_outline(const rtt_font_t *f, rtt_scratch_t *sc, int gi,
       const rtt_outline_sink *sink);
 
+/* A component of a TrueType composite glyph, as stored: @arg1/@arg2 are
+ * an x/y offset in font units when flags has ARGS_ARE_XY_VALUES (0x0002),
+ * else the point numbers to match; the matrix is in 2.14. */
+typedef struct rtt_component
+{
+   int      glyph;
+   unsigned flags;
+   int      arg1, arg2;
+   int      xx, xy, yx, yy;
+} rtt_component_t;
+
+/* For a caller that places composite glyphs itself, as a hinting or
+ * fixed-point engine must: 0 for a simple glyph, -1 for none or a CFF
+ * font, else how many components glyph @gi has, with up to @max of them
+ * written to @out. */
+int rtt_glyph_components(const rtt_font_t *f, int gi,
+      rtt_component_t *out, int max);
+
+/* A simple TrueType glyph's points as stored, in font units: @on is 1
+ * for an on-curve point, @ends the last point of each contour. With any
+ * array NULL it returns the point count (and *@num_contours) alone.
+ * Returns the points written, 0 for an empty glyph, -1 for a composite,
+ * a CFF font, bad data or arrays too small. */
+int rtt_glyph_points(const rtt_font_t *f, int gi, int32_t *xs, int32_t *ys,
+      uint8_t *on, uint16_t *ends, int max_points, int max_contours,
+      int *num_contours);
+
 /* The control box of glyph @gi's outline, in font units: the box of
  * all its points, curve controls and lone points included. Returns 0
  * for an empty glyph. */

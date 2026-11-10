@@ -2267,6 +2267,164 @@ void rtt_set_flatness(rtt_font_t *f, float px)
    f->flatness = px > 0.0f ? px : 0.0f;
 }
 
+int rtt_glyph_components(const rtt_font_t *f, int gi,
+      rtt_component_t *out, int max)
+{
+   uint32_t glen, p;
+   uint32_t g;
+   int      n = 0;
+   if (f->is_cff)
+      return -1;
+   g = rtt__glyf_offset(f, gi, &glen);
+   if (!g || glen < 10)
+      return -1;
+   if ((int16_t)rtt__u16(f, g) >= 0)
+      return 0;
+   p = g + 10;
+   for (;;)
+   {
+      uint16_t        fl = rtt__u16(f, p);
+      rtt_component_t c;
+      memset(&c, 0, sizeof(c));
+      c.flags = fl;
+      c.glyph = rtt__u16(f, p + 2);
+      p += 4;
+      if (fl & 0x0001) /* ARG_1_AND_2_ARE_WORDS */
+      {
+         if (fl & 0x0002)
+         {
+            c.arg1 = (int16_t)rtt__u16(f, p);
+            c.arg2 = (int16_t)rtt__u16(f, p + 2);
+         }
+         else
+         {
+            c.arg1 = rtt__u16(f, p);
+            c.arg2 = rtt__u16(f, p + 2);
+         }
+         p += 4;
+      }
+      else
+      {
+         if (fl & 0x0002)
+         {
+            c.arg1 = (int8_t)rtt__u8(f, p);
+            c.arg2 = (int8_t)rtt__u8(f, p + 1);
+         }
+         else
+         {
+            c.arg1 = rtt__u8(f, p);
+            c.arg2 = rtt__u8(f, p + 1);
+         }
+         p += 2;
+      }
+      c.xx = c.yy = 0x4000;
+      if (fl & 0x0008) /* WE_HAVE_A_SCALE */
+      {
+         c.xx = c.yy = (int16_t)rtt__u16(f, p);
+         p += 2;
+      }
+      else if (fl & 0x0040) /* X_AND_Y_SCALE */
+      {
+         c.xx = (int16_t)rtt__u16(f, p);
+         c.yy = (int16_t)rtt__u16(f, p + 2);
+         p += 4;
+      }
+      else if (fl & 0x0080) /* 2x2 */
+      {
+         c.xx = (int16_t)rtt__u16(f, p);
+         c.yx = (int16_t)rtt__u16(f, p + 2);
+         c.xy = (int16_t)rtt__u16(f, p + 4);
+         c.yy = (int16_t)rtt__u16(f, p + 6);
+         p += 8;
+      }
+      if (n < max && out)
+         out[n] = c;
+      n++;
+      if (!(fl & 0x0020) || n > 64 || p >= f->glyf + f->glyf_len)
+         break;
+   }
+   return n;
+}
+
+int rtt_glyph_points(const rtt_font_t *f, int gi, int32_t *xs, int32_t *ys,
+      uint8_t *on, uint16_t *ends, int max_points, int max_contours,
+      int *num_contours)
+{
+   uint32_t glen, g, p, endpts;
+   int      ncont, npts, i;
+   if (num_contours)
+      *num_contours = 0;
+   if (f->is_cff)
+      return -1;
+   g = rtt__glyf_offset(f, gi, &glen);
+   if (!g)
+      return 0; /* an empty glyph */
+   if (glen < 10 || (ncont = (int16_t)rtt__u16(f, g)) < 0)
+      return -1;
+   if (num_contours)
+      *num_contours = ncont;
+   if (!ncont)
+      return 0;
+   endpts = g + 10;
+   npts   = (int)rtt__u16(f, endpts + 2 * ((uint32_t)ncont - 1)) + 1;
+   if (!xs || !ys || !on || !ends)
+      return npts;
+   if (npts > max_points || ncont > max_contours)
+      return -1;
+   for (i = 0; i < ncont; i++)
+      ends[i] = rtt__u16(f, endpts + 2 * (uint32_t)i);
+   p = g + 12 + 2 * (uint32_t)ncont + rtt__u16(f, g + 10 + 2 * (uint32_t)ncont);
+   for (i = 0; i < npts; )
+   {
+      uint8_t fl = rtt__u8(f, p++);
+      on[i++] = fl;
+      if (fl & 0x08) /* REPEAT */
+      {
+         uint8_t rep = rtt__u8(f, p++);
+         while (rep-- && i < npts)
+            on[i++] = fl;
+      }
+   }
+   {
+      int32_t v = 0;
+      for (i = 0; i < npts; i++)
+      {
+         uint8_t fl = on[i];
+         if (fl & 0x02)
+         {
+            uint8_t d8 = rtt__u8(f, p++);
+            v += (fl & 0x10) ? (int32_t)d8 : -(int32_t)d8;
+         }
+         else if (!(fl & 0x10))
+         {
+            v += (int16_t)rtt__u16(f, p);
+            p += 2;
+         }
+         xs[i] = v;
+      }
+      v = 0;
+      for (i = 0; i < npts; i++)
+      {
+         uint8_t fl = on[i];
+         if (fl & 0x04)
+         {
+            uint8_t d8 = rtt__u8(f, p++);
+            v += (fl & 0x20) ? (int32_t)d8 : -(int32_t)d8;
+         }
+         else if (!(fl & 0x20))
+         {
+            v += (int16_t)rtt__u16(f, p);
+            p += 2;
+         }
+         ys[i] = v;
+         on[i] = (uint8_t)(on[i] & 1);
+      }
+   }
+   if (p > f->size)
+      return -1;
+   return npts;
+}
+
 int rtt_glyph_outline(const rtt_font_t *f, rtt_scratch_t *sc, int gi,
       const rtt_outline_sink *sink)
 {
