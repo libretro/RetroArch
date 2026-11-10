@@ -37,10 +37,24 @@ on:
       - 'samples/menu/core_info_page/**'
       - 'samples/menu/load_content_filter/**'
       - 'samples/menu/core_warning/**'
+      - 'samples/tasks/core_load_paths/**'
+      - 'samples/tasks/content_load/harness_core.c'
+      - 'core_load_check.c'
+      - 'core_load_check.h'
+      - 'core_load_file.c'
+      - 'core_load_file.h'
+      - 'runahead.c'
+      - 'retroarch.c'
       - 'core_trust_runtime.c'
       - 'core_trust_runtime.h'
       - 'core_signature.c'
       - 'core_signing_keys.h'
+      - 'core_signature.h'
+      - 'core_signature_io.c'
+      - 'runahead.h'
+      - 'Makefile.common'
+      - 'qb/config.libs.sh'
+      - 'tasks/task_netplay_find_content.c'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -67,10 +81,24 @@ on:
       - 'samples/menu/core_info_page/**'
       - 'samples/menu/load_content_filter/**'
       - 'samples/menu/core_warning/**'
+      - 'samples/tasks/core_load_paths/**'
+      - 'samples/tasks/content_load/harness_core.c'
+      - 'core_load_check.c'
+      - 'core_load_check.h'
+      - 'core_load_file.c'
+      - 'core_load_file.h'
+      - 'runahead.c'
+      - 'retroarch.c'
       - 'core_trust_runtime.c'
       - 'core_trust_runtime.h'
       - 'core_signature.c'
       - 'core_signing_keys.h'
+      - 'core_signature.h'
+      - 'core_signature_io.c'
+      - 'runahead.h'
+      - 'Makefile.common'
+      - 'qb/config.libs.sh'
+      - 'tasks/task_netplay_find_content.c'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -156,7 +184,8 @@ jobs:
                       --disable-opengl --disable-opengl_core \
                       --disable-opengl1 --disable-vulkan \
                       --disable-cheevos \
-                      --disable-ffmpeg
+                      --disable-ffmpeg \
+                      --enable-core_load_check
           make -j$(nproc)
 
       - name: Build and run content_closing_test
@@ -462,6 +491,28 @@ jobs:
           samples/menu/core_warning/build.sh
           ./samples/menu/core_warning/core_warning_test
           make -C samples/menu/core_warning clean
+
+      - name: Build and run core_load_paths_test
+        shell: bash
+        run: |
+          set -eu
+          # Real loads through the load check, on this build with the
+          # public test key, one mode a run (MODES in its Makefile): a
+          # startup -L answered from the menu (Load Once, Always Trust,
+          # outside the cores folder, there with its probe cached, with
+          # content, a core that needs content, a core changed before
+          # Load Once) or refused with no menu; staged loads (task
+          # worker, a core changed before its open); playlist and
+          # subsystem loads, playlist and netplay subsystem refusals and
+          # netplay lobby joins, probe cached or not; a quiet probe;
+          # Load Core (started, changed before Load Once, failing to
+          # open after it, refused again with no menu); the first run's
+          # seed, with and without a menu and a refusal it holds;
+          # run-ahead's copy; Load Once lasting until another core
+          # loads; another load ending a waiting park; and a built-in
+          # core's load, which ends a park as another core's load does.
+          make -C samples/tasks/core_load_paths check
+          make -C samples/tasks/core_load_paths clean
 
       - name: Build and run explore_build_test
         shell: bash
