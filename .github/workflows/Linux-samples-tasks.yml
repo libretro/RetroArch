@@ -914,6 +914,34 @@ jobs:
           make -f Makefile.staged_install clean
           echo "[pass] staged_install_test (TSan)"
 
+      - name: Build and run signed_install_test (ASan + UBSan, TSan, mingw-w64)
+        shell: bash
+        working-directory: samples/tasks/core_updater
+        run: |
+          set -eu
+          # The updater checks every download: .sig first, the core
+          # staged and checked, then installed with its .sig; Update
+          # Installed Cores carries on past a refused core. TEST_KEY=0
+          # has no keys: today's download. mingw-w64 serves the core
+          # unzipped (no zlib there).
+          make -f Makefile.signed_install clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make -f Makefile.signed_install -j$(nproc) SANITIZER=address,undefined \
+             RUNNER="timeout 600" check
+          echo "[pass] signed_install_test (ASan)"
+          make -f Makefile.signed_install clean && make -f Makefile.signed_install -j$(nproc) \
+             TEST_KEY=0 RUNNER="timeout 600" check
+          echo "[pass] signed_install_test (TEST_KEY=0)"
+          make -f Makefile.signed_install clean && TSAN_OPTIONS=halt_on_error=1 \
+             make -f Makefile.signed_install -j$(nproc) SANITIZER=thread \
+             RUNNER="timeout 600" check
+          echo "[pass] signed_install_test (TSan)"
+          make -f Makefile.signed_install clean
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -f Makefile.signed_install -j$(nproc) CC=x86_64-w64-mingw32-gcc \
+             RUNNER="timeout 600 wine" check
+          make -f Makefile.signed_install clean
+          echo "[pass] signed_install_test (mingw-w64)"
+
       - name: Build and run download_backup_wait_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/core_updater

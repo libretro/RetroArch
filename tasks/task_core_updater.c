@@ -26,6 +26,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
+#include <retro_dirent.h>
 #include <net/net_http.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
@@ -39,6 +40,10 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../core_updater_list.h"
+#ifdef HAVE_CORE_SIGNATURES
+#include "../core_install_check.h"
+#include "../core_trust_runtime.h"
+#endif
 
 #if defined(ANDROID)
 #include "../file_path_special.h"
@@ -110,15 +115,41 @@ typedef struct core_updater_list_handle
    char network_buildbot_url[PATH_MAX_LENGTH];
 } core_updater_list_handle_t;
 
+/* One store snapshot, shared by Update Installed Cores and each download
+ * it pushes from its worker, where the store can't be read */
+struct core_updater_trust;
+
+#ifdef HAVE_CORE_SIGNATURES
+/* A .sig transfer's end, as its callback found it */
+#define CORE_UPDATER_SIG_PENDING       0
+#define CORE_UPDATER_SIG_GOT           1
+#define CORE_UPDATER_SIG_MISSING       2
+#define CORE_UPDATER_SIG_FAILED        3
+/* Why a download was refused, for its message */
+#define CORE_UPDATER_REFUSED_SIGNATURE 1
+#define CORE_UPDATER_REFUSED_OLDER     2
+
+/* What a download's callback records or tells, on the main thread */
+typedef struct
+{
+   struct core_check c;
+   char msg[256];
+   bool installed;
+} core_updater_result_t;
+#endif
+
 /* Download core */
 enum core_updater_download_status
 {
    CORE_UPDATER_DOWNLOAD_BEGIN = 0,
+   CORE_UPDATER_DOWNLOAD_START_SIG,
+   CORE_UPDATER_DOWNLOAD_WAIT_SIG,
    CORE_UPDATER_DOWNLOAD_START_BACKUP,
    CORE_UPDATER_DOWNLOAD_WAIT_BACKUP,
    CORE_UPDATER_DOWNLOAD_START_TRANSFER,
    CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER,
    CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS,
+   CORE_UPDATER_DOWNLOAD_CHECK,
    CORE_UPDATER_DOWNLOAD_START_INSTALL,
    CORE_UPDATER_DOWNLOAD_WAIT_INSTALL,
    CORE_UPDATER_DOWNLOAD_ERROR,
@@ -194,6 +225,23 @@ typedef struct core_updater_download_handle
     * replaced core can be moved into the backups instead */
    bool backup_compress;
    bool backup_enabled;
+   /* Staged so the backup task can move the replaced core */
+   bool move_backup;
+#ifdef HAVE_CORE_SIGNATURES
+   /* Installed after its check: the callback records it */
+   bool installed;
+   /* Up to date, without a .sig beside it: only the .sig */
+   bool sig_only;
+   bool check_begun;
+   /* CORE_UPDATER_REFUSED_*, for the final message */
+   unsigned refusal;
+   /* CORE_UPDATER_SIG_*, published by the .sig transfer's callback */
+   retro_atomic_int_t sig_state;
+   struct core_install_check check;
+#endif
+   /* The store this download is checked against; NULL: unchecked, as
+    * without core signatures */
+   struct core_updater_trust *trust;
 } core_updater_download_handle_t;
 
 /* One installed core's CRC, against the file metadata it was
@@ -245,6 +293,8 @@ typedef struct update_installed_cores_handle
     * list the list task filled in. */
    core_updater_sub_task_done_t *list_done;
    core_updater_sub_task_done_t *download_done;
+   /* Taken at the push, on the main thread, for every download */
+   struct core_updater_trust *trust;
    size_t auto_backup_history_size;
    size_t list_size;
    size_t list_index;
@@ -499,6 +549,49 @@ static void core_updater_sub_task_done_signal(
    task_queue_wake(done->waiter);
    core_updater_sub_task_done_release(done);
 }
+
+#ifdef HAVE_CORE_SIGNATURES
+struct core_updater_trust
+{
+   core_trust_set_t *set;
+   retro_atomic_int_t refs;
+};
+
+/* Main thread. NULL with the feature inactive, or out of memory. */
+static struct core_updater_trust *core_updater_trust_new(void)
+{
+   struct core_updater_trust *trust;
+   core_trust_set_t *set = core_trust_runtime_get();
+   if (!set)
+      return NULL;
+   if (!(trust = (struct core_updater_trust*)calloc(1, sizeof(*trust))))
+   {
+      core_trust_set_put(set);
+      return NULL;
+   }
+   trust->set = set;
+   retro_atomic_int_init(&trust->refs, 1);
+   return trust;
+}
+
+static struct core_updater_trust *core_updater_trust_ref(
+      struct core_updater_trust *trust)
+{
+   if (trust)
+      retro_atomic_fetch_add_int(&trust->refs, 1);
+   return trust;
+}
+
+/* Any thread */
+static void core_updater_trust_release(struct core_updater_trust *trust)
+{
+   if (trust && retro_atomic_fetch_sub_int(&trust->refs, 1) == 1)
+   {
+      core_trust_set_put(trust->set);
+      free(trust);
+   }
+}
+#endif
 
 /* The backup task's completion, at its retirement: before the task
  * is freed, so a handler that sees 'complete' never reads it again. */
@@ -957,6 +1050,23 @@ static void cb_task_core_updater_download(
    bool refresh                            = true;
    core_updater_sub_task_done_t *download_done =
          (core_updater_sub_task_done_t*)user_data;
+#ifdef HAVE_CORE_SIGNATURES
+   core_updater_result_t *result = (core_updater_result_t*)task_data;
+
+   /* Recorded before the parent goes on */
+   if (result)
+   {
+      if (result->installed)
+         core_trust_runtime_apply(&result->c);
+      /* Update Installed Cores mutes its downloads: each refusal is
+       * told here */
+      if (*result->msg && (task_get_flags(task) & RETRO_TASK_FLG_MUTE))
+         runloop_msg_queue_push(result->msg, strlen(result->msg), 1, 180,
+               false, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_WARNING);
+      free(result);
+   }
+#endif
 
    /* Signal completion to the parent 'update installed
     * cores' task, if there is one - it cannot safely poll
@@ -1118,6 +1228,105 @@ finish:
    }
 }
 
+/* .<core filename>.staging: one per core, so each has exactly one
+ * owner and can be removed when that download is done */
+#define CORE_UPDATER_STAGING_EXT ".staging"
+
+/* Listings, deletes and folder removals one call may make. A download
+ * leaves an archive, a core, a .sig and the folder: six steps. Hostile
+ * archive members go a few dozen a call, so no call stalls the main
+ * thread, where the removal runs after a cancel or without threads. */
+#define CORE_UPDATER_STAGING_STEPS 32
+
+/* Empties and removes a staging folder, whatever an archive put in it:
+ * one path buffer, no recursion, CORE_UPDATER_STAGING_STEPS at most.
+ * Stops at anything that won't go, and takes no folder but a staging
+ * one. What it removed: while that isn't 0 and the folder is still
+ * there, another call goes on. */
+static unsigned core_updater_staging_remove(const char *dir)
+{
+   size_t root_len;
+   unsigned steps   = 0;
+   unsigned removed = 0;
+   char *path       = NULL;
+   const char *name = path_basename(dir);
+   if (     !name
+         || name[0] != '.'
+         || !string_ends_with(name, CORE_UPDATER_STAGING_EXT)
+         || !(path = (char*)malloc(PATH_MAX_LENGTH)))
+      return 0;
+   if ((root_len = strlcpy(path, dir, PATH_MAX_LENGTH)) >= PATH_MAX_LENGTH)
+   {
+      free(path);
+      return 0;
+   }
+   while (steps++ < CORE_UPDATER_STAGING_STEPS)
+   {
+      char *slash;
+      struct RDIR *rdir;
+      size_t _len = strlen(path);
+      bool down   = false;
+      bool gone   = false;
+      if ((rdir = retro_opendir_include_hidden(path, true)))
+      {
+         while (     !down
+               && steps < CORE_UPDATER_STAGING_STEPS
+               && retro_readdir(rdir))
+         {
+            const char *entry = retro_dirent_get_name(rdir);
+            if (     !entry
+                  || string_is_equal(entry, ".")
+                  || string_is_equal(entry, "..")
+                  || _len + 1 + strlen(entry) >= PATH_MAX_LENGTH)
+               continue;
+            path[_len] = PATH_DEFAULT_SLASH_C();
+            strlcpy(path + _len + 1, entry, PATH_MAX_LENGTH - _len - 1);
+            if (retro_dirent_is_dir(rdir, NULL))
+               down = true;
+            else
+            {
+               steps++;
+               if (filestream_delete(path) == 0)
+               {
+                  removed++;
+                  gone = true;
+               }
+               path[_len] = '\0';
+            }
+         }
+         retro_closedir(rdir);
+      }
+      /* Into a subfolder, or a listing again after a delete */
+      if (down || gone)
+         continue;
+      steps++;
+      if (!path_rmdir(path))
+         break;
+      removed++;
+      if (     _len <= root_len
+            || !(slash = find_last_slash(path + root_len)))
+         break;
+      *slash = '\0';
+   }
+   free(path);
+   return removed;
+}
+
+/* A download's end clears its staging folder a call a tick, so only a
+ * cancel can leave part of it. True while there is more to go. */
+static bool core_updater_staging_clear(
+      core_updater_download_handle_t *download_handle)
+{
+   if (!download_handle->staging_dir)
+      return false;
+#ifdef HAVE_CORE_SIGNATURES
+   /* Closed before the staged files go (Windows) */
+   core_install_check_free(&download_handle->check);
+#endif
+   return core_updater_staging_remove(download_handle->staging_dir)
+      && path_is_directory(download_handle->staging_dir);
+}
+
 static void core_updater_download_handle_drop(
       core_updater_download_handle_t *download_handle)
 {
@@ -1130,20 +1339,25 @@ static void core_updater_download_handle_drop(
 
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
 {
+#ifdef HAVE_CORE_SIGNATURES
+   /* Closed before the staged files go (Windows) */
+   core_install_check_free(&download_handle->check);
+   core_updater_trust_release(download_handle->trust);
+#endif
+
    /* The staging directory is this download's alone (concurrent
     * downloads of one core are refused), and the HTTP and decompress
-    * callbacks have let go by now: whatever is left in it - an archive
-    * or core from a download that failed or was cancelled - goes, and
-    * so does the directory */
+    * callbacks have let go by now: whatever is left in it - an archive,
+    * a core, a .sig or other members of the archive, from any end - goes,
+    * and so does the directory */
    if (download_handle->staging_dir)
    {
-      if (     download_handle->staged_core_path
-            && path_is_valid(download_handle->staged_core_path))
-         filestream_delete(download_handle->staged_core_path);
-      if (     download_handle->local_download_path
-            && path_is_valid(download_handle->local_download_path))
-         filestream_delete(download_handle->local_download_path);
-      path_rmdir(download_handle->staging_dir);
+      /* After a cancel, what a hostile archive leaves past one call
+       * goes at the next download of this core */
+      if (     core_updater_staging_remove(download_handle->staging_dir)
+            && path_is_directory(download_handle->staging_dir))
+         RARCH_LOG("[Core Updater] Part of \"%s\" is left for the next download.\n",
+               download_handle->staging_dir);
       free(download_handle->staging_dir);
    }
 
@@ -1189,38 +1403,50 @@ static void core_updater_download_handle_release(
 }
 
 /* Staged install: the new core is downloaded and extracted into its
- * own staging directory beside the cores, on the same volume, instead of
- * over the installed core, so the backup task can then move the old
- * core into the backups as it is and the new one into place - two
- * renames, with an installed core present throughout the download
- * and the extraction.  Only where the file the extraction would
- * replace is the installed core itself (no symbolic link between
- * them, which a move would back up instead of the core).  Returns
- * false, leaving the handle as it was, where that does not hold. */
-/* .<core filename>.staging: one per core, so each has exactly one
- * owner and can be removed when that download is done */
-#define CORE_UPDATER_STAGING_EXT ".staging"
-
+ * own staging directory beside the installed core, on the same volume,
+ * instead of over the installed core, so the backup task can then move
+ * the old core into the backups as it is and the new one into place -
+ * two renames, with an installed core present throughout the download
+ * and the extraction.  Without any_folder, only where the file the
+ * extraction would replace is the installed core itself (no symbolic
+ * link between them, which a move would back up instead of the core).
+ * any_folder, for the signature check, also stages beside a core whose
+ * folder is reached through a link, but never for a core that is a
+ * link to a file of another name: the .sig names the listed file.
+ * Returns false, leaving the handle as it was, where staging fails. */
 static bool core_updater_download_stage(
-      core_updater_download_handle_t *download_handle)
+      core_updater_download_handle_t *download_handle, bool any_folder)
 {
    bool staged = false;
-   char *buf   = (char*)malloc(3 * PATH_MAX_LENGTH);
+   char *buf   = (char*)malloc(4 * PATH_MAX_LENGTH);
    char *member;
    char *installed;
    char *staging;
+   char *folder;
 
    if (!buf)
       return false;
    member    = buf;
    installed = buf +     PATH_MAX_LENGTH;
    staging   = buf + 2 * PATH_MAX_LENGTH;
+   folder    = buf + 3 * PATH_MAX_LENGTH;
 
    strlcpy(member, download_handle->remote_filename, PATH_MAX_LENGTH);
    if (path_is_compressed_file(member))
       path_remove_extension(member);
    fill_pathname_join_special(installed,
          download_handle->path_dir_libretro, member, PATH_MAX_LENGTH);
+   strlcpy(folder, download_handle->path_dir_libretro, PATH_MAX_LENGTH);
+
+   if (     any_folder
+         && !string_is_equal(installed, download_handle->local_core_path)
+         && string_is_equal(path_basename_nocompression(
+               download_handle->local_core_path), member))
+   {
+      fill_pathname_parent_dir(folder, download_handle->local_core_path,
+            PATH_MAX_LENGTH);
+      strlcpy(installed, download_handle->local_core_path, PATH_MAX_LENGTH);
+   }
 
    if (string_is_equal(installed, download_handle->local_core_path))
    {
@@ -1229,7 +1455,7 @@ static bool core_updater_download_stage(
       char *staging_dir   = NULL;
       size_t _len;
 
-      /* .<member>.staging, in the libretro directory ('installed' is
+      /* .<member>.staging, beside the installed core ('installed' is
        * free again as scratch) */
       installed[0] = '.';
       _len  = 1 + strlcpy(installed + 1, member, PATH_MAX_LENGTH - 1);
@@ -1240,8 +1466,8 @@ static bool core_updater_download_stage(
       }
       strlcpy(installed + _len, CORE_UPDATER_STAGING_EXT,
             PATH_MAX_LENGTH - _len);
-      fill_pathname_join_special(staging,
-            download_handle->path_dir_libretro, installed, PATH_MAX_LENGTH);
+      fill_pathname_join_special(staging, folder, installed,
+            PATH_MAX_LENGTH);
       staging_dir   = strdup(staging);
       fill_pathname_join_special(installed, staging,
             download_handle->remote_filename, PATH_MAX_LENGTH);
@@ -1270,6 +1496,171 @@ static bool core_updater_download_stage(
    return staged;
 }
 
+#ifdef HAVE_CORE_SIGNATURES
+/* <core>.sig beside the listed file: an archive's name loses its
+ * extension */
+static char *core_updater_sig_url(const char *remote_core_path,
+      const char *remote_filename)
+{
+   size_t _len = strlen(remote_core_path);
+   char *url;
+   if (path_is_compressed_file(remote_filename))
+   {
+      const char *dot = strrchr(remote_core_path, '.');
+      if (dot)
+         _len = (size_t)(dot - remote_core_path);
+   }
+   if ((url = (char*)malloc(_len + sizeof(".sig"))))
+   {
+      memcpy(url, remote_core_path, _len);
+      memcpy(url + _len, ".sig", sizeof(".sig"));
+   }
+   return url;
+}
+
+/* Nothing but the archive, the core and its .sig: any other member of
+ * the archive would stay in the cores folder unchecked */
+static bool core_updater_staging_only_core(
+      const core_updater_download_handle_t *download_handle)
+{
+   bool only           = true;
+   const char *core    = path_basename(download_handle->staged_core_path);
+   const char *archive = path_basename(
+         download_handle->local_download_path);
+   size_t core_len     = strlen(core);
+   struct RDIR *rdir   = retro_opendir_include_hidden(
+         download_handle->staging_dir, true);
+   if (!rdir)
+      return false;
+   while (only && retro_readdir(rdir))
+   {
+      const char *name = retro_dirent_get_name(rdir);
+      if (     name
+            && (string_is_equal(name, ".") || string_is_equal(name, "..")))
+         continue;
+      only =    name
+             && !retro_dirent_is_dir(rdir, NULL)
+             && (     string_is_equal(name, core)
+                   || string_is_equal(name, archive)
+                   || (     !strncmp(name, core, core_len)
+                         && string_is_equal(name + core_len, ".sig")));
+   }
+   retro_closedir(rdir);
+   return only;
+}
+
+/* Main thread, at the .sig transfer's end. Only 404 or 410 means
+ * there is none; any other answer but 2xx, no answer, or a broken
+ * transfer, that it failed (a server or proxy fault, never worded as
+ * a bad signature). */
+static void cb_http_task_core_updater_sig(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   core_updater_download_handle_t *download_handle =
+         (core_updater_download_handle_t*)user_data;
+   int state                  = CORE_UPDATER_SIG_FAILED;
+   if (data && (data->status == 404 || data->status == 410))
+      state = CORE_UPDATER_SIG_MISSING;
+   else if (data && data->status >= 200 && data->status <= 299
+         && (!err || !*err))
+      state = CORE_UPDATER_SIG_GOT;
+   if (download_handle)
+   {
+      retro_atomic_store_release_int(&download_handle->sig_state, state);
+      task_queue_wake(download_handle->ident);
+      /* The download task may have retired already */
+      core_updater_download_handle_release(download_handle);
+   }
+}
+
+/* The check's result as the next state, and why a refusal was made */
+static enum core_updater_download_status core_updater_checked(
+      core_updater_download_handle_t *download_handle)
+{
+   switch (download_handle->check.c.result)
+   {
+      case CORE_CHECK_OK:
+         return CORE_UPDATER_DOWNLOAD_START_INSTALL;
+      case CORE_CHECK_OLDER:
+         download_handle->refusal = CORE_UPDATER_REFUSED_OLDER;
+         break;
+      case CORE_CHECK_ERROR:
+         /* Couldn't check: a failed install, not a bad signature */
+         RARCH_ERR("[Core Updater] Could not check \"%s\".\n",
+               download_handle->staged_core_path);
+         return CORE_UPDATER_DOWNLOAD_ERROR;
+      default:
+         download_handle->refusal = CORE_UPDATER_REFUSED_SIGNATURE;
+         break;
+   }
+   RARCH_ERR("[Core Updater] \"%s\" failed its signature check (%d).\n",
+         download_handle->display_name,
+         (int)download_handle->check.c.result);
+   return CORE_UPDATER_DOWNLOAD_ERROR;
+}
+
+/* For the callback: what to record, or the refusal to tell */
+static void core_updater_set_result(retro_task_t *task,
+      core_updater_download_handle_t *download_handle, const char *msg)
+{
+   core_updater_result_t *result;
+   if (     !download_handle->trust
+         || (!download_handle->installed && !msg)
+         || !(result = (core_updater_result_t*)calloc(1, sizeof(*result))))
+      return;
+   result->c         = download_handle->check.c;
+   result->installed = download_handle->installed;
+   if (msg)
+      strlcpy(result->msg, msg, sizeof(result->msg));
+   task_set_data(task, result);
+}
+#endif
+
+/* The backup task moved the new core into place: its .sig follows,
+ * and the identity to record is read again, as a rename changes ctime */
+static enum core_updater_download_status core_updater_installed(
+      core_updater_download_handle_t *download_handle)
+{
+#ifdef HAVE_CORE_SIGNATURES
+   if (download_handle->trust)
+   {
+      core_install_vet_sig(&download_handle->check.c,
+            download_handle->staged_core_path);
+      core_install_place_sig(download_handle->staged_core_path,
+            download_handle->local_core_path);
+      core_install_identify(download_handle->local_core_path,
+            &download_handle->check.c);
+      download_handle->installed = true;
+   }
+#else
+   (void)download_handle;
+#endif
+   return CORE_UPDATER_DOWNLOAD_END;
+}
+
+/* The staged core straight into place, without the backup task */
+static enum core_updater_download_status core_updater_rename_staged(
+      core_updater_download_handle_t *download_handle)
+{
+#ifdef HAVE_CORE_SIGNATURES
+   if (download_handle->trust)
+   {
+      if (!core_install_commit(download_handle->staged_core_path,
+               download_handle->local_core_path,
+               &download_handle->check.c))
+         return CORE_UPDATER_DOWNLOAD_ERROR;
+      download_handle->installed = true;
+      return CORE_UPDATER_DOWNLOAD_END;
+   }
+#endif
+   return (filestream_rename(download_handle->staged_core_path,
+         download_handle->local_core_path) == 0)
+         ? CORE_UPDATER_DOWNLOAD_END
+         : CORE_UPDATER_DOWNLOAD_ERROR;
+}
+
 static void task_core_updater_download_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -1281,8 +1672,24 @@ static void task_core_updater_download_handler(retro_task_t *task)
    download_handle = (core_updater_download_handle_t*)task->state;
    flg             = task_get_flags(task);
 
-   if (!download_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
+   if (!download_handle)
       goto task_finished;
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+   {
+#ifdef HAVE_CORE_SIGNATURES
+      /* Cancelled with the new core in place: its .sig and record
+       * follow all the same */
+      if (     download_handle->status == CORE_UPDATER_DOWNLOAD_WAIT_INSTALL
+            && retro_atomic_load_acquire_int(
+                  &download_handle->backup_done->complete)
+            && !download_handle->backup_done->error)
+         core_updater_installed(download_handle);
+      if (download_handle->installed)
+         core_updater_set_result(task, download_handle, NULL);
+#endif
+      goto task_finished;
+   }
 
    switch (download_handle->status)
    {
@@ -1337,21 +1744,110 @@ static void task_core_updater_download_handler(retro_task_t *task)
              * initialise download */
             download_handle->backup_enabled = download_handle->auto_backup &&
                   path_is_valid(download_handle->local_core_path);
+            download_handle->move_backup    = download_handle->backup_enabled
+                  && !download_handle->backup_compress;
+
+#ifdef HAVE_CORE_SIGNATURES
+            /* Checked: every install is staged, its .sig fetched first */
+            if (download_handle->trust)
+            {
+               if (core_updater_download_stage(download_handle, true))
+                  download_handle->status = CORE_UPDATER_DOWNLOAD_START_SIG;
+               else
+               {
+                  RARCH_ERR("[Core Updater] Cannot stage \"%s\" for its signature check.\n",
+                        download_handle->local_core_path);
+                  download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               }
+               break;
+            }
+#endif
 
             /* With 'Compress Automatic Core Backups' off, the backup
              * is taken after the extraction instead, by moving the
              * replaced core; where the install cannot be staged it is
              * compressed beforehand as usual */
-            if (     download_handle->backup_enabled
-                  && !download_handle->backup_compress
-                  && core_updater_download_stage(download_handle))
+            if (     download_handle->move_backup
+                  && core_updater_download_stage(download_handle, false))
                download_handle->status = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
             else
+            {
+               download_handle->move_backup = false;
                download_handle->status = download_handle->backup_enabled ?
                      CORE_UPDATER_DOWNLOAD_START_BACKUP :
                            CORE_UPDATER_DOWNLOAD_START_TRANSFER;
+            }
          }
          break;
+#ifdef HAVE_CORE_SIGNATURES
+      case CORE_UPDATER_DOWNLOAD_START_SIG:
+         {
+            char *sig_path = NULL;
+            char *url      = NULL;
+
+            /* What an interrupted run left would be placed, or refused:
+             * a call's worth a tick */
+            if (     core_updater_staging_remove(download_handle->staging_dir)
+                  && path_is_directory(download_handle->staging_dir))
+               break; /* resume next tick */
+            sig_path = core_sig_path(download_handle->staged_core_path);
+            url      = core_updater_sig_url(
+                  download_handle->remote_core_path,
+                  download_handle->remote_filename);
+
+            /* Into staging, beside where the core will be checked */
+            retro_atomic_store_release_int(&download_handle->sig_state,
+                  CORE_UPDATER_SIG_FAILED);
+            download_handle->status = CORE_UPDATER_DOWNLOAD_WAIT_SIG;
+            if (     url
+                  && sig_path
+                  && path_mkdir(download_handle->staging_dir))
+            {
+               retro_atomic_store_release_int(&download_handle->sig_state,
+                     CORE_UPDATER_SIG_PENDING);
+               /* The callback's reference, taken before the push */
+               retro_atomic_fetch_add_int(&download_handle->refs, 1);
+               if (!task_push_http_download_file(url, sig_path, true,
+                        sig_path, cb_http_task_core_updater_sig,
+                        download_handle))
+               {
+                  retro_atomic_fetch_sub_int(&download_handle->refs, 1);
+                  retro_atomic_store_release_int(&download_handle->sig_state,
+                        CORE_UPDATER_SIG_FAILED);
+               }
+            }
+            free(sig_path);
+            free(url);
+         }
+         break;
+      case CORE_UPDATER_DOWNLOAD_WAIT_SIG:
+         {
+            bool checks_on;
+            int state = retro_atomic_load_acquire_int(
+                  &download_handle->sig_state);
+            if (state == CORE_UPDATER_SIG_PENDING)
+            {
+               task_queue_park(task, CORE_UPDATER_WAIT_PARK_USEC);
+               break;
+            }
+            checks_on = !(core_trust_flags(download_handle->trust->set)
+                  & CORE_TRUST_CHECK_OFF);
+            /* With checks on, no .sig means no download */
+            if (checks_on && state != CORE_UPDATER_SIG_GOT)
+            {
+               if (state == CORE_UPDATER_SIG_MISSING)
+                  download_handle->refusal = CORE_UPDATER_REFUSED_SIGNATURE;
+               download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               break;
+            }
+            download_handle->status =
+                  (download_handle->backup_enabled
+                   && !download_handle->move_backup)
+                  ? CORE_UPDATER_DOWNLOAD_START_BACKUP
+                  : CORE_UPDATER_DOWNLOAD_START_TRANSFER;
+         }
+         break;
+#endif
       case CORE_UPDATER_DOWNLOAD_START_BACKUP:
          {
             core_updater_sub_task_done_t *done =
@@ -1621,13 +2117,60 @@ static void task_core_updater_download_handler(retro_task_t *task)
             /* Wait for task_push_decompress()
              * callback to trigger */
             if (complete)
+            {
+#ifdef HAVE_CORE_SIGNATURES
+               if (download_handle->trust)
+               {
+                  if (core_updater_staging_only_core(download_handle))
+                     download_handle->status = CORE_UPDATER_DOWNLOAD_CHECK;
+                  else
+                  {
+                     RARCH_ERR("[Core Updater] \"%s\" holds more than the core.\n",
+                           download_handle->staging_dir);
+                     download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+                  }
+               }
+               else
+#endif
                download_handle->status = download_handle->staged_core_path
                      ? CORE_UPDATER_DOWNLOAD_START_INSTALL
                      : CORE_UPDATER_DOWNLOAD_END;
+            }
             else
                task_queue_park(task, CORE_UPDATER_PROGRESS_PARK_USEC);
          }
          break;
+#ifdef HAVE_CORE_SIGNATURES
+      case CORE_UPDATER_DOWNLOAD_CHECK:
+         {
+            nbio_budget_t budget;
+            bool done = false;
+            if (!download_handle->check_begun)
+            {
+               download_handle->check_begun = true;
+               if (!core_install_check_begin(&download_handle->check,
+                        download_handle->trust->set,
+                        download_handle->staged_core_path,
+                        download_handle->local_core_path))
+               {
+                  download_handle->status = core_updater_checked(
+                        download_handle);
+                  break;
+               }
+            }
+            task_nbio_slice_open(&budget);
+            while (!done && task_nbio_slice_within_budget(&budget, 0, 0))
+               done = core_install_check_step(&download_handle->check);
+            task_nbio_slice_close(&budget);
+            if (!done)
+               break; /* resume next tick */
+            core_install_check_end(&download_handle->check,
+                  download_handle->trust->set,
+                  download_handle->staged_core_path, 0);
+            download_handle->status = core_updater_checked(download_handle);
+         }
+         break;
+#endif
       case CORE_UPDATER_DOWNLOAD_START_INSTALL:
          {
             core_updater_sub_task_done_t *done = NULL;
@@ -1638,6 +2181,16 @@ static void task_core_updater_download_handler(retro_task_t *task)
                download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
                break;
             }
+
+#ifdef HAVE_CORE_SIGNATURES
+            /* Staged for the check only: straight into place */
+            if (download_handle->trust && !download_handle->move_backup)
+            {
+               download_handle->status = core_updater_rename_staged(
+                     download_handle);
+               break;
+            }
+#endif
 
             /* The backup task moves the replaced core into the
              * backups, the staged one into place, and prunes the
@@ -1680,11 +2233,8 @@ static void task_core_updater_download_handler(retro_task_t *task)
             {
                RARCH_ERR("[Core Updater] Failed to backup core: \"%s\".\n",
                      download_handle->local_core_path);
-               download_handle->status =
-                     (filestream_rename(download_handle->staged_core_path,
-                           download_handle->local_core_path) == 0)
-                     ? CORE_UPDATER_DOWNLOAD_END
-                     : CORE_UPDATER_DOWNLOAD_ERROR;
+               download_handle->status = core_updater_rename_staged(
+                     download_handle);
             }
          }
          break;
@@ -1701,7 +2251,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
             download_handle->backup_task = NULL;
             download_handle->status      = failed
                   ? CORE_UPDATER_DOWNLOAD_ERROR
-                  : CORE_UPDATER_DOWNLOAD_END;
+                  : core_updater_installed(download_handle);
          }
          else
             task_queue_park(task, CORE_UPDATER_WAIT_PARK_USEC);
@@ -1710,6 +2260,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
          {
             size_t _len;
             char task_title[128];
+#ifdef HAVE_CORE_SIGNATURES
+            char refusal_msg[256];
+#endif
+
+            if (core_updater_staging_clear(download_handle))
+               break; /* resume next tick */
 
             /* Set final task title */
             task_free_title(task);
@@ -1719,6 +2275,26 @@ static void task_core_updater_download_handler(retro_task_t *task)
             if (     download_handle->staged_core_path
                   && path_is_valid(download_handle->staged_core_path))
                filestream_delete(download_handle->staged_core_path);
+
+#ifdef HAVE_CORE_SIGNATURES
+            if (download_handle->refusal)
+            {
+               _len           = 0;
+               refusal_msg[0] = '\0';
+               strlcpy_append(refusal_msg, sizeof(refusal_msg), &_len,
+                     download_handle->display_name);
+               strlcpy_append(refusal_msg, sizeof(refusal_msg), &_len, ": ");
+               strlcpy_append(refusal_msg, sizeof(refusal_msg), &_len,
+                     msg_hash_to_str(
+                        (download_handle->refusal == CORE_UPDATER_REFUSED_OLDER)
+                        ? MSG_CORE_SIGNATURE_DOWNLOAD_OLDER
+                        : MSG_CORE_SIGNATURE_DOWNLOAD_FAILED));
+               task_set_title(task, strdup(refusal_msg));
+               core_updater_set_result(task, download_handle, refusal_msg);
+               task_set_progress(task, 100);
+               goto task_finished;
+            }
+#endif
 
             _len = strlcpy(task_title, msg_hash_to_str(MSG_CORE_INSTALL_FAILED), sizeof(task_title));
             strlcpy(task_title + _len, download_handle->display_name,
@@ -1734,8 +2310,14 @@ static void task_core_updater_download_handler(retro_task_t *task)
             size_t _len;
             char task_title[128];
 
+            if (core_updater_staging_clear(download_handle))
+               break; /* resume next tick */
+
             /* Set final task title */
             task_free_title(task);
+#ifdef HAVE_CORE_SIGNATURES
+            core_updater_set_result(task, download_handle, NULL);
+#endif
 
             _len = strlcpy(
                   task_title,
@@ -1797,7 +2379,8 @@ static void *task_push_core_updater_download_internal(
       size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets,
-      core_updater_sub_task_done_t *download_done)
+      core_updater_sub_task_done_t *download_done,
+      struct core_updater_trust *trust, bool sig_only)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -1823,6 +2406,14 @@ static void *task_push_core_updater_download_internal(
        || (!filename || !*filename)
        || !download_handle)
       goto error;
+
+#ifdef HAVE_CORE_SIGNATURES
+   download_handle->trust    = core_updater_trust_ref(trust);
+   download_handle->sig_only = sig_only && trust;
+#else
+   (void)trust;
+   (void)sig_only;
+#endif
 
    /* Get core updater list entry */
    if (!core_updater_list_get_filename(
@@ -1956,12 +2547,24 @@ void *task_push_core_updater_download(
       const char *path_dir_libretro,
       const char *path_dir_core_assets)
 {
-   settings_t *settings = config_get_ptr();
-   return task_push_core_updater_download_internal(
+   void *task;
+   settings_t *settings             = config_get_ptr();
+   struct core_updater_trust *trust = NULL;
+#ifdef HAVE_CORE_SIGNATURES
+   /* The store can be read here, on the main thread, and not after */
+   if (     !(trust = core_updater_trust_new())
+         && core_trust_runtime_active())
+      return NULL;
+#endif
+   task = task_push_core_updater_download_internal(
          core_list, filename, crc, mute, auto_backup,
          settings->bools.core_updater_auto_backup_compress,
          auto_backup_history_size, path_dir_libretro,
-         path_dir_core_assets, NULL);
+         path_dir_core_assets, NULL, trust, false);
+#ifdef HAVE_CORE_SIGNATURES
+   core_updater_trust_release(trust);
+#endif
+   return task;
 }
 
 /****************************/
@@ -2270,6 +2873,10 @@ static void free_update_installed_cores_handle(
 
    core_crc_cache_free(&update_installed_handle->crc_cache);
 
+#ifdef HAVE_CORE_SIGNATURES
+   core_updater_trust_release(update_installed_handle->trust);
+#endif
+
    free(update_installed_handle);
    update_installed_handle = NULL;
 }
@@ -2409,7 +3016,8 @@ static void task_update_installed_cores_scan(retro_task_t *task,
                      handle->auto_backup_history_size,
                      handle->path_dir_libretro,
                      handle->path_dir_core_assets,
-                     handle->download_done))
+                     handle->download_done,
+                     handle->trust, false))
          {
             /* No task, so no callback: both references are ours */
             free(handle->download_done);
@@ -2678,6 +3286,13 @@ void task_push_update_installed_cores(
    if (  !update_installed_handle
        || (!path_dir_libretro || !*path_dir_libretro))
       goto error;
+
+#ifdef HAVE_CORE_SIGNATURES
+   /* Read here, on the main thread, for every download the run pushes */
+   if (     !(update_installed_handle->trust = core_updater_trust_new())
+         && core_trust_runtime_active())
+      goto error;
+#endif
 
    /* Configure handle */
    update_installed_handle->auto_backup              = auto_backup;
