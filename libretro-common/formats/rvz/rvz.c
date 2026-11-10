@@ -170,6 +170,7 @@ struct rvz
    uint64_t           rd_off;
    size_t             rd_len;
    size_t             rd_done;
+   int                rd_part;  /* a decrypted read's partition, or -1 */
    bool               rd_armed;
    uint32_t           n_regions;
    uint32_t           n_parts;
@@ -864,11 +865,64 @@ static const struct rvz_region *rvz_region_at(const rvz_t *z, uint64_t off,
    return NULL;
 }
 
+/* The partition whose data starts at disc offset @pdo, or -1 */
+static int rvz_part_at(const rvz_t *z, uint64_t pdo)
+{
+   uint32_t i;
+   for (i = 0; i < z->n_parts; i++)
+      if ((uint64_t)z->parts[i].base * RVZ_SECTOR == pdo)
+         return (int)i;
+   return -1;
+}
+
+/* Runs an armed decrypted read on: each sector's data as its group
+ * holds it, with no hashes worked out and nothing encrypted */
+static int rvz_read_decrypted_run(rvz_t *z)
+{
+   const struct rvz_part *pt = &z->parts[z->rd_part];
+   unsigned n_lists = z->chunk >= RVZ_BLOCK ? z->chunk / RVZ_BLOCK : 1;
+   int      e;
+
+   while (z->rd_done < z->rd_len)
+   {
+      uint64_t pos  = z->rd_off + z->rd_done;
+      size_t   in_s = (size_t)(pos % RVZ_SECTOR_DATA);
+      size_t   take = z->rd_len - z->rd_done, avail;
+      uint32_t s, g, g_first, g_count, in_g, k;
+      struct rvz_slot *slot = NULL;
+
+      if (pos / RVZ_SECTOR_DATA >= pt->sectors)
+         return RVZ_ERROR_DATA;
+      s = (uint32_t)(pos / RVZ_SECTOR_DATA);
+      if (!rvz_part_locate(z, pt, s, &g, &g_first, &g_count, &in_g))
+         return RVZ_ERROR_DATA;
+      /* a slot holding the group already, else the first */
+      for (k = 0; k < z->n_slots && !slot; k++)
+         if (z->slots[k].group == g)
+            slot = &z->slots[k];
+      if (!slot)
+         slot = &z->slots[0];
+      if ((e = rvz_group_load(z, slot, g, (size_t)g_count * RVZ_SECTOR_DATA,
+               n_lists, (uint64_t)g_first * RVZ_SECTOR_DATA, NULL)) != RVZ_OK)
+         return e;
+      avail = (size_t)(g_count - in_g) * RVZ_SECTOR_DATA - in_s;
+      if (take > avail)
+         take = avail;
+      memcpy(z->rd_dst + z->rd_done,
+            slot->data + (size_t)in_g * RVZ_SECTOR_DATA + in_s, take);
+      z->rd_done += take;
+   }
+   return RVZ_OK;
+}
+
 /* Runs the armed read on from where it stands */
 static int rvz_read_run(rvz_t *z)
 {
    uint8_t *out = z->rd_dst;
    int      e;
+
+   if (z->rd_part >= 0)
+      return rvz_read_decrypted_run(z);
 
    while (z->rd_done < z->rd_len)
    {
@@ -977,6 +1031,45 @@ int rvz_read_begin(rvz_t *z, uint64_t off, void *dst, size_t len)
    z->rd_off   = off;
    z->rd_len   = len;
    z->rd_done  = 0;
+   z->rd_part  = -1;
+   z->rd_armed = true;
+   return RVZ_OK;
+}
+
+bool rvz_decrypted_supported(const rvz_t *z, uint64_t partition_data,
+      uint64_t off, uint64_t len)
+{
+   const struct rvz_part *pt;
+   unsigned k;
+   int      pi;
+   if (!z || z->stage != RVZ_STAGE_OPEN
+         || (pi = rvz_part_at(z, partition_data)) < 0)
+      return false;
+   pt = &z->parts[pi];
+   for (k = 0; k < 2; k++)
+      if (pt->count[k] && off + len <= (uint64_t)(pt->first[k] - pt->base
+               + pt->count[k]) * RVZ_SECTOR_DATA)
+         return true;
+   return false;
+}
+
+int rvz_read_decrypted_begin(rvz_t *z, uint64_t partition_data,
+      uint64_t off, void *dst, size_t len)
+{
+   int pi;
+   if (!z || (!dst && len))
+      return RVZ_ERROR_PARAM;
+   if (z->stage != RVZ_STAGE_OPEN)
+      return RVZ_ERROR_STATE;
+   if ((pi = rvz_part_at(z, partition_data)) < 0)
+      return RVZ_ERROR_PARAM;
+   z->fetching = 0;
+   z->failed   = false;
+   z->rd_dst   = (uint8_t*)dst;
+   z->rd_off   = off;
+   z->rd_len   = len;
+   z->rd_done  = 0;
+   z->rd_part  = pi;
    z->rd_armed = true;
    return RVZ_OK;
 }
