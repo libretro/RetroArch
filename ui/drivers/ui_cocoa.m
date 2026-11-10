@@ -1359,16 +1359,21 @@ void cocoa_publish_focus(bool focused);
 
 static void open_core_handler(ui_browser_window_state_t *state, bool result)
 {
+#ifndef HAVE_CORE_LOAD_CHECK
    rarch_system_info_t *sys_info    = &runloop_state_get_ptr()->system;
    settings_t           *settings   = config_get_ptr();
    bool set_supports_no_game_enable =
       settings->bools.set_supports_no_game_enable;
+#endif
    if (!state || !state->result || !*state->result)
       return;
    if (!result)
       return;
 
    path_set(RARCH_PATH_CORE, state->result);
+#ifdef HAVE_CORE_LOAD_CHECK
+   task_content_load_core_start(state->result);
+#else
    ui_companion_event_command(CMD_EVENT_LOAD_CORE);
 
    if (     sys_info
@@ -1383,6 +1388,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
             CORE_TYPE_PLAIN,
             NULL, NULL);
    }
+#endif
 }
 
 static void open_document_handler(

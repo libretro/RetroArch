@@ -33938,6 +33938,14 @@ MSG_HASH(
    "Core loaded this time only: the trusted cores list is full, so RetroArch couldn't remember it."
    )
 MSG_HASH(
+   MSG_CORE_LOAD_REFUSED_LOAD_CORE,
+   "Core not loaded: %s isn't trusted. To trust it, load it from Load Core and choose Always Trust."
+   )
+MSG_HASH(
+   MSG_CORE_LOAD_REFUSED_SEED_PENDING,
+   "Core not loaded: RetroArch is still checking the installed cores. Try again in a moment."
+   )
+MSG_HASH(
    MSG_TO,
    "to"
    )

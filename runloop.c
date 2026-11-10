@@ -913,7 +913,7 @@ static bool load_dynamic_core_resolves_symlinks(void)
 /* With a trust store the preload stage is the core's check, with or
  * without a worker, and the open moves to a worker only from the file
  * the check passed. Any core path but a built-in core's: a playlist
- * Run sets no explicit core type. */
+ * Run sets no explicit core type, and only a refused open parks. */
 static bool runloop_core_check_begin(void)
 {
    const char *path = path_get(RARCH_PATH_CORE);
@@ -4887,6 +4887,7 @@ static core_probe_t *core_probes       = NULL;
 static size_t        core_probes_count = 0;
 static size_t        core_probes_cap   = 0;
 static bool          core_probes_read  = false;
+static bool          core_probe_live   = false;
 
 #define CORE_PROBE_FILE_HEADER "core_probe 1\n"
 
@@ -5156,6 +5157,11 @@ bool runloop_core_probe_need_fullpath(const char *core_path,
    }
    return true;
 }
+
+bool runloop_core_probe_live(void)
+{
+   return core_probe_live;
+}
 #endif
 
 bool libretro_get_system_info(
@@ -5173,6 +5179,9 @@ bool libretro_get_system_info(
 #endif
    runloop_state_t *runloop_st  = &runloop_state;
 
+#ifdef HAVE_DYNAMIC
+   core_probe_live              = false;
+#endif
    if (string_ends_with_size(path,
             "builtin", strlen(path), STRLEN_CONST("builtin")))
       return false;
@@ -5204,6 +5213,7 @@ bool libretro_get_system_info(
       lib = libretro_get_system_info_lib(path, &dummy_info, &no_game,
             &live);
       core_probe_capture = NULL;
+      core_probe_live    = live;
       if (!lib)
       {
          const char *err = NULL;
@@ -9960,6 +9970,10 @@ int runloop_iterate(void)
 
    recording_gpu_poll();
    runloop_msg_queue_drain_deferred();
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (!runloop_st->quit_pending)
+      core_load_check_iterate();
+#endif
 
    /* A quit waiting for its state to be written: the core is not run
     * and nothing is read but the input the window needs drained; the

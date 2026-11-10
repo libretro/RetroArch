@@ -1047,6 +1047,10 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                    | MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
             }
+#ifdef HAVE_CORE_LOAD_CHECK
+            else
+               task_content_park_core_load(win32_file);
+#endif
 #endif
          }
          break;

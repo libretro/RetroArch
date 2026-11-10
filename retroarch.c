@@ -10258,6 +10258,9 @@ bool retroarch_main_init_drivers(bool staged,
 #ifdef HAVE_CORE_SIGNATURES
    core_trust_runtime_notify();
 #endif
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_notify();
+#endif
 #ifdef HAVE_COMMAND
    input_driver_refresh_command(input_st, settings);
 #endif

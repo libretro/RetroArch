@@ -1072,6 +1072,10 @@ void runloop_core_probe_cache_free(void);
  * been asked this session, or its overrides are not known. */
 bool runloop_core_probe_need_fullpath(const char *core_path,
       const char *ext, bool *need_fullpath);
+
+/* Whether the last libretro_get_system_info() asked the running core:
+ * its load_no_content is read back from the running state */
+bool runloop_core_probe_live(void);
 #endif
 
 void runloop_performance_counter_register(
