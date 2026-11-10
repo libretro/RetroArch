@@ -125,6 +125,7 @@ static void render_subtitles(struct menu_state *menu_st)
 #include "subtitle_media_test.h"
 
 #include "folder_playback_test.h"
+#include "external_settings_test.h"
 #include "media_cadence_test.h"
 #include "wallpaper_pick_test.h"
 #include "history_image_test.h"
@@ -425,6 +426,9 @@ int main(int argc,char **argv)
          goto media_test_done;
       }
 #endif
+      if (getenv("MEDIA_TEST_EXTERNAL_SETTINGS"))
+         CHECK("external media survives settings, keeps preview pixels and returns to viewer",
+               media_external_settings_check(menu_st, viewer));
       CHECK("Back closes internal view", test_action(viewer, MENU_ACTION_CANCEL)
             == MENU_ACTION_NOOP && !test_showing(viewer));
       CHECK("cancellation and stale startup acknowledgements stay isolated",

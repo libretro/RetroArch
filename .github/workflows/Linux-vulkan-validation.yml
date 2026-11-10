@@ -958,6 +958,14 @@ jobs:
           python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --refresh-pixels samples/menu/rgui_media/fixture.mp4
           python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --continuous-error samples/menu/rgui_media/fixture.mp4
 
+      - name: External Ozone movie settings at drive root and in a subfolder
+        if: matrix.driver == 'd3d11'
+        shell: msys2 {0}
+        run: |
+          set -eu
+          ffmpeg -v error -y -f lavfi -i color=orange:size=320x240:rate=30 -t 3 -c:v libx264 -preset ultrafast -pix_fmt yuv420p samples/menu/rgui_media/settings-preview.mp4
+          MEDIA_TEST_SETTINGS_ORANGE=1 python3 samples/menu/texture_media/external_settings_paths.py samples/menu/rgui_media/settings-preview.mp4 --video-driver ${{ matrix.driver }} --threaded
+
   views-sdl3:
     name: Views on SDL3, end to end (Xvfb, llvmpipe)
     runs-on: ubuntu-latest

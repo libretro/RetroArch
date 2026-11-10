@@ -2,12 +2,17 @@ from pathlib import Path
 import argparse, os, re, shutil, subprocess, sys, tempfile
 p=argparse.ArgumentParser();p.add_argument('fixture');p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',choices=['rgui','materialui','xmb','ozone'],default='rgui');p.add_argument('--video-driver',default='null');p.add_argument('--threaded',action='store_true');p.add_argument('--assets');p.add_argument('--gpu-surface',action='store_true',help='require RGUI GPU surface playback');p.add_argument('--hardware-decode',action='store_true',help='require hardware decoding as well as GPU presentation');p.add_argument('--continuous',action='store_true',help='test natural folder playback using three temporary fixture links/copies');p.add_argument('--first-video-us',type=int,default=0,help='first visible video timestamp used for capture comparisons');p.add_argument('--continuous-error',action='store_true',help='test that an invalid next movie stops folder playback');p.add_argument('--fullscreen-settings',action='store_true',help='test the shared fullscreen settings action');p.add_argument("--external",action="store_true",help="open the fixture as OS/command-line content");p.add_argument("--browser-image",action="store_true",help="activate an image through the real file browser");p.add_argument("--wallpaper-pick",action="store_true",help="pick the image through the menu Background setting browser");p.add_argument("--history-image",action="store_true",help="view the image from the Images history list and go back to it");p.add_argument("--window-toggle",action="store_true",help="verify pixels and seeking across application fullscreen transitions");p.add_argument("--dxgi",action="store_true",help="use the Windows DXGI presentation bridge");p.add_argument("--first-frame",action="store_true",help="require black loading frames before the external viewer is ready");p.add_argument("--startup-failure",action="store_true",help="require startup recovery from an undecodable media fixture");p.add_argument('--subtitles',action='store_true',help='verify the generated UTF-8 sidecar through the real menu adapter');p.add_argument('--modal',choices=['move','resize']);p.add_argument('--audio-driver',default='wasapi');p.add_argument('--cadence-hz',type=float,help='require measured movie cadence in Hz');p.add_argument('--require-cadence',action='store_true',help='require fullscreen display source in the folder fixture');p.add_argument('--desktop-refresh',action='store_true',help='exercise fullscreen refresh source and settings lifecycle');p.add_argument('--refresh-pixels',action='store_true',help='require changing movie pixels during fullscreen refresh matching')
 p.add_argument('--first-import-refusal',action='store_true',help='require recovery after a real asynchronous native import is refused')
+p.add_argument('--external-settings', action='store_true',
+               help='check settings preview and return after OS/command-line movie launch')
+p.add_argument('--base-config', help='read display/menu preferences; keep harness I/O overrides')
 p.add_argument('--cold-cancel',action='store_true',help='close and reopen while native decoder admission is held on the worker')
 p.add_argument('--cold-reset',action='store_true',help='reinitialize video while native decoder admission is held on the worker')
 p.add_argument('--audio-latency',type=int)
 p.add_argument('--audio-sync',choices=['true','false'])
 p.add_argument('--validation',action='store_true',help='enable Vulkan validation and fail on any VUID')
 a=p.parse_args()
+if a.external_settings and (not a.external or a.driver == 'rgui'):
+ p.error('--external-settings requires external launch and a texture menu')
 if a.validation and a.video_driver!='vulkan':p.error('--validation requires Vulkan')
 if a.audio_latency is not None and a.audio_latency<0:p.error("--audio-latency must be nonnegative")
 if a.cadence_hz is not None and not 5<=a.cadence_hz<=240:p.error('--cadence-hz needs a rate from 5 through 240')
@@ -57,7 +62,18 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
    broken.write_bytes(b'invalid movie')
   fixture=Path(temp)/('episode2'+fixture.suffix)
  cfg=Path(temp)/'retroarch.cfg'
+ base_values = {}
+ if a.base_config:
+  for line in Path(a.base_config).read_text(encoding='utf-8-sig').splitlines():
+   key, separator, value = line.partition('=')
+   if separator and key.strip() and not key.lstrip().startswith('#'):
+    base_values[key.strip()] = value.strip().strip('"')
  values={'video_driver':'null','audio_driver':'null','input_driver':'null','input_joypad_driver':'null','menu_driver':('glui' if a.driver=='materialui' else a.driver),'audio_enable':'false','menu_ignore_missing_assets':'true','video_threaded':'false','menu_show_start_screen':'false','config_save_on_exit':'false','menu_mouse_enable':'true','history_list_enable':'false','savefile_directory':temp,'savestate_directory':temp,'screenshot_directory':temp}
+ base_values.update(values)
+ values = base_values
+ if a.base_config:
+  values.update(cache_directory=temp, log_dir=temp, libretro_directory=temp,
+                libretro_info_path=temp, core_info_cache_enable='false')
  values.update(video_driver=a.video_driver,video_threaded='true' if a.threaded else 'false',video_vsync='false',pause_nonactive='false',video_hw_decode='1')
  if a.continuous:values['media_player_continuous']='true'
  if a.history_image:values.update(history_list_enable='true',menu_content_show_images='true',content_image_history_directory=temp)
@@ -85,6 +101,7 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.subtitles:env['MEDIA_TEST_SUBTITLES']='1'
  if a.window_toggle:env['MEDIA_TEST_WINDOW_TOGGLE']='1'
  if a.external:env["MEDIA_TEST_EXTERNAL"]="1"
+ if a.external_settings:env['MEDIA_TEST_EXTERNAL_SETTINGS']='1'
  if a.first_frame:env["MEDIA_TEST_FIRST_FRAME"]="1"
  if a.first_frame and a.dxgi:env["MEDIA_TEST_FULL_WINDOW_CAPTURE"]="1"
  if a.startup_failure:env["MEDIA_TEST_STARTUP_FAILURE"]="1"

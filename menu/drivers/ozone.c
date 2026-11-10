@@ -10346,7 +10346,7 @@ static void ozone_refresh_thumbnail_image(void *data, size_t i)
    ozone_handle_t *ozone        = (ozone_handle_t*)data;
    struct menu_state   *menu_st = menu_state_get_ptr();
 
-   if (!ozone)
+   if (!ozone || menu_media_controls_settings_active(&ozone->media))
       return;
 
    ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
@@ -12920,8 +12920,9 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       ozone_update_scroll(ozone, allow_animation, node);
 
       /* Update thumbnail */
-      if (   gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-          || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+      if (!menu_media_controls_settings_active(&ozone->media)
+            && (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+               || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)))
       {
          bool update_thumbnails = false;
 
