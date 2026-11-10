@@ -22,6 +22,11 @@
 #define socket_nonblock fake_nonblock
 #define socket_receive_all_nonblocking fake_receive
 #define socket_send_all_nonblocking fake_send
+#ifdef HAVE_SSL
+#define ssl_socket_receive_all_nonblocking fake_tls_receive
+#define ssl_socket_send_all_nonblocking fake_tls_send
+#define ssl_socket_flush_nonblocking fake_tls_flush
+#endif
 #include "../../../net/net_rtmp_socket.c"
 #include <assert.h>
 #include <stdio.h>
@@ -32,6 +37,11 @@ static size_t sent, write_limit, incoming_size;
 static unsigned reads, writes;
 static const void *stalled;
 static bool configure_fail, eof, send_fail;
+#ifdef HAVE_SSL
+static unsigned tls_reads, tls_writes, flushes;
+static int flush_result;
+static unsigned tls_token;
+#endif
 
 bool fake_nonblock(int fd)
 {
@@ -74,6 +84,29 @@ ssize_t fake_send(int fd, const void *data, size_t size, bool no_signal)
    sent += count;
    return (ssize_t)count;
 }
+
+#ifdef HAVE_SSL
+ssize_t fake_tls_receive(void *ssl, bool *error, void *data, size_t size)
+{
+   assert(ssl == &tls_token);
+   tls_reads++;
+   return fake_receive(99, error, data, size);
+}
+
+ssize_t fake_tls_send(void *ssl, const void *data, size_t size, bool no_signal)
+{
+   assert(ssl == &tls_token);
+   tls_writes++;
+   return fake_send(99, data, size, no_signal);
+}
+
+int fake_tls_flush(void *ssl)
+{
+   assert(ssl == &tls_token);
+   flushes++;
+   return flush_result;
+}
+#endif
 
 static net_rtmp_session_t *make_session(void)
 {
@@ -155,8 +188,49 @@ static void retained_input(void)
    assert(net_rtmp_session_free(session));
 }
 
+#ifdef HAVE_SSL
+static void tls_backpressure(void)
+{
+   net_rtmp_session_t *session = make_session();
+   net_rtmp_socket_t *socket;
+   unsigned before;
+   assert(session && !net_rtmp_socket_new_tls(session, 99, NULL));
+   socket = net_rtmp_socket_new_tls(session, 99, &tls_token);
+   assert(socket);
+   tls_reads = tls_writes = flushes = 0;
+   flush_result = 0;
+   write_limit = 0;
+   assert(net_rtmp_socket_step(socket, 0) == NET_RTMP_SOCKET_IDLE);
+   assert(tls_reads == 1 && tls_writes == 1 && !flushes);
+   write_limit = 7;
+   assert(net_rtmp_socket_step(socket, 0) == NET_RTMP_SOCKET_PROGRESS);
+   assert(sent == 7 && tls_writes == 2);
+   before = tls_writes;
+   assert(net_rtmp_socket_step(socket, 0) == NET_RTMP_SOCKET_IDLE);
+   assert(tls_writes == before && flushes == 1 && sent == 7);
+   assert(!net_rtmp_socket_flush(socket));
+   assert(tls_writes == before && flushes == 2);
+   flush_result = 1;
+   assert(net_rtmp_socket_step(socket, 0) == NET_RTMP_SOCKET_PROGRESS);
+   assert(tls_writes == before + 1 && sent == 14);
+   flush_result = -1;
+   assert(net_rtmp_socket_flush(socket) == -1);
+   before = reads + writes + flushes;
+   assert(net_rtmp_socket_step(socket, 0) == NET_RTMP_SOCKET_ERROR);
+   assert(net_rtmp_socket_flush(socket) == -1);
+   assert(reads + writes + flushes == before);
+   assert(net_rtmp_session_status(session, NULL, NULL) == NET_RTMP_SESSION_FAILED);
+   net_rtmp_socket_free(socket);
+   assert(net_rtmp_session_free(session));
+   puts("PASS RTMPS borrowed TLS, stalled write retry, bounded flush and cancellation");
+}
+#endif
+
 int main(void)
 {
+#ifdef HAVE_SSL
+   tls_backpressure();
+#endif
    backpressure();
    failures();
    retained_input();

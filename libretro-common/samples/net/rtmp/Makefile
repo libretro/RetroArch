@@ -12,6 +12,7 @@ endif
 TARGETS := rtmp_chunk_test$(EXE) rtmp_handshake_test$(EXE) rtmp_receive_test$(EXE) rtmp_command_test$(EXE) rtmp_reply_test$(EXE) rtmp_publish_test$(EXE) rtmp_control_test$(EXE) rtmp_session_test$(EXE) rtmp_socket_test$(EXE) rtmp_socket_native_test$(EXE) rtmp_connect_test$(EXE) rtmp_connect_select_test$(EXE)
 TARGETS += rtmp_resolve_test$(EXE)
 TARGETS += rtmp_resolve_native_test$(EXE)
+TARGETS += rtmps_socket_test$(EXE)
 all: $(TARGETS)
 rtmp_resolve_test$(EXE): rtmp_resolve_test.c $(LRC)/net/net_resolve.c $(LRC)/include/net/net_resolve.h
 	$(CC) $(CFLAGS) -D_GNU_SOURCE -o $@ $< $(LDFLAGS)
@@ -24,8 +25,16 @@ rtmp_session_test$(EXE): rtmp_session_test.c $(SESSION) $(wildcard $(LRC)/includ
 	$(CC) $(CFLAGS) -o $@ rtmp_session_test.c $(SESSION) $(LDFLAGS)
 rtmp_socket_test$(EXE): rtmp_socket_test.c $(SESSION) $(LRC)/net/net_rtmp_socket.c $(wildcard $(LRC)/include/net/net_rtmp*.h)
 	$(CC) $(CFLAGS) -D_GNU_SOURCE -o $@ rtmp_socket_test.c $(SESSION) $(LDFLAGS)
+rtmps_socket_test$(EXE): rtmp_socket_test.c $(SESSION) $(LRC)/net/net_rtmp_socket.c $(LRC)/include/net/net_socket_ssl.h $(wildcard $(LRC)/include/net/net_rtmp*.h)
+	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_SSL -o $@ rtmp_socket_test.c $(SESSION) $(LDFLAGS)
 NETWORK := $(LRC)/net/net_socket.c $(LRC)/net/net_compat.c $(LRC)/features/features_cpu.c $(LRC)/string/stdstring.c $(LRC)/string/rstrtod.c $(LRC)/compat/compat_strl.c $(LRC)/compat/compat_posix_string.c $(LRC)/encodings/encoding_utf.c $(LRC)/time/rtime.c
 NETWORK_OBJS := $(call sample_objs,$(NETWORK:.c=.o))
+TLS_SRC := $(LRC)/net/net_socket_ssl_retro.c $(LRC)/crypto/crypto.c $(LRC)/crypto/kdf.c $(LRC)/crypto/pk.c $(LRC)/crypto/x509.c \
+ $(LRC)/hash/lrc_hash.c $(LRC)/utils/md5.c $(LRC)/encodings/encoding_base64.c \
+ $(LRC)/streams/file_stream.c $(LRC)/vfs/vfs_implementation.c $(LRC)/file/file_path.c \
+ $(LRC)/file/file_path_io.c $(LRC)/compat/fopen_utf8.c $(LRC)/rthreads/retro_eventcount.c
+TLS_OBJS := $(call sample_objs,$(TLS_SRC:.c=.o))
+$(TLS_OBJS): CFLAGS += -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_CRYPTO -DHAVE_THREADS
 NETWORK_LIBS := -lm $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),-lws2_32 -lwinmm,)
 RESOLVE_THREAD_OBJ := $(call sample_objs,$(LRC)/rthreads/rthreads.o)
 $(RESOLVE_THREAD_OBJ): $(LRC)/rthreads/rthreads.c
@@ -35,6 +44,8 @@ rtmp_resolve_native_test$(EXE): rtmp_resolve_native_test.c $(LRC)/net/net_resolv
 	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_THREADS -o $@ $< $(LRC)/net/net_resolve.c $(RESOLVE_THREAD_OBJ) $(NETWORK_OBJS) $(LDFLAGS) $(NETWORK_LIBS) $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),,-pthread)
 rtmp_socket_native_test$(EXE): rtmp_socket_native_test.c $(SESSION) $(NETWORK_OBJS) $(RESOLVE_THREAD_OBJ) $(LRC)/net/net_resolve.c $(LRC)/include/net/net_resolve.h $(LRC)/net/net_rtmp_socket.c $(wildcard $(LRC)/include/net/net_rtmp*.h)
 	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_THREADS -o $@ rtmp_socket_native_test.c $(SESSION) $(LRC)/net/net_rtmp_socket.c $(LRC)/net/net_resolve.c $(RESOLVE_THREAD_OBJ) $(NETWORK_OBJS) $(LDFLAGS) $(NETWORK_LIBS) $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),,-pthread)
+rtmps_socket_native_test$(EXE): rtmp_socket_native_test.c $(SESSION) $(NETWORK_OBJS) $(TLS_OBJS) $(RESOLVE_THREAD_OBJ) $(LRC)/net/net_resolve.c $(LRC)/include/net/net_resolve.h $(LRC)/net/net_rtmp_socket.c $(LRC)/include/net/net_socket_ssl.h $(wildcard $(LRC)/include/net/net_rtmp*.h)
+	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_THREADS -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_CRYPTO -o $@ rtmp_socket_native_test.c $(SESSION) $(LRC)/net/net_rtmp_socket.c $(LRC)/net/net_resolve.c $(RESOLVE_THREAD_OBJ) $(NETWORK_OBJS) $(TLS_OBJS) $(LDFLAGS) $(NETWORK_LIBS) $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),,-pthread)
 $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) $(filter-out -pedantic -Werror,$(CFLAGS)) -D_GNU_SOURCE -c -o $@ $<
@@ -68,6 +79,7 @@ check: all
 	$(RUNNER) ./rtmp_control_test$(EXE)
 	$(RUNNER) ./rtmp_session_test$(EXE)
 	$(RUNNER) ./rtmp_socket_test$(EXE)
+	$(RUNNER) ./rtmps_socket_test$(EXE)
 	python3 run.py --runner "$(RUNNER)" ./rtmp_chunk_test$(EXE)
 	python3 receive.py --runner "$(RUNNER)" ./rtmp_receive_test$(EXE)
 	python3 command.py --runner "$(RUNNER)" ./rtmp_command_test$(EXE)
@@ -78,6 +90,8 @@ peer-check: all
 	python3 session_peer.py --runner "$(RUNNER)" --socket-binary ./rtmp_socket_native_test$(EXE) ./rtmp_session_test$(EXE)
 	python3 media_peer.py --runner "$(RUNNER)" ./rtmp_socket_native_test$(EXE)
 clean:
+	rm -f rtmps_socket_native_test rtmps_socket_native_test.exe
+	rm -f rtmps_socket_test rtmps_socket_test.exe
 	rm -f rtmp_resolve_test rtmp_resolve_test.exe
 	rm -f rtmp_resolve_native_test rtmp_resolve_native_test.exe
 	rm -rf $(SAMPLE_OBJDIR)

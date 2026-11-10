@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Independent decode oracle for native RTMP audio/video delivery."""
 import argparse
+from contextlib import ExitStack
 import hashlib
 import json
+import os
 from pathlib import Path
 import shlex
 import socket
@@ -11,6 +13,7 @@ import tempfile
 import time
 
 from session_peer import native_ffmpeg
+from tls_relay import TlsRelay
 
 
 def decode(ffmpeg, path, audio):
@@ -20,7 +23,7 @@ def decode(ffmpeg, path, audio):
                           check=True, stdout=subprocess.PIPE, timeout=20).stdout
 
 
-def run(binary, runner, legacy):
+def run(binary, runner, legacy, tls=None):
     ffmpeg = native_ffmpeg()
     with tempfile.TemporaryDirectory(prefix='rtmp-media-') as temp:
         root = Path(temp)
@@ -46,13 +49,21 @@ def run(binary, runner, legacy):
             reserve.bind(('127.0.0.1', 0))
             port = reserve.getsockname()[1]
         url = f'rtmp://127.0.0.1:{port}/live'
-        with (root / 'receiver.log').open('w+b') as log:
+        with ExitStack() as stack, (root / 'receiver.log').open('w+b') as log:
             server = subprocess.Popen([ffmpeg, '-v', 'error', '-listen', '1', '-timeout',
                                        '10', '-copyts', '-i', url + '/test', '-map', '0',
                                        '-c', 'copy', '-f', 'flv', str(received)],
                                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                       stderr=log)
             try:
+                relay = stack.enter_context(TlsRelay(root, port, tls)) if tls else None
+                client_url = f'rtmps://localhost:{relay.port}/live' if relay else url
+                client_port = relay.port if relay else port
+                env = os.environ.copy()
+                if relay:
+                    env['RTMPS_CA'] = str(relay.ca)
+                    if 'wine' in shlex.split(runner):
+                        env['RTMPS_CA'] = 'Z:' + str(relay.ca).replace('/', '\\')
                 deadline = time.monotonic() + 20
                 fixture_arg = str(fixture)
                 if 'wine' in shlex.split(runner) and fixture.is_absolute():
@@ -61,8 +72,9 @@ def run(binary, runner, legacy):
                     if time.monotonic() >= deadline:
                         raise TimeoutError('native media publisher did not connect')
                     result = subprocess.run(shlex.split(runner) + [str(Path(binary).resolve()),
-                                            url, str(port), 'legacy' if legacy else 'standard',
-                                            fixture_arg], timeout=15, capture_output=True)
+                                            client_url, str(client_port),
+                                            'legacy' if legacy else 'standard',
+                                            fixture_arg], timeout=15, capture_output=True, env=env)
                     if result.returncode == 0:
                         break
                     if result.returncode != 77 or server.poll() is not None:
@@ -93,14 +105,16 @@ def run(binary, runner, legacy):
             if not audio:
                 assert len(actual) == 48 * 320 * 240 * 3 // 2
             hashes['audio' if audio else 'video'] = hashlib.sha256(actual).hexdigest()
-        print('PASS native RTMP H.264/AAC decoded A/V, ' +
+        print('PASS native ' + ('RTMPS TLS ' + tls if tls else 'RTMP')
+              + ' H.264/AAC decoded A/V, ' +
               ('legacy' if legacy else 'standard') + ': ' + json.dumps(hashes))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--runner', default='')
+    parser.add_argument('--tls', choices=['1.2', '1.3'])
     parser.add_argument('binary')
     args = parser.parse_args()
-    run(args.binary, args.runner, False)
-    run(args.binary, args.runner, True)
+    run(args.binary, args.runner, False, args.tls)
+    run(args.binary, args.runner, True, args.tls)

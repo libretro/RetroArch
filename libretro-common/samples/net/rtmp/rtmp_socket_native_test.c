@@ -21,6 +21,10 @@
  */
 #include <net/net_rtmp_socket.h>
 #include <net/net_socket.h>
+#ifdef HAVE_SSL
+#include <net/net_socket_ssl.h>
+#include <streams/file_stream.h>
+#endif
 #include <net/net_resolve.h>
 #include <rthreads/rthreads.h>
 #include <retro_timers.h>
@@ -94,6 +98,7 @@ static bool resolve_dispatch(void (*work)(void*), void *job, void *data)
    return *thread != NULL;
 }
 
+#ifndef HAVE_SSL
 static void finish_transport(int fd)
 {
    uint8_t input[256];
@@ -113,12 +118,58 @@ static void finish_transport(int fd)
          socket_wait(fd, &read, &write, 10);
    }
 }
+#else
+static void *connect_tls(int fd)
+{
+   const char *path = getenv("RTMPS_CA");
+   char *pem = NULL;
+   int64_t size = 0;
+   void *ssl;
+   int result;
+   retro_time_t deadline = cpu_features_get_time_usec() + 10000000;
+   assert(path && filestream_read_file(path, (void**)&pem, &size));
+   assert(pem && size > 0);
+   ssl_socket_retro_set_trust_pem(pem, (size_t)size);
+   ssl = ssl_socket_init(fd, "localhost");
+   assert(ssl);
+   do
+   {
+      bool read = false, write = false;
+      assert(cpu_features_get_time_usec() < deadline);
+      result = ssl_socket_handshake_step(ssl, &read, &write);
+      assert(result >= 0);
+      if (!result && (read || write))
+         assert(socket_wait(fd, &read, &write, 5000));
+   } while (!result);
+   ssl_socket_retro_set_trust_pem(NULL, 0);
+   free(pem);
+   return ssl;
+}
+
+static void finish_tls(net_rtmp_socket_t *transport, int fd)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 5000000;
+   int result;
+   do
+   {
+      bool read = false, write = true;
+      assert(cpu_features_get_time_usec() < deadline);
+      result = net_rtmp_socket_flush(transport);
+      assert(result >= 0);
+      if (!result)
+         assert(socket_wait(fd, &read, &write, 1000));
+   } while (!result);
+}
+#endif
 
 int main(int argc, char **argv)
 {
    net_rtmp_publish_config_t config;
    net_rtmp_session_t *session;
    net_rtmp_socket_t *transport;
+#ifdef HAVE_SSL
+   void *ssl;
+#endif
    void *address = NULL;
    net_resolve_t *resolver;
    sthread_t *resolver_thread = NULL;
@@ -171,7 +222,12 @@ int main(int argc, char **argv)
       random_bytes[i] = (uint8_t)(i * 13 + 1);
    session = net_rtmp_session_new(&config, random_bytes, 0, 65536, 8);
    assert(session);
+#ifdef HAVE_SSL
+   ssl = connect_tls(fd);
+   transport = net_rtmp_socket_new_tls(session, fd, ssl);
+#else
    transport = net_rtmp_socket_new(session, fd);
+#endif
    assert(transport);
    deadline = cpu_features_get_time_usec() + 10000000;
    while (net_rtmp_session_status(session, &stream, &sent) != NET_RTMP_SESSION_READY)
@@ -188,10 +244,19 @@ int main(int argc, char **argv)
    {
       assert(net_rtmp_session_chunk_size(session, 4096));
       send_media(session, transport, fd, argv[4]);
+#ifdef HAVE_SSL
+      finish_tls(transport, fd);
+#else
       finish_transport(fd);
+#endif
    }
    net_rtmp_socket_free(transport);
+#ifdef HAVE_SSL
+   ssl_socket_close(ssl);
+   ssl_socket_free(ssl);
+#else
    socket_close(fd);
+#endif
    assert(net_rtmp_session_free(session));
    puts("PASS native nonblocking TCP publish session");
    return 0;

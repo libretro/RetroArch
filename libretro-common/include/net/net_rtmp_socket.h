@@ -35,6 +35,15 @@ RETRO_BEGIN_DECLS
  * nonblocking; neither name resolution nor connection setup occurs here.
  * This worker is the session's sole I/O owner until free. */
 net_rtmp_socket_t *net_rtmp_socket_new(net_rtmp_session_t *session, int fd);
+#ifdef HAVE_SSL
+/* Borrows a completed TLS connection on fd. Caller closes/frees TLS after
+ * retiring the pump. Handshake scheduling remains with the caller. */
+net_rtmp_socket_t *net_rtmp_socket_new_tls(net_rtmp_session_t *session,
+      int fd, void *ssl);
+#endif
+/* Drains bytes already accepted by TLS, not unconsumed session output.
+ * 1: drained, 0: needs writable readiness, -1: failed. Plain sockets return 1. */
+int net_rtmp_socket_flush(net_rtmp_socket_t *socket);
 /* One bounded receive/feed/send pass. No allocation, poll, wait or clock. */
 int net_rtmp_socket_step(net_rtmp_socket_t *socket, uint32_t receive_time);
 /* Retires this pump's session borrows and cancels it. Caller then closes the
