@@ -7,6 +7,8 @@ on:
     paths:
       - 'record/**'
       - 'libretro-common/net/net_rtmp*'
+      - 'libretro-common/net/net_socket.c'
+      - 'libretro-common/include/net/net_socket.h'
       - 'libretro-common/include/net/net_rtmp*'
       - 'libretro-common/formats/flv/**'
       - 'libretro-common/include/formats/rflv_mux.h'
@@ -24,6 +26,8 @@ on:
     paths:
       - 'record/**'
       - 'libretro-common/net/net_rtmp*'
+      - 'libretro-common/net/net_socket.c'
+      - 'libretro-common/include/net/net_socket.h'
       - 'libretro-common/include/net/net_rtmp*'
       - 'libretro-common/formats/flv/**'
       - 'libretro-common/include/formats/rflv_mux.h'

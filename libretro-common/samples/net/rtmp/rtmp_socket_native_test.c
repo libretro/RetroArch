@@ -120,9 +120,18 @@ int main(int argc, char **argv)
    assert(port && port <= 65535);
    fd = socket_init(&address, (uint16_t)port, "127.0.0.1", SOCKET_TYPE_STREAM, AF_INET);
    assert(fd >= 0 && address);
-   result = socket_connect(fd, address);
+   result = socket_connect_begin(fd, address);
+   deadline = cpu_features_get_time_usec() + 5000000;
+   while (result == SOCKET_CONNECT_PENDING)
+   {
+      bool read = false, write = true;
+      assert(cpu_features_get_time_usec() < deadline);
+      result = socket_connect_step(fd, address);
+      if (result == SOCKET_CONNECT_PENDING)
+         socket_wait(fd, &read, &write, 10);
+   }
    freeaddrinfo_retro((struct addrinfo*)address);
-   if (result < 0)
+   if (result != SOCKET_CONNECT_READY)
    {
       socket_close(fd);
       return 77;

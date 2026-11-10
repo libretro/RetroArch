@@ -9,7 +9,12 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: rtmp_chunk_test$(EXE) rtmp_handshake_test$(EXE) rtmp_receive_test$(EXE) rtmp_command_test$(EXE) rtmp_reply_test$(EXE) rtmp_publish_test$(EXE) rtmp_control_test$(EXE) rtmp_session_test$(EXE) rtmp_socket_test$(EXE) rtmp_socket_native_test$(EXE)
+TARGETS := rtmp_chunk_test$(EXE) rtmp_handshake_test$(EXE) rtmp_receive_test$(EXE) rtmp_command_test$(EXE) rtmp_reply_test$(EXE) rtmp_publish_test$(EXE) rtmp_control_test$(EXE) rtmp_session_test$(EXE) rtmp_socket_test$(EXE) rtmp_socket_native_test$(EXE) rtmp_connect_test$(EXE) rtmp_connect_select_test$(EXE)
+all: $(TARGETS)
+rtmp_connect_test$(EXE): rtmp_connect_test.c $(LRC)/net/net_socket.c $(LRC)/include/net/net_socket.h
+	$(CC) $(CFLAGS) -D_GNU_SOURCE -Wno-unused-function -Wno-unused-parameter -ffunction-sections -fdata-sections -o $@ $< $(LDFLAGS) -Wl,--gc-sections $(NETWORK_LIBS)
+rtmp_connect_select_test$(EXE): rtmp_connect_test.c $(LRC)/net/net_socket.c $(LRC)/include/net/net_socket.h
+	$(CC) $(CFLAGS) -D_GNU_SOURCE -DCONNECT_FORCE_SELECT -Wno-unused-function -Wno-unused-parameter -ffunction-sections -fdata-sections -o $@ $< $(LDFLAGS) -Wl,--gc-sections $(NETWORK_LIBS)
 SESSION := $(LRC)/net/net_rtmp_session.c $(LRC)/net/net_rtmp_handshake.c $(LRC)/net/net_rtmp_chunk.c $(LRC)/net/net_rtmp_receive.c $(LRC)/net/net_rtmp_publish.c $(LRC)/net/net_rtmp_command.c $(LRC)/net/net_rtmp_reply.c $(LRC)/net/net_rtmp_control.c
 rtmp_session_test$(EXE): rtmp_session_test.c $(SESSION) $(wildcard $(LRC)/include/net/net_rtmp*.h)
 	$(CC) $(CFLAGS) -o $@ rtmp_session_test.c $(SESSION) $(LDFLAGS)
@@ -40,6 +45,8 @@ PUBLISH_HEADERS := $(LRC)/include/net/net_rtmp_publish.h $(LRC)/include/net/net_
 rtmp_publish_test$(EXE): rtmp_publish_test.c $(PUBLISH) $(PUBLISH_HEADERS)
 	$(CC) $(CFLAGS) -o $@ rtmp_publish_test.c $(PUBLISH) $(LDFLAGS)
 check: all
+	$(RUNNER) ./rtmp_connect_test$(EXE)
+	$(RUNNER) ./rtmp_connect_select_test$(EXE)
 	$(RUNNER) ./rtmp_chunk_test$(EXE)
 	$(RUNNER) ./rtmp_handshake_test$(EXE)
 	$(RUNNER) ./rtmp_receive_test$(EXE)
@@ -69,4 +76,5 @@ clean:
 	rm -f rtmp_session_test rtmp_session_test.exe
 	rm -f rtmp_socket_test rtmp_socket_test.exe
 	rm -f rtmp_socket_native_test rtmp_socket_native_test.exe
+	rm -f rtmp_connect_test rtmp_connect_test.exe rtmp_connect_select_test rtmp_connect_select_test.exe
 .PHONY: all check peer-check clean

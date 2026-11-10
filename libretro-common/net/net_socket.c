@@ -801,6 +801,87 @@ static void socket_set_last_error(int err)
 }
 #endif
 
+int socket_connect_begin(int fd, void *data)
+{
+   int result;
+   if (fd < 0 || !data || !socket_nonblock(fd))
+      return SOCKET_CONNECT_ERROR;
+   result = socket_connect(fd, data);
+   if (!result)
+      return SOCKET_CONNECT_READY;
+   return isinprogress(result) || isagain(result)
+      ? SOCKET_CONNECT_PENDING : SOCKET_CONNECT_ERROR;
+}
+
+int socket_connect_step(int fd, void *data)
+{
+   int result;
+   if (fd < 0 || !data)
+      return SOCKET_CONNECT_ERROR;
+#ifdef NETWORK_HAVE_POLL
+   {
+      struct pollfd fds = {0};
+      NET_POLL_FD(fd, &fds);
+      NET_POLL_EVENT(POLLOUT, &fds);
+      result = socket_poll(&fds, 1, 0);
+      if (result < 0)
+         return SOCKET_CONNECT_ERROR;
+      if (!result || !NET_POLL_HAS_EVENT(POLLOUT | POLLERR | POLLHUP | POLLNVAL, &fds))
+         return SOCKET_CONNECT_PENDING;
+   }
+#else
+   {
+      fd_set writable, errors;
+      struct timeval timeout;
+#ifndef _WIN32
+      if (fd >= FD_SETSIZE)
+         return SOCKET_CONNECT_ERROR;
+#endif
+      FD_ZERO(&writable);
+      FD_ZERO(&errors);
+      FD_SET(fd, &writable);
+      FD_SET(fd, &errors);
+      timeout.tv_sec = timeout.tv_usec = 0;
+      result = socket_select(fd + 1, NULL, &writable, &errors, &timeout);
+      if (result < 0)
+         return SOCKET_CONNECT_ERROR;
+      if (!result || (!FD_ISSET(fd, &writable) && !FD_ISSET(fd, &errors)))
+         return SOCKET_CONNECT_PENDING;
+   }
+#endif
+#if defined(GEKKO) && !defined(GEKKO_NATIVE)
+   result = socket_connect(fd, data);
+   if (!result || -result == EISCONN)
+      return SOCKET_CONNECT_READY;
+#elif defined(_3DS) || defined(GEKKO_NATIVE)
+   result = socket_connect(fd, data);
+   if (!result || errno == EISCONN)
+      return SOCKET_CONNECT_READY;
+#elif defined(WIIU)
+   result = socket_connect(fd, data);
+   if (!result || socketlasterr() == SO_EISCONN)
+      return SOCKET_CONNECT_READY;
+#else
+   {
+      int error = -1;
+      socklen_t size = sizeof(error);
+      result = getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&error, &size);
+      if (result < 0 || size != sizeof(error))
+         return SOCKET_CONNECT_ERROR;
+      if (!error)
+         return SOCKET_CONNECT_READY;
+#ifdef SOCKET_CONNECT_SETS_ERROR
+      socket_set_last_error(error);
+#endif
+      return SOCKET_CONNECT_ERROR;
+   }
+#endif
+#if defined(GEKKO) || defined(GEKKO_NATIVE) || defined(_3DS) || defined(WIIU)
+   return isinprogress(result) || isagain(result)
+      ? SOCKET_CONNECT_PENDING : SOCKET_CONNECT_ERROR;
+#endif
+}
+
 bool socket_connect_with_timeout(int fd, void *data, int timeout)
 {
    int res;

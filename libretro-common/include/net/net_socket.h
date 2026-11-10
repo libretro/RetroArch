@@ -52,6 +52,13 @@ enum socket_protocol
    SOCKET_PROTOCOL_UDP
 };
 
+enum socket_connect_result
+{
+   SOCKET_CONNECT_ERROR = -1,
+   SOCKET_CONNECT_PENDING,
+   SOCKET_CONNECT_READY
+};
+
 typedef struct socket_target
 {
    unsigned port;
@@ -100,6 +107,13 @@ ssize_t socket_receive_all_nonblocking(int fd, bool *error,
 bool socket_bind(int fd, void *data);
 
 int socket_connect(int fd, void *data);
+
+/* A resolved addrinfo, never a hostname. Begin once on a fresh descriptor;
+ * step only after PENDING, and stop after a terminal result. A successful
+ * begin leaves it nonblocking. Caller holds the address and closes to cancel.
+ * No resolution, clock, retry loop or wait; caller schedules/deadlines it. */
+int socket_connect_begin(int fd, void *data);
+int socket_connect_step(int fd, void *data);
 
 bool socket_connect_with_timeout(int fd, void *data, int timeout);
 
