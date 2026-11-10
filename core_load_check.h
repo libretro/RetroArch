@@ -102,6 +102,35 @@ enum core_load_startup
 /* What a refused startup load left, for its failure path; read once */
 enum core_load_startup core_load_check_startup_take(void);
 
+struct core_load_source
+{
+   struct core_identity id;
+   uint8_t sha256[CORE_SHA256_LEN];
+   bool hashed;                 /* sha256 is the running core's */
+};
+
+enum core_load_copy
+{
+   CORE_LOAD_COPY_OFF = 0,      /* no store, or checks off: as before */
+   CORE_LOAD_COPY_CHECK,        /* the copy must match the source */
+   CORE_LOAD_COPY_NONE          /* the running core isn't known: no copy */
+};
+
+/* Main thread: what a copy of the running core at path must match */
+enum core_load_copy core_load_check_copy_source(const char *path,
+      struct core_load_source *src);
+
+typedef struct core_load_match core_load_match_t;
+/* Any thread. NULL when the copy can't be opened, or the source (hashed
+ * only when src has no hash) is no longer the file loaded. */
+core_load_match_t *core_load_match_new(const char *copy_path,
+      const char *src_path, const struct core_load_source *src);
+/* Any thread: 1 while there is more, 0 when the copy matches, -1 not */
+int core_load_match_step(core_load_match_t *m);
+/* Any thread, after 0: loads the copy from the file hashed */
+dylib_t core_load_match_load(core_load_match_t *m);
+void core_load_match_free(core_load_match_t *m);
+
 RETRO_END_DECLS
 
 #endif

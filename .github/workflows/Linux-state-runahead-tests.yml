@@ -14,6 +14,7 @@ on:
       - runahead.c
       - runahead.h
       - runloop.h
+      - core_load_check.h
       - samples/state_rewind/**
       - samples/runahead/**
       - tasks/task_nbio_slice.c
@@ -28,6 +29,7 @@ on:
       - runahead.c
       - runahead.h
       - runloop.h
+      - core_load_check.h
       - samples/state_rewind/**
       - samples/runahead/**
       - tasks/task_nbio_slice.c

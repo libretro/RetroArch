@@ -46,7 +46,11 @@ endif
 
 OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
-all: $(TARGET) runahead_tmpdir_test
+# The same harness built with the load check on
+CHECK_TARGET := runahead_copy_check_test
+CHECK_OBJS   := runahead_copy_check_test.o $(filter-out runahead_copy_test.o,$(OBJS))
+
+all: $(TARGET) $(CHECK_TARGET) runahead_tmpdir_test
 
 runahead_copy_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN runahead core-copy fragment =====/,/===== END runahead core-copy fragment =====/p' $< > $@
@@ -70,6 +74,7 @@ preempt_slab_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN preempt slab =====/,/===== END preempt slab =====/p' $< > $@
 
 runahead_copy_test.o: runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c input_list_fragment.c
+runahead_copy_check_test.o: runahead_copy_test.c runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c input_list_fragment.c
 
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
@@ -81,13 +86,17 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET): $(OBJS)
 	$(CC) -o$@ $(OBJS) $(LDFLAGS)
 
-check: $(TARGET) runahead_tmpdir_test
+$(CHECK_TARGET): $(CHECK_OBJS)
+	$(CC) -o$@ $(CHECK_OBJS) $(LDFLAGS)
+
+check: $(TARGET) $(CHECK_TARGET) runahead_tmpdir_test
 	./$(TARGET)
+	./$(CHECK_TARGET)
 	./runahead_tmpdir_test
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(OBJS) runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c input_list_fragment.c runahead_tmpdir_fragment.c
-	rm -f $(TARGET) runahead_tmpdir_test
+	rm -f $(OBJS) runahead_copy_check_test.o runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c input_list_fragment.c runahead_tmpdir_fragment.c
+	rm -f $(TARGET) $(CHECK_TARGET) runahead_tmpdir_test
 
 .PHONY: clean all check
