@@ -189,6 +189,16 @@ static const uint64_t xxh3_init_acc[8] = {
 #define XXH3_ROTL(x, r) (((x) << (r)) | ((x) >> (64 - (r))))
 #endif
 
+/* Keeps the longer paths, their spills and stack buffer out of the
+ * entry, so short inputs return without a frame */
+#if defined(_MSC_VER)
+#define XXH3_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__)
+#define XXH3_NOINLINE __attribute__((noinline))
+#else
+#define XXH3_NOINLINE
+#endif
+
 static INLINE uint64_t xxh3_rd64(const uint8_t *p)
 {
    uint64_t v;
@@ -318,7 +328,8 @@ static uint64_t xxh3_17to128(const uint8_t *in, size_t len, uint64_t seed)
    return xxh3_avalanche(acc);
 }
 
-static uint64_t xxh3_129to240(const uint8_t *in, size_t len, uint64_t seed)
+static XXH3_NOINLINE uint64_t xxh3_129to240(const uint8_t *in, size_t len,
+      uint64_t seed)
 {
    const uint8_t *k      = xxh3_secret;
    uint64_t       acc    = (uint64_t)len * XXH3_P64_1;
@@ -1202,7 +1213,8 @@ static int xxh3_choose(void)
 }
 #endif
 
-static uint64_t xxh3_long(const uint8_t *in, size_t len, uint64_t seed)
+static XXH3_NOINLINE uint64_t xxh3_long(const uint8_t *in, size_t len,
+      uint64_t seed)
 {
 #if defined(XXH3_HAVE_SSE2)
    int path = retro_atomic_load_acquire_int(&xxh3_path);
