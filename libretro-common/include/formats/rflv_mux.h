@@ -57,12 +57,21 @@ RETRO_BEGIN_DECLS
 /* Single worker owner. Copies AVCDecoderConfigurationRecord and AAC-LC ASC
  * during cold initialization. At least one track; AVC uses four-byte lengths. */
 rflv_mux_t *rflv_mux_new(const rflv_config_t *config);
+/* Native AVC encoder adapter. avcc contains Annex B SPS/PPS (one each).
+ * Cold allocation reserves conversion storage up to max_packet_size.
+ * Other configuration fields retain their ordinary meaning. */
+rflv_mux_t *rflv_mux_new_annexb(const rflv_config_t *config);
 /* Track 1: one length-prefixed AVC access unit; track 2: one raw AAC unit.
  * Accepted input stays borrowed until output release, error or free.
  * BUSY takes nothing. Timestamps use the configured per-track timescale;
  * their millisecond representation must fit a nonnegative signed 32-bit value. */
 int rflv_mux_push(rflv_mux_t *mux, unsigned track,
       const void *data, size_t size, uint64_t dts, uint64_t pts, bool keyframe);
+/* Video only, on a mux created by new_annexb. Immutable native output stays
+ * borrowed until release/error/free. Each step adapts one NAL into reserved
+ * storage: format conversion requires a copy; ordinary push still borrows. */
+int rflv_mux_push_annexb(rflv_mux_t *mux, const void *data, size_t size,
+      uint64_t dts, uint64_t pts, bool keyframe);
 /* One AVC NAL validation step. PACKET repeats until release; BUSY needs input. */
 int rflv_mux_step(rflv_mux_t *mux);
 /* Up to three borrowed spans. No payload copy, allocation, I/O or wait. */

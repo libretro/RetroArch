@@ -45,6 +45,45 @@ static void output(rflv_mux_t *m, FILE *f)
    }
 }
 
+static rflv_mux_t *annexb_mux(const rflv_config_t *c)
+{
+   rflv_config_t config = *c;
+   const unsigned char *avcc = (const unsigned char*)c->avcc;
+   unsigned char *sets;
+   size_t sps, pps, at;
+   rflv_mux_t *mux;
+   assert(c->avcc_size >= 7 && (avcc[5] & 31) == 1);
+   sps = read_be(avcc + 6, 2);
+   at = 8 + sps;
+   assert(at + 3 <= c->avcc_size && avcc[at] == 1);
+   pps = read_be(avcc + at + 1, 2);
+   assert(pps && pps <= c->avcc_size - at - 3);
+   sets = (unsigned char*)malloc(sps + pps + 8);
+   assert(sets);
+   memcpy(sets, "\0\0\0\1", 4);
+   memcpy(sets + 4, avcc + 8, sps);
+   memcpy(sets + sps + 4, "\0\0\0\1", 4);
+   memcpy(sets + sps + 8, avcc + at + 3, pps);
+   config.avcc = sets;
+   config.avcc_size = sps + pps + 8;
+   mux = rflv_mux_new_annexb(&config);
+   free(sets);
+   return mux;
+}
+
+static void annexb_packet(unsigned char *data, size_t size)
+{
+   size_t at = 0, length;
+   while (at < size)
+   {
+      assert(size - at >= 4);
+      length = read_be(data + at, 4);
+      assert(length && length <= size - at - 4);
+      memcpy(data + at, "\0\0\0\1", 4);
+      at += length + 4;
+   }
+}
+
 int main(int argc, char **argv)
 {
    rflv_config_t c;
@@ -56,7 +95,8 @@ int main(int argc, char **argv)
    unsigned pass, type, timestamp, prefix;
    int result, composition;
    int64_t pts;
-   assert(argc == 3);
+   bool annexb = argc == 4;
+   assert(argc == 3 || (annexb && !strcmp(argv[3], "annexb")));
    f = fopen(argv[1], "rb");
    assert(f && !fseek(f, 0, SEEK_END));
    bytes = ftell(f);
@@ -113,7 +153,14 @@ int main(int argc, char **argv)
             composition -= 0x1000000;
          pts = (int64_t)timestamp + composition;
          assert(pts >= 0);
-         result = rflv_mux_push(m, type == 9 ? 1 : 2,
+         if (annexb && type == 9)
+         {
+            annexb_packet(p + 16, length - 5);
+            result = rflv_mux_push_annexb(m, p + 16, length - 5,
+                  timestamp, (uint64_t)pts, (p[11] >> 4) == 1);
+         }
+         else
+            result = rflv_mux_push(m, type == 9 ? 1 : 2,
                p + 11 + prefix, length - prefix, timestamp, (uint64_t)pts,
                type == 9 && (p[11] >> 4) == 1);
          assert(result == RFLV_PROGRESS);
@@ -126,7 +173,7 @@ int main(int argc, char **argv)
       assert(pos == size);
       if (!pass)
       {
-         m = rflv_mux_new(&c);
+         m = annexb ? annexb_mux(&c) : rflv_mux_new(&c);
          f = fopen(argv[2], "wb");
          assert(m && f);
          output(m, f);

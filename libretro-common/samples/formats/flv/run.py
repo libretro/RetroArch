@@ -50,11 +50,14 @@ def main():
                      '-c:v', 'libx264', '-threads', '1', '-bf', str(bframes),
                      '-g', '12', '-c:a', 'aac', '-profile:a', 'aac_low',
                      '-flvflags', 'no_duration_filesize', '-f', 'flv', str(source)])
-            command(shlex.split(args.runner) + [binary, str(source), str(output)])
-            assert probe(source) == probe(output), 'encoded packets or timestamps differ'
-            for audio in (False, True):
-                assert decode(source, audio) == decode(output, audio), 'decoded output differs'
-            print(f'PASS: independent FLV packet/timestamp/video/PCM oracle, B-frames={bframes}')
+            for annexb in (False, True):
+                command(shlex.split(args.runner) + [binary, str(source), str(output)]
+                        + (['annexb'] if annexb else []))
+                assert probe(source) == probe(output), 'encoded packets or timestamps differ'
+                for audio in (False, True):
+                    assert decode(source, audio) == decode(output, audio), 'decoded output differs'
+                print(f'PASS: independent FLV packet/timestamp/video/PCM oracle, '
+                      f'B-frames={bframes}, Annex B={annexb}')
 
 
 if __name__ == '__main__':

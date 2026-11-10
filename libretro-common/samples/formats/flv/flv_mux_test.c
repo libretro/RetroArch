@@ -238,12 +238,60 @@ static void timestamp_limits(void)
    rflv_mux_free(m);
 }
 
+static void annexb(void)
+{
+   static const unsigned char sets[] =
+      { 0, 0, 0, 1, 103, 66, 0, 30, 0, 0, 1, 104 };
+   static const unsigned char packet[] =
+      { 0, 0, 1, 101, 136, 0, 0, 0, 1, 6, 128, 0, 0 };
+   static const unsigned char bad[] = { 0, 0, 1, 0, 0, 1, 101 };
+   rflv_config_t c = config();
+   rflv_mux_t *m;
+   rflv_tag_t tag;
+   const void *converted;
+   c.avcc = sets;
+   c.avcc_size = sizeof(sets);
+   m = rflv_mux_new_annexb(&c);
+   assert(m && rflv_mux_release(m));
+   assert(rflv_mux_get_tag(m, &tag) && tag.spans[1].size == sizeof(avcc));
+   assert(!memcmp(tag.spans[1].data, avcc, sizeof(avcc)));
+   assert(rflv_mux_release(m) && rflv_mux_release(m));
+   assert(rflv_mux_push_annexb(m, packet, sizeof(packet), 0, 0, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS);
+   assert(rflv_mux_push_annexb(m, bad, sizeof(bad), 0, 0, true) == RFLV_BUSY);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_PACKET);
+   assert(rflv_mux_get_tag(m, &tag) && tag.spans[1].size == sizeof(idr));
+   assert(!memcmp(tag.spans[1].data, idr, sizeof(idr)));
+   converted = tag.spans[1].data;
+   assert(rflv_mux_step(m) == RFLV_PACKET && rflv_mux_get_tag(m, &tag));
+   assert(tag.spans[1].data == converted && !memcmp(packet,
+         "\0\0\1\145\210\0\0\0\1\6\200\0\0", sizeof(packet)));
+   assert(rflv_mux_release(m));
+   assert(rflv_mux_push(m, 1, predicted, sizeof(predicted), 9000, 9000, false) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_PACKET);
+   assert(rflv_mux_get_tag(m, &tag) && tag.spans[1].data == predicted);
+   assert(rflv_mux_release(m));
+   assert(rflv_mux_push_annexb(m, bad, sizeof(bad), 18000, 18000, false) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_ERROR && !rflv_mux_finish(m));
+   rflv_mux_free(m);
+   c.max_packet_size = 11;
+   m = rflv_mux_new_annexb(&c);
+   assert(m);
+   headers(m, 5);
+   assert(rflv_mux_push_annexb(m, packet, 11, 0, 0, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_ERROR);
+   rflv_mux_free(m);
+   c.avcc_size = 8;
+   assert(!rflv_mux_new_annexb(&c));
+}
+
 int main(void)
 {
    lifetime();
    invalid();
    single_track();
    timestamp_limits();
+   annexb();
    puts("PASS: FLV framing, borrowed packets, clocks, admission and teardown");
    return 0;
 }

@@ -33,14 +33,17 @@ struct rflv_mux
    uint64_t last[2], input_dts;
    rflv_span_t spans[3];
    uint8_t *config;
+   uint8_t *converted;
    const uint8_t *input;
    size_t avcc_size, asc_size, limit, size, offset, span_count;
+   size_t converted_size;
    uint32_t timestamp;
    int32_t composition;
    unsigned timescale[2], track;
    enum flv_output output;
    uint8_t prefix[16], suffix[4];
    bool pending, scanning, failed, finished, seen[2], keyframe, vcl, idr;
+   bool annexb;
 };
 
 static void flv_uint(uint8_t *out, uint32_t value, unsigned count)
@@ -180,6 +183,101 @@ rflv_mux_t *rflv_mux_new(const rflv_config_t *c)
    return m;
 }
 
+static bool flv_annexb(const uint8_t *data, size_t size, size_t *offset,
+      const uint8_t **nal, size_t *length)
+{
+   size_t start = *offset, at, zeros = 0, end;
+   while (start < size && !data[start])
+      start++;
+   if (start - *offset < 2 || start == size || data[start] != 1)
+      return false;
+   start++;
+   end = size;
+   for (at = start; at < size; at++)
+   {
+      if (!data[at])
+         zeros++;
+      else
+      {
+         if (data[at] == 1 && zeros >= 2)
+         {
+            end = at - zeros;
+            break;
+         }
+         zeros = 0;
+      }
+   }
+   *offset = at < size ? end : size;
+   if (at == size)
+      end -= zeros;
+   if (end <= start)
+      return false;
+   *nal = data + start;
+   *length = end - start;
+   return true;
+}
+
+rflv_mux_t *rflv_mux_new_annexb(const rflv_config_t *c)
+{
+   rflv_config_t config;
+   rflv_mux_t *m;
+   const uint8_t *nal, *sps = NULL, *pps = NULL;
+   uint8_t *avcc;
+   size_t offset = 0, size, sps_size = 0, pps_size = 0;
+   if (!c || !c->avcc || !c->avcc_size || c->avcc_size > 65536
+         || !c->max_packet_size || c->max_packet_size > 0xfffffa)
+      return NULL;
+   while (offset < c->avcc_size)
+   {
+      unsigned type;
+      if (!flv_annexb((const uint8_t*)c->avcc, c->avcc_size, &offset, &nal, &size)
+            || size > 65535 || (nal[0] & 0x80))
+         return NULL;
+      type = nal[0] & 31;
+      if (type == 7 && !sps && size >= 4)
+      {
+         sps = nal;
+         sps_size = size;
+      }
+      else if (type == 8 && !pps)
+      {
+         pps = nal;
+         pps_size = size;
+      }
+      else
+         return NULL;
+   }
+   if (!sps || !pps || sps_size + pps_size > 65536 - 11)
+      return NULL;
+   size = sps_size + pps_size + 11;
+   avcc = (uint8_t*)malloc(size);
+   if (!avcc)
+      return NULL;
+   avcc[0] = 1;
+   memcpy(avcc + 1, sps + 1, 3);
+   avcc[4] = 255;
+   avcc[5] = 225;
+   flv_uint(avcc + 6, (uint32_t)sps_size, 2);
+   memcpy(avcc + 8, sps, sps_size);
+   avcc[8 + sps_size] = 1;
+   flv_uint(avcc + 9 + sps_size, (uint32_t)pps_size, 2);
+   memcpy(avcc + 11 + sps_size, pps, pps_size);
+   config = *c;
+   config.avcc = avcc;
+   config.avcc_size = size;
+   m = rflv_mux_new(&config);
+   free(avcc);
+   if (!m)
+      return NULL;
+   m->converted = (uint8_t*)malloc(m->limit);
+   if (!m->converted)
+   {
+      rflv_mux_free(m);
+      return NULL;
+   }
+   return m;
+}
+
 static bool flv_milliseconds(uint64_t ticks, unsigned scale, uint32_t *result)
 {
    uint64_t seconds = ticks / scale;
@@ -220,6 +318,8 @@ int rflv_mux_push(rflv_mux_t *m, unsigned track, const void *data,
    m->composition = (int32_t)composition;
    m->keyframe = keyframe;
    m->vcl = m->idr = false;
+   m->annexb = false;
+   m->converted_size = 0;
    m->output = FLV_MEDIA;
    m->scanning = track == 1;
    if (track == 2)
@@ -227,8 +327,22 @@ int rflv_mux_push(rflv_mux_t *m, unsigned track, const void *data,
    return RFLV_PROGRESS;
 }
 
+int rflv_mux_push_annexb(rflv_mux_t *m, const void *data, size_t size,
+      uint64_t dts, uint64_t pts, bool keyframe)
+{
+   int result;
+   if (!m || !m->converted)
+      return RFLV_ERROR;
+   result = rflv_mux_push(m, 1, data, size, dts, pts, keyframe);
+   if (result == RFLV_PROGRESS)
+      m->annexb = true;
+   return result;
+}
+
 int rflv_mux_step(rflv_mux_t *m)
 {
+   const uint8_t *nal;
+   size_t size;
    uint32_t length;
    unsigned type;
    if (!m || m->failed)
@@ -244,22 +358,40 @@ int rflv_mux_step(rflv_mux_t *m)
       if (!m->vcl || (!m->seen[0] && !m->idr))
          goto failed;
       m->scanning = false;
-      flv_tag(m, 1, m->input, m->size, m->timestamp, m->composition, m->keyframe, false);
+      flv_tag(m, 1, m->annexb ? m->converted : m->input,
+            m->annexb ? m->converted_size : m->size,
+            m->timestamp, m->composition, m->keyframe, false);
       return RFLV_PACKET;
    }
-   if (m->size - m->offset < 4)
+   if (m->annexb)
+   {
+      if (!flv_annexb(m->input, m->size, &m->offset, &nal, &size)
+            || m->limit - m->converted_size < 4
+            || size > m->limit - m->converted_size - 4)
+         goto failed;
+      flv_uint(m->converted + m->converted_size, (uint32_t)size, 4);
+      memcpy(m->converted + m->converted_size + 4, nal, size);
+      m->converted_size += size + 4;
+   }
+   else
+   {
+      if (m->size - m->offset < 4)
+         goto failed;
+      length = ((uint32_t)m->input[m->offset] << 24) | ((uint32_t)m->input[m->offset + 1] << 16)
+         | ((uint32_t)m->input[m->offset + 2] << 8) | m->input[m->offset + 3];
+      m->offset += 4;
+      if (!length || length > m->size - m->offset)
+         goto failed;
+      nal = m->input + m->offset;
+      m->offset += length;
+   }
+   if (nal[0] & 0x80)
       goto failed;
-   length = ((uint32_t)m->input[m->offset] << 24) | ((uint32_t)m->input[m->offset + 1] << 16)
-      | ((uint32_t)m->input[m->offset + 2] << 8) | m->input[m->offset + 3];
-   m->offset += 4;
-   if (!length || length > m->size - m->offset || (m->input[m->offset] & 0x80))
-      goto failed;
-   type = m->input[m->offset] & 31;
+   type = nal[0] & 31;
    if (!type || type >= 24)
       goto failed;
    m->vcl = m->vcl || type <= 5;
    m->idr = m->idr || type == 5;
-   m->offset += length;
    return RFLV_PROGRESS;
 failed:
    m->failed = true;
@@ -331,5 +463,6 @@ void rflv_mux_free(rflv_mux_t *m)
    if (!m)
       return;
    free(m->config);
+   free(m->converted);
    free(m);
 }
