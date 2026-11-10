@@ -905,6 +905,7 @@ FONTS
 
 #include "../gfx/font_driver.c"
 
+#include "../libretro-common/gfx/font/rtt.c"
 #include "../gfx/drivers_font_renderer/stb.c"
 
 #if defined(HAVE_FREETYPE)

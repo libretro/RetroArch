@@ -24,24 +24,28 @@ owner: font_owner_test.c stubs_retroarch.c $(SRC)
 	$(CC) $(CFLAGS) -DHAVE_THREADS -o $@ font_owner_test.c stubs_retroarch.c \
 	   $(filter-out $(RA)/gfx/font_driver.c,$(SRC)) -lm
 create: font_create_test.c stubs_retroarch.c $(SRC) \
-        $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c
+        $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
+        $(RA)/libretro-common/gfx/font/rtt.c
 	$(CC) $(CFLAGS) -DFONT_TEST_REAL_STB -o $@ $^ -lm
 # The fallback font read on its own thread, against two fonts asking
 # at once: real stb, real rthreads.
 fallback: font_fallback_test.c stubs_retroarch.c $(SRC) \
         $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
+        $(RA)/libretro-common/gfx/font/rtt.c \
         $(RA)/libretro-common/rthreads/rthreads.c
 	$(CC) $(CFLAGS) -DHAVE_THREADS -DFONT_TEST_REAL_STB \
 	   -DFONT_TEST_REAL_THREADS -o $@ $^ -lm
 # A second fallback face for a range the first lacks
 chain: font_fallback_chain_test.c stubs_retroarch.c $(SRC) \
         $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
+        $(RA)/libretro-common/gfx/font/rtt.c \
         $(RA)/libretro-common/rthreads/rthreads.c
 	$(CC) $(CFLAGS) -DHAVE_THREADS -DFONT_TEST_REAL_STB \
 	   -DFONT_TEST_REAL_THREADS -o $@ $^ -lm
 # Cells drawn from in a frame are kept for that frame
 frame: font_frame_test.c stubs_retroarch.c $(SRC) \
-        $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c
+        $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
+        $(RA)/libretro-common/gfx/font/rtt.c
 	$(CC) $(CFLAGS) -DFONT_TEST_REAL_STB -o $@ $^ -lm
 # OpenVG's text path, from the shipping gfx/drivers/vg.c, drawn onto
 # the software OpenVG in font_vg_test.c.
@@ -49,6 +53,7 @@ frame: font_frame_test.c stubs_retroarch.c $(SRC) \
 # its own.
 vg: font_vg_test.c stubs_retroarch.c $(SRC) \
         $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
+        $(RA)/libretro-common/gfx/font/rtt.c \
         $(RA)/gfx/drivers/vg.c $(RA)/gfx/font_layout.h
 	$(CC) $(CFLAGS) -DFONT_TEST_REAL_STB -DHAVE_VG -DHAVE_EGL \
 	   -I$(RA)/tools/platform_stubs/openvg -Ivg_mock \
@@ -62,6 +67,7 @@ SDL2_CFLAGS := $(shell pkg-config --cflags sdl2 2>/dev/null)
 SDL2_LIBS   := $(shell pkg-config --libs sdl2 2>/dev/null)
 sdl2: font_sdl2_test.c stubs_retroarch.c $(SRC) \
         $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
+        $(RA)/libretro-common/gfx/font/rtt.c \
         $(RA)/gfx/drivers/sdl2_gfx.c $(RA)/gfx/font_layout.h
 ifneq ($(SDL2_LIBS),)
 	$(CC) $(CFLAGS) -DFONT_TEST_REAL_STB -DHAVE_SDL2 -DHAVE_MENU $(SDL2_CFLAGS) -no-pie \
@@ -82,6 +88,7 @@ FT_CFLAGS := $(shell pkg-config --cflags freetype2 2>/dev/null)
 FT_LIBS   := $(shell pkg-config --libs freetype2 2>/dev/null)
 omap: font_omap_test.c stubs_retroarch.c $(SRC) \
         $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
+        $(RA)/libretro-common/gfx/font/rtt.c \
         $(RA)/gfx/drivers_font_renderer/freetype.c \
         $(RA)/gfx/drivers/omap_gfx.c $(RA)/gfx/font_layout.h
 ifneq ($(FT_LIBS),)
