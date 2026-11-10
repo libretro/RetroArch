@@ -2,6 +2,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #include <stdlib.h>
 #include <string.h>
+#ifdef ANDROID
+#include <unistd.h>
+#endif
 
 #include <compat/strl.h>
 #include <file/file_path.h>
@@ -48,6 +51,10 @@ struct core_load_check_task
    char *check_path;
    unsigned gen;
    bool hash_live;
+#ifdef ANDROID
+   bool rehash;   /* f hashed again after the enable */
+   bool verity;   /* fs-verity on */
+#endif
 };
 
 enum core_load_grant
@@ -355,6 +362,71 @@ static void core_load_check_task_free(struct core_load_check_task *t)
    free(t);
 }
 
+#ifdef ANDROID
+/* The second hash ended (step 0) or failed (step -1): only the file as
+ * it was checked is recorded */
+static void core_load_check_verity_end(struct core_load_check_task *t,
+      int step)
+{
+   uint8_t sha256[CORE_SHA256_LEN];
+   t->hash_live = false;
+   t->rehash    = false;
+   if (step < 0)
+      core_hash_free(&t->h);
+   else
+   {
+      core_hash_final(&t->h, sha256);
+      /* Enabling may move ctime: the file as it is now, recorded, or
+       * if it changed, what Always Trust records. Without fs-verity
+       * nothing held it while it was hashed. */
+      if (t->verity
+            ? (     !core_file_identity(t->f, &t->c.rec.id)
+                 || !core_file_verity_measure(t->f, &t->c.rec.id))
+            : !core_load_same_file(&t->c.rec.id, t->f))
+         t->c.record = false;
+      if (!memcmp(sha256, t->c.rec.sha256, sizeof(sha256)))
+         return;
+      /* Changed since its hash and now kept so: a Load Once opens
+       * these bytes, so Always Trust takes their hash */
+      memcpy(t->c.rec.sha256, sha256, sizeof(sha256));
+      t->c.rec.build_time = 0;
+      RARCH_WARN("[Core] \"%s\" changed while it was checked.\n", t->path);
+   }
+   t->c.result       = (step < 0) ? CORE_CHECK_ERROR : CORE_CHECK_MODIFIED;
+   t->c.record       = false;
+   t->c.raise_newest = false;
+}
+
+/* After a full check that passed: fs-verity, so the kernel keeps the
+ * file from changing, and its digest goes in the record. Building the
+ * tree reads the whole file: on a task worker only, never the main
+ * thread or the startup's in-place check. True: f is hashed again. */
+static bool core_load_check_verity(struct core_load_check_task *t)
+{
+   int on;
+   if (t->c.result != CORE_CHECK_OK || !t->c.record)
+      return false;
+   /* Can't here (no fs-verity, not our file, a writer has it, an old
+    * kernel's page size): the identity record works as before, unless
+    * the attempt moved the file (f2fs's rollback truncates it) */
+   on = core_file_verity_enable(t->f);
+   if (on <= 0 && core_load_same_file(&t->c.rec.id, t->f))
+      return false;
+   t->verity = (on > 0);
+   /* A write since the hash is kept now, or the file moved: it must
+    * hash the same, the moved one as it is from now */
+   if (     (!t->verity && !core_file_identity(t->f, &t->c.rec.id))
+         || lseek(core_file_fd(t->f), 0, SEEK_SET) != 0
+         || !(t->hash_live = core_hash_init(&t->h)))
+   {
+      core_load_check_verity_end(t, -1);
+      return false;
+   }
+   t->rehash = true;
+   return true;
+}
+#endif
+
 static void core_load_check_handler(retro_task_t *task)
 {
    struct core_load_check_task *t = (struct core_load_check_task*)
@@ -372,8 +444,22 @@ static void core_load_check_handler(retro_task_t *task)
    task_nbio_slice_close(&budget);
    if (step > 0)
       return;
+#ifdef ANDROID
+   if (t->rehash)
+   {
+      core_load_check_verity_end(t, step);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+#endif
    core_load_check_complete(t->s, &t->h, step, t->check_path, &t->c);
    t->hash_live = false;
+#ifdef ANDROID
+   /* The enable reads the whole core in one call, and this handler runs
+    * on the main thread when tasks aren't threaded */
+   if (!task_is_on_main_thread() && core_load_check_verity(t))
+      return;
+#endif
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
