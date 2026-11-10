@@ -411,6 +411,56 @@ static int ryaml_quoted(struct ryaml_parser *ps, const char *s, const char *e,
                case '\\': *w++ = '\\'; break;
                case '"':  *w++ = '"';  break;
                case '\'': *w++ = '\''; break;
+               case ' ':  *w++ = ' ';  break;
+               case 'x':
+               case 'u':
+               case 'U':
+               {
+                  /* \xNN, \uNNNN, \UNNNNNNNN: a code point, as UTF-8 */
+                  int      digits = (c == 'x') ? 2 : (c == 'u') ? 4 : 8;
+                  uint32_t cp     = 0;
+                  int      i;
+                  for (i = 0; i < digits; i++)
+                  {
+                     char h = (r < q) ? *r : 0;
+                     int  d = (h >= '0' && h <= '9') ? h - '0'
+                            : (h >= 'a' && h <= 'f') ? h - 'a' + 10
+                            : (h >= 'A' && h <= 'F') ? h - 'A' + 10 : -1;
+                     if (d < 0)
+                     {
+                        ps->err = 1;
+                        return 0;
+                     }
+                     cp = (cp << 4) | (uint32_t)d;
+                     r++;
+                  }
+                  if (c == 'x' || cp < 0x80)
+                     *w++ = (char)cp;
+                  else if (cp < 0x800)
+                  {
+                     *w++ = (char)(0xC0 | (cp >> 6));
+                     *w++ = (char)(0x80 | (cp & 0x3F));
+                  }
+                  else if (cp < 0x10000)
+                  {
+                     *w++ = (char)(0xE0 | (cp >> 12));
+                     *w++ = (char)(0x80 | ((cp >> 6) & 0x3F));
+                     *w++ = (char)(0x80 | (cp & 0x3F));
+                  }
+                  else if (cp < 0x110000)
+                  {
+                     *w++ = (char)(0xF0 | (cp >> 18));
+                     *w++ = (char)(0x80 | ((cp >> 12) & 0x3F));
+                     *w++ = (char)(0x80 | ((cp >> 6) & 0x3F));
+                     *w++ = (char)(0x80 | (cp & 0x3F));
+                  }
+                  else
+                  {
+                     ps->err = 1;
+                     return 0;
+                  }
+                  break;
+               }
                default:   *w++ = c;    break;
             }
             continue;
@@ -1066,6 +1116,25 @@ static int ryaml_run(struct ryaml_parser *ps)
        * up, or a sequence sitting at the key's own indent. */
       if (ps->pending >= 0)
       {
+         /* The value itself on the line below its key: a scalar (quoted
+          * or plain), a flow collection or an alias, rather than the
+          * entries of a mapping */
+         if (!is_seq_item && indent > ps->pending_indent
+               && (*c == '[' || *c == '{' || *c == '*'
+                  || !ryaml_find_key_colon(c, le)))
+         {
+            int32_t node = ps->pending;
+            int     deferred;
+            int     r;
+            ps->pending = RYAML_NONE;
+            r = ryaml_value(ps, node, ps->pending_indent, c, le, &deferred);
+            if (r == 0 || deferred)
+               return 0;
+            if (r < 0)
+               continue;
+            ps->p = ryaml_next_line(le, ps->end);
+            continue;
+         }
          if (indent > ps->pending_indent
                || (is_seq_item && indent == ps->pending_indent))
          {

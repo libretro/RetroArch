@@ -233,6 +233,50 @@ static void anchors(void)
    ryaml_free(y);
 }
 
+/* As RPCS3's patch.yml writes some values: on the line below the key,
+ * anchored on the key's line; and \x, \u, \U escapes */
+static void below_and_escapes(void)
+{
+   static const char doc[] =
+      "Anchors:\n"
+      "  Notes: &notes\n"
+      "    \"Requires \\\"Stretch\\\" checked.\"\n"
+      "  Plain:\n"
+      "    just text\n"
+      "  Flow:\n"
+      "    [ a, b ]\n"
+      "  Values: &values\n"
+      "    \"Aspect Ratio\":\n"
+      "      Value: 3.5\n"
+      "Use:\n"
+      "  Notes:\n"
+      "    *notes\n"
+      "  Esc: \"nul\\x00 e\\u00e9 g\\U0001F600 sp\\ x\"\n";
+   static const char esc[] = "nul\0 e\xc3\xa9 g\xf0\x9f\x98\x80 sp x";
+   ryaml_t *y = parse(doc);
+   int      anchors, use, n;
+   size_t   len;
+   const char *v;
+
+   printf("values below their keys, escapes\n");
+   CHECK(y != NULL, "parses");
+   if (!y)
+      return;
+   anchors = ryaml_find_child(y, ryaml_root(y), "Anchors");
+   use     = ryaml_find_child(y, ryaml_root(y), "Use");
+   CHECK(val_is(y, ryaml_find_child(y, anchors, "Notes"), "Requires \"Stretch\" checked."), "a quoted scalar below its anchored key");
+   CHECK(val_is(y, ryaml_find_child(y, anchors, "Plain"), "just text"), "a plain scalar below its key");
+   n = ryaml_find_child(y, anchors, "Flow");
+   CHECK(ryaml_is_seq(y, n) && ryaml_num_children(y, n) == 2, "a flow sequence below its key");
+   n = ryaml_find_child(y, anchors, "Values");
+   CHECK(ryaml_is_map(y, n) && val_is(y, ryaml_find_child(y, ryaml_find_child(y, n, "Aspect Ratio"), "Value"), "3.5"),
+         "a quoted key below an anchored key is a mapping's");
+   CHECK(val_is(y, ryaml_find_child(y, use, "Notes"), "Requires \"Stretch\" checked."), "an alias below its key");
+   v = ryaml_val(y, ryaml_find_child(y, use, "Esc"), &len);
+   CHECK(v && len == sizeof(esc) - 1 && !memcmp(v, esc, len), "\\x00, \\u00e9, \\U0001F600 and \\ as bytes and UTF-8");
+   ryaml_free(y);
+}
+
 static void refused(void)
 {
    static const char *bad[] = {
@@ -241,6 +285,7 @@ static void refused(void)
       "a: & \n",
       "b: *later\nlater: &later 1\n",
       "a: &x 1\nb: *x trailing\n",
+      "a: \"\\xZZ\"\n",
    };
    size_t i;
    printf("refused\n");
@@ -298,6 +343,7 @@ int main(void)
    block_scalars();
    patch_file();
    anchors();
+   below_and_escapes();
    refused();
    locations();
    printf(fails ? "ryaml: %d FAILED\n" : "ryaml: ok\n", fails);

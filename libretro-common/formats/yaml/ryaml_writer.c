@@ -182,8 +182,12 @@ static void ryw_text(ryaml_writer_t *w, const char *s, size_t len,
    run = s;
    for (i = 0; i < len; i++)
    {
-      const char *esc = NULL;
-      switch (s[i])
+      static const char hex[] = "0123456789abcdef";
+      unsigned char c   = (unsigned char)s[i];
+      const char   *esc = NULL;
+      char          xb[4];
+      size_t        elen = 2;
+      switch (c)
       {
          case '"':  esc = "\\\""; break;
          case '\\': esc = "\\\\"; break;
@@ -191,12 +195,23 @@ static void ryw_text(ryaml_writer_t *w, const char *s, size_t len,
          case '\r': esc = "\\r";  break;
          case '\t': esc = "\\t";  break;
          case '\0': esc = "\\0";  break;
-         default:   break;
+         default:
+            if (c < 0x20 || c == 0x7f)
+            {
+               /* any other control byte as \xNN */
+               xb[0] = '\\';
+               xb[1] = 'x';
+               xb[2] = hex[c >> 4];
+               xb[3] = hex[c & 15];
+               esc   = xb;
+               elen  = 4;
+            }
+            break;
       }
       if (esc)
       {
          ryw_put(w, run, (size_t)(s + i - run));
-         ryw_put(w, esc, 2);
+         ryw_put(w, esc, elen);
          run = s + i + 1;
       }
    }

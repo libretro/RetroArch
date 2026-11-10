@@ -142,7 +142,7 @@ static unsigned rnd(unsigned n)
    return (rnd_state >> 8) % n;
 }
 
-static const char tricky[] = "-?:,[]{}#&*!|>'\"%@` \t\\\n\r";
+static const char tricky[] = "-?:,[]{}#&*!|>'\"%@` \t\\\n\r\x01\x1b\x7f";
 
 static size_t rnd_text(char *out)
 {
