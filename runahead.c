@@ -54,7 +54,7 @@
 #include "runloop.h"
 #include "verbosity.h"
 #ifdef HAVE_CORE_LOAD_CHECK
-#include "core_trust_runtime.h"
+#include "core_load_check.h"
 #endif
 
 /* ===== BEGIN runahead dense input cache =====
@@ -541,6 +541,12 @@ typedef struct runahead_copy_handle
    char *copy_dst;   /* destination the open copy is writing to */
    dylib_t lib;      /* out_path opened by the task; NULL if it
                       * could not be, and the caller opens it */
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_match_t *match;  /* the copy against the running core */
+   struct core_load_source src;
+   bool check;                /* the copy loads only once it matches */
+   bool mismatch;
+#endif
    bool  started;    /* the open was attempted (once, on pass one) */
    bool  failed;
    unsigned generation;
@@ -735,6 +741,33 @@ static void runahead_copy_task_handler(retro_task_t *task)
       return;
    }
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (h->match)
+   {
+      nbio_budget_t budget;
+      st = 1;
+      task_nbio_slice_open(&budget);
+      while (st > 0 && task_nbio_slice_within_budget(&budget, 0, 0))
+         st = core_load_match_step(h->match);
+      task_nbio_slice_close(&budget);
+      if (st > 0)
+         return;
+      if (st == 0)
+         h->lib = core_load_match_load(h->match);
+      /* No second instance from a copy that doesn't match, or won't
+       * load: the main thread never opens it by path */
+      if (!h->lib)
+      {
+         h->mismatch = (st != 0);
+         h->failed   = true;
+      }
+      core_load_match_free(h->match);
+      h->match = NULL;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+#endif
+
    if (!h->copy)
    {
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
@@ -755,9 +788,21 @@ static void runahead_copy_task_handler(retro_task_t *task)
       h->copy_dst = NULL;
       h->failed   = false;
       /* On the worker under the threaded queue: the frame loop goes
-       * on while the loader maps the copy. A copy that will not
-       * open is still published; the main thread's own open of it
-       * then reports why. */
+       * on while the loader maps the copy. Unchecked, a copy that
+       * will not open is still published; the main thread's own open
+       * of it then reports why. */
+#ifdef HAVE_CORE_LOAD_CHECK
+      if (h->check)
+      {
+         /* Hashed over the next ticks, then loaded from the file hashed */
+         if ((h->match = core_load_match_new(h->out_path, h->src_path,
+                     &h->src)))
+            return;
+         h->mismatch = true;
+         h->failed   = true;
+      }
+      else
+#endif
       h->lib      = runloop_core_dylib_open(h->out_path, true);
    }
    else
@@ -785,6 +830,19 @@ static void runahead_copy_task_cb(retro_task_t *task,
    /* The pipeline is free again in every case below - including
     * the discard path: that task is done. */
    runahead_copy_task_pending = false;
+
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (h->failed && h->out_path)
+   {
+      if (h->mismatch)
+         RARCH_WARN("[Run-Ahead] The core's copy doesn't match the running core: one instance.\n");
+      else
+         RARCH_WARN("[Run-Ahead] The core's copy won't load: one instance.\n");
+      filestream_delete(h->out_path);
+      free(h->out_path);
+      h->out_path = NULL;
+   }
+#endif
 
    if (h->generation != runahead_copy_generation)
    {
@@ -818,6 +876,9 @@ static void runahead_copy_task_free(retro_task_t *task)
       return;
    if ((h = (runahead_copy_handle_t*)task->state))
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      core_load_match_free(h->match);
+#endif
       /* A task cancelled mid-copy still has one open: closing an
        * unfinished copy removes the partial destination. */
       if (h->copy)
@@ -918,6 +979,22 @@ static enum runahead_copy_status runahead_copy_poll(
          h->src_path     = strdup(core_path);
          h->dir_libretro = dir_libretro ? strdup(dir_libretro) : NULL;
          h->generation   = runahead_copy_generation;
+#ifdef HAVE_CORE_LOAD_CHECK
+         switch (core_load_check_copy_source(core_path, &h->src))
+         {
+            case CORE_LOAD_COPY_NONE:
+               free(h->src_path);
+               free(h->dir_libretro);
+               free(h);
+               free(task);
+               return RUNAHEAD_COPY_UNAVAILABLE;
+            case CORE_LOAD_COPY_CHECK:
+               h->check = true;
+               break;
+            default:
+               break;
+         }
+#endif
 
          task->handler   = runahead_copy_task_handler;
          task->state     = h;
@@ -1051,12 +1128,6 @@ static enum runahead_copy_status secondary_core_create(
          || (!runloop_st->load_content_info)
          || ( runloop_st->load_content_info->special))
       return RUNAHEAD_COPY_UNAVAILABLE;
-
-#ifdef HAVE_CORE_LOAD_CHECK
-   /* The copy would load unchecked */
-   if (core_trust_runtime_active())
-      return RUNAHEAD_COPY_UNAVAILABLE;
-#endif
 
    /* The core binary is duplicated by a task; until the copy
     * completes this reports PENDING and the caller runs the

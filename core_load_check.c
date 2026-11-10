@@ -110,6 +110,7 @@ static struct
    struct core_load_slot loaded;  /* the core loaded last */
    struct core_load_slot quick;   /* the last quick pass */
    struct core_check c;
+   struct core_check stage_c;     /* the stage's own quick pass */
    core_file_t *stage_f;          /* the checked file the open uses */
    dylib_t stage_lib;
    char path[PATH_MAX_LENGTH];
@@ -703,6 +704,7 @@ static void core_load_check_stage_start(void)
          core_load_rt.quick.pass = true;
          strlcpy(core_load_rt.quick.path, path,
                sizeof(core_load_rt.quick.path));
+         core_load_rt.stage_c    = core_load_rt.c;
          core_load_rt.stage_f    = f;
          f                       = NULL;
       }
@@ -1272,6 +1274,125 @@ enum core_load_startup core_load_check_startup_take(void)
    return state;
 }
 
+enum core_load_copy core_load_check_copy_source(const char *path,
+      struct core_load_source *src)
+{
+   memset(src, 0, sizeof(*src));
+   if (!core_trust_runtime_active() || !core_trust_runtime_checks_on())
+      return CORE_LOAD_COPY_OFF;
+#ifdef ANDROID
+   if (android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      path = core_load_rt.check_path;
+#endif
+   core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+   /* The record can outlive its core's unload */
+   if (     !core_load_rt.running
+         || !core_load_slot_is(&core_load_rt.loaded, core_load_rt.path))
+      return CORE_LOAD_COPY_NONE;
+   src->id     = core_load_rt.loaded.c.rec.id;
+   src->hashed = core_load_rt.loaded.hashed;
+   if (src->hashed)
+      memcpy(src->sha256, core_load_rt.loaded.c.rec.sha256,
+            CORE_SHA256_LEN);
+   return CORE_LOAD_COPY_CHECK;
+}
+
+struct core_load_match
+{
+   struct core_hash h;
+   struct core_load_source src;
+   struct core_identity id;      /* the copy's, as the match began */
+   uint8_t sha256[CORE_SHA256_LEN];
+   core_file_t *copy;
+   core_file_t *source;          /* open while it is hashed */
+   char *copy_path;
+   bool hash_live;
+};
+
+void core_load_match_free(core_load_match_t *m)
+{
+   if (!m)
+      return;
+   if (m->hash_live)
+      core_hash_free(&m->h);
+   core_file_close(m->copy);
+   core_file_close(m->source);
+   free(m->copy_path);
+   free(m);
+}
+
+core_load_match_t *core_load_match_new(const char *copy_path,
+      const char *src_path, const struct core_load_source *src)
+{
+   core_load_match_t *m = (core_load_match_t*)calloc(1, sizeof(*m));
+   if (!m)
+      return NULL;
+   m->src = *src;
+   if (     !(m->copy_path = strdup(copy_path))
+         || !(m->copy      = core_file_open(copy_path))
+         || !core_file_identity(m->copy, &m->id))
+      goto fail;
+   /* No hash from its check: hash the running core's file, if it is
+    * still the one loaded */
+   if (     !src->hashed
+         && (     !(m->source = core_file_open(src_path))
+               || !core_load_same_file(&src->id, m->source)))
+      goto fail;
+   if (!(m->hash_live = core_hash_init(&m->h)))
+      goto fail;
+   return m;
+fail:
+   core_load_match_free(m);
+   return NULL;
+}
+
+int core_load_match_step(core_load_match_t *m)
+{
+   core_file_t *f                 = m->source ? m->source : m->copy;
+   const struct core_identity *id = m->source ? &m->src.id : &m->id;
+   int step                       = core_hash_step(&m->h, f);
+   if (step > 0)
+      return 1;
+   /* Written since the match began: not the bytes hashed */
+   if (step < 0 || !core_load_same_file(id, f) || m->h.done != id->size)
+      return -1;
+   m->hash_live = false;
+   if (m->source)
+   {
+      core_hash_final(&m->h, m->src.sha256);
+      core_file_close(m->source);
+      m->source    = NULL;
+      m->hash_live = core_hash_init(&m->h);
+      return m->hash_live ? 1 : -1;
+   }
+   core_hash_final(&m->h, m->sha256);
+   return memcmp(m->sha256, m->src.sha256, CORE_SHA256_LEN) ? -1 : 0;
+}
+
+dylib_t core_load_match_load(core_load_match_t *m)
+{
+#ifndef ANDROID
+   core_file_t *f;
+   bool same;
+#endif
+#ifdef _WIN32
+   if (     core_load_dll_appended(m->copy_path)
+         || core_load_verbatim_dot(m->copy_path))
+      return NULL;
+#endif
+#ifndef ANDROID
+   /* Loaded by path outside Android: only while the path still names
+    * the copy hashed, unchanged */
+   f    = core_file_open(m->copy_path);
+   same = f && core_load_same_file(&m->id, f);
+   core_file_close(f);
+   if (!same)
+      return NULL;
+#endif
+   return core_load_file(m->copy, m->copy_path);
+}
+
 bool core_load_check_stage_begin(const char *path)
 {
    if (!core_trust_runtime_active())
@@ -1315,11 +1436,20 @@ dylib_t core_load_check_stage_take(const char *path)
          core_load_rt.stage_lib = NULL;
          /* Not a grant a probe made while it opened */
          core_load_rt.granted   = CORE_LOAD_GRANT_NONE;
-         if (core_load_slot_is(
-                  core_load_rt.stage_grant == CORE_LOAD_GRANT_SLOT
-                  ? &core_load_rt.slot : &core_load_rt.quick,
+         if (core_load_rt.stage_grant == CORE_LOAD_GRANT_QUICK)
+         {
+            /* A probe's quick pass may have taken its place */
+            core_load_slot_clear(&core_load_rt.quick);
+            core_load_rt.quick.c    = core_load_rt.stage_c;
+            core_load_rt.quick.used = true;
+            core_load_rt.quick.pass = true;
+            strlcpy(core_load_rt.quick.path, core_load_rt.stage_path,
+                  sizeof(core_load_rt.quick.path));
+            core_load_rt.granted    = CORE_LOAD_GRANT_QUICK;
+         }
+         else if (core_load_slot_is(&core_load_rt.slot,
                   core_load_rt.stage_path))
-            core_load_rt.granted = core_load_rt.stage_grant;
+            core_load_rt.granted = CORE_LOAD_GRANT_SLOT;
       }
    }
    core_load_check_stage_cancel();

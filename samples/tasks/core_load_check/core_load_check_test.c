@@ -2701,7 +2701,115 @@ static void test_startup_seed_park(void)
    startup_seed_park(true, SEED_PARK_GONE);
 }
 
+/* A copy of path as run-ahead makes one, a new file */
+static bool copy_core(const char *from, const char *to)
+{
+   void *buf   = NULL;
+   int64_t len = 0;
+   bool ok;
+   if (!filestream_read_file(from, &buf, &len))
+      return false;
+   filestream_delete(to);
+   ok = filestream_write_file(to, buf, len);
+   free(buf);
+   return ok;
+}
+
+static int match_all(core_load_match_t *m)
+{
+   int st = 1;
+   while (st > 0)
+      st = core_load_match_step(m);
+   return st;
+}
+
+static void test_copy(void)
+{
+   dylib_t lib  = NULL;
+   dylib_t copy = NULL;
+   struct core_load_source src;
+   core_load_match_t *m = NULL;
+   char core[256];
+   char tmp[256];
+   start(false);
+   CHECK(put_core(core, "ra_libretro" LIB_EXT, 'a'));
+   strlcpy(tmp, TMP_DIR "/ra_copy" LIB_EXT, sizeof(tmp));
+   /* Not the running core: no copy */
+   CHECK(core_load_check_copy_source(core, &src) == CORE_LOAD_COPY_NONE);
+   /* Loaded through a full check: its hash is known */
+   CHECK(trust(core));
+   CHECK(put_core(core, "ra_libretro" LIB_EXT, 'a'));
+   /* A staged load waits on its check, so the pass is kept on every
+    * platform (a quiet one isn't on Windows) */
+   CHECK(core_load_check_stage_begin(core));
+   CHECK(stage_wait());
+   CHECK(!core_load_check_stage_take(core));
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_OPENED);
+   core_load_check_loaded();
+   CHECK(core_load_check_copy_source(core, &src) == CORE_LOAD_COPY_CHECK);
+   CHECK(copy_core(core, tmp));
+   CHECK((m = core_load_match_new(tmp, core, &src)) != NULL);
+   CHECK(m && match_all(m) == 0);
+   CHECK(m && lib_id(copy = core_load_match_load(m)) == 1);
+   if (copy)
+      dylib_close(copy);
+   core_load_match_free(m);
+   /* A copy with other bytes */
+   CHECK(copy_core("core_load_check_test_b" LIB_EXT, tmp));
+   CHECK((m = core_load_match_new(tmp, core, &src)) != NULL);
+   CHECK(m && match_all(m) == -1);
+   core_load_match_free(m);
+#ifndef _WIN32
+   /* Unknown hash, a quick pass's (Windows has none with checks on):
+    * the source is hashed too, if it is the file loaded */
+   src.hashed = false;
+   CHECK(copy_core(core, tmp));
+   CHECK((m = core_load_match_new(tmp, core, &src)) != NULL);
+   CHECK(m && match_all(m) == 0);
+   core_load_match_free(m);
+   /* Replaced since its load (Windows' held file can't be) */
+   CHECK(put_core(core, "ra_libretro" LIB_EXT, 'a'));
+   CHECK(core_load_match_new(tmp, core, &src) == NULL);
+#endif
+   if (lib)
+      dylib_close(lib);
+   core_load_check_unloaded();
+   CHECK(core_load_check_copy_source(core, &src) == CORE_LOAD_COPY_NONE);
+   stop();
+}
+
 #ifdef _WIN32
+/* A copy named with no '.' would load <name>.dll */
+static void test_copy_dll_name(void)
+{
+   dylib_t lib  = NULL;
+   dylib_t copy = NULL;
+   struct core_load_source src;
+   core_load_match_t *m = NULL;
+   char core[256];
+   start(false);
+   CHECK(put_core(core, "ra_name_libretro" LIB_EXT, 'b'));
+   CHECK(trust(core));
+   core_load_check_set_startup(true);
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_OPENED);
+   core_load_check_set_startup(false);
+   core_load_check_loaded();
+   CHECK(core_load_check_copy_source(core, &src) == CORE_LOAD_COPY_CHECK);
+   CHECK(copy_core(core, TMP_DIR "/ra_name"));
+   CHECK(copy_core("core_load_check_test_a" LIB_EXT,
+            TMP_DIR "/ra_name" LIB_EXT));
+   CHECK((m = core_load_match_new(TMP_DIR "/ra_name", core, &src)) != NULL);
+   CHECK(m && match_all(m) == 0);
+   CHECK(m && lib_id(copy = core_load_match_load(m)) == 0);
+   if (copy)
+      dylib_close(copy);
+   core_load_match_free(m);
+   if (lib)
+      dylib_close(lib);
+   core_load_check_unloaded();
+   stop();
+}
+
 /* \\?\ + the absolute form of rel, and suffix */
 static void verbatim_path(char *s, size_t len, const char *rel,
       const char *suffix)
@@ -2720,11 +2828,12 @@ static void verbatim_path(char *s, size_t len, const char *rel,
 static void test_verbatim_dot(void)
 {
    const char *forms[] = { "\\\\?\\", "//?/", "\\??\\" };
-   dylib_t lib = NULL;
+   dylib_t lib  = NULL;
+   dylib_t copy = NULL;
+   struct core_load_source src;
+   core_load_match_t *m = NULL;
    char core[256];
    char path[512];
-   void *buf   = NULL;
-   int64_t len = 0;
    unsigned i;
    start(true);
    core_load_check_set_startup(true);
@@ -2733,7 +2842,18 @@ static void test_verbatim_dot(void)
    verbatim_path(path, sizeof(path), core, "");
    CHECK(core_load_check_open(path, &lib) == CORE_LOAD_GATE_OPENED);
    CHECK(lib_id(lib) == 1);
+   /* Run-ahead's copy, named so, isn't loaded either */
    core_load_check_loaded();
+   CHECK(core_load_check_copy_source(path, &src) == CORE_LOAD_COPY_CHECK);
+   verbatim_path(path, sizeof(path), TMP_DIR "/ra_verb", ".");
+   CHECK(copy_core(core, path));
+   CHECK(copy_core("core_load_check_test_b" LIB_EXT, TMP_DIR "/ra_verb"));
+   CHECK((m = core_load_match_new(path, core, &src)) != NULL);
+   CHECK(m && match_all(m) == 0);
+   CHECK(m && lib_id(copy = core_load_match_load(m)) == 0);
+   if (copy)
+      dylib_close(copy);
+   core_load_match_free(m);
    if (lib)
       dylib_close(lib);
    lib = NULL;
@@ -2755,9 +2875,7 @@ static void test_verbatim_dot(void)
    /* The trusted bytes as "verb_dot_libretro." itself */
    CHECK(put_core(core, "verb_dot_libretro", 'b'));
    verbatim_path(path, sizeof(path), core, ".");
-   CHECK(filestream_read_file("core_load_check_test_a" LIB_EXT, &buf, &len));
-   CHECK(buf && filestream_write_file(path, buf, len));
-   free(buf);
+   CHECK(copy_core("core_load_check_test_a" LIB_EXT, path));
    CHECK(trust(path));
    last_log[0] = '\0';
    CHECK(core_load_check_open(path, &lib) == CORE_LOAD_GATE_REFUSED);
@@ -2774,6 +2892,142 @@ static void test_verbatim_dot(void)
    CHECK(queued() == 0);
    if (lib)
       dylib_close(lib);
+   stop();
+}
+#endif
+
+/* Run-ahead's copy of the running core is no load: a park waiting on
+ * the user, the running core's Load Once and its held file all stay */
+static void test_copy_not_a_load(void)
+{
+   dylib_t lib  = NULL;
+   dylib_t copy = NULL;
+   struct core_load_source src;
+   core_load_match_t *m = NULL;
+   char a[256];
+   char b[256];
+   char tmp[256];
+   start(false);
+   park_reset();
+   CHECK(put_core(a, "copy_once_libretro" LIB_EXT, 'a'));
+   CHECK(put_core(b, "copy_waits_libretro" LIB_EXT, 'b'));
+   strlcpy(tmp, TMP_DIR "/copy_once" LIB_EXT, sizeof(tmp));
+   /* a runs on Load Once */
+   CHECK(park(a));
+   drain();
+   CHECK(core_warning_choose(CORE_WARNING_LOAD_ONCE));
+   park_wait(1);
+   CHECK(core_load_check_open(a, &lib) == CORE_LOAD_GATE_OPENED);
+   core_load_check_loaded();
+   /* b waits on the user */
+   CHECK(park(b));
+   drain();
+   CHECK(core_warning_pending(NULL, NULL));
+   CHECK(core_load_check_copy_source(a, &src) == CORE_LOAD_COPY_CHECK);
+   CHECK(copy_core(a, tmp));
+   CHECK((m = core_load_match_new(tmp, a, &src)) != NULL);
+   CHECK(m && match_all(m) == 0);
+   CHECK(m && lib_id(copy = core_load_match_load(m)) == 1);
+   core_load_match_free(m);
+   if (copy)
+      dylib_close(copy);
+   CHECK(core_warning_pending(NULL, NULL));
+   CHECK(frees == 1);
+   if (lib)
+      dylib_close(lib);
+   lib = NULL;
+   core_load_check_unloaded();
+#ifdef _WIN32
+   CHECK(!put_core(a, "copy_once_libretro" LIB_EXT, 'a'));
+#endif
+   /* a's probes still pass on its Load Once */
+   CHECK(core_load_check_open(a, &lib) == CORE_LOAD_GATE_OPENED);
+   CHECK(lib_id(lib) == 1);
+   CHECK(queued() == 0);
+   if (lib)
+      dylib_close(lib);
+   /* b's park still re-runs on the user's answer */
+   CHECK(core_warning_choose(CORE_WARNING_LOAD_ONCE));
+   park_wait(2);
+   CHECK(reruns == 2);
+   CHECK(rerun_id == 2);
+   CHECK(frees == 2);
+   stop();
+}
+
+#ifndef _WIN32
+/* Files written in place while the match runs (Windows: its open files
+ * can't be): the copy after it matched isn't loaded, and a running
+ * core and copy rewritten alike don't match */
+static void test_copy_rewritten(void)
+{
+   dylib_t lib = NULL;
+   struct core_load_source src;
+   core_load_match_t *m = NULL;
+   char core[256];
+   char tmp[256];
+   start(false);
+   CHECK(put_core(core, "rw_libretro" LIB_EXT, 'a'));
+   strlcpy(tmp, TMP_DIR "/rw_copy" LIB_EXT, sizeof(tmp));
+   CHECK(trust(core));
+   CHECK(put_core(core, "rw_libretro" LIB_EXT, 'a'));
+   CHECK(core_load_check_stage_begin(core));
+   CHECK(stage_wait());
+   CHECK(!core_load_check_stage_take(core));
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_OPENED);
+   core_load_check_loaded();
+   /* Unmapped before its file is written */
+   if (lib)
+      dylib_close(lib);
+   CHECK(core_load_check_copy_source(core, &src) == CORE_LOAD_COPY_CHECK);
+   CHECK(copy_core(core, tmp));
+   CHECK((m = core_load_match_new(tmp, core, &src)) != NULL);
+   CHECK(m && match_all(m) == 0);
+   CHECK(rewrite_core(tmp));
+   CHECK(m && !core_load_match_load(m));
+   core_load_match_free(m);
+   src.hashed = false;
+   CHECK(copy_core(core, tmp));
+   CHECK((m = core_load_match_new(tmp, core, &src)) != NULL);
+   CHECK(rewrite_core(core));
+   CHECK(rewrite_core(tmp));
+   CHECK(m && match_all(m) == -1);
+   core_load_match_free(m);
+   core_load_check_unloaded();
+   stop();
+}
+
+/* A probe's quick pass while the stage's worker opens its core takes
+ * the stage's place: the stage's own pass is still the one granted, so
+ * run-ahead has its source (Windows: no record passes a core unhashed) */
+static void test_stage_stale_quick(void)
+{
+   dylib_t lib = NULL;
+   struct core_load_source src;
+   char a[256];
+   char b[256];
+   start(true);
+   CHECK(put_core(a, "squick_a_libretro" LIB_EXT, 'a'));
+   CHECK(put_core(b, "squick_b_libretro" LIB_EXT, 'b'));
+   CHECK(trust(a));
+   CHECK(trust(b));
+   CHECK(worker_hold());
+   CHECK(core_load_check_stage_begin(a));
+   CHECK(!core_load_check_stage_ready());
+   CHECK(core_load_check_open(b, &lib) == CORE_LOAD_GATE_OPENED);
+   CHECK(lib_id(lib) == 2);
+   if (lib)
+      dylib_close(lib);
+   worker_go();
+   CHECK(stage_wait());
+   lib = core_load_check_stage_take(a);
+   CHECK(lib_id(lib) == 1);
+   core_load_check_loaded();
+   CHECK(core_load_check_copy_source(a, &src) == CORE_LOAD_COPY_CHECK);
+   CHECK(core_load_check_copy_source(b, &src) == CORE_LOAD_COPY_NONE);
+   if (lib)
+      dylib_close(lib);
+   core_load_check_unloaded();
    stop();
 }
 #endif
@@ -2857,8 +3111,21 @@ int main(void)
    test_startup_seed();
    test_startup_refused();
    test_startup_seed_park();
+   test_copy();
+#ifdef __linux__
+   /* No ctime binds the record: its held file does */
+   no_ctime_fs = 1;
+   test_copy();
+   no_ctime_fs = 0;
+#endif
+   test_copy_not_a_load();
 #ifdef _WIN32
+   test_copy_dll_name();
    test_verbatim_dot();
+#endif
+#ifndef _WIN32
+   test_copy_rewritten();
+   test_stage_stale_quick();
 #endif
    /* Messages past OSD_MAX aren't kept for the counts above */
    CHECK(osd_count <= OSD_MAX);
