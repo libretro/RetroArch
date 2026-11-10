@@ -116,8 +116,40 @@ typedef struct
     size_t dataSize;
     size_t readPos;             /* Read cursor into pData. */
     uint32_t atEnd;
+    /* Gapless playback, from the Xing/Info tag frame when there is one:
+     * the tag frame is not decoded, the encoder delay and the decoder's
+     * own RMP3_DECODER_DELAY are dropped from the start, and output
+     * stops at the track's end, before the encoder padding. */
+    uint64_t totalFrames;       /* PCM frames the reads give in all; 0 when not known. */
+    uint64_t framesRead;        /* PCM frames returned so far. Internal. */
+    uint64_t startSkip;         /* PCM frames dropped at the start. Internal. */
+    uint64_t skipLeft;          /* Of those, still to drop. Internal. */
+    size_t dataStart;           /* First byte after a tag frame. Internal. */
 } rmp3;
 
+
+/* The samples a Layer III decoder outputs before the first one the
+ * encoder was given: the synthesis filter's delay. */
+#define RMP3_DECODER_DELAY 529
+
+/* What the tag frame at the start of an encoded stream says: a Xing or
+ * Info tag (LAME and most encoders since), with LAME's extension where
+ * the encoder wrote one, or a Fraunhofer VBRI tag. The tag frame decodes
+ * to silence and is not part of the track. */
+typedef struct
+{
+    uint32_t frames;            /* MPEG frames after the tag frame; 0 when not given. */
+    uint32_t bytes;             /* Stream bytes; 0 when not given. */
+    uint32_t encoder_delay;     /* Samples the encoder put before the audio (LAME extension). */
+    uint32_t encoder_padding;   /* Samples the encoder put after it (LAME extension). */
+    uint32_t frame_samples;     /* Samples a channel in each frame: 1152, 576 or 384. */
+    uint8_t has_delay;          /* The LAME extension was there. */
+    uint8_t is_vbri;
+} rmp3_vbr_tag;
+
+/* Reads the tag in @frame, the @frame_bytes of one whole MPEG audio
+ * frame starting at its header. Returns 1 when the frame is a tag frame. */
+int rmp3_parse_vbr_tag(const uint8_t *frame, size_t frame_bytes, rmp3_vbr_tag *tag);
 
 /* Initializes an MP3 decoder from a block of memory.
  *
@@ -145,7 +177,8 @@ uint64_t rmp3_read_s16(rmp3* pMP3, uint64_t framesToRead, int16_t* pBufferOut);
 
 /* Seeks to a specific frame.
  *
- * Note that this is _not_ an MP3 frame, but rather a PCM frame.
+ * Note that this is _not_ an MP3 frame, but rather a PCM frame, counted
+ * as the reads count them: after the trimmed start.
  */
 uint32_t rmp3_seek_to_frame(rmp3* pMP3, uint64_t frameIndex);
 

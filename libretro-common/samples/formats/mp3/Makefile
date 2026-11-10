@@ -1,14 +1,13 @@
 include ../../sample_objdir.mk
 
-TARGET := rmp3_frame_test
+TARGETS := rmp3_frame_test rmp3_gapless_test
 
 LIBRETRO_COMM_DIR := ../../..
 
-SOURCES := \
-	rmp3_frame_test.c \
-	$(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.c
-
-OBJS := $(call sample_objs,$(SOURCES:.c=.o))
+OBJS_rmp3_frame_test := $(call sample_objs,rmp3_frame_test.o \
+	$(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.o)
+OBJS_rmp3_gapless_test := $(call sample_objs,rmp3_gapless_test.o \
+	$(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.o)
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O1 -I$(LIBRETRO_COMM_DIR)/include
 
@@ -19,7 +18,7 @@ endif
 
 LDLIBS += -lm
 
-all: $(TARGET)
+all: $(TARGETS)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -28,11 +27,14 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS)
+rmp3_frame_test: $(OBJS_rmp3_frame_test)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+rmp3_gapless_test: $(OBJS_rmp3_gapless_test)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGETS) $(OBJS_rmp3_frame_test) $(OBJS_rmp3_gapless_test)
 
 .PHONY: all clean

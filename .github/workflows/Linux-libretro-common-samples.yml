@@ -192,6 +192,8 @@ jobs:
             rh264_state_test
             # rmp3's frame-at-a-time API against its pull API.
             rmp3_frame_test
+            # rmp3's gapless trimming against ffmpeg's, and its tag parser.
+            rmp3_gapless_test
             # raac_last_size over units followed by more.
             raac_size_test
             # raac's savestates: saved between units, loaded into a new decoder.
