@@ -105,6 +105,13 @@ int net_rtmp_socket_step(net_rtmp_socket_t *s, uint32_t time)
    if (!s || s->failed)
       return NET_RTMP_SOCKET_ERROR;
    progress = net_rtmp_session_step(s->session);
+   if (net_rtmp_session_status(s->session, NULL, NULL) == NET_RTMP_SESSION_FINISHED)
+   {
+      int result = net_rtmp_socket_flush(s);
+      if (result < 0)
+         return NET_RTMP_SOCKET_ERROR;
+      return progress ? NET_RTMP_SOCKET_PROGRESS : NET_RTMP_SOCKET_IDLE;
+   }
    if (s->offset == s->size)
    {
 #ifdef HAVE_SSL

@@ -361,6 +361,17 @@ int main(int argc, char **argv)
    {
       assert(net_rtmp_session_chunk_size(session, 4096));
       send_media(session, transport, fd, argv[4], argc == 6);
+      assert(net_rtmp_session_finish(session));
+      deadline = cpu_features_get_time_usec() + 10000000;
+      while (net_rtmp_session_status(session, NULL, NULL) != NET_RTMP_SESSION_FINISHED)
+      {
+         bool read = true, write = true;
+         assert(cpu_features_get_time_usec() < deadline);
+         result = net_rtmp_socket_step(transport, 0);
+         assert(result != NET_RTMP_SOCKET_ERROR);
+         if (result == NET_RTMP_SOCKET_IDLE)
+            socket_wait(fd, &read, &write, 10);
+      }
 #ifdef HAVE_SSL
       finish_tls(transport, fd);
 #else

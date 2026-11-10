@@ -31,7 +31,9 @@ enum net_rtmp_session_state
    NET_RTMP_SESSION_FAILED = -1,
    NET_RTMP_SESSION_HANDSHAKE,
    NET_RTMP_SESSION_NEGOTIATING,
-   NET_RTMP_SESSION_READY
+   NET_RTMP_SESSION_READY,
+   NET_RTMP_SESSION_DRAINING,
+   NET_RTMP_SESSION_FINISHED
 };
 RETRO_BEGIN_DECLS
 /* One worker; cold allocation. Copies configuration and handshake random.
@@ -60,6 +62,11 @@ bool net_rtmp_session_media(net_rtmp_session_t *session, unsigned type,
 /* Retires a fully sent message, or a canceled message after transport discard.
  * True returns the producer's borrow. No allocation or wait. */
 bool net_rtmp_session_media_release(net_rtmp_session_t *session);
+/* After returning media/transport borrows. Stops admission and sends
+ * deleteStream after pending commands. Idempotent; FINISHED means all
+ * session bytes were consumed, not that TLS or the socket has drained.
+ * The transport owner must flush before closing. No wait or allocation. */
+bool net_rtmp_session_finish(net_rtmp_session_t *session);
 enum net_rtmp_session_state net_rtmp_session_status(
       const net_rtmp_session_t *session, uint32_t *stream, uint64_t *sent);
 void net_rtmp_session_cancel(net_rtmp_session_t *session);

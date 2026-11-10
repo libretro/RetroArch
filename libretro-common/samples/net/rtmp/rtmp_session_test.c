@@ -470,6 +470,50 @@ static void credit(void)
    output_size = 0;
 }
 
+static void finish(void)
+{
+   static const uint8_t expected[] =
+   {
+      3, 0, 0, 0, 0, 0, 34, 20, 0, 0, 0, 0,
+      2, 0, 12, 'd', 'e', 'l', 'e', 't', 'e', 'S', 't', 'r', 'e', 'a', 'm',
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 64, 49, 0, 0, 0, 0, 0, 0
+   };
+   static const uint8_t payload[] = { 175, 1, 1 };
+   net_rtmp_span_t span, media_span;
+   net_rtmp_session_t *s = make_session("rtmp://localhost/live", false);
+   assert(!net_rtmp_session_finish(NULL) && !net_rtmp_session_finish(s));
+   assert(net_rtmp_session_free(s));
+   s = ready();
+   media_span.data = payload;
+   media_span.size = sizeof(payload);
+   assert(net_rtmp_session_media(s, 8, 0, &media_span, 1));
+   assert(!net_rtmp_session_finish(s));
+   pump(s);
+   assert(!net_rtmp_session_finish(s));
+   assert(net_rtmp_session_media_release(s));
+   output_size = 0;
+   assert(net_rtmp_session_finish(s) && net_rtmp_session_finish(s));
+   assert(net_rtmp_session_status(s, NULL, NULL) == NET_RTMP_SESSION_DRAINING);
+   assert(!net_rtmp_session_free(s));
+   assert(!net_rtmp_session_media(s, 8, 0, &media_span, 1));
+   assert(!net_rtmp_session_chunk_size(s, 4096));
+   assert(net_rtmp_session_step(s) && net_rtmp_session_get(s, &span));
+   assert(net_rtmp_session_consume(s, 0));
+   assert(net_rtmp_session_status(s, NULL, NULL) == NET_RTMP_SESSION_DRAINING);
+   pump(s);
+   assert(net_rtmp_session_status(s, NULL, NULL) == NET_RTMP_SESSION_FINISHED);
+   assert(output_size == sizeof(expected) && !memcmp(output, expected, sizeof(expected)));
+   assert(!net_rtmp_session_get(s, &span) && !net_rtmp_session_step(s));
+   assert(net_rtmp_session_finish(s) && net_rtmp_session_free(s));
+   output_size = 0;
+   s = ready();
+   assert(net_rtmp_session_finish(s));
+   assert(net_rtmp_session_step(s) && net_rtmp_session_get(s, &span));
+   net_rtmp_session_cancel(s);
+   assert(!net_rtmp_session_finish(s) && !net_rtmp_session_free(s));
+   assert(net_rtmp_session_discard(s) && net_rtmp_session_free(s));
+}
+
 int main(int argc, char **argv)
 {
    if (argc == 4 && !strcmp(argv[1], "--peer"))
@@ -485,6 +529,7 @@ int main(int argc, char **argv)
    mux_lifetime();
    chunk_resize();
    credit();
+   finish();
    puts("PASS RTMP session borrows, media/control interleave, credit and cancellation");
    return 0;
 }
