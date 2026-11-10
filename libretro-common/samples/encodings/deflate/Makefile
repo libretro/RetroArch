@@ -2,6 +2,7 @@ include ../../sample_objdir.mk
 
 TARGET            := rinflate_window_test
 TARGET_TEST       := rdeflate_hash_test
+TARGET_FLUSH      := rdeflate_flush_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -39,7 +40,10 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST)
+# The flush test links what the window test does
+FLUSH_SOURCES := rdeflate_flush_test.c $(filter-out rinflate_window_test.c,$(SOURCES))
+
+all: $(TARGET) $(TARGET_TEST) $(TARGET_FLUSH)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -54,12 +58,16 @@ $(TARGET): $(OBJS)
 $(TARGET_TEST): $(HASH_SOURCES) $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c
 	$(CC) $(CFLAGS) $(HASH_ARCH) -o $@ $(HASH_SOURCES) $(LDFLAGS)
 
+$(TARGET_FLUSH): $(FLUSH_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $(FLUSH_SOURCES) $(LDFLAGS)
+
 check: all
 	./$(TARGET)
 	./$(TARGET_TEST)
+	./$(TARGET_FLUSH)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET).exe $(TARGET_TEST).exe $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_FLUSH) $(TARGET).exe $(TARGET_TEST).exe $(TARGET_FLUSH).exe $(OBJS)
 
 .PHONY: all check clean

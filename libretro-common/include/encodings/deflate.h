@@ -185,6 +185,20 @@ void  rdeflate_set_out(void *stream, uint8_t *out, size_t out_size);
 /* Signal that no more input will be supplied after the current input buffer
  * is consumed, so the final block and trailer can be emitted. */
 void  rdeflate_finish(void *stream);
+/**
+ * rdeflate_flush:
+ * @stream       : stream returned by rdeflate_new()
+ *
+ * Sync flush, zlib's Z_SYNC_FLUSH: once the current input is consumed,
+ * everything given so far is written out, ending with an empty stored
+ * block on a byte boundary, so a reader of the output up to there
+ * decodes all of it - a log compressed as it is written stays readable
+ * up to its last line after a crash. Call rdeflate_process() until it
+ * returns with room left in the output; the flush is then done and the
+ * stream goes on, its window kept. A no-op once rdeflate_finish() was
+ * called.
+ */
+void  rdeflate_flush(void *stream);
 
 int   rdeflate_process(void *stream, size_t *read, size_t *wrote);
 
