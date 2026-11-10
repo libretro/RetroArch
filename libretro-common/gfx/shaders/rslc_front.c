@@ -6831,13 +6831,15 @@ struct rslc_builder *rslc_b_begin(const struct rslc_opts *opts, enum rslc_stage 
    struct rslc_parser  *p;
    if (!opts)
       return NULL;
-   b = (struct rslc_builder*)calloc(1, sizeof(*b));
+   /* from the caller's allocator, as the compile's own memory is */
+   b = (struct rslc_builder*)rslc_mem_alloc(opts, sizeof(*b));
    if (!b)
       return NULL;
+   memset(b, 0, sizeof(*b));
    if (!rslc_ctx_init(&b->c, opts, stage))
    {
       rslc_ctx_close(&b->c);
-      free(b);
+      rslc_mem_free(opts, b);
       return NULL;
    }
    /* The parser's helpers read the current token for messages: give
@@ -6869,10 +6871,12 @@ struct rslc_builder *rslc_b_begin(const struct rslc_opts *opts, enum rslc_stage 
 
 void rslc_b_abort(struct rslc_builder *b)
 {
+   const struct rslc_opts *opts;
    if (!b)
       return;
+   opts = b->c.opts;
    rslc_ctx_close(&b->c);
-   free(b);
+   rslc_mem_free(opts, b);
 }
 
 bool rslc_b_end(struct rslc_builder *b, struct rslc_result *result)

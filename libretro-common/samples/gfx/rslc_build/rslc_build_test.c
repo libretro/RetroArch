@@ -24,7 +24,9 @@
  * builder calls; both must compile to the same SPIR-V words and print
  * the same GLSL.  Then the builder's own errors. */
 
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <gfx/shaders/rslc.h>
@@ -338,6 +340,44 @@ static void same(const char *name, const char *glsl, enum rslc_stage stage, buil
    rslc_result_free(&rb, &o);
 }
 
+/* With a caller arena, all a build takes beyond it comes from the
+ * caller's allocator, so a compile worker can keep the heap still. */
+static int  allocs, live;
+static void *count_alloc(void *ud, size_t len)
+{
+   (void)ud;
+   allocs++;
+   live++;
+   return malloc(len);
+}
+
+static void count_free(void *ud, void *ptr)
+{
+   (void)ud;
+   if (ptr)
+      live--;
+   free(ptr);
+}
+
+static void allocator(void)
+{
+   static uint64_t    block[(256u * 1024u) / sizeof(uint64_t)];
+   struct rslc_opts   o;
+   struct rslc_result r;
+   opts_for(&o, RSLC_DST_SPIRV, 0);
+   o.alloc     = count_alloc;
+   o.free_fn   = count_free;
+   o.arena     = block;
+   o.arena_len = sizeof(block);
+   memset(&r, 0, sizeof(r));
+   rslc_b_abort(rslc_b_begin(&o, RSLC_STAGE_FRAGMENT));
+   CHECK(allocs == 1 && live == 0);   /* the builder */
+   CHECK(rslc_b_end(fs_build(&o), &r));
+   CHECK(allocs == 3 && live == 1);   /* and the result's blob */
+   rslc_result_free(&r, &o);
+   CHECK(live == 0);
+}
+
 static void errors(void)
 {
    struct rslc_opts     o;
@@ -394,6 +434,7 @@ int main(void)
    same("vertex hlsl", vs_glsl, RSLC_STAGE_VERTEX, vs_build, RSLC_DST_HLSL, 50);
    same("fragment hlsl", fs_glsl, RSLC_STAGE_FRAGMENT, fs_build, RSLC_DST_HLSL, 50);
    errors();
+   allocator();
    if (fails)
    {
       fprintf(stderr, "rslc_build_test: %d failure(s)\n", fails);
