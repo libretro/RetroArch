@@ -34,16 +34,17 @@
  *   - sfnt / TTC directory parsing with full bounds checking
  *   - cmap formats 0, 4, 6, 12 (codepoint -> glyph index)
  *   - hmtx / hhea / head / maxp metrics
- *   - glyf outlines (simple + composite), quadratic flattening, and an
+ *   - glyf outlines (simple + composite) and CFF outlines (Type 2
+ *     charstrings, CID-keyed fonts included), flattened and filled by an
  *     exact-coverage anti-aliased rasterizer (signed-area delta
  *     accumulation + per-row prefix sum, SSE2/NEON resolve kernels)
+ *   - vhea/vmtx vertical metrics and 'kern' format 0 pair kerning
  *
  * Coverage is accumulated in float and quantized only in the final
  * per-row resolve step, so a future higher-bit-depth output path
  * (e.g. 10-bit HDR) only needs an alternate resolve routine.
  *
- * CFF ('OTTO') fonts are rejected at init (no glyf/loca), matching the
- * capability of the stb_truetype version this replaced.
+ * There is no hinting: outlines are drawn as designed.
  *
  * The font is read in place from the caller's bytes, which must stay
  * valid for as long as the rtt_font_t is used: nothing is copied and
@@ -52,6 +53,20 @@
  */
 
 RETRO_BEGIN_DECLS
+
+/* Up to this many CID font dicts have their local subroutines found at
+ * init; a font with more finds the rest per glyph. */
+#define RTT_CFF_MAX_FDS 32
+
+/* A CFF INDEX: count items, offsets of off_size bytes at offsets (the
+ * first is 1), item data from data - 1 + offset. */
+typedef struct rtt_cff_index
+{
+   uint32_t count;
+   uint32_t offsets;
+   uint32_t data;
+   uint32_t off_size;
+} rtt_cff_index_t;
 
 typedef struct rtt_font
 {
@@ -79,7 +94,45 @@ typedef struct rtt_font
     * which sizes the outline scratch carved into each render's block
     * (0 when maxp is the CFF short form, leaving per-glyph fallback). */
    int max_points;
+
+   uint32_t fontstart;
+   /* How far a flattened curve may stray from the true one, in pixels;
+    * 0 for 0.35 */
+   float flatness;
+
+   /* Vertical metrics and kerning; 0 when the font has none */
+   uint32_t vhea;
+   uint32_t vmtx;
+   uint32_t vmtx_len;
+   uint32_t kern;
+   uint32_t kern_len;
+   int num_vmetrics;
+
+   /* CFF outlines, for a font with no glyf table */
+   int is_cff;
+   int cff_num_fds;
+   uint32_t cff;
+   uint32_t cff_len;
+   uint32_t cff_fdselect;     /* 0 for a font that is not CID-keyed */
+   rtt_cff_index_t cff_charstrings;
+   rtt_cff_index_t cff_gsubrs;
+   rtt_cff_index_t cff_subrs; /* the Private DICT's, when not CID-keyed */
+   rtt_cff_index_t cff_fdarray;
+   rtt_cff_index_t cff_fd_subrs[RTT_CFF_MAX_FDS];
+   uint32_t cff_fdarray_off;
 } rtt_font_t;
+
+/* Receives an outline in font units, y up. Every contour begins with
+ * move_to and is closed back to that point. */
+typedef struct rtt_outline_sink
+{
+   void *user;
+   void (*move_to)(void *user, float x, float y);
+   void (*line_to)(void *user, float x, float y);
+   void (*quad_to)(void *user, float cx, float cy, float x, float y);
+   void (*cubic_to)(void *user, float c1x, float c1y, float c2x, float c2y,
+         float x, float y);
+} rtt_outline_sink;
 
 /* A face's rasterizer memory, kept from glyph to glyph */
 typedef struct rtt_scratch
@@ -114,6 +167,45 @@ float rtt_scale_for_em_to_pixels(const rtt_font_t *f, float px);
 void rtt_render_glyph(const rtt_font_t *f, rtt_scratch_t *sc,
       void *dst, int out_w, int out_h, int stride, float sx, float sy,
       int gi, int bx0, int by1, int fmt16);
+/* As rtt_render_glyph with the device origin given directly: a font
+ * unit point (x, y) lands at (x * sx - ox, -y * sy - oy) in the bitmap,
+ * so a fractional origin places the glyph at a sub-pixel offset. */
+void rtt_render_glyph_at(const rtt_font_t *f, rtt_scratch_t *sc,
+      void *dst, int out_w, int out_h, int stride, float sx, float sy,
+      float ox, float oy, int gi, int fmt16);
+
+/* Sets how far rendering may flatten a curve from its true shape, in
+ * pixels: the default, 0.35, suits small text; finer costs more line
+ * segments per curve. 0 restores the default. */
+void rtt_set_flatness(rtt_font_t *f, float px);
+
+/* Walks glyph @gi's outline into @sink, in font units. @sc lends point
+ * storage (TrueType); it may be NULL. Returns 0 for no outline. */
+int rtt_glyph_outline(const rtt_font_t *f, rtt_scratch_t *sc, int gi,
+      const rtt_outline_sink *sink);
+
+/* The control box of glyph @gi's outline, in font units: the box of
+ * all its points, curve controls and lone points included. Returns 0
+ * for an empty glyph. */
+int rtt_glyph_cbox(const rtt_font_t *f, rtt_scratch_t *sc, int gi,
+      float *x0, float *y0, float *x1, float *y1);
+
+/* Vertical advance and top side bearing from vmtx; returns 0 (and
+ * sets neither) when the font has no vertical metrics. */
+int rtt_glyph_vmetrics(const rtt_font_t *f, int gi, int *advance, int *tsb);
+
+/* vhea's ascent, descent and line gap; returns 0 when there is none. */
+int rtt_vhea_metrics(const rtt_font_t *f, int *ascent, int *descent,
+      int *line_gap);
+
+/* Horizontal kerning between two glyphs from 'kern' format 0 tables,
+ * in font units; 0 when there is none. */
+int rtt_kerning(const rtt_font_t *f, int left, int right);
+
+/* A table of the face, read in place; NULL when absent. */
+const uint8_t *rtt_table(const rtt_font_t *f, const char *tag,
+      uint32_t *len);
+
 /* Frees a scratch's memory; it may be used again after. */
 void rtt_scratch_free(rtt_scratch_t *sc);
 

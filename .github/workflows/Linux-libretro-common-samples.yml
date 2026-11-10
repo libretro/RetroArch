@@ -272,6 +272,8 @@ jobs:
             socket_poll_test
             # Half floats both ways, against F16C.
             float16_test
+            # TrueType and CID-keyed CFF glyphs, metrics and kerning.
+            rtt_test
             rjson_test
             rm3u_test
             rmp4_fragment_test
@@ -1443,6 +1445,19 @@ jobs:
             -I../../../include thread_cleanup_test.c ../../../rthreads/rthreads.c \
             -lwinmm -o thread_cleanup_test.exe
           timeout 30 wine ./thread_cleanup_test.exe
+
+      - name: rtt under Wine
+        shell: bash
+        working-directory: libretro-common/samples/gfx/font
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean
+          make CC=x86_64-w64-mingw32-gcc all
+          timeout 60 wine ./rtt_test.exe
+          make clean
 
       - name: socket_poll past FD_SETSIZE under Wine
         shell: bash
