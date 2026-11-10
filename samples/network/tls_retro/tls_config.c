@@ -23,12 +23,12 @@
 /* One connection under ssl_socket_retro_configure(), then a GET:
  *
  *   tls_config host port [-t ca.der] [-c cert.der]... [-k key.der]
- *              [-s 0035,c02f] [-n] [-H] [-g path sha256hex]
+ *              [-s 0035,c02f] [-n] [-H] [-N] [-g path sha256hex]
  *
  * -t trusts that certificate instead of the bundle, -c / -k present a
  * client chain and its RSA key (PKCS#1 or PKCS#8), -s offers those
- * suites, -n / -H skip the verification / the hostname check, and -g
- * fetches path and checks the body's SHA-256. Prints the version and
+ * suites, -n / -H skip the verification / the hostname check, -N sends
+ * no server_name, and -g fetches path and checks the body's SHA-256. Prints the version and
  * suite, and a record refused mid-transfer; exits 0 on success, 1 on a
  * failed connection or check. */
 
@@ -143,6 +143,8 @@ int main(int argc, char **argv)
          cfg.flags |= SSL_RETRO_NO_VERIFY;
       else if (!strcmp(argv[i], "-H"))
          cfg.flags |= SSL_RETRO_NO_HOSTNAME;
+      else if (!strcmp(argv[i], "-N"))
+         cfg.flags |= SSL_RETRO_NO_SNI;
       else if (!strcmp(argv[i], "-g") && i + 2 < argc)
       {
          path = argv[++i];

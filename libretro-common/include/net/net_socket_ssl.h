@@ -160,6 +160,9 @@ struct ssl_socket_retro_config
  * calls only after the handshake; close and free once neither thread
  * uses the connection. */
 #define SSL_RETRO_DUPLEX      (1 << 2)
+/* Send no server_name: for a client that emulates one without SNI. The
+ * certificate is still checked against the host. */
+#define SSL_RETRO_NO_SNI      (1 << 3)
 
 /**
  * ssl_socket_retro_configure:

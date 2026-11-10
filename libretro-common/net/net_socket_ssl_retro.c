@@ -1527,7 +1527,8 @@ static int tls_send_client_hello(struct ssl_state *s)
    uint8_t  iplit[16];
    /* No server_name for an IP address: RFC 6066 3 allows host names
     * only, and the certificate is checked against the address anyway. */
-   size_t   dlen = (s->domain && !x509_parse_ip(s->domain, iplit))
+   size_t   dlen = (s->domain && !(s->cfg.flags & SSL_RETRO_NO_SNI)
+         && !x509_parse_ip(s->domain, iplit))
       ? strlen(s->domain) : 0;
    size_t   ext_len;
    int      ret;

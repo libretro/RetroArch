@@ -281,6 +281,21 @@ cfg "no hostname check: an address passes"            0 "TLS 1.3" -- 127.0.0.1 4
 cfg "hostname still checked otherwise"                1 "FAILED" -- 127.0.0.1 44331 -t $D/ca.der $G
 cfg "no verification"                                 0 "TLS 1.3" -- localhost 44331 -n $G
 cfg "a suite list without a known suite: refused"     1 "refused" -- localhost 44331 -t $D/ca.der -s 0005
+# SSL_RETRO_NO_SNI: no server_name in the ClientHello (the server's
+# -trace shows every extension), the host still checked
+sni() { # label want_count client-options
+   L=$1; W=$2; shift 2
+   (cd $D/cfgwww && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -trace -WWW) > $D/sni.out 2>&1 &
+   SRV=$!; listening 44331
+   set +e; $RUN ./tls_config$EXE "$@" > $D/cfg.out 2>&1; rc=$?; set -e
+   kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+   n=$(grep -c 'extension_type=server_name' $D/sni.out || true)
+   if [ $rc -eq 0 ] && [ "$n" = $W ]; then echo "ok:   $L"
+   else echo "FAIL: $L (rc=$rc, $n server_name extensions, want $W): $(cat $D/cfg.out)"; exit 1; fi
+}
+sni "server_name sent"                                1 localhost 44331 -t $D/ca.der $G
+sni "no server_name with SSL_RETRO_NO_SNI"            0 localhost 44331 -t $D/ca.der -N $G
+cfg "host still checked without server_name"          1 "FAILED" -- 127.0.0.1 44331 -t $D/ca.der -N $G
 for s in AES128-SHA:002f AES256-SHA:0035 AES128-SHA256:003c AES256-SHA256:003d \
       AES128-GCM-SHA256:009c AES256-GCM-SHA384:009d ECDHE-RSA-AES128-SHA:c013 \
       ECDHE-RSA-AES256-SHA:c014 ECDHE-RSA-AES128-SHA256:c027 ECDHE-RSA-AES256-SHA384:c028; do
