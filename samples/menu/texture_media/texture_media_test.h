@@ -305,6 +305,7 @@ int main(int argc,char **argv)
    if(failures){main_exit(NULL);return 1;}
    viewer=(test_viewer_t*)menu_st->userdata;
    CHECK("Port N Controls' Controllers row has the pad icon",test_pad_icon(viewer,MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS,MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR,MENU_SETTING_ACTION));
+   CHECK("Plays As controller row has the pad icon",test_pad_icon(viewer,MENU_ENUM_LABEL_INPUT_PLAYS_AS,MENU_ENUM_LABEL_INPUT_PLAYS_AS_STR,MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN));
    video=video_state_get_ptr();old_poke=video->poke;
    if(!native_gpu)
    { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }
