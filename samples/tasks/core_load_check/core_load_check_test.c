@@ -145,6 +145,14 @@ bool task_content_load_pending(void)
    return load_pending;
 }
 
+/* Quits asked for as a failed startup's */
+static unsigned quits;
+
+void retroarch_main_quit_failure(void)
+{
+   quits++;
+}
+
 #ifdef COUNT_HASHES
 /* Hashes started, in place or in a task */
 static unsigned hashes;
@@ -1894,12 +1902,15 @@ static void test_park_no_menu(void)
    menu_can_open = false;
    last_log[0]   = '\0';
    shown         = osd_refused();
+   quits         = 0;
    CHECK(put_core(core, "nomenu_libretro" LIB_EXT, 'a'));
    CHECK(park(core));
    drain();
    CHECK(frees == 1);
    CHECK(reruns == 0);
    CHECK(strstr(last_log, "Always Trust") != NULL);
+   /* Not the startup load's: the user goes on with what runs */
+   CHECK(quits == 0);
    CHECK(osd_refused() == shown);
    core_load_check_notify();
    CHECK(osd_refused() == shown + 1);
@@ -2532,6 +2543,164 @@ static void test_held_ctime_moved(void)
 #endif
 }
 
+/* A first run's startup load of a core the pending seed covers */
+static void test_startup_seed(void)
+{
+   dylib_t lib = NULL;
+   char store[64];
+   char core[256];
+   void *buf   = NULL;
+   int64_t len = 0;
+   task_queue_init(false, NULL);
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   path_mkdir(TMP_DIR "/seed3");
+   strlcpy(core, TMP_DIR "/seed3/first_libretro." CORE_EXT, sizeof(core));
+   CHECK(filestream_read_file("core_load_check_test_b" LIB_EXT, &buf, &len));
+   CHECK(buf && filestream_write_file(core, buf, len));
+   free(buf);
+   CHECK(core_trust_runtime_init(store, TMP_DIR "/seed3", CORE_EXT));
+   core_load_check_set_startup(true);
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_REFUSED);
+   /* Not hashed in place: the seed decides first */
+   CHECK(core_load_check_startup_take() == CORE_LOAD_STARTUP_SEED);
+   CHECK(core_load_check_startup_take() == CORE_LOAD_STARTUP_NONE);
+   core_load_check_set_startup(false);
+   stop();
+}
+
+/* Refused at startup: asked from the menu, or with none, told how to
+ * approve it */
+static void test_startup_refused(void)
+{
+   dylib_t lib = NULL;
+   char core[256];
+   unsigned opens;
+   start(false);
+   park_reset();
+   CHECK(put_core(core, "start_refused_libretro" LIB_EXT, 'b'));
+   core_load_check_set_startup(true);
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_REFUSED);
+   CHECK(core_load_check_startup_take() == CORE_LOAD_STARTUP_REFUSED);
+   core_load_check_set_startup(false);
+   /* Its park asks at once, about the file checked in place */
+   opens = menu_opens;
+   CHECK(park(core));
+   CHECK(menu_opens == opens + 1);
+   CHECK(queued() == 0);
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   CHECK(frees == 1);
+   menu_can_open = false;
+   last_log[0]   = '\0';
+   CHECK(put_core(core, "start_refused_libretro" LIB_EXT, 'b'));
+   core_load_check_set_startup(true);
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_REFUSED);
+   CHECK(core_load_check_startup_take() == CORE_LOAD_STARTUP_FAILED);
+   CHECK(strstr(last_log, "Always Trust") != NULL);
+   core_load_check_set_startup(false);
+   menu_can_open = true;
+   stop();
+}
+
+enum seed_park_change
+{
+   SEED_PARK_SAME = 0,
+   SEED_PARK_CHANGED,
+   SEED_PARK_CUT,     /* changed, and quitting cancels its check */
+   SEED_PARK_GONE
+};
+
+/* A first run's startup load held for the seed, with no menu to fall
+ * back to: run again once the seed trusts it; refused after the seed,
+ * it says how to approve the core and quits as a failed startup does.
+ * With a menu it asks there instead. Its check cut off by quitting, it
+ * is only dropped; not run for any other reason, it quits with no menu
+ * and leaves the menu up with one. */
+static void startup_seed_park(bool menu, enum seed_park_change change)
+{
+   dylib_t lib = NULL;
+   char store[64];
+   char core[256];
+   unsigned opens;
+   void *buf   = NULL;
+   int64_t len = 0;
+   task_queue_init(false, NULL);
+   park_reset();
+   quits         = 0;
+   menu_can_open = menu;
+   last_log[0]   = '\0';
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   sprintf(core, TMP_DIR "/seed5_%u", store_n);
+   path_mkdir(core);
+   strlcat(core, "/held_libretro." CORE_EXT, sizeof(core));
+   CHECK(filestream_read_file("core_load_check_test_a" LIB_EXT, &buf, &len));
+   CHECK(buf && filestream_write_file(core, buf, len));
+   free(buf);
+   *strrchr(core, '/') = '\0';
+   CHECK(core_trust_runtime_init(store, core, CORE_EXT));
+   strlcat(core, "/held_libretro." CORE_EXT, sizeof(core));
+   core_load_check_set_startup(true);
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_REFUSED);
+   CHECK(core_load_check_startup_take() == CORE_LOAD_STARTUP_SEED);
+   CHECK(park(core));
+   core_load_check_set_startup(false);
+   /* The seed walks the folder first; a file put there after it isn't
+    * trusted */
+   while (core_trust_runtime_seed_pending())
+      pump(1);
+   if (change == SEED_PARK_GONE)
+      CHECK(filestream_delete(core) == 0);
+   else if (change != SEED_PARK_SAME)
+      CHECK(rewrite_core(core));
+   opens = menu_opens;
+   if (change == SEED_PARK_CUT)
+   {
+      drain();
+      core_load_check_iterate();
+      CHECK(queued() == 1);
+      task_queue_reset();
+   }
+   park_frames(2);
+   drain();
+   park_frames(20);
+   if (change == SEED_PARK_SAME)
+   {
+      CHECK(reruns == 1);
+      CHECK(rerun_id == 1);
+   }
+   else if (change != SEED_PARK_CHANGED)
+   {
+      CHECK(reruns == 0);
+      CHECK(menu_opens == opens);
+   }
+   else if (menu)
+   {
+      CHECK(reruns == 0);
+      CHECK(menu_opens == opens + 1);
+      CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   }
+   else
+   {
+      CHECK(reruns == 0);
+      CHECK(strstr(last_log, "Always Trust") != NULL);
+   }
+   CHECK(frees == 1);
+   CHECK(quits == ((!menu && (change == SEED_PARK_CHANGED
+               || change == SEED_PARK_GONE)) ? 1u : 0u));
+   menu_can_open = true;
+   stop();
+}
+
+static void test_startup_seed_park(void)
+{
+   startup_seed_park(false, SEED_PARK_SAME);
+   startup_seed_park(false, SEED_PARK_CHANGED);
+   startup_seed_park(true, SEED_PARK_CHANGED);
+   startup_seed_park(false, SEED_PARK_CUT);
+   startup_seed_park(true, SEED_PARK_CUT);
+   startup_seed_park(false, SEED_PARK_GONE);
+   startup_seed_park(true, SEED_PARK_GONE);
+}
+
 #ifdef _WIN32
 /* \\?\ + the absolute form of rel, and suffix */
 static void verbatim_path(char *s, size_t len, const char *rel,
@@ -2685,6 +2854,9 @@ int main(void)
    test_park_fallback();
    test_load_once_lasts();
    test_held_ctime_moved();
+   test_startup_seed();
+   test_startup_refused();
+   test_startup_seed_park();
 #ifdef _WIN32
    test_verbatim_dot();
 #endif

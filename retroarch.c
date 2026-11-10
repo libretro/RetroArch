@@ -7311,6 +7311,7 @@ int rarch_main(int argc, char *argv[], void *data)
    retroarch_deinit_drivers(&runloop_st->retro_ctx);
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
+   p_rarch->flags &= ~RARCH_FLAGS_QUIT_FAILURE;
 
    frontend_driver_init_first(data);
 
@@ -7423,7 +7424,7 @@ int rarch_main(int argc, char *argv[], void *data)
    main_exit(data);
 #endif
 
-   return 0;
+   return (p_rarch->flags & RARCH_FLAGS_QUIT_FAILURE) ? 1 : 0;
 }
 
 #if defined(__EMSCRIPTEN__)
@@ -10137,10 +10138,34 @@ bool retroarch_main_init_core(int argc, char *argv[],
    /* Handle core initialization failure */
    if (init_failed)
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      /* A startup core the check holds back falls back to the dummy
+       * core, parked to run again from there. Refused with no menu to
+       * ask on, it fails whatever --load-menu-on-error says. */
+      bool parked = false;
+      switch (core_load_check_startup_take())
+      {
+         case CORE_LOAD_STARTUP_NONE:
+            /* A marked load's refusal, before the dummy core's init
+             * probes that core: from a cached probe the menu would
+             * describe it as loaded */
+            task_content_load_refused(p_rarch->path_libretro);
+            break;
+         case CORE_LOAD_STARTUP_FAILED:
+            return retroarch_main_init_fail();
+         default:
+            parked = task_content_park_startup(p_rarch->path_libretro,
+                  p_rarch->path_content);
+            break;
+      }
+#endif
 #ifdef HAVE_DYNAMIC
       /* Check if menu was active prior to core initialization */
       if (   (!(rarch_st.flags & RARCH_FLAGS_LAUNCHED_FROM_CLI))
           ||   (rarch_st.flags & RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR)
+#ifdef HAVE_CORE_LOAD_CHECK
+          ||   parked
+#endif
 #ifdef HAVE_MENU
           ||  (menu_st->flags & MENU_ST_FLAG_ALIVE)
 #endif
@@ -11304,6 +11329,12 @@ bool retroarch_main_quit_poll(void)
    runloop_st->quit_pending = false;
    retroarch_main_quit_finish(true);
    return true;
+}
+
+void retroarch_main_quit_failure(void)
+{
+   rarch_st.flags                 |= RARCH_FLAGS_QUIT_FAILURE;
+   runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 }
 
 enum retro_language retroarch_get_language_from_iso(const char *iso639)

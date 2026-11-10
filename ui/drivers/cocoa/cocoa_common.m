@@ -191,7 +191,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       ui_companion_driver_wimp_quit();
       ui_companion_driver_wimp_deinit();
       main_exit(NULL);
-      exit(0);
+      exit((retroarch_get_flags() & RARCH_FLAGS_QUIT_FAILURE) ? 1 : 0);
       return;
    }
 

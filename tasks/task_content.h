@@ -100,6 +100,18 @@ void task_content_load_core_start(const char *core_path);
  * park it: says it wasn't loaded and how to trust it. False when the
  * check didn't refuse it. */
 bool task_content_core_refused_notify(const char *core_path);
+/* Marks the staged load in flight: if the check refuses its core,
+ * refused() takes it, with the core's path, before the dummy core
+ * starts in its place, and the load is not parked */
+void task_content_load_no_park(bool (*refused)(const char *core_path));
+/* A load's core init failed, before its dummy core starts: hands a
+ * marked load's refused core to its refused() */
+void task_content_load_refused(const char *core_path);
+/* A startup load refused, or waiting for the first run's seed: runs
+ * again from the dummy core, as a menu load, or with no menu as a
+ * staged load that quits RetroArch if it fails */
+bool task_content_park_startup(const char *core_path,
+      const char *content_path);
 #endif
 
 /* Every task_push_load_* entry point below (the CLI one excepted, which

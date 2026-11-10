@@ -5360,6 +5360,11 @@ bool runloop_init_libretro_symbols(
                {
                   const char *_msg = msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE);
                   const char *err  = dylib_error();
+#ifdef HAVE_CORE_LOAD_CHECK
+                  /* Held back by the load check, which says why */
+                  if (core_load_check_refused(path))
+                     return false;
+#endif
                   if (err)
                      RARCH_ERR("[Core] %s: \"%s\"\nError(s): %s\n", _msg, path, err);
                   else
