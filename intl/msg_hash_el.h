@@ -982,6 +982,7 @@ static const struct
    char s_caf61308[17];
    char s_5410e874[11];
    char s_c7a27b20[17];
+   char s_d6611158[13];
    char s_de16b5d2[23];
    char s_57665cff[13];
    char s_74dcbca5[34];
@@ -3358,6 +3359,7 @@ static const struct
    "\316\221\317\205\317\204\317\214\316\274\316\261\317\204\316\277",
    "\316\240\316\254\316\275\317\204\316\261",
    "\316\221\317\205\317\204\317\214\316\274\316\261\317\204\316\277",
+   "\316\232\316\261\316\275\316\265\316\257\317\202",
    "\316\246\317\205\317\203\316\271\316\277\316\273\316\277\316\263\316\271\316\272\316\254",
    "\316\210\316\276\316\277\316\264\316\277\317\202",
    "\316\240\316\277\316\271\317\214\317\204\316\267\317\204\316\261 \316\225\316\263\316\263\317"
@@ -4760,7 +4762,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68530u
+      (sizeof(msg_hash_el_blob) == (68543u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -5829,6 +5831,7 @@ static const msg_hash_id_t msg_hash_el_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,

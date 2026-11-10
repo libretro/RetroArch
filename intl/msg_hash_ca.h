@@ -2478,7 +2478,6 @@ static const struct
    char s_4b582a0c[41];
    char s_61213f1d[18];
    char s_95e4b29f[71];
-   char s_1ee69db0[30];
    char s_0cfd4fd0[9];
    char s_d64659c4[8];
    char s_0861dea4[26];
@@ -2511,6 +2510,8 @@ static const struct
    char s_c7a27b20[11];
    char s_740ed6e5[22];
    char s_c7ab7873[46];
+   char s_d65a7d95[8];
+   char s_d6611158[4];
    char s_83ecb279[23];
    char s_317b17ed[6];
    char s_94c8d15f[6];
@@ -4042,10 +4043,8 @@ static const struct
    char s_34400c79[106];
    char s_34400c7a[104];
    char s_4a09218b[38];
-   char s_dea334de[188];
    char s_cacc1492[62];
    char s_c0c6924e[266];
-   char s_c83fcc7e[270];
    char s_2fe7ca1a[304];
    char s_cdf158e0[274];
    char s_7efaf561[272];
@@ -4444,7 +4443,6 @@ static const struct
    char s_94d1736a[24];
    char s_b969706a[241];
    char s_a3f6ebc3[16];
-   char s_11b4cc97[25];
    char s_a8fa00e0[74];
    char s_4c1e527b[84];
    char s_efc0708e[89];
@@ -7488,7 +7486,6 @@ static const struct
    "Posici\303\263 de les notificacions (vertical)",
    "\303\215ndex de monitor",
    "Activa la pantalla completa sobre l'osca als dispositius Android i iOS",
-   "Configuraci\303\263 dels auriculars",
    "Combinat",
    "Separat",
    "Dist\303\240ncia de la pantalla",
@@ -7521,6 +7518,8 @@ static const struct
    "Autom\303\240tic",
    "Segons els auriculars",
    "Freq\303\274\303\250ncia d'actualitzaci\303\263 dels auriculars",
+   "Ambdues",
+   "Cap",
    "Amplada de la pantalla",
    "180\302\272",
    "270\302\272",
@@ -9983,17 +9982,11 @@ static const struct
    "Especifica una posici\303\263 personalitzada del text en pantalla respecte a l'eix Y. 0 \303\251"
    "s la vora inferior.",
    "Seleccioneu quina pantalla utilitzar.",
-   "Com funcionen els comandaments del casc: si es combinen, formen un sol comandament per al jugado"
-   "r 1; si se separen, el comandament esquerre correspon al jugador 1 i el dret, al jugador 2.",
    "A quina dist\303\240ncia respecte tu, el casc mostra les pantalles.",
    "Mostra tamb\303\251 el contingut en un casc OpenXR: cada pantalla apareix com una pantalla flota"
    "nt independent, amb visi\303\263 3D est\303\250reo per a ambd\303\263s ulls i el men\303\272 sit"
    "uat davant d'elles. Utilitza Vulkan, o b\303\251 OpenGL a Linux. La finestra mant\303\251 la sev"
    "a sortida habitual.",
-   "En els punts d'activaci\303\263 i les zones t\303\240ctils del comandament, en lloc de pr\303"
-   "\251mer L2 o R2. Autom\303\240tic: als men\303\272s mentre estan oberts, i a pantalles secund"
-   "\303\240ries, com ara una pantalla t\303\240ctil. Sempre: a qualsevol pantalla; per a pistoles "
-   "\303\262ptiques. Desactivat: enlloc.",
    "Demana als auriculars la seva velocitat de rellotge de CPU m\303\251s alta, per sobre del que po"
    "t suportar, de manera que el contingut exigent pugui mantenir el ritme dels auriculars. Consumei"
    "x m\303\251s bateria i funciona amb m\303\251s calor; uns auriculars calents encara poden anar m"
@@ -10546,7 +10539,6 @@ static const struct
    "nt\303\251n premuts els botons per utilitzar-los i, despr\303\251s, tria qu\303\250 fan. Esquerr"
    "a: tria qu\303\250 fan. D'acord: introdueix l'acci\303\263. Inici: elimina-la.",
    "Establir botons",
-   "compartit amb el port %u",
    "Canviant el controlador de DualShock 3: permet en el terminal de Windows.",
    "El controlador DualShock 3 no ha canviat: No es van concedir drets d'administrador.",
    "S'ha activat el suport de DualShock 3. El controlador torna a connectar autom\303\240ticament.",
@@ -10920,7 +10912,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243982u
+      (sizeof(msg_hash_ca_blob) == (243481u
 #ifdef ANDROID
        + 281u
 #endif
@@ -13946,7 +13938,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
@@ -13979,6 +13970,8 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
@@ -15499,10 +15492,8 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PERF_BOOST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
@@ -15899,7 +15890,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MSG_INPUT_COMBO_PRESS_DEPTH,
    (msg_hash_id_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
    (msg_hash_id_t)MSG_INPUT_COMBO_SET_BUTTONS,
-   (msg_hash_id_t)MSG_INPUT_DEVICE_INDEX_SHARED,
    (msg_hash_id_t)MSG_INPUT_DS3_ASKING,
    (msg_hash_id_t)MSG_INPUT_DS3_DECLINED,
    (msg_hash_id_t)MSG_INPUT_DS3_ENABLED,

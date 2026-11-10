@@ -2125,6 +2125,8 @@ static const struct
    char s_caf61308[9];
    char s_5410e874[6];
    char s_c7a27b20[9];
+   char s_d65a7d95[9];
+   char s_d6611158[4];
    char s_317b17ed[11];
    char s_94c8d15f[11];
    char s_1f66aac3[10];
@@ -6393,6 +6395,8 @@ static const struct
    "Otomatik",
    "Daima",
    "Otomatik",
+   "\304\260kiside",
+   "Yok",
    "180 derece",
    "270 derece",
    "90 derece",
@@ -9191,7 +9195,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169309u
+      (sizeof(msg_hash_tr_blob) == (169322u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11676,6 +11680,8 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,

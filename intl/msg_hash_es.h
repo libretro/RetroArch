@@ -2546,7 +2546,6 @@ static const struct
    char s_4b582a0c[39];
    char s_61213f1d[20];
    char s_95e4b29f[98];
-   char s_1ee69db0[20];
    char s_0cfd4fd0[11];
    char s_d64659c4[15];
    char s_0861dea4[23];
@@ -2586,6 +2585,8 @@ static const struct
    char s_c7a27b20[12];
    char s_740ed6e5[17];
    char s_c7ab7873[38];
+   char s_d65a7d95[6];
+   char s_d6611158[13];
    char s_83ecb279[18];
    char s_317b17ed[6];
    char s_94c8d15f[6];
@@ -4183,7 +4184,6 @@ static const struct
    char s_34400c79[105];
    char s_34400c7a[104];
    char s_4a09218b[31];
-   char s_dea334de[235];
    char s_cacc1492[91];
    char s_9382c86e[277];
    char s_774bb68a[196];
@@ -4191,7 +4191,6 @@ static const struct
    char s_fbdd5b7e[289];
    char s_3e7750f7[439];
    char s_c0c6924e[243];
-   char s_c83fcc7e[256];
    char s_d0c5c252[264];
    char s_ac07820e[316];
    char s_2fe7ca1a[309];
@@ -4224,7 +4223,6 @@ static const struct
    char s_dc6f9d69[71];
    char s_417085f4[52];
    char s_1bcf70a7[139];
-   char s_fbed99aa[185];
    char s_2e2ca41a[330];
    char s_f48b1fac[59];
    char s_f4ad1b37[95];
@@ -4310,7 +4308,6 @@ static const struct
    char s_3c13e61f[143];
    char s_d96182c1[37];
    char s_d740017d[96];
-   char s_675acf1d[52];
    char s_93bbb839[112];
    char s_4d0b4ce0[113];
    char s_f99a7d5e[278];
@@ -4629,7 +4626,6 @@ static const struct
    char s_b969706a[294];
    char s_a3f6ebc3[16];
    char s_98adf951[47];
-   char s_11b4cc97[28];
    char s_d3e49974[40];
    char s_a8fa00e0[82];
    char s_4c1e527b[94];
@@ -7768,7 +7764,6 @@ static const struct
    "\303\215ndice del monitor",
    "Permitir que la pantalla completa sobrepase la muesca (\"notch\") de los dispositivos Android e "
    "iOS",
-   "Mandos de las gafas",
    "Combinados",
    "Independientes",
    "Distancia de pantallas",
@@ -7808,6 +7803,8 @@ static const struct
    "Autom\303\241tico",
    "Seg\303\272n las gafas",
    "Frecuencia de actualizaci\303\263n de gafas",
+   "Ambos",
+   "No compartir",
    "Ancho de pantalla",
    "180\302\260",
    "270\302\260",
@@ -10450,9 +10447,6 @@ static const struct
    "Especifica una posici\303\263n personalizada del texto en pantalla respecto al eje Y. 0 es el bo"
    "rde inferior.",
    "Selecciona la pantalla a usar.",
-   "Establece la forma de gestionar los mandos de las gafas. Combinados hace que ambos sean reconoci"
-   "dos como un solo mando del jugador 1. Independientes hace que el mando izquierdo sea el del juga"
-   "dor 1 y el mando derecho el del jugador 2.",
    "Indica la distancia respecto a tu posici\303\263n con la que las gafas mostrar\303\241n las pant"
    "allas.",
    "Deja este espacio entre las pantallas que se conecten por sus bordes, de forma lateral, en una e"
@@ -10478,10 +10472,6 @@ static const struct
    "Muestra tambi\303\251n los contenidos en un casco OpenXR: cada pantalla flotando por separado, e"
    "n ambos ojos de la estereoscopia 3D y con el men\303\272 delante. Para Vulkan, as\303\255 como p"
    "ara OpenGL en Linux. La ventana seguir\303\241 mostrando su imagen normal.",
-   "Indica a qu\303\251 se\303\261alar\303\241 y tocar\303\241 el gatillo de un mando en vez de puls"
-   "ar L2 o R2. Valor autom\303\241tico: al men\303\272 cuando est\303\251 abierto y a las pantallas"
-   " secundarias, como si fuesen t\303\241ctiles. Siempre: a todas las pantallas, a usar con lightgu"
-   "ns. No: a nada.",
    "Muestra una l\303\255nea que va desde cada mando hasta d\303\263nde apuntan. Solo en modo de edi"
    "ci\303\263n: al mover las pantallas durante la edici\303\263n. Siempre: mostrar\303\241 los hace"
    "s tambi\303\251n dentro del men\303\272 y al usar lightguns. Desactiva esta opci\303\263n para n"
@@ -10569,9 +10559,6 @@ static const struct
    "Selecciona la pantalla flotante que se modificar\303\241.",
    "Acoplada mantiene esta pantalla con el resto. Independiente la muestra en una ventana o pantalla"
    " aparte. Oculta no mostrar\303\241 esa pantalla.",
-   "D\303\263nde ir\303\241 esta pantalla si se configura como independiente. El valor autom\303\241"
-   "tico elegr\303\241 una segunda pantalla. La pantalla donde se est\303\251 mostrando RetroArch co"
-   "nservar\303\241 su pantalla.",
    "Cierra el men\303\272 y permite reubicar las pantallas y el men\303\272 de las gafas con los man"
    "dos: usa el agarre para agarrar elementos, el gatillo para inclinar, el stick para cambiar la di"
    "stancia y el tama\303\261o, el stick de la mano libre para girar e inclinar, el bot\303\263n pri"
@@ -10770,7 +10757,6 @@ static const struct
    "eto para no tener que cambiar entre modos de v\303\255deo.",
    "Cambia los ajustes del modo ventana.",
    "Permite que las pantallas secundarias puedan utilizar ventanas independientes en el escritorio.",
-   "Muestra las pantallas secundarias en otra pantalla.",
    "Establece la altura m\303\241xima de la ventana al reescalarla autom\303\241ticamente seg\303"
    "\272n el valor de Escala en ventana.",
    "Establece la anchura m\303\241xima de la ventana al reescalarla autom\303\241ticamente seg\303"
@@ -11137,7 +11123,6 @@ static const struct
    "Aceptar: escribir. START: eliminar.",
    "Asignar botones",
    "El mando %u (%04X:%04X) est\303\241 siendo ignorado.",
-   "compartido con el puerto %u",
    "El mando %04X:%04X vuelve a ser le\303\255do.",
    "Cambiando controlador de DualShock\302\2403: debes aceptar la notificaci\303\263n de Windows.",
    "No se ha cambiado el controlador para DualShock\302\2403: no se han dado permisos de administrad"
@@ -11535,7 +11520,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (273419u
+      (sizeof(msg_hash_es_blob) == (272662u
 #ifdef ANDROID
        + 329u
 #endif
@@ -14644,7 +14629,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
@@ -14684,6 +14668,8 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
@@ -16265,7 +16251,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_HINGE_GAP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_PAUSE,
@@ -16273,7 +16258,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SNAP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SNAP_ANGLES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER_BEAM,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_MENU_FOLLOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PERF_BOOST,
@@ -16306,7 +16290,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,
@@ -16387,7 +16370,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
@@ -16705,7 +16687,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
    (msg_hash_id_t)MSG_INPUT_COMBO_SET_BUTTONS,
    (msg_hash_id_t)MSG_INPUT_DEVICE_IGNORED,
-   (msg_hash_id_t)MSG_INPUT_DEVICE_INDEX_SHARED,
    (msg_hash_id_t)MSG_INPUT_DEVICE_UNIGNORED,
    (msg_hash_id_t)MSG_INPUT_DS3_ASKING,
    (msg_hash_id_t)MSG_INPUT_DS3_DECLINED,

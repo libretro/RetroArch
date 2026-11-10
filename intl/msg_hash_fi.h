@@ -2003,6 +2003,8 @@ static const struct
    char s_9eb59c3e[15];
    char s_34b2592a[15];
    char s_c7a27b20[14];
+   char s_d65a7d95[9];
+   char s_d6611158[12];
    char s_317b17ed[8];
    char s_94c8d15f[8];
    char s_de16b5d2[9];
@@ -5562,6 +5564,8 @@ static const struct
    "Ei k\303\244yt\303\266ss\303\244",
    "Ei k\303\244yt\303\266ss\303\244",
    "Automaattinen",
+   "Molemmat",
+   "Ei mit\303\244\303\244n",
    "180 as.",
    "270 as.",
    "Normaali",
@@ -7576,7 +7580,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123449u
+      (sizeof(msg_hash_fi_blob) == (123470u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9904,6 +9908,8 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,

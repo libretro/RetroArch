@@ -2474,7 +2474,6 @@ static const struct
    char s_4b582a0c[38];
    char s_61213f1d[21];
    char s_95e4b29f[94];
-   char s_1ee69db0[19];
    char s_0cfd4fd0[9];
    char s_d64659c4[9];
    char s_0861dea4[21];
@@ -2496,6 +2495,8 @@ static const struct
    char s_bacb5991[26];
    char s_740ed6e5[16];
    char s_c7ab7873[42];
+   char s_d65a7d95[9];
+   char s_d6611158[16];
    char s_83ecb279[20];
    char s_de16b5d2[8];
    char s_57665cff[14];
@@ -4009,10 +4010,8 @@ static const struct
    char s_34400c79[98];
    char s_34400c7a[102];
    char s_4a09218b[36];
-   char s_dea334de[211];
    char s_cacc1492[67];
    char s_c0c6924e[273];
-   char s_c83fcc7e[255];
    char s_cdf158e0[403];
    char s_7efaf561[275];
    char s_c90aff27[113];
@@ -7474,7 +7473,6 @@ static const struct
    "Num\303\251ro du moniteur ",
    "Activer le d\303\251passement de l'encoche (notch) en plein \303\251cran sur les appareils Andro"
    "id et iOS",
-   "Manettes de casque",
    "Combin\303\251",
    "S\303\251par\303\251",
    "Distance de l'\303\251cran",
@@ -7496,6 +7494,8 @@ static const struct
    "Mouvement de suivi souple",
    "Choix du casque",
    "Fr\303\251quence de rafra\303\256chissement du casque",
+   "Les deux",
+   "Ne pas partager",
    "Largeur de l'\303\251cran",
    "Normale",
    "Sortie vid\303\251o",
@@ -10088,17 +10088,11 @@ static const struct
    "Sp\303\251cifier la position personalis\303\251e sur l'axe Y pour le texte \303\240 l'\303\251cr"
    "an. 0 est le bord inf\303\251rieur.",
    "S\303\251lectionner l'\303\251cran \303\240 utiliser.",
-   "Comment fonctionnent les manettes du casque. En mode combin\303\251, elles forment une seule man"
-   "ette pour le joueur 1. En mode s\303\251par\303\251, la manette de gauche est attribu\303\251e a"
-   "u joueur 1 et celle de droite au joueur 2.",
    "La distance \303\240 laquelle le casque affiche les \303\251crans devant vous.",
    "Afficher \303\251galement le contenu dans un casque OpenXR : chaque \303\251cran appara\303\256t"
    " comme un \303\251cran flottant distinct, en 3D st\303\251r\303\251oscopique, pour les deux yeux"
    ", avec le menu plac\303\251 devant eux. Utilise Vulkan, ou OpenGL sous Linux. La fen\303\252tre "
    "conserve son affichage habituel.",
-   "Utilise les zones tactiles de la manette au lieu d'appuyer sur L2 ou R2. Auto : dans le menu lor"
-   "squ'il est ouvert, ainsi que les \303\251crans secondaires comme un \303\251cran tactile. Toujou"
-   "rs : dans tous les \303\251crans (pour les pistolets). D\303\251sactiv\303\251 : nulle part.",
    "Emplacement des \303\251crans par rapport au casque. Fix\303\251 dans la pi\303\250ce : l\303"
    "\240 o\303\271 la fonction de recentrage les place. Suivre la t\303\252te : toujours devant vous"
    " ; sur un grand \303\251cran, les bords se situent l\303\240 o\303\271 la vision \303\240 traver"
@@ -11033,7 +11027,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (258067u
+      (sizeof(msg_hash_fr_blob) == (257607u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14056,7 +14050,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
@@ -14078,6 +14071,8 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_LAZY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -15571,10 +15566,8 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,

@@ -2339,6 +2339,8 @@ static const struct
    char s_5410e874[7];
    char s_9eb59c3e[12];
    char s_34b2592a[12];
+   char s_d65a7d95[6];
+   char s_d6611158[8];
    char s_57665cff[7];
    char s_0e2c0fca[44];
    char s_93ac5ec8[42];
@@ -6940,6 +6942,8 @@ static const struct
    "Sempre",
    "Desactivado",
    "Desactivado",
+   "Ambos",
+   "Ning\303\272n",
    "Sa\303\255da",
    "Correcci\303\263n de sobreexploraci\303\263n (inferior)",
    "Correcci\303\263n de sobreexploraci\303\263n (arriba)",
@@ -9790,7 +9794,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (210903u
+      (sizeof(msg_hash_gl_blob) == (210917u
 #ifdef ANDROID
        + 365u
 #endif
@@ -12575,6 +12579,8 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,

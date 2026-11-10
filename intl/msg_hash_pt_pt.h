@@ -815,6 +815,7 @@ static const struct
    char s_61213f1d[19];
    char s_caf61308[12];
    char s_c7a27b20[12];
+   char s_d6611158[15];
    char s_57665cff[7];
    char s_6cdf4f07[32];
    char s_b3d1e989[13];
@@ -2278,6 +2279,7 @@ static const struct
    "\303\215ndice do monitor",
    "Autom\303\241tico",
    "Autom\303\241tico",
+   "N\303\243o partilhar",
    "Sa\303\255da",
    "Utilizar grava\303\247\303\243o p\303\263s-filtro",
    "Personalizar",
@@ -3020,7 +3022,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55120u
+      (sizeof(msg_hash_pt_pt_blob) == (55135u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3926,6 +3928,7 @@ static const msg_hash_id_t msg_hash_pt_pt_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,

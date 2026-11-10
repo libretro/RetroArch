@@ -2278,6 +2278,8 @@ static const struct
    char s_9eb59c3e[12];
    char s_34b2592a[12];
    char s_c7a27b20[10];
+   char s_d65a7d95[7];
+   char s_d6611158[7];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_de16b5d2[1];
@@ -6690,6 +6692,8 @@ static const struct
    "Malebligita",
    "Malebligita",
    "A\305\255tomata",
+   "Amba\305\255",
+   "Neniom",
    "180\302\260",
    "270\302\260",
    "",
@@ -9166,7 +9170,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (170775u
+      (sizeof(msg_hash_eo_blob) == (170789u
 #ifdef ANDROID
        + 312u
 #endif
@@ -11874,6 +11878,8 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,

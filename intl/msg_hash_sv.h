@@ -318,6 +318,7 @@ static const struct
    char s_1bf49fce[37];
    char s_11e34db0[45];
    char s_0058b881[9];
+   char s_7bc3f4b6[7];
    char s_14ec7b7e[10];
    char s_00614813[8];
    char s_8584f1d6[10];
@@ -852,6 +853,7 @@ static const struct
    char s_539024ed[9];
    char s_3703a97b[12];
    char s_933104ed[23];
+   char s_9894f8ce[15];
    char s_c6b760c9[51];
    char s_1d5a27f5[44];
    char s_18029d7e[11];
@@ -1028,6 +1030,9 @@ static const struct
    char s_800197ff[28];
    char s_93d13126[9];
    char s_7785c81e[30];
+   char s_4c280c7b[24];
+   char s_48da9f69[16];
+   char s_f6722142[26];
    char s_38cf005e[35];
    char s_7e9108fa[6];
    char s_f455cf63[4];
@@ -1638,6 +1643,7 @@ static const struct
    char s_fa6d4901[21];
    char s_4e2d78a1[18];
    char s_7ea8ec8f[19];
+   char s_0cb936fe[26];
    char s_e1606ab3[20];
    char s_7772fc51[31];
    char s_29889f9f[16];
@@ -2420,6 +2426,9 @@ static const struct
    char s_5741c1d0[14];
    char s_a1a7717d[19];
    char s_e6ca3876[32];
+   char s_c757f528[18];
+   char s_6eca94f8[14];
+   char s_edc59557[14];
    char s_1fba8831[35];
    char s_ff960910[19];
    char s_17690f5a[36];
@@ -2432,7 +2441,10 @@ static const struct
    char s_4b582a0c[31];
    char s_61213f1d[12];
    char s_95e4b29f[71];
-   char s_1ee69db0[28];
+   char s_4d5d23af[12];
+   char s_181a290c[11];
+   char s_181d8487[10];
+   char s_1ee69db0[34];
    char s_0cfd4fd0[11];
    char s_d64659c4[8];
    char s_0861dea4[15];
@@ -2463,6 +2475,18 @@ static const struct
    char s_bacb5991[16];
    char s_740ed6e5[15];
    char s_c7ab7873[32];
+   char s_1a530177[9];
+   char s_24609441[14];
+   char s_f7d0f128[6];
+   char s_e3a41a10[38];
+   char s_f2c95394[10];
+   char s_12be9dca[11];
+   char s_9c547fe9[11];
+   char s_d65a7d95[6];
+   char s_d65fcd13[9];
+   char s_d6611158[6];
+   char s_a2c83706[7];
+   char s_034eab33[19];
    char s_83ecb279[12];
    char s_317b17ed[7];
    char s_94c8d15f[7];
@@ -2507,6 +2531,7 @@ static const struct
    char s_a40653a7[25];
    char s_e67b672d[33];
    char s_52e3d6ea[34];
+   char s_0eea4a53[30];
    char s_f387bafb[13];
    char s_2c868ae4[12];
    char s_9c535394[9];
@@ -2613,6 +2638,8 @@ static const struct
    char s_8f379310[32];
    char s_6a9b757c[20];
    char s_6c52dfb1[32];
+   char s_9e5596c6[26];
+   char s_b9bc0c48[24];
    char s_9119ef97[21];
 #if defined (WIIU)
 #ifdef WIIU
@@ -2622,10 +2649,12 @@ static const struct
    char s_84c46931[27];
    char s_ebf10493[14];
    char s_d15bd14f[24];
+   char s_79ea50ef[36];
    char s_539d5393[8];
    char s_a64b3a0b[22];
    char s_83e8dc72[22];
    char s_7cf985f0[33];
+   char s_cfc4e36b[15];
    char s_0f5266ce[14];
    char s_0f97fdc1[5];
    char s_ea2674d3[32];
@@ -3071,6 +3100,7 @@ static const struct
    char s_71b76e1b[399];
    char s_f96ddf69[90];
    char s_d84f519b[186];
+   char s_7ba567bc[61];
    char s_5d20ea2c[58];
    char s_b339b327[157];
    char s_a9e0aaa3[92];
@@ -3200,12 +3230,20 @@ static const struct
    char s_ece34ee9[252];
    char s_8b8a59ad[122];
    char s_f426bf8c[52];
+   char s_a1003f83[65];
+   char s_ba14f8e9[14];
+   char s_16246941[63];
+   char s_a7f838ad[11];
+   char s_7f1be186[30];
+   char s_84959c2c[42];
+   char s_e0a0379c[16];
    char s_f88b978c[180];
    char s_47df0525[61];
    char s_03e272fc[52];
    char s_5c2cc60f[80];
    char s_d6d33eda[159];
    char s_d6d8d4be[139];
+   char s_ff1242c9[32];
    char s_e86d2704[75];
    char s_dda608b5[301];
    char s_bc08c395[269];
@@ -3514,7 +3552,9 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[59];
    char s_1536325c[253];
+   char s_ad621411[89];
    char s_f6ec26c1[45];
+   char s_4f7fb41f[98];
    char s_70f70009[343];
    char s_3487ce71[36];
 #endif
@@ -3610,6 +3650,7 @@ static const struct
    char s_abf90aae[129];
    char s_b48e1eda[62];
    char s_4113227d[48];
+   char s_1e07c6ac[92];
    char s_0a1cf5a1[158];
    char s_64e37a7f[65];
    char s_cac7ba4d[57];
@@ -4029,6 +4070,8 @@ static const struct
    char s_66f2b57e[38];
    char s_a776daeb[88];
    char s_88095324[88];
+   char s_0c7641d6[90];
+   char s_b3e8e1a6[113];
    char s_c0f9a2df[114];
    char s_ed06873e[52];
    char s_e08b7fc8[115];
@@ -4040,7 +4083,8 @@ static const struct
    char s_34400c79[73];
    char s_34400c7a[70];
    char s_4a09218b[39];
-   char s_dea334de[176];
+   char s_ee9c3e5d[75];
+   char s_dea334de[228];
    char s_cacc1492[52];
    char s_9382c86e[280];
    char s_774bb68a[196];
@@ -4054,6 +4098,9 @@ static const struct
    char s_2fe7ca1a[226];
    char s_cdf158e0[305];
    char s_7efaf561[212];
+   char s_d1a27e65[203];
+   char s_5c111717[233];
+   char s_0ed76ce1[131];
    char s_c90aff27[75];
    char s_19d092ed[43];
    char s_1eebf4f8[181];
@@ -4078,10 +4125,10 @@ static const struct
    char s_8cee3615[213];
    char s_87ba81db[147];
    char s_58c80718[291];
+   char s_14ce7a81[76];
    char s_dc6f9d69[55];
    char s_417085f4[44];
    char s_1bcf70a7[142];
-   char s_fbed99aa[156];
    char s_2e2ca41a[296];
    char s_f48b1fac[55];
    char s_f4ad1b37[84];
@@ -4157,6 +4204,9 @@ static const struct
    char s_9506fc7d[97];
    char s_9506fc7e[97];
    char s_47ae341f[105];
+   char s_5e122df4[238];
+   char s_cc84c32d[67];
+   char s_fa09f4f6[42];
    char s_48696c85[74];
 #if defined (WIIU)
 #ifdef WIIU
@@ -4166,7 +4216,7 @@ static const struct
    char s_3c13e61f[103];
    char s_d96182c1[42];
    char s_d740017d[59];
-   char s_675acf1d[50];
+   char s_675acf1d[91];
    char s_93bbb839[112];
    char s_4d0b4ce0[112];
    char s_f99a7d5e[209];
@@ -4470,6 +4520,7 @@ static const struct
    char s_b7b83070[84];
    char s_0a4aab6c[45];
    char s_46f6a65d[9];
+   char s_1f85370f[42];
    char s_265dbfa3[46];
    char s_b0e45a57[30];
    char s_543fcabd[11];
@@ -4486,7 +4537,7 @@ static const struct
    char s_b969706a[243];
    char s_a3f6ebc3[18];
    char s_98adf951[63];
-   char s_11b4cc97[18];
+   char s_11b4cc97[20];
    char s_d3e49974[39];
    char s_a8fa00e0[72];
    char s_4c1e527b[93];
@@ -4509,6 +4560,7 @@ static const struct
    char s_b43a100a[19];
    char s_b8bfcaec[192];
    char s_51df877a[39];
+   char s_ae6be748[130];
    char s_136098cd[31];
    char s_f482576f[34];
    char s_d2b9475b[100];
@@ -4562,6 +4614,7 @@ static const struct
    char s_f279fcb2[60];
    char s_8b487430[33];
 #endif
+   char s_4e346408[37];
    char s_a602dd84[29];
    char s_aa7139c6[64];
    char s_4ae9f9f9[69];
@@ -4664,6 +4717,7 @@ static const struct
    char s_bd039188[19];
    char s_9c7aa654[23];
    char s_e43d27b3[19];
+   char s_3d24ce62[62];
    char s_fbd2d537[87];
    char s_bd8967e3[62];
    char s_58cc2bb3[44];
@@ -4759,6 +4813,12 @@ static const struct
    char s_bdc78c0d[34];
    char s_850e7bf8[33];
    char s_710d99e5[36];
+   char s_ad0b447c[34];
+   char s_18bc6492[36];
+   char s_607ae60d[30];
+   char s_dee6b223[35];
+   char s_ff0097ff[50];
+   char s_a9177805[52];
    char s_efceecfb[18];
    char s_60038fe5[23];
    char s_91ec0bdf[50];
@@ -4817,6 +4877,13 @@ static const struct
    char s_4f3bb585[50];
    char s_5876788a[64];
    char s_b7248c5d[62];
+   char s_a3e7b13a[133];
+   char s_966a8865[82];
+   char s_69e2b087[95];
+   char s_098459c5[52];
+   char s_35e09a43[41];
+   char s_a27fec29[96];
+   char s_7182190e[114];
    char s_a7ae1b42[22];
 #ifdef HAVE_LAKKA
    char s_ebacf443[25];
@@ -5375,6 +5442,7 @@ static const struct
    "L\303\244s in ommappningsfiler automatiskt",
    "L\303\244s in shaderf\303\266rinst\303\244llningar automatiskt",
    "Tillbaka",
+   "Avbryt",
    "Bekr\303\244fta",
    "Avsluta",
    "Rulla ner",
@@ -5912,6 +5980,7 @@ static const struct
    "Svarstid",
    "H\303\245ll ned i",
    "Vad kombinationen g\303\266r",
+   "Handkontroller",
    "D\303\266lj obundna inmatningsbeskrivningar f\303\266r k\303\244rnor",
    "Visa etiketter f\303\266r inmatningsbeskrivningar",
    "Enhetindex",
@@ -6088,6 +6157,9 @@ static const struct
    "Visa inmatningar fr\303\245n Port",
    "Ber\303\266rda",
    "Visa muspekare med \303\266verl\303\244gg",
+   "L\303\244gg till handkontroll",
+   "%s (spelare %u)",
+   "%s (reglage f\303\266r port %u)",
    "Pollningsbeteende (omstart kr\303\244vs)",
    "Tidig",
    "Sen",
@@ -6701,6 +6773,7 @@ static const struct
    "Ta bort () inneh\303\245ll",
    "Ta bort () och []",
    "Hantera Spellistor",
+   "Uppdatera alla spellistor",
    "Uppdatera spellista",
    "\303\205terst\303\244ll k\303\244rnassociationer",
    "Sorteringsmetod",
@@ -7492,6 +7565,9 @@ static const struct
    "Videolayouter",
    "Max bildrutelatens",
    "Maximalt antal swapchain-bilder",
+   "Menyns bildsk\303\244rm",
+   "Menyn f\303\266ljer",
+   "Spelsk\303\244rm %u",
    "Meddelandens bakgrundsf\303\244rg (bl\303\245)",
    "Meddelandebakgrund",
    "Meddelandens bakgrundsf\303\244rg (gr\303\266n)",
@@ -7504,7 +7580,10 @@ static const struct
    "Meddelandeposition (vertikalt)",
    "Sk\303\244rmindex",
    "Aktivera helsk\303\244rm utan h\303\244nsyn till notch p\303\245 Android och iOS-enheter",
-   "Handkontroller f\303\266r headset",
+   "Aviseringar",
+   "Med spelet",
+   "Med menyn",
+   "OpenXR-layout f\303\266r handkontroller",
    "Kombinerat",
    "Separat",
    "Sk\303\244rmavst\303\245nd",
@@ -7535,6 +7614,18 @@ static const struct
    "Tr\303\266g f\303\266ljning",
    "Headsetets val",
    "Headsetets uppdateringsfrekvens",
+   "Pekknapp",
+   "St\303\266tf\303\245ngare",
+   "Grepp",
+   "%s (inte p\303\245 den h\303\244r handkontrollen)",
+   "Spakklick",
+   "Avtryckare",
+   "Pekh\303\244nder",
+   "B\303\245da",
+   "V\303\244nster",
+   "Ingen",
+   "H\303\266ger",
+   "Pekvidarebefordran",
    "Sk\303\244rmbredd",
    "180 gr",
    "270 gr",
@@ -7579,6 +7670,7 @@ static const struct
    "Skannlinjesynkronisering",
    "F\303\266rskjutning f\303\266r Scanline Sync",
    "Rullande skanningslinjesimulering",
+   "Bildsk\303\244rm f\303\266r spelsk\303\244rm %u",
    "Sk\303\244rmlayout",
    "Horisontell",
    "Vertikal",
@@ -7685,6 +7777,8 @@ static const struct
    "Anpassa bildformat (Y-position)",
    "Ange VI-sk\303\244rmbredd",
    "Vertikal synkronisering (Vsync)",
+   "Anpassad Vulkan-drivrutin",
+   "Systemet (s\303\244ker start)",
    "V\303\244ntbara swapchains",
 #if defined (WIIU)
 #ifdef WIIU
@@ -7694,10 +7788,12 @@ static const struct
    "F\303\266nster i helsk\303\244rmsl\303\244ge",
    "F\303\266nsterl\303\244ge",
    "Separata sk\303\244rmf\303\266nster",
+   "Spelsk\303\244rmar p\303\245 andra bildsk\303\244rmar",
    "Kopplad",
    "Maximal f\303\266nsterh\303\266jd",
    "Maximal f\303\266nsterbredd",
    "Anv\303\244nd anpassad f\303\266nsterstorlek",
+   "Bildsk\303\244rm: %s",
    "F\303\266nsterh\303\266jd",
    "Dold",
    "Horisontell sk\303\244rmf\303\266rskjutning",
@@ -8444,6 +8540,7 @@ static const struct
    "Vad som sker n\303\244r alla knappar i kombinationen h\303\245lls ned samtidigt: en snabbtangent"
    ", ett kommando utan snabbtangent eller ett av dina makron. Knapparna skickas fortfarande till sp"
    "elet.",
+   "V\303\244lj vilken spelare varje ansluten handkontroll spelar som.",
    "Den fysiska kontrollern som den k\303\244nns igen av RetroArch.",
    "F\303\266redragen: om angiven enhet finns, kommer den att allokeras till denna spelare. Reserver"
    "ad: ingen annan styrenhet kommer att tilldelas f\303\266r denna spelare.",
@@ -8676,6 +8773,13 @@ static const struct
    "V\303\244lj port f\303\266r inmatningsenhet att \303\266vervaka n\303\244r 'Visa inmatningar p"
    "\303\245 \303\266verl\303\244gg' \303\244r satt till 'Fysisk (Kontroller)'.",
    "Visa muspekaren n\303\244r ett sk\303\244rm\303\266verl\303\244gg anv\303\244nds.",
+   "\303\226ver maximalt antal anv\303\244ndare: spelar automatiskt (spelare %u)",
+   "Inte ansluten",
+   "Spelar inte: fler handkontroller \303\244n maximalt antal anv\303\244ndare",
+   "Spelare %u",
+   "Delas \302\267 reglage f\303\266r port %u",
+   "Spelare %u, delas \302\267 reglage f\303\266r port %u",
+   "Den h\303\244r porten",
    "P\303\245verkar hur inmatningspollning g\303\266rs i RetroArch. Om du st\303\244ller in den p"
    "\303\245 \342\200\235Tidig\342\200\235 eller \342\200\235Sen\342\200\235 kan det resultera i min"
    "dre f\303\266rdr\303\266jning, beroende p\303\245 din konfiguration.",
@@ -8688,6 +8792,7 @@ static const struct
    "till den.",
    "Anger vilken k\303\244rnport som tar emot indata fr\303\245n klientdelens handkontrollsport %u. "
    "\342\200\235Ingen\342\200\235 skickar inte indata till n\303\245gon k\303\244rnport.",
+   "Delar spelare %u (k\303\244rnport %u)",
    "Ommappningar till\303\244mpas endast till aktiv gamepad till vilken de sparades.",
    "\303\204ndra hur den virtuella RetroPad mappas till en fysisk inmatningsenhet. Om en inmatningse"
    "nhet k\303\244nns igen och automatiskt konfigurerad p\303\245 r\303\244tt s\303\244tt beh\303"
@@ -9254,7 +9359,11 @@ static const struct
    "\303\244g p\303\245 servern fungerar \303\244ven f\303\266r NFS version 4, d\303\244r servern ka"
    "n visa den under ett kortare namn. L\303\244mna tomt f\303\266r att ange exporten i adressen som"
    " nfs://server/export/path.",
+   "Port f\303\266r MOUNT-tj\303\244nsten. 0 fr\303\245gar serverns portmappare. Version 4 anv\303"
+   "\244nder den inte.",
    "Anslutningar som h\303\245lls \303\266ppna till servern.",
+   "Port f\303\266r NFS-tj\303\244nsten. 0 fr\303\245gar serverns portmappare i version 3 och betyde"
+   "r 2049 i version 4.",
    "Data som h\303\244mtas i f\303\266rv\303\244g n\303\244r ett spel l\303\244ser en fil i sm\303"
    "\245 delar. En bakgrundstr\303\245d f\303\266rbereder n\303\244sta f\303\266nster. Kan g\303\266"
    "ra stora skivavbildningar mjukare \303\266ver en l\303\245ngsam l\303\244nk, men anv\303\244nder"
@@ -9424,6 +9533,8 @@ static const struct
    "istepost som inte har n\303\245gon befintlig k\303\244rnassociation.",
    "\303\204ndra hur inneh\303\245llsetiketterna visas i den h\303\244r spellistan.",
    "Genomf\303\266r underh\303\245lls\303\245tg\303\244rder p\303\245 spellistor.",
+   "Skanna om varje spellista som har sparade skanningsinst\303\244llningar med dessa inst\303\244ll"
+   "ningar.",
    "L\303\244gg till nytt inneh\303\245ll och ta bort ogiltiga poster genom att upprepa den inneh"
    "\303\245llsskanning som senast anv\303\244ndes f\303\266r att skapa eller redigera spellistan.",
    "Ta bort befintliga k\303\244rnassociationer f\303\266r alla spellisteposter.",
@@ -10117,6 +10228,10 @@ static const struct
    "\303\244ge.",
    "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
    "\303\244ge.",
+   "Bildsk\303\244rmen som menyn visas p\303\245. Auto anv\303\244nder det automatiska valet f\303"
+   "\266r spelsk\303\244rm 1.",
+   "Placerar menyn p\303\245 den h\303\244r spelsk\303\244rmens bildsk\303\244rm, med eller utan spe"
+   "l. Separat ger menyn en egen bildsk\303\244rm.",
    "St\303\244ller in det bl\303\245a v\303\244rdet f\303\266r bakgrundsf\303\244rgen f\303\266r sk"
    "\303\244rmmeddelanden. Giltiga v\303\244rden \303\244r mellan 0 och 255.",
    "Aktiverar en bakgrundsf\303\244rg f\303\266r sk\303\244rmmeddelanden.",
@@ -10135,9 +10250,11 @@ static const struct
    "Ange anpassad X-axelposition f\303\266r sk\303\244rmtext. 0 \303\244r den v\303\244nstra kanten.",
    "Ange anpassad Y-axelposition f\303\266r sk\303\244rmtext. 0 \303\244r den nedre kanten.",
    "V\303\244lj vilken sk\303\244rm som ska anv\303\244ndas.",
-   "Hur headsetets handkontroller anv\303\244nds. Kombinerat g\303\266r b\303\245da till en handkont"
-   "roll f\303\266r spelare 1. Separat g\303\266r v\303\244nster handkontroll till spelare 1 och h"
-   "\303\266ger till spelare 2.",
+   "Var aviseringar visas n\303\244r menyn finns p\303\245 en annan bildsk\303\244rm \303\244n spele"
+   "t.",
+   "Hur headsetets handkontroller visas. Kombinerad g\303\266r b\303\245da till en handkontroll. Sep"
+   "arat g\303\266r varje hand till en egen handkontroll. Var och en spelar som spelaren som angetts"
+   " ovan f\303\266r den, spelare 1 om inget annat har angetts.",
    "Hur l\303\245ngt framf\303\266r dig headsetet visar sk\303\244rmarna.",
    "L\303\244mnar detta mellanrum mellan sk\303\244rmar som m\303\266ts kant mot kant, sida vid sida"
    ", i ett h\303\266rn eller g\303\245ngj\303\244rnsf\303\244st i en vinkel. En sk\303\244rm f\303"
@@ -10161,10 +10278,10 @@ static const struct
    "Visa \303\244ven inneh\303\245llet i ett OpenXR-headset: varje sk\303\244rm som en egen flytande"
    " sk\303\244rm, stereo 3D med b\303\245da \303\266gonen och menyn framf\303\266r sk\303\244rmarna"
    ". Vulkan eller OpenGL p\303\245 Linux. F\303\266nstret beh\303\245ller sin vanliga utmatning.",
-   "Var en handkontrolls avtryckare pekar och vidr\303\266r i st\303\244llet f\303\266r att trycka p"
-   "\303\245 L2 eller R2. Automatisk: i menyn n\303\244r den \303\244r \303\266ppen och p\303\245 se"
-   "kund\303\244ra sk\303\244rmar som peksk\303\244rm. Alltid: p\303\245 alla sk\303\244rmar, f\303"
-   "\266r ljuspistoler. Av: ingenstans.",
+   "Vart en handkontroll pekar, s\303\245 att pekknappen kan vidr\303\266ra en sk\303\244rm och avtr"
+   "yckaren kan klicka p\303\245 menyn. Auto: menyn n\303\244r den \303\244r \303\266ppen och sekund"
+   "\303\244ra sk\303\244rmar som peksk\303\244rmar. Alltid: alla sk\303\244rmar, f\303\266r ljuspis"
+   "toler. Av: ingenstans.",
    "En tunn linje fr\303\245n varje handkontroll till punkten d\303\244r lasern pekar. Endast redige"
    "ringsl\303\244ge: medan Redigera sk\303\244rmar flyttar sk\303\244rmarna. Alltid: \303\244ven f"
    "\303\266r menyn och ljuspistoler. Av: aldrig.",
@@ -10183,6 +10300,15 @@ static const struct
    "Uppdateringsfrekvensen som ska beg\303\244ras fr\303\245n headsetet. Automatisk v\303\244ljer de"
    "n som passar inneh\303\245llet b\303\244st. Headsetets val beg\303\244r aldrig n\303\245gon. Inn"
    "eh\303\245llet k\303\266rs synkront med headsetet n\303\244r frekvensen passar.",
+   "Knappen som vidr\303\266r det handen pekar mot. N\303\244r den pekar n\303\245gon annanstans try"
+   "cker den p\303\245 det den \303\244r bunden till. En hand utan den h\303\244r knappen kan inte v"
+   "idr\303\266ra. Avtryckaren klickar alltid p\303\245 menyn.",
+   "H\303\244nderna som vidr\303\266r en sk\303\244rm de pekar mot, till exempel en peksk\303\244rm."
+   " Den andra handen pekar fortfarande p\303\245 menyn. Ingen st\303\244nger av pekfunktionen f\303"
+   "\266r headsetets handkontroller och l\303\244mnar sk\303\244rmarna \303\245t musen och \303\266v"
+   "erl\303\244gget.",
+   "Tryck \303\244ven p\303\245 det som pekknappen \303\244r bunden till medan den vidr\303\266r. Av"
+   " h\303\245ller tillbaka dessa bindningar under hela ber\303\266ringen.",
    "Bredden p\303\245 huvudsk\303\244rmen i headsetet. \303\226vriga sk\303\244rmar anpassas till de"
    "n.",
    "\303\204ndra inst\303\244llningar f\303\266r videoutmatning.",
@@ -10238,13 +10364,12 @@ static const struct
    "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
    "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
    "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "Bildsk\303\244rmen som spelsk\303\244rmen visas p\303\245. Auto v\303\244ljer en, Av utesluter d"
+   "en.",
    "Hur sk\303\244rmarna i system med flera sk\303\244rmar ska ordnas.",
    "V\303\244lj den flytande sk\303\244rm som ska justeras.",
    "Kopplad beh\303\245ller sk\303\244rmen tillsammans med de andra. Separat visar den i ett eget f"
    "\303\266nster eller p\303\245 en egen bildsk\303\244rm. Dold utel\303\244mnar den.",
-   "Var den h\303\244r sk\303\244rmen visas n\303\244r den \303\244r separat. Automatiskt v\303\244l"
-   "jer en andra bildsk\303\244rm. P\303\245 bildsk\303\244rmen d\303\244r RetroArch k\303\266rs beh"
-   "\303\245lls sk\303\244rmen kopplad.",
    "St\303\244ng menyn och flytta VR-headsetets sk\303\244rmar och meny med handkontrollerna: greppk"
    "nappen tar tag, avtryckaren vinklar, styrspaken \303\244ndrar avst\303\245nd och storlek, den fr"
    "ia handens styrspak vrider och vinklar, huvudknappen \303\245terst\303\244ller och V\303\244lj n"
@@ -10432,6 +10557,12 @@ static const struct
    "\245dets Y-axelposition.",
    "Synkronisera videoutmatningen fr\303\245n grafikkortet till bildsk\303\244rmens uppdateringsfrek"
    "vens. Rekommenderas.",
+   "Anv\303\244nd ett Vulkan-drivrutinspaket (.zip) i st\303\244llet f\303\266r systemets drivrutin."
+   " Drivrutinen k\303\266rs inuti RetroArch: anv\303\244nd endast paket fr\303\245n en k\303\244lla"
+   " du litar p\303\245. Tr\303\244der i kraft n\303\244sta g\303\245ng Vulkan startar. Start: syste"
+   "mets drivrutin.",
+   "Kraschade vid f\303\266reg\303\245ende k\303\266rning, anv\303\244nder systemets drivrutin",
+   "%s anv\303\244nds igen vid n\303\244sta vanliga start",
    "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
 #if defined (WIIU)
 #ifdef WIIU
@@ -10443,7 +10574,8 @@ static const struct
    "\303\266rhindrar att visningsl\303\244ge \303\244ndras.",
    "\303\204ndra inst\303\244llningar f\303\266r f\303\266nsterl\303\244ge.",
    "Till\303\245t sekund\303\244ra sk\303\244rmar i separata skrivbordsf\303\266nster.",
-   "Visa sekund\303\244ra sk\303\244rmar p\303\245 en annan bildsk\303\244rm.",
+   "L\303\245t spelsk\303\244rmar och menyn anv\303\244nda andra bildsk\303\244rmar. Av beh\303\245l"
+   "ler allt i ett f\303\266nster.",
    "Ange den maximala h\303\266jden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244n"
    "dras automatiskt baserat p\303\245 'F\303\266nsterskala'.",
    "Ange den maximala bredden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244ndras a"
@@ -10799,6 +10931,7 @@ static const struct
    "ing ocks\303\245.",
    "Uppbl\303\245st kontrollsumma matchade inte CRC32.",
    "H\303\245ll in",
+   "Lyssnar efter spelare %u:s handkontroller",
    "Tryck p\303\245 tangentbord, mus eller spelkontroll",
    "Sl\303\244pp tangenter och knappar!",
    "Tidsgr\303\244ns",
@@ -10819,7 +10952,7 @@ static const struct
    "ort den.",
    "St\303\244ll in knappar",
    "Handkontroll %u (%04X:%04X) ignoreras och l\303\244ses inte l\303\244ngre.",
-   "Delas med port %u",
+   "anv\303\244nds av port %u",
    "Handkontroll %04X:%04X l\303\244ses in igen.",
    "\303\204ndrar DualShock 3-drivrutinen. Till\303\245t \303\244ndringen i Windows-prompten.",
    "DualShock 3-drivrutinen \303\244ndrades inte eftersom administrat\303\266rsr\303\244ttigheter in"
@@ -10848,6 +10981,8 @@ static const struct
    "tor i spelet, skrivna som \342\200\235ned 2, ned+h\303\266ger 2, a 4\342\200\235. En kombination"
    " aktiverar den. Start: ta bort den.",
    "Filnamn f\303\266r inmatnings\303\245sidos\303\244ttning",
+   "Listan \303\266ver handkontroller \303\244r full: st\303\244ll in en fr\303\245nkopplad handkont"
+   "roll med en spelare och utan egna snabbtangenter p\303\245 Auto",
    "Filnamn f\303\266r inmatningsf\303\266rval",
    "Filnamn f\303\266r inmatningsommappning",
    "Tryck p\303\245 en knapp eller f\303\266r en styrspak p\303\245 handkontrollen f\303\266r port %"
@@ -10905,6 +11040,7 @@ static const struct
    "Startar Wi-Fi-\303\245tkomstpunkt med SSID=%s och l\303\266sennyckel=%s",
    "St\303\244nger av Wi-Fi-\303\245tkomstpunkt.",
 #endif
+   "En inneh\303\245llsskanning p\303\245g\303\245r redan.",
    "Ogiltig arcade DAT-fil vald.",
    "Misslyckades med att l\303\244sa in arcade DAT-fil (ogiltigt format?)",
    "Vald arcade DAT-fil \303\244r f\303\266r stor (otillr\303\244ckligt med ledigt minne).",
@@ -11022,6 +11158,7 @@ static const struct
    "Rensar spellista: ",
    "K\303\244rnor \303\245terst\303\244lld: ",
    "Spellista rensad: ",
+   "Uppdaterade spellistor: %u, \303\266verhoppade: %u, misslyckade: %u",
    "Uppdatering misslyckades - arcade DAT-filen \303\244r f\303\266r stor (otillr\303\244ckligt med "
    "minne): ",
    "Uppdatering misslyckades - ogiltig/saknad inneh\303\245llskatalog: ",
@@ -11128,6 +11265,12 @@ static const struct
    "Genoms\303\266kning av katalog f\303\244rdig.",
    "Genoms\303\266kning av fil genomf\303\266rd.",
    "S\303\266ker efter tr\303\245dl\303\266sa n\303\244tverk...",
+   "kan inte ansluta till SMB-servern",
+   "kan inte sl\303\245 upp SMB-serverns namn",
+   "SMB-inloggningen misslyckades",
+   "SMB-serveradress inte konfigurerad",
+   "SMB-resursen hittades inte eller \303\245tkomst nekades",
+   "resursen skiljer sig fr\303\245n SMB-resursinst\303\244llningen",
    "Sk\303\244rmdump sparad",
    "Verkst\303\244ller: Standard",
    "Verkst\303\244ller: %dx%d - %s\nSTART f\303\266r att starta om",
@@ -11190,6 +11333,17 @@ static const struct
    "Misslyckades med att mata ut virtuell skivsl\303\244de.",
    "Synkronisera till inneh\303\245llets exakta bildfrekvens inaktiverat.",
    "Synkronisera till inneh\303\245llets exakta bildfrekvens aktiverat.",
+   "Den anpassade Vulkan-drivrutinen kraschade tidigare och \303\244r avst\303\244ngd f\303\266r den"
+   "na k\303\244rna. V\303\244lj den igen f\303\266r att f\303\266rs\303\266ka p\303\245 nytt.",
+   "Den anpassade Vulkan-drivrutinen kunde inte starta. Systemets drivrutin anv\303\244nds.",
+   "Paketet med den anpassade Vulkan-drivrutinen kan inte anv\303\244ndas. Systemets drivrutin anv"
+   "\303\244nds.",
+   "Starta om RetroArch f\303\266r att byta Vulkan-drivrutin.",
+   "Startade med systemets Vulkan-drivrutin.",
+   "Anpassade Vulkan-drivrutiner kr\303\244ver en Adreno-GPU och Android 9. Systemets drivrutin anv"
+   "\303\244nds.",
+   "Den anpassade Vulkan-drivrutinen har inte valts i menyn eller har \303\244ndrats. V\303\244lj de"
+   "n igen f\303\266r att anv\303\244nda den.",
    "V\303\244ntar p\303\245 klient...",
 #ifdef HAVE_LAKKA
    "Ansluter till Wi-Fi '%s'",
@@ -11203,7 +11357,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (231365u
+      (sizeof(msg_hash_sv_blob) == (234595u
 #ifdef ANDROID
        + 361u
 #endif
@@ -11611,7 +11765,9 @@ typedef char msg_hash_sv_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 59u
        + 253u
+       + 89u
        + 45u
+       + 98u
        + 343u
        + 36u
 #endif
@@ -12084,6 +12240,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
@@ -12618,6 +12775,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD_TIME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_TARGET,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -12794,6 +12952,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD_ITEM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_BINDS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
@@ -13404,6 +13565,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
@@ -14185,6 +14347,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MENU_DISPLAY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MENU_FOLLOWS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MENU_FOLLOWS_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -14197,6 +14362,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTIFICATIONS_WINDOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTIFICATIONS_WITH_GAME,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTIFICATIONS_WITH_MENU,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
@@ -14228,6 +14396,18 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_LAZY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_BUMPER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_GRIP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_MISSING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_STICK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_LEFT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_RIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_PASSTHROUGH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
@@ -14272,6 +14452,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
@@ -14378,6 +14559,8 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -14387,10 +14570,12 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
@@ -14829,6 +15014,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -14958,12 +15144,20 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ABOVE_MAX_USERS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_GONE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_NO_PORT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_PLAYER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARED_BINDS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARING,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_THIS_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT_SHARING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_ROTATION,
@@ -15271,7 +15465,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
@@ -15367,6 +15563,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
@@ -15785,6 +15982,8 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MENU_DISPLAY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MENU_FOLLOWS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -15796,6 +15995,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_NOTIFICATIONS_WINDOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_HINGE_GAP,
@@ -15810,6 +16010,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PERF_BOOST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_TOUCH_BUTTON,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_TOUCH_HANDS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
@@ -15834,10 +16037,10 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,
@@ -15909,6 +16112,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -16221,6 +16427,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
    (msg_hash_id_t)MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
    (msg_hash_id_t)MSG_INPUT_BIND_HOLD,
+   (msg_hash_id_t)MSG_INPUT_BIND_LISTENING_PLAYER,
    (msg_hash_id_t)MSG_INPUT_BIND_PRESS,
    (msg_hash_id_t)MSG_INPUT_BIND_RELEASE,
    (msg_hash_id_t)MSG_INPUT_BIND_TIMEOUT,
@@ -16260,6 +16467,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
    (msg_hash_id_t)MSG_INPUT_MACRO_ROW_SUBLABEL,
    (msg_hash_id_t)MSG_INPUT_OVERRIDE_FILENAME,
+   (msg_hash_id_t)MSG_INPUT_PLAYS_AS_FULL,
    (msg_hash_id_t)MSG_INPUT_PRESET_FILENAME,
    (msg_hash_id_t)MSG_INPUT_REMAP_FILENAME,
    (msg_hash_id_t)MSG_INPUT_REMAP_FIND_PRESS,
@@ -16313,6 +16521,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_LOCALAP_STARTING,
    (msg_hash_id_t)MSG_LOCALAP_SWITCHING_OFF,
 #endif
+   (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
@@ -16415,6 +16624,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CORES_RESET,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
@@ -16510,6 +16720,12 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_SCANNING_OF_DIRECTORY_FINISHED,
    (msg_hash_id_t)MSG_SCANNING_OF_FILE_FINISHED,
    (msg_hash_id_t)MSG_SCANNING_WIRELESS_NETWORKS,
+   (msg_hash_id_t)MSG_SCAN_SMB_CANNOT_CONNECT,
+   (msg_hash_id_t)MSG_SCAN_SMB_CANNOT_RESOLVE,
+   (msg_hash_id_t)MSG_SCAN_SMB_LOGIN_FAILED,
+   (msg_hash_id_t)MSG_SCAN_SMB_NO_SERVER,
+   (msg_hash_id_t)MSG_SCAN_SMB_NO_SHARE,
+   (msg_hash_id_t)MSG_SCAN_SMB_SHARE_DIFFERS,
    (msg_hash_id_t)MSG_SCREENSHOT_SAVED,
    (msg_hash_id_t)MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
    (msg_hash_id_t)MSG_SCREEN_RESOLUTION_APPLYING_DESC,
@@ -16568,6 +16784,13 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_VIRTUAL_DISK_TRAY_EJECT,
    (msg_hash_id_t)MSG_VRR_RUNLOOP_DISABLED,
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MSG_WIFI_CONNECTING_TO,

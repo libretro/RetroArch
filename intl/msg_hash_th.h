@@ -2356,6 +2356,8 @@ static const struct
    char s_34b2592a[10];
    char s_c7a27b20[28];
    char s_740ed6e5[40];
+   char s_d65a7d95[22];
+   char s_d6611158[40];
    char s_57665cff[16];
    char s_0e2c0fca[88];
    char s_93ac5ec8[82];
@@ -12047,6 +12049,9 @@ static const struct
    "\340\270\264",
    "\340\270\201\340\270\262\340\270\243\340\271\200\340\270\245\340\270\267\340\270\255\340\270\201"
    "\340\270\253\340\270\271\340\270\237\340\270\261\340\270\207",
+   "\340\270\227\340\270\261\340\271\211\340\270\207\340\270\204\340\270\271\340\271\210",
+   "\340\271\204\340\270\241\340\271\210\340\271\201\340\270\212\340\270\243\340\271\214\340\270\255"
+   "\340\270\264\340\270\231\340\270\236\340\270\270\340\270\225",
    "\340\270\202\340\270\262\340\270\255\340\270\255\340\270\201",
    "\340\270\201\340\270\262\340\270\243\340\270\212\340\270\224\340\271\200\340\270\212\340\270\242"
    "\340\270\252\340\271\210\340\270\247\340\270\231\340\270\227\340\270\265\340\271\210\340\270\245"
@@ -26511,7 +26516,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_th_blob_check[
-      (sizeof(msg_hash_th_blob) == (453647u
+      (sizeof(msg_hash_th_blob) == (453709u
 #ifdef ANDROID
        + 757u
 #endif
@@ -29364,6 +29369,8 @@ static const msg_hash_id_t msg_hash_th_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,

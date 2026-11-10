@@ -846,6 +846,7 @@ static const struct
    char s_61213f1d[13];
    char s_60258de0[7];
    char s_5410e874[7];
+   char s_d6611158[6];
    char s_317b17ed[11];
    char s_94c8d15f[11];
    char s_1f66aac3[10];
@@ -2127,6 +2128,7 @@ static const struct
    "Skjermindeks",
    "Alltid",
    "Alltid",
+   "Ingen",
    "180 grader",
    "270 grader",
    "90 grader",
@@ -2629,7 +2631,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29324u
+      (sizeof(msg_hash_no_blob) == (29330u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3605,6 +3607,7 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,

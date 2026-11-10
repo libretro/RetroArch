@@ -247,6 +247,8 @@ static const struct
    char s_aa9bc75d[11];
    char s_29f97e35[7];
    char s_569b0627[6];
+   char s_d65a7d95[6];
+   char s_d6611158[7];
    char s_57665cff[6];
    char s_50eb4c56[7];
    char s_c2280f28[6];
@@ -539,6 +541,8 @@ static const struct
    "Automatski",
    "Visoka",
    "Niska",
+   "Oboje",
+   "Ni\305\241ta",
    "Izlaz",
    "Visoka",
    "Niska",
@@ -605,7 +609,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4284u
+      (sizeof(msg_hash_hr_blob) == (4297u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -882,6 +886,8 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
