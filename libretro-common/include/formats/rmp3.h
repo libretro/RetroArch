@@ -79,10 +79,14 @@ typedef struct
  * without a frame (junk, or a frame whose bit reservoir reaches back
  * before the decoder joined the stream). The decoder keeps the bit
  * reservoir from call to call; rmp3dec_init starts it afresh, as at a
- * seek. s16 only: the synthesis runs in fixed point throughout. */
+ * seek. rmp3dec_decode_s16 synthesises in fixed point,
+ * rmp3dec_decode_f32 in float; a decoder keeps to one of the two
+ * from rmp3dec_init on. */
 void rmp3dec_init(rmp3dec *dec);
 int rmp3dec_decode_s16(rmp3dec *dec, const uint8_t *mp3, int mp3_bytes,
       int16_t *pcm, rmp3dec_frame_info *info);
+int rmp3dec_decode_f32(rmp3dec *dec, const uint8_t *mp3, int mp3_bytes,
+      float *pcm, rmp3dec_frame_info *info);
 
 /* One decoded MPEG frame, in whichever format the synthesis ran in.
  * The two pipelines share the storage through this union; a format

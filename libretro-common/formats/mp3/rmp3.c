@@ -3343,3 +3343,15 @@ int rmp3dec_decode_s16(rmp3dec *dec, const uint8_t *mp3, int mp3_bytes,
    }
    return rmp3dec_decode_frame(dec, mp3, mp3_bytes, pcm, info, 0);
 }
+
+int rmp3dec_decode_f32(rmp3dec *dec, const uint8_t *mp3, int mp3_bytes,
+      float *pcm, rmp3dec_frame_info *info)
+{
+   if (!dec || !mp3 || mp3_bytes <= 0 || !pcm || !info)
+   {
+      if (info)
+         memset(info, 0, sizeof(*info));
+      return 0;
+   }
+   return rmp3dec_decode_frame(dec, mp3, mp3_bytes, pcm, info, 1);
+}
