@@ -169,6 +169,20 @@ jobs:
           make clean && make check stream-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
+      - name: Media Foundation AAC portable and cross builds
+        shell: bash
+        working-directory: samples/record/mf_audio
+        run: |
+          set -eu
+          make clean all SANITIZER=address,undefined
+          make clean all CC=x86_64-w64-mingw32-gcc EXE=.exe
+          x86_64-w64-mingw32-objdump -p encode_test.exe > imports.txt
+          if grep -Ei 'DLL Name:.*(mfplat|mfaacenc|ole32)\.dll' imports.txt; then
+            echo 'Native AAC must load optional entry points at runtime'
+            exit 1
+          fi
+          make clean
+
       - name: RTMP protocol and sockets (ASan + UBSan, TSan, mingw-w64)
         shell: bash
         working-directory: libretro-common/samples/net/rtmp
@@ -257,3 +271,42 @@ jobs:
         with:
           path: ~/.ccache
           key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+
+  mf-audio-native:
+    name: Native Windows AAC packets and source clock
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Ensure the server media component is installed
+        shell: pwsh
+        run: |
+          if ((Get-CimInstance Win32_OperatingSystem).ProductType -ne 1) {
+            $feature = Get-WindowsFeature Server-Media-Foundation -ErrorAction Stop
+            if (-not $feature.Installed) {
+              $result = Install-WindowsFeature Server-Media-Foundation -ErrorAction Stop
+              if (-not $result.Success) { throw 'Media Foundation installation failed' }
+            }
+          }
+
+      - name: Native compiler and independent decoder
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: make mingw-w64-x86_64-gcc mingw-w64-x86_64-python mingw-w64-x86_64-ffmpeg
+
+      - name: Encode and independently decode native AAC
+        shell: msys2 {0}
+        working-directory: samples/record/mf_audio
+        run: |
+          set -eu
+          make clean native-check CC=gcc EXE=.exe
+          objdump -p encode_test.exe > imports.txt
+          if grep -Ei 'DLL Name:.*(mfplat|mfaacenc|ole32)\.dll' imports.txt; then
+            echo 'Native AAC must load optional entry points at runtime'
+            exit 1
+          fi
+          make clean

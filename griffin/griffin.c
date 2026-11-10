@@ -779,6 +779,10 @@ VIDEO DRIVER
 #include "../gfx/drivers/d3d12.c"
 #endif
 
+#ifdef HAVE_MF_AUDIO
+#include "../record/record_mf_audio.c"
+#endif
+
 #if defined(HAVE_D3D10)
 #include "../gfx/drivers/d3d10.c"
 #endif

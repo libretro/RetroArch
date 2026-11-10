@@ -2039,6 +2039,13 @@ ifeq ($(HAVE_D3D12), 1)
    DEFINES += -DHAVE_D3D12
 endif
 
+ifeq ($(HAVE_MF_AUDIO), 1)
+   ifneq ($(findstring Win32,$(OS)),)
+      DEFINES += -DHAVE_MF_AUDIO
+      OBJ += record/record_mf_audio.o
+   endif
+endif
+
 # H.264 previews decoded on the GPU, as rh264's backend; D3D12 imports
 # its frames as well
 ifneq ($(findstring 1, $(HAVE_D3D11) $(HAVE_D3D12)),)

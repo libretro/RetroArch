@@ -1144,6 +1144,12 @@ ifeq ($(HAVE_RFLV), 1)
    CFLAGS      += -DHAVE_RFLV
 endif
 
+ifeq ($(HAVE_MF_AUDIO), 1)
+   ifeq ($(system_platform), win)
+      CFLAGS   += -DHAVE_MF_AUDIO
+   endif
+endif
+
 ifeq ($(HAVE_IFINFO), 1)
    CFLAGS      += -DHAVE_IFINFO
 endif
