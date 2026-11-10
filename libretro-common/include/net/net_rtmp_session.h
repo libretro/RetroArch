@@ -44,15 +44,28 @@ bool net_rtmp_session_feed(net_rtmp_session_t *session,
 /* One output retirement, command dispatch or reply-parser step. True means
  * local progress; false requires transport activity or reports FAILED. */
 bool net_rtmp_session_step(net_rtmp_session_t *session);
-/* Borrow one output span. Partial consumption keeps its remaining bytes live. */
+/* Borrow one output span, capped to peer credit. Partial consumption keeps
+ * the grant live, even if a later peer message reduces its window. */
 bool net_rtmp_session_get(net_rtmp_session_t *session, net_rtmp_span_t *span);
 bool net_rtmp_session_consume(net_rtmp_session_t *session, size_t size);
+/* READY and no media borrow: announce a new outgoing chunk size. Media
+ * admission stays busy until the announcement has left the transport. */
+bool net_rtmp_session_chunk_size(net_rtmp_session_t *session, unsigned size);
+/* READY only: one audio(8), video(9) or AMF0 data(18) message, up to three
+ * borrowed spans. False takes nothing. Payload includes its FLV codec header,
+ * without an FLV tag header/trailer. Timestamp is milliseconds, modulo 2^32.
+ * The producer keeps bytes immutable until media_release succeeds. */
+bool net_rtmp_session_media(net_rtmp_session_t *session, unsigned type,
+      uint32_t timestamp, const net_rtmp_span_t *spans, size_t count);
+/* Retires a fully sent message, or a canceled message after transport discard.
+ * True returns the producer's borrow. No allocation or wait. */
+bool net_rtmp_session_media_release(net_rtmp_session_t *session);
 enum net_rtmp_session_state net_rtmp_session_status(
       const net_rtmp_session_t *session, uint32_t *stream, uint64_t *sent);
 void net_rtmp_session_cancel(net_rtmp_session_t *session);
 /* After cancellation, retire a transport borrow without reporting it sent. */
 bool net_rtmp_session_discard(net_rtmp_session_t *session);
-/* Refuses a live transport borrow. Releases internal borrows before freeing. */
+/* Refuses live transport/media borrows. Releases internal borrows before freeing. */
 bool net_rtmp_session_free(net_rtmp_session_t *session);
 RETRO_END_DECLS
 #endif

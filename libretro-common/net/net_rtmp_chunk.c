@@ -173,6 +173,11 @@ bool net_rtmp_chunk_consume(net_rtmp_chunk_t *c, size_t size)
    return true;
 }
 
+bool net_rtmp_chunk_boundary(const net_rtmp_chunk_t *c)
+{
+   return c && (!c->active || !c->header_offset);
+}
+
 void net_rtmp_chunk_free(net_rtmp_chunk_t *c)
 {
    free(c);

@@ -47,6 +47,9 @@ bool net_rtmp_chunk_push(net_rtmp_chunk_t *chunk, unsigned chunk_id,
  * No allocation, copy of payload, I/O, loop over chunks or wait. */
 bool net_rtmp_chunk_get(net_rtmp_chunk_t *chunk, net_rtmp_span_t *span);
 bool net_rtmp_chunk_consume(net_rtmp_chunk_t *chunk, size_t size);
+/* True before a header starts, or after the message ends. No live output
+ * borrow may be interrupted; the transport owner tracks that borrow. */
+bool net_rtmp_chunk_boundary(const net_rtmp_chunk_t *chunk);
 void net_rtmp_chunk_free(net_rtmp_chunk_t *chunk);
 RETRO_END_DECLS
 #endif

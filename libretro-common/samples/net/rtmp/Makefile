@@ -57,6 +57,7 @@ peer-check: all
 	python3 peer.py --runner "$(RUNNER)" --receive-binary ./rtmp_receive_test$(EXE) --command-binary ./rtmp_command_test$(EXE) --reply-binary ./rtmp_reply_test$(EXE) ./rtmp_handshake_test$(EXE)
 	python3 session_peer.py --runner "$(RUNNER)" ./rtmp_session_test$(EXE)
 	python3 session_peer.py --runner "$(RUNNER)" --socket-binary ./rtmp_socket_native_test$(EXE) ./rtmp_session_test$(EXE)
+	python3 media_peer.py --runner "$(RUNNER)" ./rtmp_socket_native_test$(EXE)
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f rtmp_chunk_test rtmp_chunk_test.exe rtmp_handshake_test rtmp_handshake_test.exe
