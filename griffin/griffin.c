@@ -781,6 +781,9 @@ VIDEO DRIVER
 
 #ifdef HAVE_MF_AUDIO
 #include "../record/record_mf_audio.c"
+#if defined(HAVE_D3D12) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#include "../record/record_stream_d3d12.c"
+#endif
 #endif
 
 #if defined(HAVE_D3D10)

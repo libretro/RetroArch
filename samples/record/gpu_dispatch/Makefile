@@ -15,6 +15,11 @@ endif
 HEADERS := $(RA)/record/record_gpu_dispatch_d3d12.h $(RA)/record/record_gpu_session_d3d12.h
 SOURCE := $(RA)/record/record_gpu_dispatch_d3d12.c
 all: dispatch_test$(EXE) threadless_test$(EXE) session_integration$(EXE)
+ifeq ($(EXE),.exe)
+all: stream_dispatch_test.exe
+stream_dispatch_test.exe: stream_dispatch_test.c dispatch_test.c $(SOURCE) $(HEADERS)
+	$(CC) $(CFLAGS) -Wframe-larger-than=2048 -DHAVE_THREADS -DHAVE_D3D12 -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -DHAVE_CRYPTO -o $@ $< $(LDFLAGS) -lws2_32
+endif
 win32.o: win32.c win32/windows.h
 	$(CC) $(CFLAGS) -pthread -c win32.c -o $@
 dispatch_test$(EXE): dispatch_test.c $(SOURCE) $(HEADERS) $(SHIM)
@@ -31,6 +36,9 @@ check: all
 	$(RUNNER) ./dispatch_test$(EXE)
 	$(RUNNER) ./threadless_test$(EXE)
 	$(RUNNER) ./session_integration$(EXE)
+ifeq ($(EXE),.exe)
+	$(RUNNER) ./stream_dispatch_test.exe
+endif
 clean:
-	rm -f dispatch_test dispatch_test.exe threadless_test threadless_test.exe session_integration session_integration.exe dispatch_uut.o win32.o
+	rm -f dispatch_test dispatch_test.exe threadless_test threadless_test.exe session_integration session_integration.exe stream_dispatch_test.exe dispatch_uut.o win32.o
 .PHONY: all check clean

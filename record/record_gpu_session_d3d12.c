@@ -245,6 +245,12 @@ bool record_gpu_session_d3d12_retry_needed(const record_gpu_session_d3d12_t *s)
       && retro_atomic_load_acquire_int(&s->video_closed);
 }
 
+bool record_gpu_session_d3d12_network(const record_gpu_session_d3d12_t *s,
+      int *fd, bool *read, bool *write)
+{
+   return record_gpu_output_d3d12_network(s ? s->output : NULL, fd, read, write);
+}
+
 enum record_gpu_session_error record_gpu_session_d3d12_error(
       const record_gpu_session_d3d12_t *s, uint32_t *file_error)
 {

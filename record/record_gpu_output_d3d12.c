@@ -6,11 +6,19 @@
 #include <retro_spsc.h>
 #include <retro_atomic.h>
 #include <formats/rac3.h>
+#if defined(HAVE_D3D12) && defined(HAVE_MF_AUDIO) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#define RECORD_OUTPUT_STREAM
+#include "record_stream_d3d12.h"
+#endif
 
 struct record_gpu_output_d3d12
 {
    retro_spsc_t audio;
    uint64_t audio_pts;
+#ifdef RECORD_OUTPUT_STREAM
+   record_stream_d3d12_t *stream;
+   record_stream_wait_t stream_wait;
+#endif
    record_gpu_worker_d3d12_t *worker;
    record_mux_mp4_t *mux;
    record_file_win32_t *file;
@@ -52,6 +60,10 @@ record_gpu_output_d3d12_t *record_gpu_output_d3d12_new(
    if (!worker || !config || !path || !*path
          || config->video.ac3_header || config->video.ac3_header_size)
       return NULL;
+#ifndef RECORD_OUTPUT_STREAM
+   if (config->stream_client)
+      return NULL;
+#endif
    p = (record_gpu_output_d3d12_t*)calloc(1, sizeof(*p));
    if (!p)
       return NULL;
@@ -59,6 +71,16 @@ record_gpu_output_d3d12_t *record_gpu_output_d3d12_new(
    retro_atomic_int_init(&p->failed, 0);
    p->worker = worker;
    p->rate = config->audio_rate;
+#ifdef RECORD_OUTPUT_STREAM
+   if (config->stream_client)
+   {
+      p->stream = record_stream_d3d12_new(worker, config, config->stream_client);
+      if (!p->stream)
+         goto error;
+      p->stream_wait.network.fd = -1;
+      return p;
+   }
+#endif
    mux = config->video;
    if (p->rate)
    {
@@ -118,6 +140,10 @@ int record_gpu_output_d3d12_audio(record_gpu_output_d3d12_t *p,
       const int16_t *samples, size_t frames)
 {
    size_t bytes, space, used;
+#ifdef RECORD_OUTPUT_STREAM
+   if (p && p->stream)
+      return record_stream_d3d12_audio(p->stream, samples, frames);
+#endif
    if (!p || !p->rate || !samples || !frames
          || frames > p->fifo_bytes / p->frame_bytes
          || retro_atomic_load_acquire_int(&p->audio_closed)
@@ -137,6 +163,10 @@ bool record_gpu_output_d3d12_audio_finish(record_gpu_output_d3d12_t *p)
    if (!p)
       return false;
    retro_atomic_store_release_int(&p->audio_closed, 1);
+#ifdef RECORD_OUTPUT_STREAM
+   if (p->stream)
+      return record_stream_d3d12_audio_finish(p->stream);
+#endif
    return true;
 }
 
@@ -194,6 +224,10 @@ int record_gpu_output_d3d12_step(record_gpu_output_d3d12_t *p)
    int result;
    if (!p)
       return RECORD_GPU_OUTPUT_ERROR;
+#ifdef RECORD_OUTPUT_STREAM
+   if (p->stream)
+      return record_stream_d3d12_step(p->stream, 0, &p->stream_wait);
+#endif
    if (p->writing)
    {
       result = record_file_win32_step(p->file);
@@ -265,6 +299,11 @@ int record_gpu_output_d3d12_step(record_gpu_output_d3d12_t *p)
 void *record_gpu_output_d3d12_wait_handle(const record_gpu_output_d3d12_t *p)
 {
    if (!p) return NULL;
+#ifdef RECORD_OUTPUT_STREAM
+   if (p->stream)
+      return p->stream_wait.encoder_retry
+         ? record_gpu_worker_d3d12_wait_handle(p->worker) : NULL;
+#endif
    if (p->writing) return record_file_win32_wait_handle(p->file);
    if (p->ended || p->video_end || retro_atomic_load_acquire_int(&p->failed))
       return NULL;
@@ -274,6 +313,10 @@ void *record_gpu_output_d3d12_wait_handle(const record_gpu_output_d3d12_t *p)
 bool record_gpu_output_d3d12_retry_needed(const record_gpu_output_d3d12_t *p)
 {
    if (!p) return false;
+#ifdef RECORD_OUTPUT_STREAM
+   if (p->stream)
+      return p->stream_wait.encoder_retry || p->stream_wait.network.again;
+#endif
    if (p->writing) return true;
    return !p->ended && !p->video_end
       && !retro_atomic_load_acquire_int(&p->failed)
@@ -282,6 +325,13 @@ bool record_gpu_output_d3d12_retry_needed(const record_gpu_output_d3d12_t *p)
 
 bool record_gpu_output_d3d12_abort(record_gpu_output_d3d12_t *p)
 {
+#ifdef RECORD_OUTPUT_STREAM
+   if (p && p->stream)
+   {
+      record_stream_d3d12_abort(p->stream);
+      return true;
+   }
+#endif
    if (!p || p->ended)
       return false;
    record_gpu_output_fail(p, RECORD_GPU_OUTPUT_ERROR_ABORTED);
@@ -291,12 +341,20 @@ bool record_gpu_output_d3d12_abort(record_gpu_output_d3d12_t *p)
 enum record_gpu_output_error record_gpu_output_d3d12_error(
       const record_gpu_output_d3d12_t *p)
 {
+#ifdef RECORD_OUTPUT_STREAM
+   if (p && p->stream)
+      return record_stream_d3d12_error(p->stream);
+#endif
    return p ? (enum record_gpu_output_error)retro_atomic_load_acquire_int(&p->failed)
       : RECORD_GPU_OUTPUT_ERROR_VIDEO;
 }
 
 uint32_t record_gpu_output_d3d12_file_error(const record_gpu_output_d3d12_t *p)
 {
+#ifdef RECORD_OUTPUT_STREAM
+   if (p && p->stream)
+      return 0;
+#endif
    return record_file_win32_error(p ? p->file : NULL);
 }
 
@@ -304,6 +362,17 @@ bool record_gpu_output_d3d12_free(record_gpu_output_d3d12_t *p)
 {
    if (!p)
       return true;
+#ifdef RECORD_OUTPUT_STREAM
+   if (p->stream)
+   {
+      if (!retro_atomic_load_acquire_int(&p->audio_closed)
+            || !record_stream_d3d12_free(p->stream))
+         return false;
+      p->stream = NULL;
+      record_gpu_output_destroy(p);
+      return true;
+   }
+#endif
    if (!retro_atomic_load_acquire_int(&p->audio_closed) || p->writing
          || (!p->ended && !retro_atomic_load_acquire_int(&p->failed)))
       return false;
@@ -311,4 +380,25 @@ bool record_gpu_output_d3d12_free(record_gpu_output_d3d12_t *p)
       return false;
    record_gpu_output_destroy(p);
    return true;
+}
+
+bool record_gpu_output_d3d12_network(const record_gpu_output_d3d12_t *p,
+      int *fd, bool *read, bool *write)
+{
+   if (!fd || !read || !write)
+      return false;
+   *fd = -1;
+   *read = *write = false;
+#ifdef RECORD_OUTPUT_STREAM
+   if (p && p->stream && p->stream_wait.network.fd >= 0)
+   {
+      *fd = p->stream_wait.network.fd;
+      *read = p->stream_wait.network.read;
+      *write = p->stream_wait.network.write;
+      return true;
+   }
+#else
+   (void)p;
+#endif
+   return false;
 }

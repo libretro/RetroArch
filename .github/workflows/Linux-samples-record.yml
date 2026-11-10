@@ -149,6 +149,8 @@ jobs:
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
+
+
       - name: Native MP4 mux (ASan + UBSan, mingw-w64)
         shell: bash
         working-directory: samples/record/mp4_mux
@@ -205,6 +207,15 @@ jobs:
           make rtmps_client_native_test.exe CC=x86_64-w64-mingw32-gcc EXE=.exe
           python3 media_peer.py --runner wine --mux --tls 1.2 ./rtmps_client_native_test.exe
           python3 media_peer.py --runner wine --mux --tls 1.3 ./rtmps_client_native_test.exe
+          make clean
+
+      - name: Native encoder stream ownership contracts
+        working-directory: samples/record/rtmp_stream
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean check SANITIZER=address,undefined
+          make clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
       - name: GPU PCM output pipeline (ASan + UBSan, TSan, mingw-w64)
@@ -315,4 +326,14 @@ jobs:
             echo 'Native AAC must load optional entry points at runtime'
             exit 1
           fi
+          make clean
+
+      - name: Native streaming worker readiness and cancellation
+        shell: msys2 {0}
+        working-directory: samples/record/gpu_dispatch
+        run: |
+          set -eu
+          make clean
+          make stream_dispatch_test.exe CC=gcc EXE=.exe
+          ./stream_dispatch_test.exe
           make clean

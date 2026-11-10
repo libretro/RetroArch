@@ -14,6 +14,7 @@ import tempfile
 parser = argparse.ArgumentParser()
 parser.add_argument('--core', required=True)
 parser.add_argument('--retroarch')
+parser.add_argument('--desktop-runner')
 parser.add_argument('--output-dir')
 parser.add_argument('--codecs', nargs='+', default=['h264', 'hevc', 'av1'])
 parser.add_argument('--threads', nargs='+', default=['false', 'true'])
@@ -73,9 +74,12 @@ savestate_auto_load = "false"
     environment['NATIVE_RECORD_LAYOUT'] = str(layout)
     if args.floating: environment['NATIVE_RECORD_FLOAT'] = '1'
     else: environment.pop('NATIVE_RECORD_FLOAT', None)
-    result = subprocess.run([exe, '-v', '--config', str(config), '-L', core,
+    command = [exe, '-v', '--config', str(config), '-L', core,
                              '--record', str(movie), '--recordconfig', str(record),
-                             '--max-frames', frames], cwd=path,
+                             '--max-frames', frames]
+    if args.desktop_runner:
+        command = [str(Path(args.desktop_runner).resolve()), subprocess.list2cmdline(command)]
+    result = subprocess.run(command, cwd=path,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=45, env=environment)
     log = result.stdout.decode(errors='replace')
     (path / 'run.log').write_text(log, encoding='utf-8')

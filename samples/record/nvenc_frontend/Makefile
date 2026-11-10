@@ -7,6 +7,11 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: $(CORE) rate_test$(EXE) audio_test$(EXE) layout_test$(EXE) float_negotiation_test$(EXE) color_test$(EXE)
+ifeq ($(EXE),.exe)
+all: desktop_runner.exe
+desktop_runner.exe: desktop_runner.c
+	$(CC) $(CFLAGS) -Wframe-larger-than=2048 -o $@ $< $(LDFLAGS) -luser32
+endif
 color_fragment.c: $(RA)/record/drivers/record_nvenc.c
 	sed -n '/^static bool record_nvenc_color/,/^static bool record_nvenc_layout/p' $< | sed '$$d' > $@
 color_test$(EXE): color_test.c color_fragment.c $(RA)/gfx/video_hdr_metadata.h $(RA)/gfx/common/nvenc_d3d12.h
@@ -39,6 +44,7 @@ check: all
 	$(RUNNER) ./color_test$(EXE)
 	python3 run.py --core ./$(CORE) $(if $(RETROARCH),--retroarch "$(RETROARCH)",)
 clean:
+	rm -f desktop_runner.exe
 	rm -f frontend_core.dll frontend_core.so rate_fragment.c rate_test rate_test.exe audio_fragment.c video_fragment.c audio_test audio_test.exe layout_fragment.c layout_test layout_test.exe float_fragment.c float_negotiation_test float_negotiation_test.exe
 	rm -f color_fragment.c color_test color_test.exe
 .PHONY: all check clean

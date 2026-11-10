@@ -7,7 +7,7 @@ can be recorded with HEVC or AV1 as 10-bit, limited-range BT.2020/PQ; H.264
 HDR recording is refused. Admission follows the renderer's active output,
 including fallback to SDR, rather than the requested HDR setting. Display peak
 brightness is not used to invent content-light or mastering metadata.
-Streaming and asynchronous core audio callbacks are not supported. Core audio can be recorded
+Asynchronous core audio callbacks are not supported. Core audio can be recorded
 as native AC-3 at 32, 44.1 or 48 kHz.
 The recording keeps the speaker mask declared when it starts, independently
 of the playback device layout. AC-3 layouts up to six channels are accepted:
@@ -41,6 +41,32 @@ recording before a frame with the new encoding can enter the old session.
 Startup waits for the first valid
 viewport. Normal quit polls asynchronous encoder/file retirement before
 exiting.
+
+## Native RTMP streaming
+
+Build with `HAVE_MF_AUDIO=1 HAVE_RTMP=1 HAVE_RFLV=1` and cryptography enabled.
+Set `video_stream_url` to an `rtmp://` or `rtmps://` publishing URL and
+`video_stream_config` to a native config:
+
+```
+audio_enable = true
+vcodec = "h264"
+format = "flv"
+video_bit_rate = 8000000
+```
+
+Start/stop using the normal streaming action. Optional
+`rtmp_legacy_commands = true` supports peers requiring legacy command syntax.
+RTMPS also requires the SSL transport. This path accepts SDR H.264 and native
+AAC-LC at 44.1/48 kHz, mono/stereo; unsupported HDR/codecs/layouts are refused.
+No output file is created. Inputs start together after publish setup completes.
+URL setup and final drain run on the I/O worker with 30/10-second deadlines.
+Enhanced RTMP HDR and other native platform encoders remain separate work.
+
+`samples/gfx/nvenc_d3d12/stream.py` exercises real GPU capture, native AAC,
+RTMP delivery and independent received video/audio decoding. It requires
+native NVIDIA hardware and an FFmpeg build with the native RTMP listener;
+its output directory retains publisher/receiver logs and reference media.
 
 `make check` tests production frame-rate conversion, PCM admission and queued
 video retirement, and builds a deterministic libretro test core. Native

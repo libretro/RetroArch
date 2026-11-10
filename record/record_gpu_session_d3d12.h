@@ -42,6 +42,9 @@ void record_gpu_session_d3d12_cancel(record_gpu_session_d3d12_t *session);
 int record_gpu_session_d3d12_step(record_gpu_session_d3d12_t *session);
 void *record_gpu_session_d3d12_wait_handle(const record_gpu_session_d3d12_t *session);
 bool record_gpu_session_d3d12_retry_needed(const record_gpu_session_d3d12_t *session);
+/* I/O-owner network interests, alongside completion and producer wake. */
+bool record_gpu_session_d3d12_network(const record_gpu_session_d3d12_t *session,
+      int *fd, bool *read, bool *write);
 /* Atomic snapshot, valid for controller/producers. Details optional. */
 enum record_gpu_session_error record_gpu_session_d3d12_error(
       const record_gpu_session_d3d12_t *session, uint32_t *file_error);

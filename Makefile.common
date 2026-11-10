@@ -2043,6 +2043,13 @@ ifeq ($(HAVE_MF_AUDIO), 1)
    ifneq ($(findstring Win32,$(OS)),)
       DEFINES += -DHAVE_MF_AUDIO
       OBJ += record/record_mf_audio.o
+      ifeq ($(HAVE_RTMP), 1)
+         ifeq ($(HAVE_RFLV), 1)
+            ifeq ($(HAVE_D3D12), 1)
+               OBJ += record/record_stream_d3d12.o
+            endif
+         endif
+      endif
    endif
 endif
 

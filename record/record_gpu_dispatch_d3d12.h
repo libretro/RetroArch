@@ -23,6 +23,13 @@ record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new(
 record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new_owned(
       record_gpu_capture_d3d12_t *capture, const nvenc_d3d12_config_t *encoder,
       const record_gpu_output_config_t *output, const char *path);
+/* Native H.264/AAC streaming. Transfers a fresh capture on success. Keeps
+ * STARTING until URL resolution, connection and publish setup complete;
+ * output.stream_client must be NULL. Setup has a 30-second deadline; final
+ * drain has 10 seconds after both producers close. No controller network work. */
+record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new_stream_owned(
+      record_gpu_capture_d3d12_t *capture, const nvenc_d3d12_config_t *encoder,
+      const record_gpu_output_config_t *output, const char *url, bool legacy);
 /* One render producer and one PCM producer. STARTING returns BUSY, taking
  * nothing. READY preserves the capture/output whole-input contracts. No
  * allocation, waits or logging. Source references retire through capture reap/free. */
@@ -43,7 +50,7 @@ bool record_gpu_dispatch_d3d12_audio_finish(record_gpu_dispatch_d3d12_t *job);
 /* Controller request; never closes either producer on another thread. */
 void record_gpu_dispatch_d3d12_cancel(record_gpu_dispatch_d3d12_t *job);
 /* Atomic observations, which may advance during the call. Optional details;
- * system_error reports a Win32 notification/wait failure. DONE/FAILED require
+ * system_error reports a Win32 failure or setup/drain timeout. DONE/FAILED require
  * retired resources. Startup failure still awaits producer closure. */
 enum record_gpu_dispatch_state record_gpu_dispatch_d3d12_status(
       const record_gpu_dispatch_d3d12_t *job,

@@ -2,6 +2,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#ifdef NVENC_TEST_STREAM
+#include <net/net_socket.h>
+#include <net/net_socket_ssl.h>
+static char *nve_stream_ca;
+static bool nve_stream_trust(void)
+{
+   const char *path = getenv("RTMPS_CA");
+   FILE *file;
+   long size;
+   bool ok;
+   if (!path)
+      return true;
+   file = fopen(path, "rb");
+   if (!file)
+      return false;
+   ok = !fseek(file, 0, SEEK_END) && (size = ftell(file)) > 0
+      && size < 65536 && !fseek(file, 0, SEEK_SET);
+   if (ok)
+   {
+      nve_stream_ca = (char*)malloc((size_t)size);
+      ok = nve_stream_ca && fread(nve_stream_ca, 1, (size_t)size, file) == (size_t)size;
+      if (ok)
+         ssl_socket_retro_set_trust_pem(nve_stream_ca, (size_t)size);
+   }
+   fclose(file);
+   return ok;
+}
+#endif
 #include "../../../gfx/common/nvenc_d3d12.h"
 #include "../../../record/record_gpu_queue.h"
 #include "../../../record/record_gpu_capture_d3d12.h"
@@ -424,6 +453,9 @@ int main(int argc, char **argv)
    FreeLibrary(runtime);
    if (FAILED(D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0, &IID_ID3D12Device, (void**)&device)))
       return 77;
+#ifdef NVENC_TEST_STREAM
+   CHECK(nve_stream_trust());
+#endif
    CHECK(SUCCEEDED(ID3D12Device_CreateCommandQueue(device, &qdesc, &IID_ID3D12CommandQueue, (void**)&queue)));
    CHECK(SUCCEEDED(ID3D12Device_CreateCommandAllocator(device, D3D12_COMMAND_LIST_TYPE_DIRECT,
             &IID_ID3D12CommandAllocator, (void**)&allocator)));
@@ -805,6 +837,10 @@ done:
    if (ready) ID3D12Fence_Release(ready);
    if (queue) ID3D12CommandQueue_Release(queue);
    if (device) ID3D12Device_Release(device);
+#ifdef NVENC_TEST_STREAM
+   ssl_socket_retro_set_trust_pem(NULL, 0);
+   free(nve_stream_ca);
+#endif
    printf("codec %s: %s (%u packets)\n", argv[1], ok ? "PASS" : "FAIL", received);
    return ok == 77 ? 77 : !ok;
 }

@@ -16,6 +16,9 @@ static int nve_pipeline_worker_step(record_gpu_worker_d3d12_t *worker, nvenc_d3d
    return result;
 }
 #define record_gpu_worker_d3d12_step nve_pipeline_worker_step
+#ifdef NVENC_TEST_STREAM
+#include "../../../record/record_stream_d3d12.c"
+#endif
 #include "../../../record/record_gpu_output_d3d12.c"
 #undef record_gpu_worker_d3d12_step
 #include "../../../record/record_file_win32.c"
@@ -69,18 +72,29 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
    FILE *audio = NULL;
    rac3_encoder_t *reference = NULL;
    unsigned i, j, idle = 0, channels, total, rate;
-   size_t length = strlen(path), size, headers_size;
+   size_t length = strlen(path), headers_size;
+#ifndef NVENC_TEST_STREAM
+   size_t size;
+#endif
    int result = RECORD_GPU_OUTPUT_BUSY;
    bool signalled = false, ok = false;
    const char *setting = getenv("NVENC_TEST_AUDIO_RATE");
    const char *ownership = getenv("NVENC_TEST_CAPTURE_OWNED");
    bool owned_capture = ownership && atoi(ownership) != 0;
+#ifdef NVENC_TEST_STREAM
+   const char *url = getenv("NVENC_TEST_STREAM_URL");
+   if (!url || !*url || !dispatch_config || !owned_capture)
+      return false;
+#endif
    rate = setting ? (unsigned)atoi(setting) : 48000;
    channels = rate == 44100 ? 1 : rate == 32000 ? 6 : 2;
    memset(&config, 0, sizeof(config)); memset(&producer, 0, sizeof(producer));
    config.video = *video; config.audio_rate = rate; config.audio_kbps = 192;
    config.audio_layout = channels == 1 ? 4 : channels == 6 ? 0x60f : 3;
    config.audio_fifo_frames = 3072;
+#ifdef NVENC_TEST_STREAM
+   config.video.max_packet_size = 0xfffffa;
+#endif
    total = frames * rate / 60;
    movie = (char*)malloc(length + 9); sound = (char*)malloc(length + 9);
    samples = (int16_t*)malloc(total * channels * sizeof(*samples));
@@ -90,6 +104,16 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
    memcpy(sound, path, length); memcpy(sound + length, ".av.ac3", 8);
    for (i = 0; i < total; i++)
       for (j = 0; j < channels; j++) samples[i * channels + j] = (int16_t)((int)((i * 37 + j * 1009) % 60001) - 30000);
+#ifdef NVENC_TEST_STREAM
+   for (i = 0; i < total; i++)
+      for (j = 0; j < channels; j++)
+         samples[i * channels + j] = (int16_t)(12000.0 * sin(6.283185307179586
+                  * (440.0 + j * 220.0) * i / rate));
+   memcpy(sound + length, ".av.pcm", 8);
+   audio = fopen(sound, "wb"); if (!audio) goto done;
+   if (fwrite(samples, channels * sizeof(*samples), total, audio) != total) goto done;
+   if (fclose(audio)) { audio = NULL; goto done; } audio = NULL;
+#else
    reference = rac3_encoder_new(rate, config.audio_layout, 192); if (!reference) goto done;
    audio = fopen(sound, "wb"); if (!audio) goto done;
    for (i = 0; i < total; i += 1536)
@@ -101,12 +125,18 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
       if (!size || fwrite(packet, 1, size, audio) != size) goto done;
    }
    if (fclose(audio)) { audio = NULL; goto done; } audio = NULL;
+#endif
    nve_pipeline_raw = raw; nve_pipeline_received = received;
    if (dispatch_config)
    {
+#ifdef NVENC_TEST_STREAM
+      dispatch = record_gpu_dispatch_d3d12_new_stream_owned(video_producer->capture,
+            dispatch_config, &config, url, false);
+#else
       dispatch = owned_capture
          ? record_gpu_dispatch_d3d12_new_owned(video_producer->capture, dispatch_config, &config, movie)
          : record_gpu_dispatch_d3d12_new(video_producer->capture, dispatch_config, &config, movie);
+#endif
       if (!dispatch) goto done;
       video_producer->dispatch = dispatch;
       retro_atomic_int_init(&video_producer->stop, 0);
@@ -210,7 +240,7 @@ done:
    nve_pipeline_raw = NULL; nve_pipeline_received = NULL;
    if (audio) fclose(audio);
    rac3_encoder_free(reference); free(movie); free(sound); free(samples); free(pcm); free(packet); free(headers);
-   if (ok) printf("PASS: %s + concurrent PCM + native MP4/file output, %u Hz/%u ch\n",
+   if (ok) printf("PASS: %s + concurrent PCM + native output, %u Hz/%u ch\n",
          dispatch_config ? "GPU dispatcher/session" : "GPU worker", rate, channels);
    return ok;
 }
