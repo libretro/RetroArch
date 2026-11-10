@@ -170,6 +170,8 @@ jobs:
             path_mkdir_test
             path_parent_dir_test
             rpng
+            # a PNG a row at a time, as stored, from input in pieces
+            rpng_rows_test
             rzip_chunk_size_test
             rzip_matches_buf_test
             rzip_codec_test
