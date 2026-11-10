@@ -151,6 +151,15 @@ struct ssl_socket_retro_config
 #define SSL_RETRO_NO_VERIFY   (1 << 0)
 /* Check the chain but not that it names the host. */
 #define SSL_RETRO_NO_HOSTNAME (1 << 1)
+/* Full duplex: once the handshake is done, one thread may receive
+ * (ssl_socket_receive_all_nonblocking, ssl_socket_retro_pending) while
+ * another sends (ssl_socket_send_all_nonblocking,
+ * ssl_socket_flush_nonblocking) on this connection, with no lock. The
+ * receiving side then sends nothing itself: a KeyUpdate the server asks
+ * for is sent by the next send or flush, before its data. Nonblocking
+ * calls only after the handshake; close and free once neither thread
+ * uses the connection. */
+#define SSL_RETRO_DUPLEX      (1 << 2)
 
 /**
  * ssl_socket_retro_configure:

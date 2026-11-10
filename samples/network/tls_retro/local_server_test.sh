@@ -7,16 +7,20 @@ set -e
 command -v openssl >/dev/null 2>&1 || { echo "skip: no openssl"; exit 0; }
 D=$(mktemp -d); trap 'rm -rf $D; kill $SRV 2>/dev/null || true' EXIT
 cd "$(dirname "$0")"
-make -s tls_fetch
 # RUNNER prefixes every tool invocation: empty natively, "wine" for a
 # MinGW build of the tools
 RUN=${RUNNER:-}
 EXE=${EXE:-}
+# TLS_TEST_DUPLEX_ONLY=1: the full-duplex check alone, for a run with the
+# tools built under ThreadSanitizer
+if [ -z "${TLS_TEST_DUPLEX_ONLY:-}" ]; then
+make -s tls_fetch
 make -s tls_partial
 $RUN ./tls_partial$EXE
 make -s tls_partial_threads tls_partial_flag
 $RUN ./tls_partial_threads$EXE
 $RUN ./tls_partial_flag$EXE
+fi
 # Until a server listens on port $1, five seconds at most. It is asked of
 # the socket table, not by connecting: a server that counts its
 # connections would count a probe. Without ss, the old fixed wait.
@@ -37,6 +41,36 @@ mkcert() { # name keyalg [pkeyopt]
 mkcert rsa rsa:2048
 mkcert p256 ec "-pkeyopt ec_paramgen_curve:prime256v1"
 mkcert p384 ec "-pkeyopt ec_paramgen_curve:secp384r1"
+run_duplex() {
+# Full duplex (SSL_RETRO_DUPLEX): one thread reads the server's lines
+# while another sends 60 of its own, one every 50 ms. Under TLS 1.3 the
+# server asks for KeyUpdates twice and sends one unrequested between its
+# lines; the sending thread answers each request before its next line
+# (the server's -msg trace shows exactly two from us), and the server
+# prints every line we sent, the ones after each update included. Then
+# the same over TLS 1.2, where there are none. CI runs it again with the
+# tool built under ThreadSanitizer (TLS_TEST_DUPLEX_ONLY=1).
+make -s tls_duplex
+for v in 1_3 1_2; do
+   if [ $v = 1_3 ]; then KU=K; KU2=k; else KU=; KU2=; fi
+   (sleep 1; echo s1; sleep 0.4; [ -n "$KU" ] && echo $KU; sleep 0.4; echo s2; sleep 0.4; [ -n "$KU" ] && echo $KU; sleep 0.4; echo s3; sleep 0.4; [ -n "$KU2" ] && echo $KU2; sleep 0.4; echo s4; sleep 2.5; echo end; sleep 1.5) \
+      | openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -tls$v -msg > $D/dup.out 2>&1 &
+   SRV=$!; listening 44331
+   set +e; $RUN ./tls_duplex$EXE localhost 44331 $D/ca.pem 60 > $D/dup.client 2>&1; rc=$?; set -e
+   sleep 1; kill $SRV 2>/dev/null || true; wait $SRV 2>/dev/null || true
+   sent=$(grep -c '^w0[0-5][0-9]$' $D/dup.out || true)
+   got=$(grep -c '^got: s[1-4]$' $D/dup.client || true)
+   # our KeyUpdates as the server received them (-msg): one per request
+   kus=$(grep -c '^<<< .*KeyUpdate' $D/dup.out || true)
+   if [ $v = 1_3 ]; then want_kus=2; else want_kus=0; fi
+   if [ $rc -eq 0 ] && [ "$sent" = 60 ] && [ "$got" = 4 ] && [ "$kus" = $want_kus ] && grep -q '^done$' $D/dup.out; then
+      echo "ok:   TLS ${v%_*}.${v#*_} full duplex: 4 lines read while 60 were sent${KU:+, across KeyUpdates}"
+   else
+      echo "FAIL: duplex TLS $v: client: $(tr '\n' ' ' < $D/dup.client) / server printed $sent of 60, got $kus KeyUpdates of $want_kus"; exit 1
+   fi
+done
+}
+if [ -n "${TLS_TEST_DUPLEX_ONLY:-}" ]; then run_duplex; exit 0; fi
 # leaf policy: certificates a correctly chaining, in-date, host-matching
 # server may still not present - an unknown critical extension, an EKU
 # without serverAuth (client-auth only, code-signing only), a keyUsage
@@ -165,6 +199,7 @@ if [ $rc -eq 0 ] && grep -q "^ack-after-K" $D/ku.out && grep -q "^ack-after-k" $
 else
    echo "FAIL: KeyUpdate: $(cat $D/ku.client) / server saw: $(grep '^ack' $D/ku.out | tr '\n' ' ')"; exit 1
 fi
+run_duplex
 # concurrent first use: six threads verify against a store none of them
 # has built yet, and with an ECDSA server compute the curve constants
 # none of them has computed yet; under TSan when the tools are built

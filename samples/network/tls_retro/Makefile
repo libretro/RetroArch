@@ -83,10 +83,14 @@ tls_verify_hook: $(HOOK_SRC)
 	$(CC) $(STALL_FLAGS) -DHAVE_THREADS $(CFLAGS) $(HOOK_SRC) $(STALL_LIBS) $(LDLIBS) -lpthread -o $@
 tls_threads: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
+# one connection read on one thread and written on another (SSL_RETRO_DUPLEX)
+DUP_SRC = tls_duplex.c $(filter-out tls_threads.c,$(THR_SRC))
+tls_duplex: $(DUP_SRC) $(COMMON)/include/net/net_socket_ssl.h
+	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(DUP_SRC) $(LDLIBS) -lpthread -o $@
 clean:
 	rm -f tls_partial_threads tls_partial_threads.exe
 	rm -f tls_partial_flag tls_partial_flag.exe
 	rm -f tls_handshake tls_handshake.exe
 	rm -f tls_partial tls_partial.exe
-	rm -f tls_verify_hook tls_verify_hook.exe tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_config tls_config.exe tls_threads tls_threads.exe
+	rm -f tls_verify_hook tls_verify_hook.exe tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_config tls_config.exe tls_threads tls_threads.exe tls_duplex tls_duplex.exe
 .PHONY: all clean

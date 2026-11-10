@@ -87,6 +87,12 @@ jobs:
           # IP address matches only an iPAddress SAN entry, never the
           # same address written as a DNS name.
           samples/network/tls_retro/local_server_test.sh
+          # One connection read and written from two threads at once
+          # (SSL_RETRO_DUPLEX), under ThreadSanitizer
+          make -C samples/network/tls_retro clean
+          make -C samples/network/tls_retro tls_duplex CFLAGS='-O1 -g -fsanitize=thread -fno-omit-frame-pointer'
+          TLS_TEST_DUPLEX_ONLY=1 TSAN_OPTIONS=halt_on_error=1 RUNNER="setarch $(uname -m) -R" \
+             samples/network/tls_retro/local_server_test.sh
           # The same tool cross-linked for Windows: the sample's link
           # line has to carry Winsock, which nothing on Linux checks.
           make -C samples/network/tls_retro clean

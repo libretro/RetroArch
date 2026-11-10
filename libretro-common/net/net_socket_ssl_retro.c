@@ -441,7 +441,9 @@ struct ssl_state
    struct sha256_state transcript;
    struct sha512_state transcript384;
    int      fd;
-   int      last_err;
+   /* atomic: in duplex mode the receiving and the sending thread can
+    * both fail at once */
+   retro_atomic_int_t last_err;
    unsigned suite;
    unsigned group;          /* 23 P-256, 24 P-384 */
    uint8_t  client_random[32];
@@ -476,7 +478,10 @@ struct ssl_state
    size_t   cork_len;
    size_t   cork_off;
    uint8_t  corked;
-   uint8_t  key_update;
+   /* A KeyUpdate of ours is owed: set by the receiving side when the
+    * server asks for one, sent and cleared by the sending side (in
+    * duplex mode those are two threads) */
+   retro_atomic_int_t key_update;
    /* One sealed application-data record not yet fully on the wire,
     * for ssl_socket_send_all_nonblocking(): bytes are sealed as they
     * are accepted, and what the socket did not take waits here.
@@ -530,6 +535,12 @@ struct ssl_state
    } wcbc, rcbc;
    struct tls_handshake_progress connect;
 };
+
+/* SSL_RETRO_DUPLEX: one thread receives while another sends */
+static INLINE int tls_duplex(const struct ssl_state *s)
+{
+   return s->configured && (s->cfg.flags & SSL_RETRO_DUPLEX);
+}
 
 /* ---- byte helpers ------------------------------------------------- */
 
@@ -829,7 +840,7 @@ static int tls_uncork(struct ssl_state *s)
    s->cork_len = 0;
    if (!ok)
    {
-      s->last_err = TLS_ERR_SOCKET;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
       return -1;
    }
    return 0;
@@ -961,7 +972,7 @@ static int tls_seal_record(struct ssl_state *s, uint8_t type,
    return 0;
 
 fail:
-   s->last_err = TLS_ERR_CIPHER;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_CIPHER);
    return -1;
 }
 
@@ -977,7 +988,7 @@ static int tls_tx_drain_blocking(struct ssl_state *s)
       bool write = true;
       if (!socket_wait(s->fd, NULL, &write, SSL_SOCKET_IO_TIMEOUT_MS) || !write)
       {
-         s->last_err = TLS_ERR_SOCKET;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
          return -1;
       }
    }
@@ -1000,12 +1011,12 @@ static int tls_connect_record(struct ssl_state *s, uint8_t type,
    }
    if (s->tx_off < s->tx_len)
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    if (!s->tx && !(s->tx = (uint8_t*)malloc(5 + TLS_REC_MAX + TLS_REC_OVERHEAD)))
    {
-      s->last_err = TLS_ERR_MEMORY;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_MEMORY);
       return -1;
    }
    if (tls_seal_record(s, type, data, len, s->tx, &s->tx_len) != 0)
@@ -1023,7 +1034,7 @@ static int tls_connect_push(struct ssl_state *s, bool cork)
          *length - *offset, true);
    if (n < 0)
    {
-      s->last_err = TLS_ERR_SOCKET;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
       return -1;
    }
    *offset += (size_t)n;
@@ -1079,7 +1090,7 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
 
    if (!(rec = (uint8_t*)malloc(5 + len + TLS_REC_OVERHEAD)))
    {
-      s->last_err = TLS_ERR_MEMORY;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_MEMORY);
       return -1;
    }
    if (tls_seal_record(s, type, data, len, rec, &rec_len) != 0)
@@ -1097,7 +1108,7 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
       if (!ok)
       {
          free(rec);
-         s->last_err = TLS_ERR_SOCKET;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
          return -1;
       }
    }
@@ -1112,7 +1123,7 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
    free(rec);
    if (!ok)
    {
-      s->last_err = TLS_ERR_SOCKET;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
       return -1;
    }
    return 0;
@@ -1162,7 +1173,7 @@ static int tls_record_part(struct ssl_state *s, size_t target, bool nonblock)
    }
    return s->rx_len < target ? 1 : 0;
 error:
-   s->last_err = TLS_ERR_SOCKET;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
    return -1;
 }
 
@@ -1180,7 +1191,7 @@ static int tls_read_record_to(struct ssl_state *s, uint8_t *type,
    rlen = tls_get16(s->rx + 3);
    if (s->rx[1] != 3 || rlen > TLS_REC_IN_MAX || rlen == 0)
    {
-      s->last_err = TLS_ERR_RECORD;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_RECORD);
       return -1;
    }
    result = tls_record_part(s, 5 + rlen, nonblock);
@@ -1335,13 +1346,13 @@ static int tls_read_record_to(struct ssl_state *s, uint8_t *type,
       /* close_notify is a clean end; anything else is an error. */
       s->closed = 1;
       if (*len < 2 || (*body)[1] != 0)
-         s->last_err = TLS_ERR_ALERT;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_ALERT);
       return -1;
    }
    return 0;
 
 bad:
-   s->last_err = TLS_ERR_CIPHER;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_CIPHER);
    return -1;
 }
 
@@ -1410,12 +1421,12 @@ static int tls_read_handshake(struct ssl_state *s, uint8_t *msg_type,
          continue;
       if (type != TLS_CT_HANDSHAKE)
       {
-         s->last_err = TLS_ERR_HANDSHAKE;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
          return -1;
       }
       if (s->hs_len + rl > TLS_HS_MAX)
       {
-         s->last_err = TLS_ERR_HANDSHAKE;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
          return -1;
       }
       memcpy(s->hs + s->hs_len, rb, rl);
@@ -1431,12 +1442,12 @@ static int tls_send_handshake(struct ssl_state *s, uint8_t msg_type,
    int ret;
    if (len > 0xffffffU || (s->connect_nonblock && s->connect_message))
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    if (!(m = (uint8_t*)malloc(4 + len)))
    {
-      s->last_err = TLS_ERR_MEMORY;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_MEMORY);
       return -1;
    }
    m[0] = msg_type;
@@ -1590,13 +1601,13 @@ static int tls_send_client_hello(struct ssl_state *s)
          || crypto_random_bytes(s->xpriv, 32) != 0 || x25519_base(s->xpub, s->xpriv) != 0)
    {
       free(ticket);
-      s->last_err = TLS_ERR_KEX;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
       return -1;
    }
    if (!(h = (uint8_t*)malloc(400 + dlen + ticket_len)))
    {
       free(ticket);
-      s->last_err = TLS_ERR_MEMORY;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_MEMORY);
       return -1;
    }
    p = h;
@@ -1735,7 +1746,7 @@ static int tls_send_client_hello(struct ssl_state *s)
             || tls13_expand_label_h(bhlen, bkey, "finished", NULL, 0, fkey, bhlen) != 0)
       {
          free(h); free(ticket);
-         s->last_err = TLS_ERR_KEX;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
          return -1;
       }
       tls13_hmac(bhlen, fkey, th, bhlen, h + trunc + 3);
@@ -1769,7 +1780,7 @@ static int tls_recv_server_hello(struct ssl_state *s)
       goto bad;
    if (b[0] != 3 || b[1] != 3)
    {
-      s->last_err = TLS_ERR_VERSION;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_VERSION);
       return -1;
    }
    memcpy(s->server_random, b + 2, 32);
@@ -1822,7 +1833,7 @@ static int tls_recv_server_hello(struct ssl_state *s)
       }
       if (memcmp(s->server_random, hrr_random, 8) == 0)
       {
-         s->last_err = TLS_ERR_KEX;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
          return -1;
       }
    }
@@ -1880,7 +1891,7 @@ static int tls_recv_server_hello(struct ssl_state *s)
    return 0;
 
 bad:
-   s->last_err = TLS_ERR_HANDSHAKE;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
    return -1;
 }
 
@@ -1910,7 +1921,7 @@ static int tls_verify_peer(struct ssl_state *s, const uint8_t **ders,
       ssl_socket_log_verify_fail(s->verify_mode == 0, s->domain, info);
       if (s->verify_mode == 0)
       {
-         s->last_err = TLS_ERR_CERT;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_CERT);
          return -1;
       }
    }
@@ -1952,14 +1963,14 @@ static int tls_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
       goto bad;
    if (x509_parse(leaf, ders[0], lens[0]) != 0 || leaf->key_type == X509_KEY_NONE)
    {
-      s->last_err = TLS_ERR_CERT;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_CERT);
       return -1;
    }
 
    return tls_verify_peer(s, ders, lens, n);
 
 bad:
-   s->last_err = TLS_ERR_HANDSHAKE;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
    return -1;
 }
 
@@ -2048,13 +2059,13 @@ static int tls_recv_server_kex(struct ssl_state *s, const struct x509_cert *leaf
    }
    if (ok != 0)
    {
-      s->last_err = TLS_ERR_SIGNATURE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SIGNATURE);
       return -1;
    }
    return 0;
 
 bad:
-   s->last_err = TLS_ERR_KEX;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
    return -1;
 }
 
@@ -2101,14 +2112,14 @@ static int tls_recv_server_done(struct ssl_state *s)
    {
       if (s->cert_requested || tls_parse_cert_request(s, b, len) != 0)
       {
-         s->last_err = TLS_ERR_HANDSHAKE;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
          return -1;
       }
       return 1;
    }
    if (type != TLS_HS_SERVER_DONE || len != 0)
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    return 0;
@@ -2125,7 +2136,7 @@ static int tls_send_client_kex_rsa(struct ssl_state *s,
 
    if (leaf->key_type != X509_KEY_RSA)
    {
-      s->last_err = TLS_ERR_KEX;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
       return -1;
    }
    while (n_len && leaf->rsa_n[leaf->rsa_n_len - n_len] == 0)
@@ -2138,7 +2149,7 @@ static int tls_send_client_kex_rsa(struct ssl_state *s,
                leaf->rsa_e, leaf->rsa_e_len, s->premaster, 48,
                msg + 2, n_len) != 0)
    {
-      s->last_err = TLS_ERR_KEX;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
       return -1;
    }
    tls_put16(msg, (unsigned)n_len);
@@ -2163,7 +2174,7 @@ static int tls_send_client_kex(struct ssl_state *s, const uint8_t *peer,
        * straight from the ladder */
       if (peer_len != 32 || x25519(s->premaster, s->xpriv, peer) != 0)
       {
-         s->last_err = TLS_ERR_KEX;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
          return -1;
       }
       crypto_memzero(s->xpriv, sizeof(s->xpriv));
@@ -2175,7 +2186,7 @@ static int tls_send_client_kex(struct ssl_state *s, const uint8_t *peer,
    {
       if (crypto_random_bytes(s->priv, slen) != 0)
       {
-         s->last_err = TLS_ERR_KEX;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
          return -1;
       }
       r = s->group == 23 ? p256_keygen(s->priv, pub) : p384_keygen(s->priv, pub);
@@ -2184,7 +2195,7 @@ static int tls_send_client_kex(struct ssl_state *s, const uint8_t *peer,
    }
    if (tries == 8)
    {
-      s->last_err = TLS_ERR_KEX;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
       return -1;
    }
    r = s->group == 23 ? p256_ecdh(s->priv, peer, s->premaster)
@@ -2192,7 +2203,7 @@ static int tls_send_client_kex(struct ssl_state *s, const uint8_t *peer,
    crypto_memzero(s->priv, sizeof(s->priv));
    if (r != 0 || peer_len != plen)
    {
-      s->last_err = TLS_ERR_KEX;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
       return -1;
    }
 
@@ -2214,14 +2225,14 @@ static int tls_send_client_cert(struct ssl_state *s)
       size_t length = s->cfg.chain_lens[i];
       if (length > 0xffffffU - 6 || total > 0xffffffU - 6 - length)
       {
-         s->last_err = TLS_ERR_MEMORY;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_MEMORY);
          return -1;
       }
       total += 3 + length;
    }
    if (total > 0xffffff - 3 || !(m = (uint8_t*)malloc(3 + total)))
    {
-      s->last_err = TLS_ERR_MEMORY;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_MEMORY);
       return -1;
    }
    m[0] = (uint8_t)(total >> 16);
@@ -2281,7 +2292,7 @@ static int tls_send_cert_verify(struct ssl_state *s)
    if (n_len > 512 || rsa_pkcs1_sign(s->cfg.key, hash, digest, dlen,
             msg + 4, n_len) != 0)
    {
-      s->last_err = TLS_ERR_SIGNATURE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SIGNATURE);
       return -1;
    }
    tls_put16(msg, s->cv_alg);
@@ -2301,13 +2312,13 @@ static int tls_recv_new_session_ticket(struct ssl_state *s)
       return -1;
    if (type != 4 || len < 6)
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    tlen = tls_get16(b + 4);
    if (6 + tlen != len || tlen == 0 || tlen > 16384)
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    if (s->configured)
@@ -2394,7 +2405,7 @@ static int tls_recv_finished(struct ssl_state *s)
       return -1;
    if (type != TLS_HS_FINISHED || len != 12 || !crypto_memeq_ct(b, verify, 12))
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    return 0;
@@ -2613,13 +2624,13 @@ static int tls13_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
    }
    if (!n || x509_parse(leaf, ders[0], lens[0]) != 0 || leaf->key_type == X509_KEY_NONE)
    {
-      s->last_err = TLS_ERR_CERT;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_CERT);
       return -1;
    }
    return tls_verify_peer(s, ders, lens, (unsigned)n);
 
 bad:
-   s->last_err = TLS_ERR_HANDSHAKE;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
    return -1;
 }
 
@@ -2645,7 +2656,7 @@ static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_
       return -1;
    if (type != TLS_HS_CERTIFICATE_VERIFY || len < 4)
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    alg     = tls_get16(b);
@@ -2653,7 +2664,7 @@ static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_
    sig     = b + 4;
    if (4 + sig_len != len)
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    memset(content, 0x20, 64);
@@ -2679,7 +2690,7 @@ static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_
    }
    else
    {
-      s->last_err = TLS_ERR_SIGNATURE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SIGNATURE);
       return -1;
    }
    if ((alg == 0x0804 || alg == 0x0805) && leaf->key_type == X509_KEY_RSA)
@@ -2690,7 +2701,7 @@ static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_
       ok = x509_verify_ecdsa_digest(leaf, digest, dlen, sig, sig_len);
    if (ok != 0)
    {
-      s->last_err = TLS_ERR_SIGNATURE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SIGNATURE);
       return -1;
    }
    return 0;
@@ -2708,7 +2719,7 @@ static int tls13_recv_finished(struct ssl_state *s)
       return -1;
    if (type != TLS_HS_FINISHED || len != hlen || !crypto_memeq_ct(b, expect, hlen))
    {
-      s->last_err = TLS_ERR_HANDSHAKE;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
       return -1;
    }
    return 0;
@@ -2781,9 +2792,11 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
          {
             /* update_requested: rotate ours too, announcing it first */
             uint8_t ku[1] = {0};
-            if (nonblock)
+            /* In duplex mode the sending side owns our keys: it sends
+             * this before its next record, as RFC 8446 4.6.3 asks */
+            if (nonblock || tls_duplex(s))
             {
-               s->key_update = 1;
+               retro_atomic_store_release_int(&s->key_update, 1);
                return 0;
             }
             if (tls_send_handshake(s, TLS_HS_KEY_UPDATE, ku, 1) != 0)
@@ -2832,7 +2845,7 @@ static int tls_handshake_step(struct ssl_state *s)
          sha1_stream_init(&s->transcript1);
          if (crypto_random_bytes(s->client_random, 32) != 0)
          {
-            s->last_err = TLS_ERR_KEX;
+            retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
             goto error;
          }
          if (tls_send_client_hello(s) != 0)
@@ -2919,7 +2932,7 @@ static int tls_handshake_step(struct ssl_state *s)
             goto error;
          if (type != TLS_CT_CCS || len != 1 || b[0] != 1)
          {
-            s->last_err = TLS_ERR_HANDSHAKE;
+            retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
             goto error;
          }
          s->rx_encrypted = 1;
@@ -2939,7 +2952,7 @@ static int tls_handshake_step(struct ssl_state *s)
       case TLS_CONNECT_KEYS13:
          if (tls13_handshake_keys(s, s->tls13_peer, s->tls13_peer_len) != 0)
          {
-            s->last_err = TLS_ERR_KEX;
+            retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_KEX);
             goto error;
          }
          progress->phase = TLS_CONNECT_EXT13;
@@ -2949,7 +2962,7 @@ static int tls_handshake_step(struct ssl_state *s)
             goto error;
          if (type != TLS_HS_ENCRYPTED_EXTENSIONS)
          {
-            s->last_err = TLS_ERR_HANDSHAKE;
+            retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
             goto error;
          }
          s->resumed = s->psk_accepted ? 1 : 0;
@@ -3003,7 +3016,7 @@ static int tls_handshake_step(struct ssl_state *s)
       case TLS_CONNECT_FAILED:
          return -1;
       default:
-         s->last_err = TLS_ERR_HANDSHAKE;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
          goto error;
    }
    if (!s->handshake_done)
@@ -3040,6 +3053,8 @@ void* ssl_socket_init(int fd, const char *domain)
    if (!s)
       return NULL;
    s->verify_mode = (unsigned)retro_atomic_load_acquire_int(&tls_verify_mode_setting);
+   retro_atomic_int_init(&s->last_err, 0);
+   retro_atomic_int_init(&s->key_update, 0);
    /* No Nagle on a TLS socket. Everything RetroArch does over TLS is
     * request-then-reply, and with Nagle the first request after a
     * resumed 1.2 handshake waits behind the unacknowledged Finished
@@ -3085,6 +3100,11 @@ int ssl_socket_retro_configure(void *state_data,
    }
    if (!s || !any || (cfg->chain_count && !cfg->key))
       return -1;
+   /* A duplex connection's sending side has its record buffer from
+    * the start, rather than taking it on its first send */
+   if ((cfg->flags & SSL_RETRO_DUPLEX) && !s->tx
+         && !(s->tx = (uint8_t*)malloc(5 + TLS_REC_MAX + TLS_REC_OVERHEAD)))
+      return -1;
    s->cfg        = *cfg;
    s->configured = 1;
    return 0;
@@ -3115,7 +3135,7 @@ int ssl_socket_retro_was_resumed(void *state_data)
 int ssl_socket_last_error(void *state_data)
 {
    struct ssl_state *s = (struct ssl_state*)state_data;
-   return s ? s->last_err : 0;
+   return s ? retro_atomic_load_relaxed_int(&s->last_err) : 0;
 }
 
 int ssl_socket_handshake_step(void *state_data, bool *read, bool *write)
@@ -3134,7 +3154,7 @@ int ssl_socket_handshake_step(void *state_data, bool *read, bool *write)
    {
       if (!socket_set_block(s->fd, false))
       {
-         s->last_err = TLS_ERR_SOCKET;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
          s->connect.phase = TLS_CONNECT_FAILED;
          return -1;
       }
@@ -3207,13 +3227,16 @@ static int tls_fill(struct ssl_state *s, uint8_t *dst, size_t dst_cap,
    for (;;)
    {
       int result;
-      if (nonblock)
+      /* Sending what is owed, unless another thread does the sending */
+      if (nonblock && !tls_duplex(s))
       {
          result = tls_control_push(s);
          if (result < 0)
             return -1;
       }
-      else if (!nonblock && (s->key_update || s->cork_off < s->cork_len)
+      else if (!tls_duplex(s)
+            && (retro_atomic_load_acquire_int(&s->key_update)
+               || s->cork_off < s->cork_len)
             && tls_tx_drain_blocking(s) != 0)
          return -1;
       if (s->v13)
@@ -3271,7 +3294,7 @@ static int tls_fill(struct ssl_state *s, uint8_t *dst, size_t dst_cap,
          return 1;
    }
 bad_handshake:
-   s->last_err = TLS_ERR_HANDSHAKE;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_HANDSHAKE);
    return -1;
 }
 
@@ -3333,7 +3356,7 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
       }
       if (!socket_set_block(s->fd, false))
       {
-         s->last_err = TLS_ERR_SOCKET;
+         retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
          *error = true;
          return -1;
       }
@@ -3390,13 +3413,13 @@ static int tls_tx_push(struct ssl_state *s)
       return 1;
    if (!socket_set_block(s->fd, false))
    {
-      s->last_err = TLS_ERR_SOCKET;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
       return -1;
    }
    if ((n = socket_send_all_nonblocking(s->fd, s->tx + s->tx_off,
                s->tx_len - s->tx_off, true)) < 0)
    {
-      s->last_err = TLS_ERR_SOCKET;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
       return -1;
    }
    s->tx_off += (size_t)n;
@@ -3410,7 +3433,8 @@ static int tls_control_push(struct ssl_state *s)
    int result = tls_tx_push(s);
    if (result <= 0)
       return result;
-   if (s->cork_off >= s->cork_len && s->key_update)
+   if (s->cork_off >= s->cork_len
+         && retro_atomic_load_acquire_int(&s->key_update))
    {
       static const uint8_t update[5] = {TLS_HS_KEY_UPDATE, 0, 0, 1, 0};
       uint8_t next[48];
@@ -3425,7 +3449,7 @@ static int tls_control_push(struct ssl_state *s)
          return -1;
       s->cseq = 0;
       s->cork_off = 0;
-      s->key_update = 0;
+      retro_atomic_store_relaxed_int(&s->key_update, 0);
    }
    if (s->cork_off < s->cork_len)
    {
@@ -3441,9 +3465,9 @@ static int tls_control_push(struct ssl_state *s)
          return 0;
       s->cork_off = s->cork_len = 0;
    }
-   return s->key_update ? 0 : 1;
+   return retro_atomic_load_relaxed_int(&s->key_update) ? 0 : 1;
 error:
-   s->last_err = TLS_ERR_SOCKET;
+   retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
    return -1;
 }
 
@@ -3457,7 +3481,11 @@ bool ssl_socket_retro_pending(void *state_data, bool *write)
    if (!s)
       return false;
    available = s->hs_len - s->hs_off;
-   *write = s->tx_off < s->tx_len || s->cork_off < s->cork_len || s->key_update;
+   /* The sending side's state is not this thread's to read in duplex
+    * mode, and nothing is sent from here then */
+   if (!tls_duplex(s))
+      *write = s->tx_off < s->tx_len || s->cork_off < s->cork_len
+            || retro_atomic_load_relaxed_int(&s->key_update);
    if (s->pt_off < s->pt_len)
       return true;
    if (available >= 4)
@@ -3478,7 +3506,7 @@ ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_,
 
    if (!s->tx && !(s->tx = (uint8_t*)malloc(5 + TLS_REC_MAX + TLS_REC_OVERHEAD)))
    {
-      s->last_err = TLS_ERR_MEMORY;
+      retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_MEMORY);
       return -1;
    }
 
@@ -3517,7 +3545,8 @@ void ssl_socket_close(void *state_data)
    if (!s || s->fd < 0)
       return;
    if (s->handshake_done && !s->closed && s->tx_off >= s->tx_len
-         && !s->key_update && s->cork_off >= s->cork_len)
+         && !retro_atomic_load_relaxed_int(&s->key_update)
+         && s->cork_off >= s->cork_len)
    {
       static const uint8_t alert[2] = {1, 0};
       size_t length;
