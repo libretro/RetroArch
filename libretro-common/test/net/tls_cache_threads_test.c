@@ -79,7 +79,7 @@ static void put(unsigned h, unsigned round)
       p.ticket     = ticket;
       p.ticket_len = sizeof(ticket) - (h % 4);
    }
-   tls_cache_put(host, &p);
+   tls_cache_put(host, &p, false);
 }
 
 static void check(unsigned h)

@@ -50,10 +50,14 @@ run_duplex() {
 # prints every line we sent, the ones after each update included. Then
 # the same over TLS 1.2, where there are none. CI runs it again with the
 # tool built under ThreadSanitizer (TLS_TEST_DUPLEX_ONLY=1).
+# The server's input stays open well past "end": its end closes the
+# connection, and on a slow runner our 60 lines and "done" can still be
+# in flight 1.5 s after it. The server is killed a second after the
+# client exits, so the long tail costs nothing.
 make -s tls_duplex
 for v in 1_3 1_2; do
    if [ $v = 1_3 ]; then KU=K; KU2=k; else KU=; KU2=; fi
-   (sleep 1; echo s1; sleep 0.4; [ -n "$KU" ] && echo $KU; sleep 0.4; echo s2; sleep 0.4; [ -n "$KU" ] && echo $KU; sleep 0.4; echo s3; sleep 0.4; [ -n "$KU2" ] && echo $KU2; sleep 0.4; echo s4; sleep 2.5; echo end; sleep 1.5) \
+   (sleep 1; echo s1; sleep 0.4; [ -n "$KU" ] && echo $KU; sleep 0.4; echo s2; sleep 0.4; [ -n "$KU" ] && echo $KU; sleep 0.4; echo s3; sleep 0.4; [ -n "$KU2" ] && echo $KU2; sleep 0.4; echo s4; sleep 2.5; echo end; sleep 10) \
       | openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -tls$v -msg > $D/dup.out 2>&1 &
    SRV=$!; listening 44331
    set +e; $RUN ./tls_duplex$EXE localhost 44331 $D/ca.pem 60 > $D/dup.client 2>&1; rc=$?; set -e
