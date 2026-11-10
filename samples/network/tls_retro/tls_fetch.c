@@ -10,6 +10,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <net/net_socket_ssl.h>
+#include "tls_handshake_driver.h"
 
 void ssl_socket_log_verify_fail(int mode_required, const char *domain, const char *info)
 {
@@ -66,7 +67,7 @@ int main(int argc, char **argv)
    ssl = ssl_socket_init(fd, host);
    if (!ssl)
       return 2;
-   if (ssl_socket_connect(ssl, addr, true, false) < 0)
+   if (tls_test_connect(ssl, fd, addr, getenv("TLS_TEST_HANDSHAKE_STEP") != NULL) < 0)
    {
       fprintf(stderr, "TLS connect failed (%d)\n", ssl_socket_last_error(ssl));
       ssl_socket_free(ssl);

@@ -43,6 +43,11 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
+#if MBEDTLS_VERSION_MAJOR == 3 && MBEDTLS_VERSION_MINOR == 0
+#define SSL_MBED_FD(ctx) ((ctx)->MBEDTLS_PRIVATE(fd))
+#else
+#define SSL_MBED_FD(ctx) ((ctx)->fd)
+#endif
 #if MBEDTLS_VERSION_MAJOR >= 4
 #include <psa/crypto.h>
 #else
@@ -108,6 +113,7 @@ struct ssl_state
    * holds that record half-sent and must be called again with the same
    * buffer and length to finish it. */
   size_t wpend;
+  int handshake_state; /* 0: setup, 1: active, 2: complete, -1: failed */
 };
 
 static void ssl_debug(void *ctx, int level,
@@ -180,7 +186,7 @@ void* ssl_socket_init(int fd, const char *domain)
    mbedtls_entropy_init(&state->entropy);
 #endif
 
-   state->net_ctx.fd = fd;
+   SSL_MBED_FD(&state->net_ctx) = fd;
 
 #if SSL_MBED_LEGACY_RNG
    if (mbedtls_ctr_drbg_seed(&state->ctr_drbg,
@@ -247,7 +253,7 @@ error:
     * Mirrors the normal-teardown path in ssl_socket_free below
     * (lines 355-361) in reverse of init order.  mbedtls_net_free
     * is intentionally not called for net_ctx (line 111):
-    *   - init sets state->net_ctx.fd from the caller's fd
+    *   - init borrows the caller's descriptor
     *     parameter at line 120, and the caller still owns that
     *     fd on this error exit.
     *   - ssl_socket_free similarly never calls mbedtls_net_free;
@@ -319,27 +325,9 @@ void ssl_socket_log_verify_disabled(const char *domain)
 }
 #endif
 
-int ssl_socket_connect(void *state_data,
-      void *data, bool timeout_enable, bool nonblock)
+static int ssl_mbed_start(struct ssl_state *state)
 {
-   int ret, flags;
-   int authmode;
-   struct ssl_state *state = (struct ssl_state*)state_data;
-
-   if (timeout_enable)
-   {
-      if (!socket_connect_with_timeout(state->net_ctx.fd, data, 5000))
-         return -1;
-      /* socket_connect_with_timeout makes the socket non-blocking. */
-      if (!socket_set_block(state->net_ctx.fd, true))
-         return -1;
-   }
-   else
-   {
-      if (socket_connect(state->net_ctx.fd, data))
-         return -1;
-   }
-
+   int ret, authmode;
    state->last_err = 0;
 
    if ((ret = mbedtls_ssl_config_defaults(&state->conf,
@@ -386,55 +374,113 @@ int ssl_socket_connect(void *state_data,
 
    mbedtls_ssl_set_bio(&state->ctx, &state->net_ctx, mbedtls_net_send, mbedtls_net_recv, NULL);
 
-   /* The handshake runs on a non-blocking socket, each wait for the
-    * server bounded: on a blocking one, a server that goes silent holds
-    * recv() for good. */
-   if (!socket_set_block(state->net_ctx.fd, false))
+   if (!socket_set_block(SSL_MBED_FD(&state->net_ctx), false))
       return -1;
-   while ((ret = mbedtls_ssl_handshake(&state->ctx)) != 0)
+   state->handshake_state = 1;
+   return 0;
+}
+
+static void ssl_mbed_report_verify(struct ssl_state *state, bool required)
+{
+   char info[512];
+   uint32_t flags = mbedtls_ssl_get_verify_result(&state->ctx);
+   mbedtls_x509_crt_verify_info(info, sizeof(info), "  ! ", flags);
+   ssl_socket_log_verify_fail(required ? 1 : 0, state->domain, info);
+}
+
+int ssl_socket_handshake_step(void *state_data, bool *read, bool *write)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   int result;
+   bool complete;
+   if (read)
+      *read = false;
+   if (write)
+      *write = false;
+   if (!state || state->handshake_state < 0)
+      return -1;
+   if (state->handshake_state == 2)
+      return 1;
+   if (!state->handshake_state && ssl_mbed_start(state) != 0)
    {
-      if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+      state->handshake_state = -1;
+      return -1;
+   }
+   result = mbedtls_ssl_handshake_step(&state->ctx);
+   if (result == MBEDTLS_ERR_SSL_WANT_READ)
+   {
+      if (read)
+         *read = true;
+      return 0;
+   }
+   if (result == MBEDTLS_ERR_SSL_WANT_WRITE)
+   {
+      if (write)
+         *write = true;
+      return 0;
+   }
+#ifdef MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS
+   if (result == MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS)
+      return 0;
+#endif
+#ifdef MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS
+   if (result == MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS)
+      return 0;
+#endif
+   if (result)
+   {
+      state->last_err = result;
+      state->handshake_state = -1;
+      if (result == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED)
+         ssl_mbed_report_verify(state, true);
+      return -1;
+   }
+#if MBEDTLS_VERSION_NUMBER >= 0x03020000
+   complete = mbedtls_ssl_is_handshake_over(&state->ctx) != 0;
+#elif MBEDTLS_VERSION_MAJOR >= 3
+   /* 3.0/3.1 predate the completion accessor. */
+   complete = state->ctx.MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HANDSHAKE_OVER;
+#else
+   complete = state->ctx.state == MBEDTLS_SSL_HANDSHAKE_OVER;
+#endif
+   if (!complete)
+      return 0;
+   state->handshake_state = 2;
+   if (mbedtls_ssl_get_verify_result(&state->ctx))
+      ssl_mbed_report_verify(state, false);
+   return 1;
+}
+
+int ssl_socket_connect(void *state_data,
+      void *data, bool timeout_enable, bool nonblock)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   int result;
+   bool read, write;
+   (void)nonblock;
+   if (!state)
+      return -1;
+   if (timeout_enable)
+   {
+      if (!socket_connect_with_timeout(SSL_MBED_FD(&state->net_ctx), data, 5000))
+         return -1;
+   }
+   else if (socket_connect(SSL_MBED_FD(&state->net_ctx), data))
+      return -1;
+   while ((result = ssl_socket_handshake_step(state, &read, &write)) == 0)
+   {
+      if ((read || write)
+            && (!socket_wait(SSL_MBED_FD(&state->net_ctx), &read, &write, SSL_SOCKET_IO_TIMEOUT_MS)
+               || !(read || write)))
       {
-         bool rd = (ret == MBEDTLS_ERR_SSL_WANT_READ);
-         bool wr = !rd;
-         if (     !socket_wait(state->net_ctx.fd, &rd, &wr, SSL_SOCKET_IO_TIMEOUT_MS)
-               || !(rd || wr))
-         {
-            state->last_err = MBEDTLS_ERR_SSL_TIMEOUT;
-            return -1;
-         }
-      }
-      else
-      {
-         state->last_err = ret;
-         /* Fail-closed: under REQUIRED a bad certificate makes the
-          * handshake return here (MBEDTLS_ERR_X509_CERT_VERIFY_FAILED)
-          * before we reach the verify-result block below. Surface the
-          * reason, then bail. */
-         if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED)
-         {
-            char     vrfy_buf[512];
-            uint32_t vflags = mbedtls_ssl_get_verify_result(&state->ctx);
-            mbedtls_x509_crt_verify_info(vrfy_buf, sizeof(vrfy_buf), "  ! ", vflags);
-            ssl_socket_log_verify_fail(1, state->domain, vrfy_buf);
-         }
+         state->last_err = MBEDTLS_ERR_SSL_TIMEOUT;
+         state->handshake_state = -1;
          return -1;
       }
    }
-   if (!socket_set_block(state->net_ctx.fd, true))
+   if (result < 0 || !socket_set_block(SSL_MBED_FD(&state->net_ctx), true))
       return -1;
-
-   if ((flags = mbedtls_ssl_get_verify_result(&state->ctx)) != 0)
-   {
-      char vrfy_buf[512];
-      mbedtls_x509_crt_verify_info(vrfy_buf, sizeof(vrfy_buf), "  ! ", flags);
-      /* Reached only under OPTIONAL/DISABLED: the handshake succeeded
-       * despite a verification failure. Log the soft-fail and let the
-       * connection proceed (the mode's documented behaviour). */
-      ssl_socket_log_verify_fail(0, state->domain, vrfy_buf);
-   }
-
-   return state->net_ctx.fd;
+   return SSL_MBED_FD(&state->net_ctx);
 }
 
 int ssl_socket_last_error(void *state_data)
@@ -617,10 +663,13 @@ int ssl_socket_flush_nonblocking(void *state_data)
 void ssl_socket_close(void *state_data)
 {
    struct ssl_state *state = (struct ssl_state*)state_data;
-
-   mbedtls_ssl_close_notify(&state->ctx);
-
-   socket_close(state->net_ctx.fd);
+   if (!state || SSL_MBED_FD(&state->net_ctx) < 0)
+      return;
+   if (state->handshake_state == 2 && socket_set_block(SSL_MBED_FD(&state->net_ctx), false))
+      mbedtls_ssl_close_notify(&state->ctx);
+   socket_close(SSL_MBED_FD(&state->net_ctx));
+   SSL_MBED_FD(&state->net_ctx) = -1;
+   state->handshake_state = -1;
 }
 
 void ssl_socket_free(void *state_data)

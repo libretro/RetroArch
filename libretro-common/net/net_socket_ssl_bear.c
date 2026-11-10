@@ -34,6 +34,7 @@
 struct ssl_state
 {
    int fd;
+   int handshake_state;
    char domain[256];
    br_ssl_client_context sc;
    br_x509_minimal_context xc;
@@ -280,7 +281,7 @@ void* ssl_socket_init(int fd, const char *domain)
 
 static bool process_inner(struct ssl_state *state, bool blocking)
 {
-   bool dummy;
+   bool dummy = false;
    size_t buflen;
    ssize_t bytes;
    uint8_t *buf = br_ssl_engine_sendrec_buf(&state->sc.eng, &buflen);
@@ -321,7 +322,7 @@ static bool process_inner(struct ssl_state *state, bool blocking)
       bytes = socket_receive_all_nonblocking(state->fd, &dummy, buf, buflen);
       if (bytes > 0)
          br_ssl_engine_recvrec_ack(&state->sc.eng, bytes);
-      if (bytes < 0)
+      if (bytes < 0 || dummy)
          return false;
    }
 
@@ -381,44 +382,73 @@ static void ssl_bear_report_verify(struct ssl_state *state)
    ssl_socket_log_verify_fail(1, state->domain, info);
 }
 
+int ssl_socket_handshake_step(void *state_data, bool *read, bool *write)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   unsigned status;
+   if (read)
+      *read = false;
+   if (write)
+      *write = false;
+   if (!state || state->handshake_state < 0)
+      return -1;
+   if (state->handshake_state == 2)
+      return 1;
+   if (!state->handshake_state)
+   {
+      if (!socket_set_block(state->fd, false))
+         goto error;
+      state->handshake_state = 1;
+   }
+   if (!process_inner(state, false))
+      goto error;
+   status = br_ssl_engine_current_state(&state->sc.eng);
+   if (status & BR_SSL_CLOSED)
+      goto error;
+   if (status & BR_SSL_SENDAPP)
+   {
+      state->handshake_state = 2;
+      return 1;
+   }
+   if (read)
+      *read = (status & BR_SSL_RECVREC) != 0;
+   if (write)
+      *write = (status & BR_SSL_SENDREC) != 0;
+   return 0;
+error:
+   state->handshake_state = -1;
+   ssl_bear_report_verify(state);
+   return -1;
+}
+
 int ssl_socket_connect(void *state_data,
       void *data, bool timeout_enable, bool nonblock)
 {
    struct ssl_state *state = (struct ssl_state*)state_data;
-   unsigned bearstate;
-
+   int result;
+   bool read, write;
+   (void)nonblock;
+   if (!state)
+      return -1;
    if (timeout_enable)
    {
       if (!socket_connect_with_timeout(state->fd, data, 5000))
          return -1;
-      /* socket_connect_with_timeout makes the socket non-blocking. */
-      if (!socket_set_block(state->fd, true))
-         return -1;
    }
-   else
+   else if (socket_connect(state->fd, data))
+      return -1;
+   while ((result = ssl_socket_handshake_step(state, &read, &write)) == 0)
    {
-      if (socket_connect(state->fd, data))
-         return -1;
-   }
-
-   for (;;)
-   {
-      if (!process_inner(state, true))
+      if ((read || write)
+            && (!socket_wait(state->fd, &read, &write, SSL_SOCKET_IO_TIMEOUT_MS)
+               || !(read || write)))
       {
-         ssl_bear_report_verify(state);
+         state->handshake_state = -1;
          return -1;
       }
-
-      bearstate = br_ssl_engine_current_state(&state->sc.eng);
-      if (bearstate & BR_SSL_SENDAPP)
-         break; /* handshake done */
-      if (bearstate & BR_SSL_CLOSED)
-      {
-         ssl_bear_report_verify(state);
-         return -1; /* failed */
-      }
    }
-
+   if (result < 0 || !socket_set_block(state->fd, true))
+      return -1;
    return 1;
 }
 
@@ -574,12 +604,16 @@ int ssl_socket_flush_nonblocking(void *state_data)
 void ssl_socket_close(void *state_data)
 {
    struct ssl_state *state = (struct ssl_state*)state_data;
-
-   br_ssl_engine_close(&state->sc.eng);
-   process_inner(state, false); /* send close notification */
-   socket_close(state->fd);     /* but immediately close socket
-                                   and don't worry about recipient
-                                   getting our message */
+   if (!state || state->fd < 0)
+      return;
+   if (state->handshake_state == 2 && socket_set_block(state->fd, false))
+   {
+      br_ssl_engine_close(&state->sc.eng);
+      process_inner(state, false);
+   }
+   socket_close(state->fd);
+   state->fd = -1;
+   state->handshake_state = -1;
 }
 
 void ssl_socket_free(void *state_data)

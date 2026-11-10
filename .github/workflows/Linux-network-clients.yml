@@ -91,6 +91,12 @@ jobs:
           # line has to carry Winsock, which nothing on Linux checks.
           make -C samples/network/tls_retro clean
 
+      - name: Incremental built-in TLS handshakes
+        shell: bash
+        run: |
+          set -eu
+          TLS_TEST_HANDSHAKE_STEP=1 samples/network/tls_retro/local_server_test.sh
+          make -C samples/network/tls_retro clean
 
       - name: Built-in SMB2/3 client against a local smbd
         shell: bash

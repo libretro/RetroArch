@@ -38,6 +38,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <net/net_socket_ssl.h>
+#include "tls_handshake_driver.h"
 #include <crypto/pk.h>
 #include <crypto/x509.h>
 #include <lrc_hash.h>
@@ -160,7 +161,7 @@ int main(int argc, char **argv)
       fprintf(stderr, "configuration refused\n");
       goto done;
    }
-   if (ssl_socket_connect(ssl, addr, true, false) < 0)
+   if (tls_test_connect(ssl, fd, addr, getenv("TLS_TEST_HANDSHAKE_STEP") != NULL) < 0)
    {
       fprintf(stderr, "TLS connect failed (%d)\n", ssl_socket_last_error(ssl));
       goto done;

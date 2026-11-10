@@ -43,6 +43,13 @@ void* ssl_socket_init(int fd, const char *domain);
 
 int ssl_socket_connect(void *state_data, void *data, bool timeout_enable, bool nonblock);
 
+/* TLS only, on an already-connected descriptor. Enables nonblocking I/O.
+ * 1: complete, -1: failed, 0: progress; read/write name the next readiness
+ * interests. Neither means internal work remains: schedule another step.
+ * The caller owns scheduling, deadlines and cancellation (close then free).
+ * Do not mix this with ssl_socket_connect() on the same state. */
+int ssl_socket_handshake_step(void *state_data, bool *read, bool *write);
+
 /* The TLS library's own code for the most recent failure in
  * ssl_socket_init()/ssl_socket_connect(), as the library reports it
  * (mbedtls: negative, so -0x7780 style; BearSSL: its BR_ERR_* value),
@@ -72,6 +79,8 @@ int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t len);
  * records/control work use ssl_socket_retro_pending for readiness. */
 ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *data_, size_t len);
 
+/* Closes immediately; flush pending application bytes before closing when
+ * delivery matters. The close notification is best effort and never waits. */
 void ssl_socket_close(void *state_data);
 
 void ssl_socket_free(void *state_data);
@@ -114,7 +123,8 @@ struct rsa_private_key;
 
 /* net_socket_ssl_retro.c only: one connection's own settings, for
  * clients that pin their own CAs or present a certificate. Every
- * pointer is borrowed until ssl_socket_connect() returns. */
+ * pointer is borrowed until ssl_socket_connect() returns, or until the
+ * incremental handshake completes or the connection is freed. */
 struct ssl_socket_retro_config
 {
    /* Trust anchors, DER, in place of the built-in bundle; NULL for

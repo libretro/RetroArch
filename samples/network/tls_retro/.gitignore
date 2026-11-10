@@ -1,2 +1,8 @@
 tls_config
 tls_config.exe
+tls_handshake
+tls_handshake.exe
+tls_partial_flag
+tls_partial_flag.exe
+tls_partial_threads
+tls_partial_threads.exe

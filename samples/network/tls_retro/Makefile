@@ -9,6 +9,8 @@ SRC = tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/net/net_socket.
       $(COMMON)/file/file_path_io.c $(COMMON)/features/features_cpu.c $(COMMON)/compat/compat_strl.c \
       $(COMMON)/compat/fopen_utf8.c \
       $(COMMON)/time/rtime.c $(COMMON)/string/stdstring.c $(COMMON)/encodings/encoding_utf.c
+THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c \
+      $(COMMON)/rthreads/retro_eventcount.c
 
 # Winsock on Windows (MSYS2 / MinGW, or a cross build with a *-w64-mingw32 CC).
 ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Windows,$(OS)))
@@ -20,15 +22,21 @@ all: tls_fetch tls_http tls_threads
 tls_partial: tls_partial.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_partial.c $(filter-out tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c,$(SRC)) $(LDLIBS) -o $@
 
-tls_fetch: $(SRC)
+tls_partial_flag: tls_partial.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_threads.c $(COMMON)/net/net_socket_ssl_retro.c,$(THR_SRC))
+	$(CC) $(CPPFLAGS) -DHAVE_THREADS -DTLS_CACHE_TEST_FLAG $(CFLAGS) tls_partial.c $(filter-out tls_threads.c $(COMMON)/net/net_socket_ssl_retro.c,$(THR_SRC)) $(LDLIBS) -lpthread -o $@
+
+tls_partial_threads: tls_partial.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_threads.c $(COMMON)/net/net_socket_ssl_retro.c,$(THR_SRC))
+	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) tls_partial.c $(filter-out tls_threads.c $(COMMON)/net/net_socket_ssl_retro.c,$(THR_SRC)) $(LDLIBS) -lpthread -o $@
+
+tls_fetch: tls_handshake_driver.h $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 # the same tool with no AES instructions to use, as on a 3DS or a Vita
-tls_fetch_noaes: $(SRC)
+tls_fetch_noaes: tls_handshake_driver.h $(SRC)
 	$(CC) $(CPPFLAGS) -DAES_NO_X86 -DAES_NO_ARM $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 tls_bench: tls_bench.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_bench.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
 # one connection under ssl_socket_retro_configure()
-tls_config: tls_config.c $(filter-out tls_fetch.c,$(SRC))
+tls_config: tls_handshake_driver.h tls_config.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_config.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
 tls_keyupdate: tls_keyupdate.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
@@ -62,17 +70,23 @@ else
       $(COMMON)/rthreads/retro_eventcount.c
    STALL_FLAGS = $(CPPFLAGS)
 endif
+HANDSHAKE_SRC = $(patsubst tls_stall.c,tls_handshake.c,$(STALL_SRC))
+HANDSHAKE_IMPL = $(filter $(COMMON)/net/net_socket_ssl_%.c,$(HANDSHAKE_SRC))
+tls_handshake: $(HANDSHAKE_SRC) tls_handshake_driver.h
+	$(CC) $(STALL_FLAGS) -DHAVE_THREADS $(CFLAGS) $(filter-out $(HANDSHAKE_IMPL),$(HANDSHAKE_SRC)) $(STALL_LIBS) $(LDLIBS) -lpthread -o $@
+
 tls_stall: $(STALL_SRC)
 	$(CC) $(STALL_FLAGS) -DHAVE_THREADS -DSSL_SOCKET_IO_TIMEOUT_MS=500 $(CFLAGS) $(STALL_SRC) $(STALL_LIBS) $(LDLIBS) -lpthread -o $@
 # a refused certificate reaches the verify hook, on the same backends
 HOOK_SRC = $(patsubst tls_stall.c,tls_verify_hook.c,$(STALL_SRC))
 tls_verify_hook: $(HOOK_SRC)
 	$(CC) $(STALL_FLAGS) -DHAVE_THREADS $(CFLAGS) $(HOOK_SRC) $(STALL_LIBS) $(LDLIBS) -lpthread -o $@
-THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c \
-      $(COMMON)/rthreads/retro_eventcount.c
 tls_threads: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
+	rm -f tls_partial_threads tls_partial_threads.exe
+	rm -f tls_partial_flag tls_partial_flag.exe
+	rm -f tls_handshake tls_handshake.exe
 	rm -f tls_partial tls_partial.exe
 	rm -f tls_verify_hook tls_verify_hook.exe tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_config tls_config.exe tls_threads tls_threads.exe
 .PHONY: all clean
