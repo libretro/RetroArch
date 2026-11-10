@@ -285,6 +285,95 @@ static void annexb(void)
    assert(!rflv_mux_new_annexb(&c));
 }
 
+static void hevc(void)
+{
+   unsigned char hvcc[44];
+   static const unsigned char cra[] = {0, 0, 0, 2, 42, 1};
+   static const unsigned char inter[] = {0, 0, 0, 2, 2, 1};
+   static const unsigned char bad[] = {0, 0, 0, 2, 42, 0};
+   rflv_config_t c = config();
+   rflv_mux_t *m;
+   rflv_tag_t tag;
+   const rflv_span_t *spans;
+   size_t count, i, at;
+   memset(hvcc, 0, sizeof(hvcc));
+   hvcc[0] = 1;
+   hvcc[13] = 0xf0;
+   hvcc[15] = hvcc[16] = 0xfc;
+   hvcc[17] = hvcc[18] = 0xf8;
+   hvcc[21] = hvcc[22] = 3;
+   for (i = 0; i < 3; i++)
+   {
+      at = 23 + 7 * i;
+      hvcc[at] = (unsigned char)(0xa0 + i);
+      hvcc[at + 2] = 1;
+      hvcc[at + 4] = 2;
+      hvcc[at + 5] = (unsigned char)(64 + 2 * i);
+      hvcc[at + 6] = 1;
+   }
+   c.avcc = hvcc;
+   c.asc = NULL; c.asc_size = c.audio_timescale = 0;
+   for (i = 0; i < sizeof(hvcc); i++)
+   {
+      c.avcc_size = i;
+      assert(!rflv_mux_new_hevc(&c));
+   }
+   c.avcc_size = sizeof(hvcc);
+   c.max_packet_size = 0xfffff8;
+   assert(!rflv_mux_new_hevc(&c));
+   c.max_packet_size = 1024;
+   m = rflv_mux_new_hevc(&c);
+   assert(m && rflv_mux_release(m));
+   hvcc[23] = 0;
+   assert(rflv_mux_get_tag(m, &tag) && tag.spans[0].size == 5);
+   assert(!memcmp(tag.spans[0].data, "\220hvc1", 5));
+   assert(tag.spans[1].size == sizeof(hvcc));
+   assert(((const unsigned char*)tag.spans[1].data)[23] == 0xa0);
+   assert(rflv_mux_release(m));
+   assert(rflv_mux_push(m, 1, cra, sizeof(cra), 0, 90, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_PACKET);
+   assert(rflv_mux_get_tag(m, &tag) && tag.spans[1].data == cra);
+   assert(tag.spans[0].size == 8 && !memcmp(tag.spans[0].data, "\221hvc1\0\0\1", 8));
+   assert(rflv_mux_step(m) == RFLV_PACKET && rflv_mux_get_tag(m, &tag));
+   assert(tag.spans[1].data == cra);
+   assert(rflv_mux_release(m));
+   assert(rflv_mux_push(m, 1, inter, sizeof(inter), 90000, 90000, false) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_PACKET);
+   assert(rflv_mux_get_tag(m, &tag) && tag.timestamp == 1000);
+   assert(tag.spans[0].size == 5 && !memcmp(tag.spans[0].data, "\243hvc1", 5));
+   assert(tag.spans[1].data == inter && rflv_mux_release(m));
+   assert(rflv_mux_push(m, 1, inter, sizeof(inter), 180000, 179910, false) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_PACKET);
+   assert(rflv_mux_get_tag(m, &tag) && tag.spans[0].size == 8);
+   assert(!memcmp(tag.spans[0].data, "\241hvc1\377\377\377", 8));
+   assert(rflv_mux_get(m, &spans, &count) && count == 3);
+   assert(be(spans[0].data, 1) == 9 && be((const unsigned char*)spans[0].data + 1, 3) == sizeof(inter) + 8);
+   assert(be(spans[2].data, 4) == sizeof(inter) + 19);
+   assert(rflv_mux_release(m) && rflv_mux_finish(m));
+   rflv_mux_free(m);
+   hvcc[23] = 0xa0;
+   hvcc[13] = 0;
+   assert(!rflv_mux_new_hevc(&c));
+   hvcc[13] = 0xf0;
+   hvcc[21] = 2;
+   assert(!rflv_mux_new_hevc(&c));
+   hvcc[21] = 3;
+   hvcc[29] = 0;
+   assert(!rflv_mux_new_hevc(&c));
+   hvcc[29] = 1;
+   m = rflv_mux_new_hevc(&c);
+   assert(m && rflv_mux_release(m) && rflv_mux_release(m));
+   assert(rflv_mux_push_annexb(m, cra, sizeof(cra), 0, 0, true) == RFLV_ERROR);
+   assert(rflv_mux_push(m, 1, bad, sizeof(bad), 0, 0, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_ERROR);
+   rflv_mux_free(m);
+   m = rflv_mux_new_hevc(&c);
+   assert(m && rflv_mux_release(m) && rflv_mux_release(m));
+   assert(rflv_mux_push(m, 1, inter, sizeof(inter), 0, 0, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_ERROR);
+   rflv_mux_free(m);
+}
+
 int main(void)
 {
    lifetime();
@@ -292,6 +381,7 @@ int main(void)
    single_track();
    timestamp_limits();
    annexb();
+   hevc();
    puts("PASS: FLV framing, borrowed packets, clocks, admission and teardown");
    return 0;
 }

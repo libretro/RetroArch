@@ -28,7 +28,7 @@ def decode(path, audio):
     return command(['ffmpeg', '-v', 'error', '-i', str(path), '-map',
                     '0:a:0' if audio else '0:v:0',
                     *(['-f', 'f32le'] if audio else
-                      ['-fps_mode', 'passthrough', '-pix_fmt', 'yuv420p', '-f', 'rawvideo']), '-'])
+                      ['-fps_mode', 'passthrough', '-pix_fmt', 'yuv420p10le', '-f', 'rawvideo']), '-'])
 
 
 def main():
@@ -42,22 +42,29 @@ def main():
     binary = str(Path(args.binary).resolve())
     with tempfile.TemporaryDirectory(prefix='flv-mux-') as temp:
         root = Path(temp)
-        for bframes in (0, 2):
-            source, output = root / 'source.flv', root / 'output.flv'
-            command(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
-                     'testsrc2=size=128x96:rate=25:duration=1', '-f', 'lavfi', '-i',
-                     'sine=frequency=997:sample_rate=44100:duration=1',
-                     '-c:v', 'libx264', '-threads', '1', '-bf', str(bframes),
-                     '-g', '12', '-c:a', 'aac', '-profile:a', 'aac_low',
-                     '-flvflags', 'no_duration_filesize', '-f', 'flv', str(source)])
-            for annexb in (False, True):
-                command(shlex.split(args.runner) + [binary, str(source), str(output)]
-                        + (['annexb'] if annexb else []))
-                assert probe(source) == probe(output), 'encoded packets or timestamps differ'
-                for audio in (False, True):
-                    assert decode(source, audio) == decode(output, audio), 'decoded output differs'
-                print(f'PASS: independent FLV packet/timestamp/video/PCM oracle, '
-                      f'B-frames={bframes}, Annex B={annexb}')
+        for codec, depth in (('libx264', 8), ('libx265', 8), ('libx265', 10)):
+            for bframes in (0, 2):
+                source, output = root / 'source.flv', root / 'output.flv'
+                options = ['-pix_fmt', 'yuv420p10le' if depth == 10 else 'yuv420p']
+                if codec == 'libx265':
+                    options += ['-x265-params', 'pools=1:frame-threads=1:log-level=error']
+                if depth == 10:
+                    options += ['-color_primaries', 'bt2020', '-color_trc', 'smpte2084',
+                                '-colorspace', 'bt2020nc']
+                command(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
+                         'testsrc2=size=128x96:rate=25:duration=1', '-f', 'lavfi', '-i',
+                         'sine=frequency=997:sample_rate=44100:duration=1',
+                         '-c:v', codec, '-threads', '1', '-bf', str(bframes), *options,
+                         '-g', '12', '-c:a', 'aac', '-profile:a', 'aac_low',
+                         '-flvflags', 'no_duration_filesize', '-f', 'flv', str(source)])
+                for annexb in ((False, True) if codec == 'libx264' else (False,)):
+                    command(shlex.split(args.runner) + [binary, str(source), str(output)]
+                            + (['annexb'] if annexb else []))
+                    assert probe(source) == probe(output), 'encoded packets or timestamps differ'
+                    for audio in (False, True):
+                        assert decode(source, audio) == decode(output, audio), 'decoded output differs'
+                    print(f'PASS: independent FLV packet/timestamp/video/PCM oracle, '
+                          f'codec={codec}/{depth}, B-frames={bframes}, Annex B={annexb}')
 
 
 if __name__ == '__main__':

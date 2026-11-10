@@ -41,9 +41,9 @@ struct rflv_mux
    int32_t composition;
    unsigned timescale[2], track;
    enum flv_output output;
-   uint8_t prefix[16], suffix[4];
+   uint8_t prefix[19], suffix[4];
    bool pending, scanning, failed, finished, seen[2], keyframe, vcl, idr;
-   bool annexb;
+   bool annexb, hevc;
 };
 
 static void flv_uint(uint8_t *out, uint32_t value, unsigned count)
@@ -93,6 +93,42 @@ static bool flv_avcc(const uint8_t *data, size_t size)
    return flv_sets(data, size, &pos, count, 13) && pos == size;
 }
 
+static bool flv_hvcc(const uint8_t *data, size_t size)
+{
+   size_t at = 23;
+   unsigned arrays, count, type, length, present = 0;
+   if (!data || size < 23 || size > 65536 || data[0] != 1
+         || (data[13] & 0xf0) != 0xf0 || (data[15] & 0xfc) != 0xfc
+         || (data[16] & 0xfc) != 0xfc || (data[17] & 0xf8) != 0xf8
+         || (data[18] & 0xf8) != 0xf8
+         || (data[21] & 3) != 3 || !data[22])
+      return false;
+   for (arrays = data[22]; arrays; arrays--)
+   {
+      if (size - at < 3 || (data[at] & 0x40))
+         return false;
+      type = data[at++] & 63;
+      count = ((unsigned)data[at] << 8) | data[at + 1];
+      at += 2;
+      if (!count)
+         return false;
+      while (count--)
+      {
+         if (size - at < 2)
+            return false;
+         length = ((unsigned)data[at] << 8) | data[at + 1];
+         at += 2;
+         if (length < 2 || length > size - at || (data[at] & 0x80)
+               || ((data[at] >> 1) & 63) != type || !(data[at + 1] & 7))
+            return false;
+         at += length;
+      }
+      if (type >= 32 && type <= 34)
+         present |= 1u << (type - 32);
+   }
+   return at == size && present == 7;
+}
+
 static unsigned flv_bits(const uint8_t *data, size_t size, unsigned *pos, unsigned count)
 {
    unsigned i, value = 0;
@@ -126,7 +162,7 @@ static bool flv_asc(const uint8_t *data, size_t size)
 static void flv_tag(rflv_mux_t *m, unsigned track, const void *data,
       size_t size, uint32_t timestamp, int32_t composition, bool keyframe, bool config)
 {
-   unsigned bytes = track == 1 ? 5 : 2;
+   unsigned bytes = track == 1 ? (m->hevc && !config && composition ? 8 : 5) : 2;
    memset(m->prefix, 0, sizeof(m->prefix));
    m->prefix[0] = track == 1 ? 9 : 8;
    flv_uint(m->prefix + 1, (uint32_t)size + bytes, 3);
@@ -134,7 +170,15 @@ static void flv_tag(rflv_mux_t *m, unsigned track, const void *data,
    m->prefix[7] = (uint8_t)(timestamp >> 24);
    m->prefix[11] = track == 1 ? (keyframe ? 0x17 : 0x27) : 0xaf;
    m->prefix[12] = config ? 0 : 1;
-   if (track == 1)
+   if (track == 1 && m->hevc)
+   {
+      m->prefix[11] = (uint8_t)(0x80 | (keyframe ? 0x10 : 0x20)
+            | (config ? 0 : composition ? 1 : 3));
+      memcpy(m->prefix + 12, "hvc1", 4);
+      if (bytes == 8)
+         flv_uint(m->prefix + 16, (uint32_t)composition, 3);
+   }
+   else if (track == 1)
       flv_uint(m->prefix + 13, (uint32_t)composition, 3);
    flv_uint(m->suffix, (uint32_t)size + bytes + 11, 4);
    m->spans[0].data = m->prefix;
@@ -147,11 +191,14 @@ static void flv_tag(rflv_mux_t *m, unsigned track, const void *data,
    m->pending = true;
 }
 
-rflv_mux_t *rflv_mux_new(const rflv_config_t *c)
+static rflv_mux_t *flv_new(const rflv_config_t *c, bool hevc)
 {
    rflv_mux_t *m;
-   if (!c || (!c->avcc && !c->asc) || !c->max_packet_size || c->max_packet_size > 0xfffffa
-         || (c->avcc ? !c->video_timescale || !flv_avcc((const uint8_t*)c->avcc, c->avcc_size)
+   if (!c || (!c->avcc && !c->asc) || (hevc && !c->avcc)
+         || !c->max_packet_size || c->max_packet_size > (hevc ? 0xfffff7u : 0xfffffau)
+         || (c->avcc ? !c->video_timescale
+            || !(hevc ? flv_hvcc((const uint8_t*)c->avcc, c->avcc_size)
+               : flv_avcc((const uint8_t*)c->avcc, c->avcc_size))
             : c->avcc_size || c->video_timescale)
          || (c->asc ? !c->audio_timescale || !flv_asc((const uint8_t*)c->asc, c->asc_size)
             : c->asc_size || c->audio_timescale))
@@ -174,6 +221,7 @@ rflv_mux_t *rflv_mux_new(const rflv_config_t *c)
    m->timescale[0] = c->video_timescale;
    m->timescale[1] = c->audio_timescale;
    m->limit = c->max_packet_size;
+   m->hevc = hevc;
    memcpy(m->prefix, "FLV\1\0\0\0\0\11\0\0\0\0", 13);
    m->prefix[4] = (c->avcc ? 1 : 0) | (c->asc ? 4 : 0);
    m->spans[0].data = m->prefix;
@@ -181,6 +229,16 @@ rflv_mux_t *rflv_mux_new(const rflv_config_t *c)
    m->span_count = 1;
    m->pending = true;
    return m;
+}
+
+rflv_mux_t *rflv_mux_new(const rflv_config_t *c)
+{
+   return flv_new(c, false);
+}
+
+rflv_mux_t *rflv_mux_new_hevc(const rflv_config_t *c)
+{
+   return flv_new(c, true);
 }
 
 static bool flv_annexb(const uint8_t *data, size_t size, size_t *offset,
@@ -383,10 +441,20 @@ int rflv_mux_step(rflv_mux_t *m)
       if (!length || length > m->size - m->offset)
          goto failed;
       nal = m->input + m->offset;
+      size = length;
       m->offset += length;
    }
    if (nal[0] & 0x80)
       goto failed;
+   if (m->hevc)
+   {
+      if (size < 2 || !(nal[1] & 7))
+         goto failed;
+      type = (nal[0] >> 1) & 63;
+      m->vcl = m->vcl || type <= 31;
+      m->idr = m->idr || (type >= 16 && type <= 23);
+      return RFLV_PROGRESS;
+   }
    type = nal[0] & 31;
    if (!type || type >= 24)
       goto failed;

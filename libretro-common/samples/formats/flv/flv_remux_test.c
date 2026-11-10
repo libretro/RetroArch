@@ -92,10 +92,11 @@ int main(int argc, char **argv)
    unsigned char *data, *p;
    size_t size, pos, length;
    long bytes;
-   unsigned pass, type, timestamp, prefix;
+   unsigned pass, type, timestamp, prefix, packet_type;
    int result, composition;
    int64_t pts;
    bool annexb = argc == 4;
+   bool hevc = false, keyframe;
    assert(argc == 3 || (annexb && !strcmp(argv[3], "annexb")));
    f = fopen(argv[1], "rb");
    assert(f && !fseek(f, 0, SEEK_END));
@@ -106,7 +107,7 @@ int main(int argc, char **argv)
    assert(data && fread(data, 1, size, f) == size && !fclose(f));
    assert(!memcmp(data, "FLV\1", 4) && read_be(data + 5, 4) == 9);
    memset(&c, 0, sizeof(c));
-   c.max_packet_size = 0xfffffa;
+   c.max_packet_size = 0xfffff7;
    m = NULL;
    f = NULL;
    for (pass = 0; pass < 2; pass++)
@@ -123,13 +124,25 @@ int main(int argc, char **argv)
             continue;
          prefix = type == 9 ? 5 : 2;
          assert(length >= prefix);
-         assert(type == 9 ? (p[11] & 15) == 7 : (p[11] >> 4) == 10);
-         if (type == 9 && p[12] == 2)
+         if (type == 9)
+         {
+            hevc = (p[11] & 0x80) != 0;
+            assert(hevc ? !memcmp(p + 12, "hvc1", 4) : (p[11] & 15) == 7);
+            packet_type = hevc ? p[11] & 15 : p[12];
+            if (hevc && packet_type == 1)
+               prefix = 8;
+         }
+         else
+         {
+            assert((p[11] >> 4) == 10);
+            packet_type = p[12];
+         }
+         if (type == 9 && packet_type == 2)
             continue;
          assert(length > prefix);
          if (!pass)
          {
-            if (p[12] != 0)
+            if (packet_type != 0)
                continue;
             if (type == 9)
             {
@@ -145,24 +158,26 @@ int main(int argc, char **argv)
             }
             continue;
          }
-         if (p[12] != 1)
+         if (packet_type != 1 && !(type == 9 && hevc && packet_type == 3))
             continue;
          timestamp = read_be(p + 4, 3) | ((unsigned)p[7] << 24);
-         composition = type == 9 ? (int)read_be(p + 13, 3) : 0;
+         composition = type == 9 && (!hevc || packet_type == 1)
+            ? (int)read_be(p + (hevc ? 16 : 13), 3) : 0;
          if (composition & 0x800000)
             composition -= 0x1000000;
          pts = (int64_t)timestamp + composition;
          assert(pts >= 0);
+         keyframe = type == 9 && ((p[11] >> 4) & 7) == 1;
          if (annexb && type == 9)
          {
             annexb_packet(p + 16, length - 5);
             result = rflv_mux_push_annexb(m, p + 16, length - 5,
-                  timestamp, (uint64_t)pts, (p[11] >> 4) == 1);
+                  timestamp, (uint64_t)pts, keyframe);
          }
          else
             result = rflv_mux_push(m, type == 9 ? 1 : 2,
                p + 11 + prefix, length - prefix, timestamp, (uint64_t)pts,
-               type == 9 && (p[11] >> 4) == 1);
+               keyframe);
          assert(result == RFLV_PROGRESS);
          do
             result = rflv_mux_step(m);
@@ -173,7 +188,8 @@ int main(int argc, char **argv)
       assert(pos == size);
       if (!pass)
       {
-         m = annexb ? annexb_mux(&c) : rflv_mux_new(&c);
+         assert(!annexb || !hevc);
+         m = annexb ? annexb_mux(&c) : hevc ? rflv_mux_new_hevc(&c) : rflv_mux_new(&c);
          f = fopen(argv[2], "wb");
          assert(m && f);
          output(m, f);
