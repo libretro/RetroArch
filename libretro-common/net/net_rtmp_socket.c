@@ -185,7 +185,10 @@ void net_rtmp_socket_free(net_rtmp_socket_t *s)
 {
    if (!s)
       return;
-   net_rtmp_session_cancel(s->session);
-   net_rtmp_session_discard(s->session);
+   if (net_rtmp_session_status(s->session, NULL, NULL) != NET_RTMP_SESSION_FINISHED)
+   {
+      net_rtmp_session_cancel(s->session);
+      net_rtmp_session_discard(s->session);
+   }
    free(s);
 }

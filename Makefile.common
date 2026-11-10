@@ -2773,7 +2773,8 @@ ifeq ($(HAVE_NETWORKING), 1)
              $(LIBRETRO_COMM_DIR)/net/net_rtmp_receive.o \
              $(LIBRETRO_COMM_DIR)/net/net_rtmp_reply.o \
              $(LIBRETRO_COMM_DIR)/net/net_rtmp_session.o \
-             $(LIBRETRO_COMM_DIR)/net/net_rtmp_socket.o
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_socket.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_client.o
    endif
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_compat.o \
           $(LIBRETRO_COMM_DIR)/net/net_http.o \

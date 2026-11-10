@@ -1807,6 +1807,7 @@ NETPLAY
 #include "../libretro-common/net/net_rtmp_reply.c"
 #include "../libretro-common/net/net_rtmp_session.c"
 #include "../libretro-common/net/net_rtmp_socket.c"
+#include "../libretro-common/net/net_rtmp_client.c"
 #endif
 #ifdef HAVE_IFINFO
 #include "../libretro-common/net/net_ifinfo.c"

@@ -46,8 +46,9 @@ net_rtmp_socket_t *net_rtmp_socket_new_tls(net_rtmp_session_t *session,
 int net_rtmp_socket_flush(net_rtmp_socket_t *socket);
 /* One bounded receive/feed/send pass. No allocation, poll, wait or clock. */
 int net_rtmp_socket_step(net_rtmp_socket_t *socket, uint32_t receive_time);
-/* Retires this pump's session borrows and cancels it. Caller then closes the
- * descriptor and frees the session. No asynchronous socket operation survives. */
+/* Retires this pump's session borrows; cancels unfinished sessions. Caller
+ * then closes the descriptor and frees the session. No asynchronous socket
+ * operation survives. */
 void net_rtmp_socket_free(net_rtmp_socket_t *socket);
 RETRO_END_DECLS
 #endif

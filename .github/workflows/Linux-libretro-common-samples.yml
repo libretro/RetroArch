@@ -125,6 +125,7 @@ jobs:
             rtmp_publish_test
             rtmp_control_test
             rtmp_session_test
+            rtmp_client_test
             rtmp_socket_test
             rtmp_connect_test
             rtmp_connect_select_test

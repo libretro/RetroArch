@@ -13,6 +13,7 @@ TARGETS := rtmp_chunk_test$(EXE) rtmp_handshake_test$(EXE) rtmp_receive_test$(EX
 TARGETS += rtmp_resolve_test$(EXE)
 TARGETS += rtmp_resolve_native_test$(EXE)
 TARGETS += rtmps_socket_test$(EXE)
+TARGETS += rtmp_client_test$(EXE) rtmp_client_native_test$(EXE)
 all: $(TARGETS)
 rtmp_resolve_test$(EXE): rtmp_resolve_test.c $(LRC)/net/net_resolve.c $(LRC)/include/net/net_resolve.h
 	$(CC) $(CFLAGS) -D_GNU_SOURCE -o $@ $< $(LDFLAGS)
@@ -21,6 +22,7 @@ rtmp_connect_test$(EXE): rtmp_connect_test.c $(LRC)/net/net_socket.c $(LRC)/incl
 rtmp_connect_select_test$(EXE): rtmp_connect_test.c $(LRC)/net/net_socket.c $(LRC)/include/net/net_socket.h
 	$(CC) $(CFLAGS) -D_GNU_SOURCE -DCONNECT_FORCE_SELECT -Wno-unused-function -Wno-unused-parameter -ffunction-sections -fdata-sections -o $@ $< $(LDFLAGS) -Wl,--gc-sections $(NETWORK_LIBS)
 SESSION := $(LRC)/net/net_rtmp_session.c $(LRC)/net/net_rtmp_handshake.c $(LRC)/net/net_rtmp_chunk.c $(LRC)/net/net_rtmp_receive.c $(LRC)/net/net_rtmp_publish.c $(LRC)/net/net_rtmp_command.c $(LRC)/net/net_rtmp_reply.c $(LRC)/net/net_rtmp_control.c
+CLIENT := $(LRC)/net/net_rtmp_client.c $(LRC)/net/net_rtmp_socket.c $(LRC)/net/net_resolve.c
 FLV := $(LRC)/formats/flv/rflv_mux.c
 rtmp_session_test$(EXE): rtmp_session_test.c $(SESSION) $(FLV) $(LRC)/include/formats/rflv_mux.h $(wildcard $(LRC)/include/net/net_rtmp*.h)
 	$(CC) $(CFLAGS) -o $@ rtmp_session_test.c $(SESSION) $(FLV) $(LDFLAGS)
@@ -47,6 +49,12 @@ rtmp_socket_native_test$(EXE): rtmp_socket_native_test.c $(SESSION) $(FLV) $(LRC
 	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_THREADS -o $@ rtmp_socket_native_test.c $(SESSION) $(FLV) $(LRC)/net/net_rtmp_socket.c $(LRC)/net/net_resolve.c $(RESOLVE_THREAD_OBJ) $(NETWORK_OBJS) $(LDFLAGS) $(NETWORK_LIBS) $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),,-pthread)
 rtmps_socket_native_test$(EXE): rtmp_socket_native_test.c $(SESSION) $(FLV) $(LRC)/include/formats/rflv_mux.h $(NETWORK_OBJS) $(TLS_OBJS) $(RESOLVE_THREAD_OBJ) $(LRC)/net/net_resolve.c $(LRC)/include/net/net_resolve.h $(LRC)/net/net_rtmp_socket.c $(LRC)/include/net/net_socket_ssl.h $(wildcard $(LRC)/include/net/net_rtmp*.h)
 	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_THREADS -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_CRYPTO -o $@ rtmp_socket_native_test.c $(SESSION) $(FLV) $(LRC)/net/net_rtmp_socket.c $(LRC)/net/net_resolve.c $(RESOLVE_THREAD_OBJ) $(NETWORK_OBJS) $(TLS_OBJS) $(LDFLAGS) $(NETWORK_LIBS) $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),,-pthread)
+rtmp_client_test$(EXE): rtmp_client_test.c $(CLIENT) $(SESSION) $(NETWORK_OBJS) $(wildcard $(LRC)/include/net/net_rtmp*.h)
+	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_THREADS -o $@ $< $(CLIENT) $(SESSION) $(NETWORK_OBJS) $(LDFLAGS) $(NETWORK_LIBS) $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),,-pthread)
+rtmp_client_native_test$(EXE): rtmp_client_native_test.c rtmp_socket_native_test.c $(CLIENT) $(SESSION) $(FLV) $(NETWORK_OBJS) $(RESOLVE_THREAD_OBJ) $(wildcard $(LRC)/include/net/net_rtmp*.h)
+	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_THREADS -o $@ $< $(CLIENT) $(SESSION) $(FLV) $(RESOLVE_THREAD_OBJ) $(NETWORK_OBJS) $(LDFLAGS) $(NETWORK_LIBS) $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),,-pthread)
+rtmps_client_native_test$(EXE): rtmp_client_native_test.c rtmp_socket_native_test.c $(CLIENT) $(SESSION) $(FLV) $(NETWORK_OBJS) $(TLS_OBJS) $(RESOLVE_THREAD_OBJ) $(wildcard $(LRC)/include/net/net_rtmp*.h)
+	$(CC) $(CFLAGS) -D_GNU_SOURCE -DHAVE_THREADS -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_CRYPTO -o $@ $< $(CLIENT) $(SESSION) $(FLV) $(RESOLVE_THREAD_OBJ) $(NETWORK_OBJS) $(TLS_OBJS) $(LDFLAGS) $(NETWORK_LIBS) $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),,-pthread)
 $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) $(filter-out -pedantic -Werror,$(CFLAGS)) -D_GNU_SOURCE -c -o $@ $<
@@ -67,6 +75,7 @@ PUBLISH_HEADERS := $(LRC)/include/net/net_rtmp_publish.h $(LRC)/include/net/net_
 rtmp_publish_test$(EXE): rtmp_publish_test.c $(PUBLISH) $(PUBLISH_HEADERS)
 	$(CC) $(CFLAGS) -o $@ rtmp_publish_test.c $(PUBLISH) $(LDFLAGS)
 check: all
+	$(RUNNER) ./rtmp_client_test$(EXE)
 	$(RUNNER) ./rtmp_resolve_test$(EXE)
 	$(RUNNER) ./rtmp_resolve_native_test$(EXE)
 	$(RUNNER) ./rtmp_connect_test$(EXE)
@@ -91,7 +100,9 @@ peer-check: all
 	python3 session_peer.py --runner "$(RUNNER)" --socket-binary ./rtmp_socket_native_test$(EXE) ./rtmp_session_test$(EXE)
 	python3 media_peer.py --runner "$(RUNNER)" ./rtmp_socket_native_test$(EXE)
 	python3 media_peer.py --runner "$(RUNNER)" --mux ./rtmp_socket_native_test$(EXE)
+	python3 media_peer.py --runner "$(RUNNER)" --mux ./rtmp_client_native_test$(EXE)
 clean:
+	rm -f rtmp_client_test rtmp_client_test.exe rtmp_client_native_test rtmp_client_native_test.exe rtmps_client_native_test rtmps_client_native_test.exe
 	rm -f rtmps_socket_native_test rtmps_socket_native_test.exe
 	rm -f rtmps_socket_test rtmps_socket_test.exe
 	rm -f rtmp_resolve_test rtmp_resolve_test.exe
