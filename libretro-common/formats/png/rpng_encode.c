@@ -229,6 +229,7 @@ static unsigned rpng_pixfmt_bpp(enum rpng_pixfmt fmt)
       case RPNG_PIXFMT_RGB48:
          return 6;
       case RPNG_PIXFMT_XRGB8888:
+      case RPNG_PIXFMT_XBGR8888:
       case RPNG_PIXFMT_RGB565:
          /* 32/16-bit sources, but the PNG side is 8-bit RGB. */
       case RPNG_PIXFMT_BGR24:
@@ -389,6 +390,46 @@ static void copy_xrgb8888_line(uint8_t *dst, const uint32_t *src,
       *dst++      = (uint8_t)(px >> 16); /* R */
       *dst++      = (uint8_t)(px >>  8); /* G */
       *dst++      = (uint8_t)(px >>  0); /* B */
+   }
+}
+
+/* X8B8G8R8 (R,G,B,X in memory) -> PNG RGB.  Each 32-bit lane is
+ * already 0xXXBBGGRR, so SSE2 drops the X byte and closes the gaps as
+ * the XRGB8888 path does after its rotate; NEON stores the first three
+ * of the four channel planes. */
+static void copy_xbgr8888_line(uint8_t *dst, const uint32_t *src,
+      unsigned width)
+{
+   unsigned i = 0;
+#if defined(RPNG_ENC_SSE2)
+   {
+      const __m128i m_rgb = _mm_set1_epi32(0x00FFFFFF);
+      for (; i + 6 <= width; i += 4)
+      {
+         __m128i v = _mm_loadu_si128((const __m128i*)(src + i));
+         _mm_storeu_si128((__m128i*)(dst + (size_t)i * 3),
+               rpng_pack_rgb0x4(_mm_and_si128(v, m_rgb)));
+      }
+   }
+#elif defined(RPNG_ENC_NEON) && !defined(__ARM_BIG_ENDIAN)
+   for (; i + 16 <= width; i += 16)
+   {
+      uint8x16x4_t p = vld4q_u8((const uint8_t*)(src + i)); /* R,G,B,X */
+      uint8x16x3_t q;
+      q.val[0] = p.val[0];
+      q.val[1] = p.val[1];
+      q.val[2] = p.val[2];
+      vst3q_u8(dst + (size_t)i * 3, q);
+   }
+#endif
+   {
+      const uint8_t *s8 = (const uint8_t*)(src + i);
+      for (dst += (size_t)i * 3; i < width; i++, s8 += 4)
+      {
+         *dst++ = s8[0]; /* R */
+         *dst++ = s8[1]; /* G */
+         *dst++ = s8[2]; /* B */
+      }
    }
 }
 
@@ -1035,6 +1076,9 @@ static bool rpng_encode_row(rpng_encoder_t *e)
          break;
       case RPNG_PIXFMT_XRGB8888:
          copy_xrgb8888_line(e->rgba_line, (const uint32_t*)(const void*)data, width);
+         break;
+      case RPNG_PIXFMT_XBGR8888:
+         copy_xbgr8888_line(e->rgba_line, (const uint32_t*)(const void*)data, width);
          break;
       case RPNG_PIXFMT_RGB565:
          copy_rgb565_line(e->rgba_line, (const uint16_t*)(const void*)data, width);

@@ -436,6 +436,195 @@ START_TEST (test_rpng_ihdr_zero_dimensions_rejected)
 }
 END_TEST
 
+/* rpng_set_output and rpng_get_info.  An image decoded into the
+ * caller's memory, rows a stride apart, must match the one rpng
+ * allocates, row for row, and leave the pixels past each row's end
+ * alone.  The filter is chosen so that the 8-bit RGBA rows unfilter
+ * straight into the output (Paeth and Average take the two-row
+ * wavefront path, whose second row sits a stride below the first),
+ * and the interlaced image covers the Adam7 passes and pass 7 written
+ * in place. */
+static size_t rpng_out_build_png(uint8_t *out, size_t out_size,
+      int interlace, uint8_t filter)
+{
+   uint8_t  raw[8 * 1024];
+   uint8_t  ihdr[13];
+   size_t   rlen = 0;
+   size_t   len  = 0;
+   uLongf   zlen;
+   uint8_t  zbuf[16 * 1024];
+   unsigned x, y, p;
+
+   for (p = 0; p < (interlace ? 7u : 1u); p++)
+   {
+      unsigned ox = interlace ? rpng_sweep_adam7[p][0] : 0;
+      unsigned oy = interlace ? rpng_sweep_adam7[p][1] : 0;
+      unsigned sx = interlace ? rpng_sweep_adam7[p][2] : 1;
+      unsigned sy = interlace ? rpng_sweep_adam7[p][3] : 1;
+      if (ox >= RPNG_SWEEP_W || oy >= RPNG_SWEEP_H)
+         continue;
+      for (y = oy; y < RPNG_SWEEP_H; y += sy)
+      {
+         raw[rlen++] = filter;
+         for (x = ox; x < RPNG_SWEEP_W; x += sx)
+         {
+            raw[rlen++] = (uint8_t)(x * 7 + y);
+            raw[rlen++] = (uint8_t)(y * 5 + x);
+            raw[rlen++] = (uint8_t)(x ^ y);
+            raw[rlen++] = (uint8_t)(x * y + 3);
+         }
+      }
+   }
+
+   zlen = (uLongf)sizeof(zbuf);
+   if (compress2(zbuf, &zlen, raw, (uLong)rlen, 6) != Z_OK)
+      return 0;
+   if (out_size < 8 + 25 + (12 + zlen) + 12)
+      return 0;
+
+   memcpy(out + len, png_magic, 8);
+   len += 8;
+   ihdr[0]  = 0; ihdr[1]  = 0; ihdr[2]  = 0; ihdr[3]  = RPNG_SWEEP_W;
+   ihdr[4]  = 0; ihdr[5]  = 0; ihdr[6]  = 0; ihdr[7]  = RPNG_SWEEP_H;
+   ihdr[8]  = 8;
+   ihdr[9]  = 6;
+   ihdr[10] = 0; ihdr[11] = 0;
+   ihdr[12] = (uint8_t)interlace;
+   len += rpng_sweep_emit_chunk(out + len, "IHDR", ihdr, 13);
+   len += rpng_sweep_emit_chunk(out + len, "IDAT", zbuf, (size_t)zlen);
+   len += rpng_sweep_emit_chunk(out + len, "IEND", NULL, 0);
+   return len;
+}
+
+/* Decodes @png; into @dst, @stride pixels a row, when @dst is set. */
+static uint32_t *rpng_out_decode(uint8_t *png, size_t len, bool rgba,
+      uint32_t *dst, size_t stride, unsigned *w, unsigned *h)
+{
+   rpng_t   *r    = rpng_alloc();
+   uint32_t *data = NULL;
+   int       ret;
+   ck_assert(r != NULL);
+   ck_assert(rpng_set_buf_ptr(r, png, len));
+   ck_assert(rpng_start(r));
+   while (rpng_iterate_image(r)) { }
+   if (dst)
+      ck_assert(rpng_set_output(r, dst, stride));
+   do
+   {
+      ret = rpng_process_image(r, (void**)&data, len, w, h, rgba);
+   } while (ret == 0);
+   ck_assert_int_eq(ret, 1);
+   if (dst)
+      ck_assert(data == dst);
+   rpng_free(r);
+   return data;
+}
+
+static void rpng_out_check(int interlace, uint8_t filter, bool rgba)
+{
+   enum { STRIDE = RPNG_SWEEP_W + 5, GUARD = 0xA5A5A5A5u };
+   uint8_t   png[24 * 1024];
+   uint32_t  dst[STRIDE * RPNG_SWEEP_H];
+   uint32_t *ref;
+   unsigned  w = 0, h = 0, x, y;
+   size_t    len = rpng_out_build_png(png, sizeof(png), interlace, filter);
+
+   ck_assert(len > 0);
+   ref = rpng_out_decode(png, len, rgba, NULL, 0, &w, &h);
+   ck_assert(ref != NULL);
+   ck_assert_uint_eq(w, RPNG_SWEEP_W);
+   ck_assert_uint_eq(h, RPNG_SWEEP_H);
+
+   for (x = 0; x < STRIDE * RPNG_SWEEP_H; x++)
+      dst[x] = GUARD;
+   rpng_out_decode(png, len, rgba, dst, STRIDE, &w, &h);
+   for (y = 0; y < RPNG_SWEEP_H; y++)
+   {
+      ck_assert(!memcmp(dst + (size_t)y * STRIDE, ref + (size_t)y * w,
+               (size_t)w * sizeof(uint32_t)));
+      for (x = w; x < STRIDE; x++)
+         ck_assert_uint_eq(dst[(size_t)y * STRIDE + x], GUARD);
+   }
+   free(ref);
+}
+
+START_TEST (test_rpng_set_output_stride)
+{
+   static const uint8_t filters[] = { 0, 1, 2, 3, 4 };
+   size_t i;
+   for (i = 0; i < sizeof(filters); i++)
+   {
+      rpng_out_check(0, filters[i], true);
+      rpng_out_check(0, filters[i], false);
+      rpng_out_check(1, filters[i], true);
+      rpng_out_check(1, filters[i], false);
+   }
+}
+END_TEST
+
+START_TEST (test_rpng_set_output_refused)
+{
+   uint8_t  png[24 * 1024];
+   uint32_t dst[RPNG_SWEEP_W * RPNG_SWEEP_H];
+   size_t   len = rpng_out_build_png(png, sizeof(png), 0, 0);
+   rpng_t  *r   = rpng_alloc();
+   ck_assert(len > 0 && r != NULL);
+   ck_assert(rpng_set_buf_ptr(r, png, len));
+   ck_assert(rpng_start(r));
+   /* Before IHDR has been read */
+   ck_assert(!rpng_set_output(r, dst, RPNG_SWEEP_W));
+   while (rpng_iterate_image(r)) { }
+   /* A stride short of the width */
+   ck_assert(!rpng_set_output(r, dst, RPNG_SWEEP_W - 1));
+   ck_assert(rpng_set_output(r, dst, RPNG_SWEEP_W));
+   rpng_free(r);
+}
+END_TEST
+
+START_TEST (test_rpng_get_info)
+{
+   /* A 3x2 2-bit palette image with tRNS, interlaced */
+   uint8_t png[256];
+   uint8_t ihdr[13]  = { 0,0,0,3, 0,0,0,2, 2, 3, 0, 0, 1 };
+   uint8_t plte[12]  = { 255,0,0, 0,255,0, 0,0,255, 9,9,9 };
+   uint8_t trns[2]   = { 0, 128 };
+   uint8_t raw[16];
+   uint8_t zbuf[64];
+   uLongf  zlen = sizeof(zbuf);
+   size_t  len  = 0, rlen = 0, i;
+   struct rpng_info info;
+   rpng_t *r = rpng_alloc();
+
+   /* Adam7 passes of a 3x2 image: 1 (0,0), 4 (2,0), 6 (1,0), 7 (row 1) */
+   raw[rlen++] = 0; raw[rlen++] = 0x00;
+   raw[rlen++] = 0; raw[rlen++] = 0x40;
+   raw[rlen++] = 0; raw[rlen++] = 0x80;
+   raw[rlen++] = 0; raw[rlen++] = 0x1B;
+   ck_assert(compress2(zbuf, &zlen, raw, (uLong)rlen, 6) == Z_OK);
+   memcpy(png, png_magic, 8);
+   len = 8;
+   len += rpng_sweep_emit_chunk(png + len, "IHDR", ihdr, 13);
+   len += rpng_sweep_emit_chunk(png + len, "PLTE", plte, sizeof(plte));
+   len += rpng_sweep_emit_chunk(png + len, "tRNS", trns, sizeof(trns));
+   len += rpng_sweep_emit_chunk(png + len, "IDAT", zbuf, (size_t)zlen);
+   len += rpng_sweep_emit_chunk(png + len, "IEND", NULL, 0);
+
+   ck_assert(r != NULL);
+   ck_assert(!rpng_get_info(r, &info));
+   ck_assert(rpng_set_buf_ptr(r, png, len));
+   ck_assert(rpng_start(r));
+   for (i = 0; rpng_iterate_image(r); i++) { }
+   ck_assert(rpng_get_info(r, &info));
+   ck_assert_uint_eq(info.width, 3);
+   ck_assert_uint_eq(info.height, 2);
+   ck_assert_uint_eq(info.depth, 2);
+   ck_assert_uint_eq(info.color_type, 3);
+   ck_assert_uint_eq(info.interlace, 1);
+   ck_assert_uint_eq(info.has_trns, 1);
+   rpng_free(r);
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
@@ -451,6 +640,9 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_rpng_abandoned_decode_teardown_regular);
    tcase_add_test(tc_core, test_rpng_abandoned_decode_teardown_adam7);
    tcase_add_test(tc_core, test_rpng_ihdr_zero_dimensions_rejected);
+   tcase_add_test(tc_core, test_rpng_set_output_stride);
+   tcase_add_test(tc_core, test_rpng_set_output_refused);
+   tcase_add_test(tc_core, test_rpng_get_info);
    suite_add_tcase(s, tc_core);
 
    return s;

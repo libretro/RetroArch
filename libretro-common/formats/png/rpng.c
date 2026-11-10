@@ -252,9 +252,13 @@ struct rpng_process
     * task_image_load_free.  The caller's pointer now never moves. */
    uint32_t *out_cursor;
    size_t    out_stride;      /* pixels from one output row to the next:
-                               * the image width, the pass width into a
-                               * pass buffer, or twice the image width for
-                               * Adam7 pass 7, written in place          */
+                               * the image's row stride, the pass width
+                               * into a pass buffer, or twice the image's
+                               * row stride for Adam7 pass 7, written in
+                               * place                                   */
+   size_t    image_stride;    /* pixels from one row of the image to the
+                               * next: its width, or what
+                               * rpng_set_output was given               */
    /* Kept for the whole decode rather than per pass: the three scanline
     * buffers (one block, lines_cap bytes apiece, at the image's full
     * pitch, which no pass exceeds) and the Adam7 pass buffer (pass_cap
@@ -332,6 +336,10 @@ struct rpng
    struct rpng_hdr_metadata hdr;
    uint8_t flags;
    bool supports_rgba;
+   /* rpng_set_output: the caller's memory the image decodes into, and its
+    * row stride in pixels; NULL to allocate the image as usual. */
+   uint32_t *out_dst;
+   size_t    out_dst_stride;
    /* When set and the source is 16-bit, decode to packed XRGB2101010
     * (10-bit) instead of narrowing to 8-bit ARGB, so HDR PNGs can reach a
     * 10-bit display path. Ignored for 8-bit sources. */
@@ -2343,16 +2351,16 @@ static size_t rpng_adam7_buf_size(const struct png_ihdr *ihdr)
 }
 
 static void rpng_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
-      const struct png_ihdr *ihdr,
+      size_t stride,
       const uint32_t *input, unsigned pass_width, unsigned pass_height,
       const struct adam7_pass *pass)
 {
    unsigned x, y;
 
-   data += pass->y * ihdr->width + pass->x;
+   data += pass->y * stride + pass->x;
 
    for (y = 0; y < pass_height;
-         y++, data += ihdr->width * pass->stride_y, input += pass_width)
+         y++, data += stride * pass->stride_y, input += pass_width)
    {
       uint32_t *out = data;
 
@@ -2829,7 +2837,7 @@ static int rpng_reverse_filter_regular_iterate(
             {
                /* Straight into the two output rows */
                dec0 = (uint8_t*)pngp->out_cursor;
-               dec1 = dec0 + pngp->pitch;
+               dec1 = (uint8_t*)(pngp->out_cursor + pngp->out_stride);
             }
             else if (in_place)
             {
@@ -2973,8 +2981,8 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
    else
    {
       /* Pass 7: its rows are the image's odd rows, whole */
-      pngp->out_cursor = data + ihdr->width;
-      pngp->out_stride = 2 * (size_t)ihdr->width;
+      pngp->out_cursor = data + pngp->image_stride;
+      pngp->out_stride = 2 * pngp->image_stride;
    }
 
    do
@@ -2992,7 +3000,8 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
 
    if (pngp->data)
       rpng_reverse_filter_adam7_deinterlace_pass(data,
-            ihdr, pngp->data, pngp->pass_width, pngp->pass_height,
+            pngp->image_stride, pngp->data, pngp->pass_width,
+            pngp->pass_height,
             &rpng_passes[pngp->pass_pos]);
 
    pngp->data                   = NULL;
@@ -3224,8 +3233,11 @@ static int rpng_load_image_argb_process_output_init(
 {
    struct rpng_process *process = (struct rpng_process*)rpng->process;
 
+   /* The caller's own memory (rpng_set_output): nothing to allocate */
+   if (rpng->out_dst)
+      *data = rpng->out_dst;
    /* A pool's buffer was allocated here too, so it is aligned alike. */
-   if (!(*data = (uint32_t*)rpng_pool_take(rpng->pool, RPNG_POOL_OUT,
+   else if (!(*data = (uint32_t*)rpng_pool_take(rpng->pool, RPNG_POOL_OUT,
                (size_t)rpng->ihdr.width * (size_t)rpng->ihdr.height
                * sizeof(uint32_t))))
 #ifdef GEKKO
@@ -3248,8 +3260,10 @@ static int rpng_load_image_argb_process_output_init(
       if (rpng_reverse_filter_init(&rpng->ihdr, process) == -1)
          return -1;
 
-   process->out_cursor = *data;
-   process->out_stride = rpng->ihdr.width;
+   process->image_stride = rpng->out_dst ? rpng->out_dst_stride
+                                         : rpng->ihdr.width;
+   process->out_cursor   = *data;
+   process->out_stride   = process->image_stride;
 
    process->flags |= RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED;
    return 0;
@@ -4102,6 +4116,30 @@ void rpng_set_avail(rpng_t *rpng, size_t avail)
 bool rpng_need_more(const rpng_t *rpng)
 {
    return rpng ? rpng->need_more : false;
+}
+
+bool rpng_get_info(const rpng_t *rpng, struct rpng_info *info)
+{
+   if (!rpng || !(rpng->flags & RPNG_FLAG_HAS_IHDR))
+      return false;
+   info->width      = rpng->ihdr.width;
+   info->height     = rpng->ihdr.height;
+   info->depth      = rpng->ihdr.depth;
+   info->color_type = rpng->ihdr.color_type;
+   info->interlace  = rpng->ihdr.interlace;
+   info->has_trns   = (rpng->flags & RPNG_FLAG_HAS_TRNS) ? 1 : 0;
+   return true;
+}
+
+bool rpng_set_output(rpng_t *rpng, uint32_t *dst, size_t stride)
+{
+   if (!rpng || rpng->process || !(rpng->flags & RPNG_FLAG_HAS_IHDR))
+      return false;
+   if (dst && stride < rpng->ihdr.width)
+      return false;
+   rpng->out_dst        = dst;
+   rpng->out_dst_stride = stride;
+   return true;
 }
 
 rpng_t *rpng_alloc(void)

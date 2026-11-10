@@ -603,10 +603,11 @@ static void test_fmt_roundtrip(const char *path, enum rpng_pixfmt fmt,
    uint32_t *got = NULL;
    unsigned got_w = 0, got_h = 0;
    unsigned x, y;
-   const unsigned src_bpp = (fmt == RPNG_PIXFMT_XRGB8888) ? 4 : 2;
+   const unsigned src_bpp = (fmt == RPNG_PIXFMT_RGB565) ? 2 : 4;
    const size_t stride    = (size_t)w * src_bpp;
-   const char *fname      = (fmt == RPNG_PIXFMT_XRGB8888)
-         ? "xrgb8888" : "rgb565";
+   const char *fname      = (fmt == RPNG_PIXFMT_XRGB8888) ? "xrgb8888"
+                          : (fmt == RPNG_PIXFMT_XBGR8888) ? "xbgr8888"
+                          : "rgb565";
    const char *pname      = pattern_name(pat);
    const char *orient     = flip_bottom_up ? "bottom-up" : "top-down";
    bool ok                = false;
@@ -629,6 +630,16 @@ static void test_fmt_roundtrip(const char *path, enum rpng_pixfmt fmt,
          {
             uint32_t *p = (uint32_t*)(void*)(src + y * stride) + x;
             *p = px & 0x00FFFFFFu;
+         }
+         else if (fmt == RPNG_PIXFMT_XBGR8888)
+         {
+            /* R,G,B in memory order, then an X byte that must be
+             * ignored: given a value of its own */
+            uint8_t *p = src + y * stride + (size_t)x * 4;
+            p[0] = (uint8_t)(px >> 16);
+            p[1] = (uint8_t)(px >>  8);
+            p[2] = (uint8_t)(px >>  0);
+            p[3] = (uint8_t)(x * 13 + y);
          }
          else
          {
@@ -691,7 +702,7 @@ static void test_fmt_roundtrip(const char *path, enum rpng_pixfmt fmt,
          unsigned src_y   = flip_bottom_up ? (h - 1 - y) : y;
          uint32_t px      = sample_argb(pat, x, src_y, w, h);
          uint32_t exp_rgb;
-         if (fmt == RPNG_PIXFMT_XRGB8888)
+         if (fmt == RPNG_PIXFMT_XRGB8888 || fmt == RPNG_PIXFMT_XBGR8888)
             exp_rgb = px & 0x00FFFFFFu;
          else
          {
@@ -977,6 +988,10 @@ int main(int argc, char *argv[])
                sizes[i].w, sizes[i].h, (enum pattern)p, false);
          test_fmt_roundtrip(path, RPNG_PIXFMT_XRGB8888,
                sizes[i].w, sizes[i].h, (enum pattern)p, true);
+         test_fmt_roundtrip(path, RPNG_PIXFMT_XBGR8888,
+               sizes[i].w, sizes[i].h, (enum pattern)p, false);
+         test_fmt_roundtrip(path, RPNG_PIXFMT_XBGR8888,
+               sizes[i].w, sizes[i].h, (enum pattern)p, true);
          test_fmt_roundtrip(path, RPNG_PIXFMT_RGB565,
                sizes[i].w, sizes[i].h, (enum pattern)p, false);
          test_fmt_roundtrip(path, RPNG_PIXFMT_RGB565,
@@ -1031,6 +1046,7 @@ int main(int argc, char *argv[])
          { RPNG_PIXFMT_ARGB32,   4 },
          { RPNG_PIXFMT_RGBA32,   4 },
          { RPNG_PIXFMT_XRGB8888, 4 },
+         { RPNG_PIXFMT_XBGR8888, 4 },
          { RPNG_PIXFMT_RGB565,   2 },
          { RPNG_PIXFMT_RGB48,    6 },
       };
