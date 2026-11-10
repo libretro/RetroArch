@@ -1401,6 +1401,19 @@ jobs:
           done
           [[ $fails -eq 0 ]]
 
+      - name: Release eventcount thread caches under Wine
+        shell: bash
+        working-directory: libretro-common/samples/rthreads/retro_eventcount_test
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          x86_64-w64-mingw32-gcc -std=c89 -O2 -DHAVE_THREADS -DHAVE_THREAD_STORAGE \
+            -I../../../include thread_cleanup_test.c ../../../rthreads/rthreads.c \
+            -lwinmm -o thread_cleanup_test.exe
+          timeout 30 wine ./thread_cleanup_test.exe
+
       - name: Build and run the NVIDIA loaders under Wine
         shell: bash
         working-directory: libretro-common/samples/gfx/nvidia

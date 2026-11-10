@@ -215,6 +215,16 @@ bool retro_eventcount_init(retro_eventcount_t *ec);
 void retro_eventcount_free(retro_eventcount_t *ec);
 
 /**
+ * retro_eventcount_thread_cleanup:
+ *
+ * Releases this thread's cached backend event, timer or semaphore after its
+ * last wait returns. Call before an owning thread exits or its module unloads.
+ * Safe before init and on repeated calls; later waits may recreate the cache.
+ * Other threads' caches and eventcount objects are unchanged.
+ */
+void retro_eventcount_thread_cleanup(void);
+
+/**
  * retro_eventcount_notify:
  * @ec : object to signal.
  *

@@ -1050,7 +1050,11 @@ static ec_sem_t *ec_sem_get(void)
       free(sem);
       return NULL;
    }
-   pthread_setspecific(ec_g.key, sem);
+   if (pthread_setspecific(ec_g.key, sem) != 0)
+   {
+      ec_sem_release(sem);
+      return NULL;
+   }
    return sem;
 }
 
@@ -1300,12 +1304,8 @@ static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
 
    if (!w.event && ec_g.sleep == EC_SLEEP_EVENT)
    {
-      if (!(w.event = (HANDLE)TlsGetValue(ec_g.tls_event)))
-      {
-         if (!(w.event = CreateEvent(NULL, FALSE, FALSE, NULL)))
-            return true;   /* nothing to wait on: a spurious wake-up */
-         TlsSetValue(ec_g.tls_event, w.event);
-      }
+      if (!(w.event = ec_thread_event()))
+         return true;   /* nothing to wait on: a spurious wake-up */
    }
 
    ec_list_push(ec, &w);
@@ -1518,6 +1518,34 @@ void retro_eventcount_free(retro_eventcount_t *ec)
 
    ec->cond = NULL;
    ec->lock = NULL;
+}
+
+void retro_eventcount_thread_cleanup(void)
+{
+#if defined(RETRO_EC_ADDR_WIN32)
+   HANDLE handle;
+   if (retro_atomic_load_acquire_int(&ec_g.state) != 2)
+      return;
+   if (ec_g.tls_event != TLS_OUT_OF_INDEXES)
+   {
+      handle = (HANDLE)TlsGetValue(ec_g.tls_event);
+      if (handle && TlsSetValue(ec_g.tls_event, NULL))
+         CloseHandle(handle);
+   }
+   if (ec_g.tls_timer != TLS_OUT_OF_INDEXES)
+   {
+      handle = (HANDLE)TlsGetValue(ec_g.tls_timer);
+      if (handle && TlsSetValue(ec_g.tls_timer, NULL))
+         CloseHandle(handle);
+   }
+#elif defined(RETRO_EC_SEM) && !defined(RETRO_EC_SEM_POOL)
+   ec_sem_t *sem;
+   if (retro_atomic_load_acquire_int(&ec_g.state) != 2 || !ec_g.ready)
+      return;
+   sem = (ec_sem_t*)pthread_getspecific(ec_g.key);
+   if (sem && pthread_setspecific(ec_g.key, NULL) == 0)
+      ec_sem_release(sem);
+#endif
 }
 
 void retro_eventcount_notify(retro_eventcount_t *ec)
