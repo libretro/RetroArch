@@ -66,6 +66,7 @@
 #include <limits.h>
 
 #include <retro_inline.h>
+#include <retro_endianness.h>
 
 #include <formats/image.h>
 #include <formats/rdds.h>
@@ -90,7 +91,20 @@
    (  (unsigned long long)RDDS_RL32((const unsigned char*)(p)) \
    | ((unsigned long long)RDDS_RL32((const unsigned char*)(p) + 4) << 32))
 
-static void rdds_bcdec__color_block(const void* compressedBlock, void* decompressedBlock, int destinationPitch, int onlyOpaqueMode) {
+/* Inlined into each of its callers whatever the compiler would choose, so
+ * that a decoder taking a constant order (RGBA or BGRA) is built for it
+ * alone, with no test of the order per block. */
+#if defined(_MSC_VER)
+#define RDDS_FORCE_INLINE static __forceinline
+#elif defined(__GNUC__)
+#define RDDS_FORCE_INLINE static INLINE __attribute__((always_inline))
+#else
+#define RDDS_FORCE_INLINE static INLINE
+#endif
+
+/* bgra: B,G,R,A in memory instead of R,G,B,A (red and blue swapped in
+ * the reference colours) */
+RDDS_FORCE_INLINE void rdds_bcdec__color_block_order(const void* compressedBlock, void* decompressedBlock, int destinationPitch, int onlyOpaqueMode, int bgra) {
     unsigned short c0, c1;
     unsigned int refColors[4]; /* 0xAABBGGRR */
     unsigned char* dstColors;
@@ -146,6 +160,12 @@ static void rdds_bcdec__color_block(const void* compressedBlock, void* decompres
 
     colorIndices = RDDS_RL32((const unsigned char*)compressedBlock + 4);
 
+    if (bgra) {
+        for (i = 0; i < 4; ++i)
+            refColors[i] = (refColors[i] & 0xFF00FF00u) | ((refColors[i] >> 16) & 0xFFu)
+                         | ((refColors[i] & 0xFFu) << 16);
+    }
+
     /* Fill out the decompressed color block */
     dstColors = (unsigned char*)decompressedBlock;
     for (i = 0; i < 4; ++i) {
@@ -160,6 +180,14 @@ static void rdds_bcdec__color_block(const void* compressedBlock, void* decompres
 
         dstColors += destinationPitch;
     }
+}
+
+static void rdds_bcdec__color_block(const void* compressedBlock, void* decompressedBlock, int destinationPitch, int onlyOpaqueMode) {
+    rdds_bcdec__color_block_order(compressedBlock, decompressedBlock, destinationPitch, onlyOpaqueMode, 0);
+}
+
+static void rdds_bcdec__color_block_bgra(const void* compressedBlock, void* decompressedBlock, int destinationPitch, int onlyOpaqueMode) {
+    rdds_bcdec__color_block_order(compressedBlock, decompressedBlock, destinationPitch, onlyOpaqueMode, 1);
 }
 
 static void rdds_bcdec__sharp_alpha_block(const void* compressedBlock, void* decompressedBlock, int destinationPitch) {
@@ -387,6 +415,21 @@ static void rdds_bcdec_bc2(const void* compressedBlock, void* decompressedBlock,
 
 static void rdds_bcdec_bc3(const void* compressedBlock, void* decompressedBlock, int destinationPitch) {
     rdds_bcdec__color_block(((char*)compressedBlock) + 8, decompressedBlock, destinationPitch, 1);
+    rdds_bcdec__smooth_alpha_block(compressedBlock, ((char*)decompressedBlock) + 3, destinationPitch, 4);
+}
+
+/* The same, B,G,R,A in memory: alpha stays the fourth byte */
+static void rdds_bcdec_bc1_bgra(const void* compressedBlock, void* decompressedBlock, int destinationPitch) {
+    rdds_bcdec__color_block_bgra(compressedBlock, decompressedBlock, destinationPitch, 0);
+}
+
+static void rdds_bcdec_bc2_bgra(const void* compressedBlock, void* decompressedBlock, int destinationPitch) {
+    rdds_bcdec__color_block_bgra(((char*)compressedBlock) + 8, decompressedBlock, destinationPitch, 1);
+    rdds_bcdec__sharp_alpha_block(compressedBlock, ((char*)decompressedBlock) + 3, destinationPitch);
+}
+
+static void rdds_bcdec_bc3_bgra(const void* compressedBlock, void* decompressedBlock, int destinationPitch) {
+    rdds_bcdec__color_block_bgra(((char*)compressedBlock) + 8, decompressedBlock, destinationPitch, 1);
     rdds_bcdec__smooth_alpha_block(compressedBlock, ((char*)decompressedBlock) + 3, destinationPitch, 4);
 }
 
@@ -1891,7 +1934,7 @@ static const unsigned char rdds_d6[190] = {
  * stores the compiler already coalesces, so it needs no fused variant
  * and no punch-through handling here.) */
 static INLINE void rdds_bc_refcolors(const unsigned char *cp,
-      unsigned int ref[4])
+      unsigned int ref[4], int bgra)
 {
    unsigned c0 = RDDS_RL16(cp), c1 = RDDS_RL16(cp + 2);
    unsigned r0 = (c0 >> 11) & 0x1F, g0 = (c0 >> 5) & 0x3F, b0 = c0 & 0x1F;
@@ -1905,11 +1948,19 @@ static INLINE void rdds_bc_refcolors(const unsigned char *cp,
           | ((unsigned)rdds_d6[2 * g0 + g1] << 8) | rdds_d5[2 * r0 + r1];
    ref[3] = 0xFF000000u | ((unsigned)rdds_d5[b0 + 2 * b1] << 16)
           | ((unsigned)rdds_d6[g0 + 2 * g1] << 8) | rdds_d5[r0 + 2 * r1];
+   if (bgra) /* A<<24|R<<16|G<<8|B, for a BGRA surface */
+   {
+      int k;
+      for (k = 0; k < 4; k++)
+         ref[k] = (ref[k] & 0xFF00FF00u) | ((ref[k] >> 16) & 0xFFu)
+                | ((ref[k] & 0xFFu) << 16);
+   }
 }
 
-/* BC2: opaque colour + explicit 4-bit alpha, fused into one store. */
-static void rdds_bcdec_bc2_direct(const void *compressedBlock,
-      void *decompressedBlock, int destinationPitch)
+/* BC2: opaque colour + explicit 4-bit alpha, fused into one store.
+ * bgra: the uint32 is A<<24|R<<16|G<<8|B instead of A<<24|B<<16|G<<8|R. */
+RDDS_FORCE_INLINE void rdds_bcdec_bc2_fused(const void *compressedBlock,
+      void *decompressedBlock, int destinationPitch, int bgra)
 {
    const unsigned char *p = (const unsigned char*)compressedBlock;
    unsigned char       *dst = (unsigned char*)decompressedBlock;
@@ -1917,7 +1968,7 @@ static void rdds_bcdec_bc2_direct(const void *compressedBlock,
    unsigned int         ci = RDDS_RL32(p + 12);
    int                  i, j;
 
-   rdds_bc_refcolors(p + 8, ref);
+   rdds_bc_refcolors(p + 8, ref, bgra);
    for (i = 0; i < 4; ++i)
    {
       unsigned int arow = RDDS_RL16(p + 2 * i); /* four 4-bit alphas */
@@ -1934,9 +1985,11 @@ static void rdds_bcdec_bc2_direct(const void *compressedBlock,
    }
 }
 
-/* BC3: opaque colour + smooth (interpolated) 8-value alpha, one store. */
-static void rdds_bcdec_bc3_direct(const void *compressedBlock,
-      void *decompressedBlock, int destinationPitch)
+/* BC3: opaque colour + smooth (interpolated) 8-value alpha, one store.
+ * The alpha ramp rounds as rdds_bcdec__smooth_alpha_block does, so this
+ * path and the scratch one agree for every texel. */
+RDDS_FORCE_INLINE void rdds_bcdec_bc3_fused(const void *compressedBlock,
+      void *decompressedBlock, int destinationPitch, int bgra)
 {
    const unsigned char   *p = (const unsigned char*)compressedBlock;
    unsigned char         *dst = (unsigned char*)decompressedBlock;
@@ -1951,24 +2004,24 @@ static void rdds_bcdec_bc3_direct(const void *compressedBlock,
    al[1] = (unsigned char)((blk >> 8) & 0xFF);
    if (al[0] > al[1])
    {
-      al[2] = (unsigned char)((6 * al[0] +     al[1]) / 7);
-      al[3] = (unsigned char)((5 * al[0] + 2 * al[1]) / 7);
-      al[4] = (unsigned char)((4 * al[0] + 3 * al[1]) / 7);
-      al[5] = (unsigned char)((3 * al[0] + 4 * al[1]) / 7);
-      al[6] = (unsigned char)((2 * al[0] + 5 * al[1]) / 7);
-      al[7] = (unsigned char)((    al[0] + 6 * al[1]) / 7);
+      al[2] = (unsigned char)((6 * al[0] +     al[1] + 3) / 7);
+      al[3] = (unsigned char)((5 * al[0] + 2 * al[1] + 3) / 7);
+      al[4] = (unsigned char)((4 * al[0] + 3 * al[1] + 3) / 7);
+      al[5] = (unsigned char)((3 * al[0] + 4 * al[1] + 3) / 7);
+      al[6] = (unsigned char)((2 * al[0] + 5 * al[1] + 3) / 7);
+      al[7] = (unsigned char)((    al[0] + 6 * al[1] + 3) / 7);
    }
    else
    {
-      al[2] = (unsigned char)((4 * al[0] +     al[1]) / 5);
-      al[3] = (unsigned char)((3 * al[0] + 2 * al[1]) / 5);
-      al[4] = (unsigned char)((2 * al[0] + 3 * al[1]) / 5);
-      al[5] = (unsigned char)((    al[0] + 4 * al[1]) / 5);
+      al[2] = (unsigned char)((4 * al[0] +     al[1] + 2) / 5);
+      al[3] = (unsigned char)((3 * al[0] + 2 * al[1] + 2) / 5);
+      al[4] = (unsigned char)((2 * al[0] + 3 * al[1] + 2) / 5);
+      al[5] = (unsigned char)((    al[0] + 4 * al[1] + 2) / 5);
       al[6] = 0x00;
       al[7] = 0xFF;
    }
 
-   rdds_bc_refcolors(p + 8, ref);
+   rdds_bc_refcolors(p + 8, ref, bgra);
    ci  = RDDS_RL32(p + 12);
    idx = blk >> 16;                              /* 16 * 3-bit indices */
    for (i = 0; i < 4; ++i)
@@ -1984,6 +2037,15 @@ static void rdds_bcdec_bc3_direct(const void *compressedBlock,
       dst += destinationPitch;
    }
 }
+
+static void rdds_bcdec_bc2_direct(const void *b, void *o, int pitch)
+{ rdds_bcdec_bc2_fused(b, o, pitch, 0); }
+static void rdds_bcdec_bc3_direct(const void *b, void *o, int pitch)
+{ rdds_bcdec_bc3_fused(b, o, pitch, 0); }
+static void rdds_bcdec_bc2_direct_bgra(const void *b, void *o, int pitch)
+{ rdds_bcdec_bc2_fused(b, o, pitch, 1); }
+static void rdds_bcdec_bc3_direct_bgra(const void *b, void *o, int pitch)
+{ rdds_bcdec_bc3_fused(b, o, pitch, 1); }
 
 /* Emit an edge (partially out-of-range) block from a decoded RGBA8
  * scratch into the surface with per-texel bounds tests.  Shared by every
@@ -2060,6 +2122,17 @@ RDDS_GEN_ROWS_DIRECT(rdds_rows_bc1_rgba, rdds_bcdec_bc1,        8u)
 RDDS_GEN_ROWS_DIRECT(rdds_rows_bc2_rgba, rdds_bcdec_bc2_direct, 16u)
 RDDS_GEN_ROWS_DIRECT(rdds_rows_bc3_rgba, rdds_bcdec_bc3_direct, 16u)
 
+#ifndef MSB_FIRST
+/* The same for a BGRA video driver, little-endian only: there the
+ * A<<24|R<<16|G<<8|B pixel is the bytes B,G,R,A, which the BGRA block
+ * decoders write, so the edge scratch passes through rdds_emit_edge's
+ * byte order unchanged (as with RGBA).  Big-endian keeps the scratch
+ * path below. */
+RDDS_GEN_ROWS_DIRECT(rdds_rows_bc1_bgra, rdds_bcdec_bc1_bgra,        8u)
+RDDS_GEN_ROWS_DIRECT(rdds_rows_bc2_bgra, rdds_bcdec_bc2_direct_bgra, 16u)
+RDDS_GEN_ROWS_DIRECT(rdds_rows_bc3_bgra, rdds_bcdec_bc3_direct_bgra, 16u)
+#endif
+
 /* Decode block rows [by0, by1) of a BCn surface into 'out'.  The caller
  * has already validated that the payload holds every block. */
 static void rdds_rows_compressed(const rdds_info_t *info,
@@ -2093,6 +2166,22 @@ static void rdds_rows_compressed(const rdds_info_t *info,
             break; /* BC4/BC5/BC7 fall through to the scratch loop */
       }
    }
+#ifndef MSB_FIRST
+   else if (!premul)
+   {
+      switch (info->fmt)
+      {
+         case RDDS_FMT_BC1:
+            rdds_rows_bc1_bgra(info, data, out, by0, by1); return;
+         case RDDS_FMT_BC2:
+            rdds_rows_bc2_bgra(info, data, out, by0, by1); return;
+         case RDDS_FMT_BC3:
+            rdds_rows_bc3_bgra(info, data, out, by0, by1); return;
+         default:
+            break;
+      }
+   }
+#endif
 
    /* Generic scratch path: BGRA output order, premultiplied alpha,
     * BC4/BC5 channel expansion, and BC7 (whose decode dominates, so the
@@ -2722,3 +2811,6 @@ void rdds_decode_block_bc1(const void *block, void *out, int pitch) { rdds_bcdec
 void rdds_decode_block_bc2(const void *block, void *out, int pitch) { rdds_bcdec_bc2(block, out, pitch); }
 void rdds_decode_block_bc3(const void *block, void *out, int pitch) { rdds_bcdec_bc3(block, out, pitch); }
 void rdds_decode_block_bc7(const void *block, void *out, int pitch) { rdds_bcdec_bc7(block, out, pitch); }
+void rdds_decode_block_bc1_bgra(const void *block, void *out, int pitch) { rdds_bcdec_bc1_bgra(block, out, pitch); }
+void rdds_decode_block_bc2_bgra(const void *block, void *out, int pitch) { rdds_bcdec_bc2_bgra(block, out, pitch); }
+void rdds_decode_block_bc3_bgra(const void *block, void *out, int pitch) { rdds_bcdec_bc3_bgra(block, out, pitch); }

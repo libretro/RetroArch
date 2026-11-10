@@ -73,6 +73,16 @@ void rdds_decode_block_bc2(const void *block, void *out, int pitch);
 void rdds_decode_block_bc3(const void *block, void *out, int pitch);
 void rdds_decode_block_bc7(const void *block, void *out, int pitch);
 
+/**
+ * rdds_decode_block_bc1_bgra / bc2_bgra / bc3_bgra:
+ *
+ * The same, B,G,R,A in memory (a BGRA8 texture). The same values as the
+ * RGBA decoders, red and blue swapped.
+ */
+void rdds_decode_block_bc1_bgra(const void *block, void *out, int pitch);
+void rdds_decode_block_bc2_bgra(const void *block, void *out, int pitch);
+void rdds_decode_block_bc3_bgra(const void *block, void *out, int pitch);
+
 rdds_t *rdds_alloc(void);
 
 RETRO_END_DECLS
