@@ -30,6 +30,7 @@
 #include "../common/vulkan_video_import.h"
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
+#include <math/float16.h>
 #include <queues/mpsc_stack.h>
 #include <queues/task_queue.h>
 #include <retro_math.h>
@@ -17375,35 +17376,6 @@ static bool vulkan_read_viewport_bgrx(void *data, uint8_t *buffer,
 }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-/* IEEE-754 half (binary16) -> float, for reading an RGBA16F scRGB backbuffer
- * on the CPU. Handles normals, subnormals, sign and inf/nan. */
-static float vulkan_half_to_float(uint16_t h)
-{
-   uint32_t sign = (uint32_t)(h & 0x8000) << 16;
-   uint32_t exp  = (h >> 10) & 0x1F;
-   uint32_t mant = h & 0x3FF;
-   uint32_t f;
-   float    out;
-   if (exp == 0)
-   {
-      if (mant == 0)
-         f = sign;
-      else
-      {
-         exp = 127 - 15 + 1;
-         while (!(mant & 0x400)) { mant <<= 1; exp--; }
-         mant &= 0x3FF;
-         f = sign | (exp << 23) | (mant << 13);
-      }
-   }
-   else if (exp == 0x1F)
-      f = sign | 0x7F800000 | (mant << 13);
-   else
-      f = sign | ((exp - 15 + 127) << 23) | (mant << 13);
-   memcpy(&out, &f, sizeof(out));
-   return out;
-}
-
 /* ST.2084 (PQ) inverse-EOTF: normalised linear (v = nits/10000, [0,1]) ->
  * PQ code [0,1]. Same constants as the forward HDR pipeline. */
 static float vulkan_pq_encode(float v)
@@ -17589,9 +17561,9 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
             int x;
             for (x = 0; x < (int)vp_width; x++)
             {
-               float r = vulkan_half_to_float(row[x * 4 + 0]);
-               float g = vulkan_half_to_float(row[x * 4 + 1]);
-               float b = vulkan_half_to_float(row[x * 4 + 2]);
+               float r = retro_half_to_float(row[x * 4 + 0]);
+               float g = retro_half_to_float(row[x * 4 + 1]);
+               float b = retro_half_to_float(row[x * 4 + 2]);
                float lvl;
                buffer[x * 3 + 0] = vulkan_scrgb_channel_to_pq16(r);
                buffer[x * 3 + 1] = vulkan_scrgb_channel_to_pq16(g);

@@ -268,6 +268,8 @@ jobs:
             net_http_options_test
             # socket_poll past FD_SETSIZE sockets.
             socket_poll_test
+            # Half floats both ways, against F16C.
+            float16_test
             rjson_test
             rm3u_test
             rmp4_fragment_test
