@@ -605,6 +605,11 @@ struct cmd_rows
     * characters in turn - the last column takes what is left - and
     * answered as fields of their own. */
    const char               *seps;
+   /* Set, for a record: the field a reply of several such lines - one
+    * for each range READ_CORE_MEMORY was asked - gives them all in, in
+    * order, each with the trailers after it. The record's own fields
+    * are the first. */
+   const char               *more;
    /* The reply may carry a "PREVIOUS ..." line: how a queued STEPS no
     * reply has told of ended. */
    bool                      previous;
@@ -881,18 +886,19 @@ static const struct cmd_param cmd_params_watch[] = {
    { "watches", "Label and hexadecimal address pairs, as GET_MEMORY_MAP "
       "gives them: \"x 86 mode 770\"; \"x 6d:86\" reads two bytes as one "
       "value. A label watched again is replaced; off as its address stops "
-      "it. 16 at most.",
+      "it. 16 at most, counted once the offs are taken.",
       CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_until[] = {
    { "address", "Hexadecimal, as GET_MEMORY_MAP gives it; high:low "
       "(6d:86) reads two bytes as one value; & 0x40 after it compares "
-      "only those bits.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+      "only those bits; 485 - 47e compares the first less the second, "
+      "signed.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "condition", "How it compares with the value.",
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
-   { "value", "0 to 255, or 65535 for high:low.",
-      CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "value", "0 to 255, or 65535 for high:low; a difference from "
+      "-255, or -65535.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { "frames", "Frames to wait at most; a request's nine seconds when "
       "left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
    { NULL }
@@ -915,7 +921,8 @@ static const struct cmd_param cmd_params_steps[] = {
       "<frames>, until <condition> as RUN_UNTIL's, checkpoint, and up to "
       "four stop <condition> that end it: \"until 86 >= 200; "
       "press 1 a 20; until 1d == 0; stop e == 11\". 32 at most. A press "
-      "after a press lets go for a frame first.",
+      "after a press lets go for a frame first. stop becomes <condition> "
+      "ends it only once it starts to hold, not where it already does.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "queue", "on: answer now, run after those queued, pause when all "
       "have (idle: ms since). After a queued list ends the next reply says "
@@ -975,6 +982,16 @@ static const struct cmd_param cmd_params_read[] = {
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "bytes", "How many.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_read_memory[] = {
+   { "address", "The address to read from, in hexadecimal.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "bytes", "How many.",
+      CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "more", "Further ranges in the same request, as address and byte "
+      "count pairs: \"4a2 18 568 18\". Each answers a line, given as "
+      "ranges.", CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_write[] = {
@@ -1191,10 +1208,10 @@ static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, NULL, 7, 0 
 static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, cmd_trailers_page, 1, 0 };
 static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, NULL, 0, 0 };
 static const struct cmd_rows cmd_rows_watch     = { cmd_cols_watch, NULL, 0, 0 };
-static const struct cmd_rows cmd_rows_frames    = { cmd_cols_watch, cmd_trailers_frames, 0, 0, NULL, true };
-static const struct cmd_rows cmd_rows_press     = { cmd_cols_watch, cmd_trailers_press, 0, 0, NULL, true };
-static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0, NULL, true };
-static const struct cmd_rows cmd_rows_steps     = { cmd_cols_watch, cmd_trailers_steps, 0, 0, NULL, true };
+static const struct cmd_rows cmd_rows_frames    = { cmd_cols_watch, cmd_trailers_frames, 0, 0, NULL, NULL, true };
+static const struct cmd_rows cmd_rows_press     = { cmd_cols_watch, cmd_trailers_press, 0, 0, NULL, NULL, true };
+static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0, NULL, NULL, true };
+static const struct cmd_rows cmd_rows_steps     = { cmd_cols_watch, cmd_trailers_steps, 0, 0, NULL, NULL, true };
 /* No columns: the lines are the text, and splitting a 60k page into a
  * row apiece would answer with it twice over. What a client cannot read
  * off the text is how far the log got, which is what the trailers say. */
@@ -1217,7 +1234,7 @@ static const struct cmd_trailer cmd_trailers_read[] = {
    { "TRUNCATED", "truncated", "read", "Bytes read, short of those asked." },
    { NULL }
 };
-static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, cmd_trailers_read, 0, 0, " " };
+static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, cmd_trailers_read, 0, 0, " ", "ranges" };
 /* "MENU Main Menu", the entries, then which is selected of how many */
 static const struct cmd_column cmd_cols_menu[] = {
    { "index", NULL },
@@ -1238,7 +1255,7 @@ static const struct cmd_trailer cmd_trailers_menu[] = {
    { "MORE", "more", "next", "from for the next page." },
    { NULL }
 };
-static const struct cmd_rows cmd_rows_menu      = { cmd_cols_menu, cmd_trailers_menu, 1, 0, NULL, false };
+static const struct cmd_rows cmd_rows_menu      = { cmd_cols_menu, cmd_trailers_menu, 1, 0, NULL };
 
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
@@ -1263,7 +1280,7 @@ static const struct cmd_action_map action_map[] = {
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content some frames; it finishes paused. One request runs nine seconds of frames at most (540 at 60fps), as PRESS, RUN_UNTIL and STEPS do.", 0, cmd_params_run_frames, &cmd_rows_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. The core is given exactly what is held: opposing directions are not cleaned and the D-Pad is not turned with the picture. Under netplay the player is this machine's, and what is held is sent like a press. Answers with the player, the buttons held and the axes held, none for either where nothing is.", CMD_INFO_NO_TOOL, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press buttons for some frames and let go; with until, run on until a condition holds. What INPUT holds stays held. Answers with what WATCH watches; finishes paused.", 0, cmd_params_press, &cmd_rows_press },
-   { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run until memory meets a condition. Answers met or waiting (ask again) with the frames run, what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
+   { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] [- <address>[:<address>]] <condition> <value> [max frames]", "Run until memory meets a condition. Answers met or waiting (ask again) with the frames run, what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
    { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch in one request, or queued to play on unpaused. Answers with how it ended and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
    { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes under labels: every step answers with them, so needs no read after. With none, answers each value, in decimal. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", CMD_INFO_NO_TOOL, cmd_params_input_release, &cmd_rows_input },
@@ -1280,7 +1297,7 @@ static const struct cmd_action_map action_map[] = {
    { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_read },
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_write },
 #endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read, &cmd_rows_read },
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes> [<address> <number of bytes>]...", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal; a line for each range asked.", CMD_INFO_READ_ONLY, cmd_params_read_memory, &cmd_rows_read },
    { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "The core's memory map: start, length, select and disconnect in hexadecimal, as READ_CORE_MEMORY takes them. A core with none lists the RAM it hands over, in space core: system RAM from 0, save RAM after.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 

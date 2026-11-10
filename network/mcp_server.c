@@ -523,6 +523,17 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
          MCP_RAW(w, "}");
       }
    }
+   /* every line of a reply of several records, the first too */
+   if (rows->more)
+   {
+      MCP_RAW(w, ",");
+      rjsonwriter_add_string(w, rows->more);
+      MCP_RAW(w, ":{\"type\":\"array\",\"items\":{\"type\":\"object\"}");
+      if (describe)
+         MCP_RAW(w, ",\"description\":\"Where several were asked: each, "
+               "as the fields above give the first.\"");
+      MCP_RAW(w, "}");
+   }
    MCP_RAW(w, "}");
    /* a record's own fields, or only the rows, are always there */
    if (rows->seps)
@@ -1037,13 +1048,14 @@ static int mcp_trailer(const struct cmd_trailer *tr, size_t n,
       }
       if (line[wl] != ' ')
          continue;
-      /* the number ends the line: "PRESS 1 right+a 4" ran 4 */
+      /* the number ends the line: "PRESS 1 right+a 4" ran 4; a
+       * difference waited on may be below zero, "VALUE -3" */
       for (k = len; k > wl + 1 && line[k - 1] != ' '; k--)
          ;
-      for (j = k; j < len; j++)
+      for (j = k < len && line[k] == '-' ? k + 1 : k; j < len; j++)
          if (line[j] < '0' || line[j] > '9')
             break;
-      if (j < len || k == len)
+      if (j < len || k == len || line[len - 1] == '-')
          continue;
       *num     = line + k;
       *num_len = len - k;
@@ -1115,17 +1127,20 @@ static void mcp_structured_previous(rjsonwriter_t *w, const char *p,
    MCP_RAW(w, "}");
 }
 
-/* A record's fields from the line the command opens with its own
- * name: split by rows->seps in turn, the last field taking the rest,
- * and the trailers on the lines after it. */
-static void mcp_structured_record(rjsonwriter_t *w,
+/* A record's fields from the line at @text, which the command opens
+ * with its own name: split by rows->seps in turn, the last field taking
+ * the rest, and the trailers on the lines after it. Where rows->more
+ * is set, another line opening with the name ends those and is
+ * returned; otherwise @text_end. */
+static const char *mcp_record_fields(rjsonwriter_t *w,
       const struct cmd_rows *rows, const char *name, const char *text,
-      size_t len)
+      const char *text_end)
 {
    const struct cmd_column *col;
-   const char *end      = text + len;
+   const char *end      = text_end;
    const char *p        = text;
-   const char *eol      = (const char*)memchr(text, '\n', len);
+   const char *eol      = (const char*)memchr(text, '\n',
+         (size_t)(text_end - text));
    size_t      name_len = strlen(name);
    size_t      nseps    = strlen(rows->seps);
    size_t      i        = 0;
@@ -1137,7 +1152,6 @@ static void mcp_structured_record(rjsonwriter_t *w,
    if ((size_t)(end - p) > name_len && !strncmp(p, name, name_len)
          && p[name_len] == ' ')
       p += name_len + 1;
-   MCP_RAW(w, ",\"structuredContent\":{");
    for (col = rows->columns; col && col->name && p < end; col++, i++)
    {
       const char *stop = end;
@@ -1157,22 +1171,54 @@ static void mcp_structured_record(rjsonwriter_t *w,
       p = stop < end ? stop + 1 : end;
    }
    wrote = !first;
-   for (p = end; p < text + len; )
+   for (p = end; p < text_end; )
    {
       const char *line = p + 1;
       const char *num;
       size_t      num_len;
       int         t;
       size_t      ntr = 0;
-      eol     = (const char*)memchr(line, '\n', (size_t)(text + len - line));
-      p       = eol ? eol : text + len;
+      eol     = (const char*)memchr(line, '\n', (size_t)(text_end - line));
+      p       = eol ? eol : text_end;
       num     = NULL;
       num_len = 0;
+      /* the next range's own line */
+      if (     rows->more && (size_t)(p - line) > name_len
+            && !strncmp(line, name, name_len) && line[name_len] == ' ')
+         return line;
       while (rows->trailers && rows->trailers[ntr].word)
          ntr++;
       if ((t = mcp_trailer(rows->trailers, ntr, line, p, false, true,
             &num, &num_len)) >= 0)
          mcp_trailer_fields(w, &rows->trailers[t], num, num_len, &wrote);
+   }
+   return text_end;
+}
+
+/* A record, from the line the command opens with its own name; where
+ * there are several such lines, the first, and every one in turn as
+ * rows->more. */
+static void mcp_structured_record(rjsonwriter_t *w,
+      const struct cmd_rows *rows, const char *name, const char *text,
+      size_t len)
+{
+   const char *p;
+   MCP_RAW(w, ",\"structuredContent\":{");
+   p = mcp_record_fields(w, rows, name, text, text + len);
+   if (p < text + len)
+   {
+      MCP_RAW(w, ",");
+      rjsonwriter_add_string(w, rows->more);
+      MCP_RAW(w, ":[");
+      for (p = text; p < text + len; )
+      {
+         if (p != text)
+            MCP_RAW(w, ",");
+         MCP_RAW(w, "{");
+         p = mcp_record_fields(w, rows, name, p, text + len);
+         MCP_RAW(w, "}");
+      }
+      MCP_RAW(w, "]");
    }
    MCP_RAW(w, "}");
 }
