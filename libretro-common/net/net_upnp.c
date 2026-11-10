@@ -316,9 +316,13 @@ bool net_upnp_discover(struct net_upnp_gateway *gw, int timeout_ms)
       "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n"
       "MX: 2\r\n"
       "\r\n";
+   /* an SSDP reply is a datagram, one Ethernet frame at most; on the
+    * heap, as this can run on an 8 KiB thread stack (PSP, GX) */
+   enum { NET_UPNP_SSDP_MAX = 1536 };
    retro_time_t     deadline = net_upnp_deadline(timeout_ms);
    struct addrinfo *group    = NULL;
    struct addrinfo  hints;
+   char            *buf;
    int              fd;
    bool             found    = false;
 
@@ -329,8 +333,14 @@ bool net_upnp_discover(struct net_upnp_gateway *gw, int timeout_ms)
    hints.ai_flags    = AI_NUMERICHOST | AI_NUMERICSERV;
    if (getaddrinfo_retro("239.255.255.250", "1900", &hints, &group) || !group)
       return false;
+   if (!(buf = (char*)malloc(NET_UPNP_SSDP_MAX)))
+   {
+      freeaddrinfo_retro(group);
+      return false;
+   }
    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
    {
+      free(buf);
       freeaddrinfo_retro(group);
       return false;
    }
@@ -351,14 +361,13 @@ bool net_upnp_discover(struct net_upnp_gateway *gw, int timeout_ms)
    {
       while (!found)
       {
-         char    buf[1536];
          char    location[NET_UPNP_URL_MAX];
          bool    rd  = true;
          int     left = net_upnp_remaining_ms(deadline);
          ssize_t got;
          if (!left || !socket_wait(fd, &rd, NULL, left) || !rd)
             break;
-         got = recvfrom(fd, buf, sizeof(buf), 0, NULL, NULL);
+         got = recvfrom(fd, buf, NET_UPNP_SSDP_MAX, 0, NULL, NULL);
          if (got <= 0)
             continue;
          if (net_upnp_ssdp_location(buf, (size_t)got, location,
@@ -376,6 +385,7 @@ bool net_upnp_discover(struct net_upnp_gateway *gw, int timeout_ms)
       }
    }
    socket_close(fd);
+   free(buf);
    freeaddrinfo_retro(group);
    if (!found)
       memset(gw, 0, sizeof(*gw));

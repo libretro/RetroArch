@@ -66,3 +66,12 @@ libretro-common/encodings/encoding_deflate.c|memcpy|h->fast|h->fast
 libretro-common/encodings/encoding_deflate.c|memcpy|h->pfast|h->pfast
 # place_d[2].name from place_d[1].name: distinct elements
 samples/gfx/video_windows/video_windows_test.c|memcpy|place_d|place_d
+# raac parametric stereo: a parameter row from another row (src != num_env
+# is checked), matrix [0] from [num_env_old] (num_env_old > 0 is checked),
+# and in_buf[i][32..37] down to [0..5]: always distinct ranges
+libretro-common/formats/aac/raac.c|memcpy|ps->iid_par|ps->iid_par
+libretro-common/formats/aac/raac.c|memcpy|ps->icc_par|ps->icc_par
+libretro-common/formats/aac/raac.c|memcpy|ps->ipd_par|ps->ipd_par
+libretro-common/formats/aac/raac.c|memcpy|ps->opd_par|ps->opd_par
+libretro-common/formats/aac/raac.c|memcpy|ps->in_buf|ps->in_buf
+libretro-common/formats/aac/raac.c|memcpy|ps->H|ps->H
