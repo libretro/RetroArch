@@ -55,6 +55,13 @@ else
       # held-core tests
       SOURCES += no_ctime_fs.c
       LDFLAGS += -Wl,--wrap=fstatfs -Wl,--wrap=fstatfs64
+      # The check's fs-verity step against stand-ins for the kernel's,
+      # in a second build of core_load_check.c as for Android
+      CFLAGS  += -DVERITY_STANDIN
+      LDFLAGS += -Wl,--wrap=core_file_verity_enable \
+                 -Wl,--wrap=core_file_verity_measure -Wl,--wrap=ioctl \
+                 -Wl,--wrap=core_trust_runtime_always
+      ANDROID_TEST := $(TARGET)_android
    endif
 endif
 
@@ -96,7 +103,7 @@ endif
 TEST_LIBS := core_load_check_test_a$(LIB_EXT) core_load_check_test_b$(LIB_EXT) \
              core_load_check_test_c$(LIB_EXT)
 
-all: $(TARGET)$(EXE) $(TEST_LIBS)
+all: $(TARGET)$(EXE) $(ANDROID_TEST) $(TEST_LIBS)
 
 core_load_check_test_a$(LIB_EXT): ../core_signature/core_load_lib.c
 	$(CC) -shared $(LIB_FLAGS) -DCORE_LOAD_ID=1 -o $@ $<
@@ -117,13 +124,42 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET)$(EXE): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 
+# Its other Android blocks (loads by fd, real paths) would fail the
+# desktop tests: this build runs only the fs-verity and load-by-fd ones,
+# with the tree's NDK header stubs. -rdynamic: core_load_file.c finds
+# the test's android_dlopen_ext by dlsym.
+ifneq ($(ANDROID_TEST),)
+$(SAMPLE_OBJDIR)/core_load_check_android.o: $(REPO_ROOT)/core_load_check.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) -DANDROID \
+	   -I$(REPO_ROOT)/tools/platform_stubs/android \
+	   -Werror=declaration-after-statement
+
+$(SAMPLE_OBJDIR)/core_load_file_android.o: $(REPO_ROOT)/core_load_file.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) -DANDROID -D_GNU_SOURCE \
+	   -I$(REPO_ROOT)/tools/platform_stubs/android \
+	   -Werror=declaration-after-statement
+
+$(ANDROID_TEST): $(SAMPLE_OBJDIR)/core_load_check_android.o \
+      $(SAMPLE_OBJDIR)/core_load_file_android.o \
+      $(filter-out $(SAMPLE_OBJDIR)/__/__/__/core_load_check.o \
+         $(SAMPLE_OBJDIR)/__/__/__/core_load_file.o,$(OBJS))
+	$(CC) -o $@ $^ -rdynamic $(LDFLAGS) $(LIBS)
+endif
+
 check: all
 	rm -rf core_load_check_test_tmp
 	$(RUNNER) ./$(TARGET)$(EXE)
+ifneq ($(ANDROID_TEST),)
+	rm -rf core_load_check_test_tmp
+	$(RUNNER) ./$(ANDROID_TEST) android
+endif
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR) core_load_check_test_tmp
-	rm -f $(TARGET) $(TARGET).exe $(OBJS) core_load_check_test_a.so \
+	rm -f $(TARGET) $(TARGET).exe $(TARGET)_android $(OBJS) \
+	      core_load_check_test_a.so \
 	      core_load_check_test_b.so core_load_check_test_c.so \
 	      core_load_check_test_a.dll core_load_check_test_b.dll \
 	      core_load_check_test_c.dll
