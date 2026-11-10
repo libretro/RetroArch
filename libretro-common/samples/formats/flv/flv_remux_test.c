@@ -95,9 +95,10 @@ int main(int argc, char **argv)
    unsigned pass, type, timestamp, prefix, packet_type;
    int result, composition;
    int64_t pts;
-   bool annexb = argc == 4;
+   bool annexb = argc == 4 && !strcmp(argv[3], "annexb");
+   bool metadata = argc == 4 && !strcmp(argv[3], "color");
    bool hevc = false, keyframe;
-   assert(argc == 3 || (annexb && !strcmp(argv[3], "annexb")));
+   assert(argc == 3 || (argc == 4 && (annexb || metadata)));
    f = fopen(argv[1], "rb");
    assert(f && !fseek(f, 0, SEEK_END));
    bytes = ftell(f);
@@ -190,6 +191,21 @@ int main(int argc, char **argv)
       {
          assert(!annexb || !hevc);
          m = annexb ? annexb_mux(&c) : hevc ? rflv_mux_new_hevc(&c) : rflv_mux_new(&c);
+         if (metadata)
+         {
+            static const uint16_t xy[] = {34000,16000,13250,34500,7500,3000,15635,16450};
+            video_color_metadata_t described;
+            memset(&described, 0, sizeof(described));
+            described.primaries = described.matrix = 9;
+            described.transfer = 16;
+            described.range = 1;
+            described.max_cll = 1000; described.max_fall = 400;
+            described.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+            described.mastering.luminance_max = 10000000;
+            described.mastering.luminance_min = 50;
+            memcpy(described.mastering.chromaticity, xy, sizeof(xy));
+            assert(hevc && rflv_mux_set_color(m, &described, 10));
+         }
          f = fopen(argv[2], "wb");
          assert(m && f);
          output(m, f);

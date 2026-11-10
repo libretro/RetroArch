@@ -25,7 +25,7 @@
 
 enum flv_output
 {
-   FLV_HEADER, FLV_VIDEO_CONFIG, FLV_AUDIO_CONFIG, FLV_MEDIA, FLV_IDLE
+   FLV_HEADER, FLV_COLOR, FLV_VIDEO_CONFIG, FLV_AUDIO_CONFIG, FLV_MEDIA, FLV_IDLE
 };
 
 struct rflv_mux
@@ -34,9 +34,11 @@ struct rflv_mux
    rflv_span_t spans[3];
    uint8_t *config;
    uint8_t *converted;
+   uint8_t *metadata;
    const uint8_t *input;
    size_t avcc_size, asc_size, limit, size, offset, span_count;
    size_t converted_size;
+   size_t metadata_size;
    uint32_t timestamp;
    int32_t composition;
    unsigned timescale[2], track;
@@ -239,6 +241,173 @@ rflv_mux_t *rflv_mux_new(const rflv_config_t *c)
 rflv_mux_t *rflv_mux_new_hevc(const rflv_config_t *c)
 {
    return flv_new(c, true);
+}
+
+struct flv_metadata_writer
+{
+   uint8_t *data;
+   size_t used;
+   bool failed;
+};
+
+static void flv_metadata_bytes(struct flv_metadata_writer *w,
+      const void *data, size_t size)
+{
+   if (w->failed || size > 512 - w->used)
+   {
+      w->failed = true;
+      return;
+   }
+   memcpy(w->data + w->used, data, size);
+   w->used += size;
+}
+
+static void flv_metadata_name(struct flv_metadata_writer *w,
+      const char *name, bool property)
+{
+   uint8_t header[3];
+   size_t size = strlen(name);
+   header[0] = 2;
+   header[1] = (uint8_t)(size >> 8);
+   header[2] = (uint8_t)size;
+   flv_metadata_bytes(w, header + (property ? 1 : 0), property ? 2 : 3);
+   flv_metadata_bytes(w, name, size);
+}
+
+static void flv_metadata_object(struct flv_metadata_writer *w, const char *name)
+{
+   static const uint8_t marker = 3;
+   flv_metadata_name(w, name, true);
+   flv_metadata_bytes(w, &marker, 1);
+}
+
+static void flv_metadata_end(struct flv_metadata_writer *w)
+{
+   static const uint8_t end[] = {0, 0, 9};
+   flv_metadata_bytes(w, end, sizeof(end));
+}
+
+/* Encode the nonnegative rational as binary64 without host float assumptions. */
+static void flv_metadata_number(struct flv_metadata_writer *w, const char *name,
+      uint32_t numerator, unsigned denominator)
+{
+   uint64_t n = numerator, d = denominator, fraction = 0, bits = 0, remainder;
+   int exponent = 0;
+   unsigned i;
+   if (n)
+   {
+      while (n < d)
+      {
+         n <<= 1;
+         exponent--;
+      }
+      while (n >= d * 2)
+      {
+         d <<= 1;
+         exponent++;
+      }
+      remainder = n - d;
+      for (i = 0; i < 52; i++)
+      {
+         remainder <<= 1;
+         fraction <<= 1;
+         if (remainder >= d)
+         {
+            remainder -= d;
+            fraction++;
+         }
+      }
+      if (remainder * 2 > d || (remainder * 2 == d && (fraction & 1)))
+         fraction++;
+      if (fraction == ((uint64_t)1 << 52))
+      {
+         fraction = 0;
+         exponent++;
+      }
+      bits = ((uint64_t)(exponent + 1023) << 52) | fraction;
+   }
+   flv_metadata_name(w, name, true);
+   if (w->failed || 512 - w->used < 9)
+   {
+      w->failed = true;
+      return;
+   }
+   w->data[w->used++] = 0;
+   for (i = 0; i < 8; i++)
+      w->data[w->used++] = (uint8_t)(bits >> (56 - i * 8));
+}
+
+bool rflv_mux_set_color(rflv_mux_t *m, const video_color_metadata_t *c,
+      unsigned depth)
+{
+   static const char *const xy[] =
+   { "redX", "redY", "greenX", "greenY", "blueX", "blueY", "whitePointX", "whitePointY" };
+   struct flv_metadata_writer w;
+   static const uint8_t object = 3;
+   unsigned i;
+   if (!m || !c || !m->hevc || m->failed || m->metadata
+         || m->output != FLV_HEADER || !m->pending
+         || (depth != 8 && depth != 10 && depth != 12)
+         || depth != 8u + (m->config[17] & 7)
+         || ((m->config[16] & 3) && depth != 8u + (m->config[18] & 7))
+         || c->primaries > 255 || c->transfer > 255 || c->matrix > 255
+         || c->range > 2 || c->max_cll > 10000 || c->max_fall > 10000
+         || (c->max_cll && c->max_fall > c->max_cll))
+      return false;
+   if (c->mastering.present)
+   {
+      if (c->mastering.present != VIDEO_MASTERING_DISPLAY_COMPLETE
+            || c->mastering.luminance_max < 50000 || c->mastering.luminance_max > 100000000
+            || !c->mastering.luminance_min || c->mastering.luminance_min > 50000)
+         return false;
+      for (i = 0; i < 8; i++)
+         if (c->mastering.chromaticity[i] < 5
+               || c->mastering.chromaticity[i] > (i & 1 ? 42000 : 37000))
+            return false;
+   }
+   w.data = (uint8_t*)malloc(512);
+   if (!w.data)
+      return false;
+   w.used = 0;
+   w.failed = false;
+   flv_metadata_name(&w, "colorInfo", false);
+   flv_metadata_bytes(&w, &object, 1);
+   flv_metadata_object(&w, "colorConfig");
+   flv_metadata_number(&w, "bitDepth", depth, 1);
+   if (c->primaries)
+      flv_metadata_number(&w, "colorPrimaries", c->primaries, 1);
+   if (c->transfer)
+      flv_metadata_number(&w, "transferCharacteristics", c->transfer, 1);
+   if (c->matrix)
+      flv_metadata_number(&w, "matrixCoefficients", c->matrix, 1);
+   flv_metadata_end(&w);
+   if (c->max_cll || c->max_fall)
+   {
+      flv_metadata_object(&w, "hdrCll");
+      if (c->max_cll)
+         flv_metadata_number(&w, "maxCLL", c->max_cll, 1);
+      if (c->max_fall)
+         flv_metadata_number(&w, "maxFall", c->max_fall, 1);
+      flv_metadata_end(&w);
+   }
+   if (c->mastering.present)
+   {
+      flv_metadata_object(&w, "hdrMdcv");
+      for (i = 0; i < 8; i++)
+         flv_metadata_number(&w, xy[i], (c->mastering.chromaticity[i] + 2u) / 5, 10000);
+      flv_metadata_number(&w, "maxLuminance", c->mastering.luminance_max, 10000);
+      flv_metadata_number(&w, "minLuminance", c->mastering.luminance_min, 10000);
+      flv_metadata_end(&w);
+   }
+   flv_metadata_end(&w);
+   if (w.failed)
+   {
+      free(w.data);
+      return false;
+   }
+   m->metadata = w.data;
+   m->metadata_size = w.used;
+   return true;
 }
 
 static bool flv_annexb(const uint8_t *data, size_t size, size_t *offset,
@@ -494,7 +663,14 @@ bool rflv_mux_release(rflv_mux_t *m)
    if (!m || !m->pending)
       return false;
    m->pending = false;
-   if (m->output == FLV_HEADER && m->avcc_size)
+   if (m->output == FLV_HEADER && m->metadata)
+   {
+      m->output = FLV_COLOR;
+      flv_tag(m, 1, m->metadata, m->metadata_size, 0, 0, true, true);
+      /* Information-frame flags preserve existing demuxer interoperability. */
+      m->prefix[11] = 0xd4;
+   }
+   else if ((m->output == FLV_HEADER || m->output == FLV_COLOR) && m->avcc_size)
    {
       m->output = FLV_VIDEO_CONFIG;
       flv_tag(m, 1, m->config, m->avcc_size, 0, 0, true, true);
@@ -532,5 +708,6 @@ void rflv_mux_free(rflv_mux_t *m)
       return;
    free(m->config);
    free(m->converted);
+   free(m->metadata);
    free(m);
 }

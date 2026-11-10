@@ -337,3 +337,12 @@ jobs:
           make stream_dispatch_test.exe CC=gcc EXE=.exe
           ./stream_dispatch_test.exe
           make clean
+
+      - name: Native FLV source color metadata interoperability
+        shell: msys2 {0}
+        working-directory: libretro-common/samples/formats/flv
+        run: |
+          set -eu
+          make clean
+          make check stream-check CC=gcc EXE=.exe COLOR_METADATA_ORACLE=1
+          make clean

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Independent FLV packet, timestamp and decoded video/audio checks."""
 import argparse
+from fractions import Fraction
 import json
 from pathlib import Path
 import shlex
@@ -31,9 +32,29 @@ def decode(path, audio):
                       ['-fps_mode', 'passthrough', '-pix_fmt', 'yuv420p10le', '-f', 'rawvideo']), '-'])
 
 
+def color_metadata(path):
+    data = json.loads(command(['ffprobe', '-v', 'error', '-show_streams', '-of', 'json', str(path)]))
+    video = next(s for s in data['streams'] if s['codec_type'] == 'video')
+    assert (video['color_primaries'], video['color_transfer'], video['color_space']) == (
+        'bt2020', 'smpte2084', 'bt2020nc')
+    side = video.get('side_data_list', [])
+    mastering = next(s for s in side if s['side_data_type'] == 'Mastering display metadata')
+    light = next(s for s in side if s['side_data_type'] == 'Content light level metadata')
+    expected = dict(red_x='0.68', red_y='0.32', green_x='0.265', green_y='0.69',
+                    blue_x='0.15', blue_y='0.06', white_point_x='0.3127', white_point_y='0.329',
+                    min_luminance='0.005', max_luminance='1000')
+    for key, value in expected.items():
+        actual, original = float(Fraction(mastering[key])), float(value)
+        # Receiver-side metadata uses float precision; AMF wire checks are exact.
+        assert abs(actual - original) <= max(1e-12, abs(original) * 1e-7), (
+            key, mastering[key], value)
+    assert light['max_content'] == 1000 and light['max_average'] == 400, light
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--runner', default='')
+    parser.add_argument('--require-color-metadata', action='store_true')
     parser.add_argument('binary')
     args = parser.parse_args()
     for tool in ('ffmpeg', 'ffprobe'):
@@ -57,14 +78,21 @@ def main():
                          '-c:v', codec, '-threads', '1', '-bf', str(bframes), *options,
                          '-g', '12', '-c:a', 'aac', '-profile:a', 'aac_low',
                          '-flvflags', 'no_duration_filesize', '-f', 'flv', str(source)])
-                for annexb in ((False, True) if codec == 'libx264' else (False,)):
+                modes = [None, 'annexb'] if codec == 'libx264' else [None]
+                if depth == 10:
+                    modes.append('color')
+                for mode in modes:
                     command(shlex.split(args.runner) + [binary, str(source), str(output)]
-                            + (['annexb'] if annexb else []))
+                            + ([mode] if mode else []))
                     assert probe(source) == probe(output), 'encoded packets or timestamps differ'
                     for audio in (False, True):
                         assert decode(source, audio) == decode(output, audio), 'decoded output differs'
+                    if args.require_color_metadata and mode == 'color':
+                        color_metadata(output)
+                        print('PASS: independent receiver parsed mastering/light units from colorInfo')
                     print(f'PASS: independent FLV packet/timestamp/video/PCM oracle, '
-                          f'codec={codec}/{depth}, B-frames={bframes}, Annex B={annexb}')
+                          f'codec={codec}/{depth}, B-frames={bframes}, '
+                          f'Annex B={mode == "annexb"}, colorInfo={mode == "color"}')
 
 
 if __name__ == '__main__':

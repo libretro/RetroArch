@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <formats/video_color.h>
 
 typedef struct rflv_mux rflv_mux_t;
 typedef struct rflv_config
@@ -61,6 +62,13 @@ rflv_mux_t *rflv_mux_new(const rflv_config_t *config);
  * NAL lengths. Other fields retain their meaning; max_packet_size <= 0xfffff7.
  * Media input stays borrowed; native Annex B requires a separate adapter. */
 rflv_mux_t *rflv_mux_new_hevc(const rflv_config_t *config);
+/* Cold HEVC setup, once before the initial file-header release. Emits AMF0
+ * colorInfo before the video sequence. Unknown fields stay absent. Mastering
+ * must be complete and within Enhanced RTMP ranges; xy rounds to four decimals.
+ * Depth must match hvcC; range remains in the coded bitstream. Copies supplied
+ * source metadata, never display/tone-map defaults. No later mutation. */
+bool rflv_mux_set_color(rflv_mux_t *mux, const video_color_metadata_t *color,
+      unsigned bit_depth);
 /* Native AVC encoder adapter. avcc contains Annex B SPS/PPS (one each).
  * Cold allocation reserves conversion storage up to max_packet_size.
  * Other configuration fields retain their ordinary meaning. */
