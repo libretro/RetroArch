@@ -71,7 +71,9 @@ check: $(TARGET) $(TARGET_TEST2) plane-check
 		done; \
 	fi
 	@if command -v glslangValidator >/dev/null 2>&1; then \
-		glslangValidator -S frag obj/subgroup.glsl && glslangValidator -S frag obj/depth_unchanged.glsl; \
+		glslangValidator -S frag obj/subgroup.glsl && glslangValidator -S frag obj/depth_unchanged.glsl \
+			&& glslangValidator -S frag obj/es_samplers.glsl \
+			&& glslangValidator -S frag obj/es_sampler_param.glsl; \
 	fi
 
 clean:

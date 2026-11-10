@@ -418,6 +418,9 @@ static void pr_type_full(struct rslc_pr *p, const struct rslc_type *t)
    pr_array_suffix(p, t);
 }
 
+/* GLSL ES: of the opaque types only sampler2D and samplerCube have a
+ * default precision (and int and uint sampler2D the statements the stage
+ * opens with); any other takes its own, highp where none is stated. */
 static void pr_precision(struct rslc_pr *p, unsigned prec, const struct rslc_type *t)
 {
    const struct rslc_type *bt = t;
@@ -427,6 +430,17 @@ static void pr_precision(struct rslc_pr *p, unsigned prec, const struct rslc_typ
       bt = bt->elem;
    if (bt->kind == RSLC_TY_STRUCT || bt->kind == RSLC_TY_VOID || bt->base == RSLC_BASE_BOOL)
       return;
+   if (!prec && (RSLC_TY_IS_SAMPLER(bt->kind) || RSLC_TY_IS_IMAGE(bt->kind)))
+   {
+      if (bt->kind == RSLC_TY_SAMPLER2D)
+         return;
+#ifdef RSLC_EXTENDED
+      if (     bt->kind == RSLC_TY_SAMPLERX && bt->rows == RSLC_SDIM_CUBE
+            && !bt->cols && bt->base == RSLC_BASE_FLOAT)
+         return;
+#endif
+      prec = RSLC_PREC_HIGH;
+   }
    switch (prec)
    {
       case RSLC_PREC_LOW:    pr_s(p, "lowp "); break;
@@ -4842,6 +4856,7 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
    for (i = 0; i < pr->nsamplers; i++)
    {
       pr_s(p, "uniform ");
+      pr_precision(p, pr->samplers[i]->precision, pr->samplers[i]->type);
       pr_type(p, pr->samplers[i]->type);
       pr_c(p, ' ');
       pr_var_name(p, pr->samplers[i]);
@@ -4909,6 +4924,7 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
             pr_s(p, "readonly ");
          if (v->quals & RSLC_VQ_WRITEONLY)
             pr_s(p, "writeonly ");
+         pr_precision(p, v->precision, v->type);
       }
       else if (v->storage == RSLC_ST_SHARED)
          pr_s(p, "shared ");

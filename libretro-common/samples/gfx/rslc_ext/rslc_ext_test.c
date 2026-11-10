@@ -1005,6 +1005,70 @@ int main(int argc, char **argv)
       }
    }
 
+   /* GLSL ES: a sampler type without a default precision is declared
+    * highp, as the stage cannot compile without one; sampler2D keeps its
+    * default */
+   {
+      static const char fs_sampler2d[] =
+         "#version 450\n"
+         "layout(set = 0, binding = 0) uniform sampler2D tex;\n"
+         "layout(location = 0) in vec2 uv;\n"
+         "layout(location = 0) out vec4 col;\n"
+         "void main() { col = texture(tex, uv); }\n";
+      static const char fs_sampler_param[] =
+         "#version 450\n"
+         "layout(set = 0, binding = 0) uniform sampler2DArray samp[2];\n"
+         "layout(location = 0) in vec3 uv;\n"
+         "layout(location = 0) out vec4 col;\n"
+         "vec4 fetch(sampler2DArray s) { return texture(s, uv); }\n"
+         "void main() { col = fetch(samp[0]) + fetch(samp[1]); }\n";
+      char err[256];
+      struct rslc_opts   o;
+      struct rslc_result r;
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_sampler_array, RSLC_DST_GLSL_ES, 310, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "es sampler array: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(strstr(r.text, "uniform highp sampler2DArray samp[8];") != NULL);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_samplers, RSLC_DST_GLSL_ES, 320, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "es samplers: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(strstr(r.text, "uniform highp sampler2DArray samp;") != NULL);
+         CHECK(strstr(r.text, "uniform highp usamplerBuffer texels;") != NULL);
+         CHECK(strstr(r.text, "uniform highp sampler2DMSArray ms;") != NULL);
+         CHECK(strstr(r.text, "uniform highp isampler2DArray isamp;") != NULL);
+         write_text(dir, "es_samplers.glsl", r.text);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_sampler2d, RSLC_DST_GLSL_ES, 310, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "es sampler2D: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(strstr(r.text, "uniform sampler2D tex;") != NULL);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_sampler_param, RSLC_DST_GLSL_ES, 310, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "es sampler parameter: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(strstr(r.text, "highp sampler2DArray s") != NULL);
+         write_text(dir, "es_sampler_param.glsl", r.text);
+         rslc_result_free(&r, &o);
+      }
+   }
+
    /* subgroup operations (GroupNonUniform 61, its Arithmetic 63) in a
     * SPIR-V 1.3 module; MSL's simdgroup functions; GLSL's under
     * GL_KHR_shader_subgroup, read back; HLSL refuses */
