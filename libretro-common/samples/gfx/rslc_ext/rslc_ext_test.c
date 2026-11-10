@@ -966,6 +966,45 @@ int main(int argc, char **argv)
       CHECK(strstr(err, "input_attachment_index") != NULL);
    }
 
+   /* early fragment tests as conservative depth's depth_unchanged, for
+    * a GL context without image load / store: under the extension
+    * below GLSL 4.20 and in GLSL ES */
+   {
+      static const struct { enum rslc_dst dst; unsigned version; const char *ext; } gl[] = {
+         { RSLC_DST_GLSL, 410, "#extension GL_ARB_conservative_depth : require" },
+         { RSLC_DST_GLSL, 450, NULL },
+         { RSLC_DST_GLSL_ES, 320, "#extension GL_EXT_conservative_depth : require" } };
+      unsigned i;
+      char err[256];
+      struct rslc_opts   o;
+      struct rslc_result r;
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      for (i = 0; i < sizeof(gl) / sizeof(gl[0]); i++)
+      {
+         memset(&o, 0, sizeof(o));
+         o.dst     = gl[i].dst;
+         o.version = gl[i].version;
+         o.err     = err;
+         o.err_cap = sizeof(err);
+         o.early_z_depth_unchanged = true;
+         err[0]    = '\0';
+         memset(&r, 0, sizeof(r));
+         CHECK(rslc_compile(fs_dual_source, strlen(fs_dual_source), RSLC_STAGE_FRAGMENT, &o, &r));
+         if (err[0])
+            fprintf(stderr, "depth_unchanged: %s\n", err);
+         if (r.blob)
+         {
+            CHECK(strstr(r.text, "layout(depth_unchanged) out float gl_FragDepth;") != NULL);
+            CHECK(strstr(r.text, "early_fragment_tests") == NULL);
+            CHECK(gl[i].ext ? strstr(r.text, gl[i].ext) != NULL
+                  : strstr(r.text, "conservative_depth") == NULL);
+            if (gl[i].version == 450)
+               write_text(dir, "depth_unchanged.glsl", r.text);
+            rslc_result_free(&r, &o);
+         }
+      }
+   }
+
    /* subgroup operations (GroupNonUniform 61, its Arithmetic 63) in a
     * SPIR-V 1.3 module; MSL's simdgroup functions; GLSL's under
     * GL_KHR_shader_subgroup, read back; HLSL refuses */

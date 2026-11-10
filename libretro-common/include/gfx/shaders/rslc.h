@@ -349,6 +349,9 @@ struct rslc_opts
    bool fixup_clipspace;
    bool flip_vert_y;
    unsigned fb_fetch;   /* enum rslc_fb_fetch */
+   /* RSLC_EXTENDED, GLSL: early fragment tests as conservative depth's
+    * depth_unchanged, for a context without image load / store */
+   bool early_z_depth_unchanged;
 };
 
 #define RSLC_ARENA_CHUNK        (64u * 1024u)

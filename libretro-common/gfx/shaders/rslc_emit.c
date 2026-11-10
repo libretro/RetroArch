@@ -4772,6 +4772,13 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
          pr_nl(p);
          break;
       }
+   if (pr->early_fragment_tests && c->opts->early_z_depth_unchanged
+         && (p->es || p->version < 420))
+   {
+      pr_s(p, p->es ? "#extension GL_EXT_conservative_depth : require"
+            : "#extension GL_ARB_conservative_depth : require");
+      pr_nl(p);
+   }
    if (pr->subgroup)
    {
       pr_s(p, "#extension GL_KHR_shader_subgroup_basic : require");
@@ -4844,6 +4851,13 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
    }
    if (pr->early_fragment_tests)
    {
+#ifdef RSLC_EXTENDED
+      /* the driver may then test depth early, as the stage does not
+       * change it */
+      if (c->opts->early_z_depth_unchanged)
+         pr_s(p, "layout(depth_unchanged) out float gl_FragDepth;");
+      else
+#endif
       pr_s(p, "layout(early_fragment_tests) in;");
       pr_nl(p);
    }
