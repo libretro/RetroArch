@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
@@ -380,8 +381,13 @@ done:
 int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
 {
 #if defined(_WIN32)
-   /* select() exists on 9x, XP, Vista+, and Xbox XTL. WSAPoll does not. */
-   fd_set rfds, wfds, efds;
+   /* select() exists on 9x, XP, Vista+, and Xbox XTL. WSAPoll does not.
+    * A Winsock fd_set is a count and an array that select() reads up to
+    * the count, and FD_SET drops what passes FD_SETSIZE (64), so more
+    * sockets than that get sets sized for them. */
+   fd_set sets[3];
+   fd_set *rfds = &sets[0], *wfds = &sets[1], *efds = &sets[2];
+   void   *big  = NULL;
    struct timeval tv, *ptv = NULL;
    unsigned i;
    int ret;
@@ -390,9 +396,18 @@ int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
    if (nfds && !fds)
       return -1;
 
-   FD_ZERO(&rfds);
-   FD_ZERO(&wfds);
-   FD_ZERO(&efds);
+   if (nfds > FD_SETSIZE)
+   {
+      size_t one = offsetof(fd_set, fd_array) + nfds * sizeof(SOCKET);
+      if (!(big = malloc(3 * one)))
+         return -1;
+      rfds = (fd_set*)big;
+      wfds = (fd_set*)((char*)big + one);
+      efds = (fd_set*)((char*)big + 2 * one);
+   }
+   rfds->fd_count = 0;
+   wfds->fd_count = 0;
+   efds->fd_count = 0;
 
    for (i = 0; i < nfds; i++)
    {
@@ -408,10 +423,10 @@ int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
       }
 
       if (fds[i].events & (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI))
-         FD_SET(s, &rfds);
+         rfds->fd_array[rfds->fd_count++] = s;
       if (fds[i].events & (POLLOUT | POLLWRNORM | POLLWRBAND))
-         FD_SET(s, &wfds);
-      FD_SET(s, &efds);
+         wfds->fd_array[wfds->fd_count++] = s;
+      efds->fd_array[efds->fd_count++] = s;
    }
 
    if (timeout >= 0)
@@ -422,9 +437,12 @@ int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
    }
 
    /* Winsock ignores nfds and walks the fd_set. */
-   ret = socket_select(0, &rfds, &wfds, &efds, ptv);
+   ret = socket_select(0, rfds, wfds, efds, ptv);
    if (ret < 0)
+   {
+      free(big);
       return ret;
+   }
 
    for (i = 0; i < nfds; i++)
    {
@@ -433,18 +451,19 @@ int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
       if (fds[i].revents & POLLNVAL)
          continue;
 
-      if (FD_ISSET(s, &rfds))
+      if (FD_ISSET(s, rfds))
          fds[i].revents |= (short)(fds[i].events &
                (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI));
-      if (FD_ISSET(s, &wfds))
+      if (FD_ISSET(s, wfds))
          fds[i].revents |= (short)(fds[i].events &
                (POLLOUT | POLLWRNORM | POLLWRBAND));
-      if (FD_ISSET(s, &efds))
+      if (FD_ISSET(s, efds))
          fds[i].revents |= POLLERR;
       if (fds[i].revents)
          nready++;
    }
 
+   free(big);
    return nready;
 #elif defined(VITA)
    int i, j;

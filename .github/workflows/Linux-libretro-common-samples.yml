@@ -266,6 +266,8 @@ jobs:
             # net_http: a 3xx handed back unfollowed, a DELETE body's
             # Content-Length, the caller's Accept-Encoding/User-Agent.
             net_http_options_test
+            # socket_poll past FD_SETSIZE sockets.
+            socket_poll_test
             rjson_test
             rm3u_test
             rmp4_fragment_test
@@ -1437,6 +1439,21 @@ jobs:
             -I../../../include thread_cleanup_test.c ../../../rthreads/rthreads.c \
             -lwinmm -o thread_cleanup_test.exe
           timeout 30 wine ./thread_cleanup_test.exe
+
+      - name: socket_poll past FD_SETSIZE under Wine
+        shell: bash
+        working-directory: libretro-common/samples/net/socket_poll
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # select() takes 64 sockets a set; past that the sets are sized
+          # for the call.
+          make clean
+          make CC=x86_64-w64-mingw32-gcc all
+          timeout 60 wine ./socket_poll_test.exe
+          make clean
 
       - name: Build and run the NVIDIA loaders under Wine
         shell: bash
