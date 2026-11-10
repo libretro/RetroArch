@@ -150,6 +150,7 @@ jobs:
             rzstd_raw_block_test_novec
             rzstd_dict_test
             rbzip2_test
+            shiftjis_test
             rinflate_window_test
             rdeflate_hash_test
             rdeflate_flush_test
