@@ -12255,6 +12255,7 @@ static void materialui_list_insert(void *userdata,
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_USE_DIRECTORY:
+         case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
             node->icon_texture_index = MUI_TEXTURE_CHECKMARK;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
