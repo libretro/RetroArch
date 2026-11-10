@@ -1716,6 +1716,81 @@ START_TEST(test_aes_cbc_decrypt)
 }
 END_TEST
 
+/* XTS-AES-128: IEEE 1619 vectors 1 and 2, then random data units -
+ * in place and not, both key sizes, lengths through the eight-block and
+ * the single-block loops - against one block at a time through
+ * aes_encrypt_block()/aes_decrypt_block(), and back. */
+START_TEST(test_aes_xts)
+{
+   static uint8_t in[1040], out[1040], ref[1040], back[1040];
+   uint8_t k1[32], k2[32], tw[16], t[16], b[16], pt[32];
+   unsigned it, i;
+   size_t off;
+   struct aes_ctx a, c;
+
+   memset(k1, 0, 16);
+   memset(k2, 0, 16);
+   memset(tw, 0, 16);
+   memset(pt, 0, 32);
+   ck_assert_int_eq(aes_init(&a, k1, 16), 0);
+   ck_assert_int_eq(aes_init(&c, k2, 16), 0);
+   aes_xts_encrypt(&a, &c, tw, pt, out, 32);
+   ck_hex(out, 32, "917cf69ebd68b2ec9b9fe9a3eadda692cd43d2f59598ed858c02c2652fbf922e");
+   aes_xts_decrypt(&a, &c, tw, out, out, 32);
+   ck_assert_int_eq(memcmp(out, pt, 32), 0);
+
+   memset(k1, 0x11, 16);
+   memset(k2, 0x22, 16);
+   memset(tw, 0, 16);
+   memset(tw, 0x33, 5);
+   memset(pt, 0x44, 32);
+   ck_assert_int_eq(aes_init(&a, k1, 16), 0);
+   ck_assert_int_eq(aes_init(&c, k2, 16), 0);
+   aes_xts_encrypt(&a, &c, tw, pt, out, 32);
+   ck_hex(out, 32, "c454185e6a16936e39334038acef838bfb186fff7480adc4289382ecd6d394f0");
+
+   for (it = 0; it < 300; it++)
+   {
+      size_t   len     = 16 * (bulk_rand() % 66);
+      int      inplace = (it & 4) != 0;
+      unsigned ks      = (it & 1) ? 32 : 16;
+      for (i = 0; i < 32; i++)
+      {
+         k1[i] = (uint8_t)bulk_rand();
+         k2[i] = (uint8_t)bulk_rand();
+      }
+      for (i = 0; i < 16; i++)
+         tw[i] = (uint8_t)bulk_rand();
+      for (i = 0; i < len; i++)
+         in[i] = (uint8_t)bulk_rand();
+      ck_assert_int_eq(aes_init(&a, k1, ks), 0);
+      ck_assert_int_eq(aes_init(&c, k2, ks), 0);
+      aes_encrypt_block(&c, tw, t);
+      for (off = 0; off < len; off += 16)
+      {
+         uint8_t carry = 0;
+         for (i = 0; i < 16; i++)
+            b[i] = in[off + i] ^ t[i];
+         aes_encrypt_block(&a, b, b);
+         for (i = 0; i < 16; i++)
+            ref[off + i] = b[i] ^ t[i];
+         for (i = 0; i < 16; i++)
+         {
+            uint8_t next = t[i] >> 7;
+            t[i]  = (uint8_t)((t[i] << 1) | carry);
+            carry = next;
+         }
+         t[0] ^= (uint8_t)(0x87 & (0 - carry));
+      }
+      memcpy(back, in, len);
+      aes_xts_encrypt(&a, &c, tw, in, inplace ? in : out, len);
+      ck_assert_int_eq(memcmp(inplace ? in : out, ref, len), 0);
+      aes_xts_decrypt(&a, &c, tw, inplace ? in : out, inplace ? in : out, len);
+      ck_assert_int_eq(memcmp(inplace ? in : out, back, len), 0);
+   }
+}
+END_TEST
+
 START_TEST(test_md5_unaligned)
 {
    static const uint8_t expected[16] = {
@@ -1751,6 +1826,7 @@ Suite *create_suite(void)
    TCase *tc_core = tcase_create("Core");
    tcase_set_timeout(tc_core, 60);
    tcase_add_test(tc_core, test_md5_unaligned);
+   tcase_add_test(tc_core, test_aes_xts);
    tcase_add_test(tc_core, test_aes_block);
    tcase_add_test(tc_core, test_aes_cmac);
    tcase_add_test(tc_core, test_aes_gcm);

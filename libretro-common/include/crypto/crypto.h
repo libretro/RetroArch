@@ -217,6 +217,35 @@ void aes_cbc_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
       const uint8_t *in, uint8_t *out, size_t len);
 
 /**
+ * aes_xts_encrypt:
+ * @data_key          : the data key, made by aes_init().
+ * @tweak_key         : the tweak key, made by aes_init(); XTS takes two
+ *                      independent keys of one size (AES-128-XTS is a
+ *                      32-octet key, its halves the two).
+ * @tweak             : 16 octets, the data unit's number as IEEE 1619
+ *                      gives it (little-endian for disk sectors);
+ *                      encrypted with @tweak_key here.
+ * @len               : a multiple of 16: whole blocks, no ciphertext
+ *                      stealing.
+ *
+ * XTS-AES (IEEE 1619, SP 800-38E) over one data unit, several blocks at
+ * once where the cipher runs on instructions made for it. @in and @out
+ * may alias.
+ **/
+void aes_xts_encrypt(const struct aes_ctx *data_key,
+      const struct aes_ctx *tweak_key, const uint8_t *tweak,
+      const uint8_t *in, uint8_t *out, size_t len);
+
+/**
+ * aes_xts_decrypt:
+ *
+ * The inverse of aes_xts_encrypt(), with the same keys and tweak.
+ **/
+void aes_xts_decrypt(const struct aes_ctx *data_key,
+      const struct aes_ctx *tweak_key, const uint8_t *tweak,
+      const uint8_t *in, uint8_t *out, size_t len);
+
+/**
  * aes_cbc_encrypt_lanes:
  * @n                 : independent chains, each @len octets (a
  *                      multiple of 16) from in[i] to out[i] under
