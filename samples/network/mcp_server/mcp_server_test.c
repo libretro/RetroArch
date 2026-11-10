@@ -200,6 +200,14 @@ static bool act_until(command_t *cmd, const char *arg)
    cmd->replier(cmd, UNTIL_TEXT, sizeof(UNTIL_TEXT) - 1);
    return true;
 }
+/* a wait on how far apart two bytes are, which may be below zero */
+#define APART_TEXT "MET 0\nVALUE -3\n"
+static bool act_apart(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, APART_TEXT, sizeof(APART_TEXT) - 1);
+   return true;
+}
 
 /* answers through its destination before it returns, as RUN_UNTIL does
  * when the byte already holds what was asked */
@@ -281,6 +289,15 @@ static bool act_readt(command_t *cmd, const char *arg)
 {
    (void)arg;
    cmd->replier(cmd, READT_TEXT, sizeof(READT_TEXT) - 1);
+   return true;
+}
+/* a read of several ranges, the second cut short */
+#define READM_TEXT "READM 1000 AA 0F\nREADM 101e 1E 1F\nTRUNCATED 2\n" \
+                   "READM 1010 10\n"
+static bool act_readm(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, READM_TEXT, sizeof(READM_TEXT) - 1);
    return true;
 }
 
@@ -381,6 +398,7 @@ static struct cmd_action_map test_actions[] = {
    { "LOGR",  act_log,   "No argument", "Answer rows between two trailers.", CMD_INFO_READ_ONLY, NULL, &test_rows_log },
    { "BARE",  act_log,   "No argument", "Answer trailers and no rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_bare },
    { "UNTIL", act_until, "No argument", "Answer as RUN_UNTIL meets.", 0, NULL, &cmd_rows_until },
+   { "APART", act_apart, "No argument", "Answer as RUN_UNTIL on a difference.", 0, NULL, &cmd_rows_until },
    { "NOW",   act_now,   "No argument", "Answer before returning.", 0, NULL, &cmd_rows_until },
    { "WAIT",  act_wait,  "No argument", "Answer as RUN_UNTIL waits.", 0, NULL, &cmd_rows_until },
    { "RUN_FRAMES", act_runf,  "No argument", "Answer as RUN_FRAMES does.", 0, NULL, &cmd_rows_frames },
@@ -393,6 +411,7 @@ static struct cmd_action_map test_actions[] = {
    { "PREVF", act_prevf, "No argument", "Answer as RUN_FRAMES after a queue gave up.", 0, NULL, &cmd_rows_frames },
    { "PREVE", act_preve, "No argument", "Answer as STEPS after a queue failed.", 0, NULL, &cmd_rows_steps },
    { "READT", act_readt, "No argument", "Answer as a read cut short.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
+   { "READM", act_readm, "No argument", "Answer as a read of several ranges.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "MENUS", act_menus, "No argument", "Answer as MENU does.", 0, NULL, &cmd_rows_menu },
    { "MENUC", act_menuc, "No argument", "Answer as MENU does when closed.", 0, NULL, &cmd_rows_menu },
    { "MENUD", act_menud, "No argument", "Answer as MENU does over a dialog.", 0, NULL, &cmd_rows_menu },
@@ -942,9 +961,10 @@ int main(void)
             && strstr(rs, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(rs, "\"next\":{\"type\":\"integer\""));
       /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
-       * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS,
-       * STEP, PREVS, PREVF, PREVE, READT, MENUS, MENUC and MENUD */
-      check("only the commands that answer rows declare one", n == 24);
+       * BARE, UNTIL, APART, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS,
+       * STEPS, STEP, PREVS, PREVF, PREVE, READT, READM, MENUS, MENUC and
+       * MENUD */
+      check("only the commands that answer rows declare one", n == 26);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1213,6 +1233,11 @@ int main(void)
                "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"},"
                "{\"label\":\"mode\",\"address\":\"7e0770\",\"value\":\"8\"}],"
                "\"met\":12,\"value\":5}"));
+   st = post(cmd, PORT_OPEN, NULL, call("APART", NULL), out, sizeof(out), NULL);
+   check("a difference below zero is a number all the same",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],"
+               "\"met\":0,\"value\":-3}"));
    st = post(cmd, PORT_OPEN, NULL, call("NOW", NULL), out, sizeof(out), NULL);
    check("answered before the command returns, it is answered once, whole",
          st == 200 && json_valid(body_of(out)) && !strstr(out, "Done.")
@@ -1267,6 +1292,15 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"address\":\"101e\","
                "\"bytes\":\"1E 1F\",\"truncated\":true,\"read\":2}"));
+   st = post(cmd, PORT_OPEN, NULL, call("READM", NULL), out, sizeof(out), NULL);
+   check("a read of several ranges is the first, and each in ranges",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"address\":\"1000\","
+               "\"bytes\":\"AA 0F\",\"ranges\":["
+               "{\"address\":\"1000\",\"bytes\":\"AA 0F\"},"
+               "{\"address\":\"101e\",\"bytes\":\"1E 1F\","
+               "\"truncated\":true,\"read\":2},"
+               "{\"address\":\"1010\",\"bytes\":\"10\"}]}"));
    st = post(cmd, PORT_OPEN, NULL, call("MENUS", NULL), out, sizeof(out), NULL);
    check("the menu's title, path, and three closing lines",
          st == 200 && json_valid(body_of(out))
@@ -1297,6 +1331,9 @@ int main(void)
                   "\"description\":\"The menu is closed.\"}"));
       check("and a text line is declared a string",
             m && strstr(m, "\"message\":{\"type\":\"string\","));
+      m = strstr(out, "\"name\":\"READ_CORE_MEMORY\"");
+      check("a read declares its ranges",
+            m && strstr(m, "\"ranges\":{\"type\":\"array\","));
    }
    st = post(cmd, PORT_OPEN, NULL, call("PREVS", NULL), out, sizeof(out), NULL);
    check("a queued STEPS after a stop: its steps dropped, and the stop",
