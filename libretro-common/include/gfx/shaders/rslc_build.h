@@ -123,7 +123,9 @@ struct rslc_var *rslc_b_block(struct rslc_builder *b, bool push, bool std140,
       const struct rslc_type *const *types, const char *const *names, uint32_t n,
       struct rslc_var **members);
 /* gl_Position, gl_PointSize, gl_VertexIndex, gl_InstanceIndex,
- * gl_FragCoord, gl_FragDepth, gl_FrontFacing. */
+ * gl_FragCoord, gl_FragDepth, gl_FrontFacing; with RSLC_EXTENDED every
+ * builtin the parser gives the stage, and a geometry stage's gl_in once
+ * its input primitive is laid out. */
 struct rslc_var *rslc_b_builtin_var(struct rslc_builder *b, const char *name);
 /* A file-scope variable; constant when is_const and init folds. */
 struct rslc_var *rslc_b_global(struct rslc_builder *b, const char *name,
@@ -193,6 +195,104 @@ uint32_t rslc_b_return(struct rslc_builder *b, uint32_t e);
 /* A local's declaration, not appended: a for loop's init. */
 uint32_t rslc_b_decl_stmt(struct rslc_builder *b, const char *name,
       const struct rslc_type *type, uint32_t init, struct rslc_var **out);
+
+/* ---- RSLC_EXTENDED: the stages, types and storage an emulator's
+ * shaders use.  Present only in a build with RSLC_EXTENDED defined
+ * too; each makes what the same GLSL declaration makes. ---- */
+
+enum rslc_b_sampler_kind
+{
+   RSLC_B_SAMPLER_2D = 0,
+   RSLC_B_SAMPLER_2D_ARRAY,
+   RSLC_B_SAMPLER_2D_MS_ARRAY,
+   RSLC_B_SAMPLER_BUFFER,
+   RSLC_B_IMAGE_2D,        /* its format and access are the declaration's */
+   RSLC_B_IMAGE_2D_ARRAY,
+   RSLC_B_SUBPASS_INPUT
+};
+
+/* Where a declaration lives. */
+enum rslc_b_storage
+{
+   RSLC_B_ST_GLOBAL = 0,
+   RSLC_B_ST_CONST,
+   RSLC_B_ST_IN,
+   RSLC_B_ST_OUT,
+   RSLC_B_ST_UNIFORM,      /* a sampler, image, subpass input or uniform block */
+   RSLC_B_ST_BUFFER,       /* a storage block */
+   RSLC_B_ST_SHARED        /* a compute stage's shared memory */
+};
+
+/* A geometry stage's input and output primitives. */
+enum rslc_b_prim
+{
+   RSLC_B_PRIM_NONE = 0,
+   RSLC_B_PRIM_POINTS,
+   RSLC_B_PRIM_LINES,
+   RSLC_B_PRIM_LINES_ADJACENCY,
+   RSLC_B_PRIM_TRIANGLES,
+   RSLC_B_PRIM_TRIANGLES_ADJACENCY,
+   RSLC_B_PRIM_LINE_STRIP,
+   RSLC_B_PRIM_TRIANGLE_STRIP
+};
+
+/* Access of an image or a storage block. */
+#define RSLC_B_READONLY  1u
+#define RSLC_B_WRITEONLY 2u
+#define RSLC_B_COHERENT  4u
+
+/* What a declaration's qualifiers and layout say.  rslc_b_quals_init
+ * leaves every number unstated and every flag clear. */
+struct rslc_b_quals
+{
+   const char *format;            /* a storage image's, by its GLSL name ("rgba8") */
+   uint32_t    location;          /* RSLC_NO_BINDING where not stated */
+   uint32_t    binding;
+   uint32_t    set;
+   uint32_t    index;             /* a fragment output's: 0 or 1 */
+   uint32_t    input_attachment;
+   uint32_t    local_size[3];     /* 0 where not stated */
+   uint32_t    invocations;
+   uint32_t    max_vertices;
+   unsigned    storage;           /* enum rslc_b_storage */
+   unsigned    interp;            /* enum rslc_b_interp */
+   unsigned    quals;             /* RSLC_B_CENTROID, RSLC_B_SAMPLE, RSLC_B_INVARIANT */
+   unsigned    access;            /* RSLC_B_READONLY, RSLC_B_WRITEONLY, RSLC_B_COHERENT */
+   unsigned    prim;              /* enum rslc_b_prim */
+   bool        push_constant;
+   bool        std140;
+   bool        early_fragment_tests;
+};
+
+void rslc_b_quals_init(struct rslc_b_quals *q);
+
+/* A sampler, image or subpass input type of base float, int or uint.
+ * rslc_b_array with len 0 is an array of unstated length: a geometry
+ * input's, or a storage block's last member. */
+const struct rslc_type *rslc_b_sampler_type(struct rslc_builder *b,
+      enum rslc_b_sampler_kind kind, enum rslc_base base);
+
+/* A file-scope declaration of any storage but a block's. */
+struct rslc_var *rslc_b_declare(struct rslc_builder *b, const struct rslc_b_quals *q,
+      const char *name, const struct rslc_type *type, uint32_t init);
+/* A uniform (q->storage RSLC_B_ST_UNIFORM, or push_constant) or storage
+ * (RSLC_B_ST_BUFFER) block; as rslc_b_block otherwise. */
+struct rslc_var *rslc_b_block_q(struct rslc_builder *b, const struct rslc_b_quals *q,
+      const char *type_name, const char *instance,
+      const struct rslc_type *const *types, const char *const *names, uint32_t n,
+      struct rslc_var **members);
+/* An in or out block, its members with their own interpolation and
+ * qualifiers (interps and mquals may be NULL).  The instance is
+ * returned whether named or not; a member is rslc_b_member of a
+ * reference to it.  array_len -1 for a single instance, 0 for a
+ * geometry input's, as long as the input primitive. */
+struct rslc_var *rslc_b_io_block(struct rslc_builder *b, const struct rslc_b_quals *q,
+      const char *type_name, const char *instance,
+      const struct rslc_type *const *types, const char *const *names,
+      const unsigned *interps, const unsigned *mquals, uint32_t n, int32_t array_len);
+/* A layout on the stage's in or out alone: early_fragment_tests, a
+ * local size, a geometry primitive, invocations or max_vertices. */
+bool rslc_b_layout(struct rslc_builder *b, const struct rslc_b_quals *q);
 
 RETRO_END_DECLS
 

@@ -2,6 +2,7 @@ include ../../sample_objdir.mk
 
 TARGET := rslc_ext_test
 TARGET_TEST := rslc_plane_test
+TARGET_TEST2 := rslc_ext_build_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -29,7 +30,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
 
 # every object sees both headers, so a layout change rebuilds all of them
 $(OBJS): $(LIBRETRO_COMM_DIR)/include/gfx/shaders/rslc.h $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_share.h
@@ -50,14 +51,19 @@ $(TARGET): $(OBJS)
 rslc_plane_test: rslc_plane_test.c $(filter-out rslc_ext_test.c,$(SOURCES)) $(LIBRETRO_COMM_DIR)/include/gfx/shaders/rslc.h $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_share.h
 	$(CC) $(filter-out -Wno-overlength-strings,$(CFLAGS)) -Werror -Wframe-larger-than=2048 -DRSLC_NO_DXBC -o $@ $(filter %.c,$^) $(LDFLAGS) $(LDLIBS)
 
+# The builder (RSLC_BUILD) against the parser, stage for stage.
+rslc_ext_build_test: rslc_ext_build_test.c $(filter-out rslc_ext_test.c,$(SOURCES)) $(LIBRETRO_COMM_DIR)/include/gfx/shaders/rslc.h $(LIBRETRO_COMM_DIR)/include/gfx/shaders/rslc_build.h $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_share.h
+	$(CC) $(CFLAGS) -DRSLC_BUILD -o $@ $(filter %.c,$^) $(LDFLAGS) $(LDLIBS)
+
 plane-check: rslc_plane_test
 	@mkdir -p $(SAMPLE_OBJDIR)
 	./rslc_plane_test $(SAMPLE_OBJDIR)/planes
 	@if command -v spirv-val >/dev/null 2>&1; then spirv-val --target-env vulkan1.1 $(SAMPLE_OBJDIR)/planes.spv; fi
 	@if command -v glslangValidator >/dev/null 2>&1; then glslangValidator -S comp $(SAMPLE_OBJDIR)/planes.glsl; fi
 
-check: $(TARGET) plane-check
+check: $(TARGET) $(TARGET_TEST2) plane-check
 	./$(TARGET) obj
+	./$(TARGET_TEST2)
 	@if command -v spirv-val >/dev/null 2>&1; then \
 		for f in obj/*.spv; do \
 			env=vulkan1.0; case $$f in */subgroup.spv) env=vulkan1.1;; esac; \
@@ -67,6 +73,6 @@ check: $(TARGET) plane-check
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(OBJS)
 
 .PHONY: all check plane-check clean
