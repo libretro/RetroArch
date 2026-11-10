@@ -29,9 +29,9 @@ settings_t *config_get_ptr(void) { return &stub_settings; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
-bool input_autoconfigure_connect(const char *name, const char *display_name,
-      const char *phys, const char *driver, unsigned port, unsigned vid,
-      unsigned pid)
+bool input_autoconfigure_connect_uniq(const char *name,
+      const char *display_name, const char *phys, const char *uniq,
+      const char *driver, unsigned port, unsigned vid, unsigned pid)
 { return true; }
 bool input_autoconfigure_disconnect(unsigned port, const char *name)
 { return true; }

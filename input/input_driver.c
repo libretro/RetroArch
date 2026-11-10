@@ -10889,6 +10889,8 @@ void input_config_forget_controllers(void)
       input_st->input_device_info[i].joypad_driver[0] = '\0';
       input_st->input_device_info[i].vid              = 0;
       input_st->input_device_info[i].pid              = 0;
+      input_st->input_device_info[i].ident            = 0;
+      input_st->input_device_info[i].tag[0]           = '\0';
       input_st->input_device_info[i].autoconfigured   = false;
       input_st->input_device_info[i].name_index       = 0;
 
@@ -13004,6 +13006,83 @@ unsigned input_config_get_device_name_index(unsigned port)
    return input_st->input_device_info[port].name_index;
 }
 
+uint32_t input_config_get_device_ident(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].ident;
+}
+
+const char *input_config_get_device_ident_tag(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].tag;
+}
+
+/* Pads whose tags clash are numbered by identity, not connect order:
+ * the hash, then the port path (a serial-less pad's identity), then
+ * the slot. */
+static bool input_device_ident_before(const input_device_info_t *a,
+      unsigned slot_a, const input_device_info_t *b, unsigned slot_b)
+{
+   int cmp;
+   if (a->ident != b->ident)
+      return a->ident < b->ident;
+   cmp = strcmp(a->phys, b->phys);
+   if (cmp)
+      return cmp < 0;
+   return slot_a < slot_b;
+}
+
+size_t input_config_get_device_tag(unsigned port, char *s, size_t len)
+{
+   unsigned i;
+   char tag[32];
+   const char *shown;
+   const input_device_info_t *d;
+   unsigned same                  = 0;
+   unsigned before                = 0;
+   unsigned clash                 = 0;
+   unsigned clash_before          = 0;
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (len)
+      *s = '\0';
+   if (port >= MAX_INPUT_DEVICES)
+      return 0;
+   d = &input_st->input_device_info[port];
+   if (!*d->name)
+      return 0;
+   /* the name the menus show: a profile can give two names one */
+   shown = *d->display_name ? d->display_name : d->name;
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+   {
+      const input_device_info_t *o = &input_st->input_device_info[i];
+      if (     i == port
+            || !*o->name
+            || !string_is_equal(
+                  *o->display_name ? o->display_name : o->name, shown))
+         continue;
+      same++;
+      if (i < port)
+         before++;
+      if (*d->tag && string_is_equal(o->tag, d->tag))
+      {
+         clash++;
+         if (input_device_ident_before(o, i, d, port))
+            clash_before++;
+      }
+   }
+   if (!same)
+      return 0;
+   if (!*d->tag)
+      snprintf(tag, sizeof(tag), " (#%u)", before + 1);
+   else if (clash)
+      snprintf(tag, sizeof(tag), " [%s #%u]", d->tag, clash_before + 1);
+   else
+      snprintf(tag, sizeof(tag), " [%s]", d->tag);
+   return strlcpy(s, tag, len);
+}
+
 /* TODO/FIXME: This is required by linuxraw_joypad.c
  * and parport_joypad.c. These input drivers should
  * be refactored such that this dubious low-level
@@ -13148,6 +13227,15 @@ void input_config_set_device_phys(unsigned port, const char *phys)
             sizeof(input_st->input_device_info[port].phys));
    else
       input_st->input_device_info[port].phys[0] = '\0';
+}
+
+void input_config_set_device_ident(unsigned port, uint32_t ident,
+      const char *tag)
+{
+   input_driver_state_t *input_st          = &input_driver_st;
+   input_st->input_device_info[port].ident = ident;
+   strlcpy(input_st->input_device_info[port].tag, tag ? tag : "",
+         sizeof(input_st->input_device_info[port].tag));
 }
 
 void input_config_set_device_vid(unsigned port, uint16_t vid)

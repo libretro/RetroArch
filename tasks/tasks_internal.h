@@ -603,6 +603,19 @@ bool input_autoconfigure_connect_ex(
       unsigned vid,
       unsigned pid,
       uint8_t flags);
+/* As input_autoconfigure_connect(), from a driver that tells apart
+ * controllers of one model: @uniq is the controller's own serial or
+ * Bluetooth address, "" when it has none and @phys, where it is
+ * plugged in, tells it apart instead. */
+bool input_autoconfigure_connect_uniq(
+      const char *name,
+      const char *display_name,
+      const char *phys,
+      const char *uniq,
+      const char *driver,
+      unsigned port,
+      unsigned vid,
+      unsigned pid);
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 bool input_autoconfigure_reconnect(unsigned port);

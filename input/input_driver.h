@@ -350,8 +350,12 @@ struct rarch_joypad_info
 typedef struct
 {
    unsigned name_index;
+   /* the controller's own identity and its tag (input_pad_tag.h), 0
+    * and "" for none */
+   uint32_t ident;
    uint16_t vid;
    uint16_t pid;
+   char tag[7];
    char joypad_driver[32];
    char name[128];
    char display_name[128];
@@ -1983,6 +1987,11 @@ void input_config_set_device_joypad_driver(unsigned port, const char *driver);
  */
 void input_config_set_device_phys(unsigned port, const char *phys);
 
+/* The identity of the controller in @port (input_pad_tag_ident()) and
+ * its tag (input_pad_tag_text()): 0 and NULL for none. */
+void input_config_set_device_ident(unsigned port, uint32_t ident,
+      const char *tag);
+
 /**
  * Set the vendor ID (vid) for the device in the specified port
  *
@@ -2216,6 +2225,16 @@ bool input_config_get_device_autoconfigured(unsigned port);
  * @return the name index for this device
  */
 unsigned input_config_get_device_name_index(unsigned port);
+
+uint32_t input_config_get_device_ident(unsigned port);
+const char *input_config_get_device_ident_tag(unsigned port);
+
+/* After the name of the controller in @port when another connected one
+ * shows the same name: " [9f2b7e]", its tag; " [9f2b7e #2]" when the
+ * other's tag is the same, in identity order; " (#2)", its place among
+ * those of that name, with no identity. "" for a name of its own.
+ * Returns strlcpy()'s. */
+size_t input_config_get_device_tag(unsigned port, char *s, size_t len);
 
 
 /*****************************************************************************/
