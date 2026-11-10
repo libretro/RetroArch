@@ -177,6 +177,9 @@ jobs:
             # YAML: configurations, block scalars, a patch file whose
             # entries name anchored sequences by alias, node locations
             ryaml_test
+            # what the YAML writer writes reads back the same, over
+            # tricky scalars and 3000 random documents
+            ryaml_writer_test
             rzip_chunk_size_test
             rzip_matches_buf_test
             rzip_codec_test
