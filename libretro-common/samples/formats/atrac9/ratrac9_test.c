@@ -1240,7 +1240,7 @@ static void test_wave_fmt(void)
 int main(int argc, char **argv)
 {
    test_bits();
-   test_codebooks(argc > 1 ? argv[1] : "/tmp/at9clean/spec/tables.txt");
+   test_codebooks(argc > 1 ? argv[1] : "codebooks.txt");
    test_dct();
    test_config();
    test_frames();
