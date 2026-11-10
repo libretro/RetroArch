@@ -85,6 +85,7 @@ struct rslc_pr
 #ifdef RSLC_EXTENDED
    bool                     msl_boolread;   /* inside the bool(...) of a block read */
    bool                     msl_dual;       /* a dual-source output: every color names its index */
+   const struct rslc_var   *fb_out;         /* GLSL: the output an input attachment reads */
 #endif
    uint8_t                 *active[RSLC_MAX_BLOCKS];
    unsigned                 version;
@@ -1970,6 +1971,17 @@ static void pr_builtin(struct rslc_pr *p, const struct rslc_node *n)
       pr_msl_builtin(p, n);
       return;
    }
+#ifdef RSLC_EXTENDED
+   /* the framebuffer's value: the inout output, or ARM's built-in */
+   if (bfn == RSLC_BFN_SUBPASSLOAD)
+   {
+      if (p->fb_out)
+         pr_var_name(p, p->fb_out);
+      else
+         pr_s(p, "gl_LastFragColorARM");
+      return;
+   }
+#endif
    /* fma() needs GLSL 4.00 / ES 3.20; below that it is written out */
    if (bfn == RSLC_BFN_FMA && ((!p->es && p->version < 400) || (p->es && p->version < 320)))
    {
@@ -4490,6 +4502,32 @@ static void pr_ioblock_decl(struct rslc_pr *p, const struct rslc_var *v, bool is
 }
 #endif
 
+#ifdef RSLC_EXTENDED
+/* GLSL, GL_EXT_shader_framebuffer_fetch: the colour output an input
+ * attachment reads, the one at its index (an output without a location
+ * is at 0); it prints inout.  Every attachment must find one. */
+static bool pr_fb_fetch_output(struct rslc_pr *p, const struct rslc_var *in)
+{
+   const struct rslc_prog *pr = &p->c->prog;
+   const struct rslc_var  *out = NULL;
+   uint32_t i;
+   if (p->c->opts->fb_fetch != RSLC_FB_FETCH_EXT)
+      return true;
+   for (i = 0; i < pr->noutputs && !out; i++)
+   {
+      const struct rslc_var *v = pr->outputs[i];
+      if (v->index)
+         continue;
+      if (v->location == in->member || (v->location == RSLC_UNSET && in->member == 0))
+         out = v;
+   }
+   if (!out || (p->fb_out && p->fb_out != out))
+      return false;
+   p->fb_out = out;
+   return true;
+}
+#endif
+
 static void pr_io_decl(struct rslc_pr *p, const struct rslc_var *v, bool is_in)
 {
    bool layout_ok = p->es ? p->version >= 300 : p->version >= 330;
@@ -4528,6 +4566,11 @@ static void pr_io_decl(struct rslc_pr *p, const struct rslc_var *v, bool is_in)
       pr_s(p, "centroid ");
    if (v->quals & RSLC_VQ_SAMPLE)
       pr_s(p, "sample ");
+#ifdef RSLC_EXTENDED
+   if (v == p->fb_out)
+      pr_s(p, "inout ");
+   else
+#endif
    pr_s(p, is_in ? "in " : "out ");
    pr_precision(p, v->precision, v->type);
    pr_type(p, v->type);
@@ -4720,6 +4763,15 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
       pr_nl(p);
    }
 #ifdef RSLC_EXTENDED
+   for (i = 1; i < pr->nvars; i++)
+      if (pr->vars[i]->storage == RSLC_ST_SUBPASS)
+      {
+         pr_s(p, c->opts->fb_fetch == RSLC_FB_FETCH_ARM
+               ? "#extension GL_ARM_shader_framebuffer_fetch : require"
+               : "#extension GL_EXT_shader_framebuffer_fetch : require");
+         pr_nl(p);
+         break;
+      }
    if (pr->subgroup)
    {
       pr_s(p, "#extension GL_KHR_shader_subgroup_basic : require");
@@ -6711,8 +6763,19 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
             rslc_err(c, "hlsl: no form of gl_HelperInvocation", NULL, 0);
             return false;
          }
-   /* an input attachment has a form in MSL alone */
-   if (!p->msl)
+   /* an input attachment has a form in MSL, and in GLSL where the caller
+    * names the framebuffer fetch extension */
+   if (!p->msl && !p->hlsl && c->opts->fb_fetch != RSLC_FB_FETCH_NONE)
+   {
+      for (k = 1; k < pr->nvars; k++)
+         if (pr->vars[k]->storage == RSLC_ST_SUBPASS && !pr_fb_fetch_output(p, pr->vars[k]))
+         {
+            rslc_err(c, "glsl: no colour output for the input attachment", NULL,
+                  pr->vars[k]->line);
+            return false;
+         }
+   }
+   else if (!p->msl)
       for (k = 1; k < pr->nvars; k++)
          if (pr->vars[k]->storage == RSLC_ST_SUBPASS)
          {

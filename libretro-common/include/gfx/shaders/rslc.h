@@ -319,6 +319,18 @@ struct rslc_names
  * version: GLSL #version, HLSL shader model or MSL version per dst.
  * es / fixup_clipspace / flip_vert_y: the flags slang_process passes
  *   into the printers today; honoured at print time, never in the IR. */
+/* RSLC_EXTENDED, GLSL: how an input attachment, the colour attachment's
+ * value on entry, is read */
+enum rslc_fb_fetch
+{
+   RSLC_FB_FETCH_NONE = 0,   /* refused */
+   RSLC_FB_FETCH_EXT,        /* GL_EXT_shader_framebuffer_fetch: the colour
+                                output at the attachment's index is inout
+                                and read where the input is */
+   RSLC_FB_FETCH_ARM         /* GL_ARM_shader_framebuffer_fetch:
+                                gl_LastFragColorARM */
+};
+
 struct rslc_opts
 {
    void *(*alloc)(void *ud, size_t len);
@@ -336,6 +348,7 @@ struct rslc_opts
    bool es;
    bool fixup_clipspace;
    bool flip_vert_y;
+   unsigned fb_fetch;   /* enum rslc_fb_fetch */
 };
 
 #define RSLC_ARENA_CHUNK        (64u * 1024u)
