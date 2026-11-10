@@ -90,6 +90,8 @@ struct ryaml_node
    int32_t     next_sibling;
    int32_t     parent;
    uint32_t    num_children;
+   int32_t     alias;     /* *name: the anchored node it stands for */
+   uint32_t    off;       /* where in the document it starts */
    uint8_t     type;
 };
 
@@ -104,8 +106,19 @@ struct ryaml
 {
    struct ryaml_node  *nodes;
    struct ryaml_chunk *chunks;
+   const char         *doc;      /* borrowed, for ryaml_location() */
+   size_t              doc_len;
    size_t              count;
    size_t              cap;
+};
+
+/* &name, while the document is read: aliases are resolved as they are met,
+ * so the names do not outlive the parse */
+struct ryaml_anchor
+{
+   const char *name;
+   uint32_t    len;
+   int32_t     node;
 };
 
 struct ryaml_frame
@@ -123,6 +136,9 @@ struct ryaml_parser
    struct ryaml_frame *stk;
    int                 sp;
    int                 stk_cap;
+   struct ryaml_anchor *anc;
+   int                 anc_count;
+   int                 anc_cap;
    int32_t             pending;
    int32_t             pending_indent;
    int                 err;
@@ -164,7 +180,8 @@ static char *ryaml_arena_alloc(ryaml_t *y, size_t n)
 /* nodes                                                            */
 /* ---------------------------------------------------------------- */
 
-static int32_t ryaml_node_new(struct ryaml_parser *ps, int32_t parent, int type)
+static int32_t ryaml_node_new(struct ryaml_parser *ps, int32_t parent, int type,
+      const char *at)
 {
    ryaml_t           *y = ps->y;
    struct ryaml_node *n;
@@ -195,6 +212,8 @@ static int32_t ryaml_node_new(struct ryaml_parser *ps, int32_t parent, int type)
    n->next_sibling   = RYAML_NONE;
    n->parent         = parent;
    n->num_children   = 0;
+   n->alias          = RYAML_NONE;
+   n->off            = (uint32_t)(at - ps->doc);
    n->type           = (uint8_t)type;
 
    if (parent >= 0)
@@ -621,6 +640,81 @@ static int ryaml_block_scalar(struct ryaml_parser *ps, const char *hdr,
 static const char *ryaml_flow(struct ryaml_parser *ps, int32_t parent,
       const char *s, const char *e);
 
+/* ---------------------------------------------------------------- */
+/* anchors and aliases                                              */
+/* ---------------------------------------------------------------- */
+
+/* The name after a '&' or '*' at @s: up to a blank, the line end, or
+ * (in a flow collection) a ',', ']' or '}'. Returns its end, or NULL
+ * when there is no name. */
+static const char *ryaml_anchor_name(const char *s, const char *e)
+{
+   const char *q = s + 1;
+   while (q < e && !RYAML_IS_SPACE(*q) && !RYAML_IS_BREAK(*q)
+         && *q != ',' && *q != ']' && *q != '}')
+      q++;
+   return (q > s + 1) ? q : NULL;
+}
+
+/* &name on @node: a later *name stands for it. A name given again
+ * names the newer node from there on, as YAML has it. */
+static const char *ryaml_anchor(struct ryaml_parser *ps, int32_t node,
+      const char *s, const char *e)
+{
+   const char *q = ryaml_anchor_name(s, e);
+   if (!q)
+   {
+      ps->err = 1;
+      return NULL;
+   }
+   if (ps->anc_count == ps->anc_cap)
+   {
+      int                  ncap = ps->anc_cap ? (ps->anc_cap * 2) : 16;
+      struct ryaml_anchor *tmp  = (struct ryaml_anchor*)realloc(ps->anc,
+            (size_t)ncap * sizeof(struct ryaml_anchor));
+      if (!tmp)
+      {
+         ps->err = 1;
+         return NULL;
+      }
+      ps->anc     = tmp;
+      ps->anc_cap = ncap;
+   }
+   ps->anc[ps->anc_count].name = s + 1;
+   ps->anc[ps->anc_count].len  = (uint32_t)(q - s - 1);
+   ps->anc[ps->anc_count].node = node;
+   ps->anc_count++;
+   return q;
+}
+
+/* *name as @node's value: @node stands for the anchored node, which
+ * has to come before it in the document. */
+static const char *ryaml_alias(struct ryaml_parser *ps, int32_t node,
+      const char *s, const char *e)
+{
+   const char *q = ryaml_anchor_name(s, e);
+   int         i;
+   if (q)
+   {
+      uint32_t len = (uint32_t)(q - s - 1);
+      for (i = ps->anc_count - 1; i >= 0; i--)
+      {
+         if (ps->anc[i].len == len && !memcmp(ps->anc[i].name, s + 1, len))
+         {
+            int32_t            target = ps->anc[i].node;
+            struct ryaml_node *n      = &ps->y->nodes[node];
+            if (ps->y->nodes[target].alias >= 0)
+               target = ps->y->nodes[target].alias;
+            n->alias = target;
+            n->type  = ps->y->nodes[target].type;
+            return q;
+         }
+      }
+   }
+   ps->err = 1;
+   return NULL;
+}
+
 static const char *ryaml_flow_skip_ws(const char *s, const char *e)
 {
    while (s < e && RYAML_IS_SPACE(*s))
@@ -690,7 +784,7 @@ static const char *ryaml_flow(struct ryaml_parser *ps, int32_t parent,
       if (*s == close)
          return s + 1;
 
-      child = ryaml_node_new(ps, parent, RYAML_TYPE_SCALAR);
+      child = ryaml_node_new(ps, parent, RYAML_TYPE_SCALAR, s);
       if (child < 0)
          return NULL;
 
@@ -716,7 +810,26 @@ static const char *ryaml_flow(struct ryaml_parser *ps, int32_t parent,
          }
       }
 
-      if (*s == '{' || *s == '[')
+      if (*s == '&')
+      {
+         s = ryaml_anchor(ps, child, s, e);
+         if (!s)
+            return NULL;
+         s = ryaml_flow_skip_ws(s, e);
+         if (s >= e)
+         {
+            ps->err = 1;
+            return NULL;
+         }
+      }
+
+      if (*s == '*')
+      {
+         s = ryaml_alias(ps, child, s, e);
+         if (!s)
+            return NULL;
+      }
+      else if (*s == '{' || *s == '[')
       {
          s = ryaml_flow(ps, child, s, e);
          if (!s)
@@ -770,9 +883,33 @@ static int ryaml_value(struct ryaml_parser *ps, int32_t node, int indent,
    while (v < le && RYAML_IS_SPACE(*v))
       v++;
 
+   /* &name ahead of the value, or of the lines that make it up */
+   if (v < le && *v == '&')
+   {
+      if (!(v = ryaml_anchor(ps, node, v, le)))
+         return 0;
+      while (v < le && RYAML_IS_SPACE(*v))
+         v++;
+   }
+
    if (v >= le || *v == '\r' || *v == '#')
    {
       *deferred = 1;
+      return 1;
+   }
+
+   /* *name, and nothing but a comment after it */
+   if (*v == '*')
+   {
+      if (!(v = ryaml_alias(ps, node, v, le)))
+         return 0;
+      while (v < le && RYAML_IS_SPACE(*v))
+         v++;
+      if (v < le && *v != '\r' && *v != '#')
+      {
+         ps->err = 1;
+         return 0;
+      }
       return 1;
    }
 
@@ -895,7 +1032,7 @@ static const char *ryaml_find_key_colon(const char *s, const char *le)
 
 static int ryaml_run(struct ryaml_parser *ps)
 {
-   int32_t root = ryaml_node_new(ps, RYAML_NONE, RYAML_TYPE_NONE);
+   int32_t root = ryaml_node_new(ps, RYAML_NONE, RYAML_TYPE_NONE, ps->p);
 
    if (root < 0)
       return 0;
@@ -968,7 +1105,7 @@ static int ryaml_run(struct ryaml_parser *ps)
          if (ps->y->nodes[cur].type != RYAML_TYPE_SEQ)
             return 0;
 
-         item = ryaml_node_new(ps, cur, RYAML_TYPE_SCALAR);
+         item = ryaml_node_new(ps, cur, RYAML_TYPE_SCALAR, c);
          if (item < 0)
             return 0;
 
@@ -993,7 +1130,7 @@ static int ryaml_run(struct ryaml_parser *ps)
             if (!ryaml_push(ps, item, kind))
                return 0;
 
-            kv = ryaml_node_new(ps, item, RYAML_TYPE_SCALAR);
+            kv = ryaml_node_new(ps, item, RYAML_TYPE_SCALAR, rest);
             if (kv < 0)
                return 0;
 
@@ -1030,6 +1167,12 @@ static int ryaml_run(struct ryaml_parser *ps)
             int r = ryaml_value(ps, item, indent, rest, le, &deferred);
             if (r == 0)
                return 0;
+            if (deferred)
+            {
+               /* "- &name" with the item on the lines below */
+               ps->pending        = item;
+               ps->pending_indent = indent;
+            }
             if (r < 0)
                continue;
          }
@@ -1057,7 +1200,7 @@ static int ryaml_run(struct ryaml_parser *ps)
          if (ps->y->nodes[cur].type != RYAML_TYPE_MAP)
             return 0;
 
-         kv = ryaml_node_new(ps, cur, RYAML_TYPE_SCALAR);
+         kv = ryaml_node_new(ps, cur, RYAML_TYPE_SCALAR, c);
          if (kv < 0)
             return 0;
 
@@ -1113,6 +1256,8 @@ ryaml_t *ryaml_parse_ex(const char *buf, size_t len,
       return NULL;
 
    memset(&ps, 0, sizeof(ps));
+   y->doc     = buf;
+   y->doc_len = len;
    ps.y   = y;
    ps.doc = buf;
    ps.p   = buf;
@@ -1154,11 +1299,13 @@ ryaml_t *ryaml_parse_ex(const char *buf, size_t len,
             *err_col = (size_t)(ps.p - ls) + 1;
       }
       free(ps.stk);
+      free(ps.anc);
       ryaml_free(y);
       return NULL;
    }
 
    free(ps.stk);
+   free(ps.anc);
    return y;
 }
 
@@ -1191,6 +1338,10 @@ void ryaml_free(ryaml_t *y)
 
 #define RYAML_VALID(y, n) ((y) && (n) >= 0 && (size_t)(n) < (y)->count)
 
+/* What @node holds: the anchored node for an alias, else itself. A node
+ * keeps its own key, siblings and parent either way. */
+#define RYAML_HELD(y, n) ((y)->nodes[n].alias >= 0 ? (y)->nodes[n].alias : (n))
+
 int ryaml_root(const ryaml_t *y)
 {
    return (y && y->count) ? 0 : RYAML_NONE;
@@ -1203,12 +1354,12 @@ size_t ryaml_count(const ryaml_t *y)
 
 int ryaml_first_child(const ryaml_t *y, int node)
 {
-   return RYAML_VALID(y, node) ? y->nodes[node].first_child : RYAML_NONE;
+   return RYAML_VALID(y, node) ? y->nodes[RYAML_HELD(y, node)].first_child : RYAML_NONE;
 }
 
 int ryaml_last_child(const ryaml_t *y, int node)
 {
-   return RYAML_VALID(y, node) ? y->nodes[node].last_child : RYAML_NONE;
+   return RYAML_VALID(y, node) ? y->nodes[RYAML_HELD(y, node)].last_child : RYAML_NONE;
 }
 
 int ryaml_next_sibling(const ryaml_t *y, int node)
@@ -1223,7 +1374,7 @@ int ryaml_parent(const ryaml_t *y, int node)
 
 size_t ryaml_num_children(const ryaml_t *y, int node)
 {
-   return RYAML_VALID(y, node) ? (size_t)y->nodes[node].num_children : 0;
+   return RYAML_VALID(y, node) ? (size_t)y->nodes[RYAML_HELD(y, node)].num_children : 0;
 }
 
 int ryaml_find_child_len(const ryaml_t *y, int node,
@@ -1234,7 +1385,7 @@ int ryaml_find_child_len(const ryaml_t *y, int node,
    if (!RYAML_VALID(y, node) || !key)
       return RYAML_NONE;
 
-   for (n = y->nodes[node].first_child; n >= 0; n = y->nodes[n].next_sibling)
+   for (n = y->nodes[RYAML_HELD(y, node)].first_child; n >= 0; n = y->nodes[n].next_sibling)
    {
       const struct ryaml_node *c = &y->nodes[n];
       if (c->key_len == (uint32_t)key_len && c->key
@@ -1256,7 +1407,7 @@ int ryaml_has_child(const ryaml_t *y, int node, const char *key)
 
 int ryaml_type(const ryaml_t *y, int node)
 {
-   return RYAML_VALID(y, node) ? (int)y->nodes[node].type : RYAML_TYPE_NONE;
+   return RYAML_VALID(y, node) ? (int)y->nodes[RYAML_HELD(y, node)].type : RYAML_TYPE_NONE;
 }
 
 int ryaml_is_map(const ryaml_t *y, int node)
@@ -1271,12 +1422,12 @@ int ryaml_is_seq(const ryaml_t *y, int node)
 
 int ryaml_has_children(const ryaml_t *y, int node)
 {
-   return RYAML_VALID(y, node) && y->nodes[node].first_child >= 0;
+   return RYAML_VALID(y, node) && y->nodes[RYAML_HELD(y, node)].first_child >= 0;
 }
 
 int ryaml_has_val(const ryaml_t *y, int node)
 {
-   return RYAML_VALID(y, node) && y->nodes[node].val != NULL;
+   return RYAML_VALID(y, node) && y->nodes[RYAML_HELD(y, node)].val != NULL;
 }
 
 int ryaml_has_key(const ryaml_t *y, int node)
@@ -1299,6 +1450,8 @@ const char *ryaml_key(const ryaml_t *y, int node, size_t *len)
 
 const char *ryaml_val(const ryaml_t *y, int node, size_t *len)
 {
+   if (RYAML_VALID(y, node))
+      node = RYAML_HELD(y, node);
    if (!RYAML_VALID(y, node) || !y->nodes[node].val)
    {
       if (len)
@@ -1431,4 +1584,33 @@ int ryaml_val_equals(const ryaml_t *y, int node, const char *str)
       return 0;
    slen = strlen(str);
    return (slen == len) && (memcmp(v, str, len) == 0);
+}
+
+int ryaml_is_alias(const ryaml_t *y, int node)
+{
+   return RYAML_VALID(y, node) && y->nodes[node].alias >= 0;
+}
+
+int ryaml_location(const ryaml_t *y, int node, size_t *line, size_t *col)
+{
+   const char *p, *end, *ls;
+   size_t      l = 1;
+   if (!RYAML_VALID(y, node) || !y->doc)
+      return 0;
+   p   = y->doc;
+   end = y->doc + y->nodes[node].off;
+   ls  = p;
+   while (p < end)
+   {
+      const char *nl = (const char*)memchr(p, '\n', (size_t)(end - p));
+      if (!nl)
+         break;
+      l++;
+      p = ls = nl + 1;
+   }
+   if (line)
+      *line = l;
+   if (col)
+      *col = (size_t)(end - ls) + 1;
+   return 1;
 }

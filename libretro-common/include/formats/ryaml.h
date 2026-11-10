@@ -55,9 +55,14 @@
  * nested block mappings, block sequences, compact mappings written on a
  * sequence dash, plain and quoted scalars, literal and folded block
  * scalars with the three chomping modes, {} and [] flow collections,
- * and comments. Anchors, aliases, tags, directives, multi-document
- * streams and flow collections spanning several lines are not read; a
- * document using them is rejected rather than half-parsed. Tabs are
+ * comments, and anchors and aliases: "&name" ahead of a value (or of the
+ * lines that make it up) and "*name" as a value, in block and flow
+ * collections alike. An alias is a node of its own, with its own key,
+ * that holds what the anchored node holds: its value, its type and its
+ * children, as every call below reads them. Tags, directives, merge keys,
+ * multi-document streams and flow collections spanning several lines
+ * are not read; a document using them, or an alias to a name not
+ * anchored before it, is rejected rather than half-parsed. Tabs are
  * never indentation, which is what the specification says and what a
  * hand-written file usually means anyway.
  */
@@ -273,6 +278,28 @@ int ryaml_val_bool(const ryaml_t *y, int node, int *out);
  * Returns: 1 when the node's value is exactly @str, 0 otherwise.
  */
 int ryaml_val_equals(const ryaml_t *y, int node, const char *str);
+
+/**
+ * ryaml_is_alias:
+ * @y                      : tree
+ * @node                   : node to ask about
+ * Returns: 1 when @node is a "*name", standing for the node anchored as
+ * name, 0 otherwise.
+ */
+int ryaml_is_alias(const ryaml_t *y, int node);
+
+/**
+ * ryaml_location:
+ * @y                      : tree
+ * @node                   : node to find
+ * @line                   : filled with its 1-based line, may be NULL
+ * @col                    : filled with its 1-based column, may be NULL
+ * Where @node starts in the document: its key, its sequence dash, or its
+ * value in a flow collection. For messages about a document; it walks
+ * the document up to the node, so it is not for a lookup loop.
+ * Returns: 1 on success, 0 for an invalid node.
+ */
+int ryaml_location(const ryaml_t *y, int node, size_t *line, size_t *col);
 
 RETRO_END_DECLS
 
