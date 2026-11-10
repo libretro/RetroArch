@@ -49,7 +49,13 @@
  * The decoder takes its memory when the header is read - two rows and an
  * inflate state - and nothing after. Every chunk's CRC is checked; a bad
  * one in a critical chunk is an error, in an ancillary chunk it drops the
- * chunk, as libpng does. */
+ * chunk, as libpng does.
+ *
+ * The colour chunks (gAMA, cHRM, sRGB, sBIT, cICP, mDCV) are kept as the
+ * file states them, for a caller that converts colour as libpng would:
+ * one of the wrong length, out of place (after PLTE or the image data),
+ * a second of a kind, or one holding a value the specification forbids
+ * is dropped, as libpng drops it. */
 
 #include <stdint.h>
 #include <stddef.h>
@@ -70,7 +76,8 @@ enum
 /* The ancillary chunks seen, as bits of rpng_rows_info.chunks. A chunk
  * where the PNG specification does not allow it (gAMA after PLTE, bKGD
  * after IDAT, hIST without a palette, tRNS on an image with alpha) is
- * dropped, as libpng drops it. */
+ * dropped, as libpng drops it. Bits 0 to 15 are in the order console PNG
+ * libraries report them in. */
 enum
 {
    RPNG_ROWS_GAMA = 1 << 0,
@@ -88,7 +95,9 @@ enum
    RPNG_ROWS_ICCP = 1 << 12,
    RPNG_ROWS_SPLT = 1 << 13,
    RPNG_ROWS_SCAL = 1 << 14,
-   RPNG_ROWS_IDAT = 1 << 15
+   RPNG_ROWS_IDAT = 1 << 15,
+   RPNG_ROWS_CICP = 1 << 16,
+   RPNG_ROWS_MDCV = 1 << 17
 };
 
 struct rpng_rows_info
@@ -106,6 +115,23 @@ struct rpng_rows_info
    uint8_t  interlace;       /* 1: Adam7 */
    uint8_t  palette[256 * 3];/* RGB triples */
    uint8_t  trns[256];       /* palette alphas, or the key colour as stored */
+
+   /* The colour chunks, each valid where its bit is in chunks */
+   uint32_t gama;            /* gAMA: the image's gamma times 100000 */
+   int32_t  chrm[8];         /* cHRM: white, red, green and blue x and y,
+                                times 100000 */
+   uint16_t mdcv[8];         /* mDCV: red, green, blue and white x and y,
+                                times 50000 */
+   uint32_t mdcv_luminance[2];/* mDCV: maximum and minimum, 0.0001 cd/m2 */
+   uint8_t  cicp[4];         /* cICP: primaries, transfer function, matrix,
+                                full range */
+   uint8_t  sbit[4];         /* sBIT: significant bits of each channel,
+                                R, G, B for a palette */
+   uint8_t  srgb;            /* sRGB: the rendering intent */
+   /* Where each came among the colour chunks, from 1: for rules that go
+    * by which came first (libpng's gamma: sRGB's over gAMA's, unless a
+    * cICP came before both) */
+   uint8_t  gama_at, chrm_at, srgb_at, sbit_at, cicp_at, mdcv_at;
 };
 
 struct rpng_rows_row

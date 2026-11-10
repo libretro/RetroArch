@@ -1,7 +1,8 @@
 /* rpng_rows: every colour type and bit depth, plain and Adam7, written
  * here with every filter type, decoded a few bytes at a time and put
  * back together from the rows; the chunks before and after the image
- * counted and dropped as libpng would; broken files refused. */
+ * counted and dropped as libpng would; the colour chunks' contents kept,
+ * and dropped where libpng drops them; broken files refused. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -310,6 +311,132 @@ static void check_image(unsigned depth, unsigned ct, uint32_t w, uint32_t h,
    free(back);
 }
 
+/* A small image of type @ct with the chunks in @pre between IHDR and the
+ * image data, read back */
+static int colour_png(unsigned depth, unsigned ct, const struct out *pre,
+      struct rpng_rows_info *info)
+{
+   struct out o;
+   uint8_t    img[16], back[16];
+   int        r;
+
+   memset(&o, 0, sizeof(o));
+   memset(img, 0, sizeof(img));
+   write_png(&o, img, 1, 1, depth, ct, 0, 0);
+   /* after the signature and IHDR */
+   o.p = (uint8_t*)realloc(o.p, o.n + pre->n);
+   memmove(o.p + 33 + pre->n, o.p + 33, o.n - 33);
+   memcpy(o.p + 33, pre->p, pre->n);
+   r = decode(o.p, o.n + pre->n, 3, back, 16, info, NULL);
+   free(o.p);
+   return r;
+}
+
+static void be32(uint8_t *p, uint32_t v)
+{
+   p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16);
+   p[2] = (uint8_t)(v >> 8);  p[3] = (uint8_t)v;
+}
+
+static void check_colour_chunks(void)
+{
+   static const uint32_t chrm[8] = { 31270, 32900, 64000, 33000,
+      30000, 60000, 15000, 0xfffffc18u /* -1000 */ };
+   static const uint8_t mdcv[24] = { 0x83, 0xe8, 0x3f, 0x7a, 0x34, 0xbc,
+      0x89, 0x58, 0x1d, 0x4c, 0x0b, 0xb8, 0x3d, 0x13, 0x40, 0x42,
+      0x00, 0x98, 0x96, 0x80, 0x00, 0x00, 0x00, 0x32 };
+   struct rpng_rows_info info;
+   struct out pre;
+   uint8_t    b[32];
+   unsigned   i;
+
+   /* each kind, kept, in the order they came */
+   memset(&pre, 0, sizeof(pre));
+   chunk(&pre, "cICP", (const uint8_t*)"\x01\x0d\x00\x01", 4, 0);
+   be32(b, 45455);
+   chunk(&pre, "gAMA", b, 4, 0);
+   for (i = 0; i < 8; i++)
+      be32(b + i * 4, chrm[i]);
+   chunk(&pre, "cHRM", b, 32, 0);
+   chunk(&pre, "sRGB", (const uint8_t*)"\x02", 1, 0);
+   chunk(&pre, "sBIT", (const uint8_t*)"\x05\x06\x05", 3, 0);
+   chunk(&pre, "mDCV", mdcv, 24, 0);
+   CHECK(colour_png(8, 2, &pre, &info) == 1, "colour chunks: decode");
+   CHECK(info.chunks == (RPNG_ROWS_GAMA | RPNG_ROWS_CHRM | RPNG_ROWS_SRGB
+         | RPNG_ROWS_SBIT | RPNG_ROWS_CICP | RPNG_ROWS_MDCV | RPNG_ROWS_IDAT),
+         "colour chunks: all seen");
+   CHECK(info.gama == 45455, "gAMA");
+   CHECK(info.chrm[0] == 31270 && info.chrm[5] == 60000
+         && info.chrm[7] == -1000, "cHRM, negative values too");
+   CHECK(info.srgb == 2, "sRGB");
+   CHECK(info.sbit[0] == 5 && info.sbit[1] == 6 && info.sbit[2] == 5
+         && info.sbit[3] == 0, "sBIT");
+   CHECK(!memcmp(info.cicp, "\x01\x0d\x00\x01", 4), "cICP");
+   CHECK(info.mdcv[0] == 0x83e8 && info.mdcv[7] == 0x4042
+         && info.mdcv_luminance[0] == 10000000 && info.mdcv_luminance[1] == 50,
+         "mDCV");
+   CHECK(info.cicp_at == 1 && info.gama_at == 2 && info.chrm_at == 3
+         && info.srgb_at == 4 && info.sbit_at == 5 && info.mdcv_at == 6,
+         "the order they came in");
+   free(pre.p);
+
+   /* the broken, the second of a kind: dropped; a good one after a broken
+    * one is the first */
+   memset(&pre, 0, sizeof(pre));
+   be32(b, 0x80000000u);
+   chunk(&pre, "gAMA", b, 4, 0);                 /* over 31 bits */
+   be32(b, 50000);
+   chunk(&pre, "gAMA", b, 4, 1);                 /* bad CRC */
+   chunk(&pre, "gAMA", b, 3, 0);                 /* short */
+   be32(b, 220000);
+   chunk(&pre, "gAMA", b, 4, 0);                 /* this one */
+   be32(b, 100000);
+   chunk(&pre, "gAMA", b, 4, 0);                 /* a second */
+   memset(b, 0, 32);
+   be32(b + 12, 0x80000000u);
+   chunk(&pre, "cHRM", b, 32, 0);                /* no such int32 */
+   chunk(&pre, "sRGB", (const uint8_t*)"\x04", 1, 0);   /* no such intent */
+   chunk(&pre, "sBIT", (const uint8_t*)"\x05\x09\x05", 3, 0); /* over 8 */
+   chunk(&pre, "sBIT", (const uint8_t*)"\x05\x00\x05", 3, 0); /* none */
+   chunk(&pre, "sBIT", (const uint8_t*)"\x05\x05\x05\x05", 4, 0); /* RGB: 3 */
+   chunk(&pre, "cICP", (const uint8_t*)"\x01\x0d\x00", 3, 0);
+   chunk(&pre, "mDCV", mdcv, 23, 0);
+   CHECK(colour_png(8, 2, &pre, &info) == 1, "broken colour chunks: decode");
+   CHECK(info.chunks == (RPNG_ROWS_GAMA | RPNG_ROWS_IDAT),
+         "broken colour chunks dropped");
+   CHECK(info.gama == 220000 && info.gama_at == 1,
+         "the first good gAMA, not the second");
+   free(pre.p);
+
+   /* sBIT by colour type: a value for each channel, a palette's three of 8
+    * bits, 16-bit gray up to 16 */
+   memset(&pre, 0, sizeof(pre));
+   chunk(&pre, "sBIT", (const uint8_t*)"\x10\x03", 2, 0);
+   CHECK(colour_png(16, 4, &pre, &info) == 1 && (info.chunks & RPNG_ROWS_SBIT)
+         && info.sbit[0] == 16 && info.sbit[1] == 3, "sBIT, 16-bit gray and alpha");
+   free(pre.p);
+   memset(&pre, 0, sizeof(pre));
+   chunk(&pre, "sBIT", (const uint8_t*)"\x08\x01\x07", 3, 0);
+   CHECK(colour_png(2, 3, &pre, &info) == 1 && (info.chunks & RPNG_ROWS_SBIT)
+         && info.sbit[2] == 7, "sBIT, palette");
+   free(pre.p);
+   memset(&pre, 0, sizeof(pre));
+   chunk(&pre, "sBIT", (const uint8_t*)"\x03", 1, 0);
+   CHECK(colour_png(2, 0, &pre, &info) == 1 && !(info.chunks & RPNG_ROWS_SBIT),
+         "sBIT over a gray image's depth");
+   free(pre.p);
+
+   /* after PLTE: out of place */
+   memset(&pre, 0, sizeof(pre));
+   chunk(&pre, "PLTE", (const uint8_t*)"\x01\x02\x03", 3, 0);
+   chunk(&pre, "sRGB", (const uint8_t*)"\x00", 1, 0);
+   chunk(&pre, "mDCV", mdcv, 24, 0);
+   CHECK(colour_png(8, 2, &pre, &info) == 1
+         && !(info.chunks & (RPNG_ROWS_SRGB | RPNG_ROWS_MDCV)),
+         "colour chunks after PLTE");
+   free(pre.p);
+}
+
 int main(void)
 {
    static const unsigned cases[][2] = {
@@ -326,6 +453,8 @@ int main(void)
          for (il = 0; il < 2; il++)
             check_image(cases[c][0], cases[c][1], sizes[s][0], sizes[s][1],
                   (int)il, s & 1 ? 1 : 4096, s == 2);
+
+   check_colour_chunks();
 
    /* broken files */
    {

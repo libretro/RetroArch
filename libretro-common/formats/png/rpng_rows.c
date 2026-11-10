@@ -70,6 +70,7 @@ struct rpng_rows
 
    int      have_ihdr;
    int      have_plte;
+   unsigned colour_n;          /* colour chunks taken */
    int      header_sent;
    int      idat_done;         /* a chunk other than IDAT came after IDATs */
    int      image_done;        /* every row is out */
@@ -227,6 +228,95 @@ static int rr_unfilter(rpng_rows_t *z)
    return 1;
 }
 
+/* A colour chunk, from keep[]: dropped where libpng drops it */
+static void rr_colour(rpng_rows_t *z)
+{
+   struct rpng_rows_info *info = &z->info;
+   const uint8_t         *k    = z->keep;
+   uint32_t               len  = z->keep_len;
+   uint32_t               bit;
+   uint8_t               *at;
+   unsigned               i;
+
+   switch (z->type)
+   {
+      case RR_TYPE('g', 'A', 'M', 'A'):
+         if (len != 4 || (k[0] & 0x80u))
+            return;
+         bit        = RPNG_ROWS_GAMA;
+         at         = &info->gama_at;
+         if (info->chunks & bit)
+            return;
+         info->gama = rr_be32(k);
+         break;
+      case RR_TYPE('c', 'H', 'R', 'M'):
+         if (len != 32)
+            return;
+         for (i = 0; i < 8; i++)
+            if (rr_be32(k + i * 4) == 0x80000000u)
+               return; /* no 32-bit value is its negative */
+         bit = RPNG_ROWS_CHRM;
+         at  = &info->chrm_at;
+         if (info->chunks & bit)
+            return;
+         for (i = 0; i < 8; i++)
+         {
+            uint32_t v   = rr_be32(k + i * 4);
+            info->chrm[i] = (v & 0x80000000u)
+               ? -(int32_t)(~v + 1u) : (int32_t)v;
+         }
+         break;
+      case RR_TYPE('s', 'R', 'G', 'B'):
+         if (len != 1 || k[0] > 3)
+            return;
+         bit        = RPNG_ROWS_SRGB;
+         at         = &info->srgb_at;
+         if (info->chunks & bit)
+            return;
+         info->srgb = k[0];
+         break;
+      case RR_TYPE('s', 'B', 'I', 'T'):
+      {
+         unsigned n   = info->color_type == 3 ? 3u : info->channels;
+         unsigned max = info->color_type == 3 ? 8u : info->depth;
+         if (len != n)
+            return;
+         for (i = 0; i < n; i++)
+            if (!k[i] || k[i] > max)
+               return;
+         bit = RPNG_ROWS_SBIT;
+         at  = &info->sbit_at;
+         if (info->chunks & bit)
+            return;
+         memcpy(info->sbit, k, n);
+         break;
+      }
+      case RR_TYPE('c', 'I', 'C', 'P'):
+         if (len != 4)
+            return;
+         bit = RPNG_ROWS_CICP;
+         at  = &info->cicp_at;
+         if (info->chunks & bit)
+            return;
+         memcpy(info->cicp, k, 4);
+         break;
+      default: /* mDCV */
+         if (len != 24)
+            return;
+         bit = RPNG_ROWS_MDCV;
+         at  = &info->mdcv_at;
+         if (info->chunks & bit)
+            return;
+         for (i = 0; i < 8; i++)
+            info->mdcv[i] = (uint16_t)((k[i * 2] << 8) | k[i * 2 + 1]);
+         info->mdcv_luminance[0] = rr_be32(k + 16);
+         info->mdcv_luminance[1] = rr_be32(k + 20);
+         break;
+   }
+   info->chunks |= bit;
+   *at           = (uint8_t)++z->colour_n;
+}
+
 /* IHDR, from keep[] */
 static int rr_ihdr(rpng_rows_t *z)
 {
@@ -322,10 +412,16 @@ static int rr_chunk_end(rpng_rows_t *z)
       case RR_TYPE('i', 'T', 'X', 't'):
          info->text_chunks++;
          return 1;
-      case RR_TYPE('g', 'A', 'M', 'A'): bit = RPNG_ROWS_GAMA; before_plte = 1; break;
-      case RR_TYPE('s', 'B', 'I', 'T'): bit = RPNG_ROWS_SBIT; before_plte = 1; break;
-      case RR_TYPE('c', 'H', 'R', 'M'): bit = RPNG_ROWS_CHRM; before_plte = 1; break;
-      case RR_TYPE('s', 'R', 'G', 'B'): bit = RPNG_ROWS_SRGB; before_plte = 1; break;
+      case RR_TYPE('g', 'A', 'M', 'A'):
+      case RR_TYPE('c', 'H', 'R', 'M'):
+      case RR_TYPE('s', 'R', 'G', 'B'):
+      case RR_TYPE('s', 'B', 'I', 'T'):
+      case RR_TYPE('c', 'I', 'C', 'P'):
+      case RR_TYPE('m', 'D', 'C', 'V'):
+         /* before PLTE and the image data */
+         if (!z->header_sent && !z->have_plte)
+            rr_colour(z);
+         return 1;
       case RR_TYPE('i', 'C', 'C', 'P'): bit = RPNG_ROWS_ICCP; before_plte = 1; break;
       case RR_TYPE('b', 'K', 'G', 'D'): bit = RPNG_ROWS_BKGD; break;
       case RR_TYPE('h', 'I', 'S', 'T'):
@@ -343,9 +439,7 @@ static int rr_chunk_end(rpng_rows_t *z)
          return 1;
       /* known, not reported */
       case RR_TYPE('e', 'X', 'I', 'f'):
-      case RR_TYPE('c', 'I', 'C', 'P'):
       case RR_TYPE('c', 'L', 'L', 'I'):
-      case RR_TYPE('m', 'D', 'C', 'V'):
          return 1;
       default:
          /* an unknown chunk; critical ones fail at their header */
@@ -401,6 +495,15 @@ static int rr_chunk_begin(rpng_rows_t *z)
          z->mode = len <= RR_KEEP_MAX ? RR_KEEP : RR_SKIP;
          if (z->mode == RR_SKIP && type != RR_TYPE('t', 'R', 'N', 'S'))
             return 0;
+         return 1;
+      /* the colour chunks: one too long to keep is the wrong length */
+      case RR_TYPE('g', 'A', 'M', 'A'):
+      case RR_TYPE('c', 'H', 'R', 'M'):
+      case RR_TYPE('s', 'R', 'G', 'B'):
+      case RR_TYPE('s', 'B', 'I', 'T'):
+      case RR_TYPE('c', 'I', 'C', 'P'):
+      case RR_TYPE('m', 'D', 'C', 'V'):
+         z->mode = len <= RR_KEEP_MAX ? RR_KEEP : RR_SKIP;
          return 1;
       case RR_TYPE('I', 'E', 'N', 'D'):
          z->mode = RR_SKIP;
