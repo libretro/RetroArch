@@ -251,6 +251,8 @@ jobs:
             filestream_printf_test
             strlcpy_append_test
             http_parse_test
+            # UPnP gateway client: parsers, and SOAP against a fake gateway.
+            net_upnp_test
             rjson_test
             rm3u_test
             rmp4_fragment_test
