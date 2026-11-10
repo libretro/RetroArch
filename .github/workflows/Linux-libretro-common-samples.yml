@@ -188,6 +188,8 @@ jobs:
             raac_size_test
             # raac's savestates: saved between units, loaded into a new decoder.
             raac_state_test
+            # raac's ADTS header parse and WAVE channel order.
+            raac_layout_test
             rh265_lossless_test
             rh265_lossless_test_nothreads
             rh265_lossless_test_volatile

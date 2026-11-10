@@ -35,19 +35,19 @@
  * What it implements: AAC-LC (audio object type 2) raw access units,
  * channel configurations 1 through 7 and configuration 0 with an
  * embedded PCE (up to eight output channels, interleaved in element
- * transmission order), explicit as well as indexed sampling
+ * transmission order or WAVE order), HE-AAC SBR, ADTS header
+ * parsing, explicit as well as indexed sampling
  * frequencies, M/S and intensity stereo, PNS, TNS, coupling channel
  * elements (dependently and independently switched, up to four
  * concurrent tags), in-stream PCE and DSE elements (skipped), and
  * both the s16 and f32 output paths from a shared float synthesis
  * pipeline.
  *
- * What it does not implement: other object types (Main, SSR, LTP,
- * HE-AAC's SBR/PS - configurations other than plain LC are refused
- * at open, as is the 960-sample frame variant), downmixing,
- * ADTS/LATM/LOAS framing (the caller supplies the
- * AudioSpecificConfig and raw access units, as rmp4 does), and
- * encoding. */
+ * What it does not implement: other object types (Main, SSR, LTP -
+ * refused at open), HE-AAC v2's parametric stereo (skipped, the SBR
+ * mono signal is decoded), downmixing, LATM/LOAS framing and walking
+ * ADTS streams (the caller supplies the AudioSpecificConfig and raw
+ * access units, as rmp4 does), and encoding. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -187,6 +187,20 @@ static INLINE raac_v raac_v_set4(float a, float b, float c, float e)
 
 #define RAAC_FRAME     1024
 #define RAAC_MAX_CH    8
+
+/* WAVE speaker positions, in the order WAVEFORMATEXTENSIBLE lists its
+ * channel mask bits */
+#define RAAC_WAVE_FL   0
+#define RAAC_WAVE_FR   1
+#define RAAC_WAVE_FC   2
+#define RAAC_WAVE_LFE  3
+#define RAAC_WAVE_BL   4
+#define RAAC_WAVE_BR   5
+#define RAAC_WAVE_FLC  6
+#define RAAC_WAVE_FRC  7
+#define RAAC_WAVE_BC   8
+#define RAAC_WAVE_SL   9
+#define RAAC_WAVE_SR   10
 #define RAAC_MAX_SFB   51
 #define RAAC_MAX_WIN   8
 #define RAAC_MAX_CCE   4   /* concurrently active coupling tags      */
@@ -1817,6 +1831,10 @@ struct raac
    unsigned out_rate;         /* rate reported to the caller */
    raac_qmf_ch *qmf;          /* one per output channel when sbr_mode */
    raac_sbr_scratch *sbx;     /* shared HF scratch, same lifetime    */
+   uint8_t  out_map[RAAC_MAX_CH];    /* output channel -> element
+                                      * channel, by the chosen order */
+   uint8_t  wave_map[RAAC_MAX_CH];   /* that map for WAVE order      */
+   int      has_wave_map;            /* the layout has a WAVE order  */
    int8_t   sbr_map[RAAC_MAX_CH];    /* this frame: SBR slot per
                                       * output channel, -1 if none  */
    int8_t   sbr_map_ch[RAAC_MAX_CH]; /* 0/1: which element channel  */
@@ -5068,10 +5086,12 @@ static void raac_couple_all(raac_t *a, int point, int is_cpe, int tag,
  * relative to the start of the enclosing structure - the ASC or the
  * raw_data_block - and the bit reader's buffer begins there in both
  * callers, so aligning the raw position is correct. */
-static int raac_pce(raac_bits *b, int *elems, int *channels)
+static int raac_pce(raac_bits *b, int *elems, int *channels,
+      uint8_t *pos)
 {
    int nfront, nside, nback, nlfe, nassoc, ncc;
    int i, n_elems, n_ch;
+   int fsce = 0, fcpe = 0, bcpe = 0, bsce = 0, scpe = 0;
    raac_getbits(b, 4);           /* element_instance_tag       */
    raac_getbits(b, 2);           /* object_type                */
    raac_getbits(b, 4);           /* sampling_frequency_index   */
@@ -5088,13 +5108,57 @@ static int raac_pce(raac_bits *b, int *elems, int *channels)
    if (raac_getbits(b, 1))       /* matrix_mixdown_idx_present */
       raac_getbits(b, 3);        /* idx + pseudo_surround      */
    n_elems = nfront + nside + nback + nlfe;
-   n_ch    = nlfe;
+   n_ch = 0;
    for (i = 0; i < nfront + nside + nback; i++)
    {
-      /* element_is_cpe + element_tag_select */
-      n_ch += raac_getbits(b, 1) ? 2 : 1;
+      /* element_is_cpe + element_tag_select; the speaker each channel
+       * stands for follows from the group and the element's place in
+       * it, as WAVE positions (raac_wave_pos), 0xFF where none fits */
+      int     cpe = (int)raac_getbits(b, 1);
+      uint8_t p0  = 0xFF, p1 = 0xFF;
       raac_getbits(b, 4);
+      if (i < nfront)
+      {
+         if (!cpe)
+            p0 = fsce++ ? 0xFF : RAAC_WAVE_FC;
+         else if (fcpe++ == 0)
+         {
+            p0 = RAAC_WAVE_FL;
+            p1 = RAAC_WAVE_FR;
+         }
+         else if (fcpe == 2)
+         {
+            p0 = RAAC_WAVE_FLC;
+            p1 = RAAC_WAVE_FRC;
+         }
+      }
+      else if (i < nfront + nside)
+      {
+         if (cpe && scpe++ == 0)
+         {
+            p0 = RAAC_WAVE_SL;
+            p1 = RAAC_WAVE_SR;
+         }
+      }
+      else if (!cpe)
+         p0 = bsce++ ? 0xFF : RAAC_WAVE_BC;
+      else if (bcpe++ == 0)
+      {
+         p0 = RAAC_WAVE_BL;
+         p1 = RAAC_WAVE_BR;
+      }
+      if (pos && n_ch < RAAC_MAX_CH)
+         pos[n_ch] = p0;
+      if (pos && cpe && n_ch + 1 < RAAC_MAX_CH)
+         pos[n_ch + 1] = p1;
+      n_ch += cpe ? 2 : 1;
    }
+   for (i = 0; i < nlfe; i++)
+   {
+      if (pos && n_ch + i < RAAC_MAX_CH)
+         pos[n_ch + i] = i ? 0xFF : RAAC_WAVE_LFE;
+   }
+   n_ch += nlfe;
    for (i = 0; i < nlfe; i++)
       raac_getbits(b, 4);        /* lfe_element_tag_select     */
    for (i = 0; i < nassoc; i++)
@@ -5123,6 +5187,44 @@ static int raac_pce(raac_bits *b, int *elems, int *channels)
  * 6 adds an LFE (5.1), 7 is SCE+3CPE+LFE (7.1, eight channels) */
 static const uint8_t raac_chcfg_channels[8] = { 0, 1, 2, 3, 4, 5, 6, 8 };
 
+/* WAVE speaker positions per channelConfiguration, in element
+ * transmission order. 7 follows the common reading of its second
+ * and third CPE as the side and back pairs. */
+static const uint8_t raac_chcfg_pos[8][RAAC_MAX_CH] = {
+   { 0 },
+   { RAAC_WAVE_FC },
+   { RAAC_WAVE_FL, RAAC_WAVE_FR },
+   { RAAC_WAVE_FC, RAAC_WAVE_FL, RAAC_WAVE_FR },
+   { RAAC_WAVE_FC, RAAC_WAVE_FL, RAAC_WAVE_FR, RAAC_WAVE_BC },
+   { RAAC_WAVE_FC, RAAC_WAVE_FL, RAAC_WAVE_FR, RAAC_WAVE_BL,
+     RAAC_WAVE_BR },
+   { RAAC_WAVE_FC, RAAC_WAVE_FL, RAAC_WAVE_FR, RAAC_WAVE_BL,
+     RAAC_WAVE_BR, RAAC_WAVE_LFE },
+   { RAAC_WAVE_FC, RAAC_WAVE_FL, RAAC_WAVE_FR, RAAC_WAVE_SL,
+     RAAC_WAVE_SR, RAAC_WAVE_BL, RAAC_WAVE_BR, RAAC_WAVE_LFE }
+};
+
+/* The WAVE order of channels at speaker positions pos: by position,
+ * the order WAVEFORMATEXTENSIBLE lists its speaker bits. Returns 0,
+ * or -1 when a channel has no position or two share one. */
+static int raac_make_wave_map(uint8_t *map, const uint8_t *pos,
+      unsigned channels)
+{
+   unsigned i, j, n = 0;
+   unsigned used = 0;
+   for (i = 0; i < channels; i++)
+   {
+      if (pos[i] > RAAC_WAVE_SR || (used & (1u << pos[i])))
+         return -1;
+      used |= 1u << pos[i];
+   }
+   for (j = 0; j <= RAAC_WAVE_SR; j++)
+      for (i = 0; i < channels; i++)
+         if (pos[i] == j)
+            map[n++] = (uint8_t)i;
+   return 0;
+}
+
 /* Map an explicitly coded sampling frequency onto the sampling
  * frequency index whose scalefactor band tables apply, per the
  * ranges of ISO/IEC 14496-3 Table 4.55. */
@@ -5147,10 +5249,12 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    raac_bits b;
    unsigned  aot, sfi, chcfg, freq, channels, frame_960;
    unsigned  sbr_explicit, ext_freq;
+   uint8_t   pos[RAAC_MAX_CH];
    int       i;
 
    if (!asc || asc_size < 2)
       return NULL;
+   memset(pos, 0xFF, sizeof(pos));
    raac_bits_init(&b, asc, asc_size);
    aot = raac_getbits(&b, 5);
    if (aot == 31)
@@ -5206,14 +5310,17 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
        * channels sequentially, so any coupling-free layout that fits
        * is decodable */
       int elems = 0, nch = 0;
-      if (raac_pce(&b, &elems, &nch) < 0)
+      if (raac_pce(&b, &elems, &nch, pos) < 0)
          return NULL;
       if (nch < 1 || nch > RAAC_MAX_CH)
          return NULL;
       channels = (unsigned)nch;
    }
    else
+   {
       channels = raac_chcfg_channels[chcfg];
+      memcpy(pos, raac_chcfg_pos[chcfg], sizeof(pos));
+   }
    if (b.err)
       return NULL;
 
@@ -5249,6 +5356,9 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    a->channels    = channels;
    a->frame_len   = frame_960 ? 960 : 1024;
    a->noise_state = 0x1f2e3d4cu;
+   for (i = 0; i < RAAC_MAX_CH; i++)
+      a->out_map[i] = (uint8_t)i;
+   a->has_wave_map = raac_make_wave_map(a->wave_map, pos, channels) == 0;
 
    /* output-rate contract, fixed for the life of the instance:
     * - explicit SBR signaling at twice the core rate turns the
@@ -5342,6 +5452,48 @@ unsigned raac_frame_len(const raac_t *a)
 }
 unsigned raac_sample_rate(const raac_t *a) { return a ? a->out_rate : 0; }
 size_t raac_last_size(const raac_t *a) { return a ? a->used : 0; }
+
+int raac_set_channel_order(raac_t *a, enum raac_channel_order order)
+{
+   unsigned i;
+   if (!a)
+      return -1;
+   if (order == RAAC_ORDER_WAVE)
+   {
+      if (!a->has_wave_map)
+         return -1;
+      memcpy(a->out_map, a->wave_map, sizeof(a->out_map));
+      return 0;
+   }
+   for (i = 0; i < RAAC_MAX_CH; i++)
+      a->out_map[i] = (uint8_t)i;
+   return 0;
+}
+
+int raac_adts_parse(const uint8_t *buf, size_t size, raac_adts_t *h)
+{
+   unsigned profile, sfi, chcfg;
+   if (!buf || !h || size < 7)
+      return -1;
+   /* syncword 0xFFF, MPEG-4 or -2 id, layer 0 */
+   if (buf[0] != 0xFF || (buf[1] & 0xF6) != 0xF0)
+      return -1;
+   profile = (buf[2] >> 6) & 3;   /* audio object type - 1 */
+   sfi     = (buf[2] >> 2) & 15;
+   chcfg   = ((unsigned)(buf[2] & 1) << 2) | (buf[3] >> 6);
+   if (sfi > 12)
+      return -1;
+   h->header_size = (buf[1] & 1) ? 7 : 9;   /* CRC when absent bit is 0 */
+   h->frame_size  = ((unsigned)(buf[3] & 3) << 11)
+                  | ((unsigned)buf[4] << 3)
+                  | ((unsigned)buf[5] >> 5);
+   h->raw_blocks  = (unsigned)(buf[6] & 3) + 1;
+   if (h->frame_size <= h->header_size)
+      return -1;
+   h->asc[0] = (uint8_t)(((profile + 1) << 3) | (sfi >> 1));
+   h->asc[1] = (uint8_t)(((sfi & 1) << 7) | (chcfg << 3));
+   return 0;
+}
 
 /* Shared worker: parse and synthesise one access unit into per-channel
  * float PCM in full-scale (+-32768) units. Both public entry points
@@ -5457,7 +5609,7 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
             break;
          }
          case 5:  /* PCE: parse to keep bit position, contents unused */
-            if (raac_pce(&b, NULL, NULL) < 0)
+            if (raac_pce(&b, NULL, NULL, NULL) < 0)
                return -1;
             break;
          case 6:  /* FIL: SBR extension payloads route to the SBR
@@ -5704,7 +5856,9 @@ void raac_copy_s16(const raac_t *a, size_t first, size_t count,
 #endif
    for (ch = 0; ch < a->channels; ch++)
    {
-      const float *p = (a->sbr_mode ? a->qmf[ch].out : a->pcm[ch]) + first;
+      unsigned     src = a->out_map[ch];
+      const float *p = (a->sbr_mode ? a->qmf[src].out : a->pcm[src])
+                     + first;
       int16_t     *o = out + ch;
       for (i = 0; i < count; i++, o += a->channels)
       {
@@ -5760,7 +5914,9 @@ void raac_copy_f32(const raac_t *a, size_t first, size_t count,
    }
    for (ch = 0; ch < a->channels; ch++)
    {
-      const float *p = (a->sbr_mode ? a->qmf[ch].out : a->pcm[ch]) + first;
+      unsigned     src = a->out_map[ch];
+      const float *p = (a->sbr_mode ? a->qmf[src].out : a->pcm[src])
+                     + first;
       for (i = 0; i < count; i++)
          out[i * a->channels + ch] = p[i] * (1.0f / 32768.0f);
    }

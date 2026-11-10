@@ -38,13 +38,14 @@
  * and DSE elements are parsed and skipped.  Coupling channel
  * elements are decoded and mixed into their targets, dependently or
  * independently switched, with up to four concurrent coupling tags.
- * Channels are emitted in element transmission order, which for the
- * standard configurations is the ISO order (e.g. 5.1: C, L, R, Ls,
- * Rs, LFE); no downmix or reordering is applied.  Not decoded (open
- * or decode fails cleanly): other object types (Main, SSR, LTP,
- * HE-AAC's explicit SBR signalling) and the 960-sample frame length.
- * Implicitly signalled SBR in fill elements is skipped, decoding the
- * LC core band, as plain LC decoders do.
+ * HE-AAC's SBR is decoded, signalled explicitly or implicitly (see
+ * raac_frame_len).  Channels are emitted in element transmission
+ * order, which for the standard configurations is the ISO order (e.g.
+ * 5.1: C, L, R, Ls, Rs, LFE), or in WAVE order on request
+ * (raac_set_channel_order); no downmix is applied.  ADTS framing is
+ * the caller's, with raac_adts_parse reading its headers.  Not decoded
+ * (open or decode fails cleanly): other object types (Main, SSR, LTP)
+ * and the 960-sample frame length with SBR.
  */
 #ifndef __LIBRETRO_SDK_FORMAT_RAAC_H__
 #define __LIBRETRO_SDK_FORMAT_RAAC_H__
@@ -76,8 +77,7 @@ unsigned raac_channels(const raac_t *a);
  * HE-AAC streams hide behind plain LC configurations. In that window
  * genuinely plain LC decodes upsampled and reports the doubled rate;
  * raac_sample_rate() always reports the rate the output is actually
- * at. High-frequency reconstruction is not synthesised yet, so
- * SBR-bearing streams currently decode as upsampled core audio.
+ * at. SBR data, when the stream carries it, rebuilds the high band.
  * HE-AAC v2 configurations open as v1: the parametric-stereo payload
  * is skipped and the SBR mono signal is decoded. Explicitly signaled
  * downsampled SBR (extension rate equal to the core rate) decodes as
@@ -121,6 +121,42 @@ void raac_copy_s16(const raac_t *a, size_t first, size_t count,
       int16_t *out);
 void raac_copy_f32(const raac_t *a, size_t first, size_t count,
       float *out);
+
+/* The order channels are interleaved in by the copies above.
+ * RAAC_ORDER_STREAM, the default, is element transmission order (5.1:
+ * C, L, R, Ls, Rs, LFE). RAAC_ORDER_WAVE is the order of the
+ * WAVEFORMATEXTENSIBLE speaker bits, as WAV files, most audio APIs and
+ * ffmpeg use (5.1: L, R, C, LFE, Ls, Rs; channelConfiguration 7 reads
+ * as L, R, C, LFE, back L, back R, side L, side R). It is known for
+ * channelConfiguration 1-7 and for a PCE whose elements each map to a
+ * distinct speaker; for other layouts the call returns -1 and the order
+ * stays as it was. Returns 0 otherwise. */
+enum raac_channel_order
+{
+   RAAC_ORDER_STREAM = 0,
+   RAAC_ORDER_WAVE
+};
+int raac_set_channel_order(raac_t *a, enum raac_channel_order order);
+
+/* An ADTS frame header (ISO/IEC 13818-7 / 14496-3 1.A.3.2), for
+ * streams that carry raw_data_blocks in ADTS framing. asc is the
+ * AudioSpecificConfig to raac_open with (a channel configuration of 0,
+ * whose PCE travels in the first raw_data_block, makes raac_open
+ * refuse it). The access unit is the frame_size - header_size bytes
+ * after the header; a frame of more than one raw_data_block carries
+ * them back to back, raac_last_size telling where each ends, with
+ * CRC words between them when header_size is 9. */
+typedef struct raac_adts
+{
+   unsigned frame_size;   /* whole frame, header included   */
+   unsigned header_size;  /* 7, or 9 with the CRC word      */
+   unsigned raw_blocks;   /* raw_data_blocks in the frame   */
+   uint8_t  asc[2];
+} raac_adts_t;
+
+/* Parses the header at buf (7 bytes are enough). Returns 0, or -1
+ * when buf holds no valid ADTS header. */
+int raac_adts_parse(const uint8_t *buf, size_t size, raac_adts_t *h);
 
 /* Return the decoder to its just-opened state (clears the overlap-add
  * history and reseeds the noise generator) so a stream can be decoded

@@ -4140,6 +4140,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         raac_adts_t                adts;
          if (!ac)
             return false;
          ac->limit = -1;   /* unbounded unless a container says otherwise */
@@ -4148,19 +4149,13 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          /* buffer mode, ADTS stream: the header carries the setup,
           * so synthesise the AudioSpecificConfig from it (LC only,
           * matching the decoder's scope) and walk frames in place */
-         if (!ac->setup && ac->buf && ac->buf_size >= 7
-               && ac->buf[0] == 0xFF && (ac->buf[1] & 0xF6) == 0xF0)
+         if (!ac->setup && ac->buf
+               && raac_adts_parse(ac->buf, ac->buf_size, &adts) == 0)
          {
-            unsigned profile = (ac->buf[2] >> 6) & 3;   /* 1 = LC     */
-            unsigned sfi     = (ac->buf[2] >> 2) & 15;
-            unsigned chcfg   = ((ac->buf[2] & 1) << 2)
-                             | ((ac->buf[3] >> 6) & 3);
-            uint8_t  asc[2];
-            if (profile != 1 || sfi > 12 || chcfg < 1 || chcfg > 2)
+            unsigned chcfg = (adts.asc[1] >> 3) & 15;
+            if ((adts.asc[0] >> 3) != 2 || chcfg < 1 || chcfg > 2)
                return false;
-            asc[0] = (uint8_t)((2u << 3) | (sfi >> 1));
-            asc[1] = (uint8_t)(((sfi & 1) << 7) | (chcfg << 3));
-            ac->handle = raac_open(asc, 2);
+            ac->handle = raac_open(adts.asc, sizeof(adts.asc));
             if (!ac->handle)
                return false;
             ac->adts       = 1;
@@ -5198,17 +5193,14 @@ static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
       {
          /* walk the next ADTS frame: 12-bit sync, CRC flag choosing a
           * 7- or 9-byte header, 13-bit total frame length */
-         size_t   pos = ac->adts_pos;
-         unsigned hdr, flen;
-         if (pos + 7 > ac->buf_size)
-            return 0;
-         if (ac->buf[pos] != 0xFF || (ac->buf[pos + 1] & 0xF6) != 0xF0)
+         size_t      pos = ac->adts_pos;
+         raac_adts_t adts;
+         unsigned    hdr, flen;
+         if (raac_adts_parse(ac->buf + pos, ac->buf_size - pos, &adts) < 0)
             return 0;             /* lost sync: treat as end of stream */
-         hdr  = (ac->buf[pos + 1] & 1) ? 7 : 9;
-         flen = ((unsigned)(ac->buf[pos + 3] & 3) << 11)
-              | ((unsigned)ac->buf[pos + 4] << 3)
-              | ((unsigned)ac->buf[pos + 5] >> 5);
-         if (flen <= hdr || pos + flen > ac->buf_size)
+         hdr  = adts.header_size;
+         flen = adts.frame_size;
+         if (pos + flen > ac->buf_size)
             return 0;
          *pdata       = ac->buf + pos + hdr;
          *plen        = flen - hdr;
