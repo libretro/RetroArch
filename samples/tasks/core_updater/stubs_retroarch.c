@@ -101,10 +101,14 @@ void RARCH_ERR(const char *fmt, ...)
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 
+/* Forced core info rescans, for the harnesses that count them */
+int stub_core_info_inits = 0;
+
 bool command_event(enum event_command cmd, void *data)
 {
-   (void)cmd;
    (void)data;
+   if (cmd == CMD_EVENT_CORE_INFO_INIT)
+      stub_core_info_inits++;
    return true;
 }
 
@@ -200,6 +204,9 @@ void *task_push_core_backup_install(
 }
 #endif
 
+int stub_contentless_frees = 0;
+
 void menu_contentless_cores_free(void)
 {
+   stub_contentless_frees++;
 }
