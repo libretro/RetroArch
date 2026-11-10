@@ -7666,6 +7666,10 @@ MSG_HASH(
    "System"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_USE_SYSTEM,
+   "<Use System Driver>"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
    "Crashed last run, using System"
    )
@@ -7677,6 +7681,20 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    "%s is used again at the next normal start"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM,
+   "From %s"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD,
+   "Use another Vulkan driver: pick its .json, from share/vulkan/icd.d.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: --vulkan-driver=system"
+   )
+#if defined(_WIN32)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS,
+   "Use another Vulkan driver: pick its .json, usually beside its .dll.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: --vulkan-driver=system"
+   )
+#endif
 /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group (see settings_def_video_hdr_toggles.h, settings_def_video_stereo.h and settings_def_video_headset.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -34464,6 +34482,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
    "Custom Vulkan driver was not picked in the menu or has changed. Pick it again to use it."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_INVALID_ICD,
+   "Custom Vulkan driver .json is not usable. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED_LOADER,
+   "Custom Vulkan drivers need Vulkan loader 1.3.235 or newer. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_XR_UNSUPPORTED,
+   "The headset runtime can't use the custom Vulkan driver. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_MISSING_FEATURES,
+   "Custom Vulkan driver lacks features RetroArch needs. Using the system driver."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
