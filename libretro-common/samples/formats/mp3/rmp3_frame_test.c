@@ -3,9 +3,10 @@
  * rmp3dec_decode_s16/_f32 are the frame decoder the pull API runs,
  * handed the caller's buffer. Walked over a file frame by frame they
  * must give the samples rmp3_read_s16/_f32 give, to the bit, and
- * account for every byte; junk ahead of a frame is skipped and counted in frame_bytes, a
- * buffer with no whole frame gives frame_bytes 0, and rmp3dec_init
- * forgets the bit reservoir. Streams from ffmpeg (libmp3lame): MPEG-1
+ * account for every byte, also when only part of the next frame
+ * follows; junk ahead of a frame is skipped and counted in
+ * frame_bytes, a buffer with no whole frame gives frame_bytes 0, and
+ * rmp3dec_init forgets the bit reservoir. Streams from ffmpeg (libmp3lame): MPEG-1
  * stereo and mono at several rates, MPEG-2 at 22 kHz.
  *
  * Needs ffmpeg with libmp3lame in PATH; a missing tool is a failure. */
@@ -132,6 +133,38 @@ static void frame_case(const char *name, const char *args, unsigned want_ch)
    check(label, same && total > 0 && ch == want_ch);
    snprintf(label, sizeof(label), "%s: every byte accounted for", name);
    check(label, pos == len);
+
+   /* a frame handed over with just the first two bytes of the next
+    * behind it, as a caller framing the stream itself has it, decodes
+    * the same */
+   {
+      size_t   at    = 0, t = 0;
+      int      ok    = 1;
+      rmp3dec *probe = (rmp3dec*)malloc(sizeof(*probe));
+      rmp3dec_init(dec);
+      while (ok && at < len)
+      {
+         rmp3dec_frame_info info;
+         size_t win;
+         /* this frame's length, from a decoder handed the rest */
+         rmp3dec_init(probe);
+         rmp3dec_decode_s16(probe, buf + at, (int)(len - at), pcm, &info);
+         win = (size_t)info.frame_bytes + 2;
+         if (win > len - at)
+            win = len - at;
+         int    n   = rmp3dec_decode_s16(dec, buf + at, (int)win, pcm, &info);
+         if (info.frame_bytes <= 0)
+            break;
+         at += (size_t)info.frame_bytes;
+         if (t + (size_t)n * info.channels > ref_n
+               || memcmp(pcm, ref + t, (size_t)n * info.channels * sizeof(int16_t)))
+            ok = 0;
+         t += (size_t)n * info.channels;
+      }
+      free(probe);
+      snprintf(label, sizeof(label), "%s: a frame and part of the next", name);
+      check(label, ok && at == len && t == ref_n);
+   }
 
    /* junk ahead of the first frame is skipped and counted */
    {

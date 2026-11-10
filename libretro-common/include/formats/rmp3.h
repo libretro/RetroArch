@@ -73,11 +73,13 @@ typedef struct
  * frame out of it). rmp3dec_decode_s16 decodes the first frame in @mp3,
  * skipping whatever comes before its sync, into @pcm - up to
  * RMP3_MAX_SAMPLES_PER_FRAME samples, interleaved at the frame's
- * channel count - and returns the samples a channel. info->frame_bytes
- * is what the frame and anything skipped before it took of @mp3: 0
- * when no whole frame was found, and with a return of 0 bytes skipped
- * without a frame (junk, or a frame whose bit reservoir reaches back
- * before the decoder joined the stream). The decoder keeps the bit
+ * channel count - and returns the samples a channel. The frame need
+ * only be whole: what follows it may be part of the next one.
+ * info->frame_bytes is what the frame and anything skipped before it
+ * took of @mp3: 0 when there is nothing to skip and no whole frame.
+ * With a return of 0, info->hz is 0 when only junk was skipped, and
+ * set for a frame whose bit reservoir reaches back before the decoder
+ * joined the stream. The decoder keeps the bit
  * reservoir from call to call; rmp3dec_init starts it afresh, as at a
  * seek. rmp3dec_decode_s16 synthesises in fixed point,
  * rmp3dec_decode_f32 in float; a decoder keeps to one of the two

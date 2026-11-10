@@ -3332,26 +3332,59 @@ void rmp3dec_init(rmp3dec *dec)
    memset(dec, 0, sizeof(*dec));
 }
 
+/* The frame finder wants the frame after this one in view, and when it
+ * is not, takes the bytes it scanned for junk and forgets the stream.
+ * A caller framing the stream itself hands over a frame and whatever
+ * part of the next it has, so the frame is located here: its header,
+ * whole, and followed by a matching header when one is in view. Free
+ * format, which has no length in its header, is left to the finder. */
+static int rmp3dec_decode_one(rmp3dec *dec, const uint8_t *mp3,
+      int mp3_bytes, void *pcm, rmp3dec_frame_info *info, int f32)
+{
+   int i;
+   memset(info, 0, sizeof(*info));
+   if (!dec || !mp3 || mp3_bytes <= 0 || !pcm)
+      return 0;
+   for (i = 0; i + RMP3_HDR_SIZE <= mp3_bytes; i++)
+   {
+      const uint8_t *h = mp3 + i;
+      int size, n;
+      if (!rmp3_hdr_valid(h))
+         continue;
+      size = rmp3_hdr_frame_bytes(h,
+            (dec->header[0] == 0xff && rmp3_hdr_compare(dec->header, h))
+            ? dec->free_format_bytes : 0);
+      if (!size)
+         return rmp3dec_decode_frame(dec, mp3, mp3_bytes, pcm, info, f32);
+      size += rmp3_hdr_padding(h);
+      if (i + size > mp3_bytes)
+         break;
+      if (     i + size + RMP3_HDR_SIZE <= mp3_bytes
+            && !rmp3_hdr_compare(h, h + size))
+         continue;
+      n = rmp3dec_decode_frame(dec, h, size, pcm, info, f32);
+      if (info->frame_bytes)
+         info->frame_bytes += i;
+      return n;
+   }
+   /* junk before a frame not all here yet, or before the tail that
+    * could still hold the head of one */
+   info->frame_bytes = i;
+   return 0;
+}
+
 int rmp3dec_decode_s16(rmp3dec *dec, const uint8_t *mp3, int mp3_bytes,
       int16_t *pcm, rmp3dec_frame_info *info)
 {
-   if (!dec || !mp3 || mp3_bytes <= 0 || !pcm || !info)
-   {
-      if (info)
-         memset(info, 0, sizeof(*info));
+   if (!info)
       return 0;
-   }
-   return rmp3dec_decode_frame(dec, mp3, mp3_bytes, pcm, info, 0);
+   return rmp3dec_decode_one(dec, mp3, mp3_bytes, pcm, info, 0);
 }
 
 int rmp3dec_decode_f32(rmp3dec *dec, const uint8_t *mp3, int mp3_bytes,
       float *pcm, rmp3dec_frame_info *info)
 {
-   if (!dec || !mp3 || mp3_bytes <= 0 || !pcm || !info)
-   {
-      if (info)
-         memset(info, 0, sizeof(*info));
+   if (!info)
       return 0;
-   }
-   return rmp3dec_decode_frame(dec, mp3, mp3_bytes, pcm, info, 1);
+   return rmp3dec_decode_one(dec, mp3, mp3_bytes, pcm, info, 1);
 }
