@@ -125,6 +125,14 @@ int main(void)
             / (double)freq.QuadPart;
          if (ms > worst)
             worst = ms;
+         /* The first read starts the read-ahead thread. Let it take up
+          * that read's hint before reading on: a reader that gets to
+          * the end of the file before the thread first runs (a slow
+          * start under Wine) leaves it only the last hint to bring in,
+          * and one hint shows nothing of the read-ahead keeping up. */
+         if (off == 0)
+            for (i = 0; i < 500 && hook_calls < 1; i++)
+               Sleep(10);
       }
       /* the thread runs on its own: wait until it has gone a few of
        * its sleeps without starting another */

@@ -2049,9 +2049,19 @@ int retro_vfs_file_remove_impl(const char *path)
    return -1;
 }
 
-#if (defined(_WIN32) && !defined(_XBOX) && (defined(LEGACY_WIN32_RUNTIME) || defined(LEGACY_WIN32))) \
- || defined(_XBOX) || defined(VITA) || defined(PSP) || defined(_3DS) || defined(PS2) \
+/* The branches of retro_vfs_file_rename_impl that move the
+ * destination aside; a desktop Windows build takes the Windows branch
+ * whatever else is defined (a console define in a test build). */
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(LEGACY_WIN32_RUNTIME) || defined(LEGACY_WIN32)
+#define VFS_RENAME_ASIDE
+#endif
+#elif defined(_XBOX) || defined(VITA) || defined(PSP) || defined(_3DS) || defined(PS2) \
  || defined(WIIU) || defined(GEKKO) || defined(__PSL1GHT__) || defined(__PS3__) || defined(SWITCH)
+#define VFS_RENAME_ASIDE
+#endif
+
+#ifdef VFS_RENAME_ASIDE
 /* Where to move @new_path while @old_path takes its place: "<new>.old",
  * whose leftover from an interrupted run gets removed.  The source can
  * be the file of that very name, as when a backup is restored, and must
