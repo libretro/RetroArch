@@ -535,6 +535,27 @@ failure:
 }
 #endif
 
+#ifdef HAVE_DYNAMIC
+/* A join whose core the check refused is said, as for subsystem
+ * content, not parked: nothing of it is left to connect a later load */
+static bool task_netplay_core_refused(const char *core)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_core_refused_notify(core))
+   {
+      path_clear(RARCH_PATH_CORE);
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
+      /* No host: drops the deferred one */
+      init_netplay_deferred(NULL, 0, NULL);
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+      return true;
+   }
+#endif
+   return false;
+}
+#endif
+
 static void task_netplay_crc_scan_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
@@ -576,8 +597,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   data->hostname);
             }
 
-            task_push_load_new_core(data->core,
-               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+            if (     !task_push_load_new_core(data->core,
+                     NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL)
+                  && task_netplay_core_refused(data->core))
+               break;
             task_push_load_content_with_core(content_path,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
 #else
@@ -639,7 +662,17 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             }
             else
             {
-               RARCH_ERR("[Lobby] Subsystem not found.\n");
+#ifdef HAVE_CORE_LOAD_CHECK
+               /* Held back by its check: the dummy core starts without
+                * it, as if it had never been set */
+               if (task_content_core_refused_notify(data->core))
+               {
+                  path_clear(RARCH_PATH_CORE);
+                  runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
+               }
+               else
+#endif
+                  RARCH_ERR("[Lobby] Subsystem not found.\n");
 
                /* Disable netplay if we don't have the subsystem. */
                netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
@@ -676,8 +709,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   data->hostname);
             }
 
-            task_push_load_new_core(data->core,
-               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+            if (     !task_push_load_new_core(data->core,
+                     NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL)
+                  && task_netplay_core_refused(data->core))
+               break;
             task_push_start_current_core(&content_info);
 #else
             static_load(data->core, NULL, NULL, data->hostname);
@@ -706,8 +741,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                      data->hostname);
                }
 
-               task_push_load_new_core(data->core,
-                  NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+               if (     !task_push_load_new_core(data->core,
+                        NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL)
+                     && task_netplay_core_refused(data->core))
+                  break;
 
                if (*data->current.subsystem)
                {

@@ -81,6 +81,9 @@
 #include "version.h"
 #include "version_git.h"
 #include "tasks/task_content.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "core_load_check.h"
+#endif
 #ifdef HAVE_TRANSLATE
 #include "accessibility.h"
 #endif
@@ -5522,6 +5525,11 @@ static bool command_core_at(command_t *cmd, const char *name,
    }
    if (!libretro_get_system_info(path, &info, NULL))
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      /* A core its check holds back: the load after this parks it */
+      if (core_load_check_refused(path))
+         return true;
+#endif
       command_reply_error(cmd, name, "%s is not a libretro core", path);
       return false;
    }
@@ -5555,6 +5563,10 @@ bool command_load_core(command_t *cmd, const char* arg)
    if (!task_push_load_new_core(path, NULL,
             &content_info, CORE_TYPE_PLAIN, NULL, NULL))
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      if (task_content_park_core_load(path))
+         return true;
+#endif
       command_reply_error(cmd, "LOAD_CORE", "could not load %s", path);
       return false;
    }

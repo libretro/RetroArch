@@ -1136,6 +1136,10 @@ static LRESULT CALLBACK wnd_proc_common(
                             | MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
                      }
+#ifdef HAVE_CORE_LOAD_CHECK
+                     else
+                        task_content_park_core_load(td->path);
+#endif
                      break;
                   case WIN32_BROWSER_MODE_LOAD_CONTENT:
                      win32_load_content_from_gui(td->path);

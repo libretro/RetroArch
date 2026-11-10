@@ -2579,6 +2579,10 @@ static int generic_action_ok(const char *path,
                      CORE_TYPE_PLAIN,
                      NULL, NULL))
             {
+#ifdef HAVE_CORE_LOAD_CHECK
+               /* Held back for its check: loads after it, or asks */
+               task_content_park_core_load(action_path);
+#endif
 #ifndef HAVE_DYNAMIC
                ret = -1;
 #endif
@@ -3298,6 +3302,10 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       if (!content_set_subsystem_by_name(entry->subsystem_ident))
       {
+#ifdef HAVE_CORE_LOAD_CHECK
+         if (task_content_core_refused_notify(core_path))
+            goto refused;
+#endif
          RARCH_LOG("[Playlist] Subsystem not found in implementation.\n");
          goto error;
       }
@@ -3344,6 +3352,9 @@ error:
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
+#ifdef HAVE_CORE_LOAD_CHECK
+refused:
+#endif
 
    /* Single-click playlist return */
    if (settings->bools.input_menu_singleclick_playlists)

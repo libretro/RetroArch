@@ -145,6 +145,10 @@ static NSImage *companion_folder_icon(void)
 #include "../../version.h"
 #include "../../verbosity.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../../core_load_check.h"
+#include "../../paths.h"
+#endif
 
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
@@ -4324,7 +4328,15 @@ static const char *cc_thumb_subdir(int t)
       [self setStatus:"Core loaded."];
    }
    else
+   {
+#ifdef HAVE_CORE_LOAD_CHECK
+      /* Held back by the load check, which says why */
+      if (core_load_check_refused([path UTF8String]))
+         [self setStatus:""];
+      else
+#endif
       [self setStatus:"Failed to load the core."];
+   }
 }
 
 - (void)loadCore:(id)sender
@@ -4477,7 +4489,16 @@ static const char *cc_thumb_subdir(int t)
             companion_core_installed_core_path(wimp->core, (size_t)row)))
       [self setStatus:"Core loaded."];
    else
+   {
+#ifdef HAVE_CORE_LOAD_CHECK
+      /* Held back by the load check, which says why. The list's path
+       * went with the load's rebuild of the list. */
+      if (core_load_check_refused(path_get(RARCH_PATH_CORE)))
+         [self setStatus:""];
+      else
+#endif
       [self setStatus:"Failed to load the core."];
+   }
 }
 
 - (void)cancelLoadCore:(id)sender

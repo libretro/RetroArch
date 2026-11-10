@@ -97,6 +97,9 @@ companion_core_t *ui_companion_qt_core(void)
 #include "../../msg_hash.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../../core_load_check.h"
+#endif
 #ifdef HAVE_GIT_VERSION
 #include "../../version_git.h"
 #endif
@@ -5613,6 +5616,11 @@ void LoadCoreWindow::loadCore(const char *path)
 #ifdef HAVE_DYNAMIC
    if (!companion_core_load_core(qt_companion_core, path))
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      /* Held back by the load check, which says why */
+      if (core_load_check_refused(path))
+         return;
+#endif
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
             msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE));
       return;
