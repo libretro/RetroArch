@@ -407,6 +407,11 @@ jobs:
             # stereo stream (tones, gain points, swap and negate masks)
             # and a mono one, then bad frames and garbage.
             ratrac3p_test
+            # ATRAC9 against a reference decoder's output for generated
+            # streams in every channel layout, rate and superframe size,
+            # with reset and savestates; then its own unit checks.
+            ratrac9_vectors_test
+            ratrac9_test
             # Animation playback against a scripted stream: order,
             # pacing, loops, catch-up, the worker's two jobs.
             video_player_test
