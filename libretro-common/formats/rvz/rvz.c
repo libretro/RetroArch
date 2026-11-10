@@ -176,6 +176,7 @@ struct rvz
    uint32_t           n_groups;
    uint32_t           chunk;
    uint32_t           compression;
+   int32_t            level;    /* as the file records it */
    uint32_t           n_slots;
    uint32_t           block_part;  /* the hash block held: partition, */
    uint32_t           block_index; /* and block, or UINT32_MAX */
@@ -1065,6 +1066,18 @@ int rvz_disc_type(const rvz_t *z)
    return z ? z->disc_type : 0;
 }
 
+int rvz_compression(const rvz_t *z, int *level)
+{
+   if (level)
+      *level = z && z->stage == RVZ_STAGE_OPEN ? (int)z->level : 0;
+   return z && z->stage == RVZ_STAGE_OPEN ? (int)z->compression : -1;
+}
+
+uint32_t rvz_chunk_size(const rvz_t *z)
+{
+   return z && z->stage == RVZ_STAGE_OPEN ? z->chunk : 0;
+}
+
 uint64_t rvz_disc_size(const rvz_t *z)
 {
    return z ? z->disc_size : 0;
@@ -1272,6 +1285,7 @@ static int rvz_open_run(rvz_t *z)
             d              = z->disc;
             z->disc_type   = (int)rvz_be32(d + 0x00);
             z->compression = rvz_be32(d + 0x04);
+            z->level       = (int32_t)rvz_be32(d + 0x08);
             z->chunk       = rvz_be32(d + 0x0c);
             memcpy(z->dhead, d + 0x10, RVZ_DHEAD);
             z->n_parts     = rvz_be32(d + 0x90);

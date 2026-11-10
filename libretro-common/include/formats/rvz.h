@@ -116,6 +116,21 @@ int rvz_disc_type(const rvz_t *rvz);
 /* the size of the disc image */
 uint64_t rvz_disc_size(const rvz_t *rvz);
 
+/* How the file's groups are compressed */
+#define RVZ_COMPRESSION_NONE  0
+#define RVZ_COMPRESSION_PURGE 1
+#define RVZ_COMPRESSION_BZIP2 2
+#define RVZ_COMPRESSION_LZMA  3
+#define RVZ_COMPRESSION_LZMA2 4
+#define RVZ_COMPRESSION_ZSTD  5
+
+/* The open file's RVZ_COMPRESSION_* method, -1 before it is open; and
+ * at @level (may be NULL) the compression level the file records */
+int rvz_compression(const rvz_t *rvz, int *level);
+
+/* the octets of the disc a group holds, 0 before the file is open */
+uint32_t rvz_chunk_size(const rvz_t *rvz);
+
 /**
  * rvz_read_begin:
  *

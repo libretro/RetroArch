@@ -235,6 +235,10 @@ static void emit(struct out *o, const void *p, size_t len)
 #define M_LZMA2 4
 #define M_ZSTD  5
 
+/* the level the writer records: a different one each method, one of
+ * them negative as Zstandard's may be */
+#define LEVEL_OF(cfg) ((int)(cfg)->method * 7 - 5)
+
 struct config
 {
    const char *name;
@@ -896,7 +900,7 @@ static bool write_rvz(const struct config *cfg, const char *path, struct image *
    memset(dt, 0, sizeof(dt));
    put32(dt + 0x00, cfg->wii ? 2 : 1);
    put32(dt + 0x04, (uint32_t)cfg->method);
-   put32(dt + 0x08, 1);
+   put32(dt + 0x08, (uint32_t)LEVEL_OF(cfg));
    put32(dt + 0x0c, cfg->chunk);
    memcpy(dt + 0x10, disc.d, 0x80);
    put32(dt + 0x90, part.len ? 1 : 0);
@@ -1039,6 +1043,15 @@ static void check_image(const struct config *cfg, const struct image *img)
       fail("disc type", cfg->name);
    if (rvz_disc_size(z) != img->size)
       fail("disc size", cfg->name);
+   {
+      static const int methods[] = { RVZ_COMPRESSION_NONE, RVZ_COMPRESSION_PURGE,
+         RVZ_COMPRESSION_BZIP2, RVZ_COMPRESSION_LZMA, RVZ_COMPRESSION_LZMA2,
+         RVZ_COMPRESSION_ZSTD };
+      int level = -1;
+      if (     rvz_compression(z, &level) != methods[cfg->method]
+            || level != LEVEL_OF(cfg) || rvz_chunk_size(z) != cfg->chunk)
+         fail("compression and chunk size", cfg->name);
+   }
 
    /* the whole image in order, in pieces of every size */
    for (at = 0; at < img->size; )
