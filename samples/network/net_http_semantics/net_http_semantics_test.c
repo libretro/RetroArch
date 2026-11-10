@@ -31,6 +31,7 @@
 #include <net/net_http.h>
 #include <net/net_compat.h>
 #include <lists/string_list.h>
+#include <features/features_cpu.h>
 
 #define MAX_CONNS   16
 #define CONN_BUF    (256 * 1024)
@@ -51,9 +52,7 @@ static void check(int ok, const char *what)
 
 static int64_t now_ms(void)
 {
-   struct timeval tv;
-   gettimeofday(&tv, NULL);
-   return (int64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
+   return cpu_features_get_time_usec() / 1000;
 }
 
 static unsigned char pat(size_t i)
@@ -1363,7 +1362,11 @@ static int64_t xfer_timed(struct xfer *x, const char *path)
 
 static int stalled_in_time(const struct xfer *x, int64_t ms)
 {
-   return x->done && x->err && ms >= STALL_MS && ms < CASE_MS;
+   int ok = x->done && x->err && ms >= STALL_MS && ms < CASE_MS;
+   if (!ok)
+      fprintf(stderr, "stall: done=%d err=%d status=%d len=%lu elapsed=%ld ms\n",
+            x->done, x->err, x->status, (unsigned long)x->len, (long)ms);
+   return ok;
 }
 
 static void run_section_stall(void)
