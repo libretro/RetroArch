@@ -35,6 +35,11 @@ void core_install_check_end(struct core_install_check *ic,
       const core_trust_set_t *s, const char *staged, unsigned flags);
 /* What a check left unended holds; a zeroed one is fine */
 void core_install_check_free(struct core_install_check *ic);
+/* After the last step, for a core already in place that is trusted by
+ * its hash: its .sig (staged's) must verify on its own, so the hash
+ * isn't asked; s gives only the newest build */
+void core_install_check_end_sig(struct core_install_check *ic,
+      const core_trust_set_t *s, const char *staged);
 
 /* <src>.sig to <dst>.sig, no further than the longest valid one and a
  * byte, so a longer one stays invalid. False when src has none, leaving
@@ -48,6 +53,8 @@ void core_install_drop_sig(const char *path);
 void core_install_set_aside_sig(const char *path);
 /* The set-aside .sig goes once the core is replaced, or comes back */
 void core_install_end_aside_sig(const char *path, bool replaced);
+/* <path>.sig exists */
+bool core_install_has_sig(const char *path);
 /* Once staged is renamed to install_path: its .sig follows, or the
  * one there goes, so the old core is never left with a new .sig */
 void core_install_place_sig(const char *staged, const char *install_path);
