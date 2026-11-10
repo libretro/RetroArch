@@ -128,6 +128,8 @@ jobs:
             rtmp_socket_test
             rtmp_connect_test
             rtmp_connect_select_test
+            rtmp_resolve_test
+            rtmp_resolve_native_test
             rslc_test
             rslc_build_test
             rslc_ext_test

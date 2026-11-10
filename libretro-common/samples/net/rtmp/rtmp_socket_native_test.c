@@ -21,6 +21,9 @@
  */
 #include <net/net_rtmp_socket.h>
 #include <net/net_socket.h>
+#include <net/net_resolve.h>
+#include <rthreads/rthreads.h>
+#include <retro_timers.h>
 #include <features/features_cpu.h>
 #include <assert.h>
 #include <stdio.h>
@@ -84,6 +87,13 @@ static void send_media(net_rtmp_session_t *session, net_rtmp_socket_t *transport
    free(payload);
 }
 
+static bool resolve_dispatch(void (*work)(void*), void *job, void *data)
+{
+   sthread_t **thread = (sthread_t**)data;
+   *thread = sthread_create(work, job);
+   return *thread != NULL;
+}
+
 static void finish_transport(int fd)
 {
    uint8_t input[256];
@@ -110,6 +120,9 @@ int main(int argc, char **argv)
    net_rtmp_session_t *session;
    net_rtmp_socket_t *transport;
    void *address = NULL;
+   net_resolve_t *resolver;
+   sthread_t *resolver_thread = NULL;
+   struct addrinfo *resolved;
    retro_time_t deadline;
    uint64_t sent;
    uint32_t stream;
@@ -118,7 +131,20 @@ int main(int argc, char **argv)
    assert((argc == 4 || argc == 5) && network_init());
    port = (unsigned)strtoul(argv[2], NULL, 10);
    assert(port && port <= 65535);
-   fd = socket_init(&address, (uint16_t)port, "127.0.0.1", SOCKET_TYPE_STREAM, AF_INET);
+   resolver = net_resolve_new("127.0.0.1", port,
+         resolve_dispatch, &resolver_thread);
+   assert(resolver && resolver_thread);
+   deadline = cpu_features_get_time_usec() + 5000000;
+   do
+   {
+      result = net_resolve_poll(resolver, &address);
+      assert(cpu_features_get_time_usec() < deadline);
+      if (result == NET_RESOLVE_PENDING)
+         retro_sleep(1);
+   } while (result == NET_RESOLVE_PENDING);
+   assert(result == NET_RESOLVE_READY && address);
+   resolved = (struct addrinfo*)address;
+   fd = socket(resolved->ai_family, resolved->ai_socktype, resolved->ai_protocol);
    assert(fd >= 0 && address);
    result = socket_connect_begin(fd, address);
    deadline = cpu_features_get_time_usec() + 5000000;
@@ -130,7 +156,8 @@ int main(int argc, char **argv)
       if (result == SOCKET_CONNECT_PENDING)
          socket_wait(fd, &read, &write, 10);
    }
-   freeaddrinfo_retro((struct addrinfo*)address);
+   net_resolve_free(resolver);
+   sthread_join(resolver_thread);
    if (result != SOCKET_CONNECT_READY)
    {
       socket_close(fd);

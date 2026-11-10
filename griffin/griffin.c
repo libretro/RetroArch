@@ -1787,6 +1787,7 @@ NETPLAY
 #include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
+#include "../libretro-common/net/net_resolve.c"
 #include "../libretro-common/net/net_http.c"
 #ifdef HAVE_RTMP
 #include "../libretro-common/net/net_rtmp_chunk.c"

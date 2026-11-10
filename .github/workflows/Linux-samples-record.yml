@@ -8,6 +8,8 @@ on:
       - 'record/**'
       - 'libretro-common/net/net_rtmp*'
       - 'libretro-common/net/net_socket.c'
+      - 'libretro-common/net/net_resolve.c'
+      - 'libretro-common/include/net/net_resolve.h'
       - 'libretro-common/include/net/net_socket.h'
       - 'libretro-common/include/net/net_rtmp*'
       - 'libretro-common/formats/flv/**'
@@ -27,6 +29,8 @@ on:
       - 'record/**'
       - 'libretro-common/net/net_rtmp*'
       - 'libretro-common/net/net_socket.c'
+      - 'libretro-common/net/net_resolve.c'
+      - 'libretro-common/include/net/net_resolve.h'
       - 'libretro-common/include/net/net_socket.h'
       - 'libretro-common/include/net/net_rtmp*'
       - 'libretro-common/formats/flv/**'
@@ -165,13 +169,15 @@ jobs:
           make clean && make check stream-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
-      - name: RTMP protocol and sockets (ASan + UBSan, mingw-w64)
+      - name: RTMP protocol and sockets (ASan + UBSan, TSan, mingw-w64)
         shell: bash
         working-directory: libretro-common/samples/net/rtmp
         run: |
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make check peer-check SANITIZER=address,undefined
+          make clean && make rtmp_resolve_native_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 30 ./rtmp_resolve_native_test
           make clean && make check peer-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
