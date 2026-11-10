@@ -534,12 +534,33 @@ struct ssl_state
       unsigned key_len;
    } wcbc, rcbc;
    struct tls_handshake_progress connect;
+   /* The blocking mode this connection last gave its socket: 0 not known,
+    * 1 nonblocking, 2 blocking. The socket is the connection's, so it is
+    * set only when it changes, not with two system calls on every
+    * receive and send. */
+   uint8_t  fd_mode;
 };
 
 /* SSL_RETRO_DUPLEX: one thread receives while another sends */
 static INLINE int tls_duplex(const struct ssl_state *s)
 {
    return s->configured && (s->cfg.flags & SSL_RETRO_DUPLEX);
+}
+
+/* The socket blocking (@block) or not, without a system call when it
+ * already is */
+static bool tls_set_block(struct ssl_state *s, bool block)
+{
+   uint8_t want = block ? 2 : 1;
+   if (s->fd_mode == want)
+      return true;
+   if (!socket_set_block(s->fd, block))
+   {
+      s->fd_mode = 0;
+      return false;
+   }
+   s->fd_mode = want;
+   return true;
 }
 
 /* ---- byte helpers ------------------------------------------------- */
@@ -992,7 +1013,7 @@ static int tls_tx_drain_blocking(struct ssl_state *s)
          return -1;
       }
    }
-   socket_set_block(s->fd, true);
+   tls_set_block(s, true);
    return result < 0 ? -1 : 0;
 }
 
@@ -2948,6 +2969,10 @@ static int tls_handshake_step(struct ssl_state *s)
       case TLS_CONNECT_COMPLETE12:
          tls_cache_store(s);
          s->handshake_done = 1;
+         /* duplex: the socket nonblocking now, so that neither side
+          * sets its mode from then on */
+         if (tls_duplex(s))
+            tls_set_block(s, false);
          break;
       case TLS_CONNECT_KEYS13:
          if (tls13_handshake_keys(s, s->tls13_peer, s->tls13_peer_len) != 0)
@@ -3012,6 +3037,10 @@ static int tls_handshake_step(struct ssl_state *s)
          crypto_memzero(s->c_hs, sizeof(s->c_hs));
          crypto_memzero(s->s_hs, sizeof(s->s_hs));
          s->handshake_done = 1;
+         /* duplex: the socket nonblocking now, so that neither side
+          * sets its mode from then on */
+         if (tls_duplex(s))
+            tls_set_block(s, false);
          break;
       case TLS_CONNECT_FAILED:
          return -1;
@@ -3152,7 +3181,7 @@ int ssl_socket_handshake_step(void *state_data, bool *read, bool *write)
       return 1;
    if (!s->connect_nonblock)
    {
-      if (!socket_set_block(s->fd, false))
+      if (!tls_set_block(s, false))
       {
          retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
          s->connect.phase = TLS_CONNECT_FAILED;
@@ -3180,7 +3209,8 @@ int ssl_socket_connect(void *state_data,
    {
       if (!socket_connect_with_timeout(s->fd, data, 5000))
          return -1;
-      if (!socket_set_block(s->fd, true))
+      s->fd_mode = 0;   /* left nonblocking by the connect */
+      if (!tls_set_block(s, true))
          return -1;
    }
    else if (socket_connect(s->fd, data))
@@ -3303,7 +3333,7 @@ int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t len)
    struct ssl_state *s = (struct ssl_state*)state_data;
    uint8_t *data       = (uint8_t*)data_;
 
-   socket_set_block(s->fd, true);
+   tls_set_block(s, true);
    while (len)
    {
       size_t avail = s->pt_len - s->pt_off;
@@ -3354,7 +3384,7 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
          *error = true;
          return -1;
       }
-      if (!socket_set_block(s->fd, false))
+      if (!tls_set_block(s, false))
       {
          retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
          *error = true;
@@ -3390,7 +3420,7 @@ int ssl_socket_send_all_blocking(void *state_data, const void *data_,
    const uint8_t *data  = (const uint8_t*)data_;
    (void)no_signal;
 
-   socket_set_block(s->fd, true);
+   tls_set_block(s, true);
    if (tls_tx_drain_blocking(s) != 0)
       return -1;
    while (len)
@@ -3411,7 +3441,7 @@ static int tls_tx_push(struct ssl_state *s)
    ssize_t n;
    if (s->tx_off >= s->tx_len)
       return 1;
-   if (!socket_set_block(s->fd, false))
+   if (!tls_set_block(s, false))
    {
       retro_atomic_store_relaxed_int(&s->last_err, TLS_ERR_SOCKET);
       return -1;
@@ -3454,7 +3484,7 @@ static int tls_control_push(struct ssl_state *s)
    if (s->cork_off < s->cork_len)
    {
       ssize_t n;
-      if (!socket_set_block(s->fd, false))
+      if (!tls_set_block(s, false))
          goto error;
       n = socket_send_all_nonblocking(s->fd, s->cork + s->cork_off,
             s->cork_len - s->cork_off, true);
@@ -3550,7 +3580,7 @@ void ssl_socket_close(void *state_data)
    {
       static const uint8_t alert[2] = {1, 0};
       size_t length;
-      if (socket_set_block(s->fd, false)
+      if (tls_set_block(s, false)
             && tls_seal_record(s, TLS_CT_ALERT, alert, sizeof(alert),
                s->cork, &length) == 0)
          socket_send_all_nonblocking(s->fd, s->cork, length, true);
