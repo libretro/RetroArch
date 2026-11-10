@@ -174,10 +174,19 @@ int main(void)
       return 1;
    }
    port       = ntohs(addr.sin_port);
-   g.requests = 4;
+   g.requests = 6;
    t          = sthread_create(gateway_thread, &g);
 
    snprintf(url, sizeof(url), "http://127.0.0.1:%u/desc.xml", port);
+
+   /* a gateway found before, by the description URL discovery kept */
+   CHECK(net_upnp_gateway_from_url(&gw, url, 5000)
+         && !strcmp(gw.desc_url, url)
+         && strstr(gw.control_url, "/ctl/IPConn")
+         && !strcmp(gw.lan_addr, "127.0.0.1"), "gateway from its URL");
+   CHECK(!net_upnp_gateway_from_url(&gw, "ftp://127.0.0.1/desc.xml", 5000)
+         && !gw.control_url[0], "gateway from a URL that is not http");
+
    memset(&gw, 0, sizeof(gw));
    {
       /* what discovery does once SSDP has named the description */
@@ -194,6 +203,11 @@ int main(void)
          && strstr(g.last_body, "<NewProtocol>UDP</NewProtocol>")
          && strstr(g.last_body, "<NewInternalClient>192.168.1.10</NewInternalClient>")
          && strstr(g.last_body, "a&lt;b"), "AddPortMapping request");
+   CHECK(net_upnp_add_port_mapping_ext(&gw, 3700, 3658, false, "x", 5000)
+         && strstr(g.last_body, "<NewExternalPort>3700</NewExternalPort>")
+         && strstr(g.last_body, "<NewInternalPort>3658</NewInternalPort>")
+         && strstr(g.last_body, "<NewProtocol>TCP</NewProtocol>"),
+         "AddPortMapping to another external port");
    CHECK(net_upnp_delete_port_mapping(&gw, 3658, true, 5000),
          "DeletePortMapping");
    CHECK(strstr(g.last_body, "<NewExternalPort>3658</NewExternalPort>") != NULL,

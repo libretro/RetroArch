@@ -43,12 +43,20 @@ struct net_upnp_gateway
    char control_url[NET_UPNP_URL_MAX]; /* WAN connection service control */
    char service_type[128];             /* its urn:...:WANIPConnection:n  */
    char lan_addr[64];                  /* this host's address towards it */
+   char desc_url[NET_UPNP_URL_MAX];    /* its device description         */
 };
 
 /* Searches for a gateway for up to timeout_ms. Returns true and fills
  * gw for the first one with a WANIPConnection or WANPPPConnection
  * service. */
 bool net_upnp_discover(struct net_upnp_gateway *gw, int timeout_ms);
+
+/* The gateway whose device description is at desc_url, as discovery
+ * found it before (gw->desc_url), without searching again. Returns true
+ * and fills gw when the description still names a WAN connection
+ * service. */
+bool net_upnp_gateway_from_url(struct net_upnp_gateway *gw,
+      const char *desc_url, int timeout_ms);
 
 /* The gateway's external IPv4 address, dotted, into s. */
 bool net_upnp_external_address(const struct net_upnp_gateway *gw,
@@ -58,6 +66,11 @@ bool net_upnp_external_address(const struct net_upnp_gateway *gw,
  * TCP, without a lease time. */
 bool net_upnp_add_port_mapping(const struct net_upnp_gateway *gw,
       unsigned port, bool udp, const char *description, int timeout_ms);
+/* As net_upnp_add_port_mapping, from external_port to internal_port,
+ * for a caller that tries other external ports when one is taken. */
+bool net_upnp_add_port_mapping_ext(const struct net_upnp_gateway *gw,
+      unsigned external_port, unsigned internal_port, bool udp,
+      const char *description, int timeout_ms);
 bool net_upnp_delete_port_mapping(const struct net_upnp_gateway *gw,
       unsigned port, bool udp, int timeout_ms);
 

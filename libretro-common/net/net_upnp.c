@@ -379,7 +379,10 @@ bool net_upnp_discover(struct net_upnp_gateway *gw, int timeout_ms)
                      location, gw)
                   && net_upnp_lan_addr(gw->control_url, gw->lan_addr,
                      sizeof(gw->lan_addr)))
+            {
+               strlcpy(gw->desc_url, location, sizeof(gw->desc_url));
                found = true;
+            }
             free(xml);
          }
       }
@@ -387,6 +390,33 @@ bool net_upnp_discover(struct net_upnp_gateway *gw, int timeout_ms)
    socket_close(fd);
    free(buf);
    freeaddrinfo_retro(group);
+   if (!found)
+      memset(gw, 0, sizeof(*gw));
+   return found;
+}
+
+bool net_upnp_gateway_from_url(struct net_upnp_gateway *gw,
+      const char *desc_url, int timeout_ms)
+{
+   int   status;
+   bool  found = false;
+   char *xml;
+
+   memset(gw, 0, sizeof(*gw));
+   if (!desc_url || !string_starts_with_case_insensitive(desc_url, "http://")
+         || strlcpy(gw->desc_url, desc_url, sizeof(gw->desc_url))
+               >= sizeof(gw->desc_url))
+   {
+      memset(gw, 0, sizeof(*gw));
+      return false;
+   }
+   xml = net_upnp_http(desc_url, NULL, NULL, net_upnp_deadline(timeout_ms),
+         &status);
+   if (xml && status == 200 && net_upnp_parse_description(xml, desc_url, gw)
+         && net_upnp_lan_addr(gw->control_url, gw->lan_addr,
+            sizeof(gw->lan_addr)))
+      found = true;
+   free(xml);
    if (!found)
       memset(gw, 0, sizeof(*gw));
    return found;
@@ -423,6 +453,14 @@ static void net_upnp_escape(char *s, size_t len, const char *text)
 bool net_upnp_add_port_mapping(const struct net_upnp_gateway *gw,
       unsigned port, bool udp, const char *description, int timeout_ms)
 {
+   return net_upnp_add_port_mapping_ext(gw, port, port, udp, description,
+         timeout_ms);
+}
+
+bool net_upnp_add_port_mapping_ext(const struct net_upnp_gateway *gw,
+      unsigned external_port, unsigned internal_port, bool udp,
+      const char *description, int timeout_ms)
+{
    char  args[640];
    char  desc[128];
    char *xml;
@@ -437,7 +475,8 @@ bool net_upnp_add_port_mapping(const struct net_upnp_gateway *gw,
          "<NewEnabled>1</NewEnabled>"
          "<NewPortMappingDescription>%s</NewPortMappingDescription>"
          "<NewLeaseDuration>0</NewLeaseDuration>",
-         port, udp ? "UDP" : "TCP", port, gw->lan_addr, desc);
+         external_port, udp ? "UDP" : "TCP", internal_port, gw->lan_addr,
+         desc);
    xml = net_upnp_soap(gw, "AddPortMapping", args,
          net_upnp_deadline(timeout_ms), &status);
    free(xml);
