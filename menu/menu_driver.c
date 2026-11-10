@@ -9577,6 +9577,107 @@ static enum menu_action menu_driver_media_launch(struct menu_state *menu_st,
    return action;
 }
 
+bool menu_driver_pads_share_name(void)
+{
+   unsigned s;
+   char tag[32];
+   for (s = 0; s < MAX_INPUT_DEVICES; s++)
+      if (input_config_get_device_tag(s, tag, sizeof(tag)))
+         return true;
+   return false;
+}
+
+/* Whether the list shown lists the controllers: Controllers, Port N
+ * Controls and its Controllers, Add Controller, or a Device Index
+ * dropdown */
+static bool menu_driver_lists_pads(void)
+{
+   unsigned e;
+   const char *path  = NULL;
+   const char *label = NULL;
+   menu_entries_get_last_stack(&path, &label, NULL, NULL, NULL);
+   if (!label)
+      return false;
+   if (     string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_PLAYS_AS_ADD_STR))
+      return true;
+   if (     !path
+         || !string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_STR))
+      return false;
+   e = string_to_unsigned(path);
+   return e >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+       && e <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST;
+}
+
+/* RGUI draws only what changed, so a mark coming or going asks it to. */
+static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
+      gfx_display_t *p_disp, retro_time_t current_time)
+{
+   unsigned s;
+   uint32_t marked = 0;
+   bool lists      = menu_driver_lists_pads();
+   /* with no name shared, a mark would only hide the value */
+   bool share      = lists && menu_driver_pads_share_name();
+
+   if (share)
+   {
+      for (s = 0; s < MAX_INPUT_DEVICES; s++)
+      {
+         unsigned w;
+         input_bits_t buttons;
+         uint16_t hats[MENU_MAX_HATS];
+         uint32_t down = 0;
+
+         if (!input_config_get_device_name(s))
+         {
+            menu_st->pad_pressed_us[s] = 0;
+            menu_st->pad_down[s]       = 0;
+            continue;
+         }
+         BIT256_CLEAR_ALL(buttons);
+         memset(hats, 0, sizeof(hats));
+         input_driver_capture_pad(s, false, &buttons, MENU_MAX_BUTTONS,
+               NULL, 0, hats, MENU_MAX_HATS);
+         for (w = 0; w < ARRAY_SIZE(buttons.data); w++)
+            down |= buttons.data[w];
+         /* hats onto buttons 28-31, which few pads have */
+         for (w = 0; w < MENU_MAX_HATS; w++)
+            down |= (uint32_t)hats[w] << 16;
+         /* only a new press marks: a button left down (a shifter in
+          * gear, a toggle) would hide the row's value */
+         if (down & ~menu_st->pad_down[s])
+            menu_st->pad_pressed_us[s] = current_time;
+         menu_st->pad_down[s] = down;
+         if (     menu_st->pad_pressed_us[s]
+               && current_time - menu_st->pad_pressed_us[s]
+                  < MENU_PAD_PRESSED_HOLD_US)
+            marked |= 1u << s;
+      }
+   }
+   else
+   {
+      /* unread here, so a button down when marks are back is new */
+      memset(menu_st->pad_down, 0, sizeof(menu_st->pad_down));
+      /* names parted: a press from before must not mark again */
+      if (lists)
+         memset(menu_st->pad_pressed_us, 0,
+               sizeof(menu_st->pad_pressed_us));
+   }
+   menu_st->pad_find_hint = share;
+   if (marked != menu_st->pads_marked)
+   {
+      menu_st->pads_marked = marked;
+      p_disp->flags       |= GFX_DISP_FLAG_FB_DIRTY;
+   }
+}
+
 bool menu_driver_iterate(
       struct menu_state *menu_st,
       gfx_display_t *p_disp,
@@ -9586,6 +9687,7 @@ bool menu_driver_iterate(
       retro_time_t current_time)
 {
    menu_driver_pump_pending(menu_st, settings);
+   menu_driver_mark_pressed_pads(menu_st, p_disp, current_time);
    action = menu_driver_media_launch(menu_st, action);
 
 #ifdef RETRO_ATOMIC_HAS_PTR

@@ -241,9 +241,12 @@ jobs:
           # Two controllers shown with one name: each is told apart by
           # a tag from its own identity (the end of its serial or
           # address, else a hash of its port, never the slot), numbered
-          # when two tags are the same, "#N" with no identity. Test
-          # joypad pads through the real frame loop. Shares the non-Qt
-          # build made above.
+          # when two tags are the same, "#N" with no identity. While two
+          # share a name, a press on a pad marks its rows "Pressed" for
+          # a second and the rows' sublabels say a
+          # press finds one, except in Ozone, whose footer hint is up on
+          # the controller pages only. Test joypad pads through the real
+          # frame loop. Shares the non-Qt build made above.
           samples/menu/pad_tag_rows/build.sh
           ./samples/menu/pad_tag_rows/pad_tags_test
           make -C samples/menu/pad_tag_rows clean

@@ -17,7 +17,11 @@
  * only main() replaced (the playlist_nav pattern) and drives the real
  * frame loop with the test joypad driver, whose script connects pads
  * named "(vid:pid) name@@port@@serial". Each phase checks the tag the
- * frontend gives each pad and the menu places that show it.
+ * frontend gives each pad and the menu places that show it. Then,
+ * while two pads share a name, a press of a pad's button marks its
+ * rows "Pressed" for a second, on the menu's clock, the rows'
+ * sublabels say a press finds one (never with Ozone), and Ozone's
+ * footer hint is up on those pages only.
  * Requires a completed non-Qt build:
  *   ./configure --disable-qt && make
  *   samples/menu/pad_tag_rows/build.sh
@@ -67,6 +71,22 @@
 #define F_SHOWN_OUT  340
 #define F_SHOWN_IN   360
 #define SETTLE         8
+
+#define F_PRESS_ROW    410
+#define F_PRESS_OTHER  460
+#define F_PRESS_DI     490
+#define F_PRESS_DD     540
+#define F_PRESS_TOP    590
+#define F_HELD         640
+#define F_HELD_UP      660
+#define F_HELD_AGAIN   670
+#define F_PRESS_ADD    700
+#define F_PRESS_STALE  740
+#define F_PRESS_APART  780
+/* button 10: no menu action is bound to it */
+#define BUTTON_10     1024
+
+#define PRESSED msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED)
 
 #define PAD "(045e:028e) Harness Pad"
 
@@ -135,6 +155,26 @@ static void write_script(FILE *f)
    step(f, F_NOID_IN,    1, 1, PAD);
    step(f, F_SHOWN_OUT,  2, 1, NULL);
    step(f, F_SHOWN_IN,   1, 1, "(045e:028e) Wireless Pad@@port-1");
+   step(f, F_PRESS_ROW,       17, BUTTON_10, NULL);
+   step(f, F_PRESS_ROW + 2,   33, BUTTON_10, NULL);
+   step(f, F_PRESS_OTHER,     17, BUTTON_10, NULL);
+   step(f, F_PRESS_OTHER + 2, 33, BUTTON_10, NULL);
+   step(f, F_PRESS_DI,        16, BUTTON_10, NULL);
+   step(f, F_PRESS_DI + 2,    32, BUTTON_10, NULL);
+   step(f, F_PRESS_DD,        17, BUTTON_10, NULL);
+   step(f, F_PRESS_DD + 2,    33, BUTTON_10, NULL);
+   step(f, F_PRESS_TOP,       16, BUTTON_10, NULL);
+   step(f, F_PRESS_TOP + 2,   32, BUTTON_10, NULL);
+   step(f, F_HELD,            17, BUTTON_10, NULL);
+   step(f, F_HELD_UP,         33, BUTTON_10, NULL);
+   step(f, F_HELD_AGAIN,      17, BUTTON_10, NULL);
+   step(f, F_HELD_AGAIN + 2,  33, BUTTON_10, NULL);
+   step(f, F_PRESS_ADD,       17, BUTTON_10, NULL);
+   step(f, F_PRESS_ADD + 2,   33, BUTTON_10, NULL);
+   step(f, F_PRESS_STALE,     17, BUTTON_10, NULL);
+   step(f, F_PRESS_STALE + 2, 33, BUTTON_10, NULL);
+   step(f, F_PRESS_APART,     17, BUTTON_10, NULL);
+   step(f, F_PRESS_APART + 2, 33, BUTTON_10, NULL);
    fprintf(f, "]\n");
 }
 
@@ -207,6 +247,7 @@ static void check_gone(unsigned slot, const char *when)
 }
 
 #define DEVICE_INDEX_1 "input_player1_joypad_index"
+#define DEVICE_INDEX_2 "input_player2_joypad_index"
 
 static file_list_t *selection_buf(void)
 {
@@ -244,6 +285,18 @@ static int dropdown_item(unsigned slot)
    file_list_t *buf = selection_buf();
    for (i = 0; buf && i < buf->size; i++)
       if (     buf->list[i].type == MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM
+            && buf->list[i].entry_idx == slot)
+         return (int)i;
+   return -1;
+}
+
+/* Add Controller's item for @slot, or -1 */
+static int add_item(unsigned slot)
+{
+   size_t i;
+   file_list_t *buf = selection_buf();
+   for (i = 0; buf && i < buf->size; i++)
+      if (     buf->list[i].type == MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD
             && buf->list[i].entry_idx == slot)
          return (int)i;
    return -1;
@@ -495,15 +548,10 @@ static void check_clash_places(void)
 
    open_port_controllers(1);
    press_ok(row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR));
-   buf = selection_buf();
-   for (i = 0; buf && (size_t)i < buf->size; i++)
-      if (     buf->list[i].type == MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD
-            && buf->list[i].entry_idx == 1)
-         break;
    want = with_tag("Harness Pad [%s #1] (Player 2)", ID_SER11);
-   check(string_is_equal(row_path(i), want),
+   check(string_is_equal(row_path(add_item(1)), want),
          "Add Controller lists slot 1 as \"%s\", not \"%s\"",
-         row_path(i), want);
+         row_path(add_item(1)), want);
 
    /* both play as player 1, slot 0 first: slot 1 shares from
     * another port, and Port 1 Controls links it */
@@ -525,6 +573,115 @@ static void check_clash_places(void)
    input_autoconfigure_reallocate_ports(1);
    input_config_plays_as_set(0, 0);
    input_autoconfigure_reallocate_ports(0);
+}
+
+/* The find hint's line, on a line of its own after the row's own */
+static bool has_find_line(const char *s)
+{
+   const char *line = msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PAD_FIND);
+   size_t n         = strlen(s);
+   size_t l         = strlen(line);
+   return n > l + 1 && *s != '\n' && s[n - l - 1] == '\n'
+      && string_is_equal(s + n - l, line);
+}
+
+#ifdef HAVE_OZONE
+/* Row @i's sublabel with the running menu driver named "ozone" */
+static void row_sublabel_as_ozone(int i, char *s, size_t len)
+{
+   static menu_ctx_driver_t as_ozone;
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   const menu_ctx_driver_t *real = menu_st->driver_ctx;
+
+   as_ozone            = *real;
+   as_ozone.ident      = "ozone";
+   menu_st->driver_ctx = &as_ozone;
+   row_sublabel(i, s, len);
+   menu_st->driver_ctx = real;
+}
+#endif
+
+/* While two connected pads show one name, the Plays As rows and Device
+ * Index say on a second line that a press finds one; not with names of
+ * their own, not in the Device Index dropdown or Add Controller, never
+ * with Ozone. Ozone's footer hint is up on Controllers, Port 1 Controls,
+ * its Controllers, the dropdown and Add Controller then, and nowhere
+ * else. */
+static void check_find_hint(bool shared, const char *when)
+{
+   char v[NAME_MAX_LENGTH];
+   char want[NAME_MAX_LENGTH];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *line = msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PAD_FIND);
+   const char *di   = msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX);
+   const char *verb = shared ? "lacks" : "has";
+   const char *up   = shared ? "down" : "up";
+
+   open_controllers();
+   check(menu_st->pad_find_hint == shared,
+         "%s: Controllers: Ozone's hint is %s", when, up);
+   row_sublabel(row_of_type(MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN),
+         v, sizeof(v));
+   check(has_find_line(v) == shared,
+         "%s: Controllers: slot 0's sublabel %s the find line: \"%s\"",
+         when, verb, v);
+   row_sublabel(row_of_type(MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 2),
+         v, sizeof(v));
+   check(has_find_line(v) == shared,
+         "%s: Controllers: Other Pad's sublabel %s the find line: \"%s\"",
+         when, verb, v);
+#ifdef HAVE_OZONE
+   row_sublabel_as_ozone(row_of_type(MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN),
+         v, sizeof(v));
+   check(!strstr(v, line),
+         "%s: Controllers: with Ozone, slot 0's sublabel has the find line",
+         when);
+#endif
+
+   open_port_controllers(1);
+   check(menu_st->pad_find_hint == shared,
+         "%s: Port 1 Controls > Controllers: Ozone's hint is %s", when, up);
+   row_sublabel(row_of_type(MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN),
+         v, sizeof(v));
+   check(has_find_line(v) == shared,
+         "%s: Port 1 Controls > Controllers: the Plays As row's sublabel "
+         "%s the find line: \"%s\"", when, verb, v);
+
+   open_port_controls(1);
+   check(menu_st->pad_find_hint == shared,
+         "%s: Port 1 Controls: Ozone's hint is %s", when, up);
+   snprintf(want, sizeof(want), "%s%s%s", di, shared ? "\n" : "",
+         shared ? line : "");
+   row_sublabel(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(string_is_equal(v, want),
+         "%s: Device Index's sublabel is \"%s\", not \"%s\"", when, v, want);
+#ifdef HAVE_OZONE
+   row_sublabel_as_ozone(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(string_is_equal(v, di),
+         "%s: with Ozone, Device Index's sublabel is \"%s\"", when, v);
+#endif
+
+   open_device_index_dropdown();
+   check(menu_st->pad_find_hint == shared,
+         "%s: the Device Index dropdown: Ozone's hint is %s", when, up);
+   row_sublabel(dropdown_item(0), v, sizeof(v));
+   check(!strstr(v, line),
+         "%s: the Device Index dropdown's entry has the find line", when);
+
+   open_port_controllers(1);
+   press_ok(row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR));
+   check(menu_st->pad_find_hint == shared,
+         "%s: Add Controller: Ozone's hint is %s", when, up);
+   row_sublabel(0, v, sizeof(v));
+   check(!strstr(v, line), "%s: Add Controller's item has the find line",
+         when);
+
+   open_input_info();
+   check(!menu_st->pad_find_hint,
+         "%s: Input Information: Ozone's hint is up", when);
+   open_top();
+   check(!menu_st->pad_find_hint,
+         "%s: the main menu: Ozone's hint is up", when);
 }
 
 /* Two pads of one name and one of its own */
@@ -551,6 +708,7 @@ static void phase_connect(void)
    check_input_info(2, "Other Pad", NULL, "a name of its own");
    check_remap_port(with_tag("Harness Pad [%s]", ID_PORT1),
          "two Harness Pads");
+   check_find_hint(true, "two Harness Pads");
 }
 
 /* The tag follows the pad, not the slot; a placeholder serial
@@ -581,6 +739,7 @@ static void phase_serial(void)
    check_ident(0, ID_PORT2, "one Harness Pad left");
    open_controllers();
    check_row(0, "Harness Pad", "one Harness Pad left");
+   check_find_hint(false, "one Harness Pad left");
    run_until(F_SERIAL_IN);
    check_tag(1, with_tag(" [%s]", ID_BT), "a pad with an address");
    check_ident(1, ID_BT, "a pad with an address");
@@ -676,6 +835,284 @@ static void phase_shown(void)
          with_tag("Harness Pad [%s]", ID_PORT1), "two names shown as one");
 }
 
+/* One menu frame at @t on the menu's clock: the marks follow it, not
+ * the real time a loaded machine takes between frames */
+static void frame_at(retro_time_t t)
+{
+   menu_driver_iterate(menu_state_get_ptr(), disp_get_ptr(), anim_get_ptr(),
+         config_get_ptr(), MENU_ACTION_NOOP, t);
+}
+
+/* @slot's press, released, keeps its rows marked until a second after
+ * the frame that saw it go down; RGUI is asked to draw only when the
+ * mark goes. Leaves @slot unpressed for the next lane. */
+static void check_hold(unsigned slot, const char *when)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   gfx_display_t *p_disp      = disp_get_ptr();
+   retro_time_t t0            = menu_st->pad_pressed_us[slot];
+
+   check(t0 != 0, "%s: no press seen on slot %u", when, slot);
+   p_disp->flags &= ~GFX_DISP_FLAG_FB_DIRTY;
+   frame_at(t0 + MENU_PAD_PRESSED_HOLD_US - 1);
+   check(MENU_PAD_MARKED(menu_st, slot),
+         "%s: slot %u's mark ended before a second", when, slot);
+   check(!(p_disp->flags & GFX_DISP_FLAG_FB_DIRTY),
+         "%s: RGUI asked to draw with no mark changed", when);
+   frame_at(t0 + MENU_PAD_PRESSED_HOLD_US);
+   check(!MENU_PAD_MARKED(menu_st, slot),
+         "%s: slot %u still marked a second on", when, slot);
+   check(p_disp->flags & GFX_DISP_FLAG_FB_DIRTY,
+         "%s: RGUI not asked to draw when the mark went", when);
+}
+
+static void forget_press(unsigned slot)
+{
+   menu_state_get_ptr()->pad_pressed_us[slot] = 0;
+}
+
+/* Controllers: the pressed pad's row reads "Pressed", the other's not;
+ * the cursor stays */
+static void lane_press_row(void)
+{
+   char before0[NAME_MAX_LENGTH];
+   char before1[NAME_MAX_LENGTH];
+   char v[NAME_MAX_LENGTH];
+   size_t cursor;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned row0              = MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
+   unsigned row1              = MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1;
+
+   open_controllers();
+   row_value(row_of_type(row0), before0, sizeof(before0));
+   row_value(row_of_type(row1), before1, sizeof(before1));
+   check(!string_is_equal(before1, PRESSED),
+         "fixture: slot 1 reads Pressed before its press");
+   cursor = menu_st->selection_ptr;
+   run_until(F_PRESS_ROW + 2);
+   frame_at(menu_st->pad_pressed_us[1] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(row_of_type(row1), v, sizeof(v));
+   check(string_is_equal(v, PRESSED),
+         "Controllers: the pressed pad's row reads \"%s\"", v);
+   row_value(row_of_type(row0), v, sizeof(v));
+   check(string_is_equal(v, before0),
+         "Controllers: another pad's row reads \"%s\"", v);
+   check(menu_st->selection_ptr == cursor,
+         "Controllers: a press moved the cursor");
+   check_hold(1, "Controllers");
+   row_value(row_of_type(row1), v, sizeof(v));
+   check(string_is_equal(v, before1),
+         "Controllers: after the hold the row reads \"%s\"", v);
+   forget_press(1);
+}
+
+/* Port 1 Controls' Device Index and its Controllers' Plays As row read
+ * "Pressed" for the pad they name (slot 0) and not for another; so does Port 2's
+ * Device Index, set to slot 0 so its slot is not its port */
+static void lane_press_device_index(void)
+{
+   char before[NAME_MAX_LENGTH];
+   char before2[NAME_MAX_LENGTH];
+   char v[NAME_MAX_LENGTH];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   unsigned port2_slot        = settings->uints.input_joypad_index[1];
+
+   settings->uints.input_joypad_index[1] = 0;
+   open_port_controls(2);
+   row_value(row(DEVICE_INDEX_2), before2, sizeof(before2));
+   open_port_controls(1);
+   row_value(row(DEVICE_INDEX_1), before, sizeof(before));
+   run_until(F_PRESS_OTHER + 2);
+   frame_at(menu_st->pad_pressed_us[1] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(string_is_equal(v, before),
+         "Device Index reads \"%s\" for another port's pad", v);
+   open_port_controls(2);
+   frame_at(menu_st->pad_pressed_us[1] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(row(DEVICE_INDEX_2), v, sizeof(v));
+   check(string_is_equal(v, before2),
+         "Port 2's Device Index reads \"%s\" for slot 1's press", v);
+   forget_press(1);
+   run_until(F_PRESS_DI + 2);
+   frame_at(menu_st->pad_pressed_us[0] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(row(DEVICE_INDEX_2), v, sizeof(v));
+   check(string_is_equal(v, PRESSED),
+         "Port 2's Device Index reads \"%s\" for slot 0's press", v);
+   open_port_controls(1);
+   frame_at(menu_st->pad_pressed_us[0] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(string_is_equal(v, PRESSED),
+         "Device Index reads \"%s\" for its own pad's press", v);
+   open_port_controllers(1);
+   frame_at(menu_st->pad_pressed_us[0] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(row_of_type(MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN), v, sizeof(v));
+   check(string_is_equal(v, PRESSED),
+         "Port 1 Controls > Controllers: the pressed pad's Plays As row "
+         "reads \"%s\"", v);
+   open_port_controls(1);
+   frame_at(menu_st->pad_pressed_us[0] + MENU_PAD_PRESSED_HOLD_US / 2);
+   check_hold(0, "Device Index");
+   row_value(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(string_is_equal(v, before),
+         "Device Index after the hold reads \"%s\"", v);
+   forget_press(0);
+   settings->uints.input_joypad_index[1] = port2_slot;
+}
+
+/* Device Index's dropdown: the pressed pad's entry */
+static void lane_press_dropdown(void)
+{
+   char v[NAME_MAX_LENGTH];
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   open_device_index_dropdown();
+   run_until(F_PRESS_DD + 2);
+   frame_at(menu_st->pad_pressed_us[1] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(dropdown_item(1), v, sizeof(v));
+   check(string_is_equal(v, PRESSED),
+         "the dropdown's entry for the pressed pad reads \"%s\"", v);
+   row_value(dropdown_item(0), v, sizeof(v));
+   check(!*v, "the dropdown's entry for another pad reads \"%s\"", v);
+   check_hold(1, "Device Index dropdown");
+   row_value(dropdown_item(1), v, sizeof(v));
+   check(!*v, "the dropdown's entry after the hold reads \"%s\"", v);
+   forget_press(1);
+}
+
+/* With no controller list shown, nothing is read or marked */
+static void lane_press_elsewhere(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   open_top();
+   run_until(F_PRESS_TOP + 2);
+   check(!menu_st->pad_pressed_us[0] && !menu_st->pads_marked,
+         "a press was marked with no controller list shown");
+}
+
+/* A button left down marks its pad for a second, not for as long as it
+ * stays down; let up and pressed again, it marks again */
+static void lane_press_held(void)
+{
+   char before[NAME_MAX_LENGTH];
+   char v[NAME_MAX_LENGTH];
+   input_bits_t b;
+   retro_time_t t0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned row1              = MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1;
+
+   open_controllers();
+   row_value(row_of_type(row1), before, sizeof(before));
+   run_until(F_HELD);
+   t0 = menu_st->pad_pressed_us[1];
+   check(t0 != 0, "held: no press seen on slot 1");
+   frame_at(t0 + MENU_PAD_PRESSED_HOLD_US - 1);
+   check(MENU_PAD_MARKED(menu_st, 1),
+         "held: slot 1's mark ended before a second");
+   frame_at(t0 + MENU_PAD_PRESSED_HOLD_US);
+   frame_at(t0 + 3 * MENU_PAD_PRESSED_HOLD_US);
+   BIT256_CLEAR_ALL(b);
+   input_driver_capture_pad(1, false, &b, 16, NULL, 0, NULL, 0);
+   check(BIT256_GET(b, 10), "fixture: slot 1's button was let up");
+   check(!MENU_PAD_MARKED(menu_st, 1),
+         "held: slot 1 still marked seconds after its press");
+   row_value(row_of_type(row1), v, sizeof(v));
+   check(string_is_equal(v, before),
+         "held: the row reads \"%s\" with the button still down", v);
+   run_until(F_HELD_AGAIN + 2);
+   check(menu_st->pad_pressed_us[1] > t0,
+         "held: let up and pressed again, the press was not seen");
+   frame_at(menu_st->pad_pressed_us[1] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(row_of_type(row1), v, sizeof(v));
+   check(string_is_equal(v, PRESSED),
+         "held: pressed again, the row reads \"%s\"", v);
+   check_hold(1, "pressed again");
+   forget_press(1);
+}
+
+/* Add Controller: the pressed pad's item reads "Pressed", another's
+ * nothing; the cursor stays. With Other Pad shown as a Harness Pad
+ * too, Port 1's list holds two of one name, slot 1 on row 0: an item
+ * is not its row. */
+static void lane_press_add(void)
+{
+   int i1, i2;
+   size_t cursor;
+   char other[NAME_MAX_LENGTH];
+   char v[NAME_MAX_LENGTH];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *shown          = input_config_get_device_display_name(2);
+
+   strlcpy(other, shown ? shown : "", sizeof(other));
+   input_config_set_device_display_name(2, "Harness Pad");
+   open_port_controllers(1);
+   press_ok(row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR));
+   i1 = add_item(1);
+   i2 = add_item(2);
+   check(i1 == 0 && i2 == 1,
+         "fixture: Port 1's Add Controller lists slots 1 and 2 on rows "
+         "%d and %d", i1, i2);
+   check(menu_st->pad_find_hint,
+         "Add Controller: Ozone's hint is down with three of one name");
+   cursor = menu_st->selection_ptr;
+   run_until(F_PRESS_ADD + 2);
+   frame_at(menu_st->pad_pressed_us[1] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(i1, v, sizeof(v));
+   check(string_is_equal(v, PRESSED),
+         "Add Controller: the pressed pad's item reads \"%s\"", v);
+   row_value(i2, v, sizeof(v));
+   check(!*v, "Add Controller: another pad's item reads \"%s\"", v);
+   check(menu_st->selection_ptr == cursor,
+         "Add Controller: a press moved the cursor");
+   check_hold(1, "Add Controller");
+   row_value(i1, v, sizeof(v));
+   check(!*v, "Add Controller: after the hold the item reads \"%s\"", v);
+   forget_press(1);
+   if (*other)
+      input_config_set_device_display_name(2, other);
+   else
+      input_config_clear_device_display_name(2);
+}
+
+/* Names of their own: a press marks nothing, so no value is hidden,
+ * and a mark from before the names parted does not come back with
+ * them. Slot 1 shows its driver's "Wireless Pad" with its display
+ * name cleared. */
+static void lane_press_apart(void)
+{
+   unsigned s;
+   retro_time_t t0;
+   char v[NAME_MAX_LENGTH];
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   open_controllers();
+   run_until(F_PRESS_STALE + 2);
+   t0 = menu_st->pad_pressed_us[1];
+   check(t0 != 0, "fixture: no press seen on slot 1 with its name shared");
+   input_config_clear_device_display_name(1);
+   frame_at(t0 + MENU_PAD_PRESSED_HOLD_US / 4);
+   check(!menu_st->pads_marked && !menu_st->pad_find_hint,
+         "names apart: a mark or Ozone's hint stays up");
+   input_config_set_device_display_name(1, "Harness Pad");
+   frame_at(t0 + MENU_PAD_PRESSED_HOLD_US / 2);
+   check(!MENU_PAD_MARKED(menu_st, 1),
+         "names shared again: slot 1's mark from before is back");
+   input_config_clear_device_display_name(1);
+   run_until(F_PRESS_APART + 2);
+   frame_at(cpu_features_get_time_usec());
+   check(!menu_st->pad_pressed_us[1] && !menu_st->pads_marked,
+         "names apart: a press was marked");
+   for (s = 0; s < 3; s++)
+   {
+      row_value(row_of_type(MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + s),
+            v, sizeof(v));
+      check(!string_is_equal(v, PRESSED),
+            "names apart: slot %u's row reads \"%s\"", s, v);
+   }
+   input_config_set_device_display_name(1, "Harness Pad");
+}
+
 int main(int argc, char *argv[])
 {
    FILE *f;
@@ -749,6 +1186,13 @@ int main(int argc, char *argv[])
    phase_clash_tie();
    phase_noid();
    phase_shown();
+   lane_press_row();
+   lane_press_device_index();
+   lane_press_dropdown();
+   lane_press_elsewhere();
+   lane_press_held();
+   lane_press_add();
+   lane_press_apart();
 
    filestream_delete(ratst_path);
    filestream_delete(cfg_path);

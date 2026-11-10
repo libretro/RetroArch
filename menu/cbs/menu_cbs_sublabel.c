@@ -378,7 +378,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_player_chat,   ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_fade_chat_toggle, MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_type,                MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_index,               MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_index,                MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_keyboard_index,             MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_aim_stick,                  MENU_ENUM_SUBLABEL_INPUT_AIM_STICK)
@@ -1621,6 +1620,20 @@ size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
    return strlen(s);
 }
 
+/* While two connected controllers show one name, a second line says a
+ * press finds one. Ozone says it in its footer. */
+static void menu_cbs_sublabel_pad_find(char *s, size_t len)
+{
+   size_t _len = strlen(s);
+#ifdef HAVE_OZONE
+   if (string_is_equal(menu_driver_ident(), "ozone"))
+      return;
+#endif
+   if (_len + 1 < len && menu_driver_pads_share_name())
+      snprintf(s + _len, len - _len, "\n%s",
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PAD_FIND));
+}
+
 /* Settings > Input > Controllers and Port N Controls > Controllers:
  * the player it plays as, and where. */
 static int action_bind_sublabel_input_plays_as(
@@ -1645,6 +1658,7 @@ static int action_bind_sublabel_input_plays_as(
          snprintf(s, len,
                msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARED_BINDS),
                port);
+      menu_cbs_sublabel_pad_find(s, len);
       return 0;
    }
    switch (where)
@@ -1673,7 +1687,22 @@ static int action_bind_sublabel_input_plays_as(
                len);
          break;
    }
+   /* a press cannot find a controller that is gone */
+   if (where != INPUT_PLAYS_AS_GONE)
+      menu_cbs_sublabel_pad_find(s, len);
    return 0;
+}
+
+/* Port N Controls' Device Index */
+static int action_bind_sublabel_input_device_index(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX), len);
+   menu_cbs_sublabel_pad_find(s, len);
+   return 1;
 }
 
 /* Add Controller: its player's user is in its entry_idx. */

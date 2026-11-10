@@ -867,6 +867,9 @@ static size_t menu_action_setting_disp_set_label_input_plays_as(
    *w = 19;
    if (path && *path)
       strlcpy(s2, path, len2);
+   if (MENU_PAD_MARKED(menu_state_get_ptr(), row))
+      return strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED), len);
    player = (row < MAX_INPUT_DEVICES)
       ? input_config_plays_as_player(row)
       : input_config_plays_as_entry_player(row - MAX_INPUT_DEVICES);
@@ -1978,6 +1981,45 @@ static size_t menu_action_setting_disp_set_label(file_list_t* list,
    return _len;
 }
 
+/* Device Index: "Pressed" while a press marks the controller it names */
+static size_t menu_action_setting_disp_set_label_input_device_index(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
+   settings_t *settings      = config_get_ptr();
+   size_t _len               = menu_action_setting_disp_set_label(list,
+         w, type, i, label, s, len, path, s2, len2);
+   if (MENU_PAD_MARKED(menu_state_get_ptr(),
+            settings->uints.input_joypad_index[cbs->setting->index_offset]))
+      return strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED), len);
+   return _len;
+}
+
+/* An entry of Device Index's dropdown or Add Controller: "Pressed" while
+ * a press marks its controller (entry_idx), else nothing beside its name */
+static size_t menu_action_setting_disp_set_label_input_pad_item(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   menu_action_setting_disp_set_label_no_items(list, w, type, i, label,
+         s, len, path, s2, len2);
+   if (MENU_PAD_MARKED(menu_state_get_ptr(), list->list[i].entry_idx))
+      return strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED), len);
+   return 0;
+}
+
 static size_t menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -2528,6 +2570,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case MENU_SETTING_NO_ITEM:
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_no_items);
          break;
+      case MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_input_pad_item);
+         break;
       case MENU_SETTING_ACTION_CORE_LOCK:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_lock);
@@ -2555,6 +2601,27 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 {
    if (!cbs)
       return -1;
+
+   /* the rows of a group are appended with no enum but their setting */
+   if (     cbs->setting
+         && cbs->setting->enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+         && cbs->setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_input_device_index);
+      return 0;
+   }
+   /* the dropdown's entries are labelled with the setting's enum */
+   if (     type == MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM
+         && label
+         && string_to_unsigned(label) >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+         && string_to_unsigned(label)
+            <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_input_pad_item);
+      return 0;
+   }
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {

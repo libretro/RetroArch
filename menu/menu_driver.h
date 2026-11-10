@@ -80,6 +80,13 @@ RETRO_BEGIN_DECLS
 #define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
 #define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!((menu_st->flags & MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH) || !(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH)))
 
+/* How long a press marks a controller's rows */
+#define MENU_PAD_PRESSED_HOLD_US 1000000
+
+/* Whether a press on the controller in @slot marks its rows now */
+#define MENU_PAD_MARKED(menu_st, slot) ((slot) < MAX_INPUT_DEVICES \
+      && (((menu_st)->pads_marked >> (slot)) & 1))
+
 #define MENU_SETTINGS_CORE_INFO_NONE             0xffff
 #define MENU_SETTINGS_CORE_OPTION_NONE           0xffff
 #define MENU_SETTINGS_CHEEVOS_NONE               0xffff
@@ -535,6 +542,11 @@ struct menu_state
     * Left/Right on a number speeds up by it. Set by menu_event(). */
    retro_time_t action_press_time;
 
+   /* When each controller slot last had a button pressed while a list
+    * of the controllers was shown and two connected ones shared a
+    * name; 0 for not since */
+   retro_time_t pad_pressed_us[MAX_INPUT_DEVICES];
+
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
    gfx_thumbnail_path_data_t *thumbnail_path_data;
@@ -569,6 +581,10 @@ struct menu_state
    /* unsigned alignment */
    unsigned input_dialog_kb_idx;
    unsigned video_screen_selected;
+   /* The slots whose rows read "Pressed", a bit each */
+   uint32_t pads_marked;
+   /* Each slot's buttons and hats down at the last scan, folded */
+   uint32_t pad_down[MAX_INPUT_DEVICES];
    menu_dialog_t dialog_st;
    enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
@@ -618,6 +634,10 @@ struct menu_state
     * that frame at 4312 where this tree allows four thousand. One is
     * looked at a time, on the thread that iterates. */
    menu_entry_t iterate_entry;
+
+   /* A list of the controllers is shown and two connected ones show one
+    * name: Ozone's footer says a press finds one */
+   bool pad_find_hint;
 };
 
 typedef struct menu_content_ctx_defer_info
@@ -718,6 +738,10 @@ void menu_explore_set_state(explore_state_t *state);
 #endif
 
 const char *menu_driver_ident(void);
+
+/* Whether two connected controllers show the same name, so carry tags
+ * (input_config_get_device_tag()) */
+bool menu_driver_pads_share_name(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
