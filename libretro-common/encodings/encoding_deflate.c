@@ -407,6 +407,11 @@ static uint32_t rd_adler32_update(uint32_t adler,
    return rd_adler32_on(adler, buf, len, 16);
 }
 
+uint32_t encoding_adler32(uint32_t adler, const uint8_t *buf, size_t len)
+{
+   return rd_adler32_update(adler, buf, len);
+}
+
 /* Test entry point for tools/encodings/adler32_test.c: the kernel above is
  * static, and driving it only through rinflate/rdeflate would exercise
  * whatever lengths and alignments a stream happens to produce rather than

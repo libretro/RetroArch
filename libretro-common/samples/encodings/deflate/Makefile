@@ -3,6 +3,7 @@ include ../../sample_objdir.mk
 TARGET            := rinflate_window_test
 TARGET_TEST       := rdeflate_hash_test
 TARGET_TEST2      := rdeflate_flush_test
+TARGET_TEST3      := encoding_adler32_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -40,10 +41,11 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-# The flush test links what the window test does
+# The flush test links what the window test does, and so does the adler32 one
 FLUSH_SOURCES := rdeflate_flush_test.c $(filter-out rinflate_window_test.c,$(SOURCES))
+ADLER_SOURCES := encoding_adler32_test.c $(filter-out rinflate_window_test.c,$(SOURCES))
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -61,13 +63,17 @@ $(TARGET_TEST): $(HASH_SOURCES) $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.
 $(TARGET_TEST2): $(FLUSH_SOURCES)
 	$(CC) $(CFLAGS) -o $@ $(FLUSH_SOURCES) $(LDFLAGS)
 
+$(TARGET_TEST3): $(ADLER_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $(ADLER_SOURCES) $(LDFLAGS)
+
 check: all
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
+	./$(TARGET_TEST3)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET).exe $(TARGET_TEST).exe $(TARGET_TEST2).exe $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET).exe $(TARGET_TEST).exe $(TARGET_TEST2).exe $(TARGET_TEST3).exe $(OBJS)
 
 .PHONY: all check clean

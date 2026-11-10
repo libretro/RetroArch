@@ -202,6 +202,17 @@ void  rdeflate_flush(void *stream);
 
 int   rdeflate_process(void *stream, size_t *read, size_t *wrote);
 
+/**
+ * encoding_adler32:
+ * @adler        : the checksum so far, 1 to start
+ * @buf          : the data
+ * @len          : its length
+ *
+ * Adler-32 (RFC 1950) of @buf continued from @adler, as zlib's adler32()
+ * gives it: the checksum rinflate and rdeflate keep for the zlib wrapper.
+ */
+uint32_t encoding_adler32(uint32_t adler, const uint8_t *buf, size_t len);
+
 RETRO_END_DECLS
 
 #endif
