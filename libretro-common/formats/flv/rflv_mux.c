@@ -277,6 +277,18 @@ bool rflv_mux_get(rflv_mux_t *m, const rflv_span_t **spans, size_t *count)
    return true;
 }
 
+bool rflv_mux_get_tag(rflv_mux_t *m, rflv_tag_t *tag)
+{
+   if (!m || !tag || !m->pending || m->output == FLV_HEADER)
+      return false;
+   tag->spans[0].data = m->prefix + 11;
+   tag->spans[0].size = m->spans[0].size - 11;
+   tag->spans[1] = m->spans[1];
+   tag->timestamp = m->timestamp;
+   tag->type = m->prefix[0];
+   return true;
+}
+
 bool rflv_mux_release(rflv_mux_t *m)
 {
    if (!m || !m->pending)

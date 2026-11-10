@@ -177,14 +177,14 @@ jobs:
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make check peer-check SANITIZER=address,undefined
           make rtmps_socket_native_test SANITIZER=address,undefined
-          python3 media_peer.py --tls 1.2 ./rtmps_socket_native_test
-          python3 media_peer.py --tls 1.3 ./rtmps_socket_native_test
+          python3 media_peer.py --mux --tls 1.2 ./rtmps_socket_native_test
+          python3 media_peer.py --mux --tls 1.3 ./rtmps_socket_native_test
           make clean && make rtmp_resolve_native_test SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 30 ./rtmp_resolve_native_test
           make clean && make check peer-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make rtmps_socket_native_test.exe CC=x86_64-w64-mingw32-gcc EXE=.exe
-          python3 media_peer.py --runner wine --tls 1.2 ./rtmps_socket_native_test.exe
-          python3 media_peer.py --runner wine --tls 1.3 ./rtmps_socket_native_test.exe
+          python3 media_peer.py --runner wine --mux --tls 1.2 ./rtmps_socket_native_test.exe
+          python3 media_peer.py --runner wine --mux --tls 1.3 ./rtmps_socket_native_test.exe
           make clean
 
       - name: GPU PCM output pipeline (ASan + UBSan, TSan, mingw-w64)

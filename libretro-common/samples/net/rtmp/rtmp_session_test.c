@@ -20,6 +20,7 @@
  * THE SOFTWARE.
  */
 #include <net/net_rtmp_session.h>
+#include <formats/rflv_mux.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -267,6 +268,67 @@ static net_rtmp_session_t *ready(void)
    return s;
 }
 
+static void mux_lifetime(void)
+{
+   static const uint8_t asc[] = { 18, 16 };
+   static const uint8_t packet[] = { 1, 2, 3, 4, 5, 6, 7 };
+   net_rtmp_session_t *s = ready();
+   rflv_config_t config;
+   rflv_mux_t *mux;
+   unsigned phase;
+   memset(&config, 0, sizeof(config));
+   config.asc = asc;
+   config.asc_size = sizeof(asc);
+   config.audio_timescale = 1000;
+   config.max_packet_size = 1024;
+   mux = rflv_mux_new(&config);
+   assert(mux && rflv_mux_release(mux));
+   for (phase = 0; phase < 2; phase++)
+   {
+      rflv_tag_t tag, again;
+      net_rtmp_span_t spans[2], span;
+      if (phase)
+         assert(rflv_mux_push(mux, 2, packet, sizeof(packet), 1000, 1000, false)
+               == RFLV_PROGRESS);
+      assert(rflv_mux_get_tag(mux, &tag) && tag.type == 8);
+      assert(tag.timestamp == (phase ? 1000u : 0u));
+      spans[0].data = tag.spans[0].data;
+      spans[0].size = tag.spans[0].size;
+      spans[1].data = tag.spans[1].data;
+      spans[1].size = tag.spans[1].size;
+      assert(net_rtmp_session_media(s, tag.type, tag.timestamp, spans, 2));
+      assert(!net_rtmp_session_media_release(s));
+      assert(rflv_mux_push(mux, 2, packet, sizeof(packet), 2000, 2000, false)
+            == RFLV_BUSY);
+      if (!phase)
+      {
+         pump(s);
+         assert(net_rtmp_session_media_release(s));
+         assert(rflv_mux_release(mux));
+         output_size = 0;
+         continue;
+      }
+      assert(net_rtmp_session_get(s, &span));
+      assert(net_rtmp_session_consume(s, span.size));
+      assert(net_rtmp_session_get(s, &span) && span.data == tag.spans[0].data);
+      assert(net_rtmp_session_consume(s, span.size));
+      assert(net_rtmp_session_get(s, &span) && span.data == packet);
+      assert(span.size == sizeof(packet) && net_rtmp_session_consume(s, 0));
+      net_rtmp_session_cancel(s);
+      assert(!net_rtmp_session_media_release(s));
+      assert(rflv_mux_get_tag(mux, &again));
+      assert(again.spans[0].data == tag.spans[0].data && again.spans[1].data == packet);
+      assert(!net_rtmp_session_free(s));
+      assert(net_rtmp_session_discard(s));
+      assert(net_rtmp_session_media_release(s));
+      assert(rflv_mux_release(mux) && !rflv_mux_get_tag(mux, &tag));
+   }
+   assert(rflv_mux_finish(mux));
+   rflv_mux_free(mux);
+   assert(net_rtmp_session_free(s));
+   output_size = 0;
+}
+
 static void media(void)
 {
    static const uint8_t first[] =
@@ -420,6 +482,7 @@ int main(int argc, char **argv)
    internal_retirement();
    rejection();
    media();
+   mux_lifetime();
    chunk_resize();
    credit();
    puts("PASS RTMP session borrows, media/control interleave, credit and cancellation");

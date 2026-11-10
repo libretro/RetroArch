@@ -56,10 +56,12 @@ static unsigned be(const void *data, unsigned count)
 
 static void headers(rflv_mux_t *m, unsigned flags)
 {
+   rflv_tag_t tag;
    const rflv_span_t *s;
    const unsigned char *p;
    size_t n;
    assert(rflv_mux_get(m, &s, &n) && n == 1);
+   assert(!rflv_mux_get_tag(m, &tag));
    p = (const unsigned char*)s[0].data;
    assert(s[0].size == 13 && !memcmp(p, "FLV\1", 4) && p[4] == flags);
    assert(be(p + 5, 4) == 9 && be(p + 9, 4) == 0);
@@ -71,6 +73,9 @@ static void headers(rflv_mux_t *m, unsigned flags)
       assert(rflv_mux_get(m, &s, &n) && n == 3);
       p = (const unsigned char*)s[0].data;
       assert(p[0] == 9 && p[11] == 23 && p[12] == 0);
+      assert(rflv_mux_get_tag(m, &tag) && tag.type == 9 && !tag.timestamp);
+      assert(tag.spans[0].data == p + 11 && tag.spans[0].size == 5);
+      assert(tag.spans[1].data == s[1].data && tag.spans[1].size == sizeof(avcc));
       assert(be(p + 1, 3) == sizeof(avcc) + 5);
       assert(s[1].size == sizeof(avcc) && !memcmp(s[1].data, avcc, sizeof(avcc)));
       assert(be(s[2].data, 4) == sizeof(avcc) + 16);
@@ -81,14 +86,19 @@ static void headers(rflv_mux_t *m, unsigned flags)
       assert(rflv_mux_get(m, &s, &n) && n == 3);
       p = (const unsigned char*)s[0].data;
       assert(p[0] == 8 && p[11] == 175 && p[12] == 0);
+      assert(rflv_mux_get_tag(m, &tag) && tag.type == 8 && !tag.timestamp);
+      assert(tag.spans[0].data == p + 11 && tag.spans[0].size == 2);
+      assert(tag.spans[1].data == s[1].data && tag.spans[1].size == sizeof(asc));
       assert(s[1].size == sizeof(asc) && !memcmp(s[1].data, asc, sizeof(asc)));
       assert(rflv_mux_release(m));
    }
    assert(rflv_mux_step(m) == RFLV_BUSY);
+   assert(!rflv_mux_get_tag(m, &tag));
 }
 
 static void lifetime(void)
 {
+   rflv_tag_t tag;
    rflv_config_t c = config();
    unsigned char owned[sizeof(avcc)];
    rflv_mux_t *m;
@@ -99,6 +109,7 @@ static void lifetime(void)
    c.avcc = owned;
    m = rflv_mux_new(&c);
    assert(m);
+   assert(!rflv_mux_get_tag(NULL, &tag) && !rflv_mux_get_tag(m, NULL));
    memset(owned, 0, sizeof(owned));
    headers(m, 5);
    assert(rflv_mux_push(m, 1, predicted, sizeof(predicted), 0, 0, false) == RFLV_ERROR);
@@ -110,6 +121,9 @@ static void lifetime(void)
    assert(rflv_mux_get(m, &s, &n) && n == 3 && s[1].data == idr);
    p = (const unsigned char*)s[0].data;
    assert(be(p + 4, 3) == 1000 && be(p + 13, 3) == 0xffff9c);
+   assert(rflv_mux_get_tag(m, &tag) && tag.timestamp == 1000 && tag.type == 9);
+   assert(tag.spans[0].data == p + 11 && tag.spans[0].size == 5);
+   assert(tag.spans[1].data == idr && tag.spans[1].size == sizeof(idr));
    assert(rflv_mux_step(m) == RFLV_PACKET);
    assert(rflv_mux_push(m, 2, asc, sizeof(asc), 0, 0, false) == RFLV_BUSY);
    assert(be(p + 13, 3) == 0xffff9c);
@@ -119,6 +133,8 @@ static void lifetime(void)
    assert(rflv_mux_get(m, &s, &n) && s[1].data == asc);
    p = (const unsigned char*)s[0].data;
    assert(be(p + 4, 3) == 1000 && p[12] == 1);
+   assert(rflv_mux_get_tag(m, &tag) && tag.timestamp == 1000 && tag.type == 8);
+   assert(tag.spans[1].data == asc && tag.spans[1].size == sizeof(asc));
    assert(rflv_mux_release(m));
    assert(rflv_mux_finish(m) && rflv_mux_finish(m));
    assert(rflv_mux_step(m) == RFLV_END);

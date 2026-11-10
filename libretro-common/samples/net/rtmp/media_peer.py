@@ -23,7 +23,7 @@ def decode(ffmpeg, path, audio):
                           check=True, stdout=subprocess.PIPE, timeout=20).stdout
 
 
-def run(binary, runner, legacy, tls=None):
+def run(binary, runner, legacy, tls=None, remux=False):
     ffmpeg = native_ffmpeg()
     with tempfile.TemporaryDirectory(prefix='rtmp-media-') as temp:
         root = Path(temp)
@@ -74,7 +74,8 @@ def run(binary, runner, legacy, tls=None):
                     result = subprocess.run(shlex.split(runner) + [str(Path(binary).resolve()),
                                             client_url, str(client_port),
                                             'legacy' if legacy else 'standard',
-                                            fixture_arg], timeout=15, capture_output=True, env=env)
+                                            fixture_arg] + (['mux'] if remux else []),
+                                            timeout=15, capture_output=True, env=env)
                     if result.returncode == 0:
                         break
                     if result.returncode != 77 or server.poll() is not None:
@@ -106,7 +107,7 @@ def run(binary, runner, legacy, tls=None):
                 assert len(actual) == 48 * 320 * 240 * 3 // 2
             hashes['audio' if audio else 'video'] = hashlib.sha256(actual).hexdigest()
         print('PASS native ' + ('RTMPS TLS ' + tls if tls else 'RTMP')
-              + ' H.264/AAC decoded A/V, ' +
+              + (' muxed' if remux else '') + ' H.264/AAC decoded A/V, ' +
               ('legacy' if legacy else 'standard') + ': ' + json.dumps(hashes))
 
 
@@ -114,7 +115,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--runner', default='')
     parser.add_argument('--tls', choices=['1.2', '1.3'])
+    parser.add_argument('--mux', action='store_true')
     parser.add_argument('binary')
     args = parser.parse_args()
-    run(args.binary, args.runner, False, args.tls)
-    run(args.binary, args.runner, True, args.tls)
+    run(args.binary, args.runner, False, args.tls, args.mux)
+    run(args.binary, args.runner, True, args.tls, args.mux)

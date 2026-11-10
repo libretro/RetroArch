@@ -26,6 +26,7 @@
 #include <streams/file_stream.h>
 #endif
 #include <net/net_resolve.h>
+#include <formats/rflv_mux.h>
 #include <rthreads/rthreads.h>
 #include <retro_timers.h>
 #include <features/features_cpu.h>
@@ -36,56 +37,171 @@
 
 static uint8_t random_bytes[1528];
 
+static size_t read_tag(FILE *file, uint8_t *header, uint8_t *payload)
+{
+   uint8_t previous[4];
+   uint32_t last_size;
+   size_t size = fread(header, 1, 11, file);
+   if (!size)
+      return 0;
+   assert(size == 11);
+   size = ((size_t)header[1] << 16) | ((size_t)header[2] << 8) | header[3];
+   assert(size && size <= 1048576 && !header[8] && !header[9] && !header[10]);
+   assert(fread(payload, 1, size, file) == size);
+   assert(fread(previous, 1, 4, file) == 4);
+   last_size = ((uint32_t)previous[0] << 24) | ((uint32_t)previous[1] << 16)
+      | ((uint32_t)previous[2] << 8) | previous[3];
+   assert(last_size == size + 11);
+   return size;
+}
+
+static void send_spans(net_rtmp_session_t *session, net_rtmp_socket_t *transport,
+      int fd, unsigned type, uint32_t timestamp, const net_rtmp_span_t *spans,
+      size_t count, retro_time_t deadline)
+{
+   while (!net_rtmp_session_media(session, type, timestamp, spans, count))
+   {
+      assert(cpu_features_get_time_usec() < deadline);
+      assert(net_rtmp_socket_step(transport, 0) != NET_RTMP_SOCKET_ERROR);
+   }
+   while (!net_rtmp_session_media_release(session))
+   {
+      bool read = true, write = false;
+      int result;
+      if (cpu_features_get_time_usec() >= deadline)
+      {
+         uint64_t sent;
+         net_rtmp_session_status(session, NULL, &sent);
+         fprintf(stderr, "media deadline: sent %lu\n", (unsigned long)sent);
+         assert(!"media transfer deadline");
+      }
+      result = net_rtmp_socket_step(transport, 0);
+      assert(result != NET_RTMP_SOCKET_ERROR);
+      if (result == NET_RTMP_SOCKET_IDLE)
+         socket_wait(fd, &read, &write, 10);
+   }
+}
+
+static rflv_mux_t *media_mux(FILE *file, uint8_t *header, uint8_t *payload)
+{
+   rflv_config_t config;
+   rflv_mux_t *mux;
+   uint8_t *avcc = NULL, *asc = NULL;
+   size_t size;
+   memset(&config, 0, sizeof(config));
+   config.video_timescale = config.audio_timescale = 1000;
+   config.max_packet_size = 1048576;
+   while ((!avcc || !asc) && (size = read_tag(file, header, payload)) != 0)
+   {
+      if (header[0] == 9 && size > 5 && payload[1] == 0)
+      {
+         assert(!avcc && payload[0] == 23);
+         config.avcc_size = size - 5;
+         config.avcc = avcc = (uint8_t*)malloc(config.avcc_size);
+         assert(avcc);
+         memcpy(avcc, payload + 5, config.avcc_size);
+      }
+      if (header[0] == 8 && size > 2 && payload[1] == 0)
+      {
+         assert(!asc && payload[0] == 175);
+         config.asc_size = size - 2;
+         config.asc = asc = (uint8_t*)malloc(config.asc_size);
+         assert(asc);
+         memcpy(asc, payload + 2, config.asc_size);
+      }
+   }
+   assert(avcc && asc);
+   mux = rflv_mux_new(&config);
+   free(avcc);
+   free(asc);
+   assert(mux && !fseek(file, 13, SEEK_SET));
+   assert(rflv_mux_release(mux));
+   return mux;
+}
+
+static void send_mux(net_rtmp_session_t *session, net_rtmp_socket_t *transport,
+      int fd, rflv_mux_t *mux, const void *input, size_t size, retro_time_t deadline)
+{
+   int result;
+   while ((result = rflv_mux_step(mux)) != RFLV_BUSY)
+   {
+      rflv_tag_t tag;
+      net_rtmp_span_t spans[2];
+      assert((result == RFLV_PROGRESS || result == RFLV_PACKET)
+            && cpu_features_get_time_usec() < deadline);
+      if (result != RFLV_PACKET)
+         continue;
+      assert(rflv_mux_get_tag(mux, &tag));
+      if (input)
+      {
+         assert(tag.spans[1].data == input && tag.spans[1].size == size);
+         assert(rflv_mux_push(mux, 1, input, size, 0, 0, true) == RFLV_BUSY);
+      }
+      spans[0].data = tag.spans[0].data;
+      spans[0].size = tag.spans[0].size;
+      spans[1].data = tag.spans[1].data;
+      spans[1].size = tag.spans[1].size;
+      send_spans(session, transport, fd, tag.type, tag.timestamp, spans, 2, deadline);
+      assert(rflv_mux_release(mux));
+   }
+}
+
 static void send_media(net_rtmp_session_t *session, net_rtmp_socket_t *transport,
-      int fd, const char *path)
+      int fd, const char *path, bool remux)
 {
    FILE *file = fopen(path, "rb");
-   uint8_t header[13], previous[4];
+   uint8_t header[13];
    uint8_t *payload = (uint8_t*)malloc(1048576);
-   net_rtmp_span_t span;
+   rflv_mux_t *mux = NULL;
    retro_time_t deadline = cpu_features_get_time_usec() + 10000000;
    size_t size;
-   uint32_t timestamp, last_size;
    unsigned count = 0;
    assert(file && payload);
    assert(fread(header, 1, 13, file) == 13);
    assert(!memcmp(header, "FLV\1", 4) && header[8] == 9);
-   while ((size = fread(header, 1, 11, file)) != 0)
+   if (remux)
    {
-      assert(size == 11 && ++count < 4096);
-      size = ((size_t)header[1] << 16) | ((size_t)header[2] << 8) | header[3];
-      timestamp = ((uint32_t)header[7] << 24) | ((uint32_t)header[4] << 16)
+      mux = media_mux(file, header, payload);
+      send_mux(session, transport, fd, mux, NULL, 0, deadline);
+   }
+   while ((size = read_tag(file, header, payload)) != 0)
+   {
+      uint32_t timestamp = ((uint32_t)header[7] << 24) | ((uint32_t)header[4] << 16)
          | ((uint32_t)header[5] << 8) | header[6];
-      assert(size && size <= 1048576 && !header[8] && !header[9] && !header[10]);
-      assert(fread(payload, 1, size, file) == size);
-      assert(fread(previous, 1, 4, file) == 4);
-      last_size = ((uint32_t)previous[0] << 24) | ((uint32_t)previous[1] << 16)
-         | ((uint32_t)previous[2] << 8) | previous[3];
-      assert(last_size == size + 11);
+      net_rtmp_span_t span;
+      assert(++count < 4096);
+      if (mux)
+      {
+         size_t prefix;
+         uint64_t pts = timestamp;
+         if ((header[0] != 8 && header[0] != 9) || size < 2 || payload[1] != 1)
+            continue;
+         prefix = header[0] == 9 ? 5 : 2;
+         assert(size > prefix);
+         if (header[0] == 9)
+         {
+            int32_t composition = ((int32_t)payload[2] << 16)
+               | ((int32_t)payload[3] << 8) | payload[4];
+            if (composition & 0x800000)
+               composition -= 0x1000000;
+            assert(composition >= 0 || timestamp >= (uint32_t)-composition);
+            pts = composition < 0 ? timestamp - (uint32_t)-composition
+               : (uint64_t)timestamp + (uint32_t)composition;
+         }
+         assert(rflv_mux_push(mux, header[0] == 9 ? 1 : 2, payload + prefix,
+                  size - prefix, timestamp, pts, (payload[0] >> 4) == 1)
+               == RFLV_PROGRESS);
+         send_mux(session, transport, fd, mux, payload + prefix, size - prefix, deadline);
+         continue;
+      }
       span.data = payload;
       span.size = size;
-      while (!net_rtmp_session_media(session, header[0], timestamp, &span, 1))
-      {
-         assert(cpu_features_get_time_usec() < deadline);
-         assert(net_rtmp_socket_step(transport, 0) != NET_RTMP_SOCKET_ERROR);
-      }
-      while (!net_rtmp_session_media_release(session))
-      {
-         bool read = true, write = false;
-         int result;
-         if (cpu_features_get_time_usec() >= deadline)
-         {
-            uint64_t sent;
-            net_rtmp_session_status(session, NULL, &sent);
-            fprintf(stderr, "media deadline: tag %u, sent %lu\n", count,
-                  (unsigned long)sent);
-            assert(!"media transfer deadline");
-         }
-         result = net_rtmp_socket_step(transport, 0);
-         assert(result != NET_RTMP_SOCKET_ERROR);
-         if (result == NET_RTMP_SOCKET_IDLE)
-            socket_wait(fd, &read, &write, 10);
-      }
+      send_spans(session, transport, fd, header[0], timestamp, &span, 1, deadline);
+   }
+   if (mux)
+   {
+      assert(rflv_mux_finish(mux));
+      rflv_mux_free(mux);
    }
    assert(!ferror(file) && count && !fclose(file));
    free(payload);
@@ -179,7 +295,8 @@ int main(int argc, char **argv)
    uint32_t stream;
    unsigned i, port;
    int fd, result;
-   assert((argc == 4 || argc == 5) && network_init());
+   assert((argc == 4 || argc == 5 || argc == 6) && network_init());
+   assert(argc != 6 || !strcmp(argv[5], "mux"));
    port = (unsigned)strtoul(argv[2], NULL, 10);
    assert(port && port <= 65535);
    resolver = net_resolve_new("127.0.0.1", port,
@@ -240,10 +357,10 @@ int main(int argc, char **argv)
          socket_wait(fd, &read, &write, 10);
    }
    assert(stream && sent > 3073);
-   if (argc == 5)
+   if (argc >= 5)
    {
       assert(net_rtmp_session_chunk_size(session, 4096));
-      send_media(session, transport, fd, argv[4]);
+      send_media(session, transport, fd, argv[4], argc == 6);
 #ifdef HAVE_SSL
       finish_tls(transport, fd);
 #else

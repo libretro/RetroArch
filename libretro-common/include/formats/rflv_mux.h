@@ -40,6 +40,13 @@ typedef struct rflv_span
    size_t size;
 } rflv_span_t;
 
+typedef struct rflv_tag
+{
+   rflv_span_t spans[2];
+   uint32_t timestamp;
+   unsigned type;
+} rflv_tag_t;
+
 enum rflv_result
 {
    RFLV_ERROR = -1, RFLV_BUSY, RFLV_PROGRESS,
@@ -61,6 +68,10 @@ int rflv_mux_step(rflv_mux_t *mux);
 /* Up to three borrowed spans. No payload copy, allocation, I/O or wait. */
 bool rflv_mux_get(rflv_mux_t *mux,
       const rflv_span_t **spans, size_t *count);
+/* Ready codec payload for streaming, without the file tag header/trailer.
+ * False for the initial file header. Borrows last until mux output release.
+ * A streaming consumer must return its borrow before releasing mux output. */
+bool rflv_mux_get_tag(rflv_mux_t *mux, rflv_tag_t *tag);
 bool rflv_mux_release(rflv_mux_t *mux);
 /* Requires acknowledged output. No seek or file trailer. */
 bool rflv_mux_finish(rflv_mux_t *mux);
