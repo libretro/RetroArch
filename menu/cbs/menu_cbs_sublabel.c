@@ -728,6 +728,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   char name_buf[NAME_MAX_LENGTH];
    const char *display_name, *config_name;
    unsigned port;
    if (!list || i >= list->size || list->list[i].entry_idx >= MAX_USERS)
@@ -735,6 +736,14 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    port         = (unsigned)list->list[i].entry_idx;
    display_name = input_config_get_device_display_name(port);
    config_name  = input_config_get_device_config_name(port);
+   if (display_name)
+   {
+      size_t _len = strlcpy(name_buf, display_name, sizeof(name_buf));
+      if (_len < sizeof(name_buf))
+         input_config_get_device_tag(port, name_buf + _len,
+               sizeof(name_buf) - _len);
+      display_name = name_buf;
+   }
    snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO),
          display_name ? display_name
@@ -1069,12 +1078,14 @@ static int action_bind_sublabel_input_remap_port(
          display_port);
 
    /* Remove trailing dot */
-   snprintf(s + _len - 1, len - _len - 1, ": %s",
+   _len += snprintf(s + _len - 1, len - _len - 1, ": %s",
            input_config_get_device_display_name(user_idx)
          ? input_config_get_device_display_name(user_idx)
          : (input_config_get_device_name(user_idx)
          ? input_config_get_device_name(user_idx)
-         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE))) - 1;
+   if (_len < len)
+      input_config_get_device_tag(user_idx, s + _len, len - _len);
 
    /* We can safely cache the sublabel here, since
     * frontend port index cannot change while the

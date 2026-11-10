@@ -1838,10 +1838,10 @@ static void lane_port_controls_add_items(void)
    press_ok(row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR));
    buf = selection_buf();
    CHECK(buf && buf->size == 2
-         && string_is_equal(buf->list[0].path, "Pad C (Player 2)")
-         && string_is_equal(buf->list[1].path, "Pad C (Player 3)"),
-         "Port 1's Add Controller does not tell C and D apart by player "
-         "alone (%u items)", buf ? (unsigned)buf->size : 0);
+         && string_is_equal(buf->list[0].path, "Pad C (#1) (Player 2)")
+         && string_is_equal(buf->list[1].path, "Pad C (#2) (Player 3)"),
+         "Port 1's Add Controller does not tell C and D apart by tag and "
+         "player (%u items)", buf ? (unsigned)buf->size : 0);
    press(MENU_ACTION_CANCEL);
 
    open_port_controllers(2);
@@ -1849,11 +1849,11 @@ static void lane_port_controls_add_items(void)
    buf = selection_buf();
    CHECK(buf && buf->size == 3
          && string_is_equal(buf->list[0].path, "Pad A (Player 1)")
-         && string_is_equal(buf->list[1].path, "Pad C (Player 3)")
+         && string_is_equal(buf->list[1].path, "Pad C (#2) (Player 3)")
          && string_is_equal(buf->list[2].path, "Pad B (Player 1)")
          && buf->list[2].entry_idx == 1,
          "Port 2's Add Controller does not list A, D and the sharer B "
-         "by player alone (%u items)", buf ? (unsigned)buf->size : 0);
+         "by tag and player (%u items)", buf ? (unsigned)buf->size : 0);
    press_ok(2);
    CHECK(cursor_type() == pad_b,
          "back on Port 2's Controllers the cursor is not on B");

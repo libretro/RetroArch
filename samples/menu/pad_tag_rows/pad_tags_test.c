@@ -17,7 +17,7 @@
  * only main() replaced (the playlist_nav pattern) and drives the real
  * frame loop with the test joypad driver, whose script connects pads
  * named "(vid:pid) name@@port@@serial". Each phase checks the tag the
- * frontend gives each pad.
+ * frontend gives each pad and the menu places that show it.
  * Requires a completed non-Qt build:
  *   ./configure --disable-qt && make
  *   samples/menu/pad_tag_rows/build.sh
@@ -206,6 +206,327 @@ static void check_gone(unsigned slot, const char *when)
          when, slot, tag);
 }
 
+#define DEVICE_INDEX_1 "input_player1_joypad_index"
+
+static file_list_t *selection_buf(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   return menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+}
+
+/* Index of the row labelled @label, or -1 */
+static int row(const char *label)
+{
+   size_t i;
+   file_list_t *buf = selection_buf();
+   for (i = 0; buf && i < buf->size; i++)
+      if (buf->list[i].label && string_is_equal(buf->list[i].label, label))
+         return (int)i;
+   return -1;
+}
+
+/* Index of the first row of type @type, or -1 */
+static int row_of_type(unsigned type)
+{
+   size_t i;
+   file_list_t *buf = selection_buf();
+   for (i = 0; buf && i < buf->size; i++)
+      if (buf->list[i].type == type)
+         return (int)i;
+   return -1;
+}
+
+/* The Device Index dropdown's entry for @slot, or -1 */
+static int dropdown_item(unsigned slot)
+{
+   size_t i;
+   file_list_t *buf = selection_buf();
+   for (i = 0; buf && i < buf->size; i++)
+      if (     buf->list[i].type == MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM
+            && buf->list[i].entry_idx == slot)
+         return (int)i;
+   return -1;
+}
+
+static const char *row_path(int i)
+{
+   file_list_t *buf = selection_buf();
+   if (!buf || i < 0 || (size_t)i >= buf->size || !buf->list[i].path)
+      return "";
+   return buf->list[i].path;
+}
+
+/* Row @i's value as the menu drivers draw it */
+static void row_value(int i, char *s, size_t len)
+{
+   menu_entry_t entry;
+   *s = '\0';
+   if (i < 0)
+      return;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+   menu_entry_get(&entry, 0, (size_t)i, NULL, true);
+   strlcpy(s, entry.value, len);
+}
+
+static void row_sublabel(int i, char *s, size_t len)
+{
+   menu_entry_t entry;
+   *s = '\0';
+   if (i < 0)
+      return;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+   menu_entry_get(&entry, 0, (size_t)i, NULL, true);
+   strlcpy(s, entry.sublabel, len);
+}
+
+/* Input Information's first row for @slot, the one naming it, or -1 */
+static int info_row(unsigned slot)
+{
+   size_t i;
+   file_list_t *buf = selection_buf();
+   for (i = 0; buf && i < buf->size; i++)
+   {
+      menu_file_list_cbs_t *cbs =
+         (menu_file_list_cbs_t*)buf->list[i].actiondata;
+      if (     cbs
+            && cbs->enum_idx == MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY
+            && buf->list[i].entry_idx == slot)
+         return (int)i;
+   }
+   return -1;
+}
+
+/* One menu frame on the real clock; no video frame, no input poll */
+static void menu_frame(void)
+{
+   menu_driver_iterate(menu_state_get_ptr(), disp_get_ptr(), anim_get_ptr(),
+         config_get_ptr(), MENU_ACTION_NOOP, cpu_features_get_time_usec());
+}
+
+static void open_top(void)
+{
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   menu_frame();
+}
+
+/* What OK on Settings > Input > Controllers does */
+static void open_controllers(void)
+{
+   open_top();
+   generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
+         ACTION_OK_DL_INPUT_CONTROLLERS_LIST);
+   menu_frame();
+}
+
+/* RetroPad Binds > Port @n Controls */
+static void open_port_controls(unsigned n)
+{
+   char label[32];
+   open_top();
+   snprintf(label, sizeof(label), "%u_input_binds_list", n);
+   generic_action_ok_displaylist_push("", NULL, label, 0, 0, 0,
+         ACTION_OK_DL_USER_BINDS_LIST);
+   menu_frame();
+}
+
+/* Information > Input Information */
+static void open_input_info(void)
+{
+   open_top();
+   generic_action_ok_displaylist_push("", NULL,
+         MENU_ENUM_LABEL_INPUT_INFORMATION_STR, 0, 0, 0,
+         ACTION_OK_DL_PUSH_DEFAULT);
+   menu_frame();
+}
+
+/* Quick Menu > Controls > Port @n Controls */
+static void open_remap_port(unsigned n)
+{
+   char label[16];
+   open_top();
+   snprintf(label, sizeof(label), "%u", n - 1);
+   generic_action_ok_displaylist_push("", NULL, label, 0, 0, 0,
+         ACTION_OK_DL_REMAPPINGS_PORT_LIST);
+   menu_frame();
+}
+
+/* OK on row @i, as the menu presses it */
+static void press_ok(int i)
+{
+   menu_file_list_cbs_t *cbs = NULL;
+   file_list_t *buf          = selection_buf();
+   if (buf && i >= 0 && (size_t)i < buf->size)
+      cbs = (menu_file_list_cbs_t*)buf->list[i].actiondata;
+   check(cbs && cbs->action_ok, "fixture: row %d has no OK", i);
+   if (!cbs || !cbs->action_ok)
+      return;
+   menu_state_get_ptr()->selection_ptr = (size_t)i;
+   cbs->action_ok(buf->list[i].path, buf->list[i].label,
+         buf->list[i].type, (size_t)i, buf->list[i].entry_idx);
+   menu_frame();
+}
+
+/* RetroPad Binds > Port @n Controls > Controllers */
+static void open_port_controllers(unsigned n)
+{
+   open_port_controls(n);
+   press_ok(row(MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR));
+}
+
+static void open_device_index_dropdown(void)
+{
+   open_port_controls(1);
+   press_ok(row(DEVICE_INDEX_1));
+}
+
+/* Slot @slot's Plays As row on the open list reads @want */
+static void check_row(unsigned slot, const char *want, const char *when)
+{
+   int i = row_of_type(MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + slot);
+   check(i >= 0 && string_is_equal(row_path(i), want),
+         "%s: slot %u's row reads \"%s\", not \"%s\"", when, slot,
+         i >= 0 ? row_path(i) : "(no row)", want);
+}
+
+static void check_controllers(const char *s0, const char *s1,
+      const char *s2, const char *when)
+{
+   open_controllers();
+   check_row(0, s0, when);
+   check_row(1, s1, when);
+   check_row(2, s2, when);
+}
+
+/* Port 1 Controls' Device Index reads @want */
+static void check_device_index(const char *want, const char *when)
+{
+   char v[NAME_MAX_LENGTH];
+   open_port_controls(1);
+   row_value(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(string_is_equal(v, want),
+         "%s: Device Index reads \"%s\", not \"%s\"", when, v, want);
+}
+
+/* Input Information names slot @slot @name; with @display, its
+ * sublabel and RGUI's row below it give that display name */
+static void check_input_info(unsigned slot, const char *name,
+      const char *display, const char *when)
+{
+   char want[NAME_MAX_LENGTH];
+   char v[NAME_MAX_LENGTH];
+   const char *config = input_config_get_device_config_name(slot);
+   size_t _len;
+
+   open_input_info();
+   _len = snprintf(want, sizeof(want),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
+         (int)slot + 1, name);
+   if (!input_config_get_device_autoconfigured(slot) && _len < sizeof(want))
+      snprintf(want + _len, sizeof(want) - _len, " (%s)",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE));
+   check(string_is_equal(row_path(info_row(slot)), want),
+         "%s: Input Information names slot %u \"%s\", not \"%s\"",
+         when, slot, row_path(info_row(slot)), want);
+   if (!display)
+      return;
+   snprintf(want, sizeof(want),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO), display,
+         config ? config : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+         input_config_get_device_vid(slot),
+         input_config_get_device_pid(slot));
+   row_sublabel(info_row(slot), v, sizeof(v));
+   check(string_is_equal(v, want),
+         "%s: Input Information's sublabel for slot %u is \"%s\", not \"%s\"",
+         when, slot, v, want);
+   snprintf(want, sizeof(want), "- Device Display Name: %s", display);
+   check(info_row(slot) >= 0
+         && string_is_equal(row_path(info_row(slot) + 1), want),
+         "%s: Input Information's RGUI row for slot %u is \"%s\", not \"%s\"",
+         when, slot, row_path(info_row(slot) + 1), want);
+}
+
+/* Quick Menu > Controls > Port 1 Controls: Mapped Port's sublabel
+ * ends in port 1's controller, @name */
+static void check_remap_port(const char *name, const char *when)
+{
+   char key[32];
+   char want[NAME_MAX_LENGTH];
+   char v[NAME_MAX_LENGTH];
+   size_t _len;
+
+   open_remap_port(1);
+   snprintf(key, sizeof(key), MENU_ENUM_LABEL_INPUT_REMAP_PORT_STR, 1);
+   _len = snprintf(want, sizeof(want),
+         msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT), 1);
+   /* less its trailing dot */
+   snprintf(want + _len - 1, sizeof(want) - _len + 1, ": %s", name);
+   row_sublabel(row(key), v, sizeof(v));
+   check(string_is_equal(v, want),
+         "%s: Mapped Port's sublabel is \"%s\", not \"%s\"", when, v, want);
+}
+
+/* Two pads picking one tag: the dropdown, Add Controller's items and
+ * a sharer's link carry the numbered tags too */
+static void check_clash_places(void)
+{
+   int i;
+   char used[NAME_MAX_LENGTH];
+   char shared[64];
+   const char *want;
+   const char *link = NULL;
+   file_list_t *buf;
+
+   open_device_index_dropdown();
+   want = with_tag("#1: Harness Pad [%s #2]", ID_SER22);
+   check(string_is_equal(row_path(dropdown_item(0)), want),
+         "Device Index's dropdown lists slot 0 as \"%s\", not \"%s\"",
+         row_path(dropdown_item(0)), want);
+   /* port 2 has slot 1, and the entry says so after the name */
+   snprintf(shared, sizeof(shared),
+         msg_hash_to_str(MSG_INPUT_DEVICE_INDEX_SHARED), 2);
+   snprintf(used, sizeof(used), "%s (%s)",
+         with_tag("#2: Harness Pad [%s #1]", ID_SER11), shared);
+   check(string_is_equal(row_path(dropdown_item(1)), used),
+         "Device Index's dropdown lists slot 1 as \"%s\", not \"%s\"",
+         row_path(dropdown_item(1)), used);
+
+   open_port_controllers(1);
+   press_ok(row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR));
+   buf = selection_buf();
+   for (i = 0; buf && (size_t)i < buf->size; i++)
+      if (     buf->list[i].type == MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD
+            && buf->list[i].entry_idx == 1)
+         break;
+   want = with_tag("Harness Pad [%s #1] (Player 2)", ID_SER11);
+   check(string_is_equal(row_path(i), want),
+         "Add Controller lists slot 1 as \"%s\", not \"%s\"",
+         row_path(i), want);
+
+   /* both play as player 1, slot 0 first: slot 1 shares from
+    * another port, and Port 1 Controls links it */
+   input_config_plays_as_set(0, 1);
+   input_autoconfigure_reallocate_ports(0);
+   input_config_plays_as_set(1, 1);
+   input_autoconfigure_reallocate_ports(1);
+   open_port_controllers(1);
+   buf = selection_buf();
+   for (i = 0; buf && (size_t)i < buf->size; i++)
+      if (     buf->list[i].label
+            && string_ends_with(buf->list[i].label, "_input_binds_list"))
+         link = row_path(i);
+   want = with_tag("Harness Pad [%s #1] (Port ", ID_SER11);
+   check(link && string_starts_with(link, want),
+         "Port 1 Controls > Controllers links its sharer as \"%s\", not \"%s...\"",
+         link ? link : "(no link)", want);
+   input_config_plays_as_set(1, 0);
+   input_autoconfigure_reallocate_ports(1);
+   input_config_plays_as_set(0, 0);
+   input_autoconfigure_reallocate_ports(0);
+}
+
 /* Two pads of one name and one of its own */
 static void phase_connect(void)
 {
@@ -215,6 +536,21 @@ static void phase_connect(void)
    check_tag(2, "",         "a name of its own");
    check_ident(0, ID_PORT1, "port-1");
    check_ident(1, ID_PORT2, "port-2");
+   check_controllers(with_tag("Harness Pad [%s]", ID_PORT1),
+         with_tag("Harness Pad [%s]", ID_PORT2), "Other Pad",
+         "two Harness Pads");
+   check_device_index(with_tag("#1: Harness Pad [%s]", ID_PORT1),
+         "two Harness Pads");
+   open_port_controllers(1);
+   check_row(0, with_tag("Harness Pad [%s]", ID_PORT1),
+         "two Harness Pads: Port 1 Controls > Controllers");
+   check_input_info(0, with_tag("Harness Pad [%s]", ID_PORT1), NULL,
+         "two Harness Pads");
+   check_input_info(1, with_tag("Harness Pad [%s]", ID_PORT2), NULL,
+         "two Harness Pads");
+   check_input_info(2, "Other Pad", NULL, "a name of its own");
+   check_remap_port(with_tag("Harness Pad [%s]", ID_PORT1),
+         "two Harness Pads");
 }
 
 /* The tag follows the pad, not the slot; a placeholder serial
@@ -231,6 +567,9 @@ static void phase_swap(void)
          "the pads in each other's slots");
    check_tag(1, with_tag(" [%s]", ID_PORT1),
          "the pads in each other's slots");
+   check_controllers(with_tag("Harness Pad [%s]", ID_PORT2),
+         with_tag("Harness Pad [%s]", ID_PORT1), "Other Pad",
+         "the pads in each other's slots");
 }
 
 /* Alone, no tag; its own Bluetooth address wins over the port */
@@ -240,10 +579,15 @@ static void phase_serial(void)
    check_gone(1, "one Harness Pad left");
    check_tag(0, "", "one Harness Pad left");
    check_ident(0, ID_PORT2, "one Harness Pad left");
+   open_controllers();
+   check_row(0, "Harness Pad", "one Harness Pad left");
    run_until(F_SERIAL_IN);
    check_tag(1, with_tag(" [%s]", ID_BT), "a pad with an address");
    check_ident(1, ID_BT, "a pad with an address");
    check_tag(0, with_tag(" [%s]", ID_PORT2), "beside a pad with an address");
+   check_controllers(with_tag("Harness Pad [%s]", ID_PORT2),
+         with_tag("Harness Pad [%s]", ID_BT), "Other Pad",
+         "a pad with an address");
 }
 
 /* Two serials ending alike, one tag: numbered in identity order,
@@ -270,6 +614,12 @@ static void phase_clash(void)
    check_ident(1, ID_SER11, "port-11");
    check_tag(0, with_tag(" [%s #2]", ID_SER22), "two pads picking one tag");
    check_tag(1, with_tag(" [%s #1]", ID_SER11), "two pads picking one tag");
+   check_controllers(with_tag("Harness Pad [%s #2]", ID_SER22),
+         with_tag("Harness Pad [%s #1]", ID_SER11), "Other Pad",
+         "two pads picking one tag");
+   check_device_index(with_tag("#1: Harness Pad [%s #2]", ID_SER22),
+         "two pads picking one tag");
+   check_clash_places();
 }
 
 /* One identity twice (a cloned serial): the port path decides; with
@@ -300,6 +650,8 @@ static void phase_noid(void)
    check_ident(1, 0, "a pad with no identity");
    check_tag(0, with_tag(" [%s]", ID_SER22),
          "beside a pad with no identity");
+   check_controllers(with_tag("Harness Pad [%s]", ID_SER22),
+         "Harness Pad (#2)", "Other Pad", "a pad with no identity");
 }
 
 /* The name the menus show decides, not the driver's: as a profile's
@@ -320,6 +672,8 @@ static void phase_shown(void)
    check_tag(0, with_tag(" [%s]", ID_SER22), "two names shown as one");
    check_tag(1, with_tag(" [%s]", ID_PORT1), "two names shown as one");
    check_tag(2, "",         "beside two names shown as one");
+   check_input_info(1, with_tag("Wireless Pad [%s]", ID_PORT1),
+         with_tag("Harness Pad [%s]", ID_PORT1), "two names shown as one");
 }
 
 int main(int argc, char *argv[])

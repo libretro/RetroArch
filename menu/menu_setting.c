@@ -10601,14 +10601,8 @@ static size_t get_string_representation_input_device_index(
                   ? device_name
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-      if (device_name && *device_name)
-      {
-         unsigned idx = input_config_get_device_name_index(map);
-
-         /* If idx is non-zero, it's part of a set */
-         if (idx > 0 && _len < len)
-            _len += snprintf(s + _len, len - _len, " (%u)", idx);
-      }
+      if (device_name && *device_name && _len < len)
+         _len += input_config_get_device_tag(map, s + _len, len - _len);
 
       /* several ports on one pad is allowed; say so, in case it is
        * not what was meant */

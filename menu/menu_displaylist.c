@@ -3101,15 +3101,20 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
 
    for (port = 0; port < MAX_USERS; port++)
    {
+      char name_buf[NAME_MAX_LENGTH];
       const char *name = input_config_get_device_name(port);
       size_t _len;
       if (!name)
          continue;
+      _len = strlcpy(name_buf, name, sizeof(name_buf));
+      if (_len < sizeof(name_buf))
+         input_config_get_device_tag(port, name_buf + _len,
+               sizeof(name_buf) - _len);
 
       /* Port and Device Name */
       _len = snprintf(entry, sizeof(entry), /* Note: format string below */
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
-            port + 1, name);
+            port + 1, name_buf);
       if (!input_config_get_device_autoconfigured(port) && _len < sizeof(entry))
          snprintf(entry + _len, sizeof(entry) - _len, " (%s)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE));
@@ -3121,12 +3126,24 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
 #ifdef HAVE_RGUI
       if (!strcmp(menu_driver, "rgui"))
       {
+         const char *display_name =
+               input_config_get_device_display_name(port);
+
          /* Device Display Name */
-         snprintf(entry, sizeof(entry), /* TODO/FIXME: localize */
-               "- Device Display Name: %s",
-               input_config_get_device_display_name(port)
-               ? input_config_get_device_display_name(port)
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+         _len = strlcpy(entry, /* TODO/FIXME: localize */
+               "- Device Display Name: ", sizeof(entry));
+         if (display_name)
+         {
+            _len += strlcpy(entry + _len, display_name,
+                  sizeof(entry) - _len);
+            if (_len < sizeof(entry))
+               input_config_get_device_tag(port, entry + _len,
+                     sizeof(entry) - _len);
+         }
+         else
+            strlcpy(entry + _len,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+                  sizeof(entry) - _len);
          if (menu_entries_append(list, entry, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
@@ -9274,13 +9291,22 @@ static VIDEO_NOINLINE void menu_displaylist_monitor_index_range(void)
       setting->max          = (float)(cur > (unsigned)n ? cur : (unsigned)n);
 }
 
-/* The name a controller row shows; NULL with none in @slot. */
-static const char *menu_displaylist_controller_name(unsigned slot)
+/* The name a controller row shows, in @s, with the tag that tells it
+ * from a connected controller of the same name; NULL with none in
+ * @slot. */
+static const char *menu_displaylist_controller_name(unsigned slot,
+      char *s, size_t len)
 {
+   size_t _len;
    const char *name = input_config_get_device_name(slot);
-   if (name && input_config_get_device_display_name(slot))
-      return input_config_get_device_display_name(slot);
-   return name;
+   if (!name)
+      return NULL;
+   if (input_config_get_device_display_name(slot))
+      name = input_config_get_device_display_name(slot);
+   _len = strlcpy(s, name, len);
+   if (_len < len)
+      input_config_get_device_tag(slot, s + _len, len - _len);
+   return s;
 }
 
 /* The connected controllers' slots into @slots (MAX_INPUT_DEVICES
@@ -9302,7 +9328,7 @@ static unsigned menu_displaylist_controller_slots(settings_t *settings,
          ? settings->uints.input_joypad_index[u] : u - max_users;
       if (     s >= MAX_INPUT_DEVICES
             || (listed & (1U << s))
-            || !menu_displaylist_controller_name(s))
+            || !input_config_get_device_name(s))
          continue;
       listed    |= 1U << s;
       slots[n++] = s;
@@ -9338,13 +9364,15 @@ static unsigned menu_displaylist_parse_input_port_links(
    for (u = 0; u < max_users; u++)
    {
       char text[NAME_MAX_LENGTH];
+      char name_buf[NAME_MAX_LENGTH];
       bool added;
       const char *name;
       unsigned s = settings->uints.input_joypad_index[u];
       if (     u == user
             || s >= MAX_INPUT_DEVICES
             || input_config_slot_user(s) != u
-            || !(name = menu_displaylist_controller_name(s))
+            || !(name = menu_displaylist_controller_name(s,
+                  name_buf, sizeof(name_buf)))
             || input_config_user_player(u) != user)
          continue;
       snprintf(text, sizeof(text),
@@ -9408,11 +9436,13 @@ static void menu_displaylist_parse_input_port_controllers(
       max_users = MAX_USERS;
    for (u = 0; u < max_users; u++)
    {
+      char name_buf[NAME_MAX_LENGTH];
       const char *name;
       unsigned s = settings->uints.input_joypad_index[u];
       if (     s >= MAX_INPUT_DEVICES
             || input_config_slot_user(s) != u
-            || !(name = menu_displaylist_controller_name(s))
+            || !(name = menu_displaylist_controller_name(s,
+                  name_buf, sizeof(name_buf)))
             || input_config_user_player(u) != p_user)
          continue;
       menu_displaylist_append_plays_as_row(list, name, s, user + 1);
@@ -9429,6 +9459,7 @@ static unsigned menu_displaylist_parse_input_plays_as_add_list(
 {
    char entry_lbl[12];
    char text[NAME_MAX_LENGTH];
+   char name_buf[NAME_MAX_LENGTH];
    unsigned slots[MAX_INPUT_DEVICES];
    unsigned i, n;
    unsigned count  = 0;
@@ -9447,7 +9478,9 @@ static unsigned menu_displaylist_parse_input_plays_as_add_list(
          continue;
       snprintf(text, sizeof(text),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD_ITEM),
-            menu_displaylist_controller_name(slots[i]), player);
+            menu_displaylist_controller_name(slots[i], name_buf,
+               sizeof(name_buf)),
+            player);
       if (menu_entries_append(info->list, text, entry_lbl, MSG_UNKNOWN,
                MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD, 0, slots[i],
                NULL))
@@ -9462,6 +9495,7 @@ static unsigned menu_displaylist_parse_input_plays_as_add_list(
 static unsigned menu_displaylist_parse_input_controllers(
       file_list_t *list, settings_t *settings)
 {
+   char name_buf[NAME_MAX_LENGTH];
    unsigned slots[MAX_INPUT_DEVICES];
    unsigned i, e;
    unsigned count = 0;
@@ -9469,7 +9503,8 @@ static unsigned menu_displaylist_parse_input_controllers(
 
    for (i = 0; i < n; i++)
       if (menu_displaylist_append_plays_as_row(list,
-               menu_displaylist_controller_name(slots[i]), slots[i], 0))
+               menu_displaylist_controller_name(slots[i], name_buf,
+                  sizeof(name_buf)), slots[i], 0))
          count++;
    for (e = 0; e < MAX_USERS; e++)
    {
