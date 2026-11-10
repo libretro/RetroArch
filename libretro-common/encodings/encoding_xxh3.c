@@ -369,6 +369,7 @@ static const uint8_t *xxh3_keys(uint8_t *buf, uint64_t seed)
    return buf;
 }
 
+#if defined(XXH3_HAVE_AVX512)
 /* The accumulators merged with the words of secret at @mkey, and the
  * avalanche */
 static INLINE uint64_t xxh3_merge(const uint64_t *acc, const uint64_t *mkey,
@@ -381,6 +382,7 @@ static INLINE uint64_t xxh3_merge(const uint64_t *acc, const uint64_t *mkey,
    h += xxh3_fold(acc[6] ^ mkey[6], acc[7] ^ mkey[7]);
    return xxh3_avalanche(h);
 }
+#endif
 
 /* The same, merged with the secret at @sec, eleven octets in */
 static INLINE uint64_t xxh3_merge_sec(const uint64_t *acc,
