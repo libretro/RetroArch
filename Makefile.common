@@ -2524,6 +2524,11 @@ ifeq ($(HAVE_RTGA), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/tga/rtga.o
 endif
 
+ifeq ($(HAVE_RGIF), 1)
+   DEFINES += -DHAVE_RGIF
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/gif/rgif.o
+endif
+
 ifeq ($(HAVE_RDDS), 1)
    DEFINES += -DHAVE_RDDS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/dds/rdds.o

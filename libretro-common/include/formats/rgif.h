@@ -51,7 +51,8 @@ enum rgif_order
 {
    RGIF_RGBA = 0,
    RGIF_ARGB,
-   RGIF_BGRA
+   RGIF_BGRA,
+   RGIF_ABGR
 };
 
 typedef struct rgif rgif_t;
@@ -75,7 +76,7 @@ bool rgif_size(const uint8_t *data, size_t len,
  * @data, @len : the file
  * @out        : rgif_size()'s width x height pixels of 4 bytes, @stride
  *               bytes from one row to the next (at least width * 4)
- * @order      : RGIF_RGBA, RGIF_ARGB or RGIF_BGRA
+ * @order      : RGIF_RGBA, RGIF_ARGB, RGIF_BGRA or RGIF_ABGR
  *
  * Decodes the first image into @out.
  *
@@ -85,6 +86,20 @@ bool rgif_size(const uint8_t *data, size_t len,
  */
 bool rgif_decode(rgif_t *g, const uint8_t *data, size_t len,
       uint8_t *out, size_t stride, unsigned order);
+
+/* The image_transfer interface (formats/image.h), as the other image
+ * decoders have it: the first image as a 32-bit texture of its own,
+ * ARGB32 or, with @supports_rgba, ABGR32, in native byte order.
+ *
+ * rgif_set_avail() says how much of the buffer is resident yet; until
+ * the whole file is, rgif_process_image() returns IMAGE_PROCESS_WAIT and
+ * takes nothing (a GIF decodes in one go). rgif_header_ready() says
+ * whether @len bytes hold the header. */
+bool rgif_header_ready(const uint8_t *data, size_t len);
+bool rgif_set_buf_ptr(rgif_t *g, void *data, size_t len);
+void rgif_set_avail(rgif_t *g, size_t avail);
+int rgif_process_image(rgif_t *g, void **buf, size_t size,
+      unsigned *width, unsigned *height, bool supports_rgba);
 
 RETRO_END_DECLS
 

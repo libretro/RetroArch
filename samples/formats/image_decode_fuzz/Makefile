@@ -9,6 +9,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 SOURCES := image_decode_fuzz_test.c \
            $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.c \
            $(LIBRETRO_COMM_DIR)/formats/tga/rtga.c \
+           $(LIBRETRO_COMM_DIR)/formats/gif/rgif.c \
            $(LIBRETRO_COMM_DIR)/formats/dds/rdds.c \
            $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
            $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c

@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <formats/image.h>
 #include <formats/rgif.h>
 
 static int fails;
@@ -404,6 +405,55 @@ static void broken(rgif_t *g)
    free(o.p);
 }
 
+/* The image_transfer interface: a 32-bit texture of its own, ARGB32 or
+ * ABGR32 in native order; nothing until the whole file is resident */
+static void texture(rgif_t *g)
+{
+   struct gif_desc d;
+   struct out      o;
+   uint8_t        *idx = noise(13 * 9, 16, 77, 1);
+   uint8_t        *ref = (uint8_t*)malloc(13 * 9 * 4);
+   void           *px  = NULL;
+   unsigned        w = 0, h = 0, k;
+   uint32_t        one = 1;
+   int             le  = *(uint8_t*)&one == 1;
+
+   memset(&d, 0, sizeof(d));
+   memset(&o, 0, sizeof(o));
+   d.w = d.iw = 13; d.h = d.ih = 9; d.bits = 4; d.transparent = 3;
+   d.idx = idx;
+   write_gif(&o, &d);
+
+   CHECK(rgif_header_ready(o.p, o.n) && !rgif_header_ready(o.p, 12),
+         "header_ready");
+   for (k = 0; k < 2; k++)
+   {
+      int rgba = (int)k;
+      unsigned order = le ? (rgba ? RGIF_RGBA : RGIF_BGRA)
+                          : (rgba ? RGIF_ABGR : RGIF_ARGB);
+      rgif_set_buf_ptr(g, o.p, o.n);
+      rgif_set_avail(g, o.n - 1);
+      CHECK(rgif_process_image(g, &px, o.n, &w, &h, rgba != 0)
+            == IMAGE_PROCESS_WAIT && !px, "a file not all in: wait");
+      rgif_set_avail(g, o.n);
+      CHECK(rgif_process_image(g, &px, o.n, &w, &h, rgba != 0)
+            == IMAGE_PROCESS_END && px && w == 13 && h == 9,
+            "the texture");
+      rgif_decode(g, o.p, o.n, ref, 13 * 4, order);
+      CHECK(px && !memcmp(px, ref, 13 * 9 * 4),
+            "the texture: ARGB32 / ABGR32 in native order");
+      free(px);
+      px = NULL;
+   }
+   o.p[0] = 'X';
+   rgif_set_buf_ptr(g, o.p, o.n);
+   CHECK(rgif_process_image(g, &px, o.n, &w, &h, true) == IMAGE_PROCESS_ERROR
+         && !px, "the texture of no GIF");
+   free(o.p);
+   free(idx);
+   free(ref);
+}
+
 int main(void)
 {
    static const unsigned sizes[][2] = { { 1, 1 }, { 7, 5 }, { 33, 17 }, { 160, 120 } };
@@ -467,6 +517,7 @@ int main(void)
    }
 
    broken(g);
+   texture(g);
    rgif_free(g);
 
    printf("rgif_test: %s (%d failures)\n", fails ? "FAIL" : "PASS", fails);

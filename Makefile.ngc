@@ -158,6 +158,7 @@ HAVE_RDDS                := 0
 HAVE_RJPEG               := 1
 HAVE_RBMP                := 1
 HAVE_RTGA                := 1
+HAVE_RGIF                := 1
 HAVE_RMODTRACKER         := 0
 HAVE_OVERLAY             := 1
 HAVE_7ZIP                := 0

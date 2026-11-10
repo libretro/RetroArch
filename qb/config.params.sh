@@ -244,6 +244,7 @@ HAVE_RPNG=yes              # RPNG support
 HAVE_RBMP=yes              # RBMP support
 HAVE_RJPEG=yes             # RJPEG support
 HAVE_RTGA=yes              # RTGA support
+HAVE_RGIF=yes              # RGIF support
 HAVE_RDDS=yes              # DDS (DXT/BCn) support
 HAVE_RWEBP=yes             # RWEBP support
 HAVE_RWAV=yes              # WAV support

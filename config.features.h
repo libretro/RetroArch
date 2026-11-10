@@ -418,6 +418,12 @@
 #define SUPPORTS_RTGA false
 #endif
 
+#ifdef HAVE_RGIF
+#define SUPPORTS_RGIF true
+#else
+#define SUPPORTS_RGIF false
+#endif
+
 #ifdef HAVE_RWEBP
 #define SUPPORTS_RWEBP true
 #else

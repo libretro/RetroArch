@@ -685,6 +685,9 @@ bool task_push_image_load_ex(const char *fullpath, unsigned load_flags,
       case IMAGE_TYPE_MP4:
          nbio->type = NBIO_TYPE_MP4;
          break;
+      case IMAGE_TYPE_GIF:
+         nbio->type = NBIO_TYPE_GIF;
+         break;
       default:
          nbio->type = NBIO_TYPE_NONE;
          break;

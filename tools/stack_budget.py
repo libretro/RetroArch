@@ -180,7 +180,8 @@ def stack_usage(path, workdir, cc='gcc', tag='o'):
     # ctr and every desktop build set.
     defs = ['-DPSP', '-DHAVE_COMPRESSION', '-DHAVE_7ZIP',
             '-DHAVE_CHD', '-DHAVE_RPNG', '-DHAVE_RJPEG', '-DHAVE_RBMP',
-            '-DHAVE_RTGA', '-DHAVE_RWEBP', '-DHAVE_RDDS', '-DHAVE_RWAV']
+            '-DHAVE_RTGA', '-DHAVE_RGIF', '-DHAVE_RWEBP', '-DHAVE_RDDS',
+            '-DHAVE_RWAV']
     if path.replace(os.sep, '/').endswith('rthreads/rthreads.c'):
         # Under -DPSP this TU is the native sceKernel backend and only
         # the PSP SDK's compiler can see its headers; measure the

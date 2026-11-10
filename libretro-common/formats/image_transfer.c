@@ -35,6 +35,9 @@
 #ifdef HAVE_RTGA
 #include <formats/rtga.h>
 #endif
+#ifdef HAVE_RGIF
+#include <formats/rgif.h>
+#endif
 #ifdef HAVE_RBMP
 #include <formats/rbmp.h>
 #endif
@@ -68,27 +71,27 @@
  * Y = forwarded to the backend, . = returns the unsupported answer,
  * s = constant stub (see the notes below):
  *
- *                                   PNG JPG BMP TGA WBP DDS WBM MP4
- *   new / free / set_buf_ptr        Y   Y   Y   Y   Y   Y   Y   Y
- *   start                           Y   Y   s   s   s   s   s   s
- *   is_valid                        Y   Y   s   s   s   s   s   s
- *   process                         Y   Y   Y   Y   Y   Y   Y   Y
- *   process slices (returns NEXT)   Y   Y   Y   Y   Y   Y   Y   Y
- *   iterate                         Y   Y   .   .   .   .   .   .
- *   need_more                       Y   Y   .   .   .   .   .   .
- *   set_avail                       Y   Y   .   .   .   .   Y   Y
- *   get_gpu_layout                  .   .   .   .   .   Y   .   .
- *   set_want_10bit / is_10bit       Y   .   .   .   .   .   Y   Y
- *   detach_anim_stream              .   .   .   .   .   .   Y   Y
- *   anim_* (whole buffer)           .   .   .   .   Y   .   .   .
- *   anim_stream_new                 Y   .   .   .   Y   .   Y   Y
- *   anim_stream_new_avail           Y   .   .   .   .   .   Y   Y
+ *                                   PNG JPG BMP TGA WBP DDS WBM MP4 GIF
+ *   new / free / set_buf_ptr        Y   Y   Y   Y   Y   Y   Y   Y   Y
+ *   start                           Y   Y   s   s   s   s   s   s   s
+ *   is_valid                        Y   Y   s   s   s   s   s   s   s
+ *   process                         Y   Y   Y   Y   Y   Y   Y   Y   Y
+ *   process slices (returns NEXT)   Y   Y   Y   Y   Y   Y   Y   Y   .
+ *   iterate                         Y   Y   .   .   .   .   .   .   .
+ *   need_more                       Y   Y   .   .   .   .   .   .   .
+ *   set_avail                       Y   Y   .   .   .   .   Y   Y   Y
+ *   get_gpu_layout                  .   .   .   .   .   Y   .   .   .
+ *   set_want_10bit / is_10bit       Y   .   .   .   .   .   Y   Y   .
+ *   detach_anim_stream              .   .   .   .   .   .   Y   Y   .
+ *   anim_* (whole buffer)           .   .   .   .   Y   .   .   .   .
+ *   anim_stream_new                 Y   .   .   .   Y   .   Y   Y   .
+ *   anim_stream_new_avail           Y   .   .   .   .   .   Y   Y   .
  *   anim_stream_free / _get_info /
- *     _next / _rewind / _set_argb   Y   .   .   .   Y   .   Y   Y
- *   anim_stream_set_avail           Y   .   .   .   .   .   Y   Y
+ *     _next / _rewind / _set_argb   Y   .   .   .   Y   .   Y   Y   .
+ *   anim_stream_set_avail           Y   .   .   .   .   .   Y   Y   .
  *   anim_stream_media_floor /
- *     _consumed                     .   .   .   .   .   .   Y   Y
- *   anim_stream_complete_scan       .   .   .   .   .   .   Y   .
+ *     _consumed                     .   .   .   .   .   .   Y   Y   .
+ *   anim_stream_complete_scan       .   .   .   .   .   .   Y   .   .
  *
  * The gaps, in the order a caller runs into them:
  *
@@ -115,7 +118,8 @@
  * - set_avail (the still-image byte wall) is honoured by PNG and JPEG,
  *   where it surfaces as need_more(), and by TGA, WEBM and MP4, where
  *   it surfaces as IMAGE_PROCESS_WAIT out of process(), and by BMP the
- *   same way.  WEBP and DDS have no partial-buffer decode and must be
+ *   same way. GIF waits the same way, but for the whole file: it
+ *   decodes its first image in one process() call once it is all in.  WEBP and DDS have no partial-buffer decode and must be
  *   handed fully resident data: a WEBP still is a VP8 keyframe, which
  *   cannot be decoded in part at all.
  *
@@ -168,6 +172,11 @@ void image_transfer_free(void *data, enum image_type_enum type)
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
          rtga_free((rtga_t*)data);
+#endif
+         break;
+      case IMAGE_TYPE_GIF:
+#ifdef HAVE_RGIF
+         rgif_free((rgif_t*)data);
 #endif
          break;
       case IMAGE_TYPE_PNG:
@@ -236,6 +245,12 @@ void *image_transfer_new(enum image_type_enum type)
 #else
          break;
 #endif
+      case IMAGE_TYPE_GIF:
+#ifdef HAVE_RGIF
+         return rgif_new();
+#else
+         break;
+#endif
       case IMAGE_TYPE_BMP:
 #ifdef HAVE_RBMP
          return rbmp_alloc();
@@ -296,6 +311,12 @@ bool image_transfer_start(void *data, enum image_type_enum type)
 #endif
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
+         return true;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_GIF:
+#ifdef HAVE_RGIF
          return true;
 #else
          break;
@@ -361,6 +382,12 @@ bool image_transfer_is_valid(
 #else
          break;
 #endif
+      case IMAGE_TYPE_GIF:
+#ifdef HAVE_RGIF
+         return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_BMP:
 #ifdef HAVE_RBMP
          return true;
@@ -419,6 +446,11 @@ void image_transfer_set_buffer_ptr(
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
          rtga_set_buf_ptr((rtga_t*)data, (uint8_t*)ptr);
+#endif
+         break;
+      case IMAGE_TYPE_GIF:
+#ifdef HAVE_RGIF
+         rgif_set_buf_ptr((rgif_t*)data, (uint8_t*)ptr, len);
 #endif
          break;
       case IMAGE_TYPE_BMP:
@@ -482,6 +514,14 @@ int image_transfer_process(
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
          ret = rtga_process_image((rtga_t*)data,
+               (void**)buf, len, width, height, supports_rgba);
+         break;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_GIF:
+#ifdef HAVE_RGIF
+         ret = rgif_process_image((rgif_t*)data,
                (void**)buf, len, width, height, supports_rgba);
          break;
 #else
@@ -703,6 +743,7 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
       case IMAGE_TYPE_DDS:
       case IMAGE_TYPE_WEBM:
       case IMAGE_TYPE_MP4:
+      case IMAGE_TYPE_GIF:
       case IMAGE_TYPE_NONE:
          break;
    }
@@ -746,6 +787,11 @@ void image_transfer_set_avail(void *data, enum image_type_enum type,
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
          rtga_set_avail((rtga_t*)data, avail);
+#endif
+         break;
+      case IMAGE_TYPE_GIF:
+#ifdef HAVE_RGIF
+         rgif_set_avail((rgif_t*)data, avail);
 #endif
          break;
       case IMAGE_TYPE_BMP:

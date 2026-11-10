@@ -28,6 +28,7 @@
 #include <formats/image.h>
 #include <formats/rbmp.h>
 #include <formats/rtga.h>
+#include <formats/rgif.h>
 #include <formats/rdds.h>
 #include <formats/rwebp.h>
 
@@ -35,10 +36,10 @@
  * whose seed stopped being accepted, which would leave that format
  * exercising only its reject paths while the sweep still reported a
  * pass. */
-enum { FMT_BMP = 0, FMT_TGA, FMT_DDS, FMT_WEBP, FMT_COUNT };
+enum { FMT_BMP = 0, FMT_TGA, FMT_DDS, FMT_WEBP, FMT_GIF, FMT_COUNT };
 
 static const char *const fmt_name[FMT_COUNT] =
-{ "bmp", "tga", "dds", "webp" };
+{ "bmp", "tga", "dds", "webp", "gif" };
 
 static long decoded_ok[FMT_COUNT];
 static long attempted[FMT_COUNT];
@@ -232,6 +233,38 @@ static void try_tga(const unsigned char *buf, size_t len)
    rtga_free(rtga);
 }
 
+/* Smallest well-formed GIF: 2x1, a 2-entry global table, one image. */
+static const unsigned char gif_seed[] =
+{
+   'G','I','F','8','7','a', 2,0, 1,0, 0x80, 0, 0,     /* screen      */
+   0,0,0, 255,255,255,                               /* colours     */
+   0x2c, 0,0, 0,0, 2,0, 1,0, 0,                      /* image       */
+   2, 2, 0x44, 0x0a, 0,                              /* LZW: 0, 1   */
+   0x3b
+};
+
+static void try_gif(const unsigned char *buf, size_t len)
+{
+   rgif_t *rgif = rgif_new();
+   void   *out  = NULL;
+   unsigned w = 0, h = 0;
+
+   attempts++;
+   attempted[cur_fmt]++;
+
+   if (!rgif)
+      return;
+
+   if (rgif_set_buf_ptr(rgif, (void*)buf, len)
+         && rgif_process_image(rgif, &out, len, &w, &h, true)
+            == IMAGE_PROCESS_END)
+      decoded_ok[cur_fmt]++;
+
+   if (out)
+      free(out);
+   rgif_free(rgif);
+}
+
 /* Every single-byte value at every offset of the header, on a copy
  * sized exactly to the seed so a read past the end is a report. */
 static void sweep(int fmt, const unsigned char *seed, size_t seed_len,
@@ -291,6 +324,9 @@ int main(void)
    sweep(FMT_TGA,  tga_seed,  sizeof(tga_seed),  try_tga,  18);
    sweep(FMT_DDS,  dds_seed,  sizeof(dds_seed),  try_dds,  128);
    sweep(FMT_WEBP, webp_seed, sizeof(webp_seed), try_webp, 32);
+   /* every byte: the whole file is header and LZW stream */
+   sweep(FMT_GIF,  gif_seed,  sizeof(gif_seed),  try_gif,
+         sizeof(gif_seed));
 
    {
       int i, bad = 0;

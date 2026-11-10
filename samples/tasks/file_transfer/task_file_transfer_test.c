@@ -223,6 +223,7 @@ static bool is_image_type(enum nbio_type type)
       case NBIO_TYPE_WEBP:
       case NBIO_TYPE_WEBM:
       case NBIO_TYPE_MP4:
+      case NBIO_TYPE_GIF:
          return true;
       default:
          break;

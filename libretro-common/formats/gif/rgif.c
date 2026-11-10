@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_endianness.h>
+#include <formats/image.h>
 #include <formats/rgif.h>
 
 #define RG_CODES 4096 /* 12-bit LZW codes */
@@ -39,6 +41,11 @@ struct rgif
    uint8_t  lpal[256][4];      /* the image's own */
    uint8_t  px[256][4];        /* each index as written: in @order, or
                                   0 where it is transparent */
+
+   /* the image_transfer interface's file */
+   const uint8_t *buf;
+   size_t         len;
+   size_t         avail;
 };
 
 /* The file, read as stb_image reads it: past the end, every byte is 0 */
@@ -74,6 +81,9 @@ static void rg_put(uint8_t *d, unsigned order, unsigned r, unsigned g,
          break;
       case RGIF_BGRA:
          d[0] = (uint8_t)b; d[1] = (uint8_t)g; d[2] = (uint8_t)r; d[3] = (uint8_t)a;
+         break;
+      case RGIF_ABGR:
+         d[0] = (uint8_t)a; d[1] = (uint8_t)b; d[2] = (uint8_t)g; d[3] = (uint8_t)r;
          break;
       default:
          d[0] = (uint8_t)r; d[1] = (uint8_t)g; d[2] = (uint8_t)b; d[3] = (uint8_t)a;
@@ -395,4 +405,59 @@ bool rgif_decode(rgif_t *g, const uint8_t *data, size_t len,
       else
          return false; /* the trailer before any image, or no GIF block */
    }
+}
+
+bool rgif_header_ready(const uint8_t *data, size_t len)
+{
+   unsigned w, h;
+   return data && len >= 13 && rgif_size(data, len, &w, &h);
+}
+
+bool rgif_set_buf_ptr(rgif_t *g, void *data, size_t len)
+{
+   if (!g)
+      return false;
+   g->buf   = (const uint8_t*)data;
+   g->len   = len;
+   g->avail = len;
+   return true;
+}
+
+void rgif_set_avail(rgif_t *g, size_t avail)
+{
+   if (g)
+      g->avail = avail < g->len ? avail : g->len;
+}
+
+int rgif_process_image(rgif_t *g, void **buf, size_t size,
+      unsigned *width, unsigned *height, bool supports_rgba)
+{
+   unsigned w, h, order;
+   size_t   len;
+   uint8_t *px;
+
+   if (!g || !g->buf || !buf)
+      return IMAGE_PROCESS_ERROR;
+   len = g->len ? g->len : size;
+   if (g->avail < len)
+      return IMAGE_PROCESS_WAIT; /* nothing taken: the whole file first */
+   if (!rgif_size(g->buf, len, &w, &h) || !w || !h)
+      return IMAGE_PROCESS_ERROR;
+   if (!(px = (uint8_t*)malloc((size_t)w * h * 4)))
+      return IMAGE_PROCESS_ERROR;
+   /* the 32-bit pixel, ARGB or ABGR from the high byte, as it lies in
+    * memory */
+   if (is_little_endian())
+      order = supports_rgba ? RGIF_RGBA : RGIF_BGRA;
+   else
+      order = supports_rgba ? RGIF_ABGR : RGIF_ARGB;
+   if (!rgif_decode(g, g->buf, len, px, (size_t)w * 4, order))
+   {
+      free(px);
+      return IMAGE_PROCESS_ERROR;
+   }
+   *buf    = px;
+   *width  = w;
+   *height = h;
+   return IMAGE_PROCESS_END;
 }

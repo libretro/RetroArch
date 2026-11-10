@@ -233,6 +233,7 @@ enum msg_file_type
    FILE_TYPE_TGA,
    FILE_TYPE_BMP,
    FILE_TYPE_WEBP,
+   FILE_TYPE_GIF,
 
    FILE_TYPE_MOD,
    FILE_TYPE_S3M,

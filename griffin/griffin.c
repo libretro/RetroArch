@@ -582,6 +582,9 @@ VIDEO IMAGE
 #ifdef HAVE_RTGA
 #include "../libretro-common/formats/tga/rtga.c"
 #endif
+#ifdef HAVE_RGIF
+#include "../libretro-common/formats/gif/rgif.c"
+#endif
 
 #ifdef HAVE_IMAGEVIEWER
 #include "../cores/libretro-imageviewer/image_core.c"

@@ -98,7 +98,8 @@ enum image_type_enum
    IMAGE_TYPE_WEBP,
    IMAGE_TYPE_DDS,
    IMAGE_TYPE_WEBM,
-   IMAGE_TYPE_MP4
+   IMAGE_TYPE_MP4,
+   IMAGE_TYPE_GIF
 };
 
 #define IMAGE_MAX_MIPS 16

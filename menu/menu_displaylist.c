@@ -3783,6 +3783,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RTGA
          {SUPPORTS_RTGA, "TGA (RTGA)"},
 #endif
+#ifdef HAVE_RGIF
+         {SUPPORTS_RGIF, "GIF (RGIF)"},
+#endif
 #ifdef HAVE_RWEBP
          {SUPPORTS_RWEBP, "WebP (RWEBP)"},
 #endif
@@ -18934,7 +18937,12 @@ static bool menu_displaylist_ctl_internal(
 #ifdef HAVE_RTGA
                if (_len > 0)
                   _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               strlcpy_lit(new_exts + _len, "tga", sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "tga", sizeof(new_exts) - _len);
+#endif
+#ifdef HAVE_RGIF
+               if (_len > 0)
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "gif", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RWEBP
                if (_len > 0)

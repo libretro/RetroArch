@@ -52,7 +52,8 @@ enum nbio_type
    NBIO_TYPE_LPCM,
    NBIO_TYPE_OPUS,
    NBIO_TYPE_MOD,
-   NBIO_TYPE_WAV
+   NBIO_TYPE_WAV,
+   NBIO_TYPE_GIF
 };
 
 enum nbio_status_flags

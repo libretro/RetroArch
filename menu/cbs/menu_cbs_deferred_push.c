@@ -557,6 +557,9 @@ static int general_push(menu_displaylist_info_t *info,
 #ifdef HAVE_RTGA
       string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "tga");
 #endif
+#ifdef HAVE_RGIF
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "gif");
+#endif
 #ifdef HAVE_RWEBP
       string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "webp");
 #endif

@@ -721,6 +721,8 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
       { "bmp",       FILE_TYPE_BMP },
       { "webp",      FILE_TYPE_WEBP },
       { "WEBP",      FILE_TYPE_WEBP },
+      { "gif",       FILE_TYPE_GIF },
+      { "GIF",       FILE_TYPE_GIF },
 #endif
 #ifdef HAVE_EASTEREGG
       { "gong",      FILE_TYPE_GONG },

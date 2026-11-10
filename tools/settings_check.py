@@ -73,7 +73,7 @@ UNITY_EXTRA = [
     'HAVE_STDIN_CMD', 'HAVE_RWAV', 'HAVE_ONLINE_UPDATER',
     'HAVE_UPDATE_ASSETS', 'HAVE_CORE_INFO_CACHE', 'HAVE_DSP_FILTER',
     'HAVE_VIDEO_FILTER', 'HAVE_7ZIP', 'HAVE_RPNG', 'HAVE_RJPEG',
-    'HAVE_RBMP', 'HAVE_RTGA',
+    'HAVE_RBMP', 'HAVE_RTGA', 'HAVE_RGIF',
 ]
 
 # The unity check compiles at -Werror, so it gets its own profile set:

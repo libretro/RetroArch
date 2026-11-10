@@ -37,6 +37,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		   -DHAVE_RJPEG \
 		   -DHAVE_RBMP \
 		   -DHAVE_RTGA \
+		   -DHAVE_RGIF \
 		   -DHAVE_CC_RESAMPLER \
 		   -DHAVE_CORE_INFO_CACHE
 	ifeq ($(DEBUG), 1)
@@ -58,6 +59,7 @@ else
 	HAVE_RJPEG		:= 1
 	HAVE_RBMP		:= 1
 	HAVE_RTGA		:= 1
+	HAVE_RGIF		:= 1
 	HAVE_7ZIP		:= 1
 	HAVE_RZSTD		:= 1
    ifeq ($(HAVE_VITAGLES), 1)

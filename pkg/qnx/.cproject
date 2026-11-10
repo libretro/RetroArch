@@ -46,6 +46,7 @@
 									<listOptionValue builtIn="false" value="HAVE_RJPEG"/>
 									<listOptionValue builtIn="false" value="HAVE_RBMP"/>
 									<listOptionValue builtIn="false" value="HAVE_RTGA"/>
+									<listOptionValue builtIn="false" value="HAVE_RGIF"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
@@ -121,6 +122,7 @@
 									<listOptionValue builtIn="false" value="HAVE_RJPEG"/>
 									<listOptionValue builtIn="false" value="HAVE_RBMP"/>
 									<listOptionValue builtIn="false" value="HAVE_RTGA"/>
+									<listOptionValue builtIn="false" value="HAVE_RGIF"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
@@ -231,6 +233,7 @@
 									<listOptionValue builtIn="false" value="HAVE_RJPEG"/>
 									<listOptionValue builtIn="false" value="HAVE_RBMP"/>
 									<listOptionValue builtIn="false" value="HAVE_RTGA"/>
+									<listOptionValue builtIn="false" value="HAVE_RGIF"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
@@ -300,6 +303,7 @@
 									<listOptionValue builtIn="false" value="HAVE_RJPEG"/>
 									<listOptionValue builtIn="false" value="HAVE_RBMP"/>
 									<listOptionValue builtIn="false" value="HAVE_RTGA"/>
+									<listOptionValue builtIn="false" value="HAVE_RGIF"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
@@ -413,6 +417,7 @@
 									<listOptionValue builtIn="false" value="HAVE_RJPEG"/>
 									<listOptionValue builtIn="false" value="HAVE_RBMP"/>
 									<listOptionValue builtIn="false" value="HAVE_RTGA"/>
+									<listOptionValue builtIn="false" value="HAVE_RGIF"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
@@ -482,6 +487,7 @@
 									<listOptionValue builtIn="false" value="HAVE_RJPEG"/>
 									<listOptionValue builtIn="false" value="HAVE_RBMP"/>
 									<listOptionValue builtIn="false" value="HAVE_RTGA"/>
+									<listOptionValue builtIn="false" value="HAVE_RGIF"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
@@ -592,6 +598,7 @@
 									<listOptionValue builtIn="false" value="HAVE_RJPEG"/>
 									<listOptionValue builtIn="false" value="HAVE_RBMP"/>
 									<listOptionValue builtIn="false" value="HAVE_RTGA"/>
+									<listOptionValue builtIn="false" value="HAVE_RGIF"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
@@ -661,6 +668,7 @@
 									<listOptionValue builtIn="false" value="HAVE_RJPEG"/>
 									<listOptionValue builtIn="false" value="HAVE_RBMP"/>
 									<listOptionValue builtIn="false" value="HAVE_RTGA"/>
+									<listOptionValue builtIn="false" value="HAVE_RGIF"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
