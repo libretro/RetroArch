@@ -6,6 +6,7 @@
  * from us under the new keys.
  *   tls_keyupdate host port ca.pem */
 #include <stdio.h>
+#include <features/features_cpu.h>
 #include <stdlib.h>
 #include <string.h>
 #include <net/net_compat.h>
@@ -15,13 +16,23 @@
 void ssl_socket_log_verify_fail(int m, const char *d, const char *i) { fprintf(stderr, "verify: %s %s\n", d, i); (void)m; }
 void ssl_socket_log_verify_disabled(const char *d) { (void)d; }
 
-static int read_line(void *ssl, char *out, size_t cap)
+static int read_line(void *ssl, int fd, char *out, size_t cap)
 {
    size_t n = 0;
+   retro_time_t deadline = cpu_features_get_time_usec() + 5000000;
    while (n + 1 < cap)
    {
-      if (ssl_socket_receive_all_blocking(ssl, out + n, 1) != 1)
+      bool error = false;
+      ssize_t got = ssl_socket_receive_all_nonblocking(ssl, &error, out + n, 1);
+      if (got < 0 || error || cpu_features_get_time_usec() >= deadline)
          return -1;
+      if (!got)
+      {
+         bool read = true, write = false;
+         if (!ssl_socket_retro_pending(ssl, &write))
+            socket_wait(fd, &read, &write, 100);
+         continue;
+      }
       if (out[n] == '\n')
          break;
       n++;
@@ -50,7 +61,7 @@ int main(int argc, char **argv)
    if (ssl_socket_connect(ssl, addr, true, true) < 0) { fprintf(stderr, "connect failed (%d)\n", ssl_socket_last_error(ssl)); return 1; }
    for (i = 0; i < 3; i++)
    {
-      if (read_line(ssl, line, sizeof(line)) != 0 || strcmp(line, expect[i]) != 0)
+      if (read_line(ssl, fd, line, sizeof(line)) != 0 || strcmp(line, expect[i]) != 0)
       {
          fprintf(stderr, "step %d: got \"%s\", expected \"%s\"\n", i, line, expect[i]);
          return 1;

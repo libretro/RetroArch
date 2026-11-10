@@ -12,6 +12,8 @@ make -s tls_fetch
 # MinGW build of the tools
 RUN=${RUNNER:-}
 EXE=${EXE:-}
+make -s tls_partial
+$RUN ./tls_partial$EXE
 # Until a server listens on port $1, five seconds at most. It is asked of
 # the socket table, not by connecting: a server that counts its
 # connections would count a probe. Without ss, the old fixed wait.

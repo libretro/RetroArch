@@ -3310,7 +3310,14 @@ bool net_http_wait(struct http_t *state, int timeout_ms)
       return true;
 
    if (state->conn->connected && state->request_sent)
+   {
       rd = true;
+#ifdef HAVE_RETROSSL
+      if (state->ssl && state->conn->ssl_ctx
+            && ssl_socket_retro_pending(state->conn->ssl_ctx, &wr))
+         return true;
+#endif
+   }
    else
       wr = true;
 
@@ -3596,16 +3603,9 @@ bool net_http_update_budget(struct http_t *state,
          if (response->part == P_DONE || state->err)
             break;
 
-         /* _len == 0 is EAGAIN: the socket is drained for now.
-          * _len < 0 past the header stage is a close, which the body
-          * parser above has already turned into P_DONE for T_FULL and
-          * into an error otherwise; either way we are finished here.
-          *
-          * This is the one exit that leaves nothing buffered anywhere,
-          * including inside the TLS layer: the SSL read reports EAGAIN
-          * only once it has handed over every decrypted byte it holds.
-          * Breaking on the budget below leaves bytes waiting, so only
-          * this exit marks the transfer as blocked. */
+         /* Zero yields: net_http_wait checks TLS-local work as well as
+          * socket readiness. A negative result ends a close-delimited
+          * body, or fails any other unfinished body above. */
          if (_len <= 0)
          {
             state->blocked = (_len == 0);

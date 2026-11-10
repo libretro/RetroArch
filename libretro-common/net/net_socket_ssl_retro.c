@@ -417,7 +417,9 @@ struct ssl_state
     * delayed ACK and costs a 40 ms stall per full handshake. */
    uint8_t *cork;
    size_t   cork_len;
+   size_t   cork_off;
    uint8_t  corked;
+   uint8_t  key_update;
    /* One sealed application-data record not yet fully on the wire,
     * for ssl_socket_send_all_nonblocking(): bytes are sealed as they
     * are accepted, and what the socket did not take waits here.
@@ -904,19 +906,22 @@ fail:
 
 /* Put a pending non-blocking record on the wire before anything else
  * goes out, so records leave in sequence order. */
+static int tls_control_push(struct ssl_state *s);
+
 static int tls_tx_drain_blocking(struct ssl_state *s)
 {
-   if (s->tx_off >= s->tx_len)
-      return 0;
-   socket_set_block(s->fd, true);
-   if (!socket_send_all_blocking(s->fd, s->tx + s->tx_off,
-            s->tx_len - s->tx_off, true))
+   int result;
+   while ((result = tls_control_push(s)) == 0)
    {
-      s->last_err = TLS_ERR_SOCKET;
-      return -1;
+      bool write = true;
+      if (!socket_wait(s->fd, NULL, &write, SSL_SOCKET_IO_TIMEOUT_MS) || !write)
+      {
+         s->last_err = TLS_ERR_SOCKET;
+         return -1;
+      }
    }
-   s->tx_off = s->tx_len = 0;
-   return 0;
+   socket_set_block(s->fd, true);
+   return result < 0 ? -1 : 0;
 }
 
 static int tls_send_record(struct ssl_state *s, uint8_t type,
@@ -993,34 +998,54 @@ static bool tls_recv_exact(struct ssl_state *s, uint8_t *buf, size_t len)
    return true;
 }
 
-/* Reads one record into s->rx, decrypting in place once the server
- * write keys are in force. On return *type is the content type, and
- * *body / *len the plaintext. */
-/* One record, its body in *body: decrypted in place in s->rx, or -
- * when @dst is given and the record's plaintext fits @dst_cap - into
- * @dst, so application data lands where the caller wants it with no
- * copy. The AEADs check the tag before writing anything. */
+/* Retain incomplete headers and bodies in the record buffer. */
+static int tls_record_part(struct ssl_state *s, size_t target, bool nonblock)
+{
+   if (s->rx_len < target)
+   {
+      if (nonblock)
+      {
+         bool error = false;
+         ssize_t n = socket_receive_all_nonblocking(s->fd, &error,
+               s->rx + s->rx_len, target - s->rx_len);
+         if (n < 0 || error)
+            goto error;
+         s->rx_len += (size_t)n;
+      }
+      else
+      {
+         if (!tls_recv_exact(s, s->rx + s->rx_len, target - s->rx_len))
+            goto error;
+         s->rx_len = target;
+      }
+   }
+   return s->rx_len < target ? 1 : 0;
+error:
+   s->last_err = TLS_ERR_SOCKET;
+   return -1;
+}
+
+/* One record, decrypted in rx or directly into dst when it fits.
+ * The AEADs verify before writing. 1 retains partial input, 0 opens
+ * a complete record, -1 fails. */
 static int tls_read_record_to(struct ssl_state *s, uint8_t *type,
-      const uint8_t **body, size_t *len, uint8_t *dst, size_t dst_cap)
+      const uint8_t **body, size_t *len, uint8_t *dst, size_t dst_cap,
+      bool nonblock)
 {
    size_t rlen;
-
-   if (!tls_recv_exact(s, s->rx, 5))
-   {
-      s->last_err = TLS_ERR_SOCKET;
-      return -1;
-   }
+   int result = tls_record_part(s, 5, nonblock);
+   if (result)
+      return result;
    rlen = tls_get16(s->rx + 3);
    if (s->rx[1] != 3 || rlen > TLS_REC_IN_MAX || rlen == 0)
    {
       s->last_err = TLS_ERR_RECORD;
       return -1;
    }
-   if (!tls_recv_exact(s, s->rx + 5, rlen))
-   {
-      s->last_err = TLS_ERR_SOCKET;
-      return -1;
-   }
+   result = tls_record_part(s, 5 + rlen, nonblock);
+   if (result)
+      return result;
+   s->rx_len = 0;
    *type = s->rx[0];
 
    if (!s->rx_encrypted || (s->v13 && *type == TLS_CT_CCS))
@@ -1182,7 +1207,7 @@ bad:
 static int tls_read_record(struct ssl_state *s, uint8_t *type,
       const uint8_t **body, size_t *len)
 {
-   return tls_read_record_to(s, type, body, len, NULL, 0);
+   return tls_read_record_to(s, type, body, len, NULL, 0, false);
 }
 
 static int tls_send_alert(struct ssl_state *s, uint8_t level, uint8_t desc)
@@ -2590,7 +2615,8 @@ static int tls13_handshake(struct ssl_state *s, const uint8_t *peer, size_t peer
 /* A post-handshake message on the application stream: tickets are
  * dropped (no PSK resumption), a KeyUpdate rotates the server keys and
  * is answered with our own when asked. */
-static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t len)
+static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t len,
+      bool nonblock)
 {
    if (len < 4)
       return -1;
@@ -2633,7 +2659,7 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
       {
          uint8_t next[48];
          size_t  hlen = tls13_hlen(s);
-         if (len != 5)
+         if (len != 5 || msg[4] > 1)
             return -1;
          if (tls13_expand_label(s, s->s_app, "traffic upd", NULL, 0, next, hlen) != 0)
             return -1;
@@ -2645,6 +2671,11 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
          {
             /* update_requested: rotate ours too, announcing it first */
             uint8_t ku[1] = {0};
+            if (nonblock)
+            {
+               s->key_update = 1;
+               return 0;
+            }
             if (tls_send_handshake(s, TLS_HS_KEY_UPDATE, ku, 1) != 0)
                return -1;
             if (tls13_expand_label(s, s->c_app, "traffic upd", NULL, 0, next, hlen) != 0)
@@ -2872,7 +2903,28 @@ int ssl_socket_connect(void *state_data,
 
 /* Points s->pt at the next application record's plaintext: in @dst
  * when given and the record fits @dst_cap, else in s->rx. */
-static int tls_fill(struct ssl_state *s, uint8_t *dst, size_t dst_cap)
+static int tls_post_step(struct ssl_state *s, bool nonblock)
+{
+   const uint8_t *message = s->hs + s->hs_off;
+   size_t available = s->hs_len - s->hs_off;
+   size_t length;
+   if (available < 4)
+      return 0;
+   length = tls_get24(message + 1);
+   if (length > TLS_HS_MAX - 4)
+      return -1;
+   if (available < length + 4)
+      return 0;
+   if (tls13_post_handshake(s, message, length + 4, nonblock) != 0)
+      return -1;
+   s->hs_off += length + 4;
+   if (s->hs_off == s->hs_len)
+      s->hs_len = s->hs_off = 0;
+   return 1;
+}
+
+static int tls_fill(struct ssl_state *s, uint8_t *dst, size_t dst_cap,
+      bool nonblock)
 {
    uint8_t type;
    const uint8_t *b;
@@ -2880,10 +2932,35 @@ static int tls_fill(struct ssl_state *s, uint8_t *dst, size_t dst_cap)
 
    for (;;)
    {
-      if (tls_read_record_to(s, &type, &b, &len, dst, dst_cap) != 0)
+      int result;
+      if (nonblock)
+      {
+         result = tls_control_push(s);
+         if (result < 0)
+            return -1;
+      }
+      else if (!nonblock && (s->key_update || s->cork_off < s->cork_len)
+            && tls_tx_drain_blocking(s) != 0)
          return -1;
+      if (s->v13)
+      {
+         result = tls_post_step(s, nonblock);
+         if (result < 0)
+            goto bad_handshake;
+         if (result > 0)
+         {
+            if (nonblock)
+               return 1;
+            continue;
+         }
+      }
+      result = tls_read_record_to(s, &type, &b, &len, dst, dst_cap, nonblock);
+      if (result)
+         return result;
       if (type == TLS_CT_APPDATA)
       {
+         if (s->v13 && s->hs_len != s->hs_off)
+            goto bad_handshake;
          s->pt     = b;
          s->pt_len = len;
          s->pt_off = 0;
@@ -2894,19 +2971,34 @@ static int tls_fill(struct ssl_state *s, uint8_t *dst, size_t dst_cap)
        * CCS) is ignored. Alerts were handled in tls_read_record. */
       if (s->v13 && type == TLS_CT_HANDSHAKE)
       {
-         size_t off = 0;
-         while (off + 4 <= len)
+         if (s->hs_len == s->hs_off && len >= 4)
          {
-            size_t ml = tls_get24(b + off + 1);
-            if (off + 4 + ml > len || tls13_post_handshake(s, b + off, 4 + ml) != 0)
+            size_t length = tls_get24(b + 1);
+            if (length <= len - 4)
             {
-               s->last_err = TLS_ERR_HANDSHAKE;
-               return -1;
+               if (tls13_post_handshake(s, b, length + 4, nonblock) != 0)
+                  goto bad_handshake;
+               b += length + 4;
+               len -= length + 4;
             }
-            off += 4 + ml;
          }
+         if (s->hs_off)
+         {
+            memmove(s->hs, s->hs + s->hs_off, s->hs_len - s->hs_off);
+            s->hs_len -= s->hs_off;
+            s->hs_off = 0;
+         }
+         if (len > TLS_HS_MAX - s->hs_len)
+            goto bad_handshake;
+         memcpy(s->hs + s->hs_len, b, len);
+         s->hs_len += len;
       }
+      if (nonblock)
+         return 1;
    }
+bad_handshake:
+   s->last_err = TLS_ERR_HANDSHAKE;
+   return -1;
 }
 
 int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t len)
@@ -2920,7 +3012,7 @@ int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t len)
       size_t avail = s->pt_len - s->pt_off;
       if (!avail)
       {
-         if (tls_fill(s, data, len) != 0)
+         if (tls_fill(s, data, len, false) != 0)
             return -1;
          if (s->pt == data)
          {
@@ -2944,18 +3036,17 @@ int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t len)
 ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
       bool *error, void *data_, size_t len)
 {
-   /* Application reads through net_http go a record at a time: hand
-    * back what is already decrypted, and only touch the socket when
-    * it has a whole record waiting. */
+   /* At most one record/message per call; partial input stays in rx. */
    struct ssl_state *s = (struct ssl_state*)state_data;
    uint8_t *data       = (uint8_t*)data_;
    size_t   got        = 0;
-   bool     rd         = true;
-   bool     wr         = false;
 
    *error = false;
+   if (!len)
+      return 0;
    if (s->pt_len == s->pt_off)
    {
+      int result;
       /* The end of the stream - close_notify, or the connection gone -
        * is -1 with *error set, as a plain socket and the library
        * backends report it: net_http ends a body that runs to the close
@@ -2966,14 +3057,20 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
          *error = true;
          return -1;
       }
-      if (!socket_wait(s->fd, &rd, &wr, 0) || !rd)
-         return 0;
-      socket_set_block(s->fd, true);
-      if (tls_fill(s, data, len) != 0)
+      if (!socket_set_block(s->fd, false))
+      {
+         s->last_err = TLS_ERR_SOCKET;
+         *error = true;
+         return -1;
+      }
+      result = tls_fill(s, data, len, true);
+      if (result < 0)
       {
          *error = true;
          return -1;
       }
+      if (result > 0)
+         return 0;
       if (s->pt == data)
       {
          /* decrypted in place in the caller's buffer */
@@ -3017,7 +3114,11 @@ static int tls_tx_push(struct ssl_state *s)
    ssize_t n;
    if (s->tx_off >= s->tx_len)
       return 1;
-   socket_set_block(s->fd, false);
+   if (!socket_set_block(s->fd, false))
+   {
+      s->last_err = TLS_ERR_SOCKET;
+      return -1;
+   }
    if ((n = socket_send_all_nonblocking(s->fd, s->tx + s->tx_off,
                s->tx_len - s->tx_off, true)) < 0)
    {
@@ -3026,6 +3127,71 @@ static int tls_tx_push(struct ssl_state *s)
    }
    s->tx_off += (size_t)n;
    return s->tx_off >= s->tx_len;
+}
+
+/* Reuse the handshake cork for a KeyUpdate, behind any sealed application
+ * record. Rotate client keys only once its old-key announcement is sealed. */
+static int tls_control_push(struct ssl_state *s)
+{
+   int result = tls_tx_push(s);
+   if (result <= 0)
+      return result;
+   if (s->cork_off >= s->cork_len && s->key_update)
+   {
+      static const uint8_t update[5] = {TLS_HS_KEY_UPDATE, 0, 0, 1, 0};
+      uint8_t next[48];
+      size_t hlen = tls13_hlen(s);
+      if (tls_seal_record(s, TLS_CT_HANDSHAKE, update, sizeof(update),
+               s->cork, &s->cork_len) != 0
+            || tls13_expand_label(s, s->c_app, "traffic upd", NULL, 0,
+               next, hlen) != 0)
+         return -1;
+      memcpy(s->c_app, next, hlen);
+      if (tls13_traffic_keys(s, s->c_app, s->cwk, s->civ) != 0)
+         return -1;
+      s->cseq = 0;
+      s->cork_off = 0;
+      s->key_update = 0;
+   }
+   if (s->cork_off < s->cork_len)
+   {
+      ssize_t n;
+      if (!socket_set_block(s->fd, false))
+         goto error;
+      n = socket_send_all_nonblocking(s->fd, s->cork + s->cork_off,
+            s->cork_len - s->cork_off, true);
+      if (n < 0)
+         goto error;
+      s->cork_off += (size_t)n;
+      if (s->cork_off < s->cork_len)
+         return 0;
+      s->cork_off = s->cork_len = 0;
+   }
+   return s->key_update ? 0 : 1;
+error:
+   s->last_err = TLS_ERR_SOCKET;
+   return -1;
+}
+
+bool ssl_socket_retro_pending(void *state_data, bool *write)
+{
+   const struct ssl_state *s = (const struct ssl_state*)state_data;
+   size_t available;
+   if (!write)
+      return false;
+   *write = false;
+   if (!s)
+      return false;
+   available = s->hs_len - s->hs_off;
+   *write = s->tx_off < s->tx_len || s->cork_off < s->cork_len || s->key_update;
+   if (s->pt_off < s->pt_len)
+      return true;
+   if (available >= 4)
+   {
+      size_t length = tls_get24(s->hs + s->hs_off + 1);
+      return length > TLS_HS_MAX - 4 || available >= length + 4;
+   }
+   return false;
 }
 
 ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_,
@@ -3049,7 +3215,7 @@ ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_,
    for (;;)
    {
       size_t n;
-      int    r = tls_tx_push(s);
+      int    r = tls_control_push(s);
       if (r < 0)
          return -1;
       if (!r || taken == len)
@@ -3068,7 +3234,7 @@ ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_,
 
 int ssl_socket_flush_nonblocking(void *state_data)
 {
-   return tls_tx_push((struct ssl_state*)state_data);
+   return tls_control_push((struct ssl_state*)state_data);
 }
 
 void ssl_socket_close(void *state_data)
@@ -3077,7 +3243,8 @@ void ssl_socket_close(void *state_data)
    /* Not behind a half-sent record: the alert would have to wait for
     * it, and a peer that stopped reading is exactly when a transfer is
     * abandoned mid-upload. */
-   if (s->handshake_done && !s->closed && s->tx_off >= s->tx_len)
+   if (s->handshake_done && !s->closed && s->tx_off >= s->tx_len
+         && !s->key_update && s->cork_off >= s->cork_len)
       tls_send_alert(s, 1, 0);   /* warning close_notify */
    socket_close(s->fd);
 }

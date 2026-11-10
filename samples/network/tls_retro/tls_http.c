@@ -21,6 +21,7 @@
 #include <crypto/pk.h>
 #include <crypto/x509.h>
 #include <lrc_hash.h>
+#include <features/features_cpu.h>
 
 void ssl_socket_log_verify_fail(int mode_required, const char *domain, const char *info)
 {
@@ -48,7 +49,8 @@ static int get(const char *url, const char *want,
    char     hex[65];
    size_t   pos = 0, tot = 0, len = 0;
    uint8_t *body;
-   long     updates = 0;
+   retro_time_t deadline = cpu_features_get_time_usec() + 30000000;
+   bool timed_out = false;
    int      ret = 1;
 
    if (!(conn = net_http_connection_new(url, "GET", NULL)))
@@ -64,11 +66,17 @@ static int get(const char *url, const char *want,
    net_http_connection_free(conn);
 
    while (!net_http_update(h, &pos, &tot))
-      if (++updates > 50000000L)
+   {
+      if (cpu_features_get_time_usec() >= deadline)
+      {
+         timed_out = true;
          break;
+      }
+      net_http_wait(h, 100);
+   }
    /* A transfer that never ends is a failure even with every byte
     * received: RetroArch's task would wait on it forever. */
-   if (updates > 50000000L)
+   if (timed_out)
       fprintf(stderr, "transfer never completed (%u octets received)\n", (unsigned)pos);
    else if (net_http_error(h) || net_http_status(h) != 200)
       fprintf(stderr, "status %d, error %d\n", net_http_status(h), net_http_error(h) ? 1 : 0);

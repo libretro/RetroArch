@@ -17,6 +17,9 @@ endif
 
 all: tls_fetch tls_http tls_threads
 
+tls_partial: tls_partial.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c,$(SRC))
+	$(CC) $(CPPFLAGS) $(CFLAGS) tls_partial.c $(filter-out tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c,$(SRC)) $(LDLIBS) -o $@
+
 tls_fetch: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 # the same tool with no AES instructions to use, as on a 3DS or a Vita
@@ -27,7 +30,7 @@ tls_bench: tls_bench.c $(filter-out tls_fetch.c,$(SRC))
 # one connection under ssl_socket_retro_configure()
 tls_config: tls_config.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_config.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
-tls_keyupdate: tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC))
+tls_keyupdate: tls_keyupdate.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
 # net_http over the built-in client, as RetroArch's HTTP task drives it
 HTTP_SRC = tls_http.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/net/net_http.c \
@@ -70,5 +73,6 @@ THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthr
 tls_threads: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
+	rm -f tls_partial tls_partial.exe
 	rm -f tls_verify_hook tls_verify_hook.exe tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_config tls_config.exe tls_threads tls_threads.exe
 .PHONY: all clean

@@ -68,6 +68,8 @@ int ssl_socket_flush_nonblocking(void *state_data);
 
 int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t len);
 
+/* Positive plaintext bytes, zero yields, negative sets error. Native partial
+ * records/control work use ssl_socket_retro_pending for readiness. */
 ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *data_, size_t len);
 
 void ssl_socket_close(void *state_data);
@@ -103,6 +105,10 @@ unsigned ssl_socket_retro_version(void *state_data);
  * number (0x1303 is TLS_CHACHA20_POLY1305_SHA256), 0 before the
  * handshake. */
 unsigned ssl_socket_retro_suite(void *state_data);
+
+/* After handshake, native backend: buffered plaintext/control work is ready.
+ * Otherwise include *write in the socket wait interests, alongside reading. */
+bool ssl_socket_retro_pending(void *state_data, bool *write);
 
 struct rsa_private_key;
 
