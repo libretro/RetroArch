@@ -38,8 +38,8 @@
  * and DSE elements are parsed and skipped.  Coupling channel
  * elements are decoded and mixed into their targets, dependently or
  * independently switched, with up to four concurrent coupling tags.
- * HE-AAC's SBR is decoded, signalled explicitly or implicitly (see
- * raac_frame_len).  Channels are emitted in element transmission
+ * HE-AAC's SBR and HE-AAC v2's parametric stereo are decoded, signalled
+ * explicitly or implicitly (see raac_frame_len).  Channels are emitted in element transmission
  * order, which for the standard configurations is the ISO order (e.g.
  * 5.1: C, L, R, Ls, Rs, LFE), or in WAVE order on request
  * (raac_set_channel_order); no downmix is applied.  ADTS framing is
@@ -78,8 +78,9 @@ unsigned raac_channels(const raac_t *a);
  * genuinely plain LC decodes upsampled and reports the doubled rate;
  * raac_sample_rate() always reports the rate the output is actually
  * at. SBR data, when the stream carries it, rebuilds the high band.
- * HE-AAC v2 configurations open as v1: the parametric-stereo payload
- * is skipped and the SBR mono signal is decoded. Explicitly signaled
+ * Mono SBR decodes to two channels (raac_channels reports 2): HE-AAC
+ * v2's parametric stereo when the stream carries it, else the mono
+ * signal in both. Explicitly signaled
  * downsampled SBR (extension rate equal to the core rate) decodes as
  * plain LC at the core rate. Size output buffers from
  * raac_frame_len() and raac_channels(), never a constant. */

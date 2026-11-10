@@ -190,6 +190,8 @@ jobs:
             raac_state_test
             # raac's ADTS header parse and WAVE channel order.
             raac_layout_test
+            # HE-AAC v2 parametric stereo, with reset and savestates.
+            raac_ps_test
             rh265_lossless_test
             rh265_lossless_test_nothreads
             rh265_lossless_test_volatile
