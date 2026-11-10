@@ -64,6 +64,15 @@ jobs:
         run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 --driver materialui samples/menu/rgui_media/fixture.mp4
       - name: Real XMB file-browser playback controls
         run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 --driver xmb samples/menu/rgui_media/fixture.mp4
+      - name: QuickTime MOV browsing and external launch across all menus
+        run: |
+          ffmpeg -v error -y -i samples/menu/rgui_media/fixture.mp4 -map 0 -c copy -f mov samples/menu/rgui_media/fixture.mov
+          python3 -c "import json,subprocess; p='samples/menu/rgui_media/fixture.mov'; d=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_format','-of','json',p])); assert d['format']['tags']['major_brand']=='qt  '"
+          cp samples/menu/rgui_media/fixture.mov samples/menu/rgui_media/fixture-upper.MOV
+          for driver in rgui materialui xmb ozone; do
+            python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/fixture.mov
+            python3 samples/menu/rgui_media/run.py --c89 --external --driver "$driver" samples/menu/rgui_media/fixture-upper.MOV
+          done
       - name: Real Ozone file-browser playback controls
         run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 --driver ozone samples/menu/rgui_media/fixture.mp4
       - name: UTF-8 subtitle sidecars across all four menus

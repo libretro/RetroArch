@@ -34,6 +34,7 @@
 #include <boolean.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <formats/image.h>
 #include <lists/file_list.h>
 #include <time/rtime.h>
 #include <queues/task_queue.h>
@@ -188,7 +189,10 @@ static bool write_fixture(const char *core_ext)
    }
    return touch(dir_content, "picture.png")
        && touch(dir_content, "movie.webm")
-       && touch(dir_content, "movie.mp4");
+       && touch(dir_content, "movie.mp4")
+       && touch(dir_content, "movie.mov")
+       && touch(dir_content, "movie_upper.MOV")
+       && touch(dir_content, "movie.m4v");
 }
 
 static void remove_fixture(const char *core_ext)
@@ -216,6 +220,9 @@ static void remove_fixture(const char *core_ext)
    unlink_in(dir_content, "picture.png");
    unlink_in(dir_content, "movie.webm");
    unlink_in(dir_content, "movie.mp4");
+   unlink_in(dir_content, "movie.mov");
+   unlink_in(dir_content, "movie_upper.MOV");
+   unlink_in(dir_content, "movie.m4v");
    path_rmdir(dir_cores);
    path_rmdir(dir_info);
    path_rmdir(dir_content);
@@ -849,6 +856,17 @@ int main(int argc, char *argv[])
 #endif
 #ifdef HAVE_RMP4
    CHECK(listed("movie.mp4"), "an MP4 movie is not listed");
+   CHECK(listed("movie.mov"), "a MOV movie is not listed");
+   CHECK(listed("movie_upper.MOV"), "an uppercase MOV movie is not listed");
+   CHECK(listed("movie.m4v"), "an M4V movie is not listed");
+   CHECK(image_texture_get_type("movie.mov") == IMAGE_TYPE_MP4,
+         "MOV does not use the internal MP4 movie path");
+   CHECK(image_texture_get_type("movie.MOV") == IMAGE_TYPE_MP4,
+         "uppercase MOV does not use the internal MP4 movie path");
+   CHECK(image_texture_get_type("movie.MoV") == IMAGE_TYPE_MP4,
+         "mixed-case MOV does not use the internal MP4 movie path");
+   CHECK(image_texture_get_type("movie.movie") != IMAGE_TYPE_MP4,
+         "a longer extension is mistaken for MOV");
 #endif
 
    content_location_lanes();

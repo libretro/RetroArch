@@ -114,6 +114,10 @@ enum image_type_enum image_texture_get_type(const char *path)
 #endif
 #ifdef HAVE_RMP4
          if ((ext[0] | 0x20) == 'm' &&
+             (ext[1] | 0x20) == 'o' &&
+             (ext[2] | 0x20) == 'v')
+            return IMAGE_TYPE_MP4;
+         if ((ext[0] | 0x20) == 'm' &&
               ext[1]         == '4' &&
              (ext[2] | 0x20) == 'v')
             return IMAGE_TYPE_MP4;

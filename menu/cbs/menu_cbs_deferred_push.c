@@ -537,7 +537,7 @@ static int general_push(menu_displaylist_info_t *info,
       string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "webm|mkv");
 #endif
 #ifdef HAVE_RMP4
-      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "mp4|m4v");
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "mp4|m4v|mov");
 #endif
    }
 #endif
