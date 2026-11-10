@@ -78,21 +78,22 @@ def main():
                          '-c:v', codec, '-threads', '1', '-bf', str(bframes), *options,
                          '-g', '12', '-c:a', 'aac', '-profile:a', 'aac_low',
                          '-flvflags', 'no_duration_filesize', '-f', 'flv', str(source)])
-                modes = [None, 'annexb'] if codec == 'libx264' else [None]
+                modes = [None, 'annexb']
                 if depth == 10:
-                    modes.append('color')
+                    modes.extend(['color', 'annexb-color'])
                 for mode in modes:
                     command(shlex.split(args.runner) + [binary, str(source), str(output)]
                             + ([mode] if mode else []))
                     assert probe(source) == probe(output), 'encoded packets or timestamps differ'
                     for audio in (False, True):
                         assert decode(source, audio) == decode(output, audio), 'decoded output differs'
-                    if args.require_color_metadata and mode == 'color':
+                    if args.require_color_metadata and mode in ('color', 'annexb-color'):
                         color_metadata(output)
                         print('PASS: independent receiver parsed mastering/light units from colorInfo')
                     print(f'PASS: independent FLV packet/timestamp/video/PCM oracle, '
                           f'codec={codec}/{depth}, B-frames={bframes}, '
-                          f'Annex B={mode == "annexb"}, colorInfo={mode == "color"}')
+                          f'Annex B={mode in ("annexb", "annexb-color")}, '
+                          f'colorInfo={mode in ("color", "annexb-color")}')
 
 
 if __name__ == '__main__':

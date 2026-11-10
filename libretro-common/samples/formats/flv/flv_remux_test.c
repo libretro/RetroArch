@@ -45,6 +45,47 @@ static void output(rflv_mux_t *m, FILE *f)
    }
 }
 
+static rflv_mux_t *hevc_annexb_mux(const rflv_config_t *c)
+{
+   rflv_config_t config = *c;
+   const unsigned char *hvcc = (const unsigned char*)c->avcc;
+   unsigned char *sets;
+   size_t at = 23, used = 0, size;
+   unsigned arrays, count, type;
+   rflv_mux_t *mux;
+   assert(c->avcc_size >= 23);
+   sets = (unsigned char*)malloc(c->avcc_size + 16);
+   assert(sets);
+   for (arrays = hvcc[22]; arrays; arrays--)
+   {
+      assert(c->avcc_size - at >= 3);
+      type = hvcc[at++] & 63;
+      count = read_be(hvcc + at, 2);
+      at += 2;
+      while (count--)
+      {
+         assert(c->avcc_size - at >= 2);
+         size = read_be(hvcc + at, 2);
+         at += 2;
+         assert(size && size <= c->avcc_size - at);
+         if (type >= 32 && type <= 34)
+         {
+            assert(used + size + 4 <= c->avcc_size + 16);
+            memcpy(sets + used, "\0\0\0\1", 4);
+            memcpy(sets + used + 4, hvcc + at, size);
+            used += size + 4;
+         }
+         at += size;
+      }
+   }
+   assert(at == c->avcc_size);
+   config.avcc = sets;
+   config.avcc_size = used;
+   mux = rflv_mux_new_hevc_annexb(&config);
+   free(sets);
+   return mux;
+}
+
 static rflv_mux_t *annexb_mux(const rflv_config_t *c)
 {
    rflv_config_t config = *c;
@@ -95,8 +136,8 @@ int main(int argc, char **argv)
    unsigned pass, type, timestamp, prefix, packet_type;
    int result, composition;
    int64_t pts;
-   bool annexb = argc == 4 && !strcmp(argv[3], "annexb");
-   bool metadata = argc == 4 && !strcmp(argv[3], "color");
+   bool annexb = argc == 4 && (!strcmp(argv[3], "annexb") || !strcmp(argv[3], "annexb-color"));
+   bool metadata = argc == 4 && (!strcmp(argv[3], "color") || !strcmp(argv[3], "annexb-color"));
    bool hevc = false, keyframe;
    assert(argc == 3 || (argc == 4 && (annexb || metadata)));
    f = fopen(argv[1], "rb");
@@ -171,8 +212,8 @@ int main(int argc, char **argv)
          keyframe = type == 9 && ((p[11] >> 4) & 7) == 1;
          if (annexb && type == 9)
          {
-            annexb_packet(p + 16, length - 5);
-            result = rflv_mux_push_annexb(m, p + 16, length - 5,
+            annexb_packet(p + 11 + prefix, length - prefix);
+            result = rflv_mux_push_annexb(m, p + 11 + prefix, length - prefix,
                   timestamp, (uint64_t)pts, keyframe);
          }
          else
@@ -189,8 +230,8 @@ int main(int argc, char **argv)
       assert(pos == size);
       if (!pass)
       {
-         assert(!annexb || !hevc);
-         m = annexb ? annexb_mux(&c) : hevc ? rflv_mux_new_hevc(&c) : rflv_mux_new(&c);
+         m = annexb ? (hevc ? hevc_annexb_mux(&c) : annexb_mux(&c))
+            : hevc ? rflv_mux_new_hevc(&c) : rflv_mux_new(&c);
          if (metadata)
          {
             static const uint16_t xy[] = {34000,16000,13250,34500,7500,3000,15635,16450};

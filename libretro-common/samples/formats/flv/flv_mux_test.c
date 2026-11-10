@@ -374,6 +374,111 @@ static void hevc(void)
    rflv_mux_free(m);
 }
 
+static void hevc_test_bits(unsigned char *data, unsigned *at, unsigned value, unsigned count)
+{
+   while (count--)
+   {
+      assert(*at < 1024);
+      data[*at / 8] |= (unsigned char)(((value >> count) & 1) << (7 - *at % 8));
+      (*at)++;
+   }
+}
+
+static void hevc_test_ue(unsigned char *data, unsigned *at, unsigned value)
+{
+   unsigned width = 0, n = ++value;
+   while (n >>= 1)
+      width++;
+   hevc_test_bits(data, at, 0, width);
+   hevc_test_bits(data, at, value, width + 1);
+}
+
+static size_t hevc_test_sets(unsigned char *data, unsigned layers, unsigned depth)
+{
+   unsigned char rbsp[128];
+   unsigned at = 0, i, zeros = 0;
+   size_t used = 13;
+   memset(rbsp, 0, sizeof(rbsp));
+   memcpy(data, "\0\0\0\1\100\1\252\0\0\0\1\102\1", 13);
+   hevc_test_bits(rbsp, &at, (layers << 1) | 1, 8);
+   for (i = 0; i < 12; i++)
+      hevc_test_bits(rbsp, &at, 0x11, 8);
+   for (i = 0; i < layers; i++)
+      hevc_test_bits(rbsp, &at, i == 0 ? 3 : i == 1 ? 1 : 0, 2);
+   if (layers)
+      for (i = layers; i < 8; i++)
+         hevc_test_bits(rbsp, &at, 0, 2);
+   if (layers)
+   {
+      for (i = 0; i < 12; i++)
+         hevc_test_bits(rbsp, &at, 0x11, 8);
+      if (layers > 1)
+         hevc_test_bits(rbsp, &at, 0x22, 8);
+   }
+   hevc_test_ue(rbsp, &at, 0);
+   hevc_test_ue(rbsp, &at, 1);
+   hevc_test_ue(rbsp, &at, 128);
+   hevc_test_ue(rbsp, &at, 96);
+   hevc_test_bits(rbsp, &at, layers ? 1 : 0, 1);
+   if (layers)
+      for (i = 0; i < 4; i++)
+         hevc_test_ue(rbsp, &at, 0);
+   hevc_test_ue(rbsp, &at, depth);
+   hevc_test_ue(rbsp, &at, depth);
+   hevc_test_bits(rbsp, &at, 1, 1);
+   for (i = 0; i < (at + 7) / 8; i++)
+   {
+      if (zeros == 2 && rbsp[i] <= 3)
+      {
+         data[used++] = 3;
+         zeros = 0;
+      }
+      data[used++] = rbsp[i];
+      zeros = rbsp[i] ? 0 : zeros + 1;
+   }
+   memcpy(data + used, "\0\0\1\104\1\252", 6);
+   return used + 6;
+}
+
+static void hevc_annexb(void)
+{
+   unsigned char sets[256];
+   const unsigned char *hvcc;
+   const rflv_span_t *s;
+   size_t size, cut, n;
+   unsigned layers, depth;
+   rflv_config_t c = config();
+   rflv_mux_t *m;
+   c.avcc = sets;
+   for (layers = 0; layers <= 6; layers += 2)
+      for (depth = 0; depth <= 4; depth += 2)
+      {
+         size = hevc_test_sets(sets, layers, depth);
+         c.avcc_size = size;
+         m = rflv_mux_new_hevc_annexb(&c);
+         assert(m && rflv_mux_release(m));
+         assert(rflv_mux_get(m, &s, &n) && n == 3);
+         hvcc = (const unsigned char*)s[1].data;
+         assert(hvcc[1] == 0x11 && hvcc[12] == 0x11);
+         assert(hvcc[16] == 0xfd && hvcc[17] == 0xf8 + depth
+               && hvcc[18] == 0xf8 + depth && hvcc[21] == ((layers + 1) << 3) + 7);
+         rflv_mux_free(m);
+         for (cut = 0; cut < size; cut++)
+         {
+            c.avcc_size = cut;
+            assert(!rflv_mux_new_hevc_annexb(&c));
+         }
+      }
+   c.avcc_size = hevc_test_sets(sets, 7, 0);
+   assert(!rflv_mux_new_hevc_annexb(&c));
+   c.avcc_size = hevc_test_sets(sets, 0, 7);
+   assert(!rflv_mux_new_hevc_annexb(&c));
+   c.avcc_size = hevc_test_sets(sets, 0, 0);
+   sets[11] = 0x40;
+   assert(!rflv_mux_new_hevc_annexb(&c));
+   puts("PASS: native HEVC SPS depth/temporal fields, emulation prevention and every header truncation");
+}
+
 int main(void)
 {
    lifetime();
@@ -382,6 +487,7 @@ int main(void)
    timestamp_limits();
    annexb();
    hevc();
+   hevc_annexb();
    puts("PASS: FLV framing, borrowed packets, clocks, admission and teardown");
    return 0;
 }

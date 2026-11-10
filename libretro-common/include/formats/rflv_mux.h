@@ -60,7 +60,7 @@ RETRO_BEGIN_DECLS
 rflv_mux_t *rflv_mux_new(const rflv_config_t *config);
 /* Enhanced RTMP HEVC. avcc/avcc_size carry an hvcC record with four-byte
  * NAL lengths. Other fields retain their meaning; max_packet_size <= 0xfffff7.
- * Media input stays borrowed; native Annex B requires a separate adapter. */
+ * Media input stays borrowed; native Annex B uses new_hevc_annexb. */
 rflv_mux_t *rflv_mux_new_hevc(const rflv_config_t *config);
 /* Cold HEVC setup, once before the initial file-header release. Emits AMF0
  * colorInfo before the video sequence. Unknown fields stay absent. Mastering
@@ -73,13 +73,16 @@ bool rflv_mux_set_color(rflv_mux_t *mux, const video_color_metadata_t *color,
  * Cold allocation reserves conversion storage up to max_packet_size.
  * Other configuration fields retain their ordinary meaning. */
 rflv_mux_t *rflv_mux_new_annexb(const rflv_config_t *config);
+/* Native HEVC adapter: Annex B VPS/SPS/PPS (one each). Builds hvcC from SPS;
+ * reserves conversion storage once. Media uses push_annexb, one NAL per step. */
+rflv_mux_t *rflv_mux_new_hevc_annexb(const rflv_config_t *config);
 /* Track 1: one length-prefixed AVC/HEVC access unit; track 2: one raw AAC unit.
  * Accepted input stays borrowed until output release, error or free.
  * BUSY takes nothing. Timestamps use the configured per-track timescale;
  * their millisecond representation must fit a nonnegative signed 32-bit value. */
 int rflv_mux_push(rflv_mux_t *mux, unsigned track,
       const void *data, size_t size, uint64_t dts, uint64_t pts, bool keyframe);
-/* Video only, on a mux created by new_annexb. Immutable native output stays
+/* Video only, on a mux created by new_annexb/new_hevc_annexb. Native output stays
  * borrowed until release/error/free. Each step adapts one NAL into reserved
  * storage: format conversion requires a copy; ordinary push still borrows. */
 int rflv_mux_push_annexb(rflv_mux_t *mux, const void *data, size_t size,

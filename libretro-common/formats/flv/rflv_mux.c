@@ -444,6 +444,167 @@ static bool flv_annexb(const uint8_t *data, size_t size, size_t *offset,
    return true;
 }
 
+struct flv_rbsp
+{
+   const uint8_t *data;
+   size_t size, at;
+   unsigned byte, left, zeros;
+   bool failed;
+};
+
+static unsigned flv_rbsp_bits(struct flv_rbsp *b, unsigned count)
+{
+   unsigned value = 0, next;
+   while (count--)
+   {
+      if (!b->left)
+      {
+         if (b->at == b->size)
+            goto failed;
+         next = b->data[b->at++];
+         if (b->zeros == 2 && next == 3)
+         {
+            if (b->at == b->size || b->data[b->at] > 3)
+               goto failed;
+            b->zeros = 0;
+            next = b->data[b->at++];
+         }
+         b->zeros = next ? 0 : b->zeros < 2 ? b->zeros + 1 : 2;
+         b->byte = next;
+         b->left = 8;
+      }
+      value = (value << 1) | ((b->byte >> --b->left) & 1);
+   }
+   return value;
+failed:
+   b->failed = true;
+   return 0;
+}
+
+static unsigned flv_rbsp_ue(struct flv_rbsp *b)
+{
+   unsigned zeros = 0;
+   while (!b->failed && !flv_rbsp_bits(b, 1))
+      if (++zeros == 32)
+         b->failed = true;
+   if (b->failed)
+      return ~0u;
+   return ((1u << zeros) - 1) + flv_rbsp_bits(b, zeros);
+}
+
+static bool flv_hevc_info(const uint8_t *sps, size_t size, uint8_t *header)
+{
+   struct flv_rbsp b;
+   unsigned layers, nested, flags = 0, i, j, chroma, luma, chroma_depth;
+   memset(&b, 0, sizeof(b));
+   b.data = sps + 2;
+   b.size = size - 2;
+   flv_rbsp_bits(&b, 4);
+   layers = flv_rbsp_bits(&b, 3);
+   nested = flv_rbsp_bits(&b, 1);
+   if (layers > 6)
+      return false;
+   for (i = 1; i <= 12; i++)
+      header[i] = (uint8_t)flv_rbsp_bits(&b, 8);
+   for (i = 0; i < layers; i++)
+      flags |= flv_rbsp_bits(&b, 2) << (i * 2);
+   if (layers)
+      for (i = layers; i < 8; i++)
+         if (flv_rbsp_bits(&b, 2))
+            return false;
+   for (i = 0; i < layers; i++)
+   {
+      if (flags & (2u << (i * 2)))
+         for (j = 0; j < 11; j++)
+            flv_rbsp_bits(&b, 8);
+      if (flags & (1u << (i * 2)))
+         flv_rbsp_bits(&b, 8);
+   }
+   if (flv_rbsp_ue(&b) > 15)
+      return false;
+   chroma = flv_rbsp_ue(&b);
+   if (chroma > 3)
+      return false;
+   if (chroma == 3)
+      flv_rbsp_bits(&b, 1);
+   if (!flv_rbsp_ue(&b) || !flv_rbsp_ue(&b))
+      return false;
+   if (flv_rbsp_bits(&b, 1))
+      for (i = 0; i < 4; i++)
+         flv_rbsp_ue(&b);
+   luma = flv_rbsp_ue(&b);
+   chroma_depth = flv_rbsp_ue(&b);
+   if (b.failed || luma > 6 || chroma_depth > 6)
+      return false;
+   header[0] = 1;
+   header[13] = 0xf0;
+   header[15] = 0xfc;
+   header[16] = (uint8_t)(0xfc | chroma);
+   header[17] = (uint8_t)(0xf8 | luma);
+   header[18] = (uint8_t)(0xf8 | chroma_depth);
+   header[21] = (uint8_t)(((layers + 1) << 3) | (nested << 2) | 3);
+   header[22] = 3;
+   return true;
+}
+
+rflv_mux_t *rflv_mux_new_hevc_annexb(const rflv_config_t *c)
+{
+   const uint8_t *sets[3] = {NULL, NULL, NULL}, *nal;
+   size_t lengths[3] = {0, 0, 0}, at = 0, size, total = 38;
+   unsigned type, i;
+   uint8_t *hvcc;
+   rflv_config_t config;
+   rflv_mux_t *m;
+   if (!c || !c->avcc || !c->avcc_size || c->avcc_size > 65536
+         || !c->max_packet_size || c->max_packet_size > 0xfffff7)
+      return NULL;
+   while (at < c->avcc_size)
+   {
+      if (!flv_annexb((const uint8_t*)c->avcc, c->avcc_size, &at, &nal, &size)
+            || size < 3 || size > 65535 || (nal[0] & 0x81) || nal[1] != 1)
+         return NULL;
+      type = (nal[0] >> 1) & 63;
+      if (type < 32 || type > 34 || sets[type - 32] || size > 65536 - total)
+         return NULL;
+      sets[type - 32] = nal;
+      lengths[type - 32] = size;
+      total += size;
+   }
+   if (!sets[0] || !sets[1] || !sets[2])
+      return NULL;
+   hvcc = (uint8_t*)calloc(1, total);
+   if (!hvcc)
+      return NULL;
+   if (!flv_hevc_info(sets[1], lengths[1], hvcc))
+   {
+      free(hvcc);
+      return NULL;
+   }
+   at = 23;
+   for (i = 0; i < 3; i++)
+   {
+      hvcc[at++] = (uint8_t)(0xa0 + i);
+      flv_uint(hvcc + at, 1, 2);
+      flv_uint(hvcc + at + 2, (uint32_t)lengths[i], 2);
+      memcpy(hvcc + at + 4, sets[i], lengths[i]);
+      at += lengths[i] + 4;
+   }
+   config = *c;
+   config.avcc = hvcc;
+   config.avcc_size = total;
+   m = rflv_mux_new_hevc(&config);
+   free(hvcc);
+   if (!m)
+      return NULL;
+   m->converted = (uint8_t*)malloc(m->limit);
+   if (!m->converted)
+   {
+      rflv_mux_free(m);
+      return NULL;
+   }
+   return m;
+}
+
 rflv_mux_t *rflv_mux_new_annexb(const rflv_config_t *c)
 {
    rflv_config_t config;
