@@ -1452,9 +1452,9 @@ void input_autoconfigure_plays_as_reread(const uint8_t *before)
 }
 
 #ifdef HAVE_MENU
-/* Settings > Input > Controllers and Port N Controls, and the Quick
- * Menu's Port N Controls, have rows for controllers: if shown, the
- * list is made again. */
+/* Settings > Input > Controllers, Port N Controls > Controllers and the
+ * Quick Menu's Port N Controls have rows for controllers: if shown,
+ * the list is made again. */
 static void input_autoconfigure_refresh_controllers(void)
 {
    const char *menu_label = NULL;
@@ -1462,7 +1462,7 @@ static void input_autoconfigure_refresh_controllers(void)
    if (     string_is_equal(menu_label,
                MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST_STR)
          || string_is_equal(menu_label,
-               MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR)
+               MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST_STR)
          || string_is_equal(menu_label,
                MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR))
       menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH

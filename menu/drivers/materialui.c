@@ -12509,6 +12509,7 @@ static void materialui_list_insert(void *userdata,
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_CONTROLLERS_STR))
             {

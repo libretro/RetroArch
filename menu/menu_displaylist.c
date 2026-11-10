@@ -8078,33 +8078,29 @@ static const char *menu_displaylist_headset_row(unsigned i)
    return NULL;
 }
 
-/* Put the cursor back on the Controllers or Port N Controls (@page) row
- * in plays_as_row: the rows go in port order, so its index moves. Once
- * the list is made it is forgotten, so a row that is gone leaves the
- * cursor at its index, or on Port N Controls after the controller rows. */
+/* Put the cursor back on the Controllers or Port N Controls >
+ * Controllers (@page) row in plays_as_row: the rows go in port order,
+ * so its index moves. Once the list is made it is forgotten, so a row
+ * that is gone leaves the cursor at its index, or on Add Controller. */
 static void menu_displaylist_restore_plays_as_row(
       struct menu_state *menu_st, file_list_t *list, unsigned page)
 {
    size_t i;
    size_t rows         = 0;
-   size_t links        = 0;
    size_t to           = list->size;
    menu_handle_t *menu = menu_st->driver_data;
 
    if (!menu)
       return;
 
+   /* Add Controller, then the controller rows; the links after them */
    if (page)
    {
+      rows = 1;
       while (     rows < list->size
             && list->list[rows].type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
             && list->list[rows].type <  MENU_SETTINGS_INPUT_PLAYS_AS_END)
          rows++;
-      /* Add Controller, then the links to sharers' pages */
-      while (     rows + 1 + links < list->size
-            && string_ends_with(list->list[rows + 1 + links].label,
-                  "_input_binds_list"))
-         links++;
    }
    for (i = 0; menu->plays_as_row && i < list->size; i++)
    {
@@ -8125,20 +8121,14 @@ static void menu_displaylist_restore_plays_as_row(
    if (page && to == list->size)
    {
       if (menu->plays_as_row)
-         to = rows;
-      /* a cursor below the controller rows stays on its row, one
-       * below the links too */
+         to = 0;
+      /* a cursor on a link moves with the controller rows above it */
       else if (   menu->plays_as_page == page
                && menu_st->selection_ptr >= menu->plays_as_rows)
       {
          to = menu_st->selection_ptr + rows - menu->plays_as_rows;
-         if (menu_st->selection_ptr
-               > menu->plays_as_rows + menu->plays_as_links)
-            to = to + links - menu->plays_as_links;
-         /* on a link: within the links when its sharer left */
-         else if (   menu_st->selection_ptr > menu->plays_as_rows
-                  && to > rows + links)
-            to = rows + links;
+         if (to >= list->size)
+            to = list->size - 1;
       }
    }
    if (to < list->size)
@@ -8150,7 +8140,6 @@ static void menu_displaylist_restore_plays_as_row(
    menu->plays_as_row   = 0;
    menu->plays_as_page  = page;
    menu->plays_as_rows  = (unsigned)rows;
-   menu->plays_as_links = (unsigned)links;
 }
 
 /* A hotplug, or a layout change reconnecting the headset's controllers,
@@ -9168,7 +9157,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_PLAYLIST_COLLECTION
             || t == (unsigned)DISPLAYLIST_DATABASES
             || t == (unsigned)DISPLAYLIST_DATABASE_QUERY
-            || t == (unsigned)DISPLAYLIST_USER_BINDS_LIST)
+            || t == (unsigned)DISPLAYLIST_USER_BINDS_LIST
+            || t == (unsigned)DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST)
       {
          filestream_printf(f, "=c= %u needs-input\n", t);
          continue;
@@ -9351,7 +9341,8 @@ static unsigned menu_displaylist_controller_slots(settings_t *settings,
 }
 
 /* A Plays As row for @row (a slot, or MAX_INPUT_DEVICES and an entry);
- * @page is Port N Controls' N, 0 in Controllers. */
+ * @page is the N of Port N Controls > Controllers, 0 in
+ * Settings > Input > Controllers. */
 static bool menu_displaylist_append_plays_as_row(file_list_t *list,
       const char *name, unsigned row, size_t page)
 {
@@ -9361,7 +9352,7 @@ static bool menu_displaylist_append_plays_as_row(file_list_t *list,
          MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + row, 0, page, NULL);
 }
 
-/* On Port N Controls (@user = N - 1), a link to Port M Controls for
+/* For Port N (@user = N - 1), a link to Port M Controls for
  * each controller playing as player N from port M, in port order: its
  * binds and remaps are port M's. Settings' links (@remaps false) are
  * RetroPad Binds' entries, the Quick Menu's are Controls' entries. */
@@ -9427,10 +9418,10 @@ static unsigned menu_displaylist_remap_port_row(file_list_t *list,
    return 0;
 }
 
-/* RetroPad Binds > Port N Controls (@user = N - 1): a row for each
- * connected controller playing as the player port N feeds, in port
- * order, then Add Controller, carrying that player's user, then the
- * links to the sharers' own pages. */
+/* RetroPad Binds > Port N Controls > Controllers (@user = N - 1): Add
+ * Controller, carrying the player port N feeds, then a row for each
+ * connected controller playing as that player, in port order, then
+ * the links to the sharers' own pages. */
 static void menu_displaylist_parse_input_port_controllers(
       file_list_t *list, settings_t *settings, unsigned user)
 {
@@ -9438,6 +9429,11 @@ static void menu_displaylist_parse_input_port_controllers(
    unsigned p_user    = input_config_user_player(user);
    unsigned max_users = settings->uints.input_max_users;
 
+   menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD),
+         MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR,
+         MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD,
+         MENU_SETTING_ACTION, 0, p_user, NULL);
    if (max_users > MAX_USERS)
       max_users = MAX_USERS;
    for (u = 0; u < max_users; u++)
@@ -9451,11 +9447,6 @@ static void menu_displaylist_parse_input_port_controllers(
          continue;
       menu_displaylist_append_plays_as_row(list, name, s, user + 1);
    }
-   menu_entries_append(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD),
-         MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR,
-         MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD,
-         MENU_SETTING_ACTION, 0, p_user, NULL);
    menu_displaylist_parse_input_port_links(list, settings, user, false);
 }
 
@@ -15697,8 +15688,9 @@ static bool menu_displaylist_ctl_internal(
          && menu_st->driver_ctx->list_push(menu_st->driver_data,
             menu_st->userdata, info, type) == 0);
 
-   /* any other list shown in the menu replaces Port N Controls */
-   if (     type != DISPLAYLIST_USER_BINDS_LIST
+   /* any other list shown in the menu replaces Port N Controls >
+    * Controllers */
+   if (     type != DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST
          && menu_st->driver_data
          && info->list == MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(
                menu_st, 0))
@@ -18778,6 +18770,23 @@ static bool menu_displaylist_ctl_internal(
                unsigned val              = atoi(info->path);
                const char *temp_val      = msg_hash_to_str(
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
+               menu_entries_clear(info->list);
+               /* Controllers, carrying N */
+               if (val >= 1 && val <= MAX_USERS)
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PORT_CONTROLLERS),
+                        MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR,
+                        MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS,
+                        MENU_SETTING_ACTION, 0, val, NULL);
+               ret                = MENU_DISPLAYLIST_PARSE_SETTINGS(info->list,
+                     temp_val, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);
+               info->flags       |=  MD_FLAG_NEED_REFRESH
+                                  |  MD_FLAG_NEED_PUSH;
+            }
+            break;
+         case DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST:
+            {
+               unsigned val              = atoi(info->path);
                /* the list still holds this page only if none was made since */
                if (menu && val && menu->plays_as_page == val)
                   menu_displaylist_keep_plays_as_row(menu_st, info->list);
@@ -18785,8 +18794,6 @@ static bool menu_displaylist_ctl_internal(
                if (val >= 1 && val <= MAX_USERS)
                   menu_displaylist_parse_input_port_controllers(
                         info->list, settings, val - 1);
-               ret                = MENU_DISPLAYLIST_PARSE_SETTINGS(info->list,
-                     temp_val, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);
                menu_displaylist_restore_plays_as_row(menu_st, info->list,
                      val);
                info->flags       |=  MD_FLAG_NEED_REFRESH

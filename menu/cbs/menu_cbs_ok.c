@@ -533,6 +533,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST;
+      case ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST;
       case ACTION_OK_DL_INPUT_CONTROLLERS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST;
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
@@ -1951,6 +1953,7 @@ int generic_action_ok_displaylist_push(
 #endif
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST:
+      case ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST:
       case ACTION_OK_DL_INPUT_CONTROLLERS_LIST:
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
@@ -9180,6 +9183,19 @@ static int action_ok_input_plays_as_dropdown_box_list(const char *path,
       ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_PLAYS_AS);
 }
 
+static int action_ok_push_input_port_controllers_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char port_str[12];
+   /* the list reads its port from its path */
+   snprintf(port_str, sizeof(port_str), "%u", (unsigned)entry_idx);
+   return generic_action_ok_displaylist_push(
+      port_str, NULL,
+      label, type,
+      idx, entry_idx,
+      ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST);
+}
+
 static int action_ok_input_plays_as_add_dropdown_box_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -10307,6 +10323,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,              action_ok_remap_file_remove_game},
          {MENU_ENUM_LABEL_REMAP_FILE_RESET,                    action_ok_remap_file_reset},
          {MENU_ENUM_LABEL_INPUT_REMAP_FIND,                    action_ok_input_remap_find},
+         {MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS,              action_ok_push_input_port_controllers_list},
          {MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD,                  action_ok_input_plays_as_add_dropdown_box_list},
          {MENU_ENUM_LABEL_REMAP_FILE_FLUSH,                    action_ok_remap_file_flush},
          {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,                  action_ok_override_file},

@@ -12,6 +12,10 @@ S_ACTION(INPUT_RETROPAD_BINDS,
       "input_retropad_binds",
       "RetroPad Binds",
       "Change how the virtual RetroPad is mapped to a physical input device. If an input device is recognized and autoconfigured correctly, users probably do not need to use this menu.\nNote: for core-specific input changes, use the Quick Menu's 'Controls' submenu instead.")
+S_ACTION(INPUT_PORT_CONTROLLERS,
+      "input_port_controllers",
+      "Controllers",
+      "Add a controller to this player, or choose which player each of its controllers plays as.")
 S_ACTION(INPUT_CONTROLLERS,
       "input_controllers",
       "Controllers",

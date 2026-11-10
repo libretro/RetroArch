@@ -510,11 +510,11 @@ typedef struct
     * PLAYS_AS_ROW_LAYOUT plus a headset row's index
     * (menu_displaylist.c); 0 for none. */
    unsigned plays_as_row;
-   /* Port N Controls as last made, N, its controller rows and its
-    * links, while no other list was made since; N is 0 for none. */
+   /* Port N Controls > Controllers as last made, N and the index of
+    * its first link, while no other list was made since; N is 0 for
+    * none. */
    unsigned plays_as_page;
    unsigned plays_as_rows;
-   unsigned plays_as_links;
 } menu_handle_t;
 
 struct menu_state

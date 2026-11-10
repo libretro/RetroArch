@@ -1610,8 +1610,8 @@ size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
    return strlen(s);
 }
 
-/* Settings > Input > Controllers and Port N Controls: the player it
- * plays as, and where. */
+/* Settings > Input > Controllers and Port N Controls > Controllers:
+ * the player it plays as, and where. */
 static int action_bind_sublabel_input_plays_as(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1620,7 +1620,7 @@ static int action_bind_sublabel_input_plays_as(
 {
    unsigned player, port;
    unsigned row  = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
-   /* Port N Controls' rows carry N */
+   /* Port N Controls > Controllers' rows carry N */
    size_t page   = (list && i < list->size) ? list->list[i].entry_idx : 0;
    enum input_plays_as_where where = input_config_plays_as_where(row,
          &player, &port);
@@ -1662,6 +1662,20 @@ static int action_bind_sublabel_input_plays_as(
                len);
          break;
    }
+   return 0;
+}
+
+/* Add Controller: its player's user is in its entry_idx. */
+static int action_bind_sublabel_input_plays_as_add(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   if (!list || i >= list->size || list->list[i].entry_idx >= MAX_USERS)
+      return 0;
+   snprintf(s, len, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ADD),
+         (unsigned)list->list[i].entry_idx + 1);
    return 0;
 }
 
@@ -2039,6 +2053,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME },
       { MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS },
       { MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS, MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS },
+      { MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS, MENU_ENUM_SUBLABEL_INPUT_PORT_CONTROLLERS },
       { MENU_ENUM_LABEL_INPUT_CONTROLLERS, MENU_ENUM_SUBLABEL_INPUT_CONTROLLERS },
       { MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS, MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS },
       { MENU_ENUM_LABEL_INPUT_TURBO_ENABLE, MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE },
@@ -3040,6 +3055,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_PLAYLIST_ENTRY, action_bind_sublabel_playlist_entry },
       { MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_ENTRY, action_bind_sublabel_core_backup_entry },
       { MENU_ENUM_LABEL_CORE_DELETE_BACKUP_ENTRY, action_bind_sublabel_core_backup_entry },
+      { MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD, action_bind_sublabel_input_plays_as_add },
    };
    {
       uint32_t key = (uint32_t)cbs->enum_idx;

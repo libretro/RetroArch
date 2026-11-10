@@ -203,6 +203,66 @@ static bool test_history_tab(void *data)
 #define test_history_tab NULL
 #endif
 
+/* The row @label (@enum_idx, @type) gets the pad icon */
+#if defined(TEST_MATERIALUI)
+static bool test_pad_icon(test_viewer_t *v, enum msg_hash_enums enum_idx,
+      const char *label, unsigned type)
+{
+   struct item_file item;
+   file_list_t list;
+   materialui_node_t *node;
+   bool pad;
+   test_viewer_t *mui = (test_viewer_t*)calloc(1, sizeof(*mui));
+   (void)v;
+   (void)enum_idx;
+   if (!mui)
+      return false;
+   memset(&item, 0, sizeof(item));
+   memset(&list, 0, sizeof(list));
+   list.list     = &item;
+   list.size     = 1;
+   list.capacity = 1;
+   materialui_list_insert(mui, &list, "", "", label, 0, type);
+   node = (materialui_node_t*)item.userdata;
+   pad  =   node
+         && node->icon_type          == MUI_ICON_TYPE_INTERNAL
+         && node->icon_texture_index == MUI_TEXTURE_CONTROLS;
+   free(node);
+   free(mui);
+   return pad;
+}
+#elif defined(TEST_XMB)
+static bool test_pad_icon(test_viewer_t *v, enum msg_hash_enums enum_idx,
+      const char *label, unsigned type)
+{
+   gfx_surface_t pad;
+   uintptr_t icon;
+   test_viewer_t *xmb = (test_viewer_t*)calloc(1, sizeof(*xmb));
+   (void)v;
+   if (!xmb)
+      return false;
+   memset(&pad, 0, sizeof(pad));
+   pad.handle = (uintptr_t)&pad;
+   xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS] = &pad;
+   icon = xmb_icon_get_id(xmb, NULL, NULL, enum_idx, "", label, type,
+         false, false, 0, 0);
+   free(xmb);
+   return icon == pad.handle;
+}
+#else
+static bool test_pad_icon(test_viewer_t *v, enum msg_hash_enums enum_idx,
+      const char *label, unsigned type)
+{
+   unsigned i;
+   uintptr_t icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
+   for (i = 0; i < OZONE_ENTRIES_ICONS_TEXTURE_LAST; i++)
+      icons_tex[i] = i + 1;
+   return ozone_entries_icon_get_texture(v, icons_tex, enum_idx, "",
+         label, type, false)
+      == icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
+}
+#endif
+
 int main(int argc,char **argv)
 {
    struct menu_state *menu_st;
@@ -244,6 +304,7 @@ int main(int argc,char **argv)
    CHECK("actual texture menu initialized",menu_st->driver_ctx&&!strcmp(menu_st->driver_ctx->ident,TEST_IDENT));
    if(failures){main_exit(NULL);return 1;}
    viewer=(test_viewer_t*)menu_st->userdata;
+   CHECK("Port N Controls' Controllers row has the pad icon",test_pad_icon(viewer,MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS,MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR,MENU_SETTING_ACTION));
    video=video_state_get_ptr();old_poke=video->poke;
    if(!native_gpu)
    { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }

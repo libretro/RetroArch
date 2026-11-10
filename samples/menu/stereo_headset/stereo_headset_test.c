@@ -883,6 +883,16 @@ static void open_port_controls(unsigned n)
    run_frame();
 }
 
+static void press_ok(int i);
+
+/* RetroPad Binds > Port @n Controls > Controllers, opened by OK on its
+ * row, built on the next frame. */
+static void open_port_controllers(unsigned n)
+{
+   open_port_controls(n);
+   press_ok(row(MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR));
+}
+
 /* Row @i's sublabel into @s, "" with none. */
 static void row_sublabel(size_t i, char *s, size_t len)
 {
@@ -965,13 +975,15 @@ static size_t stack_depth(void)
    return stack ? stack->size : 0;
 }
 
-/* Port N Controls lists the controllers playing as the player port N
+/* Port N Controls starts with Controllers, then Device Index, and
+ * stays as it is while controllers come and go. Its Controllers lists
+ * Add Controller, then the controllers playing as the player port N
  * feeds, in port order: its own "This port", each other by the page
- * its binds are on. It opens on its first row, and Cancel out of a
- * dropdown comes back to the row it came from. A controller joining
- * above keeps the cursor on its row, or on the bind it is on, as does
- * a change that keeps the row; a row moved off the player leaves the
- * cursor on Add Controller, and Controllers no row to find. */
+ * its binds are on. Each opens on its first row, and Cancel comes
+ * back to the row it came from. A controller joining above keeps the
+ * cursor on its row, as does a change that keeps the row; a row moved
+ * off the player leaves the cursor on Add Controller, and Controllers
+ * no row to find. */
 static void lane_port_controls_rows(void)
 {
    char s[128];
@@ -979,6 +991,9 @@ static void lane_port_controls_rows(void)
    size_t depth;
    unsigned port3;
    file_list_t *buf;
+   const char *label          = NULL;
+   const char *add            = MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR;
+   const char *ctl            = MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR;
    settings_t *settings       = config_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned pad_a             = MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
@@ -988,56 +1003,92 @@ static void lane_port_controls_rows(void)
 
    t_three_pads();
 
-   /* from RetroPad Binds, Port 3 Controls left empty, then opened
-    * again once D plays as Player 3: on D's row */
+   /* Port 3's Controllers with Add Controller alone, then opened again
+    * once D plays as Player 3: on Add Controller, D after it */
    port3 = settings->uints.input_joypad_index[2];
    generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
          ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST);
    run_frame();
-   open_port_controls(3);
+   open_port_controllers(3);
    buf = selection_buf();
-   CHECK(buf && buf->size && !is_plays_as_row(buf->list[0].type),
-         "fixture: Port 3 Controls lists a controller");
+   CHECK(buf && buf->size == 1 && row(add) == 0,
+         "fixture: Port 3's Controllers lists more than Add Controller");
    press(MENU_ACTION_CANCEL);
    input_config_set_device_name(3, "Pad D");
    input_config_plays_as_set(3, 3);
    input_autoconfigure_reallocate_ports(3);
-   open_port_controls(3);
-   CHECK(menu_st->selection_ptr == 0 && cursor_type() == pad_d,
-         "Port 3 Controls opened again with D on row %u",
-         (unsigned)menu_st->selection_ptr);
+   open_port_controllers(3);
+   CHECK(menu_st->selection_ptr == 0 && row_of_type(pad_d) == 1,
+         "Port 3's Controllers opened again on row %u, D on row %d",
+         (unsigned)menu_st->selection_ptr, row_of_type(pad_d));
    input_config_plays_as_set(3, 0);
    input_config_clear_device_name(3);
    input_config_plays_as_release(3);
    settings->uints.input_joypad_index[2] = port3;
 
+   /* Port 1 Controls: Controllers, then Device Index */
    open_port_controls(1);
+   CHECK(menu_st->selection_ptr == 0 && row(ctl) == 0
+         && row("input_player1_joypad_index") == 1,
+         "Port 1 Controls does not start with Controllers, then Device "
+         "Index (rows %d, %d)", row(ctl),
+         row("input_player1_joypad_index"));
+   CHECK(row(add) < 0 && row_of_type(pad_a) < 0 && row_of_type(pad_b) < 0,
+         "Port 1 Controls lists Add Controller or a controller itself");
+   row_sublabel(0, s, sizeof(s));
+   CHECK(string_is_equal(s, "Add a controller to this player, or "
+         "choose which player each of its controllers plays as."),
+         "Controllers' sublabel on Port 1 Controls is \"%s\"", s);
+   row_sublabel(1, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            "The physical controller as recognized by RetroArch."),
+         "Device Index's sublabel on Port 1 Controls is \"%s\"", s);
+
+   /* OK on Controllers opens Port 1's, titled Controllers */
+   depth = stack_depth();
+   press_ok(row(ctl));
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+   menu_entries_get_title(s, sizeof(s));
+   CHECK(stack_depth() == depth + 1 && label && string_is_equal(label,
+            MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST_STR)
+         && string_is_equal(s, "Controllers"),
+         "OK on Controllers opened \"%s\", titled \"%s\"",
+         label ? label : "", s);
    CHECK(menu_st->selection_ptr == 0,
-         "Port 1 Controls opened on row %u",
+         "Port 1's Controllers opened on row %u",
          (unsigned)menu_st->selection_ptr);
    buf = selection_buf();
-   CHECK(buf && buf->size > 2
-         && buf->list[0].type == pad_a && buf->list[1].type == pad_b
-         && !is_plays_as_row(buf->list[2].type),
-         "Port 1 Controls does not start with rows for A and B");
+   CHECK(buf && buf->size > 3 && row(add) == 0
+         && buf->list[1].type == pad_a && buf->list[2].type == pad_b
+         && !is_plays_as_row(buf->list[3].type),
+         "Port 1's Controllers is not Add Controller, then rows for A "
+         "and B");
    row_sublabel(0, s, sizeof(s));
-   CHECK(string_is_equal(s, "This port"),
-         "A's sublabel on Port 1 Controls is \"%s\"", s);
+   CHECK(string_is_equal(s, "Pick a connected controller to play as "
+         "Player 1. It moves here from the player it plays now."),
+         "Add Controller's sublabel on Port 1's Controllers is \"%s\"", s);
    row_sublabel(1, s, sizeof(s));
+   CHECK(string_is_equal(s, "This port"),
+         "A's sublabel on Port 1's Controllers is \"%s\"", s);
+   row_sublabel(2, s, sizeof(s));
    CHECK(string_is_equal(s, "Shared \xC2\xB7 binds in Port 4 Controls"),
-         "B's sublabel on Port 1 Controls is \"%s\"", s);
+         "B's sublabel on Port 1's Controllers is \"%s\"", s);
 
-   /* OK into B's Plays As and Device Index, each Cancelled */
-   menu_st->selection_ptr = 1;
-   depth = stack_depth();
+   /* B's Plays As Cancelled is back on B; Controllers Cancelled is
+    * back on its row; Device Index's dropdown Cancelled on its */
+   menu_st->selection_ptr = 2;
    press(MENU_ACTION_OK);
-   CHECK(stack_depth() == depth + 1, "fixture: OK on B opened nothing");
+   CHECK(stack_depth() == depth + 2, "fixture: OK on B opened nothing");
    press(MENU_ACTION_CANCEL);
-   CHECK(menu_st->selection_ptr == 1 && cursor_type() == pad_b,
+   CHECK(menu_st->selection_ptr == 2 && cursor_type() == pad_b,
          "Cancel out of B's Plays As left the cursor on row %u",
          (unsigned)menu_st->selection_ptr);
+   press(MENU_ACTION_CANCEL);
+   CHECK(stack_depth() == depth && menu_st->selection_ptr == 0
+         && row(ctl) == 0,
+         "Cancel out of Port 1's Controllers left the cursor on row %u",
+         (unsigned)menu_st->selection_ptr);
    di = row("input_player1_joypad_index");
-   CHECK(di == 4, "fixture: Device Index is row %d, not 4", di);
    if (di >= 0)
    {
       menu_st->selection_ptr = (size_t)di;
@@ -1050,87 +1101,106 @@ static void lane_port_controls_rows(void)
             (unsigned)menu_st->selection_ptr);
    }
 
-   open_port_controls(4);
+   open_port_controllers(4);
    CHECK(menu_st->selection_ptr == 0,
-         "Port 4 Controls opened from Port 1's on row %u",
+         "Port 4's Controllers opened from Port 1's on row %u",
          (unsigned)menu_st->selection_ptr);
    buf = selection_buf();
-   CHECK(buf && buf->size > 2
-         && buf->list[0].type == pad_a && buf->list[1].type == pad_b
-         && !is_plays_as_row(buf->list[2].type),
-         "Port 4 Controls, B's, does not list Player 1's A and B");
-   row_sublabel(0, s, sizeof(s));
-   CHECK(string_is_equal(s, "Shared \xC2\xB7 binds in Port 1 Controls"),
-         "A's sublabel on Port 4 Controls is \"%s\"", s);
+   /* a sharer's page has no links */
+   CHECK(buf && buf->size == 3
+         && buf->list[1].type == pad_a && buf->list[2].type == pad_b,
+         "Port 4's Controllers, B's, does not list Player 1's A and B "
+         "alone");
    row_sublabel(1, s, sizeof(s));
+   CHECK(string_is_equal(s, "Shared \xC2\xB7 binds in Port 1 Controls"),
+         "A's sublabel on Port 4's Controllers is \"%s\"", s);
+   row_sublabel(2, s, sizeof(s));
    CHECK(string_is_equal(s, "This port"),
-         "B's sublabel on Port 4 Controls is \"%s\"", s);
+         "B's sublabel on Port 4's Controllers is \"%s\"", s);
+   /* port 4 feeds Player 1 */
+   row_sublabel(0, s, sizeof(s));
+   CHECK(string_is_equal(s, "Pick a connected controller to play as "
+         "Player 1. It moves here from the player it plays now."),
+         "Add Controller's sublabel on Port 4's Controllers is \"%s\"", s);
 
-   open_port_controls(2);
+   open_port_controllers(2);
    CHECK(menu_st->selection_ptr == 0,
-         "Port 2 Controls opened from Port 4's on row %u",
+         "Port 2's Controllers opened from Port 4's on row %u",
          (unsigned)menu_st->selection_ptr);
    buf = selection_buf();
-   CHECK(buf && buf->size > 1 && buf->list[0].type == pad_c
-         && !is_plays_as_row(buf->list[1].type),
-         "Port 2 Controls does not list C alone");
+   CHECK(buf && buf->size == 2 && buf->list[1].type == pad_c,
+         "Port 2's Controllers does not list C alone");
+   row_sublabel(0, s, sizeof(s));
+   CHECK(string_is_equal(s, "Pick a connected controller to play as "
+         "Player 2. It moves here from the player it plays now."),
+         "Add Controller's sublabel on Port 2's Controllers is \"%s\"", s);
 
    /* D joins Player 1 from port 3, above B's row */
-   open_port_controls(1);
-   CHECK(menu_st->selection_ptr == 0,
-         "Port 1 Controls opened from Port 2's on row %u",
-         (unsigned)menu_st->selection_ptr);
-   menu_st->selection_ptr = 1;
+   open_port_controllers(1);
+   menu_st->selection_ptr = 2;
    input_config_set_device_name(3, "Pad D");
    input_config_plays_as_set(3, 1);
    input_autoconfigure_reallocate_ports(3);
    rebuild_as_hotplug();
-   CHECK(cursor_type() == pad_b && menu_st->selection_ptr == 2,
+   CHECK(cursor_type() == pad_b && menu_st->selection_ptr == 3,
          "a controller joining above B took the cursor (cursor %u)",
          (unsigned)menu_st->selection_ptr);
 
-   /* the cursor on the B button's bind while D, its row and its link,
-    * goes and comes back */
-   bind = row("p1_b");
-   CHECK(bind > 2, "fixture: no B button bind after the controller rows");
-   menu_st->selection_ptr = (size_t)bind;
+   /* with a list made outside the menu's, D going and coming back
+    * leaves the cursor on B */
    build_other_list();
    input_config_clear_device_name(3);
    rebuild_as_hotplug();
-   CHECK((int)menu_st->selection_ptr == row("p1_b")
-         && (int)menu_st->selection_ptr == bind - 2,
-         "a controller going above the binds moved the cursor off "
-         "the B button (cursor %u)", (unsigned)menu_st->selection_ptr);
+   CHECK(cursor_type() == pad_b && menu_st->selection_ptr == 2,
+         "a controller going above B took the cursor (cursor %u)",
+         (unsigned)menu_st->selection_ptr);
    input_config_set_device_name(3, "Pad D");
    rebuild_as_hotplug();
-   CHECK((int)menu_st->selection_ptr == row("p1_b")
-         && (int)menu_st->selection_ptr == bind,
-         "a controller joining above the binds moved the cursor off "
-         "the B button (cursor %u)", (unsigned)menu_st->selection_ptr);
+   CHECK(cursor_type() == pad_b && menu_st->selection_ptr == 3,
+         "a controller coming back above B took the cursor (cursor %u)",
+         (unsigned)menu_st->selection_ptr);
 
-   /* Right takes D to Player 2: the cursor goes past B, so a held
-    * Right stops */
+   /* Port 1 Controls stays as it is while D goes and comes back */
+   open_port_controls(1);
+   bind = row("p1_b");
+   CHECK(bind > 1, "fixture: no B button bind on Port 1 Controls");
+   menu_st->selection_ptr = (size_t)bind;
+   input_config_clear_device_name(3);
+   rebuild_as_hotplug();
+   CHECK((int)menu_st->selection_ptr == bind && row("p1_b") == bind,
+         "a controller going moved Port 1 Controls' B button bind "
+         "(cursor %u, bind on row %d, was %d)",
+         (unsigned)menu_st->selection_ptr, row("p1_b"), bind);
+   input_config_set_device_name(3, "Pad D");
+   rebuild_as_hotplug();
+   CHECK((int)menu_st->selection_ptr == bind && row("p1_b") == bind,
+         "a controller joining moved Port 1 Controls' B button bind "
+         "(cursor %u, bind on row %d, was %d)",
+         (unsigned)menu_st->selection_ptr, row("p1_b"), bind);
+
+   /* Right takes D to Player 2: the cursor goes to Add Controller, so
+    * a held Right stops */
+   open_port_controllers(1);
    press_lr(row_of_type(pad_d), true);
    run_frame();
    CHECK(row_of_type(pad_d) < 0,
-         "D on Player 2 is still on Port 1 Controls");
-   CHECK(menu_st->selection_ptr == 2
-         && row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR) == 2,
-         "D leaving Port 1 Controls left the cursor on row %u, not on "
-         "Add Controller after A's and B's",
-         (unsigned)menu_st->selection_ptr);
+         "D on Player 2 is still on Port 1's Controllers");
+   CHECK(menu_st->selection_ptr == 0 && row(add) == 0,
+         "D leaving Port 1's Controllers left the cursor on row %u, not "
+         "on Add Controller", (unsigned)menu_st->selection_ptr);
    CHECK(menu_st->driver_data && !menu_st->driver_data->plays_as_row,
-         "Port 1 Controls left plays_as_row %u for Controllers",
+         "Port 1's Controllers left plays_as_row %u for Controllers",
          menu_st->driver_data ? menu_st->driver_data->plays_as_row : 0);
 
    /* Right takes C, on Auto on its own port, to Player 1: its page
     * follows it to Player 1's rows, and the cursor follows C down them */
-   open_port_controls(input_config_slot_user(2) + 1);
-   CHECK(row_of_type(pad_c) == 0, "fixture: C is not row 0 of Port %u "
-         "Controls (%d)", input_config_slot_user(2) + 1, row_of_type(pad_c));
+   open_port_controllers(input_config_slot_user(2) + 1);
+   CHECK(row_of_type(pad_c) == 1, "fixture: C is not row 1 of Port %u's "
+         "Controllers (%d)", input_config_slot_user(2) + 1,
+         row_of_type(pad_c));
    press_lr(row_of_type(pad_c), true);
    run_frame();
-   CHECK(row_of_type(pad_c) > 0,
+   CHECK(row_of_type(pad_c) > 1,
          "fixture: C's row did not move (%d)", row_of_type(pad_c));
    CHECK(cursor_type() == pad_c,
          "C on Player 1 left the cursor on row %u (C on row %d)",
@@ -1156,7 +1226,8 @@ static void press_ok(int i)
 }
 
 /* After @how, Port 1 Controls lists B alone (@on_b) or A and B, A's
- * or B's row "This port", with the cursor on Device Index (@cursor). */
+ * or B's row "This port", in its Controllers, with the cursor left on
+ * Device Index (@cursor). */
 static void check_port1_rows(bool on_b, bool cursor, const char *how)
 {
    char s[128];
@@ -1167,34 +1238,36 @@ static void check_port1_rows(bool on_b, bool cursor, const char *how)
    CHECK(config_get_ptr()->uints.input_joypad_index[0] == (on_b ? 1u : 0u),
          "fixture: %s left Port 1 on slot %u", how,
          config_get_ptr()->uints.input_joypad_index[0]);
-   row_sublabel(0, s, sizeof(s));
-   if (on_b)
-      CHECK(row_of_type(pad_a) < 0 && row_of_type(pad_b) == 0
-            && string_is_equal(s, "This port"),
-            "%s to B: Port 1 Controls does not list B alone as "
-            "\"This port\" (row 0 \"%s\")", how, s);
-   else
-      CHECK(row_of_type(pad_a) == 0 && row_of_type(pad_b) == 1
-            && string_is_equal(s, "This port"),
-            "%s to A: Port 1 Controls does not list A as \"This port\" "
-            "and B (row 0 \"%s\")", how, s);
-   CHECK(!cursor || (di >= 0
+   CHECK(!cursor || (di == 1
             && (int)menu_state_get_ptr()->selection_ptr == di),
          "%s left the cursor on row %u, not on Device Index (row %d)",
          how, (unsigned)menu_state_get_ptr()->selection_ptr, di);
+   press_ok(row(MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR));
+   row_sublabel(1, s, sizeof(s));
+   if (on_b)
+      CHECK(row_of_type(pad_a) < 0 && row_of_type(pad_b) == 1
+            && string_is_equal(s, "This port"),
+            "%s to B: Port 1's Controllers does not list B alone as "
+            "\"This port\" (row 1 \"%s\")", how, s);
+   else
+      CHECK(row_of_type(pad_a) == 1 && row_of_type(pad_b) == 2
+            && string_is_equal(s, "This port"),
+            "%s to A: Port 1's Controllers does not list A as \"This "
+            "port\" and B (row 1 \"%s\")", how, s);
+   press(MENU_ACTION_CANCEL);
 }
 
-/* Port N Controls is made again when its Device Index changes, by
- * Left/Right, Start or the dropdown: its controller rows follow which
- * controller the port reads. A dropdown pick leaves the cursor at its
- * index, as the page record goes with the dropdown's build. */
+/* Port N Controls > Controllers follows Port N's Device Index, set by
+ * Left/Right, Start or the dropdown: its controller rows are those of
+ * the controller the port reads, and Port N Controls keeps the cursor
+ * on Device Index. */
 static void lane_port_controls_device_index(void)
 {
    const char *di = "input_player1_joypad_index";
 
    t_three_pads();
    open_port_controls(1);
-   CHECK(row(di) == 4, "fixture: Device Index is row %d, not 4", row(di));
+   CHECK(row(di) == 1, "fixture: Device Index is row %d, not 1", row(di));
    if (row(di) < 0)
    {
       t_forget_pads();
@@ -1215,7 +1288,7 @@ static void lane_port_controls_device_index(void)
    menu_state_get_ptr()->selection_ptr = (size_t)row(di);
    press(MENU_ACTION_OK);
    press_ok(1);
-   check_port1_rows(true, false, "A dropdown pick");
+   check_port1_rows(true, true, "A dropdown pick");
    t_forget_pads();
 }
 
@@ -1258,33 +1331,36 @@ static void connect_pad_d(void)
    rebuild_as_hotplug();
 }
 
-/* Port N Controls links each controller playing as player N from
- * another port to that port's page, where its binds are: after Add
- * Controller, named for the controller and the page, opening what
- * RetroPad Binds' own entry opens. A controller on its own port, the
- * page's own and a sharer's page have none, and a sharer's row still
- * opens its Plays As. A sharer joining above keeps the cursor on Add
- * Controller, or on the bind it is on; one leaving with the cursor on
- * its link leaves it on the last link. */
+/* Port N Controls > Controllers links each controller playing as
+ * player N from another port to that port's page, where its binds
+ * are: after the controller rows, named for the controller and the
+ * page, opening what RetroPad Binds' own entry opens. A controller on
+ * its own port, the page's own and a sharer's page have none, nor has
+ * Port N Controls itself, and a sharer's row still opens its Plays As.
+ * A sharer joining keeps the cursor on Add Controller; one leaving
+ * with the cursor on its link leaves it on the last link. */
 static void lane_port_controls_links(void)
 {
    char s[256];
-   int link, add, bind;
+   int link;
    size_t depth;
    file_list_t *buf;
    const char *path           = NULL;
    const char *label          = NULL;
+   const char *add            = MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR;
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned pad_b             = MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1;
 
    t_three_pads();
    open_port_controls(1);
+   CHECK(port_links(false) == 0,
+         "Port 1 Controls links to %d pages itself", port_links(false));
+   open_port_controllers(1);
    buf  = selection_buf();
    link = row("4_input_binds_list");
-   add  = row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR);
-   CHECK(link == 3 && add == 2 && port_links(false) == 1,
-         "Port 1 Controls does not link to B's Port 4 Controls alone, "
-         "after Add Controller (row %d, %d links)", link,
+   CHECK(link == 3 && row(add) == 0 && port_links(false) == 1,
+         "Port 1's Controllers does not link to B's Port 4 Controls "
+         "alone, after A's and B's rows (row %d, %d links)", link,
          port_links(false));
    if (!buf || link < 0)
    {
@@ -1310,10 +1386,13 @@ static void lane_port_controls_links(void)
          && string_is_equal(s, "Port 4 Controls")
          && row("input_player4_joypad_index") >= 0,
          "OK on B's link did not open Port 4 Controls (\"%s\")", s);
+   press_ok(row(MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR));
    CHECK(port_links(false) == 0,
-         "Port 4 Controls, B's own, links to %d pages", port_links(false));
+         "Port 4's Controllers, B's own, links to %d pages",
+         port_links(false));
    press(MENU_ACTION_CANCEL);
-   CHECK((int)menu_st->selection_ptr == link
+   press(MENU_ACTION_CANCEL);
+   CHECK(stack_depth() == depth && (int)menu_st->selection_ptr == link
          && row("4_input_binds_list") == link,
          "Cancel out of Port 4 Controls left the cursor on row %u",
          (unsigned)menu_st->selection_ptr);
@@ -1325,33 +1404,34 @@ static void lane_port_controls_links(void)
          "OK on B's row opened \"%s\", not its Plays As", label);
    press(MENU_ACTION_CANCEL);
 
-   open_port_controls(2);
+   open_port_controllers(2);
    CHECK(port_links(false) == 0,
-         "Port 2 Controls, C's alone, links to %d pages", port_links(false));
+         "Port 2's Controllers, C's alone, links to %d pages",
+         port_links(false));
 
    /* D joins Player 1 from port 3: its link comes before B's */
-   open_port_controls(1);
-   menu_st->selection_ptr = (size_t)add;
+   open_port_controllers(1);
+   menu_st->selection_ptr = 0;
    connect_pad_d();
    buf = selection_buf();
-   CHECK(row("3_input_binds_list") == 4 && row("4_input_binds_list") == 5
+   CHECK(buf && row("3_input_binds_list") == 4
+         && row("4_input_binds_list") == 5
          && string_is_equal(buf->list[4].path, "Pad D (Port 3 Controls)"),
-         "with D sharing from port 3, Port 1 Controls' links are not D's "
-         "then B's (rows %d, %d)", row("3_input_binds_list"),
+         "with D sharing from port 3, Port 1's Controllers' links are not "
+         "D's then B's (rows %d, %d)", row("3_input_binds_list"),
          row("4_input_binds_list"));
-   CHECK((int)menu_st->selection_ptr == add + 1
-         && row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR) == add + 1,
-         "a sharer joining above Add Controller took the cursor (cursor %u)",
+   CHECK(menu_st->selection_ptr == 0 && row(add) == 0,
+         "a sharer joining took the cursor off Add Controller (cursor %u)",
          (unsigned)menu_st->selection_ptr);
-   open_port_controls(3);
+   open_port_controllers(3);
    CHECK(port_links(false) == 0,
-         "Port 3 Controls, D's, links to %d pages", port_links(false));
-   open_port_controls(4);
+         "Port 3's Controllers, D's, links to %d pages", port_links(false));
+   open_port_controllers(4);
    CHECK(port_links(false) == 0,
-         "Port 4 Controls, B's, links to %d pages", port_links(false));
+         "Port 4's Controllers, B's, links to %d pages", port_links(false));
 
    /* B goes with the cursor on its link, the last */
-   open_port_controls(1);
+   open_port_controllers(1);
    menu_st->selection_ptr = (size_t)row("4_input_binds_list");
    input_config_clear_device_name(1);
    rebuild_as_hotplug();
@@ -1361,18 +1441,39 @@ static void lane_port_controls_links(void)
          "D's link (row %d)", (unsigned)menu_st->selection_ptr,
          row("3_input_binds_list"));
    input_config_set_device_name(1, "Pad B");
-   rebuild_as_hotplug();
-   bind = row("p1_b");
-   menu_st->selection_ptr = (size_t)bind;
-   input_config_clear_device_name(3);
-   rebuild_as_hotplug();
-   CHECK((int)menu_st->selection_ptr == row("p1_b")
-         && (int)menu_st->selection_ptr == bind - 2,
-         "a sharer going, its row and its link, moved the cursor off the "
-         "B button (cursor %u)", (unsigned)menu_st->selection_ptr);
-   input_config_set_device_name(3, "Pad D");
    t_forget_pads();
    check_no_entries();
+}
+
+/* A controller's disconnect makes Port N Controls > Controllers again
+ * when it is shown, and Port N Controls not. */
+static void lane_port_controllers_hotplug(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   t_three_pads();
+   open_port_controls(1);
+   menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                     | MENU_ST_FLAG_PREVENT_POPULATE);
+   input_autoconfigure_disconnect(2, "Pad C");
+   task_queue_wait(NULL, NULL);
+   CHECK(!input_config_get_device_name(2),
+         "fixture: C's disconnect did not finish");
+   CHECK(!(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH),
+         "a disconnect makes Port 1 Controls again");
+   run_frame();
+
+   input_config_set_device_name(2, "Pad C");
+   input_autoconfigure_reallocate_ports(2);
+   open_port_controllers(1);
+   menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                     | MENU_ST_FLAG_PREVENT_POPULATE);
+   input_autoconfigure_disconnect(2, "Pad C");
+   task_queue_wait(NULL, NULL);
+   CHECK(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH,
+         "a disconnect does not make Port 1's Controllers again");
+   run_frame();
+   t_forget_pads();
 }
 
 /* Quick Menu > Controls > Port @port + 1 Controls, built on the next
@@ -1511,11 +1612,11 @@ static void lane_remap_port_links(void)
    check_no_entries();
 }
 
-/* Port N Controls links the controllers playing as player N, whatever
- * port N's own plays as: A Player 1, C and B Player 4, then C Player 1
- * leaves B playing as Player 4 from port 3 and C sharing Player 1 from
- * port 4. Port 4 Controls links to B's page, B's has none, and Port 1
- * Controls links to C's. */
+/* Port N Controls > Controllers links the controllers playing as
+ * player N, whatever port N's own plays as: A Player 1, C and B Player
+ * 4, then C Player 1 leaves B playing as Player 4 from port 3 and C
+ * sharing Player 1 from port 4. Port 4's Controllers links to B's
+ * page, B's has none, and Port 1's links to C's. */
 static void lane_port_links_by_port(void)
 {
    file_list_t *buf;
@@ -1541,12 +1642,12 @@ static void lane_port_links_by_port(void)
          "port 4 as Player 1 (port %u)", input_config_slot_user(1) + 1,
          input_config_slot_user(2) + 1);
 
-   open_port_controls(4);
+   open_port_controllers(4);
    buf  = selection_buf();
    link = row("3_input_binds_list");
    CHECK(buf && link >= 0 && port_links(false) == 1
          && string_is_equal(buf->list[link].path, "Pad B (Port 3 Controls)"),
-         "Port 4 Controls does not link to B's Port 3 Controls alone "
+         "Port 4's Controllers does not link to B's Port 3 Controls alone "
          "(%d links)", port_links(false));
    open_remap_port(3);
    buf = selection_buf();
@@ -1555,24 +1656,25 @@ static void lane_port_links_by_port(void)
          && string_is_equal(buf->list[0].path, "Pad B (Port 3 Controls)"),
          "the Quick Menu's Port 4 Controls does not start with a link to "
          "B's Port 3 Controls alone (%d links)", port_links(true));
-   open_port_controls(3);
+   open_port_controllers(3);
    CHECK(port_links(false) == 0,
-         "Port 3 Controls, B's, links to %d pages", port_links(false));
+         "Port 3's Controllers, B's, links to %d pages", port_links(false));
    open_remap_port(2);
    CHECK(port_links(true) == 0,
          "the Quick Menu's Port 3 Controls, B's, links to %d pages",
          port_links(true));
-   open_port_controls(1);
+   open_port_controllers(1);
    CHECK(row("4_input_binds_list") >= 0 && port_links(false) == 1,
-         "Port 1 Controls does not link to C's Port 4 Controls alone");
+         "Port 1's Controllers does not link to C's Port 4 Controls alone");
    t_forget_pads();
    check_no_entries();
 }
 
 /* Add Controller lists the controllers not playing as the page's
  * player, and Cancel comes back to it; picking one moves it there,
- * back on the page with the cursor on its row, not on the row now at
- * Add Controller's; with none left, the list says so. */
+ * back on Port N Controls > Controllers with the cursor on its row;
+ * with none left, the list says so. Cancel out of Controllers is back
+ * on its row. */
 static void lane_port_controls_add(void)
 {
    char title[64];
@@ -1580,14 +1682,13 @@ static void lane_port_controls_add(void)
    size_t depth;
    file_list_t *buf;
    struct menu_state *menu_st = menu_state_get_ptr();
-   unsigned pad_b             = MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1;
    unsigned pad_c             = MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 2;
 
    t_three_pads();
-   open_port_controls(1);
+   open_port_controllers(1);
    add = row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR);
-   CHECK(add == 2, "Add Controller is not right after A and B (row %d)",
-         add);
+   CHECK(add == 0, "Add Controller is not the first row of Port 1's "
+         "Controllers (row %d)", add);
    depth = stack_depth();
    press_ok(add);
    CHECK(stack_depth() == depth + 1,
@@ -1612,15 +1713,12 @@ static void lane_port_controls_add(void)
    press_ok(0);
    CHECK(input_config_plays_as_player(2) == 1,
          "picking Pad C did not set it to Player 1");
-   CHECK(row_of_type(pad_b) == add,
-         "fixture: B is not on Add Controller's old row (%d)",
-         row_of_type(pad_b));
-   CHECK(cursor_type() == pad_c && menu_st->selection_ptr == 1
-         && row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR) == 3,
-         "back on Port 1 Controls the rows are not A, C, B with the "
-         "cursor on C (cursor %u)", (unsigned)menu_st->selection_ptr);
+   CHECK(cursor_type() == pad_c && menu_st->selection_ptr == 2
+         && row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR) == 0,
+         "back on Port 1's Controllers the rows are not Add Controller, "
+         "A, C, B with the cursor on C (cursor %u)",
+         (unsigned)menu_st->selection_ptr);
 
-   depth = stack_depth();
    press_ok(row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR));
    buf = selection_buf();
    CHECK(stack_depth() == depth + 1 && buf && buf->size == 1
@@ -1630,6 +1728,11 @@ static void lane_port_controls_add(void)
          "with every controller Player 1's, Add Controller does not show "
          "the empty-list entry");
    press(MENU_ACTION_CANCEL);
+   press(MENU_ACTION_CANCEL);
+   CHECK(stack_depth() == depth - 1 && menu_st->selection_ptr == 0
+         && row(MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR) == 0,
+         "Cancel out of Port 1's Controllers left the cursor on row %u",
+         (unsigned)menu_st->selection_ptr);
    t_forget_pads();
 }
 
@@ -1653,7 +1756,7 @@ static void lane_port_controls_add_items(void)
          && input_config_slot_user(4) == MAX_USERS,
          "fixture: D is not on port 3, or E has a port");
 
-   open_port_controls(1);
+   open_port_controllers(1);
    press_ok(row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR));
    buf = selection_buf();
    CHECK(buf && buf->size == 2
@@ -1663,7 +1766,7 @@ static void lane_port_controls_add_items(void)
          "alone (%u items)", buf ? (unsigned)buf->size : 0);
    press(MENU_ACTION_CANCEL);
 
-   open_port_controls(2);
+   open_port_controllers(2);
    press_ok(row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR));
    buf = selection_buf();
    CHECK(buf && buf->size == 3
@@ -1675,10 +1778,10 @@ static void lane_port_controls_add_items(void)
          "by player alone (%u items)", buf ? (unsigned)buf->size : 0);
    press_ok(2);
    CHECK(cursor_type() == pad_b,
-         "back on Port 2 Controls the cursor is not on B");
-   open_port_controls(1);
+         "back on Port 2's Controllers the cursor is not on B");
+   open_port_controllers(1);
    CHECK(row_of_type(pad_b) < 0,
-         "B, moved to Player 2, is still on Port 1 Controls");
+         "B, moved to Player 2, is still on Port 1's Controllers");
 
    input_config_clear_device_name(4);
    input_config_plays_as_release(4);
@@ -1710,7 +1813,7 @@ static void lane_port_controls_add_full(void)
    CHECK(!input_config_plays_as_set(2, 1),
          "fixture: C took a seventeenth entry");
 
-   open_port_controls(1);
+   open_port_controllers(1);
    add = row(MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR);
    press_ok(add);
    msg_queue_clear(&runloop_st->msg_queue);
@@ -1866,6 +1969,7 @@ int main(int argc, char *argv[])
    lane_port_controls_rows();
    lane_port_controls_device_index();
    lane_port_controls_links();
+   lane_port_controllers_hotplug();
    lane_remap_port_links();
    lane_port_links_by_port();
    lane_port_controls_add();

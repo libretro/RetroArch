@@ -12919,6 +12919,10 @@ MSG_HASH(
    "Shared · binds in Port %u Controls"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ADD,
+   "Pick a connected controller to play as Player %u. It moves here from the player it plays now."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
    "Preferred: if specified device is present, it will be allocated for this player. Reserved: no other controller will be allocated for this player."
    )
