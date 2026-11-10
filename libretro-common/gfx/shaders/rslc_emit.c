@@ -4719,6 +4719,15 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
       pr_s(p, "#extension GL_ARB_shader_bit_encoding : require");
       pr_nl(p);
    }
+#ifdef RSLC_EXTENDED
+   if (pr->subgroup)
+   {
+      pr_s(p, "#extension GL_KHR_shader_subgroup_basic : require");
+      pr_nl(p);
+      pr_s(p, "#extension GL_KHR_shader_subgroup_arithmetic : require");
+      pr_nl(p);
+   }
+#endif
    if (!p->es && p->version < 400 && p->uses_gather)
    {
       pr_s(p, "#extension GL_ARB_texture_gather : require");
@@ -6687,12 +6696,11 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
       rslc_err(c, p->hlsl ? "hlsl: no geometry stage yet" : "msl: no geometry stage", NULL, 0);
       return false;
    }
-   /* subgroup operations have a form in SPIR-V and MSL alone; HLSL's
-    * shader models here have no helper invocation either */
-   if (!p->msl && pr->subgroup)
+   /* subgroup operations have no form in HLSL's shader models here,
+    * which have no helper invocation either */
+   if (p->hlsl && pr->subgroup)
    {
-      rslc_err(c, p->hlsl ? "hlsl: no form of subgroup operations"
-            : "glsl: no form of subgroup operations", NULL, 0);
+      rslc_err(c, "hlsl: no form of subgroup operations", NULL, 0);
       return false;
    }
    if (p->hlsl)

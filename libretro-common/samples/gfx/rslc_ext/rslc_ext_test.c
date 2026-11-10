@@ -910,7 +910,8 @@ int main(int argc, char **argv)
    }
 
    /* subgroup operations (GroupNonUniform 61, its Arithmetic 63) in a
-    * SPIR-V 1.3 module; MSL's simdgroup functions; GLSL and HLSL refuse */
+    * SPIR-V 1.3 module; MSL's simdgroup functions; GLSL's under
+    * GL_KHR_shader_subgroup, read back; HLSL refuses */
    {
       char err[256];
       struct rslc_opts   o;
@@ -940,8 +941,45 @@ int main(int argc, char **argv)
          write_text(dir, "subgroup.msl", r.text);
          rslc_result_free(&r, &o);
       }
+      {
+         static const struct { enum rslc_dst dst; unsigned version; } gl[] = {
+            { RSLC_DST_GLSL, 450 }, { RSLC_DST_GLSL_ES, 320 } };
+         unsigned i;
+         for (i = 0; i < sizeof(gl) / sizeof(gl[0]); i++)
+         {
+            memset(&r, 0, sizeof(r));
+            CHECK(compile(fs_subgroup, gl[i].dst, gl[i].version, &o, &r, err, sizeof(err)));
+            if (err[0])
+               fprintf(stderr, "subgroup glsl: %s\n", err);
+            if (r.blob)
+            {
+               struct rslc_opts   o2;
+               struct rslc_result r2;
+               char err2[256];
+               CHECK(strstr(r.text, "#extension GL_KHR_shader_subgroup_basic : require") != NULL);
+               CHECK(strstr(r.text, "#extension GL_KHR_shader_subgroup_arithmetic : require") != NULL);
+               CHECK(strstr(r.text, "subgroupMin(") != NULL);
+               CHECK(strstr(r.text, "subgroupElect()") != NULL);
+               CHECK(strstr(r.text, "gl_HelperInvocation") != NULL);
+               if (gl[i].dst == RSLC_DST_GLSL)
+               {
+                  /* what it printed reads back as the same stage */
+                  memset(&r2, 0, sizeof(r2));
+                  CHECK(compile(r.text, RSLC_DST_SPIRV, 0, &o2, &r2, err2, sizeof(err2)));
+                  if (err2[0])
+                     fprintf(stderr, "subgroup glsl read back: %s\n", err2);
+                  if (r2.blob)
+                  {
+                     CHECK(has_capability(r2.spirv, r2.spirv_len, 63));
+                     rslc_result_free(&r2, &o2);
+                  }
+                  write_text(dir, "subgroup.glsl", r.text);
+               }
+               rslc_result_free(&r, &o);
+            }
+         }
+      }
       memset(&r, 0, sizeof(r));
-      CHECK(!compile(fs_subgroup, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
       CHECK(!compile(fs_subgroup, RSLC_DST_HLSL, 50, &o, &r, err, sizeof(err)));
       CHECK(strstr(err, "subgroup") != NULL);
       /* a plain stage stays SPIR-V 1.0 */

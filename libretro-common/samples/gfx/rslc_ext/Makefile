@@ -70,6 +70,7 @@ check: $(TARGET) $(TARGET_TEST2) plane-check
 			spirv-val --target-env $$env $$f || exit 1; \
 		done; \
 	fi
+	@if command -v glslangValidator >/dev/null 2>&1; then glslangValidator -S frag obj/subgroup.glsl; fi
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
