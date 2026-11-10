@@ -172,6 +172,8 @@ jobs:
             rpng
             # a PNG a row at a time, as stored, from input in pieces
             rpng_rows_test
+            # a GIF's first image, straight into the caller's rows
+            rgif_test
             rzip_chunk_size_test
             rzip_matches_buf_test
             rzip_codec_test
