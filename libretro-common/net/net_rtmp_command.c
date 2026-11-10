@@ -74,7 +74,6 @@ static void command_number(struct command_writer *w, uint32_t value)
    uint64_t bits = 0;
    uint32_t high = value;
    unsigned bit = 0, i;
-   uint8_t encoded[9];
    if (value)
    {
       while (high >>= 1)
@@ -82,10 +81,14 @@ static void command_number(struct command_writer *w, uint32_t value)
       bits = ((uint64_t)(1023 + bit) << 52)
          | (((uint64_t)value << (52 - bit)) & (((uint64_t)1 << 52) - 1));
    }
-   encoded[0] = 0;
+   if (w->failed || w->capacity - w->used < 9)
+   {
+      w->failed = true;
+      return;
+   }
+   w->data[w->used++] = 0;
    for (i = 0; i < 8; i++)
-      encoded[i + 1] = (uint8_t)(bits >> (56 - i * 8));
-   command_bytes(w, encoded, sizeof(encoded));
+      w->data[w->used++] = (uint8_t)(bits >> (56 - i * 8));
 }
 
 static void command_property(struct command_writer *w, const char *name, const char *value)
@@ -94,8 +97,70 @@ static void command_property(struct command_writer *w, const char *name, const c
    command_string(w, value, false);
 }
 
-bool net_rtmp_command_encode(enum net_rtmp_command command,
-      const net_rtmp_command_config_t *c, void *output, size_t capacity, size_t *size)
+static bool command_caps_valid(const net_rtmp_codec_caps_t *c)
+{
+   const net_rtmp_codec_capability_t *entry, *previous;
+   unsigned i, j, k, count;
+   if (!c)
+      return true;
+   if (c->video_count > 16 || c->audio_count > 16
+         || (c->video_count && !c->video) || (c->audio_count && !c->audio))
+      return false;
+   count = c->video_count + c->audio_count;
+   for (i = 0; i < count; i++)
+   {
+      entry = i < c->video_count ? c->video + i : c->audio + i - c->video_count;
+      if (!entry->flags || entry->flags > 7 || entry->fourcc[4])
+         return false;
+      for (k = 0; k < 4; k++)
+         if ((unsigned char)entry->fourcc[k] < 32 || (unsigned char)entry->fourcc[k] > 126)
+            return false;
+      for (j = 0; j < i; j++)
+      {
+         previous = j < c->video_count ? c->video + j : c->audio + j - c->video_count;
+         if (!memcmp(entry->fourcc, previous->fourcc, 4))
+            return false;
+      }
+   }
+   return true;
+}
+
+static void command_caps_map(struct command_writer *w, const char *name,
+      const net_rtmp_codec_capability_t *entries, unsigned count)
+{
+   unsigned i;
+   if (!count)
+      return;
+   command_string(w, name, true);
+   command_marker(w, 3);
+   for (i = 0; i < count; i++)
+   {
+      command_string(w, entries[i].fourcc, true);
+      command_number(w, entries[i].flags);
+   }
+   command_bytes(w, "\0\0\11", 3);
+}
+
+static void command_caps(struct command_writer *w, const net_rtmp_codec_caps_t *c)
+{
+   unsigned i, count;
+   if (!c || !(count = c->video_count + c->audio_count))
+      return;
+   command_string(w, "fourCcList", true);
+   command_marker(w, 10);
+   for (i = 4; i; i--)
+      command_marker(w, (uint8_t)((uint32_t)count >> ((i - 1) * 8)));
+   for (i = 0; i < c->video_count; i++)
+      command_string(w, c->video[i].fourcc, false);
+   for (i = 0; i < c->audio_count; i++)
+      command_string(w, c->audio[i].fourcc, false);
+   command_caps_map(w, "videoFourCcInfoMap", c->video, c->video_count);
+   command_caps_map(w, "audioFourCcInfoMap", c->audio, c->audio_count);
+}
+
+bool net_rtmp_command_encode_caps(enum net_rtmp_command command,
+      const net_rtmp_command_config_t *c, const net_rtmp_codec_caps_t *caps,
+      void *output, size_t capacity, size_t *size)
 {
    static const char *const names[] =
    { "connect", "createStream", "publish", "deleteStream", "releaseStream", "FCPublish" };
@@ -104,7 +169,8 @@ bool net_rtmp_command_encode(enum net_rtmp_command command,
    if (size)
       *size = 0;
    if (!size || !c || !output || !capacity || command < NET_RTMP_CONNECT
-         || command > NET_RTMP_FC_PUBLISH)
+         || command > NET_RTMP_FC_PUBLISH || (caps && command != NET_RTMP_CONNECT)
+         || !command_caps_valid(caps))
       return false;
    transaction = command == NET_RTMP_CONNECT ? 1
       : command == NET_RTMP_PUBLISH || command == NET_RTMP_DELETE_STREAM ? 0 : c->transaction;
@@ -134,6 +200,7 @@ bool net_rtmp_command_encode(enum net_rtmp_command command,
       command_bytes(&w, "\1\0", 2);
       command_string(&w, "objectEncoding", true);
       command_number(&w, 0);
+      command_caps(&w, caps);
       command_bytes(&w, "\0\0\11", 3);
    }
    else
@@ -151,4 +218,10 @@ bool net_rtmp_command_encode(enum net_rtmp_command command,
       return false;
    *size = w.used;
    return true;
+}
+
+bool net_rtmp_command_encode(enum net_rtmp_command command,
+      const net_rtmp_command_config_t *c, void *output, size_t capacity, size_t *size)
+{
+   return net_rtmp_command_encode_caps(command, c, NULL, output, capacity, size);
 }

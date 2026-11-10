@@ -37,6 +37,25 @@ typedef struct net_rtmp_command_config
    const char *application, *url, *name;
    uint32_t transaction, stream;
 } net_rtmp_command_config_t;
+
+enum net_rtmp_codec_flag
+{
+   NET_RTMP_CODEC_DECODE = 1,
+   NET_RTMP_CODEC_ENCODE = 2,
+   NET_RTMP_CODEC_FORWARD = 4
+};
+
+typedef struct net_rtmp_codec_capability
+{
+   unsigned flags;
+   char fourcc[5];
+} net_rtmp_codec_capability_t;
+
+typedef struct net_rtmp_codec_caps
+{
+   const net_rtmp_codec_capability_t *video, *audio;
+   unsigned video_count, audio_count;
+} net_rtmp_codec_caps_t;
 RETRO_BEGIN_DECLS
 /* Encodes one AMF0 command body into caller storage; no I/O or allocation.
  * Strings are UTF-8, at most 4096 bytes each, and must not alias output.
@@ -45,6 +64,13 @@ RETRO_BEGIN_DECLS
  * Publish targets the assigned message stream; other commands target stream 0. */
 bool net_rtmp_command_encode(enum net_rtmp_command command,
       const net_rtmp_command_config_t *config,
+      void *output, size_t capacity, size_t *size);
+/* Connect only when caps is non-NULL. Emits fourCcList and per-media maps.
+ * At most 16 entries per media type; printable four-byte codes, unique across
+ * both lists, flags 1..7. No wildcard or implicit codec/feature claims.
+ * NULL preserves the ordinary command bytes. Reads caps only during encode. */
+bool net_rtmp_command_encode_caps(enum net_rtmp_command command,
+      const net_rtmp_command_config_t *config, const net_rtmp_codec_caps_t *caps,
       void *output, size_t capacity, size_t *size);
 RETRO_END_DECLS
 #endif

@@ -38,6 +38,10 @@ RETRO_BEGIN_DECLS
  * bracketed IPv6 and explicit ports; no userinfo or fragments. The resolver
  * executor owns notification/lifetime; cancellation never joins it. */
 net_rtmp_client_t *net_rtmp_client_new(const net_rtmp_client_config_t *config);
+/* Serializes connect capabilities before resolver dispatch; no retained caps
+ * pointers. Invalid capabilities fail setup before starting any resolver. */
+net_rtmp_client_t *net_rtmp_client_new_caps(const net_rtmp_client_config_t *config,
+      const net_rtmp_codec_caps_t *caps);
 /* One bounded setup/transport step, no wait or internal deadline. The caller
  * schedules readiness, resolver completion, retries and cancellation. again
  * requests local work; otherwise read/write name socket interests. No fd while

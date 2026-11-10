@@ -51,6 +51,8 @@ int main(void)
    net_rtmp_client_config_t config;
    net_rtmp_client_t *client;
    net_rtmp_client_view_t view;
+   net_rtmp_codec_capability_t codec = {0, "hvc1"};
+   net_rtmp_codec_caps_t caps;
    unsigned i;
    assert(network_init());
    memset(&config, 0, sizeof(config));
@@ -59,6 +61,18 @@ int main(void)
    config.userdata = &queued;
    config.max_reply = 65536;
    config.streams = 8;
+   config.url = valid[0];
+   caps.video = &codec;
+   caps.video_count = 1;
+   caps.audio = NULL;
+   caps.audio_count = 0;
+   assert(!net_rtmp_client_new_caps(&config, &caps) && !queued);
+   codec.flags = NET_RTMP_CODEC_ENCODE;
+   client = net_rtmp_client_new_caps(&config, &caps);
+   assert(client && queued == 1);
+   net_rtmp_client_cancel(client);
+   assert(net_rtmp_client_free(client));
+   retire();
    assert(!net_rtmp_client_new(NULL) && net_rtmp_client_free(NULL));
    for (i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++)
    {

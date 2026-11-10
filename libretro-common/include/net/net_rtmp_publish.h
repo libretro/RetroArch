@@ -56,6 +56,10 @@ RETRO_BEGIN_DECLS
 /* Single worker, after handshake. Copies nonempty strings (up to4096 bytes
  * each) at initialization. Does not own the socket, chunk sender or receiver. */
 net_rtmp_publish_t *net_rtmp_publish_new(const net_rtmp_publish_config_t *config);
+/* Cold connect capabilities; serialized immediately, never retained.
+ * NULL is identical to new(). Existing configuration layout is unchanged. */
+net_rtmp_publish_t *net_rtmp_publish_new_caps(const net_rtmp_publish_config_t *config,
+      const net_rtmp_codec_caps_t *caps);
 /* Borrows one outgoing command until ack, including across cancellation.
  * Ack only after transmission completes or its transport borrow is retired. */
 bool net_rtmp_publish_get(net_rtmp_publish_t *publish, net_rtmp_message_t *message);

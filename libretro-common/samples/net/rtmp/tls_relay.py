@@ -7,7 +7,7 @@ import threading
 
 
 class TlsRelay:
-    def __init__(self, root, target, version):
+    def __init__(self, root, target, version, capture_connect=False):
         self.root = Path(root)
         self.target = target
         self.version = version
@@ -18,6 +18,10 @@ class TlsRelay:
         self.loop = None
         self.done = None
         self.thread = threading.Thread(target=self.run, daemon=True)
+        self.connect_bytes = bytearray() if capture_connect else None
+        self.context = None
+        if version is None:
+            return
         key, cert = self.root / 'server.key', self.root / 'server.pem'
         ca_key, csr = self.root / 'ca.key', self.root / 'server.csr'
         extension = self.root / 'server.ext'
@@ -60,6 +64,8 @@ class TlsRelay:
                         if destination.can_write_eof():
                             destination.write_eof()
                         return
+                    if upload and self.connect_bytes is not None:
+                        self.connect_bytes.extend(data[:max(0, 16384 - len(self.connect_bytes))])
                     if not forwarding:
                         continue
                     try:
@@ -92,9 +98,9 @@ class TlsRelay:
     async def serve(self):
         self.loop = asyncio.get_running_loop()
         self.done = asyncio.Event()
-        async with await asyncio.start_server(self.forward, '127.0.0.1', 0,
-                                             ssl=self.context, ssl_handshake_timeout=5,
-                                             ssl_shutdown_timeout=1) as server:
+        options = dict(ssl=self.context, ssl_handshake_timeout=5,
+                       ssl_shutdown_timeout=1) if self.context else {}
+        async with await asyncio.start_server(self.forward, '127.0.0.1', 0, **options) as server:
             self.port = server.sockets[0].getsockname()[1]
             self.ready.set()
             await self.done.wait()

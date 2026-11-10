@@ -82,6 +82,86 @@ static void bounds(void)
    assert(!net_rtmp_command_encode((enum net_rtmp_command)99, &c, output, sizeof(output), &size));
 }
 
+static void caps_maximum(void)
+{
+   static uint8_t output[10000];
+   net_rtmp_codec_capability_t entries[32];
+   net_rtmp_codec_caps_t caps;
+   net_rtmp_command_config_t c = config(0);
+   size_t size;
+   unsigned i;
+   for (i = 0; i < 32; i++)
+   {
+      entries[i].flags = 7;
+      entries[i].fourcc[0] = i < 16 ? 'v' : 'a';
+      entries[i].fourcc[1] = (char)('0' + (i % 16) / 10);
+      entries[i].fourcc[2] = (char)('0' + (i % 16) % 10);
+      entries[i].fourcc[3] = 'x';
+      entries[i].fourcc[4] = 0;
+   }
+   caps.video = entries;
+   caps.audio = entries + 16;
+   caps.video_count = caps.audio_count = 16;
+   memset(oversized, 'a', 4096);
+   oversized[4096] = 0;
+   c.application = c.url = oversized;
+   assert(net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   assert(size > 9000 && size < sizeof(output));
+}
+
+static void caps_bounds(void)
+{
+   net_rtmp_codec_capability_t video[] = {{2, "hvc1"}, {1, "av01"}};
+   net_rtmp_codec_capability_t audio[] = {{7, "mp4a"}};
+   net_rtmp_codec_caps_t caps;
+   net_rtmp_command_config_t c = config(0);
+   uint8_t output[1026];
+   size_t size, needed, cap, i;
+   caps.video = video;
+   caps.audio = audio;
+   caps.video_count = 2;
+   caps.audio_count = 1;
+   assert(net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps,
+            golden, sizeof(golden), &needed));
+   for (cap = 0; cap < needed; cap++)
+   {
+      memset(output, 0xa5, sizeof(output));
+      size = 99;
+      assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps,
+               output, cap, &size) && !size);
+      for (i = cap; i < sizeof(output); i++)
+         assert(output[i] == 0xa5);
+   }
+   assert(net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps,
+            output, needed, &size) && size == needed && !memcmp(output, golden, needed));
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_PUBLISH, &c, &caps,
+            output, sizeof(output), &size) && !size);
+   video[0].flags = 8;
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   video[0].flags = 0;
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   video[0].flags = 2;
+   video[0].fourcc[4] = 'x';
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   video[0].fourcc[4] = 0;
+   video[0].fourcc[0] = 1;
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   memcpy(video[0].fourcc, "av01", 5);
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   memcpy(video[0].fourcc, "mp4a", 5);
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   memcpy(video[0].fourcc, "hvc1", 5);
+   caps.video_count = 17;
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   caps.video_count = 1;
+   caps.video = NULL;
+   assert(!net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size));
+   caps.video_count = caps.audio_count = 0;
+   assert(net_rtmp_command_encode(NET_RTMP_CONNECT, &c, golden, sizeof(golden), &needed));
+   assert(net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps, output, sizeof(output), &size)
+         && size == needed && !memcmp(output, golden, size));
+}
+
 int main(int argc, char **argv)
 {
    net_rtmp_command_config_t c;
@@ -100,6 +180,8 @@ int main(int argc, char **argv)
    }
    assert(argc == 1 || argc == 2);
    bounds();
+   caps_bounds();
+   caps_maximum();
    if (argc == 2)
    {
       f = fopen(argv[1], "wb");
@@ -109,6 +191,22 @@ int main(int argc, char **argv)
          c = config(command);
          assert(net_rtmp_command_encode((enum net_rtmp_command)command,
                   &c, golden, sizeof(golden), &size));
+         length[0] = (uint8_t)(size >> 8);
+         length[1] = (uint8_t)size;
+         assert(fwrite(length, 1, 2, f) == 2 && fwrite(golden, 1, size, f) == size);
+      }
+      for (command = 0; command < 4; command++)
+      {
+         static const net_rtmp_codec_capability_t video[] = {{2, "hvc1"}, {1, "av01"}};
+         static const net_rtmp_codec_capability_t audio[] = {{7, "mp4a"}};
+         net_rtmp_codec_caps_t caps;
+         caps.video = video;
+         caps.audio = audio;
+         caps.video_count = command < 2 ? 0 : 2;
+         caps.audio_count = command & 1;
+         c = config(0);
+         assert(net_rtmp_command_encode_caps(NET_RTMP_CONNECT, &c, &caps,
+                  golden, sizeof(golden), &size));
          length[0] = (uint8_t)(size >> 8);
          length[1] = (uint8_t)size;
          assert(fwrite(length, 1, 2, f) == 2 && fwrite(golden, 1, size, f) == size);

@@ -40,6 +40,10 @@ RETRO_BEGIN_DECLS
  * No socket ownership, internal clock or I/O. */
 net_rtmp_session_t *net_rtmp_session_new(const net_rtmp_publish_config_t *config,
       const uint8_t random[1528], uint32_t time, size_t max_reply, unsigned streams);
+/* Same ownership; caps is read only during construction and not retained. */
+net_rtmp_session_t *net_rtmp_session_new_caps(const net_rtmp_publish_config_t *config,
+      const uint8_t random[1528], uint32_t time, size_t max_reply, unsigned streams,
+      const net_rtmp_codec_caps_t *caps);
 /* One handshake/receive segment. Zero consumption requires step/output work. */
 bool net_rtmp_session_feed(net_rtmp_session_t *session,
       const void *data, size_t size, size_t *consumed, uint32_t receive_time);

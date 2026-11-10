@@ -47,14 +47,15 @@ struct net_rtmp_session
    bool media_wire;
 };
 
-net_rtmp_session_t *net_rtmp_session_new(const net_rtmp_publish_config_t *config,
-      const uint8_t random[1528], uint32_t time, size_t max_reply, unsigned streams)
+net_rtmp_session_t *net_rtmp_session_new_caps(const net_rtmp_publish_config_t *config,
+      const uint8_t random[1528], uint32_t time, size_t max_reply, unsigned streams,
+      const net_rtmp_codec_caps_t *caps)
 {
    net_rtmp_session_t *s = (net_rtmp_session_t*)calloc(1, sizeof(*s));
    if (!s)
       return NULL;
    s->handshake = net_rtmp_handshake_new(random, time);
-   s->publish = net_rtmp_publish_new(config);
+   s->publish = net_rtmp_publish_new_caps(config, caps);
    s->control = net_rtmp_control_new();
    s->receive = net_rtmp_receive_new(max_reply, streams);
    s->chunk = net_rtmp_chunk_new(128);
@@ -66,6 +67,12 @@ net_rtmp_session_t *net_rtmp_session_new(const net_rtmp_publish_config_t *config
       return NULL;
    }
    return s;
+}
+
+net_rtmp_session_t *net_rtmp_session_new(const net_rtmp_publish_config_t *config,
+      const uint8_t random[1528], uint32_t time, size_t max_reply, unsigned streams)
+{
+   return net_rtmp_session_new_caps(config, random, time, max_reply, streams, NULL);
 }
 
 bool net_rtmp_session_feed(net_rtmp_session_t *s,

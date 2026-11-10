@@ -34,6 +34,8 @@ def decode(data):
             return text()
         if marker == 5:
             return None
+        if marker == 10:
+            return [value(depth + 1) for _ in range(int.from_bytes(take(4), 'big'))]
         assert marker == 3
         result = {}
         while data[pos:pos + 3] != b'\x00\x00\x09':
@@ -63,6 +65,16 @@ def main():
         ['deleteStream', 0, None, 0xffffffff],
         ['releaseStream', 0x80000000, None, 'test/é'],
         ['FCPublish', 0x1000001, None, 'test/é']]
+    for video, audio in (({}, {}), ({}, {'mp4a': 7}),
+                         ({'hvc1': 2, 'av01': 1}, {}), ({'hvc1': 2, 'av01': 1}, {'mp4a': 7})):
+        properties = dict(expected[0][2])
+        if video or audio:
+            properties['fourCcList'] = list(video) + list(audio)
+        if video:
+            properties['videoFourCcInfoMap'] = video
+        if audio:
+            properties['audioFourCcInfoMap'] = audio
+        expected.append(['connect', 1, properties])
     with tempfile.TemporaryDirectory(prefix='rtmp-amf-') as temp:
         output = Path(temp) / 'commands.bin'
         subprocess.run(shlex.split(args.runner) + [str(Path(args.binary).resolve()), str(output)],

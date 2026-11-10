@@ -3,6 +3,7 @@
 import argparse
 from contextlib import ExitStack
 import hashlib
+from io import BytesIO
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,8 @@ import time
 
 from session_peer import native_ffmpeg
 from tls_relay import TlsRelay
+from peer import replies
+from command import decode as decode_amf
 
 
 def decode(ffmpeg, path, audio):
@@ -23,7 +26,7 @@ def decode(ffmpeg, path, audio):
                           check=True, stdout=subprocess.PIPE, timeout=20).stdout
 
 
-def run(binary, runner, legacy, tls=None, remux=False):
+def run(binary, runner, legacy, tls=None, remux=False, caps=False):
     ffmpeg = native_ffmpeg()
     with tempfile.TemporaryDirectory(prefix='rtmp-media-') as temp:
         root = Path(temp)
@@ -56,11 +59,13 @@ def run(binary, runner, legacy, tls=None, remux=False):
                                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                       stderr=log)
             try:
-                relay = stack.enter_context(TlsRelay(root, port, tls)) if tls else None
-                client_url = f'rtmps://localhost:{relay.port}/live' if relay else url
+                relay = stack.enter_context(TlsRelay(root, port, tls, caps)) if tls or caps else None
+                client_url = f'{"rtmps" if tls else "rtmp"}://localhost:{relay.port}/live' if relay else url
                 client_port = relay.port if relay else port
                 env = os.environ.copy()
-                if relay:
+                if caps:
+                    env['RTMP_TEST_CAPS'] = '1'
+                if tls:
                     env['RTMPS_CA'] = str(relay.ca)
                     if 'wine' in shlex.split(runner):
                         env['RTMPS_CA'] = 'Z:' + str(relay.ca).replace('/', '\\')
@@ -83,6 +88,17 @@ def run(binary, runner, legacy, tls=None, remux=False):
                     time.sleep(0.01)
                 if server.wait(timeout=15):
                     raise RuntimeError('independent receiver failed')
+                if caps:
+                    wire = BytesIO(relay.connect_bytes)
+                    assert wire.read(1) == b'\x03'
+                    assert len(wire.read(3072)) == 3072
+                    _, payload = replies(wire.read, command=b'connect')
+                    properties = decode_amf(payload)[2]
+                    assert properties['fourCcList'] == ['avc1', 'mp4a']
+                    assert properties['videoFourCcInfoMap'] == {'avc1': 2}
+                    assert properties['audioFourCcInfoMap'] == {'mp4a': 2}
+                    assert 'capsEx' not in properties
+                    print('PASS: owned client serialized truthful connect capabilities before asynchronous setup')
             except Exception as error:
                 if isinstance(error, subprocess.TimeoutExpired):
                     print((error.stdout or b'').decode(errors='replace'))
@@ -116,7 +132,8 @@ if __name__ == '__main__':
     parser.add_argument('--runner', default='')
     parser.add_argument('--tls', choices=['1.2', '1.3'])
     parser.add_argument('--mux', action='store_true')
+    parser.add_argument('--caps', action='store_true')
     parser.add_argument('binary')
     args = parser.parse_args()
-    run(args.binary, args.runner, False, args.tls, args.mux)
-    run(args.binary, args.runner, True, args.tls, args.mux)
+    run(args.binary, args.runner, False, args.tls, args.mux, args.caps)
+    run(args.binary, args.runner, True, args.tls, args.mux, args.caps)

@@ -123,7 +123,8 @@ void net_rtmp_client_cancel(net_rtmp_client_t *c)
    c->state = NET_RTMP_CLIENT_FAILED;
 }
 
-net_rtmp_client_t *net_rtmp_client_new(const net_rtmp_client_config_t *config)
+net_rtmp_client_t *net_rtmp_client_new_caps(const net_rtmp_client_config_t *config,
+      const net_rtmp_codec_caps_t *caps)
 {
    net_rtmp_client_t *c;
    net_rtmp_publish_config_t publish;
@@ -159,8 +160,8 @@ net_rtmp_client_t *net_rtmp_client_new(const net_rtmp_client_config_t *config)
    publish.legacy_commands = config->legacy_commands;
    if (!client_url(parts, target, &c->hostname, &port, &publish, secure))
       goto failed;
-   c->session = net_rtmp_session_new(&publish, config->random, config->time,
-         config->max_reply, config->streams);
+   c->session = net_rtmp_session_new_caps(&publish, config->random, config->time,
+         config->max_reply, config->streams, caps);
    if (!c->session)
       goto failed;
    c->resolver = net_resolve_new(c->hostname, port, config->dispatch, config->userdata);
@@ -172,6 +173,11 @@ failed:
    net_rtmp_session_free(c->session);
    free(c);
    return NULL;
+}
+
+net_rtmp_client_t *net_rtmp_client_new(const net_rtmp_client_config_t *config)
+{
+   return net_rtmp_client_new_caps(config, NULL);
 }
 
 static bool client_connected(net_rtmp_client_t *c)

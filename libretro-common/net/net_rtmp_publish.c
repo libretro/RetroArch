@@ -35,7 +35,7 @@ struct net_rtmp_publish
    enum net_rtmp_publish_error error;
    enum net_rtmp_command command;
    enum publish_wait wait;
-   uint8_t output[9000];
+   uint8_t output[10000];
    bool pending, borrowed, input, legacy;
 };
 
@@ -59,9 +59,10 @@ static void publish_fail(net_rtmp_publish_t *p, enum net_rtmp_publish_error erro
    }
 }
 
-static bool publish_command(net_rtmp_publish_t *p, enum net_rtmp_command command)
+static bool publish_command_caps(net_rtmp_publish_t *p, enum net_rtmp_command command,
+      const net_rtmp_codec_caps_t *caps)
 {
-   if (!net_rtmp_command_encode(command, &p->config,
+   if (!net_rtmp_command_encode_caps(command, &p->config, caps,
             p->output, sizeof(p->output), &p->output_size))
    {
       publish_fail(p, NET_RTMP_PUBLISH_ERROR_PROTOCOL);
@@ -72,7 +73,13 @@ static bool publish_command(net_rtmp_publish_t *p, enum net_rtmp_command command
    return true;
 }
 
-net_rtmp_publish_t *net_rtmp_publish_new(const net_rtmp_publish_config_t *c)
+static bool publish_command(net_rtmp_publish_t *p, enum net_rtmp_command command)
+{
+   return publish_command_caps(p, command, NULL);
+}
+
+net_rtmp_publish_t *net_rtmp_publish_new_caps(const net_rtmp_publish_config_t *c,
+      const net_rtmp_codec_caps_t *caps)
 {
    net_rtmp_publish_t *p;
    size_t app, url, name;
@@ -98,12 +105,17 @@ net_rtmp_publish_t *net_rtmp_publish_new(const net_rtmp_publish_config_t *c)
    p->legacy = c->legacy_commands;
    p->create_transaction = p->legacy ? 4 : 2;
    p->config.transaction = 1;
-   if (!publish_command(p, NET_RTMP_CONNECT))
+   if (!publish_command_caps(p, NET_RTMP_CONNECT, caps))
    {
       net_rtmp_publish_free(p);
       return NULL;
    }
    return p;
+}
+
+net_rtmp_publish_t *net_rtmp_publish_new(const net_rtmp_publish_config_t *c)
+{
+   return net_rtmp_publish_new_caps(c, NULL);
 }
 
 bool net_rtmp_publish_get(net_rtmp_publish_t *p, net_rtmp_message_t *message)

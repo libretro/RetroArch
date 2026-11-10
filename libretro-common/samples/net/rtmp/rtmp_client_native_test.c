@@ -21,6 +21,9 @@ int main(int argc, char **argv)
 {
    net_rtmp_client_config_t config;
    net_rtmp_client_view_t view;
+   net_rtmp_codec_capability_t video = {NET_RTMP_CODEC_ENCODE, "avc1"};
+   net_rtmp_codec_capability_t audio = {NET_RTMP_CODEC_ENCODE, "mp4a"};
+   net_rtmp_codec_caps_t caps;
    enum net_rtmp_client_state state = NET_RTMP_CLIENT_RESOLVING, previous_state;
    sthread_t *resolver_thread = NULL;
    retro_time_t deadline;
@@ -52,7 +55,14 @@ int main(int argc, char **argv)
    config.max_reply = 65536;
    config.streams = 8;
    config.legacy_commands = !strcmp(argv[3], "legacy");
-   active_client = net_rtmp_client_new(&config);
+   caps.video = &video;
+   caps.audio = &audio;
+   caps.video_count = caps.audio_count = 1;
+   active_client = getenv("RTMP_TEST_CAPS") ? net_rtmp_client_new_caps(&config, &caps)
+      : net_rtmp_client_new(&config);
+   memset(&video, 0, sizeof(video));
+   memset(&audio, 0, sizeof(audio));
+   memset(&caps, 0, sizeof(caps));
    free(url);
    assert(active_client);
    deadline = cpu_features_get_time_usec() + 10000000;
