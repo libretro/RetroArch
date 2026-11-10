@@ -49,7 +49,14 @@ void net_http_connection_free(struct http_connection_t *conn);
 
 void net_http_connection_set_user_agent(struct http_connection_t *conn, const char *user_agent);
 
+/* Pre-formatted "Name: value\r\n" lines. An Accept-Encoding or
+ * User-Agent among them replaces net_http's own. */
 void net_http_connection_set_headers(struct http_connection_t *conn, const char *headers);
+
+/* false: a 3xx response is returned as it is (status, headers and
+ * body), for a caller applying its own redirect rules. Followed by
+ * default. */
+void net_http_connection_set_redirects(struct http_connection_t *conn, bool follow);
 
 struct ssl_socket_retro_config;
 

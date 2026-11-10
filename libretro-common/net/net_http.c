@@ -296,6 +296,8 @@ struct http_t
    /* The request has already been replayed once on a fresh
     * connection; it will not be replayed again. */
    bool retried;
+   /* 3xx responses are handed back as they are, not followed. */
+   bool no_redirect;
    unsigned redirects;
 
    /* For the stall bound: when the transfer last moved and how far it
@@ -331,6 +333,7 @@ struct http_connection_t
    const struct ssl_socket_retro_config *tls;
    int port;
    bool ssl;
+   bool no_redirect;
 };
 
 /* The OS error left by the socket call that just failed, for
@@ -968,6 +971,12 @@ void net_http_connection_set_user_agent(
    conn->useragent = user_agent ? strdup(user_agent) : NULL;
 }
 
+void net_http_connection_set_redirects(
+      struct http_connection_t *conn, bool follow)
+{
+   conn->no_redirect = !follow;
+}
+
 void net_http_connection_set_headers(
       struct http_connection_t *conn, const char *headers)
 {
@@ -1468,6 +1477,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.headers  = conn->headers ? strdup(conn->headers) : NULL;
    state->request.auth     = conn->auth    ? strdup(conn->auth)    : NULL;
    state->request.port     = conn->port;
+   state->no_redirect      = conn->no_redirect;
 
    state->response.status  = -1;
    state->sink                  = conn->sink;
@@ -1903,6 +1913,22 @@ static void net_http_send_reset(struct http_t *state)
    state->send_phase   = SEND_NONE;
 }
 
+/* Whether the caller's pre-formatted headers carry @name (with its
+ * colon), at the start of a line, in any case. */
+static bool net_http_has_header(const char *headers, const char *name)
+{
+   size_t len = strlen(name);
+   const char *line;
+   for (line = headers; line && *line; )
+   {
+      const char *next = strchr(line, '\n');
+      if (!strncasecmp(line, name, len))
+         return true;
+      line = next ? next + 1 : NULL;
+   }
+   return false;
+}
+
 static size_t net_http_put(char *dst, size_t at, const char *src)
 {
    size_t n = strlen(src);
@@ -1917,7 +1943,10 @@ static bool net_http_build_head(struct http_t *state)
 {
    struct request *request = &state->request;
    const char *method      = request->method ? request->method : "GET";
-   bool body_method        = request->method && request->method[0] == 'P';
+   /* Content-Length goes with a POST/PUT/PATCH, empty or not, and with
+    * any other method carrying a body, which is sent */
+   bool body_method        = (request->method && request->method[0] == 'P')
+      || ((request->postdata || request->source) && request->contentlength);
    size_t cap              = 192
       + STRLEN_CONST("Accept-Encoding: identity\r\n")
       + strlen(method) + strlen(request->path) + strlen(request->domain)
@@ -1968,11 +1997,17 @@ static bool net_http_build_head(struct http_t *state)
 #endif
    }
    /* The body reaches callers as sent: no content coding is decoded,
-    * so none is accepted. Without this header a server may pick any. */
-   n = net_http_put(h, n, "Accept-Encoding: identity\r\n");
-   n = net_http_put(h, n, "User-Agent: ");
-   n = net_http_put(h, n, request->useragent ? request->useragent : "libretro");
-   n = net_http_put(h, n, "\r\n\r\n");
+    * so none is accepted. Without this header a server may pick any.
+    * A caller sending its own takes on decoding what it accepts. */
+   if (!net_http_has_header(request->headers, "Accept-Encoding:"))
+      n = net_http_put(h, n, "Accept-Encoding: identity\r\n");
+   if (!net_http_has_header(request->headers, "User-Agent:"))
+   {
+      n = net_http_put(h, n, "User-Agent: ");
+      n = net_http_put(h, n, request->useragent ? request->useragent : "libretro");
+      n = net_http_put(h, n, "\r\n");
+   }
+   n = net_http_put(h, n, "\r\n");
 
    state->out_head     = h;
    state->out_head_len = n;
@@ -2289,6 +2324,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
                response->conn_close = true;
             if (   status >= 300 && status < 400
                 && response->location
+                && !state->no_redirect
                 && state->redirects < NET_HTTP_MAX_REDIRECTS)
                response->discard = true;
             if (status >= 100 && status < 200 && status != 101)
@@ -3612,7 +3648,8 @@ bool net_http_update_budget(struct http_t *state,
    state->conn = NULL;
 
    if (   response->status >= 300 && response->status < 400
-       && response->location)
+       && response->location
+       && !state->no_redirect)
    {
       if (state->redirects >= NET_HTTP_MAX_REDIRECTS)
       {

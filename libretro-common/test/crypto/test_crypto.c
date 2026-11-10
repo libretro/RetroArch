@@ -1534,6 +1534,77 @@ START_TEST(test_streams)
 }
 END_TEST
 
+/* CFB128: SP 800-38A F.3.13 and F.3.17 (128- and 256-bit keys), then
+ * random streams split at random points against one call, decrypted
+ * back, in place and not. */
+START_TEST(test_aes_cfb128)
+{
+   static uint8_t in[600], out[600], ref[600], back[600];
+   uint8_t  key[32], iv[16], v[16], pt[64], ct[64];
+   unsigned it, num;
+   size_t   i;
+   struct aes_ctx a;
+
+   unhex(pt, 64, "6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51"
+         "30c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710");
+   unhex(key, 16, "2b7e151628aed2a6abf7158809cf4f3c");
+   unhex(v, 16, "000102030405060708090a0b0c0d0e0f");
+   ck_assert_int_eq(aes_init(&a, key, 16), 0);
+   num = 0;
+   aes_cfb128_encrypt(&a, v, &num, pt, ct, 64);
+   ck_hex(ct, 64, "3b3fd92eb72dad20333449f8e83cfb4ac8a64537a0b3a93fcde3cdad9f1ce58b"
+         "26751f67a3cbb140b1808cf187a4f4dfc04b05357c5d1c0eeac4c66f9ff7f2e6");
+   unhex(key, 32, "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4");
+   unhex(v, 16, "000102030405060708090a0b0c0d0e0f");
+   ck_assert_int_eq(aes_init(&a, key, 32), 0);
+   num = 0;
+   aes_cfb128_encrypt(&a, v, &num, pt, ct, 64);
+   ck_hex(ct, 64, "dc7e84bfda79164b7ecd8486985d386039ffed143b28b1c832113c6331e5407b"
+         "df10132415e54b92a13ed0a8267ae2f975a385741ab9cef82031623d55b1e471");
+
+   for (it = 0; it < 200; it++)
+   {
+      size_t len = bulk_rand() % sizeof(in), at;
+      for (i = 0; i < 32; i++)
+         key[i] = (uint8_t)bulk_rand();
+      for (i = 0; i < 16; i++)
+         iv[i] = (uint8_t)bulk_rand();
+      for (i = 0; i < len; i++)
+         in[i] = (uint8_t)bulk_rand();
+      ck_assert_int_eq(aes_init(&a, key, (it & 1) ? 32 : 16), 0);
+      memcpy(v, iv, 16);
+      num = 0;
+      aes_cfb128_encrypt(&a, v, &num, in, ref, len);
+      ck_assert_uint_eq(num, (unsigned)(len & 15));
+      /* the same stream in random pieces */
+      memcpy(v, iv, 16);
+      num = 0;
+      for (at = 0; at < len; )
+      {
+         size_t n = 1 + bulk_rand() % 40;
+         if (n > len - at)
+            n = len - at;
+         aes_cfb128_encrypt(&a, v, &num, in + at, out + at, n);
+         at += n;
+      }
+      ck_assert_int_eq(memcmp(out, ref, len), 0);
+      /* and back, in place */
+      memcpy(back, ref, len);
+      memcpy(v, iv, 16);
+      num = 0;
+      for (at = 0; at < len; )
+      {
+         size_t n = 1 + bulk_rand() % 40;
+         if (n > len - at)
+            n = len - at;
+         aes_cfb128_decrypt(&a, v, &num, back + at, back + at, n);
+         at += n;
+      }
+      ck_assert_int_eq(memcmp(back, in, len), 0);
+   }
+}
+END_TEST
+
 /* CBC: SP 800-38A F.2.1, then interleaved chains - in place and not,
  * 128- and 256-bit keys - against one block at a time through
  * aes_encrypt_block(). */
@@ -1708,6 +1779,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_krb5_enctypes);
    tcase_add_test(tc_core, test_bulk_paths);
    tcase_add_test(tc_core, test_streams);
+   tcase_add_test(tc_core, test_aes_cfb128);
    tcase_add_test(tc_core, test_aes_cbc);
    tcase_add_test(tc_core, test_aes_cbc_decrypt);
    suite_add_tcase(s, tc_core);

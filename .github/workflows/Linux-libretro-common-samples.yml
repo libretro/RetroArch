@@ -258,6 +258,9 @@ jobs:
             http_parse_test
             # UPnP gateway client: parsers, and SOAP against a fake gateway.
             net_upnp_test
+            # net_http: a 3xx handed back unfollowed, a DELETE body's
+            # Content-Length, the caller's Accept-Encoding/User-Agent.
+            net_http_options_test
             rjson_test
             rm3u_test
             rmp4_fragment_test

@@ -1,6 +1,6 @@
 include ../sample_objdir.mk
 
-TARGETS  = http_test http_parse_test net_ifinfo net_upnp_test
+TARGETS  = http_test http_parse_test net_ifinfo net_upnp_test net_http_options_test
 
 LIBRETRO_COMM_DIR := ../..
 
@@ -101,6 +101,12 @@ UPNP_TEST_C = \
 
 UPNP_TEST_OBJS := $(call sample_objs,$(UPNP_TEST_C:.c=.o))
 
+HTTP_OPTIONS_TEST_C = $(filter-out net_upnp_test.c $(LIBRETRO_COMM_DIR)/net/net_upnp.c \
+				  $(LIBRETRO_COMM_DIR)/formats/xml/rxml.c,$(UPNP_TEST_C)) \
+				  net_http_options_test.c
+
+HTTP_OPTIONS_TEST_OBJS := $(call sample_objs,$(HTTP_OPTIONS_TEST_C:.c=.o))
+
 NET_IFINFO_C = \
 					$(LIBRETRO_COMM_DIR)/net/net_ifinfo.c \
 					$(LIBRETRO_COMM_DIR)/net/net_compat.c \
@@ -143,9 +149,12 @@ http_test: $(HTTP_TEST_OBJS)
 net_upnp_test: $(UPNP_TEST_OBJS)
 	$(CC) $(INCFLAGS) $(UPNP_TEST_OBJS) $(CFLAGS) -lpthread -o $@
 
+net_http_options_test: $(HTTP_OPTIONS_TEST_OBJS)
+	$(CC) $(INCFLAGS) $(HTTP_OPTIONS_TEST_OBJS) $(CFLAGS) -lpthread -o $@
+
 net_ifinfo: $(NET_IFINFO_OBJS)
 	$(CC) $(INCFLAGS) $(NET_IFINFO_OBJS) $(CFLAGS) -o $@
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -rf $(TARGETS) $(HTTP_TEST_OBJS) $(HTTP_PARSE_TEST_OBJS) $(NET_IFINFO_OBJS) $(UPNP_TEST_OBJS)
+	rm -rf $(TARGETS) $(HTTP_TEST_OBJS) $(HTTP_PARSE_TEST_OBJS) $(NET_IFINFO_OBJS) $(UPNP_TEST_OBJS) $(HTTP_OPTIONS_TEST_OBJS)

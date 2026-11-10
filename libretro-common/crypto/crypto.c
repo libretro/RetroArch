@@ -1441,6 +1441,42 @@ void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
    crypto_memzero(ks, sizeof(ks));
 }
 
+/* The register holds ciphertext: encrypting it gives the next
+ * keystream block, and each ciphertext octet goes back into it. */
+void aes_cfb128_encrypt(const struct aes_ctx *ctx, uint8_t *iv,
+      unsigned *num, const uint8_t *in, uint8_t *out, size_t len)
+{
+   unsigned n = *num & 15;
+   while (len)
+   {
+      if (!n)
+         aes_encrypt_block(ctx, iv, iv);
+      iv[n] ^= *in++;
+      *out++ = iv[n];
+      n      = (n + 1) & 15;
+      len--;
+   }
+   *num = n;
+}
+
+void aes_cfb128_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
+      unsigned *num, const uint8_t *in, uint8_t *out, size_t len)
+{
+   unsigned n = *num & 15;
+   while (len)
+   {
+      uint8_t c;
+      if (!n)
+         aes_encrypt_block(ctx, iv, iv);
+      c      = *in++;
+      *out++ = (uint8_t)(iv[n] ^ c);
+      iv[n]  = c;
+      n      = (n + 1) & 15;
+      len--;
+   }
+   *num = n;
+}
+
 void aes_cbc_encrypt(const struct aes_ctx *ctx, uint8_t *iv,
       const uint8_t *in, uint8_t *out, size_t len)
 {
