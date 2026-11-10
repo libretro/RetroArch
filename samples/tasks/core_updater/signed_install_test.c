@@ -4,7 +4,8 @@
 /* The core updater checks every download (tasks/task_core_updater.c):
  * <core>.sig first, then the core, staged and checked under its install
  * name, then installed with its .sig beside it and recorded; Update
- * Installed Cores tells of each refused core and carries on. Against
+ * Installed Cores tells of each refused core and carries on, and
+ * fetches only the .sig of an up-to-date core that has none. Against
  * the shipping updater, HTTP, backup and trust store code, with a
  * loopback server as the buildbot. COMPRESSION=1 also serves a zip.
  * Linux and mingw-w64 (COMPRESSION=0). */
@@ -51,6 +52,8 @@
 void get_list_test_set_buildbot_url(const char *url);
 extern int  stub_osd_count;
 extern char stub_osd_last[256];
+extern int  stub_core_info_inits;
+extern int  stub_contentless_frees;
 extern bool stub_err_expected;
 
 static int checks   = 0;
@@ -1068,6 +1071,143 @@ static void test_zip(void)
 }
 #endif
 
+static void sha(const uint8_t *data, size_t len, uint8_t *out)
+{
+   struct sha256_state st;
+   sha256_stream_init(&st, 0);
+   sha256_stream_update(&st, data, len);
+   sha256_stream_final(&st, out);
+}
+
+static void update_installed(void)
+{
+   settings_point_at_server();
+   task_push_update_installed_cores(false, 0, g_cores, NULL);
+   pump();
+}
+
+/* other_libretro.so, listed first, is refused with one message; the
+ * run goes on and updates the next core */
+static void test_update_installed(void)
+{
+   int osd   = stub_osd_count;
+   int infos = stub_core_info_inits;
+   int frees = stub_contentless_frees;
+   printf("[update installed cores]\n");
+   install_old(g_core);
+   install_old(g_other);
+   srv_use(2);
+   srv_set(0, FX_NAME, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good), false);
+   srv_set(1, OTHER_NAME, fx_core, FX_CORE_SIZE, NULL, 0, false);
+   stub_err_expected = true;
+   update_installed();
+   stub_err_expected = false;
+   CHECK(same(g_other, old_core, OLD_SIZE));
+   CHECK(!path_is_valid(g_other_sig));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_good, sizeof(fx_sig_good)));
+   CHECK(stub_osd_count == osd + 1);
+   CHECK(strstr(stub_osd_last, OTHER_NAME)
+         && strstr(stub_osd_last, "failed the signature check"));
+   /* A core file changed: core info is read again */
+   CHECK(stub_core_info_inits > infos);
+   CHECK(stub_contentless_frees > frees);
+   srv_use(1);
+   filestream_delete(g_other);
+}
+
+/* Up to date but unsigned on disk: Update Installed Cores fetches its
+ * .sig once, checks it and places it; the core isn't downloaded */
+static void test_sig_for_unchanged(void)
+{
+   struct core_check c;
+   int osd   = stub_osd_count;
+   int infos = stub_core_info_inits;
+   int frees = stub_contentless_frees;
+   printf("[signature for an unchanged core]\n");
+   /* Trusted by its hash, as the seed leaves a core: its .sig must
+    * still verify on its own */
+   memset(&c, 0, sizeof(c));
+   strlcpy(c.rec.name, FX_NAME, sizeof(c.rec.name));
+   sha(fx_core, FX_CORE_SIZE, c.rec.sha256);
+   c.result = CORE_CHECK_UNSIGNED;
+   CHECK(core_trust_runtime_always(&c));
+   put(g_core, fx_core, FX_CORE_SIZE);
+   if (path_is_valid(g_core_sig))
+      filestream_delete(g_core_sig);
+   srv_use(1);
+   srv_set(0, FX_NAME, fx_core, FX_CORE_SIZE,
+         fx_sig_key2, sizeof(fx_sig_key2), false);
+   update_installed();
+   CHECK(srv_hits(0, true) == 1 && srv_hits(0, false) == 0);
+   CHECK(!path_is_valid(g_core_sig));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(!path_is_directory(g_staging));
+   /* Still none: the next run asks again */
+   srv_set(0, FX_NAME, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good), false);
+   update_installed();
+   CHECK(srv_hits(0, true) == 1 && srv_hits(0, false) == 0);
+   CHECK(same(g_core_sig, fx_sig_good, sizeof(fx_sig_good)));
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(recorded(g_core));
+   /* With its .sig there, nothing is asked for */
+   srv_set(0, FX_NAME, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good), false);
+   update_installed();
+   CHECK(srv_hits(0, true) == 0 && srv_hits(0, false) == 0);
+   CHECK(stub_osd_count == osd);
+   /* No core file changed: no forced core info rescan */
+   CHECK(stub_core_info_inits == infos);
+   CHECK(stub_contentless_frees == frees);
+}
+
+/* Passed by its trusted hash (test_sig_for_unchanged): its .sig must
+ * still verify on its own, either way in */
+static void test_hash_pass(void)
+{
+   printf("[trusted hash, bad .sig]\n");
+   install_old(g_core);
+   srv_set(0, FX_NAME, fx_core, FX_CORE_SIZE,
+         fx_sig_key2, sizeof(fx_sig_key2), false);
+   update(false);
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(!path_is_valid(g_core_sig));
+   CHECK(!path_is_directory(g_staging));
+
+   printf("[trusted hash, bad .sig, move backup]\n");
+   install_old(g_core);
+   update(true);
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(!path_is_valid(g_core_sig));
+   CHECK(!path_is_directory(g_staging));
+
+   printf("[trusted hash, good .sig]\n");
+   install_old(g_core);
+   srv_set(0, FX_NAME, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good), false);
+   update(false);
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_good, sizeof(fx_sig_good)));
+}
+
+/* Checks off: no .sig is asked for an up-to-date core */
+static void test_checks_off_no_sig(void)
+{
+   printf("[checks off, up to date]\n");
+   CHECK(core_trust_runtime_set_checks(false));
+   put(g_core, fx_core, FX_CORE_SIZE);
+   if (path_is_valid(g_core_sig))
+      filestream_delete(g_core_sig);
+   srv_set(0, FX_NAME, fx_core, FX_CORE_SIZE,
+         fx_sig_key2, sizeof(fx_sig_key2), false);
+   update_installed();
+   CHECK(srv_hits(0, true) == 0 && srv_hits(0, false) == 0);
+   CHECK(!path_is_valid(g_core_sig));
+   CHECK(core_trust_runtime_set_checks(true));
+}
+
 static void test_threaded(void)
 {
    printf("[threaded]\n");
@@ -1143,6 +1283,10 @@ int main(void)
    test_check_error();
    test_zip_extra();
 #endif
+   test_update_installed();
+   test_sig_for_unchanged();
+   test_hash_pass();
+   test_checks_off_no_sig();
    pump();
    task_queue_deinit();
    task_queue_init(true, NULL);

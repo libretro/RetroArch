@@ -424,6 +424,67 @@ static void test_copy_sig(void)
    CHECK(!path_is_valid(dsig));
 }
 
+/* A core in place, nothing staged but a .sig fetched for it */
+static void stage_sig(const uint8_t *sig, size_t sig_len)
+{
+   char p[300];
+   if (path_is_valid(staged))
+      filestream_delete(staged);
+   sig_of(staged, p, sizeof(p));
+   if (path_is_valid(p))
+      filestream_delete(p);
+   if (sig)
+      put(p, sig, sig_len);
+}
+
+/* The installed core hashed where it is, against staged's .sig */
+static enum core_check_result run_sig(core_trust_t *t,
+      struct core_install_check *ic)
+{
+   core_trust_set_t *s = core_trust_get(t);
+   if (core_install_check_begin(ic, s, installed, installed))
+   {
+      while (!core_install_check_step(ic))
+         ;
+      core_install_check_end_sig(ic, s, staged);
+   }
+   core_trust_set_put(s);
+   return ic->c.result;
+}
+
+/* Trusted by its hash: only the .sig decides, and the store's newest
+ * build still makes an older one OLDER */
+static void test_end_sig(void)
+{
+   struct core_install_check ic;
+   struct core_check c;
+   uint8_t key[CORE_SHA256_LEN];
+   core_trust_t *t = new_store("store_end_sig");
+   put(installed, fx_core, FX_CORE_SIZE);
+   memset(&c, 0, sizeof(c));
+   strlcpy(c.rec.name, FX_NAME, sizeof(c.rec.name));
+   sha(fx_core, FX_CORE_SIZE, c.rec.sha256);
+   c.result = CORE_CHECK_UNSIGNED;
+   CHECK(core_trust_always(t, &c));
+   stage_sig(fx_sig_key2, sizeof(fx_sig_key2));
+   CHECK(run_sig(t, &ic) == CORE_CHECK_UNKNOWN_KEY);
+   stage_sig(NULL, 0);
+   CHECK(run_sig(t, &ic) == CORE_CHECK_UNSIGNED);
+   stage_sig(fx_sig_good, sizeof(fx_sig_good));
+   CHECK(run_sig(t, &ic) == CORE_CHECK_OK);
+   CHECK(ic.c.record && ic.c.raise_newest);
+   CHECK(ic.c.rec.build_time == FX_TIME);
+   CHECK(!strcmp(ic.c.rec.name, FX_NAME));
+   CHECK(core_folder_key(installed, key)
+         && !memcmp(key, ic.c.folder, sizeof(key)));
+   CHECK(core_trust_apply(t, &ic.c));
+   stage_sig(fx_sig_older, sizeof(fx_sig_older));
+   CHECK(run_sig(t, &ic) == CORE_CHECK_OLDER);
+   CHECK(!ic.c.record && !ic.c.raise_newest);
+   stage_sig(NULL, 0);
+   core_trust_free(t);
+}
+
 /* Passed by its trusted hash: the .sig staged beside it, never read,
  * stays only if it verifies on its own */
 static void test_vet_sig(void)
@@ -477,6 +538,19 @@ static void test_vet_sig(void)
    core_trust_free(t);
 }
 
+static void test_has_sig(void)
+{
+   char p[300];
+   put(installed, fx_core, FX_CORE_SIZE);
+   sig_of(installed, p, sizeof(p));
+   if (path_is_valid(p))
+      filestream_delete(p);
+   CHECK(!core_install_has_sig(installed));
+   put(p, fx_sig_good, sizeof(fx_sig_good));
+   CHECK(core_install_has_sig(installed));
+   filestream_delete(p);
+}
+
 int main(void)
 {
    path_mkdir(TMP_DIR);
@@ -502,7 +576,9 @@ int main(void)
    test_identify_other();
    test_identify_mtime();
    test_copy_sig();
+   test_end_sig();
    test_vet_sig();
+   test_has_sig();
 
    free(fx_core);
    printf("%d checks, %d failures\n", checks, failures);

@@ -71,6 +71,35 @@ void core_install_check_free(struct core_install_check *ic)
    ic->f       = NULL;
 }
 
+void core_install_check_end_sig(struct core_install_check *ic,
+      const core_trust_set_t *s, const char *staged)
+{
+   /* Empty, so no trusted hash ends the check before the .sig; private
+    * to this call (core_trust_new() is pure), not RetroArch's store */
+   core_trust_t *none     = core_trust_new();
+   core_trust_set_t *bare = none ? core_trust_get(none) : NULL;
+   if (!bare)
+   {
+      core_install_check_free(ic);
+      ic->c.result = CORE_CHECK_ERROR;
+   }
+   else
+   {
+      core_install_check_end(ic, bare, staged, 0);
+      if (     ic->c.result == CORE_CHECK_OK
+            && ic->c.rec.build_time
+               < core_trust_newest(s, ic->c.folder, ic->c.rec.name))
+      {
+         ic->c.result       = CORE_CHECK_OLDER;
+         ic->c.record       = false;
+         ic->c.raise_newest = false;
+      }
+      core_trust_set_put(bare);
+   }
+   if (none)
+      core_trust_free(none);
+}
+
 bool core_install_copy_sig(const char *src, const char *dst)
 {
    uint8_t buf[CORE_SIG_MAX_LEN + 1];
@@ -129,6 +158,14 @@ void core_install_end_aside_sig(const char *path, bool replaced)
       filestream_delete(old);
    free(sig);
    free(old);
+}
+
+bool core_install_has_sig(const char *path)
+{
+   char *sig = core_sig_path(path);
+   bool has  = sig && path_is_valid(sig);
+   free(sig);
+   return has;
 }
 
 void core_install_place_sig(const char *staged, const char *install_path)

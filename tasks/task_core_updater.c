@@ -135,6 +135,8 @@ typedef struct
    struct core_check c;
    char msg[256];
    bool installed;
+   /* Only a .sig was fetched: no core file changed */
+   bool sig_only;
 } core_updater_result_t;
 #endif
 
@@ -1048,6 +1050,7 @@ static void cb_task_core_updater_download(
     * > This must be done on the main thread
     * > Forced: a core file changed on disk */
    bool refresh                            = true;
+   bool rescan                             = true;
    core_updater_sub_task_done_t *download_done =
          (core_updater_sub_task_done_t*)user_data;
 #ifdef HAVE_CORE_SIGNATURES
@@ -1056,6 +1059,8 @@ static void cb_task_core_updater_download(
    /* Recorded before the parent goes on */
    if (result)
    {
+      /* Only a .sig was placed: no core file changed */
+      rescan = !result->sig_only;
       if (result->installed)
          core_trust_runtime_apply(&result->c);
       /* Update Installed Cores mutes its downloads: each refusal is
@@ -1076,12 +1081,14 @@ static void cb_task_core_updater_download(
    if (download_done)
       core_updater_sub_task_done_signal(download_done, err);
 
-   command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
-
+   if (rescan)
+   {
+      command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
-   /* Force reload of contentless cores icons */
-   menu_contentless_cores_free();
+      /* Force reload of contentless cores icons */
+      menu_contentless_cores_free();
 #endif
+   }
 }
 
 static void core_updater_download_handle_release(
@@ -1607,14 +1614,36 @@ static void core_updater_set_result(retro_task_t *task,
 {
    core_updater_result_t *result;
    if (     !download_handle->trust
-         || (!download_handle->installed && !msg)
+         || (     !download_handle->installed && !msg
+               && !download_handle->sig_only)
          || !(result = (core_updater_result_t*)calloc(1, sizeof(*result))))
       return;
    result->c         = download_handle->check.c;
    result->installed = download_handle->installed;
+   result->sig_only  = download_handle->sig_only;
    if (msg)
       strlcpy(result->msg, msg, sizeof(result->msg));
    task_set_data(task, result);
+}
+
+/* A .sig fetched for an up-to-date core: placed and recorded when it
+ * checks out, else only logged; the core and its trust stay as they are */
+static enum core_updater_download_status core_updater_sig_checked(
+      core_updater_download_handle_t *download_handle)
+{
+   if (download_handle->check.c.result == CORE_CHECK_OK)
+   {
+      core_install_place_sig(download_handle->staged_core_path,
+            download_handle->local_core_path);
+      download_handle->installed = true;
+      RARCH_LOG("[Core Updater] Signature placed beside \"%s\".\n",
+            download_handle->display_name);
+   }
+   else
+      RARCH_WARN("[Core Updater] The signature fetched for \"%s\" did not check (%d); left without one.\n",
+            download_handle->display_name,
+            (int)download_handle->check.c.result);
+   return CORE_UPDATER_DOWNLOAD_END;
 }
 #endif
 
@@ -1695,6 +1724,18 @@ static void task_core_updater_download_handler(retro_task_t *task)
    {
       case CORE_UPDATER_DOWNLOAD_BEGIN:
          {
+#ifdef HAVE_CORE_SIGNATURES
+            /* Up to date, without a .sig: fetch only that */
+            if (download_handle->sig_only)
+            {
+               download_handle->crc_match = true;
+               download_handle->status    =
+                     core_updater_download_stage(download_handle, true)
+                     ? CORE_UPDATER_DOWNLOAD_START_SIG
+                     : CORE_UPDATER_DOWNLOAD_END;
+               break;
+            }
+#endif
             /* Get CRC of existing core, if required.
              *
              * Sliced: the handler returns after one tick's budget and
@@ -1828,6 +1869,23 @@ static void task_core_updater_download_handler(retro_task_t *task)
             if (state == CORE_UPDATER_SIG_PENDING)
             {
                task_queue_park(task, CORE_UPDATER_WAIT_PARK_USEC);
+               break;
+            }
+            /* Only the .sig was wanted: nothing to refuse */
+            if (download_handle->sig_only)
+            {
+               if (state == CORE_UPDATER_SIG_GOT)
+                  download_handle->status = CORE_UPDATER_DOWNLOAD_CHECK;
+               else
+               {
+                  if (state == CORE_UPDATER_SIG_MISSING)
+                     RARCH_LOG("[Core Updater] No signature for \"%s\" yet.\n",
+                           download_handle->display_name);
+                  else
+                     RARCH_WARN("[Core Updater] Could not download the signature for \"%s\".\n",
+                           download_handle->display_name);
+                  download_handle->status = CORE_UPDATER_DOWNLOAD_END;
+               }
                break;
             }
             checks_on = !(core_trust_flags(download_handle->trust->set)
@@ -2148,13 +2206,20 @@ static void task_core_updater_download_handler(retro_task_t *task)
             if (!download_handle->check_begun)
             {
                download_handle->check_begun = true;
+               /* sig_only hashes the installed core where it is */
                if (!core_install_check_begin(&download_handle->check,
                         download_handle->trust->set,
-                        download_handle->staged_core_path,
+                        download_handle->sig_only
+                        ? download_handle->local_core_path
+                        : download_handle->staged_core_path,
                         download_handle->local_core_path))
                {
-                  download_handle->status = core_updater_checked(
-                        download_handle);
+                  /* Not hashed: no .sig of an installed core is placed */
+                  if (download_handle->sig_only)
+                     download_handle->check.c.result = CORE_CHECK_ERROR;
+                  download_handle->status = download_handle->sig_only
+                        ? core_updater_sig_checked(download_handle)
+                        : core_updater_checked(download_handle);
                   break;
                }
             }
@@ -2164,6 +2229,16 @@ static void task_core_updater_download_handler(retro_task_t *task)
             task_nbio_slice_close(&budget);
             if (!done)
                break; /* resume next tick */
+            /* The staged path names the .sig: staging/<core>.sig */
+            if (download_handle->sig_only)
+            {
+               core_install_check_end_sig(&download_handle->check,
+                     download_handle->trust->set,
+                     download_handle->staged_core_path);
+               download_handle->status = core_updater_sig_checked(
+                     download_handle);
+               break;
+            }
             core_install_check_end(&download_handle->check,
                   download_handle->trust->set,
                   download_handle->staged_core_path, 0);
@@ -2995,6 +3070,32 @@ static void task_update_installed_cores_scan(retro_task_t *task,
          {
             RARCH_LOG("[Core Updater] Core \"%s\" is already at latest version.\n",
                   list_entry->display_name);
+#ifdef HAVE_CORE_SIGNATURES
+            /* Up to date but no .sig on disk: fetch its .sig, once a
+             * run, until it has one */
+            if (     handle->trust
+                  && !(core_trust_flags(handle->trust->set)
+                     & CORE_TRUST_CHECK_OFF)
+                  && !core_install_has_sig(list_entry->local_core_path)
+                  && (handle->download_done =
+                     core_updater_sub_task_done_new(task->ident)))
+            {
+               if (task_push_core_updater_download_internal(
+                        handle->core_list, list_entry->remote_filename,
+                        local_crc, true, false, false, 0,
+                        handle->path_dir_libretro,
+                        handle->path_dir_core_assets,
+                        handle->download_done, handle->trust, true))
+               {
+                  /* Waited for as a download; not counted as one */
+                  handle->status = UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD;
+                  break;
+               }
+               /* No task, so no callback: both references are ours */
+               free(handle->download_done);
+               handle->download_done = NULL;
+            }
+#endif
             handle->status = UPDATE_INSTALLED_CORES_ITERATE;
             continue;
          }
