@@ -50,7 +50,19 @@ struct menu_state *menu_state_get_ptr(void)
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
-   (void)msg;
+   /* The updater's refusals and failure, which signed_install_test
+    * tells apart */
+   switch (msg)
+   {
+      case MSG_CORE_INSTALL_FAILED:
+         return "Failed to install core: ";
+      case MSG_CORE_SIGNATURE_DOWNLOAD_FAILED:
+         return "failed the signature check";
+      case MSG_CORE_SIGNATURE_DOWNLOAD_OLDER:
+         return "older than one already used";
+      default:
+         break;
+   }
    return "stub";
 }
 
@@ -73,9 +85,14 @@ void task_window_progress_cb(retro_task_t *task)
 
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 
+/* Set by a harness around a lane whose errors are expected */
+bool stub_err_expected = false;
+
 void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
+   if (stub_err_expected)
+      return;
    va_start(ap, fmt);
    vfprintf(stderr, fmt, ap);
    va_end(ap);
@@ -91,14 +108,20 @@ bool command_event(enum event_command cmd, void *data)
    return true;
 }
 
+/* What was last shown, for the harnesses that look */
+int  stub_osd_count = 0;
+char stub_osd_last[256];
+
 void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned prio, unsigned duration,
       bool flush, char *title,
       enum message_queue_icon icon,
       enum message_queue_category category)
 {
-   (void)msg; (void)len; (void)prio; (void)duration;
+   (void)len; (void)prio; (void)duration;
    (void)flush; (void)title; (void)icon; (void)category;
+   stub_osd_count++;
+   strlcpy(stub_osd_last, msg ? msg : "", sizeof(stub_osd_last));
 }
 
 core_updater_info_t *core_info_get_core_updater_info(
