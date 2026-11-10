@@ -146,7 +146,26 @@ jobs:
       # The system upgrade runs in the action: an msys2-runtime update
       # kills every MSYS2 process, which a run step's own shell would
       # not survive.
-      - uses: msys2/setup-msys2@v2
+      - name: Set up MSYS2
+        id: msys2
+        continue-on-error: true
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.sys }}
+          update: true
+
+      # setup-msys2 has no retry of its own, and its system upgrade fails
+      # the job when mirror.msys2.org stalls ("Operation too slow") on the
+      # package databases. A failed attempt is run once more after a
+      # minute; the second reinstalls over the first.
+      - name: Wait before retrying MSYS2
+        if: steps.msys2.outcome == 'failure'
+        shell: bash
+        run: sleep 60
+
+      - name: Set up MSYS2 (retry)
+        if: steps.msys2.outcome == 'failure'
+        uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.sys }}
           update: true
