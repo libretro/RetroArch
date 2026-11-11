@@ -23,7 +23,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/* MPEG-1 video decoder, intra pictures.
+/* MPEG-1 and MPEG-2 (main profile, 4:2:0) video decoder.
  *
  * Bitstream hierarchy (11172-2 clause 2.4.2):
  *
@@ -71,6 +71,7 @@ enum
    RM_VLC_MB_TYPE_B,
    RM_VLC_CBP,
    RM_VLC_MOTION,
+   RM_VLC_DCT_INTRA1,
    RM_VLC_COUNT
 };
 
@@ -84,7 +85,8 @@ static const rmpeg1_vlc_t * const rmpeg1_vlc_tables[RM_VLC_COUNT] =
    rmpeg1_vlc_mb_type_p,
    rmpeg1_vlc_mb_type_b,
    rmpeg1_vlc_cbp,
-   rmpeg1_vlc_motion
+   rmpeg1_vlc_motion,
+   rmpeg2_vlc_dct_intra1
 };
 
 typedef struct
@@ -216,6 +218,26 @@ struct rmpeg1_video
     * zero vector. Remember them. */
    unsigned  last_flags;
    int       last_mv[2][2];
+
+   /* MPEG-2: the sequence and picture coding extensions */
+   bool      m2_progressive_seq;
+   unsigned  m2_f_code[2][2];   /* [s][t] */
+   unsigned  m2_dc_prec;        /* intra_dc_precision, 0..3 */
+   unsigned  m2_structure;      /* picture_structure: 1 top, 2 bottom, 3 frame */
+   bool      m2_tff, m2_fpfd, m2_conceal, m2_qtype, m2_ivlc, m2_altscan;
+   unsigned  m2_mb_rows;        /* macroblock rows of the picture: a field's half */
+   int       pmv[2][2][2];      /* [r][s][t] */
+   /* A B picture's skipped macroblocks take the previous one's
+    * directions; there has to be one, not intra */
+   bool      m2_last_ok;
+   /* Field pictures: the first field of the frame in slot_cur is decoded
+    * and the second awaited; the frame's coding type and temporal
+    * reference are the first field's */
+   bool      m2_field_open;
+   bool      m2_second;
+   bool      m2_orphan;         /* a field came that is not the open one's pair */
+   unsigned  m2_first_structure;
+   unsigned  m2_frame_type, m2_frame_tref;
 
    uint32_t  skipped;
    uint32_t  errors;
@@ -1315,6 +1337,7 @@ static void reset_dc_predictors(rmpeg1_video_t *v)
 static bool decode_slice(rmpeg1_video_t *v, unsigned vertical_pos, size_t end)
 {
    unsigned mb_row;
+   bool     first;
 
    if (vertical_pos < 1 || vertical_pos > v->mb_h)
       return false;
@@ -1336,7 +1359,7 @@ static bool decode_slice(rmpeg1_video_t *v, unsigned vertical_pos, size_t end)
    v->last_flags    = 0;
    memset(v->last_mv, 0, sizeof(v->last_mv));
 
-   for (;;)
+   for (first = true;; first = false)
    {
       const rmpeg1_vlc_t *e;
       unsigned increment = 0;
@@ -1350,12 +1373,15 @@ static bool decode_slice(rmpeg1_video_t *v, unsigned vertical_pos, size_t end)
          break;
       if (bits_left(v) < 24)
       {
-         /* Fewer than a start code's worth of bits left inside the slice:
-          * the remainder is the byte-alignment padding that ends every
-          * slice, not a truncated macroblock. */
-         if (end >= v->wr)
+         /* Fewer than a start code's worth of bits left: inside the
+          * stream that is a broken slice; at its end, with no start code
+          * after it, either the padding that ends the slice (zero bits)
+          * or a last macroblock shorter than a start code, which used to
+          * be dropped */
+         if (end < v->wr)
+            return false;
+         if (peek_bits(v, (unsigned)bits_left(v)) == 0)
             break;
-         return false;
       }
       if (at_start_code(v))
          break;
@@ -1393,8 +1419,11 @@ static bool decode_slice(rmpeg1_video_t *v, unsigned vertical_pos, size_t end)
        * a B skip like a P skip produces a picture that looks almost right,
        * which is the worst kind of wrong.
        *
-       * Either way the DC predictors reset. */
-      if (increment > 1)
+       * Either way the DC predictors reset.
+       *
+       * Not the slice's first increment, which says where in the row the
+       * slice starts (11172-2 2.4.3.6): nothing before it is skipped. */
+      if (increment > 1 && !first)
       {
          unsigned k;
 
@@ -1528,8 +1557,799 @@ static bool decode_slice(rmpeg1_video_t *v, unsigned vertical_pos, size_t end)
 }
 
 /* --------------------------------------------------------------------- */
+/* MPEG-2 (H.262) macroblock layer                                       */
+/* --------------------------------------------------------------------- */
+
+/* Main profile, 4:2:0: frame and field pictures, frame/field/dual-prime
+ * prediction in frame pictures, field/16x8/dual-prime in field pictures,
+ * frame and field DCT, alternate scan, Table B.15, the non-linear
+ * quantiser, 8 to 11-bit intra DC, concealment motion vectors. What it
+ * does not take - 4:2:2 and 4:4:4, the scalable extensions - is refused
+ * at the extension that announces it (parse_mpeg2_extension).
+ *
+ * The two fields of an interlaced frame are the even and odd lines of
+ * one plane, so a field is the frame's plane from line `parity` on at
+ * twice its stride: field pictures decode into, and predict from, those
+ * views, and nothing is ever copied between field and frame form. */
+
+#define RM2_STRUCT_TOP    1
+#define RM2_STRUCT_BOTTOM 2
+#define RM2_STRUCT_FRAME  3
+
+#define RM2_MT_FIELD      1   /* field (frame pictures) / field (field pictures) */
+#define RM2_MT_FRAME      2   /* frame (frame pictures) / 16x8 (field pictures)  */
+#define RM2_MT_DUAL       3
+
+/* Figure 7-3, alternate scan: scan position -> raster index. */
+static const uint8_t rmpeg2_alternate[64] =
+{
+    0,  8, 16, 24,  1,  9,  2, 10,
+   17, 25, 32, 40, 48, 56, 57, 49,
+   41, 33, 26, 18,  3, 11,  4, 12,
+   19, 27, 34, 42, 50, 58, 35, 43,
+   51, 59, 20, 28,  5, 13,  6, 14,
+   21, 29, 36, 44, 52, 60, 37, 45,
+   53, 61, 22, 30,  7, 15, 23, 31,
+   38, 46, 54, 62, 39, 47, 55, 63
+};
+
+/* Table 7-6, quantiser_scale for q_scale_type 1, by quantiser_scale_code. */
+static const uint8_t rmpeg2_nonlinear_q[32] =
+{
+    0,  1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16, 18, 20, 22,
+   24, 28, 32, 36, 40, 44, 48, 52, 56, 64, 72, 80, 88, 96,104,112
+};
+
+static int m2_quantiser_scale(const rmpeg1_video_t *v, unsigned code)
+{
+   return v->m2_qtype ? rmpeg2_nonlinear_q[code & 31] : (int)(code * 2);
+}
+
+static void m2_reset_dc(rmpeg1_video_t *v)
+{
+   /* 7.2.1: 2^(7 + intra_dc_precision), in units of the DC as coded */
+   v->dc_pred[0] = v->dc_pred[1] = v->dc_pred[2] = 128 << v->m2_dc_prec;
+}
+
+/* 7.4.4 mismatch control: the sum of the block's coefficients made odd
+ * by the last one's lowest bit. */
+static void m2_mismatch(int16_t *blk, int sum)
+{
+   if (!(sum & 1))
+      blk[63] ^= 1;
+}
+
+static int m2_saturate(int rec)
+{
+   if (rec >  2047) return  2047;
+   if (rec < -2048) return -2048;
+   return rec;
+}
+
+/* One intra block, 7.2.1 and 7.4: the DC by its own precision, the AC by
+ * Table B.14 or B.15, escapes with a 12-bit level, then
+ * F = (2 * QF * W * quantiser_scale) / 32. */
+static bool m2_intra_block(rmpeg1_video_t *v, int16_t *blk, int cc)
+{
+   const rmpeg1_vlc_t *e;
+   const uint8_t      *scan = v->m2_altscan ? rmpeg2_alternate : rmpeg1_zigzag;
+   unsigned            idx  = 0;
+   int                 sum, dc_size, diff = 0;
+
+   memset(blk, 0, sizeof(int16_t) * 64);
+
+   e = vlc_decode(v, cc == 0 ? RM_VLC_DC_LUM : RM_VLC_DC_CHR);
+   if (!e)
+      return false;
+   dc_size = e->a;
+   if (dc_size)
+   {
+      int val = (int)get_bits(v, (unsigned)dc_size);
+      if (val < (1 << (dc_size - 1)))
+         val -= (1 << dc_size) - 1;
+      diff = val;
+   }
+   v->dc_pred[cc] += diff;
+   blk[0] = (int16_t)m2_saturate(v->dc_pred[cc] * (8 >> v->m2_dc_prec));
+   sum    = blk[0];
+
+   for (;;)
+   {
+      int run, level, pos, rec;
+
+      if (v->m2_ivlc)
+      {
+         if (peek_bits(v, RMPEG2_DCT1_EOB_LEN) == RMPEG2_DCT1_EOB_CODE)
+         {
+            (void)get_bits(v, RMPEG2_DCT1_EOB_LEN);
+            break;
+         }
+      }
+      else if (peek_bits(v, RMPEG1_DCT_EOB_LEN) == RMPEG1_DCT_EOB_CODE)
+      {
+         (void)get_bits(v, RMPEG1_DCT_EOB_LEN);
+         break;
+      }
+
+      if (peek_bits(v, RMPEG1_DCT_ESCAPE_LEN) == RMPEG1_DCT_ESCAPE_CODE)
+      {
+         (void)get_bits(v, RMPEG1_DCT_ESCAPE_LEN);
+         run   = (int)get_bits(v, 6);
+         level = (int)get_bits(v, 12);
+         if (level & 2048)
+            level -= 4096;
+         if (!level || level == -2048)
+            return false;
+      }
+      else
+      {
+         e = vlc_decode(v, v->m2_ivlc ? RM_VLC_DCT_INTRA1 : RM_VLC_DCT_NEXT);
+         if (!e)
+            return false;
+         run   = e->a;
+         level = e->b;
+         if (get_bit(v))
+            level = -level;
+      }
+
+      idx += (unsigned)run + 1;
+      if (idx > 63)
+         return false;
+
+      pos      = scan[idx];
+      rec      = m2_saturate((2 * level * v->quant_scale * (int)v->intra_q[pos]) / 32);
+      blk[pos] = (int16_t)rec;
+      sum     += rec;
+   }
+
+   m2_mismatch(blk, sum);
+   return true;
+}
+
+/* One non-intra block: Table B.14 always, the first coefficient in its
+ * '1s' spelling, F = ((2 * QF + Sign(QF)) * W * quantiser_scale) / 32. */
+static bool m2_inter_block(rmpeg1_video_t *v, int16_t *blk)
+{
+   const rmpeg1_vlc_t *e;
+   const uint8_t      *scan  = v->m2_altscan ? rmpeg2_alternate : rmpeg1_zigzag;
+   int                 idx   = -1;
+   int                 first = 1;
+   int                 sum   = 0;
+
+   memset(blk, 0, sizeof(int16_t) * 64);
+
+   for (;;)
+   {
+      int run, level, pos, rec;
+
+      if (!first && peek_bits(v, RMPEG1_DCT_EOB_LEN) == RMPEG1_DCT_EOB_CODE)
+      {
+         (void)get_bits(v, RMPEG1_DCT_EOB_LEN);
+         break;
+      }
+
+      if (peek_bits(v, RMPEG1_DCT_ESCAPE_LEN) == RMPEG1_DCT_ESCAPE_CODE)
+      {
+         (void)get_bits(v, RMPEG1_DCT_ESCAPE_LEN);
+         run   = (int)get_bits(v, 6);
+         level = (int)get_bits(v, 12);
+         if (level & 2048)
+            level -= 4096;
+         if (!level || level == -2048)
+            return false;
+      }
+      else
+      {
+         e = vlc_decode(v, first ? RM_VLC_DCT_FIRST : RM_VLC_DCT_NEXT);
+         if (!e)
+            return false;
+         run   = e->a;
+         level = e->b;
+         if (get_bit(v))
+            level = -level;
+      }
+
+      first = 0;
+      idx  += run + 1;
+      if (idx > 63)
+         return false;
+
+      pos = scan[idx];
+      rec = ((2 * level + (level > 0 ? 1 : -1))
+            * v->quant_scale * (int)v->non_intra_q[pos]) / 32;
+      rec = m2_saturate(rec);
+      blk[pos] = (int16_t)rec;
+      sum     += rec;
+   }
+
+   m2_mismatch(blk, sum);
+   return true;
+}
+
+/* One motion vector component, 7.6.3.1. @pmv is the predictor in the
+ * units it is kept in; @field_in_frame halves it for a field vector of a
+ * frame picture and doubles the result back. Returns the vector. */
+static bool m2_mv_component(rmpeg1_video_t *v, int f_code, int *pmv,
+      bool field_in_frame, int *out)
+{
+   const rmpeg1_vlc_t *e = vlc_decode(v, RM_VLC_MOTION);
+   int r_size, f, code, r = 0, delta, pred, vec;
+
+   if (!e || f_code < 1 || f_code > 9)
+      return false;
+
+   r_size = f_code - 1;
+   f      = 1 << r_size;
+   code   = e->a;
+   if (f != 1 && code != 0)
+      r = (int)get_bits(v, (unsigned)r_size);
+
+   if (code == 0)
+      delta = 0;
+   else
+   {
+      delta = ((code < 0 ? -code : code) - 1) * f + r + 1;
+      if (code < 0)
+         delta = -delta;
+   }
+
+   pred = field_in_frame ? (*pmv >> 1) : *pmv;
+   vec  = pred + delta;
+   if (vec < -16 * f)
+      vec += 32 * f;
+   else if (vec > 16 * f - 1)
+      vec -= 32 * f;
+
+   *pmv = field_in_frame ? vec * 2 : vec;
+   *out = vec;
+   return true;
+}
+
+/* Table B.11 */
+static int m2_dmvector(rmpeg1_video_t *v)
+{
+   if (!get_bit(v))
+      return 0;
+   return get_bit(v) ? -1 : 1;
+}
+
+/* motion_vector(r, s) */
+static bool m2_motion_vector(rmpeg1_video_t *v, int r, int s, bool field_in_frame,
+      bool dual, int mv[2][2][2], int dmv[2])
+{
+   if (!m2_mv_component(v, v->m2_f_code[s][0], &v->pmv[r][s][0], false, &mv[r][s][0]))
+      return false;
+   if (dual)
+      dmv[0] = m2_dmvector(v);
+   if (!m2_mv_component(v, v->m2_f_code[s][1], &v->pmv[r][s][1], field_in_frame, &mv[r][s][1]))
+      return false;
+   if (dual)
+      dmv[1] = m2_dmvector(v);
+   return true;
+}
+
+/* motion_vectors(s), 6.2.5.2, for a macroblock of motion type @mtype */
+static bool m2_motion_vectors(rmpeg1_video_t *v, int s, unsigned mtype,
+      int mv[2][2][2], int mvfs[2][2], int dmv[2])
+{
+   bool frame_pic = v->m2_structure == RM2_STRUCT_FRAME;
+   bool dual      = mtype == RM2_MT_DUAL;
+   bool two       = mtype == (frame_pic ? RM2_MT_FIELD : RM2_MT_FRAME);
+   bool field_fmt = !(frame_pic && mtype == RM2_MT_FRAME);
+   bool fif       = frame_pic && field_fmt;
+
+   if (!two)
+   {
+      if (field_fmt && !dual)
+         mvfs[0][s] = (int)get_bit(v);
+      if (!m2_motion_vector(v, 0, s, fif, dual, mv, dmv))
+         return false;
+      v->pmv[1][s][0] = v->pmv[0][s][0];
+      v->pmv[1][s][1] = v->pmv[0][s][1];
+   }
+   else
+   {
+      mvfs[0][s] = (int)get_bit(v);
+      if (!m2_motion_vector(v, 0, s, fif, false, mv, dmv))
+         return false;
+      mvfs[1][s] = (int)get_bit(v);
+      if (!m2_motion_vector(v, 1, s, fif, false, mv, dmv))
+         return false;
+   }
+   return true;
+}
+
+/* The reference frame slot a prediction of direction @s from the field
+ * of parity @parity reads (-1: a frame prediction). In the second field
+ * of a P frame the field of the other parity is the first field of the
+ * frame being decoded. */
+static int m2_ref_slot(const rmpeg1_video_t *v, int s, int parity)
+{
+   if (s == 1)
+      return v->slot_bwd;
+   if (v->coding_type == RMPEG1_PIC_B)
+      return v->slot_fwd;
+   if (parity >= 0 && v->m2_structure != RM2_STRUCT_FRAME && v->m2_second
+         && parity != (int)(v->m2_structure - 1))
+      return v->slot_cur;
+   return v->have_bwd ? v->slot_bwd : v->slot_cur;
+}
+
+/* Predict a bw x bh luma block and its chroma from reference @slot (its
+ * field @parity, or the frame for -1) into @dy/@dcb/@dcr, averaging into
+ * what is there when @add. @lx/@ly is the block's place in the reference
+ * plane's own coordinates (field lines for a field). */
+static void m2_predict(rmpeg1_video_t *v, int slot, int parity,
+      uint8_t *dy, uint8_t *dcb, uint8_t *dcr, unsigned ys, unsigned cs,
+      int lx, int ly, int mvx, int mvy, unsigned bw, unsigned bh, bool add)
+{
+   unsigned       fld = parity >= 0 ? 1u : 0u;
+   unsigned       rys = v->y_stride << fld;
+   unsigned       rcs = v->c_stride << fld;
+   unsigned       rph = (v->mb_h * 16) >> fld;
+   unsigned       rch = (v->mb_h * 8) >> fld;
+   const uint8_t *ry  = RM_Y(v, slot)  + (fld ? (size_t)parity * v->y_stride : 0);
+   const uint8_t *rcb = RM_CB(v, slot) + (fld ? (size_t)parity * v->c_stride : 0);
+   const uint8_t *rcr = RM_CR(v, slot) + (fld ? (size_t)parity * v->c_stride : 0);
+   int            cmx = mvx / 2;
+   int            cmy = mvy / 2;
+   uint8_t        ty[16 * 16], tcb[8 * 8], tcr[8 * 8];
+   unsigned       r, c;
+
+   if (!add)
+   {
+      mc_predict(ry, rys, v->y_stride, rph, dy, ys, lx, ly, mvx, mvy, bw, bh);
+      mc_predict(rcb, rcs, v->c_stride, rch, dcb, cs, lx / 2, ly / 2, cmx, cmy, bw / 2, bh / 2);
+      mc_predict(rcr, rcs, v->c_stride, rch, dcr, cs, lx / 2, ly / 2, cmx, cmy, bw / 2, bh / 2);
+      return;
+   }
+
+   mc_predict(ry, rys, v->y_stride, rph, ty, 16, lx, ly, mvx, mvy, bw, bh);
+   mc_predict(rcb, rcs, v->c_stride, rch, tcb, 8, lx / 2, ly / 2, cmx, cmy, bw / 2, bh / 2);
+   mc_predict(rcr, rcs, v->c_stride, rch, tcr, 8, lx / 2, ly / 2, cmx, cmy, bw / 2, bh / 2);
+   for (r = 0; r < bh; r++)
+      for (c = 0; c < bw; c++)
+      {
+         uint8_t *p = dy + (size_t)r * ys + c;
+         *p = (uint8_t)((*p + ty[r * 16 + c] + 1) >> 1);
+      }
+   for (r = 0; r < bh / 2; r++)
+      for (c = 0; c < bw / 2; c++)
+      {
+         uint8_t *p = dcb + (size_t)r * cs + c;
+         uint8_t *q = dcr + (size_t)r * cs + c;
+         *p = (uint8_t)((*p + tcb[r * 8 + c] + 1) >> 1);
+         *q = (uint8_t)((*q + tcr[r * 8 + c] + 1) >> 1);
+      }
+}
+
+/* The macroblock's place: its luma and chroma origin in the picture being
+ * decoded, and their strides (a field's, in a field picture) */
+typedef struct
+{
+   uint8_t *y, *cb, *cr;
+   unsigned ys, cs;
+   int      mx, my;   /* in macroblocks, my in the picture's own rows */
+} rm2_mb_t;
+
+static void m2_mb_place(rmpeg1_video_t *v, unsigned addr, rm2_mb_t *m)
+{
+   unsigned fld    = v->m2_structure != RM2_STRUCT_FRAME ? 1u : 0u;
+   unsigned parity = fld ? v->m2_structure - 1 : 0;
+
+   m->mx = (int)(addr % v->mb_w);
+   m->my = (int)(addr / v->mb_w);
+   m->ys = v->y_stride << fld;
+   m->cs = v->c_stride << fld;
+   m->y  = RM_Y(v, v->slot_cur)  + (size_t)parity * v->y_stride
+         + (size_t)m->my * 16 * m->ys + (size_t)m->mx * 16;
+   m->cb = RM_CB(v, v->slot_cur) + (size_t)parity * v->c_stride
+         + (size_t)m->my * 8 * m->cs + (size_t)m->mx * 8;
+   m->cr = RM_CR(v, v->slot_cur) + (size_t)parity * v->c_stride
+         + (size_t)m->my * 8 * m->cs + (size_t)m->mx * 8;
+}
+
+/* Where luma block @i of the macroblock goes: frame DCT in 8x8 quarters,
+ * field DCT (frame pictures) as the top field's lines in blocks 0 and 1
+ * and the bottom field's in 2 and 3. */
+static uint8_t *m2_block_dst(const rm2_mb_t *m, int i, bool field_dct, unsigned *stride)
+{
+   if (field_dct)
+   {
+      *stride = m->ys * 2;
+      return m->y + (size_t)(i >> 1) * m->ys + (size_t)(i & 1) * 8;
+   }
+   *stride = m->ys;
+   return m->y + (size_t)(i >> 1) * 8 * m->ys + (size_t)(i & 1) * 8;
+}
+
+/* The prediction of one direction @s of a non-intra macroblock */
+static void m2_predict_dir(rmpeg1_video_t *v, const rm2_mb_t *m, int s,
+      unsigned mtype, int mv[2][2][2], int mvfs[2][2], const int dmv[2], bool add)
+{
+   int lx = m->mx * 16;
+
+   if (v->m2_structure == RM2_STRUCT_FRAME)
+   {
+      int p;
+
+      if (mtype == RM2_MT_FRAME)
+      {
+         m2_predict(v, m2_ref_slot(v, s, -1), -1, m->y, m->cb, m->cr, m->ys, m->cs,
+               lx, m->my * 16, mv[0][s][0], mv[0][s][1], 16, 16, add);
+         return;
+      }
+
+      for (p = 0; p < 2; p++)
+      {
+         uint8_t *dy  = m->y  + (size_t)p * m->ys;
+         uint8_t *dcb = m->cb + (size_t)p * m->cs;
+         uint8_t *dcr = m->cr + (size_t)p * m->cs;
+
+         if (mtype == RM2_MT_FIELD)
+            m2_predict(v, m2_ref_slot(v, s, mvfs[p][s]), mvfs[p][s], dy, dcb, dcr,
+                  m->ys * 2, m->cs * 2, lx, m->my * 8, mv[p][s][0], mv[p][s][1], 16, 8, add);
+         else
+         {
+            /* Dual prime: the field of the same parity with the vector,
+             * averaged with the other field by the derived one */
+            int mx = mv[0][s][0], my = mv[0][s][1];
+            int k  = v->m2_tff ? (p ? 3 : 1) : (p ? 1 : 3);
+            int dx = ((mx * k + (mx > 0)) >> 1) + dmv[0];
+            int dy2 = ((my * k + (my > 0)) >> 1) + dmv[1] + (p ? 1 : -1);
+            int slot = m2_ref_slot(v, 0, p);
+
+            m2_predict(v, slot, p, dy, dcb, dcr, m->ys * 2, m->cs * 2,
+                  lx, m->my * 8, mx, my, 16, 8, false);
+            m2_predict(v, m2_ref_slot(v, 0, p ^ 1), p ^ 1, dy, dcb, dcr, m->ys * 2, m->cs * 2,
+                  lx, m->my * 8, dx, dy2, 16, 8, true);
+         }
+      }
+      return;
+   }
+
+   {
+      int cur = (int)v->m2_structure - 1;
+
+      if (mtype == RM2_MT_FIELD)
+         m2_predict(v, m2_ref_slot(v, s, mvfs[0][s]), mvfs[0][s], m->y, m->cb, m->cr,
+               m->ys, m->cs, lx, m->my * 16, mv[0][s][0], mv[0][s][1], 16, 16, add);
+      else if (mtype == RM2_MT_FRAME)
+      {
+         /* 16x8: the upper and lower halves each by their own vector */
+         int h;
+         for (h = 0; h < 2; h++)
+            m2_predict(v, m2_ref_slot(v, s, mvfs[h][s]), mvfs[h][s],
+                  m->y + (size_t)h * 8 * m->ys, m->cb + (size_t)h * 4 * m->cs,
+                  m->cr + (size_t)h * 4 * m->cs, m->ys, m->cs,
+                  lx, m->my * 16 + h * 8, mv[h][s][0], mv[h][s][1], 16, 8, add);
+      }
+      else
+      {
+         int mx = mv[0][s][0], my = mv[0][s][1];
+         int dx = ((mx + (mx > 0)) >> 1) + dmv[0];
+         int dy = ((my + (my > 0)) >> 1) + dmv[1] + (cur == 0 ? -1 : 1);
+
+         m2_predict(v, m2_ref_slot(v, 0, cur), cur, m->y, m->cb, m->cr, m->ys, m->cs,
+               lx, m->my * 16, mx, my, 16, 16, false);
+         m2_predict(v, m2_ref_slot(v, 0, cur ^ 1), cur ^ 1, m->y, m->cb, m->cr, m->ys, m->cs,
+               lx, m->my * 16, dx, dy, 16, 16, true);
+      }
+   }
+}
+
+/* A non-intra macroblock: the prediction, then the coded blocks */
+static bool m2_inter_macroblock(rmpeg1_video_t *v, unsigned addr, unsigned flags,
+      unsigned mtype, int mv[2][2][2], int mvfs[2][2], const int dmv[2],
+      unsigned cbp, bool field_dct)
+{
+   int16_t  blk[64];
+   rm2_mb_t m;
+   int      i;
+   bool     fwd = (flags & RMPEG1_MB_FORWARD)  != 0;
+   bool     bwd = (flags & RMPEG1_MB_BACKWARD) != 0;
+
+   if (addr >= v->mb_w * v->m2_mb_rows)
+      return false;
+   m2_mb_place(v, addr, &m);
+
+   if (fwd || !bwd)
+      m2_predict_dir(v, &m, 0, mtype, mv, mvfs, dmv, false);
+   if (bwd)
+      m2_predict_dir(v, &m, 1, mtype, mv, mvfs, dmv, fwd);
+
+   for (i = 0; i < 4; i++)
+      if (cbp & (1u << (5 - i)))
+      {
+         unsigned stride;
+         uint8_t *dst = m2_block_dst(&m, i, field_dct, &stride);
+         if (!m2_inter_block(v, blk))
+            return false;
+         idct_block_add(blk, dst, stride);
+      }
+   if (cbp & 0x02)
+   {
+      if (!m2_inter_block(v, blk))
+         return false;
+      idct_block_add(blk, m.cb, m.cs);
+   }
+   if (cbp & 0x01)
+   {
+      if (!m2_inter_block(v, blk))
+         return false;
+      idct_block_add(blk, m.cr, m.cs);
+   }
+   return true;
+}
+
+static bool m2_intra_macroblock(rmpeg1_video_t *v, unsigned addr, bool field_dct)
+{
+   int16_t  blk[64];
+   rm2_mb_t m;
+   int      i;
+
+   if (addr >= v->mb_w * v->m2_mb_rows)
+      return false;
+   m2_mb_place(v, addr, &m);
+
+   for (i = 0; i < 4; i++)
+   {
+      unsigned stride;
+      uint8_t *dst = m2_block_dst(&m, i, field_dct, &stride);
+      if (!m2_intra_block(v, blk, 0))
+         return false;
+      idct_block(blk, dst, stride);
+   }
+   if (!m2_intra_block(v, blk, 1))
+      return false;
+   idct_block(blk, m.cb, m.cs);
+   if (!m2_intra_block(v, blk, 2))
+      return false;
+   idct_block(blk, m.cr, m.cs);
+   return true;
+}
+
+static void m2_reset_pmv(rmpeg1_video_t *v)
+{
+   memset(v->pmv, 0, sizeof(v->pmv));
+}
+
+/* One slice of an MPEG-2 picture, 6.2.4 and 6.2.5 */
+static bool m2_decode_slice(rmpeg1_video_t *v, unsigned vertical_pos, size_t end)
+{
+   unsigned code;
+   bool     first;
+
+   if (vertical_pos < 1 || vertical_pos > v->m2_mb_rows)
+      return false;
+
+   code = get_bits(v, 5);
+   if (code == 0)
+      return false;
+   v->quant_scale = m2_quantiser_scale(v, code);
+
+   /* intra_slice_flag, then intra_slice and reserved bits; then
+    * extra_bit_slice and its bytes, ending with a clear bit */
+   if (get_bit(v))
+   {
+      (void)get_bits(v, 8);
+      while (get_bit(v))
+         (void)get_bits(v, 8);
+   }
+
+   m2_reset_dc(v);
+   m2_reset_pmv(v);
+   v->mb_addr   = (vertical_pos - 1) * v->mb_w - 1;
+   v->m2_last_ok = false;
+
+   for (first = true;; first = false)
+   {
+      const rmpeg1_vlc_t *e;
+      unsigned increment = 0;
+      unsigned flags, mtype = 0, cbp = 0;
+      bool     field_dct = false;
+      int      mv[2][2][2], mvfs[2][2], dmv[2];
+      int      s;
+
+      memset(mv, 0, sizeof(mv));
+      memset(mvfs, 0, sizeof(mvfs));
+      dmv[0] = dmv[1] = 0;
+
+      if (v->rd >= end)
+         break;
+      if (bits_left(v) < 24)
+      {
+         /* At the end of the stream, with no start code after it, the
+          * last macroblock can take fewer bits than a start code: only
+          * zero bits are the padding that ends the slice */
+         if (end < v->wr)
+            return false;
+         if (peek_bits(v, (unsigned)bits_left(v)) == 0)
+            break;
+      }
+      if (at_start_code(v))
+         break;
+
+      while (peek_bits(v, RMPEG1_MBA_ESCAPE_LEN) == RMPEG1_MBA_ESCAPE_CODE)
+      {
+         (void)get_bits(v, RMPEG1_MBA_ESCAPE_LEN);
+         increment += 33;
+      }
+      e = vlc_decode(v, RM_VLC_MBA);
+      if (!e)
+         return false;
+      increment += (unsigned)e->a;
+
+      /* Skipped macroblocks, 7.6.6: frame prediction in a frame picture,
+       * prediction from the field of the same parity in a field picture;
+       * in a P picture by a zero vector, the vector predictors reset, in a
+       * B picture in the previous macroblock's directions by the vector
+       * predictors as they stand, which are kept */
+      /* The first increment of a slice is where in its row the slice
+       * starts: nothing before it is skipped */
+      if (increment > 1 && !first)
+      {
+         unsigned k;
+
+         if (v->coding_type == RMPEG1_PIC_I)
+            return false;
+         if (v->coding_type == RMPEG1_PIC_B && !v->m2_last_ok)
+            return false;
+
+         for (k = 1; k < increment; k++)
+         {
+            unsigned a2 = v->mb_addr + k;
+            int      smv[2][2][2], smvfs[2][2], sdmv[2] = { 0, 0 };
+            unsigned sflags, smtype;
+
+            memset(smv, 0, sizeof(smv));
+            memset(smvfs, 0, sizeof(smvfs));
+            sflags = RMPEG1_MB_FORWARD;
+            if (v->coding_type == RMPEG1_PIC_B)
+            {
+               int d;
+               sflags = v->last_flags & (RMPEG1_MB_FORWARD | RMPEG1_MB_BACKWARD);
+               for (d = 0; d < 2; d++)
+               {
+                  smv[0][d][0] = v->pmv[0][d][0];
+                  smv[0][d][1] = v->pmv[0][d][1];
+               }
+            }
+            if (v->m2_structure == RM2_STRUCT_FRAME)
+               smtype = RM2_MT_FRAME;
+            else
+            {
+               smtype = RM2_MT_FIELD;
+               smvfs[0][0] = smvfs[0][1] = (int)v->m2_structure - 1;
+            }
+            if (!m2_inter_macroblock(v, a2, sflags, smtype, smv, smvfs, sdmv, 0, false))
+               return false;
+         }
+         if (v->coding_type == RMPEG1_PIC_P)
+            m2_reset_pmv(v);
+         m2_reset_dc(v);
+      }
+      v->mb_addr += increment;
+
+      /* macroblock_modes */
+      if (v->coding_type == RMPEG1_PIC_I)
+      {
+         if (get_bit(v))
+            flags = RMPEG1_MB_INTRA;
+         else
+         {
+            if (!get_bit(v))
+               return false;
+            flags = RMPEG1_MB_INTRA | RMPEG1_MB_QUANT;
+         }
+      }
+      else
+      {
+         e = vlc_decode(v, v->coding_type == RMPEG1_PIC_B
+               ? RM_VLC_MB_TYPE_B : RM_VLC_MB_TYPE_P);
+         if (!e)
+            return false;
+         flags = (unsigned)e->a;
+      }
+
+      if (flags & (RMPEG1_MB_FORWARD | RMPEG1_MB_BACKWARD))
+      {
+         if (v->m2_structure == RM2_STRUCT_FRAME && v->m2_fpfd)
+            mtype = RM2_MT_FRAME;
+         else
+            mtype = get_bits(v, 2);
+         if (mtype == 0 || (mtype == RM2_MT_DUAL && v->coding_type == RMPEG1_PIC_B))
+            return false;
+      }
+      else if ((flags & RMPEG1_MB_INTRA) && v->m2_conceal)
+         mtype = v->m2_structure == RM2_STRUCT_FRAME ? RM2_MT_FRAME : RM2_MT_FIELD;
+      else if (!(flags & RMPEG1_MB_INTRA))
+      {
+         /* P, no motion compensation: a zero vector, frame prediction or
+          * the field of the same parity */
+         if (v->m2_structure == RM2_STRUCT_FRAME)
+            mtype = RM2_MT_FRAME;
+         else
+         {
+            mtype = RM2_MT_FIELD;
+            mvfs[0][0] = (int)v->m2_structure - 1;
+         }
+      }
+
+      if (v->m2_structure == RM2_STRUCT_FRAME && !v->m2_fpfd
+            && (flags & (RMPEG1_MB_INTRA | RMPEG1_MB_PATTERN)))
+         field_dct = get_bit(v) != 0;
+
+      if (flags & RMPEG1_MB_QUANT)
+      {
+         code = get_bits(v, 5);
+         if (code == 0)
+            return false;
+         v->quant_scale = m2_quantiser_scale(v, code);
+      }
+
+      for (s = 0; s < 2; s++)
+      {
+         unsigned bit = s ? RMPEG1_MB_BACKWARD : RMPEG1_MB_FORWARD;
+         if ((flags & bit) || (s == 0 && (flags & RMPEG1_MB_INTRA) && v->m2_conceal))
+            if (!m2_motion_vectors(v, s, mtype, mv, mvfs, dmv))
+               return false;
+      }
+      if ((flags & RMPEG1_MB_INTRA) && v->m2_conceal)
+         (void)get_bit(v);    /* marker_bit */
+
+      if (flags & RMPEG1_MB_INTRA)
+      {
+         if (!m2_intra_macroblock(v, v->mb_addr, field_dct))
+            return false;
+         if (!v->m2_conceal)
+            m2_reset_pmv(v);
+         v->m2_last_ok = false;
+      }
+      else
+      {
+         if (v->coding_type == RMPEG1_PIC_P && !(flags & RMPEG1_MB_FORWARD))
+            m2_reset_pmv(v);
+         if (flags & RMPEG1_MB_PATTERN)
+         {
+            e = vlc_decode(v, RM_VLC_CBP);
+            if (!e)
+               return false;
+            cbp = (unsigned)e->a;
+         }
+         if (!m2_inter_macroblock(v, v->mb_addr, flags, mtype, mv, mvfs, dmv, cbp, field_dct))
+            return false;
+         m2_reset_dc(v);
+
+         v->last_flags = flags;
+         v->m2_last_ok = true;
+      }
+   }
+
+   return true;
+}
+
+/* --------------------------------------------------------------------- */
 /* Headers                                                               */
 /* --------------------------------------------------------------------- */
+
+/* The frame's size in macroblocks: an MPEG-2 sequence that is not
+ * progressive has a whole number of field macroblock rows, so twice that
+ * many frame rows (6.3.3). The planes are made again only when that
+ * changes, not at every sequence header. */
+static bool set_geometry(rmpeg1_video_t *v, unsigned w, unsigned h, bool progressive)
+{
+   unsigned mb_w = (w + 15) / 16;
+   unsigned mb_h = progressive ? (h + 15) / 16 : 2 * ((h + 31) / 32);
+
+   v->width  = w;
+   v->height = h;
+   if (v->plane_arena && mb_w == v->mb_w && mb_h == v->mb_h)
+      return true;
+   v->mb_w = mb_w;
+   v->mb_h = mb_h;
+   return alloc_planes(v);
+}
 
 static bool parse_sequence_header(rmpeg1_video_t *v)
 {
@@ -1552,31 +2372,33 @@ static bool parse_sequence_header(rmpeg1_video_t *v)
    (void)get_bits(v, 10);        /* vbv_buffer_size     */
    (void)get_bit(v);             /* constrained_params  */
 
+   /* A matrix the header does not load is the default again (11172-2
+    * 2.4.3.2, H.262 6.3.3), not the one an earlier header loaded */
    if (get_bit(v))
    {
       if (bits_left(v) < 513) return false;
       for (i = 0; i < 64; i++)
          v->intra_q[rmpeg1_zigzag[i]] = (uint8_t)get_bits(v, 8);
    }
+   else
+      memcpy(v->intra_q, rmpeg1_default_intra, 64);
    if (get_bit(v))
    {
       if (bits_left(v) < 512) return false;
       for (i = 0; i < 64; i++)
          v->non_intra_q[rmpeg1_zigzag[i]] = (uint8_t)get_bits(v, 8);
    }
+   else
+      memset(v->non_intra_q, 16, 64);
 
-   if (!v->have_seq || w != v->width || h != v->height)
-   {
-      v->width  = w;
-      v->height = h;
-      v->mb_w   = (w + 15) / 16;
-      v->mb_h   = (h + 15) / 16;
-
-      if (!alloc_planes(v))
-         return false;
-   }
+   /* With the last sequence's progressiveness, so an interlaced stream
+    * keeps its planes; its sequence extension follows and settles it */
+   if (!set_geometry(v, w, h, v->mpeg2 ? v->m2_progressive_seq : true))
+      return false;
 
    v->mpeg2 = false;
+   v->m2_structure = RM2_STRUCT_FRAME;
+   v->m2_mb_rows = v->mb_h;
    v->sequence_supported = true;
    v->picture_supported = true;
    v->have_seq = true;
@@ -1645,8 +2467,10 @@ static bool parse_picture_header(rmpeg1_video_t *v)
 /* Frame ordering                                                        */
 /* --------------------------------------------------------------------- */
 
-/* Initial H.262 subset: progressive 4:2:0 frame I pictures, Table B.14,
- * zigzag scan, linear quantisation and eight-bit intra DC precision. */
+/* The MPEG-2 extensions (6.2.2.3, 6.2.3.1). What this decoder does not
+ * take - a chroma format other than 4:2:0, the scalable extensions -
+ * leaves the sequence or picture unsupported, and its pictures are
+ * counted as skipped instead of decoded wrong. */
 static void parse_mpeg2_extension(rmpeg1_video_t *v)
 {
    unsigned id;
@@ -1654,37 +2478,82 @@ static void parse_mpeg2_extension(rmpeg1_video_t *v)
    id = get_bits(v, 4);
    if (id == 1)
    {
-      unsigned progressive, chroma, width_ext, height_ext, marker, rate_n, rate_d;
+      unsigned progressive, chroma, width_ext, height_ext, marker, w, h;
       v->mpeg2 = true;
       v->sequence_supported = false;
       if (bits_left(v) < 44) { v->errors++; return; }
-      (void)get_bits(v, 8);
+      (void)get_bits(v, 8);           /* profile_and_level_indication */
       progressive = get_bit(v); chroma = get_bits(v, 2);
       width_ext = get_bits(v, 2); height_ext = get_bits(v, 2);
       (void)get_bits(v, 12); marker = get_bit(v);
       (void)get_bits(v, 8); (void)get_bit(v);
-      rate_n = get_bits(v, 2); rate_d = get_bits(v, 5);
-      v->sequence_supported = progressive && chroma == 1 && !width_ext
-         && !height_ext && marker && !rate_n && !rate_d;
+      (void)get_bits(v, 2); (void)get_bits(v, 5); /* frame_rate_extension */
+      w = v->width  | (width_ext  << 12);
+      h = v->height | (height_ext << 12);
+      if (!marker || chroma != 1 || w > RMPEG1_MAX_W || h > RMPEG1_MAX_H)
+         return;
+      v->m2_progressive_seq = progressive != 0;
+      if (!set_geometry(v, w, h, v->m2_progressive_seq))
+      {
+         v->have_seq = false;
+         return;
+      }
+      v->m2_mb_rows = v->mb_h;
+      v->sequence_supported = true;
+   }
+   else if (id == 3)
+   {
+      /* quant_matrix_extension: the luma matrices; the chroma ones are
+       * for 4:2:2 and 4:4:4 only */
+      unsigned i;
+      if (get_bit(v))
+      {
+         if (bits_left(v) < 512) { v->errors++; return; }
+         for (i = 0; i < 64; i++)
+            v->intra_q[rmpeg1_zigzag[i]] = (uint8_t)get_bits(v, 8);
+      }
+      if (get_bit(v))
+      {
+         if (bits_left(v) < 512) { v->errors++; return; }
+         for (i = 0; i < 64; i++)
+            v->non_intra_q[rmpeg1_zigzag[i]] = (uint8_t)get_bits(v, 8);
+      }
    }
    else if (id == 8)
    {
-      unsigned precision, structure, frame_pred, conceal, qscale, vlc, scan, progressive;
-      unsigned repeat, chroma, composite;
+      unsigned s, t, structure;
       if (!v->mpeg2) { v->mpeg2 = true; v->sequence_supported = false; }
       v->picture_supported = false;
       if (bits_left(v) < 30) { v->errors++; return; }
-      (void)get_bits(v, 16);
-      precision = get_bits(v, 2); structure = get_bits(v, 2);
-      (void)get_bit(v); frame_pred = get_bit(v); conceal = get_bit(v);
-      qscale = get_bit(v); vlc = get_bit(v); scan = get_bit(v);
-      repeat = get_bit(v); chroma = get_bit(v); progressive = get_bit(v);
-      composite = get_bit(v);
-      v->picture_supported = v->sequence_supported && v->coding_type == RMPEG1_PIC_I
-         && !precision && structure == 3 && frame_pred && !conceal
-         && !qscale && !vlc && !scan && progressive && chroma && !repeat && !composite;
+      for (s = 0; s < 2; s++)
+         for (t = 0; t < 2; t++)
+            v->m2_f_code[s][t] = get_bits(v, 4);
+      v->m2_dc_prec  = get_bits(v, 2);
+      structure      = get_bits(v, 2);
+      v->m2_tff      = get_bit(v) != 0;
+      v->m2_fpfd     = get_bit(v) != 0;
+      v->m2_conceal  = get_bit(v) != 0;
+      v->m2_qtype    = get_bit(v) != 0;
+      v->m2_ivlc     = get_bit(v) != 0;
+      v->m2_altscan  = get_bit(v) != 0;
+      (void)get_bits(v, 4);  /* repeat_first_field, chroma_420_type,
+                                progressive_frame, composite_display_flag */
+      if (structure == 0)
+         return;
+      v->m2_structure = structure;
+      v->m2_mb_rows   = structure == RM2_STRUCT_FRAME ? v->mb_h : v->mb_h / 2;
+
+      /* The second field of a frame is decoded into the frame the first
+       * one started; a field without its pair ends that frame as it is */
+      v->m2_second = false;
+      if (structure != RM2_STRUCT_FRAME && v->m2_field_open
+            && structure != v->m2_first_structure)
+         v->m2_second = true;
+      else if (v->m2_field_open)
+         v->m2_orphan = true;
+      v->picture_supported = v->sequence_supported;
    }
-   else if (v->mpeg2 && (id == 3 || id == 5 || id == 9 || id == 10))
+   else if (v->mpeg2 && (id == 5 || id == 9 || id == 10))
       v->sequence_supported = v->picture_supported = false;
 }
 
@@ -1698,7 +2567,9 @@ static bool picture_decodable(const rmpeg1_video_t *v)
       case RMPEG1_PIC_I:
          return true;
       case RMPEG1_PIC_P:
-         return v->have_bwd;              /* predicts from the last ref */
+         /* predicts from the last ref; the second field of a frame can
+          * predict from the first */
+         return v->have_bwd || (v->mpeg2 && v->m2_second);
       case RMPEG1_PIC_B:
          return v->have_fwd && v->have_bwd;
       default:
@@ -1734,13 +2605,14 @@ static void fill_frame(rmpeg1_video_t *v, int slot,
  * the end.
  *
  * out->y is left NULL when there is nothing to display this call. */
-static void emit_picture(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
+static void emit_frame(rmpeg1_video_t *v, rmpeg1_video_frame_t *out,
+      unsigned type, unsigned tref)
 {
    memset(out, 0, sizeof(*out));
 
-   if (v->coding_type == RMPEG1_PIC_B)
+   if (type == RMPEG1_PIC_B)
    {
-      fill_frame(v, v->slot_cur, out, v->temporal_ref, v->coding_type);
+      fill_frame(v, v->slot_cur, out, tref, type);
       return;
    }
 
@@ -1757,12 +2629,25 @@ static void emit_picture(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
 
    v->have_fwd  = v->have_bwd;
    v->have_bwd  = true;
-   v->bwd_tref  = v->temporal_ref;
-   v->bwd_type  = v->coding_type;
+   v->bwd_tref  = tref;
+   v->bwd_type  = type;
 
    /* The frame just handed out now lives in slot_fwd and is not written
     * again until two reference pictures later, so the caller's pointers stay
     * valid for the lifetime the header promises. */
+}
+
+static void emit_picture(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
+{
+   emit_frame(v, out, v->coding_type, v->temporal_ref);
+}
+
+/* A frame whose second field never came, finished as it is */
+static void emit_open_field(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
+{
+   v->m2_field_open = false;
+   v->m2_orphan     = false;
+   emit_frame(v, out, v->m2_frame_type, v->m2_frame_tref);
 }
 
 /* --------------------------------------------------------------------- */
@@ -1788,6 +2673,8 @@ rmpeg1_video_t *rmpeg1_video_init(void)
 
    memcpy(v->intra_q, rmpeg1_default_intra, 64);
    memset(v->non_intra_q, 16, 64);
+   v->m2_progressive_seq = true;
+   v->m2_structure       = RM2_STRUCT_FRAME;
 
    return v;
 }
@@ -1811,6 +2698,12 @@ void rmpeg1_video_flush(rmpeg1_video_t *v)
  * it once. */
 static int drain_held(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
 {
+   if (v->eof && v->m2_field_open)
+   {
+      emit_open_field(v, out);
+      if (out->y)
+         return 1;
+   }
    if (!v->eof || !v->have_bwd)
       return 0;
 
@@ -1830,6 +2723,9 @@ void rmpeg1_video_reset(rmpeg1_video_t *v)
    v->have_bwd = false;
    v->picture_supported = false;
    v->picture_counted = false;
+   v->m2_field_open = false;
+   v->m2_second = false;
+   v->m2_orphan = false;
 }
 
 static void compact(rmpeg1_video_t *v)
@@ -1954,6 +2850,12 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
             parse_mpeg2_extension(v);
             v->wr = written;
             v->rd = end; v->bit = 0;
+            if (v->m2_orphan)
+            {
+               emit_open_field(v, out);
+               if (out->y)
+                  return 1;
+            }
             break;
          }
          case RMPEG1_START_USER_DATA:
@@ -2008,7 +2910,8 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
                   break;
                }
 
-               if (!decode_slice(v, (unsigned)code, end))
+               if (!(v->mpeg2 ? m2_decode_slice(v, (unsigned)code, end)
+                              : decode_slice(v, (unsigned)code, end)))
                   v->errors++;
 
                /* Resynchronise on the slice boundary we already found rather
@@ -2028,7 +2931,23 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
                         && v->buf[p + 3] <= RMPEG1_START_SLICE_HI)
                      break;         /* same picture continues */
 
-                  emit_picture(v, out);
+                  if (v->mpeg2 && v->m2_structure != RM2_STRUCT_FRAME)
+                  {
+                     if (!v->m2_second)
+                     {
+                        /* The first field: the frame waits for the second */
+                        v->m2_field_open      = true;
+                        v->m2_first_structure = v->m2_structure;
+                        v->m2_frame_type      = v->coding_type;
+                        v->m2_frame_tref      = v->temporal_ref;
+                        break;
+                     }
+                     v->m2_second     = false;
+                     v->m2_field_open = false;
+                     emit_frame(v, out, v->m2_frame_type, v->m2_frame_tref);
+                  }
+                  else
+                     emit_picture(v, out);
                   if (out->y)
                      return 1;
                   break;

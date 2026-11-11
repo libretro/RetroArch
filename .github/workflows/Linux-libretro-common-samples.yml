@@ -742,6 +742,83 @@ jobs:
           ffmpeg -hide_banner -loglevel error -i "$fixture" -pix_fmt yuv420p -f rawvideo -y "$reference"
           ./rdvd_h262_test "$fixture" "$reference"
 
+      # The ISO/IEC 13818-4 streams never change (their md5s are checked):
+      # one good download is kept in the Actions cache
+      - name: Restore the MPEG-2 conformance streams
+        if: matrix.group == 'formats'
+        id: mpeg2_conformance
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/mpeg2-conformance
+          key: mpeg2-conformance-main-8-1
+
+      # MPEG-2 video against FFmpeg's decode, within 3 per sample (two
+      # IEEE 1180 inverse transforms): streams FFmpeg writes, progressive,
+      # interlaced (field DCT, field motion) and with Table B.15, alternate
+      # scan, the non-linear quantiser and 10-bit intra DC; and conformance
+      # streams with field pictures, dual prime, frame and field pictures
+      # mixed, slices starting mid-row
+      - name: Decode MPEG-2 video against FFmpeg and conformance streams
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/mpeg2
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          src="-f lavfi -i testsrc2=size=352x288:rate=25,format=yuv420p -frames:v 24"
+          i=0
+          for opts in "-bf 2 -g 12 -q:v 4" "-bf 2 -g 12 -q:v 4 -flags +ildct+ilme -top 1" \
+                      "-bf 2 -g 12 -q:v 3 -qmax 28 -intra_vlc 1 -non_linear_quant 1 -alternate_scan 1 -dc 10"; do
+            i=$((i+1))
+            ffmpeg -hide_banner -loglevel error $src -c:v mpeg2video $opts -f mpeg2video -y "$work/g$i.m2v"
+            ffmpeg -hide_banner -loglevel error -i "$work/g$i.m2v" -fps_mode passthrough \
+              -pix_fmt yuv420p -f rawvideo -y "$work/g$i.yuv"
+            ./rmpeg2_test "$work/g$i.m2v" "$work/g$i.yuv"
+          done
+          conf="$HOME/mpeg2-conformance"
+          mkdir -p "$conf"
+          base=https://standards.iso.org/ittf/PubliclyAvailableStandards/ISO_IEC_13818-4_2004_Conformance_Testing/Video/bitstreams/main-profile
+          # A stream the server will not give is reported and left out
+          # rather than failing the job; the cache is saved only once every
+          # stream is in it, and kept from then on
+          missing=0
+          while read -r path md5; do
+            f="$conf/$(basename "$path")"
+            if ! { [ -f "$f" ] && echo "$md5  $f" | md5sum --quiet -c -; }; then
+              if ! curl --fail --silent --show-error --location --retry 3 --retry-all-errors \
+                     --retry-max-time 60 --connect-timeout 10 --max-time 60 "$base/$path" -o "$f" \
+                   || ! echo "$md5  $f" | md5sum --quiet -c -; then
+                echo "::warning title=MPEG-2 conformance::$path could not be fetched; left out"
+                rm -f "$f"
+                missing=1
+                continue
+              fi
+            fi
+            gunzip -c "$f" > "$work/c.m2v"
+            ffmpeg -nostdin -hide_banner -loglevel error -i "$work/c.m2v" -fps_mode passthrough \
+              -pix_fmt yuv420p -f rawvideo -y "$work/c.yuv"
+            ./rmpeg2_test "$work/c.m2v" "$work/c.yuv"
+          done <<'LIST'
+          tcela/tcela-8-fp-dp/tcela-8.bits.gz f0ef12c0e4f4a6cdb9ba42d000054c8b
+          hhi/hhi_burst_short/hhi_burst_short.bits.gz a68d3436d89ffc896393b18e8556a33c
+          nokia/nokia6/nokia6_dual.bit.gz 9890f21e949716f67469240d4e3105c0
+          toshiba/toshiba_DPall-0/toshiba_DPall-0.mpg.gz d92090842a0c2e37cf1cda7212868cc3
+          sony/sony-ct3/sony-ct3.bs.gz 31bb0abfaf802c754254b38b500d7685
+          tcela/tcela-6-slices/tcela-6.bits.gz 1247cf986205e7dfe4413bd223be8ee6
+          mei/mei.2conftest.4f/mei_2stream.4f.gz 505375e1f68fe527f52eb3604cc8edae
+          ti/TI_cl_2/TI_c1_2.bits.gz 3b25d76d4b517ec3ab493f2f3fb767c0
+          LIST
+          [ "$missing" = 0 ] && touch "$conf/complete" || rm -f "$conf/complete"
+
+      - name: Save the MPEG-2 conformance streams
+        if: matrix.group == 'formats' && steps.mpeg2_conformance.outputs.cache-hit != 'true' && hashFiles('~/mpeg2-conformance/complete') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/mpeg2-conformance
+          key: mpeg2-conformance-main-8-1
+
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
         shell: bash

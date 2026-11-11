@@ -35,28 +35,22 @@ static void run_small(const uint8_t *data, size_t size, bool supported, size_t c
    rmpeg1_video_free(v);
 }
 
+/* The fixture decodes whatever the chunking; a sequence in a chroma format
+ * the decoder does not take (4:2:2 here, chroma_format flipped in the
+ * sequence extension) has its pictures skipped, not decoded wrong. The
+ * MPEG-2 tools themselves are checked by samples/formats/mpeg2. */
 static void test_gates(void)
 {
    uint8_t data[sizeof(fixture)];
-   size_t i, sequence = 0, picture = 0, chunk;
-   const unsigned picture_bits[] = {20,22,25,26,27,28,29,30,31,32,33};
+   size_t i, sequence = 0, chunk;
    for (i = 0; i + 5 < sizeof(fixture); i++)
-      if (!fixture[i] && !fixture[i+1] && fixture[i+2] == 1 && fixture[i+3] == 0xb5)
-      {
-         if (fixture[i+4] >> 4 == 1) sequence = i + 4;
-         if (fixture[i+4] >> 4 == 8) picture = i + 4;
-      }
-   CHECK(sequence && picture);
+      if (!fixture[i] && !fixture[i+1] && fixture[i+2] == 1 && fixture[i+3] == 0xb5
+            && fixture[i+4] >> 4 == 1)
+         sequence = i + 4;
+   CHECK(sequence);
    for (chunk = 1; chunk <= sizeof(fixture); chunk++)
       run_small(fixture, sizeof(fixture), true, chunk);
-   for (i = 0; i < sizeof(picture_bits)/sizeof(picture_bits[0]); i++)
-   {
-      unsigned bit = picture_bits[i];
-      memcpy(data, fixture, sizeof(data));
-      data[picture + bit/8] ^= (uint8_t)(1u << (7 - bit%8));
-      run_small(data, sizeof(data), false, 1);
-   }
-   memcpy(data, fixture, sizeof(data)); data[sequence + 1] ^= 8;
+   memcpy(data, fixture, sizeof(data)); data[sequence + 1] ^= 0x06;
    run_small(data, sizeof(data), false, 1);
 }
 
