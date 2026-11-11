@@ -1,5 +1,10 @@
 local dat_obj = {}
 local match_key = nil
+-- DATs write hex in either case; merge "abbe02fa" with "ABBE02FA"
+local hex_match_keys = {
+    ["rom.crc"] = true, ["rom.md5"] = true, ["rom.sha1"] = true,
+    set_fp1 = true, set_fpm1 = true,
+}
 
 local function dat_lexer(f, fname)
     local line, err = f:read("*l")
@@ -161,6 +166,9 @@ function init(...)
                 local mk = get_match_key(match_key, obj)
                 if mk == nil then
                     error("  missing match key '" .. match_key .. "' in one of the entries")
+                end
+                if hex_match_keys[match_key] then
+                    mk = string.upper(mk)
                 end
                 if dat_hash[mk] == nil then
                     dat_hash[mk] = {}
