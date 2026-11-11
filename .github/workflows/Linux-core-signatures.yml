@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
-  load-check-on: # The check at load, off in the default build
+  load-check-off: # The tree without the check at load
     runs-on: ubuntu-latest
     env:
       APT_PKGS: build-essential zlib1g-dev libfreetype-dev libsdl2-dev ccache
@@ -89,9 +89,9 @@ jobs:
       - name: Configure
         run: |
           set -eu
-          ./configure --disable-qt --enable-core_load_check
+          ./configure --disable-qt --disable-core_load_check
           grep -qx 'HAVE_CORE_SIGNATURES = 1' config.mk
-          grep -qx 'HAVE_CORE_LOAD_CHECK = 1' config.mk
+          grep -qx 'HAVE_CORE_LOAD_CHECK = 0' config.mk
 
       - name: Build
         run: make -j$(nproc)
@@ -166,6 +166,7 @@ jobs:
           set -eu
           ./configure --disable-qt --enable-core_signing_test_key
           grep -qx 'HAVE_CORE_SIGNING_TEST_KEY = 1' config.mk
+          grep -qx 'HAVE_CORE_LOAD_CHECK = 1' config.mk
 
       - name: Build
         run: make -j$(nproc)

@@ -1,11 +1,11 @@
 #!/bin/sh
 # Builds the load paths harness: real loads through the load check on
-# the shipping objects of a build configured with --enable-core_load_check,
+# the shipping objects of a build with the load check (the default),
 # core_signature.c compiled again with the public test key, main()
 # replaced. Requires a completed NON-Qt build (with Qt enabled main()
 # lives in ui_qt.o and drags the Qt UI in).
 #
-#   ./configure --disable-qt --enable-core_load_check
+#   ./configure --disable-qt
 #   make
 #   samples/tasks/core_load_paths/build.sh
 #   make -C samples/tasks/core_load_paths check
@@ -42,7 +42,7 @@ if [ ! -f "$objdir/gfx/video_driver.o" ]; then
    exit 1
 fi
 if [ ! -f "$objdir/core_load_check.o" ]; then
-   echo "configure with --enable-core_load_check first" >&2
+   echo "no core_load_check.o: configure without --disable-core_load_check" >&2
    exit 1
 fi
 
