@@ -139,6 +139,8 @@ jobs:
             s16_to_float_test
             float_to_s16_test
             float_to_s32_test
+            # G.711 mu-law; a step below compares it with FFmpeg's.
+            float_to_ulaw_test
             compat_fnmatch_test
             snprintf
             unbase64_test
@@ -1436,6 +1438,22 @@ jobs:
           CC=clang make -j$(nproc) all SANITIZER=thread
 
           TSAN_OPTIONS=halt_on_error=1 ./audio_mixer_voice_threads_test
+
+      # Every 16-bit sample through convert_s16_to_ulaw against FFmpeg's
+      # pcm_mulaw: all 65536 codes the same
+      - name: Encode mu-law as FFmpeg's pcm_mulaw does
+        if: matrix.group == 'core'
+        shell: bash
+        working-directory: libretro-common/samples/audio/float_to_ulaw
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          make -j2 all
+          ./float_to_ulaw_test --ramp "$work/ramp.s16"
+          ffmpeg -nostdin -hide_banner -loglevel error -f s16le -ar 8000 -ac 1 \
+            -i "$work/ramp.s16" -c:a pcm_mulaw -f mulaw -y "$work/ramp.ul"
+          ./float_to_ulaw_test --ffmpeg "$work/ramp.ul"
 
       - name: Run mpsc_stack_test under Clang + ThreadSanitizer
         if: matrix.group == 'core'
