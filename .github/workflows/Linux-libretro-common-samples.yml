@@ -221,6 +221,8 @@ jobs:
             # Tags in each container and ID3 version, and every prefix
             # and corruption of each file read inside it.
             rtags_test
+            # A file's audio_transfer arm from its bytes, and the folds.
+            audio_transfer_sniff_test
             # 4:2:0 to bytes in memory order and to UYVY.
             image_yuv_test
             rh264_lossless_test
@@ -1042,6 +1044,56 @@ jobs:
             n=$((n+1))
           done
           [ "$n" = 11 ]
+
+      # Files FFmpeg writes - MP3 with and without ID3v2, ADTS with and
+      # without, M4A, FLAC, Ogg Vorbis, Opus, WAVE PCM and float, WMA1/2,
+      # AC-3 - each sniffed as its arm and decoded where the sniffer
+      # says; and 5.1 with a tone a channel in each multichannel arm,
+      # folded with audio_transfer_stereo_matrix: every tone on its side
+      - name: Sniff and fold FFmpeg's files with audio_transfer
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/audio_transfer_sniff
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          enc() { ffmpeg -nostdin -hide_banner -loglevel error \
+            -f lavfi -i sine=f=440:d=1:sample_rate=48000 -ac 2 "$@"; }
+          enc -metadata title=t -y "$work/id3.mp3"
+          enc -id3v2_version 0 -write_xing 0 -y "$work/bare.mp3"
+          enc -c:a aac -f adts -y "$work/bare.aac"
+          enc -c:a aac -f adts -write_id3v2 1 -metadata title=t -y "$work/id3.aac"
+          enc -y "$work/a.m4a"
+          enc -y "$work/a.flac"
+          enc -c:a libvorbis -y "$work/a.ogg"
+          enc -c:a libopus -y "$work/a.opus"
+          enc -y "$work/s16.wav"
+          enc -c:a pcm_f32le -y "$work/f32.wav"
+          enc -c:a wmav1 -y "$work/v1.wma"
+          enc -y "$work/v2.wma"
+          enc -c:a ac3 -y "$work/a.ac3"
+          for p in id3.mp3:mp3 bare.mp3:mp3 bare.aac:aac id3.aac:aac a.m4a:aac \
+                   a.flac:flac a.ogg:vorbis a.opus:opus s16.wav:wav f32.wav:wav \
+                   v1.wma:wma v2.wma:wma a.ac3:ac3; do
+            ./audio_transfer_sniff_test --file "$work/${p%%:*}" "${p#*:}"
+          done
+          six=""
+          n=0
+          for hz in 300 500 700 80 1100 1300; do
+            six="${six}sine=f=$hz:d=2:sample_rate=48000[c$n];"
+            n=$((n+1))
+          done
+          six="${six}[c0][c1][c2][c3][c4][c5]join=inputs=6:channel_layout=5.1"
+          six="$six:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR"
+          for p in m4a:aac:aac ogg:libvorbis:vorbis opus:libopus:opus \
+                   flac:flac:flac ac3:ac3:ac3 wav:pcm_s16le:wav; do
+            IFS=: read -r ext codec type <<< "$p"
+            ffmpeg -nostdin -hide_banner -loglevel error -filter_complex "$six" \
+              -c:a "$codec" -y "$work/six.$ext"
+            ./audio_transfer_sniff_test --file "$work/six.$ext" "$type" --tones
+          done
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'

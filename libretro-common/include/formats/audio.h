@@ -214,6 +214,28 @@ enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
 enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len);
 
+/* The arm for a whole file, from its bytes: ID3v2 tags in front are
+ * looked past, then FLAC, Ogg (audio_transfer_ogg_audio_type), WebM and
+ * Matroska (audio_transfer_webm_audio_type), WAVE (PCM and float as
+ * AUDIO_TYPE_WAV, WMA in RIFF and xWMA as AUDIO_TYPE_WMA), ASF, MP4 and
+ * M4A (AUDIO_TYPE_AAC; start finds the AAC track, if there is one),
+ * tracker modules, then raw streams - AC-3, ADTS and MPEG audio - by a
+ * frame header with another where it says the next frame starts, in
+ * the first 64 KiB. Only the arms this build has; AUDIO_TYPE_NONE for
+ * anything else. @skip (may be NULL) is where the arm's buffer starts:
+ * past the ID3v2 tags, and past junk before a raw stream's first frame,
+ * which the buffer modes of AAC and AC-3 do not look past themselves. */
+enum audio_type_enum audio_transfer_sniff_type(const void *buf, size_t len,
+      size_t *skip);
+
+/* The fold to stereo of @channels channels (1 to 8) in the order @type's
+ * arm hands them over: [channel][0 = left, 1 = right], Q15 (unity
+ * 32768). Vorbis and Opus in Vorbis order, the rest in WAVE order;
+ * centre and surrounds at -3 dB into each side, a lone back centre at
+ * -6 dB, LFE dropped; mono to both sides at unity. NULL past eight. */
+const int32_t (*audio_transfer_fold_q15(enum audio_type_enum type,
+      unsigned channels))[2];
+
 /* Open the decoder over the buffer set above. Returns false on malformed
  * input. */
 bool  audio_transfer_start(void *data, enum audio_type_enum type);
@@ -228,7 +250,12 @@ void  audio_transfer_free(void *data, enum audio_type_enum type);
 
 /* Stream format, valid after a successful start. Any out pointer may be
  * NULL. total_frames is 0 when the stream length is unknown. */
-/* WAVE speaker-mask downmix for native WMA/XMA. False for other arms. */
+/* The fold of a started stream's channels to stereo: matrix[channel]
+ * [0 = left, 1 = right], Q15 (unity 32768), zero past the stream's
+ * channels. WMA's by the stream's WAVE speaker mask; every other arm's
+ * by its channel count, in the order the arm hands channels over
+ * (audio_transfer_fold_q15). False before a successful start or past
+ * eight channels. */
 bool audio_transfer_stereo_matrix(void *data, enum audio_type_enum type,
       int32_t matrix[8][2]);
 /* Float mixing keeps sqrt(1/2) coefficients without Q15 rounding. */
