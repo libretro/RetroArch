@@ -613,13 +613,13 @@ static bool file_archive_pending_copy_in_place(const char *temp_path,
    if (!(buf = (uint8_t*)malloc(65536)))
       return false;
    if (!(in = filestream_open(temp_path, RETRO_VFS_FILE_ACCESS_READ,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
    {
       free(buf);
       return false;
    }
    if (!(out = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
    {
       filestream_close(in);
       free(buf);

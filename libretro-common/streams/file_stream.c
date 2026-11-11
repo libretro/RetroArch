@@ -1677,7 +1677,7 @@ static int filestream_copy_loop(const char *src, const char *dst)
    if (!fp_src)
       goto end;
    fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    if (!fp_dst)
       goto end;
 

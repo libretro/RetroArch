@@ -390,7 +390,8 @@ static int64_t bz2_file_read(const char *path, const char *needle,
    if (optional_outfile)
    {
       RFILE *out = filestream_open(optional_outfile,
-            RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+            RETRO_VFS_FILE_ACCESS_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
       ok = out && bz2_pass(&src, file, filestream_get_size(file),
             bz2_write, out);
       if (out)
