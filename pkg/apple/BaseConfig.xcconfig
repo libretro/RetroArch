@@ -31,6 +31,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_CORETEXT
 OTHER_CFLAGS = $(inherited) -DHAVE_CORE_SIGNATURES
 // The app bundle lookup in core_signature_io.c.
 OTHER_LDFLAGS = $(inherited) -framework CoreFoundation
+OTHER_CFLAGS = $(inherited) -DHAVE_CORE_LOAD_CHECK
 OTHER_CFLAGS = $(inherited) -DHAVE_DR_FLAC
 OTHER_CFLAGS = $(inherited) -DHAVE_DR_MP3
 OTHER_CFLAGS = $(inherited) -DHAVE_DSP_FILTER
