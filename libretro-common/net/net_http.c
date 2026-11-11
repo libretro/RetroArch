@@ -2244,6 +2244,17 @@ static bool net_http_body_streams(const struct http_t *state)
    return state->sink || state->response.discard;
 }
 
+/* A streamed body of known framing (Content-Length or close) stays in
+ * the receive buffer, where it was read, until the window left behind
+ * it would fall below the floor: the sink then gets it in one piece of
+ * 32 KB or more instead of one piece per read, which over TLS or a
+ * slow link is a few hundred bytes to one record at a time.  Nothing
+ * is copied to hold it, and the buffer never grows for it. */
+static bool net_http_sink_due(const struct response *response)
+{
+   return response->buflen - response->pos < NET_HTTP_MIN_RECV_WINDOW;
+}
+
 static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
 {
    struct response *response = (struct response*)&state->response;
@@ -2606,6 +2617,14 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
    {
       if (response->bodytype != T_FULL)
          return false;
+      /* What is still held of a streamed body goes to the sink first */
+      if (net_http_body_streams(state) && response->pos)
+      {
+         if (!net_http_sink_flush(state, response->pos))
+            return false;
+         response->pos = 0;
+         response->len = 0;
+      }
       response->part       = P_DONE;
       /* The close that ended the body ended the connection too. */
       response->conn_close = true;
@@ -2856,7 +2875,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
        * function, which sets P_DONE and shrinks the buffer. */
       response->pos += newlen;
       response->len  = response->pos;
-      if (net_http_body_streams(state))
+      if (net_http_body_streams(state) && net_http_sink_due(response))
       {
          if (!net_http_sink_flush(state, response->pos))
             return false;
@@ -2901,12 +2920,13 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          }
          return true;
       }
-      if (net_http_body_streams(state))
+      if (net_http_body_streams(state) && net_http_sink_due(response))
       {
          /* T_LEN's `len` is the outstanding count once streaming, so
           * decrement it by what we hand off; the "pos == len"
-          * completion test above keeps working unchanged.  The
-          * advertised total lives in content_len for progress. */
+          * completion test above keeps working unchanged, held bytes
+          * included.  The advertised total lives in content_len for
+          * progress. */
          if (!net_http_sink_flush(state, response->pos))
             return false;
          response->len -= response->pos;
