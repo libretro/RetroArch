@@ -215,6 +215,9 @@ jobs:
             # AAC-LC encoding, decoded back with raac; a step below has
             # FFmpeg decode the streams.
             raac_encode_test
+            # H.264 encoding, decoded back with rh264; a step below has
+            # FFmpeg decode the streams.
+            rh264_encode_test
             # 4:2:0 to bytes in memory order and to UYVY.
             image_yuv_test
             rh264_lossless_test
@@ -970,6 +973,28 @@ jobs:
             n=$((n+1))
           done
           [ "$n" = 9 ]
+
+      # What rh264_encode writes - whole macroblocks and cropped, fine
+      # and coarse quantisers, a bit rate - FFmpeg decodes to exactly the
+      # encoder's reconstruction, as rh264 does (the sample checks that)
+      - name: Decode rh264_encode's streams with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/h264_encode
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./rh264_encode_test "$work"
+          n=0
+          for f in "$work"/*.264; do
+            ffmpeg -nostdin -hide_banner -loglevel error -xerror -i "$f" \
+              -f rawvideo -pix_fmt yuv420p -y "${f%.264}.ff.yuv"
+            cmp "${f%.264}.yuv" "${f%.264}.ff.yuv"
+            n=$((n+1))
+          done
+          [ "$n" = 5 ]
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
