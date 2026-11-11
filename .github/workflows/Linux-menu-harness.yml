@@ -453,11 +453,12 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # The Security Warning answers only the request it shows: OK
-          # on the rows of an older request chooses nothing for a newer
-          # one, and a pending request's screen comes back after a tab
-          # switch flushes the stack. Turning Check Core Signatures off
-          # always asks first.
+          # The Security Warning is a confirm box with named buttons:
+          # Cancel starts highlighted, Left/Right stop at the ends, OK
+          # presses the highlighted button, Back and Info cancel, a
+          # press on a box an older request put up chooses nothing,
+          # and synthetic input can't answer it. Turning Check Core
+          # Signatures off always asks first.
           samples/menu/core_warning/build.sh
           ./samples/menu/core_warning/core_warning_test
           make -C samples/menu/core_warning clean
