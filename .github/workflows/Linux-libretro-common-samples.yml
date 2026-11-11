@@ -395,6 +395,10 @@ jobs:
             # forces every tier on Linux, Windows and macOS runners.
             retro_procbarrier_test
             retro_asym_eventcount_test
+            # Two processes hand a counter back and forth 200000 times,
+            # each parked between turns: a lost wake hangs it, and its
+            # own watchdog reports that as a failure.
+            retro_shared_eventcount_test
             sthread_ex_test
             fast_cores_test
             memshm_test
