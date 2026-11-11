@@ -15,7 +15,7 @@ from command import decode as decode_amf
 from reply import record as reply_record
 
 
-def replies(read, command=b'_result'):
+def replies(read, command=b'_result', stop=None):
     streams = {}
     chunk_size = 128
     records = bytearray()
@@ -67,7 +67,8 @@ def replies(read, command=b'_result'):
             assert len(payload) == 4
             chunk_size = int.from_bytes(payload, 'big')
             assert 0 < chunk_size <= 0x7fffffff
-        if current['type'] == 20 and payload.startswith(b'\x02' + len(command).to_bytes(2, 'big') + command):
+        if (stop(current['type'], payload) if stop else
+                current['type'] == 20 and payload.startswith(b'\x02' + len(command).to_bytes(2, 'big') + command)):
             return records, payload
     raise RuntimeError('no complete connect result within server chunk bound')
 

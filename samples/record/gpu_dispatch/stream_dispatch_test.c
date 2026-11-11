@@ -27,11 +27,15 @@ int crypto_random_bytes(uint8_t *p, size_t n)
    memset(p, 42, n);
    return 0;
 }
-net_rtmp_client_t *net_rtmp_client_new(const net_rtmp_client_config_t *c)
+net_rtmp_client_t *net_rtmp_client_new_caps(const net_rtmp_client_config_t *c,
+      const net_rtmp_codec_caps_t *caps)
 {
    net_rtmp_client_t *client = (net_rtmp_client_t*)calloc(1, sizeof(*client));
    CHECK(GetCurrentThreadId() != controller);
    CHECK(c->random && c->max_reply == 65536);
+   CHECK(caps && caps->video_count == 1 && caps->audio_count == 1);
+   CHECK(!strcmp(caps->video[0].fourcc, "avc1") && caps->video[0].flags == NET_RTMP_CODEC_ENCODE);
+   CHECK(!strcmp(caps->audio[0].fourcc, "mp4a") && caps->audio[0].flags == NET_RTMP_CODEC_ENCODE);
    CHECK(c->dispatch(resolve_work, NULL, c->userdata));
    return client;
 }

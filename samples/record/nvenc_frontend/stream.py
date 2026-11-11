@@ -35,7 +35,7 @@ def check(args, threaded):
     config, native = root / 'retroarch.cfg', root / 'stream.cfg'
     received, log_path = root / 'received.flv', root / 'frontend.log'
     url = f'rtmp://127.0.0.1:{stream_port}/live/test'
-    native.write_text('audio_enable = true\nvcodec = "h264"\nformat = "flv"\n'
+    native.write_text(f'audio_enable = true\nvcodec = "{args.codec}"\nformat = "flv"\n'
                       'video_bit_rate = 8000000\n')
     config.write_text(f'''video_driver = "d3d12"
 video_threaded = "{str(threaded).lower()}"
@@ -113,7 +113,7 @@ network_cmd_port = "{command_port}"
                                     check=True, capture_output=True, timeout=15).stdout)
     video = next(s for s in info['streams'] if s['codec_type'] == 'video')
     audio = next(s for s in info['streams'] if s['codec_type'] == 'audio')
-    assert video['codec_name'] == 'h264' and audio['codec_name'] == 'aac'
+    assert video['codec_name'] == args.codec and audio['codec_name'] == 'aac'
     assert audio['sample_rate'] == '48000' and audio['channels'] == 2
     packets = [p for p in info['packets'] if p['stream_index'] == video['index']]
     assert len(packets) == int(finalized[1]), (len(packets), finalized[1])
@@ -147,7 +147,7 @@ network_cmd_port = "{command_port}"
                                    sum(v * math.sin(omega * i) for i, v in enumerate(values))) / n
         assert abs(amplitude - .2) < .04, (channel, amplitude)
         amplitudes.append(amplitude)
-    result = dict(threaded=threaded, video_frames=len(pts), pcm_frames=len(samples) // 2,
+    result = dict(threaded=threaded, codec=args.codec, video_frames=len(pts), pcm_frames=len(samples) // 2,
                   amplitudes=amplitudes)
     (root / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
     print('PASS frontend streaming start/stop, A/V and retirement: ' + json.dumps(result), flush=True)
@@ -161,6 +161,7 @@ if __name__ == '__main__':
     parser.add_argument('--ffmpeg', default='ffmpeg')
     parser.add_argument('--ffprobe', default='ffprobe')
     parser.add_argument('--output-dir', required=True, type=Path)
+    parser.add_argument('--codec', choices=['h264', 'hevc'], default='h264')
     args = parser.parse_args()
     for threaded in (False, True):
         check(args, threaded)

@@ -181,6 +181,50 @@ static void make_config(struct net_rtmp_client *c,
 }
 
 #ifndef STREAM_CONTRACT_HELPERS_ONLY
+static void hevc_admission(void)
+{
+   static const uint8_t sets[] = {
+      0,0,0,1,64,1,12,1,255,255,1,96,0,0,3,0,144,0,0,3,0,0,3,0,93,151,2,64,
+      0,0,0,1,66,1,1,1,96,0,0,3,0,144,0,0,3,0,0,3,0,93,160,10,8,12,22,89,
+      116,164,33,25,23,84,48,22,160,32,32,32,128,0,0,3,0,128,0,0,30,4,
+      0,0,0,1,68,1,193,247,192,204,144
+   };
+   struct net_rtmp_client client;
+   record_gpu_worker_d3d12_t worker;
+   record_gpu_output_config_t config;
+   record_stream_d3d12_t *stream;
+   record_stream_wait_t wait;
+   unsigned i;
+   int result;
+   make_config(&client, &worker, &config);
+   worker.frames = 0;
+   config.video.codec = RECORD_MP4_HEVC;
+   config.video.headers = sets;
+   config.video.headers_size = sizeof(sets);
+   config.audio_rate = config.audio_layout = config.audio_kbps = 0;
+   config.audio_fifo_frames = 0;
+   config.video.bit_depth = 10;
+   assert(!record_stream_d3d12_new(&worker, &config, &client));
+   config.video.bit_depth = 8;
+   config.stream_color.transfer = 256;
+   assert(!record_stream_d3d12_new(&worker, &config, &client));
+   config.stream_color.transfer = 0;
+   config.video.max_packet_size = 0xfffffa;
+   assert(!record_stream_d3d12_new(&worker, &config, &client));
+   config.video.max_packet_size = 0xfffff7;
+   stream = record_stream_d3d12_new(&worker, &config, &client);
+   assert(stream && record_stream_d3d12_audio_finish(stream));
+   result = RECORD_GPU_OUTPUT_PROGRESS;
+   for (i = 0; i < 1000 && result != RECORD_GPU_OUTPUT_END; i++)
+   {
+      result = record_stream_d3d12_step(stream, 0, &wait);
+      assert(result != RECORD_GPU_OUTPUT_ERROR);
+   }
+   assert(result == RECORD_GPU_OUTPUT_END && record_stream_d3d12_free(stream));
+   assert(net_rtmp_session_free(client.session));
+   puts("PASS HEVC native header admission, depth/color/packet bounds and video-only retirement");
+}
+
 static record_stream_d3d12_t *make_stream(struct net_rtmp_client *c,
       record_gpu_worker_d3d12_t *w)
 {
@@ -197,6 +241,7 @@ int main(void)
    record_stream_wait_t wait;
    unsigned i;
    int result;
+   hevc_admission();
    for (i = 0; i < sizeof(pcm) / sizeof(pcm[0]); i += 2)
    {
       pcm[i] = 1234;

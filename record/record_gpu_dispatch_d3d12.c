@@ -124,6 +124,9 @@ static bool record_dispatch_resolve(void (*work)(void*), void *job, void *userda
 static int record_gpu_dispatch_bootstrap(record_gpu_dispatch_d3d12_t *j)
 {
    net_rtmp_client_config_t config;
+   net_rtmp_codec_capability_t video = {NET_RTMP_CODEC_ENCODE, "avc1"};
+   net_rtmp_codec_capability_t audio = {NET_RTMP_CODEC_ENCODE, "mp4a"};
+   net_rtmp_codec_caps_t caps;
    enum net_rtmp_client_state state;
    enum record_gpu_session_error error;
    if (retro_atomic_load_acquire_int(&j->cancelled)
@@ -142,7 +145,15 @@ static int record_gpu_dispatch_bootstrap(record_gpu_dispatch_d3d12_t *j)
       config.time = 0;
       config.streams = 8;
       config.legacy_commands = j->legacy;
-      j->client = net_rtmp_client_new(&config);
+      if (j->encoder.codec == NVENC_D3D12_HEVC)
+         memcpy(video.fourcc, "hvc1", 5);
+      else if (j->encoder.codec != NVENC_D3D12_H264)
+         goto failed;
+      caps.video = &video;
+      caps.audio = &audio;
+      caps.video_count = 1;
+      caps.audio_count = j->output.audio_rate ? 1 : 0;
+      j->client = net_rtmp_client_new_caps(&config, &caps);
       if (!j->client)
          goto failed;
    }

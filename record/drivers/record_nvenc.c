@@ -203,11 +203,11 @@ static void *record_nvenc_init(const struct record_params *params)
       RARCH_ERR("[NVENC] Requires a valid frame rate and native MP4/FLV config with an explicit audio_enable setting.\n");
       return NULL;
    }
-   if (streaming && (encoder.codec != NVENC_D3D12_H264 || hdr.output_mode
+   if (streaming && ((encoder.codec != NVENC_D3D12_H264 && encoder.codec != NVENC_D3D12_HEVC)
             || (strncmp(params->filename, "rtmp://", 7)
                && strncmp(params->filename, "rtmps://", 8))))
    {
-      RARCH_ERR("[NVENC] Streaming requires SDR H.264 and an RTMP/RTMPS URL.\n");
+      RARCH_ERR("[NVENC] Streaming requires H.264 or HEVC and an RTMP/RTMPS URL.\n");
       return NULL;
    }
    if (!record_nvenc_color(&encoder, &hdr)
@@ -254,7 +254,8 @@ static void *record_nvenc_init(const struct record_params *params)
       return NULL;
    }
    output.video.timescale = encoder.fps_num;
-   output.video.max_packet_size = streaming ? 0xfffffa : 16 * 1024 * 1024;
+   output.video.max_packet_size = streaming
+      ? encoder.codec == NVENC_D3D12_HEVC ? 0xfffff7 : 0xfffffa : 16 * 1024 * 1024;
    ctx->job = streaming
       ? record_gpu_dispatch_d3d12_new_stream_owned(capture, &encoder, &output, ctx->path, legacy)
       : record_gpu_dispatch_d3d12_new_owned(capture, &encoder, &output, ctx->path);

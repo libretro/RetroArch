@@ -93,7 +93,7 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
    config.audio_layout = channels == 1 ? 4 : channels == 6 ? 0x60f : 3;
    config.audio_fifo_frames = 3072;
 #ifdef NVENC_TEST_STREAM
-   config.video.max_packet_size = 0xfffffa;
+   config.video.max_packet_size = dispatch_config->codec == NVENC_D3D12_HEVC ? 0xfffff7 : 0xfffffa;
 #endif
    total = frames * rate / 60;
    movie = (char*)malloc(length + 9); sound = (char*)malloc(length + 9);

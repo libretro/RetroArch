@@ -12,7 +12,7 @@ typedef struct record_stream_wait
 } record_stream_wait_t;
 
 RETRO_BEGIN_DECLS
-/* One recording I/O owner. Borrows an H.264 worker and a READY client until
+/* One recording I/O owner. Borrows an H.264/HEVC worker and a READY client until
  * free; this consumer alone drives the client meanwhile. AAC-LC is optional,
  * 44.1/48 kHz mono/stereo in center/stereo speaker-mask order. PCM starts at
  * zero; video uses config.video.timescale. No file is created. */

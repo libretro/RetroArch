@@ -41,8 +41,11 @@ record_stream_d3d12_t *record_stream_d3d12_new(record_gpu_worker_d3d12_t *worker
    net_rtmp_client_view_t view;
    rflv_config_t mux;
    unsigned channels;
-   if (!worker || !client || !config || config->video.codec != RECORD_MP4_H264
-         || config->video.bit_depth != 8 || !config->video.timescale
+   if (!worker || !client || !config
+         || (config->video.codec != RECORD_MP4_H264 && config->video.codec != RECORD_MP4_HEVC)
+         || (config->video.bit_depth != 8
+            && (config->video.codec != RECORD_MP4_HEVC || config->video.bit_depth != 10))
+         || !config->video.timescale
          || config->video.ac3_header || config->video.ac3_header_size
          || net_rtmp_client_step(client, 0, &view) != NET_RTMP_CLIENT_READY)
       return NULL;
@@ -84,11 +87,14 @@ record_stream_d3d12_t *record_stream_d3d12_new(record_gpu_worker_d3d12_t *worker
          goto failed;
       p->audio_end = true;
    }
-   p->mux = rflv_mux_new_annexb(&mux);
-   if (!p->mux)
+   p->mux = config->video.codec == RECORD_MP4_HEVC
+      ? rflv_mux_new_hevc_annexb(&mux) : rflv_mux_new_annexb(&mux);
+   if (!p->mux || (config->video.codec == RECORD_MP4_HEVC
+            && !rflv_mux_set_color(p->mux, &config->stream_color, config->video.bit_depth)))
       goto failed;
    return p;
 failed:
+   rflv_mux_free(p->mux);
    if (p->aac)
    {
       record_mf_audio_cancel(p->aac);

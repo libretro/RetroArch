@@ -3,6 +3,7 @@
 #define RECORD_GPU_OUTPUT_D3D12_H
 #include "record_gpu_worker_d3d12.h"
 #include "record_mux_mp4.h"
+#include <formats/video_color.h>
 RETRO_BEGIN_DECLS
 
 enum record_gpu_output_result
@@ -22,6 +23,9 @@ struct net_rtmp_client;
 typedef struct record_gpu_output_config
 {
    record_mp4_config_t video;
+   /* Coded source metadata for HEVC streaming, never display defaults.
+    * Session setup replaces this from its encoder configuration. */
+   video_color_metadata_t stream_color;
    /* I/O-owner-only READY client; NULL selects file output. */
    struct net_rtmp_client *stream_client;
    unsigned audio_rate, audio_kbps;
@@ -35,7 +39,7 @@ typedef struct record_gpu_output_config
  * AC-3 at 32/44.1/48 kHz in its frontend speaker-mask order. No resampling.
  * video.ac3_header must be NULL. Creates a new UTF-8 named file. No scheduler
  * is installed here; task handlers may execute on the main thread.
- * stream_client instead borrows a READY connection: H.264/8-bit plus optional
+ * stream_client instead borrows a READY connection: H.264/8-bit or HEVC/8/10-bit plus optional
  * native AAC at 44.1/48 kHz mono/stereo. Its I/O owner drives the connection
  * until output free; this path creates no file. */
 record_gpu_output_d3d12_t *record_gpu_output_d3d12_new(

@@ -2,6 +2,7 @@
 #include "record_gpu_session_d3d12.h"
 #include <retro_atomic.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum record_gpu_session_stage
 {
@@ -86,6 +87,14 @@ record_gpu_session_d3d12_t *record_gpu_session_d3d12_new(
          }
          if (mux.video.color_primaries)
             mux.video.full_range = config.full_range;
+         memset(&mux.stream_color, 0, sizeof(mux.stream_color));
+         mux.stream_color.primaries = mux.video.color_primaries;
+         mux.stream_color.transfer = mux.video.transfer_characteristics;
+         mux.stream_color.matrix = mux.video.matrix_coefficients;
+         mux.stream_color.range = mux.video.color_primaries ? config.full_range ? 2 : 1 : 0;
+         mux.stream_color.mastering = config.mastering;
+         mux.stream_color.max_cll = config.max_cll;
+         mux.stream_color.max_fall = config.max_fall;
          switch (config.codec)
          {
             case NVENC_D3D12_H264: mux.video.codec = RECORD_MP4_H264; break;

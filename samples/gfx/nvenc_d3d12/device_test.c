@@ -631,7 +631,7 @@ int main(int argc, char **argv)
    }
    if (getenv("NVENC_TEST_DISPATCH"))
    {
-      CHECK(capture && !metadata);
+      CHECK(capture);
       producer.frames = FRAMES;
       out = fopen(argv[3], "wb"); CHECK(out != NULL);
       mux_config.timescale = config.fps_num;
