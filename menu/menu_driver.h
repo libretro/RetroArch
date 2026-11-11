@@ -887,6 +887,13 @@ size_t menu_playlist_random_selection(
  * inside an open playlist or Explore list. */
 size_t menu_playlists_tab_random_selection(size_t selection);
 
+const char *menu_dialog_firmware_path_line(const struct menu_state *menu_st,
+      const char *line, unsigned *state);
+void menu_dialog_draw_path_underline(const struct menu_state *menu_st,
+      unsigned *state, const char *line, font_data_t *font,
+      gfx_display_t *p_disp, void *userdata, unsigned video_dims,
+      float x, float baseline, uint32_t color);
+
 void menu_dialog_confirm_set(struct menu_state *menu_st,
       unsigned msg, unsigned cmd);
 void menu_dialog_confirm_clear(struct menu_state *menu_st);

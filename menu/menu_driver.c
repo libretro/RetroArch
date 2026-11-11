@@ -8515,7 +8515,8 @@ static int generic_menu_iterate(
          break;
       case ITERATE_TYPE_CONFIRM:
          strlcpy(menu->menu_state_msg,
-               msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
+               menu_st->dialog_st.confirm_text ? menu_st->dialog_st.confirm_text
+               : msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
                sizeof(menu->menu_state_msg));
 
 #ifdef HAVE_ACCESSIBILITY
@@ -9904,8 +9905,82 @@ size_t menu_playlists_tab_random_selection(size_t selection)
 }
 
 /* Modal dialog handling */
+/* Wrapped path lines precede the bracketed availability badge. */
+const char *menu_dialog_firmware_path_line(const struct menu_state *menu_st,
+      const char *line, unsigned *state)
+{
+   const char *path = line;
+   if (menu_st->dialog_st.confirm_msg != MSG_CORE_FIRMWARE_MISSING || !line)
+      return NULL;
+
+   if (!*line)
+   {
+      *state = 0;
+      return NULL;
+   }
+
+   if (*state == 0)
+   {
+      while (*path >= '0' && *path <= '9')
+         path++;
+
+      if (path != line && *path == '.' && (path[1] == ' ' || !path[1]))
+      {
+         path++;
+         if (*path == ' ')
+            path++;
+         *state = 1;
+         return *path ? path : NULL;
+      }
+
+      *state = 2;
+   }
+   else if (*state == 1)
+   {
+      if (*line != '[')
+         return line;
+      *state = 2;
+   }
+
+   return NULL;
+}
+
+void menu_dialog_draw_path_underline(const struct menu_state *menu_st,
+      unsigned *state, const char *line, font_data_t *font,
+      gfx_display_t *p_disp, void *userdata, unsigned video_dims,
+      float x, float baseline, uint32_t color)
+{
+   unsigned i;
+   float rgba[16];
+   int width;
+   const char *path = menu_dialog_firmware_path_line(menu_st, line, state);
+
+   if (!path)
+      return;
+
+   width = font_driver_get_message_width(font, path, strlen(path), 1.0f);
+   if (width <= 0)
+      return;
+
+   x += font_driver_get_message_width(font, line, path - line, 1.0f);
+
+   for (i = 0; i < 4; i++)
+   {
+      rgba[i * 4]     = FONT_COLOR_GET_RED(color)   / 255.0f;
+      rgba[i * 4 + 1] = FONT_COLOR_GET_GREEN(color) / 255.0f;
+      rgba[i * 4 + 2] = FONT_COLOR_GET_BLUE(color)  / 255.0f;
+      rgba[i * 4 + 3] = FONT_COLOR_GET_ALPHA(color) / 255.0f;
+   }
+
+   gfx_display_blend_begin(p_disp->dispctx, userdata);
+   gfx_display_draw_quad(p_disp, userdata, video_dims, x, baseline + 1,
+         VIDEO_SCALE_PACK(width, 1), video_dims, rgba, NULL);
+   gfx_display_blend_end(p_disp->dispctx, userdata);
+}
+
 static void menu_dialog_confirm_reset(struct menu_state *menu_st)
 {
+   menu_st->dialog_st.confirm_text = NULL;
    menu_st->dialog_st.confirm_msg = MSG_UNKNOWN;
    menu_st->dialog_st.confirm_cmd = CMD_EVENT_NONE;
 
@@ -9918,6 +9993,7 @@ static void menu_dialog_confirm_reset(struct menu_state *menu_st)
 
 void menu_dialog_confirm_set(struct menu_state *menu_st, unsigned msg, unsigned cmd)
 {
+   menu_st->dialog_st.confirm_text = NULL;
    menu_st->dialog_st.confirm_msg = msg;
    menu_st->dialog_st.confirm_cmd = cmd;
    menu_st->dialog_st.pending_cmd = CMD_EVENT_NONE;

@@ -107,12 +107,14 @@ void win32_window_release_kept(void);
 #include "patch_stream.h"
 #include "tasks_internal.h"
 #include "task_content_prefetch.h"
+#include "task_file_transfer.h"
 
 #include "../command.h"
 #include "../core_info.h"
 #include "../content.h"
 #include "../core.h"
 #include "../configuration.h"
+#include "../config.def.h"
 #include "../defaults.h"
 #include "../dynamic.h"
 #include "../file_path_special.h"
@@ -2036,7 +2038,8 @@ enum content_load_stage
    CONTENT_LOAD_STAGE_CORE,
    /* One driver reinit against the new core, then the session tail
     * and whatever the entry point asked for after the load. */
-   CONTENT_LOAD_STAGE_DRIVERS
+   CONTENT_LOAD_STAGE_DRIVERS,
+   CONTENT_LOAD_STAGE_FIRMWARE
 };
 
 /* What an entry point wants done once the load is through. */
@@ -2052,8 +2055,104 @@ enum content_load_after
    CONTENT_LOAD_AFTER_DUMMY_IS_FAIL    = 1 << 7  /* the dummy core counts as failure */
 };
 
+#ifdef HAVE_MENU
+struct content_firmware
+{
+   size_t index;
+   unsigned missing_count;
+   char system_dir[DIR_MAX_LENGTH];
+   char target[PATH_MAX_LENGTH];
+   char download[PATH_MAX_LENGTH];
+#ifdef HAVE_NETWORKING
+   char url[PATH_MAX_LENGTH];
+#endif
+   char message[1024];
+   bool shown;
+   bool downloading;
+   bool failed;
+   bool archive;
+   bool confirmed;
+   bool cancelled;
+   bool has_download;
+   bool download_requested;
+};
+
+#if defined(HAVE_NETWORKING)
+static bool content_firmware_path_valid(const char *path)
+{
+   const char *part = path;
+   const char *end;
+   if (string_is_empty(path) || *path == '/' || *path == '\\')
+      return false;
+
+   do
+   {
+      end = part + strcspn(part, "/\\");
+      if (end == part || (end - part == 2 && !memcmp(part, "..", 2))
+            || memchr(part, ':', end - part))
+         return false;
+      part = end + 1;
+   } while (*end);
+
+   return true;
+}
+
+static void content_firmware_download_finish(struct content_firmware *firmware,
+      bool success)
+{
+   filestream_delete(firmware->download);
+   firmware->downloading = false;
+
+   if (!success || !path_is_valid(firmware->target))
+      firmware->failed = true;
+}
+
+#ifdef HAVE_COMPRESSION
+static void content_firmware_extracted(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   decompress_task_data_t *data = (decompress_task_data_t*)task_data;
+   struct content_firmware *firmware = (struct content_firmware*)user_data;
+   content_firmware_download_finish(firmware, !err);
+   if (data)
+   {
+      free(data->source_file);
+      free(data);
+   }
+}
+#endif
+
+static void content_firmware_downloaded(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   struct content_firmware *firmware = (struct content_firmware*)user_data;
+   bool success = !err && data && data->status >= 200 && data->status < 300;
+#ifdef HAVE_COMPRESSION
+   if (success && firmware->archive)
+   {
+      if (task_push_decompress(firmware->download, firmware->system_dir,
+               NULL, NULL, NULL, content_firmware_extracted, firmware,
+               NULL, false))
+         return;
+
+      success = false;
+   }
+   else
+#endif
+   if (success)
+      success = filestream_rename(firmware->download, firmware->target) == 0;
+
+   content_firmware_download_finish(firmware, success);
+}
+#endif
+#endif
+
 struct content_load_job
 {
+#ifdef HAVE_MENU
+   struct content_firmware *firmware;
+#endif
    struct rarch_main_wrap *wrap_args;
    char **argv_ptr;
    int   *argc_ptr;
@@ -2075,6 +2174,226 @@ static struct content_load_job content_load_job;
 /* How the last job ended, for the unstaged caller's return value. */
 static bool content_load_job_result;
 
+#ifdef HAVE_MENU
+void task_content_firmware_download(void)
+{
+   struct content_firmware *firmware = content_load_job.firmware;
+   if (firmware)
+   {
+      firmware->confirmed = true;
+      firmware->download_requested = firmware->has_download;
+   }
+}
+
+#if defined(HAVE_NETWORKING)
+static void content_firmware_download_start(struct content_firmware *firmware,
+      const char *url)
+{
+   char parent[PATH_MAX_LENGTH];
+   strlcpy(parent, firmware->download, sizeof(parent));
+   path_basedir_wrapper(parent);
+
+   if (!path_mkdir(parent) || path_is_valid(firmware->download))
+   {
+      firmware->failed = true;
+      return;
+   }
+
+   firmware->downloading = true;
+
+   /* The HTTP task copies the borrowed URL on submission. */
+   if (!task_push_http_download_file(url, firmware->download,
+            false, msg_hash_to_str(MSG_FIRMWARE),
+            content_firmware_downloaded, firmware))
+      content_firmware_download_finish(firmware, false);
+}
+#endif
+
+static bool content_load_firmware(struct content_load_job *job)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings      = config_get_ptr();
+   struct content_firmware *firmware = job->firmware;
+   core_info_t *core          = NULL;
+   core_info_firmware_t *entry;
+   bool download_available   = false;
+   const char *content       = path_get(RARCH_PATH_CONTENT);
+#if defined(HAVE_NETWORKING)
+   const char *url           = NULL;
+   const char *download_url;
+#endif
+
+   if (firmware && firmware->downloading)
+      return false;
+
+   if (!settings->bools.core_firmware_notification_enable
+         || !menu_st->driver_data
+         || (string_is_empty(content)
+            && !runloop_state_get_ptr()->system.load_no_content)
+         || !core_info_find(path_get(RARCH_PATH_CORE), &core)
+         || !core || !core->firmware_count)
+      return true;
+
+   if (menu_st->dialog_st.confirm_cmd || menu_st->dialog_st.pending_cmd)
+      return false;
+
+   if (!firmware)
+   {
+      firmware = (struct content_firmware*)calloc(1, sizeof(*firmware));
+      if (!firmware)
+         return true;
+
+      job->firmware = firmware;
+
+      if ((settings->bools.systemfiles_in_content_dir
+               || string_is_empty(settings->paths.directory_system))
+            && !string_is_empty(content))
+         fill_pathname_basedir(firmware->system_dir, content,
+               sizeof(firmware->system_dir));
+      else
+         strlcpy(firmware->system_dir, settings->paths.directory_system,
+               sizeof(firmware->system_dir));
+   }
+
+   if (firmware->shown && !firmware->download_requested)
+   {
+      firmware->cancelled = !firmware->has_download && !firmware->confirmed;
+      return true;
+   }
+
+   if (firmware->index >= core->firmware_count)
+   {
+      if (firmware->shown)
+      {
+         if (firmware->failed)
+         {
+            const char *msg = msg_hash_to_str(MSG_CORE_FIRMWARE_DOWNLOAD_FAILED);
+            runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         }
+
+         return true;
+      }
+
+      if (!firmware->missing_count)
+         return true;
+
+      strlcat(firmware->message, "\n\n", sizeof(firmware->message));
+      strlcat(firmware->message, msg_hash_to_str(firmware->has_download
+               ? MSG_CORE_FIRMWARE_DOWNLOAD_PROMPT
+               : MSG_CORE_FIRMWARE_CONTINUE_PROMPT), sizeof(firmware->message));
+      firmware->shown = true;
+      firmware->index = 0;
+
+      menu_dialog_confirm_set(menu_st, MSG_CORE_FIRMWARE_MISSING,
+            CMD_EVENT_CORE_FIRMWARE_DOWNLOAD);
+      menu_st->dialog_st.confirm_text = firmware->message;
+      retroarch_menu_running();
+
+      return false;
+   }
+
+   entry = &core->firmware[firmware->index++];
+   if (entry->optional || string_is_empty(entry->path))
+      return false;
+
+   fill_pathname_join(firmware->target, firmware->system_dir,
+         entry->path, sizeof(firmware->target));
+
+   if (path_is_valid(firmware->target))
+      return false;
+
+#if defined(HAVE_NETWORKING)
+   download_url = entry->url;
+   if (!string_is_empty(download_url)
+         && !strchr(download_url, ':')
+         && content_firmware_path_valid(download_url))
+   {
+      int written     = snprintf(firmware->url, sizeof(firmware->url),
+            "%ssystem/%s", DEFAULT_BUILDBOT_ASSETS_SERVER_URL, download_url);
+      download_url    = written >= 0
+            && (size_t)written < sizeof(firmware->url)
+            ? firmware->url : NULL;
+   }
+
+   if (!string_is_empty(firmware->system_dir)
+         && content_firmware_path_valid(entry->path)
+         && !string_is_empty(download_url)
+         && (string_starts_with_size(download_url, "https://", 8)
+            || string_starts_with_size(download_url, "http://", 7)))
+   {
+      char url_path[PATH_MAX_LENGTH];
+      strlcpy(url_path, download_url, sizeof(url_path));
+      url_path[strcspn(url_path, "?#")] = '\0';
+      firmware->archive = path_is_compressed_file(url_path);
+#ifndef HAVE_COMPRESSION
+      if (!firmware->archive)
+#endif
+      {
+         if (firmware->archive)
+         {
+            char name[64];
+            snprintf(name, sizeof(name), ".retroarch-firmware.%s",
+                  path_get_extension(url_path));
+            fill_pathname_join(firmware->download, firmware->system_dir,
+                  name, sizeof(firmware->download));
+         }
+         else
+         {
+            size_t len = strlcpy(firmware->download, firmware->target,
+                  sizeof(firmware->download));
+            if (len + sizeof(".download") > sizeof(firmware->download))
+               return false;
+            strlcpy_lit(firmware->download + len, ".download",
+                  sizeof(firmware->download) - len);
+         }
+
+         download_available = true;
+
+         if (firmware->shown)
+            url = download_url;
+         else
+            firmware->has_download = true;
+      }
+   }
+#endif
+   if (firmware->shown)
+   {
+#if defined(HAVE_NETWORKING)
+      if (url)
+         content_firmware_download_start(firmware, url);
+#endif
+      return false;
+   }
+
+   if (!firmware->missing_count)
+      strlcpy(firmware->message, msg_hash_to_str(MSG_CORE_FIRMWARE_MISSING),
+            sizeof(firmware->message));
+
+   strlcat(firmware->message, "\n\n", sizeof(firmware->message));
+   {
+      char number[32];
+      snprintf(number, sizeof(number), "%u. ", ++firmware->missing_count);
+      strlcat(firmware->message, number, sizeof(firmware->message));
+   }
+
+   strlcat(firmware->message, entry->path, sizeof(firmware->message));
+   strlcat(firmware->message, "\n[", sizeof(firmware->message));
+   strlcat(firmware->message, msg_hash_to_str(download_available
+            ? MSG_CORE_FIRMWARE_DOWNLOAD_AVAILABLE
+            : MSG_CORE_FIRMWARE_SUPPLY_MANUALLY), sizeof(firmware->message));
+   strlcat(firmware->message, "]", sizeof(firmware->message));
+
+   if (!string_is_empty(entry->desc))
+   {
+      strlcat(firmware->message, "\n", sizeof(firmware->message));
+      strlcat(firmware->message, entry->desc, sizeof(firmware->message));
+   }
+
+   return false;
+}
+#endif
+
 static void content_load_job_free(struct content_load_job *job)
 {
    size_t i;
@@ -2083,6 +2402,13 @@ static void content_load_job_free(struct content_load_job *job)
       free(job->argv_copy[i]);
       job->argv_copy[i] = NULL;
    }
+#ifdef HAVE_MENU
+   if (job->firmware)
+   {
+      free(job->firmware);
+      job->firmware = NULL;
+   }
+#endif
    free(job->wrap_args);
    job->wrap_args = NULL;
    job->stage     = CONTENT_LOAD_STAGE_NONE;
@@ -2342,6 +2668,19 @@ static void content_load_step(struct content_load_job *job,
 {
    switch (job->stage)
    {
+      case CONTENT_LOAD_STAGE_FIRMWARE:
+#ifdef HAVE_MENU
+         if (!content_load_firmware(job))
+            break;
+         if (job->firmware && job->firmware->cancelled)
+         {
+            job->after |= CONTENT_LOAD_AFTER_MENU_ON_FAIL;
+            content_load_finish(job, p_content);
+            break;
+         }
+#endif
+         job->stage = CONTENT_LOAD_STAGE_DEINIT;
+         break;
       case CONTENT_LOAD_STAGE_DEINIT:
          if (!content_load_stage_deinit(job))
          {
@@ -2455,7 +2794,9 @@ bool task_content_is_load_stage(const retro_task_t *task)
 {
    return task && task->handler == content_load_task_handler
        && (enum content_load_stage)(uintptr_t)task->state
-          != CONTENT_LOAD_STAGE_CLOSE_WAIT;
+          != CONTENT_LOAD_STAGE_CLOSE_WAIT
+       && (enum content_load_stage)(uintptr_t)task->state
+          != CONTENT_LOAD_STAGE_FIRMWARE;
 }
 
 static bool content_load_push_stage(struct content_load_job *job)
@@ -2522,6 +2863,15 @@ static bool content_load(content_ctx_info_t *info,
    job->after     = after;
    job->staged    = staged;
    job->stage     = CONTENT_LOAD_STAGE_DEINIT;
+#ifdef HAVE_MENU
+   if (staged && config_get_ptr()->bools.core_firmware_notification_enable)
+   {
+      core_info_t *core = NULL;
+      if (core_info_find(path_get(RARCH_PATH_CORE), &core)
+            && core && core->firmware_count)
+         job->stage = CONTENT_LOAD_STAGE_FIRMWARE;
+   }
+#endif
 
    if (staged)
    {

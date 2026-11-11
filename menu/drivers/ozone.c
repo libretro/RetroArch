@@ -7893,6 +7893,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    int usable_width           = 0;
    float scale_factor         = 0.0f;
    float line_height          = 0;
+   float button_spacing       = 0;
    unsigned i                 = 0;
    unsigned line_count        = 0;
    unsigned y_position        = 0;
@@ -7903,6 +7904,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    struct menu_state *menu_st = menu_state_get_ptr();
    bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape             = video_width >= video_height;
+   unsigned firmware_line_state = 0;
    gfx_display_ctx_driver_t
          *dispctx             = p_disp->dispctx;
    char *lines[256];
@@ -7997,12 +7999,14 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                   ? (16.0f * scale_factor)
                   : (16.0f * ((float)slice_new_h / (float)slice_size)));
 
-      /* Extra room for confirm buttons */
       if (confirm_dialog)
-         slice_new_h       += (line_height + font_data.line_ascender) * 2;
-
+      {
+         button_spacing    = slice_y + slice_new_h
+               - (y + line_count * line_height)
+               - (line_height - font_data.line_ascender);
+         slice_new_h       += 70 * scale_factor + button_spacing;
+      }
       width                 = slice_new_w;
-      height                = slice_new_h;
       margin                = slice_margin;
 
       gfx_display_blend_begin(dispctx, userdata);
@@ -8044,6 +8048,13 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                false,
                1.0f,
                false);
+
+      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+            msg, font_data.font, p_disp, userdata, video_dims,
+            x - (longest_width / 2),
+            y + (i * line_height) + font_data.line_ascender,
+            COLOR_TEXT_ALPHA(ozone->theme->text_rgba,
+               (uint32_t)(ozone->animations.messagebox_alpha * 255.0f)));
    }
 
    if (confirm_dialog)
@@ -8054,7 +8065,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       float icon_size                        = 50 * scale_factor;
       float icon_padding                     = 10 * scale_factor;
       float icon_x                           = x - (width / 2) + icon_size + (icon_padding * 3);
-      float icon_y                           = video_height - y + (height / 2) - icon_size - (icon_padding * 2);
+      float icon_y                           = y + (line_count * line_height) + button_spacing + icon_padding;
       float label_y                          = icon_y + (icon_size / 2.0f) + ozone->fonts.footer.line_centre_offset;
       int cursor_x                           = icon_x - icon_padding;
       int cursor_y                           = icon_y - icon_padding;

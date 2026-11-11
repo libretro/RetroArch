@@ -1198,6 +1198,7 @@ typedef struct settings
       bool load_dummy_on_core_shutdown;
       bool core_option_category_enable;
       bool core_info_cache_enable;
+      bool core_firmware_notification_enable;
       bool core_info_savestate_bypass;
 #ifndef HAVE_DYNAMIC
       bool always_reload_core_on_run_content;

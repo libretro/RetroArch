@@ -39864,3 +39864,37 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_FIRMWARE_NOTIFICATION_ENABLE,
+   "Missing Firmware Notifications"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_FIRMWARE_NOTIFICATION_ENABLE,
+   "Show a dialog when launching a core with missing required firmware. Offer to download firmware when its core info file provides a URL."
+   )
+MSG_HASH(
+   MSG_CORE_FIRMWARE_MISSING,
+   "Required firmware is missing:"
+   )
+MSG_HASH(
+   MSG_CORE_FIRMWARE_DOWNLOAD_PROMPT,
+   "Selecting OK will download and install the firmware indicated with \"This is firmware is available for download.\".\nAny other missing firmware must be provided as per your local laws.\n\nSelect Cancel to continue without downloading.\n\nNote: These notifications can be disabled in RetroArch settings."
+   )
+MSG_HASH(
+   MSG_CORE_FIRMWARE_CONTINUE_PROMPT,
+   "Select OK to launch without this firmware, or Cancel to abort core launch.\n\nSelect Cancel to continue without downloading.\n\nNote: These notifications can be disabled in RetroArch settings."
+   )
+MSG_HASH(
+   MSG_CORE_FIRMWARE_DOWNLOAD_FAILED,
+   "Required firmware could not be installed."
+   )
+
+MSG_HASH(
+   MSG_CORE_FIRMWARE_DOWNLOAD_AVAILABLE,
+   "This firmware is available for download."
+   )
+MSG_HASH(
+   MSG_CORE_FIRMWARE_SUPPLY_MANUALLY,
+   "This firmware must be supplied manually."
+   )
