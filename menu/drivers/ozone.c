@@ -7897,13 +7897,16 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    unsigned i                 = 0;
    unsigned line_count        = 0;
    unsigned y_position        = 0;
-   unsigned margin            = 0;
    unsigned width             = video_width;
    unsigned height            = video_height;
    font_data_impl_t font_data = ozone->fonts.entries_label;
    struct menu_state *menu_st = menu_state_get_ptr();
-   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape             = video_width >= video_height;
+   menu_dialog_buttons_t buttons;
+   int button_w[MENU_DIALOG_BUTTONS_MAX];
+   int button_x[MENU_DIALOG_BUTTONS_MAX];
+   int label_w[MENU_DIALOG_BUTTONS_MAX];
+   int row_y                  = 0;
    gfx_display_ctx_driver_t
          *dispctx             = p_disp->dispctx;
    char *lines[256];
@@ -7912,6 +7915,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    size_t remaining;
 
    wrapped_message[0]         = '\0';
+   menu_dialog_get_buttons(menu_st, &buttons);
 
    /* Sanity check */
    if ((!message || !*message) || !font_data.font)
@@ -7973,9 +7977,34 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       }
    }
 
-   /* Narrow font can make the box too narrow for Back & OK */
-   if (confirm_dialog && longest_width < (int)video_width / 4)
-      longest_width = video_width / 4;
+   if (buttons.count)
+   {
+      float icon_size    = 50 * scale_factor;
+      float icon_padding = 10 * scale_factor;
+      int row_need;
+      unsigned b;
+      for (b = 0; b < buttons.count; b++)
+      {
+         const char *str = msg_hash_to_str(
+               (enum msg_hash_enums)buttons.label[b]);
+         label_w[b]      = font_driver_get_message_width(
+               ozone->fonts.footer.font, str, strlen(str), 1.0f);
+         /* Every button keeps room for an icon */
+         button_w[b]     = label_w[b] + (int)(icon_padding * 4)
+            + (int)icon_size;
+      }
+      row_need = menu_dialog_buttons_layout(button_w, buttons.count,
+            (int)(icon_padding * 4), 0, 0, NULL);
+      /* Narrow font can make the box too narrow for Back & OK */
+      if (longest_width < (int)video_width / 4)
+         longest_width = video_width / 4;
+      if (longest_width < row_need)
+         longest_width = row_need;
+      /* A row wider than the screen packs from the left instead of
+       * pushing the text off it */
+      if (longest_width > (int)video_width - (int)(100 * scale_factor))
+         longest_width = (int)video_width - (int)(100 * scale_factor);
+   }
 
    gfx_display_set_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
 
@@ -7998,13 +8027,14 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                   ? (16.0f * scale_factor)
                   : (16.0f * ((float)slice_new_h / (float)slice_size)));
 
-      /* Extra room for confirm buttons */
-      if (confirm_dialog)
+      /* The 70 high row sits half a margin above the box's bottom
+       * edge, which the slice draws 16 above slice_y + slice_new_h */
+      if (buttons.count)
+      {
          slice_new_h       += (line_height + font_data.line_ascender) * 2;
-
-      width                 = slice_new_w;
-      height                = slice_new_h;
-      margin                = slice_margin;
+         row_y              = slice_y + (int)slice_new_h
+               - (int)((70 + 16) * scale_factor) - (int)(slice_margin / 2);
+      }
 
       gfx_display_blend_begin(dispctx, userdata);
 
@@ -8028,6 +8058,9 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       gfx_display_blend_end(dispctx, userdata);
    }
 
+   if (buttons.count && !row_y)
+      row_y = (int)(y + (line_count + 1) * line_height);
+
    for (i = 0; i < line_count; i++)
    {
       const char *msg = lines[i];
@@ -8047,139 +8080,109 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                false);
    }
 
-   if (confirm_dialog)
+   if (buttons.count)
    {
-      bool input_menu_swap_ok_cancel_buttons = video_info->input_menu_swap_ok_cancel_buttons;
-      float *col                             = ozone->theme_dynamic.entries_icon;
-      float scale_factor                     = ozone->last_scale_factor;
-      float icon_size                        = 50 * scale_factor;
-      float icon_padding                     = 10 * scale_factor;
-      float icon_x                           = x - (width / 2) + icon_size + (icon_padding * 3);
-      float icon_y                           = video_height - y + (height / 2) - icon_size - (icon_padding * 2);
-      float label_y                          = icon_y + (icon_size / 2.0f) + ozone->fonts.footer.line_centre_offset;
-      int cursor_x                           = icon_x - icon_padding;
-      int cursor_y                           = icon_y - icon_padding;
-      int cursor_w                           = icon_size + (icon_padding * 4) + ozone->footer_labels.cancel.width;
-      int cursor_h                           = icon_size + (icon_padding * 2);
+      bool swap          = video_info->input_menu_swap_ok_cancel_buttons;
+      float *col         = ozone->theme_dynamic.entries_icon;
+      float scale_factor = ozone->last_scale_factor;
+      float icon_size    = 50 * scale_factor;
+      float icon_padding = 10 * scale_factor;
+      int cursor_h       = (int)(icon_size + icon_padding * 2);
+      float label_y      = row_y + icon_padding + (icon_size / 2.0f)
+            + ozone->fonts.footer.line_centre_offset;
+      int hover          = -1;
+      unsigned b;
+
+      menu_dialog_buttons_layout(button_w, buttons.count,
+            (int)(icon_padding * 4), (int)x - longest_width / 2,
+            longest_width, button_x);
 
       gfx_display_set_alpha(col, 0.25f);
 
-      /* Back */
-      if (     VIDEO_POS_X(ozone->pointer.pos) >= cursor_x
-            && VIDEO_POS_X(ozone->pointer.pos) <= cursor_x + cursor_w
-            && VIDEO_POS_Y(ozone->pointer.pos) >= cursor_y
-            && VIDEO_POS_Y(ozone->pointer.pos) <= cursor_y + cursor_h)
+      for (b = 0; b < buttons.count; b++)
       {
-         menu_st->dialog_st.confirm_hover_back = true;
+         const char *str = msg_hash_to_str(
+               (enum msg_hash_enums)buttons.label[b]);
+         float label_x   = button_x[b] + icon_padding * 2;
+         float icon_x    = button_x[b] + icon_padding;
 
-         ozone_draw_cursor(
-               ozone,
-               p_disp,
-               userdata,
+         /* Icon and label centred on what shows: the icon's ink is
+          * 7/46 of its width in from each edge, and the cursor reaches
+          * one scaled pixel further out on the left than the right */
+         if (!buttons.classic)
+         {
+            float inset  = icon_size * 7.0f / 46.0f;
+            icon_x       = button_x[b] + (button_w[b] - label_w[b]
+                  - icon_size - icon_padding - inset - scale_factor) / 2.0f;
+            label_x      = icon_x + icon_padding;
+         }
+
+         if (     VIDEO_POS_X(ozone->pointer.pos) >= button_x[b]
+               && VIDEO_POS_X(ozone->pointer.pos) <= button_x[b] + button_w[b]
+               && VIDEO_POS_Y(ozone->pointer.pos) >= row_y
+               && VIDEO_POS_Y(ozone->pointer.pos) <= row_y + cursor_h)
+            hover = (int)b;
+
+         /* The highlighted button, and the one under the pointer */
+         if ((int)b == buttons.highlight || (int)b == hover)
+            ozone_draw_cursor(
+                  ozone,
+                  p_disp,
+                  userdata,
+                  video_dims,
+                  button_x[b],
+                  button_w[b],
+                  cursor_h,
+                  row_y,
+                  ((int)b == buttons.highlight || buttons.highlight < 0)
+                        ? ozone->animations.cursor_alpha
+                        : ozone->animations.cursor_alpha * 0.5f,
+                  mymat);
+
+         gfx_display_blend_begin(dispctx, userdata);
+
+         if (buttons.icon[b])
+         {
+            bool ok = (buttons.icon[b] != MENU_DIALOG_ICON_CANCEL);
+            /* Dimmed as the cursor of a button not highlighted */
+            if (buttons.icon[b] == MENU_DIALOG_ICON_OK_DIM)
+               gfx_display_set_alpha(col, 0.125f);
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_dims,
+                  icon_size,
+                  icon_size,
+                  (ok != swap)
+                        ? GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R])
+                        : GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D]),
+                  icon_x,
+                  row_y + icon_padding,
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
+            gfx_display_set_alpha(col, 0.25f);
+         }
+         label_x += icon_size;
+
+         gfx_display_draw_text(
+               ozone->fonts.footer.font,
+               str,
+               label_x,
+               label_y,
                video_dims,
-               cursor_x,
-               cursor_w,
-               cursor_h,
-               cursor_y,
-               ozone->animations.cursor_alpha,
-               mymat);
+               ozone->theme->text_rgba,
+               TEXT_ALIGN_LEFT,
+               1.0f,
+               false,
+               1.0f,
+               false);
+
+         gfx_display_blend_end(dispctx, userdata);
       }
-      else
-         menu_st->dialog_st.confirm_hover_back = false;
 
-      gfx_display_blend_begin(dispctx, userdata);
-
-      ozone_draw_icon(
-            p_disp,
-            userdata,
-            video_dims,
-            icon_size,
-            icon_size,
-            input_menu_swap_ok_cancel_buttons
-                  ? GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R])
-                  : GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D]),
-            icon_x,
-            icon_y,
-            0.0f,
-            1.0f,
-            col,
-            mymat);
-
-      gfx_display_draw_text(
-            ozone->fonts.footer.font,
-            ozone->footer_labels.cancel.str,
-            icon_x + icon_size + icon_padding,
-            label_y,
-            video_dims,
-            ozone->theme->text_rgba,
-            TEXT_ALIGN_LEFT,
-            1.0f,
-            false,
-            1.0f,
-            false);
-
-      gfx_display_blend_end(dispctx, userdata);
-
-      /* OK */
-      icon_x  += width - (icon_size * 2) - (icon_padding * 8) - margin - ozone->footer_labels.ok.width;
-
-      cursor_x = icon_x - icon_padding;
-      cursor_w = icon_size + (icon_padding * 4) + ozone->footer_labels.ok.width;
-
-      if (     VIDEO_POS_X(ozone->pointer.pos) >= cursor_x
-            && VIDEO_POS_X(ozone->pointer.pos) <= cursor_x + cursor_w
-            && VIDEO_POS_Y(ozone->pointer.pos) >= cursor_y
-            && VIDEO_POS_Y(ozone->pointer.pos) <= cursor_y + cursor_h)
-      {
-         menu_st->dialog_st.confirm_hover_ok = true;
-
-         ozone_draw_cursor(
-               ozone,
-               p_disp,
-               userdata,
-               video_dims,
-               cursor_x,
-               cursor_w,
-               cursor_h,
-               cursor_y,
-               ozone->animations.cursor_alpha,
-               mymat);
-      }
-      else
-         menu_st->dialog_st.confirm_hover_ok = false;
-
-      gfx_display_blend_begin(dispctx, userdata);
-
-      ozone_draw_icon(
-            p_disp,
-            userdata,
-            video_dims,
-            icon_size,
-            icon_size,
-            input_menu_swap_ok_cancel_buttons
-                  ? GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D])
-                  : GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R]),
-            icon_x,
-            icon_y,
-            0.0f,
-            1.0f,
-            col,
-            mymat);
-
-      gfx_display_draw_text(
-            ozone->fonts.footer.font,
-            ozone->footer_labels.ok.str,
-            icon_x + icon_size + icon_padding,
-            label_y,
-            video_dims,
-            ozone->theme->text_rgba,
-            TEXT_ALIGN_LEFT,
-            1.0f,
-            false,
-            1.0f,
-            false);
-
-      gfx_display_blend_end(dispctx, userdata);
+      menu_dialog_set_hover(menu_st, hover);
    }
 }
 
