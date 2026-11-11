@@ -266,7 +266,8 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                   return;
                }
                state->output_file = filestream_open(state->output_temp_path,
-                     RETRO_VFS_FILE_ACCESS_WRITE, 0);
+                     RETRO_VFS_FILE_ACCESS_WRITE,
+                     RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
                state->output_pending = state->output_file != NULL;
                if (!state->output_file)
                {
@@ -460,7 +461,8 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                   return;
                }
                state->output_file = filestream_open(state->output_temp_path,
-                     RETRO_VFS_FILE_ACCESS_WRITE, 0);
+                     RETRO_VFS_FILE_ACCESS_WRITE,
+                     RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
                state->output_pending = state->output_file != NULL;
                if (!state->output_file)
                {
