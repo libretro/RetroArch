@@ -725,6 +725,14 @@ void *task_push_http_download_file(const char *url, const char *path,
       bool mute, const char *title,
       retro_task_callback_t cb, void *user_data)
 {
+   return task_push_http_download_file_with_headers(url, path, mute,
+         title, NULL, cb, user_data);
+}
+
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
    retro_task_t  *t;
    http_handle_t *http;
 
@@ -732,7 +740,7 @@ void *task_push_http_download_file(const char *url, const char *path,
       return NULL;
 
    if (!(t = (retro_task_t*)task_push_http_transfer_generic(url, "GET",
-               NULL, 0, NULL, NULL, mute, title, cb, user_data)))
+               NULL, 0, NULL, headers, mute, title, cb, user_data)))
       return NULL;
 
    /* Safe to reach into the handle here: the fetch cannot have

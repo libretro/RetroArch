@@ -275,6 +275,37 @@ static bool task_http_resume(http_handle_t *http, uint8_t flg)
    return true;
 }
 
+/* What a download to a file keeps of an error response for its
+ * callback: the start of the body, enough for a server's error message,
+ * read back from the file before it is removed.  Only on that error
+ * path; a successful download hands its callback no body at all. */
+#define TASK_HTTP_ERROR_BODY_MAX 4096
+
+static char *task_http_error_body(const char *path, size_t *len)
+{
+   char   *body = NULL;
+   int64_t n    = 0;
+   RFILE  *f    = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!f)
+      return NULL;
+   if ((body = (char*)malloc(TASK_HTTP_ERROR_BODY_MAX + 1)))
+   {
+      if ((n = filestream_read(f, body, TASK_HTTP_ERROR_BODY_MAX)) > 0)
+      {
+         body[n] = '\0';
+         *len    = (size_t)n;
+      }
+      else
+      {
+         free(body);
+         body = NULL;
+      }
+   }
+   filestream_close(f);
+   return body;
+}
+
 /* Close the output file, removing it unless the transfer succeeded.
  * A partial file left behind would otherwise be indistinguishable
  * from a good one on the next run. */
@@ -408,6 +439,8 @@ static void task_http_transfer_handler(retro_task_t *task)
 {
    http_transfer_data_t *data = NULL;
    http_handle_t        *http = (http_handle_t*)task->state;
+   char *error_body           = NULL;
+   size_t error_body_len      = 0;
    uint8_t flg                = task_get_flags(task);
 
    if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
@@ -450,6 +483,17 @@ task_finished:
              && !http->sink_failed
              && !net_http_error(http->handle)
              && ((flg & RETRO_TASK_FLG_CANCELLED) == 0);
+      /* An HTTP error response: its start, for the callback to log */
+      if (     !ok && http->handle && http->sink_file
+            && !http->sink_failed
+            && ((flg & RETRO_TASK_FLG_CANCELLED) == 0)
+            && net_http_status(http->handle) >= 300)
+      {
+         filestream_close(http->sink_file);
+         http->sink_file = NULL;
+         error_body      = task_http_error_body(http->sink_path,
+               &error_body_len);
+      }
       task_http_sink_close(http, ok);
       if (!ok && !task_get_error(task))
          task_set_error(task, task_http_failure_string(http->handle));
@@ -462,6 +506,12 @@ task_finished:
 
       if (!tmp)
          tmp = (char*)net_http_data(http->handle, &_len, true);
+      if (!tmp && error_body)
+      {
+         tmp        = error_body;
+         _len       = error_body_len;
+         error_body = NULL;
+      }
 
       if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       {
@@ -520,6 +570,7 @@ task_finished:
    else if (http->error)
       task_set_error(task, strldup("Internal error.",
                sizeof("Internal error.")));
+   free(error_body);
 
    /* Deliberately NOT freeing `http` here.
     *
@@ -1050,9 +1101,21 @@ void *task_push_http_download_file(const char *url, const char *path,
       bool mute, const char *title,
       retro_task_callback_t cb, void *user_data)
 {
+   return task_push_http_download_file_with_headers(url, path, mute,
+         title, NULL, cb, user_data);
+}
+
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
    if (!url || !*url || !path || !*path)
       return NULL;
-   return task_push_http_transfer_generic_titled(
-         net_http_connection_new(url, "GET", NULL),
+   if (!(conn = net_http_connection_new(url, "GET", NULL)))
+      return NULL;
+   if (headers)
+      net_http_connection_set_headers(conn, headers);
+   return task_push_http_transfer_generic_titled(conn,
          url, mute, false, title, path, cb, user_data);
 }

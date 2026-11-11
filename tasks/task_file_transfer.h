@@ -127,6 +127,14 @@ void *task_push_http_download_file(const char *url, const char *path,
       bool mute, const char *title,
       retro_task_callback_t cb, void *user_data);
 
+/* The same with extra request @headers ("Name: value\r\n" lines), for a
+ * server that wants authorization.  An HTTP error response hands its
+ * callback the start of its body (up to 4 KB) in data->data, so the
+ * server's message can be logged; a successful one hands none. */
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data);
+
 void* task_push_http_transfer_file(const char* url, bool mute, const char* type,
       retro_task_callback_t cb, file_transfer_t* transfer_data);
 
