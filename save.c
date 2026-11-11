@@ -135,7 +135,7 @@ static void autosave_thread(void *data)
                   RETRO_VFS_FILE_ACCESS_WRITE);
          else
             file = intfstream_open_file(save->path,
-                  RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+                  RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
 
          if (file)
          {

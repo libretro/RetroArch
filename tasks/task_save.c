@@ -958,7 +958,7 @@ static void task_save_handler(retro_task_t *task)
       else
          state->file   = intfstream_open_file(
                tmp_path, RETRO_VFS_FILE_ACCESS_WRITE,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE);
+               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
 
       if (!state->file)
       {
@@ -2065,7 +2065,7 @@ bool content_auto_save_state(const char *path)
    else
 #endif
       file = intfstream_open_file(tmp_path, RETRO_VFS_FILE_ACCESS_WRITE,
-                                  RETRO_VFS_FILE_ACCESS_HINT_NONE);
+                                  RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
 
    if (!file)
    {
