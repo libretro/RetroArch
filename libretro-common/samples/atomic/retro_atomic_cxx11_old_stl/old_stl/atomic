@@ -32,6 +32,10 @@ namespace std
       _Tp  exchange(_Tp __i, memory_order __m = memory_order_seq_cst);
       bool compare_exchange_strong(_Tp& __e, _Tp __i,
             memory_order __s, memory_order __f);
+      _Tp  fetch_add(_Tp __i, memory_order __m = memory_order_seq_cst);
+      _Tp  fetch_sub(_Tp __i, memory_order __m = memory_order_seq_cst);
+      _Tp  fetch_or(_Tp __i, memory_order __m = memory_order_seq_cst);
+      _Tp  fetch_and(_Tp __i, memory_order __m = memory_order_seq_cst);
    };
 
    template<typename _ITp>

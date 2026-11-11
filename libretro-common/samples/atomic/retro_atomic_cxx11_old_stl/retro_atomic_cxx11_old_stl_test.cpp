@@ -89,7 +89,7 @@ int main(void)
    want("int init from member enumerator",
          retro_atomic_load_relaxed_int(&b.flags), baton::IDLE);
    want("size init from enumerator",
-         (long)retro_atomic_load_acquire_size(&b.count), baton::BUSY);
+         static_cast<long>(retro_atomic_load_acquire_size(&b.count)), baton::BUSY);
 
    retro_atomic_store_release_int(&b.state, BATON_HELD);
    want("store_release from enumerator",
@@ -104,23 +104,23 @@ int main(void)
    want("fetch_add of unsigned",
          retro_atomic_fetch_add_int(&b.flags, u), baton::IDLE);
    want("fetch_add_seq_cst of enumerator",
-         retro_atomic_fetch_add_seq_cst_int(&b.flags, BATON_HELD), (long)u);
+         retro_atomic_fetch_add_seq_cst_int(&b.flags, BATON_HELD), static_cast<long>(u));
    want("fetch_sub of enumerator",
-         retro_atomic_fetch_sub_int(&b.flags, BATON_HELD), (long)u + 1);
+         retro_atomic_fetch_sub_int(&b.flags, BATON_HELD), static_cast<long>(u) + 1);
    want("fetch_or of unsigned",
-         retro_atomic_fetch_or_int(&b.flags, 1u), (long)u);
+         retro_atomic_fetch_or_int(&b.flags, 1u), static_cast<long>(u));
    want("fetch_and of unsigned",
-         retro_atomic_fetch_and_int(&b.flags, ~u), (long)u + 1);
+         retro_atomic_fetch_and_int(&b.flags, ~u), static_cast<long>(u) + 1);
    want("flags after or and and",
          retro_atomic_load_acquire_int(&b.flags), 1);
 
    retro_atomic_store_release_size(&b.count, baton::IDLE);
    want("size store_release from enumerator",
-         (long)retro_atomic_load_relaxed_size(&b.count), baton::IDLE);
+         static_cast<long>(retro_atomic_load_relaxed_size(&b.count)), baton::IDLE);
    want("size fetch_add of enumerator",
-         (long)retro_atomic_fetch_add_size(&b.count, BATON_FRAME), baton::IDLE);
+         static_cast<long>(retro_atomic_fetch_add_size(&b.count, BATON_FRAME)), baton::IDLE);
    want("size fetch_sub of enumerator",
-         (long)retro_atomic_fetch_sub_size(&b.count, BATON_HELD), BATON_FRAME);
+         static_cast<long>(retro_atomic_fetch_sub_size(&b.count, BATON_HELD)), BATON_FRAME);
 
    want("exchange from enumerator",
          retro_atomic_exchange_int(&b.state, BATON_NONE), baton::BUSY);
@@ -132,13 +132,19 @@ int main(void)
    retro_atomic_store_release_ptr(&b.work, &work);
    want("ptr round trip",
          retro_atomic_load_acquire_ptr(&b.work) == &work, 1);
+   want("cas of ptr",
+         retro_atomic_cas_ptr(&b.work, &work, NULL), 1);
 
 #ifdef RETRO_ATOMIC_HAS_64
    retro_atomic_store_release_64(&b.stamp, BATON_FRAME);
    want("64 store from enumerator",
-         (long)retro_atomic_load_acquire_64(&b.stamp), BATON_FRAME);
+         static_cast<long>(retro_atomic_load_acquire_64(&b.stamp)), BATON_FRAME);
    want("64 exchange from enumerator",
-         (long)retro_atomic_exchange_64(&b.stamp, BATON_NONE), BATON_FRAME);
+         static_cast<long>(retro_atomic_exchange_64(&b.stamp, BATON_NONE)), BATON_FRAME);
+   want("64 fetch_add of enumerator",
+         static_cast<long>(retro_atomic_fetch_add_64(&b.stamp, BATON_HELD)), BATON_NONE);
+   want("64 cas from enumerators",
+         retro_atomic_cas_64(&b.stamp, BATON_HELD, BATON_FRAME), 1);
 #endif
 
    printf("%s: %s\n", RETRO_ATOMIC_BACKEND_NAME, fails ? "FAIL" : "all ok");
