@@ -199,6 +199,10 @@ jobs:
             # step below runs it again over FFmpeg's and the conformance
             # streams.
             rmpeg2_test
+            # MPEG-4 Part 2 video through rmpeg4_video, on its own
+            # fixtures, whole, a unit at a time and damaged; a step below
+            # runs it over FFmpeg's and Xvid's streams.
+            rmpeg4_test
             # 4:2:0 to bytes in memory order and to UYVY.
             image_yuv_test
             rh264_lossless_test
@@ -824,6 +828,48 @@ jobs:
         with:
           path: ~/mpeg2-conformance
           key: mpeg2-conformance-main-8-1
+
+      # MPEG-4 Part 2 video against FFmpeg's decode, within 3 per sample:
+      # streams FFmpeg's mpeg4 encoder writes (B-VOPs, quarter sample, four
+      # vectors, MPEG quantisation, interlaced field DCT and motion with
+      # alternate scan, AC prediction, resync markers, data partitioning, a
+      # size not a multiple of 16), Xvid's
+      # (GMC S-VOPs), and H.263 for the short video header, with and
+      # without GOB headers. FFmpeg decodes with one thread: its frame
+      # threads do not share the field vectors interlaced direct mode reads.
+      - name: Decode MPEG-4 video against FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/mpeg4
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          i=0
+          while IFS='|' read -r size fmt opts; do
+            i=$((i+1))
+            ffmpeg -nostdin -hide_banner -loglevel error \
+              -f lavfi -i "testsrc2=size=$size:rate=25,format=yuv420p" -frames:v 24 \
+              $opts -f "$fmt" -y "$work/s$i.bin"
+            ffmpeg -nostdin -hide_banner -loglevel error -threads 1 -flags +bitexact -idct simple \
+              -f "$fmt" -i "$work/s$i.bin" -fps_mode passthrough -pix_fmt yuv420p -f rawvideo -y "$work/s$i.yuv"
+            ./rmpeg4_test "$work/s$i.bin" "$work/s$i.yuv"
+          done <<'LIST'
+          352x288|m4v|-c:v mpeg4 -g 12 -bf 2 -q:v 4
+          352x288|m4v|-c:v mpeg4 -g 12 -bf 2 -q:v 4 -flags +qpel+mv4
+          352x288|m4v|-c:v mpeg4 -g 12 -bf 2 -q:v 4 -mpeg_quant 1
+          352x288|m4v|-c:v mpeg4 -g 12 -bf 2 -q:v 4 -flags +ildct+ilme
+          352x288|m4v|-c:v mpeg4 -g 12 -bf 2 -q:v 3 -mpeg_quant 1 -flags +ildct+ilme+qpel -alternate_scan 1
+          352x288|m4v|-c:v mpeg4 -g 12 -bf 2 -q:v 8 -flags +aic
+          352x288|m4v|-c:v mpeg4 -g 12 -bf 2 -q:v 4 -ps 400
+          352x288|m4v|-c:v mpeg4 -g 12 -bf 0 -q:v 6 -ps 300 -data_partitioning 1 -flags +mv4+aic
+          350x286|m4v|-c:v mpeg4 -g 12 -bf 2 -q:v 4 -flags +mv4+qpel
+          352x288|m4v|-c:v libxvid -g 8 -bf 0 -q:v 4 -gmc 1 -flags +qpel+mv4
+          352x288|m4v|-c:v libxvid -g 8 -bf 0 -q:v 4 -flags +ildct
+          176x144|h263|-c:v h263 -g 12 -q:v 5
+          352x288|h263|-c:v h263 -g 12 -q:v 5 -ps 300
+          LIST
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
