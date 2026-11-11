@@ -195,6 +195,12 @@ jobs:
             # rvorbis' codebook size bound, and a real stream past it.
             rvorbis_codebook_test
             rjpeg_test
+            # MPEG-2 video through rmpeg1_video, on its own fixtures; the
+            # step below runs it again over FFmpeg's and the conformance
+            # streams.
+            rmpeg2_test
+            # 4:2:0 to bytes in memory order and to UYVY.
+            image_yuv_test
             rh264_lossless_test
             rh264_lossless_test_nothreads
             rh264_lossless_test_volatile
