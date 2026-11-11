@@ -666,7 +666,7 @@ static void *task_push_http_transfer_generic_titled(
          goto error;
       if (!(http->sink_file = filestream_open(sink_path,
                   RETRO_VFS_FILE_ACCESS_WRITE,
-                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+                  RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
          goto error;
       net_http_connection_set_sink(conn, task_http_file_sink, http);
    }
