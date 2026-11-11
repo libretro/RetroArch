@@ -26,7 +26,8 @@
  *          VOL headers as the decoder configuration) and 16-bit PCM
  *   mjpeg  motion JPEG from rjpeg_encode and big-endian float PCM
  *   avc    H.264 and AAC sample entries (avcC, an AudioSpecificConfig)
- *          around placeholder samples, for the structure alone
+ *          around placeholder samples, for the structure alone; the
+ *          AAC's priming skipped by an edit list when asked
  *
  * Each must open in rmp4 with its tracks, sizes, rates, decoder
  * configurations and esds object types (MPEG-4 Visual and JPEG behind
@@ -215,6 +216,8 @@ static void read_back(const membuf_t *b, track_samples_t *tracks, unsigned count
       CHECK(tracks[i].seen == tracks[i].n);
    rmp4_close(mp4);
 }
+
+static int64_t llabs_ns(int64_t v) { return v < 0 ? -v : v; }
 
 static rmp4_mux_t *open_mux(membuf_t *b, const rmp4_mux_track_t *t, unsigned n)
 {
@@ -552,6 +555,38 @@ static void test_avc_aac(const char *dir)
    }
    CHECK(first[0] == 0 && first[1] == 0);
    free(b.p);
+
+   /* AAC's priming packet, skipped by the edit list; none without */
+   t[1].skip = 1024;
+   memset(&b, 0, sizeof(b));
+   m = open_mux(&b, t, 2);
+   CHECK(m != NULL);
+   if (m)
+   {
+      for (i = 0; i < 8; i++)
+      {
+         CHECK(rmp4_mux_write(m, 0, s[0].s[i].data, s[0].s[i].len, s[0].s[i].pts, s[0].s[i].dts, s[0].s[i].sync));
+         CHECK(rmp4_mux_write(m, 1, s[1].s[i].data, s[1].s[i].len, s[1].s[i].pts, s[1].s[i].dts, true));
+      }
+      CHECK(rmp4_mux_close(m));
+      {
+         rmp4_t *r = rmp4_open_memory(b.p, b.size);
+         CHECK(r != NULL);
+         if (r)
+         {
+            const rmp4_track *tv = rmp4_get_track(r, 0), *ta = rmp4_get_track(r, 1);
+            CHECK(ta && ta->media_skip == 1024);
+            CHECK(tv && tv->media_skip == 0);
+            /* the shown length is the samples' less the priming (in the
+             * movie's milliseconds) */
+            CHECK(ta && llabs_ns(ta->presentation_duration_ns
+                  - (int64_t)(8 * 1024 - 1024) * 1000000000 / 44100) <= 1000000);
+            rmp4_close(r);
+         }
+      }
+   }
+   free(b.p);
+   t[1].skip = 0;
 
    /* a write that fails fails the file */
    memset(&b, 0, sizeof(b));

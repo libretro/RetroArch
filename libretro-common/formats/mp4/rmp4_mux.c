@@ -254,7 +254,7 @@ static void summarise(mux_track_t *t)
       t->duration  = t->samples;
       t->pres_end  = t->samples;
       t->stss_n    = 0;
-      t->media_start = 0;
+      t->media_start = t->info.skip < t->pres_end ? t->info.skip : 0;
       return;
    }
 
@@ -290,6 +290,9 @@ static void summarise(mux_track_t *t)
    t->pres_end    = t->n ? (uint64_t)max_pts + last_dur : 0;
    if (t->pres_end < t->duration)
       t->pres_end = t->duration;
+   /* the priming, past the first sample shown, if the track has more */
+   if ((uint64_t)t->media_start + t->info.skip < t->pres_end)
+      t->media_start += t->info.skip;
 }
 
 /* What the track shows, in the movie's timescale: from the first frame
