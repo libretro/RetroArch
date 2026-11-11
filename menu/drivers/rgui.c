@@ -5292,6 +5292,8 @@ static void rgui_render_messagebox(
    unsigned button_rows       = 0;
    int row_step               = 0;
    int rows_y                 = 0;
+   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
+   unsigned firmware_line_state = 0;
 
    wrapped_message[0]         = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
@@ -5440,6 +5442,8 @@ static void rgui_render_messagebox(
       for (i = 0; i < line_count; i++)
       {
          const char *msg = lines[i];
+         const char *path = menu_dialog_firmware_path_line(menu_st,
+               msg, &firmware_line_state);
          int offset_x    = (int)(rgui->font_width_stride * (glyphs_width - glyphs[i]) / 2);
          int offset_y    = (int)(rgui->font_height_stride * i);
          int text_x      = x + 8 + offset_x;
@@ -5455,6 +5459,13 @@ static void rgui_render_messagebox(
 
          rgui_blit_line(rgui, fb_width, text_x, text_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
+
+         if (path)
+            rgui_color_rect(frame_buf_data, fb_dims,
+                  text_x + (path - msg) * rgui->font_width_stride,
+                  text_y + VIDEO_SCALE_H(rgui->font_dims),
+                  utf8len(path) * rgui->font_width_stride - 1, 1,
+                  rgui->colors.normal_color);
       }
 
       if (buttons.count)

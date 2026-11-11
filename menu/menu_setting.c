@@ -15905,9 +15905,9 @@ static void settings_build_core(
 
          unsigned i, listing = 0;
 #ifndef HAVE_DYNAMIC
-         struct bool_entry bool_entries[11];
+         struct bool_entry bool_entries[12];
 #else
-         struct bool_entry bool_entries[10];
+         struct bool_entry bool_entries[11];
 #endif
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -15998,6 +15998,12 @@ static void settings_build_core(
             bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
          listing++;
 #endif
+         bool_entries[listing].target         = &settings->bools.core_firmware_notification_enable;
+         bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_FIRMWARE_NOTIFICATION_ENABLE;
+         bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_FIRMWARE_NOTIFICATION_ENABLE;
+         bool_entries[listing].flags          = SD_FLAG_DEFAULT_VALUE;
+         listing++;
+
          /* Iterate the filled count, not the array capacity:
           * the capacities above are upper bounds and iterating
           * ARRAY_SIZE registered one setting from uninitialized

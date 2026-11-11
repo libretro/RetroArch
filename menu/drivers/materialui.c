@@ -2867,6 +2867,7 @@ static void materialui_render_messagebox(
    int *lengths               = lengths_buf;
    bool keep_wrap             = false;
    struct menu_state *menu_st = menu_state_get_ptr();
+   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape             = video_width >= video_height;
    menu_dialog_buttons_t buttons;
    int button_w[MENU_DIALOG_BUTTONS_MAX];
@@ -2877,6 +2878,7 @@ static void materialui_render_messagebox(
    int stack_h                = 0;
    bool text_only             = false;
    bool stacked               = false;
+   unsigned firmware_line_state = 0;
 
    wrapped_buf[0] = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
@@ -3159,6 +3161,10 @@ static void materialui_render_messagebox(
       }
    }
 
+   if (confirm_dialog)
+      slice_h             += 70 * mui->last_scale_factor + mui->margin * 2.0
+            - (mui->font_data.list.line_height - mui->font_data.list.line_ascender);
+
    if (draw_focus)
    {
       mui->osk_textbox_pos  = VIDEO_POS_PACK(slice_x, slice_y);
@@ -3225,6 +3231,13 @@ static void materialui_render_messagebox(
                   + mui->font_data.list.line_ascender,
                video_dims, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
+
+      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+            lines[i], mui->font_data.list.font, p_disp, userdata, video_dims,
+            x - longest_width / 2.0f,
+            y + (i * mui->font_data.list.line_height)
+               + mui->font_data.list.line_ascender,
+            mui->colors.list_text);
    }
 
    if (draw_caret && (cursor_line < (unsigned)line_count))

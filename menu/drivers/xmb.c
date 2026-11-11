@@ -1377,6 +1377,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    unsigned cursor_line                = 0;
    int cursor_x                        = 0;
    struct menu_state *menu_st          = menu_state_get_ptr();
+   bool confirm_dialog                 = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape                      = video_width >= video_height;
    menu_dialog_buttons_t buttons;
    int button_w[MENU_DIALOG_BUTTONS_MAX];
@@ -1389,6 +1390,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    bool text_only                      = false;
    bool stacked                        = false;
    bool input_dialog_display_kb        = false;
+   unsigned firmware_line_state        = 0;
    size_t wrapped_len                  = 0;
    size_t msg_len                      = strlen(message);
    char wrapped_buf[MENU_LABEL_MAX_LENGTH];
@@ -1695,6 +1697,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       }
    }
 
+   if (confirm_dialog)
+      slice_h             += 70 * xmb->last_scale_factor
+            + xmb->margins_slice + xmb->margins_dialog
+            - 0.15f * line_height;
+
    if (input_dialog_display_kb)
    {
       xmb->osk_textbox_x = slice_x;
@@ -1792,6 +1799,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                y + ((i + 0.85) * line_height),
                video_dims, 0x444444ff,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
+
+      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+            msg, xmb->font, p_disp, userdata, video_dims,
+            x - (longest_width / 2.0), y + ((i + 0.85) * line_height),
+            0x444444ff);
    }
 
    if (draw_caret && (cursor_line < line_count))

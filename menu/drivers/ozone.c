@@ -7918,13 +7918,16 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    int usable_width           = 0;
    float scale_factor         = 0.0f;
    float line_height          = 0;
+   float button_spacing       = 0;
    unsigned i                 = 0;
    unsigned line_count        = 0;
    unsigned y_position        = 0;
+   unsigned margin            = 0;
    unsigned width             = video_width;
    unsigned height            = video_height;
    font_data_impl_t font_data = ozone->fonts.entries_label;
    struct menu_state *menu_st = menu_state_get_ptr();
+   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape             = video_width >= video_height;
    menu_dialog_buttons_t buttons;
    int button_w[MENU_DIALOG_BUTTONS_MAX];
@@ -7934,6 +7937,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    int stack_h                = 0;
    bool text_only             = false;
    bool stacked               = false;
+   unsigned firmware_line_state = 0;
    gfx_display_ctx_driver_t
          *dispctx             = p_disp->dispctx;
    char *lines_buf[256];
@@ -8187,6 +8191,16 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
          }
       }
 
+      if (confirm_dialog)
+      {
+         button_spacing    = slice_y + slice_new_h
+               - (y + line_count * line_height)
+               - (line_height - font_data.line_ascender);
+         slice_new_h       += 70 * scale_factor + button_spacing;
+      }
+      width                 = slice_new_w;
+      margin                = slice_margin;
+
       gfx_display_blend_begin(dispctx, userdata);
 
       gfx_display_draw_texture_slice(
@@ -8229,6 +8243,13 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                false,
                1.0f,
                false);
+
+      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+            msg, font_data.font, p_disp, userdata, video_dims,
+            x - (longest_width / 2),
+            y + (i * line_height) + font_data.line_ascender,
+            COLOR_TEXT_ALPHA(ozone->theme->text_rgba,
+               (uint32_t)(ozone->animations.messagebox_alpha * 255.0f)));
    }
 
    if (buttons.count)

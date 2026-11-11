@@ -61,7 +61,7 @@
 /* Core Info Cache START */
 /*************************/
 
-#define CORE_INFO_CACHE_VERSION "1.2"
+#define CORE_INFO_CACHE_VERSION "1.3"
 #define CORE_INFO_CACHE_DEFAULT_CAPACITY 8
 
 /* TODO/FIXME: Apparently rzip compression is an issue on UWP */
@@ -351,6 +351,9 @@ static bool CCJSONObjectMemberHandler(void *context,
                   else if (len == sizeof("desc") - 1
                         && !memcmp(pValue, "desc", sizeof("desc") - 1))
                      pCtx->current_string_val      = &pCtx->core_info->firmware[firmware_idx].desc;
+                  else if (len == sizeof("url") - 1
+                        && !memcmp(pValue, "url", sizeof("url") - 1))
+                     pCtx->current_string_val      = &pCtx->core_info->firmware[firmware_idx].url;
                   else if (len == sizeof("optional") - 1
                         && !memcmp(pValue, "optional", sizeof("optional") - 1))
                      pCtx->current_entry_bool_val  = &pCtx->core_info->firmware[firmware_idx].optional;
@@ -485,6 +488,7 @@ static bool CCJSONStartObjectHandler(void *context)
 
             tmp[new_idx].path              = NULL;
             tmp[new_idx].desc              = NULL;
+            tmp[new_idx].url               = NULL;
             tmp[new_idx].missing           = false;
             tmp[new_idx].optional          = false;
 
@@ -1095,6 +1099,11 @@ static bool core_info_cache_write(const core_info_t *items, size_t count,
             rjsonwriter_raw(writer, ",", 1);
             rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 10);
+            rjsonwriter_add_string(writer, "url");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_add_string(writer, info->firmware[j].url);
+            rjsonwriter_raw(writer, ",\n", 2);
+            rjsonwriter_add_spaces(writer, 10);
             rjsonwriter_add_string(writer, "optional");
             rjsonwriter_raw(writer, ":", 1);
             rjsonwriter_raw(writer, " ", 1);
@@ -1680,6 +1689,9 @@ static void core_info_resolve_firmware(
       strlcpy_lit(key + _len2, "desc", sizeof(key) - _len2);
 
       firmware[i].desc = config_take_string(conf, key);
+
+      strlcpy_lit(key + _len2, "url", sizeof(key) - _len2);
+      firmware[i].url = config_take_string(conf, key);
    }
 
    info->firmware_count = firmware_count;
@@ -2096,6 +2108,8 @@ static void core_info_free(core_info_t* info)
          free(info->firmware[i].path);
       if (info->firmware[i].desc)
          free(info->firmware[i].desc);
+      free(info->firmware[i].url);
+      info->firmware[i].url  = NULL;
       info->firmware[i].path = NULL;
       info->firmware[i].desc = NULL;
    }

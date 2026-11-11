@@ -114,6 +114,10 @@ bool task_content_park_startup(const char *core_path,
       const char *content_path);
 #endif
 
+#ifdef HAVE_MENU
+void task_content_firmware_download(void);
+#endif
+
 /* Every task_push_load_* entry point below (the CLI one excepted, which
  * is startup itself and loads in one go) starts the load as a chain of
  * main-thread tasks of the frontend's queue and returns; the load is
