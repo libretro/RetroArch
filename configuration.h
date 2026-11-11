@@ -1015,6 +1015,7 @@ typedef struct settings
       bool settings_show_accessibility;
       bool settings_show_power_management;
       bool settings_show_achievements;
+      bool settings_show_bluetooth;
       bool settings_show_network;
       bool settings_show_playlists;
       bool settings_show_user;

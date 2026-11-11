@@ -14516,6 +14516,9 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_achievements;
                      break;
+                  case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_bluetooth;
+                     break;
                   case MENU_ENUM_LABEL_NETWORK_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_network;
                      break;
@@ -14534,7 +14537,6 @@ unsigned menu_displaylist_build_list(
                      break;
 #endif
                      /* MISSING:
-                      * MENU_ENUM_LABEL_BLUETOOTH_SETTINGS
                       * MENU_ENUM_LABEL_WIFI_SETTINGS
                       * MENU_ENUM_LABEL_LAKKA_SERVICES
                       */
@@ -14692,6 +14694,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE,       PARSE_ONLY_BOOL},
 #endif
                {MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_BLUETOOTH,        PARSE_ONLY_BOOL},
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK,          PARSE_ONLY_BOOL},
 #endif

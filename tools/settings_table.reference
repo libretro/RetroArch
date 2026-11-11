@@ -352,6 +352,7 @@ bool	settings_show_ai_service	1	1
 bool	settings_show_accessibility	1	1
 bool	settings_show_power_management	1	1
 bool	settings_show_achievements	1	1
+bool	settings_show_bluetooth	1	1
 bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1
@@ -1086,6 +1087,7 @@ bool	settings_show_ai_service	1	1
 bool	settings_show_accessibility	1	1
 bool	settings_show_power_management	1	1
 bool	settings_show_achievements	1	1
+bool	settings_show_bluetooth	1	1
 bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1
@@ -1820,6 +1822,7 @@ bool	settings_show_ai_service	1	1
 bool	settings_show_accessibility	1	1
 bool	settings_show_power_management	1	1
 bool	settings_show_achievements	1	1
+bool	settings_show_bluetooth	1	1
 bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1

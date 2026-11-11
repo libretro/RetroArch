@@ -94,6 +94,11 @@ S_BOOL(settings_show_achievements, SETTINGS_SHOW_ACHIEVEMENTS,
       DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS, SD_FLAG_NONE, 0, 0,
       "Show 'Achievements'",
       "Show 'Achievements' settings.")
+S_BOOL(settings_show_bluetooth, SETTINGS_SHOW_BLUETOOTH,
+      "settings_show_bluetooth",
+      DEFAULT_SETTINGS_SHOW_BLUETOOTH, SD_FLAG_NONE, 0, 0,
+      "Show 'Bluetooth'",
+      "Show 'Bluetooth' settings.")
 S_BOOL(settings_show_network, SETTINGS_SHOW_NETWORK,
       "settings_show_network",
       DEFAULT_SETTINGS_SHOW_NETWORK, SD_FLAG_NONE, 0, 0,

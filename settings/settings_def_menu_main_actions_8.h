@@ -10,5 +10,5 @@
 S_ACTION(BLUETOOTH_SETTINGS,
       "bluetooth_settings",
       "Bluetooth",
-      "Scan for bluetooth devices and connect them.")
+      "Scan for Bluetooth devices and connect them.")
 #endif

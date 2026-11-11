@@ -4727,6 +4727,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #endif
       case MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICES:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_SUBSETTING]);
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_BLUETOOTH:
+         return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_BLUETOOTH]);
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK:
