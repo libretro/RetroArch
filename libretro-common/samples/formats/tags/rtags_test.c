@@ -165,7 +165,7 @@ static void frame24(const char *id, const uint8_t *data, size_t len, unsigned fl
 /* ---------------------------------------------------------------- */
 
 static struct fx fx_v23, fx_v24, fx_v22, fx_v1, fx_v2v1, fx_flac, fx_flac_id3,
-                 fx_ogg, fx_opus, fx_oggflac, fx_wav, fx_mp4, fx_qt, fx_asf;
+                 fx_ea3, fx_ogg, fx_opus, fx_oggflac, fx_wav, fx_mp4, fx_qt, fx_asf;
 static char      ogg_title[300];
 
 static void build_v23(void)
@@ -246,6 +246,19 @@ static void build_v22(void)
    tframe_s(1, "TRK", "4");
    id3_tag(2, 0, 0, 3);
    fill(0xff, 4);
+}
+
+/* OpenMG: an "ea3" tag, an ID3v2.3 tag by another name, then the
+ * EA3 header and ATRAC frames */
+static void build_ea3(void)
+{
+   cur = &fx_ea3; cur->name = "OpenMG";
+   tframe(0, "TIT2", 2, "\x00O\x00m\x00" "a", 6);
+   tframe_s(0, "TPE1", "Sony");
+   id3_tag(3, 0, 0, 4);
+   memcpy(cur->d, "ea3", 3);
+   puts_("EA3\x01"); put16be(96); put16be(0xffff); fill(0, 88);
+   fill(0x5a, 64);
 }
 
 static void id3v1(void)
@@ -606,14 +619,15 @@ static int run_checks(void)
    static const char *const wav[]  = { "Wave", "\xc3\x89mile", "Chunk Album", "", "11", "", "" };
    static const char *const mp4[]  = { "Mp4 T\xc3\xaftle", "Mp4 Artist", "", "Rock", "3/12", "1", "2001-02-03" };
    static const char *const qt[]   = { "QT Title", "QT Artist", "QT Album", "", "5", "", "" };
+   static const char *const ea3[]  = { "Oma", "Sony", "", "", "", "", "" };
    static const char *const asf[]  = { "Wma T\xc3\xaftle", "Wma Art", "Wma Album", "", "5", "", "1995" };
    const char *ogg[RTAGS_FIELDS];
-   struct fx  *all[14];
+   struct fx  *all[15];
    char        small[4];
    size_t      i;
 
    build_v23(); build_v24(); build_v22(); build_v1(); build_v2v1();
-   build_flac(); build_ogg(); build_wav(); build_mp4(); build_asf();
+   build_flac(); build_ea3(); build_ogg(); build_wav(); build_mp4(); build_asf();
 
    expect_all(&fx_v23, v23);
    expect_all(&fx_v24, v24);
@@ -634,6 +648,7 @@ static int run_checks(void)
    expect_all(&fx_mp4, mp4);
    expect_all(&fx_qt, qt);
    expect_all(&fx_asf, asf);
+   expect_all(&fx_ea3, ea3);
 
    /* a value cut where it no longer fits, never inside a character */
    CHECK(rtags_get(fx_v24.d, fx_v24.n, RTAGS_TITLE, small, 4) == 3 && !strcmp(small, "T\xc3\xaf"));
@@ -650,8 +665,8 @@ static int run_checks(void)
    all[0] = &fx_v23; all[1] = &fx_v24; all[2] = &fx_v22; all[3] = &fx_v1;
    all[4] = &fx_v2v1; all[5] = &fx_flac; all[6] = &fx_flac_id3; all[7] = &fx_ogg;
    all[8] = &fx_opus; all[9] = &fx_oggflac; all[10] = &fx_wav; all[11] = &fx_mp4;
-   all[12] = &fx_qt; all[13] = &fx_asf;
-   for (i = 0; i < 14; i++)
+   all[12] = &fx_qt; all[13] = &fx_asf; all[14] = &fx_ea3;
+   for (i = 0; i < 15; i++)
       harden(all[i]);
 
    if (failures)
@@ -659,7 +674,7 @@ static int run_checks(void)
       fprintf(stderr, "rtags_test: %d check(s) failed\n", failures);
       return 1;
    }
-   printf("rtags_test: ok (14 files, every prefix and byte corrupted)\n");
+   printf("rtags_test: ok (15 files, every prefix and byte corrupted)\n");
    return 0;
 }
 

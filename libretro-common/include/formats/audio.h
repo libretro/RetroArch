@@ -89,7 +89,11 @@ enum audio_type_enum
                     * channel count (the mixer folds by count): a
                     * lone surround becomes a phantom pair, and the
                     * LFE is kept only in 5.1                           */
-   AUDIO_TYPE_WMA   /* Native WMA1/WMA2/Pro in ASF or RIFF/XWMA. */
+   AUDIO_TYPE_WMA,  /* Native WMA1/WMA2/Pro in ASF or RIFF/XWMA. */
+   AUDIO_TYPE_ATRAC /* ATRAC3 (ratrac3) or ATRAC3plus (ratrac3p), in
+                     * OpenMG (.oma, .aa3) or WAVE (.at3); up to 7.1,
+                     * handed over in the WAV shape for its channel
+                     * count, as AC-3 is. Encrypted OpenMG is refused. */
 };
 
 /* The linear-PCM format an AUDIO_TYPE_LPCM handle will use, for a
@@ -217,7 +221,8 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
 /* The arm for a whole file, from its bytes: ID3v2 tags in front are
  * looked past, then FLAC, Ogg (audio_transfer_ogg_audio_type), WebM and
  * Matroska (audio_transfer_webm_audio_type), WAVE (PCM and float as
- * AUDIO_TYPE_WAV, WMA in RIFF and xWMA as AUDIO_TYPE_WMA), ASF, MP4 and
+ * AUDIO_TYPE_WAV, WMA in RIFF and xWMA as AUDIO_TYPE_WMA, ATRAC3 and
+ * ATRAC3plus as AUDIO_TYPE_ATRAC), OpenMG (AUDIO_TYPE_ATRAC), ASF, MP4 and
  * M4A (AUDIO_TYPE_AAC; start finds the AAC track, if there is one),
  * tracker modules, then raw streams - AC-3, ADTS and MPEG audio - by a
  * frame header with another where it says the next frame starts, in

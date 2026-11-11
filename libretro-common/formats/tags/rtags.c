@@ -515,10 +515,12 @@ static void genre_by_number(rtags_out *o)
 /* ID3v2                                                            */
 /* ---------------------------------------------------------------- */
 
-/* The size of the ID3v2 tag at @p, header and footer in; 0 for none */
+/* The size of the ID3v2 tag at @p, header and footer in; 0 for none.
+ * OpenMG's "ea3" tag is an ID3v2 tag by another name. */
 static size_t id3v2_size(const uint8_t *p, size_t n)
 {
-   if (n < 10 || memcmp(p, "ID3", 3) || p[3] == 0xff || p[4] == 0xff
+   if (n < 10 || (memcmp(p, "ID3", 3) && memcmp(p, "ea3", 3))
+         || p[3] == 0xff || p[4] == 0xff
          || ((p[6] | p[7] | p[8] | p[9]) & 0x80))
       return 0;
    return 10 + (((size_t)p[6] << 21) | ((size_t)p[7] << 14)

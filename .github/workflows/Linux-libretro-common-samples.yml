@@ -223,6 +223,8 @@ jobs:
             rtags_test
             # A file's audio_transfer arm from its bytes, and the folds.
             audio_transfer_sniff_test
+            # ATRAC3 and ATRAC3plus in WAVE and OpenMG through audio_transfer.
+            audio_transfer_atrac_test
             # 4:2:0 to bytes in memory order and to UYVY.
             image_yuv_test
             rh264_lossless_test
@@ -1093,6 +1095,35 @@ jobs:
             ffmpeg -nostdin -hide_banner -loglevel error -filter_complex "$six" \
               -c:a "$codec" -y "$work/six.$ext"
             ./audio_transfer_sniff_test --file "$work/six.$ext" "$type" --tones
+          done
+
+      # ATRAC3 and ATRAC3plus - stereo, joint stereo, mono, 4.0, 5.1,
+      # 6.1, 7.1 - in WAVE and OpenMG files the sample writes: FFmpeg
+      # decodes each to the samples audio_transfer gives (in FFmpeg's
+      # channel layout), and ffprobe reads the OpenMG ea3 tags as rtags
+      # does
+      - name: Decode audio_transfer's ATRAC files with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats
+        run: |
+          set -euo pipefail
+          make -C audio_transfer_atrac -j2 SANITIZER=address,undefined
+          make -C tags -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./audio_transfer_atrac/audio_transfer_atrac_test --write "$work"
+          n=0
+          for f in "$work"/*.wav "$work"/*.oma; do
+            ffmpeg -nostdin -hide_banner -loglevel fatal -i "$f" -f f32le -y "$f.f32"
+            ./audio_transfer_atrac/audio_transfer_atrac_test --compare "$f" "$f.f32"
+            n=$((n+1))
+          done
+          [ "$n" = 11 ]
+          for f in "$work"/*.oma; do
+            ffprobe -v error -show_entries format_tags:stream_tags \
+              -of default=nw=1 "$f" > "$f.tags"
+            ./tags/rtags_test --ffprobe "$f" "$f.tags"
           done
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan

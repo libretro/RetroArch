@@ -29,7 +29,8 @@
  *
  * What it reads:
  *   - ID3v2.2, 2.3 and 2.4 at the start of a file (MP3, ADTS AAC, AC-3,
- *     FLAC with one in front), in any of their text encodings,
+ *     FLAC with one in front) and OpenMG's "ea3" tag (ATRAC in .oma),
+ *     in any of their text encodings,
  *     unsynchronised or not; ID3v1 and 1.1 at the end of a file that is
  *     none of the containers below, for what ID3v2 does not give;
  *   - Vorbis comments: FLAC, and Vorbis, Opus and FLAC in Ogg;
