@@ -27,9 +27,6 @@
 #include "../../cheat_manager.h"
 #endif
 #include "../../msg_hash_lbl_str.h"
-#ifdef HAVE_CORE_SIGNATURES
-#include "../../core_trust_runtime.h"
-#endif
 
 #ifndef BIND_ACTION_CANCEL
 #define BIND_ACTION_CANCEL(cbs, name) (cbs)->action_cancel = (name)
@@ -115,17 +112,6 @@ static int action_cancel_state_slot_run(const char *path,
    return action_cancel_pop_default(path, label, type, idx);
 }
 
-#ifdef HAVE_CORE_SIGNATURES
-static int action_cancel_core_warning(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   /* Popped first: the callback may change the menu stack */
-   int ret = action_cancel_pop_default(path, label, type, idx);
-   core_warning_choose(CORE_WARNING_CANCEL);
-   return ret;
-}
-#endif
-
 #ifdef HAVE_CHEATS
 static int action_cancel_cheat_details(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -210,12 +196,6 @@ static int menu_cbs_init_bind_cancel_compare_type(menu_file_list_cbs_t *cbs,
       case MENU_SETTING_ACTION_STATE_SLOT_RUN:
          BIND_ACTION_CANCEL(cbs, action_cancel_state_slot_run);
          return 0;
-#ifdef HAVE_CORE_SIGNATURES
-      case MENU_SETTING_ACTION_CORE_WARNING:
-      case MENU_SETTING_CORE_WARNING_TEXT:
-         BIND_ACTION_CANCEL(cbs, action_cancel_core_warning);
-         return 0;
-#endif
       default:
          break;
    }

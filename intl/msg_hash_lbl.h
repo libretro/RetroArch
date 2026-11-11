@@ -802,14 +802,6 @@ MSG_HASH(
    "deferred_archive_action"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CORE_WARNING,
-   "deferred_core_warning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CORE_WARNING_TEXT,
-   "core_warning_text"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE,
    "deferred_archive_action_detect_core"
    )
@@ -1710,26 +1702,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_ARCHIVE,
    "load_archive"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CORE_WARNING,
-   "core_warning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CORE_WARNING_CANCEL,
-   "core_warning_cancel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CORE_WARNING_INSTALL_TRUST,
-   "core_warning_install_trust"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CORE_WARNING_LOAD_ONCE,
-   "core_warning_load_once"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CORE_WARNING_ALWAYS_TRUST,
-   "core_warning_always_trust"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,
