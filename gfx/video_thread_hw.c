@@ -15,6 +15,7 @@
 
 /* See video_thread_hw.h. */
 
+#include <features/features_cpu.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1607,10 +1608,19 @@ static hw_ring_t *hw_handoff_ring(thread_video_t *thr)
  * that holds it already keeps it. Held by the other thread, the wait
  * asks for it and ends at that thread's next release, which hands it
  * over: the wait is one hold of the other thread long. */
+#ifdef __SWITCH2__
+/* The core's thread - split: waiting for the video thread to hand
+ * the context over, and binding it (eglMakeCurrent) once handed. */
+unsigned long long sw2_ctx_wait_us, sw2_ctx_bind_us;
+unsigned long long sw2_ctx_rel_us;
+#endif
 void video_thread_hw_ctx_take(thread_video_t *thr, bool video_thread)
 {
    hw_ring_t *ring = hw_handoff_ring(thr);
    int me;
+#ifdef __SWITCH2__
+   retro_time_t sw2_t0 = cpu_features_get_time_usec(), sw2_t1;
+#endif
    if (!ring)
       return;
    me = video_thread ? HW_CTX_VIDEO : HW_CTX_MAIN;
@@ -1645,8 +1655,34 @@ void video_thread_hw_ctx_take(thread_video_t *thr, bool video_thread)
       }
       retro_eventcount_commit_wait(&ring->ctx_free, key);
    }
+#ifdef __SWITCH2__
+   sw2_t1 = cpu_features_get_time_usec();
+#endif
    video_context_driver_bind_hw_render(!video_thread);
+#ifdef __SWITCH2__
+   if (!video_thread)
+   {
+      sw2_ctx_wait_us += (unsigned long long)(sw2_t1 - sw2_t0);
+      sw2_ctx_bind_us += (unsigned long long)(cpu_features_get_time_usec() - sw2_t1);
+   }
+#endif
 }
+
+#ifdef __SWITCH2__
+/* Whether the video thread has the context now (it gives it up at the end
+ * of its pass): a take now would wait for that. */
+int video_thread_hw_ctx_owner(thread_video_t *thr)
+{
+   hw_ring_t *ring = hw_handoff_ring(thr);
+   return ring ? retro_atomic_load_acquire_int(&ring->ctx_owner) : -1;
+}
+bool video_thread_hw_ctx_video_holds(thread_video_t *thr)
+{
+   hw_ring_t *ring = hw_handoff_ring(thr);
+   return ring && (retro_atomic_load_acquire_int(&ring->ctx_owner)
+         & HW_CTX_HOLDER) == HW_CTX_VIDEO;
+}
+#endif
 
 /* Whether the main thread holds the context. */
 bool video_thread_hw_ctx_held(thread_video_t *thr)
@@ -1661,9 +1697,21 @@ bool video_thread_hw_ctx_held(thread_video_t *thr)
 bool video_thread_hw_ctx_release(thread_video_t *thr, bool video_thread)
 {
    hw_ring_t *ring = hw_handoff_ring(thr);
+#ifdef __SWITCH2__
+   retro_time_t sw2_t0;
+   bool r;
+#endif
    if (!ring)
       return false;
+#ifdef __SWITCH2__
+   sw2_t0 = cpu_features_get_time_usec();
+   r = hw_ctx_hand(ring, video_thread ? HW_CTX_VIDEO : HW_CTX_MAIN, false);
+   if (!video_thread)
+      sw2_ctx_rel_us += (unsigned long long)(cpu_features_get_time_usec() - sw2_t0);
+   return r;
+#else
    return hw_ctx_hand(ring, video_thread ? HW_CTX_VIDEO : HW_CTX_MAIN, false);
+#endif
 }
 
 /* Hardware cores run under the wrapper whenever the wrapper runs, where

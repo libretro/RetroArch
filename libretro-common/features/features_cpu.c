@@ -201,6 +201,14 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
       __asm__ __volatile__ ("rdtsc" : "=a" (a), "=d" (d));
       time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
    }
+#elif defined(__SWITCH2__)
+   /* cntvct_el0 faults for the process here: the monotonic clock */
+   {
+      struct timespec tv;
+      if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
+         time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
+            (retro_perf_tick_t)tv.tv_nsec;
+   }
 #elif defined(__GNUC__) && defined(__aarch64__)
    __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (time_ticks));
 #elif defined(__GNUC__) && defined(__ARM_ARCH_6__)
@@ -270,7 +278,13 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(WIIU)
    return ticks_to_us(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
+#ifdef __SWITCH2__
+   /* The Switch 2's system tick is 31.25 MHz, not the Switch's 19.2 MHz:
+    * taken as 19.2 MHz, time ran 1.63 times too fast */
+   return armTicksToNs(armGetSystemTick()) / 1000;
+#else
    return (svcGetSystemTick() * 10) / 192;
+#endif
 #elif defined(_3DS)
    return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)

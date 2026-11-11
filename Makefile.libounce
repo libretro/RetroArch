@@ -1,0 +1,277 @@
+include version.all
+
+#---------------------------------------------------------------------------------
+.SUFFIXES:
+#---------------------------------------------------------------------------------
+
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
+endif
+
+TOPDIR ?= $(CURDIR)
+include $(DEVKITPRO)/libounce/switch2_rules
+
+TARGET := retroarch_switch2
+
+DEBUG                  ?= 0
+WHOLE_ARCHIVE_LINK      = 0
+GRIFFIN_BUILD           = 0
+
+OBJ :=
+
+DEFINES := -D__SWITCH2__ -D__SWITCH__=1 -U__linux__ -U__linux -DGLM_FORCE_PURE=1 -DRARCH_CONSOLE -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"' -DHAVE_RVORBIS
+
+HAVE_RMP3 = 1
+HAVE_TRANSLATE = 1
+HAVE_SCREENSHOTS = 1
+HAVE_REWIND = 1
+HAVE_AUDIOMIXER = 1
+HAVE_CC_RESAMPLER = 1
+HAVE_MENU_COMMON = 1
+HAVE_RTGA = 1
+HAVE_RGIF = 1
+HAVE_RPNG = 1
+HAVE_RWEBP = 1
+HAVE_RDDS = 1
+HAVE_RJPEG = 1
+HAVE_RBMP = 1
+HAVE_RWAV = 1
+HAVE_7ZIP = 1
+HAVE_LIBRETRODB = 1
+HAVE_DSP_FILTER = 1
+HAVE_VIDEO_FILTER = 1
+HAVE_STATIC_VIDEO_FILTERS = 1
+HAVE_STATIC_AUDIO_FILTERS = 1
+HAVE_STATIC_CORES = 1
+HAVE_FILTERS_BUILTIN = 1
+HAVE_MENU = 1
+HAVE_CONFIGFILE = 1
+HAVE_PATCH = 1
+HAVE_CHEATS = 1
+HAVE_RUNAHEAD = 1
+HAVE_NETWORKING = 1
+HAVE_IFINFO = 1
+HAVE_NETPLAYDISCOVERY = 1
+HAVE_CHEEVOS = 1
+HAVE_CHD = 1
+HAVE_RCHD = 1
+HAVE_RVORBIS = 1
+HAVE_RMODTRACKER = 1
+HAVE_CORE_INFO_CACHE = 1
+HAVE_CLOUDSYNC = 1
+# The cleanroom crypto, keychain and TLS 1.2/1.3 client; nothing to link.
+HAVE_CRYPTO = 1
+HAVE_KEYCHAIN = 1
+HAVE_RETROSSL = 1
+# The built-in NFS client (nfs://); it needs no crypto.
+HAVE_RETRONFS = 1
+# The built-in SMB client (smb://), on the crypto above.
+HAVE_RETROSMB = 1
+
+# RetroArch libounce useful flags
+HAVE_FILE_LOGGER = 1
+HAVE_THREADS = 1
+HAVE_PTHREADS = 1
+HAVE_FREETYPE = 0
+HAVE_SWITCH = 1
+HAVE_LIBNX = 1
+HAVE_OPENGL = 1
+HAVE_OPENGLES = 1
+HAVE_OPENGLES3 = 1
+HAVE_VULKAN = 1
+# the Vulkan driver is built on the slang shader runtime; rslc compiles slang
+# without glslang or SPIRV-Cross
+HAVE_SLANG = 1
+HAVE_RSLC = 1
+HAVE_LANGEXTRA = 1
+HAVE_GFX_WIDGETS = 1
+
+ifeq ($(HAVE_OPENGL), 1)
+  HAVE_EGL = 1
+  HAVE_SHADERPIPELINE = 1
+  HAVE_RGUI = 1
+  HAVE_MATERIALUI = 1
+  HAVE_XMB = 1
+  HAVE_OZONE = 1
+  HAVE_OVERLAY = 1
+  HAVE_GLSL = 1
+else
+  HAVE_RGUI = 1
+  HAVE_MATERIALUI = 0
+  HAVE_XMB = 0
+  HAVE_OZONE = 0
+endif
+
+include Makefile.common
+BLACKLIST :=
+
+OBJ := $(filter-out $(BLACKLIST),$(OBJ))
+
+BUILD := build
+SOURCES := $(CURDIR)/source
+DATA := data
+INCLUDES :=	include
+EXEFS_SRC := exefs_src
+#ROMFS := switch/romfs
+
+APP_TITLE := RetroArch
+APP_VERSION := $(RARCH_VERSION)
+APP_AUTHOR := libretro Team
+APP_ICON := pkg/libnx/retroarch.jpg
+
+#---------------------------------------------------------------------------------
+# options for code generation
+#---------------------------------------------------------------------------------
+ARCH	:=	$(SWITCH2_CPU) -mtp=soft -fPIE
+
+CFLAGS := -g -Wall -O3 -fcommon -ffunction-sections \
+          $(ARCH) $(DEFINES) $(INCLUDE_DIRS) -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h
+
+CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_UPDATE_CORE_INFO
+
+ifeq ($(HAVE_FILTERS_BUILTIN), 1)
+  CFLAGS += -DHAVE_FILTERS_BUILTIN
+endif
+
+ifeq ($(strip $(HAVE_STATIC_DUMMY)),1)
+  CFLAGS	+=	-DHAVE_STATIC_DUMMY=1
+endif
+
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+
+ASFLAGS	:=	-g $(ARCH)
+LDFLAGS	=	-specs=$(DEVKITPRO)/libounce/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
+
+# add things from Makefile.common
+CFLAGS += $(DEF_FLAGS)
+
+LIBS := -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lnx -lm
+
+ifeq ($(HAVE_OPENGL), 1)
+  LIBS := -lGLESv2 -lEGL -lglapi -ldrm_nouveau $(LIBS)
+endif
+ifeq ($(HAVE_VULKAN), 1)
+  LIBS := -lvulkan $(LIBS)
+endif
+
+#---------------------------------------------------------------------------------
+# list of directories containing libraries, this must be the top level containing
+# include and lib
+#---------------------------------------------------------------------------------
+LIBDIRS := $(PORTLIBS_SWITCH2) $(PORTLIBS) $(LIBNX)
+
+#---------------------------------------------------------------------------------
+# no real need to edit anything past this point unless you need to add additional
+# rules for different file extensions
+#---------------------------------------------------------------------------------
+ifneq ($(BUILD),$(notdir $(CURDIR)))
+#---------------------------------------------------------------------------------
+
+export OUTPUT	:=	$(TARGET)
+export TOPDIR	:=	$(CURDIR)
+
+export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+
+export DEPSDIR	:=	$(CURDIR)/
+
+CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+
+#---------------------------------------------------------------------------------
+# use CXX for linking C++ projects, CC for standard C
+#---------------------------------------------------------------------------------
+ifeq ($(strip $(CPPFILES)),)
+#---------------------------------------------------------------------------------
+	export LD	:=	$(CC)
+#---------------------------------------------------------------------------------
+else
+#---------------------------------------------------------------------------------
+	export LD	:=	$(CXX)
+#---------------------------------------------------------------------------------
+endif
+#---------------------------------------------------------------------------------
+
+export OFILES 	:=	$(OBJ)
+
+ifeq ($(strip $(HAVE_STATIC_DUMMY)),)
+  OFILES += libretro_libounce.a
+endif
+
+export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+
+export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+			-I$(CURDIR)/$(BUILD)
+
+export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+
+export BUILD_EXEFS_SRC := $(TOPDIR)/$(EXEFS_SRC)
+
+ifeq ($(strip $(ICON)),)
+	icons := $(wildcard *.jpg)
+	ifneq (,$(findstring $(TARGET).jpg,$(icons)))
+		export APP_ICON := $(TOPDIR)/$(TARGET).jpg
+	else
+		ifneq (,$(findstring icon.jpg,$(icons)))
+			export APP_ICON := $(TOPDIR)/icon.jpg
+		endif
+	endif
+else
+	export APP_ICON := $(TOPDIR)/$(ICON)
+endif
+
+ifeq ($(strip $(NO_ICON)),)
+	export NROFLAGS += --icon=$(APP_ICON)
+endif
+
+ifeq ($(strip $(NO_NACP)),)
+	export NROFLAGS += --nacp=$(CURDIR)/$(TARGET).nacp
+endif
+
+ifneq ($(APP_TITLEID),)
+	export NACPFLAGS += --titleid=$(APP_TITLEID)
+endif
+
+ifneq ($(ROMFS),)
+	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
+endif
+
+DEPENDS_TMP  := $(OFILES:.o=.d)
+DEPENDS      := $(filter-out libretro_libounce.a,$(DEPENDS_TMP))
+
+.PHONY: clean all
+
+#---------------------------------------------------------------------------------
+# main targets
+#---------------------------------------------------------------------------------
+all	:	$(OUTPUT).pfs0 $(OUTPUT).nro
+
+$(OUTPUT).pfs0	:	$(OUTPUT).nso
+
+$(OUTPUT).nso	:	$(OUTPUT).elf
+
+ifeq ($(strip $(NO_NACP)),)
+$(OUTPUT).nro	:	$(OUTPUT).elf $(OUTPUT).nacp
+else
+$(OUTPUT).nro	:	$(OUTPUT).elf
+endif
+
+$(OUTPUT).elf	:	$(OBJ)
+
+clean:
+	rm -f $(DEPENDS) $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf
+
+#---------------------------------------------------------------------------------
+# you need a rule like this for each extension you use as binary data
+#---------------------------------------------------------------------------------
+%.bin.o	%_bin.h :	%.bin
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+
+#---------------------------------------------------------------------------------------
+endif
+#---------------------------------------------------------------------------------------

@@ -756,6 +756,27 @@ build-static-retroarch-dummy-libnx-aarch64:
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f pkg/libnx/retroarch.jpg ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
+build-static-retroarch-dummy-libounce-aarch64:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libounce-devkitpro:latest
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - retroarch_switch2.nro
+    - retroarch_switch2.elf
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - "make -f Makefile.libounce -j$NUMPROC HAVE_STATIC_DUMMY=1"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f pkg/libnx/retroarch.jpg ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+
 build-static-retroarch-psp:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
   stage: prepare-for-static-cores
@@ -1218,6 +1239,7 @@ trigger_static-cores:
   stage: trigger-static-cores
   needs:
   - build-static-retroarch-libnx-aarch64
+  - build-static-retroarch-libounce-aarch64
   - build-static-retroarch-psp
   - build-static-retroarch-vita
   - build-static-retroarch-ps2

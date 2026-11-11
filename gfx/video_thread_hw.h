@@ -119,6 +119,9 @@ bool video_thread_hw_handoff(struct thread_video *thr);
 void video_thread_hw_ctx_take(struct thread_video *thr, bool video_thread);
 bool video_thread_hw_ctx_release(struct thread_video *thr, bool video_thread);
 bool video_thread_hw_ctx_held(struct thread_video *thr);
+#ifdef __SWITCH2__
+bool video_thread_hw_ctx_video_holds(struct thread_video *thr);
+#endif
 
 /* Main thread: whether the ring holds anything of the core's - an image
  * in a slot, or a presented slot a dupe would read again. Vulkan and

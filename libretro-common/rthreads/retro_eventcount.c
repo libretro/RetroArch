@@ -198,7 +198,16 @@ static unsigned           ec_linux_spin;
  * version at startup, and this is asked once per object at init. */
 static bool ec_switch_has_arbiter(void)
 {
+#ifdef __SWITCH2__
+   /* Switch 2: svcSignalToAddress may fail to wake a thread waiting on
+    * the arbiter promptly. This was observed during video frame handoff
+    * and GL context synchronization, causing delays of around 30 ms.
+    * Use condition variables instead to avoid missed frames and stalls
+    * in subsequent GL operations. */
+   return false;
+#else
    return hosversionAtLeast(4, 0, 0);
+#endif
 }
 
 /* Waits while the epoch still reads @key, for @timeout_ns (negative:

@@ -108,6 +108,9 @@ extern bool nxlink_connected;
 
 void libnx_apply_overclock(void)
 {
+#ifdef __SWITCH2__
+   return;
+#else
    const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)
       / sizeof(SWITCH_CPU_PROFILES[1]) - 1;
    settings_t *settings        = config_get_ptr();
@@ -128,6 +131,7 @@ void libnx_apply_overclock(void)
          clkrstCloseSession(&session);
       }
    }
+#endif
 }
 
 static void on_applet_hook(AppletHookType hook, void *param)
@@ -216,7 +220,7 @@ static void frontend_switch_get_env(
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init(SD_PREFIX "/retroarch-log.txt");
+   retro_main_log_file_init(SD_PREFIX "/retroarch-log.txt", false);
 #endif
 #endif
 
@@ -311,7 +315,9 @@ static void frontend_switch_deinit(void *data)
 {
    (void)data;
 
+#ifndef __SWITCH2__
    nifmExit();
+#endif
 
    if (hosversionBefore(8, 0, 0))
    {
@@ -320,10 +326,12 @@ static void frontend_switch_deinit(void *data)
    }
    else
    {
+#ifndef __SWITCH2__
       ClkrstSession session = {0};
       clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
       clkrstSetClockRate(&session, 1020000000);
       clkrstCloseSession(&session);
+#endif
       clkrstExit();
    }
 
@@ -572,6 +580,11 @@ error:
 static void frontend_switch_shutdown(bool unused)
 {
    (void)unused;
+
+#ifdef __SWITCH2__
+   // do this here instead to prevent a crash on shutdown
+   nifmExit();
+#endif
 }
 
 /* runloop_get_system_info isnt initialized that early.. */

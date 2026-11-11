@@ -1065,8 +1065,57 @@ static thread_video_t *video_thread_thr_capture;
  * gives it up between, so the video thread can draw while the core is
  * not running (the menu over a paused core). No-ops without a ring
  * that hands off. */
+
+#ifdef __SWITCH2__
+/* The GL context's take-back after a hardware frame's hand-off, put off
+ * until the core's thread next needs the context, so that the video
+ * thread's present runs while the core emulates the next frame instead
+ * of before it. Set by video_thread_frame(); settled by the next thing
+ * on the core's thread that needs the context. */
+static thread_video_t *sw2_ctx_owed_thr;
+
+/* site: who settles the take (0 core glsm bind, 1 framebuffer query,
+ * 2 core-context take, 3 next frame hand-off, 4 teardown) */
+void sw2_gl_ctx_ensure_at(int site)
+{
+   thread_video_t *thr = sw2_ctx_owed_thr;
+   (void)site;
+   if (!thr)
+      return;
+   sw2_ctx_owed_thr = NULL;
+   video_thread_hw_ctx_take(thr, false);
+}
+
+void sw2_gl_ctx_ensure(void) { sw2_gl_ctx_ensure_at(0); }
+
+/* The context for work that can wait for a later frame: taken (and true)
+ * only if that does not mean waiting for the video thread's present. */
+int sw2_gl_ctx_try_at(int site)
+{
+   thread_video_t *thr = sw2_ctx_owed_thr;
+   if (thr && video_thread_hw_ctx_video_holds(thr))
+      return 0;
+   sw2_gl_ctx_ensure_at(site);
+   return 1;
+}
+
+/* The runloop's take before retro_run(), put off the same way: the core's
+ * first use of the context in the frame takes it, by which time the video
+ * thread has presented the last frame. A thread holding it already keeps it. */
+ void sw2_gl_ctx_defer_core_take(void)
+{
+   thread_video_t *thr = video_thread_thr_capture;
+   if (!thr || video_thread_hw_ctx_held(thr))
+      return;
+   sw2_ctx_owed_thr = thr;
+}
+#endif
+
 void video_thread_core_context_take(void)
 {
+#ifdef __SWITCH2__
+   sw2_gl_ctx_ensure_at(2);
+#endif
    thread_video_t *thr = video_thread_thr_capture;
    if (thr)
       video_thread_hw_ctx_take(thr, false);
@@ -4425,6 +4474,14 @@ static bool video_thread_frame(void *data, const void *frame_,
    retro_time_t t_now  = 0;
    size_t       copied = 0;
    thread_video_t *thr = (thread_video_t*)data;
+#ifdef __SWITCH2__
+   /* the publish below captures the frame on the context: the core's thread has it again first.
+    * A dupe (no frame) publishes nothing and touches no context: a core that
+    * did not draw this frame (a game that draws at 20 or 30 fps) leaves the
+    * take owed, and does not wait for the video thread's present. */
+   if (frame_)
+      sw2_gl_ctx_ensure_at(3);
+#endif
 
    if (!thr)
       return false;
@@ -4873,8 +4930,13 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    /* One GL context: the publish handed it to the video thread with
     * the frame; taken back once that pass is done with it. */
+#ifdef __SWITCH2__
+   if (ctx_held)
+      sw2_ctx_owed_thr = thr;
+#else
    if (ctx_held)
       video_thread_hw_ctx_take(thr, false);
+#endif
 
    thr->last_time = VIDEO_THREAD_NOW(video_info);
    thr->run_start = thr->last_time;
@@ -5206,6 +5268,11 @@ static bool video_thread_read_viewport_hdr(void *data,
 static void video_thread_free(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
+#ifdef __SWITCH2__
+   /* the core's thread holds the context again before anything is torn down */
+   if (sw2_ctx_owed_thr == thr)
+      sw2_gl_ctx_ensure_at(4);
+#endif
 
    /* Cleared before any teardown: entry points that reach the
     * wrapper through the capture stop taking this instance now. */

@@ -14,6 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef __SWITCH2__
+#include <features/features_cpu.h>
+#endif
 #include <stdlib.h>
 
 #include <string/stdstring.h>
@@ -26,6 +29,7 @@
 
 #include "../common/switch_defines.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 
 /* TODO/FIXME - global referenced */
 extern bool platform_switch_has_focus;
@@ -68,6 +72,11 @@ static void *switch_ctx_init(void *video_driver)
         EGL_GREEN_SIZE, 8,
         EGL_RED_SIZE, 8,
         EGL_ALPHA_SIZE, 8,
+#if defined(HAVE_OPENGLES3)
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+#elif defined(HAVE_OPENGLES)
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+#endif
         EGL_NONE};
 #endif
 
@@ -136,8 +145,18 @@ static bool switch_ctx_set_video_mode(void *data,
     /* Create an EGL rendering context */
     static const EGLint contextAttributeList[] =
         {
+#ifdef HAVE_OPENGLES3
+            EGL_CONTEXT_MAJOR_VERSION, 3,
+#else
+            EGL_CONTEXT_CLIENT_VERSION, 2,
+#endif
+            EGL_NONE};
+#ifdef HAVE_OPENGLES3
+    static const EGLint contextAttributeListES2[] =
+        {
             EGL_CONTEXT_CLIENT_VERSION, 2,
             EGL_NONE};
+#endif
 
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
     unsigned win_dims         = 0;
@@ -150,7 +169,17 @@ static bool switch_ctx_set_video_mode(void *data,
     if (!egl_create_context(&ctx_nx->egl, contextAttributeList))
     {
         egl_report_error();
+#ifdef HAVE_OPENGLES3
+        /* no ES 3 context: fall back to ES 2 */
+        RARCH_WARN("[EGL] No OpenGL ES 3 context, trying OpenGL ES 2.\n");
+        if (!egl_create_context(&ctx_nx->egl, contextAttributeListES2))
+        {
+            egl_report_error();
+            goto error;
+        }
+#else
         goto error;
+#endif
     }
 #endif
 
@@ -174,7 +203,11 @@ static void switch_ctx_input_driver(void *data,
 {
 }
 
+#ifdef HAVE_OPENGLES
+static enum gfx_ctx_api switch_ctx_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }
+#else
 static enum gfx_ctx_api switch_ctx_get_api(void *data) { return GFX_CTX_OPENGL_API; }
+#endif
 
 static bool switch_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -182,6 +215,11 @@ static bool switch_ctx_bind_api(void *data,
     if (api == GFX_CTX_OPENGL_API)
         if (egl_bind_api(EGL_OPENGL_API))
             return true;
+#ifdef HAVE_OPENGLES
+    if (api == GFX_CTX_OPENGL_ES_API)
+        if (egl_bind_api(EGL_OPENGL_ES_API))
+            return true;
+#endif
     return false;
 }
 
