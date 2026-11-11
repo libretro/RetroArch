@@ -64,6 +64,7 @@ typedef struct
 {
    char *path;
    char *desc;
+   char *url;
    /* Set missing once to avoid opening
     * the same file several times. */
    bool missing;
