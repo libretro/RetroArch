@@ -19,13 +19,17 @@ static void check(int valid, const char *what)
    }
 }
 #include "wma_fixture.h"
+/* The fixture is one coded frame. WMA1 and WMA2 play gapless: that
+ * frame's first half is the encoder's priming, dropped, and its second
+ * half - the overlap tail - comes out when the stream drains: what
+ * plays is the second half of the windowed transform. */
 static void expected(void)
 {
    unsigned i;
    for (i = 0; i < 2048; i++)
    {
-      double transform = -cos(PI / 2048 * (i + 0.5 + 1024) * 0.5);
-      double window = sin((i + 0.5) * PI / 4096);
+      double transform = -cos(PI / 2048 * (i + 2048 + 0.5 + 1024) * 0.5);
+      double window = sin((i + 2048 + 0.5) * PI / 4096);
       reference[i] =
           (float)(256 * pow(10.0, 5.0) * (2.0 / 2048) / 32768 * transform * window);
    }

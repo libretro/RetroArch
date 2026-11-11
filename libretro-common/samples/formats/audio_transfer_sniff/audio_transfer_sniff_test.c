@@ -6,13 +6,17 @@
  *      and look-alikes it must turn down; every prefix of each, and each
  *      byte corrupted, read inside the buffer; the fold tables.
  *   audio_transfer_sniff_test --file FILE TYPE [--tones] [--pcm REF]
- *                             [--frames N]
+ *                             [--frames N] [--source REF]
  *      FILE sniffed as TYPE (wav flac vorbis opus mp3 aac ac3 wma mod),
  *      started where the sniffer says and decoded to the end. With
  *      --pcm the decode is FFmpeg's (REF, f32le at the file's rate):
  *      the same length, sample for sample within 1e-4 - where the audio
  *      starts and ends, gapless trims and all. With --frames the length
- *      audio_transfer_info states is N. With
+ *      audio_transfer_info states is N. With --source the decode is
+ *      the signal the encoder was given (REF, f32le): where it starts,
+ *      to the sample, its length within 2 ms (what ASF's millisecond
+ *      durations lose), and at least 20 dB above the coding error -
+ *      for codecs FFmpeg's decoder is not gapless for. With
  *      --tones FILE is 5.1 with a tone in each channel - FL 300 Hz,
  *      FR 500, FC 700, LFE 80, BL 1100, BR 1300 - and the decode folded
  *      with audio_transfer_stereo_matrix has the left tones on the left
@@ -250,7 +254,7 @@ static double tone(const float *x, size_t n, double hz, double rate)
 }
 
 static int run_file(const char *path, const char *want, int tones,
-      const char *pcm_path, long want_frames)
+      const char *pcm_path, long want_frames, const char *src_path)
 {
    FILE                *fp = fopen(path, "rb");
    uint8_t             *buf;
@@ -341,6 +345,60 @@ static int run_file(const char *path, const char *want, int tones,
       free(ref);
    }
 
+   if (src_path)
+   {
+      FILE  *rf = fopen(src_path, "rb");
+      long   rlen, lag, best_lag = 0;
+      float *ref;
+      size_t i, rn, n;
+      double best = -1e300, sig = 0, err = 0;
+      unsigned c;
+      if (!rf)
+         return 1;
+      fseek(rf, 0, SEEK_END);
+      rlen = ftell(rf);
+      fseek(rf, 0, SEEK_SET);
+      ref = (float*)malloc((size_t)rlen + 1);
+      if (fread(ref, 1, (size_t)rlen, rf) != (size_t)rlen)
+         return 1;
+      fclose(rf);
+      rn = (size_t)rlen / sizeof(float) / ch;
+      n  = rn < frames ? rn : frames;
+      /* where the decode lines up with the source */
+      for (lag = -4096; lag <= 4096; lag++)
+      {
+         double dot = 0;
+         for (i = 0; i < n; i++)
+         {
+            long j = (long)i + lag;
+            if (j < 0 || (size_t)j >= frames)
+               continue;
+            for (c = 0; c < ch; c++)
+               dot += (double)pcm[(size_t)j * ch + c] * ref[i * ch + c];
+         }
+         if (dot > best)
+         {
+            best     = dot;
+            best_lag = lag;
+         }
+      }
+      for (i = 0; i < n * ch; i++)
+      {
+         sig += (double)ref[i] * ref[i];
+         err += ((double)pcm[i] - ref[i]) * ((double)pcm[i] - ref[i]);
+      }
+      if (     best_lag
+            || (frames > rn ? frames - rn : rn - frames) > rate / 500
+            || !(sig > 0 && 10 * log10(sig / (err + 1e-30)) >= 20))
+      {
+         fprintf(stderr, "%s: %ld frames from the source, %u frames to its %u, %.1f dB above the error\n",
+               path, best_lag, (unsigned)frames, (unsigned)rn,
+               sig > 0 ? 10 * log10(sig / (err + 1e-30)) : 0.0);
+         bad = 1;
+      }
+      free(ref);
+   }
+
    if (tones)
    {
       static const double hz[6]   = { 300, 500, 700, 80, 1100, 1300 };
@@ -390,7 +448,7 @@ static int run_file(const char *path, const char *want, int tones,
    if (!bad)
       printf("audio_transfer_sniff_test: %s: %s, %u channels at %u Hz, %u frames%s%s\n",
             path, want, ch, rate, (unsigned)frames, tones ? ", each tone where it belongs" : "",
-            pcm_path ? ", FFmpeg's samples" : "");
+            pcm_path ? ", FFmpeg's samples" : src_path ? ", the source's timing" : "");
    audio_transfer_free(ctx, t);
    free(pcm);
    free(buf);
@@ -402,7 +460,7 @@ int main(int argc, char **argv)
    if (argc >= 4 && !strcmp(argv[1], "--file"))
    {
       int         i, tones = 0;
-      const char *pcm = NULL;
+      const char *pcm = NULL, *src = NULL;
       long        frames = -1;
       for (i = 4; i < argc; i++)
       {
@@ -412,8 +470,10 @@ int main(int argc, char **argv)
             pcm = argv[++i];
          else if (!strcmp(argv[i], "--frames") && i + 1 < argc)
             frames = atol(argv[++i]);
+         else if (!strcmp(argv[i], "--source") && i + 1 < argc)
+            src = argv[++i];
       }
-      return run_file(argv[2], argv[3], tones, pcm, frames);
+      return run_file(argv[2], argv[3], tones, pcm, frames, src);
    }
    return run_checks();
 }

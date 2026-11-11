@@ -628,14 +628,27 @@ int rwma_std_decode(void *opaque, const uint8_t *data, size_t bytes, size_t *use
    unsigned step;
    if (s->failed)
       return RWMA_BAD_DATA;
-   std_roll(s);
    if (!bytes)
    {
+      /* The end of the stream: the last frame's second half, which the
+       * next frame's overlap would have completed, comes out once */
+      unsigned c, had = s->pending;
       if (s->in_packet)
          return RWMA_BAD_DATA;
+      std_roll(s);
+      if (had && !s->drained)
+      {
+         out->samples = s->length;
+         out->channels = s->config.channels;
+         out->sample_rate = s->config.sample_rate;
+         for (c = 0; c < s->config.channels; c++)
+            out->planes[c] = s->acc[c];
+         s->pending = 1;
+      }
       s->drained = 1;
       return RWMA_OK;
    }
+   std_roll(s);
    if (s->drained || !data || bytes < s->config.block_align ||
        (s->in_packet && data != s->packet))
       return RWMA_BAD_DATA;

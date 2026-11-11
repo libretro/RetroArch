@@ -1093,6 +1093,19 @@ jobs:
               -of csv=p=0 "$work/$f" | tr '\n' ' ' | awk '{ printf "%d", $1 * $2 + 0.5 }')
             ./audio_transfer_sniff_test --file "$work/$f" wma --frames "$frames"
           done
+          # WMA1 and WMA2, gapless at each frame size (2048, 1024 and 512
+          # samples): the signal FFmpeg's encoder was given, from its
+          # first sample, at the length the header states
+          for codec in wmav1 wmav2; do
+            for rate in 44100 22050 16000 8000; do
+              src="sine=f=440:d=0.73:sample_rate=$rate"
+              ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i "$src" -ac 2 \
+                -c:a "$codec" -y "$work/g.wma"
+              ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i "$src" -ac 2 \
+                -f f32le -y "$work/g.f32"
+              ./audio_transfer_sniff_test --file "$work/g.wma" wma --source "$work/g.f32"
+            done
+          done
           six=""
           n=0
           for hz in 300 500 700 80 1100 1300; do
