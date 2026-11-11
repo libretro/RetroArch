@@ -50,6 +50,15 @@
  *   sync_matches_iterative
  *     The monolithic and the iterative drivers must agree bit for bit.
  *
+ *   rows_match_image
+ *     rjpeg_decode_rows writes the rows rjpeg_process_image makes, byte
+ *     for byte, in either byte order, into the caller's rows, its own or
+ *     a mix, for each layout the decoder has a separate path for (4:2:0,
+ *     4:2:2, 4:4:4, grayscale, progressive, CMYK), with no byte written
+ *     past a row; a size the caller refuses writes nothing; and once each
+ *     image has been decoded, decoding them all again takes no memory
+ *     (counted where the linker can wrap malloc).
+ *
  * Build and run:  make && ./rjpeg_test
  */
 
@@ -60,6 +69,18 @@
 
 #include <formats/rjpeg.h>
 #include <formats/image.h>
+
+#include "rjpeg_rows_fixtures.h"
+
+/* The decoder's allocations, counted: the Makefile links with
+ * --wrap=malloc,--wrap=calloc where the linker has it */
+#ifdef RJPEG_TEST_COUNT_ALLOCS
+static unsigned long allocs;
+void *__real_malloc(size_t n);
+void *__real_calloc(size_t n, size_t m);
+void *__wrap_malloc(size_t n) { allocs++; return __real_malloc(n); }
+void *__wrap_calloc(size_t n, size_t m) { allocs++; return __real_calloc(n, m); }
+#endif
 
 static const unsigned char rjpeg_valid[] = {
    0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
@@ -578,6 +599,204 @@ static void test_unscanned_coefficients(void)
    }
 }
 
+/* The image rjpeg_process_image makes, in the order asked */
+static uint8_t *image_of(const unsigned char *jpg, size_t len, bool rgba,
+      unsigned *w, unsigned *h)
+{
+   rjpeg_t *r    = rjpeg_alloc();
+   void    *data = NULL;
+   int      ret  = IMAGE_PROCESS_ERROR;
+   if (r && rjpeg_set_buf_ptr(r, (void*)jpg, len))
+   {
+      rjpeg_set_out_rgba(r, rgba);
+      if (rjpeg_start(r))
+         while (rjpeg_iterate_image(r)) { }
+      do
+      {
+         ret = rjpeg_process_image(r, &data, len, w, h, rgba);
+      } while (ret == IMAGE_PROCESS_NEXT);
+   }
+   rjpeg_free(r);
+   if (ret != IMAGE_PROCESS_END)
+   {
+      free(data);
+      return NULL;
+   }
+   return (uint8_t*)data;
+}
+
+/* What the callbacks see */
+struct rows_ctx
+{
+   uint8_t **dst;      /* the caller's rows, one allocation each */
+   uint8_t  *img;      /* rows given to done(), gathered */
+   unsigned  w, h;
+   unsigned  next;     /* the row expected next */
+   int       mode;     /* 0: caller's rows, 1: rjpeg's, 2: every other */
+   int       refuse;   /* size() says no */
+   int       bad;      /* a row out of order, or written elsewhere */
+};
+
+static bool rows_size(void *user, unsigned w, unsigned h)
+{
+   struct rows_ctx *c = (struct rows_ctx*)user;
+   if (w != c->w || h != c->h)
+      c->bad = 1;
+   return !c->refuse;
+}
+
+static uint8_t *rows_row(void *user, unsigned y)
+{
+   struct rows_ctx *c = (struct rows_ctx*)user;
+   if (y != c->next || y >= c->h)
+   {
+      c->bad = 1;
+      return NULL;
+   }
+   if (c->mode == 1 || (c->mode == 2 && (y & 1)))
+      return NULL;
+   return c->dst[y];
+}
+
+static void rows_done(void *user, unsigned y, const uint8_t *px)
+{
+   struct rows_ctx *c = (struct rows_ctx*)user;
+   int mine = !(c->mode == 1 || (c->mode == 2 && (y & 1)));
+   if (y != c->next || y >= c->h || (mine && px != c->dst[y]))
+   {
+      c->bad = 1;
+      return;
+   }
+   memcpy(c->img + (size_t)4 * c->w * y, px, (size_t)4 * c->w);
+   c->next++;
+}
+
+static void test_rows_match_image(void)
+{
+   static const struct
+   {
+      const unsigned char *jpg;
+      size_t               len;
+      const char          *name;
+   } files[] = {
+      { rows_420,  sizeof(rows_420),  "4:2:0" },
+      { rows_422,  sizeof(rows_422),  "4:2:2" },
+      { rows_444,  sizeof(rows_444),  "4:4:4" },
+      { rows_gray, sizeof(rows_gray), "grayscale" },
+      { rows_prog, sizeof(rows_prog), "progressive" },
+      { rows_cmyk, sizeof(rows_cmyk), "CMYK" },
+      { rjpeg_valid, sizeof(rjpeg_valid), "reference" },
+      { rjpeg_tiny_progressive, sizeof(rjpeg_tiny_progressive), "tiny progressive" }
+   };
+   const struct rjpeg_rows cb = { rows_size, rows_row, rows_done, NULL };
+   rjpeg_t *r = rjpeg_alloc();
+   unsigned pass, f;
+
+   printf("rows_match_image\n");
+
+   for (pass = 0; pass < 2; pass++)
+   {
+#ifdef RJPEG_TEST_COUNT_ALLOCS
+      unsigned long before = allocs;
+#endif
+      for (f = 0; f < sizeof(files) / sizeof(files[0]); f++)
+      {
+         int mode, rgba;
+         for (rgba = 0; rgba < 2; rgba++)
+         for (mode = 0; mode < 3; mode++)
+         {
+            unsigned w = 0, h = 0, rw = 1, rh = 1, y;
+            uint8_t *want = image_of(files[f].jpg, files[f].len, rgba != 0, &w, &h);
+            struct rows_ctx c;
+            struct rjpeg_rows rows = cb;
+            char msg[128];
+            bool ok;
+            unsigned long n_before;
+
+            sprintf(msg, "%s decodes as an image", files[f].name);
+            check(want != NULL, msg);
+            if (!want)
+               continue;
+
+            memset(&c, 0, sizeof(c));
+            c.w    = w;
+            c.h    = h;
+            c.mode = mode;
+            c.img  = (uint8_t*)calloc((size_t)4 * w, h);
+            c.dst  = (uint8_t**)calloc(h, sizeof(*c.dst));
+            for (y = 0; y < h; y++)
+               c.dst[y] = (uint8_t*)malloc((size_t)4 * w);
+            rows.user = &c;
+
+#ifdef RJPEG_TEST_COUNT_ALLOCS
+            n_before = allocs;
+#else
+            n_before = 0;
+#endif
+            ok = rjpeg_decode_rows(r, files[f].jpg, files[f].len,
+                  rgba != 0, &rows, &rw, &rh);
+#ifdef RJPEG_TEST_COUNT_ALLOCS
+            if (pass == 1)
+            {
+               sprintf(msg, "%s again takes no memory", files[f].name);
+               check(allocs == n_before, msg);
+            }
+#endif
+            (void)n_before;
+            sprintf(msg, "%s, %s, %s rows: every row, in order, as the image",
+                  files[f].name, rgba ? "RGBA" : "BGRA",
+                  mode == 0 ? "caller's" : mode == 1 ? "rjpeg's" : "mixed");
+            check(ok && !c.bad && c.next == h && rw == w && rh == h
+                  && !memcmp(c.img, want, (size_t)4 * w * h), msg);
+
+            /* Refused: nothing written, the decoder still good */
+            if (pass == 0 && mode == 0)
+            {
+               c.refuse = 1;
+               c.next   = 0;
+               ok = rjpeg_decode_rows(r, files[f].jpg, files[f].len,
+                     rgba != 0, &rows, &rw, &rh);
+               sprintf(msg, "%s refused by size(): no row", files[f].name);
+               check(!ok && c.next == 0 && rw == w && rh == h, msg);
+            }
+
+            for (y = 0; y < h; y++)
+               free(c.dst[y]);
+            free(c.dst);
+            free(c.img);
+            free(want);
+         }
+      }
+#ifdef RJPEG_TEST_COUNT_ALLOCS
+      (void)before;
+#endif
+   }
+
+   /* Broken files fail cleanly and leave the decoder usable */
+   {
+      struct rows_ctx c;
+      struct rjpeg_rows rows = cb;
+      unsigned w = 0, h = 0, n;
+      memset(&c, 0, sizeof(c));
+      c.mode    = 1;
+      c.refuse  = 0;
+      rows.size = NULL;
+      rows.row  = NULL;
+      rows.done = NULL;
+      rows.user = &c;
+      check(!rjpeg_decode_rows(r, rjpeg_bad_dc_baseline,
+            sizeof(rjpeg_bad_dc_baseline), true, &rows, &w, &h),
+            "a broken file is refused");
+      for (n = 1; n < sizeof(rows_420); n += 37)
+         rjpeg_decode_rows(r, rows_420, n, true, &rows, &w, &h);
+      check(rjpeg_decode_rows(r, rows_420, sizeof(rows_420), true, &rows,
+            &w, &h) && w == 37 && h == 29,
+            "the decoder decodes after broken and cut files");
+   }
+
+   rjpeg_free(r);
+}
+
 int main(void)
 {
    test_sync_matches_iterative();
@@ -589,6 +808,7 @@ int main(void)
    test_truncation_never_faults();
    test_undefined_tables();
    test_unscanned_coefficients();
+   test_rows_match_image();
 
    if (failures)
       printf("\n%d check(s) failed\n", failures);

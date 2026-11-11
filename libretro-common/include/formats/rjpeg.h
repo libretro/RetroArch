@@ -65,6 +65,44 @@ void rjpeg_set_avail(rjpeg_t *rjpeg, size_t avail);
 bool rjpeg_need_more(const rjpeg_t *rjpeg);
 bool rjpeg_header_ready(const uint8_t *data, size_t len);
 
+/* An image decoded straight to where its rows go, in one call, with
+ * the decoder's memory kept for the next image: once an image of a size
+ * has been decoded, decoding another no bigger takes no memory.
+ *
+ *   size  the image's size, once the header is read, before any row;
+ *         false stops the decode (NULL: any size)
+ *   row   where row y's width * 4 bytes are to be written: 4-byte
+ *         aligned memory of the caller's, or NULL for rjpeg's own row
+ *         (NULL: always rjpeg's)
+ *   done  row y is written, at px - where row() said, or rjpeg's own
+ *         row, valid until the call returns (NULL: not told)
+ *
+ * Rows come in order, 0 to height - 1, as BGRA, or RGBA with @rgba. */
+struct rjpeg_rows
+{
+   bool     (*size)(void *user, unsigned width, unsigned height);
+   uint8_t *(*row)(void *user, unsigned y);
+   void     (*done)(void *user, unsigned y, const uint8_t *px);
+   void      *user;
+};
+
+/**
+ * rjpeg_decode_rows:
+ * @data, @len : the whole file, read where it lies
+ * @rgba       : RGBA rather than BGRA
+ * @rows       : where the rows go
+ * @width, @height : receive the size (0 if the header was not read)
+ *
+ * Not on a decoder that rjpeg_start() or rjpeg_process_image() is
+ * decoding with.
+ *
+ * Returns: true when every row was written; false for a file that is
+ * not a JPEG or is broken, or when @rows->size said no.
+ */
+bool rjpeg_decode_rows(rjpeg_t *rjpeg, const uint8_t *data, size_t len,
+      bool rgba, const struct rjpeg_rows *rows,
+      unsigned *width, unsigned *height);
+
 void rjpeg_free(rjpeg_t *rjpeg);
 
 rjpeg_t *rjpeg_alloc(void);

@@ -14,6 +14,12 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include
 
+# The decoder's allocations counted, where the linker can wrap malloc
+ifeq ($(shell uname -s),Linux)
+   CFLAGS  += -DRJPEG_TEST_COUNT_ALLOCS
+   LDFLAGS += -Wl,--wrap=malloc,--wrap=calloc
+endif
+
 # The samples workflow passes SANITIZER=address,undefined to every
 # sample dir.  Without this block the variable was accepted and
 # ignored, so these targets built unsanitized while the workflow
