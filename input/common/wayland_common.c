@@ -28,6 +28,8 @@
 #include <unistd.h>
 
 #include <string/stdstring.h>
+#include <compat/strl.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
@@ -743,11 +745,33 @@ static void wl_seat_handle_name(void *data,
  * takes), compared by identity only, for the mode handler below */
 static output_info_t *wl_window_output;
 
+/* The window output's connector name, for the display server, which
+ * runs on a connection of its own. Written into the idle slot, then
+ * published by flipping the index. */
+static char wl_window_output_names[2][32];
+static retro_atomic_int_t wl_window_output_slot;
+
+static void wl_publish_window_output_name(void)
+{
+   int next = !retro_atomic_load_acquire_int(&wl_window_output_slot);
+   strlcpy(wl_window_output_names[next],
+         wl_window_output ? wl_window_output->name : "",
+         sizeof(wl_window_output_names[next]));
+   retro_atomic_store_release_int(&wl_window_output_slot, next);
+}
+
+void wayland_window_output_name(char *s, size_t len)
+{
+   strlcpy(s, wl_window_output_names[
+         retro_atomic_load_acquire_int(&wl_window_output_slot)], len);
+}
+
 /* Tell the frontend the refresh rate of the output the window is on,
  * which it paces the menu by on a desktop of several monitors */
 static void wl_report_window_output(gfx_ctx_wayland_data_t *wl)
 {
    wl_window_output = wl->current_output;
+   wl_publish_window_output_name();
    video_driver_set_window_refresh_rate(
          (wl->current_output && wl->current_output->refresh_rate > 0)
          ? (float)wl->current_output->refresh_rate / 1000.0f
@@ -926,7 +950,13 @@ static void wl_output_handle_done(void *data, struct wl_output *output) { }
 
 #ifdef WL_OUTPUT_NAME_SINCE_VERSION
 static void wl_output_handle_name(void *data,
-      struct wl_output *output, const char *name) { }
+      struct wl_output *output, const char *name)
+{
+   output_info_t *oi = (output_info_t*)data;
+   strlcpy(oi->name, name ? name : "", sizeof(oi->name));
+   if (oi == wl_window_output)
+      wl_publish_window_output_name();
+}
 
 static void wl_output_handle_description(void *data,
       struct wl_output *output, const char *description) { }
