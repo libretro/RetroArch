@@ -254,6 +254,174 @@ bool path_rmdir(const char *dir)
    return retro_vfs_rmdir_impl(dir) == 0;
 }
 
+static bool path_is_dot_entry(const char *name)
+{
+   return name[0] == '.'
+      && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'));
+}
+
+/* Appends the separator and @name to the @len characters of @path,
+ * a PATH_MAX_LENGTH buffer.  Returns the new length, or 0 if it
+ * does not fit. */
+static size_t path_tree_append(char *path, size_t len, const char *name)
+{
+   size_t name_len = strlen(name);
+   if (len + 1 + name_len >= PATH_MAX_LENGTH)
+      return 0;
+   path[len] = PATH_DEFAULT_SLASH_C();
+   memcpy(path + len + 1, name, name_len + 1);
+   return len + 1 + name_len;
+}
+
+/* Drops trailing separators, keeping a root's.  Returns the length. */
+static size_t path_tree_trim(char *path)
+{
+   size_t len = strlen(path);
+   while (len > 1 && (path[len - 1] == '/' || path[len - 1] == '\\')
+         && path[len - 2] != ':')
+      path[--len] = '\0';
+   return len;
+}
+
+/* Empties and removes the directory in the first @len characters of
+ * @path, which grows in place with each entry's name. */
+static bool path_remove_tree_dir(char *path, size_t len)
+{
+   bool ok = true;
+   libretro_vfs_implementation_dir *dir =
+      retro_vfs_opendir_impl(path, true);
+
+   if (!dir)
+      return false;
+
+   while (retro_vfs_readdir_impl(dir))
+   {
+      size_t      entry_len;
+      const char *name = retro_vfs_dirent_get_name_impl(dir);
+
+      if (!name || path_is_dot_entry(name))
+         continue;
+      if (!(entry_len = path_tree_append(path, len, name)))
+      {
+         ok = false;
+         continue;
+      }
+      if (retro_vfs_dirent_is_dir_impl(dir))
+      {
+         /* An empty directory goes at once, and so does a link to
+          * one (rmdir on Windows, unlink elsewhere): only a real
+          * directory with something in it is walked. */
+         if (     retro_vfs_rmdir_impl(path)       != 0
+               && retro_vfs_file_remove_impl(path) != 0
+               && !path_remove_tree_dir(path, entry_len))
+            ok = false;
+      }
+      else if (retro_vfs_file_remove_impl(path) != 0)
+         ok = false;
+   }
+
+   retro_vfs_closedir_impl(dir);
+   path[len] = '\0';
+   return retro_vfs_rmdir_impl(path) == 0 && ok;
+}
+
+bool path_remove_tree(const char *path)
+{
+   bool   ok;
+   size_t len;
+   char  *buf;
+
+   if (!path || !*path)
+      return false;
+   /* A file, a link or an empty directory: no walk */
+   if (     retro_vfs_rmdir_impl(path)       == 0
+         || retro_vfs_file_remove_impl(path) == 0
+         || !path_is_valid(path))
+      return true;
+   if (!path_is_directory(path))
+      return false;
+   if (!(buf = (char*)malloc(PATH_MAX_LENGTH)))
+      return false;
+   strlcpy(buf, path, PATH_MAX_LENGTH);
+   len = path_tree_trim(buf);
+   ok  = path_remove_tree_dir(buf, len);
+   free(buf);
+   return ok;
+}
+
+static bool path_copy_tree_file(const char *src, const char *dst)
+{
+   struct retro_vfs_copy_handle *copy =
+      retro_vfs_copy_begin_impl(src, dst, RETRO_VFS_COPY_OVERWRITE);
+
+   if (!copy)
+      return false;
+   /* The whole file in one step: the platform's copy primitive at
+    * full speed, no buffer of ours */
+   while (retro_vfs_copy_step_impl(copy, (int64_t)1 << 62, NULL, NULL)
+         == RETRO_VFS_COPY_RUNNING) { }
+   return retro_vfs_copy_close_impl(copy) == 0;
+}
+
+/* Copies the directory in the first @src_len characters of @src into
+ * the one in the first @dst_len of @dst; both grow in place. */
+static bool path_copy_tree_dir(char *src, size_t src_len,
+      char *dst, size_t dst_len)
+{
+   bool ok = true;
+   libretro_vfs_implementation_dir *dir;
+
+   if (!path_is_directory(dst) && !path_mkdir(dst))
+      return false;
+   if (!(dir = retro_vfs_opendir_impl(src, true)))
+      return false;
+
+   while (retro_vfs_readdir_impl(dir))
+   {
+      size_t      src_entry, dst_entry;
+      const char *name = retro_vfs_dirent_get_name_impl(dir);
+
+      if (!name || path_is_dot_entry(name))
+         continue;
+      if (     !(src_entry = path_tree_append(src, src_len, name))
+            || !(dst_entry = path_tree_append(dst, dst_len, name)))
+         ok = false;
+      else if (retro_vfs_dirent_is_dir_impl(dir))
+      {
+         if (!path_copy_tree_dir(src, src_entry, dst, dst_entry))
+            ok = false;
+      }
+      else if (!path_copy_tree_file(src, dst))
+         ok = false;
+      src[src_len] = '\0';
+      dst[dst_len] = '\0';
+   }
+
+   retro_vfs_closedir_impl(dir);
+   return ok;
+}
+
+bool path_copy_tree(const char *src, const char *dst)
+{
+   bool  ok;
+   char *src_buf;
+   char *dst_buf;
+
+   if (!src || !*src || !dst || !*dst)
+      return false;
+   if (!path_is_directory(src))
+      return path_copy_tree_file(src, dst);
+   if (!(src_buf = (char*)malloc(2 * PATH_MAX_LENGTH)))
+      return false;
+   dst_buf = src_buf + PATH_MAX_LENGTH;
+   strlcpy(src_buf, src, PATH_MAX_LENGTH);
+   strlcpy(dst_buf, dst, PATH_MAX_LENGTH);
+   ok = path_copy_tree_dir(src_buf, path_tree_trim(src_buf),
+         dst_buf, path_tree_trim(dst_buf));
+   free(src_buf);
+   return ok;
+}
+
 /**
  * path_mkdir:
  * @dir                : directory

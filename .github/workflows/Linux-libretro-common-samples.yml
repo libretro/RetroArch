@@ -171,6 +171,8 @@ jobs:
             fill_pathname_test
             path_mkdir_test
             path_parent_dir_test
+            # path_remove_tree and path_copy_tree on a real tree, links
+            path_tree_test
             rpng
             # a PNG a row at a time, as stored, from input in pieces
             rpng_rows_test
