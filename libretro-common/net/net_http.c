@@ -2616,7 +2616,21 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
    if (newlen < 0 || state->err)
    {
       if (response->bodytype != T_FULL)
+      {
+         /* A Content-Length or chunked body cut short by the peer: the
+          * decoded bytes still held below the 32 KB floor arrived
+          * whole, so they reach the sink before the transfer fails.
+          * Held back, they were lost, and a download resumed from
+          * the file's end asked again for what it had received. */
+         if (newlen < 0 && net_http_body_streams(state))
+         {
+            size_t held = response->bodytype == T_CHUNK
+               ? response->len : response->pos;
+            if (held)
+               net_http_sink_flush(state, held);
+         }
          return false;
+      }
       /* What is still held of a streamed body goes to the sink first */
       if (net_http_body_streams(state) && response->pos)
       {
