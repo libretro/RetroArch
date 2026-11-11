@@ -117,25 +117,41 @@ static bool webdav_url_for_path(char *url, size_t len, const char *path,
 
 static char *webdav_create_basic_auth(void)
 {
+   static const char prefix[] = "Authorization: Basic ";
    int         flen;
+   int         plain_len;
    char       *base64auth;
+   char       *header;
    char        userpass[512];
-   settings_t *settings  = config_get_ptr();
-   size_t      _len      = 0;
-   if (*settings->arrays.webdav_username)
-      _len += strlcpy(userpass + _len, settings->arrays.webdav_username, sizeof(userpass) - _len);
-   userpass[_len++] = ':';
-   if (*settings->arrays.webdav_password)
-      _len += strlcpy(userpass + _len, settings->arrays.webdav_password, sizeof(userpass) - _len);
-   userpass[_len]   = '\0';
-   base64auth = base64(userpass, (int)_len, &flen);
-   _len  = strlcpy_lit(userpass, "Authorization: Basic ", sizeof(userpass));
-   _len += strlcpy(userpass + _len, base64auth, sizeof(userpass) - _len);
+   size_t      header_len;
+   size_t      prefix_len = sizeof(prefix) - 1;
+   settings_t *settings = config_get_ptr();
+
+   plain_len = snprintf(userpass, sizeof(userpass), "%s:%s",
+         settings->arrays.webdav_username,
+         settings->arrays.webdav_password);
+   if (plain_len < 0 || (size_t)plain_len >= sizeof(userpass))
+      return NULL;
+
+   base64auth = base64(userpass, plain_len, &flen);
+   if (!base64auth)
+      return NULL;
+
+   header_len = prefix_len + (size_t)flen;
+   header     = (char*)malloc(header_len + 3);
+   if (!header)
+   {
+      free(base64auth);
+      return NULL;
+   }
+
+   memcpy(header, prefix, prefix_len);
+   memcpy(header + prefix_len, base64auth, (size_t)flen);
    free(base64auth);
-   userpass[_len++] = '\r';
-   userpass[_len++] = '\n';
-   userpass[_len  ] = '\0';
-   return strdup(userpass);
+   header[header_len++] = '\r';
+   header[header_len++] = '\n';
+   header[header_len]   = '\0';
+   return header;
 }
 
 static void webdav_cleanup_digest(void)
