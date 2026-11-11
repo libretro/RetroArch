@@ -863,7 +863,7 @@ static void s3_read_cb(retro_task_t *task, void *task_data, void *user_data, con
    {
       file = filestream_open(s3_cb_st->file,
             RETRO_VFS_FILE_ACCESS_READ_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
       if (!file)
       {
          RARCH_WARN(S3_PFX "Failed to open local file for read '%s'\n", s3_cb_st->file);

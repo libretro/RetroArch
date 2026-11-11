@@ -350,7 +350,8 @@ static bool smb_read(const char *path, const char *file,
    smb2_close(smb_st.ctx, fh);
 
    /* Write to local file */
-   rfile = filestream_open(file, RETRO_VFS_FILE_ACCESS_READ_WRITE, 0);
+   rfile = filestream_open(file, RETRO_VFS_FILE_ACCESS_READ_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    if (!rfile)
    {
       RARCH_ERR(SMBPFX "Failed to open local file '%s'\n", file);

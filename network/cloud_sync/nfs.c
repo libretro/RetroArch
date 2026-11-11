@@ -318,7 +318,7 @@ static bool nfs_read(const char *path, const char *file,
       return true;
    }
    if (!(local = filestream_open(s->local_tmp, RETRO_VFS_FILE_ACCESS_WRITE,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
    {
       RARCH_ERR(NFSPFX "Could not create '%s'\n", s->local_tmp);
       rnfs_close(ctx, remote);

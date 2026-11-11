@@ -926,7 +926,7 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
        * to the file happened during the network reads */
       file = filestream_open(webdav_cb_st->file,
                              RETRO_VFS_FILE_ACCESS_READ_WRITE,
-                             RETRO_VFS_FILE_ACCESS_HINT_NONE);
+                             RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
       if (   file
           && data->data && data->len
           && filestream_write(file, data->data, data->len) != (int64_t)data->len)

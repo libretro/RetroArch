@@ -147,7 +147,7 @@ static bool icloud_read(const char *p, const char *f, cloud_sync_complete_handle
                   RARCH_DBG("[iCloud] record for %s has no readable data\n", path);
                else if (!(rfile = filestream_open(file,
                            RETRO_VFS_FILE_ACCESS_READ_WRITE,
-                           RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+                           RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
                   RARCH_DBG("[iCloud] could not open %s for writing\n", file);
                else if (filestream_write(rfile, [data bytes], [data length])
                      != (int64_t)[data length])

@@ -1326,7 +1326,7 @@ static void gdrive_read_download_cb(retro_task_t *task, void *task_data,
    {
       file = filestream_open(cb_st->file,
             RETRO_VFS_FILE_ACCESS_READ_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
       if (   file
           && data->data && data->len
           && filestream_write(file, data->data, data->len) != (int64_t)data->len)
