@@ -1,0 +1,41 @@
+TARGET := udev_touch_test
+
+# The real udev input driver's touchscreen support, handed a panel in
+# memory: its ioctls are answered by the test and evdev frames are fed
+# to its event handler. udev_input.c is included by the test itself;
+# the frontend symbols it links against are stood in for in the test.
+#    make && make check
+REPO_ROOT := ../../..
+
+CFLAGS += -Wall -Wno-unused -std=gnu99 -g1 -O1 \
+          -DRARCH_INTERNAL -DHAVE_UDEV -DHAVE_EPOLL -DHAVE_THREADS \
+          -DUDEV_TOUCH_SUPPORT \
+          -I$(REPO_ROOT) -I$(REPO_ROOT)/input/include \
+          -I$(REPO_ROOT)/gfx/include \
+          -I$(REPO_ROOT)/libretro-common/include -I$(REPO_ROOT)/deps
+
+ifneq ($(SANITIZER),)
+   CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+   LDFLAGS += -fsanitize=$(SANITIZER)
+endif
+
+# udev is Linux's: elsewhere there is no driver to test, and the
+# targets say so and succeed.
+ifeq ($(shell uname -s 2>/dev/null),Linux)
+all: $(TARGET)
+
+$(TARGET): udev_touch_test.c $(REPO_ROOT)/input/drivers/udev_input.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ udev_touch_test.c \
+		$(REPO_ROOT)/libretro-common/compat/compat_strl.c -ludev
+
+check: all
+	./$(TARGET)
+else
+all check:
+	@echo "SKIP udev_touch_test: the udev input driver is Linux only"
+endif
+
+clean:
+	rm -f $(TARGET)
+
+.PHONY: all check clean

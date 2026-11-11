@@ -1265,6 +1265,26 @@ jobs:
           make clean
           echo "[pass] udev_devices_test (ASan)"
 
+      - name: Build and run udev_touch_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/udev_touch
+        run: |
+          set -eu
+          # The udev input driver's touchscreen support
+          # (UDEV_TOUCH_SUPPORT), handed a panel in memory: its
+          # ioctls are answered by the test and evdev frames are fed
+          # to its event handler. The pointer is pressed while any
+          # contact is down and released after the last; the pointer
+          # device answers X, Y and pressed; a multi-touch panel's
+          # single-touch emulation leaves the slots alone; a
+          # single-touch panel's contact is slot 0; positions are
+          # taken from the axis minimum.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./udev_touch_test
+          make clean
+          echo "[pass] udev_touch_test (ASan)"
+
       - name: Build and run device_pins_test
         shell: bash
         working-directory: samples/input/device_pins
