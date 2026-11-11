@@ -27,6 +27,7 @@
 #include "../cloud_sync_driver.h"
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../tasks/task_file_transfer.h"
 #include "../../verbosity.h"
 
 typedef struct
@@ -901,7 +902,9 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
 
       RARCH_DBG("[webdav] GET %s\n", url_encoded);
       auth_header = webdav_get_auth_header("GET", url_encoded);
-      task_push_http_transfer_with_headers(url_encoded, true, NULL, auth_header, webdav_read_cb, webdav_cb_st);
+      task_push_http_download_file_with_headers(url_encoded,
+            webdav_cb_st->file, true, NULL, auth_header,
+            webdav_read_cb, webdav_cb_st);
       free(auth_header);
       return;
    }
@@ -912,6 +915,7 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
    {
       RARCH_WARN("[webdav] %s: response body has no Content-Length or "
             "chunked framing; treating as failure.\n", webdav_cb_st->path);
+      filestream_delete(webdav_cb_st->file);
       found   = false;
       success = false;
    }
@@ -922,23 +926,12 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
     * server does not have it (404). */
    if (found)
    {
-      /* TODO/FIXME: it would be better if writing
-       * to the file happened during the network reads */
-      file = filestream_open(webdav_cb_st->file,
-                             RETRO_VFS_FILE_ACCESS_READ_WRITE,
-                             RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
-      if (   file
-          && data->data && data->len
-          && filestream_write(file, data->data, data->len) != (int64_t)data->len)
+      /* The body went to the file as it arrived */
+      if (!(file = filestream_open(webdav_cb_st->file,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
       {
-         filestream_close(file);
-         file = NULL;
-      }
-      if (file)
-         filestream_seek(file, 0, SEEK_SET);
-      else
-      {
-         RARCH_WARN("[webdav] Could not write \"%s\".\n", webdav_cb_st->file);
+         RARCH_WARN("[webdav] Could not open \"%s\".\n", webdav_cb_st->file);
          success = false;
       }
    }
@@ -969,8 +962,10 @@ static bool webdav_read(const char *path, const char *file,
 
    RARCH_DBG("[webdav] GET %s\n", url_encoded);
    auth_header = webdav_get_auth_header("GET", url_encoded);
-   t = task_push_http_transfer_with_headers(url_encoded, true, NULL,
-         auth_header, webdav_read_cb, webdav_cb_st);
+   /* Downloaded straight to the file, as it arrives */
+   t = task_push_http_download_file_with_headers(url_encoded,
+         webdav_cb_st->file, true, NULL, auth_header,
+         webdav_read_cb, webdav_cb_st);
    free(auth_header);
    return (t != NULL);
 }

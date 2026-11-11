@@ -24,6 +24,7 @@
 #include "../cloud_sync_driver.h"
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../tasks/task_file_transfer.h"
 #include "../../verbosity.h"
 #include <compat/strl.h>
 
@@ -859,21 +860,15 @@ static void s3_read_cb(retro_task_t *task, void *task_data, void *user_data, con
    else if (!success)
       s3_log_http_failure(s3_cb_st->path, data, err);
 
+   /* The body went to the file as it arrived */
    if (success && data && data->status >= 200 && data->status < 300)
    {
-      file = filestream_open(s3_cb_st->file,
-            RETRO_VFS_FILE_ACCESS_READ_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
-      if (!file)
+      if (!(file = filestream_open(s3_cb_st->file,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
       {
          RARCH_WARN(S3_PFX "Failed to open local file for read '%s'\n", s3_cb_st->file);
          success = false;
-      }
-      else
-      {
-         if (data->data && data->len > 0)
-            filestream_write(file, data->data, data->len);
-         filestream_seek(file, 0, SEEK_SET);
       }
    }
 
@@ -926,10 +921,11 @@ static void s3_delete_cb(retro_task_t *task, void *task_data, void *user_data, c
    free(s3_cb_st);
 }
 
+/* GET straight into @cb_state's file, as the body arrives */
 static bool s3_http_get_async(const char *url, const char *headers, s3_cb_state_t *cb_state)
 {
-   return task_push_http_transfer_with_headers(url, true, NULL,
-         headers, s3_read_cb, cb_state) != NULL;
+   return task_push_http_download_file_with_headers(url, cb_state->file,
+         true, NULL, headers, s3_read_cb, cb_state) != NULL;
 }
 
 /* PUT @cb_state's body, streamed from its file */

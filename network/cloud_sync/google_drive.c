@@ -23,6 +23,7 @@
 #include "../cloud_sync_driver.h"
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../tasks/task_file_transfer.h"
 #include "../../verbosity.h"
 
 /* OAuth client credentials (XOR-obfuscated to avoid automated secret scanners;
@@ -1315,6 +1316,7 @@ static void gdrive_read_download_cb(retro_task_t *task, void *task_data,
    {
       RARCH_WARN(GDPFX "%s: response body has no Content-Length or "
             "chunked framing; treating as failure.\n", cb_st->path);
+      filestream_delete(cb_st->file);
       success = false;
    }
 
@@ -1324,21 +1326,12 @@ static void gdrive_read_download_cb(retro_task_t *task, void *task_data,
     * server" (gdrive_read_search_cb()). */
    if (success)
    {
-      file = filestream_open(cb_st->file,
-            RETRO_VFS_FILE_ACCESS_READ_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
-      if (   file
-          && data->data && data->len
-          && filestream_write(file, data->data, data->len) != (int64_t)data->len)
+      /* The body went to the file as it arrived */
+      if (!(file = filestream_open(cb_st->file,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
       {
-         filestream_close(file);
-         file = NULL;
-      }
-      if (file)
-         filestream_seek(file, 0, SEEK_SET);
-      else
-      {
-         RARCH_WARN(GDPFX "Could not write \"%s\".\n", cb_st->file);
+         RARCH_WARN(GDPFX "Could not open \"%s\".\n", cb_st->file);
          success = false;
       }
    }
@@ -1383,8 +1376,9 @@ static void gdrive_read_search_cb(retro_task_t *task, void *task_data,
 
    RARCH_DBG(GDPFX "GET %s\n", cb_st->path);
    headers = gdrive_get_headers(NULL);
-   if (!task_push_http_transfer_with_headers(url, true, NULL,
-         headers, gdrive_read_download_cb, cb_st))
+   /* Downloaded straight to the file, as it arrives */
+   if (!task_push_http_download_file_with_headers(url, cb_st->file, true,
+         NULL, headers, gdrive_read_download_cb, cb_st))
    {
       RARCH_WARN(GDPFX "Could not download %s\n", cb_st->path);
       gdrive_cb_state_finish(cb_st, false);
