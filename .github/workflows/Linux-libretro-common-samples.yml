@@ -212,6 +212,9 @@ jobs:
             # MPEG-4 Part 2 encoding, decoded back with rmpeg4_video; a
             # step below has FFmpeg decode the streams.
             rmpeg4_encode_test
+            # AAC-LC encoding, decoded back with raac; a step below has
+            # FFmpeg decode the streams.
+            raac_encode_test
             # 4:2:0 to bytes in memory order and to UYVY.
             image_yuv_test
             rh264_lossless_test
@@ -945,6 +948,28 @@ jobs:
             n=$((n+1))
           done
           [ "$n" = 5 ]
+
+      # What raac_encode writes - tones, noise, an attack, mono and
+      # stereo, 8 to 96 kHz - FFmpeg decodes within 2 per sample of raac
+      # (the sample checks raac's decoding against the input)
+      - name: Decode raac_encode's streams with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/aac_encode
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./raac_encode_test "$work"
+          n=0
+          for f in "$work"/*.aac; do
+            ffmpeg -nostdin -hide_banner -loglevel error -xerror -i "$f" \
+              -f s16le -y "${f%.aac}.ff.s16"
+            ./raac_encode_test --compare "${f%.aac}.s16" "${f%.aac}.ff.s16"
+            n=$((n+1))
+          done
+          [ "$n" = 9 ]
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
