@@ -198,6 +198,9 @@ jobs:
             # Baseline JPEG encoding, decoded back with rjpeg; a step
             # below has FFmpeg decode what it writes.
             rjpeg_encode_test
+            # MP4 writing, read back with rmp4; a step below has FFmpeg
+            # decode the files.
+            rmp4_mux_test
             # MPEG-2 video through rmpeg1_video, on its own fixtures; the
             # step below runs it again over FFmpeg's and the conformance
             # streams.
@@ -859,6 +862,28 @@ jobs:
             n=$((n+1))
           done
           [ "$n" = 9 ]
+
+      # What rmp4_mux writes - MPEG-4 video with B-VOPs and 16-bit PCM,
+      # motion JPEG and float PCM - must decode in FFmpeg with no error,
+      # every frame there and the first shown at time zero
+      - name: Read rmp4_mux's files with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/mp4_mux
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./rmp4_mux_test "$work"
+          for f in mpeg4_pcm:8 mjpeg_f32:6; do
+            file="$work/${f%%:*}.mp4"
+            ffmpeg -nostdin -hide_banner -loglevel error -xerror -i "$file" -f null -
+            got=$(ffprobe -v error -count_frames -select_streams v \
+              -show_entries stream=nb_read_frames,start_time -of csv=p=0 "$file")
+            echo "$file: $got"
+            [ "$got" = "0.000000,${f##*:}" ]
+          done
 
       - name: Decode MPEG-4 video against FFmpeg
         if: matrix.group == 'formats'
