@@ -399,6 +399,9 @@ jobs:
             # each parked between turns: a lost wake hangs it, and its
             # own watchdog reports that as a failure.
             retro_shared_eventcount_test
+            # A writer updates a record two million times while three
+            # threads copy it: no copy torn, none going back.
+            retro_seqlock_test
             sthread_ex_test
             fast_cores_test
             memshm_test
