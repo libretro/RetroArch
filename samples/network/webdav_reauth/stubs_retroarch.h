@@ -12,6 +12,10 @@ typedef struct
 {
    unsigned count;
    const char *method;
+   /* A download's file, which the real task streams the body into;
+    * NULL for any other request. The driver's own string, valid until
+    * the request is answered. */
+   const char *sink_path;
    bool had_auth;
    retro_task_callback_t cb;
    void *user_data;

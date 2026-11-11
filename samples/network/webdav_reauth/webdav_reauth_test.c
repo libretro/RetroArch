@@ -301,6 +301,9 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
    if (stub_req.count == 1)
    {
       stub_req.count = 0;
+      /* The real task streamed the body to the file before answering */
+      if (stub_req.sink_path)
+         filestream_write_file(stub_req.sink_path, body, sizeof(body) - 1);
       stub_req.cb(NULL, &ok, stub_req.user_data, NULL);
    }
 

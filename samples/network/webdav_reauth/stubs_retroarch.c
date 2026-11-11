@@ -13,6 +13,7 @@
 
 #include "../../../configuration.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../tasks/task_file_transfer.h"
 
 #include "stubs_retroarch.h"
 
@@ -73,6 +74,7 @@ static void *stub_record(const char *method, const char *headers,
    stub_req.had_auth  = (headers != NULL);
    stub_req.cb        = cb;
    stub_req.user_data = user_data;
+   stub_req.sink_path = NULL;
    return &stub_req;
 }
 
@@ -130,6 +132,19 @@ void *task_push_http_transfer_with_headers(const char *url, bool mute,
 {
    (void)url; (void)mute; (void)type;
    return stub_record("GET", headers, cb, user_data);
+}
+
+/* A read: a GET streamed into @path. A test answering it with a body
+ * writes the body there first, as the real task would have. */
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   void *ret;
+   (void)url; (void)mute; (void)title;
+   ret                = stub_record("GET", headers, cb, user_data);
+   stub_req.sink_path = path;
+   return ret;
 }
 
 void *task_push_webdav_move(const char *url, const char *dest,

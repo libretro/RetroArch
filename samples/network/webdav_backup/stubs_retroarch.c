@@ -14,6 +14,7 @@
 
 #include "../../../configuration.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../tasks/task_file_transfer.h"
 
 #include "stubs_retroarch.h"
 
@@ -114,6 +115,16 @@ void *task_push_http_transfer_with_headers(const char *url, bool mute,
       retro_task_callback_t cb, void *user_data)
 {
    (void)mute; (void)type;
+   return stub_record("GET", url, NULL, headers, cb, user_data);
+}
+
+/* A read: a GET streamed into @path. No test here answers one with
+ * a body, so nothing is written there. */
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   (void)path; (void)mute; (void)title;
    return stub_record("GET", url, NULL, headers, cb, user_data);
 }
 
