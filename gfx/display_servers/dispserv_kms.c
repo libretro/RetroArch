@@ -482,13 +482,52 @@ static bool kms_display_server_crtc_vrr(int fd, uint32_t crtc_id)
    return vrr;
 }
 
+/* Physical size comes from the connector (EDID or the panel's device
+ * tree node), pixel size from the live mode. The menu's touch drag,
+ * swipe and scaling need DPI; 0 mm means the sink did not say. */
+static bool kms_display_server_geometry_metric(
+      enum display_metric_types type, float *value)
+{
+   unsigned n;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_PIXEL_WIDTH:
+         n = g_drm_mode ? g_drm_mode->hdisplay : 0;
+         break;
+      case DISPLAY_METRIC_PIXEL_HEIGHT:
+         n = g_drm_mode ? g_drm_mode->vdisplay : 0;
+         break;
+      case DISPLAY_METRIC_MM_WIDTH:
+         n = g_drm_connector ? g_drm_connector->mmWidth : 0;
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         n = g_drm_connector ? g_drm_connector->mmHeight : 0;
+         break;
+      case DISPLAY_METRIC_DPI:
+         if (     !g_drm_mode || !g_drm_mode->hdisplay
+               || !g_drm_connector || !g_drm_connector->mmWidth)
+            return false;
+         *value = (float)g_drm_mode->hdisplay * 25.4f
+               / (float)g_drm_connector->mmWidth;
+         return true;
+      default:
+         return false;
+   }
+   if (!n)
+      return false;
+   *value = (float)n;
+   return true;
+}
+
 static bool kms_display_server_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
    bool vrr;
 
-   if (     type != DISPLAY_METRIC_TOTAL_LINES
-         || !kms_display_server_mode_timed())
+   if (type != DISPLAY_METRIC_TOTAL_LINES)
+      return kms_display_server_geometry_metric(type, value);
+   if (!kms_display_server_mode_timed())
       return false;
    /* Read with the line count, outside Scanline Sync's wait */
    vrr = g_crtc_id && kms_display_server_crtc_vrr(g_drm_fd, g_crtc_id);

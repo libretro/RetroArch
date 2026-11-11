@@ -1068,7 +1068,81 @@ static int test_total_lines_metric(void)
 
    if (fails)
       return 1;
-   puts("[pass] DISPLAY_METRIC_TOTAL_LINES is the mode's vtotal, and nothing else is answered");
+   puts("[pass] DISPLAY_METRIC_TOTAL_LINES is the mode's vtotal, and only for a timed mode");
+   return 0;
+}
+
+/* Issue #20061: the menu's DPI comes from here under KMS, and a DPI
+ * of 0 turns off pointer drag, swipe and press direction. A 1024x600
+ * panel 154 x 86 mm wide reports about 169 DPI. */
+static int test_geometry_metrics(void)
+{
+   static const mode_spec_t specs[] = { { 1024, 600, 60 } };
+   float value = 0.0f;
+   float want  = 1024.0f * 25.4f / 154.0f;
+   int fails   = 0;
+
+   if (!(g_drm_connector = make_connector(specs, 1)))
+      return 1;
+   g_drm_connector->mmWidth  = 154;
+   g_drm_connector->mmHeight = 86;
+   g_drm_mode                = &g_drm_connector->modes[0];
+
+   if (     !dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_DPI, &value)
+         || value < want - 0.01f || value > want + 0.01f)
+   {
+      fprintf(stderr, "FAIL: DPI %.2f, want %.2f\n", value, want);
+      fails++;
+   }
+   if (     !dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_MM_WIDTH, &value)
+         || value != 154.0f
+         || !dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_MM_HEIGHT, &value)
+         || value != 86.0f)
+   {
+      fputs("FAIL: physical size not the connector's\n", stderr);
+      fails++;
+   }
+   if (     !dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_PIXEL_WIDTH, &value)
+         || value != 1024.0f
+         || !dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_PIXEL_HEIGHT, &value)
+         || value != 600.0f)
+   {
+      fputs("FAIL: pixel size not the live mode's\n", stderr);
+      fails++;
+   }
+
+   /* A sink that reports no size: no DPI and no mm, pixels still */
+   g_drm_connector->mmWidth  = 0;
+   g_drm_connector->mmHeight = 0;
+   if (     dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_DPI, &value)
+         || dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_MM_WIDTH, &value)
+         || dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_MM_HEIGHT, &value))
+   {
+      fputs("FAIL: answered a size the connector does not report\n", stderr);
+      fails++;
+   }
+   if (!dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_PIXEL_WIDTH, &value))
+   {
+      fputs("FAIL: pixel width tied to the physical size\n", stderr);
+      fails++;
+   }
+
+   /* After a context teardown neither global is there to read */
+   free_connector(g_drm_connector);
+   g_drm_connector = NULL;
+   g_drm_mode      = NULL;
+   if (     dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_DPI, &value)
+         || dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_MM_WIDTH, &value)
+         || dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_PIXEL_WIDTH, &value)
+         || dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_NONE, &value))
+   {
+      fputs("FAIL: geometry answered with no connector or mode\n", stderr);
+      fails++;
+   }
+
+   if (fails)
+      return 1;
+   puts("[pass] DPI, mm and pixel size come from the connector and live mode");
    return 0;
 }
 
@@ -1079,6 +1153,8 @@ int main(void)
    if (test_get_scanline())
       return 1;
    if (test_total_lines_metric())
+      return 1;
+   if (test_geometry_metrics())
       return 1;
    if (test_get_edid())
       return 1;
