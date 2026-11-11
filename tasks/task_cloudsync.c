@@ -1384,6 +1384,30 @@ static void task_cloud_sync_fetched_take(task_cloud_sync_state_t *sync_state)
    *tail = rev;
 }
 
+/* A download comes back on the stream it was written through, which
+ * cannot lend its bytes, so hashing it would read the whole file back
+ * into the hash buffer.  Opened again to read with the mapping hint it
+ * lends them where they lie, out of the page cache the write just
+ * filled.  Under one hash chunk the file is a single read, cheaper
+ * than another open, so it stays as it is; where the platform has no
+ * mapping the new stream reads as the old one did. */
+static void task_cloud_sync_fetched_lend(tcs_fetched_t *rec)
+{
+   char   tmp[PATH_MAX_LENGTH];
+   RFILE *lent;
+
+   if (     filestream_get_size(rec->file) < CS_HASH_CHUNK
+         || !task_cloud_sync_fetching_path(tmp, sizeof(tmp),
+               rec->fetch_state->local)
+         || filestream_flush(rec->file) != 0)
+      return;
+   if (!(lent = filestream_open(tmp, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+      return;
+   filestream_close(rec->file);
+   rec->file = lent;
+}
+
 /* Hashes the downloads handed over, inside @b, finishing each fetch
  * once its file is hashed. */
 static void task_cloud_sync_fetched_run(task_cloud_sync_state_t *sync_state,
@@ -1397,6 +1421,7 @@ static void task_cloud_sync_fetched_run(task_cloud_sync_state_t *sync_state,
 
       if (!sync_state->hash_fetched.file)
       {
+         task_cloud_sync_fetched_lend(rec);
          if (     !sync_state->hash_buf
                && !(sync_state->hash_buf = (uint8_t*)malloc(CS_HASH_CHUNK)))
             hash[0] = '\0';
