@@ -63,7 +63,8 @@ for v in 1_3 1_2; do
    set +e; $RUN ./tls_duplex$EXE localhost 44331 $D/ca.pem 60 > $D/dup.client 2>&1; rc=$?; set -e
    sleep 1; kill $SRV 2>/dev/null || true; wait $SRV 2>/dev/null || true
    sent=$(grep -c '^w0[0-5][0-9]$' $D/dup.out || true)
-   got=$(grep -c '^got: s[1-4]$' $D/dup.client || true)
+   # a Windows client (EXE=.exe under Wine) ends its lines with CR LF
+   got=$(tr -d '\r' < $D/dup.client | grep -c '^got: s[1-4]$' || true)
    # our KeyUpdates as the server received them (-msg): one per request
    kus=$(grep -c '^<<< .*KeyUpdate' $D/dup.out || true)
    if [ $v = 1_3 ]; then want_kus=2; else want_kus=0; fi
