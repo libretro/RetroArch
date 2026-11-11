@@ -596,15 +596,19 @@ static dat_converter_list_t* dat_converter_parser(
                   {
                      if (warning_displayed == false)
                      {
+                        /* A walk of its own: the entries after this
+                         * one are matched by the whole key. */
+                        dat_converter_match_key_t* mk = match_key;
                         printf("    - Missing match key '");
-                        while (match_key->next)
+                        while (mk->next)
                         {
-                           printf("%s.", match_key->value);
-                           match_key = match_key->next;
+                           printf("%s.", mk->value);
+                           mk = mk->next;
                         }
-                        printf("%s' on line %d\n", match_key->value, current->token.line_no);
+                        printf("%s' on line %d\n", mk->value, current->token.line_no);
                         warning_displayed = true;
                      }
+                     dat_converter_list_free(map.value.list);
                      skip = true;
                   }
                }

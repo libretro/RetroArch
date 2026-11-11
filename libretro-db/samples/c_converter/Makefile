@@ -1,4 +1,4 @@
-TARGETS := c_converter_case_test
+TARGETS := c_converter_case_test c_converter_missing_key_test
 
 LIBRETRODB_DIR    := ../..
 LIBRETRO_COMM_DIR := ../../../libretro-common
@@ -50,10 +50,15 @@ c_converter_main.o: $(LIBRETRODB_DIR)/c_converter.c
 c_converter_case_test: c_converter_case_test.o $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+c_converter_missing_key_test: c_converter_missing_key_test.o $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 check: all
 	./c_converter_case_test
+	./c_converter_missing_key_test
 
 clean:
-	rm -f $(TARGETS) $(OBJS) c_converter_case_test.o
+	rm -f $(TARGETS) $(OBJS) c_converter_case_test.o \
+	      c_converter_missing_key_test.o
 
 .PHONY: clean check
