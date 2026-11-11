@@ -135,6 +135,9 @@ struct rvz
    uint8_t           *zbuf;     /* a compressed group, as read */
    uint16_t          *probs;    /* the LZMA model, for LZMA and LZMA2 */
    rbzip2_t          *bz;       /* the bzip2 decoder, for bzip2 */
+#ifdef HAVE_RZSTD
+   rzstd_decoder_t   *zstd;     /* the zstd decoder's scratch, for zstd */
+#endif
    uint8_t           *zeros;    /* a group's worth of zeroed data */
    uint8_t           *block;    /* the hash block reassembled */
    uint8_t           *hashes;   /* its 64 sectors' hash areas */
@@ -292,8 +295,8 @@ static int rvz_decompress(rvz_t *z, uint8_t *dst, size_t cap,
    {
 #ifdef HAVE_RZSTD
       case RVZ_COMP_ZSTD:
-         return rzstd_decode(dst, cap, src, src_len, len) == RZSTD_PROCESS_END
-            ? RVZ_OK : RVZ_ERROR_DATA;
+         return rzstd_decode_reuse(z->zstd, dst, cap, src, src_len, len)
+               == RZSTD_PROCESS_END ? RVZ_OK : RVZ_ERROR_DATA;
 #endif
       case RVZ_COMP_BZIP2:
          switch (rbzip2_decode(z->bz, dst, cap, src, src_len, len))
@@ -1149,6 +1152,9 @@ void rvz_free(rvz_t *z)
    free(z->h0);
    free(z->probs);
    rbzip2_free(z->bz);
+#ifdef HAVE_RZSTD
+   rzstd_decoder_free(z->zstd);
+#endif
    free(z->disc);
    free(z->tab);
    free(z);
@@ -1427,6 +1433,11 @@ static int rvz_open_run(rvz_t *z)
             }
             if (z->compression == RVZ_COMP_BZIP2 && !(z->bz = rbzip2_new()))
                return RVZ_ERROR_MEM;
+#ifdef HAVE_RZSTD
+            if (z->compression == RVZ_COMP_ZSTD && !z->zstd
+                  && !(z->zstd = rzstd_decoder_new()))
+               return RVZ_ERROR_MEM;
+#endif
             z->encrypted = z->dhead[0x61] == 0;
             z->data_max  = z->chunk;
             z->stage     = RVZ_STAGE_PARTS;

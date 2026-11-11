@@ -43,6 +43,16 @@
 #define MAX_EXC   4096
 
 static int failures = 0;
+
+/* Allocations made through malloc, calloc and realloc (the Makefile wraps
+ * them): reads of a Zstandard image once read through allocate nothing. */
+static unsigned long allocations = 0;
+void *__real_malloc(size_t size);
+void *__real_calloc(size_t n, size_t size);
+void *__real_realloc(void *p, size_t size);
+void *__wrap_malloc(size_t size) { allocations++; return __real_malloc(size); }
+void *__wrap_calloc(size_t n, size_t size) { allocations++; return __real_calloc(n, size); }
+void *__wrap_realloc(void *p, size_t size) { allocations++; return __real_realloc(p, size); }
 /* the Wii partition's data, in sectors: a full hash block and 37 */
 static uint32_t n_sectors = 101;
 static uint32_t rng_state;
@@ -1160,6 +1170,8 @@ static void check_image(const struct config *cfg, const struct image *img)
       at += (uint64_t)got;
    }
 
+   allocations = 0;
+
    /* anywhere, any size, across every boundary */
    /* fewer where a group is slow to decode: LZMA and bzip2, and 2 MiB
     * groups of literals the LZMA encoder here makes */
@@ -1177,6 +1189,12 @@ static void check_image(const struct config *cfg, const struct image *img)
          fail("reading anywhere", cfg->name);
          break;
       }
+   }
+
+   if (cfg->method == M_ZSTD && allocations)
+   {
+      fprintf(stderr, "  %lu allocations\n", allocations);
+      fail("reads allocating after the image was read through", cfg->name);
    }
 
    /* at and past the end */
