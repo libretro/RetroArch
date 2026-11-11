@@ -2244,9 +2244,9 @@ static bool net_http_body_streams(const struct http_t *state)
    return state->sink || state->response.discard;
 }
 
-/* A streamed body of known framing (Content-Length or close) stays in
- * the receive buffer, where it was read, until the window left behind
- * it would fall below the floor: the sink then gets it in one piece of
+/* A streamed body stays in the receive buffer, where it was read (or
+ * de-chunked), until the window left behind it would fall below the
+ * floor: the sink then gets it in one piece of
  * 32 KB or more instead of one piece per read, which over TLS or a
  * slow link is a few hundred bytes to one record at a time.  Nothing
  * is copied to hold it, and the buffer never grows for it. */
@@ -2708,7 +2708,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          {
             response->pos += newlen;
             response->len -= newlen;
-            if (net_http_body_streams(state))
+            if (net_http_body_streams(state) && net_http_sink_due(response))
             {
                if (!net_http_sink_flush(state, response->pos))
                   return false;
@@ -2821,11 +2821,12 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
             response->pos  = (size_t)(out - response->data);
             response->len  = chunklen - avail;
             response->part = P_BODY;
-            if (net_http_body_streams(state))
+            if (net_http_body_streams(state) && net_http_sink_due(response))
             {
                /* In P_BODY, pos is the decoded count and len is what
                 * is still outstanding in this chunk, so the decoded
-                * prefix can go and the next receive appends at 0. */
+                * prefix can go and the next receive appends at 0.
+                * Until then the next receive appends behind it. */
                if (!net_http_sink_flush(state, response->pos))
                   return false;
                response->pos = 0;
@@ -2847,12 +2848,13 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          memmove(out, in, leftover);
       response->pos  = response->len + leftover;
       response->part = P_BODY_CHUNKLEN;
-      if (net_http_body_streams(state))
+      if (net_http_body_streams(state) && net_http_sink_due(response))
       {
          /* Decoded bytes sit at data[0..len) with the unconsumed raw
           * tail behind them; hand off the former and slide the tail
           * to the front so the invariant (len == decoded offset of
-          * the current chunklen line) still holds at 0. */
+          * the current chunklen line) still holds at 0.  Until then
+          * they stay where they are, as for a body kept whole. */
          if (!net_http_sink_flush(state, response->len))
             return false;
          if (leftover)
