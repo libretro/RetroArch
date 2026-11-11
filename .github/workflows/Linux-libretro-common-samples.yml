@@ -225,6 +225,8 @@ jobs:
             audio_transfer_sniff_test
             # ATRAC3 and ATRAC3plus in WAVE and OpenMG through audio_transfer.
             audio_transfer_atrac_test
+            # AVI and ASF headers: streams, codecs, sizes, rates, length.
+            rcontainer_test
             # 4:2:0 to bytes in memory order and to UYVY.
             image_yuv_test
             rh264_lossless_test
@@ -1150,6 +1152,37 @@ jobs:
               -of default=nw=1 "$f" > "$f.tags"
             ./tags/rtags_test --ffprobe "$f" "$f.tags"
           done
+
+      # AVI (MPEG-4 Part 2 with MP3, AVC with AC-3, MPEG-4 alone,
+      # MS-MPEG4 with PCM) and WMV (WMV2 with WMA2) from FFmpeg: rcontainer
+      # reads the streams, tags, sizes, rates, bit rates and length as
+      # ffprobe does
+      - name: Read FFmpeg's AVI and ASF headers with rcontainer
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/container
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          v=(-f lavfi -i testsrc2=s=96x64:r=25:d=1)
+          a=(-f lavfi -i sine=f=440:d=1:sample_rate=44100)
+          ff() { ffmpeg -nostdin -hide_banner -loglevel error "$@"; }
+          ff "${v[@]}" "${a[@]}" -c:v mpeg4 -vtag XVID -c:a libmp3lame -y "$work/a.avi"
+          ff "${v[@]}" "${a[@]}" -c:v libx264 -c:a ac3 -y "$work/b.avi"
+          ff "${v[@]}" -c:v mpeg4 -y "$work/c.avi"
+          ff "${v[@]}" "${a[@]}" -c:v msmpeg4 -c:a pcm_s16le -ac 1 -y "$work/d.avi"
+          ff "${v[@]}" "${a[@]}" -c:v wmv2 -c:a wmav2 -y "$work/e.wmv"
+          n=0
+          for f in "$work"/*.avi "$work"/*.wmv; do
+            ffprobe -v error -show_entries \
+              stream=codec_type,codec_tag,width,height,sample_rate,channels,bit_rate,duration \
+              -of default=nw=1 "$f" > "$f.probe"
+            ./rcontainer_test --ffprobe "$f" "$f.probe"
+            n=$((n+1))
+          done
+          [ "$n" = 5 ]
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
