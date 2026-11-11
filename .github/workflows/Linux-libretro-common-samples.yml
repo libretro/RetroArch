@@ -195,6 +195,9 @@ jobs:
             # rvorbis' codebook size bound, and a real stream past it.
             rvorbis_codebook_test
             rjpeg_test
+            # Baseline JPEG encoding, decoded back with rjpeg; a step
+            # below has FFmpeg decode what it writes.
+            rjpeg_encode_test
             # MPEG-2 video through rmpeg1_video, on its own fixtures; the
             # step below runs it again over FFmpeg's and the conformance
             # streams.
@@ -837,6 +840,26 @@ jobs:
       # (GMC S-VOPs), and H.263 for the short video header, with and
       # without GOB headers. FFmpeg decodes with one thread: its frame
       # threads do not share the field vectors interlaced direct mode reads.
+      # What rjpeg_encode writes - 4:2:0 and 4:2:2, sizes in and out of
+      # whole MCUs, qualities 20 to 100 - must decode in FFmpeg with no
+      # error
+      - name: Decode rjpeg_encode's JPEGs with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/jpeg_encode
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./rjpeg_encode_test "$work"
+          n=0
+          for f in "$work"/*.jpg; do
+            ffmpeg -nostdin -hide_banner -loglevel error -xerror -i "$f" -f null -
+            n=$((n+1))
+          done
+          [ "$n" = 9 ]
+
       - name: Decode MPEG-4 video against FFmpeg
         if: matrix.group == 'formats'
         shell: bash
