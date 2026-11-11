@@ -250,6 +250,7 @@ jobs:
             r7z_stored_test
             r7z_methods_test
             r7z_stream_test
+            r7z_peek_threads_test
             rzip_archive_test
             # The RAR reader on real archives (LZ and PPMd blocks,
             # filters, Unicode names) and on mangled copies of them.
@@ -1140,6 +1141,20 @@ jobs:
           CC=clang make -j$(nproc) all SANITIZER=thread
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
+
+      - name: Run r7z_peek_threads_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
+        shell: bash
+        working-directory: libretro-common/samples/formats/r7z
+        run: |
+          # A folder peeked at while another thread decodes it, through
+          # its being held: never torn, never the other folder's.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make -j$(nproc) r7z_peek_threads_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 ./r7z_peek_threads_test
 
       - name: Run video_player_test under Clang + ThreadSanitizer, and threadless
         if: matrix.group == 'core'
