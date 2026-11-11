@@ -20,11 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* XXH64 and XXH3 (64-bit) against xxHash's own values: the ones its
+/* XXH32, XXH64 and XXH3 (64-bit) against xxHash's own values: the ones its
  * sanity check holds, over the buffer it fills, and more made with
  * xxHash 0.8.1 over the same buffer, longer, for the lengths around
- * each of XXH3's turns and for many blocks. XXH64 is taken in one call
- * and in pieces of every size; XXH3's long inputs go through each path
+ * each of XXH3's turns and for many blocks. XXH32 and XXH64 are taken in
+ * one call and in pieces of every size; XXH3's long inputs go through each path
  * this CPU can run, which must all agree with each other at every
  * length up to three blocks and at every alignment. XXH3 taken in
  * pieces must be what it is in one call, through each path, for the
@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <encodings/xxh32.h>
 #include <encodings/xxh64.h>
 
 /* the paths themselves, which xxh3_64() chooses between */
@@ -50,6 +51,70 @@ typedef struct
    uint64_t seed;
    uint64_t hash;
 } vec_t;
+
+typedef struct
+{
+   uint32_t len;
+   uint32_t seed;
+   uint32_t hash;
+} vec32_t;
+
+/* XSUM_XXH32_testdata, then more */
+static const vec32_t xxh32_spec[] = {
+   {      0,          0, 0x02CC5D05U },
+   {      0,    PRIME32, 0x36B78AE7U },
+   {      1,          0, 0xCF65B03EU },
+   {      1,    PRIME32, 0xB4545AA4U },
+   {     14,          0, 0x1208E7E2U },
+   {     14,    PRIME32, 0x6AF1D1FEU },
+   {    222,          0, 0x5BD11DBDU },
+   {    222,    PRIME32, 0x58803C5FU },
+   {      3, 0x00000000U, 0xC23884F5U },
+   {      3, 0x9E3779B1U, 0x1A269947U },
+   {      3, 0x01234567U, 0x1D69BDC8U },
+   {      4, 0x00000000U, 0xA9DE7CE9U },
+   {      4, 0x9E3779B1U, 0x2BAAFE83U },
+   {      4, 0x01234567U, 0xFD8A2B1EU },
+   {     15, 0x00000000U, 0x6B859E14U },
+   {     15, 0x9E3779B1U, 0xAD53090DU },
+   {     15, 0x01234567U, 0x6310FE36U },
+   {     16, 0x00000000U, 0x93BA3759U },
+   {     16, 0x9E3779B1U, 0xA94FC1E1U },
+   {     16, 0x01234567U, 0x77126E47U },
+   {     17, 0x00000000U, 0x89FDC23EU },
+   {     17, 0x9E3779B1U, 0xC9910739U },
+   {     17, 0x01234567U, 0x8CE2AF80U },
+   {     31, 0x00000000U, 0x5F40E562U },
+   {     31, 0x9E3779B1U, 0x5C0C3350U },
+   {     31, 0x01234567U, 0x872FD58CU },
+   {     32, 0x00000000U, 0xD89829ECU },
+   {     32, 0x9E3779B1U, 0xA5C44467U },
+   {     32, 0x01234567U, 0x903C4460U },
+   {     33, 0x00000000U, 0x31A427E5U },
+   {     33, 0x9E3779B1U, 0x0DE5B1F9U },
+   {     33, 0x01234567U, 0xDE84B464U },
+   {     63, 0x00000000U, 0xF1D48FDBU },
+   {     63, 0x9E3779B1U, 0x956B3D77U },
+   {     63, 0x01234567U, 0xD2C408BCU },
+   {     64, 0x00000000U, 0x02E95DBBU },
+   {     64, 0x9E3779B1U, 0xCF82F830U },
+   {     64, 0x01234567U, 0x8AD71BFBU },
+   {     65, 0x00000000U, 0x16992B3DU },
+   {     65, 0x9E3779B1U, 0x428EEC5FU },
+   {     65, 0x01234567U, 0x6F4DEBDAU },
+   {    100, 0x00000000U, 0x96AD8143U },
+   {    100, 0x9E3779B1U, 0x83D48124U },
+   {    100, 0x01234567U, 0xDF1138F2U },
+   {   1000, 0x00000000U, 0x2052D698U },
+   {   1000, 0x9E3779B1U, 0xD38B6679U },
+   {   1000, 0x01234567U, 0xF608BBCBU },
+   {   4097, 0x00000000U, 0x4115D4E2U },
+   {   4097, 0x9E3779B1U, 0xD0552AEDU },
+   {   4097, 0x01234567U, 0x2D53CE1CU },
+   { 100000, 0x00000000U, 0x7DA1E9AEU },
+   { 100000, 0x9E3779B1U, 0xFAAE15DAU },
+   { 100000, 0x01234567U, 0x0D3876E7U },
+};
 
 /* XSUM_XXH64_testdata */
 static const vec_t xxh64_spec[] = {
@@ -262,6 +327,28 @@ int main(void)
    paths[np].id   = 0;
    paths[np++].fn = xxh3_long_neon;
 #endif
+
+   /* XXH32: whole, and in pieces */
+   for (i = 0; i < sizeof(xxh32_spec) / sizeof(xxh32_spec[0]); i++)
+   {
+      const vec32_t *v = &xxh32_spec[i];
+      uint32_t       h = xxh32(buf, v->len, v->seed);
+      xxh32_state_t  s;
+      size_t         at;
+      checks++;
+      if (h != v->hash)
+         fail("xxh32", v->len, v->seed, h, v->hash);
+      for (n = 1; n <= 37; n += 2)
+      {
+         xxh32_reset(&s, v->seed);
+         xxh32_update(&s, buf, 0);
+         for (at = 0; at < v->len; at += n)
+            xxh32_update(&s, buf + at, at + n > v->len ? v->len - at : n);
+         checks++;
+         if ((h = xxh32_digest(&s)) != v->hash)
+            fail("xxh32 in pieces", v->len, v->seed, h, v->hash);
+      }
+   }
 
    /* XXH64: whole, and in pieces */
    for (i = 0; i < sizeof(xxh64_spec) / sizeof(xxh64_spec[0]); i++)
