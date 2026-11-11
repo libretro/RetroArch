@@ -24,6 +24,10 @@
  *  - a command interface's buttons and MENU requests and the network
  *    pad neither answer nor move the box, and still drive the menu
  *    with nothing pending;
+ *  - a tap on a button presses it and a tap anywhere else is Cancel,
+ *    through RGUI drawing the box under a scripted mouse; a click that
+ *    wakes the screensaver presses nothing, and so does one pressed
+ *    on a box a newer request replaced;
  *  - Settings > Core > Check Core Signatures: Off asks even with
  *    confirmations off and Back keeps the checks; On and Start ask
  *    nothing; a read-only store changes nothing; an inactive one hides
@@ -51,6 +55,7 @@
 #include <compat/strl.h>
 #include <retro_timers.h>
 #include <features/features_cpu.h>
+#include <libretro.h>
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
@@ -60,6 +65,7 @@
 #include "../../../frontend/frontend.h"
 #include "../../../gfx/gfx_animation.h"
 #include "../../../gfx/gfx_display.h"
+#include "../../../gfx/video_driver.h"
 #include "../../../input/input_driver.h"
 #include "../../../menu/menu_cbs.h"
 #include "../../../menu/menu_driver.h"
@@ -687,6 +693,287 @@ static bool setting_shows(enum msg_hash_enums value)
          && string_is_equal(entry.value, msg_hash_to_str(value));
 }
 
+/* A scripted mouse and a video driver that has RGUI draw, as
+ * samples/menu/mouse_click has them: RGUI reads the pointer as it draws
+ * the box, which is where a button learns it is under it */
+struct mouse
+{
+   int16_t x, y;
+   bool    left;
+};
+
+static struct mouse held;
+static struct mouse latched;
+static input_driver_t scripted;
+static input_driver_t *real_input;
+static video_driver_t scripted_video;
+static video_driver_t *real_video;
+static bool (*null_frame)(void *, const void *, unsigned, uint64_t,
+      unsigned, const char *, video_frame_info_t *);
+
+static void scripted_poll(void *data)
+{
+   (void)data;
+   latched = held;
+}
+
+static int16_t scripted_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info,
+      const retro_keybind_set *binds,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
+{
+   (void)data; (void)joypad; (void)joypad_info; (void)binds; (void)idx;
+   if (port != 0)
+      return 0;
+   if (device == RARCH_DEVICE_MOUSE_SCREEN)
+   {
+      if (id == RETRO_DEVICE_ID_MOUSE_X)
+         return latched.x;
+      if (id == RETRO_DEVICE_ID_MOUSE_Y)
+         return latched.y;
+   }
+   else if (device == RETRO_DEVICE_MOUSE && id == RETRO_DEVICE_ID_MOUSE_LEFT)
+      return latched.left;
+   return 0;
+}
+
+static void scripted_viewport_info(void *data, struct video_viewport *vp)
+{
+   (void)data;
+   memset(vp, 0, sizeof(*vp));
+   vp->dims = disp_get_ptr()->framebuf_dims;
+}
+
+static bool scripted_frame(void *data, const void *frame, unsigned dims,
+      uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
+{
+   if (video_info)
+      menu_driver_frame(
+            (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0,
+            video_info);
+   return null_frame(data, frame, dims, frame_count, pitch, msg,
+         video_info);
+}
+
+static void scripted_install(void)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   memset(&held, 0, sizeof(held));
+   real_input                     = input_st->current_driver;
+   scripted                       = *real_input;
+   scripted.poll                  = scripted_poll;
+   scripted.input_state           = scripted_input_state;
+   scripted.keys_down             = NULL;
+   input_st->current_driver       = &scripted;
+   real_video                     = video_st->current_video;
+   scripted_video                 = *real_video;
+   null_frame                     = scripted_video.frame;
+   scripted_video.frame           = scripted_frame;
+   scripted_video.viewport_info   = scripted_viewport_info;
+   video_st->current_video        = &scripted_video;
+}
+
+static void scripted_remove(void)
+{
+   input_state_get_ptr()->current_driver = real_input;
+   video_state_get_ptr()->current_video  = real_video;
+}
+
+/* Moves the mouse until the box reports button idx under it */
+static bool point_at_button(int idx)
+{
+   unsigned w = VIDEO_SCALE_W(disp_get_ptr()->framebuf_dims);
+   unsigned h = VIDEO_SCALE_H(disp_get_ptr()->framebuf_dims);
+   unsigned x, y;
+   for (y = h / 3; y < h; y += 2)
+      for (x = 1; x < w; x += 3)
+      {
+         held.x = (int16_t)x;
+         held.y = (int16_t)y;
+         pump(2);
+         if (box().hover == idx)
+            return true;
+      }
+   return false;
+}
+
+/* A left click where the mouse is, as short as a tap */
+static void click(void)
+{
+   unsigned i;
+   held.left = true;
+   for (i = 0; i < 3; i++)
+   {
+      pump(1);
+      retro_sleep(17);
+   }
+   held.left = false;
+   for (i = 0; i < 10; i++)
+   {
+      pump(1);
+      retro_sleep(17);
+   }
+}
+
+/* A tap on a button presses it, anywhere else is Cancel whatever is
+ * highlighted; a classic confirm's OK still confirms */
+static void lane_pointer(void)
+{
+   static const int pick[3] = { 1, 2, 0 };
+   static const enum core_warning_choice want[3] = {
+      CORE_WARNING_LOAD_ONCE, CORE_WARNING_ALWAYS_TRUST, CORE_WARNING_CANCEL
+   };
+   settings_t *settings = config_get_ptr();
+   char what[160];
+   size_t depth;
+   unsigned i;
+
+   configuration_set_bool(settings, settings->bools.menu_mouse_enable, true);
+   scripted_install();
+   /* The mouse is the menu's pointer once it moves */
+   held.x = 1;
+   held.y = 1;
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   pump(3);
+   CHECK(menu_state_get_ptr()->input_state.pointer.type == MENU_POINTER_MOUSE,
+         "fixture: the menu has no mouse");
+
+   for (i = 0; i < 3; i++)
+   {
+      push(&seen_a, CORE_WARNING_LOAD, (uint8_t)(0x50 + i),
+            CORE_CHECK_UNSIGNED);
+      pump(3);
+      sprintf(what, "pointer: no point is over button %d", pick[i]);
+      CHECK(point_at_button(pick[i]), what);
+      click();
+      sprintf(what, "pointer: a tap on button %d didn't press it", pick[i]);
+      CHECK(seen_a.calls == 1 && seen_a.choice == want[i], what);
+      CHECK(!shown(), "pointer: the box stayed after a tap");
+   }
+
+   push(&seen_a, CORE_WARNING_LOAD, 0x53, CORE_CHECK_UNSIGNED);
+   pump(3);
+   answer(MENU_ACTION_RIGHT);
+   answer(MENU_ACTION_RIGHT);
+   held.x = 2;
+   held.y = 2;
+   pump(2);
+   CHECK(box().hover == -1, "fixture: a button is under the corner");
+   click();
+   CHECK(seen_a.calls == 1 && seen_a.choice == CORE_WARNING_CANCEL,
+         "pointer: a tap off the buttons didn't cancel");
+
+   /* A click that wakes the screensaver over the box is no tap, and
+    * its release is no OK on the highlighted button */
+   push(&seen_a, CORE_WARNING_LOAD, 0x55, CORE_CHECK_UNSIGNED);
+   pump(3);
+   answer(MENU_ACTION_RIGHT);
+   answer(MENU_ACTION_RIGHT);
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+   click();
+   CHECK(shown() && seen_a.calls == 0,
+         "pointer: a click that woke the screensaver pressed a button");
+   answer(MENU_ACTION_CANCEL);
+
+   /* A tap on the box takes nothing off the stack, not even an info
+    * box under it (a classic confirm's tap pops its info screen) */
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   pump(3);
+   depth = stack_size();
+   act_on(0, MENU_ACTION_INFO);
+   pump(3);
+   CHECK(stack_size() == depth + 1, "fixture: Info opened no info box");
+   push(&seen_a, CORE_WARNING_INSTALL, 0x54, CORE_CHECK_UNSIGNED);
+   pump(3);
+   CHECK(point_at_button(0), "pointer: no point is over Cancel");
+   click();
+   CHECK(seen_a.calls == 1 && seen_a.choice == CORE_WARNING_CANCEL,
+         "pointer: a tap on Cancel didn't cancel");
+   CHECK(stack_size() == depth + 1,
+         "pointer: a tap on the box popped the screen under it");
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   pump(3);
+
+   if (!core_trust_runtime_checks_on())
+      core_trust_runtime_set_checks(true);
+   push_core_settings();
+   ok_on(row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK));
+   CHECK(point_at_button(1), "pointer: no point is over the confirm's OK");
+   click();
+   CHECK(!core_trust_runtime_checks_on(),
+         "pointer: a tap on the confirm's OK didn't confirm");
+   core_trust_runtime_set_checks(true);
+
+   scripted_remove();
+   configuration_set_bool(settings, settings->bools.menu_mouse_enable, false);
+   held.x = 0;
+   held.y = 0;
+}
+
+/* A press on A's Install and Trust, held while B replaces A, chooses
+ * nothing on release, in B's first frame or later; B stays up from
+ * Cancel. A hover measured on A and written once B is up (the video
+ * thread's, with threaded video) is dropped. */
+static void lane_replaced(void)
+{
+   static const unsigned hold[2] = { 1, 3 };
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   char what[160];
+   unsigned i;
+
+   configuration_set_bool(settings, settings->bools.menu_mouse_enable, true);
+   scripted_install();
+   held.x = 1;
+   held.y = 1;
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   pump(3);
+
+   for (i = 0; i < 2; i++)
+   {
+      push(&seen_a, CORE_WARNING_INSTALL, (uint8_t)(0x70 + i),
+            CORE_CHECK_UNSIGNED);
+      pump(3);
+      CHECK(point_at_button(1),
+            "replaced: no point is over Install and Trust");
+      held.left = true;
+      pump(1);
+      push(&seen_b, CORE_WARNING_INSTALL, (uint8_t)(0x72 + i),
+            CORE_CHECK_UNSIGNED);
+      pump(hold[i]);
+      held.left = false;
+      pump(3);
+      sprintf(what, "replaced: A wasn't cancelled exactly once (held %u)",
+            hold[i]);
+      CHECK(seen_a.calls == 1 && seen_a.choice == CORE_WARNING_CANCEL, what);
+      sprintf(what, "replaced: a press on A answered B (held %u)", hold[i]);
+      CHECK(seen_b.calls == 0 && shown() && box().highlight == 0, what);
+      answer(MENU_ACTION_CANCEL);
+      CHECK(seen_b.calls == 1 && seen_b.choice == CORE_WARNING_CANCEL,
+            "replaced: Back on B didn't answer B");
+   }
+
+   held.x = 1;
+   held.y = 1;
+   push(&seen_a, CORE_WARNING_INSTALL, 0x74, CORE_CHECK_UNSIGNED);
+   pump(3);
+   push(&seen_b, CORE_WARNING_INSTALL, 0x75, CORE_CHECK_UNSIGNED);
+   pump(1);
+   menu_dialog_set_hover(menu_st, 1);
+   CHECK(shown() && menu_st->dialog_st.button_hover == -1,
+         "replaced: a hover measured on A stuck to B");
+   answer(MENU_ACTION_CANCEL);
+
+   scripted_remove();
+   configuration_set_bool(settings, settings->bools.menu_mouse_enable, false);
+   held.x = 0;
+   held.y = 0;
+}
+
 /* An open Cancel/OK confirm is answered first: Cancel and OK with
  * nothing highlighted, Left and Right ignored, then the warning */
 static void lane_classic(void)
@@ -1026,6 +1313,8 @@ int main(int argc, char *argv[])
 #endif
       synthetic_install();
       lane_synthetic();
+      lane_pointer();
+      lane_replaced();
       lane_setting(dir);
       synthetic_remove();
    }
