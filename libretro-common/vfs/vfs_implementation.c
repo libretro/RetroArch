@@ -824,8 +824,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
     * write arrives in one call, so a stdio buffer only adds a copy
     * and a flush. */
    if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)
-         && (     mode == RETRO_VFS_FILE_ACCESS_WRITE
-               || mode == RETRO_VFS_FILE_ACCESS_READ_WRITE)
+         && (     (mode & ~RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING)
+                  == RETRO_VFS_FILE_ACCESS_WRITE
+               || (mode & ~RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING)
+                  == RETRO_VFS_FILE_ACCESS_READ_WRITE)
          && stream->scheme == VFS_SCHEME_NONE)
       stream->hints |= RFILE_HINT_UNBUFFERED;
 #endif
@@ -1066,25 +1068,32 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
                if (win32_needs_local_encoding())
                {
                   char *path_local    = utf8_to_local_string_alloc(path);
-                  stream->fd          = open(path_local, flags, 0);
+                  stream->fd          = open(path_local, flags,
+                        _S_IREAD | _S_IWRITE);
                   if (path_local)
                      free(path_local);
                }
                else
                {
                   wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
-                  stream->fd          = _wopen(path_wide, flags, 0);
+                  stream->fd          = _wopen(path_wide, flags,
+                        _S_IREAD | _S_IWRITE);
                   if (path_wide)
                      free(path_wide);
                }
 #elif defined(LEGACY_WIN32)
                char *path_local    = utf8_to_local_string_alloc(path);
-               stream->fd          = open(path_local, flags, 0);
+               stream->fd          = open(path_local, flags,
+                     _S_IREAD | _S_IWRITE);
                if (path_local)
                   free(path_local);
 #else
                wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
-               stream->fd          = _wopen(path_wide, flags, 0);
+               /* A file this creates is writable afterwards, as one
+                * fopen() makes is: without _S_IWRITE it would be made
+                * read-only */
+               stream->fd          = _wopen(path_wide, flags,
+                     _S_IREAD | _S_IWRITE);
                if (path_wide)
                   free(path_wide);
 #endif
@@ -1118,7 +1127,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
                   stream->fd = (uid < 0) ? -1 : (int)uid;
                }
 #else
-               stream->fd          = open(path, flags, S_IRUSR | S_IWUSR);
+               /* What fopen() creates a file with, less the umask */
+               stream->fd          = open(path, flags,
+                     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
+                     | S_IROTH | S_IWOTH);
 #endif
             }
             break;
@@ -1632,6 +1644,28 @@ int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
 
 int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t len)
 {
+   /* The descriptor itself on the descriptor path, the stream's below */
+   int fd = -1;
+   if (stream)
+   {
+      if (stream->hints & RFILE_HINT_UNBUFFERED)
+      {
+#ifdef VFS_HAVE_FILE_MAPPING
+         /* A mapped stream is read only */
+         if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+            return -1;
+#endif
+         fd = stream->fd;
+      }
+      else if (stream->fp)
+#ifdef _WIN32
+         fd = _fileno(stream->fp);
+#elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS)
+         fd = fileno(stream->fp);
+#else
+         fd = -1;
+#endif
+   }
 #ifdef _WIN32
    /* _chsize takes a long and silently truncates lengths > LONG_MAX
     * (2 GiB on Windows) -- present on all Windows CRTs including
@@ -1642,25 +1676,27 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
     * an error for larger lengths rather than silently truncating
     * the file. */
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-   if (stream && stream->fp && _chsize_s(_fileno(stream->fp), len) == 0)
+   if (fd >= 0 && _chsize_s(fd, len) == 0)
    {
 	   stream->size = len;
 	   return 0;
    }
 #else
-   if (stream && stream->fp && len >= 0 && len <= (int64_t)LONG_MAX
-         && _chsize(_fileno(stream->fp), (long)len) == 0)
+   if (fd >= 0 && len >= 0 && len <= (int64_t)LONG_MAX
+         && _chsize(fd, (long)len) == 0)
    {
 	   stream->size = len;
 	   return 0;
    }
 #endif
 #elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS)
-   if (stream && stream->fp && ftruncate(fileno(stream->fp), (off_t)len) == 0)
+   if (fd >= 0 && ftruncate(fd, (off_t)len) == 0)
    {
       stream->size = len;
       return 0;
    }
+#else
+   (void)fd;
 #endif
    return -1;
 }
@@ -1964,6 +2000,10 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
    if (stream->scheme == VFS_SCHEME_NFS)
       return 0;
 #endif
+   /* A descriptor holds no bytes of its own to flush: what was
+    * written is in the file already */
+   if (stream->hints & RFILE_HINT_UNBUFFERED)
+      return stream->fd >= 0 ? 0 : -1;
    if (stream->fp && fflush(stream->fp) == 0)
       return 0;
    return -1;

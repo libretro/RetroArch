@@ -281,16 +281,20 @@ static void test_path_selection(void)
       retro_vfs_file_close_impl(s);
    }
 
-   /* Write modes must ignore it: the descriptor branch below the hint
-    * is only wired for reading, and write() through it would bypass
-    * the size bookkeeping the buffered path does. */
+   /* Write modes take the descriptor path where the platform lists
+    * descriptor writes, and stay buffered where it does not. */
    s = retro_vfs_file_open_impl("bulk_select_w.bin",
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    CHECK(s != NULL, "bulk write open failed");
    if (s)
    {
+#if defined(VFS_HAVE_DESCRIPTOR_IO) && defined(VFS_HAVE_DESCRIPTOR_WRITE)
+      CHECK(s->fp == NULL, "bulk write still went through stdio");
+      CHECK(s->fd >= 0, "bulk write has no descriptor");
+#else
       CHECK(s->fp != NULL, "bulk hint diverted a write to the descriptor path");
+#endif
       retro_vfs_file_close_impl(s);
    }
 

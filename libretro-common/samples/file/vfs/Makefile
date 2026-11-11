@@ -13,6 +13,7 @@ TARGET_TEST9 := vfs_readahead_test
 TARGET_TEST10 := vfs_view_test
 TARGET_TEST11 := vfs_prefetch_offthread_test
 TARGET_TEST12 := vfs_close_result_test
+TARGET_TEST13 := vfs_descriptor_rw_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -34,7 +35,8 @@ OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_bulk_read_test.o filestream_rbuf_fault_test.o \
 	vfs_v5_metadata_test.o vfs_rename_replace_test.o \
 	vfs_prefetch_test.o vfs_readahead_test.o vfs_view_test.o \
-	vfs_prefetch_offthread_test.o vfs_close_result_test.o $(COMMON_OBJS)
+	vfs_prefetch_offthread_test.o vfs_close_result_test.o \
+	vfs_descriptor_rw_test.o $(COMMON_OBJS)
 
 # vfs_view_test also hashes through sha1_calculate(), whose dispatch
 # asks features_cpu.c what the CPU has.
@@ -156,7 +158,8 @@ endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
-	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(RENAME_TARGET)
+	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) \
+	$(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -172,6 +175,9 @@ $(TARGET_TEST): vfs_mapped_ptr_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(TARGET_TEST8): vfs_prefetch_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(TARGET_TEST13): vfs_descriptor_rw_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(TARGET_TEST10): vfs_view_test.o $(VIEW_OBJS)
@@ -252,7 +258,7 @@ clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
-		$(TARGET_TEST11) $(TARGET_TEST12) $(CLOSE_VFS_OBJ) \
+		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
 		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o
 	rm -rf v5_meta_dir

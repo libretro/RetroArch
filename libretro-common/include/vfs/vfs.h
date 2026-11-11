@@ -128,8 +128,16 @@ typedef struct
  * and an fstat on top of that.  On an SD card every extra stat is a
  * directory lookup, so a bulk extraction pays for all of it per
  * member. */
+/* The desktops (the file mapping targets) take it too, for streams
+ * opened to read and write as well as to write: a caller that writes
+ * in big pieces, or reads and writes a file in place as an emulated
+ * file system does, gets its bytes to and from the descriptor without
+ * a copy through a stdio buffer, and its writes are in the file for
+ * every other handle at once, with no flush.  A caller that writes in
+ * small pieces leaves the hint off and keeps the buffer. */
 #ifndef VFS_HAVE_DESCRIPTOR_WRITE
-#if defined(VITA) || defined(GEKKO) || defined(PSP) || defined(PS2)
+#if defined(VITA) || defined(GEKKO) || defined(PSP) || defined(PS2) \
+ || defined(VFS_HAVE_FILE_MAPPING)
 #define VFS_HAVE_DESCRIPTOR_WRITE 1
 #endif
 #endif
