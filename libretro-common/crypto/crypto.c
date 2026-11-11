@@ -588,15 +588,18 @@ static __m128i aes_x86_xts_next(__m128i t)
    return _mm_xor_si128(_mm_slli_epi64(t, 1), _mm_mul_epu32(carry, poly));
 }
 
-/* XTS over whole blocks, eight in flight; the round keys made once per
- * call (through InvMixColumns to decrypt). Each block's input is held
- * in a register before its output is stored, so @in and @out may
- * alias. */
+/* XTS over whole blocks, eight in flight, from the encrypted tweak
+ * @tweak; the round keys made once per call (through InvMixColumns to
+ * decrypt). Each block's input is held in a register before its output
+ * is stored, so @in and @out may alias. The tweak comes as bytes: a
+ * vector argument would be loaded by the caller, which is built
+ * without SSE on i686. */
 AES_TARGET_X86
-static void aes_x86_xts(const struct aes_ctx *ctx, __m128i t,
+static void aes_x86_xts(const struct aes_ctx *ctx, const uint8_t *tweak,
       const uint8_t *in, uint8_t *out, size_t len, int decrypt)
 {
    __m128i  k[15];
+   __m128i  t  = _mm_loadu_si128((const __m128i*)tweak);
    unsigned r, nr = ctx->rounds;
 
    if (decrypt)
@@ -1752,7 +1755,7 @@ static void aes_xts(const struct aes_ctx *data_key,
 #if defined(AES_HAVE_X86_PATH)
    if (aes_x86_available())
    {
-      aes_x86_xts(data_key, _mm_loadu_si128((const __m128i*)t), in, out, len, decrypt);
+      aes_x86_xts(data_key, t, in, out, len, decrypt);
       return;
    }
 #elif defined(AES_HAVE_ARM_PATH)
