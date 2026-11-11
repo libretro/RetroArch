@@ -92,14 +92,6 @@ static int action_info_cheevos(unsigned type, const char *label)
 }
 #endif
 
-#ifdef HAVE_CORE_SIGNATURES
-/* An info box over the Security Warning would bring a second one up */
-static int action_info_core_warning(unsigned type, const char *label)
-{
-   return 0;
-}
-#endif
-
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -110,14 +102,6 @@ int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
             (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
       {
          BIND_ACTION_INFO(cbs, action_info_cheevos);
-         return 0;
-      }
-#endif
-#ifdef HAVE_CORE_SIGNATURES
-      if (     type == MENU_SETTING_ACTION_CORE_WARNING
-            || type == MENU_SETTING_CORE_WARNING_TEXT)
-      {
-         BIND_ACTION_INFO(cbs, action_info_core_warning);
          return 0;
       }
 #endif
