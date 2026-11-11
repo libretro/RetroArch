@@ -2852,10 +2852,14 @@ static void materialui_render_messagebox(
    const char *lines[64];
    int lengths[64];
    struct menu_state *menu_st = menu_state_get_ptr();
-   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape             = video_width >= video_height;
+   menu_dialog_buttons_t buttons;
+   int button_w[MENU_DIALOG_BUTTONS_MAX];
+   int button_x[MENU_DIALOG_BUTTONS_MAX];
+   int label_w[MENU_DIALOG_BUTTONS_MAX];
 
    wrapped_msg[0] = '\0';
+   menu_dialog_get_buttons(menu_st, &buttons);
 
    /* Sanity check */
    if (  (!msg || !*msg)
@@ -2920,9 +2924,35 @@ static void materialui_render_messagebox(
       }
    }
 
-   /* Narrow font can make the box too narrow for Back & OK */
-   if (confirm_dialog && longest_width < (int)video_width / 4)
-      longest_width = video_width / 4;
+   if (buttons.count)
+   {
+      float icon_size    = 50 * mui->last_scale_factor;
+      float icon_padding = 10 * mui->last_scale_factor;
+      int row_max        = (int)video_width - (int)(mui->margin * 6.0);
+      int row_need;
+      unsigned b;
+      for (b = 0; b < buttons.count; b++)
+      {
+         const char *str = msg_hash_to_str(
+               (enum msg_hash_enums)buttons.label[b]);
+         label_w[b]      = font_driver_get_message_width(
+               mui->font_data.list.font, str, strlen(str), 1.0f);
+         /* Every button keeps room for an icon */
+         button_w[b]     = label_w[b] + (int)(icon_padding * 4)
+            + (int)icon_size;
+      }
+      row_need = menu_dialog_buttons_layout(button_w, buttons.count,
+            (int)(icon_padding * 4), 0, 0, NULL);
+      /* A row wider than the screen packs from the left instead of
+       * pushing the box and the text off it */
+      if (row_need > row_max)
+         row_need = row_max;
+      /* Narrow font can make the box too narrow for Back & OK */
+      if (longest_width < (int)video_width / 4)
+         longest_width = video_width / 4;
+      if (longest_width < row_need)
+         longest_width = row_need;
+   }
 
    if (draw_caret)
    {
@@ -2992,7 +3022,7 @@ static void materialui_render_messagebox(
    slice_h                 = mui->font_data.list.line_height * line_count + mui->margin * 4.0;
 
    /* Extra room for confirm buttons */
-   if (confirm_dialog)
+   if (buttons.count)
       slice_h             += (mui->font_data.list.line_height + mui->margin) * 2;
 
    if (draw_focus)
@@ -3075,7 +3105,7 @@ static void materialui_render_messagebox(
             mui->colors.list_icon,
             NULL);
 
-   if (confirm_dialog)
+   if (buttons.count)
    {
       float frame_color[16]                  = {
             0.5f, 0.5f, 0.5f, 0.1f,
@@ -3083,132 +3113,103 @@ static void materialui_render_messagebox(
             0.5f, 0.5f, 0.5f, 0.1f,
             0.5f, 0.5f, 0.5f, 0.1f,
       };
-      gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
-      const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL);
-      const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
-      unsigned str_back_width                = font_driver_get_message_width(mui->font_data.list.font, str_back, strlen(str_back), 1.0f);
-      unsigned str_ok_width                  = font_driver_get_message_width(mui->font_data.list.font, str_ok, strlen(str_ok), 1.0f);
-      float scale_factor                     = mui->last_scale_factor;
-      float icon_size                        = 50 * scale_factor;
-      float icon_padding                     = 10 * scale_factor;
-      float icon_x                           = x - (slice_w / 2) + icon_size + (icon_padding * 2);
-      float icon_y                           = video_height - y + (slice_h / 2) - icon_size - (icon_padding * 2);
-      float label_y                          = icon_y + ((mui->font_data.list.line_height + mui->margin) / 1.75f);
-      int cursor_x                           = icon_x - icon_padding;
-      int cursor_y                           = icon_y - icon_padding;
-      int cursor_w                           = icon_size + (icon_padding * 4) + str_back_width;
-      int cursor_h                           = icon_size + (icon_padding * 2);
+      gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+      float scale_factor = mui->last_scale_factor;
+      float icon_size    = 50 * scale_factor;
+      float icon_padding = 10 * scale_factor;
+      int cursor_h       = (int)(icon_size + icon_padding * 2);
+      int row_y          = slice_y + slice_h - cursor_h - (int)mui->margin;
+      float label_y      = row_y + icon_padding
+            + ((mui->font_data.list.line_height + mui->margin) / 1.75f);
+      int hover          = -1;
+      unsigned b;
+
+      menu_dialog_buttons_layout(button_w, buttons.count,
+            (int)(icon_padding * 4), x - longest_width / 2,
+            longest_width, button_x);
 
       gfx_display_set_alpha(mui->colors.list_icon, 0.25f);
 
-      /* Back */
-      if (     VIDEO_POS_X(mui->pointer.pos) >= cursor_x
-            && VIDEO_POS_X(mui->pointer.pos) <= cursor_x + cursor_w
-            && VIDEO_POS_Y(mui->pointer.pos) >= cursor_y
-            && VIDEO_POS_Y(mui->pointer.pos) <= cursor_y + cursor_h)
+      for (b = 0; b < buttons.count; b++)
       {
-         menu_st->dialog_st.confirm_hover_back = true;
+         const char *str = msg_hash_to_str(
+               (enum msg_hash_enums)buttons.label[b]);
+         float label_x   = button_x[b] + icon_padding * 2;
+         float icon_x    = button_x[b] + icon_padding;
+         bool lit        = ((int)b == buttons.highlight);
 
-         gfx_display_draw_quad(
-               p_disp,
-               userdata,
+         /* Icon and label centred on what shows: the ink of Cancel's
+          * back.png is 64/192 of its width in from each edge, of the
+          * others' menu_check.png 52/192 */
+         if (!buttons.classic)
+         {
+            float inset  = icon_size * (b ? 52.0f : 64.0f) / 192.0f;
+            icon_x       = button_x[b] + (button_w[b] - label_w[b]
+                  - icon_size - icon_padding - inset) / 2.0f;
+            label_x      = icon_x + icon_padding;
+         }
+
+         if (     VIDEO_POS_X(mui->pointer.pos) >= button_x[b]
+               && VIDEO_POS_X(mui->pointer.pos) <= button_x[b] + button_w[b]
+               && VIDEO_POS_Y(mui->pointer.pos) >= row_y
+               && VIDEO_POS_Y(mui->pointer.pos) <= row_y + cursor_h)
+            hover = (int)b;
+
+         /* The highlighted button, and the one under the pointer */
+         if (lit || (int)b == hover)
+            gfx_display_draw_quad(
+                  p_disp,
+                  userdata,
+                  video_dims,
+                  button_x[b],
+                  row_y,
+                  VIDEO_SCALE_PACK(button_w[b], cursor_h),
+                  video_dims,
+                  lit ? mui->colors.list_highlighted_background : frame_color,
+                  NULL);
+
+         gfx_display_blend_begin(dispctx, userdata);
+
+         if (buttons.icon[b])
+         {
+            gfx_display_set_alpha(mui->colors.list_icon,
+                  (buttons.icon[b] == MENU_DIALOG_ICON_OK_DIM)
+                  ? 0.125f : 0.25f);
+            materialui_draw_icon(
+                  userdata, p_disp,
+                  video_dims,
+                  (unsigned)icon_size,
+                  GFX_SURFACE_HANDLE(mui->textures.list[
+                        (buttons.icon[b] == MENU_DIALOG_ICON_CANCEL)
+                        ? MUI_TEXTURE_BACK : MUI_TEXTURE_CHECKMARK]),
+                  icon_x,
+                  row_y + icon_padding,
+                  0.0f,
+                  1.0f,
+                  mui->colors.list_icon,
+                  mymat);
+         }
+         label_x += icon_size;
+
+         gfx_display_draw_text(
+               mui->font_data.list.font,
+               str,
+               label_x,
+               label_y,
                video_dims,
-               cursor_x,
-               cursor_y,
-               VIDEO_SCALE_PACK(cursor_w, cursor_h),
-               video_dims,
-               frame_color,
-               NULL);
+               lit ? mui->colors.list_text_highlighted : mui->colors.list_text,
+               TEXT_ALIGN_LEFT,
+               1.0f,
+               false,
+               1.0f,
+               false);
+
+         gfx_display_blend_end(dispctx, userdata);
       }
-      else
-         menu_st->dialog_st.confirm_hover_back = false;
-
-      gfx_display_blend_begin(dispctx, userdata);
-
-      materialui_draw_icon(
-            userdata, p_disp,
-            video_dims,
-            (unsigned)icon_size,
-            GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_BACK]),
-            icon_x,
-            icon_y,
-            0.0f,
-            1.0f,
-            mui->colors.list_icon,
-            mymat);
-
-      gfx_display_draw_text(
-            mui->font_data.list.font,
-            str_back,
-            icon_x + icon_size + icon_padding,
-            label_y,
-            video_dims,
-            mui->colors.list_text,
-            TEXT_ALIGN_LEFT,
-            1.0f,
-            false,
-            1.0f,
-            false);
-
-      gfx_display_blend_end(dispctx, userdata);
-
-      /* OK */
-      icon_x  += slice_w - (icon_size * 2) - (icon_padding * 8) - mui->margin - str_ok_width;
-
-      cursor_x = icon_x - icon_padding;
-      cursor_w = icon_size + (icon_padding * 4) + str_ok_width;
-
-      if (     VIDEO_POS_X(mui->pointer.pos) >= cursor_x
-            && VIDEO_POS_X(mui->pointer.pos) <= cursor_x + cursor_w
-            && VIDEO_POS_Y(mui->pointer.pos) >= cursor_y
-            && VIDEO_POS_Y(mui->pointer.pos) <= cursor_y + cursor_h)
-      {
-         menu_st->dialog_st.confirm_hover_ok = true;
-
-         gfx_display_draw_quad(
-               p_disp,
-               userdata,
-               video_dims,
-               cursor_x,
-               cursor_y,
-               VIDEO_SCALE_PACK(cursor_w, cursor_h),
-               video_dims,
-               frame_color,
-               NULL);
-      }
-      else
-         menu_st->dialog_st.confirm_hover_ok = false;
-
-      gfx_display_blend_begin(dispctx, userdata);
-
-      materialui_draw_icon(
-            userdata, p_disp,
-            video_dims,
-            (unsigned)icon_size,
-            GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_CHECKMARK]),
-            icon_x,
-            icon_y,
-            0.0f,
-            1.0f,
-            mui->colors.list_icon,
-            mymat);
-
-      gfx_display_draw_text(
-            mui->font_data.list.font,
-            str_ok,
-            icon_x + icon_size + icon_padding,
-            label_y,
-            video_dims,
-            mui->colors.list_text,
-            TEXT_ALIGN_LEFT,
-            1.0f,
-            false,
-            1.0f,
-            false);
 
       gfx_display_set_alpha(mui->colors.list_icon, mui->transition_alpha);
 
-      gfx_display_blend_end(dispctx, userdata);
+      menu_dialog_set_hover(menu_st, hover);
    }
 }
 
