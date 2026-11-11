@@ -41,6 +41,9 @@ struct rwma_stream
    uint64_t xma_begin, xma_length, xma_skip, xma_left;
    uint32_t channel_mask;
    unsigned xma_streams, xma_ready;
+   /* the length ASF states: its play duration less its preroll, in
+    * 100 ns units */
+   uint64_t play_100ns;
 };
 
 static uint32_t stream_u32(const uint8_t *p)
@@ -173,6 +176,14 @@ static int stream_asf(rwma_stream *s, rwma_config *cfg)
          if (minimum != maximum || !minimum || minimum > 1024 * 1024)
             return RWMA_UNSUPPORTED;
          s->packet_size = minimum;
+         /* play duration (100 ns) less the preroll (ms), unless the
+          * file is a broadcast's, whose durations are not filled in */
+         if (!(stream_u32(body + 64) & 1))
+         {
+            uint64_t play = stream_u64(body + 40), preroll = stream_u64(body + 56);
+            if (preroll < play / 10000)
+               s->play_100ns = play - preroll * 10000;
+         }
       }
       else if (!found && !memcmp(p, asf_stream, 16) && bytes >= 54 &&
                !memcmp(body, asf_audio, 16))
@@ -583,4 +594,12 @@ size_t rwma_stream_read_end(const rwma_stream *s)
 uint32_t rwma_stream_channel_mask(const rwma_stream *s)
 {
    return s ? s->channel_mask : 0;
+}
+uint64_t rwma_stream_frames(const rwma_stream *s)
+{
+   if (!s || !s->rate || !s->channels)
+      return 0;
+   if (s->play_100ns && s->play_100ns < (~(uint64_t)0) / s->rate)
+      return (s->play_100ns * s->rate + 5000000) / 10000000;
+   return 0;
 }

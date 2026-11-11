@@ -1081,6 +1081,18 @@ jobs:
                    v1.wma:wma v2.wma:wma a.ac3:ac3; do
             ./audio_transfer_sniff_test --file "$work/${p%%:*}" "${p#*:}"
           done
+          # MP3, gapless (LAME tag) and not: FFmpeg's samples, where they
+          # start and end
+          for f in id3.mp3 bare.mp3; do
+            ffmpeg -nostdin -hide_banner -loglevel error -i "$work/$f" -f f32le -y "$work/$f.f32"
+            ./audio_transfer_sniff_test --file "$work/$f" mp3 --pcm "$work/$f.f32"
+          done
+          # WMA: the length the ASF header states, as ffprobe reads it
+          for f in v1.wma v2.wma; do
+            frames=$(ffprobe -v error -show_entries format=duration:stream=sample_rate \
+              -of csv=p=0 "$work/$f" | tr '\n' ' ' | awk '{ printf "%d", $1 * $2 + 0.5 }')
+            ./audio_transfer_sniff_test --file "$work/$f" wma --frames "$frames"
+          done
           six=""
           n=0
           for hz in 300 500 700 80 1100 1300; do

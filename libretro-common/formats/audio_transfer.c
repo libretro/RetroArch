@@ -3278,16 +3278,22 @@ static int audio_transfer_mp3_gapless(const uint8_t *b, size_t len,
       if (!frames)
          return 0;
       /* The LAME tag starts here; its delay and padding are twelve
-       * bits each, packed into three bytes at offset 21. */
+       * bits each, packed into three bytes at offset 21.  Its delay is
+       * the encoder's; the decoder's own, 529 samples, comes on top,
+       * as rmp3's pull API (RMP3_DECODER_DELAY) and FFmpeg take it -
+       * without it the audio started 529 samples late and its last
+       * 529 were cut.  The padding is net of it already. */
       if ((size_t)(p - b) + 24 <= len)
       {
          delay = ((uint64_t)p[21] << 4) | (p[22] >> 4);
          pad   = ((uint64_t)(p[22] & 0xf) << 8) | p[23];
+         *out_delay = (uint64_t)spf + delay + RMP3_DECODER_DELAY;
       }
+      else
+         *out_delay = (uint64_t)spf;
       /* The filler frame is decoded like any other, so it is priming
        * too.  What is left to play is the stated audio less both
        * ends. */
-      *out_delay  = (uint64_t)spf + delay;
       *out_frames = (uint64_t)frames * spf;
       *out_frames = (*out_frames > delay + pad)
                   ? *out_frames - delay - pad : 0;
@@ -5189,7 +5195,9 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          if (!a || !a->stream) return false;
          if (channels) *channels = a->channels;
          if (rate) *rate = a->rate;
-         if (total_frames) *total_frames = 0;
+         /* what the container states: the decode runs on past it by
+          * the codec's priming */
+         if (total_frames) *total_frames = rwma_stream_frames(a->stream);
          return true;
       }
 #endif

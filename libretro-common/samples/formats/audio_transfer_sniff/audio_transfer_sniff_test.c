@@ -5,9 +5,14 @@
  *      stream syntax the sniffer knows (ID3v2 tags and junk in front),
  *      and look-alikes it must turn down; every prefix of each, and each
  *      byte corrupted, read inside the buffer; the fold tables.
- *   audio_transfer_sniff_test --file FILE TYPE [--tones]
+ *   audio_transfer_sniff_test --file FILE TYPE [--tones] [--pcm REF]
+ *                             [--frames N]
  *      FILE sniffed as TYPE (wav flac vorbis opus mp3 aac ac3 wma mod),
  *      started where the sniffer says and decoded to the end. With
+ *      --pcm the decode is FFmpeg's (REF, f32le at the file's rate):
+ *      the same length, sample for sample within 1e-4 - where the audio
+ *      starts and ends, gapless trims and all. With --frames the length
+ *      audio_transfer_info states is N. With
  *      --tones FILE is 5.1 with a tone in each channel - FL 300 Hz,
  *      FR 500, FC 700, LFE 80, BL 1100, BR 1300 - and the decode folded
  *      with audio_transfer_stereo_matrix has the left tones on the left
@@ -244,7 +249,8 @@ static double tone(const float *x, size_t n, double hz, double rate)
    return (s1 * s1 + s2 * s2 - c * s1 * s2) / ((double)n * n);
 }
 
-static int run_file(const char *path, const char *want, int tones)
+static int run_file(const char *path, const char *want, int tones,
+      const char *pcm_path, long want_frames)
 {
    FILE                *fp = fopen(path, "rb");
    uint8_t             *buf;
@@ -254,6 +260,7 @@ static int run_file(const char *path, const char *want, int tones)
    void                *ctx;
    unsigned             ch = 0, rate = 0;
    float               *pcm, *st;
+   uint64_t             total = 0;
    int                  bad = 0;
 
    if (!fp)
@@ -277,11 +284,16 @@ static int run_file(const char *path, const char *want, int tones)
    }
    ctx = audio_transfer_new(t);
    audio_transfer_set_buffer_ptr(ctx, t, buf + skip, (size_t)len - skip);
-   if (!audio_transfer_start(ctx, t) || !audio_transfer_info(ctx, t, &ch, &rate, NULL)
+   if (!audio_transfer_start(ctx, t) || !audio_transfer_info(ctx, t, &ch, &rate, &total)
          || !ch || ch > 8 || !rate)
    {
       fprintf(stderr, "%s: does not start\n", path);
       return 1;
+   }
+   if (want_frames >= 0 && total != (uint64_t)want_frames)
+   {
+      fprintf(stderr, "%s: states %lu frames, not %ld\n", path, (unsigned long)total, want_frames);
+      bad = 1;
    }
    cap = (size_t)rate * 4;   /* the files are shorter than four seconds */
    pcm = (float*)malloc(cap * ch * sizeof(float));
@@ -298,6 +310,35 @@ static int run_file(const char *path, const char *want, int tones)
       }
       if (r == AUDIO_PROCESS_END || !got || frames == cap)
          break;
+   }
+
+   if (pcm_path)
+   {
+      FILE  *rf = fopen(pcm_path, "rb");
+      long   rlen;
+      float *ref;
+      size_t i, rn;
+      double worst = 0;
+      if (!rf)
+         return 1;
+      fseek(rf, 0, SEEK_END);
+      rlen = ftell(rf);
+      fseek(rf, 0, SEEK_SET);
+      ref = (float*)malloc((size_t)rlen + 1);
+      if (fread(ref, 1, (size_t)rlen, rf) != (size_t)rlen)
+         return 1;
+      fclose(rf);
+      rn = (size_t)rlen / sizeof(float) / ch;
+      for (i = 0; i < (rn < frames ? rn : frames) * ch; i++)
+         if (fabs((double)pcm[i] - ref[i]) > worst)
+            worst = fabs((double)pcm[i] - ref[i]);
+      if (rn != frames || worst > 1e-4)
+      {
+         fprintf(stderr, "%s: %u frames, FFmpeg's %u, samples within %g of FFmpeg's\n",
+               path, (unsigned)frames, (unsigned)rn, worst);
+         bad = 1;
+      }
+      free(ref);
    }
 
    if (tones)
@@ -347,8 +388,9 @@ static int run_file(const char *path, const char *want, int tones)
       free(st);
    }
    if (!bad)
-      printf("audio_transfer_sniff_test: %s: %s, %u channels at %u Hz, %u frames%s\n",
-            path, want, ch, rate, (unsigned)frames, tones ? ", each tone where it belongs" : "");
+      printf("audio_transfer_sniff_test: %s: %s, %u channels at %u Hz, %u frames%s%s\n",
+            path, want, ch, rate, (unsigned)frames, tones ? ", each tone where it belongs" : "",
+            pcm_path ? ", FFmpeg's samples" : "");
    audio_transfer_free(ctx, t);
    free(pcm);
    free(buf);
@@ -358,6 +400,20 @@ static int run_file(const char *path, const char *want, int tones)
 int main(int argc, char **argv)
 {
    if (argc >= 4 && !strcmp(argv[1], "--file"))
-      return run_file(argv[2], argv[3], argc > 4 && !strcmp(argv[4], "--tones"));
+   {
+      int         i, tones = 0;
+      const char *pcm = NULL;
+      long        frames = -1;
+      for (i = 4; i < argc; i++)
+      {
+         if (!strcmp(argv[i], "--tones"))
+            tones = 1;
+         else if (!strcmp(argv[i], "--pcm") && i + 1 < argc)
+            pcm = argv[++i];
+         else if (!strcmp(argv[i], "--frames") && i + 1 < argc)
+            frames = atol(argv[++i]);
+      }
+      return run_file(argv[2], argv[3], tones, pcm, frames);
+   }
    return run_checks();
 }
