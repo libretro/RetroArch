@@ -121,8 +121,10 @@ static void *sdl2_ctx_init(void *video_driver)
       if (SDL_Init(SDL_INIT_VIDEO) < 0)
          goto error;
    }
-   else if ((sdl_subsystem_flags & SDL_INIT_VIDEO) == 0)
+   else
    {
+      /* A reference of its own with video up too: that may be a kept
+       * window's hold, which take() quits */
       if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
          goto error;
       sdl->subsystem_inited = true;
@@ -516,6 +518,18 @@ static void sdl2_ctx_window_destroy(void *data,
    sdl2_video_window_destroy(data, window);
 }
 
+static void sdl2_ctx_window_keep(void *data,
+      video_window_native_t *window)
+{
+   sdl2_video_window_t *state = window
+      ? (sdl2_video_window_t*)window->state : NULL;
+   if (!data || !state || state->common.owner != data)
+      return;
+   if (SDL_GL_GetCurrentWindow() == state->win)
+      sdl2_ctx_window_bind_gl(data, NULL);
+   sdl2_video_window_keep(data, window);
+}
+
 static bool sdl2_ctx_window_create(void *data,
       const video_window_request_t *request, video_window_native_t *window)
 {
@@ -532,8 +546,8 @@ static const gfx_ctx_window_driver_t sdl2_ctx_windows = {
    sdl2_ctx_window_bind_gl,
    sdl2_ctx_window_present_gl,
    sdl2_ctx_window_destroy,
-   NULL, /* keep */
-   NULL, /* take */
+   sdl2_ctx_window_keep,
+   sdl2_video_window_take,
    sdl2_video_windows_supported
 };
 #endif

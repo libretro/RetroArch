@@ -103,13 +103,44 @@ static bool gfx_ctx_x_vk_window_create(void *data,
    return ok;
 }
 
+/* Kept by the last driver: adopted where it is on the visual a window
+ * made now would be on */
+static bool gfx_ctx_x_vk_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   XVisualInfo vi_template;
+   XVisualInfo *vi;
+   bool ok;
+   int nvisuals = 0;
+   if (!data || !g_x11_dpy)
+      return false;
+   memset(&vi_template, 0, sizeof(vi_template));
+   vi_template.screen = DefaultScreen(g_x11_dpy);
+   if (!(vi = XGetVisualInfo(g_x11_dpy, VisualScreenMask, &vi_template,
+               &nvisuals)))
+      return false;
+   ok = nvisuals > 0 && x11_video_window_take(data, screen, window,
+         display, vi->visualid);
+   XFree(vi);
+   if (ok)
+   {
+      window->display = gfx_ctx_x_vk_wsi_connection(
+            (gfx_ctx_x_vk_data_t*)data);
+      window->surface = &((x11_video_window_t*)window->state)->handle;
+      x11_video_window_taken(window);
+   }
+   return ok;
+}
+
 static const gfx_ctx_window_driver_t gfx_ctx_x_vk_windows = {
    gfx_ctx_x_vk_window_create,
    x11_video_window_update,
    x11_video_window_poll,
    NULL, /* bind_gl */
    NULL, /* present_gl */
-   x11_video_window_destroy
+   x11_video_window_destroy,
+   x11_video_window_keep,
+   gfx_ctx_x_vk_window_take
 };
 #endif
 

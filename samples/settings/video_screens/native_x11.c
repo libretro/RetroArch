@@ -381,18 +381,122 @@ static void native_x11_focused(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(window->focused);
 }
 
+/* A down (1) and an up (2) of A, as the core's keyboard callback has them */
+static unsigned native_x11_key_seen;
+
+static void native_x11_key_event(bool down, unsigned code,
+      uint32_t character, uint16_t mod)
+{
+   (void)character;
+   (void)mod;
+   if (code == RETROK_a)
+      native_x11_key_seen |= down ? 1 : 2;
+}
+
+static void native_x11_send_key(Display *display, Window win,
+      unsigned keycode, bool down)
+{
+   XEvent event;
+   memset(&event, 0, sizeof(event));
+   event.xkey.type        = down ? KeyPress : KeyRelease;
+   event.xkey.display     = display;
+   event.xkey.window      = win;
+   event.xkey.root        = DefaultRootWindow(display);
+   event.xkey.time        = CurrentTime;
+   event.xkey.keycode     = keycode;
+   event.xkey.same_screen = True;
+   XSendEvent(display, win, False,
+         down ? KeyPressMask : KeyReleaseMask, &event);
+   XFlush(display);
+}
+
+/* Pumps and polls until A reads 'down' in the X input driver and the
+ * core has had its event; sent again each time, as the driver selects
+ * the window at its poll */
+static void native_x11_key_wait(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, void *in, Display *display,
+      Window win, bool down)
+{
+   bool pressed          = !down;
+   unsigned want         = down ? 1 : 2;
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   do
+   {
+      native_x11_send_key(display, win, rarch_keysym_lut[RETROK_a], down);
+      retro_sleep(20);
+      native_window_drain(ctx, data, request);
+      input_x.poll(in);
+      pressed = input_x.input_state(in, NULL, NULL, NULL, 0,
+            RETRO_DEVICE_KEYBOARD, 0, RETROK_a) != 0;
+   } while (   (pressed != down || !(native_x11_key_seen & want))
+            && cpu_features_get_time_usec() < deadline);
+   CHECK(pressed == down);
+   CHECK(native_x11_key_seen & want);
+}
+
+/* Keys typed in a screen's own window reach the X input driver's own
+ * connection and the main window's key path */
+static void native_x11_keys(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, Display *display, Window win)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   retro_keyboard_event_t saved = runloop_st->key_event;
+   void *in                     = input_x.init(NULL);
+   CHECK(in != NULL);
+   if (!in)
+      return;
+   runloop_st->key_event = native_x11_key_event;
+   native_x11_key_seen   = 0;
+   native_x11_key_wait(ctx, data, request, in, display, win, true);
+   native_x11_key_wait(ctx, data, request, in, display, win, false);
+   runloop_st->key_event = saved;
+   input_x.free(in);
+}
+
 /* An error in 'window' handed to 'handler' as Xlib would hand it */
 static void native_x11_fake_error(int (*handler)(Display*, XErrorEvent*),
-      Display *display, Window window)
+      Display *display, Window window, int code)
 {
    XErrorEvent event;
    memset(&event, 0, sizeof(event));
    event.display      = display;
    event.resourceid   = window;
    event.serial       = XNextRequest(display) + 100000;
-   event.error_code   = BadWindow;
+   event.error_code   = code;
    event.request_code = 12; /* X_ConfigureWindow */
    CHECK(handler(display, &event) == 0);
+}
+
+/* Errors the window handler handed on */
+static unsigned native_x11_chained;
+
+static int native_x11_count_error(Display *dpy, XErrorEvent *event)
+{
+   native_x11_chained++;
+   return 0;
+}
+
+/* On another connection, as the input driver's, only a BadWindow for a
+ * screen's window is dropped; the rest is handed on */
+static void native_x11_errors_elsewhere(Display *display, Window window)
+{
+   int (*handler)(Display*, XErrorEvent*);
+   Display *other = XOpenDisplay(DisplayString(display));
+   CHECK(other != NULL);
+   if (!other)
+      return;
+   handler = XSetErrorHandler(native_x11_ignore_error);
+   XSetErrorHandler(handler);
+   CHECK(handler != native_x11_count_error);
+   native_x11_chained = 0;
+   native_x11_fake_error(handler, other, window, BadWindow);
+   CHECK(native_x11_chained == 0);
+   native_x11_fake_error(handler, other, window, BadMatch);
+   CHECK(native_x11_chained == 1);
+   native_x11_fake_error(handler, other, DefaultRootWindow(display),
+         BadWindow);
+   CHECK(native_x11_chained == 2);
+   XCloseDisplay(other);
 }
 
 /* A preferred monitor, with saved bounds that are not on it: moved onto
@@ -2066,6 +2170,231 @@ static void native_x11_torn_down(bool again)
 #endif
 }
 
+static const gfx_ctx_driver_t *native_x11_context(const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor, void **data)
+{
+   const gfx_ctx_driver_t *ctx;
+#if defined(HAVE_VULKAN) && defined(HAVE_XCB)
+   if (strcmp(ident, "vk_x") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_vk_x, ident, api, major, minor, false, data);
+   else
+#endif
+   ctx = video_context_driver_init_first(NULL, ident, api, major, minor,
+         false, data);
+   if (     !ctx
+         || !ctx->set_video_mode(*data, VIDEO_SCALE_PACK(640, 480), false))
+   {
+      CHECK(!"context");
+      return NULL;
+   }
+   if (api == GFX_CTX_OPENGL_API)
+      ctx->swap_interval(*data, 1);
+   return ctx;
+}
+
+/* Pumps until the keyboard focus is on 'want' */
+static Window native_x11_focus_on(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, Display *display, Window want)
+{
+   Window focus          = None;
+   int revert            = 0;
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   for (;;)
+   {
+      native_window_drain(ctx, data, request);
+      XGetInputFocus(display, &focus, &revert);
+      if (focus == want || cpu_features_get_time_usec() > deadline)
+         break;
+      retro_sleep(2);
+   }
+   native_window_settle(ctx, data, request, 300000);
+   XGetInputFocus(display, &focus, &revert);
+   return focus;
+}
+
+/* A key the user pressed on the main window, at the server's time as
+ * x11_alive() reads it, then a moment: what RetroArch does next is
+ * later than the user's last input */
+static void native_x11_user_key(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, Display *display)
+{
+   XEvent event;
+   Time now;
+   Window clock = XCreateSimpleWindow(display, DefaultRootWindow(display),
+         0, 0, 1, 1, 0, 0, 0);
+   XSelectInput(display, clock, PropertyChangeMask);
+   XChangeProperty(display, clock, XA_WM_NAME, XA_STRING, 8,
+         PropModeReplace, (const unsigned char*)"t", 1);
+   XWindowEvent(display, clock, PropertyChangeMask, &event);
+   now = event.xproperty.time;
+   XDestroyWindow(display, clock);
+   memset(&event, 0, sizeof(event));
+   event.xkey.type        = KeyPress;
+   event.xkey.window      = g_x11_win;
+   event.xkey.root        = DefaultRootWindow(display);
+   event.xkey.time        = now;
+   event.xkey.same_screen = True;
+   event.xkey.keycode     = XKeysymToKeycode(display, XStringToKeysym("Shift_L"));
+   XSendEvent(display, g_x11_win, False, KeyPressMask, &event);
+   event.xkey.type        = KeyRelease;
+   XSendEvent(display, g_x11_win, False, KeyReleaseMask, &event);
+   XSync(display, False);
+   native_window_settle(ctx, data, request, 100000);
+}
+
+/* The main window remade, as its fullscreen toggle remakes it on X11,
+ * with a screen's window up: the driver's teardown keeps that window,
+ * the next driver's start takes it, and nothing is asked of it. The
+ * focus stays on the window the user left it on: the main window, then
+ * the screen's, which first goes fullscreen and back in place. Last,
+ * the screen's again, taken and gone at once as when its drawable
+ * cannot be made: the focus stays on the main window. */
+static void native_x11_kept(const char *ident, enum gfx_ctx_api api,
+      unsigned major, unsigned minor)
+{
+   unsigned round;
+   for (round = 0; round < 3; round++)
+   {
+      video_window_request_t request;
+      video_window_native_t window;
+      native_rect_t rect, main_rect;
+      XEvent event;
+      Window win, focus;
+      Display *watch;
+      VisualID visual;
+      unsigned display = 0;
+      unsigned asked   = 0;
+      void *data       = NULL;
+      char *wm;
+      bool managed;
+      const gfx_ctx_driver_t *ctx = native_x11_context(ident, api, major,
+            minor, &data);
+      if (!ctx)
+         return;
+      wm      = x11_get_wm_name(g_x11_dpy);
+      managed = wm != NULL;
+      free(wm);
+      memset(&request, 0, sizeof(request));
+      memset(&window, 0, sizeof(window));
+      request.screen        = 1;
+      request.generation    = video_driver_window_generation();
+      request.settings.mode = VIDEO_WINDOW_SEPARATE;
+      request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+      CHECK(ctx->windows->create(data, &request, &window));
+      native_window_wait(ctx, data, &request, &window,
+            NATIVE_EVENT(RESUME), 0);
+      native_window_settle(ctx, data, &request, 100000);
+      win = native_x11_window(&window);
+      if (round)
+      {
+         native_x11_focused(ctx, data, &request, &window, g_x11_dpy, win,
+               managed);
+         main_rect                   = native_x11_rect(g_x11_dpy, g_x11_win);
+         request.settings.fullscreen = true;
+         ctx->windows->update(data, &window, &request);
+         if (managed)
+            native_x11_wait_fullscreen(ctx, data, &request, &window, true);
+         request.settings.fullscreen = false;
+         ctx->windows->update(data, &window, &request);
+         if (managed)
+            native_x11_wait_fullscreen(ctx, data, &request, &window, false);
+         native_window_settle(ctx, data, &request, 300000);
+         rect = native_x11_rect(g_x11_dpy, g_x11_win);
+         CHECK(native_x11_focus_on(ctx, data, &request, g_x11_dpy, win)
+               == win);
+         CHECK(     rect.x == main_rect.x && rect.y == main_rect.y
+                 && rect.w == main_rect.w && rect.h == main_rect.h);
+      }
+      else
+      {
+         native_x11_focus(g_x11_dpy, g_x11_win, managed);
+         CHECK(native_x11_focus_on(ctx, data, &request, g_x11_dpy,
+               g_x11_win) == g_x11_win);
+      }
+      CHECK(window.focused == (round != 0));
+      rect   = native_x11_rect(g_x11_dpy, win);
+      visual = ((x11_video_window_t*)window.state)->visual;
+
+      CHECK((watch = XOpenDisplay(NULL)) != NULL);
+      if (!watch)
+         return;
+      XSelectInput(watch, win, StructureNotifyMask);
+      XSync(watch, False);
+      if (round)
+         native_x11_user_key(ctx, data, &request, watch);
+
+      if (ctx->windows->keep)
+         ctx->windows->keep(data, &window);
+      else
+         ctx->windows->destroy(data, &window);
+      CHECK(window.state == NULL);
+      ctx->destroy(data);
+      data = NULL;
+      /* A context up and gone in between, as a probe that fails is */
+      if (round && (data = ctx->init(NULL)))
+         ctx->destroy(data);
+      data = NULL;
+      if (!(ctx = native_x11_context(ident, api, major, minor, &data)))
+      {
+         XCloseDisplay(watch);
+         return;
+      }
+      if (round == 2)
+      {
+         CHECK(x11_video_window_take(data, request.screen, &window,
+               &display, visual));
+         x11_video_window_destroy(data, &window);
+         focus = native_x11_focus_on(ctx, data, &request, g_x11_dpy,
+               g_x11_win);
+         fprintf(stderr, "native x11: taken and gone at once, focus on "
+               "%s\n", focus == g_x11_win ? "main" : "another");
+         CHECK(focus == g_x11_win);
+         XCloseDisplay(watch);
+         ctx->destroy(data);
+         continue;
+      }
+      if (     !ctx->windows->take
+            || !ctx->windows->take(data, request.screen, &window, &display))
+      {
+         CHECK(ctx->windows->create(data, &request, &window));
+         native_window_wait(ctx, data, &request, &window,
+               NATIVE_EVENT(RESUME), 0);
+      }
+      focus = native_x11_focus_on(ctx, data, &request, g_x11_dpy,
+            round ? win : g_x11_win);
+      fprintf(stderr, "native x11: remade main, screen focused %d: window "
+            "%s, focus on %s\n", round, native_x11_window(&window) == win
+            ? "kept" : "made again", focus == g_x11_win ? "main"
+            : focus == native_x11_window(&window) ? "the screen's"
+            : "another");
+      CHECK(native_x11_window(&window) == win);
+      CHECK(focus == (round ? win : g_x11_win));
+      CHECK(window.focused == (round == 1));
+      CHECK(window.generation == request.generation);
+      XSync(watch, False);
+      while (XPending(watch))
+      {
+         XNextEvent(watch, &event);
+         if (     event.xany.window == win
+               && (     event.type == UnmapNotify
+                     || event.type == DestroyNotify
+                     || event.type == MapNotify))
+            asked++;
+      }
+      CHECK(asked == 0);
+      if (native_x11_window(&window) == win)
+      {
+         native_rect_t now = native_x11_rect(g_x11_dpy, win);
+         CHECK(     now.x == rect.x && now.y == rect.y
+                 && now.w == rect.w && now.h == rect.h);
+      }
+      XCloseDisplay(watch);
+      ctx->windows->destroy(data, &window);
+      ctx->destroy(data);
+   }
+}
+
 static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
@@ -2321,6 +2650,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_x11_focused(ctx, data, request, window, display, secondary,
          managed);
    CHECK(ctx->has_focus(data));
+   native_x11_keys(ctx, data, request, display, secondary);
    native_x11_close(display, secondary);
    XSync(display, False);
    seen = native_window_drain(ctx, data, request);
@@ -2329,6 +2659,13 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(seen & NATIVE_EVENT(FOCUS_LOSS));
    CHECK(!window->focused && !window->presentable);
    CHECK(!ctx->has_focus(data));
+   ctx->windows->destroy(data, window);
+   /* The window handler hands on to the one it replaced, counted here */
+   XSetErrorHandler(native_x11_count_error);
+   request->generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, request, window));
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+   native_x11_errors_elsewhere(display, native_x11_window(window));
    ctx->windows->destroy(data, window);
    /* Xlib's default handler back, as a save and restore elsewhere can
     * leave it: the next create has to put the window handler back */
@@ -2437,7 +2774,8 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    handler = XSetErrorHandler(native_x11_ignore_error);
    XSetErrorHandler(handler);
    CHECK(handler != native_x11_ignore_error);
-   native_x11_fake_error(handler, display, native_x11_window(window));
+   native_x11_fake_error(handler, display, native_x11_window(window),
+         BadWindow);
    ctx->windows->destroy(data, window);
    request->generation = video_driver_window_generation();
    CHECK(ctx->windows->create(data, request, window));
@@ -2446,7 +2784,8 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    seen |= native_window_settle(ctx, data, request, 50000);
    CHECK(!(seen & NATIVE_EVENT(CLOSE)));
    CHECK(window->presentable);
-   native_x11_fake_error(handler, display, native_x11_window(window));
+   native_x11_fake_error(handler, display, native_x11_window(window),
+         BadWindow);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
    CHECK(!native_window_closed_user);
    CHECK(!window->presentable);

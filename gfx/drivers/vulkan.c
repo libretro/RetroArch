@@ -11412,6 +11412,10 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
                   events[i].save_pos, events[i].save_dims,
                   events[i].save_moved);
          }
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN
+                    || events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_LOSS)
+            video_driver_publish_window_focus(id, events[i].generation,
+                  events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN);
       }
       /* Those let go of on an earlier frame whose output is done now */
       for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)

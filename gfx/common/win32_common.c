@@ -1280,6 +1280,7 @@ static bool win32_wnd_input_message(UINT message,
 
 #if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
 static void win32_video_windows_unsettled(void);
+static void win32_video_windows_ime_sync(void);
 static win32_video_window_t *win32_video_window_of(HWND hwnd);
 #endif
 
@@ -1668,6 +1669,9 @@ LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
    if (message == WIN32_WM_TEXT_ENTRY)
    {
       win32_ime_sync(hwnd);
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+      win32_video_windows_ime_sync();
+#endif
       return 0;
    }
 
@@ -1901,10 +1905,18 @@ bool win32_window_keep(void)
    return true;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+static void win32_video_windows_release_kept(void);
+#endif
+
 void win32_window_release_kept(void)
 {
    HWND hwnd = win32_kept_hwnd;
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* Screens' windows kept on this thread that nobody took */
+   win32_video_windows_release_kept();
+#endif
    if (!hwnd)
       return;
    if (!IsWindow(hwnd))
@@ -2157,6 +2169,8 @@ static bool win32_window_create(void *data, unsigned style,
 
 #if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
 #define WIN32_VIDEO_WINDOW_CLASS "RetroArch Screen"
+/* The property an open one has */
+#define WIN32_VIDEO_WINDOW_OPEN  "RetroArch Screen open"
 #define WIN32_VIDEO_WINDOW_STYLE (WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS \
       | WS_CLIPCHILDREN)
 #define WIN32_VIDEO_WINDOW_FULLSCREEN_STYLE (WS_POPUP | WS_CLIPSIBLINGS \
@@ -2165,6 +2179,7 @@ static bool win32_window_create(void *data, unsigned style,
 /* Secondary screens' windows, by screen */
 static win32_video_window_t *win32_video_windows[RETRO_VIDEO_VIEWS_MAX];
 static unsigned win32_video_window_count;
+static void win32_video_window_let_go(win32_video_window_t *state);
 
 static video_window_common_t *win32_video_window_at(unsigned screen)
 {
@@ -2181,6 +2196,16 @@ static win32_video_window_t *win32_video_window_of(HWND hwnd)
    return NULL;
 }
 
+/* Asks Windows alone, so it changes with the foreground in one step */
+bool win32_video_window_open(HWND hwnd)
+{
+   DWORD pid = 0;
+   return    hwnd
+          && GetWindowThreadProcessId(hwnd, &pid)
+          && pid == GetCurrentProcessId()
+          && GetPropA(hwnd, WIN32_VIDEO_WINDOW_OPEN);
+}
+
 /* Windows moves windows as the displays change: not the user's */
 static void win32_video_windows_unsettled(void)
 {
@@ -2189,6 +2214,15 @@ static void win32_video_windows_unsettled(void)
    for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
       if (win32_video_windows[i] && !win32_video_windows[i]->common.closed)
          video_window_unsettled(&win32_video_windows[i]->common, now);
+}
+
+/* The main window's rule for the IME, on the same thread */
+static void win32_video_windows_ime_sync(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (win32_video_windows[i] && win32_video_windows[i]->hwnd)
+         win32_ime_sync(win32_video_windows[i]->hwnd);
 }
 
 /* Presentable while shown, not minimised and not of zero size. Shown
@@ -2263,11 +2297,13 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
        * window stays until its owner destroys it */
       case WM_CLOSE:
          video_window_mark_closed_by_user(&state->common);
+         RemovePropA(hwnd, WIN32_VIDEO_WINDOW_OPEN);
          return 0;
       /* By something else: destroy() takes the window out first */
       case WM_DESTROY:
          win32_video_window_end_sizemove(state);
          video_window_mark_closed(&state->common);
+         RemovePropA(hwnd, WIN32_VIDEO_WINDOW_OPEN);
          state->destroyed = true;
          state->hwnd      = NULL;
          break;
@@ -2280,6 +2316,15 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
 
    switch (message)
    {
+      /* Keys go where the main window's go */
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYDOWN:
+      case WM_SYSKEYUP:
+      case WM_CHAR:
+      case WM_IME_COMPOSITION:
+      case WM_IME_ENDCOMPOSITION:
+         return win32_wnd_proc_route(hwnd, message, wparam, lparam);
       case WM_WINDOWPOSCHANGED:
          /* the WM_SIZE and WM_MOVE it makes first */
          ret = DefWindowProc(hwnd, message, wparam, lparam);
@@ -2601,6 +2646,10 @@ bool win32_video_window_create(void *owner,
    win32_video_window_t *state;
    HINSTANCE instance = GetModuleHandle(NULL);
 
+   if (     request && request->screen < RETRO_VIDEO_VIEWS_MAX
+         && win32_video_windows[request->screen]
+         && !win32_video_windows[request->screen]->common.owner)
+      win32_video_window_let_go(win32_video_windows[request->screen]);
    if (     !owner || !request || !window || window->state
          || !main_window.hwnd
          /* the only pump that sees its messages is this thread's */
@@ -2626,6 +2675,7 @@ bool win32_video_window_create(void *owner,
    state->common.owner   = owner;
    state->common.native  = window;
    state->common.request = *request;
+   state->thread         = GetCurrentThreadId();
    state->fullscreen     = request->settings.fullscreen;
    memset(window, 0, sizeof(*window));
    window->state         = state;
@@ -2651,6 +2701,8 @@ bool win32_video_window_create(void *owner,
          UnregisterClass(WIN32_VIDEO_WINDOW_CLASS, instance);
       return false;
    }
+   win32_ime_sync(state->hwnd);
+   SetPropA(state->hwnd, WIN32_VIDEO_WINDOW_OPEN, (HANDLE)1);
 
    /* as it came up; its messages keep these from here on */
    memset(&client, 0, sizeof(client));
@@ -2742,11 +2794,79 @@ void win32_video_window_destroy(void *owner, video_window_native_t *window)
       SendMessage(state->hwnd, WM_CANCELMODE, 0, 0);
    win32_video_window_end_sizemove(state);
    if (!state->destroyed)
+   {
+      RemovePropA(state->hwnd, WIN32_VIDEO_WINDOW_OPEN);
       DestroyWindow(state->hwnd);
+   }
    free(state);
    memset(window, 0, sizeof(*window));
    if (!win32_video_window_count)
       UnregisterClass(WIN32_VIDEO_WINDOW_CLASS, GetModuleHandle(NULL));
+}
+
+/* A kept window nobody took, destroyed as its own teardown does: only
+ * by its own thread */
+static void win32_video_window_let_go(win32_video_window_t *state)
+{
+   video_window_native_t window;
+   if (state->thread != GetCurrentThreadId())
+      return;
+   window               = state->common.kept;
+   state->common.native = &window;
+   win32_video_window_destroy(NULL, &window);
+}
+
+static void win32_video_windows_release_kept(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (win32_video_windows[i] && !win32_video_windows[i]->common.owner)
+         win32_video_window_let_go(win32_video_windows[i]);
+}
+
+void win32_video_window_keep(void *owner, video_window_native_t *window)
+{
+   win32_video_window_t *state = window
+      ? (win32_video_window_t*)window->state : NULL;
+   if (!state || state->common.owner != owner)
+      return;
+   if (     !task_is_on_main_thread()
+         || (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+      win32_video_window_destroy(owner, window);
+   else
+      video_window_hold(&state->common, window);
+}
+
+bool win32_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display, int format)
+{
+   HDC hdc;
+   int has = 0;
+   win32_video_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? win32_video_windows[screen] : NULL;
+   if (     !owner || !state || state->common.owner || !window
+         || window->state
+         || state->thread != GetCurrentThreadId())
+      return false;
+   if (!state->destroyed && (hdc = GetDC(state->hwnd)))
+   {
+      has = GetPixelFormat(hdc);
+      ReleaseDC(state->hwnd, hdc);
+   }
+   /* One the user closed meanwhile is taken, for its close to land; one
+    * with another pixel format is not, as a window's is set once */
+   if (state->destroyed || has != format)
+   {
+      win32_video_window_let_go(state);
+      return false;
+   }
+   video_window_adopt(&state->common, owner, window);
+   *display = state->common.request.display;
+   /* RetroArch is in front, so the window the user left it on can be */
+   if (     state->common.kept_focus && window->presentable
+         && !state->common.closed)
+      SetForegroundWindow(state->hwnd);
+   return true;
 }
 
 void win32_video_windows_free(void *owner,

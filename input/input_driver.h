@@ -1215,6 +1215,7 @@ unsigned input_config_get_joypad_index(unsigned port);
 unsigned input_config_get_rumble_gain(void);
 bool input_config_get_nowinkey_enable(void);
 bool input_config_get_keyboard_background(void);
+bool input_config_get_video_windows_enable(void);
 bool input_config_get_winraw_xinput_enable(void);
 bool input_config_get_winraw_player_lights(void);
 bool input_config_get_sdl3_system_keyboard(void);

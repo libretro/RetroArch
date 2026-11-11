@@ -497,32 +497,46 @@ static bool gfx_ctx_wl_window_present_gl(void *data,
    return false;
 }
 
-static void gfx_ctx_wl_window_destroy(void *data,
+/* The window's EGL surface and native window gone, for its own
+ * teardown or a keep */
+static bool gfx_ctx_wl_window_unbind(void *data,
       video_window_native_t *window)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl_video_window_t *state   = window
       ? (wl_video_window_t*)window->state : NULL;
    if (!wl || !state || state->common.owner != wl)
-      return;
+      return false;
    if (state->drawable)
       egl_window_surface_free(&wl->egl, (EGLSurface)state->drawable);
    if (state->win)
       wl_egl_window_destroy((struct wl_egl_window*)state->win);
-   wl_video_window_destroy(data, window);
+   state->drawable     = NULL;
+   state->win          = NULL;
+   state->interval_set = false;
+   return true;
 }
 
-static bool gfx_ctx_wl_window_create(void *data,
-      const video_window_request_t *request, video_window_native_t *window)
+static void gfx_ctx_wl_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_wl_window_unbind(data, window))
+      wl_video_window_destroy(data, window);
+}
+
+static void gfx_ctx_wl_window_keep(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_wl_window_unbind(data, window))
+      wl_video_window_keep(data, window);
+}
+
+/* EGL's surface and native window on the window, at its size */
+static bool gfx_ctx_wl_window_surface(gfx_ctx_wayland_data_t *wl,
+      video_window_native_t *window)
 {
    EGLSurface surface;
-   wl_video_window_t *state;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   if (     !wl || wl->egl.surf == EGL_NO_SURFACE
-         || !wl_video_window_create(data, request, window))
-      return false;
-   state           = (wl_video_window_t*)window->state;
+   wl_video_window_t *state = (wl_video_window_t*)window->state;
    state->win      = wl_egl_window_create(state->surface,
          VIDEO_SCALE_W(window->dims), VIDEO_SCALE_H(window->dims));
    state->win_dims = window->dims;
@@ -530,11 +544,29 @@ static bool gfx_ctx_wl_window_create(void *data,
          || (surface = egl_window_surface_new(&wl->egl, state->win))
             == EGL_NO_SURFACE)
    {
-      gfx_ctx_wl_window_destroy(data, window);
+      gfx_ctx_wl_window_destroy(wl, window);
       return false;
    }
    state->drawable = surface;
    return true;
+}
+
+static bool gfx_ctx_wl_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return      wl && wl->egl.surf != EGL_NO_SURFACE
+            && wl_video_window_take(data, screen, window, display)
+            && gfx_ctx_wl_window_surface(wl, window);
+}
+
+static bool gfx_ctx_wl_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return      wl && wl->egl.surf != EGL_NO_SURFACE
+            && wl_video_window_create(data, request, window)
+            && gfx_ctx_wl_window_surface(wl, window);
 }
 
 static const gfx_ctx_window_driver_t gfx_ctx_wl_windows = {
@@ -543,7 +575,9 @@ static const gfx_ctx_window_driver_t gfx_ctx_wl_windows = {
    wl_video_window_poll,
    gfx_ctx_wl_window_bind_gl,
    gfx_ctx_wl_window_present_gl,
-   gfx_ctx_wl_window_destroy
+   gfx_ctx_wl_window_destroy,
+   gfx_ctx_wl_window_keep,
+   gfx_ctx_wl_window_take
 };
 #endif
 

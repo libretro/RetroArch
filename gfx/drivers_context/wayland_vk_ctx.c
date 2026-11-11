@@ -121,7 +121,9 @@ static const gfx_ctx_window_driver_t gfx_ctx_wl_vk_windows = {
    wl_video_window_poll,
    NULL, /* bind_gl */
    NULL, /* present_gl */
-   wl_video_window_destroy
+   wl_video_window_destroy,
+   wl_video_window_keep,
+   wl_video_window_take
 };
 #endif
 

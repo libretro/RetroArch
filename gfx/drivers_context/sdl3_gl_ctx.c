@@ -485,6 +485,18 @@ static void sdl3_ctx_window_destroy(void *data,
    sdl3_video_window_destroy(data, window);
 }
 
+static void sdl3_ctx_window_keep(void *data,
+      video_window_native_t *window)
+{
+   sdl3_video_window_t *state = window
+      ? (sdl3_video_window_t*)window->state : NULL;
+   if (!data || !state || state->common.owner != data)
+      return;
+   if (SDL_GL_GetCurrentWindow() == state->win)
+      sdl3_ctx_window_bind_gl(data, NULL);
+   sdl3_video_window_keep(data, window);
+}
+
 static bool sdl3_ctx_window_create(void *data,
       const video_window_request_t *request, video_window_native_t *window)
 {
@@ -494,6 +506,13 @@ static bool sdl3_ctx_window_create(void *data,
    return sdl3_video_window_create(data, SDL_WINDOW_OPENGL, request, window);
 }
 
+static bool sdl3_ctx_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   return sdl3_video_window_take(data, screen, window, display,
+         SDL_WINDOW_OPENGL);
+}
+
 static const gfx_ctx_window_driver_t sdl3_ctx_windows = {
    sdl3_ctx_window_create,
    sdl3_video_window_update,
@@ -501,8 +520,8 @@ static const gfx_ctx_window_driver_t sdl3_ctx_windows = {
    sdl3_ctx_window_bind_gl,
    sdl3_ctx_window_present_gl,
    sdl3_ctx_window_destroy,
-   NULL, /* keep */
-   NULL, /* take */
+   sdl3_ctx_window_keep,
+   sdl3_ctx_window_take,
    sdl3_video_windows_supported
 };
 #endif

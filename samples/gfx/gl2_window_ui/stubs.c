@@ -85,6 +85,9 @@ void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits) { (v
 void video_driver_publish_window_bounds(unsigned window, unsigned screens,
       unsigned edit, unsigned pos, unsigned dims, bool moved)
 { (void)window; (void)screens; (void)edit; (void)pos; (void)dims; (void)moved; }
+void video_driver_publish_window_focus(unsigned window,
+      unsigned generation, bool focused)
+{ (void)window; (void)generation; (void)focused; }
 void video_driver_publish_window_layout(unsigned window,
       unsigned generation, unsigned display,
       const video_views_layout_t *layout,

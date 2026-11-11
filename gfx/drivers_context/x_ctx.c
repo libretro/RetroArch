@@ -225,14 +225,14 @@ static bool gfx_ctx_x_window_present_gl(void *data,
    return true;
 }
 
-static void gfx_ctx_x_window_destroy(void *data,
+/* The window's GL drawable gone, for its own teardown or a keep */
+static bool gfx_ctx_x_window_unbind(void *data,
       video_window_native_t *window)
 {
-   gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
    x11_video_window_t *state = window
       ? (x11_video_window_t*)window->state : NULL;
-   if (!x || !state || state->common.owner != data)
-      return;
+   if (!data || !state || state->common.owner != data)
+      return false;
    if (state->drawable)
    {
       GLXDrawable drawable = (GLXDrawable)(uintptr_t)state->drawable;
@@ -240,7 +240,21 @@ static void gfx_ctx_x_window_destroy(void *data,
          gfx_ctx_x_window_bind_gl(data, NULL);
       glXDestroyWindow(g_x11_dpy, drawable);
    }
-   x11_video_window_destroy(data, window);
+   return true;
+}
+
+static void gfx_ctx_x_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_x_window_unbind(data, window))
+      x11_video_window_destroy(data, window);
+}
+
+static void gfx_ctx_x_window_keep(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_x_window_unbind(data, window))
+      x11_video_window_keep(data, window);
 }
 
 static bool gfx_ctx_x_window_create(void *data,
@@ -270,13 +284,44 @@ static bool gfx_ctx_x_window_create(void *data,
    return true;
 }
 
+/* Kept by the last driver: adopted where it is on this config's visual */
+static bool gfx_ctx_x_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   XVisualInfo *vi;
+   GLXWindow drawable;
+   bool ok;
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+
+   if (!x || !x->ctx || !x->glx_win)
+      return false;
+   if (!(vi = glXGetVisualFromFBConfig(g_x11_dpy, x->fbc)))
+      return false;
+   ok = x11_video_window_take(data, screen, window, display,
+         vi->visualid);
+   XFree(vi);
+   if (!ok)
+      return false;
+   if (!(drawable = glXCreateWindow(g_x11_dpy, x->fbc,
+               (Window)(uintptr_t)window->surface, NULL)))
+   {
+      x11_video_window_destroy(data, window);
+      return false;
+   }
+   x11_video_window_drawable(window, (void*)(uintptr_t)drawable, drawable);
+   x11_video_window_taken(window);
+   return true;
+}
+
 static const gfx_ctx_window_driver_t gfx_ctx_x_windows = {
    gfx_ctx_x_window_create,
    x11_video_window_update,
    x11_video_window_poll,
    gfx_ctx_x_window_bind_gl,
    gfx_ctx_x_window_present_gl,
-   gfx_ctx_x_window_destroy
+   gfx_ctx_x_window_destroy,
+   gfx_ctx_x_window_keep,
+   gfx_ctx_x_window_take
 };
 #endif
 

@@ -162,6 +162,12 @@ unsigned input_driver_pointer_read_as(unsigned i) { (void)i; return 0; }
 /* the main window, as the video driver has it */
 static HWND stub_video_window;
 uintptr_t video_driver_window_get(void) { return (uintptr_t)stub_video_window; }
+/* as a video driver without a focus callback has it: the keys must not
+ * go by it */
+bool video_driver_has_focus(void) { return true; }
+/* an open screen's own window in front */
+static bool stub_screen_focus;
+bool win32_video_window_open(HWND hwnd) { (void)hwnd; return stub_screen_focus; }
 void win32_clip_window(bool grab) { (void)grab; }
 void win32_hotplug_arm(void) { }
 bool win32_hotplug_due(void) { return false; }
@@ -655,6 +661,34 @@ int main(void)
    }
    else
       printf("   note no foreground window: the stale focus lane is not checked\n");
+
+   /* ---- a screen's own window in front --------------------------- */
+   /* The main window has lost the focus to it: game keys and hotkeys
+    * keep coming, the mouse stays the main window's */
+   {
+      static const uint16_t keys[2]  = { RETROK_a, RETROK_a };
+      static const uint8_t  binds[2] = { 0, RARCH_FIRST_META_KEY };
+      uint32_t down                  = 0;
+
+      retro_atomic_store_release_int(&winraw_focus_flag, 0);
+      stub_video_window = raw_window;
+      stub_screen_focus = true;
+      winraw_poll(wr);
+      wr->kb_keys[rarch_keysym_lut[RETROK_a]] = 1;
+      winraw_keys_down(wr, 0, keys, binds, 2, &down);
+      CHECK(down == 3, "a screen's own window in front: keys %#x, not 0x3", down);
+      CHECK(!wr->focus, "a screen's own window in front took the mouse");
+      /* and none of RetroArch's windows in front */
+      stub_screen_focus = false;
+      winraw_poll(wr);
+      wr->kb_keys[rarch_keysym_lut[RETROK_a]] = 1;
+      down = 0;
+      winraw_keys_down(wr, 0, keys, binds, 2, &down);
+      CHECK(down == 0, "no window of RetroArch's in front: keys %#x", down);
+      stub_video_window = NULL;
+      memset(wr->kb_keys, 0, SC_LAST);
+      printf("   ok   focus: keys with a screen's own window in front\n");
+   }
 
    /* ---- free ----------------------------------------------------- */
    winraw_free(wr);

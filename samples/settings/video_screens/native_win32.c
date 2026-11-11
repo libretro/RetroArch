@@ -2,6 +2,8 @@
  * and the native table a Direct3D driver uses without a context;
  * #included there. */
 #ifdef NATIVE_WIN32
+#include <imm.h>
+
 #define NATIVE_W32_STYLE (WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS \
       | WS_CLIPCHILDREN)
 
@@ -1259,6 +1261,206 @@ static void native_w32_clip(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(native_w32_foreground(ctx, data, request, main_window.hwnd));
 }
 
+/* A down (1) and an up (2) of A, as the core's keyboard callback has them */
+static unsigned native_w32_key_seen;
+
+static void native_w32_key_event(bool down, unsigned code,
+      uint32_t character, uint16_t mod)
+{
+   (void)character;
+   (void)mod;
+   if (code == RETROK_a)
+      native_w32_key_seen |= down ? 1 : 2;
+}
+
+/* A screen's own window hands its keys on as the main window does, and
+ * has no input context while no line of text is open */
+static void native_w32_keys(HWND secondary)
+{
+   HIMC imc;
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
+   retro_keyboard_event_t saved = runloop_st->key_event;
+   LPARAM scan                  = (LPARAM)0x1E << 16; /* A */
+
+   imc = ImmGetContext(secondary);
+   CHECK(!imc);
+   if (imc)
+      ImmReleaseContext(secondary, imc);
+#ifdef HAVE_DINPUT
+   input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
+   runloop_st->key_event = native_w32_key_event;
+   native_w32_key_seen   = 0;
+   SendMessage(secondary, WM_KEYDOWN, 'A', scan | 1);
+   SendMessage(secondary, WM_KEYUP, 'A', scan | 1 | ((LPARAM)3 << 30));
+   CHECK(native_w32_key_seen == 3);
+   runloop_st->key_event = saved;
+#else
+   (void)saved;
+   (void)scan;
+   puts("UNAVAILABLE: no DirectInput key map; keys of a screen window not checked");
+#endif
+}
+
+#ifdef HAVE_DINPUT
+static void native_w32_send_key(WORD scan, bool down)
+{
+   INPUT in;
+   memset(&in, 0, sizeof(in));
+   in.type       = INPUT_KEYBOARD;
+   in.ki.wScan   = scan;
+   in.ki.dwFlags = KEYEVENTF_SCANCODE | (down ? 0 : KEYEVENTF_KEYUP);
+   SendInput(1, &in, sizeof(in));
+}
+
+/* Polls DirectInput until A reads 'want', for up to a second; what it
+ * read last */
+static bool native_w32_dinput_a(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, void *di, bool want)
+{
+   bool down;
+   retro_time_t deadline = cpu_features_get_time_usec() + 1000000;
+   do
+   {
+      native_window_drain(ctx, data, request);
+      input_dinput.poll(di);
+      down = input_dinput.input_state(di, NULL, NULL, NULL, 0,
+            RETRO_DEVICE_KEYBOARD, 0, RETROK_a) != 0;
+      if (down == want)
+         break;
+      retro_sleep(10);
+   } while (cpu_features_get_time_usec() < deadline);
+   return down;
+}
+
+/* With 'hwnd' in front, whether A pressed there read down */
+static bool native_w32_dinput_at(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, void *di, HWND hwnd)
+{
+   bool down;
+   /* else SendInput would type into whatever is in front */
+   if (!native_w32_foreground(ctx, data, request, hwnd))
+   {
+      CHECK(!"the window in front");
+      return false;
+   }
+   /* a frame's poll first: it acquires a foreground device again */
+   native_window_drain(ctx, data, request);
+   input_dinput.poll(di);
+   native_w32_send_key(0x1E, true);
+   down = native_w32_dinput_a(ctx, data, request, di, true);
+   native_w32_send_key(0x1E, false);
+   CHECK(!native_w32_dinput_a(ctx, data, request, di, false));
+   return down;
+}
+
+/* Polls at the focus messages of a switch from the main window to
+ * native_w32_switch_to, as a poll on another thread can land there */
+static void *native_w32_switch_di;
+static HWND native_w32_switch_to;
+static unsigned native_w32_switch_polls;
+static unsigned native_w32_switch_up;
+
+static LRESULT CALLBACK native_w32_switch_hook(int code, WPARAM wparam,
+      LPARAM lparam)
+{
+   const CWPSTRUCT *msg = (const CWPSTRUCT*)lparam;
+   if (     code == HC_ACTION
+         && (   (msg->message == WM_KILLFOCUS
+                  && msg->hwnd == main_window.hwnd)
+             || (msg->message == WM_SETFOCUS
+                  && msg->hwnd == native_w32_switch_to)))
+   {
+      input_dinput.poll(native_w32_switch_di);
+      native_w32_switch_polls++;
+      if (!input_dinput.input_state(native_w32_switch_di, NULL, NULL, NULL,
+               0, RETRO_DEVICE_KEYBOARD, 0, RETROK_a))
+         native_w32_switch_up++;
+   }
+   return CallNextHookEx(NULL, code, wparam, lparam);
+}
+
+/* A held from the main window into a screen's own window reads held
+ * all through the switch */
+static void native_w32_dinput_switch(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request, void *di,
+      HWND secondary)
+{
+   HHOOK hook;
+   if (!native_w32_foreground(ctx, data, request, main_window.hwnd))
+   {
+      CHECK(!"the main window in front");
+      return;
+   }
+   native_w32_send_key(0x1E, true);
+   CHECK(native_w32_dinput_a(ctx, data, request, di, true));
+   native_w32_switch_di    = di;
+   native_w32_switch_to    = secondary;
+   native_w32_switch_polls = 0;
+   native_w32_switch_up    = 0;
+   hook = SetWindowsHookEx(WH_CALLWNDPROC, native_w32_switch_hook, NULL,
+         GetCurrentThreadId());
+   CHECK(hook != NULL);
+   CHECK(native_w32_foreground(ctx, data, request, secondary));
+   if (hook)
+      UnhookWindowsHookEx(hook);
+   native_w32_send_key(0x1E, false);
+   CHECK(native_w32_switch_polls >= 2);
+   CHECK(native_w32_switch_up == 0);
+   CHECK(!native_w32_dinput_a(ctx, data, request, di, false));
+}
+
+/* DirectInput's keyboard: with Separate Screen Windows on, read with
+ * the main window or a screen's own window in front, not with another,
+ * of this process too. With it off, or the Windows keys disabled, the
+ * main window's foreground level alone. A switch of the setting holds
+ * without a restart. */
+static void native_w32_dinput(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, HWND secondary)
+{
+   void *di;
+   settings_t *settings = config_get_ptr();
+   bool nowinkey        = settings->bools.input_nowinkey_enable;
+   bool windows         = settings->bools.video_windows_enable;
+   HWND foreign         = CreateWindowExA(0, "STATIC", "foreign",
+         WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 160, 120, NULL, NULL,
+         GetModuleHandle(NULL), NULL);
+
+   CHECK(foreign != NULL);
+   CHECK(native_w32_foreground(ctx, data, request, secondary));
+   settings->bools.input_nowinkey_enable = true;
+   settings->bools.video_windows_enable  = true;
+   if ((di = input_dinput.init(NULL)))
+   {
+      CHECK(!native_w32_dinput_at(ctx, data, request, di, secondary));
+      input_dinput.free(di);
+   }
+   else
+      CHECK(!"DirectInput with the Windows keys disabled");
+   settings->bools.input_nowinkey_enable = false;
+   settings->bools.video_windows_enable  = false;
+   if ((di = input_dinput.init(NULL)))
+   {
+      CHECK(!native_w32_dinput_at(ctx, data, request, di, secondary));
+      CHECK(native_w32_dinput_at(ctx, data, request, di, main_window.hwnd));
+      settings->bools.video_windows_enable = true;
+      CHECK(native_w32_dinput_at(ctx, data, request, di, secondary));
+      CHECK(!native_w32_dinput_at(ctx, data, request, di, foreign));
+      CHECK(native_w32_dinput_at(ctx, data, request, di, main_window.hwnd));
+      native_w32_dinput_switch(ctx, data, request, di, secondary);
+      settings->bools.video_windows_enable = false;
+      CHECK(!native_w32_dinput_at(ctx, data, request, di, secondary));
+      CHECK(native_w32_dinput_at(ctx, data, request, di, main_window.hwnd));
+      input_dinput.free(di);
+   }
+   else
+      CHECK(!"DirectInput");
+   settings->bools.input_nowinkey_enable = nowinkey;
+   settings->bools.video_windows_enable  = windows;
+   if (foreign)
+      DestroyWindow(foreign);
+}
+#endif
+
 static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
@@ -1493,6 +1695,10 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    }
    CHECK(native_w32_foreground(ctx, data, request, main_window.hwnd));
    native_w32_clip(ctx, data, request, secondary);
+   native_w32_keys(secondary);
+#ifdef HAVE_DINPUT
+   native_w32_dinput(ctx, data, request, secondary);
+#endif
    SetFocus(main_window.hwnd);
    native_window_settle(ctx, data, request, 20000);
    CHECK(!window->focused);

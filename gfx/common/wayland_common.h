@@ -86,6 +86,9 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
 typedef struct wl_video_window
 {
    video_window_common_t common;
+   /* The context it was made on, which a kept window stays on across
+    * a reinit: Wayland's is kept with it */
+   void *ctx;
    struct wl_surface *surface;
    struct xdg_surface *xdg_surface;
    struct xdg_toplevel *xdg_toplevel;
@@ -137,6 +140,12 @@ void wl_video_window_update(void *owner, video_window_native_t *window,
 unsigned wl_video_window_poll(void *owner, video_window_event_t *events,
       unsigned capacity);
 void wl_video_window_destroy(void *owner, video_window_native_t *window);
+void wl_video_window_keep(void *owner, video_window_native_t *window);
+bool wl_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display);
+/* Kept windows on context 'ctx', NULL for any, go: before its
+ * connection does, or once the next driver is up */
+void wl_video_windows_release_kept(void *ctx);
 /* Hands each window 'owner' still has to 'destroy'. */
 void wl_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window));

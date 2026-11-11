@@ -984,6 +984,9 @@ static gfx_ctx_wayland_data_t *wl_kept = NULL;
 
 static void gfx_ctx_wl_destroy(gfx_ctx_wayland_data_t *wl)
 {
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+   wl_video_windows_release_kept(wl);
+#endif
 #ifdef WEBOS
    gfx_ctx_wl_destroy_resources_webos(wl);
 #else
@@ -1794,6 +1797,7 @@ typedef struct
 
 static wl_video_window_t *wl_video_windows[RETRO_VIDEO_VIEWS_MAX];
 static wl_video_window_ids_t wl_video_window_ids[RETRO_VIDEO_VIEWS_MAX];
+static void wl_video_window_let_go(wl_video_window_t *state);
 #ifdef HAVE_THREADS
 /* Focus from the seat's handlers on a thread that is not the
  * context's: the frontend's, which polls the input queue */
@@ -1934,7 +1938,7 @@ static output_info_t *wl_video_window_on(const wl_video_window_t *state)
    output_info_t *on = NULL;
    for (i = 0; i < WL_VIDEO_WINDOW_OUTPUTS; i++)
    {
-      output_info_t *oi = wl_video_window_output(state->common.owner,
+      output_info_t *oi = wl_video_window_output(state->ctx,
             state->outputs[i]);
       if (oi && (!on || oi->scale > on->scale))
          on = oi;
@@ -2019,7 +2023,7 @@ static void wl_video_window_surface_enter(void *data,
    for (i = 0; output && i < WL_VIDEO_WINDOW_OUTPUTS; i++)
    {
       if (     !state->outputs[i]
-            || !wl_video_window_output(state->common.owner,
+            || !wl_video_window_output(state->ctx,
                state->outputs[i]))
       {
          state->outputs[i] = output;
@@ -2210,7 +2214,7 @@ static void wl_video_window_libdecor_configure(struct libdecor_frame *frame,
    bool suspended             = false;
    bool floating              = true;
    wl_video_window_t *state   = (wl_video_window_t*)data;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->common.owner;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->ctx;
 
    if (wl->libdecor_configuration_get_window_state(configuration,
             &window_state))
@@ -2258,7 +2262,7 @@ static struct wl_output *wl_video_window_fullscreen_output(
       const wl_video_window_t *state, unsigned monitor)
 {
    output_info_t *oi = wl_output_at(
-         (gfx_ctx_wayland_data_t*)state->common.owner, monitor);
+         (gfx_ctx_wayland_data_t*)state->ctx, monitor);
    if (!oi)
       oi = wl_video_window_on(state);
    return oi ? oi->output : NULL;
@@ -2268,7 +2272,7 @@ static void wl_video_window_set_fullscreen(wl_video_window_t *state,
       bool fullscreen, unsigned monitor)
 {
 #ifdef HAVE_LIBDECOR_H
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->common.owner;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->ctx;
    if (state->libdecor_frame)
    {
       if (fullscreen)
@@ -2299,7 +2303,7 @@ static unsigned wl_video_window_dims(const gfx_ctx_wayland_data_t *wl,
 
 static void wl_video_window_release(wl_video_window_t *state)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->common.owner;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->ctx;
    wl_video_window_ids_t *ids =
       &wl_video_window_ids[state->common.request.screen];
    retro_atomic_store_release_size(&ids->surface, 0);
@@ -2334,6 +2338,10 @@ bool wl_video_window_create(void *owner,
    wl_video_window_t *state;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)owner;
 
+   if (     request && request->screen < RETRO_VIDEO_VIEWS_MAX
+         && wl_video_windows[request->screen]
+         && !wl_video_windows[request->screen]->common.owner)
+      wl_video_window_let_go(wl_video_windows[request->screen]);
    if (     !wl || !request || !window || window->state
          || !wl->surface || !wl->compositor || !wl->xdg_shell
          || !request->generation
@@ -2364,6 +2372,7 @@ bool wl_video_window_create(void *owner,
    dims                        = wl_video_window_dims(wl,
          request->settings.dims);
    state->common.owner         = wl;
+   state->ctx                  = wl;
    state->common.native        = window;
    state->common.request       = *request;
    state->dims                 = dims;
@@ -2545,6 +2554,53 @@ void wl_video_window_destroy(void *owner, video_window_native_t *window)
    wl_video_windows[state->common.request.screen] = NULL;
    wl_video_window_release(state);
    memset(window, 0, sizeof(*window));
+}
+
+static void wl_video_window_let_go(wl_video_window_t *state)
+{
+   wl_video_windows[state->common.request.screen] = NULL;
+   wl_video_window_release(state);
+}
+
+void wl_video_window_keep(void *owner, video_window_native_t *window)
+{
+   wl_video_window_t *state = window ? (wl_video_window_t*)window->state : NULL;
+   if (state && state->common.owner == owner)
+      video_window_hold(&state->common, window);
+}
+
+/* The compositor decides the focus: a window that had it is not given
+ * it back */
+bool wl_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   wl_video_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? wl_video_windows[screen] : NULL;
+   if (     !owner || !state || state->common.owner || !window
+         || window->state)
+      return false;
+   if (state->ctx != owner)
+   {
+      wl_video_window_let_go(state);
+      return false;
+   }
+#ifdef HAVE_THREADS
+   /* A threaded driver takes it on its own thread */
+   retro_atomic_store_release_size(&wl_video_window_thread,
+         (size_t)sthread_get_current_thread_id());
+#endif
+   video_window_adopt(&state->common, owner, window);
+   *display = state->common.request.display;
+   return true;
+}
+
+void wl_video_windows_release_kept(void *ctx)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (     wl_video_windows[i] && !wl_video_windows[i]->common.owner
+            && (!ctx || wl_video_windows[i]->ctx == ctx))
+         wl_video_window_let_go(wl_video_windows[i]);
 }
 
 void wl_video_windows_free(void *owner,

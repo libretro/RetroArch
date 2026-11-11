@@ -114,6 +114,12 @@ static retro_atomic_int_t g_x11_focused;
  * the event pump and read by the input driver's poll on the runloop
  * thread, so it is one word. */
 retro_atomic_int_t g_x11_size;
+#ifdef HAVE_VIDEO_WINDOWS
+/* By screen, its window once the server has mapped it, else None: the
+ * input driver takes that window's keys too. Written by the event
+ * pump, read by the input driver's poll. */
+retro_atomic_int_t g_x11_key_windows[RETRO_VIDEO_VIEWS_MAX];
+#endif
 Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
 Window   g_x11_win                          = None;
@@ -1086,6 +1092,11 @@ static retro_atomic_int_t x11_video_window_failed[RETRO_VIDEO_VIEWS_MAX];
 static retro_atomic_int_t x11_video_windows_focus;
 /* The handler x11_video_window_error() replaced, as a size_t */
 static retro_atomic_size_t x11_video_window_chain;
+/* The user's last key or button press on a window of ours */
+static Time x11_user_time;
+
+static bool x11_check_atom_supported(Display *dpy, Atom atom);
+static void x11_video_window_release(x11_video_window_t *state);
 
 /* Xlib's default handler exits on any error, so an error in a window
  * made here - one destroyed by another client, say - fails that window
@@ -1118,6 +1129,15 @@ static int x11_video_window_error(Display *dpy, XErrorEvent *event)
             return 0;
          }
       }
+   }
+   /* The input driver's own connection selecting keys on a window that
+    * has just gone */
+   else if (event->error_code == BadWindow && event->resourceid)
+   {
+      for (i = 1; i < ARRAY_SIZE(x11_video_window_ids); i++)
+         if (event->resourceid == (XID)(unsigned)
+               retro_atomic_load_acquire_int(&x11_video_window_ids[i].id[0]))
+            return 0;
    }
    if ((chain = (XErrorHandler)retro_atomic_load_acquire_size(
                &x11_video_window_chain)))
@@ -1365,8 +1385,9 @@ static void x11_video_windows_update_focus(void)
 
 /* An event of a secondary window goes to it; false for any other. A
  * window's events are told apart by its handle, so what is still
- * queued for a destroyed one cannot reach its replacement. */
-static bool x11_video_window_event(const XEvent *event)
+ * queued for a destroyed one cannot reach its replacement. Its keys
+ * are handed back as the main window's, for the main window's path. */
+static bool x11_video_window_event(XEvent *event)
 {
    unsigned i;
    video_window_native_t *window;
@@ -1394,6 +1415,10 @@ static bool x11_video_window_event(const XEvent *event)
 
    switch (event->type)
    {
+      case KeyPress:
+      case KeyRelease:
+         event->xkey.window = g_x11_win;
+         return false;
       /* Unlike the main window's, this close does not quit */
       case ClientMessage:
          if ((Atom)event->xclient.data.l[0] == g_x11_quit_atom)
@@ -1456,6 +1481,10 @@ static bool x11_video_window_event(const XEvent *event)
          window->presentable    = true;
          state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(SUSPEND);
          state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(RESUME);
+         /* The server has made it, so another connection can select on it */
+         retro_atomic_store_release_int(
+               &g_x11_key_windows[state->common.request.screen],
+               (int)state->handle);
          /* Asked again once shown, as the main window does */
          if (state->common.request.settings.fullscreen)
             x11_set_net_wm_fullscreen(g_x11_dpy, state->handle);
@@ -1604,6 +1633,10 @@ bool x11_video_window_create(void *owner,
    x11_video_window_t *state;
    Window root;
 
+   if (     request && request->screen < RETRO_VIDEO_VIEWS_MAX
+         && x11_video_windows[request->screen]
+         && !x11_video_windows[request->screen]->common.owner)
+      x11_video_window_release(x11_video_windows[request->screen]);
    if (     !owner || !request || !window || !visual || window->state
          || !g_x11_dpy || !g_x11_win || !g_x11_quit_atom
          || !request->generation
@@ -1632,7 +1665,7 @@ bool x11_video_window_create(void *owner,
    state->colormap = XCreateColormap(g_x11_dpy, root, visual, AllocNone);
    swa.colormap    = state->colormap;
    swa.event_mask  = StructureNotifyMask | FocusChangeMask
-      | PropertyChangeMask;
+      | PropertyChangeMask | KeyPressMask | KeyReleaseMask;
    state->handle   = XCreateWindow(g_x11_dpy, root, x, y, width, height, 0,
          depth, InputOutput, visual,
          CWBackPixel | CWBorderPixel | CWColormap | CWEventMask, &swa);
@@ -1677,6 +1710,7 @@ bool x11_video_window_create(void *owner,
    state->common.request              = *request;
    state->common.pos                  = VIDEO_POS_PACK(x, y);
    state->wm_normal                   = true;
+   state->visual                      = XVisualIDFromVisual(visual);
    video_window_placed(&state->common, VIDEO_POS_PACK(x, y),
          VIDEO_SCALE_PACK(width, height), cpu_features_get_time_usec());
    x11_video_windows[request->screen] = state;
@@ -1693,6 +1727,18 @@ bool x11_video_window_create(void *owner,
    return true;
 }
 
+void x11_video_window_drawable(video_window_native_t *window,
+      void *drawable, XID resource)
+{
+   x11_video_window_t *state = window ? (x11_video_window_t*)window->state : NULL;
+   if (!state)
+      return;
+   state->drawable = drawable;
+   retro_atomic_store_release_int(
+         &x11_video_window_ids[state->common.request.screen].id[1],
+         (int)resource);
+}
+
 void x11_video_window_show(video_window_native_t *window,
       void *drawable, XID resource)
 {
@@ -1701,8 +1747,7 @@ void x11_video_window_show(video_window_native_t *window,
    if (!state)
       return;
    ids             = &x11_video_window_ids[state->common.request.screen];
-   state->drawable = drawable;
-   retro_atomic_store_release_int(&ids->id[1], (int)resource);
+   x11_video_window_drawable(window, drawable, resource);
    XMapWindow(g_x11_dpy, state->handle);
    if (state->common.request.settings.fullscreen)
       x11_set_net_wm_fullscreen(g_x11_dpy, state->handle);
@@ -1814,6 +1859,7 @@ void x11_video_window_destroy(void *owner, video_window_native_t *window)
       xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->wm_state);
    x11_video_window_unjudge(state);
 #endif
+   retro_atomic_store_release_int(&g_x11_key_windows[screen], 0);
    if (!state->destroyed)
       XDestroyWindow(g_x11_dpy, state->handle);
    XFreeColormap(g_x11_dpy, state->colormap);
@@ -1845,10 +1891,105 @@ void x11_video_window_destroy(void *owner, video_window_native_t *window)
    memset(window, 0, sizeof(*window));
 }
 
+static void x11_video_window_release(x11_video_window_t *state)
+{
+   video_window_native_t window = state->common.kept;
+   state->common.native         = &window;
+   x11_video_window_destroy(NULL, &window);
+}
+
+#ifdef RARCH_HAVE_X11_MONITORS
+static bool x11_video_windows_kept(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (x11_video_windows[i] && !x11_video_windows[i]->common.owner)
+         return true;
+   return false;
+}
+#endif
+
+void x11_video_windows_release_kept(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (x11_video_windows[i] && !x11_video_windows[i]->common.owner)
+         x11_video_window_release(x11_video_windows[i]);
+}
+
+void x11_video_window_keep(void *owner, video_window_native_t *window)
+{
+   x11_video_window_t *state = window ? (x11_video_window_t*)window->state : NULL;
+   if (!state || state->common.owner != owner)
+      return;
+   x11_video_window_drawable(window, NULL, None);
+   state->interval_set = false;
+   video_window_hold(&state->common, window);
+}
+
+/* The focus back where the user left it: the manager is asked, with the
+ * time of the user's last input, where there is one */
+static void x11_video_window_refocus(Window win)
+{
+   Atom active = XInternAtom(g_x11_dpy, "_NET_ACTIVE_WINDOW", False);
+   if (x11_check_atom_supported(g_x11_dpy, active))
+   {
+      XEvent xev               = {0};
+      xev.xclient.type         = ClientMessage;
+      xev.xclient.send_event   = True;
+      xev.xclient.message_type = active;
+      xev.xclient.window       = win;
+      xev.xclient.format       = 32;
+      xev.xclient.data.l[0]    = 1;
+      xev.xclient.data.l[1]    = (long)x11_user_time;
+      xev.xclient.data.l[2]    = (long)g_x11_win;
+      XSendEvent(g_x11_dpy, DefaultRootWindow(g_x11_dpy), False,
+            SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+   }
+   else
+   {
+      /* Not the user's time: the main window has just taken the focus
+       * at CurrentTime, and the server ignores anything older */
+      XSetInputFocus(g_x11_dpy, win, RevertToParent, CurrentTime);
+   }
+   XFlush(g_x11_dpy);
+}
+
+bool x11_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display, VisualID visual)
+{
+   x11_video_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? x11_video_windows[screen] : NULL;
+   if (!owner || !state || state->common.owner || !window || window->state)
+      return false;
+   /* One the user closed meanwhile is taken, for its close to land */
+   if (state->destroyed || state->visual != visual)
+   {
+      x11_video_window_release(state);
+      return false;
+   }
+   video_window_adopt(&state->common, owner, window);
+   window->display = g_x11_dpy;
+   window->surface = (void*)(uintptr_t)state->handle;
+   *display        = state->common.request.display;
+   x11_video_windows_update_focus();
+   return true;
+}
+
+void x11_video_window_taken(video_window_native_t *window)
+{
+   x11_video_window_t *state = (x11_video_window_t*)window->state;
+   if (     state->common.kept_focus && window->presentable
+         && !state->common.closed)
+      x11_video_window_refocus(state->handle);
+}
+
 #ifdef RARCH_HAVE_X11_MONITORS
 /* What the context thread last published from the worker */
 static video_window_display_t x11_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
 static unsigned x11_video_monitors_count;
+/* The count the last context had up at its teardown */
+static unsigned x11_video_monitors_last;
 static unsigned x11_video_monitors_serial;
 /* From the worker's start to the context's teardown */
 static bool x11_video_monitors_on;
@@ -2016,6 +2157,7 @@ void x11_video_windows_free(void *owner,
    x11_video_monitors_published = false;
    x11_video_monitors_lazy      = false;
    x11_video_monitors_pending   = false;
+   x11_video_monitors_last      = x11_video_monitors_count;
    x11_video_monitors_count     = 0;
    video_driver_publish_window_displays(NULL, 0);
 #endif
@@ -2062,6 +2204,10 @@ bool x11_alive(void *data)
 #endif
 
 #ifdef HAVE_VIDEO_WINDOWS
+      if (event.type == KeyPress)
+         x11_user_time = event.xkey.time;
+      else if (event.type == ButtonPress)
+         x11_user_time = event.xbutton.time;
       if (x11_video_window_event(&event))
          continue;
 #endif
@@ -2329,9 +2475,21 @@ bool x11_connect(void)
    x11_video_monitors_on      = false;
    x11_video_monitors_lazy    = true;
    x11_video_monitors_start();
-   /* Before any frame: one without the list would place them blind */
-   x11_video_monitors_pending = true;
-   video_driver_publish_window_displays_pending(NULL, 0);
+   /* Before any frame: one without the list would place them blind.
+    * Windows kept across a reinit are placed, and the frames that wait
+    * would let them go: they stay on the last list. */
+   if (x11_video_windows_kept() && x11_video_monitors_last)
+   {
+      x11_video_monitors_count   = x11_video_monitors_last;
+      x11_video_monitors_pending = false;
+      video_driver_publish_window_displays(x11_video_monitors,
+            x11_video_monitors_count);
+   }
+   else
+   {
+      x11_video_monitors_pending = true;
+      video_driver_publish_window_displays_pending(NULL, 0);
+   }
 #endif
 
 #ifdef RARCH_HAVE_DBUS_SCREENSAVER

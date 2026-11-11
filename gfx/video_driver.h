@@ -1758,6 +1758,8 @@ typedef struct video_window_layout
    /* The serial of the frame snapshot it was drawn from */
    unsigned serial;
    unsigned generation;
+   /* It had the keyboard focus */
+   bool focused;
 } video_window_layout_t;
 
 /* One window's published layouts, handed over by index as the window
@@ -1771,6 +1773,7 @@ typedef struct video_window_layouts
    retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
    unsigned next;                 /* the publisher's: slot to fill */
    unsigned last;                 /* the publisher's: slot + 1 */
+   unsigned focus;                /* the publisher's: focused generation */
    unsigned held;                 /* the main thread's: slot + 1 */
    unsigned bounds_moves;         /* the main thread's: last taken */
    unsigned bounds_sizes;
@@ -3283,6 +3286,11 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t gl_cg_backend;
+
+/* The screens' windows a driver left up that the next did not take go.
+ * On the thread of the context: after a driver's init, and once the
+ * last driver is gone. */
+void video_driver_release_kept_windows(void);
 
 RETRO_END_DECLS
 

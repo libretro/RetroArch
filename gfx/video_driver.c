@@ -195,7 +195,37 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #ifdef HAVE_WAYLAND
 /* gfx/common/wayland_common.c */
 void gfx_ctx_wl_release_kept(void);
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+void wl_video_windows_release_kept(void *ctx);
 #endif
+#endif
+
+#if defined(HAVE_X11) && defined(HAVE_VIDEO_WINDOWS)
+/* gfx/common/x11_common.c */
+void x11_video_windows_release_kept(void);
+#endif
+#if defined(HAVE_SDL3) && defined(HAVE_VIDEO_WINDOWS)
+/* gfx/common/sdl3_common.c */
+void sdl3_video_windows_release_kept(void);
+#elif defined(HAVE_SDL2) && defined(HAVE_VIDEO_WINDOWS)
+/* gfx/common/sdl2_common.c */
+void sdl2_video_windows_release_kept(void);
+#endif
+
+void video_driver_release_kept_windows(void)
+{
+#if defined(HAVE_X11) && defined(HAVE_VIDEO_WINDOWS)
+   x11_video_windows_release_kept();
+#endif
+#if defined(HAVE_SDL3) && defined(HAVE_VIDEO_WINDOWS)
+   sdl3_video_windows_release_kept();
+#elif defined(HAVE_SDL2) && defined(HAVE_VIDEO_WINDOWS)
+   sdl2_video_windows_release_kept();
+#endif
+#if defined(HAVE_WAYLAND) && defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+   wl_video_windows_release_kept(NULL);
+#endif
+}
 
 /* A window the last driver left up for this one
  * (gfx/common/win32_common.c): it goes if this one did not take it.
@@ -1160,6 +1190,22 @@ void video_driver_publish_window_layout(unsigned window,
    else
       slot->generation  = 0;
    slot->bounds         = box->bounds;
+   slot->focused        = slot->generation
+      && slot->generation == box->focus;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+/* The publisher's bounds and focus with the last layout, so input keeps
+ * mapping it */
+static void video_window_layout_republish(video_window_layouts_t *box)
+{
+   video_window_layout_t *slot = &box->slot[box->next];
+   if (box->last)
+      *slot = box->slot[box->last - 1];
+   else
+      slot->generation = 0;
+   slot->bounds  = box->bounds;
+   slot->focused = slot->generation && slot->generation == box->focus;
    video_window_slot_publish(&box->published, &box->next, &box->last);
 }
 
@@ -1167,7 +1213,6 @@ void video_driver_publish_window_bounds(unsigned window, unsigned screens,
       unsigned edit, unsigned pos, unsigned dims, bool moved)
 {
    video_window_layouts_t *box;
-   video_window_layout_t *slot;
    if (!window || window >= RETRO_VIDEO_VIEWS_MAX || !dims || !screens)
       return;
    box                 = &video_driver_st.window_layouts[window - 1];
@@ -1181,14 +1226,22 @@ void video_driver_publish_window_bounds(unsigned window, unsigned screens,
       box->bounds.pos_edit = edit;
       box->bounds.moves++;
    }
-   /* With the last layout, so input keeps mapping it */
-   slot = &box->slot[box->next];
-   if (box->last)
-      *slot = box->slot[box->last - 1];
-   else
-      slot->generation = 0;
-   slot->bounds = box->bounds;
-   video_window_slot_publish(&box->published, &box->next, &box->last);
+   video_window_layout_republish(box);
+}
+
+void video_driver_publish_window_focus(unsigned window,
+      unsigned generation, bool focused)
+{
+   video_window_layouts_t *box;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
+      return;
+   box = &video_driver_st.window_layouts[window - 1];
+   if (focused)
+      box->focus = generation;
+   else if (box->focus == generation)
+      box->focus = 0;
+   /* At once: a window that loses it as it hides draws no more */
+   video_window_layout_republish(box);
 }
 
 /* Once the driver has gone, with no publisher left: no window has a
@@ -1253,18 +1306,20 @@ bool video_driver_translate_window_point(unsigned window,
          slot->core_dims, x, y, report_oob, result);
 }
 
-unsigned video_driver_window_shown(unsigned window, unsigned *dims)
+/* Main thread: window @window's last published layout, NULL while it
+ * has none or has not drawn since the snapshots last asked for it
+ * differently */
+static const video_window_layout_t *video_driver_window_drawn(
+      unsigned window)
 {
    video_window_layouts_t *box;
    const video_window_layout_t *slot;
-   if (dims)
-      *dims = 0;
    if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
-      return 0;
+      return NULL;
    box = &video_driver_st.window_layouts[window - 1];
    video_window_slot_take(&box->published, &box->held);
    if (!box->held)
-      return 0;
+      return NULL;
    slot = &box->slot[box->held - 1];
    /* Drawn before the snapshot that last asked for the window
     * differently: under the threaded wrapper, a window that may be
@@ -1272,10 +1327,52 @@ unsigned video_driver_window_shown(unsigned window, unsigned *dims)
    if (     !slot->generation
          || slot->serial - box->from
             > video_driver_st.windows.serial - box->from)
-      return 0;
+      return NULL;
+   return slot;
+}
+
+unsigned video_driver_window_shown(unsigned window, unsigned *dims)
+{
+   const video_window_layout_t *slot = video_driver_window_drawn(window);
    if (dims)
-      *dims = slot->window_dims;
-   return slot->display;
+      *dims = slot ? slot->window_dims : 0;
+   return slot ? slot->display : 0;
+}
+
+bool video_driver_window_fullscreen_toggle(void)
+{
+   unsigned w;
+   video_driver_state_t *video_st = &video_driver_st;
+   settings_t *settings           = config_get_ptr();
+   /* A Presentation has no windowed mode. In the background (a pad
+    * hotkey) none of ours has the focus, whatever was last published:
+    * the unfocused sleep draws no frame to publish a loss. */
+   if (video_st->windows.display || !video_driver_has_focus())
+      return false;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      unsigned s;
+      bool *fullscreen;
+      const video_window_layout_t *slot;
+      unsigned screens = video_st->windows.window_screens[w];
+      if (     !screens
+            || !(video_st->windows_wanted & (1u << w))
+            || !(slot = video_driver_window_drawn(w))
+            || !slot->focused)
+         continue;
+      /* Its first screen, as its title names */
+      for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+         if (screens & (1u << s))
+            break;
+      fullscreen = &settings->bools.video_screen_window_fullscreen[s];
+      configuration_set_bool(settings, *fullscreen, !*fullscreen);
+      video_driver_edit_window(s);
+      /* As for the main window: the key may still be down when the
+       * focus comes back */
+      input_driver_hold_over_window_change();
+      return true;
+   }
+   return false;
 }
 #endif
 
@@ -3960,7 +4057,10 @@ void video_driver_free_internal(void)
       vid->free(video_st->data);
    /* No driver follows to take what this one left up */
    if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+   {
       VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
+      video_driver_release_kept_windows();
+   }
    video_driver_set_hdr_output_mode(0);
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
@@ -9118,6 +9218,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
          VIDEO_WIN32_RELEASE_KEPT_WINDOW();
          VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
+         video_driver_release_kept_windows();
          RARCH_ERR("[Video] Cannot open threaded video driver. Exiting...\n");
          return false;
       }
@@ -9146,6 +9247,14 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
    /* Android's after the GLES fallback, which takes them too */
    VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
+   /* With threaded video, kept windows go in CMD_INIT, on the video
+    * thread. On Windows, windows kept on the main thread go only from
+    * it; no frame has run since CMD_INIT replied, so the video thread's
+    * tables hold still. */
+#ifndef _WIN32
+   if (!video.is_threaded)
+#endif
+      video_driver_release_kept_windows();
 
    if (!video_st->data)
    {

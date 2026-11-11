@@ -16911,6 +16911,14 @@ bool input_config_get_nowinkey_enable(void)
 }
 #endif
 
+#if defined(HAVE_DINPUT) && defined(HAVE_VIDEO_WINDOWS)
+bool input_config_get_video_windows_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.video_windows_enable;
+}
+#endif
+
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
 bool input_config_get_keyboard_background(void)
 {

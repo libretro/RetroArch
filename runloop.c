@@ -8895,8 +8895,14 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
-   /* Check fullscreen hotkey */
+   /* Check fullscreen hotkey: a screen's own window with the keyboard
+    * focus toggles its own Fullscreen, else the main window toggles */
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE,
+         !video_driver_window_fullscreen_toggle(), NULL);
+#else
    HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
+#endif
 
    /* Check turbo toggle hotkey */
    HOTKEY_CHECK(RARCH_TURBO_FIRE_TOGGLE, CMD_EVENT_TURBO_FIRE_TOGGLE, true, NULL);

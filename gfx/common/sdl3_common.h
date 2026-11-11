@@ -268,6 +268,8 @@ typedef struct sdl3_video_window
     * not. 'windowed' stays. */
    SDL_DisplayID via;
    SDL_WindowID id;
+   /* The thread that made it, whose it is on Windows */
+   SDL_ThreadID thread;
    /* Bounds the next pump judges, where 'judge' */
    unsigned judge_pos;
    unsigned judge_dims;
@@ -303,6 +305,15 @@ void sdl3_video_window_update(void *owner, video_window_native_t *window,
 unsigned sdl3_video_window_poll(void *owner, video_window_event_t *events,
       unsigned capacity);
 void sdl3_video_window_destroy(void *owner, video_window_native_t *window);
+/* While kept for the next driver a window holds the video subsystem,
+ * whose last quit would take it down */
+void sdl3_video_window_keep(void *owner, video_window_native_t *window);
+/* 'flags' is SDL_WINDOW_OPENGL or SDL_WINDOW_VULKAN, as for create() */
+bool sdl3_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display,
+      SDL_WindowFlags flags);
+/* Kept windows nobody took go; on the thread of the context */
+void sdl3_video_windows_release_kept(void);
 /* Any thread: whether the window, or the window SDL gives this ID,
  * is a secondary screen's (the ID of one destroyed lately too); NULL
  * and 0 are none */

@@ -381,13 +381,22 @@ static bool gfx_ctx_w_vk_window_create(void *data,
    return true;
 }
 
+/* Not one WGL has set a pixel format on */
+static bool gfx_ctx_w_vk_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   return win32_video_window_take(data, screen, window, display, 0);
+}
+
 static const gfx_ctx_window_driver_t gfx_ctx_w_vk_windows = {
    gfx_ctx_w_vk_window_create,
    win32_video_window_update,
    win32_video_window_poll,
    NULL, /* bind_gl */
    NULL, /* present_gl */
-   win32_video_window_destroy
+   win32_video_window_destroy,
+   win32_video_window_keep,
+   gfx_ctx_w_vk_window_take
 };
 #endif
 

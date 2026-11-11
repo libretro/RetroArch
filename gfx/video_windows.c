@@ -688,6 +688,27 @@ void video_window_mark_closed_by_user(video_window_common_t *window)
    video_window_mark_closed(window);
 }
 
+void video_window_hold(video_window_common_t *window,
+      video_window_native_t *native)
+{
+   window->kept       = *native;
+   window->kept_focus = native->focused;
+   window->owner      = NULL;
+   window->native     = &window->kept;
+   memset(native, 0, sizeof(*native));
+}
+
+void video_window_adopt(video_window_common_t *window, void *owner,
+      video_window_native_t *native)
+{
+   *native          = window->kept;
+   native->focused  = window->kept_focus && window->kept.focused;
+   window->pending &= ~(VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN)
+         | VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS));
+   window->owner    = owner;
+   window->native   = native;
+}
+
 void video_window_placed(video_window_common_t *window, unsigned pos,
       unsigned dims, retro_time_t now)
 {

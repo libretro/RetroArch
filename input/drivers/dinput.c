@@ -114,13 +114,19 @@ enum dinput_input_flags
    DINP_FLAG_MOUSE_WD_BTN      = (1 << 11),
    DINP_FLAG_MOUSE_HWU_BTN     = (1 << 12),
    DINP_FLAG_MOUSE_HWD_BTN     = (1 << 13),
-   DINP_FLAG_MOUSE_IGNORE      = (1 << 14)
+   DINP_FLAG_MOUSE_IGNORE      = (1 << 14),
+   /* Set while the keyboard is read in the background */
+   DINP_FLAG_KB_BACKGROUND     = (1 << 15)
 };
 
 struct dinput_input
 {
    char *joypad_drv_name;
    LPDIRECTINPUTDEVICE8 keyboard;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* read in the background, while Separate Screen Windows is on */
+   LPDIRECTINPUTDEVICE8 keyboard_bg;
+#endif
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
    struct dinput_pointer_slot pointers[DINPUT_MAX_POINTERS];
@@ -212,6 +218,33 @@ static void *dinput_init(const char *joypad_driver)
       IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
             (HWND)video_driver_window_get(), flags);
       IDirectInputDevice8_Acquire(di->keyboard);
+
+#ifdef HAVE_VIDEO_WINDOWS
+      /* For the screens' own windows too, made now as the setting
+       * switches without a restart; the Windows keys are disabled
+       * from the foreground only */
+      if (!input_nowinkey_enable)
+      {
+#ifdef __cplusplus
+         if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+                     GUID_SysKeyboard,
+                     &di->keyboard_bg, NULL)))
+#else
+         if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+                     &GUID_SysKeyboard,
+                     &di->keyboard_bg, NULL)))
+#endif
+            di->keyboard_bg = NULL;
+         else
+         {
+            IDirectInputDevice8_SetDataFormat(di->keyboard_bg,
+                  &c_dfDIKeyboard);
+            IDirectInputDevice8_SetCooperativeLevel(di->keyboard_bg,
+                  (HWND)video_driver_window_get(),
+                  DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
+         }
+      }
+#endif
    }
 
    if (di->mouse)
@@ -244,16 +277,42 @@ static void dinput_poll(void *data)
 
    if (di->keyboard)
    {
-      if (FAILED(IDirectInputDevice8_GetDeviceState(
-                  di->keyboard, sizeof(di->state), di->state)))
+      LPDIRECTINPUTDEVICE8 keyboard = di->keyboard;
+      bool kb_focus                 = true;
+#ifdef HAVE_VIDEO_WINDOWS
+      if (di->keyboard_bg)
       {
-         IDirectInputDevice8_Acquire(di->keyboard);
+         bool background = input_config_get_video_windows_enable();
+         /* the other device is acquired by the read below */
+         if (background != !!(di->flags & DINP_FLAG_KB_BACKGROUND))
+         {
+            IDirectInputDevice8_Unacquire(background
+                  ? di->keyboard : di->keyboard_bg);
+            di->flags ^= DINP_FLAG_KB_BACKGROUND;
+         }
+         /* In the background, nothing is down unless the main window
+          * or a screen's own window is in front */
+         if (background)
+         {
+            HWND fg  = GetForegroundWindow();
+            keyboard = di->keyboard_bg;
+            kb_focus =    fg
+                       && (   fg == (HWND)video_driver_window_get()
+                           || win32_video_window_open(fg));
+         }
+      }
+#endif
+      if (     kb_focus
+            && FAILED(IDirectInputDevice8_GetDeviceState(
+                  keyboard, sizeof(di->state), di->state)))
+      {
+         IDirectInputDevice8_Acquire(keyboard);
          /* Clear again: GetDeviceState() does not promise to leave the
           * buffer untouched when it fails, and a partial write would
           * otherwise be read as live key state. dinput_joypad_poll()
           * does the same for its own device state. */
          if (FAILED(IDirectInputDevice8_GetDeviceState(
-                     di->keyboard, sizeof(di->state), di->state)))
+                     keyboard, sizeof(di->state), di->state)))
             memset(di->state, 0, sizeof(di->state));
       }
       else
@@ -750,6 +809,10 @@ static void dinput_free(void *data)
 
    if (di->keyboard)
       IDirectInputDevice8_Release(di->keyboard);
+#ifdef HAVE_VIDEO_WINDOWS
+   if (di->keyboard_bg)
+      IDirectInputDevice8_Release(di->keyboard_bg);
+#endif
 
    if (di->mouse)
       IDirectInputDevice8_Release(di->mouse);

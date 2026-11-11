@@ -26,6 +26,7 @@
 #ifdef HAVE_VIDEO_WINDOWS
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
+#include <queues/task_queue.h>
 #endif
 
 #include <SDL3/SDL.h>
@@ -101,6 +102,7 @@ static void sdl3_window_save_position(SDL_Window *win)
 #ifdef HAVE_VIDEO_WINDOWS
 /* Secondary screens' windows, by screen */
 static sdl3_video_window_t *sdl3_video_windows[RETRO_VIDEO_VIEWS_MAX];
+static void sdl3_video_window_let_go(sdl3_video_window_t *state);
 static unsigned sdl3_video_window_count;
 /* By screen, its window and SDL's ID for it, which the input driver
  * tells a screen's window by on the frontend's thread */
@@ -1281,6 +1283,10 @@ bool sdl3_video_window_create(void *owner, SDL_WindowFlags flags,
    sdl3_video_window_t *state;
    SDL_Window *primary = sdl3_ctx_window(owner);
 
+   if (     request && request->screen < RETRO_VIDEO_VIEWS_MAX
+         && sdl3_video_windows[request->screen]
+         && !sdl3_video_windows[request->screen]->common.owner)
+      sdl3_video_window_let_go(sdl3_video_windows[request->screen]);
    if (     !primary || !request || !window || window->state
          || !sdl3_video_windows_supported()
          || !request->generation
@@ -1294,6 +1300,7 @@ bool sdl3_video_window_create(void *owner, SDL_WindowFlags flags,
       return false;
    if (!(state = (sdl3_video_window_t*)calloc(1, sizeof(*state))))
       return false;
+   state->thread = SDL_GetCurrentThreadID();
 
    /* made at its window size, filling the display from there */
    windowed            = request->settings;
@@ -1486,6 +1493,75 @@ bool sdl3_video_window_is_screen(const SDL_Window *win, SDL_WindowID id)
                &sdl3_video_window_gone[i]) == id)
          return true;
    return false;
+}
+
+/* On Windows a window is its thread's, which alone takes it or lets it
+ * go; only the main thread keeps one, as that outlasts the driver */
+static bool sdl3_video_window_foreign(const sdl3_video_window_t *state)
+{
+#ifdef _WIN32
+   return state->thread != SDL_GetCurrentThreadID() || !task_is_on_main_thread();
+#else
+   return false;
+#endif
+}
+
+static void sdl3_video_window_let_go(sdl3_video_window_t *state)
+{
+   video_window_native_t window;
+   if (sdl3_video_window_foreign(state))
+      return;
+   window               = state->common.kept;
+   state->common.native = &window;
+   sdl3_video_window_destroy(NULL, &window);
+   SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+
+void sdl3_video_windows_release_kept(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (sdl3_video_windows[i] && !sdl3_video_windows[i]->common.owner)
+         sdl3_video_window_let_go(sdl3_video_windows[i]);
+}
+
+void sdl3_video_window_keep(void *owner, video_window_native_t *window)
+{
+   sdl3_video_window_t *state = window
+      ? (sdl3_video_window_t*)window->state : NULL;
+   if (!state || state->common.owner != owner)
+      return;
+   if (     sdl3_video_window_foreign(state)
+         || !SDL_InitSubSystem(SDL_INIT_VIDEO))
+      sdl3_video_window_destroy(owner, window);
+   else
+      video_window_hold(&state->common, window);
+}
+
+bool sdl3_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display,
+      SDL_WindowFlags flags)
+{
+   sdl3_video_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? sdl3_video_windows[screen] : NULL;
+   if (     !owner || !state || state->common.owner || !window
+         || window->state || sdl3_video_window_foreign(state))
+      return false;
+   /* One the user closed meanwhile is taken too, for its close to land;
+    * one made for the other API is not */
+   if (!(SDL_GetWindowFlags(state->win) & flags))
+   {
+      sdl3_video_window_let_go(state);
+      return false;
+   }
+   video_window_adopt(&state->common, owner, window);
+   *display = state->common.request.display;
+   /* The context holds the subsystem now */
+   SDL_QuitSubSystem(SDL_INIT_VIDEO);
+   if (     state->common.kept_focus && window->presentable
+         && !state->common.closed)
+      SDL_RaiseWindow(state->win);
+   return true;
 }
 
 void sdl3_video_windows_free(void *owner,

@@ -7245,6 +7245,10 @@ static bool gl2_windows_draw(gl2_t *gl,
                   events[i].save_pos, events[i].save_dims,
                   events[i].save_moved);
          }
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN
+                    || events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_LOSS)
+            video_driver_publish_window_focus(id, events[i].generation,
+                  events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN);
       }
    }
    video_windows_steps(&gl->windows.held, f, &retire, &create);

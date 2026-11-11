@@ -110,17 +110,32 @@ static bool gfx_ctx_xegl_window_present_gl(void *data,
    return false;
 }
 
-static void gfx_ctx_xegl_window_destroy(void *data,
+/* The window's EGL surface gone, for its own teardown or a keep */
+static bool gfx_ctx_xegl_window_unbind(void *data,
       video_window_native_t *window)
 {
    xegl_ctx_data_t *xegl     = (xegl_ctx_data_t*)data;
    x11_video_window_t *state = window
       ? (x11_video_window_t*)window->state : NULL;
    if (!xegl || !state || state->common.owner != data)
-      return;
+      return false;
    if (state->drawable)
       egl_window_surface_free(&xegl->egl, (EGLSurface)state->drawable);
-   x11_video_window_destroy(data, window);
+   return true;
+}
+
+static void gfx_ctx_xegl_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_xegl_window_unbind(data, window))
+      x11_video_window_destroy(data, window);
+}
+
+static void gfx_ctx_xegl_window_keep(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_xegl_window_unbind(data, window))
+      x11_video_window_keep(data, window);
 }
 
 static bool gfx_ctx_xegl_window_create(void *data,
@@ -157,13 +172,40 @@ static bool gfx_ctx_xegl_window_create(void *data,
    return true;
 }
 
+/* Kept by the last driver: adopted where it is on this config's visual */
+static bool gfx_ctx_xegl_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   EGLSurface surface;
+   EGLint vid            = 0;
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+
+   if (     !xegl
+         || xegl->egl.surf == EGL_NO_SURFACE
+         || !egl_get_native_visual_id(&xegl->egl, &vid)
+         || !x11_video_window_take(data, screen, window, display,
+               (VisualID)vid))
+      return false;
+   if ((surface = egl_window_surface_new(&xegl->egl, window->surface))
+         == EGL_NO_SURFACE)
+   {
+      x11_video_window_destroy(data, window);
+      return false;
+   }
+   x11_video_window_drawable(window, surface, None);
+   x11_video_window_taken(window);
+   return true;
+}
+
 static const gfx_ctx_window_driver_t gfx_ctx_xegl_windows = {
    gfx_ctx_xegl_window_create,
    x11_video_window_update,
    x11_video_window_poll,
    gfx_ctx_xegl_window_bind_gl,
    gfx_ctx_xegl_window_present_gl,
-   gfx_ctx_xegl_window_destroy
+   gfx_ctx_xegl_window_destroy,
+   gfx_ctx_xegl_window_keep,
+   gfx_ctx_xegl_window_take
 };
 #endif
 

@@ -308,6 +308,13 @@ static bool sdl3_vk_ctx_window_create(void *data,
    return sdl3_video_window_create(data, SDL_WINDOW_VULKAN, request, window);
 }
 
+static bool sdl3_vk_ctx_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   return sdl3_video_window_take(data, screen, window, display,
+         SDL_WINDOW_VULKAN);
+}
+
 static const gfx_ctx_window_driver_t sdl3_vk_ctx_windows = {
    sdl3_vk_ctx_window_create,
    sdl3_video_window_update,
@@ -315,8 +322,8 @@ static const gfx_ctx_window_driver_t sdl3_vk_ctx_windows = {
    NULL, /* bind_gl */
    NULL, /* present_gl */
    sdl3_video_window_destroy,
-   NULL, /* keep */
-   NULL, /* take */
+   sdl3_video_window_keep,
+   sdl3_vk_ctx_window_take,
    sdl3_video_windows_supported
 };
 #endif

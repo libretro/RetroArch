@@ -37,6 +37,7 @@
 #endif
 #include "../../../input/input_driver.h"
 #include "../../../input/input_defines.h"
+#include "../../../input/input_keymaps.h"
 #include "../../../input/input_remapping.h"
 #include "../../../tasks/tasks_internal.h"
 #ifdef HAVE_THREADS
@@ -1922,6 +1923,132 @@ static void test_window_monitors_frame(void)
    settings->arrays.video_screen_display[1][0] = '\0';
    video_driver_publish_window_displays(NULL, 0);
    window_test_run();
+   window_test_end();
+}
+
+/* Window @window drawn from the last snapshot, as its renderer does */
+static void window_test_draw_window(unsigned window, unsigned generation)
+{
+   video_views_layout_t layout;
+   video_driver_window_layout_screens(&window_test_seen,
+         window_test_seen.window_screens[window],
+         VIDEO_SCALE_PACK(640, 480), &layout);
+   video_driver_publish_window_layout(window, generation,
+         window_test_seen.display, &layout, &window_test_seen.core,
+         window_test_seen.core_dims, VIDEO_SCALE_PACK(640, 480));
+}
+
+static bool window_test_has_focus;
+
+static bool window_test_focus(void *data)
+{
+   (void)data;
+   return window_test_has_focus;
+}
+
+/* The fullscreen hotkey: the screen whose own window has the keyboard
+ * focus gets its Fullscreen flipped, as its row does; otherwise, with
+ * RetroArch in the background, and on a display's Presentation, the
+ * main window's is the one toggled */
+static void test_window_fullscreen_hotkey(void)
+{
+   video_window_display_t displays[2];
+   unsigned gen, edit;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   bool *fullscreen               =
+      settings->bools.video_screen_window_fullscreen;
+   bool main_fullscreen           = settings->bools.video_fullscreen;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   displays[0].monitor = displays[1].monitor = true;
+   fullscreen[0]       = fullscreen[1]       = false;
+   window_test_begin();
+   window_test_driver.focus = window_test_focus;
+   window_test_has_focus    = true;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.window_screens[1] == 2u);
+   gen = video_driver_window_generation();
+   /* Drawn without the focus */
+   window_test_draw_window(1, gen);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   /* Focused: Game Screen 2's, and its window follows the edit */
+   video_driver_publish_window_focus(1, gen, true);
+   window_test_draw_window(1, gen);
+   edit             = video_st->windows_edit[1];
+   settings->flags &= ~SETTINGS_FLG_MODIFIED;
+   CHECK(video_driver_window_fullscreen_toggle());
+   CHECK(fullscreen[1] && !fullscreen[0]);
+   CHECK(settings->bools.video_fullscreen == main_fullscreen);
+   CHECK(settings->flags & SETTINGS_FLG_MODIFIED);
+   CHECK(video_st->windows_edit[1] == edit + 1);
+   window_test_run();
+   CHECK(window_test_seen.settings[1].fullscreen);
+   CHECK(video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   /* A pad hotkey with RetroArch in the background, the loss not yet
+    * published */
+   window_test_has_focus = false;
+   CHECK(!video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   window_test_has_focus = true;
+   /* Lost, not drawn since: minimised or hidden, or a repeated frame */
+   video_driver_publish_window_focus(1, gen, false);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   /* Let go of while focused: neither it nor the next window in its id
+    * has the focus */
+   video_driver_publish_window_focus(1, gen, true);
+   video_driver_publish_window_layout(1, 0, 0, NULL, NULL, 0, 0);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   gen = video_driver_window_generation();
+   window_test_draw_window(1, gen);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   /* Game Screen 1's own window, by its spare id */
+   strlcpy(settings->arrays.video_screen_display[0], "HDMI-A-1",
+         sizeof(settings->arrays.video_screen_display[0]));
+   strlcpy(settings->arrays.video_screen_display[1],
+         VIDEO_WINDOW_DISPLAY_MAIN,
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.window_screens[2] == 1u);
+   gen = video_driver_window_generation();
+   /* ... focused, not drawn since */
+   window_test_draw_window(2, gen);
+   video_driver_publish_window_focus(2, gen, true);
+   CHECK(video_driver_window_fullscreen_toggle());
+   CHECK(fullscreen[0] && !fullscreen[1]);
+   fullscreen[0] = false;
+   /* Screen windows off */
+   settings->bools.video_windows_enable = false;
+   window_test_run();
+   CHECK(!video_driver_window_fullscreen_toggle());
+   settings->bools.video_windows_enable = true;
+   video_driver_publish_window_layout(2, 0, 0, NULL, NULL, 0, 0);
+   settings->arrays.video_screen_display[0][0] = '\0';
+   settings->arrays.video_screen_display[1][0] = '\0';
+   /* A display's Presentation, which has no windowed mode */
+   displays[0].monitor = displays[1].monitor = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 2u);
+   gen = video_driver_window_generation();
+   video_driver_publish_window_focus(VIDEO_WINDOWS_PRESENTATION, gen,
+         true);
+   window_test_draw_window(VIDEO_WINDOWS_PRESENTATION, gen);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   video_driver_publish_window_displays(NULL, 0);
+   window_test_run();
+   input_driver_hold_clear();
    window_test_end();
 }
 
@@ -4191,6 +4318,51 @@ static void test_window_generation(void)
    CHECK(video_driver_window_generation() == 0);
    CHECK(retro_atomic_load_acquire_int(&video_st->window_generation) > 0);
    retro_atomic_store_release_int(&video_st->window_generation, saved);
+}
+
+static video_window_common_t *window_test_kept;
+
+static video_window_common_t *window_test_kept_at(unsigned screen)
+{
+   return screen == 1 ? window_test_kept : NULL;
+}
+
+/* A close and a move no poll had drained when the window was kept
+ * reach the driver that takes it; focus the window system gave it
+ * meanwhile does not */
+static void test_window_kept_pending(void)
+{
+   video_window_event_t events[8];
+   video_window_common_t common;
+   video_window_native_t native, taken;
+   unsigned i, count;
+   unsigned seen = 0;
+   int owner     = 0;
+   memset(&common, 0, sizeof(common));
+   memset(&native, 0, sizeof(native));
+   memset(&taken, 0, sizeof(taken));
+   common.owner              = &owner;
+   common.native             = &native;
+   common.request.screen     = 1;
+   common.request.generation = 1;
+   native.state              = &common;
+   native.focused            = true;
+   native.presentable        = true;
+   common.pending           |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+   video_window_mark_closed_by_user(&common);
+   video_window_hold(&common, &native);
+   common.pending           |= VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+   video_window_adopt(&common, &owner, &taken);
+   window_test_kept          = &common;
+   count = video_windows_drain(&owner, window_test_kept_at, events,
+         ARRAY_SIZE(events));
+   window_test_kept          = NULL;
+   for (i = 0; i < count; i++)
+      seen |= 1u << events[i].kind;
+   CHECK(seen & VIDEO_WINDOW_EVENT_BIT(CLOSE));
+   CHECK(seen & VIDEO_WINDOW_EVENT_BIT(GEOMETRY));
+   CHECK(!(seen & VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN)));
+   CHECK(taken.state == &common && !taken.focused);
 }
 
 /* The Display rows replaced the mode and monitor rows */
@@ -6707,6 +6879,501 @@ static void test_window_idle_logo(void)
 #include "native_win32.c"
 #include "native_sdl.c"
 
+/* A context of 'ident' with its main window up */
+static const gfx_ctx_driver_t *native_context(const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor, void **data)
+{
+   const gfx_ctx_driver_t *ctx;
+#if defined(HAVE_VULKAN) && defined(HAVE_WAYLAND)
+   if (strcmp(ident, "vk_wayland") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_vk_wayland, ident, api, major, minor, false, data);
+   else
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_SDL3)
+   if (strcmp(ident, "vk_sdl3") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_sdl3_vk, ident, api, major, minor, false, data);
+   else
+#endif
+#if defined(NATIVE_WIN32) && defined(HAVE_VULKAN)
+   if (strcmp(ident, "vk_w") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_w_vk, ident, api, major, minor, false, data);
+   else
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_X11) && defined(HAVE_XCB)
+   if (strcmp(ident, "vk_x") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_vk_x, ident, api, major, minor, false, data);
+   else
+#endif
+   ctx = video_context_driver_init_first(NULL, ident, api, major, minor,
+         false, data);
+   /* A failed set_video_mode has freed the context already */
+   if (     !ctx
+         || !ctx->set_video_mode(*data, VIDEO_SCALE_PACK(640, 480), false))
+   {
+      CHECK(!"context");
+      return NULL;
+   }
+   if (api == GFX_CTX_OPENGL_API)
+      ctx->swap_interval(*data, 1);
+   return ctx;
+}
+
+/* The main window remade, as a fullscreen toggle that is not done in
+ * place or a video reinit from the menu remakes it, with a screen's
+ * window up: the driver's teardown keeps that window, and the next
+ * driver's start takes it as it was, with the focus the user left
+ * where it was (on the main window, then on the screen's); a context
+ * up and gone in between, as a probe that fails is, leaves it kept.
+ * X11's checks the window system's side too: native_x11_kept(). */
+static void native_window_kept(const char *ident, enum gfx_ctx_api api,
+      unsigned major, unsigned minor)
+{
+   unsigned round;
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+   unsigned video_refs = 0;
+   /* Video down and another subsystem up, as the sdl2 joypad driver
+    * leaves SDL: the first context holds the only video reference */
+   if (native_sdl_ident(ident))
+   {
+      SDL_InitSubSystem(SDL_INIT_EVENTS);
+      for (; SDL_WasInit(SDL_INIT_VIDEO); video_refs++)
+         SDL_QuitSubSystem(SDL_INIT_VIDEO);
+   }
+#endif
+   for (round = 0; round < 2; round++)
+   {
+      video_window_request_t request;
+      video_window_native_t window;
+      void *state, *surface;
+      unsigned dims;
+      bool focused;
+      unsigned display = 0;
+      bool took        = false;
+      void *data       = NULL;
+      const gfx_ctx_driver_t *ctx = native_context(ident, api, major,
+            minor, &data);
+      if (!ctx)
+         return;
+#ifdef NATIVE_SDL
+      if (native_sdl_ident(ident) && native_sdl_no_windows(ctx, data))
+         return;
+#endif
+#ifdef NATIVE_WIN32
+      if (native_w32_ident(ident))
+         native_window_input = native_w32_pump;
+#endif
+      memset(&request, 0, sizeof(request));
+      memset(&window, 0, sizeof(window));
+      request.screen        = 1;
+      request.generation    = video_driver_window_generation();
+      request.settings.mode = VIDEO_WINDOW_SEPARATE;
+      request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+      CHECK(ctx->windows->create(data, &request, &window));
+      native_window_wait(ctx, data, &request, &window,
+            NATIVE_EVENT(RESUME), 0);
+      native_window_settle(ctx, data, &request, 100000);
+      if (round)
+      {
+#ifdef NATIVE_WIN32
+         if (native_w32_ident(ident))
+            native_w32_focus(ctx, data, &request, &window, true);
+#endif
+#ifdef NATIVE_SDL
+         if (native_sdl_ident(ident))
+            native_sdl_focus(ctx, data, &request, &window, true);
+#endif
+#ifdef HAVE_WAYLAND
+         if (native_wl_ident(ident))
+         {
+            native_wl_input((gfx_ctx_wayland_data_t*)data, true);
+            native_wl_focus(ctx, data, &request, &window);
+            native_wl_input((gfx_ctx_wayland_data_t*)data, false);
+         }
+#endif
+      }
+      state   = window.state;
+      surface = window.surface;
+      dims    = window.dims;
+      focused = window.focused;
+      fprintf(stderr, "native %s: screen window focused %d before the "
+            "remake: %d\n", ident, round, focused);
+
+      if (ctx->windows->keep)
+         ctx->windows->keep(data, &window);
+      else
+         ctx->windows->destroy(data, &window);
+      CHECK(window.state == NULL);
+      ctx->destroy(data);
+      data = NULL;
+      if (round && (data = ctx->init(NULL)))
+         ctx->destroy(data);
+      data = NULL;
+      if (!(ctx = native_context(ident, api, major, minor, &data)))
+         return;
+      took = ctx->windows->take
+         && ctx->windows->take(data, request.screen, &window, &display);
+      fprintf(stderr, "native %s: remade main, screen focused %d: "
+            "window %s, focused %d\n", ident, round,
+            took ? "kept" : "made again", window.focused);
+      CHECK(took);
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+      /* The hold handed on, not the last reference quit under both */
+      if (native_sdl_ident(ident) && !SDL_WasInit(SDL_INIT_VIDEO))
+      {
+         CHECK(!"SDL video down after the take");
+         return;
+      }
+#endif
+      if (!took)
+         CHECK(ctx->windows->create(data, &request, &window));
+      else
+      {
+         CHECK(window.state == state && window.surface == surface);
+         CHECK(window.dims == dims);
+         CHECK(window.generation == request.generation);
+         CHECK(window.focused == focused);
+         native_window_settle(ctx, data, &request, 300000);
+         CHECK(window.state == state);
+      }
+#ifdef NATIVE_WIN32
+      if (took && round && native_w32_ident(ident))
+         CHECK(GetForegroundWindow() == native_w32_window(&window));
+#endif
+      ctx->windows->destroy(data, &window);
+      ctx->destroy(data);
+#ifdef NATIVE_WIN32
+      native_window_input = NULL;
+#endif
+   }
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+   if (native_sdl_ident(ident))
+   {
+      /* SDL as the tests before left it */
+      for (; video_refs; video_refs--)
+         SDL_InitSubSystem(SDL_INIT_VIDEO);
+      SDL_QuitSubSystem(SDL_INIT_EVENTS);
+   }
+#endif
+}
+
+#if (defined(HAVE_SDL3) || defined(NATIVE_WGL)) && defined(HAVE_VULKAN)
+/* A window kept by a GL context is not a Vulkan one's to take: SDL 3
+ * makes it for one API, and WGL has set a pixel format on it. One is
+ * made in its place. */
+static void native_window_kept_gl(const char *gl_ident,
+      const char *vk_ident)
+{
+   video_window_request_t request;
+   video_window_native_t window;
+   const gfx_ctx_driver_t *ctx;
+   unsigned display   = 0;
+   bool took;
+   void *data         = NULL;
+   settings_t *config = config_get_ptr();
+   /* SDL 3's are up only as the configured context */
+   strlcpy(config->arrays.video_context_driver, gl_ident,
+         sizeof(config->arrays.video_context_driver));
+   ctx = native_context(gl_ident, GFX_CTX_OPENGL_API, 0, 0, &data);
+   strlcpy(config->arrays.video_context_driver, vk_ident,
+         sizeof(config->arrays.video_context_driver));
+   if (!ctx)
+      return;
+   memset(&request, 0, sizeof(request));
+   memset(&window, 0, sizeof(window));
+   request.screen        = 1;
+   request.generation    = video_driver_window_generation();
+   request.settings.mode = VIDEO_WINDOW_SEPARATE;
+   request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+   CHECK(ctx->windows->create(data, &request, &window));
+   native_window_wait(ctx, data, &request, &window,
+         NATIVE_EVENT(RESUME), 0);
+   ctx->windows->keep(data, &window);
+   ctx->destroy(data);
+   data = NULL;
+   if (!(ctx = native_context(vk_ident, GFX_CTX_VULKAN_API, 1, 0, &data)))
+      return;
+   took = ctx->windows->take(data, request.screen, &window, &display);
+   fprintf(stderr, "native %s: %s's window %s\n", vk_ident, gl_ident,
+         took ? "taken" : "not taken");
+   CHECK(!took);
+   if (took)
+      ctx->windows->destroy(data, &window);
+   CHECK(ctx->windows->create(data, &request, &window));
+   native_window_wait(ctx, data, &request, &window,
+         NATIVE_EVENT(RESUME), 0);
+   ctx->windows->destroy(data, &window);
+   ctx->destroy(data);
+}
+#endif
+
+/* What shows on the window system's side that a window is gone;
+ * a Wayland client sees nothing */
+typedef struct
+{
+#ifdef HAVE_X11
+   Display *watch;
+   Window win;
+#endif
+#ifdef NATIVE_WIN32
+   HWND hwnd;
+#endif
+#ifdef NATIVE_SDL
+   unsigned long id;
+#endif
+   int unused;
+} native_gone_t;
+
+static void native_gone_watch(const char *ident,
+      const video_window_native_t *window, native_gone_t *gone)
+{
+   memset(gone, 0, sizeof(*gone));
+#ifdef HAVE_X11
+   if (native_x11_ident(ident) && (gone->watch = XOpenDisplay(NULL)))
+   {
+      gone->win = native_x11_window(window);
+      XSelectInput(gone->watch, gone->win, StructureNotifyMask);
+      XSync(gone->watch, False);
+   }
+#endif
+#ifdef NATIVE_WIN32
+   if (native_w32_ident(ident))
+      gone->hwnd = native_w32_window(window);
+#endif
+#ifdef NATIVE_SDL
+   if (native_sdl_ident(ident))
+      gone->id = (unsigned long)SDL_GetWindowID(
+            ((native_sdl_state_t*)window->state)->win);
+#endif
+}
+
+/* Whether the watched window is gone; the watch ends */
+static bool native_gone(native_gone_t *gone)
+{
+   bool destroyed = true;
+#ifdef HAVE_X11
+   if (gone->watch)
+   {
+      retro_time_t deadline = cpu_features_get_time_usec() + 2000000;
+      destroyed             = false;
+      while (!destroyed && cpu_features_get_time_usec() < deadline)
+      {
+         XEvent event;
+         XSync(gone->watch, False);
+         while (XPending(gone->watch))
+         {
+            XNextEvent(gone->watch, &event);
+            if (     event.type == DestroyNotify
+                  && event.xdestroywindow.window == gone->win)
+               destroyed = true;
+         }
+         if (!destroyed)
+            retro_sleep(2);
+      }
+      XCloseDisplay(gone->watch);
+      gone->watch = NULL;
+   }
+#endif
+#ifdef NATIVE_WIN32
+   if (gone->hwnd)
+      destroyed = !IsWindow(gone->hwnd);
+#endif
+#ifdef NATIVE_SDL
+   if (gone->id)
+      destroyed =    !SDL_WasInit(SDL_INIT_VIDEO)
+                  || !SDL_GetWindowFromID((Uint32)gone->id);
+#endif
+   return destroyed;
+}
+
+/* What the frontend runs once the next driver is up */
+static void native_release_kept(void)
+{
+#ifdef HAVE_WAYLAND
+   gfx_ctx_wl_release_kept();
+#endif
+#ifdef NATIVE_WIN32
+   win32_window_release_kept();
+#endif
+   video_driver_release_kept_windows();
+}
+
+/* A kept window nobody takes goes, by the release the frontend runs
+ * once the next driver is up (after init, in a threaded driver's
+ * CMD_INIT, after a failed init and at quit), by a create for its
+ * screen, and by a take on another visual (X11) or context (Wayland) */
+static void native_window_kept_gone(const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
+{
+   unsigned round;
+   unsigned rounds = 2;
+#ifdef HAVE_X11
+   if (native_x11_ident(ident))
+      rounds = 3;
+#endif
+#ifdef HAVE_WAYLAND
+   if (native_wl_ident(ident))
+      rounds = 3;
+#endif
+   for (round = 0; round < rounds; round++)
+   {
+      video_window_request_t request;
+      video_window_native_t window;
+      native_gone_t gone;
+      bool destroyed;
+      unsigned display = 0;
+      bool took        = false;
+      void *data       = NULL;
+      const gfx_ctx_driver_t *ctx = native_context(ident, api, major,
+            minor, &data);
+      if (!ctx)
+         return;
+#ifdef NATIVE_SDL
+      if (native_sdl_ident(ident) && native_sdl_no_windows(ctx, data))
+         return;
+#endif
+#ifdef NATIVE_WIN32
+      if (native_w32_ident(ident))
+         native_window_input = native_w32_pump;
+#endif
+      memset(&request, 0, sizeof(request));
+      memset(&window, 0, sizeof(window));
+      request.screen        = 1;
+      request.generation    = video_driver_window_generation();
+      request.settings.mode = VIDEO_WINDOW_SEPARATE;
+      request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+      CHECK(ctx->windows->create(data, &request, &window));
+      native_window_wait(ctx, data, &request, &window,
+            NATIVE_EVENT(RESUME), 0);
+      native_gone_watch(ident, &window, &gone);
+      ctx->windows->keep(data, &window);
+      ctx->destroy(data);
+      data = NULL;
+      if (!(ctx = native_context(ident, api, major, minor, &data)))
+      {
+         native_gone(&gone);
+         return;
+      }
+      if (round == 1)
+      {
+         request.generation = video_driver_window_generation();
+         CHECK(ctx->windows->create(data, &request, &window));
+      }
+      else if (round == 2)
+      {
+#ifdef HAVE_X11
+         if (native_x11_ident(ident))
+            took = x11_video_window_take(data, request.screen, &window,
+                  &display, ~(VisualID)0);
+#endif
+#ifdef HAVE_WAYLAND
+         if (native_wl_ident(ident))
+            took = wl_video_window_take(&gone, request.screen, &window,
+                  &display);
+#endif
+         CHECK(!took);
+      }
+      else
+         native_release_kept();
+      destroyed = native_gone(&gone);
+      fprintf(stderr, "native %s: kept, %s: %s\n", ident, round == 1
+            ? "a create for its screen" : round == 2 ? "a mismatched take"
+            : "the frontend's release", destroyed ? "gone" : "still up");
+      CHECK(destroyed);
+      if (round == 1)
+         native_window_wait(ctx, data, &request, &window,
+               NATIVE_EVENT(RESUME), 0);
+      else if (!took && ctx->windows->take(data, request.screen, &window,
+               &display))
+         CHECK(!"taken after it went");
+      if (window.state)
+         ctx->windows->destroy(data, &window);
+      ctx->destroy(data);
+#ifdef NATIVE_WIN32
+      native_window_input = NULL;
+#endif
+   }
+}
+
+#ifdef HAVE_WAYLAND
+typedef struct
+{
+   const gfx_ctx_driver_t *ctx;
+   void *data;
+   video_window_native_t *window;
+   bool took;
+} native_wl_take_t;
+
+static void native_wl_take_run(void *arg)
+{
+   unsigned display      = 0;
+   native_wl_take_t *job = (native_wl_take_t*)arg;
+   job->took             = job->ctx->windows->take(job->data, 1,
+         job->window, &display);
+}
+
+/* Video turned threaded with a window kept: it is taken on the video
+ * thread, so the seat's focus on this one, the frontend's, waits in
+ * the queue for that thread's poll */
+static void native_wl_kept_thread(const char *ident, enum gfx_ctx_api api,
+      unsigned major, unsigned minor)
+{
+#ifdef HAVE_THREADS
+   video_window_request_t request;
+   video_window_native_t window;
+   native_wl_take_t job;
+   sthread_t *thread;
+   void *data                  = NULL;
+   const gfx_ctx_driver_t *ctx = native_context(ident, api, major, minor,
+         &data);
+   if (!ctx)
+      return;
+   memset(&request, 0, sizeof(request));
+   memset(&window, 0, sizeof(window));
+   request.screen        = 1;
+   request.generation    = video_driver_window_generation();
+   request.settings.mode = VIDEO_WINDOW_SEPARATE;
+   request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+   CHECK(ctx->windows->create(data, &request, &window));
+   native_window_wait(ctx, data, &request, &window,
+         NATIVE_EVENT(RESUME), 0);
+   CHECK(!window.focused);
+   ctx->windows->keep(data, &window);
+   ctx->destroy(data);
+   data = NULL;
+   if (!(ctx = native_context(ident, api, major, minor, &data)))
+      return;
+   job.ctx    = ctx;
+   job.data   = data;
+   job.window = &window;
+   job.took   = false;
+   if ((thread = sthread_create(native_wl_take_run, &job)))
+      sthread_join(thread);
+   CHECK(job.took);
+   if (!job.took)
+   {
+      ctx->destroy(data);
+      return;
+   }
+   wl_video_window_keyboard((gfx_ctx_wayland_data_t*)data,
+         (struct wl_surface*)window.surface, true);
+   fprintf(stderr, "native %s: taken on another thread, focus from this "
+         "one %s\n", ident, window.focused ? "handled here" : "queued");
+   CHECK(!window.focused);
+   native_window_drain(ctx, data, &request);
+   CHECK(window.focused);
+   wl_video_window_keyboard((gfx_ctx_wayland_data_t*)data,
+         (struct wl_surface*)window.surface, false);
+   native_window_drain(ctx, data, &request);
+   ctx->windows->destroy(data, &window);
+   ctx->destroy(data);
+#endif
+}
+#endif
+
 /* 'core': a 3.2 core GL context, as glcore asks for; else the
  * driver's default one, as gl does */
 static void test_window_native_lifecycle(const char *ident, bool core)
@@ -6725,9 +7392,13 @@ static void test_window_native_lifecycle(const char *ident, bool core)
       task_queue_init(false, NULL);
 #endif
 #ifdef HAVE_X11
-   /* Off at the first connect, so the monitor worker starts lazily */
+   /* Off at the first connect, so the monitor worker starts lazily.
+    * This is the main thread, where key events are acted on. */
    if (native_x11_ident(ident))
+   {
       config_get_ptr()->bools.video_windows_enable = false;
+      task_queue_init(false, NULL);
+   }
 #endif
    for (restart = 0; restart < 2; restart++)
    {
@@ -6930,6 +7601,39 @@ static void test_window_native_lifecycle(const char *ident, bool core)
          native_sdl_torn_down(ctx, !restart);
 #endif
    }
+#ifdef HAVE_X11
+   if (native_x11_ident(ident))
+      native_x11_kept(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+   else
+#endif
+   if (strcmp(ident, "d3d") != 0)
+      native_window_kept(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+   if (strcmp(ident, "d3d") != 0)
+      native_window_kept_gone(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+#ifdef HAVE_WAYLAND
+   if (native_wl_ident(ident))
+      native_wl_kept_thread(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+#endif
+#if defined(HAVE_SDL3) && defined(HAVE_VULKAN)
+   if (strcmp(ident, "vk_sdl3") == 0)
+      native_window_kept_gl("gl_sdl3", ident);
+#endif
+#if defined(NATIVE_WGL) && defined(HAVE_VULKAN)
+   if (strcmp(ident, "vk_w") == 0)
+   {
+      native_window_input = native_w32_pump;
+      native_window_kept_gl("wgl", ident);
+      native_window_input = NULL;
+   }
+#endif
 #ifdef NATIVE_WIN32
    if (native_w32_ident(ident))
       native_w32_teardown(ident, api, core);
@@ -7245,6 +7949,7 @@ int main(int argc, char **argv)
    test_window_layout();
    test_window_frame();
    test_window_monitors_frame();
+   test_window_fullscreen_hotkey();
    test_window_bounds_saved();
    test_window_bounds_edit();
    test_window_displays();
@@ -7264,6 +7969,7 @@ int main(int argc, char **argv)
    test_window_menu_touch_window();
    test_window_menu_mouse_kept();
    test_window_generation();
+   test_window_kept_pending();
    test_window_ui_layer_dims();
 #ifdef HAVE_GFX_WIDGETS
    test_window_idle_logo();

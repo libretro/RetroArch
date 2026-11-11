@@ -181,6 +181,11 @@ typedef struct video_window_common
    /* Where RetroArch last put it, until a save; 0 dims for none */
    unsigned placed_pos;
    unsigned placed_dims;
+   /* Kept for the next driver: the caller's record meanwhile, and
+    * whether it had the focus then, which is the user's and not what
+    * the window system does while the main window is remade */
+   video_window_native_t kept;
+   bool kept_focus;
    bool closed;
    bool user_closed;
    bool save_moved;
@@ -195,6 +200,17 @@ void video_window_mark_closed(video_window_common_t *window);
 
 /* Closed from its title bar: CLOSE with user set */
 void video_window_mark_closed_by_user(video_window_common_t *window);
+
+/* keep(): @native's record is held in @window, which no driver owns,
+ * until video_window_adopt(); events not yet polled wait for it */
+void video_window_hold(video_window_common_t *window,
+      video_window_native_t *native);
+
+/* take(): the record back in @native for @owner. Focus that came while
+ * kept was the window system's; focus that went comes back only by the
+ * context asking for it. */
+void video_window_adopt(video_window_common_t *window, void *owner,
+      video_window_native_t *native);
 
 #define VIDEO_WINDOW_SETTLE_USEC 500000
 
@@ -637,6 +653,17 @@ void video_driver_publish_window_layout(unsigned window,
  * latest wins. The main thread drops it after a later edit. */
 void video_driver_publish_window_bounds(unsigned window, unsigned screens,
       unsigned edit, unsigned pos, unsigned dims, bool moved);
+
+/* The context's thread: window @window of @generation gained or lost
+ * the keyboard focus; published at once with its last layout */
+void video_driver_publish_window_focus(unsigned window,
+      unsigned generation, bool focused);
+
+/* Main thread, the fullscreen hotkey: Fullscreen flipped for the screen
+ * whose own window has the keyboard focus. False where none has, with
+ * RetroArch in the background, or on a display's Presentation, which
+ * has no windowed mode: the main window's is the one to toggle. */
+bool video_driver_window_fullscreen_toggle(void);
 
 /* Main thread: those bounds into their screens' settings now, as a
  * frame does, before a config save that runs no frame first */

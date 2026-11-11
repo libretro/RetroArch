@@ -189,6 +189,8 @@ typedef struct win32_video_window
    HWND hwnd;
    /* The context's device context on it, if it has one */
    HDC hdc;
+   /* The thread it was made on, which alone destroys it */
+   DWORD thread;
    /* Where it stood before it last went fullscreen */
    RECT windowed;
    /* Move and menu loops it is in */
@@ -211,9 +213,18 @@ void win32_video_window_update(void *owner, video_window_native_t *window,
 unsigned win32_video_window_poll(void *owner, video_window_event_t *events,
       unsigned capacity);
 void win32_video_window_destroy(void *owner, video_window_native_t *window);
+/* Left up for the next driver on the main thread, which outlasts it;
+ * on another the window goes with its thread, so it is destroyed */
+void win32_video_window_keep(void *owner, video_window_native_t *window);
+/* Taken only with 'format' as its pixel format, 0 for none */
+bool win32_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display, int format);
 /* Hands each window 'owner' still has to 'destroy'. */
 void win32_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window));
+/* Whether 'hwnd' is an open screen's own window of this process; any
+ * thread */
+bool win32_video_window_open(HWND hwnd);
 
 /* The native operations alone, for drivers without a context. D3D11
  * and D3D12 pass their own video data as the owner, and call

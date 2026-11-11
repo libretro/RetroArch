@@ -153,6 +153,8 @@ typedef struct x11_video_window
    bool interval_set;
    bool reparented;
    bool destroyed;
+   /* Made with it, which a context that takes it must have */
+   VisualID visual;
 } x11_video_window_t;
 
 /* The window comes unmapped, for the context to make its drawable on
@@ -169,9 +171,23 @@ void x11_video_window_update(void *owner, video_window_native_t *window,
 unsigned x11_video_window_poll(void *owner, video_window_event_t *events,
       unsigned capacity);
 void x11_video_window_destroy(void *owner, video_window_native_t *window);
-/* Hands each window 'owner' still has to 'destroy'. */
+/* Hands each window 'owner' still has to 'destroy'; kept ones stay
+ * for the next driver's start. */
 void x11_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window));
+/* Leaves the window up, untouched, for the next context; the context
+ * has let go of its drawable */
+void x11_video_window_keep(void *owner, video_window_native_t *window);
+/* Adopts screen 'screen's kept window where it is on 'visual'; one on
+ * another goes. The context then puts its drawable on it. */
+bool x11_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display, VisualID visual);
+/* Once its drawable is on it: the focus back, if it had it at keep */
+void x11_video_window_taken(video_window_native_t *window);
+void x11_video_window_drawable(video_window_native_t *window,
+      void *drawable, XID resource);
+/* Kept windows nobody took go; on the thread of the context */
+void x11_video_windows_release_kept(void);
 #endif
 
 #endif

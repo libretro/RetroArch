@@ -670,13 +670,15 @@ static bool gfx_ctx_wgl_window_present_gl(void *data,
    return true;
 }
 
-static void gfx_ctx_wgl_window_destroy(void *data,
+/* The window's device context let go of, for its own teardown or a
+ * keep */
+static bool gfx_ctx_wgl_window_unbind(void *data,
       video_window_native_t *window)
 {
    win32_video_window_t *state = window
       ? (win32_video_window_t*)window->state : NULL;
    if (!data || !state || state->common.owner != data)
-      return;
+      return false;
    if (state->hdc)
    {
       if (wglGetCurrentDC() == state->hdc)
@@ -685,7 +687,42 @@ static void gfx_ctx_wgl_window_destroy(void *data,
          ReleaseDC(state->hwnd, state->hdc);
       state->hdc = NULL;
    }
-   win32_video_window_destroy(data, window);
+   return true;
+}
+
+static void gfx_ctx_wgl_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_wgl_window_unbind(data, window))
+      win32_video_window_destroy(data, window);
+}
+
+static void gfx_ctx_wgl_window_keep(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_wgl_window_unbind(data, window))
+      win32_video_window_keep(data, window);
+}
+
+/* Taken only with the pixel format this context's main window has: a
+ * window's is set once */
+static bool gfx_ctx_wgl_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   win32_video_window_t *state;
+   int format;
+   if (     !data || win32_api != GFX_CTX_OPENGL_API || !win32_hrc
+         || !win32_hdc || !(format = GetPixelFormat(win32_hdc))
+         || !win32_video_window_take(data, screen, window, display,
+            format))
+      return false;
+   state = (win32_video_window_t*)window->state;
+   if (!(state->hdc = GetDC(state->hwnd)))
+   {
+      gfx_ctx_wgl_window_destroy(data, window);
+      return false;
+   }
+   return true;
 }
 
 static bool gfx_ctx_wgl_window_create(void *data,
@@ -725,7 +762,9 @@ static const gfx_ctx_window_driver_t gfx_ctx_wgl_windows = {
    win32_video_window_poll,
    gfx_ctx_wgl_window_bind_gl,
    gfx_ctx_wgl_window_present_gl,
-   gfx_ctx_wgl_window_destroy
+   gfx_ctx_wgl_window_destroy,
+   gfx_ctx_wgl_window_keep,
+   gfx_ctx_wgl_window_take
 };
 #endif
 
