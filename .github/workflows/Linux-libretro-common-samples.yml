@@ -209,6 +209,9 @@ jobs:
             # fixtures, whole, a unit at a time and damaged; a step below
             # runs it over FFmpeg's and Xvid's streams.
             rmpeg4_test
+            # MPEG-4 Part 2 encoding, decoded back with rmpeg4_video; a
+            # step below has FFmpeg decode the streams.
+            rmpeg4_encode_test
             # 4:2:0 to bytes in memory order and to UYVY.
             image_yuv_test
             rh264_lossless_test
@@ -918,6 +921,30 @@ jobs:
           176x144|h263|-c:v h263 -g 12 -q:v 5
           352x288|h263|-c:v h263 -g 12 -q:v 5 -ps 300
           LIST
+
+      # What rmpeg4_encode writes - whole macroblocks and not, fine and
+      # coarse quantisers, a bit rate - FFmpeg decodes within 3 per sample
+      # of rmpeg4_video, which decodes it exactly as the encoder
+      # reconstructed it (the sample checks that)
+      - name: Decode rmpeg4_encode's streams with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats
+        run: |
+          set -euo pipefail
+          make -C mpeg4 -j2 SANITIZER=address,undefined
+          make -C mpeg4_encode -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./mpeg4_encode/rmpeg4_encode_test "$work"
+          n=0
+          for f in "$work"/*.m4v; do
+            ffmpeg -nostdin -hide_banner -loglevel error -xerror -threads 1 -flags +bitexact -idct simple \
+              -i "$f" -pix_fmt yuv420p -f rawvideo -y "${f%.m4v}.yuv"
+            ./mpeg4/rmpeg4_test "$f" "${f%.m4v}.yuv"
+            n=$((n+1))
+          done
+          [ "$n" = 5 ]
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
