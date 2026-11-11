@@ -218,6 +218,9 @@ jobs:
             # H.264 encoding, decoded back with rh264; a step below has
             # FFmpeg decode the streams.
             rh264_encode_test
+            # Tags in each container and ID3 version, and every prefix
+            # and corruption of each file read inside it.
+            rtags_test
             # 4:2:0 to bytes in memory order and to UYVY.
             image_yuv_test
             rh264_lossless_test
@@ -996,6 +999,49 @@ jobs:
             n=$((n+1))
           done
           [ "$n" = 5 ]
+
+      # What FFmpeg writes as tags - ID3v2.3 and 2.4, ID3v1 alone, FLAC,
+      # Vorbis and Opus in Ogg, MP4, ASF, WAVE - rtags reads as ffprobe
+      # does, non-ASCII text, numbered genres and full dates in
+      - name: Read FFmpeg's tags with rtags
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/tags
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          tags=(-metadata 'title=Tïtle ☃' -metadata 'artist=Ärtist'
+                -metadata 'album=Albüm' -metadata genre=Rock -metadata track=3/12
+                -metadata disc=1/2 -metadata date=2004)
+          enc() { ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i sine=d=0.2 "$@"; }
+          enc "${tags[@]}" -id3v2_version 3 -y "$work/v23.mp3"
+          enc "${tags[@]}" -id3v2_version 4 -y "$work/v24.mp3"
+          enc -id3v2_version 3 -metadata genre=17 -metadata date=2004-05-01 \
+            -metadata 'title=a long title with a snowman, ☃' -y "$work/genre.mp3"
+          enc "${tags[@]}" -write_id3v1 1 -y "$work/both.mp3"
+          # ID3v1 alone: the ID3v2 tag in front cut off
+          python3 -c 'import sys
+          d = open(sys.argv[1], "rb").read()
+          s = (d[6] & 127) << 21 | (d[7] & 127) << 14 | (d[8] & 127) << 7 | (d[9] & 127)
+          open(sys.argv[2], "wb").write(d[10 + s:])' "$work/both.mp3" "$work/v1.mp3"
+          rm "$work/both.mp3"
+          enc "${tags[@]}" -y "$work/a.flac"
+          enc "${tags[@]}" -c:a libvorbis -y "$work/a.ogg"
+          enc "${tags[@]}" -c:a libopus -y "$work/a.opus"
+          enc "${tags[@]}" -y "$work/a.m4a"
+          enc -metadata genre=17 -metadata date=2004-05-01 -y "$work/b.m4a"
+          enc "${tags[@]}" -y "$work/a.wma"
+          enc "${tags[@]}" -y "$work/a.wav"
+          n=0
+          for f in "$work"/*.*; do
+            ffprobe -v error -show_entries format_tags:stream_tags \
+              -of default=nw=1 "$f" > "$f.tags"
+            ./rtags_test --ffprobe "$f" "$f.tags"
+            n=$((n+1))
+          done
+          [ "$n" = 11 ]
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
