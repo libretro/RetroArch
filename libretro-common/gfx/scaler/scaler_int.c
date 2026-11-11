@@ -455,17 +455,13 @@ void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
       int out_stride, int in_stride)
 {
    int h, w;
-   int x_pos             = (1 << 15) * in_width / out_width - (1 << 15);
+   /* the sample nearest each output pixel's centre */
+   int x_pos             = (1 << 15) * in_width / out_width;
    int x_step            = (1 << 16) * in_width / out_width;
-   int y_pos             = (1 << 15) * in_height / out_height - (1 << 15);
+   int y_pos             = (1 << 15) * in_height / out_height;
    int y_step            = (1 << 16) * in_height / out_height;
    const uint32_t *input = (const uint32_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
-
-   if (x_pos < 0)
-      x_pos = 0;
-   if (y_pos < 0)
-      y_pos = 0;
 
    for (h = 0; h < out_height; h++, y_pos += y_step, output += out_stride >> 2)
    {

@@ -297,8 +297,11 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
    switch (ctx->scaler_type)
    {
       case SCALER_TYPE_POINT:
-         gen_filter_point_sub(&ctx->horiz, ctx->out_width,  x_pos, x_step);
-         gen_filter_point_sub(&ctx->vert,  ctx->out_height, y_pos, y_step);
+         /* the sample nearest each output pixel's centre: x_pos is that
+          * centre less half a sample, which the filters above weigh
+          * from, so the nearest is half a sample on */
+         gen_filter_point_sub(&ctx->horiz, ctx->out_width,  x_pos + (1 << 15), x_step);
+         gen_filter_point_sub(&ctx->vert,  ctx->out_height, y_pos + (1 << 15), y_step);
 
          ctx->scaler_special = scaler_argb8888_point_special;
          break;
