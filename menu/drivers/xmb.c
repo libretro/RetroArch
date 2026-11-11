@@ -1313,6 +1313,22 @@ static void xmb_messagebox(void *data, const char *message)
    }
 }
 
+/* A confirm box's height on screen with n lines of text and stack_h
+ * of stacked buttons; *slice_h gets the slice's, which is taller
+ * without assets */
+static int xmb_confirm_box_h(const xmb_handle_t *xmb,
+      float line_height, unsigned n, int stack_h, int *slice_h)
+{
+   int h  = (line_height * n) + (xmb->margins_dialog * 2);
+   h     += line_height * 2;
+   h     += stack_h;
+   if (slice_h)
+      *slice_h = h;
+   if (xmb->assets_missing)
+      h  -= line_height / 2;
+   return h;
+}
+
 XMB_NOINLINE static void xmb_render_messagebox_internal(
       void *userdata,
       const video_frame_info_t *video_info,
@@ -1352,6 +1368,12 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    int button_w[MENU_DIALOG_BUTTONS_MAX];
    int button_x[MENU_DIALOG_BUTTONS_MAX];
    int label_w[MENU_DIALOG_BUTTONS_MAX];
+   int cursor_h                        = 0;
+   int row_y                           = 0;
+   int row_need                        = 0;
+   int stack_h                         = 0;
+   bool text_only                      = false;
+   bool stacked                        = false;
    bool input_dialog_display_kb        = false;
    size_t wrapped_len                  = 0;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
@@ -1372,6 +1394,92 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
    if (wrapped_len == 0)
       return;
+
+   if (buttons.count)
+   {
+      float icon_size    = 50 * xmb->last_scale_factor;
+      float icon_padding = 10 * xmb->last_scale_factor;
+      int row_max        = (int)video_width - (int)(xmb->margins_dialog * 4);
+      unsigned b;
+      for (b = 0; b < buttons.count; b++)
+      {
+         const char *str = msg_hash_to_str(
+               (enum msg_hash_enums)buttons.label[b]);
+         label_w[b]      = font_driver_get_message_width(
+               xmb->font2, str, strlen(str), 1.0f);
+         /* Every button keeps room for an icon */
+         button_w[b]     = label_w[b] + (int)(icon_padding * 4)
+            + (int)icon_size;
+      }
+      row_need = menu_dialog_buttons_layout(button_w, buttons.count,
+            (int)(icon_padding * 4), 0, 0, NULL);
+      /* Named buttons too wide with their icons go without */
+      if (row_need > row_max && !buttons.classic)
+      {
+         text_only       = true;
+         for (b = 0; b < buttons.count; b++)
+            button_w[b]  = label_w[b] + (int)(icon_padding * 4);
+         row_need = menu_dialog_buttons_layout(button_w, buttons.count,
+               (int)(icon_padding * 4), 0, 0, NULL);
+         /* Too wide even so: one under another, with their icons
+          * unless a label would then end past its button */
+         if (row_need > row_max)
+         {
+            text_only    = false;
+            stacked      = true;
+            row_need     = 0;
+            for (b = 0; b < buttons.count; b++)
+               if (label_w[b] + icon_padding * 2 + icon_size > row_max)
+                  text_only = true;
+            for (b = 0; b < buttons.count; b++)
+            {
+               button_w[b] = label_w[b] + (int)(icon_padding * 4)
+                  + (text_only ? 0 : (int)icon_size);
+               if (row_need < button_w[b])
+                  row_need = button_w[b];
+            }
+         }
+      }
+      cursor_h           = (int)(icon_size + icon_padding * 2);
+      if (stacked)
+         stack_h         = cursor_h * (int)(buttons.count - 1);
+      /* A row wider than the screen packs from the left instead of
+       * pushing the box and the text off it */
+      if (row_need > row_max)
+         row_need = row_max;
+   }
+
+   /* A box that would still be taller than the screen after the lift
+    * wraps by the font's measured width, when that fits more on a line */
+   if (buttons.count)
+   {
+      unsigned n = string_count_occurrences_single_character(
+            wrapped_message, '\n')
+            + (wrapped_message[wrapped_len - 1] != '\n');
+      if (xmb_confirm_box_h(xmb, xmb->font->size * 1.30f, n, stack_h,
+            NULL) > (int)video_height)
+      {
+         int char_w = font_driver_get_message_width(
+               xmb->font, "a", 1, 1.0f);
+         int wide   = (int)video_width
+               - (int)(xmb->margins_dialog * 4);
+         if (wide > usable_width)
+            wide    = usable_width;
+         if (     char_w > 0
+               && wide / char_w
+                  > (int)(usable_width / (xmb->font_size * 0.85f)))
+         {
+            usable_width = wide;
+            wrapped_len  = (xmb->word_wrap)(
+                  wrapped_message, sizeof(wrapped_message),
+                  message, strlen(message),
+                  usable_width / char_w,
+                  xmb->wideglyph_width, 0);
+            if (wrapped_len == 0)
+               return;
+         }
+      }
+   }
 
    /* Single-pass: find lines, null-terminate, measure width */
    start = wrapped_message;
@@ -1407,27 +1515,6 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
    if (buttons.count)
    {
-      float icon_size    = 50 * xmb->last_scale_factor;
-      float icon_padding = 10 * xmb->last_scale_factor;
-      int row_max        = (int)video_width - (int)(xmb->margins_dialog * 4);
-      int row_need;
-      unsigned b;
-      for (b = 0; b < buttons.count; b++)
-      {
-         const char *str = msg_hash_to_str(
-               (enum msg_hash_enums)buttons.label[b]);
-         label_w[b]      = font_driver_get_message_width(
-               xmb->font2, str, strlen(str), 1.0f);
-         /* Every button keeps room for an icon */
-         button_w[b]     = label_w[b] + (int)(icon_padding * 4)
-            + (int)icon_size;
-      }
-      row_need = menu_dialog_buttons_layout(button_w, buttons.count,
-            (int)(icon_padding * 4), 0, 0, NULL);
-      /* A row wider than the screen packs from the left instead of
-       * pushing the box and the text off it */
-      if (row_need > row_max)
-         row_need = row_max;
       /* Narrow font can make the box too narrow for Back & OK */
       if (longest_width < (int)video_width / 4)
          longest_width = video_width / 4;
@@ -1502,7 +1589,64 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
    /* Extra room for confirm buttons */
    if (buttons.count)
-      slice_h             += (line_height * 2);
+   {
+      /* The slice is drawn up to margins_slice (scaled) above slice_y */
+      int box_top          = slice_y - (xmb->assets_missing
+            ? 0 : (int)(xmb->margins_slice * xmb->last_scale_factor));
+      int box_h            = xmb_confirm_box_h(xmb, line_height,
+            line_count, stack_h, &slice_h);
+      /* Up until its bottom is on screen, but not above the top */
+      if (box_top + box_h > (int)video_height)
+      {
+         int lift          = box_top + box_h - (int)video_height;
+         if (lift > box_top)
+            lift           = box_top;
+         y                -= lift;
+         slice_y          -= lift;
+         box_top          -= lift;
+      }
+      row_y                = box_top + box_h - cursor_h - stack_h
+            - (int)(xmb->margins_dialog / 2);
+      /* Still taller than the screen: as tall as the screen, the row
+       * at its bottom and the text stopped above the row */
+      if (box_h > (int)video_height)
+      {
+         unsigned all      = line_count;
+         row_y            -= box_h - (int)video_height;
+         slice_h          -= box_h - (int)video_height;
+         while (line_count && y + line_count * line_height > row_y)
+            line_count--;
+         /* Only whole paragraphs: back to the blank line above the
+          * cut, or the first paragraph cut short with "..." */
+         if (line_count < all && *lines[line_count])
+         {
+            unsigned keep  = line_count;
+            while (keep && *lines[keep - 1])
+               keep--;
+            if (keep > 1)
+               line_count  = keep - 1;
+            else if (line_count)
+            {
+               char *s     = lines[line_count - 1];
+               size_t len  = strlen(s);
+               int dots_w  = font_driver_get_message_width(
+                     xmb->font, "...", 3, 1.0f);
+               while (len && font_driver_get_message_width(
+                     xmb->font, s, len, 1.0f) + dots_w > longest_width)
+               {
+                  len--;
+                  while (len && (s[len] & 0xC0) == 0x80)
+                     len--;
+               }
+               while (len && s[len - 1] == ' ')
+                  len--;
+               if ((size_t)(s - wrapped_message) + len + 4
+                     <= sizeof(wrapped_message))
+                  memcpy(s + len, "...", 4);
+            }
+         }
+      }
+   }
 
    if (input_dialog_display_kb)
    {
@@ -1651,20 +1795,21 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       float scale_factor = xmb->last_scale_factor;
       float icon_size    = 50 * scale_factor;
       float icon_padding = 10 * scale_factor;
-      int cursor_h       = (int)(icon_size + icon_padding * 2);
-      /* The slice is drawn up to margins_slice (scaled) above slice_y */
-      int box_bottom     = slice_y + slice_h - (xmb->assets_missing
-            ? 0 : (int)(xmb->margins_slice * scale_factor));
-      int row_y          = box_bottom - cursor_h
-            - (int)(xmb->margins_dialog / 2);
       float label_y      = row_y + icon_padding + icon_size
             - (line_height / 2.2f);
       int hover          = -1;
       unsigned b;
 
-      menu_dialog_buttons_layout(button_w, buttons.count,
-            (int)(icon_padding * 4), x - longest_width / 2,
-            longest_width, button_x);
+      if (stacked)
+         for (b = 0; b < buttons.count; b++)
+         {
+            button_x[b] = x - longest_width / 2;
+            button_w[b] = longest_width;
+         }
+      else
+         menu_dialog_buttons_layout(button_w, buttons.count,
+               (int)(icon_padding * 4), x - longest_width / 2,
+               longest_width, button_x);
 
       gfx_display_set_alpha(col, 0.5f);
 
@@ -1674,11 +1819,13 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                (enum msg_hash_enums)buttons.label[b]);
          float label_x   = button_x[b] + icon_padding * 2;
          float icon_x    = button_x[b] + icon_padding;
+         int dy          = stacked ? cursor_h * (int)b : 0;
          bool lit        = ((int)b == buttons.highlight);
 
          /* Icon and label centred on what shows: the default theme's
-          * icon ink is 40/256 of its width in from each edge */
-         if (!buttons.classic)
+          * icon ink is 40/256 of its width in from each edge. Stacked,
+          * the labels line up */
+         if (!buttons.classic && !text_only && !stacked)
          {
             float inset  = icon_size * 40.0f / 256.0f;
             icon_x       = button_x[b] + (button_w[b] - label_w[b]
@@ -1688,8 +1835,8 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
          if (     VIDEO_POS_X(xmb->pointer.pos) >= button_x[b]
                && VIDEO_POS_X(xmb->pointer.pos) <= button_x[b] + button_w[b]
-               && VIDEO_POS_Y(xmb->pointer.pos) >= row_y
-               && VIDEO_POS_Y(xmb->pointer.pos) <= row_y + cursor_h)
+               && VIDEO_POS_Y(xmb->pointer.pos) >= row_y + dy
+               && VIDEO_POS_Y(xmb->pointer.pos) <= row_y + dy + cursor_h)
             hover = (int)b;
 
          /* The highlighted button, and the one under the pointer */
@@ -1699,7 +1846,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                   userdata,
                   video_dims,
                   button_x[b],
-                  row_y,
+                  row_y + dy,
                   VIDEO_SCALE_PACK(button_w[b], cursor_h),
                   video_dims,
                   lit ? selection_color : frame_color,
@@ -1707,7 +1854,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
          gfx_display_blend_begin(dispctx, userdata);
 
-         if (buttons.icon[b])
+         if (buttons.icon[b] && !text_only)
          {
             bool ok = (buttons.icon[b] != MENU_DIALOG_ICON_CANCEL);
             /* Dimmed to half */
@@ -1725,7 +1872,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                         ? GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R])
                         : GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D]),
                   icon_x,
-                  row_y + icon_padding + icon_size,
+                  row_y + dy + icon_padding + icon_size,
                   xmb->alpha,
                   0,
                   1,
@@ -1734,13 +1881,14 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                   mymat);
             gfx_display_set_alpha(col, 0.5f);
          }
-         label_x += icon_size;
+         if (!text_only)
+            label_x += icon_size;
 
          gfx_display_draw_text(
                xmb->font2,
                str,
                label_x,
-               label_y,
+               label_y + dy,
                video_dims,
                0x444444ff,
                TEXT_ALIGN_LEFT,

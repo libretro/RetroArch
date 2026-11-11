@@ -7907,6 +7907,9 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    int button_x[MENU_DIALOG_BUTTONS_MAX];
    int label_w[MENU_DIALOG_BUTTONS_MAX];
    int row_y                  = 0;
+   int stack_h                = 0;
+   bool text_only             = false;
+   bool stacked               = false;
    gfx_display_ctx_driver_t
          *dispctx             = p_disp->dispctx;
    char *lines[256];
@@ -7981,6 +7984,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    {
       float icon_size    = 50 * scale_factor;
       float icon_padding = 10 * scale_factor;
+      int row_max        = (int)video_width - (int)(100 * scale_factor);
       int row_need;
       unsigned b;
       for (b = 0; b < buttons.count; b++)
@@ -7995,6 +7999,31 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       }
       row_need = menu_dialog_buttons_layout(button_w, buttons.count,
             (int)(icon_padding * 4), 0, 0, NULL);
+      /* Named buttons too wide with their icons go without */
+      if (row_need > row_max && !buttons.classic)
+      {
+         text_only       = true;
+         for (b = 0; b < buttons.count; b++)
+            button_w[b]  = label_w[b] + (int)(icon_padding * 4);
+         row_need = menu_dialog_buttons_layout(button_w, buttons.count,
+               (int)(icon_padding * 4), 0, 0, NULL);
+         /* Too wide even so: one under another, with their icons */
+         if (row_need > row_max)
+         {
+            text_only    = false;
+            stacked      = true;
+            row_need     = 0;
+            for (b = 0; b < buttons.count; b++)
+            {
+               button_w[b] = label_w[b] + (int)(icon_padding * 4)
+                  + (int)icon_size;
+               if (row_need < button_w[b])
+                  row_need = button_w[b];
+            }
+            stack_h      = (int)(icon_size + icon_padding * 2)
+                  * (int)(buttons.count - 1);
+         }
+      }
       /* Narrow font can make the box too narrow for Back & OK */
       if (longest_width < (int)video_width / 4)
          longest_width = video_width / 4;
@@ -8002,8 +8031,8 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
          longest_width = row_need;
       /* A row wider than the screen packs from the left instead of
        * pushing the text off it */
-      if (longest_width > (int)video_width - (int)(100 * scale_factor))
-         longest_width = (int)video_width - (int)(100 * scale_factor);
+      if (longest_width > row_max)
+         longest_width = row_max;
    }
 
    gfx_display_set_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
@@ -8031,9 +8060,64 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
        * edge, which the slice draws 16 above slice_y + slice_new_h */
       if (buttons.count)
       {
+         int box_top;
          slice_new_h       += (line_height + font_data.line_ascender) * 2;
-         row_y              = slice_y + (int)slice_new_h
+         slice_new_h       += stack_h;
+         box_top            = slice_y - (int)(16 * scale_factor);
+         /* Up until its bottom is on screen, but not above the top */
+         if (box_top + (int)slice_new_h > (int)height)
+         {
+            int lift        = box_top + (int)slice_new_h - (int)height;
+            if (lift > box_top)
+               lift         = box_top;
+            slice_y        -= lift;
+            y               = (size_t)((int)y - lift);
+         }
+         row_y              = slice_y + (int)slice_new_h - stack_h
                - (int)((70 + 16) * scale_factor) - (int)(slice_margin / 2);
+         /* Still taller than the screen: as tall as the screen, the
+          * row at its bottom and the text stopped above the row */
+         if (slice_new_h > height)
+         {
+            unsigned all    = line_count;
+            row_y          -= (int)(slice_new_h - height);
+            slice_new_h     = height;
+            while (line_count && y + line_count * line_height > row_y)
+               line_count--;
+            /* Only whole paragraphs: back to the blank line above the
+             * cut, or the first paragraph cut short with "..." */
+            if (line_count < all && line_lengths[line_count])
+            {
+               unsigned keep = line_count;
+               while (keep && line_lengths[keep - 1])
+                  keep--;
+               if (keep > 1)
+                  line_count = keep - 1;
+               else if (line_count)
+               {
+                  char *s    = lines[line_count - 1];
+                  size_t len = line_lengths[line_count - 1];
+                  int dots_w = font_driver_get_message_width(
+                        font_data.font, "...", 3, 1.0f);
+                  while (len && font_driver_get_message_width(
+                        font_data.font, s, len, 1.0f) + dots_w
+                        > longest_width)
+                  {
+                     len--;
+                     while (len && (s[len] & 0xC0) == 0x80)
+                        len--;
+                  }
+                  while (len && s[len - 1] == ' ')
+                     len--;
+                  if ((size_t)(s - wrapped_message) + len + 4
+                        <= sizeof(wrapped_message))
+                  {
+                     memcpy(s + len, "...", 4);
+                     line_lengths[line_count - 1] = len + 3;
+                  }
+               }
+            }
+         }
       }
 
       gfx_display_blend_begin(dispctx, userdata);
@@ -8093,9 +8177,16 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       int hover          = -1;
       unsigned b;
 
-      menu_dialog_buttons_layout(button_w, buttons.count,
-            (int)(icon_padding * 4), (int)x - longest_width / 2,
-            longest_width, button_x);
+      if (stacked)
+         for (b = 0; b < buttons.count; b++)
+         {
+            button_x[b] = (int)x - longest_width / 2;
+            button_w[b] = longest_width;
+         }
+      else
+         menu_dialog_buttons_layout(button_w, buttons.count,
+               (int)(icon_padding * 4), (int)x - longest_width / 2,
+               longest_width, button_x);
 
       gfx_display_set_alpha(col, 0.25f);
 
@@ -8105,11 +8196,13 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                (enum msg_hash_enums)buttons.label[b]);
          float label_x   = button_x[b] + icon_padding * 2;
          float icon_x    = button_x[b] + icon_padding;
+         int dy          = stacked ? cursor_h * (int)b : 0;
 
          /* Icon and label centred on what shows: the icon's ink is
           * 7/46 of its width in from each edge, and the cursor reaches
-          * one scaled pixel further out on the left than the right */
-         if (!buttons.classic)
+          * one scaled pixel further out on the left than the right.
+          * Stacked, the labels line up */
+         if (!buttons.classic && !text_only && !stacked)
          {
             float inset  = icon_size * 7.0f / 46.0f;
             icon_x       = button_x[b] + (button_w[b] - label_w[b]
@@ -8119,8 +8212,8 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
 
          if (     VIDEO_POS_X(ozone->pointer.pos) >= button_x[b]
                && VIDEO_POS_X(ozone->pointer.pos) <= button_x[b] + button_w[b]
-               && VIDEO_POS_Y(ozone->pointer.pos) >= row_y
-               && VIDEO_POS_Y(ozone->pointer.pos) <= row_y + cursor_h)
+               && VIDEO_POS_Y(ozone->pointer.pos) >= row_y + dy
+               && VIDEO_POS_Y(ozone->pointer.pos) <= row_y + dy + cursor_h)
             hover = (int)b;
 
          /* The highlighted button, and the one under the pointer */
@@ -8133,7 +8226,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                   button_x[b],
                   button_w[b],
                   cursor_h,
-                  row_y,
+                  row_y + dy,
                   ((int)b == buttons.highlight || buttons.highlight < 0)
                         ? ozone->animations.cursor_alpha
                         : ozone->animations.cursor_alpha * 0.5f,
@@ -8141,7 +8234,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
 
          gfx_display_blend_begin(dispctx, userdata);
 
-         if (buttons.icon[b])
+         if (buttons.icon[b] && !text_only)
          {
             bool ok = (buttons.icon[b] != MENU_DIALOG_ICON_CANCEL);
             /* Dimmed as the cursor of a button not highlighted */
@@ -8157,20 +8250,21 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                         ? GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R])
                         : GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D]),
                   icon_x,
-                  row_y + icon_padding,
+                  row_y + dy + icon_padding,
                   0.0f,
                   1.0f,
                   col,
                   mymat);
             gfx_display_set_alpha(col, 0.25f);
          }
-         label_x += icon_size;
+         if (!text_only)
+            label_x += icon_size;
 
          gfx_display_draw_text(
                ozone->fonts.footer.font,
                str,
                label_x,
-               label_y,
+               label_y + dy,
                video_dims,
                ozone->theme->text_rgba,
                TEXT_ALIGN_LEFT,

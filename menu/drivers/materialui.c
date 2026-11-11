@@ -2857,6 +2857,11 @@ static void materialui_render_messagebox(
    int button_w[MENU_DIALOG_BUTTONS_MAX];
    int button_x[MENU_DIALOG_BUTTONS_MAX];
    int label_w[MENU_DIALOG_BUTTONS_MAX];
+   int row_h                  = 0;
+   int row_y                  = 0;
+   int stack_h                = 0;
+   bool text_only             = false;
+   bool stacked               = false;
 
    wrapped_msg[0] = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
@@ -2931,6 +2936,9 @@ static void materialui_render_messagebox(
       int row_max        = (int)video_width - (int)(mui->margin * 6.0);
       int row_need;
       unsigned b;
+      /* Text wider than that makes the box as wide */
+      if (row_max < longest_width)
+         row_max = longest_width;
       for (b = 0; b < buttons.count; b++)
       {
          const char *str = msg_hash_to_str(
@@ -2943,6 +2951,39 @@ static void materialui_render_messagebox(
       }
       row_need = menu_dialog_buttons_layout(button_w, buttons.count,
             (int)(icon_padding * 4), 0, 0, NULL);
+      /* Named buttons too wide with their icons go without */
+      if (row_need > row_max && !buttons.classic)
+      {
+         text_only       = true;
+         for (b = 0; b < buttons.count; b++)
+            button_w[b]  = label_w[b] + (int)(icon_padding * 4);
+         row_need = menu_dialog_buttons_layout(button_w, buttons.count,
+               (int)(icon_padding * 4), 0, 0, NULL);
+         /* Too wide even so: one under another, as wide as the text
+          * column can be, with their icons unless a label would then
+          * end past its button */
+         if (row_need > row_max)
+         {
+            text_only    = false;
+            stacked      = true;
+            row_need     = 0;
+            if (row_max < usable_width)
+               row_max   = usable_width;
+            for (b = 0; b < buttons.count; b++)
+               if (label_w[b] + icon_padding * 2 + icon_size > row_max)
+                  text_only = true;
+            for (b = 0; b < buttons.count; b++)
+            {
+               button_w[b] = label_w[b] + (int)(icon_padding * 4)
+                  + (text_only ? 0 : (int)icon_size);
+               if (row_need < button_w[b])
+                  row_need = button_w[b];
+            }
+         }
+      }
+      row_h              = (int)(icon_size + icon_padding * 2);
+      if (stacked)
+         stack_h         = row_h * (int)(buttons.count - 1);
       /* A row wider than the screen packs from the left instead of
        * pushing the box and the text off it */
       if (row_need > row_max)
@@ -3023,7 +3064,65 @@ static void materialui_render_messagebox(
 
    /* Extra room for confirm buttons */
    if (buttons.count)
+   {
       slice_h             += (mui->font_data.list.line_height + mui->margin) * 2;
+      slice_h             += stack_h;
+      /* Up until its bottom is on screen, but not above the top */
+      if (slice_y + slice_h > (int)video_height)
+      {
+         int lift          = slice_y + slice_h - (int)video_height;
+         if (lift > slice_y)
+            lift           = slice_y;
+         y                -= lift;
+         slice_y          -= lift;
+      }
+      row_y                = slice_y + slice_h - row_h - stack_h
+            - (int)mui->margin;
+      /* Still taller than the screen: as tall as the screen, the row
+       * at its bottom and the text stopped above the row */
+      if (slice_h > (int)video_height)
+      {
+         int all           = line_count;
+         row_y            -= slice_h - (int)video_height;
+         slice_h           = (int)video_height;
+         while (line_count
+               && y + line_count * mui->font_data.list.line_height > row_y)
+            line_count--;
+         /* Only whole paragraphs: back to the blank line above the
+          * cut, or the first paragraph cut short with "..." */
+         if (line_count < all && lengths[line_count])
+         {
+            int keep       = line_count;
+            while (keep && lengths[keep - 1])
+               keep--;
+            if (keep > 1)
+               line_count  = keep - 1;
+            else if (line_count)
+            {
+               char *s     = wrapped_msg
+                     + (lines[line_count - 1] - wrapped_msg);
+               int len     = lengths[line_count - 1];
+               int dots_w  = font_driver_get_message_width(
+                     mui->font_data.list.font, "...", 3, 1.0f);
+               while (len && font_driver_get_message_width(
+                     mui->font_data.list.font, s, len, 1.0f) + dots_w
+                     > longest_width)
+               {
+                  len--;
+                  while (len && (s[len] & 0xC0) == 0x80)
+                     len--;
+               }
+               while (len && s[len - 1] == ' ')
+                  len--;
+               if ((size_t)(s - wrapped_msg) + len + 4 <= sizeof(wrapped_msg))
+               {
+                  memcpy(s + len, "...", 4);
+                  lengths[line_count - 1] = len + 3;
+               }
+            }
+         }
+      }
+   }
 
    if (draw_focus)
    {
@@ -3117,16 +3216,21 @@ static void materialui_render_messagebox(
       float scale_factor = mui->last_scale_factor;
       float icon_size    = 50 * scale_factor;
       float icon_padding = 10 * scale_factor;
-      int cursor_h       = (int)(icon_size + icon_padding * 2);
-      int row_y          = slice_y + slice_h - cursor_h - (int)mui->margin;
       float label_y      = row_y + icon_padding
             + ((mui->font_data.list.line_height + mui->margin) / 1.75f);
       int hover          = -1;
       unsigned b;
 
-      menu_dialog_buttons_layout(button_w, buttons.count,
-            (int)(icon_padding * 4), x - longest_width / 2,
-            longest_width, button_x);
+      if (stacked)
+         for (b = 0; b < buttons.count; b++)
+         {
+            button_x[b] = x - longest_width / 2;
+            button_w[b] = longest_width;
+         }
+      else
+         menu_dialog_buttons_layout(button_w, buttons.count,
+               (int)(icon_padding * 4), x - longest_width / 2,
+               longest_width, button_x);
 
       gfx_display_set_alpha(mui->colors.list_icon, 0.25f);
 
@@ -3136,12 +3240,13 @@ static void materialui_render_messagebox(
                (enum msg_hash_enums)buttons.label[b]);
          float label_x   = button_x[b] + icon_padding * 2;
          float icon_x    = button_x[b] + icon_padding;
+         int dy          = stacked ? row_h * (int)b : 0;
          bool lit        = ((int)b == buttons.highlight);
 
          /* Icon and label centred on what shows: the ink of Cancel's
-          * back.png is 64/192 of its width in from each edge, of the
-          * others' menu_check.png 52/192 */
-         if (!buttons.classic)
+          * back.png starts 64/192 of its width in from the left, of the
+          * others' menu_check.png 52/192. Stacked, the labels line up */
+         if (!buttons.classic && !text_only && !stacked)
          {
             float inset  = icon_size * (b ? 52.0f : 64.0f) / 192.0f;
             icon_x       = button_x[b] + (button_w[b] - label_w[b]
@@ -3151,8 +3256,8 @@ static void materialui_render_messagebox(
 
          if (     VIDEO_POS_X(mui->pointer.pos) >= button_x[b]
                && VIDEO_POS_X(mui->pointer.pos) <= button_x[b] + button_w[b]
-               && VIDEO_POS_Y(mui->pointer.pos) >= row_y
-               && VIDEO_POS_Y(mui->pointer.pos) <= row_y + cursor_h)
+               && VIDEO_POS_Y(mui->pointer.pos) >= row_y + dy
+               && VIDEO_POS_Y(mui->pointer.pos) <= row_y + dy + row_h)
             hover = (int)b;
 
          /* The highlighted button, and the one under the pointer */
@@ -3162,15 +3267,15 @@ static void materialui_render_messagebox(
                   userdata,
                   video_dims,
                   button_x[b],
-                  row_y,
-                  VIDEO_SCALE_PACK(button_w[b], cursor_h),
+                  row_y + dy,
+                  VIDEO_SCALE_PACK(button_w[b], row_h),
                   video_dims,
                   lit ? mui->colors.list_highlighted_background : frame_color,
                   NULL);
 
          gfx_display_blend_begin(dispctx, userdata);
 
-         if (buttons.icon[b])
+         if (buttons.icon[b] && !text_only)
          {
             gfx_display_set_alpha(mui->colors.list_icon,
                   (buttons.icon[b] == MENU_DIALOG_ICON_OK_DIM)
@@ -3183,19 +3288,20 @@ static void materialui_render_messagebox(
                         (buttons.icon[b] == MENU_DIALOG_ICON_CANCEL)
                         ? MUI_TEXTURE_BACK : MUI_TEXTURE_CHECKMARK]),
                   icon_x,
-                  row_y + icon_padding,
+                  row_y + dy + icon_padding,
                   0.0f,
                   1.0f,
                   mui->colors.list_icon,
                   mymat);
          }
-         label_x += icon_size;
+         if (!text_only)
+            label_x += icon_size;
 
          gfx_display_draw_text(
                mui->font_data.list.font,
                str,
                label_x,
-               label_y,
+               label_y + dy,
                video_dims,
                lit ? mui->colors.list_text_highlighted : mui->colors.list_text,
                TEXT_ALIGN_LEFT,
