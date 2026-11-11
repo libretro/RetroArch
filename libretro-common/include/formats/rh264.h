@@ -82,6 +82,11 @@ typedef struct rh264_video_color
 /* SPS VUI color; unspecified CICP values are 2. Failure clears out. */
 int rh264_video_get_color(const rh264_video *v, rh264_video_color_t *out);
 
+/* The frame rate the SPS's VUI timing gives, time_scale over twice
+ * num_units_in_tick, reduced by two where it divides: 0, or -1 when the
+ * stream has no timing (or no SPS yet). */
+int rh264_video_framerate(const rh264_video *v, unsigned *num, unsigned *den);
+
 /* Create a decoder. Returns NULL on allocation failure. */
 rh264_video *rh264_video_open(void);
 

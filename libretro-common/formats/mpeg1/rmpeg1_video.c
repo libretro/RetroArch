@@ -110,6 +110,7 @@ typedef struct
 #define RMPEG1_PIC_D           4
 
 #define RMPEG1_WINDOW          (1024 * 1024)
+#define RMPEG1_TAGS 32           /* tags pending at once */
 #define RMPEG1_MAX_W           4095
 #define RMPEG1_MAX_H           2800
 
@@ -238,6 +239,15 @@ struct rmpeg1_video
    bool      m2_orphan;         /* a field came that is not the open one's pair */
    unsigned  m2_first_structure;
    unsigned  m2_frame_type, m2_frame_tref;
+   uint64_t  m2_frame_tag;
+
+   /* rmpeg1_video_set_tag: from stream position tag_pos[i] on, the
+    * bytes carry tag_val[i]; the oldest entry first, tag_n of them */
+   uint64_t  abs_base;           /* the stream position of buf[0] */
+   uint64_t  tag_pos[RMPEG1_TAGS], tag_val[RMPEG1_TAGS];
+   unsigned  tag_n;
+   uint64_t  pic_tag;            /* the picture being decoded's */
+   uint64_t  bwd_tag;            /* the held reference's */
 
    uint32_t  skipped;
    uint32_t  errors;
@@ -2579,8 +2589,9 @@ static bool picture_decodable(const rmpeg1_video_t *v)
 }
 
 static void fill_frame(rmpeg1_video_t *v, int slot,
-      rmpeg1_video_frame_t *out, unsigned tref, unsigned ctype)
+      rmpeg1_video_frame_t *out, unsigned tref, unsigned ctype, uint64_t tag)
 {
+   out->tag          = tag;
    out->y            = RM_Y(v, slot);
    out->cb           = RM_CB(v, slot);
    out->cr           = RM_CR(v, slot);
@@ -2606,18 +2617,18 @@ static void fill_frame(rmpeg1_video_t *v, int slot,
  *
  * out->y is left NULL when there is nothing to display this call. */
 static void emit_frame(rmpeg1_video_t *v, rmpeg1_video_frame_t *out,
-      unsigned type, unsigned tref)
+      unsigned type, unsigned tref, uint64_t tag)
 {
    memset(out, 0, sizeof(*out));
 
    if (type == RMPEG1_PIC_B)
    {
-      fill_frame(v, v->slot_cur, out, tref, type);
+      fill_frame(v, v->slot_cur, out, tref, type, tag);
       return;
    }
 
    if (v->have_bwd)
-      fill_frame(v, v->slot_bwd, out, v->bwd_tref, v->bwd_type);
+      fill_frame(v, v->slot_bwd, out, v->bwd_tref, v->bwd_type, v->bwd_tag);
 
    {
       int freed = v->slot_fwd;
@@ -2631,6 +2642,7 @@ static void emit_frame(rmpeg1_video_t *v, rmpeg1_video_frame_t *out,
    v->have_bwd  = true;
    v->bwd_tref  = tref;
    v->bwd_type  = type;
+   v->bwd_tag   = tag;
 
    /* The frame just handed out now lives in slot_fwd and is not written
     * again until two reference pictures later, so the caller's pointers stay
@@ -2639,7 +2651,7 @@ static void emit_frame(rmpeg1_video_t *v, rmpeg1_video_frame_t *out,
 
 static void emit_picture(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
 {
-   emit_frame(v, out, v->coding_type, v->temporal_ref);
+   emit_frame(v, out, v->coding_type, v->temporal_ref, v->pic_tag);
 }
 
 /* A frame whose second field never came, finished as it is */
@@ -2647,7 +2659,7 @@ static void emit_open_field(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
 {
    v->m2_field_open = false;
    v->m2_orphan     = false;
-   emit_frame(v, out, v->m2_frame_type, v->m2_frame_tref);
+   emit_frame(v, out, v->m2_frame_type, v->m2_frame_tref, v->m2_frame_tag);
 }
 
 /* --------------------------------------------------------------------- */
@@ -2707,7 +2719,7 @@ static int drain_held(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
    if (!v->eof || !v->have_bwd)
       return 0;
 
-   fill_frame(v, v->slot_bwd, out, v->bwd_tref, v->bwd_type);
+   fill_frame(v, v->slot_bwd, out, v->bwd_tref, v->bwd_type, v->bwd_tag);
    v->have_bwd = false;
    return 1;
 }
@@ -2719,6 +2731,8 @@ void rmpeg1_video_reset(rmpeg1_video_t *v)
    v->eof = false;
    v->rd = v->wr = 0;
    v->bit = 0;
+   v->abs_base = 0;
+   v->tag_n = 0;
    v->have_fwd = false;
    v->have_bwd = false;
    v->picture_supported = false;
@@ -2734,8 +2748,57 @@ static void compact(rmpeg1_video_t *v)
       return;
    if (v->wr > v->rd)
       memmove(v->buf, v->buf + v->rd, v->wr - v->rd);
+   v->abs_base += v->rd;
    v->wr -= v->rd;
    v->rd  = 0;
+}
+
+/* The tag of the picture whose start code is at stream position @pos:
+ * the last one set at or before it. Entries before that one are done
+ * with, as pictures come in stream order. */
+static void take_tag(rmpeg1_video_t *v, uint64_t pos)
+{
+   unsigned i = 0, n;
+   while (i + 1 < v->tag_n && v->tag_pos[i + 1] <= pos)
+      i++;
+   if (v->tag_n && v->tag_pos[i] <= pos)
+      v->pic_tag = v->tag_val[i];
+   if (i)
+   {
+      for (n = 0; n + i < v->tag_n; n++)
+      {
+         v->tag_pos[n] = v->tag_pos[n + i];
+         v->tag_val[n] = v->tag_val[n + i];
+      }
+      v->tag_n -= i;
+   }
+}
+
+void rmpeg1_video_set_tag(rmpeg1_video_t *v, uint64_t tag)
+{
+   uint64_t pos;
+   if (!v)
+      return;
+   pos = v->abs_base + v->wr;
+   if (v->tag_n && v->tag_pos[v->tag_n - 1] == pos)
+   {
+      v->tag_val[v->tag_n - 1] = tag;
+      return;
+   }
+   if (v->tag_n == RMPEG1_TAGS)
+   {
+      /* more pending than pictures could be: the oldest goes */
+      unsigned n;
+      for (n = 1; n < RMPEG1_TAGS; n++)
+      {
+         v->tag_pos[n - 1] = v->tag_pos[n];
+         v->tag_val[n - 1] = v->tag_val[n];
+      }
+      v->tag_n--;
+   }
+   v->tag_pos[v->tag_n] = pos;
+   v->tag_val[v->tag_n] = tag;
+   v->tag_n++;
 }
 
 size_t rmpeg1_video_write(rmpeg1_video_t *v, const uint8_t *data, size_t len)
@@ -2816,11 +2879,17 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
             break;
 
          case RMPEG1_START_PICTURE:
+         {
+            /* just past its start code: within the bytes of the access
+             * unit it began, whatever came before it */
+            uint64_t pos = v->abs_base + v->rd;
             if (!parse_picture_header(v))
             {
                v->rd = save_rd;
                return 0;
             }
+            take_tag(v, pos);
+         }
             /* A predicted picture without its reference cannot be
              * reconstructed. This happens on entry mid-stream, before the
              * first I picture has been seen. */
@@ -2940,11 +3009,12 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
                         v->m2_first_structure = v->m2_structure;
                         v->m2_frame_type      = v->coding_type;
                         v->m2_frame_tref      = v->temporal_ref;
+                        v->m2_frame_tag       = v->pic_tag;
                         break;
                      }
                      v->m2_second     = false;
                      v->m2_field_open = false;
-                     emit_frame(v, out, v->m2_frame_type, v->m2_frame_tref);
+                     emit_frame(v, out, v->m2_frame_type, v->m2_frame_tref, v->m2_frame_tag);
                   }
                   else
                      emit_picture(v, out);

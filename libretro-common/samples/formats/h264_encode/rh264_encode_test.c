@@ -29,6 +29,7 @@
  *     record the encoder gives;
  *   - the reconstruction is within the PSNR the quantiser gives;
  *   - IDR pictures come every gop frames, flagged as keys;
+ *   - rh264 reads the frame rate back from the VUI's timing;
  *   - with a constant quantiser the stream is the bytes it was when
  *     FFmpeg decoded it to the same frames;
  *   - with a bit rate, the stream lands within 3% of it;
@@ -211,6 +212,13 @@ static void run(const char *dir, const char *name, unsigned w, unsigned h,
          mismatch += compare(d, w, h, ry, rcb, rcr, rys, rcs);
       else
          mismatch += h;
+
+      /* the VUI's timing, 25 frames a second, is read back */
+      if (f == 0)
+      {
+         unsigned num = 0, den = 0;
+         CHECK(rh264_video_framerate(d, &num, &den) == 0 && num == 25 && den == 1);
+      }
 
       /* a buffer too small for any picture: refused (the encoder moves
        * on, so only after the last frame) */

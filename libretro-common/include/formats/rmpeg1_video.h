@@ -57,6 +57,7 @@ typedef struct
    unsigned       c_stride;
    unsigned       temporal_ref;
    uint8_t        coding_type; /* 1 = I, 2 = P, 3 = B, 4 = D */
+   uint64_t       tag;         /* rmpeg1_video_set_tag's for the picture's start code */
 } rmpeg1_video_frame_t;
 
 rmpeg1_video_t *rmpeg1_video_init(void);
@@ -66,6 +67,13 @@ void            rmpeg1_video_reset(rmpeg1_video_t *v);
 /* Append elementary stream bytes. Returns bytes consumed; short only when
  * the internal window is full, in which case drain with _decode() first. */
 size_t rmpeg1_video_write(rmpeg1_video_t *v, const uint8_t *data, size_t len);
+
+/* A caller's value for the pictures whose start codes are in the bytes
+ * written after this call, given back in the frame each becomes
+ * (out->tag) however the frames are reordered: an access unit's time
+ * stamps, say. A field pair takes its first field's. 0 until set;
+ * rmpeg1_video_reset() forgets those pending. */
+void rmpeg1_video_set_tag(rmpeg1_video_t *v, uint64_t tag);
 
 /* Decode one picture. Returns 1 and fills *out when a frame is ready, 0 when
  * more input is needed. The frame's planes stay valid until the next call. */

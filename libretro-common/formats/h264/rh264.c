@@ -237,6 +237,8 @@ typedef struct { int valid,profile_idc,level_idc,log2_max_frame_num,pic_order_cn
    poc_type1_always_zero,
    poc1_offset_non_ref, poc1_offset_ttb, poc1_ncycle,
    vui_num_reorder, /* VUI max_num_reorder_frames, -1 when not signalled */
+   timing_present,  /* VUI timing_info_present_flag, and its values: */
+   num_units_in_tick, time_scale, fixed_frame_rate,
    /* kept for a hardware decoder (rh264_hw_sps_t) */
    sps_id, constraint_flags, gaps_allowed, frame_cropping,
    crop_l, crop_r, crop_t, crop_b;
@@ -442,7 +444,12 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
             s->color.transfer=rh264_un(&b,8);
             s->color.matrix=rh264_un(&b,8); } }
       if(rh264_u1(&b)){ rh264_ue(&b); rh264_ue(&b); }
-      if(rh264_u1(&b)){ rh264_un(&b,32); rh264_un(&b,32); rh264_u1(&b); }
+      if(rh264_u1(&b)){
+         uint32_t nuit=rh264_un(&b,32), ts=rh264_un(&b,32);
+         s->fixed_frame_rate=rh264_u1(&b);
+         if(nuit&&ts&&nuit<=0x7fffffffu&&ts<=0x7fffffffu){
+            s->timing_present=1;
+            s->num_units_in_tick=(int)nuit; s->time_scale=(int)ts; } }
       { int hrd0,hrd1,k;
         /* cpb_cnt_minus1 is 0..31 (E.2.2); an unbounded count spins on a
          * reader that has already run out of data, since a spent
@@ -11329,6 +11336,20 @@ int rh264_video_get_color(const rh264_video *v, rh264_video_color_t *out)
    return 0;
 }
 
+int rh264_video_framerate(const rh264_video *v, unsigned *num, unsigned *den)
+{
+   unsigned n, d;
+   if (!v || !v->have_sps || !v->sps.timing_present) return -1;
+   /* a frame is two ticks (E.2.1): time_scale / (2 num_units_in_tick) */
+   n = (unsigned)v->sps.time_scale;
+   d = (unsigned)v->sps.num_units_in_tick;
+   if (n % 2 == 0) n /= 2;
+   else d *= 2;
+   if (num) *num = n;
+   if (den) *den = d;
+   return 0;
+}
+
 void rh264_video_set_tag(rh264_video *v, uint64_t tag)
 {
    if (v)
@@ -11545,7 +11566,7 @@ int rh264_video_drain(rh264_video *v)
  * neither is written while shared. */
 
 #define RH264_STATE_MAGIC   0x53343652u   /* "R64S" */
-#define RH264_STATE_VERSION 2u   /* 2: the output queue's tags */
+#define RH264_STATE_VERSION 3u   /* 2: the output queue's tags; 3: the SPS's timing */
 
 typedef struct
 {
