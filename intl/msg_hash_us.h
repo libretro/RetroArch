@@ -24908,6 +24908,10 @@ MSG_HASH(
    "By Vehicular"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ENHANCEMENT_HW,
+   "By Enhancement Hardware"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
    "By Origin"
    )
