@@ -62,10 +62,18 @@ rflv_mux_t *rflv_mux_new(const rflv_config_t *config);
  * NAL lengths. Other fields retain their meaning; max_packet_size <= 0xfffff7.
  * Media input stays borrowed; native Annex B uses new_hevc_annexb. */
 rflv_mux_t *rflv_mux_new_hevc(const rflv_config_t *config);
-/* Cold HEVC setup, once before the initial file-header release. Emits AMF0
+/* Enhanced RTMP AV1. avcc carries av1C, with a sequence OBU that agrees with
+ * its header. Media is one sized-OBU temporal unit in spatial layer 0, DTS=PTS. No conversion
+ * storage or media copy; step validates one OBU. max_packet_size <= 0xfffffa. */
+rflv_mux_t *rflv_mux_new_av1(const rflv_config_t *config);
+/* Native AV1: avcc carries sized configuration OBUs, exactly one sequence.
+ * Builds av1C during cold setup. push() borrows native temporal units as-is. */
+rflv_mux_t *rflv_mux_new_av1_obu(const rflv_config_t *config);
+/* Cold HEVC/AV1 setup, once before the initial file-header release. Emits AMF0
  * colorInfo before the video sequence. Unknown fields stay absent. Mastering
  * must be complete and within Enhanced RTMP ranges; xy rounds to four decimals.
- * Depth must match hvcC; range remains in the coded bitstream. Copies supplied
+ * Depth must match configuration; AV1 CICP/range must agree with its sequence.
+ * Range remains in the coded bitstream. Copies supplied
  * source metadata, never display/tone-map defaults. No later mutation. */
 bool rflv_mux_set_color(rflv_mux_t *mux, const video_color_metadata_t *color,
       unsigned bit_depth);
@@ -76,7 +84,7 @@ rflv_mux_t *rflv_mux_new_annexb(const rflv_config_t *config);
 /* Native HEVC adapter: Annex B VPS/SPS/PPS (one each). Builds hvcC from SPS;
  * reserves conversion storage once. Media uses push_annexb, one NAL per step. */
 rflv_mux_t *rflv_mux_new_hevc_annexb(const rflv_config_t *config);
-/* Track 1: one length-prefixed AVC/HEVC access unit; track 2: one raw AAC unit.
+/* Track 1: length-prefixed AVC/HEVC or an AV1 temporal unit; track 2: raw AAC.
  * Accepted input stays borrowed until output release, error or free.
  * BUSY takes nothing. Timestamps use the configured per-track timescale;
  * their millisecond representation must fit a nonnegative signed 32-bit value. */

@@ -1,6 +1,7 @@
 CC ?= cc
 LRC := ../../..
 HEADERS := $(LRC)/include/formats/rflv_mux.h $(LRC)/include/formats/video_color.h
+HEADERS += $(LRC)/include/formats/rav1.h $(LRC)/include/formats/rav1_sequence.h
 CFLAGS += -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wframe-larger-than=2048 -I$(LRC)/include
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
 CFLAGS += -Wno-c99-extensions -Wno-c11-extensions

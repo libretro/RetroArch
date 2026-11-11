@@ -137,9 +137,11 @@ int main(int argc, char **argv)
    int result, composition;
    int64_t pts;
    bool annexb = argc == 4 && (!strcmp(argv[3], "annexb") || !strcmp(argv[3], "annexb-color"));
-   bool metadata = argc == 4 && (!strcmp(argv[3], "color") || !strcmp(argv[3], "annexb-color"));
-   bool hevc = false, keyframe;
-   assert(argc == 3 || (argc == 4 && (annexb || metadata)));
+   bool native_av1 = argc == 4 && (!strcmp(argv[3], "obu") || !strcmp(argv[3], "obu-color"));
+   bool metadata = argc == 4 && (!strcmp(argv[3], "color") || !strcmp(argv[3], "annexb-color")
+         || !strcmp(argv[3], "obu-color"));
+   bool hevc = false, av1 = false, keyframe;
+   assert(argc == 3 || (argc == 4 && (annexb || native_av1 || metadata)));
    f = fopen(argv[1], "rb");
    assert(f && !fseek(f, 0, SEEK_END));
    bytes = ftell(f);
@@ -168,9 +170,10 @@ int main(int argc, char **argv)
          assert(length >= prefix);
          if (type == 9)
          {
-            hevc = (p[11] & 0x80) != 0;
-            assert(hevc ? !memcmp(p + 12, "hvc1", 4) : (p[11] & 15) == 7);
-            packet_type = hevc ? p[11] & 15 : p[12];
+            hevc = (p[11] & 0x80) && !memcmp(p + 12, "hvc1", 4);
+            av1 = (p[11] & 0x80) && !memcmp(p + 12, "av01", 4);
+            assert(hevc || av1 || (p[11] & 15) == 7);
+            packet_type = hevc || av1 ? p[11] & 15 : p[12];
             if (hevc && packet_type == 1)
                prefix = 8;
          }
@@ -180,6 +183,9 @@ int main(int argc, char **argv)
             packet_type = p[12];
          }
          if (type == 9 && packet_type == 2)
+            continue;
+         /* FFmpeg can emit an AV1 sequence marker before configuration. */
+         if (type == 9 && av1 && packet_type == 0 && length == prefix)
             continue;
          assert(length > prefix);
          if (!pass)
@@ -203,7 +209,7 @@ int main(int argc, char **argv)
          if (packet_type != 1 && !(type == 9 && hevc && packet_type == 3))
             continue;
          timestamp = read_be(p + 4, 3) | ((unsigned)p[7] << 24);
-         composition = type == 9 && (!hevc || packet_type == 1)
+         composition = type == 9 && !av1 && (!hevc || packet_type == 1)
             ? (int)read_be(p + (hevc ? 16 : 13), 3) : 0;
          if (composition & 0x800000)
             composition -= 0x1000000;
@@ -230,7 +236,14 @@ int main(int argc, char **argv)
       assert(pos == size);
       if (!pass)
       {
+         if (native_av1)
+         {
+            assert(av1 && c.avcc_size > 4);
+            c.avcc = (const unsigned char*)c.avcc + 4;
+            c.avcc_size -= 4;
+         }
          m = annexb ? (hevc ? hevc_annexb_mux(&c) : annexb_mux(&c))
+            : av1 ? native_av1 ? rflv_mux_new_av1_obu(&c) : rflv_mux_new_av1(&c)
             : hevc ? rflv_mux_new_hevc(&c) : rflv_mux_new(&c);
          if (metadata)
          {
@@ -245,7 +258,7 @@ int main(int argc, char **argv)
             described.mastering.luminance_max = 10000000;
             described.mastering.luminance_min = 50;
             memcpy(described.mastering.chromaticity, xy, sizeof(xy));
-            assert(hevc && rflv_mux_set_color(m, &described, 10));
+            assert((hevc || av1) && rflv_mux_set_color(m, &described, 10));
          }
          f = fopen(argv[2], "wb");
          assert(m && f);

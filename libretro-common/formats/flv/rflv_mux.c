@@ -20,6 +20,7 @@
  * THE SOFTWARE.
  */
 #include <formats/rflv_mux.h>
+#include <formats/rav1_sequence.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -28,6 +29,8 @@ enum flv_output
    FLV_HEADER, FLV_COLOR, FLV_VIDEO_CONFIG, FLV_AUDIO_CONFIG, FLV_MEDIA, FLV_IDLE
 };
 
+enum flv_codec { FLV_AVC, FLV_HEVC, FLV_AV1 };
+
 struct rflv_mux
 {
    uint64_t last[2], input_dts;
@@ -35,6 +38,8 @@ struct rflv_mux
    uint8_t *config;
    uint8_t *converted;
    uint8_t *metadata;
+   rav1_sequence_t *av1_sequence;
+   rav1_config_t av1_config;
    const uint8_t *input;
    size_t avcc_size, asc_size, limit, size, offset, span_count;
    size_t converted_size;
@@ -45,7 +50,7 @@ struct rflv_mux
    enum flv_output output;
    uint8_t prefix[19], suffix[4];
    bool pending, scanning, failed, finished, seen[2], keyframe, vcl, idr;
-   bool annexb, hevc;
+   bool annexb, hevc, av1;
 };
 
 static void flv_uint(uint8_t *out, uint32_t value, unsigned count)
@@ -172,11 +177,11 @@ static void flv_tag(rflv_mux_t *m, unsigned track, const void *data,
    m->prefix[7] = (uint8_t)(timestamp >> 24);
    m->prefix[11] = track == 1 ? (keyframe ? 0x17 : 0x27) : 0xaf;
    m->prefix[12] = config ? 0 : 1;
-   if (track == 1 && m->hevc)
+   if (track == 1 && (m->hevc || m->av1))
    {
       m->prefix[11] = (uint8_t)(0x80 | (keyframe ? 0x10 : 0x20)
-            | (config ? 0 : composition ? 1 : 3));
-      memcpy(m->prefix + 12, "hvc1", 4);
+            | (config ? 0 : m->av1 || composition ? 1 : 3));
+      memcpy(m->prefix + 12, m->av1 ? "av01" : "hvc1", 4);
       if (bytes == 8)
          flv_uint(m->prefix + 16, (uint32_t)composition, 3);
    }
@@ -193,13 +198,15 @@ static void flv_tag(rflv_mux_t *m, unsigned track, const void *data,
    m->pending = true;
 }
 
-static rflv_mux_t *flv_new(const rflv_config_t *c, bool hevc)
+static rflv_mux_t *flv_new(const rflv_config_t *c, enum flv_codec codec)
 {
    rflv_mux_t *m;
-   if (!c || (!c->avcc && !c->asc) || (hevc && !c->avcc)
+   bool hevc = codec == FLV_HEVC, av1 = codec == FLV_AV1;
+   if (!c || (!c->avcc && !c->asc) || ((hevc || av1) && !c->avcc)
          || !c->max_packet_size || c->max_packet_size > (hevc ? 0xfffff7u : 0xfffffau)
          || (c->avcc ? !c->video_timescale
-            || !(hevc ? flv_hvcc((const uint8_t*)c->avcc, c->avcc_size)
+            || !(av1 ? c->avcc_size >= 4 && c->avcc_size <= 65536
+               : hevc ? flv_hvcc((const uint8_t*)c->avcc, c->avcc_size)
                : flv_avcc((const uint8_t*)c->avcc, c->avcc_size))
             : c->avcc_size || c->video_timescale)
          || (c->asc ? !c->audio_timescale || !flv_asc((const uint8_t*)c->asc, c->asc_size)
@@ -224,6 +231,17 @@ static rflv_mux_t *flv_new(const rflv_config_t *c, bool hevc)
    m->timescale[1] = c->audio_timescale;
    m->limit = c->max_packet_size;
    m->hevc = hevc;
+   m->av1 = av1;
+   if (av1)
+   {
+      m->av1_sequence = (rav1_sequence_t*)malloc(sizeof(*m->av1_sequence));
+      if (!m->av1_sequence || !rav1_config_parse(&m->av1_config, m->config, m->avcc_size)
+            || !rav1_config_sequence(m->av1_sequence, &m->av1_config))
+      {
+         rflv_mux_free(m);
+         return NULL;
+      }
+   }
    memcpy(m->prefix, "FLV\1\0\0\0\0\11\0\0\0\0", 13);
    m->prefix[4] = (c->avcc ? 1 : 0) | (c->asc ? 4 : 0);
    m->spans[0].data = m->prefix;
@@ -235,12 +253,79 @@ static rflv_mux_t *flv_new(const rflv_config_t *c, bool hevc)
 
 rflv_mux_t *rflv_mux_new(const rflv_config_t *c)
 {
-   return flv_new(c, false);
+   return flv_new(c, FLV_AVC);
 }
 
 rflv_mux_t *rflv_mux_new_hevc(const rflv_config_t *c)
 {
-   return flv_new(c, true);
+   return flv_new(c, FLV_HEVC);
+}
+
+rflv_mux_t *rflv_mux_new_av1(const rflv_config_t *c)
+{
+   return flv_new(c, FLV_AV1);
+}
+
+rflv_mux_t *rflv_mux_new_av1_obu(const rflv_config_t *c)
+{
+   rav1_obu_t obu, sequence;
+   rav1_sequence_t *info;
+   rflv_config_t config;
+   rflv_mux_t *m = NULL;
+   uint8_t *data;
+   size_t at = 0, used;
+   int result;
+   if (!c || !c->avcc || !c->avcc_size || c->avcc_size > 65532)
+      return NULL;
+   memset(&sequence, 0, sizeof(sequence));
+   while ((result = rav1_obu_next(&obu, (const uint8_t*)c->avcc, c->avcc_size, &at, false)) > 0)
+   {
+      if (obu.type == 1)
+      {
+         if (sequence.data)
+            return NULL;
+         sequence = obu;
+      }
+      else if (obu.type != 2 && obu.type != 5 && obu.type != 15)
+         return NULL;
+   }
+   if (result < 0 || !sequence.data)
+      return NULL;
+   info = (rav1_sequence_t*)malloc(sizeof(*info));
+   if (!info)
+      return NULL;
+   if (!rav1_sequence_parse(info, sequence.payload, sequence.payload_size))
+   {
+      free(info);
+      return NULL;
+   }
+   data = (uint8_t*)malloc(c->avcc_size + 4);
+   if (data)
+   {
+      data[0] = 0x81;
+      data[1] = (uint8_t)((info->profile << 5) | info->operating_points[0].level);
+      data[2] = (uint8_t)((info->operating_points[0].tier << 7)
+            | ((info->bit_depth > 8) << 6) | ((info->bit_depth == 12) << 5)
+            | (info->monochrome << 4) | (info->subsampling_x << 3)
+            | (info->subsampling_y << 2) | info->chroma_sample_position);
+      data[3] = 0;
+      memcpy(data + 4, sequence.data, sequence.size);
+      used = sequence.size + 4;
+      at = 0;
+      while (rav1_obu_next(&obu, (const uint8_t*)c->avcc, c->avcc_size, &at, false) > 0)
+         if (obu.type == 5)
+         {
+            memcpy(data + used, obu.data, obu.size);
+            used += obu.size;
+         }
+      config = *c;
+      config.avcc = data;
+      config.avcc_size = used;
+      m = rflv_mux_new_av1(&config);
+      free(data);
+   }
+   free(info);
+   return m;
 }
 
 struct flv_metadata_writer
@@ -345,11 +430,16 @@ bool rflv_mux_set_color(rflv_mux_t *m, const video_color_metadata_t *c,
    struct flv_metadata_writer w;
    static const uint8_t object = 3;
    unsigned i;
-   if (!m || !c || !m->hevc || m->failed || m->metadata
+   if (!m || !c || (!m->hevc && !m->av1) || m->failed || m->metadata
          || m->output != FLV_HEADER || !m->pending
          || (depth != 8 && depth != 10 && depth != 12)
-         || depth != 8u + (m->config[17] & 7)
-         || ((m->config[16] & 3) && depth != 8u + (m->config[18] & 7))
+         || (m->hevc && (depth != 8u + (m->config[17] & 7)
+               || ((m->config[16] & 3) && depth != 8u + (m->config[18] & 7))))
+         || (m->av1 && (depth != m->av1_sequence->bit_depth
+               || (c->primaries && c->primaries != m->av1_sequence->color_primaries)
+               || (c->transfer && c->transfer != m->av1_sequence->transfer_characteristics)
+               || (c->matrix && c->matrix != m->av1_sequence->matrix_coefficients)
+               || (c->range && c->range != m->av1_sequence->color_range + 1)))
          || c->primaries > 255 || c->transfer > 255 || c->matrix > 255
          || c->range > 2 || c->max_cll > 10000 || c->max_fall > 10000
          || (c->max_cll && c->max_fall > c->max_cll))
@@ -695,6 +785,7 @@ int rflv_mux_push(rflv_mux_t *m, unsigned track, const void *data,
       return RFLV_ERROR;
    composition = (int64_t)pts_ms - dts_ms;
    if ((track == 1 && (composition < -0x800000 || composition > 0x7fffff
+               || (m->av1 && pts != dts)
                || (!m->seen[0] && !keyframe))) || (track == 2 && pts != dts))
       return RFLV_ERROR;
    m->track = track;
@@ -750,6 +841,26 @@ int rflv_mux_step(rflv_mux_t *m)
             m->annexb ? m->converted_size : m->size,
             m->timestamp, m->composition, m->keyframe, false);
       return RFLV_PACKET;
+   }
+   if (m->av1)
+   {
+      rav1_obu_t obu;
+      if (rav1_obu_next(&obu, m->input, m->size, &m->offset, false) != 1
+            || !obu.type || (obu.type >= 8 && obu.type != 15)
+            || obu.spatial_id)
+         goto failed;
+      if (obu.type == 1 && (obu.payload_size != m->av1_config.sequence.payload_size
+               || memcmp(obu.payload, m->av1_config.sequence.payload, obu.payload_size)))
+         goto failed;
+      if (obu.type == 3 || obu.type == 6)
+      {
+         if (!obu.payload_size)
+            goto failed;
+         m->vcl = true;
+         m->idr = m->idr || m->av1_sequence->reduced_still_picture_header
+            || (obu.payload[0] & 0xe0) == 0;
+      }
+      return RFLV_PROGRESS;
    }
    if (m->annexb)
    {
@@ -870,5 +981,6 @@ void rflv_mux_free(rflv_mux_t *m)
    free(m->config);
    free(m->converted);
    free(m->metadata);
+   free(m->av1_sequence);
    free(m);
 }

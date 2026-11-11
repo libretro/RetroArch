@@ -479,6 +479,97 @@ static void hevc_annexb(void)
    puts("PASS: native HEVC SPS depth/temporal fields, emulation prevention and every header truncation");
 }
 
+static void av1(void)
+{
+   static const uint8_t configuration[] =
+   {129,0,76,0,10,13,0,0,0,3,55,251,230,215,206,129,1,4,130};
+   static const uint8_t cll[] = {42,6,1,3,232,1,144,128};
+   uint8_t copy[sizeof(configuration)], native[sizeof(configuration) + sizeof(cll)];
+   uint8_t picture[] = {50,1,16}, bad[] = {48,16};
+   rflv_config_t c = config();
+   video_color_metadata_t color;
+   rflv_mux_t *m;
+   rflv_tag_t tag, again;
+   size_t i;
+   c.avcc = copy;
+   c.asc = NULL;
+   c.asc_size = c.audio_timescale = 0;
+   memcpy(copy, configuration, sizeof(copy));
+   for (i = 0; i < sizeof(copy); i++)
+   {
+      c.avcc_size = i;
+      assert(!rflv_mux_new_av1(&c));
+   }
+   c.avcc_size = sizeof(copy);
+   copy[2] ^= 64;
+   assert(!rflv_mux_new_av1(&c));
+   copy[2] ^= 64;
+   m = rflv_mux_new_av1(&c);
+   assert(m);
+   memset(copy, 0, sizeof(copy));
+   memset(&color, 0, sizeof(color));
+   color.primaries = 9;
+   assert(!rflv_mux_set_color(m, &color, 10));
+   color.primaries = 2;
+   color.transfer = 2;
+   color.matrix = 9;
+   color.range = 1;
+   assert(!rflv_mux_set_color(m, &color, 8));
+   assert(rflv_mux_set_color(m, &color, 10));
+   assert(rflv_mux_release(m) && rflv_mux_get_tag(m, &tag));
+   assert(tag.spans[0].size == 5 && !memcmp(tag.spans[0].data, "\xd4" "av01", 5));
+   assert(!rflv_mux_finish(m) && rflv_mux_release(m) && rflv_mux_get_tag(m, &tag));
+   assert(!memcmp(tag.spans[0].data, "\x90" "av01", 5));
+   assert(tag.spans[1].size == sizeof(configuration)
+         && !memcmp(tag.spans[1].data, configuration, sizeof(configuration)));
+   assert(rflv_mux_release(m));
+   assert(rflv_mux_push(m, 1, picture, sizeof(picture), 0, 1, true) == RFLV_ERROR);
+   assert(rflv_mux_push(m, 1, picture, sizeof(picture), 0, 0, true) == RFLV_PROGRESS);
+   assert(!rflv_mux_finish(m) && rflv_mux_step(m) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PACKET && rflv_mux_get_tag(m, &tag));
+   assert(rflv_mux_get_tag(m, &again) && tag.spans[1].data == again.spans[1].data);
+   assert(tag.spans[1].data == picture && !memcmp(tag.spans[0].data, "\x91" "av01", 5));
+   assert(rflv_mux_push(m, 1, picture, sizeof(picture), 0, 0, true) == RFLV_BUSY);
+   assert(rflv_mux_release(m) && rflv_mux_finish(m) && rflv_mux_step(m) == RFLV_END);
+   rflv_mux_free(m);
+   memcpy(copy, configuration, sizeof(copy));
+   m = rflv_mux_new_av1(&c);
+   assert(m && rflv_mux_release(m) && rflv_mux_release(m));
+   picture[2] = 0;
+   assert(rflv_mux_push(m, 1, picture, sizeof(picture), 0, 0, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_PACKET);
+   assert(rflv_mux_release(m) && rflv_mux_finish(m));
+   rflv_mux_free(m);
+   m = rflv_mux_new_av1(&c);
+   assert(m && rflv_mux_release(m) && rflv_mux_release(m));
+   assert(rflv_mux_push(m, 1, bad, sizeof(bad), 0, 0, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_ERROR);
+   rflv_mux_free(m);
+   m = rflv_mux_new_av1(&c);
+   assert(m && rflv_mux_release(m) && rflv_mux_release(m));
+   picture[2] = 128;
+   assert(rflv_mux_push(m, 1, picture, sizeof(picture), 0, 0, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_PROGRESS && rflv_mux_step(m) == RFLV_ERROR);
+   rflv_mux_free(m);
+   m = rflv_mux_new_av1(&c);
+   assert(m && rflv_mux_release(m) && rflv_mux_release(m));
+   copy[sizeof(copy) - 1] ^= 1;
+   assert(rflv_mux_push(m, 1, copy + 4, sizeof(copy) - 4, 0, 0, true) == RFLV_PROGRESS);
+   assert(rflv_mux_step(m) == RFLV_ERROR);
+   rflv_mux_free(m);
+   native[0] = 18; native[1] = 0;
+   memcpy(native + 2, configuration + 4, sizeof(configuration) - 4);
+   memcpy(native + sizeof(configuration) - 2, cll, sizeof(cll));
+   c.avcc = native;
+   c.avcc_size = sizeof(configuration) - 2 + sizeof(cll);
+   m = rflv_mux_new_av1_obu(&c);
+   assert(m && rflv_mux_release(m) && rflv_mux_get_tag(m, &tag));
+   assert(tag.spans[1].size == sizeof(configuration) + sizeof(cll));
+   assert(!memcmp((const uint8_t*)tag.spans[1].data + sizeof(configuration), cll, sizeof(cll)));
+   rflv_mux_free(m);
+   puts("PASS AV1 config/sequence agreement, cold metadata, borrowed OBUs, bounds and native headers");
+}
+
 int main(void)
 {
    lifetime();
@@ -488,6 +579,7 @@ int main(void)
    annexb();
    hevc();
    hevc_annexb();
+   av1();
    puts("PASS: FLV framing, borrowed packets, clocks, admission and teardown");
    return 0;
 }

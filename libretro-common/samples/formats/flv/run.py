@@ -63,37 +63,47 @@ def main():
     binary = str(Path(args.binary).resolve())
     with tempfile.TemporaryDirectory(prefix='flv-mux-') as temp:
         root = Path(temp)
-        for codec, depth in (('libx264', 8), ('libx265', 8), ('libx265', 10)):
+        for codec, depth in (('libx264', 8), ('libx265', 8), ('libx265', 10),
+                             ('libaom-av1', 8), ('libaom-av1', 10)):
             for bframes in (0, 2):
                 source, output = root / 'source.flv', root / 'output.flv'
                 options = ['-pix_fmt', 'yuv420p10le' if depth == 10 else 'yuv420p']
                 if codec == 'libx265':
                     options += ['-x265-params', 'pools=1:frame-threads=1:log-level=error']
+                if codec == 'libaom-av1':
+                    options += ['-cpu-used', '8', '-lag-in-frames', '8' if bframes else '0',
+                                '-auto-alt-ref', '1' if bframes else '0']
                 if depth == 10:
                     options += ['-color_primaries', 'bt2020', '-color_trc', 'smpte2084',
                                 '-colorspace', 'bt2020nc']
+                video_input = 'testsrc2=size=128x96:rate=25:duration=1'
+                if depth == 10:
+                    video_input += ',setparams=color_primaries=bt2020:color_trc=smpte2084:colorspace=bt2020nc:range=limited'
                 command(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
-                         'testsrc2=size=128x96:rate=25:duration=1', '-f', 'lavfi', '-i',
+                         video_input, '-f', 'lavfi', '-i',
                          'sine=frequency=997:sample_rate=44100:duration=1',
-                         '-c:v', codec, '-threads', '1', '-bf', str(bframes), *options,
+                         '-c:v', codec, '-threads', '1',
+                         *([] if codec == 'libaom-av1' else ['-bf', str(bframes)]), *options,
                          '-g', '12', '-c:a', 'aac', '-profile:a', 'aac_low',
                          '-flvflags', 'no_duration_filesize', '-f', 'flv', str(source)])
-                modes = [None, 'annexb']
+                modes = [None, 'obu'] if codec == 'libaom-av1' else [None, 'annexb']
                 if depth == 10:
-                    modes.extend(['color', 'annexb-color'])
+                    modes.extend(['color', 'obu-color'] if codec == 'libaom-av1' else ['color', 'annexb-color'])
                 for mode in modes:
                     command(shlex.split(args.runner) + [binary, str(source), str(output)]
                             + ([mode] if mode else []))
                     assert probe(source) == probe(output), 'encoded packets or timestamps differ'
                     for audio in (False, True):
                         assert decode(source, audio) == decode(output, audio), 'decoded output differs'
-                    if args.require_color_metadata and mode in ('color', 'annexb-color'):
+                    if args.require_color_metadata and mode in ('color', 'annexb-color', 'obu-color'):
                         color_metadata(output)
                         print('PASS: independent receiver parsed mastering/light units from colorInfo')
+                    reorder = f'lookahead={8 if bframes else 0}' if codec == 'libaom-av1' else f'B-frames={bframes}'
                     print(f'PASS: independent FLV packet/timestamp/video/PCM oracle, '
-                          f'codec={codec}/{depth}, B-frames={bframes}, '
+                          f'codec={codec}/{depth}, {reorder}, '
                           f'Annex B={mode in ("annexb", "annexb-color")}, '
-                          f'colorInfo={mode in ("color", "annexb-color")}')
+                          f'native OBU={mode in ("obu", "obu-color")}, '
+                          f'colorInfo={mode in ("color", "annexb-color", "obu-color")}')
 
 
 if __name__ == '__main__':
