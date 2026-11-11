@@ -101,6 +101,7 @@ peer-check: all
 	python3 media_peer.py --runner "$(RUNNER)" ./rtmp_socket_native_test$(EXE)
 	python3 media_peer.py --runner "$(RUNNER)" --mux ./rtmp_socket_native_test$(EXE)
 	python3 media_peer.py --runner "$(RUNNER)" --caps --mux ./rtmp_client_native_test$(EXE)
+	python3 media_peer.py --runner "$(RUNNER)" --codec av1 --caps --mux ./rtmp_client_native_test$(EXE)
 clean:
 	rm -f rtmp_client_test rtmp_client_test.exe rtmp_client_native_test rtmp_client_native_test.exe rtmps_client_native_test rtmps_client_native_test.exe
 	rm -f rtmps_socket_native_test rtmps_socket_native_test.exe

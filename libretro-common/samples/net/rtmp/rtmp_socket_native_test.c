@@ -88,14 +88,18 @@ static rflv_mux_t *media_mux(FILE *file, uint8_t *header, uint8_t *payload)
    rflv_mux_t *mux;
    uint8_t *avcc = NULL, *asc = NULL;
    size_t size;
+   bool av1 = false;
    memset(&config, 0, sizeof(config));
    config.video_timescale = config.audio_timescale = 1000;
    config.max_packet_size = 1048576;
    while ((!avcc || !asc) && (size = read_tag(file, header, payload)) != 0)
    {
-      if (header[0] == 9 && size > 5 && payload[1] == 0)
+      if (header[0] == 9 && size > 5
+            && (payload[0] == 0x90 || payload[1] == 0))
       {
-         assert(!avcc && payload[0] == 23);
+         assert(!avcc);
+         av1 = payload[0] == 0x90;
+         assert(av1 ? !memcmp(payload + 1, "av01", 4) : payload[0] == 23);
          config.avcc_size = size - 5;
          config.avcc = avcc = (uint8_t*)malloc(config.avcc_size);
          assert(avcc);
@@ -111,7 +115,7 @@ static rflv_mux_t *media_mux(FILE *file, uint8_t *header, uint8_t *payload)
       }
    }
    assert(avcc && asc);
-   mux = rflv_mux_new(&config);
+   mux = av1 ? rflv_mux_new_av1(&config) : rflv_mux_new(&config);
    free(avcc);
    free(asc);
    assert(mux && !fseek(file, 13, SEEK_SET));
@@ -174,11 +178,15 @@ static void send_media(net_rtmp_session_t *session, net_rtmp_socket_t *transport
       {
          size_t prefix;
          uint64_t pts = timestamp;
-         if ((header[0] != 8 && header[0] != 9) || size < 2 || payload[1] != 1)
+         bool av1 = header[0] == 9 && size > 5 && (payload[0] & 0x80);
+         if ((header[0] != 8 && header[0] != 9) || size < 2
+               || (av1 ? (payload[0] & 15) != 1 : payload[1] != 1))
             continue;
          prefix = header[0] == 9 ? 5 : 2;
          assert(size > prefix);
-         if (header[0] == 9)
+         if (av1)
+            assert(!memcmp(payload + 1, "av01", 4));
+         else if (header[0] == 9)
          {
             int32_t composition = ((int32_t)payload[2] << 16)
                | ((int32_t)payload[3] << 8) | payload[4];
@@ -189,7 +197,7 @@ static void send_media(net_rtmp_session_t *session, net_rtmp_socket_t *transport
                : (uint64_t)timestamp + (uint32_t)composition;
          }
          assert(rflv_mux_push(mux, header[0] == 9 ? 1 : 2, payload + prefix,
-                  size - prefix, timestamp, pts, (payload[0] >> 4) == 1)
+                  size - prefix, timestamp, pts, ((payload[0] >> 4) & 7) == 1)
                == RFLV_PROGRESS);
          send_mux(session, transport, fd, mux, payload + prefix, size - prefix, deadline);
          continue;
