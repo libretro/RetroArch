@@ -227,7 +227,8 @@ jobs:
             audio_transfer_atrac_test
             # AVI and ASF headers: streams, codecs, sizes, rates, length.
             rcontainer_test
-            # 4:2:0 to bytes in memory order and to UYVY.
+            # 4:2:0 to bytes in memory order and to UYVY, and bytes to
+            # 4:2:0; a step below compares the latter with swscale's.
             image_yuv_test
             rh264_lossless_test
             rh264_lossless_test_nothreads
@@ -1183,6 +1184,28 @@ jobs:
             n=$((n+1))
           done
           [ "$n" = 5 ]
+
+      # RGBA to 4:2:0 against swscale's with the same 2x2 chroma average
+      # (area): every sample within 1, in each of FFmpeg's test patterns
+      - name: Convert RGBA to yuv420p as swscale does
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/image_yuv
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          for src in testsrc2=size=160x120 smptehdbars=size=320x180 \
+              "gradients=size=256x144:speed=0.05" mandelbrot=size=200x150; do
+            ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i "$src:rate=25" \
+              -frames:v 8 -pix_fmt rgba -f rawvideo -y "$work/f.rgba"
+            size=$(ffprobe -v error -f lavfi -i "$src:rate=25" -show_entries stream=width,height \
+              -of csv=p=0 | head -1)
+            ffmpeg -nostdin -hide_banner -loglevel error -f rawvideo -pix_fmt rgba \
+              -s "${size/,/x}" -i "$work/f.rgba" -sws_flags area+accurate_rnd \
+              -pix_fmt yuv420p -f rawvideo -y "$work/f.yuv"
+            ./image_yuv_test --ffmpeg "$work/f.rgba" "$work/f.yuv" ${size/,/ }
+          done
 
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
