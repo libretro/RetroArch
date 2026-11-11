@@ -1,7 +1,7 @@
 include ../../sample_objdir.mk
 
-TARGETS := path_resolve_realpath_test fill_pathname_test path_mkdir_test path_parent_dir_test \
-	path_tree_test
+# one line: the samples workflow reads the target list from it
+TARGETS := path_resolve_realpath_test fill_pathname_test path_mkdir_test path_parent_dir_test path_tree_test
 
 LIBRETRO_COMM_DIR := ../../..
 
