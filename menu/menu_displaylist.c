@@ -4870,6 +4870,11 @@ static void menu_displaylist_set_new_playlist(
          playlist_qsort(playlist);
 
       strlcpy(menu->db_playlist_file, path, sizeof(menu->db_playlist_file));
+
+      task_push_pl_thumbnail_match(&playlist_config, playlist,
+            settings->paths.directory_thumbnails,
+            settings->paths.path_content_database,
+            settings->bools.playlist_allow_non_png);
    }
 }
 

@@ -10157,6 +10157,15 @@ static void materialui_navigation_set(void *data, bool scroll)
    else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS)))
       mui->settings_selection_ptr = selection;
 
+#if defined(HAVE_LIBRETRODB)
+   if (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)
+   {
+      file_list_t *list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      if (list && selection < list->size)
+         menu_explore_push_thumbnail_match(list->list[selection].type);
+   }
+#endif
+
    /* Update possible fullscreen thumbnail label */
    if (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
       materialui_update_fullscreen_thumbnail_label(mui);

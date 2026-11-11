@@ -2149,6 +2149,24 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
    return -1;
 }
 
+static void menu_explore_push_match(playlist_t *playlist)
+{
+   settings_t *settings = config_get_ptr();
+   task_push_pl_thumbnail_match(playlist_get_config(playlist), playlist,
+         settings->paths.directory_thumbnails,
+         settings->paths.path_content_database,
+         settings->bools.playlist_allow_non_png);
+}
+
+void menu_explore_push_thumbnail_match(unsigned type)
+{
+   playlist_t *playlist = NULL;
+   if (     menu_explore_get_entry_playlist_index(type, &playlist,
+               NULL, NULL, NULL, NULL) >= 0
+         && playlist)
+      menu_explore_push_match(playlist);
+}
+
 ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
       gfx_thumbnail_path_data_t *thumbnail_path_data)
 {
@@ -2173,6 +2191,7 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
 
    if (playlist_index >= 0 && playlist)
    {
+      menu_explore_push_match(playlist);
       gfx_thumbnail_set_system(thumbnail_path_data, db_name, playlist);
       gfx_thumbnail_set_content_playlist(thumbnail_path_data,
             playlist, playlist_index);

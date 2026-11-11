@@ -46,6 +46,7 @@
 
 #include "../../config.def.h"
 #include "../../gfx/gfx_surface.h"
+#include "../../gfx/gfx_thumbnail_results.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "../../gfx/gfx_widgets.h"
 #endif
@@ -9670,6 +9671,7 @@ static int action_ok_delete_playlist(const char *path,
    path = playlist_get_conf_path(playlist);
 
    filestream_delete(path);
+   gfx_thumbnail_results_forget(path);
 
    if (menu_st->driver_ctx->environ_cb)
       menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,

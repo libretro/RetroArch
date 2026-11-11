@@ -76,6 +76,7 @@
 #endif
 
 #include "../gfx/gfx_animation.h"
+#include "../gfx/gfx_thumbnail_results.h"
 #include "../input/input_driver.h"
 #include "../input/input_osk.h"
 #include "../input/input_remapping.h"
@@ -7915,6 +7916,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
           * cache it would install goes away. */
          playlist_init_cached_defer_abort();
          playlist_free_cached();
+         gfx_thumbnail_results_deinit();
 
          /* End any in-flight background directory walk and drop an
           * unconsumed listing; late completions become no-ops. */
