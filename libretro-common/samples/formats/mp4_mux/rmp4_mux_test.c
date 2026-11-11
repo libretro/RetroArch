@@ -28,8 +28,9 @@
  *   avc    H.264 and AAC sample entries (avcC, an AudioSpecificConfig)
  *          around placeholder samples, for the structure alone
  *
- * Each must open in rmp4 with its tracks, sizes, rates and decoder
- * configurations, and give back every sample - its bytes, its key flag,
+ * Each must open in rmp4 with its tracks, sizes, rates, decoder
+ * configurations and esds object types (MPEG-4 Visual and JPEG behind
+ * the same mp4v), and give back every sample - its bytes, its key flag,
  * its place in presentation order - and the video's first frame must be
  * shown at time zero (B-VOPs delay it in decode order: the edit list
  * takes that off). A track full at max_samples must refuse the next one,
@@ -324,6 +325,10 @@ static void test_mpeg4(const char *dir)
       const rmp4_track *tv = rmp4_get_track(mp4, 0), *ta = rmp4_get_track(mp4, 1);
       CHECK(tv && tv->type == RMP4_TRACK_VIDEO && tv->width == 64 && tv->height == 48
             && !strcmp(tv->codec_id, "mp4v"));
+      /* MPEG-4 Visual by the esds, its VOL headers the codec_private */
+      CHECK(tv && tv->object_type == 0x20 && tv->codec_private_size == cfg
+            && !memcmp(tv->codec_private, m4_asp, cfg));
+      CHECK(ta && ta->object_type == 0);
       /* the edit list takes off the tick B-VOPs delay the first frame by */
       CHECK(tv && tv->media_skip == 1);
       CHECK(ta && ta->type == RMP4_TRACK_AUDIO && ta->sample_rate == 48000
@@ -433,9 +438,12 @@ static void test_mjpeg(const char *dir)
       CHECK(r != NULL);
       if (r)
       {
-         const rmp4_track *ta = rmp4_get_track(r, 1);
+         const rmp4_track *ta = rmp4_get_track(r, 1), *tv = rmp4_get_track(r, 0);
          CHECK(ta && !strcmp(ta->codec_id, "fl32") && ta->channels == 2
                && ta->sample_rate == 32000);
+         /* the same mp4v fourcc, told apart as JPEG by the esds */
+         CHECK(tv && !strcmp(tv->codec_id, "mp4v") && tv->object_type == 0x6C
+               && tv->codec == RMP4_CODEC_UNKNOWN && !tv->codec_private_size);
          rmp4_close(r);
       }
    }
@@ -536,6 +544,9 @@ static void test_avc_aac(const char *dir)
          CHECK(ta && ta->codec == RMP4_CODEC_AAC && ta->sample_rate == 44100
                && ta->channels == 2 && ta->codec_private_size == sizeof(asc)
                && !memcmp(ta->codec_private, asc, sizeof(asc)));
+         /* MPEG-4 Audio by the esds; avc1 has none */
+         CHECK(ta && ta->object_type == 0x40);
+         CHECK(tv && tv->object_type == 0);
          rmp4_close(r);
       }
    }

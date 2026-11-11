@@ -191,7 +191,7 @@ static int64_t rmp4_ticks_to_ns(int64_t ticks, uint32_t timescale)
    return neg ? -(int64_t)t : (int64_t)t;
 }
 
-/* ===== esds descriptor parsing (for mp4a sample entries) ===== */
+/* ===== esds descriptor parsing (for mp4a and mp4v sample entries) ===== */
 
 /* Expandable length: 1-4 bytes, 7 bits each, MSB is a continuation. */
 static int rmp4_desc_len(const uint8_t *p, uint64_t avail,
@@ -459,6 +459,28 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
             }
             break;
          }
+         case RMP4_FOURCC('m','p','4','v'):
+         {
+            /* MPEG-4 Visual or another MPEG video, or JPEG: the esds
+             * says which; the codec stays unknown to the decoders here */
+            rmp4_box esds;
+            if (e.size > 78
+                && rmp4_find_child(e.body + 78, e.size - 78,
+                      RMP4_FOURCC('e','s','d','s'), &esds)
+                && esds.size > 4)
+            {
+               const uint8_t *dsi;
+               uint64_t       dsi_size;
+               t->pub.object_type = rmp4_parse_esds(esds.body + 4,
+                     esds.size - 4, &dsi, &dsi_size);
+               if (dsi)
+               {
+                  t->pub.codec_private      = dsi;
+                  t->pub.codec_private_size = (size_t)dsi_size;
+               }
+            }
+            break;
+         }
          case RMP4_FOURCC('h','v','c','1'):
          case RMP4_FOURCC('h','e','v','1'):
          {
@@ -523,6 +545,7 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
             /* skip the FullBox version/flags word */
             unsigned oti = rmp4_parse_esds(esds.body + 4, esds.size - 4,
                   &dsi, &dsi_size);
+            t->pub.object_type = oti;
             /* 0xDD is the (de-facto) Xiph Vorbis object type; its
              * DecoderSpecificInfo is the xiph-laced 3 headers, the
              * same layout WebM's CodecPrivate uses. */
