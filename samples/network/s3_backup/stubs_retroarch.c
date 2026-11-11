@@ -84,6 +84,16 @@ static void *stub_record(const char *method, const char *url,
    return &stub_pending;
 }
 
+/* A download to a file (cloud sync reads since 66376b18) is a GET
+ * like any other here. */
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   (void)mute; (void)path; (void)title;
+   return stub_record("GET", url, headers, 0, cb, user_data);
+}
+
 void *task_push_http_transfer_with_headers(const char *url, bool mute,
       const char *type, const char *headers,
       retro_task_callback_t cb, void *user_data)

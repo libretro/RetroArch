@@ -107,7 +107,8 @@ int main(int argc, char **argv)
    scaler_ctx_gen_reset(&ctx);
    assert(video_frame_convert_to_bgr24(&ctx, output, input,
             2, 2, 8, 1, 1, 3));
-   assert(output[0] == 0x33 && output[1] == 0x22 && output[2] == 0x11);
+   /* 2x2 down to 1x1: the sample nearest the centre, the bottom right */
+   assert(output[0] == 0xcc && output[1] == 0xbb && output[2] == 0xaa);
    for (f = 0; f < 3; f++)
       for (flip = 0; flip < 4; flip++)
          for (size = 0; size < sizeof(sizes) / sizeof(sizes[0]); size++)

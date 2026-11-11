@@ -300,6 +300,9 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
 
    if (stub_req.count == 1)
    {
+      /* A read is a download to the file (66376b18): the task writes
+       * the body there before the callback, which opens it. */
+      filestream_write_file(tmp, body, sizeof(body) - 1);
       stub_req.count = 0;
       stub_req.cb(NULL, &ok, stub_req.user_data, NULL);
    }

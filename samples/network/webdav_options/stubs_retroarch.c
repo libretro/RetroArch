@@ -125,6 +125,16 @@ void *task_push_http_transfer_with_headers(const char *url, bool mute,
    return NULL;
 }
 
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   (void)url; (void)path; (void)mute; (void)title; (void)headers;
+   (void)cb; (void)user_data;
+   unreachable("task_push_http_download_file_with_headers");
+   return NULL;
+}
+
 void *task_push_webdav_move(const char *url, const char *dest,
       bool suppress, const char *headers, retro_task_callback_t cb,
       void *user_data)

@@ -24,8 +24,12 @@ static double expected_sample(unsigned sample)
 {
    const double pi = 3.14159265358979323846;
    double n = source_length;
-   double transform = -cos(pi / n * (sample + 0.5 + n / 2) * 0.5);
-   double window = sin((sample + 0.5) * pi / (2 * n));
+   /* The fixture is one coded frame. WMA1 and WMA2 play gapless
+    * (a2cd6efc): its first half is the encoder's priming, dropped, and
+    * its second half - the overlap tail - plays when the stream drains. */
+   double t = sample + n;
+   double transform = -cos(pi / n * (t + 0.5 + n / 2) * 0.5);
+   double window = sin((t + 0.5) * pi / (2 * n));
    if (xma_mode) return 0;
    return (source_length / 8) * 100000.0 * (2.0 / n) / 32768 * transform * window;
 }
