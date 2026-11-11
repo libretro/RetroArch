@@ -153,6 +153,71 @@ void image_yuv_i420_to_rgb32(uint32_t *dst, unsigned dst_stride,
             u, u_stride, 1, v, v_stride, 1, w, h, flags);
 }
 
+void image_yuv_420_to_bytes(uint8_t *dst, size_t dst_stride,
+      const uint8_t *y, unsigned y_stride,
+      const uint8_t *cb, unsigned cb_stride,
+      const uint8_t *cr, unsigned cr_stride,
+      unsigned chroma_step, unsigned w, unsigned h, unsigned flags,
+      unsigned order, uint8_t alpha)
+{
+   const image_yuv_coef_t *c =
+      &image_yuv_coefs[((flags & IMAGE_YUV_FLAG_BT709) ? 2 : 0)
+                     | ((flags & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0)];
+   /* where R, G, B and A go in each pixel */
+   unsigned ri = order == IMAGE_YUV_BYTES_ARGB ? 1 : 0;
+   unsigned ai = order == IMAGE_YUV_BYTES_ARGB ? 0 : 3;
+   unsigned row;
+
+   for (row = 0; row < h; row++)
+   {
+      const uint8_t *yr = y  + (size_t)row * y_stride;
+      const uint8_t *cu = cb + (size_t)(row >> 1) * cb_stride;
+      const uint8_t *cv = cr + (size_t)(row >> 1) * cr_stride;
+      uint8_t       *d  = dst + (size_t)row * dst_stride;
+      unsigned x;
+
+      for (x = 0; x < w; x++, d += 4)
+      {
+         int u  = (int)cu[(x >> 1) * chroma_step] - 128;
+         int v  = (int)cv[(x >> 1) * chroma_step] - 128;
+         int yy = c->ym * yr[x] + c->yb;
+         int r  = (yy + c->rv * v) >> IMAGE_YUV_SHIFT;
+         int g  = (yy + c->gu * u + c->gv * v) >> IMAGE_YUV_SHIFT;
+         int b  = (yy + c->bu * u) >> IMAGE_YUV_SHIFT;
+         d[ri]     = (uint8_t)IMAGE_YUV_CLAMP(r);
+         d[ri + 1] = (uint8_t)IMAGE_YUV_CLAMP(g);
+         d[ri + 2] = (uint8_t)IMAGE_YUV_CLAMP(b);
+         d[ai]     = alpha;
+      }
+   }
+}
+
+void image_yuv_420_to_uyvy(uint8_t *dst, size_t dst_stride,
+      const uint8_t *y, unsigned y_stride,
+      const uint8_t *cb, unsigned cb_stride,
+      const uint8_t *cr, unsigned cr_stride,
+      unsigned w, unsigned h)
+{
+   unsigned row;
+
+   for (row = 0; row < h; row++)
+   {
+      const uint8_t *yr = y  + (size_t)row * y_stride;
+      const uint8_t *cu = cb + (size_t)(row >> 1) * cb_stride;
+      const uint8_t *cv = cr + (size_t)(row >> 1) * cr_stride;
+      uint8_t       *d  = dst + (size_t)row * dst_stride;
+      unsigned x;
+
+      for (x = 0; x < w; x += 2, d += 4)
+      {
+         d[0] = cu[x >> 1];
+         d[1] = yr[x];
+         d[2] = cv[x >> 1];
+         d[3] = yr[x + 1 < w ? x + 1 : x];
+      }
+   }
+}
+
 void image_yuv_coefficients(unsigned flags, float c[6])
 {
    const image_yuv_coef_t *k =

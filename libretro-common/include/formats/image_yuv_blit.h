@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_FORMAT_IMAGE_YUV_BLIT_H__
 #define __LIBRETRO_SDK_FORMAT_IMAGE_YUV_BLIT_H__
 
+#include <stddef.h>
 #include <stdint.h>
 #include <retro_common_api.h>
 
@@ -65,6 +66,28 @@ void image_yuv_i420_to_rgb32(uint32_t *dst, unsigned dst_stride,
       const uint8_t *u, unsigned u_stride,
       const uint8_t *v, unsigned v_stride,
       unsigned w, unsigned h, unsigned flags);
+
+/* The same conversion into pixels of four bytes in memory order, on any
+ * host: @order is IMAGE_YUV_BYTES_RGBA (R, G, B, A) or
+ * IMAGE_YUV_BYTES_ARGB (A, R, G, B), the alpha byte @alpha. @dst_stride
+ * is in bytes. FLAG_RGBA has no meaning here. */
+#define IMAGE_YUV_BYTES_RGBA 0
+#define IMAGE_YUV_BYTES_ARGB 1
+void image_yuv_420_to_bytes(uint8_t *dst, size_t dst_stride,
+      const uint8_t *y, unsigned y_stride,
+      const uint8_t *cb, unsigned cb_stride,
+      const uint8_t *cr, unsigned cr_stride,
+      unsigned chroma_step, unsigned w, unsigned h, unsigned flags,
+      unsigned order, uint8_t alpha);
+
+/* 4:2:0 to packed 4:2:2 UYVY (U, Y0, V, Y1 for each pair of pixels),
+ * each chroma row serving the two luma rows it covers; @dst_stride in
+ * bytes. An odd last column repeats its luma sample. */
+void image_yuv_420_to_uyvy(uint8_t *dst, size_t dst_stride,
+      const uint8_t *y, unsigned y_stride,
+      const uint8_t *cb, unsigned cb_stride,
+      const uint8_t *cr, unsigned cr_stride,
+      unsigned w, unsigned h);
 
 /* The matrix @flags names (BT709, FULL_RANGE), for a GPU to apply to
  * samples normalised to 0..1: with chroma less 128/255,
