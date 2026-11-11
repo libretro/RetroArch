@@ -599,52 +599,14 @@ struct string_list *file_archive_get_file_list(const char *path,
 
 
 /* Copies a complete temporary file over a target it could not be
- * renamed onto, and removes it.  Only for filesystems that refuse the
- * rename; an atomic replacement is no longer possible there, which is
- * what writing the member in place always meant. */
+ * renamed onto, with the platform's copy primitive where there is one.
+ * Only for filesystems that refuse the rename; an atomic replacement
+ * is no longer possible there, which is what writing the member in
+ * place always meant. */
 static bool file_archive_pending_copy_in_place(const char *temp_path,
       const char *path)
 {
-   bool ok      = true;
-   uint8_t *buf;
-   RFILE *in;
-   RFILE *out;
-
-   if (!(buf = (uint8_t*)malloc(65536)))
-      return false;
-   if (!(in = filestream_open(temp_path, RETRO_VFS_FILE_ACCESS_READ,
-               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
-   {
-      free(buf);
-      return false;
-   }
-   if (!(out = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE,
-               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
-   {
-      filestream_close(in);
-      free(buf);
-      return false;
-   }
-
-   for (;;)
-   {
-      int64_t rd = filestream_read(in, buf, 65536);
-      if (rd < 0)
-         ok = false;
-      if (rd <= 0)
-         break;
-      if (filestream_write(out, buf, rd) != rd)
-      {
-         ok = false;
-         break;
-      }
-   }
-
-   filestream_close(in);
-   if (filestream_close(out) != 0)
-      ok = false;
-   free(buf);
-   return ok;
+   return filestream_copy(temp_path, path) == 0;
 }
 
 /* Puts a completed member in place.  Written beside the file and

@@ -1730,12 +1730,35 @@ int filestream_copy_close(struct retro_vfs_copy_handle *handle)
 
 /* Pre-v5 helper, kept for its existing callers.  Blocks by design;
  * new code uses filestream_copy_begin/poll/close. */
+/* The VFS copy, run to the end: the platform's own primitive where
+ * there is one (copy_file_range, clonefile), so the bytes never enter
+ * user space.  Returns 1 when copied, -1 when the copy failed, and 0
+ * when it could not start: no VFS v5 behind a core, or a target that
+ * cannot be removed to make way (on Windows, one that another process
+ * holds open), which the loop may still write in place. */
+static int filestream_copy_vfs(const char *src, const char *dst)
+{
+   int status;
+   struct retro_vfs_copy_handle *h = filestream_copy_begin(src, dst,
+         RETRO_VFS_COPY_OVERWRITE);
+   if (!h)
+      return 0;
+   do
+   {
+      status = filestream_copy_step(h, (int64_t)1 << 40, NULL, NULL);
+   } while (status == RETRO_VFS_COPY_RUNNING);
+   return filestream_copy_close(h) == 0 ? 1 : -1;
+}
+
 int filestream_copy(const char *src, const char *dst)
 {
+   int ret;
    if (!src || !*src || !dst || !*dst || string_is_equal(src, dst))
       return -1;
    if (!path_is_valid(src) || path_is_directory(src) || path_is_directory(dst))
       return -1;
+   if ((ret = filestream_copy_vfs(src, dst)) != 0)
+      return ret > 0 ? 0 : -1;
    return filestream_copy_loop(src, dst);
 }
 

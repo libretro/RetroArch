@@ -1695,10 +1695,8 @@ static bool content_file_load(
                   fill_pathname_join_special(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));
 
-                  /* filestream_copy() reaches CopyFileFromAppW through
-                   * the UWP VFS backend, so this is the same kernel
-                   * copy without the local UTF-16 conversion, and the
-                   * destination directory is created for us. */
+                  /* filestream_copy() goes through the VFS copy, and
+                   * the destination directory is created for us. */
                   if (filestream_copy(content_path, new_path) != 0)
                   {
                      char msg[PATH_MAX_LENGTH];

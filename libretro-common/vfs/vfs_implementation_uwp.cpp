@@ -1038,7 +1038,7 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
     if (!h->in)
         goto fail;
     h->out = retro_vfs_file_open_impl(dst, RETRO_VFS_FILE_ACCESS_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
     if (!h->out)
         goto fail;
     return h;

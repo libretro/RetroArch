@@ -446,10 +446,10 @@ int filestream_rename(const char *old_path, const char *new_path);
  * Copies a regular file to a new location, replacing an existing one,
  * and does not return until it is done.
  *
- * Kept for callers that predate VFS API v5. It copies through
- * \c filestream_open/read/write and does not use the platform's copy
- * primitive; new code should use \c filestream_copy_begin, which does
- * and does not block.
+ * It runs the copy of \c filestream_copy_begin to the end, so it uses
+ * the platform's copy primitive where there is one, and falls back to
+ * \c filestream_open/read/write where that copy cannot start. Code
+ * that must not block should use \c filestream_copy_begin itself.
  *
  * @param src_path Path to the file to copy.
  * @param dst_path The target name and location of the file.

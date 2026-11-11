@@ -3626,7 +3626,7 @@ static int vfs_copy_open_portable(struct retro_vfs_copy_handle *h, bool resume)
    h->out = retro_vfs_file_open_impl(h->dst,
          resume ? (RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING)
                 : RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    if (!h->out)
       return -1;
    if (resume && h->done > 0)
