@@ -3399,8 +3399,11 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       Window xwin, main_xwin;
       if (     native_sdl_x11(secondary, &dpy, &xwin)
             && native_sdl_x11(primary, &main_dpy, &main_xwin))
+      {
          native_x11_titles(dpy, main_xwin, xwin,
                video_window_title_screen(request));
+         native_x11_identity(dpy, main_xwin, xwin);
+      }
    }
 #endif
 #ifdef NATIVE_WIN32

@@ -7124,13 +7124,14 @@ typedef struct
 #ifdef NATIVE_SDL
    unsigned long id;
 #endif
-   int unused;
+   void *state;
 } native_gone_t;
 
 static void native_gone_watch(const char *ident,
       const video_window_native_t *window, native_gone_t *gone)
 {
    memset(gone, 0, sizeof(*gone));
+   gone->state = window->state;
 #ifdef HAVE_X11
    if (native_x11_ident(ident) && (gone->watch = XOpenDisplay(NULL)))
    {
@@ -7277,7 +7278,14 @@ static void native_window_kept_gone(const char *ident,
          CHECK(!took);
       }
       else
+      {
+#ifdef HAVE_WAYLAND
+         if (native_wl_ident(ident))
+            native_wl_kept_configure(ctx, data, &request,
+                  (wl_video_window_t*)gone.state);
+#endif
          native_release_kept();
+      }
       destroyed = native_gone(&gone);
       fprintf(stderr, "native %s: kept, %s: %s\n", ident, round == 1
             ? "a create for its screen" : round == 2 ? "a mismatched take"

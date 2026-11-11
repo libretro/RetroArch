@@ -95,6 +95,8 @@ typedef struct wl_video_window
    struct zxdg_toplevel_decoration_v1 *deco;
 #ifdef HAVE_LIBDECOR_H
    struct libdecor_frame *libdecor_frame;
+   /* Set once libdecor's toplevel exists */
+   bool libdecor_icon;
 #endif
    struct wp_viewport *viewport;
    struct wp_fractional_scale_v1 *fractional_scale;

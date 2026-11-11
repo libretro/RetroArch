@@ -519,6 +519,7 @@ static void *sdl2_gfx_init(const video_info_t *video)
       RARCH_ERR("[SDL2] Failed to init SDL window: %s.\n", SDL_GetError());
       goto error;
    }
+   sdl2_window_set_icon(vid->window);
 
    vid->video         = *video;
    vid->video.smooth  = video->smooth;

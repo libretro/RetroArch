@@ -69,9 +69,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-/* The window icon both X11 contexts set: width, height, then ARGB
- * pixels, as longs because _NET_WM_ICON is format 32. */
-#if !defined(HAVE_OPENGLES) || (defined(HAVE_VULKAN) && defined(HAVE_XCB))
+/* The icon every X11 context's window and screen window sets: width,
+ * height, then ARGB pixels, as longs because _NET_WM_ICON is format 32. */
 const unsigned long x11_retroarch_icon[] = {
    16, 16,
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
@@ -93,7 +92,6 @@ const unsigned long x11_retroarch_icon[] = {
 };
 const size_t x11_retroarch_icon_len =
       sizeof(x11_retroarch_icon) / sizeof(*x11_retroarch_icon);
-#endif
 
 #define _NET_WM_STATE_REMOVE                 0
 #define _NET_WM_STATE_ADD                    1
@@ -1702,6 +1700,10 @@ bool x11_video_window_create(void *owner,
    }
 #endif
    x11_set_window_attr(g_x11_dpy, state->handle);
+   XChangeProperty(g_x11_dpy, state->handle,
+         XInternAtom(g_x11_dpy, "_NET_WM_ICON", False), XA_CARDINAL, 32,
+         PropModeReplace, (const unsigned char*)x11_retroarch_icon,
+         (int)x11_retroarch_icon_len);
    if (request->settings.fullscreen)
       x11_set_net_wm_fullscreen_hint(g_x11_dpy, state->handle);
 

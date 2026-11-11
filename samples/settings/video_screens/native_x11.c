@@ -279,6 +279,71 @@ static void native_x11_titles(Display *dpy, Window primary, Window win,
    native_window_titles(net_name, main_net_name, screen);
 }
 
+/* Whether 'win''s _NET_WM_ICON is x11_retroarch_icon; 'count' longs */
+static bool native_x11_own_icon(Display *dpy, Window win,
+      unsigned long *count)
+{
+   Atom actual;
+   int format;
+   unsigned long i, after;
+   unsigned char *data = NULL;
+   bool same          = false;
+   *count             = 0;
+   if (     XGetWindowProperty(dpy, win,
+               XInternAtom(dpy, "_NET_WM_ICON", False), 0, 4096, False,
+               XA_CARDINAL, &actual, &format, count, &after,
+               &data) == Success
+         && data && actual == XA_CARDINAL && format == 32)
+   {
+      const unsigned long *got = (const unsigned long*)data;
+      same = *count == x11_retroarch_icon_len;
+      /* Xlib widens each 32-bit item to a long, sign and all */
+      for (i = 0; same && i < *count; i++)
+         same = (got[i] & 0xFFFFFFFFUL)
+            == (x11_retroarch_icon[i] & 0xFFFFFFFFUL);
+   }
+   if (data)
+      XFree(data);
+   return same;
+}
+
+/* The class and icon a window manager shows 'win' with: the main
+ * window's class, and RetroArch's icon on both */
+static void native_x11_identity(Display *dpy, Window primary, Window win)
+{
+   XClassHint hint, main_hint;
+   unsigned long n, main_n;
+   bool icon      = native_x11_own_icon(dpy, win, &n);
+   bool main_icon = native_x11_own_icon(dpy, primary, &main_n);
+   bool same_class;
+   memset(&hint, 0, sizeof(hint));
+   memset(&main_hint, 0, sizeof(main_hint));
+   XGetClassHint(dpy, win, &hint);
+   XGetClassHint(dpy, primary, &main_hint);
+   same_class =    hint.res_class && main_hint.res_class
+                && string_is_equal(hint.res_name, main_hint.res_name)
+                && string_is_equal(hint.res_class, main_hint.res_class);
+   if (!same_class || !icon || !main_icon)
+      fprintf(stderr, "native x11: class \"%s\" (main \"%s\"), icon %lu"
+            " longs%s, main %lu%s (want %lu)\n",
+            hint.res_class ? hint.res_class : "(none)",
+            main_hint.res_class ? main_hint.res_class : "(none)",
+            n, icon ? "" : " (not ours)", main_n,
+            main_icon ? "" : " (not ours)",
+            (unsigned long)x11_retroarch_icon_len);
+   CHECK(same_class);
+   CHECK(icon);
+   CHECK(main_icon);
+   if (hint.res_name)
+      XFree(hint.res_name);
+   if (hint.res_class)
+      XFree(hint.res_class);
+   if (main_hint.res_name)
+      XFree(main_hint.res_name);
+   if (main_hint.res_class)
+      XFree(main_hint.res_class);
+}
+
 /* What a window manager sends when its close button is pressed */
 static void native_x11_close(Display *display, Window window)
 {
@@ -2447,6 +2512,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(native_x11_titled(display, video_window_title_screen(request)) == 1);
    native_x11_titles(display, primary, secondary,
          video_window_title_screen(request));
+   native_x11_identity(display, primary, secondary);
    /* After a restart, what was queued for the last lifetime's window
     * (a close and a resize) has to reach nothing */
    seen = native_window_wait(ctx, data, request, window,
@@ -2736,7 +2802,10 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       CHECK(native_x11_titled(display, 0) == 1);
       CHECK(native_x11_titled(display, spare.screen) == 0);
       if (one.state)
+      {
          native_x11_titles(display, primary, native_x11_window(&one), 0);
+         native_x11_identity(display, primary, native_x11_window(&one));
+      }
       ctx->windows->destroy(data, &one);
       XSync(display, False);
       CHECK(!native_window_settle(ctx, data, &spare, 50000));

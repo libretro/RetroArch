@@ -183,6 +183,9 @@ void sdl2_video_grab_window(bool state);
 void sdl2_set_handles(void *data, enum rarch_display_type 
       display_type);
 
+/* Gives 'win' RetroArch's icon */
+void sdl2_window_set_icon(SDL_Window *win);
+
 #ifdef HAVE_VIDEO_WINDOWS
 /* A secondary screen's OpenGL window, window->state from create to
  * destroy, on the thread that runs the context. The record's surface

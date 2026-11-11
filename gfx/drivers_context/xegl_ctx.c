@@ -573,6 +573,11 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          CWBorderPixel | CWColormap | CWEventMask | CWOverrideRedirect,
          &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
+   XChangeProperty(g_x11_dpy, g_x11_win,
+         XInternAtom(g_x11_dpy, "_NET_WM_ICON", False),
+         XInternAtom(g_x11_dpy, "CARDINAL", False), 32, PropModeReplace,
+         (const unsigned char*)x11_retroarch_icon,
+         (int)x11_retroarch_icon_len);
 
    if (fullscreen && video_disable_composition)
    {

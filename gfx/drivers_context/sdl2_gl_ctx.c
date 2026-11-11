@@ -220,6 +220,8 @@ static bool sdl2_ctx_set_video_mode(void *data,
             SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
             width, height,
             SDL_WINDOW_OPENGL | fsflag);
+      if (sdl->win)
+         sdl2_window_set_icon(sdl->win);
    }
 
    if (!sdl->win)

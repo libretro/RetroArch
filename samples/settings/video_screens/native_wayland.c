@@ -1712,6 +1712,29 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(native_wl_main_intact(wl, &main_window));
 }
 
+/* A configure for a kept window, as the next context's start can
+ * dispatch one before the take: maximised, while nothing owns it */
+static void native_wl_kept_configure(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request,
+      wl_video_window_t *state)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->ctx;
+   retro_time_t deadline      = cpu_features_get_time_usec() + 3000000;
+#ifdef HAVE_LIBDECOR_H
+   if (state->libdecor_frame)
+      wl->libdecor_frame_set_maximized(state->libdecor_frame);
+   else
+#endif
+   xdg_toplevel_set_maximized(state->xdg_toplevel);
+   wl_display_flush(wl->input.dpy);
+   while (state->floating && cpu_features_get_time_usec() < deadline)
+   {
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   CHECK(!state->floating);
+}
+
 /* A context destroyed for good takes its list down, on its own thread.
  * A kept one let go later stays quiet: by then the next driver may
  * have published, from another thread. */

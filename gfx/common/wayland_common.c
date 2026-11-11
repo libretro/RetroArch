@@ -2202,6 +2202,22 @@ static const struct xdg_toplevel_listener wl_video_window_toplevel_listener = {
 };
 
 #ifdef HAVE_LIBDECOR_H
+/* The window's icon, once libdecor has made its toplevel; see
+ * gfx_ctx_wl_libdecor_identify() */
+static void wl_video_window_libdecor_icon(wl_video_window_t *state)
+{
+   struct xdg_toplevel *xdg_toplevel;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->ctx;
+
+   if (     state->libdecor_icon
+         || !wl->xdg_toplevel_icon_manager
+         || !(xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(
+               state->libdecor_frame)))
+      return;
+   wl_create_toplevel_icon(wl, xdg_toplevel);
+   state->libdecor_icon = true;
+}
+
 static void wl_video_window_libdecor_configure(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, void *data)
 {
@@ -2216,6 +2232,7 @@ static void wl_video_window_libdecor_configure(struct libdecor_frame *frame,
    wl_video_window_t *state   = (wl_video_window_t*)data;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->ctx;
 
+   wl_video_window_libdecor_icon(state);
    if (wl->libdecor_configuration_get_window_state(configuration,
             &window_state))
    {
@@ -2427,6 +2444,7 @@ bool wl_video_window_create(void *owner,
          wl_video_window_release(state);
          return false;
       }
+      wl_video_window_libdecor_icon(state);
       wl->libdecor_frame_set_app_id(state->libdecor_frame, WAYLAND_APP_ID);
       wl->libdecor_frame_set_title(state->libdecor_frame, title);
       if (request->settings.fullscreen)
@@ -2446,6 +2464,8 @@ bool wl_video_window_create(void *owner,
             &wl_video_window_toplevel_listener, state);
       xdg_toplevel_set_app_id(state->xdg_toplevel, WAYLAND_APP_ID);
       xdg_toplevel_set_title(state->xdg_toplevel, title);
+      if (wl->xdg_toplevel_icon_manager)
+         wl_create_toplevel_icon(wl, state->xdg_toplevel);
       if (wl->deco_manager)
       {
          state->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
