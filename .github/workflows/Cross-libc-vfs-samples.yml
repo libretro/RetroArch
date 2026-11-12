@@ -235,6 +235,8 @@ jobs:
           ./vfs_positional_nommap_test.exe
           ./vfs_positional_ntverify_test.exe
           ./vfs_positional_pathreopen_test.exe
+          # twelve threads: more than a stream keeps events for
+          ./vfs_positional_wide_test.exe
           # The same with read-only streams on the C runtime
           # (VFS_WIN32_NO_NATIVE): the stream contract, the path an
           # open takes, large files, offsets from threads.

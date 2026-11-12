@@ -253,6 +253,12 @@ struct libretro_vfs_implementation_file
    retro_atomic_size_t append_end;
 #ifdef VFS_HAVE_AT_HANDLE
    retro_atomic_ptr_t  at_handle;
+   /* at_handle is opened for overlapped I/O, so Windows does not run
+    * its calls one at a time; each call waits on an event of its own,
+    * one of these, claimed by its bit in at_ev_busy and made at first
+    * use, or a passing one when all are in use */
+   HANDLE              at_ev[8];
+   retro_atomic_int_t  at_ev_busy;
 #endif
 };
 #endif

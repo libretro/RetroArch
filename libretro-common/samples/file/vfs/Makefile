@@ -19,6 +19,7 @@ TARGET_TEST15 := vfs_positional_nommap_test
 TARGET_TEST16 := vfs_positional_off32_test
 TARGET_TEST17 := vfs_positional_pathreopen_test
 TARGET_TEST18 := vfs_positional_ntverify_test
+TARGET_TEST19 := vfs_positional_wide_test
 BENCH_CRT     := vfs_native_bench
 BENCH_NATIVE  := vfs_native_bench_native
 
@@ -176,7 +177,8 @@ all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
 	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) \
 	$(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) \
-	$(TARGET_TEST18) $(BENCH_CRT) $(BENCH_NATIVE) $(RENAME_TARGET)
+	$(TARGET_TEST18) $(TARGET_TEST19) $(BENCH_CRT) $(BENCH_NATIVE) \
+	$(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -256,6 +258,13 @@ $(NTVERIFY_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_ALWAYS_VERIFY
 
 $(TARGET_TEST18): vfs_positional_required.o $(NTVERIFY_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
+
+# vfs_positional_wide_test: the positional test from twelve threads
+vfs_positional_wide.o: vfs_positional_test.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_POSITIONAL_TEST_REQUIRED -DTHREADS=12
+
+$(TARGET_TEST19): vfs_positional_wide.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
 
 # vfs_native_bench / vfs_native_bench_native: read-only stream timings
@@ -356,7 +365,8 @@ clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
-		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) $(TARGET_TEST18) $(BENCH_CRT) $(BENCH_NATIVE) \
+		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) $(TARGET_TEST18) $(TARGET_TEST19) \
+	$(BENCH_CRT) $(BENCH_NATIVE) vfs_positional_wide.o \
 	vfs_native_bench.o vfs_native_bench_crt.o $(CRT_VFS_OBJ) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
 		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o \
