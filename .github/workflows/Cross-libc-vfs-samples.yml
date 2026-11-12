@@ -235,11 +235,11 @@ jobs:
           ./vfs_positional_nommap_test.exe
           ./vfs_positional_ntverify_test.exe
           ./vfs_positional_pathreopen_test.exe
-          # The same with read-only streams on a handle of their own
-          # (VFS_WIN32_NATIVE, opt-in): the stream contract, the
-          # path an open takes, large files, offsets from threads.
+          # The same with read-only streams on the C runtime
+          # (VFS_WIN32_NO_NATIVE): the stream contract, the path an
+          # open takes, large files, offsets from threads.
           make clean MMAP=0
-          make MMAP=0 VFS_NATIVE=1
+          make MMAP=0 VFS_NATIVE=0
           ./vfs_bulk_read_test.exe
           ./vfs_seek_contract_test.exe
           ./vfs_large_file_test.exe

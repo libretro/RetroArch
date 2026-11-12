@@ -339,15 +339,18 @@ static void vfs_unix_to_filetime(int64_t unix_s, FILETIME *ft)
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
-/* VFS_WIN32_NATIVE: a read-only stream on Windows NT opens a handle of
- * its own rather than a C runtime FILE, keeps its own position and a
- * 64 KiB buffer, and reads at offsets - with no CRT lock or buffer on
- * the way, and its reads at offsets on the same handle. Opt-in until
- * measured; see samples/file/vfs/vfs_native_bench.c. */
-#if defined(VFS_WIN32_NATIVE) && defined(_WIN32) && !defined(_XBOX) \
+/* A read-only stream on Windows NT opens a handle of its own rather
+ * than a C runtime FILE, keeps its own position and a 64 KiB buffer,
+ * and reads at offsets - with no CRT lock or buffer on the way, and its
+ * reads at offsets on the same handle. VFS_WIN32_NO_NATIVE keeps the C
+ * runtime; samples/file/vfs/vfs_native_bench.c times the two. */
+#if !defined(VFS_WIN32_NO_NATIVE) && defined(_WIN32) && !defined(_XBOX) \
    && !defined(__WINRT__) && defined(VFS_HAVE_AT_HANDLE)
 #define VFS_NATIVE 1
 #define RFILE_HINT_WIN32_NATIVE (1 << 9)
+#ifndef INVALID_FILE_SIZE
+#define INVALID_FILE_SIZE ((DWORD)0xFFFFFFFF)
+#endif
 #define VFS_NATIVE_BUF          0x10000
 static bool    vfs_native_open(libretro_vfs_implementation_file *stream,
       const char *path);

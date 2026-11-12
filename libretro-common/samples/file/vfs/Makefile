@@ -136,11 +136,12 @@ ifeq ($(DESCRIPTOR_IO),1)
    CFLAGS += -DVFS_HAVE_DESCRIPTOR_IO=1
 endif
 
-# 'make VFS_NATIVE=1' builds the suite with read-only Windows streams on
-# a handle of their own (VFS_WIN32_NATIVE); elsewhere it changes nothing.
+# 'make VFS_NATIVE=0' builds the suite with read-only Windows streams on
+# the C runtime (VFS_WIN32_NO_NATIVE) rather than a handle of their own;
+# elsewhere it changes nothing.
 VFS_NATIVE ?=
-ifeq ($(VFS_NATIVE),1)
-   CFLAGS += -DVFS_WIN32_NATIVE
+ifeq ($(VFS_NATIVE),0)
+   CFLAGS += -DVFS_WIN32_NO_NATIVE
 endif
 
 # FAKE_CFR=1 stands in a copy_file_range that copies to EOF whatever
@@ -258,22 +259,23 @@ $(TARGET_TEST18): vfs_positional_required.o $(NTVERIFY_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
 
 # vfs_native_bench / vfs_native_bench_native: read-only stream timings
-# through the C runtime, and through VFS_WIN32_NATIVE - run both on
-# Windows and compare. Elsewhere the two are the same build.
-NATIVE_VFS_OBJ := vfs_implementation_native.o
-BENCH_OBJS     := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+# through the C runtime (VFS_WIN32_NO_NATIVE), and through the stream's
+# own handle - run both on Windows and compare. Elsewhere the two are
+# the same build.
+CRT_VFS_OBJ := vfs_implementation_crt.o
+BENCH_OBJS  := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
 	rthreads_ra.o retro_eventcount_ra.o
 
-$(NATIVE_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
-	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_NATIVE
+$(CRT_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_NO_NATIVE
 
-vfs_native_bench_native.o: vfs_native_bench.c
-	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_NATIVE
+vfs_native_bench_crt.o: vfs_native_bench.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_NO_NATIVE
 
-$(BENCH_CRT): vfs_native_bench.o $(COMMON_OBJS) rthreads_ra.o retro_eventcount_ra.o
+$(BENCH_CRT): vfs_native_bench_crt.o $(BENCH_OBJS) $(CRT_VFS_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS) $(RA_LIBS) -lpthread
 
-$(BENCH_NATIVE): vfs_native_bench_native.o $(BENCH_OBJS) $(NATIVE_VFS_OBJ)
+$(BENCH_NATIVE): vfs_native_bench.o $(COMMON_OBJS) rthreads_ra.o retro_eventcount_ra.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(RA_LIBS) -lpthread
 
 $(TARGET_TEST10): vfs_view_test.o $(VIEW_OBJS)
@@ -355,7 +357,7 @@ clean:
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
 		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) $(TARGET_TEST18) $(BENCH_CRT) $(BENCH_NATIVE) \
-	vfs_native_bench.o vfs_native_bench_native.o $(NATIVE_VFS_OBJ) $(CLOSE_VFS_OBJ) \
+	vfs_native_bench.o vfs_native_bench_crt.o $(CRT_VFS_OBJ) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
 		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o \
 		$(NOMMAP_VFS_OBJ) vfs_positional_required.o $(OFF32_VFS_OBJ) \

@@ -21,9 +21,9 @@
  */
 
 /* Read-only stream throughput through filestream: the C runtime path
- * (vfs_native_bench) against VFS_WIN32_NATIVE (vfs_native_bench_native),
- * the same source built twice. On anything but Windows the two are the
- * same build.
+ * (vfs_native_bench, VFS_WIN32_NO_NATIVE) against the stream's own
+ * handle (vfs_native_bench_native), the same source built twice. On
+ * anything but Windows the two are the same build.
  *
  *   sequential reads of 1, 16, 256, 4096 and 65536 bytes, and 1 MiB
  *   4 KiB at random offsets by seek and read, and by filestream_read_at
@@ -273,10 +273,10 @@ int main(int argc, char **argv)
    if (size < 8192)
       return 1;
 
-#ifdef VFS_WIN32_NATIVE
-   printf("VFS_WIN32_NATIVE, %lld bytes\n", (long long)size);
-#else
+#ifdef VFS_WIN32_NO_NATIVE
    printf("C runtime streams, %lld bytes\n", (long long)size);
+#else
+   printf("native streams, %lld bytes\n", (long long)size);
 #endif
    sequential(path, 1);
    sequential(path, 16);
