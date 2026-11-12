@@ -44,7 +44,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
         audio_fragment.append(shipping_audio[start:end])
     (Path(directory) / "audio_tap_fragment.c").write_text("\n".join(audio_fragment))
     binary = Path(directory) / ("encoder_test.exe" if os.name == "nt" else "encoder_test")
-    for source, extra in (("test.c", []), ("audio_test.c", []),
+    for source, extra in (("test.c", []), ("stream_config_test.c", []), ("audio_test.c", []),
                           ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"]),
                           ("worker_test.c", []), ("calibrated_worker_test.c", []),
                           ("surface_test.c", []),
@@ -60,6 +60,9 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("session_test.c", []), ("dispatch_test.c", []),
                           ("gpu_dispatch_test.c", [])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
+        if source == "stream_config_test.c":
+            command += [str(root / "record/record_mediacodec_stream_config.c"),
+                        str(root / "libretro-common/formats/flv/rflv_mux.c")]
         if source in ("worker_test.c", "calibrated_worker_test.c"):
             command += ["-DHAVE_THREADS",
                         str(root / "record/record_mediacodec_worker.c"),
