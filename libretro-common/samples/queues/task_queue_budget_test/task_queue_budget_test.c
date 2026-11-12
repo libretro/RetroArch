@@ -10,9 +10,12 @@
  * ones it did not run go first next time, so the list rotates rather
  * than starving its tail.
  *
+ * Find (unthreaded queue): a task the retire budget leaves finished is
+ * found until its callback runs, as on the threaded queue.
+ *
  * Against the old queue the budgeted checks retire or run every task
- * at once, and init(false) after a threaded session comes back
- * threaded on the next check. */
+ * at once, a finished task drops out of find, and init(false) after a
+ * threaded session comes back threaded on the next check. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -183,10 +186,62 @@ static void lane_handlers(void)
    task_queue_deinit();
 }
 
+/* --- find --- */
+
+static unsigned called_back;
+
+static void count_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   (void)task; (void)task_data; (void)user_data; (void)error;
+   called_back++;
+}
+
+static bool find_counted(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   return task->callback == count_callback;
+}
+
+static bool counted_found(void)
+{
+   task_finder_data_t find_data;
+   find_data.func     = find_counted;
+   find_data.userdata = NULL;
+   return task_queue_find(&find_data);
+}
+
+static void lane_find(void)
+{
+   unsigned i;
+
+   task_queue_init(false, NULL);
+   called_back = 0;
+   for (i = 0; i < 2; i++)
+   {
+      retro_task_t *t = task_init();
+      t->handler  = finish_now;
+      t->callback = count_callback;
+      task_queue_push(t);
+   }
+
+   task_queue_set_budget(0, 1, 0);
+   task_queue_check();
+   CHECK(called_back == 1, "retire budget 1: %u of 2 callbacks ran", called_back);
+   CHECK(counted_found(), "unthreaded: a finished task is found until its callback runs");
+   task_queue_check();
+   CHECK(called_back == 2 && !counted_found(),
+         "unthreaded: not found once its callback ran (%u)", called_back);
+
+   task_queue_set_budget(0, 0, 0);
+   task_queue_deinit();
+}
+
 int main(void)
 {
    lane_retire();
    lane_handlers();
+   lane_find();
    printf("%s\n", fails ? "FAILED" : "PASSED");
    return fails ? 1 : 0;
 }

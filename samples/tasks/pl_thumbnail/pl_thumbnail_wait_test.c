@@ -1,5 +1,5 @@
 /* The playlist thumbnail tasks waiting on their transfers, on the
- * threaded task queue.
+ * threaded task queue, and a finished one on the unthreaded queue.
  *
  * The suite includes tasks/task_pl_thumbnail_download.c so it can run
  * the per-entry handler on a handle it builds, against the real queue.
@@ -15,7 +15,8 @@
  *    after the transfer's callback, which writes into the task's handle;
  *  - finished: a playlist download finished with its retirement still
  *    to come has freed its playlist but keeps the handle a push's
- *    finder reads.
+ *    finder reads;
+ *  - finished, unthreaded: the same on the unthreaded queue.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -310,6 +311,46 @@ static void lane_finished(void)
             "outlives the handler\n");
 }
 
+static void finish_now(retro_task_t *task)
+{
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void lane_finished_unthreaded(void)
+{
+   unsigned           had   = failures;
+   retro_task_t      *ahead = task_init();
+   playlist_config_t  config;
+
+   CHECK(ahead, "no task to finish first");
+   if (!ahead)
+      return;
+   memset(&config, 0, sizeof(config));
+   strlcpy(config.path, "Lane.lpl", sizeof(config.path));
+   retro_atomic_store_release_int(&playlists_freed, 0);
+   task_queue_init(false, NULL);
+   ahead->handler = finish_now;
+   task_queue_push(ahead);
+   CHECK(task_push_pl_thumbnail_download("Lane System", &config,
+         "/thumbs"), "the playlist download was not pushed");
+   /* Both finish; a budget of one retires only the task ahead */
+   task_queue_set_budget(0, 1, 0);
+   task_queue_check();
+   CHECK(retro_atomic_load_acquire_int(&playlists_freed) == 1,
+         "the finished download's playlist waits for its retirement");
+   CHECK(!task_push_pl_thumbnail_download("Lane System", &config,
+         "/thumbs"), "a second download of the playlist was pushed");
+   task_queue_set_budget(0, 0, 0);
+   task_queue_check();
+   task_queue_deinit();
+   CHECK(retro_atomic_load_acquire_int(&playlists_freed) == 1,
+         "the playlist was freed %d times",
+         retro_atomic_load_acquire_int(&playlists_freed));
+   if (failures == had)
+      fprintf(stderr, "[pass] finished, unthreaded: its playlist is freed, "
+            "its handle outlives the handler\n");
+}
+
 int main(void)
 {
    task_queue_init(true, NULL);
@@ -317,6 +358,7 @@ int main(void)
    lane_cancel();
    lane_finished();
    task_queue_deinit();
+   lane_finished_unthreaded();
 
    if (failures)
    {
