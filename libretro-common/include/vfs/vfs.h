@@ -187,6 +187,9 @@ struct libretro_vfs_implementation_file
 #endif
 {
    int64_t size;
+   /* where a stdio stream stands, kept here so a write need not ask
+    * stdio to keep size; -1 when not known, and stdio is asked */
+   int64_t stdio_pos;
    uint64_t mappos;
    uint64_t mapsize;
 #if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP)

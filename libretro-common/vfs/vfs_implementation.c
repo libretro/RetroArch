@@ -713,7 +713,18 @@ int64_t retro_vfs_file_seek_internal(
       if (stream->scheme == VFS_SCHEME_NFS)
          return retro_vfs_file_seek_nfs(stream, offset, whence);
 #endif
-      return retro_vfs_fp_seek64(stream->fp, offset, whence);
+      if (retro_vfs_fp_seek64(stream->fp, offset, whence) != 0)
+      {
+         stream->stdio_pos = -1;
+         return -1;
+      }
+      if (whence == SEEK_SET)
+         stream->stdio_pos = offset;
+      else if (whence == SEEK_CUR && stream->stdio_pos >= 0)
+         stream->stdio_pos += offset;
+      else
+         stream->stdio_pos = -1;
+      return 0;
    }
 #ifdef VFS_HAVE_FILE_MAPPING
    /* Need to check stream->mapped because this function is
@@ -2196,7 +2207,9 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       if (stream->scheme == VFS_SCHEME_NFS)
          return retro_vfs_file_tell_nfs(stream);
 #endif
-      return retro_vfs_fp_tell64(stream->fp);
+      if (stream->stdio_pos < 0)
+         stream->stdio_pos = retro_vfs_fp_tell64(stream->fp);
+      return stream->stdio_pos;
    }
 #ifdef VFS_HAVE_FILE_MAPPING
    /* Need to check stream->mapped because this function
@@ -2300,10 +2313,17 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
             size_t _got   = fread(p, 1, _chunk, stream->fp);
             total        += _got;
             if (_got < _chunk)
+            {
+               /* past an error, where it stands is stdio's to say */
+               if (ferror(stream->fp))
+                  stream->stdio_pos = -1;
                break;
+            }
             p            += _got;
             len          -= _got;
          }
+         if (stream->stdio_pos >= 0)
+            stream->stdio_pos += (int64_t)total;
          return (int64_t)total;
       }
    }
@@ -2402,6 +2422,8 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
          return ret;
       }
 #endif
+      /* the position kept, so no tell per write; stdio asked once
+       * where it is not known */
       pos = retro_vfs_file_tell_impl(stream);
       /* Same int-typed stdio callback contract as the read side:
        * chunk so no single fwrite count exceeds what bionic takes. */
@@ -2420,6 +2442,9 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
             len          -= _put;
          }
          ret = (ssize_t)total;
+         /* a short write leaves stdio's position its own to say */
+         stream->stdio_pos = (len != 0 || pos < 0) ? -1
+            : pos + (int64_t)total;
       }
 
       if (ret > 0 && pos + ret > stream->size)
