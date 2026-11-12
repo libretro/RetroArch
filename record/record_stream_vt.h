@@ -4,6 +4,7 @@
 #include "record_gpu_worker_vt.h"
 #include "record_at_audio.h"
 #include "record_audio_queue.h"
+#include "record_at_resample.h"
 #include <net/net_rtmp_client.h>
 #include <formats/video_color.h>
 RETRO_BEGIN_DECLS
@@ -48,6 +49,12 @@ record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *video,
 record_stream_vt_t *record_stream_vt_new_queued(record_gpu_worker_vt_t *video,
       record_at_audio_t *audio, net_rtmp_client_t *client,
       const record_stream_vt_config_t *config, record_audio_queue_t *source);
+/* Borrows a fresh SRC adapter and its source queue; AAC/output clocks stay
+ * in config.audio_rate. No second PCM ring. After abort/free, caller retires
+ * SRC native input borrows before draining or destroying the source queue. */
+record_stream_vt_t *record_stream_vt_new_resampled(record_gpu_worker_vt_t *video,
+      record_at_audio_t *audio, net_rtmp_client_t *client,
+      const record_stream_vt_config_t *config, record_at_resample_t *converter);
 /* One PCM producer; whole batch or BUSY, no allocation or waits.
  * These producer calls refuse a stream borrowing an external queue. */
 int record_stream_vt_audio(record_stream_vt_t *stream,

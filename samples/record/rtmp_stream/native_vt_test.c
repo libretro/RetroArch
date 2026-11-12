@@ -180,7 +180,7 @@ static void fill(CVPixelBufferRef image, unsigned frame, unsigned depth)
 }
 
 static void produce_audio(record_stream_vt_t *stream, record_audio_queue_t *source,
-      int16_t *pcm, unsigned rate, unsigned channels, uint64_t frames,
+      int16_t *pcm, double rate, unsigned channels, uint64_t frames,
       uint64_t *accepted, bool *closed)
 {
    size_t batch;
@@ -224,6 +224,7 @@ int main(int argc, char **argv)
    record_at_audio_t *audio;
    record_stream_vt_t *stream = NULL;
    record_audio_queue_t *source = NULL;
+   record_at_resample_t *resampler = NULL;
    CMVideoFormatDescriptionRef format = NULL;
    CVPixelBufferPoolRef pool;
    sthread_t *resolver = NULL;
@@ -234,6 +235,8 @@ int main(int argc, char **argv)
    uint8_t *random;
    char *pem = NULL;
    const char *ca = getenv("RTMPS_CA");
+   const char *source_rate_text = getenv("VT_STREAM_SOURCE_RATE");
+   double source_rate;
    int64_t pem_size = 0;
    uint64_t accepted = 0, frames, source_frames, prebuffer = 0;
    unsigned leading, trailing, rate, channels, i, count = 0, slot;
@@ -244,6 +247,8 @@ int main(int argc, char **argv)
    rate = (unsigned)atoi(argv[3]);
    channels = (unsigned)atoi(argv[4]);
    assert((rate == 44100 || rate == 48000) && channels && channels <= 2);
+   source_rate = source_rate_text ? strtod(source_rate_text, NULL) : rate;
+   assert(source_rate >= 8000.0 && source_rate <= 192000.0);
    memset(&capture, 0, sizeof(capture));
    memset(&video_config, 0, sizeof(video_config));
    video_config.width = 64; video_config.height = 48; video_config.slots = 2;
@@ -303,10 +308,15 @@ int main(int argc, char **argv)
       capture.staging = (uint8_t*)malloc(CAPACITY);
       pcm = (int16_t*)malloc(1024 * channels * sizeof(*pcm));
       assert(capture.coded && capture.staging && pcm);
-      if (getenv("VT_STREAM_SOURCE_QUEUE"))
+      if (getenv("VT_STREAM_SOURCE_QUEUE") || source_rate != rate)
       {
          source = record_audio_queue_new(channels, 1024, 2048 * channels * 2 + 32);
          assert(source);
+         if (source_rate != rate)
+         {
+            resampler = record_at_resample_new(source, source_rate, rate);
+            assert(resampler);
+         }
       }
       queue = record_gpu_queue_new(2);
       assert(queue);
@@ -318,14 +328,14 @@ int main(int argc, char **argv)
       ops.submit = submit; ops.peek = peek; ops.ack = ack; ops.finish = finish;
       worker = record_gpu_worker_vt_new(queue, &capture, &capture, &ops);
       assert(worker);
-      frames = ((uint64_t)FRAMES * 1001 * rate + 59999) / 60000;
+      frames = (uint64_t)ceil((double)FRAMES * 1001 * source_rate / 60000.0);
       memset(&frame, 0, sizeof(frame));
       deadline = cpu_features_get_time_usec() + 20000000;
       do
       {
          assert(cpu_features_get_time_usec() < deadline);
          if (source)
-            produce_audio(stream, source, pcm, rate, channels, frames, &accepted, &audio_closed);
+            produce_audio(stream, source, pcm, source_rate, channels, frames, &accepted, &audio_closed);
          if (count < FRAMES && record_gpu_queue_acquire(queue, &slot) == RECORD_GPU_QUEUE_OK)
          {
             fill(capture.images[slot], count, video_config.bit_depth);
@@ -361,7 +371,8 @@ int main(int argc, char **argv)
             stream_config.video_epoch_ticks = ((uint64_t)leading * 60000 + rate - 1) / rate;
             stream_config.color.primaries = 1; stream_config.color.transfer = 1;
             stream_config.color.matrix = 1; stream_config.color.range = 1;
-            stream = source ? record_stream_vt_new_queued(worker, audio, client, &stream_config, source)
+            stream = resampler ? record_stream_vt_new_resampled(worker, audio, client, &stream_config, resampler)
+               : source ? record_stream_vt_new_queued(worker, audio, client, &stream_config, source)
                : record_stream_vt_new(worker, audio, client, &stream_config);
             assert(stream);
          }
@@ -374,8 +385,18 @@ int main(int argc, char **argv)
          if (result == RECORD_STREAM_VT_BUSY) wait_network(&wait.network);
       } while (result != RECORD_STREAM_VT_END);
       assert(count == FRAMES && capture.outputs == FRAMES && capture.releases == FRAMES);
-      assert(record_at_audio_timing(audio, &leading, &trailing, &source_frames) && source_frames == frames);
+      assert(record_at_audio_timing(audio, &leading, &trailing, &source_frames));
+      if (resampler)
+      {
+         uint64_t converted_input, converted_output;
+         assert(record_at_resample_timing(resampler, &converted_input, &converted_output));
+         assert(converted_input == frames && converted_output == source_frames);
+         assert(fabs((double)source_frames - frames * rate / source_rate) <= 1.0);
+      }
+      else
+         assert(source_frames == frames);
       assert(record_stream_vt_free(stream));
+      assert(record_at_resample_free(resampler));
       assert(record_audio_queue_free(source));
       assert(record_gpu_worker_vt_free(worker) && record_gpu_queue_free(queue));
       assert(record_at_audio_free(audio));

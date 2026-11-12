@@ -13,6 +13,9 @@ enum record_at_resample_result
  * Input timestamps start at zero and remain contiguous. */
 record_at_resample_t *record_at_resample_new(record_audio_queue_t *source,
       double input_rate, unsigned output_rate);
+/* Immutable output format and caller-owned source, while usable. */
+bool record_at_resample_config(const record_at_resample_t *converter,
+      record_audio_queue_t **source, unsigned *rate, unsigned *channels);
 /* Writes at most 1024 frames directly into a caller-owned AAC input loan.
  * Output must not alias the source queue; it is not retained after return. */
 int record_at_resample_read(record_at_resample_t *converter, int16_t *output,

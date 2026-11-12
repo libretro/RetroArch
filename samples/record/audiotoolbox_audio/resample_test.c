@@ -109,11 +109,13 @@ static void lane(unsigned channels, bool cancel, bool gap)
 {
    record_audio_queue_t *q = record_audio_queue_new(channels, 8, 48);
    record_at_resample_t *e;
+   record_audio_queue_t *configured;
    const int16_t *borrow;
    int16_t input[16], output[16];
    size_t frames, count;
    uint64_t timestamp, accepted, produced;
    unsigned i;
+   unsigned rate, configured_channels;
    int result;
    assert(q);
    for (i = 0; i < 16; i++)
@@ -122,6 +124,8 @@ static void lane(unsigned channels, bool cancel, bool gap)
    assert(record_audio_queue_peek_lend(q, &borrow, &count, &timestamp) == RECORD_AUDIO_OK);
    e = record_at_resample_new(q, 32040.5, 48000);
    assert(e && !record_at_resample_free(e));
+   assert(record_at_resample_config(e, &configured, &rate, &configured_channels));
+   assert(configured == q && rate == 48000 && configured_channels == channels);
    expected = borrow;
    expected_output = output;
    assert(record_at_resample_read(e, output, 1025, &frames) == RECORD_AT_RESAMPLE_ERROR);
@@ -166,6 +170,7 @@ static void lane(unsigned channels, bool cancel, bool gap)
          assert(accepted == 8 && produced == 8);
       }
    }
+   assert(!record_at_resample_config(e, &configured, &rate, &configured_channels));
    assert(record_at_resample_free(e));
    assert(record_audio_queue_finish(q));
    assert(record_audio_queue_free(q));

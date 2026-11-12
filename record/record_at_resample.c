@@ -12,7 +12,7 @@ struct record_at_resample
    record_audio_queue_t *source;
    const int16_t *samples;
    size_t frames, offset;
-   unsigned channels;
+   unsigned channels, rate;
    OSStatus error;
    bool source_end, ended, cancelled;
 };
@@ -120,12 +120,24 @@ record_at_resample_t *record_at_resample_new(record_audio_queue_t *source,
       goto invalid;
    e->source = source;
    e->channels = channels;
+   e->rate = output_rate;
    return e;
 invalid:
    if (e->converter)
       AudioConverterDispose(e->converter);
    free(e);
    return NULL;
+}
+
+bool record_at_resample_config(const record_at_resample_t *e,
+      record_audio_queue_t **source, unsigned *rate, unsigned *channels)
+{
+   if (!e || !source || !rate || !channels || e->error || e->cancelled || e->ended)
+      return false;
+   *source = e->source;
+   *rate = e->rate;
+   *channels = e->channels;
+   return true;
 }
 
 int record_at_resample_read(record_at_resample_t *e, int16_t *output,
@@ -218,6 +230,9 @@ int32_t record_at_resample_error(const record_at_resample_t *e)
    return e ? e->error : -1;
 }
 #else
+bool record_at_resample_config(const record_at_resample_t *e,
+      record_audio_queue_t **q, unsigned *r, unsigned *c)
+{ (void)e; (void)q; (void)r; (void)c; return false; }
 record_at_resample_t *record_at_resample_new(record_audio_queue_t *q, double i, unsigned o)
 { (void)q; (void)i; (void)o; return NULL; }
 int record_at_resample_read(record_at_resample_t *e, int16_t *p, size_t n, size_t *f)

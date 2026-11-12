@@ -80,20 +80,23 @@ def main():
             link += [str(repo / name) for name in (
                 'record/record_stream_vt.c', 'record/record_gpu_worker_vt.c',
                 'record/record_gpu_queue.c', 'record/record_vt_packet.c',
-                'record/record_at_audio.c', 'record/record_audio_queue.c',
+                'record/record_at_audio.c', 'record/record_at_resample.c', 'record/record_audio_queue.c',
                 'libretro-common/queues/retro_spsc.c')]
             for framework in ('CoreMedia', 'CoreVideo', 'VideoToolbox', 'AudioToolbox', 'CoreFoundation'):
                 link += ['-framework', framework]
             command(link, cwd=network, timeout=180)
         evidence['binary_sha256'] = hashlib.sha256(binary.read_bytes()).hexdigest()
         cases = (
-                (0, 8, 48000, 2, None, False), (1, 8, 44100, 1, '1.2', False),
-                (1, 10, 48000, 2, '1.3', False), (0, 8, 48000, 2, None, True))
-        for hevc, depth, rate, channels, tls, queued in cases[:1] if args.first_case else cases:
+                (0, 8, 48000, 2, None, False, None), (1, 8, 44100, 1, '1.2', False, None),
+                (1, 10, 48000, 2, '1.3', False, None), (0, 8, 48000, 2, None, True, None),
+                (0, 8, 48000, 2, None, True, 32040.5), (1, 8, 44100, 1, '1.2', True, 96000))
+        for hevc, depth, rate, channels, tls, queued, source_rate in cases[:1] if args.first_case else cases:
             case = dict(hevc=hevc, depth=depth, rate=rate, channels=channels,
-                        tls=tls, queued=queued, result='running')
+                        tls=tls, queued=queued, source_rate=source_rate, result='running')
             evidence['cases'].append(case)
             directory = root / f'{hevc}-{depth}-{rate}-{channels}-{tls or "tcp"}{"-queued" if queued else ""}'
+            if source_rate:
+                directory = directory.with_name(directory.name + f'-src-{source_rate}')
             directory.mkdir()
             received, coded = directory / 'received.flv', directory / 'native.bin'
             with socket.socket() as reserve:
@@ -110,9 +113,12 @@ def main():
                     relay = stack.enter_context(TlsRelay(directory, port, tls)) if tls else None
                     env = os.environ.copy()
                     env.pop('VT_STREAM_SOURCE_QUEUE', None)
+                    env.pop('VT_STREAM_SOURCE_RATE', None)
                     env.pop('RTMPS_CA', None)
                     if queued:
                         env['VT_STREAM_SOURCE_QUEUE'] = '1'
+                    if source_rate:
+                        env['VT_STREAM_SOURCE_RATE'] = str(source_rate)
                     if relay:
                         url = f'rtmps://localhost:{relay.port}/live/test'
                         env['RTMPS_CA'] = str(relay.ca)

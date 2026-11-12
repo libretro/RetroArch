@@ -21,6 +21,7 @@ struct record_stream_vt
    net_rtmp_client_t *client;
    net_rtmp_session_t *session;
    record_at_audio_t *aac;
+   record_at_resample_t *resampler;
    record_audio_queue_t *source;
    const int16_t *source_data;
    rflv_mux_t *mux;
@@ -44,15 +45,24 @@ static int vt_stream_fail(record_stream_vt_t *p, enum record_stream_vt_error err
 
 static record_stream_vt_t *vt_stream_new(record_gpu_worker_vt_t *worker,
       record_at_audio_t *audio, net_rtmp_client_t *client,
-      const record_stream_vt_config_t *config, record_audio_queue_t *source)
+      const record_stream_vt_config_t *config, record_audio_queue_t *source,
+      record_at_resample_t *resampler)
 {
    record_stream_vt_t *p;
    net_rtmp_client_view_t view;
    rflv_config_t mux;
    const uint8_t *asc;
    unsigned leading, trailing, index;
+   unsigned rate, channels;
    uint64_t frames, epoch;
+   uint64_t input_frames, output_frames;
    bool hevc;
+   if (resampler && (!config || !audio
+            || !record_at_resample_config(resampler, &source, &rate, &channels)
+            || rate != config->audio_rate || channels != config->channels
+            || !record_at_resample_timing(resampler, &input_frames, &output_frames)
+            || input_frames || output_frames))
+      return NULL;
    if (!worker || !client || !config || !config->format || (source && !audio)
          || !config->video_timescale || config->video_timescale > 0x7fffffffU
          || (config->bit_depth != 8 && config->bit_depth != 10)
@@ -63,6 +73,7 @@ static record_stream_vt_t *vt_stream_new(record_gpu_worker_vt_t *worker,
       return NULL;
    p->worker = worker;
    p->aac = audio;
+   p->resampler = resampler;
    p->source = source;
    p->client = client;
    p->session = view.session;
@@ -125,14 +136,21 @@ failed:
 record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *worker,
       record_at_audio_t *audio, net_rtmp_client_t *client, const record_stream_vt_config_t *config)
 {
-   return vt_stream_new(worker, audio, client, config, NULL);
+   return vt_stream_new(worker, audio, client, config, NULL, NULL);
 }
 
 record_stream_vt_t *record_stream_vt_new_queued(record_gpu_worker_vt_t *worker,
       record_at_audio_t *audio, net_rtmp_client_t *client,
       const record_stream_vt_config_t *config, record_audio_queue_t *source)
 {
-   return source ? vt_stream_new(worker, audio, client, config, source) : NULL;
+   return source ? vt_stream_new(worker, audio, client, config, source, NULL) : NULL;
+}
+
+record_stream_vt_t *record_stream_vt_new_resampled(record_gpu_worker_vt_t *worker,
+      record_at_audio_t *audio, net_rtmp_client_t *client,
+      const record_stream_vt_config_t *config, record_at_resample_t *resampler)
+{
+   return resampler ? vt_stream_new(worker, audio, client, config, NULL, resampler) : NULL;
 }
 
 int record_stream_vt_audio(record_stream_vt_t *p, const int16_t *samples, size_t frames)
@@ -185,6 +203,53 @@ static int vt_stream_source(record_stream_vt_t *p, size_t *frames, int *closed)
    return RECORD_STREAM_VT_PROGRESS;
 }
 
+static int vt_stream_convert(record_stream_vt_t *p)
+{
+   size_t frames;
+   int result;
+   if (!p->prepared)
+   {
+      result = record_at_audio_input(p->aac, &p->input, &p->input_frames);
+      if (result == RECORD_AT_AUDIO_BUSY)
+         return RECORD_STREAM_VT_BUSY;
+      if (result != RECORD_AT_AUDIO_PROGRESS || !p->input_frames || p->input_frames > 1024)
+         return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+      result = record_at_resample_read(p->resampler, p->input, p->input_frames, &frames);
+      if ((result != RECORD_AT_RESAMPLE_BUSY && result != RECORD_AT_RESAMPLE_PROGRESS
+               && result != RECORD_AT_RESAMPLE_END) || frames > p->input_frames
+            || (result == RECORD_AT_RESAMPLE_END && frames))
+         return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+      if (!frames)
+      {
+         if (!record_at_audio_input_release(p->aac))
+            return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+         p->input = NULL;
+         if (result == RECORD_AT_RESAMPLE_END)
+         {
+            if (record_at_audio_finish(p->aac) != RECORD_AT_AUDIO_PROGRESS)
+               return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+            p->audio_finishing = true;
+         }
+         return result == RECORD_AT_RESAMPLE_BUSY
+            ? RECORD_STREAM_VT_BUSY : RECORD_STREAM_VT_PROGRESS;
+      }
+      p->staged = frames;
+      p->prepared = true;
+   }
+   if (p->audio_pts > (uint64_t)-1 - p->staged)
+      return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+   result = record_at_audio_submit(p->aac, p->staged, p->audio_pts);
+   if (result == RECORD_AT_AUDIO_BUSY)
+      return RECORD_STREAM_VT_BUSY;
+   if (result != RECORD_AT_AUDIO_PROGRESS)
+      return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+   p->audio_pts += p->staged;
+   p->input = NULL;
+   p->staged = 0;
+   p->prepared = false;
+   return RECORD_STREAM_VT_PROGRESS;
+}
+
 static int vt_stream_audio(record_stream_vt_t *p)
 {
    record_at_audio_packet_t packet;
@@ -216,6 +281,8 @@ static int vt_stream_audio(record_stream_vt_t *p)
       return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
    if (p->audio_finishing)
       return RECORD_STREAM_VT_BUSY;
+   if (p->resampler)
+      return vt_stream_convert(p);
    closed = 0;
    if (!p->prepared)
    {
