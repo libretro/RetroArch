@@ -81,6 +81,10 @@ on:
       - 'libretro-common/include/retro_atomic.h'
   workflow_dispatch:
     inputs:
+      ios_sdk_only:
+        description: 'Audit production VideoToolbox declarations against real iOS SDKs'
+        type: boolean
+        default: false
       native_aac_only:
         description: 'Run native AudioToolbox AAC acceptance without GPU/frontend jobs'
         type: boolean
@@ -93,7 +97,7 @@ permissions:
   contents: read
 jobs:
   stream-native:
-    if: ${{ !inputs.native_aac_only && !inputs.frontend_stream_only }}
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only && !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -152,7 +156,7 @@ jobs:
             ${{ runner.temp }}/vt-metal-dispatch-mrc
           if-no-files-found: ignore
   aac-native:
-    if: ${{ inputs.native_aac_only || !inputs.frontend_stream_only }}
+    if: ${{ !inputs.ios_sdk_only && (inputs.native_aac_only || !inputs.frontend_stream_only) }}
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -184,7 +188,7 @@ jobs:
           path: ${{ runner.temp }}/audiotoolbox-src-evidence
           if-no-files-found: ignore
   encode:
-    if: ${{ !inputs.native_aac_only && !inputs.frontend_stream_only }}
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only && !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -285,7 +289,7 @@ jobs:
           if-no-files-found: warn
 
   frontend-build:
-    if: ${{ !inputs.native_aac_only && !inputs.frontend_stream_only }}
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only && !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 40
     steps:
@@ -322,7 +326,7 @@ jobs:
           if-no-files-found: warn
 
   frontend-stream-build:
-    if: ${{ !inputs.native_aac_only }}
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only }}
     runs-on: macos-latest
     timeout-minutes: 20
     strategy:
@@ -372,9 +376,25 @@ jobs:
           if-no-files-found: ignore
 
   frontend-contracts:
-    if: ${{ !inputs.native_aac_only }}
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Source-clock capture and backpressure under sanitizers
         run: make -C samples/record/metal_frontend check SANITIZER=address,undefined
+
+  ios-sdk:
+    if: ${{ inputs.ios_sdk_only }}
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Compile production VideoToolbox headers for iOS and simulator
+        run: python3 samples/record/videotoolbox_encode/ios_sdk_check.py --output-dir "${{ runner.temp }}/vt-ios-sdk"
+      - name: Save actual SDK diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-ios-sdk
+          path: ${{ runner.temp }}/vt-ios-sdk
+          if-no-files-found: error
