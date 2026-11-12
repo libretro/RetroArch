@@ -7,6 +7,10 @@ name: CI Linux EGL hardware core
 # bound to the window surface the video thread holds, and with it off.
 # Mesa takes the surfaceless path by itself; a preloaded shim hides
 # parts of its EGL so the pbuffer paths run too.
+#
+# Then a core that draws on a thread of its own through
+# RETRO_ENVIRONMENT_GET_HW_SHARED_CONTEXT_INTERFACE, on GLX and on EGL,
+# threaded and not: the colour on screen must be that thread's drawing.
 
 on:
   push:
@@ -21,6 +25,10 @@ on:
       - 'gfx/video_thread_hw.c'
       - 'gfx/video_thread_wrapper.c'
       - 'samples/gfx/egl_hw_core/**'
+      - 'samples/gfx/gl_shared_context/**'
+      - 'gfx/drivers_context/x_ctx.c'
+      - 'runloop.c'
+      - 'libretro-common/include/libretro.h'
       - '.github/workflows/Linux-egl-hw-core.yml'
   pull_request:
     paths:
@@ -32,6 +40,10 @@ on:
       - 'gfx/video_thread_hw.c'
       - 'gfx/video_thread_wrapper.c'
       - 'samples/gfx/egl_hw_core/**'
+      - 'samples/gfx/gl_shared_context/**'
+      - 'gfx/drivers_context/x_ctx.c'
+      - 'runloop.c'
+      - 'libretro-common/include/libretro.h'
       - '.github/workflows/Linux-egl-hw-core.yml'
   workflow_dispatch:
 
@@ -124,6 +136,13 @@ jobs:
           set -eu
           make -C samples/gfx/egl_hw_core
           timeout 600 python3 samples/gfx/egl_hw_core/egl_hw_core_test.py ./retroarch
+
+      - name: Run gl_shared_context_test
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/gfx/gl_shared_context
+          timeout 300 python3 samples/gfx/gl_shared_context/gl_shared_context_test.py ./retroarch
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore

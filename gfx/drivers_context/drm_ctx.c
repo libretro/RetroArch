@@ -1447,6 +1447,28 @@ static bool gfx_ctx_drm_destroy_surface(void *data)
 #endif
 }
 
+#ifdef HAVE_EGL
+/* A context in the share group, of the window's client API */
+static bool gfx_ctx_drm_shared_context_new(void *data,
+      gfx_ctx_shared_context_t *out)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   memset(out, 0, sizeof(*out));
+   if (!drm)
+      return false;
+   switch (drm_api)
+   {
+      case GFX_CTX_OPENGL_API:
+         return egl_shared_context_new(&drm->egl, EGL_OPENGL_API, out);
+      case GFX_CTX_OPENGL_ES_API:
+         return egl_shared_context_new(&drm->egl, EGL_OPENGL_ES_API, out);
+      default:
+         break;
+   }
+   return false;
+}
+#endif
+
 const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
@@ -1484,5 +1506,17 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    NULL,
    NULL,
    gfx_ctx_drm_create_surface,
-   gfx_ctx_drm_destroy_surface
+   gfx_ctx_drm_destroy_surface,
+   NULL, /* presentable */
+   NULL, /* last_present_time */
+   NULL, /* release_current */
+#ifdef HAVE_EGL
+   gfx_ctx_drm_shared_context_new,
+   egl_shared_context_bind,
+   egl_shared_context_free
+#else
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL  /* shared_context_free */
+#endif
 };

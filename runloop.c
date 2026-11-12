@@ -3849,6 +3849,19 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          return false;
       }
 
+      case RETRO_ENVIRONMENT_GET_HW_SHARED_CONTEXT_INTERFACE:
+      {
+         const struct retro_hw_shared_context_interface **iface =
+            (const struct retro_hw_shared_context_interface **)data;
+         const struct retro_hw_shared_context_interface *got =
+            video_driver_hw_shared_context_interface();
+         if (!got)
+            return false;
+         if (iface)
+            *iface = got;
+         return true;
+      }
+
       case RETRO_ENVIRONMENT_GET_HW_RENDER_UPSCALER_INTERFACE:
       {
 #ifdef HAVE_TEMPORAL_UPSCALER

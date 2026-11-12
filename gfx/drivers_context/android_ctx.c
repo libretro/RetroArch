@@ -432,6 +432,19 @@ static bool android_gfx_ctx_destroy_surface(void *data)
 #endif
 }
 
+#ifdef HAVE_EGL
+/* A context in the share group, of the window's client API: OpenGL ES */
+static bool android_gfx_ctx_shared_context_new(void *data,
+      gfx_ctx_shared_context_t *out)
+{
+   android_ctx_data_t *and = (android_ctx_data_t*)data;
+   memset(out, 0, sizeof(*out));
+   if (!and || android_api != GFX_CTX_OPENGL_ES_API)
+      return false;
+   return egl_shared_context_new(&and->egl, EGL_OPENGL_ES_API, out);
+}
+#endif
+
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
@@ -473,9 +486,15 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* presentable */
    NULL, /* last_present_time */
    android_gfx_ctx_release_current,
+#ifdef HAVE_EGL
+   android_gfx_ctx_shared_context_new,
+   egl_shared_context_bind,
+   egl_shared_context_free,
+#else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
    NULL, /* shared_context_free */
+#endif
 #ifdef HAVE_EGL
    &android_gfx_ctx_windows
 #else

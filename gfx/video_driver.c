@@ -5102,6 +5102,87 @@ bool video_driver_hw_render_interface_kept(void)
    return iface == video_hw_render_iface_held;
 }
 
+/* RETRO_ENVIRONMENT_GET_HW_SHARED_CONTEXT_INTERFACE: the context driver's
+ * contexts in the window context's share group, which the core's context
+ * is in too, handed to the core for threads of its own. Made at most a few
+ * times a session (one per thread of the core's), so each its own block. */
+struct retro_hw_shared_context
+{
+   gfx_ctx_shared_context_t shared;
+};
+
+static struct retro_hw_shared_context *RETRO_CALLCONV
+      video_hw_shared_context_create(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
+   struct retro_hw_shared_context *out;
+
+   if (     !ctx->shared_context_new
+         || !video_st->context_data
+         || !(out = (struct retro_hw_shared_context*)calloc(1, sizeof(*out))))
+      return NULL;
+   if (!ctx->shared_context_new((void*)video_st->context_data, &out->shared))
+   {
+      free(out);
+      return NULL;
+   }
+   return out;
+}
+
+static bool RETRO_CALLCONV video_hw_shared_context_make_current(
+      struct retro_hw_shared_context *ctx, bool current)
+{
+   const gfx_ctx_driver_t *drv = &video_driver_st.current_video_context;
+   if (!ctx || !drv->shared_context_bind)
+      return false;
+   return drv->shared_context_bind(&ctx->shared, current);
+}
+
+static void RETRO_CALLCONV video_hw_shared_context_destroy(
+      struct retro_hw_shared_context *ctx)
+{
+   const gfx_ctx_driver_t *drv = &video_driver_st.current_video_context;
+   if (!ctx)
+      return;
+   if (drv->shared_context_free)
+      drv->shared_context_free(&ctx->shared);
+   free(ctx);
+}
+
+static const struct retro_hw_shared_context_interface
+      video_hw_shared_context_iface = {
+   RETRO_HW_SHARED_CONTEXT_INTERFACE_VERSION,
+   video_hw_shared_context_create,
+   video_hw_shared_context_make_current,
+   video_hw_shared_context_destroy
+};
+
+const struct retro_hw_shared_context_interface
+      *video_driver_hw_shared_context_interface(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
+
+   switch (video_st->hw_render.context_type)
+   {
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         break;
+      default:
+         return NULL;
+   }
+   if (     !video_st->context_data
+         || !ctx->shared_context_new
+         || !ctx->shared_context_bind
+         || !ctx->shared_context_free)
+      return NULL;
+   return &video_hw_shared_context_iface;
+}
+
 bool video_driver_hw_context_moved(int before, bool shared)
 {
    return before != -1 && before != (shared ? 1 : 0);

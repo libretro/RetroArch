@@ -3618,6 +3618,65 @@ struct retro_hw_render_upscaler_interface
    void (*set_inputs)(void *handle, const struct retro_hw_upscaler_inputs *inputs);
 };
 
+/**
+ * Gets an interface with which an OpenGL or OpenGL ES hardware core makes
+ * contexts for threads of its own: each is in the share group of the
+ * core's context (RETRO_ENVIRONMENT_SET_HW_RENDER), of the same API,
+ * version and profile, so textures, buffers, shaders, programs and syncs
+ * made on one are seen on the others; framebuffers and vertex arrays are
+ * not shared, as in OpenGL. A core renders on another thread this way -
+ * into a texture of its own, with a fence the core's context waits on
+ * before using it in retro_run - and compiles shaders on threads of its
+ * own, with nothing of the window system in the core.
+ *
+ * Call it from context_reset or later; the interface is valid until
+ * context_destroy, before which the core destroys every context it
+ * made. Returns false when the frontend cannot make such contexts for
+ * the video driver it runs; a core then keeps its OpenGL work on the
+ * thread that calls retro_run, as it always could.
+ *
+ * @param[out] data <tt>const struct retro_hw_shared_context_interface **</tt>.
+ * @see retro_hw_shared_context_interface
+ */
+#define RETRO_ENVIRONMENT_GET_HW_SHARED_CONTEXT_INTERFACE (104 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+#define RETRO_HW_SHARED_CONTEXT_INTERFACE_VERSION 1
+
+/** A context made with retro_hw_shared_context_interface; opaque. */
+struct retro_hw_shared_context;
+
+struct retro_hw_shared_context_interface
+{
+   /** RETRO_HW_SHARED_CONTEXT_INTERFACE_VERSION. */
+   unsigned interface_version;
+
+   /**
+    * A new context, current on no thread; NULL when one cannot be made.
+    * Call it on the thread that calls retro_run, in context_reset or
+    * retro_run. Each costs the driver a context: make them up front,
+    * one for each thread, not one per piece of work.
+    */
+   struct retro_hw_shared_context *(RETRO_CALLCONV *create)(void);
+
+   /**
+    * Makes @ctx current on the calling thread (@current true), or no
+    * context of these at all (false), and returns whether it could. A
+    * context is current on one thread at a time. It has no framebuffer
+    * of the window's: framebuffer 0 is not to be drawn to or read, and
+    * it draws into framebuffers of its own. Functions are looked up with
+    * the hardware render callback's get_proc_address, with this context
+    * current or the core's.
+    */
+   bool (RETRO_CALLCONV *make_current)(struct retro_hw_shared_context *ctx,
+         bool current);
+
+   /**
+    * Destroys @ctx, which is current on no thread. Call it on the thread
+    * that calls retro_run, in retro_run or context_destroy.
+    */
+   void (RETRO_CALLCONV *destroy)(struct retro_hw_shared_context *ctx);
+};
+
 /* Speaker positions, as bits of a layout mask; a frame's channels are
  * interleaved in ascending bit order. The bits are those of the
  * WAVEFORMATEXTENSIBLE channel mask. */

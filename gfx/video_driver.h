@@ -829,7 +829,8 @@ enum gfx_ctx_shared_kind
 {
    GFX_CTX_SHARED_NONE = 0,
    GFX_CTX_SHARED_EGL,
-   GFX_CTX_SHARED_GLX
+   GFX_CTX_SHARED_GLX,
+   GFX_CTX_SHARED_WGL
 };
 
 /* A second context in the window context's share group, for a thread
@@ -841,7 +842,7 @@ typedef struct gfx_ctx_shared_context
    enum gfx_ctx_shared_kind kind;
    void *display;          /* EGLDisplay, or the X Display */
    void *config;           /* EGLConfig, or GLXFBConfig */
-   void *context;          /* EGLContext, or GLXContext */
+   void *context;          /* EGLContext, GLXContext or HGLRC */
    void *surface;          /* EGL: its own pbuffer, NULL surfaceless */
    unsigned long drawable; /* GLX: its own pbuffer */
    unsigned visual_id;     /* GLX: the config's visual */
@@ -1011,10 +1012,12 @@ typedef struct gfx_ctx_driver
    void (*release_current)(void *data);
 
    /* Optional, desktop GL: a context in the window context's share
-    * group (gfx_ctx_shared_context_t). New and free run on the video
-    * thread with the window's context current, and leave it so; bind
-    * and unbind run on the thread that uses the context, which never
-    * gets the window's surface. NULL where the driver has none. Placed
+    * group (gfx_ctx_shared_context_t). New and free run on a thread
+    * with a context of the group current - the video thread with the
+    * window's, or a hardware core's thread with the core's
+    * (RETRO_ENVIRONMENT_GET_HW_SHARED_CONTEXT_INTERFACE) - and leave it
+    * so; bind and unbind run on the thread that uses the context, which
+    * never gets the window's surface. NULL where the driver has none. Placed
     * last, as above. */
    bool (*shared_context_new)(void *data, gfx_ctx_shared_context_t *out);
    bool (*shared_context_bind)(gfx_ctx_shared_context_t *ctx, bool bind);
@@ -2827,6 +2830,12 @@ void video_driver_cache_context_ack_set(void);
  * restart - and the core has to be reset after all. True for a core
  * that holds none. */
 void video_driver_hw_render_interface_note(const struct retro_hw_render_interface *iface);
+
+/* RETRO_ENVIRONMENT_GET_HW_SHARED_CONTEXT_INTERFACE's answer: NULL when the
+ * core's context is not OpenGL or the context driver cannot make contexts
+ * in its share group. */
+const struct retro_hw_shared_context_interface
+      *video_driver_hw_shared_context_interface(void);
 bool video_driver_hw_render_interface_kept(void);
 /* Which of a GL driver's contexts a hardware core renders in: its own,
  * shared with the driver's (@shared), or the driver's. Called by the
