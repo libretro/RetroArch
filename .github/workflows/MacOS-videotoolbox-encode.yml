@@ -107,6 +107,25 @@ jobs:
           name: vt-stream-evidence
           path: ${{ runner.temp }}/vt-stream-evidence
           if-no-files-found: ignore
+      - name: Native Metal factory RTMP and TLS with ARC
+        if: ${{ !cancelled() }}
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-metal-stream-arc
+        run: python3 samples/record/rtmp_stream/native_vt_run.py --metal --ownership arc
+      - name: Native Metal factory RTMP and TLS with manual reference counting
+        if: ${{ !cancelled() }}
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-metal-stream-mrc
+        run: python3 samples/record/rtmp_stream/native_vt_run.py --metal --ownership mrc
+      - name: Save native Metal streaming acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-metal-stream-evidence
+          path: |
+            ${{ runner.temp }}/vt-metal-stream-arc
+            ${{ runner.temp }}/vt-metal-stream-mrc
+          if-no-files-found: ignore
   aac-native:
     runs-on: macos-latest
     timeout-minutes: 10
