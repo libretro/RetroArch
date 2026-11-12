@@ -6,6 +6,7 @@
 #include <retro_spsc.h>
 #include <retro_atomic.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum vt_stream_producer
 {
@@ -20,10 +21,13 @@ struct record_stream_vt
    net_rtmp_client_t *client;
    net_rtmp_session_t *session;
    record_at_audio_t *aac;
+   record_audio_queue_t *source;
+   const int16_t *source_data;
    rflv_mux_t *mux;
    record_vt_packet_t *view;
    int16_t *input;
    size_t input_frames, staged, frame_bytes, fifo_bytes;
+   size_t source_frames, source_at;
    retro_atomic_int_t audio_closed, failed;
    enum vt_stream_producer producer;
    unsigned audio_epoch;
@@ -38,8 +42,9 @@ static int vt_stream_fail(record_stream_vt_t *p, enum record_stream_vt_error err
    return RECORD_STREAM_VT_ERROR;
 }
 
-record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *worker,
-      record_at_audio_t *audio, net_rtmp_client_t *client, const record_stream_vt_config_t *config)
+static record_stream_vt_t *vt_stream_new(record_gpu_worker_vt_t *worker,
+      record_at_audio_t *audio, net_rtmp_client_t *client,
+      const record_stream_vt_config_t *config, record_audio_queue_t *source)
 {
    record_stream_vt_t *p;
    net_rtmp_client_view_t view;
@@ -48,7 +53,7 @@ record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *worker,
    unsigned leading, trailing, index;
    uint64_t frames, epoch;
    bool hevc;
-   if (!worker || !client || !config || !config->format
+   if (!worker || !client || !config || !config->format || (source && !audio)
          || !config->video_timescale || config->video_timescale > 0x7fffffffU
          || (config->bit_depth != 8 && config->bit_depth != 10)
          || net_rtmp_client_step(client, 0, &view) != NET_RTMP_CLIENT_READY || !view.session)
@@ -58,6 +63,7 @@ record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *worker,
       return NULL;
    p->worker = worker;
    p->aac = audio;
+   p->source = source;
    p->client = client;
    p->session = view.session;
    p->video_epoch = config->video_epoch_ticks;
@@ -77,7 +83,9 @@ record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *worker,
    {
       if ((config->audio_rate != 44100 && config->audio_rate != 48000)
             || !config->channels || config->channels > 2
-            || config->audio_fifo_frames < 1024 || config->audio_fifo_frames > config->audio_rate * 2u
+            || (source ? config->audio_fifo_frames
+               || record_audio_queue_channels(source) != config->channels
+               : config->audio_fifo_frames < 1024 || config->audio_fifo_frames > config->audio_rate * 2u)
             || !record_at_audio_config(audio, &mux.asc, &mux.asc_size) || mux.asc_size != 2
             || !record_at_audio_timing(audio, &leading, &trailing, &frames)
             || frames || config->audio_epoch_frames < leading)
@@ -93,7 +101,7 @@ record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *worker,
       mux.audio_timescale = config->audio_rate;
       p->frame_bytes = config->channels * sizeof(int16_t);
       p->fifo_bytes = config->audio_fifo_frames * p->frame_bytes;
-      if (!retro_spsc_init(&p->audio, p->fifo_bytes))
+      if (!source && !retro_spsc_init(&p->audio, p->fifo_bytes))
          goto failed;
    }
    else
@@ -114,10 +122,23 @@ failed:
    return NULL;
 }
 
+record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *worker,
+      record_at_audio_t *audio, net_rtmp_client_t *client, const record_stream_vt_config_t *config)
+{
+   return vt_stream_new(worker, audio, client, config, NULL);
+}
+
+record_stream_vt_t *record_stream_vt_new_queued(record_gpu_worker_vt_t *worker,
+      record_at_audio_t *audio, net_rtmp_client_t *client,
+      const record_stream_vt_config_t *config, record_audio_queue_t *source)
+{
+   return source ? vt_stream_new(worker, audio, client, config, source) : NULL;
+}
+
 int record_stream_vt_audio(record_stream_vt_t *p, const int16_t *samples, size_t frames)
 {
    size_t bytes, used;
-   if (!p || !p->aac || !samples || !frames
+   if (!p || !p->aac || p->source || !samples || !frames
          || frames > p->fifo_bytes / p->frame_bytes
          || retro_atomic_load_acquire_int(&p->audio_closed)
          || retro_atomic_load_acquire_int(&p->failed))
@@ -132,10 +153,36 @@ int record_stream_vt_audio(record_stream_vt_t *p, const int16_t *samples, size_t
 
 bool record_stream_vt_audio_finish(record_stream_vt_t *p)
 {
-   if (!p)
+   if (!p || p->source)
       return false;
    retro_atomic_store_release_int(&p->audio_closed, 1);
    return true;
+}
+
+static int vt_stream_source(record_stream_vt_t *p, size_t *frames, int *closed)
+{
+   uint64_t timestamp;
+   int result;
+   *frames = 0;
+   *closed = 0;
+   if (!p->source_data)
+   {
+      result = record_audio_queue_peek_lend(p->source, &p->source_data,
+            &p->source_frames, &timestamp);
+      if (result == RECORD_AUDIO_END)
+         *closed = 1;
+      else if (result == RECORD_AUDIO_ERROR)
+         return RECORD_STREAM_VT_ERROR;
+      else if (result == RECORD_AUDIO_OK)
+      {
+         p->source_at = 0;
+         if (p->audio_pts > (uint64_t)-1 - p->staged || timestamp != p->audio_pts + p->staged)
+            return RECORD_STREAM_VT_ERROR;
+      }
+   }
+   if (p->source_data)
+      *frames = p->source_frames - p->source_at;
+   return RECORD_STREAM_VT_PROGRESS;
 }
 
 static int vt_stream_audio(record_stream_vt_t *p)
@@ -169,10 +216,19 @@ static int vt_stream_audio(record_stream_vt_t *p)
       return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
    if (p->audio_finishing)
       return RECORD_STREAM_VT_BUSY;
-   closed = retro_atomic_load_acquire_int(&p->audio_closed);
+   closed = 0;
    if (!p->prepared)
    {
-      frames = retro_spsc_read_avail(&p->audio) / p->frame_bytes;
+      if (p->source)
+      {
+         if (vt_stream_source(p, &frames, &closed) == RECORD_STREAM_VT_ERROR)
+            return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+      }
+      else
+      {
+         closed = retro_atomic_load_acquire_int(&p->audio_closed);
+         frames = retro_spsc_read_avail(&p->audio) / p->frame_bytes;
+      }
       if (!p->input && !frames)
       {
          if (!closed)
@@ -193,9 +249,24 @@ static int vt_stream_audio(record_stream_vt_t *p)
       if (frames > p->input_frames - p->staged)
          frames = p->input_frames - p->staged;
       bytes = frames * p->frame_bytes;
-      if (bytes && retro_spsc_read(&p->audio,
-               (uint8_t*)p->input + p->staged * p->frame_bytes, bytes) != bytes)
-         return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+      if (bytes)
+      {
+         if (p->source)
+         {
+            memcpy((uint8_t*)p->input + p->staged * p->frame_bytes,
+                  (const uint8_t*)p->source_data + p->source_at * p->frame_bytes, bytes);
+            p->source_at += frames;
+            if (p->source_at == p->source_frames)
+            {
+               if (!record_audio_queue_ack(p->source))
+                  return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+               p->source_data = NULL;
+            }
+         }
+         else if (retro_spsc_read(&p->audio,
+                  (uint8_t*)p->input + p->staged * p->frame_bytes, bytes) != bytes)
+            return vt_stream_fail(p, RECORD_STREAM_VT_ERROR_AUDIO);
+      }
       p->staged += frames;
       if (p->staged < p->input_frames && !closed)
          return frames ? RECORD_STREAM_VT_PROGRESS : RECORD_STREAM_VT_BUSY;
@@ -265,6 +336,15 @@ static int vt_stream_cancel(record_stream_vt_t *p, record_stream_vt_wait_t *wait
    }
    p->input = NULL;
    p->prepared = false;
+   if (p->source_data)
+   {
+      if (!record_audio_queue_ack(p->source))
+      {
+         wait->encoder_retry = true;
+         return RECORD_STREAM_VT_BUSY;
+      }
+      p->source_data = NULL;
+   }
    p->retired = true;
    return RECORD_STREAM_VT_ERROR;
 }
@@ -400,7 +480,8 @@ bool record_stream_vt_free(record_stream_vt_t *p)
 {
    if (!p)
       return true;
-   if (!retro_atomic_load_acquire_int(&p->audio_closed) || p->sending || p->input
+   if ((!p->source && !retro_atomic_load_acquire_int(&p->audio_closed))
+         || p->sending || p->input || p->source_data
          || p->producer != VT_STREAM_NONE
          || (retro_atomic_load_acquire_int(&p->failed) && !p->retired)
          || (!p->ended && !retro_atomic_load_acquire_int(&p->failed)))

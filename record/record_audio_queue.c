@@ -30,6 +30,10 @@ record_audio_queue_t *record_audio_queue_new(unsigned channels,
    { free(q->staging); free(q); return NULL; }
    retro_atomic_int_init(&q->closed,0); return q;
 }
+unsigned record_audio_queue_channels(const record_audio_queue_t *q)
+{
+   return q?(unsigned)(q->frame_bytes/sizeof(int16_t)):0;
+}
 int record_audio_queue_push(record_audio_queue_t *q,const int16_t *samples,
       size_t frames,uint64_t timestamp)
 {

@@ -3,6 +3,7 @@
 #define RECORD_STREAM_VT_H
 #include "record_gpu_worker_vt.h"
 #include "record_at_audio.h"
+#include "record_audio_queue.h"
 #include <net/net_rtmp_client.h>
 #include <formats/video_color.h>
 RETRO_BEGIN_DECLS
@@ -39,7 +40,16 @@ enum record_stream_vt_error
 record_stream_vt_t *record_stream_vt_new(record_gpu_worker_vt_t *video,
       record_at_audio_t *audio, net_rtmp_client_t *client,
       const record_stream_vt_config_t *config);
-/* One PCM producer; whole batch or BUSY, no allocation or waits. */
+/* Borrows a matching S16 source queue until free, without a second PCM ring.
+ * Source packets may precede construction; timestamps must be contiguous
+ * from zero. Set audio_fifo_frames to zero. The source producer uses queue
+ * push/finish directly; this consumer alone peeks/acks until retirement.
+ * Caller owns source closure, drain and destruction after consumer free. */
+record_stream_vt_t *record_stream_vt_new_queued(record_gpu_worker_vt_t *video,
+      record_at_audio_t *audio, net_rtmp_client_t *client,
+      const record_stream_vt_config_t *config, record_audio_queue_t *source);
+/* One PCM producer; whole batch or BUSY, no allocation or waits.
+ * These producer calls refuse a stream borrowing an external queue. */
 int record_stream_vt_audio(record_stream_vt_t *stream,
       const int16_t *samples, size_t frames);
 bool record_stream_vt_audio_finish(record_stream_vt_t *stream);

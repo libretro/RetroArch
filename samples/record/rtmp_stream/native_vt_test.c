@@ -179,6 +179,33 @@ static void fill(CVPixelBufferRef image, unsigned frame, unsigned depth)
    assert(!CVPixelBufferFillExtendedPixels(image));
 }
 
+static void produce_audio(record_stream_vt_t *stream, record_audio_queue_t *source,
+      int16_t *pcm, unsigned rate, unsigned channels, uint64_t frames,
+      uint64_t *accepted, bool *closed)
+{
+   size_t batch;
+   unsigned i;
+   int result;
+   if (*accepted < frames)
+   {
+      batch = (size_t)(frames - *accepted);
+      if (batch > 1024) batch = 1024;
+      for (i = 0; i < batch * channels; i++)
+         pcm[i] = (int16_t)(sin((*accepted + i / channels) * 6.283185307179586
+                  * (i % channels ? 1499 : 997) / rate) * 12000);
+      result = source ? record_audio_queue_push(source, pcm, batch, *accepted)
+         : record_stream_vt_audio(stream, pcm, batch);
+      assert(result >= 0);
+      if (source ? result == RECORD_AUDIO_OK : result == RECORD_STREAM_VT_PROGRESS)
+         *accepted += batch;
+   }
+   if (*accepted == frames && !*closed)
+   {
+      assert(source ? record_audio_queue_finish(source) : record_stream_vt_audio_finish(stream));
+      *closed = true;
+   }
+}
+
 int main(int argc, char **argv)
 {
    native_capture_t capture;
@@ -196,6 +223,7 @@ int main(int argc, char **argv)
    record_gpu_worker_vt_t *worker;
    record_at_audio_t *audio;
    record_stream_vt_t *stream = NULL;
+   record_audio_queue_t *source = NULL;
    CMVideoFormatDescriptionRef format = NULL;
    CVPixelBufferPoolRef pool;
    sthread_t *resolver = NULL;
@@ -207,7 +235,7 @@ int main(int argc, char **argv)
    char *pem = NULL;
    const char *ca = getenv("RTMPS_CA");
    int64_t pem_size = 0;
-   uint64_t accepted = 0, frames, source_frames;
+   uint64_t accepted = 0, frames, source_frames, prebuffer = 0;
    unsigned leading, trailing, rate, channels, i, count = 0, slot;
    OSStatus status;
    int result;
@@ -275,6 +303,11 @@ int main(int argc, char **argv)
       capture.staging = (uint8_t*)malloc(CAPACITY);
       pcm = (int16_t*)malloc(1024 * channels * sizeof(*pcm));
       assert(capture.coded && capture.staging && pcm);
+      if (getenv("VT_STREAM_SOURCE_QUEUE"))
+      {
+         source = record_audio_queue_new(channels, 1024, 2048 * channels * 2 + 32);
+         assert(source);
+      }
       queue = record_gpu_queue_new(2);
       assert(queue);
       pool = VTCompressionSessionGetPixelBufferPool(capture.encoder->session);
@@ -291,6 +324,8 @@ int main(int argc, char **argv)
       do
       {
          assert(cpu_features_get_time_usec() < deadline);
+         if (source)
+            produce_audio(stream, source, pcm, rate, channels, frames, &accepted, &audio_closed);
          if (count < FRAMES && record_gpu_queue_acquire(queue, &slot) == RECORD_GPU_QUEUE_OK)
          {
             fill(capture.images[slot], count, video_config.bit_depth);
@@ -307,7 +342,12 @@ int main(int argc, char **argv)
          {
             result = record_gpu_worker_vt_step(worker, &sample);
             assert(result >= 0 && result != RECORD_GPU_VT_END);
-            if (result != RECORD_GPU_VT_PACKET) continue;
+            if (result != RECORD_GPU_VT_PACKET)
+            {
+               retro_sleep(1);
+               continue;
+            }
+            prebuffer = accepted;
             format = (CMVideoFormatDescriptionRef)CFRetain(
                   CMSampleBufferGetFormatDescription((CMSampleBufferRef)sample));
             memset(&stream_config, 0, sizeof(stream_config));
@@ -316,29 +356,17 @@ int main(int argc, char **argv)
             stream_config.video_timescale = 60000;
             stream_config.bit_depth = video_config.bit_depth;
             stream_config.audio_rate = rate; stream_config.channels = channels;
-            stream_config.audio_fifo_frames = 2048; stream_config.audio_epoch_frames = leading;
+            stream_config.audio_fifo_frames = source ? 0 : 2048;
+            stream_config.audio_epoch_frames = leading;
             stream_config.video_epoch_ticks = ((uint64_t)leading * 60000 + rate - 1) / rate;
             stream_config.color.primaries = 1; stream_config.color.transfer = 1;
             stream_config.color.matrix = 1; stream_config.color.range = 1;
-            stream = record_stream_vt_new(worker, audio, client, &stream_config);
+            stream = source ? record_stream_vt_new_queued(worker, audio, client, &stream_config, source)
+               : record_stream_vt_new(worker, audio, client, &stream_config);
             assert(stream);
          }
-         if (accepted < frames)
-         {
-            size_t batch = (size_t)(frames - accepted);
-            if (batch > 1024) batch = 1024;
-            for (i = 0; i < batch * channels; i++)
-               pcm[i] = (int16_t)(sin((accepted + i / channels) * 6.283185307179586
-                        * (i % channels ? 1499 : 997) / rate) * 12000);
-            result = record_stream_vt_audio(stream, pcm, batch);
-            assert(result >= 0);
-            if (result == RECORD_STREAM_VT_PROGRESS) accepted += batch;
-         }
-         if (accepted == frames && !audio_closed)
-         {
-            assert(record_stream_vt_audio_finish(stream));
-            audio_closed = true;
-         }
+         if (!source)
+            produce_audio(stream, NULL, pcm, rate, channels, frames, &accepted, &audio_closed);
          result = record_stream_vt_step(stream, 0, &wait);
          if (result == RECORD_STREAM_VT_ERROR)
             fprintf(stderr, "Native stream failure: %d\n", (int)record_stream_vt_error(stream));
@@ -348,6 +376,7 @@ int main(int argc, char **argv)
       assert(count == FRAMES && capture.outputs == FRAMES && capture.releases == FRAMES);
       assert(record_at_audio_timing(audio, &leading, &trailing, &source_frames) && source_frames == frames);
       assert(record_stream_vt_free(stream));
+      assert(record_audio_queue_free(source));
       assert(record_gpu_worker_vt_free(worker) && record_gpu_queue_free(queue));
       assert(record_at_audio_free(audio));
       assert(videotoolbox_encode_free(capture.encoder));
@@ -358,8 +387,8 @@ int main(int argc, char **argv)
    CFRelease(format);
    assert(!fclose(capture.coded));
    free(capture.staging); free(pcm);
-   printf("PASS frames=%u audio=%lu leading=%u trailing=%u\n", FRAMES,
-         (unsigned long)source_frames, leading, trailing);
+   printf("PASS frames=%u audio=%lu leading=%u trailing=%u prebuffer=%lu\n", FRAMES,
+         (unsigned long)source_frames, leading, trailing, (unsigned long)prebuffer);
    return 0;
 }
 #endif

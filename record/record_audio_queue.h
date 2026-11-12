@@ -14,6 +14,8 @@ enum record_audio_queue_result
  * hard byte budget including per-packet headers, not a rounded ring limit. */
 record_audio_queue_t *record_audio_queue_new(unsigned channels,
       size_t max_frames,size_t capacity_bytes);
+/* Immutable format; zero for NULL. */
+unsigned record_audio_queue_channels(const record_audio_queue_t *queue);
 /* Producer: no allocation/wait. BUSY copies nothing and advances no clock.
  * Input is borrowed for this call only. Nonoverlapping monotonic timestamps
  * and complete packets are required; no silent trimming or replacement. */

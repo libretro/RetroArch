@@ -26,7 +26,7 @@ clean:
 	rm -f contract_test contract_test.exe wrapper_test wrapper_test.exe
 .PHONY: all check clean
 
-VT_SOURCES := $(RA)/record/record_stream_vt.c $(LRC)/queues/retro_spsc.c $(LRC)/formats/flv/rflv_mux.c $(SESSION)
+VT_SOURCES := $(RA)/record/record_stream_vt.c $(RA)/record/record_audio_queue.c $(LRC)/queues/retro_spsc.c $(LRC)/formats/flv/rflv_mux.c $(SESSION)
 vt_contract_test$(EXE): vt_contract_test.c $(VT_SOURCES) $(RA)/record/record_stream_vt.h
 	$(CC) $(CFLAGS) -o $@ vt_contract_test.c $(VT_SOURCES) $(LDFLAGS)
 vt-check: vt_contract_test$(EXE)
