@@ -326,8 +326,7 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len,
    char *disc_data = (char*)malloc(DISC_DATA_SIZE_PS1);
    if (!disc_data)
       return 0;
-   if (intfstream_seek(fd, 0, SEEK_SET) >= 0)
-      got = intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS1);
+   got = intfstream_read_at(fd, disc_data, DISC_DATA_SIZE_PS1, 0);
    if (got <= 0)
    {
       free(disc_data);
@@ -424,18 +423,11 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len,
    char *disc_data;
 
    /* Load data into buffer and use pointers */
-   if (intfstream_seek(fd, 0, SEEK_SET) < 0)
-      return 0;
-
    disc_data = (char*)malloc(DISC_DATA_SIZE_PS2);
-   /* NULL-check: intfstream_read writes into disc_data via
-    * filestream_read (which calls fread with no NULL-guard on the
-    * dest).  Matches the NULL-checked pattern in the PS1 / PSP
-    * variants above/below. */
    if (!disc_data)
       return 0;
 
-   if (intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS2) <= 0)
+   if (intfstream_read_at(fd, disc_data, DISC_DATA_SIZE_PS2, 0) <= 0)
    {
       free(disc_data);
       return 0;
@@ -557,13 +549,7 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len,
    if (!disc_data)
       return 0;
 
-   if (intfstream_seek(fd, 0, SEEK_SET) < 0)
-   {
-      free(disc_data);
-      return 0;
-   }
-
-   bytes_read = intfstream_read(fd, disc_data, DISC_DATA_SIZE_PSP);
+   bytes_read = intfstream_read_at(fd, disc_data, DISC_DATA_SIZE_PSP, 0);
    if (bytes_read <= 0)
    {
       free(disc_data);
@@ -670,9 +656,7 @@ int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
    char raw_id[16];
    int      found     = 0;
 
-   if (intfstream_seek(fd, 0, SEEK_SET) < 0)
-      return 0;
-   if (intfstream_read(fd, pbp_header, sizeof(pbp_header))
+   if (intfstream_read_at(fd, pbp_header, sizeof(pbp_header), 0)
          != (int64_t)sizeof(pbp_header))
       return 0;
 
@@ -688,15 +672,11 @@ int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
    if (sfo_size < 0x14 || sfo_size > PBP_SFO_MAX)
       return 0;
 
-   if (intfstream_seek(fd, (int64_t)sfo_off, SEEK_SET) < 0)
-      return 0;
-
    sfo = (uint8_t*)malloc(sfo_size);
-   /* NULL-check: intfstream_read writes into sfo via filestream_read
-    * (fread, no NULL-guard on the dest). */
    if (!sfo)
       return 0;
-   if (intfstream_read(fd, sfo, sfo_size) != (int64_t)sfo_size)
+   if (intfstream_read_at(fd, sfo, sfo_size, (int64_t)sfo_off)
+         != (int64_t)sfo_size)
    {
       free(sfo);
       return 0;
@@ -788,8 +768,7 @@ int detect_3ds_game(intfstream_t *fd, char *s, size_t len)
    uint8_t hdr[0x200];
    size_t  i;
 
-   if (   intfstream_seek(fd, 0, SEEK_SET) < 0
-       || intfstream_read(fd, hdr, sizeof(hdr)) != (int64_t)sizeof(hdr))
+   if (intfstream_read_at(fd, hdr, sizeof(hdr), 0) != (int64_t)sizeof(hdr))
       return 0;
 
    if (memcmp(hdr + 0x100, "NCSD", 4) == 0)
@@ -800,8 +779,8 @@ int detect_3ds_game(intfstream_t *fd, char *s, size_t len)
          return 0;
       ncch = (uint64_t)pbp_read_u32(hdr + 0x120) << (9 + hdr[0x18E]);
       if (   !ncch
-          || intfstream_seek(fd, (int64_t)ncch, SEEK_SET) < 0
-          || intfstream_read(fd, hdr, sizeof(hdr)) != (int64_t)sizeof(hdr))
+          || intfstream_read_at(fd, hdr, sizeof(hdr), (int64_t)ncch)
+             != (int64_t)sizeof(hdr))
          return 0;
    }
 
@@ -828,19 +807,14 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    size_t _len = 0;
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, 0, SEEK_SET) < 0)
-      return 0;
-
-   if (intfstream_read(fd, raw_game_id, 4) <= 0)
+   if (intfstream_read_at(fd, raw_game_id, 4, 0) <= 0)
       return 0;
 
    if (     memcmp(raw_game_id, "RVZ", STRLEN_CONST("RVZ")) == 0
          || memcmp(raw_game_id, "WIA", STRLEN_CONST("WIA")) == 0
       )
    {
-      if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
-         return 0;
-      if (intfstream_read(fd, raw_game_id, 4) <= 0)
+      if (intfstream_read_at(fd, raw_game_id, 4, 0x0058) <= 0)
          return 0;
    }
 
@@ -926,16 +900,12 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len,
    char lgame_id[10];
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, SCD_SERIAL_OFFSET, SEEK_SET) < 0)
-      return 0;
-   if (intfstream_read(fd, raw_game_id, SCD_SERIAL_LEN) <= 0)
+   if (intfstream_read_at(fd, raw_game_id, SCD_SERIAL_LEN, SCD_SERIAL_OFFSET) <= 0)
       return 0;
    raw_game_id[SCD_SERIAL_LEN] = '\0';
 
    /* Load raw region id or quit */
-   if (intfstream_seek(fd, SCD_REGION_OFFSET, SEEK_SET) < 0)
-      return 0;
-   if (intfstream_read(fd, &region_id, 1) <= 0)
+   if (intfstream_read_at(fd, &region_id, 1, SCD_REGION_OFFSET) <= 0)
       return 0;
 
 #ifdef DEBUG
@@ -1025,16 +995,12 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len,
    char rgame_id[10];
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, SAT_SERIAL_OFFSET, SEEK_SET) < 0)
-      return 0;
-   if (intfstream_read(fd, raw_game_id, SAT_SERIAL_LEN) <= 0)
+   if (intfstream_read_at(fd, raw_game_id, SAT_SERIAL_LEN, SAT_SERIAL_OFFSET) <= 0)
       return 0;
    raw_game_id[SAT_SERIAL_LEN] = '\0';
 
    /* Load raw region id or quit */
-   if (intfstream_seek(fd, SAT_REGION_OFFSET, SEEK_SET) < 0)
-      return 0;
-   if (intfstream_read(fd, &region_id, 1) <= 0)
+   if (intfstream_read_at(fd, &region_id, 1, SAT_REGION_OFFSET) <= 0)
       return 0;
 
    /** Scrub files with bad data and log **/
@@ -1141,16 +1107,10 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len,
    char region_id;
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, 0x0050, SEEK_SET) < 0)
+   if (intfstream_read_at(fd, raw_game_id, 10, 0x0050) <= 0)
       return 0;
 
-   if (intfstream_read(fd, raw_game_id, 10) <= 0)
-      return 0;
-
-   if (intfstream_seek(fd, 0x0042, SEEK_SET) < 0)
-      return false;
-
-   if (intfstream_read(fd, &region_id, 1) <= 0)
+   if (intfstream_read_at(fd, &region_id, 1, 0x0042) <= 0)
       return false;
 
    raw_game_id[10] = '\0';
@@ -1310,17 +1270,12 @@ size_t detect_wii_game(intfstream_t *fd, char *s, size_t len,
    char raw_game_id[15];
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, 0x0000, SEEK_SET) < 0)
-      return 0;
-
-   if (intfstream_read(fd, raw_game_id, 6) <= 0)
+   if (intfstream_read_at(fd, raw_game_id, 6, 0x0000) <= 0)
       return 0;
 
    if (memcmp(raw_game_id, "WBFS", STRLEN_CONST("WBFS")) == 0)
    {
-      if (intfstream_seek(fd, 0x0200, SEEK_SET) < 0)
-         return 0;
-      if (intfstream_read(fd, raw_game_id, 6) <= 0)
+      if (intfstream_read_at(fd, raw_game_id, 6, 0x0200) <= 0)
          return 0;
    }
 
@@ -1328,9 +1283,7 @@ size_t detect_wii_game(intfstream_t *fd, char *s, size_t len,
          || memcmp(raw_game_id, "WIA", STRLEN_CONST("WIA")) == 0
       )
    {
-      if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
-         return 0;
-      if (intfstream_read(fd, raw_game_id, 6) <= 0)
+      if (intfstream_read_at(fd, raw_game_id, 6, 0x0058) <= 0)
          return 0;
    }
    raw_game_id[6] = '\0';
@@ -1365,10 +1318,10 @@ int detect_system(intfstream_t *fd, const char **system_name,
 #endif
    for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
    {
-      if (intfstream_seek(fd, MAGIC_NUMBERS[i].offset, SEEK_SET) >= 0)
       {
          size_t _len = strlen(MAGIC_NUMBERS[i].magic);
-         if (intfstream_read(fd, magic, _len) > 0)
+         if (intfstream_read_at(fd, magic, _len,
+                  MAGIC_NUMBERS[i].offset) > 0)
          {
             magic[_len] = '\0';
             if (memcmp(MAGIC_NUMBERS[i].magic, magic, _len) == 0)
@@ -1635,9 +1588,8 @@ static int cue_find_track_internal(const char *cue_path, bool first,
                   ? cur_fd : (cur_transferred ? cand_fd : NULL);
 
             if (   probe
-                && intfstream_seek(probe, 0, SEEK_SET) >= 0
-                && intfstream_read(probe, magic_buf,
-                      sizeof(magic_buf)) == sizeof(magic_buf)
+                && intfstream_read_at(probe, magic_buf,
+                      sizeof(magic_buf), 0) == sizeof(magic_buf)
                 && memcmp(magic_buf, cdi_magic, sizeof(cdi_magic)) == 0)
             {
                is_data = true;  /* CD-i AUDIO track contains data */
@@ -2115,16 +2067,12 @@ static bool intfstream_file_get_serial_fd(intfstream_t *fd,
       if (size > SERIAL_PROBE_SPAN)
          size = SERIAL_PROBE_SPAN;
 
-      if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
-         return false;
-
       data = (uint8_t*)malloc(size);
-      /* NULL-check: intfstream_read below would NULL-deref on
-       * OOM via filestream_read's fread. */
       if (!data)
          return false;
 
-      if (intfstream_read(fd, data, size) != (int64_t) size)
+      if (intfstream_read_at(fd, data, size, (int64_t)offset)
+            != (int64_t)size)
       {
          free(data);
          return false;

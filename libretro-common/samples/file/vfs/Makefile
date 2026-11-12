@@ -18,6 +18,7 @@ TARGET_TEST14 := vfs_positional_test
 TARGET_TEST15 := vfs_positional_nommap_test
 TARGET_TEST16 := vfs_positional_off32_test
 TARGET_TEST17 := vfs_positional_pathreopen_test
+TARGET_TEST18 := vfs_positional_ntverify_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -165,7 +166,7 @@ all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
 	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) \
 	$(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) \
-	$(RENAME_TARGET)
+	$(TARGET_TEST18) $(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -232,6 +233,19 @@ $(PATHREOPEN_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_FORCE_PATH_REOPEN
 
 $(TARGET_TEST17): vfs_positional_required.o $(PATHREOPEN_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
+
+# vfs_positional_ntverify_test: on Windows, the handle opened relative
+# to the stream's checked against it as NT before Vista has it checked,
+# whatever version runs it. Elsewhere the define changes nothing.
+NTVERIFY_VFS_OBJ := vfs_implementation_ntverify.o
+NTVERIFY_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+	$(NTVERIFY_VFS_OBJ)
+
+$(NTVERIFY_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_ALWAYS_VERIFY
+
+$(TARGET_TEST18): vfs_positional_required.o $(NTVERIFY_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
 
 $(TARGET_TEST10): vfs_view_test.o $(VIEW_OBJS)
@@ -312,11 +326,11 @@ clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
-		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) $(CLOSE_VFS_OBJ) \
+		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) $(TARGET_TEST18) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
 		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o \
 		$(NOMMAP_VFS_OBJ) vfs_positional_required.o $(OFF32_VFS_OBJ) \
-		$(PATHREOPEN_VFS_OBJ)
+		$(PATHREOPEN_VFS_OBJ) $(NTVERIFY_VFS_OBJ)
 	rm -f vfs_positional_off32.bin
 	rm -rf v5_meta_dir
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin

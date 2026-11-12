@@ -23,8 +23,9 @@
  * Unix host, which always has pread(), or on Windows NT, which always
  * has a second handle, a -1 there fails instead - the build without
  * HAVE_MMAP (vfs_positional_nommap_test) holds that as Android builds,
- * and vfs_positional_pathreopen_test holds the path reopen that NT
- * before Vista, without ReOpenFile, takes. */
+ * vfs_positional_pathreopen_test the path reopen, and
+ * vfs_positional_ntverify_test the handle opened relative to the
+ * stream's, checked against it as NT before Vista has it checked. */
 
 #include <stdio.h>
 #include <stdlib.h>

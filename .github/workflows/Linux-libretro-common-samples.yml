@@ -291,6 +291,9 @@ jobs:
             # Positional I/O (VFS v6): reads at offsets and appends from
             # several threads on one stream, with no lock.
             vfs_positional_test
+            # intfstream reads at offsets on file, buffered and memory
+            # streams: position kept, window kept, four threads.
+            intfstream_read_at_test
             # The same without HAVE_MMAP (Android's build): pread/pwrite
             # are still there, so a -1 fails.
             vfs_positional_nommap_test
@@ -300,6 +303,7 @@ jobs:
             # Windows NT before Vista's second handle (the path, checked);
             # the same run as vfs_positional_test here.
             vfs_positional_pathreopen_test
+            vfs_positional_ntverify_test
             cdrom_cuesheet_overflow_test
             rdvd_h262_test
             rdvd_lpcm_test

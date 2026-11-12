@@ -229,10 +229,11 @@ jobs:
           # Read-write descriptor streams on the Windows C runtimes,
           # and that a file they create is writable afterwards.
           ./vfs_descriptor_rw_test.exe
-          # Reads and appends at offsets from several threads: through
-          # ReOpenFile's second handle, and through the path reopen
-          # NT before Vista takes; a -1 fails both.
+          # Reads and appends at offsets from several threads through
+          # the second handle: opened relative to the stream's, the same
+          # checked as before Vista, and by the path; a -1 fails each.
           ./vfs_positional_nommap_test.exe
+          ./vfs_positional_ntverify_test.exe
           ./vfs_positional_pathreopen_test.exe
 
       # The Win64 fastjmp_set stores xmm6-xmm15 with movaps and faults

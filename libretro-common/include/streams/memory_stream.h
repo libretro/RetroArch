@@ -38,6 +38,16 @@ void memstream_close(memstream_t *stream);
 
 uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes);
 
+/**
+ * memstream_read_at:
+ *
+ * Up to @bytes from @offset, the stream's position left where it was.
+ * Returns the bytes copied, 0 at or past the end, -1 for a negative
+ * offset. Safe from any number of threads while nothing writes.
+ */
+int64_t memstream_read_at(memstream_t *stream, void *data, uint64_t bytes,
+      int64_t offset);
+
 uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes);
 
 int memstream_getc(memstream_t *stream);

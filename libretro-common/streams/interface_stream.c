@@ -83,11 +83,16 @@ static bool intfstream_buffered_fill(intfstream_internal_t *intf,
 
    if (len > intf->buffered.cap || pos + len > intf->buffered.size)
       return false;
-   if (filestream_seek(intf->buffered.fp, (int64_t)pos,
-            RETRO_VFS_SEEK_POSITION_START) < 0)
-      return false;
-   if ((got = filestream_read(intf->buffered.fp, intf->buffered.buf,
-               (int64_t)intf->buffered.cap)) <= 0)
+   if ((got = filestream_read_at(intf->buffered.fp, intf->buffered.buf,
+               (int64_t)intf->buffered.cap, (int64_t)pos)) < 0)
+   {
+      if (filestream_seek(intf->buffered.fp, (int64_t)pos,
+               RETRO_VFS_SEEK_POSITION_START) < 0)
+         return false;
+      got = filestream_read(intf->buffered.fp, intf->buffered.buf,
+            (int64_t)intf->buffered.cap);
+   }
+   if (got <= 0)
       return false;
 
    intf->buffered.lo = pos;
@@ -449,15 +454,18 @@ int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
             if (n > intf->buffered.cap)
             {
                int64_t got;
-               if (filestream_seek(intf->buffered.fp, (int64_t)p,
-                        RETRO_VFS_SEEK_POSITION_START) < 0)
+               if ((got = filestream_read_at(intf->buffered.fp, s,
+                           (int64_t)n, (int64_t)p)) < 0)
+               {
+                  if (filestream_seek(intf->buffered.fp, (int64_t)p,
+                           RETRO_VFS_SEEK_POSITION_START) < 0)
+                     return -1;
+                  got = filestream_read(intf->buffered.fp, s, (int64_t)n);
+               }
+               if (got <= 0)
                   return -1;
-               if ((got = filestream_read(intf->buffered.fp, s,
-                           (int64_t)n)) <= 0)
-                  return -1;
-               /* The window no longer describes the file position. */
-               intf->buffered.lo  = 0;
-               intf->buffered.hi  = 0;
+               /* The window still holds what it held: only the logical
+                * position moves */
                intf->buffered.pos = p + (uint64_t)got;
                return got;
             }
@@ -481,6 +489,50 @@ int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
    }
 
    return -1;
+}
+
+int64_t intfstream_read_at(intfstream_internal_t *intf, void *s,
+      uint64_t len, int64_t offset)
+{
+   int64_t got, save;
+
+   if (!intf || offset < 0)
+      return -1;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         if ((got = filestream_read_at(intf->file.fp, s, (int64_t)len,
+                     offset)) >= 0)
+            return got;
+         break;
+      case INTFSTREAM_MEMORY:
+         return memstream_read_at(intf->memory.fp, s, len, offset);
+      case INTFSTREAM_BUFFERED:
+         /* From the file: the window and the position are the
+          * sequential reader's, and its seeks are logical, so the
+          * file is the buffered reader's to move */
+         if ((got = filestream_read_at(intf->buffered.fp, s, (int64_t)len,
+                     offset)) >= 0)
+            return got;
+         if (filestream_seek(intf->buffered.fp, offset,
+                  RETRO_VFS_SEEK_POSITION_START) < 0)
+            return -1;
+         return filestream_read(intf->buffered.fp, s, (int64_t)len);
+      case INTFSTREAM_CHD:
+         break;
+      case INTFSTREAM_RZIP:
+         return -1;
+   }
+
+   /* Sought there and back */
+   if (     (save = intfstream_tell(intf)) < 0
+         || intfstream_seek(intf, offset, SEEK_SET) < 0)
+      return -1;
+   got = intfstream_read(intf, s, len);
+   if (intfstream_seek(intf, save, SEEK_SET) < 0)
+      return -1;
+   return got;
 }
 
 int64_t intfstream_view(intfstream_internal_t *intf, uint64_t len,
