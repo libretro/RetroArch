@@ -82,6 +82,25 @@ on:
 permissions:
   contents: read
 jobs:
+  stream-native:
+    if: ${{ !inputs.native_aac_only }}
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install independent streaming receiver
+        run: command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
+      - name: Native VT and AAC over RTMP and TLS
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-stream-evidence
+        run: python3 samples/record/rtmp_stream/native_vt_run.py
+      - name: Save native streaming acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-stream-evidence
+          path: ${{ runner.temp }}/vt-stream-evidence
+          if-no-files-found: ignore
   aac-native:
     runs-on: macos-latest
     timeout-minutes: 10
