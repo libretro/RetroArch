@@ -333,7 +333,7 @@ jobs:
           if [ "${{ matrix.threads }}" = disable ]; then
             stream_options="--enable-rtmp --enable-rflv"
           fi
-          ./configure --enable-metal --enable-avf --${{ matrix.threads }}-threads --enable-configfile \
+          ./configure --enable-metal --enable-avf --${{ matrix.threads }}-threads --enable-configfile --enable-webmplayer \
             --disable-qt --disable-ffmpeg --disable-discord --disable-cheevos \
             --enable-networking --disable-sdl2 --disable-sdl --disable-translate \
             --disable-update_cores --disable-update_assets --disable-online_updater \

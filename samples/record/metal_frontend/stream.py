@@ -35,6 +35,7 @@ def check(args, threaded):
     command_port, stream_port = port(socket.SOCK_DGRAM), port(socket.SOCK_STREAM)
     config, native = root / 'retroarch.cfg', root / 'stream.cfg'
     received, log_path = root / 'received.flv', root / 'frontend.log'
+    runtime_log = root / 'runtime.log'
     url = f'rtmp://127.0.0.1:{stream_port}/live/test'
     output_rate = 44100 if args.source_rate == 44100 else 48000
     native.write_text(f'audio_enable = {str(not args.video_only).lower()}\nvcodec = "{args.codec}"\nformat = "flv"\n'
@@ -62,6 +63,8 @@ playlist_directory = "{root / 'playlists'}"
 playlist_use_old_format = "false"
 recording_output_directory = "{root / 'recordings'}"
 config_save_on_exit = "false"
+log_verbosity = "true"
+frontend_log_level = "1"
 pause_nonactive = "false"
 quit_press_twice = "false"
 savestate_auto_save = "false"
@@ -75,10 +78,11 @@ network_cmd_port = "{command_port}"
     with (root / 'receiver.log').open('wb') as receiver_log, log_path.open('wb') as log:
         server = subprocess.Popen([args.ffmpeg, '-v', 'error', '-listen', '1',
                                    '-timeout', '15', '-copyts', '-analyzeduration', '500000',
-                                   '-i', url, '-map', '0', '-c', 'copy', '-f', 'flv', str(received)],
+                                   '-i', url, '-map', '0', '-c', 'copy', '-f', 'flv',
+                                   '-flush_packets', '1', str(received)],
                                   stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                   stderr=receiver_log)
-        command = [str(args.retroarch.resolve()), '-v', '--config', str(config),
+        command = [str(args.retroarch.resolve()), '-v', '--log-file', str(runtime_log), '--config', str(config),
                    '-L', str(args.core.resolve()), '--max-frames', '36000']
         process = subprocess.Popen(command,
                                    cwd=root, env=env, stdin=subprocess.DEVNULL,
@@ -96,12 +100,33 @@ network_cmd_port = "{command_port}"
                         return False
 
                 wait_until(ready, process)
-                client.sendto(b'SET_OPTION streaming on\n', target)
-                wait_until(lambda: 'Starting native' in log_path.read_text(errors='replace')
-                           and 'fps streaming.' in log_path.read_text(errors='replace'), process)
+                def option(on):
+                    request = b'SET_OPTION streaming ' + (b'on' if on else b'off') + b'\n'
+                    client.sendto(request, target)
+                    replies = []
+                    deadline = time.monotonic() + 3
+                    while time.monotonic() < deadline:
+                        try:
+                            reply = client.recv(65536)
+                        except socket.timeout:
+                            continue
+                        replies.append(reply.decode(errors='replace'))
+                        (root / 'commands.json').write_text(json.dumps(replies, indent=2))
+                        if reply.startswith(b'streaming\t'):
+                            assert reply.strip() == (b'streaming\ton' if on else b'streaming\toff'), replies
+                            return
+                        assert b'ERROR' not in reply, replies
+                    raise TimeoutError(f'no streaming acknowledgement: {replies}')
+
+                def logged(fragment):
+                    return runtime_log.exists() and fragment in runtime_log.read_text(errors='replace')
+
+                option(True)
+                wait_until(lambda: logged('fps streaming.'), process)
+                wait_until(lambda: received.exists() and received.stat().st_size > 128, process)
                 time.sleep(2)
-                client.sendto(b'SET_OPTION streaming off\n', target)
-                wait_until(lambda: 'Finalized ' in log_path.read_text(errors='replace'), process)
+                option(False)
+                wait_until(lambda: logged('Finalized '), process)
                 client.sendto(b'QUIT\n', target)
             assert process.wait(timeout=15) == 0
             assert server.wait(timeout=15) == 0
@@ -110,7 +135,7 @@ network_cmd_port = "{command_port}"
                 if child.poll() is None:
                     child.kill()
                 child.wait(timeout=65)
-    text = log_path.read_text(errors='replace')
+    text = log_path.read_text(errors='replace') + runtime_log.read_text(errors='replace')
     assert f'[fixture] s16 source, mask {4 if args.channels == 1 else 3}' in text
     finalized = re.search(r'Finalized (\d+) GPU frames, (\d+) PCM frames', text)
     assert finalized and int(finalized[1]) > 20, text[-5000:]
