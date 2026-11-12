@@ -12,7 +12,9 @@
  *    transfer's callback wakes it - a few passes per thumbnail, not one
  *    per worker spin;
  *  - cancel: a task cancelled with a transfer in flight finishes only
- *    after the transfer's callback, which writes into the task's handle.
+ *    after the transfer's callback, which writes into the task's handle;
+ *  - finished: a playlist download finished with its retirement still
+ *    to come keeps the handle a push's finder reads.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -258,11 +260,47 @@ static void lane_cancel(void)
       fprintf(stderr, "[pass] cancel: the task outlives its transfer's callback\n");
 }
 
+static bool download_finished(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   return task->handler == task_pl_thumbnail_download_handler
+      && (task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
+}
+
+static void lane_finished(void)
+{
+   unsigned           had = failures;
+   playlist_config_t  config;
+   task_finder_data_t find_data;
+   retro_time_t       start;
+
+   memset(&config, 0, sizeof(config));
+   strlcpy(config.path, "Lane.lpl", sizeof(config.path));
+   find_data.func     = download_finished;
+   find_data.userdata = NULL;
+   CHECK(task_push_pl_thumbnail_download("Lane System", &config,
+         "/thumbs"), "the playlist download was not pushed");
+   /* No task_queue_check(), so it finishes but is not retired */
+   start = cpu_features_get_time_usec();
+   while (!task_queue_find(&find_data)
+         && cpu_features_get_time_usec() - start < 2000000)
+      retro_sleep(1);
+   CHECK(task_queue_find(&find_data), "the playlist download did not finish");
+   /* Let the worker get past the rest of the handler */
+   retro_sleep(20);
+   CHECK(!task_push_pl_thumbnail_download("Lane System", &config,
+         "/thumbs"), "a second download of the playlist was pushed");
+   task_queue_wait(NULL, NULL);
+   if (failures == had)
+      fprintf(stderr, "[pass] finished: its handle outlives the handler\n");
+}
+
 int main(void)
 {
    task_queue_init(true, NULL);
    lane_waiting();
    lane_cancel();
+   lane_finished();
    task_queue_deinit();
 
    if (failures)

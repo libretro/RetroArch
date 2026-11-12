@@ -41,7 +41,7 @@ size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data,
 { (void)path_data; (void)s; (void)len; return 0; }
 
 bool playlist_config_copy(const playlist_config_t *src, playlist_config_t *dst)
-{ (void)src; (void)dst; return false; }
+{ *dst = *src; return true; }
 void playlist_free(playlist_t *playlist) { (void)playlist; }
 size_t playlist_size(playlist_t *playlist) { (void)playlist; return 0; }
 void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
