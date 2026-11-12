@@ -8,6 +8,9 @@ RETRO_BEGIN_DECLS
 typedef struct net_wake net_wake_t;
 /* Cold setup. POSIX nonblocking, close-on-exec pipe; NULL if unavailable. */
 net_wake_t *net_wake_new(void);
+/* Cold duplicate for an asynchronous notifier that can outlive its owner.
+ * Keeps both pipe ends alive; only one reference may consume notifications. */
+net_wake_t *net_wake_dup(const net_wake_t *wake);
 /* Borrowed until free; never close it. An I/O worker may poll this descriptor
  * together with sockets. The queue owner still owns its wake/recheck epoch. */
 int net_wake_read_fd(const net_wake_t *wake);

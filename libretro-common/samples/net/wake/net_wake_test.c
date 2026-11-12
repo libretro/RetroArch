@@ -13,6 +13,8 @@
 static unsigned live,fcntl_calls,fail_fcntl,write_calls,read_calls;
 static int descriptors[2],write_error,read_error;
 static bool fail_malloc,fail_pipe,read_eof;
+static unsigned dup_calls,fail_dup;
+static int duplicate_fds[2];
 static void *wake_malloc(size_t bytes)
 {
    void *result;
@@ -44,6 +46,15 @@ static int wake_fcntl(int fd,int command,...)
    if (++fcntl_calls==fail_fcntl) { errno=EIO; return -1; }
    return fcntl(fd,command,value);
 }
+static int wake_dup_fd(int fd)
+{
+   int result;
+   if (++dup_calls==fail_dup) { errno=EMFILE; return -1; }
+   result=dup(fd);
+   assert(dup_calls<=2);
+   duplicate_fds[dup_calls-1]=result;
+   return result;
+}
 static ssize_t wake_write(int fd,const void *data,size_t size)
 {
    write_calls++;
@@ -65,6 +76,7 @@ static ssize_t wake_read(int fd,void *data,size_t size)
 #define fcntl wake_fcntl
 #define write wake_write
 #define read wake_read
+#define dup wake_dup_fd
 #endif
 #include "../../../net/net_wake.c"
 #if defined(__APPLE__) || defined(__unix__) || defined(__linux__)
@@ -74,6 +86,7 @@ static ssize_t wake_read(int fd,void *data,size_t size)
 #undef fcntl
 #undef write
 #undef read
+#undef dup
 
 static void constructor_failures(void)
 {
@@ -94,6 +107,55 @@ static void constructor_failures(void)
    fail_fcntl=0;
 }
 
+static void duplicate_lifetime(void)
+{
+   net_wake_t *original=net_wake_new(),*copy,*fresh;
+   struct pollfd fds[2];
+   unsigned i,j;
+   int old_fd;
+   assert(original && live==1 && !net_wake_dup(NULL));
+   old_fd=net_wake_read_fd(original);
+   fail_malloc=true;
+   assert(!net_wake_dup(original) && live==1);
+   fail_malloc=false;
+   for (i=1;i<=2;i++)
+   {
+      dup_calls=0; fail_dup=i;
+      duplicate_fds[0]=duplicate_fds[1]=-1;
+      assert(!net_wake_dup(original) && live==1 && errno==EMFILE);
+      for (j=0;j<2;j++)
+         if (duplicate_fds[j]>=0) assert(fcntl(duplicate_fds[j],F_GETFD)<0 && errno==EBADF);
+   }
+   fail_dup=0;
+   for (i=1;i<=8;i++)
+   {
+      dup_calls=fcntl_calls=0; fail_fcntl=i;
+      assert(!net_wake_dup(original) && live==1 && errno==EIO);
+      assert(fcntl(duplicate_fds[0],F_GETFD)<0 && errno==EBADF);
+      assert(fcntl(duplicate_fds[1],F_GETFD)<0 && errno==EBADF);
+      assert(fcntl(original->reader,F_GETFD)>=0 && fcntl(original->writer,F_GETFD)>=0);
+   }
+   fail_fcntl=0; dup_calls=0;
+   copy=net_wake_dup(original);
+   assert(copy && live==2);
+   assert((fcntl(copy->reader,F_GETFL)&O_NONBLOCK) && (fcntl(copy->writer,F_GETFL)&O_NONBLOCK));
+   assert((fcntl(copy->reader,F_GETFD)&FD_CLOEXEC) && (fcntl(copy->writer,F_GETFD)&FD_CLOEXEC));
+   net_wake_free(original);
+   fresh=net_wake_new();
+   assert(fresh && live==2 && net_wake_read_fd(fresh)==old_fd);
+   fds[0].fd=net_wake_read_fd(copy); fds[0].events=POLLIN;
+   fds[1].fd=net_wake_read_fd(fresh); fds[1].events=POLLIN;
+   assert(net_wake_notify(copy) && poll(fds,2,0)==1);
+   assert((fds[0].revents&POLLIN) && !fds[1].revents && net_wake_ack(copy));
+   assert(net_wake_notify(fresh) && poll(fds,2,0)==1);
+   assert((fds[1].revents&POLLIN) && !fds[0].revents && net_wake_ack(fresh));
+   net_wake_free(fresh);
+   assert(net_wake_notify(copy) && net_wake_ack(copy));
+   net_wake_free(copy);
+   assert(!live);
+   puts("PASS duplicated wake survives owner retirement and descriptor reuse without waking its replacement");
+}
+
 int main(void)
 {
    net_wake_t *wake;
@@ -102,6 +164,7 @@ int main(void)
    char byte='a';
    unsigned i,count,before;
    constructor_failures();
+   duplicate_lifetime();
    wake=net_wake_new();
    assert(wake && live==1 && net_wake_read_fd(wake)>=0);
    assert((fcntl(wake->reader,F_GETFL)&O_NONBLOCK) && (fcntl(wake->writer,F_GETFL)&O_NONBLOCK));
@@ -149,7 +212,7 @@ int main(void)
 #else
 int main(void)
 {
-   assert(!net_wake_new() && net_wake_read_fd(NULL)==-1 && !net_wake_notify(NULL) && !net_wake_ack(NULL));
+   assert(!net_wake_new() && !net_wake_dup(NULL) && net_wake_read_fd(NULL)==-1 && !net_wake_notify(NULL) && !net_wake_ack(NULL));
    net_wake_free(NULL);
    puts("PASS unsupported pollable-wake admission; POSIX runtime not exercised");
    return 0;

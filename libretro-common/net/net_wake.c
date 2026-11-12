@@ -65,6 +65,32 @@ net_wake_t *net_wake_new(void)
    return NULL;
 }
 
+net_wake_t *net_wake_dup(const net_wake_t *wake)
+{
+   net_wake_t *copy;
+   int error;
+   if (!wake)
+      return NULL;
+   copy = (net_wake_t*)malloc(sizeof(*copy));
+   if (!copy)
+      return NULL;
+   copy->reader = dup(wake->reader);
+   copy->writer = -1;
+   if (copy->reader >= 0)
+      copy->writer = dup(wake->writer);
+   if (copy->writer >= 0 && net_wake_configure(copy->reader)
+         && net_wake_configure(copy->writer))
+      return copy;
+   error = errno;
+   if (copy->reader >= 0)
+      close(copy->reader);
+   if (copy->writer >= 0)
+      close(copy->writer);
+   free(copy);
+   errno = error;
+   return NULL;
+}
+
 int net_wake_read_fd(const net_wake_t *wake)
 {
    return wake?wake->reader:-1;
@@ -101,6 +127,11 @@ void net_wake_free(net_wake_t *wake)
 #else
 net_wake_t *net_wake_new(void)
 {
+   return NULL;
+}
+net_wake_t *net_wake_dup(const net_wake_t *wake)
+{
+   (void)wake;
    return NULL;
 }
 int net_wake_read_fd(const net_wake_t *wake)
