@@ -33,7 +33,6 @@
 typedef struct
 {
    int64_t  pos;      /* in the disc image */
-   uint64_t file_pos; /* where the file stands; seeks to it are skipped */
    ciso_t  *ciso;
    RFILE   *file;
 } rcheevos_ciso_t;
@@ -51,12 +50,12 @@ static int rcheevos_ciso_pump(rcheevos_ciso_t *handle, bool opening)
 
       if (err != CISO_PENDING)
          return err;
-      if (     handle->file_pos == req.offset
-            || filestream_seek(handle->file, (int64_t)req.offset,
+      /* At the offset in one call; seek and read where there is none */
+      if ((got = filestream_read_at(handle->file, req.dst,
+                  (int64_t)req.length, (int64_t)req.offset)) < 0
+            && filestream_seek(handle->file, (int64_t)req.offset,
                RETRO_VFS_SEEK_POSITION_START) == 0)
          got = filestream_read(handle->file, req.dst, (int64_t)req.length);
-      /* unknown after a failed read: seek next time */
-      handle->file_pos = got > 0 ? req.offset + (uint64_t)got : ~(uint64_t)0;
       ciso_feed(handle->ciso, got > 0 ? (size_t)got : 0);
    }
 }
@@ -81,7 +80,6 @@ static void* RC_CCONV rcheevos_ciso_open(const char *path)
    if (!handle)
       return NULL;
    handle->pos      = 0;
-   handle->file_pos = 0;
    handle->ciso     = NULL;
    /* the descriptor path: no stdio buffer between the file and the
     * buffers rc_hash reads into */

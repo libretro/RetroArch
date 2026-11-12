@@ -110,6 +110,7 @@ static int zstd_src_next(struct zstd_file_context *ctx,
       return rzstd_blocks_step(ctx->zs, data, len);
    for (;;)
    {
+      int64_t got;
       size_t want = rzstd_blocks_want(ctx->zs);
       /* all of it out, and nothing after it */
       if (!want)
@@ -117,8 +118,13 @@ static int zstd_src_next(struct zstd_file_context *ctx,
             ? RZSTD_PROCESS_END : RZSTD_PROCESS_ERROR;
       if (want > RZSTD_WANT_MAX)
          return RZSTD_PROCESS_ERROR;
-      filestream_seek(f, ctx->in_at, RETRO_VFS_SEEK_POSITION_START);
-      if (filestream_read(f, ctx->in, (int64_t)want) != (int64_t)want)
+      /* At the offset in one call; seek and read where there is none */
+      if ((got = filestream_read_at(f, ctx->in, (int64_t)want,
+                  ctx->in_at)) < 0
+            && filestream_seek(f, ctx->in_at,
+               RETRO_VFS_SEEK_POSITION_START) == 0)
+         got = filestream_read(f, ctx->in, (int64_t)want);
+      if (got != (int64_t)want)
          return RZSTD_PROCESS_ERROR;
       ctx->in_at += (int64_t)want;
       if (rzstd_blocks_give(ctx->zs, ctx->in, want, data, len)
