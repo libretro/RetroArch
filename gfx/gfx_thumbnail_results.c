@@ -127,33 +127,35 @@ size_t gfx_thumbnail_system_name(char *s, size_t len, const char *db_name)
    return strlen(s);
 }
 
-bool gfx_thumbnail_name_allowed(const char *name, bool allow_non_png)
+const char *const gfx_thumbnail_image_exts[] =
 {
-   static const char *const exts[] =
-   {
-      "png", "jpg", "jpeg", "bmp", "tga",
+   ".png", ".jpg", ".jpeg", ".bmp", ".tga",
 #ifdef HAVE_RWEBP
-      "webp",
+   ".webp",
 #endif
 #ifdef HAVE_RWEBM
-      "webm", "mkv",
+   ".webm", ".mkv",
 #endif
 #ifdef HAVE_RMP4
-      "mp4",
+   ".mp4",
 #endif
-      NULL
-   };
+   NULL
+};
+
+bool gfx_thumbnail_name_allowed(const char *name, bool allow_non_png)
+{
    size_t i;
    const char *ext = path_get_extension(name);
 
-   if (!ext || !*ext)
+   /* A damaged cache must not name a file outside its folder */
+   if (!ext || !*ext || strchr(name, '/') || strchr(name, '\\'))
       return false;
-   if (string_is_equal_noncase(ext, exts[0]))
+   if (string_is_equal_noncase(ext, gfx_thumbnail_image_exts[0] + 1))
       return true;
    if (!allow_non_png)
       return false;
-   for (i = 1; exts[i]; i++)
-      if (string_is_equal_noncase(ext, exts[i]))
+   for (i = 1; gfx_thumbnail_image_exts[i]; i++)
+      if (string_is_equal_noncase(ext, gfx_thumbnail_image_exts[i] + 1))
          return true;
    return false;
 }

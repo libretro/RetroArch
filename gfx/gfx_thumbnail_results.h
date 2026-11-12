@@ -53,7 +53,10 @@ size_t gfx_thumbnail_scrub_name(char *s, size_t len, const char *src);
 /* The thumbnails/<system> folder for a db_name: "MAME" for any
  * "MAME...", else the first of "A|B" without its extension. */
 size_t gfx_thumbnail_system_name(char *s, size_t len, const char *db_name);
-/* Whether the menu shows a file with @name's extension. */
+/* The extensions the menu shows, ".png" first; NULL-terminated. */
+extern const char *const gfx_thumbnail_image_exts[];
+/* Whether the menu shows a file named @name in a thumbnail folder:
+ * no path separator, and an extension it shows. */
 bool gfx_thumbnail_name_allowed(const char *name, bool allow_non_png);
 
 /* A table belongs to one thread at a time. */

@@ -29,9 +29,11 @@ MEDIA_CPU_OBJ := gfx_media_cpu_uut.o
 # Direct-video outcomes of the surface, slot by slot; it includes
 # gfx_surface.h, so it takes the unit's flags.
 OUTCOME_OBJ := surface_outcome_test.o
+LOOKUP_OBJ := thumbnail_lookup_test.o
 
 SOURCES := gfx_thumbnail_anim_test.c \
            stubs_retroarch.c \
+           $(REPO_ROOT)/gfx/gfx_thumbnail_results.c \
            $(REPO_ROOT)/gfx/gfx_instrument.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
@@ -130,8 +132,11 @@ $(MEDIA_CPU_OBJ): $(REPO_ROOT)/gfx/gfx_media_cpu.c
 $(OUTCOME_OBJ): surface_outcome_test.c
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
+$(LOOKUP_OBJ): thumbnail_lookup_test.c
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
 $(TARGET): $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) \
-      $(PLAYER_OBJ) $(MEDIA_PLAYER_OBJ) $(MEDIA_CPU_OBJ) $(OUTCOME_OBJ)
+      $(PLAYER_OBJ) $(MEDIA_PLAYER_OBJ) $(MEDIA_CPU_OBJ) $(OUTCOME_OBJ) $(LOOKUP_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # ASan and TSan are mutually exclusive, hence separate passes.
@@ -145,8 +150,8 @@ sweep:
 	@echo "sweep clean"
 
 clean:
-	rm -rf $(SAMPLE_OBJDIR)
+	rm -rf $(SAMPLE_OBJDIR) lookup-fixture
 	rm -f $(TARGET) $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) \
-	   $(PLAYER_OBJ) $(MEDIA_PLAYER_OBJ) $(MEDIA_CPU_OBJ) $(OUTCOME_OBJ)
+	   $(PLAYER_OBJ) $(MEDIA_PLAYER_OBJ) $(MEDIA_CPU_OBJ) $(OUTCOME_OBJ) $(LOOKUP_OBJ)
 
 .PHONY: all sweep clean

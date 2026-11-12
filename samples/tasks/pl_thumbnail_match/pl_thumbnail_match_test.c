@@ -86,6 +86,10 @@ static void lane_names(void)
    CHECK(gfx_thumbnail_name_allowed("a.jpg", true), "jpg on");
    CHECK(!gfx_thumbnail_name_allowed("a.txt", true), "txt");
    CHECK(!gfx_thumbnail_name_allowed("png", true), "no extension");
+   CHECK(!gfx_thumbnail_name_allowed("../x.png", false), "parent folder");
+   CHECK(!gfx_thumbnail_name_allowed("a/x.png", false), "subfolder");
+   CHECK(!gfx_thumbnail_name_allowed("a\\x.png", false), "backslash");
+   CHECK(gfx_thumbnail_name_allowed("Presumed ...!_.png", false), "dots");
    if (failures == had)
       fprintf(stderr, "[pass] names\n");
 }

@@ -786,7 +786,8 @@ check "conversion: allegrex" "$HOSTOFF -U__SSE__ -U__SSE2__ -U__AVX2__ -U__AVX51
 # the stubs already here and shed the host identity like the ones
 # above.
 MENUGFX="gfx/video_driver.c gfx/gfx_display.c gfx/gfx_widgets.c \
- gfx/gfx_thumbnail.c gfx/gfx_thumbnail_match.c gfx/gfx_surface.c gfx/gfx_surface_player.c \
+ gfx/gfx_thumbnail.c gfx/gfx_thumbnail_match.c gfx/gfx_thumbnail_results.c \
+ gfx/gfx_surface.c gfx/gfx_surface_player.c \
  gfx/video_thread_wrapper.c menu/drivers/xmb.c menu/drivers/ozone.c menu/drivers/materialui.c"
 MG_BASE="-DHAVE_XMB -DHAVE_OZONE -DHAVE_MATERIALUI -DHAVE_RGUI \
  -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_CONFIGFILE -DRARCH_CONSOLE \
