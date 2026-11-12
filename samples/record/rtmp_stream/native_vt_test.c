@@ -24,6 +24,7 @@ int main(void)
 #include "../../../gfx/common/videotoolbox_encode.h"
 #include "../../../record/record_stream_vt.h"
 #include "../../../record/record_stream_output_vt.h"
+#include "../../../record/record_stream_session_vt_native.h"
 #include "../videotoolbox_encode/native_packet.h"
 
 #define FRAMES 24

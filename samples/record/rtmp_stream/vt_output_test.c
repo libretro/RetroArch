@@ -5,8 +5,18 @@
 static unsigned aac_frees,src_frees,client_frees,reset_failures,dispose_failures;
 static unsigned client_dispose_failures;
 static unsigned encoder_dead,gpu_retirement;
+static record_gpu_worker_vt_t *native_session_worker;
 bool record_gpu_worker_vt_abandon(record_gpu_worker_vt_t *worker)
-{ (void)worker; assert(encoder_dead==1); return ++gpu_retirement>1; }
+{
+   assert(encoder_dead==1);
+   if (++gpu_retirement<=1) return false;
+   if (worker==native_session_worker)
+   {
+      free(worker);
+      native_session_worker=NULL;
+   }
+   return true;
+}
 bool record_at_audio_cancel(record_at_audio_t *a)
 {
    if(a->held) return false;
@@ -216,12 +226,15 @@ static void video_only_test(void)
    for(i=0;i<100 && !ops.free_output(output);i++) {}
    assert(i<100 && !aac_frees && !src_frees && client_frees==1);
 }
+#include "vt_native_session_test.h"
 int main(void)
 {
    output_test(false,false); output_test(true,false);
    output_test(false,true); output_test(true,true);
    owned_test(false); owned_test(true);
    video_only_test();
+   native_session_test(0); native_session_test(1);
+   native_session_test(2); native_session_test(3);
    puts("PASS: VT output ownership, network-held cancellation, SRC/AAC reset/dispose retry and exactly-once free");
    return 0;
 }

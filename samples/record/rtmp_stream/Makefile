@@ -7,6 +7,9 @@ CFLAGS += -Wno-c99-extensions -Wno-c11-extensions
 endif
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+ifneq ($(findstring undefined,$(SANITIZER)),)
+CFLAGS += -fno-sanitize-recover=undefined
+endif
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 SESSION := $(LRC)/net/net_rtmp_session.c $(LRC)/net/net_rtmp_handshake.c $(LRC)/net/net_rtmp_chunk.c $(LRC)/net/net_rtmp_receive.c $(LRC)/net/net_rtmp_publish.c $(LRC)/net/net_rtmp_command.c $(LRC)/net/net_rtmp_reply.c $(LRC)/net/net_rtmp_control.c
@@ -30,7 +33,7 @@ clean:
 
 VT_SOURCES := $(RA)/record/record_stream_vt.c $(RA)/record/record_audio_queue.c $(LRC)/queues/retro_spsc.c $(LRC)/formats/flv/rflv_mux.c $(SESSION)
 VT_OUTPUT_SOURCES := $(RA)/record/record_stream_output_vt.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_gpu_queue.c
-vt_output_test$(EXE): vt_output_test.c vt_contract_test.c $(VT_SOURCES) $(VT_OUTPUT_SOURCES) $(RA)/record/record_stream_output_vt.h
+vt_output_test$(EXE): vt_output_test.c vt_contract_test.c vt_native_session_test.h $(VT_SOURCES) $(VT_OUTPUT_SOURCES) $(RA)/record/record_stream_output_vt.h $(RA)/record/record_stream_session_vt_native.h
 	$(CC) $(CFLAGS) -Wno-unused-function -o $@ vt_output_test.c $(VT_OUTPUT_SOURCES) $(VT_SOURCES) $(LDFLAGS)
 vt_contract_test$(EXE): vt_contract_test.c $(VT_SOURCES) $(RA)/record/record_stream_vt.h
 	$(CC) $(CFLAGS) -o $@ vt_contract_test.c $(VT_SOURCES) $(LDFLAGS)
