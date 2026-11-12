@@ -21,6 +21,8 @@ import traceback
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--artifacts', default=os.environ.get('VT_STREAM_ARTIFACT_DIR'))
+    parser.add_argument('--binary', type=Path)
+    parser.add_argument('--first-case', action='store_true')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('native VT/AAC streaming requires Apple hardware')
@@ -65,26 +67,28 @@ def main():
     try:
         ffmpeg = native_ffmpeg()
         probe = str(Path(ffmpeg).with_name('ffprobe')) if '/' in ffmpeg else 'ffprobe'
-        command(['make', 'rtmps_client_native_test'], cwd=network, timeout=180)
-        dry = command(['make', '-B', '-n', 'rtmps_client_native_test'], cwd=network)
-        link = next(shlex.split(line) for line in dry.stdout.decode().splitlines()
-                    if ' -o rtmps_client_native_test ' in line)
-        binary = root / 'native_vt_test'
-        link[link.index('-o') + 1] = str(binary)
-        link[link.index('rtmp_client_native_test.c')] = str(here / 'native_vt_test.c')
-        link += ['-O2', '-DHAVE_AVF', '-Wno-unused-function', '-Wno-long-long',
-                 '-Wno-c99-extensions', '-Wno-c11-extensions', '-mmacosx-version-min=10.14']
-        link += [str(repo / name) for name in (
-            'record/record_stream_vt.c', 'record/record_gpu_worker_vt.c',
-            'record/record_gpu_queue.c', 'record/record_vt_packet.c',
-            'record/record_at_audio.c', 'libretro-common/queues/retro_spsc.c')]
-        for framework in ('CoreMedia', 'CoreVideo', 'VideoToolbox', 'AudioToolbox', 'CoreFoundation'):
-            link += ['-framework', framework]
-        command(link, cwd=network, timeout=180)
+        binary = args.binary.resolve() if args.binary else root / 'native_vt_test'
+        if not args.binary:
+            command(['make', 'rtmps_client_native_test'], cwd=network, timeout=180)
+            dry = command(['make', '-B', '-n', 'rtmps_client_native_test'], cwd=network)
+            link = next(shlex.split(line) for line in dry.stdout.decode().splitlines()
+                        if ' -o rtmps_client_native_test ' in line)
+            link[link.index('-o') + 1] = str(binary)
+            link[link.index('rtmp_client_native_test.c')] = str(here / 'native_vt_test.c')
+            link += ['-O2', '-DHAVE_AVF', '-Wno-unused-function', '-Wno-long-long',
+                     '-Wno-c99-extensions', '-Wno-c11-extensions', '-mmacosx-version-min=10.14']
+            link += [str(repo / name) for name in (
+                'record/record_stream_vt.c', 'record/record_gpu_worker_vt.c',
+                'record/record_gpu_queue.c', 'record/record_vt_packet.c',
+                'record/record_at_audio.c', 'libretro-common/queues/retro_spsc.c')]
+            for framework in ('CoreMedia', 'CoreVideo', 'VideoToolbox', 'AudioToolbox', 'CoreFoundation'):
+                link += ['-framework', framework]
+            command(link, cwd=network, timeout=180)
         evidence['binary_sha256'] = hashlib.sha256(binary.read_bytes()).hexdigest()
-        for hevc, depth, rate, channels, tls in (
+        cases = (
                 (0, 8, 48000, 2, None), (1, 8, 44100, 1, '1.2'),
-                (1, 10, 48000, 2, '1.3')):
+                (1, 10, 48000, 2, '1.3'))
+        for hevc, depth, rate, channels, tls in cases[:1] if args.first_case else cases:
             case = dict(hevc=hevc, depth=depth, rate=rate, channels=channels,
                         tls=tls, result='running')
             evidence['cases'].append(case)
@@ -142,7 +146,7 @@ def main():
                           if p['codec_type'] == 'video']
             epoch = (values['leading'] * 60000 + rate - 1) // rate
             expected = [(epoch + i * 1001) * 1000 // 60000 for i in range(24)]
-            assert timestamps == expected, (timestamps, expected)
+            assert timestamps == expected, ('video timestamps changed', timestamps, expected)
             decoded = []
             for source in (coded, received):
                 decoded.append(command([ffmpeg, '-v', 'error', '-i', source,
@@ -181,6 +185,24 @@ def main():
             case['result'] = 'PASS'
             save()
             print('PASS native VT/AAC RTMP receiver:', case, flush=True)
+        if not args.binary:
+            source_path = repo / 'record/record_stream_vt.c'
+            source = source_path.read_text()
+            clock = 'packet.dts + p->video_epoch, packet.pts + p->video_epoch'
+            assert source.count(clock) == 1
+            mutant_source, mutant_binary = root / 'missing_epoch.c', root / 'missing_epoch_test'
+            mutant_source.write_text(source.replace(clock, 'packet.dts, packet.pts'))
+            link[link.index(str(source_path))] = str(mutant_source)
+            link[link.index('-o') + 1] = str(mutant_binary)
+            command(link + ['-I' + str(repo / 'record')], cwd=network, timeout=180)
+            negative_dir = root / 'negative-epoch'
+            negative = command([sys.executable, here / 'native_vt_run.py', '--binary',
+                                mutant_binary, '--first-case', '--artifacts', negative_dir],
+                               timeout=90, check=False)
+            assert negative.returncode != 0
+            assert 'video timestamps changed' in (negative_dir / 'failure.txt').read_text()
+            evidence['negative_epoch'] = 'rejected missing video epoch through real receiver'
+            print('PASS negative control: missing native video epoch rejected', flush=True)
         evidence['result'] = 'PASS'
         save()
     except BaseException:
