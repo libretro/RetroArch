@@ -15,6 +15,8 @@ TARGET_TEST11 := vfs_prefetch_offthread_test
 TARGET_TEST12 := vfs_close_result_test
 TARGET_TEST13 := vfs_descriptor_rw_test
 TARGET_TEST14 := vfs_positional_test
+TARGET_TEST15 := vfs_positional_nommap_test
+TARGET_TEST16 := vfs_positional_off32_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -37,7 +39,8 @@ OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_v5_metadata_test.o vfs_rename_replace_test.o \
 	vfs_prefetch_test.o vfs_readahead_test.o vfs_view_test.o \
 	vfs_prefetch_offthread_test.o vfs_close_result_test.o \
-	vfs_descriptor_rw_test.o vfs_positional_test.o $(COMMON_OBJS)
+	vfs_descriptor_rw_test.o vfs_positional_test.o \
+	vfs_positional_off32_test.o $(COMMON_OBJS)
 
 # vfs_view_test also hashes through sha1_calculate(), whose dispatch
 # asks features_cpu.c what the CPU has.
@@ -160,7 +163,7 @@ endif
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
 	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) \
-	$(TARGET_TEST14) $(RENAME_TARGET)
+	$(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -183,6 +186,37 @@ $(TARGET_TEST13): vfs_descriptor_rw_test.o $(COMMON_OBJS)
 
 $(TARGET_TEST14): vfs_positional_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
+
+# vfs_positional_nommap_test: the same test against a
+# vfs_implementation.o built without HAVE_MMAP, as Android's is, where
+# a Unix host must still read and write at offsets (pread/pwrite) - a
+# -1 there fails rather than skips.
+NOMMAP_VFS_OBJ := vfs_implementation_nommap.o
+NOMMAP_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+	$(NOMMAP_VFS_OBJ)
+
+$(NOMMAP_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+	$(CC) -c -o $@ $< $(filter-out -DHAVE_MMAP,$(CFLAGS))
+
+vfs_positional_required.o: vfs_positional_test.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_POSITIONAL_TEST_REQUIRED
+
+$(TARGET_TEST15): vfs_positional_required.o $(NOMMAP_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
+
+# vfs_positional_off32_test links a vfs_implementation.o whose
+# positional offsets go through a 32-bit type, as off_t is on 32-bit
+# Linux and older 32-bit Android, so the refusal past 4 GiB is held on
+# a 64-bit host. Scoped to this object.
+OFF32_VFS_OBJ := vfs_implementation_off32.o
+OFF32_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+	$(OFF32_VFS_OBJ)
+
+$(OFF32_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_POSITIONAL_OFF_T=int32_t
+
+$(TARGET_TEST16): vfs_positional_off32_test.o $(OFF32_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(TARGET_TEST10): vfs_view_test.o $(VIEW_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -262,9 +296,11 @@ clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
-		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(CLOSE_VFS_OBJ) \
+		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
-		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o
+		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o \
+		$(NOMMAP_VFS_OBJ) vfs_positional_required.o $(OFF32_VFS_OBJ)
+	rm -f vfs_positional_off32.bin
 	rm -rf v5_meta_dir
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
 	rm -f rbuf_fault.txt vfs_readahead_fixture.bin vfs_prefetch_offthread.bin

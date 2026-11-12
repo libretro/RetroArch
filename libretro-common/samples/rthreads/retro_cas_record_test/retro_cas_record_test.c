@@ -3,7 +3,9 @@
  *
  * What is asserted:
  *  - no change is lost: every thread's count in the record ends at the
- *    number of changes it made, and the total at their sum,
+ *    number of changes it made, and the total at their sum, half the
+ *    threads changing it in place in a spare slot (begin, commit) and
+ *    half on a copy of their own (read_versioned, replace),
  *  - no reader ever gets a torn record (every field of a copy carries
  *    the same total), and no reader's copies go back,
  *  - an aborted change leaves the record as it was,
@@ -89,6 +91,24 @@ static void *writer_main(void *arg)
          r = (record_t*)retro_cas_record_begin(&rec, &txn);
          r->field[0] = 0xdead; /* thrown away */
          retro_cas_record_abort(&rec, &txn);
+      }
+
+      if (id & 1)
+      {
+         /* The other way to change it: on a copy of this thread's own,
+          * put back if the record is still the one that was read */
+         record_t copy;
+         retro_cas_record_word_t version;
+         do
+         {
+            uint64_t total;
+            version = retro_cas_record_read_versioned(&rec, &copy);
+            total   = copy.field[0] + 1;
+            for (i = 0; i < FIELDS; i++)
+               copy.field[i] = total * (i + 1);
+            copy.by_writer[id]++;
+         } while (!retro_cas_record_replace(&rec, version, &copy));
+         continue;
       }
 
       do

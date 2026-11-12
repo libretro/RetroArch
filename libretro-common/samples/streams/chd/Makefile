@@ -85,8 +85,9 @@ $(TARGET): $(OBJS)
 $(TARGET_TEST): $(SAMPLE_OBJDIR)/chd_stream_threads_test.o $(THREADS_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
 
+# chd_stream_ahead_test counts the opens of the image it reads.
 $(TARGET_TEST2): $(SAMPLE_OBJDIR)/chd_stream_ahead_test.o $(THREADS_OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
+	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=filestream_open $(THREADS_LDLIBS)
 
 $(TARGET_TEST3): $(SAMPLE_OBJDIR)/chd_map_alloc_test.o $(LIBCHDR_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBCHDR_LDLIBS)

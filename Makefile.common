@@ -2684,10 +2684,11 @@ endif
 # when HAVE_AVF is on.
 ifeq ($(HAVE_AVF), 1)
    DEFINES += -DHAVE_AVF
-   OBJ     += camera/drivers/avfoundation.o \
+   OBJ     += record/record_at_audio.o \
+              camera/drivers/avfoundation.o \
               record/drivers/record_avfoundation.o
    LIBS    += -framework AVFoundation -framework CoreVideo \
-              -framework CoreMedia   -framework Accelerate
+              -framework CoreMedia   -framework Accelerate -framework AudioToolbox
    ifeq ($(HAVE_COCOATOUCH), 1)
       LIBS += -framework UIKit
    endif

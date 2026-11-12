@@ -69,10 +69,12 @@
 #include <memmap.h>
 #ifdef DT_COUNT_IO
 #include <streams/file_stream.h>
-static unsigned io_seeks, io_reads;
+static unsigned io_seeks, io_reads, io_ats;
 static uint64_t io_bytes;
 int64_t __real_filestream_seek(RFILE *stream, int64_t offset, int origin);
 int64_t __real_filestream_read(RFILE *stream, void *data, int64_t length);
+int64_t __real_filestream_read_at(RFILE *stream, void *data, int64_t length,
+      int64_t offset);
 int64_t __wrap_filestream_seek(RFILE *stream, int64_t offset, int origin)
 {
    io_seeks++;
@@ -83,6 +85,19 @@ int64_t __wrap_filestream_read(RFILE *stream, void *data, int64_t length)
    io_reads++;
    if (length > 0) io_bytes += (uint64_t)length;
    return __real_filestream_read(stream, data, length);
+}
+/* A read at an offset is a read and no seek; a -1 is counted by the
+ * seek and read that follow it */
+int64_t __wrap_filestream_read_at(RFILE *stream, void *data, int64_t length,
+      int64_t offset)
+{
+   int64_t got = __real_filestream_read_at(stream, data, length, offset);
+   if (got >= 0)
+   {
+      io_reads++; io_ats++;
+      if (length > 0) io_bytes += (uint64_t)length;
+   }
+   return got;
 }
 #endif
 #if defined(__linux__)
@@ -1061,7 +1076,7 @@ int main(void)
    if (data_transfer_window_is_reserved(dt))
    {
       uint8_t probe[16];
-      io_seeks = io_reads = 0;
+      io_seeks = io_reads = io_ats = 0;
       if (!data_transfer_window_extend(dt, KEEP + 4096)
             || !data_transfer_window_extend(dt, KEEP + 8192)
             || memcmp(base + KEEP, ref + KEEP, 8192))
@@ -1075,7 +1090,8 @@ int main(void)
             || !data_transfer_window_extend(dt, KEEP + 12288)
             || memcmp(base + KEEP, ref + KEEP, 12288))
          fail("metadata probes and window refill retain exact bytes");
-      if (io_seeks != 2 || io_reads != 5)
+      /* reads at offsets never seek */
+      if (io_seeks != (io_ats ? 0u : 2u) || io_reads != 5)
          fail("metadata probes only seek when changing ranges");
       else ok("metadata probes only seek when changing ranges");
       printf("window I/O: %u reads, %u seeks\n", io_reads, io_seeks);

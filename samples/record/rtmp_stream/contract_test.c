@@ -181,6 +181,62 @@ static void make_config(struct net_rtmp_client *c,
 }
 
 #ifndef STREAM_CONTRACT_HELPERS_ONLY
+static void av1_admission(void)
+{
+   static const uint8_t sequence[] = {10,13,0,0,0,3,55,251,230,215,206,129,1,4,130};
+   static const uint8_t picture[] = {1,0,0,0,3,0,0,0,50,1,16};
+   struct net_rtmp_client client;
+   record_gpu_worker_d3d12_t worker;
+   record_gpu_output_config_t config;
+   record_stream_d3d12_t *stream;
+   record_stream_wait_t wait;
+   uint8_t input[3];
+   unsigned i;
+   int result;
+   make_config(&client, &worker, &config);
+   config.video.codec = RECORD_MP4_AV1;
+   config.video.headers = sequence;
+   config.video.headers_size = sizeof(sequence);
+   config.video.bit_depth = 10;
+   config.audio_rate = config.audio_layout = config.audio_kbps = 0;
+   config.audio_fifo_frames = 0;
+   worker.frames = 1;
+   worker.in = tmpfile();
+   worker.data = input;
+   worker.size = sizeof(input);
+   assert(worker.in && fwrite(picture, 1, sizeof(picture), worker.in) == sizeof(picture));
+   rewind(worker.in);
+   config.video.bit_depth = 8;
+   assert(!record_stream_d3d12_new(&worker, &config, &client));
+   config.video.bit_depth = 10;
+   config.stream_color.primaries = 9;
+   assert(!record_stream_d3d12_new(&worker, &config, &client));
+   config.stream_color.primaries = 0;
+   config.video.headers_size--;
+   assert(!record_stream_d3d12_new(&worker, &config, &client));
+   config.video.headers_size++;
+   stream = record_stream_d3d12_new(&worker, &config, &client);
+   assert(stream);
+   for (i = 0; i < 1000 && !worker.held; i++)
+      assert(record_stream_d3d12_step(stream, 0, &wait) == RECORD_GPU_OUTPUT_PROGRESS);
+   assert(worker.held && !worker.releases);
+   client.blocked = true;
+   for (i = 0; i < 20; i++)
+      assert(record_stream_d3d12_step(stream, 0, &wait) != RECORD_GPU_OUTPUT_ERROR);
+   assert(client.wire_live && worker.held && !worker.releases);
+   client.blocked = false;
+   result = RECORD_GPU_OUTPUT_PROGRESS;
+   for (i = 0; i < 1000 && result != RECORD_GPU_OUTPUT_END; i++)
+   {
+      result = record_stream_d3d12_step(stream, 0, &wait);
+      assert(result != RECORD_GPU_OUTPUT_ERROR);
+   }
+   assert(result == RECORD_GPU_OUTPUT_END && worker.releases == 1);
+   assert(record_stream_d3d12_free(stream));
+   assert(!fclose(worker.in) && net_rtmp_session_free(client.session));
+   puts("PASS AV1 native OBU admission, network-held packet and video-only retirement");
+}
+
 static void hevc_admission(void)
 {
    static const uint8_t sets[] = {
@@ -242,6 +298,7 @@ int main(void)
    unsigned i;
    int result;
    hevc_admission();
+   av1_admission();
    for (i = 0; i < sizeof(pcm) / sizeof(pcm[0]); i += 2)
    {
       pcm[i] = 1234;

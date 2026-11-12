@@ -318,7 +318,7 @@ audio-timeline-check: $(AUDIO_TIMELINE_TARGET)
 	done
 ifeq ($(COUNT_IO),1)
 FEED_IO_FLAGS := -DPREVIEW_COUNT_READS
-FEED_IO_LIBS := -Wl,--wrap=filestream_read
+FEED_IO_LIBS := -Wl,--wrap=filestream_read -Wl,--wrap=filestream_read_at
 endif
 
 $(AUDIO_FEED_TARGET): $(AUDIO_FEED_SOURCES)
