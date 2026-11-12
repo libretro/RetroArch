@@ -197,6 +197,7 @@ static int record_metal_stream_bootstrap(record_gpu_dispatch_metal_t *j)
       goto failed;
    if (!j->client)
    {
+      startup = RECORD_METAL_STARTUP_RANDOM;
       if (crypto_random_bytes(j->random,sizeof(j->random)) != 0)
          goto failed;
       memset(&config,0,sizeof(config));
@@ -213,12 +214,14 @@ static int record_metal_stream_bootstrap(record_gpu_dispatch_metal_t *j)
       caps.audio = &audio;
       caps.video_count = 1;
       caps.audio_count = j->stream.channels ? 1 : 0;
+      startup = RECORD_METAL_STARTUP_CLIENT;
       j->client = net_rtmp_client_new_caps(&config,&caps);
       if (!j->client)
          goto failed;
       free(j->path);
       j->path = NULL;
    }
+   startup = RECORD_METAL_STARTUP_NETWORK;
    state = net_rtmp_client_step(j->client,0,&j->connect_view);
    if (state == NET_RTMP_CLIENT_FAILED)
       goto failed;
@@ -233,6 +236,7 @@ static int record_metal_stream_bootstrap(record_gpu_dispatch_metal_t *j)
    j->stream_output.color = j->stream.color;
    if (j->stream.channels)
    {
+      startup = RECORD_METAL_STARTUP_AUDIO;
       j->aac = record_at_audio_new(j->stream.audio_rate,j->stream.channels,j->stream.audio_bitrate);
       j->source = record_audio_queue_new(j->stream.channels,j->stream.max_audio_frames,
             j->stream.audio_capacity_bytes);
@@ -269,6 +273,8 @@ static int record_metal_stream_bootstrap(record_gpu_dispatch_metal_t *j)
          ? RECORD_METAL_DISPATCH_DRAINING : RECORD_METAL_DISPATCH_READY);
    return RECORD_AVF_WORKER_PROGRESS;
 failed:
+   retro_atomic_store_release_int(&j->startup,(int)startup);
+   retro_atomic_store_release_int(&j->native_status,(int)status);
    j->bootstrapping = false;
    record_metal_dispatch_fail(j,RECORD_AVF_SESSION_MUX);
    retro_atomic_store_release_int(&j->state,RECORD_METAL_DISPATCH_DRAINING);
