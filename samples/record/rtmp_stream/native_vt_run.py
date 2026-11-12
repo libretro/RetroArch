@@ -95,15 +95,21 @@ def main():
                 (0, 8, 48000, 2, None, True, None, True),
                 (0, 8, 48000, 2, None, True, 32040.5, True),
                 (1, 8, 44100, 1, '1.2', True, 96000, True))
-        for hevc, depth, rate, channels, tls, queued, source_rate, owned in cases[:1] if args.first_case else cases:
+        cases = [case + (False,) for case in cases]
+        cases += [(0, 8, 48000, 2, None, True, None, True, True),
+                  (1, 8, 44100, 1, '1.2', True, 96000, True, True)]
+        for hevc, depth, rate, channels, tls, queued, source_rate, owned, cancel in cases[:1] if args.first_case else cases:
             case = dict(hevc=hevc, depth=depth, rate=rate, channels=channels,
-                        tls=tls, queued=queued, source_rate=source_rate, owned=owned, result='running')
+                        tls=tls, queued=queued, source_rate=source_rate, owned=owned,
+                        cancel=cancel, result='running')
             evidence['cases'].append(case)
             directory = root / f'{hevc}-{depth}-{rate}-{channels}-{tls or "tcp"}{"-queued" if queued else ""}'
             if source_rate:
                 directory = directory.with_name(directory.name + f'-src-{source_rate}')
             if owned:
                 directory = directory.with_name(directory.name + '-owned')
+            if cancel:
+                directory = directory.with_name(directory.name + '-cancel')
             directory.mkdir()
             received, coded = directory / 'received.flv', directory / 'native.bin'
             with socket.socket() as reserve:
@@ -122,6 +128,7 @@ def main():
                     env.pop('VT_STREAM_SOURCE_QUEUE', None)
                     env.pop('VT_STREAM_SOURCE_RATE', None)
                     env.pop('VT_STREAM_OWNED_OUTPUT', None)
+                    env.pop('VT_STREAM_CANCEL_OWNED', None)
                     env.pop('RTMPS_CA', None)
                     if queued:
                         env['VT_STREAM_SOURCE_QUEUE'] = '1'
@@ -129,6 +136,8 @@ def main():
                         env['VT_STREAM_SOURCE_RATE'] = str(source_rate)
                     if owned:
                         env['VT_STREAM_OWNED_OUTPUT'] = '1'
+                    if cancel:
+                        env['VT_STREAM_CANCEL_OWNED'] = '1'
                     if relay:
                         url = f'rtmps://localhost:{relay.port}/live/test'
                         env['RTMPS_CA'] = str(relay.ca)
@@ -142,7 +151,10 @@ def main():
                             raise TimeoutError('native publisher did not connect')
                         time.sleep(0.01)
                     result.check_returncode()
-                    assert server.wait(timeout=20) == 0, 'independent receiver failed'
+                    receiver_status = server.wait(timeout=20)
+                    case['receiver_status'] = receiver_status
+                    if not cancel:
+                        assert receiver_status == 0, 'independent receiver failed'
                 finally:
                     if server.poll() is None:
                         server.terminate()
@@ -154,6 +166,15 @@ def main():
             values = {key: int(value) for key, value in re.findall(
                 r'(\w+)=(\d+)', result.stdout.decode())}
             case['native'] = values
+            if cancel:
+                assert values['cancelled'] == values['owned'] == 1, values
+                assert 2 <= values['submitted'] < 24, values
+                assert values['released'] == values['submitted'], values
+                case['scope'] = 'native cancellation and complete resource retirement; truncated wire is not a decode-quality pass'
+                case['result'] = 'PASS'
+                save()
+                print('PASS native owned-session cancellation:', case, flush=True)
+                continue
             assert bool(values['prebuffer']) == queued, values
             assert bool(values['owned']) == owned, values
             info = json.loads(command([probe, '-v', 'error', '-show_streams',

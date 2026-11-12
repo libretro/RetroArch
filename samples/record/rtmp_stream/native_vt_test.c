@@ -356,8 +356,11 @@ int main(int argc, char **argv)
    int result;
    bool video_closed = false, audio_closed = false;
    bool owned = getenv("VT_STREAM_OWNED_OUTPUT") != NULL;
+   bool cancel_owned = getenv("VT_STREAM_CANCEL_OWNED") != NULL;
+   bool cancelled = false;
    bool queued = false;
    assert(argc == 7 && network_init());
+   assert(!cancel_owned || owned);
    rate = (unsigned)atoi(argv[3]);
    channels = (unsigned)atoi(argv[4]);
    assert((rate == 44100 || rate == 48000) && channels && channels <= 2);
@@ -475,9 +478,16 @@ int main(int argc, char **argv)
       do
       {
          assert(cpu_features_get_time_usec() < deadline);
+         if (cancel_owned && !cancelled && owner->adopted && capture.outputs >= 2)
+         {
+            record_avfoundation_session_cancel(owned_session);
+            assert(record_avfoundation_session_video_finish(owned_session));
+            assert(record_avfoundation_session_audio_finish(owned_session));
+            video_closed = audio_closed = cancelled = true;
+         }
          if (queued && !audio_closed)
             produce_audio(stream, source, owned_session, pcm, source_rate, channels, frames, &accepted, &audio_closed);
-         if (count < FRAMES && record_gpu_queue_acquire(queue, &slot) == RECORD_GPU_QUEUE_OK)
+         if (!video_closed && count < FRAMES && record_gpu_queue_acquire(queue, &slot) == RECORD_GPU_QUEUE_OK)
          {
             fill(capture.images[slot], count, video_config.bit_depth);
             frame.slot = slot; frame.timestamp = (uint64_t)count * 1001; frame.duration = 1001;
@@ -512,9 +522,10 @@ int main(int argc, char **argv)
             produce_audio(stream, NULL, NULL, pcm, rate, channels, frames, &accepted, &audio_closed);
          result = owned_session ? record_avfoundation_session_step(owned_session)
             : record_stream_vt_step(stream, 0, &wait);
-         if (result == RECORD_STREAM_VT_ERROR)
+         if (result == RECORD_STREAM_VT_ERROR && !cancelled)
             fprintf(stderr, "Native stream failure: %d\n", owned_session
                   ?(int)record_avfoundation_session_error(owned_session):(int)record_stream_vt_error(stream));
+         if (cancelled && result == RECORD_AVF_WORKER_ERROR) break;
          assert(result >= 0);
          if (result == RECORD_STREAM_VT_BUSY)
          {
@@ -527,6 +538,19 @@ int main(int argc, char **argv)
             wait_network(&wait.network);
          }
       } while (result != (owned_session ? (int)RECORD_AVF_WORKER_END : (int)RECORD_STREAM_VT_END));
+      if (cancelled)
+      {
+         assert(record_avfoundation_session_error(owned_session) == RECORD_AVF_SESSION_CANCELLED);
+         assert(owner->adopted && !owner->complete && owner->retired && !owner->output && !capture.encoder);
+         assert(count >= 2 && count < FRAMES && capture.releases == count);
+         assert(record_avfoundation_session_free(owned_session));
+         free(owner); sthread_join(resolver);
+         for (i = 0; i < 2; i++) CVPixelBufferRelease(capture.images[i]);
+         assert(!fclose(capture.coded));
+         free(capture.staging); free(pcm);
+         printf("PASS cancelled=1 submitted=%u released=%u owned=1\n", count, capture.releases);
+         return 0;
+      }
       assert(count == FRAMES && capture.outputs == FRAMES && capture.releases == FRAMES);
       if (owned_session)
       {
