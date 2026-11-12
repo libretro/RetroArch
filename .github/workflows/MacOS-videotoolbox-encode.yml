@@ -398,3 +398,24 @@ jobs:
           name: vt-ios-sdk
           path: ${{ runner.temp }}/vt-ios-sdk
           if-no-files-found: error
+
+  ios-app:
+    if: ${{ inputs.ios_sdk_only }}
+    needs: ios-sdk
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and link actual iOS application with native recording
+        run: python3 samples/record/videotoolbox_encode/ios_app_check.py --output-dir "${{ runner.temp }}/vt-ios-app"
+      - name: Save full application build evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-ios-app
+          path: |
+            ${{ runner.temp }}/vt-ios-app/*.json
+            ${{ runner.temp }}/vt-ios-app/*.log
+            ${{ runner.temp }}/vt-ios-app/*.txt
+            ${{ runner.temp }}/vt-ios-app/build.xcresult
+          if-no-files-found: error
