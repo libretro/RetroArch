@@ -64,9 +64,9 @@ done:
    CFRelease(list); *error=status; return encoder;
 }
 #endif
-record_avfoundation_session_t *record_gpu_session_metal_new(void *device,
-      const record_gpu_session_metal_config_t *c,const record_mux_avfoundation_config_t *output,
-      size_t audio_capacity_bytes,const char *path,record_gpu_capture_metal_t **capture_out,
+record_avfoundation_session_t *record_gpu_session_metal_new_output(void *device,
+      const record_gpu_session_metal_config_t *c,record_gpu_session_metal_bind_t bind,
+      void *context,record_gpu_capture_metal_t **capture_out,
       record_gpu_queue_t **queue_out,enum record_gpu_session_metal_startup *stage,int32_t *native_status)
 {
    if (capture_out) *capture_out=NULL;
@@ -90,11 +90,10 @@ record_avfoundation_session_t *record_gpu_session_metal_new(void *device,
       unsigned i;
       enum record_gpu_session_metal_startup failure=RECORD_METAL_STARTUP_CONFIG;
       memset(images,0,sizeof(images)); memset(&config,0,sizeof(config));
-      if (!device || !c || !output || !capture_out || !queue_out || !path || !*path
-            || output->video_format || !c->width || !c->height || c->width>16384 || c->height>16384
+      if (!device || !c || !bind || !capture_out || !queue_out
+            || !c->width || !c->height || c->width>16384 || c->height>16384
             || ((c->width|c->height)&1) || c->slots<2 || c->slots>VIDEOTOOLBOX_ENCODE_SLOTS
-            || c->mode>2 || (c->mode && c->bit_depth!=10)
-            || c->timescale!=output->timescale) goto done;
+            || c->mode>2 || (c->mode && c->bit_depth!=10)) goto done;
       gpu=[(__bridge id<MTLDevice>)device registryID];
       if (!gpu) goto done;
       config.width=c->width; config.height=c->height; config.slots=c->slots;
@@ -118,8 +117,7 @@ record_avfoundation_session_t *record_gpu_session_metal_new(void *device,
       if (!capture) goto done;
       failure=RECORD_METAL_STARTUP_SESSION;
       queue=record_gpu_queue_new(c->slots); if (!queue) goto done;
-      session=record_avfoundation_session_new_native(queue,capture,encoder,c->width,c->height,
-            output,audio_capacity_bytes,path);
+      session=bind(context,queue,capture,encoder,c->width,c->height);
       if (!session) goto done;
       *capture_out=capture; *queue_out=queue;
       capture=NULL; queue=NULL; encoder=NULL; failure=RECORD_METAL_STARTUP_NONE;
@@ -129,6 +127,50 @@ done:
       if (stage) *stage=failure;
       if (native_status) *native_status=(int32_t)status;
       return session;
+   }
+#else
+   (void)device; (void)c; (void)bind; (void)context;
+   return NULL;
+#endif
+}
+#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && TARGET_OS_OSX \
+      && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+typedef struct record_metal_file_binding
+{
+   const record_mux_avfoundation_config_t *output;
+   const char *path;
+   size_t audio_capacity;
+} record_metal_file_binding_t;
+static __attribute__((availability(macos,introduced=10.14))) record_avfoundation_session_t *record_metal_file_bind(
+      void *data,record_gpu_queue_t *queue,record_gpu_capture_metal_t *capture,
+      struct videotoolbox_encode *encoder,unsigned width,unsigned height)
+{
+   record_metal_file_binding_t *binding=(record_metal_file_binding_t*)data;
+   return record_avfoundation_session_new_native(queue,capture,encoder,width,height,
+         binding->output,binding->audio_capacity,binding->path);
+}
+#endif
+record_avfoundation_session_t *record_gpu_session_metal_new(void *device,
+      const record_gpu_session_metal_config_t *c,const record_mux_avfoundation_config_t *output,
+      size_t audio_capacity_bytes,const char *path,record_gpu_capture_metal_t **capture_out,
+      record_gpu_queue_t **queue_out,enum record_gpu_session_metal_startup *stage,int32_t *native_status)
+{
+   if (capture_out) *capture_out=NULL;
+   if (queue_out) *queue_out=NULL;
+   if (stage) *stage=RECORD_METAL_STARTUP_UNSUPPORTED;
+   if (native_status) *native_status=0;
+#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && TARGET_OS_OSX \
+      && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+   {
+      record_metal_file_binding_t binding;
+      if (!c || !output || output->video_format || c->timescale!=output->timescale || !path || !*path)
+      {
+         if (stage) *stage=RECORD_METAL_STARTUP_CONFIG;
+         return NULL;
+      }
+      binding.output=output; binding.path=path; binding.audio_capacity=audio_capacity_bytes;
+      return record_gpu_session_metal_new_output(device,c,record_metal_file_bind,&binding,
+            capture_out,queue_out,stage,native_status);
    }
 #else
    (void)device; (void)c; (void)output; (void)audio_capacity_bytes; (void)path;

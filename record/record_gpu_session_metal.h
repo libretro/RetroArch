@@ -16,6 +16,22 @@ enum record_gpu_session_metal_startup
    RECORD_METAL_STARTUP_POOL, RECORD_METAL_STARTUP_CAPTURE, RECORD_METAL_STARTUP_SESSION,
    RECORD_METAL_STARTUP_UNSUPPORTED
 };
+struct videotoolbox_encode;
+/* Cold callback: success adopts queue/capture/encoder; failure adopts none.
+ * No producer may use these resources before the callback returns. */
+typedef record_avfoundation_session_t *(*record_gpu_session_metal_bind_t)(void *context,
+      record_gpu_queue_t *queue,record_gpu_capture_metal_t *capture,
+      struct videotoolbox_encode *encoder,unsigned width,unsigned height);
+/* Reuses the renderer-device encoder, aligned pool and capture bootstrap for
+ * an output-owned session. Callback/context are borrowed only during startup. */
+#if defined(__APPLE__) && defined(__clang__)
+__attribute__((availability(macos,introduced=10.14)))
+#endif
+record_avfoundation_session_t *record_gpu_session_metal_new_output(void *device,
+      const record_gpu_session_metal_config_t *config,
+      record_gpu_session_metal_bind_t bind,void *context,
+      record_gpu_capture_metal_t **capture,record_gpu_queue_t **queue,
+      enum record_gpu_session_metal_startup *stage,int32_t *native_status);
 /* macOS cold I/O worker only. Selects an explicit advertised hardware encoder
  * ID, preferring the supplied Metal GPU over an encoder with no advertised
  * GPU binding. Rejects software and encoders bound to a different GPU; checks
