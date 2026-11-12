@@ -11,7 +11,9 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
+NATIVE_BUFFER_HEADERS := $(RA)/record/record_native_buffer.h $(RA)/record/record_gpu_queue.h
 all: capture_test$(EXE) profile_test$(EXE) core_clock_test$(EXE) init_test$(EXE) menu_test$(EXE) menu_tls_test$(EXE)
+init_test$(EXE) menu_test$(EXE) menu_tls_test$(EXE): $(NATIVE_BUFFER_HEADERS)
 PROFILE_SOURCES := profile_test.c \
   $(RA)/libretro-common/file/config_file.c $(RA)/libretro-common/file/file_path.c \
   $(RA)/libretro-common/string/stdstring.c $(RA)/libretro-common/string/rstrtod.c \

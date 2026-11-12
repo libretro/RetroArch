@@ -4,12 +4,15 @@
 #include <stdio.h>
 #include <string.h>
 #include "../../../configuration.h"
+#include "../../../config.def.h"
+#include "../../../record/record_native_buffer.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_displaylist.h"
 #include "../../../record/record_driver.h"
 #include "../../../record/drivers/record_metal.h"
 #include "../../../record/drivers/record_nvenc.h"
 
+static rarch_setting_t buffer_setting;
 static settings_t test_settings;
 static struct menu_state test_menu;
 static bool metal_available = true, nvenc_available = true;
@@ -53,6 +56,11 @@ bool record_nvenc_can_stream(void)
 {
    return nvenc_available;
 }
+rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums label)
+{
+   assert(label == MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES);
+   return &buffer_setting;
+}
 static int add_row(enum msg_hash_enums label)
 {
    assert(row_count < sizeof(rows)/sizeof(rows[0]));
@@ -82,6 +90,7 @@ static void select_driver(const char *ident)
    assert(strlen(ident) < sizeof(test_settings.arrays.record_driver));
    strcpy(test_settings.arrays.record_driver,ident);
    assert(build_rows() == row_count);
+   setting_record_buffer_range(&buffer_setting);
 }
 static void check_native(const char *ident, bool streaming)
 {
@@ -96,6 +105,11 @@ static void check_native(const char *ident, bool streaming)
    assert(has_row(MENU_ENUM_LABEL_VIDEO_GPU_RECORD));
    assert(has_row(MENU_ENUM_LABEL_VIDEO_RECORD_ALLOW_FRAME_DROP));
    assert(has_row(MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES));
+   assert(buffer_setting.min == recording_native_buffer_min(ident));
+   assert(buffer_setting.max == RECORD_GPU_QUEUE_SLOTS);
+   assert(buffer_setting.step == 1 && buffer_setting.default_value.unsigned_integer == 4);
+   assert(setting_uint_get(&buffer_setting) >= buffer_setting.min);
+   assert(setting_uint_get(&buffer_setting) <= buffer_setting.max);
    assert(!has_row(MENU_ENUM_LABEL_VIDEO_RECORD_THREADS));
    assert(!has_row(MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY));
    assert(!has_row(MENU_ENUM_LABEL_VIDEO_RECORD_GAME_ONLY));
@@ -112,7 +126,19 @@ static void check_native(const char *ident, bool streaming)
 int main(void)
 {
    rarch_setting_t setting;
-   unsigned mode, offered[6];
+   unsigned mode, offered[6], slots;
+   for (slots = 0; slots <= RECORD_GPU_QUEUE_SLOTS + 1; slots++)
+   {
+      assert(recording_native_buffer_count("metal",slots)
+            == (slots >= 2 && slots <= 16 ? slots : 4));
+      assert(recording_native_buffer_count("mediacodec",slots)
+            == (slots >= 2 && slots <= 16 ? slots : 4));
+      assert(recording_native_buffer_count("nvenc",slots)
+            == (slots >= 4 && slots <= 16 ? slots : 4));
+   }
+   memset(&buffer_setting,0,sizeof(buffer_setting));
+   buffer_setting.value.target.unsigned_integer = &test_settings.uints.video_record_fifo_frames;
+   test_settings.uints.video_record_fifo_frames = DEFAULT_VIDEO_RECORD_FIFO_FRAMES;
    assert(!recording_driver_find(NULL) && !recording_driver_find("missing"));
    assert(!recording_driver_can_stream("missing"));
    check_native("metal",true);
@@ -129,6 +155,10 @@ int main(void)
    assert(!has_row(MENU_ENUM_LABEL_STREAMING_URL));
    test_settings.uints.streaming_mode = STREAMING_MODE_LOCAL;
    select_driver("ffmpeg");
+   assert(buffer_setting.min == MIN_VIDEO_RECORD_FIFO_FRAMES);
+   assert(buffer_setting.max == MAX_VIDEO_RECORD_FIFO_FRAMES);
+   assert(buffer_setting.step == 4);
+   assert(buffer_setting.default_value.unsigned_integer == DEFAULT_VIDEO_RECORD_FIFO_FRAMES);
    assert(has_row(MENU_ENUM_LABEL_UDP_STREAM_PORT));
    assert(has_row(MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY));
    assert(has_row(MENU_ENUM_LABEL_STREAMING_TITLE));

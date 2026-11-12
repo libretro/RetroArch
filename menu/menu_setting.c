@@ -39,6 +39,7 @@
 #include "../config.h"
 #endif
 
+#include "../record/record_native_buffer.h"
 #include "menu_setting.h"
 #include "menu_displaylist.h"
 #include "menu_cbs.h"
@@ -12439,12 +12440,43 @@ static void update_streaming_url_write_handler(rarch_setting_t *setting)
    recording_driver_update_streaming_url();
 }
 
+static void setting_record_buffer_range(rarch_setting_t *setting)
+{
+   settings_t *settings = config_get_ptr();
+   const record_driver_t *driver;
+   if (!setting || !settings)
+      return;
+   driver = recording_driver_find(settings->arrays.record_driver);
+   if (recording_is_native_gpu(driver))
+   {
+      setting->min = recording_native_buffer_min(driver->ident);
+      setting->max = RECORD_GPU_QUEUE_SLOTS;
+      setting->step = 1;
+      setting->offset_by = (unsigned)setting->min;
+      setting->default_value.unsigned_integer = 4;
+      setting_uint_set(setting, recording_native_buffer_count(driver->ident,
+               setting_uint_get(setting)));
+   }
+   else
+   {
+      setting->min = MIN_VIDEO_RECORD_FIFO_FRAMES;
+      setting->max = MAX_VIDEO_RECORD_FIFO_FRAMES;
+      setting->step = 4;
+      setting->offset_by = MIN_VIDEO_RECORD_FIFO_FRAMES;
+      setting->default_value.unsigned_integer = DEFAULT_VIDEO_RECORD_FIFO_FRAMES;
+      if (setting_uint_get(setting) < MIN_VIDEO_RECORD_FIFO_FRAMES)
+         setting_uint_set(setting, MIN_VIDEO_RECORD_FIFO_FRAMES);
+   }
+}
+
 static void record_driver_write_handler(rarch_setting_t *setting)
 {
    /* Force the recording settings page to rebuild so that
     * driver-specific items are shown/hidden immediately. */
    struct menu_state *menu_st = menu_state_get_ptr();
    settings_t *settings       = config_get_ptr();
+   setting_record_buffer_range(menu_setting_find_enum(
+            MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES));
    if (settings && recording_driver_can_stream(settings->arrays.record_driver)
          && !recording_driver_streaming_mode_supported(
             settings->arrays.record_driver, settings->uints.streaming_mode))
@@ -13227,6 +13259,8 @@ static void settings_list_add_desc(
                (enum ui_setting_type)d->ui_type;
       if (d->values)
          MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, d->values);
+      if (d->name_enum == MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES)
+         setting_record_buffer_range(&(*list)[list_info->index - 1]);
    }
 }
 

@@ -27,7 +27,7 @@ build = ('static unsigned build_rows(void)\n{\n'
          + rows + '   }\n   return count;\n}\n')
 actions = between(setting, 'static int setting_uint_action_left_default(',
                   'static int setting_bool_action_right_with_refresh(')
-changed = between(setting, 'static void record_driver_write_handler(',
+changed = between(setting, 'static void setting_record_buffer_range(',
                   'static void audio_driver_write_handler(')
 start = display.index('                                    if (setting->enum_idx == MENU_ENUM_LABEL_STREAMING_MODE')
 end = display.index('continue;', start) + len('continue;')

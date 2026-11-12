@@ -14,6 +14,7 @@
 #include "../../../audio/audio_driver.h"
 #include "../../../audio/audio_upmix.h"
 #include "../../../record/record_driver.h"
+#include "../../../record/record_native_buffer.h"
 #include "../../../record/record_gpu_dispatch_metal.h"
 #include "../../../record/record_vt_packet.h"
 
@@ -129,6 +130,15 @@ int main(void)
 {
    struct record_params params;
    record_metal_context_t *ctx;
+   unsigned slots;
+   for (slots = 0; slots <= RECORD_GPU_QUEUE_SLOTS + 1; slots++)
+   {
+      reset(&params);
+      params.video_fifo_frames = slots;
+      ctx = start(&params);
+      assert(offered_video.slots == (slots >= 2 && slots <= 16 ? slots : 4));
+      retire(ctx);
+   }
    reset(&params);
    ctx = start(&params);
    assert(!offered_video.hevc && offered_video.bit_depth == 8);

@@ -5,6 +5,7 @@
 #endif
 #include "record_mediacodec.h"
 #include "../../gfx/video_driver.h"
+#include "../record_native_buffer.h"
 #if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_MEDIACODEC_FRONTEND_TEST)
 #include <stdlib.h>
 #include <string.h>
@@ -371,10 +372,7 @@ static void *record_mc_init(const struct record_params *params)
       channels = params->channels;
       capacity = (size_t)rate * channels * sizeof(int16_t) * 2 + 4096;
    }
-   count = params->video_fifo_frames >= 2
-               && params->video_fifo_frames <= RECORD_GPU_QUEUE_SLOTS
-         ? params->video_fifo_frames
-         : 4;
+   count = recording_native_buffer_count("mediacodec", params->video_fifo_frames);
    for (path_length = 0;
          path_length < PATH_MAX_LENGTH && params->filename[path_length];
          path_length++)

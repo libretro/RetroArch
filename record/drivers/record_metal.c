@@ -4,6 +4,7 @@
 #endif
 #include "record_metal.h"
 #include "../../gfx/video_driver.h"
+#include "../record_native_buffer.h"
 #ifdef HAVE_RECORD_METAL
 #include <stdlib.h>
 #include <string.h>
@@ -157,7 +158,7 @@ static void *record_metal_init(const struct record_params *params)
    hdr.version=1; hdr.size=sizeof(hdr);
    if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA,&hdr)) return NULL;
    video.width=VIDEO_SCALE_W(params->out_dims); video.height=VIDEO_SCALE_H(params->out_dims);
-   video.slots=params->video_fifo_frames>=2 && params->video_fifo_frames<=16?params->video_fifo_frames:4;
+   video.slots = recording_native_buffer_count("metal", params->video_fifo_frames);
    video.bitrate=16000000; video.hevc=hdr.output_mode!=0;
    if (!video.width || !video.height || ((video.width|video.height)&1) || video.width>16384 || video.height>16384
          || !record_metal_rate(params->fps,&fps_num,&fps_den) || fps_num>INT32_MAX

@@ -4,6 +4,7 @@
 #endif
 #include "record_nvenc.h"
 #include "../../gfx/video_driver.h"
+#include "../record_native_buffer.h"
 #ifdef HAVE_RECORD_NVENC
 #include <stdlib.h>
 #include <string.h>
@@ -193,7 +194,8 @@ static void *record_nvenc_init(const struct record_params *params)
    hdr.version = 1; hdr.size = sizeof(hdr);
    if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr))
       return NULL;
-   encoder.device = device.device; encoder.slots = 4;
+   encoder.device = device.device;
+   encoder.slots = recording_native_buffer_count("nvenc", params->video_fifo_frames);
    encoder.width = VIDEO_SCALE_W(params->out_dims);
    encoder.height = VIDEO_SCALE_H(params->out_dims);
    encoder.bitrate = 16000000;
