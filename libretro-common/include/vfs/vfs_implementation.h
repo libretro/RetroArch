@@ -59,6 +59,14 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len);
 
+/* Writes @count pieces of memory, in order, as if each were written
+ * with retro_vfs_file_write_impl: one writev() call for a descriptor-
+ * written stream where the platform has it, else one write per piece.
+ * Returns the bytes written, short at the first piece not written in
+ * full, or -1 if nothing was written. */
+int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
+      const struct retro_vfs_span *spans, size_t count);
+
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream);
 
 int retro_vfs_file_remove_impl(const char *path);

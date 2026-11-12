@@ -142,6 +142,26 @@ typedef struct
 #endif
 #endif
 
+/* Gathered writes: where a descriptor-written stream can hand several
+ * pieces of memory to the kernel in one writev() call.  POSIX only;
+ * Windows and the consoles write the pieces one by one. */
+#ifndef VFS_HAVE_WRITEV
+#if defined(VFS_HAVE_DESCRIPTOR_WRITE) && defined(HAVE_MMAP) \
+ && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+  || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)) \
+ && !defined(_WIN32) && !defined(VITA) && !defined(GEKKO) \
+ && !defined(PSP) && !defined(PS2)
+#define VFS_HAVE_WRITEV 1
+#endif
+#endif
+
+/* One piece of memory for a gathered write */
+struct retro_vfs_span
+{
+   const void *data;
+   size_t      len;
+};
+
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,

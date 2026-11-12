@@ -200,6 +200,9 @@
 #endif
 
 #include <vfs/vfs_implementation.h>
+#ifdef VFS_HAVE_WRITEV
+#include <sys/uio.h>
+#endif
 #include <libretro.h>
 #if defined(HAVE_MMAP)
 #include <memmap.h>
@@ -1982,6 +1985,87 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       stream->size = pos + ret;
 
    return ret;
+}
+
+/* Pieces handed to one writev(): within every POSIX IOV_MAX (16 at
+ * the least), and the stack array stays small */
+#define VFS_WRITEV_MAX 16
+
+int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
+      const struct retro_vfs_span *spans, size_t count)
+{
+   int64_t total = 0;
+   size_t  i     = 0;
+
+   if (!stream || (count && !spans))
+      return -1;
+
+#ifdef VFS_HAVE_WRITEV
+   if (     (stream->hints & RFILE_HINT_UNBUFFERED)
+         && stream->scheme == VFS_SCHEME_NONE)
+   {
+      int64_t pos = retro_vfs_file_tell_impl(stream);
+      while (i < count)
+      {
+         struct iovec iov[VFS_WRITEV_MAX];
+         size_t  n    = 0;
+         size_t  want = 0;
+         ssize_t put;
+
+         /* Empty pieces carry nothing; a piece past the per-call
+          * clamp goes on its own, through the write loop */
+         while (     i + n < count && n < VFS_WRITEV_MAX
+               &&    spans[i + n].len <= VFS_STDIO_IO_CHUNK_MAX
+               &&    want + spans[i + n].len <= VFS_STDIO_IO_CHUNK_MAX)
+         {
+            iov[n].iov_base = (void*)spans[i + n].data;
+            iov[n].iov_len  = spans[i + n].len;
+            want           += spans[i + n].len;
+            n++;
+         }
+         if (!n)
+         {
+            int64_t one = retro_vfs_file_write_impl(stream,
+                  spans[i].data, spans[i].len);
+            if (one < 0)
+               return total ? total : -1;
+            total += one;
+            if ((uint64_t)one < spans[i].len)
+               return total;
+            i++;
+            continue;
+         }
+         do
+         {
+            put = writev(stream->fd, iov, (int)n);
+         } while (put < 0 && errno == EINTR);
+         if (put < 0)
+            return total ? total : -1;
+         total += put;
+         if (pos >= 0 && pos + total > stream->size)
+            stream->size = pos + total;
+         if ((size_t)put < want)
+            return total;
+         i += n;
+      }
+      return total;
+   }
+#endif
+
+   /* One write per piece, through whatever this stream writes with */
+   for (; i < count; i++)
+   {
+      int64_t one;
+      if (!spans[i].len)
+         continue;
+      if ((one = retro_vfs_file_write_impl(stream, spans[i].data,
+                  spans[i].len)) < 0)
+         return total ? total : -1;
+      total += one;
+      if ((uint64_t)one < spans[i].len)
+         break;
+   }
+   return total;
 }
 
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)

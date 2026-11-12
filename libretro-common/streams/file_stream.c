@@ -2018,6 +2018,51 @@ int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
    return output;
 }
 
+int64_t filestream_writev(RFILE *stream,
+      const struct retro_vfs_span *spans, size_t count)
+{
+   int64_t output = 0;
+   size_t  i;
+
+   if (!stream || (count && !spans))
+      return -1;
+
+   /* As filestream_write: back on the logical position first */
+   filestream_rbuf_discard(stream);
+   if (stream->last_io == FILESTREAM_LAST_IO_READ)
+      filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+   stream->last_io = FILESTREAM_LAST_IO_WRITE;
+
+   if (!filestream_write_cb)
+      output = retro_vfs_file_writev_impl(
+            (libretro_vfs_implementation_file*)stream->hfile, spans, count);
+   else
+   {
+      /* A core's VFS has no gathered write: one piece at a time */
+      for (i = 0; i < count; i++)
+      {
+         int64_t one;
+         if (!spans[i].len)
+            continue;
+         if ((one = filestream_write_cb(stream->hfile, spans[i].data,
+                     (uint64_t)spans[i].len)) < 0)
+         {
+            if (!output)
+               output = VFS_ERROR_RETURN_VALUE;
+            break;
+         }
+         output += one;
+         if ((uint64_t)one < spans[i].len)
+            break;
+      }
+   }
+
+   if (output == VFS_ERROR_RETURN_VALUE)
+      stream->err_flag = true;
+
+   return output;
+}
+
 int filestream_putc(RFILE *stream, int c)
 {
    char c_char = (char)c;

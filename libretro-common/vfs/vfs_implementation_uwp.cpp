@@ -245,6 +245,31 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file* stream, cons
     return write(stream->fd, s, (size_t)len);
 }
 
+
+/* No gathered write here: one write per piece, as the C backend does
+ * where the platform has no writev() */
+int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
+      const struct retro_vfs_span *spans, size_t count)
+{
+   int64_t total = 0;
+   size_t  i;
+   if (!stream || (count && !spans))
+      return -1;
+   for (i = 0; i < count; i++)
+   {
+      int64_t one;
+      if (!spans[i].len)
+         continue;
+      if ((one = retro_vfs_file_write_impl(stream, spans[i].data,
+                  spans[i].len)) < 0)
+         return total ? total : -1;
+      total += one;
+      if ((uint64_t)one < spans[i].len)
+         break;
+   }
+   return total;
+}
+
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file* stream)
 {
     if (stream && fflush(stream->fp) == 0)

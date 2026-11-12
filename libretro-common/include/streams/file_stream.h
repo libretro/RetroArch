@@ -160,6 +160,20 @@ int64_t filestream_read(RFILE *stream, void *data, int64_t len);
 int64_t filestream_write(RFILE *stream, const void *data, int64_t len);
 
 /**
+ * Writes @count pieces of memory to the given file, in order, as if
+ * each were passed to \c filestream_write in turn.  A stream opened
+ * with \c RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK hands them to the
+ * kernel in one gathered write where the platform has one, so pieces
+ * scattered through a buffer reach the file without being copied
+ * together first.
+ *
+ * @return The number of bytes written, short at the first piece not
+ * written in full, or -1 if nothing was written.
+ */
+int64_t filestream_writev(RFILE *stream,
+      const struct retro_vfs_span *spans, size_t count);
+
+/**
  * Returns the current position of the given file in bytes.
  *
  * @param stream The file to return the stream position for.
