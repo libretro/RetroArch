@@ -3635,12 +3635,18 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
 #endif
          && fl->data)
    {
-      uint64_t at = 0;
-      if (rflac_seek(fl->handle, frame, &at) == RFLAC_PROCESS_NEXT
+      uint64_t at    = 0;
+      uint64_t point = 0;
+      if (rflac_seek_point(fl->handle, frame, &at, &point)
+               == RFLAC_PROCESS_NEXT
             && at < fl->size)
       {
          uint64_t landed;
-         rflac_seek_resumed(fl->handle, 0);
+         /* Resumed at the seek point's own frame.  Told 0 instead, the
+          * decoder took the point for the start, and the remainder below
+          * was decoded on from the point as if from frame 0: the seek
+          * landed point frames past its target. */
+         rflac_seek_resumed(fl->handle, point);
          rflac_set_in(fl->handle, (const uint8_t*)fl->data + at,
                fl->size - (size_t)at);
          rflac_set_eof(fl->handle);

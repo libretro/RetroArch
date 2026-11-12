@@ -6876,11 +6876,18 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
 
 int rflac_seek(rflac_t *f, uint64_t frame, uint64_t *byte_offset)
 {
+   uint64_t point_frame;
+   return rflac_seek_point(f, frame, byte_offset, &point_frame);
+}
+
+int rflac_seek_point(rflac_t *f, uint64_t frame, uint64_t *byte_offset,
+      uint64_t *point_frame)
+{
    uint32_t i;
    uint32_t best = 0;
    int      found = 0;
 
-   if (!f || !f->dec || !byte_offset)
+   if (!f || !f->dec || !byte_offset || !point_frame)
       return RFLAC_PROCESS_ERROR;
    if (!f->dec->pSeekpoints || !f->dec->seekpointCount)
       return RFLAC_PROCESS_ERROR;
@@ -6905,6 +6912,7 @@ int rflac_seek(rflac_t *f, uint64_t frame, uint64_t *byte_offset)
 
    *byte_offset = f->dec->firstFLACFramePosInBytes
                 + f->dec->pSeekpoints[best].flacFrameOffset;
+   *point_frame = f->dec->pSeekpoints[best].firstPCMFrame;
 
    return RFLAC_PROCESS_NEXT;
 }

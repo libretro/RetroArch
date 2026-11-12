@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Regenerates fixtures/tone.flac and fixtures/tone.mka.
+"""Regenerates fixtures/tone.flac, fixtures/tone.mka and
+fixtures/tone_seektable.flac.
 
 20000 stereo frames at 44100 Hz - not a multiple of the encoder's block
 size, so each stream ends on a short frame - of two sines with a little
 low-order noise so the predictor has residual to code. The test
 regenerates the same PCM from the same formula and compares every
-sample, so keep the two in step. Needs ffmpeg; the committed fixtures
-are what CI uses."""
+sample, so keep the two in step. Needs ffmpeg, and flac and metaflac
+for the seek table; the committed fixtures are what CI uses."""
 
 import math
 import os
@@ -34,4 +35,13 @@ for out in ("tone.flac", "tone.mka"):
                            "-f", "s16le", "-ar", str(RATE), "-ac", "2",
                            "-i", raw, "-c:a", "flac",
                            os.path.join(fix, out)])
+# The same PCM through the reference encoder, with a seek table: a point
+# at each of the first frames (ffmpeg writes no table). The seek lane
+# lands between them.
+seek = os.path.join(fix, "tone_seektable.flac")
+subprocess.check_call(["flac", "--silent", "--force", "--force-raw-format",
+                       "--endian=little", "--sign=signed", "--channels=2",
+                       "--bps=16", "--sample-rate=" + str(RATE), "-S-",
+                       "-o", seek, raw])
+subprocess.check_call(["metaflac", "--add-seekpoint=5x", seek])
 os.remove(raw)
