@@ -3920,7 +3920,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
-         const uint32_t supported_vfs_version = 5;
+         const uint32_t supported_vfs_version = 6;
          static struct retro_vfs_interface vfs_iface =
          {
             /* VFS API v1 */
@@ -3954,7 +3954,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             retro_vfs_copy_begin_impl,
             retro_vfs_copy_step_impl,
             retro_vfs_copy_close_impl,
-            retro_vfs_dirent_stat_impl
+            retro_vfs_dirent_stat_impl,
+             /* VFS API v6 */
+            retro_vfs_file_read_at_impl,
+            retro_vfs_file_write_at_impl
          };
 
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;

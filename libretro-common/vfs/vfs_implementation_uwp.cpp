@@ -270,6 +270,28 @@ int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
    return total;
 }
 
+/* No positional I/O here: one handle, one position. The caller seeks and
+ * reads, as the C backend's callers do where it answers -1. */
+int64_t retro_vfs_file_read_at_impl(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len, int64_t offset)
+{
+   (void)stream;
+   (void)s;
+   (void)len;
+   (void)offset;
+   return -1;
+}
+
+int64_t retro_vfs_file_write_at_impl(libretro_vfs_implementation_file *stream,
+      const void *s, uint64_t len, int64_t offset)
+{
+   (void)stream;
+   (void)s;
+   (void)len;
+   (void)offset;
+   return -1;
+}
+
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file* stream)
 {
     if (stream && fflush(stream->fp) == 0)

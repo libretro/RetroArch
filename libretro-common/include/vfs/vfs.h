@@ -27,6 +27,7 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 #include <stdint.h>
+#include <retro_atomic.h>
 
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
@@ -230,6 +231,15 @@ struct libretro_vfs_implementation_file
 #if defined(HAVE_CDROM) && defined(__APPLE__)
    void *iokit_plugin;   /* IOCFPlugInInterface ** */
    void *iokit_mmc;      /* MMCDeviceInterface ** */
+#endif
+   /* Positional I/O (retro_vfs_file_read_at_impl, _write_at_impl), from
+    * any number of threads at once. append_end: where the next append
+    * goes, plus one; 0 until the first. at_handle (Windows): a handle of
+    * its own on the file, with a position of its own, made at the first
+    * positional call; NULL until then. */
+   retro_atomic_size_t append_end;
+#ifdef _WIN32
+   retro_atomic_ptr_t  at_handle;
 #endif
 };
 #endif

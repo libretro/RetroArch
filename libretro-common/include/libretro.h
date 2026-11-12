@@ -4346,6 +4346,50 @@ typedef int (RETRO_CALLCONV *retro_vfs_dirent_stat_t)(struct retro_vfs_dir_handl
 typedef int (RETRO_CALLCONV *retro_vfs_closedir_t)(struct retro_vfs_dir_handle *dirstream);
 
 /**
+ * Reads from a file at a given offset, without moving the position that
+ * \c retro_vfs_read_t, \c retro_vfs_seek_t and \c retro_vfs_tell_t share.
+ * Any number of threads may call it on one handle at once, with no lock
+ * of the core's: the frontend reads at the offset itself. Introduced in
+ * VFS API v6.
+ *
+ * It reads the file as it is on disk: bytes written with
+ * \c retro_vfs_write_t and not flushed yet may not be seen.
+ *
+ * @param stream The file to read from.
+ * @param s Where the bytes go.
+ * @param len How many to read.
+ * @param offset Where in the file, from its start; not negative.
+ * @return The number of bytes read, 0 at or past the end of the file, or
+ * -1 on an error or when the frontend has no positional I/O for this
+ * file (a cdrom:// or network path, a platform without it): the core
+ * then seeks and reads, under a lock of its own if it shares the handle.
+ */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_read_at_t)(struct retro_vfs_file_handle *stream, void *s, uint64_t len, int64_t offset);
+
+/** \c offset of \c retro_vfs_write_at_t for an append. */
+#define RETRO_VFS_WRITE_AT_APPEND (-1)
+
+/**
+ * Writes to a file at a given offset, without moving the handle's
+ * position; callable from several threads at once as
+ * \c retro_vfs_read_at_t is. Introduced in VFS API v6.
+ *
+ * With \c RETRO_VFS_WRITE_AT_APPEND the bytes are appended: each append
+ * goes in whole, after the one before it, whichever thread it came from
+ * - a log or a cache several threads add records to needs no lock. The
+ * appends start at the end of the file as it was opened, so a handle
+ * that is appended to is written with this call only.
+ *
+ * @param stream The file to write to.
+ * @param s The bytes to write.
+ * @param len How many.
+ * @param offset Where in the file, or \c RETRO_VFS_WRITE_AT_APPEND.
+ * @return The number of bytes written, or -1 on an error or when the
+ * frontend has no positional I/O for this file.
+ */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_write_at_t)(struct retro_vfs_file_handle *stream, const void *s, uint64_t len, int64_t offset);
+
+/**
  * File system interface exposed by the frontend.
  *
  * @see dirent_vfs_init
@@ -4440,6 +4484,13 @@ struct retro_vfs_interface
 
    /** @copydoc retro_vfs_dirent_stat_t */
    retro_vfs_dirent_stat_t dirent_stat;
+
+   /* VFS API v6 */
+   /** @copydoc retro_vfs_read_at_t */
+   retro_vfs_read_at_t read_at;
+
+   /** @copydoc retro_vfs_write_at_t */
+   retro_vfs_write_at_t write_at;
 };
 
 /**

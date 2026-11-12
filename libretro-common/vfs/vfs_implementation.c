@@ -720,6 +720,14 @@ int64_t retro_vfs_file_seek_internal(
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 
+/* Where positional I/O is had: see retro_vfs_file_read_at_impl */
+#if defined(VFS_HAVE_FILE_MAPPING) && defined(HAVE_MMAP)
+#define VFS_POSITIONAL_POSIX 1
+#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) \
+   && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#define VFS_POSITIONAL_WIN32 1
+#endif
+
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       const char *path, unsigned mode, unsigned hints)
 {
@@ -1229,6 +1237,12 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 
       retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
    }
+   /* Appends (retro_vfs_file_write_at_impl) start at the end as opened */
+   retro_atomic_size_init(&stream->append_end,
+         stream->size > 0 ? (size_t)stream->size : 0);
+#ifdef _WIN32
+   retro_atomic_ptr_init(&stream->at_handle, NULL);
+#endif
    return stream;
 
 error:
@@ -1262,6 +1276,14 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    {
       retro_vfs_file_close_nfs(stream);
       goto netend;
+   }
+#endif
+
+#ifdef VFS_POSITIONAL_WIN32
+   {
+      HANDLE at = (HANDLE)retro_atomic_load_acquire_ptr(&stream->at_handle);
+      if (at)
+         CloseHandle(at);
    }
 #endif
 
@@ -2066,6 +2088,201 @@ int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
          break;
    }
    return total;
+}
+
+/* Positional I/O: at an offset given with the call, leaving the stream's
+ * position alone, from any number of threads at once on one stream with
+ * no lock - pread()/pwrite() where there is one, a handle of the stream's
+ * own with OVERLAPPED offsets on Windows, the mapping where the stream is
+ * mapped. -1 where the platform or the stream's scheme (cdrom://, smb://,
+ * nfs://, SAF) has none: the caller seeks and reads under a lock of its
+ * own, as before. They act on the file itself: bytes written with
+ * retro_vfs_file_write_impl and not flushed yet are not seen. */
+#ifdef VFS_POSITIONAL_WIN32
+/* The stream's second handle, made by whichever thread gets there first */
+static HANDLE vfs_positional_handle(libretro_vfs_implementation_file *stream)
+{
+   HANDLE base, made;
+   HANDLE at = (HANDLE)retro_atomic_load_acquire_ptr(&stream->at_handle);
+   int    fd;
+   if (at)
+      return at;
+   fd = (stream->hints & RFILE_HINT_UNBUFFERED) ? stream->fd
+      : (stream->fp ? _fileno(stream->fp) : -1);
+   if (fd < 0)
+      return NULL;
+   base = (HANDLE)_get_osfhandle(fd);
+   if (base == INVALID_HANDLE_VALUE)
+      return NULL;
+   made = ReOpenFile(base, GENERIC_READ | GENERIC_WRITE,
+         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
+   if (made == INVALID_HANDLE_VALUE)
+      made = ReOpenFile(base, GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
+   if (made == INVALID_HANDLE_VALUE)
+      return NULL;
+   if (retro_atomic_cas_ptr(&stream->at_handle, NULL, made))
+      return made;
+   /* Another thread's is in: this one is not needed */
+   CloseHandle(made);
+   return (HANDLE)retro_atomic_load_acquire_ptr(&stream->at_handle);
+}
+#endif
+
+int64_t retro_vfs_file_read_at_impl(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len, int64_t offset)
+{
+   if (!stream || !s || offset < 0 || len > (uint64_t)INT64_MAX)
+      return -1;
+   if (stream->scheme != VFS_SCHEME_NONE)
+      return -1;
+
+#ifdef VFS_HAVE_FILE_MAPPING
+   if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+         && stream->mapped)
+   {
+      if ((uint64_t)offset >= stream->mapsize)
+         return 0;
+      if (len > stream->mapsize - (uint64_t)offset)
+         len = stream->mapsize - (uint64_t)offset;
+      memcpy(s, &stream->mapped[offset], (size_t)len);
+      return (int64_t)len;
+   }
+#endif
+
+#if defined(VFS_POSITIONAL_POSIX)
+   {
+      uint8_t *p     = (uint8_t*)s;
+      uint64_t total = 0;
+      int fd         = (stream->hints & RFILE_HINT_UNBUFFERED) ? stream->fd
+         : (stream->fp ? fileno(stream->fp) : -1);
+      if (fd < 0)
+         return -1;
+      while (len != 0)
+      {
+         size_t  _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
+               ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
+         ssize_t _got   = pread(fd, p, _chunk, (off_t)(offset + (int64_t)total));
+         if (_got < 0)
+            return (total != 0) ? (int64_t)total : -1;
+         if (_got == 0)
+            break;
+         total += (uint64_t)_got;
+         p     += _got;
+         len   -= (uint64_t)_got;
+      }
+      return (int64_t)total;
+   }
+#elif defined(VFS_POSITIONAL_WIN32)
+   {
+      uint8_t *p     = (uint8_t*)s;
+      uint64_t total = 0;
+      HANDLE at      = vfs_positional_handle(stream);
+      if (!at)
+         return -1;
+      while (len != 0)
+      {
+         OVERLAPPED ov;
+         DWORD _got     = 0;
+         DWORD _chunk   = (len > 0x40000000u) ? 0x40000000u : (DWORD)len;
+         uint64_t where = (uint64_t)offset + total;
+         memset(&ov, 0, sizeof(ov));
+         ov.Offset      = (DWORD)(where & 0xffffffffu);
+         ov.OffsetHigh  = (DWORD)(where >> 32);
+         if (!ReadFile(at, p, _chunk, &_got, &ov))
+         {
+            if (GetLastError() == ERROR_HANDLE_EOF)
+               break;
+            return (total != 0) ? (int64_t)total : -1;
+         }
+         if (_got == 0)
+            break;
+         total += _got;
+         p     += _got;
+         len   -= _got;
+      }
+      return (int64_t)total;
+   }
+#else
+   return -1;
+#endif
+}
+
+int64_t retro_vfs_file_write_at_impl(libretro_vfs_implementation_file *stream,
+      const void *s, uint64_t len, int64_t offset)
+{
+   if (!stream || !s || len > (uint64_t)INT64_MAX)
+      return -1;
+   if (stream->scheme != VFS_SCHEME_NONE)
+      return -1;
+#ifdef VFS_HAVE_FILE_MAPPING
+   /* A mapped stream is read-only */
+   if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+         && stream->mapped)
+      return -1;
+#endif
+
+#if defined(VFS_POSITIONAL_POSIX) || defined(VFS_POSITIONAL_WIN32)
+   if (offset < 0)
+   {
+      /* An append: its place taken with one atomic add, so appends from
+       * several threads land one after another, whole, in some order */
+      if (len > (uint64_t)((size_t)-1))
+         return -1;
+      offset = (int64_t)retro_atomic_fetch_add_size(&stream->append_end,
+            (size_t)len);
+   }
+#endif
+
+#if defined(VFS_POSITIONAL_POSIX)
+   {
+      const uint8_t *p = (const uint8_t*)s;
+      uint64_t total   = 0;
+      int fd           = (stream->hints & RFILE_HINT_UNBUFFERED) ? stream->fd
+         : (stream->fp ? fileno(stream->fp) : -1);
+      if (fd < 0)
+         return -1;
+      while (len != 0)
+      {
+         size_t  _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
+               ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
+         ssize_t _put   = pwrite(fd, p, _chunk, (off_t)(offset + (int64_t)total));
+         if (_put <= 0)
+            return (total != 0) ? (int64_t)total : -1;
+         total += (uint64_t)_put;
+         p     += _put;
+         len   -= (uint64_t)_put;
+      }
+      return (int64_t)total;
+   }
+#elif defined(VFS_POSITIONAL_WIN32)
+   {
+      const uint8_t *p = (const uint8_t*)s;
+      uint64_t total   = 0;
+      HANDLE at        = vfs_positional_handle(stream);
+      if (!at)
+         return -1;
+      while (len != 0)
+      {
+         OVERLAPPED ov;
+         DWORD _put     = 0;
+         DWORD _chunk   = (len > 0x40000000u) ? 0x40000000u : (DWORD)len;
+         uint64_t where = (uint64_t)offset + total;
+         memset(&ov, 0, sizeof(ov));
+         ov.Offset      = (DWORD)(where & 0xffffffffu);
+         ov.OffsetHigh  = (DWORD)(where >> 32);
+         if (!WriteFile(at, p, _chunk, &_put, &ov) || _put == 0)
+            return (total != 0) ? (int64_t)total : -1;
+         total += _put;
+         p     += _put;
+         len   -= _put;
+      }
+      return (int64_t)total;
+   }
+#else
+   (void)offset;
+   return -1;
+#endif
 }
 
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
