@@ -3044,6 +3044,22 @@ jobs:
           test -f gfx_thumbnail_anim_test.exe
           make clean TARGET=gfx_thumbnail_anim_test.exe
 
+      - name: Build and run gfx_thumbnail_match_test (ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_match
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # Thumbnail name matching on trimmed libretro-thumbnails
+          # listings: the names it must match and the games it must
+          # keep apart.
+          make clean
+          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             ASAN_OPTIONS=detect_leaks=1 make check SANITIZER=address,undefined
+          make clean
+          make check CC=x86_64-w64-mingw32-gcc LDFLAGS=-static RUNNER=wine
+          make clean
+
       - name: Build and run gfx_surface_still_test (ASan + UBSan, mingw-w64)
         shell: bash
         working-directory: samples/gfx/gfx_surface_still
