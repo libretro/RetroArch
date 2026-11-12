@@ -50,6 +50,9 @@
 #include "../audio/audio_driver.h"
 
 #include "menu_driver.h"
+#ifdef HAVE_IOS_MENU
+#include "../ui/ios/RetroArchMenuBridge.h"
+#endif
 #include "menu_bind_trigger.h"
 #include "menu_dirwalk.h"
 #include "menu_cbs.h"
@@ -369,6 +372,9 @@ const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #endif
 #if defined(HAVE_XMB)
    &menu_ctx_xmb,
+#endif
+#ifdef HAVE_IOS_MENU
+   &menu_ctx_ios,
 #endif
    &menu_ctx_null,
    NULL
@@ -5313,6 +5319,16 @@ static bool menu_driver_init_internal(
          menu_st->driver_data               = (menu_handle_t*)
             menu_st->driver_ctx->init(&menu_st->userdata,
                   video_is_threaded);
+#if defined(HAVE_IOS_MENU) && defined(HAVE_MATERIALUI)
+         if (!menu_st->driver_data && menu_st->driver_ctx == &menu_ctx_ios)
+         {
+            RARCH_ERR("[Menu] iOS menu initialization failed; using glui.\n");
+            menu_st->driver_ctx  = &menu_ctx_mui;
+            p_disp->menu_driver_id = MENU_DRIVER_ID_GLUI;
+            menu_st->driver_data = (menu_handle_t*)
+               menu_ctx_mui.init(&menu_st->userdata, video_is_threaded);
+         }
+#endif
          /* init returns NULL on failure; the check below handles it. */
          if (menu_st->driver_data)
          {
@@ -5367,6 +5383,9 @@ bool menu_driver_init(bool video_is_threaded)
    gfx_display_t            *p_disp  = disp_get_ptr();
    settings_t             *settings  = config_get_ptr();
    struct menu_state       *menu_st  = &menu_driver_state;
+#if defined(HAVE_IOS_MENU) && defined(HAVE_MATERIALUI)
+   bool ios_menu_requested = menu_st->driver_ctx == &menu_ctx_ios;
+#endif
 
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
    /* With a core up, its system info came from its own handle at
@@ -5385,6 +5404,10 @@ bool menu_driver_init(bool video_is_threaded)
       {
          menu_st->driver_ctx->context_reset(menu_st->userdata,
                video_is_threaded);
+#if defined(HAVE_IOS_MENU) && defined(HAVE_MATERIALUI)
+         if (ios_menu_requested && menu_st->driver_ctx == &menu_ctx_mui)
+            command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
          return true;
       }
    }
@@ -9587,6 +9610,9 @@ bool menu_driver_iterate(
 {
    menu_driver_pump_pending(menu_st, settings);
    action = menu_driver_media_launch(menu_st, action);
+#ifdef HAVE_IOS_MENU
+   action = (enum menu_action)ios_menu_take_action((unsigned)action);
+#endif
 
 #ifdef RETRO_ATOMIC_HAS_PTR
    if (retro_atomic_load_relaxed_ptr(&menu_drop_pending))

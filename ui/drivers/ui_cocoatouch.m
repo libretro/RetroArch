@@ -30,6 +30,9 @@
 
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
+#ifdef HAVE_IOS_MENU
+#include "../ios/RetroArchMenuBridge.h"
+#endif
 #ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 #import "cocoa/RetroArchPlaylistManager.h"
 #endif
@@ -118,6 +121,14 @@
 
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
+
+#ifdef HAVE_IOS_MENU
+static void ui_companion_cocoatouch_message(void *data, const char *message,
+      unsigned priority, unsigned duration, bool flush)
+{
+   ios_menu_bridge_message(message);
+}
+#endif
 
 static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
 {
@@ -267,6 +278,11 @@ static void handle_touch_event(NSArray* touches)
    float scale               = [renderView contentScaleFactor];
 
    cocoa_input_touches_begin();
+
+#ifdef HAVE_IOS_MENU
+   if (ios_menu_visible())
+      return;
+#endif
 
    for (i = 0; i < touches.count; i++)
    {
@@ -1788,7 +1804,11 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* iterate */
    ui_companion_cocoatouch_event_command,
    NULL, /* notify_refresh */
+#ifdef HAVE_IOS_MENU
+   ui_companion_cocoatouch_message,
+#else
    NULL, /* msg_queue_push */
+#endif
    NULL, /* render_messagebox */
    NULL, /* get_main_window */
    NULL, /* log_msg */
