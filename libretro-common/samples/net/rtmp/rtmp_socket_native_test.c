@@ -88,7 +88,7 @@ static rflv_mux_t *media_mux(FILE *file, uint8_t *header, uint8_t *payload)
    rflv_mux_t *mux;
    uint8_t *avcc = NULL, *asc = NULL;
    size_t size;
-   bool av1 = false;
+   bool av1 = false, hevc = false;
    memset(&config, 0, sizeof(config));
    config.video_timescale = config.audio_timescale = 1000;
    config.max_packet_size = 1048576;
@@ -98,8 +98,9 @@ static rflv_mux_t *media_mux(FILE *file, uint8_t *header, uint8_t *payload)
             && (payload[0] == 0x90 || payload[1] == 0))
       {
          assert(!avcc);
-         av1 = payload[0] == 0x90;
-         assert(av1 ? !memcmp(payload + 1, "av01", 4) : payload[0] == 23);
+         av1 = payload[0] == 0x90 && !memcmp(payload + 1, "av01", 4);
+         hevc = payload[0] == 0x90 && !memcmp(payload + 1, "hvc1", 4);
+         assert(av1 || hevc || payload[0] == 23);
          config.avcc_size = size - 5;
          config.avcc = avcc = (uint8_t*)malloc(config.avcc_size);
          assert(avcc);
@@ -115,7 +116,8 @@ static rflv_mux_t *media_mux(FILE *file, uint8_t *header, uint8_t *payload)
       }
    }
    assert(avcc && asc);
-   mux = av1 ? rflv_mux_new_av1(&config) : rflv_mux_new(&config);
+   mux = av1 ? rflv_mux_new_av1(&config)
+      : hevc ? rflv_mux_new_hevc(&config) : rflv_mux_new(&config);
    free(avcc);
    free(asc);
    assert(mux && !fseek(file, 13, SEEK_SET));
@@ -178,18 +180,23 @@ static void send_media(net_rtmp_session_t *session, net_rtmp_socket_t *transport
       {
          size_t prefix;
          uint64_t pts = timestamp;
-         bool av1 = header[0] == 9 && size > 5 && (payload[0] & 0x80);
+         bool enhanced = header[0] == 9 && size > 5 && (payload[0] & 0x80);
+         bool hevc = enhanced && !memcmp(payload + 1, "hvc1", 4);
+         unsigned type = payload[0] & 15;
          if ((header[0] != 8 && header[0] != 9) || size < 2
-               || (av1 ? (payload[0] & 15) != 1 : payload[1] != 1))
+               || (enhanced ? type != 1 && !(hevc && type == 3) : payload[1] != 1))
             continue;
          prefix = header[0] == 9 ? 5 : 2;
+         if (hevc && type == 1)
+            prefix = 8;
          assert(size > prefix);
-         if (av1)
-            assert(!memcmp(payload + 1, "av01", 4));
-         else if (header[0] == 9)
+         if (enhanced)
+            assert(hevc || !memcmp(payload + 1, "av01", 4));
+         if (header[0] == 9 && (!enhanced || (hevc && type == 1)))
          {
-            int32_t composition = ((int32_t)payload[2] << 16)
-               | ((int32_t)payload[3] << 8) | payload[4];
+            const uint8_t *cts = payload + (enhanced ? 5 : 2);
+            int32_t composition = ((int32_t)cts[0] << 16)
+               | ((int32_t)cts[1] << 8) | cts[2];
             if (composition & 0x800000)
                composition -= 0x1000000;
             assert(composition >= 0 || timestamp >= (uint32_t)-composition);

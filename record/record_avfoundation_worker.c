@@ -49,7 +49,7 @@ int record_avfoundation_worker_step(record_avfoundation_worker_t *w)
       const int16_t *samples=NULL;
       size_t frames=0;
       uint64_t timestamp=0;
-      result=record_audio_queue_peek(w->audio,&samples,&frames,&timestamp);
+      result=record_audio_queue_peek_lend(w->audio,&samples,&frames,&timestamp);
       if (result==RECORD_AUDIO_ERROR) goto failed;
       if (result==RECORD_AUDIO_END) { w->audio_end=true; progress=true; }
       else if (result==RECORD_AUDIO_OK)
