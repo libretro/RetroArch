@@ -1,0 +1,243 @@
+# One case per line, fields split by '|' (on-disk names never hold one):
+#   system|query|expected|tier|+name|-name...
+# system: fixtures/<system>.index, or - for an empty list.
+# expected: the file found, - for none, ! for refused.
+# tier: t0, t2, t2b, t3, t3b, or - for none.
+# +name adds a name to the list for this case, -name hides one.
+# exact tiers
+-|Game & Title|Game & Title.png|t2|+Game & Title.png
+-|Discworld II: Missing presumed ...!? (CD/DOS/English(US))|Discworld II_ Missing presumed ...!_ (CD_DOS_English(US)).png|t0|+Discworld II_ Missing presumed ...!_ (CD_DOS_English(US)).png
+-|Title: Subtitle (USA)|Title - Subtitle (USA).png|t2|+Title - Subtitle (USA).png
+-|dkong|-|-|+Donkey Kong (USA).png
+-|Half-Life (USA)|Half-Life (USA).png|t0|+Half-Life (USA).png
+-|Tetris (USA)|Tetris (USA).png|t0|+Tetris (USA).jpg|+Tetris (USA).png|+Tetris (USA).bmp
+-|Tetris (USA)|Tetris (USA).jpg|t0|+Tetris (USA).bmp|+Tetris (USA).jpg|+Tetris (USA).txt
+-|Mr. DO! (USA)|Mr. Do! (USA).png|t2|+Mr. Do (USA).png|+Mr. Do! (USA).png
+-|Mr Do (USA)|Mr. Do (USA).png|t2|+Mr. Do! (USA).png|+Mr. Do (USA).png
+-|GAME|Game.png|t2|+Game (USA).png|+Game.png|+game.png
+-|...|-|-|+!!!.png
+-|??? (Japan)|-|-|+!!! (Japan).png
+-|!!! (Japan)|!!! (Japan).png|t0|+!!! (Japan).png
+-|Tetris (USA)|Tetris (USA).PNG|t0|+Tetris (USA).png|+Tetris (USA).PNG
+-|Tetris (USA)|-|-|+Tetris (USA) (Tengen) (Unl).png
+# loose tier
+-|Final Fantasy 2 (USA)|Final Fantasy II (USA).png|t2b|+Final Fantasy II (USA).png|+Final Fantasy III (USA).png
+-|Rocky 5|-|-|+Rocky V.png
+-|Metal Slug 10|-|-|+Metal Slug X.png
+-|A Fight (Japan)|!|t2b|+Fight, The (Japan).png|+Fight (Japan).png
+-|Rock and Roll Racing (USA)|Rock _ Roll Racing (USA).png|t2b|+Rock _ Roll Racing (USA).png
+-|Ranma ½ (Japan)|Ranma1_2 (Japan).png|t2b|+Ranma1_2 (Japan).png
+-|Ranma 1/2 (Japan)|Ranma1_2 (Japan).png|t2b|+Ranma1_2 (Japan).png
+-|Ranma ½ (Japan)|-|-|+Ranma 12 (Japan).png
+-|Ranma 1/2 (Japan)|-|-|+Ranma 12 (Japan).png
+-|Final Fantasy 1 & 2 (USA)|-|-|+Final Fantasy XII (USA).png
+-|Game 12 (USA)|-|-|+Game 1 - 2 (USA).png
+-|Game 12 (USA)|-|-|+Game 1 II (USA).png
+-|Street Fighter 2 Turbo (USA)|-|-|+Street Fighter II Turbo (USA).png
+-|Ultima Underworld 2 - Labyrinth of Worlds|Ultima Underworld II_ Labyrinth of Worlds.png|t2b|+Ultima Underworld II_ Labyrinth of Worlds.png
+-|Final Fantasy 1 (USA)|-|-|+Final Fantasy I (USA).png
+-|Arquimedes 21|-|-|+Arquimedes XXI.png
+-|Quest ][|Quest II.png|t2|+Quest II.png
+-|Quest ][|-|-|+Quest, The.png
+-|Quest ][ (USA)|-|-|+Quest, The (USA).png
+-|Quest|-|-|+Quest ][.png
+# tags
+-|007 - The Living Daylights (1987)(Domark)|007 - The Living Daylights (Domark).png|t3|+007 - The Living Daylights (Domark).png|+007 - The Living Daylights.png
+-|Zox 2099 (Loriciels)|-|-|+Zox 2099.png
+-|Armored Warriors (Europe 941024)|-|-|+Armored Warriors (941024 Europe).png
+-|4 Wheel Thunder v1.002 (2000)(Midway)(NTSC)(US)[!]|-|-|+4 Wheel Thunder (USA).png
+-|Xyz (P.J.)|-|-|+Xyz (P.J. Software).png
+-|Sentinel (Abacus Programs)|-|-|+Sentinel, The (Firebird Software Ltd).png
+-|Tekken 6 (USA) (En,Fr,De,Es,It,Ru)|-|-|+Tekken 6 (2014-05-20) (PSP) (PSN).png
+-|Choplifter (USA, Europe, Brazil)|-|-|+Choplifter (Japan) (Proto).png|+Choplifter (USA) (Beta).png
+-|Mortal Kombat 2 (USA)|Mortal Kombat II (Europe).png|t3b|+Mortal Kombat II (Europe).png|+Mortal Kombat (USA).png
+-|Game (USA) (Disc A)|Game (USA) (Disc 1).png|t3|+Game (USA) (Disc 2).png|+Game (USA) (Disc 1).png
+-|Game (USA) (Disc 3)|Game (Europe).png|t3|+Game (USA) (Disc 1).png|+Game (Europe).png
+-|Game (USA)|Game (USA) (Disc 1).png|t3|+Game (USA) (Disc 2).png|+Game (USA) (Disc 1).png
+-|Game (USA)|-|-|+Game (USA) (Disc 2).png|+Game (USA) (Disc B).png|+Game (USA) (Side B).png
+-|Game (USA)|Game (USA, Europe) (En,Fr).png|t3|+Game (USA, Europe) (Disc 1).png|+Game (USA, Europe) (En,Fr).png
+-|Game (Europe)|Game (Europe) (Disk 1 of 2).png|t3|+Game (Europe) (Disk 2 of 2).png|+Game (Europe) (Disk 1 of 2).png
+-|Game (Japan)|Game (Japan) (Disc A).png|t3|+Game (Japan) (Disc B).png|+Game (Japan) (Disc A).png
+-|Game (USA) (Rev 3)|Game (USA) (Rev 2).png|t3|+Game (USA) (Rev 1).png|+Game (USA) (Rev 2).png
+-|Game (USA) (Rev 3)|Game (USA).png|t3|+Game (USA) (Rev 2).png|+Game (USA).png
+-|Super Mario Bros. (World)|Super Mario Bros. (Europe).png|t3|+Super Mario Bros. (USA) (Virtual Console).png|+Super Mario Bros. (Europe).png
+-|Game (JUE) [!]|Game (USA, Europe).png|t3|+Game (Japan).png|+Game (USA, Europe).png|+Game (World).png
+-|Game (1990)(US)|Game (USA).png|t3|+Game (Japan).png|+Game (USA).png
+-|Legend of Zelda, The|Legend of Zelda, The (USA).png|t3|+Legend of Zelda, The (USA).png|+Legend of Zelda, The (Europe).png
+-|Zelda no Densetsu|-|-|+Legend of Zelda, The (Japan).png
+# dates, second disc tags, brackets
+-|Fallout (1991)|-|-|+Fallout (1997).png|+Fallout.png
+-|Tetris (1987)|-|-|+Tetris.png|+Tetris (1991).png
+-|Civil War (1993)|-|-|+The Civil War.png|+Civil War, The (1995).png
+-|Civil War, The (1995)|-|-|+The Civil War.png|+Civil War (1993).png
+-|Zelda no Densetsu - Yume o Miru Shima DX (Japan) (Beta) (1998-06-30) (GB Compatible)|-|-|+Zelda no Densetsu - Yume o Miru Shima DX (Japan) (Beta) (1998-07-07) (GB Compatible).png
+-|Ad Astra (1984)(Gargoyle Games)|Ad Astra (Gargoyle Games).png|t3|+Ad Astra (Gargoyle Games).png
+-|Game (USA) (Disc 2) (Side A)|-|-|+Game (USA) (Disc 1).png|+Game (USA) (Disc 2).png
+-|Game (USA) (Disc 1) (Side B)|-|-|+Game (USA) (Disc 1).png|+Game (USA) (Disc 2).png
+-|Game (USA) [h1]|-|-|+Game (USA).png
+-|Game (Japan) [T+Eng]|-|-|+Game (Japan).png
+-|Game (Japan) [t]|-|-|+Game (Japan).png
+-|Game (USA) [p1]|-|-|+Game (USA).png
+-|Game (USA) [BIOS]|-|-|+Game (USA).png
+-|Game (USA) [cr Cracker]|Game (USA).png|t3|+Game (USA).png
+-|Game (USA) (Alt)|Game (USA).png|t3|+Game (USA).png
+-|Game (USA) (SGB Enhanced)|Game (USA).png|t3|+Game (USA).png
+-|Game (USA) (v1.1)|Game (USA).png|t3|+Game (USA).png
+-|Game (U) (PRG1) [!]|Game (USA).png|t3|+Game (USA).png
+-|Game (US-EU)|Game (USA, Europe).png|t3|+Game (Japan).png|+Game (USA, Europe).png
+# reported mismatches: the right image or none
+Nintendo_-_Nintendo_64|Legend of Zelda, The - Ocarina of Time (Europe) (En,Fr,De) (Rev 1)|Legend of Zelda, The - Ocarina of Time (Europe) (En,Fr,De) (Rev A).png|t3|-Legend of Zelda, The - Ocarina of Time (Europe) (En,Fr,De) (Rev 1).png|+Legend of Zelda, The - Ocarina of Time (Europe) (En,Fr,De) (Rev A).png
+Nintendo_-_Game_Boy_Color|Legend of Zelda, The - Link's Awakening DX (USA, Europe) (Rev 2) (SGB Enhanced) (GB Compatible)|Legend of Zelda, The - Link's Awakening DX (USA, Europe) (Rev B) (SGB Enhanced) (GB Compatible).png|t3|-Legend of Zelda, The - Link's Awakening DX (USA, Europe) (Rev 2) (SGB Enhanced) (GB Compatible).png|+Legend of Zelda, The - Link's Awakening DX (USA, Europe) (Rev B) (SGB Enhanced) (GB Compatible).png
+Nintendo_-_Game_Boy_Color|Legend of Zelda, The - Oracle of Ages (USA, Australia)|Legend of Zelda, The - Oracle of Ages (USA).png|t3|-Legend of Zelda, The - Oracle of Ages (USA, Australia).png|+Legend of Zelda, The - Oracle of Ages (USA).png
+Sega_-_Mega_Drive_-_Genesis|Rambo III (USA, Europe, Korea) (Rev A)|Rambo III (World) (Rev A).png|t3|-Rambo III (USA, Europe, Korea) (En) (Rev A).png
+Sega_-_Mega_Drive_-_Genesis|Acid Drop (Europe)|-|-
+Sony_-_PlayStation_2|Final Fantasy X (USA, Canada)|Final Fantasy X (Europe, Australia).png|t3|-Final Fantasy X (USA, Canada).png
+Sony_-_PlayStation_2|Soulcalibur III (Japan) (En,Ja) (v2.00)|Soulcalibur III (Japan) (v2.00).png|t3
+Nintendo_-_Super_Nintendo_Entertainment_System|Trials of Mana (World) (En) (Rev 1) (Collection of Mana)|Trials of Mana (World) (Rev 1) (Collection of Mana).png|t3|-Trials of Mana (World) (En) (Rev 1) (Collection of Mana).png
+Sega_-_Mega_Drive_-_Genesis|QuackShot Starring Donald Duck (World) (En,Ja)|QuackShot Starring Donald Duck (World).png|t3
+Sega_-_Mega_Drive_-_Genesis|QuackShot Starring Donald Duck (World) (En,Ja) (Rev A) (Alt)|QuackShot Starring Donald Duck (World) (Rev A).png|t3
+Sega_-_Mega_Drive_-_Genesis|Ristar - The Shooting Star (Japan, Korea) (En)|Ristar - The Shooting Star (Japan, Korea) (En).png|t0
+Sega_-_Mega_Drive_-_Genesis|Ristar - The Shooting Star (Japan, Korea) (En)|Ristar - The Shooting Star (Japan, Korea).png|t3|-Ristar - The Shooting Star (Japan, Korea) (En).png
+NEC_-_PC_Engine_CD_-_TurboGrafx-CD|Akumajou Dracula X - Chi no Rondo (Japan)|Akumajou Dracula X - Chi no Rondo (Japan).png|t0
+NEC_-_PC_Engine_CD_-_TurboGrafx-CD|Akumajou Dracula X - Chi no Rondo (Japan)|-|-|-Akumajou Dracula X - Chi no Rondo (Japan).png|+Akumajou Dracula X - Chi no Rondo (Japan) (Konami).png
+Nintendo_-_Super_Nintendo_Entertainment_System|FIFA Soccer 96 (Europe) (En,Fr,De,Es,It,Sv)|FIFA Soccer '96 (Europe) (En,Fr,De,Es,It,Sv).png|t2|-FIFA Soccer 96 (Europe) (En,Fr,De,Es,It,Sv).png|+FIFA Soccer '96 (Europe) (En,Fr,De,Es,It,Sv).png
+Nintendo_-_Super_Nintendo_Entertainment_System|WWF WrestleMania - The Arcade Game (USA)|WWF Wrestlemania - The Arcade Game (USA).png|t2|-WWF WrestleMania - The Arcade Game (USA).png|+WWF Wrestlemania - The Arcade Game (USA).png
+Sega_-_Mega_Drive_-_Genesis|RoboCop Versus The Terminator (USA)|RoboCop versus The Terminator (USA).png|t2|-RoboCop Versus The Terminator (USA).png|+RoboCop versus The Terminator (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|BASS Masters Classic (USA)|Bass Masters Classic (USA).png|t2|-BASS Masters Classic (USA).png|+Bass Masters Classic (USA).png
+Sony_-_PlayStation|Gex 3 - Deep Cover Gecko (USA)|Gex 3 - Deep cover Gecko (USA).png|t2|-Gex 3 - Deep Cover Gecko (USA).png|+Gex 3 - Deep cover Gecko (USA).png
+The_3DO_Company_-_3DO|Off-World Interceptor (USA)|Off-world Interceptor (USA).png|t2|-Off-World Interceptor (USA).png|+Off-world Interceptor (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Super Ghouls 'N Ghosts (Europe)|Super Ghouls'n Ghosts (Europe).png|t2b|-Super Ghouls 'N Ghosts (Europe).png|+Super Ghouls'n Ghosts (Europe).png
+Nintendo_-_Nintendo_Entertainment_System|Bump 'n' Jump (USA)|Bump'n'Jump (USA).png|t2b|-Bump 'n' Jump (USA).png|+Bump'n'Jump (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Rock N' Roll Racing (USA)|Rock N' Roll Racing (USA).png|t0
+Sega_-_Dreamcast|Soulcalibur (USA)|Soul Calibur (USA).png|t2b|-Soulcalibur (USA).png|+Soul Calibur (USA).png
+Nintendo_-_Game_Boy_Advance|Bomberman Jetters - Game Collection (Japan)|Bomber Man Jetters - Game Collection (Japan).png|t2b|-Bomberman Jetters - Game Collection (Japan).png|+Bomber Man Jetters - Game Collection (Japan).png
+Sega_-_Mega_Drive_-_Genesis|QuackShot Starring Donald Duck (World)|Quack Shot Starring Donald Duck (World).png|t2b|-QuackShot Starring Donald Duck (World).png
+Nintendo_-_Game_Boy_Advance|Ninja Five-O (USA)|-|-|-Ninja Five-O (USA).png|+Ninja Five-0 (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Ganbare Goemon 2 - Kiteretsu Shougun McGuiness (Japan)|-|-|+Ganbare Goemon 2 - Kiteretsu Shougun Magginesu (Japan).png
+Nintendo_-_Nintendo_Entertainment_System|Advanced Dungeons & Dragons - DragonStrike (USA)|Advanced Dungeons _ Dragons - DragonStrike (USA).png|t0
+Nintendo_-_Super_Nintendo_Entertainment_System|Adventures of Batman & Robin, The (USA)|Adventures of Batman _ Robin, The (USA).png|t0
+Commodore_-_Amiga|Zombi (Ubisoft) (France) (Disk 2 of 2)|-|-
+Nintendo_-_Super_Nintendo_Entertainment_System|Bahamut Lagoon (tr)|-|-
+Nintendo_-_Super_Nintendo_Entertainment_System|My Game (Japan) [English Translation]|-|-|+My Game (Japan).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Star Ocean (Japan) [T-En by DeJap v1.0]|Star Ocean (Japan) [T-En by DeJap v1.0].png|t0
+Nintendo_-_Super_Nintendo_Entertainment_System|Star Ocean (Japan) [T-En by DeJap v1.0]|-|-|-Star Ocean (Japan) [T-En by DeJap v1.0].png
+Nintendo_-_Nintendo_64|WWF No Mercy (E) (V1.1) [!]|WWF No Mercy (Europe) (Rev 1).png|t3
+Nintendo_-_Super_Nintendo_Entertainment_System|Super Mario World (USA)|Super Mario World (USA).png|t0
+Nintendo_-_Game_Boy_Color|Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible)|Pokemon - Silver Version (USA, Europe) (SGB Enhanced).png|t3|-Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).png|+Pokemon - Silver Version (USA, Europe) (SGB Enhanced).png
+# reported wrong images: the right one or none
+Sinclair_-_ZX_Spectrum|Zona 0 (Topo Soft) (Spain)[cr The Spanish Hacker]|Zona 0 (Topo Soft).png|t3|+Hacker.png
+Commodore_-_Amiga|Turrican II - The Final Fight (Rainbow Arts) (Disk 1 of 2)|-|-|+Final Fight.png
+Commodore_-_Amiga|Barbarian (Palace)|-|-|+Barbarian (Psygnosis).png
+Commodore_-_Amiga|Elf (Europe) (En,Fr,De) (Ocean)|Elf (USA) (En,Fr,De) (Ocean).png|t3
+Nintendo_-_Nintendo_Entertainment_System|Super Mario Bros. (World)|Super Mario Bros. (Europe).png|t3|-Super Mario Bros. (World).png
+Sony_-_PlayStation|Thousand Arms (USA) (Disc 1)|Thousand Arms (USA).png|t3|-Thousand Arms (USA) (Disc 1).png
+Sega_-_Dreamcast|Crazy Taxi (Europe)|Crazy Taxi (Europe).png|t0
+Nintendo_-_Nintendo_Entertainment_System|Super Mario Bros. (World) [h]|-|-
+Nintendo_-_Super_Nintendo_Entertainment_System|Rock N' Roll Racing (USA)|Rock 'N' Roll Racing (Europe).png|t3|-Rock N' Roll Racing (USA).png|+Rock _ Roll Racing (Europe) (Beta).png
+# prior-art traps
+Nintendo_-_Nintendo_Entertainment_System|Tetris (USA)|Tetris (Europe).png|t3|-Tetris (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Mega Man 2 (USA)|-|-|-Mega Man 2 (USA).png|-Mega Man 2 (USA) (Virtual Console).png|-Mega Man 2 (Europe).png|-Mega Man 2 (Europe) (Virtual Console).png|-Mega Man 2 (World) (Mega Man Legacy Collection).png|+Mega Man 4 (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Mega Man X (USA)|Mega Man X (USA) (Rev 1).png|t3|-Mega Man X (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Mega Man X (USA)|-|-|-Mega Man X (USA).png|-Mega Man X (USA) (Rev 1).png|-Mega Man X (Europe).png|-Mega Man X (World) (Rev 1) (Mega Man X Legacy Collection).png|+Mega Man X2 (USA).png|+Mega Man X3 (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Final Fantasy II (USA)|Final Fantasy II (USA) (Rev 1).png|t3|-Final Fantasy II (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Dragon Warrior II (USA)|-|-|-Dragon Warrior II (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Mortal Kombat (USA)|Mortal Kombat (USA) (Rev 1).png|t3|-Mortal Kombat (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Tetris (USA) (Tengen) (Unl)|-|-|-Tetris (USA) (Tengen) (Unl).png
+Nintendo_-_Nintendo_Entertainment_System|Pac-Man (USA) (Namco)|Pac-Man (1993-11)(Namco)(US).png|t3|-Pac-Man (USA) (Namco).png
+Nintendo_-_Nintendo_Entertainment_System|Gauntlet (USA)|-|-|-Gauntlet (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Final Fantasy II (USA)|Final Fantasy II (Japan).png|t3
+Nintendo_-_Nintendo_Entertainment_System|Final Fantasy II (USA) (Proto)|-|-|-Final Fantasy II (USA) (Proto).png
+Nintendo_-_Nintendo_Entertainment_System|Mega Man 3 (USA)|Mega Man 3 (Europe).png|t3|-Mega Man 3 (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Final Fantasy IV (Japan)|Final Fantasy IV (Japan) (Rev 1).png|t3|-Final Fantasy IV (Japan).png|+Final Fantasy IV - Easy Type (Japan).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Donkey Kong Country (USA)|Donkey Kong Country (USA) (Rev 1).png|t3|-Donkey Kong Country (USA).png|+Donkey Kong Country - Competition Cartridge (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Donkey Kong Jr. (World) (Rev 1)|Donkey Kong Jr. (Japan).png|t3|-Donkey Kong Jr. (World) (Rev 1).png|+Donkey Kong Jr. + Jr. Lesson (Japan).png
+Nintendo_-_Nintendo_Entertainment_System|Tetris 2 (USA)|-|-|-Tetris 2 (USA).png|-Tetris 2 (Europe).png|+Tetris 2 + Bombliss (Japan).png
+Sega_-_Mega_Drive_-_Genesis|Strider (Europe)|Strider (USA, Europe).png|t3|+Striker (Europe).png
+Nintendo_-_Nintendo_Entertainment_System|Rampage (Europe)|Rampage (USA).png|t3|+Rampart (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Gyrodine (USA)|Gyrodine (Japan).png|t3|+Gyromite (World).png
+Nintendo_-_Nintendo_Entertainment_System|Super Pinball (USA)|Super Pinball (Japan).png|t3|+Super Pitfall (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Pac-Mania (Japan)|-|-|+Pac-Man (Japan).png
+Nintendo_-_Nintendo_Entertainment_System|Momotarou Densetsu (Japan)|-|-|-Momotarou Densetsu (Japan).png|+Momotarou Dentetsu (Japan).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Shin Megami Tensei if... (Japan)|Shin Megami Tensei if... (Japan) (Rev 1).png|t3|-Shin Megami Tensei if... (Japan).png|+Shin Megami Tensei II (Japan).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Virtual Bart (Japan)|Virtual Bart (Japan) (En).png|t3|+Virtual Wars (Japan).png
+Sega_-_Mega_Drive_-_Genesis|Bulls versus Blazers and the NBA Playoffs (Europe)|Bulls versus Blazers and the NBA Playoffs (USA, Europe).png|t3|+Bulls versus Lakers and the NBA Playoffs (USA, Europe).png
+Nintendo_-_Game_Boy|Pokemon - Red Version (USA, Europe) (SGB Enhanced)|-|-|-Pokemon - Red Version (USA, Europe) (SGB Enhanced).png|+Pokemon - Blue Version (USA, Europe) (SGB Enhanced).png
+Nintendo_-_Nintendo_Entertainment_System|Super Dodgeball (USA)|Super Dodge Ball (USA).png|t2b
+Nintendo_-_Super_Nintendo_Entertainment_System|Mr. Do! (USA)|Mr. Do (USA).png|t2|-Mr. Do! (USA).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Actraiser (USA)|ActRaiser (USA).png|t2
+Sony_-_PlayStation|Final Fantasy VII (USA) (Disc 2)|Final Fantasy VII (USA).png|t3|-Final Fantasy VII (USA) (Disc 2).png
+Nintendo_-_Nintendo_Entertainment_System|Castlevania (USA) (Rev 1)|Castlevania (USA) (Rev A).png|t3|-Castlevania (USA) (Rev 1).png
+# manual scans
+Nintendo_-_Nintendo_Entertainment_System|Tetris|Tetris (USA).png|t3
+Nintendo_-_Nintendo_Entertainment_System|Super Mario Bros. 3 (U) (PRG1) [!]|Super Mario Bros. 3 (USA) (Rev 1).png|t3
+Nintendo_-_Nintendo_Entertainment_System|Legend of Zelda, The (U) (PRG1) [!]|Legend of Zelda, The (USA) (Rev 1).png|t3
+Nintendo_-_Nintendo_Entertainment_System|The Legend of Zelda|Legend of Zelda, The (USA).png|t3
+Nintendo_-_Super_Nintendo_Entertainment_System|The Legend of Zelda - A Link to the Past|Legend of Zelda, The - A Link to the Past (USA).png|t3
+Nintendo_-_Super_Nintendo_Entertainment_System|super mario world|Super Mario World (USA).png|t3
+Nintendo_-_Super_Nintendo_Entertainment_System|Super Mario World (E) [!]|Super Mario World (Europe).png|t3
+Nintendo_-_Game_Boy|Pokémon - Red Version (USA, Europe) (SGB Enhanced)|Pokemon - Red Version (USA, Europe) (SGB Enhanced).png|t2
+Nintendo_-_Nintendo_Entertainment_System|Tetris (1989-11)(Nintendo)(US)|Tetris (1989-11)(Nintendo)(US)[b].png|t3|-Tetris (1989-11)(Nintendo)(US).png
+Nintendo_-_Super_Nintendo_Entertainment_System|Pop'n TwinBee - Rainbow Bell Adventures (USA)|Pop’n TwinBee - Rainbow Bell Adventures (USA).png|t2
+Sony_-_PlayStation|Final Fantasy VII|Final Fantasy VII (USA).png|t3
+Sega_-_Mega_Drive_-_Genesis|Sonic the Hedgehog 2 (W) (REV01) [!]|Sonic The Hedgehog 2 (World) (Rev A).png|t3
+# m3u labels (no disc tag)
+Sony_-_PlayStation|Riven - The Sequel to Myst (USA)|Riven - The Sequel to Myst (USA) (Disc 1).png|t3
+Sony_-_PlayStation|Dracula - The Last Sanctuary (USA)|-|-|-Dracula - The Last Sanctuary (USA) (Disc 1).png
+Sony_-_PlayStation|Metal Gear Solid - Integral (Japan, Asia) (En,Ja)|Metal Gear Solid - Integral (Japan, Asia).png|t3
+Sony_-_PlayStation|Colony Wars (Europe)|Colony Wars (Europe) (Disc 1).png|t3
+# region family first
+Nintendo_-_Nintendo_Entertainment_System|Teenage Mutant Ninja Turtles (USA)|Teenage Mutant Ninja Turtles (Italy).png|t3|-Teenage Mutant Ninja Turtles (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Monopoly (USA)|Monopoly (France).png|t3|-Monopoly (USA).png
+Nintendo_-_Nintendo_Entertainment_System|Super Mario Bros. 2 (Japan)|Super Mario Bros. 2 (Japan) (Virtual Console).png|t3
+Sega_-_Mega_Drive_-_Genesis|Alien Storm (Japan)|Alien Storm (World).png|t3|-Alien Storm (Japan).png
+Nintendo_-_Nintendo_Entertainment_System|Adventures of Lolo (Japan)|Adventures of Lolo (USA).png|t3|-Adventures of Lolo (Japan).png
+-|Game (Japan)|Game (Korea).png|t3|+Game (USA).png|+Game (Korea).png
+-|Game (Japan)|Game (Thailand).png|t3|+Game (USA).png|+Game (Thailand).png
+-|Game (Japan)|Game (Unknown).png|t3|+Game (USA).png|+Game (Unknown).png
+# tags in any case
+Nintendo_-_Nintendo_Entertainment_System|kirbys adventure (usa)|Kirby's Adventure (USA) (Rev 1).png|t3|-Kirby's Adventure (USA).png
+-|game (europe) (en,fr)|Game (Europe) (En,Fr,De).png|t3|+Game (Japan).png|+Game (Europe) (En,Fr,De).png
+-|game (usa) (rev 1)|Game (USA, Europe) (Rev 1).png|t3|+Game (USA, Europe).png|+Game (USA, Europe) (Rev 1).png
+-|GAME (EUROPE) (REV A)|Game (Europe) (Rev 1).png|t3|+Game (Europe).png|+Game (Europe) (Rev 1).png|+Game (USA) (Rev 1).png
+-|game (u) (prg1) [!]|Game (USA) (Rev 1).png|t3|+Game (USA).png|+Game (USA) (Rev 1).png
+-|game (usa) (alt)|Game (USA).png|t3|+Game (World).png|+Game (USA).png
+-|game (usa) (rev 1) (beta)|Game (USA) (Beta).png|t3|+Game (USA) (Rev 1).png|+Game (USA) (Beta).png
+-|game (usa) (proto)|-|-|+Game (USA).png|+Game (USA) (Rev 1).png
+-|game (usa) (hack)|-|-|+Game (USA).png|+Game (World).png
+-|game (usa) (disc 2) (rev 1)|Game (USA) (Disc 2).png|t3|+Game (USA) (Disc 1).png|+Game (USA) (Disc 2).png
+-|game (usa) (disc 2) (rev 1)|-|-|+Game (USA) (Disc 1).png
+-|game (usa) (ii)|-|-|+Game (USA).png
+-|game (usa) (dx)|-|-|+Game (USA).png
+-|game (usa) (vi)|-|-|+Game (USA).png
+-|Game (1990)(Pub)(DG)|-|-|+Game (1990)(Pub).png
+-|game (i)|-|-|+Game (USA).png
+-|game (h)|-|-|+Game (USA).png
+-|game (se)|-|-|+Game (USA).png
+-|game (as)|-|-|+Game (USA).png|+Game (Japan).png
+-|Game (1990)(Pub)(fr)|Game (1990)(Pub).png|t3|+Game (1990)(Pub)(FR-DE).png|+Game (1990)(Pub).png
+-|Game (1990)(Pub)(de-fr)|Game (1990)(Pub).png|t3|+Game (1990)(Pub)(DE).png|+Game (1990)(Pub).png
+-|Game (1990)(Pub)(en-de)|Game (1990)(Pub).png|t3|+Game (1990)(Pub).png
+-|chrono trigger (usa) (pt-br)|-|-|+Chrono Trigger (USA).png
+-|Chrono Trigger (USA) (Pt-BR)|-|-|+Chrono Trigger (USA).png
+-|Chrono Trigger (USA) (PT-BR)|-|-|+Chrono Trigger (USA).png
+-|Chrono Trigger (PT-BR)|-|-|+Chrono Trigger (USA).png
+-|Game (1990)(Pub)(PT-BR)|-|-|+Game (1990)(Pub).png
+-|Game (1990)(Pub)(BR)(pt)|Game (1990)(Pub).png|t3|+Game (1990)(Pub).png
+# World first, unless a release shares the region
+-|rtype|R-Type (World).png|t3b|+R-Type (US).png|+R-Type (World).png|+R-Type (Japan).png
+-|Game|Game (World).png|t3|+Game (USA).png|+Game (World).png|+Game (Europe).png
+-|Game (Rev 1)|Game (World) (Rev 1).png|t3|+Game (USA) (Rev 1).png|+Game (World) (Rev 1).png
+-|Game (USA) (Alt)|Game (USA).png|t3|+Game (World).png|+Game (USA).png
+-|Game (Europe) (Alt)|Game (World).png|t3|+Game (World).png|+Game (USA).png
+-|Game (Europe) (Alt)|Game (Europe).png|t3|+Game (World).png|+Game (Europe).png
+-|Game (USA)|Game (USA, Canada).png|t3|+Game (World).png|+Game (USA, Canada).png
+-|Game (USA)|Game (USA, Canada).png|t3|+Game (Europe).png|+Game (Japan).png|+Game (USA, Canada).png
+-|Game (Japan)|Game (World).png|t3|+Game (USA).png|+Game (World).png
+-|Game (Japan)|Game (World).png|t3|+Game (Asia).png|+Game (World).png
+-|Game (Japan)|Game (USA).png|t3|+Game (USA).png
+-|Game (Europe) (Rev 1)|Game (World).png|t3|+Game (USA) (Rev 1).png|+Game (World).png
+-|Game (Europe)|Game.png|t3|+Game (USA).png|+Game.png
+# TOSEC unknown publisher
+-|Labyrinth|-|-|+Labyrinth (19xx)(-)(de).png
+-|Labyrinth (19xx)(-)(de)|-|-|+Labyrinth.png
+-|Labyrinth (19xx)(-)(de)|Labyrinth (19xx)(-).png|t3|+Labyrinth (19xx)(-).png|+Labyrinth.png
