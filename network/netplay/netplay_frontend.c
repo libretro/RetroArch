@@ -10261,7 +10261,9 @@ static void netplay_host_setup_cleanup(retro_task_t *task)
 static bool netplay_host_setup_finder(retro_task_t *task, void *user_data)
 {
    (void)user_data;
-   return task && task->handler == netplay_host_setup_handler;
+   return     task
+          &&  task->handler == netplay_host_setup_handler
+          && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
 }
 
 bool netplay_host_setup_pending(void)
