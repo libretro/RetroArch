@@ -27,6 +27,7 @@ struct deadline
 
 RETRO_DEQUE_DEFINE(words, unsigned long);
 RETRO_DEQUE_DEFINE(deadlines, struct deadline);
+RETRO_DEQUE_DEFINE(pointers, struct deadline*);
 
 static int failures;
 #define CHECK(cond) do { if (!(cond)) { fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #cond); failures++; } } while (0)
@@ -211,6 +212,26 @@ int main(void)
       deadlines_free(&q);
       CHECK(deadlines_limit(&q) == 0 && deadlines_full(&q));
       CHECK(!deadlines_push_back(&q, &extra));  /* freed: holds nothing */
+   }
+
+   /* Pointers as elements: what is pushed is the pointer, through a
+    * pointer to it that may be to a const one */
+   {
+      pointers_t q;
+      struct deadline a, b;
+      struct deadline *pa = &a;
+      struct deadline *const pb = &b;
+      CHECK(pointers_init(&q, 3));
+      CHECK(pointers_push_back(&q, &pa));
+      CHECK(pointers_push_back(&q, &pb));
+      CHECK(pointers_push_front(&q, &pb));
+      CHECK(!pointers_insert(&q, 1, &pa) || pointers_count(&q) == 4);
+      CHECK(*pointers_front(&q) == &b && *pointers_at(&q, 1) == &a && *pointers_back(&q) == &b);
+      (*pointers_at(&q, 1))->when = 5;          /* the element is not const */
+      CHECK(a.when == 5);
+      pointers_erase(&q, 0);
+      CHECK(*pointers_front(&q) == &a);
+      pointers_free(&q);
    }
 
    /* Marched along: a few elements, pushed at one end and popped at the

@@ -82,9 +82,13 @@
 #endif
 
 #define RETRO_DEQUE_DEFINE(name, type) \
+/* The element's type by one name, so that "const" in front of it means \
+ * the element whatever the type is spelled as: with a pointer type \
+ * written out, "const type *" would be a pointer to a pointer to const. */ \
+typedef type name##_value_t; \
 typedef struct name \
 { \
-   type *data;    /* mask + 1 elements */ \
+   name##_value_t *data; /* mask + 1 elements */ \
    size_t mask;   /* the block's length, a power of two, less one */ \
    size_t first;  /* where the oldest is */ \
    size_t count; \
@@ -98,13 +102,13 @@ typedef struct name \
 static INLINE bool name##_init(name##_t *q, size_t limit) \
 { \
    size_t capacity = 1; \
-   while (capacity < limit && capacity < ((size_t)-1) / 2 / sizeof(type)) \
+   while (capacity < limit && capacity < ((size_t)-1) / 2 / sizeof(name##_value_t)) \
       capacity <<= 1; \
    q->first = 0; \
    q->count = 0; \
    q->mask  = 0; \
    q->limit = 0; \
-   q->data  = capacity >= limit ? (type*)RETRO_DEQUE_MALLOC(capacity * sizeof(type)) : NULL; \
+   q->data  = capacity >= limit ? (name##_value_t*)RETRO_DEQUE_MALLOC(capacity * sizeof(name##_value_t)) : NULL; \
    if (!q->data) \
       return false; \
    q->mask  = capacity - 1; \
@@ -130,13 +134,13 @@ static INLINE size_t name##_limit(const name##_t *q) { return q->limit; } \
 static INLINE bool   name##_full(const name##_t *q)  { return q->count >= q->limit; } \
 \
 /* The @i-th oldest; @i below the count */ \
-static INLINE type *name##_at(const name##_t *q, size_t i) \
+static INLINE name##_value_t *name##_at(const name##_t *q, size_t i) \
 { \
    return &q->data[(q->first + i) & q->mask]; \
 } \
 \
-static INLINE type *name##_front(const name##_t *q) { return &q->data[q->first]; } \
-static INLINE type *name##_back(const name##_t *q) \
+static INLINE name##_value_t *name##_front(const name##_t *q) { return &q->data[q->first]; } \
+static INLINE name##_value_t *name##_back(const name##_t *q) \
 { \
    return &q->data[(q->first + q->count - 1) & q->mask]; \
 } \
@@ -168,7 +172,7 @@ static INLINE bool name##_reserve(name##_t *q, size_t limit) \
 } \
 \
 /* False when the queue is full: nothing changed */ \
-static INLINE bool name##_push_back(name##_t *q, const type *value) \
+static INLINE bool name##_push_back(name##_t *q, const name##_value_t *value) \
 { \
    if (name##_full(q)) \
       return false; \
@@ -177,7 +181,7 @@ static INLINE bool name##_push_back(name##_t *q, const type *value) \
    return true; \
 } \
 \
-static INLINE bool name##_push_front(name##_t *q, const type *value) \
+static INLINE bool name##_push_front(name##_t *q, const name##_value_t *value) \
 { \
    if (name##_full(q)) \
       return false; \
@@ -201,7 +205,7 @@ static INLINE void name##_pop_back(name##_t *q) \
 \
 /* @value before the @i-th oldest (@i up to the count: at the end). \
  * False when the queue is full: nothing changed */ \
-static INLINE bool name##_insert(name##_t *q, size_t i, const type *value) \
+static INLINE bool name##_insert(name##_t *q, size_t i, const name##_value_t *value) \
 { \
    size_t k; \
    if (name##_full(q) || i > q->count) \
