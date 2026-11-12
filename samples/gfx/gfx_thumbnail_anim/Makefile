@@ -42,7 +42,7 @@ SOURCES := gfx_thumbnail_anim_test.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
            $(LIBRETRO_COMM_DIR)/formats/data_transfer.c $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.c \
-           $(LIBRETRO_COMM_DIR)/formats/image_texture.c \
+           $(LIBRETRO_COMM_DIR)/formats/image_texture.c $(LIBRETRO_COMM_DIR)/streams/image_texture_file.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_yuv_blit.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \

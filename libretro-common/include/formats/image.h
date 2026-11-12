@@ -33,6 +33,8 @@
 
 RETRO_BEGIN_DECLS
 
+struct data_transfer;
+
 enum image_process_code
 {
    IMAGE_PROCESS_ERROR     = -2,
@@ -344,24 +346,25 @@ bool image_texture_scale(struct texture_image *img,
 bool image_texture_load_buffer(struct texture_image *img,
    enum image_type_enum type, void *s, size_t len);
 
-/* The loader run to completion over a whole buffer or a file, with
- * @req naming what the caller takes (NULL: the ordinary image). The
- * abort hook is asked between steps; it may be NULL. False leaves
- * @img empty. */
+/* The loader run to completion over a whole buffer, with @req naming
+ * what the caller takes (NULL: the ordinary image). The abort hook is
+ * asked between steps; it may be NULL. False leaves @img empty. Loading
+ * by path - image_texture_load and the rest - is in
+ * <streams/image_texture_file.h>. */
 bool image_texture_load_buffer_request(struct texture_image *img,
       enum image_type_enum type, const void *buf, size_t len,
       const image_texture_request_t *req,
       bool (*should_abort)(void *ud), void *ud);
-bool image_texture_load_request(struct texture_image *img,
-      const char *path, const image_texture_request_t *req,
-      bool (*should_abort)(void *ud), void *ud);
 
-/* image_texture_load_request answering, from the bytes it read, whether
- * the file is an animated PNG: 1 yes, 0 a still, -1 not a PNG or no
- * decode. Spares a caller that keeps an animation's bytes a second
- * read of every still to ask. @png_probe may be NULL. */
-bool image_texture_load_request_ex(struct texture_image *img,
-      const char *path, const image_texture_request_t *req,
+/* image_texture_load_buffer_request over bytes @keep, a data_transfer,
+ * holds: an image that can go on reading them (a compressed texture)
+ * takes @keep, frees it with itself and sets *@kept; *@png_probe, where
+ * not NULL, says whether the bytes are an animated PNG - 1 yes, 0 a
+ * still, -1 not a PNG or no decode. @keep and @kept may be NULL. */
+bool image_texture_load_buffer_probe(struct data_transfer *keep,
+      bool *kept, struct texture_image *img,
+      enum image_type_enum type, const void *buf, size_t len,
+      const image_texture_request_t *req,
       bool (*should_abort)(void *ud), void *ud, int *png_probe);
 
 /* Run @fn for every index below @n, across the cores at once where
@@ -382,27 +385,14 @@ void image_texture_set_run_ex(unsigned n,
       void (*thread_done)(void));
 
 /* Decode the @n files @paths name into @imgs together, each as
- * image_texture_load_request does with @req; a path that is NULL,
- * empty or unreadable leaves its image empty. Returns how many
- * decoded. In formats/image_texture_set.c. */
+ * image_texture_load_request (<streams/image_texture_file.h>) does with
+ * @req; a path that is NULL, empty or unreadable leaves its image
+ * empty. Returns how many decoded. In formats/image_texture_set.c. */
 unsigned image_texture_load_set(const char *const *paths,
       struct texture_image *imgs, unsigned n,
       const image_texture_request_t *req);
 
-/* ->pix10 is an ask on the way in and an answer on the way out: set
- * it before the call to have a decoder that can emit XRGB2101010 do
- * so, and read it after to find out whether it did. Clear on entry
- * means the ordinary 8-bit image, as before. */
-bool image_texture_load(struct texture_image *img, const char *path);
 
-/* image_texture_load with an abort hook: both decode stages are
- * incremental (one chunk / one pass per step) and @should_abort is
- * asked between steps; returning true abandons the decode, which then
- * fails cleanly. For decodes on worker threads that must stop promptly
- * at shutdown or when their result is no longer wanted. @should_abort
- * may be NULL. */
-bool image_texture_load_ex(struct texture_image *img, const char *path,
-      bool (*should_abort)(void *ud), void *ud);
 void image_texture_free(struct texture_image *img);
 
 /* Force a CPU decode of a compressed texture_image into ->pixels (RGBA8).

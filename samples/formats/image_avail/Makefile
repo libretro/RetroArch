@@ -13,7 +13,7 @@ SOURCES := image_avail_test.c \
            $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \
            $(LIBRETRO_COMM_DIR)/formats/jpeg/rjpeg.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
-           $(LIBRETRO_COMM_DIR)/formats/image_texture.c \
+           $(LIBRETRO_COMM_DIR)/formats/image_texture.c $(LIBRETRO_COMM_DIR)/streams/image_texture_file.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.c \
            $(LIBRETRO_COMM_DIR)/formats/data_transfer.c $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \

@@ -26,6 +26,7 @@
 #define CINTERFACE
 
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>

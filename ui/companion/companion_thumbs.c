@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <formats/data_transfer.h>
 #include <streams/file_stream.h>
 #include <time.h>          /* struct timespec, for retro_timers.h */

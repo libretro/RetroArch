@@ -23,7 +23,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
-	$(LIBRETRO_COMM_DIR)/formats/image_texture.c \
+	$(LIBRETRO_COMM_DIR)/formats/image_texture.c $(LIBRETRO_COMM_DIR)/streams/image_texture_file.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
 	$(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
 	$(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \

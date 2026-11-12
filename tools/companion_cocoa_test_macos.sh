@@ -25,7 +25,7 @@ CSRCS="ui/companion/companion_core.c \
        ui/companion/test/companion_core_stubs.c \
        ui/companion/test/companion_core_test.c \
        playlist.c core_option_manager.c $LC/lists/nested_list.c $LC/file/config_file_io.c \
-       $LC/formats/json/rjson.c $LC/formats/image_texture.c $LC/formats/image_transfer.c \
+       $LC/formats/json/rjson.c $LC/formats/image_texture.c $LC/streams/image_texture_file.c $LC/formats/image_transfer.c \
        $LC/formats/video_player.c \
        $LC/formats/data_transfer.c $LC/streams/data_transfer_file.c $LC/formats/png/rpng.c $LC/formats/png/rpng_apng.c \
        $LC/formats/png/rpng_encode.c $LC/file/rpng_file.c $LC/formats/tga/rtga.c $LC/memmap/memmap.c $LC/memory/mem_stats.c \

@@ -24,6 +24,7 @@
 
 #include <encodings/utf.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 

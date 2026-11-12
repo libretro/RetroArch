@@ -22,6 +22,7 @@
 
 #include <compat/strl.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <string/stdstring.h>
 #include <gfx/math/matrix_4x4.h>
 #include <retro_miscellaneous.h>

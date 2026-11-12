@@ -122,6 +122,7 @@ static void writef(const char *path, const char *text)
 }
 
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 static void write_tga_rgba(const char *path, unsigned w, unsigned h, uint32_t argb)
 {
    FILE *f = fopen(path, "wb");

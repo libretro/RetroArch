@@ -38,7 +38,7 @@ SRCS="ui/companion/companion_core.c \
       core_option_manager.c \
       $LC/lists/nested_list.c \
       $LC/formats/json/rjson.c \
-      $LC/formats/image_texture.c \
+      $LC/formats/image_texture.c $LC/streams/image_texture_file.c \
       $LC/formats/image_transfer.c \
       $LC/formats/video_player.c \
       $LC/formats/data_transfer.c $LC/streams/data_transfer_file.c \

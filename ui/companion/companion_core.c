@@ -39,6 +39,7 @@
 #include <file/archive_file.h>
 #include <file/file_path.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>

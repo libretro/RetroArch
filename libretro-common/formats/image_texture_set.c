@@ -25,6 +25,7 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <formats/data_transfer.h>
+#include <streams/image_texture_file.h>
 #ifdef HAVE_GCD
 #include <dispatch/dispatch.h>
 #elif defined(HAVE_THREADS)

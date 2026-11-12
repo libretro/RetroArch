@@ -25,6 +25,7 @@
 #endif
 #include <formats/data_transfer.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <features/features_cpu.h>
 #include <queues/task_queue.h>
 #include <streams/file_stream.h>

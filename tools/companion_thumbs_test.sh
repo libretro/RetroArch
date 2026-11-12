@@ -38,7 +38,7 @@ SRCS="ui/companion/companion_thumbs.c \
       $LC/formats/image/image_blit_bands.c \
       $LC/memory/mem_stats.c \
       ui/companion/test/companion_thumbs_test.c \
-      $LC/formats/image_texture.c \
+      $LC/formats/image_texture.c $LC/streams/image_texture_file.c \
       $LC/formats/image_transfer.c \
       $LC/formats/video_player.c \
       $LC/formats/data_transfer.c $LC/streams/data_transfer_file.c \

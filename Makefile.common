@@ -528,7 +528,7 @@ ifneq ($(HAVE_STRL), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strl.o
 endif
 
-OBJ += $(LIBRETRO_COMM_DIR)/formats/image_texture.o \
+OBJ += $(LIBRETRO_COMM_DIR)/formats/image_texture.o $(LIBRETRO_COMM_DIR)/streams/image_texture_file.o \
        $(LIBRETRO_COMM_DIR)/formats/image_texture_scale.o \
        $(LIBRETRO_COMM_DIR)/formats/image_texture_set.o \
        $(LIBRETRO_COMM_DIR)/formats/image/image_yuv_blit.o

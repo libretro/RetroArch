@@ -45,6 +45,7 @@
 #include <gfx/scaler/scaler.h>
 #include <gfx/math/matrix_4x4.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <retro_math.h>

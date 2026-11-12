@@ -30,6 +30,7 @@
 #include "stb_image.h"
 #else
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #endif
 
 #include <libretro.h>

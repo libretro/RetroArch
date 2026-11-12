@@ -27,6 +27,7 @@
 #include <boolean.h>
 #include <encodings/crc32.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 
 #define W 24
 #define H 16

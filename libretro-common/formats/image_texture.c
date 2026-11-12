@@ -28,7 +28,6 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <formats/data_transfer.h>
-#include <streams/data_transfer_file.h>
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
@@ -495,7 +494,7 @@ static void image_texture_clear(struct texture_image *img)
    img->fp16          = false;
 }
 
-static bool image_texture_load_buffer_probe(data_transfer_t *keep,
+bool image_texture_load_buffer_probe(data_transfer_t *keep,
       bool *kept, struct texture_image *out_img,
       enum image_type_enum type, const void *ptr, size_t len,
       const image_texture_request_t *req,
@@ -544,56 +543,6 @@ bool image_texture_load_buffer_request(struct texture_image *out_img,
          should_abort, abort_ud, NULL);
 }
 
-bool image_texture_load_request(struct texture_image *out_img,
-      const char *path, const image_texture_request_t *req,
-      bool (*should_abort)(void *ud), void *ud)
-{
-   return image_texture_load_request_ex(out_img, path, req,
-         should_abort, ud, NULL);
-}
-
-bool image_texture_load_request_ex(struct texture_image *out_img,
-      const char *path, const image_texture_request_t *req,
-      bool (*should_abort)(void *ud), void *ud, int *png_probe)
-{
-   enum image_type_enum type = image_texture_get_type(path);
-
-   if (png_probe)
-      *png_probe = -1;
-
-   if (type != IMAGE_TYPE_NONE)
-   {
-      /* The synchronous read rides the data_transfer prefix spine
-       * like every other loader: filestream/VFS routing (overlays
-       * and driver assets from archive members or content://
-       * documents), 64-bit lengths, the hardware guard behind the
-       * read, and honest short-read detection.  A zero budget fills
-       * to completion in one blocking call, which is this API's
-       * contract. */
-      struct data_transfer *dt = data_transfer_open_prefix(path, 0);
-      if (dt)
-      {
-         size_t file_len    = 0;
-         const uint8_t *ptr = NULL;
-         bool kept          = false;
-         bool loaded;
-
-         data_transfer_iterate(dt, 0);
-         ptr = data_transfer_ptr(dt, &file_len);
-         loaded = data_transfer_complete(dt) && ptr && file_len
-            && image_texture_load_buffer_probe(dt, &kept, out_img, type,
-                  ptr, file_len, req, should_abort, ud, png_probe);
-         if (!kept)
-            data_transfer_free(dt);
-         if (loaded)
-            return true;
-      }
-   }
-   if (out_img)
-      image_texture_clear(out_img);
-   return false;
-}
-
 /* The request the plain loads carry: the caller's image, whose
  * ->pix10 asks for 10-bit on the way in */
 static void image_texture_request_of(const struct texture_image *img,
@@ -605,10 +554,6 @@ static void image_texture_request_of(const struct texture_image *img,
    req->want_compressed = true;
 }
 
-bool image_texture_load(struct texture_image *out_img, const char *path)
-{
-   return image_texture_load_ex(out_img, path, NULL, NULL);
-}
 
 void image_texture_free(struct texture_image *img)
 {
@@ -828,11 +773,3 @@ bool image_texture_load_buffer(struct texture_image *out_img,
          buffer_len, &req, NULL, NULL);
 }
 
-bool image_texture_load_ex(struct texture_image *out_img,
-      const char *path, bool (*should_abort)(void *ud), void *ud)
-{
-   image_texture_request_t req;
-   image_texture_request_of(out_img, &req);
-   return image_texture_load_request(out_img, path, &req,
-         should_abort, ud);
-}

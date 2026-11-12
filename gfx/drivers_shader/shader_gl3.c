@@ -25,6 +25,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <retro_miscellaneous.h>
 
 #include "slang_process.h"

@@ -59,6 +59,7 @@
 #include <features/features_cpu.h>
 #include <file/file_path.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <lists/string_list.h>
 #include <compat/msvc.h>
 #include <string/stdstring.h>
