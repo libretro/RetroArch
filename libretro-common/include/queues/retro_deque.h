@@ -38,7 +38,9 @@
  * holds. Pushing, popping, inserting and erasing never allocate and never
  * free. A push or insert into a queue that holds its limit is refused,
  * with one compare (the caller decides: drop, wait, or reserve more - the
- * one call besides init that allocates).
+ * one call besides init that allocates). Where the old code relied on a
+ * queue with no limit, push_back_growing reserves twice as much when the
+ * limit is reached, and so allocates only then.
  *
  * The functions are made for the element's type with
  * RETRO_DEQUE_DEFINE(name, type), so an element is copied as what it is
@@ -81,6 +83,14 @@
 #define RETRO_DEQUE_FREE(ptr) free(ptr)
 #endif
 
+/* C's casts in C, C++'s in C++: a C++ unit that warns of old-style casts
+ * (or refuses them) includes this as it is. */
+#ifdef __cplusplus
+#define RETRO_DEQUE_CAST(to, value) static_cast<to>(value)
+#else
+#define RETRO_DEQUE_CAST(to, value) ((to)(value))
+#endif
+
 #define RETRO_DEQUE_DEFINE(name, type) \
 /* The element's type by one name, so that "const" in front of it means \
  * the element whatever the type is spelled as: with a pointer type \
@@ -102,13 +112,13 @@ typedef struct name \
 static INLINE bool name##_init(name##_t *q, size_t limit) \
 { \
    size_t capacity = 1; \
-   while (capacity < limit && capacity < ((size_t)-1) / 2 / sizeof(name##_value_t)) \
+   while (capacity < limit && capacity < RETRO_DEQUE_CAST(size_t, -1) / 2 / sizeof(name##_value_t)) \
       capacity <<= 1; \
    q->first = 0; \
    q->count = 0; \
    q->mask  = 0; \
    q->limit = 0; \
-   q->data  = capacity >= limit ? (name##_value_t*)RETRO_DEQUE_MALLOC(capacity * sizeof(name##_value_t)) : NULL; \
+   q->data  = capacity >= limit ? RETRO_DEQUE_CAST(name##_value_t*, RETRO_DEQUE_MALLOC(capacity * sizeof(name##_value_t))) : NULL; \
    if (!q->data) \
       return false; \
    q->mask  = capacity - 1; \
@@ -175,6 +185,20 @@ static INLINE bool name##_reserve(name##_t *q, size_t limit) \
 static INLINE bool name##_push_back(name##_t *q, const name##_value_t *value) \
 { \
    if (name##_full(q)) \
+      return false; \
+   q->data[(q->first + q->count) & q->mask] = *value; \
+   q->count++; \
+   return true; \
+} \
+\
+/* For a queue with no limit of its own (what a std::deque was used as): \
+ * when it holds its limit, it is first made to hold twice as many - \
+ * that push allocates, the others do not. Give it at init the most it \
+ * is expected to hold, and it never will. False only when there is no \
+ * memory: nothing changed. */ \
+static INLINE bool name##_push_back_growing(name##_t *q, const name##_value_t *value) \
+{ \
+   if (name##_full(q) && !name##_reserve(q, q->limit ? q->limit * 2 : 8)) \
       return false; \
    q->data[(q->first + q->count) & q->mask] = *value; \
    q->count++; \

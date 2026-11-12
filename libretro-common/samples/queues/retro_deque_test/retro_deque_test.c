@@ -234,6 +234,31 @@ int main(void)
       pointers_free(&q);
    }
 
+   /* A queue with no limit of its own: it grows when it has to, in order,
+    * and only then; an empty one that was never made grows too */
+   {
+      words_t q;
+      unsigned long i, before, wrong = 0;
+
+      CHECK(words_init(&q, 4));
+      before = allocations;
+      for (i = 0; i < 4; i++)
+         CHECK(words_push_back_growing(&q, &i));
+      CHECK(allocations == before);
+      words_pop_front(&q);                       /* wrapped when it grows */
+      for (i = 4; i < 100; i++)
+         CHECK(words_push_back_growing(&q, &i));
+      CHECK(allocations == before + 5);          /* 8, 16, 32, 64, 128 */
+      CHECK(words_count(&q) == 99 && words_limit(&q) == 128);
+      for (i = 0; i < 99; i++)
+         wrong += *words_at(&q, i) != i + 1;
+      CHECK(wrong == 0);
+      words_free(&q);
+      i = 7;
+      CHECK(words_push_back_growing(&q, &i) && *words_front(&q) == 7 && words_limit(&q) == 8);
+      words_free(&q);
+   }
+
    /* Marched along: a few elements, pushed at one end and popped at the
     * other, a million times. One block, the one it was given. */
    {
