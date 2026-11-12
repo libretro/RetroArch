@@ -1,4 +1,5 @@
 # Future
+- LIBRETRO-COMMON/FLAC: 24- and 32-bit FLAC decoded to 16 bits is rounded to the nearest step instead of cut down (every sample was half a step low on average); 16-bit FLAC is unchanged
 - LIBRETRO-COMMON/FLAC: A seek in a FLAC that has a seek table lands on the frame asked for (it landed as far past it as the seek point was from the start); rflac_seek_point gives the seek point's frame
 - D3D11: Software-rendering cores draw straight into lent staging textures, copied to the frame texture on the GPU instead of by the CPU
 - VULKAN: Keep the pipeline cache on disk between runs, one file per GPU, so stock and slang shader pipelines are not recompiled by the driver on every launch, preset load or driver reinit

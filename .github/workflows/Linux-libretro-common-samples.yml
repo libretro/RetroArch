@@ -496,6 +496,11 @@ jobs:
             # The FLAC arm, sample-exact in every input mode, a grown
             # demuxed packet set and a raised WebM wall both resuming.
             audio_transfer_flac_test
+            # rflac's 16-bit output against the PCM its fixtures were
+            # made from: 16 bits exact, 24 and 32 rounded to the nearest
+            # step, through every stereo coding, with SIMD and without.
+            rflac_s16_test
+            rflac_s16_nosimd_test
             # The HDR video blits: PQ and HLG to linear scRGB against
             # double-precision references, and HLG tone-mapped as HDR.
             image_hdr_blit_test
