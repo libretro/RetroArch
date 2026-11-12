@@ -178,6 +178,9 @@ def main():
             cases = [(0, 8, 48000, 2, None, True, None, True, False),
                      (1, 8, 48000, 2, '1.2', True, 32040.5, True, False),
                      (1, 10, 44100, 1, '1.3', True, 96000, True, False)]
+        if args.dispatcher:
+            cases += [(0, 8, 48000, 2, None, True, 32040.5, True, True),
+                      (1, 8, 44100, 1, '1.2', True, 96000, True, True)]
         for hevc, depth, rate, channels, tls, queued, source_rate, owned, cancel in cases[:1] if args.first_case else cases:
             case = dict(hevc=hevc, depth=depth, rate=rate, channels=channels,
                         tls=tls, queued=queued, source_rate=source_rate, owned=owned,
@@ -251,8 +254,12 @@ def main():
             if cancel:
                 assert values['cancelled'] == values['owned'] == 1, values
                 assert 2 <= values['submitted'] < 24, values
-                assert values['released'] == values['submitted'], values
-                case['scope'] = 'native cancellation and complete resource retirement; truncated wire is not a decode-quality pass'
+                if args.dispatcher:
+                    assert values['held'] == 1, values
+                    case['scope'] = 'actual dispatcher cancellation retains accepted uncommitted Metal work until renderer submission, then permits complete worker retirement; truncated wire is not a decode-quality pass'
+                else:
+                    assert values['released'] == values['submitted'], values
+                    case['scope'] = 'native cancellation and complete resource retirement; truncated wire is not a decode-quality pass'
                 case['result'] = 'PASS'
                 save()
                 print('PASS native owned-session cancellation:', case, flush=True)

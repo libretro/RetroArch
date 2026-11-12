@@ -10,6 +10,7 @@ int main(int argc,char **argv)
    {
       id<MTLDevice> device = MTLCreateSystemDefaultDevice();
       id<MTLCommandQueue> commands;
+      id<MTLCommandBuffer> held = nil;
       record_gpu_dispatch_metal_t *job;
       record_gpu_session_metal_config_t video;
       record_gpu_dispatch_metal_stream_config_t stream;
@@ -29,6 +30,7 @@ int main(int argc,char **argv)
       size_t batch;
       retro_time_t deadline;
       bool audio_closed = false, video_closed = false;
+      bool cancel = getenv("VT_STREAM_CANCEL_OWNED") != NULL;
       if (!device)
          return 77;
       memset(&video,0,sizeof(video));
@@ -124,27 +126,55 @@ int main(int argc,char **argv)
             result = record_gpu_dispatch_metal_video(job,(__bridge void*)buffer,
                   (__bridge void*)texture,2,2,(uint64_t)produced*1001,1001);
             assert(result >= 0);
-            [buffer commit];
+            if (cancel && result == RECORD_GPU_QUEUE_OK && produced == 1)
+               held = buffer;
+            else
+               [buffer commit];
             RARCH_RELEASE(texture);
-            if (result == RECORD_GPU_QUEUE_OK && ++produced == FRAMES)
+            if (result == RECORD_GPU_QUEUE_OK)
             {
-               assert(record_gpu_dispatch_metal_video_finish(job));
-               video_closed = true;
+               produced++;
+               if (cancel && produced == 2)
+               {
+                  record_gpu_dispatch_metal_cancel(job);
+                  assert(record_gpu_dispatch_metal_video_finish(job));
+                  assert(record_gpu_dispatch_metal_audio_finish(job));
+                  video_closed = audio_closed = true;
+               }
+               else if (produced == FRAMES)
+               {
+                  assert(record_gpu_dispatch_metal_video_finish(job));
+                  video_closed = true;
+               }
             }
          }
+         if (held && video_closed && audio_closed)
+         {
+            retro_sleep(20); /* Fixture: leave accepted GPU work uncommitted. */
+            assert(!record_gpu_dispatch_metal_free(job));
+            assert(record_gpu_dispatch_metal_status(job,NULL,NULL,NULL,NULL) != RECORD_METAL_DISPATCH_FAILED);
+            [held commit];
+            held = nil;
+         }
          state = record_gpu_dispatch_metal_status(job,&startup,&native,&error,&system);
-         if (error || system)
+         if ((!cancel && error) || system)
             fprintf(stderr,"dispatcher state=%d error=%d system=%d\n",(int)state,(int)error,system);
-         assert(!error && !system && state != RECORD_METAL_DISPATCH_FAILED);
+         assert(!system && (cancel ? error == RECORD_AVF_SESSION_CANCELLED || !error
+                  : !error && state != RECORD_METAL_DISPATCH_FAILED));
          retro_sleep(1);
-      } while (state != RECORD_METAL_DISPATCH_DONE);
-      assert(video_closed && audio_closed && produced == FRAMES && input == target);
+      } while (state != RECORD_METAL_DISPATCH_DONE && state != RECORD_METAL_DISPATCH_FAILED);
+      assert(video_closed && audio_closed && !held);
+      assert(cancel ? produced == 2 && state == RECORD_METAL_DISPATCH_FAILED
+            && error == RECORD_AVF_SESSION_CANCELLED : produced == FRAMES && input == target);
       assert(record_gpu_dispatch_metal_free(job));
       free(pcm);
       RARCH_RELEASE(commands);
       RARCH_RELEASE(device);
-      printf("PASS frames=%u input=%lu leading=%u prebuffer=%lu owned=1 metal=1 dispatcher=1 width=%u height=%u\n",
-            produced,(unsigned long)input,leading,(unsigned long)prebuffer,WIDTH,HEIGHT);
+      if (cancel)
+         printf("PASS cancelled=1 submitted=%u held=1 owned=1 metal=1 dispatcher=1\n",produced);
+      else
+         printf("PASS frames=%u input=%lu leading=%u prebuffer=%lu owned=1 metal=1 dispatcher=1 width=%u height=%u\n",
+               produced,(unsigned long)input,leading,(unsigned long)prebuffer,WIDTH,HEIGHT);
    }
    return 0;
 }
