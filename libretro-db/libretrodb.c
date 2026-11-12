@@ -736,6 +736,8 @@ struct libretrodb_scan
    size_t        field2_len;
    size_t        aux_len;
    size_t        name_len;
+   uint64_t      count;   /* the metadata's; 0 for a legacy file */
+   uint64_t      records;
 };
 
 libretrodb_scan_t *libretrodb_scan_begin(libretrodb_t *db,
@@ -761,6 +763,7 @@ libretrodb_scan_t *libretrodb_scan_begin(libretrodb_t *db,
    scan->field2    = field2;
    scan->aux_field = aux_field;
    scan->name_field = name_field;
+   scan->count     = db->count;
 
    if (!scan->field_len && !scan->field2_len)
    {
@@ -857,6 +860,7 @@ int libretrodb_scan_step(libretrodb_scan_t *scan, unsigned max_records,
       }
       if (map_len < 0)
          goto end;
+      scan->records++;
 
       /* The field and its companion can sit either way round in the
        * map, so both are collected before the record is reported. */
@@ -963,6 +967,11 @@ int libretrodb_scan_step(libretrodb_scan_t *scan, unsigned max_records,
 
 end:
    return rv;
+}
+
+bool libretrodb_scan_complete(const libretrodb_scan_t *scan)
+{
+   return scan && scan->records == scan->count;
 }
 
 /**

@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,6 +34,9 @@
 #include "../gfx/gfx_thumbnail_match.h"
 #include "../gfx/gfx_thumbnail_results.h"
 #include "../ui/ui_companion_driver.h"
+#ifdef HAVE_LIBRETRODB
+#include "../libretro-db/libretrodb.h"
+#endif
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
 #include "../menu/menu_driver.h"
 #endif
@@ -42,6 +46,8 @@
 #define PL_THUMB_MATCH_MAX_CACHE (64 * 1024 * 1024)
 #define PL_THUMB_MATCH_VERSION   "1"
 #define PL_THUMB_MATCH_NONE      ((size_t)-1)
+/* rdb records read per work item, about a chunk */
+#define PL_THUMB_MATCH_RECORDS   256
 
 enum pl_thumb_match_status
 {
@@ -51,6 +57,9 @@ enum pl_thumb_match_status
    PL_THUMB_MATCH_CACHE_SORT,
    PL_THUMB_MATCH_PLAYLIST,
    PL_THUMB_MATCH_KEYS,
+   PL_THUMB_MATCH_WANT_SORT,
+   PL_THUMB_MATCH_RDB,
+   PL_THUMB_MATCH_HIT_SORT,
    PL_THUMB_MATCH_LIST,
    PL_THUMB_MATCH_FINALIZE,
    PL_THUMB_MATCH_RESOLVE,
@@ -77,13 +86,33 @@ enum pl_thumb_match_flags
    PL_THUMB_MATCH_FLAG_SUMMED        = (1 << 6)
 };
 
+#ifdef HAVE_LIBRETRODB
+/* A scanned crc or serial, looked up in an rdb */
+typedef struct pl_thumb_match_anchor
+{
+   const char *serial; /* not terminated; NULL for a crc */
+   size_t serial_len;
+   uint32_t crc;       /* 0 for a serial */
+   unsigned rdb;
+} pl_thumb_match_anchor_t;
+
+/* An rdb record's name for an anchor of the playlist */
+typedef struct pl_thumb_match_hit
+{
+   pl_thumb_match_anchor_t anchor; /* a serial follows the name */
+   char *name;
+} pl_thumb_match_hit_t;
+#endif
+
 /* Pointers borrow from the task's own playlist. */
 typedef struct pl_thumb_match_entry
 {
    const char *path;
    const char *label;  /* NULL: the file name stem */
    const char *crc32;
-   const char *t1;     /* the entry's name in its rdb */
+#ifdef HAVE_LIBRETRODB
+   pl_thumb_match_anchor_t anchor; /* a serial borrows crc32 */
+#endif
    size_t rec;
    unsigned system;
 } pl_thumb_match_entry_t;
@@ -120,6 +149,21 @@ typedef struct pl_thumb_match
    struct RDIR *dir;
    gfx_thumbnail_match_index_t *index;
    gfx_thumbnail_results_t *results;
+#ifdef HAVE_LIBRETRODB
+   const pl_thumb_match_anchor_t **want; /* the entries' anchors */
+   pl_thumb_match_hit_t *hits;
+   char **rdbs;
+   bool *system_art;   /* the system has a thumbnail folder */
+   void *scratch;
+   libretrodb_scan_t *scan;
+   gfx_thumbnail_match_sort_t sort;
+   size_t want_count;
+   size_t hit_count;
+   size_t hit_cap;
+   size_t rdb_count;
+   size_t rdb_first;   /* the first hit of the current rdb */
+   unsigned cur_rdb;
+#endif
    size_t buf_len;
    size_t buf_pos;
    size_t entry_count;
@@ -194,9 +238,45 @@ static void pl_thumb_match_close(pl_thumb_match_t *m)
    m->file = NULL;
 }
 
+#ifdef HAVE_LIBRETRODB
+/* What only the keys and the rdb pass read */
+static void pl_thumb_match_drop_rdbs(pl_thumb_match_t *m)
+{
+   size_t i;
+   libretrodb_scan_end(m->scan);
+   m->scan       = NULL;
+   for (i = 0; i < m->rdb_count; i++)
+      free(m->rdbs[i]);
+   free(m->rdbs);
+   m->rdbs       = NULL;
+   m->rdb_count  = 0;
+   free(m->want);
+   m->want       = NULL;
+   m->want_count = 0;
+   free(m->system_art);
+   m->system_art = NULL;
+}
+
+/* The hits from @first on */
+static void pl_thumb_match_drop_hits(pl_thumb_match_t *m, size_t first)
+{
+   while (m->hit_count > first)
+      free(m->hits[--m->hit_count].name);
+}
+#endif
+
 /* The table holds its own copies of what it took from the playlist. */
 static void pl_thumb_match_drop_playlist(pl_thumb_match_t *m)
 {
+#ifdef HAVE_LIBRETRODB
+   pl_thumb_match_drop_rdbs(m);
+   pl_thumb_match_drop_hits(m, 0);
+   free(m->hits);
+   m->hits      = NULL;
+   m->hit_cap   = 0;
+   free(m->scratch);
+   m->scratch   = NULL;
+#endif
    if (m->parse)
       playlist_parse_abort(m->parse);
    m->parse = NULL;
@@ -207,10 +287,25 @@ static void pl_thumb_match_drop_playlist(pl_thumb_match_t *m)
    m->entry_count = 0;
 }
 
+static void pl_thumb_match_drop_folder(pl_thumb_match_t *m)
+{
+   if (m->dir)
+   {
+      retro_closedir(m->dir);
+      m->dir = NULL;
+   }
+   if (m->index)
+   {
+      gfx_thumbnail_match_index_free(m->index);
+      m->index = NULL;
+   }
+}
+
 /* On the handler's thread, so cleanup has little left to free. */
 static void pl_thumb_match_fail(pl_thumb_match_t *m)
 {
    pl_thumb_match_close(m);
+   pl_thumb_match_drop_folder(m);
    pl_thumb_match_drop_playlist(m);
    gfx_thumbnail_results_free(m->results);
    m->results = NULL;
@@ -405,6 +500,334 @@ static void pl_thumb_match_playlist(pl_thumb_match_t *m, nbio_budget_t *b)
    m->status = PL_THUMB_MATCH_KEYS;
 }
 
+#ifdef HAVE_LIBRETRODB
+/* (rdb, crc, serial) order */
+static int pl_thumb_match_anchor_cmp(const pl_thumb_match_anchor_t *a,
+      const pl_thumb_match_anchor_t *b)
+{
+   int r;
+   size_t _len = (a->serial_len < b->serial_len)
+      ? a->serial_len : b->serial_len;
+   if (a->rdb != b->rdb)
+      return (a->rdb < b->rdb) ? -1 : 1;
+   if (a->crc != b->crc)
+      return (a->crc < b->crc) ? -1 : 1;
+   if (_len && (r = memcmp(a->serial, b->serial, _len)))
+      return r;
+   return (a->serial_len > b->serial_len) - (a->serial_len < b->serial_len);
+}
+
+static int pl_thumb_match_want_cmp(const void *a, const void *b)
+{
+   return pl_thumb_match_anchor_cmp(
+         *(const pl_thumb_match_anchor_t * const *)a,
+         *(const pl_thumb_match_anchor_t * const *)b);
+}
+
+/* Anchor order, then name order */
+static int pl_thumb_match_hit_cmp(const void *a, const void *b)
+{
+   const pl_thumb_match_hit_t *x = (const pl_thumb_match_hit_t*)a;
+   const pl_thumb_match_hit_t *y = (const pl_thumb_match_hit_t*)b;
+   int r = pl_thumb_match_anchor_cmp(&x->anchor, &y->anchor);
+   return r ? r : strcmp(x->name, y->name);
+}
+
+/* Sorts @base in steps under @status. Out of memory fails the resolve,
+ * as the engine's does. */
+static void pl_thumb_match_sort_begin(pl_thumb_match_t *m, void *base,
+      size_t count, size_t size, int (*cmp)(const void *a, const void *b),
+      enum pl_thumb_match_status status)
+{
+   if (count > 1 && !(m->scratch = malloc(count * size)))
+   {
+      pl_thumb_match_fail(m);
+      return;
+   }
+   gfx_thumbnail_match_sort_begin(&m->sort, base, m->scratch, count, size,
+         cmp);
+   m->status = status;
+}
+
+/* One step; true once sorted, with the scratch freed */
+static bool pl_thumb_match_sort_done(pl_thumb_match_t *m)
+{
+   if (gfx_thumbnail_match_sort_step(&m->sort))
+      return false;
+   free(m->scratch);
+   m->scratch = NULL;
+   return true;
+}
+
+/* Whether a thumbnail folder of the system in m->name exists; the rdb
+ * of one without any is not read. */
+static bool pl_thumb_match_has_art(pl_thumb_match_t *m)
+{
+   unsigned t;
+   for (t = 0; t < GFX_THUMBNAIL_RESULT_TYPES; t++)
+   {
+      fill_pathname_join_special(m->path, m->dir_thumbnails, m->name,
+            sizeof(m->path));
+      fill_pathname_join_special(m->path, m->path,
+            gfx_thumbnail_result_type_dir(t), sizeof(m->path));
+      if (path_is_directory(m->path))
+         return true;
+   }
+   return false;
+}
+
+/* The entry's crc or serial, kept for the rdb named after its database.
+ * false on OOM. */
+static bool pl_thumb_match_anchor(pl_thumb_match_t *m,
+      pl_thumb_match_entry_t *e, const char *db_name)
+{
+   unsigned i;
+   const char *bar = strchr(e->crc32, '|');
+
+   if (     !bar || !db_name || !*m->dir_database || strchr(db_name, '|')
+         || !m->system_art[e->system])
+      return true;
+   if (string_is_equal(bar + 1, "crc"))
+   {
+      i = 0;
+      while (i < 8 && isxdigit((unsigned char)e->crc32[i]))
+         i++;
+      if (i == 8 && bar == e->crc32 + 8)
+         e->anchor.crc = (uint32_t)strtoul(e->crc32, NULL, 16);
+   }
+   else if (string_is_equal(bar + 1, "serial") && bar > e->crc32)
+   {
+      e->anchor.serial     = e->crc32;
+      e->anchor.serial_len = (size_t)(bar - e->crc32);
+   }
+   /* A manual scan writes 00000000 */
+   if (!e->anchor.crc && !e->anchor.serial)
+      return true;
+   fill_pathname_join_special(m->path, m->dir_database, db_name,
+         sizeof(m->path));
+   path_remove_extension(m->path);
+   strlcat(m->path, ".rdb", sizeof(m->path));
+   for (i = 0; i < m->rdb_count; i++)
+      if (string_is_equal(m->rdbs[i], m->path))
+         break;
+   if (i == m->rdb_count)
+   {
+      char *copy;
+      char **rdbs = (char**)realloc(m->rdbs,
+            (m->rdb_count + 1) * sizeof(*rdbs));
+      if (!rdbs)
+         return false;
+      m->rdbs = rdbs;
+      if (!(copy = strdup(m->path)))
+         return false;
+      m->rdbs[m->rdb_count++] = copy;
+   }
+   if (!m->want && !(m->want = (const pl_thumb_match_anchor_t**)malloc(
+         playlist_size(m->playlist) * sizeof(*m->want))))
+      return false;
+   e->anchor.rdb            = i;
+   m->want[m->want_count++] = &e->anchor;
+   return true;
+}
+
+static void pl_thumb_match_want_sort(pl_thumb_match_t *m)
+{
+   if (!pl_thumb_match_sort_done(m))
+      return;
+   m->cur_rdb = 0;
+   m->status  = PL_THUMB_MATCH_RDB;
+}
+
+static bool pl_thumb_match_wants(const pl_thumb_match_t *m,
+      const pl_thumb_match_anchor_t *a)
+{
+   size_t lo = 0;
+   size_t hi = m->want_count;
+   while (lo < hi)
+   {
+      size_t mid = lo + (hi - lo) / 2;
+      int r      = pl_thumb_match_anchor_cmp(m->want[mid], a);
+      if (!r)
+         return true;
+      if (r < 0)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+   return false;
+}
+
+/* @name for @a, if an entry has @a. false on OOM. */
+static bool pl_thumb_match_add_hit(pl_thumb_match_t *m, const char *name,
+      const pl_thumb_match_anchor_t *a)
+{
+   size_t _len;
+   pl_thumb_match_hit_t *h;
+
+   if (!pl_thumb_match_wants(m, a))
+      return true;
+   if (m->hit_count == m->hit_cap)
+   {
+      size_t cap                 = m->hit_cap ? m->hit_cap * 2 : 64;
+      pl_thumb_match_hit_t *hits = (pl_thumb_match_hit_t*)realloc(m->hits,
+            cap * sizeof(*hits));
+      if (!hits)
+         return false;
+      m->hits    = hits;
+      m->hit_cap = cap;
+   }
+   h    = &m->hits[m->hit_count];
+   _len = strlen(name) + 1;
+   if (!(h->name = (char*)malloc(_len + a->serial_len)))
+      return false;
+   memcpy(h->name, name, _len);
+   h->anchor = *a;
+   if (a->serial_len)
+   {
+      memcpy(h->name + _len, a->serial, a->serial_len);
+      h->anchor.serial = h->name + _len;
+   }
+   m->hit_count++;
+   return true;
+}
+
+typedef struct
+{
+   pl_thumb_match_t *m;
+   bool oom;
+} pl_thumb_match_rdb_ctx_t;
+
+/* An rdb record's names for the playlist's anchors; stops on OOM */
+static int pl_thumb_match_rdb_record(void *ctx, const uint8_t *key,
+      size_t key_len, const uint8_t *key2, size_t key2_len,
+      const char *name, size_t name_len, uint64_t offset,
+      const uint64_t *aux)
+{
+   pl_thumb_match_anchor_t crc;
+   pl_thumb_match_anchor_t serial;
+   pl_thumb_match_rdb_ctx_t *c = (pl_thumb_match_rdb_ctx_t*)ctx;
+
+   /* Absent or too long to read: "" leaves the anchor's names unknown */
+   if (!name)
+      name = "";
+   memset(&crc, 0, sizeof(crc));
+   memset(&serial, 0, sizeof(serial));
+   crc.rdb    = c->m->cur_rdb;
+   serial.rdb = c->m->cur_rdb;
+   if (key_len == 4)
+      crc.crc = ((uint32_t)key[0] << 24) | ((uint32_t)key[1] << 16)
+              | ((uint32_t)key[2] << 8)  |  (uint32_t)key[3];
+   serial.serial     = (const char*)key2;
+   serial.serial_len = key2_len;
+   if (     (crc.crc && !pl_thumb_match_add_hit(c->m, name, &crc))
+         || (key2_len && !pl_thumb_match_add_hit(c->m, name, &serial)))
+      c->oom = true;
+   return c->oom;
+}
+
+/* A run of rdb records per call; a missing rdb names nothing, nor does
+ * one that fails to read or cannot be shown complete (short of its
+ * count, or legacy with none), which may have lost a CRC's other
+ * names. */
+static void pl_thumb_match_rdb(pl_thumb_match_t *m)
+{
+   int r;
+   pl_thumb_match_rdb_ctx_t c;
+   if (m->cur_rdb >= m->rdb_count)
+   {
+      pl_thumb_match_drop_rdbs(m);
+      m->status = PL_THUMB_MATCH_LIST;
+      if (m->hit_count)
+         pl_thumb_match_sort_begin(m, m->hits, m->hit_count,
+               sizeof(*m->hits), pl_thumb_match_hit_cmp,
+               PL_THUMB_MATCH_HIT_SORT);
+      return;
+   }
+   if (!m->scan)
+   {
+      libretrodb_t *db = libretrodb_new();
+      /* The scan reads through a stream of its own */
+      if (db && libretrodb_open(m->rdbs[m->cur_rdb], db, false) == 0)
+      {
+         m->scan = libretrodb_scan_begin(db, "crc", "serial", NULL, "name");
+         libretrodb_close(db);
+      }
+      libretrodb_free(db);
+      m->rdb_first = m->hit_count;
+      if (!m->scan)
+         m->cur_rdb++;
+      return;
+   }
+   c.m   = m;
+   c.oom = false;
+   r     = libretrodb_scan_step(m->scan, PL_THUMB_MATCH_RECORDS,
+         pl_thumb_match_rdb_record, &c);
+   if (c.oom)
+   {
+      pl_thumb_match_fail(m);
+      return;
+   }
+   if (r > 0)
+      return;
+   if (r < 0 || !libretrodb_scan_complete(m->scan))
+      pl_thumb_match_drop_hits(m, m->rdb_first);
+   libretrodb_scan_end(m->scan);
+   m->scan = NULL;
+   m->cur_rdb++;
+}
+
+static void pl_thumb_match_hit_sort(pl_thumb_match_t *m)
+{
+   if (pl_thumb_match_sort_done(m))
+      m->status = PL_THUMB_MATCH_LIST;
+}
+
+/* The first hit not before @a (and @name, when given); with @after,
+ * the first hit after @a. */
+static size_t pl_thumb_match_hit_find(const pl_thumb_match_t *m,
+      const pl_thumb_match_anchor_t *a, const char *name, bool after)
+{
+   size_t lo = 0;
+   size_t hi = m->hit_count;
+   while (lo < hi)
+   {
+      size_t mid = lo + (hi - lo) / 2;
+      int r      = pl_thumb_match_anchor_cmp(&m->hits[mid].anchor, a);
+      if (!r && name)
+         r = strcmp(m->hits[mid].name, name);
+      if (r < 0 || (after && !r))
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+   return lo;
+}
+
+/* The one name the rdb gives the entry's anchor, or the one equal to
+ * its label */
+static const char *pl_thumb_match_t1(const pl_thumb_match_t *m,
+      const pl_thumb_match_entry_t *e)
+{
+   size_t lo, hi, k;
+   if (!e->anchor.crc && !e->anchor.serial)
+      return NULL;
+   lo = pl_thumb_match_hit_find(m, &e->anchor, NULL, false);
+   hi = pl_thumb_match_hit_find(m, &e->anchor, NULL, true);
+   /* An unknown name, "", sorts first */
+   if (lo == hi || !*m->hits[lo].name)
+      return NULL;
+   /* In name order: one name when the first and last agree */
+   if (string_is_equal(m->hits[lo].name, m->hits[hi - 1].name))
+      return m->hits[lo].name;
+   if (!e->label)
+      return NULL;
+   k = pl_thumb_match_hit_find(m, &e->anchor, e->label, false);
+   if (k < hi && string_is_equal(m->hits[k].name, e->label))
+      return m->hits[k].name;
+   return NULL;
+}
+#endif
+
 static void pl_thumb_match_key(pl_thumb_match_t *m)
 {
    unsigned i;
@@ -417,6 +840,14 @@ static void pl_thumb_match_key(pl_thumb_match_t *m)
       m->cur_system = 0;
       m->cur_type   = 0;
       m->status     = PL_THUMB_MATCH_LIST;
+#ifdef HAVE_LIBRETRODB
+      if (m->want_count)
+         pl_thumb_match_sort_begin(m, m->want, m->want_count,
+               sizeof(*m->want), pl_thumb_match_want_cmp,
+               PL_THUMB_MATCH_WANT_SORT);
+      else
+         pl_thumb_match_drop_rdbs(m);
+#endif
       return;
    }
    playlist_get_index(m->playlist, m->pos++, &entry);
@@ -454,6 +885,17 @@ static void pl_thumb_match_key(pl_thumb_match_t *m)
       if (!systems)
          return;
       m->systems = systems;
+#ifdef HAVE_LIBRETRODB
+      {
+         bool *art = (bool*)realloc(m->system_art,
+               (m->system_count + 1) * sizeof(*art));
+         if (!art)
+            return;
+         m->system_art                 = art;
+         m->system_art[m->system_count] = *m->dir_database
+               && pl_thumb_match_has_art(m);
+      }
+#endif
       if (!(copy = strdup(m->name)))
          return;
       m->systems[m->system_count++] = copy;
@@ -462,23 +904,17 @@ static void pl_thumb_match_key(pl_thumb_match_t *m)
    e->path   = entry->path;
    e->label  = string_is_empty(entry->label) ? NULL : entry->label;
    e->crc32  = entry->crc32 ? entry->crc32 : "";
-   e->t1     = NULL;
    e->rec    = PL_THUMB_MATCH_NONE;
    e->system = i;
+#ifdef HAVE_LIBRETRODB
+   if (!pl_thumb_match_anchor(m, e, db_name))
+      pl_thumb_match_fail(m);
+#endif
 }
 
 static void pl_thumb_match_next_type(pl_thumb_match_t *m)
 {
-   if (m->dir)
-   {
-      retro_closedir(m->dir);
-      m->dir = NULL;
-   }
-   if (m->index)
-   {
-      gfx_thumbnail_match_index_free(m->index);
-      m->index = NULL;
-   }
+   pl_thumb_match_drop_folder(m);
    if (++m->cur_type >= GFX_THUMBNAIL_RESULT_TYPES)
    {
       m->cur_type = 0;
@@ -583,7 +1019,11 @@ static void pl_thumb_match_resolve(pl_thumb_match_t *m)
    fill_pathname(m->stem, path_basename(e->path), "", sizeof(m->stem));
    label      = e->label
       ? pl_thumb_match_cut(e->label, m->name, sizeof(m->name)) : m->stem;
-   queries[0] = e->t1;
+#ifdef HAVE_LIBRETRODB
+   queries[0] = pl_thumb_match_t1(m, e);
+#else
+   queries[0] = NULL;
+#endif
    queries[1] = label;
    queries[2] = m->stem;
    if (     gfx_thumbnail_match_find_first(m->index, queries, 3, &found)
@@ -596,8 +1036,12 @@ static void pl_thumb_match_resolve(pl_thumb_match_t *m)
          && (e->rec = gfx_thumbnail_results_add(m->results,
                pl_thumb_match_cut(e->path, m->path, sizeof(m->path)), label,
                e->crc32, m->systems[e->system])) == PL_THUMB_MATCH_NONE)
+   {
+      pl_thumb_match_fail(m);
       return;
-   gfx_thumbnail_results_set(m->results, e->rec, m->cur_type, found);
+   }
+   if (!gfx_thumbnail_results_set(m->results, e->rec, m->cur_type, found))
+      pl_thumb_match_fail(m);
 }
 
 static void pl_thumb_match_sort(pl_thumb_match_t *m)
@@ -761,6 +1205,17 @@ static void pl_thumb_match_step(pl_thumb_match_t *m, nbio_budget_t *b)
       case PL_THUMB_MATCH_KEYS:
          pl_thumb_match_key(m);
          break;
+#ifdef HAVE_LIBRETRODB
+      case PL_THUMB_MATCH_WANT_SORT:
+         pl_thumb_match_want_sort(m);
+         break;
+      case PL_THUMB_MATCH_RDB:
+         pl_thumb_match_rdb(m);
+         break;
+      case PL_THUMB_MATCH_HIT_SORT:
+         pl_thumb_match_hit_sort(m);
+         break;
+#endif
       case PL_THUMB_MATCH_LIST:
          pl_thumb_match_list(m);
          break;
@@ -793,15 +1248,12 @@ static void pl_thumb_match_free(pl_thumb_match_t *m)
    if (!m)
       return;
    pl_thumb_match_close(m);
-   if (m->dir)
-      retro_closedir(m->dir);
+   pl_thumb_match_drop_folder(m);
    if (m->json)
       rjson_free(m->json);
    if (m->writer)
       rjsonwriter_free(m->writer);
    pl_thumb_match_drop_playlist(m);
-   if (m->index)
-      gfx_thumbnail_match_index_free(m->index);
    for (i = 0; i < m->system_count; i++)
       free(m->systems[i]);
    free(m->systems);
