@@ -14,8 +14,8 @@ contract_test$(EXE): contract_test.c mock/AudioToolbox/AudioToolbox.h $(RA)/reco
 	$(CC) $(CFLAGS) -o $@ contract_test.c $(RA)/record/record_at_audio.c $(LDFLAGS)
 check: all
 	$(RUNNER) ./contract_test$(EXE)
-encode_test: encode_test.c $(RA)/record/record_at_audio.c $(RA)/record/record_at_audio.h
-	$(CC) $(filter-out -Imock -DRECORD_AT_AUDIO_TEST,$(CFLAGS)) -DHAVE_AVF -o $@ encode_test.c $(RA)/record/record_at_audio.c $(LDFLAGS) -framework AudioToolbox -lm
+encode_test: diagnostic.c encode_test.c $(RA)/record/record_at_audio.c $(RA)/record/record_at_audio.h
+	$(CC) $(filter-out -Imock -DRECORD_AT_AUDIO_TEST,$(CFLAGS)) -DHAVE_AVF -o $@ diagnostic.c $(LDFLAGS) -framework AudioToolbox -lm
 native-check: encode_test
 	python3 run.py ./encode_test
 clean:

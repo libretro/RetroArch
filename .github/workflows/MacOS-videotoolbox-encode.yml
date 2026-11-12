@@ -74,10 +74,36 @@ on:
       - 'samples/record/metal_frontend/**'
       - 'libretro-common/include/retro_atomic.h'
   workflow_dispatch:
+    inputs:
+      native_aac_only:
+        description: 'Run native AudioToolbox AAC acceptance without GPU/frontend jobs'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
+  aac-native:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install independent AAC test decoder
+        run: command -v ffmpeg >/dev/null || brew install ffmpeg
+      - name: AudioToolbox AAC callback ownership contracts
+        run: make -C samples/record/audiotoolbox_audio check
+      - name: Native AudioToolbox AAC packets and independent timing
+        env:
+          AUDIO_TOOLBOX_ARTIFACT_DIR: ${{ runner.temp }}/audiotoolbox-aac-evidence
+        run: make -C samples/record/audiotoolbox_audio native-check
+      - name: Save AudioToolbox AAC acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audiotoolbox-aac-evidence
+          path: ${{ runner.temp }}/audiotoolbox-aac-evidence
+          if-no-files-found: ignore
   encode:
+    if: ${{ !inputs.native_aac_only }}
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -94,19 +120,6 @@ jobs:
         run: make -C samples/record/rtmp_stream vt-check
       - name: Native AAC property ABI and advertised rates
         run: make -C samples/record/videotoolbox_encode native-audio-check
-      - name: AudioToolbox AAC callback ownership contracts
-        run: make -C samples/record/audiotoolbox_audio check
-      - name: Native AudioToolbox AAC packets and independent timing
-        env:
-          AUDIO_TOOLBOX_ARTIFACT_DIR: ${{ runner.temp }}/audiotoolbox-aac-evidence
-        run: make -C samples/record/audiotoolbox_audio native-check
-      - name: Save AudioToolbox AAC acceptance evidence
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: audiotoolbox-aac-evidence
-          path: ${{ runner.temp }}/audiotoolbox-aac-evidence
-          if-no-files-found: ignore
       - name: Native hardware encoder and independent pixels
         run: |
           rc=0
@@ -191,6 +204,7 @@ jobs:
           if-no-files-found: warn
 
   frontend-build:
+    if: ${{ !inputs.native_aac_only }}
     runs-on: macos-latest
     timeout-minutes: 40
     steps:
@@ -227,6 +241,7 @@ jobs:
           if-no-files-found: warn
 
   frontend-contracts:
+    if: ${{ !inputs.native_aac_only }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
