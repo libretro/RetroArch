@@ -62,16 +62,23 @@ bool gfx_thumbnail_name_allowed(const char *name, bool allow_non_png);
 /* A table belongs to one thread at a time. */
 gfx_thumbnail_results_t *gfx_thumbnail_results_new(void);
 void gfx_thumbnail_results_free(gfx_thumbnail_results_t *t);
-/* Returns the new record, or (size_t)-1. Not after _sort(). */
+/* Returns the new record, or (size_t)-1. Not once a sort has begun,
+ * unless it ran out of memory. */
 size_t gfx_thumbnail_results_add(gfx_thumbnail_results_t *t,
       const char *content_path, const char *label,
       const char *crc32, const char *system);
 bool gfx_thumbnail_results_set(gfx_thumbnail_results_t *t, size_t rec,
       unsigned type, const char *name);
+/* Sorts in bounded steps; true while steps remain. Until then the table
+ * refuses adds, sets, gets and finds. On OOM it stays unsorted, which
+ * find still searches. */
+bool gfx_thumbnail_results_sort_step(gfx_thumbnail_results_t *t);
+/* Runs every step; not for the main thread. */
 void gfx_thumbnail_results_sort(gfx_thumbnail_results_t *t);
 size_t gfx_thumbnail_results_count(const gfx_thumbnail_results_t *t);
 /* @key: content path, label, crc32, system. @names: one per type,
- * NULL where nothing matched. Both borrowed from @t until it is freed. */
+ * NULL where nothing matched. Both borrowed from @t until it is freed;
+ * all NULL when refused. */
 void gfx_thumbnail_results_get(const gfx_thumbnail_results_t *t,
       size_t rec, const char **key, const char **names);
 /* Borrowed from @t until it is freed. */
@@ -82,7 +89,8 @@ const char *gfx_thumbnail_results_find(const gfx_thumbnail_results_t *t,
 /* The store keeps the tables of the last playlists opened.
  * Main thread only. */
 unsigned gfx_thumbnail_results_open(const char *playlist_path);
-/* Takes @t. false, with @t freed, once the playlist is not kept. */
+/* Takes @t. false, with @t freed, once the playlist is not kept;
+ * @resolved still counts once newer playlists pushed it out. */
 bool gfx_thumbnail_results_install(const char *playlist_path,
       gfx_thumbnail_results_t *t, bool resolved);
 bool gfx_thumbnail_results_note(const char *playlist_path,

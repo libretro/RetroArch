@@ -270,6 +270,14 @@ bool task_push_core_restore(const char *backup_path,
 bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config);
 bool task_push_pl_manager_clean_playlist(const playlist_config_t *playlist_config);
 
+/* Matches the playlist's entries to the thumbnails on disk, once a
+ * session, through <playlist>.lpl.thumbs. Main thread. @playlist is the
+ * caller's loaded copy, or NULL; history and favourites read core info
+ * from it for entries without a db_name. Nothing of it is kept. */
+bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
+      playlist_t *playlist, const char *dir_thumbnails,
+      const char *dir_database, bool allow_non_png);
+
 /* downscale_cap: if non-zero, the decoded image is capped to this many
  * pixels on its longest side before upload, preserving aspect ratio.
  * The sidebar thumbnail and the fullscreen view share one texture -

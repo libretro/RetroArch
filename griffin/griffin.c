@@ -1865,6 +1865,7 @@ DATA RUNLOOP
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_nbio_slice.c"
 #include "../tasks/task_playlist_manager.c"
+#include "../tasks/task_pl_thumbnail_match.c"
 #include "../tasks/task_core_backup.c"
 #ifdef HAVE_TRANSLATE
 #include "../tasks/task_translation.c"
