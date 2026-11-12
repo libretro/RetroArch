@@ -63,6 +63,9 @@ static HDC win32_hdc;
 static HGLRC win32_hrc, win32_hw_hrc;
 static unsigned win32_major, win32_minor;
 static unsigned wgl_flags, g_win32_flags;
+/* the attributes kept for a core's own contexts (ae907bff) */
+static int wgl_ctx_attribs[16];
+static bool wgl_ctx_attribs_used;
 
 static struct retro_hw_render_callback *video_driver_get_hw_context(void) { return &hwr; }
 static HDC GetDC(HWND w) { (void)w; return &dc; }
