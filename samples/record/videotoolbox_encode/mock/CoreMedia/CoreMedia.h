@@ -5,6 +5,8 @@
 #include <boolean.h>
 typedef int OSStatus;
 typedef unsigned FourCharCode;
+typedef long CFIndex;
+typedef const void *CFDataRef;
 typedef const void *CFTypeRef;
 typedef const void *CFBooleanRef;
 typedef const void *CFDictionaryRef;
@@ -26,7 +28,13 @@ typedef struct mock_sample
 #define kCMTimeRoundingMethod_RoundTowardZero 0
 #define CMTIME_IS_VALID(t) (((t).flags & 1) != 0)
 #define CMTIME_IS_NUMERIC(t) ((t).flags == 1 && (t).timescale > 0)
+#define CFSTR(x) ((const void*)(x))
+#define kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms ((const void*)2)
 #define kCMSampleAttachmentKey_NotSync ((const void*)1)
+CFTypeRef CMFormatDescriptionGetExtension(CMFormatDescriptionRef f, const void *key);
+unsigned CFDataGetTypeID(void);
+CFIndex CFDataGetLength(CFDataRef data);
+const uint8_t *CFDataGetBytePtr(CFDataRef data);
 unsigned CMFormatDescriptionGetMediaType(CMFormatDescriptionRef f);
 unsigned CMFormatDescriptionGetMediaSubType(CMFormatDescriptionRef f);
 int CMFormatDescriptionEqual(CMFormatDescriptionRef a, CMFormatDescriptionRef b);

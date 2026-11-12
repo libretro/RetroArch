@@ -52,7 +52,7 @@ with workspace as temp:
     directory = Path(temp)
     objects = []
     for source in ('record/record_gpu_worker_vt.c', 'record/record_vt_packet.c', 'record/record_gpu_queue.c', 'record/record_audio_queue.c', 'record/record_avfoundation_worker.c', 'record/record_avfoundation_session.c',
-                   'libretro-common/queues/retro_spsc.c', 'libretro-common/formats/h265/rh265_sps_crop.c'):
+                   'libretro-common/queues/retro_spsc.c', 'libretro-common/formats/flv/rflv_mux.c', 'libretro-common/formats/h265/rh265_sps_crop.c'):
         obj = directory / (Path(source).stem + '.o')
         subprocess.run(compiler + flags + ['-c', str(root / source), '-o', str(obj)], check=True)
         objects.append(str(obj))

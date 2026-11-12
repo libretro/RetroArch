@@ -65,6 +65,33 @@ record_vt_packet_t *record_vt_packet_new(void *format, unsigned timescale, size_
    p->timescale = timescale;
    return p;
 }
+bool record_vt_packet_config(record_vt_packet_t *p, const void **data,
+      size_t *size, bool *hevc)
+{
+   CFTypeRef atoms, config;
+   const uint8_t *bytes;
+   CFIndex length;
+   bool h265;
+   if (!p || !data || !size || !hevc)
+      return false;
+   h265 = CMFormatDescriptionGetMediaSubType(p->format) == kCMVideoCodecType_HEVC;
+   atoms = CMFormatDescriptionGetExtension(p->format,
+         kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms);
+   if (!atoms || CFGetTypeID(atoms) != CFDictionaryGetTypeID())
+      return false;
+   config = CFDictionaryGetValue((CFDictionaryRef)atoms, h265 ? CFSTR("hvcC") : CFSTR("avcC"));
+   if (!config || CFGetTypeID(config) != CFDataGetTypeID())
+      return false;
+   length = CFDataGetLength((CFDataRef)config);
+   bytes = CFDataGetBytePtr((CFDataRef)config);
+   if (!bytes || length < (h265 ? 23 : 7) || length > 65536
+         || bytes[0] != 1 || (bytes[h265 ? 21 : 4] & 3) != 3)
+      return false;
+   *data = bytes;
+   *size = (size_t)length;
+   *hevc = h265;
+   return true;
+}
 int record_vt_packet_read(record_vt_packet_t *p, void *data, record_vt_packet_view_t *view)
 {
    CMSampleBufferRef sample = (CMSampleBufferRef)data;

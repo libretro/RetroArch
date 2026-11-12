@@ -5,6 +5,22 @@
 #include <CoreMedia/CoreMedia.h>
 #include "../../../record/record_vt_packet.h"
 static unsigned copies;
+static uint8_t config_bytes[23]={1,0,0,0,3};
+static const int config_token=7, atoms_token=8;
+static unsigned config_fault;
+static bool config_hevc;
+CFTypeRef CMFormatDescriptionGetExtension(CMFormatDescriptionRef f, const void *key)
+{
+   assert(key==kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms);
+   config_bytes[21]=3;
+   config_hevc=f->codec==kCMVideoCodecType_HEVC;
+   return config_fault==1 ? NULL : config_fault==2 ? &config_token : &atoms_token;
+}
+unsigned CFDataGetTypeID(void) { return 3; }
+CFIndex CFDataGetLength(CFDataRef data)
+{ assert(data==&config_token); return config_fault==5 ? 6 : config_fault==6 ? 65537 : 23; }
+const uint8_t *CFDataGetBytePtr(CFDataRef data)
+{ assert(data==&config_token); return config_fault==7 ? NULL : config_bytes; }
 static const int yes = 1, no = 0;
 unsigned CMFormatDescriptionGetMediaType(CMFormatDescriptionRef f) { return f->media; }
 unsigned CMFormatDescriptionGetMediaSubType(CMFormatDescriptionRef f) { return f->codec; }
@@ -37,12 +53,17 @@ int CMBlockBufferCopyDataBytes(CMBlockBufferRef b, size_t off, size_t n, void *p
 { assert(!off && n==b->size); copies++; if (b->copy_error) return -1; memcpy(p,b->bytes,n); return 0; }
 long CFArrayGetCount(CFArrayRef a) { return ((CMSampleBufferRef)a)->attachments; }
 const void *CFArrayGetValueAtIndex(CFArrayRef a, long i) { assert(!i); return a; }
-unsigned CFGetTypeID(CFTypeRef p) { return p==&yes || p==&no ? 2 : 1; }
+unsigned CFGetTypeID(CFTypeRef p) { return p==&config_token ? 3 : p==&yes || p==&no ? 2 : 1; }
 unsigned CFDictionaryGetTypeID(void) { return 1; }
 unsigned CFBooleanGetTypeID(void) { return 2; }
 const void *CFDictionaryGetValue(CFDictionaryRef d, const void *key)
 {
    CMSampleBufferRef s=(CMSampleBufferRef)d;
+   if (d==&atoms_token)
+   {
+      assert(!strcmp((const char*)key,config_hevc?"hvcC":"avcC"));
+      return config_fault==3 ? NULL : config_fault==4 ? &yes : &config_token;
+   }
    assert(key==kCMSampleAttachmentKey_NotSync);
    return s->not_sync<0 ? NULL : s->not_sync ? &yes : &no;
 }
@@ -54,11 +75,24 @@ int main(void)
    struct mock_sample sample, second;
    record_vt_packet_t *p;
    record_vt_packet_view_t v;
+   const void *headers;
+   size_t header_size;
+   bool hevc;
    memset(&block,0,sizeof(block)); memset(&sample,0,sizeof(sample));
    block.size=block.contiguous=16; memset(block.bytes,0x5a,16);
    sample.format=&format; sample.block=&block; sample.sample_size=16;
    sample.ready=sample.samples=1; sample.pts.value=90; sample.pts.timescale=90; sample.pts.flags=1;
    p=record_vt_packet_new(&format,1000,32); assert(p);
+   assert(record_vt_packet_config(p,&headers,&header_size,&hevc));
+   assert(headers==config_bytes && header_size==23 && !hevc && !copies);
+   for (config_fault=1;config_fault<=7;config_fault++)
+      assert(!record_vt_packet_config(p,&headers,&header_size,&hevc));
+   config_fault=0; config_bytes[0]=0;
+   assert(!record_vt_packet_config(p,&headers,&header_size,&hevc));
+   config_bytes[0]=1; config_bytes[4]=2;
+   assert(!record_vt_packet_config(p,&headers,&header_size,&hevc));
+   config_bytes[4]=3;
+   assert(record_vt_packet_config(p,&headers,&header_size,&hevc));
    assert(record_vt_packet_read(p,&sample,&v)==1);
    assert(v.data==block.bytes && v.size==16 && v.pts==1000 && v.dts==1000 && v.keyframe && !copies);
    assert(!record_vt_packet_free(p));
@@ -88,7 +122,9 @@ int main(void)
    block.error=0; assert(record_vt_packet_read(p,&sample,&v)==1); assert(record_vt_packet_release(p));
    assert(record_vt_packet_free(p));
    format.lengths=2; assert(!record_vt_packet_new(&format,1000,32));
-   format.lengths=4; format.codec=kCMVideoCodecType_HEVC; p=record_vt_packet_new(&format,1000,32); assert(p && record_vt_packet_free(p));
+   format.lengths=4; format.codec=kCMVideoCodecType_HEVC; p=record_vt_packet_new(&format,1000,32); assert(p);
+   assert(record_vt_packet_config(p,&headers,&header_size,&hevc) && hevc && headers==config_bytes);
+   assert(record_vt_packet_free(p));
    format.error=1; assert(!record_vt_packet_new(&format,1000,32));
    assert(!record_vt_packet_new(&format,0,32)); assert(!record_vt_packet_new(&format,1000,0));
    puts("PASS VT packet loans, zero-copy blocks, bounded fragmented fallback, source clocks and format admission");

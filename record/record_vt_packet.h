@@ -17,6 +17,10 @@ typedef struct record_vt_packet_view
 /* Worker owner. Borrows the expected native format until free. Cold bounded
  * storage is used only for fragmented CoreMedia blocks. */
 record_vt_packet_t *record_vt_packet_new(void *format, unsigned timescale, size_t capacity);
+/* Cold avcC/hvcC loan from the expected format; unchanged until free.
+ * The shared mux validates codec contents before accepting media. */
+bool record_vt_packet_config(record_vt_packet_t *packet, const void **data,
+      size_t *size, bool *hevc);
 /* Caller keeps the CMSampleBuffer alive until release. Repeats the same loan;
  * a different sample is refused while live. No payload copy for contiguous data.
  * Returns 1 for a loan, 0 busy, -1 invalid input. */
