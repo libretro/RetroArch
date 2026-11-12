@@ -19,7 +19,10 @@
  *
  * Where the platform has no positional I/O at all the calls answer -1
  * and the test says so and passes: the caller's fallback is the seek
- * and read it had before. */
+ * and read it had before. Built with VFS_POSITIONAL_TEST_REQUIRED on a
+ * Unix host, which always has pread(), a -1 there fails instead - the
+ * build without HAVE_MMAP (vfs_positional_nommap_test) is the one that
+ * holds that, as Android builds. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +70,13 @@ static void thread_join(test_thread_t t)
 #define RECORD_LEN 64
 
 static int failures;
+
+#if defined(VFS_POSITIONAL_TEST_REQUIRED) && !defined(_WIN32) \
+   && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
+#define POSITIONAL_REQUIRED 1
+#else
+#define POSITIONAL_REQUIRED 0
+#endif
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
 
 /* The file's byte at @at */
@@ -138,6 +148,7 @@ static int read_shared(const char *path, unsigned hints, const char *what)
    if (retro_vfs_file_read_at_impl(shared, &one, 1, 0) < 0)
    {
       printf("vfs positional: no positional I/O for a %s stream here, skipped\n", what);
+      CHECK(!POSITIONAL_REQUIRED);
       retro_vfs_file_close_impl(shared);
       return 0;
    }

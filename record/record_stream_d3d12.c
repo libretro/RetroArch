@@ -26,6 +26,7 @@ struct record_stream_d3d12
    enum stream_producer producer;
    bool prepared, sending, video_end, audio_end, audio_turn;
    bool audio_finishing, finishing, ended, retired;
+   bool av1;
 };
 
 static int stream_fail(record_stream_d3d12_t *p, enum record_gpu_output_error error)
@@ -42,9 +43,10 @@ record_stream_d3d12_t *record_stream_d3d12_new(record_gpu_worker_d3d12_t *worker
    rflv_config_t mux;
    unsigned channels;
    if (!worker || !client || !config
-         || (config->video.codec != RECORD_MP4_H264 && config->video.codec != RECORD_MP4_HEVC)
+         || (config->video.codec != RECORD_MP4_H264
+            && config->video.codec != RECORD_MP4_HEVC && config->video.codec != RECORD_MP4_AV1)
          || (config->video.bit_depth != 8
-            && (config->video.codec != RECORD_MP4_HEVC || config->video.bit_depth != 10))
+            && (config->video.codec == RECORD_MP4_H264 || config->video.bit_depth != 10))
          || !config->video.timescale
          || config->video.ac3_header || config->video.ac3_header_size
          || net_rtmp_client_step(client, 0, &view) != NET_RTMP_CLIENT_READY)
@@ -53,6 +55,7 @@ record_stream_d3d12_t *record_stream_d3d12_new(record_gpu_worker_d3d12_t *worker
    if (!p)
       return NULL;
    p->worker = worker;
+   p->av1 = config->video.codec == RECORD_MP4_AV1;
    p->client = client;
    p->session = view.session;
    retro_atomic_int_init(&p->audio_closed, config->audio_rate ? 0 : 1);
@@ -87,9 +90,10 @@ record_stream_d3d12_t *record_stream_d3d12_new(record_gpu_worker_d3d12_t *worker
          goto failed;
       p->audio_end = true;
    }
-   p->mux = config->video.codec == RECORD_MP4_HEVC
+   p->mux = config->video.codec == RECORD_MP4_AV1 ? rflv_mux_new_av1_obu(&mux)
+      : config->video.codec == RECORD_MP4_HEVC
       ? rflv_mux_new_hevc_annexb(&mux) : rflv_mux_new_annexb(&mux);
-   if (!p->mux || (config->video.codec == RECORD_MP4_HEVC
+   if (!p->mux || (config->video.codec != RECORD_MP4_H264
             && !rflv_mux_set_color(p->mux, &config->stream_color, config->video.bit_depth)))
       goto failed;
    return p;
@@ -335,8 +339,11 @@ int record_stream_d3d12_step(record_stream_d3d12_t *p,
       if (result == RECORD_GPU_WORKER_PACKET)
       {
          p->producer = STREAM_VIDEO;
-         if (!packet.duration || rflv_mux_push_annexb(p->mux, packet.data, packet.size,
-                  packet.timestamp, packet.timestamp, packet.keyframe) != RFLV_PROGRESS)
+         if (!packet.duration || (p->av1
+               ? rflv_mux_push(p->mux, 1, packet.data, packet.size,
+                  packet.timestamp, packet.timestamp, packet.keyframe)
+               : rflv_mux_push_annexb(p->mux, packet.data, packet.size,
+                  packet.timestamp, packet.timestamp, packet.keyframe)) != RFLV_PROGRESS)
             return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_MUX);
          return RECORD_GPU_OUTPUT_PROGRESS;
       }

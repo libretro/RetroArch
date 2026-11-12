@@ -131,7 +131,13 @@ bool rdvd_vfs_service(rdvd_vfs_t *vfs)
    memset(&result, 0, sizeof(result));
    result.ticket = request.ticket; result.bytes = -1;
    bytes = request.bytes < 65536 ? request.bytes : 65536;
-   if (filestream_seek(request.file, (int64_t)request.offset,
+   /* At the offset in one call; seek and read where there is none */
+   if ((result.bytes = filestream_read_at(request.file, request.destination,
+               (int64_t)bytes, (int64_t)request.offset)) >= 0)
+   {
+      if (result.bytes > (int64_t)bytes) result.bytes = -1;
+   }
+   else if (filestream_seek(request.file, (int64_t)request.offset,
             RETRO_VFS_SEEK_POSITION_START) == 0
          && filestream_tell(request.file) == (int64_t)request.offset)
    {

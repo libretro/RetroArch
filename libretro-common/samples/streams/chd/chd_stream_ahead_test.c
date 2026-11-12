@@ -24,8 +24,10 @@
  * must return exactly the image, read in bulk, a sector at a time,
  * across seeks in both directions, and on an audio track, whose
  * octet pairs the stream swaps; and a stream closed while the thread
- * is busy must come apart cleanly. The images are uncompressed
- * version 5 CD images written here. */
+ * is busy must come apart cleanly. Where the file reads at offsets,
+ * the thread reads the stream's own file, so a stream is one open of
+ * it (filestream_open is wrapped and counted). The images are
+ * uncompressed version 5 CD images written here. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,6 +36,7 @@
 #include <boolean.h>
 #include <streams/chd_stream.h>
 #include <streams/file_stream.h>
+#include <retro_atomic.h>
 
 #define UNIT_BYTES   2448
 #define SECTOR_BYTES 2352
@@ -44,6 +47,16 @@
 #define TRACK_BYTES  ((size_t)FRAMES * SECTOR_BYTES)
 
 static int fails;
+
+static retro_atomic_int_t opens;
+RFILE *__real_filestream_open(const char *path, unsigned mode,
+      unsigned hints);
+RFILE *__wrap_filestream_open(const char *path, unsigned mode,
+      unsigned hints)
+{
+   retro_atomic_fetch_add_int(&opens, 1);
+   return __real_filestream_open(path, mode, hints);
+}
 
 #define CHECK(cond, msg) \
    do { \
@@ -156,6 +169,15 @@ static bool read_through(const char *path, bool audio, size_t chunk,
    return ok;
 }
 
+/* Opens of the image while one stream reads all of it in bulk */
+static int opens_reading(const char *path, uint8_t *buf)
+{
+   int before = retro_atomic_load_acquire_int(&opens);
+   if (!read_through(path, false, 256 * 1024, buf))
+      return -1;
+   return retro_atomic_load_acquire_int(&opens) - before;
+}
+
 /* Sector runs at offsets that jump back and forth over the track,
  * each run long enough to keep the thread going. */
 static bool read_jumping(const char *path, bool audio, uint8_t *buf)
@@ -203,6 +225,8 @@ int main(void)
    static const char *audio = "chd_stream_ahead_audio.chd";
    uint8_t *buf = (uint8_t*)malloc(TRACK_BYTES);
 
+   retro_atomic_int_init(&opens, 0);
+
    if (!buf || !write_image(data, "MODE1_RAW") || !write_image(audio, "AUDIO"))
    {
       printf("FAIL: could not write the images\n");
@@ -225,6 +249,19 @@ int main(void)
          "and on an audio track");
    CHECK(close_busy(data, buf),
          "a stream closes while the thread decodes");
+   {
+      RFILE  *f   = filestream_open(data, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      uint8_t one;
+      bool    at  = f && filestream_read_at(f, &one, 1, 0) == 1;
+      int     n;
+      filestream_close(f);
+      n = opens_reading(data, buf);
+      if (at)
+         CHECK(n == 1, "the thread reads the stream's file: one open");
+      else
+         CHECK(n == 1 || n == 2, "without reads at offsets, one of its own");
+   }
 
    filestream_delete(data);
    filestream_delete(audio);

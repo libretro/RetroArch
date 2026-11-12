@@ -1259,6 +1259,10 @@ static int data_transfer_read_at(data_transfer_t *dt, size_t off,
    int64_t save, r;
    if (dt->read_at)
       return dt->read_at(dt->read_ud,off,dst,n) == (int64_t)n;
+   /* At the offset, the cursor and read-ahead untouched; seek and read
+    * where the file has no positional reads */
+   if ((r = filestream_read_at(dt->f, dst, (int64_t)n, (int64_t)off)) >= 0)
+      return r == (int64_t)n;
    save = filestream_tell(dt->f);
    if (save < 0
          || (save != (int64_t)off

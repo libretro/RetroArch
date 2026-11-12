@@ -5,9 +5,36 @@
 #include "../../../record/record_audio_queue.h"
 #include "../../../record/record_avfoundation_worker.h"
 #include "native_packet.h"
+#include "../../../record/record_vt_packet.h"
+#include <formats/rflv_mux.h>
 #include "../../../gfx/common/videotoolbox_encode_crop.h"
 #include <unistd.h>
 #define PIPELINE_FRAMES 24
+static void packet_loan_contract(CMSampleBufferRef sample)
+{
+   CMBlockBufferRef block=CMSampleBufferGetDataBuffer(sample);
+   record_vt_packet_t *loan;
+   record_vt_packet_view_t first,again;
+   rflv_config_t config;
+   rflv_mux_t *mux;
+   bool hevc;
+   char *bytes=NULL;
+   size_t contiguous=0,total=0;
+   assert(!CMBlockBufferGetDataPointer(block,0,&contiguous,&total,&bytes));
+   loan=record_vt_packet_new((void*)CMSampleBufferGetFormatDescription(sample),60000,total);
+   assert(loan && record_vt_packet_read(loan,(void*)sample,&first)==1);
+   memset(&config,0,sizeof(config));
+   assert(record_vt_packet_config(loan,&config.avcc,&config.avcc_size,&hevc));
+   config.video_timescale=60000; config.max_packet_size=4*1024*1024;
+   mux=hevc?rflv_mux_new_hevc(&config):rflv_mux_new(&config);
+   assert(mux); rflv_mux_free(mux);
+   assert(first.size==total && first.pts==(uint64_t)CMTimeConvertScale(
+         CMSampleBufferGetPresentationTimeStamp(sample),60000,kCMTimeRoundingMethod_RoundTowardZero).value);
+   if (contiguous==total) assert(first.data==bytes);
+   assert(record_vt_packet_read(loan,(void*)sample,&again)==1 && first.data==again.data);
+   assert(!record_vt_packet_free(loan));
+   assert(record_vt_packet_release(loan) && record_vt_packet_free(loan));
+}
 static void write_reference(FILE *out,unsigned depth,unsigned mode)
 {
    unsigned plane,x,y;
@@ -155,6 +182,7 @@ static int sink_video(void *data,void *sample)
    void *again=NULL;
    unsigned received=*sink->received;
    int result;
+   packet_loan_contract(encoded);
    assert(record_gpu_worker_vt_step(sink->video,&again)==RECORD_GPU_VT_PACKET && again==sample);
    assert(!CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(encoded),CMTimeMake((int64_t)received*1001,60000)));
    assert(!CMTimeCompare(CMSampleBufferGetDuration(encoded),CMTimeMake(1001,60000)));
@@ -320,6 +348,7 @@ int main(int argc,char **argv)
             }
             if (!av_worker)
             {
+               packet_loan_contract(encoded);
                assert(record_gpu_worker_vt_step(worker,&again)==RECORD_GPU_VT_PACKET && again==sample);
                assert(!CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(encoded),CMTimeMake((int64_t)received*1001,60000)));
                assert(!CMTimeCompare(CMSampleBufferGetDuration(encoded),CMTimeMake(1001,60000)));

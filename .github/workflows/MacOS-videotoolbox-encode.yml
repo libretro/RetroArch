@@ -17,7 +17,18 @@ on:
       - 'record/record_gpu_session_metal.*'
       - 'record/record_gpu_dispatch_metal.*'
       - 'record/record_gpu_worker_vt*'
+      - 'record/record_vt_packet.*'
+      - 'record/record_stream_vt.*'
+      - 'samples/record/rtmp_stream/**'
+      - 'libretro-common/net/net_rtmp*'
+      - 'libretro-common/include/net/net_rtmp*'
+      - 'libretro-common/formats/flv/**'
+      - 'libretro-common/include/formats/rflv_mux.h'
+      - 'libretro-common/include/formats/rav1_sequence.h'
+      - 'libretro-common/include/formats/video_color.h'
       - 'record/record_audio_queue.*'
+      - 'record/record_at_audio.*'
+      - 'samples/record/audiotoolbox_audio/**'
       - 'record/record_avfoundation_worker*'
       - 'record/record_avfoundation_session*'
       - 'record/record_mux_avfoundation.*'
@@ -42,7 +53,18 @@ on:
       - 'record/record_gpu_session_metal.*'
       - 'record/record_gpu_dispatch_metal.*'
       - 'record/record_gpu_worker_vt*'
+      - 'record/record_vt_packet.*'
+      - 'record/record_stream_vt.*'
+      - 'samples/record/rtmp_stream/**'
+      - 'libretro-common/net/net_rtmp*'
+      - 'libretro-common/include/net/net_rtmp*'
+      - 'libretro-common/formats/flv/**'
+      - 'libretro-common/include/formats/rflv_mux.h'
+      - 'libretro-common/include/formats/rav1_sequence.h'
+      - 'libretro-common/include/formats/video_color.h'
       - 'record/record_audio_queue.*'
+      - 'record/record_at_audio.*'
+      - 'samples/record/audiotoolbox_audio/**'
       - 'record/record_avfoundation_worker*'
       - 'record/record_avfoundation_session*'
       - 'record/record_mux_avfoundation.*'
@@ -52,10 +74,36 @@ on:
       - 'samples/record/metal_frontend/**'
       - 'libretro-common/include/retro_atomic.h'
   workflow_dispatch:
+    inputs:
+      native_aac_only:
+        description: 'Run native AudioToolbox AAC acceptance without GPU/frontend jobs'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
+  aac-native:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install independent AAC test decoder
+        run: command -v ffmpeg >/dev/null || brew install ffmpeg
+      - name: AudioToolbox AAC callback ownership contracts
+        run: make -C samples/record/audiotoolbox_audio check
+      - name: Native AudioToolbox AAC packets and independent timing
+        env:
+          AUDIO_TOOLBOX_ARTIFACT_DIR: ${{ runner.temp }}/audiotoolbox-aac-evidence
+        run: make -C samples/record/audiotoolbox_audio native-check
+      - name: Save AudioToolbox AAC acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audiotoolbox-aac-evidence
+          path: ${{ runner.temp }}/audiotoolbox-aac-evidence
+          if-no-files-found: ignore
   encode:
+    if: ${{ !inputs.native_aac_only }}
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -68,6 +116,8 @@ jobs:
       - name: Portable ownership and failure contracts
         working-directory: samples/record/videotoolbox_encode
         run: make check thread_test worker_thread_test audio_thread_test av_session_thread_test && ./thread_test && ./worker_thread_test && ./audio_thread_test && ./av_session_thread_test
+      - name: VideoToolbox AAC streaming ownership and independent wire clock
+        run: make -C samples/record/rtmp_stream vt-check
       - name: Native AAC property ABI and advertised rates
         run: make -C samples/record/videotoolbox_encode native-audio-check
       - name: Native hardware encoder and independent pixels
@@ -154,6 +204,7 @@ jobs:
           if-no-files-found: warn
 
   frontend-build:
+    if: ${{ !inputs.native_aac_only }}
     runs-on: macos-latest
     timeout-minutes: 40
     steps:
@@ -190,6 +241,7 @@ jobs:
           if-no-files-found: warn
 
   frontend-contracts:
+    if: ${{ !inputs.native_aac_only }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

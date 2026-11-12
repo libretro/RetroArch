@@ -20,17 +20,31 @@ int64_t filestream_seek(RFILE *file, int64_t offset, int whence)
    return 0;
 }
 int64_t filestream_tell(RFILE *file) { return (int64_t)file->position; }
-int64_t filestream_read(RFILE *file, void *destination, int64_t bytes)
+static int64_t read_bytes(RFILE *file, uint64_t at, void *destination, int64_t bytes)
 {
    uint64_t count;
    file->reads++; file->destination = destination;
    if (file->read_error) return -1;
    if (file->oversize) return bytes + 1;
-   count = file->position < file->size ? file->size - file->position : 0;
+   count = at < file->size ? file->size - at : 0;
    if (count > (uint64_t)bytes) count = (uint64_t)bytes;
    memset(destination, (int)file->tag, (size_t)count);
-   file->position += count;
    return (int64_t)count;
+}
+int64_t filestream_read(RFILE *file, void *destination, int64_t bytes)
+{
+   int64_t count = read_bytes(file, file->position, destination, bytes);
+   if (count > 0 && count <= bytes) file->position += (uint64_t)count;
+   return count;
+}
+/* Off: -1, so the service seeks and reads. On: at the offset, the
+ * position left where it was - the test runs both ways. */
+static bool positional;
+int64_t filestream_read_at(RFILE *file, void *destination, int64_t bytes,
+      int64_t offset)
+{
+   if (!positional || offset < 0) return -1;
+   return read_bytes(file, (uint64_t)offset, destination, bytes);
 }
 static RFILE opened_files[2];
 RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
@@ -76,6 +90,7 @@ static void test_reads(void)
    CHECK(rdvd_vfs_service(vfs));
    CHECK(files[0].reads == 1 && files[0].destination == buffer);
    CHECK(buffer[0] == 0x51 && buffer[7] == 0x51);
+   CHECK(!positional || files[0].position == 0);
    CHECK(rdvd_source_poll(&source, backend) && source.completed == 8);
    CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
    CHECK(rdvd_vfs_service(vfs));
@@ -91,7 +106,9 @@ static void test_reads(void)
    CHECK(rdvd_source_init(&source, &backend->map, 0, 32));
    files[0].seek_error = true;
    CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
-   CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend) && source.failed);
+   /* a read at the offset never seeks */
+   CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend)
+         && source.failed == !positional);
    CHECK(rdvd_vfs_close(&vfs) && !vfs);
    CHECK(rdvd_vfs_close(&vfs));
 }
@@ -193,6 +210,10 @@ int main(void)
 {
    test_reads();
    test_open_close();
+   test_short_and_errors();
+   test_stream_lifecycle();
+   positional = true;
+   test_reads();
    test_short_and_errors();
    test_stream_lifecycle();
    printf("DVD VFS tests: %u failures\n", failures);
