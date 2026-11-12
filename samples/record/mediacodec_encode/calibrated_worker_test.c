@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../../../record/record_mediacodec_worker.h"
+#include "../../../record/record_aac_stream_timing.h"
 
 struct record_mediacodec_encoder
 {
@@ -26,6 +27,9 @@ static const unsigned char config[] = {0x11, 0x88};
 static const unsigned char encoded = 1;
 static unsigned fault;
 static bool empty;
+static bool live_mode;
+static unsigned live_delay;
+static record_aac_stream_timing_t live_timing;
 
 const int16_t *record_aac_probe_input(record_aac_probe_t *p,
       size_t at, size_t *frames)
@@ -63,7 +67,7 @@ bool record_aac_probe_delay(const record_aac_probe_t *p, unsigned *delay)
 {
    if (!p->ready)
       return false;
-   *delay = fault == 7 ? 4096 : 2048;
+   *delay = live_mode ? live_delay : fault == 7 ? 4096 : 2048;
    return true;
 }
 bool record_mediacodec_encoder_audio_config(record_mediacodec_encoder_t *e,
@@ -86,6 +90,9 @@ int record_mediacodec_encoder_audio_submit(record_mediacodec_encoder_t *e,
       return 0;
    if (timestamp < RECORD_AAC_PROBE_FRAMES)
       assert(samples == prefix + timestamp);
+   else if (live_mode && timestamp < live_timing.input_epoch)
+      for (i = 0; i < count; i++)
+         assert(samples[i] == 0);
    else
       for (i = 0; i < count; i++)
          assert(samples[i] == 7);
@@ -96,7 +103,7 @@ int record_mediacodec_encoder_audio_submit(record_mediacodec_encoder_t *e,
 int record_mediacodec_encoder_audio_finish(record_mediacodec_encoder_t *e,
       uint64_t end)
 {
-   assert(e->audio && end == RECORD_AAC_PROBE_FRAMES + (empty ? 0 : 17)
+   assert(e->audio && end == (live_mode ? live_timing.input_epoch : RECORD_AAC_PROBE_FRAMES) + (empty ? 0 : 17)
          && e->accepted == end);
    e->eos = true;
    return 1;
@@ -117,8 +124,10 @@ int record_mediacodec_encoder_pump(record_mediacodec_encoder_t *e,
       return RECORD_MC_FORMAT;
    }
    limit = e->audio ? (unsigned)(e->accepted / 1024) : 1;
+   if (e->audio && live_mode)
+      limit = e->accepted > live_delay ? (unsigned)((e->accepted - live_delay) / 1024) : 0;
    if (e->audio && e->eos)
-      limit = fault == 5 ? 7 : empty ? 8 : 11;
+      limit = fault == 5 ? 7 : live_mode ? (unsigned)((e->accepted + live_delay + 1023) / 1024) : empty ? 8 : 11;
    if (e->packets < limit)
    {
       e->held = true;
@@ -159,14 +168,15 @@ bool record_mux_mediacodec_write(record_mux_mediacodec_t *m, bool audio,
    assert(p->data == &encoded && p->size == 1);
    assert(p->pts_us == (audio
                ? (int64_t)((uint64_t)m->packets[1] * 1024 * 1000000 / 48000)
-               : 0));
+               : live_mode ? live_timing.video_epoch_us : 0));
    m->packets[audio]++;
    return true;
 }
 bool record_mux_mediacodec_end(record_mux_mediacodec_t *m,
       bool audio, int64_t end)
 {
-   assert(end == (audio ? (empty ? 170666 : 234666) : 1000000));
+   assert(end == (audio ? live_mode ? (int64_t)((uint64_t)(2048 + (empty ? 0 : 17)) * 1000000 / 48000)
+               : (empty ? 170666 : 234666) : 1000000 + (live_mode ? live_timing.video_epoch_us : 0)));
    m->ends[audio]++;
    return true;
 }
@@ -178,7 +188,8 @@ int record_mux_mediacodec_finish(record_mux_mediacodec_t *m)
 }
 #include "worker_output_fixture.h"
 
-static void exercise(unsigned failure, bool cancel, bool no_pcm, bool backpressure)
+static void exercise_mode(unsigned failure, bool cancel, bool no_pcm, bool backpressure,
+      bool live, unsigned delay)
 {
    record_mediacodec_encoder_t video, audio;
    record_mux_mediacodec_t mux;
@@ -199,6 +210,9 @@ static void exercise(unsigned failure, bool cancel, bool no_pcm, bool backpressu
    audio.audio = true;
    fault = failure;
    empty = no_pcm;
+   live_mode = live;
+   live_delay = delay;
+   assert(record_aac_stream_timing(48000, delay, &live_timing));
    for (i = 0; i < 17; i++)
       pcm[i] = 7;
    q = record_audio_queue_new(1, 17, 256);
@@ -213,8 +227,10 @@ static void exercise(unsigned failure, bool cancel, bool no_pcm, bool backpressu
    w = backpressure
       ? record_mediacodec_worker_new_output(&video, &audio, q, &busy_ops, &output, 1, 48000)
       : record_mediacodec_worker_new(&video, &audio, q, &mux, 1, 48000);
-   assert(w && record_mediacodec_worker_calibrate(w, &probe));
+   assert(w && (live ? record_mediacodec_worker_calibrate_live(w, &probe)
+            : record_mediacodec_worker_calibrate(w, &probe)));
    assert(!record_mediacodec_worker_calibrate(w, &probe));
+   assert(!record_mediacodec_worker_calibrate_live(w, &probe));
    assert(!record_mediacodec_worker_audio_edit(w, &skip, &source, &roll));
    assert(!record_mediacodec_worker_finish(w, 1000000, (uint64_t)-1));
    assert(record_mediacodec_worker_finish(w, 1000000, empty ? 0 : 17));
@@ -237,10 +253,20 @@ static void exercise(unsigned failure, bool cancel, bool no_pcm, bool backpressu
    else
    {
       assert(result == RECORD_MC_WORKER_END && mux.finished);
-      assert(record_mediacodec_worker_audio_edit(w, &skip, &source, &roll));
-      assert(skip == 10240 && source == (empty ? 0 : 17) && roll == 2);
-      assert(audio.accepted == (empty ? 8192 : 8209)
-            && mux.packets[1] == (empty ? 8 : 11));
+      if (live)
+      {
+         assert(!record_mediacodec_worker_audio_edit(w, &skip, &source, &roll));
+         assert(audio.accepted == live_timing.input_epoch + (empty ? 0 : 17));
+         assert(mux.packets[1] == (empty ? 2u : 3u));
+         assert(audio.packets - mux.packets[1] == live_timing.coded_origin / 1024);
+      }
+      else
+      {
+         assert(record_mediacodec_worker_audio_edit(w, &skip, &source, &roll));
+         assert(skip == 10240 && source == (empty ? 0 : 17) && roll == 2);
+         assert(audio.accepted == (empty ? 8192 : 8209)
+               && mux.packets[1] == (empty ? 8 : 11));
+      }
    }
    assert(record_mediacodec_worker_step(w) == result);
    assert(record_mediacodec_worker_free(w));
@@ -249,8 +275,14 @@ static void exercise(unsigned failure, bool cancel, bool no_pcm, bool backpressu
       assert(record_audio_queue_ack(q));
    assert(record_audio_queue_free(q));
 }
+static void exercise(unsigned failure, bool cancel, bool no_pcm, bool backpressure)
+{
+   exercise_mode(failure, cancel, no_pcm, backpressure, false, 2048);
+}
 int main(void)
 {
+   static const unsigned delays[] = {0,1,1023,1024,2048,4096};
+   unsigned i;
    exercise(0, false, false, false);
    exercise(0, false, true, false);
    exercise(2, false, false, false);
@@ -261,7 +293,15 @@ int main(void)
    exercise(0, true, false, false);
    exercise(0, false, false, true);
    exercise(0, false, true, true);
+   for (i = 0; i < sizeof(delays) / sizeof(delays[0]); i++)
+   {
+      exercise_mode(0, false, false, false, true, delays[i]);
+      exercise_mode(0, false, true, false, true, delays[i]);
+      exercise_mode(0, false, false, true, true, delays[i]);
+      exercise_mode(0, false, true, true, true, delays[i]);
+      exercise_mode(0, true, false, true, true, delays[i]);
+   }
    puts("PASS: calibrated worker prefix backpressure, coded/source clocks, "
-        "trim ownership, early EOS and cancellation; codecs/probe mocked");
+        "file trim, live silent priming, source epochs, empty PCM, early EOS and cancellation; codecs/probe mocked");
    return 0;
 }

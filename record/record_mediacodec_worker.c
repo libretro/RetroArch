@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
 #include "record_mediacodec_worker.h"
+#include "record_aac_stream_timing.h"
 #include <stdlib.h>
 
 struct record_mediacodec_worker
@@ -13,11 +14,13 @@ struct record_mediacodec_worker
    void *output_context;
    record_mediacodec_packet_t pending[2];
    record_aac_probe_t *probe;
+   record_aac_stream_timing_t live_timing;
    size_t consumed, prefix_sent;
    unsigned channels, rate;
    bool format[2], drained[2], ended[2], pending_live[2];
    bool active, closing, video_eos, audio_eos, pcm_end;
    bool started, finished, failed;
+   bool live_probe, timing_ready;
 };
 
 static bool record_mcw_samples_us(uint64_t frames, unsigned rate,
@@ -43,13 +46,24 @@ bool record_mediacodec_worker_calibrate(record_mediacodec_worker_t *w,
    return true;
 }
 
+bool record_mediacodec_worker_calibrate_live(record_mediacodec_worker_t *w,
+      record_aac_probe_t *probe)
+{
+   record_aac_stream_timing_t timing;
+   if (!w || !record_aac_stream_timing(w->rate, 0, &timing)
+         || !record_mediacodec_worker_calibrate(w, probe))
+      return false;
+   w->live_probe = true;
+   return true;
+}
+
 bool record_mediacodec_worker_audio_edit(
       const record_mediacodec_worker_t *w, uint64_t *skip,
       uint64_t *frames, unsigned *roll)
 {
    unsigned delay;
    if (!w || !skip || !frames || !roll || !w->finished || w->failed
-         || !w->probe || !record_aac_probe_delay(w->probe, &delay))
+         || !w->probe || w->live_probe || !record_aac_probe_delay(w->probe, &delay))
       return false;
    *skip = RECORD_AAC_PROBE_FRAMES + (uint64_t)delay;
    *frames = w->audio_end_sample;
@@ -131,7 +145,7 @@ bool record_mediacodec_worker_finish(record_mediacodec_worker_t *w,
    {
       if ((!audio_end_sample && !w->probe)
             || (w->probe && audio_end_sample
-                  > (uint64_t)-1 - RECORD_AAC_PROBE_FRAMES)
+                  > (uint64_t)-1 - (w->live_probe ? 32768u : RECORD_AAC_PROBE_FRAMES))
             || !record_mcw_samples_us(audio_end_sample, w->rate,
                   &w->end_us[1]))
          return false;
@@ -181,8 +195,11 @@ static int record_mcw_output(record_mediacodec_worker_t *w, unsigned at)
             return -1;
          if (!w->started)
             return 0;
-         if (!w->pending_live[at] && at && w->probe && !(packet.flags & 2))
+         if (!at && w->live_probe && !w->timing_ready)
+            return 0;
+         if (!w->pending_live[at] && at && w->probe && packet.size && !(packet.flags & 2))
          {
+            uint64_t coded = w->coded_frames;
             if (w->coded_frames > (uint64_t)-1 - 1024
                   || !record_mcw_samples_us(w->coded_frames, w->rate,
                         &packet.pts_us)
@@ -190,9 +207,25 @@ static int record_mcw_output(record_mediacodec_worker_t *w, unsigned at)
                         packet.size))
                return -1;
             w->coded_frames += 1024;
+            if (w->live_probe)
+            {
+               if (!w->timing_ready || coded < w->live_timing.coded_origin)
+                  return record_mediacodec_encoder_release(w->encoder[at]) ? 1 : -1;
+               if (!record_mcw_samples_us(coded - w->live_timing.coded_origin,
+                         w->rate, &packet.pts_us))
+                  return -1;
+            }
          }
          if (!w->pending_live[at])
          {
+            if (!at && w->live_probe)
+            {
+               uint64_t maximum = ((uint64_t)1 << 63) - 1;
+               if (packet.pts_us < 0 || (uint64_t)packet.pts_us
+                     > maximum - w->live_timing.video_epoch_us)
+                  return -1;
+               packet.pts_us += w->live_timing.video_epoch_us;
+            }
             w->pending[at] = packet;
             w->pending_live[at] = true;
          }
@@ -218,6 +251,7 @@ static int record_mcw_output(record_mediacodec_worker_t *w, unsigned at)
 
 static int record_mcw_input(record_mediacodec_worker_t *w)
 {
+   static const int16_t silence[512 * 2] = {0};
    const int16_t *samples = NULL;
    size_t frames = 0, accepted = 0;
    uint64_t timestamp = 0;
@@ -238,6 +272,25 @@ static int record_mcw_input(record_mediacodec_worker_t *w)
       w->prefix_sent += accepted;
       return result ? 1 : 0;
    }
+   if (w->live_probe)
+   {
+      size_t target = w->timing_ready ? w->live_timing.input_epoch
+            : RECORD_AAC_PROBE_FRAMES + RECORD_AAC_STREAM_GUARD;
+      if (w->prefix_sent < target)
+      {
+         frames = target - w->prefix_sent;
+         if (frames > 512)
+            frames = 512;
+         result = record_mediacodec_encoder_audio_submit(w->encoder[1],
+               silence, frames, w->prefix_sent, &accepted);
+         if (result < 0 || result > 1 || accepted > frames || (!result && accepted))
+            return -1;
+         w->prefix_sent += accepted;
+         return result ? 1 : 0;
+      }
+      if (!w->timing_ready)
+         return 0;
+   }
    if (!w->pcm_end)
    {
       result = record_audio_queue_peek(w->pcm, &samples, &frames, &timestamp);
@@ -250,13 +303,15 @@ static int record_mcw_input(record_mediacodec_worker_t *w)
          if (w->consumed >= frames || frames > (size_t)-1 / w->channels
                || timestamp > (uint64_t)-1 - frames
                || (w->probe && timestamp + frames
-                     > (uint64_t)-1 - RECORD_AAC_PROBE_FRAMES)
+                     > (uint64_t)-1 - (w->live_probe
+                        ? w->live_timing.input_epoch : RECORD_AAC_PROBE_FRAMES))
                || (w->closing && timestamp + frames > w->audio_end_sample))
             return -1;
          result = record_mediacodec_encoder_audio_submit(w->encoder[1],
                samples + w->consumed * w->channels, frames - w->consumed,
                timestamp + w->consumed
-                     + (w->probe ? RECORD_AAC_PROBE_FRAMES : 0), &accepted);
+                     + (w->live_probe ? w->live_timing.input_epoch
+                        : w->probe ? RECORD_AAC_PROBE_FRAMES : 0), &accepted);
          if (result < 0 || result > 1 || accepted > frames - w->consumed
                || (!result && accepted))
             return -1;
@@ -276,7 +331,8 @@ static int record_mcw_input(record_mediacodec_worker_t *w)
       return 0;
    result = record_mediacodec_encoder_audio_finish(
          w->encoder[1], w->audio_end_sample
-               + (w->probe ? RECORD_AAC_PROBE_FRAMES : 0));
+               + (w->live_probe ? w->live_timing.input_epoch
+                  : w->probe ? RECORD_AAC_PROBE_FRAMES : 0));
    if (result < 0 || result > 2)
       return -1;
    if (result == 1)
@@ -320,16 +376,28 @@ int record_mediacodec_worker_step(record_mediacodec_worker_t *w)
          goto failed;
       calibrated = result == 2;
       progress |= result == 1;
+      if (w->live_probe && calibrated && !w->timing_ready)
+      {
+         unsigned delay;
+         if (!record_aac_probe_delay(w->probe, &delay)
+               || !record_aac_stream_timing(w->rate, delay, &w->live_timing))
+            goto failed;
+         w->timing_ready = true;
+         progress = true;
+      }
       if (w->drained[1] && calibrated)
       {
          unsigned delay;
          uint64_t skip;
          if (!record_aac_probe_delay(w->probe, &delay))
             goto failed;
-         skip = RECORD_AAC_PROBE_FRAMES + (uint64_t)delay;
+         skip = (w->live_probe ? w->live_timing.input_epoch
+               : RECORD_AAC_PROBE_FRAMES) + (uint64_t)delay;
          if ((w->audio_end_sample && (w->coded_frames < skip
                      || w->coded_frames - skip < w->audio_end_sample))
-               || !record_mcw_samples_us(w->coded_frames, w->rate,
+               || !record_mcw_samples_us(w->live_probe
+                     ? w->live_timing.audio_epoch + w->audio_end_sample
+                     : w->coded_frames, w->rate,
                      &w->end_us[1]))
             goto failed;
       }
@@ -349,7 +417,17 @@ int record_mediacodec_worker_step(record_mediacodec_worker_t *w)
       if (w->started && w->drained[at] && !w->ended[at]
             && (!at || calibrated))
       {
-         if (!w->output.end(w->output_context, at != 0, w->end_us[at]))
+         int64_t end = w->end_us[at];
+         if (!at && w->live_probe)
+         {
+            uint64_t maximum = ((uint64_t)1 << 63) - 1;
+            if (!w->timing_ready)
+               continue;
+            if ((uint64_t)end > maximum - w->live_timing.video_epoch_us)
+               goto failed;
+            end += w->live_timing.video_epoch_us;
+         }
+         if (!w->output.end(w->output_context, at != 0, end))
             goto failed;
          w->ended[at] = true;
          progress = true;
