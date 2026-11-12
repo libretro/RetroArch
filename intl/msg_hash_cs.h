@@ -2268,7 +2268,6 @@ static const struct
    char s_aa08c6d6[78];
 #endif
 #endif
-   char s_27aef25c[49];
 #ifdef _3DS
    char s_2873cef1[84];
    char s_b4816da6[50];
@@ -6405,7 +6404,6 @@ static const struct
    "\275ch za\305\231\303\255zen\303\255",
 #endif
 #endif
-   "Vyhledejte za\305\231\303\255zen\303\255 Bluetooth a p\305\231ipojte je.",
 #ifdef _3DS
    "Adres\303\241\305\231 aktiv na spodn\303\255 obrazovce. Adres\303\241\305\231 mus\303\255 obsaho"
    "vat \"spodn\303\255_menu.png\".",
@@ -8810,7 +8808,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (161551u
+      (sizeof(msg_hash_cs_blob) == (161502u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11429,7 +11427,6 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

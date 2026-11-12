@@ -2546,6 +2546,10 @@ static const struct
    char s_bb929824[28];
    char s_fe2ec9bd[35];
    char s_1e3a9360[40];
+   char s_5943aeda[30];
+   char s_60b84450[31];
+   char s_782f95e3[31];
+   char s_5081d7d8[37];
    char s_5741c1d0[23];
    char s_a1a7717d[24];
    char s_e6ca3876[27];
@@ -2975,7 +2979,6 @@ static const struct
    char s_aa08c6d6[73];
 #endif
 #endif
-   char s_27aef25c[61];
 #ifdef _3DS
    char s_2873cef1[90];
    char s_b4816da6[48];
@@ -4221,6 +4224,10 @@ static const struct
    char s_72e21512[263];
    char s_9f6de46b[305];
    char s_26e66ece[276];
+   char s_5f131848[172];
+   char s_23227a3e[167];
+   char s_87e08991[167];
+   char s_56660806[173];
    char s_66f2b57e[54];
    char s_a776daeb[87];
    char s_88095324[87];
@@ -4283,6 +4290,7 @@ static const struct
    char s_dc6f9d69[50];
    char s_417085f4[57];
    char s_1bcf70a7[185];
+   char s_fbed99aa[217];
    char s_2e2ca41a[312];
    char s_f48b1fac[55];
    char s_f4ad1b37[100];
@@ -7967,6 +7975,10 @@ static const struct
    "Leagan Amach Fo-phicteil\303\255n",
    "\303\232s\303\241id an Buaicphointe Taispe\303\241na",
    "D\303\255ch\303\263d\303\272 f\303\255se\303\241in tr\303\255 chrua-earra\303\255",
+   "Imeall an Sc\303\241ile\303\241in Bun (%)",
+   "Imill Chl\303\251 an Sc\303\241ile\303\241in (%)",
+   "Imill Sc\303\241ile\303\241in ar Dheis (%)",
+   "Imill an Sc\303\241ile\303\241in ag an mBarr (%)",
    "Leagan Amach F\303\255se\303\241in",
    "Uasmh\303\251id Moille Fr\303\241ma",
    "Uasta \303\215omh\303\241nna Swapchain",
@@ -8556,7 +8568,6 @@ static const struct
    "\303\272",
 #endif
 #endif
-   "Scan\303\241il le haghaidh gl\303\251asanna bluetooth agus ceangail iad.",
 #ifdef _3DS
    "Eolaire s\303\263cmhainn\303\255 bun an sc\303\241ile\303\241in. N\303\255 m\303\263r \"bottom_m"
    "enu.png\" a bheith san eolaire.",
@@ -11099,6 +11110,18 @@ static const struct
    " Vulkan), rud a fh\303\241gann an CPU saor; m\303\241 roghna\303\255tear 'Off', d\303\251antar i"
    "ad a dh\303\255ch\303\263d\303\272 ar an CPU. Baineann s\303\251 seo le r\303\251amhamhairc a os"
    "cla\303\255tear feasta.",
+   "F\303\241g sp\303\241s ag imeall \303\255ochtair an chluiche agus an roghchl\303\241ir, arna shl"
+   "oinneadh mar ch\303\251atad\303\241n den fhuinneog ar iOS. M\303\241 shocra\303\255tear \303\251"
+   " ar 0, n\303\255 bheidh aon imeall ann.",
+   "F\303\241g sp\303\241s ag imeall cl\303\251 an chluiche agus an roghchl\303\241ir, arna shloinne"
+   "adh mar ch\303\251atad\303\241n den fhuinneog ar iOS. M\303\241 shocra\303\255tear \303\251 ar 0"
+   ", n\303\255 bheidh aon imeall ann.",
+   "F\303\241g sp\303\241s ag imeall deas an chluiche agus an roghchl\303\241ir, arna shloinneadh ma"
+   "r ch\303\251atad\303\241n den fhuinneog ar iOS. M\303\241 shocra\303\255tear \303\251 ar 0, n"
+   "\303\255 bheidh aon imeall ann.",
+   "F\303\241g sp\303\241s ag imeall uachtarach an chluiche agus an roghchl\303\241ir, arna shloinne"
+   "adh mar ch\303\251atad\303\241n den fhuinneog ar iOS. M\303\241 shocra\303\255tear \303\251 ar 0"
+   ", n\303\255 bheidh aon imeall ann.",
    "St\303\263r\303\241iltear Leagan Amach F\303\255se\303\241in san eolaire seo.",
    "Ins\303\255onn s\303\251 don tiom\303\241na\303\255 f\303\255se modh maol\303\241naithe sonraith"
    "e a \303\272s\303\241id go sainr\303\241ite.",
@@ -11297,6 +11320,10 @@ static const struct
    "Coinn\303\255onn 'Ceangailte' an sc\303\241ile\303\241n seo in \303\251ineacht leis na cinn eile"
    ". Cuireann 'Ar leithligh' \303\251 ar fhuinneog n\303\263 ar thaispe\303\241int d\303\241 chuid "
    "f\303\251in. F\303\241gann 'Faoi cheilt' ar l\303\241r \303\251.",
+   "C\303\241 dt\303\251ann an sc\303\241ile\303\241n seo nuair a bh\303\255onn a fhuinneog f\303"
+   "\251in aige? Roghna\303\255tear an dara taispe\303\241int go huathoibr\303\255och. Fanann an sc"
+   "\303\241ile\303\241n ceangailte leis an taispe\303\241int a bhfuil RetroArch \303\241 thaispe"
+   "\303\241int uirthi.",
    "D\303\272n an roghchl\303\241r agus bog sc\303\241ile\303\241in agus roghchl\303\241r na gcluas"
    "\303\241n leis na rialt\303\263ir\303\255: greama\303\255onn an greim, claonann an truicear, ath"
    "ra\303\255onn an bata achar agus m\303\251id, casann agus claonann bata na l\303\241imhe saora, "
@@ -12404,7 +12431,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (273097u
+      (sizeof(msg_hash_ga_blob) == (274061u
 #ifdef ANDROID
        + 390u
 #endif
@@ -15505,6 +15532,10 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HW_DECODE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_IOS_MARGIN_BOTTOM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_IOS_MARGIN_LEFT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_IOS_MARGIN_RIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_IOS_MARGIN_TOP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -15926,7 +15957,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
@@ -17162,6 +17192,10 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HW_DECODE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_IOS_MARGIN_BOTTOM,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_IOS_MARGIN_LEFT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_IOS_MARGIN_RIGHT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_IOS_MARGIN_TOP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -17224,6 +17258,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,

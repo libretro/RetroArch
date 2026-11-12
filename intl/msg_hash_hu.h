@@ -2455,7 +2455,6 @@ static const struct
    char s_aa08c6d6[83];
 #endif
 #endif
-   char s_27aef25c[53];
 #ifdef _3DS
    char s_2873cef1[104];
    char s_b4816da6[53];
@@ -7023,7 +7022,6 @@ static const struct
    "\241ros\303\255t\303\241s\303\241n\303\241l",
 #endif
 #endif
-   "Bluetooth eszk\303\266z\303\266k keres\303\251se \303\251s csatlakoztat\303\241sa.",
 #ifdef _3DS
    "Az als\303\263 k\303\251perny\305\221 be\303\251p\303\255tett m\303\251diaf\303\241jljainak k"
    "\303\266nyvt\303\241ra. A \"bottom_menu.png\" meg kell legyen itt.",
@@ -9816,7 +9814,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187189u
+      (sizeof(msg_hash_hu_blob) == (187136u
 #ifdef ANDROID
        + 316u
 #endif
@@ -12699,7 +12697,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

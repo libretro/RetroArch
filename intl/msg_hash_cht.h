@@ -2310,7 +2310,6 @@ static const struct
 #ifdef HAVE_LAKKA
    char s_2bab34b2[22];
 #endif
-   char s_27aef25c[31];
 #ifdef _3DS
    char s_2873cef1[102];
    char s_b4816da6[34];
@@ -6968,8 +6967,6 @@ static const struct
 #ifdef HAVE_LAKKA
    "\351\205\215\345\260\215\350\227\215\347\211\231\350\243\235\347\275\256\343\200\202",
 #endif
-   "\346\216\203\346\217\217\350\227\215\347\211\231\350\243\235\347\275\256\344\270\246\351\200\243"
-   "\346\216\245\343\200\202",
 #ifdef _3DS
    "\350\250\255\345\256\232\344\270\213\350\236\242\345\271\225\347\232\204\351\201\270\345\226\256"
    "\344\270\273\351\241\214\350\263\207\346\226\231\345\244\276\344\275\215\347\275\256, \350\263"
@@ -10477,7 +10474,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (120267u
+      (sizeof(msg_hash_cht_blob) == (120236u
 #ifdef ANDROID
        + 157u
 #endif
@@ -13092,7 +13089,6 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

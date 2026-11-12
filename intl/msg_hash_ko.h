@@ -2808,7 +2808,6 @@ static const struct
    char s_aa08c6d6[121];
 #endif
 #endif
-   char s_27aef25c[53];
 #ifdef _3DS
    char s_2873cef1[122];
    char s_b4816da6[54];
@@ -9660,9 +9659,6 @@ static const struct
    "\210\230 \354\236\210\354\212\265\353\213\210\353\213\244",
 #endif
 #endif
-   "\353\270\224\353\243\250\355\210\254\354\212\244 \354\236\245\353\271\204\353\245\274 \352\262"
-   "\200\354\203\211\355\225\230\352\263\240 \354\227\260\352\262\260\355\225\251\353\213\210\353"
-   "\213\244.",
 #ifdef _3DS
    "\354\225\204\353\236\230 \355\231\224\353\251\264 \354\225\240\354\205\213 \353\224\224\353\240"
    "\211\355\206\240\353\246\254\354\236\205\353\213\210\353\213\244. \353\224\224\353\240\211\355"
@@ -16223,7 +16219,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ko_blob_check[
-      (sizeof(msg_hash_ko_blob) == (228977u
+      (sizeof(msg_hash_ko_blob) == (228924u
 #ifdef ANDROID
        + 436u
 #endif
@@ -19492,7 +19488,6 @@ static const msg_hash_id_t msg_hash_ko_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

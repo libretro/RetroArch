@@ -2250,7 +2250,6 @@ static const struct
    char s_aa08c6d6[82];
 #endif
 #endif
-   char s_27aef25c[62];
 #ifdef _3DS
    char s_2873cef1[133];
    char s_b4816da6[55];
@@ -8157,9 +8156,6 @@ static const struct
    "\263\343\202\260\343\202\222\344\277\256\346\255\243\343\201\227\343\201\276\343\201\231",
 #endif
 #endif
-   "Bluetooth \343\203\207\343\203\220\343\202\244\343\202\271\343\202\222\343\202\271\343\202\255"
-   "\343\203\243\343\203\263\343\201\227\343\201\246\346\216\245\347\266\232\343\201\227\343\201\276"
-   "\343\201\231\343\200\202",
 #ifdef _3DS
    "\344\270\213\347\224\273\351\235\242\343\202\242\343\202\273\343\203\203\343\203\210\343\201\256"
    "\343\203\207\343\202\243\343\203\254\343\202\257\343\203\210\343\203\252\343\201\247\343\201\231"
@@ -13932,7 +13928,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (199282u
+      (sizeof(msg_hash_ja_blob) == (199220u
 #ifdef ANDROID
        + 484u
 #endif
@@ -16508,7 +16504,6 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

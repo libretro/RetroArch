@@ -2539,7 +2539,6 @@ static const struct
    char s_aa08c6d6[68];
 #endif
 #endif
-   char s_27aef25c[49];
 #ifdef _3DS
    char s_2873cef1[82];
    char s_b4816da6[58];
@@ -6986,7 +6985,6 @@ static const struct
    "Malebligi ERTM de Bluetooth por ripari kupladon de kelkaj aparatoj.",
 #endif
 #endif
-   "Ser\304\211i aparatojn kun bluetooth kaj konekti ilin.",
 #ifdef _3DS
    "Havaja dosierujo de malsupra ekrano. Dosierujo devas inkluzivi \"bottom_menu.png\".",
    "Al\304\235ustigi la bluecon de la tiparo de la malsupra ekrano.",
@@ -9170,7 +9168,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (170789u
+      (sizeof(msg_hash_eo_blob) == (170740u
 #ifdef ANDROID
        + 312u
 #endif
@@ -12139,7 +12137,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

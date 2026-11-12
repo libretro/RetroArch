@@ -2615,7 +2615,6 @@ static const struct
    char s_aa08c6d6[78];
 #endif
 #endif
-   char s_27aef25c[43];
 #ifdef _3DS
    char s_2873cef1[90];
    char s_450ca36f[50];
@@ -7315,7 +7314,6 @@ static const struct
    "Desactiva o Bluetooth ERTM para corrixir a vinculaci\303\263n dalg\303\272ns dispositivos",
 #endif
 #endif
-   "Busca dispositivos bluetooth e con\303\251ctaos.",
 #ifdef _3DS
    "Directorio de activos da pantalla inferior. O directorio debe inclu\303\255r \"bottom_menu.png\""
    ".",
@@ -9794,7 +9792,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (210917u
+      (sizeof(msg_hash_gl_blob) == (210874u
 #ifdef ANDROID
        + 365u
 #endif
@@ -12849,7 +12847,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,

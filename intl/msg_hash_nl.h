@@ -2381,7 +2381,6 @@ static const struct
    char s_aa08c6d6[78];
 #endif
 #endif
-   char s_27aef25c[45];
 #ifdef _3DS
    char s_2873cef1[76];
    char s_b4816da6[64];
@@ -6581,7 +6580,6 @@ static const struct
    "Schakel Bluetooth ERTM uit om de koppeling van sommige apparaten te repareren",
 #endif
 #endif
-   "Scan naar bluetooth apparaten en verbind ze.",
 #ifdef _3DS
    "De map met assets voor het onderste scherm moet \"bottom_menu.png\" bevatten.",
    "Pas de blauwe kleur van het lettertype onderaan het scherm aan.",
@@ -8652,7 +8650,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (172428u
+      (sizeof(msg_hash_nl_blob) == (172383u
 #ifdef ANDROID
        + 375u
 #endif
@@ -11466,7 +11464,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

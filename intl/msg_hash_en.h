@@ -264,7 +264,6 @@ static const struct
    char s_3c3598a9[39];
    char s_a8d552a7[43];
    char s_6112ec7c[38];
-   char s_27aef25c[45];
 #ifdef _3DS
    char s_b4816da6[39];
    char s_450ca36f[40];
@@ -812,7 +811,6 @@ static const struct
    "Change audio synchronisation settings.",
    "Load customised configuration at start-up.",
    "Load customised controls at start-up.",
-   "Scan for Bluetooth devices and connect them.",
 #ifdef _3DS
    "Adjust bottom screen font blue colour.",
    "Adjust bottom screen font green colour.",
@@ -1141,7 +1139,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26222u
+      (sizeof(msg_hash_en_blob) == (26177u
 #ifdef HAVE_LAKKA
        + 176u
 #endif
@@ -1475,7 +1473,6 @@ static const msg_hash_id_t msg_hash_en_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,

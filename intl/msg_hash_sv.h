@@ -2423,6 +2423,10 @@ static const struct
    char s_bb929824[16];
    char s_fe2ec9bd[33];
    char s_1e3a9360[29];
+   char s_5943aeda[32];
+   char s_60b84450[35];
+   char s_782f95e3[33];
+   char s_5081d7d8[32];
    char s_5741c1d0[14];
    char s_a1a7717d[19];
    char s_e6ca3876[32];
@@ -2828,7 +2832,6 @@ static const struct
    char s_aa08c6d6[69];
 #endif
 #endif
-   char s_27aef25c[45];
 #ifdef _3DS
    char s_2873cef1[88];
    char s_b4816da6[62];
@@ -4067,6 +4070,10 @@ static const struct
    char s_72e21512[180];
    char s_9f6de46b[288];
    char s_26e66ece[211];
+   char s_5f131848[122];
+   char s_23227a3e[125];
+   char s_87e08991[123];
+   char s_56660806[122];
    char s_66f2b57e[38];
    char s_a776daeb[88];
    char s_88095324[88];
@@ -4129,6 +4136,7 @@ static const struct
    char s_dc6f9d69[55];
    char s_417085f4[44];
    char s_1bcf70a7[142];
+   char s_fbed99aa[170];
    char s_2e2ca41a[296];
    char s_f48b1fac[55];
    char s_f4ad1b37[84];
@@ -4500,6 +4508,7 @@ static const struct
    char s_e9eb2822[45];
    char s_ed159cd6[16];
    char s_fa458d88[36];
+   char s_f2f8ca3f[212];
    char s_7ccec78e[41];
    char s_308c47e4[40];
    char s_525bf430[20];
@@ -7562,6 +7571,10 @@ static const struct
    "Subpixel-layout",
    "Anv\303\244nd bildsk\303\244rmens toppv\303\244rde",
    "Maskinvaruavkodning av video",
+   "Undermarginal f\303\266r sk\303\244rmen (%)",
+   "V\303\244nstermarginal f\303\266r sk\303\244rmen (%)",
+   "H\303\266germarginal f\303\266r sk\303\244rmen (%)",
+   "\303\226vermarginal f\303\266r sk\303\244rmen (%)",
    "Videolayouter",
    "Max bildrutelatens",
    "Maximalt antal swapchain-bilder",
@@ -8094,7 +8107,6 @@ static const struct
    "Inaktivera Bluetooth ERTM f\303\266r att fixa parkoppling av vissa enheter",
 #endif
 #endif
-   "S\303\266k efter bluetooth-enheter och anslut dem.",
 #ifdef _3DS
    "Nedre sk\303\244rmens katalog f\303\266r tillg\303\245ngar. Katalogen m\303\245ste inkludera \"b"
    "ottom_menu.png\".",
@@ -10223,6 +10235,14 @@ static const struct
    "Avkoda videof\303\266rhandsvisningar p\303\245 GPU:n n\303\244r grafikdrivrutinen kan g\303\266r"
    "a det (H.264 med Vulkan), s\303\245 att CPU:n avlastas. \342\200\235Av\342\200\235 avkodar dem p"
    "\303\245 CPU:n. G\303\244ller f\303\266rhandsvisningar som \303\266ppnas fr\303\245n och med nu.",
+   "L\303\244mna utrymme vid nederkanten av spelet och menyn, i procent av f\303\266nstret, p\303"
+   "\245 iOS. 0 l\303\244gger inte till n\303\245gon marginal.",
+   "L\303\244mna utrymme vid v\303\244nsterkanten av spelet och menyn, i procent av f\303\266nstret,"
+   " p\303\245 iOS. 0 l\303\244gger inte till n\303\245gon marginal.",
+   "L\303\244mna utrymme vid h\303\266gerkanten av spelet och menyn, i procent av f\303\266nstret, p"
+   "\303\245 iOS. 0 l\303\244gger inte till n\303\245gon marginal.",
+   "L\303\244mna utrymme vid \303\266verkanten av spelet och menyn, i procent av f\303\266nstret, p"
+   "\303\245 iOS. 0 l\303\244gger inte till n\303\245gon marginal.",
    "Videolayouter lagras i denna katalog.",
    "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
    "\303\244ge.",
@@ -10370,6 +10390,9 @@ static const struct
    "V\303\244lj den flytande sk\303\244rm som ska justeras.",
    "Kopplad beh\303\245ller sk\303\244rmen tillsammans med de andra. Separat visar den i ett eget f"
    "\303\266nster eller p\303\245 en egen bildsk\303\244rm. Dold utel\303\244mnar den.",
+   "Var den h\303\244r sk\303\244rmen visas n\303\244r den har ett eget f\303\266nster. Auto v\303"
+   "\244ljer en annan bildsk\303\244rm. P\303\245 den bildsk\303\244rm d\303\244r RetroArch k\303"
+   "\266rs beh\303\245lls sk\303\244rmen i samma f\303\266nster.",
    "St\303\244ng menyn och flytta VR-headsetets sk\303\244rmar och meny med handkontrollerna: greppk"
    "nappen tar tag, avtryckaren vinklar, styrspaken \303\244ndrar avst\303\245nd och storlek, den fr"
    "ia handens styrspak vrider och vinklar, huvudknappen \303\245terst\303\244ller och V\303\244lj n"
@@ -10910,6 +10933,9 @@ static const struct
    "Filen finns redan. Sparar till reservbuffert",
    "Filen hittas ej",
    "En eller flera firmwarefiler saknas",
+   "Vissa av RetroArchs nedladdningsbara filer (menyresurser, handkontrollprofiler, k\303\244rninfor"
+   "mation, databaser) saknas.H\303\244mta dem nu? Det kr\303\244ver en internetanslutning.De kan up"
+   "pdateras senare med N\303\244tuppdateraren.",
    "Mappspecifika k\303\244rnalternativ hittades i",
    "Hittade automatiskt sparat tillst\303\245nd i",
    "Hittade skivetikett",
@@ -11357,7 +11383,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (234595u
+      (sizeof(msg_hash_sv_blob) == (235556u
 #ifdef ANDROID
        + 361u
 #endif
@@ -14344,6 +14370,10 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HW_DECODE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_IOS_MARGIN_BOTTOM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_IOS_MARGIN_LEFT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_IOS_MARGIN_RIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_IOS_MARGIN_TOP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -14742,7 +14772,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
@@ -15979,6 +16008,10 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HW_DECODE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_IOS_MARGIN_BOTTOM,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_IOS_MARGIN_LEFT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_IOS_MARGIN_RIGHT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_IOS_MARGIN_TOP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -16041,6 +16074,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,
@@ -16407,6 +16441,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    (msg_hash_id_t)MSG_FILE_NOT_FOUND,
    (msg_hash_id_t)MSG_FIRMWARE,
+   (msg_hash_id_t)MSG_FIRST_RUN_DOWNLOAD_PROMPT,
    (msg_hash_id_t)MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
    (msg_hash_id_t)MSG_FOUND_AUTO_SAVESTATE_IN,
    (msg_hash_id_t)MSG_FOUND_DISK_LABEL,
