@@ -408,7 +408,7 @@ static void test_thumbnail_path(void)
             "Kirby (Europe).jpg");
       gfx_thumbnail_results_sort(t);
       gfx_thumbnail_results_open("/pl/companion.lpl");
-      gfx_thumbnail_results_install("/pl/companion.lpl", t, true);
+      gfx_thumbnail_results_install("/pl/companion.lpl", t, NULL, true);
    }
    fixture(want, sizeof(want),
          "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Metroid (Europe).png");
@@ -495,7 +495,7 @@ static void test_entry_thumbnail_system(void)
    gfx_thumbnail_results_sort(t);
    fixture(p, sizeof(p), "hist/content_history.lpl");
    gfx_thumbnail_results_open(p);
-   gfx_thumbnail_results_install(p, t, true);
+   gfx_thumbnail_results_install(p, t, NULL, true);
    t   = gfx_thumbnail_results_new();
    rec = gfx_thumbnail_results_add(t,
          "/roms/Nintendo - Nintendo Entertainment System/Tetris (U) [!].nes",
@@ -505,7 +505,7 @@ static void test_entry_thumbnail_system(void)
    gfx_thumbnail_results_sort(t);
    fixture(p, sizeof(p), "hist/content_favorites.lpl");
    gfx_thumbnail_results_open(p);
-   gfx_thumbnail_results_install(p, t, true);
+   gfx_thumbnail_results_install(p, t, NULL, true);
    t   = gfx_thumbnail_results_new();
    rec = gfx_thumbnail_results_add(t, "/roms/My.Roms/Rygar.nes",
          "rygar_dump", "", "My.Roms");
@@ -514,7 +514,7 @@ static void test_entry_thumbnail_system(void)
    gfx_thumbnail_results_sort(t);
    fixture(p, sizeof(p), "fav2/content_favorites.lpl");
    gfx_thumbnail_results_open(p);
-   gfx_thumbnail_results_install(p, t, true);
+   gfx_thumbnail_results_install(p, t, NULL, true);
 
    fixture(want, sizeof(want), "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Legend of Zelda, The (USA).png");
    writef(want, "png");

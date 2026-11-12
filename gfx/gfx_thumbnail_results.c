@@ -64,6 +64,7 @@ typedef struct gfx_thumb_results_slot
    gfx_thumbnail_results_t *table;
    gfx_thumbnail_results_t *notes;
    unsigned stamp;
+   bool dirty; /* notes its cache file lacks */
 } gfx_thumb_results_slot_t;
 
 static const char *const gfx_thumb_result_dirs[GFX_THUMBNAIL_RESULT_TYPES] =
@@ -81,6 +82,9 @@ static size_t gfx_thumb_results_resolved_count;
 /* Pushed out of the store before they were resolved */
 static char **gfx_thumb_results_evicted;
 static size_t gfx_thumb_results_evicted_count;
+/* Pushed-out playlists whose notes wait to be written */
+static gfx_thumbnail_results_save_t *gfx_thumb_results_parked;
+static size_t gfx_thumb_results_parked_count;
 
 const char *gfx_thumbnail_result_type_dir(unsigned type)
 {
@@ -388,6 +392,7 @@ static void gfx_thumb_results_slot_clear(gfx_thumb_results_slot_t *slot)
    slot->table         = NULL;
    slot->notes         = NULL;
    slot->stamp         = 0;
+   slot->dirty         = false;
 }
 
 static bool gfx_thumb_results_was_resolved(const char *path)
@@ -445,6 +450,107 @@ static bool gfx_thumb_results_unevict(const char *path)
    return false;
 }
 
+/* The parked entry for @path, else the count */
+static size_t gfx_thumb_results_parked_at(const char *path)
+{
+   size_t i;
+   for (i = 0; i < gfx_thumb_results_parked_count; i++)
+      if (string_is_equal(gfx_thumb_results_parked[i].playlist_path, path))
+         break;
+   return i;
+}
+
+static void gfx_thumb_results_unpark_at(size_t i)
+{
+   gfx_thumb_results_parked[i] =
+      gfx_thumb_results_parked[--gfx_thumb_results_parked_count];
+}
+
+static void gfx_thumb_results_parked_free(size_t i)
+{
+   free(gfx_thumb_results_parked[i].playlist_path);
+   gfx_thumbnail_results_free(gfx_thumb_results_parked[i].table);
+   gfx_thumbnail_results_free(gfx_thumb_results_parked[i].notes);
+   gfx_thumb_results_unpark_at(i);
+}
+
+/* A pushed-out slot's unwritten notes wait for a save, with its table. */
+static void gfx_thumb_results_park(gfx_thumb_results_slot_t *slot)
+{
+   gfx_thumbnail_results_save_t *list;
+   char *path;
+   if (!slot->dirty || !(path = strdup(slot->playlist_path)))
+      return;
+   if (!(list = (gfx_thumbnail_results_save_t*)realloc(
+         gfx_thumb_results_parked,
+         (gfx_thumb_results_parked_count + 1) * sizeof(*list))))
+   {
+      free(path);
+      return;
+   }
+   list[gfx_thumb_results_parked_count].playlist_path = path;
+   list[gfx_thumb_results_parked_count].table         = slot->table;
+   list[gfx_thumb_results_parked_count].notes         = slot->notes;
+   gfx_thumb_results_parked_count++;
+   gfx_thumb_results_parked = list;
+   slot->table              = NULL;
+   slot->notes              = NULL;
+}
+
+/* Reopened before its notes were written */
+static void gfx_thumb_results_unpark(gfx_thumb_results_slot_t *slot)
+{
+   size_t i = gfx_thumb_results_parked_at(slot->playlist_path);
+   if (i == gfx_thumb_results_parked_count)
+      return;
+   slot->table = gfx_thumb_results_parked[i].table;
+   slot->notes = gfx_thumb_results_parked[i].notes;
+   slot->dirty = true;
+   free(gfx_thumb_results_parked[i].playlist_path);
+   gfx_thumb_results_unpark_at(i);
+}
+
+/* The record for @key in a notes table, else its count */
+static size_t gfx_thumb_results_note_rec(const gfx_thumbnail_results_t *n,
+      const char * const *key)
+{
+   size_t rec;
+   for (rec = 0; rec < n->count; rec++)
+      if (!gfx_thumb_results_cmp_key(n->recs[rec].key, key))
+         break;
+   return rec;
+}
+
+/* @from's names where @into has none for that entry and type; the
+ * newer notes are @into's. Takes @from. */
+static gfx_thumbnail_results_t *gfx_thumb_results_merge(
+      gfx_thumbnail_results_t *into, gfx_thumbnail_results_t *from)
+{
+   size_t i, rec;
+   unsigned type;
+   if (!into || !from)
+      return into ? into : from;
+   for (i = 0; i < from->count; i++)
+   {
+      const char *const *key = from->recs[i].key;
+      rec = gfx_thumb_results_note_rec(into, key);
+      for (type = 0; type < GFX_THUMBNAIL_RESULT_TYPES; type++)
+      {
+         if (     !from->recs[i].names[type]
+               || (rec < into->count && into->recs[rec].names[type]))
+            continue;
+         if (     rec == into->count
+               && (rec = gfx_thumbnail_results_add(into, key[0], key[1],
+                  "", key[3])) == (size_t)-1)
+            break;
+         gfx_thumbnail_results_set(into, rec, type,
+               from->recs[i].names[type]);
+      }
+   }
+   gfx_thumbnail_results_free(from);
+   return into;
+}
+
 unsigned gfx_thumbnail_results_open(const char *playlist_path)
 {
    unsigned need = 0;
@@ -462,10 +568,12 @@ unsigned gfx_thumbnail_results_open(const char *playlist_path)
       for (i = 1; i < GFX_THUMB_RESULTS_KEPT; i++)
          if (gfx_thumb_results_slots[i].stamp < slot->stamp)
             slot = &gfx_thumb_results_slots[i];
+      gfx_thumb_results_park(slot);
       gfx_thumb_results_evict(slot);
       gfx_thumb_results_slot_clear(slot);
       gfx_thumb_results_unevict(playlist_path);
       slot->playlist_path = copy;
+      gfx_thumb_results_unpark(slot);
    }
    slot->stamp = ++gfx_thumb_results_clock;
    if (!slot->table)
@@ -476,22 +584,55 @@ unsigned gfx_thumbnail_results_open(const char *playlist_path)
 }
 
 bool gfx_thumbnail_results_install(const char *playlist_path,
-      gfx_thumbnail_results_t *t, bool resolved)
+      gfx_thumbnail_results_t *t, gfx_thumbnail_results_t *notes,
+      bool resolved)
 {
+   size_t i;
    gfx_thumb_results_slot_t *slot;
    if (!(slot = gfx_thumb_results_slot(playlist_path)))
    {
       /* Pushed out while resolving: a reopen only loads */
       if (gfx_thumb_results_unevict(playlist_path) && resolved)
          gfx_thumb_results_mark_resolved(playlist_path);
+      if ((i = gfx_thumb_results_parked_at(playlist_path))
+            < gfx_thumb_results_parked_count)
+      {
+         gfx_thumbnail_results_save_t *p = &gfx_thumb_results_parked[i];
+         gfx_thumbnail_results_free(p->table);
+         p->table = t;
+         p->notes = gfx_thumb_results_merge(p->notes, notes);
+         return false;
+      }
       gfx_thumbnail_results_free(t);
+      gfx_thumbnail_results_free(notes);
       return false;
    }
    if (resolved)
       gfx_thumb_results_mark_resolved(playlist_path);
    gfx_thumbnail_results_free(slot->table);
    slot->table = t;
+   slot->notes = gfx_thumb_results_merge(slot->notes, notes);
    return true;
+}
+
+bool gfx_thumbnail_results_take(gfx_thumbnail_results_save_t *save,
+      gfx_thumbnail_results_busy_t busy, void *userdata)
+{
+   size_t i = 0;
+   while (i < gfx_thumb_results_parked_count)
+   {
+      if (busy && busy(gfx_thumb_results_parked[i].playlist_path, userdata))
+         i++;
+      else if (gfx_thumb_results_parked[i].table)
+      {
+         *save = gfx_thumb_results_parked[i];
+         gfx_thumb_results_unpark_at(i);
+         return true;
+      }
+      else /* its load failed */
+         gfx_thumb_results_parked_free(i);
+   }
+   return false;
 }
 
 bool gfx_thumbnail_results_note(const char *playlist_path,
@@ -513,10 +654,7 @@ bool gfx_thumbnail_results_note(const char *playlist_path,
    key[1] = label;
    key[2] = "";
    key[3] = system;
-   for (rec = 0; rec < n->count; rec++)
-      if (!gfx_thumb_results_cmp_key(n->recs[rec].key, key))
-         break;
-   if (rec < n->count)
+   if ((rec = gfx_thumb_results_note_rec(n, key)) < n->count)
    {
       if (string_is_equal(n->recs[rec].names[type], name))
          return true;
@@ -524,21 +662,35 @@ bool gfx_thumbnail_results_note(const char *playlist_path,
    else if ((rec = gfx_thumbnail_results_add(n, content_path, label,
          "", system)) == (size_t)-1)
       return false;
-   return gfx_thumbnail_results_set(n, rec, type, name);
+   if (!gfx_thumbnail_results_set(n, rec, type, name))
+      return false;
+   slot->dirty = true;
+   return true;
 }
 
 const char *gfx_thumbnail_results_lookup(const char *content_path,
-      const char *label, const char *system, unsigned type)
+      const char *label, const char *system, unsigned type,
+      bool allow_non_png)
 {
    size_t i;
    const char *name;
+   const char *own;
    for (i = 0; i < GFX_THUMB_RESULTS_KEPT; i++)
-      if ((name = gfx_thumbnail_results_find(gfx_thumb_results_slots[i].notes,
+   {
+      if (!(name = gfx_thumbnail_results_find(
+            gfx_thumb_results_slots[i].notes,
             content_path, label, system, type)))
+         continue;
+      own = gfx_thumbnail_results_find(gfx_thumb_results_slots[i].table,
+            content_path, label, system, type);
+      if (!own || !gfx_thumbnail_name_allowed(own, allow_non_png))
          return name;
+   }
    for (i = 0; i < GFX_THUMB_RESULTS_KEPT; i++)
-      if ((name = gfx_thumbnail_results_find(gfx_thumb_results_slots[i].table,
-            content_path, label, system, type)))
+      if (     (name = gfx_thumbnail_results_find(
+               gfx_thumb_results_slots[i].table,
+               content_path, label, system, type))
+            && gfx_thumbnail_name_allowed(name, allow_non_png))
          return name;
    return NULL;
 }
@@ -551,6 +703,9 @@ static void gfx_thumb_results_drop(const char *playlist_path)
 
    if ((slot = gfx_thumb_results_slot(playlist_path)))
       gfx_thumb_results_slot_clear(slot);
+   if ((i = gfx_thumb_results_parked_at(playlist_path))
+         < gfx_thumb_results_parked_count)
+      gfx_thumb_results_parked_free(i);
    gfx_thumb_results_unevict(playlist_path);
    for (i = 0; i < gfx_thumb_results_resolved_count; i++)
    {
@@ -581,11 +736,23 @@ void gfx_thumbnail_results_rename(const char *old_path,
 {
    char from[PATH_MAX_LENGTH];
    char *to;
+   size_t i;
 
    if (!old_path || !*old_path || !new_path || !*new_path)
       return;
-   gfx_thumb_results_drop(old_path);
    gfx_thumb_results_drop(new_path);
+   if ((i = gfx_thumb_results_parked_at(old_path))
+         < gfx_thumb_results_parked_count)
+   {
+      if ((to = strdup(new_path)))
+      {
+         free(gfx_thumb_results_parked[i].playlist_path);
+         gfx_thumb_results_parked[i].playlist_path = to;
+      }
+      else
+         gfx_thumb_results_parked_free(i);
+   }
+   gfx_thumb_results_drop(old_path);
    if (     strlcpy(from, old_path, sizeof(from)) >= sizeof(from)
          || strlcat(from, FILE_PATH_THUMBS_EXTENSION, sizeof(from))
             >= sizeof(from)
@@ -610,6 +777,10 @@ void gfx_thumbnail_results_deinit(void)
    for (i = 0; i < gfx_thumb_results_evicted_count; i++)
       free(gfx_thumb_results_evicted[i]);
    free(gfx_thumb_results_evicted);
+   while (gfx_thumb_results_parked_count)
+      gfx_thumb_results_parked_free(0);
+   free(gfx_thumb_results_parked);
+   gfx_thumb_results_parked         = NULL;
    gfx_thumb_results_resolved       = NULL;
    gfx_thumb_results_resolved_count = 0;
    gfx_thumb_results_evicted        = NULL;

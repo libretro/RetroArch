@@ -277,6 +277,11 @@ bool task_push_pl_manager_clean_playlist(const playlist_config_t *playlist_confi
 bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
       playlist_t *playlist, const char *dir_thumbnails,
       const char *dir_database, bool allow_non_png);
+/* An on-demand download saved under another name than the label:
+ * shown for the entry only if it matches it. Main thread. */
+bool task_pl_thumbnail_match_note_download(const char *playlist_path,
+      const char *content_path, const char *label, const char *system,
+      unsigned type, const char *file_name, bool allow_non_png);
 
 /* downscale_cap: if non-zero, the decoded image is capped to this many
  * pixels on its longest side before upload, preserving aspect ratio.

@@ -2175,6 +2175,7 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
    char stem[NAME_MAX_LENGTH];
    const char *match;
    size_t _len, dir_len;
+   bool allow_non_png;
 
    if (!s || !len)
       return 0;
@@ -2209,11 +2210,11 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
                   stem_name)))
          return _len;
    }
+   allow_non_png = config_get_ptr()->bools.playlist_allow_non_png;
    if (     (match = gfx_thumbnail_results_lookup(
                content_path ? content_path : "", key_label, db_name,
-               gfx_thumbnail_result_type_of(subdir)))
-         && gfx_thumbnail_name_allowed(match,
-               config_get_ptr()->bools.playlist_allow_non_png))
+               gfx_thumbnail_result_type_of(subdir), allow_non_png))
+         && gfx_thumbnail_name_allowed(match, allow_non_png))
    {
       s[dir_len] = '\0';
       _len       = fill_pathname_join_special(s, s, match, len);

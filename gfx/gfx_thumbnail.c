@@ -3421,7 +3421,8 @@ bool gfx_thumbnail_update_path_cfg(
       {
          const char *match = gfx_thumbnail_results_lookup(
                path_data->content_path, path_data->content_label,
-               system_name, gfx_thumbnail_result_type_of(type));
+               system_name, gfx_thumbnail_result_type_of(type),
+               playlist_allow_non_png);
          if (match && gfx_thumbnail_name_allowed(match,
                   playlist_allow_non_png))
             fill_pathname_join_special(thumbnail_path, tmp_buf,

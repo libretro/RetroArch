@@ -36,6 +36,7 @@
 #ifdef RARCH_INTERNAL
 #include "../gfx/gfx_thumbnail.h"
 #ifdef HAVE_MENU
+#include "../gfx/gfx_thumbnail_results.h"
 #include "../menu/menu_cbs.h"
 #include "../menu/menu_driver.h"
 #else
@@ -179,6 +180,32 @@ static bool gfx_thumbnail_get_img_name(
 }
 
 
+/* The thumbnails/<system> folder the menu looks in */
+static const char *pl_thumb_system_name(
+      gfx_thumbnail_path_data_t *path_data, char *s, size_t len)
+{
+   const char *db_name = NULL;
+   const char *system  = path_data->system;
+
+   gfx_thumbnail_get_db_name(path_data, &db_name);
+   if (db_name && *db_name)
+      return db_name;
+   if (!system || !*system)
+      return NULL;
+   /* If this is a content history or favorites playlist
+    * then the current 'path_data->system' string is
+    * meaningless. In this case, we fall back to the
+    * content directory name */
+   if (   !strcmp(system, "history")
+       || !strcmp(system, "favorites"))
+   {
+      if (gfx_thumbnail_get_content_dir(path_data, s, len) == 0)
+         return NULL;
+      return s;
+   }
+   return system;
+}
+
 /* Fetches local and remote paths for current thumbnail
  * of current type */
 static bool task_pl_thumbnail_get_thumbnail_paths(
@@ -190,53 +217,26 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
    char tmp_buf[PATH_MAX_LENGTH];
    size_t raw_url_len      = sizeof(char) * 8192; /* TODO/FIXME - check size */
    char *raw_url           = NULL;
-   const char *db_name     = NULL;
    const char *img_name    = NULL;
    const char *sub_dir     = NULL;
    const char *system_name = NULL;
-   const char *system      = NULL;
 
    content_dir[0]          = '\0';
 
    if (!pl_thumb->thumbnail_path_data)
       return false;
 
-   system = pl_thumb->thumbnail_path_data->system;
-
    if (!pl_thumb->dir_thumbnails || !*pl_thumb->dir_thumbnails)
       return false;
 
    /* Extract required strings */
-   gfx_thumbnail_get_db_name(pl_thumb->thumbnail_path_data, &db_name);
    if (!gfx_thumbnail_get_img_name(pl_thumb->thumbnail_path_data, &img_name, pl_thumb->name_flags))
       return false;
    if (!gfx_thumbnail_get_sub_directory(pl_thumb->type_idx, &sub_dir))
       return false;
-
-   /* Determine system name */
-   if (!db_name || !*db_name)
-   {
-      if (!system || !*system)
-         return false;
-
-      /* If this is a content history or favorites playlist
-       * then the current 'path_data->system' string is
-       * meaningless. In this case, we fall back to the
-       * content directory name */
-      if (   !strcmp(system, "history")
-		    || !strcmp(system, "favorites"))
-      {
-         if (gfx_thumbnail_get_content_dir(
-               pl_thumb->thumbnail_path_data, content_dir, sizeof(content_dir)) == 0)
-            return false;
-
-         system_name = content_dir;
-      }
-      else
-         system_name = system;
-   }
-   else
-      system_name = db_name;
+   if (!(system_name = pl_thumb_system_name(pl_thumb->thumbnail_path_data,
+         content_dir, sizeof(content_dir))))
+      return false;
 
    /* Generate local path */
    fill_pathname_join_special(path, pl_thumb->dir_thumbnails,
@@ -695,6 +695,38 @@ error:
 /* Playlist Entry Thumbnail Download */
 /*************************************/
 
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+/* A short-name download shows only for an entry it matches. */
+static void pl_thumb_note_short_name(pl_thumb_handle_t *pl_thumb)
+{
+   char content_dir[DIR_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+   unsigned type_idx;
+   gfx_thumbnail_path_data_t *pd = pl_thumb->thumbnail_path_data;
+   const char *system_name       = pl_thumb_system_name(pd,
+         content_dir, sizeof(content_dir));
+
+   if (!system_name || !*pd->content_img_short)
+      return;
+   for (type_idx = 1; type_idx <= 3; type_idx++)
+   {
+      size_t _len;
+      const char *sub_dir = NULL;
+      if (!gfx_thumbnail_get_sub_directory(type_idx, &sub_dir))
+         continue;
+      fill_pathname_join_special_ext(path, pl_thumb->dir_thumbnails,
+            system_name, sub_dir, "", sizeof(path));
+      _len = fill_pathname_slash(path, sizeof(path));
+      strlcpy(path + _len, pd->content_img_short, sizeof(path) - _len);
+      if (path_is_valid(path))
+         task_pl_thumbnail_match_note_download(pl_thumb->playlist_path,
+               pd->content_path, pd->content_label, system_name,
+               gfx_thumbnail_result_type_of(sub_dir), pd->content_img_short,
+               pl_thumb->thumb_dir_config.playlist_allow_non_png);
+   }
+}
+#endif
+
 static void cb_task_pl_entry_thumbnail_refresh_menu(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -716,6 +748,9 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
 
    if (!pl_thumb || !pl_thumb->thumbnail_path_data)
       return;
+
+   if (pl_thumb->name_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+      pl_thumb_note_short_name(pl_thumb);
 
    /* Only refresh if current playlist hasn't changed,
     * and menu selection pointer is on the same entry
