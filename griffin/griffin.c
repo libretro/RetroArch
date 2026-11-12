@@ -1403,6 +1403,7 @@ DRIVERS
 #include "../gfx/gfx_surface_player.c"
 #include "../gfx/gfx_thumbnail.c"
 #include "../gfx/gfx_thumbnail_match.c"
+#include "../gfx/gfx_thumbnail_results.c"
 #include "../gfx/gfx_media_controls.c"
 #include "../gfx/gfx_media_display.c"
 #include "../gfx/gfx_media_player.c"

@@ -37,6 +37,7 @@ on:
       - 'samples/tasks/overlay/**'
       - 'samples/tasks/patch_stream/**'
       - 'samples/tasks/pl_thumbnail/**'
+      - 'samples/tasks/pl_thumbnail_match/**'
       - 'samples/tasks/playlist_manager/**'
       - 'samples/tasks/save_state/**'
       - 'samples/tasks/turbo_bind/**'
@@ -84,6 +85,7 @@ on:
       - 'samples/tasks/overlay/**'
       - 'samples/tasks/patch_stream/**'
       - 'samples/tasks/pl_thumbnail/**'
+      - 'samples/tasks/pl_thumbnail_match/**'
       - 'samples/tasks/playlist_manager/**'
       - 'samples/tasks/save_state/**'
       - 'samples/tasks/turbo_bind/**'
@@ -756,6 +758,28 @@ jobs:
           make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./pl_thumbnail_wait_test
           echo "[pass] pl_thumbnail_wait_test (TSan)"
+
+      - name: Build and run pl_thumbnail_match_test (plain, ASan + UBSan, TSan, mingw-w64)
+        shell: bash
+        working-directory: samples/tasks/pl_thumbnail_match
+        run: |
+          set -eu
+          # The thumbnail result table and store, and the task that fills
+          # them from <playlist>.lpl.thumbs and the art folders.
+          make clean && make -j$(nproc) all
+          timeout 120 ./pl_thumbnail_match_test
+          echo "[pass] pl_thumbnail_match_test"
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./pl_thumbnail_match_test
+          echo "[pass] pl_thumbnail_match_test (ASan + UBSan)"
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./pl_thumbnail_match_test
+          echo "[pass] pl_thumbnail_match_test (TSan)"
+          make clean
+          make -j$(nproc) CC=x86_64-w64-mingw32-gcc TARGET=pl_thumbnail_match_test.exe LIBS=-lm
+          test -f pl_thumbnail_match_test.exe
+          make clean TARGET=pl_thumbnail_match_test.exe
 
       - name: Build and run core_crc_slice_test (ASan + UBSan, TSan)
         shell: bash
