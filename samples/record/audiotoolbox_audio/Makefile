@@ -1,6 +1,10 @@
 CC ?= cc
 RA := ../../..
 CFLAGS += -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wframe-larger-than=2048 -I$(RA)/libretro-common/include -Imock -DRECORD_AT_AUDIO_TEST
+ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
+# Match boolean.h's intentional clang _Bool spelling in C89 mode.
+CFLAGS += -Wno-c99-extensions -Wno-c11-extensions
+endif
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)

@@ -60,7 +60,7 @@ jobs:
     name: Build and run samples/record
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: mingw-w64 wine build-essential pkg-config ffmpeg openssl python3 libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev ccache
+      APT_PKGS: clang mingw-w64 wine build-essential pkg-config ffmpeg openssl python3 libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev ccache
     timeout-minutes: 25
 
     steps:
@@ -266,6 +266,7 @@ jobs:
         run: |
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean && make check CC=clang
           make clean && make check SANITIZER=address,undefined
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
