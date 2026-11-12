@@ -150,6 +150,7 @@ typedef struct gfx_thumbnail_dir_config
 {
    char dir_thumbnails[DIR_MAX_LENGTH];
    bool playlist_allow_non_png;
+   bool use_results; /* the match store: main thread only */
    unsigned gfx_thumbnails;
    unsigned menu_left_thumbnails;
    unsigned menu_icon_thumbnails;

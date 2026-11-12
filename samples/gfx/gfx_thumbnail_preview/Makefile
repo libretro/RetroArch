@@ -41,6 +41,7 @@ PLAYER_OBJ := gfx_surface_player_uut.o
 LAYOUT_OBJ := settings_layout_uut.o
 
 SOURCES := gfx_thumbnail_preview_test.c \
+           $(REPO_ROOT)/gfx/gfx_thumbnail_results.c \
            $(REPO_ROOT)/gfx/gfx_media_player.c \
            $(REPO_ROOT)/gfx/gfx_media_cpu.c \
            stubs_retroarch.c \

@@ -43,6 +43,7 @@
 #include "gfx_surface.h"
 #include "gfx_instrument.h"
 #include "gfx_thumbnail.h"
+#include "gfx_thumbnail_results.h"
 #include "../frontend/frontend_driver.h"
 
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
@@ -3196,32 +3197,8 @@ bool gfx_thumbnail_set_content_playlist(
    if (!db_name || !*db_name)
       playlist_get_db_name(playlist, idx, &db_name);
    if (db_name && *db_name)
-   {
-      /* Hack: There is only one MAME thumbnail repo,
-       * so filter any input starting with 'MAME...' */
-      if (strncmp(db_name, "MAME", 4) == 0)
-      {
-         path_data->content_db_name[0] = path_data->content_db_name[2] = 'M';
-         path_data->content_db_name[1] = 'A';
-         path_data->content_db_name[3] = 'E';
-         path_data->content_db_name[4] = '\0';
-      }
-      else
-      {
-         char tmp_buf[NAME_MAX_LENGTH];
-         const char *pos      = strchr(db_name, '|');
-         /* If db_name comes from core info, and there are multiple
-          * databases mentioned separated by |, use only first one */
-         if (pos && (size_t) (pos - db_name) + 1 < sizeof(tmp_buf))
-            strlcpy(tmp_buf, db_name, (size_t)(pos - db_name) + 1);
-         else
-            strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
-
-         fill_pathname(path_data->content_db_name,
-               tmp_buf, "",
-               sizeof(path_data->content_db_name));
-      }
-   }
+      gfx_thumbnail_system_name(path_data->content_db_name,
+            sizeof(path_data->content_db_name), db_name);
 
    /* Playlist entry is valid -> it is now 'safe' to
     * extract any remaining playlist metadata
@@ -3249,6 +3226,7 @@ void gfx_thumbnail_dir_config_capture(gfx_thumbnail_dir_config_t *cfg)
    strlcpy(cfg->dir_thumbnails, settings->paths.directory_thumbnails,
          sizeof(cfg->dir_thumbnails));
    cfg->playlist_allow_non_png = settings->bools.playlist_allow_non_png;
+   cfg->use_results            = false;
    cfg->gfx_thumbnails         = settings->uints.gfx_thumbnails;
    cfg->menu_left_thumbnails   = settings->uints.menu_left_thumbnails;
    cfg->menu_icon_thumbnails   = settings->uints.menu_icon_thumbnails;
@@ -3260,6 +3238,7 @@ bool gfx_thumbnail_update_path(
 {
    gfx_thumbnail_dir_config_t cfg;
    gfx_thumbnail_dir_config_capture(&cfg);
+   cfg.use_results = true;
    return gfx_thumbnail_update_path_cfg(path_data, thumbnail_id, &cfg);
 }
 
@@ -3276,23 +3255,6 @@ bool gfx_thumbnail_update_path_cfg(
    unsigned gfx_thumbnails       = cfg->gfx_thumbnails;
    unsigned menu_left_thumbnails = cfg->menu_left_thumbnails;
    unsigned menu_icon_thumbnails = cfg->menu_icon_thumbnails;
-   /* Thumbnail extension order. The default (i.e. png) is always the first. */
-   const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga",
-#ifdef HAVE_RWEBP
-         ".webp",
-#endif
-#ifdef HAVE_RWEBM
-         ".webm",
-         ".mkv",
-#endif
-#ifdef HAVE_RMP4
-         ".mp4",
-#endif
-         0 };
-   /* Entries before the terminating null */
-#define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS \
-   ((int)(sizeof(SUPPORTED_THUMBNAIL_EXTENSIONS) / \
-          sizeof(SUPPORTED_THUMBNAIL_EXTENSIONS[0])) - 1)
 
    if (!path_data)
       return false;
@@ -3419,13 +3381,13 @@ bool gfx_thumbnail_update_path_cfg(
 
          if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
          {
-            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            for (i = 1; gfx_thumbnail_image_exts[i] && !thumbnail_found; i++)
             {
                if (!path_get_extension_mutable(thumbnail_path))
                   continue;
 
                strlcpy(path_get_extension_mutable(thumbnail_path),
-                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+                     gfx_thumbnail_image_exts[i], 6);
                thumbnail_found = path_is_valid(thumbnail_path);
             }
          }
@@ -3442,39 +3404,30 @@ bool gfx_thumbnail_update_path_cfg(
 
          if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
          {
-            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            for (i = 1; gfx_thumbnail_image_exts[i] && !thumbnail_found; i++)
             {
                if (!path_get_extension_mutable(thumbnail_path))
                   continue;
 
                strlcpy(path_get_extension_mutable(thumbnail_path),
-                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+                     gfx_thumbnail_image_exts[i], 6);
                thumbnail_found = path_is_valid(thumbnail_path);
             }
          }
       }
 
-      /* >> Add content image - third try with shortened name (title only) */
-      if (!thumbnail_found && *path_data->content_img_short)
+      /* >> Then the match the thumbnail task stored for this entry */
+      if (!thumbnail_found && cfg->use_results)
       {
-         thumbnail_path[0] = '\0';
-         fill_pathname_join_special(thumbnail_path, tmp_buf,
-               path_data->content_img_short, PATH_MAX_LENGTH * sizeof(char));
-         thumbnail_found = path_is_valid(thumbnail_path);
-
-         if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
-         {
-            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
-            {
-               if (!path_get_extension_mutable(thumbnail_path))
-                  continue;
-
-               strlcpy(path_get_extension_mutable(thumbnail_path),
-                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
-               thumbnail_found = path_is_valid(thumbnail_path);
-            }
-         }
+         const char *match = gfx_thumbnail_results_lookup(
+               path_data->content_path, path_data->content_label,
+               system_name, gfx_thumbnail_result_type_of(type));
+         if (match && gfx_thumbnail_name_allowed(match,
+                  playlist_allow_non_png))
+            fill_pathname_join_special(thumbnail_path, tmp_buf,
+                  match, PATH_MAX_LENGTH * sizeof(char));
       }
+
       /* This logic is valid for locally stored thumbnails. For optional downloads,
        * gfx_thumbnail_get_img_name() is used */
    }
