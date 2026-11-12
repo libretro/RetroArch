@@ -83,7 +83,9 @@ enum pl_thumb_match_flags
    /* The resolved table differs from the cache */
    PL_THUMB_MATCH_FLAG_CHANGED       = (1 << 5),
    /* The load handed its cache_crc over */
-   PL_THUMB_MATCH_FLAG_SUMMED        = (1 << 6)
+   PL_THUMB_MATCH_FLAG_SUMMED        = (1 << 6),
+   /* Writes a pushed-out playlist's notes beside its table */
+   PL_THUMB_MATCH_FLAG_SAVE          = (1 << 7)
 };
 
 #ifdef HAVE_LIBRETRODB
@@ -149,6 +151,7 @@ typedef struct pl_thumb_match
    struct RDIR *dir;
    gfx_thumbnail_match_index_t *index;
    gfx_thumbnail_results_t *results;
+   gfx_thumbnail_results_t *notes;
 #ifdef HAVE_LIBRETRODB
    const pl_thumb_match_anchor_t **want; /* the entries' anchors */
    pl_thumb_match_hit_t *hits;
@@ -182,6 +185,7 @@ typedef struct pl_thumb_match
    uint8_t flags;
    uint8_t item_keys;
    bool version_ok;
+   bool listed;        /* a record is serialized */
 } pl_thumb_match_t;
 
 static const char *const pl_thumb_match_keys[4] =
@@ -194,7 +198,8 @@ static const char *const pl_thumb_match_keys[4] =
 
 static bool pl_thumb_match_push(const playlist_config_t *config,
       const char *dir_thumbnails, const char *dir_database, uint8_t flags,
-      uint32_t cache_crc, pl_thumb_match_core_t *cores, size_t core_count);
+      uint32_t cache_crc, pl_thumb_match_core_t *cores, size_t core_count,
+      gfx_thumbnail_results_save_t *save);
 
 static void pl_thumb_match_cores_free(pl_thumb_match_core_t *cores,
       size_t count)
@@ -308,7 +313,9 @@ static void pl_thumb_match_fail(pl_thumb_match_t *m)
    pl_thumb_match_drop_folder(m);
    pl_thumb_match_drop_playlist(m);
    gfx_thumbnail_results_free(m->results);
+   gfx_thumbnail_results_free(m->notes);
    m->results = NULL;
+   m->notes   = NULL;
    m->status  = PL_THUMB_MATCH_DONE;
 }
 
@@ -1066,17 +1073,59 @@ static void pl_thumb_match_member(rjsonwriter_t *w, const char *name,
    rjsonwriter_add_string(w, value);
 }
 
-/* One record per call, into memory, so unchanged bytes are not written. */
+/* Leaves out a note's names its own table covers, as lookup does.
+ * Returns how many are left. */
+static unsigned pl_thumb_match_uncovered(const pl_thumb_match_t *m,
+      const char **key, const char **names)
+{
+   unsigned i;
+   const char *own;
+   unsigned left = 0;
+   for (i = 0; i < GFX_THUMBNAIL_RESULT_TYPES; i++)
+   {
+      if (!names[i])
+         continue;
+      if (     (own = gfx_thumbnail_results_find(m->results, key[0], key[1],
+                  key[3], i))
+            && gfx_thumbnail_name_allowed(own,
+                  (m->flags & PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG) != 0))
+         names[i] = NULL;
+      else
+         left++;
+   }
+   return left;
+}
+
+static bool pl_thumb_match_any_uncovered(const pl_thumb_match_t *m)
+{
+   size_t rec;
+   const char *key[4];
+   const char *names[GFX_THUMBNAIL_RESULT_TYPES];
+   for (rec = 0; rec < gfx_thumbnail_results_count(m->notes); rec++)
+   {
+      gfx_thumbnail_results_get(m->notes, rec, key, names);
+      if (pl_thumb_match_uncovered(m, key, names))
+         return true;
+   }
+   return false;
+}
+
+/* One record per call, into memory, so unchanged bytes are not written.
+ * A save's notes come first: the load's sort keeps them first for their
+ * entry, so its find meets them before the table's names. */
 static void pl_thumb_match_serialize(pl_thumb_match_t *m)
 {
    unsigned i;
    int _len = 0;
    const char *key[4];
    const char *names[GFX_THUMBNAIL_RESULT_TYPES];
+   size_t notes = gfx_thumbnail_results_count(m->notes);
 
    if (!m->writer)
    {
-      if (!(m->writer = rjsonwriter_open_memory()))
+      if (     ((m->flags & PL_THUMB_MATCH_FLAG_SAVE)
+               && !pl_thumb_match_any_uncovered(m))
+            || !(m->writer = rjsonwriter_open_memory()))
       {
          m->status = PL_THUMB_MATCH_DONE;
          return;
@@ -1086,10 +1135,21 @@ static void pl_thumb_match_serialize(pl_thumb_match_t *m)
       pl_thumb_match_raw(m->writer, ",\n  \"items\": [");
       return;
    }
-   if (m->pos < gfx_thumbnail_results_count(m->results))
+   if (m->pos < notes + gfx_thumbnail_results_count(m->results))
    {
-      gfx_thumbnail_results_get(m->results, m->pos, key, names);
-      pl_thumb_match_raw(m->writer, m->pos ? ",\n    {" : "\n    {");
+      if (m->pos >= notes)
+         gfx_thumbnail_results_get(m->results, m->pos - notes, key, names);
+      else
+      {
+         gfx_thumbnail_results_get(m->notes, m->pos, key, names);
+         if (!pl_thumb_match_uncovered(m, key, names))
+         {
+            m->pos++;
+            return;
+         }
+      }
+      pl_thumb_match_raw(m->writer, m->listed ? ",\n    {" : "\n    {");
+      m->listed = true;
       rjsonwriter_add_string(m->writer, pl_thumb_match_keys[0]);
       pl_thumb_match_raw(m->writer, ": ");
       rjsonwriter_add_string(m->writer, key[0]);
@@ -1126,9 +1186,12 @@ static void pl_thumb_match_sum(pl_thumb_match_t *m)
          (const uint8_t*)m->out + m->buf_pos, want);
    if ((m->buf_pos += want) < m->buf_len)
       return;
-   same = (m->flags & PL_THUMB_MATCH_FLAG_CACHE_FOUND)
-      ? (m->out_crc == m->cache_crc)
-      : !gfx_thumbnail_results_count(m->results);
+   if (m->flags & PL_THUMB_MATCH_FLAG_SAVE)
+      same = false;
+   else if (m->flags & PL_THUMB_MATCH_FLAG_CACHE_FOUND)
+      same = (m->out_crc == m->cache_crc);
+   else
+      same = !gfx_thumbnail_results_count(m->results);
    if (!same)
       m->flags |= PL_THUMB_MATCH_FLAG_CHANGED;
    /* Not for a playlist deleted meanwhile */
@@ -1260,6 +1323,7 @@ static void pl_thumb_match_free(pl_thumb_match_t *m)
    pl_thumb_match_cores_free(m->cores, m->core_count);
    free(m->buf);
    gfx_thumbnail_results_free(m->results);
+   gfx_thumbnail_results_free(m->notes);
    free(m);
 }
 
@@ -1302,50 +1366,6 @@ static void pl_thumb_match_refresh(const char *playlist_path)
 #endif
 }
 
-static void cb_task_pl_thumbnail_match(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   gfx_thumbnail_results_t *results;
-   bool changed;
-   pl_thumb_match_t *m = task ? (pl_thumb_match_t*)task->state : NULL;
-
-   if (!m || !(results = m->results))
-      return;
-   m->results = NULL;
-   /* Before the load the menu found nothing here */
-   changed    = (m->flags & PL_THUMB_MATCH_FLAG_RESOLVE)
-      ? (m->flags & PL_THUMB_MATCH_FLAG_CHANGED) != 0
-      : gfx_thumbnail_results_count(results) > 0;
-   if (!gfx_thumbnail_results_install(m->playlist_config.path, results,
-         (m->flags & PL_THUMB_MATCH_FLAG_RESOLVE) != 0))
-      return;
-   if (m->flags & PL_THUMB_MATCH_FLAG_THEN_RESOLVE)
-   {
-      /* The resolve takes the cores and the cache's crc over */
-      pl_thumb_match_push(&m->playlist_config, m->dir_thumbnails,
-            m->dir_database,
-            (uint8_t)((m->flags & (PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG
-                                 | PL_THUMB_MATCH_FLAG_COLLECTION
-                                 | PL_THUMB_MATCH_FLAG_CACHE_FOUND))
-                    | PL_THUMB_MATCH_FLAG_RESOLVE
-                    | PL_THUMB_MATCH_FLAG_SUMMED),
-            m->cache_crc, m->cores, m->core_count);
-      m->cores      = NULL;
-      m->core_count = 0;
-   }
-   if (changed)
-   {
-      pl_thumb_match_refresh(m->playlist_config.path);
-      ui_companion_driver_notify_thumbnails(m->playlist_config.path);
-   }
-}
-
-static void task_pl_thumbnail_match_cleanup(retro_task_t *task)
-{
-   if (task)
-      pl_thumb_match_free((pl_thumb_match_t*)task->state);
-}
-
 static bool task_pl_thumbnail_match_finder(retro_task_t *task,
       void *user_data)
 {
@@ -1357,22 +1377,139 @@ static bool task_pl_thumbnail_match_finder(retro_task_t *task,
    return string_is_equal((const char*)user_data, m->playlist_config.path);
 }
 
-/* Takes @cores over, also on failure. */
+typedef struct
+{
+   const char *playlist_path;
+   const retro_task_t *self;
+} pl_thumb_match_busy_t;
+
+/* Not @self: a finished task stays findable while its callback runs. */
+static bool pl_thumb_match_busy_finder(retro_task_t *task, void *user_data)
+{
+   const pl_thumb_match_busy_t *busy = (const pl_thumb_match_busy_t*)
+      user_data;
+   return task != busy->self && task_pl_thumbnail_match_finder(task,
+         (void*)busy->playlist_path);
+}
+
+static bool pl_thumb_match_busy(const char *playlist_path, void *user_data)
+{
+   task_finder_data_t find_data;
+   pl_thumb_match_busy_t busy;
+   busy.playlist_path = playlist_path;
+   busy.self          = (const retro_task_t*)user_data;
+   find_data.func     = pl_thumb_match_busy_finder;
+   find_data.userdata = &busy;
+   return task_queue_find(&find_data);
+}
+
+/* One writer per cache file: a save waits for its playlist's task. */
+static void pl_thumb_match_drain(bool allow_non_png, retro_task_t *self)
+{
+   gfx_thumbnail_results_save_t save;
+   while (gfx_thumbnail_results_take(&save, pl_thumb_match_busy, self))
+      pl_thumb_match_push(NULL, "", NULL, (uint8_t)(PL_THUMB_MATCH_FLAG_SAVE
+            | (allow_non_png ? PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG : 0)),
+            0, NULL, 0, &save);
+}
+
+static void pl_thumb_match_install(pl_thumb_match_t *m)
+{
+   gfx_thumbnail_results_t *results;
+   gfx_thumbnail_results_t *notes;
+   bool changed;
+
+   if (!(results = m->results))
+      return;
+   notes      = m->notes;
+   m->results = NULL;
+   m->notes   = NULL;
+   /* Before the load the menu found nothing here; a save's table
+    * comes back to a playlist reopened while it ran */
+   if (m->flags & PL_THUMB_MATCH_FLAG_SAVE)
+      changed = true;
+   else
+      changed = (m->flags & PL_THUMB_MATCH_FLAG_RESOLVE)
+         ? (m->flags & PL_THUMB_MATCH_FLAG_CHANGED) != 0
+         : gfx_thumbnail_results_count(results) > 0;
+   if (!gfx_thumbnail_results_install(m->playlist_config.path, results,
+         notes, (m->flags & PL_THUMB_MATCH_FLAG_RESOLVE) != 0))
+      return;
+   if (m->flags & PL_THUMB_MATCH_FLAG_THEN_RESOLVE)
+   {
+      /* The resolve takes the cores and the cache's crc over */
+      pl_thumb_match_push(&m->playlist_config, m->dir_thumbnails,
+            m->dir_database,
+            (uint8_t)((m->flags & (PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG
+                                 | PL_THUMB_MATCH_FLAG_COLLECTION
+                                 | PL_THUMB_MATCH_FLAG_CACHE_FOUND))
+                    | PL_THUMB_MATCH_FLAG_RESOLVE
+                    | PL_THUMB_MATCH_FLAG_SUMMED),
+            m->cache_crc, m->cores, m->core_count, NULL);
+      m->cores      = NULL;
+      m->core_count = 0;
+   }
+   if (changed)
+   {
+      pl_thumb_match_refresh(m->playlist_config.path);
+      ui_companion_driver_notify_thumbnails(m->playlist_config.path);
+   }
+}
+
+static void cb_task_pl_thumbnail_match(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   pl_thumb_match_t *m = task ? (pl_thumb_match_t*)task->state : NULL;
+
+   if (!m)
+      return;
+   pl_thumb_match_install(m);
+   /* Cancelled at quit: no new save, deinit drops the notes */
+   if (!(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      pl_thumb_match_drain(
+            (m->flags & PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG) != 0, task);
+}
+
+static void task_pl_thumbnail_match_cleanup(retro_task_t *task)
+{
+   if (task)
+      pl_thumb_match_free((pl_thumb_match_t*)task->state);
+}
+
+/* Takes @cores and @save's contents over, also on failure. A save
+ * needs no @config: it never reads the playlist. */
 static bool pl_thumb_match_push(const playlist_config_t *config,
       const char *dir_thumbnails, const char *dir_database, uint8_t flags,
-      uint32_t cache_crc, pl_thumb_match_core_t *cores, size_t core_count)
+      uint32_t cache_crc, pl_thumb_match_core_t *cores, size_t core_count,
+      gfx_thumbnail_results_save_t *save)
 {
    size_t _len;
    retro_task_t *task  = task_init();
    pl_thumb_match_t *m = (pl_thumb_match_t*)calloc(1, sizeof(*m));
 
+   if (save)
+   {
+      if (m)
+      {
+         playlist_config_set_path(&m->playlist_config, save->playlist_path);
+         m->results = save->table;
+         m->notes   = save->notes;
+      }
+      else
+      {
+         gfx_thumbnail_results_free(save->table);
+         gfx_thumbnail_results_free(save->notes);
+      }
+      free(save->playlist_path);
+   }
    if (     !task || !m
-         || !playlist_config_copy(config, &m->playlist_config)
-         || !(m->results = gfx_thumbnail_results_new()))
+         || (!save && (!playlist_config_copy(config, &m->playlist_config)
+            || !(m->results = gfx_thumbnail_results_new()))))
       goto error;
    /* An autofix write would race the main thread's playlist writes */
    m->playlist_config.autofix_paths = false;
-   _len = strlcpy(m->cache_path, config->path, sizeof(m->cache_path));
+   _len = strlcpy(m->cache_path, m->playlist_config.path,
+         sizeof(m->cache_path));
    if (_len + STRLEN_CONST(FILE_PATH_THUMBS_EXTENSION) >= sizeof(m->cache_path))
       goto error;
    strlcpy(m->cache_path + _len, FILE_PATH_THUMBS_EXTENSION,
@@ -1382,8 +1519,11 @@ static bool pl_thumb_match_push(const playlist_config_t *config,
          sizeof(m->dir_database));
    m->item_rec    = PL_THUMB_MATCH_NONE;
    m->member      = -1;
-   m->status      = (flags & PL_THUMB_MATCH_FLAG_SUMMED)
-      ? PL_THUMB_MATCH_PLAYLIST : PL_THUMB_MATCH_CACHE_OPEN;
+   if (save)
+      m->status   = PL_THUMB_MATCH_SERIALIZE;
+   else
+      m->status   = (flags & PL_THUMB_MATCH_FLAG_SUMMED)
+         ? PL_THUMB_MATCH_PLAYLIST : PL_THUMB_MATCH_CACHE_OPEN;
    m->flags       = flags;
    m->cache_crc   = cache_crc;
    m->cores       = cores;
@@ -1403,6 +1543,7 @@ error:
    if (m)
    {
       gfx_thumbnail_results_free(m->results);
+      gfx_thumbnail_results_free(m->notes);
       free(m);
    }
    return false;
@@ -1472,7 +1613,9 @@ bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
    if (collection && string_ends_with_size(name, "_history.lpl",
          strlen(name), STRLEN_CONST("_history.lpl")))
       return false;
-   if (!(need = gfx_thumbnail_results_open(playlist_config->path)))
+   need = gfx_thumbnail_results_open(playlist_config->path);
+   pl_thumb_match_drain(allow_non_png, NULL);
+   if (!need)
       return false;
    find_data.func     = task_pl_thumbnail_match_finder;
    find_data.userdata = (void*)playlist_config->path;
@@ -1491,5 +1634,44 @@ bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
                     | PL_THUMB_MATCH_FLAG_THEN_RESOLVE)))
       core_count = pl_thumb_match_cores(playlist, &cores);
    return pl_thumb_match_push(playlist_config, dir_thumbnails,
-         dir_database, flags, 0, cores, core_count);
+         dir_database, flags, 0, cores, core_count, NULL);
+}
+
+/* An index of one name, so the whole finalize is a few tiny steps. */
+bool task_pl_thumbnail_match_note_download(const char *playlist_path,
+      const char *content_path, const char *label, const char *system,
+      unsigned type, const char *file_name, bool allow_non_png)
+{
+   char stem[NAME_MAX_LENGTH];
+   char name[NAME_MAX_LENGTH];
+   const char *queries[2];
+   const char *match;
+   const char *found = NULL;
+   bool noted        = false;
+   gfx_thumbnail_match_index_t *index;
+
+   if (     string_is_empty(content_path)
+         || !gfx_thumbnail_name_allowed(file_name, allow_non_png))
+      return false;
+   fill_pathname(stem, path_basename(content_path), "", sizeof(stem));
+   strlcpy(name, string_is_empty(label) ? stem : label, sizeof(name));
+   /* The folder match may have picked a closer name the menu shows */
+   match = gfx_thumbnail_results_lookup(content_path, name, system, type,
+         allow_non_png);
+   if (     (match && gfx_thumbnail_name_allowed(match, allow_non_png))
+         || !(index = gfx_thumbnail_match_index_new()))
+      return false;
+   queries[0] = name;
+   queries[1] = stem;
+   if (gfx_thumbnail_match_index_add(index, file_name))
+   {
+      gfx_thumbnail_match_index_finalize(index);
+      if (     gfx_thumbnail_match_find_first(index, queries, 2, &found)
+               == GFX_THUMBNAIL_MATCH_FOUND
+            && found)
+         noted = gfx_thumbnail_results_note(playlist_path, content_path,
+               name, system, type, found);
+   }
+   gfx_thumbnail_match_index_free(index);
+   return noted;
 }

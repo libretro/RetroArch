@@ -137,7 +137,7 @@ int gt_thumbnail_lookup_test(void)
             "Duck Hunt (USA).jpg");
       gfx_thumbnail_results_sort(t);
       gfx_thumbnail_results_open(LK_PL);
-      gfx_thumbnail_results_install(LK_PL, t, true);
+      gfx_thumbnail_results_install(LK_PL, t, NULL, true);
    }
    cfg.use_results = true;
 

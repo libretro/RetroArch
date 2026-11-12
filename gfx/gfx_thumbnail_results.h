@@ -86,26 +86,50 @@ const char *gfx_thumbnail_results_find(const gfx_thumbnail_results_t *t,
       const char *content_path, const char *label, const char *system,
       unsigned type);
 
+/* A pushed-out playlist's notes, with its table, for its cache file. */
+typedef struct gfx_thumbnail_results_save
+{
+   char *playlist_path;
+   gfx_thumbnail_results_t *table;
+   gfx_thumbnail_results_t *notes;
+} gfx_thumbnail_results_save_t;
+
+/* Whether a task for @playlist_path is still running. */
+typedef bool (*gfx_thumbnail_results_busy_t)(const char *playlist_path,
+      void *userdata);
+
 /* The store keeps the tables of the last playlists opened.
  * Main thread only. */
 unsigned gfx_thumbnail_results_open(const char *playlist_path);
-/* Takes @t. false, with @t freed, once the playlist is not kept;
+/* Takes @t and @notes. false, with both freed, once the playlist is not
+ * kept, unless its notes still wait to be written: they take them;
  * @resolved still counts once newer playlists pushed it out. */
 bool gfx_thumbnail_results_install(const char *playlist_path,
-      gfx_thumbnail_results_t *t, bool resolved);
+      gfx_thumbnail_results_t *t, gfx_thumbnail_results_t *notes,
+      bool resolved);
+/* Hands a pushed-out playlist's unwritten notes and its table over to
+ * @save, once nothing for it is @busy. */
+bool gfx_thumbnail_results_take(gfx_thumbnail_results_save_t *save,
+      gfx_thumbnail_results_busy_t busy, void *userdata);
 bool gfx_thumbnail_results_note(const char *playlist_path,
       const char *content_path, const char *label, const char *system,
       unsigned type, const char *name);
-/* Borrowed until the next _open, _install, _forget, _rename or
+/* Notes first, unless the note's own playlist's table names a file the
+ * menu shows for that entry; then the first such file a table names.
+ * Borrowed until the next _open, _install, _forget, _rename or
  * _deinit. */
 const char *gfx_thumbnail_results_lookup(const char *content_path,
-      const char *label, const char *system, unsigned type);
+      const char *label, const char *system, unsigned type,
+      bool allow_non_png);
 /* The playlist is gone: its table, and its cache file. */
 void gfx_thumbnail_results_forget(const char *playlist_path);
-/* The playlist was renamed: its cache file follows it. Both paths
- * start over; the new one loads that cache and resolves again. */
+/* The playlist was renamed: its cache file and a pushed-out playlist's
+ * notes waiting to be written follow it; a kept playlist's unwritten
+ * notes are dropped. Both paths start over; the new one loads that
+ * cache and resolves again. */
 void gfx_thumbnail_results_rename(const char *old_path,
       const char *new_path);
+/* Notes not yet written are dropped. */
 void gfx_thumbnail_results_deinit(void);
 
 RETRO_END_DECLS

@@ -143,7 +143,7 @@ static const char *find_box(const char *path, const char *label,
       const char *system)
 {
    return gfx_thumbnail_results_lookup(path, label, system,
-         GFX_THUMBNAIL_RESULT_BOXARTS);
+         GFX_THUMBNAIL_RESULT_BOXARTS, false);
 }
 
 static void lane_names(void)
@@ -476,7 +476,7 @@ static void lane_store(void)
    gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
          "A (USA).png");
    gfx_thumbnail_results_sort(t);
-   CHECK(gfx_thumbnail_results_install("/p/one.lpl", t, false),
+   CHECK(gfx_thumbnail_results_install("/p/one.lpl", t, NULL, false),
          "install while kept");
    CHECK(gfx_thumbnail_results_open("/p/one.lpl")
          == GFX_THUMBNAIL_RESULTS_RESOLVE, "loaded, not resolved");
@@ -484,14 +484,14 @@ static void lane_store(void)
          "lookup");
    CHECK(gfx_thumbnail_results_note("/p/one.lpl", "/r/a.nes", "A", "Sys",
          GFX_THUMBNAIL_RESULT_BOXARTS, "A.png"), "note");
-   CHECK(string_is_equal(find_box("/r/a.nes", "A", "Sys"), "A.png"),
-         "a note comes first");
+   CHECK(string_is_equal(find_box("/r/a.nes", "A", "Sys"), "A (USA).png"),
+         "its own table's pick outranks a note");
    CHECK(!gfx_thumbnail_results_note("/p/never.lpl", "/r/a.nes", "A", "Sys",
          GFX_THUMBNAIL_RESULT_BOXARTS, "x.png"), "no note for a playlist not kept");
 
    t = gfx_thumbnail_results_new();
    gfx_thumbnail_results_sort(t);
-   CHECK(gfx_thumbnail_results_install("/p/one.lpl", t, true),
+   CHECK(gfx_thumbnail_results_install("/p/one.lpl", t, NULL, true),
          "install resolved");
    CHECK(gfx_thumbnail_results_open("/p/one.lpl") == 0, "nothing more needed");
    CHECK(string_is_equal(find_box("/r/a.nes", "A", "Sys"), "A.png"),
@@ -503,9 +503,11 @@ static void lane_store(void)
    gfx_thumbnail_results_open("/p/5.lpl");
    CHECK(!find_box("/r/a.nes", "A", "Sys"), "four newer playlists push it out");
    CHECK(!gfx_thumbnail_results_install("/p/one.lpl",
-         gfx_thumbnail_results_new(), true), "no install once pushed out");
-   CHECK(gfx_thumbnail_results_open("/p/one.lpl")
-         == GFX_THUMBNAIL_RESULTS_LOAD, "reopened: resolved this session");
+         gfx_thumbnail_results_new(), NULL, true),
+         "no install once pushed out");
+   CHECK(!gfx_thumbnail_results_open("/p/one.lpl")
+         && string_is_equal(find_box("/r/a.nes", "A", "Sys"), "A.png"),
+         "reopened before its note was written: table and note come back");
 
    path_mkdir(FIX);
    fill_pathname_join_special(cache, FIX, "gone.lpl.thumbs", sizeof(cache));
@@ -537,7 +539,7 @@ static void lane_store_order(void)
    gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
          "A (Japan).png");
    gfx_thumbnail_results_sort(t);
-   gfx_thumbnail_results_install("/p/history.lpl", t, false);
+   gfx_thumbnail_results_install("/p/history.lpl", t, NULL, false);
    gfx_thumbnail_results_open("/p/b.lpl");
    CHECK(gfx_thumbnail_results_note("/p/b.lpl", "/r/a.nes", "A", "Sys",
          GFX_THUMBNAIL_RESULT_BOXARTS, "A.png"), "note");
@@ -568,11 +570,11 @@ static void lane_forget(void)
    gfx_thumbnail_results_open(FIX "/r2.lpl");
    gfx_thumbnail_results_open(FIX "/r3.lpl");
    gfx_thumbnail_results_install(FIX "/r1.lpl",
-         gfx_thumbnail_results_new(), true);
+         gfx_thumbnail_results_new(), NULL, true);
    gfx_thumbnail_results_install(FIX "/r2.lpl",
-         gfx_thumbnail_results_new(), true);
+         gfx_thumbnail_results_new(), NULL, true);
    gfx_thumbnail_results_install(FIX "/r3.lpl",
-         gfx_thumbnail_results_new(), true);
+         gfx_thumbnail_results_new(), NULL, true);
    gfx_thumbnail_results_forget(FIX "/r1.lpl");
    CHECK(gfx_thumbnail_results_open(FIX "/r1.lpl")
          & GFX_THUMBNAIL_RESULTS_RESOLVE, "forgotten: resolve again");
@@ -586,7 +588,7 @@ static void lane_forget(void)
    rec = gfx_thumbnail_results_add(t, "/r/h.nes", "H", "", "Sys");
    gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS, "H.png");
    gfx_thumbnail_results_sort(t);
-   gfx_thumbnail_results_install(FIX "/held.lpl", t, false);
+   gfx_thumbnail_results_install(FIX "/held.lpl", t, NULL, false);
    gfx_thumbnail_results_note(FIX "/held.lpl", "/r/n.nes", "N", "Sys",
          GFX_THUMBNAIL_RESULT_BOXARTS, "N.png");
    CHECK(string_is_equal(find_box("/r/h.nes", "H", "Sys"), "H.png")
@@ -603,7 +605,7 @@ static void lane_forget(void)
    rec = gfx_thumbnail_results_add(t, "/r/l.nes", "L", "", "Sys");
    gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS, "L.png");
    gfx_thumbnail_results_sort(t);
-   CHECK(!gfx_thumbnail_results_install(FIX "/late.lpl", t, true)
+   CHECK(!gfx_thumbnail_results_install(FIX "/late.lpl", t, NULL, true)
       && !find_box("/r/l.nes", "L", "Sys"), "no table after forget");
    CHECK(gfx_thumbnail_results_open(FIX "/late.lpl")
          & GFX_THUMBNAIL_RESULTS_RESOLVE, "not marked resolved after forget");
@@ -644,13 +646,13 @@ static void lane_rename(void)
    CHECK(write_text(FIX "/old.lpl.thumbs", "{}"), "write old cache");
    gfx_thumbnail_results_open(FIX "/new.lpl");
    gfx_thumbnail_results_install(FIX "/new.lpl",
-         gfx_thumbnail_results_new(), true);
+         gfx_thumbnail_results_new(), NULL, true);
    gfx_thumbnail_results_open(FIX "/old.lpl");
    t   = gfx_thumbnail_results_new();
    rec = gfx_thumbnail_results_add(t, "/r/o.nes", "O", "", "Sys");
    gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS, "O.png");
    gfx_thumbnail_results_sort(t);
-   gfx_thumbnail_results_install(FIX "/old.lpl", t, true);
+   gfx_thumbnail_results_install(FIX "/old.lpl", t, NULL, true);
    gfx_thumbnail_results_rename(FIX "/old.lpl", FIX "/new.lpl");
    CHECK(path_is_valid(FIX "/new.lpl.thumbs")
       && !path_is_valid(FIX "/old.lpl.thumbs"), "the cache moves");
@@ -670,7 +672,7 @@ static void lane_rename(void)
    gfx_thumbnail_results_open("/p/5.lpl");
    gfx_thumbnail_results_rename(FIX "/out.lpl", FIX "/in.lpl");
    CHECK(!gfx_thumbnail_results_install(FIX "/out.lpl",
-         gfx_thumbnail_results_new(), true), "a late resolve is dropped");
+         gfx_thumbnail_results_new(), NULL, true), "a late resolve is dropped");
    CHECK(gfx_thumbnail_results_open(FIX "/out.lpl")
          & GFX_THUMBNAIL_RESULTS_RESOLVE, "and not marked resolved");
    CHECK(!path_is_valid(FIX "/in.lpl.thumbs"), "no cache: nothing moves");
@@ -770,10 +772,12 @@ static const fx_entry_t fx_entries[] =
 #define FX_COUNT (sizeof(fx_entries) / sizeof(fx_entries[0]))
 
 static char cache_path[PATH_MAX_LENGTH];
+static char cache_tmp[PATH_MAX_LENGTH];
 static char thumbs_dir[PATH_MAX_LENGTH];
 static char db_dir[PATH_MAX_LENGTH];
 
 static unsigned cache_reads;
+static unsigned cache_writes;
 static bool forget_at_rename;
 
 static struct retro_vfs_file_handle *shim_open(const char *path,
@@ -782,6 +786,9 @@ static struct retro_vfs_file_handle *shim_open(const char *path,
    if (     mode == RETRO_VFS_FILE_ACCESS_READ
          && string_is_equal(path, cache_path))
       cache_reads++;
+   if (     (mode & RETRO_VFS_FILE_ACCESS_WRITE)
+         && string_is_equal(path, cache_tmp))
+      cache_writes++;
    return retro_vfs_file_open_impl(path, mode, hints);
 }
 
@@ -881,6 +888,8 @@ static void fixture_init(void)
    fill_pathname_join_special(pl_path, FIX, "Test.lpl", sizeof(pl_path));
    strlcpy(cache_path, pl_path, sizeof(cache_path));
    strlcat(cache_path, ".thumbs", sizeof(cache_path));
+   filestream_atomic_temp_name(cache_tmp, sizeof(cache_tmp), cache_path);
+   cache_writes = 0;
    fill_pathname_join_special(thumbs_dir, FIX, "thumbnails", sizeof(thumbs_dir));
    fill_pathname_join_special(db_dir, FIX, "db", sizeof(db_dir));
    filestream_delete(cache_path);
@@ -1003,7 +1012,7 @@ static void check_first_session(const char *what)
    CHECK(string_is_equal(box(0), "Legend of Zelda, The (USA).png"),
          "%s: articles and GoodTools tags: %s", what, box(0));
    CHECK(string_is_equal(gfx_thumbnail_results_lookup(fx_entries[0].path,
-         fx_entries[0].label, SYS, GFX_THUMBNAIL_RESULT_SNAPS),
+         fx_entries[0].label, SYS, GFX_THUMBNAIL_RESULT_SNAPS, false),
          "Legend of Zelda, The (Europe).png"), "%s: types resolve apart", what);
    CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png"),
          "%s: case and punctuation: %s", what, box(1));
@@ -1646,6 +1655,166 @@ static void lane_t1(void)
       fprintf(stderr, "[pass] T1\n");
 }
 
+/* A short-name download shows only for the entry it matches. */
+static void lane_download_note(void)
+{
+   gfx_thumbnail_results_t *t;
+   size_t rec;
+   unsigned had = failures;
+
+   gfx_thumbnail_results_open("/p/dl.lpl");
+   CHECK(task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/t.nes",
+         "Tetris (USA)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
+         false), "Tetris.png fits Tetris (USA)");
+   CHECK(string_is_equal(find_box("/roms/t.nes", "Tetris (USA)", SYS),
+         "Tetris.png"), "shown at once");
+   CHECK(!task_pl_thumbnail_match_note_download("/p/dl.lpl",
+         "/roms/tetris-tengen.nes", "Tetris (USA) (Tengen) (Unl)", SYS,
+         GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png", false),
+         "Tetris.png never fits the Tengen entry");
+   CHECK(!find_box("/roms/tetris-tengen.nes", "Tetris (USA) (Tengen) (Unl)",
+         SYS), "not shown for it");
+   CHECK(task_pl_thumbnail_match_note_download("/p/dl.lpl",
+         "/roms/Tetris (Japan).nes", "", SYS, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "Tetris.png", false), "no label: the file name fits");
+   CHECK(string_is_equal(find_box("/roms/Tetris (Japan).nes",
+         "Tetris (Japan)", SYS), "Tetris.png"),
+         "shown under the menu's label, the file name");
+   CHECK(!task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/e.nes",
+         "Tetris (Europe)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.jpg",
+         false), "no JPEG while non-PNG is off");
+   CHECK(!find_box("/roms/e.nes", "Tetris (Europe)", SYS),
+         "the JPEG is not shown");
+   CHECK(task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/e.nes",
+         "Tetris (Europe)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.jpg",
+         true), "a JPEG while non-PNG is on");
+   CHECK(!task_pl_thumbnail_match_note_download("/p/none.lpl", "/roms/u.nes",
+         "Tetris (USA)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
+         false), "a playlist not open notes nothing");
+
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/roms/j.nes", "Tetris (Japan)", "",
+         SYS);
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "Tetris (Japan) (Rev 1).png");
+   rec = gfx_thumbnail_results_add(t, "/roms/usa.nes", "Tetris (USA)", "",
+         SYS);
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "Tetris (USA).jpg");
+   gfx_thumbnail_results_sort(t);
+   CHECK(gfx_thumbnail_results_install("/p/dl.lpl", t, NULL, true),
+         "install the folder match");
+   CHECK(!task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/usa.nes",
+         "Tetris (USA)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
+         true), "no note over a JPEG match while non-PNG is on");
+   CHECK(task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/usa.nes",
+         "Tetris (USA)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
+         false), "a JPEG match the menu hides does not block a PNG");
+   CHECK(string_is_equal(find_box("/roms/usa.nes", "Tetris (USA)", SYS),
+         "Tetris.png"), "the PNG is shown");
+   CHECK(!task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/j.nes",
+         "Tetris (Japan)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
+         false), "no note over the folder match");
+   CHECK(string_is_equal(find_box("/roms/j.nes", "Tetris (Japan)", SYS),
+         "Tetris (Japan) (Rev 1).png"), "the folder match still shows");
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] download note\n");
+}
+
+/* A note shows unless its own playlist's current table names a file
+ * the menu shows for that entry. */
+static void lane_note_cover(void)
+{
+   gfx_thumbnail_results_t *t;
+   size_t rec;
+   unsigned had = failures;
+
+   fixture_init();
+   art("Named_Boxarts", "Super Mario Bros. (World).png", false);
+   write_text(cache_path, "{\"version\": \"1\", \"items\": [{\"path\": "
+         "\"/roms/smb.nes\", \"label\": \"super mario bros\", "
+         "\"crc32\": \"00000000|crc\", \"system\": \"" SYS "\", "
+         "\"Named_Boxarts\": \"Hand Edited.png\"}]}");
+   task_queue_init(false, NULL);
+   push("");
+   CHECK(gfx_thumbnail_results_note(pl_path, fx_entries[1].path,
+         fx_entries[1].label, SYS, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "Mario.png"), "a note before the load lands");
+   while (queue_busy() && string_is_equal(box(1), "Mario.png"))
+      task_queue_check();
+   CHECK(string_is_equal(box(1), "Hand Edited.png") && queue_busy(),
+         "the loaded table's pick outranks the note: %s", box(1));
+   run(0);
+   CHECK(string_is_equal(box(1), "Mario.png"),
+         "the resolve names nothing for it: the note shows again: %s",
+         box(1));
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   art("Named_Boxarts", "Super Mario Bros. (World).png", true);
+
+   gfx_thumbnail_results_open("/p/own.lpl");
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/r/e.nes", "E", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "E (USA).jpg");
+   gfx_thumbnail_results_sort(t);
+   gfx_thumbnail_results_install("/p/own.lpl", t, NULL, false);
+   CHECK(gfx_thumbnail_results_note("/p/own.lpl", "/r/e.nes", "E", "Sys",
+         GFX_THUMBNAIL_RESULT_BOXARTS, "E.png"), "note");
+   CHECK(string_is_equal(find_box("/r/e.nes", "E", "Sys"), "E.png"),
+         "a JPEG the menu hides leaves the note shown");
+   CHECK(string_is_equal(gfx_thumbnail_results_lookup("/r/e.nes", "E", "Sys",
+         GFX_THUMBNAIL_RESULT_BOXARTS, true), "E (USA).jpg"),
+         "a JPEG the menu shows outranks it");
+   gfx_thumbnail_results_open("/p/other.lpl");
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/r/e.nes", "E", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "E (Other).png");
+   gfx_thumbnail_results_sort(t);
+   gfx_thumbnail_results_install("/p/other.lpl", t, NULL, false);
+   CHECK(string_is_equal(find_box("/r/e.nes", "E", "Sys"), "E.png"),
+         "another playlist's table leaves it shown");
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] note cover\n");
+}
+
+/* A kept table's name the menu hides answers no lookup. */
+static void lane_hidden_table(void)
+{
+   gfx_thumbnail_results_t *t;
+   size_t rec;
+   unsigned had = failures;
+
+   gfx_thumbnail_results_open("/p/history.lpl");
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/r/e.nes", "E", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "E (Europe).jpg");
+   gfx_thumbnail_results_sort(t);
+   gfx_thumbnail_results_install("/p/history.lpl", t, NULL, true);
+   gfx_thumbnail_results_open("/p/coll.lpl");
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/r/e.nes", "E", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "E (USA).png");
+   gfx_thumbnail_results_sort(t);
+   gfx_thumbnail_results_install("/p/coll.lpl", t, NULL, true);
+   CHECK(gfx_thumbnail_results_note("/p/coll.lpl", "/r/e.nes", "E", "Sys",
+         GFX_THUMBNAIL_RESULT_BOXARTS, "E.png"), "a note its table covers");
+   CHECK(string_is_equal(find_box("/r/e.nes", "E", "Sys"), "E (USA).png"),
+         "history's hidden JPEG does not answer: %s",
+         find_box("/r/e.nes", "E", "Sys"));
+   CHECK(string_is_equal(gfx_thumbnail_results_lookup("/r/e.nes", "E", "Sys",
+         GFX_THUMBNAIL_RESULT_BOXARTS, true), "E (Europe).jpg"),
+         "it answers while non-PNG is on");
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] hidden table name\n");
+}
+
 /* Quitting cancels every task; a write cut short leaves no file. */
 static void lane_cancel_write(void)
 {
@@ -1821,6 +1990,609 @@ static void lane_refresh(void)
       fprintf(stderr, "[pass] refresh\n");
 }
 
+/* Download notes the resolve did not list */
+#define NOTE_E "Tetris (Tengen).png"
+#define NOTE_F "Metroid (Proto).png"
+#define NOTE_E2 "Tetris (Rev 1).png"
+
+static bool push_other(unsigned i)
+{
+   char path[128];
+   playlist_config_t config;
+   memset(&config, 0, sizeof(config));
+   config.capacity = 8192;
+   snprintf(path, sizeof(path), FIX "/out%u.lpl", i);
+   playlist_config_set_path(&config, path);
+   return task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false);
+}
+
+/* Four other playlists' pushes push Test.lpl out of the store */
+static void push_out(void)
+{
+   unsigned i;
+   for (i = 1; i <= 4; i++)
+      push_other(i);
+}
+
+/* Four other playlists opened without a push, so nothing is saved */
+static void open_others(void)
+{
+   gfx_thumbnail_results_open(FIX "/e1.lpl");
+   gfx_thumbnail_results_open(FIX "/e2.lpl");
+   gfx_thumbnail_results_open(FIX "/e3.lpl");
+   gfx_thumbnail_results_open(FIX "/e4.lpl");
+}
+
+static bool note(size_t i, const char *name)
+{
+   return gfx_thumbnail_results_note(pl_path, fx_entries[i].path,
+         fx_entries[i].label, SYS, GFX_THUMBNAIL_RESULT_BOXARTS, name);
+}
+
+static bool own_finder(retro_task_t *task, void *userdata)
+{
+   pl_thumb_match_t *m = (pl_thumb_match_t*)task->state;
+   if (     task->handler != task_pl_thumbnail_match_handler || !m
+         || !string_is_equal(m->playlist_config.path, pl_path))
+      return false;
+   *(int*)userdata = m->flags;
+   return true;
+}
+
+/* Unthreaded only: the flags of Test.lpl's task, else -1 */
+static int own_task(void)
+{
+   task_finder_data_t find_data;
+   int flags          = -1;
+   find_data.func     = own_finder;
+   find_data.userdata = &flags;
+   task_queue_find(&find_data);
+   return flags;
+}
+
+static bool own_save(void)
+{
+   int flags = own_task();
+   return flags >= 0 && (flags & PL_THUMB_MATCH_FLAG_SAVE);
+}
+
+/* Steps Test.lpl's save until it opens its temporary file */
+static bool save_writing(void)
+{
+   clock_step = ONE_ITEM;
+   while (!path_is_valid(cache_tmp) && queue_busy())
+      task_queue_check();
+   return path_is_valid(cache_tmp) && own_save();
+}
+
+static bool cache_has(const char *a, const char *b)
+{
+   char *cache = read_cache();
+   bool has    = cache && strstr(cache, a) && (!b || strstr(cache, b));
+   free(cache);
+   return has;
+}
+
+/* A note outlives its playlist's push-out: the cache holds it. */
+static void lane_save(void)
+{
+   int flags;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   CHECK(!box(3), "the resolve names nothing for the Tengen entry");
+   CHECK(note(1, "Mario.png"), "a note its table covers");
+   CHECK(note(3, NOTE_E), "note");
+   push_out();
+   run(0);
+   CHECK(cache_has(NOTE_E, "Super Mario Bros. (World).png"),
+         "pushed out: the cache holds the note and the table");
+   {
+      char *cache = read_cache();
+      const char *smb = cache ? strstr(cache, "/roms/smb.nes") : NULL;
+      CHECK(smb && !strstr(smb + 1, "/roms/smb.nes"),
+            "no record for the covered note");
+      free(cache);
+   }
+   cache_reads = 0;
+   CHECK(push(""), "reopen");
+   flags = own_task();
+   CHECK(flags >= 0 && !(flags & (PL_THUMB_MATCH_FLAG_RESOLVE
+                               | PL_THUMB_MATCH_FLAG_THEN_RESOLVE
+                               | PL_THUMB_MATCH_FLAG_SAVE)),
+         "the reopen only loads");
+   run(0);
+   CHECK(cache_reads == 1 && string_is_equal(box(3), NOTE_E)
+      && string_is_equal(box(1), "Super Mario Bros. (World).png"),
+         "loaded: the note shows: %s", box(3));
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] save\n");
+}
+
+/* A note made after the resolve listed the folder outlives its write. */
+static void lane_save_stale(void)
+{
+   pl_thumb_match_t *m;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   clock_step = ONE_ITEM;
+   while (     queue_busy()
+         && (!(m = resolve_state()) || m->status <= PL_THUMB_MATCH_LIST))
+      task_queue_check();
+   CHECK(resolve_state() && note(3, NOTE_E),
+         "a note once the resolve listed the folder");
+   run(0);
+   CHECK(string_is_equal(box(3), NOTE_E),
+         "the resolve names nothing for it: the note shows");
+   CHECK(!cache_has(NOTE_E, NULL), "the resolve's write lacks it");
+   push_out();
+   run(0);
+   push("");
+   run(0);
+   CHECK(string_is_equal(box(3), NOTE_E), "pushed out, reopened: %s",
+         box(3));
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] save after a stale listing\n");
+}
+
+/* Reopened while its save writes: the save hands its table back. */
+static void lane_save_reopen(void)
+{
+   playlist_config_t config;
+   unsigned had = failures;
+
+   fixture_init();
+   memset(&config, 0, sizeof(config));
+   config.capacity = 8192;
+   playlist_config_set_path(&config, pl_path);
+   CHECK(playlist_init_cached(&config), "the menu shows the playlist");
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   note(3, NOTE_E);
+   push_out();
+   CHECK(save_writing(), "the save is writing");
+   refreshed   = 0;
+   notified    = 0;
+   cache_reads = 0;
+   CHECK(!push(""), "a reopen during its save queues nothing");
+   run(ONE_ITEM);
+   CHECK(string_is_equal(box(3), NOTE_E)
+      && string_is_equal(box(1), "Super Mario Bros. (World).png"),
+         "table and note come back: %s", box(3));
+   CHECK(!cache_reads, "the cache is not read back");
+   CHECK(refreshed == 1 && notified == 1,
+         "the menu and companion reload its art: %u, %u", refreshed,
+         notified);
+   playlist_free_cached();
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] reopen during its save\n");
+}
+
+/* Reopened while its notes wait for its resolve */
+static void lane_save_parked(void)
+{
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   while (!resolve_queued() && queue_busy())
+      task_queue_check();
+   CHECK(note(3, NOTE_E), "a note while it resolves");
+   push_out();
+   CHECK(own_task() >= 0 && !own_save(), "no save while its resolve runs");
+   CHECK(!push(""), "a reopen queues nothing");
+   CHECK(string_is_equal(box(3), NOTE_E), "the note shows at once: %s",
+         box(3));
+   run(0);
+   CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png")
+      && string_is_equal(box(3), NOTE_E),
+         "the resolve installs; the note still shows: %s", box(3));
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] reopen while parked\n");
+}
+
+/* Pushed out again during its save, with new notes; one replaces E's */
+static void lane_save_twice(void)
+{
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   note(3, NOTE_E);
+   push_out();
+   CHECK(save_writing(), "the first save is writing");
+   push("");
+   CHECK(note(4, NOTE_F), "a new note during the save");
+   CHECK(note(3, NOTE_E2), "E noted again during the save");
+   push_out();
+   run(ONE_ITEM);
+   CHECK(cache_has(NOTE_E2, NOTE_F), "the cache ends with both notes");
+   CHECK(!cache_has(NOTE_E, NULL), "the newer note for E wins");
+   push("");
+   run(0);
+   CHECK(string_is_equal(box(3), NOTE_E2) && string_is_equal(box(4), NOTE_F),
+         "both shown after a reopen: %s, %s", box(3), box(4));
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] pushed out twice\n");
+}
+
+static void lane_save_forget(void)
+{
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   note(3, NOTE_E);
+   push_out();
+   CHECK(save_writing(), "the save is writing");
+   filestream_delete(pl_path);
+   gfx_thumbnail_results_forget(pl_path);
+   run(ONE_ITEM);
+   CHECK(!path_is_valid(cache_path) && !path_is_valid(cache_tmp),
+         "forgotten during its save: no cache, no temporary file");
+   gfx_thumbnail_results_deinit();
+
+   fixture_init();
+   gfx_thumbnail_results_open(pl_path);
+   gfx_thumbnail_results_install(pl_path, gfx_thumbnail_results_new(), NULL,
+         true);
+   note(3, NOTE_E);
+   open_others();
+   gfx_thumbnail_results_forget(pl_path);
+   push_out();
+   run(0);
+   CHECK(!cache_writes && !path_is_valid(cache_path),
+         "forgotten while parked: nothing written");
+   CHECK(gfx_thumbnail_results_open(pl_path)
+         == (GFX_THUMBNAIL_RESULTS_LOAD | GFX_THUMBNAIL_RESULTS_RESOLVE)
+      && !box(3), "nor brought back by a reopen");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] forget a save\n");
+}
+
+/* A parked note follows a rename; a save in flight writes nothing. */
+static void lane_save_rename(void)
+{
+   char moved[256];
+   char moved_cache[256];
+   void *buf    = NULL;
+   int64_t len  = 0;
+   unsigned had = failures;
+
+   fill_pathname_join_special(moved, FIX, "Moved.lpl", sizeof(moved));
+   strlcpy(moved_cache, moved, sizeof(moved_cache));
+   strlcat(moved_cache, ".thumbs", sizeof(moved_cache));
+   fixture_init();
+   filestream_delete(moved);
+   filestream_delete(moved_cache);
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   note(3, NOTE_E);
+   open_others();
+   filestream_rename(pl_path, moved);
+   gfx_thumbnail_results_rename(pl_path, moved);
+   push_out();
+   run(0);
+   CHECK(     filestream_read_file(moved_cache, &buf, &len)
+         && strstr((const char*)buf, NOTE_E),
+         "a parked note follows the rename");
+   free(buf);
+   CHECK(!path_is_valid(cache_path), "nothing at the old name");
+   gfx_thumbnail_results_deinit();
+
+   fixture_init();
+   filestream_delete(moved);
+   filestream_delete(moved_cache);
+   push("");
+   run(0);
+   note(3, NOTE_E);
+   push_out();
+   CHECK(save_writing(), "the save is writing");
+   filestream_rename(pl_path, moved);
+   gfx_thumbnail_results_rename(pl_path, moved);
+   run(ONE_ITEM);
+   CHECK(!path_is_valid(cache_path) && !path_is_valid(cache_tmp),
+         "the save in flight writes nothing at the old name");
+   CHECK(path_is_valid(moved_cache), "the cache moved");
+   filestream_delete(moved);
+   filestream_delete(moved_cache);
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] rename a save\n");
+}
+
+static void lane_save_none(void)
+{
+   void *before       = NULL;
+   void *after        = NULL;
+   int64_t before_len = 0;
+   int64_t after_len  = 0;
+   unsigned had       = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   filestream_read_file(cache_path, &before, &before_len);
+   cache_writes = 0;
+   push_out();
+   CHECK(own_task() < 0, "no notes: no save");
+   run(0);
+   push("");
+   run(0);
+   CHECK(note(1, "Mario.png"), "a note its table covers");
+   push_out();
+   CHECK(own_save(), "a save for it");
+   run(0);
+   CHECK(!cache_writes, "every note covered: nothing written");
+   filestream_read_file(cache_path, &after, &after_len);
+   CHECK(before && after && before_len == after_len
+      && !memcmp(before, after, (size_t)before_len), "the cache is unchanged");
+   free(before);
+   free(after);
+   gfx_thumbnail_results_deinit();
+
+   /* Its load failed: no table to write the note beside */
+   fixture_init();
+   gfx_thumbnail_results_open(pl_path);
+   note(3, NOTE_E);
+   open_others();
+   push_out();
+   run(0);
+   CHECK(!cache_writes && !path_is_valid(cache_path),
+         "a note without a table: nothing written");
+   CHECK(gfx_thumbnail_results_open(pl_path) && !box(3), "and dropped");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] nothing to save\n");
+}
+
+/* The note goes first, so after a load it still outranks a JPEG the
+ * menu hides. */
+static void lane_save_hidden(void)
+{
+   size_t rec;
+   gfx_thumbnail_results_t *t = gfx_thumbnail_results_new();
+   unsigned had               = failures;
+
+   rec = gfx_thumbnail_results_add(t, fx_entries[3].path,
+         fx_entries[3].label, "", SYS);
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "Tengen.jpg");
+   gfx_thumbnail_results_sort(t);
+   fixture_init();
+   task_queue_init(false, NULL);
+   gfx_thumbnail_results_open(pl_path);
+   gfx_thumbnail_results_install(pl_path, t, NULL, true);
+   CHECK(note(3, "Tengen.png") && string_is_equal(box(3), "Tengen.png"),
+         "the note shows over the hidden JPEG");
+   push_out();
+   run(0);
+   CHECK(push(""), "reopen");
+   run(0);
+   CHECK(string_is_equal(box(3), "Tengen.png"), "loaded: still the note: %s",
+         box(3));
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] save over a hidden name\n");
+}
+
+/* A push the queue already has still saves the playlist it pushed out */
+static void lane_save_dedup(void)
+{
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   note(3, NOTE_E);
+   CHECK(push_other(1), "out1 queued");
+   gfx_thumbnail_results_open(FIX "/e1.lpl");
+   gfx_thumbnail_results_open(FIX "/e2.lpl");
+   gfx_thumbnail_results_open(pl_path);
+   gfx_thumbnail_results_open(FIX "/e3.lpl"); /* pushes out1 out */
+   gfx_thumbnail_results_open(FIX "/e1.lpl");
+   gfx_thumbnail_results_open(FIX "/e2.lpl");
+   CHECK(!push_other(1) && own_save(),
+         "out1's push pushed Test.lpl out, queued nothing, saved it");
+   run(0);
+   CHECK(cache_has(NOTE_E, NULL), "written");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] save on a deduplicated push\n");
+}
+
+/* A load's own callback saves the notes parked while it ran: the
+ * threaded queue still finds the task during its callback. */
+static void lane_save_own_callback(void)
+{
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(true, NULL);
+   push("");
+   CHECK(note(3, NOTE_E), "a note before the load lands");
+   open_others();
+   run(0);
+   CHECK(cache_has(NOTE_E, NULL), "the load's callback saved it");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] save from the load's own callback\n");
+}
+
+static void lane_save_deinit(void)
+{
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   gfx_thumbnail_results_open(pl_path);
+   gfx_thumbnail_results_install(pl_path, gfx_thumbnail_results_new(), NULL,
+         true);
+   note(3, NOTE_E);
+   open_others();
+   CHECK(gfx_thumbnail_results_note(FIX "/e4.lpl", "/r/a.nes", "A", "Sys",
+         GFX_THUMBNAIL_RESULT_BOXARTS, "A.png"), "a dirty slot");
+   gfx_thumbnail_results_deinit();
+   CHECK(!queue_busy(), "deinit queues nothing");
+   CHECK(gfx_thumbnail_results_open(pl_path)
+         == (GFX_THUMBNAIL_RESULTS_LOAD | GFX_THUMBNAIL_RESULTS_RESOLVE)
+      && !box(3), "its notes are gone");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] deinit drops notes\n");
+}
+
+static bool dummy_done;
+
+static void dummy_handler(retro_task_t *task)
+{
+   if (dummy_done)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Queued ahead of Test.lpl's task: a retire budget of one retires it
+ * and leaves Test.lpl's finished task waiting for its callback */
+static void push_dummy(void)
+{
+   retro_task_t *task = task_init();
+   dummy_done         = false;
+   task->handler      = dummy_handler;
+   task_queue_push(task);
+}
+
+static bool done_finder(retro_task_t *task, void *userdata)
+{
+   pl_thumb_match_t *m = (pl_thumb_match_t*)task->state;
+   return      task->handler == task_pl_thumbnail_match_handler && m
+            && m->status == PL_THUMB_MATCH_DONE
+            && string_is_equal(m->playlist_config.path, pl_path);
+}
+
+/* Unthreaded only: Test.lpl's task finished, its callback still to run */
+static bool own_done(void)
+{
+   task_finder_data_t find_data;
+   find_data.func     = done_finder;
+   find_data.userdata = NULL;
+   return task_queue_find(&find_data);
+}
+
+/* Unthreaded: a finished task whose callback has not run keeps its
+ * playlist busy, so no save goes ahead of that callback. */
+static void lane_save_finished(void)
+{
+   pl_thumb_match_t *m;
+   unsigned had = failures;
+
+   /* Parked with the load's table while the resolve finishes */
+   fixture_init();
+   task_queue_init(false, NULL);
+   push_dummy();
+   push("");
+   clock_step = ONE_ITEM;
+   while (!resolve_queued() && queue_busy())
+      task_queue_check();
+   CHECK(note(3, NOTE_E), "a note while it resolves");
+   open_others();
+   while (     (m = resolve_state())
+         && !(m->status == PL_THUMB_MATCH_WRITE && m->file
+            && m->buf_pos >= m->buf_len))
+      task_queue_check();
+   task_queue_set_budget(0, 1, 0);
+   dummy_done = true;
+   task_queue_check();
+   CHECK(own_done(), "the resolve finished, its callback still to run");
+   push_other(5);
+   task_queue_set_budget(0, 0, 0);
+   run(0);
+   CHECK(cache_has("Super Mario Bros. (World).png", NULL),
+         "the resolve's table stays in the cache");
+   CHECK(cache_has(NOTE_E, NULL), "the note is in the cache");
+   push("");
+   run(0);
+   CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png"),
+         "reopened, the resolve's pick shows: %s", box(1));
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+
+   /* Parked before its load landed, the load finished */
+   fixture_init();
+   task_queue_init(false, NULL);
+   push_dummy();
+   push("");
+   CHECK(note(3, NOTE_E), "a note while it loads");
+   open_others();
+   clock_step = ONE_ITEM;
+   task_queue_set_budget(0, 1, 0);
+   dummy_done = true;
+   task_queue_check();
+   CHECK(own_done(), "the load finished, its callback still to run");
+   push_other(5);
+   task_queue_set_budget(0, 0, 0);
+   run(0);
+   CHECK(cache_has(NOTE_E, NULL), "the note reaches the cache");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] a finished task holds the save\n");
+}
+
+/* The quit's cancel: the callback queues no save. */
+static void lane_save_quit(void)
+{
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   while (!resolve_queued() && queue_busy())
+      task_queue_check();
+   CHECK(note(3, NOTE_E), "a note while it resolves");
+   open_others();
+   CHECK(own_task() >= 0 && !own_save(), "parked while its resolve runs");
+   task_queue_reset();
+   run(0);
+   CHECK(!path_is_valid(cache_path) && !path_is_valid(cache_tmp),
+         "the cancelled resolve queued no save");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] no save at quit\n");
+}
+
 /* An engine out of memory keeps the cache and the loaded matches. */
 static void lane_engine_oom(void)
 {
@@ -1964,6 +2736,11 @@ static const void *last_t1;
 static size_t last_index_moved;
 static size_t last_results_moved;
 static size_t last_t1_moved;
+static unsigned save_items;
+static unsigned save_sorting;
+static size_t most_save_recs;
+static const void *last_save;
+static size_t last_save_pos;
 
 /* Moves since the last item, for a sort that may be new or restarted */
 static size_t sort_delta(const void *owner, const gfx_thumbnail_match_sort_t *s,
@@ -1990,9 +2767,12 @@ static void measure_item(retro_task_t *task, retro_time_t took)
    /* The want and hit sorts share m->sort */
    t1_moves    = sort_delta(m->sort.base, &m->sort, &last_t1,
          &last_t1_moved);
-   moves       = index_moves + t1_moves + sort_delta(m->results,
-         m->results ? &m->results->sort : NULL,
-         &last_results, &last_results_moved);
+   moves       = index_moves + t1_moves;
+   /* A save's table was sorted before it was handed over */
+   if (!(m->flags & PL_THUMB_MATCH_FLAG_SAVE))
+      moves   += sort_delta(m->results,
+            m->results ? &m->results->sort : NULL,
+            &last_results, &last_results_moved);
    if (index_moves)
       index_items++;
    if (t1_moves)
@@ -2008,6 +2788,18 @@ static void measure_item(retro_task_t *task, retro_time_t took)
    all_reads += read_item;
    crc_item   = 0;
    read_item  = 0;
+   if (m->flags & PL_THUMB_MATCH_FLAG_SAVE)
+   {
+      if (m != last_save)
+         last_save_pos = 0;
+      if (m->pos - last_save_pos > most_save_recs)
+         most_save_recs = m->pos - last_save_pos;
+      last_save     = m;
+      last_save_pos = m->pos;
+      save_items++;
+      if (m->results && (m->results->scratch || !m->results->sorted))
+         save_sorting++;
+   }
    if (!(m->flags & PL_THUMB_MATCH_FLAG_RESOLVE))
       return;
    if (m->status > PL_THUMB_MATCH_RESOLVE && m->playlist)
@@ -2108,6 +2900,29 @@ static void lane_bounded(void)
    run(ONE_ITEM);
    CHECK(string_is_equal(find_box("/roms/s04242.nes", "Synth 04242 (U)",
          BIG_SYS), "Synth 04242 (USA).png"), "the big playlist resolves");
+   /* A note on it, written when it is pushed out */
+   save_items     = 0;
+   save_sorting   = 0;
+   most_save_recs = 0;
+   last_save      = NULL;
+   CHECK(gfx_thumbnail_results_note(big_pl, "/roms/s00001.nes",
+         "Synth 00001 (U)", BIG_SYS, GFX_THUMBNAIL_RESULT_SNAPS,
+         "Big Note.png"), "a note on the big playlist");
+   push_out();
+   run(ONE_ITEM);
+   {
+      void *buf   = NULL;
+      int64_t len = 0;
+      CHECK(     filestream_read_file(big_cache, &buf, &len)
+            && strstr((const char*)buf, "Big Note.png")
+            && strstr((const char*)buf, "Synth 04242 (USA).png"),
+            "the big cache holds the note and the table");
+      free(buf);
+   }
+   CHECK(save_items > BIG_ENTRIES && most_save_recs <= 1 && !save_sorting,
+         "the save serialized a record an item, sorting nothing: %u items, "
+         "at most %u, %u sorting", save_items, (unsigned)most_save_recs,
+         save_sorting);
    CHECK(most_moves <= GFX_THUMBNAIL_MATCH_SORT_STEP,
          "one item moved %u records", (unsigned)most_moves);
    CHECK(most_sum <= PL_THUMB_MATCH_CHUNK, "one item summed %u bytes",
@@ -2166,7 +2981,24 @@ int main(void)
    lane_history();
    lane_pacing();
    lane_t1();
+   lane_download_note();
+   lane_note_cover();
+   lane_hidden_table();
    lane_refresh();
+   lane_save();
+   lane_save_stale();
+   lane_save_reopen();
+   lane_save_parked();
+   lane_save_twice();
+   lane_save_forget();
+   lane_save_rename();
+   lane_save_none();
+   lane_save_hidden();
+   lane_save_dedup();
+   lane_save_own_callback();
+   lane_save_deinit();
+   lane_save_finished();
+   lane_save_quit();
    lane_engine_oom();
    lane_add_oom();
    lane_bounded();
