@@ -39,7 +39,9 @@ enum
    kAudioFormatFlagsNativeEndian = 0,
    kMPEG4Object_AAC_LC = 2, kAudioConverterPrimeInfo = 10,
    kAudioConverterCurrentOutputStreamDescription,
-   kAudioConverterEncodeBitRate, kAudioConverterPropertyMaximumOutputPacketSize
+   kAudioConverterEncodeBitRate, kAudioConverterPropertyMaximumOutputPacketSize,
+   kAudioConverterSampleRateConverterQuality, kAudioConverterPrimeMethod,
+   kAudioConverterQuality_Max, kConverterPrimeMethod_Normal
 };
 OSStatus AudioConverterNew(const AudioStreamBasicDescription*,
       const AudioStreamBasicDescription*, AudioConverterRef*);

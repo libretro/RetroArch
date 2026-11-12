@@ -25,6 +25,8 @@ record_at_audio_t *record_at_audio_new(unsigned rate, unsigned channels, unsigne
 /* Repeats a writable loan until submit. Two fixed buffers protect PCM still
  * held by the native converter until its next input callback. */
 int record_at_audio_input(record_at_audio_t *encoder, int16_t **samples, size_t *frames);
+/* Return an unsubmitted writable loan, including an empty SRC drain. */
+bool record_at_audio_input_release(record_at_audio_t *encoder);
 /* Contiguous source-frame indices; invalid arguments preserve the loan. */
 int record_at_audio_submit(record_at_audio_t *encoder, size_t frames, uint64_t index);
 /* Raw AAC loan repeats until release. Timestamp is in source frames and

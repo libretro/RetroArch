@@ -140,6 +140,11 @@ int main(void)
    assert(!record_at_audio_new(48000, 6, 128000));
    assert(!record_at_audio_new(48000, 2, 64000));
    e = record_at_audio_new(44100, 1, 96000);
+   assert(e && !record_at_audio_input_release(e));
+   assert(record_at_audio_input(e, &first, &frames) == RECORD_AT_AUDIO_PROGRESS);
+   assert(record_at_audio_finish(e) == RECORD_AT_AUDIO_BUSY);
+   assert(record_at_audio_input_release(e));
+   assert(!record_at_audio_input_release(e));
    assert(e && record_at_audio_finish(e) == RECORD_AT_AUDIO_PROGRESS);
    assert(record_at_audio_pump(e, &packet) == RECORD_AT_AUDIO_END);
    assert(record_at_audio_free(e) && !live);
@@ -151,6 +156,7 @@ int main(void)
    assert(record_at_audio_submit(e, 1025, 0) == RECORD_AT_AUDIO_ERROR);
    fill(first, frames, 2, 1234);
    assert(record_at_audio_submit(e, 1024, 0) == RECORD_AT_AUDIO_PROGRESS);
+   assert(!record_at_audio_input_release(e));
    assert(record_at_audio_pump(e, &packet) == RECORD_AT_AUDIO_PACKET && packet.timestamp == -2112);
    before = calls;
    assert(record_at_audio_pump(e, &again) == RECORD_AT_AUDIO_PACKET && calls == before);

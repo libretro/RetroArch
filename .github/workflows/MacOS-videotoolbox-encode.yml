@@ -28,6 +28,7 @@ on:
       - 'libretro-common/include/formats/video_color.h'
       - 'record/record_audio_queue.*'
       - 'record/record_at_audio.*'
+      - 'record/record_at_resample.*'
       - 'samples/record/audiotoolbox_audio/**'
       - 'record/record_avfoundation_worker*'
       - 'record/record_avfoundation_session*'
@@ -64,6 +65,7 @@ on:
       - 'libretro-common/include/formats/video_color.h'
       - 'record/record_audio_queue.*'
       - 'record/record_at_audio.*'
+      - 'record/record_at_resample.*'
       - 'samples/record/audiotoolbox_audio/**'
       - 'record/record_avfoundation_worker*'
       - 'record/record_avfoundation_session*'
@@ -120,6 +122,17 @@ jobs:
         with:
           name: audiotoolbox-aac-evidence
           path: ${{ runner.temp }}/audiotoolbox-aac-evidence
+          if-no-files-found: ignore
+      - name: Native source-rate conversion and independent AAC timing
+        env:
+          AUDIO_TOOLBOX_SRC_ARTIFACT_DIR: ${{ runner.temp }}/audiotoolbox-src-evidence
+        run: make -C samples/record/audiotoolbox_audio native-src-check
+      - name: Save AudioToolbox SRC acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audiotoolbox-src-evidence
+          path: ${{ runner.temp }}/audiotoolbox-src-evidence
           if-no-files-found: ignore
   encode:
     if: ${{ !inputs.native_aac_only }}
