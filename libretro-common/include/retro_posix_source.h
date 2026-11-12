@@ -60,6 +60,15 @@
 #define _DEFAULT_SOURCE 1
 #endif
 
+/* glibc before 2.19 knows only these spellings (webOS ships 2.12);
+ * later ones accept them silently next to _DEFAULT_SOURCE. */
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE 1
+#endif
+#ifndef _SVID_SOURCE
+#define _SVID_SOURCE 1
+#endif
+
 #endif
 
 #endif

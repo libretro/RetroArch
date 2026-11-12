@@ -101,6 +101,12 @@ jobs:
           tar xzf /tmp/webos-deps/cscd98_buildroot-nc4/aarch64-webos-linux-gnu_sdk-buildroot-x86_64.tar.gz
           ./aarch64-webos-linux-gnu_sdk-buildroot/relocate-sdk.sh
 
+      - name: libretro-common feature macros on the SDK's glibc 2.12
+        shell: bash
+        run: |
+          . /tmp/arm-webos-linux-gnueabi_sdk-buildroot/environment-setup
+          sh .github/workflows/scripts/posix-source-check.sh
+
       - name: Load RARCH_VERSION from version.all
         id: version
         shell: bash
