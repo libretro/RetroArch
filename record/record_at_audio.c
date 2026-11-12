@@ -106,7 +106,7 @@ record_at_audio_t *record_at_audio_new(unsigned rate, unsigned channels, unsigne
    input.mChannelsPerFrame = output.mChannelsPerFrame = channels;
    input.mBitsPerChannel = 16;
    output.mFormatID = kAudioFormatMPEG4AAC;
-   output.mFormatFlags = kMPEG4Object_AAC_LC;
+   /* AAC-LC is the format ID; its format flags are zero. */
    output.mFramesPerPacket = AT_FRAMES;
    status = AudioConverterNew(&input, &output, &e->converter);
    if (status || !e->converter)
@@ -116,7 +116,7 @@ record_at_audio_t *record_at_audio_new(unsigned rate, unsigned channels, unsigne
          kAudioConverterCurrentOutputStreamDescription, &size, &actual);
    if (status || size != sizeof(actual) || actual.mSampleRate != rate
          || actual.mChannelsPerFrame != channels || actual.mFormatID != kAudioFormatMPEG4AAC
-         || actual.mFormatFlags != kMPEG4Object_AAC_LC || actual.mFramesPerPacket != AT_FRAMES)
+         || actual.mFormatFlags || actual.mFramesPerPacket != AT_FRAMES)
       goto failed;
    size = bitrate;
    if (AudioConverterSetProperty(e->converter, kAudioConverterEncodeBitRate, sizeof(size), &size))

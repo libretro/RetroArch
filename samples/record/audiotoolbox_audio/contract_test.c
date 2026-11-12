@@ -14,16 +14,18 @@ struct mock_converter
    int16_t value;
    bool tail;
 };
-static unsigned live, calls;
+static unsigned live, calls, format_fault;
 static bool bad_size, reset_fail, short_stream;
 OSStatus AudioConverterNew(const AudioStreamBasicDescription *in,
       const AudioStreamBasicDescription *out, AudioConverterRef *converter)
 {
    assert(in->mSampleRate == out->mSampleRate && in->mFramesPerPacket == 1);
    assert(in->mBytesPerFrame == in->mChannelsPerFrame * 2);
+   assert(out->mFormatID == kAudioFormatMPEG4AAC && !out->mFormatFlags);
    *converter = (AudioConverterRef)calloc(1, sizeof(**converter));
    assert(*converter);
    (*converter)->format = *out;
+   (*converter)->format.mFormatFlags = 0;
    live++;
    return 0;
 }
@@ -31,8 +33,15 @@ OSStatus AudioConverterGetProperty(AudioConverterRef c, UInt32 key, UInt32 *size
 {
    if (key == kAudioConverterCurrentOutputStreamDescription)
    {
+      AudioStreamBasicDescription *actual=(AudioStreamBasicDescription*)data;
       assert(*size == sizeof(c->format));
       memcpy(data, &c->format, *size);
+      if(format_fault==1) actual->mFormatFlags=kMPEG4Object_AAC_LC;
+      if(format_fault==2) actual->mFramesPerPacket=2048;
+      if(format_fault==3) actual->mFormatID=kAudioFormatLinearPCM;
+      if(format_fault==4) actual->mSampleRate=32000;
+      if(format_fault==5) actual->mChannelsPerFrame=6;
+      if(format_fault==6) (*size)--;
    }
    else if (key == kAudioConverterPropertyMaximumOutputPacketSize)
    {
@@ -124,6 +133,9 @@ int main(void)
    const void *asc;
    unsigned leading, trailing, before;
    uint64_t total;
+   for(format_fault=1;format_fault<=6;format_fault++)
+      assert(!record_at_audio_new(44100,1,96000) && !live);
+   format_fault=0;
    assert(!record_at_audio_new(32000, 2, 128000));
    assert(!record_at_audio_new(48000, 6, 128000));
    assert(!record_at_audio_new(48000, 2, 64000));
