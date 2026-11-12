@@ -1,6 +1,6 @@
 include ../../sample_objdir.mk
 
-TARGET := config_file_test
+TARGET := config_file_test$(EXE)
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -27,6 +27,12 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 # lets the suite reach config_file.c's zero-allocation sort fallback
 # without having to make malloc() fail.  Test builds only.
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -DCONFIG_FILE_TEST_HOOKS -I$(LIBRETRO_COMM_DIR)/include
+ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
+FRAME_CHECK_FLAGS := -Werror=frame-larger-than=
+else
+FRAME_CHECK_FLAGS := -Werror=frame-larger-than=2048
+endif
+config_file_test.o $(call sample_objs,$(LIBRETRO_COMM_DIR)/file/config_file.o): CFLAGS += -Wframe-larger-than=2048 $(FRAME_CHECK_FLAGS)
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -34,6 +40,9 @@ ifneq ($(SANITIZER),)
 endif
 
 all: $(TARGET)
+
+check: all
+	$(RUNNER) ./$(TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -49,4 +58,4 @@ clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: clean
+.PHONY: clean check

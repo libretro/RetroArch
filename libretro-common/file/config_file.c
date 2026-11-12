@@ -832,7 +832,7 @@ static void config_file_get_realpath(char *s, size_t len,
    }
 }
 
-static void config_file_add_sub_conf(config_file_t *conf, char *path,
+static bool config_file_add_sub_conf(config_file_t *conf, char *path,
       char *s, size_t len, config_file_cb_t *cb)
 {
    struct config_include_list *node = (struct config_include_list*)
@@ -841,12 +841,7 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
    if (node)
    {
       node->next        = NULL;
-      /* Add include list */
-      if (!(node->path = strdup(path)))
-      {
-         free(node);
-         goto realpath;
-      }
+      node->path        = path;
 
       /* Order is user-visible - config_file_dump() writes the
        * '#include' lines back in list order - so this appends rather
@@ -859,9 +854,9 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
       conf->includes_tail          = node;
    }
 
-realpath:
    config_file_get_realpath(s, len, path,
          conf->path);
+   return node != NULL;
 }
 
 size_t config_file_add_reference(config_file_t *conf, char *path)
@@ -1128,7 +1123,7 @@ static bool config_file_parse_line(config_file_t *conf,
       if (include_found)
       {
          config_file_t sub_conf;
-         char real_path[PATH_MAX_LENGTH];
+         char *real_path;
          char *include_line = comment + (sizeof("include ")-1);
          if (*include_line == '\0')
             return false;
@@ -1140,8 +1135,14 @@ static bool config_file_parse_line(config_file_t *conf,
             free(path);
             return false;
          }
-         config_file_add_sub_conf(conf, path,
-            real_path, sizeof(real_path), cb);
+         if (!(real_path = (char*)malloc(PATH_MAX_LENGTH)))
+         {
+            free(path);
+            return false;
+         }
+         if (config_file_add_sub_conf(conf, path,
+                  real_path, PATH_MAX_LENGTH, cb))
+            path = NULL; /* The include list owns the parsed path. */
          config_file_initialize(&sub_conf);
          /* Includes are fetched the same way their parent was. */
          sub_conf.io = conf->io;
@@ -1169,6 +1170,7 @@ static bool config_file_parse_line(config_file_t *conf,
           * NULL/transferred, so the call is equally correct
           * there. */
          config_file_deinitialize(&sub_conf);
+         free(real_path);
       }
       /* Starting a line with an 'reference' directive
        * sets the reference path */
