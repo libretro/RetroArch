@@ -85,11 +85,15 @@ on:
         description: 'Run native AudioToolbox AAC acceptance without GPU/frontend jobs'
         type: boolean
         default: false
+      frontend_stream_only:
+        description: 'Run frontend streaming acceptance and both native frontend links'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   stream-native:
-    if: ${{ !inputs.native_aac_only }}
+    if: ${{ !inputs.native_aac_only && !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -148,6 +152,7 @@ jobs:
             ${{ runner.temp }}/vt-metal-dispatch-mrc
           if-no-files-found: ignore
   aac-native:
+    if: ${{ inputs.native_aac_only || !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -179,7 +184,7 @@ jobs:
           path: ${{ runner.temp }}/audiotoolbox-src-evidence
           if-no-files-found: ignore
   encode:
-    if: ${{ !inputs.native_aac_only }}
+    if: ${{ !inputs.native_aac_only && !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -280,7 +285,7 @@ jobs:
           if-no-files-found: warn
 
   frontend-build:
-    if: ${{ !inputs.native_aac_only }}
+    if: ${{ !inputs.native_aac_only && !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 40
     steps:

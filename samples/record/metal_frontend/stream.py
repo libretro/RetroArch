@@ -135,6 +135,16 @@ network_cmd_port = "{command_port}"
                 if child.poll() is None:
                     child.kill()
                 child.wait(timeout=65)
+    verify(args, root, threaded)
+
+
+def verify(args, root, threaded):
+    """Independently recheck saved native output without rerunning the frontend."""
+    received = root / 'received.flv'
+    log_path, runtime_log = root / 'frontend.log', root / 'runtime.log'
+    output_rate = 44100 if args.source_rate == 44100 else 48000
+    config = (root / 'retroarch.cfg').read_text()
+    url = re.search(r'^video_stream_url = "([^"]+)"$', config, re.MULTILINE)[1]
     text = log_path.read_text(errors='replace') + runtime_log.read_text(errors='replace')
     assert f'[fixture] s16 source, mask {4 if args.channels == 1 else 3}' in text
     finalized = re.search(r'Finalized (\d+) GPU frames, (\d+) PCM frames', text)
@@ -161,7 +171,8 @@ network_cmd_port = "{command_port}"
         frame = round((timestamp - pts[0]) * 60000 / 1001)
         assert abs(timestamp - pts[0] - frame * 1001 / 60000) <= .0021, timestamp
     pixels = subprocess.run([args.ffmpeg, '-v', 'error', '-i', str(received), '-map', '0:v:0',
-                             '-vf', 'scale=1:1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'],
+                             '-vf', 'scale=1:1', '-fps_mode', 'passthrough',
+                             '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'],
                             check=True, capture_output=True, timeout=20).stdout
     assert len(pixels) == len(packets) * 3
     colors = ((255, 32, 32), (32, 255, 32), (32, 32, 255), (192, 192, 192))
@@ -204,17 +215,23 @@ network_cmd_port = "{command_port}"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--retroarch', required=True, type=Path)
-    parser.add_argument('--core', required=True, type=Path)
+    parser.add_argument('--retroarch', type=Path)
+    parser.add_argument('--core', type=Path)
     parser.add_argument('--source-rate', type=float, default=48000)
     parser.add_argument('--channels', type=int, choices=[1, 2], default=2)
     parser.add_argument('--video-only', action='store_true')
     parser.add_argument('--ffmpeg', default='ffmpeg')
     parser.add_argument('--ffprobe', default='ffprobe')
-    parser.add_argument('--output-dir', required=True, type=Path)
+    parser.add_argument('--output-dir', type=Path)
+    parser.add_argument('--verify-dir', type=Path, help='Recheck one saved direct/threaded native case')
     parser.add_argument('--codec', choices=['h264', 'hevc'], default='h264')
     args = parser.parse_args()
-    assert sys.platform == 'darwin', 'Native frontend acceptance requires macOS'
     assert math.isfinite(args.source_rate) and 8000 <= args.source_rate <= 192000
-    for threaded in (False, True):
-        check(args, threaded)
+    if args.verify_dir:
+        verify(args, args.verify_dir, args.verify_dir.name == 'threaded')
+    else:
+        assert sys.platform == 'darwin', 'Native frontend acceptance requires macOS'
+        if not args.retroarch or not args.core or not args.output_dir:
+            parser.error('--retroarch, --core and --output-dir are required for native execution')
+        for threaded in (False, True):
+            check(args, threaded)
