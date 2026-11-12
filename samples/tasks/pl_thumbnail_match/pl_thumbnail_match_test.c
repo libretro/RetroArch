@@ -13,9 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* The thumbnail result table, its main-thread store and (from I3 on)
- * the task that fills it from <playlist>.lpl.thumbs and the art folders.
- * Fixtures live in ./fixture, inside this directory. */
+/* The thumbnail result table, its main-thread store and the task that
+ * fills it from <playlist>.lpl.thumbs and the art folders.
+ * Fixtures live in ./fixture, inside this directory. The table, engine
+ * and task sources are included so lanes can see their state. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +29,44 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
-#include "../../../gfx/gfx_thumbnail_results.h"
+#include <encodings/crc32.h>
+#include <features/features_cpu.h>
+#include <formats/rjson.h>
+#include <queues/task_queue.h>
+#include <vfs/vfs_implementation.h>
+
+#include "../../../core_info.h"
+#include "../../../file_path_special.h"
+#include "../../../playlist.h"
+#include "../../../gfx/gfx_thumbnail_results.c"
+#include "../../../tasks/tasks_internal.h"
+
+/* Engine allocations of oom_size bytes fail, to fake running out. */
+static size_t oom_size;
+static unsigned oom_hits;
+static void *oom_malloc(size_t size)
+{
+   if (oom_size && size == oom_size)
+   {
+      oom_hits++;
+      return NULL;
+   }
+   return malloc(size);
+}
+#define malloc oom_malloc
+#include "../../../gfx/gfx_thumbnail_match.c"
+#undef malloc
+
+/* Bytes the task sums in the current work item */
+static size_t crc_item;
+static uint32_t counted_crc32(uint32_t crc, const uint8_t *data, size_t len)
+{
+   crc_item += len;
+   return encoding_crc32(crc, data, len);
+}
+#define encoding_crc32 counted_crc32
+#include "../../../tasks/task_pl_thumbnail_match.c"
+#undef encoding_crc32
 
 #define FIX "fixture"
 
@@ -185,6 +223,194 @@ static void lane_table_edges(void)
       fprintf(stderr, "[pass] table edges\n");
 }
 
+#define STEPPED_RECS (3 * GFX_THUMBNAIL_MATCH_SORT_STEP + 17)
+
+struct stepped_ref
+{
+   gfx_thumb_result_t rec;
+   size_t seq;
+};
+
+static int stepped_ref_cmp(const void *a, const void *b)
+{
+   const struct stepped_ref *x = (const struct stepped_ref*)a;
+   const struct stepped_ref *y = (const struct stepped_ref*)b;
+   int r = gfx_thumb_results_cmp_rec(&x->rec, &y->rec);
+   return r ? r : (x->seq > y->seq) - (x->seq < y->seq);
+}
+
+/* Few keys for many records, so keys repeat; every third has no name. */
+static gfx_thumbnail_results_t *stepped_table(size_t n)
+{
+   gfx_thumbnail_results_t *t = gfx_thumbnail_results_new();
+   size_t i;
+   for (i = 0; t && i < n; i++)
+   {
+      char path[32];
+      char label[16];
+      char name[32];
+      unsigned v = (unsigned)((i * 7919) % 16384);
+      size_t rec;
+      snprintf(path, sizeof(path), "/r/%u.nes", v % 1500);
+      snprintf(label, sizeof(label), "L%u", v % 7);
+      rec = gfx_thumbnail_results_add(t, path, label,
+            (v & 1) ? "" : "00000000|crc", (v & 2) ? "Sys" : "Other");
+      if (rec == (size_t)-1)
+      {
+         gfx_thumbnail_results_free(t);
+         return NULL;
+      }
+      snprintf(name, sizeof(name), "%u-%u.png", v, (unsigned)i);
+      if (v % 3)
+         gfx_thumbnail_results_set(t, rec,
+               v % GFX_THUMBNAIL_RESULT_TYPES, name);
+   }
+   return t;
+}
+
+static bool same_str(const char *a, const char *b)
+{
+   return (!a || !b) ? a == b : string_is_equal(a, b);
+}
+
+/* Stepped equals qsort made stable, and finds the first match in add
+ * order, as an unsorted table's linear find does. */
+static void lane_table_steps(void)
+{
+   static const size_t lens[] = { 0, 1, 2, STEPPED_RECS };
+   unsigned had = failures;
+   size_t n;
+   for (n = 0; n < ARRAY_SIZE(lens); n++)
+   {
+      size_t len                 = lens[n];
+      gfx_thumbnail_results_t *a = stepped_table(len);
+      gfx_thumbnail_results_t *b = stepped_table(len);
+      struct stepped_ref *ref    = (struct stepped_ref*)
+         malloc((len + 1) * sizeof(*ref));
+      size_t i;
+      unsigned type;
+      if (!a || !b || !ref)
+      {
+         CHECK(false, "OOM at %u records", (unsigned)len);
+         gfx_thumbnail_results_free(a);
+         gfx_thumbnail_results_free(b);
+         free(ref);
+         continue;
+      }
+      for (i = 0; i < len; i++)
+      {
+         ref[i].rec = a->recs[i];
+         ref[i].seq = i;
+      }
+      qsort(ref, len, sizeof(*ref), stepped_ref_cmp);
+      while (gfx_thumbnail_results_sort_step(a));
+      CHECK(a->sorted && !b->sorted && !a->scratch
+            && gfx_thumbnail_results_count(a) == len,
+            "sorted at %u records", (unsigned)len);
+      for (i = 0; i < len; i++)
+      {
+         const gfx_thumb_result_t *x = &a->recs[i];
+         bool same                   = true;
+         if (memcmp(x, &ref[i].rec, sizeof(*x)))
+         {
+            CHECK(false, "record %u of %u is not qsort's stable order",
+                  (unsigned)i, (unsigned)len);
+            break;
+         }
+         for (type = 0; type < GFX_THUMBNAIL_RESULT_TYPES; type++)
+            same = same && same_str(gfx_thumbnail_results_find(a,
+                     x->key[0], x->key[1], x->key[3], type),
+                  gfx_thumbnail_results_find(b, x->key[0], x->key[1],
+                     x->key[3], type));
+         if (!same)
+         {
+            CHECK(false, "record %u of %u: not the first match in add order",
+                  (unsigned)i, (unsigned)len);
+            break;
+         }
+      }
+      gfx_thumbnail_results_free(a);
+      gfx_thumbnail_results_free(b);
+      free(ref);
+   }
+   if (failures == had)
+      fprintf(stderr, "[pass] table steps\n");
+}
+
+/* No step moves more than the step size; the table is shut meanwhile. */
+static void lane_table_steps_bounded(void)
+{
+   const char *key[4];
+   const char *names[GFX_THUMBNAIL_RESULT_TYPES];
+   const gfx_thumb_result_t *probe = NULL;
+   unsigned had                    = failures;
+   size_t steps                    = 0;
+   size_t most                     = 0;
+   size_t i;
+   gfx_thumbnail_results_t *t      = stepped_table(STEPPED_RECS);
+
+   key[0] = key[1] = key[2] = NULL;
+   for (i = 0; t && i < t->count && !probe; i++)
+      if (t->recs[i].names[GFX_THUMBNAIL_RESULT_BOXARTS])
+         probe = &t->recs[i];
+   CHECK(probe, "a record with a boxart");
+   if (probe)
+   {
+      key[0] = probe->key[0];
+      key[1] = probe->key[1];
+      key[2] = probe->key[3];
+   }
+   for (;;)
+   {
+      const char *base = t ? t->sort.base : NULL;
+      size_t moved     = t ? t->sort.moved : 0;
+      bool more        = gfx_thumbnail_results_sort_step(t);
+      size_t m;
+      if (!t)
+         break;
+      m = (t->sort.base == base) ? t->sort.moved - moved : t->sort.moved;
+      if (m > most)
+         most = m;
+      if (!more)
+         break;
+      if (!steps++)
+      {
+         const char *got[4];
+         bool cleared = true;
+         for (i = 0; i < 4; i++)
+            got[i] = "stale";
+         for (i = 0; i < GFX_THUMBNAIL_RESULT_TYPES; i++)
+            names[i] = "stale";
+         gfx_thumbnail_results_get(t, 0, got, names);
+         for (i = 0; i < 4; i++)
+            cleared = cleared && !got[i];
+         for (i = 0; i < GFX_THUMBNAIL_RESULT_TYPES; i++)
+            cleared = cleared && !names[i];
+         CHECK(!gfx_thumbnail_results_find(t, key[0], key[1], key[2],
+               GFX_THUMBNAIL_RESULT_BOXARTS)
+            && gfx_thumbnail_results_add(t, "/r/z.nes", "Z", "", "Sys")
+               == (size_t)-1
+            && !gfx_thumbnail_results_set(t, 0,
+               GFX_THUMBNAIL_RESULT_BOXARTS, "z.png")
+            && gfx_thumbnail_results_count(t) == STEPPED_RECS,
+            "the table is shut while it sorts");
+         CHECK(cleared, "a refused get clears its outputs");
+      }
+   }
+   CHECK(most && most <= GFX_THUMBNAIL_MATCH_SORT_STEP,
+         "at most %u moves a step, not %u",
+         (unsigned)GFX_THUMBNAIL_MATCH_SORT_STEP, (unsigned)most);
+   CHECK(steps > STEPPED_RECS / GFX_THUMBNAIL_MATCH_SORT_STEP,
+         "%u steps", (unsigned)steps);
+   CHECK(t && t->sorted && probe && gfx_thumbnail_results_find(t, key[0],
+         key[1], key[2], GFX_THUMBNAIL_RESULT_BOXARTS),
+         "found once sorted");
+   gfx_thumbnail_results_free(t);
+   if (failures == had)
+      fprintf(stderr, "[pass] table steps bounded (%u steps, at most %u "
+            "moves)\n", (unsigned)steps + 1, (unsigned)most);
+}
+
 static void lane_store(void)
 {
    char cache[PATH_MAX_LENGTH];
@@ -288,6 +514,9 @@ static void lane_forget(void)
    size_t n;
 
    path_mkdir(FIX);
+   gfx_thumbnail_results_open(FIX "/r1.lpl");
+   gfx_thumbnail_results_open(FIX "/r2.lpl");
+   gfx_thumbnail_results_open(FIX "/r3.lpl");
    gfx_thumbnail_results_install(FIX "/r1.lpl",
          gfx_thumbnail_results_new(), true);
    gfx_thumbnail_results_install(FIX "/r2.lpl",
@@ -317,6 +546,18 @@ static void lane_forget(void)
    CHECK(!find_box("/r/h.nes", "H", "Sys")
       && !find_box("/r/n.nes", "N", "Sys"), "forget drops table and notes");
 
+   /* A task that ends after its playlist is gone */
+   gfx_thumbnail_results_open(FIX "/late.lpl");
+   gfx_thumbnail_results_forget(FIX "/late.lpl");
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/r/l.nes", "L", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS, "L.png");
+   gfx_thumbnail_results_sort(t);
+   CHECK(!gfx_thumbnail_results_install(FIX "/late.lpl", t, true)
+      && !find_box("/r/l.nes", "L", "Sys"), "no table after forget");
+   CHECK(gfx_thumbnail_results_open(FIX "/late.lpl")
+         & GFX_THUMBNAIL_RESULTS_RESOLVE, "not marked resolved after forget");
+
    /* <playlist>.thumbs cut short to <playlist>.th */
    n = strlcpy(playlist, FIX "/", sizeof(playlist));
    while (n + STRLEN_CONST("./t.lpl") <= sizeof(playlist) - 4)
@@ -340,14 +581,970 @@ static void lane_forget(void)
       fprintf(stderr, "[pass] forget\n");
 }
 
+/* Virtual clock: NBIO_XFER_TICK_USEC is 4000, so 1500 per reading
+ * ends the window after a couple of work items. */
+static retro_time_t clock_now;
+static retro_time_t clock_step;
+static unsigned notified;
+
+/* The threaded lane runs with a step of 0, so the worker only reads. */
+retro_time_t cpu_features_get_time_usec(void)
+{
+   if (clock_step)
+      clock_now += clock_step;
+   return clock_now;
+}
+uint64_t cpu_features_get(void) { return 0; }
+/* History entries' core: its info lists the NES database first. */
+#define HIST_CORE "/cores/nes_libretro.so"
+static core_info_t hist_core;
+bool core_info_find(const char *core_path, core_info_t **core_info)
+{
+   bool found = hist_core.databases && string_is_equal(core_path, HIST_CORE);
+   if (core_info)
+      *core_info = found ? &hist_core : NULL;
+   return found;
+}
+bool core_info_core_file_id_is_equal(const char *a, const char *b) { return false; }
+void frontend_driver_attach_console(void) { }
+void frontend_driver_detach_console(void) { }
+void ui_companion_driver_notify_refresh(void) { notified++; }
+
+/* The menu shows the cached playlist; a refresh reloads its art. */
+static unsigned refreshed;
+static void count_refresh(void *data, size_t i) { refreshed++; }
+static menu_ctx_driver_t refresh_driver;
+static struct menu_state menu_stub;
+struct menu_state *menu_state_get_ptr(void) { return &menu_stub; }
+
+/* One work item per check: past the window at the second reading */
+#define ONE_ITEM 5000
+
+#define SYS     "Nintendo - Nintendo Entertainment System"
+#define DB_NAME SYS ".lpl"
+
+typedef struct
+{
+   const char *path;
+   const char *label;
+   const char *crc32;
+} fx_entry_t;
+
+static const fx_entry_t fx_entries[] =
+{
+   { "/roms/zelda.nes",           "Legend of Zelda, The (U) [!]", "00000000|crc" },
+   { "/roms/smb.nes",             "super mario bros",             "00000000|crc" },
+   { "/roms/poke.nes",            "Pokemon Yellow (U)",           "00000000|crc" },
+   { "/roms/tetris-tengen.nes",   "Tetris (USA) (Tengen) (Unl)",  "00000000|crc" },
+   { "/roms/metroid.nes",         "Metroid (USA)",                "00000000|crc" },
+   { "/roms/Kid Icarus (USA).nes", "",                            "00000000|crc" }
+};
+#define FX_COUNT (sizeof(fx_entries) / sizeof(fx_entries[0]))
+
+static char pl_path[PATH_MAX_LENGTH];
+static char cache_path[PATH_MAX_LENGTH];
+static char thumbs_dir[PATH_MAX_LENGTH];
+static char db_dir[PATH_MAX_LENGTH];
+
+static unsigned cache_reads;
+static bool forget_at_rename;
+
+static struct retro_vfs_file_handle *shim_open(const char *path,
+      unsigned mode, unsigned hints)
+{
+   if (     mode == RETRO_VFS_FILE_ACCESS_READ
+         && string_is_equal(path, cache_path))
+      cache_reads++;
+   return retro_vfs_file_open_impl(path, mode, hints);
+}
+
+/* The main thread's forget, landing after the commit checked the
+ * playlist and before its rename */
+static int shim_rename(const char *old_path, const char *new_path)
+{
+   if (forget_at_rename && string_is_equal(new_path, cache_path))
+   {
+      forget_at_rename = false;
+      filestream_delete(pl_path);
+      gfx_thumbnail_results_forget(pl_path);
+   }
+   return retro_vfs_file_rename_impl(old_path, new_path);
+}
+
+static void shim_vfs(void)
+{
+   static struct retro_vfs_interface iface;
+   struct retro_vfs_interface_info info;
+
+   iface.get_path = retro_vfs_file_get_path_impl;
+   iface.open     = shim_open;
+   iface.close    = retro_vfs_file_close_impl;
+   iface.size     = retro_vfs_file_size_impl;
+   iface.tell     = retro_vfs_file_tell_impl;
+   iface.seek     = retro_vfs_file_seek_impl;
+   iface.read     = retro_vfs_file_read_impl;
+   iface.write    = retro_vfs_file_write_impl;
+   iface.flush    = retro_vfs_file_flush_impl;
+   iface.remove   = retro_vfs_file_remove_impl;
+   iface.rename   = shim_rename;
+   info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+   info.iface                      = &iface;
+   filestream_vfs_init(&info);
+}
+
+static void raw(rjsonwriter_t *w, const char *s)
+{
+   rjsonwriter_raw(w, s, (int)strlen(s));
+}
+
+static bool write_playlist(const fx_entry_t *e, size_t n)
+{
+   size_t i;
+   int _len;
+   bool ok;
+   rjsonwriter_t *w = rjsonwriter_open_memory();
+   raw(w, "{\"version\": \"1.5\", \"items\": [");
+   for (i = 0; i < n; i++)
+   {
+      raw(w, i ? ", {\"path\": " : "{\"path\": ");
+      rjsonwriter_add_string(w, e[i].path);
+      raw(w, ", \"label\": ");
+      rjsonwriter_add_string(w, e[i].label);
+      raw(w, ", \"core_path\": \"DETECT\", \"core_name\": \"DETECT\", \"crc32\": ");
+      rjsonwriter_add_string(w, e[i].crc32);
+      raw(w, ", \"db_name\": ");
+      rjsonwriter_add_string(w, DB_NAME);
+      raw(w, "}");
+   }
+   raw(w, "]}\n");
+   ok = write_text(pl_path, rjsonwriter_get_memory_buffer(w, &_len));
+   rjsonwriter_free(w);
+   return ok;
+}
+
+static void art(const char *type_dir, const char *name, bool present)
+{
+   char path[PATH_MAX_LENGTH];
+   fill_pathname_join_special(path, thumbs_dir, SYS, sizeof(path));
+   fill_pathname_join_special(path, path, type_dir, sizeof(path));
+   path_mkdir(path);
+   fill_pathname_join_special(path, path, name, sizeof(path));
+   /* Wine names files in the Unix locale's charset, so an accented
+    * name needs a UTF-8 locale there. */
+   if (present)
+      CHECK(write_text(path, "png"), "write %s", path);
+   else
+      filestream_delete(path);
+}
+
+/* The names fixture_init puts in Named_Boxarts */
+#define FX_BOXARTS 7
+
+static void fixture_init(void)
+{
+   /* A fresh frame window: a frozen clock never ends a spent one */
+   clock_now  += 20000;
+   clock_step  = 0;
+   notified    = 0;
+   refreshed   = 0;
+   cache_reads = 0;
+   refresh_driver.refresh_thumbnail_image = count_refresh;
+   menu_stub.driver_ctx                   = &refresh_driver;
+   path_mkdir(FIX);
+   fill_pathname_join_special(pl_path, FIX, "Test.lpl", sizeof(pl_path));
+   strlcpy(cache_path, pl_path, sizeof(cache_path));
+   strlcat(cache_path, ".thumbs", sizeof(cache_path));
+   fill_pathname_join_special(thumbs_dir, FIX, "thumbnails", sizeof(thumbs_dir));
+   fill_pathname_join_special(db_dir, FIX, "db", sizeof(db_dir));
+   filestream_delete(cache_path);
+   art("Named_Boxarts", "Legend of Zelda, The (USA).png", true);
+   art("Named_Snaps",   "Legend of Zelda, The (Europe).png", true);
+   art("Named_Boxarts", "Super Mario Bros. (World).png", true);
+   art("Named_Boxarts", "Pok\xc3\xa9mon Yellow (USA).png", true);
+   art("Named_Boxarts", "Tetris.png", true);
+   art("Named_Boxarts", "Tetris (USA).png", true);
+   art("Named_Boxarts", "Metroid (USA).png", true);
+   art("Named_Boxarts", "Kid Icarus (USA).png", true);
+   write_playlist(fx_entries, FX_COUNT);
+}
+
+static bool any_finder(retro_task_t *task, void *userdata)
+{
+   return true;
+}
+
+static bool queue_busy(void)
+{
+   task_finder_data_t find_data;
+   find_data.func     = any_finder;
+   find_data.userdata = NULL;
+   return task_queue_find(&find_data);
+}
+
+static bool resolve_finder(retro_task_t *task, void *userdata)
+{
+   pl_thumb_match_t *m = (pl_thumb_match_t*)task->state;
+   return    task->handler == task_pl_thumbnail_match_handler && m
+          && (m->flags & PL_THUMB_MATCH_FLAG_RESOLVE);
+}
+
+/* Unthreaded only: a worker writes the flags. */
+static bool resolve_queued(void)
+{
+   task_finder_data_t find_data;
+   find_data.func     = resolve_finder;
+   find_data.userdata = NULL;
+   return task_queue_find(&find_data);
+}
+
+static bool resolve_seen;
+
+static bool push(const char *dir_database)
+{
+   playlist_config_t config;
+   memset(&config, 0, sizeof(config));
+   config.capacity = 8192;
+   playlist_config_set_path(&config, pl_path);
+   return task_push_pl_thumbnail_match(&config, NULL, thumbs_dir,
+         dir_database, false);
+}
+
+/* Pumps the queue dry; returns the checks it took. A finished task's
+ * callback runs on a later check and may push the next task, so stop
+ * only after three checks that found nothing queued. */
+static unsigned run(retro_time_t step)
+{
+   unsigned ticks = 0;
+   unsigned idle  = 0;
+   if (clock_step != step)
+      clock_step = step;
+   while (idle < 3 && ticks < 1000000)
+   {
+      task_queue_check();
+      ticks++;
+      idle = queue_busy() ? 0 : idle + 1;
+      if (!task_queue_is_threaded() && resolve_queued())
+         resolve_seen = true;
+   }
+   return ticks;
+}
+
+static const char *box(size_t i)
+{
+   return find_box(fx_entries[i].path, fx_entries[i].label, SYS);
+}
+
+static char *read_cache(void)
+{
+   void *buf   = NULL;
+   int64_t len = 0;
+   if (!filestream_read_file(cache_path, &buf, &len))
+      return NULL;
+   return (char*)buf;
+}
+
+static void check_first_session(const char *what)
+{
+   char *cache;
+   CHECK(string_is_equal(box(0), "Legend of Zelda, The (USA).png"),
+         "%s: articles and GoodTools tags: %s", what, box(0));
+   CHECK(string_is_equal(gfx_thumbnail_results_lookup(fx_entries[0].path,
+         fx_entries[0].label, SYS, GFX_THUMBNAIL_RESULT_SNAPS),
+         "Legend of Zelda, The (Europe).png"), "%s: types resolve apart", what);
+   CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png"),
+         "%s: case and punctuation: %s", what, box(1));
+   CHECK(string_is_equal(box(2), "Pok\xc3\xa9mon Yellow (USA).png"),
+         "%s: accents: %s", what, box(2));
+   CHECK(!box(3), "%s: the Tengen entry gets nothing: %s", what, box(3));
+   CHECK(!box(4), "%s: a label match is left to the menu", what);
+   CHECK(!find_box(fx_entries[5].path, "Kid Icarus (USA)", SYS),
+         "%s: a file-name match is left to the menu", what);
+   cache = read_cache();
+   CHECK(cache && strstr(cache, "\"version\": \"1\"")
+         && strstr(cache, "Super Mario Bros. (World).png")
+         && !strstr(cache, "Metroid") && !strstr(cache, "Tengen"),
+         "%s: cache contents", what);
+   free(cache);
+}
+
+static void lane_resolve(bool threaded)
+{
+   char *before;
+   char *after;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(threaded, NULL);
+   notified = 0;
+   CHECK(push(""), "push");
+   /* Threaded, the load may already be done and gone from the queue */
+   if (!threaded)
+      CHECK(!push(""), "a second push while one runs is refused");
+   run(0);
+   CHECK(threaded || cache_reads == 1,
+         "the resolve takes the load's crc: %u reads", cache_reads);
+   check_first_session(threaded ? "threaded" : "first session");
+   CHECK(notified == 1, "a new table tells the companion: %u", notified);
+
+   /* A new session over an unchanged folder does not rewrite. */
+   before = read_cache();
+   gfx_thumbnail_results_deinit();
+   notified    = 0;
+   cache_reads = 0;
+   CHECK(push(""), "push again");
+   run(0);
+   CHECK(threaded || cache_reads == 1,
+         "one read of the cache a session: %u", cache_reads);
+   after = read_cache();
+   check_first_session("second session");
+   CHECK(notified == 0, "nothing changed: no notice");
+   CHECK(before && after && string_is_equal(before, after), "cache unchanged");
+   free(before);
+   free(after);
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] resolve (%s)\n", threaded ? "threaded" : "unthreaded");
+}
+
+static void lane_changes(void)
+{
+   fx_entry_t renamed[FX_COUNT];
+   char *cache;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+
+   /* A label rename and a deleted file re-resolve next session. */
+   memcpy(renamed, fx_entries, sizeof(renamed));
+   renamed[0].label = "Legend of Zelda, The (E)";
+   write_playlist(renamed, FX_COUNT);
+   art("Named_Boxarts", "Pok\xc3\xa9mon Yellow (USA).png", false);
+   gfx_thumbnail_results_deinit();
+   push("");
+   run(0);
+   CHECK(string_is_equal(find_box(renamed[0].path, renamed[0].label, SYS),
+         "Legend of Zelda, The (USA).png"), "renamed label resolves");
+   CHECK(!box(0), "the old label no longer matches");
+   CHECK(!box(2), "a deleted file is dropped");
+   cache = read_cache();
+   CHECK(cache && !strstr(cache, "Pok"), "cache drops the deleted file");
+   free(cache);
+
+   /* A corrupt cache is ignored and rewritten. */
+   write_playlist(fx_entries, FX_COUNT);
+   art("Named_Boxarts", "Pok\xc3\xa9mon Yellow (USA).png", true);
+   write_text(cache_path, "{ not json");
+   gfx_thumbnail_results_deinit();
+   push("");
+   run(0);
+   check_first_session("after a corrupt cache");
+
+   /* Another version is not read, even before the resolve ends. */
+   write_text(cache_path, "{\"version\": \"2\", \"items\": [{\"path\": "
+         "\"/roms/zelda.nes\", \"label\": \"Legend of Zelda, The (U) [!]\", "
+         "\"crc32\": \"\", \"system\": \"" SYS "\", "
+         "\"Named_Boxarts\": \"Bogus.png\"}]}");
+   gfx_thumbnail_results_deinit();
+   push("");
+   clock_step = 0;
+   while (queue_busy())
+   {
+      task_queue_check();
+      CHECK(!box(0) || !string_is_equal(box(0), "Bogus.png"),
+            "version 2 was read");
+   }
+   check_first_session("after a version 2 cache");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] changes\n");
+}
+
+/* A playlist deleted while its cache is written gets none. */
+static void lane_deleted(void)
+{
+   char tmp[PATH_MAX_LENGTH];
+   bool seen    = false;
+   unsigned had = failures;
+
+   fixture_init();
+   filestream_atomic_temp_name(tmp, sizeof(tmp), cache_path);
+   task_queue_init(false, NULL);
+   push("");
+   clock_step = 1500;
+   while (!seen && queue_busy())
+   {
+      task_queue_check();
+      seen = path_is_valid(tmp);
+   }
+   CHECK(seen, "the cache is written over several checks");
+   filestream_delete(pl_path);
+   gfx_thumbnail_results_forget(pl_path);
+   run(1500);
+   CHECK(!path_is_valid(cache_path) && !path_is_valid(tmp),
+         "no cache for a deleted playlist");
+   CHECK(gfx_thumbnail_results_open(pl_path) & GFX_THUMBNAIL_RESULTS_RESOLVE,
+         "a deleted playlist is not marked resolved");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] deleted\n");
+}
+
+static void lane_load_first(void)
+{
+   unsigned had   = failures;
+   bool shown     = false;
+   bool pending   = false;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+
+   /* Unthreaded: the load's callback pushes the resolve, which can
+    * only run on a later check, so the cached table shows first. */
+   gfx_thumbnail_results_deinit();
+   push("");
+   clock_step = 0;
+   while (queue_busy() && !shown)
+   {
+      task_queue_check();
+      if ((shown = (box(1) != NULL)))
+         pending = queue_busy();
+   }
+   CHECK(shown && pending, "cached matches show before the resolve ends");
+   run(0);
+
+   /* Pushed out and reopened in the same session: load only. */
+   write_text(cache_path, "{\"version\": \"1\", \"items\": [{\"path\": "
+         "\"/roms/smb.nes\", \"label\": \"super mario bros\", "
+         "\"crc32\": \"00000000|crc\", \"system\": \"" SYS "\", "
+         "\"Named_Boxarts\": \"Hand Edited.png\"}]}");
+   gfx_thumbnail_results_open("/p/a.lpl");
+   gfx_thumbnail_results_open("/p/b.lpl");
+   gfx_thumbnail_results_open("/p/c.lpl");
+   gfx_thumbnail_results_open("/p/d.lpl");
+   CHECK(!box(1), "pushed out");
+   push("");
+   run(0);
+   CHECK(string_is_equal(box(1), "Hand Edited.png"),
+         "resolved once per session: reopening only loads");
+
+   /* A table whose playlist was pushed out meanwhile is dropped, and
+    * no resolve follows it. */
+   gfx_thumbnail_results_deinit();
+   push("");
+   gfx_thumbnail_results_open("/p/a.lpl");
+   gfx_thumbnail_results_open("/p/b.lpl");
+   gfx_thumbnail_results_open("/p/c.lpl");
+   gfx_thumbnail_results_open("/p/d.lpl");
+   resolve_seen = false;
+   run(0);
+   CHECK(!box(1), "no table for a playlist no longer kept");
+   CHECK(!resolve_seen, "no resolve for a playlist no longer kept");
+
+   /* Pushed out while its resolve runs: still marked resolved, so the
+    * next open only loads. */
+   gfx_thumbnail_results_deinit();
+   push("");
+   clock_step = ONE_ITEM;
+   while (queue_busy() && !resolve_queued())
+      task_queue_check();
+   CHECK(resolve_queued(), "the resolve runs");
+   gfx_thumbnail_results_open("/p/a.lpl");
+   gfx_thumbnail_results_open("/p/b.lpl");
+   gfx_thumbnail_results_open("/p/c.lpl");
+   gfx_thumbnail_results_open("/p/d.lpl");
+   run(ONE_ITEM);
+   CHECK(!box(1), "no table once pushed out");
+   CHECK(gfx_thumbnail_results_open(pl_path)
+         == GFX_THUMBNAIL_RESULTS_LOAD,
+         "pushed out while resolving: its next open only loads");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] load first\n");
+}
+
+/* History entries without a db_name take the folder their core's info
+ * names; core info is read when the task is pushed. */
+static void lane_history(void)
+{
+   char hist[128];
+   char hist_cache[128];
+   playlist_config_t config;
+   playlist_t *playlist;
+   void *buf    = NULL;
+   int64_t len  = 0;
+   char *cache  = NULL;
+   unsigned had = failures;
+
+   fixture_init();
+   fill_pathname_join_special(hist, FIX, FILE_PATH_CONTENT_HISTORY,
+         sizeof(hist));
+   strlcpy(hist_cache, hist, sizeof(hist_cache));
+   strlcat(hist_cache, ".thumbs", sizeof(hist_cache));
+   filestream_delete(hist_cache);
+   write_text(hist, "{\"version\": \"1.5\", \"items\": ["
+         "{\"path\": \"/roms/smb.nes\", \"label\": \"super mario bros\", "
+         "\"core_path\": \"" HIST_CORE "\", \"core_name\": \"NES\", "
+         "\"crc32\": \"\", \"db_name\": \"\"}, "
+         "{\"path\": \"/roms/metroid.nes\", \"label\": \"Metroid (U)\", "
+         "\"core_path\": \"/cores/other_libretro.so\", "
+         "\"core_name\": \"Other\", \"crc32\": \"\", \"db_name\": \"\"}, "
+         "{\"path\": \"/roms/" SYS "/kid.nes\", \"label\": \"Kid Icarus (U)\", "
+         "\"core_path\": \"/cores/other_libretro.so\", "
+         "\"core_name\": \"Other\", \"crc32\": \"\", \"db_name\": \"\"}]}\n");
+   memset(&config, 0, sizeof(config));
+   config.capacity = 8192;
+   playlist_config_set_path(&config, hist);
+   hist_core.databases = (char*)SYS "|Nintendo - Family Computer Disk System";
+
+   task_queue_init(false, NULL);
+   playlist = playlist_init(&config);
+   CHECK(playlist && playlist_size(playlist) == 3, "history loads");
+   CHECK(task_push_pl_thumbnail_match(&config, playlist, thumbs_dir, "",
+         false), "push history");
+   /* The task keeps nothing of the caller's playlist */
+   playlist_free(playlist);
+   run(0);
+   CHECK(string_is_equal(find_box("/roms/smb.nes", "super mario bros", SYS),
+         "Super Mario Bros. (World).png"),
+         "no db_name: the folder of the entry's core");
+   CHECK(string_is_equal(find_box("/roms/" SYS "/kid.nes", "Kid Icarus (U)",
+         SYS), "Kid Icarus (USA).png"),
+         "a core naming no database: the content's folder");
+   CHECK(!find_box("/roms/metroid.nes", "Metroid (U)", SYS),
+         "another core's database is not borrowed");
+   if (filestream_read_file(hist_cache, &buf, &len))
+      cache = (char*)buf;
+   CHECK(cache && strstr(cache, "/roms/smb.nes") && strstr(cache, SYS),
+         "the history cache holds the match");
+   free(cache);
+
+   /* Without the caller's playlist those entries are left to the menu */
+   gfx_thumbnail_results_deinit();
+   filestream_delete(hist_cache);
+   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "",
+         false), "push history without its playlist");
+   run(0);
+   CHECK(!find_box("/roms/smb.nes", "super mario bros", SYS),
+         "no playlist given: no folder");
+   hist_core.databases = NULL;
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] history\n");
+}
+
+static void lane_pacing(void)
+{
+   unsigned had = failures;
+   unsigned unpaced, paced;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   unpaced = run(0);
+   gfx_thumbnail_results_deinit();
+   filestream_delete(cache_path);
+   push("");
+   paced = run(1500);
+   CHECK(paced > unpaced, "work is spread: %u paced vs %u unpaced",
+         paced, unpaced);
+   check_first_session("paced");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] pacing (%u paced vs %u unpaced)\n",
+            paced, unpaced);
+}
+
+/* Quitting cancels every task; a write cut short leaves no file. */
+static void lane_cancel_write(void)
+{
+   char tmp[PATH_MAX_LENGTH];
+   bool seen    = false;
+   unsigned had = failures;
+
+   fixture_init();
+   filestream_atomic_temp_name(tmp, sizeof(tmp), cache_path);
+   task_queue_init(false, NULL);
+   push("");
+   clock_step = ONE_ITEM;
+   while (!seen && queue_busy())
+   {
+      task_queue_check();
+      seen = path_is_valid(tmp);
+   }
+   CHECK(seen, "the write is under way");
+   task_queue_reset();
+   run(ONE_ITEM);
+   CHECK(!path_is_valid(tmp), "no temporary file after a cancel");
+   CHECK(!path_is_valid(cache_path), "no cache from a cancelled write");
+   CHECK(gfx_thumbnail_results_open(pl_path) & GFX_THUMBNAIL_RESULTS_RESOLVE,
+         "a cancelled resolve is not marked resolved");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] cancel mid-write\n");
+}
+
+/* A forget between the commit's check and its rename */
+static void lane_forget_race(void)
+{
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   forget_at_rename = true;
+   push("");
+   run(0);
+   CHECK(!forget_at_rename, "the forget landed at the rename");
+   CHECK(!path_is_valid(cache_path),
+         "no cache for a playlist forgotten at its rename");
+   forget_at_rename = false;
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] forget at the rename\n");
+}
+
+/* Portable paths: the task never writes the playlist, whose temporary
+ * file the main thread's writes use too. */
+static void lane_portable(void)
+{
+   char tmp[128];
+   playlist_config_t config;
+   void *before       = NULL;
+   void *after        = NULL;
+   int64_t before_len = 0;
+   int64_t after_len  = 0;
+   unsigned had       = failures;
+
+   fixture_init();
+   strlcpy(tmp, pl_path, sizeof(tmp));
+   strlcat(tmp, ".tmp", sizeof(tmp));
+   filestream_read_file(pl_path, &before, &before_len);
+   memset(&config, 0, sizeof(config));
+   config.capacity = 8192;
+   playlist_config_set_path(&config, pl_path);
+   playlist_config_set_base_content_directory(&config, FIX "/moved");
+   task_queue_init(false, NULL);
+   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false),
+         "push");
+   run(0);
+   filestream_read_file(pl_path, &after, &after_len);
+   CHECK(before && after && before_len == after_len
+      && !memcmp(before, after, (size_t)before_len),
+         "the playlist is not rewritten");
+   CHECK(!path_is_valid(tmp), "no temporary playlist file");
+   CHECK(!gfx_thumbnail_results_open(pl_path), "resolved");
+   free(before);
+   free(after);
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] portable paths\n");
+}
+
+/* @userdata takes the first match task's state */
+static bool match_finder(retro_task_t *task, void *userdata)
+{
+   if (task->handler != task_pl_thumbnail_match_handler || !task->state)
+      return false;
+   *(pl_thumb_match_t**)userdata = (pl_thumb_match_t*)task->state;
+   return true;
+}
+
+/* Waits for the resolve, then opens enough playlists to evict Test.lpl */
+static void evict_while_resolving(void)
+{
+   while (!resolve_queued() && queue_busy())
+      task_queue_check();
+   CHECK(resolve_queued(), "the resolve is queued");
+   gfx_thumbnail_results_open(FIX "/e1.lpl");
+   gfx_thumbnail_results_open(FIX "/e2.lpl");
+   gfx_thumbnail_results_open(FIX "/e3.lpl");
+   gfx_thumbnail_results_open(FIX "/e4.lpl");
+}
+
+/* Explore lists span more playlists than the store keeps. */
+static void lane_evict_resolve(void)
+{
+   task_finder_data_t find_data;
+   pl_thumb_match_t *m = NULL;
+   unsigned had        = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   CHECK(push(""), "push");
+   evict_while_resolving();
+   run(0);
+   CHECK(path_is_valid(cache_path), "the evicted resolve wrote its cache");
+   CHECK(push(""), "reopen");
+   find_data.func     = match_finder;
+   find_data.userdata = &m;
+   CHECK(task_queue_find(&find_data) && m
+      && !(m->flags & (PL_THUMB_MATCH_FLAG_RESOLVE
+                     | PL_THUMB_MATCH_FLAG_THEN_RESOLVE)),
+         "an evicted resolve is kept: the reopen only loads");
+   run(0);
+   check_first_session("reopened after eviction");
+
+   /* Forgotten while evicted: resolve again */
+   gfx_thumbnail_results_deinit();
+   CHECK(push(""), "push again");
+   evict_while_resolving();
+   gfx_thumbnail_results_forget(pl_path);
+   run(0);
+   CHECK(gfx_thumbnail_results_open(pl_path) & GFX_THUMBNAIL_RESULTS_RESOLVE,
+         "a resolve forgotten while evicted is not marked");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] evicted while resolving\n");
+}
+
+/* The menu reloads its art only when the table can differ. */
+static void lane_refresh(void)
+{
+   playlist_config_t config;
+   unsigned had = failures;
+
+   fixture_init();
+   memset(&config, 0, sizeof(config));
+   config.capacity = 8192;
+   playlist_config_set_path(&config, pl_path);
+   CHECK(playlist_init_cached(&config), "the menu shows the playlist");
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   CHECK(refreshed == 1, "first session: once, for the new matches, not %u",
+         refreshed);
+   gfx_thumbnail_results_deinit();
+   refreshed = 0;
+   push("");
+   run(0);
+   CHECK(refreshed == 1, "unchanged: once, for the loaded matches, not %u",
+         refreshed);
+   playlist_free_cached();
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] refresh\n");
+}
+
+/* An engine out of memory keeps the cache and the loaded matches. */
+static void lane_engine_oom(void)
+{
+   char *before;
+   char *after;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   before = read_cache();
+   gfx_thumbnail_results_deinit();
+   notified = 0;
+   oom_hits = 0;
+   oom_size = FX_BOXARTS * sizeof(struct gtm_rec);
+   push("");
+   run(0);
+   oom_size = 0;
+   after    = read_cache();
+   CHECK(oom_hits == 1, "one engine allocation failed: %u", oom_hits);
+   CHECK(before && after && string_is_equal(before, after),
+         "the cache is kept");
+   CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png"),
+         "the loaded matches stay: %s", box(1));
+   CHECK(!notified, "no notice");
+   CHECK(gfx_thumbnail_results_open(pl_path) == GFX_THUMBNAIL_RESULTS_RESOLVE,
+         "resolves again on its next open");
+   free(after);
+
+   /* That resolve has no load to take the crc from */
+   cache_reads = 0;
+   CHECK(push(""), "push the resolve");
+   run(ONE_ITEM);
+   CHECK(cache_reads == 1, "a resolve alone reads the cache: %u",
+         cache_reads);
+   after = read_cache();
+   CHECK(!notified && before && after && string_is_equal(before, after),
+         "and finds it unchanged");
+   CHECK(gfx_thumbnail_results_open(pl_path) == 0, "resolved");
+   free(before);
+   free(after);
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] engine out of memory\n");
+}
+
+#define BIG_SYS     "Synth - Big"
+#define BIG_NAMES   20000
+#define BIG_ENTRIES (2 * GFX_THUMBNAIL_MATCH_SORT_STEP + 808)
+
+static size_t most_moves;
+static size_t most_sum;
+static size_t all_moves;
+static size_t all_sum;
+static unsigned kept_playlist;
+static const void *last_index;
+static const void *last_results;
+static size_t last_index_moved;
+static size_t last_results_moved;
+
+/* Moves since the last item, for a sort that may be new or restarted */
+static size_t sort_delta(const void *owner, const gfx_thumbnail_match_sort_t *s,
+      const void **last, size_t *last_moved)
+{
+   size_t d = 0;
+   if (owner)
+      d = (owner == *last && s->moved >= *last_moved)
+         ? s->moved - *last_moved : s->moved;
+   *last       = owner;
+   *last_moved = owner ? s->moved : 0;
+   return d;
+}
+
+static void measure_item(retro_task_t *task, retro_time_t took)
+{
+   size_t moves;
+   pl_thumb_match_t *m = (pl_thumb_match_t*)task->state;
+   if (task->handler != task_pl_thumbnail_match_handler || !m)
+      return;
+   moves  = sort_delta(m->index, m->index ? &m->index->sort : NULL,
+         &last_index, &last_index_moved);
+   moves += sort_delta(m->results, m->results ? &m->results->sort : NULL,
+         &last_results, &last_results_moved);
+   if (moves > most_moves)
+      most_moves = moves;
+   if (crc_item > most_sum)
+      most_sum = crc_item;
+   all_moves += moves;
+   all_sum   += crc_item;
+   crc_item   = 0;
+   if (     (m->flags & PL_THUMB_MATCH_FLAG_RESOLVE)
+         && m->status > PL_THUMB_MATCH_RESOLVE && m->playlist)
+      kept_playlist++;
+}
+
+/* A big folder and playlist: no work item does a whole sort or sum. */
+static void lane_bounded(void)
+{
+   char big_pl[PATH_MAX_LENGTH];
+   char big_cache[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+   char name[64];
+   playlist_config_t config;
+   rjsonwriter_t *w;
+   size_t i;
+   int _len;
+   unsigned had = failures;
+
+   fixture_init();
+   fill_pathname_join_special(path, thumbs_dir, BIG_SYS, sizeof(path));
+   fill_pathname_join_special(path, path, "Named_Boxarts", sizeof(path));
+   path_mkdir(path);
+   for (i = 0; i < BIG_NAMES; i++)
+   {
+      char file[PATH_MAX_LENGTH];
+      snprintf(name, sizeof(name), "Synth %05u (USA).png", (unsigned)i);
+      fill_pathname_join_special(file, path, name, sizeof(file));
+      write_text(file, "png");
+   }
+   fill_pathname_join_special(big_pl, FIX, "Big.lpl", sizeof(big_pl));
+   strlcpy(big_cache, big_pl, sizeof(big_cache));
+   strlcat(big_cache, ".thumbs", sizeof(big_cache));
+   filestream_delete(big_cache);
+   w = rjsonwriter_open_memory();
+   raw(w, "{\"version\": \"1.5\", \"items\": [");
+   for (i = 0; i < BIG_ENTRIES; i++)
+   {
+      snprintf(name, sizeof(name), "/roms/s%05u.nes", (unsigned)i);
+      raw(w, i ? ", {\"path\": " : "{\"path\": ");
+      rjsonwriter_add_string(w, name);
+      snprintf(name, sizeof(name), "Synth %05u (U)", (unsigned)i);
+      raw(w, ", \"label\": ");
+      rjsonwriter_add_string(w, name);
+      raw(w, ", \"core_path\": \"DETECT\", \"core_name\": \"DETECT\", "
+            "\"crc32\": \"\", \"db_name\": \"" BIG_SYS ".lpl\"}");
+   }
+   raw(w, "]}\n");
+   write_text(big_pl, rjsonwriter_get_memory_buffer(w, &_len));
+   rjsonwriter_free(w);
+
+   memset(&config, 0, sizeof(config));
+   config.capacity = BIG_ENTRIES;
+   playlist_config_set_path(&config, big_pl);
+   most_moves = most_sum = all_moves = all_sum = 0;
+   kept_playlist = 0;
+   last_index    = last_results = NULL;
+   crc_item      = 0;
+   task_queue_init(false, NULL);
+   task_queue_set_slow_handler_cb(measure_item, 1);
+   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false),
+         "push the big playlist");
+   run(ONE_ITEM);
+   /* The next session loads the big cache, then resolves it again */
+   gfx_thumbnail_results_deinit();
+   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false),
+         "push it again");
+   run(ONE_ITEM);
+   CHECK(string_is_equal(find_box("/roms/s04242.nes", "Synth 04242 (U)",
+         BIG_SYS), "Synth 04242 (USA).png"), "the big playlist resolves");
+   CHECK(most_moves <= GFX_THUMBNAIL_MATCH_SORT_STEP,
+         "one item moved %u records", (unsigned)most_moves);
+   CHECK(most_sum <= PL_THUMB_MATCH_CHUNK, "one item summed %u bytes",
+         (unsigned)most_sum);
+   CHECK(   all_moves > 8 * GFX_THUMBNAIL_MATCH_SORT_STEP
+         && all_sum > 8 * PL_THUMB_MATCH_CHUNK,
+         "big enough: %u moves, %u bytes summed",
+         (unsigned)all_moves, (unsigned)all_sum);
+   CHECK(!kept_playlist, "the playlist outlived the resolve for %u items",
+         kept_playlist);
+   task_queue_set_slow_handler_cb(NULL, 0);
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] bounded (at most %u moves and %u bytes an "
+            "item, of %u and %u)\n", (unsigned)most_moves,
+            (unsigned)most_sum, (unsigned)all_moves, (unsigned)all_sum);
+}
+
 int main(void)
 {
+   shim_vfs();
    lane_names();
    lane_table();
    lane_table_edges();
+   lane_table_steps();
+   lane_table_steps_bounded();
    lane_store();
    lane_store_order();
    lane_forget();
+   lane_resolve(false);
+   lane_resolve(true);
+   lane_changes();
+   lane_deleted();
+   lane_cancel_write();
+   lane_forget_race();
+   lane_portable();
+   lane_evict_resolve();
+   lane_load_first();
+   lane_history();
+   lane_pacing();
+   lane_refresh();
+   lane_engine_oom();
+   lane_bounded();
    fprintf(stderr, "%s (%u failures)\n", failures ? "FAILED" : "PASS",
          failures);
    return failures ? 1 : 0;

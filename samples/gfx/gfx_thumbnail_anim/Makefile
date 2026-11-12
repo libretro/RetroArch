@@ -34,6 +34,7 @@ LOOKUP_OBJ := thumbnail_lookup_test.o
 SOURCES := gfx_thumbnail_anim_test.c \
            stubs_retroarch.c \
            $(REPO_ROOT)/gfx/gfx_thumbnail_results.c \
+           $(REPO_ROOT)/gfx/gfx_thumbnail_match.c \
            $(REPO_ROOT)/gfx/gfx_instrument.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
