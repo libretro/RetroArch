@@ -17,6 +17,7 @@ TARGET_TEST13 := vfs_descriptor_rw_test
 TARGET_TEST14 := vfs_positional_test
 TARGET_TEST15 := vfs_positional_nommap_test
 TARGET_TEST16 := vfs_positional_off32_test
+TARGET_TEST17 := vfs_positional_pathreopen_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -163,7 +164,8 @@ endif
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
 	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) \
-	$(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(RENAME_TARGET)
+	$(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) \
+	$(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -217,6 +219,20 @@ $(OFF32_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 $(TARGET_TEST16): vfs_positional_off32_test.o $(OFF32_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
+
+# vfs_positional_pathreopen_test: on Windows, the second handle made
+# the way NT before Vista makes it - the stream's path opened again and
+# checked against the handle - rather than with ReOpenFile. Elsewhere
+# the define changes nothing. Scoped to this object.
+PATHREOPEN_VFS_OBJ := vfs_implementation_pathreopen.o
+PATHREOPEN_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+	$(PATHREOPEN_VFS_OBJ)
+
+$(PATHREOPEN_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_FORCE_PATH_REOPEN
+
+$(TARGET_TEST17): vfs_positional_required.o $(PATHREOPEN_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
 
 $(TARGET_TEST10): vfs_view_test.o $(VIEW_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -296,10 +312,11 @@ clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
-		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(CLOSE_VFS_OBJ) \
+		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
 		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o \
-		$(NOMMAP_VFS_OBJ) vfs_positional_required.o $(OFF32_VFS_OBJ)
+		$(NOMMAP_VFS_OBJ) vfs_positional_required.o $(OFF32_VFS_OBJ) \
+		$(PATHREOPEN_VFS_OBJ)
 	rm -f vfs_positional_off32.bin
 	rm -rf v5_meta_dir
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin

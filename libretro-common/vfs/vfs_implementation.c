@@ -734,8 +734,9 @@ int64_t retro_vfs_file_seek_internal(
    && !defined(ORBIS) && !defined(__ORBIS__) && !defined(__PS4__) \
    && !defined(__EMSCRIPTEN__)
 #define VFS_POSITIONAL_POSIX 1
-#elif defined(VFS_HAVE_AT_HANDLE) && !defined(_XBOX) && !defined(__WINRT__) \
-   && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#elif defined(VFS_HAVE_AT_HANDLE) && !defined(_XBOX) && !defined(__WINRT__)
+/* Every NT, whatever _WIN32_WINNT the build names: the second handle
+ * is found at run time (vfs_positional_handle) */
 #define VFS_POSITIONAL_WIN32 1
 #endif
 
@@ -2137,14 +2138,55 @@ int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
  * own, as before. They act on the file itself: bytes written with
  * retro_vfs_file_write_impl and not flushed yet are not seen. */
 #ifdef VFS_POSITIONAL_WIN32
-/* The stream's second handle, made by whichever thread gets there first */
+typedef HANDLE (WINAPI *vfs_reopen_file_t)(HANDLE, DWORD, DWORD, DWORD);
+
+/* The file @base is open on, opened again by @path: refused unless the
+ * volume and file index say it is the same file, so a rename or a
+ * replacement since the stream opened is never read instead. */
+static HANDLE vfs_positional_reopen_path(HANDLE base, const char *path)
+{
+   BY_HANDLE_FILE_INFORMATION a, b;
+   HANDLE   made;
+   wchar_t *wide;
+   if (!path || !GetFileInformationByHandle(base, &a)
+         || !(a.nFileIndexHigh | a.nFileIndexLow)
+         || !(wide = utf8_to_utf16_string_alloc(path)))
+      return INVALID_HANDLE_VALUE;
+   made = CreateFileW(wide, GENERIC_READ | GENERIC_WRITE,
+         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+         FILE_ATTRIBUTE_NORMAL, NULL);
+   if (made == INVALID_HANDLE_VALUE)
+      made = CreateFileW(wide, GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL, NULL);
+   free(wide);
+   if (made == INVALID_HANDLE_VALUE)
+      return made;
+   if (     !GetFileInformationByHandle(made, &b)
+         || a.dwVolumeSerialNumber != b.dwVolumeSerialNumber
+         || a.nFileIndexHigh       != b.nFileIndexHigh
+         || a.nFileIndexLow        != b.nFileIndexLow)
+   {
+      CloseHandle(made);
+      return INVALID_HANDLE_VALUE;
+   }
+   return made;
+}
+
+/* The stream's second handle, made by whichever thread gets there
+ * first: ReOpenFile from Vista on, the stream's path checked against
+ * the handle before it, none on 9x/ME, whose ReadFile takes no offset
+ * on a file. */
 static HANDLE vfs_positional_handle(libretro_vfs_implementation_file *stream)
 {
    HANDLE base, made;
    HANDLE at = (HANDLE)retro_atomic_load_acquire_ptr(&stream->at_handle);
+   vfs_reopen_file_t reopen;
    int    fd;
    if (at)
       return at;
+   if (GetVersion() & 0x80000000u)
+      return NULL;
    fd = (stream->hints & RFILE_HINT_UNBUFFERED) ? stream->fd
       : (stream->fp ? _fileno(stream->fp) : -1);
    if (fd < 0)
@@ -2152,11 +2194,22 @@ static HANDLE vfs_positional_handle(libretro_vfs_implementation_file *stream)
    base = (HANDLE)_get_osfhandle(fd);
    if (base == INVALID_HANDLE_VALUE)
       return NULL;
-   made = ReOpenFile(base, GENERIC_READ | GENERIC_WRITE,
-         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
-   if (made == INVALID_HANDLE_VALUE)
-      made = ReOpenFile(base, GENERIC_READ,
+#ifdef VFS_WIN32_FORCE_PATH_REOPEN
+   reopen = NULL;
+#else
+   reopen = (vfs_reopen_file_t)(void (*)(void))GetProcAddress(
+         GetModuleHandleA("kernel32.dll"), "ReOpenFile");
+#endif
+   if (reopen)
+   {
+      made = reopen(base, GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
+      if (made == INVALID_HANDLE_VALUE)
+         made = reopen(base, GENERIC_READ,
+               FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
+   }
+   else
+      made = vfs_positional_reopen_path(base, stream->orig_path);
    if (made == INVALID_HANDLE_VALUE)
       return NULL;
    if (retro_atomic_cas_ptr(&stream->at_handle, NULL, made))
