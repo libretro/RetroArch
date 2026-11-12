@@ -547,6 +547,10 @@ jobs:
           # self-contained regression tests came to be compiled every
           # run and never executed.
           declare -a NORUN_TARGETS=(
+            # Benchmarks: C runtime streams against VFS_WIN32_NATIVE,
+            # for timing on Windows.
+            vfs_native_bench
+            vfs_native_bench_native
             # Fixture-driven checks run in Linux-samples-record.yml.
             flv_remux_test
             rtmp_socket_native_test

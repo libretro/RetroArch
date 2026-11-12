@@ -19,6 +19,8 @@ TARGET_TEST15 := vfs_positional_nommap_test
 TARGET_TEST16 := vfs_positional_off32_test
 TARGET_TEST17 := vfs_positional_pathreopen_test
 TARGET_TEST18 := vfs_positional_ntverify_test
+BENCH_CRT     := vfs_native_bench
+BENCH_NATIVE  := vfs_native_bench_native
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -134,6 +136,13 @@ ifeq ($(DESCRIPTOR_IO),1)
    CFLAGS += -DVFS_HAVE_DESCRIPTOR_IO=1
 endif
 
+# 'make VFS_NATIVE=1' builds the suite with read-only Windows streams on
+# a handle of their own (VFS_WIN32_NATIVE); elsewhere it changes nothing.
+VFS_NATIVE ?=
+ifeq ($(VFS_NATIVE),1)
+   CFLAGS += -DVFS_WIN32_NATIVE
+endif
+
 # FAKE_CFR=1 stands in a copy_file_range that copies to EOF whatever
 # len it was given (what gVisor was observed doing); FAKE_CFR=2 one
 # that copies three times len.  Both exercise vfs_v5_metadata_test's
@@ -166,7 +175,7 @@ all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
 	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) \
 	$(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) \
-	$(TARGET_TEST18) $(RENAME_TARGET)
+	$(TARGET_TEST18) $(BENCH_CRT) $(BENCH_NATIVE) $(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -248,6 +257,25 @@ $(NTVERIFY_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 $(TARGET_TEST18): vfs_positional_required.o $(NTVERIFY_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
 
+# vfs_native_bench / vfs_native_bench_native: read-only stream timings
+# through the C runtime, and through VFS_WIN32_NATIVE - run both on
+# Windows and compare. Elsewhere the two are the same build.
+NATIVE_VFS_OBJ := vfs_implementation_native.o
+BENCH_OBJS     := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+	rthreads_ra.o retro_eventcount_ra.o
+
+$(NATIVE_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_NATIVE
+
+vfs_native_bench_native.o: vfs_native_bench.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DVFS_WIN32_NATIVE
+
+$(BENCH_CRT): vfs_native_bench.o $(COMMON_OBJS) rthreads_ra.o retro_eventcount_ra.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(RA_LIBS) -lpthread
+
+$(BENCH_NATIVE): vfs_native_bench_native.o $(BENCH_OBJS) $(NATIVE_VFS_OBJ)
+	$(CC) -o $@ $^ $(LDFLAGS) $(RA_LIBS) -lpthread
+
 $(TARGET_TEST10): vfs_view_test.o $(VIEW_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -326,7 +354,8 @@ clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
-		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) $(TARGET_TEST18) $(CLOSE_VFS_OBJ) \
+		$(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) $(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) $(TARGET_TEST18) $(BENCH_CRT) $(BENCH_NATIVE) \
+	vfs_native_bench.o vfs_native_bench_native.o $(NATIVE_VFS_OBJ) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
 		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o \
 		$(NOMMAP_VFS_OBJ) vfs_positional_required.o $(OFF32_VFS_OBJ) \

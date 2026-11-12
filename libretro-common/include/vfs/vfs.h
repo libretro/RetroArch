@@ -199,6 +199,12 @@ struct libretro_vfs_implementation_file
    HANDLE fh;
    /* CreateFileMapping handle backing `mapped`; NULL when unmapped */
    HANDLE map_handle;
+   /* A read-only stream on a handle of its own (VFS_WIN32_NATIVE): its
+    * position, the part of the file `buf` holds, and a read error */
+   uint64_t npos;
+   uint64_t nbuf_at;
+   size_t   nbuf_len;
+   int      nerr;
 #if !defined(_XBOX) && !defined(HAVE_MMAP)
    void *warm;   /* mapped read-ahead thread, NULL until used */
 #endif

@@ -271,13 +271,19 @@ static void test_path_selection(void)
       retro_vfs_file_close_impl(s);
    }
 
-   /* No hint: unchanged, buffered. */
+   /* No hint: unchanged, buffered - on a handle of its own where
+    * VFS_WIN32_NATIVE takes read-only streams off the C runtime. */
    s = retro_vfs_file_open_impl(path, RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
    CHECK(s != NULL, "plain open failed");
    if (s)
    {
+#if defined(VFS_WIN32_NATIVE) && defined(_WIN32) && !defined(_XBOX)
+      CHECK(s->fp == NULL && s->fh != NULL,
+            "plain read-only open is not on its own handle");
+#else
       CHECK(s->fp != NULL, "plain open left stdio");
+#endif
       retro_vfs_file_close_impl(s);
    }
 

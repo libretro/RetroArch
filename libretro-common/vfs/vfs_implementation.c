@@ -339,6 +339,24 @@ static void vfs_unix_to_filetime(int64_t unix_s, FILETIME *ft)
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
+/* VFS_WIN32_NATIVE: a read-only stream on Windows NT opens a handle of
+ * its own rather than a C runtime FILE, keeps its own position and a
+ * 64 KiB buffer, and reads at offsets - with no CRT lock or buffer on
+ * the way, and its reads at offsets on the same handle. Opt-in until
+ * measured; see samples/file/vfs/vfs_native_bench.c. */
+#if defined(VFS_WIN32_NATIVE) && defined(_WIN32) && !defined(_XBOX) \
+   && !defined(__WINRT__) && defined(VFS_HAVE_AT_HANDLE)
+#define VFS_NATIVE 1
+#define RFILE_HINT_WIN32_NATIVE (1 << 9)
+#define VFS_NATIVE_BUF          0x10000
+static bool    vfs_native_open(libretro_vfs_implementation_file *stream,
+      const char *path);
+static int64_t vfs_native_seek(libretro_vfs_implementation_file *stream,
+      int64_t offset, int whence);
+static int64_t vfs_native_read(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len);
+#endif
+
 /* Largest count handed to one fread/fwrite/read/write call.  bionic's
  * stdio routes counts through an int-typed callback (aborting via
  * FORTIFY above INT_MAX) and one Linux read()/write() syscall moves at
@@ -650,6 +668,10 @@ int64_t retro_vfs_file_seek_internal(
    if (!stream)
       return -1;
 
+#ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+      return vfs_native_seek(stream, offset, whence);
+#endif
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
 #ifdef HAVE_CDROM
@@ -738,6 +760,161 @@ int64_t retro_vfs_file_seek_internal(
 /* Every NT, whatever _WIN32_WINNT the build names: the second handle
  * is found at run time (vfs_positional_handle) */
 #define VFS_POSITIONAL_WIN32 1
+#endif
+
+#ifdef VFS_POSITIONAL_WIN32
+/* @len bytes at @offset of @h, a synchronous handle, its file pointer
+ * left to whatever ReadFile makes of it: the bytes read, short at the
+ * end, or -1 when nothing could be read */
+static int64_t vfs_win32_read_at(HANDLE h, void *s, uint64_t len,
+      uint64_t offset)
+{
+   uint8_t *p     = (uint8_t*)s;
+   uint64_t total = 0;
+   while (len != 0)
+   {
+      OVERLAPPED ov;
+      DWORD    _got   = 0;
+      DWORD    _chunk = (len > 0x40000000u) ? 0x40000000u : (DWORD)len;
+      uint64_t where  = offset + total;
+      ov.Internal     = 0;
+      ov.InternalHigh = 0;
+      ov.Offset       = (DWORD)(where & 0xffffffffu);
+      ov.OffsetHigh   = (DWORD)(where >> 32);
+      ov.hEvent       = NULL;
+      if (!ReadFile(h, p, _chunk, &_got, &ov))
+      {
+         if (GetLastError() == ERROR_HANDLE_EOF)
+            break;
+         return (total != 0) ? (int64_t)total : -1;
+      }
+      if (_got == 0)
+         break;
+      total += _got;
+      p     += _got;
+      len   -= _got;
+   }
+   return (int64_t)total;
+}
+#endif
+
+#ifdef VFS_NATIVE
+static bool vfs_native_open(libretro_vfs_implementation_file *stream,
+      const char *path)
+{
+   wchar_t *wide;
+   HANDLE   h;
+   DWORD    hi = 0, lo;
+   char    *buf;
+   /* NT only: 9x's ReadFile takes no offset on a file */
+   if ((GetVersion() & 0x80000000u) || !(wide = utf8_to_utf16_string_alloc(path)))
+      return false;
+   h = CreateFileW(wide, GENERIC_READ,
+         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+   free(wide);
+   if (h == INVALID_HANDLE_VALUE)
+      return false;
+   lo = GetFileSize(h, &hi);
+   if (     (lo == INVALID_FILE_SIZE && GetLastError() != NO_ERROR)
+         || !(buf = (char*)malloc(VFS_NATIVE_BUF)))
+   {
+      CloseHandle(h);
+      return false;
+   }
+   stream->fh        = h;
+   stream->buf       = buf;
+   stream->size      = (int64_t)(((uint64_t)hi << 32) | lo);
+   stream->npos      = 0;
+   stream->nbuf_at   = 0;
+   stream->nbuf_len  = 0;
+   stream->nerr      = 0;
+   stream->hints    |= RFILE_HINT_WIN32_NATIVE;
+   return true;
+}
+
+/* As fseek: anywhere from 0, past the end included */
+static int64_t vfs_native_seek(libretro_vfs_implementation_file *stream,
+      int64_t offset, int whence)
+{
+   int64_t base;
+   switch (whence)
+   {
+      case SEEK_SET:
+         base = 0;
+         break;
+      case SEEK_CUR:
+         base = (int64_t)stream->npos;
+         break;
+      case SEEK_END:
+         {
+            DWORD hi = 0, lo = GetFileSize(stream->fh, &hi);
+            if (lo == INVALID_FILE_SIZE && GetLastError() != NO_ERROR)
+               return -1;
+            base = (int64_t)(((uint64_t)hi << 32) | lo);
+         }
+         break;
+      default:
+         return -1;
+   }
+   if (     (offset < 0 && base + offset < 0)
+         || (offset > 0 && base > INT64_MAX - offset))
+      return -1;
+   stream->npos = (uint64_t)(base + offset);
+   return 0;
+}
+
+/* From the buffer where it holds the position, else a read at the
+ * position: into the buffer for a request smaller than it, straight
+ * into @s for one as large */
+static int64_t vfs_native_read(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len)
+{
+   uint8_t *p     = (uint8_t*)s;
+   uint64_t total = 0;
+   while (len != 0)
+   {
+      uint64_t at = stream->npos;
+      int64_t  got;
+      if (at >= stream->nbuf_at && at - stream->nbuf_at < stream->nbuf_len)
+      {
+         size_t off = (size_t)(at - stream->nbuf_at);
+         size_t n   = stream->nbuf_len - off;
+         if ((uint64_t)n > len)
+            n = (size_t)len;
+         memcpy(p, stream->buf + off, n);
+         p            += n;
+         total        += n;
+         len          -= n;
+         stream->npos += n;
+         continue;
+      }
+      if (len >= VFS_NATIVE_BUF)
+      {
+         if ((got = vfs_win32_read_at(stream->fh, p, len, at)) < 0)
+            break;
+         stream->npos += (uint64_t)got;
+         total        += (uint64_t)got;
+         return (int64_t)total;
+      }
+      if ((got = vfs_win32_read_at(stream->fh, stream->buf,
+                  VFS_NATIVE_BUF, at)) <= 0)
+      {
+         if (got == 0)
+            return (int64_t)total;
+         break;
+      }
+      stream->nbuf_at  = at;
+      stream->nbuf_len = (size_t)got;
+   }
+   if (len != 0)
+   {
+      stream->nerr = 1;
+      if (total == 0)
+         return -1;
+   }
+   return (int64_t)total;
+}
 #endif
 
 #ifdef VFS_POSITIONAL_POSIX
@@ -982,6 +1159,13 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #endif
 
          default:
+#ifdef VFS_NATIVE
+            if (     mode == RETRO_VFS_FILE_ACCESS_READ
+                  && !(stream->hints
+                     & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+                  && vfs_native_open(stream, path))
+               break;
+#endif
             if (!(fp = (FILE*)fopen_utf8(path, mode_str)))
             {
 #if TARGET_OS_IPHONE
@@ -1326,6 +1510,15 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    }
 #endif
 
+#ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+   {
+      if (!CloseHandle(stream->fh))
+         result = -1;
+      stream->fh = NULL;
+   }
+   else
+#endif
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
       if (stream->fp)
@@ -1411,6 +1604,10 @@ int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
 #ifdef HAVE_NFSCLIENT
     if (stream->scheme == VFS_SCHEME_NFS)
         return retro_vfs_file_error_nfs(stream);
+#endif
+#ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+      return stream->nerr;
 #endif
    if (!stream->fp)
       return -1;
@@ -1770,6 +1967,10 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
    if (!stream)
       return -1;
 
+#ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+      return (int64_t)stream->npos;
+#endif
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
 #ifdef HAVE_CDROM
@@ -1854,6 +2055,10 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
    if (len > (uint64_t)INT64_MAX)
       return -1;
 
+#ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+      return vfs_native_read(stream, s, len);
+#endif
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
 #ifdef HAVE_CDROM
@@ -1960,6 +2165,10 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
    if (!stream)
       return -1;
 
+#ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+      return -1;                  /* read-only */
+#endif
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
 #ifdef HAVE_NFSCLIENT
@@ -2255,6 +2464,12 @@ static HANDLE vfs_positional_handle(libretro_vfs_implementation_file *stream)
    int    fd;
    if (at)
       return at;
+#ifdef VFS_NATIVE
+   /* its own handle reads at offsets already, and nothing else uses its
+    * file pointer */
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+      return stream->fh;
+#endif
    if (version & 0x80000000u)
       return NULL;
    fd = (stream->hints & RFILE_HINT_UNBUFFERED) ? stream->fd
@@ -2343,28 +2558,8 @@ int64_t retro_vfs_file_read_at_impl(libretro_vfs_implementation_file *stream,
       HANDLE at      = vfs_positional_handle(stream);
       if (!at)
          return -1;
-      while (len != 0)
-      {
-         OVERLAPPED ov;
-         DWORD _got     = 0;
-         DWORD _chunk   = (len > 0x40000000u) ? 0x40000000u : (DWORD)len;
-         uint64_t where = (uint64_t)offset + total;
-         memset(&ov, 0, sizeof(ov));
-         ov.Offset      = (DWORD)(where & 0xffffffffu);
-         ov.OffsetHigh  = (DWORD)(where >> 32);
-         if (!ReadFile(at, p, _chunk, &_got, &ov))
-         {
-            if (GetLastError() == ERROR_HANDLE_EOF)
-               break;
-            return (total != 0) ? (int64_t)total : -1;
-         }
-         if (_got == 0)
-            break;
-         total += _got;
-         p     += _got;
-         len   -= _got;
-      }
-      return (int64_t)total;
+      (void)p; (void)total;
+      return vfs_win32_read_at(at, s, len, (uint64_t)offset);
    }
 #else
    return -1;
@@ -2466,6 +2661,10 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 #endif
    /* A descriptor holds no bytes of its own to flush: what was
     * written is in the file already */
+   #ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+      return 0;                   /* nothing written */
+#endif
    if (stream->hints & RFILE_HINT_UNBUFFERED)
       return stream->fd >= 0 ? 0 : -1;
    if (stream->fp && fflush(stream->fp) == 0)
