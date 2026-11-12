@@ -3,6 +3,8 @@
 #ifndef RECORD_SESSION_MEDIACODEC_H
 #define RECORD_SESSION_MEDIACODEC_H
 #include "record_mediacodec_worker.h"
+#include "record_mediacodec_stream_config.h"
+#include <net/net_rtmp_client.h>
 RETRO_BEGIN_DECLS
 typedef struct record_session_mediacodec record_session_mediacodec_t;
 enum record_session_mediacodec_error
@@ -10,7 +12,8 @@ enum record_session_mediacodec_error
    RECORD_MC_SESSION_NONE,
    RECORD_MC_SESSION_CANCELLED,
    RECORD_MC_SESSION_OUTPUT,
-   RECORD_MC_SESSION_FILE
+   RECORD_MC_SESSION_FILE,
+   RECORD_MC_SESSION_NETWORK
 };
 /* Cold I/O worker. Owns encoder(s), PCM queue, mux and exclusive file.
  * Audio is disabled only when all audio arguments are zero. NULL publishes
@@ -19,6 +22,20 @@ record_session_mediacodec_t *record_session_mediacodec_new(JNIEnv *env,
       const mediacodec_encoder_request_t *video, unsigned interval,
       unsigned rate, unsigned channels, unsigned bitrate,
       size_t max_audio_frames, size_t audio_capacity, const char *path);
+/* Same encoder/PCM ownership, no file creation. Borrows the independently
+ * owned client until session_free; cancellation retires its packet borrows.
+ * Requires RTMP+FLV build features. Audio uses live calibrated priming.
+ * Caller schedules network_step before step on the same I/O owner. */
+record_session_mediacodec_t *record_session_mediacodec_new_stream(JNIEnv *env,
+      const mediacodec_encoder_request_t *video, unsigned interval,
+      unsigned rate, unsigned channels, unsigned bitrate,
+      size_t max_audio_frames, size_t audio_capacity, net_rtmp_client_t *client,
+      const record_mediacodec_stream_config_t *config);
+/* One bounded network/mux action, using stream result values -1/0/1/2.
+ * Returns socket interests for the dispatcher's poll set. No waits or clocks.
+ * Errors request the same producer/GPU retirement as other session failures. */
+int record_session_mediacodec_network_step(record_session_mediacodec_t *session,
+      uint32_t receive_time, net_rtmp_client_view_t *wait);
 /* Cold I/O owner, before publishing the session to the GPU executor. Borrowed
  * through gpu_released. Executor owns Surface/capture/draw construction. */
 void *record_session_mediacodec_surface(record_session_mediacodec_t *session);
