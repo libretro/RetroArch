@@ -18,6 +18,8 @@ on:
       - 'record/record_gpu_dispatch_metal.*'
       - 'record/record_gpu_worker_vt*'
       - 'record/record_audio_queue.*'
+      - 'record/record_at_audio.*'
+      - 'samples/record/audiotoolbox_audio/**'
       - 'record/record_avfoundation_worker*'
       - 'record/record_avfoundation_session*'
       - 'record/record_mux_avfoundation.*'
@@ -43,6 +45,8 @@ on:
       - 'record/record_gpu_dispatch_metal.*'
       - 'record/record_gpu_worker_vt*'
       - 'record/record_audio_queue.*'
+      - 'record/record_at_audio.*'
+      - 'samples/record/audiotoolbox_audio/**'
       - 'record/record_avfoundation_worker*'
       - 'record/record_avfoundation_session*'
       - 'record/record_mux_avfoundation.*'
@@ -70,6 +74,19 @@ jobs:
         run: make check thread_test worker_thread_test audio_thread_test av_session_thread_test && ./thread_test && ./worker_thread_test && ./audio_thread_test && ./av_session_thread_test
       - name: Native AAC property ABI and advertised rates
         run: make -C samples/record/videotoolbox_encode native-audio-check
+      - name: AudioToolbox AAC callback ownership contracts
+        run: make -C samples/record/audiotoolbox_audio check
+      - name: Native AudioToolbox AAC packets and independent timing
+        env:
+          AUDIO_TOOLBOX_ARTIFACT_DIR: ${{ runner.temp }}/audiotoolbox-aac-evidence
+        run: make -C samples/record/audiotoolbox_audio native-check
+      - name: Save AudioToolbox AAC acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audiotoolbox-aac-evidence
+          path: ${{ runner.temp }}/audiotoolbox-aac-evidence
+          if-no-files-found: ignore
       - name: Native hardware encoder and independent pixels
         run: |
           rc=0

@@ -259,6 +259,15 @@ jobs:
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
+      - name: AudioToolbox AAC input and packet ownership contracts
+        working-directory: samples/record/audiotoolbox_audio
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean && make check SANITIZER=address,undefined
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
       # The Apple API stand-in checks ownership/configuration only. Native
       # compilation and hardware encode run in MacOS-videotoolbox-encode.yml.
       - name: VideoToolbox encode callback and session contracts
