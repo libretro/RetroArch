@@ -52,13 +52,16 @@
 #define CHDSTREAM_AHEAD_AFTER 32
 #define CHDSTREAM_AHEAD_SLOTS 4
 
-/* The decode-ahead thread's own image: a file and a decoder of its
- * own, opened on that thread at its first fetch. It decodes the odd
- * hunks, window i holding hunk 2i + 1, while the reader decodes the
- * even ones itself: the two split the work rather than race for it. */
+/* The decode-ahead thread's own decoder, made on that thread at its
+ * first fetch. It reads the reader's file at offsets, which leaves the
+ * reader's position alone; where the file has no positional reads it
+ * opens one of its own instead. It decodes the odd hunks, window i
+ * holding hunk 2i + 1, while the reader decodes the even ones itself:
+ * the two split the work rather than race for it. */
 struct chdstream_ahead
 {
    char     *path;
+   RFILE    *shared;
    RFILE    *file;
    rchd_t   *chd;
    uint8_t  *pump;
@@ -430,13 +433,14 @@ chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
 #define CHDSTREAM_PUMP_BYTES 65536
 
 static bool chdstream_pump(RFILE *f, rchd_t *chd, uint8_t *buf,
-      int opening, rchd_request_t *rq)
+      int opening, bool shared, rchd_request_t *rq)
 {
    for (;;)
    {
-      int    e = opening ? rchd_open_step(chd, rq)
-                         : rchd_read_step(chd, rq);
-      size_t want, got;
+      int     e = opening ? rchd_open_step(chd, rq)
+                          : rchd_read_step(chd, rq);
+      int64_t got;
+      size_t  want;
 
       if (e == RCHD_OK)
          return true;
@@ -445,13 +449,19 @@ static bool chdstream_pump(RFILE *f, rchd_t *chd, uint8_t *buf,
 
       want = rq->length > CHDSTREAM_PUMP_BYTES
            ? CHDSTREAM_PUMP_BYTES : rq->length;
-      if (filestream_seek(f, (int64_t)rq->offset,
-               RETRO_VFS_SEEK_POSITION_START) < 0)
+      /* At the offset, one call; a file shared with the reader is read
+       * no other way, since a seek would move the reader's position */
+      if ((got = filestream_read_at(f, buf, (int64_t)want,
+                  (int64_t)rq->offset)) < 0)
+      {
+         if (shared || filestream_seek(f, (int64_t)rq->offset,
+                  RETRO_VFS_SEEK_POSITION_START) < 0)
+            return false;
+         got = filestream_read(f, buf, (int64_t)want);
+      }
+      if (got <= 0)
          return false;
-      got = (size_t)filestream_read(f, buf, want);
-      if (!got)
-         return false;
-      if (rchd_feed(chd, buf, got) != RCHD_OK)
+      if (rchd_feed(chd, buf, (size_t)got) != RCHD_OK)
          return false;
    }
 }
@@ -478,11 +488,19 @@ static int64_t chdstream_ahead_fetch(void *user, uint64_t off,
       return -1;
    if (!a->chd)
    {
-      if (     !(a->file = filestream_open(a->path,
+      /* The reader's file where it reads at offsets, else one of its own */
+      if (filestream_read_at(a->shared, a->pump, 1, 0) == 1)
+         a->file = a->shared;
+      else if (!(a->file = filestream_open(a->path,
                   RETRO_VFS_FILE_ACCESS_READ,
-                  RETRO_VFS_FILE_ACCESS_HINT_NONE))
-            || !(a->chd  = rchd_new())
-            || !chdstream_pump(a->file, a->chd, a->pump, 1, &rq))
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      {
+         a->failed = 1;
+         return -1;
+      }
+      if (     !(a->chd = rchd_new())
+            || !chdstream_pump(a->file, a->chd, a->pump, 1,
+                  a->file == a->shared, &rq))
       {
          a->failed = 1;
          return -1;
@@ -492,7 +510,8 @@ static int64_t chdstream_ahead_fetch(void *user, uint64_t off,
    if (hunk >= a->hunk_count)
       return 0;
    if (     rchd_read_hunk_begin(a->chd, hunk, buf) != RCHD_OK
-         || !chdstream_pump(a->file, a->chd, a->pump, 0, &rq))
+         || !chdstream_pump(a->file, a->chd, a->pump, 0,
+               a->file == a->shared, &rq))
       return -1;
    if (a->swab)
       chdstream_swab(buf, (uint32_t)len);
@@ -511,7 +530,7 @@ static void chdstream_ahead_free(chdstream_t *stream)
       return;
    if (a->chd)
       rchd_free(a->chd);
-   if (a->file)
+   if (a->file && a->file != a->shared)
       filestream_close(a->file);
    free(a->pump);
    free(a);
@@ -535,6 +554,7 @@ static void chdstream_ahead_start(chdstream_t *stream, uint32_t hunk)
       return;
    }
    a->path       = stream->path;
+   a->shared     = stream->file;
    a->hunk_count = rchd_info(stream->chd)->hunk_count;
    a->swab       = stream->swab;
    if (!(stream->ahead = vfs_prefetch_new(chdstream_ahead_fetch, a,
@@ -629,7 +649,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
       goto error;
    if (!(chd = rchd_new()))
       goto error;
-   if (!chdstream_pump(file, chd, pump, 1, &rq))
+   if (!chdstream_pump(file, chd, pump, 1, false, &rq))
       goto error;
    if (!(t = chdstream_track_of(chd, track)))
       goto error;
@@ -869,7 +889,7 @@ chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
                stream->hunkmem) != RCHD_OK)
          return false;
       if (!chdstream_pump(stream->file, stream->chd, stream->pump,
-               0, &rq))
+               0, false, &rq))
          return false;
       if (stream->swab)
          chdstream_swab(stream->hunkmem, stream->hunk_bytes);

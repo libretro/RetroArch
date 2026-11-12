@@ -14,11 +14,25 @@
 #include <streams/file_stream.h>
 static retro_atomic_int_t window_reads, window_bytes;
 int64_t __real_filestream_read(RFILE *file, void *data, int64_t size);
+int64_t __real_filestream_read_at(RFILE *file, void *data, int64_t size,
+      int64_t offset);
 int64_t __wrap_filestream_read(RFILE *file, void *data, int64_t size)
 {
    retro_atomic_fetch_add_int(&window_reads, 1);
    retro_atomic_fetch_add_int(&window_bytes, (int)size);
    return __real_filestream_read(file, data, size);
+}
+/* Reads at an offset count the same; a -1 is counted by the read after */
+int64_t __wrap_filestream_read_at(RFILE *file, void *data, int64_t size,
+      int64_t offset)
+{
+   int64_t got = __real_filestream_read_at(file, data, size, offset);
+   if (got >= 0)
+   {
+      retro_atomic_fetch_add_int(&window_reads, 1);
+      retro_atomic_fetch_add_int(&window_bytes, (int)size);
+   }
+   return got;
 }
 #endif
 #ifdef HAVE_THREADS

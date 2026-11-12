@@ -1443,7 +1443,10 @@ static int rcheevos_rvz_pump(rcheevos_rvz_t* handle, bool opening)
 
       if (err != RVZ_PENDING)
          return err;
-      if (filestream_seek(handle->file, (int64_t)req.offset,
+      /* At the offset in one call; seek and read where there is none */
+      if ((got = filestream_read_at(handle->file, req.dst,
+                  (int64_t)req.length, (int64_t)req.offset)) < 0
+            && filestream_seek(handle->file, (int64_t)req.offset,
                RETRO_VFS_SEEK_POSITION_START) == 0)
          got = filestream_read(handle->file, req.dst, (int64_t)req.length);
       rvz_feed(handle->rvz, got > 0 ? (size_t)got : 0);

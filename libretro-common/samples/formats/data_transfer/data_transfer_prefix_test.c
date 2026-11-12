@@ -54,10 +54,21 @@
 #include <streams/file_stream.h>
 static uint64_t inert_io_bytes, inert_io_calls;
 int64_t __real_filestream_read(RFILE *stream, void *data, int64_t length);
+int64_t __real_filestream_read_at(RFILE *stream, void *data, int64_t length,
+      int64_t offset);
 int64_t __wrap_filestream_read(RFILE *stream, void *data, int64_t length)
 {
    int64_t got = __real_filestream_read(stream, data, length);
    inert_io_calls++;
+   if (got > 0) inert_io_bytes += (uint64_t)got;
+   return got;
+}
+/* Reads at an offset count the same; a -1 is counted by the read after */
+int64_t __wrap_filestream_read_at(RFILE *stream, void *data, int64_t length,
+      int64_t offset)
+{
+   int64_t got = __real_filestream_read_at(stream, data, length, offset);
+   if (got >= 0) inert_io_calls++;
    if (got > 0) inert_io_bytes += (uint64_t)got;
    return got;
 }

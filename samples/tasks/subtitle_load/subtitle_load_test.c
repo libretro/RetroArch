@@ -48,6 +48,18 @@ int64_t filestream_read(RFILE *stream, void *data, int64_t length)
       retro_atomic_fetch_add_int(&embedded_read_bytes, (int)got);
    return got;
 }
+/* Reads at an offset count the same */
+int64_t subtitle_test_filestream_read_at_real(RFILE *stream, void *data,
+      int64_t length, int64_t offset);
+int64_t filestream_read_at(RFILE *stream, void *data, int64_t length,
+      int64_t offset)
+{
+   int64_t got = subtitle_test_filestream_read_at_real(stream, data, length,
+         offset);
+   if (got > 0 && got < 16777216)
+      retro_atomic_fetch_add_int(&embedded_read_bytes, (int)got);
+   return got;
+}
 
 static char fixture[64];
 

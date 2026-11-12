@@ -720,12 +720,50 @@ int64_t retro_vfs_file_seek_internal(
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 
-/* Where positional I/O is had: see retro_vfs_file_read_at_impl */
-#if defined(VFS_HAVE_FILE_MAPPING) && defined(HAVE_MMAP)
+/* Where positional I/O is had: see retro_vfs_file_read_at_impl.
+ * pread()/pwrite() are POSIX.1-2001 and on every Unix host whether or
+ * not the build maps files (Android's does not), so the hosts are named
+ * here rather than read off HAVE_MMAP. The PS4 toolchain is FreeBSD-
+ * derived and named out. */
+#if defined(VFS_HAVE_FILE_MAPPING) && defined(HAVE_MMAP) && !defined(_WIN32)
+#define VFS_POSITIONAL_POSIX 1
+#elif (defined(__linux__) || defined(__ANDROID__) || defined(__APPLE__) \
+      || defined(__FreeBSD__) || defined(__NetBSD__) \
+      || defined(__OpenBSD__) || defined(__DragonFly__) \
+      || defined(__HAIKU__) || defined(__QNX__) || defined(__sun)) \
+   && !defined(ORBIS) && !defined(__ORBIS__) && !defined(__PS4__) \
+   && !defined(__EMSCRIPTEN__)
 #define VFS_POSITIONAL_POSIX 1
 #elif defined(VFS_HAVE_AT_HANDLE) && !defined(_XBOX) && !defined(__WINRT__) \
    && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
 #define VFS_POSITIONAL_WIN32 1
+#endif
+
+#ifdef VFS_POSITIONAL_POSIX
+/* pread/pwrite at a 64-bit offset, as retro_vfs_fd_seek64 seeks:
+ * pread64 on 32-bit Android (off_t stays 32 bits there before API 24,
+ * and pread64 is declared from 21), otherwise off_t, refusing what a
+ * narrow one cannot hold - the caller then seeks, which reaches it. */
+#if defined(__ANDROID__) && !defined(__LP64__) \
+   && defined(__ANDROID_API__) && __ANDROID_API__ >= 21
+#define VFS_PREAD(fd, p, n, off)  pread64((fd), (p), (n), (off64_t)(off))
+#define VFS_PWRITE(fd, p, n, off) pwrite64((fd), (p), (n), (off64_t)(off))
+#define VFS_POSITIONAL_FITS(off, n) 1
+#else
+/* The offset's type on its way in; vfs_positional_off32_test builds
+ * this file with a 32-bit one to hold the refusal on a 64-bit host. */
+#ifndef VFS_POSITIONAL_OFF_T
+#define VFS_POSITIONAL_OFF_T off_t
+#endif
+#define VFS_PREAD(fd, p, n, off)  pread((fd), (p), (n), \
+   (VFS_POSITIONAL_OFF_T)(off))
+#define VFS_PWRITE(fd, p, n, off) pwrite((fd), (p), (n), \
+   (VFS_POSITIONAL_OFF_T)(off))
+#define VFS_POSITIONAL_FITS(off, n) \
+   (sizeof(VFS_POSITIONAL_OFF_T) >= sizeof(int64_t) \
+   || ((uint64_t)(off) <= (uint64_t)INT32_MAX \
+      && (uint64_t)(n) <= (uint64_t)INT32_MAX - (uint64_t)(off)))
+#endif
 #endif
 
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(
@@ -2156,13 +2194,13 @@ int64_t retro_vfs_file_read_at_impl(libretro_vfs_implementation_file *stream,
       uint64_t total = 0;
       int fd         = (stream->hints & RFILE_HINT_UNBUFFERED) ? stream->fd
          : (stream->fp ? fileno(stream->fp) : -1);
-      if (fd < 0)
+      if (fd < 0 || !VFS_POSITIONAL_FITS(offset, len))
          return -1;
       while (len != 0)
       {
          size_t  _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
                ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
-         ssize_t _got   = pread(fd, p, _chunk, (off_t)(offset + (int64_t)total));
+         ssize_t _got   = VFS_PREAD(fd, p, _chunk, offset + (int64_t)total);
          if (_got < 0)
             return (total != 0) ? (int64_t)total : -1;
          if (_got == 0)
@@ -2240,13 +2278,13 @@ int64_t retro_vfs_file_write_at_impl(libretro_vfs_implementation_file *stream,
       uint64_t total   = 0;
       int fd           = (stream->hints & RFILE_HINT_UNBUFFERED) ? stream->fd
          : (stream->fp ? fileno(stream->fp) : -1);
-      if (fd < 0)
+      if (fd < 0 || !VFS_POSITIONAL_FITS(offset, len))
          return -1;
       while (len != 0)
       {
          size_t  _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
                ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
-         ssize_t _put   = pwrite(fd, p, _chunk, (off_t)(offset + (int64_t)total));
+         ssize_t _put   = VFS_PWRITE(fd, p, _chunk, offset + (int64_t)total);
          if (_put <= 0)
             return (total != 0) ? (int64_t)total : -1;
          total += (uint64_t)_put;

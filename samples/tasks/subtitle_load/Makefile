@@ -46,7 +46,8 @@ $(call sample_objs,$(LRC)/formats/subtitle/rsubtitle_vtt_selector.o): \
    $(LRC)/formats/subtitle/rsubtitle_languages.h
 
 $(call sample_objs,$(LRC)/streams/file_stream.o): CFLAGS += \
-   -Dfilestream_read=subtitle_test_filestream_read_real
+   -Dfilestream_read=subtitle_test_filestream_read_real \
+   -Dfilestream_read_at=subtitle_test_filestream_read_at_real
 
 $(call sample_objs,$(ROOT)/tasks/task_subtitle.o): $(ROOT)/tasks/subtitle_iso639.h \
    $(ROOT)/tasks/subtitle_mac_language.h
