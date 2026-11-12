@@ -165,6 +165,8 @@ int record_mux_mediacodec_finish(record_mux_mediacodec_t *m)
    return 1;
 }
 
+#include "worker_output_fixture.h"
+
 static void exercise(unsigned video_delay, unsigned audio_delay,
       unsigned channels, unsigned failure, bool late_close)
 {
@@ -237,6 +239,61 @@ static void exercise(unsigned video_delay, unsigned audio_delay,
    }
 }
 
+static void output_backpressure(bool cancel)
+{
+   record_mediacodec_encoder_t video;
+   record_mux_mediacodec_t mux;
+   struct record_busy_output output;
+   record_mediacodec_output_ops_t ops = busy_ops;
+   record_mediacodec_worker_t *w;
+   unsigned i, pumps;
+   int result = 0;
+   memset(&video, 0, sizeof(video));
+   memset(&mux, 0, sizeof(mux));
+   memset(&output, 0, sizeof(output));
+   fault = 0;
+   output.mux = &mux;
+   output.busy[0] = cancel ? 20 : 4;
+   output.retire_busy = 2;
+   w = record_mediacodec_worker_new_output(&video, NULL, NULL, &ops, &output, 0, 0);
+   assert(w);
+   memset(&ops, 0, sizeof(ops)); /* Worker owns its callback-table copy. */
+   assert(record_mediacodec_worker_finish(w, 33333, 0));
+   assert(record_mediacodec_worker_step(w) == RECORD_MC_WORKER_PROGRESS);
+   assert(record_mediacodec_worker_step(w) != RECORD_MC_WORKER_ERROR);
+   assert(video.borrowed && !video.releases && output.borrow[0]);
+   pumps = video.pumps;
+   for (i = 0; i < 3; i++)
+   {
+      assert(record_mediacodec_worker_step(w) != RECORD_MC_WORKER_ERROR);
+      assert(video.pumps == pumps && !video.releases && video.borrowed);
+   }
+   if (cancel)
+   {
+      record_mediacodec_worker_abort(w);
+      assert(record_mediacodec_worker_step(w) == RECORD_MC_WORKER_ERROR);
+   }
+   else
+   {
+      for (i = 0; i < 32; i++)
+      {
+         result = record_mediacodec_worker_step(w);
+         if (result == RECORD_MC_WORKER_END || result == RECORD_MC_WORKER_ERROR)
+            break;
+      }
+      assert(result == RECORD_MC_WORKER_END && video.releases == 2);
+      assert(output.accepted[0] == 2 && !output.borrow[0]);
+   }
+   assert(!record_mediacodec_worker_free(w));
+   if (cancel)
+      assert(output.borrow[0]->data == &video.data && video.borrowed && !video.releases);
+   assert(!record_mediacodec_worker_free(w));
+   assert(record_mediacodec_worker_free(w) && output.retires == 3);
+   assert(!output.borrow[0]);
+   puts(cancel ? "PASS worker abort retains output borrow through delayed retirement"
+         : "PASS worker output BUSY retains immutable packet without repump or early release");
+}
+
 static void contracts(void)
 {
    record_mediacodec_encoder_t video, audio;
@@ -292,6 +349,8 @@ int main(void)
    for (failure = 1; failure <= 13; failure++)
       exercise(0, 4, 2, failure, false);
    contracts();
+   output_backpressure(false);
+   output_backpressure(true);
    assert(record_mediacodec_worker_free(NULL));
    record_mediacodec_worker_abort(NULL);
    puts("PASS: Android recording worker PCM backpressure, mux startup and drain");
