@@ -42,8 +42,6 @@ size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data,
 
 bool playlist_config_copy(const playlist_config_t *src, playlist_config_t *dst)
 { *dst = *src; return true; }
-void playlist_free(playlist_t *playlist) { (void)playlist; }
-size_t playlist_size(playlist_t *playlist) { (void)playlist; return 0; }
 void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
      enum playlist_thumbnail_name_flags thumbnail_flags)
 { (void)playlist; (void)idx; (void)thumbnail_flags; }

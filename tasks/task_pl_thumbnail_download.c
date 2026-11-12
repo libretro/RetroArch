@@ -577,6 +577,13 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
    return;
 
 task_finished:
+   /* Here, not in cleanup on the main thread; the finder reads only
+    * playlist_config */
+   if (pl_thumb && pl_thumb->playlist)
+   {
+      playlist_free(pl_thumb->playlist);
+      pl_thumb->playlist = NULL;
+   }
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }

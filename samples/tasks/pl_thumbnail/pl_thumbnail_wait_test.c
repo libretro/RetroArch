@@ -14,7 +14,8 @@
  *  - cancel: a task cancelled with a transfer in flight finishes only
  *    after the transfer's callback, which writes into the task's handle;
  *  - finished: a playlist download finished with its retirement still
- *    to come keeps the handle a push's finder reads.
+ *    to come has freed its playlist but keeps the handle a push's
+ *    finder reads.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -112,11 +113,19 @@ void *task_push_http_download_file(const char *url, const char *path,
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 const char *msg_hash_to_str(enum msg_hash_enums msg) { (void)msg; return ""; }
-bool path_is_valid(const char *path) { (void)path; return false; }
+bool path_is_valid(const char *path)
+{ return string_is_equal(path, "Lane.lpl"); }
 bool path_mkdir(const char *dir) { (void)dir; return true; }
 void net_http_urlencode_full(char *dst, const char *src, size_t len)
 { strlcpy(dst, src, len); }
 void task_window_progress_cb(retro_task_t *task) { (void)task; }
+
+static retro_atomic_int_t playlists_freed;
+playlist_t *playlist_init(const playlist_config_t *config)
+{ (void)config; return (playlist_t*)malloc(1); }
+void playlist_free(playlist_t *playlist)
+{ free(playlist); retro_atomic_fetch_add_int(&playlists_freed, 1); }
+size_t playlist_size(playlist_t *playlist) { (void)playlist; return 0; }
 
 /* ---- counting the handler's passes ---- */
 
@@ -288,11 +297,17 @@ static void lane_finished(void)
    CHECK(task_queue_find(&find_data), "the playlist download did not finish");
    /* Let the worker get past the rest of the handler */
    retro_sleep(20);
+   CHECK(retro_atomic_load_acquire_int(&playlists_freed) == 1,
+         "the finished download's playlist waits for its retirement");
    CHECK(!task_push_pl_thumbnail_download("Lane System", &config,
          "/thumbs"), "a second download of the playlist was pushed");
    task_queue_wait(NULL, NULL);
+   CHECK(retro_atomic_load_acquire_int(&playlists_freed) == 1,
+         "the playlist was freed %d times",
+         retro_atomic_load_acquire_int(&playlists_freed));
    if (failures == had)
-      fprintf(stderr, "[pass] finished: its handle outlives the handler\n");
+      fprintf(stderr, "[pass] finished: its playlist is freed, its handle "
+            "outlives the handler\n");
 }
 
 int main(void)
