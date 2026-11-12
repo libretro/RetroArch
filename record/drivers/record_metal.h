@@ -3,8 +3,8 @@
 #define RECORD_METAL_H
 #include "../record_driver.h"
 #ifdef __APPLE__
-#include <TargetConditionals.h>
-#if TARGET_OS_OSX && defined(HAVE_METAL) && defined(HAVE_AVF) \
+#include "../record_metal_platform.h"
+#if defined(RECORD_METAL_NATIVE_SDK) && defined(HAVE_METAL) && defined(HAVE_AVF) \
       && defined(HAVE_THREADS) && defined(HAVE_CONFIGFILE)
 #define HAVE_RECORD_METAL
 #endif

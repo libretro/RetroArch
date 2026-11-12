@@ -16,23 +16,26 @@ def check(sdk, minimum, output):
     with tempfile.TemporaryDirectory(prefix='vt-ios-sdk-') as tmp:
         probe = Path(tmp) / 'probe.m'
         probe.write_text('#include "gfx/common/videotoolbox_encode.h"\n'
-                         '#include "record/record_metal_platform.h"\n'
+                         '#include "record/drivers/record_metal.h"\n'
+                         '#ifndef HAVE_RECORD_METAL\n#error native frontend unavailable\n#endif\n'
                          '#ifndef RECORD_METAL_NATIVE_SDK\n#error mobile recording compiled as a stub\n#endif\n'
                          '#ifndef VIDEOTOOLBOX_ENCODE_SLOTS\n#error native encoding slots unavailable\n#endif\n'
                          'VT_ENCODE_AVAILABLE void *record_vt_ios_sdk_probe(\n'
                          '      const videotoolbox_encode_config_t *config, OSStatus *status)\n'
                          '{\n   return videotoolbox_encode_new(config, status);\n}\n')
         command = [clang, '-target', target, '-isysroot', sdk_path, '-std=gnu89',
-                   '-DHAVE_THREADS', '-DHAVE_RECORD_METAL', '-DHAVE_NETWORKING',
+                   '-DHAVE_THREADS', '-DHAVE_METAL', '-DHAVE_AVF', '-DHAVE_CONFIGFILE', '-DHAVE_NETWORKING',
                    '-DHAVE_RTMP', '-DHAVE_RFLV', '-DHAVE_CRYPTO', '-fblocks', '-fobjc-arc', '-I' + str(root), '-I' + str(root / 'libretro-common/include'),
                    '-Wall', '-Wextra', '-Werror', '-Wunguarded-availability-new',
                    '-Wno-unused-function', '-fsyntax-only', str(probe)]
         units = [probe] + [root / ('record/' + name) for name in (
             'record_gpu_capture_metal.m', 'record_gpu_session_metal.m',
-            'record_gpu_dispatch_metal.m', 'record_mux_avfoundation.m')]
+            'record_gpu_dispatch_metal.m', 'record_mux_avfoundation.m', 'drivers/record_metal.c')]
         results = []
         for unit in units:
             invocation = command[:-1] + [str(unit)]
+            if unit.suffix == '.c':
+                invocation.remove('-fobjc-arc')
             result = subprocess.run(invocation, text=True, capture_output=True, timeout=120)
             name = sdk + '-' + minimum + '-' + unit.stem
             (output / (name + '.log')).write_text(result.stdout + result.stderr)

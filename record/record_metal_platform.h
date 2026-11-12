@@ -2,6 +2,7 @@
 #ifndef RECORD_METAL_PLATFORM_H
 #define RECORD_METAL_PLATFORM_H
 #include <TargetConditionals.h>
+#include <Availability.h>
 
 #if (TARGET_OS_OSX && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) \
       && __MAC_OS_X_VERSION_MAX_ALLOWED >= 101400) \
