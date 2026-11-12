@@ -259,6 +259,26 @@ int main(void)
       words_free(&q);
    }
 
+   /* The same from the front: newest first, grown in order */
+   {
+      words_t q;
+      unsigned long i, before, wrong = 0;
+
+      CHECK(words_init(&q, 4));
+      before = allocations;
+      for (i = 0; i < 100; i++)
+         CHECK(words_push_front_growing(&q, &i));
+      CHECK(allocations == before + 5);
+      CHECK(words_count(&q) == 100 && words_limit(&q) == 128);
+      for (i = 0; i < 100; i++)
+         wrong += *words_at(&q, i) != 99 - i;
+      CHECK(wrong == 0);
+      words_free(&q);
+      i = 3;
+      CHECK(words_push_front_growing(&q, &i) && *words_back(&q) == 3 && words_limit(&q) == 8);
+      words_free(&q);
+   }
+
    /* Marched along: a few elements, pushed at one end and popped at the
     * other, a million times. One block, the one it was given. */
    {

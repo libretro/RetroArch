@@ -39,7 +39,7 @@
  * free. A push or insert into a queue that holds its limit is refused,
  * with one compare (the caller decides: drop, wait, or reserve more - the
  * one call besides init that allocates). Where the old code relied on a
- * queue with no limit, push_back_growing reserves twice as much when the
+ * queue with no limit, push_back_growing (and push_front_growing) reserves twice as much when the
  * limit is reached, and so allocates only then.
  *
  * The functions are made for the element's type with
@@ -208,6 +208,17 @@ static INLINE bool name##_push_back_growing(name##_t *q, const name##_value_t *v
 static INLINE bool name##_push_front(name##_t *q, const name##_value_t *value) \
 { \
    if (name##_full(q)) \
+      return false; \
+   q->first          = (q->first - 1) & q->mask; \
+   q->data[q->first] = *value; \
+   q->count++; \
+   return true; \
+} \
+\
+/* push_front for a queue with no limit of its own, as push_back_growing */ \
+static INLINE bool name##_push_front_growing(name##_t *q, const name##_value_t *value) \
+{ \
+   if (name##_full(q) && !name##_reserve(q, q->limit ? q->limit * 2 : 8)) \
       return false; \
    q->first          = (q->first - 1) & q->mask; \
    q->data[q->first] = *value; \
