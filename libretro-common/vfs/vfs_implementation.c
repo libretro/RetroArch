@@ -723,7 +723,7 @@ int64_t retro_vfs_file_seek_internal(
 /* Where positional I/O is had: see retro_vfs_file_read_at_impl */
 #if defined(VFS_HAVE_FILE_MAPPING) && defined(HAVE_MMAP)
 #define VFS_POSITIONAL_POSIX 1
-#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) \
+#elif defined(VFS_HAVE_AT_HANDLE) && !defined(_XBOX) && !defined(__WINRT__) \
    && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
 #define VFS_POSITIONAL_WIN32 1
 #endif
@@ -1240,7 +1240,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    /* Appends (retro_vfs_file_write_at_impl) start at the end as opened */
    retro_atomic_size_init(&stream->append_end,
          stream->size > 0 ? (size_t)stream->size : 0);
-#ifdef _WIN32
+#ifdef VFS_HAVE_AT_HANDLE
    retro_atomic_ptr_init(&stream->at_handle, NULL);
 #endif
    return stream;

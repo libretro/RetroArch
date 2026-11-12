@@ -29,6 +29,13 @@
 #include <stdint.h>
 #include <retro_atomic.h>
 
+/* Windows positional I/O keeps a second handle in a pointer atomic; the
+ * volatile backend (a PS2 TU forced onto it, built with MinGW in the
+ * samples) has none, and positional I/O falls back there. */
+#if defined(_WIN32) && !defined(RETRO_ATOMIC_BACKEND_VOLATILE)
+#define VFS_HAVE_AT_HANDLE 1
+#endif
+
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
 #define VFS_FRONTEND
@@ -238,7 +245,7 @@ struct libretro_vfs_implementation_file
     * its own on the file, with a position of its own, made at the first
     * positional call; NULL until then. */
    retro_atomic_size_t append_end;
-#ifdef _WIN32
+#ifdef VFS_HAVE_AT_HANDLE
    retro_atomic_ptr_t  at_handle;
 #endif
 };
