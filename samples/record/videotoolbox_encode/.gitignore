@@ -26,3 +26,6 @@
 
 /session_gpu_refusal_test
 /session_gpu_refusal_test.exe
+
+/hardware_id_test
+/hardware_id_test.exe
