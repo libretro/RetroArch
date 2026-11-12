@@ -337,7 +337,7 @@ jobs:
       - name: Link network worker and threadless fallback
         run: |
           set -eu
-          make -j"$(sysctl -n hw.ncpu)" HAVE_RTMP=1 HAVE_RFLV=1 HAVE_CRYPTO=1 C89_BUILD=1 \
+          make -j"$(sysctl -n hw.ncpu)" HAVE_RTMP=1 HAVE_RFLV=1 HAVE_CRYPTO=1 \
             MINVERFLAGS="-mmacosx-version-min=$(sw_vers -productVersion)"
           test -x retroarch
           nm retroarch | grep '_record_gpu_dispatch_metal_new_stream'

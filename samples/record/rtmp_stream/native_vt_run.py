@@ -74,6 +74,7 @@ def main():
         ffmpeg = native_ffmpeg()
         probe = str(Path(ffmpeg).with_name('ffprobe')) if '/' in ffmpeg else 'ffprobe'
         binary = args.binary.resolve() if args.binary else root / 'native_vt_test'
+        lifetime_link = None
         if not args.binary:
             command(['make', 'rtmps_client_native_test'], cwd=network, timeout=180)
             dry = command(['make', '-B', '-n', 'rtmps_client_native_test'], cwd=network)
@@ -105,6 +106,9 @@ def main():
                     link += ['-DHAVE_NETWORKING', '-DHAVE_RTMP', '-DHAVE_RFLV',
                              str(repo / 'record/record_gpu_dispatch_metal.m'),
                              str(repo / 'libretro-common/net/net_wake.c')]
+                    lifetime_link = [str(here / 'metal_resolve_lifetime_test.m') if flag == str(here / fixture)
+                                     else flag for flag in link
+                                     if flag != str(repo / 'record/record_gpu_dispatch_metal.m')]
                 # Compile Objective-C ownership modes separately from C inputs.
                 compile_flags = []
                 skip = False
@@ -124,6 +128,41 @@ def main():
                     command(compile_flags + ['-fblocks', ownership, '-c', source, '-o', obj], cwd=network, timeout=180)
                     link[number] = str(obj)
             command(link, cwd=network, timeout=180)
+            if lifetime_link:
+                lifetime_binary = root / 'metal_resolve_lifetime_test'
+                lifetime_link[lifetime_link.index('-o') + 1] = str(lifetime_binary)
+                sanitizer = ['-fsanitize=address,undefined', '-fno-sanitize-recover=undefined']
+                for number, source in enumerate(list(lifetime_link)):
+                    if not source.endswith('.m'):
+                        continue
+                    obj = root / f'lifetime-objc-{number}.o'
+                    command(compile_flags + sanitizer + ['-fblocks', ownership, '-c', source, '-o', obj],
+                            cwd=network, timeout=180)
+                    lifetime_link[number] = str(obj)
+                command(lifetime_link + sanitizer, cwd=network, timeout=180)
+                lifetime = command([lifetime_binary], timeout=30)
+                assert b'PASS actual delayed DNS completion' in lifetime.stdout
+                evidence['resolver_lifetime'] = 'PASS actual callback after dispatcher free and descriptor reuse under ASan/UBSan'
+                dispatcher_source = (repo / 'record/record_gpu_dispatch_metal.m').read_text()
+                retained_wake = 'r->wake = net_wake_dup(j->stream_wake);'
+                assert dispatcher_source.count(retained_wake) == 1
+                mutant_dispatch = root / 'borrowed-resolver-dispatch.m'
+                mutant_dispatch.write_text(dispatcher_source.replace(retained_wake, 'r->wake = j->stream_wake;'))
+                lifetime_source = here / 'metal_resolve_lifetime_test.m'
+                mutant_fixture = root / 'borrowed-resolver-test.m'
+                mutant_fixture.write_text(lifetime_source.read_text().replace(
+                    '../../../record/record_gpu_dispatch_metal.m', str(mutant_dispatch)))
+                mutant_object = root / 'borrowed-resolver-test.o'
+                command(compile_flags + sanitizer + ['-I' + str(repo / 'record'), '-fblocks', ownership,
+                        '-c', mutant_fixture, '-o', mutant_object], cwd=network, timeout=180)
+                lifetime_object = next(flag for flag in lifetime_link if 'lifetime-objc-' in str(flag))
+                mutant_link = [str(mutant_object) if flag == lifetime_object else flag for flag in lifetime_link]
+                mutant_binary = root / 'borrowed-resolver-test'
+                mutant_link[mutant_link.index('-o') + 1] = str(mutant_binary)
+                command(mutant_link + sanitizer, cwd=network, timeout=180)
+                negative = command([mutant_binary], timeout=30, check=False)
+                assert negative.returncode != 0 and b'heap-use-after-free' in negative.stderr
+                evidence['resolver_lifetime_negative'] = 'PASS borrowed wake rejected by native ASan'
         evidence['binary_sha256'] = hashlib.sha256(binary.read_bytes()).hexdigest()
         cases = (
                 (0, 8, 48000, 2, None, False, None, False), (1, 8, 44100, 1, '1.2', False, None, False),
