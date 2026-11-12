@@ -8305,6 +8305,10 @@ struct metal_view_chain
                width = shader_pass->fbo.abs_x;
                break;
 
+            case RARCH_SCALE_ORIGINAL:
+               width = (NSUInteger)(src_w * shader_pass->fbo.scale_x);
+               break;
+
             default:
                break;
          }
@@ -8324,6 +8328,10 @@ struct metal_view_chain
 
             case RARCH_SCALE_ABSOLUTE:
                height = shader_pass->fbo.abs_y;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               height = (NSUInteger)(src_h * shader_pass->fbo.scale_y);
                break;
 
             default:
