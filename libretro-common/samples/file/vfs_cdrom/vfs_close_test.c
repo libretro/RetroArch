@@ -22,11 +22,27 @@ static int injected_close(int fd)
    descriptor_closes++;
    return fail_descriptor ? -1 : result;
 }
+#ifdef _WIN32
+#include <windows.h>
+/* Read-only streams on Windows NT close their own handle (9ce7ef23):
+ * that is the descriptor close there. Nothing else in these checks
+ * closes a handle. */
+static BOOL injected_close_handle(HANDLE h)
+{
+   BOOL result = CloseHandle(h);
+   descriptor_closes++;
+   return fail_descriptor ? FALSE : result;
+}
+#define CloseHandle injected_close_handle
+#endif
 #define fclose injected_fclose
 #define close injected_close
 #include "../../../vfs/vfs_implementation.c"
 #undef fclose
 #undef close
+#ifdef _WIN32
+#undef CloseHandle
+#endif
 
 static int RETRO_CALLCONV callback_close(struct retro_vfs_file_handle *file)
 {
