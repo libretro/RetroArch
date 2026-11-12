@@ -65,7 +65,7 @@ bool net_rtmp_handshake_get(net_rtmp_handshake_t *h, net_rtmp_span_t *span)
    }
    else if (h->receive_stage >= 2 && h->sent < 3073)
    {
-      span->data = h->c2 + h->sent - 1537;
+      span->data = h->c2 + (h->sent - 1537);
       span->size = 3073 - h->sent;
    }
    else

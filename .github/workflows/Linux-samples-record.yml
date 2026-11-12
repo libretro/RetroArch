@@ -191,6 +191,8 @@ jobs:
         run: |
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean && make rtmp_handshake_test CC=clang SANITIZER=address,undefined
+          ./rtmp_handshake_test
           make clean && make check peer-check SANITIZER=address,undefined
           make rtmps_socket_native_test SANITIZER=address,undefined
           python3 media_peer.py --mux --tls 1.2 ./rtmps_socket_native_test
