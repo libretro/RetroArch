@@ -76,7 +76,7 @@ network_cmd_port = "{command_port}"
                NATIVE_RECORD_LAYOUT='4' if args.channels == 1 else '3')
     env.pop('NATIVE_RECORD_FLOAT', None)
     with (root / 'receiver.log').open('wb') as receiver_log, log_path.open('wb') as log:
-        server = subprocess.Popen([args.ffmpeg, '-v', 'error', '-listen', '1',
+        server = subprocess.Popen([args.ffmpeg, '-v', 'debug', '-listen', '1',
                                    '-timeout', '15', '-copyts', '-analyzeduration', '500000',
                                    '-i', url, '-map', '0', '-c', 'copy', '-f', 'flv',
                                    '-flush_packets', '1', str(received)],
