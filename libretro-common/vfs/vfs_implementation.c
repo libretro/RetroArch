@@ -1112,6 +1112,44 @@ static int64_t vfs_native_read(libretro_vfs_implementation_file *stream,
 #endif
 #endif
 
+/* Hosts whose stdio streams and descriptors fstat() answers for: a
+ * console's C library may stub it, and keeps the seek-and-tell probe */
+#if (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+      || defined(__NetBSD__) || defined(__OpenBSD__) \
+      || defined(__DragonFly__) || defined(__HAIKU__)) \
+   && !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS)
+#define VFS_OPEN_FSTAT 1
+#endif
+
+/* A file's size as just opened, in one system call or none: the native
+ * Windows stream read it opening, fstat() asks the descriptor. -1 where
+ * neither answers, and the caller seeks to the end and back. */
+static int64_t vfs_open_size(libretro_vfs_implementation_file *stream)
+{
+#ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+      return stream->size;
+#endif
+#ifdef VFS_OPEN_FSTAT
+   if (stream->scheme == VFS_SCHEME_NONE)
+   {
+      struct stat st;
+      int         fd = stream->fd;
+      if (!(stream->hints & RFILE_HINT_UNBUFFERED))
+         fd = stream->fp ? fileno(stream->fp) : -1;
+#ifdef VFS_HAVE_FILE_MAPPING
+      /* a mapped stream's size is the mapping's */
+      else if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+         return -1;
+#endif
+      if (fd >= 0 && fstat(fd, &st) == 0 && S_ISREG(st.st_mode))
+         return (int64_t)st.st_size;
+   }
+#endif
+   (void)stream;
+   return -1;
+}
+
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       const char *path, unsigned mode, unsigned hints)
 {
@@ -1624,11 +1662,17 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    if (     mode != RETRO_VFS_FILE_ACCESS_WRITE
          && mode != RETRO_VFS_FILE_ACCESS_READ_WRITE)
    {
-      retro_vfs_file_seek_internal(stream, 0, SEEK_END);
+      int64_t known = vfs_open_size(stream);
+      if (known >= 0)
+         stream->size = known;
+      else
+      {
+         retro_vfs_file_seek_internal(stream, 0, SEEK_END);
 
-      stream->size = retro_vfs_file_tell_impl(stream);
+         stream->size = retro_vfs_file_tell_impl(stream);
 
-      retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+         retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+      }
    }
    /* Appends (retro_vfs_file_write_at_impl) start at the end as opened */
    retro_atomic_size_init(&stream->append_end,
