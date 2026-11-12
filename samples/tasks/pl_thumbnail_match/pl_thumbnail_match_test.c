@@ -39,6 +39,7 @@
 #include "../../../file_path_special.h"
 #include "../../../playlist.h"
 #include "../../../gfx/gfx_thumbnail_results.c"
+#include "../../../libretro-db/libretrodb.h"
 #include "../../../tasks/tasks_internal.h"
 
 /* Engine allocations of oom_size bytes fail, to fake running out. */
@@ -64,8 +65,57 @@ static uint32_t counted_crc32(uint32_t crc, const uint8_t *data, size_t len)
    crc_item += len;
    return encoding_crc32(crc, data, len);
 }
+/* rdb records the task reads in the current work item */
+static size_t read_item;
+typedef struct
+{
+   libretrodb_scan2_cb cb;
+   void *ctx;
+} counted_scan_t;
+static int counted_record(void *ctx, const uint8_t *key, size_t key_len,
+      const uint8_t *key2, size_t key2_len, const char *name,
+      size_t name_len, uint64_t offset, const uint64_t *aux)
+{
+   counted_scan_t *c = (counted_scan_t*)ctx;
+   read_item++;
+   return c->cb(c->ctx, key, key_len, key2, key2_len, name, name_len,
+         offset, aux);
+}
+static int counted_scan_step(libretrodb_scan_t *scan, unsigned max_records,
+      libretrodb_scan2_cb cb, void *ctx)
+{
+   counted_scan_t c;
+   c.cb  = cb;
+   c.ctx = ctx;
+   return libretrodb_scan_step(scan, max_records, counted_record, &c);
+}
+
+/* The task's table adds and sets fail while these are set */
+static bool fail_adds;
+static bool fail_sets;
+static size_t failing_results_add(gfx_thumbnail_results_t *t,
+      const char *content_path, const char *label, const char *crc32,
+      const char *system)
+{
+   if (fail_adds)
+      return (size_t)-1;
+   return gfx_thumbnail_results_add(t, content_path, label, crc32, system);
+}
+static bool failing_results_set(gfx_thumbnail_results_t *t, size_t rec,
+      unsigned type, const char *name)
+{
+   if (fail_sets)
+      return false;
+   return gfx_thumbnail_results_set(t, rec, type, name);
+}
 #define encoding_crc32 counted_crc32
+#define libretrodb_scan_step counted_scan_step
+#define gfx_thumbnail_results_add failing_results_add
+#define gfx_thumbnail_results_set failing_results_set
 #include "../../../tasks/task_pl_thumbnail_match.c"
+#undef gfx_thumbnail_results_set
+#undef gfx_thumbnail_results_add
+#undef libretrodb_scan_step
 #undef encoding_crc32
 
 #define FIX "fixture"
@@ -781,11 +831,16 @@ static bool queue_busy(void)
    return task_queue_find(&find_data);
 }
 
+/* @userdata, when given, takes the resolve's state */
 static bool resolve_finder(retro_task_t *task, void *userdata)
 {
    pl_thumb_match_t *m = (pl_thumb_match_t*)task->state;
-   return    task->handler == task_pl_thumbnail_match_handler && m
-          && (m->flags & PL_THUMB_MATCH_FLAG_RESOLVE);
+   if (     task->handler != task_pl_thumbnail_match_handler || !m
+         || !(m->flags & PL_THUMB_MATCH_FLAG_RESOLVE))
+      return false;
+   if (userdata)
+      *(pl_thumb_match_t**)userdata = m;
+   return true;
 }
 
 /* Unthreaded only: a worker writes the flags. */
@@ -797,7 +852,29 @@ static bool resolve_queued(void)
    return task_queue_find(&find_data);
 }
 
+static pl_thumb_match_t *resolve_state(void)
+{
+   task_finder_data_t find_data;
+   pl_thumb_match_t *m = NULL;
+   find_data.func      = resolve_finder;
+   find_data.userdata  = &m;
+   task_queue_find(&find_data);
+   return m;
+}
+
 static bool resolve_seen;
+
+/* Tasks that finished leaving work for the main thread's cleanup */
+static unsigned leftovers;
+static void count_leftovers(retro_task_t *task, retro_time_t took)
+{
+   pl_thumb_match_t *m = (pl_thumb_match_t*)task->state;
+   if (     task->handler == task_pl_thumbnail_match_handler && m
+         && m->status == PL_THUMB_MATCH_DONE
+         && (     m->dir || m->index || m->playlist || m->want || m->hits
+               || m->rdbs || m->system_art || m->scratch || m->scan))
+      leftovers++;
+}
 
 static bool push(const char *dir_database)
 {
@@ -1165,6 +1242,333 @@ static void lane_pacing(void)
             paced, unpaced);
 }
 
+/* A MsgPack writer of its own, so the fixture is not built by the
+ * library under test (as samples/tasks/database does). */
+typedef struct { uint8_t *data; size_t len, cap; } mp_buf_t;
+
+static void mp_put(mp_buf_t *b, const void *p, size_t n)
+{
+   if (b->len + n > b->cap)
+   {
+      size_t want = b->cap ? b->cap * 2 : 256;
+      while (want < b->len + n)
+         want *= 2;
+      b->data = (uint8_t*)realloc(b->data, want);
+      b->cap  = want;
+   }
+   memcpy(b->data + b->len, p, n);
+   b->len += n;
+}
+static void mp_byte(mp_buf_t *b, uint8_t v) { mp_put(b, &v, 1); }
+static void mp_str(mp_buf_t *b, const char *s)
+{
+   size_t n = strlen(s);
+   if (n > 255)
+   {
+      mp_byte(b, 0xda); /* str 16 */
+      mp_byte(b, (uint8_t)(n >> 8));
+   }
+   else
+      mp_byte(b, 0xd9); /* str 8 */
+   mp_byte(b, (uint8_t)n);
+   mp_put(b, s, n);
+}
+static void mp_bin(mp_buf_t *b, const void *p, uint8_t n)
+{
+   mp_byte(b, 0xc4);
+   mp_byte(b, n);
+   mp_put(b, p, n);
+}
+static void mp_crc_item(mp_buf_t *b, const char *name, uint32_t c)
+{
+   uint8_t crc[4];
+   crc[0] = (uint8_t)(c >> 24); crc[1] = (uint8_t)(c >> 16);
+   crc[2] = (uint8_t)(c >> 8);  crc[3] = (uint8_t)c;
+   mp_byte(b, 0x82);
+   mp_str(b, "name");
+   mp_str(b, name);
+   mp_str(b, "crc");
+   mp_bin(b, crc, 4);
+}
+static void mp_serial_item(mp_buf_t *b, const char *name, const char *serial)
+{
+   mp_byte(b, 0x82);
+   mp_str(b, "name");
+   mp_str(b, name);
+   mp_str(b, "serial");
+   mp_bin(b, serial, (uint8_t)strlen(serial));
+}
+
+/* Header, records, nil, then the {count} map the header points at. */
+static bool write_rdb(const char *path, mp_buf_t *body, uint32_t count)
+{
+   mp_buf_t file;
+   uint64_t off = 16 + (uint64_t)body->len + 1;
+   int i;
+   bool ok;
+
+   memset(&file, 0, sizeof(file));
+   mp_put(&file, "RARCHDB", 7);
+   mp_byte(&file, 0);
+   for (i = 0; i < 8; i++)
+      mp_byte(&file, (uint8_t)(off >> (56 - 8 * i)));
+   mp_put(&file, body->data, body->len);
+   mp_byte(&file, 0xc0);
+   mp_byte(&file, 0x81);
+   mp_str(&file, "count");
+   mp_byte(&file, 0xce); /* uint 32 */
+   for (i = 0; i < 4; i++)
+      mp_byte(&file, (uint8_t)(count >> (24 - 8 * i)));
+   ok = filestream_write_file(path, file.data, (int64_t)file.len);
+   free(file.data);
+   free(body->data);
+   return ok;
+}
+
+static const fx_entry_t t1_entries[] =
+{
+   { "/roms/ng.nes",   "nes_ninja",            "1A2B3C4D|crc" },
+   { "/roms/ab.nes",   "zzz",                  "0BADF00D|crc" },
+   { "/roms/zero.nes", "qqq",                  "00000000|crc" },
+   { "/roms/ser.nes",  "disc_one",             "SLUS-00001|serial" },
+   { "/roms/ngj.nes",  "Ninja Gaiden (Japan)", "1A2B3C4D|crc" },
+   { "/roms/sg.nes",   "Serial Game (U)",      "" },
+   { "/roms/gl.nes",   "gl",                   "C0FFEE00|crc" },
+   { "/roms/gu.nes",   "gu",                   "C0FFEE01|crc" },
+   /* Each reads as 001A2B3C to strtoul */
+   { "/roms/l1.nes",   "l1",                   "1A2B3C|crc" },
+   { "/roms/l2.nes",   "l2",                   "0x1A2B3C|crc" },
+   { "/roms/l3.nes",   "l3",                   " 01A2B3C|crc" },
+   { "/roms/l4.nes",   "l4",                   "+01A2B3C|crc" },
+   { "/roms/l5.nes",   "l5",                   "1001A2B3C|crc" }
+};
+#define T1_COUNT (sizeof(t1_entries) / sizeof(t1_entries[0]))
+#define T1_LOOSE 8
+#define BARE_SYS "Synth - Bare"
+
+static const char *t1_box(size_t i)
+{
+   return find_box(t1_entries[i].path, t1_entries[i].label, SYS);
+}
+
+static const char *const t1_art[] =
+{
+   "Ninja Gaiden (USA).png",
+   "Ninja Gaiden (Japan).png",
+   "Alpha (USA).png",
+   "Beta (USA).png",
+   "Nil Game (USA).png",
+   "Serial Game (USA).png",
+   "Gamma (USA).png",
+   "Loose Crc (USA).png"
+};
+
+enum t1_rdb { T1_FULL, T1_BAD, T1_NIL, T1_LOW, T1_LEGACY };
+
+/* Beta, Alpha's other name, comes a scan step after it. T1_BAD: Beta's
+ * map header unreadable. T1_NIL: a nil in place of Beta, short of the
+ * metadata's count. T1_LOW: whole, but counted one record low.
+ * T1_LEGACY: whole, but a legacy header (offset 0), so no count. */
+static bool write_t1_rdb(const char *path, enum t1_rdb form)
+{
+   char long_name[300];
+   mp_buf_t body;
+   mp_buf_t file;
+   size_t beta;
+   int i;
+   bool ok;
+
+   memset(long_name, 'G', sizeof(long_name) - 1);
+   long_name[sizeof(long_name) - 1] = '\0';
+   memset(&body, 0, sizeof(body));
+   mp_crc_item(&body, "Ninja Gaiden (USA)", 0x1A2B3C4D);
+   mp_crc_item(&body, "Gamma (USA)", 0xC0FFEE00);
+   mp_crc_item(&body, long_name, 0xC0FFEE00);
+   mp_crc_item(&body, long_name, 0xC0FFEE01);
+   mp_crc_item(&body, "Alpha (USA)", 0x0BADF00D);
+   for (i = 0; i < PL_THUMB_MATCH_RECORDS; i++)
+      mp_crc_item(&body, "Filler (USA)", 0xF0000000 + (uint32_t)i);
+   beta = body.len;
+   mp_crc_item(&body, "Beta (USA)", 0x0BADF00D);
+   mp_crc_item(&body, "Nil Game (USA)", 0);
+   mp_serial_item(&body, "Serial Game (USA)", "SLUS-00001");
+   mp_crc_item(&body, "Loose Crc (USA)", 0x001A2B3C);
+   if (form == T1_NIL)
+      body.data[beta] = 0xc0;
+   else if (form == T1_BAD)
+      body.data[beta] = 0xc1; /* never used */
+   if (form != T1_LEGACY)
+      return write_rdb(path, &body,
+            9 + PL_THUMB_MATCH_RECORDS - (form == T1_LOW));
+   memset(&file, 0, sizeof(file));
+   mp_put(&file, "RARCHDB", 7);
+   for (i = 0; i < 9; i++)
+      mp_byte(&file, 0);
+   mp_put(&file, body.data, body.len);
+   mp_byte(&file, 0xc0);
+   ok = filestream_write_file(path, file.data, (int64_t)file.len);
+   free(file.data);
+   free(body.data);
+   return ok;
+}
+
+static void t1_database_list(void)
+{
+   char hist[128];
+   char hist_cache[128];
+   playlist_config_t config;
+   playlist_t *playlist;
+
+   fill_pathname_join_special(hist, FIX, FILE_PATH_CONTENT_HISTORY,
+         sizeof(hist));
+   strlcpy(hist_cache, hist, sizeof(hist_cache));
+   strlcat(hist_cache, ".thumbs", sizeof(hist_cache));
+   filestream_delete(hist_cache);
+   write_text(hist, "{\"version\": \"1.5\", \"items\": ["
+         "{\"path\": \"/roms/ng.nes\", \"label\": \"nes_ninja\", "
+         "\"core_path\": \"" HIST_CORE "\", \"core_name\": \"NES\", "
+         "\"crc32\": \"1A2B3C4D|crc\", \"db_name\": \"\"}]}\n");
+   memset(&config, 0, sizeof(config));
+   config.capacity = 8192;
+   playlist_config_set_path(&config, hist);
+   hist_core.databases = (char*)SYS "|Nintendo - Family Computer Disk System";
+   playlist = playlist_init(&config);
+   CHECK(task_push_pl_thumbnail_match(&config, playlist, thumbs_dir, db_dir,
+         false), "push history");
+   playlist_free(playlist);
+   run(0);
+   CHECK(!find_box("/roms/ng.nes", "nes_ninja", SYS),
+         "a list of databases: no T1: %s",
+         find_box("/roms/ng.nes", "nes_ninja", SYS));
+   hist_core.databases = NULL;
+   filestream_delete(hist_cache);
+}
+
+static void lane_t1(void)
+{
+   char rdb[256];
+   char bare[256];
+   mp_buf_t body;
+   size_t i;
+   int form;
+   pl_thumb_match_t *m = NULL;
+   unsigned had = failures;
+
+   fixture_init();
+   for (i = 0; i < sizeof(t1_art) / sizeof(t1_art[0]); i++)
+      art("Named_Boxarts", t1_art[i], true);
+   write_playlist(t1_entries, T1_COUNT);
+   path_mkdir(db_dir);
+   fill_pathname_join_special(rdb, db_dir, SYS ".rdb", sizeof(rdb));
+   CHECK(write_t1_rdb(rdb, T1_FULL), "write %s", rdb);
+
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   CHECK(!t1_box(0) && !t1_box(3), "no database: no T1");
+
+   gfx_thumbnail_results_deinit();
+   filestream_delete(cache_path);
+   leftovers = 0;
+   task_queue_set_slow_handler_cb(count_leftovers, 1);
+   push(db_dir);
+   run(ONE_ITEM);
+   CHECK(string_is_equal(t1_box(0), "Ninja Gaiden (USA).png"),
+         "a CRC names the game: %s", t1_box(0));
+   CHECK(!t1_box(1), "two names for one CRC, neither the label: no T1: %s",
+         t1_box(1));
+   CHECK(!t1_box(2), "a CRC of 00000000 is no anchor");
+   CHECK(string_is_equal(t1_box(3), "Serial Game (USA).png"),
+         "a serial names the game: %s", t1_box(3));
+   CHECK(string_is_equal(t1_box(4), "Ninja Gaiden (USA).png"),
+         "the database name beats the label's own image: %s", t1_box(4));
+   CHECK(!t1_box(6), "a CRC's other name too long to read: no T1: %s",
+         t1_box(6));
+   CHECK(!t1_box(7), "a CRC's one name too long to read: no T1: %s",
+         t1_box(7));
+   for (i = T1_LOOSE; i < T1_COUNT; i++)
+      CHECK(!t1_box(i), "\"%s\" is no anchor: %s", t1_entries[i].crc32,
+            t1_box(i));
+   CHECK(!leftovers, "the resolve left T1 state to cleanup");
+
+   /* A cancel mid-rdb: the handler frees what the pass holds */
+   gfx_thumbnail_results_deinit();
+   filestream_delete(cache_path);
+   push(db_dir);
+   clock_step = ONE_ITEM;
+   while (     queue_busy()
+         && !((m = resolve_state()) && m->scan && m->hit_count))
+      task_queue_check();
+   CHECK(m && m->scan && m->hit_count, "the rdb pass holds names");
+   task_queue_reset();
+   run(ONE_ITEM);
+   CHECK(!leftovers, "a cancel mid-rdb left its state to cleanup");
+
+   /* A read error, an end other than the metadata's count or no count
+    * drops what the rdb named in earlier steps */
+   for (form = T1_BAD; form <= T1_LEGACY; form++)
+   {
+      const char *what = form == T1_BAD ? "a damaged rdb"
+            : form == T1_NIL ? "a short rdb"
+            : form == T1_LOW ? "an rdb counted low" : "a legacy rdb";
+      gfx_thumbnail_results_deinit();
+      filestream_delete(cache_path);
+      CHECK(write_t1_rdb(rdb, (enum t1_rdb)form), "write %s", rdb);
+      leftovers = 0;
+      push(db_dir);
+      run(ONE_ITEM);
+      CHECK(!t1_box(0) && !t1_box(1) && !t1_box(3),
+            "%s names nothing: %s, %s, %s", what, t1_box(0), t1_box(1),
+            t1_box(3));
+      CHECK(string_is_equal(t1_box(5), "Serial Game (USA).png"),
+            "%s: the rest resolves: %s", what, t1_box(5));
+      CHECK(!leftovers, "%s left its state to cleanup", what);
+   }
+
+   gfx_thumbnail_results_deinit();
+   filestream_delete(cache_path);
+   filestream_delete(rdb);
+   leftovers = 0;
+   push(db_dir);
+   run(ONE_ITEM);
+   CHECK(!t1_box(0) && !t1_box(3)
+         && string_is_equal(t1_box(5), "Serial Game (USA).png"),
+         "a missing rdb names nothing, the rest resolves");
+   CHECK(!leftovers, "a missing rdb left its state to cleanup");
+   task_queue_set_slow_handler_cb(NULL, 0);
+
+   /* A core that lists several databases names no one rdb */
+   gfx_thumbnail_results_deinit();
+   CHECK(write_t1_rdb(rdb, T1_FULL), "write %s", rdb);
+   t1_database_list();
+
+   /* No art folder for the system: its rdb is not read */
+   gfx_thumbnail_results_deinit();
+   filestream_delete(cache_path);
+   fill_pathname_join_special(bare, db_dir, BARE_SYS ".rdb", sizeof(bare));
+   memset(&body, 0, sizeof(body));
+   mp_crc_item(&body, "Bare Game (USA)", 0x1A2B3C4D);
+   CHECK(write_rdb(bare, &body, 1), "write %s", bare);
+   write_text(pl_path, "{\"version\": \"1.5\", \"items\": ["
+         "{\"path\": \"/roms/bare.nes\", \"label\": \"bare\", "
+         "\"core_path\": \"DETECT\", \"core_name\": \"DETECT\", "
+         "\"crc32\": \"1A2B3C4D|crc\", \"db_name\": \"" BARE_SYS ".lpl\"}]}\n");
+   read_item = 0;
+   push(db_dir);
+   run(0);
+   CHECK(!read_item, "no art folder: %u rdb records read",
+         (unsigned)read_item);
+   filestream_delete(bare);
+
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   for (i = 0; i < sizeof(t1_art) / sizeof(t1_art[0]); i++)
+      art("Named_Boxarts", t1_art[i], false);
+   write_playlist(fx_entries, FX_COUNT);
+   if (failures == had)
+      fprintf(stderr, "[pass] T1\n");
+}
+
 /* Quitting cancels every task; a write cut short leaves no file. */
 static void lane_cancel_write(void)
 {
@@ -1353,14 +1757,17 @@ static void lane_engine_oom(void)
    run(0);
    before = read_cache();
    gfx_thumbnail_results_deinit();
-   notified = 0;
-   oom_hits = 0;
-   oom_size = FX_BOXARTS * sizeof(struct gtm_rec);
+   notified  = 0;
+   oom_hits  = 0;
+   leftovers = 0;
+   oom_size  = FX_BOXARTS * sizeof(struct gtm_rec);
+   task_queue_set_slow_handler_cb(count_leftovers, 1);
    push("");
-   run(0);
+   run(ONE_ITEM);
    oom_size = 0;
    after    = read_cache();
    CHECK(oom_hits == 1, "one engine allocation failed: %u", oom_hits);
+   CHECK(!leftovers, "the failed resolve left its index to cleanup");
    CHECK(before && after && string_is_equal(before, after),
          "the cache is kept");
    CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png"),
@@ -1380,27 +1787,104 @@ static void lane_engine_oom(void)
    CHECK(!notified && before && after && string_is_equal(before, after),
          "and finds it unchanged");
    CHECK(gfx_thumbnail_results_open(pl_path) == 0, "resolved");
+   free(after);
+
+   /* Out of memory while listing, with the folder open */
+   gfx_thumbnail_results_deinit();
+   oom_hits  = 0;
+   leftovers = 0;
+   oom_size  = sizeof(struct gtm_pool) + GTM_POOL_BLOCK;
+   push("");
+   run(ONE_ITEM);
+   oom_size = 0;
+   after    = read_cache();
+   CHECK(oom_hits == 1, "the listing's first name failed: %u", oom_hits);
+   CHECK(before && after && string_is_equal(before, after),
+         "a failed listing keeps the cache");
+   CHECK(!leftovers, "the failed listing left its folder to cleanup");
    free(before);
    free(after);
+   task_queue_set_slow_handler_cb(NULL, 0);
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
    if (failures == had)
       fprintf(stderr, "[pass] engine out of memory\n");
 }
 
+/* A table add or set out of memory keeps the cache, as the engine's
+ * does. */
+static void lane_add_oom(void)
+{
+   int i;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   run(0);
+   task_queue_set_slow_handler_cb(count_leftovers, 1);
+   for (i = 0; i < 2; i++)
+   {
+      bool *fail       = i ? &fail_sets : &fail_adds;
+      const char *what = i ? "set" : "add";
+      char *before     = read_cache();
+      char *after;
+
+      gfx_thumbnail_results_deinit();
+      notified  = 0;
+      leftovers = 0;
+      push("");
+      clock_step = ONE_ITEM;
+      while (!resolve_queued() && queue_busy())
+         task_queue_check();
+      *fail = true;
+      run(ONE_ITEM);
+      *fail = false;
+      after = read_cache();
+      CHECK(before && after && string_is_equal(before, after),
+            "%s: the cache is kept", what);
+      CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png"),
+            "%s: the loaded matches stay: %s", what, box(1));
+      CHECK(!notified, "%s: no notice", what);
+      CHECK(gfx_thumbnail_results_open(pl_path)
+            == GFX_THUMBNAIL_RESULTS_RESOLVE,
+            "%s: resolves again on its next open", what);
+      CHECK(!leftovers, "%s: the failed resolve left its index to cleanup",
+            what);
+      free(before);
+      free(after);
+   }
+   task_queue_set_slow_handler_cb(NULL, 0);
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] table add and set out of memory\n");
+}
+
 #define BIG_SYS     "Synth - Big"
-#define BIG_NAMES   20000
+/* Names and entries: more than two sort steps each */
+#define BIG_NAMES   9000
 #define BIG_ENTRIES (2 * GFX_THUMBNAIL_MATCH_SORT_STEP + 808)
+/* Entries with a crc in the rdb: several sort steps */
+#define BIG_ANCHORS (BIG_ENTRIES / 8)
 
 static size_t most_moves;
 static size_t most_sum;
+static size_t most_reads;
 static size_t all_moves;
 static size_t all_sum;
+static size_t all_reads;
+static unsigned index_items;
+static unsigned t1_items;
 static unsigned kept_playlist;
+static unsigned kept_rdbs;
+static unsigned kept_hits;
 static const void *last_index;
 static const void *last_results;
+static const void *last_t1;
 static size_t last_index_moved;
 static size_t last_results_moved;
+static size_t last_t1_moved;
 
 /* Moves since the last item, for a sort that may be new or restarted */
 static size_t sort_delta(const void *owner, const gfx_thumbnail_match_sort_t *s,
@@ -1417,54 +1901,64 @@ static size_t sort_delta(const void *owner, const gfx_thumbnail_match_sort_t *s,
 
 static void measure_item(retro_task_t *task, retro_time_t took)
 {
-   size_t moves;
+   size_t moves, index_moves, t1_moves;
    pl_thumb_match_t *m = (pl_thumb_match_t*)task->state;
    if (task->handler != task_pl_thumbnail_match_handler || !m)
       return;
-   moves  = sort_delta(m->index, m->index ? &m->index->sort : NULL,
+   count_leftovers(task, took);
+   index_moves = sort_delta(m->index, m->index ? &m->index->sort : NULL,
          &last_index, &last_index_moved);
-   moves += sort_delta(m->results, m->results ? &m->results->sort : NULL,
+   /* The want and hit sorts share m->sort */
+   t1_moves    = sort_delta(m->sort.base, &m->sort, &last_t1,
+         &last_t1_moved);
+   moves       = index_moves + t1_moves + sort_delta(m->results,
+         m->results ? &m->results->sort : NULL,
          &last_results, &last_results_moved);
+   if (index_moves)
+      index_items++;
+   if (t1_moves)
+      t1_items++;
    if (moves > most_moves)
       most_moves = moves;
    if (crc_item > most_sum)
       most_sum = crc_item;
+   if (read_item > most_reads)
+      most_reads = read_item;
    all_moves += moves;
    all_sum   += crc_item;
+   all_reads += read_item;
    crc_item   = 0;
-   if (     (m->flags & PL_THUMB_MATCH_FLAG_RESOLVE)
-         && m->status > PL_THUMB_MATCH_RESOLVE && m->playlist)
+   read_item  = 0;
+   if (!(m->flags & PL_THUMB_MATCH_FLAG_RESOLVE))
+      return;
+   if (m->status > PL_THUMB_MATCH_RESOLVE && m->playlist)
       kept_playlist++;
+   if (     m->status > PL_THUMB_MATCH_RDB
+         && (m->want || m->rdbs || m->system_art || m->scan))
+      kept_rdbs++;
+   if (m->status > PL_THUMB_MATCH_RESOLVE && m->hits)
+      kept_hits++;
 }
 
-/* A big folder and playlist: no work item does a whole sort or sum. */
-static void lane_bounded(void)
+static void write_big(const char *big_pl)
 {
-   char big_pl[PATH_MAX_LENGTH];
-   char big_cache[PATH_MAX_LENGTH];
-   char path[PATH_MAX_LENGTH];
+   char path[256];
    char name[64];
-   playlist_config_t config;
+   mp_buf_t body;
    rjsonwriter_t *w;
    size_t i;
    int _len;
-   unsigned had = failures;
 
-   fixture_init();
    fill_pathname_join_special(path, thumbs_dir, BIG_SYS, sizeof(path));
    fill_pathname_join_special(path, path, "Named_Boxarts", sizeof(path));
    path_mkdir(path);
    for (i = 0; i < BIG_NAMES; i++)
    {
-      char file[PATH_MAX_LENGTH];
+      char file[256];
       snprintf(name, sizeof(name), "Synth %05u (USA).png", (unsigned)i);
       fill_pathname_join_special(file, path, name, sizeof(file));
       write_text(file, "png");
    }
-   fill_pathname_join_special(big_pl, FIX, "Big.lpl", sizeof(big_pl));
-   strlcpy(big_cache, big_pl, sizeof(big_cache));
-   strlcat(big_cache, ".thumbs", sizeof(big_cache));
-   filestream_delete(big_cache);
    w = rjsonwriter_open_memory();
    raw(w, "{\"version\": \"1.5\", \"items\": [");
    for (i = 0; i < BIG_ENTRIES; i++)
@@ -1475,29 +1969,63 @@ static void lane_bounded(void)
       snprintf(name, sizeof(name), "Synth %05u (U)", (unsigned)i);
       raw(w, ", \"label\": ");
       rjsonwriter_add_string(w, name);
+      if (i < BIG_ANCHORS)
+         snprintf(name, sizeof(name), "%08X|crc", (unsigned)i + 1);
+      else
+         name[0] = '\0';
       raw(w, ", \"core_path\": \"DETECT\", \"core_name\": \"DETECT\", "
-            "\"crc32\": \"\", \"db_name\": \"" BIG_SYS ".lpl\"}");
+            "\"crc32\": ");
+      rjsonwriter_add_string(w, name);
+      raw(w, ", \"db_name\": \"" BIG_SYS ".lpl\"}");
    }
    raw(w, "]}\n");
    write_text(big_pl, rjsonwriter_get_memory_buffer(w, &_len));
    rjsonwriter_free(w);
+   path_mkdir(db_dir);
+   fill_pathname_join_special(path, db_dir, BIG_SYS ".rdb", sizeof(path));
+   memset(&body, 0, sizeof(body));
+   for (i = 0; i < BIG_ANCHORS; i++)
+   {
+      snprintf(name, sizeof(name), "Synth %05u (USA)", (unsigned)i);
+      mp_crc_item(&body, name, (uint32_t)i + 1);
+   }
+   CHECK(write_rdb(path, &body, BIG_ANCHORS), "write %s", path);
+}
+
+/* A big folder, playlist and rdb: no work item does a whole sort or
+ * sum, or reads a whole rdb. */
+static void lane_bounded(void)
+{
+   char big_pl[128];
+   char big_cache[128];
+   playlist_config_t config;
+   unsigned had = failures;
+
+   fixture_init();
+   fill_pathname_join_special(big_pl, FIX, "Big.lpl", sizeof(big_pl));
+   strlcpy(big_cache, big_pl, sizeof(big_cache));
+   strlcat(big_cache, ".thumbs", sizeof(big_cache));
+   filestream_delete(big_cache);
+   write_big(big_pl);
 
    memset(&config, 0, sizeof(config));
    config.capacity = BIG_ENTRIES;
    playlist_config_set_path(&config, big_pl);
-   most_moves = most_sum = all_moves = all_sum = 0;
-   kept_playlist = 0;
-   last_index    = last_results = NULL;
-   crc_item      = 0;
+   most_moves  = most_sum = most_reads = 0;
+   all_moves   = all_sum  = all_reads  = 0;
+   index_items = t1_items = 0;
+   kept_playlist = kept_rdbs = kept_hits = leftovers = 0;
+   last_index    = last_results = last_t1 = NULL;
+   crc_item      = read_item = 0;
    task_queue_init(false, NULL);
    task_queue_set_slow_handler_cb(measure_item, 1);
-   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false),
-         "push the big playlist");
+   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, db_dir,
+         false), "push the big playlist");
    run(ONE_ITEM);
    /* The next session loads the big cache, then resolves it again */
    gfx_thumbnail_results_deinit();
-   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false),
-         "push it again");
+   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, db_dir,
+         false), "push it again");
    run(ONE_ITEM);
    CHECK(string_is_equal(find_box("/roms/s04242.nes", "Synth 04242 (U)",
          BIG_SYS), "Synth 04242 (USA).png"), "the big playlist resolves");
@@ -1505,19 +2033,34 @@ static void lane_bounded(void)
          "one item moved %u records", (unsigned)most_moves);
    CHECK(most_sum <= PL_THUMB_MATCH_CHUNK, "one item summed %u bytes",
          (unsigned)most_sum);
+   CHECK(most_reads <= PL_THUMB_MATCH_RECORDS, "one item read %u rdb records",
+         (unsigned)most_reads);
    CHECK(   all_moves > 8 * GFX_THUMBNAIL_MATCH_SORT_STEP
-         && all_sum > 8 * PL_THUMB_MATCH_CHUNK,
-         "big enough: %u moves, %u bytes summed",
-         (unsigned)all_moves, (unsigned)all_sum);
+         && all_sum > 8 * PL_THUMB_MATCH_CHUNK
+         && all_reads >= 2 * BIG_ANCHORS
+         && BIG_ANCHORS > 4 * PL_THUMB_MATCH_RECORDS,
+         "big enough: %u moves, %u bytes summed, %u records read",
+         (unsigned)all_moves, (unsigned)all_sum, (unsigned)all_reads);
+   /* More items than sorts: 2 finalizes, 2 want and 2 hit sorts */
+   CHECK(index_items > 2 && t1_items > 4,
+         "sorted in steps: %u index items, %u T1 items",
+         index_items, t1_items);
    CHECK(!kept_playlist, "the playlist outlived the resolve for %u items",
          kept_playlist);
+   CHECK(!kept_rdbs, "the want list outlived the rdb pass for %u items",
+         kept_rdbs);
+   CHECK(!kept_hits, "the rdb names outlived the resolve for %u items",
+         kept_hits);
+   CHECK(!leftovers, "the resolve left its state to cleanup");
    task_queue_set_slow_handler_cb(NULL, 0);
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
    if (failures == had)
-      fprintf(stderr, "[pass] bounded (at most %u moves and %u bytes an "
-            "item, of %u and %u)\n", (unsigned)most_moves,
-            (unsigned)most_sum, (unsigned)all_moves, (unsigned)all_sum);
+      fprintf(stderr, "[pass] bounded (at most %u moves, %u bytes and %u "
+            "records an item, of %u, %u and %u; %u index and %u T1 sort "
+            "items)\n", (unsigned)most_moves, (unsigned)most_sum,
+            (unsigned)most_reads, (unsigned)all_moves, (unsigned)all_sum,
+            (unsigned)all_reads, index_items, t1_items);
 }
 
 int main(void)
@@ -1542,8 +2085,10 @@ int main(void)
    lane_load_first();
    lane_history();
    lane_pacing();
+   lane_t1();
    lane_refresh();
    lane_engine_oom();
+   lane_add_oom();
    lane_bounded();
    fprintf(stderr, "%s (%u failures)\n", failures ? "FAILED" : "PASS",
          failures);
