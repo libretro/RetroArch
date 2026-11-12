@@ -31,7 +31,9 @@ def run(binary, runner, legacy, tls=None, remux=False, caps=False, codec='h264')
     ffmpeg = native_ffmpeg()
     video_flags = (['-c:v', 'libaom-av1', '-cpu-used', '8', '-threads', '2',
                     '-crf', '0', '-b:v', '0', '-lag-in-frames', '0', '-auto-alt-ref', '0']
-                   if codec == 'av1' else ['-c:v', 'libx264', '-preset', 'medium',
+                   if codec == 'av1' else ['-c:v', 'libx265', '-preset', 'fast',
+                                          '-x265-params', 'lossless=1:bframes=2:pools=2:frame-threads=2:log-level=error']
+                   if codec == 'hevc' else ['-c:v', 'libx264', '-preset', 'medium',
                                           '-crf', '10', '-bf', '2'])
     with tempfile.TemporaryDirectory(prefix='rtmp-media-') as temp:
         root = Path(temp)
@@ -51,7 +53,7 @@ def run(binary, runner, legacy, tls=None, remux=False, caps=False, codec='h264')
         video = next(s for s in info['streams'] if s['codec_type'] == 'video')
         audio = next(s for s in info['streams'] if s['codec_type'] == 'audio')
         assert video['codec_name'] == codec
-        if codec == 'h264':
+        if codec != 'av1':
             assert video['has_b_frames'] > 0
         assert audio['codec_name'] == 'aac' and audio['sample_rate'] == '48000'
         assert fixture.stat().st_size > 3000000, 'fixture must cross the peer credit window'
@@ -72,6 +74,8 @@ def run(binary, runner, legacy, tls=None, remux=False, caps=False, codec='h264')
                 env = os.environ.copy()
                 if codec == 'av1':
                     env['RTMP_TEST_AV1'] = '1'
+                if codec == 'hevc':
+                    env['RTMP_TEST_HEVC'] = '1'
                 if caps:
                     env['RTMP_TEST_CAPS'] = '1'
                 if tls:
@@ -103,7 +107,7 @@ def run(binary, runner, legacy, tls=None, remux=False, caps=False, codec='h264')
                     assert len(wire.read(3072)) == 3072
                     _, payload = replies(wire.read, command=b'connect')
                     properties = decode_amf(payload)[2]
-                    fourcc = 'av01' if codec == 'av1' else 'avc1'
+                    fourcc = {'av1': 'av01', 'hevc': 'hvc1', 'h264': 'avc1'}[codec]
                     assert properties['fourCcList'] == [fourcc, 'mp4a']
                     assert properties['videoFourCcInfoMap'] == {fourcc: 2}
                     assert properties['audioFourCcInfoMap'] == {'mp4a': 2}
@@ -150,7 +154,7 @@ if __name__ == '__main__':
     parser.add_argument('--tls', choices=['1.2', '1.3'])
     parser.add_argument('--mux', action='store_true')
     parser.add_argument('--caps', action='store_true')
-    parser.add_argument('--codec', choices=['h264', 'av1'], default='h264')
+    parser.add_argument('--codec', choices=['h264', 'hevc', 'av1'], default='h264')
     parser.add_argument('binary')
     args = parser.parse_args()
     run(args.binary, args.runner, False, args.tls, args.mux, args.caps, args.codec)
