@@ -49,6 +49,7 @@ video_swapchain_bit_depth = "1"
 video_hdr_mode = "0"
 video_record_game_only = "false"
 video_record_allow_frame_drop = "true"
+video_record_fifo_frames = "{args.video_buffer_frames}"
 video_font_enable = "false"
 record_driver = "metal"
 video_stream_url = "{url}"
@@ -144,6 +145,10 @@ def verify(args, root, threaded):
     log_path, runtime_log = root / 'frontend.log', root / 'runtime.log'
     output_rate = 44100 if args.source_rate == 44100 else 48000
     config = (root / 'retroarch.cfg').read_text()
+    buffer = re.search(r'^video_record_fifo_frames = "(\d+)"$', config, re.MULTILINE)
+    requested_buffer = int(buffer[1]) if buffer else 32
+    if args.video_buffer_frames is not None:
+        assert requested_buffer == args.video_buffer_frames, (requested_buffer, args.video_buffer_frames)
     url = re.search(r'^video_stream_url = "([^"]+)"$', config, re.MULTILINE)[1]
     text = log_path.read_text(errors='replace') + runtime_log.read_text(errors='replace')
     assert f'[fixture] s16 source, mask {4 if args.channels == 1 else 3}' in text
@@ -181,7 +186,7 @@ def verify(args, root, threaded):
         assert min(max(abs(a - b) for a, b in zip(pixel, color)) for color in colors) < 35, list(pixel)
     result = dict(threaded=threaded, codec=args.codec, source_rate=args.source_rate,
                   channels=args.channels if audios else 0, video_frames=len(pts), video_epoch=pts[0],
-                  accepted_source_frames=int(finalized[2]), result='PASS')
+                  accepted_source_frames=int(finalized[2]), requested_buffer_frames=requested_buffer, result='PASS')
     if not audios:
         assert int(finalized[2]) == 0
         (root / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
@@ -220,6 +225,7 @@ if __name__ == '__main__':
     parser.add_argument('--source-rate', type=float, default=48000)
     parser.add_argument('--channels', type=int, choices=[1, 2], default=2)
     parser.add_argument('--video-only', action='store_true')
+    parser.add_argument('--video-buffer-frames', type=int, choices=[2, 4, 8, 16, 32])
     parser.add_argument('--ffmpeg', default='ffmpeg')
     parser.add_argument('--ffprobe', default='ffprobe')
     parser.add_argument('--output-dir', type=Path)
@@ -233,5 +239,7 @@ if __name__ == '__main__':
         assert sys.platform == 'darwin', 'Native frontend acceptance requires macOS'
         if not args.retroarch or not args.core or not args.output_dir:
             parser.error('--retroarch, --core and --output-dir are required for native execution')
+        if args.video_buffer_frames is None:
+            args.video_buffer_frames = 32
         for threaded in (False, True):
             check(args, threaded)

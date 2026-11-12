@@ -359,10 +359,10 @@ jobs:
           set -eu
           command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
           cc -dynamiclib -std=gnu89 -Ilibretro-common/include samples/record/metal_frontend/core.c -o "$RUNNER_TEMP/metal-stream-core.dylib" -lm
-          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --output-dir "$RUNNER_TEMP/metal-frontend-stream/h264"
-          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --codec hevc --source-rate 32040.5 --output-dir "$RUNNER_TEMP/metal-frontend-stream/fractional"
-          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --channels 1 --source-rate 44100 --output-dir "$RUNNER_TEMP/metal-frontend-stream/mono"
-          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --video-only --output-dir "$RUNNER_TEMP/metal-frontend-stream/video-only"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --video-buffer-frames 2 --output-dir "$RUNNER_TEMP/metal-frontend-stream/h264"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --codec hevc --source-rate 32040.5 --video-buffer-frames 16 --output-dir "$RUNNER_TEMP/metal-frontend-stream/fractional"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --channels 1 --source-rate 44100 --video-buffer-frames 8 --output-dir "$RUNNER_TEMP/metal-frontend-stream/mono"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --video-only --video-buffer-frames 4 --output-dir "$RUNNER_TEMP/metal-frontend-stream/video-only"
       - name: Save real frontend streaming evidence
         if: ${{ always() && matrix.threads == 'enable' }}
         uses: actions/upload-artifact@v4
