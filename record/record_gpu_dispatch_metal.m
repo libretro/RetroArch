@@ -15,11 +15,12 @@
 #undef RECORD_METAL_DISPATCH_UNDEF_INLINE
 #endif
 #include "record_gpu_dispatch_metal.h"
+#include "record_metal_platform.h"
 #include <retro_atomic.h>
 #include <defines/cocoa_defines.h>
 #include <stdlib.h>
 #include <string.h>
-#if TARGET_OS_OSX && defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE)
+#if defined(RECORD_METAL_NATIVE_SDK) && defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE)
 #include <pthread.h>
 #if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__<199901L) && !defined(inline)
 #define inline __inline__
@@ -447,6 +448,11 @@ static record_gpu_dispatch_metal_t *record_metal_dispatch_new(void *device,
    id<MTLDevice> metal=(__bridge id<MTLDevice>)device;
    size_t length;
    int error;
+   if (RECORD_METAL_NATIVE_RUNTIME)
+   {
+   }
+   else
+      return NULL;
    if (!metal || !config || (!output && !stream)
          || (output && output->video_format) || !path || !*path) return NULL;
 #ifndef RECORD_METAL_STREAM

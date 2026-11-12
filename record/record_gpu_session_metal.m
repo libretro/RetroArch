@@ -17,16 +17,22 @@
 #endif
 #include <string.h>
 #include "record_gpu_session_metal.h"
+#include "record_metal_platform.h"
 #include "record_avfoundation_session_native.h"
-#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && TARGET_OS_OSX \
-      && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && defined(RECORD_METAL_NATIVE_SDK)
 /* Enumerated IDs prevent silent default/software/other-GPU selection. A
  * hardware encoder with no advertised GPU is a separate explicit category,
  * as used by the hosted paravirtualized media engines. It is not evidence of
  * physical same-GPU encoding; CVPixelBuffer/Metal interop remains gated. */
-static __attribute__((availability(macos,introduced=10.14))) videotoolbox_encode_t *record_metal_select_encoder(
+static RECORD_METAL_NATIVE_AVAILABLE videotoolbox_encode_t *record_metal_select_encoder(
       const videotoolbox_encode_config_t *config,uint64_t renderer_gpu,OSStatus *error)
 {
+#if TARGET_OS_IPHONE
+   /* Mobile admission verifies hardware and the selected ID in the VT adapter.
+    * CVPixelBuffer/Metal compatibility is still checked by capture creation. */
+   (void)renderer_gpu;
+   return videotoolbox_encode_new(config, error);
+#else
    CFArrayRef list=NULL;
    CFIndex i,count;
    unsigned priority;
@@ -62,6 +68,7 @@ static __attribute__((availability(macos,introduced=10.14))) videotoolbox_encode
    }
 done:
    CFRelease(list); *error=status; return encoder;
+#endif
 }
 #endif
 record_avfoundation_session_t *record_gpu_session_metal_new_output(void *device,
@@ -73,8 +80,8 @@ record_avfoundation_session_t *record_gpu_session_metal_new_output(void *device,
    if (queue_out) *queue_out=NULL;
    if (stage) *stage=RECORD_METAL_STARTUP_UNSUPPORTED;
    if (native_status) *native_status=0;
-#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && TARGET_OS_OSX \
-      && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && defined(RECORD_METAL_NATIVE_SDK)
+   if (RECORD_METAL_NATIVE_RUNTIME)
    @autoreleasepool
    {
       videotoolbox_encode_config_t config;
@@ -94,8 +101,12 @@ record_avfoundation_session_t *record_gpu_session_metal_new_output(void *device,
             || !c->width || !c->height || c->width>16384 || c->height>16384
             || ((c->width|c->height)&1) || c->slots<2 || c->slots>VIDEOTOOLBOX_ENCODE_SLOTS
             || c->mode>2 || (c->mode && c->bit_depth!=10)) goto done;
+#if TARGET_OS_IPHONE
+      gpu = 0;
+#else
       gpu=[(__bridge id<MTLDevice>)device registryID];
       if (!gpu) goto done;
+#endif
       config.width=c->width; config.height=c->height; config.slots=c->slots;
       config.bitrate=c->bitrate; config.key_interval=c->key_interval; config.timescale=c->timescale;
       config.bit_depth=c->bit_depth; config.hevc=c->hevc; config.hdr=c->mode!=0;
@@ -128,20 +139,20 @@ done:
       if (native_status) *native_status=(int32_t)status;
       return session;
    }
+   return NULL;
 #else
    (void)device; (void)c; (void)bind; (void)context;
    return NULL;
 #endif
 }
-#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && TARGET_OS_OSX \
-      && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && defined(RECORD_METAL_NATIVE_SDK)
 typedef struct record_metal_file_binding
 {
    const record_mux_avfoundation_config_t *output;
    const char *path;
    size_t audio_capacity;
 } record_metal_file_binding_t;
-static __attribute__((availability(macos,introduced=10.14))) record_avfoundation_session_t *record_metal_file_bind(
+static RECORD_METAL_NATIVE_AVAILABLE record_avfoundation_session_t *record_metal_file_bind(
       void *data,record_gpu_queue_t *queue,record_gpu_capture_metal_t *capture,
       struct videotoolbox_encode *encoder,unsigned width,unsigned height)
 {
@@ -159,8 +170,8 @@ record_avfoundation_session_t *record_gpu_session_metal_new(void *device,
    if (queue_out) *queue_out=NULL;
    if (stage) *stage=RECORD_METAL_STARTUP_UNSUPPORTED;
    if (native_status) *native_status=0;
-#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && TARGET_OS_OSX \
-      && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && defined(RECORD_METAL_NATIVE_SDK)
+   if (RECORD_METAL_NATIVE_RUNTIME)
    {
       record_metal_file_binding_t binding;
       if (!c || !output || output->video_format || c->timescale!=output->timescale || !path || !*path)
@@ -172,6 +183,7 @@ record_avfoundation_session_t *record_gpu_session_metal_new(void *device,
       return record_gpu_session_metal_new_output(device,c,record_metal_file_bind,&binding,
             capture_out,queue_out,stage,native_status);
    }
+   return NULL;
 #else
    (void)device; (void)c; (void)output; (void)audio_capacity_bytes; (void)path;
    return NULL;

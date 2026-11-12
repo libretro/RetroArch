@@ -36,7 +36,7 @@ static INLINE CFStringRef videotoolbox_encode_hardware_id(
       || (defined(__TV_OS_VERSION_MAX_ALLOWED) && __TV_OS_VERSION_MAX_ALLOWED >= 130000) \
       || defined(__VISION_OS_VERSION_MAX_ALLOWED)
 #ifndef VIDEOTOOLBOX_ENCODE_HARDWARE_LIST_TEST
-   if (__builtin_available(iOS 13.0, tvOS 13.0, macCatalyst 13.1, visionOS 1.0, *))
+   if (__builtin_available(iOS 13.0, tvOS 13.0, *))
 #endif
    {
       CFArrayRef list = NULL;
