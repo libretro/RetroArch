@@ -11,6 +11,7 @@ struct fixture
 {
    record_gpu_queue_t *queue;
    record_avfoundation_session_t *session;
+   record_avfoundation_worker_t *pump;
    unsigned slot,submitted,videos,audios,video_calls,audio_calls,finishes,opened,destroyed,retired;
    bool packet;
 };
@@ -66,6 +67,26 @@ static void destroy_encoder(void *data)
 { struct fixture *f=(struct fixture*)data; assert(!f->packet && !f->destroyed++); }
 static bool destroy_context(void *data)
 { struct fixture *f=(struct fixture*)data; assert(f->destroyed==1 && !f->retired++); return true; }
+static void *open_output(void *data,void *sample,
+      record_gpu_worker_vt_t *worker,record_audio_queue_t *pcm)
+{
+   struct fixture *f=(struct fixture*)open_mux(data,sample);
+   record_avfoundation_worker_ops_t ops;
+   ops.video=video; ops.audio=audio; ops.finish=finish;
+   f->pump=record_avfoundation_worker_new(worker,pcm,f,&ops);
+   assert(f->pump); return f;
+}
+static int step_output(void *data)
+{ return record_avfoundation_worker_step(((struct fixture*)data)->pump); }
+static bool free_output(void *data)
+{
+   struct fixture *f=(struct fixture*)data;
+   assert(free_mux(f));
+   if (!record_avfoundation_worker_free(f->pump)) return false;
+   f->pump=NULL; return true;
+}
+static bool retry_output(const void *data)
+{ return record_avfoundation_worker_retry_needed(((const struct fixture*)data)->pump); }
 static void *produce_video(void *data)
 {
    struct fixture *f=(struct fixture*)data;
@@ -108,27 +129,42 @@ static void *consume(void *data)
    } while (result!=RECORD_AVF_WORKER_END);
    return NULL;
 }
-int main(void)
+static void concurrent_test(bool external)
 {
    struct fixture f;
    record_gpu_worker_vt_ops_t v;
    record_avfoundation_session_ops_t ops;
+   record_avfoundation_session_output_ops_t output_ops;
    record_gpu_worker_vt_t *worker;
    record_audio_queue_t *pcm;
    pthread_t video_thread,audio_thread,worker_thread;
    memset(&f,0,sizeof(f)); memset(&ops,0,sizeof(ops));
+   memset(&output_ops,0,sizeof(output_ops));
    f.queue=record_gpu_queue_new(2); pcm=record_audio_queue_new(2,4,256); assert(f.queue && pcm);
    v.ready=ready; v.buffer=buffer; v.release=release; v.submit=submit; v.peek=peek; v.ack=ack; v.finish=video_finish;
    worker=record_gpu_worker_vt_new(f.queue,&f,&f,&v); assert(worker);
    ops.open=open_mux; ops.mux.video=video; ops.mux.audio=audio; ops.mux.finish=finish;
    ops.cancel=cancel; ops.free_mux=free_mux; ops.destroy_encoder=destroy_encoder; ops.destroy_context=destroy_context;
-   f.session=record_avfoundation_session_new(f.queue,worker,pcm,&f,&ops); assert(f.session);
+   if (external)
+   {
+      output_ops.open=open_output; output_ops.step=step_output; output_ops.cancel=cancel;
+      output_ops.free_output=free_output; output_ops.retry_needed=retry_output;
+      output_ops.destroy_encoder=destroy_encoder; output_ops.destroy_context=destroy_context;
+      f.session=record_avfoundation_session_new_output(f.queue,worker,pcm,&f,&output_ops);
+   }
+   else f.session=record_avfoundation_session_new(f.queue,worker,pcm,&f,&ops);
+   assert(f.session);
    assert(!pthread_create(&video_thread,NULL,produce_video,&f));
    assert(!pthread_create(&audio_thread,NULL,produce_audio,&f));
    assert(!pthread_create(&worker_thread,NULL,consume,&f));
    assert(!pthread_join(video_thread,NULL) && !pthread_join(audio_thread,NULL) && !pthread_join(worker_thread,NULL));
    assert(f.videos==COUNT && f.audios==COUNT && f.opened==1 && f.destroyed==1 && f.retired==1);
    assert(record_avfoundation_session_free(f.session));
-   puts("PASS: owned session three threads, 10000 video frames/PCM packets, independent BUSY, close and retirement");
+   printf("PASS: owned %s session three threads, 10000 video frames/PCM packets, independent BUSY, close and retirement\n",
+         external?"output":"file");
+}
+int main(void)
+{
+   concurrent_test(false); concurrent_test(true);
    return 0;
 }

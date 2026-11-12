@@ -9,7 +9,9 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: audio_lend_test$(EXE) packet_test$(EXE) session_gpu_refusal_test$(EXE) av_session_test$(EXE) crop_test$(EXE) av_worker_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE) audio_rate_native_test$(EXE)
+all: av_output_test$(EXE) audio_lend_test$(EXE) packet_test$(EXE) session_gpu_refusal_test$(EXE) av_session_test$(EXE) crop_test$(EXE) av_worker_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE) audio_rate_native_test$(EXE)
+av_output_test$(EXE): av_output_test.c av_worker_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_session.h
+	$(CC) $(CFLAGS) -Wno-unused-function -o $@ av_output_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 audio_lend_test$(EXE): audio_lend_test.c $(RA)/record/record_audio_queue.c $(RA)/record/record_audio_queue.h
 	$(CC) $(CFLAGS) -o $@ audio_lend_test.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 av_session_thread_test: av_session_thread_test.c $(RA)/record/record_avfoundation_session.c
@@ -43,6 +45,7 @@ thread_test: slots_test.c $(RA)/gfx/common/videotoolbox_encode_slots.h
 worker_thread_test: worker_thread_test.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_worker_vt.h $(RA)/record/record_gpu_queue.c
 	$(CC) $(CFLAGS) -pthread -o $@ worker_thread_test.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 check: all legacy-check
+	$(RUNNER) ./av_output_test$(EXE)
 	$(RUNNER) ./audio_lend_test$(EXE)
 	$(RUNNER) ./packet_test$(EXE)
 	$(RUNNER) ./session_gpu_refusal_test$(EXE)
@@ -55,6 +58,7 @@ check: all legacy-check
 	$(RUNNER) ./worker_test$(EXE)
 	$(RUNNER) ./audio_rate_test$(EXE)
 clean:
+	rm -f av_output_test av_output_test.exe
 	rm -f audio_lend_test audio_lend_test.exe
 	rm -f packet_test packet_test.exe
 	rm -f session_gpu_refusal_test session_gpu_refusal_test.exe

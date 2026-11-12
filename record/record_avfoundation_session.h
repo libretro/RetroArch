@@ -18,6 +18,23 @@ typedef struct record_avfoundation_session_ops
     * False retains context for a later retirement poll. */
    bool (*destroy_context)(void *context);
 } record_avfoundation_session_ops_t;
+
+typedef struct record_avfoundation_session_output_ops
+{
+   /* The output pump borrows both producers and the first encoded sample.
+    * It drives/acknowledges them directly, including across network BUSY. */
+   void *(*open)(void *context, void *sample,
+         record_gpu_worker_vt_t *video, record_audio_queue_t *audio);
+   int (*step)(void *output);
+   /* Both producers are closed before cancel/free. True from free_output
+    * returns every native/output/PCM borrow, but destroys neither queue. */
+   bool (*cancel)(void *output);
+   bool (*free_output)(void *output);
+   bool (*retry_needed)(const void *output);
+   bool (*network)(const void *output, int *fd, bool *read, bool *write);
+   void (*destroy_encoder)(void *context);
+   bool (*destroy_context)(void *context);
+} record_avfoundation_session_output_ops_t;
 enum record_avfoundation_session_error
 {
    RECORD_AVF_SESSION_NONE, RECORD_AVF_SESSION_CANCELLED,
@@ -31,6 +48,13 @@ record_avfoundation_session_t *record_avfoundation_session_new(
       record_gpu_queue_t *queue,record_gpu_worker_vt_t *video,
       record_audio_queue_t *audio,void *context,
       const record_avfoundation_session_ops_t *ops);
+/* Same adoption/retirement contract, with an output-owned producer pump.
+ * step uses RECORD_AVF_WORKER_*; retry/network only observe worker interests.
+ * No network or codec dependency is installed in the session controller. */
+record_avfoundation_session_t *record_avfoundation_session_new_output(
+      record_gpu_queue_t *queue, record_gpu_worker_vt_t *video,
+      record_audio_queue_t *audio, void *context,
+      const record_avfoundation_session_output_ops_t *ops);
 /* One PCM producer. Whole-packet BUSY consumes nothing. Source sample clock. */
 int record_avfoundation_session_audio(record_avfoundation_session_t *session,
       const int16_t *samples,size_t frames,uint64_t timestamp);
@@ -52,5 +76,8 @@ bool record_avfoundation_session_free(record_avfoundation_session_t *session);
 /* Dedicated worker only, after BUSY. True schedules native completion polling;
  * false awaits producer input/closure. No resource/service changes. */
 bool record_avfoundation_session_retry_needed(const record_avfoundation_session_t *session);
+/* Dedicated worker only. No interests before binding or after output free. */
+bool record_avfoundation_session_network(const record_avfoundation_session_t *session,
+      int *fd, bool *read, bool *write);
 RETRO_END_DECLS
 #endif
