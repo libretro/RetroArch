@@ -9,9 +9,10 @@ struct record_audio_queue
    retro_spsc_t data;
    retro_atomic_int_t closed;
    int16_t *staging;
+   const int16_t *samples;
    size_t max_frames,frame_bytes,budget,borrowed;
    uint64_t last_end,timestamp;
-   bool submitted;
+   bool submitted,lent;
 };
 record_audio_queue_t *record_audio_queue_new(unsigned channels,
       size_t max_frames,size_t capacity_bytes)
@@ -53,11 +54,12 @@ bool record_audio_queue_finish(record_audio_queue_t *q)
    if (!q) return false;
    retro_atomic_store_release_int(&q->closed,1); return true;
 }
-int record_audio_queue_peek(record_audio_queue_t *q,const int16_t **samples,
-      size_t *frames,uint64_t *timestamp)
+static int record_audio_queue_view(record_audio_queue_t *q,const int16_t **samples,
+      size_t *frames,uint64_t *timestamp,bool lend)
 {
    record_audio_packet_t header;
    size_t available,bytes;
+   const void *span;
    int closed;
    if (samples) *samples=NULL;
    if (frames) *frames=0;
@@ -74,16 +76,42 @@ int record_audio_queue_peek(record_audio_queue_t *q,const int16_t **samples,
             || header.timestamp>((uint64_t)1<<63)-1-header.frames) return RECORD_AUDIO_ERROR;
       bytes=(size_t)header.frames*q->frame_bytes;
       if (available<sizeof(header)+bytes) return closed?RECORD_AUDIO_ERROR:RECORD_AUDIO_BUSY;
-      if (retro_spsc_skip(&q->data,sizeof(header))!=sizeof(header)
-            || retro_spsc_read(&q->data,q->staging,bytes)!=bytes) return RECORD_AUDIO_ERROR;
+      if (retro_spsc_skip(&q->data,sizeof(header))!=sizeof(header)) return RECORD_AUDIO_ERROR;
+      q->lent=false;
+      if (lend)
+      {
+         if (retro_spsc_read_begin(&q->data,&span)>=bytes)
+         {
+            q->samples=(const int16_t*)span;
+            q->lent=true;
+         }
+         else retro_spsc_read_end(&q->data,0);
+      }
+      if (!q->lent)
+      {
+         if (retro_spsc_read(&q->data,q->staging,bytes)!=bytes) return RECORD_AUDIO_ERROR;
+         q->samples=q->staging;
+      }
       q->borrowed=(size_t)header.frames; q->timestamp=header.timestamp;
    }
-   *samples=q->staging; *frames=q->borrowed; *timestamp=q->timestamp;
+   *samples=q->samples; *frames=q->borrowed; *timestamp=q->timestamp;
    return RECORD_AUDIO_OK;
+}
+int record_audio_queue_peek(record_audio_queue_t *q,const int16_t **samples,
+      size_t *frames,uint64_t *timestamp)
+{
+   return record_audio_queue_view(q,samples,frames,timestamp,false);
+}
+int record_audio_queue_peek_lend(record_audio_queue_t *q,const int16_t **samples,
+      size_t *frames,uint64_t *timestamp)
+{
+   return record_audio_queue_view(q,samples,frames,timestamp,true);
 }
 bool record_audio_queue_ack(record_audio_queue_t *q)
 {
    if (!q || !q->borrowed) return false;
+   if (q->lent) retro_spsc_read_end(&q->data,q->borrowed*q->frame_bytes);
+   q->samples=NULL; q->lent=false;
    q->borrowed=0; return true;
 }
 bool record_audio_queue_free(record_audio_queue_t *q)

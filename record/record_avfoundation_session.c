@@ -124,7 +124,7 @@ int record_avfoundation_session_step(record_avfoundation_session_t *s)
             const int16_t *samples;
             size_t frames;
             uint64_t timestamp;
-            result=record_audio_queue_peek(s->audio,&samples,&frames,&timestamp);
+            result=record_audio_queue_peek_lend(s->audio,&samples,&frames,&timestamp);
             if (result==RECORD_AUDIO_OK)
                return record_audio_queue_ack(s->audio)?RECORD_AVF_WORKER_PROGRESS:RECORD_AVF_WORKER_BUSY;
             if (result!=RECORD_AUDIO_END) return RECORD_AVF_WORKER_BUSY;
