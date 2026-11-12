@@ -21,6 +21,8 @@ static const char *test_mime = "video/hevc";
 static unsigned hdr_mode, format_fault, normalized_profile;
 static unsigned char hdr_saved[25];
 static uint8_t payload[16];
+static uint8_t video_csd[2][12];
+static unsigned csd_fault;
 static int allocation_fail;
 static void *test_allocate(size_t count, size_t bytes)
 {
@@ -182,8 +184,15 @@ static bool get_integer(AMediaFormat *f, const char *key, int32_t *value)
 static bool get_buffer(
       AMediaFormat *f, const char *key, void **data, size_t *size)
 {
-   assert((f == &output_formats[0] || f == &output_formats[1]) && hdr_mode
-         && !strcmp(key, "hdr-static-info"));
+   assert(f == &output_formats[0] || f == &output_formats[1]);
+   if (!strcmp(key, "csd-0") || !strcmp(key, "csd-1"))
+   {
+      unsigned index = key[4] == '1' ? 1 : 0;
+      *data = csd_fault == 2 ? NULL : video_csd[index];
+      *size = csd_fault == 3 ? 0 : csd_fault == 4 ? 65536 : sizeof(video_csd[index]);
+      return csd_fault != 1;
+   }
+   assert(hdr_mode && !strcmp(key, "hdr-static-info"));
    *data = format_fault == 15 ? NULL : hdr_saved;
    *size = format_fault == 14 ? 24 : 25;
    return format_fault != 13;
@@ -339,6 +348,8 @@ int main(void)
    record_mediacodec_encoder_t *s;
    record_mediacodec_packet_t packet, again;
    int i, before;
+   const void *csd;
+   size_t csd_bytes;
    for (missing = 1; missing <= 22; missing++)
    {
       assert(!open_encoder());
@@ -359,7 +370,26 @@ int main(void)
    assert(s && record_mediacodec_encoder_surface(s) == &window);
    output_mode = 0;
    assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_BUSY);
+   assert(!record_mediacodec_encoder_video_config(s, 0, &csd, &csd_bytes)
+         && !csd && !csd_bytes);
    format_ready(s);
+   before = output_calls;
+   for (i = 0; i < 2; i++)
+   {
+      assert(record_mediacodec_encoder_video_config(s, (unsigned)i, &csd, &csd_bytes));
+      assert(csd == video_csd[i] && csd_bytes == sizeof(video_csd[i]));
+   }
+   for (csd_fault = 1; csd_fault <= 4; csd_fault++)
+      assert(!record_mediacodec_encoder_video_config(s, 0, &csd, &csd_bytes)
+            && !csd && !csd_bytes);
+   csd_fault = 0;
+   assert(!record_mediacodec_encoder_video_config(s, 2, &csd, &csd_bytes)
+         && !csd && !csd_bytes);
+   assert(!record_mediacodec_encoder_video_config(s, 0, NULL, &csd_bytes)
+         && !csd_bytes);
+   assert(!record_mediacodec_encoder_video_config(s, 0, &csd, NULL) && !csd);
+   assert(output_calls == before && !owned);
+   assert(record_mediacodec_encoder_video_config(s, 0, &csd, &csd_bytes));
    format_ready(s);
    output_mode = -2;
    assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_PROGRESS);
@@ -516,6 +546,8 @@ int main(void)
       before = stops;
       stop_fault = i == 1;
       assert(record_mediacodec_encoder_stop(s) == !stop_fault);
+      assert(!record_mediacodec_encoder_video_config(s, 0, &csd,
+               &csd_bytes) && !csd && !csd_bytes);
       assert(stops == before + 1 && codecs == 1 && windows == 1
             && libraries == 2 && formats == 2);
       assert(record_mediacodec_encoder_stop(s) == !stop_fault);

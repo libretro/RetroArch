@@ -466,6 +466,24 @@ void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *s)
 {
    return s && !s->failed ? s->format : NULL;
 }
+bool record_mediacodec_encoder_video_config(record_mediacodec_encoder_t *s,
+      unsigned index, const void **data, size_t *bytes)
+{
+   static const char *const keys[2] = {"csd-0", "csd-1"};
+   void *buffer = NULL;
+   size_t size = 0;
+   if (data)
+      *data = NULL;
+   if (bytes)
+      *bytes = 0;
+   if (!s || !data || !bytes || s->failed || s->audio || !s->format
+         || index >= 2 || !s->get_buffer(s->format, keys[index], &buffer, &size)
+         || !buffer || !size || size > 65535)
+      return false;
+   *data = buffer;
+   *bytes = size;
+   return true;
+}
 bool record_mediacodec_encoder_audio_config(record_mediacodec_encoder_t *s,
       const void **data, size_t *bytes)
 {
@@ -665,6 +683,17 @@ void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *s)
 {
    (void)s;
    return NULL;
+}
+bool record_mediacodec_encoder_video_config(record_mediacodec_encoder_t *s,
+      unsigned index, const void **data, size_t *bytes)
+{
+   (void)s;
+   (void)index;
+   if (data)
+      *data = NULL;
+   if (bytes)
+      *bytes = 0;
+   return false;
 }
 bool record_mediacodec_encoder_audio_config(record_mediacodec_encoder_t *s,
       const void **data, size_t *bytes)
