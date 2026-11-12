@@ -176,12 +176,15 @@ int record_mux_mediacodec_finish(record_mux_mediacodec_t *m)
    m->finished = true;
    return 1;
 }
-static void exercise(unsigned failure, bool cancel, bool no_pcm)
+#include "worker_output_fixture.h"
+
+static void exercise(unsigned failure, bool cancel, bool no_pcm, bool backpressure)
 {
    record_mediacodec_encoder_t video, audio;
    record_mux_mediacodec_t mux;
    record_aac_probe_t probe;
    record_mediacodec_worker_t *w;
+   struct record_busy_output output;
    record_audio_queue_t *q;
    int16_t pcm[17];
    const int16_t *samples;
@@ -203,7 +206,13 @@ static void exercise(unsigned failure, bool cancel, bool no_pcm)
    if (!empty)
       assert(record_audio_queue_push(q, pcm, 17, 0) == RECORD_AUDIO_OK);
    assert(record_audio_queue_finish(q));
-   w = record_mediacodec_worker_new(&video, &audio, q, &mux, 1, 48000);
+   memset(&output, 0, sizeof(output));
+   output.mux = &mux;
+   output.busy[0] = 2;
+   output.busy[1] = 4;
+   w = backpressure
+      ? record_mediacodec_worker_new_output(&video, &audio, q, &busy_ops, &output, 1, 48000)
+      : record_mediacodec_worker_new(&video, &audio, q, &mux, 1, 48000);
    assert(w && record_mediacodec_worker_calibrate(w, &probe));
    assert(!record_mediacodec_worker_calibrate(w, &probe));
    assert(!record_mediacodec_worker_audio_edit(w, &skip, &source, &roll));
@@ -242,14 +251,16 @@ static void exercise(unsigned failure, bool cancel, bool no_pcm)
 }
 int main(void)
 {
-   exercise(0, false, false);
-   exercise(0, false, true);
-   exercise(2, false, false);
-   exercise(3, false, false);
-   exercise(4, false, false);
-   exercise(5, false, false);
-   exercise(7, false, false);
-   exercise(0, true, false);
+   exercise(0, false, false, false);
+   exercise(0, false, true, false);
+   exercise(2, false, false, false);
+   exercise(3, false, false, false);
+   exercise(4, false, false, false);
+   exercise(5, false, false, false);
+   exercise(7, false, false, false);
+   exercise(0, true, false, false);
+   exercise(0, false, false, true);
+   exercise(0, false, true, true);
    puts("PASS: calibrated worker prefix backpressure, coded/source clocks, "
         "trim ownership, early EOS and cancellation; codecs/probe mocked");
    return 0;

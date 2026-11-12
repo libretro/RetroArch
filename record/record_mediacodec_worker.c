@@ -9,11 +9,13 @@ struct record_mediacodec_worker
    int64_t end_us[2];
    record_mediacodec_encoder_t *encoder[2];
    record_audio_queue_t *pcm;
-   record_mux_mediacodec_t *mux;
+   record_mediacodec_output_ops_t output;
+   void *output_context;
+   record_mediacodec_packet_t pending[2];
    record_aac_probe_t *probe;
    size_t consumed, prefix_sent;
    unsigned channels, rate;
-   bool format[2], drained[2], ended[2];
+   bool format[2], drained[2], ended[2], pending_live[2];
    bool active, closing, video_eos, audio_eos, pcm_end;
    bool started, finished, failed;
 };
@@ -55,13 +57,40 @@ bool record_mediacodec_worker_audio_edit(
    return true;
 }
 
-record_mediacodec_worker_t *record_mediacodec_worker_new(
+static bool record_mcw_file_track(void *context, bool audio, void *format)
+{
+   return record_mux_mediacodec_track((record_mux_mediacodec_t*)context, audio, format);
+}
+static int record_mcw_file_start(void *context)
+{
+   return record_mux_mediacodec_start((record_mux_mediacodec_t*)context);
+}
+static int record_mcw_file_write(void *context, bool audio,
+      const record_mediacodec_packet_t *packet)
+{
+   return record_mux_mediacodec_write((record_mux_mediacodec_t*)context, audio, packet) ? 1 : -1;
+}
+static bool record_mcw_file_end(void *context, bool audio, int64_t end_us)
+{
+   return record_mux_mediacodec_end((record_mux_mediacodec_t*)context, audio, end_us);
+}
+static int record_mcw_file_finish(void *context)
+{
+   return record_mux_mediacodec_finish((record_mux_mediacodec_t*)context);
+}
+static bool record_mcw_file_retire(void *context)
+{
+   (void)context;
+   return true;
+}
+record_mediacodec_worker_t *record_mediacodec_worker_new_output(
       record_mediacodec_encoder_t *video, record_mediacodec_encoder_t *audio,
-      record_audio_queue_t *pcm, record_mux_mediacodec_t *mux,
-      unsigned channels, unsigned rate)
+      record_audio_queue_t *pcm, const record_mediacodec_output_ops_t *ops,
+      void *context, unsigned channels, unsigned rate)
 {
    record_mediacodec_worker_t *w;
-   if (!video || !mux || (!!audio != !!pcm)
+   if (!video || !context || !ops || !ops->track || !ops->start || !ops->write
+         || !ops->end || !ops->finish || !ops->retire || (!!audio != !!pcm)
          || (audio && (!channels || channels > 2 || !rate)))
       return NULL;
    w = (record_mediacodec_worker_t *)calloc(1, sizeof(*w));
@@ -70,11 +99,24 @@ record_mediacodec_worker_t *record_mediacodec_worker_new(
    w->encoder[0] = video;
    w->encoder[1] = audio;
    w->pcm = pcm;
-   w->mux = mux;
+   w->output = *ops;
+   w->output_context = context;
    w->channels = channels;
    w->rate = rate;
    w->drained[1] = w->ended[1] = !audio;
    return w;
+}
+record_mediacodec_worker_t *record_mediacodec_worker_new(
+      record_mediacodec_encoder_t *video, record_mediacodec_encoder_t *audio,
+      record_audio_queue_t *pcm, record_mux_mediacodec_t *mux,
+      unsigned channels, unsigned rate)
+{
+   static const record_mediacodec_output_ops_t ops = {
+      record_mcw_file_track, record_mcw_file_start, record_mcw_file_write,
+      record_mcw_file_end, record_mcw_file_finish, record_mcw_file_retire
+   };
+   return record_mediacodec_worker_new_output(video, audio, pcm, &ops,
+         mux, channels, rate);
 }
 
 bool record_mediacodec_worker_finish(record_mediacodec_worker_t *w,
@@ -106,7 +148,13 @@ static int record_mcw_output(record_mediacodec_worker_t *w, unsigned at)
    int result;
    if (w->drained[at])
       return 0;
-   result = record_mediacodec_encoder_pump(w->encoder[at], &packet);
+   if (w->pending_live[at])
+   {
+      packet = w->pending[at];
+      result = RECORD_MC_PACKET;
+   }
+   else
+      result = record_mediacodec_encoder_pump(w->encoder[at], &packet);
    switch (result)
    {
       case RECORD_MC_BUSY:
@@ -123,7 +171,7 @@ static int record_mcw_output(record_mediacodec_worker_t *w, unsigned at)
                   || !record_aac_probe_config(w->probe, config, bytes))
                return -1;
          }
-         if (w->format[at] || !record_mux_mediacodec_track(w->mux, at != 0,
+         if (w->format[at] || !w->output.track(w->output_context, at != 0,
                    record_mediacodec_encoder_format(w->encoder[at])))
             return -1;
          w->format[at] = true;
@@ -133,7 +181,7 @@ static int record_mcw_output(record_mediacodec_worker_t *w, unsigned at)
             return -1;
          if (!w->started)
             return 0;
-         if (at && w->probe && !(packet.flags & 2))
+         if (!w->pending_live[at] && at && w->probe && !(packet.flags & 2))
          {
             if (w->coded_frames > (uint64_t)-1 - 1024
                   || !record_mcw_samples_us(w->coded_frames, w->rate,
@@ -143,9 +191,19 @@ static int record_mcw_output(record_mediacodec_worker_t *w, unsigned at)
                return -1;
             w->coded_frames += 1024;
          }
-         if (!record_mux_mediacodec_write(w->mux, at != 0, &packet)
-               || !record_mediacodec_encoder_release(w->encoder[at]))
+         if (!w->pending_live[at])
+         {
+            w->pending[at] = packet;
+            w->pending_live[at] = true;
+         }
+         result = w->output.write(w->output_context, at != 0, &w->pending[at]);
+         if (result < 0)
             return -1;
+         if (!result)
+            return 0;
+         if (!record_mediacodec_encoder_release(w->encoder[at]))
+            return -1;
+         w->pending_live[at] = false;
          return 1;
       case RECORD_MC_END:
          if (!w->format[at] || !w->closing
@@ -278,7 +336,7 @@ int record_mediacodec_worker_step(record_mediacodec_worker_t *w)
    }
    if (!w->started)
    {
-      result = record_mux_mediacodec_start(w->mux);
+      result = w->output.start(w->output_context);
       if (result < 0)
          goto failed;
       if (result)
@@ -291,14 +349,14 @@ int record_mediacodec_worker_step(record_mediacodec_worker_t *w)
       if (w->started && w->drained[at] && !w->ended[at]
             && (!at || calibrated))
       {
-         if (!record_mux_mediacodec_end(w->mux, at != 0, w->end_us[at]))
+         if (!w->output.end(w->output_context, at != 0, w->end_us[at]))
             goto failed;
          w->ended[at] = true;
          progress = true;
       }
    if (w->ended[0] && w->ended[1])
    {
-      result = record_mux_mediacodec_finish(w->mux);
+      result = w->output.finish(w->output_context);
       if (result < 0)
          goto failed;
       if (result)
@@ -322,6 +380,8 @@ void record_mediacodec_worker_abort(record_mediacodec_worker_t *w)
 bool record_mediacodec_worker_free(record_mediacodec_worker_t *w)
 {
    if (w && w->active && !w->failed && !w->finished)
+      return false;
+   if (w && !w->output.retire(w->output_context))
       return false;
    free(w);
    return true;
