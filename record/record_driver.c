@@ -188,7 +188,15 @@ bool recording_driver_streaming_mode_supported(const char *ident, unsigned mode)
 {
    if (mode > STREAMING_MODE_CUSTOM || !recording_driver_can_stream(ident))
       return false;
-   return mode != STREAMING_MODE_LOCAL || strcmp(ident, "ffmpeg") == 0;
+   if (strcmp(ident, "ffmpeg") == 0)
+      return true;
+   if (mode == STREAMING_MODE_LOCAL)
+      return false;
+#ifndef HAVE_SSL
+   if (mode == STREAMING_MODE_FACEBOOK || mode == STREAMING_MODE_KICK)
+      return false;
+#endif
+   return true;
 }
 
 static void find_record_driver(void)

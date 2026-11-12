@@ -1386,27 +1386,44 @@ static int setting_uint_action_right_default(
    return 0;
 }
 
+static void setting_streaming_mode_adjust(rarch_setting_t *setting, bool forward)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned value, i;
+   if (!setting || !settings || !recording_driver_can_stream(settings->arrays.record_driver))
+      return;
+   value = setting_uint_get(setting);
+   if (value > STREAMING_MODE_CUSTOM)
+      value = forward ? STREAMING_MODE_TWITCH : STREAMING_MODE_CUSTOM;
+   /* A bounded walk of enum choices, never a wait for a backend. */
+   for (i = 0; i <= STREAMING_MODE_CUSTOM; i++)
+   {
+      if (recording_driver_streaming_mode_supported(settings->arrays.record_driver, value))
+      {
+         if (value != setting_uint_get(setting))
+            setting_uint_set(setting, value);
+         return;
+      }
+      if (forward)
+         value = value == STREAMING_MODE_CUSTOM ? STREAMING_MODE_TWITCH : value + 1;
+      else
+         value = value ? value - 1 : STREAMING_MODE_CUSTOM;
+   }
+}
+
 static int setting_uint_action_left_streaming_mode(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   settings_t *settings = config_get_ptr();
    int result = setting_uint_action_left_default(setting, idx, wraparound);
-   if (setting && settings && setting_uint_get(setting) == STREAMING_MODE_LOCAL
-         && !recording_driver_streaming_mode_supported(
-            settings->arrays.record_driver, STREAMING_MODE_LOCAL))
-      setting_uint_set(setting, STREAMING_MODE_KICK);
+   setting_streaming_mode_adjust(setting, false);
    return result;
 }
 
 static int setting_uint_action_right_streaming_mode(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   settings_t *settings = config_get_ptr();
    int result = setting_uint_action_right_default(setting, idx, wraparound);
-   if (setting && settings && setting_uint_get(setting) == STREAMING_MODE_LOCAL
-         && !recording_driver_streaming_mode_supported(
-            settings->arrays.record_driver, STREAMING_MODE_LOCAL))
-      setting_uint_set(setting, STREAMING_MODE_CUSTOM);
+   setting_streaming_mode_adjust(setting, true);
    return result;
 }
 

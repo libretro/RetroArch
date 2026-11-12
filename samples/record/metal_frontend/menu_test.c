@@ -15,6 +15,13 @@ static struct menu_state test_menu;
 static bool metal_available = true, nvenc_available = true;
 static enum msg_hash_enums rows[32];
 static unsigned row_count;
+static const unsigned native_modes[] = {
+   STREAMING_MODE_TWITCH, STREAMING_MODE_YOUTUBE,
+#ifdef HAVE_SSL
+   STREAMING_MODE_FACEBOOK, STREAMING_MODE_KICK,
+#endif
+   STREAMING_MODE_CUSTOM
+};
 
 settings_t *config_get_ptr(void)
 {
@@ -78,13 +85,13 @@ static void select_driver(const char *ident)
 }
 static void check_native(const char *ident, bool streaming)
 {
-   unsigned mode, offered[6];
+   unsigned offered[6];
    select_driver(ident);
    test_settings.bools.quick_menu_show_start_streaming = true;
    assert(quick_stream_offered() == streaming);
-   assert(dropdown_modes(offered) == (streaming ? 5u : 0u));
+   assert(dropdown_modes(offered) == (streaming ? ARRAY_SIZE(native_modes) : 0u));
    if (streaming)
-      assert(offered[3] == STREAMING_MODE_KICK && offered[4] == STREAMING_MODE_CUSTOM);
+      assert(!memcmp(offered,native_modes,sizeof(native_modes)));
    assert(has_row(MENU_ENUM_LABEL_RECORD_CONFIG));
    assert(has_row(MENU_ENUM_LABEL_VIDEO_GPU_RECORD));
    assert(has_row(MENU_ENUM_LABEL_VIDEO_RECORD_ALLOW_FRAME_DROP));
@@ -99,9 +106,8 @@ static void check_native(const char *ident, bool streaming)
    assert(has_row(MENU_ENUM_LABEL_STREAM_CONFIG) == streaming);
    assert(!has_row(MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY));
    assert(!has_row(MENU_ENUM_LABEL_UDP_STREAM_PORT));
-   for (mode = 0; mode <= STREAMING_MODE_CUSTOM; mode++)
-      assert(recording_driver_streaming_mode_supported(ident,mode)
-            == (streaming && mode != STREAMING_MODE_LOCAL));
+   assert(!recording_driver_streaming_mode_supported(ident,STREAMING_MODE_LOCAL));
+   assert(!recording_driver_streaming_mode_supported(ident,STREAMING_MODE_CUSTOM+1u));
 }
 int main(void)
 {
@@ -142,7 +148,7 @@ int main(void)
    select_driver("metal");
    test_settings.uints.streaming_mode = STREAMING_MODE_CUSTOM;
    assert(!setting_uint_action_left_streaming_mode(&setting,0,true));
-   assert(test_settings.uints.streaming_mode == STREAMING_MODE_KICK);
+   assert(test_settings.uints.streaming_mode == native_modes[ARRAY_SIZE(native_modes)-2]);
    assert(!setting_uint_action_right_streaming_mode(&setting,0,true));
    assert(test_settings.uints.streaming_mode == STREAMING_MODE_CUSTOM);
    assert(!setting_uint_action_right_streaming_mode(&setting,0,true));
