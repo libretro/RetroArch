@@ -4,7 +4,10 @@ LIBRETRO_COMM_DIR := ../../..
 
 SOURCE := retro_atomic_cxx11_old_stl_test.cpp
 
+# -Werror=old-style-cast: projects built with it (RPCS3) include the
+# header, so its C++ backend must not use C casts
 CXXFLAGS += -Wall -Wextra -pedantic -std=c++11 -g1 -O0 \
+            -Wold-style-cast -Werror=old-style-cast \
             -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)

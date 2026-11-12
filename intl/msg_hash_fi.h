@@ -2206,7 +2206,6 @@ static const struct
 #ifdef HAVE_LAKKA
    char s_2bab34b2[29];
 #endif
-   char s_27aef25c[41];
 #ifdef _3DS
    char s_2873cef1[85];
    char s_b4816da6[51];
@@ -5797,7 +5796,6 @@ static const struct
 #ifdef HAVE_LAKKA
    "M\303\244\303\244rit\303\244 bluetoothin tila.",
 #endif
-   "Etsi bluetooth laitteita ja yhdist\303\244 ne.",
 #ifdef _3DS
    "Alemman n\303\244yt\303\266n resurssien kansio. Kansioon on sis\303\244llytett\303\244v\303\244 "
    "\"bottom_menu.png\".",
@@ -7580,7 +7578,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123470u
+      (sizeof(msg_hash_fi_blob) == (123429u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -10111,7 +10109,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

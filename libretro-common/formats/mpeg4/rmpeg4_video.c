@@ -229,6 +229,8 @@ struct rmpeg4_video
    int        held;                 /* a reference not shown yet, or -1 */
    uint8_t    slot_type[3];
    uint32_t   slot_time[3];
+   uint64_t   slot_tag[3];          /* the caller's tag when each began */
+   uint64_t   tag;                  /* rmpeg4_video_set_tag's, for what comes next */
    int        cur;                  /* slot being decoded */
 
    m4_mbmv_t *mvs;        /* this VOP's vectors */
@@ -3004,6 +3006,7 @@ static void fill_frame(const rmpeg4_video_t *v, int slot, rmpeg4_video_frame_t *
    out->y_stride        = v->y_stride;
    out->c_stride        = v->c_stride;
    out->time            = v->slot_time[slot];
+   out->tag             = v->slot_tag[slot];
    out->coding_type     = v->slot_type[slot];
    out->interlaced      = v->interlaced;
    out->top_field_first = (v->slot_type[slot] >> 4) & 1;
@@ -3044,6 +3047,7 @@ static int decode_vop(rmpeg4_video_t *v, bool sh, rmpeg4_video_frame_t *out)
 
    v->slot_type[slot] = (uint8_t)(v->pict | (v->top_field_first ? 16 : 0));
    v->slot_time[slot] = (uint32_t)v->time;
+   v->slot_tag[slot]  = v->tag;
 
    if (v->pict == VOP_B)
    {
@@ -3106,6 +3110,12 @@ void rmpeg4_video_reset(rmpeg4_video_t *v)
    v->ref_old = v->ref_new = v->held = -1;
    v->time_base = v->last_time_base = v->time = v->last_non_b_time = 0;
    v->pp_time = v->pb_time = 0;
+}
+
+void rmpeg4_video_set_tag(rmpeg4_video_t *v, uint64_t tag)
+{
+   if (v)
+      v->tag = tag;
 }
 
 int rmpeg4_video_flush(rmpeg4_video_t *v, rmpeg4_video_frame_t *out)

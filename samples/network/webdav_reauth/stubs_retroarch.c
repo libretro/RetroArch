@@ -124,6 +124,16 @@ void *task_push_webdav_delete(const char *url, bool suppress,
    return stub_record("DELETE", headers, cb, user_data);
 }
 
+/* A download to a file (cloud sync reads since 66376b18) is a GET
+ * like any other here. */
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   (void)url; (void)mute; (void)path; (void)title;
+   return stub_record("GET", headers, cb, user_data);
+}
+
 void *task_push_http_transfer_with_headers(const char *url, bool mute,
       const char *type, const char *headers,
       retro_task_callback_t cb, void *user_data)

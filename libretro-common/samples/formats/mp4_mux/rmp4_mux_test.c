@@ -26,10 +26,12 @@
  *          VOL headers as the decoder configuration) and 16-bit PCM
  *   mjpeg  motion JPEG from rjpeg_encode and big-endian float PCM
  *   avc    H.264 and AAC sample entries (avcC, an AudioSpecificConfig)
- *          around placeholder samples, for the structure alone
+ *          around placeholder samples, for the structure alone; the
+ *          AAC's priming skipped by an edit list when asked
  *
- * Each must open in rmp4 with its tracks, sizes, rates and decoder
- * configurations, and give back every sample - its bytes, its key flag,
+ * Each must open in rmp4 with its tracks, sizes, rates, decoder
+ * configurations and esds object types (MPEG-4 Visual and JPEG behind
+ * the same mp4v), and give back every sample - its bytes, its key flag,
  * its place in presentation order - and the video's first frame must be
  * shown at time zero (B-VOPs delay it in decode order: the edit list
  * takes that off). A track full at max_samples must refuse the next one,
@@ -215,6 +217,8 @@ static void read_back(const membuf_t *b, track_samples_t *tracks, unsigned count
    rmp4_close(mp4);
 }
 
+static int64_t llabs_ns(int64_t v) { return v < 0 ? -v : v; }
+
 static rmp4_mux_t *open_mux(membuf_t *b, const rmp4_mux_track_t *t, unsigned n)
 {
    struct rmp4_mux_io io;
@@ -324,6 +328,10 @@ static void test_mpeg4(const char *dir)
       const rmp4_track *tv = rmp4_get_track(mp4, 0), *ta = rmp4_get_track(mp4, 1);
       CHECK(tv && tv->type == RMP4_TRACK_VIDEO && tv->width == 64 && tv->height == 48
             && !strcmp(tv->codec_id, "mp4v"));
+      /* MPEG-4 Visual by the esds, its VOL headers the codec_private */
+      CHECK(tv && tv->object_type == 0x20 && tv->codec_private_size == cfg
+            && !memcmp(tv->codec_private, m4_asp, cfg));
+      CHECK(ta && ta->object_type == 0);
       /* the edit list takes off the tick B-VOPs delay the first frame by */
       CHECK(tv && tv->media_skip == 1);
       CHECK(ta && ta->type == RMP4_TRACK_AUDIO && ta->sample_rate == 48000
@@ -433,9 +441,12 @@ static void test_mjpeg(const char *dir)
       CHECK(r != NULL);
       if (r)
       {
-         const rmp4_track *ta = rmp4_get_track(r, 1);
+         const rmp4_track *ta = rmp4_get_track(r, 1), *tv = rmp4_get_track(r, 0);
          CHECK(ta && !strcmp(ta->codec_id, "fl32") && ta->channels == 2
                && ta->sample_rate == 32000);
+         /* the same mp4v fourcc, told apart as JPEG by the esds */
+         CHECK(tv && !strcmp(tv->codec_id, "mp4v") && tv->object_type == 0x6C
+               && tv->codec == RMP4_CODEC_UNKNOWN && !tv->codec_private_size);
          rmp4_close(r);
       }
    }
@@ -536,11 +547,46 @@ static void test_avc_aac(const char *dir)
          CHECK(ta && ta->codec == RMP4_CODEC_AAC && ta->sample_rate == 44100
                && ta->channels == 2 && ta->codec_private_size == sizeof(asc)
                && !memcmp(ta->codec_private, asc, sizeof(asc)));
+         /* MPEG-4 Audio by the esds; avc1 has none */
+         CHECK(ta && ta->object_type == 0x40);
+         CHECK(tv && tv->object_type == 0);
          rmp4_close(r);
       }
    }
    CHECK(first[0] == 0 && first[1] == 0);
    free(b.p);
+
+   /* AAC's priming packet, skipped by the edit list; none without */
+   t[1].skip = 1024;
+   memset(&b, 0, sizeof(b));
+   m = open_mux(&b, t, 2);
+   CHECK(m != NULL);
+   if (m)
+   {
+      for (i = 0; i < 8; i++)
+      {
+         CHECK(rmp4_mux_write(m, 0, s[0].s[i].data, s[0].s[i].len, s[0].s[i].pts, s[0].s[i].dts, s[0].s[i].sync));
+         CHECK(rmp4_mux_write(m, 1, s[1].s[i].data, s[1].s[i].len, s[1].s[i].pts, s[1].s[i].dts, true));
+      }
+      CHECK(rmp4_mux_close(m));
+      {
+         rmp4_t *r = rmp4_open_memory(b.p, b.size);
+         CHECK(r != NULL);
+         if (r)
+         {
+            const rmp4_track *tv = rmp4_get_track(r, 0), *ta = rmp4_get_track(r, 1);
+            CHECK(ta && ta->media_skip == 1024);
+            CHECK(tv && tv->media_skip == 0);
+            /* the shown length is the samples' less the priming (in the
+             * movie's milliseconds) */
+            CHECK(ta && llabs_ns(ta->presentation_duration_ns
+                  - (int64_t)(8 * 1024 - 1024) * 1000000000 / 44100) <= 1000000);
+            rmp4_close(r);
+         }
+      }
+   }
+   free(b.p);
+   t[1].skip = 0;
 
    /* a write that fails fails the file */
    memset(&b, 0, sizeof(b));

@@ -211,25 +211,38 @@ static bool task_http_attempt_begin(http_handle_t *http)
    return false;
 }
 
-/* Sink callback: append the run of decoded body bytes to the output
- * file.  Returning false aborts the transfer, which is how a full
- * disk surfaces as a failed download rather than a truncated core. */
-static bool task_http_file_sink(void *userdata, const void *data, size_t len)
+/* Sink callback: append the runs of decoded body bytes to the output
+ * file, as net_http received them, with one gathered write: a chunked
+ * body's chunks go to the kernel from where they were received,
+ * without being slid together first.  Returning false aborts the
+ * transfer, which is how a full disk surfaces as a failed download
+ * rather than a truncated core. */
+static bool task_http_file_sink_spans(void *userdata,
+      const struct net_http_span *spans, size_t count)
 {
+   struct retro_vfs_span v[NET_HTTP_SINK_SPANS_MAX];
    http_handle_t *http = (http_handle_t*)userdata;
-   if (!http->sink_file)
+   size_t total        = 0;
+   size_t i;
+   if (!http->sink_file || count > NET_HTTP_SINK_SPANS_MAX)
       return false;
    if (!http->attempt_started && !task_http_attempt_begin(http))
    {
       http->sink_failed = true;
       return false;
    }
-   if (filestream_write(http->sink_file, data, (int64_t)len) != (int64_t)len)
+   for (i = 0; i < count; i++)
+   {
+      v[i].data = spans[i].data;
+      v[i].len  = spans[i].len;
+      total    += spans[i].len;
+   }
+   if (filestream_writev(http->sink_file, v, count) != (int64_t)total)
    {
       http->sink_failed = true;
       return false;
    }
-   http->sink_written += len;
+   http->sink_written += total;
    return true;
 }
 
@@ -263,7 +276,7 @@ static bool task_http_resume(http_handle_t *http, uint8_t flg)
    snprintf(headers, sizeof(headers), "Range: bytes=%s-\r\nIf-Range: %s\r\n",
          offset, http->validator);
    net_http_connection_set_headers(conn, headers);
-   net_http_connection_set_sink(conn, task_http_file_sink, http);
+   net_http_connection_set_sink_spans(conn, task_http_file_sink_spans, http);
 
    net_http_delete(http->handle);
    http->handle            = NULL;
@@ -719,7 +732,8 @@ static void *task_push_http_transfer_generic_titled(
                   RETRO_VFS_FILE_ACCESS_WRITE,
                   RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
          goto error;
-      net_http_connection_set_sink(conn, task_http_file_sink, http);
+      net_http_connection_set_sink_spans(conn, task_http_file_sink_spans,
+            http);
    }
 
    if (!(t = task_init()))

@@ -5580,6 +5580,7 @@ bool command_event(enum event_command cmd, void *data)
                      const char *_msg = msg_hash_to_str(MSG_ADD_TO_PLAYLIST_FAILED);
                      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+                     playlist_free(playlist);
                      return true;
                   }
 
@@ -5601,6 +5602,7 @@ bool command_event(enum event_command cmd, void *data)
                      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   }
+                  playlist_free(playlist);
                   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
                   if (menu_st->driver_ctx->environ_cb)
                      menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,

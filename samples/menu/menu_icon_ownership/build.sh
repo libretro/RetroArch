@@ -63,8 +63,11 @@ if [ ! -s "$ld_line" ]; then
    exit 1
 fi
 
+# strdup and free are wrapped so the xmb lane can count the copies of
+# a string the menu makes and frees (see the harness's string
+# accounting).
 sed -e 's#obj-unix/release/retroarch\.o#samples/menu/menu_icon_ownership/retroarch_nomain.o samples/menu/menu_icon_ownership/harness_main.o#' \
-    -e 's#-o retroarch #-o samples/menu/menu_icon_ownership/menu_icon_ownership_test #' \
+    -e 's#-o retroarch #-o samples/menu/menu_icon_ownership/menu_icon_ownership_test -Wl,--wrap=strdup -Wl,--wrap=free #' \
    "$ld_line" | sh
 
 echo "built samples/menu/menu_icon_ownership/menu_icon_ownership_test"

@@ -185,6 +185,66 @@ static void damage(const unsigned char *data, size_t len)
    free(copy);
 }
 
+/* Unit by unit, each VOP's unit tagged with its number: every frame
+ * comes out with the tag of the VOP it is - the VOP's coding type, read
+ * from its header here - each once, and the B-VOPs' references out of
+ * decode order */
+typedef struct
+{
+   unsigned char type[64], seen[64];
+   unsigned      vops, frames, bad, reordered, last;
+} tags_t;
+
+static void tag_frame(tags_t *t, const rmpeg4_video_frame_t *f)
+{
+   t->frames++;
+   if (f->tag < 1 || f->tag > t->vops || t->seen[f->tag] || t->type[f->tag] != f->coding_type)
+      t->bad++;
+   else
+      t->seen[f->tag] = 1;
+   if (f->tag < t->last)
+      t->reordered++;
+   t->last = (unsigned)f->tag;
+}
+
+static void test_tags(const char *name, const unsigned char *data, size_t len)
+{
+   rmpeg4_video_t      *v = rmpeg4_video_init();
+   rmpeg4_video_frame_t f;
+   tags_t               t;
+   size_t               at = unit_end(data, 0, len);
+
+   memset(&t, 0, sizeof(t));
+   CHECK(v != NULL);
+   if (!v)
+      return;
+   while (at < len)
+   {
+      size_t end = unit_end(data, at + 3, len), used, off = 0;
+      if (data[at + 3] == 0xB6 && t.vops + 1 < 64)
+      {
+         t.type[++t.vops] = (unsigned char)((data[at + 4] >> 6) + 1);
+         rmpeg4_video_set_tag(v, t.vops);
+      }
+      while (off < end - at)
+      {
+         int got = rmpeg4_video_decode(v, data + at + off, end - at - off, &used, &f);
+         off += used;
+         if (got)
+            tag_frame(&t, &f);
+         else if (!used)
+            break;
+      }
+      at = end;
+   }
+   while (rmpeg4_video_flush(v, &f))
+      tag_frame(&t, &f);
+   printf("%s: %u VOPs tagged, %u frames back with theirs, %u out of decode order\n",
+         name, t.vops, t.frames - t.bad, t.reordered);
+   CHECK(t.bad == 0 && t.frames == t.vops);
+   rmpeg4_video_free(v);
+}
+
 static void test_fixture(const char *name, const unsigned char *data, size_t len,
       unsigned long want)
 {
@@ -292,6 +352,9 @@ int main(int argc, char **argv)
       test_fixture("gmc",    m4_gmc,   sizeof(m4_gmc),   0xf99e38ddUL);
       test_fixture("resil",  m4_resil, sizeof(m4_resil), 0xd15d6c66UL);
       test_fixture("shortv", m4_short, sizeof(m4_short), 0x59be255aUL);
+      test_tags("asp tags",   m4_asp,   sizeof(m4_asp));
+      test_tags("ilace tags", m4_ilace, sizeof(m4_ilace));
+      test_tags("gmc tags",   m4_gmc,   sizeof(m4_gmc));
    }
    if (failures)
       printf("\n%u check(s) failed\n", failures);

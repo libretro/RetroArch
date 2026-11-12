@@ -139,6 +139,8 @@ jobs:
             s16_to_float_test
             float_to_s16_test
             float_to_s32_test
+            # G.711 mu-law; a step below compares it with FFmpeg's.
+            float_to_ulaw_test
             compat_fnmatch_test
             snprintf
             unbase64_test
@@ -212,7 +214,23 @@ jobs:
             # MPEG-4 Part 2 encoding, decoded back with rmpeg4_video; a
             # step below has FFmpeg decode the streams.
             rmpeg4_encode_test
-            # 4:2:0 to bytes in memory order and to UYVY.
+            # AAC-LC encoding, decoded back with raac; a step below has
+            # FFmpeg decode the streams.
+            raac_encode_test
+            # H.264 encoding, decoded back with rh264; a step below has
+            # FFmpeg decode the streams.
+            rh264_encode_test
+            # Tags in each container and ID3 version, and every prefix
+            # and corruption of each file read inside it.
+            rtags_test
+            # A file's audio_transfer arm from its bytes, and the folds.
+            audio_transfer_sniff_test
+            # ATRAC3 and ATRAC3plus in WAVE and OpenMG through audio_transfer.
+            audio_transfer_atrac_test
+            # AVI and ASF headers: streams, codecs, sizes, rates, length.
+            rcontainer_test
+            # 4:2:0 to bytes in memory order and to UYVY, and bytes to
+            # 4:2:0; a step below compares the latter with swscale's.
             image_yuv_test
             rh264_lossless_test
             rh264_lossless_test_nothreads
@@ -244,6 +262,7 @@ jobs:
             r7z_stored_test
             r7z_methods_test
             r7z_stream_test
+            r7z_peek_threads_test
             rzip_archive_test
             # The RAR reader on real archives (LZ and PPMd blocks,
             # filters, Unicode names) and on mangled copies of them.
@@ -269,6 +288,9 @@ jobs:
             # A read-write stream on the descriptor path, as an emulated
             # file system uses it: in-place writes, truncate, reopen.
             vfs_descriptor_rw_test
+            # Positional I/O (VFS v6): reads at offsets and appends from
+            # several threads on one stream, with no lock.
+            vfs_positional_test
             cdrom_cuesheet_overflow_test
             rdvd_h262_test
             rdvd_lpcm_test
@@ -424,6 +446,9 @@ jobs:
             # A writer updates a record two million times while three
             # threads copy it: no copy torn, none going back.
             retro_seqlock_test
+            # Twenty threads change one record two million times in all
+            # while three copy it: no change lost, no copy torn.
+            retro_cas_record_test
             sthread_ex_test
             fast_cores_test
             memshm_test
@@ -946,6 +971,250 @@ jobs:
           done
           [ "$n" = 5 ]
 
+      # What raac_encode writes - tones, noise, an attack, mono and
+      # stereo, 8 to 96 kHz - FFmpeg decodes within 2 per sample of raac
+      # (the sample checks raac's decoding against the input)
+      - name: Decode raac_encode's streams with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/aac_encode
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./raac_encode_test "$work"
+          n=0
+          for f in "$work"/*.aac; do
+            ffmpeg -nostdin -hide_banner -loglevel error -xerror -i "$f" \
+              -f s16le -y "${f%.aac}.ff.s16"
+            ./raac_encode_test --compare "${f%.aac}.s16" "${f%.aac}.ff.s16"
+            n=$((n+1))
+          done
+          [ "$n" = 9 ]
+
+      # What rh264_encode writes - whole macroblocks and cropped, fine
+      # and coarse quantisers, a bit rate - FFmpeg decodes to exactly the
+      # encoder's reconstruction, as rh264 does (the sample checks that)
+      - name: Decode rh264_encode's streams with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/h264_encode
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./rh264_encode_test "$work"
+          n=0
+          for f in "$work"/*.264; do
+            ffmpeg -nostdin -hide_banner -loglevel error -xerror -i "$f" \
+              -f rawvideo -pix_fmt yuv420p -y "${f%.264}.ff.yuv"
+            cmp "${f%.264}.yuv" "${f%.264}.ff.yuv"
+            n=$((n+1))
+          done
+          [ "$n" = 5 ]
+
+      # What FFmpeg writes as tags - ID3v2.3 and 2.4, ID3v1 alone, FLAC,
+      # Vorbis and Opus in Ogg, MP4, ASF, WAVE - rtags reads as ffprobe
+      # does, non-ASCII text, numbered genres and full dates in
+      - name: Read FFmpeg's tags with rtags
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/tags
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          tags=(-metadata 'title=Tïtle ☃' -metadata 'artist=Ärtist'
+                -metadata 'album=Albüm' -metadata genre=Rock -metadata track=3/12
+                -metadata disc=1/2 -metadata date=2004)
+          enc() { ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i sine=d=0.2 "$@"; }
+          enc "${tags[@]}" -id3v2_version 3 -y "$work/v23.mp3"
+          enc "${tags[@]}" -id3v2_version 4 -y "$work/v24.mp3"
+          enc -id3v2_version 3 -metadata genre=17 -metadata date=2004-05-01 \
+            -metadata 'title=a long title with a snowman, ☃' -y "$work/genre.mp3"
+          enc "${tags[@]}" -write_id3v1 1 -y "$work/both.mp3"
+          # ID3v1 alone: the ID3v2 tag in front cut off
+          python3 -c 'import sys
+          d = open(sys.argv[1], "rb").read()
+          s = (d[6] & 127) << 21 | (d[7] & 127) << 14 | (d[8] & 127) << 7 | (d[9] & 127)
+          open(sys.argv[2], "wb").write(d[10 + s:])' "$work/both.mp3" "$work/v1.mp3"
+          rm "$work/both.mp3"
+          enc "${tags[@]}" -y "$work/a.flac"
+          enc "${tags[@]}" -c:a libvorbis -y "$work/a.ogg"
+          enc "${tags[@]}" -c:a libopus -y "$work/a.opus"
+          enc "${tags[@]}" -y "$work/a.m4a"
+          enc -metadata genre=17 -metadata date=2004-05-01 -y "$work/b.m4a"
+          enc "${tags[@]}" -y "$work/a.wma"
+          enc "${tags[@]}" -y "$work/a.wav"
+          n=0
+          for f in "$work"/*.*; do
+            ffprobe -v error -show_entries format_tags:stream_tags \
+              -of default=nw=1 "$f" > "$f.tags"
+            ./rtags_test --ffprobe "$f" "$f.tags"
+            n=$((n+1))
+          done
+          [ "$n" = 11 ]
+
+      # Files FFmpeg writes - MP3 with and without ID3v2, ADTS with and
+      # without, M4A, FLAC, Ogg Vorbis, Opus, WAVE PCM and float, WMA1/2,
+      # AC-3 - each sniffed as its arm and decoded where the sniffer
+      # says; and 5.1 with a tone a channel in each multichannel arm,
+      # folded with audio_transfer_stereo_matrix: every tone on its side
+      - name: Sniff and fold FFmpeg's files with audio_transfer
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/audio_transfer_sniff
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          enc() { ffmpeg -nostdin -hide_banner -loglevel error \
+            -f lavfi -i sine=f=440:d=1:sample_rate=48000 -ac 2 "$@"; }
+          enc -metadata title=t -y "$work/id3.mp3"
+          enc -id3v2_version 0 -write_xing 0 -y "$work/bare.mp3"
+          enc -c:a aac -f adts -y "$work/bare.aac"
+          enc -c:a aac -f adts -write_id3v2 1 -metadata title=t -y "$work/id3.aac"
+          enc -y "$work/a.m4a"
+          enc -y "$work/a.flac"
+          enc -c:a libvorbis -y "$work/a.ogg"
+          enc -c:a libopus -y "$work/a.opus"
+          enc -y "$work/s16.wav"
+          enc -c:a pcm_f32le -y "$work/f32.wav"
+          enc -c:a wmav1 -y "$work/v1.wma"
+          enc -y "$work/v2.wma"
+          enc -c:a ac3 -y "$work/a.ac3"
+          for p in id3.mp3:mp3 bare.mp3:mp3 bare.aac:aac id3.aac:aac a.m4a:aac \
+                   a.flac:flac a.ogg:vorbis a.opus:opus s16.wav:wav f32.wav:wav \
+                   v1.wma:wma v2.wma:wma a.ac3:ac3; do
+            ./audio_transfer_sniff_test --file "$work/${p%%:*}" "${p#*:}"
+          done
+          # MP3, gapless (LAME tag) and not: FFmpeg's samples, where they
+          # start and end
+          for f in id3.mp3 bare.mp3; do
+            ffmpeg -nostdin -hide_banner -loglevel error -i "$work/$f" -f f32le -y "$work/$f.f32"
+            ./audio_transfer_sniff_test --file "$work/$f" mp3 --pcm "$work/$f.f32"
+          done
+          # WMA: the length the ASF header states, as ffprobe reads it
+          for f in v1.wma v2.wma; do
+            frames=$(ffprobe -v error -show_entries format=duration:stream=sample_rate \
+              -of csv=p=0 "$work/$f" | tr '\n' ' ' | awk '{ printf "%d", $1 * $2 + 0.5 }')
+            ./audio_transfer_sniff_test --file "$work/$f" wma --frames "$frames"
+          done
+          # WMA1 and WMA2, gapless at each frame size (2048, 1024 and 512
+          # samples): the signal FFmpeg's encoder was given, from its
+          # first sample, at the length the header states
+          for codec in wmav1 wmav2; do
+            for rate in 44100 22050 16000 8000; do
+              src="sine=f=440:d=0.73:sample_rate=$rate"
+              ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i "$src" -ac 2 \
+                -c:a "$codec" -y "$work/g.wma"
+              ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i "$src" -ac 2 \
+                -f f32le -y "$work/g.f32"
+              ./audio_transfer_sniff_test --file "$work/g.wma" wma --source "$work/g.f32"
+            done
+          done
+          six=""
+          n=0
+          for hz in 300 500 700 80 1100 1300; do
+            six="${six}sine=f=$hz:d=2:sample_rate=48000[c$n];"
+            n=$((n+1))
+          done
+          six="${six}[c0][c1][c2][c3][c4][c5]join=inputs=6:channel_layout=5.1"
+          six="$six:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR"
+          for p in m4a:aac:aac ogg:libvorbis:vorbis opus:libopus:opus \
+                   flac:flac:flac ac3:ac3:ac3 wav:pcm_s16le:wav; do
+            IFS=: read -r ext codec type <<< "$p"
+            ffmpeg -nostdin -hide_banner -loglevel error -filter_complex "$six" \
+              -c:a "$codec" -y "$work/six.$ext"
+            ./audio_transfer_sniff_test --file "$work/six.$ext" "$type" --tones
+          done
+
+      # ATRAC3 and ATRAC3plus - stereo, joint stereo, mono, 4.0, 5.1,
+      # 6.1, 7.1 - in WAVE and OpenMG files the sample writes: FFmpeg
+      # decodes each to the samples audio_transfer gives (in FFmpeg's
+      # channel layout), and ffprobe reads the OpenMG ea3 tags as rtags
+      # does
+      - name: Decode audio_transfer's ATRAC files with FFmpeg
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats
+        run: |
+          set -euo pipefail
+          make -C audio_transfer_atrac -j2 SANITIZER=address,undefined
+          make -C tags -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          ./audio_transfer_atrac/audio_transfer_atrac_test --write "$work"
+          n=0
+          for f in "$work"/*.wav "$work"/*.oma; do
+            ffmpeg -nostdin -hide_banner -loglevel fatal -i "$f" -f f32le -y "$f.f32"
+            ./audio_transfer_atrac/audio_transfer_atrac_test --compare "$f" "$f.f32"
+            n=$((n+1))
+          done
+          [ "$n" = 11 ]
+          for f in "$work"/*.oma; do
+            ffprobe -v error -show_entries format_tags:stream_tags \
+              -of default=nw=1 "$f" > "$f.tags"
+            ./tags/rtags_test --ffprobe "$f" "$f.tags"
+          done
+
+      # AVI (MPEG-4 Part 2 with MP3, AVC with AC-3, MPEG-4 alone,
+      # MS-MPEG4 with PCM) and WMV (WMV2 with WMA2) from FFmpeg: rcontainer
+      # reads the streams, tags, sizes, rates, bit rates and length as
+      # ffprobe does
+      - name: Read FFmpeg's AVI and ASF headers with rcontainer
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/container
+        run: |
+          set -euo pipefail
+          make -j2 SANITIZER=address,undefined
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          v=(-f lavfi -i testsrc2=s=96x64:r=25:d=1)
+          a=(-f lavfi -i sine=f=440:d=1:sample_rate=44100)
+          ff() { ffmpeg -nostdin -hide_banner -loglevel error "$@"; }
+          ff "${v[@]}" "${a[@]}" -c:v mpeg4 -vtag XVID -c:a libmp3lame -y "$work/a.avi"
+          ff "${v[@]}" "${a[@]}" -c:v libx264 -c:a ac3 -y "$work/b.avi"
+          ff "${v[@]}" -c:v mpeg4 -y "$work/c.avi"
+          ff "${v[@]}" "${a[@]}" -c:v msmpeg4 -c:a pcm_s16le -ac 1 -y "$work/d.avi"
+          ff "${v[@]}" "${a[@]}" -c:v wmv2 -c:a wmav2 -y "$work/e.wmv"
+          n=0
+          for f in "$work"/*.avi "$work"/*.wmv; do
+            ffprobe -v error -show_entries \
+              stream=codec_type,codec_tag,width,height,sample_rate,channels,bit_rate,duration \
+              -of default=nw=1 "$f" > "$f.probe"
+            ./rcontainer_test --ffprobe "$f" "$f.probe"
+            n=$((n+1))
+          done
+          [ "$n" = 5 ]
+
+      # RGBA to 4:2:0 against swscale's with the same 2x2 chroma average
+      # (area): every sample within 1, in each of FFmpeg's test patterns
+      - name: Convert RGBA to yuv420p as swscale does
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/image_yuv
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          for src in testsrc2=size=160x120 smptehdbars=size=320x180 \
+              "gradients=size=256x144:speed=0.05" mandelbrot=size=200x150; do
+            ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i "$src:rate=25" \
+              -frames:v 8 -pix_fmt rgba -f rawvideo -y "$work/f.rgba"
+            size=$(ffprobe -v error -f lavfi -i "$src:rate=25" -show_entries stream=width,height \
+              -of csv=p=0 | head -1)
+            ffmpeg -nostdin -hide_banner -loglevel error -f rawvideo -pix_fmt rgba \
+              -s "${size/,/x}" -i "$work/f.rgba" -sws_flags area+accurate_rnd \
+              -pix_fmt yuv420p -f rawvideo -y "$work/f.yuv"
+            ./image_yuv_test --ffmpeg "$work/f.rgba" "$work/f.yuv" ${size/,/ }
+          done
+
       - name: Frontend H.264 decode interface, v1 to v4, plain and under ASan/UBSan
         if: matrix.group == 'codecs'
         shell: bash
@@ -1091,6 +1360,20 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
 
+      - name: Run r7z_peek_threads_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
+        shell: bash
+        working-directory: libretro-common/samples/formats/r7z
+        run: |
+          # A folder peeked at while another thread decodes it, through
+          # its being held: never torn, never the other folder's.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make -j$(nproc) r7z_peek_threads_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 ./r7z_peek_threads_test
+
       - name: Run video_player_test under Clang + ThreadSanitizer, and threadless
         if: matrix.group == 'core'
         shell: bash
@@ -1161,6 +1444,22 @@ jobs:
           CC=clang make -j$(nproc) all SANITIZER=thread
 
           TSAN_OPTIONS=halt_on_error=1 ./audio_mixer_voice_threads_test
+
+      # Every 16-bit sample through convert_s16_to_ulaw against FFmpeg's
+      # pcm_mulaw: all 65536 codes the same
+      - name: Encode mu-law as FFmpeg's pcm_mulaw does
+        if: matrix.group == 'core'
+        shell: bash
+        working-directory: libretro-common/samples/audio/float_to_ulaw
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          make -j2 all
+          ./float_to_ulaw_test --ramp "$work/ramp.s16"
+          ffmpeg -nostdin -hide_banner -loglevel error -f s16le -ar 8000 -ac 1 \
+            -i "$work/ramp.s16" -c:a pcm_mulaw -f mulaw -y "$work/ramp.ul"
+          ./float_to_ulaw_test --ffmpeg "$work/ramp.ul"
 
       - name: Run mpsc_stack_test under Clang + ThreadSanitizer
         if: matrix.group == 'core'

@@ -110,6 +110,77 @@ static unsigned long decode_all(const unsigned char *data, size_t len, size_t ch
    return h;
 }
 
+/* Access unit by access unit - a picture with the headers before it,
+ * each tagged with its number - every frame comes out with the tag of
+ * the picture it is (a field pair, its first field's): that picture's
+ * temporal reference and coding type, read from its header here, each
+ * once */
+static void test_tags(const char *name, const unsigned char *data, size_t len)
+{
+   rmpeg1_video_t      *v = rmpeg1_video_init();
+   rmpeg1_video_frame_t f;
+   unsigned             tref[64], type[64], aus = 0, frames = 0, bad = 0, reordered = 0, last = 0;
+   unsigned char        seen[64];
+   size_t               at = 0, i;
+   int                  after_slice = 1;
+
+   memset(seen, 0, sizeof(seen));
+   CHECK(v != NULL);
+   if (!v)
+      return;
+   for (i = 0; i <= len; i++)
+   {
+      unsigned code = i + 3 < len && !data[i] && !data[i + 1] && data[i + 2] == 1 ? data[i + 3] : 0x100;
+      /* a picture, GOP or sequence header after slices starts the next
+       * unit; the end of the data ends the last */
+      if (i == len || ((code == 0x00 || code == 0xB3 || code == 0xB8) && after_slice))
+      {
+         if (i > at)
+         {
+            CHECK(rmpeg1_video_write(v, data + at, i - at) == i - at);
+            while (rmpeg1_video_decode(v, &f))
+            {
+               frames++;
+               if (f.tag < 1 || f.tag > aus || seen[f.tag] || tref[f.tag] != f.temporal_ref
+                     || type[f.tag] != f.coding_type)
+                  bad++;
+               else
+                  seen[f.tag] = 1;
+               reordered += f.tag < last;
+               last = (unsigned)f.tag;
+            }
+         }
+         at = i;
+         after_slice = 0;
+         if (i < len && aus + 1 < 64)
+            rmpeg1_video_set_tag(v, ++aus);
+      }
+      if (code == 0x00 && i + 6 < len)
+      {
+         tref[aus] = ((unsigned)data[i + 4] << 2) | (data[i + 5] >> 6);
+         type[aus] = (data[i + 5] >> 3) & 7;
+      }
+      if (code >= 0x01 && code <= 0xAF)
+         after_slice = 1;
+   }
+   rmpeg1_video_flush(v);
+   while (rmpeg1_video_decode(v, &f))
+   {
+      frames++;
+      if (f.tag < 1 || f.tag > aus || seen[f.tag] || tref[f.tag] != f.temporal_ref
+            || type[f.tag] != f.coding_type)
+         bad++;
+      else
+         seen[f.tag] = 1;
+      reordered += f.tag < last;
+      last = (unsigned)f.tag;
+   }
+   printf("%s: %u units tagged, %u frames back with theirs, %u out of decode order\n",
+         name, aus, frames - bad, reordered);
+   CHECK(bad == 0 && frames == 8);
+   rmpeg1_video_free(v);
+}
+
 static void test_fixture(const char *name, const unsigned char *data, size_t len,
       unsigned long want)
 {
@@ -204,6 +275,9 @@ int main(int argc, char **argv)
       test_fixture("progressive", m2_prog,  sizeof(m2_prog),  0x595061e8UL);
       test_fixture("interlaced",  m2_ilace, sizeof(m2_ilace), 0xe0cab4caUL);
       test_fixture("tools",       m2_tools, sizeof(m2_tools), 0x5c9b314eUL);
+      test_tags("progressive tags", m2_prog,  sizeof(m2_prog));
+      test_tags("interlaced tags",  m2_ilace, sizeof(m2_ilace));
+      test_tags("tools tags",       m2_tools, sizeof(m2_tools));
    }
    if (failures)
       printf("\n%u check(s) failed\n", failures);

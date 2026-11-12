@@ -17,5 +17,9 @@ void rwma_stream_info(const rwma_stream *stream, unsigned *channels, unsigned *r
 size_t rwma_stream_tell(const rwma_stream *stream);
 size_t rwma_stream_read_end(const rwma_stream *stream);
 uint32_t rwma_stream_channel_mask(const rwma_stream *stream);
+/* The frames an ASF file says the stream plays: its play duration less
+ * its preroll, as FFmpeg reads it; 0 when it says none (RIFF and xWMA,
+ * a broadcast). */
+uint64_t rwma_stream_frames(const rwma_stream *stream);
 RETRO_END_DECLS
 #endif

@@ -811,6 +811,9 @@ static void xmb_free_node(xmb_node_t *node)
    node->fullpath = NULL;
    xmb_node_icons_free(node);
 
+   if (node->console_name)
+      free(node->console_name);
+
    free(node);
 }
 

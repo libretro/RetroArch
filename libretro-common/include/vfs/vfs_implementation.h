@@ -59,6 +59,29 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len);
 
+/* Writes @count pieces of memory, in order, as if each were written
+ * with retro_vfs_file_write_impl: one writev() call for a descriptor-
+ * written stream where the platform has it, else one write per piece.
+ * Returns the bytes written, short at the first piece not written in
+ * full, or -1 if nothing was written. */
+int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
+      const struct retro_vfs_span *spans, size_t count);
+
+/* Reads @len bytes at @offset without moving the stream's position;
+ * any number of threads may call it on one stream at once. Returns the
+ * bytes read, 0 at or past the end, or -1 on an error or where the
+ * platform or the stream's scheme has no positional I/O (the caller then
+ * seeks and reads, under a lock of its own if it shares the stream). */
+int64_t retro_vfs_file_read_at_impl(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len, int64_t offset);
+
+/* Writes @len bytes at @offset the same way; with a negative @offset it
+ * appends, each append whole and after the one before it whichever
+ * thread it came from (after the file's end as it was opened, so a
+ * stream appended to is written with this call only). -1 as above. */
+int64_t retro_vfs_file_write_at_impl(libretro_vfs_implementation_file *stream,
+      const void *s, uint64_t len, int64_t offset);
+
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream);
 
 int retro_vfs_file_remove_impl(const char *path);

@@ -2832,7 +2832,6 @@ static const struct
    char s_aa08c6d6[89];
 #endif
 #endif
-   char s_27aef25c[46];
 #ifdef _3DS
    char s_2873cef1[107];
    char s_b4816da6[57];
@@ -7956,7 +7955,6 @@ static const struct
    "Desactiva el ERTM del senyal Bluetooth per corregir l'emparellament d'alguns dispositius",
 #endif
 #endif
-   "Escaneja dispositius bluetooth i connecta-hi.",
 #ifdef _3DS
    "Indica la carpeta de recursos de la pantalla inferior. La carpeta ha de tenir un fitxer \"bottom"
    "_menu.png\".",
@@ -10912,7 +10910,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243481u
+      (sizeof(msg_hash_ca_blob) == (243435u
 #ifdef ANDROID
        + 281u
 #endif
@@ -14285,7 +14283,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

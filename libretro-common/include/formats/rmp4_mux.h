@@ -75,6 +75,10 @@ typedef struct
    uint32_t       max_samples;
    /* Bits a second, for the decoder configuration; 0 if not known */
    uint32_t       bitrate;
+   /* Ticks of the track's start that are not shown: an audio encoder's
+    * priming (1024 for AAC). The edit list skips them, as it skips the
+    * delay B-frames give the first picture. */
+   uint32_t       skip;
 } rmp4_mux_track_t;
 
 struct rmp4_mux_io

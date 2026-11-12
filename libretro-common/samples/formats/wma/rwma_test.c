@@ -356,8 +356,12 @@ static void standard_test(void)
             "uncoded standard frame");
       zero_frame(&f, n);
       check(used == sizeof(packet), "standard packet released");
+      /* the drain gives the last frame's overlap tail, once */
+      check(!rwma_decode_packet(d, NULL, 0, &used, &f) && f.samples == n,
+            "standard drain gives the overlap tail");
+      zero_frame(&f, n);
       check(!rwma_decode_packet(d, NULL, 0, &used, &f) && !f.samples,
-            "standard drain adds no invented tail");
+            "standard drain gives it once");
       rwma_free(d);
    }
    cfg.codec = RWMA_V2;

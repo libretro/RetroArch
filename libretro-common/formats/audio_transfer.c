@@ -127,6 +127,12 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
 #ifdef HAVE_RLPCM
 #include <formats/rlpcm.h>
 #endif
+#ifdef HAVE_RATRAC3
+#include <formats/ratrac3.h>
+#endif
+#ifdef HAVE_RATRAC3P
+#include <formats/ratrac3p.h>
+#endif
 #ifdef HAVE_RAAC
 #include <formats/raac.h>
 #ifdef HAVE_RMP4
@@ -493,7 +499,8 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  * audio_transfer_webm_audio_type), .ogg being ambiguous between Vorbis
  * and Opus in any case. */
 
-#if defined(HAVE_RWAV) || defined(HAVE_RAC3)
+#if defined(HAVE_RWAV) || defined(HAVE_RAC3) || defined(HAVE_RATRAC3) \
+ || defined(HAVE_RATRAC3P)
 /* Unit-scale float (full scale +-1.0) to s16, the conversion raac
  * applies at its own edge, for the arms whose float arrives at unit
  * scale already (float WAV, AC-3).  A float source can carry anything, including
@@ -512,6 +519,12 @@ static int16_t audio_transfer_unit_to_s16(float unit)
    return (int16_t)(int)v;
 }
 #endif
+
+static uint32_t audio_transfer_le32(const uint8_t *p)
+{
+   return (uint32_t)p[0] | ((uint32_t)p[1] << 8)
+        | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
@@ -1407,6 +1420,337 @@ static int audio_transfer_ac3_read(struct audio_transfer_ac3 *a,
 }
 #endif
 
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+/* ATRAC3 and ATRAC3plus: OpenMG files (.oma, .aa3: an optional "ea3"
+ * tag, then the 96-byte EA3 header naming the codec and its frame
+ * size) and WAVE files (.at3: format tag 270h, or FFFEh with the
+ * ATRAC3plus sub-format). Frames are block_align bytes, 1024 samples a
+ * channel for ATRAC3 and 2048 for ATRAC3plus, decoded one at a time
+ * into a pending block the reads drain. Encrypted OpenMG is refused.
+ *
+ * ATRAC3plus decodes in Sony's order - FL FR FC, then the back pair,
+ * the back centre or the side pair, and LFE last - which is put into
+ * the WAV shape for the count, as the AC-3 arm does: 5.1, 6.1 and 7.1
+ * reordered, 6.1's back pair in WAV 7's side slots (the fold treats
+ * them alike), and 4.0's lone back centre split into a phantom pair at
+ * -3 dB each, five channels out. A frame that does not parse comes out
+ * as silence, the decoders keeping their history. */
+struct audio_transfer_atrac
+{
+   const uint8_t *buf;
+   size_t         buf_size;
+   size_t         avail;        /* resident prefix, 0 = all */
+   size_t         data, data_end;
+   size_t         pos;          /* the next frame's offset */
+   unsigned       block_align;
+   unsigned       spf;          /* samples a channel a frame */
+   unsigned       dec_channels; /* the stream's */
+   unsigned       channels;     /* handed over, in the WAV shape */
+   unsigned       rate;
+   bool           plus;
+   bool           joint;
+   bool           identity;
+   bool           ended;
+   signed char    map[8];       /* output channel: the decoded one */
+   float          gain[8];
+#ifdef HAVE_RATRAC3
+   ratrac3_t     *d3;
+#endif
+#ifdef HAVE_RATRAC3P
+   ratrac3p_t    *d3p;
+#endif
+   float         *raw;          /* spf * dec_channels */
+   float         *pend;         /* spf * channels */
+   size_t         pend_n, pend_off;
+   uint64_t       total_frames;
+   uint64_t       frame_pos;
+};
+
+static unsigned audio_transfer_be16(const uint8_t *p)
+{
+   return ((unsigned)p[0] << 8) | p[1];
+}
+
+/* The container: codec, frame size, rate and where the frames are */
+static bool audio_transfer_atrac_parse(struct audio_transfer_atrac *a)
+{
+   static const unsigned rates[8] = { 32000, 44100, 48000, 88200, 96000, 0, 0, 0 };
+   static const unsigned plus_ch[8] = { 0, 1, 2, 3, 4, 6, 7, 8 };
+   const uint8_t *b = a->buf;
+   size_t         n = a->buf_size, off = 0;
+
+   if (n >= 12 && !memcmp(b, "RIFF", 4) && !memcmp(b + 8, "WAVE", 4))
+   {
+      size_t c = 12;
+      bool   fmt = false;
+      while (c + 8 <= n)
+      {
+         size_t len = audio_transfer_le32(b + c + 4);
+         if (len > n - c - 8)
+            len = n - c - 8;
+         if (!memcmp(b + c, "fmt ", 4))
+         {
+#ifdef HAVE_RATRAC3P
+            ratrac3p_info_t pi;
+            if (ratrac3p_parse_wave_fmt(b + c + 8, len, &pi))
+            {
+               a->plus = true;  a->dec_channels = pi.channels;
+               a->rate = pi.sample_rate; a->block_align = pi.block_align;
+               fmt = true;
+            }
+#endif
+#ifdef HAVE_RATRAC3
+            if (!fmt)
+            {
+               ratrac3_info_t ti;
+               if (ratrac3_parse_wave_fmt(b + c + 8, len, &ti))
+               {
+                  a->plus = false; a->dec_channels = ti.channels;
+                  a->rate = ti.sample_rate; a->block_align = ti.block_align;
+                  a->joint = ti.joint_stereo;
+                  fmt = true;
+               }
+            }
+#endif
+            if (!fmt)
+               return false;
+         }
+         else if (!memcmp(b + c, "data", 4) && fmt)
+         {
+            a->data     = c + 8;
+            a->data_end = c + 8 + len;
+            return true;
+         }
+         c += 8 + len + (len & 1);
+      }
+      return false;
+   }
+
+   /* OpenMG: "ea3" tag (an ID3v2.3 tag by another name), then "EA3" */
+   if (n >= 10 && !memcmp(b, "ea3", 3))
+      off = 10 + (((size_t)(b[6] & 0x7f) << 21) | ((size_t)(b[7] & 0x7f) << 14)
+            | ((size_t)(b[8] & 0x7f) << 7) | (b[9] & 0x7f));
+   if (off > n || n - off < 96 || memcmp(b + off, "EA3", 3))
+      return false;
+   {
+      const uint8_t *h      = b + off;
+      unsigned       hsize  = audio_transfer_be16(h + 4);
+      unsigned       eid    = audio_transfer_be16(h + 6);
+      unsigned       codec  = h[32];
+      uint32_t       params = ((uint32_t)h[33] << 16) | ((uint32_t)h[34] << 8) | h[35];
+      if (eid != 0xFFFF && eid != 0xFF80)
+         return false;   /* encrypted */
+      if (hsize < 96 || hsize > n - off)
+         return false;
+      a->rate = rates[(params >> 13) & 7];
+      switch (codec)
+      {
+#ifdef HAVE_RATRAC3
+         case 0:
+            a->plus         = false;
+            a->dec_channels = 2;
+            a->joint        = ((params >> 17) & 1) != 0;
+            a->block_align  = (unsigned)(params & 0x3FF) * 8;
+            break;
+#endif
+#ifdef HAVE_RATRAC3P
+         case 1:
+            a->plus         = true;
+            a->dec_channels = plus_ch[(params >> 10) & 7];
+            a->block_align  = (unsigned)(params & 0x3FF) * 8 + 8;
+            break;
+#endif
+         default:
+            return false;
+      }
+      a->data     = off + hsize;
+      a->data_end = n;
+   }
+   (void)plus_ch;
+   return a->rate && a->dec_channels && a->block_align;
+}
+
+/* the WAV shape for ATRAC3plus's channel count (see above) */
+static void audio_transfer_atrac_map(struct audio_transfer_atrac *a)
+{
+   static const signed char maps[9][8] = {
+      { 0 }, { 0 }, { 0, 1 }, { 0, 1, 2 },
+      { 0, 1, 2, 3, 3 },                 /* FL FR FC BC: BC split */
+      { 0 },
+      { 0, 1, 2, 5, 3, 4 },              /* FL FR FC BL BR LFE    */
+      { 0, 1, 2, 6, 5, 3, 4 },           /* FL FR FC BL BR BC LFE */
+      { 0, 1, 2, 7, 3, 4, 5, 6 }         /* FL FR FC BL BR SL SR LFE */
+   };
+   unsigned i, n = a->dec_channels;
+   a->channels = n == 4 ? 5 : n;
+   for (i = 0; i < a->channels; i++)
+   {
+      a->map[i]  = a->plus ? maps[n][i] : (signed char)i;
+      a->gain[i] = (a->plus && n == 4 && i >= 3) ? 0.70710678f : 1.0f;
+   }
+   a->identity = true;
+   for (i = 0; i < a->channels; i++)
+      if (a->map[i] != (signed char)i || a->gain[i] != 1.0f)
+         a->identity = false;
+   if (a->channels != n)
+      a->identity = false;
+}
+
+static size_t audio_transfer_atrac_end(const struct audio_transfer_atrac *a)
+{
+   size_t end = a->data_end;
+   if (a->avail && a->avail < end)
+      end = a->avail;
+   return end;
+}
+
+/* Decodes the frame at pos into @fdst (floats) or @sdst (s16) in the
+ * WAV shape and advances pos: 1 with @frames, 0 at the end of the
+ * frames or the frontier */
+static int audio_transfer_atrac_next_into(struct audio_transfer_atrac *a,
+      float *fdst, int16_t *sdst, size_t *frames)
+{
+   size_t   end = audio_transfer_atrac_end(a), i;
+   float   *dec;
+   unsigned c;
+   int      r = -1;
+   if (a->pos >= end || a->block_align > end - a->pos)
+      return 0;
+   dec = (a->identity && fdst) ? fdst : a->raw;
+#ifdef HAVE_RATRAC3P
+   if (a->plus)
+      r = ratrac3p_decode_float(a->d3p, a->buf + a->pos, a->block_align, dec);
+#endif
+#ifdef HAVE_RATRAC3
+   if (!a->plus)
+      r = ratrac3_decode_float(a->d3, a->buf + a->pos, a->block_align, dec);
+#endif
+   (void)r;   /* a frame that does not parse is silence */
+   if (dec != fdst)
+   {
+      if (a->identity)
+         for (i = 0; i < (size_t)a->spf * a->channels; i++)
+            sdst[i] = audio_transfer_unit_to_s16(a->raw[i]);
+      else
+         for (i = 0; i < a->spf; i++)
+         {
+            const float *in = a->raw + i * a->dec_channels;
+            for (c = 0; c < a->channels; c++)
+            {
+               float v = in[a->map[c]] * a->gain[c];
+               if (fdst)
+                  fdst[i * a->channels + c] = v;
+               else
+                  sdst[i * a->channels + c] = audio_transfer_unit_to_s16(v);
+            }
+         }
+   }
+   a->pos += a->block_align;
+   *frames = a->spf;
+   return 1;
+}
+
+static int audio_transfer_atrac_read(struct audio_transfer_atrac *a,
+      float *out_f32, int16_t *out_s16, size_t frames, size_t *frames_out)
+{
+   size_t produced = 0;
+   if (!a || !a->raw)
+      return AUDIO_PROCESS_ERROR;
+   while (produced < frames)
+   {
+      size_t take, i, n;
+      const float *src;
+      if (a->pend_off >= a->pend_n)
+      {
+         size_t got = 0;
+         int    r;
+         if (a->ended)
+            break;
+         /* room for a whole frame: straight into the caller's buffer */
+         if (frames - produced >= a->spf)
+         {
+            r = audio_transfer_atrac_next_into(a,
+                  out_f32 ? out_f32 + produced * a->channels : NULL,
+                  out_f32 ? NULL : out_s16 + produced * a->channels, &got);
+            if (r == 1)
+            {
+               a->frame_pos += got;
+               produced     += got;
+               continue;
+            }
+         }
+         else
+         {
+            r = audio_transfer_atrac_next_into(a, a->pend, NULL, &got);
+            if (r == 1)
+            {
+               a->pend_n   = got;
+               a->pend_off = 0;
+            }
+         }
+         if (r == 0)
+         {
+            if (audio_transfer_atrac_end(a) >= a->data_end)
+               a->ended = true;
+            break;
+         }
+      }
+      take = a->pend_n - a->pend_off;
+      if (take > frames - produced)
+         take = frames - produced;
+      src = a->pend + a->pend_off * a->channels;
+      n   = take * a->channels;
+      if (out_f32)
+         memcpy(out_f32 + produced * a->channels, src, n * sizeof(float));
+      else
+         for (i = 0; i < n; i++)
+            out_s16[produced * a->channels + i] = audio_transfer_unit_to_s16(src[i]);
+      a->pend_off  += take;
+      a->frame_pos += take;
+      produced     += take;
+   }
+   if (frames_out)
+      *frames_out = produced;
+   if (produced == 0 && a->ended)
+      return AUDIO_PROCESS_END;
+   return AUDIO_PROCESS_NEXT;
+}
+
+/* Fresh history: the frame before the target decoded and dropped, so
+ * the overlap is what a playthrough would have left */
+static bool audio_transfer_atrac_seek_to(struct audio_transfer_atrac *a, uint64_t frame)
+{
+   uint64_t index = frame / a->spf;
+   size_t   got;
+   if (frame >= a->total_frames)
+      return false;
+#ifdef HAVE_RATRAC3P
+   if (a->plus)
+      ratrac3p_reset(a->d3p);
+#endif
+#ifdef HAVE_RATRAC3
+   if (!a->plus)
+      ratrac3_reset(a->d3);
+#endif
+   a->ended    = false;
+   a->pend_n   = a->pend_off = 0;
+   if (index)
+   {
+      a->pos = a->data + (size_t)(index - 1) * a->block_align;
+      audio_transfer_atrac_next_into(a, a->pend, NULL, &got);
+   }
+   a->pos       = a->data + (size_t)index * a->block_align;
+   a->frame_pos = index * a->spf;
+   if (audio_transfer_atrac_next_into(a, a->pend, NULL, &got) == 1)
+   {
+      a->pend_n    = got;
+      a->pend_off  = (size_t)(frame - a->frame_pos);
+      a->frame_pos = frame;
+   }
+   return true;
+}
+#endif
+
 #ifdef HAVE_RAAC
 struct audio_transfer_aac
 {
@@ -1577,6 +1921,10 @@ void *audio_transfer_new(enum audio_type_enum type)
       case AUDIO_TYPE_AAC:
          return calloc(1, sizeof(struct audio_transfer_aac));
 #endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+         return calloc(1, sizeof(struct audio_transfer_atrac));
+#endif
 #ifdef HAVE_RAC3
       case AUDIO_TYPE_AC3:
          return calloc(1, sizeof(struct audio_transfer_ac3));
@@ -1678,6 +2026,18 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          {
             md->data = ptr;
             md->size = len;
+         }
+         break;
+      }
+#endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+      {
+         struct audio_transfer_atrac *a = (struct audio_transfer_atrac*)data;
+         if (a)
+         {
+            a->buf      = (const uint8_t*)ptr;
+            a->buf_size = len;
          }
          break;
       }
@@ -2387,6 +2747,15 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
          return;
       }
 #endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+      {
+         struct audio_transfer_atrac *a = (struct audio_transfer_atrac*)data;
+         if (a)
+            a->avail = avail;
+         break;
+      }
+#endif
 #ifdef HAVE_RAC3
       case AUDIO_TYPE_AC3:
       {
@@ -2569,6 +2938,228 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
 #endif
 }
 
+/* ---- a file's arm from its bytes ------------------------------------ */
+
+#ifdef HAVE_RMP3
+/* An MPEG audio frame header's frame length (layers I to III, MPEG-1,
+ * 2 and 2.5), 0 when @h is not one; free format is not taken */
+static size_t audio_transfer_mpa_len(const uint8_t *h)
+{
+   static const uint16_t kbps[2][3][15] = {
+      { { 0,32,64,96,128,160,192,224,256,288,320,352,384,416,448 },
+        { 0,32,48,56,64,80,96,112,128,160,192,224,256,320,384 },
+        { 0,32,40,48,56,64,80,96,112,128,160,192,224,256,320 } },
+      { { 0,32,48,56,64,80,96,112,128,144,160,176,192,224,256 },
+        { 0,8,16,24,32,40,48,56,64,80,96,112,128,144,160 },
+        { 0,8,16,24,32,40,48,56,64,80,96,112,128,144,160 } }
+   };
+   static const uint16_t rates[3] = { 44100, 48000, 32000 };
+   unsigned ver, layer, bi, si, pad, rate, lsf;
+   uint32_t br;
+   if (h[0] != 0xFF || (h[1] & 0xE0) != 0xE0)
+      return 0;
+   ver   = (h[1] >> 3) & 3;   /* 0 MPEG-2.5, 1 reserved, 2 MPEG-2, 3 MPEG-1 */
+   layer = 4 - ((h[1] >> 1) & 3);
+   bi    = h[2] >> 4;
+   si    = (h[2] >> 2) & 3;
+   pad   = (h[2] >> 1) & 1;
+   if (ver == 1 || layer == 4 || bi == 0 || bi == 15 || si == 3)
+      return 0;
+   lsf  = ver != 3;
+   rate = rates[si] >> (ver == 3 ? 0 : ver == 2 ? 1 : 2);
+   br   = (uint32_t)kbps[lsf][layer - 1][bi] * 1000;
+   if (layer == 1)
+      return (size_t)((12 * br / rate + pad) * 4);
+   if (layer == 3 && lsf)
+      return (size_t)(72 * br / rate + pad);
+   return (size_t)(144 * br / rate + pad);
+}
+#endif
+
+/* The length of the raw-stream frame at @p of @type's syntax, 0 when
+ * there is none there */
+static size_t audio_transfer_raw_frame(const uint8_t *p, size_t n,
+      enum audio_type_enum type)
+{
+   switch (type)
+   {
+#ifdef HAVE_RMP3
+      case AUDIO_TYPE_MP3:
+         return n >= 4 ? audio_transfer_mpa_len(p) : 0;
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         raac_adts_t h;
+         return raac_adts_parse(p, n, &h) == 0 ? h.frame_size : 0;
+      }
+#endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         rac3_frame_info_t info;
+         return rac3_parse_frame_info(p, n, &info) == RAC3_OK
+            ? info.frame_bytes : 0;
+      }
+#endif
+      default:
+         break;
+   }
+   (void)p; (void)n;
+   return 0;
+}
+
+enum audio_type_enum audio_transfer_sniff_type(const void *buf, size_t len,
+      size_t *skip)
+{
+   const uint8_t *b = (const uint8_t*)buf;
+   size_t         at = 0, i;
+   if (skip)
+      *skip = 0;
+   if (!b)
+      return AUDIO_TYPE_NONE;
+
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+   /* OpenMG: its "ea3" tag, or the EA3 header itself; the arm reads
+    * both */
+   if (len >= 10 && (!memcmp(b, "ea3", 3) || !memcmp(b, "EA3", 3)))
+      return AUDIO_TYPE_ATRAC;
+#endif
+
+   /* ID3v2 tags in front of a stream, each 10 bytes, a syncsafe size
+    * and 10 more for a footer */
+   while (len - at >= 10 && !memcmp(b + at, "ID3", 3) && b[at + 3] != 0xFF
+         && !((b[at + 6] | b[at + 7] | b[at + 8] | b[at + 9]) & 0x80))
+   {
+      size_t tag = 10 + (((size_t)b[at + 6] << 21) | ((size_t)b[at + 7] << 14)
+            | ((size_t)b[at + 8] << 7) | b[at + 9]) + ((b[at + 5] & 0x10) ? 10 : 0);
+      if (tag > len - at)
+         return AUDIO_TYPE_NONE;
+      at += tag;
+   }
+   b   += at;
+   len -= at;
+   if (skip)
+      *skip = at;
+
+#ifdef HAVE_RFLAC
+   if (len >= 4 && !memcmp(b, "fLaC", 4))
+      return AUDIO_TYPE_FLAC;
+#endif
+   if (len >= 4 && !memcmp(b, "OggS", 4))
+      return audio_transfer_ogg_audio_type(b, len);
+   if (len >= 4 && b[0] == 0x1A && b[1] == 0x45 && b[2] == 0xDF && b[3] == 0xA3)
+      return audio_transfer_webm_audio_type(b, len);
+
+   if (len >= 12 && !memcmp(b, "RIFF", 4))
+   {
+      size_t c = 12;
+#ifdef HAVE_RWMA
+      if (!memcmp(b + 8, "XWMA", 4))
+         return AUDIO_TYPE_WMA;
+#endif
+      if (memcmp(b + 8, "WAVE", 4))
+         return AUDIO_TYPE_NONE;
+      /* the format tag says which arm */
+      while (c + 8 <= len)
+      {
+         uint32_t clen = audio_transfer_le32(b + c + 4);
+         if (!memcmp(b + c, "fmt ", 4) && clen >= 2 && len - c - 8 >= 2)
+         {
+            unsigned tag = b[c + 8] | ((unsigned)b[c + 9] << 8);
+            if (tag == 0xFFFE && clen >= 26 && len - c - 8 >= 26)
+               tag = b[c + 32] | ((unsigned)b[c + 33] << 8);
+#ifdef HAVE_RWAV
+            if (tag == 1 || tag == 3)
+               return AUDIO_TYPE_WAV;
+#endif
+#ifdef HAVE_RWMA
+            if (tag == 0x0161 || tag == 0x0162 || tag == 0x0163)
+               return AUDIO_TYPE_WMA;
+#endif
+#ifdef HAVE_RATRAC3
+            if (tag == 0x0270)
+               return AUDIO_TYPE_ATRAC;
+#endif
+#ifdef HAVE_RATRAC3P
+            {
+               /* the ATRAC3plus sub-format GUID */
+               static const uint8_t g[16] = { 0xBF,0xAA,0x23,0xE9,0x58,0xCB,0x71,0x44,
+                                              0xA1,0x19,0xFF,0xFA,0x01,0xE4,0xCE,0x62 };
+               if (     b[c + 8] == 0xFE && b[c + 9] == 0xFF && clen >= 40
+                     && len - c - 8 >= 40 && !memcmp(b + c + 32, g, 16))
+                  return AUDIO_TYPE_ATRAC;
+            }
+#endif
+            return AUDIO_TYPE_NONE;
+         }
+         if (clen > len - c - 8)
+            break;
+         c += 8 + clen + (clen & 1);
+      }
+      return AUDIO_TYPE_NONE;
+   }
+
+#ifdef HAVE_RWMA
+   {
+      static const uint8_t asf[16] = { 0x30,0x26,0xB2,0x75,0x8E,0x66,0xCF,0x11,
+                                       0xA6,0xD9,0x00,0xAA,0x00,0x62,0xCE,0x6C };
+      if (len >= 16 && !memcmp(b, asf, 16))
+         return AUDIO_TYPE_WMA;
+   }
+#endif
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+   if (len >= 8 && (!memcmp(b + 4, "ftyp", 4) || !memcmp(b + 4, "moov", 4)))
+      return AUDIO_TYPE_AAC;
+#endif
+#ifdef HAVE_RMODTRACKER
+   if (     (len >= 17 && !memcmp(b, "Extended Module: ", 17))
+         || (len >= 4  && !memcmp(b, "IMPM", 4))
+         || (len >= 48 && !memcmp(b + 44, "SCRM", 4)))
+      return AUDIO_TYPE_MOD;
+   if (len >= 1084)
+   {
+      static const char tags[][5] = { "M.K.", "M!K!", "FLT4", "FLT8", "EXO4",
+            "EXO8", "OKTA", "OCTA", "CD81", "FA08" };
+      const uint8_t *t = b + 1080;
+      for (i = 0; i < sizeof(tags) / sizeof(tags[0]); i++)
+         if (!memcmp(t, tags[i], 4))
+            return AUDIO_TYPE_MOD;
+      if (     (t[0] >= '1' && t[0] <= '9' && !memcmp(t + 1, "CHN", 3))
+            || (t[0] >= '1' && t[0] <= '9' && t[1] >= '0' && t[1] <= '9'
+               && !memcmp(t + 2, "CH", 2)))
+         return AUDIO_TYPE_MOD;
+   }
+#endif
+
+   /* Raw streams: a frame header, and another where it says the next
+    * one is (or the end of the file), at the start or after a little
+    * junk. */
+   {
+      static const enum audio_type_enum raw[3] = {
+         AUDIO_TYPE_AC3, AUDIO_TYPE_AAC, AUDIO_TYPE_MP3 };
+      size_t limit = len < 65536 ? len : 65536;
+      for (i = 0; i + 4 <= limit; i++)
+      {
+         unsigned k;
+         for (k = 0; k < 3; k++)
+         {
+            size_t f = audio_transfer_raw_frame(b + i, len - i, raw[k]);
+            if (     f && f <= len - i
+                  && (f == len - i
+                     || audio_transfer_raw_frame(b + i + f, len - i - f, raw[k])))
+            {
+               if (skip)
+                  *skip = at + i;
+               return raw[k];
+            }
+         }
+      }
+   }
+   (void)i;
+   return AUDIO_TYPE_NONE;
+}
+
 bool audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
       uint64_t frames)
 {
@@ -2687,16 +3278,22 @@ static int audio_transfer_mp3_gapless(const uint8_t *b, size_t len,
       if (!frames)
          return 0;
       /* The LAME tag starts here; its delay and padding are twelve
-       * bits each, packed into three bytes at offset 21. */
+       * bits each, packed into three bytes at offset 21.  Its delay is
+       * the encoder's; the decoder's own, 529 samples, comes on top,
+       * as rmp3's pull API (RMP3_DECODER_DELAY) and FFmpeg take it -
+       * without it the audio started 529 samples late and its last
+       * 529 were cut.  The padding is net of it already. */
       if ((size_t)(p - b) + 24 <= len)
       {
          delay = ((uint64_t)p[21] << 4) | (p[22] >> 4);
          pad   = ((uint64_t)(p[22] & 0xf) << 8) | p[23];
+         *out_delay = (uint64_t)spf + delay + RMP3_DECODER_DELAY;
       }
+      else
+         *out_delay = (uint64_t)spf;
       /* The filler frame is decoded like any other, so it is priming
        * too.  What is left to play is the stated audio less both
        * ends. */
-      *out_delay  = (uint64_t)spf + delay;
       *out_frames = (uint64_t)frames * spf;
       *out_frames = (*out_frames > delay + pad)
                   ? *out_frames - delay - pad : 0;
@@ -4033,6 +4630,39 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          return true;
       }
 #endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+      {
+         struct audio_transfer_atrac *a = (struct audio_transfer_atrac*)data;
+         if (!a || !a->buf || !audio_transfer_atrac_parse(a))
+            return false;
+         a->spf = a->plus ? 2048 : 1024;
+         audio_transfer_atrac_map(a);
+#ifdef HAVE_RATRAC3P
+         if (a->plus && !(a->d3p = ratrac3p_new(a->dec_channels, a->block_align)))
+            return false;
+#endif
+#ifdef HAVE_RATRAC3
+         if (!a->plus && !(a->d3 = ratrac3_new(a->dec_channels, a->block_align, a->joint)))
+            return false;
+#endif
+         a->raw  = (float*)malloc((size_t)a->spf * a->dec_channels * sizeof(float));
+         a->pend = (float*)malloc((size_t)a->spf * a->channels * sizeof(float));
+         if (!a->raw || !a->pend)
+         {
+            free(a->raw);
+            free(a->pend);
+            a->raw = a->pend = NULL;
+            return false;
+         }
+         a->total_frames = (uint64_t)((a->data_end - a->data) / a->block_align) * a->spf;
+         a->pos          = a->data;
+         a->pend_n       = a->pend_off = 0;
+         a->frame_pos    = 0;
+         a->ended        = false;
+         return true;
+      }
+#endif
 #ifdef HAVE_RAC3
       case AUDIO_TYPE_AC3:
       {
@@ -4294,6 +4924,10 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                return false;
          }
          ac->channels    = raac_channels(ac->handle);
+         /* the WAVE order every arm but Vorbis and Opus hands over, and
+          * audio_transfer_fold_q15 folds by; a layout raac has no WAVE
+          * map for stays in stream order */
+         raac_set_channel_order(ac->handle, RAAC_ORDER_WAVE);
          ac->trim_left   = ac->start_trim;
          ac->emitted     = 0;
          ac->pkt_index   = 0;
@@ -4360,6 +4994,13 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
          return op && op->handle;
       }
 #endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+      {
+         struct audio_transfer_atrac *a = (struct audio_transfer_atrac*)data;
+         return a && a->raw;
+      }
+#endif
 #ifdef HAVE_RAC3
       case AUDIO_TYPE_AC3:
       {
@@ -4388,11 +5029,106 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
    return false;
 }
 
+/* ---- folding to stereo ----------------------------------------------
+ *
+ * The arms do no channel conversion: wider than stereo comes out as the
+ * codec orders it, and the consumer folds. Vorbis and Opus (mapping
+ * family 1) order the channels one way (Vorbis I 4.3.9), everything
+ * else - WAV, FLAC, AAC (put into this order at start), AC-3 (shaped
+ * into it), MP3 - the WAVEFORMATEXTENSIBLE way:
+ *
+ *   Vorbis  3 L C R        4 L R RL RR      5 L C R RL RR
+ *           6 L C R RL RR LFE              7 L C R RL RR BC LFE
+ *           8 L C R RL RR SL SR LFE
+ *   WAV     3 FL FR FC     4 FL FR BL BR    5 FL FR FC BL BR
+ *           6 FL FR FC LFE BL BR           7 FL FR FC LFE BC SL SR
+ *           8 FL FR FC LFE BL BR SL SR
+ *
+ * Folding one with the other's table is not a subtle error: on 5.1 it
+ * sends front-right to both sides, front-centre to the right alone,
+ * LFE into the mix and back-right nowhere.
+ *
+ * Coefficients are the usual ITU-R BS.775 ones: centre and surrounds
+ * enter both sides at -3 dB, a lone back centre at -6 dB into each, LFE
+ * is dropped. Not normalised: scaling by the coefficient sum would put
+ * 5.1 content 7.7 dB below the same material in a stereo file, which is
+ * a surprising thing for a file's channel count to do to its volume;
+ * the sum only reaches full scale when the channels are correlated.
+ * Q15 in int32: unity is 32768, which an int16 would wrap. */
+#define AT_FOLD_UNITY 32768
+#define AT_FOLD_M3DB  23170
+#define AT_FOLD_M6DB  16384
+
+static const int32_t audio_transfer_fold_vorbis[9][8][2] = {
+   { {0,0} },
+   { {AT_FOLD_UNITY,AT_FOLD_UNITY} },
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY} },
+   /* 3: L C R */
+   { {AT_FOLD_UNITY,0}, {AT_FOLD_M3DB,AT_FOLD_M3DB}, {0,AT_FOLD_UNITY} },
+   /* 4: L R RL RR */
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB} },
+   /* 5: L C R RL RR */
+   { {AT_FOLD_UNITY,0}, {AT_FOLD_M3DB,AT_FOLD_M3DB}, {0,AT_FOLD_UNITY},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB} },
+   /* 6: L C R RL RR LFE */
+   { {AT_FOLD_UNITY,0}, {AT_FOLD_M3DB,AT_FOLD_M3DB}, {0,AT_FOLD_UNITY},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB}, {0,0} },
+   /* 7: L C R RL RR BC LFE */
+   { {AT_FOLD_UNITY,0}, {AT_FOLD_M3DB,AT_FOLD_M3DB}, {0,AT_FOLD_UNITY},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB},
+     {AT_FOLD_M6DB,AT_FOLD_M6DB}, {0,0} },
+   /* 8: L C R RL RR SL SR LFE */
+   { {AT_FOLD_UNITY,0}, {AT_FOLD_M3DB,AT_FOLD_M3DB}, {0,AT_FOLD_UNITY},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB}, {0,0} }
+};
+
+static const int32_t audio_transfer_fold_wav[9][8][2] = {
+   { {0,0} },
+   { {AT_FOLD_UNITY,AT_FOLD_UNITY} },
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY} },
+   /* 3: FL FR FC */
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY}, {AT_FOLD_M3DB,AT_FOLD_M3DB} },
+   /* 4: FL FR BL BR */
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB} },
+   /* 5: FL FR FC BL BR */
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY}, {AT_FOLD_M3DB,AT_FOLD_M3DB},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB} },
+   /* 6: FL FR FC LFE BL BR */
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY}, {AT_FOLD_M3DB,AT_FOLD_M3DB},
+     {0,0}, {AT_FOLD_M3DB,0}, {0,AT_FOLD_M3DB} },
+   /* 7: FL FR FC LFE BC SL SR */
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY}, {AT_FOLD_M3DB,AT_FOLD_M3DB},
+     {0,0}, {AT_FOLD_M6DB,AT_FOLD_M6DB},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB} },
+   /* 8: FL FR FC LFE BL BR SL SR */
+   { {AT_FOLD_UNITY,0}, {0,AT_FOLD_UNITY}, {AT_FOLD_M3DB,AT_FOLD_M3DB},
+     {0,0}, {AT_FOLD_M3DB,0}, {0,AT_FOLD_M3DB},
+     {AT_FOLD_M3DB,0},  {0,AT_FOLD_M3DB} }
+};
+
+const int32_t (*audio_transfer_fold_q15(enum audio_type_enum type,
+      unsigned channels))[2]
+{
+   if (channels < 1 || channels > 8)
+      return NULL;
+   if (type == AUDIO_TYPE_VORBIS || type == AUDIO_TYPE_OPUS)
+      return audio_transfer_fold_vorbis[channels];
+   return audio_transfer_fold_wav[channels];
+}
+
 bool audio_transfer_stereo_matrix(void *data, enum audio_type_enum type,
       int32_t matrix[8][2])
 {
+   const int32_t (*fold)[2];
+   unsigned ch = 0;
+   if (!data || !matrix)
+      return false;
 #ifdef HAVE_RWMA
-   if (data && matrix && type == AUDIO_TYPE_WMA)
+   /* by the stream's speaker mask */
+   if (type == AUDIO_TYPE_WMA)
    {
       static const uint32_t defaults[9] = {0,4,3,7,51,55,63,1807,1599};
       struct audio_transfer_wma *a = (struct audio_transfer_wma*)data;
@@ -4425,10 +5161,14 @@ bool audio_transfer_stereo_matrix(void *data, enum audio_type_enum type,
          }
       return lane == a->channels;
    }
-#else
-   (void)data; (void)type; (void)matrix;
 #endif
-   return false;
+   /* by the channel count, in the order the arm hands them over */
+   if (     !audio_transfer_info(data, type, &ch, NULL, NULL)
+         || !(fold = audio_transfer_fold_q15(type, ch)))
+      return false;
+   memset(matrix, 0, 8 * 2 * sizeof(int32_t));
+   memcpy(matrix, fold, ch * 2 * sizeof(int32_t));
+   return true;
 }
 
 bool audio_transfer_stereo_matrix_f32(void *data, enum audio_type_enum type,
@@ -4455,7 +5195,9 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          if (!a || !a->stream) return false;
          if (channels) *channels = a->channels;
          if (rate) *rate = a->rate;
-         if (total_frames) *total_frames = 0;
+         /* what the container states: the decode runs on past it by
+          * the codec's priming */
+         if (total_frames) *total_frames = rwma_stream_frames(a->stream);
          return true;
       }
 #endif
@@ -4599,6 +5341,18 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
             *total_frames = op->time.enabled
                ? (op->time.total >= 0 ? (uint64_t)op->time.total : 0)
                : (bounded && op->limit >= 0 ? (uint64_t)op->limit : 0);
+         return true;
+      }
+#endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+      {
+         struct audio_transfer_atrac *a = (struct audio_transfer_atrac*)data;
+         if (!a || !a->raw)
+            return false;
+         if (channels)     *channels     = a->channels;
+         if (rate)         *rate         = a->rate;
+         if (total_frames) *total_frames = a->total_frames;
          return true;
       }
 #endif
@@ -6096,6 +6850,11 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          break;
       }
 #endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+         return audio_transfer_atrac_read((struct audio_transfer_atrac*)data,
+               NULL, out, frames, frames_out);
+#endif
 #ifdef HAVE_RAC3
       case AUDIO_TYPE_AC3:
          return audio_transfer_ac3_read((struct audio_transfer_ac3*)data,
@@ -6420,6 +7179,11 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          break;
       }
 #endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+         return audio_transfer_atrac_read((struct audio_transfer_atrac*)data,
+               out, NULL, frames, frames_out);
+#endif
 #ifdef HAVE_RAC3
       case AUDIO_TYPE_AC3:
          return audio_transfer_ac3_read((struct audio_transfer_ac3*)data,
@@ -6633,6 +7397,13 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
          if (op->handle && op->packets)
             return op->pkt_offset;
          return 0;
+      }
+#endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+      {
+         struct audio_transfer_atrac *a = (struct audio_transfer_atrac*)data;
+         return a ? a->pos : 0;
       }
 #endif
 #ifdef HAVE_RAC3
@@ -6991,6 +7762,15 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+      {
+         struct audio_transfer_atrac *a = (struct audio_transfer_atrac*)data;
+         if (!a || !a->raw)
+            return false;
+         return audio_transfer_atrac_seek_to(a, frame);
+      }
+#endif
 #ifdef HAVE_RAC3
       case AUDIO_TYPE_AC3:
       {
@@ -7153,6 +7933,24 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          {
             free(op->pend);
             free(op->asm_buf);
+         }
+         break;
+      }
+#endif
+#if defined(HAVE_RATRAC3) || defined(HAVE_RATRAC3P)
+      case AUDIO_TYPE_ATRAC:
+      {
+         struct audio_transfer_atrac *a = (struct audio_transfer_atrac*)data;
+         if (a)
+         {
+#ifdef HAVE_RATRAC3P
+            ratrac3p_free(a->d3p);
+#endif
+#ifdef HAVE_RATRAC3
+            ratrac3_free(a->d3);
+#endif
+            free(a->raw);
+            free(a->pend);
          }
          break;
       }

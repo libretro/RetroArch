@@ -76,6 +76,7 @@ typedef struct
    uint8_t        coding_type;  /* 1 I, 2 P, 3 B, 4 S        */
    uint8_t        interlaced;
    uint8_t        top_field_first;
+   uint64_t       tag;          /* rmpeg4_video_set_tag's when the VOP was decoded */
 } rmpeg4_video_frame_t;
 
 rmpeg4_video_t *rmpeg4_video_init(void);
@@ -102,6 +103,12 @@ void            rmpeg4_video_reset(rmpeg4_video_t *v);
  */
 int  rmpeg4_video_decode(rmpeg4_video_t *v, const uint8_t *data, size_t len,
       size_t *used, rmpeg4_video_frame_t *out);
+
+/* A caller's value for the VOPs the next decode calls decode, given
+ * back in the frame each becomes (out->tag) however the frames are
+ * reordered: an access unit's time stamps, say. 0 until set; a reset
+ * keeps it. */
+void rmpeg4_video_set_tag(rmpeg4_video_t *v, uint64_t tag);
 
 /* The held frame at end of stream: 1 with *out filled, or 0 */
 int  rmpeg4_video_flush(rmpeg4_video_t *v, rmpeg4_video_frame_t *out);

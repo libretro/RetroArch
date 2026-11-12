@@ -41,6 +41,13 @@ struct rwma_stream
    uint64_t xma_begin, xma_length, xma_skip, xma_left;
    uint32_t channel_mask;
    unsigned xma_streams, xma_ready;
+   /* the length ASF states: its play duration less its preroll, in
+    * 100 ns units */
+   uint64_t play_100ns;
+   /* WMA1 and WMA2 played gapless: the encoder's priming frame dropped,
+    * the last frame's tail drained, the end at the stated length */
+   unsigned gapless, primed, tail_done;
+   uint64_t skip_left, emitted;
 };
 
 static uint32_t stream_u32(const uint8_t *p)
@@ -173,6 +180,14 @@ static int stream_asf(rwma_stream *s, rwma_config *cfg)
          if (minimum != maximum || !minimum || minimum > 1024 * 1024)
             return RWMA_UNSUPPORTED;
          s->packet_size = minimum;
+         /* play duration (100 ns) less the preroll (ms), unless the
+          * file is a broadcast's, whose durations are not filled in */
+         if (!(stream_u32(body + 64) & 1))
+         {
+            uint64_t play = stream_u64(body + 40), preroll = stream_u64(body + 56);
+            if (preroll < play / 10000)
+               s->play_100ns = play - preroll * 10000;
+         }
       }
       else if (!found && !memcmp(p, asf_stream, 16) && bytes >= 54 &&
                !memcmp(body, asf_audio, 16))
@@ -273,6 +288,7 @@ int rwma_stream_open(rwma_stream **out, const uint8_t *data, size_t size, size_t
       rwma_stream_close(s);
       return status;
    }
+   s->gapless = !s->xma_streams && (cfg.codec == RWMA_V1 || cfg.codec == RWMA_V2);
    s->channels = cfg.channels;
    s->rate = cfg.sample_rate;
    s->align = cfg.block_align;
@@ -452,7 +468,7 @@ static int stream_object(rwma_stream *s)
    return RWMA_STREAM_WAIT;
 }
 
-int rwma_stream_next(rwma_stream *s, rwma_frame *frame)
+static int stream_next_raw(rwma_stream *s, rwma_frame *frame)
 {
    unsigned steps;
    if (!frame)
@@ -520,6 +536,61 @@ invalid:
    return RWMA_BAD_DATA;
 }
 
+/* WMA1 and WMA2 carry no gapless signalling, but their encoders put one
+ * frame of priming before the audio (FFmpeg's sets initial_padding to a
+ * frame), and the decoder's output lags by the overlap, the last frame's
+ * second half coming out only when the stream is drained. So the first
+ * frame is dropped, the tail drained, and the end cut at the length the
+ * ASF header states, which is the audio the encoder was given. */
+int rwma_stream_next(rwma_stream *s, rwma_frame *frame)
+{
+   for (;;)
+   {
+      int      status = stream_next_raw(s, frame);
+      uint64_t total;
+      unsigned c, n;
+      if (!s || !s->gapless)
+         return status;
+      if (status == RWMA_STREAM_END && !s->tail_done)
+      {
+         size_t used = 0;
+         s->tail_done = 1;
+         if (rwma_decode_packet(s->decoder, NULL, 0, &used, frame) || !frame->samples)
+            return RWMA_STREAM_END;
+         status = RWMA_OK;
+      }
+      if (status)
+         return status;
+      if (!s->primed)
+      {
+         s->primed    = 1;
+         s->skip_left = frame->samples;
+      }
+      if (s->skip_left)
+      {
+         n = s->skip_left < frame->samples ? (unsigned)s->skip_left : frame->samples;
+         for (c = 0; c < frame->channels; c++)
+            frame->planes[c] += n;
+         frame->samples -= n;
+         s->skip_left   -= n;
+         if (!frame->samples)
+            continue;
+      }
+      if ((total = rwma_stream_frames(s)) != 0)
+      {
+         if (s->emitted >= total)
+         {
+            memset(frame, 0, sizeof(*frame));
+            return RWMA_STREAM_END;
+         }
+         if (frame->samples > total - s->emitted)
+            frame->samples = (unsigned)(total - s->emitted);
+      }
+      s->emitted += frame->samples;
+      return RWMA_OK;
+   }
+}
+
 void rwma_stream_rewind(rwma_stream *s)
 {
    unsigned i;
@@ -541,6 +612,8 @@ void rwma_stream_rewind(rwma_stream *s)
    s->assembled = s->object_pos = s->object_size = 0;
    s->compressed_at = s->compressed_end = s->demand = 0;
    s->object = NULL;
+   s->primed = s->tail_done = 0;
+   s->skip_left = s->emitted = 0;
 }
 void rwma_stream_set_avail(rwma_stream *s, size_t avail)
 {
@@ -583,4 +656,12 @@ size_t rwma_stream_read_end(const rwma_stream *s)
 uint32_t rwma_stream_channel_mask(const rwma_stream *s)
 {
    return s ? s->channel_mask : 0;
+}
+uint64_t rwma_stream_frames(const rwma_stream *s)
+{
+   if (!s || !s->rate || !s->channels)
+      return 0;
+   if (s->play_100ns && s->play_100ns < (~(uint64_t)0) / s->rate)
+      return (s->play_100ns * s->rate + 5000000) / 10000000;
+   return 0;
 }

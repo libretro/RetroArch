@@ -2429,7 +2429,6 @@ static const struct
    char s_aa08c6d6[81];
 #endif
 #endif
-   char s_27aef25c[52];
 #ifdef _3DS
    char s_2873cef1[88];
    char s_b4816da6[55];
@@ -6713,7 +6712,6 @@ static const struct
    "Disabilita l'ERTM Bluetooth per correggere l'accoppiamento di alcuni dispositivi",
 #endif
 #endif
-   "Scansione per i dispositivi bluetooth e collegarli.",
 #ifdef _3DS
    "Directory asset nello schermo inferiore. La directory deve includere \"bottom_menu.png\".",
    "Regola il colore blu del font dello schermo inferiore.",
@@ -8840,7 +8838,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182312u
+      (sizeof(msg_hash_it_blob) == (182260u
 #ifdef ANDROID
        + 376u
 #endif
@@ -11700,7 +11698,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

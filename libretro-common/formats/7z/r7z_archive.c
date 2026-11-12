@@ -396,12 +396,13 @@ struct r7z_archive
 
    /* What a reader on another thread may look at while one thread calls
     * r7z_archive_decode_step(): the buffer the folder is being decoded
-    * into in order, and how much of it is final. prog_state is 0 when
-    * there is nothing to look at, 1 while it is being decoded, 2 when
-    * the folder is decoded and held; the buffer and the folder are
-    * written before the state says they are there. */
-   const uint8_t      *prog_buf;
-   uint32_t            prog_folder;
+    * into in order, and how much of it is final. prog_state's low two
+    * bits are 0 when there is nothing to look at, 1 while it is being
+    * decoded, 2 when the folder is decoded and held; the rest count the
+    * changes, so that a reader that finds it the same after reading the
+    * others read them all from one (see r7z_progress_state()). */
+   retro_atomic_size_t prog_buf;
+   retro_atomic_size_t prog_folder;
    retro_atomic_int_t  prog_state;
    retro_atomic_size_t prog_pos;
 
@@ -2332,6 +2333,26 @@ static int decode_encoded_header(r7z_archive_t *a, rd_t *r,
    return res;
 }
 
+/* A new state, the count of changes moved on. Only the decoding thread
+ * writes it. */
+static void r7z_progress_state(r7z_archive_t *a, int state)
+{
+   unsigned n = (unsigned)retro_atomic_load_relaxed_int(&a->prog_state) >> 2;
+   retro_atomic_store_release_int(&a->prog_state,
+         (int)((((n + 1u) & 0x1FFFFFFFu) << 2) | (unsigned)state));
+}
+
+/* What a reader is to see from now on: nothing while it is written */
+static void r7z_progress_set(r7z_archive_t *a, const uint8_t *buf,
+      uint32_t folder, size_t pos, int state)
+{
+   r7z_progress_state(a, 0);
+   retro_atomic_store_release_size(&a->prog_buf, (size_t)(uintptr_t)buf);
+   retro_atomic_store_release_size(&a->prog_folder, folder);
+   retro_atomic_store_release_size(&a->prog_pos, pos);
+   r7z_progress_state(a, state);
+}
+
 /* The archive in memory (@data), or read through @read_cb. */
 static int r7z_open(r7z_archive_t **out, const uint8_t *data, size_t len,
       r7z_read_t read_cb, void *ud)
@@ -2386,6 +2407,8 @@ static int r7z_open(r7z_archive_t **out, const uint8_t *data, size_t len,
    a->len           = len;
    a->read_cb       = read_cb;
    a->read_ud       = ud;
+   retro_atomic_size_init(&a->prog_buf, 0);
+   retro_atomic_size_init(&a->prog_folder, 0);
    retro_atomic_int_init(&a->prog_state, 0);
    retro_atomic_size_init(&a->prog_pos, 0);
    a->cached_folder = 0xFFFFFFFFu;
@@ -2471,7 +2494,7 @@ void r7z_archive_close(r7z_archive_t *a)
    if (!a)
       return;
    decode_pending_reset(a);
-   retro_atomic_store_release_int(&a->prog_state, 0);
+   r7z_progress_state(a, 0);
    if (!a->cached_borrowed)
       free(a->cached_data);
 #ifdef HAVE_RBZIP2
@@ -2555,8 +2578,8 @@ static void decode_pending_reset(r7z_archive_t *a)
    if (!a)
       return;
    /* (a folder decoded and held stays to be looked at: 2) */
-   if (retro_atomic_load_acquire_int(&a->prog_state) == 1)
-      retro_atomic_store_release_int(&a->prog_state, 0);
+   if ((retro_atomic_load_relaxed_int(&a->prog_state) & 3) == 1)
+      r7z_progress_state(a, 0);
    if (!a->pend_in_borrowed)
       free(a->pend_in);
    if (!a->pend_pass)
@@ -2614,10 +2637,7 @@ static int coder_is_resumable(const coder_t *c)
 /* The cached folder, decoded whole and checked, is there to be read. */
 static void r7z_progress_held(r7z_archive_t *a)
 {
-   a->prog_buf    = a->cached_data;
-   a->prog_folder = a->cached_folder;
-   retro_atomic_store_release_size(&a->prog_pos, a->cached_len);
-   retro_atomic_store_release_int(&a->prog_state, 2);
+   r7z_progress_set(a, a->cached_data, a->cached_folder, a->cached_len, 2);
 }
 
 /* The stage that is being decoded writes its output in order, and is the
@@ -2625,7 +2645,7 @@ static void r7z_progress_held(r7z_archive_t *a)
  * to be read (r7z_archive_decode_peek()). */
 static void r7z_progress_at(r7z_archive_t *a, size_t pos)
 {
-   if (retro_atomic_load_acquire_int(&a->prog_state) == 1)
+   if ((retro_atomic_load_relaxed_int(&a->prog_state) & 3) == 1)
       retro_atomic_store_release_size(&a->prog_pos, pos);
 }
 
@@ -2829,10 +2849,7 @@ static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
     * folder will be held in: its progress can be watched. */
    if (a->pend_coder + 1 == f->num_coders)
    {
-      a->prog_buf    = a->pend_out;
-      a->prog_folder = a->pend_folder;
-      retro_atomic_store_release_size(&a->prog_pos, 0);
-      retro_atomic_store_release_int(&a->prog_state, 1);
+      r7z_progress_set(a, a->pend_out, a->pend_folder, 0, 1);
    }
 
    /* Stand up a decoder that survives between slices. */
@@ -3238,7 +3255,7 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
       return R7Z_ERROR_CRC;
    }
 
-   retro_atomic_store_release_int(&a->prog_state, 0);
+   r7z_progress_state(a, 0);
    r7z_cache_hold(a, a->pend_b2dst, a->pend_b2dstlen, fi, 0);
    a->pend_b2dst    = NULL;
 
@@ -3405,7 +3422,7 @@ static int decode_folder_slice(r7z_archive_t *a, uint32_t fi, int *done)
 
    /* a folder no coder touched is held where it lies, when the
     * archive is in memory */
-   retro_atomic_store_release_int(&a->prog_state, 0);
+   r7z_progress_state(a, 0);
    r7z_cache_hold(a, a->pend_in, a->pend_in_len, fi, a->pend_in_borrowed);
    r7z_progress_held(a);
 
@@ -3502,7 +3519,7 @@ int r7z_archive_extract_slice(r7z_archive_t *a, uint32_t index,
       if ((res = decode_folder(a, e->folder, &folder_data, &folder_borrowed)) != R7Z_OK)
          return res;
 
-      retro_atomic_store_release_int(&a->prog_state, 0);
+      r7z_progress_state(a, 0);
       r7z_cache_hold(a, folder_data,
             (size_t)a->folders[e->folder].unpack_size, e->folder,
             folder_borrowed);
@@ -3563,7 +3580,7 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
       if (res != R7Z_OK)
          return res;
 
-      retro_atomic_store_release_int(&a->prog_state, 0);
+      r7z_progress_state(a, 0);
       r7z_cache_hold(a, folder_data,
             (size_t)a->folders[e->folder].unpack_size, e->folder,
             folder_borrowed);
@@ -3634,7 +3651,7 @@ int r7z_archive_extract_detach(r7z_archive_t *a, uint32_t index,
    else
    {
       int borrowed = 0;
-      retro_atomic_store_release_int(&a->prog_state, 0);
+      r7z_progress_state(a, 0);
       r7z_cache_hold(a, NULL, 0, 0xFFFFFFFFu, 0);
       if ((res = decode_folder(a, e->folder, &buf, &borrowed)) != R7Z_OK)
          return res;
@@ -3647,7 +3664,7 @@ int r7z_archive_extract_detach(r7z_archive_t *a, uint32_t index,
 
    /* The folder's output is the member: hand the buffer over rather
     * than keep it cached and copy it. */
-   retro_atomic_store_release_int(&a->prog_state, 0);
+   r7z_progress_state(a, 0);
    a->cached_data     = NULL;
    a->cached_len      = 0;
    a->cached_folder   = 0xFFFFFFFFu;
@@ -3694,7 +3711,7 @@ int r7z_archive_entry_borrow(r7z_archive_t *a, uint32_t index,
    {
       if ((res = decode_folder(a, e->folder, &folder_data, &folder_borrowed)) != R7Z_OK)
          return res;
-      retro_atomic_store_release_int(&a->prog_state, 0);
+      r7z_progress_state(a, 0);
       r7z_cache_hold(a, folder_data,
             (size_t)a->folders[e->folder].unpack_size, e->folder,
             folder_borrowed);
@@ -3736,7 +3753,7 @@ int r7z_archive_decode_step(r7z_archive_t *a, uint32_t index)
 
    if (a->cached_folder == e->folder && a->cached_data)
    {
-      if (retro_atomic_load_acquire_int(&a->prog_state) != 2)
+      if ((retro_atomic_load_relaxed_int(&a->prog_state) & 3) != 2)
          r7z_progress_held(a);
       return R7Z_OK;
    }
@@ -3750,7 +3767,7 @@ int r7z_archive_decode_step(r7z_archive_t *a, uint32_t index)
 
       if ((res = decode_folder(a, e->folder, &folder_data, &folder_borrowed)) != R7Z_OK)
          return res;
-      retro_atomic_store_release_int(&a->prog_state, 0);
+      r7z_progress_state(a, 0);
       r7z_cache_hold(a, folder_data,
             (size_t)a->folders[e->folder].unpack_size, e->folder,
             folder_borrowed);
@@ -3762,7 +3779,7 @@ int r7z_archive_decode_step(r7z_archive_t *a, uint32_t index)
    if (!done)
       return R7Z_PENDING;
    /* (a folder that went through the BCJ2 slicer says so only now) */
-   if (retro_atomic_load_acquire_int(&a->prog_state) != 2)
+   if ((retro_atomic_load_relaxed_int(&a->prog_state) & 3) != 2)
       r7z_progress_held(a);
    return R7Z_OK;
 }
@@ -4805,7 +4822,7 @@ int r7z_archive_decode_peek(const r7z_archive_t *a, uint32_t index,
       const uint8_t **data, size_t *avail)
 {
    const r7z_entry_t *e;
-   size_t             pos;
+   size_t             pos, buf, folder;
    int                state;
 
    if (!a || !data || !avail || index >= a->num_entries)
@@ -4816,14 +4833,20 @@ int r7z_archive_decode_peek(const r7z_archive_t *a, uint32_t index,
    if (e->is_dir)
       return R7Z_ERROR_PARAM;
 
-   /* the state, and then what it says is there */
-   state = retro_atomic_load_acquire_int((retro_atomic_int_t*)&a->prog_state);
-   if (!state || a->prog_folder != e->folder)
+   /* the state, what it says is there, and the state again: changed,
+    * and what was read may be from before and after */
+   state  = retro_atomic_load_acquire_int((retro_atomic_int_t*)&a->prog_state);
+   if (!(state & 3))
       return R7Z_OK;
-   pos = retro_atomic_load_acquire_size((retro_atomic_size_t*)&a->prog_pos);
+   folder = retro_atomic_load_acquire_size((retro_atomic_size_t*)&a->prog_folder);
+   buf    = retro_atomic_load_acquire_size((retro_atomic_size_t*)&a->prog_buf);
+   pos    = retro_atomic_load_acquire_size((retro_atomic_size_t*)&a->prog_pos);
+   if (retro_atomic_load_acquire_int((retro_atomic_int_t*)&a->prog_state) != state
+         || folder != e->folder)
+      return R7Z_OK;
    if (e->offset_in_folder > (uint64_t)((size_t)-1))
       return R7Z_ERROR_DATA;
-   *data = a->prog_buf + (size_t)e->offset_in_folder;
+   *data = (const uint8_t*)(uintptr_t)buf + (size_t)e->offset_in_folder;
    if (pos > (size_t)e->offset_in_folder)
    {
       size_t have = pos - (size_t)e->offset_in_folder;

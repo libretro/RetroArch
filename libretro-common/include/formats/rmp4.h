@@ -102,6 +102,13 @@ typedef struct
    /* Duration of the supported nonempty unity-rate edit, excluding the
     * leading delay. -1 when no such edit declares a play length. */
    int64_t                presentation_duration_ns;
+   /* An mp4v or mp4a entry's esds objectTypeIndication: what the
+    * fourcc does not say (mp4v carries MPEG-4 Visual 0x20, MPEG-2
+    * video 0x60..0x65, MPEG-1 video 0x6A or JPEG 0x6C; mp4a MPEG-4
+    * Audio 0x40, MPEG-2 AAC 0x66..0x68 or MP3 0x69/0x6B). 0 for other
+    * entries, or without an esds. An mp4v's DecoderSpecificInfo (the
+    * MPEG-4 VOS/VOL headers) is its codec_private. */
+   unsigned               object_type;
 } rmp4_track;
 
 typedef struct

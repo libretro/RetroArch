@@ -179,14 +179,13 @@ static void upscale(unsigned factor, int pix10)
    struct texture_image img;
    uint32_t *expected;
    unsigned x, y, dw = 7 * factor, dh = 3 * factor;
-   unsigned step = 65536 / factor;
    init(&img, 7, 3, pix10);
    expected = (uint32_t*)malloc((size_t)dw * dh * 4);
    assert(expected);
+   /* every pixel repeated factor times each way */
    for (y = 0; y < dh; y++)
       for (x = 0; x < dw; x++)
-         expected[(size_t)y * dw + x] = img.pixels[
-            (size_t)((y * step) >> 16) * 7 + ((x * step) >> 16)];
+         expected[(size_t)y * dw + x] = img.pixels[(size_t)(y / factor) * 7 + x / factor];
    assert(image_texture_scale(&img, 3 * factor, 0));
    assert(img.width == dw && img.height == dh);
    assert(img.pix10 == (pix10 != 0) && img.supports_rgba);

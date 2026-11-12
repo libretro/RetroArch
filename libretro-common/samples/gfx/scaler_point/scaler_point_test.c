@@ -85,17 +85,16 @@ static void pixels(int iw, int ih, int ow, int oh, unsigned flip,
    if (flip & 2) op = -op;
    for (y = 0; y < oh; y++)
    {
-      int64_t yp = ((int64_t)ih << 15) / oh - 32768;
+      /* the input sample nearest the output pixel's centre */
+      int64_t yp = ((int64_t)ih << 15) / oh;
       int64_t ys = ((int64_t)ih << 16) / oh;
-      if (yp < 0) yp = 0;
       for (x = 0; x < ow; x++)
       {
-         int64_t xp = ((int64_t)iw << 15) / ow - 32768;
+         int64_t xp = ((int64_t)iw << 15) / ow;
          int64_t xs = ((int64_t)iw << 16) / ow;
          const void *p;
          void *q = ref + (ptrdiff_t)y * op + (size_t)x * bpp_out;
          uint32_t pixel;
-         if (xp < 0) xp = 0;
          p = src + (ptrdiff_t)((yp + y * ys) >> 16) * ip
             + (size_t)((xp + x * xs) >> 16) * bpp_in;
          if (in_fmt == SCALER_FMT_RGB565)
@@ -241,6 +240,49 @@ static void all_rgb565_values(enum scaler_pix_fmt out_fmt)
    free(expected);
 }
 
+/* Each output pixel takes the input sample nearest its centre:
+ * floor((x + 1/2) * in / out). An odd input size never puts a centre on
+ * a boundary between samples, so the pick is never a tie. Both paths:
+ * ARGB8888 to itself, and RGB565 to ARGB8888 through the filter. */
+static void centres(void)
+{
+   static const int sizes[][2] = {
+      {63, 40}, {63, 100}, {7, 3}, {3, 8}, {5, 2}, {9, 4}, {1, 5}, {65, 64}
+   };
+   unsigned k;
+   for (k = 0; k < sizeof(sizes) / sizeof(sizes[0]); k++)
+   {
+      int iw = sizes[k][0], ow = sizes[k][1], x, y, path;
+      for (path = 0; path < 2; path++)
+      {
+         struct scaler_ctx ctx;
+         uint32_t in32[65 * 65], out[100 * 100];
+         uint16_t in16[65 * 65];
+         for (y = 0; y < iw; y++)
+            for (x = 0; x < iw; x++)
+            {
+               /* the sample's own column and row in its channels */
+               in32[y * iw + x] = 0xff000000u | ((uint32_t)(x * 2) << 16) | ((uint32_t)(y * 2) << 8);
+               in16[y * iw + x] = (uint16_t)((x << 11) | (y << 5));
+            }
+         init(&ctx, SCALER_TYPE_POINT, path ? SCALER_FMT_RGB565 : SCALER_FMT_ARGB8888,
+               SCALER_FMT_ARGB8888, iw, iw, ow, ow, iw * (path ? 2 : 4), ow * 4);
+         assert(scaler_ctx_gen_filter(&ctx));
+         scaler_ctx_scale(&ctx, out, path ? (const void*)in16 : (const void*)in32);
+         for (y = 0; y < ow; y++)
+            for (x = 0; x < ow; x++)
+            {
+               int sx = (2 * x + 1) * iw / (2 * ow), sy = (2 * y + 1) * iw / (2 * ow);
+               uint32_t want = path
+                  ? 0xff000000u | pixconv_rgb565_to_xrgb8888((uint16_t)((sx << 11) | (sy << 5)))
+                  : in32[sy * iw + sx];
+               assert(out[y * ow + x] == want);
+            }
+         scaler_ctx_gen_reset(&ctx);
+      }
+   }
+}
+
 int main(int argc, char **argv)
 {
    static const enum scaler_pix_fmt fmts[][2] = {
@@ -278,9 +320,10 @@ int main(int argc, char **argv)
          for (fmt = 0; fmt < sizeof(fmts) / sizeof(fmts[0]); fmt++)
             pixels(sizes[size][0], sizes[size][1], sizes[size][2], sizes[size][3], flip,
                   fmts[fmt][0], fmts[fmt][1], 0);
+   centres();
    modes_and_failures();
    all_rgb565_values(SCALER_FMT_ARGB8888);
    all_rgb565_values(SCALER_FMT_BGR24);
-   puts("PASS: point pixels/strides, native and converted formats, mode changes, allocation failure and bounds");
+   puts("PASS: point pixels at the nearest centres, pixels/strides, native and converted formats, mode changes, allocation failure and bounds");
    return 0;
 }

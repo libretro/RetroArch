@@ -9,7 +9,8 @@ was explicitly authorized by the maintainer on 2026-10-13.
 
 OpenH264 data
 ------------
-The CAVLC tables in rh264.c and the generated CABAC initialization data in
+The CAVLC tables in rh264_cavlc_tables.h (shared by rh264.c and
+rh264_encode.c) and the generated CABAC initialization data in
 rh264_cabac_tables.h contain data adapted from Cisco OpenH264. These portions
 remain BSD-2-Clause, with the Cisco copyright, conditions and disclaimer
 retained in the source and COPYING.OpenH264. The MIT permission applies to

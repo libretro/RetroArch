@@ -572,8 +572,10 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
 /* Every free-function form below casts the value to the atomic's type:
  * before P0558R1 (libstdc++ < 9) the value parameter was deduced too,
  * so an enumerator or any non-int argument made the deduction conflict
- * and the call fail to compile. */
-#define retro_atomic_int_init(p, v)    std::atomic_init((p), (int)(v))
+ * and the call fail to compile. The casts are C++ casts, so that a
+ * project built with -Werror=old-style-cast (RPCS3's) can include this
+ * header. */
+#define retro_atomic_int_init(p, v)    std::atomic_init((p), static_cast<int>(v))
 
 /* Static/aggregate initializer for a retro_atomic_int_t member.
  * std::atomic<int> is a class type, so it must be brace-initialized
@@ -581,41 +583,41 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
  * plain scalars and must NOT be braced, or GCC/Clang emit
  * -Wbraces-around-scalar-init. */
 #define RETRO_ATOMIC_INT_INITIALIZER(v)  { (v) }
-#define retro_atomic_size_init(p, v)   std::atomic_init((p), (std::size_t)(v))
+#define retro_atomic_size_init(p, v)   std::atomic_init((p), static_cast<std::size_t>(v))
 
 #define retro_atomic_load_acquire_int(p) \
    std::atomic_load_explicit((p), std::memory_order_acquire)
 #define retro_atomic_load_relaxed_int(p) \
    std::atomic_load_explicit((p), std::memory_order_relaxed)
 #define retro_atomic_store_release_int(p, v) \
-   std::atomic_store_explicit((p), (int)(v), std::memory_order_release)
+   std::atomic_store_explicit((p), static_cast<int>(v), std::memory_order_release)
 #define retro_atomic_store_relaxed_int(p, v) \
-   std::atomic_store_explicit((p), (int)(v), std::memory_order_relaxed)
+   std::atomic_store_explicit((p), static_cast<int>(v), std::memory_order_relaxed)
 #define retro_atomic_fetch_add_int(p, v) \
-   std::atomic_fetch_add_explicit((p), (int)(v), std::memory_order_acq_rel)
+   std::atomic_fetch_add_explicit((p), static_cast<int>(v), std::memory_order_acq_rel)
 #define retro_atomic_fetch_add_seq_cst_int(p, v) \
-   std::atomic_fetch_add_explicit((p), (int)(v), std::memory_order_seq_cst)
+   std::atomic_fetch_add_explicit((p), static_cast<int>(v), std::memory_order_seq_cst)
 #define retro_atomic_load_seq_cst_int(p) \
    std::atomic_load_explicit((p), std::memory_order_seq_cst)
 #define retro_atomic_fetch_sub_int(p, v) \
-   std::atomic_fetch_sub_explicit((p), (int)(v), std::memory_order_acq_rel)
+   std::atomic_fetch_sub_explicit((p), static_cast<int>(v), std::memory_order_acq_rel)
 #define retro_atomic_fetch_or_int(p, v) \
-   std::atomic_fetch_or_explicit((p), (int)(v), std::memory_order_acq_rel)
+   std::atomic_fetch_or_explicit((p), static_cast<int>(v), std::memory_order_acq_rel)
 #define retro_atomic_fetch_and_int(p, v) \
-   std::atomic_fetch_and_explicit((p), (int)(v), std::memory_order_acq_rel)
+   std::atomic_fetch_and_explicit((p), static_cast<int>(v), std::memory_order_acq_rel)
 
 #define retro_atomic_load_acquire_size(p) \
    std::atomic_load_explicit((p), std::memory_order_acquire)
 #define retro_atomic_load_relaxed_size(p) \
    std::atomic_load_explicit((p), std::memory_order_relaxed)
 #define retro_atomic_store_release_size(p, v) \
-   std::atomic_store_explicit((p), (std::size_t)(v), std::memory_order_release)
+   std::atomic_store_explicit((p), static_cast<std::size_t>(v), std::memory_order_release)
 #define retro_atomic_store_relaxed_size(p, v) \
-   std::atomic_store_explicit((p), (std::size_t)(v), std::memory_order_relaxed)
+   std::atomic_store_explicit((p), static_cast<std::size_t>(v), std::memory_order_relaxed)
 #define retro_atomic_fetch_add_size(p, v) \
-   std::atomic_fetch_add_explicit((p), (std::size_t)(v), std::memory_order_acq_rel)
+   std::atomic_fetch_add_explicit((p), static_cast<std::size_t>(v), std::memory_order_acq_rel)
 #define retro_atomic_fetch_sub_size(p, v) \
-   std::atomic_fetch_sub_explicit((p), (std::size_t)(v), std::memory_order_acq_rel)
+   std::atomic_fetch_sub_explicit((p), static_cast<std::size_t>(v), std::memory_order_acq_rel)
 
 /* ---- GCC __atomic_* (4.7+) / Clang ------------------------------------ */
 #elif defined(RETRO_ATOMIC_BACKEND_GCC_NEW)
@@ -1421,8 +1423,8 @@ typedef std::atomic<void*> retro_atomic_ptr_t;
 static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
 {
    int e = expected;
-   return (int)p->compare_exchange_strong(e, desired,
-         std::memory_order_acq_rel, std::memory_order_acquire);
+   return p->compare_exchange_strong(e, desired,
+         std::memory_order_acq_rel, std::memory_order_acquire) ? 1 : 0;
 }
 #define retro_atomic_cas_int(p, expected, desired) \
    retro_atomic_cas_int_impl_((p), (expected), (desired))
@@ -1439,8 +1441,8 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
 static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
 {
    void *e = expected;
-   return (int)p->compare_exchange_strong(e, desired,
-         std::memory_order_acq_rel, std::memory_order_acquire);
+   return p->compare_exchange_strong(e, desired,
+         std::memory_order_acq_rel, std::memory_order_acquire) ? 1 : 0;
 }
 #define retro_atomic_cas_ptr(p, expected, desired) \
    retro_atomic_cas_ptr_impl_((p), (expected), (desired))
@@ -1942,8 +1944,8 @@ typedef std::atomic<int64_t> retro_atomic_64_t;
 static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
 {
    int64_t e = expected;
-   return (int)p->compare_exchange_strong(e, desired,
-         std::memory_order_acq_rel, std::memory_order_acquire);
+   return p->compare_exchange_strong(e, desired,
+         std::memory_order_acq_rel, std::memory_order_acquire) ? 1 : 0;
 }
 #define retro_atomic_cas_64(p, expected, desired) \
    retro_atomic_cas_64_impl_((p), (expected), (desired))
@@ -2238,13 +2240,13 @@ static INLINE int retro_atomic_ee_cas_64_(retro_atomic_64_t *p,
    atomic_fetch_and_explicit((p), (int64_t)(v), memory_order_acq_rel)
 #elif defined(RETRO_ATOMIC_BACKEND_CXX11)
 #define retro_atomic_fetch_add_64(p, v) \
-   ((p)->fetch_add((int64_t)(v), std::memory_order_acq_rel))
+   ((p)->fetch_add(static_cast<int64_t>(v), std::memory_order_acq_rel))
 #define retro_atomic_fetch_sub_64(p, v) \
-   ((p)->fetch_sub((int64_t)(v), std::memory_order_acq_rel))
+   ((p)->fetch_sub(static_cast<int64_t>(v), std::memory_order_acq_rel))
 #define retro_atomic_fetch_or_64(p, v) \
-   ((p)->fetch_or((int64_t)(v), std::memory_order_acq_rel))
+   ((p)->fetch_or(static_cast<int64_t>(v), std::memory_order_acq_rel))
 #define retro_atomic_fetch_and_64(p, v) \
-   ((p)->fetch_and((int64_t)(v), std::memory_order_acq_rel))
+   ((p)->fetch_and(static_cast<int64_t>(v), std::memory_order_acq_rel))
 #elif defined(RETRO_ATOMIC_BACKEND_GCC_NEW)
 #define retro_atomic_fetch_add_64(p, v) \
    __atomic_fetch_add((p), (int64_t)(v), __ATOMIC_ACQ_REL)

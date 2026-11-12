@@ -152,6 +152,10 @@ static uint8_t wgl_flags;
 #ifdef HAVE_EGL
 static egl_ctx_data_t win32_egl;
 #endif
+/* The attributes the window's context was made with, for contexts in its
+ * share group (gfx_ctx_wgl_shared_context_new); none for a legacy one */
+static int              wgl_ctx_attribs[16];
+static bool             wgl_ctx_attribs_used = false;
 static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
 static int              win32_interval    = 0;
@@ -367,6 +371,10 @@ void create_gl_context(HWND hwnd, bool *quit)
                      break;
                   }
                }
+
+               for (i = 0; i < 16; i++)
+                  wgl_ctx_attribs[i] = attribs[i];
+               wgl_ctx_attribs_used = true;
 
                /* Found a suitable version that is high enough, we can stop now */
                break;
@@ -819,6 +827,71 @@ static void gfx_ctx_wgl_release_current(void *data)
    }
 }
 
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+/* A context in the share group of the one current on this thread - the
+ * core's, or the window's - with the window's attributes, for a thread
+ * of its own. It is made current on the window's device context: it
+ * draws into framebuffers of its own, never into the window. */
+static bool gfx_ctx_wgl_shared_context_new(void *data,
+      gfx_ctx_shared_context_t *out)
+{
+   typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)
+      (HDC, HGLRC, const int*);
+   HGLRC share = wglGetCurrentContext();
+   HGLRC ctx   = NULL;
+
+   memset(out, 0, sizeof(*out));
+   if (win32_api != GFX_CTX_OPENGL_API || !win32_hdc || !win32_hrc)
+      return false;
+   if (!share)
+      share = win32_hw_hrc ? win32_hw_hrc : win32_hrc;
+
+   if (wgl_ctx_attribs_used)
+   {
+      wglCreateContextAttribsProc create = (wglCreateContextAttribsProc)
+         gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
+      if (create)
+         ctx = create(win32_hdc, share, wgl_ctx_attribs);
+   }
+   else if ((ctx = wglCreateContext(win32_hdc)) && !wglShareLists(share, ctx))
+   {
+      wglDeleteContext(ctx);
+      ctx = NULL;
+   }
+   if (!ctx)
+   {
+      RARCH_ERR("[WGL] A shared context could not be made: 0x%08lx.\n",
+            (unsigned long)GetLastError());
+      return false;
+   }
+
+   out->kind             = GFX_CTX_SHARED_WGL;
+   out->context          = ctx;
+   out->get_proc_address = gfx_ctx_wgl_get_proc_address;
+   return true;
+}
+
+static bool gfx_ctx_wgl_shared_context_bind(gfx_ctx_shared_context_t *ctx,
+      bool bind)
+{
+   if (ctx->kind != GFX_CTX_SHARED_WGL)
+      return false;
+   if (!bind)
+      return wglMakeCurrent(NULL, NULL) ? true : false;
+   /* The window's, read now: a window made again has another one, of the
+    * same pixel format */
+   return wglMakeCurrent(win32_hdc, (HGLRC)ctx->context) ? true : false;
+}
+
+static void gfx_ctx_wgl_shared_context_free(gfx_ctx_shared_context_t *ctx)
+{
+   if (ctx->kind != GFX_CTX_SHARED_WGL)
+      return;
+   wglDeleteContext((HGLRC)ctx->context);
+   memset(ctx, 0, sizeof(*ctx));
+}
+#endif
+
 static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 {
    switch (win32_api)
@@ -1058,5 +1131,14 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_destroy_surface,
    gfx_ctx_wgl_presentable,
    gfx_ctx_wgl_last_present_time,
-   gfx_ctx_wgl_release_current
+   gfx_ctx_wgl_release_current,
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+   gfx_ctx_wgl_shared_context_new,
+   gfx_ctx_wgl_shared_context_bind,
+   gfx_ctx_wgl_shared_context_free
+#else
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL  /* shared_context_free */
+#endif
 };

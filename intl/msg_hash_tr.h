@@ -2369,7 +2369,6 @@ static const struct
    char s_aa08c6d6[76];
 #endif
 #endif
-   char s_27aef25c[56];
 #ifdef _3DS
    char s_2873cef1[64];
    char s_b4816da6[46];
@@ -6690,7 +6689,6 @@ static const struct
    "\237\304\261 b\304\261rak\304\261n",
 #endif
 #endif
-   "Bluetooth cihazlar\304\261n\304\261 tarar ve ba\304\237lant\304\261 olu\305\237turur.",
 #ifdef _3DS
    "Alt ekran i\303\247erik dizini. Dizin 'bottom_menu.png' i\303\247ermelidir.",
    "Alt ekran yaz\304\261 tipi mavi rengini ayarlay\304\261n.",
@@ -9195,7 +9193,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169322u
+      (sizeof(msg_hash_tr_blob) == (169266u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11924,7 +11922,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

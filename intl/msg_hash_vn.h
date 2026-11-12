@@ -3007,7 +3007,6 @@ static const struct
    char s_aa08c6d6[90];
 #endif
 #endif
-   char s_27aef25c[51];
 #ifdef _3DS
    char s_2873cef1[91];
    char s_b4816da6[73];
@@ -9570,8 +9569,6 @@ static const struct
    " b\341\273\213",
 #endif
 #endif
-   "Qu\303\251t c\303\241c thi\341\272\277t b\341\273\213 Bluetooth v\303\240 k\341\272\277t n\341"
-   "\273\221i.",
 #ifdef _3DS
    "Th\306\260 m\341\273\245c t\303\240i nguy\303\252n m\303\240n h\303\254nh d\306\260\341\273\233i"
    ". Th\306\260 m\341\273\245c ph\341\272\243i bao g\341\273\223m \"bottom_menu.png\".",
@@ -15672,7 +15669,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (312852u
+      (sizeof(msg_hash_vn_blob) == (312801u
 #ifdef ANDROID
        + 373u
 #endif
@@ -19228,7 +19225,6 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

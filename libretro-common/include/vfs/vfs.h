@@ -27,6 +27,14 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 #include <stdint.h>
+#include <retro_atomic.h>
+
+/* Windows positional I/O keeps a second handle in a pointer atomic; the
+ * volatile backend (a PS2 TU forced onto it, built with MinGW in the
+ * samples) has none, and positional I/O falls back there. */
+#if defined(_WIN32) && !defined(RETRO_ATOMIC_BACKEND_VOLATILE)
+#define VFS_HAVE_AT_HANDLE 1
+#endif
 
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
@@ -142,6 +150,26 @@ typedef struct
 #endif
 #endif
 
+/* Gathered writes: where a descriptor-written stream can hand several
+ * pieces of memory to the kernel in one writev() call.  POSIX only;
+ * Windows and the consoles write the pieces one by one. */
+#ifndef VFS_HAVE_WRITEV
+#if defined(VFS_HAVE_DESCRIPTOR_WRITE) && defined(HAVE_MMAP) \
+ && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+  || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)) \
+ && !defined(_WIN32) && !defined(VITA) && !defined(GEKKO) \
+ && !defined(PSP) && !defined(PS2)
+#define VFS_HAVE_WRITEV 1
+#endif
+#endif
+
+/* One piece of memory for a gathered write */
+struct retro_vfs_span
+{
+   const void *data;
+   size_t      len;
+};
+
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
@@ -210,6 +238,15 @@ struct libretro_vfs_implementation_file
 #if defined(HAVE_CDROM) && defined(__APPLE__)
    void *iokit_plugin;   /* IOCFPlugInInterface ** */
    void *iokit_mmc;      /* MMCDeviceInterface ** */
+#endif
+   /* Positional I/O (retro_vfs_file_read_at_impl, _write_at_impl), from
+    * any number of threads at once. append_end: where the next append
+    * goes, plus one; 0 until the first. at_handle (Windows): a handle of
+    * its own on the file, with a position of its own, made at the first
+    * positional call; NULL until then. */
+   retro_atomic_size_t append_end;
+#ifdef VFS_HAVE_AT_HANDLE
+   retro_atomic_ptr_t  at_handle;
 #endif
 };
 #endif

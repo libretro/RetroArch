@@ -2695,7 +2695,6 @@ static const struct
    char s_aa08c6d6[71];
 #endif
 #endif
-   char s_27aef25c[59];
 #ifdef _3DS
    char s_2873cef1[75];
    char s_b4816da6[53];
@@ -7522,7 +7521,6 @@ static const struct
    "ze\305\204",
 #endif
 #endif
-   "Skanuj w poszukiwaniu urz\304\205dze\305\204 bluetooth i pod\305\202\304\205cz je.",
 #ifdef _3DS
    "Katalog zasob\303\263w dolnego ekranu. Katalog musi zawiera\304\207 \"bottom_menu.png\".",
    "Dostosuj niebieski kolor czcionki na dolnym ekranie.",
@@ -10225,7 +10223,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199715u
+      (sizeof(msg_hash_pl_blob) == (199656u
 #ifdef ANDROID
        + 385u
 #endif
@@ -13418,7 +13416,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

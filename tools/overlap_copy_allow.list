@@ -75,3 +75,7 @@ libretro-common/formats/aac/raac.c|memcpy|ps->ipd_par|ps->ipd_par
 libretro-common/formats/aac/raac.c|memcpy|ps->opd_par|ps->opd_par
 libretro-common/formats/aac/raac.c|memcpy|ps->in_buf|ps->in_buf
 libretro-common/formats/aac/raac.c|memcpy|ps->H|ps->H
+# rh264 encoder border: the rows above and below a plane copied from its
+# first and last rows; y >= 1 rows away at a stride wider than the
+# copied width plus both borders, so never the same row
+libretro-common/formats/h264/rh264_encode.c|memcpy|o|o

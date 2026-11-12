@@ -122,6 +122,39 @@ typedef bool (*net_http_sink_t)(void *userdata, const void *data, size_t len);
 void net_http_connection_set_sink(struct http_connection_t *conn,
       net_http_sink_t cb, void *userdata);
 
+/* The most runs a spans sink is handed in one call */
+#define NET_HTTP_SINK_SPANS_MAX 16
+
+/* One run of decoded body bytes, in the receive buffer */
+struct net_http_span
+{
+   const void *data;
+   size_t      len;
+};
+
+/**
+ * net_http_sink_spans_t:
+ *
+ * As net_http_sink_t, with the decoded bytes as up to
+ * NET_HTTP_SINK_SPANS_MAX runs, in order, where they were received.
+ * A chunked body's long chunks are left in place rather than slid
+ * together over the chunk headers between them, so a sink that writes
+ * the runs with one gathered write (filestream_writev) gets them to
+ * the file with no copy in between.  The runs are only valid for the
+ * call.
+ **/
+typedef bool (*net_http_sink_spans_t)(void *userdata,
+      const struct net_http_span *spans, size_t count);
+
+/**
+ * net_http_connection_set_sink_spans:
+ *
+ * As net_http_connection_set_sink, with a sink that takes runs; it
+ * replaces a sink set before, and the other way round.
+ **/
+void net_http_connection_set_sink_spans(struct http_connection_t *conn,
+      net_http_sink_spans_t cb, void *userdata);
+
 void net_http_connection_set_content(struct http_connection_t *conn, const char *content_type,
       size_t content_length, const void *content);
 

@@ -16,6 +16,10 @@
  *
  *   xmb         The same fixture against the other horizontal list;
  *               the explore view's node no longer aliases the cursor.
+ *               Each horizontal-list node owns a copy of its
+ *               playlist's console name; every copy of the fixture
+ *               playlist's name must be freed by deinit. The link
+ *               wraps strdup and free (see build.sh) to count them.
  *
  *   materialui  An icon whose decode is still queued when the playlist
  *               icon array is freed and rebuilt (RESET_HORIZONTAL_LIST
@@ -62,6 +66,7 @@
 #include "../../../menu/menu_displaylist.h"
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/video_driver.h"
+#include "../../../frontend/frontend.h"
 #include "../../../frontend/frontend_driver.h"
 
 static unsigned failures = 0;
@@ -76,6 +81,53 @@ static unsigned failures = 0;
          failures++; \
       } \
    } while (0)
+
+/* --- the string accounting ----------------------------------------- */
+
+/* build.sh links with --wrap=strdup --wrap=free. Every strdup of
+ * watch_text is recorded until it is freed; whatever is still recorded
+ * after deinit was never freed. Inert while watch_text is NULL. */
+#define WATCH_MAX 64
+
+char *__real_strdup(const char *s);
+void  __real_free(void *p);
+
+static const char *watch_text;
+static void       *watched[WATCH_MAX];
+static unsigned    watched_count;
+static unsigned    watched_overflow;
+static unsigned    watched_seen;
+
+char *__wrap_strdup(const char *s)
+{
+   char *p = __real_strdup(s);
+   if (p && watch_text && !strcmp(s, watch_text))
+   {
+      watched_seen++;
+      if (watched_count < WATCH_MAX)
+         watched[watched_count++] = p;
+      else
+         watched_overflow++;
+   }
+   return p;
+}
+
+void __wrap_free(void *p)
+{
+   if (p && watched_count)
+   {
+      unsigned i;
+      for (i = 0; i < watched_count; i++)
+      {
+         if (watched[i] == p)
+         {
+            watched[i] = watched[--watched_count];
+            break;
+         }
+      }
+   }
+   __real_free(p);
+}
 
 /* --- the accounting driver ----------------------------------------- */
 
@@ -567,6 +619,10 @@ int main(int argc, char *argv[])
       return 1;
    }
 
+   /* The fixture playlist's console name, as XMB names its node */
+   if (string_is_equal(menu_driver, "xmb"))
+      watch_text = "Harness System";
+
    rarch_argv[rarch_argc++] = (char*)"retroarch";
    rarch_argv[rarch_argc++] = (char*)"--menu";
    rarch_argv[rarch_argc++] = (char*)"--config";
@@ -654,11 +710,21 @@ int main(int argc, char *argv[])
          "%u unload(s) of a handle that was not live before deinit",
          unknown_unloads);
 
-   retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
+   /* The program's own exit: the menu is not kept past it, so the
+    * driver's free() runs and everything it owns goes */
+   main_exit(NULL);
 
    CHECK(unknown_unloads == 0,
          "%u unload(s) of a handle that was not live",
          unknown_unloads);
+   if (watch_text)
+   {
+      CHECK(watched_seen > 0,
+            "fixture: no copy of \"%s\" was ever made", watch_text);
+      CHECK(watched_count == 0 && watched_overflow == 0,
+            "%u of %u copies of \"%s\" not freed by deinit",
+            watched_count + watched_overflow, watched_seen, watch_text);
+   }
    CHECK(live_count == 0,
          "%u texture(s) still live after deinit (%u loaded, %u unloaded)",
          live_count, loads, unloads);

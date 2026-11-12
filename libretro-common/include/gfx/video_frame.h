@@ -184,14 +184,12 @@ static INLINE bool video_frame_convert_to_bgr24(
       int y, x;
       int64_t x_step = ((int64_t)in_width << 16) / out_width;
       int64_t y_step = ((int64_t)in_height << 16) / out_height;
-      int64_t x_start = ((int64_t)in_width << 15) / out_width - (1 << 15);
-      int64_t y_pos = ((int64_t)in_height << 15) / out_height - (1 << 15);
+      /* the sample nearest each output pixel's centre, as the point
+       * scaler picks */
+      int64_t x_start = ((int64_t)in_width << 15) / out_width;
+      int64_t y_pos = ((int64_t)in_height << 15) / out_height;
       unsigned bpp = scaler->in_fmt == SCALER_FMT_RGB565 ? 2
          : (scaler->in_fmt == SCALER_FMT_BGR24 ? 3 : 4);
-      if (x_start < 0)
-         x_start = 0;
-      if (y_pos < 0)
-         y_pos = 0;
       for (y = 0; y < out_height; y++, y_pos += y_step)
       {
          uint8_t *dst = (uint8_t*)output + (ptrdiff_t)y * out_pitch;

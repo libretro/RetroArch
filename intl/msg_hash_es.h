@@ -2939,7 +2939,6 @@ static const struct
    char s_aa08c6d6[98];
 #endif
 #endif
-   char s_27aef25c[58];
 #ifdef _3DS
    char s_2873cef1[116];
    char s_b4816da6[59];
@@ -8272,7 +8271,6 @@ static const struct
    "itivos.",
 #endif
 #endif
-   "Busca dispositivos con Bluetooth para conectarse a ellos.",
 #ifdef _3DS
    "Indica el directorio de recursos de la pantalla inferior. El directorio debe contener el archivo"
    " \"bottom_menu.png\".",
@@ -11520,7 +11518,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (272662u
+      (sizeof(msg_hash_es_blob) == (272604u
 #ifdef ANDROID
        + 329u
 #endif
@@ -15013,7 +15011,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

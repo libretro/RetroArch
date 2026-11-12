@@ -197,6 +197,8 @@ static retro_vfs_rename_t filestream_rename_cb     = NULL;
 static retro_vfs_copy_begin_t filestream_copy_begin_cb = NULL;
 static retro_vfs_copy_step_t  filestream_copy_step_cb  = NULL;
 static retro_vfs_copy_close_t filestream_copy_close_cb = NULL;
+static retro_vfs_read_at_t  filestream_read_at_cb  = NULL;
+static retro_vfs_write_at_t filestream_write_at_cb = NULL;
 static bool filestream_copy_unavailable                = false;
 
 /* VFS Initialization */
@@ -221,6 +223,8 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_copy_begin_cb = NULL;
    filestream_copy_step_cb  = NULL;
    filestream_copy_close_cb = NULL;
+   filestream_read_at_cb    = NULL;
+   filestream_write_at_cb   = NULL;
    filestream_copy_unavailable = false;
 
    if (
@@ -251,6 +255,13 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    }
    else
       filestream_copy_unavailable = true;
+
+   /* v6: positional I/O; a frontend before it has none to offer */
+   if (vfs_info->required_interface_version >= 6)
+   {
+      filestream_read_at_cb  = vfs_iface->read_at;
+      filestream_write_at_cb = vfs_iface->write_at;
+   }
 }
 
 /* Callback wrappers */
@@ -2011,6 +2022,82 @@ int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
    else
       output = retro_vfs_file_write_impl(
             (libretro_vfs_implementation_file*)stream->hfile, s, len);
+
+   if (output == VFS_ERROR_RETURN_VALUE)
+      stream->err_flag = true;
+
+   return output;
+}
+
+int64_t filestream_read_at(RFILE *stream, void *data, int64_t len,
+      int64_t offset)
+{
+   if (!stream || len < 0)
+      return -1;
+   /* The file itself, at the offset: the stream's position, its
+    * read-ahead and its last operation are not touched, which is what
+    * lets several threads call this at once */
+   if (filestream_read_cb)
+      return filestream_read_at_cb
+         ? filestream_read_at_cb(stream->hfile, data, (uint64_t)len, offset)
+         : -1;
+   return retro_vfs_file_read_at_impl(
+         (libretro_vfs_implementation_file*)stream->hfile,
+         data, (uint64_t)len, offset);
+}
+
+int64_t filestream_write_at(RFILE *stream, const void *data, int64_t len,
+      int64_t offset)
+{
+   if (!stream || len < 0)
+      return -1;
+   if (filestream_write_cb)
+      return filestream_write_at_cb
+         ? filestream_write_at_cb(stream->hfile, data, (uint64_t)len, offset)
+         : -1;
+   return retro_vfs_file_write_at_impl(
+         (libretro_vfs_implementation_file*)stream->hfile,
+         data, (uint64_t)len, offset);
+}
+
+int64_t filestream_writev(RFILE *stream,
+      const struct retro_vfs_span *spans, size_t count)
+{
+   int64_t output = 0;
+   size_t  i;
+
+   if (!stream || (count && !spans))
+      return -1;
+
+   /* As filestream_write: back on the logical position first */
+   filestream_rbuf_discard(stream);
+   if (stream->last_io == FILESTREAM_LAST_IO_READ)
+      filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+   stream->last_io = FILESTREAM_LAST_IO_WRITE;
+
+   if (!filestream_write_cb)
+      output = retro_vfs_file_writev_impl(
+            (libretro_vfs_implementation_file*)stream->hfile, spans, count);
+   else
+   {
+      /* A core's VFS has no gathered write: one piece at a time */
+      for (i = 0; i < count; i++)
+      {
+         int64_t one;
+         if (!spans[i].len)
+            continue;
+         if ((one = filestream_write_cb(stream->hfile, spans[i].data,
+                     (uint64_t)spans[i].len)) < 0)
+         {
+            if (!output)
+               output = VFS_ERROR_RETURN_VALUE;
+            break;
+         }
+         output += one;
+         if ((uint64_t)one < spans[i].len)
+            break;
+      }
+   }
 
    if (output == VFS_ERROR_RETURN_VALUE)
       stream->err_flag = true;

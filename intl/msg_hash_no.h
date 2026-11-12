@@ -924,7 +924,6 @@ static const struct
    char s_8a24406f[28];
    char s_5977d6d8[44];
    char s_f6adf4ee[39];
-   char s_27aef25c[53];
 #ifdef _3DS
    char s_f441f728[37];
 #endif
@@ -2208,7 +2207,6 @@ static const struct
    "Demp all lyd i stillemodus.",
    "Endre innstillinger for lyd inngang/utgang.",
    "Vis n\303\245v\303\246rende batteriniv\303\245 i menyen.",
-   "Skann etter bluetooth-enheter og opprett tilkobling.",
 #ifdef _3DS
    "Juster skriftskalaen for bunnskjerm.",
 #endif
@@ -2631,7 +2629,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29330u
+      (sizeof(msg_hash_no_blob) == (29277u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3685,7 +3683,6 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
 #endif

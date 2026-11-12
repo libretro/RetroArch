@@ -68,17 +68,37 @@ void image_yuv_i420_to_rgb32(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, unsigned flags);
 
 /* The same conversion into pixels of four bytes in memory order, on any
- * host: @order is IMAGE_YUV_BYTES_RGBA (R, G, B, A) or
- * IMAGE_YUV_BYTES_ARGB (A, R, G, B), the alpha byte @alpha. @dst_stride
- * is in bytes. FLAG_RGBA has no meaning here. */
+ * host: @order is IMAGE_YUV_BYTES_RGBA (R, G, B, A),
+ * IMAGE_YUV_BYTES_ARGB (A, R, G, B), IMAGE_YUV_BYTES_BGRA (B, G, R, A;
+ * XRGB8888 as a little-endian host stores it) or IMAGE_YUV_BYTES_ABGR
+ * (A, B, G, R), the alpha byte @alpha. @dst_stride is in bytes.
+ * FLAG_RGBA has no meaning here. */
 #define IMAGE_YUV_BYTES_RGBA 0
 #define IMAGE_YUV_BYTES_ARGB 1
+#define IMAGE_YUV_BYTES_BGRA 2
+#define IMAGE_YUV_BYTES_ABGR 3
 void image_yuv_420_to_bytes(uint8_t *dst, size_t dst_stride,
       const uint8_t *y, unsigned y_stride,
       const uint8_t *cb, unsigned cb_stride,
       const uint8_t *cr, unsigned cr_stride,
       unsigned chroma_step, unsigned w, unsigned h, unsigned flags,
       unsigned order, uint8_t alpha);
+
+/* The other way, for an encoder: pixels of four bytes in @order (the
+ * alpha byte ignored), @src_stride in bytes, to 4:2:0 in the colour
+ * space and range @flags name (BT.601 limited range by default, what
+ * MPEG-4, H.264 and JPEG encoders take), each chroma sample the average
+ * of the 2x2 pixels it covers (centred, as JPEG and MPEG-1 site it). An
+ * odd last column or row averages the pixels it has. The planes are
+ * laid out as for image_yuv_420_to_bytes; nothing is written past
+ * (@w + 1) / 2 chroma samples or @w luma samples of a row. Rows are
+ * independent in pairs, so a band starting on an even row converts on
+ * its own. */
+void image_yuv_420_from_bytes(uint8_t *y, unsigned y_stride,
+      uint8_t *cb, unsigned cb_stride,
+      uint8_t *cr, unsigned cr_stride, unsigned chroma_step,
+      const uint8_t *src, size_t src_stride,
+      unsigned w, unsigned h, unsigned flags, unsigned order);
 
 /* 4:2:0 to packed 4:2:2 UYVY (U, Y0, V, Y1 for each pair of pixels),
  * each chroma row serving the two luma rows it covers; @dst_stride in

@@ -160,6 +160,47 @@ int64_t filestream_read(RFILE *stream, void *data, int64_t len);
 int64_t filestream_write(RFILE *stream, const void *data, int64_t len);
 
 /**
+ * Reads \c len bytes at \c offset without moving the stream's position
+ * or touching its read-ahead: any number of threads may call it on one
+ * stream at once, with no lock.  It reads the file as it is on disk;
+ * bytes written with \c filestream_write and not flushed are not seen.
+ *
+ * @return The number of bytes read, 0 at or past the end, or -1 on an
+ * error or where there is no positional I/O for this stream (the VFS in
+ * use is older than v6, a cdrom:// or network path, a platform without
+ * it): the caller then seeks and reads, under a lock of its own if it
+ * shares the stream.
+ * @see retro_vfs_read_at_t
+ */
+int64_t filestream_read_at(RFILE *stream, void *data, int64_t len,
+      int64_t offset);
+
+/**
+ * Writes \c len bytes at \c offset the same way.  With
+ * \c RETRO_VFS_WRITE_AT_APPEND for \c offset each call appends, whole
+ * and after the one before it, whichever thread it came from.
+ *
+ * @return The number of bytes written, or -1 as \c filestream_read_at.
+ * @see retro_vfs_write_at_t
+ */
+int64_t filestream_write_at(RFILE *stream, const void *data, int64_t len,
+      int64_t offset);
+
+/**
+ * Writes @count pieces of memory to the given file, in order, as if
+ * each were passed to \c filestream_write in turn.  A stream opened
+ * with \c RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK hands them to the
+ * kernel in one gathered write where the platform has one, so pieces
+ * scattered through a buffer reach the file without being copied
+ * together first.
+ *
+ * @return The number of bytes written, short at the first piece not
+ * written in full, or -1 if nothing was written.
+ */
+int64_t filestream_writev(RFILE *stream,
+      const struct retro_vfs_span *spans, size_t count);
+
+/**
  * Returns the current position of the given file in bytes.
  *
  * @param stream The file to return the stream position for.

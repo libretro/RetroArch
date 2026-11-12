@@ -51,6 +51,38 @@ static const image_yuv_coef_t image_yuv_coefs[4] =
 
 #define IMAGE_YUV_SHIFT 14
 
+/* The other way, RGB to YCbCr, in the same fixed point, indexed the
+ * same way: each luma row sums to the luma range (white is 235, or 255)
+ * and each chroma row to 0 (grey is 128 exactly). */
+typedef struct
+{
+   int y[3];  /* R, G, B -> Y */
+   int u[3];  /* R, G, B -> Cb */
+   int v[3];  /* R, G, B -> Cr */
+   int y0;    /* black level */
+} image_yuv_fwd_t;
+
+static const image_yuv_fwd_t image_yuv_fwds[4] =
+{
+   /* BT.601 limited: Y 0.299, 0.587, 0.114 by 219/255, chroma by 224/255 */
+   { { 4207,  8260, 1604 }, { -2428, -4768, 7196 }, { 7196, -6026, -1170 }, 16 },
+   /* BT.601 full */
+   { { 4899,  9617, 1868 }, { -2765, -5427, 8192 }, { 8192, -6860, -1332 },  0 },
+   /* BT.709 limited: Y 0.2126, 0.7152, 0.0722 by 219/255 */
+   { { 2991, 10064, 1016 }, { -1649, -5547, 7196 }, { 7196, -6536,  -660 }, 16 },
+   /* BT.709 full */
+   { { 3483, 11718, 1183 }, { -1877, -6315, 8192 }, { 8192, -7441,  -751 },  0 }
+};
+
+/* where R, G, B and A lie in a pixel of each IMAGE_YUV_BYTES_ order */
+static const uint8_t image_yuv_order[4][4] =
+{
+   { 0, 1, 2, 3 },   /* RGBA */
+   { 1, 2, 3, 0 },   /* ARGB */
+   { 2, 1, 0, 3 },   /* BGRA */
+   { 3, 2, 1, 0 }    /* ABGR */
+};
+
 #define IMAGE_YUV_CLAMP(v) ((v) < 0 ? 0 : ((v) > 255 ? 255 : (v)))
 
 /* Two luma pixels sharing one chroma sample, into @d[0] and @d[1]
@@ -164,8 +196,8 @@ void image_yuv_420_to_bytes(uint8_t *dst, size_t dst_stride,
       &image_yuv_coefs[((flags & IMAGE_YUV_FLAG_BT709) ? 2 : 0)
                      | ((flags & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0)];
    /* where R, G, B and A go in each pixel */
-   unsigned ri = order == IMAGE_YUV_BYTES_ARGB ? 1 : 0;
-   unsigned ai = order == IMAGE_YUV_BYTES_ARGB ? 0 : 3;
+   const uint8_t *at = image_yuv_order[order & 3];
+   unsigned ri = at[0], gi = at[1], bi = at[2], ai = at[3];
    unsigned row;
 
    for (row = 0; row < h; row++)
@@ -184,10 +216,67 @@ void image_yuv_420_to_bytes(uint8_t *dst, size_t dst_stride,
          int r  = (yy + c->rv * v) >> IMAGE_YUV_SHIFT;
          int g  = (yy + c->gu * u + c->gv * v) >> IMAGE_YUV_SHIFT;
          int b  = (yy + c->bu * u) >> IMAGE_YUV_SHIFT;
-         d[ri]     = (uint8_t)IMAGE_YUV_CLAMP(r);
-         d[ri + 1] = (uint8_t)IMAGE_YUV_CLAMP(g);
-         d[ri + 2] = (uint8_t)IMAGE_YUV_CLAMP(b);
-         d[ai]     = alpha;
+         d[ri] = (uint8_t)IMAGE_YUV_CLAMP(r);
+         d[gi] = (uint8_t)IMAGE_YUV_CLAMP(g);
+         d[bi] = (uint8_t)IMAGE_YUV_CLAMP(b);
+         d[ai] = alpha;
+      }
+   }
+}
+
+void image_yuv_420_from_bytes(uint8_t *y, unsigned y_stride,
+      uint8_t *cb, unsigned cb_stride,
+      uint8_t *cr, unsigned cr_stride, unsigned chroma_step,
+      const uint8_t *src, size_t src_stride,
+      unsigned w, unsigned h, unsigned flags, unsigned order)
+{
+   const image_yuv_fwd_t *c =
+      &image_yuv_fwds[((flags & IMAGE_YUV_FLAG_BT709) ? 2 : 0)
+                    | ((flags & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0)];
+   const uint8_t *at = image_yuv_order[order & 3];
+   unsigned ri = at[0], gi = at[1], bi = at[2];
+   int      yb = (c->y0 << IMAGE_YUV_SHIFT) + (1 << (IMAGE_YUV_SHIFT - 1));
+   /* the four pixels' sum carries two more bits */
+   int      cbias = (128 << (IMAGE_YUV_SHIFT + 2)) + (1 << (IMAGE_YUV_SHIFT + 1));
+   unsigned row;
+
+   for (row = 0; row < h; row += 2)
+   {
+      /* an odd last row is its own pair */
+      unsigned       row1 = row + 1 < h ? row + 1 : row;
+      const uint8_t *s0   = src + (size_t)row  * src_stride;
+      const uint8_t *s1   = src + (size_t)row1 * src_stride;
+      uint8_t       *y0   = y + (size_t)row  * y_stride;
+      uint8_t       *y1   = y + (size_t)row1 * y_stride;
+      uint8_t       *u    = cb + (size_t)(row >> 1) * cb_stride;
+      uint8_t       *v    = cr + (size_t)(row >> 1) * cr_stride;
+      unsigned       x;
+
+      for (x = 0; x < w; x += 2)
+      {
+         unsigned       x1   = x + 1 < w ? x + 1 : x;
+         const uint8_t *p[4];
+         int            r = 0, g = 0, b = 0, cu, cv;
+         unsigned       k;
+         p[0] = s0 + (size_t)x * 4;
+         p[1] = s0 + (size_t)x1 * 4;
+         p[2] = s1 + (size_t)x * 4;
+         p[3] = s1 + (size_t)x1 * 4;
+         for (k = 0; k < 4; k++)
+         {
+            int pr = p[k][ri], pg = p[k][gi], pb = p[k][bi];
+            int yy = (c->y[0] * pr + c->y[1] * pg + c->y[2] * pb + yb) >> IMAGE_YUV_SHIFT;
+            r += pr;
+            g += pg;
+            b += pb;
+            /* the duplicates of an odd edge write the same sample twice */
+            (k < 2 ? y0 : y1)[k & 1 ? x1 : x] = (uint8_t)yy;
+         }
+         /* the 2x2 average, centred between the four */
+         cu = (c->u[0] * r + c->u[1] * g + c->u[2] * b + cbias) >> (IMAGE_YUV_SHIFT + 2);
+         cv = (c->v[0] * r + c->v[1] * g + c->v[2] * b + cbias) >> (IMAGE_YUV_SHIFT + 2);
+         u[(x >> 1) * chroma_step] = (uint8_t)IMAGE_YUV_CLAMP(cu);
+         v[(x >> 1) * chroma_step] = (uint8_t)IMAGE_YUV_CLAMP(cv);
       }
    }
 }
