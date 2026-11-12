@@ -1386,6 +1386,30 @@ static int setting_uint_action_right_default(
    return 0;
 }
 
+static int setting_uint_action_left_streaming_mode(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   int result = setting_uint_action_left_default(setting, idx, wraparound);
+   if (setting && settings && setting_uint_get(setting) == STREAMING_MODE_LOCAL
+         && !recording_driver_streaming_mode_supported(
+            settings->arrays.record_driver, STREAMING_MODE_LOCAL))
+      setting_uint_set(setting, STREAMING_MODE_KICK);
+   return result;
+}
+
+static int setting_uint_action_right_streaming_mode(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   int result = setting_uint_action_right_default(setting, idx, wraparound);
+   if (setting && settings && setting_uint_get(setting) == STREAMING_MODE_LOCAL
+         && !recording_driver_streaming_mode_supported(
+            settings->arrays.record_driver, STREAMING_MODE_LOCAL))
+      setting_uint_set(setting, STREAMING_MODE_CUSTOM);
+   return result;
+}
+
 static int setting_bool_action_right_with_refresh(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -12403,6 +12427,11 @@ static void record_driver_write_handler(rarch_setting_t *setting)
    /* Force the recording settings page to rebuild so that
     * driver-specific items are shown/hidden immediately. */
    struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   if (settings && recording_driver_can_stream(settings->arrays.record_driver)
+         && !recording_driver_streaming_mode_supported(
+            settings->arrays.record_driver, settings->uints.streaming_mode))
+      settings->uints.streaming_mode = STREAMING_MODE_CUSTOM;
    menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
                     | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 }
@@ -17898,6 +17927,8 @@ static void settings_build_recording(
             update_streaming_url_write_handler,
             general_read_handler);
             SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
+            SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_uint_action_left_streaming_mode)
+            SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_uint_action_right_streaming_mode)
             SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_streaming_mode)
          menu_settings_list_current_add_range(list, list_info, 0, STREAMING_MODE_CUSTOM, 1, true, true);
 

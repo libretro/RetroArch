@@ -25,6 +25,8 @@ typedef struct record_gpu_dispatch_metal_stream_config
    unsigned audio_rate, channels, audio_bitrate;
    bool legacy_commands;
 } record_gpu_dispatch_metal_stream_config_t;
+/* Cold capability query; no device, encoder or network work. */
+bool record_gpu_dispatch_metal_stream_available(void);
 /* Cold controller. Copies URL/config and starts the existing dedicated worker;
  * READY follows publish negotiation and native resource construction. */
 record_gpu_dispatch_metal_t *record_gpu_dispatch_metal_new_stream(void *device,

@@ -13,6 +13,7 @@ RETRO_BEGIN_DECLS
 struct video_frame_info;
 extern const record_driver_t record_metal;
 void record_metal_frame_info(struct video_frame_info *info,bool capture);
+bool record_metal_can_stream(void);
 void record_metal_poll(void);
 void record_metal_stop(void);
 bool record_metal_pending(void);

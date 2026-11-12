@@ -647,3 +647,12 @@ enum record_gpu_dispatch_metal_state record_gpu_dispatch_metal_status(const reco
 }
 bool record_gpu_dispatch_metal_free(record_gpu_dispatch_metal_t *j) { return !j; }
 #endif
+
+bool record_gpu_dispatch_metal_stream_available(void)
+{
+#ifdef RECORD_METAL_STREAM
+   if (__builtin_available(macOS 10.14,*))
+      return true;
+#endif
+   return false;
+}

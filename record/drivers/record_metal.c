@@ -368,3 +368,13 @@ bool record_metal_cancel_start(void) { return false; }
 void record_metal_gpu_capture(void *data,void *commands,void *source,unsigned pos,unsigned dims,uint64_t timestamp,unsigned output_mode)
 { (void)data; (void)commands; (void)source; (void)pos; (void)dims; (void)timestamp; (void)output_mode; }
 #endif
+
+bool record_metal_can_stream(void)
+{
+#if defined(HAVE_RECORD_METAL) && defined(HAVE_NETWORKING) && defined(HAVE_RTMP) \
+      && defined(HAVE_RFLV) && defined(HAVE_CRYPTO)
+   return record_gpu_dispatch_metal_stream_available();
+#else
+   return false;
+#endif
+}

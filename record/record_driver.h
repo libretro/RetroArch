@@ -207,6 +207,11 @@ extern const record_driver_t *record_drivers[];
 /* Common native GPU controller hooks. Keep one call at frame/runloop sites;
  * platform backends own their worker and snapshot retirement. */
 RETRO_BEGIN_DECLS
+/* Cold registry/capability queries; descriptors are process-lifetime borrows. */
+const record_driver_t *recording_driver_find(const char *ident);
+bool recording_driver_can_stream(const char *ident);
+bool recording_driver_streaming_mode_supported(const char *ident, unsigned mode);
+
 extern const record_driver_t record_nvenc;
 extern const record_driver_t record_metal;
 #if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_MEDIACODEC_TEST)

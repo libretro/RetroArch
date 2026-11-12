@@ -5098,8 +5098,7 @@ static int menu_displaylist_parse_load_content_settings(
                }
 
                if (     settings->bools.quick_menu_show_start_streaming
-                     && !strcmp(settings->arrays.record_driver,
-                        "ffmpeg"))
+                     && recording_driver_can_stream(settings->arrays.record_driver))
                {
                   if (menu_entries_append(list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
@@ -12290,11 +12289,12 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          {
             unsigned streaming_mode = settings->uints.streaming_mode;
-            bool is_ffmpeg          = !strcmp(
-                     settings->arrays.record_driver, "ffmpeg");
-            bool has_video          = is_ffmpeg
-               || !strcmp(
-                     settings->arrays.record_driver, "avfoundation");
+            const record_driver_t *driver = recording_driver_find(settings->arrays.record_driver);
+            bool is_ffmpeg          = driver && !strcmp(driver->ident, "ffmpeg");
+            bool is_native          = driver && recording_is_native_gpu(driver);
+            bool can_stream         = recording_driver_can_stream(settings->arrays.record_driver);
+            bool has_video          = is_native || is_ffmpeg
+               || (driver && !strcmp(driver->ident, "avfoundation"));
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_RECORD_DRIVER,                                         PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,           false},
@@ -12313,20 +12313,20 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_STREAMING_URL,                                         PARSE_ONLY_STRING,         false},
                {MENU_ENUM_LABEL_UDP_STREAM_PORT,                                       PARSE_ONLY_UINT,           false},
             };
-            build_list[1].checked  = has_video; /* MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY */
-            build_list[2].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_RECORD_CONFIG */
+            build_list[1].checked  = has_video && !is_native; /* MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY */
+            build_list[2].checked  = is_ffmpeg || is_native; /* MENU_ENUM_LABEL_RECORD_CONFIG */
             build_list[3].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_RECORD_THREADS */
-            build_list[4].checked  = has_video; /* MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD */
+            build_list[4].checked  = has_video && !is_native; /* MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD */
             build_list[5].checked  = has_video; /* MENU_ENUM_LABEL_VIDEO_GPU_RECORD */
-            build_list[6].checked  = has_video; /* MENU_ENUM_LABEL_VIDEO_RECORD_GAME_ONLY */
-            build_list[7].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_RECORD_ALLOW_FRAME_DROP */
+            build_list[6].checked  = has_video && !is_native; /* MENU_ENUM_LABEL_VIDEO_RECORD_GAME_ONLY */
+            build_list[7].checked  = is_ffmpeg || is_native; /* MENU_ENUM_LABEL_VIDEO_RECORD_ALLOW_FRAME_DROP */
             build_list[8].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_RECORD_HW_ENCODER */
-            build_list[9].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES */
-            build_list[10].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAMING_MODE */
+            build_list[9].checked  = is_ffmpeg || is_native; /* MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES */
+            build_list[10].checked = can_stream; /* MENU_ENUM_LABEL_STREAMING_MODE */
             build_list[11].checked = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY */
-            build_list[12].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAM_CONFIG */
+            build_list[12].checked = can_stream; /* MENU_ENUM_LABEL_STREAM_CONFIG */
             build_list[13].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAMING_TITLE */
-            build_list[14].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAMING_URL */
+            build_list[14].checked = can_stream; /* MENU_ENUM_LABEL_STREAMING_URL */
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -19509,6 +19509,10 @@ static bool menu_displaylist_ctl_internal(
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     int val = i;
+                                    if (setting->enum_idx == MENU_ENUM_LABEL_STREAMING_MODE
+                                          && !recording_driver_streaming_mode_supported(
+                                             settings->arrays.record_driver, (unsigned)val))
+                                       continue;
                                     /* Mouse Index: the mice there are,
                                      * and the one chosen now whatever
                                      * it is */

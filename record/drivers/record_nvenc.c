@@ -514,3 +514,13 @@ void record_nvenc_gpu_capture(void *data, void *source, unsigned state,
       unsigned pos, unsigned dims, uint64_t timestamp, unsigned output_mode)
 { (void)data; (void)source; (void)state; (void)pos; (void)dims; (void)timestamp; (void)output_mode; }
 #endif
+
+bool record_nvenc_can_stream(void)
+{
+#if defined(HAVE_RECORD_NVENC) && defined(HAVE_NETWORKING) && defined(HAVE_MF_AUDIO) \
+      && defined(HAVE_RTMP) && defined(HAVE_RFLV) && defined(HAVE_CRYPTO)
+   return true;
+#else
+   return false;
+#endif
+}

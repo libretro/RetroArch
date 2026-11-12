@@ -159,6 +159,38 @@ const char* config_get_record_driver_options(void)
    return char_list_new_special(STRING_LIST_RECORD_DRIVERS, NULL);
 }
 
+const record_driver_t *recording_driver_find(const char *ident)
+{
+   unsigned i;
+   if (!ident || !*ident)
+      return NULL;
+   for (i = 0; record_drivers[i]; i++)
+      if (strcmp(record_drivers[i]->ident, ident) == 0)
+         return record_drivers[i];
+   return NULL;
+}
+
+bool recording_driver_can_stream(const char *ident)
+{
+   const record_driver_t *driver = recording_driver_find(ident);
+   if (!driver || !driver->init)
+      return false;
+   if (strcmp(driver->ident, "ffmpeg") == 0)
+      return true;
+   if (driver == &record_metal)
+      return record_metal_can_stream();
+   if (driver == &record_nvenc)
+      return record_nvenc_can_stream();
+   return false;
+}
+
+bool recording_driver_streaming_mode_supported(const char *ident, unsigned mode)
+{
+   if (mode > STREAMING_MODE_CUSTOM || !recording_driver_can_stream(ident))
+      return false;
+   return mode != STREAMING_MODE_LOCAL || strcmp(ident, "ffmpeg") == 0;
+}
+
 static void find_record_driver(void)
 {
    settings_t *settings = config_get_ptr();
