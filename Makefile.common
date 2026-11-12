@@ -3412,7 +3412,7 @@ ifeq ($(HAVE_RECORD_MEDIACODEC), 1)
    DEFINES += -DHAVE_RECORD_MEDIACODEC
    MEDIA_RECORD_OBJ := record/record_mediacodec_encoder.o \
       record/record_audio_tap.o \
-      record/record_mux_mediacodec.o record/record_mediacodec_worker.o \
+      record/record_mux_mediacodec.o record/record_mediacodec_worker.o record/record_aac_stream_timing.o \
       record/record_aac_probe.o \
       record/record_mp4_audio_edit.o record/record_mediacodec_file_edit.o \
       record/record_mediacodec_surface.o record/record_mediacodec_file.o \

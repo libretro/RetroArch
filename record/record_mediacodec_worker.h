@@ -45,6 +45,12 @@ record_mediacodec_worker_t *record_mediacodec_worker_new(
 /* Before service starts; caller retains the probe until worker retirement. */
 bool record_mediacodec_worker_calibrate(record_mediacodec_worker_t *worker,
       record_aac_probe_t *probe);
+/* Live output only, before service. Uses measured delay and silent preroll;
+ * calibration packets never reach output. Original PCM timestamps stay in
+ * the source epoch; output video is shifted to match the audible source.
+ * Probe and encoders remain borrowed through worker retirement. */
+bool record_mediacodec_worker_calibrate_live(record_mediacodec_worker_t *worker,
+      record_aac_probe_t *probe);
 /* Completed calibrated recording only; source frames exclude the prefix. */
 bool record_mediacodec_worker_audio_edit(
       const record_mediacodec_worker_t *worker, uint64_t *skip,

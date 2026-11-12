@@ -70,6 +70,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
         if source in ("worker_test.c", "calibrated_worker_test.c"):
             command += ["-DHAVE_THREADS",
                         str(root / "record/record_mediacodec_worker.c"),
+                        str(root / "record/record_aac_stream_timing.c"),
                         str(root / "record/record_audio_queue.c"),
                         str(root / "libretro-common/queues/retro_spsc.c")]
             if source == "worker_test.c":

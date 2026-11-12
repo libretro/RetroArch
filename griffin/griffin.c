@@ -1726,6 +1726,7 @@ RECORDING
 #include "../record/record_mp4_audio_edit.c"
 #include "../record/record_mediacodec_encoder.c"
 #include "../record/record_mux_mediacodec.c"
+#include "../record/record_aac_stream_timing.c"
 #include "../record/record_mediacodec_worker.c"
 #include "../record/record_mediacodec_surface.c"
 #include "../record/record_mediacodec_file.c"
