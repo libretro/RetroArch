@@ -66,6 +66,7 @@
 #include "../../version.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../gfx/gfx_thumbnail_results.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -982,6 +983,7 @@ bool companion_core_playlist_rename(companion_core_t *core,
       return false;                /* a playlist by that name exists */
    if (filestream_rename(path, new_path) != 0)
       return false;
+   gfx_thumbnail_results_rename(path, new_path);
    if (out_path)
       strlcpy(out_path, new_path, len);
    companion_core_refresh_playlists(core);
@@ -1059,11 +1061,13 @@ size_t companion_core_playlist_add_files(companion_core_t *core,
 
 bool companion_core_thumbnail_install(companion_core_t *core,
       const char *db_name, const char *type, const char *label,
-      const char *image_path, char *out_path, size_t len)
+      const char *content_path, const char *image_path,
+      char *out_path, size_t len)
 {
    settings_t *settings = config_get_ptr();
-   char dir[PATH_MAX_LENGTH], dst[PATH_MAX_LENGTH];
+   char dst[PATH_MAX_LENGTH];
    struct texture_image img;
+   char *slash;
    uint32_t *bits = NULL;
    unsigned w, h;
    bool ok;
@@ -1071,13 +1075,20 @@ bool companion_core_thumbnail_install(companion_core_t *core,
          || string_is_empty(type) || string_is_empty(label))
       return false;
    /* the repository path, which also names the directory */
-   if (!companion_core_thumbnail_path(core, db_name, type, label, NULL,
-            dst, sizeof(dst)))
+   if (!companion_core_thumbnail_save_path(core, db_name, type, label,
+            content_path, dst, sizeof(dst)))
       return false;
-   strlcpy(dir, dst, sizeof(dir));
-   path_basedir(dir);
-   if (!path_is_directory(dir) && !path_mkdir(dir))
-      return false;
+   /* The directory, cut from the path in place: a second path buffer
+    * would pass 4 KiB. */
+   if ((slash = find_last_slash(dst)))
+   {
+      char kept = slash[1];
+      slash[1]  = '\0';
+      ok        = path_is_directory(dst) || path_mkdir(dst);
+      slash[1]  = kept;
+      if (!ok)
+         return false;
+   }
    memset(&img, 0, sizeof(img));
    if (!image_texture_load(&img, image_path) || !img.pixels || !img.width || !img.height)
    {
@@ -1261,6 +1272,14 @@ void companion_core_iterate(companion_core_t *core, unsigned budget_us)
    {
       core->playlist      = playlist_parse_end(core->pending_parse);
       core->pending_parse = NULL;
+      if (core->playlist)
+      {
+         settings_t *settings = config_get_ptr();
+         task_push_pl_thumbnail_match(playlist_get_config(core->playlist),
+               core->playlist, settings->paths.directory_thumbnails,
+               settings->paths.path_content_database,
+               settings->bools.playlist_allow_non_png);
+      }
    }
 
    if (core->cb.on_playlist_changed)
@@ -1553,6 +1572,7 @@ bool companion_core_playlist_delete(companion_core_t *core, const char *path)
       return false;
    if (!path_is_valid(path) || filestream_delete(path) != 0)
       return false;
+   gfx_thumbnail_results_forget(path);
    companion_core_playlist_set_hidden(core, path, false); /* forget it */
    companion_core_refresh_playlists(core);
    return true;
@@ -2040,14 +2060,121 @@ size_t companion_core_thumbnail_dir(companion_core_t *core,
    return fill_pathname_join_special(s, s, subdir, len);
 }
 
+/* @s holds a thumbnail folder of @dir_len: @name with the first image
+ * extension that exists. Returns its length, else 0. */
+static size_t companion_core_thumbnail_probe(char *s, size_t len,
+      size_t dir_len, const char *name)
+{
+   size_t i, _len;
+
+   s[dir_len] = '\0';
+   _len       = fill_pathname_join_special(s, s, name, len);
+   for (i = 0; gfx_thumbnail_image_exts[i]; i++)
+   {
+      if (_len + strlen(gfx_thumbnail_image_exts[i]) >= len)
+         continue;
+      strlcpy(s + _len, gfx_thumbnail_image_exts[i], len - _len);
+      if (path_is_valid(s))
+         return strlen(s);
+   }
+   return 0;
+}
+
+/* The menu's label into @key, @content_path's file stem into @stem.
+ * Front ends pass the path or file name as the label of an entry
+ * without one: the stem stands in. */
+static void companion_core_thumbnail_key(const char *label,
+      const char *content_path, char *key, size_t key_len,
+      char *stem, size_t stem_len)
+{
+   stem[0] = '\0';
+   if (!string_is_empty(content_path))
+      fill_pathname(stem, path_basename(content_path), "", stem_len);
+   if (     *stem
+         && (   !*label
+             || string_is_equal(label, content_path)
+             || string_is_equal(label, path_basename(content_path))))
+      strlcpy(key, stem, key_len);
+   else
+      strlcpy(key, label, key_len);
+}
+
+size_t companion_core_thumbnail_save_path(companion_core_t *core,
+      const char *db_name, const char *subdir, const char *label,
+      const char *content_path, char *s, size_t len)
+{
+   char key_label[NAME_MAX_LENGTH];
+   char name[NAME_MAX_LENGTH];
+   char stem[NAME_MAX_LENGTH];
+   size_t _len;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || !label)
+      return 0;
+
+   companion_core_thumbnail_key(label, content_path,
+         key_label, sizeof(key_label), stem, sizeof(stem));
+   gfx_thumbnail_scrub_name(name, sizeof(name), key_label);
+   companion_core_thumbnail_dir(core, db_name, subdir, s, len);
+   _len = fill_pathname_join_special(s, s, name, len);
+   /* No room for the whole ".png": no path */
+   if (_len + STRLEN_CONST(FILE_PATH_PNG_EXTENSION) >= len)
+   {
+      s[0] = '\0';
+      return 0;
+   }
+   strlcpy(s + _len, FILE_PATH_PNG_EXTENSION, len - _len);
+   return strlen(s);
+}
+
+size_t companion_core_entry_thumbnail_system(companion_core_t *core,
+      size_t i, char *s, size_t len)
+{
+   playlist_t *playlist               = NULL;
+   const char *db_name                = NULL;
+   const struct playlist_entry *entry = NULL;
+   size_t idx                         = i;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core)
+      return 0;
+   if (core->all_mode)
+   {
+      if (i >= core->all_count || core->all_index[i].list >= core->all_n)
+         return 0;
+      playlist = core->all_lists[core->all_index[i].list];
+      idx      = core->all_index[i].idx;
+   }
+   else
+      playlist = core->playlist;
+   playlist_get_index(playlist, idx, &entry);
+   if (!entry)
+      return 0;
+   playlist_get_db_name(playlist, idx, &db_name);
+   if (gfx_thumbnail_system_name(s, len, db_name))
+      return strlen(s);
+   /* History and favourites, a core naming no database: the content's
+    * folder, as the menu and the thumbnail task have it */
+   if (     string_is_empty(entry->db_name)
+         && !string_is_empty(entry->path)
+         && fill_pathname_parent_dir_name(s, entry->path, len))
+      return strlen(s);
+   return 0;
+}
+
 size_t companion_core_thumbnail_path(companion_core_t *core,
       const char *db_name, const char *subdir, const char *label,
       const char *content_path, char *s, size_t len)
 {
-   /* Extensions probed, in order; the first is also the default. */
-   static const char *exts[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
-   char name[PATH_MAX_LENGTH];
-   size_t i, _len, name_len;
+   char key_label[NAME_MAX_LENGTH];
+   char name[NAME_MAX_LENGTH];
+   char stem[NAME_MAX_LENGTH];
+   const char *match;
+   size_t _len, dir_len;
 
    if (!s || !len)
       return 0;
@@ -2060,33 +2187,42 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
          && image_texture_get_type(content_path) != IMAGE_TYPE_NONE)
       return strlcpy(s, content_path, len);
 
-   /* Characters the thumbnail repository replaces with '_':
-    * & * / : ` < > ? \ | */
-   name_len = strlcpy(name, label, sizeof(name));
-   for (i = 0; i < name_len; i++)
+   companion_core_thumbnail_key(label, content_path,
+         key_label, sizeof(key_label), stem, sizeof(stem));
+
+   /* Label, file name, then the match the thumbnail task stored */
+   dir_len = companion_core_thumbnail_dir(core, db_name, subdir, s, len);
+   if (dir_len >= len)
    {
-      switch (name[i])
-      {
-         case '&': case '*': case '/': case ':': case '`':
-         case '<': case '>': case '?': case '\\': case '|':
-            name[i] = '_';
-            break;
-         default:
-            break;
-      }
+      s[0] = '\0';
+      return 0;
+   }
+   gfx_thumbnail_scrub_name(name, sizeof(name), key_label);
+   if ((_len = companion_core_thumbnail_probe(s, len, dir_len, name)))
+      return _len;
+   if (*stem)
+   {
+      char stem_name[NAME_MAX_LENGTH];
+      gfx_thumbnail_scrub_name(stem_name, sizeof(stem_name), stem);
+      if (     !string_is_equal(stem_name, name)
+            && (_len = companion_core_thumbnail_probe(s, len, dir_len,
+                  stem_name)))
+         return _len;
+   }
+   if (     (match = gfx_thumbnail_results_lookup(
+               content_path ? content_path : "", key_label, db_name,
+               gfx_thumbnail_result_type_of(subdir)))
+         && gfx_thumbnail_name_allowed(match,
+               config_get_ptr()->bools.playlist_allow_non_png))
+   {
+      s[dir_len] = '\0';
+      _len       = fill_pathname_join_special(s, s, match, len);
+      if (_len < len && path_is_valid(s))
+         return _len;
    }
 
-   companion_core_thumbnail_dir(core, db_name, subdir, s, len);
-   _len = fill_pathname_join_special(s, s, name, len);
-
-   for (i = 0; i < sizeof(exts) / sizeof(exts[0]); i++)
-   {
-      strlcpy(s + _len, exts[i], len - _len);
-      if (path_is_valid(s))
-         return strlen(s);
-   }
-   strlcpy(s + _len, exts[0], len - _len);
-   return strlen(s);
+   return companion_core_thumbnail_save_path(core, db_name, subdir,
+         label, content_path, s, len);
 }
 
 /* --- Running core ------------------------------------------------------ */
@@ -3527,6 +3663,19 @@ void companion_core_notify_refresh(companion_core_t *core)
       core->cb.on_notify_refresh(core->ud);
 }
 
+void companion_core_notify_thumbnails(companion_core_t *core,
+      const char *playlist_path)
+{
+   if (!core || !core->cb.on_thumbnails_changed)
+      return;
+   /* All Playlists shows rows of every playlist */
+   if (     !core->all_mode
+         && (!core->playlist || !string_is_equal(playlist_path,
+               playlist_get_conf_path(core->playlist))))
+      return;
+   core->cb.on_thumbnails_changed(core->ud);
+}
+
 playlist_t *companion_core_playlist_open_private(companion_core_t *core,
       const char *path)
 {
@@ -3660,24 +3809,13 @@ static void companion_core_download_done(companion_download_t *d)
    free(d);
 }
 
-/* The label as the thumbnail server names files: the repository's
- * forbidden characters replaced by '_' (this set also covers the
- * double quote), then percent-encoded for the URL. */
-static void companion_core_download_scrub(char *s)
-{
-   static const char chars[] = "&*/:`\"<>?\\|";
-   size_t i;
-   for (i = 0; i < sizeof(chars) - 1; i++)
-      string_replace_all_chars(s, chars[i], '_');
-}
-
 /* Write the transfer to .partial, then move it over the final name.
  * Returns the result code; @final receives the final path. */
 static enum companion_download_result companion_core_download_commit(
       const companion_download_t *d, const http_transfer_data_t *data,
       const char *err, char *final, size_t len)
 {
-   char *ext;
+   size_t _len;
    char dir[PATH_MAX_LENGTH];
 
    if (!data || !data->data || data->status != 200 || err)
@@ -3686,6 +3824,14 @@ static enum companion_download_result companion_core_download_commit(
             data ? data->status : 0);
       return COMPANION_DL_ERR_NETWORK;
    }
+
+   /* Only the trailing suffix: a name or folder may hold it too */
+   _len = strlcpy(final, d->output_path, len);
+   if (     _len >= len
+         || !string_ends_with_size(final, COMPANION_DL_PARTIAL_EXT, _len,
+               STRLEN_CONST(COMPANION_DL_PARTIAL_EXT)))
+      return COMPANION_DL_ERR_WRITE;
+   final[_len - STRLEN_CONST(COMPANION_DL_PARTIAL_EXT)] = '\0';
 
    strlcpy(dir, d->output_path, sizeof(dir));
    path_basedir_wrapper(dir);
@@ -3696,10 +3842,6 @@ static enum companion_download_result companion_core_download_commit(
       RARCH_ERR("[Companion] Could not write \"%s\".\n", d->output_path);
       return COMPANION_DL_ERR_WRITE;
    }
-
-   strlcpy(final, d->output_path, len);
-   if ((ext = strstr(final, COMPANION_DL_PARTIAL_EXT)))
-      *ext = '\0';
 
    if (path_is_valid(final))
       filestream_delete(final);
@@ -3850,7 +3992,8 @@ static void companion_core_pack_http_cb(retro_task_t *task,
 }
 
 bool companion_core_thumbnail_download(companion_core_t *core,
-      const char *db_name, const char *label, const char *subdir)
+      const char *db_name, const char *label, const char *content_path,
+      const char *subdir)
 {
    char url[PATH_MAX_LENGTH];
    char name[NAME_MAX_LENGTH];
@@ -3863,8 +4006,14 @@ bool companion_core_thumbnail_download(companion_core_t *core,
          || string_is_empty(label) || string_is_empty(subdir))
       return false;
 
-   strlcpy(name, label, sizeof(name));
-   companion_core_download_scrub(name);
+   /* Saved where the display looks first; the server names its file
+    * by the same key, as the menu's downloader asks for it. */
+   if (!companion_core_thumbnail_save_path(core, db_name, subdir, label,
+            content_path, url, sizeof(url)))
+      return false;
+   /* <name>: the file name less its .png */
+   _len = strlen(path_basename(url)) - STRLEN_CONST(COMPANION_DL_THUMB_EXT);
+   strlcpy(name, path_basename(url), MIN(_len + 1, sizeof(name)));
 
    d = companion_core_download_new(core, db_name, name, subdir, false);
    if (!d)
@@ -3874,9 +4023,8 @@ bool companion_core_thumbnail_download(companion_core_t *core,
    companion_core_thumbnail_dir(core, db_name, subdir,
          d->output_path, sizeof(d->output_path));
    path_mkdir(d->output_path);
-   _len = fill_pathname_join_special(d->output_path, d->output_path, name,
-         sizeof(d->output_path));
-   strlcpy(d->output_path + _len, COMPANION_DL_THUMB_EXT COMPANION_DL_PARTIAL_EXT,
+   _len = strlcpy(d->output_path, url, sizeof(d->output_path));
+   strlcpy(d->output_path + _len, COMPANION_DL_PARTIAL_EXT,
          sizeof(d->output_path) - _len);
 
    /* https://thumbnails.libretro.com/<db>/<subdir>/<name>.png, each path
@@ -3970,9 +4118,10 @@ bool companion_core_download_active(companion_core_t *core)
 #else /* !HAVE_NETWORKING */
 
 bool companion_core_thumbnail_download(companion_core_t *core,
-      const char *db_name, const char *label, const char *subdir)
+      const char *db_name, const char *label, const char *content_path,
+      const char *subdir)
 {
-   (void)core; (void)db_name; (void)label; (void)subdir;
+   (void)core; (void)db_name; (void)label; (void)content_path; (void)subdir;
    return false;
 }
 

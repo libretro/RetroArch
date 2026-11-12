@@ -163,6 +163,8 @@ public:
    void reloadThumbnail(const QModelIndex &index);
    void reloadThumbnailPath(const QString path);
    void reloadSystemThumbnails(const QString system);
+   /* Forget the rows' resolved thumbnail paths. */
+   void clearThumbnailPaths();
    void setThumbnailCacheLimit(int limit);
    /* Edge (px) the grid draws thumbnails at; requests are made at this
     * size so the engine hands back cells that need no further scaling. */
@@ -183,9 +185,9 @@ public:
    void abandonPending();
    bool isSupportedImage(const QString path) const;
    QString getPlaylistThumbnailsDir(const QString playlistName, const QString type) const;
-   /* Repository thumbnail file for a label, ignoring whether the content
-    * itself is an image (the save target / the sidebar images). */
-   QString getRepositoryThumbnailPath(const QString playlistName, const QString labelNoExt, const QString type) const;
+   QString getThumbnailPath(const PlaylistEntry &entry, QString type) const;
+   /* Where an image dropped for @entry is saved. */
+   QString getThumbnailSavePath(const PlaylistEntry &entry, const QString type) const;
 
 signals:
    void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);
@@ -222,8 +224,10 @@ private:
    /* stages of imageAt()/data(): one conversion per (path, dims) */
    QPixmap *pixmapFor(const QString &path, unsigned dims) const;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
+   /* Per row, at m_thumbnailType: a lookup stats up to about twenty
+    * files, too many for every paint. */
+   mutable QHash<int, QString> m_thumbnailPaths;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
-   QString getThumbnailPath(const PlaylistEntry &entry, QString type) const;
    QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
 };
 
@@ -571,13 +575,15 @@ public slots:
    void onCoreThumbnailDownloaded(QString system, QString title, QString path, bool success);
    void onCoreThumbnailPackFinished(int result);
    void onBrowseChanged();
+   /* The stored thumbnail matches changed. */
+   void onThumbnailsChanged(const QString &playlistPath);
    void onSingleThumbnailDownloadFinishedInternal(QString system, QString title, QString path, bool success);
    void onPlaylistThumbnailDownloadFinishedInternal(QString path, bool success);
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
    void downloadAllThumbnails(QString system, QUrl url = QUrl());
    void downloadPlaylistThumbnails(QString playlistPath);
-   void downloadNextPlaylistThumbnail(QString system, QString title, QString type, QUrl url = QUrl());
+   void downloadNextPlaylistThumbnail(QString system, QString title, QString path, QString type, QUrl url = QUrl());
    void changeThumbnailType(ThumbnailType type);
    void onThumbnailDropped(const QImage &image, ThumbnailType type);
 
@@ -717,6 +723,7 @@ private:
 
    QProgressDialog *m_thumbnailDownloadProgressDialog;
    QStringList m_pendingThumbnailDownloadTypes;
+   QString m_pendingThumbnailDownloadPath;
 
    QProgressDialog *m_thumbnailPackDownloadProgressDialog;
 

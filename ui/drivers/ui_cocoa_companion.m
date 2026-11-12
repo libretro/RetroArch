@@ -312,6 +312,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSImage *boxartImage[4];
    unsigned boxartDims[4];
    NSInteger boxartEntry[4];          /* entry the pane shows / awaits, -1 none */
+   char boxartPath[4][PATH_MAX_LENGTH]; /* its file */
    /* The docks: the shared model, its geometry, the metrics it was
     * laid out with, the surface that draws and drags it, a floating
     * pane's window, the side a floating pane came from, the drag in
@@ -380,6 +381,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)browseDownloads:(id)sender;
 - (void)browseReload;
 - (void)browseLanded;
+- (void)thumbnailsChanged;
 - (void)hideAndFocusRetroArch;
 - (void)focusRetroArchDeferred:(id)unused;
 - (void)windowWillClose:(NSNotification*)note;
@@ -477,6 +479,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)toggleBoxart:(id)sender;
 - (void)showClosedDock:(id)sender;
 - (void)refreshBoxart;
+- (void)refreshBoxartKeeping:(BOOL)keep;
 - (BOOL)installThumbnailFromPath:(const char*)imagePath pane:(int)pane;
 - (void)refreshInfo;
 - (void)infoFollowCore;
@@ -553,6 +556,13 @@ static void cc_on_browse_changed(void *ud)
       [CC_CTRL(w) browseLanded];
 }
 
+static void cc_on_thumbnails_changed(void *ud)
+{
+   ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)ud;
+   if (w && w->controller)
+      [CC_CTRL(w) thumbnailsChanged];
+}
+
 static const companion_callbacks_t cc_callbacks = {
    cc_on_playlists_changed,
    cc_on_playlist_changed,
@@ -562,7 +572,8 @@ static const companion_callbacks_t cc_callbacks = {
    cc_on_scan_finished,
    NULL, /* on_thumbnail_downloaded */
    NULL, /* on_thumbnail_pack_finished */
-   cc_on_browse_changed
+   cc_on_browse_changed,
+   cc_on_thumbnails_changed
 };
 
 /* --- Controller ------------------------------------------------------- */
@@ -965,6 +976,17 @@ static const companion_callbacks_t cc_callbacks = {
    }
 }
 
+/* Rows marked "no file" may have a stored match now: the grid re-asks
+ * for its screen, and the selection's panes for a changed file. */
+- (void)thumbnailsChanged
+{
+   if (thumbNone && thumbNoneCount > 0)
+      memset(thumbNone, 0, (size_t)thumbNoneCount);
+   visFirst = visLast = -1;
+   if (!browseMode)
+      [self refreshBoxartKeeping:YES];
+}
+
 - (void)reloadEntries
 {
    char buf[64];
@@ -1060,8 +1082,8 @@ static const companion_callbacks_t cc_callbacks = {
    const struct playlist_entry *e = companion_core_entry(wimp->core, (size_t)row);
    if (!e)
       return NO;
-   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-   path_remove_extension(db_name);
+   companion_core_entry_thumbnail_system(wimp->core, (size_t)row,
+         db_name, sizeof(db_name));
    return companion_core_thumbnail_path(wimp->core, db_name,
          thumbSubdir ? thumbSubdir : COMPANION_THUMB_BOXART,
          !string_is_empty(e->label) ? e->label : path_basename(e->path),
@@ -3306,6 +3328,13 @@ static const char *cc_thumb_subdir(int t)
  * decodes on the UI thread. */
 - (void)refreshBoxart
 {
+   [self refreshBoxartKeeping:NO];
+}
+
+/* @keep: a pane still showing the same entry's same file is left as
+ * it is, image and animation. */
+- (void)refreshBoxartKeeping:(BOOL)keep
+{
    NSInteger row = -1, ent = -1;
    char path[PATH_MAX_LENGTH];
    char db_name[NAME_MAX_LENGTH];
@@ -3313,7 +3342,7 @@ static const char *cc_thumb_subdir(int t)
    const char *fp = NULL;
    int t;
 
-   if (thumbs)
+   if (thumbs && !keep)
       companion_thumbs_animate_stop(thumbs); /* the old selection's animation */
    if (browseMode)
    {
@@ -3332,8 +3361,8 @@ static const char *cc_thumb_subdir(int t)
       if (row >= 0 && (e = companion_core_entry(wimp->core, (size_t)row)))
       {
          ent = row;
-         strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-         path_remove_extension(db_name);
+         companion_core_entry_thumbnail_system(wimp->core, (size_t)row,
+               db_name, sizeof(db_name));
       }
    }
    for (t = 0; t < 4; t++)
@@ -3343,18 +3372,26 @@ static const char *cc_thumb_subdir(int t)
       unsigned dims;
       if (!boxart[t] || [boxart[t] isHidden] || ![boxart[t] window])
          continue;
+      path[0] = '\0';
+      if (ent >= 0 && thumbs)
+      {
+         if (fp)
+            strlcpy(path, fp, sizeof(path));
+         else if (!companion_core_thumbnail_path(wimp->core, db_name, cc_thumb_subdir(t),
+                  !string_is_empty(e->label) ? e->label : path_basename(e->path),
+                  e->path, path, sizeof(path)))
+            path[0] = '\0';
+      }
+      if (     keep && boxartImage[t] && boxartEntry[t] == ent
+            && string_is_equal(path, boxartPath[t]))
+         continue;
       [boxart[t] setImage:nil];
       RELEASE(boxartRep[t]);
       RELEASE(boxartImage[t]);
       boxartRep[t] = nil; boxartImage[t] = nil; boxartDims[t] = 0;
       boxartEntry[t] = ent;
-      if (ent < 0 || !thumbs)
-         continue;
-      if (fp)
-         strlcpy(path, fp, sizeof(path));
-      else if (!companion_core_thumbnail_path(wimp->core, db_name, cc_thumb_subdir(t),
-               !string_is_empty(e->label) ? e->label : path_basename(e->path),
-               e->path, path, sizeof(path)))
+      strlcpy(boxartPath[t], path, sizeof(boxartPath[t]));
+      if (!*path)
          continue;
       sz = [boxart[t] bounds].size;
       if ((int)sz.width < 5 || (int)sz.height < 5)
@@ -3896,12 +3933,12 @@ static const char *cc_thumb_subdir(int t)
    row = iconView ? [grid selectedRow] : [self entryForRow:[entries selectedRow]];
    if (row < 0 || !(e = companion_core_entry(wimp->core, (size_t)row)))
       return NO;
-   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-   path_remove_extension(db_name);
+   companion_core_entry_thumbnail_system(wimp->core, (size_t)row,
+         db_name, sizeof(db_name));
    if (!companion_core_thumbnail_install(wimp->core, db_name,
             cc_thumb_subdir(pane),
             !string_is_empty(e->label) ? e->label : path_basename(e->path),
-            imagePath, out, sizeof(out)))
+            e->path, imagePath, out, sizeof(out)))
    {
       [self setStatus:"Could not save the thumbnail"];
       return NO;
@@ -4606,6 +4643,14 @@ static void ui_companion_cocoa_wimp_notify_refresh(void *data)
       companion_core_notify_refresh(w->core);
 }
 
+static void ui_companion_cocoa_wimp_notify_thumbnails(void *data,
+      const char *playlist_path)
+{
+   ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)data;
+   if (w)
+      companion_core_notify_thumbnails(w->core, playlist_path);
+}
+
 static void ui_companion_cocoa_wimp_msg_queue_push(void *data,
       const char *msg, unsigned priority, unsigned duration, bool flush)
 {
@@ -4642,6 +4687,7 @@ ui_companion_driver_t ui_companion_wimp_cocoa = {
    ui_companion_cocoa_wimp_iterate,
    ui_companion_cocoa_wimp_event_command,
    ui_companion_cocoa_wimp_notify_refresh,
+   ui_companion_cocoa_wimp_notify_thumbnails,
    ui_companion_cocoa_wimp_msg_queue_push,
    NULL, /* render_messagebox */
    ui_companion_cocoa_wimp_get_main_window,

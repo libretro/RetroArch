@@ -631,11 +631,85 @@ static void lane_forget(void)
       fprintf(stderr, "[pass] forget\n");
 }
 
+static void lane_rename(void)
+{
+   static char playlist[PATH_MAX_LENGTH];
+   static char cache[PATH_MAX_LENGTH];
+   unsigned had = failures;
+   gfx_thumbnail_results_t *t;
+   size_t rec;
+   size_t n;
+
+   path_mkdir(FIX);
+   CHECK(write_text(FIX "/old.lpl.thumbs", "{}"), "write old cache");
+   gfx_thumbnail_results_open(FIX "/new.lpl");
+   gfx_thumbnail_results_install(FIX "/new.lpl",
+         gfx_thumbnail_results_new(), true);
+   gfx_thumbnail_results_open(FIX "/old.lpl");
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/r/o.nes", "O", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS, "O.png");
+   gfx_thumbnail_results_sort(t);
+   gfx_thumbnail_results_install(FIX "/old.lpl", t, true);
+   gfx_thumbnail_results_rename(FIX "/old.lpl", FIX "/new.lpl");
+   CHECK(path_is_valid(FIX "/new.lpl.thumbs")
+      && !path_is_valid(FIX "/old.lpl.thumbs"), "the cache moves");
+   CHECK(!find_box("/r/o.nes", "O", "Sys"), "the old table is dropped");
+   CHECK(gfx_thumbnail_results_open(FIX "/new.lpl")
+         == (GFX_THUMBNAIL_RESULTS_LOAD | GFX_THUMBNAIL_RESULTS_RESOLVE),
+         "the new path loads the moved cache and resolves");
+   CHECK(gfx_thumbnail_results_open(FIX "/old.lpl")
+         & GFX_THUMBNAIL_RESULTS_RESOLVE, "the old path resolves again");
+   filestream_delete(FIX "/new.lpl.thumbs");
+
+   /* Pushed out while resolving, then renamed */
+   gfx_thumbnail_results_open(FIX "/out.lpl");
+   gfx_thumbnail_results_open("/p/2.lpl");
+   gfx_thumbnail_results_open("/p/3.lpl");
+   gfx_thumbnail_results_open("/p/4.lpl");
+   gfx_thumbnail_results_open("/p/5.lpl");
+   gfx_thumbnail_results_rename(FIX "/out.lpl", FIX "/in.lpl");
+   CHECK(!gfx_thumbnail_results_install(FIX "/out.lpl",
+         gfx_thumbnail_results_new(), true), "a late resolve is dropped");
+   CHECK(gfx_thumbnail_results_open(FIX "/out.lpl")
+         & GFX_THUMBNAIL_RESULTS_RESOLVE, "and not marked resolved");
+   CHECK(!path_is_valid(FIX "/in.lpl.thumbs"), "no cache: nothing moves");
+
+   /* <playlist>.thumbs cut short, as old and as new name */
+   n = strlcpy(playlist, FIX "/", sizeof(playlist));
+   while (n + STRLEN_CONST("./t.lpl") <= sizeof(playlist) - 4)
+      n = strlcat(playlist, "./", sizeof(playlist));
+   while (n + STRLEN_CONST("t.lpl") < sizeof(playlist) - 4)
+      n = strlcat(playlist, "x", sizeof(playlist));
+   strlcat(playlist, "t.lpl", sizeof(playlist));
+   strlcpy(cache, playlist, sizeof(cache));
+   strlcat(cache, ".th", sizeof(cache));
+   if (write_text(cache, "x"))
+   {
+      gfx_thumbnail_results_rename(playlist, FIX "/short.lpl");
+      CHECK(path_is_valid(cache) && !path_is_valid(FIX "/short.lpl.thumbs"),
+            "a cut-short old cache path is not moved");
+      filestream_delete(cache);
+      CHECK(write_text(FIX "/short.lpl.thumbs", "{}"), "write short cache");
+      gfx_thumbnail_results_rename(FIX "/short.lpl", playlist);
+      CHECK(path_is_valid(FIX "/short.lpl.thumbs") && !path_is_valid(cache),
+            "nor to a cut-short new one");
+      filestream_delete(FIX "/short.lpl.thumbs");
+   }
+   else
+      fprintf(stderr, "[skip] a %u-byte path is not writable here\n",
+            (unsigned)strlen(cache));
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] rename\n");
+}
+
 /* Virtual clock: NBIO_XFER_TICK_USEC is 4000, so 1500 per reading
  * ends the window after a couple of work items. */
 static retro_time_t clock_now;
 static retro_time_t clock_step;
 static unsigned notified;
+static char pl_path[PATH_MAX_LENGTH];
 
 /* The threaded lane runs with a step of 0, so the worker only reads. */
 retro_time_t cpu_features_get_time_usec(void)
@@ -658,7 +732,11 @@ bool core_info_find(const char *core_path, core_info_t **core_info)
 bool core_info_core_file_id_is_equal(const char *a, const char *b) { return false; }
 void frontend_driver_attach_console(void) { }
 void frontend_driver_detach_console(void) { }
-void ui_companion_driver_notify_refresh(void) { notified++; }
+void ui_companion_driver_notify_thumbnails(const char *playlist_path)
+{
+   if (string_is_equal(playlist_path, pl_path))
+      notified++;
+}
 
 /* The menu shows the cached playlist; a refresh reloads its art. */
 static unsigned refreshed;
@@ -691,7 +769,6 @@ static const fx_entry_t fx_entries[] =
 };
 #define FX_COUNT (sizeof(fx_entries) / sizeof(fx_entries[0]))
 
-static char pl_path[PATH_MAX_LENGTH];
 static char cache_path[PATH_MAX_LENGTH];
 static char thumbs_dir[PATH_MAX_LENGTH];
 static char db_dir[PATH_MAX_LENGTH];
@@ -974,7 +1051,7 @@ static void lane_resolve(bool threaded)
          "one read of the cache a session: %u", cache_reads);
    after = read_cache();
    check_first_session("second session");
-   CHECK(notified == 0, "nothing changed: no notice");
+   CHECK(notified == 1, "the loaded table: one notice, not %u", notified);
    CHECK(before && after && string_is_equal(before, after), "cache unchanged");
    free(before);
    free(after);
@@ -1772,13 +1849,14 @@ static void lane_engine_oom(void)
          "the cache is kept");
    CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png"),
          "the loaded matches stay: %s", box(1));
-   CHECK(!notified, "no notice");
+   CHECK(notified == 1, "the load's notice only: %u", notified);
    CHECK(gfx_thumbnail_results_open(pl_path) == GFX_THUMBNAIL_RESULTS_RESOLVE,
          "resolves again on its next open");
    free(after);
 
    /* That resolve has no load to take the crc from */
    cache_reads = 0;
+   notified    = 0;
    CHECK(push(""), "push the resolve");
    run(ONE_ITEM);
    CHECK(cache_reads == 1, "a resolve alone reads the cache: %u",
@@ -1845,7 +1923,8 @@ static void lane_add_oom(void)
             "%s: the cache is kept", what);
       CHECK(string_is_equal(box(1), "Super Mario Bros. (World).png"),
             "%s: the loaded matches stay: %s", what, box(1));
-      CHECK(!notified, "%s: no notice", what);
+      CHECK(notified == 1, "%s: the load's notice only: %u", what,
+            notified);
       CHECK(gfx_thumbnail_results_open(pl_path)
             == GFX_THUMBNAIL_RESULTS_RESOLVE,
             "%s: resolves again on its next open", what);
@@ -2074,6 +2153,7 @@ int main(void)
    lane_store();
    lane_store_order();
    lane_forget();
+   lane_rename();
    lane_resolve(false);
    lane_resolve(true);
    lane_changes();

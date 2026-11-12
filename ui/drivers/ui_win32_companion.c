@@ -726,6 +726,8 @@ typedef struct ui_companion_win32_wimp
       void *bits;       /* the DIB's pixels */
       unsigned dims;    /* its size */
       long entry;       /* entry index shown, -1 = none, -2 = refresh */
+      bool recheck;     /* a notice: shown again only if @path changed */
+      char path[PATH_MAX_LENGTH]; /* the file shown */
    } thumb_pane[4];
    /* The docks: the shared model, its geometry for the current client
     * size, the metrics it was laid out with, a floating pane's own
@@ -1094,8 +1096,8 @@ static bool cw_thumb_path(ui_companion_win32_wimp_t *w, size_t row,
    e = companion_core_entry(w->core, w->rows[row]);
    if (!e)
       return false;
-   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-   path_remove_extension(db_name);
+   companion_core_entry_thumbnail_system(w->core, w->rows[row],
+         db_name, sizeof(db_name));
    return companion_core_thumbnail_path(w->core, db_name,
          w->thumb_subdir ? w->thumb_subdir : COMPANION_THUMB_BOXART,
          !string_is_empty(e->label) ? e->label : path_basename(e->path),
@@ -2785,30 +2787,50 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, int t,
    const uint32_t *bits;
    RECT rc;
    unsigned dims;
-   HWND ctl = w->thumb_pane[t].ctl;
+   bool same = false;
+   HWND ctl  = w->thumb_pane[t].ctl;
 
    if (!w || !ctl || !IsWindowVisible(ctl))
       return;
    if (id == w->thumb_pane[t].entry)
-      return;
-   w->thumb_pane[t].entry = id;
-
-   /* Whatever was animating stops with the old selection. */
-   if (w->thumbs_engine)
-      companion_thumbs_animate_stop(w->thumbs_engine);
-
-   /* Clear. A static control does not repaint on STM_SETIMAGE NULL by
-    * itself (it keeps drawing the old image until invalidated), so
-    * invalidate it; the old bitmap goes once it is no longer set. */
-   SendMessageA(ctl, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
-   if (w->thumb_pane[t].bmp)
    {
-      DeleteObject(w->thumb_pane[t].bmp);
-      w->thumb_pane[t].bmp = NULL;
+      /* After a notice the same file keeps its image and animation; a
+       * pane still waiting is asked again (the cancel dropped it). */
+      if (!w->thumb_pane[t].recheck)
+         return;
+      w->thumb_pane[t].recheck = false;
+      if (string_is_equal(path ? path : "", w->thumb_pane[t].path))
+      {
+         if (w->thumb_pane[t].bits)
+            return;
+         same = true;
+      }
    }
-   w->thumb_pane[t].bits = NULL;
-   w->thumb_pane[t].dims = 0;
-   InvalidateRect(ctl, NULL, TRUE);
+   if (!same)
+   {
+      w->thumb_pane[t].entry   = id;
+      w->thumb_pane[t].recheck = false;
+      strlcpy(w->thumb_pane[t].path, path ? path : "",
+            sizeof(w->thumb_pane[t].path));
+
+      /* Whatever was animating stops with the old selection. */
+      if (w->thumbs_engine)
+         companion_thumbs_animate_stop(w->thumbs_engine);
+
+      /* Clear. A static control does not repaint on STM_SETIMAGE NULL
+       * by itself (it keeps drawing the old image until invalidated),
+       * so invalidate it; the old bitmap goes once it is no longer
+       * set. */
+      SendMessageA(ctl, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
+      if (w->thumb_pane[t].bmp)
+      {
+         DeleteObject(w->thumb_pane[t].bmp);
+         w->thumb_pane[t].bmp = NULL;
+      }
+      w->thumb_pane[t].bits = NULL;
+      w->thumb_pane[t].dims = 0;
+      InvalidateRect(ctl, NULL, TRUE);
+   }
    if (id < 0 || !w->thumbs_engine || string_is_empty(path))
       return;
 
@@ -2825,8 +2847,9 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, int t,
    /* And, like RetroArch's File Browser, an APNG / animated WEBP /
     * WEBM / MP4 plays in the pane: frames land through cw_thumb_done
     * with the same tag. A still animates nothing. */
-   companion_thumbs_animate(w->thumbs_engine, path, dims,
-         CW_TAG_MAKE(id, t), cw_sys_color_argb(COLOR_BTNFACE));
+   if (!same)
+      companion_thumbs_animate(w->thumbs_engine, path, dims,
+            CW_TAG_MAKE(id, t), cw_sys_color_argb(COLOR_BTNFACE));
 }
 
 /* Every thumbnail pane on screen shows playlist entry @entry, each
@@ -2843,10 +2866,8 @@ static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
    if (entry >= 0 && !w->browse_mode)
       e = companion_core_entry(w->core, (size_t)entry);
    if (e)
-   {
-      strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-      path_remove_extension(db_name);
-   }
+      companion_core_entry_thumbnail_system(w->core, (size_t)entry,
+            db_name, sizeof(db_name));
    for (t = 0; t < 4; t++)
    {
       if (!e)
@@ -3075,6 +3096,29 @@ static void cw_on_browse_changed(void *ud)
       cw_browse_rebuild(w);
 }
 
+/* Rows without an image may have a stored match now: the next tick
+ * asks for what is on screen again. A decode in flight is for the old
+ * path, so it is dropped (new generation), and the panes, whose queued
+ * requests the cancel drops too, are checked again. */
+static void cw_on_thumbnails_changed(void *ud)
+{
+   size_t i;
+   int t;
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
+   if (!w || !w->thumb_idx || w->browse_mode)
+      return;
+   if (w->thumbs_engine)
+      companion_thumbs_cancel(w->thumbs_engine);
+   w->gen++;
+   for (i = 0; i < w->row_count; i++)
+      if (w->thumb_idx[i] < 0)
+         w->thumb_idx[i] = 0;
+   w->vis_first = w->vis_last = (size_t)-1;
+   for (t = 0; t < 4; t++)
+      w->thumb_pane[t].recheck = true;
+   cw_boxart_update(w, cw_focused_entry(w));
+}
+
 static const companion_callbacks_t cw_callbacks = {
    cw_on_playlists_changed,
    cw_on_playlist_changed,
@@ -3084,7 +3128,8 @@ static const companion_callbacks_t cw_callbacks = {
    cw_on_scan_finished,
    NULL, /* on_thumbnail_downloaded */
    NULL, /* on_thumbnail_pack_finished */
-   cw_on_browse_changed
+   cw_on_browse_changed,
+   cw_on_thumbnails_changed
 };
 
 /* --- Window procedure ------------------------------------------------- */
@@ -3152,12 +3197,12 @@ static void cw_drop_files(ui_companion_win32_wimp_t *w, HDROP drop)
       if (e)
       {
          char db_name[NAME_MAX_LENGTH], out[PATH_MAX_LENGTH];
-         strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-         path_remove_extension(db_name);
+         companion_core_entry_thumbnail_system(w->core, (size_t)entry,
+               db_name, sizeof(db_name));
          if (companion_core_thumbnail_install(w->core, db_name,
                   cw_thumb_subdir(over_pane),
                   !string_is_empty(e->label) ? e->label : path_basename(e->path),
-                  paths[0], out, sizeof(out)))
+                  e->path, paths[0], out, sizeof(out)))
          {
             /* the file changed on disk: forget it and show it again */
             if (w->thumbs_engine)
@@ -5973,6 +6018,14 @@ static void ui_companion_win32_wimp_notify_refresh(void *data)
       companion_core_notify_refresh(w->core);
 }
 
+static void ui_companion_win32_wimp_notify_thumbnails(void *data,
+      const char *playlist_path)
+{
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
+   if (w)
+      companion_core_notify_thumbnails(w->core, playlist_path);
+}
+
 static void ui_companion_win32_wimp_msg_queue_push(void *data,
       const char *msg, unsigned priority, unsigned duration, bool flush)
 {
@@ -6005,6 +6058,7 @@ ui_companion_driver_t ui_companion_wimp_win32 = {
    ui_companion_win32_wimp_iterate,
    ui_companion_win32_wimp_event_command,
    ui_companion_win32_wimp_notify_refresh,
+   ui_companion_win32_wimp_notify_thumbnails,
    ui_companion_win32_wimp_msg_queue_push,
    NULL, /* render_messagebox */
    ui_companion_win32_wimp_get_main_window,
