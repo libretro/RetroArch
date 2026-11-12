@@ -12964,8 +12964,6 @@ unsigned menu_displaylist_build_list(
                         && !video_driver_is_hw_context()
                         && config_get_ptr()->bools.video_threaded_present_repeat;
                      break;
-                     build_list[i].checked = *video_driver_get_threaded();
-                     break;
                   case MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING:
                      build_list[i].checked = *video_driver_get_threaded()
                         && !video_driver_is_hw_context();
