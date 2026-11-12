@@ -81,22 +81,29 @@ def main():
                 'record/record_stream_vt.c', 'record/record_gpu_worker_vt.c',
                 'record/record_gpu_queue.c', 'record/record_vt_packet.c',
                 'record/record_at_audio.c', 'record/record_at_resample.c', 'record/record_audio_queue.c',
+                'record/record_stream_output_vt.c', 'record/record_avfoundation_session.c',
+                'record/record_avfoundation_worker.c',
                 'libretro-common/queues/retro_spsc.c')]
             for framework in ('CoreMedia', 'CoreVideo', 'VideoToolbox', 'AudioToolbox', 'CoreFoundation'):
                 link += ['-framework', framework]
             command(link, cwd=network, timeout=180)
         evidence['binary_sha256'] = hashlib.sha256(binary.read_bytes()).hexdigest()
         cases = (
-                (0, 8, 48000, 2, None, False, None), (1, 8, 44100, 1, '1.2', False, None),
-                (1, 10, 48000, 2, '1.3', False, None), (0, 8, 48000, 2, None, True, None),
-                (0, 8, 48000, 2, None, True, 32040.5), (1, 8, 44100, 1, '1.2', True, 96000))
-        for hevc, depth, rate, channels, tls, queued, source_rate in cases[:1] if args.first_case else cases:
+                (0, 8, 48000, 2, None, False, None, False), (1, 8, 44100, 1, '1.2', False, None, False),
+                (1, 10, 48000, 2, '1.3', False, None, False), (0, 8, 48000, 2, None, True, None, False),
+                (0, 8, 48000, 2, None, True, 32040.5, False), (1, 8, 44100, 1, '1.2', True, 96000, False),
+                (0, 8, 48000, 2, None, True, None, True),
+                (0, 8, 48000, 2, None, True, 32040.5, True),
+                (1, 8, 44100, 1, '1.2', True, 96000, True))
+        for hevc, depth, rate, channels, tls, queued, source_rate, owned in cases[:1] if args.first_case else cases:
             case = dict(hevc=hevc, depth=depth, rate=rate, channels=channels,
-                        tls=tls, queued=queued, source_rate=source_rate, result='running')
+                        tls=tls, queued=queued, source_rate=source_rate, owned=owned, result='running')
             evidence['cases'].append(case)
             directory = root / f'{hevc}-{depth}-{rate}-{channels}-{tls or "tcp"}{"-queued" if queued else ""}'
             if source_rate:
                 directory = directory.with_name(directory.name + f'-src-{source_rate}')
+            if owned:
+                directory = directory.with_name(directory.name + '-owned')
             directory.mkdir()
             received, coded = directory / 'received.flv', directory / 'native.bin'
             with socket.socket() as reserve:
@@ -114,11 +121,14 @@ def main():
                     env = os.environ.copy()
                     env.pop('VT_STREAM_SOURCE_QUEUE', None)
                     env.pop('VT_STREAM_SOURCE_RATE', None)
+                    env.pop('VT_STREAM_OWNED_OUTPUT', None)
                     env.pop('RTMPS_CA', None)
                     if queued:
                         env['VT_STREAM_SOURCE_QUEUE'] = '1'
                     if source_rate:
                         env['VT_STREAM_SOURCE_RATE'] = str(source_rate)
+                    if owned:
+                        env['VT_STREAM_OWNED_OUTPUT'] = '1'
                     if relay:
                         url = f'rtmps://localhost:{relay.port}/live/test'
                         env['RTMPS_CA'] = str(relay.ca)
@@ -145,6 +155,7 @@ def main():
                 r'(\w+)=(\d+)', result.stdout.decode())}
             case['native'] = values
             assert bool(values['prebuffer']) == queued, values
+            assert bool(values['owned']) == owned, values
             info = json.loads(command([probe, '-v', 'error', '-show_streams',
                                        '-show_packets', '-of', 'json', received]).stdout)
             video = next(s for s in info['streams'] if s['codec_type'] == 'video')

@@ -11,6 +11,7 @@ int main(void)
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <features/features_cpu.h>
 #include <net/net_compat.h>
@@ -22,6 +23,7 @@ int main(void)
 #include <retro_timers.h>
 #include "../../../gfx/common/videotoolbox_encode.h"
 #include "../../../record/record_stream_vt.h"
+#include "../../../record/record_stream_output_vt.h"
 #include "../videotoolbox_encode/native_packet.h"
 
 #define FRAMES 24
@@ -36,6 +38,111 @@ typedef struct native_capture
    int length;
    bool written;
 } native_capture_t;
+
+typedef struct native_stream_owner
+{
+   record_stream_vt_config_t config;
+   record_avfoundation_session_output_ops_t callbacks;
+   native_capture_t *capture;
+   record_stream_output_vt_t *output;
+   record_at_audio_t *audio;
+   record_at_resample_t *converter;
+   net_rtmp_client_t *client;
+   CMVideoFormatDescriptionRef format;
+   const uint64_t *accepted;
+   uint64_t prebuffer,frames,source_frames;
+   unsigned leading,trailing;
+   bool adopted,complete,stats,retired;
+} native_stream_owner_t;
+
+static void *native_owned_open(void *context,void *sample,
+      record_gpu_worker_vt_t *video,record_audio_queue_t *audio)
+{
+   native_stream_owner_t *o=(native_stream_owner_t*)context;
+   assert(!o->format && !o->output);
+   o->prebuffer=*o->accepted;
+   o->format=(CMVideoFormatDescriptionRef)CFRetain(
+         CMSampleBufferGetFormatDescription((CMSampleBufferRef)sample));
+   o->config.format=(void*)o->format;
+   o->output=record_stream_output_vt_new(video,o->audio,o->converter,o->client,&o->config,audio);
+   if (!o->output) { CFRelease(o->format); o->format=NULL; return NULL; }
+   o->adopted=true; o->client=NULL;
+   return o;
+}
+static int native_owned_step(void *context)
+{
+   native_stream_owner_t *o=(native_stream_owner_t*)context;
+   int result=o->callbacks.step(o->output);
+   if (result==RECORD_AVF_WORKER_END) o->complete=true;
+   return result;
+}
+static bool native_owned_cancel(void *context)
+{
+   native_stream_owner_t *o=(native_stream_owner_t*)context;
+   return o->callbacks.cancel(o->output);
+}
+static bool native_owned_free_output(void *context)
+{
+   native_stream_owner_t *o=(native_stream_owner_t*)context;
+   if (o->complete && !o->stats)
+   {
+      assert(record_at_audio_timing(o->audio,&o->leading,&o->trailing,&o->frames));
+      if (o->converter)
+      {
+         uint64_t produced;
+         assert(record_at_resample_timing(o->converter,&o->source_frames,&produced));
+         assert(produced==o->frames);
+      }
+      else o->source_frames=o->frames;
+      o->stats=true;
+   }
+   if (!o->callbacks.free_output(o->output)) return false;
+   o->output=NULL; o->audio=NULL; o->converter=NULL;
+   return true;
+}
+static bool native_owned_retry(const void *context)
+{
+   const native_stream_owner_t *o=(const native_stream_owner_t*)context;
+   return o->callbacks.retry_needed(o->output);
+}
+static bool native_owned_network(const void *context,int *fd,bool *read,bool *write)
+{
+   const native_stream_owner_t *o=(const native_stream_owner_t*)context;
+   return o->callbacks.network(o->output,fd,read,write);
+}
+static void native_owned_encoder_destroy(void *context)
+{
+   native_stream_owner_t *o=(native_stream_owner_t*)context;
+   assert(!o->output);
+   if (o->complete) assert(o->capture->encoder->drained && !o->capture->encoder->count);
+   videotoolbox_encode_cancel(o->capture->encoder); o->capture->encoder=NULL;
+}
+static bool native_owned_context_destroy(void *context)
+{
+   native_stream_owner_t *o=(native_stream_owner_t*)context;
+   assert(!o->capture->encoder && !o->output && !o->retired);
+   if (!o->adopted)
+   {
+      if (o->converter)
+      {
+         if (!record_at_resample_cancel(o->converter) || !record_at_resample_free(o->converter)) return false;
+         o->converter=NULL;
+      }
+      if (o->audio)
+      {
+         if (!record_at_audio_cancel(o->audio) || !record_at_audio_free(o->audio)) return false;
+         o->audio=NULL;
+      }
+      if (o->client)
+      {
+         net_rtmp_client_cancel(o->client);
+         if (!net_rtmp_client_free(o->client)) return false;
+         o->client=NULL;
+      }
+   }
+   if (o->format) { CFRelease(o->format); o->format=NULL; }
+   o->retired=true; return true;
+}
 
 static bool resolve_dispatch(void (*work)(void*), void *job, void *data)
 {
@@ -180,6 +287,7 @@ static void fill(CVPixelBufferRef image, unsigned frame, unsigned depth)
 }
 
 static void produce_audio(record_stream_vt_t *stream, record_audio_queue_t *source,
+      record_avfoundation_session_t *session,
       int16_t *pcm, double rate, unsigned channels, uint64_t frames,
       uint64_t *accepted, bool *closed)
 {
@@ -193,7 +301,8 @@ static void produce_audio(record_stream_vt_t *stream, record_audio_queue_t *sour
       for (i = 0; i < batch * channels; i++)
          pcm[i] = (int16_t)(sin((*accepted + i / channels) * 6.283185307179586
                   * (i % channels ? 1499 : 997) / rate) * 12000);
-      result = source ? record_audio_queue_push(source, pcm, batch, *accepted)
+      result = session ? record_avfoundation_session_audio(session,pcm,batch,*accepted)
+         :source ? record_audio_queue_push(source, pcm, batch, *accepted)
          : record_stream_vt_audio(stream, pcm, batch);
       assert(result >= 0);
       if (source ? result == RECORD_AUDIO_OK : result == RECORD_STREAM_VT_PROGRESS)
@@ -201,7 +310,8 @@ static void produce_audio(record_stream_vt_t *stream, record_audio_queue_t *sour
    }
    if (*accepted == frames && !*closed)
    {
-      assert(source ? record_audio_queue_finish(source) : record_stream_vt_audio_finish(stream));
+      assert(session ? record_avfoundation_session_audio_finish(session)
+            :source ? record_audio_queue_finish(source) : record_stream_vt_audio_finish(stream));
       *closed = true;
    }
 }
@@ -225,6 +335,8 @@ int main(int argc, char **argv)
    record_stream_vt_t *stream = NULL;
    record_audio_queue_t *source = NULL;
    record_at_resample_t *resampler = NULL;
+   record_avfoundation_session_t *owned_session = NULL;
+   native_stream_owner_t *owner = NULL;
    CMVideoFormatDescriptionRef format = NULL;
    CVPixelBufferPoolRef pool;
    sthread_t *resolver = NULL;
@@ -243,6 +355,8 @@ int main(int argc, char **argv)
    OSStatus status;
    int result;
    bool video_closed = false, audio_closed = false;
+   bool owned = getenv("VT_STREAM_OWNED_OUTPUT") != NULL;
+   bool queued = false;
    assert(argc == 7 && network_init());
    rate = (unsigned)atoi(argv[3]);
    channels = (unsigned)atoi(argv[4]);
@@ -308,7 +422,7 @@ int main(int argc, char **argv)
       capture.staging = (uint8_t*)malloc(CAPACITY);
       pcm = (int16_t*)malloc(1024 * channels * sizeof(*pcm));
       assert(capture.coded && capture.staging && pcm);
-      if (getenv("VT_STREAM_SOURCE_QUEUE") || source_rate != rate)
+      if (getenv("VT_STREAM_SOURCE_QUEUE") || source_rate != rate || owned)
       {
          source = record_audio_queue_new(channels, 1024, 2048 * channels * 2 + 32);
          assert(source);
@@ -319,6 +433,7 @@ int main(int argc, char **argv)
          }
       }
       queue = record_gpu_queue_new(2);
+      queued = source != NULL;
       assert(queue);
       pool = VTCompressionSessionGetPixelBufferPool(capture.encoder->session);
       assert(pool);
@@ -329,13 +444,39 @@ int main(int argc, char **argv)
       worker = record_gpu_worker_vt_new(queue, &capture, &capture, &ops);
       assert(worker);
       frames = (uint64_t)ceil((double)FRAMES * 1001 * source_rate / 60000.0);
+      memset(&stream_config, 0, sizeof(stream_config));
+      stream_config.max_packet_size = CAPACITY;
+      stream_config.video_timescale = 60000;
+      stream_config.bit_depth = video_config.bit_depth;
+      stream_config.audio_rate = rate; stream_config.channels = channels;
+      stream_config.audio_fifo_frames = source ? 0 : 2048;
+      stream_config.audio_epoch_frames = leading;
+      stream_config.video_epoch_ticks = ((uint64_t)leading * 60000 + rate - 1) / rate;
+      stream_config.color.primaries = 1; stream_config.color.transfer = 1;
+      stream_config.color.matrix = 1; stream_config.color.range = 1;
+      if (owned)
+      {
+         record_avfoundation_session_output_ops_t output_ops;
+         owner=(native_stream_owner_t*)calloc(1,sizeof(*owner)); assert(owner);
+         owner->config=stream_config; owner->capture=&capture; owner->accepted=&accepted;
+         owner->audio=audio; owner->converter=resampler; owner->client=client;
+         assert(record_stream_output_vt_set_ops(&owner->callbacks));
+         memset(&output_ops,0,sizeof(output_ops));
+         output_ops.open=native_owned_open; output_ops.step=native_owned_step;
+         output_ops.cancel=native_owned_cancel; output_ops.free_output=native_owned_free_output;
+         output_ops.retry_needed=native_owned_retry; output_ops.network=native_owned_network;
+         output_ops.destroy_encoder=native_owned_encoder_destroy;
+         output_ops.destroy_context=native_owned_context_destroy;
+         owned_session=record_avfoundation_session_new_output(queue,worker,source,owner,&output_ops);
+         assert(owned_session);
+      }
       memset(&frame, 0, sizeof(frame));
       deadline = cpu_features_get_time_usec() + 20000000;
       do
       {
          assert(cpu_features_get_time_usec() < deadline);
-         if (source)
-            produce_audio(stream, source, pcm, source_rate, channels, frames, &accepted, &audio_closed);
+         if (queued && !audio_closed)
+            produce_audio(stream, source, owned_session, pcm, source_rate, channels, frames, &accepted, &audio_closed);
          if (count < FRAMES && record_gpu_queue_acquire(queue, &slot) == RECORD_GPU_QUEUE_OK)
          {
             fill(capture.images[slot], count, video_config.bit_depth);
@@ -345,10 +486,11 @@ int main(int argc, char **argv)
          }
          if (count == FRAMES && !video_closed)
          {
-            assert(record_gpu_queue_finish(queue));
+            assert(owned_session ? record_avfoundation_session_video_finish(owned_session)
+                  : record_gpu_queue_finish(queue));
             video_closed = true;
          }
-         if (!stream)
+         if (!owned_session && !stream)
          {
             result = record_gpu_worker_vt_step(worker, &sample);
             assert(result >= 0 && result != RECORD_GPU_VT_END);
@@ -360,56 +502,68 @@ int main(int argc, char **argv)
             prebuffer = accepted;
             format = (CMVideoFormatDescriptionRef)CFRetain(
                   CMSampleBufferGetFormatDescription((CMSampleBufferRef)sample));
-            memset(&stream_config, 0, sizeof(stream_config));
             stream_config.format = (void*)format;
-            stream_config.max_packet_size = CAPACITY;
-            stream_config.video_timescale = 60000;
-            stream_config.bit_depth = video_config.bit_depth;
-            stream_config.audio_rate = rate; stream_config.channels = channels;
-            stream_config.audio_fifo_frames = source ? 0 : 2048;
-            stream_config.audio_epoch_frames = leading;
-            stream_config.video_epoch_ticks = ((uint64_t)leading * 60000 + rate - 1) / rate;
-            stream_config.color.primaries = 1; stream_config.color.transfer = 1;
-            stream_config.color.matrix = 1; stream_config.color.range = 1;
             stream = resampler ? record_stream_vt_new_resampled(worker, audio, client, &stream_config, resampler)
                : source ? record_stream_vt_new_queued(worker, audio, client, &stream_config, source)
                : record_stream_vt_new(worker, audio, client, &stream_config);
             assert(stream);
          }
-         if (!source)
-            produce_audio(stream, NULL, pcm, rate, channels, frames, &accepted, &audio_closed);
-         result = record_stream_vt_step(stream, 0, &wait);
+         if (!queued)
+            produce_audio(stream, NULL, NULL, pcm, rate, channels, frames, &accepted, &audio_closed);
+         result = owned_session ? record_avfoundation_session_step(owned_session)
+            : record_stream_vt_step(stream, 0, &wait);
          if (result == RECORD_STREAM_VT_ERROR)
-            fprintf(stderr, "Native stream failure: %d\n", (int)record_stream_vt_error(stream));
+            fprintf(stderr, "Native stream failure: %d\n", owned_session
+                  ?(int)record_avfoundation_session_error(owned_session):(int)record_stream_vt_error(stream));
          assert(result >= 0);
-         if (result == RECORD_STREAM_VT_BUSY) wait_network(&wait.network);
-      } while (result != RECORD_STREAM_VT_END);
+         if (result == RECORD_STREAM_VT_BUSY)
+         {
+            if (owned_session)
+            {
+               wait.network.again=false;
+               record_avfoundation_session_network(owned_session,&wait.network.fd,
+                     &wait.network.read,&wait.network.write);
+            }
+            wait_network(&wait.network);
+         }
+      } while (result != (owned_session ? (int)RECORD_AVF_WORKER_END : (int)RECORD_STREAM_VT_END));
       assert(count == FRAMES && capture.outputs == FRAMES && capture.releases == FRAMES);
-      assert(record_at_audio_timing(audio, &leading, &trailing, &source_frames));
-      if (resampler)
+      if (owned_session)
       {
-         uint64_t converted_input, converted_output;
-         assert(record_at_resample_timing(resampler, &converted_input, &converted_output));
-         assert(converted_input == frames && converted_output == source_frames);
+         assert(owner->complete && owner->stats && owner->retired && !owner->output && !capture.encoder);
+         assert(owner->source_frames==frames);
+         source_frames=owner->frames; leading=owner->leading; trailing=owner->trailing; prebuffer=owner->prebuffer;
          assert(fabs((double)source_frames - frames * rate / source_rate) <= 1.0);
+         assert(record_avfoundation_session_free(owned_session));
+         free(owner);
       }
       else
-         assert(source_frames == frames);
-      assert(record_stream_vt_free(stream));
-      assert(record_at_resample_free(resampler));
-      assert(record_audio_queue_free(source));
-      assert(record_gpu_worker_vt_free(worker) && record_gpu_queue_free(queue));
-      assert(record_at_audio_free(audio));
-      assert(videotoolbox_encode_free(capture.encoder));
-      assert(net_rtmp_client_free(client));
+      {
+         assert(record_at_audio_timing(audio, &leading, &trailing, &source_frames));
+         if (resampler)
+         {
+            uint64_t converted_input, converted_output;
+            assert(record_at_resample_timing(resampler, &converted_input, &converted_output));
+            assert(converted_input == frames && converted_output == source_frames);
+            assert(fabs((double)source_frames - frames * rate / source_rate) <= 1.0);
+         }
+         else assert(source_frames == frames);
+         assert(record_stream_vt_free(stream));
+         assert(record_at_resample_free(resampler));
+         assert(record_audio_queue_free(source));
+         assert(record_gpu_worker_vt_free(worker) && record_gpu_queue_free(queue));
+         assert(record_at_audio_free(audio));
+         assert(videotoolbox_encode_free(capture.encoder));
+         assert(net_rtmp_client_free(client));
+      }
       sthread_join(resolver);
    }
    for (i = 0; i < 2; i++) CVPixelBufferRelease(capture.images[i]);
-   CFRelease(format);
+   if (format) CFRelease(format);
    assert(!fclose(capture.coded));
    free(capture.staging); free(pcm);
-   printf("PASS frames=%u audio=%lu leading=%u trailing=%u prebuffer=%lu\n", FRAMES,
-         (unsigned long)source_frames, leading, trailing, (unsigned long)prebuffer);
+   printf("PASS frames=%u audio=%lu leading=%u trailing=%u prebuffer=%lu owned=%u\n", FRAMES,
+         (unsigned long)source_frames, leading, trailing, (unsigned long)prebuffer,owned?1u:0u);
    return 0;
 }
 #endif
