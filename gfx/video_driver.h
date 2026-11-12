@@ -2054,6 +2054,10 @@ typedef struct
    unsigned driver_pacing_interval_us;
    uint8_t driver_pacing_mode;
    uint8_t driver_pacing_reason;
+   /* Skip Duplicate Frames: the core frames left before the runloop
+    * stops pacing for skipped repeats, rearmed by each one skipped.
+    * Main thread. */
+   uint8_t dupe_skip_hold;
 
    bool threaded;
 
@@ -2606,6 +2610,11 @@ float video_driver_get_aspect_ratio(void);
 /* The aspect ratio, as the bits of the float in an atomic word. A
  * union, not a cast through a pointer, so it stays inside what the
  * standard allows and MSVC's aliasing rules. */
+
+/* Core frames a skipped repeat keeps the runloop's dupe-skip pacing on
+ * for: long enough to span the gaps between repeats down to 1 in 8. */
+#define VIDEO_DUPE_SKIP_HOLD 8
+
 #ifdef HAVE_THREADS
 #define VIDEO_CACHE_KEEPER ((size_t)sthread_get_current_thread_id())
 #else

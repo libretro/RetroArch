@@ -9749,6 +9749,34 @@ void video_driver_frame(const void *data, unsigned width,
    if (data)
       video_st->main_flags &= ~VIDEO_FLAG_FF_FRAME_OWED;
 
+   /* Skip Duplicate Frames: a repeat from the core is left unpresented,
+    * so the display gets the content's own rate. Only a repeat the core
+    * sent, not the cached frame sent again for pause or the menu, and
+    * not where the presents themselves are the effect: Black Frame
+    * Insertion, shader sub-frames, the threaded presenter's repeats or
+    * a headset's interval. The hold tells the runloop to pace these
+    * iterations itself (runloop_pace_dupe_skip_engages). */
+   if (     !data
+         && render_frame
+         && settings->bools.video_skip_dupe_frames
+         && !video_st->frame_repeat
+         && !menu_is_alive
+         && !video_info.input_driver_nonblock_state
+         && !video_info.black_frame_insertion
+         && video_info.shader_subframes <= 1
+         && !video_st->headset_interval
+#ifdef HAVE_THREADS
+         && !(   video_st->thread_wrapper_active
+              && video_info.threaded_present_repeat)
+#endif
+      )
+   {
+      render_frame               = false;
+      video_st->dupe_skip_hold   = VIDEO_DUPE_SKIP_HOLD;
+   }
+   else if (video_st->dupe_skip_hold && !video_st->frame_repeat)
+      video_st->dupe_skip_hold--;
+
    /* What the shader chains read as FrameTimeDelta, from the reading
     * taken at the top of this function. Measured between the frames
     * the driver is handed, so a frame dropped by fast-forward

@@ -786,9 +786,12 @@ enum runloop_pace_fact
    PACE_FACT_DRIVER_PACING   = (1 << 18), /* the driver's low-latency backend
                                              is up and took the mode */
    PACE_FACT_CORE_RAN        = (1 << 19), /* this iteration ran the core */
-   PACE_FACT_DRIVER_PACING_MISSING = (1 << 20) /* Driver Pacing is on, but
+   PACE_FACT_DRIVER_PACING_MISSING = (1 << 20),/* Driver Pacing is on, but
                                              the driver has no backend
                                              that took it */
+   PACE_FACT_DUPE_SKIP       = (1 << 21)  /* Skip Duplicate Frames is
+                                             leaving the core's repeats
+                                             unpresented */
 };
 
 typedef unsigned runloop_pace_facts_t;
@@ -822,6 +825,7 @@ static INLINE bool runloop_pace_driver_owns(runloop_pace_facts_t f,
 {
    return    (f & PACE_FACT_DRIVER_PACING)
           && (f & PACE_FACT_CORE_RAN)
+          && !(f & PACE_FACT_DUPE_SKIP)
           && (f & PACE_FACT_FOCUSED)
           && !(f & PACE_FACT_NONBLOCKING)
           && !(f & PACE_FACT_FASTMOTION)
@@ -857,6 +861,23 @@ static INLINE bool runloop_pace_driver_fallback(runloop_pace_facts_t f,
    return    (f & PACE_FACT_DRIVER_PACING_MISSING)
           && pace == RUNLOOP_PACE_NONE
           && runloop_pace_driver_owns(f | PACE_FACT_DRIVER_PACING, pace);
+}
+
+/* A repeat left unpresented by Skip Duplicate Frames reaches no present,
+ * so neither VSync nor the threaded hold can keep the loop on it, and the
+ * presents between repeats come at the content's rate, which a swapchain
+ * queues without blocking. Where audio, a scanline or the timer do not
+ * already hold the loop, the timer holds it to the content's period for
+ * as long as repeats are being skipped. The driver's release waits on a
+ * present, so it stands aside for that time (runloop_pace_driver_owns). */
+static INLINE bool runloop_pace_dupe_skip_engages(runloop_pace_facts_t f,
+      unsigned pace)
+{
+   return    (f & PACE_FACT_DUPE_SKIP)
+          && !(f & PACE_FACT_NONBLOCKING)
+          && !(f & PACE_FACT_FASTMOTION)
+          && !(pace & (RUNLOOP_PACE_AUDIO | RUNLOOP_PACE_SCANLINE
+                     | RUNLOOP_PACE_TIMER | RUNLOOP_PACE_NOWINDOW));
 }
 
 static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)
@@ -931,6 +952,8 @@ static INLINE unsigned runloop_pace_decide(runloop_pace_facts_t f)
             (f & PACE_FACT_RATE_CONTROL)  != 0))
       pace |= RUNLOOP_PACE_TIMER;
    else if (runloop_pace_driver_fallback(f, pace))
+      pace |= RUNLOOP_PACE_TIMER;
+   else if (runloop_pace_dupe_skip_engages(f, pace))
       pace |= RUNLOOP_PACE_TIMER;
    return pace;
 }

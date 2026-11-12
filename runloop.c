@@ -6289,6 +6289,9 @@ static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
    if (video_context_driver_presentable())                 f |= PACE_FACT_PRESENTABLE;
    if (runloop_st->frame_limit_minimum_time)               f |= PACE_FACT_FRAME_LIMIT;
    if (core_ran)                                           f |= PACE_FACT_CORE_RAN;
+   if (     core_ran
+         && video_st->dupe_skip_hold
+         && settings->bools.video_skip_dupe_frames)        f |= PACE_FACT_DUPE_SKIP;
    return runloop_driver_pacing_gather(settings, runloop_st, video_st, f);
 }
 
@@ -10380,7 +10383,8 @@ end:
                ? video_st->video_refresh_rate_original
                : settings->floats.video_refresh_rate);
    }
-   else if (runloop_pace_driver_fallback(pace_facts, runloop_st->pace))
+   else if (   runloop_pace_driver_fallback(pace_facts, runloop_st->pace)
+            || runloop_pace_dupe_skip_engages(pace_facts, runloop_st->pace))
    {
       runloop_st->pace         |= RUNLOOP_PACE_TIMER;
       pace_limit_min            = runloop_content_frame_time_us(

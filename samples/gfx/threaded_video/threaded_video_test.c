@@ -5813,6 +5813,150 @@ static void lane_dupe_under_wrapper(void)
       fprintf(stderr, "[pass] dupe lane (NULL reaches the driver as NULL)\n");
 }
 
+/* Skip Duplicate Frames.
+ *
+ * With the setting on, a repeat the core sends (NULL) is not handed to
+ * the driver at all, so the display gets the content's own rate, and
+ * the hold that tells the runloop to pace those iterations is armed.
+ * Where the presents are the point - Black Frame Insertion, the menu -
+ * or with the setting off, the repeat still reaches the driver as NULL,
+ * and frames that are presented wind the hold down to nothing. Threaded
+ * and not: the decision is made before the wrapper is reached. */
+#define SKIPLANE_LOG 16
+static video_driver_t        skiplane_driver;
+static const video_driver_t *skiplane_inner;
+static int                   skiplane_seen[SKIPLANE_LOG];
+static retro_atomic_size_t   skiplane_count;
+
+static bool skiplane_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   size_t n = retro_atomic_load_acquire_size(&skiplane_count);
+   if (n < SKIPLANE_LOG)
+      skiplane_seen[n] = frame ? (int)*(const uint8_t*)frame : -1;
+   retro_atomic_store_release_size(&skiplane_count, n + 1);
+   return skiplane_inner->frame(data, NULL, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static void skiplane_push(const void *pix, bool threaded)
+{
+   video_driver_frame(pix, 32, 32, 32 * sizeof(uint32_t));
+   if (threaded)
+      video_thread_wait_idle();
+}
+
+static void lane_dupe_skip(bool threaded)
+{
+   unsigned had                   = failures;
+   const char *mode               = threaded ? "threaded" : "unthreaded";
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   bool saved_skip                = settings->bools.video_skip_dupe_frames;
+   bool saved_repeat              = settings->bools.video_threaded_present_repeat;
+   unsigned saved_bfi             = settings->uints.video_black_frame_insertion;
+   /* Static, as in the dupe lane: the cached frame borrows it */
+   static uint8_t pix_a[32 * 32 * sizeof(uint32_t)];
+   static uint8_t pix_b[32 * 32 * sizeof(uint32_t)];
+   size_t seen;
+   unsigned i;
+
+   memset(pix_a, 0x10, sizeof(pix_a));
+   memset(pix_b, 0x20, sizeof(pix_b));
+   set_threaded_via_setting(threaded);
+   run_frames(3);
+   expect_wrapper(threaded, "dupe skip lane");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "dupe skip lane: menu still up");
+   run_frames(2);
+   if (threaded)
+      video_thread_wait_idle();
+
+   settings->bools.video_threaded_present_repeat = false;
+   settings->uints.video_black_frame_insertion   = 0;
+   if (threaded)
+   {
+      thread_video_t *thr  = (thread_video_t*)video_st->data;
+      skiplane_inner       = thr->driver;
+      skiplane_driver      = *thr->driver;
+      skiplane_driver.frame = skiplane_frame;
+      set_driver(thr, &skiplane_driver);
+   }
+   else
+   {
+      skiplane_inner          = video_st->current_video;
+      skiplane_driver         = *video_st->current_video;
+      skiplane_driver.frame   = skiplane_frame;
+      video_st->current_video = &skiplane_driver;
+   }
+
+   /* On: real, repeat, real, repeat reaches the driver as two frames */
+   settings->bools.video_skip_dupe_frames = true;
+   video_st->dupe_skip_hold               = 0;
+   retro_atomic_store_release_size(&skiplane_count, 0);
+   skiplane_push(pix_a, threaded);
+   skiplane_push(NULL,  threaded);
+   skiplane_push(pix_b, threaded);
+   skiplane_push(NULL,  threaded);
+   seen = retro_atomic_load_acquire_size(&skiplane_count);
+   CHECK(seen == 2,
+         "dupe skip lane (%s): 2 frames and 2 repeats reached the driver "
+         "as %u presents, want the 2 frames alone", mode, (unsigned)seen);
+   if (seen == 2)
+      CHECK(skiplane_seen[0] == 0x10 && skiplane_seen[1] == 0x20,
+            "dupe skip lane (%s): the driver saw 0x%02x, 0x%02x", mode,
+            skiplane_seen[0], skiplane_seen[1]);
+   CHECK(video_st->dupe_skip_hold == VIDEO_DUPE_SKIP_HOLD,
+         "dupe skip lane (%s): a skipped repeat left the hold at %u, "
+         "the runloop would not pace it", mode,
+         (unsigned)video_st->dupe_skip_hold);
+
+   /* Black Frame Insertion: the presents are the effect */
+   settings->uints.video_black_frame_insertion = 1;
+   retro_atomic_store_release_size(&skiplane_count, 0);
+   skiplane_push(NULL, threaded);
+   settings->uints.video_black_frame_insertion = 0;
+   seen = retro_atomic_load_acquire_size(&skiplane_count);
+   CHECK(seen == 1 && skiplane_seen[0] == -1,
+         "dupe skip lane (%s): under BFI a repeat reached the driver %u "
+         "times, want once as NULL", mode, (unsigned)seen);
+
+   /* Off: the repeat is presented, and presented frames wind the hold
+    * down to nothing */
+   settings->bools.video_skip_dupe_frames = false;
+   retro_atomic_store_release_size(&skiplane_count, 0);
+   for (i = 0; i < VIDEO_DUPE_SKIP_HOLD; i++)
+      skiplane_push(NULL, threaded);
+   seen = retro_atomic_load_acquire_size(&skiplane_count);
+   CHECK(seen == VIDEO_DUPE_SKIP_HOLD,
+         "dupe skip lane (%s): setting off, %u repeats reached the driver "
+         "as %u presents", mode, (unsigned)VIDEO_DUPE_SKIP_HOLD,
+         (unsigned)seen);
+   CHECK(video_st->dupe_skip_hold == 0,
+         "dupe skip lane (%s): the hold stayed at %u after %u presented "
+         "frames", mode, (unsigned)video_st->dupe_skip_hold,
+         (unsigned)VIDEO_DUPE_SKIP_HOLD);
+
+   if (threaded)
+      set_driver((thread_video_t*)video_st->data, skiplane_inner);
+   else
+      video_st->current_video = (video_driver_t*)skiplane_inner;
+
+   settings->bools.video_skip_dupe_frames        = saved_skip;
+   settings->bools.video_threaded_present_repeat = saved_repeat;
+   settings->uints.video_black_frame_insertion   = saved_bfi;
+   video_st->dupe_skip_hold                      = 0;
+   video_driver_cached_frame_invalidate();
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] dupe skip lane (%s: repeats unpresented, "
+            "BFI and setting off present them)\n", mode);
+}
+
 /* ------------------------------------------------------------------ */
 /* Lane: a view count shrink behind queued frames                     */
 /*   A frame queued before the count shrinks draws with the views its */
@@ -12622,6 +12766,8 @@ int main(int argc, char *argv[])
       lane_frame_path_heap();
       lane_resize_under_wrapper();
       lane_dupe_under_wrapper();
+      lane_dupe_skip(false);
+      lane_dupe_skip(true);
       lane_view_count_shrink();
       lane_movie_ring();
       lane_suppress_screensaver();
