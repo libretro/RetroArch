@@ -2,6 +2,7 @@
 #define VT_METAL_NO_MAIN
 #include "metal_vt_test.m"
 #include "../../../record/record_gpu_dispatch_metal.h"
+#include "../../../record/record_vt_packet.h"
 
 int main(int argc,char **argv)
 {
@@ -62,6 +63,12 @@ int main(int argc,char **argv)
       commands = [device newCommandQueue];
       pcm = (int16_t*)malloc(1024*stream.channels*sizeof(*pcm));
       assert(commands && pcm);
+      /* Refuse impossible bounds before DNS, encoder or capture startup. */
+      stream.max_packet_size = RECORD_VT_PACKET_MAX_SIZE+1u;
+      assert(!record_gpu_dispatch_metal_new_stream((__bridge void*)device,&video,&stream,argv[5]));
+      stream.max_packet_size = 0xfffffau;
+      assert(!record_gpu_dispatch_metal_new_stream((__bridge void*)device,&video,&stream,argv[5]));
+      stream.max_packet_size = CAPACITY;
       job = record_gpu_dispatch_metal_new_stream((__bridge void*)device,&video,&stream,argv[5]);
       assert(job);
       deadline = cpu_features_get_time_usec()+20000000;

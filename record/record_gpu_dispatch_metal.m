@@ -37,6 +37,7 @@
 #include "record_stream_session_vt_native.h"
 #ifdef VIDEOTOOLBOX_ENCODE_SLOTS
 #define RECORD_METAL_STREAM
+#include "record_vt_packet.h"
 #include <crypto/kdf.h>
 #include <features/features_cpu.h>
 #include <net/net_wake.h>
@@ -452,6 +453,7 @@ static record_gpu_dispatch_metal_t *record_metal_dispatch_new(void *device,
    if (stream) return NULL;
 #else
    if (stream && (!config->timescale || !stream->max_packet_size
+            || stream->max_packet_size > RECORD_VT_PACKET_MAX_SIZE
             || (stream->channels && (stream->channels > 2
                   || !(stream->source_rate >= 8000 && stream->source_rate <= 192000)
                   || (stream->audio_rate != 44100 && stream->audio_rate != 48000)
