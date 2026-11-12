@@ -219,7 +219,7 @@ private:
    QVector<PlaylistEntry> m_pendingContents;
    bool m_loadingPlaylists = false;
    void appendEntriesFromCore();
-   void startNextPendingPlaylist();
+   void startNextPendingPlaylist(bool append);
    mutable QCache<QString, QPixmap> m_cache; /* filled lazily from data() */
    /* stages of imageAt()/data(): one conversion per (path, dims) */
    QPixmap *pixmapFor(const QString &path, unsigned dims) const;

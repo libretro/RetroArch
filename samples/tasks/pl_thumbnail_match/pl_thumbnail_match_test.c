@@ -1290,7 +1290,32 @@ static void lane_history(void)
          "the history cache holds the match");
    free(cache);
 
-   /* Without the caller's playlist those entries are left to the menu */
+   /* After a reset, a push without the playlist only loads, so the
+    * next push with it resolves with its cores */
+   gfx_thumbnail_results_deinit();
+   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "",
+         false), "re-push history without its playlist");
+   run(0);
+   CHECK(string_is_equal(find_box("/roms/smb.nes", "super mario bros", SYS),
+         "Super Mario Bros. (World).png"),
+         "no playlist given: the cache's match stays");
+   buf   = NULL;
+   cache = NULL;
+   if (filestream_read_file(hist_cache, &buf, &len))
+      cache = (char*)buf;
+   CHECK(cache && strstr(cache, "/roms/smb.nes"),
+         "no playlist given: the cache keeps the match");
+   free(cache);
+   playlist = playlist_init(&config);
+   CHECK(playlist && task_push_pl_thumbnail_match(&config, playlist,
+         thumbs_dir, "", false), "the next push with the playlist resolves");
+   playlist_free(playlist);
+   run(0);
+   CHECK(string_is_equal(find_box("/roms/smb.nes", "super mario bros", SYS),
+         "Super Mario Bros. (World).png"),
+         "resolved with its cores: the match stays");
+
+   /* With no cache, a push without the playlist leaves it to resolve */
    gfx_thumbnail_results_deinit();
    filestream_delete(hist_cache);
    CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "",
@@ -1298,6 +1323,9 @@ static void lane_history(void)
    run(0);
    CHECK(!find_box("/roms/smb.nes", "super mario bros", SYS),
          "no playlist given: no folder");
+   CHECK(gfx_thumbnail_results_open(config.path)
+         & GFX_THUMBNAIL_RESULTS_RESOLVE,
+         "no playlist given: still to resolve");
    hist_core.databases = NULL;
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
@@ -2593,6 +2621,251 @@ static void lane_save_quit(void)
       fprintf(stderr, "[pass] no save at quit\n");
 }
 
+#define HOLD_MENU      GFX_THUMBNAIL_RESULTS_HOLD_MENU
+#define HOLD_EXPLORE   GFX_THUMBNAIL_RESULTS_HOLD_EXPLORE
+#define HOLD_COMPANION GFX_THUMBNAIL_RESULTS_HOLD_COMPANION
+
+static void held_path(char *s, size_t len, unsigned i)
+{
+   snprintf(s, len, "/p/h%u.lpl", i);
+}
+
+static unsigned held_open(unsigned i)
+{
+   char path[32];
+   held_path(path, sizeof(path), i);
+   return gfx_thumbnail_results_open(path);
+}
+
+static void held_hold(unsigned i, unsigned hold)
+{
+   char path[32];
+   held_path(path, sizeof(path), i);
+   CHECK(gfx_thumbnail_results_hold(path, hold), "%s: the hold takes",
+         path);
+}
+
+/* Opens /p/h<i>.lpl, held by @hold, with a resolved table naming
+ * its one entry. */
+static void held_table(unsigned i, unsigned hold)
+{
+   char path[32];
+   char rom[32];
+   char name[32];
+   size_t rec;
+   gfx_thumbnail_results_t *t = gfx_thumbnail_results_new();
+   held_path(path, sizeof(path), i);
+   snprintf(rom, sizeof(rom), "/r/h%u.nes", i);
+   snprintf(name, sizeof(name), "H%u (USA).png", i);
+   rec = gfx_thumbnail_results_add(t, rom, "H", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS, name);
+   gfx_thumbnail_results_sort(t);
+   gfx_thumbnail_results_open(path);
+   gfx_thumbnail_results_hold(path, hold);
+   gfx_thumbnail_results_install(path, t, NULL, true);
+}
+
+static bool held_shows(unsigned i)
+{
+   char rom[32];
+   char name[32];
+   const char *got;
+   snprintf(rom, sizeof(rom), "/r/h%u.nes", i);
+   snprintf(name, sizeof(name), "H%u (USA).png", i);
+   got = find_box(rom, "H", "Sys");
+   return got && string_is_equal(got, name);
+}
+
+static unsigned held_count(unsigned from, unsigned to)
+{
+   unsigned n = 0;
+   for (; from < to; from++)
+      n += held_shows(from);
+   return n;
+}
+
+/* What shows a playlist keeps its table however many others open. */
+static void lane_hold(void)
+{
+   unsigned i;
+   unsigned had = failures;
+   unsigned gen = gfx_thumbnail_results_generation();
+
+   CHECK(!gfx_thumbnail_results_hold("/p/none.lpl", HOLD_MENU),
+         "no hold on a playlist not open");
+   held_table(0, HOLD_COMPANION);
+   held_hold(0, HOLD_MENU);
+   for (i = 1; i <= 6; i++)
+      held_table(i, 0);
+   CHECK(held_shows(0) && held_open(0) == 0,
+         "held: kept past six other opens");
+   CHECK(held_count(1, 7) == 4, "four others kept: %u", held_count(1, 7));
+   gfx_thumbnail_results_release(HOLD_MENU);
+   for (i = 7; i <= 10; i++)
+      held_table(i, 0);
+   CHECK(held_shows(0), "another hold's release keeps it");
+   gfx_thumbnail_results_release(HOLD_COMPANION);
+   CHECK(held_shows(0) && held_count(0, 11) == 4,
+         "its own release: four kept, %u", held_count(0, 11));
+   CHECK(gfx_thumbnail_results_generation() == gen,
+         "only deinit moves the generation");
+   gfx_thumbnail_results_deinit();
+
+   for (i = 0; i < 12; i++)
+      held_table(i, HOLD_EXPLORE);
+   gen = 0;
+   for (i = 0; i < 12; i++)
+      gen |= held_open(i);
+   CHECK(!gen && held_count(0, 12) == 12,
+         "twelve held: none needs a task (%u), all shown (%u)", gen,
+         held_count(0, 12));
+   gfx_thumbnail_results_release(HOLD_EXPLORE);
+   CHECK(held_count(0, 12) == 4, "released: four kept, %u",
+         held_count(0, 12));
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] hold\n");
+}
+
+/* The menu holds the list it shows; the one before is the newest of
+ * the others. */
+static void lane_hold_menu(void)
+{
+   unsigned i;
+   unsigned had = failures;
+
+   held_table(0, HOLD_MENU);
+   for (i = 1; i <= 4; i++)
+      held_table(i, 0);
+   gfx_thumbnail_results_release(HOLD_MENU);
+   CHECK(held_shows(0) && !held_shows(1),
+         "shown until its release: the oldest other goes");
+   gfx_thumbnail_results_deinit();
+
+   held_table(0, HOLD_MENU);
+   gfx_thumbnail_results_release(HOLD_MENU);
+   held_table(1, HOLD_MENU);
+   for (i = 2; i <= 5; i++)
+      held_table(i, 0);
+   CHECK(!held_shows(0) && held_shows(1),
+         "the menu's list kept, the one before pushed out");
+   gfx_thumbnail_results_deinit();
+
+   held_table(0, HOLD_COMPANION);
+   gfx_thumbnail_results_forget("/p/h0.lpl");
+   held_table(0, 0);
+   held_table(1, HOLD_COMPANION);
+   gfx_thumbnail_results_rename("/p/h1.lpl", "/p/h9.lpl");
+   held_table(1, 0);
+   for (i = 2; i <= 5; i++)
+      held_table(i, 0);
+   CHECK(!held_shows(0) && !held_shows(1),
+         "a forget or rename drops the hold with the table");
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] hold menu\n");
+}
+
+/* Menu, Explore and a companion past four playlists: once loaded,
+ * nothing opens again. */
+static void lane_hold_loop(void)
+{
+   unsigned round, i;
+   unsigned need  = 0;
+   unsigned shown = 0;
+   unsigned had   = failures;
+
+   held_table(0, HOLD_MENU);
+   held_table(1, HOLD_COMPANION);
+   for (i = 2; i < 8; i++)
+      held_table(i, HOLD_EXPLORE);
+   for (round = 0; round < 3; round++)
+   {
+      for (i = 2; i < 8; i++)
+      {
+         gfx_thumbnail_results_release(HOLD_MENU);
+         need |= held_open(0);
+         held_hold(0, HOLD_MENU);
+         need |= held_open(i);
+         held_hold(i, HOLD_EXPLORE);
+         shown += held_shows(0) + held_shows(1) + held_shows(i);
+      }
+   }
+   CHECK(!need && shown == 3 * 6 * 3,
+         "no load after the first: need %u, shown %u", need, shown);
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] hold loop\n");
+}
+
+/* A held playlist's notes wait for its release, then its push-out. */
+static void lane_hold_save(void)
+{
+   unsigned i;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push("");
+   gfx_thumbnail_results_hold(pl_path, HOLD_MENU);
+   run(0);
+   CHECK(note(3, NOTE_E), "note");
+   for (i = 1; i <= 6; i++)
+      push_other(i);
+   run(0);
+   CHECK(!push("") && own_task() < 0, "held: a reopen queues nothing");
+   CHECK(string_is_equal(box(0), "Legend of Zelda, The (USA).png")
+         && string_is_equal(box(3), NOTE_E),
+         "held: its table and note show");
+   CHECK(!cache_has(NOTE_E, NULL), "held: its note waits");
+   gfx_thumbnail_results_release(HOLD_MENU);
+   for (i = 7; i <= 10; i++)
+      push_other(i);
+   run(0);
+   CHECK(cache_has(NOTE_E, "Super Mario Bros. (World).png"),
+         "released, pushed out: the cache holds the note and the table");
+   CHECK(!box(3), "and the store does not");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] hold save\n");
+}
+
+/* Deinit drops held tables, notes and holds, and says so. */
+static void lane_hold_deinit(void)
+{
+   unsigned i;
+   unsigned gen;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   gfx_thumbnail_results_open(pl_path);
+   gfx_thumbnail_results_hold(pl_path, HOLD_COMPANION);
+   gfx_thumbnail_results_install(pl_path, gfx_thumbnail_results_new(), NULL,
+         true);
+   note(3, NOTE_E);
+   held_table(1, HOLD_EXPLORE);
+   CHECK(gfx_thumbnail_results_note("/p/h1.lpl", "/r/h1.nes", "H", "Sys",
+         GFX_THUMBNAIL_RESULT_BOXARTS, "H1.png"), "a held dirty slot");
+   for (i = 2; i <= 7; i++)
+      held_table(i, 0);
+   gen = gfx_thumbnail_results_generation();
+   gfx_thumbnail_results_deinit();
+   CHECK(gfx_thumbnail_results_generation() != gen,
+         "deinit moves the generation");
+   CHECK(!queue_busy(), "deinit queues nothing");
+   CHECK(!box(3) && !held_shows(1), "held tables dropped");
+   gfx_thumbnail_results_release(HOLD_EXPLORE | HOLD_COMPANION);
+   CHECK(gfx_thumbnail_results_open(pl_path)
+         == (GFX_THUMBNAIL_RESULTS_LOAD | GFX_THUMBNAIL_RESULTS_RESOLVE),
+         "a new session");
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] hold deinit\n");
+}
+
 /* An engine out of memory keeps the cache and the loaded matches. */
 static void lane_engine_oom(void)
 {
@@ -2999,6 +3272,11 @@ int main(void)
    lane_save_deinit();
    lane_save_finished();
    lane_save_quit();
+   lane_hold();
+   lane_hold_menu();
+   lane_hold_loop();
+   lane_hold_save();
+   lane_hold_deinit();
    lane_engine_oom();
    lane_add_oom();
    lane_bounded();
