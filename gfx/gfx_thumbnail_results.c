@@ -543,14 +543,12 @@ const char *gfx_thumbnail_results_lookup(const char *content_path,
    return NULL;
 }
 
-void gfx_thumbnail_results_forget(const char *playlist_path)
+/* Its table, notes and marks; a late resolve of it is dropped. */
+static void gfx_thumb_results_drop(const char *playlist_path)
 {
-   char path[PATH_MAX_LENGTH];
    size_t i;
    gfx_thumb_results_slot_t *slot;
 
-   if (!playlist_path || !*playlist_path)
-      return;
    if ((slot = gfx_thumb_results_slot(playlist_path)))
       gfx_thumb_results_slot_clear(slot);
    gfx_thumb_results_unevict(playlist_path);
@@ -564,9 +562,41 @@ void gfx_thumbnail_results_forget(const char *playlist_path)
          break;
       }
    }
+}
+
+void gfx_thumbnail_results_forget(const char *playlist_path)
+{
+   char path[PATH_MAX_LENGTH];
+
+   if (!playlist_path || !*playlist_path)
+      return;
+   gfx_thumb_results_drop(playlist_path);
    strlcpy(path, playlist_path, sizeof(path));
    if (strlcat(path, FILE_PATH_THUMBS_EXTENSION, sizeof(path)) < sizeof(path))
       filestream_delete(path);
+}
+
+void gfx_thumbnail_results_rename(const char *old_path,
+      const char *new_path)
+{
+   char from[PATH_MAX_LENGTH];
+   char *to;
+
+   if (!old_path || !*old_path || !new_path || !*new_path)
+      return;
+   gfx_thumb_results_drop(old_path);
+   gfx_thumb_results_drop(new_path);
+   if (     strlcpy(from, old_path, sizeof(from)) >= sizeof(from)
+         || strlcat(from, FILE_PATH_THUMBS_EXTENSION, sizeof(from))
+            >= sizeof(from)
+         || !(to = (char*)malloc(PATH_MAX_LENGTH)))
+      return;
+   /* A missing cache fails the rename, which is fine */
+   if (     strlcpy(to, new_path, PATH_MAX_LENGTH) < PATH_MAX_LENGTH
+         && strlcat(to, FILE_PATH_THUMBS_EXTENSION, PATH_MAX_LENGTH)
+            < PATH_MAX_LENGTH)
+      filestream_rename(from, to);
+   free(to);
 }
 
 void gfx_thumbnail_results_deinit(void)

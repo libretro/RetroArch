@@ -1992,6 +1992,7 @@ ui_companion_driver_t ui_companion_cocoa = {
    NULL, /* iterate */
    ui_companion_cocoa_event_command,
    NULL, /* notify_refresh */
+   NULL, /* notify_thumbnails */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */
    ui_companion_cocoa_get_main_window,

@@ -53,6 +53,7 @@
 #include "../../msg_hash.h"
 #include "../../paths.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../gfx/gfx_thumbnail_results.h"
 #include "../../verbosity.h"
 #include "../../version.h"
 #include "../../gfx/video_display_server.h"
@@ -1504,7 +1505,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
       if (selectedAction == downloadThumbnailAction.data())
       {
          PlaylistEntry entry = getCurrentContentEntry();
-         QString system = QFileInfo(getCurrentPlaylistPath()).completeBaseName();
+         QString system = entry.thumbnailSystem;
          QString title  = entry.label;
 
          if (!title.isEmpty())
@@ -1515,6 +1516,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_LOGO);
+               m_pendingThumbnailDownloadPath = entry.path;
                downloadThumbnail(system, title);
             }
             else
@@ -5345,7 +5347,7 @@ void MainWindow::onSingleThumbnailDownloadFinishedInternal(
 void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 {
    QString downloadType;
-   QByteArray systemArray, titleArray, typeArray;
+   QByteArray systemArray, titleArray, pathArray, typeArray;
 
    (void)url;
 
@@ -5355,13 +5357,14 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    downloadType = m_pendingThumbnailDownloadTypes.takeFirst();
    systemArray  = system.toUtf8();
    titleArray   = title.toUtf8();
+   pathArray    = m_pendingThumbnailDownloadPath.toUtf8();
    typeArray    = downloadType.toUtf8();
 
    m_downloadingPlaylistThumbnails = false;
 
    if (!companion_core_thumbnail_download(ui_companion_qt_core(),
             systemArray.constData(), titleArray.constData(),
-            typeArray.constData()))
+            pathArray.constData(), typeArray.constData()))
    {
       RARCH_ERR("[Qt] Failed to start thumbnail download.\n");
       m_pendingThumbnailDownloadTypes.clear();
@@ -5425,6 +5428,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
       downloadNextPlaylistThumbnail(
             nextThumbnail.value("db_name"),
             nextThumbnail.value("label_noext"),
+            nextThumbnail.value("path"),
             nextThumbnail.value("type"));
    }
    else
@@ -5443,10 +5447,11 @@ void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
 }
 
 void MainWindow::downloadNextPlaylistThumbnail(
-      QString system, QString title, QString type, QUrl url)
+      QString system, QString title, QString path, QString type, QUrl url)
 {
    QByteArray systemArray = system.toUtf8();
    QByteArray titleArray  = title.toUtf8();
+   QByteArray pathArray   = path.toUtf8();
    QByteArray typeArray   = type.toUtf8();
 
    (void)url;
@@ -5455,7 +5460,7 @@ void MainWindow::downloadNextPlaylistThumbnail(
     * core reports every one it does start. */
    while (!companion_core_thumbnail_download(ui_companion_qt_core(),
             systemArray.constData(), titleArray.constData(),
-            typeArray.constData()))
+            pathArray.constData(), typeArray.constData()))
    {
       m_failedThumbnails++;
 
@@ -5470,6 +5475,7 @@ void MainWindow::downloadNextPlaylistThumbnail(
          QHash<QString, QString> next = m_pendingPlaylistThumbnails.takeAt(0);
          systemArray = next.value("db_name").toUtf8();
          titleArray  = next.value("label_noext").toUtf8();
+         pathArray   = next.value("path").toUtf8();
          typeArray   = next.value("type").toUtf8();
       }
    }
@@ -5503,8 +5509,9 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
          m_playlistModel->index(i, 0).data(
                PlaylistModel::ENTRY).value<PlaylistEntry>();
 
-      hash["db_name"]     = itemEntry.dbName;
+      hash["db_name"]     = itemEntry.thumbnailSystem;
       hash["label_noext"] = itemEntry.labelNoExt;
+      hash["path"]        = itemEntry.path;
       hash["type"]        = THUMBNAIL_BOXART;
 
       hash2               = hash;
@@ -5540,6 +5547,7 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
       downloadNextPlaylistThumbnail(
             firstThumbnail.value("db_name"),
             firstThumbnail.value("label_noext"),
+            firstThumbnail.value("path"),
             firstThumbnail.value("type"));
    }
 }
@@ -8201,6 +8209,7 @@ bool PlaylistModel::setData(const QModelIndex &index, const QVariant &value, int
       rowEntry.labelNoExt = QFileInfo(value.toString()).completeBaseName();
 
       m_contents.replace(index.row(), rowEntry);
+      m_thumbnailPaths.remove(index.row());
       emit dataChanged(index, index, { role });
       return true;
    }
@@ -8221,6 +8230,12 @@ QVariant PlaylistModel::headerData(int section,
 void PlaylistModel::setThumbnailType(const ThumbnailType type)
 {
    m_thumbnailType = type;
+   m_thumbnailPaths.clear();
+}
+
+void PlaylistModel::clearThumbnailPaths()
+{
+   m_thumbnailPaths.clear();
 }
 
 void PlaylistModel::setThumbnailCacheLimit(int limit)
@@ -8273,24 +8288,25 @@ bool PlaylistModel::isSupportedImage(const QString path) const
    return image_texture_get_type(pathArray.constData()) != IMAGE_TYPE_NONE;
 }
 
-QString PlaylistModel::getRepositoryThumbnailPath(const QString playlistName,
-      const QString labelNoExt, const QString type) const
+QString PlaylistModel::getThumbnailSavePath(const PlaylistEntry &entry,
+      const QString type) const
 {
    char path[PATH_MAX_LENGTH];
-   QByteArray dbArray    = playlistName.toUtf8();
+   QByteArray dbArray    = entry.thumbnailSystem.toUtf8();
    QByteArray typeArray  = type.toUtf8();
-   QByteArray labelArray = labelNoExt.toUtf8();
+   QByteArray labelArray = entry.labelNoExt.toUtf8();
+   QByteArray pathArray  = entry.path.toUtf8();
 
-   companion_core_thumbnail_path(ui_companion_qt_core(),
+   companion_core_thumbnail_save_path(ui_companion_qt_core(),
          dbArray.constData(), typeArray.constData(), labelArray.constData(),
-         NULL, path, sizeof(path));
+         pathArray.constData(), path, sizeof(path));
    return QString::fromUtf8(path);
 }
 
 QString PlaylistModel::getThumbnailPath(const PlaylistEntry &entry, QString type) const
 {
    char path[PATH_MAX_LENGTH];
-   QByteArray dbArray    = entry.dbName.toUtf8();
+   QByteArray dbArray    = entry.thumbnailSystem.toUtf8();
    QByteArray typeArray  = type.toUtf8();
    QByteArray labelArray = entry.labelNoExt.toUtf8();
    QByteArray pathArray  = entry.path.toUtf8();
@@ -8303,21 +8319,33 @@ QString PlaylistModel::getThumbnailPath(const PlaylistEntry &entry, QString type
 
 QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) const
 {
+   QString path;
+   QHash<int, QString>::const_iterator it =
+      m_thumbnailPaths.constFind(index.row());
+
+   if (it != m_thumbnailPaths.constEnd())
+      return it.value();
+
    switch (m_thumbnailType)
    {
       case THUMBNAIL_TYPE_BOXART:
-         return getThumbnailPath(index, THUMBNAIL_BOXART);
+         path = getThumbnailPath(index, THUMBNAIL_BOXART);
+         break;
       case THUMBNAIL_TYPE_SCREENSHOT:
-         return getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
+         path = getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
+         break;
       case THUMBNAIL_TYPE_TITLE_SCREEN:
-         return getThumbnailPath(index, THUMBNAIL_TITLE);
+         path = getThumbnailPath(index, THUMBNAIL_TITLE);
+         break;
       case THUMBNAIL_TYPE_LOGO:
-         return getThumbnailPath(index, THUMBNAIL_LOGO);
+         path = getThumbnailPath(index, THUMBNAIL_LOGO);
+         break;
       default:
          break;
    }
 
-   return QString();
+   m_thumbnailPaths.insert(index.row(), path);
+   return path;
 }
 
 void PlaylistModel::reloadThumbnail(const QModelIndex &index)
@@ -8338,6 +8366,7 @@ void PlaylistModel::reloadSystemThumbnails(const QString system)
 	   + QString("/") + system;
    QList<QString>             keys = m_cache.keys();
 
+   m_thumbnailPaths.clear();
    for (i = 0; i < keys.size(); i++)
    {
       QString key = keys.at(i);
@@ -8355,6 +8384,7 @@ void PlaylistModel::reloadThumbnailPath(const QString path)
 {
    QList<QString> keys = m_cache.keys();
    int i;
+   m_thumbnailPaths.clear();
    for (i = 0; i < keys.size(); i++)
       if (keys.at(i).startsWith(path + QLatin1Char('@')))
          m_cache.remove(keys.at(i));
@@ -9146,7 +9176,11 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          if (showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST)).arg(selectedItem->text()), MainWindow::MSGBOX_TYPE_QUESTION_YESNO, Qt::ApplicationModal, false))
          {
             if (currentPlaylistFile.remove())
+            {
+               QByteArray pathArray = currentPlaylistFile.fileName().toUtf8();
+               gfx_thumbnail_results_forget(pathArray.constData());
                reloadPlaylists();
+            }
             else
                showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          }
@@ -9478,11 +9512,17 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
 
 void MainWindow::getPlaylistFiles()
 {
+   int i;
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
 
    m_playlistFiles = playlistDir.entryList(
          QDir::NoDotAndDotDot | QDir::Readable | QDir::Files, QDir::Name);
+   for (i = m_playlistFiles.count() - 1; i >= 0; i--)
+      if (m_playlistFiles.at(i).endsWith(
+            FILE_PATH_LPL_EXTENSION FILE_PATH_THUMBS_EXTENSION,
+            Qt::CaseInsensitive))
+         m_playlistFiles.removeAt(i);
 }
 
 /* Copy the companion core's currently loaded playlist into the pending
@@ -9502,6 +9542,7 @@ void PlaylistModel::appendEntriesFromCore()
    for (i = 0; i < playlistSize; i++)
    {
       PlaylistEntry rowEntry;
+      char system[NAME_MAX_LENGTH];
       const struct playlist_entry *pl_row = companion_core_entry(core, i);
 
       if (!pl_row || !pl_row->path || !*pl_row->path)
@@ -9536,6 +9577,9 @@ void PlaylistModel::appendEntriesFromCore()
          rowEntry.dbName.remove(".lpl");
       }
 
+      companion_core_entry_thumbnail_system(core, i, system, sizeof(system));
+      rowEntry.thumbnailSystem = system;
+
       if (playlistName && *playlistName)
       {
          rowEntry.plName      = playlistName;
@@ -9565,6 +9609,7 @@ void PlaylistModel::startNextPendingPlaylist()
    beginResetModel();
    m_contents          = m_pendingContents;
    m_pendingContents.clear();
+   m_thumbnailPaths.clear();
    m_loadingPlaylists  = false;
    endResetModel();
 
@@ -9616,6 +9661,7 @@ void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
    beginResetModel();
 
    m_contents.clear();
+   m_thumbnailPaths.clear();
 
    for (i = 0; i < dirList.count(); i++)
    {
@@ -9629,6 +9675,7 @@ void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
       rowEntry.label      = filePath;
       rowEntry.labelNoExt = fileInfo.completeBaseName();
       rowEntry.dbName     = fileInfo.dir().dirName();
+      rowEntry.thumbnailSystem = rowEntry.dbName;
 
       m_contents.append(rowEntry);
    }

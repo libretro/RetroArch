@@ -88,7 +88,28 @@ size_t stub_core_count = 0;
 static core_info_t stub_cores[80];
 static char stub_core_names[80][20];
 static core_info_list_t stub_core_list;
-bool core_info_find(const char *core_path, core_info_t **core_info) { (void)core_path; if (core_info) *core_info = NULL; return false; }
+/* core_info_find() knows one core, with @databases, once a test names
+ * it through stub_core_info_find_set(). */
+static char stub_find_core_path[PATH_MAX_LENGTH];
+static char stub_find_core_dbs[NAME_MAX_LENGTH];
+static core_info_t stub_find_core;
+void stub_core_info_find_set(const char *path, const char *databases)
+{
+   strlcpy(stub_find_core_path, path ? path : "", sizeof(stub_find_core_path));
+   strlcpy(stub_find_core_dbs, databases ? databases : "", sizeof(stub_find_core_dbs));
+}
+bool core_info_find(const char *core_path, core_info_t **core_info)
+{
+   if (core_info)
+      *core_info = NULL;
+   if (!*stub_find_core_path || !core_path || strcmp(core_path, stub_find_core_path))
+      return false;
+   memset(&stub_find_core, 0, sizeof(stub_find_core));
+   stub_find_core.databases = *stub_find_core_dbs ? stub_find_core_dbs : NULL;
+   if (core_info)
+      *core_info = &stub_find_core;
+   return true;
+}
 bool core_info_get_list(core_info_list_t **list)
 {
    size_t i;
@@ -277,3 +298,50 @@ size_t input_macro_spec(unsigned number, char *s, size_t len)
       return 0;
    return strlcpy(s, stub_macro_text[number], len);
 }
+
+char stub_match_push_path[PATH_MAX_LENGTH];
+bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
+      playlist_t *playlist, const char *dir_thumbnails,
+      const char *dir_database, bool allow_non_png)
+{
+   (void)playlist;
+   (void)dir_thumbnails;
+   (void)dir_database;
+   (void)allow_non_png;
+   strlcpy(stub_match_push_path,
+         playlist_config ? playlist_config->path : "",
+         sizeof(stub_match_push_path));
+   return true;
+}
+
+#ifdef HAVE_NETWORKING
+/* The thumbnail downloader: the transfer is recorded, and the test
+ * finishes it, writing the body where the stream would, then running
+ * the callback. */
+char stub_http_url[PATH_MAX_LENGTH];
+char stub_http_path[PATH_MAX_LENGTH];
+retro_task_callback_t stub_http_cb;
+void *stub_http_ud;
+
+void net_http_urlencode(char **dest, const char *source)
+{
+   *dest = strdup(source);
+}
+
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   (void)mute; (void)title; (void)headers;
+   strlcpy(stub_http_url, url, sizeof(stub_http_url));
+   strlcpy(stub_http_path, path, sizeof(stub_http_path));
+   stub_http_cb = cb;
+   stub_http_ud = user_data;
+   return &stub_http_cb;
+}
+
+void task_set_flags(retro_task_t *task, uint8_t flags, bool set)
+{
+   (void)task; (void)flags; (void)set;
+}
+#endif

@@ -79,6 +79,7 @@ struct PlaylistEntry
    QString coreName;
    QString crc32;
    QString dbName;
+   QString thumbnailSystem; /* thumbnails/<system> folder */
    QString plName;
    QString plPath;
    unsigned index = 0;

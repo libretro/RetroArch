@@ -1334,9 +1334,10 @@ static void cb_task_pl_thumbnail_match(retro_task_t *task,
       m->core_count = 0;
    }
    if (changed)
+   {
       pl_thumb_match_refresh(m->playlist_config.path);
-   if (m->flags & PL_THUMB_MATCH_FLAG_CHANGED)
-      ui_companion_driver_notify_refresh();
+      ui_companion_driver_notify_thumbnails(m->playlist_config.path);
+   }
 }
 
 static void task_pl_thumbnail_match_cleanup(retro_task_t *task)

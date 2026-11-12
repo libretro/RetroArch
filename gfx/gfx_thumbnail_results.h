@@ -96,11 +96,16 @@ bool gfx_thumbnail_results_install(const char *playlist_path,
 bool gfx_thumbnail_results_note(const char *playlist_path,
       const char *content_path, const char *label, const char *system,
       unsigned type, const char *name);
-/* Borrowed until the next _open, _install, _forget or _deinit. */
+/* Borrowed until the next _open, _install, _forget, _rename or
+ * _deinit. */
 const char *gfx_thumbnail_results_lookup(const char *content_path,
       const char *label, const char *system, unsigned type);
 /* The playlist is gone: its table, and its cache file. */
 void gfx_thumbnail_results_forget(const char *playlist_path);
+/* The playlist was renamed: its cache file follows it. Both paths
+ * start over; the new one loads that cache and resolves again. */
+void gfx_thumbnail_results_rename(const char *old_path,
+      const char *new_path);
 void gfx_thumbnail_results_deinit(void);
 
 RETRO_END_DECLS
