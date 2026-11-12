@@ -153,6 +153,7 @@
 #endif
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
+#include "../gfx/gfx_thumbnail_results.h"
 #include "../dynamic.h"
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
@@ -4871,10 +4872,13 @@ static void menu_displaylist_set_new_playlist(
 
       strlcpy(menu->db_playlist_file, path, sizeof(menu->db_playlist_file));
 
+      gfx_thumbnail_results_release(GFX_THUMBNAIL_RESULTS_HOLD_MENU);
       task_push_pl_thumbnail_match(&playlist_config, playlist,
             settings->paths.directory_thumbnails,
             settings->paths.path_content_database,
             settings->bools.playlist_allow_non_png);
+      gfx_thumbnail_results_hold(playlist_config.path,
+            GFX_THUMBNAIL_RESULTS_HOLD_MENU);
    }
 }
 

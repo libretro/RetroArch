@@ -46,6 +46,7 @@
 #include "../../../verbosity.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../gfx/gfx_thumbnail_results.h"
 #include "../../../msg_hash_lbl_str.h"
 
 static unsigned failures = 0;
@@ -459,6 +460,264 @@ static void lane_reopen(void)
       fprintf(stderr, "[pass] reopen lane\n");
 }
 
+/* Explore steps across more systems than the thumbnail store keeps
+ * besides held playlists: each playlist's matches load once and stay
+ * while Explore shows them. */
+#define HOLD_SYSTEMS 6
+#define HOLD_GAMES   3
+
+static char dir_hold[512];
+
+static void hold_paths(char *pl, char *thumbs_sys, char *art, size_t len,
+      unsigned s, unsigned g)
+{
+   if (pl)
+      snprintf(pl, len, "%s/pl/Hold System %u.lpl", dir_hold, s);
+   if (thumbs_sys)
+      snprintf(thumbs_sys, len, "%s/thumbs/Hold System %u", dir_hold, s);
+   if (art)
+      snprintf(art, len, "%s/thumbs/Hold System %u/Named_Boxarts/"
+            "Game S%u N%04u (USA).png", dir_hold, s, s, g);
+}
+
+static int hold_fixture(void)
+{
+   char path[700], db[64];
+   unsigned s, g;
+   FILE *f;
+   snprintf(path, sizeof(path), "%s/pl", dir_hold);
+   path_mkdir(path);
+   snprintf(path, sizeof(path), "%s/rdb", dir_hold);
+   path_mkdir(path);
+   for (s = 0; s < HOLD_SYSTEMS; s++)
+   {
+      snprintf(db, sizeof(db), "Hold System %u.lpl", s);
+      hold_paths(path, NULL, NULL, sizeof(path), s, 0);
+      if (!(f = fopen(path, "wb")))
+         return 0;
+      fprintf(f, "{\n  \"version\": \"1.5\",\n  \"items\": [\n");
+      for (g = 0; g < HOLD_GAMES; g++)
+         fprintf(f,
+               "    { \"path\": \"/nowhere/h%u/g%04u.bin\", \"label\": \"Game S%u N%04u\","
+               " \"core_path\": \"DETECT\", \"core_name\": \"DETECT\","
+               " \"crc32\": \"%08X|crc\", \"db_name\": \"%s\" }%s\n",
+               s, g, s, g, game_crc(s, g), db,
+               (g + 1 < HOLD_GAMES) ? "," : "");
+      fprintf(f, "  ]\n}\n");
+      fclose(f);
+      snprintf(path, sizeof(path), "%s/rdb/Hold System %u.rdb", dir_hold, s);
+      if (!write_db(path, s))
+         return 0;
+      hold_paths(NULL, path, NULL, sizeof(path), s, 0);
+      path_mkdir(path);
+      strlcat(path, "/Named_Boxarts", sizeof(path));
+      path_mkdir(path);
+      for (g = 0; g < HOLD_GAMES; g++)
+      {
+         hold_paths(NULL, NULL, path, sizeof(path), s, g);
+         if (!(f = fopen(path, "wb")))
+            return 0;
+         fclose(f);
+      }
+   }
+   return 1;
+}
+
+static void hold_fixture_remove(void)
+{
+   char path[700];
+   unsigned s, g;
+   for (s = 0; s < HOLD_SYSTEMS; s++)
+   {
+      for (g = 0; g < HOLD_GAMES; g++)
+      {
+         hold_paths(NULL, NULL, path, sizeof(path), s, g);
+         remove(path);
+      }
+      hold_paths(NULL, path, NULL, sizeof(path), s, 0);
+      strlcat(path, "/Named_Boxarts", sizeof(path));
+      rmdir(path);
+      hold_paths(NULL, path, NULL, sizeof(path), s, 0);
+      rmdir(path);
+      hold_paths(path, NULL, NULL, sizeof(path), s, 0);
+      remove(path);
+      strlcat(path, ".thumbs", sizeof(path));
+      remove(path);
+      snprintf(path, sizeof(path), "%s/rdb/Hold System %u.rdb", dir_hold, s);
+      remove(path);
+   }
+   snprintf(path, sizeof(path), "%s/thumbs", dir_hold);
+   rmdir(path);
+   snprintf(path, sizeof(path), "%s/pl", dir_hold);
+   rmdir(path);
+   snprintf(path, sizeof(path), "%s/rdb", dir_hold);
+   rmdir(path);
+   rmdir(dir_hold);
+}
+
+static bool any_task(retro_task_t *task, void *user_data)
+{
+   (void)task; (void)user_data;
+   return true;
+}
+
+static bool tasks_queued(void)
+{
+   task_finder_data_t find;
+   find.func     = any_task;
+   find.userdata = NULL;
+   return task_queue_find(&find);
+}
+
+static bool hold_shows(unsigned s, unsigned g)
+{
+   char path[64], label[64], sys[64], want[64];
+   const char *got;
+   snprintf(path,  sizeof(path),  "/nowhere/h%u/g%04u.bin", s, g);
+   snprintf(label, sizeof(label), "Game S%u N%04u", s, g);
+   snprintf(sys,   sizeof(sys),   "Hold System %u", s);
+   snprintf(want,  sizeof(want),  "Game S%u N%04u (USA).png", s, g);
+   got = gfx_thumbnail_results_lookup(path, label, sys,
+         GFX_THUMBNAIL_RESULT_BOXARTS, false);
+   return got && !strcmp(got, want);
+}
+
+/* As the menu's teardown: the menu's playlist may be one of Explore's */
+static void hold_explore_free(void)
+{
+   gfx_thumbnail_set_content_playlist(
+         menu_state_get_ptr()->thumbnail_path_data, NULL, 0);
+   playlist_free_cached();
+   menu_explore_free();
+}
+
+static void lane_thumbnail_holds(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *menu_stack    = menu_list ? MENU_LIST_GET(menu_list, 0) : NULL;
+   file_list_t *buf           = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   settings_t *settings       = config_get_ptr();
+   unsigned types[HOLD_SYSTEMS][HOLD_GAMES];
+   unsigned found[HOLD_SYSTEMS];
+   char thumbs_was[PATH_MAX_LENGTH];
+   char thumbs[600];
+   unsigned showall = 0;
+   unsigned queued  = 0;
+   unsigned shown   = 0;
+   unsigned had     = failures;
+   unsigned round, s, g, kept;
+   size_t i;
+
+   CHECK(menu_stack && buf, "no menu to build the Explore screen in");
+   if (!menu_stack || !buf || !hold_fixture())
+   {
+      CHECK(0, "no hold fixture");
+      return;
+   }
+   memset(found, 0, sizeof(found));
+   strlcpy(thumbs_was, settings->paths.directory_thumbnails, sizeof(thumbs_was));
+   snprintf(thumbs, sizeof(thumbs), "%s/thumbs", dir_hold);
+   strlcpy(settings->paths.directory_thumbnails, thumbs,
+         sizeof(settings->paths.directory_thumbnails));
+
+   {
+      char pl[600], rdb[600];
+      snprintf(pl,  sizeof(pl),  "%s/pl", dir_hold);
+      snprintf(rdb, sizeof(rdb), "%s/rdb", dir_hold);
+      menu_explore_free();
+      CHECK(task_push_menu_explore_init(pl, rdb), "the explore task was not pushed");
+   }
+   for (i = 0; i < 2000 && menu_explore_init_in_progress(NULL); i++)
+   {
+      runloop_iterate();
+      task_queue_check();
+   }
+
+   /* Explore > Show All */
+   menu_entries_append(menu_stack, MENU_ENUM_LABEL_GOTO_EXPLORE_STR,
+         MENU_ENUM_LABEL_GOTO_EXPLORE_STR, MENU_ENUM_LABEL_GOTO_EXPLORE,
+         MENU_EXPLORE_TAB, 0, 0, NULL);
+   menu_entries_clear(buf);
+   menu_displaylist_explore(buf, settings);
+   for (i = 0; i < buf->size; i++)
+      if (     buf->list[i].path && !strcmp(buf->list[i].path,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL)))
+         showall = buf->list[i].type;
+   CHECK(showall, "no Show All row");
+   menu_entries_append(menu_stack, "", "", MSG_UNKNOWN, showall, 0, 0, NULL);
+   menu_entries_clear(buf);
+   menu_displaylist_explore(buf, settings);
+   for (i = 0; i < buf->size; i++)
+   {
+      playlist_t *pl = NULL;
+      const char *p;
+      if (     menu_explore_get_entry_playlist_index(buf->list[i].type, &pl,
+                  NULL, NULL, NULL, NULL) < 0
+            || !pl || !(p = strstr(playlist_get_conf_path(pl), "Hold System ")))
+         continue;
+      s = (unsigned)(p[12] - '0');
+      if (s < HOLD_SYSTEMS && found[s] < HOLD_GAMES)
+         types[s][found[s]++] = buf->list[i].type;
+   }
+   for (s = 0; s < HOLD_SYSTEMS; s++)
+      CHECK(found[s] == HOLD_GAMES, "system %u: %u rows", s, found[s]);
+   if (failures != had)
+      goto done;
+
+   /* No thumbnails folder: nothing is held, so the rows ask again */
+   settings->paths.directory_thumbnails[0] = '\0';
+   for (s = 0; s < HOLD_SYSTEMS; s++)
+      menu_explore_set_playlist_thumbnail(types[s][0],
+            menu_st->thumbnail_path_data);
+   strlcpy(settings->paths.directory_thumbnails, thumbs,
+         sizeof(settings->paths.directory_thumbnails));
+
+   /* Down the list one entry per system in turn, three times */
+   for (round = 0; round < 3; round++)
+   {
+      for (g = 0; g < HOLD_GAMES; g++)
+      {
+         for (s = 0; s < HOLD_SYSTEMS; s++)
+         {
+            menu_explore_set_playlist_thumbnail(types[s][g],
+                  menu_st->thumbnail_path_data);
+            if (round)
+            {
+               queued += tasks_queued();
+               shown  += hold_shows(s, g);
+            }
+         }
+      }
+      for (i = 0; i < 200000 && tasks_queued(); i++)
+         task_queue_check();
+   }
+   CHECK(!queued, "%u steps after the loads queued a task", queued);
+   CHECK(shown == 2 * HOLD_GAMES * HOLD_SYSTEMS,
+         "%u of %u steps after the loads found their stored match", shown,
+         2 * HOLD_GAMES * HOLD_SYSTEMS);
+
+   hold_explore_free();
+   for (s = 0; s < 4; s++)
+   {
+      char other[64];
+      snprintf(other, sizeof(other), "/elsewhere/%u.lpl", s);
+      gfx_thumbnail_results_open(other);
+   }
+   for (kept = 0, s = 0; s < HOLD_SYSTEMS; s++)
+      kept += hold_shows(s, 0);
+   CHECK(!kept, "freed Explore still holds %u playlists", kept);
+
+done:
+   menu_entries_clear(buf);
+   hold_explore_free();
+   strlcpy(settings->paths.directory_thumbnails, thumbs_was,
+         sizeof(settings->paths.directory_thumbnails));
+   hold_fixture_remove();
+   if (failures == had)
+      fprintf(stderr, "[pass] thumbnail holds lane\n");
+}
+
 /* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
@@ -482,6 +741,7 @@ int main(int argc, char *argv[])
    }
    snprintf(dir_playlists, sizeof(dir_playlists), "%s/playlists", dir);
    snprintf(dir_database,  sizeof(dir_database),  "%s/rdb", dir);
+   snprintf(dir_hold,      sizeof(dir_hold),      "%s/hold", dir);
    if (!path_mkdir(dir) || !path_mkdir(dir_playlists) || !path_mkdir(dir_database))
       return 1;
    for (s = 0; s < SYSTEMS; s++)
@@ -535,6 +795,7 @@ int main(int argc, char *argv[])
    lane_task();
    lane_labels();
    lane_reopen();
+   lane_thumbnail_holds();
 
    main_exit(NULL);
 

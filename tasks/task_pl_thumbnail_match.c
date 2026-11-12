@@ -1614,6 +1614,10 @@ bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
          strlen(name), STRLEN_CONST("_history.lpl")))
       return false;
    need = gfx_thumbnail_results_open(playlist_config->path);
+   /* Without the cores a resolve would drop the db-less rows; the
+    * next push with the playlist resolves */
+   if (!collection && !playlist)
+      need &= ~GFX_THUMBNAIL_RESULTS_RESOLVE;
    pl_thumb_match_drain(allow_non_png, NULL);
    if (!need)
       return false;

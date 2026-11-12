@@ -62,6 +62,8 @@
 #include "../companion_core.h"
 
 extern char stub_match_push_path[];
+extern unsigned stub_match_pushes;
+extern unsigned stub_match_bare_pushes;
 extern void stub_core_info_find_set(const char *path, const char *databases);
 #ifdef HAVE_NETWORKING
 #include "../../../tasks/tasks_internal.h"
@@ -587,6 +589,202 @@ static void test_thumbnail_match_push(void)
    CHECK(thumbnails_changed == 1, "the shown playlist's matches: %d notices",
          thumbnails_changed);
    companion_core_free(c);
+}
+
+/* Installs a table naming @path's row @rom "<file name> (Hold).png" */
+static void hold_table(const char *path, const char *rom)
+{
+   char name[64];
+   size_t rec;
+   gfx_thumbnail_results_t *t = gfx_thumbnail_results_new();
+   snprintf(name, sizeof(name), "%s (Hold).png", path_basename(rom));
+   rec = gfx_thumbnail_results_add(t, rom, "L", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS, name);
+   gfx_thumbnail_results_sort(t);
+   gfx_thumbnail_results_install(path, t, NULL, true);
+}
+
+static bool hold_shows(const char *rom)
+{
+   char name[64];
+   const char *got = gfx_thumbnail_results_lookup(rom, "L", "Sys",
+         GFX_THUMBNAIL_RESULT_BOXARTS, false);
+   snprintf(name, sizeof(name), "%s (Hold).png", path_basename(rom));
+   return got && string_is_equal(got, name);
+}
+
+static void open_others(unsigned from, unsigned n)
+{
+   char p[64];
+   for (; n; n--, from++)
+   {
+      snprintf(p, sizeof(p), "/elsewhere/%u.lpl", from);
+      gfx_thumbnail_results_open(p);
+   }
+}
+
+/* The shown playlist keeps its stored matches whatever else opens,
+ * also after the store starts over. */
+static void test_thumbnail_hold(void)
+{
+   char pl[PATH_MAX_LENGTH];
+   companion_core_t *c = make_core();
+
+   gfx_thumbnail_results_deinit();
+   fixture(pl, sizeof(pl), "playlists/Nintendo - Nintendo Entertainment System.lpl");
+   stub_match_pushes = 0;
+   CHECK(companion_core_select_playlist_path(c, pl) && iterate_until_loaded(c),
+         "select %s", pl);
+   hold_table(pl, "/roms/nes/metroid.nes");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/metroid.nes"),
+         "held: the row's stored match outlives six other opens");
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_pushes == 1, "one push while the store keeps it: %u",
+         stub_match_pushes);
+
+   gfx_thumbnail_results_deinit();
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_pushes == 2,
+         "the store started over: one push again, not %u",
+         stub_match_pushes - 1);
+   hold_table(pl, "/roms/nes/metroid.nes");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/metroid.nes"), "and held again");
+
+   companion_core_free(c);
+   open_others(6, 4);
+   CHECK(!hold_shows("/roms/nes/metroid.nes"), "released with the playlist");
+   gfx_thumbnail_results_deinit();
+}
+
+/* All Playlists pushes and holds every playlist it lists. */
+static void test_thumbnail_hold_all(void)
+{
+   char nes[512];
+   char gen[512];
+   companion_core_t *c = make_core();
+
+   gfx_thumbnail_results_deinit();
+   fixture(nes, sizeof(nes), "playlists/Nintendo - Nintendo Entertainment System.lpl");
+   fixture(gen, sizeof(gen), "playlists/Sega - Mega Drive - Genesis.lpl");
+   companion_core_refresh_playlists(c);
+   stub_match_pushes = 0;
+   CHECK(companion_core_select_playlist(c, 0) && iterate_until_loaded(c),
+         "select All Playlists");
+   CHECK(stub_match_pushes == 2, "one push per playlist: %u",
+         stub_match_pushes);
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && hold_shows("/roms/gen/sonic.md"),
+         "every listed playlist held");
+
+   gfx_thumbnail_results_deinit();
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_pushes == 4, "the store started over: each pushed once more: %u",
+         stub_match_pushes);
+
+   CHECK(companion_core_select_playlist_path(c, nes) && iterate_until_loaded(c),
+         "leave for one playlist");
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(6, 4);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && !hold_shows("/roms/gen/sonic.md"),
+         "leaving All Playlists releases the others");
+   companion_core_free(c);
+   gfx_thumbnail_results_deinit();
+}
+
+/* Qt lists All Playlists one playlist after another: each stays held. */
+static void test_thumbnail_hold_append(void)
+{
+   char nes[512];
+   char gen[512];
+   companion_core_t *c = make_core();
+
+   gfx_thumbnail_results_deinit();
+   fixture(nes, sizeof(nes), "playlists/Nintendo - Nintendo Entertainment System.lpl");
+   fixture(gen, sizeof(gen), "playlists/Sega - Mega Drive - Genesis.lpl");
+   stub_match_pushes      = 0;
+   stub_match_bare_pushes = 0;
+   CHECK(   companion_core_select_playlist_path(c, nes) && iterate_until_loaded(c)
+         && companion_core_append_playlist_path(c, gen) && iterate_until_loaded(c),
+         "list two playlists in turn");
+   CHECK(stub_match_pushes == 2 && stub_match_bare_pushes == 0,
+         "one push per playlist, with its parsed playlist: %u, %u bare",
+         stub_match_pushes, stub_match_bare_pushes);
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && hold_shows("/roms/gen/sonic.md"),
+         "every listed playlist held");
+   thumbnails_changed = 0;
+   companion_core_notify_thumbnails(c, nes);
+   CHECK(thumbnails_changed == 1, "the first playlist's matches: %d notices",
+         thumbnails_changed);
+
+   gfx_thumbnail_results_deinit();
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_pushes == 4, "the store started over: each pushed once more: %u",
+         stub_match_pushes);
+   CHECK(stub_match_bare_pushes == 1,
+         "the earlier playlist by its path, not kept parsed: %u bare",
+         stub_match_bare_pushes);
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && hold_shows("/roms/gen/sonic.md"),
+         "and both held again");
+
+   CHECK(companion_core_select_playlist_path(c, nes) && iterate_until_loaded(c),
+         "select one playlist");
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(6, 4);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && !hold_shows("/roms/gen/sonic.md"),
+         "selecting one releases the others");
+
+   /* An append is a plain select with a parse pending, */
+   CHECK(   companion_core_append_playlist_path(c, gen)
+         && companion_core_append_playlist_path(c, gen)
+         && iterate_until_loaded(c)
+         && string_is_equal(companion_core_selected_playlist_path(c), gen),
+         "append while a parse is pending");
+   thumbnails_changed = 0;
+   companion_core_notify_thumbnails(c, nes);
+   CHECK(thumbnails_changed == 0, "the one listed before is let go: %d notices",
+         thumbnails_changed);
+   /* for All Playlists, */
+   companion_core_refresh_playlists(c);
+   CHECK(   companion_core_append_playlist_path(c,
+               COMPANION_ALL_PLAYLISTS_TOKEN)
+         && iterate_until_loaded(c) && companion_core_entry_count(c) == 5,
+         "append All Playlists: its 5 entries, got %u",
+         (unsigned)companion_core_entry_count(c));
+   stub_match_bare_pushes = 0;
+   gfx_thumbnail_results_deinit();
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_bare_pushes == 0,
+         "and keeps no earlier playlist by its path: %u bare",
+         stub_match_bare_pushes);
+   /* and in All Playlists */
+   CHECK(   companion_core_append_playlist_path(c, gen)
+         && iterate_until_loaded(c) && companion_core_entry_count(c) == 2,
+         "append in All Playlists: one playlist's 2 entries, got %u",
+         (unsigned)companion_core_entry_count(c));
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(10, 4);
+   CHECK(!hold_shows("/roms/nes/alpha.nes") && hold_shows("/roms/gen/sonic.md"),
+         "and leaves it, releasing the others");
+   companion_core_free(c);
+   gfx_thumbnail_results_deinit();
 }
 
 #ifdef HAVE_NETWORKING
@@ -2007,6 +2205,9 @@ int main(void)
    test_thumbnail_path();
    test_entry_thumbnail_system();
    test_thumbnail_match_push();
+   test_thumbnail_hold();
+   test_thumbnail_hold_all();
+   test_thumbnail_hold_append();
 #ifdef HAVE_NETWORKING
    test_thumbnail_download();
 #endif

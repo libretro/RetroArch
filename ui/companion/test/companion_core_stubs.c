@@ -38,6 +38,7 @@
 #include "../../../input/input_driver.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../paths.h"
+#include "../../../gfx/gfx_thumbnail_results.h"
 
 settings_t test_settings;
 runloop_state_t test_runloop;
@@ -300,17 +301,24 @@ size_t input_macro_spec(unsigned number, char *s, size_t len)
 }
 
 char stub_match_push_path[PATH_MAX_LENGTH];
+unsigned stub_match_pushes;
+unsigned stub_match_bare_pushes; /* without a parsed playlist */
+/* Opens the playlist in the store, as the task does */
 bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
       playlist_t *playlist, const char *dir_thumbnails,
       const char *dir_database, bool allow_non_png)
 {
-   (void)playlist;
    (void)dir_thumbnails;
    (void)dir_database;
    (void)allow_non_png;
    strlcpy(stub_match_push_path,
          playlist_config ? playlist_config->path : "",
          sizeof(stub_match_push_path));
+   stub_match_pushes++;
+   if (!playlist)
+      stub_match_bare_pushes++;
+   if (playlist_config)
+      gfx_thumbnail_results_open(playlist_config->path);
    return true;
 }
 

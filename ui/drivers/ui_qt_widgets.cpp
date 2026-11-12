@@ -8647,7 +8647,9 @@ void PlaylistModel::appendEntriesFromCore()
    }
 }
 
-void PlaylistModel::startNextPendingPlaylist()
+/* @append: the playlists loaded before keep their thumbnail matches
+ * in the core, so every one of All Playlists does. */
+void PlaylistModel::startNextPendingPlaylist(bool append)
 {
    while (!m_pendingPaths.isEmpty())
    {
@@ -8656,7 +8658,10 @@ void PlaylistModel::startNextPendingPlaylist()
       /* The parse is driven from the runloop by companion_core_iterate()
        * under a time budget; onCorePlaylistChanged() fires when it is
        * done. Nothing blocks here, however large the playlist. */
-      if (companion_core_select_playlist_path(ui_companion_qt_core(),
+      if (append
+            ? companion_core_append_playlist_path(ui_companion_qt_core(),
+               pathArray.constData())
+            : companion_core_select_playlist_path(ui_companion_qt_core(),
                pathArray.constData()))
          return;
       /* Unreadable path: skip it and try the next one. */
@@ -8678,7 +8683,7 @@ void PlaylistModel::onCorePlaylistChanged()
    if (!m_loadingPlaylists)
       return;
    appendEntriesFromCore();
-   startNextPendingPlaylist();
+   startNextPendingPlaylist(true);
 }
 
 bool PlaylistModel::isLoadingPlaylists() const
@@ -8698,7 +8703,7 @@ void PlaylistModel::addPlaylistItems(const QStringList &paths, bool add)
    m_pendingContents.clear();
    m_loadingPlaylists = true;
 
-   startNextPendingPlaylist();
+   startNextPendingPlaylist(false);
 }
 
 void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)

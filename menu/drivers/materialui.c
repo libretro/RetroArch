@@ -4829,7 +4829,10 @@ static void materialui_render(void *data,
                   list->list[entry_idx].type, &mui->playlist, &playlist_entry, list, &entry_idx, &list_size);
 
             if (list_idx > -1)
+            {
                playlist_idx = list_idx;
+               menu_explore_push_thumbnail_match(mui->playlist);
+            }
          }
 
          if (!materialui_render_process_entry(
@@ -10156,15 +10159,6 @@ static void materialui_navigation_set(void *data, bool scroll)
       mui->mainmenu_selection_ptr = selection;
    else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS)))
       mui->settings_selection_ptr = selection;
-
-#if defined(HAVE_LIBRETRODB)
-   if (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)
-   {
-      file_list_t *list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
-      if (list && selection < list->size)
-         menu_explore_push_thumbnail_match(list->list[selection].type);
-   }
-#endif
 
    /* Update possible fullscreen thumbnail label */
    if (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)

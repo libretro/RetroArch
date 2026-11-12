@@ -110,6 +110,10 @@ struct companion_core
    playlist_t *playlist;
    playlist_parse_t *pending_parse;
    size_t selected;
+   /* The thumbnail store's generation its playlists were pushed under */
+   unsigned results_gen;
+   /* Files appended before it: held, by path only */
+   struct string_list *appended;
 
    /* File the selected playlist was loaded from (select_playlist_path
     * may name a file outside the playlist directory). */
@@ -195,6 +199,8 @@ static void companion_core_clear_playlist(companion_core_t *core)
       playlist_free(core->playlist);
       core->playlist = NULL;
    }
+   string_list_free(core->appended);
+   core->appended = NULL;
    for (i = 0; i < core->all_n; i++)
       if (core->all_lists[i])
          playlist_free(core->all_lists[i]);
@@ -204,6 +210,7 @@ static void companion_core_clear_playlist(companion_core_t *core)
    core->all_index = NULL;
    core->all_n     = core->all_count = core->all_next = 0;
    core->all_mode  = false;
+   gfx_thumbnail_results_release(GFX_THUMBNAIL_RESULTS_HOLD_COMPANION);
 }
 
 static bool companion_core_budget_cb(void *ud)
@@ -1239,6 +1246,40 @@ static void companion_core_all_finish(companion_core_t *core)
       core->all_count = cap;
 }
 
+static void companion_core_push_match(const playlist_config_t *cfg,
+      playlist_t *pl)
+{
+   settings_t *settings = config_get_ptr();
+   task_push_pl_thumbnail_match(cfg, pl,
+         settings->paths.directory_thumbnails,
+         settings->paths.path_content_database,
+         settings->bools.playlist_allow_non_png);
+   gfx_thumbnail_results_hold(cfg->path,
+         GFX_THUMBNAIL_RESULTS_HOLD_COMPANION);
+}
+
+/* The shown playlists keep their thumbnail matches in the store. */
+static void companion_core_push_matches(companion_core_t *core)
+{
+   size_t i;
+   core->results_gen = gfx_thumbnail_results_generation();
+   if (core->playlist)
+      companion_core_push_match(playlist_get_config(core->playlist),
+            core->playlist);
+   for (i = 0; i < core->all_n; i++)
+      if (core->all_lists[i])
+         companion_core_push_match(playlist_get_config(core->all_lists[i]),
+               core->all_lists[i]);
+   /* Without its playlist, history and favorites only load their cache;
+    * rows added since get their art when shown again. */
+   for (i = 0; core->appended && i < core->appended->size; i++)
+   {
+      companion_core_playlist_config_init(&core->playlist_cfg,
+            core->appended->elems[i].data);
+      companion_core_push_match(&core->playlist_cfg, NULL);
+   }
+}
+
 void companion_core_iterate(companion_core_t *core, unsigned budget_us)
 {
    int ret;
@@ -1247,7 +1288,12 @@ void companion_core_iterate(companion_core_t *core, unsigned budget_us)
       return;
    companion_core_browse_poll(core);
    if (!core->pending_parse)
+   {
+      /* The store started over */
+      if (core->results_gen != gfx_thumbnail_results_generation())
+         companion_core_push_matches(core);
       return;
+   }
 
    core->budget_end = cpu_features_get_time_usec() + (retro_time_t)budget_us;
    ret              = playlist_parse_step(core->pending_parse,
@@ -1272,15 +1318,14 @@ void companion_core_iterate(companion_core_t *core, unsigned budget_us)
    {
       core->playlist      = playlist_parse_end(core->pending_parse);
       core->pending_parse = NULL;
-      if (core->playlist)
-      {
-         settings_t *settings = config_get_ptr();
-         task_push_pl_thumbnail_match(playlist_get_config(core->playlist),
-               core->playlist, settings->paths.directory_thumbnails,
-               settings->paths.path_content_database,
-               settings->bools.playlist_allow_non_png);
-      }
    }
+   /* Those appended before were pushed under this generation */
+   if (     core->all_mode
+         || core->results_gen != gfx_thumbnail_results_generation())
+      companion_core_push_matches(core);
+   else if (core->playlist)
+      companion_core_push_match(playlist_get_config(core->playlist),
+            core->playlist);
 
    if (core->cb.on_playlist_changed)
       core->cb.on_playlist_changed(core->ud);
@@ -1581,11 +1626,12 @@ bool companion_core_playlist_delete(companion_core_t *core, const char *path)
 /* --- Selected playlist ----------------------------------------------- */
 
 static bool companion_core_begin_playlist(companion_core_t *core,
-      const char *path, size_t index)
+      const char *path, size_t index, bool keep)
 {
    playlist_config_t *cfg = &core->playlist_cfg;
 
-   companion_core_clear_playlist(core);
+   if (!keep)
+      companion_core_clear_playlist(core);
    core->selected = index;
    /* @path may be the core's own selected_path (a backend reloading
     * the shown playlist hands companion_core_selected_playlist_path()
@@ -1620,25 +1666,57 @@ bool companion_core_select_playlist(companion_core_t *core, size_t i)
    const char *path = companion_core_playlist_path(core, i);
    if (!path)
       return false;
-   return companion_core_begin_playlist(core, path, i);
+   return companion_core_begin_playlist(core, path, i, false);
+}
+
+static bool companion_core_select_path(companion_core_t *core,
+      const char *path, bool keep)
+{
+   size_t i;
+   size_t n = companion_core_playlist_count(core);
+   for (i = 0; i < n; i++)
+   {
+      const char *p_i = companion_core_playlist_path(core, i);
+      if (p_i && string_is_equal(path, p_i))
+         return companion_core_begin_playlist(core, path, i, keep);
+   }
+   return companion_core_begin_playlist(core, path, COMPANION_NO_SELECTION,
+         keep);
 }
 
 bool companion_core_select_playlist_path(companion_core_t *core,
       const char *path)
 {
-   size_t i, n;
+   if (!core || string_is_empty(path))
+      return false;
+   return companion_core_select_path(core, path, false);
+}
+
+/* The playlists listed before keep only their paths, held: pushed again
+ * when the store starts over, released with the listing. */
+bool companion_core_append_playlist_path(companion_core_t *core,
+      const char *path)
+{
+   union string_list_elem_attr attr;
 
    if (!core || string_is_empty(path))
       return false;
-
-   n = companion_core_playlist_count(core);
-   for (i = 0; i < n; i++)
+   if (     core->all_mode || core->pending_parse
+         || string_is_equal(path, COMPANION_ALL_PLAYLISTS_TOKEN))
+      return companion_core_select_path(core, path, false);
+   if (core->playlist)
    {
-      const char *p_i = companion_core_playlist_path(core, i);
-      if (p_i && string_is_equal(path, p_i))
-         return companion_core_begin_playlist(core, path, i);
+      attr.i = 0;
+      if (!core->appended)
+         core->appended = string_list_new();
+      if (     !core->appended
+            || !string_list_append(core->appended,
+               playlist_get_conf_path(core->playlist), attr))
+         return companion_core_select_path(core, path, false);
+      playlist_free(core->playlist);
+      core->playlist = NULL;
    }
-   return companion_core_begin_playlist(core, path, COMPANION_NO_SELECTION);
+   return companion_core_select_path(core, path, true);
 }
 
 size_t companion_core_selected_playlist(companion_core_t *core)
@@ -3667,13 +3745,22 @@ void companion_core_notify_refresh(companion_core_t *core)
 void companion_core_notify_thumbnails(companion_core_t *core,
       const char *playlist_path)
 {
+   size_t i, n;
    if (!core || !core->cb.on_thumbnails_changed)
       return;
    /* All Playlists shows rows of every playlist */
    if (     !core->all_mode
          && (!core->playlist || !string_is_equal(playlist_path,
                playlist_get_conf_path(core->playlist))))
-      return;
+   {
+      /* or an appended one */
+      n = core->appended ? core->appended->size : 0;
+      for (i = 0; i < n; i++)
+         if (string_is_equal(playlist_path, core->appended->elems[i].data))
+            break;
+      if (i == n)
+         return;
+   }
    core->cb.on_thumbnails_changed(core->ud);
 }
 

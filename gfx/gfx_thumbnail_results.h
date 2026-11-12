@@ -98,9 +98,20 @@ typedef struct gfx_thumbnail_results_save
 typedef bool (*gfx_thumbnail_results_busy_t)(const char *playlist_path,
       void *userdata);
 
-/* The store keeps the tables of the last playlists opened.
- * Main thread only. */
+/* What shows a playlist, for gfx_thumbnail_results_hold(). */
+#define GFX_THUMBNAIL_RESULTS_HOLD_MENU      (1 << 0)
+#define GFX_THUMBNAIL_RESULTS_HOLD_EXPLORE   (1 << 1)
+#define GFX_THUMBNAIL_RESULTS_HOLD_COMPANION (1 << 2)
+
+/* The store keeps the tables of the playlists held and of the last
+ * few others opened. Main thread only. */
 unsigned gfx_thumbnail_results_open(const char *playlist_path);
+/* Keeps an opened playlist until @hold is released; false if it is
+ * not open. */
+bool gfx_thumbnail_results_hold(const char *playlist_path, unsigned hold);
+void gfx_thumbnail_results_release(unsigned hold);
+/* Changes when _deinit drops every playlist. */
+unsigned gfx_thumbnail_results_generation(void);
 /* Takes @t and @notes. false, with both freed, once the playlist is not
  * kept, unless its notes still wait to be written: they take them;
  * @resolved still counts once newer playlists pushed it out. */
@@ -116,8 +127,8 @@ bool gfx_thumbnail_results_note(const char *playlist_path,
       unsigned type, const char *name);
 /* Notes first, unless the note's own playlist's table names a file the
  * menu shows for that entry; then the first such file a table names.
- * Borrowed until the next _open, _install, _forget, _rename or
- * _deinit. */
+ * Borrowed until the next _open, _install, _release, _forget, _rename
+ * or _deinit. */
 const char *gfx_thumbnail_results_lookup(const char *content_path,
       const char *label, const char *system, unsigned type,
       bool allow_non_png);

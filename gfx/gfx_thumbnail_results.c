@@ -29,8 +29,7 @@
 
 /* Strings live in blocks that never move, so records hold pointers. */
 #define GFX_THUMB_RESULTS_BLOCK 16384
-/* Playlists whose tables are kept: a menu list, history, explore and
- * a companion window can show different playlists at once. */
+/* Tables kept beside the held ones, the last playlists opened */
 #define GFX_THUMB_RESULTS_KEPT  4
 
 typedef struct gfx_thumb_results_block
@@ -64,6 +63,7 @@ typedef struct gfx_thumb_results_slot
    gfx_thumbnail_results_t *table;
    gfx_thumbnail_results_t *notes;
    unsigned stamp;
+   unsigned hold;
    bool dirty; /* notes its cache file lacks */
 } gfx_thumb_results_slot_t;
 
@@ -75,8 +75,10 @@ static const char *const gfx_thumb_result_dirs[GFX_THUMBNAIL_RESULT_TYPES] =
    "Named_Logos"
 };
 
-static gfx_thumb_results_slot_t gfx_thumb_results_slots[GFX_THUMB_RESULTS_KEPT];
+static gfx_thumb_results_slot_t *gfx_thumb_results_slots;
+static size_t gfx_thumb_results_slot_count;
 static unsigned gfx_thumb_results_clock;
+static unsigned gfx_thumb_results_generation;
 static char **gfx_thumb_results_resolved;
 static size_t gfx_thumb_results_resolved_count;
 /* Pushed out of the store before they were resolved */
@@ -375,7 +377,7 @@ static gfx_thumb_results_slot_t *gfx_thumb_results_slot(const char *path)
 {
    size_t i;
    if (path)
-      for (i = 0; i < GFX_THUMB_RESULTS_KEPT; i++)
+      for (i = 0; i < gfx_thumb_results_slot_count; i++)
          if (     gfx_thumb_results_slots[i].playlist_path
                && string_is_equal(gfx_thumb_results_slots[i].playlist_path,
                   path))
@@ -392,6 +394,7 @@ static void gfx_thumb_results_slot_clear(gfx_thumb_results_slot_t *slot)
    slot->table         = NULL;
    slot->notes         = NULL;
    slot->stamp         = 0;
+   slot->hold          = 0;
    slot->dirty         = false;
 }
 
@@ -510,6 +513,47 @@ static void gfx_thumb_results_unpark(gfx_thumb_results_slot_t *slot)
    gfx_thumb_results_unpark_at(i);
 }
 
+static void gfx_thumb_results_push_out(gfx_thumb_results_slot_t *slot)
+{
+   gfx_thumb_results_park(slot);
+   gfx_thumb_results_evict(slot);
+   gfx_thumb_results_slot_clear(slot);
+}
+
+/* The oldest slot nothing holds, once @kept or more are unheld */
+static gfx_thumb_results_slot_t *gfx_thumb_results_oldest(size_t kept)
+{
+   size_t i;
+   size_t unheld                    = 0;
+   gfx_thumb_results_slot_t *oldest = NULL;
+   for (i = 0; i < gfx_thumb_results_slot_count; i++)
+   {
+      gfx_thumb_results_slot_t *slot = &gfx_thumb_results_slots[i];
+      if (!slot->playlist_path || slot->hold)
+         continue;
+      unheld++;
+      if (!oldest || slot->stamp < oldest->stamp)
+         oldest = slot;
+   }
+   return (unheld >= kept) ? oldest : NULL;
+}
+
+/* An empty slot, else NULL */
+static gfx_thumb_results_slot_t *gfx_thumb_results_free_slot(void)
+{
+   size_t i;
+   gfx_thumb_results_slot_t *slots;
+   for (i = 0; i < gfx_thumb_results_slot_count; i++)
+      if (!gfx_thumb_results_slots[i].playlist_path)
+         return &gfx_thumb_results_slots[i];
+   if (!(slots = (gfx_thumb_results_slot_t*)realloc(gfx_thumb_results_slots,
+         (gfx_thumb_results_slot_count + 1) * sizeof(*slots))))
+      return NULL;
+   gfx_thumb_results_slots = slots;
+   memset(&slots[gfx_thumb_results_slot_count], 0, sizeof(*slots));
+   return &slots[gfx_thumb_results_slot_count++];
+}
+
 /* The record for @key in a notes table, else its count */
 static size_t gfx_thumb_results_note_rec(const gfx_thumbnail_results_t *n,
       const char * const *key)
@@ -560,17 +604,16 @@ unsigned gfx_thumbnail_results_open(const char *playlist_path)
       return 0;
    if (!(slot = gfx_thumb_results_slot(playlist_path)))
    {
-      size_t i;
       char *copy = strdup(playlist_path);
       if (!copy)
          return 0;
-      slot = &gfx_thumb_results_slots[0];
-      for (i = 1; i < GFX_THUMB_RESULTS_KEPT; i++)
-         if (gfx_thumb_results_slots[i].stamp < slot->stamp)
-            slot = &gfx_thumb_results_slots[i];
-      gfx_thumb_results_park(slot);
-      gfx_thumb_results_evict(slot);
-      gfx_thumb_results_slot_clear(slot);
+      if (     !(slot = gfx_thumb_results_oldest(GFX_THUMB_RESULTS_KEPT))
+            && !(slot = gfx_thumb_results_free_slot()))
+      {
+         free(copy);
+         return 0;
+      }
+      gfx_thumb_results_push_out(slot);
       gfx_thumb_results_unevict(playlist_path);
       slot->playlist_path = copy;
       gfx_thumb_results_unpark(slot);
@@ -675,7 +718,7 @@ const char *gfx_thumbnail_results_lookup(const char *content_path,
    size_t i;
    const char *name;
    const char *own;
-   for (i = 0; i < GFX_THUMB_RESULTS_KEPT; i++)
+   for (i = 0; i < gfx_thumb_results_slot_count; i++)
    {
       if (!(name = gfx_thumbnail_results_find(
             gfx_thumb_results_slots[i].notes,
@@ -686,7 +729,7 @@ const char *gfx_thumbnail_results_lookup(const char *content_path,
       if (!own || !gfx_thumbnail_name_allowed(own, allow_non_png))
          return name;
    }
-   for (i = 0; i < GFX_THUMB_RESULTS_KEPT; i++)
+   for (i = 0; i < gfx_thumb_results_slot_count; i++)
       if (     (name = gfx_thumbnail_results_find(
                gfx_thumb_results_slots[i].table,
                content_path, label, system, type))
@@ -766,11 +809,41 @@ void gfx_thumbnail_results_rename(const char *old_path,
    free(to);
 }
 
+bool gfx_thumbnail_results_hold(const char *playlist_path, unsigned hold)
+{
+   gfx_thumb_results_slot_t *slot = gfx_thumb_results_slot(playlist_path);
+   if (!slot)
+      return false;
+   slot->hold |= hold;
+   return true;
+}
+
+void gfx_thumbnail_results_release(unsigned hold)
+{
+   size_t i;
+   gfx_thumb_results_slot_t *slot;
+   for (i = 0; i < gfx_thumb_results_slot_count; i++)
+   {
+      slot = &gfx_thumb_results_slots[i];
+      /* Shown until now: the newest of the others */
+      if (slot->hold && !(slot->hold &= ~hold))
+         slot->stamp = ++gfx_thumb_results_clock;
+   }
+   while ((slot = gfx_thumb_results_oldest(GFX_THUMB_RESULTS_KEPT + 1)))
+      gfx_thumb_results_push_out(slot);
+}
+
+unsigned gfx_thumbnail_results_generation(void)
+{
+   return gfx_thumb_results_generation;
+}
+
 void gfx_thumbnail_results_deinit(void)
 {
    size_t i;
-   for (i = 0; i < GFX_THUMB_RESULTS_KEPT; i++)
+   for (i = 0; i < gfx_thumb_results_slot_count; i++)
       gfx_thumb_results_slot_clear(&gfx_thumb_results_slots[i]);
+   free(gfx_thumb_results_slots);
    for (i = 0; i < gfx_thumb_results_resolved_count; i++)
       free(gfx_thumb_results_resolved[i]);
    free(gfx_thumb_results_resolved);
@@ -780,10 +853,13 @@ void gfx_thumbnail_results_deinit(void)
    while (gfx_thumb_results_parked_count)
       gfx_thumb_results_parked_free(0);
    free(gfx_thumb_results_parked);
+   gfx_thumb_results_slots          = NULL;
+   gfx_thumb_results_slot_count     = 0;
    gfx_thumb_results_parked         = NULL;
    gfx_thumb_results_resolved       = NULL;
    gfx_thumb_results_resolved_count = 0;
    gfx_thumb_results_evicted        = NULL;
    gfx_thumb_results_evicted_count  = 0;
    gfx_thumb_results_clock          = 0;
+   gfx_thumb_results_generation++;
 }

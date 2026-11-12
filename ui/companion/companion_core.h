@@ -146,6 +146,11 @@ bool companion_core_select_playlist(companion_core_t *core, size_t i);
  * index becomes the matching entry of the file list, or (size_t)-1. */
 bool companion_core_select_playlist_path(companion_core_t *core,
       const char *path);
+/* Same, but the playlists loaded before @path keep their thumbnail
+ * matches, though only @path's entries stay: a listing of several,
+ * one after another. */
+bool companion_core_append_playlist_path(companion_core_t *core,
+      const char *path);
 /* Index of the selected playlist, or (size_t)-1 if none. */
 size_t companion_core_selected_playlist(companion_core_t *core);
 /* Path of the playlist currently selected / loading ("" if none). */
