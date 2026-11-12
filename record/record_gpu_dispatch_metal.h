@@ -2,6 +2,7 @@
 #ifndef RECORD_GPU_DISPATCH_METAL_H
 #define RECORD_GPU_DISPATCH_METAL_H
 #include "record_gpu_session_metal.h"
+#include <formats/video_color.h>
 RETRO_BEGIN_DECLS
 typedef struct record_gpu_dispatch_metal record_gpu_dispatch_metal_t;
 enum record_gpu_dispatch_metal_state
@@ -16,6 +17,19 @@ enum record_gpu_dispatch_metal_state
 record_gpu_dispatch_metal_t *record_gpu_dispatch_metal_new(void *device,
       const record_gpu_session_metal_config_t *config,
       const record_mux_avfoundation_config_t *output,size_t audio_capacity_bytes,const char *path);
+typedef struct record_gpu_dispatch_metal_stream_config
+{
+   double source_rate;
+   size_t audio_capacity_bytes, max_audio_frames, max_packet_size;
+   video_color_metadata_t color;
+   unsigned audio_rate, channels, audio_bitrate;
+   bool legacy_commands;
+} record_gpu_dispatch_metal_stream_config_t;
+/* Cold controller. Copies URL/config and starts the existing dedicated worker;
+ * READY follows publish negotiation and native resource construction. */
+record_gpu_dispatch_metal_t *record_gpu_dispatch_metal_new_stream(void *device,
+      const record_gpu_session_metal_config_t *video,
+      const record_gpu_dispatch_metal_stream_config_t *stream, const char *url);
 /* One render producer. Uses RECORD_GPU_QUEUE_* results. STARTING is BUSY and
  * consumes nothing. Accepted work retains source references via the supplied
  * uncommitted command buffer; caller always commits it as part of rendering.

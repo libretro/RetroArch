@@ -76,6 +76,9 @@ bool record_avfoundation_session_free(record_avfoundation_session_t *session);
 /* Dedicated worker only, after BUSY. True schedules native completion polling;
  * false awaits producer input/closure. No resource/service changes. */
 bool record_avfoundation_session_retry_needed(const record_avfoundation_session_t *session);
+/* Dedicated worker only. A cold output may service its borrowed connection
+ * while waiting for the first video format; false ends that borrow. */
+bool record_avfoundation_session_binding(const record_avfoundation_session_t *session);
 /* Dedicated worker only. No interests before binding or after output free. */
 bool record_avfoundation_session_network(const record_avfoundation_session_t *session,
       int *fd, bool *read, bool *write);

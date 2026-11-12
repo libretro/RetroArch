@@ -128,6 +128,25 @@ jobs:
             ${{ runner.temp }}/vt-metal-stream-arc
             ${{ runner.temp }}/vt-metal-stream-mrc
           if-no-files-found: ignore
+      - name: Native URL-owning Metal streaming dispatcher with ARC
+        if: ${{ !cancelled() }}
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-metal-dispatch-arc
+        run: python3 samples/record/rtmp_stream/native_vt_run.py --dispatcher --ownership arc
+      - name: Native URL-owning Metal streaming dispatcher with manual reference counting
+        if: ${{ !cancelled() }}
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-metal-dispatch-mrc
+        run: python3 samples/record/rtmp_stream/native_vt_run.py --dispatcher --ownership mrc
+      - name: Save native Metal dispatcher acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-metal-dispatch-evidence
+          path: |
+            ${{ runner.temp }}/vt-metal-dispatch-arc
+            ${{ runner.temp }}/vt-metal-dispatch-mrc
+          if-no-files-found: ignore
   aac-native:
     runs-on: macos-latest
     timeout-minutes: 10
@@ -296,6 +315,32 @@ jobs:
           name: metal-frontend-recordings
           path: ${{ runner.temp }}/metal-frontend-recordings
           if-no-files-found: warn
+
+  frontend-stream-build:
+    if: ${{ !inputs.native_aac_only }}
+    runs-on: macos-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        threads: [enable, disable]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Configure network-enabled Metal frontend
+        run: |
+          set -eu
+          ./configure --enable-metal --enable-avf --${{ matrix.threads }}-threads --enable-configfile \
+            --disable-qt --disable-ffmpeg --disable-discord --disable-cheevos \
+            --enable-networking --disable-sdl2 --disable-sdl --disable-translate \
+            --disable-update_cores --disable-update_assets --disable-online_updater \
+            --disable-cdrom --disable-7zip --disable-ssl
+      - name: Link network worker and threadless fallback
+        run: |
+          set -eu
+          make -j"$(sysctl -n hw.ncpu)" HAVE_RTMP=1 HAVE_RFLV=1 HAVE_CRYPTO=1 C89_BUILD=1 \
+            MINVERFLAGS="-mmacosx-version-min=$(sw_vers -productVersion)"
+          test -x retroarch
+          nm retroarch | grep '_record_gpu_dispatch_metal_new_stream'
 
   frontend-contracts:
     if: ${{ !inputs.native_aac_only }}

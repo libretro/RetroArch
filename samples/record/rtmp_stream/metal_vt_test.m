@@ -32,6 +32,7 @@ static id<MTLTexture> stream_texture(id<MTLDevice> device,unsigned frame)
    return texture;
 }
 
+#ifndef VT_METAL_NO_MAIN
 int main(int argc,char **argv)
 {
    assert(argc==7 && network_init());
@@ -186,3 +187,4 @@ int main(int argc,char **argv)
    }
    return 0;
 }
+#endif

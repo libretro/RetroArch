@@ -1751,6 +1751,12 @@ RECORDING
 #include "../record/record_avfoundation_worker.c"
 #include "../record/record_avfoundation_session.c"
 #include "../libretro-common/formats/h265/rh265_sps_crop.c"
+#if defined(HAVE_NETWORKING) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#include "../record/record_stream_vt.c"
+#include "../record/record_stream_output_vt.c"
+#include "../record/record_vt_packet.c"
+#include "../libretro-common/net/net_wake.c"
+#endif
 #endif
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"

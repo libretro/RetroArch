@@ -92,6 +92,8 @@ static void output_test(unsigned failure)
    ops.free_output=output_free; ops.retry_needed=output_retry; ops.network=output_network;
    ops.destroy_encoder=output_encoder_destroy; ops.destroy_context=output_context_destroy;
    session=record_avfoundation_session_new_output(queue,video,audio,&f,&ops); assert(session);
+   assert(record_avfoundation_session_binding(session));
+   assert(!record_avfoundation_session_binding(NULL));
    memset(&ops,0,sizeof(ops));
    assert(!record_avfoundation_session_network(session,&fd,&read,&write) && fd==-1 && !read && !write);
    assert(record_avfoundation_session_step(session)==RECORD_AVF_WORKER_BUSY);
@@ -106,6 +108,7 @@ static void output_test(unsigned failure)
    }
    for (i=0;i<100 && !f.native.opens;i++) assert(record_avfoundation_session_step(session)>=0);
    assert(f.native.opens==1 && f.native.packet && !record_avfoundation_session_free(session));
+   assert(!record_avfoundation_session_binding(session));
    if (!f.open_failure)
    {
       assert(record_avfoundation_session_network(session,&fd,&read,&write) && fd==17 && read && !write);
@@ -135,6 +138,7 @@ static void output_test(unsigned failure)
    assert(!record_avfoundation_session_network(session,&fd,&read,&write) && fd==-1 && !read && !write);
    assert(!record_avfoundation_session_retry_needed(session));
    assert(f.output_frees==(f.open_failure?0u:1u));
+   assert(!record_avfoundation_session_binding(session));
    assert(f.cancellations==((failure && !f.open_failure)?3u:0u));
    assert(record_avfoundation_session_free(session));
 }

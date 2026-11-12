@@ -1704,6 +1704,17 @@ ifeq ($(HAVE_METAL), 1)
              record/record_gpu_session_metal.o \
              record/record_gpu_dispatch_metal.o \
              $(LIBRETRO_COMM_DIR)/formats/h265/rh265_sps_crop.o
+      ifeq ($(HAVE_NETWORKING), 1)
+         ifeq ($(HAVE_RTMP), 1)
+            ifeq ($(HAVE_RFLV), 1)
+               OBJ += record/record_stream_vt.o \
+                      record/record_stream_output_vt.o \
+                      record/record_at_resample.o \
+                      record/record_vt_packet.o \
+                      $(LIBRETRO_COMM_DIR)/net/net_wake.o
+            endif
+         endif
+      endif
       LIBS += -framework CoreMedia -framework VideoToolbox -framework AudioToolbox
    endif
 endif

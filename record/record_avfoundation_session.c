@@ -209,6 +209,11 @@ bool record_avfoundation_session_retry_needed(const record_avfoundation_session_
    return true;
 }
 
+bool record_avfoundation_session_binding(const record_avfoundation_session_t *s)
+{
+   return s && s->stage == AVFS_BIND;
+}
+
 bool record_avfoundation_session_network(const record_avfoundation_session_t *s,
       int *fd,bool *read,bool *write)
 {

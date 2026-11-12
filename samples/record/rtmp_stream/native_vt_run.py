@@ -24,8 +24,10 @@ def main():
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--first-case', action='store_true')
     parser.add_argument('--metal', action='store_true')
+    parser.add_argument('--dispatcher', action='store_true')
     parser.add_argument('--ownership', choices=('arc', 'mrc'), default='arc')
     args = parser.parse_args()
+    args.metal = args.metal or args.dispatcher
     if sys.platform != 'darwin':
         parser.error('native VT/AAC streaming requires Apple hardware')
     here = Path(__file__).resolve().parent
@@ -39,7 +41,8 @@ def main():
     if args.artifacts:
         root.mkdir(parents=True, exist_ok=False)
     evidence = dict(platform=sys.platform, backend='metal' if args.metal else 'pixel-pool',
-                    ownership=args.ownership if args.metal else None, commands=[], cases=[], result='running')
+                    ownership=args.ownership if args.metal else None, dispatcher=args.dispatcher,
+                    commands=[], cases=[], result='running')
 
     def save():
         (root / 'evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
@@ -77,7 +80,8 @@ def main():
             link = next(shlex.split(line) for line in dry.stdout.decode().splitlines()
                         if ' -o rtmps_client_native_test ' in line)
             link[link.index('-o') + 1] = str(binary)
-            link[link.index('rtmp_client_native_test.c')] = str(here / ('metal_vt_test.m' if args.metal else 'native_vt_test.c'))
+            fixture = 'metal_dispatch_test.m' if args.dispatcher else 'metal_vt_test.m' if args.metal else 'native_vt_test.c'
+            link[link.index('rtmp_client_native_test.c')] = str(here / fixture)
             link += ['-O2', '-DHAVE_AVF', '-Wno-unused-function', '-Wno-long-long',
                      '-Wno-c99-extensions', '-Wno-c11-extensions', '-mmacosx-version-min=10.14']
             link += [str(repo / name) for name in (
@@ -97,6 +101,10 @@ def main():
                          'libretro-common/formats/h265/rh265_sps_crop.c')]
                 for framework in ('Foundation', 'Metal', 'AVFoundation'):
                     link += ['-framework', framework]
+                if args.dispatcher:
+                    link += ['-DHAVE_NETWORKING', '-DHAVE_RTMP', '-DHAVE_RFLV',
+                             str(repo / 'record/record_gpu_dispatch_metal.m'),
+                             str(repo / 'libretro-common/net/net_wake.c')]
                 # Compile Objective-C ownership modes separately from C inputs.
                 compile_flags = []
                 skip = False
@@ -200,6 +208,7 @@ def main():
                 r'(\w+)=(\d+)', result.stdout.decode())}
             case['native'] = values
             assert bool(values.get('metal', 0)) == args.metal, values
+            assert bool(values.get('dispatcher', 0)) == args.dispatcher, values
             if cancel:
                 assert values['cancelled'] == values['owned'] == 1, values
                 assert 2 <= values['submitted'] < 24, values
@@ -296,6 +305,8 @@ def main():
                              mutant_binary, '--first-case', '--artifacts', negative_dir]
             if args.metal:
                 negative_args += ['--metal', '--ownership', args.ownership]
+            if args.dispatcher:
+                negative_args += ['--dispatcher']
             negative = command(negative_args,
                                timeout=90, check=False)
             assert negative.returncode != 0
