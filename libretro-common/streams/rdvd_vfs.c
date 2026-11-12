@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <retro_atomic.h>
-#include <formats/rdvd_vfs.h>
+#include <streams/rdvd_vfs.h>
 #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
 #include <retro_spsc.h>
 #define RDVD_VFS_ENABLED

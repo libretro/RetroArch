@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <formats/cdfs.h>
+#include <streams/cdfs_file.h>
 static unsigned long long h64(const uint8_t *p, size_t n, unsigned long long h)
 { size_t i; for (i = 0; i < n; i++) h = (h ^ p[i]) * 1099511628211ULL; return h; }
 int main(int argc, char **argv)

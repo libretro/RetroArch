@@ -37,6 +37,7 @@
 
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #include "subtitle_iso639.h"
 #endif
 

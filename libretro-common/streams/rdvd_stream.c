@@ -1,7 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: MIT */
 #include <string.h>
 #include <retro_atomic.h>
-#include <formats/rdvd_stream.h>
+#include <streams/rdvd_stream.h>
 bool rdvd_stream_init(rdvd_stream_t *stream, rdvd_source_t *source,
       rdvd_vfs_t *vfs, tpool_t *pool, rmpeg1_ps_t *ps, uint8_t *buffer, size_t capacity)
 {

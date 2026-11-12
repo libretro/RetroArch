@@ -29,8 +29,8 @@
  * avail() for the buffer and how much of it is real, and the
  * complete()/failed()/capped() terminals.
  *
- *  - prefix (data_transfer_open_prefix): a file whose length is known
- *    at open.  Address space for the whole length is reserved up
+ *  - prefix (data_transfer_open_prefix_reader): a source whose length
+ *    is known at open, read at offsets through a callback.  Address space for the whole length is reserved up
  *    front so the base never moves, and physical pages are committed
  *    DT_COMMIT_STEP at a time as the fill advances, in DT_READ_CHUNK
  *    reads.  commit_cap bounds the committed bytes and turns overrun
@@ -39,7 +39,7 @@
  *    sequential consumer holds a constant window over a file of any
  *    size.
  *
- *  - window (data_transfer_open_window): the same reservation used
+ *  - window (data_transfer_open_window_reader): the same reservation used
  *    cyclically, for sequential consumers that loop.  A permanent
  *    head of 'keep' bytes plus a moving [wlo, whi) that feed()
  *    advances behind the consumer and extends ahead of it;
@@ -59,8 +59,11 @@
  * growable buffer that shares this file and header but touches no
  * data_transfer_t and no page machinery.
  *
- * File access goes through filestream/VFS throughout, so 64-bit
- * offsets and VFS-only paths work.  Where the platform cannot reserve
+ * No file I/O here: every read is the reader's. streams/
+ * data_transfer_file.c opens paths through filestream/VFS - 64-bit
+ * offsets, VFS-only paths - and hands the reader in, keeping the
+ * data_transfer_open_prefix/_window names.  Where the platform cannot
+ * reserve
  * address space, every mode degrades to a plain allocation of
  * min(len, commit_cap) - the whole file when there is no cap - and a
  * window simply holds the whole file; reserve_supported() and
@@ -68,8 +71,8 @@
  *
  * NOT IMPLEMENTED
  *
- *  - Asynchrony.  Every read is a synchronous filestream_read on the
- *    calling thread: iterate() blocks for the length of its budget,
+ *  - Asynchrony.  Every read is a synchronous call of the reader on
+ *    the calling thread: iterate() blocks for the length of its budget,
  *    and there is nothing in flight for free() to cancel.  Pacing is
  *    by byte budget and the caller does the time-slicing.  The module
  *    began as a wrapper over nbio, which is where its vocabulary came
@@ -162,7 +165,6 @@
 #include <stdlib.h>
 
 #include <memmap.h>
-#include <streams/file_stream.h>
 #include <string.h>
 #include <formats/data_transfer.h>
 
@@ -302,9 +304,10 @@ struct data_transfer_inert { size_t lo, hi; };
 
 struct data_transfer
 {
-   /* file-backed reader (open_prefix, and open_window over it)      */
-   RFILE  *f;
+   /* the reader every prefix and window fills from, and what frees
+    * its user data with the transfer, if anything                    */
    data_transfer_read_at_t read_at;
+   data_transfer_release_t release;
    void *read_ud;
    uint8_t *map;     /* reserved (or fallback-allocated) buffer      */
    size_t  map_len;  /* reserved bytes (page-rounded), 0 = fallback  */
@@ -392,17 +395,12 @@ void data_transfer_arena_release(data_transfer_arena_t *a)
 
 static int data_transfer_read_at(data_transfer_t *dt, size_t off,
       uint8_t *dst, size_t n);
-/* open_prefix's body.  allow_pool is 0 for open_window, which builds
- * on a prefix handle but reads map_len in punch/peek and so needs it
- * to be the file's own rounded length rather than a pool slot's. */
-static data_transfer_t *data_transfer_open_reader_ex(const char *path,
-      size_t commit_cap, int allow_pool, data_transfer_read_at_t read_at,
-      size_t length, void *ud);
-static data_transfer_t *data_transfer_open_prefix_ex(const char *path,
-      size_t commit_cap, int allow_pool)
-{
-   return data_transfer_open_reader_ex(path,commit_cap,allow_pool,NULL,0,NULL);
-}
+/* The prefix body.  allow_pool is 0 for a window, which builds on a
+ * prefix handle but reads map_len in punch/peek and so needs it to be
+ * the source's own rounded length rather than a pool slot's. */
+static data_transfer_t *data_transfer_open_reader_ex(size_t commit_cap,
+      int allow_pool, data_transfer_read_at_t read_at, size_t length,
+      void *ud);
 /* The fill proper.  data_transfer_iterate() refuses to run it on a
  * window; open_window's no-reservation path genuinely needs it and
  * calls it here directly. */
@@ -575,16 +573,19 @@ static data_transfer_t *data_transfer_start_window(data_transfer_t *dt, size_t k
    return dt;
 }
 
-data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
-{
-   return data_transfer_start_window(data_transfer_open_prefix_ex(path,0,0),keep);
-}
 data_transfer_t *data_transfer_open_window_reader(size_t length,size_t keep,
       data_transfer_read_at_t read_at,void *ud)
 {
    if (!read_at) return NULL;
    return data_transfer_start_window(
-         data_transfer_open_reader_ex(NULL,0,0,read_at,length,ud),keep);
+         data_transfer_open_reader_ex(0,0,read_at,length,ud),keep);
+}
+
+void data_transfer_set_release(data_transfer_t *dt,
+      data_transfer_release_t release)
+{
+   if (dt)
+      dt->release = release;
 }
 
 bool data_transfer_reserve_supported(void)
@@ -901,44 +902,18 @@ bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
          margin, 0, NULL);
 }
 
-static data_transfer_t *data_transfer_open_reader_ex(const char *path,
-      size_t commit_cap, int allow_pool, data_transfer_read_at_t read_at,
-      size_t length, void *ud)
+static data_transfer_t *data_transfer_open_reader_ex(size_t commit_cap,
+      int allow_pool, data_transfer_read_at_t read_at, size_t length,
+      void *ud)
 {
    data_transfer_t *dt;
-   RFILE *f = NULL;
-   int64_t l;
-   /* filestream: 64-bit lengths and offsets everywhere (a plain long
-    * ftell caps at 2 GB on LLP64 and 32-bit targets), and the read
-    * routes through the VFS interface when one is registered, so
-    * paths only the VFS can open - archive members, Android
-    * content:// documents, frontend overrides - work like any
-    * other. */
-   if (read_at)
-   {
-      if (!length || (uint64_t)length > INT64_MAX) return NULL;
-      l = (int64_t)length;
-   }
-   else
-   {
-      if (!(f = filestream_open(path,RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE))) return NULL;
-      l = filestream_get_size(f);
-      if (l <= 0 || (uint64_t)l > SIZE_MAX)
-      {
-         filestream_close(f);
-         return NULL;
-      }
-   }
-   if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
-   {
-      if (f) filestream_close(f);
+   if (!read_at || !length || (uint64_t)length > INT64_MAX)
       return NULL;
-   }
-   dt->f   = f;
+   if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
+      return NULL;
    dt->read_at = read_at;
    dt->read_ud = ud;
-   dt->len = (size_t)l;
+   dt->len = length;
    dt->cap = commit_cap;
 
    {
@@ -1019,7 +994,6 @@ static data_transfer_t *data_transfer_open_reader_ex(const char *path,
       dt->cap = w;
       if (!(dt->map = (uint8_t*)malloc(w ? w : 1)))
       {
-         if (f) filestream_close(f);
          free(dt);
          return NULL;
       }
@@ -1028,10 +1002,10 @@ static data_transfer_t *data_transfer_open_reader_ex(const char *path,
    return dt;
 }
 
-data_transfer_t *data_transfer_open_prefix(const char *path,
-      size_t commit_cap)
+data_transfer_t *data_transfer_open_prefix_reader(size_t length,
+      size_t commit_cap, data_transfer_read_at_t read_at, void *ud)
 {
-   return data_transfer_open_prefix_ex(path, commit_cap, 1);
+   return data_transfer_open_reader_ex(commit_cap, 1, read_at, length, ud);
 }
 
 /* Grow the physical backing to cover at least 'need' bytes.
@@ -1161,8 +1135,6 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
                size_t end = dt->inert[lo].hi;
                size_t release_end;
                if (dt->cap && end > dt->cap) end = dt->cap;
-               if (filestream_seek(dt->f, (int64_t)end, RETRO_VFS_SEEK_POSITION_START) < 0)
-               { dt->done = dt->failed = 1; break; }
                /* Commit growth may have armed pages past the preceding
                 * read. Keep an inert interval unreadable after crossing
                 * it, including in strict builds and after refill. */
@@ -1224,9 +1196,8 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
          continue;
       }
       {
-         int64_t r = dt->read_at
-               ? dt->read_at(dt->read_ud,dt->avail,dt->map+dt->avail,chunk)
-               : filestream_read(dt->f,dt->map+dt->avail,(int64_t)chunk);
+         int64_t r = dt->read_at(dt->read_ud, dt->avail,
+               dt->map + dt->avail, chunk);
          got = r > 0 && (uint64_t)r <= chunk ? (size_t)r : 0;
       }
       dt->avail += got;
@@ -1256,29 +1227,14 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
 static int data_transfer_read_at(data_transfer_t *dt, size_t off,
       uint8_t *dst, size_t n)
 {
-   int64_t save, r;
-   if (dt->read_at)
-      return dt->read_at(dt->read_ud,off,dst,n) == (int64_t)n;
-   /* At the offset, the cursor and read-ahead untouched; seek and read
-    * where the file has no positional reads */
-   if ((r = filestream_read_at(dt->f, dst, (int64_t)n, (int64_t)off)) >= 0)
-      return r == (int64_t)n;
-   save = filestream_tell(dt->f);
-   if (save < 0
-         || (save != (int64_t)off
-            && filestream_seek(dt->f, (int64_t)off,
-               RETRO_VFS_SEEK_POSITION_START) < 0))
-      return 0;
-   r = filestream_read(dt->f, dst, (int64_t)n);
-   if (!dt->window || !dt->map_len)
-      filestream_seek(dt->f, save, RETRO_VFS_SEEK_POSITION_START);
-   return r == (int64_t)n;
+   return dt->read_at(dt->read_ud, off, dst, n) == (int64_t)n;
 }
 
 bool data_transfer_prefix_inert(data_transfer_t *dt, size_t from, size_t to)
 {
    size_t lo, hi, first, last, count;
-   if (!dt || !dt->f || dt->window || dt->failed || from > to || to > dt->len)
+   if (!dt || !dt->read_at || dt->window || dt->failed || from > to
+         || to > dt->len)
       return false;
    if (!dt->map_len || dt->pooled) return true;
    lo = (from / dt->page + (from % dt->page != 0)) * dt->page;
@@ -1320,7 +1276,7 @@ bool data_transfer_prefix_inert(data_transfer_t *dt, size_t from, size_t to)
 void data_transfer_discard(data_transfer_t *dt, size_t up_to)
 {
    size_t lo;
-   if (!dt || !dt->f || !dt->map_len || !dt->page)
+   if (!dt || !dt->read_at || !dt->map_len || !dt->page)
       return;                     /* source or fallback: bytes stay */
    if (dt->window)
       return;                     /* not this surface - see below */
@@ -1342,7 +1298,7 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
    size_t lo, end, at, i;
    if (!dt)
       return false;
-   if (!dt->f || !dt->map_len || dt->window || from >= dt->low)
+   if (!dt->read_at || !dt->map_len || dt->window || from >= dt->low)
       return !dt->failed;         /* nothing was released there */
    lo  = (from / dt->page) * dt->page;
    end = dt->low;
@@ -1378,7 +1334,7 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
 
 /* The prefix surface is inert on a window handle.
  *
- * A window keeps a live RFILE and a reservation, so these three would
+ * A window keeps a live reader and a reservation, so these three would
  * otherwise pass their own guards on one and then disagree with the
  * window's bookkeeping.  discard() is the dangerous one: its 'low'
  * frontier knows nothing of keep/wlo/whi/wfreed, so it releases from
@@ -1399,7 +1355,7 @@ size_t data_transfer_iterate_while(data_transfer_t *dt, size_t max_bytes,
       return 0;
    if (dt->window)
       return dt->avail;           /* not this surface - see above */
-   if (dt->f || dt->src_cb)
+   if (dt->read_at || dt->src_cb)
       return data_transfer_prefix_iterate(dt, max_bytes,
             should_continue, ud);
    return dt->avail;
@@ -1447,8 +1403,8 @@ void data_transfer_free(data_transfer_t *dt)
 {
    if (!dt)
       return;
-   if (dt->f)
-      filestream_close(dt->f);
+   if (dt->release)
+      dt->release(dt->read_ud);
    free(dt->inert);
    if (dt->map)
    {

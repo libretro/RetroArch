@@ -2655,9 +2655,9 @@ ifeq ($(HAVE_RMPEG1), 1)
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_packet.o \
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_spu.o \
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_ifo.o \
-          $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_stream.o \
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_source.o \
-          $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_vfs.o
+          $(LIBRETRO_COMM_DIR)/streams/rdvd_stream.o \
+          $(LIBRETRO_COMM_DIR)/streams/rdvd_vfs.o
    # MPEG-1 audio is layer II, which rmp3 already decodes; a consumer that
    # wants sound from an MPEG-1 stream needs HAVE_RMP3 as well.
 endif
@@ -2673,7 +2673,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
        $(LIBRETRO_COMM_DIR)/formats/video_player.o \
        $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
-       $(LIBRETRO_COMM_DIR)/formats/data_transfer.o \
+       $(LIBRETRO_COMM_DIR)/formats/data_transfer.o $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.o \
        $(LIBRETRO_COMM_DIR)/memmap/memmap.o \
        $(LIBRETRO_COMM_DIR)/formats/m3u/rm3u.o
 
@@ -2889,7 +2889,7 @@ ifeq ($(HAVE_NETWORKING), 1)
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
              cheevos/cheevos_badge.o \
-             $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
+             $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o $(LIBRETRO_COMM_DIR)/streams/cdfs_file.o \
              deps/rcheevos/src/rc_client.o \
              deps/rcheevos/src/rc_compat.o \
              deps/rcheevos/src/rc_libretro.o \

@@ -92,7 +92,7 @@ AV1_CORE_DEPS := $(RA)/libretro-common/compat/compat_strl.c \
       $(RA)/libretro-common/encodings/encoding_crc32.c \
       $(RA)/libretro-common/file/file_path.c \
       $(RA)/libretro-common/file/file_path_io.c \
-      $(RA)/libretro-common/formats/data_transfer.c \
+      $(RA)/libretro-common/formats/data_transfer.c $(RA)/libretro-common/streams/data_transfer_file.c \
       $(RA)/libretro-common/formats/webm/rwebm.c \
       $(RA)/libretro-common/formats/webm/rwebm_video.c \
       $(RA)/libretro-common/lists/string_list.c \

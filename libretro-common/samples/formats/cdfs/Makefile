@@ -3,6 +3,7 @@ include ../../sample_objdir.mk
 TARGET := cdfs_dir_record_test$(EXE)
 TARGET_TEST2 := cdfs_pure_api_test$(EXE)
 TARGET_TEST3 := cdfs_io_error_test$(EXE)
+TARGET_TEST4 := cdfs_file_test$(EXE)
 .DEFAULT_GOAL := all
 
 LIBRETRO_COMM_DIR := ../../..
@@ -53,6 +54,10 @@ endif
 
 TEST3_OBJS := $(SAMPLE_OBJDIR)/cdfs_io_error_test.o $(call sample_objs,$(filter-out cdfs_pure_api_test.o $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o,$(TEST2_SOURCES:.c=.o)))
 
+# cdfs_file_test: the same stack and the path openers over it
+TEST4_OBJS := $(SAMPLE_OBJDIR)/cdfs_file_test.o $(call sample_objs,$(filter-out cdfs_pure_api_test.o,$(TEST2_SOURCES:.c=.o))) \
+	$(call sample_objs,$(LIBRETRO_COMM_DIR)/streams/cdfs_file.o)
+
 ifeq ($(OS),Windows_NT)
    LDLIBS += -lwinmm
 endif
@@ -64,7 +69,10 @@ $(SAMPLE_OBJDIR)/cdfs_io_error_test.o: cdfs_io_error_test.c $(LIBRETRO_COMM_DIR)
 $(TARGET_TEST3): $(TEST3_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3)
+$(TARGET_TEST4): $(TEST4_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -81,6 +89,7 @@ $(TARGET_TEST2): $(TEST2_OBJS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS) $(TEST2_OBJS) $(TEST3_OBJS)
+	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(OBJS) \
+		$(TEST2_OBJS) $(TEST3_OBJS) $(TEST4_OBJS)
 
 .PHONY: clean

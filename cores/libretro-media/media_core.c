@@ -27,6 +27,7 @@
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #include <streams/file_stream.h>
 #include <formats/rwebm.h>
 #include <formats/rwebm_video.h>

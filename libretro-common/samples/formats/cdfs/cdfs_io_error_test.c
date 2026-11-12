@@ -161,7 +161,7 @@ int main(void)
          memset(&layout, 0, sizeof(layout));
          layout.stream = track.stream;
          sparse_size = UINT64_C(4194307) * sizes[mode];
-         cdfs_determine_sector_size_from_file_size(&layout);
+         cdfs_track_sector_size_from_length(&layout);
          CHECK(layout.stream_sector_size == sizes[mode]);
          sparse_size = UINT64_C(4194304) * sizes[mode] + 12345;
       }

@@ -41,7 +41,7 @@ SRCS="ui/companion/companion_thumbs.c \
       $LC/formats/image_texture.c \
       $LC/formats/image_transfer.c \
       $LC/formats/video_player.c \
-      $LC/formats/data_transfer.c \
+      $LC/formats/data_transfer.c $LC/streams/data_transfer_file.c \
       $LC/memmap/memmap.c \
       $LC/formats/tga/rtga.c \
       $LC/formats/png/rpng.c \

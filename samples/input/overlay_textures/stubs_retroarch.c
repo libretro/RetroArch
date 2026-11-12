@@ -15,6 +15,7 @@
 #endif
 
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #include "../../../tasks/tasks_internal.h"
 
 #include "stubs_retroarch.h"

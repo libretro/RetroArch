@@ -9,7 +9,7 @@ SOURCES := media_subtitle_test.c $(ROOT)/gfx/gfx_media_subtitle.c $(ROOT)/tasks/
            $(LRC)/formats/subtitle/rsubtitle_srt.c $(LRC)/formats/subtitle/rsubtitle_vtt.c \
            $(LRC)/formats/subtitle/rsubtitle_vtt_css.c $(LRC)/formats/subtitle/rsubtitle_vtt_css_tree.c \
            $(LRC)/formats/subtitle/rsubtitle_vtt_selector.c \
-           $(LRC)/formats/mp4/rmp4.c $(LRC)/formats/webm/rwebm.c $(LRC)/formats/data_transfer.c \
+           $(LRC)/formats/mp4/rmp4.c $(LRC)/formats/webm/rwebm.c $(LRC)/formats/data_transfer.c $(LRC)/streams/data_transfer_file.c \
            $(LRC)/memmap/memmap.c \
            $(LRC)/queues/task_queue.c $(LRC)/rthreads/rthreads.c \
            $(LRC)/rthreads/retro_eventcount.c \

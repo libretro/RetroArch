@@ -2,7 +2,7 @@
 #ifndef LIBRETRO_RDVD_STREAM_H
 #define LIBRETRO_RDVD_STREAM_H
 #include <formats/rdvd_demux.h>
-#include <formats/rdvd_vfs.h>
+#include <streams/rdvd_vfs.h>
 RETRO_BEGIN_DECLS
 enum rdvd_stream_status
 {

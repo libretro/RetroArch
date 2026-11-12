@@ -229,6 +229,7 @@ ACHIEVEMENTS
 #define RC_CLIENT_SUPPORTS_HASH 1
 
 #include "../libretro-common/formats/cdfs/cdfs.c"
+#include "../libretro-common/streams/cdfs_file.c"
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_client.c"
@@ -613,6 +614,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/image_transfer.c"
 #include "../libretro-common/formats/video_player.c"
 #include "../libretro-common/formats/data_transfer.c"
+#include "../libretro-common/streams/data_transfer_file.c"
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_apng.c"

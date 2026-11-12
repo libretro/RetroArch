@@ -8,6 +8,7 @@
 #include <formats/audio.h>
 #include <formats/video_player.h>
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #include <memmap.h>
 #ifdef PREVIEW_COUNT_READS
 #include <retro_atomic.h>

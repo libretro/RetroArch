@@ -28,6 +28,7 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
