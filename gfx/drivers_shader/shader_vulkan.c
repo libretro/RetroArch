@@ -2771,6 +2771,10 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
             p_info.scale_x      = pass->fbo.scale_x;
             p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            p_info.scale_x      = pass->fbo.scale_x;
+            p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+            break;
       }
 
       switch (pass->fbo.type_y)
@@ -2786,6 +2790,10 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
          case RARCH_SCALE_VIEWPORT:
             p_info.scale_y      = pass->fbo.scale_y;
             p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            p_info.scale_y      = pass->fbo.scale_y;
+            p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
             break;
       }
    }
@@ -5348,6 +5356,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                pass_info.scale_x      = pass->fbo.scale_x;
                pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
+
+            case RARCH_SCALE_ORIGINAL:
+               pass_info.scale_x      = pass->fbo.scale_x;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+               break;
          }
 
          switch (pass->fbo.type_y)
@@ -5365,6 +5378,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             case RARCH_SCALE_VIEWPORT:
                pass_info.scale_y      = pass->fbo.scale_y;
                pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               pass_info.scale_y      = pass->fbo.scale_y;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
                break;
          }
       }

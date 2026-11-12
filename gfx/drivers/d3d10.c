@@ -3380,6 +3380,10 @@ static void d3d10_chain_init_render_targets(d3d10_video_t* d3d10,
                width = pass->fbo.abs_x;
                break;
 
+            case RARCH_SCALE_ORIGINAL:
+               width = pass->fbo.scale_x;
+               break;
+
             default:
                break;
          }
@@ -3399,6 +3403,10 @@ static void d3d10_chain_init_render_targets(d3d10_video_t* d3d10,
 
             case RARCH_SCALE_ABSOLUTE:
                height = pass->fbo.abs_y;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               height = pass->fbo.scale_y;
                break;
 
             default:
