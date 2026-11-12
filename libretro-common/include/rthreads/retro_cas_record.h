@@ -46,7 +46,18 @@
  *         s->last = now;
  *      } while (!retro_cas_record_commit(&rec, &txn));
  *
- *   read, and change only if need be:
+ *   read, work on the copy, and put it back only if it changed (most
+ *   reads change nothing and then write nothing shared at all):
+ *      for (;;)
+ *      {
+ *         version = retro_cas_record_read_versioned(&rec, &copy);
+ *         if (!work(&copy))
+ *            break;                               (nothing to put back)
+ *         if (retro_cas_record_replace(&rec, version, &copy))
+ *            break;
+ *      }
+ *
+ *   look, and change only if need be:
  *      s = (status_t*)retro_cas_record_begin(&rec, &txn);
  *      if (s->flag)
  *      {
@@ -154,17 +165,26 @@ static INLINE void retro_cas_record_read(retro_cas_record_t *rec, void *out)
    }
 }
 
-/* Starts a change.
- * @return a copy of the record to change in place; the caller's until
- * commit or abort. */
-static INLINE void *retro_cas_record_begin(retro_cas_record_t *rec,
-      retro_cas_record_txn_t *txn)
+/* Copies the record as it is into @out, as retro_cas_record_read does.
+ * @return which record that was, for retro_cas_record_replace. */
+static INLINE retro_cas_record_word_t retro_cas_record_read_versioned(
+      retro_cas_record_t *rec, void *out)
+{
+   for (;;)
+   {
+      retro_cas_record_word_t head = RETRO_CAS_RECORD_HEAD_LOAD(&rec->head);
+      memcpy(out, rec->slots + (size_t)(head & 15) * rec->size, rec->size);
+      retro_atomic_thread_fence_acquire();
+      if (RETRO_CAS_RECORD_HEAD_LOAD(&rec->head) == head)
+         return head;
+   }
+}
+
+/* A spare slot for this thread: the lowest free bit, taken if nobody
+ * else took it meanwhile. */
+static INLINE unsigned retro_cas_record_take_slot_(retro_cas_record_t *rec)
 {
    unsigned slot;
-   unsigned char *copy;
-
-   /* A spare slot: the lowest free bit, taken if nobody else took it
-    * meanwhile */
    for (;;)
    {
       unsigned busy = (unsigned)retro_atomic_load_acquire_int(&rec->busy);
@@ -175,10 +195,18 @@ static INLINE void *retro_cas_record_begin(retro_cas_record_t *rec,
          continue;
       if (!((unsigned)retro_atomic_fetch_or_int(&rec->busy, (int)(1u << slot))
                & (1u << slot)))
-         break;
+         return slot;
    }
+}
 
-   copy = rec->slots + (size_t)slot * rec->size;
+/* Starts a change.
+ * @return a copy of the record to change in place; the caller's until
+ * commit or abort. */
+static INLINE void *retro_cas_record_begin(retro_cas_record_t *rec,
+      retro_cas_record_txn_t *txn)
+{
+   unsigned slot       = retro_cas_record_take_slot_(rec);
+   unsigned char *copy = rec->slots + (size_t)slot * rec->size;
    for (;;)
    {
       retro_cas_record_word_t head = RETRO_CAS_RECORD_HEAD_LOAD(&rec->head);
@@ -218,6 +246,23 @@ static INLINE bool retro_cas_record_commit(retro_cas_record_t *rec,
    }
    retro_atomic_fetch_and_int(&rec->busy, (int)~(1u << txn->slot));
    return false;
+}
+
+/* Puts @value in the record's place, if the record is still the one
+ * retro_cas_record_read_versioned gave as @version.
+ * @return false if the record changed since: nothing was done, and the
+ * caller reads it again. */
+static INLINE bool retro_cas_record_replace(retro_cas_record_t *rec,
+      retro_cas_record_word_t version, const void *value)
+{
+   retro_cas_record_txn_t txn;
+   /* Changed already: not worth a slot */
+   if (RETRO_CAS_RECORD_HEAD_LOAD(&rec->head) != version)
+      return false;
+   txn.seen = version;
+   txn.slot = retro_cas_record_take_slot_(rec);
+   memcpy(rec->slots + (size_t)txn.slot * rec->size, value, rec->size);
+   return retro_cas_record_commit(rec, &txn);
 }
 
 #endif /* lock-free */
