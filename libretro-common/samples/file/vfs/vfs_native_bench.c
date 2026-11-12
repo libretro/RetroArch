@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Read-only stream throughput through filestream: the C runtime path
+/* Stream throughput through filestream: the C runtime path
  * (vfs_native_bench, VFS_WIN32_NO_NATIVE) against the stream's own
  * handle (vfs_native_bench_native), the same source built twice. On
  * anything but Windows the two are the same build.
@@ -29,6 +29,10 @@
  *   4 KiB at random offsets by seek and read, and by filestream_read_at
  *   4 KiB at random offsets by filestream_read_at from 4 threads
  *   open, read 4 KiB, close, over 1000 small files
+ *   sequential writes of 16, 256, 4096 and 65536 bytes, and 1 MiB, to a
+ *   new file, its close included
+ *   64 bytes written at random offsets of a 4 MiB file by seek and write
+ *   create, write 4 KiB, close, over 1000 small files
  *
  * Each case runs five times and reports the best, in ns per call and
  * MB/s; the file is read once first so every case runs from the cache.
@@ -245,6 +249,107 @@ static void small_files(void)
          (double)SMALL_FILES * 4096);
 }
 
+static void sequential_writes(int64_t chunk)
+{
+   double  best  = 0;
+   int     r;
+   char    what[64];
+   int64_t limit = chunk < 4096 ? (int64_t)(4u << 20) : (int64_t)(32u << 20);
+   for (r = 0; r < RUNS; r++)
+   {
+      RFILE  *f = filestream_open("vfs_bench_w.bin",
+            RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      int64_t done = 0;
+      double  t0, t;
+      if (!f)
+         return;
+      t0 = now_ns();
+      while (done < limit && filestream_write(f, buf, chunk) == chunk)
+         done += chunk;
+      filestream_close(f);
+      t = now_ns() - t0;
+      if (!r || t < best)
+         best = t;
+   }
+   remove("vfs_bench_w.bin");
+   snprintf(what, sizeof(what), "write sequential %lld B", (long long)chunk);
+   report(what, best, (double)(limit / chunk), (double)limit);
+}
+
+static void random_writes(void)
+{
+   double best = 0;
+   int    r;
+   RFILE *f    = filestream_open("vfs_bench_w.bin",
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!f)
+      return;
+   filestream_write(f, buf, 1u << 20);
+   filestream_write(f, buf, 1u << 20);
+   filestream_write(f, buf, 1u << 20);
+   filestream_write(f, buf, 1u << 20);
+   filestream_close(f);
+   for (r = 0; r < RUNS; r++)
+   {
+      unsigned x = 4321, k;
+      double   t0, t;
+      if (!(f = filestream_open("vfs_bench_w.bin",
+                  RETRO_VFS_FILE_ACCESS_WRITE
+                  | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         break;
+      t0 = now_ns();
+      for (k = 0; k < RANDOM_OPS; k++)
+      {
+         x = x * 1103515245u + 12345u;
+         filestream_seek(f, (int64_t)((x >> 4) % ((4u << 20) - 64)),
+               RETRO_VFS_SEEK_POSITION_START);
+         if (filestream_write(f, buf, 64) != 64)
+            break;
+      }
+      filestream_close(f);
+      t = now_ns() - t0;
+      if (!r || t < best)
+         best = t;
+   }
+   remove("vfs_bench_w.bin");
+   report("write random 64 B, seek+write", best, RANDOM_OPS,
+         (double)RANDOM_OPS * 64);
+}
+
+static void small_writes(void)
+{
+   char     name[64];
+   unsigned i;
+   double   best = 0;
+   int      r;
+   for (r = 0; r < RUNS; r++)
+   {
+      double t0 = now_ns(), t;
+      for (i = 0; i < SMALL_FILES; i++)
+      {
+         RFILE *f;
+         snprintf(name, sizeof(name), "vfs_bench_small_%04u.bin", i);
+         if ((f = filestream_open(name, RETRO_VFS_FILE_ACCESS_WRITE,
+                     RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         {
+            filestream_write(f, buf, 4096);
+            filestream_close(f);
+         }
+      }
+      t = now_ns() - t0;
+      if (!r || t < best)
+         best = t;
+   }
+   for (i = 0; i < SMALL_FILES; i++)
+   {
+      snprintf(name, sizeof(name), "vfs_bench_small_%04u.bin", i);
+      remove(name);
+   }
+   report("create + write 4 KiB + close", best, SMALL_FILES,
+         (double)SMALL_FILES * 4096);
+}
+
 int main(int argc, char **argv)
 {
    const char *path = argc > 1 ? argv[1] : "vfs_bench_64m.bin";
@@ -288,6 +393,13 @@ int main(int argc, char **argv)
    random_reads(path, 1);
    threaded_reads(path);
    small_files();
+   sequential_writes(16);
+   sequential_writes(256);
+   sequential_writes(4096);
+   sequential_writes(65536);
+   sequential_writes(1 << 20);
+   random_writes();
+   small_writes();
 
    if (made)
       remove(path);

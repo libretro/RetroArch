@@ -240,9 +240,12 @@ jobs:
           # seeks and reads of every size, every byte checked, through
           # the stream's own buffer
           ./vfs_seek_read_mix_test.exe
-          # The same with read-only streams on the C runtime
-          # (VFS_WIN32_NO_NATIVE): the stream contract, the path an
-          # open takes, large files, offsets from threads.
+          # writes, seeks, reads, truncates and holes in every write
+          # mode through the stream's own buffer, checked against a copy
+          ./vfs_write_mix_test.exe
+          # The same with streams on the C runtime (VFS_WIN32_NO_NATIVE):
+          # the stream contract, the path an open takes, large files,
+          # offsets from threads, writes.
           make clean MMAP=0
           make MMAP=0 VFS_NATIVE=0
           ./vfs_bulk_read_test.exe
@@ -252,6 +255,7 @@ jobs:
           ./vfs_descriptor_rw_test.exe
           ./vfs_positional_test.exe
           ./vfs_positional_nommap_test.exe
+          ./vfs_write_mix_test.exe
 
       # The Win64 fastjmp_set stores xmm6-xmm15 with movaps and faults
       # on a misaligned buffer. Linux has no such stores, so the Linux
