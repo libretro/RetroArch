@@ -1,0 +1,260 @@
+/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+#include "../../../record/record_stream_vt.h"
+#include "../../../record/record_vt_packet.h"
+#include <stdlib.h>
+#define main session_reference_main
+#include "../../../libretro-common/samples/net/rtmp/rtmp_session_test.c"
+#undef main
+struct net_rtmp_client
+{
+   net_rtmp_session_t *session;
+   bool blocked, wire_live, delay_discard, cancelled;
+};
+static uint8_t wire[65536];
+static size_t wire_size;
+enum net_rtmp_client_state net_rtmp_client_step(net_rtmp_client_t *c,
+      uint32_t time, net_rtmp_client_view_t *view)
+{
+   net_rtmp_span_t span;
+   (void)time;
+   view->session = c->session;
+   view->fd = -1;
+   view->read = true;
+   view->write = view->again = false;
+   if (c->cancelled)
+      return NET_RTMP_CLIENT_FAILED;
+   if (c->blocked)
+   {
+      c->wire_live = net_rtmp_session_get(c->session, &span);
+      return NET_RTMP_CLIENT_READY;
+   }
+   output_size = 0;
+   pump(c->session);
+   assert(output_size<=sizeof(wire)-wire_size);
+   memcpy(wire+wire_size,output,output_size); wire_size+=output_size;
+   c->wire_live = false;
+   return net_rtmp_session_status(c->session, NULL, NULL) == NET_RTMP_SESSION_FINISHED
+      ? NET_RTMP_CLIENT_FINISHED : NET_RTMP_CLIENT_READY;
+}
+void net_rtmp_client_cancel(net_rtmp_client_t *c)
+{
+   c->cancelled = true;
+   net_rtmp_session_cancel(c->session);
+   if (c->delay_discard)
+   {
+      c->delay_discard = false;
+      return;
+   }
+   assert(net_rtmp_session_discard(c->session));
+   c->wire_live = false;
+}
+
+
+struct record_gpu_worker_vt { unsigned made, releases; bool held, release_fail; };
+struct record_vt_packet { struct record_gpu_worker_vt *worker; bool live; };
+struct record_at_audio
+{
+   uint64_t consumed, produced;
+   int16_t input[2048];
+   unsigned rate, channels;
+   size_t pending;
+   bool loan, held, finishing, ended;
+   uint8_t asc[2], bytes[8];
+};
+static record_vt_packet_t *active_view;
+static unsigned audio_releases;
+static const uint8_t headers[]={1,66,0,30,255,225,0,4,103,66,0,30,1,0,1,104};
+static const uint8_t picture[]={0,0,0,1,101};
+record_vt_packet_t *record_vt_packet_new(void *format, unsigned scale, size_t capacity)
+{
+   record_vt_packet_t *p;
+   assert(scale==60000 && capacity==65536);
+   p=(record_vt_packet_t*)calloc(1,sizeof(*p)); assert(p);
+   p->worker=(record_gpu_worker_vt_t*)format; active_view=p; return p;
+}
+bool record_vt_packet_config(record_vt_packet_t *p, const void **data,size_t *size,bool *hevc)
+{ assert(p); *data=headers; *size=sizeof(headers); *hevc=false; return true; }
+int record_vt_packet_read(record_vt_packet_t *p,void *sample,record_vt_packet_view_t *v)
+{
+   assert(sample==p->worker && p->worker->held);
+   p->live=true; v->data=picture; v->size=sizeof(picture);
+   v->dts=v->pts=p->worker->made*1001; v->keyframe=true; return 1;
+}
+bool record_vt_packet_release(record_vt_packet_t *p)
+{ assert(p->live); p->live=false; return true; }
+bool record_vt_packet_free(record_vt_packet_t *p)
+{ if(p) { assert(!p->live); free(p); active_view=NULL; } return true; }
+int record_gpu_worker_vt_step(record_gpu_worker_vt_t *w,void **sample)
+{
+   if(w->made==2) return RECORD_GPU_VT_END;
+   w->held=true; *sample=w; return RECORD_GPU_VT_PACKET;
+}
+bool record_gpu_worker_vt_release(record_gpu_worker_vt_t *w)
+{
+   assert(w->held && !active_view->live);
+   if(w->release_fail) { w->release_fail=false; return false; }
+   w->held=false; w->made++; w->releases++; return true;
+}
+bool record_gpu_worker_vt_retry_needed(const record_gpu_worker_vt_t *w)
+{ (void)w; return false; }
+bool record_at_audio_config(record_at_audio_t *e,const void **data,size_t *size)
+{ *data=e->asc; *size=2; return true; }
+bool record_at_audio_timing(record_at_audio_t *e,unsigned *leading,unsigned *trailing,uint64_t *frames)
+{ *leading=2112; *trailing=0; *frames=e->consumed; return true; }
+int record_at_audio_input(record_at_audio_t *e,int16_t **samples,size_t *frames)
+{
+   assert(!e->held && !e->pending && !e->finishing);
+   e->loan=true; *samples=e->input; *frames=1024; return RECORD_AT_AUDIO_PROGRESS;
+}
+int record_at_audio_submit(record_at_audio_t *e,size_t frames,uint64_t index)
+{
+   size_t i;
+   assert(e->loan && !e->pending && frames<=1024 && frames && index==e->consumed);
+   for(i=0;i<frames*e->channels;i++) assert(e->input[i]==1234);
+   e->loan=false; e->pending=frames; e->consumed+=frames; return RECORD_AT_AUDIO_PROGRESS;
+}
+int record_at_audio_pump(record_at_audio_t *e,record_at_audio_packet_t *packet)
+{
+   if(e->pending || (e->finishing && e->produced<e->consumed+2112))
+   {
+      e->held=true; packet->data=e->bytes; packet->size=sizeof(e->bytes);
+      packet->timestamp=(int64_t)e->produced-2112; packet->frames=1024;
+      return RECORD_AT_AUDIO_PACKET;
+   }
+   if(e->finishing) { e->ended=true; return RECORD_AT_AUDIO_END; }
+   return RECORD_AT_AUDIO_BUSY;
+}
+bool record_at_audio_release(record_at_audio_t *e)
+{ assert(e->held); e->held=false; e->pending=0; e->produced+=1024; audio_releases++; return true; }
+int record_at_audio_finish(record_at_audio_t *e)
+{ assert(!e->held && !e->pending && !e->loan); e->finishing=true; return RECORD_AT_AUDIO_PROGRESS; }
+static void setup(struct net_rtmp_client *c,record_gpu_worker_vt_t *w,
+      record_at_audio_t *a,record_stream_vt_config_t *cfg)
+{
+   memset(c,0,sizeof(*c)); memset(w,0,sizeof(*w)); memset(a,0,sizeof(*a)); memset(cfg,0,sizeof(*cfg));
+   c->session=ready(); wire_size=0; cfg->format=w; cfg->max_packet_size=65536; cfg->video_timescale=60000;
+   cfg->bit_depth=8; cfg->audio_rate=a->rate=48000; cfg->channels=a->channels=2;
+   cfg->audio_fifo_frames=2048; cfg->audio_epoch_frames=2112; cfg->video_epoch_ticks=2640;
+   a->asc[0]=17; a->asc[1]=144; audio_releases=0;
+}
+#ifdef VT_STREAM_THREAD_TEST
+#include <pthread.h>
+#include <sched.h>
+struct vt_pcm_producer { record_stream_vt_t *stream; const int16_t *samples; };
+static void *vt_pcm_produce(void *data)
+{
+   struct vt_pcm_producer *p=(struct vt_pcm_producer*)data;
+   size_t sent=0;
+   unsigned retries=0;
+   while(sent<32769)
+   {
+      size_t count=32769-sent>257?257:32769-sent;
+      int result=record_stream_vt_audio(p->stream,p->samples,count);
+      assert(result!=RECORD_STREAM_VT_ERROR);
+      if(result==RECORD_STREAM_VT_BUSY)
+      { assert(++retries<1000000); sched_yield(); }
+      else { assert(result==RECORD_STREAM_VT_PROGRESS); sent+=count; retries=0; }
+   }
+   assert(record_stream_vt_audio_finish(p->stream));
+   return NULL;
+}
+#endif
+int main(int argc,char **argv)
+{
+   struct net_rtmp_client client;
+   record_gpu_worker_vt_t worker;
+   static record_at_audio_t aac;
+   record_stream_vt_config_t cfg;
+   record_stream_vt_t *stream;
+   record_stream_vt_wait_t wait;
+   static int16_t pcm[4096];
+   unsigned i;
+   int result;
+   for(i=0;i<4096;i++) pcm[i]=1234;
+   setup(&client,&worker,&aac,&cfg);
+   cfg.audio_epoch_frames=2111; assert(!record_stream_vt_new(&worker,&aac,&client,&cfg));
+   cfg.audio_epoch_frames=2112; cfg.video_epoch_ticks=2639; assert(!record_stream_vt_new(&worker,&aac,&client,&cfg));
+   cfg.video_epoch_ticks=2640;
+   stream=record_stream_vt_new(&worker,&aac,&client,&cfg); assert(stream && !record_stream_vt_free(stream));
+   assert(record_stream_vt_audio(stream,pcm,2048)==RECORD_STREAM_VT_PROGRESS);
+   assert(record_stream_vt_audio(stream,pcm,1)==RECORD_STREAM_VT_BUSY);
+   assert(record_stream_vt_audio_finish(stream));
+   for(i=0;i<1000 && !worker.held;i++) assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_PROGRESS);
+   assert(worker.held && !worker.releases); client.blocked=true;
+   for(i=0;i<20;i++) assert(record_stream_vt_step(stream,0,&wait)!=RECORD_STREAM_VT_ERROR);
+   assert(client.wire_live && worker.held && active_view->live && !worker.releases);
+   client.blocked=false; result=RECORD_STREAM_VT_BUSY;
+   for(i=0;i<10000 && result!=RECORD_STREAM_VT_END;i++)
+   { result=record_stream_vt_step(stream,0,&wait); assert(result!=RECORD_STREAM_VT_ERROR); }
+   assert(result==RECORD_STREAM_VT_END && worker.releases==2 && aac.ended && audio_releases==5);
+   assert(record_stream_vt_free(stream) && net_rtmp_session_free(client.session));
+   if(argc==2)
+   {
+      FILE *dump=fopen(argv[1],"wb");
+      assert(dump && fwrite(wire,1,wire_size,dump)==wire_size && !fclose(dump));
+   }
+   setup(&client,&worker,&aac,&cfg); stream=record_stream_vt_new(&worker,&aac,&client,&cfg); assert(stream);
+   assert(record_stream_vt_audio(stream,pcm,1025)==RECORD_STREAM_VT_PROGRESS && record_stream_vt_audio_finish(stream));
+   result=RECORD_STREAM_VT_BUSY;
+   for(i=0;i<10000 && result!=RECORD_STREAM_VT_END;i++)
+   { result=record_stream_vt_step(stream,0,&wait); assert(result!=RECORD_STREAM_VT_ERROR); }
+   assert(result==RECORD_STREAM_VT_END && aac.consumed==1025 && aac.ended);
+   assert(record_stream_vt_free(stream) && net_rtmp_session_free(client.session));
+   setup(&client,&worker,&aac,&cfg);
+   stream=record_stream_vt_new(&worker,&aac,&client,&cfg); assert(stream);
+   for(i=0;i<1000 && !worker.held;i++) assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_PROGRESS);
+   client.blocked=true;
+   for(i=0;i<20;i++) assert(record_stream_vt_step(stream,0,&wait)!=RECORD_STREAM_VT_ERROR);
+   assert(client.wire_live && worker.held && active_view->live);
+   record_stream_vt_abort(stream); client.delay_discard=true;
+   assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_BUSY);
+   assert(worker.held && active_view->live && !worker.releases && !record_stream_vt_free(stream));
+   assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_ERROR);
+   assert(!worker.held && worker.releases==1 && !active_view->live && !record_stream_vt_free(stream));
+   assert(record_stream_vt_audio_finish(stream) && record_stream_vt_free(stream));
+   assert(net_rtmp_session_free(client.session));
+   setup(&client,&worker,&aac,&cfg);
+   cfg.audio_rate=aac.rate=44100; cfg.channels=aac.channels=1; aac.asc[0]=18; aac.asc[1]=8;
+   cfg.video_epoch_ticks=2874;
+   stream=record_stream_vt_new(&worker,&aac,&client,&cfg); assert(stream);
+   assert(record_stream_vt_audio(stream,pcm,1025)==RECORD_STREAM_VT_PROGRESS && record_stream_vt_audio_finish(stream));
+   for(i=0;i<1000 && !aac.held;i++) assert(record_stream_vt_step(stream,0,&wait)!=RECORD_STREAM_VT_ERROR);
+   assert(aac.held); client.blocked=true;
+   for(i=0;i<20;i++) assert(record_stream_vt_step(stream,0,&wait)!=RECORD_STREAM_VT_ERROR);
+   assert(client.wire_live && aac.held);
+   record_stream_vt_abort(stream); client.delay_discard=true;
+   assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_BUSY && aac.held);
+   assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_ERROR && !aac.held);
+   assert(record_stream_vt_free(stream) && net_rtmp_session_free(client.session));
+   setup(&client,&worker,&aac,&cfg); worker.release_fail=true;
+   stream=record_stream_vt_new(&worker,&aac,&client,&cfg); assert(stream);
+   assert(record_stream_vt_audio_finish(stream)); result=RECORD_STREAM_VT_BUSY;
+   for(i=0;i<1000 && result!=RECORD_STREAM_VT_ERROR;i++) result=record_stream_vt_step(stream,0,&wait);
+   assert(result==RECORD_STREAM_VT_ERROR && worker.held && !active_view->live && !worker.releases);
+   assert(record_stream_vt_error(stream)==RECORD_STREAM_VT_ERROR_VIDEO);
+   assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_ERROR);
+   assert(record_stream_vt_free(stream) && worker.held && net_rtmp_session_free(client.session));
+   worker.held=false; /* Caller retires the failed native worker after teardown. */
+#ifdef VT_STREAM_THREAD_TEST
+   {
+      pthread_t producer;
+      struct vt_pcm_producer context;
+      setup(&client,&worker,&aac,&cfg);
+      stream=record_stream_vt_new(&worker,&aac,&client,&cfg); assert(stream);
+      context.stream=stream; context.samples=pcm;
+      assert(!pthread_create(&producer,NULL,vt_pcm_produce,&context));
+      result=RECORD_STREAM_VT_BUSY;
+      for(i=0;i<1000000 && result!=RECORD_STREAM_VT_END;i++)
+      {
+         result=record_stream_vt_step(stream,0,&wait); assert(result!=RECORD_STREAM_VT_ERROR);
+         if(result==RECORD_STREAM_VT_BUSY) sched_yield();
+      }
+      assert(result==RECORD_STREAM_VT_END && aac.consumed==32769 && aac.ended);
+      assert(!pthread_join(producer,NULL));
+      assert(record_stream_vt_free(stream) && net_rtmp_session_free(client.session));
+      puts("PASS concurrent PCM producer and exclusive streaming I/O owner, 32769 source frames");
+   }
+#endif
+   puts("PASS VT/AAC stream explicit priming epoch, network-held borrows, source continuity, bounded PCM, partial drain and cancellation retirement");
+   return 0;
+}

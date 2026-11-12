@@ -18,6 +18,10 @@ on:
       - 'record/record_gpu_dispatch_metal.*'
       - 'record/record_gpu_worker_vt*'
       - 'record/record_vt_packet.*'
+      - 'record/record_stream_vt.*'
+      - 'samples/record/rtmp_stream/**'
+      - 'libretro-common/net/net_rtmp*'
+      - 'libretro-common/include/net/net_rtmp*'
       - 'libretro-common/formats/flv/**'
       - 'libretro-common/include/formats/rflv_mux.h'
       - 'libretro-common/include/formats/rav1_sequence.h'
@@ -50,6 +54,10 @@ on:
       - 'record/record_gpu_dispatch_metal.*'
       - 'record/record_gpu_worker_vt*'
       - 'record/record_vt_packet.*'
+      - 'record/record_stream_vt.*'
+      - 'samples/record/rtmp_stream/**'
+      - 'libretro-common/net/net_rtmp*'
+      - 'libretro-common/include/net/net_rtmp*'
       - 'libretro-common/formats/flv/**'
       - 'libretro-common/include/formats/rflv_mux.h'
       - 'libretro-common/include/formats/rav1_sequence.h'
@@ -82,6 +90,8 @@ jobs:
       - name: Portable ownership and failure contracts
         working-directory: samples/record/videotoolbox_encode
         run: make check thread_test worker_thread_test audio_thread_test av_session_thread_test && ./thread_test && ./worker_thread_test && ./audio_thread_test && ./av_session_thread_test
+      - name: VideoToolbox AAC streaming ownership and independent wire clock
+        run: make -C samples/record/rtmp_stream vt-check
       - name: Native AAC property ABI and advertised rates
         run: make -C samples/record/videotoolbox_encode native-audio-check
       - name: AudioToolbox AAC callback ownership contracts

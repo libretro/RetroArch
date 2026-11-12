@@ -219,6 +219,8 @@ jobs:
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean check SANITIZER=address,undefined
+          make clean vt_thread_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./vt_thread_test
           make clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
