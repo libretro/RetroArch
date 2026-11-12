@@ -51,6 +51,14 @@ void *record_mediacodec_encoder_surface(record_mediacodec_encoder_t *encoder);
 int record_mediacodec_encoder_pump(
       record_mediacodec_encoder_t *encoder, record_mediacodec_packet_t *packet);
 void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *encoder);
+/* Worker-only video CSD buffer 0 or 1, at most 65535 bytes each.
+ * Native encoding is unchanged (AVC SPS/PPS are separate buffers; HEVC
+ * parameter sets share buffer 0). Borrowed until the next pump, stop or free.
+ * No allocation, packet dequeue/release or payload conversion. Missing or
+ * invalid metadata clears both outputs without poisoning the encoder. */
+bool record_mediacodec_encoder_video_config(
+      record_mediacodec_encoder_t *encoder, unsigned index,
+      const void **data, size_t *bytes);
 /* AAC configuration borrowed for the current output format. */
 bool record_mediacodec_encoder_audio_config(
       record_mediacodec_encoder_t *encoder, const void **data, size_t *bytes);

@@ -317,6 +317,8 @@ int main(void)
    assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_FORMAT);
    assert(record_mediacodec_encoder_audio_config(s, &config_data,
             &config_bytes) && config_data == asc && config_bytes == 2);
+   assert(!record_mediacodec_encoder_video_config(s, 0, &config_data,
+            &config_bytes) && !config_data && !config_bytes);
    for (config_fault = 1; config_fault <= 3; config_fault++)
       assert(!record_mediacodec_encoder_audio_config(s, &config_data,
                &config_bytes) && !config_data && !config_bytes);
