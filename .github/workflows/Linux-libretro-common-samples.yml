@@ -467,6 +467,9 @@ jobs:
             # Twenty threads change one record two million times in all
             # while three copy it: no change lost, no copy torn.
             retro_cas_record_test
+            # A double-ended queue of one type in one block, against a
+            # model: two million changes, none wrong, none allocating.
+            retro_deque_test
             sthread_ex_test
             fast_cores_test
             memshm_test
