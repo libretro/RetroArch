@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+#define RECORD_VT_PACKET_MAX_SIZE 0xfffff7u
 RETRO_BEGIN_DECLS
 typedef struct record_vt_packet record_vt_packet_t;
 typedef struct record_vt_packet_view

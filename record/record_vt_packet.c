@@ -39,7 +39,7 @@ record_vt_packet_t *record_vt_packet_new(void *format, unsigned timescale, size_
    int lengths = 0;
    OSStatus status;
    FourCharCode codec;
-   if (!format || !timescale || timescale > 0x7fffffffU || !capacity || capacity > 0xfffff7U
+   if (!format || !timescale || timescale > 0x7fffffffU || !capacity || capacity > RECORD_VT_PACKET_MAX_SIZE
          || CMFormatDescriptionGetMediaType(format) != kCMMediaType_Video)
       return NULL;
    codec = CMFormatDescriptionGetMediaSubType(format);

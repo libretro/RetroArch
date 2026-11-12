@@ -13,6 +13,7 @@
 #include <string/stdstring.h>
 #include <retro_atomic.h>
 #include "../record_gpu_dispatch_metal.h"
+#include "../record_vt_packet.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../audio/audio_driver.h"
 #include "../../audio/audio_upmix.h"
@@ -205,7 +206,7 @@ static void *record_metal_init(const struct record_params *params)
    retro_atomic_int_init(&ctx->failed,0); retro_atomic_int_init(&ctx->stop,0);
    if (streaming)
    {
-      stream.max_packet_size=video.hevc?0xfffff7:0xfffffa;
+      stream.max_packet_size=RECORD_VT_PACKET_MAX_SIZE;
       stream.color.primaries=stream.color.matrix=video.mode?9:1;
       stream.color.transfer=video.mode?16:1; stream.color.range=1;
       ctx->job=record_gpu_dispatch_metal_new_stream(device.device,&video,&stream,params->filename);
