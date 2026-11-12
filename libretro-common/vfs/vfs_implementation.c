@@ -879,8 +879,12 @@ static int64_t vfs_native_seek(libretro_vfs_implementation_file *stream,
 }
 
 /* From the buffer where it holds the position, else a read at the
- * position: into the buffer for a request smaller than it, straight
- * into @s for one as large */
+ * position: straight into @s for a request as large as the buffer;
+ * into the buffer for a smaller one - all of it where the read carries
+ * on from the buffer's end or starts the file, and only the request,
+ * rounded up to 4 KiB, after a seek elsewhere, so a reader jumping about
+ * reads what it asks for and one that then reads on is sequential
+ * again from the next refill */
 static int64_t vfs_native_read(libretro_vfs_implementation_file *stream,
       void *s, uint64_t len)
 {
@@ -911,8 +915,14 @@ static int64_t vfs_native_read(libretro_vfs_implementation_file *stream,
          total        += (uint64_t)got;
          return (int64_t)total;
       }
-      if ((got = vfs_win32_io(stream->fh, NULL, stream->buf,
-                  VFS_NATIVE_BUF, at, false)) <= 0)
+      {
+         uint64_t fill = VFS_NATIVE_BUF;
+         if (     at != stream->nbuf_at + stream->nbuf_len
+               && (at != 0 || stream->nbuf_len))
+            fill = (len + 4095) & ~(uint64_t)4095;
+         got = vfs_win32_io(stream->fh, NULL, stream->buf, fill, at, false);
+      }
+      if (got <= 0)
       {
          if (got == 0)
             return (int64_t)total;
