@@ -69,8 +69,9 @@ struct record_at_resample
    uint64_t accepted, produced;
    size_t frames, offset;
    unsigned rate, channels;
-   bool failed, cancelled;
+   bool failed, cancelled, ended;
 };
+static unsigned src_cancel_failures;
 bool record_at_resample_config(const record_at_resample_t *e,
       record_audio_queue_t **q,unsigned *rate,unsigned *channels)
 {
@@ -91,7 +92,7 @@ int record_at_resample_read(record_at_resample_t *e,int16_t *output,size_t capac
    if(!e->samples)
    {
       result=record_audio_queue_peek_lend(e->source,&e->samples,&e->frames,&timestamp);
-      if(result==RECORD_AUDIO_END) return RECORD_AT_RESAMPLE_END;
+      if(result==RECORD_AUDIO_END) { e->ended=true; return RECORD_AT_RESAMPLE_END; }
       if(result==RECORD_AUDIO_BUSY) return RECORD_AT_RESAMPLE_BUSY;
       assert(result==RECORD_AUDIO_OK);
       e->offset=0;
@@ -106,6 +107,7 @@ int record_at_resample_read(record_at_resample_t *e,int16_t *output,size_t capac
 }
 bool record_at_resample_cancel(record_at_resample_t *e)
 {
+   if(src_cancel_failures) { src_cancel_failures--; return false; }
    if(e->samples) { assert(record_audio_queue_ack(e->source)); e->samples=NULL; }
    e->cancelled=true; return true;
 }
@@ -162,7 +164,7 @@ int record_at_audio_submit(record_at_audio_t *e,size_t frames,uint64_t index)
    e->loan=false; e->pending=frames; e->consumed+=frames; return RECORD_AT_AUDIO_PROGRESS;
 }
 bool record_at_audio_input_release(record_at_audio_t *e)
-{ assert(e->loan); e->loan=false; return true; }
+{ if(!e->loan) return false; e->loan=false; return true; }
 int record_at_audio_pump(record_at_audio_t *e,record_at_audio_packet_t *packet)
 {
    if(e->pending || (e->finishing && e->produced<e->consumed+2112))
@@ -175,7 +177,7 @@ int record_at_audio_pump(record_at_audio_t *e,record_at_audio_packet_t *packet)
    return RECORD_AT_AUDIO_BUSY;
 }
 bool record_at_audio_release(record_at_audio_t *e)
-{ assert(e->held); e->held=false; e->pending=0; e->produced+=1024; audio_releases++; return true; }
+{ if(!e->held) return false; e->held=false; e->pending=0; e->produced+=1024; audio_releases++; return true; }
 int record_at_audio_finish(record_at_audio_t *e)
 { assert(!e->held && !e->pending && !e->loan); e->finishing=true; return RECORD_AT_AUDIO_PROGRESS; }
 static void setup(struct net_rtmp_client *c,record_gpu_worker_vt_t *w,
@@ -365,7 +367,10 @@ static void *vt_pcm_produce(void *data)
    return NULL;
 }
 #endif
-int main(int argc,char **argv)
+#ifndef VT_STREAM_TEST_MAIN
+#define VT_STREAM_TEST_MAIN main
+#endif
+int VT_STREAM_TEST_MAIN(int argc,char **argv)
 {
    struct net_rtmp_client client;
    record_gpu_worker_vt_t worker;
