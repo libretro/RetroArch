@@ -67,6 +67,8 @@ HAVE_RETROARCH_PLAYLIST_MANAGER=auto # iOS/tvOS + macOS 10.11+ playlist helper (
 
 # Networking and online services
 HAVE_NETWORKING=auto       # Networking features (recommended)
+HAVE_RTMP=auto             # Built-in RTMP/RTMPS publishing (requires networking and crypto)
+HAVE_RFLV=auto             # Built-in FLV muxing for native streaming
 HAVE_IFINFO=yes
 HAVE_NETPLAYDISCOVERY=yes  # Add netplay discovery (room creation, etc.)
 HAVE_NETWORKGAMEPAD=auto   # Networked game pad (plus baked-in core)

@@ -34,13 +34,15 @@
 #endif
 #include <unistd.h>
 #if defined(HAVE_NETWORKING) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
-#define RECORD_METAL_STREAM
 #include "record_stream_session_vt_native.h"
+#ifdef VIDEOTOOLBOX_ENCODE_SLOTS
+#define RECORD_METAL_STREAM
 #include <crypto/kdf.h>
 #include <features/features_cpu.h>
 #include <net/net_wake.h>
 #include <errno.h>
 #include <poll.h>
+#endif
 #endif
 struct record_gpu_dispatch_metal
 {
@@ -214,6 +216,8 @@ static int record_metal_stream_bootstrap(record_gpu_dispatch_metal_t *j)
       j->client = net_rtmp_client_new_caps(&config,&caps);
       if (!j->client)
          goto failed;
+      free(j->path);
+      j->path = NULL;
    }
    state = net_rtmp_client_step(j->client,0,&j->connect_view);
    if (state == NET_RTMP_CLIENT_FAILED)

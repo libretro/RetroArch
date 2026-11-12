@@ -25,14 +25,15 @@
 #include "../../verbosity.h"
 typedef struct record_metal_context
 {
+   double audio_rate;
    uint64_t next_timestamp,origin,captured,audio_frames,last_offered;
    struct record_metal_context *next;
    record_gpu_dispatch_metal_t *job;
    void *device;
    char *path;
-   unsigned dims,duration,audio_rate,output_mode;
+   unsigned dims,duration,output_mode;
    retro_atomic_int_t failed,stop;
-   bool allow_drop,have_origin,video_closed,audio_enabled,armed,have_offered;
+   bool allow_drop,have_origin,video_closed,audio_enabled,armed,have_offered,streaming;
 } record_metal_context_t;
 static record_metal_context_t *record_metal_active,*record_metal_retired;
 static bool record_metal_start_requested;
@@ -65,7 +66,8 @@ static bool record_metal_rate(double fps, unsigned *num, unsigned *den)
    return false;
 }
 
-static bool record_metal_config(const char *path,record_gpu_session_metal_config_t *video,bool *audio_enabled)
+static bool record_metal_config(const char *path,record_gpu_session_metal_config_t *video,
+      bool *audio_enabled,record_gpu_dispatch_metal_stream_config_t *stream)
 {
    config_file_t *config;
    struct config_file_entry entry;
@@ -82,13 +84,27 @@ static bool record_metal_config(const char *path,record_gpu_session_metal_config
       else goto done;
    }
    if (config_get_entry(config,"format") && (!config_get_array(config,"format",format,sizeof(format))
-            || !string_is_equal(format,"mp4"))) goto done;
+            || !string_is_equal(format,stream?"flv":"mp4"))) goto done;
    if (config_get_entry(config,"video_bit_rate") && (!config_get_uint(config,"video_bit_rate",&video->bitrate)
             || !video->bitrate || video->bitrate>INT32_MAX)) goto done;
+   if (config_get_entry(config,"rtmp_legacy_commands")
+         && (!stream || !config_get_bool(config,"rtmp_legacy_commands",&stream->legacy_commands))) goto done;
+   if (config_get_entry(config,"acodec") && (!stream
+            || !config_get_array(config,"acodec",codec,sizeof(codec)) || !string_is_equal(codec,"aac"))) goto done;
+   if (config_get_entry(config,"sample_rate") && (!stream
+            || !config_get_uint(config,"sample_rate",&stream->audio_rate)
+            || (stream->audio_rate!=44100 && stream->audio_rate!=48000))) goto done;
+   if (config_get_entry(config,"audio_bit_rate") && (!stream
+            || !config_get_uint(config,"audio_bit_rate",&stream->audio_bitrate)
+            || (stream->audio_bitrate!=96000 && stream->audio_bitrate!=128000
+               && stream->audio_bitrate!=160000 && stream->audio_bitrate!=192000))) goto done;
    if (config_get_entry_list_head(config,&entry)) do
    {
       if (!string_is_equal(entry.key,"audio_enable") && !string_is_equal(entry.key,"vcodec")
-            && !string_is_equal(entry.key,"format") && !string_is_equal(entry.key,"video_bit_rate")) goto done;
+            && !string_is_equal(entry.key,"format") && !string_is_equal(entry.key,"video_bit_rate")
+            && !(stream && (string_is_equal(entry.key,"rtmp_legacy_commands")
+                  || string_is_equal(entry.key,"acodec") || string_is_equal(entry.key,"sample_rate")
+                  || string_is_equal(entry.key,"audio_bit_rate")))) goto done;
    } while (config_get_entry_list_next(&entry));
    *audio_enabled=audio; ok=true;
 done:
@@ -106,6 +122,7 @@ static void *record_metal_init(const struct record_params *params)
 {
    record_gpu_session_metal_config_t video;
    record_mux_avfoundation_config_t output;
+   record_gpu_dispatch_metal_stream_config_t stream;
    record_metal_context_t *ctx;
    video_device_info_t device;
    struct retro_hdr_metadata hdr;
@@ -113,16 +130,29 @@ static void *record_metal_init(const struct record_params *params)
    unsigned fps_num,fps_den,rate=0;
    size_t length,audio_capacity=0;
    bool audio_enabled;
+   bool streaming=recording_state_get_ptr()->streaming_enable;
    if (!params || !settings || record_metal_active || record_metal_retired || !params->filename || !*params->filename)
       return NULL;
-   if (!params->video_gpu_record || recording_state_get_ptr()->streaming_enable
+   if (!params->video_gpu_record
          || settings->bools.video_record_game_only || audio_driver_has_callback())
    {
-      RARCH_ERR("[Metal recording] Requires viewport recording without streaming, Game Only or asynchronous core audio callbacks.\n");
+      RARCH_ERR("[Metal recording] Requires viewport recording without Game Only or asynchronous core audio callbacks.\n");
       return NULL;
    }
+#if !defined(HAVE_NETWORKING) || !defined(HAVE_RTMP) || !defined(HAVE_RFLV) || !defined(HAVE_CRYPTO)
+   if (streaming)
+   {
+      RARCH_ERR("[Metal recording] Native streaming is unavailable in this build.\n");
+      return NULL;
+   }
+#endif
+   if (streaming && strncmp(params->filename,"rtmp://",7) && strncmp(params->filename,"rtmps://",8))
+      return NULL;
    if (!video_driver_get_device(&device) || device.api!=VIDEO_DEVICE_METAL || !device.device) return NULL;
    memset(&video,0,sizeof(video)); memset(&output,0,sizeof(output)); memset(&hdr,0,sizeof(hdr));
+   memset(&stream,0,sizeof(stream));
+   stream.audio_rate=params->samplerate==44100.0?44100:48000;
+   stream.audio_bitrate=128000;
    hdr.version=1; hdr.size=sizeof(hdr);
    if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA,&hdr)) return NULL;
    video.width=VIDEO_SCALE_W(params->out_dims); video.height=VIDEO_SCALE_H(params->out_dims);
@@ -130,10 +160,11 @@ static void *record_metal_init(const struct record_params *params)
    video.bitrate=16000000; video.hevc=hdr.output_mode!=0;
    if (!video.width || !video.height || ((video.width|video.height)&1) || video.width>16384 || video.height>16384
          || !record_metal_rate(params->fps,&fps_num,&fps_den) || fps_num>INT32_MAX
-         || !record_metal_config(params->config,&video,&audio_enabled) || !record_metal_color(&video,&hdr)
+         || !record_metal_config(params->config,&video,&audio_enabled,streaming?&stream:NULL)
+         || !record_metal_color(&video,&hdr)
          || (!hdr.output_mode && settings->uints.video_swapchain_bit_depth==2))
    {
-      RARCH_ERR("[Metal recording] Unsupported viewport, frame rate or MP4 configuration; HDR requires HEVC/P010.\n");
+      RARCH_ERR("[Metal recording] Unsupported viewport, frame rate or native configuration; HDR requires HEVC/P010.\n");
       return NULL;
    }
    video.timescale=fps_num; video.key_interval=(unsigned)ceil(params->fps*2.0);
@@ -142,24 +173,48 @@ static void *record_metal_init(const struct record_params *params)
    {
       uint32_t layout=recording_state_get_ptr()->layout;
       double sample_rate=params->samplerate;
-      if (sample_rate!=sample_rate || sample_rate<8000.0 || sample_rate>192000.0 || floor(sample_rate)!=sample_rate
-            || !params->channels || params->channels>8 || audio_layout_channels(layout)!=params->channels
+      if (sample_rate!=sample_rate || sample_rate<8000.0 || sample_rate>192000.0
+            || (!streaming && floor(sample_rate)!=sample_rate)
+            || !params->channels || params->channels>(streaming?2u:8u)
+            || audio_layout_channels(layout)!=params->channels
             || (layout&~0x63fu)) return NULL;
-      rate=(unsigned)sample_rate;
-      output.audio_rate=rate; output.channels=params->channels; output.audio_layout=layout;
-      output.audio_bitrate=params->channels>2?384000:128000; output.max_audio_frames=4096;
-      audio_capacity=(size_t)rate*params->channels*2+1024;
+      if (streaming)
+      {
+         if (layout!=(params->channels==1?AUDIO_SPEAKER_FRONT_CENTER:AUDIO_LAYOUT_STEREO)) return NULL;
+         stream.source_rate=sample_rate;
+         stream.channels=params->channels;
+         stream.max_audio_frames=4096;
+         stream.audio_capacity_bytes=(size_t)ceil(sample_rate)*params->channels*2+1024;
+      }
+      else
+      {
+         rate=(unsigned)sample_rate;
+         output.audio_rate=rate; output.channels=params->channels; output.audio_layout=layout;
+         output.audio_bitrate=params->channels>2?384000:128000; output.max_audio_frames=4096;
+         audio_capacity=(size_t)rate*params->channels*2+1024;
+      }
    }
+   else stream.audio_rate=0;
    length=strlen(params->filename); if (length>=PATH_MAX_LENGTH) return NULL;
-   ctx=(record_metal_context_t*)calloc(1,sizeof(*ctx)+length+1); if (!ctx) return NULL;
-   ctx->path=(char*)(ctx+1); memcpy(ctx->path,params->filename,length+1);
+   ctx=(record_metal_context_t*)calloc(1,sizeof(*ctx)+(streaming?0:length+1)); if (!ctx) return NULL;
+   if (!streaming)
+   { ctx->path=(char*)(ctx+1); memcpy(ctx->path,params->filename,length+1); }
    ctx->device=device.device; ctx->dims=params->out_dims; ctx->output_mode=hdr.output_mode;
-   ctx->duration=fps_den; ctx->audio_rate=rate; ctx->audio_enabled=audio_enabled; ctx->allow_drop=params->allow_frame_drop;
+   ctx->duration=fps_den; ctx->audio_rate=params->samplerate; ctx->audio_enabled=audio_enabled;
+   ctx->allow_drop=params->allow_frame_drop; ctx->streaming=streaming;
    retro_atomic_int_init(&ctx->failed,0); retro_atomic_int_init(&ctx->stop,0);
-   ctx->job=record_gpu_dispatch_metal_new(device.device,&video,&output,audio_capacity,ctx->path);
+   if (streaming)
+   {
+      stream.max_packet_size=video.hevc?0xfffff7:0xfffffa;
+      stream.color.primaries=stream.color.matrix=video.mode?9:1;
+      stream.color.transfer=video.mode?16:1; stream.color.range=1;
+      ctx->job=record_gpu_dispatch_metal_new_stream(device.device,&video,&stream,params->filename);
+   }
+   else ctx->job=record_gpu_dispatch_metal_new(device.device,&video,&output,audio_capacity,ctx->path);
    if (!ctx->job) { free(ctx); return NULL; }
    record_metal_active=ctx;
-   RARCH_LOG("[Metal recording] Starting native %s %u/%u fps recording.\n",audio_enabled?"AAC/video":"video-only",fps_num,fps_den);
+   RARCH_LOG("[Metal recording] Starting native %s %u/%u fps %s.\n",audio_enabled?"AAC/video":"video-only",
+         fps_num,fps_den,streaming?"streaming":"recording");
    return ctx;
 }
 static bool record_metal_finalize(void *data)
@@ -284,7 +339,7 @@ void record_metal_poll(void)
          RARCH_LOG("[Metal recording] Finalized %llu GPU frames, %llu PCM frames.\n",
                (unsigned long long)ctx->captured,(unsigned long long)ctx->audio_frames);
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
-         if (config_get_ptr()->bools.history_list_enable)
+         if (!ctx->streaming && config_get_ptr()->bools.history_list_enable)
          {
             struct playlist_entry entry={0};
             entry.path=ctx->path; entry.core_path=(char*)"builtin"; entry.core_name=(char*)"movieplayer";

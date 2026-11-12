@@ -360,6 +360,24 @@ jobs:
           fi
           make clean
 
+      - name: Native Metal frontend profiles and source clocks
+        shell: msys2 {0}
+        working-directory: samples/record/metal_frontend
+        run: |
+          set -eu
+          make clean
+          make check CC=gcc EXE=.exe
+          make clean
+
+      - name: Config include ownership and stack budget
+        shell: msys2 {0}
+        working-directory: libretro-common/samples/file/config_file
+        run: |
+          set -eu
+          make clean
+          make check CC=gcc EXE=.exe
+          make clean CC=gcc EXE=.exe
+
       - name: Native streaming worker readiness and cancellation
         shell: msys2 {0}
         working-directory: samples/record/gpu_dispatch

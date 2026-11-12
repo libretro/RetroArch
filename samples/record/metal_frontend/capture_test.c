@@ -74,6 +74,12 @@ int main(void)
       reset(&ctx); ctx.audio_enabled=ctx.armed=true; ctx.audio_rate=48000;
       test_video.av_info.timing.sample_rate=44100;
       assert(!record_metal_audio(&ctx,&audio) && !audio_offers && cancels==1);
+      reset(&ctx); ctx.audio_enabled=ctx.armed=true; ctx.audio_rate=32040.5;
+      test_video.av_info.timing.sample_rate=32040.5;
+      dispatch_result=RECORD_AUDIO_OK;
+      assert(record_metal_audio(&ctx,&audio) && ctx.audio_frames==256 && audio_pts==0);
+      test_video.av_info.timing.sample_rate=32040.0;
+      assert(!record_metal_audio(&ctx,&audio) && ctx.audio_frames==256 && audio_offers==1 && cancels==1);
    }
    puts("PASS: Metal frontend source-clock deduplication, BUSY/error policy and output-change refusal");
    return 0;

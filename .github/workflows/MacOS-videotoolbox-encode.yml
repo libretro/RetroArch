@@ -329,18 +329,42 @@ jobs:
       - name: Configure network-enabled Metal frontend
         run: |
           set -eu
+          stream_options=
+          if [ "${{ matrix.threads }}" = disable ]; then
+            stream_options="--enable-rtmp --enable-rflv"
+          fi
           ./configure --enable-metal --enable-avf --${{ matrix.threads }}-threads --enable-configfile \
             --disable-qt --disable-ffmpeg --disable-discord --disable-cheevos \
             --enable-networking --disable-sdl2 --disable-sdl --disable-translate \
             --disable-update_cores --disable-update_assets --disable-online_updater \
-            --disable-cdrom --disable-7zip --disable-ssl
+            --disable-cdrom --disable-7zip --enable-ssl --enable-retrossl $stream_options
+          for feature in HAVE_METAL HAVE_AVF HAVE_NETWORKING HAVE_CRYPTO HAVE_RTMP HAVE_RFLV HAVE_RETROSSL; do
+            grep -Eq "^#define $feature 1" config.h
+          done
       - name: Link network worker and threadless fallback
         run: |
           set -eu
-          make -j"$(sysctl -n hw.ncpu)" HAVE_RTMP=1 HAVE_RFLV=1 HAVE_CRYPTO=1 \
+          make -j"$(sysctl -n hw.ncpu)" \
             MINVERFLAGS="-mmacosx-version-min=$(sw_vers -productVersion)"
           test -x retroarch
           nm retroarch | grep '_record_gpu_dispatch_metal_new_stream'
+      - name: Native frontend streaming through command start and stop
+        if: ${{ matrix.threads == 'enable' }}
+        run: |
+          set -eu
+          command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
+          cc -dynamiclib -std=gnu89 -Ilibretro-common/include samples/record/metal_frontend/core.c -o "$RUNNER_TEMP/metal-stream-core.dylib" -lm
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --output-dir "$RUNNER_TEMP/metal-frontend-stream/h264"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --codec hevc --source-rate 32040.5 --output-dir "$RUNNER_TEMP/metal-frontend-stream/fractional"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --channels 1 --source-rate 44100 --output-dir "$RUNNER_TEMP/metal-frontend-stream/mono"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --video-only --output-dir "$RUNNER_TEMP/metal-frontend-stream/video-only"
+      - name: Save real frontend streaming evidence
+        if: ${{ always() && matrix.threads == 'enable' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: metal-frontend-stream-evidence
+          path: ${{ runner.temp }}/metal-frontend-stream
+          if-no-files-found: ignore
 
   frontend-contracts:
     if: ${{ !inputs.native_aac_only }}

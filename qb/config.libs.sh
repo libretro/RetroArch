@@ -1112,6 +1112,21 @@ fi
 check_enabled NETWORKING RETRONFS 'built-in NFS client' 'Networking is' false
 if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
 
+check_enabled NETWORKING RTMP 'RTMP publishing' 'Networking is' false
+check_enabled CRYPTO RTMP 'RTMP publishing' 'crypto is' false
+if [ "$HAVE_RTMP" = 'auto' ]; then
+   HAVE_RTMP=no
+   if [ "$OS" = 'Darwin' ] && [ "$HAVE_METAL" = 'yes' ] && \
+      [ "$HAVE_AVF" = 'yes' ] && [ "$HAVE_THREADS" = 'yes' ] && \
+      [ "$HAVE_CONFIGFILE" = 'yes' ]; then
+      HAVE_RTMP=yes
+   fi
+fi
+if [ "$HAVE_RFLV" = 'auto' ]; then
+   HAVE_RFLV=no
+   [ "$HAVE_RTMP" = 'yes' ] && HAVE_RFLV=yes
+fi
+
 # The built-in client is used unless a system libsmb2 was asked for
 # (--enable-libsmb, or --enable-smbclient); nothing is bundled any more,
 # so libsmb2 asked for and not found is an error.
