@@ -2624,7 +2624,12 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
           * the file's end asked again for what it had received. */
          if (newlen < 0 && net_http_body_streams(state))
          {
-            size_t held = response->bodytype == T_CHUNK
+            /* Decoded bytes are data[0..pos) for an identity body and
+             * in the middle of a chunk (P_BODY, where len is what the
+             * chunk still owes), and data[0..len) between chunks
+             * (P_BODY_CHUNKLEN, where pos also covers the raw tail) */
+            size_t held = (     response->bodytype == T_CHUNK
+                           &&   response->part     != P_BODY)
                ? response->len : response->pos;
             if (held)
                net_http_sink_flush(state, held);
