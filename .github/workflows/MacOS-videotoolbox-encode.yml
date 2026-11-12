@@ -96,6 +96,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install independent streaming receiver
         run: command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
+      - name: Pollable producer wake and socket readiness
+        run: make -C libretro-common/samples/net/wake check
       - name: Native VT and AAC over RTMP and TLS
         env:
           VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-stream-evidence

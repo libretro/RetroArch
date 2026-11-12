@@ -185,6 +185,16 @@ jobs:
           fi
           make clean
 
+      - name: Pollable producer wake (Clang ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: libretro-common/samples/net/wake
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean && make check CC=clang SANITIZER=address,undefined
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
       - name: RTMP protocol and sockets (ASan + UBSan, TSan, mingw-w64)
         shell: bash
         working-directory: libretro-common/samples/net/rtmp
