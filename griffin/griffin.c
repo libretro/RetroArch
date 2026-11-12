@@ -1728,6 +1728,10 @@ RECORDING
 #include "../record/record_mux_mediacodec.c"
 #include "../record/record_aac_stream_timing.c"
 #include "../record/record_mediacodec_worker.c"
+#if defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#include "../record/record_mediacodec_stream_config.c"
+#include "../record/record_stream_mediacodec.c"
+#endif
 #include "../record/record_mediacodec_surface.c"
 #include "../record/record_mediacodec_file.c"
 #include "../record/record_mediacodec_file_edit.c"

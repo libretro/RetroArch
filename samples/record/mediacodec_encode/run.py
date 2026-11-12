@@ -57,7 +57,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("draw_test.c", []), ("gpu_worker_test.c", []),
                           ("file_test.c", ["-DRECORD_MEDIACODEC_FILE_TEST"]),
                           ("file_edit_test.c", ["-DRECORD_MEDIACODEC_FILE_TEST"]),
-                          ("session_test.c", []), ("dispatch_test.c", []),
+                          ("session_test.c", []), ("session_stream_test.c", []), ("dispatch_test.c", []),
                           ("gpu_dispatch_test.c", [])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
         if source == "stream_timing_test.c":
@@ -75,7 +75,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "libretro-common/queues/retro_spsc.c")]
             if source == "worker_test.c":
                 command += [str(root / "record/record_aac_probe.c")]
-        if source == "session_test.c":
+        if source in ("session_test.c", "session_stream_test.c"):
             command += ["-DHAVE_THREADS",
                         str(root / "record/record_audio_queue.c"),
                         str(root / "libretro-common/queues/retro_spsc.c")]

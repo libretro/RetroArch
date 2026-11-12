@@ -2,8 +2,13 @@
  * GPL-3.0-or-later */
 #include "record_session_mediacodec.h"
 #include "record_mediacodec_file.h"
+#include "record_stream_mediacodec.h"
 #include <retro_atomic.h>
 #include <stdlib.h>
+#include <string.h>
+#if defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#define RECORD_MCS_NETWORK
+#endif
 
 struct record_session_mediacodec
 {
@@ -15,9 +20,10 @@ struct record_session_mediacodec
    record_mediacodec_worker_t *worker;
    record_aac_probe_t *probe;
    record_mediacodec_file_t *file;
+   record_stream_mediacodec_t *stream;
    retro_atomic_int_t audio_closed, gpu_done, gpu_released, cancelled;
    retro_atomic_int_t error, file_error;
-   bool finishing, draining, retired;
+   bool finishing, draining, retired, network;
 };
 
 static void record_mcs_fail(record_session_mediacodec_t *s, int error)
@@ -26,16 +32,22 @@ static void record_mcs_fail(record_session_mediacodec_t *s, int error)
       retro_atomic_store_release_int(&s->error, error);
 }
 
-record_session_mediacodec_t *record_session_mediacodec_new(JNIEnv *env,
+static record_session_mediacodec_t *record_mcs_new(JNIEnv *env,
       const mediacodec_encoder_request_t *video, unsigned interval,
       unsigned rate, unsigned channels, unsigned bitrate,
-      size_t max_audio_frames, size_t audio_capacity, const char *path)
+      size_t max_audio_frames, size_t audio_capacity, const char *path,
+      net_rtmp_client_t *client, const record_mediacodec_stream_config_t *config)
 {
    record_session_mediacodec_t *s;
    int error = 0;
    bool audio
          = rate || channels || bitrate || max_audio_frames || audio_capacity;
-   if (!video || !path || !*path
+#ifndef RECORD_MCS_NETWORK
+   (void)config;
+   if (client)
+      return NULL;
+#endif
+   if (!video || (client ? !config || path : !path || !*path)
          || (audio
                && (!rate || !channels || channels > 2 || !bitrate
                      || !max_audio_frames || !audio_capacity)))
@@ -49,6 +61,7 @@ record_session_mediacodec_t *record_session_mediacodec_new(JNIEnv *env,
    retro_atomic_int_init(&s->cancelled, 0);
    retro_atomic_int_init(&s->error, 0);
    retro_atomic_int_init(&s->file_error, 0);
+   s->network = client != NULL;
    s->video = record_mediacodec_encoder_new(env, video, interval);
    if (!s->video)
       goto failed;
@@ -60,6 +73,20 @@ record_session_mediacodec_t *record_session_mediacodec_new(JNIEnv *env,
       s->probe = record_aac_probe_new(rate, channels);
       if (!s->audio || !s->pcm || !s->probe)
          goto failed;
+   }
+   if (s->network)
+   {
+#ifdef RECORD_MCS_NETWORK
+      s->stream = record_stream_mediacodec_new(s->video, s->audio, client, config);
+      if (!s->stream)
+         goto failed;
+      s->worker = record_mediacodec_worker_new_output(s->video, s->audio, s->pcm,
+            record_stream_mediacodec_ops(), s->stream, channels, rate);
+      if (s->worker && (!audio
+            || record_mediacodec_worker_calibrate_live(s->worker, s->probe)))
+         return s;
+#endif
+      goto failed;
    }
    s->file = record_mediacodec_file_new(path, &error);
    if (!s->file)
@@ -76,6 +103,9 @@ record_session_mediacodec_t *record_session_mediacodec_new(JNIEnv *env,
 failed:
    if (s->worker)
       record_mediacodec_worker_free(s->worker);
+#ifdef RECORD_MCS_NETWORK
+   record_stream_mediacodec_free(s->stream);
+#endif
    record_aac_probe_free(s->probe);
    record_mux_mediacodec_free(s->mux);
    record_mediacodec_file_close(s->file, false, &error);
@@ -84,6 +114,48 @@ failed:
    record_mediacodec_encoder_free(s->video);
    free(s);
    return NULL;
+}
+
+record_session_mediacodec_t *record_session_mediacodec_new(JNIEnv *env,
+      const mediacodec_encoder_request_t *video, unsigned interval,
+      unsigned rate, unsigned channels, unsigned bitrate,
+      size_t max_audio_frames, size_t audio_capacity, const char *path)
+{
+   return record_mcs_new(env, video, interval, rate, channels, bitrate,
+         max_audio_frames, audio_capacity, path, NULL, NULL);
+}
+
+record_session_mediacodec_t *record_session_mediacodec_new_stream(JNIEnv *env,
+      const mediacodec_encoder_request_t *video, unsigned interval,
+      unsigned rate, unsigned channels, unsigned bitrate,
+      size_t max_audio_frames, size_t audio_capacity, net_rtmp_client_t *client,
+      const record_mediacodec_stream_config_t *config)
+{
+   if (!client)
+      return NULL;
+   return record_mcs_new(env, video, interval, rate, channels, bitrate,
+         max_audio_frames, audio_capacity, NULL, client, config);
+}
+
+int record_session_mediacodec_network_step(record_session_mediacodec_t *s,
+      uint32_t receive_time, net_rtmp_client_view_t *wait)
+{
+   if (!wait)
+      return -1;
+   memset(wait, 0, sizeof(*wait));
+   wait->fd = -1;
+#ifdef RECORD_MCS_NETWORK
+   if (s && s->stream && !s->draining)
+   {
+      int result = record_stream_mediacodec_step(s->stream, receive_time, wait);
+      if (result < 0)
+         record_mcs_fail(s, RECORD_MC_SESSION_NETWORK);
+      return result;
+   }
+#else
+   (void)receive_time;
+#endif
+   return s && s->network ? 0 : -1;
 }
 
 void *record_session_mediacodec_surface(record_session_mediacodec_t *s)
@@ -152,7 +224,7 @@ static bool record_mcs_close_output(
    int error = 0;
    uint64_t skip = 0, frames = 0;
    unsigned roll = 0;
-   bool edit = complete && s->probe;
+   bool edit = complete && s->probe && !s->network;
    if (s->worker)
    {
       if (edit && !record_mediacodec_worker_audio_edit(s->worker,
@@ -167,6 +239,14 @@ static bool record_mcs_close_output(
          return false;
       s->worker = NULL;
    }
+#ifdef RECORD_MCS_NETWORK
+   if (s->stream)
+   {
+      if (!record_stream_mediacodec_free(s->stream))
+         return false;
+      s->stream = NULL;
+   }
+#endif
    record_aac_probe_free(s->probe);
    s->probe = NULL;
    if (!complete)
@@ -175,6 +255,11 @@ static bool record_mcs_close_output(
          record_mcs_fail(s, RECORD_MC_SESSION_OUTPUT);
       if (s->audio && !record_mediacodec_encoder_stop(s->audio))
          record_mcs_fail(s, RECORD_MC_SESSION_OUTPUT);
+   }
+   if (s->network)
+   {
+      s->draining = true;
+      return true;
    }
    record_mux_mediacodec_free(s->mux);
    s->mux = NULL;

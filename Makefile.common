@@ -3424,6 +3424,10 @@ ifeq ($(HAVE_RECORD_MEDIACODEC), 1)
       record/record_android_capture_ops.o record/record_android_capture_egl.o \
       record/record_android_capture_gl.o record/record_android_capture_draw.o \
       record/record_gpu_queue.o record/record_audio_queue.o
+   ifeq ($(HAVE_RTMP)$(HAVE_RFLV),11)
+      MEDIA_RECORD_OBJ += record/record_stream_mediacodec.o \
+         record/record_mediacodec_stream_config.o
+   endif
    MEDIA_RECORD_OBJ := $(filter-out $(OBJ),$(MEDIA_RECORD_OBJ))
    OBJ += $(MEDIA_RECORD_OBJ)
 endif

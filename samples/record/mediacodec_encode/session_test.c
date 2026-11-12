@@ -40,6 +40,9 @@ static struct record_aac_probe probe;
 static int fault, stops, completes, closes, aborts, finishes, reads_retired;
 static int output_error, stop_error, file_error;
 static int trim_error, edit_error;
+#ifdef RECORD_SESSION_STREAM_TEST
+static bool session_output_retired(void);
+#endif
 static const int16_t pcm[4] = {1, 2, 3, 4};
 static void *session_allocate(size_t count, size_t bytes)
 {
@@ -225,6 +228,10 @@ void record_mediacodec_worker_abort(record_mediacodec_worker_t *w)
 bool record_mediacodec_worker_free(record_mediacodec_worker_t *w)
 {
    assert(w == &worker && w->live);
+#ifdef RECORD_SESSION_STREAM_TEST
+   if (!session_output_retired())
+      return false;
+#endif
    w->live = 0;
    return true;
 }
