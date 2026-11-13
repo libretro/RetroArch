@@ -850,7 +850,7 @@ jobs:
           trap 'rm -rf "$work"' EXIT
           src="-f lavfi -i testsrc2=size=352x288:rate=25,format=yuv420p -frames:v 24"
           i=0
-          for opts in "-bf 2 -g 12 -q:v 4" "-bf 2 -g 12 -q:v 4 -flags +ildct+ilme -top 1" \
+          for opts in "-bf 2 -g 12 -q:v 4" "-bf 2 -g 12 -q:v 4 -flags +ildct+ilme -vf setfield=tff" \
                       "-bf 2 -g 12 -q:v 3 -qmax 28 -intra_vlc 1 -non_linear_quant 1 -alternate_scan 1 -dc 10"; do
             i=$((i+1))
             ffmpeg -hide_banner -loglevel error $src -c:v mpeg2video $opts -f mpeg2video -y "$work/g$i.m2v"
