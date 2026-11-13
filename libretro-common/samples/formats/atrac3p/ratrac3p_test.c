@@ -115,7 +115,7 @@ static void lane_reference(void)
          sizeof(ref_gha) / sizeof(ref_gha[0]), "tonal", 1e-5);
    printf("stereo %.1f dB, mono %.1f dB, tonal %.1f dB against the reference\n",
          a, b, c);
-   CHECK(a > 100.0 && b > 100.0 && c > 100.0, "reference match");
+   CHECK(a > 120.0 && b > 120.0 && c > 100.0, "reference match");
 }
 
 /* Four blocks in one frame: a block that ends a few bits early leaves
@@ -125,7 +125,7 @@ static void lane_surround(void)
    double a = compare(6, stream_sur, SURROUND_BA, SURROUND_N, &ref_sur[0][0],
          sizeof(ref_sur) / sizeof(ref_sur[0]), "surround", 1e-5);
    printf("surround %.1f dB against the reference\n", a);
-   CHECK(a > 100.0, "surround reference match");
+   CHECK(a > 120.0, "surround reference match");
 }
 
 /* A tone frequency with no room left above or below the one before
@@ -139,10 +139,10 @@ static void lane_tone_edges(void)
          sizeof(ref_bottom) / sizeof(ref_bottom[0]), "tones at the bottom",
          1e-5);
    double c = compare(2, stream_music, MUSIC_BA, 2, &ref_music[0][0],
-         sizeof(ref_music) / sizeof(ref_music[0]), "music", 1e-4);
+         sizeof(ref_music) / sizeof(ref_music[0]), "music", 1e-5);
    printf("tones at the top %.1f dB, at the bottom %.1f dB, music %.1f dB"
          " against the reference\n", a, b, c);
-   CHECK(a > 85.0 && b > 85.0 && c > 85.0, "tone edge reference match");
+   CHECK(a > 120.0 && b > 120.0 && c > 115.0, "tone edge reference match");
 }
 
 /* s16 is the float output times 32768, rounded and clamped */
