@@ -1427,6 +1427,128 @@ static void test_dock_model(void)
    settings->bools.desktop_menu_save_dock_positions = false;
 }
 
+/* A bulk add pushes what it has not seen without a search of every
+ * entry; what it has seen takes the full push. Both together must do
+ * exactly what the full push does for each file: the same playlist from
+ * new files, files already there for the same core (moved to the top)
+ * and for another (added beside), a file twice in one add, and a folder
+ * added twice. */
+static void bulk_seed(const char *rel, const char *many)
+{
+   char path[512], buf[4096];
+   int  off = 0, i;
+   static const int   ids[4]   = { 5, 10, 15, 20 };
+   static const char *cores[4] = { "DETECT", "DETECT", "DETECT", "/cores/other_libretro.so" };
+   fixture(path, sizeof(path), rel);
+   off += snprintf(buf + off, sizeof(buf) - off,
+         "{\n  \"version\": \"1.5\",\n  \"items\": [\n");
+   for (i = 0; i < 4; i++)
+      off += snprintf(buf + off, sizeof(buf) - off,
+            "    { \"path\": \"%s/f%02d.bin\", \"label\": \"f%02d\", \"core_path\": \"%s\","
+            " \"core_name\": \"DETECT\", \"crc32\": \"00000000|crc\", \"db_name\": \"Bulk.lpl\" }%s\n",
+            many, ids[i], ids[i], cores[i], i < 3 ? "," : "");
+   snprintf(buf + off, sizeof(buf) - off, "  ]\n}\n");
+   writef(path, buf);
+}
+
+static playlist_t *bulk_open(const char *rel)
+{
+   char path[512];
+   playlist_config_t config;
+   memset(&config, 0, sizeof(config));
+   config.capacity = 1000;
+   fixture(path, sizeof(path), rel);
+   playlist_config_set_path(&config, path);
+   return playlist_init(&config);
+}
+
+static void test_bulk_add_matches_pushes(void)
+{
+   companion_core_t *c = make_core();
+   char many[512], p[512], f03[512], f10[512], f20[512], pa[512];
+   const char *paths[6];
+   size_t i, na, nb = 0;
+   playlist_t *a, *b;
+   fixture(p, sizeof(p), "bulk"); mkdirp(p);
+   fixture(p, sizeof(p), "bulk/a"); mkdirp(p);
+   fixture(p, sizeof(p), "bulk/b"); mkdirp(p);
+   fixture(many, sizeof(many), "bulk/many"); mkdirp(many);
+   for (i = 0; i < 40; i++)
+   {
+      snprintf(p, sizeof(p), "%s/f%02u.bin", many, (unsigned)i);
+      writef(p, "x");
+   }
+   bulk_seed("bulk/a/Bulk.lpl", many);
+   bulk_seed("bulk/b/Bulk.lpl", many);
+   snprintf(f03, sizeof(f03), "%s/f03.bin", many);
+   snprintf(f10, sizeof(f10), "%s/f10.bin", many);
+   snprintf(f20, sizeof(f20), "%s/f20.bin", many);
+   paths[0] = many; paths[1] = f10; paths[2] = f20;
+   paths[3] = f03;  paths[4] = f03; paths[5] = many;
+
+   fixture(pa, sizeof(pa), "bulk/a/Bulk.lpl");
+   na = companion_core_playlist_add_files(c, pa, paths, 6, NULL, NULL);
+
+   /* the same, a full push per file, folders walked as the add walks them */
+   if ((b = bulk_open("bulk/b/Bulk.lpl")))
+   {
+      for (i = 0; i < 6; i++)
+      {
+         struct string_list *list = NULL;
+         size_t k, cnt = 1;
+         if (path_is_directory(paths[i]))
+         {
+            list = dir_list_new(paths[i], NULL, true, false, false, false);
+            cnt  = list ? list->size : 0;
+         }
+         for (k = 0; k < cnt; k++)
+         {
+            const char *one = list ? list->elems[k].data : paths[i];
+            char label[NAME_MAX_LENGTH];
+            fill_pathname(label, path_basename(one), "", sizeof(label));
+            if (companion_core_playlist_push(c, b, one, label, "DETECT",
+                     "DETECT", "Bulk.lpl"))
+               nb++;
+         }
+         string_list_free(list);
+      }
+      playlist_write_file(b);
+      playlist_free(b);
+   }
+   CHECK(na == nb, "bulk add counted %u, full pushes %u", (unsigned)na, (unsigned)nb);
+
+   a = bulk_open("bulk/a/Bulk.lpl");
+   b = bulk_open("bulk/b/Bulk.lpl");
+   CHECK(a && b, "both playlists load");
+   if (a && b)
+   {
+      CHECK(playlist_size(a) == playlist_size(b), "bulk add %u entries, full pushes %u",
+            (unsigned)playlist_size(a), (unsigned)playlist_size(b));
+      CHECK(playlist_size(a) == 41, "the 40 files, and f20 for another core besides (got %u)",
+            (unsigned)playlist_size(a));
+      for (i = 0; i < playlist_size(a) && i < playlist_size(b); i++)
+      {
+         const struct playlist_entry *ea = NULL, *eb = NULL;
+         playlist_get_index(a, i, &ea);
+         playlist_get_index(b, i, &eb);
+         if (!ea || !eb
+               || !string_is_equal(ea->path, eb->path)
+               || !string_is_equal(ea->label, eb->label)
+               || !string_is_equal(ea->core_path, eb->core_path)
+               || !string_is_equal(ea->db_name, eb->db_name))
+         {
+            CHECK(false, "entry %u: bulk add %s (%s), full pushes %s (%s)", (unsigned)i,
+                  ea ? ea->path : "-", ea ? ea->core_path : "-",
+                  eb ? eb->path : "-", eb ? eb->core_path : "-");
+            break;
+         }
+      }
+   }
+   playlist_free(a);
+   playlist_free(b);
+   companion_core_free(c);
+}
+
 int main(void)
 {
    setup();
@@ -1441,6 +1563,7 @@ int main(void)
    test_backend_scenario();
    test_sort_callback_reentrancy();
    test_rename_add_install();
+   test_bulk_add_matches_pushes();
    test_options_and_shader_params();
    test_settings_table();
    test_shortcuts();
