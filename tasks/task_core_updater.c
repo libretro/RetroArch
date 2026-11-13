@@ -172,8 +172,14 @@ typedef struct core_updater_download_handle
    /* One reference for the task, one each for the HTTP and
     * decompress callbacks while those tasks are pushed: a download
     * cancelled mid-transfer retires first, and the callbacks still
-    * write here.  The last reference frees the handle. */
+    * write here.  The last reference tears the download down: its
+    * staging files, CRC stream and backup record. */
    retro_atomic_int_t refs;
+   /* The struct itself, with the remote_filename the duplicate finder
+    * reads: one hold for the references above, dropped after the
+    * teardown, and one for the task, dropped by its cleanup once
+    * nothing can find it. */
+   retro_atomic_int_t holds;
    /* Set by the HTTP and decompress callbacks on the main thread,
     * polled by the worker: release stores, acquire loads. */
    retro_atomic_int_t http_task_complete;
@@ -1112,6 +1118,16 @@ finish:
    }
 }
 
+static void core_updater_download_handle_drop(
+      core_updater_download_handle_t *download_handle)
+{
+   if (retro_atomic_fetch_sub_int(&download_handle->holds, 1) == 1)
+   {
+      free(download_handle->remote_filename);
+      free(download_handle);
+   }
+}
+
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
 {
    /* The staging directory is this download's alone (concurrent
@@ -1145,9 +1161,6 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
    if (download_handle->path_dir_core_assets)
       free(download_handle->path_dir_core_assets);
 
-   if (download_handle->remote_filename)
-      free(download_handle->remote_filename);
-
    if (download_handle->remote_core_path)
       free(download_handle->remote_core_path);
 
@@ -1164,8 +1177,7 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
    if (download_handle->display_name)
       free(download_handle->display_name);
 
-   free(download_handle);
-   download_handle = NULL;
+   core_updater_download_handle_drop(download_handle);
 }
 
 static void core_updater_download_handle_release(
@@ -1745,28 +1757,31 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-   {
-      /* Clear the state pointer before the handle is freed.  The
-       * worker runs handlers with running_lock released and the task
-       * still linked into tasks_running, so a task that has finished
-       * here stays visible to retro_task_threaded_find() until the
-       * worker retires it.  The finders in this file dereference
-       * task->state, so leaving it pointing at freed memory is a
-       * use-after-free - task_core_updater_download_finder() strcmps
-       * through it, which is a hard crash the moment
-       * task_update_installed_cores_handler() pushes the next core. */
-      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-   }
 
    /* Cancelled mid-transfer: the HTTP or decompress callback still
-    * holds a reference and frees the handle when it runs */
+    * holds a reference and tears the download down when it runs. The
+    * struct stays for the finder until the task's cleanup. */
    core_updater_download_handle_release(download_handle);
 }
 
+/* The task is findable until it retires, from other threads than the
+ * worker, so task->state stays set and the struct alive until then;
+ * the cleanup drops the task's hold. */
+static void task_core_updater_download_cleanup(retro_task_t *task)
+{
+   if (task->state)
+      core_updater_download_handle_drop(
+            (core_updater_download_handle_t*)task->state);
+}
+
+/* A download that has finished no longer counts, even while it waits
+ * to be retired. */
 static bool task_core_updater_download_finder(retro_task_t *task, void *user_data)
 {
-   if (task && user_data && task->handler == task_core_updater_download_handler)
+   if (     task && user_data
+         && task->handler == task_core_updater_download_handler
+         && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED))
    {
       core_updater_download_handle_t *download_handle = NULL;
       if ((download_handle = (core_updater_download_handle_t*)task->state))
@@ -1877,6 +1892,7 @@ static void *task_push_core_updater_download_internal(
    download_handle->backup_done              = NULL;
    download_handle->status                   = CORE_UPDATER_DOWNLOAD_BEGIN;
    retro_atomic_int_init(&download_handle->refs, 1);
+   retro_atomic_int_init(&download_handle->holds, 1);
 
    /* Concurrent downloads of the same file are not allowed */
    find_data.func     = task_core_updater_download_finder;
@@ -1898,6 +1914,8 @@ static void *task_push_core_updater_download_internal(
 
    task->handler          = task_core_updater_download_handler;
    task->state            = download_handle;
+   task->cleanup          = task_core_updater_download_cleanup;
+   retro_atomic_int_init(&download_handle->holds, 2);
    download_handle->ident = task->ident;
    task->title            = strdup(task_title);
    task->progress         = 0;

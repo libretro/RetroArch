@@ -40,7 +40,11 @@
  * Lane 2 cancels the download while the backup is still running, so
  * the download's handle is gone when the backup's callback fires: a
  * record owned by the handle alone is written after free.  LeakSan
- * covers the other direction - a reference nobody drops. */
+ * covers the other direction - a reference nobody drops.
+ *
+ * Lane 3 runs the push's duplicate finder on this thread against
+ * downloads finishing on the worker: the handle it reads through
+ * task->state has to outlive the handler until the task retires. */
 
 #include <stdio.h>
 #include <string.h>
@@ -394,6 +398,69 @@ static void lane_download_cancelled_during_backup(void)
    core_updater_list_free(list);
 }
 
+/* The duplicate finder, on this thread, against downloads finishing
+ * on the worker: it reads the handle's remote_filename through
+ * task->state while the handler releases the handle. A handle freed
+ * before the task retires is a heap-use-after-free under ASan and a
+ * race on task->state under TSan. */
+static void lane_finder_against_finishing_download(void)
+{
+   task_finder_data_t find_data;
+   core_updater_list_t *list;
+   unsigned refused = 0;
+   unsigned ran     = 0;
+   unsigned stuck   = 0;
+   int round;
+
+   printf("[lane: duplicate finder against a finishing download]\n");
+
+   task_queue_init(true, NULL);
+   list = fetch_list();
+   CHECK(list && core_updater_list_size(list) == 1, "index parsed into list");
+
+   retro_atomic_store_release_int(&stub_backup_hold, 0);
+   retro_atomic_store_release_int(&park_state, PARK_OFF);
+
+   for (round = 0; round < 40; round++)
+   {
+      retro_time_t until;
+      void *download = task_push_core_updater_download(list,
+            CORE_NAME ".zip", 0, true, false, 1, g_dir, g_dir);
+      if (!download)
+         continue;
+      ran++;
+      find_data.func     = is_task;
+      find_data.userdata = download;
+      until              = cpu_features_get_time_usec() + 5000000;
+      for (;;)
+      {
+         task_queue_check();
+         if (!task_queue_find(&find_data))
+            break;
+         if (task_push_core_updater_download(list, CORE_NAME ".zip",
+                  0, true, false, 1, g_dir, g_dir))
+            /* Only once the first has finished; it runs on */
+            pump_until_idle(5000);
+         else
+            refused++;
+         if (cpu_features_get_time_usec() > until)
+         {
+            stuck++;
+            break;
+         }
+      }
+      pump_until_idle(5000);
+   }
+
+   CHECK(ran == 40, "every round's download was pushed");
+   CHECK(refused > 0, "a second download of a running core is refused");
+   CHECK(stuck == 0, "every download retired");
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
+   core_updater_list_free(list);
+}
+
 int main(void)
 {
    char cmd[128];
@@ -421,6 +488,7 @@ int main(void)
          printf("SKIP: could not recreate fixture\n");
       else
          lane_download_cancelled_during_backup();
+      lane_finder_against_finishing_download();
       server_stop();
    }
 
