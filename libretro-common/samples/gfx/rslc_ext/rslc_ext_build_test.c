@@ -533,6 +533,64 @@ static struct rslc_builder *cs_build(const struct rslc_opts *opts)
    return b;
 }
 
+/* ---- compute: a sum over a storage block's unsized array, as long as
+ * the buffer bound says ---- */
+
+static const char agg_glsl[] =
+   "#version 450\n"
+   "layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
+   "layout(set = 0, binding = 0, std430) readonly buffer ssbo0 { uint src[]; };\n"
+   "layout(set = 0, binding = 1, std430) writeonly buffer ssbo1 { uint result; };\n"
+   "void main()\n"
+   "{\n"
+   "   if (gl_GlobalInvocationID.x < src.length())\n"
+   "   {\n"
+   "      atomicAdd(result, src[gl_GlobalInvocationID.x]);\n"
+   "   }\n"
+   "}\n";
+
+static struct rslc_builder *agg_build(const struct rslc_opts *opts)
+{
+   struct rslc_builder *b = rslc_b_begin(opts, RSLC_STAGE_COMPUTE);
+   const struct rslc_type *u1 = rslc_b_vec(b, RSLC_BASE_UINT, 1);
+   const struct rslc_type *t[1];
+   const char *src_n[1] = { "src" };
+   const char *res_n[1] = { "result" };
+   struct rslc_var *src_m[1], *res_m[1], *gid;
+   struct rslc_b_quals q;
+   uint32_t a[2], x, body;
+
+   rslc_b_quals_init(&q);
+   q.storage       = RSLC_B_ST_IN;
+   q.local_size[0] = 64;
+   q.local_size[1] = 1;
+   q.local_size[2] = 1;
+   rslc_b_layout(b, &q);
+   rslc_b_quals_init(&q);
+   q.storage = RSLC_B_ST_BUFFER;
+   q.access  = RSLC_B_READONLY;
+   q.set     = 0;
+   q.binding = 0;
+   t[0]      = rslc_b_array(b, u1, 0);
+   rslc_b_block_q(b, &q, "ssbo0", NULL, t, src_n, 1, src_m);
+   q.access  = RSLC_B_WRITEONLY;
+   q.binding = 1;
+   t[0]      = u1;
+   rslc_b_block_q(b, &q, "ssbo1", NULL, t, res_n, 1, res_m);
+
+   rslc_b_func_begin(b, rslc_b_func(b, "main", rslc_b_void(b), 0, NULL, NULL, NULL));
+   gid = rslc_b_builtin_var(b, "gl_GlobalInvocationID");
+   x   = rslc_b_swizzle(b, rslc_b_ref(b, gid), "x");
+   rslc_b_begin_block(b);
+   a[0] = rslc_b_ref(b, res_m[0]);
+   a[1] = rslc_b_index(b, rslc_b_ref(b, src_m[0]), rslc_b_swizzle(b, rslc_b_ref(b, gid), "x"));
+   E(rslc_b_builtin(b, "atomicAdd", a, 2));
+   body = rslc_b_end_block(b);
+   S(rslc_b_if(b, rslc_b_binary(b, RSLC_B_LT, x, rslc_b_length(b, rslc_b_ref(b, src_m[0]))), body, 0));
+   rslc_b_func_end(b);
+   return b;
+}
+
 static char err[256];
 
 static void opts_for(struct rslc_opts *o, enum rslc_dst dst, unsigned version)
@@ -667,7 +725,8 @@ int main(void)
       { "compute glsl",   cs_glsl,  cs_build,  RSLC_STAGE_COMPUTE,  RSLC_DST_GLSL,   450 },
       { "compute hlsl",   cs_glsl,  cs_build,  RSLC_STAGE_COMPUTE,  RSLC_DST_HLSL,   50 },
       { "compute dxbc",   cs_glsl,  cs_build,  RSLC_STAGE_COMPUTE,  RSLC_DST_DXBC,   50 },
-      { "compute msl",    cs_glsl,  cs_build,  RSLC_STAGE_COMPUTE,  RSLC_DST_MSL,    20 }
+      { "compute msl",    cs_glsl,  cs_build,  RSLC_STAGE_COMPUTE,  RSLC_DST_MSL,    20 },
+      { "aggregate spirv", agg_glsl, agg_build, RSLC_STAGE_COMPUTE, RSLC_DST_SPIRV,  0 }
    };
    unsigned i;
    for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)

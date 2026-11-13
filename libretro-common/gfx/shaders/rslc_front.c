@@ -7425,6 +7425,22 @@ uint32_t rslc_b_member(struct rslc_builder *b, uint32_t e, uint32_t field)
          rslc_prec_max(rslc_b_node(b, e)->prec, bt->fields[field].precision));
 }
 
+#ifdef RSLC_EXTENDED
+uint32_t rslc_b_length(struct rslc_builder *b, uint32_t e)
+{
+   const struct rslc_type *bt;
+   if (!rslc_b_ok(b) || !e)
+      return 0;
+   bt = rslc_b_node(b, e)->type;
+   if (bt->kind != RSLC_TY_ARRAY)
+      return rslc_b_fail(b, "length() of what is not an array", NULL);
+   if (bt->array_len)
+      return rslc_p_const_int(b->p, (int32_t)bt->array_len, b->line);
+   b->c.prog.spirv_only = "length() of an unsized array";
+   return rslc_p_mk(b->p, RSLC_OP_UNARY, b->p->t_int, e, 0, 0, RSLC_UN_ARRAYLEN, b->line, 0);
+}
+#endif
+
 uint32_t rslc_b_index(struct rslc_builder *b, uint32_t e, uint32_t idx)
 {
    if (!rslc_b_ok(b) || !e || !idx)
