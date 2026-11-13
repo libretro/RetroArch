@@ -2320,7 +2320,7 @@ static void gl2_renderchain_recompute_pass_sizes(
       switch (fbo_scale->type_x)
       {
          case RARCH_SCALE_INPUT:
-            img_w     = fbo_scale->scale_x * VIDEO_SCALE_W(last_dims);
+            img_w     = VIDEO_SCALE_W(last_dims) * fbo_scale->scale_x;
             max_img_w = VIDEO_SCALE_W(last_max_dims) * fbo_scale->scale_x;
             break;
 
@@ -2336,7 +2336,7 @@ static void gl2_renderchain_recompute_pass_sizes(
             break;
 
          case RARCH_SCALE_ORIGINAL:
-            img_w     = fbo_scale->scale_x * VIDEO_SCALE_W(orig_dims);
+            img_w     = VIDEO_SCALE_W(orig_dims) * fbo_scale->scale_x;
             max_img_w = VIDEO_SCALE_W(orig_max_dims) * fbo_scale->scale_x;
             break;
       }
