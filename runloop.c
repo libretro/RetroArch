@@ -9146,6 +9146,9 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
 #endif
 
+   /* Check Blank Unused Screens hotkey */
+   HOTKEY_CHECK(RARCH_BLANK_UNUSED_TOGGLE, CMD_EVENT_BLANK_UNUSED_TOGGLE, true, NULL);
+
    /* Check turbo toggle hotkey */
    HOTKEY_CHECK(RARCH_TURBO_FIRE_TOGGLE, CMD_EVENT_TURBO_FIRE_TOGGLE, true, NULL);
 
