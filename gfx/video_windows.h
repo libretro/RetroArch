@@ -479,6 +479,12 @@ void video_driver_restore_windows(void);
 void video_driver_publish_window_displays(
       const video_window_display_t *displays, unsigned count);
 
+#ifdef ANDROID
+/* Any thread: the next frame sends Java the whole set of displays to
+ * cover, for a new controller that holds none. */
+void video_driver_blank_unused_resend(void);
+#endif
+
 /* App thread: the newest published list, at most @capacity entries;
  * returns how many. For the menu's picker. */
 unsigned video_driver_get_window_displays(video_window_display_t *out,

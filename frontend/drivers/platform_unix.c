@@ -318,6 +318,30 @@ void android_second_display_request(unsigned ordinal, bool given_up)
          android_app->setSecondDisplay, (jint)ordinal, (jint)number);
 }
 
+void android_blank_displays_request(const int *ids, unsigned count)
+{
+   JNIEnv *env;
+   jintArray array;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if (!android_app || !android_app->setBlankDisplays)
+      return;
+   if (!(env = jni_thread_getenv()))
+      return;
+   /* Java keeps the array, so every call makes its own */
+   if (!(array = (*env)->NewIntArray(env, (jsize)count)))
+   {
+      JNI_EXCEPTION(env);
+      return;
+   }
+   if (count)
+      (*env)->SetIntArrayRegion(env, array, 0, (jsize)count,
+            (const jint*)ids);
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         android_app->setBlankDisplays, array);
+   (*env)->DeleteLocalRef(env, array);
+}
+
 void android_activity_move_request(int display_id, unsigned move)
 {
    JNIEnv *env;
@@ -586,7 +610,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       android_second_wake(android_app);
 }
 
-/* The memory the two sides share, once per Activity */
+/* The memory the two sides share, once per Activity; its new controller
+ * covers nothing yet */
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeShare(
       JNIEnv *env, jclass clazz, jobject buffer)
 {
@@ -594,6 +619,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
          >= (jlong)sizeof(android_second_shared_t))
       android_second_shared = (android_second_shared_t*)
          (*env)->GetDirectBufferAddress(env, buffer);
+   video_driver_blank_unused_resend();
 }
 
 /* Java could not start move @move, which
@@ -4082,6 +4108,8 @@ static void frontend_unix_init(void *data)
          "setSecondDisplay", "(II)V");
    GET_METHOD_ID(env, android_app->moveToDisplay, class,
          "moveToDisplay", "(II)V");
+   GET_METHOD_ID(env, android_app->setBlankDisplays, class,
+         "setBlankDisplays", "([I)V");
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
    GET_METHOD_ID(env, android_app->addSafeStartShortcut, class,
          "addSafeStartShortcut", "()V");
