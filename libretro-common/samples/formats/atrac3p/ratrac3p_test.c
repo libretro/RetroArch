@@ -23,7 +23,7 @@
 /* ratrac3p against a reference decoder's output for a stereo stream
  * (tonal components, gain points in both channels, explicit and
  * all-band swap and negate masks), a mono one and a synthetic one for
- * the second channel's tonal coding. Then the s16
+ * the second channel's tonal coding, and a game's 5.1 stream. Then the s16
  * output, the fmt chunk, bad frames, reset, and garbage. */
 
 #include <stdio.h>
@@ -69,10 +69,10 @@ static unsigned n_of(unsigned ch)
 static double compare(unsigned ch, const uint8_t *s, unsigned ba,
       unsigned n, const float *ref, unsigned nref, const char *name)
 {
-   static float   pcm[GHA_N * RATRAC3P_SAMPLES * 2];
+   static float   pcm[SURROUND_N * RATRAC3P_SAMPLES * 6];
    unsigned       f, i;
    ratrac3p_t    *d  = ratrac3p_new(ch, ba);
-   double         err = 0.0, sig = 0.0, worst = 0.0;
+   double         err = 0.0, sig = 0.0, worst = 0.0, peak = 0.0;
 
    CHECK(d != NULL, "%s: new", name);
    if (!d)
@@ -92,9 +92,14 @@ static double compare(unsigned ch, const uint8_t *s, unsigned ba,
       sig += b * b;
       if (e > worst)
          worst = e;
+      if (fabs(b) > peak)
+         peak = fabs(b);
    }
    ratrac3p_free(d);
    CHECK(worst < 1e-5, "%s: worst sample error %g", name, worst);
+   /* a quiet stream must not pass by being close to silence */
+   CHECK(worst < peak * 1e-4, "%s: worst sample error %g against a peak of %g",
+         name, worst, peak);
    return 10.0 * log10(sig / (err > 0.0 ? err : 1e-30));
 }
 
@@ -109,6 +114,16 @@ static void lane_reference(void)
    printf("stereo %.1f dB, mono %.1f dB, tonal %.1f dB against the reference\n",
          a, b, c);
    CHECK(a > 100.0 && b > 100.0 && c > 100.0, "reference match");
+}
+
+/* Four blocks in one frame: a block that ends a few bits early leaves
+ * the next one unreadable, which a single block never shows. */
+static void lane_surround(void)
+{
+   double a = compare(6, stream_sur, SURROUND_BA, SURROUND_N, &ref_sur[0][0],
+         sizeof(ref_sur) / sizeof(ref_sur[0]), "surround");
+   printf("surround %.1f dB against the reference\n", a);
+   CHECK(a > 100.0, "surround reference match");
 }
 
 /* s16 is the float output times 32768, rounded and clamped */
@@ -451,6 +466,7 @@ int main(void)
    lane_master_table_default();
    coded_band_flags();
    lane_reference();
+   lane_surround();
    lane_s16();
    lane_fmt();
    lane_bad_frame();

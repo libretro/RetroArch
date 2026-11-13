@@ -1465,7 +1465,9 @@ static bool r3p_tones(r3p_br_t *b, const r3p_block_t *blk, r3p_unit_t *u,
       if (!share[i])
          list[n1++] = (uint8_t)i;
    memset(tmp[1].tband, 0, sizeof(tmp[1].tband));
-   if (!(s0 && !s1) && !r3p_tones_second(b, &tmp[0], &tmp[1], list, n1))
+   /* The second channel's section is in the stream even when that
+    * channel takes every band from the first one. */
+   if (!r3p_tones_second(b, &tmp[0], &tmp[1], list, n1))
       return false;
 
    /* swapped bands trade places, then the second channel's negated
