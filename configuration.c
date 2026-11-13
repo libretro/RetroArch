@@ -7134,6 +7134,10 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
          > VIDEO_NOTIFICATIONS_WITH_MENU)
       settings->uints.video_notifications_window =
          VIDEO_NOTIFICATIONS_WITH_GAME;
+   if (settings->uints.video_blank_unused_screens
+         > VIDEO_BLANK_UNUSED_ALWAYS)
+      settings->uints.video_blank_unused_screens =
+         VIDEO_BLANK_UNUSED_OFF;
 }
 
 #undef CONFIG_NOINLINE

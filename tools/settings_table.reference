@@ -582,6 +582,7 @@ uint	video_stereo_mode	1	0
 uint	video_screen_layout	1	0
 uint	video_menu_follows	1	0
 uint	video_notifications_window	1	0
+uint	video_blank_unused_screens	1	0
 uint	video_openxr_refresh_rate	1	0
 uint	video_openxr_placement	1	0
 uint	video_openxr_controllers	1	0

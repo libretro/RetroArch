@@ -13157,6 +13157,12 @@ unsigned menu_displaylist_build_list(
             }
 #endif
          }
+#ifdef ANDROID
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+#endif
 #endif
 #ifdef HAVE_OPENXR
          if (video_driver_has_headset_path(settings->arrays.video_driver))

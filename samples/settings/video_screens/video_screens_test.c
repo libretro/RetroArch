@@ -4039,6 +4039,7 @@ static void test_window_menu_list(void)
    CHECK(!window_menu_has(&list, "video_menu_follows"));
    CHECK(!window_menu_has(&list, "video_menu_display"));
    CHECK(!window_menu_has(&list, "video_notifications_window"));
+   CHECK(!window_menu_has(&list, "video_blank_unused_screens"));
    CHECK(!window_menu_has(&list, "video_screen2_window_x"));
    file_list_deinitialize(&list);
 
@@ -4048,6 +4049,7 @@ static void test_window_menu_list(void)
          DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
    CHECK(window_menu_has(&list, "video_windows_enable"));
    CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
+   CHECK(!window_menu_has(&list, "video_blank_unused_screens"));
    file_list_deinitialize(&list);
    window_test_end();
 
@@ -4075,6 +4077,25 @@ static void test_window_menu_list(void)
          0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
             msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE)));
+}
+
+/* Blank Unused Screens' strings are everywhere, its row only on Android */
+static void test_blank_unused_strings(void)
+{
+   char s[256];
+   CHECK(string_is_equal(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_SCREENS),
+         "Blank Unused Screens"));
+   CHECK(string_is_equal(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_GAMES),
+         "During Games"));
+   menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS,
+         0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_BLANK_UNUSED_SCREENS)));
+   CHECK(strstr(s, "Android 12") != NULL);
+   CHECK(menu_setting_find_enum(
+            MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS) == NULL);
 }
 
 #ifdef HAVE_THREADS
@@ -4822,6 +4843,7 @@ int main(int argc, char **argv)
    test_window_menu_rows();
    test_window_menu_follows_screens();
    test_window_menu_list();
+   test_blank_unused_strings();
    test_window_redraw();
    test_screen_frame_snapshot();
    test_xr_screen_menu();
