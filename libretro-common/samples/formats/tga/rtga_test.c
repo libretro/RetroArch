@@ -33,6 +33,11 @@
  *
  *  5. An indexed TGA whose colour map is cut short is refused after
  *     the surface is made, and the surface is freed (LeakSanitizer).
+ *
+ *  6. rtga_decode_rows gives the bytes rtga_process_image gives, for
+ *     every type, depth and origin, raw and RLE, a file cut short,
+ *     either byte order, into the caller's rows and into rtga's own,
+ *     on one decoder reused across sizes.
  */
 
 #include <stdio.h>
@@ -259,6 +264,226 @@ static void test_oversized_size(void)
    rtga_free(rtga);
 }
 
+/* ---- 5: rtga_decode_rows against rtga_process_image ---- */
+
+static uint32_t rng_state = 12345;
+
+static unsigned rng(void)
+{
+   rng_state = rng_state * 1103515245u + 12345u;
+   return (rng_state >> 16) & 0x7FFF;
+}
+
+struct rows_dst
+{
+   uint8_t *pic;      /* the caller's rows, or NULL for rtga's own */
+   uint8_t *copy;     /* where done() puts rtga's own rows */
+   unsigned w, h;
+   int      asked, told, bad_order;
+   int      refuse;
+};
+
+static bool rows_size(void *user, unsigned w, unsigned h)
+{
+   struct rows_dst *d = (struct rows_dst*)user;
+   if (d->refuse)
+      return false;
+   d->w    = w;
+   d->h    = h;
+   d->pic  = (uint8_t*)malloc((size_t)w * h * 4);
+   d->copy = (uint8_t*)malloc((size_t)w * h * 4);
+   return d->pic && d->copy;
+}
+
+static uint8_t *rows_row(void *user, unsigned y)
+{
+   struct rows_dst *d = (struct rows_dst*)user;
+   d->asked++;
+   return (y & 1) ? NULL : d->pic + (size_t)y * d->w * 4;
+}
+
+static void rows_done(void *user, unsigned y, const uint8_t *px)
+{
+   struct rows_dst *d = (struct rows_dst*)user;
+   d->told++;
+   if (y >= d->h)
+      d->bad_order++;
+   else
+      memcpy(d->copy + (size_t)y * d->w * 4, px, (size_t)d->w * 4);
+}
+
+/* A TGA of the given type, bpp and origin with random pixels; RLE
+ * types get runs and literals.  Returns the length. */
+static size_t make_tga(uint8_t *out, int type, int bpp, int w, int h,
+      int top_down, int pal_bits)
+{
+   int    indexed = ((type & 7) == 1);
+   int    pal_len = indexed ? 1 + (int)(rng() % 300) : 0;
+   int    pix_bytes = indexed ? 1 : bpp / 8;
+   int    npix    = w * h;
+   size_t n       = (size_t)make_tga_header(out, (uint8_t)(rng() % 3),
+         (uint8_t)indexed, (uint8_t)type, 0, (uint16_t)pal_len,
+         (uint8_t)(indexed ? pal_bits : 0), (uint16_t)w, (uint16_t)h,
+         (uint8_t)(indexed ? 8 : bpp), (uint8_t)(top_down ? 0x20 : 0));
+   int    i, k;
+   for (i = 0; i < out[0]; i++)
+      out[n++] = (uint8_t)rng();
+   for (i = 0; i < pal_len * ((pal_bits + 7) / 8); i++)
+      out[n++] = (uint8_t)rng();
+   if (type < 8)
+   {
+      for (i = 0; i < npix * pix_bytes; i++)
+         out[n++] = (uint8_t)rng();
+      return n;
+   }
+   for (i = 0; i < npix; )
+   {
+      int run = 1 + (int)(rng() % 128);
+      if (run > npix - i)
+         run = npix - i;
+      if (rng() & 1)
+      {
+         out[n++] = (uint8_t)(0x80 | (run - 1));
+         for (k = 0; k < pix_bytes; k++)
+            out[n++] = (uint8_t)rng();
+      }
+      else
+      {
+         out[n++] = (uint8_t)(run - 1);
+         for (k = 0; k < run * pix_bytes; k++)
+            out[n++] = (uint8_t)rng();
+      }
+      i += run;
+   }
+   return n;
+}
+
+static int compare_rows(rtga_t *dec, const uint8_t *file, size_t len,
+      bool rgba, const char *what)
+{
+   rtga_t *ref = rtga_alloc();
+   void *out   = NULL;
+   unsigned w = 0, h = 0, rw = 0, rh = 0, y, x;
+   struct rtga_rows rows;
+   struct rows_dst d;
+   int rc, bad = 0;
+
+   rtga_set_buf_ptr(ref, (void*)file);
+   do
+   {
+      rc = rtga_process_image(ref, &out, len, &w, &h, rgba);
+   } while (rc == IMAGE_PROCESS_NEXT);
+   rtga_free(ref);
+
+   memset(&d, 0, sizeof(d));
+   rows.size = rows_size;
+   rows.row  = rows_row;
+   rows.done = rows_done;
+   rows.user = &d;
+   if (!rtga_decode_rows(dec, file, len, rgba, &rows, &rw, &rh))
+      bad = (rc == IMAGE_PROCESS_END);
+   else if (rc != IMAGE_PROCESS_END || rw != w || rh != h
+         || d.asked != (int)h || d.told != (int)h || d.bad_order)
+      bad = 1;
+   else
+   {
+      for (y = 0; y < h && !bad; y++)
+         for (x = 0; x < w; x++)
+         {
+            uint32_t v = ((const uint32_t*)out)[(size_t)y * w + x];
+            const uint8_t *p = ((y & 1) ? d.copy : d.pic)
+               + ((size_t)y * w + x) * 4;
+            const uint8_t *c = d.copy + ((size_t)y * w + x) * 4;
+            if (     p[0] != (uint8_t)v         || p[1] != (uint8_t)(v >> 8)
+                  || p[2] != (uint8_t)(v >> 16) || p[3] != (uint8_t)(v >> 24)
+                  || memcmp(p, c, 4))
+            {
+               bad = 1;
+               break;
+            }
+         }
+   }
+   if (bad)
+      printf("[ERROR] decode_rows differs: %s (%ux%u)\n", what, w, h);
+   free(out);
+   free(d.pic);
+   free(d.copy);
+   return bad;
+}
+
+static void test_decode_rows(void)
+{
+   static const int types[] = { 1, 2, 3, 9, 10, 11 };
+   static const int sizes[][2] = { {1, 1}, {7, 3}, {64, 5}, {300, 17}, {2, 40} };
+   uint8_t *file = (uint8_t*)malloc(1 << 20);
+   rtga_t  *dec  = rtga_alloc();
+   char what[96];
+   int t, b, z, o, rgba, cut, cases = 0, bad = 0;
+
+   for (t = 0; t < 6; t++)
+      for (b = 8; b <= 32; b += 8)
+         for (z = 0; z < 5; z++)
+            for (o = 0; o < 2; o++)
+               for (cut = 0; cut < 2; cut++)
+                  for (rgba = 0; rgba < 2; rgba++)
+                  {
+                     int    indexed = ((types[t] & 7) == 1);
+                     int    pal_bits;
+                     size_t len;
+                     if (types[t] == 3 || types[t] == 11)
+                     {
+                        if (b > 16)
+                           continue;
+                     }
+                     else if (!indexed && b < 24)
+                        continue;
+                     pal_bits = (b == 8) ? 15 : (b == 16 ? 16 : b);
+                     rng_state = (uint32_t)(t * 1000 + b * 100 + z * 10 + o);
+                     len = make_tga(file, types[t], b, sizes[z][0],
+                           sizes[z][1], o, pal_bits);
+                     if (cut)
+                        len -= len / 3;
+                     sprintf(what, "type %d bpp %d %s%s%s", types[t], b,
+                           o ? "top-down" : "bottom-up",
+                           cut ? " cut short" : "", rgba ? " rgba" : " bgra");
+                     bad += compare_rows(dec, file, len, rgba ? true : false,
+                           what);
+                     cases++;
+                  }
+
+   {
+      struct rtga_rows rows;
+      struct rows_dst d;
+      unsigned w, h;
+      size_t len = make_tga(file, 2, 32, 4, 4, 0, 0);
+      memset(&d, 0, sizeof(d));
+      d.refuse  = 1;
+      rows.size = rows_size;
+      rows.row  = rows_row;
+      rows.done = rows_done;
+      rows.user = &d;
+      if (rtga_decode_rows(dec, file, len, true, &rows, &w, &h)
+            || d.asked || w != 4 || h != 4)
+      {
+         printf("[ERROR] decode_rows went on after size() said no\n");
+         bad++;
+      }
+      if (rtga_decode_rows(dec, file, 10, true, &rows, &w, &h) || w || h)
+      {
+         printf("[ERROR] decode_rows took a cut header\n");
+         bad++;
+      }
+   }
+
+   if (bad)
+      failures++;
+   else
+      printf("[SUCCESS] rtga_decode_rows matches rtga_process_image (%d files)\n",
+            cases);
+   rtga_free(dec);
+   free(file);
+}
+
 int main(void)
 {
    test_malicious_palette_bits();
@@ -266,6 +491,7 @@ int main(void)
    test_happy_path_rgb();
    test_oversized_size();
    test_cut_palette();
+   test_decode_rows();
 
    if (failures)
    {

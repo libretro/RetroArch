@@ -62,6 +62,45 @@ int rtga_process_image(rtga_t *rtga, void **buf,
 
 bool rtga_set_buf_ptr(rtga_t *rtga, void *data);
 
+/* An image decoded straight to where its rows go, in one call, with
+ * the decoder's memory kept for the next image.
+ *
+ *   size  the image's size, once the header is read, before any row;
+ *         false stops the decode (NULL: any size)
+ *   row   where row y's width * 4 bytes are to be written: 4-byte
+ *         aligned memory of the caller's, or NULL for rtga's own row
+ *         (NULL: always rtga's)
+ *   done  row y is written, at px - where row() said, or rtga's own
+ *         row, valid until the next row is begun (NULL: not told)
+ *
+ * Each row is asked for once and told done once, in the file's order:
+ * bottom to top for a TGA stored bottom-up.  y counts from the top.
+ * Pixels are BGRA, or RGBA with @rgba, in byte order.  A file that
+ * ends early is finished as rtga_process_image() finishes it. */
+struct rtga_rows
+{
+   bool     (*size)(void *user, unsigned width, unsigned height);
+   uint8_t *(*row)(void *user, unsigned y);
+   void     (*done)(void *user, unsigned y, const uint8_t *px);
+   void      *user;
+};
+
+/**
+ * rtga_decode_rows:
+ * @data, @len : the whole file, read where it lies
+ * @rgba       : RGBA rather than BGRA
+ * @rows       : where the rows go
+ * @width, @height : receive the size (0 if the header was not read)
+ *
+ * Abandons any rtga_process_image() decode on @rtga.
+ *
+ * Returns: true when every row was written; false for a header this
+ * decoder does not take, or when @rows->size said no.
+ */
+bool rtga_decode_rows(rtga_t *rtga, const uint8_t *data, size_t len,
+      bool rgba, const struct rtga_rows *rows,
+      unsigned *width, unsigned *height);
+
 void rtga_free(rtga_t *rtga);
 
 rtga_t *rtga_alloc(void);
