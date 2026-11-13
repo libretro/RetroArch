@@ -316,6 +316,10 @@ struct rslc_field
    uint8_t                 interp;      /* RSLC_EXTENDED: an in / out block member's */
    uint8_t                 quals;       /* RSLC_VQ_* of that member */
    uint8_t                 pad;
+   uint32_t                offset_p1;   /* RSLC_EXTENDED, a block's member that
+                                           says layout(offset = n): n + 1, and
+                                           the members after it follow from
+                                           there; 0 when it does not */
 };
 
 struct rslc_type
@@ -425,6 +429,7 @@ struct rslc_var
 #define RSLC_BI_HELPERINVOCATION   18   /* RSLC_EXTENDED, fragment */
 #define RSLC_BI_POINTCOORD         19   /* RSLC_EXTENDED, fragment */
 #define RSLC_BI_PRIMITIVEID        20   /* RSLC_EXTENDED, geometry gl_PrimitiveIDIn */
+#define RSLC_BI_FRAGSTENCILREF     21   /* RSLC_EXTENDED, fragment out; SPIR-V only */
 
 /* RSLC_EXTENDED: a geometry stage's primitives, in and out. */
 #define RSLC_GS_POINTS              1

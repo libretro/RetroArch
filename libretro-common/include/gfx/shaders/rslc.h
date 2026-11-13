@@ -53,7 +53,9 @@
  * dialect, gl_WorkGroupSize, and a uniform block that says std430
  * (placed as glslang places it under GL_EXT_scalar_block_layout) or
  * ends in an array of unstated length
- * (GL_EXT_uniform_buffer_unsized_array; SPIR-V only).
+ * (GL_EXT_uniform_buffer_unsized_array; SPIR-V only), a block member
+ * that says its layout(offset) (SPIR-V only), and
+ * gl_FragStencilRefARB (SPIR-V only).
  * Without it
  * none of that is accepted, nothing is compiled in for it, and every
  * destination is word for word what it was. RSLC_NO_DXBC omits the

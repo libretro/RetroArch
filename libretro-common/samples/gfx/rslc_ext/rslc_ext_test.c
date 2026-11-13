@@ -633,6 +633,48 @@ static const char vs_self_macro[] =
    "   gl_Position = enabled(1) ? pos : pos * float(draw_offset);\n"
    "}\n";
 
+/* -- and ++ through several components of a vector at once; a fragment
+ * stage's part of a push block that starts where the vertex stage's ends;
+ * the stencil reference written by the stage. */
+static const char cs_swizzle_step[] =
+   "#version 450\n"
+   "layout(local_size_x = 8) in;\n"
+   "layout(std430, set = 0, binding = 0) buffer ssbo { uvec4 data[]; };\n"
+   "struct inv_t { uvec3 size; uvec3 size_log2; };\n"
+   "void main()\n"
+   "{\n"
+   "   inv_t inv;\n"
+   "   uvec2 was;\n"
+   "   inv.size      = uvec3(64u, 32u, 4u);\n"
+   "   inv.size_log2 = uvec3(6u, 5u, 2u);\n"
+   "   inv.size_log2.xy --;\n"
+   "   was = inv.size.xy++;\n"
+   "   ++inv.size.zx;\n"
+   "   data[gl_GlobalInvocationID.x] = uvec4(inv.size_log2.xy + was, inv.size.xz);\n"
+   "}\n";
+
+static const char fs_member_offset[] =
+   "#version 450\n"
+   "layout(push_constant) uniform FragmentConfiguration\n"
+   "{\n"
+   "   layout(offset = 68)\n"
+   "   uint  config;\n"
+   "   float timestamp;\n"
+   "   vec4  params;\n"
+   "};\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main() { col = params * timestamp * float(config); }\n";
+
+static const char fs_stencil_export[] =
+   "#version 450\n"
+   "#extension GL_ARB_shader_stencil_export : enable\n"
+   "layout(location = 0) in vec2 uv;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_FragDepth = uv.x;\n"
+   "   gl_FragStencilRefARB = int(uv.y * 255.0);\n"
+   "}\n";
+
 static const char fs_old_version[] =
    "#version 410\n"
    "layout(location = 0) out vec4 col;\n"
@@ -1485,6 +1527,74 @@ int main(int argc, char **argv)
          write_spirv(dir, "self_macro", &r);
          rslc_result_free(&r, &o);
       }
+
+      /* v.xy-- and ++v.zx: no one pointer to step through, so read,
+       * stepped and written back; the module is spirv-val's to check */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_swizzle_step, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "swizzle_step: %s\n", err);
+      if (r.blob)
+      {
+         write_spirv(dir, "swizzle_step", &r);
+         rslc_result_free(&r, &o);
+      }
+
+      /* A member that says its offset is placed there (68), the next
+       * ones after it (72, then the vec4 at 80); SPIR-V only */
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_member_offset, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "member_offset: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned right = 0, members = 0;
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            if ((r.spirv[i] & 0xffffu) == 72 && (r.spirv[i] >> 16) == 5 && r.spirv[i + 3] == 35)
+            {
+               static const uint32_t want[3] = { 68, 72, 80 };
+               members++;
+               right += r.spirv[i + 2] < 3 && r.spirv[i + 4] == want[r.spirv[i + 2]];
+            }
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(members == 3 && right == 3);
+         CHECK(r.refl->push.size == 96);
+         write_spirv(dir, "member_offset", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_member_offset, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* gl_FragStencilRefARB: StencilExportEXT (5013), its extension and
+       * StencilRefReplacingEXT (5027) on the entry point; SPIR-V only */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_stencil_export, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "stencil_export: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned mode = 0;
+         CHECK(has_capability(r.spirv, r.spirv_len, 5013));
+         CHECK(count_op(r.spirv, r.spirv_len, 10 /* OpExtension */, &at) == 1);
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            mode += (r.spirv[i] & 0xffffu) == 16 && r.spirv[i + 2] == 5027;
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(mode == 1);
+         write_spirv(dir, "stencil_export", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_stencil_export, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
       cur_stage = RSLC_STAGE_FRAGMENT;
    }
 

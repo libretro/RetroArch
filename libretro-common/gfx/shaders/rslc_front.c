@@ -3633,6 +3633,7 @@ static bool rslc_p_is_lvalue(struct rslc_parser *p, uint32_t e)
             return v->builtin == RSLC_BI_POSITION || v->builtin == RSLC_BI_FRAGDEPTH
                || v->builtin == RSLC_BI_POINTSIZE || v->builtin == RSLC_BI_CLIPDISTANCE
                || v->builtin == RSLC_BI_CULLDISTANCE
+               || v->builtin == RSLC_BI_FRAGSTENCILREF
                || (v->builtin == RSLC_BI_LAYER && v->dir == RSLC_DIR_OUT);
          return true;
       }
@@ -4069,6 +4070,13 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
          return rslc_p_mk(p, RSLC_OP_MEMBER, f->type, e, sym->decl->member, 0, 0, line,
                rslc_prec_max(v->precision, f->precision));
       }
+#endif
+#ifdef RSLC_EXTENDED
+      if (     sym->decl && sym->decl->kind == RSLC_DK_VAR
+            && ((struct rslc_var*)sym->decl->ptr)->storage == RSLC_ST_BUILTIN
+            && ((struct rslc_var*)sym->decl->ptr)->builtin == RSLC_BI_FRAGSTENCILREF
+            && !p->c->prog.spirv_only)
+         p->c->prog.spirv_only = "gl_FragStencilRefARB";
 #endif
       if (sym->decl && sym->decl->kind == RSLC_DK_VAR)
          return rslc_p_var_ref(p, (struct rslc_var*)sym->decl->ptr, line);
@@ -5751,6 +5759,18 @@ static bool rslc_p_block_decl(struct rslc_parser *p, struct rslc_quals *q,
          fields[nfields].name      = rslc_tok_sym(p->c, nt);
          fields[nfields].line      = nt->line;
          fields[nfields].precision = rslc_p_default_prec(p, mt, fq.precision);
+#ifdef RSLC_EXTENDED
+         /* layout(offset = n) on a member: it is placed there and the
+          * rest follow, as a fragment stage's half of a push block shared
+          * with the vertex stage starts past the vertex stage's.  SPIR-V
+          * only: nothing printed says it. */
+         if (fq.offset != RSLC_UNSET)
+         {
+            fields[nfields].offset_p1 = fq.offset + 1;
+            if (!p->c->prog.spirv_only)
+               p->c->prog.spirv_only = "a block member's layout(offset)";
+         }
+#endif
          nfields++;
          if (rslc_p_accept(p, RSLC_P_COMMA))
             continue;
@@ -6656,6 +6676,10 @@ static bool rslc_p_stage_builtins(struct rslc_parser *p)
             || !rslc_p_builtin_var(p, "gl_FrontFacing", p->t_bool, RSLC_BI_FRONTFACING, RSLC_DIR_IN))
          return false;
 #ifdef RSLC_EXTENDED
+      /* GL_ARB_shader_stencil_export: the stencil reference written by
+       * the stage */
+      if (!rslc_p_builtin_var(p, "gl_FragStencilRefARB", p->t_int, RSLC_BI_FRAGSTENCILREF, RSLC_DIR_OUT))
+         return false;
       if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN)
             || !rslc_p_builtin_var(p, "gl_HelperInvocation", p->t_bool,
                   RSLC_BI_HELPERINVOCATION, RSLC_DIR_IN)

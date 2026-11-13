@@ -984,6 +984,8 @@ uint32_t rslc_layout_field_offset(const struct rslc_type *t, uint32_t field,
       uint32_t fa, fs, fst;
       rslc_layout_of(t->fields[i].type, std140, &fa, &fs, &fst);
       off = (off + fa - 1) / fa * fa;
+      if (t->fields[i].offset_p1)
+         off = t->fields[i].offset_p1 - 1;
       if (i == field)
          return off;
       off += fs;
@@ -1262,6 +1264,7 @@ struct spv_emit
    bool                 need_geometry;   /* a pixel stage reading gl_Layer */
    bool                 need_clipdistance;
    bool                 writes_fragdepth;   /* the entry point declares DepthReplacing */
+   bool                 writes_stencilref;  /* and StencilRefReplacingEXT, with its extension */
    bool                 need_culldistance;
    bool                 in_main;
 };
@@ -3928,9 +3931,12 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
                const struct rslc_type *t = an->type;
                bool inc = n->aux == RSLC_UN_PREINC || n->aux == RSLC_UN_POSTINC;
                bool post = n->aux == RSLC_UN_POSTINC || n->aux == RSLC_UN_POSTDEC;
-               if (!ptr)
+               /* no one pointer to it - several components of a vector
+                * (v.xy--): read as a value, written back as an assignment
+                * to the same place is */
+               if (!ptr && (e->c->failed || t->kind == RSLC_TY_MAT))
                   return 0;
-               old = spv_load(e, t, ptr, prec);
+               old = ptr ? spv_load(e, t, ptr, prec) : spv_rvalue(e, n->a);
                if (!old)
                   return 0;
                if (t->base == RSLC_BASE_FLOAT)
@@ -3951,7 +3957,7 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
                }
                else
                   nv = one ? spv_r2(e, spv_binop(t, inc ? RSLC_BIN_ADD : RSLC_BIN_SUB), tid, old, one, prec) : 0;
-               if (!nv || !spv_store(e, ptr, nv))
+               if (!nv || !(ptr ? spv_store(e, ptr, nv) : spv_assign_to(e, n->a, nv)))
                   return 0;
                return post ? old : nv;
             }
@@ -4776,6 +4782,7 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       : v->builtin == RSLC_BI_LOCALINVOCATIONINDEX ? SPV_BI_LOCALINVOCATIONINDEX
       : v->builtin == RSLC_BI_HELPERINVOCATION ? SPV_BI_HELPERINVOCATION
       : v->builtin == RSLC_BI_POINTCOORD ? SPV_BI_POINTCOORD
+      : v->builtin == RSLC_BI_FRAGSTENCILREF ? 5014u /* FragStencilRefEXT */
       : v->builtin == RSLC_BI_PRIMITIVEID ? SPV_BI_PRIMITIVEID : SPV_BI_POSITION;
    if (!ptr)
       return false;
@@ -4784,6 +4791,8 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       e->need_samplerateshading = true;
    if (v->builtin == RSLC_BI_FRAGDEPTH)
       e->writes_fragdepth = true;
+   if (v->builtin == RSLC_BI_FRAGSTENCILREF)
+      e->writes_stencilref = true;
    id = spv_id(e);
    if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpVariable, ptr, id, sc))
       return false;
@@ -5183,6 +5192,8 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    if (e->need_clipdistance && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_CLIPDISTANCE))
       return false;
+   if (e->writes_stencilref && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, 5013u /* StencilExportEXT */))
+      return false;
    if (e->need_culldistance && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_CULLDISTANCE))
       return false;
    if (e->need_imagequery && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_IMAGEQUERY))
@@ -5237,6 +5248,9 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
          return false;
    }
 #endif
+   if (e->writes_stencilref && !spv_inst_str(e, SPV_SEC_CAPS, SpvOpExtension, NULL, 0,
+            "SPV_EXT_shader_stencil_export", NULL, 0))
+      return false;
    if (!spv_inst_str(e, SPV_SEC_CAPS, SpvOpExtInstImport, &e->ext_id, 1, "GLSL.std.450", NULL, 0))
       return false;
    if (!spv_inst2(e, SPV_SEC_CAPS, SpvOpMemoryModel, 0 /* Logical */, 1 /* GLSL450 */))
@@ -5262,6 +5276,9 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    if (e->writes_fragdepth
          && !spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, 12u /* DepthReplacing */))
+      return false;
+   if (e->writes_stencilref
+         && !spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, 5027u /* StencilRefReplacingEXT */))
       return false;
 #ifdef RSLC_EXTENDED
    for (i = 0; i < c->prog.nxmodes; i += 1 + c->prog.xmodes[i])
