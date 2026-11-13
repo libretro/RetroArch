@@ -506,6 +506,9 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       border-top-left-radius:0px;
       border-top-right-radius:4px;
    }
+   QWidget#quickMenuPage {
+      background-color:transparent;
+   }
    QGroupBox::title {
       min-height:28px;
       subcontrol-origin:margin;
@@ -1337,6 +1340,11 @@ static double exp_scale(double input_val, double mid_val, double max_val)
  * enum order (which has SCREENSHOT before TITLE_SCREEN). */
 static const char * const qt_thumbnail_widget_names[4] = {
    "thumbnail", "thumbnail2", "thumbnail3", "thumbnail4"
+};
+
+static const char * const qt_thumbnail_dock_names[4] = {
+   "thumbnailDock", "thumbnail2Dock",
+   "thumbnail3Dock", "thumbnail4Dock"
 };
 
 static const char * const qt_thumbnail_subdirs[4] = {
@@ -3501,6 +3509,37 @@ void MainWindow::setThumbnail(QString widgetName,
       thumbnail->setPixmap(pixmap, acceptDrop);
 }
 
+void MainWindow::onThumbnailDockVisibilityChanged(bool visible)
+{
+   QDockWidget *dock;
+   int i;
+
+   if (!visible)
+      return;
+
+   dock = qobject_cast<QDockWidget*>(sender());
+   if (!dock)
+      return;
+
+   for (i = 0; i < 4; i++)
+      if (dock->objectName() == qt_thumbnail_dock_names[i])
+         break;
+
+   if (i >= 4)
+      return;
+
+   /* Queued, so the dock has its shown size when the image is asked
+    * for at it. */
+   QMetaObject::invokeMethod(this, "onThumbnailDockShown",
+         Qt::QueuedConnection, Q_ARG(int, i));
+}
+
+void MainWindow::onThumbnailDockShown(int idx)
+{
+   if (idx >= 0 && idx < 4 && !m_sidebarPending[idx].isEmpty())
+      showSidebarImage(idx, m_sidebarPending[idx], m_sidebarAcceptDrop);
+}
+
 /* Show @path in sidebar widget @idx through the model's engine: from
  * the cache at once, otherwise blank now and filled in by
  * onThumbnailReady(). Never decodes on the UI thread. */
@@ -4017,7 +4056,18 @@ void MainWindow::restoreDockLayout()
       have[i]  = docks[i]
          && companion_dock_row_parse(qt_dock_row(settings, i, &len), &st[i]);
    }
-
+   /* Qt 6 can keep a dock's old tab grouping alive across a re-add, and
+    * tabifying it again from its row duplicates its tab titles. Detach
+    * each dock pass 1 re-adds to a side first; a dock without a row
+    * keeps its default place, and a floating one stays in the layout
+    * so it can be docked again. */
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+   {
+      if (     have[i]
+            && st[i].area != COMPANION_DOCK_FLOAT
+            && dockWidgetArea(docks[i]) != Qt::NoDockWidgetArea)
+         removeDockWidget(docks[i]);
+   }
    /* Pass 1: placement, in slot order. addDockWidget() appends to the
     * end of a side, so adding the docks of a side from its first slot
     * to its last stacks them the way they were saved; two docks on one
@@ -4418,6 +4468,77 @@ static ui_browser_window_t ui_browser_window_qt = {
    "qt"
 };
 
+/* Wheel policy: over a spin box, combo box or slider that sits in a
+ * scroll area, the wheel scrolls the area instead of changing the
+ * value. Everything else - an open combo popup, a scroll bar, a
+ * control with no scroll area around it (the grid zoom slider, the
+ * core combo) - takes the wheel as Qt delivers it. */
+class RetroArchQtApplication : public QApplication
+{
+public:
+   RetroArchQtApplication(int &argc, char **argv)
+      : QApplication(argc, argv)
+      ,m_forwardingWheel(false)
+   {
+   }
+
+   bool notify(QObject *receiver, QEvent *event) override
+   {
+      if (event->type() == QEvent::Wheel && !m_forwardingWheel)
+      {
+         QWidget *viewport = qt_wheel_redirect_target(
+               qobject_cast<QWidget*>(receiver));
+         if (viewport)
+         {
+            m_forwardingWheel = true;
+            QCoreApplication::sendEvent(viewport, event);
+            m_forwardingWheel = false;
+            return true;
+         }
+      }
+      return QApplication::notify(receiver, event);
+   }
+
+private:
+   bool m_forwardingWheel;
+
+   /* The viewport of the scroll area a value control under @w sits in,
+    * or NULL to leave the wheel to Qt. Neither walk crosses a window,
+    * which is what keeps a combo's popup list (a window parented to
+    * the combo) scrolling itself. */
+   static QWidget *qt_wheel_redirect_target(QWidget *w)
+   {
+      QWidget *control = NULL;
+      QWidget *p;
+
+      for (p = w; p; p = p->parentWidget())
+      {
+         if (qobject_cast<QScrollBar*>(p))
+            return NULL;
+         if (     qobject_cast<QAbstractSpinBox*>(p)
+               || qobject_cast<QComboBox*>(p)
+               || qobject_cast<QAbstractSlider*>(p))
+         {
+            control = p;
+            break;
+         }
+         if (p->isWindow())
+            return NULL;
+      }
+      if (!control || control->isWindow())
+         return NULL;
+      for (p = control->parentWidget(); p; p = p->parentWidget())
+      {
+         QAbstractScrollArea *area = qobject_cast<QAbstractScrollArea*>(p);
+         if (area && area->viewport())
+            return area->viewport();
+         if (p->isWindow())
+            break;
+      }
+      return NULL;
+   }
+};
+
 static void* ui_application_qt_initialize(void)
 {
    /* These must last for the lifetime of the QApplication */
@@ -4434,7 +4555,7 @@ static void* ui_application_qt_initialize(void)
 
    /* Create QApplication() before calling QApplication::setStyle()
     * to ensure that plugin path is determined correctly */
-   ui_application.app = new QApplication(app_argc, app_argv);
+   ui_application.app = new RetroArchQtApplication(app_argc, app_argv);
    QApplication::setStyle("fusion");
    ui_application.app->setOrganizationName("libretro");
    ui_application.app->setApplicationName("RetroArch");
@@ -4959,9 +5080,6 @@ static void qt_companion_build_thumbnail_docks(MainWindow *mainwindow)
       MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
       MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO
    };
-   static const char * const dock_obj_names[4] = {
-      "thumbnailDock", "thumbnail2Dock", "thumbnail3Dock", "thumbnail4Dock"
-   };
    QDockWidget *docks[4];
    int i;
 
@@ -4975,10 +5093,12 @@ static void qt_companion_build_thumbnail_docks(MainWindow *mainwindow)
                   SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
 
       docks[i] = new QDockWidget(msg_hash_to_str(labels[i]), mainwindow);
-      qt_dock_configure(docks[i], dock_obj_names[i],
+      qt_dock_configure(docks[i], qt_thumbnail_dock_names[i],
             Qt::RightDockWidgetArea, labels[i], tw);
 
       qt_dock_add_to(mainwindow, docks[i]);
+      QObject::connect(docks[i], SIGNAL(visibilityChanged(bool)),
+            mainwindow, SLOT(onThumbnailDockVisibilityChanged(bool)));
    }
 
    for (i = 1; i < 4; i++)
