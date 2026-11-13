@@ -773,6 +773,34 @@ static const char fs_subpass_ms[] =
    "   col = subpassLoad(att, gl_SampleID) + subpassLoad(plain) + vec4(float(n));\n"
    "}\n";
 
+/* What the SPIR-V for ordinary code should look like: one access chain
+ * for a path into a block, a const in parameter handed over as a value,
+ * each pointer type and each constant vector made once. */
+static const char fs_lean[] =
+   "#version 450\n"
+   "struct item { vec4 a; vec4 b[2]; };\n"
+   "layout(set = 0, binding = 0, std140) uniform Block { item items[4]; int which; };\n"
+   "layout(location = 0) in vec4 v;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "vec4 pick(const in vec4 x, const in vec4[3] arr, in vec4 y, const in int i)\n"
+   "{\n"
+   "   y += x + vec4(0.0, 0.0, 0.0, 1.0);\n"
+   "   return arr[i] + y + arr[1];\n"
+   "}\n"
+   "void main()\n"
+   "{\n"
+   "   vec4 arr[3] = vec4[3](v, v * 2.0, vec4(0.0, 0.0, 0.0, 1.0));\n"
+   "   item whole = items[which];\n"
+   "   col = pick(items[which].b[1], arr, vec4(0.0, 0.0, 0.0, 1.0), which)\n"
+   "      * items[which].b[1].z + whole.a + items[which].a;\n"
+   "}\n";
+
+static const char fs_const_in_written[] =
+   "#version 450\n"
+   "layout(location = 0) out vec4 col;\n"
+   "float f(const in float x) { x = 1.0; return x; }\n"
+   "void main() { col = vec4(f(2.0)); }\n";
+
 static bool has_capability(const uint32_t *w, size_t n, uint32_t cap)
 {
    size_t i = 5;
@@ -1812,6 +1840,52 @@ int main(int argc, char **argv)
       memset(&r, 0, sizeof(r));
       CHECK(!compile(fs_subpass_ms, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
       CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* Lean code. No access chain starts from another's result; no
+       * pointer type and no constant vector is made twice; of pick's
+       * four parameters only the plain in one is a pointer; a const in
+       * parameter cannot be written. */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_lean, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "lean: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i, j;
+         unsigned chained = 0, longest = 0, twice = 0, params = 0, by_pointer = 0;
+         for (i = 5; i < r.spirv_len && (r.spirv[i] >> 16); i += r.spirv[i] >> 16)
+         {
+            unsigned op = r.spirv[i] & 0xffffu, len = r.spirv[i] >> 16;
+            if (op == 65 /* OpAccessChain */)
+            {
+               if (len - 4 > longest)
+                  longest = len - 4;
+               for (j = 5; j < r.spirv_len && (r.spirv[j] >> 16); j += r.spirv[j] >> 16)
+                  chained += (r.spirv[j] & 0xffffu) == 65 && r.spirv[j + 2] == r.spirv[i + 3];
+            }
+            if (op == 32 /* OpTypePointer */ || op == 44 /* OpConstantComposite */)
+               for (j = i + len; j < r.spirv_len && (r.spirv[j] >> 16); j += r.spirv[j] >> 16)
+                  if (r.spirv[j] == r.spirv[i]
+                        && (op == 32 ? r.spirv[j + 2] == r.spirv[i + 2] && r.spirv[j + 3] == r.spirv[i + 3]
+                           : r.spirv[j + 1] == r.spirv[i + 1]
+                              && !memcmp(r.spirv + j + 3, r.spirv + i + 3, (len - 3) * sizeof(uint32_t))))
+                     twice++;
+            if (op == 55 /* OpFunctionParameter */)
+            {
+               params++;
+               for (j = 5; j < r.spirv_len && (r.spirv[j] >> 16); j += r.spirv[j] >> 16)
+                  by_pointer += (r.spirv[j] & 0xffffu) == 32 && r.spirv[j + 1] == r.spirv[i + 1];
+            }
+         }
+         CHECK(chained == 0);
+         CHECK(longest == 4);   /* items, [which], b, [1] */
+         CHECK(twice == 0);
+         CHECK(params == 4 && by_pointer == 1);
+         write_spirv(dir, "lean", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_const_in_written, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
    }
 
    if (fails)

@@ -1214,6 +1214,12 @@ struct spv_const
    uint32_t id;
 };
 
+struct spv_vconst
+{
+   uint32_t type, id;
+   uint32_t c[4];
+};
+
 struct spv_var
 {
    uint32_t id;        /* the OpVariable, or the constant for a folded const */
@@ -1221,6 +1227,7 @@ struct spv_var
    uint32_t tid;       /* type id of the variable's value */
    uint8_t  sc;        /* storage class */
    bool     is_const;  /* id is a constant value, not a pointer */
+   bool     byval;     /* a const in parameter: id is its value */
    bool     in_block;  /* RSLC_ST_MEMBER / BLOCK: id is the block variable */
 };
 
@@ -1240,6 +1247,10 @@ struct spv_emit
    uint32_t            *func_ids;     /* by func id */
    uint32_t            *func_types;
    struct spv_const    *consts;
+   struct spv_vconst   *vconsts;   /* constant vectors made, by type and components */
+   uint32_t             nvconsts, vconsts_cap;
+   struct spv_const    *xptrs;     /* pointer types to types outside tinfo: type, class, id */
+   uint32_t             nxptrs, xptrs_cap;
    struct rslc_wbuf     entry_iface;  /* interface ids for OpEntryPoint */
    struct rslc_wbuf     func_vars;    /* OpVariable Function words, hoisted */
    struct rslc_wbuf     fntypes;      /* interned OpTypeFunction: id, n, words[n] */
@@ -1741,16 +1752,49 @@ static uint32_t spv_ptr(struct spv_emit *e, uint32_t tid, unsigned sc)
             return 0;
          return e->tinfo[i].ptr[sc];
       }
-   /* A laid-out type or an ad-hoc one: make a fresh pointer type. */
+   /* A laid-out type or an ad-hoc one: one pointer type for each it is
+    * asked of, kept by the type's id and the storage class. */
+   for (i = 0; i < e->nxptrs; i++)
+      if (e->xptrs[i].type == tid && e->xptrs[i].bits == sc)
+         return e->xptrs[i].id;
    {
       uint32_t p = spv_id(e);
       if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpTypePointer, p, sc, tid))
          return 0;
+      if (e->nxptrs == e->xptrs_cap)
+      {
+         uint32_t          ncap = e->xptrs_cap ? e->xptrs_cap * 2 : 32;
+         struct spv_const *nv   = (struct spv_const*)rslc_arena_alloc(e->c, ncap * sizeof(*nv));
+         if (!nv)
+            return 0;
+         if (e->nxptrs)
+            memcpy(nv, e->xptrs, e->nxptrs * sizeof(*nv));
+         e->xptrs     = nv;
+         e->xptrs_cap = ncap;
+      }
+      e->xptrs[e->nxptrs].type = tid;
+      e->xptrs[e->nxptrs].bits = sc;
+      e->xptrs[e->nxptrs].id   = p;
+      e->nxptrs++;
       return p;
    }
 }
 
-/* Function parameters are pointers; samplers point at the uniform. */
+/* A const in parameter is never written: it is handed over as its
+ * value, with no variable made and stored for it at the call and no
+ * load in the function (as glslang does). Opaque types stay pointers. */
+static bool spv_param_byval(const struct rslc_var *v)
+{
+   if (v->storage != RSLC_ST_PARAM || v->dir != RSLC_DIR_IN || !(v->quals & RSLC_VQ_PRECISE))
+      return false;
+#ifdef RSLC_EXTENDED
+   if (RSLC_TY_IS_IMAGE(v->type->kind) || v->type->kind == RSLC_TY_SUBPASSINPUT)
+      return false;
+#endif
+   return !RSLC_TY_IS_SAMPLER(v->type->kind);
+}
+
+/* The other function parameters are pointers; samplers point at the uniform. */
 static unsigned spv_param_sc(const struct rslc_type *t)
 {
 #ifdef RSLC_EXTENDED
@@ -1867,11 +1911,38 @@ static uint32_t spv_const_composite(struct spv_emit *e, const struct rslc_type *
    }
    else
       return 0;
+   /* a vector made before is that one again */
+   if (t->kind == RSLC_TY_VEC)
+   {
+      uint32_t i;
+      for (i = 0; i < e->nvconsts; i++)
+         if (e->vconsts[i].type == tid && !memcmp(e->vconsts[i].c, words + 2, n * sizeof(uint32_t)))
+            return e->vconsts[i].id;
+   }
    id = spv_id(e);
    words[0] = tid;
    words[1] = id;
    if (!spv_inst(e, SPV_SEC_TYPES, SpvOpConstantComposite, words, 2 + n))
       return 0;
+   if (t->kind == RSLC_TY_VEC)
+   {
+      if (e->nvconsts == e->vconsts_cap)
+      {
+         uint32_t           ncap = e->vconsts_cap ? e->vconsts_cap * 2 : 32;
+         struct spv_vconst *nv   = (struct spv_vconst*)rslc_arena_alloc(e->c, ncap * sizeof(*nv));
+         if (!nv)
+            return 0;
+         if (e->nvconsts)
+            memcpy(nv, e->vconsts, e->nvconsts * sizeof(*nv));
+         e->vconsts     = nv;
+         e->vconsts_cap = ncap;
+      }
+      e->vconsts[e->nvconsts].type = tid;
+      e->vconsts[e->nvconsts].id   = id;
+      memset(e->vconsts[e->nvconsts].c, 0, sizeof(e->vconsts[e->nvconsts].c));
+      memcpy(e->vconsts[e->nvconsts].c, words + 2, n * sizeof(uint32_t));
+      e->nvconsts++;
+   }
    return id;
 }
 
@@ -2360,10 +2431,52 @@ static uint32_t spv_temp_of(struct spv_emit *e, uint32_t val, const struct rslc_
    return tmp;
 }
 
+/* The steps from a variable to the part of it an lvalue names, kept
+ * until the whole expression is walked so that they go out as one
+ * access chain: a[i].b.c is one instruction and one pointer type, not
+ * three of each. */
+#define SPV_CHAIN_MAX 12
+struct spv_chain
+{
+   uint32_t idx[SPV_CHAIN_MAX];
+   unsigned n;
+   uint32_t tid;   /* what the last step points at */
+};
+
+/* The chain so far, from root; nothing kept after it. */
+static uint32_t spv_chain_emit(struct spv_emit *e, uint32_t root, struct spv_chain *ch, unsigned sc)
+{
+   uint32_t w[3 + SPV_CHAIN_MAX];
+   uint32_t ptrt = spv_ptr(e, ch->tid, sc);
+   if (!ptrt)
+      return 0;
+   w[0] = ptrt; w[1] = spv_id(e); w[2] = root;
+   memcpy(w + 3, ch->idx, ch->n * sizeof(uint32_t));
+   if (!spv_fn_inst(e, SpvOpAccessChain, w, 3 + ch->n))
+      return 0;
+   ch->n = 0;
+   return w[1];
+}
+
+static bool spv_chain_push(struct spv_emit *e, uint32_t *root, struct spv_chain *ch, unsigned sc,
+      uint32_t idx, uint32_t tid)
+{
+   if (ch->n == SPV_CHAIN_MAX)
+   {
+      *root = spv_chain_emit(e, *root, ch, sc);
+      if (!*root)
+         return false;
+   }
+   ch->idx[ch->n++] = idx;
+   ch->tid          = tid;
+   return true;
+}
+
 /* The pointer for an lvalue expression: an access chain from a
  * variable.  sc receives its storage class, laid whether the pointee
  * is a laid-out block type. */
-static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool *laid, bool *std140)
+static uint32_t spv_lvalue_root(struct spv_emit *e, uint32_t node, unsigned *sc, bool *laid,
+      bool *std140, struct spv_chain *ch)
 {
    const struct rslc_node *n = rslc_node_at(e->c, node);
    switch (n->op)
@@ -2407,6 +2520,28 @@ static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool
             }
             return sv->ptr;
          }
+         if (e->vars[v->id].byval)
+         {
+            /* a value indexed through a pointer: a variable holding it */
+            *sc = SPV_SC_FUNCTION; *laid = false; *std140 = false;
+            return spv_temp_of(e, e->vars[v->id].id, v->type);
+         }
+         if (v->storage == RSLC_ST_MEMBER)
+         {
+            /* a bare block member: the block, and the member's index */
+            const struct rslc_blockdecl *b = &e->c->prog.blocks[v->block];
+            uint32_t idx  = spv_const_int(e, (int32_t)v->member);
+            uint32_t root = e->block_var[v->block];
+            uint32_t ftid;
+            *sc     = b->push ? SPV_SC_PUSHCONSTANT : SPV_SC_UNIFORM;
+            *laid   = true;
+            *std140 = b->std140;
+            e->member_active[v->block][v->member] = 1;
+            ftid = spv_type_laid(e, b->type->fields[v->member].type, b->std140);
+            if (!ftid || !idx || !spv_chain_push(e, &root, ch, *sc, idx, ftid))
+               return 0;
+            return root;
+         }
          return spv_var_ptr(e, v, sc, laid, std140);
       }
       case RSLC_OP_MEMBER:
@@ -2415,8 +2550,7 @@ static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool
          const struct rslc_node *bn = rslc_node_at(e->c, n->a);
          uint32_t base;
          uint32_t idx;
-         uint32_t tid, ptrt, id;
-         uint32_t w[4];
+         uint32_t tid;
          if (n->op == RSLC_OP_MEMBER && bn->op == RSLC_OP_VAR
                && e->c->prog.vars[bn->a]->storage == RSLC_ST_BLOCK)
          {
@@ -2430,7 +2564,7 @@ static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool
             e->member_active[bv->block][n->b] = 1;
          }
          else
-            base = spv_lvalue(e, n->a, sc, laid, std140);
+            base = spv_lvalue_root(e, n->a, sc, laid, std140, ch);
          if (!base)
             return 0;
          if (n->op == RSLC_OP_MEMBER)
@@ -2456,40 +2590,25 @@ static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool
 #ifdef RSLC_EXTENDED
 have_tid:
 #endif
-         if (!tid)
+         if (!tid || !spv_chain_push(e, &base, ch, *sc, idx, tid))
             return 0;
-         ptrt = spv_ptr(e, tid, *sc);
-         if (!ptrt)
-            return 0;
-         id = spv_id(e);
-         w[0] = ptrt; w[1] = id; w[2] = base; w[3] = idx;
-         if (!spv_fn_inst(e, SpvOpAccessChain, w, 4))
-            return 0;
-         return id;
+         return base;
       }
       case RSLC_OP_SWIZZLE:
       {
          /* single-component swizzle is an access chain */
          unsigned cnt = n->aux & 3u;
-         uint32_t base, idx, tid, ptrt, id;
-         uint32_t w[4];
+         uint32_t base, idx, tid;
          if (cnt != 1)
             return 0;
-         base = spv_lvalue(e, n->a, sc, laid, std140);
+         base = spv_lvalue_root(e, n->a, sc, laid, std140, ch);
          if (!base)
             return 0;
          idx  = spv_const_int(e, (int32_t)((n->aux >> 2) & 3u));
          tid  = spv_type(e, n->type);
-         if (!idx || !tid)
+         if (!idx || !tid || !spv_chain_push(e, &base, ch, *sc, idx, tid))
             return 0;
-         ptrt = spv_ptr(e, tid, *sc);
-         if (!ptrt)
-            return 0;
-         id = spv_id(e);
-         w[0] = ptrt; w[1] = id; w[2] = base; w[3] = idx;
-         if (!spv_fn_inst(e, SpvOpAccessChain, w, 4))
-            return 0;
-         return id;
+         return base;
       }
       default:
       {
@@ -2501,6 +2620,18 @@ have_tid:
          return spv_temp_of(e, v, n->type);
       }
    }
+}
+
+
+static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool *laid, bool *std140)
+{
+   struct spv_chain ch;
+   uint32_t root;
+   ch.n = 0;
+   root = spv_lvalue_root(e, node, sc, laid, std140, &ch);
+   if (root && ch.n)
+      return spv_chain_emit(e, root, &ch, *sc);
+   return root;
 }
 
 /* Stores val into the lvalue node; multi-component swizzles become a
@@ -3796,6 +3927,8 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
          uint32_t ptr;
          if (e->vars[v->id].is_const)
             return spv_const_var(e, v);
+         if (e->vars[v->id].byval)
+            return e->vars[v->id].id;
          ptr = spv_var_ptr(e, v, &sc, &laid, &std140);
          if (!ptr)
             return 0;
@@ -3810,7 +3943,8 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
             || rslc_node_at(e->c, n->b)->op == RSLC_OP_CONST;
          bool base_is_ptr = base->op == RSLC_OP_VAR || base->op == RSLC_OP_MEMBER
             || base->op == RSLC_OP_INDEX || (base->op == RSLC_OP_SWIZZLE && (base->aux & 3u) == 1);
-         if (base->op == RSLC_OP_VAR && e->vars[e->c->prog.vars[base->a]->id].is_const)
+         if (base->op == RSLC_OP_VAR && (e->vars[e->c->prog.vars[base->a]->id].is_const
+                  || e->vars[e->c->prog.vars[base->a]->id].byval))
             base_is_ptr = false;
          if (!base_is_ptr && const_idx)
          {
@@ -3884,6 +4018,13 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
             {
                unsigned sc; bool laid, std140;
                temps[i] = spv_lvalue(e, an, &sc, &laid, &std140);
+               if (!temps[i])
+                  return 0;
+               continue;
+            }
+            if (spv_param_byval(pv))
+            {
+               temps[i] = spv_rvalue(e, an);
                if (!temps[i])
                   return 0;
                continue;
@@ -4463,7 +4604,8 @@ static bool spv_function(struct spv_emit *e, const struct rslc_func *f)
    w[0] = 0; w[1] = rtid;
    for (i = 0; i < f->nparams; i++)
    {
-      w[2 + i] = spv_ptr_to(e, f->params[i]->type, spv_param_sc(f->params[i]->type));
+      w[2 + i] = spv_param_byval(f->params[i]) ? spv_type(e, f->params[i]->type)
+         : spv_ptr_to(e, f->params[i]->type, spv_param_sc(f->params[i]->type));
       if (!w[2 + i])
          return false;
    }
@@ -4477,10 +4619,12 @@ static bool spv_function(struct spv_emit *e, const struct rslc_func *f)
    for (i = 0; i < f->nparams; i++)
    {
       const struct rslc_var *pv = f->params[i];
-      uint32_t ptr = spv_ptr_to(e, pv->type, spv_param_sc(pv->type));
+      uint32_t ptr = spv_param_byval(pv) ? spv_type(e, pv->type)
+         : spv_ptr_to(e, pv->type, spv_param_sc(pv->type));
       uint32_t pid = spv_id(e);
       if (!ptr || !spv_inst2(e, SPV_SEC_FUNCS, SpvOpFunctionParameter, ptr, pid))
          return false;
+      e->vars[pv->id].byval = spv_param_byval(pv);
       e->vars[pv->id].id = pid;
       e->vars[pv->id].sc = (uint8_t)spv_param_sc(pv->type);
       if (pv->name && !spv_name(e, pid, pv->name->str))

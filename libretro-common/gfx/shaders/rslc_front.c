@@ -3632,7 +3632,7 @@ static bool rslc_p_is_lvalue(struct rslc_parser *p, uint32_t e)
                || v->storage == RSLC_ST_MEMBER)
             return false;
          if (v->storage == RSLC_ST_PARAM && v->dir == RSLC_DIR_IN)
-            return true;   /* in params are writable locals */
+            return !(v->quals & RSLC_VQ_PRECISE);   /* in params are writable locals; const in ones are not */
          if (v->storage == RSLC_ST_BUILTIN)
             return v->builtin == RSLC_BI_POSITION || v->builtin == RSLC_BI_FRAGDEPTH
                || v->builtin == RSLC_BI_POINTSIZE || v->builtin == RSLC_BI_CLIPDISTANCE
