@@ -675,6 +675,56 @@ static const char fs_stencil_export[] =
    "   gl_FragStencilRefARB = int(uv.y * 255.0);\n"
    "}\n";
 
+/* One multisampled image, read and written a sample at a time: as a
+ * storage image by a compute stage that resolves it, and as a sampler by
+ * a fragment stage that resolves depth and stencil. */
+static const char cs_resolve_ms[] =
+   "#version 450\n"
+   "layout(local_size_x = 8, local_size_y = 8) in;\n"
+   "layout(set = 0, binding = 0, rg16f) uniform readonly restrict image2DMS multisampled;\n"
+   "layout(set = 0, binding = 1) uniform writeonly restrict image2D resolve;\n"
+   "void main()\n"
+   "{\n"
+   "   ivec2 size = imageSize(multisampled);\n"
+   "   ivec2 at   = ivec2(gl_GlobalInvocationID.xy);\n"
+   "   vec4  sum  = vec4(0.0);\n"
+   "   int   i;\n"
+   "   if (any(greaterThanEqual(at, size)))\n"
+   "      return;\n"
+   "   for (i = 0; i < 4; i++)\n"
+   "      sum += imageLoad(multisampled, at, i);\n"
+   "   imageStore(resolve, at, sum * 0.25);\n"
+   "}\n";
+
+static const char cs_unresolve_ms[] =
+   "#version 450\n"
+   "layout(local_size_x = 8, local_size_y = 8) in;\n"
+   "layout(set = 0, binding = 0) uniform writeonly restrict image2DMS multisampled;\n"
+   "layout(set = 0, binding = 1, rgba8) uniform readonly restrict image2D resolve;\n"
+   "void main()\n"
+   "{\n"
+   "   ivec2 at = ivec2(gl_GlobalInvocationID.xy);\n"
+   "   imageStore(multisampled, at, int(gl_LocalInvocationID.x & 3u), imageLoad(resolve, at));\n"
+   "}\n";
+
+static const char fs_resolve_ms[] =
+   "#version 450\n"
+   "layout(set = 0, binding = 0) uniform sampler2DMS fs0;\n"
+   "layout(set = 0, binding = 1) uniform usampler2DMS fs1;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   ivec2 at = ivec2(gl_FragCoord.xy) % textureSize(fs0);\n"
+   "   col = vec4(texelFetch(fs0, at, 2).x, float(texelFetch(fs1, at, gl_SampleID).x), 0.0, 1.0);\n"
+   "}\n";
+
+static const char cs_read_no_format[] =
+   "#version 450\n"
+   "layout(local_size_x = 8) in;\n"
+   "layout(set = 0, binding = 0) uniform readonly image2D src;\n"
+   "layout(set = 0, binding = 1, rgba8) uniform writeonly image2D dst;\n"
+   "void main() { imageStore(dst, ivec2(0), imageLoad(src, ivec2(0))); }\n";
+
 static const char fs_old_version[] =
    "#version 410\n"
    "layout(location = 0) out vec4 col;\n"
@@ -1595,6 +1645,76 @@ int main(int argc, char **argv)
       memset(&r, 0, sizeof(r));
       CHECK(!compile(fs_stencil_export, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
       CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* A multisampled storage image: StorageImageMultisample (27), the
+       * rg16f format with StorageImageExtendedFormats (49), a write-only
+       * image without a format with StorageImageWriteWithoutFormat (56);
+       * the sample an operand of the read. SPIR-V only. */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_resolve_ms, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "resolve_ms: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(has_capability(r.spirv, r.spirv_len, 27));
+         CHECK(has_capability(r.spirv, r.spirv_len, 49));
+         CHECK(has_capability(r.spirv, r.spirv_len, 56));
+         /* OpImageRead with an operand mask: 7 words, the mask Sample (0x40) */
+         CHECK(count_op(r.spirv, r.spirv_len, 98, &at) == 1);
+         CHECK((r.spirv[at - 1] >> 16) == 7 && r.spirv[at + 4] == 0x40);
+         write_spirv(dir, "resolve_ms", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(cs_resolve_ms, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* The other way: OpImageWrite (99) with the sample */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_unresolve_ms, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "unresolve_ms: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(has_capability(r.spirv, r.spirv_len, 27));
+         CHECK(!has_capability(r.spirv, r.spirv_len, 49));
+         CHECK(count_op(r.spirv, r.spirv_len, 99, &at) == 1);
+         CHECK((r.spirv[at - 1] >> 16) == 6 && r.spirv[at + 3] == 0x40);
+         write_spirv(dir, "unresolve_ms", &r);
+         rslc_result_free(&r, &o);
+      }
+
+      /* An image that is read still needs its format */
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(cs_read_no_format, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "format") != NULL);
+
+      /* sampler2DMS and usampler2DMS: two fetches (95), each with its sample */
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_resolve_ms, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "fs_resolve_ms: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned ms_images = 0;
+         CHECK(count_op(r.spirv, r.spirv_len, 95, &at) == 2);
+         CHECK((r.spirv[at - 1] >> 16) == 7 && r.spirv[at + 4] == 0x40);
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            /* OpTypeImage: 2D (1), not arrayed, multisampled, sampled */
+            ms_images += (r.spirv[i] & 0xffffu) == 25 && r.spirv[i + 3] == 1
+               && r.spirv[i + 5] == 0 && r.spirv[i + 6] == 1 && r.spirv[i + 7] == 1;
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(ms_images == 2);
+         write_spirv(dir, "fs_resolve_ms", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_resolve_ms, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
       cur_stage = RSLC_STAGE_FRAGMENT;
    }
 

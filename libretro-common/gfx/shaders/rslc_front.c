@@ -3067,9 +3067,10 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
  *   2 3 4     vec2 vec3 vec4; i2.. ivec, u2.. uvec, b2.. bvec
  *   S         sampler2D
  *   A N Z     sampler2DArray, sampler2DMSArray, samplerBuffer
- *   J K       image2D, image2DArray; g the gvec4 of the image's base,
- *             matched exactly
- *   D1 D3 DC DR  sampler1D, sampler3D, samplerCube, samplerCubeArray
+ *   J K L     image2D, image2DArray, image2DMS; g the gvec4 of the
+ *             image's base, matched exactly
+ *   D1 D3 DC DR DM  sampler1D, sampler3D, samplerCube, samplerCubeArray,
+ *             sampler2DMS
  *   H1 H2 HA HC HR  the shadow sampler1D, 2D, 2DArray, Cube, CubeArray
  *   P         subpassInput
  *             (RSLC_EXTENDED; their overloads are absent otherwise)
@@ -3148,7 +3149,7 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_BITFIELDREVERSE, "bitfieldReverse", "I:I;U:U" },
    { RSLC_BFN_BITCOUNT, "bitCount", "I:I;U:I" },
    { RSLC_BFN_FINDLSB, "findLSB", "I:I;U:I" }, { RSLC_BFN_FINDMSB, "findMSB", "I:I;U:I" },
-   { RSLC_BFN_TEXTURESIZE, "textureSize", "S i:i2" RSLC_X(";A i:i3;N:i3;Z:i"
+   { RSLC_BFN_TEXTURESIZE, "textureSize", "S i:i2" RSLC_X(";A i:i3;N:i3;Z:i;DM:i2"
          ";D1 i:i;D3 i:i3;DC i:i2;DR i:i3;H1 i:i;H2 i:i2;HA i:i3;HC i:i2;HR i:i3") },
    { RSLC_BFN_TEXTUREQUERYLOD, "textureQueryLod", "S 2:2" RSLC_X(";A 2:2"
          ";D1 f:2;D3 3:2;DC 3:2;DR 3:2;H1 f:2;H2 2:2;HA 2:2;HC 3:2;HR 3:2") },
@@ -3163,7 +3164,7 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_TEXTUREOFFSET, "textureOffset", "S 2 i2:4;S 2 i2 f:4" RSLC_X(";A 3 i2:4;A 3 i2 f:4"
          ";D1 f i:4;D1 f i f:4;D3 3 i3:4;D3 3 i3 f:4"
          ";H1 3 i:f;H1 3 i f:f;H2 3 i2:f;H2 3 i2 f:f;HA 4 i2:f") },
-   { RSLC_BFN_TEXELFETCH, "texelFetch", "S i2 i:4" RSLC_X(";A i3 i:4;N i3 i:4;Z i:4;D1 i i:4;D3 i3 i:4") },
+   { RSLC_BFN_TEXELFETCH, "texelFetch", "S i2 i:4" RSLC_X(";A i3 i:4;N i3 i:4;Z i:4;D1 i i:4;D3 i3 i:4;DM i2 i:4") },
    { RSLC_BFN_TEXELFETCHOFFSET, "texelFetchOffset", "S i2 i i2:4" },
    { RSLC_BFN_TEXTUREPROJOFFSET, "textureProjOffset", "S 3 i2:4;S 4 i2:4;S 3 i2 f:4;S 4 i2 f:4" },
    { RSLC_BFN_TEXTURELODOFFSET, "textureLodOffset", "S 2 f i2:4" RSLC_X(";A 3 f i2:4"
@@ -3201,9 +3202,9 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_MEMORYBARRIERBUFFER, "memoryBarrierBuffer", ":v" },
    { RSLC_BFN_MEMORYBARRIERIMAGE, "memoryBarrierImage", ":v" },
    { RSLC_BFN_GROUPMEMORYBARRIER, "groupMemoryBarrier", ":v" },
-   { RSLC_BFN_IMAGESTORE, "imageStore", "J i2 g:v;K i3 g:v" },
-   { RSLC_BFN_IMAGELOAD, "imageLoad", "J i2:4;K i3:4" },
-   { RSLC_BFN_IMAGESIZE, "imageSize", "J:i2;K:i3" },
+   { RSLC_BFN_IMAGESTORE, "imageStore", "J i2 g:v;K i3 g:v;L i2 i g:v" },
+   { RSLC_BFN_IMAGELOAD, "imageLoad", "J i2:4;K i3:4;L i2 i:4" },
+   { RSLC_BFN_IMAGESIZE, "imageSize", "J:i2;K:i3;L:i2" },
    { RSLC_BFN_SUBPASSLOAD, "subpassLoad", "P:4" },
    { RSLC_BFN_SUBGROUPELECT, "subgroupElect", ":b" },
    { RSLC_BFN_SUBGROUPMIN, "subgroupMin", "F:F;I:I;U:U" },
@@ -3300,9 +3301,10 @@ static bool rslc_bsig_match_tok(struct rslc_parser *p, const char *tok, unsigned
    else if (len == 2 && (tok[0] == 'D' || tok[0] == 'H'))
    {
       unsigned dim = tok[1] == '1' ? RSLC_SDIM_1D
-         : (tok[1] == '2' || tok[1] == 'A') ? RSLC_SDIM_2D
+         : (tok[1] == '2' || tok[1] == 'A' || tok[1] == 'M') ? RSLC_SDIM_2D
          : tok[1] == '3' ? RSLC_SDIM_3D : RSLC_SDIM_CUBE;
       unsigned fl  = ((tok[1] == 'A' || tok[1] == 'R') ? RSLC_SX_ARRAY : 0)
+         | (tok[1] == 'M' ? RSLC_SX_MS : 0)
          | (tok[0] == 'H' ? RSLC_SX_SHADOW : 0);
       if (t->kind != RSLC_TY_SAMPLERX || t->rows != dim || t->cols != fl)
          return false;
@@ -3311,9 +3313,10 @@ static bool rslc_bsig_match_tok(struct rslc_parser *p, const char *tok, unsigned
    }
    else if (len == 1 && tok[0] == 'P')
       return t->kind == RSLC_TY_SUBPASSINPUT;
-   else if (len == 1 && (tok[0] == 'J' || tok[0] == 'K'))
+   else if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'L'))
    {
-      if (t->kind != (tok[0] == 'J' ? RSLC_TY_IMAGE2D : RSLC_TY_IMAGE2DARRAY))
+      if (t->kind != (tok[0] == 'J' ? RSLC_TY_IMAGE2D
+               : tok[0] == 'K' ? RSLC_TY_IMAGE2DARRAY : RSLC_TY_IMAGE2DMS))
          return false;
       *sbase = t->base;
       return true;
@@ -3407,7 +3410,7 @@ static const struct rslc_type *rslc_bsig_param_type(struct rslc_parser *p,
    if (len == 1 && (tok[0] == 'S' || tok[0] == 'A' || tok[0] == 'N' || tok[0] == 'Z'))
       return actual;
 #ifdef RSLC_EXTENDED
-   if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'P'))
+   if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'L' || tok[0] == 'P'))
       return actual;
    if (len == 2 && (tok[0] == 'D' || tok[0] == 'H'))
       return actual;
@@ -4662,6 +4665,11 @@ static bool rslc_p_image_format(const char *s, uint32_t len, uint8_t *fmt)
       { "rgba32f", RSLC_IMGFMT_RGBA32F }, { "rgba16f", RSLC_IMGFMT_RGBA16F },
       { "r32f", RSLC_IMGFMT_R32F }, { "rgba8", RSLC_IMGFMT_RGBA8 },
       { "rg8", RSLC_IMGFMT_RG8 }, { "r8", RSLC_IMGFMT_R8 },
+      { "rgba8_snorm", RSLC_IMGFMT_RGBA8_SNORM }, { "rg32f", RSLC_IMGFMT_RG32F },
+      { "rg16f", RSLC_IMGFMT_RG16F }, { "r11f_g11f_b10f", RSLC_IMGFMT_R11G11B10F },
+      { "r16f", RSLC_IMGFMT_R16F }, { "rgba16", RSLC_IMGFMT_RGBA16 },
+      { "rgb10_a2", RSLC_IMGFMT_RGB10_A2 }, { "rg16", RSLC_IMGFMT_RG16 },
+      { "r16", RSLC_IMGFMT_R16 },
       { "rgba32i", RSLC_IMGFMT_RGBA32I }, { "rgba16i", RSLC_IMGFMT_RGBA16I },
       { "rgba8i", RSLC_IMGFMT_RGBA8I }, { "r32i", RSLC_IMGFMT_R32I },
       { "rgba32ui", RSLC_IMGFMT_RGBA32UI }, { "rgba16ui", RSLC_IMGFMT_RGBA16UI },
@@ -4860,13 +4868,24 @@ static const struct rslc_type *rslc_p_type_spec(struct rslc_parser *p,
          ty = rslc_type_sampler2d(p->c, RSLC_BASE_UINT);
       else if (k == RSLC_KW_SUBPASSINPUT)
          ty = rslc_type_basic(p->c, RSLC_TY_SUBPASSINPUT, RSLC_BASE_FLOAT, 1, 1);
-      else if (k >= RSLC_KW_IMAGE2D && k <= RSLC_KW_UIMAGE2DARRAY)
+      else if (k >= RSLC_KW_IMAGE2D && k <= RSLC_KW_UIMAGE2DMS)
       {
          /* the format is the declaration's layout; it is applied there */
          static const uint8_t bases[3] = { RSLC_BASE_FLOAT, RSLC_BASE_INT, RSLC_BASE_UINT };
          unsigned i = k - RSLC_KW_IMAGE2D;
-         ty = rslc_type_basic(p->c, i < 3 ? RSLC_TY_IMAGE2D : RSLC_TY_IMAGE2DARRAY,
+         ty = rslc_type_basic(p->c, i < 3 ? RSLC_TY_IMAGE2D
+               : i < 6 ? RSLC_TY_IMAGE2DARRAY : RSLC_TY_IMAGE2DMS,
                (enum rslc_base)bases[i % 3], 1, 0);
+#ifdef RSLC_EXTENDED
+         if (i >= 6 && !p->c->prog.spirv_only)
+            p->c->prog.spirv_only = "a multisampled image";
+#endif
+      }
+      else if (k >= RSLC_KW_SAMPLER2DMS && k <= RSLC_KW_USAMPLER2DMS)
+      {
+         static const uint8_t bases[3] = { RSLC_BASE_FLOAT, RSLC_BASE_INT, RSLC_BASE_UINT };
+         ty = rslc_type_basic(p->c, RSLC_TY_SAMPLERX,
+               (enum rslc_base)bases[k - RSLC_KW_SAMPLER2DMS], RSLC_SDIM_2D, RSLC_SX_MS);
       }
       else if (k >= RSLC_KW_SAMPLER2DARRAY && k <= RSLC_KW_USAMPLERBUFFER)
       {
@@ -6254,11 +6273,15 @@ static struct rslc_var *rslc_p_var_make(struct rslc_parser *p, const struct rslc
          rslc_p_fail(p, "an image must be a global uniform", NULL);
          return NULL;
       }
-      if (!q->img_fmt)
+      /* an image that is only written may leave its format out; the
+       * device then has to write without one */
+      if (!q->img_fmt && !q->writeonly)
       {
-         rslc_p_fail(p, "an image needs its format in the layout", NULL);
+         rslc_p_fail(p, "an image that is read needs its format in the layout", NULL);
          return NULL;
       }
+      if (!q->img_fmt && !p->c->prog.spirv_only)
+         p->c->prog.spirv_only = "an image without a format";
       /* rows carries the access: 1 read-write, 2 write only, 3 read only */
       v->type = rslc_type_basic(p->c, (enum rslc_tkind)vt->kind, (enum rslc_base)vt->base,
             q->writeonly ? RSLC_IMG_WRITEONLY : q->readonly ? RSLC_IMG_READONLY : RSLC_IMG_READWRITE,

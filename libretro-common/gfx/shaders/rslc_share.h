@@ -224,9 +224,12 @@ enum rslc_kw
    /* RSLC_EXTENDED: the depth comparing ones */
    RSLC_KW_SAMPLER1DSHADOW, RSLC_KW_SAMPLER2DSHADOW, RSLC_KW_SAMPLER2DARRAYSHADOW,
    RSLC_KW_SAMPLERCUBESHADOW, RSLC_KW_SAMPLERCUBEARRAYSHADOW,
+   /* RSLC_EXTENDED: one multisampled image, not an array of them */
+   RSLC_KW_SAMPLER2DMS, RSLC_KW_ISAMPLER2DMS, RSLC_KW_USAMPLER2DMS,
    /* RSLC_EXTENDED image types: float, int, uint of each */
    RSLC_KW_IMAGE2D, RSLC_KW_IIMAGE2D, RSLC_KW_UIMAGE2D,
    RSLC_KW_IMAGE2DARRAY, RSLC_KW_IIMAGE2DARRAY, RSLC_KW_UIMAGE2DARRAY,
+   RSLC_KW_IMAGE2DMS, RSLC_KW_IIMAGE2DMS, RSLC_KW_UIMAGE2DMS,
    /* RSLC_EXTENDED: a fragment stage's input attachment */
    RSLC_KW_SUBPASSINPUT,
    /* RSLC_EXTENDED qualifiers */
@@ -260,6 +263,7 @@ enum rslc_tkind
    /* RSLC_EXTENDED storage images; cols is the RSLC_IMGFMT_* */
    RSLC_TY_IMAGE2D,
    RSLC_TY_IMAGE2DARRAY,
+   RSLC_TY_IMAGE2DMS,       /* multisampled: read and written a sample at a time; SPIR-V only */
    /* RSLC_EXTENDED: a float input attachment */
    RSLC_TY_SUBPASSINPUT,
    /* RSLC_EXTENDED: any other sampler; rows is its RSLC_SDIM_*, cols its
@@ -273,8 +277,10 @@ enum rslc_tkind
 #define RSLC_SDIM_CUBE 4
 #define RSLC_SX_ARRAY  1u
 #define RSLC_SX_SHADOW 2u
+#define RSLC_SX_MS     4u   /* sampler2DMS: 2D, fetched a sample at a time */
 
-#define RSLC_TY_IS_IMAGE(k) ((k) == RSLC_TY_IMAGE2D || (k) == RSLC_TY_IMAGE2DARRAY)
+#define RSLC_TY_IS_IMAGE(k) ((k) == RSLC_TY_IMAGE2D || (k) == RSLC_TY_IMAGE2DARRAY \
+      || (k) == RSLC_TY_IMAGE2DMS)
 /* A storage image type's rows: its access. */
 #define RSLC_IMG_READWRITE 1
 #define RSLC_IMG_WRITEONLY 2
@@ -286,6 +292,19 @@ enum rslc_tkind
 #define RSLC_IMGFMT_RGBA16F  2
 #define RSLC_IMGFMT_R32F     3
 #define RSLC_IMGFMT_RGBA8    4
+#define RSLC_IMGFMT_RGBA8_SNORM 5
+#define RSLC_IMGFMT_RG32F    6
+#define RSLC_IMGFMT_RG16F    7
+#define RSLC_IMGFMT_R11G11B10F 8
+#define RSLC_IMGFMT_R16F     9
+#define RSLC_IMGFMT_RGBA16   10
+#define RSLC_IMGFMT_RGB10_A2 11
+#define RSLC_IMGFMT_RG16     12
+#define RSLC_IMGFMT_R16      14
+/* The formats every device with storage images has; the others need
+ * StorageImageExtendedFormats. */
+#define RSLC_IMGFMT_IS_BASE(f) ((f) <= RSLC_IMGFMT_RGBA8_SNORM || ((f) >= RSLC_IMGFMT_RGBA32I \
+      && (f) <= RSLC_IMGFMT_R32I) || ((f) >= RSLC_IMGFMT_RGBA32UI && (f) <= RSLC_IMGFMT_R32UI))
 #define RSLC_IMGFMT_RG8      13
 #define RSLC_IMGFMT_R8       15
 #define RSLC_IMGFMT_RGBA32I  21

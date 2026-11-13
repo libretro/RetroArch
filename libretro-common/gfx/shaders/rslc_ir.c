@@ -427,7 +427,9 @@ static const char *const rslc_keywords[] = {
    "samplerCubeArray", "isamplerCubeArray", "usamplerCubeArray",
    "sampler1DShadow", "sampler2DShadow", "sampler2DArrayShadow",
    "samplerCubeShadow", "samplerCubeArrayShadow",
+   "sampler2DMS", "isampler2DMS", "usampler2DMS",
    "image2D", "iimage2D", "uimage2D", "image2DArray", "iimage2DArray", "uimage2DArray",
+   "image2DMS", "iimage2DMS", "uimage2DMS",
    "subpassInput",
    "buffer", "readonly", "writeonly", "coherent", "restrict", "volatile", "shared"
 #endif
@@ -1254,6 +1256,8 @@ struct spv_emit
    uint32_t             entry_label;
    bool                 need_imagequery;
    bool                 need_storageimageextended;
+   bool                 need_storageimagemultisample;
+   bool                 need_storageimagewritewithoutformat;
    bool                 need_inputattachment;
    bool                 need_groupnonuniform;
    bool                 need_groupnonuniformarith;
@@ -1628,7 +1632,7 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
          w[0] = img; w[1] = s; w[2] = (uint32_t)t->rows - 1;
          w[3] = (t->cols & RSLC_SX_SHADOW) ? 1 : 0;
          w[4] = (t->cols & RSLC_SX_ARRAY) ? 1 : 0;
-         w[5] = 0; w[6] = 1; w[7] = 0;
+         w[5] = (t->cols & RSLC_SX_MS) ? 1 : 0; w[6] = 1; w[7] = 0;
          if (t->rows == RSLC_SDIM_1D)
             e->need_sampled1d = true;
          if (t->rows == RSLC_SDIM_CUBE && (t->cols & RSLC_SX_ARRAY))
@@ -1642,6 +1646,7 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
       }
       case RSLC_TY_IMAGE2D:
       case RSLC_TY_IMAGE2DARRAY:
+      case RSLC_TY_IMAGE2DMS:
       {
          /* a storage image: Sampled 2, its format from the layout (cols) */
          uint32_t s = spv_type(e, rslc_type_basic(e->c, RSLC_TY_SCALAR, (enum rslc_base)t->base, 1, 1));
@@ -1649,9 +1654,14 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
             return 0;
          ti = &e->tinfo[t->id];
          w[0] = id; w[1] = s; w[2] = 1 /* 2D */; w[3] = 0;
-         w[4] = t->kind == RSLC_TY_IMAGE2DARRAY; w[5] = 0; w[6] = 2; w[7] = t->cols;
-         if (t->cols == RSLC_IMGFMT_R8 || t->cols == RSLC_IMGFMT_RG8)
+         w[4] = t->kind == RSLC_TY_IMAGE2DARRAY; w[5] = t->kind == RSLC_TY_IMAGE2DMS;
+         w[6] = 2; w[7] = t->cols;
+         if (!t->cols)
+            e->need_storageimagewritewithoutformat = true;
+         else if (!RSLC_IMGFMT_IS_BASE(t->cols))
             e->need_storageimageextended = true;
+         if (t->kind == RSLC_TY_IMAGE2DMS)
+            e->need_storageimagemultisample = true;
          if (!spv_inst(e, SPV_SEC_TYPES, SpvOpTypeImage, w, 8))
             return 0;
          ti->img = id;
@@ -3150,7 +3160,8 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
                return 0;
 #ifdef RSLC_EXTENDED
             /* multisampled and buffer images have no levels */
-            if (t0->kind == RSLC_TY_SAMPLER2DMSARRAY || t0->kind == RSLC_TY_SAMPLERBUFFER)
+            if (     t0->kind == RSLC_TY_SAMPLER2DMSARRAY || t0->kind == RSLC_TY_SAMPLERBUFFER
+                  || (t0->kind == RSLC_TY_SAMPLERX && (t0->cols & RSLC_SX_MS)))
                return spv_r1(e, SpvOpImageQuerySize, tid, img, prec);
 #endif
             return spv_r2(e, SpvOpImageQuerySizeLod, tid, img, args[1], prec);
@@ -3176,7 +3187,8 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
             /* a buffer has no level; a multisampled image takes the sample */
             if (t0->kind == RSLC_TY_SAMPLERBUFFER)
                return spv_image_op(e, SpvOpImageFetch, tid, img, args[1], 0, 0, NULL, 0, prec);
-            if (t0->kind == RSLC_TY_SAMPLER2DMSARRAY)
+            if (     t0->kind == RSLC_TY_SAMPLER2DMSARRAY
+                  || (t0->kind == RSLC_TY_SAMPLERX && (t0->cols & RSLC_SX_MS)))
             {
                ops[0] = args[2];
                return spv_image_op(e, SpvOpImageFetch, tid, img, args[1], 0, SPV_IMG_SAMPLE, ops, 1, prec);
@@ -3379,13 +3391,28 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
       }
       case RSLC_BFN_IMAGESTORE:
       {
-         uint32_t w[3];
+         uint32_t w[5];
          w[0] = args[0]; w[1] = args[1]; w[2] = args[2];
+         if (nargs == 4)
+         {
+            /* a multisampled image: (image, coordinate, sample, texel) */
+            w[2] = args[3]; w[3] = SPV_IMG_SAMPLE; w[4] = args[2];
+            if (!spv_fn_inst(e, SpvOpImageWrite, w, 5))
+               return 0;
+            return tid;
+         }
          if (!spv_fn_inst(e, SpvOpImageWrite, w, 3))
             return 0;
          return tid;
       }
       case RSLC_BFN_IMAGELOAD:
+         if (nargs == 3)
+         {
+            /* a multisampled image: the sample is an image operand */
+            uint32_t ops[1];
+            ops[0] = args[2];
+            return spv_image_op(e, SpvOpImageRead, tid, args[0], args[1], 0, SPV_IMG_SAMPLE, ops, 1, prec);
+         }
          return spv_r2(e, SpvOpImageRead, tid, args[0], args[1], prec);
       case RSLC_BFN_IMAGESIZE:
          e->need_imagequery = true;
@@ -5200,6 +5227,12 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    if (e->need_storageimageextended &&
          !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_STORAGEIMAGEEXTENDED))
+      return false;
+   if (e->need_storageimagewritewithoutformat
+         && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, 56u /* StorageImageWriteWithoutFormat */))
+      return false;
+   if (e->need_storageimagemultisample
+         && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, 27u /* StorageImageMultisample */))
       return false;
 #ifdef RSLC_EXTENDED
    if (e->need_inputattachment

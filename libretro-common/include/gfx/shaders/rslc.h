@@ -54,8 +54,12 @@
  * (placed as glslang places it under GL_EXT_scalar_block_layout) or
  * ends in an array of unstated length
  * (GL_EXT_uniform_buffer_unsized_array; SPIR-V only), a block member
- * that says its layout(offset) (SPIR-V only), and
- * gl_FragStencilRefARB (SPIR-V only).
+ * that says its layout(offset) (SPIR-V only),
+ * gl_FragStencilRefARB (SPIR-V only), and one multisampled image read
+ * and written a sample at a time: sampler2DMS and image2DMS with their
+ * i and u forms (SPIR-V only), the two-channel and 16-bit image
+ * formats, and a write-only image that leaves its format out (SPIR-V
+ * only).
  * Without it
  * none of that is accepted, nothing is compiled in for it, and every
  * destination is word for word what it was. RSLC_NO_DXBC omits the
