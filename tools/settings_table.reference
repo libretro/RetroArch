@@ -194,6 +194,7 @@ bool	cheevos_visibility_lboard_cancel	1	1
 bool	menu_texture_mipmapping	1	1
 bool	menu_pause_libretro	1	1
 bool	menu_savestate_resume	1	1
+bool	menu_auto_insert_disk	1	1
 bool	menu_insert_disk_resume	1	1
 bool	menu_mouse_enable	1	0
 bool	menu_pointer_enable	1	1
@@ -933,6 +934,7 @@ bool	cheevos_visibility_lboard_cancel	1	1
 bool	menu_texture_mipmapping	1	1
 bool	menu_pause_libretro	1	1
 bool	menu_savestate_resume	1	1
+bool	menu_auto_insert_disk	1	1
 bool	menu_insert_disk_resume	1	1
 bool	menu_mouse_enable	1	1
 bool	menu_pointer_enable	1	0
@@ -1669,6 +1671,7 @@ bool	cheevos_visibility_lboard_cancel	1	1
 bool	menu_texture_mipmapping	1	1
 bool	menu_pause_libretro	1	1
 bool	menu_savestate_resume	1	1
+bool	menu_auto_insert_disk	1	1
 bool	menu_insert_disk_resume	1	1
 bool	menu_mouse_enable	1	1
 bool	menu_pointer_enable	1	0

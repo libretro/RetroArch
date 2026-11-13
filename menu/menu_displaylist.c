@@ -6935,7 +6935,16 @@ static unsigned menu_displaylist_parse_disk_options(file_list_t *list)
             MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0, NULL))
       count++;
 
-   if (disk_ejected)
+   if (runloop_state_get_ptr()->pending_disk_control_insert)
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INSERT_PENDING),
+               MENU_ENUM_LABEL_DISK_INSERT_PENDING_STR,
+               MENU_ENUM_LABEL_DISK_INSERT_PENDING,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+   else if (disk_ejected)
    {
       if (menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT),
@@ -12536,6 +12545,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PAUSE_NONACTIVE,                                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,                                 PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_AUTO_INSERT_DISK,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,                               PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,                                 PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,                               PARSE_ONLY_UINT,   true},
