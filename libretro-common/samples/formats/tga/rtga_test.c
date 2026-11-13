@@ -30,6 +30,9 @@
  *     simulate with a small buffer and a size_t value that would
  *     pre-patch have truncated; post-patch we get an early
  *     IMAGE_PROCESS_ERROR without even calling the decoder.
+ *
+ *  5. An indexed TGA whose colour map is cut short is refused after
+ *     the surface is made, and the surface is freed (LeakSanitizer).
  */
 
 #include <stdio.h>
@@ -200,6 +203,34 @@ static void test_happy_path_rgb(void)
    rtga_free(rtga);
 }
 
+static void test_cut_palette(void)
+{
+   /* 2x2 indexed, a 256-entry 24-bit colour map of which 9 bytes
+    * are there */
+   uint8_t file[32];
+   rtga_t *rtga;
+   void *out = NULL;
+   unsigned w = 0, h = 0;
+   int rc;
+   int hdr_len;
+   memset(file, 0, sizeof(file));
+
+   hdr_len = make_tga_header(file, 0, 1, 1, 0, 256, 24, 2, 2, 8, 0);
+
+   rtga = rtga_alloc();
+   rtga_set_buf_ptr(rtga, file);
+   rc = rtga_process_image(rtga, &out, (size_t)hdr_len + 9, &w, &h, true);
+   if (rc != IMAGE_PROCESS_ERROR || out)
+   {
+      printf("[ERROR] cut colour map not refused (rc=%d)\n", rc);
+      failures++;
+      free(out);
+   }
+   else
+      printf("[SUCCESS] TGA with a cut colour map refused\n");
+   rtga_free(rtga);
+}
+
 static void test_oversized_size(void)
 {
    /* A size > INT_MAX should be rejected before the (int)size
@@ -234,6 +265,7 @@ int main(void)
    test_empty_indexed_palette();
    test_happy_path_rgb();
    test_oversized_size();
+   test_cut_palette();
 
    if (failures)
    {

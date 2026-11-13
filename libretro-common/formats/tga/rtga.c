@@ -737,17 +737,14 @@ static void rtga_generic_pixels(rtga_t *tga, int npix)
    (void)tga_height;
 }
 
-/* Abandon an in-flight decode.  The END path clears output_image
- * first, transferring ownership, so this only frees what nobody
- * received. */
+/* Abandon an in-flight decode, or one rtga_begin() refused after
+ * making its surface.  The END path clears output_image first,
+ * transferring ownership, so this only frees what nobody received. */
 static void rtga_proc_reset(rtga_t *rtga)
 {
-   if (rtga->phase != RTGA_PHASE_IDLE)
-   {
-      free(rtga->output_image);
-      rtga->output_image = NULL;
-   }
-   rtga->phase   = RTGA_PHASE_IDLE;
+   free(rtga->output_image);
+   rtga->output_image = NULL;
+   rtga->phase        = RTGA_PHASE_IDLE;
 }
 
 /* Smallest prefix that rtga_begin can parse: the 18-byte header plus
