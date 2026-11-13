@@ -1226,7 +1226,8 @@ static bool r3p_tone_counts(r3p_br_t *b, r3p_unit_t *u,
 }
 
 /* A band's frequencies: the first 10 bits, the rest each in the room
- * left above (ascending) or below (descending) the one before */
+ * left above (ascending) or below (descending) the one before - and
+ * one bit even when no room is left */
 static void r3p_tone_freqs(r3p_br_t *b, r3p_tone_t *t, unsigned n)
 {
    unsigned k, desc = n >= 2 ? r3p_bit(b) : 0, prev = r3p_get(b, 10);
@@ -1237,11 +1238,15 @@ static void r3p_tone_freqs(r3p_br_t *b, r3p_tone_t *t, unsigned n)
       if (!desc)
       {
          nb   = r3p_bitlen(1023 - prev);
+         if (!nb)
+            nb = 1;
          prev = 1024 - (1u << nb) + r3p_get(b, nb);
       }
       else
       {
          nb   = r3p_bitlen(prev);
+         if (!nb)
+            nb = 1;
          prev = r3p_get(b, nb);
       }
       t[k].freq = (uint16_t)prev;

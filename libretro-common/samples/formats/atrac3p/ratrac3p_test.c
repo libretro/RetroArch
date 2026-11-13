@@ -23,7 +23,8 @@
 /* ratrac3p against a reference decoder's output for a stereo stream
  * (tonal components, gain points in both channels, explicit and
  * all-band swap and negate masks), a mono one and a synthetic one for
- * the second channel's tonal coding, and a game's 5.1 stream. Then the s16
+ * the second channel's tonal coding, a game's 5.1 stream, and tone
+ * frequencies at the edges. Then the s16
  * output, the fmt chunk, bad frames, reset, and garbage. */
 
 #include <stdio.h>
@@ -67,7 +68,8 @@ static unsigned n_of(unsigned ch)
 }
 
 static double compare(unsigned ch, const uint8_t *s, unsigned ba,
-      unsigned n, const float *ref, unsigned nref, const char *name)
+      unsigned n, const float *ref, unsigned nref, const char *name,
+      double tol)
 {
    static float   pcm[SURROUND_N * RATRAC3P_SAMPLES * 6];
    unsigned       f, i;
@@ -96,7 +98,7 @@ static double compare(unsigned ch, const uint8_t *s, unsigned ba,
          peak = fabs(b);
    }
    ratrac3p_free(d);
-   CHECK(worst < 1e-5, "%s: worst sample error %g", name, worst);
+   CHECK(worst < tol, "%s: worst sample error %g", name, worst);
    /* a quiet stream must not pass by being close to silence */
    CHECK(worst < peak * 1e-4, "%s: worst sample error %g against a peak of %g",
          name, worst, peak);
@@ -106,11 +108,11 @@ static double compare(unsigned ch, const uint8_t *s, unsigned ba,
 static void lane_reference(void)
 {
    double a = compare(2, stream_st, STEREO_BA, STEREO_N, &ref_st[0][0],
-         sizeof(ref_st) / sizeof(ref_st[0]), "stereo");
+         sizeof(ref_st) / sizeof(ref_st[0]), "stereo", 1e-5);
    double b = compare(1, stream_mo, MONO_BA, MONO_N, &ref_mo[0][0],
-         sizeof(ref_mo) / sizeof(ref_mo[0]), "mono");
+         sizeof(ref_mo) / sizeof(ref_mo[0]), "mono", 1e-5);
    double c = compare(2, stream_gha, GHA_BA, GHA_N, &ref_gha[0][0],
-         sizeof(ref_gha) / sizeof(ref_gha[0]), "tonal");
+         sizeof(ref_gha) / sizeof(ref_gha[0]), "tonal", 1e-5);
    printf("stereo %.1f dB, mono %.1f dB, tonal %.1f dB against the reference\n",
          a, b, c);
    CHECK(a > 100.0 && b > 100.0 && c > 100.0, "reference match");
@@ -121,9 +123,26 @@ static void lane_reference(void)
 static void lane_surround(void)
 {
    double a = compare(6, stream_sur, SURROUND_BA, SURROUND_N, &ref_sur[0][0],
-         sizeof(ref_sur) / sizeof(ref_sur[0]), "surround");
+         sizeof(ref_sur) / sizeof(ref_sur[0]), "surround", 1e-5);
    printf("surround %.1f dB against the reference\n", a);
    CHECK(a > 100.0, "surround reference match");
+}
+
+/* A tone frequency with no room left above or below the one before
+ * still takes a bit: without it the rest of the block is read one bit
+ * early for each such tone. */
+static void lane_tone_edges(void)
+{
+   double a = compare(2, stream_top, TOP_BA, 2, &ref_top[0][0],
+         sizeof(ref_top) / sizeof(ref_top[0]), "tones at the top", 1e-5);
+   double b = compare(2, stream_bottom, BOTTOM_BA, 2, &ref_bottom[0][0],
+         sizeof(ref_bottom) / sizeof(ref_bottom[0]), "tones at the bottom",
+         1e-5);
+   double c = compare(2, stream_music, MUSIC_BA, 2, &ref_music[0][0],
+         sizeof(ref_music) / sizeof(ref_music[0]), "music", 1e-4);
+   printf("tones at the top %.1f dB, at the bottom %.1f dB, music %.1f dB"
+         " against the reference\n", a, b, c);
+   CHECK(a > 85.0 && b > 85.0 && c > 85.0, "tone edge reference match");
 }
 
 /* s16 is the float output times 32768, rounded and clamped */
@@ -467,6 +486,7 @@ int main(void)
    coded_band_flags();
    lane_reference();
    lane_surround();
+   lane_tone_edges();
    lane_s16();
    lane_fmt();
    lane_bad_frame();
