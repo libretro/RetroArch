@@ -561,6 +561,7 @@ public slots:
    void onTitleThumbnailClicked();
    void onLogoThumbnailClicked();
    void onThumbnailDockVisibilityChanged(bool visible);
+   void onThumbnailDockShown(int idx);
    void onTabWidgetIndexChanged(int index);
    void deleteCurrentPlaylistItem();
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);

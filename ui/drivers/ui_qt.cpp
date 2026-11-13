@@ -3528,11 +3528,16 @@ void MainWindow::onThumbnailDockVisibilityChanged(bool visible)
    if (i >= 4)
       return;
 
-   QTimer::singleShot(0, this, [this, i]()
-   {
-      if (!m_sidebarPending[i].isEmpty())
-         showSidebarImage(i, m_sidebarPending[i], m_sidebarAcceptDrop);
-   });
+   /* Queued, so the dock has its shown size when the image is asked
+    * for at it. */
+   QMetaObject::invokeMethod(this, "onThumbnailDockShown",
+         Qt::QueuedConnection, Q_ARG(int, i));
+}
+
+void MainWindow::onThumbnailDockShown(int idx)
+{
+   if (idx >= 0 && idx < 4 && !m_sidebarPending[idx].isEmpty())
+      showSidebarImage(idx, m_sidebarPending[idx], m_sidebarAcceptDrop);
 }
 
 /* Show @path in sidebar widget @idx through the model's engine: from
@@ -4051,13 +4056,16 @@ void MainWindow::restoreDockLayout()
       have[i]  = docks[i]
          && companion_dock_row_parse(qt_dock_row(settings, i, &len), &st[i]);
    }
-   /* Qt 6 can keep a dock's old tab grouping alive across a re-add.
-    * Detach every dock before restoring the saved rows, otherwise
-    * the saved dock layout can tabify already-tabbed thumbnail docks
-    * a second time and duplicate their titles. */
+   /* Qt 6 can keep a dock's old tab grouping alive across a re-add, and
+    * tabifying it again from its row duplicates its tab titles. Detach
+    * each dock pass 1 re-adds to a side first; a dock without a row
+    * keeps its default place, and a floating one stays in the layout
+    * so it can be docked again. */
    for (i = 0; i < QT_DOCK_COUNT; i++)
    {
-      if (docks[i] && dockWidgetArea(docks[i]) != Qt::NoDockWidgetArea)
+      if (     have[i]
+            && st[i].area != COMPANION_DOCK_FLOAT
+            && dockWidgetArea(docks[i]) != Qt::NoDockWidgetArea)
          removeDockWidget(docks[i]);
    }
    /* Pass 1: placement, in slot order. addDockWidget() appends to the
@@ -4460,8 +4468,11 @@ static ui_browser_window_t ui_browser_window_qt = {
    "qt"
 };
 
-/* Global wheel policy: wheel scrolls the UI instead of nudging values
- * in spin boxes / combo boxes / sliders. */
+/* Wheel policy: over a spin box, combo box or slider that sits in a
+ * scroll area, the wheel scrolls the area instead of changing the
+ * value. Everything else - an open combo popup, a scroll bar, a
+ * control with no scroll area around it (the grid zoom slider, the
+ * core combo) - takes the wheel as Qt delivers it. */
 class RetroArchQtApplication : public QApplication
 {
 public:
@@ -4475,45 +4486,57 @@ public:
    {
       if (event->type() == QEvent::Wheel && !m_forwardingWheel)
       {
-         QWidget *widget = qobject_cast<QWidget*>(receiver);
-         QWidget *candidate = widget;
-
-         while (candidate)
+         QWidget *viewport = qt_wheel_redirect_target(
+               qobject_cast<QWidget*>(receiver));
+         if (viewport)
          {
-            if (qobject_cast<QAbstractSpinBox*>(candidate)
-                  || qobject_cast<QComboBox*>(candidate)
-                  || qobject_cast<QAbstractSlider*>(candidate))
-            {
-               QWidget *parent = candidate->parentWidget();
-
-               while (parent)
-               {
-                  QAbstractScrollArea *scrollArea =
-                        qobject_cast<QAbstractScrollArea*>(parent);
-                  if (scrollArea && scrollArea->viewport())
-                  {
-                     m_forwardingWheel = true;
-                     QCoreApplication::sendEvent(
-                           scrollArea->viewport(), event);
-                     m_forwardingWheel = false;
-                     return true;
-                  }
-                  parent = parent->parentWidget();
-               }
-
-               event->ignore();
-               return true;
-            }
-
-            candidate = candidate->parentWidget();
+            m_forwardingWheel = true;
+            QCoreApplication::sendEvent(viewport, event);
+            m_forwardingWheel = false;
+            return true;
          }
       }
-
       return QApplication::notify(receiver, event);
    }
 
 private:
    bool m_forwardingWheel;
+
+   /* The viewport of the scroll area a value control under @w sits in,
+    * or NULL to leave the wheel to Qt. Neither walk crosses a window,
+    * which is what keeps a combo's popup list (a window parented to
+    * the combo) scrolling itself. */
+   static QWidget *qt_wheel_redirect_target(QWidget *w)
+   {
+      QWidget *control = NULL;
+      QWidget *p;
+
+      for (p = w; p; p = p->parentWidget())
+      {
+         if (qobject_cast<QScrollBar*>(p))
+            return NULL;
+         if (     qobject_cast<QAbstractSpinBox*>(p)
+               || qobject_cast<QComboBox*>(p)
+               || qobject_cast<QAbstractSlider*>(p))
+         {
+            control = p;
+            break;
+         }
+         if (p->isWindow())
+            return NULL;
+      }
+      if (!control || control->isWindow())
+         return NULL;
+      for (p = control->parentWidget(); p; p = p->parentWidget())
+      {
+         QAbstractScrollArea *area = qobject_cast<QAbstractScrollArea*>(p);
+         if (area && area->viewport())
+            return area->viewport();
+         if (p->isWindow())
+            break;
+      }
+      return NULL;
+   }
 };
 
 static void* ui_application_qt_initialize(void)
@@ -5057,9 +5080,6 @@ static void qt_companion_build_thumbnail_docks(MainWindow *mainwindow)
       MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
       MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO
    };
-   static const char * const dock_obj_names[4] = {
-      "thumbnailDock", "thumbnail2Dock", "thumbnail3Dock", "thumbnail4Dock"
-   };
    QDockWidget *docks[4];
    int i;
 
@@ -5073,12 +5093,12 @@ static void qt_companion_build_thumbnail_docks(MainWindow *mainwindow)
                   SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
 
       docks[i] = new QDockWidget(msg_hash_to_str(labels[i]), mainwindow);
-      qt_dock_configure(docks[i], dock_obj_names[i],
+      qt_dock_configure(docks[i], qt_thumbnail_dock_names[i],
             Qt::RightDockWidgetArea, labels[i], tw);
 
       qt_dock_add_to(mainwindow, docks[i]);
       QObject::connect(docks[i], SIGNAL(visibilityChanged(bool)),
-      mainwindow, SLOT(onThumbnailDockVisibilityChanged(bool)));
+            mainwindow, SLOT(onThumbnailDockVisibilityChanged(bool)));
    }
 
    for (i = 1; i < 4; i++)
