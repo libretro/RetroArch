@@ -40,6 +40,13 @@ enum video_notifications_window
    VIDEO_NOTIFICATIONS_WITH_MENU
 };
 
+enum video_blank_unused
+{
+   VIDEO_BLANK_UNUSED_OFF = 0,
+   VIDEO_BLANK_UNUSED_GAMES,
+   VIDEO_BLANK_UNUSED_ALWAYS
+};
+
 typedef struct video_window_settings
 {
    unsigned pos;
@@ -441,6 +448,17 @@ void video_windows_display_key(const video_window_display_t *displays,
  * and notifications go, and RetroArch's moves. Pure. */
 void video_windows_place(video_windows_host_t *host,
       const video_windows_place_in_t *in, video_windows_route_t *out);
+
+/* Whether unused panels are covered now. @mode a video_blank_unused (any
+ * other value acts as OFF), @game content is loaded, @flipped the hotkey's
+ * flip for it. Pure. */
+bool video_windows_blank_wanted(unsigned mode, bool game, bool flipped);
+
+/* The ids of @displays to cover, in list order, at most
+ * VIDEO_WINDOW_DISPLAYS_MAX into @ids; returns how many. @shown: the
+ * ordinal the Presentation shows on, 0 for none. Pure. */
+unsigned video_windows_blank_ids(const video_window_display_t *displays,
+      unsigned count, unsigned shown, int *ids);
 
 /* A host that decides afresh on its next call */
 void video_windows_host_reset(video_windows_host_t *host);
