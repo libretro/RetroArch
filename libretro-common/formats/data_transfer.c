@@ -875,6 +875,13 @@ bool data_transfer_window_feed_budget(data_transfer_t *dt, size_t tell,
    dt->wtell = tell;
    if (tell > margin && tell - margin > dt->wlo)
       data_transfer_window_advance(dt, tell - margin);
+   /* A frontier short of the margin behind the consumer moves up to it:
+    * the bytes between are behind the consumer and outside its margin,
+    * never read, and filling them in would make a gap of any size
+    * resident - a consumer that starts or jumps far into a large file,
+    * or one left there by the rewind above. */
+   if (dt->map_len && tell > margin && tell - margin > dt->whi)
+      data_transfer_window_rebase(dt, tell - margin);
    hi = tell + lookahead;
    /* The ceiling applies only while the frontier covers the consumer.
     * A frontier behind tell means the consumer's next read lands on

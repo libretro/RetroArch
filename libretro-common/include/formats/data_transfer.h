@@ -259,8 +259,10 @@ bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
  * behind the consumer.  There the bytes at tell itself are what is
  * missing - a lap that landed past the head, an open that rebased -
  * and leaving them for a later tick leaves the consumer's very next
- * read on unresident pages; that catch-up is one unbudgeted extend,
- * exactly what window_feed has always done.  budget == 0 disables
+ * read on unresident pages; that catch-up is one unbudgeted extend
+ * from margin bytes behind tell, never from further back: a frontier
+ * further behind than that moves up first, so a gap the consumer has
+ * passed is never read in.  budget == 0 disables
  * the ceiling entirely, making this window_feed by another name.
  *
  * *resident_hi (may be NULL) reports the sequential bound this call
