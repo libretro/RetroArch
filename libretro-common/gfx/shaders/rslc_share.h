@@ -231,10 +231,10 @@ enum rslc_kw
    RSLC_KW_IMAGE2DARRAY, RSLC_KW_IIMAGE2DARRAY, RSLC_KW_UIMAGE2DARRAY,
    RSLC_KW_IMAGE2DMS, RSLC_KW_IIMAGE2DMS, RSLC_KW_UIMAGE2DMS,
    /* RSLC_EXTENDED: a fragment stage's input attachment */
-   RSLC_KW_SUBPASSINPUT,
+   RSLC_KW_SUBPASSINPUT, RSLC_KW_SUBPASSINPUTMS,
    /* RSLC_EXTENDED qualifiers */
    RSLC_KW_BUFFER, RSLC_KW_READONLY, RSLC_KW_WRITEONLY, RSLC_KW_COHERENT,
-   RSLC_KW_RESTRICT, RSLC_KW_VOLATILE, RSLC_KW_SHARED,
+   RSLC_KW_RESTRICT, RSLC_KW_VOLATILE, RSLC_KW_SHARED, RSLC_KW_PERVERTEX,
    RSLC_KW_COUNT
 };
 
@@ -317,7 +317,7 @@ enum rslc_tkind
 #define RSLC_IMGFMT_R32UI    33
 
 /* The last keyword that names a type. */
-#define RSLC_KW_LAST_TYPE RSLC_KW_SUBPASSINPUT
+#define RSLC_KW_LAST_TYPE RSLC_KW_SUBPASSINPUTMS
 
 /* Every sampler kind: sampler2D, and the RSLC_EXTENDED ones. */
 #define RSLC_TY_IS_SAMPLER(k) ((k) == RSLC_TY_SAMPLER2D \
@@ -387,6 +387,7 @@ enum rslc_storage
 #define RSLC_INTERP_FLAT          1
 #define RSLC_INTERP_NOPERSPECTIVE 2
 #define RSLC_INTERP_SMOOTH        3
+#define RSLC_INTERP_PERVERTEX     4   /* RSLC_EXTENDED: pervertexEXT, each vertex's value; SPIR-V only */
 
 #define RSLC_VQ_CENTROID  1u
 #define RSLC_VQ_SAMPLE    2u
@@ -449,6 +450,8 @@ struct rslc_var
 #define RSLC_BI_POINTCOORD         19   /* RSLC_EXTENDED, fragment */
 #define RSLC_BI_PRIMITIVEID        20   /* RSLC_EXTENDED, geometry gl_PrimitiveIDIn */
 #define RSLC_BI_FRAGSTENCILREF     21   /* RSLC_EXTENDED, fragment out; SPIR-V only */
+#define RSLC_BI_BARYCOORD          22   /* RSLC_EXTENDED, fragment in; SPIR-V only */
+#define RSLC_BI_BARYCOORDNOPERSP   23
 
 /* RSLC_EXTENDED: a geometry stage's primitives, in and out. */
 #define RSLC_GS_POINTS              1
@@ -640,6 +643,7 @@ enum rslc_bfn
    RSLC_BFN_MEMORYBARRIERBUFFER, RSLC_BFN_MEMORYBARRIERIMAGE, RSLC_BFN_GROUPMEMORYBARRIER,
    RSLC_BFN_IMAGESTORE, RSLC_BFN_IMAGELOAD, RSLC_BFN_IMAGESIZE,
    RSLC_BFN_SUBPASSLOAD,   /* RSLC_EXTENDED, fragment */
+   RSLC_BFN_TEXTURESAMPLES,   /* RSLC_EXTENDED: a multisampled sampler's count */
    /* RSLC_EXTENDED: subgroup operations */
    RSLC_BFN_SUBGROUPELECT, RSLC_BFN_SUBGROUPMIN, RSLC_BFN_SUBGROUPMAX,
    RSLC_BFN_COUNT

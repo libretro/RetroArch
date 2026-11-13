@@ -745,6 +745,34 @@ static bool compile(const char *src, enum rslc_dst dst, unsigned version,
 }
 
 /* Whether the module declares the capability. */
+/* GL_EXT_fragment_shader_barycentric: a varying as each vertex's value,
+ * interpolated by the stage itself. */
+static const char fs_barycentric[] =
+   "#version 450\n"
+   "#extension GL_EXT_fragment_shader_barycentric : require\n"
+   "layout(location = 0) pervertexEXT in vec4 tc_raw[3];\n"
+   "layout(location = 1) in vec4 plain;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "vec4 interpolate(const in vec4[3] v)\n"
+   "{\n"
+   "   return v[0] + (v[1] - v[0]) * gl_BaryCoordEXT.y + (v[2] - v[0]) * gl_BaryCoordEXT.z;\n"
+   "}\n"
+   "void main() { col = interpolate(tc_raw) + plain * gl_BaryCoordNoPerspEXT.x; }\n";
+
+/* A multisampled attachment read a sample at a time, and a multisampled
+ * sampler asked how many it has. */
+static const char fs_subpass_ms[] =
+   "#version 450\n"
+   "layout(input_attachment_index = 0, set = 0, binding = 0) uniform subpassInputMS att;\n"
+   "layout(input_attachment_index = 1, set = 0, binding = 1) uniform subpassInput plain;\n"
+   "layout(set = 0, binding = 2) uniform sampler2DMS tex;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   int n = textureSamples(tex);\n"
+   "   col = subpassLoad(att, gl_SampleID) + subpassLoad(plain) + vec4(float(n));\n"
+   "}\n";
+
 static bool has_capability(const uint32_t *w, size_t n, uint32_t cap)
 {
    size_t i = 5;
@@ -1716,6 +1744,74 @@ int main(int argc, char **argv)
       memset(&r, 0, sizeof(r));
       CHECK(!compile(fs_resolve_ms, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
       cur_stage = RSLC_STAGE_FRAGMENT;
+
+      /* pervertexEXT and gl_BaryCoordEXT: FragmentBarycentricKHR (5284)
+       * with its extension, PerVertexKHR (5285) on the one input that asks
+       * for it, the two built-ins (5286, 5287); SPIR-V only */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_barycentric, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "barycentric: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned pervertex = 0, bary = 0, nopersp = 0;
+         CHECK(has_capability(r.spirv, r.spirv_len, 5284));
+         CHECK(count_op(r.spirv, r.spirv_len, 10 /* OpExtension */, &at) == 1);
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            if ((r.spirv[i] & 0xffffu) == 71 /* OpDecorate */)
+            {
+               pervertex += r.spirv[i + 2] == 5285;
+               bary      += r.spirv[i + 2] == 11 && r.spirv[i + 3] == 5286;
+               nopersp   += r.spirv[i + 2] == 11 && r.spirv[i + 3] == 5287;
+            }
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(pervertex == 1 && bary == 1 && nopersp == 1);
+         write_spirv(dir, "barycentric", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_barycentric, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* subpassInputMS: its image type multisampled where the plain one's
+       * is not, the read with a Sample operand; textureSamples is
+       * OpImageQuerySamples (107). SPIR-V only. */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_subpass_ms, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "subpass_ms: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned ms = 0, single = 0, sampled = 0, unsampled = 0;
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            unsigned op = r.spirv[i] & 0xffffu, len = r.spirv[i] >> 16;
+            if (op == 25 /* OpTypeImage */ && r.spirv[i + 3] == 6 /* SubpassData */)
+            {
+               ms     += r.spirv[i + 6] == 1;
+               single += r.spirv[i + 6] == 0;
+            }
+            if (op == 98 /* OpImageRead */)
+            {
+               sampled   += len == 7 && r.spirv[i + 5] == 0x40;
+               unsampled += len == 5;
+            }
+            i += len;
+         }
+         CHECK(ms == 1 && single == 1);
+         CHECK(sampled == 1 && unsampled == 1);
+         CHECK(count_op(r.spirv, r.spirv_len, 107, &at) == 1);
+         CHECK(has_capability(r.spirv, r.spirv_len, 50 /* ImageQuery */));
+         write_spirv(dir, "subpass_ms", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_subpass_ms, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
    }
 
    if (fails)

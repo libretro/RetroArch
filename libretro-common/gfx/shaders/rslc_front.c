@@ -3072,7 +3072,7 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
  *   D1 D3 DC DR DM  sampler1D, sampler3D, samplerCube, samplerCubeArray,
  *             sampler2DMS
  *   H1 H2 HA HC HR  the shadow sampler1D, 2D, 2DArray, Cube, CubeArray
- *   P         subpassInput
+ *   P W       subpassInput, subpassInputMS
  *             (RSLC_EXTENDED; their overloads are absent otherwise)
  *   M         any matrix;  Q square matrix;  T transposed M result
  *   X         any scalar or vector, same type as other X
@@ -3205,7 +3205,8 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_IMAGESTORE, "imageStore", "J i2 g:v;K i3 g:v;L i2 i g:v" },
    { RSLC_BFN_IMAGELOAD, "imageLoad", "J i2:4;K i3:4;L i2 i:4" },
    { RSLC_BFN_IMAGESIZE, "imageSize", "J:i2;K:i3;L:i2" },
-   { RSLC_BFN_SUBPASSLOAD, "subpassLoad", "P:4" },
+   { RSLC_BFN_SUBPASSLOAD, "subpassLoad", "P:4;W i:4" },
+   { RSLC_BFN_TEXTURESAMPLES, "textureSamples", "DM:i;N:i" },
    { RSLC_BFN_SUBGROUPELECT, "subgroupElect", ":b" },
    { RSLC_BFN_SUBGROUPMIN, "subgroupMin", "F:F;I:I;U:U" },
    { RSLC_BFN_SUBGROUPMAX, "subgroupMax", "F:F;I:I;U:U" }
@@ -3311,8 +3312,8 @@ static bool rslc_bsig_match_tok(struct rslc_parser *p, const char *tok, unsigned
       *sbase = t->base;
       return true;
    }
-   else if (len == 1 && tok[0] == 'P')
-      return t->kind == RSLC_TY_SUBPASSINPUT;
+   else if (len == 1 && (tok[0] == 'P' || tok[0] == 'W'))
+      return t->kind == RSLC_TY_SUBPASSINPUT && t->cols == (tok[0] == 'W' ? 2u : 1u);
    else if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'L'))
    {
       if (t->kind != (tok[0] == 'J' ? RSLC_TY_IMAGE2D
@@ -3410,7 +3411,7 @@ static const struct rslc_type *rslc_bsig_param_type(struct rslc_parser *p,
    if (len == 1 && (tok[0] == 'S' || tok[0] == 'A' || tok[0] == 'N' || tok[0] == 'Z'))
       return actual;
 #ifdef RSLC_EXTENDED
-   if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'L' || tok[0] == 'P'))
+   if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'L' || tok[0] == 'P' || tok[0] == 'W'))
       return actual;
    if (len == 2 && (tok[0] == 'D' || tok[0] == 'H'))
       return actual;
@@ -3995,7 +3996,8 @@ static uint32_t rslc_p_var_ref(struct rslc_parser *p, struct rslc_var *v, uint32
       v->precision = rslc_p_default_prec(p, v->type, 0);   /* as glslang: the default applies */
 #ifdef RSLC_EXTENDED
    if (v->storage == RSLC_ST_BUILTIN
-         && (v->builtin == RSLC_BI_POINTCOORD || v->builtin == RSLC_BI_PRIMITIVEID))
+         && (v->builtin == RSLC_BI_POINTCOORD || v->builtin == RSLC_BI_PRIMITIVEID
+            || v->builtin == RSLC_BI_BARYCOORD || v->builtin == RSLC_BI_BARYCOORDNOPERSP))
       p->c->prog.spirv_only = v->name->str;
 #endif
    e = rslc_p_mk(p, RSLC_OP_VAR, v->type, v->id, 0, 0, 0, line, v->precision);
@@ -4800,6 +4802,12 @@ static bool rslc_p_quals(struct rslc_parser *p, struct rslc_quals *q)
          case RSLC_KW_WRITEONLY: q->writeonly = true; break;
          case RSLC_KW_RESTRICT:
          case RSLC_KW_VOLATILE:  break;
+         /* GL_EXT_fragment_shader_barycentric: the input is each
+          * vertex's value, an array of three */
+         case RSLC_KW_PERVERTEX:
+            q->interp = RSLC_INTERP_PERVERTEX;
+            p->c->prog.spirv_only = "pervertexEXT";
+            break;
 #endif
          default:
             return true;
@@ -4868,6 +4876,14 @@ static const struct rslc_type *rslc_p_type_spec(struct rslc_parser *p,
          ty = rslc_type_sampler2d(p->c, RSLC_BASE_UINT);
       else if (k == RSLC_KW_SUBPASSINPUT)
          ty = rslc_type_basic(p->c, RSLC_TY_SUBPASSINPUT, RSLC_BASE_FLOAT, 1, 1);
+      else if (k == RSLC_KW_SUBPASSINPUTMS)
+      {
+         /* a multisampled attachment: cols 2 */
+         ty = rslc_type_basic(p->c, RSLC_TY_SUBPASSINPUT, RSLC_BASE_FLOAT, 1, 2);
+#ifdef RSLC_EXTENDED
+         p->c->prog.spirv_only = "a multisampled subpass input";
+#endif
+      }
       else if (k >= RSLC_KW_IMAGE2D && k <= RSLC_KW_UIMAGE2DMS)
       {
          /* the format is the declaration's layout; it is applied there */
@@ -5073,7 +5089,7 @@ static bool rslc_p_starts_declaration(struct rslc_parser *p)
    s = rslc_tok_sym(p->c, t);
    if (s->kw >= RSLC_KW_CONST && s->kw <= RSLC_KW_STRUCT)
       return true;
-   if (s->kw >= RSLC_KW_BUFFER && s->kw <= RSLC_KW_SHARED)
+   if (s->kw >= RSLC_KW_BUFFER && s->kw <= RSLC_KW_PERVERTEX)
       return true;   /* RSLC_EXTENDED: only seeded there */
    if (s->kw >= RSLC_KW_VOID && s->kw <= RSLC_KW_LAST_TYPE)
    {
@@ -6702,6 +6718,11 @@ static bool rslc_p_stage_builtins(struct rslc_parser *p)
       /* GL_ARB_shader_stencil_export: the stencil reference written by
        * the stage */
       if (!rslc_p_builtin_var(p, "gl_FragStencilRefARB", p->t_int, RSLC_BI_FRAGSTENCILREF, RSLC_DIR_OUT))
+         return false;
+      if (     !rslc_p_builtin_var(p, "gl_BaryCoordEXT", rslc_ty_vecn(p, RSLC_BASE_FLOAT, 3),
+                  RSLC_BI_BARYCOORD, RSLC_DIR_IN)
+            || !rslc_p_builtin_var(p, "gl_BaryCoordNoPerspEXT", rslc_ty_vecn(p, RSLC_BASE_FLOAT, 3),
+                  RSLC_BI_BARYCOORDNOPERSP, RSLC_DIR_IN))
          return false;
       if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN)
             || !rslc_p_builtin_var(p, "gl_HelperInvocation", p->t_bool,

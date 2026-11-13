@@ -430,8 +430,9 @@ static const char *const rslc_keywords[] = {
    "sampler2DMS", "isampler2DMS", "usampler2DMS",
    "image2D", "iimage2D", "uimage2D", "image2DArray", "iimage2DArray", "uimage2DArray",
    "image2DMS", "iimage2DMS", "uimage2DMS",
-   "subpassInput",
-   "buffer", "readonly", "writeonly", "coherent", "restrict", "volatile", "shared"
+   "subpassInput", "subpassInputMS",
+   "buffer", "readonly", "writeonly", "coherent", "restrict", "volatile", "shared",
+   "pervertexEXT"
 #endif
 };
 
@@ -1268,6 +1269,7 @@ struct spv_emit
    bool                 need_geometry;   /* a pixel stage reading gl_Layer */
    bool                 need_clipdistance;
    bool                 writes_fragdepth;   /* the entry point declares DepthReplacing */
+   bool                 need_barycentric;   /* FragmentBarycentricKHR, with its extension */
    bool                 writes_stencilref;  /* and StencilRefReplacingEXT, with its extension */
    bool                 need_culldistance;
    bool                 in_main;
@@ -1674,7 +1676,7 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
          if (!s)
             return 0;
          ti = &e->tinfo[t->id];
-         w[0] = id; w[1] = s; w[2] = 6; w[3] = 0; w[4] = 0; w[5] = 0; w[6] = 2; w[7] = 0;
+         w[0] = id; w[1] = s; w[2] = 6; w[3] = 0; w[4] = 0; w[5] = t->cols == 2; w[6] = 2; w[7] = 0;
          if (!spv_inst(e, SPV_SEC_TYPES, SpvOpTypeImage, w, 8))
             return 0;
          ti->img = id;
@@ -3425,7 +3427,22 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
                rslc_type_basic(e->c, RSLC_TY_VEC, RSLC_BASE_INT, 2, 1), zero, &used);
          if (!coord)
             return 0;
+         if (nargs == 2)
+         {
+            /* a multisampled attachment: the sample is an image operand */
+            uint32_t ops[1];
+            ops[0] = args[1];
+            return spv_image_op(e, SpvOpImageRead, tid, args[0], coord, 0, SPV_IMG_SAMPLE, ops, 1, prec);
+         }
          return spv_r2(e, SpvOpImageRead, tid, args[0], coord, prec);
+      }
+      case RSLC_BFN_TEXTURESAMPLES:
+      {
+         uint32_t img = spv_r1(e, SpvOpImage, e->tinfo[t0->id].img, args[0], 0);
+         if (!img)
+            return 0;
+         e->need_imagequery = true;
+         return spv_r1(e, 107 /* OpImageQuerySamples */, tid, img, prec);
       }
       case RSLC_BFN_SUBGROUPELECT:
       {
@@ -4729,6 +4746,12 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
          return false;
       if (v->interp == RSLC_INTERP_NOPERSPECTIVE && !spv_decorate(e, id, SPV_DEC_NOPERSPECTIVE))
          return false;
+      if (v->interp == RSLC_INTERP_PERVERTEX)
+      {
+         if (!spv_decorate(e, id, 5285u /* PerVertexKHR */))
+            return false;
+         e->need_barycentric = true;
+      }
       if ((v->quals & RSLC_VQ_CENTROID) && !spv_decorate(e, id, SPV_DEC_CENTROID))
          return false;
       if ((v->quals & RSLC_VQ_SAMPLE) && !spv_decorate(e, id, SPV_DEC_SAMPLE))
@@ -4810,6 +4833,8 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       : v->builtin == RSLC_BI_HELPERINVOCATION ? SPV_BI_HELPERINVOCATION
       : v->builtin == RSLC_BI_POINTCOORD ? SPV_BI_POINTCOORD
       : v->builtin == RSLC_BI_FRAGSTENCILREF ? 5014u /* FragStencilRefEXT */
+      : v->builtin == RSLC_BI_BARYCOORD ? 5286u /* BaryCoordKHR */
+      : v->builtin == RSLC_BI_BARYCOORDNOPERSP ? 5287u /* BaryCoordNoPerspKHR */
       : v->builtin == RSLC_BI_PRIMITIVEID ? SPV_BI_PRIMITIVEID : SPV_BI_POSITION;
    if (!ptr)
       return false;
@@ -4820,6 +4845,8 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       e->writes_fragdepth = true;
    if (v->builtin == RSLC_BI_FRAGSTENCILREF)
       e->writes_stencilref = true;
+   if (v->builtin == RSLC_BI_BARYCOORD || v->builtin == RSLC_BI_BARYCOORDNOPERSP)
+      e->need_barycentric = true;
    id = spv_id(e);
    if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpVariable, ptr, id, sc))
       return false;
@@ -5221,6 +5248,8 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    if (e->writes_stencilref && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, 5013u /* StencilExportEXT */))
       return false;
+   if (e->need_barycentric && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, 5284u /* FragmentBarycentricKHR */))
+      return false;
    if (e->need_culldistance && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_CULLDISTANCE))
       return false;
    if (e->need_imagequery && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_IMAGEQUERY))
@@ -5283,6 +5312,9 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
 #endif
    if (e->writes_stencilref && !spv_inst_str(e, SPV_SEC_CAPS, SpvOpExtension, NULL, 0,
             "SPV_EXT_shader_stencil_export", NULL, 0))
+      return false;
+   if (e->need_barycentric && !spv_inst_str(e, SPV_SEC_CAPS, SpvOpExtension, NULL, 0,
+            "SPV_KHR_fragment_shader_barycentric", NULL, 0))
       return false;
    if (!spv_inst_str(e, SPV_SEC_CAPS, SpvOpExtInstImport, &e->ext_id, 1, "GLSL.std.450", NULL, 0))
       return false;
