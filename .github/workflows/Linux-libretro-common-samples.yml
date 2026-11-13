@@ -449,6 +449,10 @@ jobs:
             retro_triple_buffer_test
             retro_waitable_spsc_test
             retro_eventcount_test
+            # Parking on the value of words and waking by address, over
+            # the eventcount: a lost wake leaves a thread asleep and the
+            # test's alarm ends it.
+            retro_waitaddr_test
             # retro_sleep_until_us must never return early against the
             # microsecond clock; the late bound is loose for a loaded
             # runner.
