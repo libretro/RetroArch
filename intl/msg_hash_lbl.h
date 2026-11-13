@@ -2146,6 +2146,10 @@ MSG_HASH(
    "rdb_entry_vehicular"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_TAGS,
+   "rdb_entry_tags"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS,
    "rdb_entry_max_users"
    )

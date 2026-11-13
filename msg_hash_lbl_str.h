@@ -532,6 +532,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_RDB_ENTRY_SETTING_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_RDB_ENTRY_SETTING)
 #define MENU_ENUM_LABEL_RDB_ENTRY_VISUAL_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_RDB_ENTRY_VISUAL)
 #define MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR)
+#define MENU_ENUM_LABEL_RDB_ENTRY_TAGS_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_RDB_ENTRY_TAGS)
 #define MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS)
 #define MENU_ENUM_LABEL_RDB_ENTRY_MD5_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_RDB_ENTRY_MD5)
 #define MENU_ENUM_LABEL_RDB_ENTRY_NAME_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_RDB_ENTRY_NAME)
@@ -2307,6 +2308,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_RDB_ENTRY_SETTING_STR "rdb_entry_setting"
 #define MENU_ENUM_LABEL_RDB_ENTRY_VISUAL_STR "rdb_entry_visual"
 #define MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR_STR "rdb_entry_vehicular"
+#define MENU_ENUM_LABEL_RDB_ENTRY_TAGS_STR "rdb_entry_tags"
 #define MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS_STR "rdb_entry_max_users"
 #define MENU_ENUM_LABEL_RDB_ENTRY_MD5_STR "rdb_entry_md5"
 #define MENU_ENUM_LABEL_RDB_ENTRY_NAME_STR "rdb_entry_name"
