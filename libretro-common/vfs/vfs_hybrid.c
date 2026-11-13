@@ -449,6 +449,32 @@ static int hyb_dirent_stat( struct retro_vfs_dir_handle *dh, int64_t *size, int6
 	return 0;
 }
 
+/* ---- v6: positional reads and writes ---- */
+
+/* -1 on a frontend handle the frontend has no positional I/O for: the
+   caller seeks and reads, as the v6 contract says. */
+static int64_t hyb_read_at( struct retro_vfs_file_handle *fh, void *s, uint64_t len, int64_t offset ) {
+	hyb_file_t *f = (hyb_file_t *)fh;
+	if ( !f )
+		return -1;
+	if ( f->be == HYB_LOCAL )
+		return retro_vfs_file_read_at_impl( (libretro_vfs_implementation_file *)f->h, s, len, offset );
+	if ( hyb_front_version >= 6 && hyb_front->read_at )
+		return hyb_front->read_at( (struct retro_vfs_file_handle *)f->h, s, len, offset );
+	return -1;
+}
+
+static int64_t hyb_write_at( struct retro_vfs_file_handle *fh, const void *s, uint64_t len, int64_t offset ) {
+	hyb_file_t *f = (hyb_file_t *)fh;
+	if ( !f )
+		return -1;
+	if ( f->be == HYB_LOCAL )
+		return retro_vfs_file_write_at_impl( (libretro_vfs_implementation_file *)f->h, s, len, offset );
+	if ( hyb_front_version >= 6 && hyb_front->write_at )
+		return hyb_front->write_at( (struct retro_vfs_file_handle *)f->h, s, len, offset );
+	return -1;
+}
+
 /* the zero-copy sideband: local-backed handles expose their mapping,
    frontend-backed ones honestly cannot */
 static const uint8_t *hyb_mapped_ptr( void *fh, int64_t *len ) {
@@ -479,15 +505,21 @@ static struct retro_vfs_interface hyb_iface = {
 	hyb_stat_64,
 	/* v5 */
 	hyb_set_readonly, hyb_get_mtime, hyb_set_mtime,
-	hyb_copy_begin, hyb_copy_step, hyb_copy_close, hyb_dirent_stat
+	hyb_copy_begin, hyb_copy_step, hyb_copy_close, hyb_dirent_stat,
+	/* v6 */
+	hyb_read_at, hyb_write_at
 };
 
 void vfs_hybrid_init( retro_environment_t env_cb, retro_log_printf_t log ) {
 	struct retro_vfs_interface_info info;
 
-	info.required_interface_version = 5;
+	info.required_interface_version = 6;
 	info.iface = NULL;
 	if ( !env_cb( RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &info ) || !info.iface ) {
+		info.required_interface_version = 5;
+		info.iface = NULL;
+	}
+	if ( !info.iface && ( !env_cb( RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &info ) || !info.iface ) ) {
 		info.required_interface_version = 4;
 		info.iface = NULL;
 	}
@@ -509,7 +541,7 @@ void vfs_hybrid_init( retro_environment_t env_cb, retro_log_printf_t log ) {
 
 	{
 		struct retro_vfs_interface_info ours;
-		ours.required_interface_version = 5;
+		ours.required_interface_version = 6;
 		ours.iface = &hyb_iface;
 		filestream_vfs_init( &ours );
 		path_vfs_init( &ours );
