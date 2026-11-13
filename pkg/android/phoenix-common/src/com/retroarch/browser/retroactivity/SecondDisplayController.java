@@ -22,8 +22,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
 import android.hardware.display.DeviceProductInfo;
 import android.hardware.display.DisplayManager;
 import android.os.Build;
@@ -32,6 +35,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 import android.view.Choreographer;
@@ -51,9 +55,10 @@ import java.util.Arrays;
 import java.util.Collections;
 
 /**
- * The second display: publishes the display list to native code, and
- * shows a Presentation with a SurfaceView on the display native code
- * asks for. Everything here runs on the UI thread.
+ * The second display: publishes the display list to native code, shows
+ * a Presentation with a SurfaceView on the display native code asks for,
+ * and covers the displays it asks to with black. Everything here runs on
+ * the UI thread.
  */
 @TargetApi(17)
 final class SecondDisplayController implements DisplayManager.DisplayListener
@@ -144,6 +149,18 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private boolean topLostFocused;
   /* uptimeMillis() of the last top-resumed loss, -1 since onStop */
   private long topLostAt = -1;
+  /* The displays native code last asked to cover with black */
+  private int[] blankIds = new int[0];
+  /* The black Presentations by display id */
+  private final SparseArray<Presentation> blanks =
+      new SparseArray<Presentation>();
+  /* Displays a black window failed on, skipped until onStart or a list
+   * change. Not failedIds: the game's Presentation may still go there */
+  private final SparseBooleanArray blankFailedIds = new SparseBooleanArray();
+  /* Displays whose black window Android dismissed, until the one shown
+   * again draws: a dismissal before that fails them, as it would recur */
+  private final SparseBooleanArray blankDroppedIds =
+      new SparseBooleanArray();
 
   private final Choreographer.FrameCallback publishFrame =
       new Choreographer.FrameCallback() {
@@ -162,7 +179,11 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
             return;
           }
           if (!list.sameAsBut(published, FLAG_OWN))
+          {
             failedIds.clear();
+            blankFailedIds.clear();
+            blankDroppedIds.clear();
+          }
           publishMarked(list);
         }
       };
@@ -231,6 +252,42 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         }
       };
 
+  private final Runnable reblank = new Runnable() {
+    @Override public void run() {
+      applyBlanks();
+    }
+  };
+
+  /* As onDismiss, for a black window; dismissBlank() takes it out of
+   * blanks first */
+  private final DialogInterface.OnDismissListener onBlankDismiss =
+      new DialogInterface.OnDismissListener() {
+        @Override public void onDismiss(DialogInterface dialog) {
+          int i = blanks.indexOfValue((Presentation)dialog);
+          int id;
+          if (i < 0)
+            return;
+          id = blanks.keyAt(i);
+          blanks.removeAt(i);
+          if (blankDroppedIds.get(id))
+          {
+            blankFailed(id, null);
+            return;
+          }
+          blankDroppedIds.put(id, true);
+          handler.removeCallbacks(reblank);
+          handler.post(reblank);
+        }
+      };
+
+  /* A black window's touches go nowhere */
+  private static final View.OnTouchListener swallowTouches =
+      new View.OnTouchListener() {
+        @Override public boolean onTouch(View v, MotionEvent e) {
+          return true;
+        }
+      };
+
   SecondDisplayController(RetroActivityCommon activity)
   {
     this.activity  = activity;
@@ -245,6 +302,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     /* A loss heard after onStop went with the stop */
     lost    = false;
     failedIds.clear();
+    blankFailedIds.clear();
+    blankDroppedIds.clear();
     displayManager.registerDisplayListener(this, null);
     publish(listDisplays());
     if (wantedId >= 0)
@@ -262,6 +321,9 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       endRefocus();
     endTopGainWait();
     dismiss();
+    /* blankIds stay for onStart */
+    for (int i = blanks.size() - 1; i >= 0; i--)
+      dismissBlank(blanks.keyAt(i));
   }
 
   /** The Activity may be on another display: Android reports the old
@@ -295,6 +357,14 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       showOn(wantedId);
   }
 
+  /** Covers the displays whose ids are @ids with black, and no others;
+   * never RetroArch's own display or a move's target. */
+  void blank(int[] ids)
+  {
+    blankIds = ids != null ? ids : new int[0];
+    applyBlanks();
+  }
+
   /** Moves the Activity onto display @displayId. Native code hears back,
    * by @move, only when the move cannot start; one that starts but
    * never shows is its timeout's to find. */
@@ -306,6 +376,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       moveFailed(displayId, move, null);
       return;
     }
+    /* RetroArch's window must not open under it */
+    dismissBlank(displayId);
     try
     {
       startOn(displayId);
@@ -313,6 +385,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     catch (RuntimeException e)
     {
       moveFailed(displayId, move, e);
+      applyBlanks();
       return;
     }
     /* Only a move that started replaces an earlier one's hold */
@@ -474,6 +547,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     {
       movedId = own;
       moves++;
+      /* No display event may follow to lift a black window off own */
+      publishSoon();
       if (focused)
         endMarkIfQuiet();
       else
@@ -542,6 +617,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   {
     if (displayId == presentationId)
       dismiss();
+    dismissBlank(displayId);
     publishSoon();
   }
 
@@ -685,6 +761,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     }
     published = list;
     nativeDisplaysChanged(count, list.names, list.models);
+    /* RetroArch's own display may have changed */
+    applyBlanks();
   }
 
   private void showOn(int displayId)
@@ -784,6 +862,108 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     if (p == null)
       return;
     /* The display may already be gone */
+    try
+    {
+      p.dismiss();
+    }
+    catch (RuntimeException e)
+    {
+    }
+  }
+
+  /* Presentations sit above the Activity's window: never on its display
+   * or a move's target */
+  private void applyBlanks()
+  {
+    int own;
+    if (!started)
+      return;
+    own = ownDisplayId();
+    for (int i = blanks.size() - 1; i >= 0; i--)
+    {
+      int id = blanks.keyAt(i);
+      if (id == own || id == movedId || !blankAsked(id))
+        dismissBlank(id);
+    }
+    for (int i = 0; i < blankIds.length; i++)
+    {
+      int id = blankIds[i];
+      if (id != own && id != movedId && blanks.get(id) == null
+          && !blankFailedIds.get(id))
+        showBlank(id);
+    }
+  }
+
+  private boolean blankAsked(int displayId)
+  {
+    for (int i = 0; i < blankIds.length; i++)
+      if (blankIds[i] == displayId)
+        return true;
+    return false;
+  }
+
+  /* Never on a display that is off: a window could light it again */
+  private void showBlank(final int displayId)
+  {
+    Display display = displayManager.getDisplay(displayId);
+    Presentation p;
+    Window window;
+    View view;
+
+    if (display == null || !display.isValid()
+        || (display.getFlags() & Display.FLAG_PRESENTATION) == 0
+        || (Build.VERSION.SDK_INT >= 20
+            && display.getState() != Display.STATE_ON))
+      return;
+    p      = new Presentation(activity, display);
+    window = p.getWindow();
+    if (window != null)
+    {
+      window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+          | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+      window.setBackgroundDrawable(new ColorDrawable(Color.BLACK));
+    }
+    p.setCancelable(false);
+    view   = new View(p.getContext()) {
+      @Override protected void onDraw(Canvas canvas) {
+        blankDroppedIds.delete(displayId);
+      }
+    };
+    view.setBackgroundColor(Color.BLACK);
+    view.setOnTouchListener(swallowTouches);
+    p.setContentView(view);
+    p.setOnDismissListener(onBlankDismiss);
+    try
+    {
+      p.show();
+    }
+    catch (WindowManager.BadTokenException e)
+    {
+      blankFailed(displayId, e);
+      return;
+    }
+    catch (WindowManager.InvalidDisplayException e)
+    {
+      blankFailed(displayId, e);
+      return;
+    }
+    blanks.put(displayId, p);
+  }
+
+  private void blankFailed(int displayId, RuntimeException e)
+  {
+    Log.w(TAG, "[SecondDisplay] Cannot blank display " + displayId, e);
+    blankFailedIds.put(displayId, true);
+  }
+
+  private void dismissBlank(int displayId)
+  {
+    int i = blanks.indexOfKey(displayId);
+    Presentation p;
+    if (i < 0)
+      return;
+    p = blanks.valueAt(i);
+    blanks.removeAt(i);
     try
     {
       p.dismiss();
