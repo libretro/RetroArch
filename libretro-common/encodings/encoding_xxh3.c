@@ -199,6 +199,14 @@ static const uint64_t xxh3_init_acc[8] = {
 #define XXH3_NOINLINE
 #endif
 
+#if defined(_MSC_VER)
+#define XXH3_FORCEINLINE __forceinline
+#elif defined(__GNUC__)
+#define XXH3_FORCEINLINE INLINE __attribute__((always_inline))
+#else
+#define XXH3_FORCEINLINE INLINE
+#endif
+
 static INLINE uint64_t xxh3_rd64(const uint8_t *p)
 {
    uint64_t v;
@@ -272,7 +280,8 @@ static INLINE uint64_t xxh3_mix16(const uint8_t *in, const uint8_t *sec,
 
 /* ---- up to 240 octets ---- */
 
-static uint64_t xxh3_0to16(const uint8_t *in, size_t len, uint64_t seed)
+static XXH3_FORCEINLINE uint64_t xxh3_0to16(const uint8_t *in, size_t len,
+      uint64_t seed)
 {
    const uint8_t *k = xxh3_secret;
 
@@ -303,7 +312,8 @@ static uint64_t xxh3_0to16(const uint8_t *in, size_t len, uint64_t seed)
    return xxh3_xxh64_avalanche(seed ^ (xxh3_rd64(k + 56) ^ xxh3_rd64(k + 64)));
 }
 
-static uint64_t xxh3_17to128(const uint8_t *in, size_t len, uint64_t seed)
+static XXH3_FORCEINLINE uint64_t xxh3_17to128(const uint8_t *in, size_t len,
+      uint64_t seed)
 {
    const uint8_t *k   = xxh3_secret;
    uint64_t       acc = (uint64_t)len * XXH3_P64_1;
@@ -328,7 +338,7 @@ static uint64_t xxh3_17to128(const uint8_t *in, size_t len, uint64_t seed)
    return xxh3_avalanche(acc);
 }
 
-static XXH3_NOINLINE uint64_t xxh3_129to240(const uint8_t *in, size_t len,
+static XXH3_FORCEINLINE uint64_t xxh3_129to240(const uint8_t *in, size_t len,
       uint64_t seed)
 {
    const uint8_t *k      = xxh3_secret;
@@ -1240,15 +1250,28 @@ static XXH3_NOINLINE uint64_t xxh3_long(const uint8_t *in, size_t len,
 #endif
 }
 
+/* Seed 0 apart, where the secret folds into constants; each range its
+ * own function, so none pays another's register saves */
+#define XXH3_SHORT(name, body) \
+static XXH3_NOINLINE uint64_t name##_0(const uint8_t *in, size_t len) \
+{ return body(in, len, 0); } \
+static XXH3_NOINLINE uint64_t name##_s(const uint8_t *in, size_t len, \
+      uint64_t seed) \
+{ return body(in, len, seed); }
+XXH3_SHORT(xxh3_short16,  xxh3_0to16)
+XXH3_SHORT(xxh3_short128, xxh3_17to128)
+XXH3_SHORT(xxh3_short240, xxh3_129to240)
+#undef XXH3_SHORT
+
 uint64_t xxh3_64(const void *data, size_t len, uint64_t seed)
 {
    const uint8_t *in = (const uint8_t*)data;
    if (len <= 16)
-      return xxh3_0to16(in, len, seed);
+      return seed ? xxh3_short16_s(in, len, seed) : xxh3_short16_0(in, len);
    if (len <= 128)
-      return xxh3_17to128(in, len, seed);
+      return seed ? xxh3_short128_s(in, len, seed) : xxh3_short128_0(in, len);
    if (len <= 240)
-      return xxh3_129to240(in, len, seed);
+      return seed ? xxh3_short240_s(in, len, seed) : xxh3_short240_0(in, len);
    return xxh3_long(in, len, seed);
 }
 
