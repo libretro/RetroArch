@@ -13,8 +13,10 @@
 #include <time/rtime.h>
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
 
 #include "../../../configuration.h"
+#include "../../../verbosity.h"
 #include "../../../gfx/video_windows.h"
 #include "../../../retroarch.h"
 #include "../../../runloop.h"
@@ -30,13 +32,83 @@
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/gfx_widgets.h"
 #endif
+#ifdef HAVE_VULKAN
+#include "../../../gfx/common/vulkan_common.h"
+#endif
 #include "../../../input/input_driver.h"
 #include "../../../input/input_defines.h"
+#include "../../../input/input_keymaps.h"
 #include "../../../input/input_remapping.h"
 #include "../../../tasks/tasks_internal.h"
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
+#endif
+
+#ifdef HAVE_X11
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/resource.h>
+#include <X11/Xatom.h>
+#ifdef HAVE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+#include "../../../gfx/common/x11_common.h"
+#include "../../../gfx/common/x11_monitors.h"
+#include "../../../gfx/common/dbus_common.h"
+#ifdef HAVE_XRANDR
+#include <X11/extensions/Xrandr.h>
+#endif
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+#define NATIVE_GLX
+#include <GL/glx.h>
+#endif
+#endif
+
+#ifdef HAVE_WAYLAND
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include "../../../gfx/common/wayland_common.h"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#define NATIVE_WIN32
+#include "../../../gfx/common/win32_common.h"
+#include "../../../ui/ui_companion_driver.h"
+#include <queues/task_queue.h>
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+#define NATIVE_WGL
+#endif
+#endif
+
+#if defined(HAVE_SDL3) || defined(HAVE_SDL2)
+#define NATIVE_SDL
+#ifndef SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED
+#endif
+#ifndef HAVE_LIBDECOR_H
+#define NATIVE_NO_LIBDECOR
+#endif
+#ifdef HAVE_SDL3
+#include "../../../gfx/common/sdl3_common.h"
+#else
+#include "../../../gfx/common/sdl2_common.h"
+#include "SDL_syswm.h"
+#endif
+/* SDL 2's SDL_config.h has its own build's HAVE_LIBDECOR_H */
+#ifdef NATIVE_NO_LIBDECOR
+#undef HAVE_LIBDECOR_H
+#endif
+#endif
+
+#if defined(HAVE_X11) || defined(HAVE_WAYLAND) || defined(NATIVE_WIN32) \
+   || defined(NATIVE_SDL)
+#define NATIVE_WINDOWS
+#if defined(HAVE_EGL) && !defined(HAVE_DYNAMIC_EGL)
+#define NATIVE_EGL
+#include <EGL/egl.h>
+#endif
 #endif
 
 static unsigned failures;
@@ -70,7 +142,7 @@ static void load_fixture(const char *text)
 
 static void test_window_config(void)
 {
-   static const char *fields[] = {"mode", "x", "y", "width", "height", "monitor", "fullscreen"};
+   static const char *fields[] = {"mode", "x", "y", "width", "height", "pos_set", "monitor", "fullscreen"};
    static rarch_system_info_t system_info;
    settings_t *settings = config_get_ptr();
    config_file_t *conf;
@@ -87,8 +159,8 @@ static void test_window_config(void)
       CHECK(!settings->arrays.video_screen_display[i][0]);
       CHECK(settings->uints.video_screen_window_dims[i] == 0);
       CHECK(settings->uints.video_screen_window_pos[i] == 0);
-      CHECK(settings->uints.video_screen_window_monitor[i] == 0);
       CHECK(!settings->bools.video_screen_window_fullscreen[i]);
+      CHECK(!settings->bools.video_screen_window_pos_set[i]);
    }
    settings->bools.config_save_minimal = true;
    CHECK(config_save_file(saved_path));
@@ -115,6 +187,7 @@ static void test_window_config(void)
             "video_screen2_window_y = \"-30\"\n"
             "video_screen2_window_width = \"640\"\n"
             "video_screen2_window_height = \"480\"\n"
+            "video_screen2_window_pos_set = \"true\"\n"
             "video_screen2_window_monitor = \"3\"\n"
             "video_screen2_window_fullscreen = \"true\"\n"
             "video_screen8_window_mode = \"0\"\n");
@@ -125,22 +198,32 @@ static void test_window_config(void)
                VIDEO_WINDOW_DISPLAY_OFF));
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(-1200, -30));
       settings->bools.config_save_minimal = minimal != 0;
+      write_config(saved_path, "video_screen2_window_monitor = \"3\"\n");
       CHECK(config_save_file(saved_path));
+      conf = config_file_new_from_path_to_string(saved_path);
+      CHECK(conf != NULL);
+      if (conf)
+      {
+         CHECK(config_get_entry(conf, "video_screen2_window_monitor") == NULL);
+         config_file_free(conf);
+      }
       path_set(RARCH_PATH_CONFIG, saved_path);
       config_load();
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(-1200, -30));
       CHECK(settings->uints.video_screen_window_dims[1] == VIDEO_SCALE_PACK(640, 480));
-      CHECK(settings->uints.video_screen_window_monitor[1] == 3);
       CHECK(settings->bools.video_screen_window_fullscreen[1]);
+      CHECK(settings->bools.video_screen_window_pos_set[1]);
       CHECK(string_is_equal(settings->arrays.video_screen_display[1],
                VIDEO_WINDOW_DISPLAY_OFF));
-      CHECK(!settings->arrays.video_screen_display[7][0]);
+      CHECK(string_is_equal(settings->arrays.video_screen_display[7],
+               VIDEO_WINDOW_DISPLAY_MAIN));
       write_config(override_path, "video_windows_enable = \"false\"\n"
             "video_screen2_display = \"\"\n"
             "video_screen2_window_x = \"0\"\n"
             "video_screen2_window_y = \"0\"\n"
             "video_screen2_window_width = \"800\"\n"
             "video_screen2_window_height = \"600\"\n"
+            "video_screen2_window_pos_set = \"false\"\n"
             "video_screen2_window_monitor = \"0\"\n"
             "video_screen2_window_fullscreen = \"false\"\n");
       CHECK(config_load_override_file(override_path));
@@ -148,6 +231,7 @@ static void test_window_config(void)
       CHECK(!settings->arrays.video_screen_display[1][0]);
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(0, 0));
       CHECK(settings->uints.video_screen_window_dims[1] == VIDEO_SCALE_PACK(800, 600));
+      CHECK(!settings->bools.video_screen_window_pos_set[1]);
       path_set(RARCH_PATH_BASENAME, "window_game.rom");
       CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
       strlcpy(generated_path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(generated_path));
@@ -157,7 +241,8 @@ static void test_window_config(void)
       {
          CHECK(config_get_int(conf, "video_screen2_window_x", &value) && value == 0);
          CHECK(config_get_int(conf, "video_screen2_window_width", &value) && value == 800);
-         CHECK(config_get_int(conf, "video_screen2_window_monitor", &value) && value == 0);
+         CHECK(config_get_entry(conf, "video_screen2_window_monitor") == NULL);
+         CHECK(config_get_bool(conf, "video_screen2_window_pos_set", &flag) && !flag);
          CHECK(config_get_array(conf, "video_screen2_display", text, sizeof(text))
                && !text[0]);
          CHECK(config_get_entry(conf, "video_screen2_window_mode") == NULL);
@@ -169,10 +254,11 @@ static void test_window_config(void)
       CHECK(string_is_equal(settings->arrays.video_screen_display[1],
                VIDEO_WINDOW_DISPLAY_OFF));
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(-1200, -30));
+      CHECK(settings->bools.video_screen_window_pos_set[1]);
       CHECK(config_load_override_file(generated_path));
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(0, 0));
       CHECK(!settings->bools.video_screen_window_fullscreen[1]);
-      CHECK(settings->uints.video_screen_window_monitor[1] == 0);
+      CHECK(!settings->bools.video_screen_window_pos_set[1]);
       CHECK(config_unload_override());
       path_clear(RARCH_PATH_BASENAME);
    }
@@ -541,7 +627,7 @@ static bool menu_has_setting(const char *name)
    if (!list)
       return false;
    menu_displaylist_build_list(list, settings,
-         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+         DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST, false);
    for (i = 0; i < list->size; i++)
       if (list->list[i].label && !strcmp(list->list[i].label, name))
          found = true;
@@ -560,7 +646,7 @@ static bool menu_setting_follows(const char *name, const char *prev)
    if (!list)
       return false;
    menu_displaylist_build_list(list, settings,
-         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+         DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST, false);
    for (i = 1; i < list->size; i++)
       if (     list->list[i].label && list->list[i - 1].label
             && !strcmp(list->list[i].label, name)
@@ -1316,8 +1402,7 @@ static void test_window_display_config(void)
 
    load_fixture("video_screen1_window_mode = \"1\"\n"
          "video_screen1_display = \"DP Screen\"\n"
-         "video_screen2_display = \"Screen-2 2\"\n"
-         "video_screen1_window_monitor = \"0\"\n");
+         "video_screen2_display = \"Screen-2 2\"\n");
    CHECK(string_is_equal(settings->arrays.video_screen_display[0], "DP Screen"));
    CHECK(string_is_equal(settings->arrays.video_screen_display[1], "Screen-2 2"));
    CHECK(!settings->arrays.video_screen_display[2][0]);
@@ -1400,11 +1485,22 @@ static void test_window_migration(void)
    CHECK(string_is_equal(settings->arrays.video_screen_display[2],
             VIDEO_WINDOW_DISPLAY_OFF));
 
-   /* migration: old With RetroArch and Separate become Auto */
+   /* migration: old With RetroArch becomes Main Window past Screen 1;
+    * Screen 1's, Separate and no mode stay Auto */
    load_fixture("video_screen1_window_mode = \"0\"\n"
-         "video_screen2_window_mode = \"1\"\n");
+         "video_screen2_window_mode = \"0\"\n"
+         "video_screen3_window_mode = \"1\"\n"
+         "video_screen4_window_mode = \"2\"\n");
    CHECK(!settings->arrays.video_screen_display[0][0]);
-   CHECK(!settings->arrays.video_screen_display[1][0]);
+   CHECK(string_is_equal(settings->arrays.video_screen_display[1],
+            VIDEO_WINDOW_DISPLAY_MAIN));
+   CHECK(!settings->arrays.video_screen_display[2][0]);
+   CHECK(string_is_equal(settings->arrays.video_screen_display[3],
+            VIDEO_WINDOW_DISPLAY_OFF));
+   CHECK(!settings->arrays.video_screen_display[4][0]);
+   load_fixture("video_screen2_window_mode = \"0\"\n"
+         "video_screen2_display = \"DP-1\"\n");
+   CHECK(string_is_equal(settings->arrays.video_screen_display[1], "DP-1"));
 
    /* migration: a display key wins over the old mode */
    load_fixture("video_screen1_window_mode = \"2\"\n"
@@ -1598,13 +1694,29 @@ static void test_window_layout(void)
    CHECK(layout.num_placements == 0);
 }
 
+static void window_test_display(video_window_display_t *d,
+      unsigned ordinal, unsigned connection, bool own, const char *name)
+{
+   memset(d, 0, sizeof(*d));
+   d->ordinal    = ordinal;
+   d->connection = connection;
+   d->own        = own;
+   d->valid      = true;
+   d->on         = true;
+   d->physical   = true;
+   /* Listed first, as Android lists its default display */
+   d->is_default = ordinal == 1;
+   strlcpy(d->name, name, sizeof(d->name));
+}
+
 /* The frame's snapshot of the screens' windows, and the main window's
  * layout without the screens that have windows of their own */
 static void test_window_frame(void)
 {
+   video_window_display_t monitors[2];
    video_driver_state_t *video_st = video_state_get_ptr();
    settings_t *settings           = config_get_ptr();
-   unsigned restore;
+   unsigned restore, retry;
    window_test_begin();
    window_test_flags = 1u << GFX_CTX_FLAGS_VIDEO_VIEWS;
    window_test_run();
@@ -1634,6 +1746,12 @@ static void test_window_frame(void)
    CHECK(window_test_seen.settings[1].mode == VIDEO_WINDOW_HIDDEN);
    CHECK(window_test_seen.settings[0].mode == VIDEO_WINDOW_ATTACHED);
    CHECK(window_test_seen.settings[1].pos == VIDEO_POS_PACK(-20, 30));
+   /* Game Screen 1 Off too: the desktop resolves without a list */
+   strlcpy(settings->arrays.video_screen_display[0], VIDEO_WINDOW_DISPLAY_OFF,
+         sizeof(settings->arrays.video_screen_display[0]));
+   window_test_run();
+   CHECK(window_test_seen.plan.hidden_mask & 1u);
+   settings->arrays.video_screen_display[0][0] = '\0';
    /* The layout's settings; a stereo mode places screen 1 once an eye */
    settings->bools.video_scale_integer         = true;
    settings->bools.video_force_aspect          = false;
@@ -1650,17 +1768,41 @@ static void test_window_frame(void)
    settings->uints.video_stereo_mode           = VIDEO_STEREO_MODE_2D;
    settings->bools.video_stereo_swap_eyes      = false;
 
-   /* A close attaches a screen until the windows are restored */
+   /* A close attaches a screen over a new list, until the windows are
+    * restored */
    settings->arrays.video_screen_display[1][0] = '\0';
-   video_st->windows_forced_attached           = 2u;
+   video_st->windows_closed_attached           = 2u;
    window_test_run();
    CHECK(window_test_placements() == 2);
    CHECK(window_test_seen.plan.main_mask == 3u);
    CHECK(window_test_seen.restore == restore);
+   retry = window_test_seen.retry;
+   window_test_display(&monitors[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&monitors[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   monitors[0].monitor = monitors[1].monitor = true;
+   video_driver_publish_window_displays(monitors, 2);
+   window_test_run();
+   CHECK(window_test_seen.monitors);
+   CHECK(window_test_seen.retry == retry + 1);
+   CHECK(window_test_seen.restore == restore);
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   CHECK(video_st->windows_closed_attached == 2u);
    video_driver_restore_windows();
-   CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 0u);
    window_test_run();
    CHECK(window_test_placements() == 1);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.restore == restore + 1);
+   CHECK(window_test_seen.retry == retry + 2);
+   /* A failure only until the next list */
+   video_st->windows_forced_attached = 2u;
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   video_driver_publish_window_displays(NULL, 0);
+   window_test_run();
+   CHECK(video_st->windows_forced_attached == 0u);
    CHECK(window_test_seen.plan.separate_mask == 2u);
    CHECK(window_test_seen.restore == restore + 1);
 
@@ -1668,22 +1810,246 @@ static void test_window_frame(void)
    window_test_run();
    CHECK(window_test_placements() == 2);
    CHECK(window_test_handed == NULL);
+   /* Content unloads (video_driver_clear_views()): none stay closed */
+   video_st->windows_forced_attached = 2u;
+   video_st->windows_closed_attached = 2u;
+   restore                           = video_st->windows_restore;
+   window_test_end();
+   CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 0u);
+   CHECK(video_st->windows_restore == restore + 1);
+}
+
+/* Desktop monitors: each screen's window where its Display puts it,
+ * with no Presentation, move or UI routing */
+static void test_window_monitors_frame(void)
+{
+   video_window_display_t displays[2];
+   settings_t *settings = config_get_ptr();
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   displays[0].monitor = displays[1].monitor = true;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* Auto: Game Screen 2 on the monitor RetroArch is not on */
+   window_test_run();
+   CHECK(window_test_seen.monitors);
+   CHECK(window_test_seen.display == 0);
+   CHECK(window_test_seen.plan.main_mask == 1u);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.window_screens[1] == 2u);
+   CHECK(window_test_seen.window_ui[1] == 0u);
+   CHECK(window_test_seen.settings[1].mode == VIDEO_WINDOW_SEPARATE);
+   CHECK(window_test_seen.settings[1].monitor == 2);
+   /* A size alone keeps Auto's monitor; bounds with a position set, the
+    * origin too, go where they are (the platform's pick) */
+   settings->uints.video_screen_window_pos[1]  = VIDEO_POS_PACK(0, 0);
+   settings->uints.video_screen_window_dims[1] = VIDEO_SCALE_PACK(640, 480);
+   window_test_run();
+   CHECK(!window_test_seen.settings[1].pos_set);
+   CHECK(window_test_seen.settings[1].monitor == 2);
+   settings->bools.video_screen_window_pos_set[1] = true;
+   window_test_run();
+   CHECK(window_test_seen.settings[1].pos_set);
+   CHECK(window_test_seen.settings[1].monitor == 0);
+   settings->bools.video_screen_window_pos_set[1] = false;
+   settings->uints.video_screen_window_dims[1]    = 0;
+   /* RetroArch's own monitor, by name */
+   strlcpy(settings->arrays.video_screen_display[1], "DP-1",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.settings[1].monitor == 1);
+   /* Main Window */
+   strlcpy(settings->arrays.video_screen_display[1],
+         VIDEO_WINDOW_DISPLAY_MAIN,
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   CHECK(window_test_seen.plan.separate_mask == 0u);
+   CHECK(window_test_placements() == 2);
+   /* Game Screen 1 on a monitor: a window past the content's screens */
+   strlcpy(settings->arrays.video_screen_display[0], "HDMI-A-1",
+         sizeof(settings->arrays.video_screen_display[0]));
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 1u);
+   CHECK(window_test_seen.plan.main_mask == 2u);
+   CHECK(window_test_seen.window_screens[2] == 1u);
+   CHECK(window_test_seen.window_screens[1] == 0u);
+   CHECK(window_test_seen.settings[2].mode == VIDEO_WINDOW_SEPARATE);
+   CHECK(window_test_seen.settings[2].monitor == 2);
+   /* Off */
+   strlcpy(settings->arrays.video_screen_display[0],
+         VIDEO_WINDOW_DISPLAY_OFF,
+         sizeof(settings->arrays.video_screen_display[0]));
+   window_test_run();
+   CHECK(window_test_seen.plan.hidden_mask == 1u);
+   CHECK(window_test_seen.settings[0].mode == VIDEO_WINDOW_HIDDEN);
+   /* A monitor that is gone: Auto, the main window for Game Screen 1 */
+   strlcpy(settings->arrays.video_screen_display[0], "DP-9",
+         sizeof(settings->arrays.video_screen_display[0]));
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   /* The listed ordinals, and by window id those that show a screen
+    * whose Display names one */
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "RA-A");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "RA-B");
+   displays[0].monitor = displays[1].monitor = true;
+   video_driver_publish_window_displays(displays, 2);
+   settings->arrays.video_screen_display[0][0] = '\0';
+   strlcpy(settings->arrays.video_screen_display[1], "RA-B",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.monitors_present == 3u);
+   CHECK(window_test_seen.window_named == 2u);
+   video_driver_publish_window_displays(displays, 1);
+   window_test_run();
+   CHECK(window_test_seen.monitors_present == 1u);
+   CHECK(window_test_seen.window_named == 0u);
+   /* Game Screen 1's spare id */
+   video_driver_publish_window_displays(displays, 2);
+   strlcpy(settings->arrays.video_screen_display[0], "RA-B",
+         sizeof(settings->arrays.video_screen_display[0]));
+   strlcpy(settings->arrays.video_screen_display[1],
+         VIDEO_WINDOW_DISPLAY_MAIN,
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.window_screens[2] == 1u);
+   CHECK(window_test_seen.window_named == 4u);
+   settings->arrays.video_screen_display[0][0] = '\0';
+   settings->arrays.video_screen_display[1][0] = '\0';
+   video_driver_publish_window_displays(NULL, 0);
+   window_test_run();
    window_test_end();
 }
 
-static void window_test_display(video_window_display_t *d,
-      unsigned ordinal, unsigned connection, bool own, const char *name)
+/* Window @window drawn from the last snapshot, as its renderer does */
+static void window_test_draw_window(unsigned window, unsigned generation)
 {
-   memset(d, 0, sizeof(*d));
-   d->ordinal    = ordinal;
-   d->connection = connection;
-   d->own        = own;
-   d->valid      = true;
-   d->on         = true;
-   d->physical   = true;
-   /* Listed first, as Android lists its default display */
-   d->is_default = ordinal == 1;
-   strlcpy(d->name, name, sizeof(d->name));
+   video_views_layout_t layout;
+   video_driver_window_layout_screens(&window_test_seen,
+         window_test_seen.window_screens[window],
+         VIDEO_SCALE_PACK(640, 480), &layout);
+   video_driver_publish_window_layout(window, generation,
+         window_test_seen.display, &layout, &window_test_seen.core,
+         window_test_seen.core_dims, VIDEO_SCALE_PACK(640, 480));
+}
+
+static bool window_test_has_focus;
+
+static bool window_test_focus(void *data)
+{
+   (void)data;
+   return window_test_has_focus;
+}
+
+/* The fullscreen hotkey: the screen whose own window has the keyboard
+ * focus gets its Fullscreen flipped, as its row does; otherwise, with
+ * RetroArch in the background, and on a display's Presentation, the
+ * main window's is the one toggled */
+static void test_window_fullscreen_hotkey(void)
+{
+   video_window_display_t displays[2];
+   unsigned gen, edit;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   bool *fullscreen               =
+      settings->bools.video_screen_window_fullscreen;
+   bool main_fullscreen           = settings->bools.video_fullscreen;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   displays[0].monitor = displays[1].monitor = true;
+   fullscreen[0]       = fullscreen[1]       = false;
+   window_test_begin();
+   window_test_driver.focus = window_test_focus;
+   window_test_has_focus    = true;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.window_screens[1] == 2u);
+   gen = video_driver_window_generation();
+   /* Drawn without the focus */
+   window_test_draw_window(1, gen);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   /* Focused: Game Screen 2's, and its window follows the edit */
+   video_driver_publish_window_focus(1, gen, true);
+   window_test_draw_window(1, gen);
+   edit             = video_st->windows_edit[1];
+   settings->flags &= ~SETTINGS_FLG_MODIFIED;
+   CHECK(video_driver_window_fullscreen_toggle());
+   CHECK(fullscreen[1] && !fullscreen[0]);
+   CHECK(settings->bools.video_fullscreen == main_fullscreen);
+   CHECK(settings->flags & SETTINGS_FLG_MODIFIED);
+   CHECK(video_st->windows_edit[1] == edit + 1);
+   window_test_run();
+   CHECK(window_test_seen.settings[1].fullscreen);
+   CHECK(video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   /* A pad hotkey with RetroArch in the background, the loss not yet
+    * published */
+   window_test_has_focus = false;
+   CHECK(!video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   window_test_has_focus = true;
+   /* Lost, not drawn since: minimised or hidden, or a repeated frame */
+   video_driver_publish_window_focus(1, gen, false);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   /* Let go of while focused: neither it nor the next window in its id
+    * has the focus */
+   video_driver_publish_window_focus(1, gen, true);
+   video_driver_publish_window_layout(1, 0, 0, NULL, NULL, 0, 0);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   gen = video_driver_window_generation();
+   window_test_draw_window(1, gen);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   /* Game Screen 1's own window, by its spare id */
+   strlcpy(settings->arrays.video_screen_display[0], "HDMI-A-1",
+         sizeof(settings->arrays.video_screen_display[0]));
+   strlcpy(settings->arrays.video_screen_display[1],
+         VIDEO_WINDOW_DISPLAY_MAIN,
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.window_screens[2] == 1u);
+   gen = video_driver_window_generation();
+   /* ... focused, not drawn since */
+   window_test_draw_window(2, gen);
+   video_driver_publish_window_focus(2, gen, true);
+   CHECK(video_driver_window_fullscreen_toggle());
+   CHECK(fullscreen[0] && !fullscreen[1]);
+   fullscreen[0] = false;
+   /* Screen windows off */
+   settings->bools.video_windows_enable = false;
+   window_test_run();
+   CHECK(!video_driver_window_fullscreen_toggle());
+   settings->bools.video_windows_enable = true;
+   video_driver_publish_window_layout(2, 0, 0, NULL, NULL, 0, 0);
+   settings->arrays.video_screen_display[0][0] = '\0';
+   settings->arrays.video_screen_display[1][0] = '\0';
+   /* A display's Presentation, which has no windowed mode */
+   displays[0].monitor = displays[1].monitor = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 2u);
+   gen = video_driver_window_generation();
+   video_driver_publish_window_focus(VIDEO_WINDOWS_PRESENTATION, gen,
+         true);
+   window_test_draw_window(VIDEO_WINDOWS_PRESENTATION, gen);
+   CHECK(!video_driver_window_fullscreen_toggle());
+   CHECK(!fullscreen[1]);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   video_driver_publish_window_displays(NULL, 0);
+   window_test_run();
+   input_driver_hold_clear();
+   window_test_end();
 }
 
 /* A platform's display list routes the Separate screens into one
@@ -1695,7 +2061,8 @@ static void test_window_displays(void)
    video_window_display_t many[VIDEO_WINDOW_DISPLAYS_MAX + 1];
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX + 1];
    video_views_layout_t layout;
-   unsigned restore;
+   video_windows_frame_t before;
+   unsigned restore, retry;
    unsigned i;
    /* The Thor: its own panel, then Screen-2 */
    window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
@@ -1711,14 +2078,17 @@ static void test_window_displays(void)
    CHECK(window_test_seen.display == 0);
    CHECK(window_test_seen.window_screens[1] == 2u);
    restore = window_test_seen.restore;
+   retry   = window_test_seen.retry;
 
+   /* A new list retries, and restores nothing */
    video_driver_publish_window_displays(displays, 2);
    window_test_run();
    CHECK(window_test_seen.display == 2);
    CHECK(window_test_seen.plan.separate_mask == 2u);
    CHECK(window_test_seen.window_screens[0] == 0u);
    CHECK(window_test_seen.window_screens[1] == 2u);
-   CHECK(window_test_seen.restore == restore + 1);
+   CHECK(window_test_seen.retry == retry + 1);
+   CHECK(window_test_seen.restore == restore);
    CHECK(window_test_placements() == 1);
    video_driver_window_layout_screens(&window_test_seen, 2u,
          VIDEO_SCALE_PACK(400, 200), &layout);
@@ -1736,17 +2106,71 @@ static void test_window_displays(void)
    CHECK(got[1].ordinal == 0);
    /* A list is taken once */
    window_test_run();
-   CHECK(window_test_seen.restore == restore + 1);
+   CHECK(window_test_seen.retry == retry + 1);
 
-   /* A failure from a frame laid out before the last restore is not
-    * held against the window the restore asked for */
-   video_driver_attach_windows(2u, window_test_seen.restore - 1);
+   /* A failure from a frame laid out before the last retry is not
+    * held against the window the retry asked for */
+   video_driver_attach_windows(2u, window_test_seen.retry - 1);
    window_test_run();
    CHECK(window_test_seen.plan.separate_mask == 2u);
    CHECK(window_test_seen.window_screens[1] == 2u);
 
+   /* ... nor a close from before the last restore */
+   before         = window_test_seen;
+   before.restore = window_test_seen.restore - 1;
+   video_driver_close_windows(&before, 2u);
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(video_state_get_ptr()->windows_closed_attached == 0u);
+
+   /* Closed from its title bar: attached over a new list, until a
+    * restore */
+   video_driver_close_windows(&window_test_seen, 2u);
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   CHECK(window_test_seen.window_screens[1] == 0u);
+   CHECK(video_state_get_ptr()->windows_closed_attached == 2u);
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   video_driver_restore_windows();
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.window_screens[1] == 2u);
+
+   /* ... or an edit of its rows: a close from a frame before the edit,
+    * sent before it or after, is dropped */
+   before = window_test_seen;
+   video_driver_close_windows(&before, 2u);
+   video_driver_edit_window(1);
+   window_test_run();
+   CHECK(video_state_get_ptr()->windows_closed_attached == 0u);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   before = window_test_seen;
+   video_driver_edit_window(1);
+   video_driver_close_windows(&before, 2u);
+   window_test_run();
+   CHECK(video_state_get_ptr()->windows_closed_attached == 0u);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   /* One from a frame that carries the edit holds */
+   video_driver_close_windows(&window_test_seen, 2u);
+   window_test_run();
+   CHECK(video_state_get_ptr()->windows_closed_attached == 2u);
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   /* An edit of Game Screen 1 leaves Game Screen 2's close */
+   video_driver_restore_windows();
+   window_test_run();
+   video_driver_close_windows(&window_test_seen, 3u);
+   video_driver_edit_window(0);
+   window_test_run();
+   CHECK(video_state_get_ptr()->windows_closed_attached == 2u);
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   video_driver_restore_windows();
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+
    /* The renderer could not make it: attached until the next list */
-   video_driver_attach_windows(2u, window_test_seen.restore);
+   video_driver_attach_windows(2u, window_test_seen.retry);
    window_test_run();
    CHECK(window_test_seen.plan.main_mask == 3u);
    CHECK(window_test_seen.window_screens[1] == 0u);
@@ -2588,6 +3012,404 @@ static void window_test_free(void *data)
    (void)data;
 }
 
+#ifdef HAVE_THREADS
+static retro_atomic_int_t window_test_bounds_reading;
+static retro_atomic_int_t window_test_bounds_done;
+#endif
+/* The edit count window 2 is made for while it is dragged */
+static unsigned window_test_bounds_edit;
+
+/* Publishes window 2's bounds as a renderer does through a drag, every
+ * other one a move */
+static void window_test_publish_bounds(void *data)
+{
+   unsigned count = *(const unsigned*)data;
+   unsigned i;
+#ifdef HAVE_THREADS
+   while (!retro_atomic_load_acquire_int(&window_test_bounds_reading))
+      ;
+#endif
+   for (i = 1; i <= count; i++)
+      video_driver_publish_window_bounds(2, 4u, window_test_bounds_edit,
+            VIDEO_POS_PACK(i % 1000, 100), VIDEO_SCALE_PACK(200 + i, 300),
+            (i & 1) != 0);
+#ifdef HAVE_THREADS
+   retro_atomic_store_release_int(&window_test_bounds_done, 1);
+#endif
+}
+
+/* The bounds a renderer forwards for a window the user moved reach its
+ * screen's settings, and only those */
+static void test_window_bounds_saved(void)
+{
+   static struct retro_video_view views[3];
+   static video_views_layout_t layout;
+   static video_window_settings_t seen;
+   struct retro_video_views map;
+   video_window_display_t displays[2];
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   unsigned saved_pos[3], saved_dims[3];
+   bool saved_pos_set[3];
+   bool saved_save_positions      = settings->bools.video_window_save_positions;
+   unsigned count                 = 2000;
+   unsigned i, gen, spare, edit;
+   uint32_t before, after;
+   for (i = 0; i < 3; i++)
+   {
+      saved_pos[i]     = settings->uints.video_screen_window_pos[i];
+      saved_dims[i]    = settings->uints.video_screen_window_dims[i];
+      saved_pos_set[i] = settings->bools.video_screen_window_pos_set[i];
+   }
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "RA-A");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "RA-B");
+   displays[0].monitor = displays[1].monitor = true;
+   window_test_begin();
+   /* Three screens: Game Screen 3 named on RA-B, in window 2 */
+   memset(views, 0, sizeof(views));
+   views[0].width  = 4;
+   views[0].height = views[1].height = views[2].height = 2;
+   views[1].x      = 4;
+   views[1].width  = views[2].width = 2;
+   views[1].screen = 1;
+   views[2].x      = 6;
+   views[2].screen = 2;
+   memset(&map, 0, sizeof(map));
+   map.views     = views;
+   map.num_views = 3;
+   CHECK(video_driver_set_views(&map));
+   settings->arrays.video_screen_display[0][0] = '\0';
+   strlcpy(settings->arrays.video_screen_display[2], "RA-B",
+         sizeof(settings->arrays.video_screen_display[2]));
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.monitors);
+   CHECK(window_test_seen.window_screens[2] == 4u);
+   CHECK(window_test_seen.settings[2].monitor == 2);
+   gen = video_driver_window_generation();
+   video_driver_window_layout(&window_test_seen, 2,
+         VIDEO_SCALE_PACK(800, 480), &layout);
+   video_driver_publish_window_layout(2, gen, 2, &layout,
+         &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(800, 480));
+   CHECK(video_driver_translate_window_point(2, gen, 400, 240, true,
+            &before));
+
+   /* Moved: pos, size and pos_set, with no edit and the Display kept */
+   edit             = window_test_seen.settings[2].edit;
+   settings->flags &= ~SETTINGS_FLG_MODIFIED;
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(300, 200), VIDEO_SCALE_PACK(500, 400), true);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[2]
+         == VIDEO_POS_PACK(300, 200));
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(500, 400));
+   CHECK(settings->bools.video_screen_window_pos_set[2]);
+   CHECK(settings->flags & SETTINGS_FLG_MODIFIED);
+   seen = window_test_seen.settings[2];
+   CHECK(seen.dims == VIDEO_SCALE_PACK(500, 400) && seen.pos_set);
+   CHECK(seen.edit == edit);
+   CHECK(string_is_equal(settings->arrays.video_screen_display[2], "RA-B"));
+   CHECK(seen.monitor == 2);
+   /* The layout came with them, so input still maps the window */
+   CHECK(video_driver_translate_window_point(2, gen, 400, 240, true,
+            &after));
+   CHECK(after == before);
+
+   /* Resized only: the position stays */
+   settings->uints.video_screen_window_pos[2] = VIDEO_POS_PACK(1, 1);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(9, 9), VIDEO_SCALE_PACK(600, 450), false);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(600, 450));
+   CHECK(settings->uints.video_screen_window_pos[2] == VIDEO_POS_PACK(1, 1));
+   /* The same again, and a move to where it is: nothing modified */
+   settings->flags &= ~SETTINGS_FLG_MODIFIED;
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(9, 9), VIDEO_SCALE_PACK(600, 450), false);
+   window_test_run();
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(1, 1), VIDEO_SCALE_PACK(600, 450), true);
+   window_test_run();
+   CHECK(!(settings->flags & SETTINGS_FLG_MODIFIED));
+   /* Taken once: a frame with nothing new writes nothing */
+   settings->uints.video_screen_window_dims[2] = VIDEO_SCALE_PACK(10, 10);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(10, 10));
+   /* Nor do the layouts after them, in whichever slot */
+   for (i = 0; i < 3; i++)
+   {
+      video_driver_publish_window_layout(2, gen, 2, &layout,
+            &window_test_seen.core, window_test_seen.core_dims,
+            VIDEO_SCALE_PACK(800, 480));
+      window_test_run();
+   }
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(10, 10));
+
+   /* Game Screen 1's spare id saves to Game Screen 1 */
+   spare = video_windows_spare_window(window_test_seen.plan.separate_mask
+         | 1u, window_test_seen.core.num_screens);
+   CHECK(spare == 3);
+   video_driver_publish_window_bounds(spare, 1u, video_st->windows_edit[0],
+         VIDEO_POS_PACK(40, 50), VIDEO_SCALE_PACK(320, 240), true);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[0] == VIDEO_POS_PACK(40, 50));
+   CHECK(settings->uints.video_screen_window_dims[0]
+         == VIDEO_SCALE_PACK(320, 240));
+   CHECK(settings->bools.video_screen_window_pos_set[0]);
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(10, 10));
+
+   /* Saved whatever Remember Window Position says */
+   settings->bools.video_window_save_positions = false;
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(310, 210), VIDEO_SCALE_PACK(510, 410), true);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[2]
+         == VIDEO_POS_PACK(310, 210));
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(510, 410));
+   settings->bools.video_window_save_positions = saved_save_positions;
+
+   /* Wayland: a size alone never sets the position */
+   settings->bools.video_screen_window_pos_set[2] = false;
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         0, VIDEO_SCALE_PACK(520, 420), false);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(520, 420));
+   CHECK(!settings->bools.video_screen_window_pos_set[2]);
+   CHECK(!window_test_seen.settings[2].pos_set);
+
+   /* No window, no screens or no size: nothing */
+   video_driver_publish_window_bounds(0, 4u, video_st->windows_edit[2],
+         0, VIDEO_SCALE_PACK(1, 1), true);
+   video_driver_publish_window_bounds(RETRO_VIDEO_VIEWS_MAX, 4u,
+         video_st->windows_edit[2], 0, VIDEO_SCALE_PACK(1, 1), true);
+   video_driver_publish_window_bounds(2, 0u, 0, 0, VIDEO_SCALE_PACK(1, 1),
+         true);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         0, 0, true);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(520, 420));
+   CHECK(!settings->bools.video_screen_window_pos_set[2]);
+
+   /* A quit's config save takes what no frame has */
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(320, 220), VIDEO_SCALE_PACK(530, 430), true);
+   video_driver_take_window_bounds();
+   CHECK(settings->uints.video_screen_window_pos[2]
+         == VIDEO_POS_PACK(320, 220));
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(530, 430));
+   CHECK(settings->bools.video_screen_window_pos_set[2]);
+
+   /* A driver's teardown keeps what its last frames left, and the next
+    * one's counts start again, and are taken */
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(330, 230), VIDEO_SCALE_PACK(540, 440), true);
+   window_test_driver.free = window_test_free;
+   video_driver_free_internal();
+   CHECK(settings->uints.video_screen_window_pos[2]
+         == VIDEO_POS_PACK(330, 230));
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(540, 440));
+   video_st->data = &window_test_driver;
+   video_st->poke = &window_test_poke;
+   video_driver_publish_window_bounds(spare, 1u, video_st->windows_edit[0],
+         VIDEO_POS_PACK(60, 70), VIDEO_SCALE_PACK(330, 250), true);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[0] == VIDEO_POS_PACK(60, 70));
+   CHECK(settings->uints.video_screen_window_dims[0]
+         == VIDEO_SCALE_PACK(330, 250));
+
+   /* A drag on the context's thread beside the frames: the last one
+    * wins */
+   window_test_bounds_edit = video_st->windows_edit[2];
+#ifdef HAVE_THREADS
+   {
+      retro_time_t until;
+      sthread_t *thread;
+      retro_atomic_store_release_int(&window_test_bounds_reading, 0);
+      retro_atomic_store_release_int(&window_test_bounds_done, 0);
+      thread = sthread_create(window_test_publish_bounds, &count);
+      CHECK(thread != NULL);
+      until = cpu_features_get_time_usec() + 10000000;
+      while (     thread
+            && !retro_atomic_load_acquire_int(&window_test_bounds_done)
+            && cpu_features_get_time_usec() < until)
+      {
+         window_test_run();
+         retro_atomic_store_release_int(&window_test_bounds_reading, 1);
+      }
+      if (thread)
+         sthread_join(thread);
+   }
+#else
+   window_test_publish_bounds(&count);
+#endif
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_dims[2]
+         == VIDEO_SCALE_PACK(200 + count, 300));
+   CHECK(settings->uints.video_screen_window_pos[2]
+         == VIDEO_POS_PACK((count - 1) % 1000, 100));
+   CHECK(settings->bools.video_screen_window_pos_set[2]);
+
+   /* The list test_window_monitors_frame() left */
+   video_driver_publish_window_displays(displays, 1);
+   window_test_run();
+   video_driver_publish_window_layout(2, 0, 0, NULL, NULL, 0, 0);
+   window_test_end();
+   settings->arrays.video_screen_display[2][0] = '\0';
+   for (i = 0; i < 3; i++)
+   {
+      settings->uints.video_screen_window_pos[i]     = saved_pos[i];
+      settings->uints.video_screen_window_dims[i]    = saved_dims[i];
+      settings->bools.video_screen_window_pos_set[i] = saved_pos_set[i];
+   }
+}
+
+/* A menu edit crossing a save of a dragged window, with a renderer's
+ * steps as gl2 and vulkan run them: the edit wins, and the window and
+ * the settings end the same */
+static void test_window_bounds_edit(void)
+{
+   static video_windows_held_t held;
+   video_window_display_t displays[2];
+   settings_t *settings               = config_get_ptr();
+   const video_window_settings_t *win = &held.made[1];
+   rarch_setting_t *x;
+   unsigned retire, create;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "RA-A");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "RA-B");
+   displays[0].monitor = displays[1].monitor = true;
+   load_fixture("");
+   settings->uints.video_screen_window_pos[1]     = VIDEO_POS_PACK(100, 50);
+   settings->uints.video_screen_window_dims[1]    = VIDEO_SCALE_PACK(640, 480);
+   settings->bools.video_screen_window_pos_set[1] = true;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.monitors);
+   memset(&held, 0, sizeof(held));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(create == 2u);
+   held.live       = create;
+   held.display[1] = window_test_seen.display;
+   x = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X + 1));
+   CHECK(x != NULL);
+   if (!x)
+   {
+      window_test_end();
+      return;
+   }
+
+   /* A: Right on X is in the frame; the drag's save is judged before
+    * that frame's steps, and taken after */
+   CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+   window_test_run();
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(300, 200), VIDEO_SCALE_PACK(800, 600), true);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(300, 200),
+         VIDEO_SCALE_PACK(800, 600), true);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && held.update == 2u);
+   CHECK(win->pos == VIDEO_POS_PACK(110, 50));
+   CHECK(win->dims == VIDEO_SCALE_PACK(640, 480));
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(110, 50));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(640, 480));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && !held.update);
+
+   /* C: the save is published, and Right on X comes before the frame
+    * that takes it */
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(400, 300), VIDEO_SCALE_PACK(820, 620), true);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(400, 300),
+         VIDEO_SCALE_PACK(820, 620), true);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!held.update);
+   CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(120, 50));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(640, 480));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && held.update == 2u);
+   CHECK(win->pos == VIDEO_POS_PACK(120, 50));
+   CHECK(win->dims == VIDEO_SCALE_PACK(640, 480));
+
+   /* B: the save is taken first, with the edit it was made for, and the
+    * row steps from it */
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(500, 400), VIDEO_SCALE_PACK(840, 640), true);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(500, 400),
+         VIDEO_SCALE_PACK(840, 640), true);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(500, 400));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(840, 640));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && !held.update);
+   CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(510, 400));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(held.update == 2u);
+   CHECK(win->pos == VIDEO_POS_PACK(510, 400));
+   CHECK(win->dims == VIDEO_SCALE_PACK(840, 640));
+
+   /* A move from before an edit and a resize after it, taken together:
+    * the resize alone */
+   CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+   window_test_run();
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(600, 500), VIDEO_SCALE_PACK(860, 660), true);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(600, 500),
+         VIDEO_SCALE_PACK(860, 660), true);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(held.update == 2u && win->pos == VIDEO_POS_PACK(520, 400));
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(520, 400), VIDEO_SCALE_PACK(880, 680), false);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(520, 400),
+         VIDEO_SCALE_PACK(880, 680), false);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(520, 400));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(880, 680));
+   CHECK(settings->bools.video_screen_window_pos_set[1]);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && !held.update);
+   CHECK(win->pos == VIDEO_POS_PACK(520, 400));
+   CHECK(win->dims == VIDEO_SCALE_PACK(880, 680));
+
+   /* The list test_window_bounds_saved() left */
+   video_driver_publish_window_displays(displays, 1);
+   window_test_run();
+   window_test_end();
+   settings->uints.video_screen_window_pos[1]     = 0;
+   settings->uints.video_screen_window_dims[1]    = 0;
+   settings->bools.video_screen_window_pos_set[1] = false;
+}
+
 /* A driver reinit: the teardown clears every layout, and the next
  * driver's init takes the kept Presentation and publishes it again,
  * with no screens. Still shown on display 2, so a close no placement
@@ -3141,6 +3963,72 @@ static void test_window_pointer_mapping(void)
    CHECK(!video_driver_translate_window_point(1, gen, 400, 240, true, &pos));
 }
 
+/* Device @i's left button and motion, and the touches down in a list */
+#define WINDOW_TEST_LEFT(i) input_driver_device_state(i, RETRO_DEVICE_MOUSE, \
+      0, RETRO_DEVICE_ID_MOUSE_LEFT)
+#define WINDOW_TEST_MOTION(i) input_driver_device_state(i, \
+      RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X)
+#define WINDOW_TEST_TOUCHES(device) input_driver_device_state(0, device, \
+      0, RETRO_DEVICE_ID_POINTER_COUNT)
+
+/* Input from a screen's window that goes is let go; the main window's
+ * is kept */
+static void test_window_pointer_release(void)
+{
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_pointer_frame_t frames[2];
+   input_video_window_t windows[2];
+   uint32_t touches[2];
+   unsigned off;
+
+   memset(frames, 0, sizeof(frames));
+   memset(windows, 0, sizeof(windows));
+   frames[0].pos         = VIDEO_POS_PACK(10, 10);
+   frames[0].rel         = VIDEO_POS_PACK(3, -4);
+   frames[0].buttons     = INPUT_POINTER_LEFT;
+   frames[1]             = frames[0];
+   windows[1].window     = 1;
+   windows[1].generation = video_driver_window_generation();
+   touches[0]            = VIDEO_POS_PACK(10, 10);
+   touches[1]            = VIDEO_POS_PACK(10, 10);
+
+   window_test_begin();
+   /* Display Off for Screen 2, then the windows off */
+   for (off = 0; off < 2; off++)
+   {
+      settings->arrays.video_screen_display[1][0] = '\0';
+      settings->bools.video_windows_enable        = true;
+      window_test_run();
+      CHECK(video_st->windows_wanted == 2u);
+      input_driver_publish_window_pointers(frames, windows, 2,
+            INPUT_POINTERS_WINDOWS_SECOND);
+      input_driver_publish_window_touches(touches, windows, 2, 3u, 3u);
+      CHECK(WINDOW_TEST_LEFT(1) == 1);
+      CHECK(WINDOW_TEST_MOTION(1) == 3);
+      CHECK(WINDOW_TEST_TOUCHES(RARCH_DEVICE_POINTER_SECOND) == 1);
+
+      if (off)
+         settings->bools.video_windows_enable = false;
+      else
+         strlcpy(settings->arrays.video_screen_display[1],
+               VIDEO_WINDOW_DISPLAY_OFF,
+               sizeof(settings->arrays.video_screen_display[1]));
+      window_test_run();
+      CHECK(video_st->windows_wanted == 0);
+      CHECK(WINDOW_TEST_LEFT(1) == 0);
+      CHECK(WINDOW_TEST_MOTION(1) == 0);
+      CHECK(WINDOW_TEST_TOUCHES(RARCH_DEVICE_POINTER_SECOND) == 0);
+      CHECK(WINDOW_TEST_LEFT(0) == 1);
+      CHECK(WINDOW_TEST_MOTION(0) == 3);
+      CHECK(WINDOW_TEST_TOUCHES(RETRO_DEVICE_POINTER) == 1);
+   }
+   settings->arrays.video_screen_display[1][0] = '\0';
+   input_driver_publish_pointers(frames, 0, 0);
+   input_driver_publish_touches(touches, 0, 0, 0);
+   window_test_end();
+}
+
 /* Game Screen 2's window turned: drawn again at the swapped size, the menu
  * lays out at that size */
 static void test_window_turned(void)
@@ -3432,110 +4320,84 @@ static void test_window_generation(void)
    retro_atomic_store_release_int(&video_st->window_generation, saved);
 }
 
-/* Game Screens 2 and up have a display picker that goes through Auto and
- * the displays published */
+static video_window_common_t *window_test_kept;
+
+static video_window_common_t *window_test_kept_at(unsigned screen)
+{
+   return screen == 1 ? window_test_kept : NULL;
+}
+
+/* A close and a move no poll had drained when the window was kept
+ * reach the driver that takes it; focus the window system gave it
+ * meanwhile does not */
+static void test_window_kept_pending(void)
+{
+   video_window_event_t events[8];
+   video_window_common_t common;
+   video_window_native_t native, taken;
+   unsigned i, count;
+   unsigned seen = 0;
+   int owner     = 0;
+   memset(&common, 0, sizeof(common));
+   memset(&native, 0, sizeof(native));
+   memset(&taken, 0, sizeof(taken));
+   common.owner              = &owner;
+   common.native             = &native;
+   common.request.screen     = 1;
+   common.request.generation = 1;
+   native.state              = &common;
+   native.focused            = true;
+   native.presentable        = true;
+   common.pending           |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+   video_window_mark_closed_by_user(&common);
+   video_window_hold(&common, &native);
+   common.pending           |= VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+   video_window_adopt(&common, &owner, &taken);
+   window_test_kept          = &common;
+   count = video_windows_drain(&owner, window_test_kept_at, events,
+         ARRAY_SIZE(events));
+   window_test_kept          = NULL;
+   for (i = 0; i < count; i++)
+      seen |= 1u << events[i].kind;
+   CHECK(seen & VIDEO_WINDOW_EVENT_BIT(CLOSE));
+   CHECK(seen & VIDEO_WINDOW_EVENT_BIT(GEOMETRY));
+   CHECK(!(seen & VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN)));
+   CHECK(taken.state == &common && !taken.focused);
+}
+
+/* The Display rows replaced the mode and monitor rows */
 static void test_window_menu_settings(void)
 {
-   static video_window_display_t displays[2];
-   settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
-   unsigned *picked               = &settings->uints.video_screen_window_monitor[1];
-   rarch_setting_t *monitor;
    rarch_setting_t *enable;
-   char s[128];
+   unsigned i, restore;
+   char name[64];
    load_fixture("");
-   video_driver_publish_window_displays(displays, 0);
-   /* No mode rows */
-   CHECK(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE) == NULL);
-   CHECK(menu_setting_find_enum((enum msg_hash_enums)
-            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + 1)) == NULL);
-   CHECK(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR) == NULL);
-   monitor = menu_setting_find_enum((enum msg_hash_enums)
-         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + 1));
-   enable  = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE);
-   CHECK(monitor != NULL);
+   for (i = 1; i <= RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      snprintf(name, sizeof(name), "video_screen%u_window_mode", i);
+      CHECK(menu_setting_find(name) == NULL);
+      snprintf(name, sizeof(name), "video_screen%u_window_monitor", i);
+      CHECK(menu_setting_find(name) == NULL);
+      snprintf(name, sizeof(name), "video_screen%u_display", i);
+      CHECK(menu_setting_find(name) != NULL);
+   }
+   enable = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE);
    CHECK(enable != NULL);
-   if (!monitor || !enable)
+   if (!enable)
       return;
-   CHECK(string_is_equal(monitor->name, "video_screen2_window_monitor"));
-   CHECK(string_is_equal(monitor->short_description, "Screen 2 Display"));
-   CHECK(monitor->value.target.unsigned_integer == picked);
-
-   /* A change to either gives closed windows another try */
+   /* A change brings failed and closed windows back */
    video_st->windows_forced_attached = 2u;
-   monitor->actions->change(monitor);
-   CHECK(video_st->windows_forced_attached == 0u);
-   video_st->windows_forced_attached = 2u;
+   video_st->windows_closed_attached = 2u;
    enable->actions->change(enable);
    CHECK(video_st->windows_forced_attached == 0u);
-
-   /* Nothing published: Auto only, and a display set elsewhere kept */
-   monitor->actions->repr(monitor, s, sizeof(s));
-   CHECK(string_is_equal(s, "Auto"));
-   CHECK(monitor->actions->right(monitor, 0, false) == 0);
-   CHECK(*picked == 0);
-   CHECK(monitor->actions->left(monitor, 0, false) == 0);
-   CHECK(*picked == 0);
-   *picked = 5;
-   monitor->actions->repr(monitor, s, sizeof(s));
-   CHECK(string_is_equal(s, "5"));
-
-   /* As the Thor lists its panels */
-   memset(displays, 0, sizeof(displays));
-   displays[0].ordinal  = 1;
-   displays[0].own      = true;
-   displays[0].valid    = true;
-   displays[0].on       = true;
-   displays[0].physical = true;
-   displays[0].dims     = VIDEO_SCALE_PACK(1920, 1080);
-   strlcpy(displays[0].name, "Built-in Screen", sizeof(displays[0].name));
-   displays[1].ordinal  = 2;
-   displays[1].valid    = true;
-   displays[1].on       = true;
-   displays[1].physical = true;
-   displays[1].dims     = VIDEO_SCALE_PACK(1240, 1080);
-   strlcpy(displays[1].name, "Screen-2", sizeof(displays[1].name));
-   video_driver_publish_window_displays(displays, 2);
-   monitor->actions->repr(monitor, s, sizeof(s));
-   CHECK(string_is_equal(s, "5"));
-   CHECK(monitor->actions->ok(monitor, 0, false) == 1);
-   CHECK(monitor->max == 5.0f);
-   CHECK(monitor->actions->left(monitor, 0, false) == 0);
-   CHECK(*picked == 2);
-   monitor->actions->repr(monitor, s, sizeof(s));
-   CHECK(string_is_equal(s, "2 (Screen-2 1240x1080)"));
-   CHECK(monitor->actions->ok(monitor, 0, false) == 1);
-   CHECK(monitor->max == 2.0f);
-   CHECK(monitor->actions->left(monitor, 0, false) == 0);
-   monitor->actions->repr(monitor, s, sizeof(s));
-   CHECK(string_is_equal(s, "1 (Built-in Screen 1920x1080)"));
-   CHECK(monitor->actions->left(monitor, 0, false) == 0);
-   CHECK(*picked == 0);
-   CHECK(monitor->actions->left(monitor, 0, false) == 0);
-   CHECK(*picked == 2);
-   CHECK(monitor->actions->right(monitor, 0, false) == 0);
-   CHECK(*picked == 0);
-   CHECK(monitor->actions->right(monitor, 0, false) == 0);
-   CHECK(*picked == 1);
-   *picked = 5;
-   CHECK(monitor->actions->right(monitor, 0, false) == 0);
-   CHECK(*picked == 0);
-   /* No published display can have an ordinal past the list's size */
-   *picked = VIDEO_WINDOW_DISPLAYS_MAX;
-   CHECK(monitor->actions->ok(monitor, 0, false) == 1);
-   CHECK(monitor->max == (float)VIDEO_WINDOW_DISPLAYS_MAX);
-   *picked = 1000;
-   CHECK(monitor->actions->ok(monitor, 0, false) == 1);
-   CHECK(monitor->max == 2.0f);
-   /* A display with no size reported */
-   displays[1].dims = 0;
-   video_driver_publish_window_displays(displays, 2);
-   *picked = 2;
-   monitor->actions->repr(monitor, s, sizeof(s));
-   CHECK(string_is_equal(s, "2 (Screen-2)"));
-   video_driver_publish_window_displays(displays, 0);
-   monitor->max = (float)VIDEO_WINDOW_DISPLAYS_MAX;
-   load_fixture("");
+   CHECK(video_st->windows_closed_attached == 0u);
+   /* So does Restore Screen Windows */
+   restore = video_st->windows_restore;
+   video_st->windows_closed_attached = 2u;
+   menu_action("video_screen_windows_restore", MENU_ACTION_OK);
+   CHECK(video_st->windows_closed_attached == 0u);
+   CHECK(video_st->windows_restore == restore + 1u);
 }
 
 static void window_test_named(video_window_display_t *d, unsigned ordinal,
@@ -3573,12 +4435,16 @@ static void test_window_menu_display(void)
    CHECK(row->type == ST_STRING_OPTIONS);
    CHECK(row->value.target.string == picked);
 
-   /* Nothing published: Auto and Off */
+   /* Nothing published on the desktop: Auto, Main Window and Off */
    video_driver_publish_window_displays(displays, 0);
    menu_setting_video_screen_display_values();
-   CHECK(string_is_equal(row->aux.values, "|off"));
+   CHECK(string_is_equal(row->aux.values, "|main|off"));
    row->actions->repr(row, s, sizeof(s));
    CHECK(string_is_equal(s, "Auto"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_MAIN));
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Main Window"));
    CHECK(row->actions->right(row, 0, false) == 0);
    CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
    row->actions->repr(row, s, sizeof(s));
@@ -3641,12 +4507,110 @@ static void test_window_menu_display(void)
    CHECK(row->actions->right(row, 0, false) == 0);
    CHECK(string_is_equal(picked, "Screen-2 2"));
 
-   /* A change gives closed windows another try */
+   /* A change gives failed windows another try, and brings back its
+    * own screen's closed window only */
    video_st->windows_forced_attached = 2u;
+   video_st->windows_closed_attached = 6u;
    row->actions->change(row);
    CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 4u);
+   video_st->windows_closed_attached = 0u;
    picked[0] = '\0';
    video_driver_publish_window_displays(displays, 0);
+}
+
+/* Desktop monitors: Auto, Main Window, each monitor, then Off; the
+ * menu's row gets the monitors only */
+static void test_window_menu_monitors(void)
+{
+   static video_window_display_t displays[2];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   char *picked = config_get_ptr()->arrays.video_screen_display[1];
+   rarch_setting_t *row;
+   rarch_setting_t *menu;
+   char s[128];
+   load_fixture("");
+   row  = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + 1));
+   menu = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY);
+   CHECK(row != NULL);
+   CHECK(menu != NULL);
+   if (!row || !menu)
+      return;
+   CHECK(row->value.target.string == picked);
+   window_test_named(&displays[0], 1, true, "DP-1", "DELL U2720Q",
+         VIDEO_SCALE_PACK(2560, 1440));
+   window_test_named(&displays[1], 2, false, "", "", 0);
+   displays[0].monitor = displays[1].monitor = true;
+   video_driver_publish_window_displays(displays, 2);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(row->aux.values, "|main|DP-1|Monitor 2|off"));
+   CHECK(string_is_equal(menu->aux.values, "|DP-1|Monitor 2"));
+   picked[0] = '\0';
+   menu_st->flags &= ~(MENU_ST_FLAG_PREVENT_POPULATE
+         | MENU_ST_FLAG_ENTRIES_NEED_REFRESH);
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_MAIN));
+   /* The rows under it follow the choice */
+   CHECK(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH);
+   CHECK(menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE);
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Main Window"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, "DP-1"));
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Display: DP-1 (DELL U2720Q 2560x1440)"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, "Monitor 2"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(!picked[0]);
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
+   strlcpy(picked, "DP-1", 64);
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_MAIN));
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(!picked[0]);
+   /* The menu's row steps through the monitors alone */
+   CHECK(menu->actions->right(menu, 0, false) == 0);
+   CHECK(string_is_equal(menu->value.target.string, "DP-1"));
+   menu->value.target.string[0] = '\0';
+   /* None listed on the desktop: Auto, Main Window, Off */
+   video_driver_publish_window_displays(displays, 0);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(row->aux.values, "|main|off"));
+   CHECK(string_is_equal(menu->aux.values, "|"));
+   /* A monitor literally named "main" is not offered */
+   strlcpy(displays[1].name, VIDEO_WINDOW_DISPLAY_MAIN,
+         sizeof(displays[1].name));
+   video_driver_publish_window_displays(displays, 2);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(row->aux.values, "|main|DP-1|off"));
+   CHECK(string_is_equal(menu->aux.values, "|DP-1"));
+   /* Every slot listed and the one chosen gone: left is Off, right is
+    * Auto, not the last monitor */
+   {
+      static video_window_display_t many[VIDEO_WINDOW_DISPLAYS_MAX];
+      char name[16];
+      unsigned i;
+      for (i = 0; i < VIDEO_WINDOW_DISPLAYS_MAX; i++)
+      {
+         snprintf(name, sizeof(name), "DP-%u", i + 1);
+         window_test_named(&many[i], i + 1, !i, name, "", 0);
+         many[i].monitor = true;
+      }
+      video_driver_publish_window_displays(many, VIDEO_WINDOW_DISPLAYS_MAX);
+      strlcpy(picked, "HDMI-9", 64);
+      CHECK(row->actions->left(row, 0, false) == 0);
+      CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
+      strlcpy(picked, "HDMI-9", 64);
+      CHECK(row->actions->right(row, 0, false) == 0);
+      CHECK(!picked[0]);
+   }
+   video_driver_publish_window_displays(NULL, 0);
+   picked[0] = '\0';
 }
 
 /* OK on a row, as menu_action_handle_setting() presses it */
@@ -3724,18 +4688,26 @@ static void test_window_menu_display_dropdown(void)
    if (!menu_st->driver_ctx)
       return;
 
-   /* Nothing published: Auto and Off */
+   /* Nothing published on the desktop: Auto, Main Window and Off */
    video_driver_publish_window_displays(displays, 0);
    CHECK(window_display_ok(row) == 1);
-   CHECK(window_display_dropdown(&list, row) == 2);
-   if (list.size == 2)
+   CHECK(window_display_dropdown(&list, row) == 3);
+   if (list.size == 3)
    {
       CHECK(string_is_equal(list.list[0].path, "Auto"));
-      CHECK(string_is_equal(list.list[1].path, "OFF"));
+      CHECK(string_is_equal(list.list[1].path, "Main Window"));
+      CHECK(string_is_equal(list.list[2].path, "OFF"));
+      window_display_pick(&list, 1);
+      CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_MAIN));
+      picked[0] = '\0';
    }
    file_list_deinitialize(&list);
+   /* The menu's row never offers Main Window */
+   CHECK(window_display_ok(menu) == 1);
+   CHECK(window_display_dropdown(&list, menu) == 1);
+   file_list_deinitialize(&list);
 
-   /* Published since the Stereo 3D & Screens list was built */
+   /* Published since the Game Screens list was built */
    window_test_named(&displays[0], 1, true, "Built-in Screen", "",
          VIDEO_SCALE_PACK(1920, 1080));
    window_test_named(&displays[1], 2, false, "Screen-2", "AYN",
@@ -3874,7 +4846,9 @@ static void test_window_menu_rows(void)
    menu_setting_video_screen_display_values();
    CHECK(string_is_equal(menu->aux.values, "|Built-in Screen"));
 
-   /* A change to any of them gives closed windows another try */
+   /* A change to any of them gives failed windows another try, and
+    * leaves closed ones closed */
+   video_st->windows_closed_attached = 2u;
    video_st->windows_forced_attached = 2u;
    follows->actions->change(follows);
    CHECK(video_st->windows_forced_attached == 0u);
@@ -3884,6 +4858,8 @@ static void test_window_menu_rows(void)
    video_st->windows_forced_attached = 2u;
    notes->actions->change(notes);
    CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 2u);
+   video_st->windows_closed_attached = 0u;
 
    picked[0] = '\0';
    video_driver_publish_window_displays(displays, 0);
@@ -4009,45 +4985,136 @@ static bool window_menu_has(const file_list_t *list, const char *label)
    return false;
 }
 
-/* The switch sits in Stereo 3D & Screens where the driver has windows;
- * the screens' and the menu's rows are Android's */
+/* Where @label is listed, or the list's size */
+static size_t window_menu_index(const file_list_t *list, const char *label)
+{
+   size_t i;
+   for (i = 0; i < list->size; i++)
+      if (string_is_equal(list->list[i].label, label))
+         break;
+   return i;
+}
+
+/* Screen @screen + 1's page, built as its deferred push builds it */
+static void window_menu_page_build(file_list_t *list, unsigned screen)
+{
+   static menu_ctx_driver_t page_ctx;
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   const menu_ctx_driver_t *ctx = menu_st->driver_ctx;
+   menu_displaylist_info_t info;
+   char path[64];
+   snprintf(path, sizeof(path), msg_hash_to_str(
+            MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS), screen + 1);
+   menu_displaylist_info_init(&info);
+   info.list = list;
+   info.path = strdup(path);
+   if (!ctx)
+   {
+      page_ctx.ident      = "window_menu_page";
+      menu_st->driver_ctx = &page_ctx;
+   }
+   menu_displaylist_ctl(DISPLAYLIST_VIDEO_SCREEN_SETTINGS_LIST, &info,
+         config_get_ptr());
+   menu_st->driver_ctx = ctx;
+   menu_displaylist_info_free(&info);
+}
+
+/* Whether @label is listed right after Game Screen @screen's rows */
+static bool window_menu_after_screen(const file_list_t *list,
+      const char *label, unsigned screen)
+{
+   char prefix[32];
+   size_t i;
+   snprintf(prefix, sizeof(prefix), "video_screen%u_", screen);
+   for (i = 1; i < list->size; i++)
+      if (     string_is_equal(list->list[i].label, label)
+            && list->list[i - 1].label
+            && string_starts_with(list->list[i - 1].label, prefix))
+         return true;
+   return false;
+}
+
+/* The switch sits in Game Screens where the driver has windows,
+ * with a row a screen (Android's Display rows, the desktop's Screen
+ * N) and, on the desktop, Restore Screen Windows; the menu's rows are
+ * Android's */
 static void test_window_menu_list(void)
 {
    settings_t *settings = config_get_ptr();
    file_list_t list;
+   size_t gs, hs;
    char s[256];
    load_fixture("");
    memset(&list, 0, sizeof(list));
    menu_displaylist_build_list(&list, settings,
-         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+         DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST, false);
    CHECK(!window_menu_has(&list, "video_windows_enable"));
    CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
+   CHECK(!window_menu_has(&list, "video_screen_windows_restore"));
    file_list_deinitialize(&list);
 
    window_test_begin();
    window_test_run();
    memset(&list, 0, sizeof(list));
    menu_displaylist_build_list(&list, settings,
-         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+         DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST, false);
    CHECK(window_menu_has(&list, "video_windows_enable"));
-   /* The screens' and the menu's rows are Android's (06 rows) */
    CHECK(!window_menu_has(&list, "video_screen1_window_mode"));
    CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
    CHECK(!window_menu_has(&list, "video_screen2_window_monitor"));
+#ifdef ANDROID
+   CHECK(window_menu_has(&list, "video_screen1_display"));
+   CHECK(window_menu_has(&list, "video_screen2_display"));
+   CHECK(!window_menu_has(&list, "video_screen3_display"));
+#else
+   CHECK(window_menu_has(&list, "video_screen1_settings"));
+   CHECK(window_menu_has(&list, "video_screen2_settings"));
+   CHECK(!window_menu_has(&list, "video_screen3_settings"));
    CHECK(!window_menu_has(&list, "video_screen1_display"));
    CHECK(!window_menu_has(&list, "video_screen2_display"));
+#endif
+   /* The menu's and notifications' rows are Android's */
    CHECK(!window_menu_has(&list, "video_menu_follows"));
    CHECK(!window_menu_has(&list, "video_menu_display"));
    CHECK(!window_menu_has(&list, "video_notifications_window"));
    CHECK(!window_menu_has(&list, "video_screen2_window_x"));
+#ifdef ANDROID
+   CHECK(!window_menu_has(&list, "video_screen_windows_restore"));
+#else
+   CHECK(window_menu_after_screen(&list, "video_screen_windows_restore",
+            2));
+#endif
+   file_list_deinitialize(&list);
+   /* Stereo 3D keeps only the eyes' rows; Video lists Game Screens,
+    * Headset when it is listed, then Stereo 3D */
+   memset(&list, 0, sizeof(list));
+   menu_displaylist_build_list(&list, settings,
+         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+   CHECK(window_menu_has(&list, "video_stereo_swap_eyes"));
+   CHECK(!window_menu_has(&list, "video_screen_layout"));
+   CHECK(!window_menu_has(&list, "video_windows_enable"));
+   CHECK(!window_menu_has(&list, "video_screen2_display"));
+   file_list_deinitialize(&list);
+   memset(&list, 0, sizeof(list));
+   menu_displaylist_build_list(&list, settings,
+         DISPLAYLIST_VIDEO_SETTINGS_LIST, false);
+   gs = window_menu_index(&list, "video_game_screens_settings");
+   hs = window_menu_index(&list, "video_headset_settings");
+   CHECK(gs < list.size);
+   CHECK(hs == list.size || hs == gs + 1);
+   CHECK(window_menu_index(&list, "video_stereo_settings")
+         == (hs < list.size ? hs : gs) + 1);
    file_list_deinitialize(&list);
 
    settings->bools.video_windows_enable = false;
    memset(&list, 0, sizeof(list));
    menu_displaylist_build_list(&list, settings,
-         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+         DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST, false);
    CHECK(window_menu_has(&list, "video_windows_enable"));
    CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
+   CHECK(!window_menu_has(&list, "video_screen2_display"));
+   CHECK(!window_menu_has(&list, "video_screen2_settings"));
+   CHECK(!window_menu_has(&list, "video_screen_windows_restore"));
    file_list_deinitialize(&list);
    window_test_end();
 
@@ -4063,18 +5130,1072 @@ static void test_window_menu_list(void)
          0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
             msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_NOTIFICATIONS_WINDOW)));
-   menu_cbs_sublabel_for_enum((enum msg_hash_enums)
-         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + 7), 0, 0, s, sizeof(s));
-   CHECK(string_is_equal(s,
-            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR)));
+#ifdef ANDROID
    menu_cbs_sublabel_for_enum((enum msg_hash_enums)
          (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + 7), 0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
             msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY)));
+#else
+   menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + 7), 0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s, msg_hash_to_str(
+            MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY_DESKTOP)));
+   menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + 1), 0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s, msg_hash_to_str(
+            MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY_DESKTOP)));
+   menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS + 7), 0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s, msg_hash_to_str(
+            MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SETTINGS)));
+#endif
    menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE,
          0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
             msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE)));
+   menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOWS_RESTORE,
+         0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOWS_RESTORE)));
+}
+
+/* A screen with its own window gets its window rows; X and Y once it
+ * has a size */
+static void test_window_menu_window_rows(void)
+{
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   file_list_t list;
+   rarch_setting_t *width, *x, *y, *fullscreen, *display;
+   unsigned restore, edit, edit2;
+   char s[64];
+
+   /* The rows step a copy; only the settings are saved */
+   load_fixture("video_screen2_window_x = \"-1200\"\n"
+         "video_screen2_window_width = \"640\"\n"
+         "video_screen2_window_height = \"480\"\n");
+   CHECK(menu_setting_find_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X + 1)) != NULL);
+   CHECK(menu_setting_find_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH + 1)) != NULL);
+   settings->uints.video_screen_window_pos[1]  = VIDEO_POS_PACK(-1100, 20);
+   settings->uints.video_screen_window_dims[1] = VIDEO_SCALE_PACK(800, 600);
+   settings->bools.config_save_minimal         = false;
+   CHECK(config_save_file(saved_path));
+   path_set(RARCH_PATH_CONFIG, saved_path);
+   config_load();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(-1100, 20));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(800, 600));
+
+   load_fixture("");
+   window_test_begin();
+   window_test_run();
+   /* Game Screen 1: the main window, no rows; 2: Auto, its own */
+   memset(&list, 0, sizeof(list));
+   window_menu_page_build(&list, 0);
+   CHECK(window_menu_has(&list, "video_screen1_display"));
+   CHECK(!window_menu_has(&list, "video_screen1_window_fullscreen"));
+   file_list_deinitialize(&list);
+   memset(&list, 0, sizeof(list));
+   window_menu_page_build(&list, 1);
+   CHECK(window_menu_has(&list, "video_screen2_window_fullscreen"));
+   CHECK(window_menu_has(&list, "video_screen2_window_width"));
+   CHECK(window_menu_has(&list, "video_screen2_window_height"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_x"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_y"));
+   file_list_deinitialize(&list);
+
+   /* Game Screen 1 on a monitor: rows while it is listed; one that is
+    * not leaves it in the main window */
+   {
+      static video_window_display_t displays[1];
+      window_test_named(&displays[0], 1, false, "DP-1", "", 0);
+      displays[0].monitor = true;
+      video_driver_publish_window_displays(displays, 1);
+      strlcpy(settings->arrays.video_screen_display[0], "DP-1",
+            sizeof(settings->arrays.video_screen_display[0]));
+      memset(&list, 0, sizeof(list));
+      window_menu_page_build(&list, 0);
+      CHECK(window_menu_has(&list, "video_screen1_window_fullscreen"));
+      CHECK(window_menu_has(&list, "video_screen1_window_width"));
+      file_list_deinitialize(&list);
+      strlcpy(settings->arrays.video_screen_display[0], "DP-2",
+            sizeof(settings->arrays.video_screen_display[0]));
+      strlcpy(settings->arrays.video_screen_display[1], "DP-2",
+            sizeof(settings->arrays.video_screen_display[1]));
+      memset(&list, 0, sizeof(list));
+      window_menu_page_build(&list, 0);
+      CHECK(window_menu_has(&list, "video_screen1_display"));
+      CHECK(!window_menu_has(&list, "video_screen1_window_fullscreen"));
+      CHECK(!window_menu_has(&list, "video_screen1_window_width"));
+      file_list_deinitialize(&list);
+      /* Game Screen 2 on it: its own window, on Auto's monitor */
+      memset(&list, 0, sizeof(list));
+      window_menu_page_build(&list, 1);
+      CHECK(window_menu_has(&list, "video_screen2_window_fullscreen"));
+      file_list_deinitialize(&list);
+      settings->arrays.video_screen_display[1][0] = '\0';
+      video_driver_publish_window_displays(NULL, 0);
+      memset(&list, 0, sizeof(list));
+      window_menu_page_build(&list, 0);
+      CHECK(!window_menu_has(&list, "video_screen1_window_fullscreen"));
+      file_list_deinitialize(&list);
+      settings->arrays.video_screen_display[0][0] = '\0';
+   }
+
+   width = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH + 1));
+   x     = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X + 1));
+   y     = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y + 1));
+   CHECK(width != NULL && x != NULL && y != NULL);
+   if (width && x && y)
+   {
+      CHECK(string_is_equal(width->short_description,
+               "Game Screen 2 Window Width"));
+      CHECK(width->actions->read != NULL && width->actions->change != NULL);
+      CHECK(x->actions->read != NULL && x->actions->change != NULL);
+      width->actions->read(width);
+      width->actions->repr(width, s, sizeof(s));
+      CHECK(string_is_equal(s, "Auto"));
+      /* A step moves the copy; the change handler stores it, as
+       * menu_setting_generic() does after a step */
+      menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                        | MENU_ST_FLAG_PREVENT_POPULATE);
+      CHECK(width->actions->right(width, 0, false) == 0);
+      width->actions->change(width);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(640, 480));
+      /* X and Y come in with a size */
+      CHECK(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH);
+      CHECK(menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE);
+      menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                        | MENU_ST_FLAG_PREVENT_POPULATE);
+      CHECK(width->actions->right(width, 0, false) == 0);
+      width->actions->change(width);
+      CHECK(VIDEO_SCALE_W(settings->uints.video_screen_window_dims[1]) == 650);
+      CHECK(VIDEO_SCALE_H(settings->uints.video_screen_window_dims[1]) == 480);
+      CHECK(!(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH));
+
+      settings->uints.video_screen_window_pos[1] = VIDEO_POS_PACK(-20, 30);
+      x->actions->read(x);
+      CHECK(!settings->bools.video_screen_window_pos_set[1]);
+      /* Not placed: the rows show what is applied, not the position */
+      x->actions->repr(x, s, sizeof(s));
+      CHECK(string_is_equal(s, "Auto"));
+      y->actions->repr(y, s, sizeof(s));
+      CHECK(string_is_equal(s, "Auto"));
+      CHECK(x->actions->left(x, 0, false) == 0);
+      x->actions->change(x);
+      CHECK(VIDEO_POS_X(settings->uints.video_screen_window_pos[1]) == -30);
+      CHECK(VIDEO_POS_Y(settings->uints.video_screen_window_pos[1]) == 30);
+      /* A position set from the menu is the window's */
+      CHECK(settings->bools.video_screen_window_pos_set[1]);
+      x->actions->repr(x, s, sizeof(s));
+      CHECK(string_is_equal(s, "-30"));
+      y->actions->repr(y, s, sizeof(s));
+      CHECK(string_is_equal(s, "30"));
+
+      /* A row change gives a window that could not be made another
+       * try, and brings back its own screen's closed one, as the Display
+       * row does */
+      fullscreen = menu_setting_find_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN + 1));
+      display    = menu_setting_find_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + 1));
+      CHECK(fullscreen != NULL && display != NULL);
+      /* Each row counts an edit of its own screen's window, which the
+       * next frame carries */
+      edit2                             = video_st->windows_edit[2];
+      restore                           = video_st->windows_restore;
+      edit                              = video_st->windows_edit[1];
+      video_st->windows_forced_attached = 2u;
+      video_st->windows_closed_attached = 6u;
+      CHECK(width->actions->right(width, 0, false) == 0);
+      width->actions->change(width);
+      CHECK(video_st->windows_forced_attached == 0u);
+      CHECK(video_st->windows_closed_attached == 4u);
+      CHECK(video_st->windows_restore == restore);
+      CHECK(video_st->windows_edit[1] == edit + 1);
+      video_st->windows_closed_attached = 0u;
+      window_test_run();
+      CHECK(window_test_seen.settings[1].edit == video_st->windows_edit[1]);
+      restore                           = video_st->windows_restore;
+      edit                              = video_st->windows_edit[1];
+      video_st->windows_forced_attached = 2u;
+      video_st->windows_closed_attached = 6u;
+      CHECK(x->actions->right(x, 0, false) == 0);
+      x->actions->change(x);
+      CHECK(video_st->windows_forced_attached == 0u);
+      CHECK(video_st->windows_closed_attached == 4u);
+      CHECK(video_st->windows_restore == restore);
+      CHECK(video_st->windows_edit[1] == edit + 1);
+      video_st->windows_closed_attached = 0u;
+      window_test_run();
+      CHECK(window_test_seen.settings[1].edit == video_st->windows_edit[1]);
+      if (fullscreen)
+      {
+         restore                           = video_st->windows_restore;
+         edit                              = video_st->windows_edit[1];
+         video_st->windows_forced_attached = 2u;
+         video_st->windows_closed_attached = 6u;
+         menu_action_handle_setting(fullscreen, 0, MENU_ACTION_RIGHT, false);
+         CHECK(settings->bools.video_screen_window_fullscreen[1]);
+         CHECK(video_st->windows_forced_attached == 0u);
+         CHECK(video_st->windows_closed_attached == 4u);
+         CHECK(video_st->windows_restore == restore);
+         video_st->windows_closed_attached = 0u;
+         /* Not by 1: the menu runs a toggle's change handler twice */
+         CHECK(video_st->windows_edit[1] != edit);
+         window_test_run();
+         CHECK(window_test_seen.settings[1].edit
+               == video_st->windows_edit[1]);
+         settings->bools.video_screen_window_fullscreen[1] = false;
+      }
+      if (display)
+      {
+         edit                              = video_st->windows_edit[1];
+         video_st->windows_closed_attached = 6u;
+         menu_action_handle_setting(display, 0, MENU_ACTION_RIGHT, false);
+         CHECK(string_is_equal(settings->arrays.video_screen_display[1],
+                  VIDEO_WINDOW_DISPLAY_MAIN));
+         CHECK(video_st->windows_edit[1] == edit + 1);
+         CHECK(video_st->windows_closed_attached == 4u);
+         video_st->windows_closed_attached = 0u;
+         window_test_run();
+         CHECK(window_test_seen.settings[1].edit
+               == video_st->windows_edit[1]);
+         settings->arrays.video_screen_display[1][0] = '\0';
+         menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                           | MENU_ST_FLAG_PREVENT_POPULATE);
+      }
+      CHECK(video_st->windows_edit[2] == edit2);
+      /* Game Screen 1's spare id carries its edits */
+      {
+         static video_window_display_t displays[1];
+         window_test_named(&displays[0], 1, false, "DP-1", "", 0);
+         displays[0].monitor = true;
+         video_driver_publish_window_displays(displays, 1);
+         strlcpy(settings->arrays.video_screen_display[0], "DP-1",
+               sizeof(settings->arrays.video_screen_display[0]));
+         video_driver_edit_window(0);
+         video_driver_edit_window(0);
+         CHECK(video_st->windows_edit[0] != video_st->windows_edit[2]);
+         window_test_run();
+         CHECK(window_test_seen.window_screens[2] == 1u);
+         CHECK(window_test_seen.settings[2].edit
+               == video_st->windows_edit[0]);
+         settings->arrays.video_screen_display[0][0] = '\0';
+         video_driver_publish_window_displays(NULL, 0);
+         window_test_run();
+      }
+      settings->uints.video_screen_window_dims[1] = VIDEO_SCALE_PACK(650, 480);
+      settings->uints.video_screen_window_pos[1]  = VIDEO_POS_PACK(-30, 30);
+      x->actions->read(x);
+
+      /* With a size, X and Y are listed */
+      memset(&list, 0, sizeof(list));
+      window_menu_page_build(&list, 1);
+      CHECK(window_menu_has(&list, "video_screen2_window_x"));
+      CHECK(window_menu_has(&list, "video_screen2_window_y"));
+      file_list_deinitialize(&list);
+
+      /* Start on X or Y: placed automatically again, as the menu runs
+       * it (the change handler twice) */
+      CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_START, false) == 0);
+      CHECK(!settings->bools.video_screen_window_pos_set[1]);
+      x->actions->repr(x, s, sizeof(s));
+      CHECK(string_is_equal(s, "Auto"));
+      y->actions->repr(y, s, sizeof(s));
+      CHECK(string_is_equal(s, "Auto"));
+      /* and a step places it again */
+      CHECK(menu_action_handle_setting(y, 0, MENU_ACTION_RIGHT, false) == 0);
+      CHECK(settings->bools.video_screen_window_pos_set[1]);
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(0, 40));
+      y->actions->repr(y, s, sizeof(s));
+      CHECK(string_is_equal(s, "40"));
+      CHECK(menu_action_handle_setting(y, 0, MENU_ACTION_START, false) == 0);
+      CHECK(!settings->bools.video_screen_window_pos_set[1]);
+      menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                        | MENU_ST_FLAG_PREVENT_POPULATE);
+
+      /* Back to Auto, as the row's reset does: the position goes too */
+      *width->value.target.unsigned_integer = 0;
+      width->actions->change(width);
+      CHECK(settings->uints.video_screen_window_dims[1] == 0);
+      CHECK(!settings->bools.video_screen_window_pos_set[1]);
+      CHECK(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH);
+      menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                        | MENU_ST_FLAG_PREVENT_POPULATE);
+   }
+   /* Main Window: no rows */
+   strlcpy(settings->arrays.video_screen_display[1],
+         VIDEO_WINDOW_DISPLAY_MAIN,
+         sizeof(settings->arrays.video_screen_display[1]));
+   memset(&list, 0, sizeof(list));
+   window_menu_page_build(&list, 1);
+   CHECK(window_menu_has(&list, "video_screen2_display"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_fullscreen"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_width"));
+   file_list_deinitialize(&list);
+   settings->arrays.video_screen_display[1][0] = '\0';
+   settings->uints.video_screen_window_dims[1] = 0;
+   settings->uints.video_screen_window_pos[1]  = 0;
+   window_test_end();
+   {
+      char sub[256];
+      menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH + 1),
+            0, 0, sub, sizeof(sub));
+      CHECK(string_is_equal(sub, msg_hash_to_str(
+                  MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_WIDTH)));
+      menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y + 7),
+            0, 0, sub, sizeof(sub));
+      CHECK(string_is_equal(sub, msg_hash_to_str(
+                  MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_Y)));
+      menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN + 1),
+            0, 0, sub, sizeof(sub));
+      CHECK(string_is_equal(sub, msg_hash_to_str(
+                  MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN)));
+   }
+}
+
+/* A window dragged with its rows' list open: they step, reset and show
+ * what the drag left */
+static void test_window_menu_rows_moved(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   rarch_setting_t *width, *height, *x, *y;
+   char s[64];
+   load_fixture("");
+   settings->uints.video_screen_window_pos[1]     = VIDEO_POS_PACK(100, 50);
+   settings->uints.video_screen_window_dims[1]    = VIDEO_SCALE_PACK(640, 480);
+   settings->bools.video_screen_window_pos_set[1] = true;
+   window_test_begin();
+   window_test_run();
+   /* Found as the list is built */
+   width  = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH + 1));
+   height = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT + 1));
+   x      = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X + 1));
+   y      = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y + 1));
+   CHECK(width && height && x && y);
+   if (width && height && x && y)
+   {
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(300, 200), VIDEO_SCALE_PACK(800, 600), true);
+      window_test_run();
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(300, 200));
+      x->actions->repr(x, s, sizeof(s));
+      CHECK(string_is_equal(s, "300"));
+      y->actions->repr(y, s, sizeof(s));
+      CHECK(string_is_equal(s, "200"));
+      width->actions->repr(width, s, sizeof(s));
+      CHECK(string_is_equal(s, "800"));
+      height->actions->repr(height, s, sizeof(s));
+      CHECK(string_is_equal(s, "600"));
+      CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(310, 200));
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(800, 600));
+      CHECK(settings->bools.video_screen_window_pos_set[1]);
+
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(320, 220), VIDEO_SCALE_PACK(700, 500), true);
+      window_test_run();
+      CHECK(menu_action_handle_setting(width, 0, MENU_ACTION_RIGHT, false)
+            == 0);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(710, 500));
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(320, 220));
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(320, 220), VIDEO_SCALE_PACK(730, 530), false);
+      window_test_run();
+      CHECK(menu_action_handle_setting(height, 0, MENU_ACTION_LEFT, false)
+            == 0);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(730, 520));
+
+      /* Start puts X alone back to Auto */
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(330, 230), VIDEO_SCALE_PACK(720, 520), true);
+      window_test_run();
+      CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_START, false) == 0);
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(0, 230));
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(720, 520));
+      CHECK(!settings->bools.video_screen_window_pos_set[1]);
+   }
+   window_test_end();
+   settings->uints.video_screen_window_pos[1]     = 0;
+   settings->uints.video_screen_window_dims[1]    = 0;
+   settings->bools.video_screen_window_pos_set[1] = false;
+   menu_state_get_ptr()->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                  | MENU_ST_FLAG_PREVENT_POPULATE);
+}
+
+/* A menu the rows' tests drive as the menu runs: a driver that is not
+ * the null one, so lists can be pushed, and a stack of its own */
+static menu_ctx_driver_t window_menu_ctx;
+static menu_handle_t window_menu_handle;
+static file_list_t window_menu_stack;
+static file_list_t window_menu_shown;
+static file_list_t *window_menu_stacks[1];
+static file_list_t *window_menu_selections[1];
+static menu_list_t window_menu_list;
+
+/* One press as the menu iterates it: the action on the row under the
+ * cursor, then the rebuild it or the frame asked for */
+static void window_menu_press(unsigned action)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t i                   = menu_st->selection_ptr;
+   menu_entry_t entry;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                | MENU_ENTRY_FLAG_LABEL_ENABLED;
+   menu_entry_get(&entry, 0, i, NULL, false);
+   generic_menu_entry_action(NULL, &entry, i, (enum menu_action)action);
+}
+
+/* The list on top of the menu's stack is @label's */
+static bool window_menu_top(enum msg_hash_enums label)
+{
+   return window_menu_stack.size && string_is_equal(
+         window_menu_stack.list[window_menu_stack.size - 1].label,
+         msg_hash_to_str(label));
+}
+
+/* The cursor is on @label */
+static bool window_menu_on(const char *label)
+{
+   size_t i = menu_state_get_ptr()->selection_ptr;
+   return i < window_menu_shown.size
+      && string_is_equal(window_menu_shown.list[i].label, label);
+}
+
+/* The row @label of the list shown, as a menu driver reads it */
+static void window_menu_entry(const char *label, menu_entry_t *entry)
+{
+   MENU_ENTRY_INITIALIZE((*entry));
+   entry->flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                 | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                 | MENU_ENTRY_FLAG_VALUE_ENABLED;
+   menu_entry_get(entry, 0, window_menu_index(&window_menu_shown, label),
+         NULL, true);
+}
+
+/* The cursor put on @label, as navigation puts it */
+static void window_menu_go(const char *label)
+{
+   menu_state_get_ptr()->selection_ptr = window_menu_index(
+         &window_menu_shown, label);
+   CHECK(window_menu_on(label));
+}
+
+/* Video's list, Game Screens' parent, built as the menu builds it */
+static void window_menu_open(void)
+{
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   memset(&window_menu_ctx, 0, sizeof(window_menu_ctx));
+   window_menu_ctx.ident               = "window_menu_test";
+   memset(&window_menu_handle, 0, sizeof(window_menu_handle));
+   window_menu_stacks[0]               = &window_menu_stack;
+   window_menu_selections[0]           = &window_menu_shown;
+   window_menu_list.menu_stack         = window_menu_stacks;
+   window_menu_list.menu_stack_size    = 1;
+   window_menu_list.selection_buf      = window_menu_selections;
+   window_menu_list.selection_buf_size = 1;
+   menu_st->driver_ctx                 = &window_menu_ctx;
+   menu_st->driver_data                = &window_menu_handle;
+   menu_st->entries.list               = &window_menu_list;
+   menu_entries_append(&window_menu_stack, "",
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST),
+         MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST, 0, 0, 0, NULL);
+   /* A refresh wants a list shown */
+   file_list_append(&window_menu_shown, "", "", 0, 0, 0);
+   menu_st->selection_ptr              = 0;
+   menu_st->flags                     |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST));
+}
+
+/* Game Screen 2's page built again as a refresh builds it, with the
+ * screens in @mask at Auto size */
+static void window_menu_rows_build(unsigned mask)
+{
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned s;
+   for (s = 0; s < 2; s++)
+      if (mask & (1u << s))
+      {
+         settings->uints.video_screen_window_dims[s]    = 0;
+         settings->bools.video_screen_window_pos_set[s] = false;
+      }
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                   | MENU_ST_FLAG_PREVENT_POPULATE;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+}
+
+/* A key window_menu_rows_drag()'s frame presses on the row under the
+ * cursor, after the drag is taken */
+static unsigned window_menu_rows_key = MENU_ACTION_NOOP;
+
+/* A frame's take, Game Screen 2 dragged by @step: what it asks the
+ * menu for */
+static void window_menu_rows_take(unsigned step, bool *redraw,
+      bool *refresh)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   gfx_display_t *p_disp          = disp_get_ptr();
+   p_disp->flags                 &= ~GFX_DISP_FLAG_FB_DIRTY;
+   menu_st->flags                &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE);
+   if (step)
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(100 + step, 50), VIDEO_SCALE_PACK(640, 480 + step),
+            true);
+   window_test_run();
+   menu_setting_video_screen_windows_moved();
+   *redraw  = (p_disp->flags & GFX_DISP_FLAG_FB_DIRTY) != 0;
+   *refresh = (menu_st->flags & (MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+            | MENU_ST_FLAG_PREVENT_POPULATE))
+      == (MENU_ST_FLAG_ENTRIES_NEED_REFRESH | MENU_ST_FLAG_PREVENT_POPULATE);
+}
+
+/* A frame with the cursor on @label of Game Screen 2's page: the take,
+ * then the frame's key and any rebuild. The cursor must be on @label in
+ * the page after. */
+static void window_menu_rows_drag(const char *label, unsigned step,
+      bool *redraw, bool *refresh)
+{
+   window_menu_go(label);
+   window_menu_rows_take(step, redraw, refresh);
+   window_menu_press(window_menu_rows_key);
+   window_menu_rows_key = MENU_ACTION_NOOP;
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   CHECK(window_menu_on(label));
+}
+
+/* A move redraws a page's rows; an Auto-size screen's first one lists
+ * X and Y too, and the cursor stays on its row whatever builds the
+ * page */
+static void test_window_menu_rows_redraw(void)
+{
+   settings_t *settings          = config_get_ptr();
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   gfx_display_t *p_disp         = disp_get_ptr();
+   const menu_ctx_driver_t *saved_ctx = menu_st->driver_ctx;
+   menu_handle_t *saved_menu     = menu_st->driver_data;
+   menu_list_t *saved_list       = menu_st->entries.list;
+   size_t saved_selection        = menu_st->selection_ptr;
+   uint16_t saved_menu_flags     = menu_st->flags;
+   uint8_t saved_disp_flags      = p_disp->flags;
+   const char *screen_row        = "video_screen2_settings";
+   file_list_t *shown            = &window_menu_shown;
+   size_t display, height;
+   bool redraw, refresh;
+   load_fixture("");
+   window_test_begin();
+   window_test_run();
+   /* What earlier tests' takes left */
+   menu_setting_video_screen_windows_moved();
+
+   /* Entered from Game Screens with Game Screen 2 sized: the cursor on
+    * top */
+   settings->uints.video_screen_window_dims[1] = VIDEO_SCALE_PACK(640, 480);
+   window_menu_open();
+   window_menu_go(msg_hash_to_str(
+            MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS));
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(
+            MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST));
+   window_menu_go(screen_row);
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   CHECK(menu_st->selection_ptr == 0);
+   CHECK(window_menu_has(shown, "video_screen2_window_x"));
+
+   window_menu_rows_build(2u);
+   display = window_menu_index(shown, "video_screen2_display");
+   height  = window_menu_index(shown, "video_screen2_window_height");
+   CHECK(display == 0 && display < height && height + 1 == shown->size);
+   CHECK(!window_menu_has(shown, "video_screen2_window_x"));
+
+   /* No move, nothing asked */
+   window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+   CHECK(!redraw && !refresh);
+   /* Auto size, the cursor above Height: one refresh */
+   window_menu_rows_drag("video_screen2_display", 1, &redraw, &refresh);
+   CHECK(redraw && refresh);
+   CHECK(window_menu_has(shown, "video_screen2_window_x"));
+   /* The rest of that drag, sized now: a redraw alone */
+   window_menu_rows_drag("video_screen2_display", 2, &redraw, &refresh);
+   CHECK(redraw && !refresh);
+   /* Bounds as saved: nothing changed */
+   window_menu_rows_drag("video_screen2_display", 2, &redraw, &refresh);
+   CHECK(!redraw && !refresh);
+
+   /* The cursor on Height: X and Y go in below it */
+   window_menu_rows_build(2u);
+   window_menu_rows_drag("video_screen2_window_height", 3, &redraw,
+         &refresh);
+   CHECK(redraw && refresh);
+   CHECK(window_menu_has(shown, "video_screen2_window_x"));
+   /* The cursor on Window Y, Game Screen 2 Off from elsewhere: a
+    * refresh drops its window rows, the cursor onto Display */
+   window_menu_go("video_screen2_window_y");
+   strlcpy(settings->arrays.video_screen_display[1],
+         VIDEO_WINDOW_DISPLAY_OFF,
+         sizeof(settings->arrays.video_screen_display[1]));
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                   | MENU_ST_FLAG_PREVENT_POPULATE;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   CHECK(window_menu_on("video_screen2_display"));
+   CHECK(!window_menu_has(shown, "video_screen2_window_fullscreen"));
+   settings->arrays.video_screen_display[1][0] = '\0';
+   /* Its Display list open: a redraw alone; the return lists them */
+   window_menu_rows_build(2u);
+   window_menu_go("video_screen2_display");
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+   window_menu_rows_take(5, &redraw, &refresh);
+   CHECK(redraw && !refresh);
+   window_menu_press(MENU_ACTION_CANCEL);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   CHECK(window_menu_on("video_screen2_display"));
+   CHECK(window_menu_has(shown, "video_screen2_window_x"));
+
+   /* Game Screen 1 on a monitor, its rows on its own page; window 2
+    * shows it */
+   {
+      static video_window_display_t displays[1];
+      video_driver_state_t *video_st = video_state_get_ptr();
+      window_test_named(&displays[0], 1, false, "DP-1", "", 0);
+      displays[0].monitor = true;
+      video_driver_publish_window_displays(displays, 1);
+      strlcpy(settings->arrays.video_screen_display[0], "DP-1",
+            sizeof(settings->arrays.video_screen_display[0]));
+      window_menu_rows_build(3u);
+      CHECK(!window_menu_has(shown, "video_screen1_display"));
+      CHECK(window_menu_index(shown, "video_screen2_window_height") + 1
+            == shown->size);
+      /* Game Screen 1 sized by a move: a redraw alone, page 2
+       * unchanged */
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(60, 40), VIDEO_SCALE_PACK(320, 240), true);
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(redraw && !refresh);
+      CHECK(!window_menu_has(shown, "video_screen1_window_x"));
+      CHECK(!window_menu_has(shown, "video_screen2_window_x"));
+      /* Both sized in one take: Game Screen 2's X and Y alone go in */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(62, 40), VIDEO_SCALE_PACK(320, 242), true);
+      window_menu_rows_drag("video_screen2_display", 6, &redraw, &refresh);
+      CHECK(redraw && refresh);
+      CHECK(settings->uints.video_screen_window_dims[0]
+            == VIDEO_SCALE_PACK(320, 242));
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(640, 486));
+      CHECK(!window_menu_has(shown, "video_screen1_window_x"));
+      CHECK(window_menu_has(shown, "video_screen2_window_x"));
+      /* A Display step on Game Screen 2 in the drag's frame */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(65, 40), VIDEO_SCALE_PACK(320, 245), true);
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(redraw && !refresh);
+      CHECK(settings->arrays.video_screen_display[1][0] != '\0');
+      CHECK(!window_menu_has(shown, "video_screen1_window_x"));
+      settings->arrays.video_screen_display[1][0] = '\0';
+      /* The same in the next frame */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(66, 40), VIDEO_SCALE_PACK(320, 246), true);
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(redraw && !refresh);
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(!redraw && !refresh);
+      CHECK(settings->arrays.video_screen_display[1][0] != '\0');
+      settings->arrays.video_screen_display[1][0] = '\0';
+      /* A Size-from-Auto edit on Game Screen 2 in the drag's frame */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(67, 40), VIDEO_SCALE_PACK(320, 247), true);
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_window_width", 0, &redraw,
+            &refresh);
+      CHECK(redraw && !refresh);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(640, 480));
+      CHECK(!window_menu_has(shown, "video_screen1_window_x"));
+      CHECK(window_menu_has(shown, "video_screen2_window_x"));
+      /* The same in the next frame */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(68, 40), VIDEO_SCALE_PACK(320, 248), true);
+      window_menu_rows_drag("video_screen2_window_width", 0, &redraw,
+            &refresh);
+      CHECK(redraw && !refresh);
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_window_width", 0, &redraw,
+            &refresh);
+      CHECK(!redraw && !refresh);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(640, 480));
+      /* OK in the drag's frame, after a repeat: it acts, on its row */
+      window_menu_rows_build(3u);
+      settings->bools.video_screen_window_fullscreen[1] = false;
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_window_fullscreen", 0, &redraw,
+            &refresh);
+      CHECK(settings->bools.video_screen_window_fullscreen[1]);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(69, 40), VIDEO_SCALE_PACK(320, 249), true);
+      window_menu_rows_key = MENU_ACTION_OK;
+      window_menu_rows_drag("video_screen2_window_fullscreen", 0, &redraw,
+            &refresh);
+      CHECK(redraw && !refresh);
+      CHECK(!settings->bools.video_screen_window_fullscreen[1]);
+
+      /* OK on Game Screen 2's Display in the drag's frame opens its
+       * list; a pick returns to the Display row */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(70, 40), VIDEO_SCALE_PACK(320, 250), true);
+      window_menu_go("video_screen2_display");
+      window_menu_rows_take(0, &redraw, &refresh);
+      CHECK(redraw && !refresh);
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+      /* Auto, its value now */
+      menu_st->selection_ptr = 0;
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+      CHECK(window_menu_on("video_screen2_display"));
+      CHECK(!window_menu_has(shown, "video_screen1_window_x"));
+      CHECK(!settings->arrays.video_screen_display[1][0]);
+      /* The same, closed with Cancel */
+      window_menu_rows_build(1u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(71, 40), VIDEO_SCALE_PACK(320, 251), true);
+      window_menu_go("video_screen2_display");
+      window_menu_rows_take(0, &redraw, &refresh);
+      CHECK(redraw && !refresh);
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+      window_menu_press(MENU_ACTION_CANCEL);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+      CHECK(window_menu_on("video_screen2_display"));
+      /* Game Screen 1 first sized while that list is open: a redraw
+       * alone, and the return to the Display row */
+      window_menu_rows_build(1u);
+      window_menu_go("video_screen2_display");
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(72, 40), VIDEO_SCALE_PACK(320, 252), true);
+      window_menu_rows_take(0, &redraw, &refresh);
+      CHECK(redraw && !refresh);
+      window_menu_press(MENU_ACTION_CANCEL);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+      CHECK(window_menu_on("video_screen2_display"));
+      CHECK(!window_menu_has(shown, "video_screen1_window_x"));
+      /* Left for Game Screens and entered again, Game Screen 2 sized
+       * since: the cursor on top */
+      window_menu_rows_build(2u);
+      window_menu_go("video_screen2_window_height");
+      window_menu_press(MENU_ACTION_CANCEL);
+      CHECK(window_menu_top(
+               MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST));
+      CHECK(window_menu_on(screen_row));
+      settings->uints.video_screen_window_dims[1] = VIDEO_SCALE_PACK(640,
+            480);
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+      CHECK(menu_st->selection_ptr == 0);
+      CHECK(window_menu_has(shown, "video_screen2_window_x"));
+      video_driver_publish_window_displays(NULL, 0);
+      settings->arrays.video_screen_display[0][0]    = '\0';
+      settings->uints.video_screen_window_pos[0]     = 0;
+      settings->uints.video_screen_window_dims[0]    = 0;
+      settings->bools.video_screen_window_pos_set[0] = false;
+   }
+
+   file_list_deinitialize(&window_menu_stack);
+   file_list_deinitialize(&window_menu_shown);
+   memset(&window_menu_stack, 0, sizeof(window_menu_stack));
+   memset(&window_menu_shown, 0, sizeof(window_menu_shown));
+   window_test_end();
+   menu_st->driver_ctx    = saved_ctx;
+   menu_st->driver_data   = saved_menu;
+   menu_st->entries.list  = saved_list;
+   menu_st->selection_ptr = saved_selection;
+   menu_st->flags         = saved_menu_flags;
+   p_disp->flags          = saved_disp_flags;
+   settings->uints.video_screen_window_pos[1]     = 0;
+   settings->uints.video_screen_window_dims[1]    = 0;
+   settings->bools.video_screen_window_pos_set[1] = false;
+}
+
+/* Game Screens lists a row a screen, Screen N, showing its Display; OK
+ * opens the screen's page: its Display, and its window rows under short
+ * labels while it has a window of its own; a page past the core's
+ * screens lists none */
+static void test_window_menu_screen_page(void)
+{
+#ifndef ANDROID
+   static video_window_display_t displays[1];
+   settings_t *settings               = config_get_ptr();
+   struct menu_state *menu_st         = menu_state_get_ptr();
+   const menu_ctx_driver_t *saved_ctx = menu_st->driver_ctx;
+   menu_handle_t *saved_menu          = menu_st->driver_data;
+   menu_list_t *saved_list            = menu_st->entries.list;
+   size_t saved_selection             = menu_st->selection_ptr;
+   uint16_t saved_menu_flags          = menu_st->flags;
+   file_list_t *shown                 = &window_menu_shown;
+   menu_entry_t entry;
+   char s[64];
+   unsigned tries;
+   load_fixture("");
+   window_test_begin();
+   window_test_run();
+   window_menu_open();
+   window_menu_go(msg_hash_to_str(
+            MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS));
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(
+            MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST));
+
+   /* A row a screen, then Restore; the Display rows are on the pages */
+   CHECK(window_menu_index(shown, "video_screen1_settings") + 1
+         == window_menu_index(shown, "video_screen2_settings"));
+   CHECK(window_menu_index(shown, "video_screen2_settings") + 1
+         == window_menu_index(shown, "video_screen_windows_restore"));
+   CHECK(!window_menu_has(shown, "video_screen3_settings"));
+   CHECK(!window_menu_has(shown, "video_screen1_display"));
+   CHECK(!window_menu_has(shown, "video_screen2_window_fullscreen"));
+
+   /* Called Screen N, its value its Display's */
+   window_menu_entry("video_screen2_settings", &entry);
+   CHECK(string_is_equal(entry.path, "Screen 2"));
+   CHECK(string_is_equal(entry.value,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO)));
+
+   /* OK opens Screen 2's page, under that title */
+   window_menu_go("video_screen2_settings");
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   menu_entries_get_title(s, sizeof(s));
+   CHECK(string_is_equal(s, "Screen 2"));
+   CHECK(menu_st->selection_ptr == 0);
+   CHECK(window_menu_index(shown, "video_screen2_display") == 0);
+   CHECK(window_menu_index(shown, "video_screen2_window_fullscreen") == 1);
+   CHECK(window_menu_index(shown, "video_screen2_window_width") == 2);
+   CHECK(window_menu_index(shown, "video_screen2_window_height") == 3);
+   CHECK(!window_menu_has(shown, "video_screen2_window_x"));
+   CHECK(!window_menu_has(shown, "video_screen1_display"));
+   CHECK(!window_menu_has(shown, "video_screen_windows_restore"));
+   /* Short labels on the page */
+   window_menu_entry("video_screen2_display", &entry);
+   CHECK(string_is_equal(entry.rich_label, "Display"));
+   window_menu_entry("video_screen2_window_fullscreen", &entry);
+   CHECK(string_is_equal(entry.rich_label, "Fullscreen"));
+   window_menu_entry("video_screen2_window_width", &entry);
+   CHECK(string_is_equal(entry.rich_label, "Window Width"));
+   window_menu_entry("video_screen2_window_height", &entry);
+   CHECK(string_is_equal(entry.rich_label, "Window Height"));
+   /* X and Y once it has a size */
+   settings->uints.video_screen_window_dims[1] = VIDEO_SCALE_PACK(640, 480);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                   | MENU_ST_FLAG_PREVENT_POPULATE;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(window_menu_index(shown, "video_screen2_window_x") == 4);
+   CHECK(window_menu_index(shown, "video_screen2_window_y") == 5);
+   if (     window_menu_has(shown, "video_screen2_window_x")
+         && window_menu_has(shown, "video_screen2_window_y"))
+   {
+      window_menu_entry("video_screen2_window_x", &entry);
+      CHECK(string_is_equal(entry.rich_label, "Window X"));
+      window_menu_entry("video_screen2_window_y", &entry);
+      CHECK(string_is_equal(entry.rich_label, "Window Y"));
+   }
+   settings->uints.video_screen_window_dims[1] = 0;
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                   | MENU_ST_FLAG_PREVENT_POPULATE;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(!window_menu_has(shown, "video_screen2_window_x"));
+   /* The Display list keeps the long name */
+   window_menu_go("video_screen2_display");
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+   menu_entries_get_title(s, sizeof(s));
+   CHECK(string_is_equal(s, "Game Screen 2 Display"));
+   window_menu_press(MENU_ACTION_CANCEL);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   window_menu_press(MENU_ACTION_CANCEL);
+   CHECK(window_menu_top(
+            MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST));
+
+   /* Game Screen 1 in the main window: its page is Display alone; a
+    * step to a monitor lists its window rows at once */
+   window_test_named(&displays[0], 1, false, "DP-1", "", 0);
+   displays[0].monitor = true;
+   video_driver_publish_window_displays(displays, 1);
+   window_menu_go("video_screen1_settings");
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   CHECK(shown->size == 1);
+   window_menu_go("video_screen1_display");
+   for (tries = 0; tries < 4
+         && !string_is_equal(settings->arrays.video_screen_display[0], "DP-1");
+         tries++)
+      window_menu_press(MENU_ACTION_RIGHT);
+   CHECK(string_is_equal(settings->arrays.video_screen_display[0], "DP-1"));
+   CHECK(window_menu_on("video_screen1_display"));
+   CHECK(window_menu_has(shown, "video_screen1_window_fullscreen"));
+   CHECK(!window_menu_has(shown, "video_screen2_display"));
+   /* Start puts it back on Auto, the main window: they go at once */
+   window_menu_press(MENU_ACTION_START);
+   CHECK(!settings->arrays.video_screen_display[0][0]);
+   CHECK(shown->size == 1
+         && window_menu_has(shown, "video_screen1_display"));
+
+   /* Screen 3's page while the core has 4 screens; once it has 2, a
+    * refresh lists none of Screen 3's rows (D9) */
+   window_menu_press(MENU_ACTION_CANCEL);
+   CHECK(window_menu_top(
+            MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST));
+   set_menu_map(4);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                   | MENU_ST_FLAG_PREVENT_POPULATE;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(window_menu_has(shown, "video_screen4_settings"));
+   window_menu_go("video_screen3_settings");
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   CHECK(window_menu_has(shown, "video_screen3_display"));
+   set_menu_map(2);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                   | MENU_ST_FLAG_PREVENT_POPULATE;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST));
+   CHECK(!window_menu_has(shown, "video_screen3_display"));
+   CHECK(!window_menu_has(shown, "video_screen3_window_fullscreen"));
+   CHECK(shown->size == 1 && window_menu_has(shown,
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND)));
+   menu_entries_get_title(s, sizeof(s));
+   CHECK(string_is_equal(s, "Screen 3"));
+   set_menu_map(0);
+
+   video_driver_publish_window_displays(NULL, 0);
+   settings->arrays.video_screen_display[0][0] = '\0';
+   file_list_deinitialize(&window_menu_stack);
+   file_list_deinitialize(&window_menu_shown);
+   memset(&window_menu_stack, 0, sizeof(window_menu_stack));
+   memset(&window_menu_shown, 0, sizeof(window_menu_shown));
+   window_test_end();
+   menu_st->driver_ctx    = saved_ctx;
+   menu_st->driver_data   = saved_menu;
+   menu_st->entries.list  = saved_list;
+   menu_st->selection_ptr = saved_selection;
+   menu_st->flags         = saved_menu_flags;
+#endif
+}
+
+/* Each of these settings is listed in one list: Video's entries, Stereo
+ * 3D, Game Screens, Headset and the Screen N pages */
+static void test_window_menu_one_place(void)
+{
+#ifndef ANDROID
+   static const enum menu_displaylist_ctl_state lists[] = {
+      DISPLAYLIST_VIDEO_SETTINGS_LIST,
+      DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST,
+      DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST,
+      DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST
+   };
+   static const char *const names[] = {
+      "video_stereo_settings", "video_game_screens_settings",
+      "video_stereo_mode", "video_stereo_swap_eyes", "video_screen_layout",
+      "video_windows_enable", "video_screen_windows_restore",
+      "video_screen1_settings", "video_screen2_settings",
+      "video_screen1_display", "video_screen2_display",
+      "video_screen2_window_fullscreen", "video_screen2_window_width",
+      "video_screen2_window_height", "video_screen2_window_x",
+      "video_screen2_window_y",
+#ifdef HAVE_OPENXR
+      "video_headset_settings", "video_openxr_enable",
+      "video_openxr_refresh_rate", "video_openxr_distance",
+      "video_screen_xr_reset_all",
+#endif
+   };
+   settings_t *settings = config_get_ptr();
+   unsigned seen[ARRAY_SIZE(names)];
+   file_list_t list;
+   unsigned l, n, s;
+#ifdef HAVE_OPENXR
+   char driver[sizeof(settings->arrays.video_driver)];
+#endif
+   load_fixture("");
+   memset(seen, 0, sizeof(seen));
+   window_test_begin();
+   window_test_run();
+#ifdef HAVE_OPENXR
+   /* After the windows' start, which may name its own driver; the lists
+    * read only the name */
+   strlcpy(driver, settings->arrays.video_driver, sizeof(driver));
+   strlcpy(settings->arrays.video_driver, "glcore",
+         sizeof(settings->arrays.video_driver));
+#endif
+   settings->uints.video_screen_window_dims[1] = VIDEO_SCALE_PACK(640, 480);
+   for (l = 0; l < ARRAY_SIZE(lists) + 2; l++)
+   {
+      memset(&list, 0, sizeof(list));
+      if (l < ARRAY_SIZE(lists))
+         menu_displaylist_build_list(&list, settings, lists[l], false);
+      else
+         window_menu_page_build(&list, l - ARRAY_SIZE(lists));
+      for (s = 0; s < list.size; s++)
+         for (n = 0; n < ARRAY_SIZE(names); n++)
+            if (string_is_equal(list.list[s].label, names[n]))
+               seen[n]++;
+      file_list_deinitialize(&list);
+   }
+   for (n = 0; n < ARRAY_SIZE(names); n++)
+      if (seen[n] != 1)
+      {
+         fprintf(stderr, "listed %u times: %s\n", seen[n], names[n]);
+         CHECK(seen[n] == 1);
+      }
+   settings->uints.video_screen_window_dims[1] = 0;
+#ifdef HAVE_OPENXR
+   strlcpy(settings->arrays.video_driver, driver,
+         sizeof(settings->arrays.video_driver));
+#endif
+   window_test_end();
+#endif
 }
 
 #ifdef HAVE_THREADS
@@ -4352,11 +6473,19 @@ static void test_window_redraw(void)
    const unsigned both            =
         VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)
       | VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS);
+   settings_t *settings           = config_get_ptr();
    video_window_display_t displays[3];
+   video_window_display_t monitors[2];
    video_window_ui_target_t ui[VIDEO_WINDOW_UI_LAYERS];
    video_windows_route_t route;
+   video_windows_route_t *held;
    video_info_t info;
    unsigned layer;
+   window_test_display(&monitors[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&monitors[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   monitors[0].monitor = monitors[1].monitor = true;
    window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
          true, "Built-in Screen");
    window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
@@ -4384,6 +6513,7 @@ static void test_window_redraw(void)
       video_driver_publish_window_displays(displays, 3);
       window_test_run();
       CHECK(window_test_seen.display == 1);
+      CHECK(!window_test_seen.monitors);
       window_test_redraw(threaded, data);
       CHECK(window_test_seen.display == 1);
       CHECK(window_test_seen.plan.main_mask == 1u);
@@ -4393,12 +6523,14 @@ static void test_window_redraw(void)
       CHECK(window_test_seen.serial == video_st->windows.serial);
 
       /* With the UI, a keep and the logo routed: every UI layer is the
-       * main window's, the rest as routed */
-      route                        = video_st->windows_route;
+       * main window's, the rest as routed. The route the redraw holds. */
+      held       = &video_st->windows_routes.slot[
+            video_st->windows_routes.held - 1];
+      route      = *held;
       memcpy(ui, video_st->windows_ui, sizeof(ui));
-      video_st->windows_route.ui   = both;
-      video_st->windows_route.keep = 1;
-      video_st->windows_route.logo = true;
+      held->ui   = both;
+      held->keep = 1;
+      held->logo = true;
       for (layer = 0; layer < VIDEO_WINDOW_UI_LAYERS; layer++)
          video_st->windows_ui[layer].window = VIDEO_WINDOWS_PRESENTATION;
       window_test_redraw(threaded, data);
@@ -4413,7 +6545,7 @@ static void test_window_redraw(void)
             == 1u << VIDEO_WINDOWS_PRESENTATION);
       CHECK(window_test_seen.logo);
       CHECK(window_test_seen.serial == video_st->windows.serial);
-      video_st->windows_route = route;
+      *held = route;
       memcpy(video_st->windows_ui, ui, sizeof(ui));
 
       /* Nowhere to go: still attached */
@@ -4424,6 +6556,240 @@ static void test_window_redraw(void)
       CHECK(window_test_seen.display == 0);
       CHECK(window_test_seen.plan.main_mask == 3u);
       CHECK(window_test_seen.window_screens[1] == 0u);
+
+      /* Desktop: a redraw takes the newest route handed over, never
+       * the app thread's own copy */
+      video_driver_publish_window_displays(monitors, 2);
+      strlcpy(settings->arrays.video_screen_display[1], "HDMI-A-1",
+            sizeof(settings->arrays.video_screen_display[1]));
+      window_test_run();
+      window_test_redraw(threaded, data);
+      CHECK(window_test_seen.monitors);
+      CHECK(window_test_seen.settings[1].monitor == 2);
+      strlcpy(settings->arrays.video_screen_display[1], "DP-1",
+            sizeof(settings->arrays.video_screen_display[1]));
+      window_test_run();
+      route = video_st->windows_route;
+      video_st->windows_route.target[1] = 7;
+      window_test_redraw(threaded, data);
+      CHECK(window_test_seen.settings[1].monitor == 1);
+      video_st->windows_route = route;
+      settings->arrays.video_screen_display[1][0] = '\0';
+
+      video_driver_publish_window_displays(NULL, 0);
+      window_test_run();
+      threaded->free(data);
+   }
+   else
+      CHECK(false);
+   window_test_end();
+#endif
+}
+
+#ifdef HAVE_THREADS
+/* The ids a renderer makes for the frame it was just handed, stepping
+ * its windows as gl2 and vulkan do */
+static unsigned redraw_made(video_windows_held_t *held, const char *from)
+{
+   unsigned w, retire, create;
+   video_windows_steps(held, window_test_handed ? &window_test_seen : NULL,
+         &retire, &create);
+   held->live &= ~retire;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (create & (1u << w))
+      {
+         held->live      |= 1u << w;
+         held->display[w] = window_test_seen.display;
+         fprintf(stderr, "redraw own moved: window %u made by the %s"
+               " frame, Game Screen 2 on monitor %u\n", w, from,
+               window_test_seen.settings[1].monitor);
+      }
+   return create;
+}
+
+static unsigned redraw_bits(unsigned bits)
+{
+   unsigned n = 0;
+   for (; bits; bits &= bits - 1)
+      n++;
+   return n;
+}
+#endif
+
+/* The main window dragged to the monitor an Auto window is on, under
+ * the threaded wrapper: the window stays where it was made; after an
+ * edit, redraws of the cached frame between the app thread's frames
+ * make it again once, on the other monitor */
+static void test_window_redraw_own_moved(void)
+{
+#ifdef HAVE_THREADS
+   static video_driver_t driver;
+   const video_driver_t *threaded = NULL;
+   void *data                     = NULL;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   video_window_display_t monitors[2];
+   video_windows_held_t held;
+   video_info_t info;
+   unsigned i;
+   unsigned made                  = 0;
+   window_test_display(&monitors[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&monitors[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   monitors[0].monitor = monitors[1].monitor = true;
+   memset(&driver, 0, sizeof(driver));
+   memset(&info, 0, sizeof(info));
+   memset(&held, 0, sizeof(held));
+   driver.init          = snapshot_init;
+   driver.frame         = window_test_frame;
+   driver.free          = snapshot_free;
+   driver.viewport_info = redraw_viewport;
+   driver.read_viewport = redraw_read_viewport;
+   driver.ident         = "redraw";
+   info.input_scale     = 1;
+   info.rgb32           = true;
+   window_test_begin();
+   if (video_init_thread(&threaded, &data, &driver, info))
+   {
+      video_st->thread_wrapper_active = false;
+      /* Game Screen 2 on Auto: the monitor RetroArch is not on */
+      video_driver_publish_window_displays(monitors, 2);
+      window_test_run();
+      CHECK(redraw_bits(redraw_made(&held, "app")) == 1);
+      CHECK(window_test_seen.settings[1].monitor == 2);
+      window_test_redraw(threaded, data);
+      CHECK(!redraw_made(&held, "redraw"));
+
+      /* The main window dragged onto HDMI-A-1, as X11 republishes it */
+      monitors[0].own = false;
+      monitors[1].own = true;
+      video_driver_publish_window_displays(monitors, 2);
+      for (i = 0; i < 4; i++)
+      {
+         window_test_redraw(threaded, data);
+         made += redraw_bits(redraw_made(&held, "redraw"));
+         window_test_run();
+         made += redraw_bits(redraw_made(&held, "app"));
+      }
+      fprintf(stderr, "redraw own moved, no edit: %u remake(s)\n", made);
+      CHECK(made == 0);
+      CHECK(window_test_seen.settings[1].monitor == 1);
+      video_driver_edit_window(1);
+      for (i = 0; i < 4; i++)
+      {
+         window_test_redraw(threaded, data);
+         made += redraw_bits(redraw_made(&held, "redraw"));
+         window_test_run();
+         made += redraw_bits(redraw_made(&held, "app"));
+      }
+      fprintf(stderr, "redraw own moved: %u remake(s)\n", made);
+      CHECK(made == 1);
+      CHECK(window_test_seen.settings[1].monitor == 1);
+
+      video_driver_publish_window_displays(NULL, 0);
+      window_test_run();
+      threaded->free(data);
+   }
+   else
+      CHECK(false);
+   window_test_end();
+#endif
+}
+
+/* An edit between the app thread's frames: a redraw's route is from
+ * before it, so the edit waits for the frame laid out with it */
+static void test_window_redraw_edit(void)
+{
+#ifdef HAVE_THREADS
+   static video_driver_t driver;
+   const video_driver_t *threaded = NULL;
+   void *data                     = NULL;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   video_window_display_t monitors[2];
+   video_windows_held_t held;
+   video_info_t info;
+   unsigned edit;
+   window_test_display(&monitors[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&monitors[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   monitors[0].monitor = monitors[1].monitor = true;
+   memset(&driver, 0, sizeof(driver));
+   memset(&info, 0, sizeof(info));
+   memset(&held, 0, sizeof(held));
+   driver.init          = snapshot_init;
+   driver.frame         = window_test_frame;
+   driver.free          = snapshot_free;
+   driver.viewport_info = redraw_viewport;
+   driver.read_viewport = redraw_read_viewport;
+   driver.ident         = "redraw";
+   info.input_scale     = 1;
+   info.rgb32           = true;
+   window_test_begin();
+   if (video_init_thread(&threaded, &data, &driver, info))
+   {
+      video_st->thread_wrapper_active = false;
+      strlcpy(settings->arrays.video_screen_display[1], "DP-1",
+            sizeof(settings->arrays.video_screen_display[1]));
+      video_driver_publish_window_displays(monitors, 2);
+      window_test_run();
+      CHECK(redraw_bits(redraw_made(&held, "app")) == 1);
+      CHECK(window_test_seen.settings[1].monitor == 1);
+
+      /* To Auto, the other monitor: only the app thread's frame knows */
+      settings->arrays.video_screen_display[1][0] = '\0';
+      video_driver_edit_window(1);
+      edit = held.made[1].edit;
+      window_test_redraw(threaded, data);
+      CHECK(!redraw_made(&held, "redraw"));
+      CHECK(!held.update);
+      CHECK(held.made[1].edit == edit);
+      window_test_run();
+      CHECK(window_test_seen.settings[1].monitor == 2);
+      CHECK(redraw_bits(redraw_made(&held, "app")) == 1);
+      CHECK(held.made[1].monitor == 2);
+
+      /* A placement edit: update() from that frame too, not the redraw */
+      strlcpy(settings->arrays.video_screen_display[1], "HDMI-A-1",
+            sizeof(settings->arrays.video_screen_display[1]));
+      video_driver_edit_window(1);
+      window_test_run();
+      CHECK(!redraw_made(&held, "app"));
+      settings->uints.video_screen_window_pos[1]     = VIDEO_POS_PACK(10, 20);
+      settings->bools.video_screen_window_pos_set[1] = true;
+      video_driver_edit_window(1);
+      window_test_redraw(threaded, data);
+      CHECK(!redraw_made(&held, "redraw"));
+      CHECK(!held.update);
+      window_test_run();
+      CHECK(!redraw_made(&held, "app"));
+      CHECK(held.update == 2u);
+      CHECK(held.made[1].pos == VIDEO_POS_PACK(10, 20));
+
+      /* Reopened by a redraw on the old route: moved by the frame with
+       * the edit */
+      video_driver_close_windows(&window_test_seen,
+            window_test_seen.window_screens[1]);
+      held.closed_edit[1] = window_test_seen.settings[1].edit;
+      held.closed         = 2u;
+      held.live           = 0u;
+      window_test_run();
+      CHECK(!redraw_made(&held, "app"));
+      settings->arrays.video_screen_display[1][0] = '\0';
+      settings->uints.video_screen_window_pos[1]     = 0;
+      settings->bools.video_screen_window_pos_set[1] = false;
+      video_driver_edit_window(1);
+      window_test_redraw(threaded, data);
+      CHECK(redraw_bits(redraw_made(&held, "redraw")) == 1);
+      CHECK(held.made[1].monitor == 2);
+      monitors[0].own = false;
+      monitors[1].own = true;
+      video_driver_publish_window_displays(monitors, 2);
+      window_test_run();
+      CHECK(window_test_seen.settings[1].monitor == 1);
+      CHECK(redraw_bits(redraw_made(&held, "app")) == 1);
+      CHECK(held.made[1].monitor == 1);
 
       video_driver_publish_window_displays(NULL, 0);
       window_test_run();
@@ -4507,6 +6873,784 @@ static void test_window_idle_logo(void)
    p_disp->dispctx = saved;
 }
 #endif
+#include "native_windows.c"
+#include "native_x11.c"
+#include "native_wayland.c"
+#include "native_win32.c"
+#include "native_sdl.c"
+
+/* A context of 'ident' with its main window up */
+static const gfx_ctx_driver_t *native_context(const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor, void **data)
+{
+   const gfx_ctx_driver_t *ctx;
+#if defined(HAVE_VULKAN) && defined(HAVE_WAYLAND)
+   if (strcmp(ident, "vk_wayland") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_vk_wayland, ident, api, major, minor, false, data);
+   else
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_SDL3)
+   if (strcmp(ident, "vk_sdl3") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_sdl3_vk, ident, api, major, minor, false, data);
+   else
+#endif
+#if defined(NATIVE_WIN32) && defined(HAVE_VULKAN)
+   if (strcmp(ident, "vk_w") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_w_vk, ident, api, major, minor, false, data);
+   else
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_X11) && defined(HAVE_XCB)
+   if (strcmp(ident, "vk_x") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_vk_x, ident, api, major, minor, false, data);
+   else
+#endif
+   ctx = video_context_driver_init_first(NULL, ident, api, major, minor,
+         false, data);
+   /* A failed set_video_mode has freed the context already */
+   if (     !ctx
+         || !ctx->set_video_mode(*data, VIDEO_SCALE_PACK(640, 480), false))
+   {
+      CHECK(!"context");
+      return NULL;
+   }
+   if (api == GFX_CTX_OPENGL_API)
+      ctx->swap_interval(*data, 1);
+   return ctx;
+}
+
+/* The main window remade, as a fullscreen toggle that is not done in
+ * place or a video reinit from the menu remakes it, with a screen's
+ * window up: the driver's teardown keeps that window, and the next
+ * driver's start takes it as it was, with the focus the user left
+ * where it was (on the main window, then on the screen's); a context
+ * up and gone in between, as a probe that fails is, leaves it kept.
+ * X11's checks the window system's side too: native_x11_kept(). */
+static void native_window_kept(const char *ident, enum gfx_ctx_api api,
+      unsigned major, unsigned minor)
+{
+   unsigned round;
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+   unsigned video_refs = 0;
+   /* Video down and another subsystem up, as the sdl2 joypad driver
+    * leaves SDL: the first context holds the only video reference */
+   if (native_sdl_ident(ident))
+   {
+      SDL_InitSubSystem(SDL_INIT_EVENTS);
+      for (; SDL_WasInit(SDL_INIT_VIDEO); video_refs++)
+         SDL_QuitSubSystem(SDL_INIT_VIDEO);
+   }
+#endif
+   for (round = 0; round < 2; round++)
+   {
+      video_window_request_t request;
+      video_window_native_t window;
+      void *state, *surface;
+      unsigned dims;
+      bool focused;
+      unsigned display = 0;
+      bool took        = false;
+      void *data       = NULL;
+      const gfx_ctx_driver_t *ctx = native_context(ident, api, major,
+            minor, &data);
+      if (!ctx)
+         return;
+#ifdef NATIVE_SDL
+      if (native_sdl_ident(ident) && native_sdl_no_windows(ctx, data))
+         return;
+#endif
+#ifdef NATIVE_WIN32
+      if (native_w32_ident(ident))
+         native_window_input = native_w32_pump;
+#endif
+      memset(&request, 0, sizeof(request));
+      memset(&window, 0, sizeof(window));
+      request.screen        = 1;
+      request.generation    = video_driver_window_generation();
+      request.settings.mode = VIDEO_WINDOW_SEPARATE;
+      request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+      CHECK(ctx->windows->create(data, &request, &window));
+      native_window_wait(ctx, data, &request, &window,
+            NATIVE_EVENT(RESUME), 0);
+      native_window_settle(ctx, data, &request, 100000);
+      if (round)
+      {
+#ifdef NATIVE_WIN32
+         if (native_w32_ident(ident))
+            native_w32_focus(ctx, data, &request, &window, true);
+#endif
+#ifdef NATIVE_SDL
+         if (native_sdl_ident(ident))
+            native_sdl_focus(ctx, data, &request, &window, true);
+#endif
+#ifdef HAVE_WAYLAND
+         if (native_wl_ident(ident))
+         {
+            native_wl_input((gfx_ctx_wayland_data_t*)data, true);
+            native_wl_focus(ctx, data, &request, &window);
+            native_wl_input((gfx_ctx_wayland_data_t*)data, false);
+         }
+#endif
+      }
+      state   = window.state;
+      surface = window.surface;
+      dims    = window.dims;
+      focused = window.focused;
+      fprintf(stderr, "native %s: screen window focused %d before the "
+            "remake: %d\n", ident, round, focused);
+
+      if (ctx->windows->keep)
+         ctx->windows->keep(data, &window);
+      else
+         ctx->windows->destroy(data, &window);
+      CHECK(window.state == NULL);
+      ctx->destroy(data);
+      data = NULL;
+      if (round && (data = ctx->init(NULL)))
+         ctx->destroy(data);
+      data = NULL;
+      if (!(ctx = native_context(ident, api, major, minor, &data)))
+         return;
+      took = ctx->windows->take
+         && ctx->windows->take(data, request.screen, &window, &display);
+      fprintf(stderr, "native %s: remade main, screen focused %d: "
+            "window %s, focused %d\n", ident, round,
+            took ? "kept" : "made again", window.focused);
+      CHECK(took);
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+      /* The hold handed on, not the last reference quit under both */
+      if (native_sdl_ident(ident) && !SDL_WasInit(SDL_INIT_VIDEO))
+      {
+         CHECK(!"SDL video down after the take");
+         return;
+      }
+#endif
+      if (!took)
+         CHECK(ctx->windows->create(data, &request, &window));
+      else
+      {
+         CHECK(window.state == state && window.surface == surface);
+         CHECK(window.dims == dims);
+         CHECK(window.generation == request.generation);
+         CHECK(window.focused == focused);
+         native_window_settle(ctx, data, &request, 300000);
+         CHECK(window.state == state);
+      }
+#ifdef NATIVE_WIN32
+      if (took && round && native_w32_ident(ident))
+         CHECK(GetForegroundWindow() == native_w32_window(&window));
+#endif
+      ctx->windows->destroy(data, &window);
+      ctx->destroy(data);
+#ifdef NATIVE_WIN32
+      native_window_input = NULL;
+#endif
+   }
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+   if (native_sdl_ident(ident))
+   {
+      /* SDL as the tests before left it */
+      for (; video_refs; video_refs--)
+         SDL_InitSubSystem(SDL_INIT_VIDEO);
+      SDL_QuitSubSystem(SDL_INIT_EVENTS);
+   }
+#endif
+}
+
+#if (defined(HAVE_SDL3) || defined(NATIVE_WGL)) && defined(HAVE_VULKAN)
+/* A window kept by a GL context is not a Vulkan one's to take: SDL 3
+ * makes it for one API, and WGL has set a pixel format on it. One is
+ * made in its place. */
+static void native_window_kept_gl(const char *gl_ident,
+      const char *vk_ident)
+{
+   video_window_request_t request;
+   video_window_native_t window;
+   const gfx_ctx_driver_t *ctx;
+   unsigned display   = 0;
+   bool took;
+   void *data         = NULL;
+   settings_t *config = config_get_ptr();
+   /* SDL 3's are up only as the configured context */
+   strlcpy(config->arrays.video_context_driver, gl_ident,
+         sizeof(config->arrays.video_context_driver));
+   ctx = native_context(gl_ident, GFX_CTX_OPENGL_API, 0, 0, &data);
+   strlcpy(config->arrays.video_context_driver, vk_ident,
+         sizeof(config->arrays.video_context_driver));
+   if (!ctx)
+      return;
+   memset(&request, 0, sizeof(request));
+   memset(&window, 0, sizeof(window));
+   request.screen        = 1;
+   request.generation    = video_driver_window_generation();
+   request.settings.mode = VIDEO_WINDOW_SEPARATE;
+   request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+   CHECK(ctx->windows->create(data, &request, &window));
+   native_window_wait(ctx, data, &request, &window,
+         NATIVE_EVENT(RESUME), 0);
+   ctx->windows->keep(data, &window);
+   ctx->destroy(data);
+   data = NULL;
+   if (!(ctx = native_context(vk_ident, GFX_CTX_VULKAN_API, 1, 0, &data)))
+      return;
+   took = ctx->windows->take(data, request.screen, &window, &display);
+   fprintf(stderr, "native %s: %s's window %s\n", vk_ident, gl_ident,
+         took ? "taken" : "not taken");
+   CHECK(!took);
+   if (took)
+      ctx->windows->destroy(data, &window);
+   CHECK(ctx->windows->create(data, &request, &window));
+   native_window_wait(ctx, data, &request, &window,
+         NATIVE_EVENT(RESUME), 0);
+   ctx->windows->destroy(data, &window);
+   ctx->destroy(data);
+}
+#endif
+
+/* What shows on the window system's side that a window is gone;
+ * a Wayland client sees nothing */
+typedef struct
+{
+#ifdef HAVE_X11
+   Display *watch;
+   Window win;
+#endif
+#ifdef NATIVE_WIN32
+   HWND hwnd;
+#endif
+#ifdef NATIVE_SDL
+   unsigned long id;
+#endif
+   void *state;
+} native_gone_t;
+
+static void native_gone_watch(const char *ident,
+      const video_window_native_t *window, native_gone_t *gone)
+{
+   memset(gone, 0, sizeof(*gone));
+   gone->state = window->state;
+#ifdef HAVE_X11
+   if (native_x11_ident(ident) && (gone->watch = XOpenDisplay(NULL)))
+   {
+      gone->win = native_x11_window(window);
+      XSelectInput(gone->watch, gone->win, StructureNotifyMask);
+      XSync(gone->watch, False);
+   }
+#endif
+#ifdef NATIVE_WIN32
+   if (native_w32_ident(ident))
+      gone->hwnd = native_w32_window(window);
+#endif
+#ifdef NATIVE_SDL
+   if (native_sdl_ident(ident))
+      gone->id = (unsigned long)SDL_GetWindowID(
+            ((native_sdl_state_t*)window->state)->win);
+#endif
+}
+
+/* Whether the watched window is gone; the watch ends */
+static bool native_gone(native_gone_t *gone)
+{
+   bool destroyed = true;
+#ifdef HAVE_X11
+   if (gone->watch)
+   {
+      retro_time_t deadline = cpu_features_get_time_usec() + 2000000;
+      destroyed             = false;
+      while (!destroyed && cpu_features_get_time_usec() < deadline)
+      {
+         XEvent event;
+         XSync(gone->watch, False);
+         while (XPending(gone->watch))
+         {
+            XNextEvent(gone->watch, &event);
+            if (     event.type == DestroyNotify
+                  && event.xdestroywindow.window == gone->win)
+               destroyed = true;
+         }
+         if (!destroyed)
+            retro_sleep(2);
+      }
+      XCloseDisplay(gone->watch);
+      gone->watch = NULL;
+   }
+#endif
+#ifdef NATIVE_WIN32
+   if (gone->hwnd)
+      destroyed = !IsWindow(gone->hwnd);
+#endif
+#ifdef NATIVE_SDL
+   if (gone->id)
+      destroyed =    !SDL_WasInit(SDL_INIT_VIDEO)
+                  || !SDL_GetWindowFromID((Uint32)gone->id);
+#endif
+   return destroyed;
+}
+
+/* What the frontend runs once the next driver is up */
+static void native_release_kept(void)
+{
+#ifdef HAVE_WAYLAND
+   gfx_ctx_wl_release_kept();
+#endif
+#ifdef NATIVE_WIN32
+   win32_window_release_kept();
+#endif
+   video_driver_release_kept_windows();
+}
+
+/* A kept window nobody takes goes, by the release the frontend runs
+ * once the next driver is up (after init, in a threaded driver's
+ * CMD_INIT, after a failed init and at quit), by a create for its
+ * screen, and by a take on another visual (X11) or context (Wayland) */
+static void native_window_kept_gone(const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
+{
+   unsigned round;
+   unsigned rounds = 2;
+#ifdef HAVE_X11
+   if (native_x11_ident(ident))
+      rounds = 3;
+#endif
+#ifdef HAVE_WAYLAND
+   if (native_wl_ident(ident))
+      rounds = 3;
+#endif
+   for (round = 0; round < rounds; round++)
+   {
+      video_window_request_t request;
+      video_window_native_t window;
+      native_gone_t gone;
+      bool destroyed;
+      unsigned display = 0;
+      bool took        = false;
+      void *data       = NULL;
+      const gfx_ctx_driver_t *ctx = native_context(ident, api, major,
+            minor, &data);
+      if (!ctx)
+         return;
+#ifdef NATIVE_SDL
+      if (native_sdl_ident(ident) && native_sdl_no_windows(ctx, data))
+         return;
+#endif
+#ifdef NATIVE_WIN32
+      if (native_w32_ident(ident))
+         native_window_input = native_w32_pump;
+#endif
+      memset(&request, 0, sizeof(request));
+      memset(&window, 0, sizeof(window));
+      request.screen        = 1;
+      request.generation    = video_driver_window_generation();
+      request.settings.mode = VIDEO_WINDOW_SEPARATE;
+      request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+      CHECK(ctx->windows->create(data, &request, &window));
+      native_window_wait(ctx, data, &request, &window,
+            NATIVE_EVENT(RESUME), 0);
+      native_gone_watch(ident, &window, &gone);
+      ctx->windows->keep(data, &window);
+      ctx->destroy(data);
+      data = NULL;
+      if (!(ctx = native_context(ident, api, major, minor, &data)))
+      {
+         native_gone(&gone);
+         return;
+      }
+      if (round == 1)
+      {
+         request.generation = video_driver_window_generation();
+         CHECK(ctx->windows->create(data, &request, &window));
+      }
+      else if (round == 2)
+      {
+#ifdef HAVE_X11
+         if (native_x11_ident(ident))
+            took = x11_video_window_take(data, request.screen, &window,
+                  &display, ~(VisualID)0);
+#endif
+#ifdef HAVE_WAYLAND
+         if (native_wl_ident(ident))
+            took = wl_video_window_take(&gone, request.screen, &window,
+                  &display);
+#endif
+         CHECK(!took);
+      }
+      else
+      {
+#ifdef HAVE_WAYLAND
+         if (native_wl_ident(ident))
+            native_wl_kept_configure(ctx, data, &request,
+                  (wl_video_window_t*)gone.state);
+#endif
+         native_release_kept();
+      }
+      destroyed = native_gone(&gone);
+      fprintf(stderr, "native %s: kept, %s: %s\n", ident, round == 1
+            ? "a create for its screen" : round == 2 ? "a mismatched take"
+            : "the frontend's release", destroyed ? "gone" : "still up");
+      CHECK(destroyed);
+      if (round == 1)
+         native_window_wait(ctx, data, &request, &window,
+               NATIVE_EVENT(RESUME), 0);
+      else if (!took && ctx->windows->take(data, request.screen, &window,
+               &display))
+         CHECK(!"taken after it went");
+      if (window.state)
+         ctx->windows->destroy(data, &window);
+      ctx->destroy(data);
+#ifdef NATIVE_WIN32
+      native_window_input = NULL;
+#endif
+   }
+}
+
+#ifdef HAVE_WAYLAND
+typedef struct
+{
+   const gfx_ctx_driver_t *ctx;
+   void *data;
+   video_window_native_t *window;
+   bool took;
+} native_wl_take_t;
+
+static void native_wl_take_run(void *arg)
+{
+   unsigned display      = 0;
+   native_wl_take_t *job = (native_wl_take_t*)arg;
+   job->took             = job->ctx->windows->take(job->data, 1,
+         job->window, &display);
+}
+
+/* Video turned threaded with a window kept: it is taken on the video
+ * thread, so the seat's focus on this one, the frontend's, waits in
+ * the queue for that thread's poll */
+static void native_wl_kept_thread(const char *ident, enum gfx_ctx_api api,
+      unsigned major, unsigned minor)
+{
+#ifdef HAVE_THREADS
+   video_window_request_t request;
+   video_window_native_t window;
+   native_wl_take_t job;
+   sthread_t *thread;
+   void *data                  = NULL;
+   const gfx_ctx_driver_t *ctx = native_context(ident, api, major, minor,
+         &data);
+   if (!ctx)
+      return;
+   memset(&request, 0, sizeof(request));
+   memset(&window, 0, sizeof(window));
+   request.screen        = 1;
+   request.generation    = video_driver_window_generation();
+   request.settings.mode = VIDEO_WINDOW_SEPARATE;
+   request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+   CHECK(ctx->windows->create(data, &request, &window));
+   native_window_wait(ctx, data, &request, &window,
+         NATIVE_EVENT(RESUME), 0);
+   CHECK(!window.focused);
+   ctx->windows->keep(data, &window);
+   ctx->destroy(data);
+   data = NULL;
+   if (!(ctx = native_context(ident, api, major, minor, &data)))
+      return;
+   job.ctx    = ctx;
+   job.data   = data;
+   job.window = &window;
+   job.took   = false;
+   if ((thread = sthread_create(native_wl_take_run, &job)))
+      sthread_join(thread);
+   CHECK(job.took);
+   if (!job.took)
+   {
+      ctx->destroy(data);
+      return;
+   }
+   wl_video_window_keyboard((gfx_ctx_wayland_data_t*)data,
+         (struct wl_surface*)window.surface, true);
+   fprintf(stderr, "native %s: taken on another thread, focus from this "
+         "one %s\n", ident, window.focused ? "handled here" : "queued");
+   CHECK(!window.focused);
+   native_window_drain(ctx, data, &request);
+   CHECK(window.focused);
+   wl_video_window_keyboard((gfx_ctx_wayland_data_t*)data,
+         (struct wl_surface*)window.surface, false);
+   native_window_drain(ctx, data, &request);
+   ctx->windows->destroy(data, &window);
+   ctx->destroy(data);
+#endif
+}
+#endif
+
+/* 'core': a 3.2 core GL context, as glcore asks for; else the
+ * driver's default one, as gl does */
+static void test_window_native_lifecycle(const char *ident, bool core)
+{
+   video_window_request_t request;
+   video_window_native_t window;
+   unsigned restart;
+   unsigned previous    = 0;
+   enum gfx_ctx_api api = strstr(ident, "vk")
+      ? GFX_CTX_VULKAN_API : strcmp(ident, "d3d") == 0
+      ? GFX_CTX_NONE : GFX_CTX_OPENGL_API;
+#ifdef NATIVE_WIN32
+   /* This is the main thread, which may keep the main window up for
+    * the next lifetime (win32_window_keep()) */
+   if (native_w32_ident(ident))
+      task_queue_init(false, NULL);
+#endif
+#ifdef HAVE_X11
+   /* Off at the first connect, so the monitor worker starts lazily.
+    * This is the main thread, where key events are acted on. */
+   if (native_x11_ident(ident))
+   {
+      config_get_ptr()->bools.video_windows_enable = false;
+      task_queue_init(false, NULL);
+   }
+#endif
+   for (restart = 0; restart < 2; restart++)
+   {
+      const gfx_ctx_driver_t *ctx;
+      void *ctx_data = NULL;
+      memset(&request, 0, sizeof(request));
+      memset(&window, 0, sizeof(window));
+      request.screen        = 1;
+      request.generation    = video_driver_window_generation();
+      request.settings.mode = VIDEO_WINDOW_SEPARATE;
+      request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+      CHECK(request.generation > previous);
+      strlcpy(config_get_ptr()->arrays.video_context_driver, ident,
+            sizeof(config_get_ptr()->arrays.video_context_driver));
+#if defined(HAVE_VULKAN) && defined(HAVE_X11) && defined(HAVE_XCB)
+      /* Vulkan contexts are not on the GL list */
+      if (strcmp(ident, "vk_x") == 0)
+         ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+               &gfx_ctx_vk_x, ident, api, 1, 0, false, &ctx_data);
+      else
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_WAYLAND)
+      if (strcmp(ident, "vk_wayland") == 0)
+         ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+               &gfx_ctx_vk_wayland, ident, api, 1, 0, false, &ctx_data);
+      else
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_SDL3)
+      if (strcmp(ident, "vk_sdl3") == 0)
+         ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+               &gfx_ctx_sdl3_vk, ident, api, 1, 0, false, &ctx_data);
+      else
+#endif
+#ifdef NATIVE_WIN32
+#ifdef HAVE_VULKAN
+      if (strcmp(ident, "vk_w") == 0)
+         ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+               &gfx_ctx_w_vk, ident, api, 1, 0, false, &ctx_data);
+      else
+#endif
+      /* No context: the native table a Direct3D driver uses */
+      if (strcmp(ident, "d3d") == 0)
+         ctx = native_w32_d3d_init(&ctx_data);
+      else
+#endif
+      ctx = video_context_driver_init_first(NULL, ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0), false,
+            &ctx_data);
+      CHECK(ctx != NULL);
+      if (!ctx)
+         return;
+      fprintf(stderr, "native context: requested %s, selected %s\n",
+            ident, ctx->ident);
+      CHECK(strcmp(ctx->ident, ident) == 0);
+      if (strcmp(ctx->ident, ident) != 0)
+      {
+         ctx->destroy(ctx_data);
+         return;
+      }
+      /* A failed set_video_mode has freed the context already */
+      if (!ctx->set_video_mode(ctx_data, VIDEO_SCALE_PACK(640, 480), false))
+      {
+         CHECK(!"set_video_mode");
+         return;
+      }
+#if defined(HAVE_X11) && defined(RARCH_HAVE_X11_MONITORS)
+      /* First a context whose monitor worker cannot start */
+      if (     !restart && native_x11_ident(ident)
+            && !(ctx = native_x11_unlisted(ctx, &ctx_data, api,
+                  api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+                  api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0))))
+         return;
+      /* Then, on two monitors, the toggle on from the start */
+      if (     restart && native_x11_ident(ident)
+            && !(ctx = native_x11_located(ctx, &ctx_data, api,
+                  api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+                  api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0))))
+         return;
+#endif
+      if (api == GFX_CTX_OPENGL_API)
+         ctx->swap_interval(ctx_data, 1);
+#ifdef NATIVE_SDL
+      if (native_sdl_ident(ident) && native_sdl_no_windows(ctx, ctx_data))
+         return;
+#endif
+      CHECK(ctx->windows != NULL);
+      if (     ctx->windows
+            && !(     ctx->windows->create && ctx->windows->update
+                   && ctx->windows->poll   && ctx->windows->destroy))
+      {
+         CHECK(!"window operations");
+         ctx->destroy(ctx_data);
+         return;
+      }
+#ifdef NATIVE_WIN32
+      if (native_w32_ident(ident))
+         native_window_input = native_w32_pump;
+#endif
+      if (ctx->windows)
+      {
+         CHECK(ctx->windows->create(ctx_data, &request, &window));
+         CHECK(window.generation == request.generation);
+         CHECK(window.surface != NULL && window.state != NULL);
+#ifdef HAVE_X11
+         if (native_x11_ident(ident))
+         {
+            CHECK(window.kind == VIDEO_WINDOW_NATIVE_X11);
+            if (window.state)
+               native_x11_lifecycle(ctx, ctx_data, &request, &window);
+         }
+#endif
+#ifdef HAVE_WAYLAND
+         if (native_wl_ident(ident))
+         {
+            CHECK(window.kind == VIDEO_WINDOW_NATIVE_WAYLAND);
+            native_wl_input((gfx_ctx_wayland_data_t*)ctx_data, true);
+            if (window.state)
+               native_wl_lifecycle(ctx, ctx_data, &request, &window);
+         }
+#endif
+#ifdef NATIVE_WIN32
+         if (native_w32_ident(ident))
+         {
+            CHECK(window.kind == VIDEO_WINDOW_NATIVE_WIN32);
+            if (window.state)
+               native_w32_lifecycle(ctx, ctx_data, &request, &window);
+         }
+#endif
+#ifdef NATIVE_SDL
+         if (native_sdl_ident(ident))
+         {
+            CHECK(window.kind == NATIVE_SDL_KIND);
+            if (window.state)
+               native_sdl_lifecycle(ctx, ctx_data, &request, &window);
+         }
+#endif
+         previous = window.generation;
+#ifdef HAVE_X11
+         /* The context takes the window down, with a close and a resize
+          * queued for it that the next lifetime must not see */
+         if (!restart && window.state && native_x11_ident(ident))
+         {
+            Window w = native_x11_window(&window);
+            XResizeWindow(g_x11_dpy, w, 500, 400);
+            native_x11_close(g_x11_dpy, w);
+            XSync(g_x11_dpy, False);
+         }
+#endif
+#ifdef HAVE_WAYLAND
+         /* Focus as well, by the seat */
+         if (!restart && window.state && native_wl_ident(ident))
+         {
+            native_wl_kwin(video_window_title_screen(&request),
+                  "var g = w.frameGeometry;"
+                  " w.frameGeometry = {x: g.x, y: g.y, width: 500,"
+                  " height: 400}; w.closeWindow();");
+            native_wl_flood((gfx_ctx_wayland_data_t*)ctx_data,
+                  (struct wl_surface*)window.surface, 100, true, true, true);
+         }
+         if (native_wl_ident(ident))
+            native_wl_input((gfx_ctx_wayland_data_t*)ctx_data, false);
+#endif
+#ifdef NATIVE_WIN32
+         if (!restart && window.state && native_w32_ident(ident))
+         {
+            HWND w = native_w32_window(&window);
+            PostMessage(w, WM_SIZE, SIZE_RESTORED, MAKELPARAM(500, 400));
+            PostMessage(w, WM_CLOSE, 0, 0);
+         }
+#endif
+#ifdef NATIVE_SDL
+         if (!restart && window.state && native_sdl_ident(ident))
+         {
+            SDL_Window *w = (SDL_Window*)window.surface;
+            native_sdl_push(w, NATIVE_SDL_RESIZE, 500, 400);
+            native_sdl_push(w, NATIVE_SDL_CLOSE, 0, 0);
+         }
+#endif
+      }
+      ctx->destroy(ctx_data);
+      CHECK(window.state == NULL && window.surface == NULL);
+#ifdef HAVE_X11
+      if (native_x11_ident(ident))
+      {
+         CHECK(native_x11_titled(g_x11_dpy,
+               video_window_title_screen(&request)) == 0);
+         native_x11_torn_down(!restart);
+      }
+#endif
+#ifdef NATIVE_WIN32
+      if (native_w32_ident(ident))
+      {
+         native_w32_torn_down(video_window_title_screen(&request));
+         native_window_input = NULL;
+      }
+#endif
+#ifdef NATIVE_SDL
+      if (native_sdl_ident(ident))
+         native_sdl_torn_down(ctx, !restart);
+#endif
+   }
+#ifdef HAVE_X11
+   if (native_x11_ident(ident))
+      native_x11_kept(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+   else
+#endif
+   if (strcmp(ident, "d3d") != 0)
+      native_window_kept(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+   if (strcmp(ident, "d3d") != 0)
+      native_window_kept_gone(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+#ifdef HAVE_WAYLAND
+   if (native_wl_ident(ident))
+      native_wl_kept_thread(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+#endif
+#if defined(HAVE_SDL3) && defined(HAVE_VULKAN)
+   if (strcmp(ident, "vk_sdl3") == 0)
+      native_window_kept_gl("gl_sdl3", ident);
+#endif
+#if defined(NATIVE_WGL) && defined(HAVE_VULKAN)
+   if (strcmp(ident, "vk_w") == 0)
+   {
+      native_window_input = native_w32_pump;
+      native_window_kept_gl("wgl", ident);
+      native_window_input = NULL;
+   }
+#endif
+#ifdef NATIVE_WIN32
+   if (native_w32_ident(ident))
+      native_w32_teardown(ident, api, core);
+#endif
+#ifdef HAVE_WAYLAND
+   if (native_wl_ident(ident))
+      native_wl_teardown(ident, api, core);
+#endif
+}
 
 /* A controller's Plays As player saved into a game override: gone with
  * the override unloaded and back with it loaded, placed at once each
@@ -4769,6 +7913,23 @@ int main(int argc, char **argv)
    if (getenv("RA_SCREEN_TEST_SCRIPT"))
       return rarch_main(argc, argv, NULL);
 #endif
+   if (     (argc == 3 || argc == 4)
+         && strcmp(argv[1], "--native-windows") == 0)
+   {
+      rtime_init();
+      retroarch_config_init();
+      retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
+      frontend_driver_init_first(NULL);
+      config_set_defaults(config_get_ptr());
+      retro_main_log_file_init(NULL, false);
+      verbosity_enable();
+      test_window_native_lifecycle(argv[2],
+            argc == 3 || strcmp(argv[3], "gl") != 0);
+      if (failures)
+         return 1;
+      puts("PASS native window lifecycle");
+      return 0;
+   }
    if (argc != 2 && argc != 3)
       return 2;
    fill_pathname_join(fixture_path, argv[1], "fixture.cfg", sizeof(fixture_path));
@@ -4795,6 +7956,10 @@ int main(int argc, char **argv)
    }
    test_window_layout();
    test_window_frame();
+   test_window_monitors_frame();
+   test_window_fullscreen_hotkey();
+   test_window_bounds_saved();
+   test_window_bounds_edit();
    test_window_displays();
    test_window_display_names();
    test_window_moves();
@@ -4808,9 +7973,11 @@ int main(int argc, char **argv)
    test_window_turned_display();
    test_window_turned_waiting();
    test_window_pointer_mapping();
+   test_window_pointer_release();
    test_window_menu_touch_window();
    test_window_menu_mouse_kept();
    test_window_generation();
+   test_window_kept_pending();
    test_window_ui_layer_dims();
 #ifdef HAVE_GFX_WIDGETS
    test_window_idle_logo();
@@ -4818,11 +7985,19 @@ int main(int argc, char **argv)
    test_window_frame_snapshot();
    test_window_menu_settings();
    test_window_menu_display();
+   test_window_menu_monitors();
    test_window_menu_display_dropdown();
    test_window_menu_rows();
    test_window_menu_follows_screens();
    test_window_menu_list();
+   test_window_menu_window_rows();
+   test_window_menu_rows_moved();
+   test_window_menu_rows_redraw();
+   test_window_menu_screen_page();
+   test_window_menu_one_place();
    test_window_redraw();
+   test_window_redraw_own_moved();
+   test_window_redraw_edit();
    test_screen_frame_snapshot();
    test_xr_screen_menu();
    test_xr_menu_map_change();

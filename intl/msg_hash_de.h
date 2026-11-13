@@ -2534,8 +2534,6 @@ static const struct
    char s_f387bafb[21];
    char s_9c535394[9];
    char s_7f065006[11];
-   char s_5c12d979[14];
-   char s_32cb293c[22];
    char s_284873ec[23];
    char s_3220e9be[12];
    char s_3242e549[25];
@@ -2650,12 +2648,10 @@ static const struct
    char s_84c46931[26];
    char s_ebf10493[13];
    char s_d15bd14f[35];
-   char s_539d5393[10];
    char s_a64b3a0b[22];
    char s_83e8dc72[23];
    char s_7cf985f0[44];
    char s_0f5266ce[13];
-   char s_0f97fdc1[13];
    char s_ea2674d3[33];
    char s_ea2674d4[31];
    char s_2d8cb7ce[18];
@@ -4115,7 +4111,6 @@ static const struct
    char s_58c80718[336];
    char s_dc6f9d69[89];
    char s_417085f4[53];
-   char s_1bcf70a7[189];
    char s_2e2ca41a[396];
    char s_f48b1fac[54];
    char s_f4ad1b37[104];
@@ -7642,8 +7637,6 @@ static const struct
    "Bildschirmaufteilung",
    "Vertikal",
    "Bildschirm",
-   "Bildschirm %u",
-   "Bildschirm %u Display",
    "Bildschirme bearbeiten",
    "Neigewinkel",
    "Bildschirm zur\303\274cksetzen",
@@ -7758,12 +7751,10 @@ static const struct
    "Randloses Vollbildfenster",
    "Fenstermodus",
    "Fenster f\303\274r getrennte Bildschirme",
-   "Verbunden",
    "Maximale Fensterh\303\266he",
    "Maximale Fensterbreite",
    "Benutzerdefinierte Fenstergr\303\266\303\237e verwenden",
    "Fensterh\303\266he",
-   "Ausgeblendet",
    "Horizontaler Versatz der Anzeige",
    "Vertikaler Versatz der Anzeige",
    "Fenster-Deckkraft",
@@ -10227,9 +10218,6 @@ static const struct
    "s entsprechend der Anzahl der Unterbilder dargestellt wird.",
    "Legt fest, wie die Bildschirme von Systemen mit mehreren Bildschirmen angeordnet werden.",
    "Den anzupassenden schwebenden Bildschirm ausw\303\244hlen.",
-   "\342\200\236Verbunden\342\200\234 zeigt diesen Bildschirm zusammen mit den anderen an. \342\200"
-   "\236Getrennt\342\200\234 zeigt ihn in einem eigenen Fenster oder auf einem eigenen Display an. "
-   "\342\200\236Ausgeblendet\342\200\234 l\303\244sst ihn weg.",
    "Schlie\303\237t das Men\303\274 und verschiebt die Bildschirme und das Men\303\274 des Headsets "
    "mithilfe der Controller: Mit der Grifftaste werden Objekte gegriffen, mit dem Trigger geneigt un"
    "d mit dem Stick Abstand und Gr\303\266\303\237e ver\303\244ndert. Der Stick der freien Hand dreh"
@@ -11187,7 +11175,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (255069u
+      (sizeof(msg_hash_de_blob) == (254821u
 #ifdef ANDROID
        + 358u
 #endif
@@ -14291,8 +14279,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -14407,12 +14393,10 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -15854,7 +15838,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,

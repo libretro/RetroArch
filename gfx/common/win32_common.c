@@ -403,6 +403,19 @@ uint8_t g_win32_flags               = 0;
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+/* The monitors last published for the screens' Display setting and
+ * their handles, on the main window's thread. dirty: enumerate again;
+ * own_dirty: the main window may be on another one; published: the
+ * list up is this one, not another driver's. */
+static video_window_display_t win32_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+static HMONITOR win32_video_monitor_handles[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned win32_video_monitor_count;
+static bool win32_video_monitors_dirty;
+static bool win32_video_monitors_own_dirty;
+static bool win32_video_monitors_published;
+#endif
+
 static win32_common_state_t win32_st =
 {
    0,                   /* pos */
@@ -1007,6 +1020,9 @@ static LRESULT CALLBACK wnd_proc_common(
          win32_save_position();
          /* It may be on another monitor now */
          video_driver_window_output_changed();
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+         win32_video_monitors_own_dirty = true;
+#endif
          break;
 #if !defined(_XBOX)
       case WM_ENTERSIZEMOVE:
@@ -1261,6 +1277,12 @@ static bool win32_wnd_input_message(UINT message,
    return false;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+static void win32_video_windows_unsettled(void);
+static void win32_video_windows_ime_sync(void);
+static win32_video_window_t *win32_video_window_of(HWND hwnd);
+#endif
+
 /* The window procedure, past the window's creation. What it does with
  * a message is win32_msg_route()'s answer for the kind of input driver
  * in use; the steps are taken here, in order. */
@@ -1424,6 +1446,15 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
    if (     message == WM_KILLFOCUS
          && main_window.hwnd && hwnd != main_window.hwnd)
       route &= ~(WIN32_ROUTE_INPUT | WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF);
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* To one of its own screens' windows: the mouse stays clipped */
+   else if (message == WM_KILLFOCUS && wparam)
+   {
+      win32_video_window_t *to = win32_video_window_of((HWND)wparam);
+      if (to && !to->common.closed)
+         route &= ~WIN32_ROUTE_CLIP_OFF;
+   }
+#endif
 
 #ifdef HAVE_CLIP_WINDOW
    if (     (route & (WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF))
@@ -1450,6 +1481,11 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
       if (mon)
          win32_resize_after_display_change(hwnd, mon);
       video_driver_window_output_changed();
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+      win32_video_monitors_dirty     = true;
+      win32_video_monitors_own_dirty = true;
+      win32_video_windows_unsettled();
+#endif
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -1632,6 +1668,9 @@ LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
    if (message == WIN32_WM_TEXT_ENTRY)
    {
       win32_ime_sync(hwnd);
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+      win32_video_windows_ime_sync();
+#endif
       return 0;
    }
 
@@ -1865,10 +1904,18 @@ bool win32_window_keep(void)
    return true;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+static void win32_video_windows_release_kept(void);
+#endif
+
 void win32_window_release_kept(void)
 {
    HWND hwnd = win32_kept_hwnd;
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* Screens' windows kept on this thread that nobody took */
+   win32_video_windows_release_kept();
+#endif
    if (!hwnd)
       return;
    if (!IsWindow(hwnd))
@@ -2118,6 +2165,733 @@ static bool win32_window_create(void *data, unsigned style,
 #endif
    return true;
 }
+
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+#define WIN32_VIDEO_WINDOW_CLASS "RetroArch Screen"
+/* The property an open one has */
+#define WIN32_VIDEO_WINDOW_OPEN  "RetroArch Screen open"
+#define WIN32_VIDEO_WINDOW_STYLE (WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS \
+      | WS_CLIPCHILDREN)
+#define WIN32_VIDEO_WINDOW_FULLSCREEN_STYLE (WS_POPUP | WS_CLIPSIBLINGS \
+      | WS_CLIPCHILDREN)
+
+/* Secondary screens' windows, by screen */
+static win32_video_window_t *win32_video_windows[RETRO_VIDEO_VIEWS_MAX];
+static unsigned win32_video_window_count;
+static void win32_video_window_let_go(win32_video_window_t *state);
+
+static video_window_common_t *win32_video_window_at(unsigned screen)
+{
+   return win32_video_windows[screen]
+      ? &win32_video_windows[screen]->common : NULL;
+}
+
+static win32_video_window_t *win32_video_window_of(HWND hwnd)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (win32_video_windows[i] && win32_video_windows[i]->hwnd == hwnd)
+         return win32_video_windows[i];
+   return NULL;
+}
+
+/* Asks Windows alone, so it changes with the foreground in one step */
+bool win32_video_window_open(HWND hwnd)
+{
+   DWORD pid = 0;
+   return    hwnd
+          && GetWindowThreadProcessId(hwnd, &pid)
+          && pid == GetCurrentProcessId()
+          && GetPropA(hwnd, WIN32_VIDEO_WINDOW_OPEN);
+}
+
+/* Windows moves windows as the displays change: not the user's */
+static void win32_video_windows_unsettled(void)
+{
+   unsigned i;
+   retro_time_t now = cpu_features_get_time_usec();
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (win32_video_windows[i] && !win32_video_windows[i]->common.closed)
+         video_window_unsettled(&win32_video_windows[i]->common, now);
+}
+
+/* The main window's rule for the IME, on the same thread */
+static void win32_video_windows_ime_sync(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (win32_video_windows[i] && win32_video_windows[i]->hwnd)
+         win32_ime_sync(win32_video_windows[i]->hwnd);
+}
+
+/* Presentable while shown, not minimised and not of zero size. Shown
+ * by its own style: IsWindowVisible() is false for every window of a
+ * desktop that is never shown, as a service's. */
+static void win32_video_window_presentable(win32_video_window_t *state)
+{
+   RECT client;
+   video_window_native_t *window = state->common.native;
+   bool presentable              =
+         (GetWindowLongPtr(state->hwnd, GWL_STYLE) & WS_VISIBLE)
+      && !IsIconic(state->hwnd)
+      && GetClientRect(state->hwnd, &client)
+      && client.right  > client.left
+      && client.bottom > client.top;
+   if (presentable == window->presentable)
+      return;
+   window->presentable = presentable;
+   if (presentable)
+   {
+      state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(SUSPEND);
+      state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(RESUME);
+   }
+   else
+   {
+      state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(RESUME);
+      state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(SUSPEND);
+   }
+}
+
+/* Gone mid-drag: the drag's modal loop goes with it. Not exit()'s
+ * audio restart, which on a driver being torn down mutes the session. */
+static void win32_video_window_end_sizemove(win32_video_window_t *state)
+{
+   if (!state->sizemove)
+      return;
+   state->sizemove = 0;
+   win32_sizemove_abort(state->hwnd);
+}
+
+static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   video_window_native_t *window;
+   win32_video_window_t *state = win32_video_window_of(hwnd);
+
+   if (!state)
+      return DefWindowProc(hwnd, message, wparam, lparam);
+   window = state->common.native;
+
+   switch (message)
+   {
+      /* Its modal loops run on the main window's thread too. The
+       * frame this can yield to may free 'state'. */
+      case WM_ENTERSIZEMOVE:
+      case WM_ENTERMENULOOP:
+         state->sizemove++;
+         win32_sizemove_enter(hwnd);
+         return DefWindowProc(hwnd, message, wparam, lparam);
+      case WM_EXITSIZEMOVE:
+      case WM_EXITMENULOOP:
+         if (state->sizemove)
+            state->sizemove--;
+         win32_sizemove_exit(hwnd);
+         break;
+      case WM_PAINT:
+         if (win32_message_paint(hwnd))
+            return 0;
+         break;
+      /* Unlike the main window's, this close does not quit, and the
+       * window stays until its owner destroys it */
+      case WM_CLOSE:
+         video_window_mark_closed_by_user(&state->common);
+         RemovePropA(hwnd, WIN32_VIDEO_WINDOW_OPEN);
+         return 0;
+      /* By something else: destroy() takes the window out first */
+      case WM_DESTROY:
+         win32_video_window_end_sizemove(state);
+         video_window_mark_closed(&state->common);
+         RemovePropA(hwnd, WIN32_VIDEO_WINDOW_OPEN);
+         state->destroyed = true;
+         state->hwnd      = NULL;
+         break;
+      default:
+         break;
+   }
+
+   if (state->common.closed)
+      return DefWindowProc(hwnd, message, wparam, lparam);
+
+   switch (message)
+   {
+      /* Keys go where the main window's go */
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYDOWN:
+      case WM_SYSKEYUP:
+      case WM_CHAR:
+      case WM_IME_COMPOSITION:
+      case WM_IME_ENDCOMPOSITION:
+         return win32_wnd_proc_route(hwnd, message, wparam, lparam);
+      case WM_WINDOWPOSCHANGED:
+         /* the WM_SIZE and WM_MOVE it makes first */
+         ret = DefWindowProc(hwnd, message, wparam, lparam);
+         if ((state = win32_video_window_of(hwnd)) && !state->common.closed)
+         {
+            /* Judged once both are in. Nothing is the user's while it
+             * is hidden or minimised. */
+            retro_time_t now = cpu_features_get_time_usec();
+            if (!state->common.native->presentable)
+               video_window_unsettled(&state->common, now);
+            video_window_moved(&state->common, state->common.pos, true,
+                  state->common.native->dims,
+                     !IsZoomed(hwnd) && !IsIconic(hwnd)
+                  && !state->common.request.settings.fullscreen, now);
+            win32_video_window_presentable(state);
+         }
+         return ret;
+      case WM_SIZE:
+         if (     wparam != SIZE_MINIMIZED
+               && LOWORD(lparam) && HIWORD(lparam))
+         {
+            unsigned dims = VIDEO_SCALE_PACK(LOWORD(lparam), HIWORD(lparam));
+            if (dims != window->dims)
+            {
+               window->dims           = dims;
+               state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+            }
+         }
+         break;
+      case WM_MOVE:
+         /* a minimised window's position is a placeholder */
+         if (!IsIconic(hwnd))
+         {
+            unsigned pos = VIDEO_POS_PACK((short)LOWORD(lparam),
+                  (short)HIWORD(lparam));
+            if (pos != state->common.pos)
+            {
+               state->common.pos      = pos;
+               state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+            }
+         }
+         break;
+      case WM_SETFOCUS:
+         window->focused        = true;
+         state->common.pending |= VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+         break;
+      case WM_KILLFOCUS:
+         window->focused        = false;
+         state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+         state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS);
+#ifdef HAVE_CLIP_WINDOW
+         /* Out of RetroArch's windows: the main window's loss to this
+          * one kept the clip */
+         if (     (HWND)wparam != main_window.hwnd
+               && (input_driver_get_flags() & INP_FLAG_GRAB_MOUSE_STATE))
+         {
+            win32_video_window_t *to = wparam
+                  ? win32_video_window_of((HWND)wparam) : NULL;
+            if (!to || to->common.closed)
+               win32_clip_window(false);
+         }
+#endif
+         break;
+      default:
+         break;
+   }
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+static bool win32_video_window_class(HINSTANCE instance)
+{
+   WNDCLASSEX wndclass;
+   memset(&wndclass, 0, sizeof(wndclass));
+   wndclass.cbSize        = sizeof(wndclass);
+   if (GetClassInfoEx(instance, WIN32_VIDEO_WINDOW_CLASS, &wndclass))
+      return true;
+   memset(&wndclass, 0, sizeof(wndclass));
+   wndclass.cbSize        = sizeof(wndclass);
+   /* a DC of its own keeps a context's pixel format */
+   wndclass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+   wndclass.lpfnWndProc   = win32_video_window_proc;
+   wndclass.hInstance     = instance;
+   wndclass.hCursor       = LoadCursor(NULL, IDC_ARROW);
+   wndclass.hIcon         = LoadIcon(instance, MAKEINTRESOURCE(IDI_ICON));
+   wndclass.hIconSm       = (HICON)LoadImage(instance,
+         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+   wndclass.lpszClassName = WIN32_VIDEO_WINDOW_CLASS;
+   return RegisterClassEx(&wndclass) != 0;
+}
+
+typedef struct
+{
+   HMONITOR all[MAX_MONITORS];
+   unsigned count;
+} win32_video_monitors_t;
+
+static BOOL CALLBACK win32_video_window_monitor(HMONITOR hm,
+      HDC hdc, LPRECT rect, LPARAM data)
+{
+   win32_video_monitors_t *list = (win32_video_monitors_t*)data;
+   if (list->count >= MAX_MONITORS)
+      return FALSE;
+   list->all[list->count++] = hm;
+   return TRUE;
+}
+
+/* The monitors for the screens' Display setting, in the order the
+ * windows' monitor setting counts them (win32_video_window_place()).
+ * Enumerated only when dirty; else only the main window's is found
+ * again. Published only when changed, or another list is up. */
+static void win32_video_monitors_publish(void)
+{
+   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned i;
+   unsigned count = win32_video_monitor_count;
+   HMONITOR own   = main_window.hwnd
+      ? MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST)
+      : NULL;
+
+   if (win32_video_monitors_dirty)
+   {
+      win32_video_monitors_t monitors;
+      monitors.count = 0;
+      EnumDisplayMonitors(NULL, NULL, win32_video_window_monitor,
+            (LPARAM)&monitors);
+      count = monitors.count < VIDEO_WINDOW_DISPLAYS_MAX
+         ? monitors.count : VIDEO_WINDOW_DISPLAYS_MAX;
+      for (i = 0; i < count; i++)
+      {
+         MONITORINFOEX info;
+         video_window_display_t *display = &list[i];
+         unsigned w                      = 0;
+         unsigned h                      = 0;
+         memset(display, 0, sizeof(*display));
+         memset(&info, 0, sizeof(info));
+         info.cbSize                     = sizeof(info);
+         win32_video_monitor_handles[i]  = monitors.all[i];
+         display->ordinal                = i + 1;
+         display->valid                  = true;
+         display->on                     = true;
+         display->physical               = true;
+         display->monitor                = true;
+         if (GetMonitorInfo(monitors.all[i], (LPMONITORINFO)&info))
+         {
+            w = info.rcMonitor.right  - info.rcMonitor.left;
+            h = info.rcMonitor.bottom - info.rcMonitor.top;
+            strlcpy(display->name, info.szDevice, sizeof(display->name));
+         }
+         if (VIDEO_SCALE_FITS(w, h))
+            display->dims = VIDEO_SCALE_PACK(w, h);
+      }
+      win32_display_config_connectors(list, count);
+   }
+   else
+      memcpy(list, win32_video_monitors, count * sizeof(*list));
+   for (i = 0; i < count; i++)
+      list[i].own = win32_video_monitor_handles[i] == own;
+   win32_video_monitors_dirty     = false;
+   win32_video_monitors_own_dirty = false;
+   if (     win32_video_monitors_published
+         && count == win32_video_monitor_count
+         && !memcmp(list, win32_video_monitors, count * sizeof(*list)))
+      return;
+   memcpy(win32_video_monitors, list, count * sizeof(*list));
+   win32_video_monitor_count      = count;
+   win32_video_monitors_published = true;
+   video_driver_publish_window_displays(list, count);
+}
+
+/* The window rect for 'settings' on the monitors there are now: on
+ * 'monitor' if given, else the preferred one (counted as for the main
+ * window), else with an automatic monitor the one the saved bounds are
+ * mostly on, else the main window's, else the primary. Saved bounds
+ * partly off its work area are moved onto it; bounds not on it at all,
+ * automatic ones and ones with no position set are centred on it.
+ * Fullscreen covers it. */
+static void win32_video_window_place(
+      const video_window_settings_t *settings, HMONITOR monitor, RECT *out)
+{
+   RECT frame;
+   MONITORINFO info;
+   video_window_rect_t rect, work;
+   unsigned cw    = VIDEO_SCALE_W(settings->dims);
+   unsigned ch    = VIDEO_SCALE_H(settings->dims);
+   bool automatic = !settings->dims || !settings->pos_set;
+
+   if (!settings->dims)
+   {
+      RECT client;
+      cw = 640;
+      ch = 480;
+      if (     main_window.hwnd && GetClientRect(main_window.hwnd, &client)
+            && client.right > 0 && client.bottom > 0)
+      {
+         cw = client.right;
+         ch = client.bottom;
+      }
+   }
+   /* saved bounds are the client area's */
+   frame.left   = VIDEO_POS_X(settings->pos);
+   frame.top    = VIDEO_POS_Y(settings->pos);
+   frame.right  = frame.left + (int)cw;
+   frame.bottom = frame.top  + (int)ch;
+   AdjustWindowRectEx(&frame, WIN32_VIDEO_WINDOW_STYLE, FALSE, 0);
+
+   if (!monitor && settings->monitor)
+   {
+      win32_video_monitors_t monitors;
+      monitors.count = 0;
+      EnumDisplayMonitors(NULL, NULL, win32_video_window_monitor,
+            (LPARAM)&monitors);
+      if (settings->monitor <= monitors.count)
+         monitor = monitors.all[settings->monitor - 1];
+   }
+   if (!monitor && !settings->monitor && !automatic)
+      monitor = MonitorFromRect(&frame, MONITOR_DEFAULTTONULL);
+   if (!monitor && main_window.hwnd)
+      monitor = MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONULL);
+   memset(&info, 0, sizeof(info));
+   info.cbSize = sizeof(info);
+   if (!monitor || !GetMonitorInfo(monitor, &info))
+   {
+      POINT origin;
+      origin.x = 0;
+      origin.y = 0;
+      GetMonitorInfo(MonitorFromPoint(origin, MONITOR_DEFAULTTOPRIMARY),
+            &info);
+   }
+
+   if (settings->fullscreen)
+   {
+      *out = info.rcMonitor;
+      return;
+   }
+   rect.x = frame.left;
+   rect.y = frame.top;
+   rect.w = frame.right  - frame.left;
+   rect.h = frame.bottom - frame.top;
+   work.x = info.rcWork.left;
+   work.y = info.rcWork.top;
+   work.w = info.rcWork.right  - info.rcWork.left;
+   work.h = info.rcWork.bottom - info.rcWork.top;
+   video_window_place_rect(&rect, &work, automatic);
+   out->left   = rect.x;
+   out->top    = rect.y;
+   out->right  = rect.x + rect.w;
+   out->bottom = rect.y + rect.h;
+}
+
+/* Puts the window where its request has it */
+static void win32_video_window_apply(win32_video_window_t *state)
+{
+   RECT frame, rect;
+   UINT flags                         = SWP_NOZORDER | SWP_NOACTIVATE;
+   HMONITOR monitor                   = NULL;
+   const video_window_settings_t *now = &state->common.request.settings;
+   video_window_settings_t place      = *now;
+
+   state->apply = false;
+   /* placed from its restored size, not its maximised one */
+   if (IsZoomed(state->hwnd))
+      ShowWindow(state->hwnd, SW_SHOWNOACTIVATE);
+   /* fullscreen on no monitor in particular is on the one it is on */
+   if (now->fullscreen && !now->monitor)
+      monitor = MonitorFromWindow(state->hwnd, MONITOR_DEFAULTTONEAREST);
+   /* a window again with no position of its own: where it was, at its
+    * own size if it has one, moved onto its monitor */
+   if (     !now->fullscreen && state->fullscreen
+         && (!now->dims || !now->pos_set) && state->windowed_set)
+   {
+      RECT edge;
+      SetRectEmpty(&edge);
+      AdjustWindowRectEx(&edge, WIN32_VIDEO_WINDOW_STYLE, FALSE, 0);
+      /* placed by its client area */
+      place.pos     = VIDEO_POS_PACK(state->windowed.left - edge.left,
+            state->windowed.top - edge.top);
+      place.pos_set = true;
+      if (!now->dims)
+         place.dims = VIDEO_SCALE_PACK(
+               (state->windowed.right  - state->windowed.left)
+                  - (edge.right  - edge.left),
+               (state->windowed.bottom - state->windowed.top)
+                  - (edge.bottom - edge.top));
+   }
+   win32_video_window_place(&place, monitor, &rect);
+   if (now->fullscreen != state->fullscreen)
+   {
+      if (now->fullscreen)
+         state->windowed_set = GetWindowRect(state->hwnd,
+               &state->windowed) != 0;
+      SetWindowLongPtr(state->hwnd, GWL_STYLE, (now->fullscreen
+               ? WIN32_VIDEO_WINDOW_FULLSCREEN_STYLE
+               : WIN32_VIDEO_WINDOW_STYLE)
+            | (GetWindowLongPtr(state->hwnd, GWL_STYLE) & WS_VISIBLE));
+      state->fullscreen = now->fullscreen;
+      flags            |= SWP_FRAMECHANGED;
+   }
+   /* placed by its client area, as GEOMETRY reports it */
+   SetRectEmpty(&frame);
+   AdjustWindowRectEx(&frame, now->fullscreen
+         ? WIN32_VIDEO_WINDOW_FULLSCREEN_STYLE
+         : WIN32_VIDEO_WINDOW_STYLE, FALSE, 0);
+   video_window_placed(&state->common,
+         VIDEO_POS_PACK(rect.left - frame.left, rect.top - frame.top),
+         VIDEO_SCALE_PACK(
+            (rect.right  - rect.left) - (frame.right  - frame.left),
+            (rect.bottom - rect.top)  - (frame.bottom - frame.top)),
+         cpu_features_get_time_usec());
+   SetWindowPos(state->hwnd, NULL, rect.left, rect.top,
+         rect.right - rect.left, rect.bottom - rect.top, flags);
+}
+
+bool win32_video_window_create(void *owner,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   char title[64];
+   RECT rect, client;
+   POINT origin;
+   win32_video_window_t *state;
+   HINSTANCE instance = GetModuleHandle(NULL);
+
+   if (     request && request->screen < RETRO_VIDEO_VIEWS_MAX
+         && win32_video_windows[request->screen]
+         && !win32_video_windows[request->screen]->common.owner)
+      win32_video_window_let_go(win32_video_windows[request->screen]);
+   if (     !owner || !request || !window || window->state
+         || !main_window.hwnd
+         /* the only pump that sees its messages is this thread's */
+         || GetWindowThreadProcessId(main_window.hwnd, NULL)
+            != GetCurrentThreadId()
+         || !request->generation
+         || !request->screen
+         || request->screen >= RETRO_VIDEO_VIEWS_MAX
+         || request->settings.mode != VIDEO_WINDOW_SEPARATE
+         || win32_video_windows[request->screen]
+         || (request->settings.dims
+            && (  !VIDEO_SCALE_W(request->settings.dims)
+               || !VIDEO_SCALE_H(request->settings.dims))))
+      return false;
+   if (     !win32_video_window_class(instance)
+         || !(state = (win32_video_window_t*)calloc(1, sizeof(*state))))
+   {
+      if (!win32_video_window_count)
+         UnregisterClass(WIN32_VIDEO_WINDOW_CLASS, instance);
+      return false;
+   }
+
+   state->common.owner   = owner;
+   state->common.native  = window;
+   state->common.request = *request;
+   state->thread         = GetCurrentThreadId();
+   state->fullscreen     = request->settings.fullscreen;
+   memset(window, 0, sizeof(*window));
+   window->state         = state;
+   window->display       = instance;
+   window->kind          = VIDEO_WINDOW_NATIVE_WIN32;
+   window->generation    = request->generation;
+   window->configured    = true;
+
+   win32_video_window_place(&request->settings, NULL, &rect);
+   snprintf(title, sizeof(title), "RetroArch - Screen %u",
+         video_window_title_screen(request) + 1);
+   if (!(state->hwnd = CreateWindowEx(0, WIN32_VIDEO_WINDOW_CLASS, title,
+               state->fullscreen
+               ? WIN32_VIDEO_WINDOW_FULLSCREEN_STYLE
+               : WIN32_VIDEO_WINDOW_STYLE,
+               rect.left, rect.top,
+               rect.right - rect.left, rect.bottom - rect.top,
+               NULL, NULL, instance, NULL)))
+   {
+      free(state);
+      memset(window, 0, sizeof(*window));
+      if (!win32_video_window_count)
+         UnregisterClass(WIN32_VIDEO_WINDOW_CLASS, instance);
+      return false;
+   }
+   win32_ime_sync(state->hwnd);
+   SetPropA(state->hwnd, WIN32_VIDEO_WINDOW_OPEN, (HANDLE)1);
+
+   /* as it came up; its messages keep these from here on */
+   memset(&client, 0, sizeof(client));
+   GetClientRect(state->hwnd, &client);
+   origin.x          = 0;
+   origin.y          = 0;
+   ClientToScreen(state->hwnd, &origin);
+   window->surface   = state->hwnd;
+   window->dims      = VIDEO_SCALE_PACK(client.right, client.bottom);
+   state->common.pos = VIDEO_POS_PACK(origin.x, origin.y);
+   video_window_placed(&state->common, state->common.pos, window->dims,
+         cpu_features_get_time_usec());
+   win32_video_windows[request->screen] = state;
+   win32_video_window_count++;
+   return true;
+}
+
+void win32_video_window_show(video_window_native_t *window)
+{
+   win32_video_window_t *state = window
+      ? (win32_video_window_t*)window->state : NULL;
+   if (!state)
+      return;
+   /* the main window keeps the focus */
+   ShowWindow(state->hwnd, SW_SHOWNOACTIVATE);
+   win32_video_window_presentable(state);
+}
+
+void win32_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request)
+{
+   const video_window_settings_t *now;
+   const video_window_settings_t *was;
+   win32_video_window_t *state = window
+      ? (win32_video_window_t*)window->state : NULL;
+
+   if (     !state || state->common.owner != owner || !request
+         || state->common.closed
+         || request->screen     != state->common.request.screen
+         || request->generation != state->common.request.generation)
+      return;
+   now = &request->settings;
+   was = &state->common.request.settings;
+   if (     (now->dims && (!VIDEO_SCALE_W(now->dims) || !VIDEO_SCALE_H(now->dims)))
+         || (     now->pos        == was->pos
+               && now->dims       == was->dims
+               && now->pos_set    == was->pos_set
+               && now->monitor    == was->monitor
+               && now->fullscreen == was->fullscreen))
+      return;
+   state->common.request    = *request;
+   /* A drag not yet out does not overwrite this */
+   state->common.save_dims  = 0;
+   state->common.save_moved = false;
+   /* a minimised window takes it once restored, in poll() */
+   if (IsIconic(state->hwnd))
+      state->apply = true;
+   else
+      win32_video_window_apply(state);
+}
+
+unsigned win32_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      win32_video_window_t *state = win32_video_windows[i];
+      if (     state && state->apply && state->common.owner == owner
+            && !state->common.closed && !IsIconic(state->hwnd))
+         win32_video_window_apply(state);
+   }
+   return video_windows_drain(owner, win32_video_window_at, events,
+         capacity);
+}
+
+void win32_video_window_destroy(void *owner, video_window_native_t *window)
+{
+   win32_video_window_t *state = window
+      ? (win32_video_window_t*)window->state : NULL;
+
+   if (!state || state->common.owner != owner)
+      return;
+   /* out of the table first: nothing destroying it sends is reported */
+   win32_video_windows[state->common.request.screen] = NULL;
+   win32_video_window_count--;
+   /* as win32_pump_cancel() does: its loop ends when it next runs */
+   if (state->sizemove && !state->destroyed)
+      SendMessage(state->hwnd, WM_CANCELMODE, 0, 0);
+   win32_video_window_end_sizemove(state);
+   if (!state->destroyed)
+   {
+      RemovePropA(state->hwnd, WIN32_VIDEO_WINDOW_OPEN);
+      DestroyWindow(state->hwnd);
+   }
+   free(state);
+   memset(window, 0, sizeof(*window));
+   if (!win32_video_window_count)
+      UnregisterClass(WIN32_VIDEO_WINDOW_CLASS, GetModuleHandle(NULL));
+}
+
+/* A kept window nobody took, destroyed as its own teardown does: only
+ * by its own thread */
+static void win32_video_window_let_go(win32_video_window_t *state)
+{
+   video_window_native_t window;
+   if (state->thread != GetCurrentThreadId())
+      return;
+   window               = state->common.kept;
+   state->common.native = &window;
+   win32_video_window_destroy(NULL, &window);
+}
+
+static void win32_video_windows_release_kept(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (win32_video_windows[i] && !win32_video_windows[i]->common.owner)
+         win32_video_window_let_go(win32_video_windows[i]);
+}
+
+void win32_video_window_keep(void *owner, video_window_native_t *window)
+{
+   win32_video_window_t *state = window
+      ? (win32_video_window_t*)window->state : NULL;
+   if (!state || state->common.owner != owner)
+      return;
+   if (     !task_is_on_main_thread()
+         || (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+      win32_video_window_destroy(owner, window);
+   else
+      video_window_hold(&state->common, window);
+}
+
+bool win32_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display, int format)
+{
+   HDC hdc;
+   int has = 0;
+   win32_video_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? win32_video_windows[screen] : NULL;
+   if (     !owner || !state || state->common.owner || !window
+         || window->state
+         || state->thread != GetCurrentThreadId())
+      return false;
+   if (!state->destroyed && (hdc = GetDC(state->hwnd)))
+   {
+      has = GetPixelFormat(hdc);
+      ReleaseDC(state->hwnd, hdc);
+   }
+   /* One the user closed meanwhile is taken, for its close to land; one
+    * with another pixel format is not, as a window's is set once */
+   if (state->destroyed || has != format)
+   {
+      win32_video_window_let_go(state);
+      return false;
+   }
+   video_window_adopt(&state->common, owner, window);
+   *display = state->common.request.display;
+   /* RetroArch is in front, so the window the user left it on can be */
+   if (     state->common.kept_focus && window->presentable
+         && !state->common.closed)
+      SetForegroundWindow(state->hwnd);
+   return true;
+}
+
+void win32_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window))
+{
+   video_windows_sweep(owner, win32_video_window_at, destroy);
+}
+
+static bool win32_video_window_create_shown(void *owner,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   if (!win32_video_window_create(owner, request, window))
+      return false;
+   win32_video_window_show(window);
+   return true;
+}
+
+const gfx_ctx_window_driver_t win32_video_window_driver = {
+   win32_video_window_create_shown,
+   win32_video_window_update,
+   win32_video_window_poll,
+   NULL, /* bind_gl */
+   NULL, /* present_gl */
+   win32_video_window_destroy
+};
+#endif
 #endif
 
 void win32_monitor_init(void)
@@ -2128,6 +2902,12 @@ void win32_monitor_init(void)
    g_win32->monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL,
          win32_monitor_enum_proc, 0);
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* Nothing kept from the last driver: another driver's list may be up */
+   if (!win32_kept_hwnd)
+      win32_video_monitors_published = false;
+   win32_video_monitors_dirty     = true;
+#endif
 #endif
    g_win32_flags         &= ~WIN32_CMN_FLAG_QUIT;
 }
@@ -2148,6 +2928,10 @@ void win32_check_window(void *data,
    bool video_is_threaded = video_driver_is_threaded();
    if (video_is_threaded)
       ui_companion_win32.application->process_events();
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   if (win32_video_monitors_dirty || win32_video_monitors_own_dirty)
+      win32_video_monitors_publish();
+#endif
    *quit                  = (g_win32_flags & WIN32_CMN_FLAG_QUIT) ? true : false;
 
    if (g_win32_flags & WIN32_CMN_FLAG_RESIZED)
@@ -2284,8 +3068,16 @@ bool win32_has_focus(void *data)
    }
 
    if (g_win32_flags & WIN32_CMN_FLAG_INITED)
-      if (GetForegroundWindow() == main_window.hwnd)
+   {
+      HWND fg = GetForegroundWindow();
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+      win32_video_window_t *state = fg ? win32_video_window_of(fg) : NULL;
+      if (state && !state->common.closed)
          return true;
+#endif
+      if (fg == main_window.hwnd)
+         return true;
+   }
 
    return false;
 }
@@ -2668,6 +3460,12 @@ bool win32_set_video_mode(void *data,
     * clear until the first key event reaches the window procedure. */
    win32_update_keyboard_mods();
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* Before the first frame lays the screens out */
+   if (win32_video_monitors_dirty || win32_video_monitors_own_dirty)
+      win32_video_monitors_publish();
+#endif
+
    return true;
 }
 
@@ -2846,6 +3644,12 @@ void win32_destroy_window(void)
 #endif
 #endif
    main_window.hwnd = NULL;
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__) && !defined(_XBOX)
+   /* Its monitors go with it, from its own thread. A kept window's
+    * stay up for the next driver. */
+   win32_video_monitor_count = 0;
+   video_driver_publish_window_displays(NULL, 0);
+#endif
    /* video_st->window is a copy of this handle taken by
     * win32_window_create(). Nothing else clears it - video_driver.c
     * only resets it at the top of the next

@@ -9,12 +9,14 @@ SDX(OK, setting_action_ok_retropad_bind)
 SDX(OK, setting_action_ok_video_openxr_refresh_rate)
 SDX(OK, setting_action_ok_video_refresh_rate_auto)
 SDX(OK, setting_bool_action_left_with_refresh)
-SDX(OK, setting_bool_action_ok_video_openxr_enable)
 #ifdef HAVE_ASIO
 SDX(OK, setting_action_asio_control_panel)
 #endif
 #ifdef HAVE_MODELINE
 SDX(OK, setting_action_crt_switch_write_edid)
+#endif
+#ifdef HAVE_VIDEO_WINDOWS
+SDX(OK, setting_action_video_screen_windows_restore)
 #endif
 #if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
 SDX(OK, setting_action_keychain_passphrase)
@@ -34,7 +36,6 @@ SDX(START, directory_action_start_generic)
 SDX(START, setting_generic_action_start_default)
 SDX(START, setting_action_start_custom_vp_width)
 SDX(START, setting_action_start_custom_vp_height)
-SDX(START, setting_action_start_video_openxr_enable)
 SDX(START, setting_action_start_video_refresh_rate_auto)
 #ifndef RARCH_CONSOLE
 SDX(START, setting_string_action_start_audio_device)
@@ -58,7 +59,6 @@ SDX(LEFT, setting_uint_action_left_custom_vp_width)
 SDX(LEFT, setting_uint_action_left_custom_vp_height)
 SDX(LEFT, setting_uint_action_left_video_openxr_refresh_rate)
 SDX(LEFT, setting_uint_action_left_video_openxr_touch_button)
-SDX(LEFT, setting_bool_action_ok_video_openxr_enable)
 #ifdef HAVE_OZONE
 SDX(LEFT, setting_string_action_left_ozone_menu_color_theme)
 #endif
@@ -83,7 +83,6 @@ SDX(RIGHT, setting_uint_action_right_custom_vp_width)
 SDX(RIGHT, setting_uint_action_right_custom_vp_height)
 SDX(RIGHT, setting_uint_action_right_video_openxr_refresh_rate)
 SDX(RIGHT, setting_uint_action_right_video_openxr_touch_button)
-SDX(RIGHT, setting_bool_action_ok_video_openxr_enable)
 #ifdef HAVE_OZONE
 SDX(RIGHT, setting_string_action_right_ozone_menu_color_theme)
 #endif

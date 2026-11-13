@@ -63,6 +63,7 @@
 #include <vfs/vfs_implementation.h>
 #include <array/rbuf.h>
 #include "../msg_hash_lbl_str.h"
+#include "../gfx/video_driver.h"
 
 #include <retro_miscellaneous.h>
 
@@ -2393,6 +2394,8 @@ static void content_load_step(struct content_load_job *job,
             /* nor for a Windows one */
             win32_window_release_kept();
 #endif
+            /* nor for screen windows */
+            video_driver_release_kept_windows();
             content_load_finish(job, p_content);
             break;
          }

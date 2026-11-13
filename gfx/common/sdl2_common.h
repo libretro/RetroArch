@@ -22,6 +22,7 @@
 #include "SDL.h"
 
 #include "../video_defines.h"
+#include "../video_windows.h"
 #include "../font_driver.h"
 #include "../../retroarch.h"
 
@@ -181,5 +182,105 @@ void sdl2_video_grab_window(bool state);
 
 void sdl2_set_handles(void *data, enum rarch_display_type 
       display_type);
+
+/* Gives 'win' RetroArch's icon */
+void sdl2_window_set_icon(SDL_Window *win);
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* A secondary screen's OpenGL window, window->state from create to
+ * destroy, on the thread that runs the context. The record's surface
+ * is the SDL_Window, its display NULL; dims are its size. Only on
+ * SDL's x11, wayland and windows backends. SDL quits only when its
+ * last window closes, so the main window's own close request quits as
+ * that would (SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE), and a secondary's
+ * close is a CLOSE event alone. */
+typedef struct sdl2_video_window
+{
+   video_window_common_t common;
+   /* When the check of judge_pos and judge_dims ran */
+   retro_time_t judge_at;
+   /* When an update stops waiting for SDL: for a MAXIMIZED 'waiting',
+    * then for the frame of a 'framed' one or the display of 'via' */
+   retro_time_t wait_by;
+   SDL_Window *win;
+   /* The context's main window, for placement */
+   SDL_Window *primary;
+   /* Where it stood before it last went fullscreen */
+   SDL_Rect windowed;
+   /* On its way to a fullscreen request's display as a window: the
+    * display it was moved to, which SDL is to have it on next; -1 when
+    * not. 'windowed' stays. */
+   int via;
+   Uint32 id;
+   /* The thread that made it, whose it is on Windows */
+   SDL_threadID thread;
+   /* What SDL is still to finish of what it was asked, which an
+    * update waits for: MAXIMIZED until wait_by, FULLSCREEN as long as
+    * SDL has it so, as for a minimised window */
+   Uint32 waiting;
+   /* SDL's flags at the last check */
+   Uint32 flags;
+   /* Bounds the next pump judges, where 'judge' */
+   unsigned judge_pos;
+   unsigned judge_dims;
+   bool fullscreen;
+   bool windowed_set;
+   /* It left fullscreen on its way to a fullscreen request's display:
+    * 'windowed' stays, and SDL puts it back where it stood, which is
+    * no display to wait for */
+   bool left_fullscreen;
+   /* It had a frame going fullscreen, or may have one: made fullscreen,
+    * or fullscreen again before the frame came back. Placing it as a
+    * window waits for the frame, until wait_by */
+   bool framed;
+   /* An update that waits for the window */
+   bool apply;
+   /* Whether they were normal at that check */
+   bool judge_normal;
+   bool judge;
+} sdl2_video_window_t;
+
+/* Context thread, at init once SDL video is up: what
+ * sdl2_video_windows_supported() answers from then on */
+void sdl2_video_windows_probe(void);
+/* Any thread: whether SDL's video driver can make them, the context's
+ * window table's usable() */
+bool sdl2_video_windows_supported(void);
+bool sdl2_video_window_create(void *owner, SDL_Window *primary,
+      const video_window_request_t *request, video_window_native_t *window);
+void sdl2_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request);
+unsigned sdl2_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity);
+void sdl2_video_window_destroy(void *owner, video_window_native_t *window);
+/* While kept for the next driver a window holds the video subsystem,
+ * whose last quit would take it down */
+void sdl2_video_window_keep(void *owner, video_window_native_t *window);
+bool sdl2_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display);
+/* Kept windows nobody took go; on the thread of the context */
+void sdl2_video_windows_release_kept(void);
+/* Any thread: whether the window, or the window SDL gives this ID,
+ * is a secondary screen's; NULL and 0 are none */
+bool sdl2_video_window_is_screen(const SDL_Window *win, Uint32 id);
+/* Hands each window 'owner' still has to 'destroy'. */
+void sdl2_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window));
+/* True for a secondary's window event, which then goes nowhere else.
+ * The main window's close request sets 'quit', as SDL would for its
+ * last window. */
+bool sdl2_video_window_event(const SDL_Event *event, bool *quit);
+/* After each SDL_PumpEvents(), before its window events are taken */
+void sdl2_video_windows_judge(void);
+/* The window flags of the screens' open windows, together */
+Uint32 sdl2_video_windows_flags(void);
+/* The displays for the screens' Display setting, on the context's
+ * thread: 'changed' after a display event (@removed: one went),
+ * 'moved' after a main window move. Published once the main window is
+ * made (@init), then after each pump, and only when the list changed. */
+void sdl2_video_monitors_changed(bool removed);
+void sdl2_video_monitors_moved(void);
+void sdl2_video_monitors_publish(SDL_Window *primary, bool init);
+#endif
 
 #endif

@@ -51,6 +51,9 @@ static void sdl3_vk_ctx_destroy(void *data)
    if (!sdl)
       return;
 
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl3_video_windows_free(sdl, sdl3_video_window_destroy);
+#endif
    vulkan_context_destroy(&sdl->vk, sdl->win != NULL);
 
 #if defined(HAVE_THREADS)
@@ -95,6 +98,9 @@ static void *sdl3_vk_ctx_init(void *video_driver)
       free(sdl);
       return NULL;
    }
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl3_video_windows_probe();
+#endif
 
    /* Load SDL's Vulkan support up front: instance creation queries
     * SDL_Vulkan_GetInstanceExtensions before any window exists. */
@@ -207,13 +213,23 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
 {
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
    unsigned win_dims           = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+   bool had_window;
+#endif
 
    if (!sdl)
       return false;
+#ifdef HAVE_VIDEO_WINDOWS
+   had_window = sdl->win != NULL;
+#endif
 
    if (!sdl3_window_set_video_mode(&sdl->win, dims, fullscreen,
             SDL_WINDOW_VULKAN))
       goto error;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Before the first frame lays the screens out */
+   sdl3_video_monitors_publish(sdl->win, !had_window);
+#endif
 
    /* The window was restyled in place; its surface stays valid. */
    if (sdl->vk.vk_surface != VK_NULL_HANDLE)
@@ -285,6 +301,33 @@ static uint32_t sdl3_vk_ctx_get_flags(void *data)
 
 static void sdl3_vk_ctx_set_flags(void *data, uint32_t flags) { }
 
+#ifdef HAVE_VIDEO_WINDOWS
+static bool sdl3_vk_ctx_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   return sdl3_video_window_create(data, SDL_WINDOW_VULKAN, request, window);
+}
+
+static bool sdl3_vk_ctx_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   return sdl3_video_window_take(data, screen, window, display,
+         SDL_WINDOW_VULKAN);
+}
+
+static const gfx_ctx_window_driver_t sdl3_vk_ctx_windows = {
+   sdl3_vk_ctx_window_create,
+   sdl3_video_window_update,
+   sdl3_video_window_poll,
+   NULL, /* bind_gl */
+   NULL, /* present_gl */
+   sdl3_video_window_destroy,
+   sdl3_video_window_keep,
+   sdl3_vk_ctx_window_take,
+   sdl3_video_windows_supported
+};
+#endif
+
 const gfx_ctx_driver_t gfx_ctx_sdl3_vk = {
    sdl3_vk_ctx_init,
    sdl3_vk_ctx_destroy,
@@ -322,5 +365,15 @@ const gfx_ctx_driver_t gfx_ctx_sdl3_vk = {
    NULL,
    NULL, /* create_surface */
    NULL  /* destroy_surface */,
-   sdl3_vk_ctx_presentable
+   sdl3_vk_ctx_presentable,
+   NULL, /* last_present_time */
+   NULL, /* release_current */
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL, /* shared_context_free */
+#ifdef HAVE_VIDEO_WINDOWS
+   &sdl3_vk_ctx_windows
+#else
+   NULL  /* windows */
+#endif
 };

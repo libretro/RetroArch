@@ -170,6 +170,7 @@ bool android_get_vfs_authorized_locations(
 #include "menu/menu_cbs.h"
 #include "menu/menu_driver.h"
 #include "menu/menu_input.h"
+#include "menu/menu_setting.h"
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -8713,6 +8714,11 @@ static enum runloop_state_enum runloop_check_state(
          /* a MENU request's action, run as the menu's own input is */
          action = (enum menu_action)command_menu_action(action);
 #endif
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+         /* Here, before the menu iterates: a redraw asked for from the
+          * frame is cleared when the menu's texture goes up */
+         menu_setting_video_screen_windows_moved();
+#endif
          if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                   settings, action, current_time))
          {
@@ -8895,8 +8901,14 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
-   /* Check fullscreen hotkey */
+   /* Check fullscreen hotkey: a screen's own window with the keyboard
+    * focus toggles its own Fullscreen, else the main window toggles */
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE,
+         !video_driver_window_fullscreen_toggle(), NULL);
+#else
    HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
+#endif
 
    /* Check turbo toggle hotkey */
    HOTKEY_CHECK(RARCH_TURBO_FIRE_TOGGLE, CMD_EVENT_TURBO_FIRE_TOGGLE, true, NULL);

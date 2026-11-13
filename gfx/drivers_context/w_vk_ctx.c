@@ -168,6 +168,11 @@ static void gfx_ctx_w_vk_destroy(void *data)
    HWND            window  = win32_get_window();
    gfx_ctx_w_vk_data_t *vk = (gfx_ctx_w_vk_data_t*)data;
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* before the Vulkan context, and never kept with the main window */
+   if (vk)
+      win32_video_windows_free(vk, win32_video_window_destroy);
+#endif
    vulkan_context_destroy(&win32_vk, win32_vk.vk_surface != VK_NULL_HANDLE);
    if (win32_vk.context.queue_lock)
       slock_free(win32_vk.context.queue_lock);
@@ -361,6 +366,40 @@ static retro_time_t gfx_ctx_w_vk_last_present_time(void *data)
    return win32_dwm_last_vblank_time();
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+static HINSTANCE gfx_ctx_w_vk_instance;
+
+/* As vulkan_surface_create() takes the main window's */
+static bool gfx_ctx_w_vk_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   if (!win32_video_window_driver.create(data, request, window))
+      return false;
+   gfx_ctx_w_vk_instance = (HINSTANCE)window->display;
+   window->display       = &gfx_ctx_w_vk_instance;
+   window->surface       = &((win32_video_window_t*)window->state)->hwnd;
+   return true;
+}
+
+/* Not one WGL has set a pixel format on */
+static bool gfx_ctx_w_vk_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   return win32_video_window_take(data, screen, window, display, 0);
+}
+
+static const gfx_ctx_window_driver_t gfx_ctx_w_vk_windows = {
+   gfx_ctx_w_vk_window_create,
+   win32_video_window_update,
+   win32_video_window_poll,
+   NULL, /* bind_gl */
+   NULL, /* present_gl */
+   win32_video_window_destroy,
+   win32_video_window_keep,
+   gfx_ctx_w_vk_window_take
+};
+#endif
+
 const gfx_ctx_driver_t gfx_ctx_w_vk = {
    gfx_ctx_w_vk_init,
    gfx_ctx_w_vk_destroy,
@@ -396,5 +435,14 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    NULL,                            /* create_surface */
    NULL                             /* destroy_surface */,
    gfx_ctx_w_vk_presentable,
-   gfx_ctx_w_vk_last_present_time
+   gfx_ctx_w_vk_last_present_time,
+   NULL,                            /* release_current */
+   NULL,                            /* shared_context_new */
+   NULL,                            /* shared_context_bind */
+   NULL,                            /* shared_context_free */
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   &gfx_ctx_w_vk_windows
+#else
+   NULL                             /* windows */
+#endif
 };

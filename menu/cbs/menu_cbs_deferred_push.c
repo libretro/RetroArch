@@ -176,6 +176,11 @@ GENERIC_DEFERRED_PUSH(deferred_push_video_output_settings_list,    DISPLAYLIST_V
 GENERIC_DEFERRED_PUSH(deferred_push_video_scaling_settings_list,    DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_hdr_settings_list,        DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_stereo_settings_list,     DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_game_screens_settings_list, DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST)
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+GENERIC_DEFERRED_PUSH(deferred_push_video_screen_settings_list,     DISPLAYLIST_VIDEO_SCREEN_SETTINGS_LIST)
+#endif
+GENERIC_DEFERRED_PUSH(deferred_push_video_headset_settings_list,    DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_dlss_nr_settings_list,    DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_crt_switchres_settings_list,    DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
@@ -788,6 +793,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, deferred_push_video_scaling_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST, deferred_push_video_hdr_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST, deferred_push_video_stereo_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST, deferred_push_video_game_screens_settings_list},
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST, deferred_push_video_screen_settings_list},
+#endif
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST, deferred_push_video_headset_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST, deferred_push_video_dlss_nr_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST, deferred_push_crt_switchres_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST, deferred_push_audio_settings_list},
@@ -1012,6 +1022,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST, deferred_push_video_output_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST, deferred_push_video_hdr_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST, deferred_push_video_stereo_settings_list },
+         { MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST, deferred_push_video_game_screens_settings_list },
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+         { MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST, deferred_push_video_screen_settings_list },
+#endif
+         { MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST, deferred_push_video_headset_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST, deferred_push_video_dlss_nr_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, deferred_push_video_scaling_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST, deferred_push_crt_switchres_settings_list },

@@ -7034,16 +7034,41 @@ static void gl2_windows_take(gl2_t *gl)
    }
 }
 
-/* Window @w's screens back in the main window, until the next restore
- * (video_driver_restore_windows()) */
+/* Window @w's screens back in the main window: closed by the @user
+ * until the next restore or an edit of their rows, failed until the
+ * next retry */
 static void gl2_window_attach(gl2_t *gl, const video_windows_frame_t *f,
-      unsigned w)
+      unsigned w, bool user)
 {
-   if (f)
-      video_driver_attach_windows(f->window_screens[w], f->restore);
-   gl->windows.held.failed |= 1u << w;
+   if (user)
+   {
+      if (f)
+      {
+         video_driver_close_windows(f, f->window_screens[w]);
+         gl->windows.held.closed_edit[w] = f->settings[w].edit;
+      }
+      gl->windows.held.closed |= 1u << w;
+   }
+   else
+   {
+      if (f)
+         video_driver_attach_windows(f->window_screens[w], f->retry);
+      gl->windows.held.failed |= 1u << w;
+   }
    if (gl->windows.held.live & (1u << w))
       gl2_window_retire(gl, w, false);
+}
+
+/* What @f asks of window @w, at the generation it has */
+static void gl2_window_request(gl2_t *gl, const video_windows_frame_t *f,
+      unsigned w, video_window_request_t *out)
+{
+   memset(out, 0, sizeof(*out));
+   out->screen     = w;
+   out->screens    = f->window_screens[w];
+   out->generation = gl->windows.win[w].native.generation;
+   out->settings   = f->settings[w];
+   out->display    = f->display;
 }
 
 /* Window @w for @f's screens there, on @f's display */
@@ -7053,12 +7078,9 @@ static bool gl2_window_make(gl2_t *gl, const video_windows_frame_t *f,
    video_window_request_t request;
    struct gl2_window *win = &gl->windows.win[w];
 
-   memset(&request, 0, sizeof(request));
    memset(win, 0, sizeof(*win));
-   request.screen     = w;
+   gl2_window_request(gl, f, w, &request);
    request.generation = video_driver_window_generation();
-   request.settings   = f->settings[w];
-   request.display    = f->display;
    if (     !request.generation
          || !gl->ctx_driver->windows->create(gl->ctx_data, &request,
             &win->native))
@@ -7142,7 +7164,7 @@ static bool gl2_window_draw(gl2_t *gl,
       ctx->bind_gl(gl->ctx_data, NULL);
       RARCH_WARN("[GL] A screen window can't be drawn. "
             "What it shows stays in the main window.\n");
-      gl2_window_attach(gl, f, w);
+      gl2_window_attach(gl, f, w, false);
       return false;
    }
    if (screens)
@@ -7186,6 +7208,7 @@ static bool gl2_windows_draw(gl2_t *gl,
 {
    unsigned w, retire, create;
    unsigned closed                    = 0;
+   unsigned user_closed               = 0;
    const video_windows_frame_t *f     = video_info->windows;
    const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
    bool drawn                         = false;
@@ -7200,12 +7223,33 @@ static bool gl2_windows_draw(gl2_t *gl,
       for (i = 0; i < count; i++)
       {
          unsigned id = events[i].screen;
-         if (     events[i].kind == VIDEO_WINDOW_EVENT_CLOSE
-               && id && id < RETRO_VIDEO_VIEWS_MAX
-               && (gl->windows.held.live & (1u << id))
-               && gl->windows.win[id].native.generation
-                  == events[i].generation)
+         if (     !id || id >= RETRO_VIDEO_VIEWS_MAX
+               || !(gl->windows.held.live & (1u << id))
+               || gl->windows.win[id].native.generation
+                  != events[i].generation)
+            continue;
+         if (events[i].kind == VIDEO_WINDOW_EVENT_CLOSE)
+         {
             closed |= 1u << id;
+            if (events[i].user)
+               user_closed |= 1u << id;
+         }
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY
+                    && events[i].save_dims
+                    && (gl->windows.held.made_known & (1u << id)))
+         {
+            video_driver_publish_window_bounds(id,
+                  gl->windows.held.made_screens[id],
+                  gl->windows.held.made[id].edit, events[i].save_pos,
+                  events[i].save_dims, events[i].save_moved);
+            video_windows_held_saved(&gl->windows.held, id,
+                  events[i].save_pos, events[i].save_dims,
+                  events[i].save_moved);
+         }
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN
+                    || events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_LOSS)
+            video_driver_publish_window_focus(id, events[i].generation,
+                  events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN);
       }
    }
    video_windows_steps(&gl->windows.held, f, &retire, &create);
@@ -7215,11 +7259,11 @@ static bool gl2_windows_draw(gl2_t *gl,
    if (!f)
       return false;
    /* Marked after steps(), which clears the marks when this frame's
-    * restore count moved, so a closed window waits for the next one */
+    * counts moved, so a closed window waits for the next one */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (closed & (1u << w))
             && (f->window_screens[w] || f->window_ui[w]))
-         gl2_window_attach(gl, f, w);
+         gl2_window_attach(gl, f, w, (user_closed & (1u << w)) != 0);
    create &= ~closed;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
@@ -7227,8 +7271,15 @@ static bool gl2_windows_draw(gl2_t *gl,
          continue;
       RARCH_WARN("[GL] A screen window can't be made. "
             "What it shows stays in the main window.\n");
-      gl2_window_attach(gl, f, w);
+      gl2_window_attach(gl, f, w, false);
    }
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (gl->windows.held.update & gl->windows.held.live & (1u << w))
+      {
+         video_window_request_t request;
+         gl2_window_request(gl, f, w, &request);
+         ctx->update(gl->ctx_data, &gl->windows.win[w].native, &request);
+      }
    /* A kept window keeps its last image */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (gl->windows.held.live & (1u << w))
@@ -7861,7 +7912,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* Before the ring's fence: the windows read the frame too. Not from
     * the BFI light dupes. */
    if (     (video_info->windows || gl->windows.held.live
-            || gl->windows.held.failed)
+            || gl->windows.held.failed || gl->windows.held.closed)
          && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
    {
       gl->windows.frame_count = (unsigned)frame_count;
@@ -10177,7 +10228,7 @@ static uint32_t gl2_get_flags(void *data)
 #if defined(HAVE_VIDEO_WINDOWS) && !(defined(HAVE_OPENXR) && defined(ANDROID))
       /* The context can make screens windows of their own. Not in the
        * Quest's build, whose back buffer is the headset's framebuffer. */
-      if (gl2->ctx_driver && gl2->ctx_driver->windows)
+      if (gl2->ctx_driver && video_windows_usable(gl2->ctx_driver->windows))
          BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS);
 #endif
    }

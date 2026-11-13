@@ -1215,6 +1215,7 @@ unsigned input_config_get_joypad_index(unsigned port);
 unsigned input_config_get_rumble_gain(void);
 bool input_config_get_nowinkey_enable(void);
 bool input_config_get_keyboard_background(void);
+bool input_config_get_video_windows_enable(void);
 bool input_config_get_winraw_xinput_enable(void);
 bool input_config_get_winraw_player_lights(void);
 bool input_config_get_sdl3_system_keyboard(void);
@@ -1623,6 +1624,10 @@ void input_driver_publish_window_touches(const uint32_t *pos,
  * has not shown (video_driver_window_shown()). App thread. */
 bool input_driver_window_touch(unsigned window, unsigned idx,
       uint32_t *screen_pos, bool *down);
+
+/* Screen window @window is gone: the buttons, motion and touches
+ * published in it are let go until the next poll. App thread. */
+void input_driver_release_window(unsigned window);
 #endif
 
 typedef struct input_pointer_view

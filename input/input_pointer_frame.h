@@ -742,6 +742,27 @@ static bool input_pointer_window_touch(unsigned window, unsigned idx,
    }
    return false;
 }
+
+/* Screen window @window gone: what its devices and touches hold down,
+ * and their motion, let go */
+static void input_pointer_frames_forget(unsigned window)
+{
+   unsigned i;
+   for (i = 0; i < input_pointers.count; i++)
+      if (     (input_pointers.in_window & (1 << i))
+            && input_pointers.window[i].window == window)
+      {
+         input_pointers.frame[i].rel     = 0;
+         input_pointers.frame[i].buttons = 0;
+      }
+   for (i = 0; i < input_pointers.touch_count; i++)
+      if (     (input_pointers.touch_in_window & ((uint32_t)1 << i))
+            && input_pointers.touch_window[i].window == window)
+      {
+         input_pointers.touch_present &= ~((uint32_t)1 << i);
+         input_pointers.touch_down    &= ~((uint32_t)1 << i);
+      }
+}
 #endif
 
 /* Before a driver's poll: one that publishes nothing is asked itself. */

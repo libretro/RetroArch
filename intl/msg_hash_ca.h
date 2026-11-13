@@ -2562,7 +2562,6 @@ static const struct
    char s_f387bafb[27];
    char s_2c868ae4[12];
    char s_7f065006[9];
-   char s_5c12d979[12];
    char s_284873ec[20];
    char s_3220e9be[7];
    char s_3242e549[21];
@@ -2652,12 +2651,10 @@ static const struct
 #endif
    char s_84c46931[37];
    char s_ebf10493[14];
-   char s_539d5393[7];
    char s_a64b3a0b[31];
    char s_83e8dc72[31];
    char s_7cf985f0[45];
    char s_0f5266ce[23];
-   char s_0f97fdc1[6];
    char s_ea2674d3[41];
    char s_ea2674d4[38];
    char s_2d8cb7ce[24];
@@ -7569,7 +7566,6 @@ static const struct
    "Disposici\303\263 de la pantalla",
    "Horitzontal",
    "Pantalla",
-   "Pantalla %u",
    "Edita les pantalles",
    "Timbre",
    "Reinicia la pantalla",
@@ -7661,12 +7657,10 @@ static const struct
 #endif
    "Mode de finestra a pantalla completa",
    "Mode finestra",
-   "Adjunt",
    "Al\303\247ada m\303\240xima de la finestra",
    "Amplada m\303\240xima de la finestra",
    "Utilitza una mida de finestra personalitzada",
    "Al\303\247ada de la finestra",
-   "Ocult",
    "Despla\303\247ament horitzontal de la pantalla",
    "Despla\303\247ament vertical de la pantalla",
    "Opacitat de la finestra",
@@ -10910,7 +10904,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243435u
+      (sizeof(msg_hash_ca_blob) == (243410u
 #ifdef ANDROID
        + 281u
 #endif
@@ -14020,7 +14014,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -14110,12 +14103,10 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,

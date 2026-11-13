@@ -64,10 +64,159 @@ static enum gfx_ctx_api xegl_api = GFX_CTX_NONE;
 
 static int xegl_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
 
+#if defined(HAVE_EGL) && defined(HAVE_VIDEO_WINDOWS)
+/* A secondary window is drawn with the main window's context, on a
+ * surface of the same config; NULL puts the context back on the main
+ * window. */
+static bool gfx_ctx_xegl_window_bind_gl(void *data,
+      video_window_native_t *window)
+{
+   xegl_ctx_data_t *xegl     = (xegl_ctx_data_t*)data;
+   x11_video_window_t *state = window
+      ? (x11_video_window_t*)window->state : NULL;
+
+   if (!xegl)
+      return false;
+   if (!window)
+      return egl_window_surface_bind(&xegl->egl, EGL_NO_SURFACE, false);
+   if (     !state || state->common.owner != data || state->common.closed
+         || !state->drawable)
+      return false;
+   if (!egl_window_surface_bind(&xegl->egl, (EGLSurface)state->drawable,
+            !state->interval_set))
+   {
+      /* A surface that cannot be drawn to fails the window, and the
+       * main window's is current again */
+      gfx_ctx_xegl_window_bind_gl(data, NULL);
+      video_window_mark_closed(&state->common);
+      return false;
+   }
+   state->interval_set = true;
+   return true;
+}
+
+static bool gfx_ctx_xegl_window_present_gl(void *data,
+      video_window_native_t *window)
+{
+   xegl_ctx_data_t *xegl     = (xegl_ctx_data_t*)data;
+   x11_video_window_t *state = window
+      ? (x11_video_window_t*)window->state : NULL;
+   if (     !xegl || !state || state->common.owner != data
+         || state->common.closed || !state->drawable || !window->presentable)
+      return false;
+   if (egl_window_surface_swap(&xegl->egl, (EGLSurface)state->drawable))
+      return true;
+   video_window_mark_closed(&state->common);
+   return false;
+}
+
+/* The window's EGL surface gone, for its own teardown or a keep */
+static bool gfx_ctx_xegl_window_unbind(void *data,
+      video_window_native_t *window)
+{
+   xegl_ctx_data_t *xegl     = (xegl_ctx_data_t*)data;
+   x11_video_window_t *state = window
+      ? (x11_video_window_t*)window->state : NULL;
+   if (!xegl || !state || state->common.owner != data)
+      return false;
+   if (state->drawable)
+      egl_window_surface_free(&xegl->egl, (EGLSurface)state->drawable);
+   return true;
+}
+
+static void gfx_ctx_xegl_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_xegl_window_unbind(data, window))
+      x11_video_window_destroy(data, window);
+}
+
+static void gfx_ctx_xegl_window_keep(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_xegl_window_unbind(data, window))
+      x11_video_window_keep(data, window);
+}
+
+static bool gfx_ctx_xegl_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   XVisualInfo temp;
+   XVisualInfo *vi;
+   EGLSurface surface;
+   bool ok;
+   EGLint vid            = 0;
+   int count             = 0;
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+
+   if (     !xegl
+         || xegl->egl.surf == EGL_NO_SURFACE
+         || !egl_get_native_visual_id(&xegl->egl, &vid))
+      return false;
+   memset(&temp, 0, sizeof(temp));
+   temp.visualid = vid;
+   if (!(vi = XGetVisualInfo(g_x11_dpy, VisualIDMask, &temp, &count)))
+      return false;
+   ok = x11_video_window_create(data, request, window, vi->visual,
+         vi->depth);
+   XFree(vi);
+   if (!ok)
+      return false;
+   if ((surface = egl_window_surface_new(&xegl->egl, window->surface))
+         == EGL_NO_SURFACE)
+   {
+      x11_video_window_destroy(data, window);
+      return false;
+   }
+   x11_video_window_show(window, surface, None);
+   return true;
+}
+
+/* Kept by the last driver: adopted where it is on this config's visual */
+static bool gfx_ctx_xegl_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   EGLSurface surface;
+   EGLint vid            = 0;
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+
+   if (     !xegl
+         || xegl->egl.surf == EGL_NO_SURFACE
+         || !egl_get_native_visual_id(&xegl->egl, &vid)
+         || !x11_video_window_take(data, screen, window, display,
+               (VisualID)vid))
+      return false;
+   if ((surface = egl_window_surface_new(&xegl->egl, window->surface))
+         == EGL_NO_SURFACE)
+   {
+      x11_video_window_destroy(data, window);
+      return false;
+   }
+   x11_video_window_drawable(window, surface, None);
+   x11_video_window_taken(window);
+   return true;
+}
+
+static const gfx_ctx_window_driver_t gfx_ctx_xegl_windows = {
+   gfx_ctx_xegl_window_create,
+   x11_video_window_update,
+   x11_video_window_poll,
+   gfx_ctx_xegl_window_bind_gl,
+   gfx_ctx_xegl_window_present_gl,
+   gfx_ctx_xegl_window_destroy,
+   gfx_ctx_xegl_window_keep,
+   gfx_ctx_xegl_window_take
+};
+#endif
+
 static void gfx_ctx_xegl_destroy(void *data)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
+#if defined(HAVE_EGL) && defined(HAVE_VIDEO_WINDOWS)
+   if (g_x11_dpy)
+      x11_video_windows_free(xegl, gfx_ctx_xegl_window_destroy);
+#endif
    x11_input_ctx_destroy();
 #ifdef HAVE_EGL
    egl_destroy(&xegl->egl);
@@ -424,6 +573,11 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          CWBorderPixel | CWColormap | CWEventMask | CWOverrideRedirect,
          &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
+   XChangeProperty(g_x11_dpy, g_x11_win,
+         XInternAtom(g_x11_dpy, "_NET_WM_ICON", False),
+         XInternAtom(g_x11_dpy, "CARDINAL", False), 32, PropModeReplace,
+         (const unsigned char*)x11_retroarch_icon,
+         (int)x11_retroarch_icon_len);
 
    if (fullscreen && video_disable_composition)
    {
@@ -741,10 +895,16 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
 #ifdef HAVE_EGL
    gfx_ctx_xegl_shared_context_new,
    egl_shared_context_bind,
-   egl_shared_context_free
+   egl_shared_context_free,
+#ifdef HAVE_VIDEO_WINDOWS
+   &gfx_ctx_xegl_windows
+#else
+   NULL  /* windows */
+#endif
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
+   NULL  /* windows */
 #endif
 };

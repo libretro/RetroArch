@@ -1059,6 +1059,7 @@ static bool video_thread_handle_packet(
          if (thr->driver && thr->driver->init)
          {
             thr->driver_data = thr->driver->init(&thr->info);
+            video_driver_release_kept_windows();
             if (thr->driver_data && thr->driver->poke_interface)
                thr->driver->poke_interface(thr->driver_data,
                      &thr->frame.mem_poke);

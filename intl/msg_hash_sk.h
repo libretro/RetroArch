@@ -2574,8 +2574,6 @@ static const struct
    char s_2c868ae4[10];
    char s_9c535394[7];
    char s_7f065006[10];
-   char s_5c12d979[13];
-   char s_32cb293c[21];
    char s_284873ec[19];
    char s_3220e9be[8];
    char s_3242e549[19];
@@ -2693,13 +2691,11 @@ static const struct
    char s_ebf10493[14];
    char s_d15bd14f[27];
    char s_79ea50ef[38];
-   char s_539d5393[11];
    char s_a64b3a0b[24];
    char s_83e8dc72[24];
    char s_7cf985f0[33];
    char s_cfc4e36b[12];
    char s_0f5266ce[13];
-   char s_0f97fdc1[8];
    char s_ea2674d3[27];
    char s_ea2674d4[24];
    char s_2d8cb7ce[20];
@@ -4174,8 +4170,6 @@ static const struct
    char s_14ce7a81[97];
    char s_dc6f9d69[62];
    char s_417085f4[55];
-   char s_1bcf70a7[134];
-   char s_fbed99aa[142];
    char s_2e2ca41a[280];
    char s_f48b1fac[55];
    char s_f4ad1b37[83];
@@ -7812,8 +7806,6 @@ static const struct
    "Vodorovne",
    "Zvislo",
    "Obrazovka",
-   "Obrazovka %u",
-   "Displej obrazovky %u",
    "Upravi\305\245 obrazovky",
    "N\303\241klon",
    "Obnovi\305\245 obrazovku",
@@ -7931,13 +7923,11 @@ static const struct
    "Re\305\276im v okne",
    "Oddelen\303\251 okn\303\241 obrazoviek",
    "Hern\303\251 obrazovky na in\303\275ch displejoch",
-   "Pripojen\303\251",
    "Maxim\303\241lna v\303\275\305\241ka okna",
    "Maxim\303\241lna \305\241\303\255rka okna",
    "Pou\305\276i\305\245 vlastn\303\272 ve\304\276kos\305\245 okna",
    "Displej: %s",
    "V\303\275\305\241ka okna",
-   "Skryt\303\251",
    "Vodorovn\303\275 posun obrazovky",
    "Zvisl\303\275 posun obrazovky",
    "Prieh\304\276adnos\305\245 okna",
@@ -10767,11 +10757,6 @@ static const struct
    "n\303\272\305\245 ju vynech\303\241.",
    "Ako usporiada\305\245 obrazovky syst\303\251mov s viacer\303\275mi obrazovkami.",
    "Vyberte pl\303\241vaj\303\272cu obrazovku, ktor\303\272 chcete upravi\305\245.",
-   "Pripojen\303\251 ponech\303\241 t\303\272to obrazovku s ostatn\303\275mi. Oddelen\303\251 ju d"
-   "\303\241 do vlastn\303\251ho okna alebo na vlastn\303\275 displej. Skryt\303\251 ju vynech\303"
-   "\241.",
-   "Kam t\303\241to obrazovka ide, ke\304\217 m\303\241 vlastn\303\251 okno. Auto vyberie druh\303"
-   "\275 displej. Displej, na ktorom je RetroArch, ponech\303\241 obrazovku pripojen\303\272.",
    "Zatvor\303\255 menu a umo\305\276n\303\255 pres\303\272va\305\245 obrazovky a menu headsetu ovl"
    "\303\241da\304\215mi: \303\272chop chyt\303\241, sp\303\272\305\241\305\245 nakl\303\241\305\210"
    "a, p\303\241\304\215ka men\303\255 vzdialenos\305\245 a ve\304\276kos\305\245, p\303\241\304\215"
@@ -11808,7 +11793,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (236667u
+      (sizeof(msg_hash_sk_blob) == (236338u
 #ifdef ANDROID
        + 389u
 #endif
@@ -14948,8 +14933,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -15067,13 +15050,11 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE_ANDROID,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -16540,8 +16521,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,

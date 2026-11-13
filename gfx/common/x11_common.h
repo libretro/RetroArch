@@ -24,6 +24,7 @@
 #include <retro_inline.h>
 
 #include "../../retroarch.h"
+#include "../video_windows.h"
 
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;
@@ -111,5 +112,82 @@ void x11_event_queue_check(XEvent *event);
 char *x11_get_wm_name(Display *dpy);
 
 bool x11_has_net_wm_fullscreen(Display *dpy);
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* A secondary screen's window on g_x11_dpy, window->state from create
+ * to destroy. Its events arrive through x11_alive(); everything here
+ * belongs to the thread that runs the context. */
+typedef struct x11_video_window
+{
+   video_window_common_t common;
+   /* When the event that asked for the root position was taken */
+   retro_time_t translate_at;
+   /* When the event of judge_pos and judge_dims was taken */
+   retro_time_t judge_at;
+   /* The context's GL drawable for the window, if it has one */
+   void *drawable;
+   Window handle;
+   Colormap colormap;
+   /* The request asking for the root position, 0 for none */
+   unsigned translate;
+   /* The request reading _NET_WM_STATE, 0 for none */
+   unsigned wm_state;
+   /* The _NET_WM_STATE read the bounds to judge wait for, 0 for none */
+   unsigned judge_read;
+   /* The wm_state read out when they came, 0 for none */
+   unsigned judge_state;
+   /* Bounds the next poll() judges, where 'judge' */
+   unsigned judge_pos;
+   unsigned judge_dims;
+   /* Where it stood before it last went fullscreen, 0 dims for never */
+   unsigned windowed_pos;
+   unsigned windowed_dims;
+   bool translate_again;
+   bool wm_state_again;
+   /* Not fullscreen, maximised or minimised, as last read */
+   bool wm_normal;
+   bool judge;
+   /* Whether they were normal at the first poll() after them */
+   bool judge_normal;
+   /* The context has set its drawable's swap interval */
+   bool interval_set;
+   bool reparented;
+   bool destroyed;
+   /* Made with it, which a context that takes it must have */
+   VisualID visual;
+} x11_video_window_t;
+
+/* The window comes unmapped, for the context to make its drawable on
+ * with the same visual; x11_video_window_show() then maps it. A
+ * drawable that is a server resource of its own is named as 'resource'
+ * so its errors are the window's too. */
+bool x11_video_window_create(void *owner,
+      const video_window_request_t *request,
+      video_window_native_t *window, Visual *visual, int depth);
+void x11_video_window_show(video_window_native_t *window,
+      void *drawable, XID resource);
+void x11_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request);
+unsigned x11_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity);
+void x11_video_window_destroy(void *owner, video_window_native_t *window);
+/* Hands each window 'owner' still has to 'destroy'; kept ones stay
+ * for the next driver's start. */
+void x11_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window));
+/* Leaves the window up, untouched, for the next context; the context
+ * has let go of its drawable */
+void x11_video_window_keep(void *owner, video_window_native_t *window);
+/* Adopts screen 'screen's kept window where it is on 'visual'; one on
+ * another goes. The context then puts its drawable on it. */
+bool x11_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display, VisualID visual);
+/* Once its drawable is on it: the focus back, if it had it at keep */
+void x11_video_window_taken(video_window_native_t *window);
+void x11_video_window_drawable(video_window_native_t *window,
+      void *drawable, XID resource);
+/* Kept windows nobody took go; on the thread of the context */
+void x11_video_windows_release_kept(void);
+#endif
 
 #endif

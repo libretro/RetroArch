@@ -195,7 +195,37 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #ifdef HAVE_WAYLAND
 /* gfx/common/wayland_common.c */
 void gfx_ctx_wl_release_kept(void);
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+void wl_video_windows_release_kept(void *ctx);
 #endif
+#endif
+
+#if defined(HAVE_X11) && defined(HAVE_VIDEO_WINDOWS)
+/* gfx/common/x11_common.c */
+void x11_video_windows_release_kept(void);
+#endif
+#if defined(HAVE_SDL3) && defined(HAVE_VIDEO_WINDOWS)
+/* gfx/common/sdl3_common.c */
+void sdl3_video_windows_release_kept(void);
+#elif defined(HAVE_SDL2) && defined(HAVE_VIDEO_WINDOWS)
+/* gfx/common/sdl2_common.c */
+void sdl2_video_windows_release_kept(void);
+#endif
+
+void video_driver_release_kept_windows(void)
+{
+#if defined(HAVE_X11) && defined(HAVE_VIDEO_WINDOWS)
+   x11_video_windows_release_kept();
+#endif
+#if defined(HAVE_SDL3) && defined(HAVE_VIDEO_WINDOWS)
+   sdl3_video_windows_release_kept();
+#elif defined(HAVE_SDL2) && defined(HAVE_VIDEO_WINDOWS)
+   sdl2_video_windows_release_kept();
+#endif
+#if defined(HAVE_WAYLAND) && defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+   wl_video_windows_release_kept(NULL);
+#endif
+}
 
 /* A window the last driver left up for this one
  * (gfx/common/win32_common.c): it goes if this one did not take it.
@@ -974,9 +1004,31 @@ unsigned video_driver_window_generation(void)
 
 void video_driver_restore_windows(void)
 {
+   unsigned i;
    video_driver_state_t *video_st   = &video_driver_st;
    video_st->windows_forced_attached = 0;
+   video_st->windows_closed_attached = 0;
    video_st->windows_restore++;
+   video_st->windows_retry++;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      video_st->windows_edit[i]++;
+}
+
+void video_driver_retry_windows(void)
+{
+   video_driver_state_t *video_st   = &video_driver_st;
+   video_st->windows_forced_attached = 0;
+   video_st->windows_retry++;
+}
+
+void video_driver_edit_window(unsigned screen)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (screen >= RETRO_VIDEO_VIEWS_MAX)
+      return;
+   video_st->windows_edit[screen]++;
+   video_st->windows_closed_attached &= ~(1u << screen);
+   video_driver_retry_windows();
 }
 
 /* The three-slot protocol of video_title_publish(), latest wins: hands
@@ -1020,20 +1072,45 @@ void video_driver_publish_window_displays(
       count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
    if (count)
       memcpy(box->slot[pub], displays, count * sizeof(*displays));
-   box->count[pub] = count;
+   box->count[pub]   = count;
+   box->pending[pub] = false;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+void video_driver_publish_window_displays_pending(
+      const video_window_display_t *displays, unsigned count)
+{
+   video_window_displays_t *box = &video_driver_st.window_displays;
+   unsigned pub                 = box->next;
+   if (!displays || count > VIDEO_WINDOW_DISPLAYS_MAX)
+      count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
+   if (count)
+      memcpy(box->slot[pub], displays, count * sizeof(*displays));
+   box->count[pub]   = count;
+   box->pending[pub] = true;
    video_window_slot_publish(&box->published, &box->next, &box->last);
 }
 
 /* App thread: the newest list, or NULL with *count 0. Taking a new one
- * gives the screens a close attached another try. */
+ * gives the failed screens another try. */
 static const video_window_display_t *video_driver_take_window_displays(
       video_driver_state_t *video_st, unsigned *count)
 {
    video_window_displays_t *box = &video_st->window_displays;
    if (video_window_slot_take(&box->published, &box->held))
-      video_driver_restore_windows();
+      video_driver_retry_windows();
    *count = box->held ? box->count[box->held - 1] : 0;
    return *count ? box->slot[box->held - 1] : NULL;
+}
+
+/* App thread: whether the newest list is still to come */
+static bool video_driver_window_displays_pending(
+      video_driver_state_t *video_st)
+{
+   unsigned count;
+   video_window_displays_t *box = &video_st->window_displays;
+   video_driver_take_window_displays(video_st, &count);
+   return box->held && box->pending[box->held - 1];
 }
 
 unsigned video_driver_get_window_displays(video_window_display_t *out,
@@ -1049,23 +1126,43 @@ unsigned video_driver_get_window_displays(video_window_display_t *out,
    return count;
 }
 
-/* windows_failed: the screens in its low byte, the restore count of
- * the frames they failed in above it */
-#define VIDEO_WINDOWS_FAILED_TAG(restore) ((int)(((restore) & 0x7fffffu) << 8))
+/* windows_failed and windows_closed: the screens in the low byte, the
+ * retry or restore count of the frames they went in above it */
+#define VIDEO_WINDOWS_FAILED_TAG(count) ((int)(((count) & 0x7fffffu) << 8))
 
-void video_driver_attach_windows(unsigned screens, unsigned restore)
+static void video_driver_windows_word(retro_atomic_int_t *word,
+      unsigned screens, unsigned count)
 {
-   retro_atomic_int_t *word = &video_driver_st.windows_failed;
-   int tag                  = VIDEO_WINDOWS_FAILED_TAG(restore);
+   int tag = VIDEO_WINDOWS_FAILED_TAG(count);
    int was, now;
    if (!(screens &= 0xffu))
       return;
-   /* A later restore's failures replace an earlier one's */
+   /* A later count's screens replace an earlier one's */
    do
    {
       was = retro_atomic_load_acquire_int(word);
       now = (((was & ~0xff) == tag) ? was : tag) | (int)screens;
    } while (!retro_atomic_cas_int(word, was, now));
+}
+
+void video_driver_attach_windows(unsigned screens, unsigned retry)
+{
+   video_driver_windows_word(&video_driver_st.windows_failed, screens,
+         retry);
+}
+
+void video_driver_close_windows(const video_windows_frame_t *frame,
+      unsigned screens)
+{
+   unsigned i;
+   /* Before the word: the fold reads them after taking it */
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (screens & (1u << i))
+         retro_atomic_store_release_int(
+               &video_driver_st.windows_closed_edit[i],
+               VIDEO_WINDOWS_FAILED_TAG(frame->settings[i].edit));
+   video_driver_windows_word(&video_driver_st.windows_closed, screens,
+         frame->restore);
 }
 
 void video_driver_publish_window_layout(unsigned window,
@@ -1092,21 +1189,77 @@ void video_driver_publish_window_layout(unsigned window,
    }
    else
       slot->generation  = 0;
+   slot->bounds         = box->bounds;
+   slot->focused        = slot->generation
+      && slot->generation == box->focus;
    video_window_slot_publish(&box->published, &box->next, &box->last);
 }
 
+/* The publisher's bounds and focus with the last layout, so input keeps
+ * mapping it */
+static void video_window_layout_republish(video_window_layouts_t *box)
+{
+   video_window_layout_t *slot = &box->slot[box->next];
+   if (box->last)
+      *slot = box->slot[box->last - 1];
+   else
+      slot->generation = 0;
+   slot->bounds  = box->bounds;
+   slot->focused = slot->generation && slot->generation == box->focus;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+void video_driver_publish_window_bounds(unsigned window, unsigned screens,
+      unsigned edit, unsigned pos, unsigned dims, bool moved)
+{
+   video_window_layouts_t *box;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX || !dims || !screens)
+      return;
+   box                 = &video_driver_st.window_layouts[window - 1];
+   box->bounds.screens = screens;
+   box->bounds.edit    = edit;
+   box->bounds.dims    = dims;
+   box->bounds.sizes++;
+   if (moved)
+   {
+      box->bounds.pos      = pos;
+      box->bounds.pos_edit = edit;
+      box->bounds.moves++;
+   }
+   video_window_layout_republish(box);
+}
+
+void video_driver_publish_window_focus(unsigned window,
+      unsigned generation, bool focused)
+{
+   video_window_layouts_t *box;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
+      return;
+   box = &video_driver_st.window_layouts[window - 1];
+   if (focused)
+      box->focus = generation;
+   else if (box->focus == generation)
+      box->focus = 0;
+   /* At once: a window that loses it as it hides draws no more */
+   video_window_layout_republish(box);
+}
+
 /* Once the driver has gone, with no publisher left: no window has a
- * layout */
+ * layout, and the bounds its last frames left are in settings */
 static void video_driver_window_layouts_clear(video_driver_state_t *video_st)
 {
    unsigned i;
+   video_driver_take_window_bounds();
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX - 1; i++)
    {
       video_window_layouts_t *box = &video_st->window_layouts[i];
       retro_atomic_store_release_int(&box->published, 0);
-      box->next = 0;
-      box->last = 0;
-      box->held = 0;
+      box->next         = 0;
+      box->last         = 0;
+      box->held         = 0;
+      box->bounds_moves = 0;
+      box->bounds_sizes = 0;
+      memset(&box->bounds, 0, sizeof(box->bounds));
    }
 }
 
@@ -1153,18 +1306,20 @@ bool video_driver_translate_window_point(unsigned window,
          slot->core_dims, x, y, report_oob, result);
 }
 
-unsigned video_driver_window_shown(unsigned window, unsigned *dims)
+/* Main thread: window @window's last published layout, NULL while it
+ * has none or has not drawn since the snapshots last asked for it
+ * differently */
+static const video_window_layout_t *video_driver_window_drawn(
+      unsigned window)
 {
    video_window_layouts_t *box;
    const video_window_layout_t *slot;
-   if (dims)
-      *dims = 0;
    if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
-      return 0;
+      return NULL;
    box = &video_driver_st.window_layouts[window - 1];
    video_window_slot_take(&box->published, &box->held);
    if (!box->held)
-      return 0;
+      return NULL;
    slot = &box->slot[box->held - 1];
    /* Drawn before the snapshot that last asked for the window
     * differently: under the threaded wrapper, a window that may be
@@ -1172,10 +1327,52 @@ unsigned video_driver_window_shown(unsigned window, unsigned *dims)
    if (     !slot->generation
          || slot->serial - box->from
             > video_driver_st.windows.serial - box->from)
-      return 0;
+      return NULL;
+   return slot;
+}
+
+unsigned video_driver_window_shown(unsigned window, unsigned *dims)
+{
+   const video_window_layout_t *slot = video_driver_window_drawn(window);
    if (dims)
-      *dims = slot->window_dims;
-   return slot->display;
+      *dims = slot ? slot->window_dims : 0;
+   return slot ? slot->display : 0;
+}
+
+bool video_driver_window_fullscreen_toggle(void)
+{
+   unsigned w;
+   video_driver_state_t *video_st = &video_driver_st;
+   settings_t *settings           = config_get_ptr();
+   /* A Presentation has no windowed mode. In the background (a pad
+    * hotkey) none of ours has the focus, whatever was last published:
+    * the unfocused sleep draws no frame to publish a loss. */
+   if (video_st->windows.display || !video_driver_has_focus())
+      return false;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      unsigned s;
+      bool *fullscreen;
+      const video_window_layout_t *slot;
+      unsigned screens = video_st->windows.window_screens[w];
+      if (     !screens
+            || !(video_st->windows_wanted & (1u << w))
+            || !(slot = video_driver_window_drawn(w))
+            || !slot->focused)
+         continue;
+      /* Its first screen, as its title names */
+      for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+         if (screens & (1u << s))
+            break;
+      fullscreen = &settings->bools.video_screen_window_fullscreen[s];
+      configuration_set_bool(settings, *fullscreen, !*fullscreen);
+      video_driver_edit_window(s);
+      /* As for the main window: the key may still be down when the
+       * focus comes back */
+      input_driver_hold_over_window_change();
+      return true;
+   }
+   return false;
 }
 #endif
 
@@ -3860,7 +4057,10 @@ void video_driver_free_internal(void)
       vid->free(video_st->data);
    /* No driver follows to take what this one left up */
    if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+   {
       VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
+      video_driver_release_kept_windows();
+   }
    video_driver_set_hdr_output_mode(0);
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
@@ -4180,6 +4380,10 @@ void video_driver_clear_views(void)
    video_st->views_presented  = false;
    video_st->views_fallback   = false;
    video_st->headset_view     = VIDEO_HEADSET_VIEW_IMMERSIVE;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The next content starts with no closes */
+   video_driver_restore_windows();
+#endif
 }
 
 unsigned video_driver_views_status(void)
@@ -4637,13 +4841,99 @@ static void video_driver_windows_asked(video_driver_state_t *video_st,
    unsigned w;
    unsigned wanted  = video_windows_wanted(out);
    unsigned changed = wanted ^ video_st->windows_wanted;
+   unsigned gone    = video_st->windows_wanted & ~wanted;
    if (out->display != display_was)
       changed |= wanted;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
       if (changed & (1u << w))
          video_st->window_layouts[w - 1].from = out->serial;
+      if (gone & (1u << w))
+         input_driver_release_window(w);
+   }
    video_st->windows_wanted = wanted;
 }
+
+/* App thread: hands its route to a redraw */
+static void video_driver_windows_route_publish(video_driver_state_t *video_st)
+{
+   video_windows_routes_t *box = &video_st->windows_routes;
+   box->slot[box->next]        = video_st->windows_route;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+/* App thread: the bounds the user left the screens' windows at, into
+ * their settings */
+static void video_driver_windows_bounds_take(video_driver_state_t *video_st,
+      settings_t *settings)
+{
+   unsigned w;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      video_window_layouts_t *box = &video_st->window_layouts[w - 1];
+      const video_window_bounds_t *b;
+      unsigned s = 0;
+      bool changed;
+      video_window_slot_take(&box->published, &box->held);
+      if (!box->held)
+         continue;
+      b = &box->slot[box->held - 1].bounds;
+      if (!b->screens || b->sizes == box->bounds_sizes)
+         continue;
+      while (!(b->screens & (1u << s)))
+         s++;
+      /* Saved before the screen's last edit: the edit wins, and the
+       * window follows it */
+      if (b->edit != video_st->windows_edit[s])
+      {
+         box->bounds_moves = b->moves;
+         box->bounds_sizes = b->sizes;
+         continue;
+      }
+      changed = settings->uints.video_screen_window_dims[s] != b->dims;
+#ifdef HAVE_MENU
+      if (!settings->uints.video_screen_window_dims[s])
+         video_st->windows_rows_sized |= 1u << s;
+#endif
+      settings->uints.video_screen_window_dims[s] = b->dims;
+      if (b->moves != box->bounds_moves && b->pos_edit == b->edit)
+      {
+         changed = changed
+            || settings->uints.video_screen_window_pos[s] != b->pos
+            || !settings->bools.video_screen_window_pos_set[s];
+         settings->uints.video_screen_window_pos[s]     = b->pos;
+         settings->bools.video_screen_window_pos_set[s] = true;
+      }
+      box->bounds_moves = b->moves;
+      box->bounds_sizes = b->sizes;
+      if (changed)
+      {
+         settings->flags |= SETTINGS_FLG_MODIFIED;
+#ifdef HAVE_MENU
+         video_st->windows_rows_moved |= 1u << s;
+#endif
+      }
+   }
+}
+
+void video_driver_take_window_bounds(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (settings)
+      video_driver_windows_bounds_take(&video_driver_st, settings);
+}
+
+#ifdef HAVE_MENU
+unsigned video_driver_window_rows_changed(unsigned *sized)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   unsigned moved                 = video_st->windows_rows_moved;
+   *sized                         = video_st->windows_rows_sized;
+   video_st->windows_rows_moved   = 0;
+   video_st->windows_rows_sized   = 0;
+   return moved;
+}
+#endif
 
 /* This frame's windows, with or without content views, or NULL while
  * they are off or the driver has none; @now is the frame's clock
@@ -4655,15 +4945,22 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    video_views_layout_params_t params;
    video_windows_route_t route;
    unsigned i;
-   unsigned forced            = video_st->windows_forced_attached;
+   unsigned forced            = video_st->windows_forced_attached
+                              | video_st->windows_closed_attached;
    unsigned display_was       = 0;
    video_windows_frame_t *out = &video_st->windows;
    if (     !settings->bools.video_windows_enable
-         || !BIT32_GET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS))
+         || !BIT32_GET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS)
+         || (!redraw && video_driver_window_displays_pending(video_st)))
    {
-      /* Off: the driver lets every window go */
+      /* Off, or waiting for the list: the driver lets every window go */
       if (!redraw)
+      {
+         for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+            if (video_st->windows_wanted & (1u << i))
+               input_driver_release_window(i);
          video_st->windows_wanted = 0;
+      }
       /* The UI in the main window; placement starts afresh when they
        * are back */
       if (!redraw && video_st->windows_host.names)
@@ -4671,25 +4968,32 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
          memset(video_st->windows_ui, 0, sizeof(video_st->windows_ui));
          memset(&video_st->windows_route, 0,
                sizeof(video_st->windows_route));
+         video_driver_windows_route_publish(video_st);
          video_st->windows_ui_asked = 0;
          video_windows_host_reset(&video_st->windows_host);
       }
       return NULL;
    }
+   if (!redraw)
+      video_driver_windows_bounds_take(video_st, settings);
 #ifdef HAVE_THREADS
    if (redraw)
       out = &video_st->windows_redraw;
 #endif
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
+      const char *display        = settings->arrays.video_screen_display[i];
       video_window_settings_t *w = &out->settings[i];
       w->pos        = settings->uints.video_screen_window_pos[i];
       w->dims       = settings->uints.video_screen_window_dims[i];
-      w->monitor    = settings->uints.video_screen_window_monitor[i];
-      w->mode       = string_is_equal(settings->arrays.video_screen_display[i],
-            VIDEO_WINDOW_DISPLAY_OFF) ? VIDEO_WINDOW_HIDDEN
-         : i ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
+      w->monitor    = 0;
+      w->mode       = string_is_equal(display, VIDEO_WINDOW_DISPLAY_OFF)
+         ? VIDEO_WINDOW_HIDDEN
+         : (!i || string_is_equal(display, VIDEO_WINDOW_DISPLAY_MAIN))
+         ? VIDEO_WINDOW_ATTACHED : VIDEO_WINDOW_SEPARATE;
       w->fullscreen = settings->bools.video_screen_window_fullscreen[i];
+      w->pos_set    = settings->bools.video_screen_window_pos_set[i];
+      w->edit       = redraw ? 0 : video_st->windows_edit[i];
    }
    out->core          = video_st->views_core;
    out->core_dims     = video_st->views_frame_dims;
@@ -4706,7 +5010,15 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    memset(out->window_ui, 0, sizeof(out->window_ui));
    if (redraw)
    {
-      route       = video_st->windows_route;
+      video_windows_routes_t *box = &video_st->windows_routes;
+      video_window_slot_take(&box->published, &box->held);
+      if (box->held)
+         route    = box->slot[box->held - 1];
+      else
+         memset(&route, 0, sizeof(route));
+      /* An edit waits for the frame laid out with it */
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+         out->settings[i].edit = route.edit[i];
       out->serial = video_st->windows_drawn;
       memset(out->ui, 0, sizeof(out->ui));
       if (route.display)
@@ -4731,26 +5043,62 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
          (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
 #endif
       {
-         /* Not those of frames laid out before the last restore */
+         /* Not those of frames laid out before the last retry, or
+          * closes from before the last restore or their screen's last
+          * edit */
          int failed = retro_atomic_exchange_int(&video_st->windows_failed, 0);
+         int closed = retro_atomic_exchange_int(&video_st->windows_closed, 0);
          if (     (failed & ~0xff)
-               == VIDEO_WINDOWS_FAILED_TAG(video_st->windows_restore))
+               == VIDEO_WINDOWS_FAILED_TAG(video_st->windows_retry))
             video_st->windows_forced_attached |= (unsigned)failed & 0xffu;
+         if (     (closed & ~0xff)
+               == VIDEO_WINDOWS_FAILED_TAG(video_st->windows_restore))
+            for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+               if (     (closed & (1 << i))
+                     && retro_atomic_load_acquire_int(
+                           &video_st->windows_closed_edit[i])
+                     == VIDEO_WINDOWS_FAILED_TAG(video_st->windows_edit[i]))
+                  video_st->windows_closed_attached |= 1u << i;
       }
       list   = video_driver_take_window_displays(video_st, &count);
-      forced = video_st->windows_forced_attached;
-      if (list)
+      forced = video_st->windows_forced_attached
+             | video_st->windows_closed_attached;
+      if (list && !list[0].monitor)
          video_driver_windows_place(video_st, settings, list, count,
                &in, &route);
+#ifndef ANDROID
+      else
+         video_windows_resolve(list, count,
+               (const char (*)[VIDEO_WINDOW_DISPLAY_NAME_SIZE])
+               settings->arrays.video_screen_display, out->settings,
+               &route);
+#endif
       video_driver_windows_ui(video_st, list, count, &route, &in, client,
             out);
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+         route.edit[i] = video_st->windows_edit[i];
       if (memcmp(&route, &video_st->windows_route, sizeof(route)))
+      {
          video_st->windows_route = route;
+         video_driver_windows_route_publish(video_st);
+      }
    }
    out->restore     = video_st->windows_restore;
+   out->retry       = video_st->windows_retry;
    video_windows_plan(&out->core, out->settings, true, true,
-         forced, route.own ? &route : NULL, &out->plan);
+         forced, (route.own || route.monitors) ? &route : NULL,
+         &out->plan);
+   /* Each own window on its monitor */
+   if (route.monitors)
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+         if (out->plan.separate_mask & (1u << i))
+         {
+            out->settings[i].mode    = VIDEO_WINDOW_SEPARATE;
+            out->settings[i].monitor = route.target[i];
+         }
    out->display     = route.display;
+   out->monitors    = route.monitors;
+   out->monitors_present = route.present;
    out->window_keep = route.keep ? 1u << VIDEO_WINDOWS_PRESENTATION : 0;
    out->logo        = route.logo;
 #ifdef HAVE_GFX_WIDGETS
@@ -4767,6 +5115,26 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
          if (out->plan.separate_mask & (1u << i))
             out->window_screens[i] = 1u << i;
+   /* Game Screen 1's own window takes an id no screen's window has */
+   if (route.monitors && (out->plan.separate_mask & 1u))
+   {
+      unsigned w = video_windows_spare_window(out->plan.separate_mask,
+            out->core.num_screens);
+      if (w)
+      {
+         out->window_screens[w] = 1u;
+         out->settings[w]       = out->settings[0];
+      }
+      else
+      {
+         out->plan.separate_mask &= ~1u;
+         out->plan.main_mask     |= 1u;
+      }
+   }
+   out->window_named = 0;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (out->window_screens[i] & route.named)
+         out->window_named |= 1u << i;
    if (!redraw)
       video_driver_windows_asked(video_st, out, display_was);
    return out;
@@ -8850,6 +9218,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
          VIDEO_WIN32_RELEASE_KEPT_WINDOW();
          VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
+         video_driver_release_kept_windows();
          RARCH_ERR("[Video] Cannot open threaded video driver. Exiting...\n");
          return false;
       }
@@ -8878,6 +9247,14 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
    /* Android's after the GLES fallback, which takes them too */
    VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
+   /* With threaded video, kept windows go in CMD_INIT, on the video
+    * thread. On Windows, windows kept on the main thread go only from
+    * it; no frame has run since CMD_INIT replied, so the video thread's
+    * tables hold still. */
+#ifndef _WIN32
+   if (!video.is_threaded)
+#endif
+      video_driver_release_kept_windows();
 
    if (!video_st->data)
    {

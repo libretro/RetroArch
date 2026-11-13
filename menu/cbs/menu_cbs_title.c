@@ -260,6 +260,8 @@ static const title_enum_map_t title_enum_map[] = {
    { MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS, TITLE_VARIANT_PLAIN },
    { MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS, TITLE_VARIANT_PLAIN },
    { MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS, TITLE_VARIANT_PLAIN },
+   { MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_GAME_SCREENS_SETTINGS, TITLE_VARIANT_PLAIN },
+   { MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_HEADSET_SETTINGS, TITLE_VARIANT_PLAIN },
    { MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SETTINGS, TITLE_VARIANT_PLAIN },
    { MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS, TITLE_VARIANT_PLAIN },
    { MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS, TITLE_VARIANT_PLAIN },
@@ -660,9 +662,7 @@ static int action_get_title_dropdown_item(
                      (enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
                   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT;
                else if (
-                        (   enum_idx - 2 >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR
-                         && enum_idx - 2 <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR_LAST)
-                     || (   enum_idx - 2 >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
+                        (   enum_idx - 2 >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
                          && enum_idx - 2 <= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_LAST)
                      || enum_idx - 2 == MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY)
                {
@@ -1116,6 +1116,19 @@ static int action_get_title_input_binds_list(
    return 0;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+static int action_get_title_video_screen_settings_list(
+      const char *path, const char *label,
+      unsigned menu_type, char *s, size_t len)
+{
+   unsigned screen = menu_setting_video_screen_page(path);
+   if (screen < RETRO_VIDEO_VIEWS_MAX)
+      snprintf(s, len, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS), screen + 1);
+   return 0;
+}
+#endif
+
 static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
@@ -1171,6 +1184,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_core_options_list},
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST,
          action_get_title_input_binds_list},
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST,
+         action_get_title_video_screen_settings_list},
+#endif
 #ifdef HAVE_CHEEVOS
       {MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST,
          action_get_title_achievements_submenu_list},

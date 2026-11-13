@@ -175,6 +175,11 @@ typedef struct gfx_ctx_cgl_data
    bool dxgi_requested;
    bool dxgi_failed;
    bool dxgi_fp16;
+   /* wglGetSwapIntervalEXT, for secondary windows */
+   int (APIENTRY *window_get_interval)(void);
+   /* A secondary window's swap interval was set since the main
+    * window's was last put back */
+   bool window_interval;
 } gfx_ctx_wgl_data_t;
 
 /* FORWARD DECLARATIONS */
@@ -603,12 +608,178 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    }
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+#define WGL_VIDEO_WINDOWS
+/* A secondary window is drawn with the main window's context, on a DC
+ * of the main window's pixel format; NULL puts the context back on the
+ * main window. The extension sets the interval of the current window,
+ * but not every driver keeps one per window (Mesa's keeps one per
+ * context): so a secondary's is set to 0 where it reads otherwise, and
+ * the main window's is put back after that. */
+static bool gfx_ctx_wgl_window_bind_gl(void *data,
+      video_window_native_t *window)
+{
+   gfx_ctx_wgl_data_t *wgl     = (gfx_ctx_wgl_data_t*)data;
+   win32_video_window_t *state = window
+      ? (win32_video_window_t*)window->state : NULL;
+
+   if (!wgl || !win32_hrc || !win32_hdc)
+      return false;
+   if (!window)
+   {
+      if (!wglMakeCurrent(win32_hdc, win32_hrc))
+         return false;
+      if (wgl->window_interval && p_swap_interval)
+         p_swap_interval(win32_interval);
+      wgl->window_interval = false;
+      return true;
+   }
+   if (     !state || state->common.owner != data || state->common.closed
+         || !state->hdc)
+      return false;
+   if (!wglMakeCurrent(state->hdc, win32_hrc))
+   {
+      /* a failed make-current leaves no context current */
+      gfx_ctx_wgl_window_bind_gl(data, NULL);
+      video_window_mark_closed(&state->common);
+      return false;
+   }
+   if (     p_swap_interval
+         && (!wgl->window_get_interval || wgl->window_get_interval() != 0))
+   {
+      p_swap_interval(0);
+      wgl->window_interval = true;
+   }
+   return true;
+}
+
+/* Plain SwapBuffers: the DXGI presenter is the main window's alone */
+static bool gfx_ctx_wgl_window_present_gl(void *data,
+      video_window_native_t *window)
+{
+   win32_video_window_t *state = window
+      ? (win32_video_window_t*)window->state : NULL;
+   if (     !data || !state || state->common.owner != data
+         || state->common.closed || !state->hdc || !window->presentable)
+      return false;
+   if (!wglSwapBuffers(state->hdc))
+   {
+      video_window_mark_closed(&state->common);
+      return false;
+   }
+   return true;
+}
+
+/* The window's device context let go of, for its own teardown or a
+ * keep */
+static bool gfx_ctx_wgl_window_unbind(void *data,
+      video_window_native_t *window)
+{
+   win32_video_window_t *state = window
+      ? (win32_video_window_t*)window->state : NULL;
+   if (!data || !state || state->common.owner != data)
+      return false;
+   if (state->hdc)
+   {
+      if (wglGetCurrentDC() == state->hdc)
+         gfx_ctx_wgl_window_bind_gl(data, NULL);
+      if (!state->destroyed)
+         ReleaseDC(state->hwnd, state->hdc);
+      state->hdc = NULL;
+   }
+   return true;
+}
+
+static void gfx_ctx_wgl_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_wgl_window_unbind(data, window))
+      win32_video_window_destroy(data, window);
+}
+
+static void gfx_ctx_wgl_window_keep(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_wgl_window_unbind(data, window))
+      win32_video_window_keep(data, window);
+}
+
+/* Taken only with the pixel format this context's main window has: a
+ * window's is set once */
+static bool gfx_ctx_wgl_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   win32_video_window_t *state;
+   int format;
+   if (     !data || win32_api != GFX_CTX_OPENGL_API || !win32_hrc
+         || !win32_hdc || !(format = GetPixelFormat(win32_hdc))
+         || !win32_video_window_take(data, screen, window, display,
+            format))
+      return false;
+   state = (win32_video_window_t*)window->state;
+   if (!(state->hdc = GetDC(state->hwnd)))
+   {
+      gfx_ctx_wgl_window_destroy(data, window);
+      return false;
+   }
+   return true;
+}
+
+static bool gfx_ctx_wgl_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   PIXELFORMATDESCRIPTOR pfd;
+   win32_video_window_t *state;
+   int format;
+   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)data;
+
+   if (     !data || win32_api != GFX_CTX_OPENGL_API || !win32_hrc
+         || !win32_hdc || !(format = GetPixelFormat(win32_hdc)))
+      return false;
+   if (!win32_video_window_create(data, request, window))
+      return false;
+   if (p_swap_interval && !wgl->window_get_interval)
+      wgl->window_get_interval = (int (APIENTRY *)(void))
+         gfx_ctx_wgl_get_proc_address("wglGetSwapIntervalEXT");
+   state = (win32_video_window_t*)window->state;
+   memset(&pfd, 0, sizeof(pfd));
+   /* a window's pixel format can be set once; the descriptor is only
+    * informational, as for the main window's float format */
+   if ((state->hdc = GetDC(state->hwnd)))
+      DescribePixelFormat(win32_hdc, format, sizeof(pfd), &pfd);
+   if (!state->hdc || !SetPixelFormat(state->hdc, format, &pfd))
+   {
+      gfx_ctx_wgl_window_destroy(data, window);
+      return false;
+   }
+   win32_video_window_show(window);
+   return true;
+}
+
+static const gfx_ctx_window_driver_t gfx_ctx_wgl_windows = {
+   gfx_ctx_wgl_window_create,
+   win32_video_window_update,
+   win32_video_window_poll,
+   gfx_ctx_wgl_window_bind_gl,
+   gfx_ctx_wgl_window_present_gl,
+   gfx_ctx_wgl_window_destroy,
+   gfx_ctx_wgl_window_keep,
+   gfx_ctx_wgl_window_take
+};
+#endif
+
 static bool gfx_ctx_wgl_set_resize(void *data, unsigned dims) { return false; }
 
 static void gfx_ctx_wgl_destroy(void *data)
 {
    HWND            window  = win32_get_window();
    gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)data;
+
+#ifdef WGL_VIDEO_WINDOWS
+   /* never kept with the main window */
+   if (wgl)
+      win32_video_windows_free(wgl, gfx_ctx_wgl_window_destroy);
+#endif
 
    switch (win32_api)
    {
@@ -1135,10 +1306,15 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
    gfx_ctx_wgl_shared_context_new,
    gfx_ctx_wgl_shared_context_bind,
-   gfx_ctx_wgl_shared_context_free
+   gfx_ctx_wgl_shared_context_free,
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
+#endif
+#ifdef WGL_VIDEO_WINDOWS
+   &gfx_ctx_wgl_windows
+#else
+   NULL  /* windows */
 #endif
 };

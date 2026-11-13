@@ -58,6 +58,10 @@ typedef struct x11_input
     * could not be opened. */
    Display *event_display;
    Window win;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* By screen, the window whose keys event_display has selected */
+   Window key_windows[RETRO_VIDEO_VIEWS_MAX];
+#endif
 
 #ifdef HAVE_XI2
    /* First request after a warp: older events are from before it. */
@@ -103,6 +107,12 @@ typedef struct x11_input
 extern retro_atomic_int_t g_x11_entered;
 extern retro_atomic_int_t g_x11_size;
 extern Window             g_x11_win;
+#ifdef HAVE_VIDEO_WINDOWS
+extern retro_atomic_int_t g_x11_key_windows[RETRO_VIDEO_VIEWS_MAX];
+#endif
+
+#define X_EVENTS_MASK (KeyPressMask | KeyReleaseMask | FocusChangeMask \
+      | KeymapStateMask)
 
 /* The poll reads the keyboard from events on a connection of the
  * driver's own. Draining it is a non-blocking read, where a query on
@@ -122,8 +132,7 @@ static Display *x_events_open(x11_input_t *x11)
 
    /* KeymapNotify follows every FocusIn and EnterNotify with the
     * whole key vector. */
-   XSelectInput(dpy, x11->win, KeyPressMask | KeyReleaseMask
-         | FocusChangeMask | KeymapStateMask);
+   XSelectInput(dpy, x11->win, X_EVENTS_MASK);
 
    /* Keys already down. Events selected above that the query saw
     * are applied again in order, which leaves each key at its last
@@ -320,6 +329,22 @@ static void x_pointer_event(x11_input_t *x11, XGenericEventCookie *cookie)
 static void x_events_drain(x11_input_t *x11)
 {
    Display *dpy = x11->event_display;
+#ifdef HAVE_VIDEO_WINDOWS
+   unsigned i;
+
+   /* A screen's own window's keys, from when it is new; the request
+    * goes out with XPending() below */
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      Window win = (Window)(unsigned)retro_atomic_load_acquire_int(
+            &g_x11_key_windows[i]);
+      if (win == x11->key_windows[i])
+         continue;
+      x11->key_windows[i] = win;
+      if (win != None)
+         XSelectInput(dpy, win, X_EVENTS_MASK);
+   }
+#endif
 
    while (XPending(dpy))
    {

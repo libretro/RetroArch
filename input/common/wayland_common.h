@@ -200,6 +200,11 @@ typedef struct output_info
    unsigned scale;
    char *make;
    char *model;
+#ifdef HAVE_VIDEO_WINDOWS
+   struct gfx_ctx_wayland_data *wl;
+   /* wl_output v4's, e.g. "DP-2"; NULL below it */
+   char *name;
+#endif
 } output_info_t;
 
 typedef struct display_output
@@ -253,6 +258,9 @@ typedef struct input_ctx_wayland_data
       bool axis_discrete;
       bool last_valid;
       bool focus;
+      /* Its place and wheel not taken, decided at enter: what is in
+       * flight for a window that has gone stays out */
+      bool gated;
       bool left, right, middle, side, extra;
       bool wu, wd, wl, wr;
    } mouse;
@@ -430,6 +438,12 @@ typedef struct gfx_ctx_wayland_data
    } cfg_pending;
    bool activated;
    bool reported_display_size;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The outputs to publish again: one changed, or the main window
+    * went to another */
+   bool video_monitors_dirty;
+   bool video_monitors_own_dirty;
+#endif
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_XKBCOMMON
@@ -448,6 +462,25 @@ void gfx_ctx_wl_show_mouse(void *data, bool state);
 void gfx_ctx_wl_cursor_load(gfx_ctx_wayland_data_t *wl);
 
 void flush_wayland_fd(void *data);
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* A keyboard enter or leave: one of a secondary screen's surfaces goes
+ * to its window (gfx/common/wayland_common.c), on the thread that runs
+ * the context. Called on whichever thread handles the seat's events. */
+void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface, bool focused);
+/* Whether a secondary screen's window is open and the surface is not
+ * the main window's: a screen's, or a decoration's. Any thread. */
+bool wl_video_windows_not_main(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface);
+/* An output's properties changed: secondary screens' windows on it
+ * take its scale again. On the thread that runs the context. */
+void wl_video_windows_rescale(void);
+/* An output changed or went away: what the compositor does to secondary
+ * screens' windows then is not the user's. On the thread that runs the
+ * context. */
+void wl_video_windows_unsettled(void);
+#endif
 
 extern const struct wl_keyboard_listener keyboard_listener;
 

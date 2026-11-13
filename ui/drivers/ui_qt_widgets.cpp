@@ -6721,7 +6721,8 @@ QWidget *VideoPage::widget()
    QHBoxLayout *syncMiscLayout         = new QHBoxLayout;
 
    SettingsGroup *miscGroup            = new SettingsGroup("Miscellaneous");
-   SettingsGroup *stereo3dGroup        = new SettingsGroup("Stereo 3D and Screens");
+   SettingsGroup *stereo3dGroup        = new SettingsGroup("Stereo 3D");
+   SettingsGroup *gameScreensGroup     = new SettingsGroup("Game Screens");
    SettingsGroup *filterGroup          = new SettingsGroup("Video Filter");
 
    unsigned i, size                    = 0;
@@ -6844,7 +6845,8 @@ QWidget *VideoPage::widget()
 
    stereo3dGroup->add(MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES);
    stereo3dGroup->add(MENU_ENUM_LABEL_VIDEO_STEREO_MODE);
-   stereo3dGroup->add(MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT);
+
+   gameScreensGroup->add(MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT);
 
 #ifdef HAVE_VIDEO_FILTER
    filterGroup->add(MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE);
@@ -6862,6 +6864,7 @@ QWidget *VideoPage::widget()
    layout->addLayout(modeLayout);
    layout->addLayout(hdrLayout);
    layout->addLayout(syncMiscLayout);
+   layout->addWidget(gameScreensGroup);
    layout->addWidget(stereo3dGroup);
    layout->addWidget(filterGroup);
 

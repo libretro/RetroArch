@@ -443,6 +443,144 @@ static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
 }
 #endif
 
+#if defined(HAVE_EGL) && defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+/* A secondary window is drawn with the main window's context, on a
+ * surface of the same config; NULL puts the context back on the main
+ * window. */
+static bool gfx_ctx_wl_window_bind_gl(void *data,
+      video_window_native_t *window)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl_video_window_t *state   = window
+      ? (wl_video_window_t*)window->state : NULL;
+
+   if (!wl)
+      return false;
+   if (!window)
+      return egl_window_surface_bind(&wl->egl, EGL_NO_SURFACE, false);
+   if (     !state || state->common.owner != wl || state->common.closed
+         || !state->drawable)
+      return false;
+   /* Before the frame is drawn, so it is drawn at the new size */
+   if (state->win_dims != window->dims)
+   {
+      wl_egl_window_resize((struct wl_egl_window*)state->win,
+            VIDEO_SCALE_W(window->dims), VIDEO_SCALE_H(window->dims), 0, 0);
+      state->win_dims = window->dims;
+   }
+   if (!egl_window_surface_bind(&wl->egl, (EGLSurface)state->drawable,
+            !state->interval_set))
+   {
+      /* A surface that cannot be drawn to fails the window, and the
+       * main window's is current again */
+      gfx_ctx_wl_window_bind_gl(data, NULL);
+      video_window_mark_closed(&state->common);
+      return false;
+   }
+   state->interval_set = true;
+   return true;
+}
+
+static bool gfx_ctx_wl_window_present_gl(void *data,
+      video_window_native_t *window)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl_video_window_t *state   = window
+      ? (wl_video_window_t*)window->state : NULL;
+   /* Nothing goes on the surface before the compositor configured it */
+   if (     !wl || !state || state->common.owner != wl
+         || state->common.closed || !state->drawable || !window->presentable)
+      return false;
+   if (egl_window_surface_swap(&wl->egl, (EGLSurface)state->drawable))
+      return true;
+   video_window_mark_closed(&state->common);
+   return false;
+}
+
+/* The window's EGL surface and native window gone, for its own
+ * teardown or a keep */
+static bool gfx_ctx_wl_window_unbind(void *data,
+      video_window_native_t *window)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl_video_window_t *state   = window
+      ? (wl_video_window_t*)window->state : NULL;
+   if (!wl || !state || state->common.owner != wl)
+      return false;
+   if (state->drawable)
+      egl_window_surface_free(&wl->egl, (EGLSurface)state->drawable);
+   if (state->win)
+      wl_egl_window_destroy((struct wl_egl_window*)state->win);
+   state->drawable     = NULL;
+   state->win          = NULL;
+   state->interval_set = false;
+   return true;
+}
+
+static void gfx_ctx_wl_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_wl_window_unbind(data, window))
+      wl_video_window_destroy(data, window);
+}
+
+static void gfx_ctx_wl_window_keep(void *data,
+      video_window_native_t *window)
+{
+   if (gfx_ctx_wl_window_unbind(data, window))
+      wl_video_window_keep(data, window);
+}
+
+/* EGL's surface and native window on the window, at its size */
+static bool gfx_ctx_wl_window_surface(gfx_ctx_wayland_data_t *wl,
+      video_window_native_t *window)
+{
+   EGLSurface surface;
+   wl_video_window_t *state = (wl_video_window_t*)window->state;
+   state->win      = wl_egl_window_create(state->surface,
+         VIDEO_SCALE_W(window->dims), VIDEO_SCALE_H(window->dims));
+   state->win_dims = window->dims;
+   if (     !state->win
+         || (surface = egl_window_surface_new(&wl->egl, state->win))
+            == EGL_NO_SURFACE)
+   {
+      gfx_ctx_wl_window_destroy(wl, window);
+      return false;
+   }
+   state->drawable = surface;
+   return true;
+}
+
+static bool gfx_ctx_wl_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return      wl && wl->egl.surf != EGL_NO_SURFACE
+            && wl_video_window_take(data, screen, window, display)
+            && gfx_ctx_wl_window_surface(wl, window);
+}
+
+static bool gfx_ctx_wl_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return      wl && wl->egl.surf != EGL_NO_SURFACE
+            && wl_video_window_create(data, request, window)
+            && gfx_ctx_wl_window_surface(wl, window);
+}
+
+static const gfx_ctx_window_driver_t gfx_ctx_wl_windows = {
+   gfx_ctx_wl_window_create,
+   wl_video_window_update,
+   wl_video_window_poll,
+   gfx_ctx_wl_window_bind_gl,
+   gfx_ctx_wl_window_present_gl,
+   gfx_ctx_wl_window_destroy,
+   gfx_ctx_wl_window_keep,
+   gfx_ctx_wl_window_take
+};
+#endif
+
 static void gfx_ctx_wl_destroy(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -450,6 +588,10 @@ static void gfx_ctx_wl_destroy(void *data)
    if (!wl)
       return;
 
+#if defined(HAVE_EGL) && defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+   /* Secondaries go before the context, kept or not */
+   wl_video_windows_free(wl, gfx_ctx_wl_window_destroy);
+#endif
    /* This context's HDR settings go with it */
    video_driver_modify_disp_flags(0,
            VIDEO_FLAG_HDR_SUPPORT
@@ -788,10 +930,16 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
 #ifdef HAVE_EGL
    gfx_ctx_wl_shared_context_new,
    egl_shared_context_bind,
-   egl_shared_context_free
+   egl_shared_context_free,
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+   &gfx_ctx_wl_windows
+#else
+   NULL  /* windows */
+#endif
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
+   NULL  /* windows */
 #endif
 };

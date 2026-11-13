@@ -6382,8 +6382,8 @@ void config_set_defaults(settings_t *target)
    {
       settings->uints.video_screen_window_pos[i] = 0;
       settings->uints.video_screen_window_dims[i] = 0;
-      settings->uints.video_screen_window_monitor[i] = 0;
       settings->bools.video_screen_window_fullscreen[i] = false;
+      settings->bools.video_screen_window_pos_set[i] = false;
       settings->arrays.video_screen_display[i][0] = '\0';
    }
    settings->arrays.video_menu_display[0] = '\0';
@@ -7088,13 +7088,14 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
       int x = 0, y = 0;
       unsigned width = 0, height = 0;
       unsigned old_mode = VIDEO_WINDOW_ATTACHED;
+      bool had_mode;
       size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
 
-      settings->uints.video_screen_window_monitor[i] = 0;
       settings->bools.video_screen_window_fullscreen[i] = false;
+      settings->bools.video_screen_window_pos_set[i] = false;
       settings->arrays.video_screen_display[i][0] = '\0';
       strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
-      config_get_uint(conf, cfg, &old_mode);
+      had_mode = config_get_uint(conf, cfg, &old_mode);
       strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
       config_get_int(conf, cfg, &x);
       strlcpy_lit(cfg + len, "y", sizeof(cfg) - len);
@@ -7103,8 +7104,8 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
       config_get_uint(conf, cfg, &width);
       strlcpy_lit(cfg + len, "height", sizeof(cfg) - len);
       config_get_uint(conf, cfg, &height);
-      strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
-      config_get_uint(conf, cfg, &settings->uints.video_screen_window_monitor[i]);
+      strlcpy_lit(cfg + len, "pos_set", sizeof(cfg) - len);
+      config_get_bool(conf, cfg, &settings->bools.video_screen_window_pos_set[i]);
       strlcpy_lit(cfg + len, "fullscreen", sizeof(cfg) - len);
       config_get_bool(conf, cfg, &settings->bools.video_screen_window_fullscreen[i]);
       settings->uints.video_screen_window_pos[i] =
@@ -7116,13 +7117,22 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
       snprintf(cfg, sizeof(cfg), "video_screen%u_display", i + 1);
       config_get_array(conf, cfg, settings->arrays.video_screen_display[i],
             sizeof(settings->arrays.video_screen_display[i]));
-      /* Hidden, saved before a display could be Off. Auto does not
-       * stop it: a full save writes every display, "" included */
-      if (     old_mode == VIDEO_WINDOW_HIDDEN
-            && !settings->arrays.video_screen_display[i][0])
-         strlcpy(settings->arrays.video_screen_display[i],
-               VIDEO_WINDOW_DISPLAY_OFF,
-               sizeof(settings->arrays.video_screen_display[i]));
+      /* Saved before the display rows. Auto does not stop it: a full
+       * save writes every display, "" included */
+      if (had_mode && !settings->arrays.video_screen_display[i][0])
+      {
+         if (old_mode == VIDEO_WINDOW_HIDDEN)
+            strlcpy(settings->arrays.video_screen_display[i],
+                  VIDEO_WINDOW_DISPLAY_OFF,
+                  sizeof(settings->arrays.video_screen_display[i]));
+#ifndef ANDROID
+         /* Attached was the main window's */
+         else if (i && old_mode == VIDEO_WINDOW_ATTACHED)
+            strlcpy(settings->arrays.video_screen_display[i],
+                  VIDEO_WINDOW_DISPLAY_MAIN,
+                  sizeof(settings->arrays.video_screen_display[i]));
+#endif
+      }
    }
    settings->arrays.video_menu_display[0] = '\0';
    config_get_array(conf, "video_menu_display",
@@ -9954,9 +9964,11 @@ bool config_save_file(const char *path)
       char cfg[64];
       size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
 
-      /* Migrated on load; one left in the file would hide the screen
-       * again */
+      /* Migrated or retired on load; a mode left in the file would
+       * hide the screen again */
       strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
+      config_unset(conf, cfg);
+      strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
       config_unset(conf, cfg);
 
       strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
@@ -9987,10 +9999,10 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
-      strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
+      strlcpy_lit(cfg + len, "pos_set", sizeof(cfg) - len);
       if (   !minimal
-          || settings->uints.video_screen_window_monitor[i] != defaults->uints.video_screen_window_monitor[i])
-         config_set_int(conf, cfg, settings->uints.video_screen_window_monitor[i]);
+          || settings->bools.video_screen_window_pos_set[i] != defaults->bools.video_screen_window_pos_set[i])
+         config_set_string(conf, cfg, settings->bools.video_screen_window_pos_set[i] ? "true" : "false");
       else
          config_unset(conf, cfg);
 
@@ -10783,9 +10795,9 @@ int8_t config_save_overrides(enum override_type type,
          if (VIDEO_SCALE_H(settings->uints.video_screen_window_dims[i]) != VIDEO_SCALE_H(overrides->uints.video_screen_window_dims[i]))
             config_set_int(conf, cfg, VIDEO_SCALE_H(overrides->uints.video_screen_window_dims[i]));
 
-         strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
-         if (settings->uints.video_screen_window_monitor[i] != overrides->uints.video_screen_window_monitor[i])
-            config_set_int(conf, cfg, overrides->uints.video_screen_window_monitor[i]);
+         strlcpy_lit(cfg + len, "pos_set", sizeof(cfg) - len);
+         if (settings->bools.video_screen_window_pos_set[i] != overrides->bools.video_screen_window_pos_set[i])
+            config_set_string(conf, cfg, overrides->bools.video_screen_window_pos_set[i] ? "true" : "false");
 
          strlcpy_lit(cfg + len, "fullscreen", sizeof(cfg) - len);
          if (settings->bools.video_screen_window_fullscreen[i] != overrides->bools.video_screen_window_fullscreen[i])

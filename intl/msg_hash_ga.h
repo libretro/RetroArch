@@ -2671,8 +2671,6 @@ static const struct
    char s_2c868ae4[14];
    char s_9c535394[10];
    char s_7f065006[11];
-   char s_5c12d979[14];
-   char s_32cb293c[27];
    char s_284873ec[26];
    char s_3220e9be[10];
    char s_3242e549[27];
@@ -2794,13 +2792,11 @@ static const struct
    char s_ebf10493[16];
    char s_d15bd14f[31];
    char s_79ea50ef[43];
-   char s_539d5393[11];
    char s_a64b3a0b[26];
    char s_83e8dc72[26];
    char s_7cf985f0[38];
    char s_cfc4e36b[16];
    char s_0f5266ce[20];
-   char s_0f97fdc1[12];
    char s_ea2674d3[43];
    char s_ea2674d4[39];
    char s_2d8cb7ce[26];
@@ -4289,8 +4285,6 @@ static const struct
    char s_14ce7a81[169];
    char s_dc6f9d69[50];
    char s_417085f4[57];
-   char s_1bcf70a7[185];
-   char s_fbed99aa[217];
    char s_2e2ca41a[312];
    char s_f48b1fac[55];
    char s_f4ad1b37[100];
@@ -8100,8 +8094,6 @@ static const struct
    "Cothrom\303\241nach",
    "Ingearach",
    "Sc\303\241ile\303\241n",
-   "Sc\303\241ile\303\241n %u",
-   "Sc\303\241ile\303\241n %u Taispe\303\241ntas",
    "Cuir Sc\303\241ile\303\241in in Eagar",
    "Tuinairde",
    "Athshocraigh an Sc\303\241ile\303\241n",
@@ -8224,13 +8216,11 @@ static const struct
    "M\303\263d Fuinneoige",
    "Fuinneoga Sc\303\241ile\303\241in ar Leith",
    "Sc\303\241ile\303\241in Cluiche ar Thaispe\303\241ntais Eile",
-   "Ceangailte",
    "Airde Uasta na Fuinneoige",
    "Uasleithead na Fuinneoige",
    "\303\232s\303\241id M\303\251id Fuinneoige Saincheaptha",
    "Taispe\303\241int: %s",
    "Airde na Fuinneoige",
-   "Faoi cheilt",
    "Frith\303\241ireamh Cothrom\303\241nach an Sc\303\241ile\303\241in",
    "Frith\303\241ireamh Ingearach an Sc\303\241ile\303\241in",
    "Teimhneacht na Fuinneoige",
@@ -11317,13 +11307,6 @@ static const struct
    ", n\303\255 roghna\303\255tear aon cheann.",
    "Conas sc\303\241ile\303\241in c\303\263ras ilsc\303\241ile\303\241in a shocr\303\272.",
    "Roghnaigh an sc\303\241ile\303\241n ar sn\303\241mh chun \303\251 a choigeart\303\272.",
-   "Coinn\303\255onn 'Ceangailte' an sc\303\241ile\303\241n seo in \303\251ineacht leis na cinn eile"
-   ". Cuireann 'Ar leithligh' \303\251 ar fhuinneog n\303\263 ar thaispe\303\241int d\303\241 chuid "
-   "f\303\251in. F\303\241gann 'Faoi cheilt' ar l\303\241r \303\251.",
-   "C\303\241 dt\303\251ann an sc\303\241ile\303\241n seo nuair a bh\303\255onn a fhuinneog f\303"
-   "\251in aige? Roghna\303\255tear an dara taispe\303\241int go huathoibr\303\255och. Fanann an sc"
-   "\303\241ile\303\241n ceangailte leis an taispe\303\241int a bhfuil RetroArch \303\241 thaispe"
-   "\303\241int uirthi.",
    "D\303\272n an roghchl\303\241r agus bog sc\303\241ile\303\241in agus roghchl\303\241r na gcluas"
    "\303\241n leis na rialt\303\263ir\303\255: greama\303\255onn an greim, claonann an truicear, ath"
    "ra\303\255onn an bata achar agus m\303\251id, casann agus claonann bata na l\303\241imhe saora, "
@@ -12431,7 +12414,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (274061u
+      (sizeof(msg_hash_ga_blob) == (273595u
 #ifdef ANDROID
        + 390u
 #endif
@@ -15657,8 +15640,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -15780,13 +15761,11 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE_ANDROID,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -17257,8 +17236,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,

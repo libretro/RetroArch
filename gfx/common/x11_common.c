@@ -35,6 +35,7 @@
 #endif
 
 #include "x11_common.h"
+#include "x11_monitors.h"
 
 #ifdef HAVE_XRANDR
 #include <X11/extensions/randr.h>
@@ -44,7 +45,14 @@
 #include <X11/extensions/xf86vmode.h>
 #endif
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_XCB)
+#include <X11/Xlib-xcb.h>
+#include <xcb/xcb.h>
+#include <xcb/xcbext.h>
+#endif
+
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 #include <retro_atomic.h>
 #include <compat/strl.h>
 
@@ -61,9 +69,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-/* The window icon both X11 contexts set: width, height, then ARGB
- * pixels, as longs because _NET_WM_ICON is format 32. */
-#if !defined(HAVE_OPENGLES) || (defined(HAVE_VULKAN) && defined(HAVE_XCB))
+/* The icon every X11 context's window and screen window sets: width,
+ * height, then ARGB pixels, as longs because _NET_WM_ICON is format 32. */
 const unsigned long x11_retroarch_icon[] = {
    16, 16,
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
@@ -85,8 +92,8 @@ const unsigned long x11_retroarch_icon[] = {
 };
 const size_t x11_retroarch_icon_len =
       sizeof(x11_retroarch_icon) / sizeof(*x11_retroarch_icon);
-#endif
 
+#define _NET_WM_STATE_REMOVE                 0
 #define _NET_WM_STATE_ADD                    1
 #define MOVERESIZE_GRAVITY_CENTER            5
 #define MOVERESIZE_X_SHIFT                   8
@@ -105,6 +112,12 @@ static retro_atomic_int_t g_x11_focused;
  * the event pump and read by the input driver's poll on the runloop
  * thread, so it is one word. */
 retro_atomic_int_t g_x11_size;
+#ifdef HAVE_VIDEO_WINDOWS
+/* By screen, its window once the server has mapped it, else None: the
+ * input driver takes that window's keys too. Written by the event
+ * pump, read by the input driver's poll. */
+retro_atomic_int_t g_x11_key_windows[RETRO_VIDEO_VIEWS_MAX];
+#endif
 Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
 Window   g_x11_win                          = None;
@@ -125,6 +138,10 @@ static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_XCB)
+/* _NET_WM_STATE, then the states that are not a normal window's */
+static Atom x11_video_window_states[5];
+#endif
 #ifdef HAVE_MENU
 enum x11_dnd_atom
 {
@@ -1043,6 +1060,1113 @@ static void x11_dnd_selection(const XSelectionEvent *s)
 }
 #endif
 
+#ifdef HAVE_VIDEO_WINDOWS
+#define X11_VIDEO_WINDOW_RETIRED     8
+
+/* What x11_video_window_error() tells a secondary window's errors by:
+ * the serials of the requests that made it and its resources, and its
+ * generation, 0 while unused. Written on the context thread, read on
+ * whichever thread reads an error off g_x11_dpy. Entries by screen,
+ * then the last few windows destroyed, whose errors can still be on
+ * their way. */
+typedef struct
+{
+   retro_atomic_size_t first;
+   retro_atomic_size_t last;
+   retro_atomic_int_t  id[2];
+   retro_atomic_int_t  generation;
+} x11_video_window_ids_t;
+
+static x11_video_window_t *x11_video_windows[RETRO_VIDEO_VIEWS_MAX];
+static unsigned x11_video_window_count;
+static x11_video_window_ids_t x11_video_window_ids[
+      RETRO_VIDEO_VIEWS_MAX + X11_VIDEO_WINDOW_RETIRED];
+static unsigned x11_video_window_retired;
+/* By screen, the generation of a window that drew an error, for the
+ * context thread */
+static retro_atomic_int_t x11_video_window_failed[RETRO_VIDEO_VIEWS_MAX];
+/* A bit by screen for each open window with the keyboard focus, for
+ * x11_has_focus() */
+static retro_atomic_int_t x11_video_windows_focus;
+/* The handler x11_video_window_error() replaced, as a size_t */
+static retro_atomic_size_t x11_video_window_chain;
+/* The user's last key or button press on a window of ours */
+static Time x11_user_time;
+
+static bool x11_check_atom_supported(Display *dpy, Atom atom);
+static void x11_video_window_release(x11_video_window_t *state);
+
+/* Xlib's default handler exits on any error, so an error in a window
+ * made here - one destroyed by another client, say - fails that window
+ * instead. Anything else goes to the handler this one replaced. */
+static int x11_video_window_error(Display *dpy, XErrorEvent *event)
+{
+   unsigned i;
+   XErrorHandler chain;
+   if (dpy == g_x11_dpy)
+   {
+      for (i = 1; i < ARRAY_SIZE(x11_video_window_ids); i++)
+      {
+         x11_video_window_ids_t *ids = &x11_video_window_ids[i];
+         int generation = retro_atomic_load_acquire_int(&ids->generation);
+         size_t first   = retro_atomic_load_acquire_size(&ids->first);
+         XID id0        = (XID)(unsigned)retro_atomic_load_acquire_int(&ids->id[0]);
+         XID id1        = (XID)(unsigned)retro_atomic_load_acquire_int(&ids->id[1]);
+         if (     (first
+                  && event->serial >= first
+                  && event->serial <= retro_atomic_load_acquire_size(&ids->last))
+               || (event->resourceid
+                  && (event->resourceid == id0 || event->resourceid == id1)))
+         {
+            /* Only for the window the ids were read for: one that has
+             * replaced it meanwhile has another generation */
+            if (     i < RETRO_VIDEO_VIEWS_MAX && generation
+                  && generation == retro_atomic_load_acquire_int(&ids->generation))
+               retro_atomic_store_release_int(&x11_video_window_failed[i],
+                     generation);
+            return 0;
+         }
+      }
+   }
+   /* The input driver's own connection selecting keys on a window that
+    * has just gone */
+   else if (event->error_code == BadWindow && event->resourceid)
+   {
+      for (i = 1; i < ARRAY_SIZE(x11_video_window_ids); i++)
+         if (event->resourceid == (XID)(unsigned)
+               retro_atomic_load_acquire_int(&x11_video_window_ids[i].id[0]))
+            return 0;
+   }
+   if ((chain = (XErrorHandler)retro_atomic_load_acquire_size(
+               &x11_video_window_chain)))
+      return chain(dpy, event);
+   return 0;
+}
+
+/* Done when g_x11_dpy opens, before any request on it can fail, and
+ * again on every create, as a save and restore elsewhere may have put
+ * back the handler this one replaced. */
+static void x11_video_window_error_install(void)
+{
+   XErrorHandler prev = XSetErrorHandler(x11_video_window_error);
+   if (prev != x11_video_window_error)
+      retro_atomic_store_release_size(&x11_video_window_chain, (size_t)prev);
+}
+
+static video_window_common_t *x11_video_window_at(unsigned screen)
+{
+   return x11_video_windows[screen]
+      ? &x11_video_windows[screen]->common : NULL;
+}
+
+#ifdef HAVE_XCB
+/* Inside a window manager's frame the server reports the frame's
+ * coordinates, and a manager need not follow a resize with a synthetic
+ * event that has the root's. So the root position is asked for, and
+ * the answer taken once it has come rather than waited for; one
+ * question at a time, asked again if the window moved meanwhile. */
+static void x11_video_window_translate(x11_video_window_t *state,
+      retro_time_t at)
+{
+   xcb_connection_t *conn;
+   state->translate_at = at;
+   if (state->translate)
+   {
+      state->translate_again = true;
+      return;
+   }
+   conn             = XGetXCBConnection(g_x11_dpy);
+   state->translate = xcb_translate_coordinates(conn,
+         (xcb_window_t)state->handle,
+         (xcb_window_t)DefaultRootWindow(g_x11_dpy), 0, 0).sequence;
+   xcb_flush(conn);
+}
+
+/* Drops the _NET_WM_STATE read that bounds wait for */
+static void x11_video_window_unjudge(x11_video_window_t *state)
+{
+   if (state->judge_read)
+      xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->judge_read);
+   state->judge_read = 0;
+}
+
+/* Not fullscreen, maximised or minimised, by a _NET_WM_STATE reply */
+static bool x11_video_window_normal(xcb_get_property_reply_t *reply)
+{
+   unsigned j, k;
+   unsigned count          = 0;
+   const xcb_atom_t *atoms = NULL;
+   if (reply->format == 32 && reply->type == XCB_ATOM_ATOM)
+   {
+      atoms = (const xcb_atom_t*)xcb_get_property_value(reply);
+      count = (unsigned)xcb_get_property_value_length(reply)
+         / sizeof(*atoms);
+   }
+   for (j = 0; j < count; j++)
+      for (k = 1; k < ARRAY_SIZE(x11_video_window_states); k++)
+         if (atoms[j] == (xcb_atom_t)x11_video_window_states[k])
+            return false;
+   return true;
+}
+
+/* The bounds it is at, for GEOMETRY to save where the user left them,
+ * as of 'at', when the event that told of them was taken. Before it is
+ * mapped nothing is the user's. */
+static void x11_video_window_moved(x11_video_window_t *state,
+      retro_time_t at)
+{
+   if (!state->common.native->presentable)
+      video_window_unsettled(&state->common, at);
+   state->judge_at    = at;
+   state->judge_pos   = state->common.pos;
+   state->judge_dims  = state->common.native->dims;
+   state->judge_state = state->wm_state;
+   state->judge       = true;
+   x11_video_window_unjudge(state);
+}
+
+/* A manager may set _NET_WM_STATE just after it configures, so bounds
+ * wait one poll() for a change that came with them, and for the state
+ * read out when they came, if any; not for one asked since, so a later
+ * change cannot hold them. Its PropertyNotify can come pumps later, so
+ * they also wait for a read that poll() asks for. */
+static void x11_video_windows_judge(void)
+{
+   unsigned i;
+   xcb_connection_t *conn = XGetXCBConnection(g_x11_dpy);
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      xcb_get_property_reply_t *reply = NULL;
+      xcb_generic_error_t *error      = NULL;
+      x11_video_window_t *state       = x11_video_windows[i];
+      if (!state || !state->judge)
+         continue;
+      if (!state->judge_read)
+      {
+         if (state->wm_state && state->wm_state == state->judge_state)
+            continue;
+         state->judge_normal = state->wm_normal
+            && !state->common.request.settings.fullscreen;
+         if (state->judge_normal && x11_video_window_states[0])
+         {
+            state->judge_read = xcb_get_property(conn, 0,
+                  (xcb_window_t)state->handle,
+                  (xcb_atom_t)x11_video_window_states[0], XCB_ATOM_ATOM,
+                  0, 32).sequence;
+            xcb_flush(conn);
+            continue;
+         }
+      }
+      else if (!xcb_poll_for_reply(conn, state->judge_read,
+               (void**)&reply, &error))
+         continue;
+      else
+      {
+         state->judge_read = 0;
+         if (!reply || !x11_video_window_normal(reply))
+            state->judge_normal = false;
+         free(reply);
+         free(error);
+      }
+      state->judge = false;
+      video_window_moved(&state->common, state->judge_pos, true,
+            state->judge_dims, state->judge_normal, state->judge_at);
+   }
+}
+
+/* _NET_WM_STATE changed: read again, taken once it has come, as the
+ * root position is */
+static void x11_video_window_read_state(x11_video_window_t *state)
+{
+   xcb_connection_t *conn;
+   if (state->wm_state)
+   {
+      state->wm_state_again = true;
+      return;
+   }
+   conn            = XGetXCBConnection(g_x11_dpy);
+   state->wm_state = xcb_get_property(conn, 0,
+         (xcb_window_t)state->handle,
+         (xcb_atom_t)x11_video_window_states[0], XCB_ATOM_ATOM, 0,
+         32).sequence;
+   xcb_flush(conn);
+}
+
+static void x11_video_windows_states(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      xcb_get_property_reply_t *reply = NULL;
+      xcb_generic_error_t *error      = NULL;
+      x11_video_window_t *state       = x11_video_windows[i];
+      if (     !state || !state->wm_state
+            || !xcb_poll_for_reply(XGetXCBConnection(g_x11_dpy),
+               state->wm_state, (void**)&reply, &error))
+         continue;
+      state->wm_state = 0;
+      if (reply)
+         state->wm_normal = x11_video_window_normal(reply);
+      free(reply);
+      free(error);
+      if (state->wm_state_again)
+      {
+         state->wm_state_again = false;
+         x11_video_window_read_state(state);
+      }
+   }
+}
+
+static void x11_video_windows_translated(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      xcb_translate_coordinates_reply_t *reply = NULL;
+      xcb_generic_error_t *error               = NULL;
+      x11_video_window_t *state                = x11_video_windows[i];
+      if (     !state || !state->translate
+            || !xcb_poll_for_reply(XGetXCBConnection(g_x11_dpy),
+               state->translate, (void**)&reply, &error))
+         continue;
+      state->translate = 0;
+      if (reply && !state->common.closed)
+      {
+         unsigned pos = VIDEO_POS_PACK(reply->dst_x, reply->dst_y);
+         if (pos != state->common.pos)
+         {
+            state->common.pos      = pos;
+            state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+         }
+         /* One asked again has the size this position goes with */
+         if (!state->translate_again)
+            x11_video_window_moved(state, state->translate_at);
+      }
+      free(reply);
+      free(error);
+      if (state->translate_again)
+      {
+         state->translate_again = false;
+         x11_video_window_translate(state, state->translate_at);
+      }
+   }
+}
+#endif
+
+static void x11_video_windows_check_failed(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      unsigned generation;
+      x11_video_window_t *state = x11_video_windows[i];
+      if (!retro_atomic_load_relaxed_int(&x11_video_window_failed[i]))
+         continue;
+      generation = (unsigned)retro_atomic_fetch_and_int(
+            &x11_video_window_failed[i], 0);
+      if (     state && !state->common.closed
+            && state->common.request.generation == generation)
+         video_window_mark_closed(&state->common);
+   }
+}
+
+static void x11_video_windows_update_focus(void)
+{
+   unsigned i;
+   int focus = 0;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (     x11_video_windows[i] && !x11_video_windows[i]->common.closed
+            && x11_video_windows[i]->common.native->focused)
+         focus |= 1 << i;
+   retro_atomic_store_relaxed_int(&x11_video_windows_focus, focus);
+}
+
+/* An event of a secondary window goes to it; false for any other. A
+ * window's events are told apart by its handle, so what is still
+ * queued for a destroyed one cannot reach its replacement. Its keys
+ * are handed back as the main window's, for the main window's path. */
+static bool x11_video_window_event(XEvent *event)
+{
+   unsigned i;
+   video_window_native_t *window;
+   x11_video_window_t *state = NULL;
+
+   if (!x11_video_window_count)
+      return false;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      if (     x11_video_windows[i]
+            && x11_video_windows[i]->handle == event->xany.window)
+      {
+         state = x11_video_windows[i];
+         break;
+      }
+   }
+   if (!state)
+      return false;
+
+   window = state->common.native;
+   if (event->type == DestroyNotify)
+      state->destroyed = true;
+   if (state->common.closed)
+      return true;
+
+   switch (event->type)
+   {
+      case KeyPress:
+      case KeyRelease:
+         event->xkey.window = g_x11_win;
+         return false;
+      /* Unlike the main window's, this close does not quit */
+      case ClientMessage:
+         if ((Atom)event->xclient.data.l[0] == g_x11_quit_atom)
+            video_window_mark_closed_by_user(&state->common);
+         break;
+      case DestroyNotify:
+         video_window_mark_closed(&state->common);
+         break;
+      case ReparentNotify:
+         state->reparented = event->xreparent.parent
+            != DefaultRootWindow(g_x11_dpy);
+#ifdef HAVE_XCB
+         if (state->reparented)
+            x11_video_window_translate(state,
+                  cpu_features_get_time_usec());
+#endif
+         break;
+      case ConfigureNotify:
+         {
+#ifdef HAVE_XCB
+            retro_time_t at = cpu_features_get_time_usec();
+#endif
+            unsigned pos    = state->common.pos;
+            unsigned dims   = VIDEO_SCALE_PACK(event->xconfigure.width,
+                  event->xconfigure.height);
+            if (!state->reparented)
+               pos = VIDEO_POS_PACK(event->xconfigure.x,
+                     event->xconfigure.y);
+#ifdef HAVE_XCB
+            else
+               x11_video_window_translate(state, at);
+#else
+            /* The manager's synthetic event has root coordinates */
+            else if (event->xconfigure.send_event)
+               pos = VIDEO_POS_PACK(event->xconfigure.x,
+                     event->xconfigure.y);
+#endif
+            if (dims != window->dims || pos != state->common.pos)
+            {
+               window->dims           = dims;
+               state->common.pos      = pos;
+               state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+            }
+#ifdef HAVE_XCB
+            if (!state->reparented)
+               x11_video_window_moved(state, at);
+#endif
+         }
+         break;
+#ifdef HAVE_XCB
+      case PropertyNotify:
+         if (     x11_video_window_states[0]
+               && event->xproperty.atom == x11_video_window_states[0])
+            x11_video_window_read_state(state);
+         break;
+#endif
+      case MapNotify:
+         video_window_unsettled(&state->common,
+               cpu_features_get_time_usec());
+         window->presentable    = true;
+         state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(SUSPEND);
+         state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(RESUME);
+         /* The server has made it, so another connection can select on it */
+         retro_atomic_store_release_int(
+               &g_x11_key_windows[state->common.request.screen],
+               (int)state->handle);
+         /* Asked again once shown, as the main window does */
+         if (state->common.request.settings.fullscreen)
+            x11_set_net_wm_fullscreen(g_x11_dpy, state->handle);
+         break;
+      case UnmapNotify:
+         window->presentable    = false;
+         state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(RESUME);
+         state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(SUSPEND);
+         break;
+      case FocusIn:
+         if (     event->xfocus.mode   != NotifyGrab
+               && event->xfocus.mode   != NotifyUngrab
+               && (   event->xfocus.detail == NotifyAncestor
+                   || event->xfocus.detail == NotifyInferior
+                   || event->xfocus.detail == NotifyNonlinear))
+         {
+            window->focused        = true;
+            state->common.pending |= VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+         }
+         break;
+      case FocusOut:
+         if (     event->xfocus.mode   != NotifyGrab
+               && event->xfocus.mode   != NotifyUngrab
+               && event->xfocus.detail != NotifyPointer)
+         {
+            window->focused        = false;
+            state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+            state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS);
+         }
+         break;
+      default:
+         break;
+   }
+   return true;
+}
+
+/* Bounds on the monitors there are now: on the preferred monitor, or
+ * the one the saved bounds are mostly on, or else the main window's.
+ * Saved bounds partly off that monitor are moved onto it; bounds that
+ * are not on it at all, automatic ones and ones with no position set
+ * are centred on it. */
+static void x11_video_window_place(const video_window_settings_t *settings,
+      int *x, int *y, unsigned *width, unsigned *height)
+{
+   video_window_rect_t rect, monitor;
+   bool automatic             = !settings->dims || !settings->pos_set;
+#ifdef RARCH_HAVE_X11_MONITORS
+   unsigned i;
+   int chosen                 = -1;
+   const x11_monitors_t *snap = x11_monitors_get();
+#endif
+
+   rect.x    = VIDEO_POS_X(settings->pos);
+   rect.y    = VIDEO_POS_Y(settings->pos);
+   rect.w    = VIDEO_SCALE_W(settings->dims);
+   rect.h    = VIDEO_SCALE_H(settings->dims);
+   monitor.x = 0;
+   monitor.y = 0;
+   monitor.w = DisplayWidth(g_x11_dpy, DefaultScreen(g_x11_dpy));
+   monitor.h = DisplayHeight(g_x11_dpy, DefaultScreen(g_x11_dpy));
+   if (!settings->dims)
+   {
+      unsigned size = (unsigned)retro_atomic_load_relaxed_int(&g_x11_size);
+      rect.w        = VIDEO_SCALE_W(size) ? VIDEO_SCALE_W(size) : 640;
+      rect.h        = VIDEO_SCALE_H(size) ? VIDEO_SCALE_H(size) : 480;
+   }
+
+   /* The worker's monitors, never a round trip here; with none yet a
+    * saved position cannot be checked, so it goes unused */
+#ifdef RARCH_HAVE_X11_MONITORS
+   if (snap)
+   {
+      unsigned best = 0;
+      for (i = 0; i < snap->count && settings->monitor; i++)
+         if (snap->mon[i].ordinal == settings->monitor)
+            chosen = (int)i;
+      for (i = 0; i < snap->count && !settings->monitor && !automatic; i++)
+      {
+         unsigned area;
+         video_window_rect_t screen;
+         screen.x = snap->mon[i].x;
+         screen.y = snap->mon[i].y;
+         screen.w = snap->mon[i].w;
+         screen.h = snap->mon[i].h;
+         if ((area = video_window_rect_overlap(&rect, &screen)) > best)
+         {
+            best   = area;
+            chosen = (int)i;
+         }
+      }
+      for (i = 0; i < snap->count && chosen < 0; i++)
+         if (snap->mon[i].ordinal == g_x11_screen + 1)
+            chosen = (int)i;
+      if (chosen < 0 && snap->count > 0)
+         chosen = 0;
+      if (chosen >= 0)
+      {
+         monitor.x = snap->mon[chosen].x;
+         monitor.y = snap->mon[chosen].y;
+         monitor.w = snap->mon[chosen].w;
+         monitor.h = snap->mon[chosen].h;
+      }
+   }
+   else
+      automatic = true;
+   x11_monitors_put();
+#else
+   automatic = true;
+#endif
+
+   if (settings->fullscreen)
+      rect = monitor;
+   else
+      video_window_place_rect(&rect, &monitor, automatic);
+   *x      = rect.x;
+   *y      = rect.y;
+   *width  = (unsigned)rect.w;
+   *height = (unsigned)rect.h;
+}
+
+static void x11_video_window_unfullscreen(Window win)
+{
+   XEvent xev                 = {0};
+   xev.xclient.type           = ClientMessage;
+   xev.xclient.send_event     = True;
+   xev.xclient.message_type   = XInternAtom(g_x11_dpy, "_NET_WM_STATE", False);
+   xev.xclient.window         = win;
+   xev.xclient.format         = 32;
+   xev.xclient.data.l[0]      = _NET_WM_STATE_REMOVE;
+   xev.xclient.data.l[1]      = XInternAtom(g_x11_dpy,
+         "_NET_WM_STATE_FULLSCREEN", False);
+   XSendEvent(g_x11_dpy, DefaultRootWindow(g_x11_dpy), False,
+         SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+}
+
+bool x11_video_window_create(void *owner,
+      const video_window_request_t *request,
+      video_window_native_t *window, Visual *visual, int depth)
+{
+   XSizeHints hints;
+   XSetWindowAttributes swa;
+   char title[64];
+   unsigned width, height;
+   int x, y;
+   x11_video_window_ids_t *ids;
+   x11_video_window_t *state;
+   Window root;
+
+   if (     request && request->screen < RETRO_VIDEO_VIEWS_MAX
+         && x11_video_windows[request->screen]
+         && !x11_video_windows[request->screen]->common.owner)
+      x11_video_window_release(x11_video_windows[request->screen]);
+   if (     !owner || !request || !window || !visual || window->state
+         || !g_x11_dpy || !g_x11_win || !g_x11_quit_atom
+         || !request->generation
+         || !request->screen
+         || request->screen >= RETRO_VIDEO_VIEWS_MAX
+         || request->settings.mode != VIDEO_WINDOW_SEPARATE
+         || x11_video_windows[request->screen]
+         || (request->settings.dims
+            && (  !VIDEO_SCALE_W(request->settings.dims)
+               || !VIDEO_SCALE_H(request->settings.dims))))
+      return false;
+   if (!(state = (x11_video_window_t*)calloc(1, sizeof(*state))))
+      return false;
+
+   x11_video_window_error_install();
+
+   root = DefaultRootWindow(g_x11_dpy);
+   x11_video_window_place(&request->settings, &x, &y, &width, &height);
+
+   ids = &x11_video_window_ids[request->screen];
+   retro_atomic_store_release_int(&ids->generation, (int)request->generation);
+   retro_atomic_store_release_size(&ids->last, (size_t)-1);
+   retro_atomic_store_release_size(&ids->first, XNextRequest(g_x11_dpy));
+
+   memset(&swa, 0, sizeof(swa));
+   state->colormap = XCreateColormap(g_x11_dpy, root, visual, AllocNone);
+   swa.colormap    = state->colormap;
+   swa.event_mask  = StructureNotifyMask | FocusChangeMask
+      | PropertyChangeMask | KeyPressMask | KeyReleaseMask;
+   state->handle   = XCreateWindow(g_x11_dpy, root, x, y, width, height, 0,
+         depth, InputOutput, visual,
+         CWBackPixel | CWBorderPixel | CWColormap | CWEventMask, &swa);
+   retro_atomic_store_release_int(&ids->id[0], (int)state->handle);
+
+   /* Saved bounds are the window's own, frame or not */
+   memset(&hints, 0, sizeof(hints));
+   hints.flags       = USPosition | USSize | PWinGravity;
+   hints.x           = x;
+   hints.y           = y;
+   hints.width       = width;
+   hints.height      = height;
+   hints.win_gravity = StaticGravity;
+   XSetWMNormalHints(g_x11_dpy, state->handle, &hints);
+   XSetWMProtocols(g_x11_dpy, state->handle, &g_x11_quit_atom, 1);
+   snprintf(title, sizeof(title), "RetroArch - Screen %u",
+         video_window_title_screen(request) + 1);
+   /* As the main window's: WM_NAME, and EWMH's in UTF-8 */
+   XStoreName(g_x11_dpy, state->handle, title);
+#ifdef X_HAVE_UTF8_STRING
+   {
+      Atom utf8 = XInternAtom(g_x11_dpy, "UTF8_STRING", False);
+      if (utf8)
+      {
+         XChangeProperty(g_x11_dpy, state->handle,
+               XInternAtom(g_x11_dpy, "_NET_WM_NAME", False), utf8, 8,
+               PropModeReplace, (const unsigned char*)title,
+               (int)strlen(title));
+         XChangeProperty(g_x11_dpy, state->handle,
+               XInternAtom(g_x11_dpy, "_NET_WM_ICON_NAME", False), utf8, 8,
+               PropModeReplace, (const unsigned char*)title,
+               (int)strlen(title));
+      }
+   }
+#endif
+   x11_set_window_attr(g_x11_dpy, state->handle);
+   XChangeProperty(g_x11_dpy, state->handle,
+         XInternAtom(g_x11_dpy, "_NET_WM_ICON", False), XA_CARDINAL, 32,
+         PropModeReplace, (const unsigned char*)x11_retroarch_icon,
+         (int)x11_retroarch_icon_len);
+   if (request->settings.fullscreen)
+      x11_set_net_wm_fullscreen_hint(g_x11_dpy, state->handle);
+
+   state->common.owner                = owner;
+   state->common.native               = window;
+   state->common.request              = *request;
+   state->common.pos                  = VIDEO_POS_PACK(x, y);
+   state->wm_normal                   = true;
+   state->visual                      = XVisualIDFromVisual(visual);
+   video_window_placed(&state->common, VIDEO_POS_PACK(x, y),
+         VIDEO_SCALE_PACK(width, height), cpu_features_get_time_usec());
+   x11_video_windows[request->screen] = state;
+   x11_video_window_count++;
+
+   memset(window, 0, sizeof(*window));
+   window->state      = state;
+   window->display    = g_x11_dpy;
+   window->surface    = (void*)(uintptr_t)state->handle;
+   window->kind       = VIDEO_WINDOW_NATIVE_X11;
+   window->generation = request->generation;
+   window->dims       = VIDEO_SCALE_PACK(width, height);
+   window->configured = true;
+   return true;
+}
+
+void x11_video_window_drawable(video_window_native_t *window,
+      void *drawable, XID resource)
+{
+   x11_video_window_t *state = window ? (x11_video_window_t*)window->state : NULL;
+   if (!state)
+      return;
+   state->drawable = drawable;
+   retro_atomic_store_release_int(
+         &x11_video_window_ids[state->common.request.screen].id[1],
+         (int)resource);
+}
+
+void x11_video_window_show(video_window_native_t *window,
+      void *drawable, XID resource)
+{
+   x11_video_window_ids_t *ids;
+   x11_video_window_t *state = window ? (x11_video_window_t*)window->state : NULL;
+   if (!state)
+      return;
+   ids             = &x11_video_window_ids[state->common.request.screen];
+   x11_video_window_drawable(window, drawable, resource);
+   XMapWindow(g_x11_dpy, state->handle);
+   if (state->common.request.settings.fullscreen)
+      x11_set_net_wm_fullscreen(g_x11_dpy, state->handle);
+   retro_atomic_store_release_size(&ids->last, XNextRequest(g_x11_dpy) - 1);
+   XFlush(g_x11_dpy);
+}
+
+void x11_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request)
+{
+   unsigned width, height;
+   int x, y;
+   video_window_settings_t place;
+   const video_window_settings_t *now;
+   const video_window_settings_t *was;
+   x11_video_window_t *state = window ? (x11_video_window_t*)window->state : NULL;
+
+   if (     !state || state->common.owner != owner || !request
+         || state->common.closed
+         || request->screen     != state->common.request.screen
+         || request->generation != state->common.request.generation)
+      return;
+   now = &request->settings;
+   was = &state->common.request.settings;
+   if (     (now->dims && (!VIDEO_SCALE_W(now->dims) || !VIDEO_SCALE_H(now->dims)))
+         || (     now->pos        == was->pos
+               && now->dims       == was->dims
+               && now->pos_set    == was->pos_set
+               && now->monitor    == was->monitor
+               && now->fullscreen == was->fullscreen))
+      return;
+
+   /* A drag not yet out does not overwrite this */
+#ifdef HAVE_XCB
+   x11_video_window_unjudge(state);
+#endif
+   state->judge             = false;
+   state->common.save_dims  = 0;
+   state->common.save_moved = false;
+
+   if (!was->fullscreen && now->fullscreen)
+   {
+      state->windowed_pos  = state->common.pos;
+      state->windowed_dims = window->dims;
+   }
+
+   /* Fullscreen on no monitor in particular is on the one it is on */
+   place = *now;
+   if (now->fullscreen && !now->monitor)
+   {
+      place.pos     = state->common.pos;
+      place.dims    = window->dims;
+      place.pos_set = true;
+   }
+   /* A window again with no bounds of its own: where it stood before */
+   else if (was->fullscreen && !now->fullscreen && state->windowed_dims
+         && (!now->dims || !now->pos_set))
+   {
+      place.pos     = state->windowed_pos;
+      place.dims    = now->dims ? now->dims : state->windowed_dims;
+      place.pos_set = true;
+   }
+   x11_video_window_place(&place, &x, &y, &width, &height);
+   if (!(      was->fullscreen && now->fullscreen
+            && state->common.pos   == VIDEO_POS_PACK(x, y)
+            && window->dims == VIDEO_SCALE_PACK(width, height)))
+   {
+      video_window_placed(&state->common, VIDEO_POS_PACK(x, y),
+            VIDEO_SCALE_PACK(width, height), cpu_features_get_time_usec());
+      /* Window managers keep a fullscreen window where it is */
+      if (was->fullscreen)
+         x11_video_window_unfullscreen(state->handle);
+      XMoveResizeWindow(g_x11_dpy, state->handle, x, y, width, height);
+      if (now->fullscreen)
+         x11_set_net_wm_fullscreen(g_x11_dpy, state->handle);
+      XFlush(g_x11_dpy);
+   }
+   state->common.request = *request;
+}
+
+unsigned x11_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity)
+{
+   x11_video_windows_check_failed();
+   x11_video_windows_update_focus();
+#ifdef HAVE_XCB
+   x11_video_windows_states();
+   x11_video_windows_judge();
+   x11_video_windows_translated();
+#endif
+   return video_windows_drain(owner, x11_video_window_at, events, capacity);
+}
+
+void x11_video_window_destroy(void *owner, video_window_native_t *window)
+{
+   size_t last;
+   unsigned screen;
+   x11_video_window_ids_t *ids, *retired;
+   x11_video_window_t *state = window ? (x11_video_window_t*)window->state : NULL;
+
+   if (!state || state->common.owner != owner)
+      return;
+   screen = state->common.request.screen;
+   ids    = &x11_video_window_ids[screen];
+#ifdef HAVE_XCB
+   if (state->translate)
+      xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->translate);
+   if (state->wm_state)
+      xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->wm_state);
+   x11_video_window_unjudge(state);
+#endif
+   retro_atomic_store_release_int(&g_x11_key_windows[screen], 0);
+   if (!state->destroyed)
+      XDestroyWindow(g_x11_dpy, state->handle);
+   XFreeColormap(g_x11_dpy, state->colormap);
+
+   if ((last = retro_atomic_load_acquire_size(&ids->last)) == (size_t)-1)
+      last = XNextRequest(g_x11_dpy) - 1;
+   retired = &x11_video_window_ids[RETRO_VIDEO_VIEWS_MAX
+      + x11_video_window_retired];
+   x11_video_window_retired = (x11_video_window_retired + 1)
+      % X11_VIDEO_WINDOW_RETIRED;
+   retro_atomic_store_release_size(&retired->first, 0);
+   retro_atomic_store_release_size(&retired->last, last);
+   retro_atomic_store_release_int(&retired->id[0],
+         retro_atomic_load_acquire_int(&ids->id[0]));
+   retro_atomic_store_release_int(&retired->id[1],
+         retro_atomic_load_acquire_int(&ids->id[1]));
+   retro_atomic_store_release_size(&retired->first,
+         retro_atomic_load_acquire_size(&ids->first));
+   retro_atomic_store_release_size(&ids->first, 0);
+   retro_atomic_store_release_int(&ids->id[0], 0);
+   retro_atomic_store_release_int(&ids->id[1], 0);
+   retro_atomic_store_release_int(&ids->generation, 0);
+
+   x11_video_windows[screen] = NULL;
+   x11_video_window_count--;
+   x11_video_windows_update_focus();
+   XFlush(g_x11_dpy);
+   free(state);
+   memset(window, 0, sizeof(*window));
+}
+
+static void x11_video_window_release(x11_video_window_t *state)
+{
+   video_window_native_t window = state->common.kept;
+   state->common.native         = &window;
+   x11_video_window_destroy(NULL, &window);
+}
+
+#ifdef RARCH_HAVE_X11_MONITORS
+static bool x11_video_windows_kept(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (x11_video_windows[i] && !x11_video_windows[i]->common.owner)
+         return true;
+   return false;
+}
+#endif
+
+void x11_video_windows_release_kept(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (x11_video_windows[i] && !x11_video_windows[i]->common.owner)
+         x11_video_window_release(x11_video_windows[i]);
+}
+
+void x11_video_window_keep(void *owner, video_window_native_t *window)
+{
+   x11_video_window_t *state = window ? (x11_video_window_t*)window->state : NULL;
+   if (!state || state->common.owner != owner)
+      return;
+   x11_video_window_drawable(window, NULL, None);
+   state->interval_set = false;
+   video_window_hold(&state->common, window);
+}
+
+/* The focus back where the user left it: the manager is asked, with the
+ * time of the user's last input, where there is one */
+static void x11_video_window_refocus(Window win)
+{
+   Atom active = XInternAtom(g_x11_dpy, "_NET_ACTIVE_WINDOW", False);
+   if (x11_check_atom_supported(g_x11_dpy, active))
+   {
+      XEvent xev               = {0};
+      xev.xclient.type         = ClientMessage;
+      xev.xclient.send_event   = True;
+      xev.xclient.message_type = active;
+      xev.xclient.window       = win;
+      xev.xclient.format       = 32;
+      xev.xclient.data.l[0]    = 1;
+      xev.xclient.data.l[1]    = (long)x11_user_time;
+      xev.xclient.data.l[2]    = (long)g_x11_win;
+      XSendEvent(g_x11_dpy, DefaultRootWindow(g_x11_dpy), False,
+            SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+   }
+   else
+   {
+      /* Not the user's time: the main window has just taken the focus
+       * at CurrentTime, and the server ignores anything older */
+      XSetInputFocus(g_x11_dpy, win, RevertToParent, CurrentTime);
+   }
+   XFlush(g_x11_dpy);
+}
+
+bool x11_video_window_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display, VisualID visual)
+{
+   x11_video_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? x11_video_windows[screen] : NULL;
+   if (!owner || !state || state->common.owner || !window || window->state)
+      return false;
+   /* One the user closed meanwhile is taken, for its close to land */
+   if (state->destroyed || state->visual != visual)
+   {
+      x11_video_window_release(state);
+      return false;
+   }
+   video_window_adopt(&state->common, owner, window);
+   window->display = g_x11_dpy;
+   window->surface = (void*)(uintptr_t)state->handle;
+   *display        = state->common.request.display;
+   x11_video_windows_update_focus();
+   return true;
+}
+
+void x11_video_window_taken(video_window_native_t *window)
+{
+   x11_video_window_t *state = (x11_video_window_t*)window->state;
+   if (     state->common.kept_focus && window->presentable
+         && !state->common.closed)
+      x11_video_window_refocus(state->handle);
+}
+
+#ifdef RARCH_HAVE_X11_MONITORS
+/* What the context thread last published from the worker */
+static video_window_display_t x11_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned x11_video_monitors_count;
+/* The count the last context had up at its teardown */
+static unsigned x11_video_monitors_last;
+static unsigned x11_video_monitors_serial;
+/* From the worker's start to the context's teardown */
+static bool x11_video_monitors_on;
+static bool x11_video_monitors_published;
+/* A context is up that starts the worker once the windows are on */
+static bool x11_video_monitors_lazy;
+/* The frame waits until the worker has looked for g_x11_win */
+static bool x11_video_monitors_pending;
+/* The monitors' bounds the windows were last checked against */
+static video_window_rect_t x11_video_monitor_areas[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned x11_video_monitor_area_count;
+
+/* The monitors changed. A window left on none of @areas, as by a
+ * monitor that went, is placed again from its request; the window
+ * manager may move the others. Neither move is the user's, so neither
+ * is saved. */
+static void x11_video_windows_replace(const video_window_rect_t *areas,
+      unsigned count)
+{
+   unsigned i;
+   bool moved       = false;
+   retro_time_t now = cpu_features_get_time_usec();
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      video_window_rect_t rect;
+      unsigned width, height;
+      int x, y;
+      const video_window_settings_t *settings;
+      x11_video_window_t *state = x11_video_windows[i];
+      if (!state || state->common.closed)
+         continue;
+      rect.x = VIDEO_POS_X(state->common.pos);
+      rect.y = VIDEO_POS_Y(state->common.pos);
+      rect.w = VIDEO_SCALE_W(state->common.native->dims);
+      rect.h = VIDEO_SCALE_H(state->common.native->dims);
+      if (!video_window_rect_lost(&rect, areas, count))
+      {
+         video_window_unsettled(&state->common, now);
+         continue;
+      }
+      settings = &state->common.request.settings;
+      x11_video_window_place(settings, &x, &y, &width, &height);
+      video_window_placed(&state->common, VIDEO_POS_PACK(x, y),
+            VIDEO_SCALE_PACK(width, height), now);
+      /* Window managers keep a fullscreen window where it is */
+      if (settings->fullscreen)
+         x11_video_window_unfullscreen(state->handle);
+      XMoveResizeWindow(g_x11_dpy, state->handle, x, y, width, height);
+      if (settings->fullscreen)
+         x11_set_net_wm_fullscreen(g_x11_dpy, state->handle);
+      moved = true;
+   }
+   if (moved)
+      XFlush(g_x11_dpy);
+}
+
+/* The worker's monitors as the screens' Display setting lists them.
+ * Published when they changed, and once per context whatever is up:
+ * another platform's list may be. Costs one load until the worker's
+ * serial moves. */
+static void x11_video_monitors_publish(void)
+{
+   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_rect_t areas[VIDEO_WINDOW_DISPLAYS_MAX];
+   const x11_monitors_t *snap;
+   unsigned count  = 0;
+   bool located    = false;
+   bool changed    = false;
+   unsigned serial = x11_monitors_serial();
+   if (!x11_video_monitors_on || !serial)
+   {
+      /* None is coming: placed without one */
+      if (     x11_video_monitors_pending && !x11_video_monitors_lazy
+            && (!x11_video_monitors_on || x11_monitors_state() < 0))
+      {
+         x11_video_monitors_pending = false;
+         video_driver_publish_window_displays(NULL, 0);
+      }
+      return;
+   }
+   if (     x11_video_monitors_published
+         && serial == x11_video_monitors_serial)
+      return;
+   if ((snap = x11_monitors_get()))
+   {
+      unsigned i;
+      for (i = 0; i < snap->count && count < VIDEO_WINDOW_DISPLAYS_MAX; i++)
+      {
+         const x11_monitor_t *mon        = &snap->mon[i];
+         video_window_rect_t *area       = &areas[count];
+         video_window_display_t *display = &list[count++];
+         memset(display, 0, sizeof(*display));
+         display->ordinal  = mon->ordinal;
+         /* On none, or not looked for yet: the one it was made on */
+         display->own      = snap->own >= 0
+            ? (int)i == snap->own
+            : mon->ordinal == g_x11_screen + 1;
+         display->valid    = true;
+         display->on       = true;
+         display->physical = true;
+         display->monitor  = true;
+         strlcpy(display->name, mon->name, sizeof(display->name));
+         if (VIDEO_SCALE_FITS(mon->w, mon->h))
+            display->dims  = VIDEO_SCALE_PACK(mon->w, mon->h);
+         area->x           = mon->x;
+         area->y           = mon->y;
+         area->w           = (int)mon->w;
+         area->h           = (int)mon->h;
+      }
+      serial  = snap->serial;
+      located = g_x11_win && snap->win == (unsigned long)g_x11_win;
+      changed = count != x11_video_monitor_area_count
+         || memcmp(areas, x11_video_monitor_areas, count * sizeof(*areas));
+   }
+   /* Before placing, which reads a snapshot of its own */
+   x11_monitors_put();
+   if (changed)
+   {
+      memcpy(x11_video_monitor_areas, areas, count * sizeof(*areas));
+      x11_video_monitor_area_count = count;
+      if (x11_video_window_count)
+         x11_video_windows_replace(areas, count);
+   }
+   x11_video_monitors_serial = serial;
+   if (     x11_video_monitors_published
+         && !(x11_video_monitors_pending && located)
+         && count == x11_video_monitors_count
+         && !memcmp(list, x11_video_monitors, count * sizeof(*list)))
+      return;
+   memcpy(x11_video_monitors, list, count * sizeof(*list));
+   x11_video_monitors_count     = count;
+   x11_video_monitors_published = true;
+   /* The menu lists them meanwhile; the screens wait for the monitor
+    * the window is on, which decides where Auto puts them */
+   if (x11_video_monitors_pending && !located)
+   {
+      video_driver_publish_window_displays_pending(list, count);
+      return;
+   }
+   x11_video_monitors_pending   = false;
+   video_driver_publish_window_displays(list, count);
+}
+
+/* A thread and an X connection, so only for the screens' windows.
+ * From the context's thread; kept once started, as a detached thread
+ * cannot be stopped. */
+static void x11_video_monitors_start(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings->bools.video_windows_enable)
+      return;
+   x11_video_monitors_lazy      = false;
+   x11_video_monitors_on        = x11_monitors_start(
+         DisplayString(g_x11_dpy));
+   x11_video_monitors_published = false;
+}
+#endif
+
+void x11_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window))
+{
+#ifdef RARCH_HAVE_X11_MONITORS
+   /* The context's monitors go with it, from its own thread */
+   x11_video_monitors_on        = false;
+   x11_video_monitors_published = false;
+   x11_video_monitors_lazy      = false;
+   x11_video_monitors_pending   = false;
+   x11_video_monitors_last      = x11_video_monitors_count;
+   x11_video_monitors_count     = 0;
+   video_driver_publish_window_displays(NULL, 0);
+#endif
+   video_windows_sweep(owner, x11_video_window_at, destroy);
+}
+#endif
+
 bool x11_alive(void *data)
 {
 #ifdef HAVE_XRANDR
@@ -1074,8 +2198,20 @@ bool x11_alive(void *data)
             && event.type <= rr_base + RRNotify)
       {
          x11_refresh_invalidate();
+#ifdef RARCH_HAVE_X11_MONITORS
+         x11_monitors_wake(X11_MONITORS_ENUMERATE);
+#endif
          continue;
       }
+#endif
+
+#ifdef HAVE_VIDEO_WINDOWS
+      if (event.type == KeyPress)
+         x11_user_time = event.xkey.time;
+      else if (event.type == ButtonPress)
+         x11_user_time = event.xbutton.time;
+      if (x11_video_window_event(&event))
+         continue;
 #endif
 
       /* IMPORTANT - Get keycode before XFilterEvent
@@ -1111,7 +2247,12 @@ bool x11_alive(void *data)
 
          case MapNotify:
             if (event.xmap.window == g_x11_win)
+            {
                g_x11_mapped = true;
+#ifdef RARCH_HAVE_X11_MONITORS
+               x11_monitors_window(g_x11_win);
+#endif
+            }
             break;
 
          case UnmapNotify:
@@ -1127,6 +2268,10 @@ bool x11_alive(void *data)
                         event.xconfigure.height));
 #ifdef HAVE_XRANDR
                x11_refresh_invalidate();
+#endif
+#ifdef RARCH_HAVE_X11_MONITORS
+               /* Perhaps onto another monitor */
+               x11_monitors_window(g_x11_win);
 #endif
             }
             break;
@@ -1211,6 +2356,20 @@ bool x11_alive(void *data)
       }
    }
 
+#ifdef HAVE_VIDEO_WINDOWS
+   x11_video_windows_check_failed();
+   x11_video_windows_update_focus();
+#ifdef HAVE_XCB
+   if (x11_video_window_count)
+      x11_video_windows_translated();
+#endif
+#endif
+#ifdef RARCH_HAVE_X11_MONITORS
+   if (x11_video_monitors_lazy)
+      x11_video_monitors_start();
+   x11_video_monitors_publish();
+#endif
+
    return !((bool)frontend_driver_get_signal_handler_state());
 }
 
@@ -1293,6 +2452,9 @@ bool x11_has_focus(void *data)
 {
    return (   retro_atomic_load_relaxed_int(&g_x11_focused)
            && g_x11_mapped)
+#ifdef HAVE_VIDEO_WINDOWS
+      || retro_atomic_load_relaxed_int(&x11_video_windows_focus)
+#endif
       || g_x11_true_full;
 }
 
@@ -1303,8 +2465,34 @@ bool x11_connect(void)
    /* Keep one g_x11_dpy alive the entire process lifetime.
     * This is necessary for nVidia's EGL implementation for now. */
    if (!g_x11_dpy)
+   {
       if (!(g_x11_dpy = XOpenDisplay(NULL)))
          return false;
+#ifdef HAVE_VIDEO_WINDOWS
+      x11_video_window_error_install();
+#endif
+   }
+
+#ifdef RARCH_HAVE_X11_MONITORS
+   x11_video_monitors_on      = false;
+   x11_video_monitors_lazy    = true;
+   x11_video_monitors_start();
+   /* Before any frame: one without the list would place them blind.
+    * Windows kept across a reinit are placed, and the frames that wait
+    * would let them go: they stay on the last list. */
+   if (x11_video_windows_kept() && x11_video_monitors_last)
+   {
+      x11_video_monitors_count   = x11_video_monitors_last;
+      x11_video_monitors_pending = false;
+      video_driver_publish_window_displays(x11_video_monitors,
+            x11_video_monitors_count);
+   }
+   else
+   {
+      x11_video_monitors_pending = true;
+      video_driver_publish_window_displays_pending(NULL, 0);
+   }
+#endif
 
 #ifdef RARCH_HAVE_DBUS_SCREENSAVER
    dbus_ensure_connection();
@@ -1380,6 +2568,9 @@ void x11_input_ctx_destroy(void)
 
 void x11_window_destroy(bool fullscreen)
 {
+#ifdef RARCH_HAVE_X11_MONITORS
+   x11_monitors_window(0);
+#endif
    if (g_x11_win)
       XUnmapWindow(g_x11_dpy, g_x11_win);
    if (!fullscreen)
@@ -1409,6 +2600,18 @@ void x11_install_quit_atom(void)
          "WM_DELETE_WINDOW", False);
    if (g_x11_quit_atom)
       XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_XCB)
+   {
+      static char *names[ARRAY_SIZE(x11_video_window_states)] = {
+         "_NET_WM_STATE", "_NET_WM_STATE_FULLSCREEN",
+         "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ",
+         "_NET_WM_STATE_HIDDEN" };
+      if (!XInternAtoms(g_x11_dpy, names,
+               ARRAY_SIZE(x11_video_window_states), False,
+               x11_video_window_states))
+         x11_video_window_states[0] = None;
+   }
+#endif
 #ifdef HAVE_MENU
    {
       static char *names[X11_DND_ATOM_LAST] = {
@@ -1436,9 +2639,16 @@ void x11_event_queue_check(XEvent *event)
 {
    XWindowAttributes target;
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
+#ifdef RARCH_HAVE_X11_MONITORS
+   x11_monitors_window(g_x11_win);
+#endif
    if (XGetWindowAttributes(g_x11_dpy, g_x11_win, &target))
       retro_atomic_store_relaxed_int(&g_x11_size,
             (int)VIDEO_SCALE_PACK(target.width, target.height));
+#ifdef RARCH_HAVE_X11_MONITORS
+   /* Before the first frame lays the screens out */
+   x11_video_monitors_publish();
+#endif
 }
 
 static bool x11_check_atom_supported(Display *dpy, Atom atom)
