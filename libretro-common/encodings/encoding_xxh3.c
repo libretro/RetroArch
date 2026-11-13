@@ -125,15 +125,6 @@
 
 /* ---- constants ---- */
 
-#define XXH3_P32_1 0x9E3779B1U
-#define XXH3_P32_2 0x85EBCA77U
-#define XXH3_P32_3 0xC2B2AE3DU
-#define XXH3_P64_1 0x9E3779B185EBCA87ULL
-#define XXH3_P64_2 0xC2B2AE3D27D4EB4FULL
-#define XXH3_P64_3 0x165667B19E3779F9ULL
-#define XXH3_P64_4 0x85EBCA77C2B2AE63ULL
-#define XXH3_P64_5 0x27D4EB2F165667C5ULL
-
 #define XXH3_SECRET  192
 #define XXH3_STRIPE  64
 /* stripes between scrambles: (secret - stripe) / 8 */
@@ -183,12 +174,6 @@ static const uint64_t xxh3_init_acc[8] = {
 
 /* ---- scalar pieces ---- */
 
-#if defined(_MSC_VER)
-#define XXH3_ROTL(x, r) _rotl64((x), (r))
-#else
-#define XXH3_ROTL(x, r) (((x) << (r)) | ((x) >> (64 - (r))))
-#endif
-
 /* Keeps the longer paths, their spills and stack buffer out of the
  * entry, so short inputs return without a frame */
 #if defined(_MSC_VER)
@@ -199,78 +184,6 @@ static const uint64_t xxh3_init_acc[8] = {
 #define XXH3_NOINLINE
 #endif
 
-#if defined(_MSC_VER)
-#define XXH3_FORCEINLINE __forceinline
-#elif defined(__GNUC__)
-#define XXH3_FORCEINLINE INLINE __attribute__((always_inline))
-#else
-#define XXH3_FORCEINLINE INLINE
-#endif
-
-static INLINE uint64_t xxh3_rd64(const uint8_t *p)
-{
-   uint64_t v;
-   memcpy(&v, p, 8);
-   return swap_if_big64(v);
-}
-
-static INLINE uint32_t xxh3_rd32(const uint8_t *p)
-{
-   uint32_t v;
-   memcpy(&v, p, 4);
-   return swap_if_big32(v);
-}
-
-/* The 128-bit product of @a and @b, its halves folded together */
-static INLINE uint64_t xxh3_fold(uint64_t a, uint64_t b)
-{
-#if defined(__SIZEOF_INT128__)
-   __extension__ typedef unsigned __int128 xxh3_u128;
-   xxh3_u128 p = (xxh3_u128)a * b;
-   return (uint64_t)p ^ (uint64_t)(p >> 64);
-#elif defined(_MSC_VER) && defined(_M_X64)
-   uint64_t hi;
-   uint64_t lo = _umul128(a, b, &hi);
-   return lo ^ hi;
-#elif defined(_MSC_VER) && defined(_M_ARM64)
-   return (a * b) ^ __umulh(a, b);
-#else
-   uint64_t lo_lo = (a & 0xFFFFFFFFU) * (b & 0xFFFFFFFFU);
-   uint64_t hi_lo = (a >> 32)         * (b & 0xFFFFFFFFU);
-   uint64_t lo_hi = (a & 0xFFFFFFFFU) * (b >> 32);
-   uint64_t hi_hi = (a >> 32)         * (b >> 32);
-   uint64_t cross = (lo_lo >> 32) + (hi_lo & 0xFFFFFFFFU) + lo_hi;
-   uint64_t upper = (hi_lo >> 32) + (cross >> 32) + hi_hi;
-   uint64_t lower = (cross << 32) | (lo_lo & 0xFFFFFFFFU);
-   return lower ^ upper;
-#endif
-}
-
-static INLINE uint64_t xxh3_xxh64_avalanche(uint64_t h)
-{
-   h ^= h >> 33;
-   h *= XXH3_P64_2;
-   h ^= h >> 29;
-   h *= XXH3_P64_3;
-   return h ^ (h >> 32);
-}
-
-static INLINE uint64_t xxh3_avalanche(uint64_t h)
-{
-   h ^= h >> 37;
-   h *= 0x165667919E3779F9ULL;
-   return h ^ (h >> 32);
-}
-
-static uint64_t xxh3_rrmxmx(uint64_t h, uint64_t len)
-{
-   h ^= XXH3_ROTL(h, 49) ^ XXH3_ROTL(h, 24);
-   h *= 0x9FB21C651E98DF25ULL;
-   h ^= (h >> 35) + len;
-   h *= 0x9FB21C651E98DF25ULL;
-   return h ^ (h >> 28);
-}
-
 static INLINE uint64_t xxh3_mix16(const uint8_t *in, const uint8_t *sec,
       uint64_t seed)
 {
@@ -278,65 +191,7 @@ static INLINE uint64_t xxh3_mix16(const uint8_t *in, const uint8_t *sec,
                     xxh3_rd64(in + 8) ^ (xxh3_rd64(sec + 8) - seed));
 }
 
-/* ---- up to 240 octets ---- */
-
-static XXH3_FORCEINLINE uint64_t xxh3_0to16(const uint8_t *in, size_t len,
-      uint64_t seed)
-{
-   const uint8_t *k = xxh3_secret;
-
-   if (len > 8)
-   {
-      uint64_t lo = xxh3_rd64(in)
-         ^ ((xxh3_rd64(k + 24) ^ xxh3_rd64(k + 32)) + seed);
-      uint64_t hi = xxh3_rd64(in + len - 8)
-         ^ ((xxh3_rd64(k + 40) ^ xxh3_rd64(k + 48)) - seed);
-      return xxh3_avalanche((uint64_t)len + SWAP64(lo) + hi
-            + xxh3_fold(lo, hi));
-   }
-   if (len >= 4)
-   {
-      uint64_t s  = seed ^ ((uint64_t)SWAP32((uint32_t)seed) << 32);
-      uint64_t in64 = (uint64_t)xxh3_rd32(in + len - 4)
-         + ((uint64_t)xxh3_rd32(in) << 32);
-      return xxh3_rrmxmx(in64
-            ^ ((xxh3_rd64(k + 8) ^ xxh3_rd64(k + 16)) - s), len);
-   }
-   if (len)
-   {
-      uint32_t c = ((uint32_t)in[0] << 16) | ((uint32_t)in[len >> 1] << 24)
-                 | (uint32_t)in[len - 1]   | ((uint32_t)len << 8);
-      return xxh3_xxh64_avalanche((uint64_t)c
-            ^ ((uint64_t)(xxh3_rd32(k) ^ xxh3_rd32(k + 4)) + seed));
-   }
-   return xxh3_xxh64_avalanche(seed ^ (xxh3_rd64(k + 56) ^ xxh3_rd64(k + 64)));
-}
-
-static XXH3_FORCEINLINE uint64_t xxh3_17to128(const uint8_t *in, size_t len,
-      uint64_t seed)
-{
-   const uint8_t *k   = xxh3_secret;
-   uint64_t       acc = (uint64_t)len * XXH3_P64_1;
-
-   if (len > 32)
-   {
-      if (len > 64)
-      {
-         if (len > 96)
-         {
-            acc += xxh3_mix16(in + 48,       k + 96,  seed);
-            acc += xxh3_mix16(in + len - 64, k + 112, seed);
-         }
-         acc += xxh3_mix16(in + 32,       k + 64, seed);
-         acc += xxh3_mix16(in + len - 48, k + 80, seed);
-      }
-      acc += xxh3_mix16(in + 16,       k + 32, seed);
-      acc += xxh3_mix16(in + len - 32, k + 48, seed);
-   }
-   acc += xxh3_mix16(in,            k,      seed);
-   acc += xxh3_mix16(in + len - 16, k + 16, seed);
-   return xxh3_avalanche(acc);
-}
+/* ---- 129 to 240 octets; up to 128 are in xxh3.h ---- */
 
 static XXH3_FORCEINLINE uint64_t xxh3_129to240(const uint8_t *in, size_t len,
       uint64_t seed)
@@ -1263,7 +1118,7 @@ XXH3_SHORT(xxh3_short128, xxh3_17to128)
 XXH3_SHORT(xxh3_short240, xxh3_129to240)
 #undef XXH3_SHORT
 
-uint64_t xxh3_64(const void *data, size_t len, uint64_t seed)
+uint64_t (xxh3_64)(const void *data, size_t len, uint64_t seed)
 {
    const uint8_t *in = (const uint8_t*)data;
    if (len <= 16)

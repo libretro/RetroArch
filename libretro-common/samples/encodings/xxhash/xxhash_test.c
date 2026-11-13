@@ -293,9 +293,12 @@ int main(void)
       g     *= PRIME64;
    }
 
+   /* NEON builds no scalar path */
+#if !defined(XXH3_HAVE_NEON)
    paths[np].name = "scalar";
    paths[np].id   = 1;
    paths[np++].fn = xxh3_long_scalar;
+#endif
 #if defined(XXH3_HAVE_SSE2)
    {
       uint64_t simd = cpu_features_get();
@@ -371,6 +374,36 @@ int main(void)
       }
    }
 
+   /* XXH3 at every length to 128 the compiler knows, which xxh3.h
+    * hashes in place, and just past it, against the function */
+#define XXH3_KNOWN(n) do { \
+   checks += 2; \
+   if (xxh3_64(buf + 3, n, 0) != (xxh3_64)(buf + 3, n, 0)) \
+      fail("xxh3_64 known length", n, 0, xxh3_64(buf + 3, n, 0), \
+            (xxh3_64)(buf + 3, n, 0)); \
+   if (xxh3_64(buf + 3, n, PRIME64) != (xxh3_64)(buf + 3, n, PRIME64)) \
+      fail("xxh3_64 known length", n, PRIME64, \
+            xxh3_64(buf + 3, n, PRIME64), (xxh3_64)(buf + 3, n, PRIME64)); \
+} while (0)
+   XXH3_KNOWN(0); XXH3_KNOWN(1); XXH3_KNOWN(2); XXH3_KNOWN(3); XXH3_KNOWN(4); XXH3_KNOWN(5); XXH3_KNOWN(6); XXH3_KNOWN(7);
+   XXH3_KNOWN(8); XXH3_KNOWN(9); XXH3_KNOWN(10); XXH3_KNOWN(11); XXH3_KNOWN(12); XXH3_KNOWN(13); XXH3_KNOWN(14); XXH3_KNOWN(15);
+   XXH3_KNOWN(16); XXH3_KNOWN(17); XXH3_KNOWN(18); XXH3_KNOWN(19); XXH3_KNOWN(20); XXH3_KNOWN(21); XXH3_KNOWN(22); XXH3_KNOWN(23);
+   XXH3_KNOWN(24); XXH3_KNOWN(25); XXH3_KNOWN(26); XXH3_KNOWN(27); XXH3_KNOWN(28); XXH3_KNOWN(29); XXH3_KNOWN(30); XXH3_KNOWN(31);
+   XXH3_KNOWN(32); XXH3_KNOWN(33); XXH3_KNOWN(34); XXH3_KNOWN(35); XXH3_KNOWN(36); XXH3_KNOWN(37); XXH3_KNOWN(38); XXH3_KNOWN(39);
+   XXH3_KNOWN(40); XXH3_KNOWN(41); XXH3_KNOWN(42); XXH3_KNOWN(43); XXH3_KNOWN(44); XXH3_KNOWN(45); XXH3_KNOWN(46); XXH3_KNOWN(47);
+   XXH3_KNOWN(48); XXH3_KNOWN(49); XXH3_KNOWN(50); XXH3_KNOWN(51); XXH3_KNOWN(52); XXH3_KNOWN(53); XXH3_KNOWN(54); XXH3_KNOWN(55);
+   XXH3_KNOWN(56); XXH3_KNOWN(57); XXH3_KNOWN(58); XXH3_KNOWN(59); XXH3_KNOWN(60); XXH3_KNOWN(61); XXH3_KNOWN(62); XXH3_KNOWN(63);
+   XXH3_KNOWN(64); XXH3_KNOWN(65); XXH3_KNOWN(66); XXH3_KNOWN(67); XXH3_KNOWN(68); XXH3_KNOWN(69); XXH3_KNOWN(70); XXH3_KNOWN(71);
+   XXH3_KNOWN(72); XXH3_KNOWN(73); XXH3_KNOWN(74); XXH3_KNOWN(75); XXH3_KNOWN(76); XXH3_KNOWN(77); XXH3_KNOWN(78); XXH3_KNOWN(79);
+   XXH3_KNOWN(80); XXH3_KNOWN(81); XXH3_KNOWN(82); XXH3_KNOWN(83); XXH3_KNOWN(84); XXH3_KNOWN(85); XXH3_KNOWN(86); XXH3_KNOWN(87);
+   XXH3_KNOWN(88); XXH3_KNOWN(89); XXH3_KNOWN(90); XXH3_KNOWN(91); XXH3_KNOWN(92); XXH3_KNOWN(93); XXH3_KNOWN(94); XXH3_KNOWN(95);
+   XXH3_KNOWN(96); XXH3_KNOWN(97); XXH3_KNOWN(98); XXH3_KNOWN(99); XXH3_KNOWN(100); XXH3_KNOWN(101); XXH3_KNOWN(102); XXH3_KNOWN(103);
+   XXH3_KNOWN(104); XXH3_KNOWN(105); XXH3_KNOWN(106); XXH3_KNOWN(107); XXH3_KNOWN(108); XXH3_KNOWN(109); XXH3_KNOWN(110); XXH3_KNOWN(111);
+   XXH3_KNOWN(112); XXH3_KNOWN(113); XXH3_KNOWN(114); XXH3_KNOWN(115); XXH3_KNOWN(116); XXH3_KNOWN(117); XXH3_KNOWN(118); XXH3_KNOWN(119);
+   XXH3_KNOWN(120); XXH3_KNOWN(121); XXH3_KNOWN(122); XXH3_KNOWN(123); XXH3_KNOWN(124); XXH3_KNOWN(125); XXH3_KNOWN(126); XXH3_KNOWN(127);
+   XXH3_KNOWN(128); XXH3_KNOWN(129); XXH3_KNOWN(130); XXH3_KNOWN(240);
+#undef XXH3_KNOWN
+
    /* XXH3: the chosen path, then each */
    for (i = 0; i < sizeof(xxh3_spec) / sizeof(xxh3_spec[0]); i++)
    {
@@ -390,12 +423,12 @@ int main(void)
    }
 
    /* every length to three blocks, at every alignment, every path as
-    * the scalar one */
+    * the first */
    for (n = 241; n <= 3 * 1024 + 64; n++)
    {
       unsigned off  = (unsigned)(n & 7);
       uint64_t seed = (n & 1) ? 0 : (uint64_t)n * PRIME64;
-      uint64_t want = xxh3_long_scalar(buf + off, n, seed);
+      uint64_t want = paths[0].fn(buf + off, n, seed);
       for (p = 1; p < np; p++)
       {
          uint64_t h = paths[p].fn(buf + off, n, seed);

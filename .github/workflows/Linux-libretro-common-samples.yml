@@ -1802,8 +1802,8 @@ jobs:
   #
   # We deliberately do NOT run the full samples sweep here -- the rest
   # of the samples don't have architecture-dependent codegen that
-  # warrants the extra CI time.  retro_atomic_test is the one that
-  # benefits from cross-arch coverage.
+  # warrants the extra CI time.  retro_atomic_test and xxhash_test are
+  # the ones that benefit from cross-arch coverage.
   #
   # Real ARM hardware still beats qemu (see e.g. PostgreSQL's 2025
   # Win11/ARM64 atomic ordering bug, found only on real silicon),
@@ -2195,6 +2195,17 @@ jobs:
           set -u
           set -o pipefail
           ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./retro_atomic_test
+
+      # XXH3's NEON path is the only one AArch64 builds, and its scalar
+      # path is the only one ARMv7 does: the x86 jobs build neither.
+      - name: Build and run xxhash_test under qemu-user
+        working-directory: libretro-common/samples/encodings/xxhash
+        run: |
+          set -u
+          set -o pipefail
+          make clean
+          CC=${{ matrix.cc }} make all
+          ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./xxhash_test
 
       - name: Inspect emitted atomic instructions
         working-directory: libretro-common/samples/atomic/retro_atomic_test
