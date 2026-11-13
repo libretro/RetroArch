@@ -6396,6 +6396,7 @@ QWidget *ViewsPage::widget()
    OptionsPage *quickPage     = new SimplePage(
          DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST,
          MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS, this);
+   QWidget *quickPageWidget;
    SettingsGroup *mainMenu    = new SettingsGroup("Main Menu");
    SettingsGroup *settings    = new SettingsGroup("Settings");
    SettingsGroup *tabs        = new SettingsGroup("Tabs");
@@ -6477,7 +6478,9 @@ QWidget *ViewsPage::widget()
    startScreen->add(MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN);
 
    quickMenu->layout()->setContentsMargins(0, 0, 0, 0);
-   quickMenu->addRow(quickPage->widget());
+   quickPageWidget = quickPage->widget();
+   quickPageWidget->setObjectName("quickMenuPage");
+   quickMenu->addRow(quickPageWidget);
 
    leftLayout->addRow(mainMenu);
    leftLayout->addRow(settings);
