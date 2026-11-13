@@ -650,6 +650,12 @@ const video_window_display_t *video_driver_published_window_displays(
 const video_window_display_t *video_driver_borrow_window_displays(
       unsigned *count);
 
+#ifdef ANDROID
+/* Any thread: the next frame sends Java the whole set of displays to
+ * cover, for a new controller that holds none. */
+void video_driver_blank_unused_resend(void);
+#endif
+
 /* A window showing @screens, from @frame's snapshot at @dims: the map
  * with every screen outside @screens left out. Any thread. */
 void video_driver_window_layout_screens(const video_windows_frame_t *frame,
