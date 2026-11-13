@@ -6630,6 +6630,23 @@ bool command_event(enum event_command cmd, void *data)
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
+      case CMD_EVENT_BLANK_UNUSED_TOGGLE:
+         {
+            bool blanked     = false;
+            unsigned covered = 0;
+            const char *_msg;
+            if (!video_driver_blank_unused_toggle(&blanked, &covered))
+               return false;
+            _msg = msg_hash_to_str(!blanked
+                  ? MSG_BLANK_UNUSED_SCREENS_OFF
+                  : covered
+                  ? MSG_BLANK_UNUSED_SCREENS_ON
+                  : MSG_BLANK_UNUSED_SCREENS_NONE);
+            RARCH_LOG("[Video] %s\n", _msg);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         break;
       case CMD_EVENT_LASER_POINTER_TOGGLE:
          {
             char msg[256];

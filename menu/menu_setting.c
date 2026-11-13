@@ -3967,6 +3967,29 @@ static size_t setting_get_string_representation_video_notifications_window(
    return 0;
 }
 
+#ifdef ANDROID
+static size_t setting_get_string_representation_video_blank_unused_screens(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_BLANK_UNUSED_OFF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF), len);
+         case VIDEO_BLANK_UNUSED_GAMES:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_GAMES), len);
+         case VIDEO_BLANK_UNUSED_ALWAYS:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_ALWAYS), len);
+      }
+   }
+   return 0;
+}
+#endif
+
 /* Display N is the Nth the platform lists, 0 is Auto */
 static unsigned setting_video_screen_window_displays(void)
 {

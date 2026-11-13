@@ -288,6 +288,8 @@ enum event_command
    CMD_EVENT_LASER_POINTER_TOGGLE,
    /* Cycle what a core is told the headset displays: immersive, stereoscopic, flat. */
    CMD_EVENT_HEADSET_VIEW_TOGGLE,
+   /* Blank or show the unused built-in screens for the running content. */
+   CMD_EVENT_BLANK_UNUSED_TOGGLE,
    /* Start or stop moving the headset's screens with its controllers. */
    CMD_EVENT_HEADSET_EDIT_SCREENS,
    /* AI service. */
@@ -1363,6 +1365,7 @@ static const struct cmd_map map[] = {
    { "GAME_FOCUS_TOGGLE", RARCH_GAME_FOCUS_TOGGLE, "Give the game all keyboard input, or hand it back to hotkeys.", CMD_INFO_NO_TOOL },
    { "FULLSCREEN_TOGGLE", RARCH_FULLSCREEN_TOGGLE_KEY, "Switch between fullscreen and windowed.", CMD_INFO_NO_TOOL },
    { "UI_COMPANION_TOGGLE", RARCH_UI_COMPANION_TOGGLE, "Show or hide the desktop companion window.", CMD_INFO_NO_TOOL },
+   { "BLANK_UNUSED_TOGGLE", RARCH_BLANK_UNUSED_TOGGLE, "Blank or show the built-in screens RetroArch isn't using, for the running game (Android).", CMD_INFO_NO_TOOL },
 
    { "VRR_RUNLOOP_TOGGLE", RARCH_VRR_RUNLOOP_TOGGLE, "Turn sync to exact content framerate on or off.", CMD_INFO_NO_TOOL },
    { "RUNAHEAD_TOGGLE", RARCH_RUNAHEAD_TOGGLE, "Turn run-ahead on or off.", CMD_INFO_NO_TOOL },

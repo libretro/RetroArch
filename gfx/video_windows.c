@@ -514,6 +514,35 @@ void video_windows_place(video_windows_host_t *host,
    out->move_seq = move ? host->move_seq : 0;
 }
 
+bool video_windows_blank_wanted(unsigned mode, bool game, bool flipped)
+{
+   if (!game)
+      return mode == VIDEO_BLANK_UNUSED_ALWAYS;
+   return (   mode == VIDEO_BLANK_UNUSED_GAMES
+           || mode == VIDEO_BLANK_UNUSED_ALWAYS) != flipped;
+}
+
+unsigned video_windows_blank_ids(const video_window_display_t *displays,
+      unsigned count, unsigned shown, int *ids)
+{
+   unsigned i;
+   unsigned n = 0;
+   for (i = 0; i < count && i < VIDEO_WINDOW_DISPLAYS_MAX; i++)
+   {
+      const video_window_display_t *d = &displays[i];
+      /* Built-in panels only: never a monitor, cast or virtual display.
+       * Android refuses a Presentation on its default display. */
+      if (     d->physical
+            && d->type == VIDEO_WINDOW_TYPE_INTERNAL
+            && video_windows_place_eligible(d)
+            && !d->own
+            && !d->is_default
+            && d->ordinal != shown)
+         ids[n++] = d->id;
+   }
+   return n;
+}
+
 void video_window_mark_closed(video_window_common_t *window)
 {
    video_window_native_t *native = window->native;
