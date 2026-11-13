@@ -131,7 +131,7 @@ bool	audio_fastforward_speedup	1	0
 bool	audio_fastforward_callback	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
-bool	menu_scroll_quick	1	0
+bool	menu_scroll_quick	1	1
 bool	ai_service_enable	1	0
 bool	ai_service_pause	1	0
 bool	video_scale_integer	1	0
@@ -870,7 +870,7 @@ bool	audio_fastforward_speedup	1	0
 bool	audio_fastforward_callback	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
-bool	menu_scroll_quick	1	0
+bool	menu_scroll_quick	1	1
 bool	ai_service_enable	1	0
 bool	ai_service_pause	1	0
 bool	video_scale_integer	1	0
@@ -1598,7 +1598,7 @@ bool	audio_fastforward_speedup	1	0
 bool	audio_fastforward_callback	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
-bool	menu_scroll_quick	1	0
+bool	menu_scroll_quick	1	1
 bool	ui_companion_enable	1	0
 bool	ui_companion_start_on_boot	1	1
 bool	desktop_menu_enable	1	1
