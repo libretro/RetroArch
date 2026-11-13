@@ -232,6 +232,8 @@ enum rslc_kw
    RSLC_KW_IMAGE2DMS, RSLC_KW_IIMAGE2DMS, RSLC_KW_UIMAGE2DMS,
    /* RSLC_EXTENDED: a fragment stage's input attachment */
    RSLC_KW_SUBPASSINPUT, RSLC_KW_SUBPASSINPUTMS,
+   /* RSLC_EXTENDED: a 64-bit float scalar */
+   RSLC_KW_DOUBLE,
    /* RSLC_EXTENDED qualifiers */
    RSLC_KW_BUFFER, RSLC_KW_READONLY, RSLC_KW_WRITEONLY, RSLC_KW_COHERENT,
    RSLC_KW_RESTRICT, RSLC_KW_VOLATILE, RSLC_KW_SHARED, RSLC_KW_PERVERTEX,
@@ -317,7 +319,10 @@ enum rslc_tkind
 #define RSLC_IMGFMT_R32UI    33
 
 /* The last keyword that names a type. */
-#define RSLC_KW_LAST_TYPE RSLC_KW_SUBPASSINPUTMS
+#define RSLC_KW_LAST_TYPE RSLC_KW_DOUBLE
+
+/* float or double: the bases the floating-point operations take */
+#define RSLC_BASE_IS_REAL(b) ((b) == RSLC_BASE_FLOAT || (b) == RSLC_BASE_DOUBLE)
 
 /* Every sampler kind: sampler2D, and the RSLC_EXTENDED ones. */
 #define RSLC_TY_IS_SAMPLER(k) ((k) == RSLC_TY_SAMPLER2D \

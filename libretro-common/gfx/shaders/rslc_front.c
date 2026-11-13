@@ -2067,6 +2067,9 @@ static bool rslc_ty_converts(const struct rslc_type *from, const struct rslc_typ
       return false;
    if (from->kind != RSLC_TY_SCALAR && from->kind != RSLC_TY_VEC)
       return false;
+   if (to->base == RSLC_BASE_DOUBLE)
+      return to->kind == RSLC_TY_SCALAR && (from->base == RSLC_BASE_INT
+            || from->base == RSLC_BASE_UINT || from->base == RSLC_BASE_FLOAT);
    if (to->base == RSLC_BASE_FLOAT)
       return from->base == RSLC_BASE_INT || from->base == RSLC_BASE_UINT;
    if (to->base == RSLC_BASE_UINT)
@@ -2162,6 +2165,17 @@ static uint32_t rslc_p_convert(struct rslc_parser *p, uint32_t e,
       return e;
    if (n->op == RSLC_OP_CONST && n->type->kind == RSLC_TY_SCALAR && to->kind == RSLC_TY_SCALAR)
    {
+      /* A literal made a double keeps the value it was written with:
+       * the node carries the 64 bits, as a float literal's does */
+      if (to->base == RSLC_BASE_DOUBLE && n->type->base != RSLC_BASE_BOOL)
+      {
+         double   d = n->type->base == RSLC_BASE_FLOAT ? rslc_p_const_double(n)
+            : n->type->base == RSLC_BASE_INT ? (double)(int32_t)n->a : (double)n->a;
+         uint64_t bits;
+         memcpy(&bits, &d, sizeof(bits));
+         return rslc_p_mk(p, RSLC_OP_CONST, to, rslc_float_bits((float)d),
+               (uint32_t)bits, (uint32_t)(bits >> 32), 0, n->line, 0);
+      }
       /* Fold a scalar literal. */
       if (to->base == RSLC_BASE_FLOAT)
       {
@@ -2863,6 +2877,9 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
    memset(out, 0, sizeof(*out));
    /* a failed compile's nodes may name lists and nodes never made */
    if (!e || p->c->failed || n->nonconstant)
+      return false;
+   /* a double is calculated where it runs: no constant has 64 bits here */
+   if (n->type && n->type->base == RSLC_BASE_DOUBLE)
       return false;
    switch (n->op)
    {
@@ -3948,6 +3965,42 @@ static uint32_t rslc_p_call(struct rslc_parser *p, struct rslc_sym *name, uint32
       const struct rslc_type *ret = NULL;
       uint8_t  prec = 0;
       uint32_t i;
+#ifdef RSLC_EXTENDED
+      /* The rounding, range and selection functions on doubles: every
+       * number among the arguments a double, and so the result */
+      for (i = 0; i < nargs; i++)
+         if (rslc_p_node(p, args[i])->type->base == RSLC_BASE_DOUBLE)
+            break;
+      if (i < nargs)
+      {
+         const struct rslc_type *dt = rslc_type_basic(p->c, RSLC_TY_SCALAR, RSLC_BASE_DOUBLE, 1, 1);
+         unsigned want = (name->bfn == RSLC_BFN_MIX || name->bfn == RSLC_BFN_CLAMP) ? 3
+            : (name->bfn == RSLC_BFN_MIN || name->bfn == RSLC_BFN_MAX) ? 2
+            : (name->bfn == RSLC_BFN_ABS || name->bfn == RSLC_BFN_SIGN || name->bfn == RSLC_BFN_FLOOR
+                  || name->bfn == RSLC_BFN_CEIL || name->bfn == RSLC_BFN_TRUNC || name->bfn == RSLC_BFN_ROUND
+                  || name->bfn == RSLC_BFN_FRACT || name->bfn == RSLC_BFN_SQRT) ? 1 : 0;
+         if (!want || nargs != want)
+         {
+            rslc_err(p->c, "not a function of doubles: ", name->str, line);
+            return 0;
+         }
+         for (i = 0; i < nargs; i++)
+         {
+            const struct rslc_type *at = rslc_p_node(p, args[i])->type;
+            if (name->bfn == RSLC_BFN_MIX && i == 2 && at->kind == RSLC_TY_SCALAR && at->base == RSLC_BASE_BOOL)
+               continue;
+            if (!rslc_ty_converts(at, dt))
+            {
+               rslc_err(p->c, "an argument that is not a number, in ", name->str, line);
+               return 0;
+            }
+            args[i] = rslc_p_convert(p, args[i], dt);
+         }
+         r = rslc_p_mk(p, RSLC_OP_BUILTIN, dt, name->bfn, rslc_list_new(p->c, args, nargs), 0, 0, line, 0);
+         rslc_scratch_release(p->c, &mark);
+         return r;
+      }
+#endif
       if (!rslc_p_resolve_builtin(p, bs, args, nargs, &ret, line))
          return 0;
 #ifdef RSLC_EXTENDED
@@ -4427,7 +4480,9 @@ static const struct rslc_type *rslc_p_binary_type(struct rslc_parser *p, uint16_
    if (ta->base != tb->base)
    {
       const struct rslc_type *ca, *cb;
-      enum rslc_base base = (ta->base == RSLC_BASE_FLOAT || tb->base == RSLC_BASE_FLOAT)
+      enum rslc_base base = (ta->base == RSLC_BASE_DOUBLE || tb->base == RSLC_BASE_DOUBLE)
+         ? RSLC_BASE_DOUBLE
+         : (ta->base == RSLC_BASE_FLOAT || tb->base == RSLC_BASE_FLOAT)
          ? RSLC_BASE_FLOAT : RSLC_BASE_UINT;
       ca = rslc_type_basic(p->c, ta->kind, base, ta->rows, ta->cols);
       cb = rslc_type_basic(p->c, tb->kind, base, tb->rows, tb->cols);
@@ -4887,6 +4942,15 @@ static const struct rslc_type *rslc_p_type_spec(struct rslc_parser *p,
          ty = rslc_type_sampler2d(p->c, RSLC_BASE_UINT);
       else if (k == RSLC_KW_SUBPASSINPUT)
          ty = rslc_type_basic(p->c, RSLC_TY_SUBPASSINPUT, RSLC_BASE_FLOAT, 1, 1);
+      else if (k == RSLC_KW_DOUBLE)
+      {
+         /* a 64-bit scalar: converted to and from, calculated with,
+          * compared; never a constant, a vector or a block member */
+         ty = rslc_type_basic(p->c, RSLC_TY_SCALAR, RSLC_BASE_DOUBLE, 1, 1);
+#ifdef RSLC_EXTENDED
+         p->c->prog.spirv_only = "double";
+#endif
+      }
       else if (k == RSLC_KW_SUBPASSINPUTMS)
       {
          /* a multisampled attachment: cols 2 */
@@ -6443,6 +6507,31 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       return 0;
 
 #ifdef RSLC_EXTENDED
+   /* invariant gl_Position;  - a variable already declared, a built-in
+    * or an output, made invariant after the fact */
+   if (global && (q.vq & RSLC_VQ_INVARIANT) && P_TOK(p)->kind == RSLC_TK_IDENT
+         && rslc_tok_sym(p->c, P_TOK(p))->kw == RSLC_KW_NONE
+         && rslc_tok_sym(p->c, P_TOK(p))->decl
+         && rslc_tok_sym(p->c, P_TOK(p))->decl->kind == RSLC_DK_VAR
+         && (rslc_tok_is_punct(P_PEEK(p, 1), RSLC_P_SEMI) || rslc_tok_is_punct(P_PEEK(p, 1), RSLC_P_COMMA)))
+   {
+      for (;;)
+      {
+         struct rslc_sym *s = P_TOK(p)->kind == RSLC_TK_IDENT ? rslc_tok_sym(p->c, P_TOK(p)) : NULL;
+         struct rslc_var *v;
+         if (!s || !s->decl || s->decl->kind != RSLC_DK_VAR)
+            return rslc_p_fail(p, "invariant names a variable", NULL);
+         v = (struct rslc_var*)s->decl->ptr;
+         if (v->storage != RSLC_ST_OUT && v->storage != RSLC_ST_BUILTIN)
+            return rslc_p_fail(p, "only an output can be made invariant", NULL);
+         v->quals |= RSLC_VQ_INVARIANT;
+         p->c->prog.spirv_only = "invariant on a declared variable";
+         rslc_p_next(p);
+         if (!rslc_p_accept(p, RSLC_P_COMMA))
+            break;
+      }
+      return rslc_p_expect(p, RSLC_P_SEMI, "';'") ? 1 : 0;
+   }
    if (global && P_TOK(p)->kind == RSLC_TK_IDENT && P_TOK(p)->len == 20
          && !memcmp(rslc_tok_text(p->c, P_TOK(p)), "spirv_execution_mode", 20))
       return rslc_p_spirv_execution_mode(p) ? 1 : 0;

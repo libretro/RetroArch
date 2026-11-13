@@ -105,7 +105,8 @@ enum rslc_base
    RSLC_BASE_BOOL,
    RSLC_BASE_INT,
    RSLC_BASE_UINT,
-   RSLC_BASE_FLOAT
+   RSLC_BASE_FLOAT,
+   RSLC_BASE_DOUBLE   /* RSLC_EXTENDED: a 64-bit scalar, never a constant; SPIR-V only */
 };
 
 #define RSLC_MAX_SAMPLERS 16

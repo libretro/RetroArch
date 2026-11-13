@@ -814,6 +814,35 @@ static const char cs_array_length[] =
    "      atomicAdd(o.sum, src[gl_GlobalInvocationID.x] + head);\n"
    "}\n";
 
+/* What the parallel-ps3 vertex programs carry on a GPU with 64-bit floats
+ * and a driver that wants invariance asked for: a position made invariant
+ * after its declaration, and a depth worked out in doubles. */
+static const char vs_double[] =
+   "#version 450\n"
+   "layout(location = 0) in vec4 in_pos;\n"
+   "layout(location = 1) in vec2 planes;\n"
+   "invariant gl_Position;\n"
+   "vec4 apply_zclip_xform(const in vec4 pos, const in float near_plane, const in float far_plane)\n"
+   "{\n"
+   "   if (pos.w != 0.0)\n"
+   "   {\n"
+   "      const float real_n = min(far_plane, near_plane);\n"
+   "      const float real_f = max(far_plane, near_plane);\n"
+   "      const double depth_range = double(real_f - real_n);\n"
+   "      const double inv_range = (depth_range > 0.000001) ? (1.0 / (depth_range * pos.w)) : 0.0;\n"
+   "      const double actual_d = (double(pos.z) - double(real_n * pos.w)) * inv_range;\n"
+   "      const double nearest_d = floor(actual_d + 0.5);\n"
+   "      const double epsilon = (inv_range * pos.w) / 16777215.;\n"
+   "      const double d = mix(actual_d, nearest_d, abs(actual_d - nearest_d) < epsilon);\n"
+   "      return vec4(pos.xy, float(d * pos.w), pos.w);\n"
+   "   }\n"
+   "   else\n"
+   "   {\n"
+   "      return pos;\n"
+   "   }\n"
+   "}\n"
+   "void main() { gl_Position = apply_zclip_xform(in_pos, planes.x, planes.y); }\n";
+
 static bool has_capability(const uint32_t *w, size_t n, uint32_t cap)
 {
    size_t i = 5;
@@ -1923,6 +1952,48 @@ int main(int argc, char **argv)
       }
       memset(&r, 0, sizeof(r));
       CHECK(!compile(cs_array_length, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+      cur_stage = RSLC_STAGE_FRAGMENT;
+
+      /* invariant gl_Position; decorates the block's member (Invariant,
+       * 18). double: Float64 (10), a 64-bit float type, conversions both
+       * ways (OpFConvert, 115), and a literal that keeps its value as a
+       * double - 0.000001 is 0x3EB0C6F7A0B5ED8D, not the float's
+       * 9.99999997e-7 widened. SPIR-V only. */
+      cur_stage = RSLC_STAGE_VERTEX;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(vs_double, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "vs_double: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i;
+         unsigned invariant = 0, wide = 0, exact = 0, converts = 0;
+         uint32_t dbl = 0;
+         for (i = 5; i < r.spirv_len && (r.spirv[i] >> 16); i += r.spirv[i] >> 16)
+         {
+            unsigned op = r.spirv[i] & 0xffffu, len = r.spirv[i] >> 16;
+            if (op == 72 /* OpMemberDecorate */ && r.spirv[i + 2] == 0 && r.spirv[i + 3] == 18)
+               invariant++;
+            if (op == 22 /* OpTypeFloat */ && r.spirv[i + 2] == 64)
+            {
+               wide++;
+               dbl = r.spirv[i + 1];
+            }
+            if (op == 43 /* OpConstant */ && len == 5 && r.spirv[i + 1] == dbl
+                  && r.spirv[i + 3] == 0xA0B5ED8Du && r.spirv[i + 4] == 0x3EB0C6F7u)
+               exact++;
+            converts += op == 115;
+         }
+         CHECK(invariant == 1);
+         CHECK(wide == 1 && exact == 1);
+         CHECK(converts >= 4);
+         CHECK(has_capability(r.spirv, r.spirv_len, 10));
+         write_spirv(dir, "vs_double", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(vs_double, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
       CHECK(strstr(err, "SPIR-V") != NULL);
       cur_stage = RSLC_STAGE_FRAGMENT;
    }

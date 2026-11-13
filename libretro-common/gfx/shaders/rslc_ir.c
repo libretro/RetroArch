@@ -431,6 +431,7 @@ static const char *const rslc_keywords[] = {
    "image2D", "iimage2D", "uimage2D", "image2DArray", "iimage2DArray", "uimage2DArray",
    "image2DMS", "iimage2DMS", "uimage2DMS",
    "subpassInput", "subpassInputMS",
+   "double",
    "buffer", "readonly", "writeonly", "coherent", "restrict", "volatile", "shared",
    "pervertexEXT"
 #endif
@@ -1280,6 +1281,7 @@ struct spv_emit
    bool                 need_geometry;   /* a pixel stage reading gl_Layer */
    bool                 need_clipdistance;
    bool                 writes_fragdepth;   /* the entry point declares DepthReplacing */
+   bool                 need_float64;       /* Float64 */
    bool                 need_barycentric;   /* FragmentBarycentricKHR, with its extension */
    bool                 writes_stencilref;  /* and StencilRefReplacingEXT, with its extension */
    bool                 need_culldistance;
@@ -1572,6 +1574,11 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
             case RSLC_BASE_UINT:
                if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpTypeInt, id, 32, 0))
                   return 0;
+               break;
+            case RSLC_BASE_DOUBLE:
+               if (!spv_inst2(e, SPV_SEC_TYPES, SpvOpTypeFloat, id, 64))
+                  return 0;
+               e->need_float64 = true;
                break;
             default:
                if (!spv_inst2(e, SPV_SEC_TYPES, SpvOpTypeFloat, id, 32))
@@ -2163,10 +2170,13 @@ static uint32_t spv_convert(struct spv_emit *e, uint32_t v, const struct rslc_ty
       return 0;
    if (from->base == to->base)
       return v;
-   if (to->base == RSLC_BASE_FLOAT)
+   /* float to double and back */
+   if (RSLC_BASE_IS_REAL(to->base) && RSLC_BASE_IS_REAL(from->base))
+      return spv_r1(e, (enum spv_op)115 /* OpFConvert */, tid, v, prec);
+   if (RSLC_BASE_IS_REAL(to->base))
       return spv_r1(e, from->base == RSLC_BASE_INT ? SpvOpConvertSToF
             : from->base == RSLC_BASE_UINT ? SpvOpConvertUToF : SpvOpSelect, tid, v, prec);
-   if (from->base == RSLC_BASE_FLOAT)
+   if (RSLC_BASE_IS_REAL(from->base))
       return spv_r1(e, to->base == RSLC_BASE_INT ? SpvOpConvertFToS : SpvOpConvertFToU, tid, v, prec);
    if ((from->base == RSLC_BASE_INT && to->base == RSLC_BASE_UINT)
          || (from->base == RSLC_BASE_UINT && to->base == RSLC_BASE_INT))
@@ -2261,7 +2271,7 @@ static uint32_t spv_mat_columnwise(struct spv_emit *e, enum spv_op op, const str
 
 static enum spv_op spv_binop(const struct rslc_type *t, uint16_t op)
 {
-   bool f = t->base == RSLC_BASE_FLOAT;
+   bool f = RSLC_BASE_IS_REAL(t->base);
    bool s = t->base == RSLC_BASE_INT;
    switch (op)
    {
@@ -3043,7 +3053,7 @@ static uint32_t spv_construct_node(struct spv_emit *e, const struct rslc_node *n
 /* ext-inst builtin map; 0 = core op handled elsewhere */
 static uint32_t spv_bfn_ext(unsigned bfn, const struct rslc_type *t)
 {
-   bool f = t->base == RSLC_BASE_FLOAT;
+   bool f = RSLC_BASE_IS_REAL(t->base);
    bool s = t->base == RSLC_BASE_INT;
    switch (bfn)
    {
@@ -3919,6 +3929,39 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
    switch (n->op)
    {
       case RSLC_OP_CONST:
+         if (n->type->base == RSLC_BASE_DOUBLE)
+         {
+            /* 64 bits, low word first; one constant for each value */
+            uint32_t dt = spv_type(e, n->type), k, id;
+            uint32_t w[4];
+            if (!dt)
+               return 0;
+            for (k = 0; k < e->nvconsts; k++)
+               if (e->vconsts[k].type == dt && e->vconsts[k].c[0] == n->b && e->vconsts[k].c[1] == n->c)
+                  return e->vconsts[k].id;
+            id   = spv_id(e);
+            w[0] = dt; w[1] = id; w[2] = n->b; w[3] = n->c;
+            if (!spv_inst(e, SPV_SEC_TYPES, SpvOpConstant, w, 4))
+               return 0;
+            if (e->nvconsts == e->vconsts_cap)
+            {
+               uint32_t           ncap = e->vconsts_cap ? e->vconsts_cap * 2 : 32;
+               struct spv_vconst *nv   = (struct spv_vconst*)rslc_arena_alloc(e->c, ncap * sizeof(*nv));
+               if (!nv)
+                  return 0;
+               if (e->nvconsts)
+                  memcpy(nv, e->vconsts, e->nvconsts * sizeof(*nv));
+               e->vconsts     = nv;
+               e->vconsts_cap = ncap;
+            }
+            memset(&e->vconsts[e->nvconsts], 0, sizeof(e->vconsts[0]));
+            e->vconsts[e->nvconsts].type = dt;
+            e->vconsts[e->nvconsts].id   = id;
+            e->vconsts[e->nvconsts].c[0] = n->b;
+            e->vconsts[e->nvconsts].c[1] = n->c;
+            e->nvconsts++;
+            return id;
+         }
          return spv_const_bits(e, n->type, n->a);
       case RSLC_OP_VAR:
       {
@@ -4126,7 +4169,7 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
                   }
                   return spv_construct(e, n->type, cols, n->type->cols, prec);
                }
-               return spv_r1(e, n->type->base == RSLC_BASE_FLOAT ? SpvOpFNegate : SpvOpSNegate, tid, v, prec);
+               return spv_r1(e, RSLC_BASE_IS_REAL(n->type->base) ? SpvOpFNegate : SpvOpSNegate, tid, v, prec);
             }
             case RSLC_UN_NOT:
             {
@@ -5161,6 +5204,20 @@ static bool spv_pervertex(struct spv_emit *e)
          || !spv_mdecorate1(e, st, 2, SPV_DEC_BUILTIN, SPV_BI_CLIPDISTANCE)
          || !spv_mdecorate1(e, st, 3, SPV_DEC_BUILTIN, SPV_BI_CULLDISTANCE))
       return false;
+   /* a member made invariant: invariant gl_Position; */
+   {
+      uint32_t k;
+      for (k = 1; k < e->c->prog.nvars; k++)
+      {
+         const struct rslc_var *bv = e->c->prog.vars[k];
+         if (bv->storage == RSLC_ST_BUILTIN && (bv->quals & RSLC_VQ_INVARIANT)
+               && RSLC_BI_IN_PERVERTEX(bv->builtin)
+               && !spv_mdecorate(e, st, bv->builtin == RSLC_BI_POSITION ? 0
+                  : bv->builtin == RSLC_BI_POINTSIZE ? 1 : bv->builtin == RSLC_BI_CLIPDISTANCE ? 2 : 3,
+                  SPV_DEC_INVARIANT))
+            return false;
+      }
+   }
    ptr = spv_ptr(e, st, SPV_SC_OUTPUT);
    if (!ptr)
       return false;
@@ -5424,6 +5481,8 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    if (e->writes_stencilref && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, 5013u /* StencilExportEXT */))
       return false;
    if (e->need_barycentric && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, 5284u /* FragmentBarycentricKHR */))
+      return false;
+   if (e->need_float64 && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, 10u /* Float64 */))
       return false;
    if (e->need_culldistance && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_CULLDISTANCE))
       return false;
