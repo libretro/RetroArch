@@ -2853,6 +2853,7 @@ static void materialui_render_messagebox(
    int lengths[64];
    struct menu_state *menu_st = menu_state_get_ptr();
    bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
+   bool landscape             = video_width >= video_height;
 
    wrapped_msg[0] = '\0';
 
@@ -2861,8 +2862,11 @@ static void materialui_render_messagebox(
        || !mui
        || !mui->font_data.list.font)
       return;
-   if ((usable_width = (int)video_width - (mui->margin * 4.0)) < 1)
-      return;
+
+   usable_width = (int)video_width - (mui->margin * (landscape ? 4.0 : 1.0));
+   if (usable_width < 1)
+      usable_width = video_width;
+
    /* Split message into lines */
    wrapped_len = (mui->word_wrap)(
          wrapped_msg, sizeof(wrapped_msg),
@@ -2982,9 +2986,9 @@ static void materialui_render_messagebox(
       }
    }
 
-   slice_x                 = x - longest_width / 2.0 - mui->margin * 2.0;
+   slice_x                 = x - longest_width / 2.0 - mui->margin * (landscape ? 2.0 : 4.0);
    slice_y                 = y - mui->margin * 2.0;
-   slice_w                 = longest_width + mui->margin * 4.0;
+   slice_w                 = longest_width + mui->margin * (landscape ? 4.0 : 8.0);
    slice_h                 = mui->font_data.list.line_height * line_count + mui->margin * 4.0;
 
    /* Extra room for confirm buttons */
@@ -12887,6 +12891,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_CORE_MANAGER_LIST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_SHOW_WIMP_STR)
                   )
                   {
                      node->icon_texture_index = MUI_TEXTURE_SETTINGS;

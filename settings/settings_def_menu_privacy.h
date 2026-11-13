@@ -73,6 +73,6 @@ S_BOOL_EX(menu_show_sublabels_current_selection_only, MENU_SHOW_SUBLABELS_CURREN
 S_BOOL(menu_show_confirm, MENU_SHOW_CONFIRM,
       "menu_show_confirm",
       DEFAULT_MENU_SHOW_CONFIRM, SD_FLAG_NONE, 0, 0,
-      "Show Confirmation Boxes",
-      "Ask for confirmation before quitting, resetting or closing content. When disabled these actions happen immediately.")
+      "Show Confirmation Dialogs",
+      "Ask for confirmation before quitting, resetting or closing content.")
 #endif

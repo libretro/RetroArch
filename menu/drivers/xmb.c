@@ -1348,15 +1348,16 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    int cursor_x                        = 0;
    struct menu_state *menu_st          = menu_state_get_ptr();
    bool confirm_dialog                 = (menu_st->dialog_st.confirm_cmd) ? true : false;
+   bool landscape                      = video_width >= video_height;
    bool input_dialog_display_kb        = false;
    size_t wrapped_len                  = 0;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
    char *lines[512];
    char *start, *nl, *end;
 
-   if ((usable_width = (int)video_width - (xmb->margins_dialog * 8)) < 1)
-      return;
-   usable_width = (usable_width < 300) ? 300 : usable_width;
+   usable_width = (int)video_width - (xmb->margins_dialog * (landscape ? 4 : 1));
+   if (usable_width < 1)
+      usable_width = video_width;
 
    wrapped_len = (xmb->word_wrap)(
          wrapped_message, sizeof(wrapped_message),

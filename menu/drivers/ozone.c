@@ -7902,6 +7902,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    font_data_impl_t font_data = ozone->fonts.entries_label;
    struct menu_state *menu_st = menu_state_get_ptr();
    bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
+   bool landscape             = video_width >= video_height;
    gfx_display_ctx_driver_t
          *dispctx             = p_disp->dispctx;
    char *lines[256];
@@ -7917,11 +7918,10 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
 
    msg_len                  = strlen(message);
    scale_factor             = ozone->last_scale_factor;
-   usable_width             = (int)width - (150 * 8 * scale_factor) / ((float)width / (float)height * 2.0f);
    line_height              = font_data.line_height * 1.20f;
-
+   usable_width             = (int)width - ((landscape ? 200 : 100) * scale_factor);
    if (usable_width < 1)
-      return;
+      usable_width = width;
 
    /* Split message into lines */
    remaining = (ozone->word_wrap)(
