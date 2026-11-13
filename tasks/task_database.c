@@ -1366,6 +1366,8 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       return FILE_TYPE_WUA;
    if (string_is_equal(ext_lower, "pbp"))
       return FILE_TYPE_PBP;
+   if (string_is_equal(ext_lower, "vpk"))
+      return FILE_TYPE_VPK;
    if (string_is_equal(ext_lower, "lutro"))
       return FILE_TYPE_LUTRO;
    if (
@@ -2558,6 +2560,13 @@ static int task_database_iterate_playlist(
             return task_database_crc_begin(db_state, name,
                   TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
+         break;
+      /* A PS Vita package: the serial or nothing, as its CRC is in no
+       * database. */
+      case FILE_TYPE_VPK:
+         db_state->serial[0] = '\0';
+         task_database_vpk_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size);
+         db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_3DS:
          db_state->serial[0] = '\0';

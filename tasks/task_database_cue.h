@@ -68,6 +68,8 @@ int task_database_gdi_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
 int task_database_pbp_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
+int task_database_vpk_get_serial(const char *name, char *s, size_t len,
+      uint64_t *filesize);
 int task_database_3ds_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
 int task_database_ciso_get_serial(const char *name, char *s, size_t len,

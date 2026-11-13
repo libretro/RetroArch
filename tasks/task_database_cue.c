@@ -22,6 +22,7 @@
 #include <retro_endianness.h>
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
+#include <file/archive_file.h>
 #include <file/file_path.h>
 #include <retro_endianness.h>
 #include <streams/file_stream.h>
@@ -640,54 +641,26 @@ static uint32_t pbp_read_u32(const uint8_t *p)
  * (e.g. "SCUS94900"); we re-insert the hyphen after the 4-letter
  * prefix to produce the "SCUS-94900" form the RDB is keyed on.
  */
-int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
-   const char *filename)
-{
 #define PBP_SFO_MAX 65536
-   uint8_t pbp_header[0x28];
-   uint8_t *sfo       = NULL;
-   uint32_t sfo_off   = 0;
-   uint32_t sfo_end   = 0;
-   uint32_t sfo_size  = 0;
-   uint32_t key_tbl   = 0;
-   uint32_t data_tbl  = 0;
-   uint32_t entries   = 0;
+
+/* The product code a PARAM.SFO holds, from its DISC_ID (PS1-Classics)
+ * or TITLE_ID (PSP, PS Vita) key, whichever comes first, written to @s
+ * as the RDB keys it. 0 when @sfo is no PARAM.SFO or has neither. */
+static int sfo_get_serial(const uint8_t *sfo, uint32_t sfo_size,
+   char *s, size_t len)
+{
+   uint32_t key_tbl  = 0;
+   uint32_t data_tbl = 0;
+   uint32_t entries  = 0;
    uint32_t i;
    char raw_id[16];
-   int      found     = 0;
 
-   if (intfstream_read_at(fd, pbp_header, sizeof(pbp_header), 0)
-         != (int64_t)sizeof(pbp_header))
+   if (sfo_size < 0x14)
       return 0;
-
-   /* Verify '\0PBP' magic. */
-   if (pbp_read_u32(pbp_header) != 0x50425000)
-      return 0;
-
-   sfo_off = pbp_read_u32(pbp_header + 0x08);
-   sfo_end = pbp_read_u32(pbp_header + 0x0C);
-   if (sfo_end <= sfo_off)
-      return 0;
-   sfo_size = sfo_end - sfo_off;
-   if (sfo_size < 0x14 || sfo_size > PBP_SFO_MAX)
-      return 0;
-
-   sfo = (uint8_t*)malloc(sfo_size);
-   if (!sfo)
-      return 0;
-   if (intfstream_read_at(fd, sfo, sfo_size, (int64_t)sfo_off)
-         != (int64_t)sfo_size)
-   {
-      free(sfo);
-      return 0;
-   }
 
    /* Verify '\0PSF' magic. */
    if (pbp_read_u32(sfo) != 0x46535000)
-   {
-      free(sfo);
       return 0;
-   }
 
    key_tbl  = pbp_read_u32(sfo + 0x08);
    data_tbl = pbp_read_u32(sfo + 0x0C);
@@ -696,15 +669,9 @@ int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
          || data_tbl >= sfo_size
          || entries == 0
          || entries  > 1024)
-   {
-      free(sfo);
       return 0;
-   }
 
-   /* First pass prefers DISC_ID (PS1-Classics), second pass falls
-    * back to TITLE_ID (PSP). DISC_ID matches the RDB serial form
-    * directly; TITLE_ID is the PSP product code, also RDB-keyed. */
-   for (i = 0; i < entries && !found; i++)
+   for (i = 0; i < entries; i++)
    {
       uint32_t idx = 0x14 + i * 0x10;
       uint16_t koff;
@@ -746,13 +713,48 @@ int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
       raw_id[10] = '\0';
 
       string_remove_all_whitespace(s, raw_id);
-      cue_append_multi_disc_suffix(s, len, filename);
-      found = 1;
+      return 1;
    }
+
+   return 0;
+}
+
+int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
+{
+   uint8_t pbp_header[0x28];
+   uint8_t *sfo       = NULL;
+   uint32_t sfo_off   = 0;
+   uint32_t sfo_end   = 0;
+   uint32_t sfo_size  = 0;
+   int      found     = 0;
+
+   if (intfstream_read_at(fd, pbp_header, sizeof(pbp_header), 0)
+         != (int64_t)sizeof(pbp_header))
+      return 0;
+
+   /* Verify '\0PBP' magic. */
+   if (pbp_read_u32(pbp_header) != 0x50425000)
+      return 0;
+
+   sfo_off = pbp_read_u32(pbp_header + 0x08);
+   sfo_end = pbp_read_u32(pbp_header + 0x0C);
+   if (sfo_end <= sfo_off)
+      return 0;
+   sfo_size = sfo_end - sfo_off;
+   if (sfo_size < 0x14 || sfo_size > PBP_SFO_MAX)
+      return 0;
+
+   sfo = (uint8_t*)malloc(sfo_size);
+   if (!sfo)
+      return 0;
+   if (intfstream_read_at(fd, sfo, sfo_size, (int64_t)sfo_off)
+         == (int64_t)sfo_size
+       && (found = sfo_get_serial(sfo, sfo_size, s, len)))
+      cue_append_multi_disc_suffix(s, len, filename);
 
    free(sfo);
    return found;
-#undef PBP_SFO_MAX
 }
 
 /* detect_3ds_game:
@@ -2209,6 +2211,31 @@ int task_database_pbp_get_serial(const char *name, char *s, size_t len,
    intfstream_close(fd);
    free(fd);
    return rv;
+}
+
+/* A PS Vita VPK is a zip whose sce_sys/param.sfo is the same PARAM.SFO
+ * a PBP carries: its TITLE_ID is the product code ("PCSE00781"). */
+int task_database_vpk_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
+{
+#if defined(HAVE_ZLIB) || defined(HAVE_COMPRESSION)
+   void   *sfo      = NULL;
+   int64_t sfo_size = 0;
+   int rv           = 0;
+
+   if (filesize)
+      *filesize = (uint64_t)path_get_size(name);
+
+   sfo_size = zlib_backend.compressed_file_read(name,
+         "sce_sys/param.sfo", &sfo, NULL);
+   if (sfo && sfo_size > 0 && sfo_size <= PBP_SFO_MAX)
+      rv = sfo_get_serial((const uint8_t*)sfo, (uint32_t)sfo_size,
+            s, len);
+   free(sfo);
+   return rv;
+#else
+   return 0;
+#endif
 }
 
 int task_database_3ds_get_serial(const char *name, char *s, size_t len,
