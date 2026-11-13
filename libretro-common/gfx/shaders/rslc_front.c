@@ -853,7 +853,15 @@ static bool rslc_pp_expand_token(struct rslc_pp *pp, const struct rslc_tok *t,
    if (!m)
       return true;
    if (sym->flags & RSLC_SYM_BUSY)
+   {
+      /* Its own name inside its own expansion: painted, so it is never
+       * a macro again however often those tokens are scanned from here
+       * on - as an argument prescanned and then rescanned in the body
+       * it was substituted into is.  Both callers hold the token they
+       * go on to emit. */
+      ((struct rslc_tok*)t)->flags |= RSLC_TF_NOEXPAND;
       return true;
+   }
 
    if (m->function_like)
    {
@@ -1327,6 +1335,13 @@ static bool rslc_pp_version(struct rslc_pp *pp, uint32_t line)
          }
       }
       if (ok && pp->c->version != 450 && pp->c->version != 460
+#ifdef RSLC_EXTENDED
+            /* an emulator's own stages say 420 to 440 as well and mean
+             * the same dialect: the layout qualifiers they need came
+             * with 420 */
+            && !(!pp->c->es && (pp->c->version == 420 || pp->c->version == 430
+                  || pp->c->version == 440))
+#endif
             && !(pp->c->es && (pp->c->version == 310 || pp->c->version == 320)))
       {
          rslc_err(pp->c, "unsupported #version", NULL, line);
@@ -1767,6 +1782,7 @@ struct rslc_quals
    bool     has_storage;
    bool     push_constant;
    bool     std140;
+   bool     std430;       /* said so: RSLC_EXTENDED honours it on a uniform block */
    bool     is_uniform;
    bool     is_const;
    bool     is_in;
@@ -4056,6 +4072,23 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
 #endif
       if (sym->decl && sym->decl->kind == RSLC_DK_VAR)
          return rslc_p_var_ref(p, (struct rslc_var*)sym->decl->ptr, line);
+#ifdef RSLC_EXTENDED
+      /* gl_WorkGroupSize: the constant the local size layout before it
+       * made (1 where it named none) */
+      if (     p->c->stage == RSLC_STAGE_COMPUTE && !sym->decl
+            && !strcmp(sym->str, "gl_WorkGroupSize"))
+      {
+         uint32_t args[3];
+         unsigned k;
+         for (k = 0; k < 3; k++)
+         {
+            uint32_t n = p->c->prog.cs_local[k];
+            if (!(args[k] = rslc_p_const_uint(p, n ? n : 1, line)))
+               return 0;
+         }
+         return rslc_p_construct(p, rslc_ty_vecn(p, RSLC_BASE_UINT, 3), args, 3, line);
+      }
+#endif
       rslc_err(p->c, "undeclared identifier ", sym->str, line);
       return 0;
    }
@@ -4658,7 +4691,7 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       else if (len == 6 && !memcmp(s, "offset", 6))   slot = &q->offset;
       else if (len == 13 && !memcmp(s, "push_constant", 13)) q->push_constant = true;
       else if (len == 6 && !memcmp(s, "std140", 6))   q->std140 = true;
-      else if (len == 6 && !memcmp(s, "std430", 6))   { }
+      else if (len == 6 && !memcmp(s, "std430", 6))   q->std430 = true;
       else if (len == 12 && !memcmp(s, "column_major", 12)) { }
       else if (len == 9 && !memcmp(s, "row_major", 9))
          return rslc_p_fail(p, "row_major is not supported", NULL);
@@ -5613,18 +5646,30 @@ static bool rslc_p_block_make(struct rslc_parser *p, const struct rslc_quals *q,
    b->push     = idx == 1;
    b->std140   = idx == 0 || q->std140;
 #ifdef RSLC_EXTENDED
-   /* a further uniform block is std140 as the first is; a storage
-    * buffer std430 unless it says otherwise, and only its last member
-    * may be an array of unstated length */
+   /* a further uniform block is std140 as the first is, unless it says
+    * std430 (GL_EXT_scalar_block_layout lets a uniform block say so, and
+    * its members are then placed as glslang places them); a storage
+    * buffer std430 unless it says otherwise.  Only a block's last member
+    * may be an array of unstated length: a storage buffer's, or a
+    * uniform block's (GL_EXT_uniform_buffer_unsized_array), which only
+    * the SPIR-V destination takes. */
    b->buffer   = q->is_buffer;
    b->readonly = q->readonly;
    b->coherent = q->coherent;
    if (idx >= 2 && !q->is_buffer)
       b->std140 = true;
+   if (idx != 1 && !q->is_buffer && q->std430 && !q->std140)
+      b->std140 = false;
    for (i = 0; i < nfields; i++)
-      if (fields[i].type->kind == RSLC_TY_ARRAY && !fields[i].type->array_len
-            && (!q->is_buffer || i + 1 != nfields))
-         return rslc_p_fail(p, "only a storage buffer's last member may be unsized", NULL);
+      if (fields[i].type->kind == RSLC_TY_ARRAY && !fields[i].type->array_len)
+      {
+         if (i + 1 != nfields)
+            return rslc_p_fail(p, "only a block's last member may be unsized", NULL);
+         if (idx == 1)
+            return rslc_p_fail(p, "a push constant block's member may not be unsized", NULL);
+         if (!q->is_buffer && !p->c->prog.spirv_only)
+            p->c->prog.spirv_only = "an unsized array in a uniform block";
+      }
 #endif
    pr->has_block[idx] = true;
 

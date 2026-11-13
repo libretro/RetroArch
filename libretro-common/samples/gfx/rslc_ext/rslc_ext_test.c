@@ -587,6 +587,57 @@ static const char fs_subgroup[] =
    "   col = vec4(subgroupMax(gl_FragCoord.x));\n"
    "}\n";
 
+/* What an emulator's generated stages say that the frontend's never do:
+ * #version 430, gl_WorkGroupSize, a uniform block laid out std430 whose
+ * one member is an array of unstated length (GL_EXT_scalar_block_layout,
+ * GL_EXT_uniform_buffer_unsized_array), and macros that name themselves. */
+static const char cs_work_group[] =
+   "#version 430\n"
+   "layout(local_size_x = 32, local_size_y = 4) in;\n"
+   "layout(std430, set = 0, binding = 0) buffer ssbo { uint data[]; };\n"
+   "void main()\n"
+   "{\n"
+   "   uint row = gl_NumWorkGroups.x * gl_WorkGroupSize.x;\n"
+   "   uint at  = gl_GlobalInvocationID.y * row + gl_GlobalInvocationID.x;\n"
+   "   data[at] = gl_WorkGroupSize.x + gl_WorkGroupSize.y * 100u + gl_WorkGroupSize.z * 10000u;\n"
+   "}\n";
+
+static const char vs_unsized_uniform[] =
+   "#version 450\n"
+   "#extension GL_EXT_scalar_block_layout : require\n"
+   "#extension GL_EXT_uniform_buffer_unsized_array : require\n"
+   "struct ctx_t { mat4 m; uint a; uint b; float c; float tail[3]; };\n"
+   "layout(std430, set = 0, binding = 3) uniform Contexts { ctx_t ctxs[]; };\n"
+   "layout(std430, set = 0, binding = 4) uniform Constants { vec4 vc[]; };\n"
+   "layout(push_constant) uniform push { uint which; };\n"
+   "layout(location = 0) in vec4 pos;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = ctxs[which].m * pos * ctxs[which].tail[2] + vc[ctxs[which].a];\n"
+   "}\n";
+
+/* draw_offset names itself through params(): the name stays a member */
+static const char vs_self_macro[] =
+   "#version 450\n"
+   "struct params_t { uint draw_offset; uint bits; };\n"
+   "layout(std140, set = 0, binding = 0) uniform Params { params_t all_params[4]; };\n"
+   "layout(push_constant) uniform push { uint which; };\n"
+   "#define params() all_params[which]\n"
+   "#define draw_offset params().draw_offset\n"
+   "#define bits_of() params().bits\n"
+   "#define get_bits(v, at, n) (((v) >> (at)) & ((1u << (n)) - 1u))\n"
+   "#define enabled(i) (get_bits(bits_of() + draw_offset, (i) * 2, 2) != 0u)\n"
+   "layout(location = 0) in vec4 pos;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = enabled(1) ? pos : pos * float(draw_offset);\n"
+   "}\n";
+
+static const char fs_old_version[] =
+   "#version 410\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main() { col = vec4(1.0); }\n";
+
 static enum rslc_stage cur_stage = RSLC_STAGE_FRAGMENT;
 
 static bool compile(const char *src, enum rslc_dst dst, unsigned version,
@@ -1346,6 +1397,95 @@ int main(int argc, char **argv)
          write_spirv(dir, "bool_depth", &r);
          rslc_result_free(&r, &o);
       }
+   }
+
+   /* An emulator's generated stages */
+   {
+      char err[256];
+      struct rslc_opts   o;
+      struct rslc_result r;
+      size_t at = 0;
+
+      /* #version 430 and gl_WorkGroupSize: a constant, (32, 4, 1) */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_work_group, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "work_group: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned c32 = 0, folded = 0;
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            /* OpConstant: the x size the row is multiplied by, and the
+             * three sizes folded into one number */
+            if ((r.spirv[i] & 0xffffu) == 43 && (r.spirv[i] >> 16) == 4)
+            {
+               c32    += r.spirv[i + 3] == 32;
+               folded += r.spirv[i + 3] == 32 + 4 * 100 + 1 * 10000;
+            }
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(c32 == 1 && folded == 1);
+         write_spirv(dir, "work_group", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_work_group, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      if (r.blob)
+         rslc_result_free(&r, &o);
+
+      /* 410 is still not this dialect */
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_old_version, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "#version") != NULL);
+
+      /* A uniform block that says std430 and ends unsized: two runtime
+       * arrays (29), the struct's float[3] straight after its three
+       * scalars at 76 - std140 would round it up to 80 - and SPIR-V only */
+      cur_stage = RSLC_STAGE_VERTEX;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(vs_unsized_uniform, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "unsized_uniform: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned tail_at_76 = 0, tail_at_80 = 0;
+         CHECK(count_op(r.spirv, r.spirv_len, 29, &at) == 2);
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            /* OpMemberDecorate type member Offset n, of member 4 */
+            if ((r.spirv[i] & 0xffffu) == 72 && (r.spirv[i] >> 16) == 5
+                  && r.spirv[i + 2] == 4 && r.spirv[i + 3] == 35)
+            {
+               tail_at_76 += r.spirv[i + 4] == 76;
+               tail_at_80 += r.spirv[i + 4] == 80;
+            }
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(tail_at_76 == 1 && tail_at_80 == 0);
+         write_spirv(dir, "unsized_uniform", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(vs_unsized_uniform, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* A macro that names itself through another, as an argument that
+       * is scanned twice: it compiles, the name a member the second time */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(vs_self_macro, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "self_macro: %s\n", err);
+      if (r.blob)
+      {
+         write_spirv(dir, "self_macro", &r);
+         rslc_result_free(&r, &o);
+      }
+      cur_stage = RSLC_STAGE_FRAGMENT;
    }
 
    if (fails)

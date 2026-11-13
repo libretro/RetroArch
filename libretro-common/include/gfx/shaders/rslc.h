@@ -48,7 +48,12 @@
  * stage's gl_ClipDistance / gl_CullDistance (sized by the highest
  * constant element written; HLSL and MSL refuse them yet), in / out
  * interface blocks, RSLC_STAGE_GEOMETRY (SPIR-V and GLSL only), and
- * storage buffers with the atomic builtins (SPIR-V and GLSL only).
+ * storage buffers with the atomic builtins (SPIR-V and GLSL only),
+ * and what a generated stage says: #version 420 to 440 for the same
+ * dialect, gl_WorkGroupSize, and a uniform block that says std430
+ * (placed as glslang places it under GL_EXT_scalar_block_layout) or
+ * ends in an array of unstated length
+ * (GL_EXT_uniform_buffer_unsized_array; SPIR-V only).
  * Without it
  * none of that is accepted, nothing is compiled in for it, and every
  * destination is word for word what it was. RSLC_NO_DXBC omits the
