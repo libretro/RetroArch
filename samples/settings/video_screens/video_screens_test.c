@@ -4089,6 +4089,12 @@ static void test_blank_unused_strings(void)
    CHECK(string_is_equal(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_GAMES),
          "During Games"));
+   CHECK(string_is_equal(msg_hash_to_str(MSG_BLANK_UNUSED_SCREENS_ON),
+         "Blank Unused Screens on"));
+   CHECK(string_is_equal(msg_hash_to_str(MSG_BLANK_UNUSED_SCREENS_OFF),
+         "Blank Unused Screens off"));
+   CHECK(string_is_equal(msg_hash_to_str(MSG_BLANK_UNUSED_SCREENS_NONE),
+         "No unused screen to blank"));
    menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS,
          0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
@@ -4096,6 +4102,33 @@ static void test_blank_unused_strings(void)
    CHECK(strstr(s, "Android 12") != NULL);
    CHECK(menu_setting_find_enum(
             MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS) == NULL);
+}
+
+/* Its hotkey is in every bind list, in the hotkey menu only on Android */
+static void test_blank_unused_hotkey(void)
+{
+   settings_t *settings         = config_get_ptr();
+   const rarch_setting_t *full  = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + RARCH_FULLSCREEN_TOGGLE_KEY));
+   const rarch_setting_t *blank = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + RARCH_BLANK_UNUSED_TOGGLE));
+   file_list_t list;
+   CHECK(string_is_equal(input_config_bind_map_get_base(
+            RARCH_BLANK_UNUSED_TOGGLE), "blank_unused_toggle"));
+   CHECK(string_is_equal(input_config_bind_map_get_desc(
+            RARCH_BLANK_UNUSED_TOGGLE), "Blank Unused Screens (Toggle)"));
+   /* Nothing to blank off Android */
+   CHECK(!command_event(CMD_EVENT_BLANK_UNUSED_TOGGLE, NULL));
+   /* The list's rows are labelled with their bind setting's name */
+   CHECK(full && string_is_equal(full->name, "toggle_fullscreen"));
+   CHECK(blank && string_is_equal(blank->name, "blank_unused_toggle"));
+   load_fixture("");
+   memset(&list, 0, sizeof(list));
+   menu_displaylist_build_list(&list, settings,
+         DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST, false);
+   CHECK(full && window_menu_has(&list, full->name));
+   CHECK(blank && !window_menu_has(&list, blank->name));
+   file_list_deinitialize(&list);
 }
 
 #ifdef HAVE_THREADS
@@ -4844,6 +4877,7 @@ int main(int argc, char **argv)
    test_window_menu_follows_screens();
    test_window_menu_list();
    test_blank_unused_strings();
+   test_blank_unused_hotkey();
    test_window_redraw();
    test_screen_frame_snapshot();
    test_xr_screen_menu();
