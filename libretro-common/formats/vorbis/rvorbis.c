@@ -4814,7 +4814,11 @@ static int start_decoder_setup(vorb *f)
             if (sparse)
             {
                if (c->sorted_entries == 0)
+               {
+                  setup_temp_free(f, mults,
+                     sizeof(mults[0]) * c->lookup_values);
                   goto skip;
+               }
                c->multiplicands = (rvorbis_codetype *) setup_malloc(f,
                      sizeof(c->multiplicands[0]) * len * c->dimensions);
             } else
