@@ -4231,6 +4231,17 @@ static uint32_t rslc_p_postfix_ops(struct rslc_parser *p, uint32_t e)
          {
             if (!rslc_p_expect(p, RSLC_P_LPAREN, "'('") || !rslc_p_expect(p, RSLC_P_RPAREN, "')'"))
                return 0;
+#ifdef RSLC_EXTENDED
+            if (!bt->array_len)
+            {
+               /* an unsized array: how long it is is the buffer's to say */
+               e = rslc_p_mk(p, RSLC_OP_UNARY, p->t_int, e, 0, 0, RSLC_UN_ARRAYLEN, line, 0);
+               if (!e)
+                  return 0;
+               p->c->prog.spirv_only = "length() of an unsized array";
+               continue;
+            }
+#endif
             e = rslc_p_const_int(p, (int32_t)bt->array_len, line);
             continue;
          }

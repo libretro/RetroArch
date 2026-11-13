@@ -801,6 +801,19 @@ static const char fs_const_in_written[] =
    "float f(const in float x) { x = 1.0; return x; }\n"
    "void main() { col = vec4(f(2.0)); }\n";
 
+/* length() of a buffer block's unsized last member: the buffer's to say,
+ * named bare and through the block's instance. */
+static const char cs_array_length[] =
+   "#version 450\n"
+   "layout(local_size_x = 32) in;\n"
+   "layout(set = 0, binding = 0, std430) readonly buffer In { uint head; uint src[]; };\n"
+   "layout(set = 0, binding = 1, std430) buffer Out { uint sum; uint seen[]; } o;\n"
+   "void main()\n"
+   "{\n"
+   "   if (gl_GlobalInvocationID.x < src.length() && int(gl_GlobalInvocationID.x) < o.seen.length())\n"
+   "      atomicAdd(o.sum, src[gl_GlobalInvocationID.x] + head);\n"
+   "}\n";
+
 static bool has_capability(const uint32_t *w, size_t n, uint32_t cap)
 {
    size_t i = 5;
@@ -1886,6 +1899,32 @@ int main(int argc, char **argv)
       }
       memset(&r, 0, sizeof(r));
       CHECK(!compile(fs_const_in_written, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+
+      /* length() of an unsized array is OpArrayLength (68) of the block
+       * and the member, not a constant: member 1 of each block here */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_array_length, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "array_length: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i;
+         unsigned lengths = 0, of_member_1 = 0;
+         for (i = 5; i < r.spirv_len && (r.spirv[i] >> 16); i += r.spirv[i] >> 16)
+            if ((r.spirv[i] & 0xffffu) == 68)
+            {
+               lengths++;
+               of_member_1 += r.spirv[i + 4] == 1;
+            }
+         CHECK(lengths == 2 && of_member_1 == 2);
+         write_spirv(dir, "array_length", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(cs_array_length, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+      cur_stage = RSLC_STAGE_FRAGMENT;
    }
 
    if (fails)

@@ -554,6 +554,7 @@ enum rslc_op
 #define RSLC_UN_PREDEC  5
 #define RSLC_UN_POSTINC 6
 #define RSLC_UN_POSTDEC 7
+#define RSLC_UN_ARRAYLEN 8   /* RSLC_EXTENDED: length() of a buffer block's unsized last member; SPIR-V only */
 
 #define RSLC_BIN_NONE   0
 #define RSLC_BIN_ADD    1

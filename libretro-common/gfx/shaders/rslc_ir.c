@@ -4075,6 +4075,37 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
             return 0;
          switch (n->aux)
          {
+#ifdef RSLC_EXTENDED
+            case RSLC_UN_ARRAYLEN:
+            {
+               /* OpArrayLength of the block and the member's index: the
+                * array is the last member of a buffer block, named bare
+                * or through the block's instance */
+               const struct rslc_var *v = NULL;
+               uint32_t member = 0, len, utid;
+               uint32_t w[4];
+               if (an->op == RSLC_OP_VAR && e->c->prog.vars[an->a]->storage == RSLC_ST_MEMBER)
+               {
+                  v      = e->c->prog.vars[an->a];
+                  member = v->member;
+               }
+               else if (an->op == RSLC_OP_MEMBER && rslc_node_at(e->c, an->a)->op == RSLC_OP_VAR
+                     && e->c->prog.vars[rslc_node_at(e->c, an->a)->a]->storage == RSLC_ST_BLOCK)
+               {
+                  v      = e->c->prog.vars[rslc_node_at(e->c, an->a)->a];
+                  member = an->b;
+               }
+               utid = spv_type(e, rslc_type_basic(e->c, RSLC_TY_SCALAR, RSLC_BASE_UINT, 1, 1));
+               if (!v || !utid)
+                  return 0;
+               e->member_active[v->block][member] = 1;
+               len = spv_id(e);
+               w[0] = utid; w[1] = len; w[2] = e->block_var[v->block]; w[3] = member;
+               if (!spv_fn_inst(e, 68 /* OpArrayLength */, w, 4))
+                  return 0;
+               return spv_r1(e, SpvOpBitcast, tid, len, 0);
+            }
+#endif
             case RSLC_UN_NEG:
             {
                uint32_t v = spv_rvalue(e, n->a);
