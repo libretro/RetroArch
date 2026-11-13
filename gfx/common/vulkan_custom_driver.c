@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
+#include <stdio.h>
 #include <string.h>
 
 #include <compat/strl.h>
@@ -286,6 +287,65 @@ const char *vulkan_custom_driver_check_elf(const unsigned char *head,
    return NULL;
 }
 
+void vulkan_custom_driver_trim_dlerror(char *s, size_t len, const char *err)
+{
+   static const char prefix[] = "dlopen failed: ";
+   static const char by[]     = " needed or dlopened by \"";
+   const char *start;
+   const char *end;
+   const char *cut;
+   const char *rest;
+   size_t n;
+   size_t m;
+   if (!len)
+      return;
+   if (!err)
+      err = "";
+   start = err;
+   if (!strncmp(start, prefix, sizeof(prefix) - 1))
+      start += sizeof(prefix) - 1;
+   end = start + strlen(start);
+   if ((cut = strstr(start, ": needed by ")))
+      end = cut;
+   if ((cut = strstr(start, " referenced by ")) && cut < end)
+      end = cut;
+   if (end == start)
+   {
+      start = err;
+      end   = err + strlen(err);
+   }
+   /* The "needed or dlopened by" path goes; "is not accessible" stays */
+   if (     (cut  = strstr(start, by)) && cut < end
+         && (rest = strchr(cut + sizeof(by) - 1, '"')) && rest < end)
+      rest++;
+   else
+      cut = rest = end;
+   n = (size_t)(cut - start);
+   m = (size_t)(end - rest);
+   if (n + m < len)
+   {
+      memcpy(s, start, n);
+      memcpy(s + n, rest, m);
+      s[n + m] = '\0';
+      return;
+   }
+   if (n >= len - 1)
+      memcpy(s, start, len - 1);
+   else
+   {
+      memcpy(s, start, n);
+      memcpy(s + n, rest, len - 1 - n);
+   }
+   s[len - 1] = '\0';
+   if (len <= 4)
+      return;
+   /* "..." marks the cut, which never splits a UTF-8 sequence */
+   n = len - 4;
+   while (n && ((unsigned char)s[n] & 0xC0) == 0x80)
+      n--;
+   memcpy(s + n, "...", 4);
+}
+
 uint32_t vulkan_custom_driver_key(const char *path,
       int64_t size, int64_t mtime)
 {
@@ -359,6 +419,74 @@ static size_t crash_put(char *state, size_t len, size_t cap,
    memcpy(state + len + core_len + 1, path, path_len);
    state[len + need - 1] = '\n';
    return len + need;
+}
+
+enum vulkan_custom_driver_msg vulkan_custom_driver_verdict(
+      enum vulkan_custom_driver_hook hook, uint32_t gpus)
+{
+   if (hook == VULKAN_CUSTOM_DRIVER_HOOK_FAILED)
+      return VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED;
+   if (hook != VULKAN_CUSTOM_DRIVER_HOOK_LOADED)
+      return VULKAN_CUSTOM_DRIVER_MSG_LOADER;
+   if (!gpus)
+      return VULKAN_CUSTOM_DRIVER_MSG_NO_GPU;
+   return VULKAN_CUSTOM_DRIVER_MSG_NONE;
+}
+
+/* VkResult values, as vulkan_core.h has them */
+static const struct
+{
+   int result;
+   const char *name;
+} vkcd_results[] = {
+   { -1,          "VK_ERROR_OUT_OF_HOST_MEMORY" },
+   { -2,          "VK_ERROR_OUT_OF_DEVICE_MEMORY" },
+   { -3,          "VK_ERROR_INITIALIZATION_FAILED" },
+   { -4,          "VK_ERROR_DEVICE_LOST" },
+   { -5,          "VK_ERROR_MEMORY_MAP_FAILED" },
+   { -6,          "VK_ERROR_LAYER_NOT_PRESENT" },
+   { -7,          "VK_ERROR_EXTENSION_NOT_PRESENT" },
+   { -8,          "VK_ERROR_FEATURE_NOT_PRESENT" },
+   { -9,          "VK_ERROR_INCOMPATIBLE_DRIVER" },
+   { -10,         "VK_ERROR_TOO_MANY_OBJECTS" },
+   { -11,         "VK_ERROR_FORMAT_NOT_SUPPORTED" },
+   { -12,         "VK_ERROR_FRAGMENTED_POOL" },
+   { -13,         "VK_ERROR_UNKNOWN" },
+   { -1000069000, "VK_ERROR_OUT_OF_POOL_MEMORY" },
+   { -1000072003, "VK_ERROR_INVALID_EXTERNAL_HANDLE" },
+   { -1000161000, "VK_ERROR_FRAGMENTATION" },
+   { -1000000000, "VK_ERROR_SURFACE_LOST_KHR" },
+   { -1000000001, "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR" },
+   { -1000001004, "VK_ERROR_OUT_OF_DATE_KHR" },
+   { -1000003001, "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR" },
+   { -1000011001, "VK_ERROR_VALIDATION_FAILED_EXT" },
+   { -1000023000, "VK_ERROR_IMAGE_USAGE_NOT_SUPPORTED_KHR" },
+   { -1000174001, "VK_ERROR_NOT_PERMITTED_KHR" },
+   { -1000338000, "VK_ERROR_COMPRESSION_EXHAUSTED_EXT" }
+};
+
+void vulkan_custom_driver_result_text(char *s, size_t len, int result)
+{
+   char num[24];
+   size_t i;
+   for (i = 0; i < sizeof(vkcd_results) / sizeof(vkcd_results[0]); i++)
+      if (vkcd_results[i].result == result)
+      {
+         strlcpy(s, vkcd_results[i].name, len);
+         return;
+      }
+   sprintf(num, "VkResult %d", result);
+   strlcpy(s, num, len);
+}
+
+enum vulkan_custom_driver_msg vulkan_custom_driver_no_gpu(bool kgsl,
+      bool mali)
+{
+   if (kgsl && !mali)
+      return VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_ADRENO;
+   if (mali && !kgsl)
+      return VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_MALI;
+   return VULKAN_CUSTOM_DRIVER_MSG_NO_GPU;
 }
 
 bool vulkan_custom_driver_crash_find(const char *state, size_t len,
@@ -472,6 +600,14 @@ static struct vulkan_custom_driver_path *session_path(
    return p;
 }
 
+/* For path's sublabel; NONE once it loads. */
+static void session_why_set(struct vulkan_custom_driver_path *p,
+      enum vulkan_custom_driver_msg why, const char *detail)
+{
+   p->why = why;
+   strlcpy(p->detail, detail ? detail : "", sizeof(p->detail));
+}
+
 static enum vulkan_custom_driver_msg session_once(
       struct vulkan_custom_driver_path *p, enum vulkan_custom_driver_msg msg)
 {
@@ -503,6 +639,8 @@ static bool session_wants(vulkan_custom_driver_session_t *s,
    if (req->size < 0)
    {
       p->invalid = true;
+      session_why_set(p, VULKAN_CUSTOM_DRIVER_MSG_INVALID,
+            "the zip is missing or not readable");
       *msg       = session_once(p, VULKAN_CUSTOM_DRIVER_MSG_INVALID);
       return false;
    }
@@ -529,6 +667,8 @@ void *vulkan_custom_driver_session_open(vulkan_custom_driver_session_t *s,
    *msg       = VULKAN_CUSTOM_DRIVER_MSG_NONE;
    s->current = NULL;
    s->full    = false;
+   s->reason  = VULKAN_CUSTOM_DRIVER_MSG_NONE;
+   s->result  = 0;
    if (string_is_empty(req->path) || req->safe_mode)
       return NULL;
    /* Past a full table, as past full slots: the system driver. */
@@ -562,8 +702,9 @@ void *vulkan_custom_driver_session_open(vulkan_custom_driver_session_t *s,
    }
    if (!slot->handle)
    {
+      const char *reason = NULL;
       if (!(slot->handle = s->load(s->load_data, req->path, key,
-            &slot->meta, &err)))
+            &slot->meta, &err, &reason)))
       {
          if (err == VULKAN_CUSTOM_DRIVER_MSG_INVALID)
             p->invalid = true;
@@ -572,11 +713,13 @@ void *vulkan_custom_driver_session_open(vulkan_custom_driver_session_t *s,
             err       = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
             p->failed = true;
          }
+         session_why_set(p, err, reason);
          *msg = session_once(p, err);
          return NULL;
       }
       slot->key = key;
    }
+   session_why_set(p, VULKAN_CUSTOM_DRIVER_MSG_NONE, NULL);
    s->current = p;
    s->pending = true;
    *meta      = &slot->meta;
@@ -587,12 +730,44 @@ enum vulkan_custom_driver_msg vulkan_custom_driver_session_failed(
       vulkan_custom_driver_session_t *s)
 {
    struct vulkan_custom_driver_path *p = s->current;
+   enum vulkan_custom_driver_msg msg   = s->reason;
    s->current = NULL;
    s->pending = false;
+   s->reason  = VULKAN_CUSTOM_DRIVER_MSG_NONE;
    if (!p)
       return VULKAN_CUSTOM_DRIVER_MSG_NONE;
    p->failed = true;
-   return session_once(p, VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   if (msg == VULKAN_CUSTOM_DRIVER_MSG_NONE && s->result < 0)
+   {
+      msg = VULKAN_CUSTOM_DRIVER_MSG_NO_START;
+      vulkan_custom_driver_result_text(s->detail, sizeof(s->detail),
+            s->result);
+   }
+   else if (msg == VULKAN_CUSTOM_DRIVER_MSG_NONE)
+   {
+      msg          = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
+      s->detail[0] = '\0';
+   }
+   session_why_set(p, msg, s->detail);
+   return session_once(p, msg);
+}
+
+void vulkan_custom_driver_session_result(vulkan_custom_driver_session_t *s,
+      int result)
+{
+   if (vulkan_custom_driver_session_current(s))
+      s->result = result;
+}
+
+void vulkan_custom_driver_session_reason(vulkan_custom_driver_session_t *s,
+      enum vulkan_custom_driver_msg msg, const char *detail)
+{
+   if (     vulkan_custom_driver_session_current(s)
+         && s->reason == VULKAN_CUSTOM_DRIVER_MSG_NONE)
+   {
+      s->reason = msg;
+      strlcpy(s->detail, detail ? detail : "", sizeof(s->detail));
+   }
 }
 
 bool vulkan_custom_driver_session_started(vulkan_custom_driver_session_t *s)
@@ -614,6 +789,21 @@ bool vulkan_custom_driver_session_current(
    return s->current && s->pending;
 }
 
+enum vulkan_custom_driver_msg vulkan_custom_driver_session_why(
+      const vulkan_custom_driver_session_t *s, const char *path,
+      const char **detail)
+{
+   unsigned i;
+   for (i = 0; i < s->path_count; i++)
+      if (string_is_equal(s->paths[i].path, path))
+      {
+         *detail = s->paths[i].detail;
+         return s->paths[i].why;
+      }
+   *detail = "";
+   return VULKAN_CUSTOM_DRIVER_MSG_NONE;
+}
+
 enum vulkan_custom_driver_msg vulkan_custom_driver_session_picked(
       vulkan_custom_driver_session_t *s, const char *path)
 {
@@ -632,5 +822,6 @@ enum vulkan_custom_driver_msg vulkan_custom_driver_session_picked(
    p->invalid  = false;
    p->shown   &= ~((1u << VULKAN_CUSTOM_DRIVER_MSG_INVALID)
                |  (1u << VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED));
+   session_why_set(p, VULKAN_CUSTOM_DRIVER_MSG_NONE, NULL);
    return VULKAN_CUSTOM_DRIVER_MSG_NONE;
 }
