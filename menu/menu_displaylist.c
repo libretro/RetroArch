@@ -13295,6 +13295,12 @@ unsigned menu_displaylist_build_list(
 #endif
             }
          }
+#ifdef ANDROID
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+#endif
 #endif
          break;
       case DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST:

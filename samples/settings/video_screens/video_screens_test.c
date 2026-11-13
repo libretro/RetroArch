@@ -5097,6 +5097,7 @@ static void test_window_menu_list(void)
    CHECK(!window_menu_has(&list, "video_menu_follows"));
    CHECK(!window_menu_has(&list, "video_menu_display"));
    CHECK(!window_menu_has(&list, "video_notifications_window"));
+   CHECK(!window_menu_has(&list, "video_blank_unused_screens"));
    CHECK(!window_menu_has(&list, "video_screen2_window_x"));
 #ifdef ANDROID
    CHECK(!window_menu_has(&list, "video_screen_windows_restore"));
@@ -5135,6 +5136,7 @@ static void test_window_menu_list(void)
    CHECK(!window_menu_has(&list, "video_screen2_display"));
    CHECK(!window_menu_has(&list, "video_screen2_settings"));
    CHECK(!window_menu_has(&list, "video_screen_windows_restore"));
+   CHECK(!window_menu_has(&list, "video_blank_unused_screens"));
    file_list_deinitialize(&list);
    window_test_end();
 
@@ -6216,6 +6218,25 @@ static void test_window_menu_one_place(void)
 #endif
    window_test_end();
 #endif
+}
+
+/* Blank Unused Screens' strings are everywhere, its row only on Android */
+static void test_blank_unused_strings(void)
+{
+   char s[256];
+   CHECK(string_is_equal(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_SCREENS),
+         "Blank Unused Screens"));
+   CHECK(string_is_equal(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_GAMES),
+         "During Games"));
+   menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS,
+         0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_BLANK_UNUSED_SCREENS)));
+   CHECK(strstr(s, "Android 12") != NULL);
+   CHECK(menu_setting_find_enum(
+            MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS) == NULL);
 }
 
 #ifdef HAVE_THREADS
@@ -8015,6 +8036,7 @@ int main(int argc, char **argv)
    test_window_menu_rows_redraw();
    test_window_menu_screen_page();
    test_window_menu_one_place();
+   test_blank_unused_strings();
    test_window_redraw();
    test_window_redraw_own_moved();
    test_window_redraw_edit();

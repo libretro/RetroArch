@@ -312,6 +312,7 @@ typedef struct settings
       unsigned video_screen_window_dims[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_menu_follows;
       unsigned video_notifications_window;
+      unsigned video_blank_unused_screens;
 #endif
       unsigned video_openxr_refresh_rate;
       unsigned video_openxr_controllers;
