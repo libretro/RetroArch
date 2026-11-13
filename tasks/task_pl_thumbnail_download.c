@@ -438,6 +438,14 @@ static void free_pl_thumb_handle(pl_thumb_handle_t *pl_thumb)
    pl_thumb = NULL;
 }
 
+/* Not in the handler: a finder reads the handle until the task retires */
+static void task_pl_thumb_free(retro_task_t *task)
+{
+   pl_thumb_handle_t *pl_thumb = NULL;
+   if (task && (pl_thumb = (pl_thumb_handle_t*)task->state))
+      free_pl_thumb_handle(pl_thumb);
+}
+
 /*******************************/
 /* Playlist Thumbnail Download */
 /*******************************/
@@ -569,10 +577,15 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
    return;
 
 task_finished:
+   /* Here, not in cleanup on the main thread; the finder reads only
+    * playlist_config */
+   if (pl_thumb && pl_thumb->playlist)
+   {
+      playlist_free(pl_thumb->playlist);
+      pl_thumb->playlist = NULL;
+   }
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-   if (pl_thumb)
-      free_pl_thumb_handle(pl_thumb);
 }
 
 static bool task_pl_thumbnail_finder(retro_task_t *task, void *user_data)
@@ -652,6 +665,7 @@ bool task_push_pl_thumbnail_download(
    /* Configure task */
    task->handler                 = task_pl_thumbnail_download_handler;
    task->state                   = pl_thumb;
+   task->cleanup                 = task_pl_thumb_free;
    task->title                   = strdup(system);
    task->progress                = 0;
    task->progress_cb             = task_window_progress_cb;
@@ -766,13 +780,6 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    }
 
 #endif
-}
-
-static void task_pl_entry_thumbnail_free(retro_task_t *task)
-{
-   pl_thumb_handle_t *pl_thumb = NULL;
-   if (task && (pl_thumb = (pl_thumb_handle_t*)task->state))
-      free_pl_thumb_handle(pl_thumb);
 }
 
 static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
@@ -1005,7 +1012,7 @@ bool task_push_pl_entry_thumbnail_download(
    task->title                   = strdup(system);
    task->progress                = 0;
    task->callback                = cb_task_pl_entry_thumbnail_refresh_menu;
-   task->cleanup                 = task_pl_entry_thumbnail_free;
+   task->cleanup                 = task_pl_thumb_free;
    task->flags                  |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags               |=  RETRO_TASK_FLG_MUTE;
