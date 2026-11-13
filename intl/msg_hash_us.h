@@ -13413,7 +13413,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   "Save changes to the configuration file on quit."
+   "Save changes to the configuration file on quit. Run 'Save Current Configuration' to keep this OFF after quitting."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
