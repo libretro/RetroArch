@@ -3602,10 +3602,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (video_switch_refresh_rate)
                video_display_server_set_refresh_rate(refresh_rate);
 
-            /* Cannot continue recording with different parameters.
-             * Take the easiest route out and just restart
-             * the recording. */
-            if (rec_st->data)
+            /* Restart when recording parameters or the video driver change. */
+            if (     rec_st->data
+                  && (!no_video_reinit || viewport_changed
+                     || max_size_changed || timing_changed))
             {
                const char *_msg = msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT);
                runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,

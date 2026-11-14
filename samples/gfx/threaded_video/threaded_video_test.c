@@ -3544,6 +3544,173 @@ static void lane_aspect_hint_changes(void)
       fprintf(stderr, "[pass] aspect hints: metadata retained, only dependent viewports resized\n");
 }
 
+static unsigned avr_inits, avr_frees, avr_finalizes;
+static unsigned avr_handles[32];
+static retro_atomic_int_t avr_frames;
+static double avr_fps, avr_rate;
+static unsigned avr_fb_dims;
+
+static void *avr_init(const struct record_params *params)
+{
+   avr_fps = params->fps;
+   avr_rate = params->samplerate;
+   avr_fb_dims = params->fb_dims;
+   return &avr_handles[avr_inits++];
+}
+
+static void avr_free(void *data)
+{
+   (void)data;
+   avr_frees++;
+}
+
+static bool avr_finalize(void *data)
+{
+   (void)data;
+   avr_finalizes++;
+   return true;
+}
+
+static bool avr_video(void *data, const struct record_video_data *frame)
+{
+   (void)data;
+   (void)frame;
+   retro_atomic_fetch_add_int(&avr_frames, 1);
+   return true;
+}
+
+static bool avr_audio(void *data, const struct record_audio_data *audio)
+{
+   (void)data;
+   (void)audio;
+   return true;
+}
+
+static const record_driver_t avr_driver = {
+   avr_init, avr_free, avr_video, avr_audio, avr_finalize, "av-info-test"
+};
+
+static void lane_av_info_recording(void)
+{
+   settings_t *settings = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   recording_state_t *rec_st = recording_state_get_ptr();
+   recording_state_t *saved_rec;
+   struct retro_system_av_info saved_av = video_st->av_info;
+   struct retro_system_av_info info;
+   const record_driver_t *saved_driver = record_drivers[0];
+   unsigned saved_aspect = settings->uints.video_aspect_ratio_idx;
+   unsigned saved_crt = settings->uints.crt_switch_resolution;
+   unsigned saved_target = video_st->frame_delay_target;
+   bool saved_pause = video_st->frame_delay_pause;
+   bool saved_gpu = settings->bools.video_gpu_record;
+   bool saved_history = settings->bools.history_list_enable;
+   bool was_menu = menu_is_up();
+   char saved_ident[sizeof(settings->arrays.record_driver)];
+   unsigned had = failures;
+   unsigned stream, step;
+
+   CHECK(!rec_st->data && !rec_st->start_pending
+            && !video_st->record_gpu_buffer,
+         "AV-info recording: recorder already active");
+   if (rec_st->data || rec_st->start_pending || video_st->record_gpu_buffer)
+      return;
+   saved_rec = (recording_state_t*)malloc(sizeof(*saved_rec));
+   CHECK(saved_rec != NULL, "AV-info recording: state allocation failed");
+   if (!saved_rec)
+      return;
+   *saved_rec = *rec_st;
+   memcpy(saved_ident, settings->arrays.record_driver, sizeof(saved_ident));
+   record_drivers[0] = &avr_driver;
+   strcpy(settings->arrays.record_driver, avr_driver.ident);
+   settings->bools.video_gpu_record = false;
+   settings->bools.history_list_enable = false;
+   settings->uints.crt_switch_resolution = 0;
+   if (was_menu)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+
+   for (stream = 0; stream < 2; stream++)
+   {
+      void *owner;
+      int frames;
+      memset(rec_st, 0, sizeof(*rec_st));
+      strcpy(rec_st->output_dir, ".");
+      rec_st->enable = true;
+      rec_st->streaming_enable = stream != 0;
+      avr_inits = avr_frees = avr_finalizes = 0;
+      retro_atomic_store_relaxed_int(&avr_frames, 0);
+      settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_4_3;
+      video_driver_set_aspect_ratio();
+      CHECK(recording_init(), "AV-info recording: fake encoder did not open");
+      owner = rec_st->data;
+      CHECK(owner != NULL, "AV-info recording: encoder has no owner");
+      run_frames(3);
+      frames = retro_atomic_load_acquire_int(&avr_frames);
+      CHECK(frames > 0, "AV-info recording: no frames reached the encoder");
+
+      info = saved_av;
+      info.geometry.aspect_ratio = saved_av.geometry.aspect_ratio == 1.75f
+         ? 1.5f : 1.75f;
+      CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+            "AV-info recording: ignored hint rejected");
+      CHECK(avr_inits == 1 && !avr_frees && !avr_finalizes
+               && rec_st->data == owner && rec_st->enable
+               && rec_st->streaming_enable == (stream != 0),
+            "AV-info recording: ignored hint restarted encoder (stream %u)", stream);
+      CHECK(video_st->av_info.geometry.aspect_ratio == info.geometry.aspect_ratio,
+            "AV-info recording: ignored hint discarded");
+      run_frames(3);
+      CHECK(retro_atomic_load_acquire_int(&avr_frames) > frames,
+            "AV-info recording: frames stopped after ignored hint");
+
+      for (step = 0; step < 5; step++)
+      {
+         unsigned before = avr_inits;
+         switch (step)
+         {
+            case 0: info.timing.fps *= 0.5; break;
+            case 1: info.timing.sample_rate *= 0.5; break;
+            case 2: info.geometry.base_width++; break;
+            case 3: info.geometry.max_width++; break;
+            default:
+               settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_CORE;
+               video_driver_set_aspect_ratio();
+               info.geometry.aspect_ratio += 0.25f;
+               break;
+         }
+         CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+               "AV-info recording: parameter update rejected");
+         CHECK(avr_inits == before + 1 && avr_frees == avr_inits - 1
+                  && avr_finalizes == avr_frees && rec_st->data
+                  && rec_st->enable && rec_st->streaming_enable == (stream != 0),
+               "AV-info recording: stream %u step %u missed restart", stream, step);
+         CHECK(avr_fps == info.timing.fps && avr_rate == info.timing.sample_rate
+                  && avr_fb_dims == VIDEO_SCALE_PACK(info.geometry.max_width,
+                     info.geometry.max_height),
+               "AV-info recording: restart used stale parameters");
+      }
+      command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+      CHECK(avr_frees == avr_inits && avr_finalizes == avr_inits && !rec_st->data,
+            "AV-info recording: final encoder was not retired");
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &saved_av);
+   }
+   if (was_menu)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   settings->uints.video_aspect_ratio_idx = saved_aspect;
+   settings->uints.crt_switch_resolution = saved_crt;
+   settings->bools.video_gpu_record = saved_gpu;
+   settings->bools.history_list_enable = saved_history;
+   memcpy(settings->arrays.record_driver, saved_ident, sizeof(saved_ident));
+   record_drivers[0] = saved_driver;
+   *rec_st = *saved_rec;
+   free(saved_rec);
+   video_driver_set_aspect_ratio();
+   video_st->frame_delay_pause = saved_pause;
+   video_st->frame_delay_target = saved_target;
+   if (failures == had)
+      fprintf(stderr, "[pass] AV-info recording: ignored hints retain encoder; parameter changes restart\n");
+}
+
 static void lane_av_info_changes(void)
 {
    settings_t *settings            = config_get_ptr();
@@ -13420,6 +13587,7 @@ int main(int argc, char *argv[])
       set_threaded_via_setting(false);
       lane_square_pixel_geometry();
       lane_aspect_hint_changes();
+      lane_av_info_recording();
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
@@ -13461,6 +13629,7 @@ int main(int argc, char *argv[])
       set_threaded_via_setting(false);
       lane_square_pixel_geometry();
       lane_aspect_hint_changes();
+      lane_av_info_recording();
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
