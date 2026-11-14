@@ -1966,6 +1966,26 @@ int main(void)
    test_ffx(settings, &color, &mv, &depth);
    test_xess(settings, &color, &mv, &depth);
 
+   /* Device handoff keeps the replacement SDK session alive. These
+    * handles are used only by the stand-in, never by Vulkan. */
+   {
+      const ngx_lib_t *lib = ngx_lib_get();
+      ngx_parameter_t *caps = NULL;
+      vulkan_ngx_t *old_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)2, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      vulkan_ngx_t *new_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)3, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      CHECK(old_session != NULL && new_session != NULL);
+      vulkan_ngx_free(old_session);
+      CHECK(!NGX_FAILED(lib->vulkan.get_capability_parameters(&caps)));
+      CHECK(vulkan_ngx_optimal(new_session, NGX_PERF_QUALITY_MAX_QUALITY,
+               VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
+      vulkan_ngx_free(new_session);
+      CHECK(NGX_FAILED(lib->vulkan.get_capability_parameters(&caps)));
+   }
+
    free_image(&color);
    free_image(&mv);
    free_image(&depth);

@@ -205,10 +205,22 @@ static void vulkan_session_key_store(struct vulkan_session_key **out,
 }
 #endif
 
-void vulkan_context_session_cache_free(void)
+void vulkan_context_session_cache_prune(const char *keep_dir)
 {
 #ifdef VULKAN_SESSION_CACHE
-   vulkan_session_discard();
+   if (!keep_dir || video_upscaler_optiscaler()
+         || !kept_dlss_session.session_upscaler_dir
+         || strcmp(keep_dir, kept_dlss_session.session_upscaler_dir))
+      vulkan_session_discard();
+#else
+   (void)keep_dir;
+#endif
+}
+
+void vulkan_context_session_cache_free(void)
+{
+   vulkan_context_session_cache_prune(NULL);
+#ifdef VULKAN_SESSION_CACHE
    if (vulkan_library && !cached_instance_vk)
    {
       dylib_close(vulkan_library);
@@ -1428,7 +1440,6 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
             RARCH_LOG("[Vulkan] Reusing DLSS device and NGX session.\n");
             return VK_SUCCESS;
          }
-         vulkan_session_discard();
       }
       res = vkCreateDevice(gpu, info, allocator, device);
       if (res == VK_SUCCESS && !allocator)
@@ -1978,12 +1989,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.graphics_queue_index = context.queue_family_index;
          vk->context.queue                = context.queue;
 
-#ifdef VULKAN_SESSION_CACHE
-         /* A core may create a private device without our wrapper. */
-         if (kept_dlss_borrowed_instance == vk->context.instance)
-            vulkan_session_discard();
-#endif
-
          if (context.presentation_queue != context.queue)
          {
             RARCH_ERR("[Vulkan] Present queue != graphics queue. This is currently not supported.\n");
@@ -2396,10 +2401,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    }
 
 #ifdef VULKAN_SESSION_CACHE
-   /* Only one NGX device is kept. A miss ends before the next init. */
+   /* Keep NGX warm until a replacement DLSS session is initialized. */
    if (kept_dlss_session.device
-         && ((video_upscaler_wanted()
-               && config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
+         && (config_get_ptr()->uints.video_temporal_upscaler != VIDEO_TEMPORAL_UPSCALER_DLSS
 #ifdef HAVE_OPENXR
              || vk->context.xr
 #endif

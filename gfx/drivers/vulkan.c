@@ -7967,6 +7967,8 @@ static void vulkan_init_hw_render(vk_t *vk)
          config_get_ptr()->uints.video_temporal_upscaler;
       char dir[DIR_MAX_LENGTH];
       video_upscaler_dir(kind, dir, sizeof(dir));
+      vulkan_context_session_cache_prune(
+            kind == VIDEO_TEMPORAL_UPSCALER_DLSS ? dir : NULL);
       if (vk->context->session_upscaler
             && (kind != VIDEO_TEMPORAL_UPSCALER_DLSS
                || strcmp(vk->context->session_upscaler_dir, dir)))
@@ -7998,6 +8000,7 @@ static void vulkan_init_hw_render(vk_t *vk)
          video_upscaler_set_output(vk->vp.dims);
       }
    }
+   vulkan_context_session_cache_prune(NULL);
 #endif
 }
 

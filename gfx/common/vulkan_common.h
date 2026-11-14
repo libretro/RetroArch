@@ -709,6 +709,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
 /* After all video drivers have stopped, including a non-Vulkan one. */
 void vulkan_context_session_cache_free(void);
+/* Keep native NGX from keep_dir until its replacement is ready.
+ * NULL retires all cached sessions. */
+void vulkan_context_session_cache_prune(const char *keep_dir);
 
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
