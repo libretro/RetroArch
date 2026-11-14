@@ -57,7 +57,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("draw_test.c", []), ("gpu_worker_test.c", []),
                           ("file_test.c", ["-DRECORD_MEDIACODEC_FILE_TEST"]),
                           ("file_edit_test.c", ["-DRECORD_MEDIACODEC_FILE_TEST"]),
-                          ("session_test.c", []), ("session_stream_test.c", []), ("dispatch_test.c", []),
+                          ("session_test.c", []), ("session_stream_test.c", []), ("dispatch_test.c", []), ("dispatch_stream_test.c", []),
                           ("gpu_dispatch_test.c", [])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
         if source == "stream_timing_test.c":
@@ -81,8 +81,10 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "libretro-common/queues/retro_spsc.c")]
             if os.name != "nt":
                 command += ["-pthread"]
-        if source == "dispatch_test.c" and os.name != "nt":
+        if source in ("dispatch_test.c", "dispatch_stream_test.c") and os.name != "nt":
             command += ["-DHAVE_THREADS", "-DRECORD_MEDIACODEC_DISPATCH_TEST", "-pthread"]
+            if source == "dispatch_stream_test.c":
+                command += [str(root / "libretro-common/net/net_wake.c")]
         if source == "gpu_dispatch_test.c":
             command += ["-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include/ANGLE")]
             if os.name != "nt":

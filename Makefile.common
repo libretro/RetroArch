@@ -3426,7 +3426,7 @@ ifeq ($(HAVE_RECORD_MEDIACODEC), 1)
       record/record_gpu_queue.o record/record_audio_queue.o
    ifeq ($(HAVE_RTMP)$(HAVE_RFLV),11)
       MEDIA_RECORD_OBJ += record/record_stream_mediacodec.o \
-         record/record_mediacodec_stream_config.o
+         record/record_mediacodec_stream_config.o $(LIBRETRO_COMM_DIR)/net/net_wake.o
    endif
    MEDIA_RECORD_OBJ := $(filter-out $(OBJ),$(MEDIA_RECORD_OBJ))
    OBJ += $(MEDIA_RECORD_OBJ)

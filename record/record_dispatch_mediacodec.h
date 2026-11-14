@@ -20,6 +20,19 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
       const mediacodec_encoder_request_t *video, unsigned interval,
       unsigned rate, unsigned channels, unsigned bitrate,
       size_t max_audio_frames, size_t audio_capacity, const char *path);
+typedef struct record_dispatch_mediacodec_stream_config
+{
+   record_mediacodec_stream_config_t mux;
+   bool legacy_commands;
+} record_dispatch_mediacodec_stream_config_t;
+/* Copies URL/config; I/O owner constructs and retires its RTMP client.
+ * READY follows connection negotiation and encoder/Surface startup.
+ * Requires networking, crypto, RTMP and FLV. Never resolves or waits here. */
+record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_stream(
+      const mediacodec_encoder_request_t *video, unsigned interval,
+      unsigned rate, unsigned channels, unsigned bitrate,
+      size_t max_audio_frames, size_t audio_capacity, const char *url,
+      const record_dispatch_mediacodec_stream_config_t *config);
 /* GPU executor, after READY. Window remains borrowed until gpu_released.
  * No producer may use the session directly. */
 void *record_dispatch_mediacodec_surface(record_dispatch_mediacodec_t *job);

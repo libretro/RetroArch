@@ -1731,6 +1731,9 @@ RECORDING
 #if defined(HAVE_RTMP) && defined(HAVE_RFLV)
 #include "../record/record_mediacodec_stream_config.c"
 #include "../record/record_stream_mediacodec.c"
+#if !defined(HAVE_RECORD_METAL)
+#include "../libretro-common/net/net_wake.c"
+#endif
 #endif
 #include "../record/record_mediacodec_surface.c"
 #include "../record/record_mediacodec_file.c"
