@@ -77,7 +77,7 @@ static int test_poll(struct pollfd *fds, nfds_t count, int timeout)
 #define close test_close
 #define pthread_create test_create
 #define pthread_detach test_detach
-#define write test_write
+#define write(fd, data, bytes) test_write(fd, data, bytes)
 #define poll test_poll
 #include "../../../record/record_dispatch_mediacodec.c"
 #undef eventfd
