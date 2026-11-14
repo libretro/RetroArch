@@ -675,45 +675,35 @@ static void video_thread_tex_retire_run(thread_video_t *thr,
       video_thread_tex_retire_t *list);
 static void video_thread_lend_forget(thread_video_t *thr, uintptr_t id);
 
-/* Queues a command the caller wants nothing back from, for the video
- * thread to run on its next pass. False when it could not be queued -
- * no thread to run it, or the queue is full - and the caller sends it
- * the waiting way instead. */
-static bool video_thread_defer_packet(thread_video_t *thr,
-      const thread_packet_t *pkt)
+/* The producer owns the unpublished slot until commit. Do not call out
+ * or reenter the queue while filling it. */
+static thread_packet_t *video_thread_defer_begin(thread_video_t *thr,
+      int *head, int *tail)
 {
-   int head, tail;
-
    if (     !thr->thread
          || sthread_get_thread_id(thr->thread)
             == sthread_get_current_thread_id())
-      return false;
+      return NULL;
 
-   /* The worker still takes commands, as for the waiting send: 'alive'
-    * is the window's answer and goes false while it still runs. */
    if (     !thr->deferred
          || !retro_atomic_load_acquire_int(&thr->worker_running))
-      return false;
+      return NULL;
 
-   /* This thread owns head, so it may read it plainly; tail is the
-    * video thread's and is read with an acquire. */
-   head = retro_atomic_load_acquire_int(&thr->deferred_head);
-   tail = retro_atomic_load_acquire_int(&thr->deferred_tail);
-   if (head - tail >= VIDEO_THREAD_DEFERRED_MAX)
-      return false;
+   *head = retro_atomic_load_acquire_int(&thr->deferred_head);
+   *tail = retro_atomic_load_acquire_int(&thr->deferred_tail);
+   if (*head - *tail >= VIDEO_THREAD_DEFERRED_MAX)
+      return NULL;
 
-   thr->deferred[head & (VIDEO_THREAD_DEFERRED_MAX - 1)] = *pkt;
-   /* The packet is written before the video thread is told it is
-    * there. */
+   return &thr->deferred[*head & (VIDEO_THREAD_DEFERRED_MAX - 1)];
+}
+
+static void video_thread_defer_commit(thread_video_t *thr, int head, int tail)
+{
    retro_atomic_store_release_int(&thr->deferred_head, head + 1);
 
-   /* A ring that was empty may have a sleeping thread to wake. A ring
-    * that was not empty has a thread that cannot sleep before draining
-    * it, so a burst notifies once rather than once a packet. */
+   /* A nonempty ring cannot sleep before draining this packet. */
    if (head == tail)
       retro_eventcount_notify(&thr->work);
-
-   return true;
 }
 
 /* The consumer owns each packet and its reply until slot retirement. */
@@ -3538,13 +3528,21 @@ static bool video_thread_alive(void *data)
     * paused frontend. */
    if (runloop_flags & RUNLOOP_FLAG_PAUSED)
    {
-      thread_packet_t pkt;
-      pkt.type = CMD_ALIVE;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
 
-      if (!video_thread_defer_packet(thr, &pkt))
+      if (!queued)
+         pkt = &fallback;
+      pkt->type = CMD_ALIVE;
+
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
       {
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
-         return pkt.data.b;
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
+         return pkt->data.b;
       }
    }
 
@@ -4591,7 +4589,9 @@ static bool video_thread_shader_load_begin(void *data,
 static bool video_thread_shader_load_step(void *data,
       shader_load_deferred_t *deferred)
 {
-   thread_packet_t pkt;
+   thread_packet_t fallback;
+   thread_packet_t *pkt;
+   int head, tail;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr || !thr->driver || !thr->driver->shader_load_step)
@@ -4600,14 +4600,13 @@ static bool video_thread_shader_load_step(void *data,
       return false;
    }
 
-   pkt.type   = CMD_SHADER_LOAD_STEP;
-   pkt.data.v = deferred;
-
    if (retro_atomic_load_acquire_int(&deferred->cancel))
    {
       /* after any step still queued, which ends the load itself */
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
-      return pkt.data.b;
+      fallback.type   = CMD_SHADER_LOAD_STEP;
+      fallback.data.v = deferred;
+      video_thread_send_and_wait_user_to_thread(thr, &fallback);
+      return fallback.data.b;
    }
 
    /* the step before this one is still running, or ended the load */
@@ -4617,11 +4616,19 @@ static bool video_thread_shader_load_step(void *data,
       return false;
 
    retro_atomic_store_release_int(&deferred->busy, 1);
-   if (video_thread_defer_packet(thr, &pkt))
+   pkt = video_thread_defer_begin(thr, &head, &tail);
+   if (!pkt)
+      pkt = &fallback;
+   pkt->type   = CMD_SHADER_LOAD_STEP;
+   pkt->data.v = deferred;
+   if (pkt != &fallback)
+   {
+      video_thread_defer_commit(thr, head, tail);
       return true;
+   }
    /* no thread to post to: run it the waiting way, as set_shader does */
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
-   return pkt.data.b;
+   video_thread_send_and_wait_user_to_thread(thr, pkt);
+   return pkt->data.b;
 }
 
 static bool video_thread_set_shader(void *data,
@@ -4869,14 +4876,22 @@ static void thread_overlay_enable(void *data, bool state)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type   = CMD_OVERLAY_ENABLE;
-      pkt.data.b = state;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type   = CMD_OVERLAY_ENABLE;
+      pkt->data.b = state;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -4924,18 +4939,26 @@ static void thread_overlay_tex_geom(void *data,
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type            = CMD_OVERLAY_TEX_GEOM;
-      pkt.data.rect.index = idx;
-      pkt.data.rect.x     = x;
-      pkt.data.rect.y     = y;
-      pkt.data.rect.w     = w;
-      pkt.data.rect.h     = h;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type            = CMD_OVERLAY_TEX_GEOM;
+      pkt->data.rect.index = idx;
+      pkt->data.rect.x     = x;
+      pkt->data.rect.y     = y;
+      pkt->data.rect.w     = w;
+      pkt->data.rect.h     = h;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -4946,18 +4969,26 @@ static void thread_overlay_vertex_geom(void *data,
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type            = CMD_OVERLAY_VERTEX_GEOM;
-      pkt.data.rect.index = idx;
-      pkt.data.rect.x     = x;
-      pkt.data.rect.y     = y;
-      pkt.data.rect.w     = w;
-      pkt.data.rect.h     = h;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type            = CMD_OVERLAY_VERTEX_GEOM;
+      pkt->data.rect.index = idx;
+      pkt->data.rect.x     = x;
+      pkt->data.rect.y     = y;
+      pkt->data.rect.w     = w;
+      pkt->data.rect.h     = h;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -4967,14 +4998,22 @@ static void thread_overlay_full_screen(void *data, bool enable)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type   = CMD_OVERLAY_FULL_SCREEN;
-      pkt.data.b = enable;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type   = CMD_OVERLAY_FULL_SCREEN;
+      pkt->data.b = enable;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -5042,15 +5081,23 @@ static void thread_set_filtering(void *data,
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type                  = CMD_POKE_SET_FILTERING;
-      pkt.data.filtering.index  = idx;
-      pkt.data.filtering.smooth = smooth;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type                  = CMD_POKE_SET_FILTERING;
+      pkt->data.filtering.index  = idx;
+      pkt->data.filtering.smooth = smooth;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -5060,14 +5107,22 @@ static void thread_set_hdr_menu_nits(void *data, float menu_nits)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type               = CMD_POKE_SET_HDR_MENU_NITS;
-      pkt.data.hdr.menu_nits = menu_nits;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type               = CMD_POKE_SET_HDR_MENU_NITS;
+      pkt->data.hdr.menu_nits = menu_nits;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -5077,14 +5132,22 @@ static void thread_set_hdr_paper_white_nits(void *data, float paper_white_nits)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type                      = CMD_POKE_SET_HDR_PAPER_WHITE_NITS;
-      pkt.data.hdr.paper_white_nits = paper_white_nits;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type                      = CMD_POKE_SET_HDR_PAPER_WHITE_NITS;
+      pkt->data.hdr.paper_white_nits = paper_white_nits;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -5094,14 +5157,22 @@ static void thread_set_hdr_expand_gamut(void *data, unsigned expand_gamut)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type                  = CMD_POKE_SET_HDR_EXPAND_GAMUT;
-      pkt.data.hdr.expand_gamut = expand_gamut;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type                  = CMD_POKE_SET_HDR_EXPAND_GAMUT;
+      pkt->data.hdr.expand_gamut = expand_gamut;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -5111,14 +5182,22 @@ static void thread_set_hdr_scanlines(void *data, bool hdr_scanlines)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type                = CMD_POKE_SET_HDR_SCANLINES;
-      pkt.data.hdr.scanlines  = hdr_scanlines;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type                = CMD_POKE_SET_HDR_SCANLINES;
+      pkt->data.hdr.scanlines  = hdr_scanlines;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -5128,14 +5207,22 @@ static void thread_set_hdr_subpixel_layout(void *data, unsigned hdr_subpixel_lay
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type                        = CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT;
-      pkt.data.hdr.subpixel_layout    = hdr_subpixel_layout;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type                        = CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT;
+      pkt->data.hdr.subpixel_layout    = hdr_subpixel_layout;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -5559,14 +5646,22 @@ static void thread_show_mouse(void *data, bool state)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type   = CMD_POKE_SHOW_MOUSE;
-      pkt.data.b = state;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type   = CMD_POKE_SHOW_MOUSE;
+      pkt->data.b = state;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -5576,13 +5671,21 @@ static void thread_grab_mouse_toggle(void *data)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type = CMD_POKE_GRAB_MOUSE_TOGGLE;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
+      if (!queued)
+         pkt = &fallback;
+      pkt->type = CMD_POKE_GRAB_MOUSE_TOGGLE;
 
       /* Nothing comes back from this, so it does not wait for the
        * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 
@@ -6125,6 +6228,23 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    return pkt.data.font_init.return_value;
 }
 
+bool video_thread_run_queued(custom_command_method_t func, void *data)
+{
+   int head, tail;
+   thread_packet_t *pkt;
+   thread_video_t *thr = video_thread_thr_capture;
+
+   if (!thr)
+      return false;
+   if (!(pkt = video_thread_defer_begin(thr, &head, &tail)))
+      return false;
+   pkt->type                       = CMD_CUSTOM_COMMAND;
+   pkt->data.custom_command.method = func;
+   pkt->data.custom_command.data   = data;
+   video_thread_defer_commit(thr, head, tail);
+   return true;
+}
+
 /* Runs func(data) on the video thread as a blocking round trip -
  * the caller is parked until the reply, so borrowed pointers in
  * data stay valid for the whole call and func executes inside the
@@ -6132,19 +6252,6 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
  * calling func directly when the wrapper is not active, when the
  * worker has already handled CMD_FREE, or when this is already the
  * video thread. */
-bool video_thread_run_queued(custom_command_method_t func, void *data)
-{
-   thread_packet_t pkt;
-   thread_video_t *thr = video_thread_thr_capture;
-
-   if (!thr)
-      return false;
-   pkt.type                       = CMD_CUSTOM_COMMAND;
-   pkt.data.custom_command.method = func;
-   pkt.data.custom_command.data   = data;
-   return video_thread_defer_packet(thr, &pkt);
-}
-
 uintptr_t video_thread_run_blocking(custom_command_method_t func, void *data)
 {
    thread_packet_t pkt;
@@ -6231,9 +6338,13 @@ bool video_thread_presentable(void)
     * presentable window costs the load above and nothing else. A full
     * queue just leaves it to the next frame's answer. */
    {
-      thread_packet_t pkt;
-      pkt.type = CMD_POLL_PRESENTABLE;
-      video_thread_defer_packet(thr, &pkt);
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      if (pkt)
+      {
+         pkt->type = CMD_POLL_PRESENTABLE;
+         video_thread_defer_commit(thr, head, tail);
+      }
    }
    return false;
 }
