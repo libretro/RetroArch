@@ -3332,6 +3332,10 @@ static void gl3_renderchain_recompute_pass_sizes(
             else
                img_w  = max_img_w = fbo_scale->scale_x * vp_width;
             break;
+
+         case RARCH_SCALE_ORIGINAL:
+            img_w     = max_img_w = width;
+            break;
       }
 
       switch (fbo_scale->type_y)
@@ -3350,6 +3354,10 @@ static void gl3_renderchain_recompute_pass_sizes(
                img_h  = max_img_h = fbo_scale->scale_y * vp_width;
             else
                img_h  = max_img_h = fbo_scale->scale_y * vp_height;
+            break;
+
+         case RARCH_SCALE_ORIGINAL:
+            img_h     = max_img_h = height;
             break;
       }
 

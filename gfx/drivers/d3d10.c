@@ -3361,6 +3361,8 @@ static void d3d10_chain_init_render_targets(d3d10_video_t* d3d10,
       d3d10_chain_t *c, unsigned width, unsigned height, unsigned vp_dims)
 {
    size_t i;
+   unsigned orig_width  = width;  /* frame size before any pass rescales it */
+   unsigned orig_height = height;
    for (i = 0; i < c->shader_preset->passes; i++)
    {
       struct video_shader_pass* pass = &c->shader_preset->pass[i];
@@ -3379,6 +3381,10 @@ static void d3d10_chain_init_render_targets(d3d10_video_t* d3d10,
 
             case RARCH_SCALE_ABSOLUTE:
                width = pass->fbo.abs_x;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               width = orig_width * pass->fbo.scale_x;
                break;
 
             default:
@@ -3400,6 +3406,10 @@ static void d3d10_chain_init_render_targets(d3d10_video_t* d3d10,
 
             case RARCH_SCALE_ABSOLUTE:
                height = pass->fbo.abs_y;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               height = orig_height * pass->fbo.scale_y;
                break;
 
             default:

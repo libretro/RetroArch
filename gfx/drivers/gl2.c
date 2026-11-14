@@ -2295,6 +2295,10 @@ static void gl2_renderchain_recompute_pass_sizes(
    bool size_modified      = false;
    GLint max_size          = 0;
    unsigned last_max_dims  = gl->tex_dims;
+   /* The frame as the core made it: last_dims moves on with each pass,
+    * and an "original" pass is sized from this one instead */
+   unsigned orig_dims      = last_dims;
+   unsigned orig_max_dims  = last_max_dims;
 
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
 
@@ -2317,7 +2321,7 @@ static void gl2_renderchain_recompute_pass_sizes(
       switch (fbo_scale->type_x)
       {
          case RARCH_SCALE_INPUT:
-            img_w     = fbo_scale->scale_x * VIDEO_SCALE_W(last_dims);
+            img_w     = VIDEO_SCALE_W(last_dims) * fbo_scale->scale_x;
             max_img_w = VIDEO_SCALE_W(last_max_dims) * fbo_scale->scale_x;
             break;
 
@@ -2330,6 +2334,11 @@ static void gl2_renderchain_recompute_pass_sizes(
                img_w  = max_img_w = fbo_scale->scale_x * VIDEO_SCALE_H(vp_dims);
             else
                img_w  = max_img_w = fbo_scale->scale_x * VIDEO_SCALE_W(vp_dims);
+            break;
+
+         case RARCH_SCALE_ORIGINAL:
+            img_w     = VIDEO_SCALE_W(orig_dims) * fbo_scale->scale_x;
+            max_img_w = VIDEO_SCALE_W(orig_max_dims) * fbo_scale->scale_x;
             break;
       }
 
@@ -2349,6 +2358,11 @@ static void gl2_renderchain_recompute_pass_sizes(
                img_h  = max_img_h = fbo_scale->scale_y * VIDEO_SCALE_W(vp_dims);
             else
                img_h  = max_img_h = fbo_scale->scale_y * VIDEO_SCALE_H(vp_dims);
+            break;
+
+         case RARCH_SCALE_ORIGINAL:
+            img_h     = VIDEO_SCALE_H(orig_dims) * fbo_scale->scale_y;
+            max_img_h = VIDEO_SCALE_H(orig_max_dims) * fbo_scale->scale_y;
             break;
       }
 

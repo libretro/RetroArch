@@ -7080,6 +7080,8 @@ static void d3d12_chain_init_render_targets(d3d12_video_t *d3d12,
    unsigned k;
    static const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
    D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   unsigned orig_width  = width;  /* frame size before any pass rescales it */
+   unsigned orig_height = height;
 
    if (!c->shader_preset)
       return;
@@ -7104,6 +7106,10 @@ static void d3d12_chain_init_render_targets(d3d12_video_t *d3d12,
                width = pass->fbo.abs_x;
                break;
 
+            case RARCH_SCALE_ORIGINAL:
+               width = orig_width * pass->fbo.scale_x;
+               break;
+
             default:
                break;
          }
@@ -7123,6 +7129,10 @@ static void d3d12_chain_init_render_targets(d3d12_video_t *d3d12,
 
             case RARCH_SCALE_ABSOLUTE:
                height = pass->fbo.abs_y;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               height = orig_height * pass->fbo.scale_y;
                break;
 
             default:
