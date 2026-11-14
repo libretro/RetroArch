@@ -2433,6 +2433,16 @@ static INLINE RETRO_ATOMIC_U16_T_ retro_atomic_load_acquire_u16_fb_(
  *                                          *expected is what was there
  *                                          instead - a retry loop does
  *                                          not load again
+ *   retro_atomic_load_acquire_128_lo(p)    one half alone, as a 64-bit
+ *   retro_atomic_load_acquire_128_hi(p)    acquire load: the half as it
+ *                                          is, not paired with the other
+ *                                          half of the same value
+ *
+ * A half alone is for one field of a pair that changes together - the
+ * owner of a lock whose word also holds its queue, a pointer whose
+ * generation is not needed to look at it.  It is a plain 64-bit load
+ * on every backend, where the whole value is a compare-and-swap on all
+ * but GCC and Clang on x86-64 (the line written, not only read).
  *
  * The compare-and-swap and the exchange are full barriers on every
  * backend here.  The value that a failed compare-and-swap reports is a
@@ -2615,6 +2625,33 @@ static INLINE int retro_atomic_cas_128(retro_atomic_128_t *p,
 {
    return retro_atomic_cas_seen_128(p, &expected, desired);
 }
+
+/* One aligned eight-byte half: single-copy atomic on both processors */
+#if defined(RETRO_ATOMIC_128_MSVC_)
+static INLINE uint64_t retro_atomic_128_half_(const retro_atomic_128_t *p,
+      int i)
+{
+#if defined(_M_ARM64)
+   uint64_t value = (uint64_t)__iso_volatile_load64(
+         (const volatile __int64*)&p->w[i]);
+   __dmb(_ARM64_BARRIER_ISH);
+#else
+   /* x86-64 orders loads; the compiler is kept from moving others */
+   uint64_t value = p->w[i];
+   _ReadWriteBarrier();
+#endif
+   return value;
+}
+#else
+static INLINE uint64_t retro_atomic_128_half_(const retro_atomic_128_t *p,
+      int i)
+{
+   return __atomic_load_n(&p->w[i], __ATOMIC_ACQUIRE);
+}
+#endif
+
+#define retro_atomic_load_acquire_128_lo(p) retro_atomic_128_half_((p), 0)
+#define retro_atomic_load_acquire_128_hi(p) retro_atomic_128_half_((p), 1)
 
 #endif /* RETRO_ATOMIC_HAS_128 */
 

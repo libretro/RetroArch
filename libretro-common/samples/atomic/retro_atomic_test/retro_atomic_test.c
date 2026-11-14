@@ -61,7 +61,8 @@
  *     four readers.  The word holds a pair whose halves are each
  *     other's complement, so a load made of two values' halves, a lost
  *     update or a failed compare-and-swap that reports a torn value is
- *     seen.
+ *     seen.  Each half alone is read beside the whole, by the same
+ *     readers: the low half never goes back, the high one never forward.
  * 10. The test prints which backend was selected and whether
  *     RETRO_ATOMIC_LOCK_FREE is defined, so a CI diff makes accidental
  *     backend regressions obvious.
@@ -960,6 +961,12 @@ static int check_128_single_thread(void)
       fprintf(stderr, "FAIL 128: cas_seen with the value it reported\n");
       fails++;
    }
+   if (retro_atomic_load_acquire_128_lo(&w) != 2
+         || retro_atomic_load_acquire_128_hi(&w) != ~(uint64_t)2)
+   {
+      fprintf(stderr, "FAIL 128: a half alone is not that half\n");
+      fails++;
+   }
 
    if (!fails)
       printf("[pass] 128-bit word: load, store, exchange, cas\n");
@@ -1007,15 +1014,26 @@ static void w128_reader(void *userdata)
 {
    w128_state_t *st = (w128_state_t*)userdata;
    uint64_t last   = 0;
+   uint64_t last_lo = 0;
+   uint64_t last_hi = ~(uint64_t)0;
 
    while (retro_atomic_load_acquire_int(&st->counters_done) < W128_COUNTERS)
    {
       retro_u128_t seen = retro_atomic_load_acquire_128(&st->word);
+      uint64_t lo, hi;
 
       /* Whole, and never older than the one before */
       if (seen.hi != ~seen.lo || seen.lo < last)
          retro_atomic_inc_int(&st->torn);
       last = seen.lo;
+
+      /* The halves alone: each the right one, and never older */
+      lo = retro_atomic_load_acquire_128_lo(&st->word);
+      hi = retro_atomic_load_acquire_128_hi(&st->word);
+      if (lo < last_lo || hi > last_hi || lo < last)
+         retro_atomic_inc_int(&st->torn);
+      last_lo = lo;
+      last_hi = hi;
    }
 }
 
