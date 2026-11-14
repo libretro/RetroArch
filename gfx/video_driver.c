@@ -134,6 +134,7 @@ struct video_vp_param_snap
 };
 
 static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
+static unsigned video_driver_read_vp_rotation(bool include_core_request);
 #include "video_filter.h"
 #include "video_display_server.h"
 #include "modeline/modeline_list.h"
@@ -5041,12 +5042,8 @@ float video_driver_get_core_aspect(void)
 
    /* Flip rotated aspect - rotations from the seqlock'd snapshot,
     * this runs on the video thread inside the frame closures. */
-   {
-      struct video_vp_param_snap ps;
-      video_driver_read_vp_params(&ps);
-      if ((ps.rotation + ps.core_req_rotation) % 2)
-         return (1.0f / out_aspect);
-   }
+   if (video_driver_read_vp_rotation(true) % 2)
+      return (1.0f / out_aspect);
    return out_aspect;
 }
 
@@ -5842,6 +5839,27 @@ void video_driver_publish_vp_params(void)
    retro_atomic_store_release_int(&video_st->vp_params_seq, seq + 2);
 }
 
+/* Keep the rotation fields coherent without copying the full viewport. */
+static unsigned video_driver_read_vp_rotation(bool include_core_request)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   for (;;)
+   {
+      unsigned rotation;
+      int seq = retro_atomic_load_acquire_int(&video_st->vp_params_seq);
+      if (seq & 1)
+         continue;
+      rotation = (unsigned)retro_atomic_load_relaxed_int(
+            &video_st->vp_params_bits[1]);
+      if (include_core_request)
+         rotation += (unsigned)retro_atomic_load_relaxed_int(
+               &video_st->vp_params_bits[2]);
+      retro_atomic_thread_fence_acquire();
+      if (retro_atomic_load_relaxed_int(&video_st->vp_params_seq) == seq)
+         return rotation;
+   }
+}
+
 /* Seqlock read of the published parameters; converges immediately on
  * the main thread (same thread as the writer) and retries across a
  * concurrent publish on the video thread. */
@@ -5895,9 +5913,7 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps)
  * across set_rotation's ordered publish, within a frame otherwise. */
 unsigned video_driver_get_rotation_snapshot(void)
 {
-   struct video_vp_param_snap ps;
-   video_driver_read_vp_params(&ps);
-   return ps.rotation;
+   return video_driver_read_vp_rotation(false);
 }
 
 void video_driver_update_viewport(
