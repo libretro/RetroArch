@@ -29,7 +29,11 @@ typedef struct param_slot
 } param_slot_t;
 
 typedef struct param { const void *const *vtable; param_slot_t slot[64]; unsigned n; } param_t;
-static const void *init_info;
+static struct
+{
+   void *device;
+   const void *info;
+} sessions[16];
 static const void *const param_vtable[17];
 static param_t params[16];
 static unsigned params_used;
@@ -228,10 +232,18 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int eng
       void *dev, void *gipa, void *gdpa, int sdk_version, const void *common_info)
 {
    const wchar_t *const *const *paths = (const wchar_t *const *const *)common_info;
+   unsigned slot;
    (void)engine_version; (void)data_path;
    if (!project || !inst || !pd || !dev || !gipa || !gdpa || engine != 0
          || sdk_version != 0x15 || !common_info)
       return FAIL;
+   for (slot = 0; slot < 16 && sessions[slot].device; slot++)
+   {
+   }
+   if (slot == 16)
+      return FAIL;
+   sessions[slot].device = dev;
+   sessions[slot].info = common_info;
    rec.init_calls++;
    rec.init_device   = dev;
    clear_color_image = NULL;
@@ -242,7 +254,6 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int eng
       clear_color_image = (clear_color_t)get(dev, "vkCmdClearColorImage");
    }
    rec.init_path0    = (paths[0] && paths[0][0]) ? paths[0][0][0] : 0;
-   init_info         = common_info;
    memset(&caps, 0, sizeof(caps));
    caps.vtable = param_vtable;
    NVSDK_NGX_Parameter_SetI(&caps, "SuperSampling.Available", rec.unavailable ? 0 : 1);
@@ -257,7 +268,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int eng
       memcpy(&cb, &fn, sizeof(cb));
       NVSDK_NGX_Parameter_SetVoidPointer(&caps, "DLSSOptimalSettingsCallback", cb);
    }
-   inited = 1;
+   inited++;
    return OK;
 }
 EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
@@ -270,9 +281,19 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
 
 EXPORT int CONV NVSDK_NGX_VULKAN_Shutdown1(void *dev, int *in_use)
 {
-   const wchar_t *const *const *paths = (const wchar_t *const *const *)init_info;
-   (void)dev; *in_use = 0; inited = 0; rec.shutdown_calls++;
+   const wchar_t *const *const *paths;
+   unsigned slot;
+   for (slot = 0; slot < 16 && sessions[slot].device != dev; slot++)
+   {
+   }
+   if (slot == 16 || !dev)
+      return FAIL;
+   paths = (const wchar_t *const *const *)sessions[slot].info;
    rec.shutdown_path0 = (paths && paths[0] && paths[0][0]) ? paths[0][0][0] : 0;
+   sessions[slot].device = NULL;
+   sessions[slot].info = NULL;
+   *in_use = --inited != 0;
+   rec.shutdown_calls++;
    return OK;
 }
 EXPORT int CONV NVSDK_NGX_VULKAN_GetCapabilityParameters(param_t **out)
