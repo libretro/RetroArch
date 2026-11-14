@@ -42,6 +42,7 @@ static int output_error, stop_error, file_error;
 static int trim_error, edit_error;
 #ifdef RECORD_SESSION_STREAM_TEST
 static bool session_output_retired(void);
+static bool session_network_active;
 #endif
 static const int16_t pcm[4] = {1, 2, 3, 4};
 static void *session_allocate(size_t count, size_t bytes)
@@ -76,6 +77,9 @@ bool record_mediacodec_worker_calibrate(record_mediacodec_worker_t *w,
 bool record_mediacodec_worker_audio_edit(const record_mediacodec_worker_t *w,
       uint64_t *skip, uint64_t *frames, unsigned *roll)
 {
+#ifdef RECORD_SESSION_STREAM_TEST
+   assert(!session_network_active);
+#endif
    assert(w == &worker && w->live && probe.live);
    *skip = 10240;
    *frames = 7;
@@ -117,6 +121,9 @@ void *record_mediacodec_encoder_surface(record_mediacodec_encoder_t *e)
 }
 bool record_mediacodec_encoder_stop(record_mediacodec_encoder_t *e)
 {
+#ifdef RECORD_SESSION_STREAM_TEST
+   assert(!session_network_active);
+#endif
    assert(e && e->live && !worker.live);
    stops++;
    return !stop_error;
