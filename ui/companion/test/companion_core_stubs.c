@@ -306,11 +306,12 @@ unsigned stub_match_bare_pushes; /* without a parsed playlist */
 /* Opens the playlist in the store, as the task does */
 bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
       playlist_t *playlist, const char *dir_thumbnails,
-      const char *dir_database, bool allow_non_png)
+      const char *dir_database, bool allow_non_png, bool other_regions)
 {
    (void)dir_thumbnails;
    (void)dir_database;
    (void)allow_non_png;
+   (void)other_regions;
    strlcpy(stub_match_push_path,
          playlist_config ? playlist_config->path : "",
          sizeof(stub_match_push_path));

@@ -722,7 +722,8 @@ static void pl_thumb_note_short_name(pl_thumb_handle_t *pl_thumb)
          task_pl_thumbnail_match_note_download(pl_thumb->playlist_path,
                pd->content_path, pd->content_label, system_name,
                gfx_thumbnail_result_type_of(sub_dir), pd->content_img_short,
-               pl_thumb->thumb_dir_config.playlist_allow_non_png);
+               pl_thumb->thumb_dir_config.playlist_allow_non_png,
+               pl_thumb->thumb_dir_config.playlist_thumbnail_other_regions);
    }
 }
 #endif

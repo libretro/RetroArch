@@ -123,6 +123,7 @@ struct explore_state
    explore_entry_t *entries;
    playlist_t **playlists;
    uint8_t *thumb_pushed; /* per playlist: its matches are held */
+   unsigned thumb_gen;    /* the store's generation they were held in */
    gfx_surface_t **icons;
    const char *label_explore_item_str;
 
@@ -2164,17 +2165,27 @@ void menu_explore_push_thumbnail_match(playlist_t *playlist)
          break;
    if (i == count)
       return;
+   settings = config_get_ptr();
+   /* An override skips the menu's handler: apply the rule first */
+   gfx_thumbnail_results_set_other_regions(
+         settings->bools.playlist_thumbnail_other_regions);
+   if (explore_state->thumb_gen != gfx_thumbnail_results_generation())
+   {
+      if (explore_state->thumb_pushed)
+         memset(explore_state->thumb_pushed, 0, count);
+      explore_state->thumb_gen = gfx_thumbnail_results_generation();
+   }
    if (     !explore_state->thumb_pushed
          && !(explore_state->thumb_pushed = (uint8_t*)calloc(count, 1)))
       return;
    if (explore_state->thumb_pushed[i])
       return;
-   settings = config_get_ptr();
-   cfg      = playlist_get_config(playlist);
+   cfg = playlist_get_config(playlist);
    task_push_pl_thumbnail_match(cfg, playlist,
          settings->paths.directory_thumbnails,
          settings->paths.path_content_database,
-         settings->bools.playlist_allow_non_png);
+         settings->bools.playlist_allow_non_png,
+         settings->bools.playlist_thumbnail_other_regions);
    explore_state->thumb_pushed[i] = gfx_thumbnail_results_hold(cfg->path,
          GFX_THUMBNAIL_RESULTS_HOLD_EXPLORE);
 }

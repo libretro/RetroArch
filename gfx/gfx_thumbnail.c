@@ -3226,6 +3226,8 @@ void gfx_thumbnail_dir_config_capture(gfx_thumbnail_dir_config_t *cfg)
    strlcpy(cfg->dir_thumbnails, settings->paths.directory_thumbnails,
          sizeof(cfg->dir_thumbnails));
    cfg->playlist_allow_non_png = settings->bools.playlist_allow_non_png;
+   cfg->playlist_thumbnail_other_regions =
+         settings->bools.playlist_thumbnail_other_regions;
    cfg->use_results            = false;
    cfg->gfx_thumbnails         = settings->uints.gfx_thumbnails;
    cfg->menu_left_thumbnails   = settings->uints.menu_left_thumbnails;

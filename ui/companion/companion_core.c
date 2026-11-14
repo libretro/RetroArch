@@ -1253,7 +1253,8 @@ static void companion_core_push_match(const playlist_config_t *cfg,
    task_push_pl_thumbnail_match(cfg, pl,
          settings->paths.directory_thumbnails,
          settings->paths.path_content_database,
-         settings->bools.playlist_allow_non_png);
+         settings->bools.playlist_allow_non_png,
+         settings->bools.playlist_thumbnail_other_regions);
    gfx_thumbnail_results_hold(cfg->path,
          GFX_THUMBNAIL_RESULTS_HOLD_COMPANION);
 }

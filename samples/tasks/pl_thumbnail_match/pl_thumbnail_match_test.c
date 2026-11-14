@@ -962,6 +962,8 @@ static void count_leftovers(retro_task_t *task, retro_time_t took)
       leftovers++;
 }
 
+static bool push_other_regions = true;
+
 static bool push(const char *dir_database)
 {
    playlist_config_t config;
@@ -969,7 +971,7 @@ static bool push(const char *dir_database)
    config.capacity = 8192;
    playlist_config_set_path(&config, pl_path);
    return task_push_pl_thumbnail_match(&config, NULL, thumbs_dir,
-         dir_database, false);
+         dir_database, false, push_other_regions);
 }
 
 /* Pumps the queue dry; returns the checks it took. A finished task's
@@ -1184,7 +1186,8 @@ static void lane_load_first(void)
    run(0);
 
    /* Pushed out and reopened in the same session: load only. */
-   write_text(cache_path, "{\"version\": \"1\", \"items\": [{\"path\": "
+   write_text(cache_path, "{\"version\": \"1\", \"regions\": \"any\", "
+         "\"items\": [{\"path\": "
          "\"/roms/smb.nes\", \"label\": \"super mario bros\", "
          "\"crc32\": \"00000000|crc\", \"system\": \"" SYS "\", "
          "\"Named_Boxarts\": \"Hand Edited.png\"}]}");
@@ -1272,7 +1275,7 @@ static void lane_history(void)
    playlist = playlist_init(&config);
    CHECK(playlist && playlist_size(playlist) == 3, "history loads");
    CHECK(task_push_pl_thumbnail_match(&config, playlist, thumbs_dir, "",
-         false), "push history");
+         false, true), "push history");
    /* The task keeps nothing of the caller's playlist */
    playlist_free(playlist);
    run(0);
@@ -1294,7 +1297,7 @@ static void lane_history(void)
     * next push with it resolves with its cores */
    gfx_thumbnail_results_deinit();
    CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "",
-         false), "re-push history without its playlist");
+         false, true), "re-push history without its playlist");
    run(0);
    CHECK(string_is_equal(find_box("/roms/smb.nes", "super mario bros", SYS),
          "Super Mario Bros. (World).png"),
@@ -1308,7 +1311,8 @@ static void lane_history(void)
    free(cache);
    playlist = playlist_init(&config);
    CHECK(playlist && task_push_pl_thumbnail_match(&config, playlist,
-         thumbs_dir, "", false), "the next push with the playlist resolves");
+         thumbs_dir, "", false, true),
+         "the next push with the playlist resolves");
    playlist_free(playlist);
    run(0);
    CHECK(string_is_equal(find_box("/roms/smb.nes", "super mario bros", SYS),
@@ -1319,7 +1323,7 @@ static void lane_history(void)
    gfx_thumbnail_results_deinit();
    filestream_delete(hist_cache);
    CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "",
-         false), "push history without its playlist");
+         false, true), "push history without its playlist");
    run(0);
    CHECK(!find_box("/roms/smb.nes", "super mario bros", SYS),
          "no playlist given: no folder");
@@ -1548,7 +1552,7 @@ static void t1_database_list(void)
    hist_core.databases = (char*)SYS "|Nintendo - Family Computer Disk System";
    playlist = playlist_init(&config);
    CHECK(task_push_pl_thumbnail_match(&config, playlist, thumbs_dir, db_dir,
-         false), "push history");
+         false, true), "push history");
    playlist_free(playlist);
    run(0);
    CHECK(!find_box("/roms/ng.nes", "nes_ninja", SYS),
@@ -1690,35 +1694,36 @@ static void lane_download_note(void)
    size_t rec;
    unsigned had = failures;
 
+   gfx_thumbnail_results_set_other_regions(true);
    gfx_thumbnail_results_open("/p/dl.lpl");
    CHECK(task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/t.nes",
          "Tetris (USA)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
-         false), "Tetris.png fits Tetris (USA)");
+         false, true), "Tetris.png fits Tetris (USA)");
    CHECK(string_is_equal(find_box("/roms/t.nes", "Tetris (USA)", SYS),
          "Tetris.png"), "shown at once");
    CHECK(!task_pl_thumbnail_match_note_download("/p/dl.lpl",
          "/roms/tetris-tengen.nes", "Tetris (USA) (Tengen) (Unl)", SYS,
-         GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png", false),
+         GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png", false, true),
          "Tetris.png never fits the Tengen entry");
    CHECK(!find_box("/roms/tetris-tengen.nes", "Tetris (USA) (Tengen) (Unl)",
          SYS), "not shown for it");
    CHECK(task_pl_thumbnail_match_note_download("/p/dl.lpl",
          "/roms/Tetris (Japan).nes", "", SYS, GFX_THUMBNAIL_RESULT_BOXARTS,
-         "Tetris.png", false), "no label: the file name fits");
+         "Tetris.png", false, true), "no label: the file name fits");
    CHECK(string_is_equal(find_box("/roms/Tetris (Japan).nes",
          "Tetris (Japan)", SYS), "Tetris.png"),
          "shown under the menu's label, the file name");
    CHECK(!task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/e.nes",
          "Tetris (Europe)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.jpg",
-         false), "no JPEG while non-PNG is off");
+         false, true), "no JPEG while non-PNG is off");
    CHECK(!find_box("/roms/e.nes", "Tetris (Europe)", SYS),
          "the JPEG is not shown");
    CHECK(task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/e.nes",
          "Tetris (Europe)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.jpg",
-         true), "a JPEG while non-PNG is on");
+         true, true), "a JPEG while non-PNG is on");
    CHECK(!task_pl_thumbnail_match_note_download("/p/none.lpl", "/roms/u.nes",
          "Tetris (USA)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
-         false), "a playlist not open notes nothing");
+         false, true), "a playlist not open notes nothing");
 
    t   = gfx_thumbnail_results_new();
    rec = gfx_thumbnail_results_add(t, "/roms/j.nes", "Tetris (Japan)", "",
@@ -1734,15 +1739,15 @@ static void lane_download_note(void)
          "install the folder match");
    CHECK(!task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/usa.nes",
          "Tetris (USA)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
-         true), "no note over a JPEG match while non-PNG is on");
+         true, true), "no note over a JPEG match while non-PNG is on");
    CHECK(task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/usa.nes",
          "Tetris (USA)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
-         false), "a JPEG match the menu hides does not block a PNG");
+         false, true), "a JPEG match the menu hides does not block a PNG");
    CHECK(string_is_equal(find_box("/roms/usa.nes", "Tetris (USA)", SYS),
          "Tetris.png"), "the PNG is shown");
    CHECK(!task_pl_thumbnail_match_note_download("/p/dl.lpl", "/roms/j.nes",
          "Tetris (Japan)", SYS, GFX_THUMBNAIL_RESULT_BOXARTS, "Tetris.png",
-         false), "no note over the folder match");
+         false, true), "no note over the folder match");
    CHECK(string_is_equal(find_box("/roms/j.nes", "Tetris (Japan)", SYS),
          "Tetris (Japan) (Rev 1).png"), "the folder match still shows");
    gfx_thumbnail_results_deinit();
@@ -1760,7 +1765,8 @@ static void lane_note_cover(void)
 
    fixture_init();
    art("Named_Boxarts", "Super Mario Bros. (World).png", false);
-   write_text(cache_path, "{\"version\": \"1\", \"items\": [{\"path\": "
+   write_text(cache_path, "{\"version\": \"1\", \"regions\": \"any\", "
+         "\"items\": [{\"path\": "
          "\"/roms/smb.nes\", \"label\": \"super mario bros\", "
          "\"crc32\": \"00000000|crc\", \"system\": \"" SYS "\", "
          "\"Named_Boxarts\": \"Hand Edited.png\"}]}");
@@ -1914,8 +1920,8 @@ static void lane_portable(void)
    playlist_config_set_path(&config, pl_path);
    playlist_config_set_base_content_directory(&config, FIX "/moved");
    task_queue_init(false, NULL);
-   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false),
-         "push");
+   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false,
+         true), "push");
    run(0);
    filestream_read_file(pl_path, &after, &after_len);
    CHECK(before && after && before_len == after_len
@@ -2031,7 +2037,8 @@ static bool push_other(unsigned i)
    config.capacity = 8192;
    snprintf(path, sizeof(path), FIX "/out%u.lpl", i);
    playlist_config_set_path(&config, path);
-   return task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false);
+   return task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false,
+         push_other_regions);
 }
 
 /* Four other playlists' pushes push Test.lpl out of the store */
@@ -2102,10 +2109,9 @@ static bool cache_has(const char *a, const char *b)
 }
 
 /* A note outlives its playlist's push-out: the cache holds it. */
-static void lane_save(void)
+static void save_steps(void)
 {
    int flags;
-   unsigned had = failures;
 
    fixture_init();
    task_queue_init(false, NULL);
@@ -2138,8 +2144,261 @@ static void lane_save(void)
          "loaded: the note shows: %s", box(3));
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
+}
+
+static void lane_save(void)
+{
+   unsigned had = failures;
+   save_steps();
    if (failures == had)
       fprintf(stderr, "[pass] save\n");
+}
+
+static const char *snap(size_t i)
+{
+   return gfx_thumbnail_results_lookup(fx_entries[i].path,
+         fx_entries[i].label, SYS, GFX_THUMBNAIL_RESULT_SNAPS, false);
+}
+
+/* The store's tables follow one region rule. */
+static void lane_regions_store(void)
+{
+   unsigned gen;
+   size_t rec;
+   gfx_thumbnail_results_t *t;
+   unsigned had = failures;
+
+   gfx_thumbnail_results_set_other_regions(true);
+   gfx_thumbnail_results_deinit();
+   gen = gfx_thumbnail_results_generation();
+   gfx_thumbnail_results_set_other_regions(false);
+   CHECK(gfx_thumbnail_results_generation() == gen,
+         "the first rule after deinit is only recorded");
+   gfx_thumbnail_results_open("/p/one.lpl");
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/r/a.nes", "A", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "A (USA).png");
+   gfx_thumbnail_results_sort(t);
+   CHECK(gfx_thumbnail_results_install("/p/one.lpl", t, NULL, true),
+         "install");
+   gfx_thumbnail_results_set_other_regions(false);
+   CHECK(gfx_thumbnail_results_generation() == gen
+         && string_is_equal(find_box("/r/a.nes", "A", "Sys"), "A (USA).png"),
+         "the same rule keeps the tables");
+   gfx_thumbnail_results_set_other_regions(true);
+   CHECK(gfx_thumbnail_results_generation() != gen,
+         "another rule drops every playlist");
+   CHECK(!find_box("/r/a.nes", "A", "Sys"), "its table is gone");
+   CHECK(gfx_thumbnail_results_open("/p/one.lpl")
+         == (GFX_THUMBNAIL_RESULTS_LOAD | GFX_THUMBNAIL_RESULTS_RESOLVE),
+         "the playlist is matched again");
+   CHECK(gfx_thumbnail_results_other_regions(), "the new rule is kept");
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] regions store\n");
+}
+
+/* Runs the queue dry, as run() does; true if entry 0's snap was ever
+ * @name meanwhile, or the queue never ran dry */
+static bool snap_seen(const char *name)
+{
+   unsigned ticks = 0;
+   unsigned idle  = 0;
+   bool seen      = false;
+   clock_step     = 0;
+   while (idle < 3)
+   {
+      if (++ticks > 1000000)
+         return true;
+      task_queue_check();
+      idle = queue_busy() ? 0 : idle + 1;
+      if (string_is_equal(snap(0), name))
+         seen = true;
+   }
+   return seen;
+}
+
+/* Entry 0 has a USA boxart and only a Europe snap. */
+static void lane_regions(void)
+{
+   bool shown   = false;
+   bool pending = false;
+   unsigned had = failures;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push_other_regions = false;
+   CHECK(push(""), "push strict");
+   run(0);
+   CHECK(string_is_equal(box(0), "Legend of Zelda, The (USA).png"),
+         "strict: its own region's boxart: %s", box(0));
+   CHECK(!snap(0), "strict: no Europe snap for a USA entry: %s", snap(0));
+   CHECK(cache_has("\"regions\": \"strict\"", NULL), "strict: the cache");
+
+   /* Changed by an override, not the menu */
+   push_other_regions = true;
+   CHECK(push(""), "a push under the other rule re-matches");
+   run(0);
+   CHECK(string_is_equal(snap(0), "Legend of Zelda, The (Europe).png"),
+         "any region: the Europe snap: %s", snap(0));
+   CHECK(cache_has("\"regions\": \"any\"", NULL), "any region: the cache");
+
+   gfx_thumbnail_results_deinit();
+   write_text(cache_path, "{\"version\": \"1\", \"regions\": \"strict\", "
+         "\"items\": [{\"path\": \"/roms/zelda.nes\", "
+         "\"label\": \"Legend of Zelda, The (U) [!]\", "
+         "\"crc32\": \"00000000|crc\", \"system\": \"" SYS "\", "
+         "\"Named_Snaps\": \"Bogus.png\"}]}");
+   CHECK(push(""), "push over a strict cache");
+   CHECK(!snap_seen("Bogus.png"), "a strict cache is not read for any");
+   gfx_thumbnail_results_deinit();
+   write_text(cache_path, "{\"version\": \"1\", "
+         "\"items\": [{\"path\": \"/roms/zelda.nes\", "
+         "\"label\": \"Legend of Zelda, The (U) [!]\", "
+         "\"crc32\": \"00000000|crc\", \"system\": \"" SYS "\", "
+         "\"Named_Snaps\": \"Bogus.png\"}]}");
+   CHECK(push(""), "push over an unstamped cache");
+   CHECK(!snap_seen("Bogus.png"), "a cache without its rule is not read");
+
+   /* A strict load's chained resolve stays strict */
+   gfx_thumbnail_results_deinit();
+   write_text(cache_path, "{\"version\": \"1\", \"regions\": \"strict\", "
+         "\"items\": [{\"path\": \"/roms/zelda.nes\", "
+         "\"label\": \"Legend of Zelda, The (U) [!]\", "
+         "\"crc32\": \"00000000|crc\", \"system\": \"" SYS "\", "
+         "\"Named_Boxarts\": \"Legend of Zelda, The (USA).png\"}]}");
+   push_other_regions = false;
+   CHECK(push(""), "push strict over a strict cache");
+   clock_step = 0;
+   while (queue_busy() && !shown)
+   {
+      task_queue_check();
+      if ((shown = (box(0) != NULL)))
+         pending = queue_busy();
+   }
+   CHECK(shown && pending, "the strict cache loads first");
+   run(0);
+   CHECK(!snap(0), "the chained resolve stays strict: %s", snap(0));
+   push_other_regions = true;
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] regions\n");
+}
+
+/* A strict save writes a strict cache, which a strict reopen reads. */
+static void lane_regions_save(void)
+{
+   unsigned had = failures;
+   push_other_regions = false;
+   save_steps();
+   push_other_regions = true;
+   CHECK(cache_has(NOTE_E, "\"regions\": \"strict\""),
+         "the saved cache keeps the rule");
+   if (failures == had)
+      fprintf(stderr, "[pass] regions save\n");
+}
+
+/* A strict push stepped until its resolve has listed the folder */
+static bool regions_stale_start(void)
+{
+   pl_thumb_match_t *m;
+   unsigned ticks = 0;
+
+   fixture_init();
+   task_queue_init(false, NULL);
+   push_other_regions = false;
+   push("");
+   clock_step = ONE_ITEM;
+   while (     queue_busy() && ticks++ < 1000000
+         && (!(m = resolve_state()) || m->status <= PL_THUMB_MATCH_LIST))
+      task_queue_check();
+   return resolve_state() != NULL;
+}
+
+/* Checks the queue until the strict resolve's callback has run */
+static bool regions_stale_finish(void)
+{
+   unsigned ticks = 0;
+   clock_step     = 0;
+   while (resolve_queued() && ticks++ < 1000000)
+      task_queue_check();
+   return !resolve_queued();
+}
+
+static void regions_stale_end(void)
+{
+   push_other_regions = true;
+   task_queue_deinit();
+   gfx_thumbnail_results_deinit();
+}
+
+/* The rule changes while a strict resolve runs. */
+static void lane_regions_stale(void)
+{
+   unsigned had = failures;
+
+   CHECK(regions_stale_start(), "reopened: the strict resolve runs");
+   gfx_thumbnail_results_set_other_regions(true);
+   push_other_regions = true;
+   CHECK(!push(""), "reopened: the strict resolve is still busy");
+   run(0);
+   CHECK(string_is_equal(snap(0), "Legend of Zelda, The (Europe).png"),
+         "reopened: matched again under any region: %s", snap(0));
+   CHECK(cache_has("\"regions\": \"any\"", NULL), "reopened: the cache");
+   regions_stale_end();
+
+   CHECK(regions_stale_start(), "not reopened: the strict resolve runs");
+   gfx_thumbnail_results_set_other_regions(true);
+   CHECK(regions_stale_finish(), "not reopened: the strict resolve ends");
+   CHECK(!queue_busy(), "not reopened: nothing is pushed");
+   run(0);
+   CHECK(!snap(0), "not reopened: nothing is installed: %s", snap(0));
+   CHECK(!gfx_thumbnail_results_hold(pl_path, 0), "not reopened: not open");
+   regions_stale_end();
+
+   CHECK(regions_stale_start(), "back to strict: the strict resolve runs");
+   gfx_thumbnail_results_set_other_regions(true);
+   gfx_thumbnail_results_set_other_regions(false);
+   CHECK(!push(""), "back to strict: the strict resolve is still busy");
+   CHECK(regions_stale_finish(), "back to strict: the strict resolve ends");
+   CHECK(!queue_busy(), "back to strict: nothing is pushed again");
+   CHECK(!gfx_thumbnail_results_open(pl_path),
+         "back to strict: its table installs as resolved");
+   run(0);
+   CHECK(!snap(0), "back to strict: no Europe snap: %s", snap(0));
+   regions_stale_end();
+   if (failures == had)
+      fprintf(stderr, "[pass] regions stale\n");
+}
+
+/* A download notes under the rule it ran with, while the store has it */
+static void lane_regions_note(void)
+{
+   const char *label = "Legend of Zelda, The (U) [!]";
+   const char *file  = "Legend of Zelda, The (Europe).png";
+   unsigned had      = failures;
+
+   gfx_thumbnail_results_set_other_regions(false);
+   gfx_thumbnail_results_open("/p/rn.lpl");
+   CHECK(!task_pl_thumbnail_match_note_download("/p/rn.lpl",
+         "/roms/zelda.nes", label, SYS, GFX_THUMBNAIL_RESULT_SNAPS, file,
+         false, false), "strict: no Europe snap for a USA entry");
+   CHECK(!task_pl_thumbnail_match_note_download("/p/rn.lpl",
+         "/roms/zelda.nes", label, SYS, GFX_THUMBNAIL_RESULT_SNAPS, file,
+         false, true), "an any download notes nothing in a strict store");
+   gfx_thumbnail_results_set_other_regions(true);
+   gfx_thumbnail_results_open("/p/rn.lpl");
+   CHECK(!task_pl_thumbnail_match_note_download("/p/rn.lpl",
+         "/roms/zelda.nes", label, SYS, GFX_THUMBNAIL_RESULT_SNAPS, file,
+         false, false), "a strict download notes nothing once any is set");
+   CHECK(task_pl_thumbnail_match_note_download("/p/rn.lpl",
+         "/roms/zelda.nes", label, SYS, GFX_THUMBNAIL_RESULT_SNAPS, file,
+         false, true), "any region: the Europe snap");
+   gfx_thumbnail_results_deinit();
+   if (failures == had)
+      fprintf(stderr, "[pass] regions note\n");
 }
 
 /* A note made after the resolve listed the folder outlives its write. */
@@ -3164,12 +3423,12 @@ static void lane_bounded(void)
    task_queue_init(false, NULL);
    task_queue_set_slow_handler_cb(measure_item, 1);
    CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, db_dir,
-         false), "push the big playlist");
+         false, true), "push the big playlist");
    run(ONE_ITEM);
    /* The next session loads the big cache, then resolves it again */
    gfx_thumbnail_results_deinit();
    CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, db_dir,
-         false), "push it again");
+         false, true), "push it again");
    run(ONE_ITEM);
    CHECK(string_is_equal(find_box("/roms/s04242.nes", "Synth 04242 (U)",
          BIG_SYS), "Synth 04242 (USA).png"), "the big playlist resolves");
@@ -3259,6 +3518,11 @@ int main(void)
    lane_hidden_table();
    lane_refresh();
    lane_save();
+   lane_regions_store();
+   lane_regions();
+   lane_regions_save();
+   lane_regions_stale();
+   lane_regions_note();
    lane_save_stale();
    lane_save_reopen();
    lane_save_parked();

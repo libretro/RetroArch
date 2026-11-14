@@ -79,6 +79,9 @@ static gfx_thumb_results_slot_t *gfx_thumb_results_slots;
 static size_t gfx_thumb_results_slot_count;
 static unsigned gfx_thumb_results_clock;
 static unsigned gfx_thumb_results_generation;
+static bool gfx_thumb_results_other_regions;
+/* Since start or the last _deinit */
+static bool gfx_thumb_results_rule_set;
 static char **gfx_thumb_results_resolved;
 static size_t gfx_thumb_results_resolved_count;
 /* Pushed out of the store before they were resolved */
@@ -838,6 +841,20 @@ unsigned gfx_thumbnail_results_generation(void)
    return gfx_thumb_results_generation;
 }
 
+void gfx_thumbnail_results_set_other_regions(bool other_regions)
+{
+   if (     gfx_thumb_results_rule_set
+         && gfx_thumb_results_other_regions != other_regions)
+      gfx_thumbnail_results_deinit();
+   gfx_thumb_results_other_regions = other_regions;
+   gfx_thumb_results_rule_set      = true;
+}
+
+bool gfx_thumbnail_results_other_regions(void)
+{
+   return gfx_thumb_results_other_regions;
+}
+
 void gfx_thumbnail_results_deinit(void)
 {
    size_t i;
@@ -861,5 +878,6 @@ void gfx_thumbnail_results_deinit(void)
    gfx_thumb_results_evicted        = NULL;
    gfx_thumb_results_evicted_count  = 0;
    gfx_thumb_results_clock          = 0;
+   gfx_thumb_results_rule_set       = false;
    gfx_thumb_results_generation++;
 }

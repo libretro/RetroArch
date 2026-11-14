@@ -112,6 +112,10 @@ bool gfx_thumbnail_results_hold(const char *playlist_path, unsigned hold);
 void gfx_thumbnail_results_release(unsigned hold);
 /* Changes when _deinit drops every playlist. */
 unsigned gfx_thumbnail_results_generation(void);
+/* The region rule the tables were matched under: another rule drops
+ * every playlist as _deinit does. */
+void gfx_thumbnail_results_set_other_regions(bool other_regions);
+bool gfx_thumbnail_results_other_regions(void);
 /* Takes @t and @notes. false, with both freed, once the playlist is not
  * kept, unless its notes still wait to be written: they take them;
  * @resolved still counts once newer playlists pushed it out. */
