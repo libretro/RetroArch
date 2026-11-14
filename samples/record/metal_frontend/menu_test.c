@@ -11,11 +11,13 @@
 #include "../../../record/record_driver.h"
 #include "../../../record/drivers/record_metal.h"
 #include "../../../record/drivers/record_nvenc.h"
+#include "../../../record/drivers/record_mediacodec.h"
 
 static rarch_setting_t buffer_setting;
 static settings_t test_settings;
 static struct menu_state test_menu;
 static bool metal_available = true, nvenc_available = true;
+static bool mediacodec_available;
 static enum msg_hash_enums rows[32];
 static unsigned row_count;
 static const unsigned native_modes[] = {
@@ -55,6 +57,10 @@ bool record_metal_can_stream(void)
 bool record_nvenc_can_stream(void)
 {
    return nvenc_available;
+}
+bool record_mediacodec_can_stream(void)
+{
+   return mediacodec_available;
 }
 rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums label)
 {
@@ -144,6 +150,9 @@ int main(void)
    check_native("metal",true);
    check_native("nvenc",true);
    check_native("mediacodec",false);
+   mediacodec_available = true;
+   check_native("mediacodec",true);
+   mediacodec_available = false;
    metal_available = nvenc_available = false;
    check_native("metal",false);
    check_native("nvenc",false);

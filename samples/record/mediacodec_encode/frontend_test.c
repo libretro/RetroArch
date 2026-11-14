@@ -47,6 +47,8 @@ static mediacodec_encoder_request_t encoded;
 static const char *option_key, *option_value;
 static int config_token;
 static unsigned history_writes;
+static unsigned stream_dispatches, stream_audio_bitrate;
+static record_dispatch_mediacodec_stream_config_t stream_observed;
 static int native_error, native_file_error, native_system_error;
 static bool settings_available = true;
 #ifdef HAVE_WEBMPLAYER
@@ -261,6 +263,29 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
    io.live = true;
    io.state = RECORD_MC_DISPATCH_STARTING;
    return &io;
+}
+record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_stream(
+      const mediacodec_encoder_request_t *v, unsigned interval, unsigned rate,
+      unsigned channels, unsigned bitrate, size_t max_frames, size_t capacity,
+      const char *url, const record_dispatch_mediacodec_stream_config_t *config)
+{
+   assert(recording.streaming_enable && config);
+   assert(!strcmp(url, "rtmp://localhost/live/test")
+         || !strcmp(url, "rtmps://localhost/live/test"));
+   assert(config->mux.codec == (!strcmp(v->mime, "video/hevc")
+            ? RECORD_MC_STREAM_HEVC : RECORD_MC_STREAM_AVC));
+   assert(config->mux.bit_depth == (v->color ? 10u : 8u));
+   assert(config->mux.color.primaries == (v->color ? 9u : 1u));
+   assert(config->mux.color.transfer == (v->color ? 16u : 1u));
+   assert(config->mux.color.range == 1 && !config->mux.color.mastering.present);
+   assert(config->mux.color.max_cll == (v->color ? 1000u : 0u));
+   assert(config->mux.color.max_fall == (v->color ? 300u : 0u));
+   assert(config->mux.max_packet_size <= 0xfffff7);
+   stream_dispatches++;
+   stream_audio_bitrate = bitrate;
+   stream_observed = *config;
+   return record_dispatch_mediacodec_new(v, interval, rate, channels,
+         channels ? 128000 : 0, max_frames, capacity, "test.mp4");
 }
 int record_dispatch_mediacodec_audio(record_dispatch_mediacodec_t *j,
       const int16_t *samples, size_t frames, uint64_t pts)
@@ -885,7 +910,7 @@ static void level_selection(void)
    reset(0);
    option_key = "video_level";
    option_value = "65536";
-   assert(record_mc_options("options", &v, &audio));
+   assert(record_mc_options("options", &v, &audio, NULL, NULL));
    assert(v.level == 65536);
 }
 static void admission(void)

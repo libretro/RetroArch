@@ -51,7 +51,9 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
                           ("capture_submit_test.c", []), ("capture_pipe_test.c", []),
                           ("capture_pool_test.c", []), ("device_test.c", []), ("request_test.c", []), ("config_test.c", []), ("audio_tap_test.c", []), ("audio_tap_driver_test.c", []), ("audio_tap_driver_test.c", ["-DHAVE_THREADS"]),
-                          ("frontend_test.c", []), ("frontend_test.c", ["-DHAVE_WEBMPLAYER"]), ("capture_ops_test.c", []),
+                          ("frontend_test.c", []), ("frontend_test.c", ["-DHAVE_WEBMPLAYER"]),
+                          ("frontend_stream_test.c", ["-DHAVE_WEBMPLAYER"]),
+                          ("frontend_stream_test.c", ["-DHAVE_WEBMPLAYER", "-DHAVE_SSL"]), ("capture_ops_test.c", []),
                           ("capture_egl_test.c", []),
                           ("capture_gl_test.c", []),
                           ("draw_test.c", []), ("gpu_worker_test.c", []),
@@ -142,7 +144,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "libretro-common/rthreads/retro_eventcount.c"), "-lm"]
             if os.name != "nt":
                 command += ["-pthread"]
-        if source == "frontend_test.c":
+        if source in ("frontend_test.c", "frontend_stream_test.c"):
             command += ["-DHAVE_THREADS", "-DHAVE_CONFIGFILE", "-DRECORD_MEDIACODEC_FRONTEND_TEST",
                         "-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include"),
                         "-I" + str(root / "gfx/include/ANGLE"), "-lm",
