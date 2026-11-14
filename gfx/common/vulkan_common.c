@@ -1444,6 +1444,13 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
          }
       }
       res = vkCreateDevice(gpu, info, allocator, device);
+      if (kept_dlss_session.device
+            && (res == VK_ERROR_OUT_OF_DEVICE_MEMORY
+               || res == VK_ERROR_OUT_OF_HOST_MEMORY))
+      {
+         vulkan_session_discard();
+         res = vkCreateDevice(gpu, info, allocator, device);
+      }
       if (res == VK_SUCCESS && !allocator)
          vulkan_session_key_store(&vk->context.session_device_key, &key);
       vulkan_session_key_free(&key);
