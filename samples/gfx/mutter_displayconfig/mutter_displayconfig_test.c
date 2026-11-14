@@ -85,6 +85,11 @@ extern const video_display_server_t dispserv_x11;
 #ifdef TEST_WL
 struct wl_display;
 void wayland_drm_lease_report(struct wl_display *dpy) { (void)dpy; }
+void wayland_window_output_name(char *s, size_t len)
+{
+   if (len)
+      s[0] = '\0';
+}
 extern const video_display_server_t dispserv_wl;
 #endif
 
