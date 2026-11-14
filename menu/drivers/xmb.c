@@ -1350,6 +1350,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    bool confirm_dialog                 = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape                      = video_width >= video_height;
    bool input_dialog_display_kb        = false;
+   unsigned firmware_line_state        = 0;
    size_t wrapped_len                  = 0;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
    char *lines[512];
@@ -1469,9 +1470,10 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    slice_w                 = longest_width + (xmb->margins_dialog * 2);
    slice_h                 = (line_height * line_count) + (xmb->margins_dialog * 2);
 
-   /* Extra room for confirm buttons */
    if (confirm_dialog)
-      slice_h             += (line_height * 2);
+      slice_h             += 70 * xmb->last_scale_factor
+            + xmb->margins_slice + xmb->margins_dialog
+            - 0.15f * line_height;
 
    if (input_dialog_display_kb)
    {
@@ -1570,6 +1572,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                y + ((i + 0.85) * line_height),
                video_dims, 0x444444ff,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
+
+      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+            msg, xmb->font, p_disp, userdata, video_dims,
+            x - (longest_width / 2.0), y + ((i + 0.85) * line_height),
+            0x444444ff);
    }
 
    if (draw_caret && (cursor_line < line_count))
@@ -1625,7 +1632,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       float icon_size                        = 50 * scale_factor;
       float icon_padding                     = 10 * scale_factor;
       float icon_x                           = x - (slice_w / 2) + icon_size + (icon_padding * 4);
-      float icon_y                           = video_height - y + (slice_h / 2) + (xmb->margins_slice / 2);
+      float icon_y                           = y + (line_count * line_height)
+            + xmb->margins_slice + xmb->margins_dialog + icon_padding + icon_size
+            - 0.15f * line_height;
       float label_y                          = icon_y - (line_height / 2.2f);
       int cursor_x                           = icon_x - icon_padding;
       int cursor_y                           = icon_y - icon_padding - icon_size;

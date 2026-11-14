@@ -86,6 +86,10 @@ void task_content_load_notify_finish(const char *error);
 /* Whether a content load is in progress. */
 bool task_content_load_pending(void);
 
+#ifdef HAVE_MENU
+void task_content_firmware_download(void);
+#endif
+
 /* Every task_push_load_* entry point below (the CLI one excepted, which
  * is startup itself and loads in one go) starts the load as a chain of
  * main-thread tasks of the frontend's queue and returns; the load is

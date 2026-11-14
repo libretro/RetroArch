@@ -598,6 +598,7 @@ enum menu_input_binds_ctl_state
 
 struct menu_dialog
 {
+   const char           *confirm_text; /* borrowed until the dialog closes */
    unsigned              current_id;
    enum menu_dialog_type current_type;
    unsigned              confirm_msg;

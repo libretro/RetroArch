@@ -2854,6 +2854,7 @@ static void materialui_render_messagebox(
    struct menu_state *menu_st = menu_state_get_ptr();
    bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape             = video_width >= video_height;
+   unsigned firmware_line_state = 0;
 
    wrapped_msg[0] = '\0';
 
@@ -2991,9 +2992,9 @@ static void materialui_render_messagebox(
    slice_w                 = longest_width + mui->margin * (landscape ? 4.0 : 8.0);
    slice_h                 = mui->font_data.list.line_height * line_count + mui->margin * 4.0;
 
-   /* Extra room for confirm buttons */
    if (confirm_dialog)
-      slice_h             += (mui->font_data.list.line_height + mui->margin) * 2;
+      slice_h             += 70 * mui->last_scale_factor + mui->margin * 2.0
+            - (mui->font_data.list.line_height - mui->font_data.list.line_ascender);
 
    if (draw_focus)
    {
@@ -3061,6 +3062,13 @@ static void materialui_render_messagebox(
                   + mui->font_data.list.line_ascender,
                video_dims, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
+
+      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+            lines[i], mui->font_data.list.font, p_disp, userdata, video_dims,
+            x - longest_width / 2.0f,
+            y + (i * mui->font_data.list.line_height)
+               + mui->font_data.list.line_ascender,
+            mui->colors.list_text);
    }
 
    if (draw_caret && (cursor_line < (unsigned)line_count))
@@ -3092,7 +3100,9 @@ static void materialui_render_messagebox(
       float icon_size                        = 50 * scale_factor;
       float icon_padding                     = 10 * scale_factor;
       float icon_x                           = x - (slice_w / 2) + icon_size + (icon_padding * 2);
-      float icon_y                           = video_height - y + (slice_h / 2) - icon_size - (icon_padding * 2);
+      float icon_y                           = y + (line_count * mui->font_data.list.line_height)
+            + mui->margin * 2.0 + icon_padding
+            - (mui->font_data.list.line_height - mui->font_data.list.line_ascender);
       float label_y                          = icon_y + ((mui->font_data.list.line_height + mui->margin) / 1.75f);
       int cursor_x                           = icon_x - icon_padding;
       int cursor_y                           = icon_y - icon_padding;

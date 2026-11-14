@@ -1288,6 +1288,10 @@ MSG_HASH(
    "core_option_category_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_FIRMWARE_NOTIFICATION_ENABLE,
+   "core_firmware_notification_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,
    "core_info_cache_enable"
    )
