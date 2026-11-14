@@ -64,7 +64,7 @@ S_BOOL(video_d3d9ex_present, VIDEO_D3D9EX_PRESENT,
       "With the Direct3D 9 drivers on Windows Vista and later, present as Direct3D 11 does: a window through the flip model, and with Waitable Swapchains and Max Frame Latency honoured when V-Sync is on. Changes frame pacing. Off: presented as before.")
 S_BOOL(video_threaded_present_repeat, VIDEO_THREADED_PRESENT_REPEAT,
       "video_threaded_present_repeat",
-      DEFAULT_VIDEO_THREADED_PRESENT_REPEAT, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      DEFAULT_VIDEO_THREADED_PRESENT_REPEAT, SD_FLAG_NONE, SDESC_FLG_REFRESH, CMD_EVENT_NONE,
       "Threaded Video Frame Repeat",
       "With Threaded Video, keep presenting the last frame at the display's refresh rate while the core falls behind, instead of leaving the previous present on screen. Keeps Black Frame Insertion and refresh-rate shader effects steady through core stutter. Applies where the video driver can repeat a frame; not applied with shader sub-frames.")
 S_BOOL(video_threaded_display_pacing, VIDEO_THREADED_DISPLAY_PACING,

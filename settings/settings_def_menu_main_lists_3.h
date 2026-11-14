@@ -40,6 +40,10 @@ S_ACTION(VIDEO_OUTPUT_SETTINGS,
       "video_output_settings",
       "Output",
       "Change video output settings.")
+S_ACTION(VIDEO_THREADING_SETTINGS,
+      "video_threading_settings",
+      "Threading",
+      "Change video threading settings.")
 S_ACTION(AUDIO_SETTINGS,
       "audio_settings",
       "Audio",

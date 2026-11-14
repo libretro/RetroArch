@@ -10459,35 +10459,65 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
 #endif
+      case DISPLAYLIST_AUDIO_THREADING_SETTINGS_LIST:
+         {
+            bool pipeline   = settings->bools.audio_threaded_pipeline;
+            bool callback   = audio_driver_has_callback();
+            bool own_thread =
+                  string_is_equal(settings->arrays.audio_driver, "wasapi")
+               || string_is_equal(settings->arrays.audio_driver, "wdmks");
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE, PARSE_ONLY_BOOL, true },
+               {MENU_ENUM_LABEL_AUDIO_PIPELINE_FILL_CAP, PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY,   PARSE_ONLY_BOOL, false},
+#ifdef HAVE_WASAPI
+               {MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS,      PARSE_ONLY_BOOL, false},
+#endif
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_AUDIO_PIPELINE_FILL_CAP:
+                     build_list[i].checked = pipeline && !callback;
+                     break;
+                  case MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY:
+                     build_list[i].checked = pipeline || callback
+                        || own_thread;
+                     break;
+                  case MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS:
+                     /* Which way the device thread's priority is asked
+                      * for, so only where one is asked for at all */
+                     build_list[i].checked = own_thread
+                        && settings->bools.audio_thread_priority;
+                     break;
+                  default:
+                     break;
+               }
+
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx, build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          {
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_AUDIO_SYNC,                      PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,           PARSE_ONLY_FLOAT,    true  },
                {MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,        PARSE_ONLY_FLOAT,    true  },
-               {MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE,         PARSE_ONLY_BOOL,     true  },
-               {MENU_ENUM_LABEL_AUDIO_PIPELINE_FILL_CAP,         PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION,      PARSE_ONLY_BOOL,     true  },
-               {MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY,           PARSE_ONLY_BOOL,     true  },
-#ifdef HAVE_WASAPI
-               /* Which way the thread's priority is asked for, so it
-                * is only worth showing where one is being asked for at
-                * all: checked below against the setting above it. */
-               {MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS,              PARSE_ONLY_BOOL,     false },
-#endif
 #ifdef HAVE_THREADS
                {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH,              PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS,      PARSE_ONLY_BOOL,     true  },
 #endif
             };
-
-#ifdef HAVE_WASAPI
-            /* Which way the audio thread's priority is asked for, so
-             * it is shown only where one is being asked for at all. */
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-               if (build_list[i].enum_idx == MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS)
-                  build_list[i].checked = settings->bools.audio_thread_priority;
-#endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -10505,6 +10535,9 @@ unsigned menu_displaylist_build_list(
       {
          static menu_displaylist_build_info_selective_t build_list[] = {
             {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true },
+#ifdef HAVE_THREADS
+            {MENU_ENUM_LABEL_AUDIO_THREADING_SETTINGS,        PARSE_ACTION,     true },
+#endif
 #ifdef HAVE_MICROPHONE
             {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true },
 #endif
@@ -10558,6 +10591,9 @@ unsigned menu_displaylist_build_list(
             {
                static const menu_displaylist_settings_row_t dl_rows_6[] = {
                   { MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS, PARSE_ACTION, false },
+#ifdef HAVE_THREADS
+                  { MENU_ENUM_LABEL_VIDEO_THREADING_SETTINGS, PARSE_ACTION, false },
+#endif
                   { MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS, PARSE_ACTION, false },
@@ -10616,11 +10652,6 @@ unsigned menu_displaylist_build_list(
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_FILTER,
                      PARSE_ONLY_PATH, false) == 0)
-               count++;
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FILTER_THREADS,
-                     PARSE_ONLY_UINT, false) == 0)
                count++;
 
             if (*settings->paths.path_softfilter_plugin)
@@ -12753,7 +12784,6 @@ unsigned menu_displaylist_build_list(
             {
                static const menu_displaylist_settings_row_t dl_rows_8[] = {
                   { MENU_ENUM_LABEL_VIDEO_DRIVER, PARSE_ONLY_STRING_OPTIONS, false },
-                  { MENU_ENUM_LABEL_VIDEO_THREADED, PARSE_ONLY_BOOL, false },
                   { MENU_ENUM_LABEL_VIDEO_GPU_INDEX, PARSE_ONLY_INT, false },
                   { MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX, PARSE_ONLY_UINT, false },
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
@@ -12877,6 +12907,56 @@ unsigned menu_displaylist_build_list(
                count++;
          }
          break;
+      case DISPLAYLIST_VIDEO_THREADING_SETTINGS_LIST:
+         {
+            /* Where threaded video is on and can be honored */
+            bool threaded = video_driver_is_threaded();
+            bool repeat   = threaded
+               && settings->uints.video_shader_subframes <= 1;
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_VIDEO_THREADED,                    PARSE_ONLY_BOOL, true },
+               {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING,     PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT,     PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
+#if defined(HAVE_VIDEO_FILTER) && defined(HAVE_THREADS)
+               {MENU_ENUM_LABEL_VIDEO_FILTER_THREADS,              PARSE_ONLY_UINT, false},
+#endif
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING:
+                     build_list[i].checked = threaded;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT:
+                     build_list[i].checked = repeat;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY:
+                     build_list[i].checked = repeat
+                        && settings->bools.video_threaded_present_repeat;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_FILTER_THREADS:
+                     build_list[i].checked =
+                           *settings->paths.path_softfilter_plugin
+                        && settings->bools.video_filter_enable
+                        && !video_driver_is_hw_context();
+                     break;
+                  default:
+                     break;
+               }
+
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx, build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          {
             size_t i;
@@ -12905,9 +12985,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,     PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_VIDEO_D3D9EX_PRESENT,       PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,  PARSE_ONLY_BOOL, false},
-               {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, PARSE_ONLY_BOOL, false},
-               {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING, PARSE_ONLY_BOOL, false},
-               {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_SKIP_DUPE_FRAMES,     PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,    PARSE_ONLY_INT,  false},
                {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, PARSE_ONLY_UINT, false},
@@ -12958,24 +13035,6 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS:
                      build_list[i].checked = video_vsync && frame_latency;
-                     break;
-                  case MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY:
-                     /* Only where a repeat can happen at all: this is
-                      * what paces one. */
-                     build_list[i].checked = *video_driver_get_threaded()
-                        && !video_driver_is_hw_context()
-                        && config_get_ptr()->bools.video_threaded_present_repeat;
-                     break;
-                  case MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING:
-                     build_list[i].checked = *video_driver_get_threaded()
-                        && !video_driver_is_hw_context();
-                     break;
-                  case MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT:
-                     /* Only where threaded video is on and can be honoured:
-                      * a hardware-rendered core runs unthreaded whatever
-                      * the setting says. */
-                     build_list[i].checked = *video_driver_get_threaded()
-                        && !video_driver_is_hw_context();
                      break;
                   case MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY:
                      build_list[i].checked = video_vsync && frame_latency && video_wait_swap;
@@ -17956,6 +18015,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
+         case DISPLAYLIST_VIDEO_THREADING_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST:
@@ -18016,6 +18076,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
+         case DISPLAYLIST_AUDIO_THREADING_SETTINGS_LIST:
 #ifdef HAVE_MICROPHONE
          case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
 #endif
