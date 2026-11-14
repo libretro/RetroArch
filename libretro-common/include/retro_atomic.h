@@ -2405,6 +2405,219 @@ static INLINE RETRO_ATOMIC_U16_T_ retro_atomic_load_acquire_u16_fb_(
         *(p) = (RETRO_ATOMIC_U16_T_)(v); } while (0)
 #endif
 
+/* ---- 128-bit word --------------------------------------------------------
+ * Two 64-bit words read, written and swapped as one, where the processor
+ * can: x86-64 (CMPXCHG16B) and little-endian AArch64 (LDAXP/STLXP), with
+ * GCC, Clang or MSVC.  RETRO_ATOMIC_HAS_128 is set there and nowhere
+ * else; code that needs a wider word elsewhere keeps a record
+ * (rthreads/retro_cas_record.h).
+ *
+ * For a pair that has to change together and is too hot for a record:
+ * a pointer with its generation, a value with its stamp, an emulated
+ * machine's own 128-bit atomic.
+ *
+ *   retro_u128_t          the value: lo is the word at the lower address
+ *   retro_atomic_128_t    the word, 16 bytes aligned to 16 - memory used
+ *                         as one has to be aligned so too
+ *
+ *   retro_atomic_128_init(p, v)
+ *   retro_atomic_load_acquire_128(p)       a whole value, never halves
+ *                                          of two
+ *   retro_atomic_store_release_128(p, v)
+ *   retro_atomic_exchange_128(p, v)        the value that was there
+ *   retro_atomic_cas_128(p, expected, desired)
+ *                                          nonzero if it was expected
+ *                                          and is desired now
+ *   retro_atomic_cas_seen_128(p, &expected, desired)
+ *                                          the same, and on failure
+ *                                          *expected is what was there
+ *                                          instead - a retry loop does
+ *                                          not load again
+ *
+ * The compare-and-swap and the exchange are full barriers on every
+ * backend here.  The value that a failed compare-and-swap reports is a
+ * whole one.
+ *
+ * x86-64 with GCC or Clang loads and stores with one aligned SSE move
+ * (MOVDQA).  The architecture manuals promise atomicity for accesses
+ * up to eight bytes only; an aligned sixteen-byte move has nevertheless
+ * been one access on every x86-64 processor made, and emulators have
+ * long relied on it.  The moves are written in assembly so that the
+ * compiler cannot turn one into two eight-byte accesses.  MSVC has no
+ * inline assembly there, and AArch64 without LSE2 no single access:
+ * both load by swapping the value for itself, which writes the line. */
+
+#if !defined(_MSC_VER) && defined(__GNUC__) && defined(__x86_64__)
+#define RETRO_ATOMIC_128_GNU_X64_ 1
+#elif !defined(_MSC_VER) && defined(__GNUC__) && defined(__aarch64__) \
+   && !defined(__AARCH64EB__)
+#define RETRO_ATOMIC_128_GNU_A64_ 1
+#elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_ARM64)) \
+   && !defined(_M_ARM64EC)
+#define RETRO_ATOMIC_128_MSVC_ 1
+#endif
+
+#if defined(RETRO_ATOMIC_128_GNU_X64_) || defined(RETRO_ATOMIC_128_GNU_A64_) \
+   || defined(RETRO_ATOMIC_128_MSVC_)
+#define RETRO_ATOMIC_HAS_128 1
+
+#include <stdint.h>
+
+typedef struct retro_u128
+{
+   uint64_t lo;
+   uint64_t hi;
+} retro_u128_t;
+
+#if defined(RETRO_ATOMIC_128_MSVC_)
+#include <intrin.h>
+typedef __declspec(align(16)) struct retro_atomic_128
+{
+   uint64_t volatile w[2];
+} retro_atomic_128_t;
+#else
+typedef struct retro_atomic_128
+{
+   volatile uint64_t w[2];
+} __attribute__((aligned(16))) retro_atomic_128_t;
+#endif
+
+#define retro_atomic_128_init(p, v) \
+   do { (p)->w[0] = (v).lo; (p)->w[1] = (v).hi; } while (0)
+
+#if defined(RETRO_ATOMIC_128_GNU_X64_)
+
+typedef uint64_t retro_atomic_v2du_ __attribute__((vector_size(16)));
+
+static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
+      retro_u128_t *expected, retro_u128_t desired)
+{
+   unsigned char ok;
+   __asm__ __volatile__("lock; cmpxchg16b %1\n\tsetz %0"
+         : "=q" (ok), "+m" (*p), "+a" (expected->lo), "+d" (expected->hi)
+         : "b" (desired.lo), "c" (desired.hi)
+         : "cc", "memory");
+   return ok;
+}
+
+static INLINE retro_u128_t retro_atomic_load_acquire_128(
+      retro_atomic_128_t *p)
+{
+   retro_atomic_v2du_ v;
+   retro_u128_t r;
+   __asm__ __volatile__("movdqa %1, %0"
+         : "=x" (v) : "m" (*p) : "memory");
+   r.lo = v[0];
+   r.hi = v[1];
+   return r;
+}
+
+static INLINE void retro_atomic_store_release_128(retro_atomic_128_t *p,
+      retro_u128_t value)
+{
+   retro_atomic_v2du_ v;
+   v[0] = value.lo;
+   v[1] = value.hi;
+   __asm__ __volatile__("movdqa %1, %0"
+         : "=m" (*p) : "x" (v) : "memory");
+}
+
+#elif defined(RETRO_ATOMIC_128_GNU_A64_)
+
+static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
+      retro_u128_t *expected, retro_u128_t desired)
+{
+   uint64_t seen_lo, seen_hi;
+   unsigned status;
+   /* A pair read by LDAXP is known to be whole only once a store to it
+    * has succeeded, so a mismatch is written back before it is
+    * reported. */
+   __asm__ __volatile__(
+         "1:\n"
+         "\tldaxp %[sl], %[sh], %[mem]\n"
+         "\tcmp   %[sl], %[el]\n"
+         "\tccmp  %[sh], %[eh], #0, eq\n"
+         "\tb.ne  2f\n"
+         "\tstlxp %w[st], %[dl], %[dh], %[mem]\n"
+         "\tcbnz  %w[st], 1b\n"
+         "\tmov   %w[st], #1\n"
+         "\tb     3f\n"
+         "2:\n"
+         "\tstlxp %w[st], %[sl], %[sh], %[mem]\n"
+         "\tcbnz  %w[st], 1b\n"
+         "3:\n"
+         : [st] "=&r" (status), [sl] "=&r" (seen_lo), [sh] "=&r" (seen_hi),
+           [mem] "+Q" (*p)
+         : [el] "r" (expected->lo), [eh] "r" (expected->hi),
+           [dl] "r" (desired.lo), [dh] "r" (desired.hi)
+         : "cc", "memory");
+   if (status)
+      return 1;
+   expected->lo = seen_lo;
+   expected->hi = seen_hi;
+   return 0;
+}
+
+#else /* RETRO_ATOMIC_128_MSVC_ */
+
+static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
+      retro_u128_t *expected, retro_u128_t desired)
+{
+   __int64 seen[2];
+   seen[0] = (__int64)expected->lo;
+   seen[1] = (__int64)expected->hi;
+   if (_InterlockedCompareExchange128((__int64 volatile*)p->w, (__int64)desired.hi,
+            (__int64)desired.lo, seen))
+      return 1;
+   expected->lo = (uint64_t)seen[0];
+   expected->hi = (uint64_t)seen[1];
+   return 0;
+}
+
+#endif
+
+static INLINE retro_u128_t retro_atomic_exchange_128(retro_atomic_128_t *p,
+      retro_u128_t value)
+{
+   retro_u128_t seen;
+   seen.lo = p->w[0];
+   seen.hi = p->w[1];
+   while (!retro_atomic_cas_seen_128(p, &seen, value))
+   {
+   }
+   return seen;
+}
+
+#if !defined(RETRO_ATOMIC_128_GNU_X64_)
+/* No single access for sixteen bytes: the value swapped for itself is
+ * the value, whole */
+static INLINE retro_u128_t retro_atomic_load_acquire_128(
+      retro_atomic_128_t *p)
+{
+   retro_u128_t seen;
+   seen.lo = p->w[0];
+   seen.hi = p->w[1];
+   while (!retro_atomic_cas_seen_128(p, &seen, seen))
+   {
+   }
+   return seen;
+}
+
+static INLINE void retro_atomic_store_release_128(retro_atomic_128_t *p,
+      retro_u128_t value)
+{
+   (void)retro_atomic_exchange_128(p, value);
+}
+#endif
+
+static INLINE int retro_atomic_cas_128(retro_atomic_128_t *p,
+      retro_u128_t expected, retro_u128_t desired)
+{
+   return retro_atomic_cas_seen_128(p, &expected, desired);
+}
+
+#endif /* RETRO_ATOMIC_HAS_128 */
+
 /* ---- Convenience wrappers (backend-agnostic) -------------------------- */
 
 #define retro_atomic_inc_int(p)    ((void)retro_atomic_fetch_add_int((p), 1))
