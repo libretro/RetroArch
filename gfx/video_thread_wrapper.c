@@ -499,7 +499,8 @@ static void video_thread_reply(thread_video_t *thr, const thread_packet_t *pkt)
 {
    if (thr->inline_reply)
    {
-      *thr->inline_reply = *pkt;
+      if (thr->inline_reply != pkt)
+         *thr->inline_reply = *pkt;
       return;
    }
 
@@ -667,7 +668,7 @@ static void video_thread_user_release(thread_video_t *thr)
 
 /* user -> thread */
 static bool video_thread_handle_packet(thread_video_t *thr,
-      const thread_packet_t *incoming);
+      thread_packet_t *pkt);
 typedef struct video_thread_tex_retire video_thread_tex_retire_t;
 
 static void video_thread_tex_retire_run(thread_video_t *thr,
@@ -715,12 +716,9 @@ static bool video_thread_defer_packet(thread_video_t *thr,
    return true;
 }
 
-/* Video thread: runs what was queued, with the replies going nowhere -
- * inline_reply is what the handlers write to, and no sender is waiting
- * on one. */
+/* The consumer owns each packet and its reply until slot retirement. */
 static void video_thread_run_deferred(thread_video_t *thr)
 {
-   thread_packet_t sink;
    thread_packet_t *saved_reply;
    int head, tail;
 
@@ -734,13 +732,14 @@ static void video_thread_run_deferred(thread_video_t *thr)
       return;
 
    saved_reply       = thr->inline_reply;
-   thr->inline_reply = &sink;
    /* Run where they lie: the producer cannot reuse a slot before tail
     * says it is free, which is after the packet has run. */
    for (; tail != head; tail++)
    {
-      video_thread_handle_packet(thr,
-            &thr->deferred[tail & (VIDEO_THREAD_DEFERRED_MAX - 1)]);
+      thread_packet_t *pkt =
+            &thr->deferred[tail & (VIDEO_THREAD_DEFERRED_MAX - 1)];
+      thr->inline_reply = pkt;
+      video_thread_handle_packet(thr, pkt);
       retro_atomic_store_release_int(&thr->deferred_tail, tail + 1);
    }
    thr->inline_reply = saved_reply;
@@ -1052,14 +1051,13 @@ static void video_thread_set_view_count(thread_video_t *thr,
       video_thread_views_apply(thr, count);
 }
 
-/* returns true when video_thread_loop should quit */
+/* The caller owns the packet until reply or deferred-slot retirement.
+ * Returns true when video_thread_loop should quit. */
 static bool video_thread_handle_packet(
       thread_video_t *thr,
-      const thread_packet_t *incoming)
+      thread_packet_t *pkt)
 {
-   thread_packet_t pkt = *incoming;
-
-   switch (pkt.type)
+   switch (pkt->type)
    {
       case CMD_INIT:
          if (thr->driver && thr->driver->init)
@@ -1100,8 +1098,8 @@ static bool video_thread_handle_packet(
          }
          else
             thr->driver_data = NULL;
-         pkt.data.b = (thr->driver_data != NULL);
-         video_thread_reply(thr, &pkt);
+         pkt->data.b = (thr->driver_data != NULL);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_FREE:
@@ -1173,22 +1171,22 @@ static bool video_thread_handle_packet(
          thr->driver_data = NULL;
          /* The last command this thread takes */
          retro_atomic_store_release_int(&thr->worker_running, 0);
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          return true;
 
       case CMD_SET_ROTATION:
          if (thr->driver_data && thr->driver && thr->driver->set_rotation)
-            thr->driver->set_rotation(thr->driver_data, pkt.data.i);
-         video_thread_reply(thr, &pkt);
+            thr->driver->set_rotation(thr->driver_data, pkt->data.i);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_SET_VIEWPORT:
          if (thr->driver_data && thr->driver && thr->driver->set_viewport)
             thr->driver->set_viewport(thr->driver_data,
-                  pkt.data.set_viewport.dims,
-                  pkt.data.set_viewport.force_full,
-                  pkt.data.set_viewport.allow_rotate);
-         video_thread_reply(thr, &pkt);
+                  pkt->data.set_viewport.dims,
+                  pkt->data.set_viewport.force_full,
+                  pkt->data.set_viewport.allow_rotate);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_SET_NONBLOCK:
@@ -1196,16 +1194,16 @@ static bool video_thread_handle_packet(
           * adaptive vsync are its settings and have to be applied here. */
          if (thr->driver_data && thr->driver && thr->driver->set_nonblock_state)
             thr->driver->set_nonblock_state(thr->driver_data,
-                  pkt.data.nonblock.nonblock,
-                  pkt.data.nonblock.adaptive_vsync,
-                  pkt.data.nonblock.swap_interval);
-         video_thread_reply(thr, &pkt);
+                  pkt->data.nonblock.nonblock,
+                  pkt->data.nonblock.adaptive_vsync,
+                  pkt->data.nonblock.swap_interval);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_READ_VIEWPORT:
       case CMD_READ_VIEWPORT_HDR:
          if (thr->driver_data && thr->driver && thr->driver->viewport_info
-               && (pkt.type == CMD_READ_VIEWPORT_HDR
+               && (pkt->type == CMD_READ_VIEWPORT_HDR
                   ? thr->driver->read_viewport_hdr != NULL
                   : thr->driver->read_viewport != NULL))
          {
@@ -1235,49 +1233,49 @@ static bool video_thread_handle_packet(
                 *
                 * video_thread_frame() sees that it is on this thread
                 * and renders straight through. */
-               if (pkt.type == CMD_READ_VIEWPORT_HDR)
-                  pkt.data.b = thr->driver->read_viewport_hdr(thr->driver_data,
-                        pkt.data.hdr_viewport.buffer, thr->is_idle,
-                        pkt.data.hdr_viewport.metadata);
+               if (pkt->type == CMD_READ_VIEWPORT_HDR)
+                  pkt->data.b = thr->driver->read_viewport_hdr(thr->driver_data,
+                        pkt->data.hdr_viewport.buffer, thr->is_idle,
+                        pkt->data.hdr_viewport.metadata);
                else
-                  pkt.data.b = thr->driver->read_viewport(thr->driver_data,
-                        (uint8_t*)pkt.data.v, thr->is_idle);
+                  pkt->data.b = thr->driver->read_viewport(thr->driver_data,
+                        (uint8_t*)pkt->data.v, thr->is_idle);
             }
             else
             {
                /* Viewport dimensions changed right after main
                 * thread read the async value. Cannot read safely. */
-               pkt.data.b = false;
+               pkt->data.b = false;
             }
          }
          else
-            pkt.data.b = false;
-         video_thread_reply(thr, &pkt);
+            pkt->data.b = false;
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_SET_SHADER:
          if (thr->driver_data && thr->driver && thr->driver->set_shader)
-            pkt.data.b = thr->driver->set_shader(thr->driver_data,
-               pkt.data.set_shader.type, pkt.data.set_shader.path);
+            pkt->data.b = thr->driver->set_shader(thr->driver_data,
+               pkt->data.set_shader.type, pkt->data.set_shader.path);
          else
-            pkt.data.b = false;
-         video_thread_reply(thr, &pkt);
+            pkt->data.b = false;
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_SHADER_LOAD_BEGIN:
          {
-            shader_load_deferred_t *d = (shader_load_deferred_t*)pkt.data.v;
+            shader_load_deferred_t *d = (shader_load_deferred_t*)pkt->data.v;
             video_driver_shader_deferred_take(d, true);
-            pkt.data.b = thr->driver_data && thr->driver
+            pkt->data.b = thr->driver_data && thr->driver
                && thr->driver->shader_load_begin
                && thr->driver->shader_load_begin(thr->driver_data, d);
          }
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_SHADER_LOAD_STEP:
          {
-            shader_load_deferred_t *d = (shader_load_deferred_t*)pkt.data.v;
+            shader_load_deferred_t *d = (shader_load_deferred_t*)pkt->data.v;
             /* The main thread asked for the load to end: the writes the
              * driver's step reads as that are made here, on its thread. */
             if (retro_atomic_load_acquire_int(&d->cancel))
@@ -1287,47 +1285,47 @@ static bool video_thread_handle_packet(
             }
             video_driver_shader_deferred_take(d, false);
             if (thr->driver_data && thr->driver && thr->driver->shader_load_step)
-               pkt.data.b = thr->driver->shader_load_step(thr->driver_data, d);
+               pkt->data.b = thr->driver->shader_load_step(thr->driver_data, d);
             else
             {
                d->state   = SHADER_LOAD_FAILED;
-               pkt.data.b = false;
+               pkt->data.b = false;
             }
-            if (!pkt.data.b)
+            if (!pkt->data.b)
                video_driver_shader_deferred_take(d, true);
             /* publishes the step's writes to the main thread's tick */
             retro_atomic_store_release_int(&d->busy, 0);
          }
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_SUPPRESS_SCREENSAVER:
          /* The inhibit belongs to the window, and the window to this
           * thread. */
          if (thr->driver_data && thr->driver && thr->driver->suppress_screensaver)
-            pkt.data.b = thr->driver->suppress_screensaver(thr->driver_data,
-                  pkt.data.b);
+            pkt->data.b = thr->driver->suppress_screensaver(thr->driver_data,
+                  pkt->data.b);
          else
-            pkt.data.b = false;
-         video_thread_reply(thr, &pkt);
+            pkt->data.b = false;
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_ALIVE:
          if (thr->driver_data && thr->driver && thr->driver->alive)
-            pkt.data.b = thr->driver->alive(thr->driver_data);
+            pkt->data.b = thr->driver->alive(thr->driver_data);
          else
-            pkt.data.b = false;
+            pkt->data.b = false;
          /* Published as a frame's would be, so a caller that asked
           * without waiting has it on its next pass. This thread is the
           * word's only writer. */
          {
             int f = retro_atomic_load_acquire_int(&thr->win_flags)
                & ~VIDEO_THREAD_WIN_ALIVE;
-            if (pkt.data.b)
+            if (pkt->data.b)
                f |= VIDEO_THREAD_WIN_ALIVE;
             retro_atomic_store_release_int(&thr->win_flags, f);
          }
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POLL_PRESENTABLE:
@@ -1345,31 +1343,31 @@ static bool video_thread_handle_packet(
                f |= VIDEO_THREAD_WIN_PRESENTABLE;
             retro_atomic_store_release_int(&thr->win_flags, f);
          }
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
 #ifdef HAVE_OVERLAY
       case CMD_OVERLAY_ENABLE:
          if (thr->driver_data && thr->overlay && thr->overlay->enable)
-            thr->overlay->enable(thr->driver_data, pkt.data.b);
-         video_thread_reply(thr, &pkt);
+            thr->overlay->enable(thr->driver_data, pkt->data.b);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_OVERLAY_LOAD:
       case CMD_OVERLAY_LOAD_TEXTURES:
          {
-            unsigned tmp_alpha_mods = pkt.data.image.num;
+            unsigned tmp_alpha_mods = pkt->data.image.num;
 
             if (!thr->driver_data || !thr->overlay)
-               pkt.data.b = false;
-            else if (pkt.type == CMD_OVERLAY_LOAD_TEXTURES)
-               pkt.data.b = thr->overlay->load_textures
+               pkt->data.b = false;
+            else if (pkt->type == CMD_OVERLAY_LOAD_TEXTURES)
+               pkt->data.b = thr->overlay->load_textures
                   && thr->overlay->load_textures(thr->driver_data,
-                        pkt.data.image.textures, pkt.data.image.num);
+                        pkt->data.image.textures, pkt->data.image.num);
             else
-               pkt.data.b = thr->overlay->load
+               pkt->data.b = thr->overlay->load
                   && thr->overlay->load(thr->driver_data,
-                        pkt.data.image.data, pkt.data.image.num);
+                        pkt->data.image.data, pkt->data.image.num);
 
             if (tmp_alpha_mods > 0)
             {
@@ -1401,95 +1399,95 @@ static bool video_thread_handle_packet(
             /* Whatever the driver holds now, it is not alpha_applied. */
             thr->alpha_reset = true;
          }
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_OVERLAY_TEX_GEOM:
          if (thr->driver_data && thr->overlay && thr->overlay->tex_geom)
             thr->overlay->tex_geom(thr->driver_data,
-                  pkt.data.rect.index,
-                  pkt.data.rect.x,
-                  pkt.data.rect.y,
-                  pkt.data.rect.w,
-                  pkt.data.rect.h);
-         video_thread_reply(thr, &pkt);
+                  pkt->data.rect.index,
+                  pkt->data.rect.x,
+                  pkt->data.rect.y,
+                  pkt->data.rect.w,
+                  pkt->data.rect.h);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_OVERLAY_VERTEX_GEOM:
          if (thr->driver_data && thr->overlay && thr->overlay->vertex_geom)
             thr->overlay->vertex_geom(thr->driver_data,
-                  pkt.data.rect.index,
-                  pkt.data.rect.x,
-                  pkt.data.rect.y,
-                  pkt.data.rect.w,
-                  pkt.data.rect.h);
-         video_thread_reply(thr, &pkt);
+                  pkt->data.rect.index,
+                  pkt->data.rect.x,
+                  pkt->data.rect.y,
+                  pkt->data.rect.w,
+                  pkt->data.rect.h);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_OVERLAY_FULL_SCREEN:
          if (thr->driver_data && thr->overlay && thr->overlay->full_screen)
-            thr->overlay->full_screen(thr->driver_data, pkt.data.b);
-         video_thread_reply(thr, &pkt);
+            thr->overlay->full_screen(thr->driver_data, pkt->data.b);
+         video_thread_reply(thr, pkt);
          break;
 #endif
 
       case CMD_POKE_SET_VIDEO_MODE:
          if (thr->driver_data && thr->poke && thr->poke->set_video_mode)
             thr->poke->set_video_mode(thr->driver_data,
-                  pkt.data.new_mode.dims,
-                  pkt.data.new_mode.fullscreen);
-         video_thread_reply(thr, &pkt);
+                  pkt->data.new_mode.dims,
+                  pkt->data.new_mode.fullscreen);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_SET_FILTERING:
          if (thr->driver_data && thr->poke && thr->poke->set_filtering)
             thr->poke->set_filtering(thr->driver_data,
-                  pkt.data.filtering.index,
-                  pkt.data.filtering.smooth,
-                  pkt.data.filtering.ctx_scaling);
-         video_thread_reply(thr, &pkt);
+                  pkt->data.filtering.index,
+                  pkt->data.filtering.smooth,
+                  pkt->data.filtering.ctx_scaling);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_SET_FRAME_FORMAT:
-         pkt.data.frame_format.ret =
+         pkt->data.frame_format.ret =
                thr->driver_data && thr->poke && thr->poke->set_frame_format
             && thr->poke->set_frame_format(thr->driver_data,
-                  pkt.data.frame_format.rgb32,
-                  pkt.data.frame_format.input_scale);
+                  pkt->data.frame_format.rgb32,
+                  pkt->data.frame_format.input_scale);
          /* The slots may have grown into host memory: back into the
           * driver's, at the new size */
          video_thread_mem_provision(thr);
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_SET_VIEW_COUNT:
-         video_thread_set_view_count(thr, (unsigned)pkt.data.i);
-         video_thread_reply(thr, &pkt);
+         video_thread_set_view_count(thr, (unsigned)pkt->data.i);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_HW_CONTEXT_DESTROYING:
          if (     thr->driver_data && thr->poke
                && thr->poke->hw_context_destroying)
             thr->poke->hw_context_destroying(thr->driver_data);
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_FONT_INIT:
-         if (pkt.data.font_init.method)
-            pkt.data.font_init.return_value = pkt.data.font_init.method(
-               pkt.data.font_init.font_driver,
-               pkt.data.font_init.font_handle,
-               pkt.data.font_init.video_data,
-               pkt.data.font_init.font_path,
-               pkt.data.font_init.font_size,
-               pkt.data.font_init.backend,
-               pkt.data.font_init.is_threaded
+         if (pkt->data.font_init.method)
+            pkt->data.font_init.return_value = pkt->data.font_init.method(
+               pkt->data.font_init.font_driver,
+               pkt->data.font_init.font_handle,
+               pkt->data.font_init.video_data,
+               pkt->data.font_init.font_path,
+               pkt->data.font_init.font_size,
+               pkt->data.font_init.backend,
+               pkt->data.font_init.is_threaded
             );
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_CUSTOM_COMMAND:
-         if (pkt.data.custom_command.method)
+         if (pkt->data.custom_command.method)
          {
             /* The user thread is blocked in video_thread_wait_reply for
              * the whole of this call. On some platforms that waiter is a
@@ -1500,23 +1498,23 @@ static bool video_thread_handle_packet(
              * unsupported), covering the heavy GPU uploads the custom
              * command path carries (texture/font resource commands). */
             void *qos_override = sthread_priority_override_begin();
-            pkt.data.custom_command.return_value =
-               pkt.data.custom_command.method(pkt.data.custom_command.data);
+            pkt->data.custom_command.return_value =
+               pkt->data.custom_command.method(pkt->data.custom_command.data);
             sthread_priority_override_end(qos_override);
          }
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_SHOW_MOUSE:
          if (thr->driver_data && thr->poke && thr->poke->show_mouse)
-            thr->poke->show_mouse(thr->driver_data, pkt.data.b);
-         video_thread_reply(thr, &pkt);
+            thr->poke->show_mouse(thr->driver_data, pkt->data.b);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_GRAB_MOUSE_TOGGLE:
          if (thr->driver_data && thr->poke && thr->poke->grab_mouse_toggle)
             thr->poke->grab_mouse_toggle(thr->driver_data);
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_VIDEO_NONE:
@@ -1528,9 +1526,9 @@ static bool video_thread_handle_packet(
          if (thr->driver_data && thr->poke && thr->poke->set_hdr_menu_nits)
             thr->poke->set_hdr_menu_nits(
                thr->driver_data,
-               pkt.data.hdr.menu_nits
+               pkt->data.hdr.menu_nits
             );
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_SET_HDR_PAPER_WHITE_NITS:
@@ -1538,41 +1536,41 @@ static bool video_thread_handle_packet(
                thr->poke && thr->poke->set_hdr_paper_white_nits)
             thr->poke->set_hdr_paper_white_nits(
                thr->driver_data,
-               pkt.data.hdr.paper_white_nits
+               pkt->data.hdr.paper_white_nits
             );
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_SET_HDR_EXPAND_GAMUT:
          if (thr->driver_data && thr->poke && thr->poke->set_hdr_expand_gamut)
             thr->poke->set_hdr_expand_gamut(
                thr->driver_data,
-               pkt.data.hdr.expand_gamut
+               pkt->data.hdr.expand_gamut
             );
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_SET_HDR_SCANLINES:
          if (thr->driver_data && thr->poke && thr->poke->set_hdr_scanlines)
             thr->poke->set_hdr_scanlines(
                thr->driver_data,
-               pkt.data.hdr.scanlines
+               pkt->data.hdr.scanlines
             );
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       case CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT:
          if (thr->driver_data && thr->poke && thr->poke->set_hdr_subpixel_layout)
             thr->poke->set_hdr_subpixel_layout(
                thr->driver_data,
-               pkt.data.hdr.subpixel_layout
+               pkt->data.hdr.subpixel_layout
             );
 
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
 
       default:
-         video_thread_reply(thr, &pkt);
+         video_thread_reply(thr, pkt);
          break;
    }
 

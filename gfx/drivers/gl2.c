@@ -10700,7 +10700,8 @@ video_driver_t video_gl2 = {
 #ifdef HAVE_OPENXR
    gl2_set_vr_content_info,
 #endif
-   gl2_read_viewport_bgrx
+   gl2_read_viewport_bgrx,
+   true /* max_geometry_in_place */
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_gl = {

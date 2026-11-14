@@ -3503,19 +3503,32 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             bool video_switch_refresh_rate        = false;
             bool no_video_reinit;
             bool fps_changed                      = info->timing.fps != av_info->timing.fps;
-            bool timing_changed                   = fps_changed
-                  || info->timing.sample_rate != av_info->timing.sample_rate;
+            bool sample_rate_changed              = info->timing.sample_rate != av_info->timing.sample_rate;
+            bool timing_changed                   = fps_changed || sample_rate_changed;
             bool base_size_changed                =
                      info->geometry.base_width  != av_info->geometry.base_width
                   || info->geometry.base_height != av_info->geometry.base_height;
             bool max_size_changed                 =
                      info->geometry.max_width  != av_info->geometry.max_width
                   || info->geometry.max_height != av_info->geometry.max_height;
-            bool geometry_changed                 = base_size_changed || max_size_changed
-                  || info->geometry.aspect_ratio != av_info->geometry.aspect_ratio;
+            bool aspect_changed                   = info->geometry.aspect_ratio != av_info->geometry.aspect_ratio;
+            bool viewport_changed                 = base_size_changed || aspect_changed;
+            bool geometry_changed                 = viewport_changed || max_size_changed;
+            bool max_size_fits                     = !max_size_changed;
 
             if (!geometry_changed && !timing_changed)
                return true;
+
+            if (     max_size_changed
+                  && info->geometry.max_width && info->geometry.max_height
+                  && info->geometry.max_width  <= video_st->max_geometry_capacity
+                  && info->geometry.max_height <= video_st->max_geometry_capacity
+                  && !video_driver_is_hw_context()
+#ifdef HAVE_VIDEO_FILTER
+                  && !video_st->state_filter
+#endif
+                  && video_st->pix_fmt == video_st->max_geometry_format)
+               max_size_fits = true;
 
             /* Refresh rate switch for regular displays */
             if (fps_changed && video_display_server_has_resolution_list())
@@ -3524,11 +3537,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             /* CRT switchres depends on the base size and field rate. */
             no_video_reinit                       = (
                      !video_switch_refresh_rate
-                  && !max_size_changed
+                  && max_size_fits
                   && (!crt_switch_resolution || (!fps_changed && !base_size_changed)));
 
             /* Recalibrate only when the video workload changes. */
-            if (video_frame_delay_auto && (geometry_changed || fps_changed))
+            if (video_frame_delay_auto && (!no_video_reinit || viewport_changed || fps_changed))
             {
                if (no_video_reinit)
                   video_st->frame_delay_pause  = true;
@@ -3542,10 +3555,22 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   && video_display_server_set_refresh_rate(refresh_rate))
                video_monitor_set_refresh_rate(refresh_rate);
 
-            if (geometry_changed)
-               av_info->geometry = info->geometry;
-            if (timing_changed)
-               av_info->timing   = info->timing;
+            if (base_size_changed)
+            {
+               av_info->geometry.base_width  = info->geometry.base_width;
+               av_info->geometry.base_height = info->geometry.base_height;
+            }
+            if (max_size_changed)
+            {
+               av_info->geometry.max_width  = info->geometry.max_width;
+               av_info->geometry.max_height = info->geometry.max_height;
+            }
+            if (aspect_changed)
+               av_info->geometry.aspect_ratio = info->geometry.aspect_ratio;
+            if (fps_changed)
+               av_info->timing.fps = info->timing.fps;
+            if (sample_rate_changed)
+               av_info->timing.sample_rate = info->timing.sample_rate;
 
             /* The running audio driver takes timing changes in place. */
             if (!no_video_reinit)
@@ -3561,7 +3586,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (fps_changed)
                command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
 
-            if (no_video_reinit && geometry_changed)
+            if (no_video_reinit && viewport_changed)
                command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             if (video_switch_refresh_rate)

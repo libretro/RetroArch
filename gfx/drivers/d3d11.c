@@ -10400,7 +10400,12 @@ video_driver_t video_d3d11 = {
 #else
    NULL, /* read_viewport_hdr */
 #endif
-   &d3d11_font
+   &d3d11_font,
+#ifdef HAVE_OPENXR
+   NULL, /* set_vr_content_info */
+#endif
+   NULL, /* read_viewport_bgrx */
+   true /* max_geometry_in_place */
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {

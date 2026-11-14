@@ -3503,6 +3503,274 @@ static void lane_av_info_changes(void)
       printf("[pass] AV info changes: duplicates, geometry, timing, maxima, publish order\n");
 }
 
+static void lane_max_geometry_capacity(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   struct retro_system_av_info orig = video_st->av_info;
+   struct retro_system_av_info info;
+   bool saved_capability         = video_null.max_geometry_in_place;
+   bool saved_auto               = settings->bools.video_frame_delay_auto;
+   unsigned had                  = failures;
+   unsigned threaded;
+
+   if (     video_st->pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555
+         && video_st->pix_fmt != RETRO_PIXEL_FORMAT_RGB565
+         && video_st->pix_fmt != RETRO_PIXEL_FORMAT_XRGB8888)
+      return;
+   video_null.max_geometry_in_place = true;
+   settings->bools.video_frame_delay_auto = true;
+   for (threaded = 0; threaded < 2; threaded++)
+   {
+      unsigned capacity;
+      void *driver_data;
+      set_threaded_via_setting(threaded != 0);
+      command_event(CMD_EVENT_REINIT, NULL);
+      run_frames(2);
+      video_thread_wait_idle();
+      capacity = video_st->max_geometry_capacity;
+      CHECK(capacity >= orig.geometry.max_width && capacity > 1,
+            "max geometry: backend capacity not captured");
+      driver_data    = video_st->data;
+      avc_inner_init = video_null.init;
+      video_null.init = avc_init;
+      avc_inits       = 0;
+      video_st->frame_delay_pause  = false;
+      video_st->frame_delay_target = 5;
+      info = orig;
+      info.geometry.max_width = capacity - 1;
+      CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+            "max geometry: fitting update rejected");
+      info.geometry.max_width = capacity;
+      CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+            "max geometry: regrow rejected");
+      CHECK(!avc_inits && video_st->data == driver_data
+            && video_st->max_geometry_capacity == capacity
+            && !video_st->frame_delay_pause && video_st->frame_delay_target == 5,
+            "max geometry: fitting maxima restarted video or disturbed pacing");
+
+      info.geometry.max_width = capacity + 1;
+      CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+            "max geometry: larger update rejected");
+      CHECK(avc_inits == 1 && video_st->frame_delay_target == 0,
+            "max geometry: insufficient capacity did not rebuild video");
+      video_null.init = avc_inner_init;
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &orig);
+   }
+   set_threaded_via_setting(false);
+
+   /* Defer teardown so exclusion checks need no hardware/filter instance. */
+   {
+      enum retro_pixel_format format = video_st->pix_fmt;
+      struct retro_hw_render_callback *hw = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
+      enum retro_hw_context_type context = hw->context_type;
+      int context_type = retro_atomic_load_acquire_int(&video_st->hw_context_type);
+      bool switching = runloop_st->content_switching;
+#ifdef HAVE_VIDEO_FILTER
+      void *filter = video_st->state_filter;
+      rarch_softfilter_t *filter_token = (rarch_softfilter_t*)calloc(1, sizeof(void*));
+#endif
+      unsigned exclusion;
+      runloop_st->content_switching = true;
+      for (exclusion = 0; exclusion < 5; exclusion++)
+      {
+         info = orig;
+         info.geometry.max_width = video_st->max_geometry_capacity - 1;
+         if (exclusion == 0)
+            video_st->pix_fmt = RETRO_PIXEL_FORMAT_XRGB2101010;
+         else if (exclusion == 1)
+         {
+            hw->context_type = RETRO_HW_CONTEXT_OPENGL;
+            retro_atomic_store_release_int(&video_st->hw_context_type,
+                  RETRO_HW_CONTEXT_OPENGL);
+         }
+         else if (exclusion == 2)
+            info.geometry.max_width = 0;
+         else if (exclusion == 3)
+            video_st->pix_fmt = format == RETRO_PIXEL_FORMAT_XRGB8888
+               ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888;
+#ifdef HAVE_VIDEO_FILTER
+         else
+            video_st->state_filter = filter_token;
+#else
+         else
+            continue;
+#endif
+         video_st->frame_delay_pause = false;
+         video_st->frame_delay_target = 5;
+         runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+         CHECK(video_st->frame_delay_target == 0,
+               "max geometry: exclusion %u reused incompatible storage", exclusion);
+         video_st->pix_fmt = format;
+         hw->context_type = context;
+         retro_atomic_store_release_int(&video_st->hw_context_type, context_type);
+#ifdef HAVE_VIDEO_FILTER
+         video_st->state_filter = filter;
+#endif
+         video_st->av_info = orig;
+      }
+      runloop_st->content_switching = switching;
+#ifdef HAVE_VIDEO_FILTER
+      free(filter_token);
+#endif
+   }
+   video_null.max_geometry_in_place = saved_capability;
+   settings->bools.video_frame_delay_auto = saved_auto;
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] maximum geometry capacity: reuse, regrow, overflow and exclusions\n");
+}
+
+static void lane_max_geometry_live(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct retro_system_av_info orig = video_st->av_info;
+   struct retro_system_av_info info;
+   unsigned had = failures;
+   unsigned threaded;
+   unsigned loans = 0;
+   bool reopen_menu = menu_is_up();
+   if (reopen_menu)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   for (threaded = 0; threaded < 2; threaded++)
+   {
+      video_driver_t *driver;
+      void *instance;
+      unsigned capacity;
+      struct retro_framebuffer fb;
+      unsigned bpp = video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2;
+      uint8_t *pixels;
+      size_t pitch;
+      set_threaded_via_setting(threaded != 0);
+      run_frames(2);
+      video_thread_wait_idle();
+      driver = video_st->current_video;
+      if (threaded)
+         driver = (video_driver_t*)((thread_video_t*)video_st->data)->driver;
+      capacity = video_st->max_geometry_capacity;
+      CHECK(capacity >= orig.geometry.max_width && capacity > 1,
+            "live max geometry: driver did not opt in");
+      if (!capacity)
+         break;
+      instance = video_st->data;
+      avc_inner_init = driver->init;
+      driver->init = avc_init;
+      avc_inits = 0;
+      info = orig;
+      info.geometry.max_width = capacity - 1;
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+      info.geometry.max_width = capacity;
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+      CHECK(!avc_inits && video_st->data == instance,
+            "live max geometry: fitting size restarted the driver");
+      memset(&fb, 0, sizeof(fb));
+      fb.width = capacity;
+      fb.height = orig.geometry.base_height;
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+      if (runloop_environment_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb))
+      {
+         unsigned row;
+         uint64_t before = threaded
+            ? ((thread_video_t*)video_st->data)->frame.zero_copy_count : 0;
+         for (row = 0; row < fb.height; row++)
+            memset((uint8_t*)fb.data + row * fb.pitch, 0x55, fb.width * bpp);
+         video_driver_frame(fb.data, fb.width, fb.height, fb.pitch);
+         if (threaded)
+            CHECK(((thread_video_t*)video_st->data)->frame.zero_copy_count == before + 1,
+                  "live max geometry: lent frame was copied");
+         loans++;
+      }
+      video_thread_wait_idle();
+      info.geometry.max_width = capacity + 1;
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+      CHECK(avc_inits == 1 && video_st->max_geometry_capacity > capacity,
+            "live max geometry: growth did not rebuild storage");
+      driver->init = avc_inner_init;
+      pitch = (size_t)(capacity + 1) * bpp;
+      pixels = (uint8_t*)malloc(pitch * orig.geometry.base_height);
+      CHECK(pixels != NULL, "live max geometry: frame allocation failed");
+      if (pixels)
+      {
+         memset(pixels, 0x55, pitch * orig.geometry.base_height);
+         video_driver_frame(pixels, capacity + 1, orig.geometry.base_height, pitch);
+         run_frames(2);
+         video_thread_wait_idle();
+         free(pixels);
+      }
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &orig);
+   }
+   set_threaded_via_setting(false);
+   if (reopen_menu)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (failures == had)
+      fprintf(stderr, "[pass] live maximum geometry: kept instance, %u loans, safe growth\n", loans);
+}
+
+struct snapshot_identity
+{
+   const void *pixels;
+   unsigned dims;
+   unsigned first;
+};
+
+static void snapshot_identity_read(void *data, const void *pixels,
+      unsigned dims, size_t pitch)
+{
+   struct snapshot_identity *seen = (struct snapshot_identity*)data;
+   (void)pitch;
+   seen->pixels = pixels;
+   seen->dims = dims;
+   seen->first = pixels ? *(const uint16_t*)pixels : 0;
+}
+
+static void lane_reinit_frame_ownership(void)
+{
+   static const int partial[] = { DRIVER_LED_MASK, DRIVER_AUDIO_MASK, DRIVER_MENU_MASK };
+   struct snapshot_identity seen;
+   const void *owned;
+   enum retro_pixel_format format = video_state_get_ptr()->pix_fmt;
+   unsigned bpp = format == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F ? 8
+      : (format == RETRO_PIXEL_FORMAT_RGB565 || format == RETRO_PIXEL_FORMAT_0RGB1555) ? 2 : 4;
+   uint8_t *pixels = (uint8_t*)calloc(320 * 240, bpp);
+   unsigned had = failures;
+   int flags;
+   unsigned i;
+   CHECK(pixels != NULL, "reinit ownership: allocation failed");
+   if (!pixels)
+      return;
+   set_threaded_via_setting(false);
+   *(uint16_t*)pixels = 0x1234;
+   video_driver_cached_frame_publish(pixels, VIDEO_SCALE_PACK(320, 240), 320 * bpp);
+   for (i = 0; i < sizeof(partial) / sizeof(partial[0]); i++)
+   {
+      flags = partial[i];
+      command_event(CMD_EVENT_REINIT, &flags);
+      memset(&seen, 0, sizeof(seen));
+      video_driver_cached_frame_read(&seen, snapshot_identity_read);
+      CHECK(seen.pixels == pixels && seen.first == 0x1234,
+            "reinit ownership: a non-video restart copied or lost the frame (%u)", i);
+   }
+   flags = DRIVER_VIDEO_AND_INPUT_MASK;
+   command_event(CMD_EVENT_REINIT, &flags);
+   memset(&seen, 0, sizeof(seen));
+   video_driver_cached_frame_read(&seen, snapshot_identity_read);
+   CHECK(seen.pixels && seen.pixels != pixels && seen.first == 0x1234
+         && seen.dims == VIDEO_SCALE_PACK(320, 240),
+         "reinit ownership: video teardown did not preserve owned pixels");
+   owned = seen.pixels;
+   free(pixels);
+   command_event(CMD_EVENT_REINIT, &flags);
+   memset(&seen, 0, sizeof(seen));
+   video_driver_cached_frame_read(&seen, snapshot_identity_read);
+   CHECK(seen.pixels == owned && seen.first == 0x1234,
+         "reinit ownership: repeated teardown lost the retained snapshot");
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] reinit frame ownership: borrow retained, teardown snapshot preserved\n");
+}
+
 typedef struct
 {
    retro_eventcount_t event;
@@ -12940,10 +13208,17 @@ int main(int argc, char *argv[])
       record_gpu_stop_in_flight();
       goto shutdown;
    }
+   if (getenv("HARNESS_CAPACITY_ONLY"))
+   {
+      lane_max_geometry_live();
+      goto shutdown;
+   }
    if (getenv("HARNESS_GEOMETRY_ONLY"))
    {
       set_threaded_via_setting(false);
       lane_av_info_changes();
+      lane_max_geometry_capacity();
+      lane_reinit_frame_ownership();
       lane_geometry_burst();
       lane_reentrant_from_frame();
       goto shutdown;
@@ -12981,7 +13256,11 @@ int main(int argc, char *argv[])
    {
       set_threaded_via_setting(false);
       lane_av_info_changes();
+      lane_max_geometry_capacity();
+      lane_reinit_frame_ownership();
    }
+   if (real_driver() && video_state_get_ptr()->max_geometry_capacity)
+      lane_max_geometry_live();
    lane_geometry_burst();
    lane_reentrant_from_frame();
    lane_window_thread_present();

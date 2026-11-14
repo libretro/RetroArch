@@ -7569,7 +7569,8 @@ static void command_reinit_snapshot_cb(void *userdata,
    if (!*ctx->buf_p)
       return;
 
-   memcpy(*ctx->buf_p, data, want);
+   if (*ctx->buf_p != data)
+      memcpy(*ctx->buf_p, data, want);
    ctx->dims = dims;
    ctx->p    = pitch;
    ctx->size = want;
@@ -7648,6 +7649,7 @@ bool command_event_reinit(const int flags)
 
 
 
+   if (flags & DRIVER_VIDEO_AND_INPUT_MASK)
    {
       struct command_reinit_snapshot_ctx ctx;
       ctx.buf_p = &cached_snapshot;

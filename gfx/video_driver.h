@@ -1647,6 +1647,9 @@ typedef struct video_driver
     * recording skip the BGR24 conversion. */
    bool (*read_viewport_bgrx)(void *data, uint8_t *buffer, bool is_idle,
          bool *bottom_up);
+
+   /* Software maxima may change within the initial input-scale capacity. */
+   bool max_geometry_in_place;
 } video_driver_t;
 
 #ifdef HAVE_OPENXR
@@ -1905,6 +1908,10 @@ typedef struct
     * with, and a read-modify-write of that word on the main thread
     * races such a read. */
    retro_atomic_int_t crt_switching_active;
+
+   /* Initial software-frame capacity, in pixels on each axis; zero opts out. */
+   unsigned max_geometry_capacity;
+   enum retro_pixel_format max_geometry_format;
 
 #ifdef HAVE_VIDEO_FILTER
    unsigned state_scale;

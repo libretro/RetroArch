@@ -9167,7 +9167,8 @@ video_driver_t video_gl3 = {
    NULL, /* set_vr_content_info */
 #endif
 #endif
-   gl3_read_viewport_bgrx
+   gl3_read_viewport_bgrx,
+   true /* max_geometry_in_place */
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {

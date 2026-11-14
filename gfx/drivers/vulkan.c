@@ -18151,7 +18151,8 @@ video_driver_t video_vulkan = {
 #ifdef HAVE_OPENXR
    vulkan_set_vr_content_info,
 #endif
-   vulkan_read_viewport_bgrx
+   vulkan_read_viewport_bgrx,
+   true /* max_geometry_in_place */
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
