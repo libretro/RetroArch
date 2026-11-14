@@ -1033,7 +1033,7 @@ static void pl_thumb_match_resolve(pl_thumb_match_t *m)
 #endif
    queries[1] = label;
    queries[2] = m->stem;
-   if (     gfx_thumbnail_match_find_first(m->index, queries, 3, &found)
+   if (     gfx_thumbnail_match_find_first(m->index, queries, 3, true, &found)
             != GFX_THUMBNAIL_MATCH_FOUND
          || !found
          || pl_thumb_match_is_exact(m, found, label)
@@ -1670,7 +1670,7 @@ bool task_pl_thumbnail_match_note_download(const char *playlist_path,
    if (gfx_thumbnail_match_index_add(index, file_name))
    {
       gfx_thumbnail_match_index_finalize(index);
-      if (     gfx_thumbnail_match_find_first(index, queries, 2, &found)
+      if (     gfx_thumbnail_match_find_first(index, queries, 2, true, &found)
                == GFX_THUMBNAIL_MATCH_FOUND
             && found)
          noted = gfx_thumbnail_results_note(playlist_path, content_path,

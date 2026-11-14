@@ -81,10 +81,13 @@ enum gfx_thumbnail_match_status gfx_thumbnail_match_find(
       const gfx_thumbnail_match_index_t *idx, const char *query, const char **out);
 
 /* Runs queries in order (NULL entries skipped): FOUND stops, NONE and REFUSED move
- * to the next query string. Returns the last status. */
+ * to the next query string. Returns the last status. Without other_regions, a
+ * match by title alone keeps to the region of the first query that has one,
+ * Unknown aside: the same region, World, untagged, or Europe for a European
+ * country. A query without a region of its own also ranks by it. */
 enum gfx_thumbnail_match_status gfx_thumbnail_match_find_first(
       const gfx_thumbnail_match_index_t *idx, const char * const *queries,
-      size_t num_queries, const char **out);
+      size_t num_queries, bool other_regions, const char **out);
 
 /* The T2 fold of in into out (len bytes, always terminated). Returns the length. */
 size_t gfx_thumbnail_match_fold(const char *in, char *out, size_t len);

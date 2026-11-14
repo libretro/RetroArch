@@ -1,5 +1,6 @@
 # One case per line, fields split by '|' (on-disk names never hold one):
-#   system|query|expected|tier|+name|-name...
+#   [strict|]system|query|expected|tier|+name|-name...
+# strict: the query is an entry kept to its own region.
 # system: fixtures/<system>.index, or - for an empty list.
 # expected: the file found, - for none, ! for refused.
 # tier: t0, t2, t2b, t3, t3b, or - for none.
@@ -64,6 +65,8 @@
 -|Game (USA) (Bonus Disc) (En)|Game (USA) (Bonus Disc).png|t3|+Game (USA) (Disc 1) (Bonus Disc).png|+Game (USA) (Bonus Disc).png
 -|Command & Conquer (USA)|-|-|+Command _ Conquer (USA) (Disc 1) (GDI Disc).png|+Command _ Conquer (USA) (Disc 2) (NOD Disc).png
 -|Game (Europe) (Bonus Tape)|-|-|+Game (Europe) (Side B) (Bonus Tape).png|+Game (Europe) (Tape 2) (Bonus Tape).png
+-|Game (Europe) (Data Disk)|Game (Europe) (Disk 2) (Data Disk).png|t3|+Game (Europe) (Disk 2) (Data Disk).png
+-|Game (USA) (NOD Disc)|Game (USA) (Disc 2) (NOD Disc).png|t3|+Game (Europe) (Disc 1) (NOD Disc).png|+Game (USA) (Disc 2) (NOD Disc).png
 -|Card Sharks (1987)(Accolade)|-|-|+Card Sharks (1987)(Accolade)(Disk 2 of 2).png
 -|X (1994)(Magic Disk)|-|-|+X (1994)(Magic Disk)(Disk 2 of 2).png
 -|X (1990)(Commodore Disc)|-|-|+X (1990)(Commodore Disc)(Disk 2 of 2).png
@@ -254,6 +257,38 @@ Nintendo_-_Nintendo_Entertainment_System|kirbys adventure (usa)|Kirby's Adventur
 -|Game (Japan)|Game (USA).png|t3|+Game (USA).png
 -|Game (Europe) (Rev 1)|Game (World).png|t3|+Game (USA) (Rev 1).png|+Game (World).png
 -|Game (Europe)|Game.png|t3|+Game (USA).png|+Game.png
+# a European country ranks Europe with its own region
+-|Game (Germany)|Game (Europe).png|t3|+Game (USA).png|+Game (Europe).png
+-|Game (Austria)|Game (Europe).png|t3|+Game (USA).png|+Game (Europe).png
+-|Game (Chile)|Game (USA).png|t3|+Game (USA).png|+Game (Europe).png
+-|Game (Europe)|Game (USA).png|t3|+Game (USA).png|+Game (Germany).png
+-|Game (Austria)|Game (Europe).png|t3|+Game (Switzerland).png|+Game (Europe).png
+-|Game (Unknown) (Rev 1)|Game (Unknown).png|t3|+Game (USA).png|+Game (Unknown).png
+# strict: own region, World, untagged, or Europe for a European country
+strict|-|Game (USA)|Game (USA, Canada).png|t3|+Game (Europe).png|+Game (USA, Canada).png
+strict|-|Game (Japan)|Game (World).png|t3|+Game (USA).png|+Game (World).png
+strict|-|Drakkhen (Germany)|Drakkhen.png|t3|+Drakkhen (USA).png|+Drakkhen.png
+strict|-|Game (Germany)|Game (Europe).png|t3|+Game (USA).png|+Game (Europe).png
+strict|-|Game (Russia)|Game (Europe).png|t3|+Game (USA).png|+Game (Europe).png
+strict|-|Game (USA, Germany)|Game (Europe).png|t3|+Game (Japan).png|+Game (Europe).png
+strict|-|game (germany)|Game (Europe).png|t3|+Game (USA).png|+Game (Europe).png
+strict|-|Game (E) [!]|Game (Europe).png|t3|+Game (USA).png|+Game (Europe).png
+strict|-|Game (1990)(DE)|Game (Europe).png|t3|+Game (USA).png|+Game (Europe).png
+strict|-|Game (Europe)|-|-|+Game (Germany).png|+Game (USA).png
+strict|-|Lemmings (Europe)|-|-|+Lemmings (USA).png
+strict|-|Bomberman (Japan)|-|-|+Bomberman (USA).png
+strict|-|Game|Game (USA).png|t3|+Game (USA).png
+strict|-|Game (Unknown)|Game (USA).png|t3|+Game (USA).png
+strict|-|Super Mario Bros. (World)|Super Mario Bros. (Europe).png|t3|+Super Mario Bros. (USA) (Virtual Console).png|+Super Mario Bros. (Europe).png
+strict|-|Game (Austria)|-|-|+Game (Switzerland).png
+strict|-|Game (Austria)|Game (Austria, Switzerland).png|t3|+Game (Switzerland).png|+Game (Austria, Switzerland).png
+strict|-|Game (Austria)|Game (Europe).png|t3|+Game (Europe).png
+strict|-|Game (USA, Switzerland) (Rev 1)|Game (USA, Switzerland).png|t3|+Game (USA, Austria).png|+Game (USA, Switzerland).png
+strict|-|Game (Chile)|-|-|+Game (Europe).png
+strict|-|Game (USA) (Disc 3)|-|-|+Game (USA) (Disc 1).png|+Game (Europe).png
+strict|-|A Fight (Japan) (Rev 1)|!|t3b|+Fight, The (USA).png|+Fight (Japan).png
+strict|-|Command & Conquer (USA) (NOD Disc)|Command _ Conquer (USA) (Disc 2) (NOD Disc).png|t3|+Command _ Conquer (USA) (Disc 1) (GDI Disc).png|+Command _ Conquer (USA) (Disc 2) (NOD Disc).png
+strict|-|Sidearms + Hyper Dyne (Europe)|Sidearms + Hyper Dyne (Europe) (2 sides).png|t3|+Sidearms + Hyper Dyne (Europe) (2 sides).png
 # TOSEC unknown publisher
 -|Labyrinth|-|-|+Labyrinth (19xx)(-)(de).png
 -|Labyrinth (19xx)(-)(de)|-|-|+Labyrinth.png

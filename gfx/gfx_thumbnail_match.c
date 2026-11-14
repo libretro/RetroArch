@@ -393,6 +393,7 @@ size_t gfx_thumbnail_match_fold(const char *in, char *out, size_t len)
 #define GTM_WEST   0x04
 #define GTM_EAST   0x08
 #define GTM_TAPE   0x10
+#define GTM_EURO   0x20
 #define GTM_GROUP  0x40
 
 #define GTM_USA    0x00000001UL
@@ -402,6 +403,8 @@ size_t gfx_thumbnail_match_fold(const char *in, char *out, size_t len)
 #define GTM_OTHER  0x80000000UL
 /* Japan, Asia, China, Hong Kong, Korea, Taiwan */
 #define GTM_EAST_BITS 0x00022914UL
+/* European countries, France to Poland; not Europe itself */
+#define GTM_EURO_BITS 0x0FDDD600UL
 
 enum gtm_tier
 {
@@ -456,6 +459,15 @@ struct gtm_parse
    char loose[GTM_NAME_MAX + 8];
    char ident[GTM_NAME_MAX * 2];
    char tagbuf[GTM_NAME_MAX * 2];
+};
+
+/* The region an entry is kept to; src is the name it came from. */
+struct gtm_want
+{
+   const char *src;
+   size_t len;
+   uint32_t region;
+   unsigned flags;
 };
 
 struct gfx_thumbnail_match_index
@@ -520,6 +532,19 @@ static const struct gtm_code gtm_other_east[] = {
    { "Philippines", GTM_EAST }, { "Vietnam",     GTM_EAST }
 };
 
+/* The GTM_OTHER codes of European countries */
+static const struct gtm_code gtm_other_euro[] = {
+   { "Austria",     GTM_EURO }, { "Belgium",     GTM_EURO },
+   { "Croatia",     GTM_EURO }, { "Czech",       GTM_EURO },
+   { "Hungary",     GTM_EURO }, { "Ireland",     GTM_EURO },
+   { "Slovakia",    GTM_EURO }, { "Switzerland", GTM_EURO },
+   { "Ukraine",     GTM_EURO }, { "Iceland",     GTM_EURO },
+   { "Estonia",     GTM_EURO }, { "Latvia",      GTM_EURO },
+   { "Lithuania",   GTM_EURO }, { "Romania",     GTM_EURO },
+   { "Bulgaria",    GTM_EURO }, { "Serbia",      GTM_EURO },
+   { "Slovenia",    GTM_EURO }
+};
+
 /* TOSEC country codes, '-'-joined */
 static const struct gtm_code gtm_tosec[] = {
    { "US", 0x00000001UL }, { "EU", 0x00000002UL }, { "JP", 0x00000004UL },
@@ -579,7 +604,8 @@ static uint32_t gtm_code_bits(const struct gtm_code *t, size_t count,
    return 0;
 }
 
-/* One code's region families: World is in both, Unknown in neither. */
+/* One code's region families: World is in both, Unknown in neither.
+ * A European country also gets GTM_EURO. */
 static unsigned gtm_family(uint32_t bits, const char *s, size_t n,
       bool nocase)
 {
@@ -587,11 +613,17 @@ static unsigned gtm_family(uint32_t bits, const char *s, size_t n,
    {
       if (n == 7 && gtm_same(s, "Unknown", 7, nocase))
          return 0;
-      return gtm_code_bits(gtm_other_east, GTM_COUNT(gtm_other_east), s, n,
-            nocase) ? GTM_EAST : GTM_WEST;
+      if (gtm_code_bits(gtm_other_east, GTM_COUNT(gtm_other_east), s, n,
+            nocase))
+         return GTM_EAST;
+      if (gtm_code_bits(gtm_other_euro, GTM_COUNT(gtm_other_euro), s, n,
+            nocase))
+         return GTM_WEST | GTM_EURO;
+      return GTM_WEST;
    }
    return ((bits & (GTM_EAST_BITS | GTM_WORLD)) ? GTM_EAST : 0)
-      | ((bits & ~GTM_EAST_BITS) ? GTM_WEST : 0);
+      | ((bits & ~GTM_EAST_BITS) ? GTM_WEST : 0)
+      | ((bits & GTM_EURO_BITS) ? GTM_EURO : 0);
 }
 
 /* Every sep-separated element of [c, c + n) is in t, else 0.
@@ -1093,6 +1125,24 @@ static void gtm_scrub(char *dst, const char *src, size_t len)
    dst[len] = '\0';
 }
 
+/* Parses query into p; true when it has a region other than Unknown. */
+static bool gtm_want_of(struct gtm_want *w, struct gtm_parse *p,
+      const char *query)
+{
+   size_t len = strlen(query);
+   w->src     = query;
+   w->len     = len;
+   w->region  = 0;
+   w->flags   = 0;
+   if (!len || len >= GTM_NAME_MAX)
+      return false;
+   gtm_scrub(p->stem, query, len);
+   gtm_parse_stem(p, p->stem, len);
+   w->region = p->region;
+   w->flags  = p->flags;
+   return (w->flags & (GTM_WEST | GTM_EAST)) != 0;
+}
+
 static int gtm_cmp_span(const char *a, size_t an, const char *b, size_t bn)
 {
    int r = memcmp(a, b, an < bn ? an : bn);
@@ -1427,13 +1477,71 @@ static enum gfx_thumbnail_match_status gtm_find_loose(
    return *hit ? GFX_THUMBNAIL_MATCH_FOUND : GFX_THUMBNAIL_MATCH_NONE;
 }
 
-static unsigned gtm_region_rel(uint32_t c, uint32_t q)
+/* A region tag of [s, e) lists the k-byte name. */
+static bool gtm_lists_region(const char *s, const char *e, const char *name,
+      size_t k)
 {
-   if (c == q)
-      return 0;
-   if ((c & q) == q)
-      return 1;
-   return (c & q) ? 2 : 3;
+   for (s = gtm_title_end(s, e); s < e; s++)
+   {
+      const char *c = s + 1;
+      const char *q = c;
+      unsigned fam;
+      if (*s != '(')
+         continue;
+      while (q < e && *q != ')')
+         q++;
+      if (q == e)
+         break;
+      if (gtm_code_list(gtm_regions, GTM_COUNT(gtm_regions), c,
+            (size_t)(q - c), ',', &fam, true))
+         while (c < q)
+         {
+            const char *t = c;
+            while (t < q && *t != ',')
+               t++;
+            if ((size_t)(t - c) == k && gtm_equal_nocase(c, name, k))
+               return true;
+            c = t;
+            if (c < q)
+               c++;
+            if (c < q && *c == ' ')
+               c++;
+         }
+      s = q;
+   }
+   return false;
+}
+
+/* Both name one GTM_OTHER country; Unknown only when unknown is set. */
+static bool gtm_other_shared(const char *a, size_t an, const char *b,
+      size_t bn, bool unknown)
+{
+   size_t i;
+   for (i = 0; i < GTM_COUNT(gtm_regions); i++)
+   {
+      const char *name = gtm_regions[i].name;
+      size_t k         = strlen(name);
+      if (     gtm_regions[i].bits == GTM_OTHER
+            && (unknown || strcmp(name, "Unknown"))
+            && gtm_lists_region(a, a + an, name, k)
+            && gtm_lists_region(b, b + bn, name, k))
+         return true;
+   }
+   return false;
+}
+
+/* GTM_OTHER countries overlap by name. Europe overlaps a European
+ * country, not the other way round. */
+static unsigned gtm_region_rel(const struct gtm_rec *r,
+      const struct gtm_want *w)
+{
+   uint32_t s = r->region & w->region;
+   if (     (s & GTM_OTHER)
+         && !gtm_other_shared(w->src, w->len, r->name, r->stem_len, true))
+      s &= ~GTM_OTHER;
+   if (s == w->region)
+      return (r->region == w->region) ? 0 : 1;
+   return (s || ((w->flags & GTM_EURO) && (r->region & GTM_EUROPE))) ? 2 : 3;
 }
 
 /* World (or no region), USA, Europe, Japan, the rest. */
@@ -1476,21 +1584,21 @@ static unsigned gtm_crosses(unsigned c, unsigned q)
 }
 
 /* First difference wins: region family, store tags, region, revision,
- * disc, extra tags, length, bytes. */
+ * disc, extra tags, length, bytes. rank: the region ranked against. */
 static bool gtm_better(const struct gtm_rec *a, const struct gtm_rec *b,
-      const struct gtm_parse *q)
+      const struct gtm_parse *q, const struct gtm_want *rank)
 {
    unsigned qs = q->flags & GTM_STORE;
-   unsigned x  = gtm_crosses(a->flags, q->flags);
-   unsigned y  = gtm_crosses(b->flags, q->flags);
+   unsigned x  = gtm_crosses(a->flags, rank->flags);
+   unsigned y  = gtm_crosses(b->flags, rank->flags);
    if (x != y)
       return x < y;
    x = (unsigned)((a->flags & GTM_STORE) != qs);
    y = (unsigned)((b->flags & GTM_STORE) != qs);
    if (x != y)
       return x < y;
-   x = gtm_region_rel(a->region, q->region);
-   y = gtm_region_rel(b->region, q->region);
+   x = gtm_region_rel(a, rank);
+   y = gtm_region_rel(b, rank);
    if (x != y)
       return x < y;
    x = gtm_region_order(a->region);
@@ -1523,9 +1631,28 @@ static bool gtm_same_game(const struct gtm_rec *r, const struct gtm_parse *q)
       && !strcmp(r->ident, q->ident);
 }
 
+/* Strict: r shares w's region, is World or untagged, or is Europe for a
+ * European country. Unknown counts as untagged. */
+static bool gtm_region_ok(const struct gtm_rec *r, const struct gtm_want *w)
+{
+   uint32_t shared;
+   if (     !w
+         || !(w->flags & (GTM_WEST | GTM_EAST))
+         || !(r->flags & (GTM_WEST | GTM_EAST))
+         || ((w->region | r->region) & GTM_WORLD)
+         || ((w->flags & GTM_EURO) && (r->region & GTM_EUROPE)))
+      return true;
+   shared = w->region & r->region;
+   if (shared & ~GTM_OTHER)
+      return true;
+   return shared
+      && gtm_other_shared(w->src, w->len, r->name, r->stem_len, false);
+}
+
 /* T3: same title key, non-empty. */
 static const struct gtm_rec *gtm_find_tagged(
       const gfx_thumbnail_match_index_t *idx, const struct gtm_parse *q,
+      const struct gtm_want *want, const struct gtm_want *rank,
       const struct gtm_rec *skip)
 {
    const struct gtm_rec *best = NULL;
@@ -1537,15 +1664,18 @@ static const struct gtm_rec *gtm_find_tagged(
       const struct gtm_rec *r = &idx->recs[i];
       if (gtm_cmp_span(r->key, r->tlen, q->key, q->tlen))
          break;
-      if (r != skip && gtm_same_game(r, q) && (!best || gtm_better(r, best, q)))
+      if (     r != skip && gtm_same_game(r, q) && gtm_region_ok(r, want)
+            && (!best || gtm_better(r, best, q, rank)))
          best = r;
    }
    return best;
 }
 
-/* T3b: same loose title; refused when the hits are different T2 titles. */
+/* T3b: same loose title; refused when the hits are different T2 titles,
+ * those outside the wanted region too. */
 static enum gfx_thumbnail_match_status gtm_find_tagged_loose(
       const gfx_thumbnail_match_index_t *idx, const struct gtm_parse *q,
+      const struct gtm_want *want, const struct gtm_want *rank,
       const struct gtm_rec *skip, const struct gtm_rec **hit)
 {
    const struct gtm_rec *first = NULL;
@@ -1567,17 +1697,22 @@ static enum gfx_thumbnail_match_status gtm_find_tagged_loose(
          *hit = NULL;
          return GFX_THUMBNAIL_MATCH_REFUSED;
       }
-      if (!*hit || gtm_better(r, *hit, q))
+      if (gtm_region_ok(r, want) && (!*hit || gtm_better(r, *hit, q, rank)))
          *hit = r;
    }
    return *hit ? GFX_THUMBNAIL_MATCH_FOUND : GFX_THUMBNAIL_MATCH_NONE;
 }
 
-/* skip: a record to leave out (the measurement's held-out name). */
+/* want: the region T3 and T3b keep to, NULL for any; a query without a
+ * region of its own ranks by it.
+ * skip: a record to leave out (the measurement's held-out name). */
 static enum gfx_thumbnail_match_status gtm_find(
       const gfx_thumbnail_match_index_t *idx, const char *query,
-      const struct gtm_rec **hit, unsigned *tier, const struct gtm_rec *skip)
+      const struct gtm_want *want, const struct gtm_rec **hit,
+      unsigned *tier, const struct gtm_rec *skip)
 {
+   struct gtm_want own;
+   const struct gtm_want *rank;
    struct gtm_parse *q;
    enum gfx_thumbnail_match_status st = GFX_THUMBNAIL_MATCH_NONE;
    unsigned t                         = GTM_T0;
@@ -1592,6 +1727,11 @@ static enum gfx_thumbnail_match_status gtm_find(
       return st;
    gtm_scrub(q->stem, query, len);
    gtm_parse_stem(q, q->stem, len);
+   own.src    = query;
+   own.len    = len;
+   own.region = q->region;
+   own.flags  = q->flags;
+   rank       = (want && !(q->flags & (GTM_WEST | GTM_EAST))) ? want : &own;
    if (!(*hit = gtm_find_exact(idx, q, len, skip, &t)))
    {
       t  = GTM_T2B;
@@ -1601,10 +1741,10 @@ static enum gfx_thumbnail_match_status gtm_find(
          && !(q->flags & GTM_NOTAGS))
    {
       t = GTM_T3;
-      if (!(*hit = gtm_find_tagged(idx, q, skip)))
+      if (!(*hit = gtm_find_tagged(idx, q, want, rank, skip)))
       {
          t  = GTM_T3B;
-         st = gtm_find_tagged_loose(idx, q, skip, hit);
+         st = gtm_find_tagged_loose(idx, q, want, rank, skip, hit);
       }
    }
    if (*hit)
@@ -1620,7 +1760,8 @@ enum gfx_thumbnail_match_status gfx_thumbnail_match_find(
       const char **out)
 {
    const struct gtm_rec *hit;
-   enum gfx_thumbnail_match_status st = gtm_find(idx, query, &hit, NULL, NULL);
+   enum gfx_thumbnail_match_status st = gtm_find(idx, query, NULL, &hit,
+         NULL, NULL);
    if (out)
       *out = hit ? hit->name : NULL;
    return st;
@@ -1628,19 +1769,36 @@ enum gfx_thumbnail_match_status gfx_thumbnail_match_find(
 
 enum gfx_thumbnail_match_status gfx_thumbnail_match_find_first(
       const gfx_thumbnail_match_index_t *idx, const char * const *queries,
-      size_t num_queries, const char **out)
+      size_t num_queries, bool other_regions, const char **out)
 {
+   struct gtm_want want;
+   const struct gtm_want *w           = NULL;
+   const struct gtm_rec *hit          = NULL;
    enum gfx_thumbnail_match_status st = GFX_THUMBNAIL_MATCH_NONE;
    size_t i;
    if (out)
       *out = NULL;
-   for (i = 0; queries && i < num_queries; i++)
+   if (!queries)
+      return st;
+   if (!other_regions)
+   {
+      struct gtm_parse *p = (struct gtm_parse*)malloc(sizeof(*p));
+      if (!p)
+         return st;
+      for (i = 0; !w && i < num_queries; i++)
+         if (queries[i] && gtm_want_of(&want, p, queries[i]))
+            w = &want;
+      free(p);
+   }
+   for (i = 0; i < num_queries; i++)
    {
       if (!queries[i])
          continue;
-      if ((st = gfx_thumbnail_match_find(idx, queries[i], out))
+      if ((st = gtm_find(idx, queries[i], w, &hit, NULL, NULL))
             == GFX_THUMBNAIL_MATCH_FOUND)
          break;
    }
+   if (out && hit)
+      *out = hit->name;
    return st;
 }
