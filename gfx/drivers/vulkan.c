@@ -7966,9 +7966,10 @@ static void vulkan_init_hw_render(vk_t *vk)
       enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
          config_get_ptr()->uints.video_temporal_upscaler;
       char dir[DIR_MAX_LENGTH];
+      unsigned attempts;
       video_upscaler_dir(kind, dir, sizeof(dir));
-      vulkan_context_session_cache_prune(
-            kind == VIDEO_TEMPORAL_UPSCALER_DLSS ? dir : NULL);
+      attempts = vulkan_context_session_cache_prune(
+            kind == VIDEO_TEMPORAL_UPSCALER_DLSS ? dir : NULL) ? 2 : 1;
       if (vk->context->session_upscaler
             && (kind != VIDEO_TEMPORAL_UPSCALER_DLSS
                || strcmp(vk->context->session_upscaler_dir, dir)))
@@ -7979,10 +7980,13 @@ static void vulkan_init_hw_render(vk_t *vk)
          vk->context->session_upscaler_dir = NULL;
       }
       vk->ngx = vk->context->session_upscaler;
-      if (!vk->ngx)
+      for (; !vk->ngx && attempts; attempts--)
+      {
          vk->ngx = vulkan_upscaler_init(kind, vk->context->instance, vk->context->gpu,
-            vk->context->device, vulkan_symbol_wrapper_instance_proc_addr(),
-            vkGetDeviceProcAddr, &vk->context->memory_properties, dir);
+               vk->context->device, vulkan_symbol_wrapper_instance_proc_addr(),
+               vkGetDeviceProcAddr, &vk->context->memory_properties, dir);
+         vulkan_context_session_cache_prune(NULL);
+      }
       if (vk->ngx && kind == VIDEO_TEMPORAL_UPSCALER_DLSS
             && !vk->context->session_upscaler)
       {

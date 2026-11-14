@@ -1984,6 +1984,23 @@ int main(void)
                VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
       vulkan_ngx_free(new_session);
       CHECK(NGX_FAILED(lib->vulkan.get_capability_parameters(&caps)));
+      rec->overlap_fails = 1;
+      old_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)2, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      CHECK(old_session != NULL);
+      new_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)3, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      CHECK(new_session == NULL);
+      vulkan_ngx_free(old_session);
+      vulkan_ngx_free(new_session);
+      new_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)3, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      CHECK(new_session != NULL);
+      vulkan_ngx_free(new_session);
+      rec->overlap_fails = 0;
    }
 
    free_image(&color);

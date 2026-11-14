@@ -6,6 +6,7 @@
  * test to read back through fake_ngx_*(). */
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "fake_ngx.h"
@@ -237,6 +238,8 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int eng
    if (!project || !inst || !pd || !dev || !gipa || !gdpa || engine != 0
          || sdk_version != 0x15 || !common_info)
       return FAIL;
+   if (inited && (rec.overlap_fails || getenv("FAKE_NGX_FAIL_OVERLAP")))
+      return FAIL | 5;
    for (slot = 0; slot < 16 && sessions[slot].device; slot++)
    {
    }
@@ -293,6 +296,8 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Shutdown1(void *dev, int *in_use)
    sessions[slot].device = NULL;
    sessions[slot].info = NULL;
    *in_use = --inited != 0;
+   if (!inited)
+      params_used = 0;
    rec.shutdown_calls++;
    return OK;
 }

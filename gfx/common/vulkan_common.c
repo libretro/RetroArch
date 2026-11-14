@@ -205,15 +205,17 @@ static void vulkan_session_key_store(struct vulkan_session_key **out,
 }
 #endif
 
-void vulkan_context_session_cache_prune(const char *keep_dir)
+bool vulkan_context_session_cache_prune(const char *keep_dir)
 {
 #ifdef VULKAN_SESSION_CACHE
    if (!keep_dir || video_upscaler_optiscaler()
          || !kept_dlss_session.session_upscaler_dir
          || strcmp(keep_dir, kept_dlss_session.session_upscaler_dir))
       vulkan_session_discard();
+   return kept_dlss_session.device != VK_NULL_HANDLE;
 #else
    (void)keep_dir;
+   return false;
 #endif
 }
 
