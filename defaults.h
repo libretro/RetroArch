@@ -87,7 +87,7 @@ struct defaults
    int settings_out_sample_rate;
    int settings_out_block_frames;
 #ifdef HAVE_MENU
-   unsigned menu_materialui_menu_color_theme;
+   const char *menu_materialui_menu_color_theme;
 #endif
 
    float settings_video_refresh_rate;
@@ -98,7 +98,6 @@ struct defaults
    char settings_menu[32];
 
 #ifdef HAVE_MENU
-   bool menu_materialui_menu_color_theme_enable;
    bool menu_controls_menu_btn_ok;
    bool menu_controls_menu_btn_cancel;
    bool menu_controls_set;
