@@ -2213,6 +2213,9 @@ static void task_cloud_sync_update_manifests(task_cloud_sync_state_t *sync_state
     * read from here on, so they take what was added to them. */
    task_cloud_sync_fold_manifest_adds(sync_state);
 
+   /* Nothing else creates it; without it neither manifest is saved. */
+   path_mkdir(sync_state->dir_core_assets);
+
    if (sync_state->need_manifest_uploaded)
    {
       RARCH_LOG(CSPFX "Uploading updated manifest to server...\n");
