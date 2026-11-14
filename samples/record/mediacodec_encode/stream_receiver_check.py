@@ -35,7 +35,8 @@ def main():
     from session_peer import native_ffmpeg
     from tls_relay import TlsRelay
     root = args.artifacts.resolve() if args.artifacts else Path(tempfile.mkdtemp(prefix='mc-wire-'))
-    root.mkdir(parents=True, exist_ok=True)
+    if args.artifacts:
+        root.mkdir(parents=True, exist_ok=False)
     evidence = dict(result='running', scope=__doc__, codecs='AVC/AAC', commands=[], cases=[])
 
     def save():
@@ -128,7 +129,7 @@ def main():
                  ('video-only', None, False, False)]
         for name, tls, legacy, with_audio in cases[:1] if args.first_case else cases:
             directory = root / name
-            directory.mkdir(exist_ok=True)
+            directory.mkdir()
             fixture = directory / 'packets.bin'
             media = [(i * 1000000 // 60, 0, 1 if i % 12 == 0 else 0, packet)
                      for i, packet in enumerate(pictures)]
@@ -182,6 +183,8 @@ def main():
             info = json.loads(command([probe, '-v', 'error', '-show_streams', '-show_packets',
                                        '-of', 'json', received]).stdout)
             video_index = next(s['index'] for s in info['streams'] if s['codec_type'] == 'video')
+            assert len(info['streams']) == (2 if with_audio else 1)
+            assert next(s for s in info['streams'] if s['index'] == video_index)['codec_name'] == 'h264'
             audio_streams = [s for s in info['streams'] if s['codec_type'] == 'audio']
             assert bool(audio_streams) == with_audio
             coded_video = [p for p in info['packets'] if p['stream_index'] == video_index]
@@ -192,6 +195,8 @@ def main():
                                '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']).stdout
             assert decoded == reference_video
             if with_audio:
+                assert audio_streams[0]['codec_name'] == 'aac'
+                assert int(audio_streams[0]['sample_rate']) == 48000 and audio_streams[0]['channels'] == 2
                 coded_audio = [p for p in info['packets'] if p['stream_index'] == audio_streams[0]['index']]
                 assert len(coded_audio) == len(packets)
                 for i, packet in enumerate(coded_audio):
