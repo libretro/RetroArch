@@ -153,6 +153,7 @@
 #endif
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
+#include "../gfx/gfx_thumbnail_results.h"
 #include "../dynamic.h"
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
@@ -4870,6 +4871,15 @@ static void menu_displaylist_set_new_playlist(
          playlist_qsort(playlist);
 
       strlcpy(menu->db_playlist_file, path, sizeof(menu->db_playlist_file));
+
+      gfx_thumbnail_results_release(GFX_THUMBNAIL_RESULTS_HOLD_MENU);
+      task_push_pl_thumbnail_match(&playlist_config, playlist,
+            settings->paths.directory_thumbnails,
+            settings->paths.path_content_database,
+            settings->bools.playlist_allow_non_png,
+            settings->bools.playlist_thumbnail_other_regions);
+      gfx_thumbnail_results_hold(playlist_config.path,
+            GFX_THUMBNAIL_RESULTS_HOLD_MENU);
    }
 }
 
@@ -9762,6 +9772,7 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,              PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_PLAYLIST_THUMBNAIL_OTHER_REGIONS,    PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,                PARSE_ONLY_UINT, false},

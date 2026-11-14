@@ -4829,7 +4829,10 @@ static void materialui_render(void *data,
                   list->list[entry_idx].type, &mui->playlist, &playlist_entry, list, &entry_idx, &list_size);
 
             if (list_idx > -1)
+            {
                playlist_idx = list_idx;
+               menu_explore_push_thumbnail_match(mui->playlist);
+            }
          }
 
          if (!materialui_render_process_entry(

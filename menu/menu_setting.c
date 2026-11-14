@@ -83,6 +83,7 @@
 
 #include "../camera/camera_driver.h"
 #include "../gfx/gfx_animation.h"
+#include "../gfx/gfx_thumbnail_results.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.h"
 #endif
@@ -12216,6 +12217,10 @@ static void general_write_handler(rarch_setting_t *setting)
             video_st->current_video->suppress_screensaver(video_st->data,
                   settings->bools.ui_suspend_screensaver_enable);
          }
+         break;
+      case MENU_ENUM_LABEL_PLAYLIST_THUMBNAIL_OTHER_REGIONS:
+         gfx_thumbnail_results_set_other_regions(
+               settings->bools.playlist_thumbnail_other_regions);
          break;
       default:
          /* Special cases */

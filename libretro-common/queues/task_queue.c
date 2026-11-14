@@ -725,11 +725,18 @@ static void retro_task_regular_reset(void)
 static bool retro_task_regular_init(void) { return true; }
 static void retro_task_regular_deinit(void) { }
 
+/* Findable until its callback runs, as on the threaded runners. */
 static bool retro_task_regular_find(retro_task_finder_t func, void *user_data)
 {
    retro_task_t *task = tasks_running.front;
 
    for (; task; task = task->next)
+   {
+      if (func(task, user_data))
+         return true;
+   }
+
+   for (task = tasks_finished.front; task; task = task->next)
    {
       if (func(task, user_data))
          return true;

@@ -2160,6 +2160,35 @@ void MainWindow::onFileSystemDirLoaded(const QString &path)
    }
 }
 
+void MainWindow::onThumbnailsChanged(const QString &playlistPath)
+{
+   int i;
+   PlaylistEntry entry;
+   /* All Playlists shows rows of every playlist */
+   if (     !currentPlaylistIsAll()
+         && (   playlistPath.isEmpty()
+             || QFileInfo(getCurrentPlaylistPath())
+             != QFileInfo(playlistPath)))
+      return;
+   m_playlistModel->clearThumbnailPaths();
+   updateVisibleItems();
+   m_gridView->viewport()->update();
+   if (m_currentBrowser != BROWSER_TYPE_PLAYLISTS)
+      return;
+   /* The selection's panes: only one whose file changed is shown
+    * again, so an image already there (or playing) stays. */
+   entry = getCurrentContentEntry();
+   if (entry.path.isEmpty())
+      return;
+   for (i = 0; i < 4; i++)
+   {
+      QString path = m_playlistModel->getThumbnailPath(
+            entry, qt_thumbnail_subdirs[i]);
+      if (path != m_sidebarPending[i])
+         showSidebarImage(i, path, m_sidebarAcceptDrop);
+   }
+}
+
 /* workaround for columns being resized */
 /* The core's listing landed (enumerated off the UI thread): show it. */
 void MainWindow::onBrowseChanged()
@@ -2727,15 +2756,18 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
 {
    PlaylistEntry entry          = getCurrentContentEntry();
    QString dirString            = m_playlistModel->getPlaylistThumbnailsDir(
-                                      entry.dbName, type);
-   QString thumbPath            = m_playlistModel->getRepositoryThumbnailPath(
-                                      entry.dbName, entry.labelNoExt, type);
+                                      entry.thumbnailSystem, type);
+   QString thumbPath            = m_playlistModel->getThumbnailSavePath(
+                                      entry, type);
    QByteArray   dirArray        = QDir::toNativeSeparators(dirString).toUtf8();
    const char   *dirData        = dirArray.constData();
    QByteArray thumbArray        = QDir::toNativeSeparators(thumbPath).toUtf8();
    const char *thumbData        = thumbArray.constData();
    int quality                  = -1;
    QImage scaledImage(image);
+
+   if (thumbPath.isEmpty())
+      return QString();
 
    if (!path_is_directory(dirData))
    {
@@ -2940,6 +2972,7 @@ PlaylistEntry MainWindow::getFileContentEntry(const QModelIndex &index)
    entry.label         = entry.path;
    entry.labelNoExt    = fileInfo.completeBaseName();
    entry.dbName        = fileInfo.dir().dirName();
+   entry.thumbnailSystem = entry.dbName;
 
    return entry;
 }
@@ -3493,9 +3526,8 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
          acceptDrop = true;
 
       for (i = 0; i < 4; i++)
-         showSidebarImage((int)i, m_playlistModel->getRepositoryThumbnailPath(
-               entry.dbName, entry.labelNoExt, qt_thumbnail_subdirs[i]),
-               acceptDrop);
+         showSidebarImage((int)i, m_playlistModel->getThumbnailPath(
+               entry, qt_thumbnail_subdirs[i]), acceptDrop);
    }
    setCoreActions();
 }
@@ -5467,6 +5499,17 @@ static void ui_companion_qt_notify_refresh(void *data)
    win_handle->qtWindow->deferReloadPlaylists();
 }
 
+static void ui_companion_qt_notify_thumbnails(void *data,
+      const char *playlist_path)
+{
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
+   ui_window_qt_t *win_handle = handle
+      ? (ui_window_qt_t*)handle->window : NULL;
+   if (win_handle && win_handle->qtWindow)
+      win_handle->qtWindow->onThumbnailsChanged(
+            QString::fromUtf8(playlist_path));
+}
+
 static void ui_companion_qt_log_msg(void *data, const char *msg)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
@@ -5498,6 +5541,7 @@ ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_iterate,
    ui_companion_qt_event_command,
    ui_companion_qt_notify_refresh,
+   ui_companion_qt_notify_thumbnails,
    ui_companion_qt_msg_queue_push,
    NULL,
    NULL,

@@ -104,6 +104,7 @@ extern void gt_lend_reset(void);
 extern int  gt_lend_owned, gt_update_fail, gt_lend_freed, gt_lend_refuse;
 void gt_async_flush(void);
 int gt_surface_outcome_test(void);
+int gt_thumbnail_lookup_test(void);
 
 /* Whether the thumbnail's animation surface has a frame on its way to
  * the video thread. */
@@ -752,6 +753,10 @@ int main(void)
    /* 12. the surface's direct-video outcomes, slot by slot */
    gt_lend_mode = 0;
    if (gt_surface_outcome_test())
+      bad = 1;
+
+   /* thumbnail lookup order */
+   if (gt_thumbnail_lookup_test())
       bad = 1;
 
    /* 13. threaded video, a release that frees its surface - a load's

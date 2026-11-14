@@ -59,6 +59,8 @@ typedef struct
 static net_driver_state_t networking_driver_st;
 static settings_t settings;
 static retro_task_t *queued;
+static retro_task_t *retiring;
+static bool hold_retire;
 static retro_time_t now;
 static bool netplay_mitm_query_pending;
 static bool netplay_mitm_query_gave_up;
@@ -87,7 +89,8 @@ static bool task_queue_push(retro_task_t *task)
 }
 static bool task_queue_find(task_finder_data_t *find)
 {
-   return queued && find->func(queued, find->userdata);
+   return    (queued   && find->func(queued,   find->userdata))
+          || (retiring && find->func(retiring, find->userdata));
 }
 static bool netplay_mitm_query_begin(const char *handle)
 {
@@ -117,6 +120,13 @@ static void tick(void)
    queued->handler(queued);
    if (queued->flags & RETRO_TASK_FLG_FINISHED)
    {
+      /* Retire budget spent: finished but still findable. */
+      if (hold_retire)
+      {
+         retiring = queued;
+         queued   = NULL;
+         return;
+      }
       queued->cleanup(queued);
       free(queued);
       queued = NULL;
@@ -125,7 +135,8 @@ static void tick(void)
 
 static void reset(void)
 {
-   assert(!queued);
+   assert(!queued && !retiring);
+   hold_retire = false;
    memset(&networking_driver_st, 0, sizeof(networking_driver_st));
    memset(&settings, 0, sizeof(settings));
    memset(netplay_mitm_query_handle, 0, sizeof(netplay_mitm_query_handle));
@@ -193,6 +204,22 @@ int main(void)
    networking_driver_st.flags |= NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT;
    tick();
    assert(!queued && queries == 1 && !setups);
-   puts("PASS relay host setup: failure, retry, success, deadline and cancellation");
+   reset();
+   command_event(CMD_EVENT_NETPLAY_INIT, NULL);
+   hold_retire = true;
+   now += NETPLAY_MITM_QUERY_TIMEOUT;
+   tick();
+   assert(!queued && retiring && setups == 1 && direct == 1);
+   hold_retire = false;
+   command_event(CMD_EVENT_NETPLAY_INIT, NULL);
+   assert(queued && queries == 2 && setups == 1);
+   netplay_mitm_query_pending = false;
+   tick();
+   assert(!queued && setups == 2 && direct == 2);
+   retiring->cleanup(retiring);
+   free(retiring);
+   retiring = NULL;
+   puts("PASS relay host setup: failure, retry, success, deadline, cancellation"
+        " and a finished setup waiting to retire");
    return 0;
 }

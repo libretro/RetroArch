@@ -43,6 +43,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_SRM_EXTENSION ".srm"
 #define FILE_PATH_STATE_EXTENSION ".state"
 #define FILE_PATH_LPL_EXTENSION ".lpl"
+#define FILE_PATH_THUMBS_EXTENSION ".thumbs"
 #define FILE_PATH_PNG_EXTENSION ".png"
 #define FILE_PATH_RDB_EXTENSION ".rdb"
 #define FILE_PATH_INDEX_URL ".index"

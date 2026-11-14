@@ -1402,6 +1402,8 @@ DRIVERS
 #include "../gfx/gfx_surface.c"
 #include "../gfx/gfx_surface_player.c"
 #include "../gfx/gfx_thumbnail.c"
+#include "../gfx/gfx_thumbnail_match.c"
+#include "../gfx/gfx_thumbnail_results.c"
 #include "../gfx/gfx_media_controls.c"
 #include "../gfx/gfx_media_display.c"
 #include "../gfx/gfx_media_player.c"
@@ -1863,6 +1865,7 @@ DATA RUNLOOP
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_nbio_slice.c"
 #include "../tasks/task_playlist_manager.c"
+#include "../tasks/task_pl_thumbnail_match.c"
 #include "../tasks/task_core_backup.c"
 #ifdef HAVE_TRANSLATE
 #include "../tasks/task_translation.c"

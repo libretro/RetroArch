@@ -58,8 +58,19 @@
 #include "../../../configuration.h"
 #include "../../../runloop.h"
 #include "../../../core_option_manager.h"
+#include "../../../gfx/gfx_thumbnail_results.h"
 #include "../companion_core.h"
 
+extern char stub_match_push_path[];
+extern unsigned stub_match_pushes;
+extern unsigned stub_match_bare_pushes;
+extern void stub_core_info_find_set(const char *path, const char *databases);
+#ifdef HAVE_NETWORKING
+#include "../../../tasks/tasks_internal.h"
+extern char stub_http_url[PATH_MAX_LENGTH];
+extern retro_task_callback_t stub_http_cb;
+extern void *stub_http_ud;
+#endif
 extern settings_t test_settings;
 extern runloop_state_t test_runloop;
 extern int  stub_calls_load_with_new_core;
@@ -86,10 +97,12 @@ static void sleep_briefly_ms(long ns) { struct timespec ts; ts.tv_sec = 0; ts.tv
 #endif
 
 static int  playlist_changed, playlists_changed, browse_changed;
+static int  thumbnails_changed;
 
 static void on_playlists_changed(void *ud) { (void)ud; playlists_changed++; }
 static void on_playlist_changed(void *ud)  { (void)ud; playlist_changed++; }
 static void on_browse_changed(void *ud)    { (void)ud; browse_changed++; }
+static void on_thumbnails_changed(void *ud) { (void)ud; thumbnails_changed++; }
 
 /* The listing is enumerated off the UI thread and lands in iterate():
  * spin it until the browse callback fires (or a timeout). */
@@ -119,6 +132,18 @@ static void writef(const char *path, const char *text)
    }
    fputs(text, f);
    fclose(f);
+}
+
+static bool file_is(const char *path, const char *text)
+{
+   char buf[64];
+   size_t n;
+   FILE *f = fopen(path, "rb");
+   if (!f)
+      return false;
+   n = fread(buf, 1, sizeof(buf), f);
+   fclose(f);
+   return n == strlen(text) && !memcmp(buf, text, n);
 }
 
 #include <formats/image.h>
@@ -259,6 +284,7 @@ static companion_core_t *make_core(void)
    cb.on_playlists_changed = on_playlists_changed;
    cb.on_playlist_changed  = on_playlist_changed;
    cb.on_browse_changed    = on_browse_changed;
+   cb.on_thumbnails_changed = on_thumbnails_changed;
    return companion_core_new(&cb, NULL);
 }
 
@@ -350,8 +376,485 @@ static void test_thumbnail_path(void)
    n = companion_core_thumbnail_path(c, "Whatever", COMPANION_THUMB_BOXART,
          "cover", img, out, sizeof(out));
    CHECK(n > 0 && string_is_equal(out, img), "image content is its own thumbnail");
+   /* '"' is replaced as the downloader replaces it */
+   fixture(want, sizeof(want),
+         "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Say _Hi_ (USA).png");
+   writef(want, "png");
+   n = companion_core_thumbnail_path(c, "Nintendo - Nintendo Entertainment System",
+         COMPANION_THUMB_BOXART, "Say \"Hi\" (USA)", "/x", out, sizeof(out));
+   CHECK(n > 0 && string_is_equal(out, want), "\" sanitised to _: %s", out);
+   /* then the content file name */
+   fixture(want, sizeof(want),
+         "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Kid Icarus (USA).png");
+   writef(want, "png");
+   n = companion_core_thumbnail_path(c, "Nintendo - Nintendo Entertainment System",
+         COMPANION_THUMB_BOXART, "kid icarus", "/roms/nes/Kid Icarus (USA).nes",
+         out, sizeof(out));
+   CHECK(n > 0 && string_is_equal(out, want), "the file name after the label: %s", out);
+   /* an entry without a label, as Qt passes it */
+   n = companion_core_thumbnail_path(c, "Nintendo - Nintendo Entertainment System",
+         COMPANION_THUMB_BOXART, "/roms/nes/Kid Icarus (USA).nes",
+         "/roms/nes/Kid Icarus (USA).nes", out, sizeof(out));
+   CHECK(n > 0 && string_is_equal(out, want), "no label: the file stem: %s", out);
+   /* then the match the thumbnail task stored, if the menu shows it */
+   {
+      size_t rec;
+      gfx_thumbnail_results_t *t = gfx_thumbnail_results_new();
+      rec = gfx_thumbnail_results_add(t, "/roms/nes/m.nes", "Metroid (U) [!]", "",
+            "Nintendo - Nintendo Entertainment System");
+      gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+            "Metroid (Europe).png");
+      rec = gfx_thumbnail_results_add(t, "/roms/nes/k.nes", "Kirby (U)", "",
+            "Nintendo - Nintendo Entertainment System");
+      gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+            "Kirby (Europe).jpg");
+      gfx_thumbnail_results_sort(t);
+      gfx_thumbnail_results_open("/pl/companion.lpl");
+      gfx_thumbnail_results_install("/pl/companion.lpl", t, NULL, true);
+   }
+   fixture(want, sizeof(want),
+         "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Metroid (Europe).png");
+   writef(want, "png");
+   n = companion_core_thumbnail_path(c, "Nintendo - Nintendo Entertainment System",
+         COMPANION_THUMB_BOXART, "Metroid (U) [!]", "/roms/nes/m.nes", out, sizeof(out));
+   CHECK(n > 0 && string_is_equal(out, want), "then the stored match: %s", out);
+   fixture(want, sizeof(want),
+         "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Kirby (Europe).jpg");
+   writef(want, "jpg");
+   n = companion_core_thumbnail_path(c, "Nintendo - Nintendo Entertainment System",
+         COMPANION_THUMB_BOXART, "Kirby (U)", "/roms/nes/k.nes", out, sizeof(out));
+   CHECK(n > 0 && string_ends_with(out, "Named_Boxarts/Kirby (U).png"),
+         "a non-PNG match only with playlist_allow_non_png: %s", out);
+   test_settings.bools.playlist_allow_non_png = true;
+   n = companion_core_thumbnail_path(c, "Nintendo - Nintendo Entertainment System",
+         COMPANION_THUMB_BOXART, "Kirby (U)", "/roms/nes/k.nes", out, sizeof(out));
+   CHECK(n > 0 && string_is_equal(out, want), "a non-PNG match when allowed: %s", out);
+   test_settings.bools.playlist_allow_non_png = false;
+   gfx_thumbnail_results_deinit();
    companion_core_free(c);
 }
+
+/* A one-entry playlist without a db_name. */
+static void write_row_lpl(const char *rel, const char *path,
+      const char *label, const char *core_path, const char *core_name)
+{
+   char p[512];
+   char buf[1024];
+   fixture(p, sizeof(p), rel);
+   snprintf(buf, sizeof(buf),
+         "{\n  \"version\": \"1.5\",\n  \"items\": [\n"
+         "    {\n      \"path\": \"%s\",\n      \"label\": \"%s\",\n"
+         "      \"core_path\": \"%s\",\n      \"core_name\": \"%s\",\n"
+         "      \"crc32\": \"\",\n      \"db_name\": \"\"\n    }\n  ]\n}\n",
+         path, label, core_path, core_name);
+   writef(p, buf);
+}
+
+/* Entry @i's art as a companion looks it up, with the system the
+ * entry resolves to. */
+static size_t entry_boxart(companion_core_t *c, size_t i,
+      char *sys, size_t sys_len, char *out, size_t len)
+{
+   const struct playlist_entry *e = companion_core_entry(c, i);
+   companion_core_entry_thumbnail_system(c, i, sys, sys_len);
+   if (!e)
+      return 0;
+   return companion_core_thumbnail_path(c, sys, COMPANION_THUMB_BOXART,
+         e->label, e->path, out, len);
+}
+
+/* History and favourites rows without a db_name find the match the
+ * thumbnail task stored, under the system it stored it: the core's
+ * database, else the content's folder (as the menu). */
+static void test_entry_thumbnail_system(void)
+{
+   static const char *const nes = "Nintendo - Nintendo Entertainment System";
+   companion_core_t *c = make_core();
+   char p[512], sys[NAME_MAX_LENGTH];
+   char out[512], want[512];
+   gfx_thumbnail_results_t *t;
+   size_t rec, n;
+
+   fixture(p, sizeof(p), "hist"); mkdirp(p);
+   write_row_lpl("hist/content_history.lpl", "/roms/nes/zelda.nes",
+         "Legend of Zelda, The (U) [!]", "/cores/fceumm_libretro.so", "FCEUmm");
+   write_row_lpl("hist/content_favorites.lpl",
+         "/roms/Nintendo - Nintendo Entertainment System/Tetris (U) [!].nes",
+         "Tetris (U) [!]", "/cores/nodb_libretro.so", "NoDB");
+   fixture(p, sizeof(p), "fav2"); mkdirp(p);
+   write_row_lpl("fav2/content_favorites.lpl", "/roms/My.Roms/Rygar.nes",
+         "rygar_dump", "/cores/nodb_libretro.so", "NoDB");
+   write_row_lpl("hist/Collection.lpl", "/roms/nes/smb.nes",
+         "super mario bros", "DETECT", "DETECT");
+   stub_core_info_find_set("/cores/fceumm_libretro.so",
+         "Nintendo - Nintendo Entertainment System|Nintendo - Family Computer Disk System");
+
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/roms/nes/zelda.nes",
+         "Legend of Zelda, The (U) [!]", "", nes);
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "Legend of Zelda, The (USA).png");
+   gfx_thumbnail_results_sort(t);
+   fixture(p, sizeof(p), "hist/content_history.lpl");
+   gfx_thumbnail_results_open(p);
+   gfx_thumbnail_results_install(p, t, NULL, true);
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t,
+         "/roms/Nintendo - Nintendo Entertainment System/Tetris (U) [!].nes",
+         "Tetris (U) [!]", "", nes);
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "Tetris (USA).png");
+   gfx_thumbnail_results_sort(t);
+   fixture(p, sizeof(p), "hist/content_favorites.lpl");
+   gfx_thumbnail_results_open(p);
+   gfx_thumbnail_results_install(p, t, NULL, true);
+   t   = gfx_thumbnail_results_new();
+   rec = gfx_thumbnail_results_add(t, "/roms/My.Roms/Rygar.nes",
+         "rygar_dump", "", "My.Roms");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS,
+         "Rygar (USA).png");
+   gfx_thumbnail_results_sort(t);
+   fixture(p, sizeof(p), "fav2/content_favorites.lpl");
+   gfx_thumbnail_results_open(p);
+   gfx_thumbnail_results_install(p, t, NULL, true);
+
+   fixture(want, sizeof(want), "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Legend of Zelda, The (USA).png");
+   writef(want, "png");
+   fixture(want, sizeof(want), "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Tetris (USA).png");
+   writef(want, "png");
+   fixture(p, sizeof(p), "thumbnails/My.Roms"); mkdirp(p);
+   fixture(p, sizeof(p), "thumbnails/My.Roms/Named_Boxarts"); mkdirp(p);
+   fixture(want, sizeof(want), "thumbnails/My.Roms/Named_Boxarts/Rygar (USA).png");
+   writef(want, "png");
+
+   /* History: the core's first database */
+   fixture(p, sizeof(p), "hist/content_history.lpl");
+   CHECK(companion_core_select_playlist_path(c, p) && iterate_until_loaded(c),
+         "select %s", p);
+   entry_boxart(c, 0, sys, sizeof(sys), out, sizeof(out));
+   fixture(want, sizeof(want), "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Legend of Zelda, The (USA).png");
+   CHECK(string_is_equal(sys, nes), "history row: its core's database (got '%s')", sys);
+   CHECK(string_is_equal(out, want), "history row: the stored match: %s", out);
+
+   /* Favourites, a core without a database: the content's folder */
+   fixture(p, sizeof(p), "hist/content_favorites.lpl");
+   CHECK(companion_core_select_playlist_path(c, p) && iterate_until_loaded(c),
+         "select %s", p);
+   entry_boxart(c, 0, sys, sizeof(sys), out, sizeof(out));
+   fixture(want, sizeof(want), "thumbnails/Nintendo - Nintendo Entertainment System/Named_Boxarts/Tetris (USA).png");
+   CHECK(string_is_equal(sys, nes), "favourites row: the content's folder (got '%s')", sys);
+   CHECK(string_is_equal(out, want), "favourites row: the stored match: %s", out);
+   n = companion_core_entry_thumbnail_system(c, 0, sys, sizeof(sys));
+   CHECK(n == strlen(sys), "content folder: returns the length written (%u, wrote %u)",
+         (unsigned)n, (unsigned)strlen(sys));
+
+   /* A folder with a dot: looked up under the name as it is */
+   fixture(p, sizeof(p), "fav2/content_favorites.lpl");
+   CHECK(companion_core_select_playlist_path(c, p) && iterate_until_loaded(c),
+         "select %s", p);
+   entry_boxart(c, 0, sys, sizeof(sys), out, sizeof(out));
+   fixture(want, sizeof(want), "thumbnails/My.Roms/Named_Boxarts/Rygar (USA).png");
+   CHECK(string_is_equal(sys, "My.Roms"), "dotted folder kept whole (got '%s')", sys);
+   CHECK(string_is_equal(out, want), "dotted folder: the stored match: %s", out);
+
+   /* A collection row: the playlist's name */
+   fixture(p, sizeof(p), "hist/Collection.lpl");
+   CHECK(companion_core_select_playlist_path(c, p) && iterate_until_loaded(c),
+         "select %s", p);
+   companion_core_entry_thumbnail_system(c, 0, sys, sizeof(sys));
+   CHECK(string_is_equal(sys, "Collection"), "collection row: its playlist (got '%s')", sys);
+
+   stub_core_info_find_set(NULL, NULL);
+   gfx_thumbnail_results_deinit();
+   companion_core_free(c);
+}
+
+static void test_thumbnail_match_push(void)
+{
+   char pl[PATH_MAX_LENGTH];
+   companion_core_t *c = make_core();
+
+   fixture(pl, sizeof(pl), "Match.lpl");
+   writef(pl, "{\"version\": \"1.5\", \"items\": []}\n");
+   stub_match_push_path[0] = '\0';
+   CHECK(companion_core_select_playlist_path(c, pl) && iterate_until_loaded(c),
+         "select %s", pl);
+   CHECK(string_is_equal(stub_match_push_path, pl),
+         "a loaded playlist asks for its thumbnail matches: %s",
+         stub_match_push_path);
+   thumbnails_changed = 0;
+   companion_core_notify_thumbnails(c, "/elsewhere/Other.lpl");
+   CHECK(thumbnails_changed == 0, "another playlist's matches: no notice");
+   companion_core_notify_thumbnails(c, pl);
+   CHECK(thumbnails_changed == 1, "the shown playlist's matches: %d notices",
+         thumbnails_changed);
+   companion_core_free(c);
+}
+
+/* Installs a table naming @path's row @rom "<file name> (Hold).png" */
+static void hold_table(const char *path, const char *rom)
+{
+   char name[64];
+   size_t rec;
+   gfx_thumbnail_results_t *t = gfx_thumbnail_results_new();
+   snprintf(name, sizeof(name), "%s (Hold).png", path_basename(rom));
+   rec = gfx_thumbnail_results_add(t, rom, "L", "", "Sys");
+   gfx_thumbnail_results_set(t, rec, GFX_THUMBNAIL_RESULT_BOXARTS, name);
+   gfx_thumbnail_results_sort(t);
+   gfx_thumbnail_results_install(path, t, NULL, true);
+}
+
+static bool hold_shows(const char *rom)
+{
+   char name[64];
+   const char *got = gfx_thumbnail_results_lookup(rom, "L", "Sys",
+         GFX_THUMBNAIL_RESULT_BOXARTS, false);
+   snprintf(name, sizeof(name), "%s (Hold).png", path_basename(rom));
+   return got && string_is_equal(got, name);
+}
+
+static void open_others(unsigned from, unsigned n)
+{
+   char p[64];
+   for (; n; n--, from++)
+   {
+      snprintf(p, sizeof(p), "/elsewhere/%u.lpl", from);
+      gfx_thumbnail_results_open(p);
+   }
+}
+
+/* The shown playlist keeps its stored matches whatever else opens,
+ * also after the store starts over. */
+static void test_thumbnail_hold(void)
+{
+   char pl[PATH_MAX_LENGTH];
+   companion_core_t *c = make_core();
+
+   gfx_thumbnail_results_deinit();
+   fixture(pl, sizeof(pl), "playlists/Nintendo - Nintendo Entertainment System.lpl");
+   stub_match_pushes = 0;
+   CHECK(companion_core_select_playlist_path(c, pl) && iterate_until_loaded(c),
+         "select %s", pl);
+   hold_table(pl, "/roms/nes/metroid.nes");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/metroid.nes"),
+         "held: the row's stored match outlives six other opens");
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_pushes == 1, "one push while the store keeps it: %u",
+         stub_match_pushes);
+
+   gfx_thumbnail_results_deinit();
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_pushes == 2,
+         "the store started over: one push again, not %u",
+         stub_match_pushes - 1);
+   hold_table(pl, "/roms/nes/metroid.nes");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/metroid.nes"), "and held again");
+
+   companion_core_free(c);
+   open_others(6, 4);
+   CHECK(!hold_shows("/roms/nes/metroid.nes"), "released with the playlist");
+   gfx_thumbnail_results_deinit();
+}
+
+/* All Playlists pushes and holds every playlist it lists. */
+static void test_thumbnail_hold_all(void)
+{
+   char nes[512];
+   char gen[512];
+   companion_core_t *c = make_core();
+
+   gfx_thumbnail_results_deinit();
+   fixture(nes, sizeof(nes), "playlists/Nintendo - Nintendo Entertainment System.lpl");
+   fixture(gen, sizeof(gen), "playlists/Sega - Mega Drive - Genesis.lpl");
+   companion_core_refresh_playlists(c);
+   stub_match_pushes = 0;
+   CHECK(companion_core_select_playlist(c, 0) && iterate_until_loaded(c),
+         "select All Playlists");
+   CHECK(stub_match_pushes == 2, "one push per playlist: %u",
+         stub_match_pushes);
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && hold_shows("/roms/gen/sonic.md"),
+         "every listed playlist held");
+
+   gfx_thumbnail_results_deinit();
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_pushes == 4, "the store started over: each pushed once more: %u",
+         stub_match_pushes);
+
+   CHECK(companion_core_select_playlist_path(c, nes) && iterate_until_loaded(c),
+         "leave for one playlist");
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(6, 4);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && !hold_shows("/roms/gen/sonic.md"),
+         "leaving All Playlists releases the others");
+   companion_core_free(c);
+   gfx_thumbnail_results_deinit();
+}
+
+/* Qt lists All Playlists one playlist after another: each stays held. */
+static void test_thumbnail_hold_append(void)
+{
+   char nes[512];
+   char gen[512];
+   companion_core_t *c = make_core();
+
+   gfx_thumbnail_results_deinit();
+   fixture(nes, sizeof(nes), "playlists/Nintendo - Nintendo Entertainment System.lpl");
+   fixture(gen, sizeof(gen), "playlists/Sega - Mega Drive - Genesis.lpl");
+   stub_match_pushes      = 0;
+   stub_match_bare_pushes = 0;
+   CHECK(   companion_core_select_playlist_path(c, nes) && iterate_until_loaded(c)
+         && companion_core_append_playlist_path(c, gen) && iterate_until_loaded(c),
+         "list two playlists in turn");
+   CHECK(stub_match_pushes == 2 && stub_match_bare_pushes == 0,
+         "one push per playlist, with its parsed playlist: %u, %u bare",
+         stub_match_pushes, stub_match_bare_pushes);
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && hold_shows("/roms/gen/sonic.md"),
+         "every listed playlist held");
+   thumbnails_changed = 0;
+   companion_core_notify_thumbnails(c, nes);
+   CHECK(thumbnails_changed == 1, "the first playlist's matches: %d notices",
+         thumbnails_changed);
+
+   gfx_thumbnail_results_deinit();
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_pushes == 4, "the store started over: each pushed once more: %u",
+         stub_match_pushes);
+   CHECK(stub_match_bare_pushes == 1,
+         "the earlier playlist by its path, not kept parsed: %u bare",
+         stub_match_bare_pushes);
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(0, 6);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && hold_shows("/roms/gen/sonic.md"),
+         "and both held again");
+
+   CHECK(companion_core_select_playlist_path(c, nes) && iterate_until_loaded(c),
+         "select one playlist");
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(6, 4);
+   CHECK(hold_shows("/roms/nes/alpha.nes") && !hold_shows("/roms/gen/sonic.md"),
+         "selecting one releases the others");
+
+   /* An append is a plain select with a parse pending, */
+   CHECK(   companion_core_append_playlist_path(c, gen)
+         && companion_core_append_playlist_path(c, gen)
+         && iterate_until_loaded(c)
+         && string_is_equal(companion_core_selected_playlist_path(c), gen),
+         "append while a parse is pending");
+   thumbnails_changed = 0;
+   companion_core_notify_thumbnails(c, nes);
+   CHECK(thumbnails_changed == 0, "the one listed before is let go: %d notices",
+         thumbnails_changed);
+   /* for All Playlists, */
+   companion_core_refresh_playlists(c);
+   CHECK(   companion_core_append_playlist_path(c,
+               COMPANION_ALL_PLAYLISTS_TOKEN)
+         && iterate_until_loaded(c) && companion_core_entry_count(c) == 5,
+         "append All Playlists: its 5 entries, got %u",
+         (unsigned)companion_core_entry_count(c));
+   stub_match_bare_pushes = 0;
+   gfx_thumbnail_results_deinit();
+   companion_core_iterate(c, 2000);
+   companion_core_iterate(c, 2000);
+   CHECK(stub_match_bare_pushes == 0,
+         "and keeps no earlier playlist by its path: %u bare",
+         stub_match_bare_pushes);
+   /* and in All Playlists */
+   CHECK(   companion_core_append_playlist_path(c, gen)
+         && iterate_until_loaded(c) && companion_core_entry_count(c) == 2,
+         "append in All Playlists: one playlist's 2 entries, got %u",
+         (unsigned)companion_core_entry_count(c));
+   hold_table(nes, "/roms/nes/alpha.nes");
+   hold_table(gen, "/roms/gen/sonic.md");
+   open_others(10, 4);
+   CHECK(!hold_shows("/roms/nes/alpha.nes") && hold_shows("/roms/gen/sonic.md"),
+         "and leaves it, releasing the others");
+   companion_core_free(c);
+   gfx_thumbnail_results_deinit();
+}
+
+#ifdef HAVE_NETWORKING
+static bool file_holds(const char *path, const char *text)
+{
+   char buf[64];
+   size_t n;
+   FILE *f = fopen(path, "rb");
+   if (!f)
+      return false;
+   n = fread(buf, 1, sizeof(buf) - 1, f);
+   fclose(f);
+   buf[n] = '\0';
+   return string_is_equal(buf, text);
+}
+
+static bool download(companion_core_t *c, const char *label,
+      const char *content_path)
+{
+   http_transfer_data_t data;
+   if (!companion_core_thumbnail_download(c, "DL", label, content_path, "Named_Boxarts"))
+      return false;
+   memset(&data, 0, sizeof(data));
+   data.data   = (char*)"png";
+   data.len    = 3;
+   data.status = 200;
+   stub_http_cb(NULL, &data, stub_http_ud, NULL);
+   return true;
+}
+
+/* A download lands where the display looks first, by the name the
+ * server is asked for, and never on another file. */
+static void test_thumbnail_download(void)
+{
+   char p[PATH_MAX_LENGTH];
+   const char *rom      = "/roms/Foo (USA).nes";
+   companion_core_t *c = make_core();
+
+   fixture(p, sizeof(p), "thumbnails/DL");
+   mkdirp(p);
+   fixture(p, sizeof(p), "thumbnails/DL/Named_Boxarts");
+   mkdirp(p);
+   fixture(p, sizeof(p), "thumbnails/DL/Named_Boxarts/X.jpg");
+   writef(p, "jpg");
+   CHECK(download(c, "X", "/roms/x.nes"), "labelled: started");
+   CHECK(string_ends_with(stub_http_url, "/DL/Named_Boxarts/X.png"),
+         "labelled: url %s", stub_http_url);
+   CHECK(file_holds(p, "jpg"), "the .jpg beside it keeps its bytes");
+   fixture(p, sizeof(p), "thumbnails/DL/Named_Boxarts/X.png");
+   CHECK(file_holds(p, "png"), "saved as X.png");
+
+   /* The .partial suffix is cut at the end only */
+   fixture(p, sizeof(p), "thumbnails/DL/Named_Boxarts/Bar");
+   writef(p, "keep");
+   CHECK(download(c, "Bar.partial", NULL), "a name holding .partial");
+   CHECK(file_holds(p, "keep"), "a file named by its head is not replaced");
+   fixture(p, sizeof(p), "thumbnails/DL/Named_Boxarts/Bar.partial.png");
+   CHECK(file_holds(p, "png"), "saved as Bar.partial.png");
+
+   /* Qt's label-less form: the label is the path */
+   CHECK(download(c, rom, rom), "label-less: started");
+   CHECK(string_ends_with(stub_http_url, "/DL/Named_Boxarts/Foo (USA).png"),
+         "label-less: the file stem is asked for: %s", stub_http_url);
+   companion_core_thumbnail_path(c, "DL", "Named_Boxarts", rom, rom,
+         p, sizeof(p));
+   CHECK(string_ends_with(p, "/DL/Named_Boxarts/Foo (USA).png")
+         && file_holds(p, "png"), "saved where it is shown: %s", p);
+   companion_core_free(c);
+}
+#endif
 
 static void test_browser(void)
 {
@@ -692,7 +1195,7 @@ static void test_backend_scenario(void)
 static void test_rename_add_install(void)
 {
    companion_core_t *c = make_core();
-   char gen[512], out[PATH_MAX_LENGTH], hist[512], p[512], sub[512];
+   char gen[512], out[512], hist[512], p[512], sub[512];
    const char *paths[2];
    size_t n;
    companion_core_refresh_playlists(c);
@@ -751,7 +1254,7 @@ static void test_rename_add_install(void)
       write_tga_rgba(img, 64, 32, 0xff336699u);
       test_settings.uints.desktop_menu_thumbnail_max_size = 16;
       CHECK(companion_core_thumbnail_install(c, "Sega - Genesis", COMPANION_THUMB_BOXART,
-               "a", img, out, sizeof(out)), "install");
+               "a", "/roms/gen/a.md", img, out, sizeof(out)), "install");
       CHECK(string_ends_with(out, "Sega - Genesis/Named_Boxarts/a.png"), "at the repository path: %s", out);
       CHECK(path_is_valid(out), "png written");
       {
@@ -762,6 +1265,143 @@ static void test_rename_add_install(void)
       }
       test_settings.uints.desktop_menu_thumbnail_max_size = 0;
    }
+   companion_core_free(c);
+}
+
+static void test_rename_cache(void)
+{
+   companion_core_t *c = make_core();
+   char out[512];
+   companion_core_refresh_playlists(c);
+   fixture(out, sizeof(out), "playlists/Sega - Genesis.lpl");
+   /* A cache follows its playlist, there and back */
+   {
+      char from[512];
+      char to[512];
+      char back[512];
+      char again[512];
+      strlcpy(from, out, sizeof(from));
+      strlcat(from, ".thumbs", sizeof(from));
+      writef(from, "{}");
+      CHECK(companion_core_playlist_rename(c, out, "Sega - Genesis 2", to, sizeof(to)),
+            "rename with a cache");
+      strlcpy(back, to, sizeof(back));
+      strlcat(back, ".thumbs", sizeof(back));
+      CHECK(path_is_valid(back) && !path_is_valid(from), "its .lpl.thumbs moves with it");
+      CHECK(companion_core_playlist_rename(c, to, "Sega - Genesis", again, sizeof(again))
+            && string_is_equal(again, out), "and back: %s", again);
+      CHECK(path_is_valid(from) && !path_is_valid(back), "and its cache with it");
+      remove(from);
+   }
+   companion_core_free(c);
+}
+
+static void test_install_names(void)
+{
+   companion_core_t *c = make_core();
+   char out[512], img[512], jpg[512], shown[512];
+   fixture(img, sizeof(img), "drop.tga");
+   write_tga_rgba(img, 64, 32, 0xff336699u);
+   /* an existing X.jpg keeps its bytes: the drop goes to X.png, shown
+    * first from then on */
+   fixture(jpg, sizeof(jpg), "thumbnails/Sega - Genesis/Named_Boxarts/X.jpg");
+   writef(jpg, "not a png");
+   CHECK(companion_core_thumbnail_install(c, "Sega - Genesis", COMPANION_THUMB_BOXART,
+            "X", "/roms/gen/other.md", img, out, sizeof(out)),
+         "install beside an X.jpg");
+   CHECK(string_ends_with(out, "Named_Boxarts/X.png"), "saved as X.png: %s", out);
+   CHECK(file_is(jpg, "not a png"), "X.jpg unchanged");
+   companion_core_thumbnail_path(c, "Sega - Genesis", COMPANION_THUMB_BOXART,
+         "X", "/roms/gen/other.md", shown, sizeof(shown));
+   CHECK(string_is_equal(shown, out), "then shown: %s", shown);
+   /* a label-less entry: saved under its file stem, where it is looked up */
+   CHECK(companion_core_thumbnail_install(c, "Sega - Genesis", COMPANION_THUMB_BOXART,
+            "Yoshi.md", "/roms/gen/Yoshi.md", img, out, sizeof(out)),
+         "install, no label");
+   CHECK(string_ends_with(out, "Named_Boxarts/Yoshi.png"), "saved under the stem: %s", out);
+   companion_core_thumbnail_path(c, "Sega - Genesis", COMPANION_THUMB_BOXART,
+         "Yoshi.md", "/roms/gen/Yoshi.md", shown, sizeof(shown));
+   CHECK(string_is_equal(shown, out) && path_is_valid(shown), "then shown: %s", shown);
+   /* Qt passes the path as the label */
+   companion_core_thumbnail_save_path(c, "Sega - Genesis", COMPANION_THUMB_BOXART,
+         "/roms/gen/Yoshi.md", "/roms/gen/Yoshi.md", shown, sizeof(shown));
+   CHECK(string_is_equal(shown, out), "Qt's save path: %s", shown);
+   companion_core_free(c);
+}
+
+/* Fills @buf with 'Z', then asks for the path in a buffer of @len. */
+static size_t bounds_path(companion_core_t *c, bool display, char *buf,
+      size_t size, size_t len)
+{
+   memset(buf, 'Z', size);
+   if (display)
+      return companion_core_thumbnail_path(c, "Bounds",
+            COMPANION_THUMB_BOXART, "bounds", "/roms/gen/bounds.md", buf, len);
+   return companion_core_thumbnail_save_path(c, "Bounds",
+         COMPANION_THUMB_BOXART, "bounds", "/roms/gen/bounds.md", buf, len);
+}
+
+static bool bounds_untouched(const char *buf, size_t from, size_t size)
+{
+   for (; from < size; from++)
+      if (buf[from] != 'Z')
+         return false;
+   return true;
+}
+
+/* A thumbnail path that does not fit, ".png" included, is no path:
+ * nothing past the buffer, never a name cut short of its .png, and
+ * install writes nothing. */
+static void test_thumbnail_path_bounds(void)
+{
+   static char buf[PATH_MAX_LENGTH], full[PATH_MAX_LENGTH];
+   companion_core_t *c = make_core();
+   char img[512];
+   size_t n, d, t, i;
+
+   n = bounds_path(c, false, full, sizeof(full), sizeof(full));
+   d = n - (sizeof("/bounds.png") - 1);
+   CHECK(n > 16 && string_ends_with(full, "/Bounds/Named_Boxarts/bounds.png"),
+         "full save path: %s", full);
+
+   CHECK(!bounds_path(c, false, buf, sizeof(buf), d + 3) && !*buf
+         && bounds_untouched(buf, d + 3, sizeof(buf)),
+         "save path, folder + name past the buffer: none");
+   CHECK(!bounds_path(c, false, buf, sizeof(buf), n) && !*buf
+         && bounds_untouched(buf, n, sizeof(buf)),
+         "save path, no room for the .png's NUL: none (got %s)", buf);
+   CHECK(!bounds_path(c, false, buf, sizeof(buf), n - 2) && !*buf,
+         "save path, .png cut short: none (got %s)", buf);
+   CHECK(bounds_path(c, false, buf, sizeof(buf), n + 1) == n
+         && string_is_equal(buf, full), "save path, exact fit: %s", buf);
+   CHECK(!bounds_path(c, true, buf, sizeof(buf), d - 4) && !*buf
+         && bounds_untouched(buf, d - 4, sizeof(buf)),
+         "display path, folder past the buffer: none");
+   CHECK(!bounds_path(c, true, buf, sizeof(buf), d + 3) && !*buf
+         && bounds_untouched(buf, d + 3, sizeof(buf)),
+         "display path, folder + name past the buffer: none");
+   CHECK(!bounds_path(c, true, buf, sizeof(buf), n) && !*buf,
+         "display path, no room for the .png: none (got %s)", buf);
+
+   /* A playlist's database name (folders and all) that leaves
+    * bounds.png two bytes short of a PATH_MAX_LENGTH buffer: install
+    * creates and writes nothing. */
+   t = PATH_MAX_LENGTH - 2 - (n - 4 - STRLEN_CONST("Bounds"));
+   strlcpy(buf, "Bounds", sizeof(buf));
+   for (i = STRLEN_CONST("Bounds"); i < t; i++)
+      buf[i] = ((i - STRLEN_CONST("Bounds")) % 100) ? 'd' : '/';
+   buf[t - 1] = 'd';
+   buf[t]     = '\0';
+   CHECK(companion_core_thumbnail_dir(c, buf, COMPANION_THUMB_BOXART,
+            full, sizeof(full)) + (n - d) - 4 == PATH_MAX_LENGTH - 2,
+         "long database name sized as meant");
+   fixture(img, sizeof(img), "bounds.tga");
+   write_tga_rgba(img, 8, 8, 0xff336699u);
+   CHECK(!companion_core_thumbnail_install(c, buf,
+            COMPANION_THUMB_BOXART, "bounds", "/roms/gen/bounds.md", img,
+            full, sizeof(full)), "install with no room for .png: refused");
+   fixture(full, sizeof(full), "thumbnails/Bounds");
+   CHECK(!path_is_directory(full), "install created nothing");
    companion_core_free(c);
 }
 
@@ -1027,7 +1667,14 @@ static void test_hidden_new_delete(void)
    /* it parses as an empty playlist */
    CHECK(companion_core_select_playlist_path(c, out) && iterate_until_loaded(c), "the new playlist parses");
    CHECK(companion_core_entry_count(c) == 0, "and is empty (%u)", (unsigned)companion_core_entry_count(c));
-   CHECK(companion_core_playlist_delete(c, out), "delete");
+   {
+      char thumbs[PATH_MAX_LENGTH];
+      strlcpy(thumbs, out, sizeof(thumbs));
+      strlcat(thumbs, ".thumbs", sizeof(thumbs));
+      writef(thumbs, "{}");
+      CHECK(companion_core_playlist_delete(c, out), "delete");
+      CHECK(!path_is_valid(thumbs), "its .lpl.thumbs goes with it");
+   }
    CHECK(!path_is_valid(out), "file gone");
    CHECK(companion_core_playlist_count(c) == n0, "listing back to %u", (unsigned)n0);
    {
@@ -1556,6 +2203,14 @@ int main(void)
    test_select_and_entries();
    test_all_playlists();
    test_thumbnail_path();
+   test_entry_thumbnail_system();
+   test_thumbnail_match_push();
+   test_thumbnail_hold();
+   test_thumbnail_hold_all();
+   test_thumbnail_hold_append();
+#ifdef HAVE_NETWORKING
+   test_thumbnail_download();
+#endif
    test_browser();
    test_browser_sort();
    test_sort_without_metadata();
@@ -1564,6 +2219,9 @@ int main(void)
    test_sort_callback_reentrancy();
    test_rename_add_install();
    test_bulk_add_matches_pushes();
+   test_rename_cache();
+   test_install_names();
+   test_thumbnail_path_bounds();
    test_options_and_shader_params();
    test_settings_table();
    test_shortcuts();
