@@ -741,8 +741,8 @@ static bool texture_array_resize(Texture **arr, size_t *count,
 
 struct CommonResources
 {
-   /* The first pass's SourceSize, from the preset; 0 when off. */
-   unsigned sim_source_dims;
+   /* Per-pass SourceSize values from the preset; 0 when off. */
+   unsigned sim_source_dims[GFX_MAX_SHADERS];
 
    struct slang_buffer vbo;
    struct slang_buffer ubo;
@@ -817,6 +817,16 @@ struct CommonResources
    float hdr10;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 };
+
+static void slang_common_set_sim_source_dims(struct CommonResources *common,
+      const struct video_shader *shader)
+{
+   unsigned i;
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+      common->sim_source_dims[i] =
+         (i < shader->passes && shader->pass[i].use_simulated_res)
+         ? shader->sim_source_dims : 0;
+}
 
 static void common_resources_init(CommonResources *common,
       VkDevice device,
@@ -4206,10 +4216,10 @@ static void slang_pass_build_semantic_texture(struct slang_pass *pass,
       unsigned *write_count)
 {
    unsigned dims = texture->texture.dims;
-   if (     semantic == SLANG_TEXTURE_SEMANTIC_SOURCE
-         && pass->pass_number == 0
-         && pass->common->sim_source_dims)
-      dims = pass->common->sim_source_dims;
+   if (semantic == SLANG_TEXTURE_SEMANTIC_SOURCE
+         && pass->pass_number < GFX_MAX_SHADERS
+         && pass->common->sim_source_dims[pass->pass_number])
+      dims = pass->common->sim_source_dims[pass->pass_number];
    slang_pass_build_semantic_texture_vec4(pass, buffer, semantic, dims);
    slang_pass_set_semantic_texture(pass, set, semantic, texture,
          image_infos, writes, write_count);
@@ -5104,7 +5114,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    if (!chain)
       goto error;
    chain->last_pass              = last_pass;
-   chain->common.sim_source_dims = shader->sim_source_dims;
+   slang_common_set_sim_source_dims(&chain->common, shader);
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
       goto error;
@@ -5462,7 +5472,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       free(shader);
       return NULL;
    }
-   chain->common.sim_source_dims = shader->sim_source_dims;
+   slang_common_set_sim_source_dims(&chain->common, shader);
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
    {

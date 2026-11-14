@@ -360,6 +360,27 @@ static size_t menu_action_setting_disp_set_label_shader_scale_pass(
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    return snprintf(s, len, "%ux", scale_value);
 }
+
+static size_t menu_action_setting_disp_set_label_shader_simulated_res_pass(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader
+      ? &shader->pass[type - MENU_SETTINGS_SHADER_PASS_SIMULATED_RES_0] : NULL;
+   *s = '\0';
+   *w = 19;
+   if (path && *path)
+      strlcpy(s2, path, len2);
+   if (!shader_pass)
+      return 0;
+   return strlcpy(s, msg_hash_to_str(shader_pass->use_simulated_res
+            ? MENU_ENUM_LABEL_VALUE_ON : MENU_ENUM_LABEL_VALUE_OFF), len);
+}
 #endif
 
 
@@ -2150,6 +2171,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_scale_pass);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_RES_PASS:
+#if defined(HAVE_SLANG)
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_shader_simulated_res_pass);
 #endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:

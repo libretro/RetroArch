@@ -16718,6 +16718,23 @@ static bool menu_displaylist_ctl_internal(
                               MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
                               MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0, 0, NULL))
                         count++;
+
+#ifdef HAVE_SLANG
+                     if (settings->bools.video_shader_simulated_input_resolution
+                           && video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
+                     {
+                        _len3 = _len2;
+                        strlcpy(buf_tmp + _len3,
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_RES_PASS),
+                              sizeof(buf_tmp) - _len3);
+                        if (menu_entries_append(info->list, buf_tmp,
+                                 MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_RES_PASS_STR,
+                                 MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_RES_PASS,
+                                 MENU_SETTINGS_SHADER_PASS_SIMULATED_RES_0 + i,
+                                 0, 0, NULL))
+                           count++;
+                     }
+#endif
                   }
                }
             }

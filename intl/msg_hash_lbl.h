@@ -2959,6 +2959,10 @@ MSG_HASH(
    "video_shader_scale_pass"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_RES_PASS,
+   "video_shader_simulated_res_pass"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,
    "video_shared_context"
    )
