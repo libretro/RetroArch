@@ -582,6 +582,20 @@ static bool hold_shows(unsigned s, unsigned g)
    return got && !strcmp(got, want);
 }
 
+/* Shows every held row again, then runs the queue dry */
+static void hold_show_all(unsigned types[HOLD_SYSTEMS][HOLD_GAMES])
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned s, g;
+   size_t i;
+   for (g = 0; g < HOLD_GAMES; g++)
+      for (s = 0; s < HOLD_SYSTEMS; s++)
+         menu_explore_set_playlist_thumbnail(types[s][g],
+               menu_st->thumbnail_path_data);
+   for (i = 0; i < 200000 && tasks_queued(); i++)
+      task_queue_check();
+}
+
 /* As the menu's teardown: the menu's playlist may be one of Explore's */
 static void hold_explore_free(void)
 {
@@ -606,6 +620,7 @@ static void lane_thumbnail_holds(void)
    unsigned queued  = 0;
    unsigned shown   = 0;
    unsigned had     = failures;
+   bool regions_was = settings->bools.playlist_thumbnail_other_regions;
    unsigned round, s, g, kept;
    size_t i;
 
@@ -697,6 +712,19 @@ static void lane_thumbnail_holds(void)
          "%u of %u steps after the loads found their stored match", shown,
          2 * HOLD_GAMES * HOLD_SYSTEMS);
 
+   /* The region setting changed in the menu, as its handler does */
+   settings->bools.playlist_thumbnail_other_regions = !regions_was;
+   gfx_thumbnail_results_set_other_regions(!regions_was);
+   hold_show_all(types);
+   CHECK(hold_shows(0, 0), "after a region change Explore matches again");
+
+   /* Changed back by an override: no handler runs */
+   settings->bools.playlist_thumbnail_other_regions = regions_was;
+   hold_show_all(types);
+   CHECK(     gfx_thumbnail_results_other_regions() == regions_was
+         && hold_shows(0, 0),
+         "after an override Explore matches again under its rule");
+
    hold_explore_free();
    for (s = 0; s < 4; s++)
    {
@@ -713,6 +741,8 @@ done:
    hold_explore_free();
    strlcpy(settings->paths.directory_thumbnails, thumbs_was,
          sizeof(settings->paths.directory_thumbnails));
+   settings->bools.playlist_thumbnail_other_regions = regions_was;
+   gfx_thumbnail_results_set_other_regions(regions_was);
    hold_fixture_remove();
    if (failures == had)
       fprintf(stderr, "[pass] thumbnail holds lane\n");

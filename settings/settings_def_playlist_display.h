@@ -66,3 +66,8 @@ S_BOOL(playlist_allow_non_png, PLAYLIST_ALLOW_NON_PNG,
       DEFAULT_PLAYLIST_ALLOW_NON_PNG, SD_FLAG_NONE, 0, 0,
       "Allow All Supported Image Types for Thumbnails",
       "When enabled, local thumbnails can be added in all image types supported by RetroArch (such as jpeg). May have a minor performance impact.")
+S_BOOL(playlist_thumbnail_other_regions, PLAYLIST_THUMBNAIL_OTHER_REGIONS,
+      "playlist_thumbnail_other_regions",
+      DEFAULT_PLAYLIST_THUMBNAIL_OTHER_REGIONS, SD_FLAG_NONE, 0, 0,
+      "Thumbnails from Other Regions",
+      "Show another region's thumbnail when a game's own region has none. When off, a game shows only its own region, World or untagged thumbnails (a European country also uses Europe).")

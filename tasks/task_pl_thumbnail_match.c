@@ -85,7 +85,8 @@ enum pl_thumb_match_flags
    /* The load handed its cache_crc over */
    PL_THUMB_MATCH_FLAG_SUMMED        = (1 << 6),
    /* Writes a pushed-out playlist's notes beside its table */
-   PL_THUMB_MATCH_FLAG_SAVE          = (1 << 7)
+   PL_THUMB_MATCH_FLAG_SAVE          = (1 << 7),
+   PL_THUMB_MATCH_FLAG_OTHER_REGIONS = (1 << 8)
 };
 
 #ifdef HAVE_LIBRETRODB
@@ -182,9 +183,10 @@ typedef struct pl_thumb_match
    unsigned depth;
    int member;
    enum pl_thumb_match_status status;
-   uint8_t flags;
+   uint16_t flags;
    uint8_t item_keys;
    bool version_ok;
+   bool regions_ok;
    bool listed;        /* a record is serialized */
 } pl_thumb_match_t;
 
@@ -197,7 +199,7 @@ static const char *const pl_thumb_match_keys[4] =
 };
 
 static bool pl_thumb_match_push(const playlist_config_t *config,
-      const char *dir_thumbnails, const char *dir_database, uint8_t flags,
+      const char *dir_thumbnails, const char *dir_database, uint16_t flags,
       uint32_t cache_crc, pl_thumb_match_core_t *cores, size_t core_count,
       gfx_thumbnail_results_save_t *save);
 
@@ -391,6 +393,12 @@ static void pl_thumb_match_cache_read(pl_thumb_match_t *m)
    m->status = PL_THUMB_MATCH_CACHE_PARSE;
 }
 
+/* The region rule, as the cache spells it */
+static const char *pl_thumb_match_regions(const pl_thumb_match_t *m)
+{
+   return (m->flags & PL_THUMB_MATCH_FLAG_OTHER_REGIONS) ? "any" : "strict";
+}
+
 /* One token: 1 at the end, -1 when the file is not ours. */
 static int pl_thumb_match_cache_token(pl_thumb_match_t *m)
 {
@@ -415,7 +423,7 @@ static int pl_thumb_match_cache_token(pl_thumb_match_t *m)
       case RJSON_NUMBER:
          break;
       case RJSON_DONE:
-         return m->version_ok ? 1 : -1;
+         return (m->version_ok && m->regions_ok) ? 1 : -1;
       case RJSON_ERROR:
          return -1;
       default:
@@ -430,6 +438,8 @@ static int pl_thumb_match_cache_token(pl_thumb_match_t *m)
       m->member = -1;
       if (m->depth == 1 && string_is_equal(str, "version"))
          m->member = 0;
+      else if (m->depth == 1 && string_is_equal(str, "regions"))
+         m->member = 5 + GFX_THUMBNAIL_RESULT_TYPES;
       else if (m->depth == 3)
       {
          for (i = 0; i < 4; i++)
@@ -446,6 +456,11 @@ static int pl_thumb_match_cache_token(pl_thumb_match_t *m)
    {
       m->version_ok = string_is_equal(str, PL_THUMB_MATCH_VERSION);
       return m->version_ok ? 0 : -1;
+   }
+   if (m->member == 5 + GFX_THUMBNAIL_RESULT_TYPES)
+   {
+      m->regions_ok = string_is_equal(str, pl_thumb_match_regions(m));
+      return m->regions_ok ? 0 : -1;
    }
    if (m->member >= 1 && m->member <= 4)
    {
@@ -1033,7 +1048,8 @@ static void pl_thumb_match_resolve(pl_thumb_match_t *m)
 #endif
    queries[1] = label;
    queries[2] = m->stem;
-   if (     gfx_thumbnail_match_find_first(m->index, queries, 3, true, &found)
+   if (     gfx_thumbnail_match_find_first(m->index, queries, 3,
+               (m->flags & PL_THUMB_MATCH_FLAG_OTHER_REGIONS) != 0, &found)
             != GFX_THUMBNAIL_MATCH_FOUND
          || !found
          || pl_thumb_match_is_exact(m, found, label)
@@ -1132,6 +1148,8 @@ static void pl_thumb_match_serialize(pl_thumb_match_t *m)
       }
       pl_thumb_match_raw(m->writer, "{\n  \"version\": ");
       rjsonwriter_add_string(m->writer, PL_THUMB_MATCH_VERSION);
+      pl_thumb_match_raw(m->writer, ",\n  \"regions\": ");
+      rjsonwriter_add_string(m->writer, pl_thumb_match_regions(m));
       pl_thumb_match_raw(m->writer, ",\n  \"items\": [");
       return;
    }
@@ -1408,9 +1426,32 @@ static void pl_thumb_match_drain(bool allow_non_png, retro_task_t *self)
 {
    gfx_thumbnail_results_save_t save;
    while (gfx_thumbnail_results_take(&save, pl_thumb_match_busy, self))
-      pl_thumb_match_push(NULL, "", NULL, (uint8_t)(PL_THUMB_MATCH_FLAG_SAVE
-            | (allow_non_png ? PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG : 0)),
+      pl_thumb_match_push(NULL, "", NULL, (uint16_t)(PL_THUMB_MATCH_FLAG_SAVE
+            | (allow_non_png ? PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG : 0)
+            | (gfx_thumbnail_results_other_regions()
+               ? PL_THUMB_MATCH_FLAG_OTHER_REGIONS : 0)),
             0, NULL, 0, &save);
+}
+
+/* Matched under a region rule the store has dropped since. A push for
+ * the reopened playlist found this task running and was refused. */
+static void pl_thumb_match_rematch(pl_thumb_match_t *m)
+{
+   if (     (m->flags & PL_THUMB_MATCH_FLAG_SAVE)
+         || !gfx_thumbnail_results_hold(m->playlist_config.path, 0))
+      return;
+   pl_thumb_match_push(&m->playlist_config, m->dir_thumbnails,
+         m->dir_database,
+         (uint16_t)((m->flags & (PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG
+                               | PL_THUMB_MATCH_FLAG_COLLECTION))
+                 | ((m->flags & (PL_THUMB_MATCH_FLAG_RESOLVE
+                               | PL_THUMB_MATCH_FLAG_THEN_RESOLVE))
+                    ? PL_THUMB_MATCH_FLAG_THEN_RESOLVE : 0)
+                 | (gfx_thumbnail_results_other_regions()
+                    ? PL_THUMB_MATCH_FLAG_OTHER_REGIONS : 0)),
+         0, m->cores, m->core_count, NULL);
+   m->cores      = NULL;
+   m->core_count = 0;
 }
 
 static void pl_thumb_match_install(pl_thumb_match_t *m)
@@ -1424,6 +1465,14 @@ static void pl_thumb_match_install(pl_thumb_match_t *m)
    notes      = m->notes;
    m->results = NULL;
    m->notes   = NULL;
+   if (     ((m->flags & PL_THUMB_MATCH_FLAG_OTHER_REGIONS) != 0)
+         != gfx_thumbnail_results_other_regions())
+   {
+      gfx_thumbnail_results_free(results);
+      gfx_thumbnail_results_free(notes);
+      pl_thumb_match_rematch(m);
+      return;
+   }
    /* Before the load the menu found nothing here; a save's table
     * comes back to a playlist reopened while it ran */
    if (m->flags & PL_THUMB_MATCH_FLAG_SAVE)
@@ -1440,9 +1489,10 @@ static void pl_thumb_match_install(pl_thumb_match_t *m)
       /* The resolve takes the cores and the cache's crc over */
       pl_thumb_match_push(&m->playlist_config, m->dir_thumbnails,
             m->dir_database,
-            (uint8_t)((m->flags & (PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG
-                                 | PL_THUMB_MATCH_FLAG_COLLECTION
-                                 | PL_THUMB_MATCH_FLAG_CACHE_FOUND))
+            (uint16_t)((m->flags & (PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG
+                                  | PL_THUMB_MATCH_FLAG_OTHER_REGIONS
+                                  | PL_THUMB_MATCH_FLAG_COLLECTION
+                                  | PL_THUMB_MATCH_FLAG_CACHE_FOUND))
                     | PL_THUMB_MATCH_FLAG_RESOLVE
                     | PL_THUMB_MATCH_FLAG_SUMMED),
             m->cache_crc, m->cores, m->core_count, NULL);
@@ -1479,7 +1529,7 @@ static void task_pl_thumbnail_match_cleanup(retro_task_t *task)
 /* Takes @cores and @save's contents over, also on failure. A save
  * needs no @config: it never reads the playlist. */
 static bool pl_thumb_match_push(const playlist_config_t *config,
-      const char *dir_thumbnails, const char *dir_database, uint8_t flags,
+      const char *dir_thumbnails, const char *dir_database, uint16_t flags,
       uint32_t cache_crc, pl_thumb_match_core_t *cores, size_t core_count,
       gfx_thumbnail_results_save_t *save)
 {
@@ -1593,13 +1643,13 @@ static size_t pl_thumb_match_cores(playlist_t *playlist,
 
 bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
       playlist_t *playlist, const char *dir_thumbnails,
-      const char *dir_database, bool allow_non_png)
+      const char *dir_database, bool allow_non_png, bool other_regions)
 {
    task_finder_data_t find_data;
    const char *name;
    unsigned need;
    bool collection;
-   uint8_t flags                = 0;
+   uint16_t flags               = 0;
    size_t core_count            = 0;
    pl_thumb_match_core_t *cores = NULL;
 
@@ -1613,6 +1663,7 @@ bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
    if (collection && string_ends_with_size(name, "_history.lpl",
          strlen(name), STRLEN_CONST("_history.lpl")))
       return false;
+   gfx_thumbnail_results_set_other_regions(other_regions);
    need = gfx_thumbnail_results_open(playlist_config->path);
    /* Without the cores a resolve would drop the db-less rows; the
     * next push with the playlist resolves */
@@ -1629,6 +1680,8 @@ bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
       flags |= PL_THUMB_MATCH_FLAG_COLLECTION;
    if (allow_non_png)
       flags |= PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG;
+   if (other_regions)
+      flags |= PL_THUMB_MATCH_FLAG_OTHER_REGIONS;
    if (!(need & GFX_THUMBNAIL_RESULTS_LOAD))
       flags |= PL_THUMB_MATCH_FLAG_RESOLVE;
    else if (need & GFX_THUMBNAIL_RESULTS_RESOLVE)
@@ -1644,7 +1697,8 @@ bool task_push_pl_thumbnail_match(const playlist_config_t *playlist_config,
 /* An index of one name, so the whole finalize is a few tiny steps. */
 bool task_pl_thumbnail_match_note_download(const char *playlist_path,
       const char *content_path, const char *label, const char *system,
-      unsigned type, const char *file_name, bool allow_non_png)
+      unsigned type, const char *file_name, bool allow_non_png,
+      bool other_regions)
 {
    char stem[NAME_MAX_LENGTH];
    char name[NAME_MAX_LENGTH];
@@ -1655,6 +1709,7 @@ bool task_pl_thumbnail_match_note_download(const char *playlist_path,
    gfx_thumbnail_match_index_t *index;
 
    if (     string_is_empty(content_path)
+         || other_regions != gfx_thumbnail_results_other_regions()
          || !gfx_thumbnail_name_allowed(file_name, allow_non_png))
       return false;
    fill_pathname(stem, path_basename(content_path), "", sizeof(stem));
@@ -1670,7 +1725,8 @@ bool task_pl_thumbnail_match_note_download(const char *playlist_path,
    if (gfx_thumbnail_match_index_add(index, file_name))
    {
       gfx_thumbnail_match_index_finalize(index);
-      if (     gfx_thumbnail_match_find_first(index, queries, 2, true, &found)
+      if (     gfx_thumbnail_match_find_first(index, queries, 2,
+                  other_regions, &found)
                == GFX_THUMBNAIL_MATCH_FOUND
             && found)
          noted = gfx_thumbnail_results_note(playlist_path, content_path,
