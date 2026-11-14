@@ -13519,6 +13519,14 @@ MSG_HASH(
    "Sort save states in folders named after the directory in which the content is located."
    )
 MSG_HASH(
+   MSG_SORT_SAVESTATES_PRECEDENCE_CONTENT_CORE,
+   "Content Directory / Core Name"
+   )
+MSG_HASH(
+   MSG_SORT_SAVESTATES_PRECEDENCE_CORE_CONTENT,
+   "Core Name / Content Directory"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
    "Save File: Don't Overwrite SaveRAM on Loading Save State"
    )

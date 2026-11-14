@@ -120,3 +120,10 @@ S_UINT_EX(save_compression_codec, SAVE_COMPRESSION_CODEC,
       "Compression Codec",
       "The codec every compressed file is written with, including save files, save states, playlists, core backups and the core info cache. Zstandard loads several times faster than Deflate and saves somewhat faster, for files somewhat larger. Files written with either codec are read back; only new files change.")
 #endif
+#if !defined(SETTINGS_DEF_CONFIG_PASS)
+S_STRING(sort_savestates_precedence, SORT_SAVESTATES_PRECEDENCE,
+      "sort_savestates_precedence",
+      DEFAULT_SORT_SAVESTATES_PRECEDENCE, SD_FLAG_ADVANCED, 0, setting_action_ok_uint, setting_get_string_representation_sort_savestates_precedence, setting_generic_action_start_default, NULL, setting_string_action_sort_savestates_precedence, setting_string_action_sort_savestates_precedence, ST_UI_TYPE_STRING_COMBOBOX,
+      "Save State: Folder Sorting Precedence",
+      "Define which type of folder should be given priority when sorting save states automatically. Changing this setting may require manual changes in the folder hierarchy, as existing save states are not moved and will stay in the old folders.")
+#endif

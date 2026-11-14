@@ -11464,21 +11464,26 @@ void runloop_path_set_redirect(settings_t *settings,
          if (     (sort_savestates || sort_savestates_by_content)
                && *new_savestate_dir)
          {
-            /* Append content directory name to savestate location */
-            if (sort_savestates_by_content)
-               fill_pathname_join_special(
-                     new_savestate_dir,
-                     intermediate_savestate_dir,
-                     content_dir_name,
-                     sizeof(new_savestate_dir));
-
-            /* Append library_name to the savestate location */
-            if (sort_savestates)
-               fill_pathname_join(
-                     new_savestate_dir,
-                     new_savestate_dir,
-                     sysinfo->library_name,
-                     sizeof(new_savestate_dir));
+            /* Append library_name and/or content directory name
+             * to the savestate location, in the chosen order */
+            if (string_is_equal(settings->arrays.sort_savestates_precedence, "corename-contentdir"))
+            {
+               if (sort_savestates)
+                  fill_pathname_join(new_savestate_dir, new_savestate_dir,
+                        sysinfo->library_name, sizeof(new_savestate_dir));
+               if (sort_savestates_by_content)
+                  fill_pathname_join(new_savestate_dir, new_savestate_dir,
+                        content_dir_name, sizeof(new_savestate_dir));
+            }
+            else
+            {
+               if (sort_savestates_by_content)
+                  fill_pathname_join(new_savestate_dir, new_savestate_dir,
+                        content_dir_name, sizeof(new_savestate_dir));
+               if (sort_savestates)
+                  fill_pathname_join(new_savestate_dir, new_savestate_dir,
+                        sysinfo->library_name, sizeof(new_savestate_dir));
+            }
 
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */

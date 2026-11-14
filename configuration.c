@@ -2032,6 +2032,7 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("midi_input",                   settings->arrays.midi_input, true, DEFAULT_MIDI_INPUT, true);
    SETTING_ARRAY("midi_output",                  settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("ai_service_backend",           settings->arrays.ai_service_backend, false, NULL, true);
+   SETTING_ARRAY("sort_savestates_precedence",   settings->arrays.sort_savestates_precedence, false, NULL, true);
 
    SETTING_ARRAY("video_driver",                 settings->arrays.video_driver, false, NULL, true);
    SETTING_ARRAY("video_context_driver",         settings->arrays.video_context_driver, false, NULL, true);
@@ -6283,6 +6284,9 @@ void config_set_defaults(settings_t *target)
    settings->uints.microphone_latency         = g_defaults.settings_in_latency;
 #endif
 
+   configuration_set_string(settings,
+         settings->arrays.sort_savestates_precedence,
+         DEFAULT_SORT_SAVESTATES_PRECEDENCE);
    configuration_set_string(settings,
          settings->arrays.midi_input,
          DEFAULT_MIDI_INPUT);
