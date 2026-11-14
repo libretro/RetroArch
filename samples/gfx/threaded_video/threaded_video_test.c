@@ -3330,6 +3330,7 @@ static void lane_replay_swap_count(void)
 
 static unsigned avc_aspects;
 static unsigned avc_cursors;
+static unsigned avc_nonblocks;
 static int avc_viewport_x;
 static unsigned avc_inits;
 static void *(*avc_inner_init)(const video_info_t *video);
@@ -3359,6 +3360,16 @@ static void avc_cursor(void *data, bool state)
    avc_cursors++;
 }
 
+static void avc_nonblock(void *data, bool state, bool adaptive,
+      unsigned interval)
+{
+   (void)data;
+   (void)state;
+   (void)adaptive;
+   (void)interval;
+   avc_nonblocks++;
+}
+
 static void lane_av_info_changes(void)
 {
    settings_t *settings            = config_get_ptr();
@@ -3367,6 +3378,8 @@ static void lane_av_info_changes(void)
    struct retro_system_av_info info = orig;
    const video_poke_interface_t *saved_poke = video_st->poke;
    video_poke_interface_t poke;
+   video_driver_t *saved_video = video_st->current_video;
+   video_driver_t video = *saved_video;
    bool saved_auto                 = settings->bools.video_frame_delay_auto;
    bool saved_fullscreen           = settings->bools.video_fullscreen;
    bool saved_pause                = video_st->frame_delay_pause;
@@ -3377,6 +3390,7 @@ static void lane_av_info_changes(void)
    float saved_hz                  = video_st->core_hz;
    float marker                    = saved_hz + 7.0f;
    unsigned had                    = failures;
+   unsigned before_nonblocks;
    unsigned i;
    retro_time_t start;
    retro_time_t geometry_time;
@@ -3391,7 +3405,9 @@ static void lane_av_info_changes(void)
    settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_CORE;
    settings->floats.video_vp_bias_x = 0.75f;
    video_driver_publish_vp_params();
-   avc_aspects = avc_cursors        = 0;
+   avc_aspects = avc_cursors = avc_nonblocks = 0;
+   video.set_nonblock_state        = avc_nonblock;
+   video_st->current_video         = &video;
    video_st->core_hz              = marker;
    video_st->frame_delay_pause    = false;
    video_st->frame_delay_target   = 5;
@@ -3421,6 +3437,10 @@ static void lane_av_info_changes(void)
    fprintf(stderr, "[info] duplicate geometry %.3f us/call, AV info %.3f us/call\n",
          (double)geometry_time / 10000.0, (double)av_time / 10000.0);
 
+   (void)driver_set_audio_input_rate(false);
+   CHECK(!avc_nonblocks && video_st->core_hz == marker,
+         "av changes: audio input update touched video timing");
+
    info.timing.sample_rate *= 0.5;
    CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
          "av changes: sample rate rejected");
@@ -3428,9 +3448,14 @@ static void lane_av_info_changes(void)
          && video_st->frame_delay_target == 5,
          "av changes: sample rate touched geometry or frame delay");
    CHECK(video_st->av_info.timing.sample_rate == info.timing.sample_rate
-         && video_st->core_hz == (float)info.timing.fps,
+         && video_st->core_hz == (avc_nonblocks
+            ? (float)info.timing.fps : marker),
          "av changes: sample rate did not update timing");
+   CHECK(avc_nonblocks <= 1,
+         "av changes: sample rate repeated video timing setup (%u calls)",
+         avc_nonblocks);
 
+   before_nonblocks = avc_nonblocks;
    info.timing.fps *= 0.5;
    CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
          "av changes: FPS rejected");
@@ -3438,6 +3463,8 @@ static void lane_av_info_changes(void)
          "av changes: FPS touched geometry or missed frame delay");
    CHECK(video_st->core_hz == (float)info.timing.fps,
          "av changes: FPS did not update timing");
+   CHECK(avc_nonblocks > before_nonblocks,
+         "av changes: FPS did not update video pacing");
 
    video_st->core_hz               = marker;
    settings->floats.video_vp_bias_x = 0.25f;
@@ -3472,6 +3499,7 @@ static void lane_av_info_changes(void)
    CHECK(avc_aspects == 4 && video_st->core_hz == (float)info.timing.fps,
          "av changes: combined update missed geometry or timing");
 
+   video_st->current_video         = saved_video;
    video_st->poke                  = saved_poke;
    settings->bools.video_fullscreen = saved_fullscreen;
    settings->bools.video_frame_delay_auto = saved_auto;

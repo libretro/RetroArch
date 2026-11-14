@@ -1578,7 +1578,7 @@ static void driver_adjust_system_rates(
       runloop_state_t *runloop_st,
       video_driver_state_t *video_st,
       settings_t *settings,
-      double *audio_input)
+      double *audio_input, bool video_timing_changed)
 {
    double input_sample_rate               = video_st->av_info.timing.sample_rate;
    double input_fps                       = video_st->av_info.timing.fps;
@@ -1592,14 +1592,15 @@ static void driver_adjust_system_rates(
    unsigned sync_plan                     = RUNLOOP_SYNC_VSYNC_HOLDS
          | (vrr_runloop_enable ? RUNLOOP_SYNC_EXACT_RATE : 0);
 #ifdef HAVE_OPENXR
-   unsigned headset_fit                   = video_xr_pace_interval(
-         video_st->headset_hz, (float)input_fps, audio_max_timing_skew,
-         MAXIMUM_SWAP_INTERVAL);
+   unsigned headset_fit                   = video_timing_changed
+      ? video_xr_pace_interval(video_st->headset_hz, (float)input_fps,
+            audio_max_timing_skew, MAXIMUM_SWAP_INTERVAL) : 0;
 #endif
 
    /* Update video swap interval if automatic
     * switching is enabled */
-   runloop_set_video_swap_interval(settings);
+   if (video_timing_changed)
+      runloop_set_video_swap_interval(settings);
    video_swap_interval = runloop_get_video_swap_interval(video_swap_interval);
 
 #ifdef HAVE_OPENXR
@@ -1607,17 +1608,20 @@ static void driver_adjust_system_rates(
     * its rate and interval stand in for the display's. Not under
     * threaded video, where the driver's frame, which waits for the
     * headset, does not hold the core. */
-   video_st->headset_vsync    = settings->bools.video_vsync;
-   video_st->headset_interval = (video_st->headset_vsync
-         && !video_driver_thread_wrapper_active()) ? headset_fit : 0;
-   /* A headset's own context begins and ends its frame in every core
-    * frame, so with no fit the core runs at the headset's rate; with a
-    * window, the window's vsync paces, and the wrapper holds the core
-    * at its own rate. */
-   video_st->headset_runloop_hz = (     !video_st->headset_interval
-         && !video_driver_thread_wrapper_active()
-         && video_context_driver_headset_inline())
-      ? video_st->headset_hz : 0.0f;
+   if (video_timing_changed)
+   {
+      video_st->headset_vsync    = settings->bools.video_vsync;
+      video_st->headset_interval = (video_st->headset_vsync
+            && !video_driver_thread_wrapper_active()) ? headset_fit : 0;
+      /* A headset's own context begins and ends its frame in every core
+       * frame, so with no fit the core runs at the headset's rate; with a
+       * window, the window's vsync paces, and the wrapper holds the core
+       * at its own rate. */
+      video_st->headset_runloop_hz = (     !video_st->headset_interval
+            && !video_driver_thread_wrapper_active()
+            && video_context_driver_headset_inline())
+         ? video_st->headset_hz : 0.0f;
+   }
    if (video_st->headset_interval)
    {
       video_refresh_rate    = video_st->headset_hz;
@@ -1626,10 +1630,12 @@ static void driver_adjust_system_rates(
       shader_subframes      = 1;
       vrr_runloop_enable    = false;
       sync_plan             = RUNLOOP_SYNC_VSYNC_HOLDS;
-      RARCH_LOG("[Video] The headset paces the core: %.2f Hz / %u.\n",
-            video_st->headset_hz, video_st->headset_interval);
+      if (video_timing_changed)
+         RARCH_LOG("[Video] The headset paces the core: %.2f Hz / %u.\n",
+               video_st->headset_hz, video_st->headset_interval);
    }
-   driver_headset_notice(runloop_st, video_st, headset_fit, input_fps);
+   if (video_timing_changed)
+      driver_headset_notice(runloop_st, video_st, headset_fit, input_fps);
 #endif
 
    if (input_fps > 0.0)
@@ -1638,18 +1644,20 @@ static void driver_adjust_system_rates(
 
       if (retro_atomic_load_acquire_int(&video_st->crt_switching_active))
          timing_skew_hz             = input_fps;
-      video_st->core_hz             = input_fps;
+      if (video_timing_changed)
+         video_st->core_hz          = input_fps;
 
       sync_plan = runloop_sync_plan_for(timing_skew_hz, (float)input_fps,
             ((float)black_frame_insertion + 1.0f)
             * (float)video_swap_interval * (float)shader_subframes,
             audio_max_timing_skew, vrr_runloop_enable);
 
-      if (!(sync_plan & RUNLOOP_SYNC_WITHIN_SKEW) && !vrr_runloop_enable)
+      if (video_timing_changed
+            && !(sync_plan & RUNLOOP_SYNC_WITHIN_SKEW) && !vrr_runloop_enable)
          RARCH_LOG("[Video] Timings deviate too much. Will not adjust."
                " (Display = %.2f Hz, Game = %.2f Hz)\n",
                timing_skew_hz, (float)input_fps);
-      else if (vrr_runloop_enable
+      else if (video_timing_changed && vrr_runloop_enable
             && (sync_plan & RUNLOOP_SYNC_VSYNC_HOLDS)
             && !(sync_plan & RUNLOOP_SYNC_EXACT_RATE))
          RARCH_LOG("[Video] Game FPS above what the display presents at "
@@ -1676,8 +1684,12 @@ static void driver_adjust_system_rates(
       else
          audio_st->input = input;
 
-      RARCH_LOG("[Audio] Set audio input rate to: %.2f Hz.\n", input);
+      if (video_timing_changed)
+         RARCH_LOG("[Audio] Set audio input rate to: %.2f Hz.\n", input);
    }
+
+   if (!video_timing_changed)
+      return;
 
    runloop_st->flags &= ~RUNLOOP_FLAG_FORCE_NONBLOCK;
 
@@ -1704,11 +1716,11 @@ static void driver_adjust_system_rates(
       driver_set_nonblock_state();
 }
 
-bool driver_set_audio_input_rate(void)
+bool driver_set_audio_input_rate(bool video_timing_changed)
 {
    double input = 0.0;
    driver_adjust_system_rates(runloop_state_get_ptr(), video_state_get_ptr(),
-         config_get_ptr(), &input);
+         config_get_ptr(), &input, video_timing_changed);
    return audio_driver_set_input_rate(input);
 }
 
@@ -1893,7 +1905,7 @@ void drivers_init(
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
       driver_adjust_system_rates(runloop_st, video_st, settings,
             (lifetime_flags & DRIVER_LIFETIME_AUDIO_CARRIED)
-            ? &carried_input : NULL);
+            ? &carried_input : NULL, true);
 
    if (     (lifetime_flags & DRIVER_LIFETIME_AUDIO_CARRIED)
          && !audio_driver_session_carry(carried_input))
@@ -2449,7 +2461,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                   && runloop_st->current_core_type == CORE_TYPE_DUMMY)
                video_st->av_info.timing.fps = *hz;
 
-            driver_adjust_system_rates(runloop_st, video_st, settings, NULL);
+            driver_adjust_system_rates(runloop_st, video_st, settings, NULL, true);
 
             /* Use the input rate adjusted for the new display timing. */
             audio_st->src_ratio_orig   =

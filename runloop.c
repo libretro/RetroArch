@@ -3576,7 +3576,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (!no_video_reinit)
                command_event(CMD_EVENT_REINIT, &reinit_flags);
             else if (     timing_changed
-                     && !driver_set_audio_input_rate()
+                     && !driver_set_audio_input_rate(fps_changed)
                      && video_st->data
                      && !runloop_is_content_switching())
                command_event(CMD_EVENT_AUDIO_REINIT, NULL);
