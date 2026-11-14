@@ -3526,6 +3526,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             bool geometry_changed                 = base_size_changed || aspect_changed || max_size_changed;
             bool max_size_fits                     = !max_size_changed;
 
+            if (     verbosity_get_log_level() == RETRO_LOG_DEBUG
+                  && verbosity_is_enabled())
+               RARCH_DBG("[Environ] SET_SYSTEM_AV_INFO: %ux%u, Aspect: %.4f, FPS: %.4f, Sample rate: %.0f Hz.\n",
+                     info->geometry.base_width, info->geometry.base_height,
+                     info->geometry.aspect_ratio, info->timing.fps,
+                     info->timing.sample_rate);
+
             if (!geometry_changed && !timing_changed)
                return true;
 
@@ -3815,6 +3822,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          base_size_changed = geom->base_width != in_geom->base_width
                           || geom->base_height != in_geom->base_height;
          aspect_changed = geom->aspect_ratio != in_geom->aspect_ratio;
+
+         if (     verbosity_get_log_level() == RETRO_LOG_DEBUG
+               && verbosity_is_enabled())
+         {
+            if (base_size_changed || aspect_changed)
+               RARCH_DBG("[Environ] SET_GEOMETRY: %ux%u, Aspect: %.3f.\n",
+                     in_geom->base_width, in_geom->base_height, in_geom->aspect_ratio);
+            else
+               RARCH_DBG("[Environ] SET_GEOMETRY.\n");
+         }
 
          /* Can potentially be called every frame,
           * don't do anything unless required. */

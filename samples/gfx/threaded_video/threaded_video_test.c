@@ -3328,6 +3328,87 @@ static void lane_replay_swap_count(void)
 /* Lane: geometry and AV-info changes                                 */
 /* ------------------------------------------------------------------ */
 
+static void lane_environment_debug_logging(void)
+{
+   static const struct {
+      bool enabled;
+      unsigned level;
+   } modes[] = {
+      {false, RETRO_LOG_DEBUG},
+      {true, RETRO_LOG_INFO},
+      {true, RETRO_LOG_DEBUG}
+   };
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct retro_system_av_info saved = video_st->av_info;
+   struct retro_system_av_info info = saved;
+   unsigned saved_level = verbosity_get_log_level();
+   bool saved_enabled = verbosity_is_enabled();
+   bool saved_pause = video_st->frame_delay_pause;
+   unsigned saved_target = video_st->frame_delay_target;
+   unsigned had = failures;
+   unsigned mode;
+   char path[96];
+   char output[2048];
+   char expected[128];
+
+   CHECK(!is_logging_to_file(), "environment logs: file sink already active");
+   if (is_logging_to_file())
+      return;
+   snprintf(path, sizeof(path), "env-geometry-log-%ld.log", (long)getpid());
+   info.geometry.base_width++;
+   snprintf(expected, sizeof(expected),
+         "[Environ] SET_GEOMETRY: %ux%u, Aspect: %.3f.",
+         info.geometry.base_width, info.geometry.base_height,
+         info.geometry.aspect_ratio);
+   for (mode = 0; mode < sizeof(modes) / sizeof(modes[0]); mode++)
+   {
+      FILE *fp;
+      size_t len;
+      retro_main_log_file_init(path, false);
+      CHECK(is_logging_to_file(), "environment logs: cannot open capture");
+      if (!is_logging_to_file())
+         break;
+      if (modes[mode].enabled)
+         verbosity_enable();
+      else
+         verbosity_disable();
+      verbosity_set_log_level(modes[mode].level);
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &saved.geometry);
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry);
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+      if (saved_enabled)
+         verbosity_enable();
+      else
+         verbosity_disable();
+      verbosity_set_log_level(saved_level);
+      retro_main_log_file_deinit();
+      retro_main_log_file_init(NULL, false);
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &saved.geometry);
+
+      fp = fopen(path, "rb");
+      CHECK(fp != NULL, "environment logs: cannot read capture");
+      if (!fp)
+         break;
+      len = fread(output, 1, sizeof(output) - 1, fp);
+      output[len] = '\0';
+      fclose(fp);
+      if (modes[mode].enabled && modes[mode].level == RETRO_LOG_DEBUG)
+         CHECK(strstr(output, "[DEBUG]") && strstr(output, expected)
+                  && strstr(output, "[Environ] SET_GEOMETRY.")
+                  && strstr(output, "[Environ] SET_SYSTEM_AV_INFO:"),
+               "environment logs: debug mode missed changed/duplicate calls");
+      else
+         CHECK(!strstr(output, "[Environ] SET_GEOMETRY")
+                  && !strstr(output, "[Environ] SET_SYSTEM_AV_INFO"),
+               "environment logs: mode %u emitted a debug trace", mode);
+   }
+   remove(path);
+   video_st->frame_delay_pause = saved_pause;
+   video_st->frame_delay_target = saved_target;
+   if (failures == had)
+      fprintf(stderr, "[pass] environment logs: debug-only, changed and duplicate calls\n");
+}
+
 static void lane_square_pixel_geometry(void)
 {
    static const unsigned cases[][4] = {
@@ -13406,6 +13487,8 @@ int main(int argc, char *argv[])
                getenv("HARNESS_HDR_MODE"));
          fprintf(cfg, "video_hdr_menu_nits = \"203\"\nvideo_hdr_expand_gamut = \"0\"\n");
       }
+      /* The log-capture lane owns its sink without a power-profile writer. */
+      fprintf(cfg, "gamemode_enable = \"false\"\n");
       fprintf(cfg, "audio_driver = \"null\"\n");
       fprintf(cfg, "input_driver = \"null\"\n");
       fprintf(cfg, "input_joypad_driver = \"null\"\n");
@@ -13585,6 +13668,7 @@ int main(int argc, char *argv[])
    if (getenv("HARNESS_GEOMETRY_ONLY"))
    {
       set_threaded_via_setting(false);
+      lane_environment_debug_logging();
       lane_square_pixel_geometry();
       lane_aspect_hint_changes();
       lane_av_info_recording();
@@ -13627,6 +13711,7 @@ int main(int argc, char *argv[])
    if (!real_driver())
    {
       set_threaded_via_setting(false);
+      lane_environment_debug_logging();
       lane_square_pixel_geometry();
       lane_aspect_hint_changes();
       lane_av_info_recording();
