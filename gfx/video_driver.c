@@ -5306,15 +5306,12 @@ void video_driver_set_aspect_ratio(void)
       poke->set_aspect_ratio(video_st->data, aspect_ratio_idx);
 }
 
-void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
+/* Borrows the caller's snapshot until scaling returns. */
+static void video_viewport_get_scaled_aspect(
+      const struct video_vp_param_snap *ps, struct video_viewport *vp,
       unsigned dims, bool y_down,
       float device_aspect, float desired_aspect)
 {
-   /* Reached from the drivers' frame closures (resize handling), so
-    * everything here comes from the seqlock'd snapshot rather than
-    * live settings; the external console caller gets the same
-    * frame-fresh values. */
-   struct video_vp_param_snap ps;
    video_driver_state_t
       *video_st         = &video_driver_st;
    int x                = 0;
@@ -5324,15 +5321,14 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
    float vp_bias_x;
    float vp_bias_y;
    unsigned video_aspect_ratio_idx;
-   video_driver_read_vp_params(&ps);
-   vp_bias_x            = ps.bias_x;
-   vp_bias_y            = ps.bias_y;
-   video_aspect_ratio_idx = ps.aspect_ratio_idx;
+   vp_bias_x            = ps->bias_x;
+   vp_bias_y            = ps->bias_y;
+   video_aspect_ratio_idx = ps->aspect_ratio_idx;
 #if defined(RARCH_MOBILE)
    if (vp_width < vp_height)
    {
-      vp_bias_x         = ps.bias_portrait_x;
-      vp_bias_y         = ps.bias_portrait_y;
+      vp_bias_x         = ps->bias_portrait_x;
+      vp_bias_y         = ps->bias_portrait_y;
    }
 #endif
    if (!y_down)
@@ -5344,14 +5340,14 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
          int padding_x     = 0;
          int padding_y     = 0;
 
-         x                 = VIDEO_POS_X(ps.custom_pos);
-         y                 = VIDEO_POS_Y(ps.custom_pos);
+         x                 = VIDEO_POS_X(ps->custom_pos);
+         y                 = VIDEO_POS_Y(ps->custom_pos);
 
          if (!y_down)
             y = -y;
 
-         padding_x         = vp_width - (int)VIDEO_SCALE_W(ps.custom_dims);
-         padding_y         = vp_height - (int)VIDEO_SCALE_H(ps.custom_dims);
+         padding_x         = vp_width - (int)VIDEO_SCALE_W(ps->custom_dims);
+         padding_y         = vp_height - (int)VIDEO_SCALE_H(ps->custom_dims);
 
          if (padding_x < 0)
          {
@@ -5364,8 +5360,8 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
             padding_y *= 2;
          }
 
-         vp_width          = VIDEO_SCALE_W(ps.custom_dims);
-         vp_height         = VIDEO_SCALE_H(ps.custom_dims);
+         vp_width          = VIDEO_SCALE_W(ps->custom_dims);
+         vp_height         = VIDEO_SCALE_H(ps->custom_dims);
          x                += padding_x * vp_bias_x;
          y                += padding_y * vp_bias_y;
       }
@@ -5400,6 +5396,17 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 
    /* Statistics */
    video_st->scale_dims = vp->dims;
+}
+
+/* External callers capture their own frame-fresh parameters. */
+void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
+      unsigned dims, bool y_down,
+      float device_aspect, float desired_aspect)
+{
+   struct video_vp_param_snap ps;
+   video_driver_read_vp_params(&ps);
+   video_viewport_get_scaled_aspect(&ps, vp, dims,
+         y_down, device_aspect, desired_aspect);
 }
 
 /**
@@ -5480,9 +5487,8 @@ static void video_viewport_get_scaled_integer(
    if (content_width > width || content_height > height)
    {
       float device_aspect      = (float)width / height;
-      float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-      video_viewport_get_scaled_aspect2(vp, dims,
-            y_down, device_aspect, desired_aspect);
+      video_viewport_get_scaled_aspect(ps, vp, dims,
+            y_down, device_aspect, aspect_ratio);
       return;
    }
 
@@ -5615,9 +5621,8 @@ static void video_viewport_get_scaled_integer(
                if (content_width > width || content_height > height)
                {
                   float device_aspect      = (float)width / height;
-                  float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-                  video_viewport_get_scaled_aspect2(vp, dims,
-                        y_down, device_aspect, desired_aspect);
+                  video_viewport_get_scaled_aspect(ps, vp, dims,
+                        y_down, device_aspect, aspect_ratio);
                   return;
                }
 
@@ -5741,9 +5746,8 @@ static void video_viewport_get_scaled_integer(
             if (MAX(height_utilization, width_utilization) < 0.88)
             {
                float device_aspect      = (float)width / height;
-               float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-               video_viewport_get_scaled_aspect2(vp, dims,
-                     y_down, device_aspect, desired_aspect);
+               video_viewport_get_scaled_aspect(ps, vp, dims,
+                     y_down, device_aspect, aspect_ratio);
                return;
             }
          }
@@ -5753,9 +5757,8 @@ static void video_viewport_get_scaled_integer(
                || padding_y <= (int)-video_st->av_info.geometry.base_height)
          {
             float device_aspect      = (float)width / height;
-            float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-            video_viewport_get_scaled_aspect2(vp, dims,
-                  y_down, device_aspect, desired_aspect);
+            video_viewport_get_scaled_aspect(ps, vp, dims,
+                  y_down, device_aspect, aspect_ratio);
             return;
          }
       }
@@ -5927,13 +5930,15 @@ void video_driver_update_viewport(
    const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
    void *ctx_data                  = (void*)video_st->context_data;
 
+   vp->pos  = VIDEO_POS_PACK(0, 0);
+   vp->dims = vp->full_dims;
+   if (force_full)
+      return;
+
    video_driver_read_vp_params(&ps);
    video_scale_integer             = ps.scale_integer;
    rotation                        = ps.rotation;
    video_driver_aspect_ratio       = ps.aspect;
-
-   vp->pos                         = VIDEO_POS_PACK(0, 0);
-   vp->dims                        = vp->full_dims;
 
 #ifdef HAVE_OVERLAY
    /* The active overlay's viewport override, if it has one: from the
@@ -6024,7 +6029,7 @@ void video_driver_update_viewport(
       if (ctx->translate_aspect)
          device_aspect = ctx->translate_aspect(ctx_data,
             VIDEO_SCALE_W(vp->full_dims), VIDEO_SCALE_H(vp->full_dims));
-      video_viewport_get_scaled_aspect2(vp, vp->full_dims,
+      video_viewport_get_scaled_aspect(&ps, vp, vp->full_dims,
             y_down, device_aspect, video_driver_aspect_ratio);
    }
 }

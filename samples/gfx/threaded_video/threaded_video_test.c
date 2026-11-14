@@ -3328,6 +3328,88 @@ static void lane_replay_swap_count(void)
 /* Lane: geometry and AV-info changes                                 */
 /* ------------------------------------------------------------------ */
 
+static unsigned viewport_borrow_calls;
+
+static float viewport_borrow_translate(void *data, unsigned width, unsigned height)
+{
+   settings_t *settings = config_get_ptr();
+   (void)data;
+   (void)width;
+   (void)height;
+   if (++viewport_borrow_calls == 1)
+   {
+      settings->floats.video_vp_bias_y = 1.0f;
+      video_driver_aspect_ratio_put(&video_state_get_ptr()->aspect_ratio_bits, 1.0f);
+      video_driver_publish_vp_params();
+   }
+   return 1.0f;
+}
+
+static void lane_viewport_snapshot_borrow(void)
+{
+   settings_t *settings = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   float (*saved_translate)(void*, unsigned, unsigned) =
+         video_st->current_video_context.translate_aspect;
+   float saved_aspect = video_driver_get_aspect_ratio();
+   float saved_bias_x = settings->floats.video_vp_bias_x;
+   float saved_bias_y = settings->floats.video_vp_bias_y;
+   unsigned saved_index = settings->uints.video_aspect_ratio_idx;
+   unsigned saved_scale = video_st->scale_dims;
+   bool saved_integer = settings->bools.video_scale_integer;
+   struct video_viewport vp;
+   unsigned had = failures;
+#ifdef HAVE_OVERLAY
+   int saved_overlay = retro_atomic_load_acquire_int(&video_st->overlay_vp_flags);
+   retro_atomic_store_release_int(&video_st->overlay_vp_flags, 0);
+#endif
+
+   settings->bools.video_scale_integer = false;
+   settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_CORE;
+   settings->floats.video_vp_bias_x = 0.0f;
+   settings->floats.video_vp_bias_y = 0.0f;
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, 2.0f);
+   video_driver_publish_vp_params();
+   viewport_borrow_calls = 0;
+   video_st->current_video_context.translate_aspect = viewport_borrow_translate;
+   memset(&vp, 0, sizeof(vp));
+   vp.full_dims = VIDEO_SCALE_PACK(1000, 1000);
+   video_driver_update_viewport(&vp, false, true, true);
+   CHECK(vp.pos == VIDEO_POS_PACK(0, 0) && vp.dims == VIDEO_SCALE_PACK(1000, 500),
+         "viewport borrow: mixed aspect/bias generations (%d,%d %ux%u)",
+         VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos),
+         VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims));
+
+   video_viewport_get_scaled_aspect2(&vp, vp.full_dims, true, 1.0f, 2.0f);
+   CHECK(vp.pos == VIDEO_POS_PACK(0, 500) && vp.dims == VIDEO_SCALE_PACK(1000, 500),
+         "viewport borrow: public scaler did not read fresh parameters");
+   video_driver_update_viewport(&vp, false, true, true);
+   CHECK(vp.pos == VIDEO_POS_PACK(0, 0) && vp.dims == vp.full_dims,
+         "viewport borrow: next update missed the new generation");
+   CHECK(viewport_borrow_calls == 2, "viewport borrow: context callback count");
+
+   vp.full_dims = VIDEO_SCALE_PACK(640, 480);
+   video_driver_update_viewport(&vp, true, true, true);
+   CHECK(vp.pos == VIDEO_POS_PACK(0, 0) && vp.dims == vp.full_dims
+            && viewport_borrow_calls == 2
+            && video_st->scale_dims == VIDEO_SCALE_PACK(1000, 1000),
+         "viewport borrow: forced-full viewport touched scaling state");
+
+   video_st->current_video_context.translate_aspect = saved_translate;
+   settings->bools.video_scale_integer = saved_integer;
+   settings->uints.video_aspect_ratio_idx = saved_index;
+   settings->floats.video_vp_bias_x = saved_bias_x;
+   settings->floats.video_vp_bias_y = saved_bias_y;
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, saved_aspect);
+   video_driver_publish_vp_params();
+#ifdef HAVE_OVERLAY
+   retro_atomic_store_release_int(&video_st->overlay_vp_flags, saved_overlay);
+#endif
+   video_st->scale_dims = saved_scale;
+   if (failures == had)
+      fprintf(stderr, "[pass] viewport borrow: one generation, fresh public reads, full bypass\n");
+}
+
 static void lane_environment_debug_logging(void)
 {
    static const struct {
@@ -13668,6 +13750,7 @@ int main(int argc, char *argv[])
    if (getenv("HARNESS_GEOMETRY_ONLY"))
    {
       set_threaded_via_setting(false);
+      lane_viewport_snapshot_borrow();
       lane_environment_debug_logging();
       lane_square_pixel_geometry();
       lane_aspect_hint_changes();
@@ -13711,6 +13794,7 @@ int main(int argc, char *argv[])
    if (!real_driver())
    {
       set_threaded_via_setting(false);
+      lane_viewport_snapshot_borrow();
       lane_environment_debug_logging();
       lane_square_pixel_geometry();
       lane_aspect_hint_changes();

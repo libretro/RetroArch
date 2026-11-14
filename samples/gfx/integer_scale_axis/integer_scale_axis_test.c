@@ -62,11 +62,14 @@ static void frame_cache_peek(const void **data, unsigned *dims,
    *pitch = 0;
 }
 
-void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
+struct video_vp_param_snap;
+
+static void video_viewport_get_scaled_aspect(
+      const struct video_vp_param_snap *ps, struct video_viewport *vp,
       unsigned dims, bool y_down, float device_aspect,
       float desired_aspect)
 {
-   (void)y_down; (void)device_aspect; (void)desired_aspect;
+   (void)ps; (void)y_down; (void)device_aspect; (void)desired_aspect;
    vp->dims = dims;
    vp->pos  = 0;
    fallbacks++;
