@@ -2408,6 +2408,9 @@ const void *video_driver_convert_xrgb2101010(
       const void *data, unsigned dims,
       size_t in_pitch, size_t *out_pitch);
 
+void video_driver_convert_xrgb2101010_into(void *output,
+      const void *data, unsigned dims, size_t in_pitch, size_t out_pitch);
+
 /**
  * config_get_video_driver_options:
  *

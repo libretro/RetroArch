@@ -2216,7 +2216,8 @@ void video_thread_async_poll(void)
  * are in flight; the video driver deinit waits this thread idle before
  * freeing them. */
 static void *video_thread_convert_lend(thread_video_t *thr,
-      const void *data, unsigned dims, unsigned in_pitch, unsigned *pitch)
+      const void *data, unsigned dims, unsigned in_pitch,
+      unsigned bpp, unsigned *pitch)
 {
    struct retro_framebuffer fb;
    uintptr_t src = (uintptr_t)data;
@@ -2240,10 +2241,11 @@ static void *video_thread_convert_lend(thread_video_t *thr,
    if (     !thr->poke->get_current_software_framebuffer(thr->driver_data, &fb)
          || !fb.data || fb.width != VIDEO_SCALE_W(dims)
          || fb.height != VIDEO_SCALE_H(dims)
-         || fb.format != RETRO_PIXEL_FORMAT_RGB565
-         || fb.pitch < (size_t)VIDEO_SCALE_W(dims) * sizeof(uint16_t)
-         || fb.pitch > INT_MAX || (fb.pitch & 1)
-         || ((uintptr_t)fb.data & 1))
+         || fb.format != (bpp == sizeof(uint32_t)
+            ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)
+         || fb.pitch < (size_t)VIDEO_SCALE_W(dims) * bpp
+         || fb.pitch > INT_MAX || (fb.pitch & (bpp - 1))
+         || ((uintptr_t)fb.data & (bpp - 1)))
       goto decline;
    dst      = (uintptr_t)fb.data;
    dst_size = fb.pitch * VIDEO_SCALE_H(dims);
@@ -2275,7 +2277,7 @@ static bool video_thread_convert(thread_video_t *thr,
          {
             unsigned out_pitch = VIDEO_SCALE_W(dims) * sizeof(uint16_t);
             void *lent = allow_lend ? video_thread_convert_lend(thr,
-                  *data, dims, *pitch, &out_pitch) : NULL;
+                  *data, dims, *pitch, sizeof(uint16_t), &out_pitch) : NULL;
             if (lent)
             {
                struct scaler_ctx *scaler = video_st->scaler_ptr->scaler;
@@ -2298,8 +2300,20 @@ static bool video_thread_convert(thread_video_t *thr,
          break;
       case VIDEO_THREAD_CONVERT_XRGB2101010:
          {
+            unsigned out_pitch = VIDEO_SCALE_W(dims) * sizeof(uint32_t);
+            void *lent = allow_lend ? video_thread_convert_lend(thr,
+                  *data, dims, *pitch, sizeof(uint32_t), &out_pitch) : NULL;
             size_t      conv_pitch = *pitch;
-            const void *converted  = video_driver_convert_xrgb2101010(
+            const void *converted;
+            if (lent)
+            {
+               video_driver_convert_xrgb2101010_into(lent, *data,
+                     dims, *pitch, out_pitch);
+               *data  = lent;
+               *pitch = out_pitch;
+               return true;
+            }
+            converted = video_driver_convert_xrgb2101010(
                   video_st, *data, dims, *pitch, &conv_pitch);
             if (converted)
             {

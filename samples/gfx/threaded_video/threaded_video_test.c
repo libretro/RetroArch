@@ -11333,7 +11333,22 @@ static bool                pixlane_wide; /* the row is 32-bit */
 static unsigned            pixlane_lend_mode;
 static unsigned            pixlane_lend_calls;
 static unsigned            pixlane_lend_bad;
-static uint16_t            pixlane_lend_pixels[(PIXLANE_W + 8) * 240];
+static union
+{
+   uint16_t narrow[(PIXLANE_W + 8) * 240];
+   uint32_t wide[(PIXLANE_W + 8) * 240];
+} pixlane_lend_pixels;
+
+static void *pixlane_lend_buffer(void)
+{
+   return pixlane_wide ? (void*)pixlane_lend_pixels.wide
+      : (void*)pixlane_lend_pixels.narrow;
+}
+
+static unsigned pixlane_seed(void)
+{
+   return pixlane_wide ? 0xd5a5b6c7u : PIXLANE_FROZE;
+}
 
 static bool pixlane_lend(void *data, struct retro_framebuffer *fb)
 {
@@ -11343,16 +11358,19 @@ static bool pixlane_lend(void *data, struct retro_framebuffer *fb)
          || !retro_atomic_load_acquire_size(
                &video_state_get_ptr()->frame_cache_keeper))
       pixlane_lend_bad++;
-   memset(pixlane_lend_pixels, 0x5a, sizeof(pixlane_lend_pixels));
-   fb->data         = pixlane_lend_pixels;
-   fb->pitch        = (PIXLANE_W + 8) * sizeof(uint16_t);
-   fb->format       = RETRO_PIXEL_FORMAT_RGB565;
+   memset(&pixlane_lend_pixels, 0x5a, sizeof(pixlane_lend_pixels));
+   fb->data         = pixlane_lend_buffer();
+   fb->pitch        = (PIXLANE_W + 8) * (pixlane_wide ? 4u : 2u);
+   fb->format       = pixlane_wide
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    fb->memory_flags = 0; /* Write-only loans need not be cached. */
    switch (pixlane_lend_mode)
    {
       case 2: return false;
-      case 3: fb->format = RETRO_PIXEL_FORMAT_XRGB8888; break;
-      case 4: fb->pitch = (PIXLANE_W - 1) * sizeof(uint16_t); break;
+      case 3: fb->format = pixlane_wide
+                 ? RETRO_PIXEL_FORMAT_XRGB2101010
+                 : RETRO_PIXEL_FORMAT_XRGB8888; break;
+      case 4: fb->pitch = (PIXLANE_W - 1) * (pixlane_wide ? 4u : 2u); break;
       case 5: fb->pitch++; break;
       case 6: fb->data = (uint8_t*)fb->data + 1; break;
       case 7: fb->pitch = (size_t)INT_MAX + 1; break;
@@ -11372,7 +11390,7 @@ static bool pixlane_frame(void *data, const void *frame, unsigned dims,
       if (pixlane_lend_mode)
       {
          bool lent = pixlane_lend_mode == 1;
-         if (     (frame == pixlane_lend_pixels) != lent
+         if (     (frame == pixlane_lend_buffer()) != lent
                || (retro_atomic_load_acquire_size(
                      &video_state_get_ptr()->frame_cache_keeper) != 0) != lent)
             pixlane_lend_bad++;
@@ -11382,13 +11400,26 @@ static bool pixlane_frame(void *data, const void *frame, unsigned dims,
             for (y = 0; y < VIDEO_SCALE_H(dims); y++)
                for (x = 0; x < PIXLANE_W + 8; x++)
                {
-                  uint16_t want = 0x5a5a;
+                  unsigned at = y * (PIXLANE_W + 8) + x;
+                  uint32_t want = pixlane_wide ? 0x5a5a5a5au : 0x5a5au;
+                  uint32_t got = pixlane_wide ? pixlane_lend_pixels.wide[at]
+                     : pixlane_lend_pixels.narrow[at];
                   if (x < PIXLANE_W)
                   {
-                     uint16_t src = (uint16_t)(PIXLANE_FROZE + y * PIXLANE_W + x);
-                     conv_0rgb1555_rgb565(&want, &src, 1, 1, 2, 2);
+                     uint32_t v = pixlane_seed() + y * PIXLANE_W + x;
+                     if (pixlane_wide)
+                        want = 0xff000000u
+                           | ((v >> 22) & 0xff) << 16
+                           | ((v >> 12) & 0xff) << 8
+                           | ((v >> 2) & 0xff);
+                     else
+                     {
+                        uint16_t src = (uint16_t)v, out;
+                        conv_0rgb1555_rgb565(&out, &src, 1, 1, 2, 2);
+                        want = out;
+                     }
                   }
-                  if (pixlane_lend_pixels[y * (PIXLANE_W + 8) + x] != want)
+                  if (got != want)
                      pixlane_lend_bad++;
                }
          }
@@ -11464,7 +11495,7 @@ static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
       video_st->current_video = &pixlane_driver;
    }
 
-   freeze(PIXLANE_FROZE);
+   freeze(pixlane_seed());
    for (i = 0; i < 64
          && retro_atomic_load_acquire_int(&pixlane_frames) < 2; i++)
    {
@@ -11490,7 +11521,7 @@ static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
    {
       for (bad = 0, i = 0; i < PIXLANE_W; i++)
       {
-         uint32_t v = PIXLANE_FROZE + i;
+         uint32_t v = pixlane_seed() + i;
          uint32_t want;
          if (pixlane_wide)
             want = 0xff000000u
@@ -11544,7 +11575,10 @@ static void lane_pixel_format(void)
    pixlane_once(RETRO_PIXEL_FORMAT_XRGB2101010, false, 0);
    pixlane_once(RETRO_PIXEL_FORMAT_XRGB2101010, true, 0);
    for (lend_mode = 1; lend_mode <= 8; lend_mode++)
+   {
       pixlane_once(RETRO_PIXEL_FORMAT_0RGB1555, true, lend_mode);
+      pixlane_once(RETRO_PIXEL_FORMAT_XRGB2101010, true, lend_mode);
+   }
 
    /* Back to the core's own format, the driver made for it */
    if (set_format)

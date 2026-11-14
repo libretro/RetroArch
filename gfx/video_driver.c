@@ -9069,6 +9069,34 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    return true;
 }
 
+void video_driver_convert_xrgb2101010_into(void *output,
+      const void *data, unsigned dims, size_t in_pitch, size_t out_pitch)
+{
+   unsigned x, y;
+   const uint8_t *src_row = (const uint8_t*)data;
+   uint8_t *dst_row = (uint8_t*)output;
+
+   for (y = 0; y < VIDEO_SCALE_H(dims); y++)
+   {
+      uint32_t *dst = (uint32_t*)dst_row;
+      const uint32_t *src = (const uint32_t*)src_row;
+      const unsigned  w   = VIDEO_SCALE_W(dims);
+      /* Each channel's high 8 bits land in place with one shift and
+       * one mask per channel; the compiler vectorises this form,
+       * where the extract-then-reinsert one it did not. */
+      for (x = 0; x < w; x++)
+      {
+         uint32_t p = src[x];
+         dst[x]     = 0xff000000u
+                    | ((p >> 6) & 0x00ff0000u)
+                    | ((p >> 4) & 0x0000ff00u)
+                    | ((p >> 2) & 0x000000ffu);
+      }
+      dst_row += out_pitch;
+      src_row += in_pitch;
+   }
+}
+
 /* Down-convert an XRGB2101010 source frame to XRGB8888 in place of a scratch
  * buffer, used when the active video driver cannot present a native 10-bit
  * source surface. Each channel is narrowed 10 -> 8 bits by taking the high 8
@@ -9082,10 +9110,7 @@ VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
       const void *data, unsigned dims,
       size_t in_pitch, size_t *out_pitch)
 {
-   unsigned x, y;
-   const uint8_t *src_row = (const uint8_t*)data;
-   uint32_t      *dst;
-   size_t         needed  = VIDEO_SCALE_AREA(dims);
+   size_t needed = VIDEO_SCALE_AREA(dims);
 
    /* Sized once at video init from the core's declared max geometry
     * (video_driver_init_internal); this grow is only reached
@@ -9100,25 +9125,8 @@ VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
       video_st->pix10_convert_cap = needed;
    }
 
-   dst = video_st->pix10_convert_buf;
-   for (y = 0; y < VIDEO_SCALE_H(dims); y++)
-   {
-      const uint32_t *src = (const uint32_t*)src_row;
-      const unsigned  w   = VIDEO_SCALE_W(dims);
-      /* Each channel's high 8 bits land in place with one shift and
-       * one mask per channel; the compiler vectorises this form,
-       * where the extract-then-reinsert one it did not. */
-      for (x = 0; x < w; x++)
-      {
-         uint32_t p = src[x];
-         dst[x]     = 0xff000000u
-                    | ((p >> 6) & 0x00ff0000u)
-                    | ((p >> 4) & 0x0000ff00u)
-                    | ((p >> 2) & 0x000000ffu);
-      }
-      dst     += w;
-      src_row += in_pitch;
-   }
+   video_driver_convert_xrgb2101010_into(video_st->pix10_convert_buf,
+         data, dims, in_pitch, (size_t)VIDEO_SCALE_W(dims) * sizeof(uint32_t));
 
    *out_pitch = (size_t)VIDEO_SCALE_W(dims) * sizeof(uint32_t);
    return video_st->pix10_convert_buf;
