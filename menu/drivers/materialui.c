@@ -12798,6 +12798,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_DRIVER_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_THREADING_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS_STR)
@@ -12807,6 +12808,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_DLSS_NR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_THREADING_SETTINGS_STR)
 #ifdef HAVE_MICROPHONE
                   || string_is_equal(label, MENU_ENUM_LABEL_MICROPHONE_SETTINGS_STR)
 #endif
