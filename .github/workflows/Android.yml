@@ -183,6 +183,34 @@ jobs:
       - name: Image ownership and runtime reader fault contracts
         run: make -C samples/gfx/android_image_queue clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
 
+  media-stream-receiver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Independent receiver and local TLS peer tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg openssl
+      - name: Replayed encoded packets over real RTMP and TLS
+        env:
+          MC_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/mc-wire-${{ matrix.cc }}
+        run: make -C samples/record/mediacodec_encode receiver-check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Save exact wire and independent decode evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mc-wire-${{ matrix.cc }}
+          path: |
+            ${{ runner.temp }}/mc-wire-${{ matrix.cc }}
+            !${{ runner.temp }}/mc-wire-${{ matrix.cc }}/objects/**
+
   codec-session:
     runs-on: ubuntu-latest
     strategy:
