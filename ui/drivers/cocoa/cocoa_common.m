@@ -846,6 +846,14 @@ retro_time_t cocoa_last_vblank_time(void)
             return;
       }
 
+      /* The screen's bounds lag behind when a foldable is unfolded;
+       * the scene window's do not */
+      {
+         UIWindow *scene_win = [[UIApplication sharedApplication] delegate].window;
+         if (scene_win)
+            screenSize = [scene_win bounds];
+      }
+
       if (settings->bools.video_notch_write_over_enable)
       {
          self.view.frame = screenSize;
