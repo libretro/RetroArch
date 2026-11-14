@@ -1300,7 +1300,6 @@ static const struct
    char s_5b3c8098[23];
    char s_ceb820ad[8];
    char s_63af41a7[34];
-   char s_a4b769ca[30];
 #ifdef HAVE_MIST
    char s_53788998[30];
 #endif
@@ -2087,6 +2086,7 @@ static const struct
    char s_b861d3d4[21];
    char s_f469be52[23];
    char s_adaa5dca[17];
+   char s_4dd4b5ce[26];
    char s_97ede950[23];
    char s_14c81b21[18];
    char s_89e8800d[21];
@@ -2668,10 +2668,6 @@ static const struct
    char s_e595f6df[39];
    char s_2a5f7cd7[33];
    char s_f90edcc2[53];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[49];
-   char s_774121c8[49];
-#endif
    char s_b0fb58d3[24];
    char s_b0fb58d4[24];
    char s_92a02470[32];
@@ -2872,6 +2868,7 @@ static const struct
    char s_aa08c6d6[70];
 #endif
 #endif
+   char s_27aef25c[49];
 #ifdef _3DS
    char s_2873cef1[86];
    char s_b4816da6[48];
@@ -3456,7 +3453,6 @@ static const struct
    char s_7963c9c6[60];
    char s_ee3a489b[44];
    char s_236bd8d5[59];
-   char s_87c7d8b8[133];
 #ifdef HAVE_MIST
    char s_40e907c6[55];
 #endif
@@ -3873,6 +3869,7 @@ static const struct
    char s_59a0ee82[33];
    char s_b4265580[34];
    char s_96924038[28];
+   char s_53a41f3c[37];
    char s_611059be[35];
    char s_59e667cf[30];
    char s_8fb7e97b[33];
@@ -4240,10 +4237,8 @@ static const struct
    char s_ecc9b2c5[311];
    char s_c2314d30[190];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[162];
-   char s_82c9e376[142];
+   char s_82c9e376[117];
 #endif
-   char s_73658ec1[137];
    char s_73658ec2[117];
    char s_8010a29e[106];
    char s_81120e85[67];
@@ -6520,7 +6515,6 @@ static const struct
    "Akceler\303\241cia rolovania",
    "Vzh\304\276ad",
    "Zobrazi\305\245 'Konfigura\304\215n\303\275 s\303\272bor'",
-   "Zobrazi\305\245 potvrdzovacie okn\303\241",
 #ifdef HAVE_MIST
    "Zobrazi\305\245 'Spravova\305\245 jadr\303\241'",
 #endif
@@ -7321,6 +7315,7 @@ static const struct
    "Zobrazi\305\245 '\303\232spechy'",
    "Zobrazi\305\245 'Slu\305\276ba AI'",
    "Zobrazi\305\245 'Zvuk'",
+   "Zobrazi\305\245 \342\200\236Bluetooth\342\200\234",
    "Zobrazi\305\245 'Nastavenie'",
    "Zobrazi\305\245 'Jadro'",
    "Zobrazi\305\245 'Adres\303\241r'",
@@ -7906,10 +7901,6 @@ static const struct
    "Opakovanie sn\303\255mok vo Vl\303\241knovom videu",
    "Zv\303\275\305\241i\305\245 prioritu vl\303\241kna videa",
    "Pou\305\276i\305\245 Metal Argument Buffers (vy\305\276aduje re\305\241tart)",
-#if defined(RARCH_MOBILE)
-   "Sklon kotvy viewportu X (orient\303\241cia na v\303\275\305\241ku)",
-   "Sklon kotvy viewportu Y (orient\303\241cia na v\303\275\305\241ku)",
-#endif
    "Sklon kotvy viewportu X",
    "Sklon kotvy viewportu Y",
    "Vlastn\303\275 pomer str\303\241n (v\303\275\305\241ka)",
@@ -8256,6 +8247,7 @@ static const struct
    "\255",
 #endif
 #endif
+   "Vyh\304\276adajte zariadenia Bluetooth a pripojte ich.",
 #ifdef _3DS
    "Adres\303\241r prostriedkov spodnej obrazovky. Adres\303\241r mus\303\255 obsahova\305\245 \"bot"
    "tom_menu.png\".",
@@ -9384,8 +9376,6 @@ static const struct
    "Maxim\303\241lna r\303\275chlos\305\245 kurzora pri dr\305\276an\303\255 smeru rolovania.",
    "Zmeni\305\245 nastavenia vzh\304\276adu obrazovky menu.",
    "Zobrazi\305\245 vo\304\276bu 'Konfigura\304\215n\303\275 s\303\272bor' v hlavnej ponuke.",
-   "P\303\275ta\305\245 si potvrdenie pred ukon\304\215en\303\255m, resetovan\303\255m alebo zatvore"
-   "n\303\255m obsahu. Ke\304\217 je vypnut\303\251, tieto akcie sa vykonaj\303\272 okam\305\276ite.",
 #ifdef HAVE_MIST
    "Zobrazi\305\245 mo\305\276nos\305\245 'Spravova\305\245 cores' v hlavnom menu.",
 #endif
@@ -10155,6 +10145,7 @@ static const struct
    "Zobrazi\305\245 nastavenia '\303\232spechy'.",
    "Zobraz\303\255 nastavenia 'Slu\305\276ba AI'.",
    "Zobraz\303\255 nastavenia 'Zvuk'.",
+   "Zobraz\303\255 nastavenia \342\200\236Bluetooth\342\200\234.",
    "Zobrazi\305\245 nastavenia 'Nastavenie'.",
    "Zobrazi\305\245 nastavenia 'Jadro'.",
    "Zobrazi\305\245 nastavenia 'Adres\303\241r'.",
@@ -10949,16 +10940,9 @@ static const struct
    " pokazi\305\245 niektor\303\251 shadery, hlavne na starom hardv\303\251ri alebo OS verzi\303\241"
    "ch.",
 #if defined(RARCH_MOBILE)
-   "Horizont\303\241lna poloha obsahu, ke\304\217 je viewport \305\241ir\305\241\303\255 ne\305\276 "
-   "\305\241\303\255rka obsahu. 0,0 je \303\272plne v\304\276avo, 0,5 je v strede, 1,0 je \303\272pl"
-   "ne vpravo. (Orient\303\241cia na v\303\275\305\241ku)",
    "Vertik\303\241lna poloha obsahu, ke\304\217 je viewport vy\305\241\305\241\303\255 ne\305\276 v"
-   "\303\275\305\241ka obsahu. 0,0 je hore, 0,5 je v strede, 1,0 je dole. (Orient\303\241cia na v"
-   "\303\275\305\241ku)",
+   "\303\275\305\241ka obsahu. 0,0 je hore, 0,5 je v strede, 1,0 je dole.",
 #endif
-   "Horizont\303\241lna poloha obsahu, ke\304\217 je viewport \305\241ir\305\241\303\255 ne\305\276 "
-   "\305\241\303\255rka obsahu. 0,0 je \303\272plne v\304\276avo, 0,5 je v strede, 1,0 je \303\272pl"
-   "ne vpravo.",
    "Vertik\303\241lna poloha obsahu, ke\304\217 je viewport vy\305\241\305\241\303\255 ne\305\276 v"
    "\303\275\305\241ka obsahu. 0,0 je hore, 0,5 je v strede, 1,0 je dole.",
    "Vlastn\303\241 v\303\275\305\241ka viewportu, ktor\303\241 sa pou\305\276ije, ak je Pomer str"
@@ -11808,7 +11792,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (236667u
+      (sizeof(msg_hash_sk_blob) == (236479u
 #ifdef ANDROID
        + 389u
 #endif
@@ -12086,10 +12070,6 @@ typedef char msg_hash_sk_blob_check[
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
        + 21u
 #endif
-#if defined(RARCH_MOBILE)
-       + 49u
-       + 49u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 54u
@@ -12356,8 +12336,7 @@ typedef char msg_hash_sk_blob_check[
        + 158u
 #endif
 #if defined(RARCH_MOBILE)
-       + 162u
-       + 142u
+       + 117u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -13675,7 +13654,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -14461,6 +14439,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_BLUETOOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
@@ -15042,10 +15021,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -15239,6 +15214,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
@@ -15823,7 +15799,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -16240,6 +16215,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_BLUETOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
@@ -16603,10 +16579,8 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

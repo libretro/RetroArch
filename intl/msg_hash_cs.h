@@ -2115,10 +2115,6 @@ static const struct
    char s_bddbac76[10];
    char s_482ee1f1[12];
    char s_214b7699[7];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[62];
-   char s_774121c8[62];
-#endif
    char s_b0fb58d3[29];
    char s_b0fb58d4[29];
    char s_92a02470[35];
@@ -3184,10 +3180,8 @@ static const struct
    char s_2e69508b[350];
    char s_7e96b5ce[40];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[169];
-   char s_82c9e376[152];
+   char s_82c9e376[130];
 #endif
-   char s_73658ec1[146];
    char s_73658ec2[130];
    char s_8010a29e[116];
    char s_81120e85[117];
@@ -6198,10 +6192,6 @@ static const struct
    "V\303\275choz\303\255",
    "Vyv\303\241\305\276en\303\241",
    "V\303\275kon",
-#if defined(RARCH_MOBILE)
-   "P\305\231edsazen\303\255 kotvy panelu zobrazen\303\255 X (orientace na v\303\275\305\241ku)",
-   "P\305\231edsazen\303\255 kotvy panelu zobrazen\303\255 Y (orientace na v\303\275\305\241ku)",
-#endif
    "P\305\231edsazen\303\255 kotvy pohledu X",
    "P\305\231edsazen\303\255 kotvy pohledu Y",
    "Vlastn\303\255 pom\304\233r stran (na v\303\275\305\241ku)",
@@ -8136,16 +8126,10 @@ static const struct
    "ap\305\231. obsahu s 30 fps na displeji s 60 Hz nebo obsahu s 60 fps na displeji se 120 Hz.",
    "Zm\304\233nit nastaven\303\255 synchronizace videa.",
 #if defined(RARCH_MOBILE)
-   "Vodorovn\303\241 poloha obsahu, kdy\305\276 je zobrazovac\303\255 plocha \305\241ir\305\241\303"
-   "\255 ne\305\276 \305\241\303\255\305\231ka obsahu. 0,0 je zcela vlevo, 0,5 je uprost\305\231ed, "
-   "1,0 je zcela vpravo. (Orientace na v\303\275\305\241ku)",
    "Svisl\303\241 poloha obsahu, kdy\305\276 je zobrazovac\303\255 plocha vy\305\241\305\241\303\255"
    " ne\305\276 v\303\275\305\241ka obsahu. 0,0 je naho\305\231e, 0,5 je uprost\305\231ed, 1,0 je do"
-   "le (orientace na v\303\275\305\241ku)",
+   "le.",
 #endif
-   "Vodorovn\303\241 poloha obsahu, kdy\305\276 je zobrazovac\303\255 plocha \305\241ir\305\241\303"
-   "\255 ne\305\276 \305\241\303\255\305\231ka obsahu. 0,0 je zcela vlevo, 0,5 je uprost\305\231ed, "
-   "1,0 je zcela vpravo.",
    "Svisl\303\241 poloha obsahu, kdy\305\276 je zobrazovac\303\255 plocha vy\305\241\305\241\303\255"
    " ne\305\276 v\303\275\305\241ka obsahu. 0,0 je naho\305\231e, 0,5 je uprost\305\231ed, 1,0 je do"
    "le.",
@@ -8808,7 +8792,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (161502u
+      (sizeof(msg_hash_cs_blob) == (161356u
 #ifdef ANDROID
        + 390u
 #endif
@@ -8976,10 +8960,6 @@ typedef char msg_hash_cs_blob_check[
        + 19u
 #endif
 #endif
-#if defined(RARCH_MOBILE)
-       + 62u
-       + 62u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 48u
@@ -9143,8 +9123,7 @@ typedef char msg_hash_cs_blob_check[
        + 69u
 #endif
 #if defined(RARCH_MOBILE)
-       + 169u
-       + 152u
+       + 130u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -11274,10 +11253,6 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -12343,10 +12318,8 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

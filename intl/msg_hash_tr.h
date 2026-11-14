@@ -2209,10 +2209,6 @@ static const struct
    char s_482ee1f1[8];
    char s_214b7699[11];
    char s_f90edcc2[64];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[49];
-   char s_774121c8[49];
-#endif
    char s_b0fb58d3[33];
    char s_b0fb58d4[33];
    char s_92a02470[33];
@@ -3336,10 +3332,8 @@ static const struct
    char s_7e96b5ce[43];
    char s_c2314d30[222];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[152];
-   char s_82c9e376[141];
+   char s_82c9e376[127];
 #endif
-   char s_73658ec1[131];
    char s_73658ec2[127];
    char s_8010a29e[108];
    char s_81120e85[107];
@@ -6478,10 +6472,6 @@ static const struct
    "Dengeli",
    "Performans",
    "Metal Arg\303\274man Arabelleklerini Kullan (Yeniden ba\305\237lat\304\261lmal\304\261)",
-#if defined(RARCH_MOBILE)
-   "G\303\266r\303\274n\303\274m Ba\304\237lant\304\261 Noktas\304\261 X (Portre Y\303\266n\303\274)",
-   "G\303\266r\303\274n\303\274m Ba\304\237lant\304\261 Noktas\304\261 Y (Portre Y\303\266n\303\274)",
-#endif
    "G\303\266r\303\274n\303\274m Ba\304\237lant\304\261 Noktas\304\261 X",
    "G\303\266r\303\274n\303\274m Ba\304\237lant\304\261 Noktas\304\261 Y",
    "\303\226zel En Boy Oran\304\261 (Y\303\274kseklik)",
@@ -8485,16 +8475,9 @@ static const struct
    "\304\261m veya i\305\237letim sistemi s\303\274r\303\274mlerinde baz\304\261 g\303\266lgelendiri"
    "cileri bozabilir.",
 #if defined(RARCH_MOBILE)
-   "G\303\266r\303\274n\303\274m alan\304\261 i\303\247erik geni\305\237li\304\237inden daha geni"
-   "\305\237 oldu\304\237unda i\303\247eri\304\237in yatay konumu. 0,0 en sol, 0,5 merkez, 1,0 en sa"
-   "\304\237d\304\261r. (Dikey Y\303\266nlendirme)",
    "G\303\266r\303\274n\303\274m i\303\247erik y\303\274ksekli\304\237inden daha uzun oldu\304\237un"
-   "da i\303\247eri\304\237in dikey konumu. 0,0 \303\274st, 0,5 orta, 1,0 alt konumdur. (Dikey Y\303"
-   "\266nlendirme)",
+   "da i\303\247eri\304\237in dikey konumu. 0,0 \303\274st, 0,5 orta, 1,0 alt anlam\304\261na gelir.",
 #endif
-   "G\303\266r\303\274n\303\274m alan\304\261 i\303\247erik geni\305\237li\304\237inden daha geni"
-   "\305\237 oldu\304\237unda i\303\247eri\304\237in yatay konumu. 0,0 en sol, 0,5 merkez, 1,0 en sa"
-   "\304\237d\304\261r.",
    "G\303\266r\303\274n\303\274m i\303\247erik y\303\274ksekli\304\237inden daha uzun oldu\304\237un"
    "da i\303\247eri\304\237in dikey konumu. 0,0 \303\274st, 0,5 orta, 1,0 alt anlam\304\261na gelir.",
    "En Boy Oran\304\261 '\303\226zel En Boy Oran\304\261' olarak ayarlanm\304\261\305\237sa kullan"
@@ -9193,7 +9176,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169266u
+      (sizeof(msg_hash_tr_blob) == (169135u
 #ifdef ANDROID
        + 340u
 #endif
@@ -9369,10 +9352,6 @@ typedef char msg_hash_tr_blob_check[
 #ifdef HAVE_ODROIDGO2
        + 20u
 #endif
-#if defined(RARCH_MOBILE)
-       + 49u
-       + 49u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 58u
@@ -9536,8 +9515,7 @@ typedef char msg_hash_tr_blob_check[
        + 67u
 #endif
 #if defined(RARCH_MOBILE)
-       + 152u
-       + 141u
+       + 127u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -11762,10 +11740,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -12889,10 +12863,8 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

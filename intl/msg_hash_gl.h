@@ -1231,7 +1231,6 @@ static const struct
    char s_5b3c8098[30];
    char s_ceb820ad[10];
    char s_63af41a7[37];
-   char s_a4b769ca[31];
 #ifdef HAVE_MIST
    char s_53788998[29];
 #endif
@@ -2418,10 +2417,6 @@ static const struct
    char s_e595f6df[45];
    char s_f90edcc2[56];
    char s_ad14307a[10];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[74];
-   char s_774121c8[74];
-#endif
    char s_b0fb58d3[43];
    char s_b0fb58d4[43];
    char s_92a02470[44];
@@ -3120,7 +3115,6 @@ static const struct
    char s_7963c9c6[73];
    char s_ee3a489b[60];
    char s_236bd8d5[66];
-   char s_87c7d8b8[137];
 #ifdef HAVE_MIST
    char s_40e907c6[58];
 #endif
@@ -3767,10 +3761,8 @@ static const struct
    char s_81163acd[473];
    char s_c2314d30[233];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[177];
-   char s_82c9e376[159];
+   char s_82c9e376[136];
 #endif
-   char s_73658ec1[154];
    char s_73658ec2[136];
    char s_8010a29e[136];
    char s_81120e85[124];
@@ -5820,7 +5812,6 @@ static const struct
    "Aceleraci\303\263n do desprazamento",
    "Aparencia",
    "Mostrar \"Ficheiro de configuraci\303\263n\"",
-   "Amosar caixas de confirmaci\303\263n",
 #ifdef HAVE_MIST
    "Mostrar \"Xestionar n\303\272cleos\"",
 #endif
@@ -7020,10 +7011,6 @@ static const struct
    "Repetici\303\263n de fotogramas de v\303\255deo en f\303\255os",
    "Usar b\303\272feres de argumentos de Metal (require reinicio)",
    "Deflector",
-#if defined(RARCH_MOBILE)
-   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en X (orientaci\303\263n vertical)",
-   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en Y (orientaci\303\263n vertical)",
-#endif
    "Axuste de Ancoraxe da Xanela gr\303\241fica en X",
    "Axuste de Ancoraxe da Xanela gr\303\241fica en Y",
    "Relaci\303\263n de aspecto personalizada (altura)",
@@ -8090,8 +8077,6 @@ static const struct
    "Velocidade m\303\241xima do cursor ao manter unha direcci\303\263n para desprazarse.",
    "Cambiar a configuraci\303\263n da aparencia da pantalla do men\303\272.",
    "Mostra a opci\303\263n \"Ficheiro de configuraci\303\263n\" no men\303\272 principal.",
-   "Solicitar confirmaci\303\263n antes de sa\303\255r, reiniciar ou pechar contido. Cando est\303"
-   "\241 desactivado, estas acci\303\263ns exec\303\272tanse inmediatamente.",
 #ifdef HAVE_MIST
    "Mostra a opci\303\263n \"Xestionar n\303\272cleos\" no men\303\272 principal.",
 #endif
@@ -9127,16 +9112,9 @@ static const struct
    "\272cleos poden requirilo. Isto pode provocar erros nalg\303\272ns sombreadores, especialmente e"
    "n soporte f\303\255sico antigo ou versi\303\263ns antigas do sistema operativo.",
 #if defined(RARCH_MOBILE)
-   "Posici\303\263n horizontal do contido cando a xanela \303\251 m\303\241is ancha ca o contido (or"
-   "ientaci\303\263n vertical). 0.0 \303\251 totalmente \303\241 esquerda, 0.5 \303\251 o centro, 1."
-   "0 \303\251 totalmente \303\241 dereita",
-   "Posici\303\263n vertical do contido cando a xanela \303\251 m\303\241is alta ca o contido (orien"
-   "taci\303\263n vertical). 0.0 \303\251 arriba de todo, 0.5 \303\251 o centro, 1.0 \303\251 abaixo"
-   " de todo",
+   "Posici\303\263n vertical do contido cando a xanela \303\251 m\303\241is alta ca o contido. 0.0 "
+   "\303\251 arriba de todo, 0.5 \303\251 o centro, 1.0 \303\251 abaixo de todo.",
 #endif
-   "Posici\303\263n horizontal do contido cando a xanela \303\251 m\303\241is ancha ca o contido. 0."
-   "0 \303\251 totalmente \303\241 esquerda, 0.5 \303\251 o centro, 1.0 \303\251 totalmente \303\241"
-   " dereita.",
    "Posici\303\263n vertical do contido cando a xanela \303\251 m\303\241is alta ca o contido. 0.0 "
    "\303\251 arriba de todo, 0.5 \303\251 o centro, 1.0 \303\251 abaixo de todo.",
    "Altura da ventana gr\303\241fica personalizada que se usa se a Relaci\303\263n de aspecto est"
@@ -9792,7 +9770,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (210874u
+      (sizeof(msg_hash_gl_blob) == (210552u
 #ifdef ANDROID
        + 365u
 #endif
@@ -10006,10 +9984,6 @@ typedef char msg_hash_gl_blob_check[
 #ifdef HAVE_ODROIDGO2
        + 13u
 #endif
-#if defined(RARCH_MOBILE)
-       + 74u
-       + 74u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 52u
@@ -10221,8 +10195,7 @@ typedef char msg_hash_gl_blob_check[
        + 56u
 #endif
 #if defined(RARCH_MOBILE)
-       + 177u
-       + 159u
+       + 136u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -11470,7 +11443,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -12656,10 +12628,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -13352,7 +13320,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -13998,10 +13965,8 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

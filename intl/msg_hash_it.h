@@ -2271,10 +2271,6 @@ static const struct
    char s_214b7699[12];
    char s_f90edcc2[51];
    char s_ad14307a[21];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[58];
-   char s_774121c8[58];
-#endif
    char s_b0fb58d3[33];
    char s_b0fb58d4[33];
    char s_92a02470[45];
@@ -3472,10 +3468,8 @@ static const struct
    char s_7e96b5ce[50];
    char s_c2314d30[218];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[190];
-   char s_82c9e376[167];
+   char s_82c9e376[142];
 #endif
-   char s_73658ec1[167];
    char s_73658ec2[142];
    char s_8010a29e[112];
    char s_81120e85[114];
@@ -6526,10 +6520,6 @@ static const struct
    "Prestazioni",
    "Usa i buffer di argomenti Metal (richiede riavvio)",
    "Eliminazione flicker",
-#if defined(RARCH_MOBILE)
-   "Bias Di Ancoraggio Di Viewport X (Orientamento Verticale)",
-   "Bias Di Ancoraggio Di Viewport Y (Orientamento Verticale)",
-#endif
    "Bias Di Ancoraggio Di Viewport X",
    "Bias Di Ancoraggio Di Viewport Y",
    "Personalizza Rapporto d'aspetto (in Altezza)",
@@ -8190,16 +8180,9 @@ static const struct
    " richiederli. Potrebbe compromettere alcuni shader, specialmente su hardware o versioni di siste"
    "ma operativo pi\303\271 datati.",
 #if defined(RARCH_MOBILE)
-   "Posizione orizzontale del contenuto quando la vista \303\250 pi\303\271 larga della larghezza de"
-   "l contenuto. 0.0 \303\250 lontano a sinistra, 0.5 \303\250 al centro, 1.0 \303\250 molto a destr"
-   "a. (Orientamento verticale)",
    "Posizione verticale del contenuto quando la vista \303\250 pi\303\271 alta dell'altezza del cont"
-   "enuto. 0.0 \303\250 in alto, 0.5 \303\250 al centro, 1.0 \303\250 in basso. (Orientamento vertic"
-   "ale)",
+   "enuto. 0.0 \303\250 in alto, 0.5 \303\250 al centro, 1.0 \303\250 in basso.",
 #endif
-   "Posizione orizzontale del contenuto quando la vista \303\250 pi\303\271 larga della larghezza de"
-   "l contenuto. 0.0 \303\250 lontano a sinistra, 0.5 \303\250 al centro, 1.0 \303\250 lontano a des"
-   "tra.",
    "Posizione verticale del contenuto quando la vista \303\250 pi\303\271 alta dell'altezza del cont"
    "enuto. 0.0 \303\250 in alto, 0.5 \303\250 al centro, 1.0 \303\250 in basso.",
    "Altezza di visualizzazione personalizzata utilizzata se il Rapporto d'aspetto \303\250 impostato"
@@ -8838,7 +8821,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182260u
+      (sizeof(msg_hash_it_blob) == (182093u
 #ifdef ANDROID
        + 376u
 #endif
@@ -9057,10 +9040,6 @@ typedef char msg_hash_it_blob_check[
 #ifdef HAVE_ODROIDGO2
        + 10u
 #endif
-#if defined(RARCH_MOBILE)
-       + 58u
-       + 58u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 54u
@@ -9253,8 +9232,7 @@ typedef char msg_hash_it_blob_check[
        + 56u
 #endif
 #if defined(RARCH_MOBILE)
-       + 190u
-       + 167u
+       + 142u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -11540,10 +11518,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -12741,10 +12715,8 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

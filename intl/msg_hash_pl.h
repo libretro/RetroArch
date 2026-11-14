@@ -1259,7 +1259,6 @@ static const struct
    char s_5b3c8098[27];
    char s_ceb820ad[8];
    char s_63af41a7[29];
-   char s_a4b769ca[34];
 #ifdef HAVE_MIST
    char s_53788998[30];
 #endif
@@ -2513,10 +2512,6 @@ static const struct
    char s_214b7699[12];
    char s_f90edcc2[54];
    char s_ad14307a[26];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[55];
-   char s_774121c8[55];
-#endif
    char s_b0fb58d3[34];
    char s_b0fb58d4[34];
    char s_92a02470[53];
@@ -3212,7 +3207,6 @@ static const struct
    char s_7963c9c6[77];
    char s_ee3a489b[40];
    char s_236bd8d5[54];
-   char s_87c7d8b8[137];
 #ifdef HAVE_MIST
    char s_40e907c6[55];
 #endif
@@ -3875,10 +3869,8 @@ static const struct
    char s_7e96b5ce[40];
    char s_c2314d30[198];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[164];
-   char s_82c9e376[142];
+   char s_82c9e376[121];
 #endif
-   char s_73658ec1[143];
    char s_73658ec2[121];
    char s_8010a29e[148];
    char s_81120e85[149];
@@ -5990,7 +5982,6 @@ static const struct
    "Przyspieszenie przewijania",
    "Wygl\304\205d",
    "Poka\305\274 'Plik konfiguracyjny'",
-   "Poka\305\274 komunikaty potwierdzaj\304\205ce",
 #ifdef HAVE_MIST
    "Poka\305\274 'Zarz\304\205dzaj rdzeniami'",
 #endif
@@ -7259,10 +7250,6 @@ static const struct
    "Wydajno\305\233\304\207",
    "U\305\274ywaj bufor\303\263w argument\303\263w Metal (Wymagany restart)",
    "Pozbywanie si\304\231 migotania",
-#if defined(RARCH_MOBILE)
-   "Odchylenie zakotwiczenia widoku X (orientacja pionowa)",
-   "Odchylenie zakotwiczenia widoku Y (orientacja pionowa)",
-#endif
    "Odchylenie zakotwiczenia widoku X",
    "Odchylenie zakotwiczenia widoku Y",
    "Niestandardowy wsp\303\263\305\202czynnik proporcji (wysoko\305\233\304\207)",
@@ -8377,9 +8364,6 @@ static const struct
    "Maksymalna pr\304\231dko\305\233\304\207 kursora podczas przytrzymywania kierunku przewijania.",
    "Zmie\305\204 ustawienia wygl\304\205du ekranu menu.",
    "Poka\305\274 opcj\304\231 'Plik konfiguracyjny' w menu g\305\202\303\263wnym.",
-   "Popro\305\233 o potwierdzenie przed wyj\305\233ciem, zresetowaniem lub zamkni\304\231ciem tre"
-   "\305\233ci. Gdy wy\305\202\304\205czone, te czynno\305\233ci staj\304\205 si\304\231 natychmiast"
-   ".",
 #ifdef HAVE_MIST
    "Poka\305\274 opcj\304\231 \"Zarz\304\205dzaj rdzeniami\" w menu g\305\202\303\263wnym.",
 #endif
@@ -9516,15 +9500,10 @@ static const struct
    "psu\304\207 niekt\303\263re shadery, zw\305\202aszcza na starych sprz\304\231tach i wersjach sys"
    "temu.",
 #if defined(RARCH_MOBILE)
-   "Poziome po\305\202o\305\274enie tre\305\233ci, gdy widok jest szerszy ni\305\274 szeroko\305\233"
-   "\304\207 tre\305\233ci. 0.0 jest daleko na lewo, 0.5 to \305\233rodek, 1.0 to daleko na prawo. ("
-   "orientacja pionowa)",
    "Pionowe po\305\202o\305\274enie tre\305\233ci, gdy widok jest wy\305\274szy ni\305\274 wysoko"
    "\305\233\304\207 tre\305\233ci. 0.0 to g\303\263ra, 0.5 to \305\233rodek, 1.0 to d\303\263\305"
-   "\202. (orientacja pionowa)",
+   "\202.",
 #endif
-   "Poziome po\305\202o\305\274enie tre\305\233ci, gdy widok jest szerszy ni\305\274 szeroko\305\233"
-   "\304\207 tre\305\233ci. 0.0 jest daleko na lewo, 0.5 to \305\233rodek, 1.0 to daleko na prawo.",
    "Pionowe po\305\202o\305\274enie tre\305\233ci, gdy widok jest wy\305\274szy ni\305\274 wysoko"
    "\305\233\304\207 tre\305\233ci. 0.0 to g\303\263ra, 0.5 to \305\233rodek, 1.0 to d\303\263\305"
    "\202.",
@@ -10223,7 +10202,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199656u
+      (sizeof(msg_hash_pl_blob) == (199342u
 #ifdef ANDROID
        + 385u
 #endif
@@ -10478,10 +10457,6 @@ typedef char msg_hash_pl_blob_check[
 #ifdef HAVE_ODROIDGO2
        + 15u
 #endif
-#if defined(RARCH_MOBILE)
-       + 55u
-       + 55u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 49u
@@ -10709,8 +10684,7 @@ typedef char msg_hash_pl_blob_check[
        + 72u
 #endif
 #if defined(RARCH_MOBILE)
-       + 164u
-       + 142u
+       + 121u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -11984,7 +11958,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -13237,10 +13210,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -13933,7 +13902,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -14596,10 +14564,8 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

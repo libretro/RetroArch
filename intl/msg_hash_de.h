@@ -1278,7 +1278,6 @@ static const struct
    char s_5b3c8098[21];
    char s_ceb820ad[12];
    char s_63af41a7[27];
-   char s_a4b769ca[30];
 #ifdef HAVE_MIST
    char s_53788998[24];
 #endif
@@ -2628,10 +2627,6 @@ static const struct
    char s_2a5f7cd7[38];
    char s_f90edcc2[55];
    char s_ad14307a[12];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[54];
-   char s_774121c8[54];
-#endif
    char s_b0fb58d3[41];
    char s_b0fb58d4[41];
    char s_92a02470[10];
@@ -3404,7 +3399,6 @@ static const struct
    char s_7963c9c6[73];
    char s_ee3a489b[52];
    char s_236bd8d5[53];
-   char s_87c7d8b8[151];
 #ifdef HAVE_MIST
    char s_40e907c6[53];
 #endif
@@ -4181,10 +4175,8 @@ static const struct
    char s_ecc9b2c5[352];
    char s_c2314d30[214];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[163];
-   char s_82c9e376[147];
+   char s_82c9e376[134];
 #endif
-   char s_73658ec1[150];
    char s_73658ec2[134];
    char s_8010a29e[153];
    char s_81120e85[154];
@@ -6376,7 +6368,6 @@ static const struct
    "Scrollbeschleunigung",
    "Darstellung",
    "\"Konfigurationen\" anzeigen",
-   "Best\303\244tigungsfenster anzeigen",
 #ifdef HAVE_MIST
    "Zeige \"Cores verwalten\"",
 #endif
@@ -7736,10 +7727,6 @@ static const struct
    "Priorit\303\244t des Video-Threads erh\303\266hen",
    "Metallargumentpuffer verwenden (Neustart erforderlich)",
    "Entflackern",
-#if defined(RARCH_MOBILE)
-   "Ansichtsfenster-Ankerpunkt-Ausrichtung X (Hochformat)",
-   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y (Hochformat)",
-#endif
    "Ansichtsfenster-Ankerpunkt-Ausrichtung X",
    "Ansichtsfenster-Ankerpunkt-Ausrichtung Y",
    "Bildh\303\266he",
@@ -9017,8 +9004,6 @@ static const struct
    "Maximale Geschwindigkeit des Cursors beim Halten einer Bildlaufrichtung.",
    "Einstellungen f\303\274r das Aussehen des Men\303\274s \303\244ndern.",
    "Die Option \"Konfigurationen\" im Hauptmen\303\274 anzeigen.",
-   "Vor dem Beenden, Zur\303\274cksetzen oder Schlie\303\237en von Inhalten eine Best\303\244tigung "
-   "anfordern. Wenn deaktiviert, werden diese Aktionen sofort durchgef\303\274hrt.",
 #ifdef HAVE_MIST
    "Die Option \"Cores verwalten\" im Hauptmen\303\274 anzeigen.",
 #endif
@@ -10387,13 +10372,9 @@ static const struct
    "\303\266nnen dies erfordern. Dies kann einige Shader st\303\266ren, insbesondere bei alten Hardw"
    "are- oder Betriebssystemversionen.",
 #if defined(RARCH_MOBILE)
-   "Horizontale Position des Inhalts, wenn das Ansichtsfenster breiter als die Inhaltsbreite ist. 0."
-   "0 ist ganz links, 0.5 ist Mitte, 1.0 ist ganz rechts. (Hochformat)",
    "Vertikale Position des Inhalts, wenn das Ansichtsfenster h\303\266her als die Inhaltsh\303\266he"
-   " ist. 0.0 ist oben, 0.5 ist Mitte, 1.0 ist unten. (Hochformat)",
+   " ist. 0.0 ist oben, 0.5 ist Mitte, 1.0 ist unten.",
 #endif
-   "Horizontale Position des Inhalts, wenn das Ansichtsfenster breiter als die Inhaltsbreite ist. 0."
-   "0 ist ganz links, 0.5 ist Mitte, 1.0 ist ganz rechts.",
    "Vertikale Position des Inhalts, wenn das Ansichtsfenster h\303\266her als die Inhaltsh\303\266he"
    " ist. 0.0 ist oben, 0.5 ist Mitte, 1.0 ist unten.",
    "Benutzerdefinierte Ansichtsfensterh\303\266he, die verwendet wird, wenn das Bildseitenverh\303"
@@ -11187,7 +11168,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (255069u
+      (sizeof(msg_hash_de_blob) == (254738u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11470,10 +11451,6 @@ typedef char msg_hash_de_blob_check[
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
        + 15u
 #endif
-#if defined(RARCH_MOBILE)
-       + 54u
-       + 54u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 54u
@@ -11740,8 +11717,7 @@ typedef char msg_hash_de_blob_check[
        + 175u
 #endif
 #if defined(RARCH_MOBILE)
-       + 163u
-       + 147u
+       + 134u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -13036,7 +13012,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -14385,10 +14360,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -15150,7 +15121,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -15916,10 +15886,8 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

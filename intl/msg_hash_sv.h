@@ -1289,9 +1289,9 @@ static const struct
    char s_7f5c6d63[33];
    char s_c2aa7439[23];
    char s_5b3c8098[22];
+   char s_c39e6c47[37];
    char s_ceb820ad[9];
    char s_63af41a7[25];
-   char s_a4b769ca[24];
 #ifdef HAVE_MIST
    char s_53788998[23];
 #endif
@@ -2072,6 +2072,7 @@ static const struct
    char s_b861d3d4[20];
    char s_f469be52[18];
    char s_adaa5dca[12];
+   char s_4dd4b5ce[17];
    char s_97ede950[21];
    char s_14c81b21[14];
    char s_89e8800d[15];
@@ -2582,6 +2583,7 @@ static const struct
    char s_697c4a13[16];
    char s_2cb6ab5c[28];
    char s_552163d9[29];
+   char s_c5055b7f[32];
    char s_ef3d53d8[21];
    char s_6dcc2f9f[13];
    char s_7a23be94[12];
@@ -2630,10 +2632,6 @@ static const struct
    char s_e595f6df[36];
    char s_2a5f7cd7[29];
    char s_f90edcc2[50];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[66];
-   char s_774121c8[66];
-#endif
    char s_b0fb58d3[43];
    char s_b0fb58d4[43];
    char s_92a02470[27];
@@ -2832,6 +2830,7 @@ static const struct
    char s_aa08c6d6[69];
 #endif
 #endif
+   char s_27aef25c[45];
 #ifdef _3DS
    char s_2873cef1[88];
    char s_b4816da6[62];
@@ -3415,9 +3414,9 @@ static const struct
    char s_3f190491[107];
    char s_a5bae327[82];
    char s_7963c9c6[74];
+   char s_a6aedb35[84];
    char s_ee3a489b[51];
    char s_236bd8d5[52];
-   char s_87c7d8b8[140];
 #ifdef HAVE_MIST
    char s_40e907c6[50];
 #endif
@@ -3834,6 +3833,7 @@ static const struct
    char s_59a0ee82[41];
    char s_b4265580[38];
    char s_96924038[32];
+   char s_53a41f3c[38];
    char s_611059be[41];
    char s_59e667cf[34];
    char s_8fb7e97b[36];
@@ -4181,6 +4181,8 @@ static const struct
    char s_7acad9c1[63];
    char s_3c679f0a[291];
    char s_5b059407[132];
+   char s_d4b64f2d_0[500];
+   char s_d4b64f2d_1[97];
    char s_36033606[181];
    char s_5d342d82[234];
    char s_bd0312ce[102];
@@ -4202,10 +4204,8 @@ static const struct
    char s_ecc9b2c5[298];
    char s_c2314d30[215];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[195];
-   char s_82c9e376[165];
+   char s_82c9e376[142];
 #endif
-   char s_73658ec1[175];
    char s_73658ec2[142];
    char s_8010a29e[96];
    char s_81120e85[96];
@@ -6426,9 +6426,9 @@ static const struct
    "Menysk\303\244rmsl\303\244ckarens tidsgr\303\244ns",
    "Rullningsf\303\266rdr\303\266jning",
    "Rullningsacceleration",
+   "Snabb bl\303\244ddring med v\303\244nster+h\303\266ger",
    "Utseende",
    "Visa 'Konfigurationsfil'",
-   "Visa bekr\303\244ftelsel\303\245dor",
 #ifdef HAVE_MIST
    "Visa 'Hantera k\303\244rnor'",
 #endif
@@ -7218,6 +7218,7 @@ static const struct
    "Visa 'Prestationer'",
    "Visa 'AI-tj\303\244nst'",
    "Visa 'Ljud'",
+   "Visa \"Bluetooth\"",
    "Visa 'Konfiguration'",
    "Visa 'K\303\244rna'",
    "Visa 'Katalog'",
@@ -7730,6 +7731,7 @@ static const struct
    "Simulerad bredd",
    "Underbildrutor f\303\266r shaders",
    "Delad kontext f\303\266r h\303\245rdvara",
+   "Hoppa \303\266ver upprepade bildrutor",
    "Bilinj\303\244r-filtrering",
    "Mjukt filter",
    "Stereol\303\244ge",
@@ -7778,10 +7780,6 @@ static const struct
    "Upprepa bildrutor med tr\303\245dad video",
    "H\303\266j videotr\303\245dens prioritet",
    "Anv\303\244nd Metal-argumentbuffertar (kr\303\244ver omstart)",
-#if defined(RARCH_MOBILE)
-   "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, X (st\303\245ende orientering)",
-   "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, Y (st\303\245ende orientering)",
-#endif
    "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, X",
    "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, Y",
    "Anpassa bildformat (H\303\266jd)",
@@ -8107,6 +8105,7 @@ static const struct
    "Inaktivera Bluetooth ERTM f\303\266r att fixa parkoppling av vissa enheter",
 #endif
 #endif
+   "S\303\266k efter Bluetooth-enheter och anslut dem.",
 #ifdef _3DS
    "Nedre sk\303\244rmens katalog f\303\266r tillg\303\245ngar. Katalogen m\303\245ste inkludera \"b"
    "ottom_menu.png\".",
@@ -9132,11 +9131,10 @@ static const struct
    "\266r att rulla.",
    "Mark\303\266rens maximala hastighet n\303\244r du h\303\245ller en riktning f\303\266r att rulla"
    ".",
+   "Till\303\245t v\303\244nster+h\303\266ger f\303\266r snabb bl\303\244ddring i poster som inte "
+   "\303\244r inst\303\244llningar.",
    "\303\204ndra inst\303\244llningar f\303\266r menysk\303\244rmens utseende.",
    "Visa alternativet 'Konfigurationsfil' i huvudmenyn.",
-   "Be om bekr\303\244ftelse innan programmet avslutas, \303\245terst\303\244lls eller inneh\303\245"
-   "ll st\303\244ngs. N\303\244r detta \303\244r inaktiverat utf\303\266rs \303\245tg\303\244rderna "
-   "direkt.",
 #ifdef HAVE_MIST
    "Visa alternativet 'Hantera k\303\244rnor' i huvudmenyn.",
 #endif
@@ -9841,6 +9839,7 @@ static const struct
    "Visa inst\303\244llningar f\303\266r 'Prestationer'.",
    "Visar inst\303\244llningar f\303\266r AI-tj\303\244nst.",
    "Visar inst\303\244llningar f\303\266r ljud.",
+   "Visa inst\303\244llningarna f\303\266r Bluetooth.",
    "Visar inst\303\244llningar f\303\266r konfiguration.",
    "Visar inst\303\244llningar f\303\266r k\303\244rna.",
    "Visa inst\303\244llningar f\303\266r 'Katalog'.",
@@ -10477,6 +10476,14 @@ static const struct
    "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
    "Ge h\303\245rdvarurenderade k\303\244rnor en egen privat kontext. Undviker att beh\303\266va ant"
    "a att h\303\245rdvaran \303\244ndrar tillst\303\245nd mellan bildrutor.",
+   "Visa inte en bildruta som k\303\244rnan markerar som en upprepning av den f\303\266reg\303\245en"
+   "de, s\303\245 att bildsk\303\244rmen f\303\245r inneh\303\245llets egen bildfrekvens: inneh\303"
+   "\245ll med 30 fps visas i 30 Hz. F\303\266r verktyg f\303\266r bildrutegenerering och interpoler"
+   "ing som arbetar med visade bildrutor. N\303\244r upprepningar hoppas \303\266ver anv\303\244nds "
+   "ljudsynkronisering, Scanline Sync eller gr\303\244nssnittets tidsinst\303\244llare f\303\266r at"
+   "t h\303\245lla takten i inneh\303\245llet i st\303\244llet f\303\266r VSync. Kr\303\244ver Frame"
+   " Duping i k\303\244rnan. G\303\244ller inte n\303\244r menyn \303\244r \303\266pp",
+   "en, vid snabbspolning, Black Frame Insertion, shaderbildrutor eller Threaded Video Frame Repeat.",
    "L\303\244gg till en liten osk\303\244rpa i bilden f\303\266r att mjuka upp h\303\245rda pixelkan"
    "ter. Det h\303\244r alternativet har mycket liten inverkan p\303\245 prestandan. B\303\266r inak"
    "tiveras n\303\244r Shaders anv\303\244nds.",
@@ -10557,16 +10564,10 @@ static const struct
    "entbuffertar. Vissa k\303\244rnor kan kr\303\244va detta. Detta kan g\303\266ra att vissa shader"
    "s slutar fungera, s\303\244rskilt p\303\245 \303\244ldre h\303\245rdvara eller operativsystem.",
 #if defined(RARCH_MOBILE)
-   "Horisontell position f\303\266r inneh\303\245ll n\303\244r visningsomr\303\245det \303\244r bred"
-   "are \303\244n inneh\303\245llets bredd. 0,0 \303\244r l\303\244ngst till v\303\244nster, 0,5 "
-   "\303\244r i mitten, 1,0 \303\244r l\303\244ngst till h\303\266ger. (St\303\245ende orientering)",
    "Vertikal position f\303\266r inneh\303\245ll n\303\244r visningsomr\303\245det \303\244r h\303"
    "\266gre \303\244n inneh\303\245llets h\303\266jd. 0,0 \303\244r \303\266verst, 0,5 \303\244r i m"
-   "itten, 1,0 \303\244r nederst. (St\303\245ende orientering)",
+   "itten, 1,0 \303\244r nederst.",
 #endif
-   "Horisontell position f\303\266r inneh\303\245ll n\303\244r visningsomr\303\245det \303\244r bred"
-   "are \303\244n inneh\303\245llets bredd. 0,0 \303\244r l\303\244ngst till v\303\244nster, 0,5 "
-   "\303\244r i mitten och 1,0 \303\244r l\303\244ngst till h\303\266ger.",
    "Vertikal position f\303\266r inneh\303\245ll n\303\244r visningsomr\303\245det \303\244r h\303"
    "\266gre \303\244n inneh\303\245llets h\303\266jd. 0,0 \303\244r \303\266verst, 0,5 \303\244r i m"
    "itten, 1,0 \303\244r nederst.",
@@ -11383,7 +11384,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (235556u
+      (sizeof(msg_hash_sv_blob) == (236067u
 #ifdef ANDROID
        + 361u
 #endif
@@ -11661,10 +11662,6 @@ typedef char msg_hash_sv_blob_check[
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
        + 17u
 #endif
-#if defined(RARCH_MOBILE)
-       + 66u
-       + 66u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 45u
@@ -11931,8 +11928,7 @@ typedef char msg_hash_sv_blob_check[
        + 183u
 #endif
 #if defined(RARCH_MOBILE)
-       + 195u
-       + 165u
+       + 142u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -13237,9 +13233,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_QUICK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -14019,6 +14015,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_BLUETOOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
@@ -14529,6 +14526,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SKIP_DUPE_FRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE,
@@ -14577,10 +14575,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -14772,6 +14766,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
@@ -15354,9 +15349,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_QUICK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -15773,6 +15768,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_BLUETOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
@@ -16119,6 +16115,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SKIP_DUPE_FRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
@@ -16136,10 +16133,8 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

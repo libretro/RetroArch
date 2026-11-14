@@ -427,10 +427,8 @@ static const struct
    char s_2e69508b[282];
    char s_7e96b5ce[39];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[147];
-   char s_82c9e376[139];
+   char s_82c9e376[116];
 #endif
-   char s_73658ec1[124];
    char s_73658ec2[116];
    char s_47ae341f[98];
    char s_48696c85[78];
@@ -1047,13 +1045,9 @@ static const struct
    "hen running e.g. 30 fps content on a 60 Hz display or 60 fps content on a 120 Hz display.",
    "Change video synchronisation settings.",
 #if defined(RARCH_MOBILE)
-   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
-   "s centre, 1.0 is far right. (Portrait Orientation)",
    "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is cen"
-   "tre, 1.0 is bottom. (Portrait Orientation)",
+   "tre, 1.0 is bottom.",
 #endif
-   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
-   "s centre, 1.0 is far right.",
    "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is cen"
    "tre, 1.0 is bottom.",
    "Synchronise the output video of the graphics card to the refresh rate of the screen. Recommended"
@@ -1139,7 +1133,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26177u
+      (sizeof(msg_hash_en_blob) == (26053u
 #ifdef HAVE_LAKKA
        + 176u
 #endif
@@ -1215,8 +1209,7 @@ typedef char msg_hash_en_blob_check[
        + 55u
 #endif
 #if defined(RARCH_MOBILE)
-       + 147u
-       + 139u
+       + 116u
 #endif
 #ifdef _3DS
        + 49u
@@ -1636,10 +1629,8 @@ static const msg_hash_id_t msg_hash_en_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,

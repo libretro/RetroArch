@@ -1331,7 +1331,6 @@ static const struct
    char s_5b3c8098[31];
    char s_ceb820ad[11];
    char s_63af41a7[34];
-   char s_a4b769ca[34];
 #ifdef HAVE_MIST
    char s_53788998[29];
 #endif
@@ -2733,10 +2732,6 @@ static const struct
    char s_2a5f7cd7[38];
    char s_f90edcc2[66];
    char s_ad14307a[20];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[97];
-   char s_774121c8[97];
-#endif
    char s_b0fb58d3[73];
    char s_b0fb58d4[73];
    char s_92a02470[42];
@@ -3516,7 +3511,6 @@ static const struct
    char s_7963c9c6[112];
    char s_ee3a489b[47];
    char s_236bd8d5[68];
-   char s_87c7d8b8[147];
 #ifdef HAVE_MIST
    char s_40e907c6[63];
 #endif
@@ -4288,10 +4282,8 @@ static const struct
    char s_ecc9b2c5[390];
    char s_c2314d30[253];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[214];
-   char s_82c9e376[211];
+   char s_82c9e376[184];
 #endif
-   char s_73658ec1[187];
    char s_73658ec2[184];
    char s_8010a29e[153];
    char s_81120e85[154];
@@ -6538,7 +6530,6 @@ static const struct
    "Aceleraci\303\263n de desplazamiento",
    "Apariencia",
    "Mostrar Archivo de configuraci\303\263n",
-   "Mostrar ventanas de confirmaci\303\263n",
 #ifdef HAVE_MIST
    "Mostrar Administrar n\303\272cleos",
 #endif
@@ -7950,12 +7941,6 @@ static const struct
    "Aumentar prioridad del hilo de v\303\255deo",
    "Utilizar b\303\272feres de argumentos de Metal (es necesario reiniciar)",
    "Filtro antiparpadeo",
-#if defined(RARCH_MOBILE)
-   "Compensaci\303\263n del eje X del punto de anclaje del \303\241rea de visualizaci\303\263n (orie"
-   "ntaci\303\263n vertical)",
-   "Compensaci\303\263n del eje Y del punto de anclaje del \303\241rea de visualizaci\303\263n (orie"
-   "ntaci\303\263n vertical)",
-#endif
    "Compensaci\303\263n del eje X del punto de anclaje del \303\241rea de visualizaci\303\263n",
    "Compensaci\303\263n del eje Y del punto de anclaje del \303\241rea de visualizaci\303\263n",
    "Relaci\303\263n de aspecto personalizada (alto)",
@@ -9302,8 +9287,6 @@ static const struct
    "a desplazarse por un men\303\272.",
    "Cambia los ajustes de la apariencia del men\303\272.",
    "Muestra en el men\303\272 principal la opci\303\263n Archivo de configuraci\303\263n.",
-   "Pide confirmaci\303\263n para salir, reiniciar o cerrar un contenido. Si desactivas esta opci"
-   "\303\263n, estas acciones se llevar\303\241n a cabo de forma inmediata.",
 #ifdef HAVE_MIST
    "Muestra la opci\303\263n Administrar n\303\272cleos en el men\303\272 principal.",
 #endif
@@ -10720,16 +10703,10 @@ static const struct
    "posible que algunos n\303\272cleos los necesiten. Podr\303\255a dar problemas con algunos shader"
    "s, sobre todo en hardware obsoleto o versiones antiguas del sistema operativo.",
 #if defined(RARCH_MOBILE)
-   "Establece la posici\303\263n horizontal del contenido cuando el \303\241rea de visualizaci\303"
-   "\263n sea m\303\241s ancha que el contenido. 0,0 para extremo izquierdo, 0,5 para centrar, 1,0 p"
-   "ara extremo derecho (en orientaci\303\263n vertical).",
    "Establece la posici\303\263n vertical del contenido cuando el \303\241rea de visualizaci\303\263"
    "n sea m\303\241s alta que el contenido. 0,0 para extremo superior, 0,5 para centrar, 1,0 para ex"
-   "tremo inferior (en orientaci\303\263n vertical).",
+   "tremo inferior.",
 #endif
-   "Establece la posici\303\263n horizontal del contenido cuando el \303\241rea de visualizaci\303"
-   "\263n sea m\303\241s ancha que el contenido. 0,0 para extremo izquierdo, 0,5 para centrar, 1,0 p"
-   "ara extremo derecho.",
    "Establece la posici\303\263n vertical del contenido cuando el \303\241rea de visualizaci\303\263"
    "n sea m\303\241s alta que el contenido. 0,0 para extremo superior, 0,5 para centrar, 1,0 para ex"
    "tremo inferior.",
@@ -11518,7 +11495,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (272604u
+      (sizeof(msg_hash_es_blob) == (272236u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11799,10 +11776,6 @@ typedef char msg_hash_es_blob_check[
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
        + 22u
 #endif
-#if defined(RARCH_MOBILE)
-       + 97u
-       + 97u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 57u
@@ -12067,8 +12040,7 @@ typedef char msg_hash_es_blob_check[
        + 206u
 #endif
 #if defined(RARCH_MOBILE)
-       + 214u
-       + 211u
+       + 184u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -13413,7 +13385,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -14814,10 +14785,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -15585,7 +15552,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -16348,10 +16314,8 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

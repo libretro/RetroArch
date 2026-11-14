@@ -1157,7 +1157,6 @@ static const struct
    char s_5b3c8098[24];
    char s_ceb820ad[8];
    char s_63af41a7[25];
-   char s_a4b769ca[26];
 #ifdef HAVE_MIST
    char s_53788998[28];
 #endif
@@ -2369,10 +2368,6 @@ static const struct
    char s_214b7699[11];
    char s_f90edcc2[55];
    char s_ad14307a[12];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[57];
-   char s_774121c8[57];
-#endif
    char s_b0fb58d3[34];
    char s_b0fb58d4[34];
    char s_92a02470[30];
@@ -3020,7 +3015,6 @@ static const struct
    char s_7963c9c6[65];
    char s_ee3a489b[52];
    char s_236bd8d5[54];
-   char s_87c7d8b8[108];
 #ifdef HAVE_MIST
    char s_40e907c6[57];
 #endif
@@ -3627,10 +3621,8 @@ static const struct
    char s_7e96b5ce[39];
    char s_c2314d30[210];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[183];
-   char s_82c9e376[173];
+   char s_82c9e376[151];
 #endif
-   char s_73658ec1[161];
    char s_73658ec2[151];
    char s_8010a29e[91];
    char s_81120e85[93];
@@ -5561,7 +5553,6 @@ static const struct
    "Plirapidigo de rulumado",
    "Aspekto",
    "Montri \"Konfigurdosiero\"",
-   "Montri konfirmajn kadrojn",
 #ifdef HAVE_MIST
    "Montri \"Administri kernojn\"",
 #endif
@@ -6782,10 +6773,6 @@ static const struct
    "Rendimento",
    "Uzi argumentajn bufrojn de Metal (bezonas restartigon)",
    "Malflagrilo",
-#if defined(RARCH_MOBILE)
-   "Videja biaso X por la ankropunkto (vertikala orienti\304\235o)",
-   "Videja biaso Y por la ankropunkto (vertikala orienti\304\235o)",
-#endif
    "Videja biaso X por la ankropunkto",
    "Videja biaso Y por la ankropunkto",
    "Propra bilda proporcio (alto)",
@@ -7650,8 +7637,6 @@ static const struct
    "Maksimuma rapido de la kursoro kiam tenante direkton por rulumi.",
    "\305\234an\304\235i agordojn pri la aspekto de la menua ekrano.",
    "Montri la opcion \"Konfigurdosiero\" en la \304\210efa menuo.",
-   "Peti konfirmon anta\305\255 ol forlasi, reagordi a\305\255 fermi enhavon. Kiam malebligite, \304"
-   "\211i tiuj agojn okazos tuje.",
 #ifdef HAVE_MIST
    "Montri la opcion \"Administri kernojn\" en la \304\211efa menuo.",
 #endif
@@ -8524,14 +8509,9 @@ static const struct
    "\211i tion. \304\210i tio povas \"rompi\" kelkajn ombrigilojn, \304\211efe en kadukaj aparataroj"
    " a\305\255 malnovaj versioj de operaciumoj.",
 #if defined(RARCH_MOBILE)
-   "Horizontala pozicio de la enhavo kiam la videjo estas pli lar\304\235a ol la lar\304\235o de la "
-   "enhavo. 0.0 estas plej maldekstre, 0.5 estas centro, 1.0 estas plej dekstre. Vertikala orienti"
-   "\304\235o.",
    "Vertikala pozicio de la enhavo kiam la videjo estas pli alta ol la alto de la enhavo. 0.0 estas "
-   "plej supre, 0.5 estas centro, 1.0 estas plej malsupre. Vertikala orienti\304\235o.",
+   "plej supre, 0.5 estas centro, 1.0 estas plej malsupre.",
 #endif
-   "Horizontala pozicio de la enhavo kiam la videjo estas pli lar\304\235a ol la lar\304\235o de la "
-   "enhavo. 0.0 estas plej maldekstre, 0.5 estas centro, 1.0 estas plej dekstre.",
    "Vertikala pozicio de la enhavo kiam la videjo estas pli alta ol la alto de la enhavo. 0.0 estas "
    "plej supre, 0.5 estas centro, 1.0 estas plej malsupre.",
    "Propra videja alto uzata se la Bilda proporcio estas agordita al \"Propra bilda proporcio\".",
@@ -9168,7 +9148,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (170740u
+      (sizeof(msg_hash_eo_blob) == (170445u
 #ifdef ANDROID
        + 312u
 #endif
@@ -9385,10 +9365,6 @@ typedef char msg_hash_eo_blob_check[
 #ifdef HAVE_ODROIDGO2
        + 12u
 #endif
-#if defined(RARCH_MOBILE)
-       + 57u
-       + 57u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 57u
@@ -9581,8 +9557,7 @@ typedef char msg_hash_eo_blob_check[
        + 60u
 #endif
 #if defined(RARCH_MOBILE)
-       + 183u
-       + 173u
+       + 151u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -10756,7 +10731,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -11967,10 +11941,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -12618,7 +12588,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -13225,10 +13194,8 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
