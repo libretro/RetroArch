@@ -65,6 +65,11 @@
 -|Game (1990)(US)|Game (USA).png|t3|+Game (Japan).png|+Game (USA).png
 -|Legend of Zelda, The|Legend of Zelda, The (USA).png|t3|+Legend of Zelda, The (USA).png|+Legend of Zelda, The (Europe).png
 -|Zelda no Densetsu|-|-|+Legend of Zelda, The (Japan).png
+-|Sidearms + Hyper Dyne (Europe)|Sidearms + Hyper Dyne (Europe) (2 sides).png|t3|+Sidearms + Hyper Dyne (Europe) (2 sides).png
+-|Summer Games II (Europe) (b-highscores)|Summer Games II (Europe) (2 sides) (b-highscores).png|t3|+Summer Games II (Europe) (2 sides) (b-highscores).png|+Summer Games II (Europe) (3 sides) (b-highscores).png
+-|Azel - Panzer Dragoon RPG (Japan)|Azel - Panzer Dragoon RPG (Japan) (Disc 1) (1M).png|t3|+Azel - Panzer Dragoon RPG (Japan) (Disc 1) (1M).png|+Azel - Panzer Dragoon RPG (Japan) (Disc 1) (2M).png|+Azel - Panzer Dragoon RPG (Japan) (Disc 2) (1M).png
+-|Azel - Panzer Dragoon RPG (Japan) (Disc 2) (2M)|Azel - Panzer Dragoon RPG (Japan) (Disc 2) (1M).png|t3|+Azel - Panzer Dragoon RPG (Japan) (Disc 1) (2M).png|+Azel - Panzer Dragoon RPG (Japan) (Disc 2) (1M).png
+-|Game (Japan) (2m)|-|-|+Game (Japan).png
 # dates, second disc tags, brackets
 -|Fallout (1991)|-|-|+Fallout (1997).png|+Fallout.png
 -|Tetris (1987)|-|-|+Tetris.png|+Tetris (1991).png
