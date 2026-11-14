@@ -16,5 +16,5 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y libvulkan-dev libx11-dev libxext-dev libasound2-dev libudev-dev
-      - run: ./configure --disable-threads --disable-qt --disable-opengl --enable-vulkan --disable-x11 --disable-wayland
+      - run: ./configure --disable-threads --disable-qt --disable-opengl --disable-vulkan --disable-x11 --disable-wayland
       - run: make -j4
