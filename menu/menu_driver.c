@@ -10185,6 +10185,9 @@ static void menu_core_warning_raise(struct menu_state *menu_st)
       labels[i] = menu_core_warning_label(choices[i]);
    menu_dialog_buttons_set(menu_st, labels, n);
    menu_core_warning_shown = core_warning_serial();
+   /* It can come up mid-hold: what is down now waits to be let go */
+   menu_event_starts_afresh = true;
+   input_driver_hold_held_input();
 }
 
 /* Brings the box in line with the request pending; true when it went up */

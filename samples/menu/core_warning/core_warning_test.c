@@ -704,6 +704,9 @@ struct mouse
 
 static struct mouse held;
 static struct mouse latched;
+/* and port 0's pad, one bit per RetroPad button */
+static uint16_t pad_held;
+static uint16_t pad_latched;
 static input_driver_t scripted;
 static input_driver_t *real_input;
 static video_driver_t scripted_video;
@@ -714,7 +717,8 @@ static bool (*null_frame)(void *, const void *, unsigned, uint64_t,
 static void scripted_poll(void *data)
 {
    (void)data;
-   latched = held;
+   latched     = held;
+   pad_latched = pad_held;
 }
 
 static int16_t scripted_input_state(
@@ -736,6 +740,12 @@ static int16_t scripted_input_state(
    }
    else if (device == RETRO_DEVICE_MOUSE && id == RETRO_DEVICE_ID_MOUSE_LEFT)
       return latched.left;
+   else if (device == RETRO_DEVICE_JOYPAD)
+   {
+      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         return (int16_t)pad_latched;
+      return id < 16 && (pad_latched & (1u << id));
+   }
    return 0;
 }
 
@@ -763,6 +773,7 @@ static void scripted_install(void)
    input_driver_state_t *input_st = input_state_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    memset(&held, 0, sizeof(held));
+   pad_held                       = 0;
    real_input                     = input_st->current_driver;
    scripted                       = *real_input;
    scripted.poll                  = scripted_poll;
@@ -912,6 +923,78 @@ static void lane_pointer(void)
    configuration_set_bool(settings, settings->bools.menu_mouse_enable, false);
    held.x = 0;
    held.y = 0;
+}
+
+/* Frames through the loop, about 60 a second */
+static void frames(unsigned n)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+   {
+      pump(1);
+      retro_sleep(17);
+   }
+}
+
+/* A pad button held from before the box opens does nothing to it until
+ * let go: a direction's repeat leaves the highlight on Cancel and OK
+ * presses nothing. A press made with the box up moves at once. */
+static void lane_held(void)
+{
+   static const unsigned dir[2] = {
+      RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_RIGHT
+   };
+   char what[160];
+   unsigned i;
+
+   scripted_install();
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   pump(3);
+   for (i = 0; i < 2; i++)
+   {
+      const char *name = i ? "Right" : "Down";
+      pad_held = (uint16_t)BUTTON(dir[i]);
+      frames(20);
+      push(&seen_a, CORE_WARNING_LOAD, (uint8_t)(0x60 + i),
+            CORE_CHECK_UNSIGNED);
+      /* well past Menu Scroll Delay */
+      frames(40);
+      sprintf(what, "held: a %s held from before the box moved the highlight",
+            name);
+      CHECK(shown() && box().highlight == 0, what);
+      pad_held = 0;
+      frames(3);
+      /* back to Cancel, if the hold moved it */
+      answer(MENU_ACTION_LEFT);
+      answer(MENU_ACTION_LEFT);
+      pad_held = (uint16_t)BUTTON(RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      pump(2);
+      sprintf(what, "held: after a %s let go, a fresh Right didn't move at once",
+            name);
+      CHECK(box().highlight == 1, what);
+      pad_held = 0;
+      frames(3);
+      CHECK(shown() && seen_a.calls == 0, "held: a key pressed a button");
+      answer(MENU_ACTION_CANCEL);
+   }
+
+   /* OK on the Main Menu's first row, as on a core that is then
+    * checked; the box comes up before it is let go */
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   pump(3);
+   menu_state_get_ptr()->selection_ptr = 0;
+   pad_held = (uint16_t)BUTTON(RETRO_DEVICE_ID_JOYPAD_A);
+   frames(3);
+   push(&seen_a, CORE_WARNING_LOAD, 0x62, CORE_CHECK_UNSIGNED);
+   frames(10);
+   pad_held = 0;
+   frames(10);
+   CHECK(shown() && seen_a.calls == 0,
+         "held: an OK held from before the box pressed a button");
+   answer(MENU_ACTION_CANCEL);
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   pump(3);
+   scripted_remove();
 }
 
 /* A press on A's Install and Trust, held while B replaces A, chooses
@@ -1314,6 +1397,7 @@ int main(int argc, char *argv[])
       synthetic_install();
       lane_synthetic();
       lane_pointer();
+      lane_held();
       lane_replaced();
       lane_setting(dir);
       synthetic_remove();
