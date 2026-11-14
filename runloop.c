@@ -2077,6 +2077,15 @@ static void runloop_video_decode_close(void *decoder)
 }
 #endif
 
+/* Whether the core's aspect hint affects the displayed viewport. */
+static bool runloop_uses_core_aspect_hint(const settings_t *settings)
+{
+   return settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CORE
+      || (     settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CONFIG
+            && settings->floats.video_aspect_ratio < 0.0f
+            && settings->bools.video_aspect_ratio_auto);
+}
+
 bool runloop_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
@@ -3512,8 +3521,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      info->geometry.max_width  != av_info->geometry.max_width
                   || info->geometry.max_height != av_info->geometry.max_height;
             bool aspect_changed                   = info->geometry.aspect_ratio != av_info->geometry.aspect_ratio;
-            bool viewport_changed                 = base_size_changed || aspect_changed;
-            bool geometry_changed                 = viewport_changed || max_size_changed;
+            bool viewport_changed                 = base_size_changed
+                  || (aspect_changed && runloop_uses_core_aspect_hint(settings));
+            bool geometry_changed                 = base_size_changed || aspect_changed || max_size_changed;
             bool max_size_fits                     = !max_size_changed;
 
             if (!geometry_changed && !timing_changed)
@@ -3796,29 +3806,35 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          video_driver_state_t *video_st           = video_state_get_ptr();
          struct retro_game_geometry  *geom        = &video_st->av_info.geometry;
          const struct retro_game_geometry *in_geom= (const struct retro_game_geometry*)data;
+         bool base_size_changed;
+         bool aspect_changed;
 
          if (!in_geom)
             return false;
 
+         base_size_changed = geom->base_width != in_geom->base_width
+                          || geom->base_height != in_geom->base_height;
+         aspect_changed = geom->aspect_ratio != in_geom->aspect_ratio;
+
          /* Can potentially be called every frame,
           * don't do anything unless required. */
-         if (     (geom->base_width   != in_geom->base_width)
-               || (geom->base_height  != in_geom->base_height)
-               || (geom->aspect_ratio != in_geom->aspect_ratio))
+         if (base_size_changed || aspect_changed)
          {
-            bool video_frame_delay_auto = settings->bools.video_frame_delay_auto;
+            if (base_size_changed)
+            {
+               geom->base_width  = in_geom->base_width;
+               geom->base_height = in_geom->base_height;
+            }
+            if (aspect_changed)
+               geom->aspect_ratio = in_geom->aspect_ratio;
 
-            geom->base_width            = in_geom->base_width;
-            geom->base_height           = in_geom->base_height;
-            geom->aspect_ratio          = in_geom->aspect_ratio;
+            if (base_size_changed || runloop_uses_core_aspect_hint(settings))
+            {
+               command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
-            /* Forces recomputation of aspect ratios if
-             * using core-dependent aspect ratios. */
-            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
-
-            /* Ignore frame delay target temporarily */
-            if (video_frame_delay_auto)
-               video_st->frame_delay_pause = true;
+               if (settings->bools.video_frame_delay_auto)
+                  video_st->frame_delay_pause = true;
+            }
 
             /* TODO: Figure out what to do, if anything, with
                recording. */

@@ -3456,6 +3456,94 @@ static void avc_nonblock(void *data, bool state, bool adaptive,
    avc_nonblocks++;
 }
 
+static void lane_aspect_hint_changes(void)
+{
+   static const struct {
+      unsigned index;
+      float configured;
+      bool automatic;
+      bool resize;
+   } modes[] = {
+      {ASPECT_RATIO_CORE, -1.0f, false, true},
+      {ASPECT_RATIO_CONFIG, -1.0f, true, true},
+      {ASPECT_RATIO_CONFIG, -1.0f, false, false},
+      {ASPECT_RATIO_CONFIG, 1.5f, true, false},
+      {ASPECT_RATIO_4_3, -1.0f, true, false},
+      {ASPECT_RATIO_SQUARE, -1.0f, true, false},
+      {ASPECT_RATIO_CUSTOM, -1.0f, true, false},
+      {ASPECT_RATIO_FULL, -1.0f, true, false}
+   };
+   settings_t *settings = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct retro_system_av_info saved = video_st->av_info;
+   struct retro_system_av_info info;
+   const video_poke_interface_t *saved_poke = video_st->poke;
+   video_poke_interface_t poke;
+   unsigned saved_aspect = settings->uints.video_aspect_ratio_idx;
+   unsigned saved_crt = settings->uints.crt_switch_resolution;
+   unsigned saved_target = video_st->frame_delay_target;
+   float saved_configured = settings->floats.video_aspect_ratio;
+   bool saved_automatic = settings->bools.video_aspect_ratio_auto;
+   bool saved_delay_auto = settings->bools.video_frame_delay_auto;
+   bool saved_pause = video_st->frame_delay_pause;
+   unsigned had = failures;
+   unsigned mode, api;
+
+   memset(&poke, 0, sizeof(poke));
+   poke.set_aspect_ratio = avc_aspect;
+   video_st->poke = &poke;
+   settings->uints.crt_switch_resolution = 0;
+   settings->bools.video_frame_delay_auto = true;
+   for (mode = 0; mode < sizeof(modes) / sizeof(modes[0]); mode++)
+   {
+      settings->uints.video_aspect_ratio_idx = modes[mode].index;
+      settings->floats.video_aspect_ratio = modes[mode].configured;
+      settings->bools.video_aspect_ratio_auto = modes[mode].automatic;
+      for (api = 0; api < 2; api++)
+      {
+         unsigned cmd = api ? RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+                            : RETRO_ENVIRONMENT_SET_GEOMETRY;
+         runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &saved);
+         info = saved;
+         info.geometry.aspect_ratio = 1.75f;
+         if (info.geometry.aspect_ratio == saved.geometry.aspect_ratio)
+            info.geometry.aspect_ratio = 1.5f;
+         avc_aspects = 0;
+         video_st->frame_delay_pause = false;
+         video_st->frame_delay_target = 5;
+         CHECK(runloop_environment_cb(cmd, api ? (void*)&info : (void*)&info.geometry),
+               "aspect hint: mode %u API %u rejected", mode, api);
+         CHECK(video_st->av_info.geometry.aspect_ratio == info.geometry.aspect_ratio,
+               "aspect hint: mode %u API %u discarded metadata", mode, api);
+         CHECK(avc_aspects == (unsigned)modes[mode].resize
+                  && video_st->frame_delay_pause == modes[mode].resize
+                  && video_st->frame_delay_target == 5,
+               "aspect hint: mode %u API %u resize count %u, pause %u",
+               mode, api, avc_aspects, video_st->frame_delay_pause);
+
+         avc_aspects = 0;
+         video_st->frame_delay_pause = false;
+         info.geometry.base_width++;
+         CHECK(runloop_environment_cb(cmd, api ? (void*)&info : (void*)&info.geometry),
+               "aspect hint: base-size update rejected");
+         CHECK(avc_aspects == 1 && video_st->frame_delay_pause,
+               "aspect hint: mode %u API %u missed base-size resize", mode, api);
+      }
+   }
+   settings->uints.video_aspect_ratio_idx = saved_aspect;
+   settings->floats.video_aspect_ratio = saved_configured;
+   settings->bools.video_aspect_ratio_auto = saved_automatic;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &saved);
+   settings->uints.crt_switch_resolution = saved_crt;
+   settings->bools.video_frame_delay_auto = saved_delay_auto;
+   video_st->poke = saved_poke;
+   video_driver_set_aspect_ratio();
+   video_st->frame_delay_pause = saved_pause;
+   video_st->frame_delay_target = saved_target;
+   if (failures == had)
+      fprintf(stderr, "[pass] aspect hints: metadata retained, only dependent viewports resized\n");
+}
+
 static void lane_av_info_changes(void)
 {
    settings_t *settings            = config_get_ptr();
@@ -13331,6 +13419,7 @@ int main(int argc, char *argv[])
    {
       set_threaded_via_setting(false);
       lane_square_pixel_geometry();
+      lane_aspect_hint_changes();
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
@@ -13371,6 +13460,7 @@ int main(int argc, char *argv[])
    {
       set_threaded_via_setting(false);
       lane_square_pixel_geometry();
+      lane_aspect_hint_changes();
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
