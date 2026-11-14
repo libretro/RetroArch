@@ -12879,6 +12879,10 @@ MSG_HASH(
    "Auto (%u)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED,
+   "Pressed"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD,
    "Add Controller"
    )
@@ -12917,6 +12921,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARED_BINDS,
    "Shared · binds in Port %u Controls"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PAD_FIND,
+   "Press a button on a controller to find it."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ADD,
+   "Pick a connected controller to play as Player %u. It moves here from the player it plays now."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
@@ -33588,6 +33600,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_COMBO_SET_BUTTONS,
    "Set Buttons"
+   )
+MSG_HASH(
+   MSG_INPUT_PAD_PRESS_TO_FIND,
+   "Press to Find"
    )
 MSG_HASH(
    MSG_INPUT_COMBO_CHOOSE_ACTION,

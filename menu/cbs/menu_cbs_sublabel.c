@@ -378,7 +378,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_player_chat,   ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_fade_chat_toggle, MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_type,                MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_index,               MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_index,                MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_keyboard_index,             MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_aim_stick,                  MENU_ENUM_SUBLABEL_INPUT_AIM_STICK)
@@ -728,6 +727,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   char name_buf[NAME_MAX_LENGTH];
    const char *display_name, *config_name;
    unsigned port;
    if (!list || i >= list->size || list->list[i].entry_idx >= MAX_USERS)
@@ -735,6 +735,14 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    port         = (unsigned)list->list[i].entry_idx;
    display_name = input_config_get_device_display_name(port);
    config_name  = input_config_get_device_config_name(port);
+   if (display_name)
+   {
+      size_t _len = strlcpy(name_buf, display_name, sizeof(name_buf));
+      if (_len < sizeof(name_buf))
+         input_config_get_device_tag(port, name_buf + _len,
+               sizeof(name_buf) - _len);
+      display_name = name_buf;
+   }
    snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO),
          display_name ? display_name
@@ -1069,12 +1077,14 @@ static int action_bind_sublabel_input_remap_port(
          display_port);
 
    /* Remove trailing dot */
-   snprintf(s + _len - 1, len - _len - 1, ": %s",
+   _len += snprintf(s + _len - 1, len - _len - 1, ": %s",
            input_config_get_device_display_name(user_idx)
          ? input_config_get_device_display_name(user_idx)
          : (input_config_get_device_name(user_idx)
          ? input_config_get_device_name(user_idx)
-         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE))) - 1;
+   if (_len < len)
+      input_config_get_device_tag(user_idx, s + _len, len - _len);
 
    /* We can safely cache the sublabel here, since
     * frontend port index cannot change while the
@@ -1610,8 +1620,22 @@ size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
    return strlen(s);
 }
 
-/* Settings > Input > Controllers and Port N Controls: the player it
- * plays as, and where. */
+/* While two connected controllers show one name, a second line says a
+ * press finds one. Ozone says it in its footer. */
+static void menu_cbs_sublabel_pad_find(char *s, size_t len)
+{
+   size_t _len = strlen(s);
+#ifdef HAVE_OZONE
+   if (string_is_equal(menu_driver_ident(), "ozone"))
+      return;
+#endif
+   if (_len + 1 < len && menu_driver_pads_share_name())
+      snprintf(s + _len, len - _len, "\n%s",
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PAD_FIND));
+}
+
+/* Settings > Input > Controllers and Port N Controls > Controllers:
+ * the player it plays as, and where. */
 static int action_bind_sublabel_input_plays_as(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1620,7 +1644,7 @@ static int action_bind_sublabel_input_plays_as(
 {
    unsigned player, port;
    unsigned row  = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
-   /* Port N Controls' rows carry N */
+   /* Port N Controls > Controllers' rows carry N */
    size_t page   = (list && i < list->size) ? list->list[i].entry_idx : 0;
    enum input_plays_as_where where = input_config_plays_as_where(row,
          &player, &port);
@@ -1634,6 +1658,7 @@ static int action_bind_sublabel_input_plays_as(
          snprintf(s, len,
                msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARED_BINDS),
                port);
+      menu_cbs_sublabel_pad_find(s, len);
       return 0;
    }
    switch (where)
@@ -1662,6 +1687,35 @@ static int action_bind_sublabel_input_plays_as(
                len);
          break;
    }
+   /* a press cannot find a controller that is gone */
+   if (where != INPUT_PLAYS_AS_GONE)
+      menu_cbs_sublabel_pad_find(s, len);
+   return 0;
+}
+
+/* Port N Controls' Device Index */
+static int action_bind_sublabel_input_device_index(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX), len);
+   menu_cbs_sublabel_pad_find(s, len);
+   return 1;
+}
+
+/* Add Controller: its player's user is in its entry_idx. */
+static int action_bind_sublabel_input_plays_as_add(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   if (!list || i >= list->size || list->list[i].entry_idx >= MAX_USERS)
+      return 0;
+   snprintf(s, len, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ADD),
+         (unsigned)list->list[i].entry_idx + 1);
    return 0;
 }
 
@@ -2039,7 +2093,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME },
       { MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS },
       { MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS, MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS },
+      { MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS, MENU_ENUM_SUBLABEL_INPUT_PORT_CONTROLLERS },
       { MENU_ENUM_LABEL_INPUT_CONTROLLERS, MENU_ENUM_SUBLABEL_INPUT_CONTROLLERS },
+      { MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS, MENU_ENUM_SUBLABEL_INPUT_HEADSET_CONTROLS },
       { MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS, MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS },
       { MENU_ENUM_LABEL_INPUT_TURBO_ENABLE, MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE },
       { MENU_ENUM_LABEL_INPUT_TURBO_MODE, MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE },
@@ -3042,6 +3098,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_PLAYLIST_ENTRY, action_bind_sublabel_playlist_entry },
       { MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_ENTRY, action_bind_sublabel_core_backup_entry },
       { MENU_ENUM_LABEL_CORE_DELETE_BACKUP_ENTRY, action_bind_sublabel_core_backup_entry },
+      { MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD, action_bind_sublabel_input_plays_as_add },
    };
    {
       uint32_t key = (uint32_t)cbs->enum_idx;

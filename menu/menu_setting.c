@@ -7418,9 +7418,6 @@ static int setting_action_left_input_device_index(
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
-   /* Port N Controls' controller rows follow it */
-   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
-                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -10135,9 +10132,6 @@ static int setting_action_start_input_device_index(rarch_setting_t *setting)
          settings->uints.input_joypad_index[setting->index_offset],
          setting->index_offset);
    input_driver_deadzones_refresh();
-   /* Port N Controls' controller rows follow it */
-   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
-                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -10459,9 +10453,6 @@ static int setting_action_right_input_device_index(
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
-   /* Port N Controls' controller rows follow it */
-   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
-                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -10652,14 +10643,8 @@ static size_t get_string_representation_input_device_index(
                   ? device_name
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-      if (device_name && *device_name)
-      {
-         unsigned idx = input_config_get_device_name_index(map);
-
-         /* If idx is non-zero, it's part of a set */
-         if (idx > 0 && _len < len)
-            _len += snprintf(s + _len, len - _len, " (%u)", idx);
-      }
+      if (device_name && *device_name && _len < len)
+         _len += input_config_get_device_tag(map, s + _len, len - _len);
 
       /* several ports on one pad is allowed; say so, in case it is
        * not what was meant */
