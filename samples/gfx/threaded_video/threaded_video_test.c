@@ -11436,6 +11436,111 @@ static bool pixlane_frame(void *data, const void *frame, unsigned dims,
          video_info);
 }
 
+static unsigned pixlane_skip_recorded;
+static unsigned pixlane_skip_bad;
+
+static bool pixlane_skip_record(void *data, const struct record_video_data *v)
+{
+   unsigned x, y;
+   unsigned bpp = pixlane_wide ? 4 : 2;
+   (void)data;
+   pixlane_skip_recorded++;
+   if (     !v->data || v->is_dupe || v->dims != VIDEO_SCALE_PACK(PIXLANE_W, 240)
+         || v->pitch != (int)(PIXLANE_W * bpp))
+   {
+      pixlane_skip_bad++;
+      return true;
+   }
+   for (y = 0; y < 240; y++)
+      for (x = 0; x < PIXLANE_W; x++)
+      {
+         unsigned at = y * PIXLANE_W + x;
+         uint32_t pixel = pixlane_wide ? ((const uint32_t*)v->data)[at]
+            : ((const uint16_t*)v->data)[at];
+         if (pixel != (pixlane_wide ? 0xffff0000u : 0xf800u))
+            pixlane_skip_bad++;
+      }
+   return true;
+}
+
+static const record_driver_t pixlane_skip_recorder = {
+   NULL, NULL, pixlane_skip_record, NULL, NULL, "conversion-skip"
+};
+
+static void pixlane_skip_cache(void *userdata, const void *data,
+      unsigned dims, size_t pitch)
+{
+   bool *ok = (bool*)userdata;
+   *ok = data == pixlane_lend_buffer()
+      && dims == VIDEO_SCALE_PACK(PIXLANE_W, 240)
+      && pitch == PIXLANE_W * (pixlane_wide ? 4u : 2u);
+}
+
+static void pixlane_skip_conversion(bool threaded)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   recording_state_t *rec = recording_state_get_ptr();
+   input_driver_state_t *input = input_state_get_ptr();
+   settings_t *settings = config_get_ptr();
+   recording_state_t saved_rec = *rec;
+   bool saved_skip = settings->bools.fastforward_frameskip;
+   unsigned saved_nonblock = input->flags & INP_FLAG_NONBLOCKING;
+   unsigned ff_mask = VIDEO_FLAG_FF_DECIDED | VIDEO_FLAG_FF_SKIP_FRAME
+      | VIDEO_FLAG_FF_FRAME_OWED;
+   unsigned saved_ff = video_st->main_flags & ff_mask;
+   unsigned bpp = pixlane_wide ? 4 : 2;
+   size_t bytes = PIXLANE_W * 240 * bpp;
+   uint8_t *scratch = pixlane_wide ? (uint8_t*)video_st->pix10_convert_buf
+      : (uint8_t*)video_st->scaler_ptr->scaler_out;
+   uint64_t swaps;
+   size_t i;
+   bool cache_ok = false;
+
+   CHECK(scratch && !rec->data && !video_st->record_gpu_buffer,
+         "conversion skip: missing scratch or recorder already active");
+   if (!scratch || rec->data || video_st->record_gpu_buffer)
+      return;
+   for (i = 0; i < PIXLANE_W * 240; i++)
+      if (pixlane_wide)
+         pixlane_lend_pixels.wide[i] = 0x3ff00000u;
+      else
+         pixlane_lend_pixels.narrow[i] = 0x7c00u;
+   input->flags |= INP_FLAG_NONBLOCKING;
+   settings->bools.fastforward_frameskip = true;
+   video_st->main_flags = (video_st->main_flags & ~ff_mask) | VIDEO_FLAG_FF_DECIDED;
+   video_driver_frame(pixlane_lend_buffer(), PIXLANE_W, 240, PIXLANE_W * bpp);
+   if (threaded)
+      video_thread_wait_idle();
+   swaps = video_st->swap_count;
+   memset(scratch, 0xa5, bytes);
+   video_st->main_flags |= VIDEO_FLAG_FF_DECIDED | VIDEO_FLAG_FF_SKIP_FRAME;
+   video_driver_frame(pixlane_lend_buffer(), PIXLANE_W, 240, PIXLANE_W * bpp);
+   for (i = 0; i < bytes && scratch[i] == 0xa5; i++) { }
+   CHECK(i == bytes, "conversion skip (%u-bit): discarded frame converted", bpp * 8);
+   CHECK(video_st->swap_count == swaps, "conversion skip: discarded frame presented");
+   if (threaded)
+      CHECK(!((thread_video_t*)video_st->data)->convert_next,
+            "conversion skip: discarded frame staged worker conversion");
+   video_driver_cached_frame_read(&cache_ok, pixlane_skip_cache);
+   CHECK(cache_ok, "conversion skip: raw cached frame not updated");
+
+   rec->driver = &pixlane_skip_recorder;
+   rec->data   = (void*)&pixlane_skip_recorder;
+   rec->enable = false;
+   pixlane_skip_recorded = pixlane_skip_bad = 0;
+   video_st->main_flags |= VIDEO_FLAG_FF_DECIDED | VIDEO_FLAG_FF_SKIP_FRAME;
+   video_driver_frame(pixlane_lend_buffer(), PIXLANE_W, 240, PIXLANE_W * bpp);
+   CHECK(pixlane_skip_recorded == 1 && !pixlane_skip_bad,
+         "conversion skip: recorder lost converted pixels (%u pushes, %u errors)",
+         pixlane_skip_recorded, pixlane_skip_bad);
+   CHECK(video_st->swap_count == swaps, "conversion skip: recorded drop presented");
+
+   *rec = saved_rec;
+   settings->bools.fastforward_frameskip = saved_skip;
+   input->flags = (input->flags & ~INP_FLAG_NONBLOCKING) | saved_nonblock;
+   video_st->main_flags = (video_st->main_flags & ~ff_mask) | saved_ff;
+}
+
 static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -11555,6 +11660,8 @@ static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
             "conversion lend %u retained the cached-frame keeper", lend_mode);
    }
    pixlane_lend_mode = 0;
+   if (!lend_mode)
+      pixlane_skip_conversion(threaded);
 }
 
 static void lane_pixel_format(void)

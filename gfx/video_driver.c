@@ -9705,51 +9705,6 @@ void video_driver_frame(const void *data, unsigned width,
 
    core_dims = dims;
 
-   if (
-            video_st->scaler_ptr
-         && data
-         && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
-         && (data != RETRO_HW_FRAME_BUFFER_VALID)
-#ifdef HAVE_THREADS
-         && !video_driver_convert_on_worker(video_st, recording_st,
-               VIDEO_THREAD_CONVERT_0RGB1555)
-#endif
-      )
-   {
-      video_pixel_frame_scale(
-            video_st->scaler_ptr->scaler,
-            video_st->scaler_ptr->scaler_out,
-            data, width, height, pitch);
-      data                = video_st->scaler_ptr->scaler_out;
-      pitch               = video_st->scaler_ptr->scaler->out_stride;
-   }
-
-   /* XRGB2101010 fallback: if the active video driver cannot present a native
-    * 10-bit source surface, transparently narrow to XRGB8888 before the driver
-    * sees the frame. A driver that advertises GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE
-    * takes the packed 10-bit frame directly and this branch is skipped. */
-   if (
-            (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010)
-         && data
-         && (data != RETRO_HW_FRAME_BUFFER_VALID)
-         && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE)
-#ifdef HAVE_THREADS
-         && !video_driver_convert_on_worker(video_st, recording_st,
-               VIDEO_THREAD_CONVERT_XRGB2101010)
-#endif
-      )
-   {
-      size_t      conv_pitch = pitch;
-      const void *converted  = video_driver_convert_xrgb2101010(
-            video_st, data, dims, pitch,
-            &conv_pitch);
-      if (converted)
-      {
-         data  = converted;
-         pitch = conv_pitch;
-      }
-   }
-
    video_driver_build_info(&video_info);
    recording_gpu_frame_info(&video_info, true);
 #ifdef HAVE_OPENXR
@@ -9837,6 +9792,55 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
    last_frame_duped = !data;
+
+   if (
+            video_st->scaler_ptr
+         && data
+         && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
+         && (data != RETRO_HW_FRAME_BUFFER_VALID)
+         && (render_frame || (recording_st->data
+               && recording_st->driver && recording_st->driver->push_video))
+#ifdef HAVE_THREADS
+         && !video_driver_convert_on_worker(video_st, recording_st,
+               VIDEO_THREAD_CONVERT_0RGB1555)
+#endif
+      )
+   {
+      video_pixel_frame_scale(
+            video_st->scaler_ptr->scaler,
+            video_st->scaler_ptr->scaler_out,
+            data, width, height, pitch);
+      data                = video_st->scaler_ptr->scaler_out;
+      pitch               = video_st->scaler_ptr->scaler->out_stride;
+   }
+
+   /* XRGB2101010 fallback: if the active video driver cannot present a native
+    * 10-bit source surface, transparently narrow to XRGB8888 before the driver
+    * sees the frame. A driver that advertises GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE
+    * takes the packed 10-bit frame directly and this branch is skipped. */
+   if (
+            (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010)
+         && data
+         && (data != RETRO_HW_FRAME_BUFFER_VALID)
+         && (render_frame || (recording_st->data
+               && recording_st->driver && recording_st->driver->push_video))
+         && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE)
+#ifdef HAVE_THREADS
+         && !video_driver_convert_on_worker(video_st, recording_st,
+               VIDEO_THREAD_CONVERT_XRGB2101010)
+#endif
+      )
+   {
+      size_t      conv_pitch = pitch;
+      const void *converted  = video_driver_convert_xrgb2101010(
+            video_st, data, dims, pitch,
+            &conv_pitch);
+      if (converted)
+      {
+         data  = converted;
+         pitch = conv_pitch;
+      }
+   }
 
    /* Get the amount of frames per seconds. */
    if (video_st->frame_count)
