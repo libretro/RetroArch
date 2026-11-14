@@ -5301,13 +5301,11 @@ void video_driver_set_aspect_ratio(void)
    video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits,
          aspectratio_lut[aspect_ratio_idx].value);
 
+   /* Publish before the video thread can take the resize request. */
+   video_driver_publish_vp_params();
+
    if (poke && poke->set_aspect_ratio)
       poke->set_aspect_ratio(video_st->data, aspect_ratio_idx);
-
-   /* The frame path's aspect snapshot follows the change before any
-    * consumer can run: the driver pokes below are blocking commands
-    * under the wrapper. */
-   video_driver_publish_vp_params();
 }
 
 void video_viewport_get_scaled_aspect2(struct video_viewport *vp,

@@ -956,6 +956,12 @@ static void video_thread_menu_mem_free(thread_video_t *thr)
 
 static void thread_update_driver_state(thread_video_t *thr)
 {
+   if (retro_atomic_load_acquire_int(&thr->aspect_ratio_pending))
+   {
+      int aspect = retro_atomic_exchange_int(&thr->aspect_ratio_pending, 0);
+      if (thr->driver_data && thr->poke && thr->poke->set_aspect_ratio)
+         thr->poke->set_aspect_ratio(thr->driver_data, (unsigned)(aspect - 1));
+   }
 #ifdef HAVE_MENU
    {
       struct video_thread_menu_texture *t;
@@ -1441,12 +1447,6 @@ static bool video_thread_handle_packet(
                   pkt.data.filtering.index,
                   pkt.data.filtering.smooth,
                   pkt.data.filtering.ctx_scaling);
-         video_thread_reply(thr, &pkt);
-         break;
-
-      case CMD_POKE_SET_ASPECT_RATIO:
-         if (thr->driver_data && thr->poke && thr->poke->set_aspect_ratio)
-            thr->poke->set_aspect_ratio(thr->driver_data, pkt.data.i);
          video_thread_reply(thr, &pkt);
          break;
 
@@ -4538,6 +4538,7 @@ static bool video_thread_init(thread_video_t *thr,
    retro_atomic_int_init(&thr->frame.hw_handoff, 0);
    retro_atomic_int_init(&thr->deferred_head,  0);
    retro_atomic_int_init(&thr->deferred_tail,  0);
+   retro_atomic_int_init(&thr->aspect_ratio_pending, 0);
    /* A ring that cannot be allocated is simply never used: every
     * setter then sends the waiting way, as it did before. */
    thr->deferred = (thread_packet_t*)calloc(VIDEO_THREAD_DEFERRED_MAX,
@@ -5176,14 +5177,18 @@ static void thread_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
    if (thr)
    {
-      thread_packet_t pkt;
-      pkt.type   = CMD_POKE_SET_ASPECT_RATIO;
-      pkt.data.i = aspect_ratio_idx;
+      if (     !thr->thread
+            || sthread_get_thread_id(thr->thread)
+               == sthread_get_current_thread_id())
+      {
+         if (thr->driver_data && thr->poke && thr->poke->set_aspect_ratio)
+            thr->poke->set_aspect_ratio(thr->driver_data, aspect_ratio_idx);
+         return;
+      }
 
-      /* Nothing comes back from this, so it does not wait for the
-       * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Like apply_state_changes: taken before the next frame. */
+      retro_atomic_store_release_int(&thr->aspect_ratio_pending,
+            (int)aspect_ratio_idx + 1);
    }
 }
 

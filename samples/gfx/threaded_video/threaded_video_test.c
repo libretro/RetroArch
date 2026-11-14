@@ -3325,13 +3325,308 @@ static void lane_replay_swap_count(void)
 }
 
 /* ------------------------------------------------------------------ */
-/* Lane: wrapper entry points called from inside frame()              */
-/*   The menu drivers call current_video->set_viewport() while they   */
-/*   draw, which under the wrapper is on the video thread. A blocking  */
-/*   command sent from there waits on itself. This wraps the driver   */
-/*   the wrapper wraps so its frame() does exactly that, plus the      */
-/*   other marshalled calls, while the main thread keeps sending its   */
-/*   own commands into the same mailbox.                               */
+/* Lane: geometry and AV-info changes                                 */
+/* ------------------------------------------------------------------ */
+
+static unsigned avc_aspects;
+static unsigned avc_cursors;
+static int avc_viewport_x;
+static unsigned avc_inits;
+static void *(*avc_inner_init)(const video_info_t *video);
+
+static void *avc_init(const video_info_t *video)
+{
+   avc_inits++;
+   return avc_inner_init(video);
+}
+
+static void avc_aspect(void *data, unsigned index)
+{
+   struct video_viewport vp;
+   (void)data;
+   (void)index;
+   memset(&vp, 0, sizeof(vp));
+   video_viewport_get_scaled_aspect2(&vp, VIDEO_SCALE_PACK(1000, 1000),
+         true, 1.0f, 0.5f);
+   avc_viewport_x = VIDEO_POS_X(vp.pos);
+   avc_aspects++;
+}
+
+static void avc_cursor(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+   avc_cursors++;
+}
+
+static void lane_av_info_changes(void)
+{
+   settings_t *settings            = config_get_ptr();
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   struct retro_system_av_info orig = video_st->av_info;
+   struct retro_system_av_info info = orig;
+   const video_poke_interface_t *saved_poke = video_st->poke;
+   video_poke_interface_t poke;
+   bool saved_auto                 = settings->bools.video_frame_delay_auto;
+   bool saved_fullscreen           = settings->bools.video_fullscreen;
+   bool saved_pause                = video_st->frame_delay_pause;
+   unsigned saved_aspect           = settings->uints.video_aspect_ratio_idx;
+   unsigned saved_scale            = video_st->scale_dims;
+   unsigned saved_target           = video_st->frame_delay_target;
+   float saved_bias                = settings->floats.video_vp_bias_x;
+   float saved_hz                  = video_st->core_hz;
+   float marker                    = saved_hz + 7.0f;
+   unsigned had                    = failures;
+   unsigned i;
+   retro_time_t start;
+   retro_time_t geometry_time;
+   retro_time_t av_time;
+
+   memset(&poke, 0, sizeof(poke));
+   poke.set_aspect_ratio           = avc_aspect;
+   poke.show_mouse                 = avc_cursor;
+   video_st->poke                 = &poke;
+   settings->bools.video_frame_delay_auto = true;
+   settings->bools.video_fullscreen = true;
+   settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_CORE;
+   settings->floats.video_vp_bias_x = 0.75f;
+   video_driver_publish_vp_params();
+   avc_aspects = avc_cursors        = 0;
+   video_st->core_hz              = marker;
+   video_st->frame_delay_pause    = false;
+   video_st->frame_delay_target   = 5;
+
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+         "av changes: duplicate AV info rejected");
+   CHECK(!avc_aspects && !avc_cursors && !video_st->frame_delay_pause,
+         "av changes: duplicate AV info touched video");
+   CHECK(video_st->core_hz == marker,
+         "av changes: duplicate AV info recalculated timing");
+
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry),
+         "av changes: duplicate geometry rejected");
+   CHECK(!avc_aspects && !video_st->frame_delay_pause,
+         "av changes: duplicate geometry touched video");
+
+   start = cpu_features_get_time_usec();
+   for (i = 0; i < 10000; i++)
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry);
+   geometry_time = cpu_features_get_time_usec() - start;
+   start = cpu_features_get_time_usec();
+   for (i = 0; i < 10000; i++)
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+   av_time = cpu_features_get_time_usec() - start;
+   CHECK(!avc_aspects && !avc_cursors && video_st->core_hz == marker,
+         "av changes: duplicate burst did work");
+   fprintf(stderr, "[info] duplicate geometry %.3f us/call, AV info %.3f us/call\n",
+         (double)geometry_time / 10000.0, (double)av_time / 10000.0);
+
+   info.timing.sample_rate *= 0.5;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+         "av changes: sample rate rejected");
+   CHECK(!avc_aspects && !avc_cursors && !video_st->frame_delay_pause
+         && video_st->frame_delay_target == 5,
+         "av changes: sample rate touched geometry or frame delay");
+   CHECK(video_st->av_info.timing.sample_rate == info.timing.sample_rate
+         && video_st->core_hz == (float)info.timing.fps,
+         "av changes: sample rate did not update timing");
+
+   info.timing.fps *= 0.5;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+         "av changes: FPS rejected");
+   CHECK(!avc_aspects && !avc_cursors && video_st->frame_delay_pause,
+         "av changes: FPS touched geometry or missed frame delay");
+   CHECK(video_st->core_hz == (float)info.timing.fps,
+         "av changes: FPS did not update timing");
+
+   video_st->core_hz               = marker;
+   settings->floats.video_vp_bias_x = 0.25f;
+   info.geometry.base_width--;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+         "av changes: geometry rejected");
+   CHECK(avc_aspects == 1 && !avc_cursors && avc_viewport_x == 125,
+         "av changes: geometry missed resize or published after notification");
+   CHECK(video_st->core_hz == marker,
+         "av changes: geometry recalculated timing");
+
+   info.geometry.aspect_ratio = 1.5f;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+         "av changes: aspect ratio rejected");
+   CHECK(avc_aspects == 2 && video_st->core_hz == marker,
+         "av changes: aspect ratio missed resize or recalculated timing");
+
+   info.geometry.base_width++;
+   info.geometry.max_width++;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry),
+         "av changes: SET_GEOMETRY rejected");
+   CHECK(avc_aspects == 3 && video_st->core_hz == marker
+         && video_st->av_info.geometry.max_width == orig.geometry.max_width
+         && video_st->av_info.timing.fps == info.timing.fps,
+         "av changes: SET_GEOMETRY changed maxima or timing");
+
+   info.geometry.max_width = orig.geometry.max_width;
+   info.geometry.base_height--;
+   info.timing.fps = orig.timing.fps;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+         "av changes: combined update rejected");
+   CHECK(avc_aspects == 4 && video_st->core_hz == (float)info.timing.fps,
+         "av changes: combined update missed geometry or timing");
+
+   video_st->poke                  = saved_poke;
+   settings->bools.video_fullscreen = saved_fullscreen;
+   settings->bools.video_frame_delay_auto = saved_auto;
+   settings->uints.video_aspect_ratio_idx = saved_aspect;
+   settings->floats.video_vp_bias_x = saved_bias;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &orig);
+   video_driver_set_aspect_ratio();
+
+   avc_inits                      = 0;
+   avc_inner_init                  = video_null.init;
+   video_null.init                = avc_init;
+   info                           = orig;
+   info.geometry.max_width++;
+   settings->bools.video_frame_delay_auto = true;
+   video_st->frame_delay_target    = 5;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+         "av changes: new maximum rejected");
+   CHECK(avc_inits == 1 && video_st->frame_delay_target == 0
+         && video_st->av_info.geometry.max_width == info.geometry.max_width,
+         "av changes: new maximum missed reinit or frame-delay reset");
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &orig);
+   video_null.init                = avc_inner_init;
+   settings->bools.video_frame_delay_auto = saved_auto;
+   video_st->frame_delay_pause     = saved_pause;
+   video_st->frame_delay_target    = saved_target;
+   video_st->core_hz               = saved_hz;
+   video_st->scale_dims            = saved_scale;
+   if (failures == had)
+      printf("[pass] AV info changes: duplicates, geometry, timing, maxima, publish order\n");
+}
+
+typedef struct
+{
+   retro_eventcount_t event;
+   retro_atomic_int_t held;
+   retro_atomic_int_t done;
+   bool completed;
+} geometry_gate_t;
+
+static bool geometry_gate_wait(geometry_gate_t *gate, retro_atomic_int_t *value)
+{
+   retro_time_t end = cpu_features_get_time_usec() + 2000000;
+   while (!retro_atomic_load_acquire_int(value))
+   {
+      int key = retro_eventcount_prepare_wait(&gate->event);
+      retro_time_t left = end - cpu_features_get_time_usec();
+      if (retro_atomic_load_acquire_int(value) || left <= 0)
+      {
+         retro_eventcount_cancel_wait(&gate->event);
+         break;
+      }
+      retro_eventcount_commit_wait_timeout(&gate->event, key, left);
+   }
+   return retro_atomic_load_acquire_int(value) != 0;
+}
+
+static uintptr_t geometry_park(void *data)
+{
+   geometry_gate_t *gate = (geometry_gate_t*)data;
+   retro_atomic_store_release_int(&gate->held, 1);
+   retro_eventcount_notify(&gate->event);
+   gate->completed = geometry_gate_wait(gate, &gate->done);
+   return 0;
+}
+
+static unsigned geometry_aspects;
+static unsigned geometry_index;
+static uintptr_t geometry_thread;
+
+static void geometry_aspect(void *data, unsigned index)
+{
+   (void)data;
+   geometry_aspects++;
+   geometry_index  = index;
+   geometry_thread = sthread_get_current_thread_id();
+}
+
+static uintptr_t geometry_fence(void *data)
+{
+   (void)data;
+   return 0;
+}
+
+static void lane_geometry_burst(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct retro_game_geometry orig = video_st->av_info.geometry;
+   struct retro_game_geometry geom = orig;
+   const video_poke_interface_t *saved_poke;
+   video_poke_interface_t poke;
+   geometry_gate_t gate;
+   thread_video_t *thr;
+   unsigned had = failures;
+   unsigned i;
+   int head;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "geometry burst");
+   video_thread_wait_idle();
+   thr = (thread_video_t*)video_st->data;
+   saved_poke = thr->poke;
+   poke = *saved_poke;
+   poke.set_aspect_ratio = geometry_aspect;
+   set_poke(thr, &poke);
+   geometry_aspects = 0;
+   memset(&gate, 0, sizeof(gate));
+   retro_atomic_int_init(&gate.held, 0);
+   retro_atomic_int_init(&gate.done, 0);
+   if (!retro_eventcount_init(&gate.event))
+   {
+      CHECK(false, "geometry burst: eventcount allocation failed");
+      set_poke(thr, saved_poke);
+      set_threaded_via_setting(false);
+      return;
+   }
+   if (video_thread_run_queued(geometry_park, &gate))
+   {
+      CHECK(geometry_gate_wait(&gate, &gate.held),
+            "geometry burst: worker did not enter the gate");
+      for (i = 1; i < VIDEO_THREAD_DEFERRED_MAX; i++)
+         CHECK(video_thread_run_queued(geometry_fence, NULL),
+               "geometry burst: could not fill the command ring");
+      head = retro_atomic_load_acquire_int(&thr->deferred_head);
+      for (i = 0; i < VIDEO_THREAD_DEFERRED_MAX * 2; i++)
+      {
+         geom.base_width = orig.base_width - ((i + 1) & 1);
+         CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom),
+               "geometry burst: update rejected");
+      }
+      CHECK(retro_atomic_load_acquire_int(&thr->deferred_head) == head,
+            "geometry burst: resize requests consumed command packets");
+      retro_atomic_store_release_int(&gate.done, 1);
+      retro_eventcount_notify(&gate.event);
+      video_thread_run_blocking(geometry_fence, NULL);
+      CHECK(gate.completed, "geometry burst: setter waited for the worker");
+      run_frames(3);
+      video_thread_wait_idle();
+      CHECK(geometry_aspects == 1,
+            "geometry burst: %u notifications instead of one", geometry_aspects);
+      CHECK(geometry_index == config_get_ptr()->uints.video_aspect_ratio_idx
+            && geometry_thread == sthread_get_thread_id(thr->thread),
+            "geometry burst: wrong index or callback thread");
+   }
+   else
+      CHECK(false, "geometry burst: could not queue worker gate");
+   set_poke(thr, saved_poke);
+   retro_eventcount_free(&gate.event);
+   set_threaded_via_setting(false);
+   if (failures == had)
+      fprintf(stderr, "[pass] geometry burst: coalesced without packets or waits\n");
+}
+
+/* ------------------------------------------------------------------ */
+/* Lane: wrapper entry points called from inside frame()               */
 /* ------------------------------------------------------------------ */
 
 static video_driver_t reentrant_driver;
@@ -12645,6 +12940,14 @@ int main(int argc, char *argv[])
       record_gpu_stop_in_flight();
       goto shutdown;
    }
+   if (getenv("HARNESS_GEOMETRY_ONLY"))
+   {
+      set_threaded_via_setting(false);
+      lane_av_info_changes();
+      lane_geometry_burst();
+      lane_reentrant_from_frame();
+      goto shutdown;
+   }
    lane_line_separation();
    lane_vp_params_publish();
    lane_toggle_cycle(cycles);
@@ -12674,6 +12977,12 @@ int main(int argc, char *argv[])
       lane_present_repeat();
    lane_every_command_replies();
    lane_second_ring_waiter();
+   if (!real_driver())
+   {
+      set_threaded_via_setting(false);
+      lane_av_info_changes();
+   }
+   lane_geometry_burst();
    lane_reentrant_from_frame();
    lane_window_thread_present();
    lane_async_done_main_thread();

@@ -76,7 +76,6 @@ enum thread_cmd
    CMD_POKE_SET_FBO_STATE,
    CMD_POKE_GET_FBO_STATE,
 
-   CMD_POKE_SET_ASPECT_RATIO,
    CMD_FONT_INIT,
    CMD_CUSTOM_COMMAND,
 
@@ -1017,6 +1016,10 @@ typedef struct thread_video
    unsigned char pad_ring[VIDEO_THREAD_LINE];
 
    retro_atomic_int_t deferred_tail;
+
+   unsigned char pad_aspect[VIDEO_THREAD_LINE];
+   /* Latest aspect index plus one; zero means no resize pending. */
+   retro_atomic_int_t aspect_ratio_pending;
 } thread_video_t;
 
 /**
