@@ -5,6 +5,8 @@
  *      (format at the top of cases.txt) against FIXTURES/<system>.index
  *   gfx_thumbnail_match_test --measure NAMES SYSTEM...
  *      leave-one-out over NAMES/<SYSTEM>.index; local only
+ *   gfx_thumbnail_match_test --measure-strict NAMES SYSTEM...
+ *      the same, each name kept to its own region
  *   gfx_thumbnail_match_test --steps NAMES SYSTEM...
  *      the stepped finalize against qsort over NAMES/<SYSTEM>.index;
  *      local only */
@@ -267,18 +269,18 @@ static void test_fold(void)
 }
 
 static void expect(const gfx_thumbnail_match_index_t *idx,
-      const char *const *queries, size_t count,
+      const char *const *queries, size_t count, bool other_regions,
       enum gfx_thumbnail_match_status want, const char *want_name)
 {
    const char *out  = "unset";
    const char *last = (count && queries[count - 1]) ? queries[count - 1] : "-";
-   enum gfx_thumbnail_match_status st =
-      gfx_thumbnail_match_find_first(idx, queries, count, &out);
+   enum gfx_thumbnail_match_status st = gfx_thumbnail_match_find_first(idx,
+         queries, count, other_regions, &out);
    if (st != want || (want_name ? !out || strcmp(out, want_name) : out != NULL))
    {
-      printf("[FAIL] find_first up to \"%s\": status %d (%s), want %d (%s)\n",
-            last, (int)st, out ? out : "null", (int)want,
-            want_name ? want_name : "null");
+      printf("[FAIL] find_first%s up to \"%s\": status %d (%s), want %d (%s)\n",
+            other_regions ? "" : " strict", last, (int)st,
+            out ? out : "null", (int)want, want_name ? want_name : "null");
       failures++;
    }
 }
@@ -324,15 +326,16 @@ static void test_api(void)
    labels[0] = NULL;
    labels[1] = "\343\203\206\343\203\210\343\203\252\343\202\271";
    labels[2] = "Tetris (USA)";
-   expect(idx, labels, 3, GFX_THUMBNAIL_MATCH_FOUND, "Tetris (USA).png");
-   expect(idx, labels, 2, GFX_THUMBNAIL_MATCH_NONE, NULL);
-   expect(idx, labels, 0, GFX_THUMBNAIL_MATCH_NONE, NULL);
+   expect(idx, labels, 3, true, GFX_THUMBNAIL_MATCH_FOUND, "Tetris (USA).png");
+   expect(idx, labels, 2, true, GFX_THUMBNAIL_MATCH_NONE, NULL);
+   expect(idx, labels, 0, true, GFX_THUMBNAIL_MATCH_NONE, NULL);
    labels[1] = "readme";
-   expect(idx, labels, 2, GFX_THUMBNAIL_MATCH_NONE, NULL);
+   expect(idx, labels, 2, true, GFX_THUMBNAIL_MATCH_NONE, NULL);
    refused[0] = "A Fight (Japan)";
    refused[1] = "Fight (Japan)";
-   expect(idx, refused, 1, GFX_THUMBNAIL_MATCH_REFUSED, NULL);
-   expect(idx, refused, 2, GFX_THUMBNAIL_MATCH_FOUND, "Fight (Japan).png");
+   expect(idx, refused, 1, true, GFX_THUMBNAIL_MATCH_REFUSED, NULL);
+   expect(idx, refused, 2, true, GFX_THUMBNAIL_MATCH_FOUND,
+         "Fight (Japan).png");
    gfx_thumbnail_match_find(idx, "Tetris (USA)", &first);
    gfx_thumbnail_match_find(idx, "Fight (Japan)", &second);
    gfx_thumbnail_match_find(idx, "TETRIS (USA)", &second);
@@ -345,14 +348,88 @@ static void test_api(void)
    idx = gfx_thumbnail_match_index_new();
    gfx_thumbnail_match_index_finalize(idx);
    labels[2] = "Tetris (USA)";
-   expect(idx, labels, 3, GFX_THUMBNAIL_MATCH_NONE, NULL);
+   expect(idx, labels, 3, true, GFX_THUMBNAIL_MATCH_NONE, NULL);
    gfx_thumbnail_match_index_free(idx);
 }
 
-/* f: system, query, expected, tier, then +add and -hide names. */
-static void run_case(const char *dir, char **f, size_t nf)
+static gfx_thumbnail_match_index_t *index_of(const char *const *names,
+      size_t count)
+{
+   gfx_thumbnail_match_index_t *idx = gfx_thumbnail_match_index_new();
+   size_t i;
+   for (i = 0; idx && i < count; i++)
+      gfx_thumbnail_match_index_add(idx, names[i]);
+   gfx_thumbnail_match_index_finalize(idx);
+   return idx;
+}
+
+/* Strict: the entry's region is the first query's that has one, Unknown
+ * aside; a query without a region ranks by it. */
+static void test_api_regions(void)
+{
+   static const char *const usa[]  = { "Super Mario World (USA).png" };
+   static const char *const both[] = { "Super Mario World (USA).png",
+      "Super Mario World (Europe).png" };
+   static const char *const game[] = { "Game (USA).png" };
+   static const char *const rev[]  = { "Game (USA).png",
+      "Game (Europe) (Rev 1).png" };
+   static const char *const eu[]   = { "Game (Europe).png" };
+   static const char *const de[]   = { "Game (Germany).png",
+      "Game (Europe).png" };
+   const char *q[3];
+   gfx_thumbnail_match_index_t *idx = index_of(usa, GTM_COUNT(usa));
+   q[0] = NULL;
+   q[1] = "Super Mario World";
+   q[2] = "Super Mario World (Europe)";
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_NONE, NULL);
+   expect(idx, q, 3, true, GFX_THUMBNAIL_MATCH_FOUND,
+         "Super Mario World (USA).png");
+   gfx_thumbnail_match_index_free(idx);
+   idx = index_of(both, GTM_COUNT(both));
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_FOUND,
+         "Super Mario World (Europe).png");
+   gfx_thumbnail_match_index_free(idx);
+   idx  = index_of(game, GTM_COUNT(game));
+   q[0] = "Game (Europe)";
+   q[1] = "Game (U)";
+   q[2] = "game";
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_NONE, NULL);
+   q[0] = NULL;
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_FOUND, "Game (USA).png");
+   q[1] = "game";
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_FOUND, "Game (USA).png");
+   q[0] = "Game - Other Cut (Europe)";
+   q[1] = "Game (E) [!]";
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_NONE, NULL);
+   gfx_thumbnail_match_index_free(idx);
+   idx = index_of(rev, GTM_COUNT(rev));
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_FOUND,
+         "Game (Europe) (Rev 1).png");
+   gfx_thumbnail_match_index_free(idx);
+   idx  = index_of(eu, GTM_COUNT(eu));
+   q[0] = "Game (Unknown)";
+   q[1] = "Game (Unknown)";
+   q[2] = "Game (USA)";
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_NONE, NULL);
+   gfx_thumbnail_match_index_free(idx);
+   idx  = index_of(de, GTM_COUNT(de));
+   q[0] = NULL;
+   q[1] = "Game";
+   q[2] = "Game (Germany)";
+   expect(idx, q, 3, false, GFX_THUMBNAIL_MATCH_FOUND, "Game (Germany).png");
+   q[0] = "Game - Other Cut (Germany)";
+   q[1] = "Game (Europe) (Rev 1)";
+   expect(idx, q, 2, false, GFX_THUMBNAIL_MATCH_FOUND, "Game (Europe).png");
+   gfx_thumbnail_match_index_free(idx);
+}
+
+/* f: system, query, expected, tier, then +add and -hide names.
+ * strict: the query is kept to its own region. */
+static void run_case(const char *dir, char **f, size_t nf, bool strict)
 {
    struct names base;
+   struct gtm_want want;
+   struct gtm_parse *p = NULL;
    gfx_thumbnail_match_index_t *idx;
    const struct gtm_rec *hit = NULL;
    enum gfx_thumbnail_match_status st;
@@ -414,15 +491,26 @@ static void run_case(const char *dir, char **f, size_t nf)
       return;
    }
    gfx_thumbnail_match_index_finalize(idx);
-   st       = gtm_find(idx, f[1], &hit, &tier, NULL);
+   if (strict && !(p = (struct gtm_parse*)malloc(sizeof(*p))))
+   {
+      printf("[FAIL] %s: out of memory\n", f[1]);
+      failures++;
+      gfx_thumbnail_match_index_free(idx);
+      names_free(&base);
+      return;
+   }
+   if (strict)
+      gtm_want_of(&want, p, f[1]);
+   st       = gtm_find(idx, f[1], strict ? &want : NULL, &hit, &tier, NULL);
    got      = hit ? hit->name : (st == GFX_THUMBNAIL_MATCH_REFUSED) ? "!" : "-";
    got_tier = (st == GFX_THUMBNAIL_MATCH_NONE) ? "-" : tier_names[tier];
    if (strcmp(got, f[2]) || strcmp(got_tier, f[3]))
    {
-      printf("[FAIL] %s|%s: got %s (%s), want %s (%s)\n",
-            f[0], f[1], got, got_tier, f[2], f[3]);
+      printf("[FAIL] %s%s|%s: got %s (%s), want %s (%s)\n",
+            strict ? "strict|" : "", f[0], f[1], got, got_tier, f[2], f[3]);
       failures++;
    }
+   free(p);
    gfx_thumbnail_match_index_free(idx);
    names_free(&base);
 }
@@ -444,6 +532,7 @@ static void run_cases(const char *dir, const char *path)
    {
       char *f[64];
       size_t nf = 0;
+      size_t k;
       char *p;
       if ((next = strchr(line, '\n')))
          *next++ = '\0';
@@ -457,13 +546,14 @@ static void run_cases(const char *dir, const char *path)
          *p++    = '\0';
          f[nf++] = p;
       }
-      if (nf < 4)
+      k = strcmp(f[0], "strict") ? 0 : 1;
+      if (nf < 4 + k)
       {
          printf("[FAIL] malformed case: %s\n", line);
          failures++;
          continue;
       }
-      run_case(dir, f, nf);
+      run_case(dir, f + k, nf - k, k != 0);
       run++;
    }
    printf("%u cases\n", run);
@@ -515,10 +605,15 @@ static void print_pair(const char *label, const struct gtm_rec *a,
    printf("   %-8s %.*s -> %s\n", label, (int)a->stem_len, a->name, b->name);
 }
 
-static int measure(const char *dir, int count, char **systems)
+/* strict: each name is kept to its own region. */
+static int measure(const char *dir, int count, char **systems, bool strict)
 {
+   struct gtm_want want;
+   struct gtm_parse *p = NULL;
    int s;
    int bad = 0;
+   if (strict && !(p = (struct gtm_parse*)malloc(sizeof(*p))))
+      return 1;
    for (s = 0; s < count; s++)
    {
       struct names l;
@@ -553,7 +648,9 @@ static int measure(const char *dir, int count, char **systems)
          enum gfx_thumbnail_match_status st;
          memcpy(stem, r->name, r->stem_len);
          stem[r->stem_len] = '\0';
-         st = gtm_find(idx, stem, &hit, &tier, r);
+         if (strict)
+            gtm_want_of(&want, p, stem);
+         st = gtm_find(idx, stem, strict ? &want : NULL, &hit, &tier, r);
          if (st == GFX_THUMBNAIL_MATCH_NONE)
             none++;
          else if (st == GFX_THUMBNAIL_MATCH_REFUSED)
@@ -587,6 +684,7 @@ static int measure(const char *dir, int count, char **systems)
       gfx_thumbnail_match_index_free(idx);
       names_free(&l);
    }
+   free(p);
    return bad;
 }
 
@@ -855,19 +953,24 @@ static int steps_lists(const char *dir, int count, char **systems)
 int main(int argc, char **argv)
 {
    if (argc >= 4 && !strcmp(argv[1], "--measure"))
-      return measure(argv[2], argc - 3, argv + 3);
+      return measure(argv[2], argc - 3, argv + 3, false);
+   if (argc >= 4 && !strcmp(argv[1], "--measure-strict"))
+      return measure(argv[2], argc - 3, argv + 3, true);
    if (argc >= 4 && !strcmp(argv[1], "--steps"))
       return steps_lists(argv[2], argc - 3, argv + 3);
    if (argc != 3)
    {
       printf("usage: %s FIXTURES CASES\n"
              "       %s --measure NAMES SYSTEM...\n"
-             "       %s --steps NAMES SYSTEM...\n", argv[0], argv[0], argv[0]);
+             "       %s --measure-strict NAMES SYSTEM...\n"
+             "       %s --steps NAMES SYSTEM...\n",
+             argv[0], argv[0], argv[0], argv[0]);
       return 2;
    }
    test_parser();
    test_fold();
    test_api();
+   test_api_regions();
    test_sort();
    test_finalize_steps();
    run_cases(argv[1], argv[2]);
