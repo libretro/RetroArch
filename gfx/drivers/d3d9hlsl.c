@@ -41,6 +41,7 @@
 #include <encodings/utf.h>
 
 #include <string.h>
+#include "d3d_shaders/xmb_material_sm3.h"
 #include <retro_inline.h>
 #include <retro_math.h>
 #include <math.h>
@@ -678,6 +679,8 @@ typedef struct hlsl_renderchain
 {
    struct d3d9_hlsl_renderchain chain;
    struct shader_pass stock_shader;
+   LPDIRECT3DPIXELSHADER9 material_shader;
+   LPDIRECT3DPIXELSHADER9 font_material_shader;
    /* Per-pass HLSL uniform data for shader presets */
    hlsl_pass_data_t pass_data[GFX_MAX_SHADERS + 1];
    unsigned pass_data_count;
@@ -937,6 +940,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
        * normalized [0,1] space, written straight into the menu's
        * vertex buffer (a stack copy for DrawPrimitiveUP if it
        * cannot be locked). */
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
       D3DCOLOR col[4];
       Vertex quad_up[4];
       Vertex *quad;
@@ -1067,6 +1071,10 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       }
 
       gfx_display_d3d9_bind_texture(draw, d3d);
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL
+            && _chain && _chain->material_shader)
+         IDirect3DDevice9_SetPixelShader(dev,
+               _chain->material_shader);
 
       if (quad != quad_up)
       {
@@ -1076,11 +1084,17 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
                0, sizeof(Vertex));
          IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                vb_start, 2);
+         if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL && _chain)
+            IDirect3DDevice9_SetPixelShader(dev,
+                  (LPDIRECT3DPIXELSHADER9)_chain->stock_shader.fprg);
          return;
       }
 
       IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP,
             2, quad, sizeof(Vertex));
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL && _chain)
+         IDirect3DDevice9_SetPixelShader(dev,
+               (LPDIRECT3DPIXELSHADER9)_chain->stock_shader.fprg);
 
       /* DrawPrimitiveUP unbinds the stream source, re-bind it */
       IDirect3DDevice9_SetStreamSource(dev, 0,
@@ -1439,6 +1453,7 @@ typedef struct
    /* Scratch buffer to avoid per-line malloc/free in font rendering */
    Vertex                       *scratch_verts;
    unsigned                      scratch_capacity; /* in Vertex count */
+   bool xmb_material;
 } d3d9_font_t;
 
 static void *d3d9_font_init(void *data,
@@ -1659,6 +1674,14 @@ static void d3d9_font_draw_verts(d3d9_video_t *d3d, d3d9_font_t *font,
          0, sizeof(Vertex));
 }
 
+static void d3d9_font_bind_block(void *data, void *userdata)
+{
+   d3d9_font_t *font = (d3d9_font_t*)data;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
+   if (font)
+      font->xmb_material = block && block->xmb_material;
+}
+
 static void d3d9_font_render_msg(
       void *userdata, void *data,
       const char *msg, size_t msg_len,
@@ -1824,7 +1847,10 @@ static void d3d9_font_render_msg(
       if (_chain)
       {
          IDirect3DDevice9_SetVertexShader(d3d->dev, (LPDIRECT3DVERTEXSHADER9)(&_chain->stock_shader)->vprg);
-         IDirect3DDevice9_SetPixelShader(d3d->dev, (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
+         IDirect3DDevice9_SetPixelShader(d3d->dev,
+               font->xmb_material && _chain->font_material_shader
+               ? _chain->font_material_shader
+               : (LPDIRECT3DPIXELSHADER9)_chain->stock_shader.fprg);
       }
    }
 
@@ -1949,6 +1975,13 @@ static void d3d9_font_render_msg(
       } while (0)
 #include "../font_layout.h"
 #undef D3D9_FONT_QUAD
+   }
+
+   if (font->xmb_material)
+   {
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      if (_chain)
+         IDirect3DDevice9_SetPixelShader(d3d->dev, (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
    }
 
 }
@@ -2782,6 +2815,12 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
       for (i = 0; i < chain->chain.passes->count; i++)
          d3d9_hlsl_release_programs(&chain->chain.passes->data[i]);
       d3d9_hlsl_release_programs(&chain->stock_shader);
+      if (chain->material_shader)
+         IDirect3DPixelShader9_Release(chain->material_shader);
+      chain->material_shader = NULL;
+      if (chain->font_material_shader)
+         IDirect3DPixelShader9_Release(chain->font_material_shader);
+      chain->font_material_shader = NULL;
    }
 
    /* The menu effects compiled so far */
@@ -2914,6 +2953,31 @@ static bool hlsl_d3d9_renderchain_init(
    if (!d3d9_hlsl_load_program_ex(chain->chain.dev, &chain->stock_shader,
             stock_hlsl_program, &chain->stock_data))
       return false;
+
+   {
+      char source[1536];
+      D3DBlob code = NULL;
+      size_t len = xmb_material_source(source, sizeof(source),
+            XMB_MATERIAL_SM3_PREFIX, "return material;}", false);
+      if (len && d3d_compile(source, len, NULL, "main", "ps_3_0", &code))
+         IDirect3DDevice9_CreatePixelShader(dev,
+               (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+               &chain->material_shader);
+      if (code)
+         code->lpVtbl->Release(code);
+   }
+   {
+      char source[1536];
+      D3DBlob code = NULL;
+      size_t len = xmb_material_source(source, sizeof(source),
+            XMB_MATERIAL_SM3_PREFIX, "return material;}", true);
+      if (len && d3d_compile(source, len, NULL, "main", "ps_3_0", &code))
+         IDirect3DDevice9_CreatePixelShader(dev,
+               (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+               &chain->font_material_shader);
+      if (code)
+         code->lpVtbl->Release(code);
+   }
 
    IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
    IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
@@ -6749,6 +6813,12 @@ static hlsl_renderchain_t *d3d9_hlsl_views_chain_new(d3d9_video_t *d3d,
    c->view              = view;
    hlsl_uniform_map_init(&c->stock_data.vs_map);
    hlsl_uniform_map_init(&c->stock_data.ps_map);
+   c->material_shader = main->material_shader;
+   if (c->material_shader)
+      IDirect3DPixelShader9_AddRef(c->material_shader);
+   c->font_material_shader = main->font_material_shader;
+   if (c->font_material_shader)
+      IDirect3DPixelShader9_AddRef(c->font_material_shader);
    c->stock_shader      = main->stock_shader;
    if (c->stock_shader.vprg)
       IDirect3DVertexShader9_AddRef(
@@ -9921,7 +9991,7 @@ static font_renderer_t d3d9_hlsl_font = {
    d3d9_font_render_msg,
    "d3d9_hlsl",
    d3d9_font_get_glyph,
-   NULL, /* bind_block */
+   d3d9_font_bind_block,
    NULL, /* flush */
    d3d9_font_get_message_width,
    d3d9_font_get_line_metrics

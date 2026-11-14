@@ -403,7 +403,8 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
    if (!wiiu || !draw)
       return;
 
-   if (draw->pipeline_id)
+   if (draw->pipeline_id >= VIDEO_SHADER_MENU_6
+         && draw->pipeline_id <= VIDEO_SHADER_MENU)
    {
       GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
 

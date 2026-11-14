@@ -124,6 +124,44 @@ fragment float4 stock_fragment(FontFragmentIn  in  [[ stage_in ]],
     return colorSample * in.color;
 }
 
+#include "../xmb_material.h"
+#define vec2 float2
+#define vec3 float3
+#define vec4 float4
+#define XMB_SAMPLE(p) tex.sample(samp, p)
+fragment float4 xmb_material_fragment(FontFragmentIn in [[stage_in]],
+      texture2d<float> tex [[texture(TextureIndexColor)]],
+      sampler samp [[sampler(SamplerIndexDraw)]])
+{
+   float2 uv = in.texCoord.xy;
+   float4 tint = in.color;
+   XMB_MATERIAL_SAMPLE
+   XMB_MATERIAL_LIGHT
+   XMB_MATERIAL_COLOR
+   return material;
+}
+#define dFdx dfdx
+#define dFdy dfdy
+#define XMB_COVERAGE(p) XMB_SAMPLE(p).r
+fragment float4 xmb_font_fragment(FontFragmentIn in [[stage_in]],
+      texture2d<float> tex [[texture(TextureIndexColor)]],
+      sampler samp [[sampler(SamplerIndexDraw)]])
+{
+   float2 uv = in.texCoord.xy;
+   float4 tint = in.color;
+   XMB_FONT_SAMPLE
+   XMB_FONT_LIGHT
+   XMB_FONT_COLOR
+   return material;
+}
+#undef XMB_COVERAGE
+#undef dFdx
+#undef dFdy
+#undef XMB_SAMPLE
+#undef vec2
+#undef vec3
+#undef vec4
+
 fragment half4 stock_fragment_color(FontFragmentIn in [[ stage_in ]])
 {
     return half4(in.color);

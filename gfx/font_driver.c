@@ -2093,7 +2093,7 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
 #endif
       /* Without a block the backend draws this string on its own;
        * with one, the draw is counted when the block is flushed */
-      if (p_disp && !(font->block_bound && renderer->bind_block))
+      if (p_disp && !(font->block_bound && renderer->flush))
          p_disp->stats.v[GFX_DISPLAY_STAT_FONT_DRAWS]++;
       renderer->render_msg(data,
             font->renderer_data, new_msg, new_msg_len, params);

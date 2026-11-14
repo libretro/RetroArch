@@ -864,6 +864,9 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    }
 #endif
 
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL)
+      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_XMB_MATERIAL, true);
+
    gl->shader->set_coords(gl->shader_data, &coords);
    gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
@@ -872,6 +875,9 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
 
    /* Menu draws use a triangle-strip layout. */
    glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
+
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL)
+      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.color     = gl->white_color_ptr;
 }
@@ -1336,12 +1342,17 @@ static void gl2_raster_font_draw_vertices(gl2_t *gl,
 
    if (gl->shader)
    {
+      if (font->block && font->block->xmb_material)
+         gl->shader->use(gl, gl->shader_data,
+               VIDEO_SHADER_XMB_FONT_MATERIAL, true);
       gl->shader->set_coords(gl->shader_data, coords);
       gl->shader->set_mvp(gl->shader_data,
             &gl->mvp_no_rot);
    }
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
+   if (gl->shader && font->block && font->block->xmb_material)
+      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 }
 
 #define GL2_RASTER_FONT_FLUSH() \

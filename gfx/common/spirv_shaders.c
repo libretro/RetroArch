@@ -31,6 +31,16 @@ const uint32_t spirv_alpha_blend_frag[] =
       ;
 const size_t spirv_alpha_blend_frag_size = sizeof(spirv_alpha_blend_frag);
 
+const uint32_t spirv_xmb_font_frag[] =
+#include "../drivers/vulkan_shaders/xmb_font.frag.inc"
+;
+const size_t spirv_xmb_font_frag_size = sizeof(spirv_xmb_font_frag);
+
+const uint32_t spirv_xmb_material_frag[] =
+#include "../drivers/vulkan_shaders/xmb_material.frag.inc"
+      ;
+const size_t spirv_xmb_material_frag_size = sizeof(spirv_xmb_material_frag);
+
 const uint32_t spirv_alpha_blend_linear_frag[] =
 #include "../drivers/vulkan_shaders/alpha_blend_linear.frag.inc"
       ;
@@ -136,11 +146,21 @@ const size_t spirv_hdr_scrgb_frag_size = sizeof(spirv_hdr_scrgb_frag);
 #endif
 
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG) && defined(HAVE_RSLC) && !defined(HAVE_SPIRV_CROSS)
+static const char xmb_font_glsl[] = {
+#include "../drivers/vulkan_shaders/xmb_font.frag.src.inc"
+};
+
+static const char xmb_material_glsl[] = {
+#include "../drivers/vulkan_shaders/xmb_material.frag.src.inc"
+};
+
 static const struct
 {
    const uint32_t *spirv;
    const char     *glsl;
 } spirv_glsl[] = {
+   { spirv_xmb_material_frag, xmb_material_glsl },
+   { spirv_xmb_font_frag, xmb_font_glsl },
    { spirv_alpha_blend_vert,
 #include "../drivers/vulkan_shaders/alpha_blend.vert.src.inc"
    },

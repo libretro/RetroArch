@@ -158,6 +158,7 @@ typedef struct
    const font_renderer_driver_t* font_driver;
    void*                         font_data;
    struct font_atlas*            atlas;
+   bool xmb_material;
 } d3d10_font_t;
 
 typedef struct d3d10_vertex_t
@@ -310,6 +311,8 @@ typedef struct
    {
       d3d10_shader_t shader;
       d3d10_shader_t shader_font;
+      d3d10_shader_t shader_material;
+      d3d10_shader_t shader_font_material;
       D3D10Buffer    vbo;
       /* Sampled by a quad drawn with no texture: solid colour */
       d3d10_texture_t white;
@@ -1307,9 +1310,16 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
 
    d3d10_set_texture_and_sampler(d3d10->device, 0, draw->texture
          ? (d3d10_texture_t*)draw->texture : &d3d10->sprites.white);
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL
+         && vertex_count == 1 && d3d10->sprites.shader_material.ps)
+      d3d10->device->lpVtbl->PSSetShader(d3d10->device,
+            d3d10->sprites.shader_material.ps);
+
    d3d10->device->lpVtbl->Draw(d3d10->device, vertex_count,
          d3d10->sprites.offset);
    d3d10->sprites.offset += vertex_count;
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL && vertex_count == 1)
+      d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader.ps);
 
    if (vertex_count > 1)
    {
@@ -1699,6 +1709,14 @@ static void d3d10_font_update_atlas_rects(D3D10Device ctx,
             (D3D10Resource)font->texture.staging, 0, &box[i]);
 }
 
+static void d3d10_font_bind_block(void *data, void *userdata)
+{
+   d3d10_font_t *font = (d3d10_font_t*)data;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
+   if (font)
+      font->xmb_material = block && block->xmb_material;
+}
+
 static void d3d10_font_render_msg(
       void *userdata,
       void* data,
@@ -1928,7 +1946,10 @@ static void d3d10_font_render_msg(
          d3d10->blend_enable,
          NULL, D3D10_DEFAULT_SAMPLE_MASK);
 
-   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader_font.ps);
+   d3d10->device->lpVtbl->PSSetShader(d3d10->device,
+         font->xmb_material && d3d10->sprites.shader_font_material.ps
+         ? d3d10->sprites.shader_font_material.ps
+         : d3d10->sprites.shader_font.ps);
    d3d10->device->lpVtbl->Draw(d3d10->device, count, d3d10->sprites.offset);
    d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader.ps);
 
@@ -2925,6 +2946,8 @@ static void d3d10_gfx_free(void* data)
 
    d3d10_release_shader(&d3d10->sprites.shader);
    d3d10_release_shader(&d3d10->sprites.shader_font);
+   d3d10_release_shader(&d3d10->sprites.shader_material);
+   d3d10_release_shader(&d3d10->sprites.shader_font_material);
    Release(d3d10->sprites.vbo);
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
@@ -3346,6 +3369,12 @@ static void *d3d10_gfx_init(const video_info_t* video)
 #include "d3d_shaders/sprite_sm4.hlsl.h"
          ;
 
+      d3d10_init_shader(d3d10->device, shader, sizeof(shader), NULL,
+            NULL, "PSMainXMB", NULL, NULL, 0,
+            &d3d10->sprites.shader_material);
+      d3d10_init_shader(d3d10->device, shader, sizeof(shader), NULL,
+            NULL, "PSMainXMBFont", NULL, NULL, 0,
+            &d3d10->sprites.shader_font_material);
       if (!d3d10_init_shader(
                d3d10->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
                countof(desc), &d3d10->sprites.shader))
@@ -5912,7 +5941,7 @@ static font_renderer_t d3d10_font = {
    d3d10_font_render_msg,
    "d3d10",
    d3d10_font_get_glyph,
-   NULL, /* bind_block */
+   d3d10_font_bind_block,
    NULL, /* flush */
    d3d10_font_get_message_width,
    d3d10_font_get_line_metrics

@@ -32,6 +32,7 @@
 
 #include "shader_glsl.h"
 #include "glsl_rect.h"
+#include "../common/xmb_material.h"
 #include "../video_shader_parse.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
@@ -220,11 +221,11 @@ typedef struct glsl_shader_data
    unsigned active_idx;
    unsigned current_idx;
    GLuint lut_textures[GFX_MAX_TEXTURES];
-   float  current_mat_data[GFX_MAX_SHADERS];
-   float* current_mat_data_pointer[GFX_MAX_SHADERS];
-   struct shader_uniforms uniforms[GFX_MAX_SHADERS];
-   struct cache_vbo vbo[GFX_MAX_SHADERS];
-   struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
+   float  current_mat_data[VIDEO_SHADER_PROGRAM_COUNT];
+   float* current_mat_data_pointer[VIDEO_SHADER_PROGRAM_COUNT];
+   struct shader_uniforms uniforms[VIDEO_SHADER_PROGRAM_COUNT];
+   struct cache_vbo vbo[VIDEO_SHADER_PROGRAM_COUNT];
+   struct shader_program_glsl_data prg[VIDEO_SHADER_PROGRAM_COUNT];
    struct video_shader *shader;
    /* Staging for set_coords on draws of more than four vertices (font
     * runs, the menu ribbon), grown on demand and kept for the shader's
@@ -241,6 +242,7 @@ typedef struct glsl_shader_data
    /* The menu effects already compiled or tried, one bit each, so one
     * that will not compile is not tried again every frame */
    uint8_t menu_shaders_tried;
+   uint8_t material_tried;
    struct glsl_in_place in_place;
    /* Compiling something that may fail, with the copy to fall back on */
    bool quiet;
@@ -964,7 +966,7 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    glsl->mesh_prg    = 0;
    glsl->mesh_failed = false;
 
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   for (i = 0; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
    {
       if (glsl->prg[i].id == 0 || (i && glsl->prg[i].id == glsl->prg[0].id))
          continue;
@@ -986,12 +988,13 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
    glsl->active_idx         = 0;
    glsl->menu_shaders_tried = 0;
+   glsl->material_tried    = false;
 
    gl_glsl_deinit_shader(glsl);
 
    gl_glsl_reset_attrib(glsl);
 
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   for (i = 0; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
    {
       if (glsl->vbo[i].vbo_primary)
          glDeleteBuffers(1, &glsl->vbo[i].vbo_primary);
@@ -1394,7 +1397,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
    gl_glsl_reset_attrib(glsl);
 
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   for (i = 0; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
    {
       glGenBuffers(1, &glsl->vbo[i].vbo_primary);
       glGenBuffers(1, &glsl->vbo[i].vbo_secondary);
@@ -1986,6 +1989,55 @@ static uint8_t gl_glsl_menu_shader_bit(unsigned idx)
    return 0;
 }
 
+static void gl_glsl_compile_material(glsl_shader_data_t *glsl, unsigned idx)
+{
+   char source[2048];
+   struct shader_program_info info;
+   bool font = idx == VIDEO_SHADER_XMB_FONT_MATERIAL;
+#if defined(VITA)
+   const char *prefix =
+      "#define vec2 float2\n#define vec3 float3\n#define vec4 float4\n"
+      "#define mix lerp\n#define XMB_SAMPLE(p) tex2D(vTexture,p)\n"
+      "#define dFdx ddx\n#define dFdy ddy\n"
+      "#define XMB_COVERAGE(p) XMB_SAMPLE(p).a\n"
+      "void main(uniform sampler2D vTexture,float2 uv:TEXCOORD0,"
+      "float4 tint:COLOR,out float4 result:COLOR){";
+   const char *suffix = "result=material;}";
+   info.vertex = stock_vertex_modern_blend;
+#else
+   const char *prefix = glsl_core
+      ? "#if defined(GL_ES) && __VERSION__ < 300\n"
+        "#extension GL_OES_standard_derivatives : enable\n#endif\n"
+        "#ifdef GL_ES\n#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
+        "precision highp float;\n#else\nprecision mediump float;\n#endif\n#endif\n"
+        "#define XMB_SAMPLE(p) texture(Texture,p)\n"
+        "#define XMB_COVERAGE(p) XMB_SAMPLE(p).a\n"
+        "uniform sampler2D Texture;in vec2 tex_coord;in vec4 color;"
+        "out vec4 FragColor;void main(){vec2 uv=tex_coord;vec4 tint=color;"
+      : "#if defined(GL_ES) && __VERSION__ < 300\n"
+        "#extension GL_OES_standard_derivatives : enable\n#endif\n"
+        "#ifdef GL_ES\n#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
+        "precision highp float;\n#else\nprecision mediump float;\n#endif\n#endif\n"
+        "#define XMB_SAMPLE(p) texture2D(Texture,p)\n"
+        "#define XMB_COVERAGE(p) XMB_SAMPLE(p).a\n"
+        "uniform sampler2D Texture;varying vec2 tex_coord;varying vec4 color;"
+        "void main(){vec2 uv=tex_coord;vec4 tint=color;";
+   const char *suffix = glsl_core
+      ? "FragColor=material;}" : "gl_FragColor=material;}";
+   info.vertex = glsl_core ? stock_vertex_core_blend : stock_vertex_modern_blend;
+#endif
+   glsl->material_tried |= font ? 2 : 1;
+   if (!xmb_material_source(source, sizeof(source), prefix, suffix, font))
+      return;
+   info.fragment = source;
+   info.is_file  = false;
+   if (gl_glsl_compile_program(glsl, idx,
+            &glsl->prg[idx], &info))
+      gl_glsl_find_uniforms(glsl, 0,
+            glsl->prg[idx].id,
+            &glsl->uniforms[idx]);
+}
+
 static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    GLuint id;
@@ -2003,6 +2055,15 @@ static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_ac
             glsl->menu_shaders_tried |= bit;
             gl_glsl_compile_menu_shader(glsl, idx);
          }
+      }
+      if (idx == VIDEO_SHADER_XMB_MATERIAL
+            || idx == VIDEO_SHADER_XMB_FONT_MATERIAL)
+      {
+         unsigned bit = idx == VIDEO_SHADER_XMB_MATERIAL ? 1 : 2;
+         if (!(glsl->material_tried & bit))
+            gl_glsl_compile_material(glsl, idx);
+         if (!glsl->prg[idx].id)
+            idx = VIDEO_SHADER_STOCK_BLEND;
       }
       gl_glsl_reset_attrib(glsl);
       glsl->active_idx        = idx;

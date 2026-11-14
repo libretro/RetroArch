@@ -38,6 +38,7 @@
 #include <d3d9.h>
 
 #include <string.h>
+#include "d3d_shaders/xmb_material_sm3.h"
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H
@@ -435,6 +436,8 @@ typedef struct cg_renderchain
 {
    struct d3d9_cg_renderchain chain;
    struct shader_pass stock_shader;
+   CGprogram material_shader;
+   CGprogram font_material_shader;
    CGcontext cgCtx;
    /* XMB pipeline shaders */
    void *pipeline_vprg[6]; /* CGprogram vertex programs */
@@ -900,6 +903,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
        * (v=0 at screen top, v=1 at screen bottom). Written straight
        * into the menu's vertex buffer, or a stack copy for
        * DrawPrimitiveUP if it cannot be locked. */
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
       D3DCOLOR col[4];
       Vertex quad_up[4];
       Vertex *quad;
@@ -1033,6 +1037,9 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       }
 
       gfx_display_d3d9_cg_bind_texture(draw, d3d);
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL
+            && _chain && _chain->material_shader)
+         cgD3D9BindProgram(_chain->material_shader);
 
       if (quad != quad_up)
       {
@@ -1042,11 +1049,15 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
                0, sizeof(Vertex));
          IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                vb_start, 2);
+         if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL && _chain)
+            cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
          return;
       }
 
       IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP,
             2, quad, sizeof(Vertex));
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL && _chain)
+         cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
 
       /* DrawPrimitiveUP unbinds the stream source, re-bind it */
       IDirect3DDevice9_SetStreamSource(dev, 0,
@@ -1348,6 +1359,7 @@ typedef struct
    /* Scratch buffer to avoid per-line malloc/free in font rendering */
    Vertex                       *scratch_verts;
    unsigned                      scratch_capacity; /* in Vertex count */
+   bool xmb_material;
 } d3d9_cg_font_t;
 
 static void *d3d9_cg_font_init(void *data,
@@ -1576,6 +1588,14 @@ static void d3d9_cg_font_draw_verts(d3d9_video_t *d3d, d3d9_cg_font_t *font,
          0, sizeof(Vertex));
 }
 
+static void d3d9_cg_font_bind_block(void *data, void *userdata)
+{
+   d3d9_cg_font_t *font = (d3d9_cg_font_t*)data;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
+   if (font)
+      font->xmb_material = block && block->xmb_material;
+}
+
 static void d3d9_cg_font_render_msg(
       void *userdata, void *data,
       const char *msg, size_t msg_len,
@@ -1739,7 +1759,9 @@ static void d3d9_cg_font_render_msg(
       cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
       if (_chain)
       {
-         cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
+         cgD3D9BindProgram(font->xmb_material && _chain->font_material_shader
+               ? _chain->font_material_shader
+               : (CGprogram)_chain->stock_shader.fprg);
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
          CG_DEBUG_CHECK(_chain->cgCtx, "font_render BindProgram");
       }
@@ -1866,6 +1888,13 @@ static void d3d9_cg_font_render_msg(
       } while (0)
 #include "../font_layout.h"
 #undef D3D9_FONT_QUAD
+   }
+
+   if (font->xmb_material)
+   {
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      if (_chain)
+         cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
    }
 
 }
@@ -2543,6 +2572,12 @@ static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
       }
    }
 
+   if (chain->material_shader)
+      cgDestroyProgram(chain->material_shader);
+   chain->material_shader = NULL;
+   if (chain->font_material_shader)
+      cgDestroyProgram(chain->font_material_shader);
+   chain->font_material_shader = NULL;
    if (chain->stock_shader.fprg)
       cgDestroyProgram((CGprogram)chain->stock_shader.fprg);
    if (chain->stock_shader.vprg)
@@ -2716,6 +2751,43 @@ static bool d3d9_cg_renderchain_init(
       return false;
    if (!d3d9_cg_load_program((cg_renderchain_t*)chain, &chain->stock_shader, NULL, false))
       return false;
+
+   {
+      char source[1536];
+      if (xmb_material_source(source, sizeof(source),
+               XMB_MATERIAL_SM3_PREFIX, "return material;}", false))
+      {
+         chain->material_shader = cgCreateProgram(chain->cgCtx,
+               CG_SOURCE, source, CG_PROFILE_PS_3_0, "main", NULL);
+         if (chain->material_shader)
+         {
+            cgD3D9LoadProgram(chain->material_shader, true, 0);
+            if (cgGetError() != CG_NO_ERROR)
+            {
+               cgDestroyProgram(chain->material_shader);
+               chain->material_shader = NULL;
+            }
+         }
+      }
+   }
+   {
+      char source[1536];
+      if (xmb_material_source(source, sizeof(source),
+               XMB_MATERIAL_SM3_PREFIX, "return material;}", true))
+      {
+         chain->font_material_shader = cgCreateProgram(chain->cgCtx,
+               CG_SOURCE, source, CG_PROFILE_PS_3_0, "main", NULL);
+         if (chain->font_material_shader)
+         {
+            cgD3D9LoadProgram(chain->font_material_shader, true, 0);
+            if (cgGetError() != CG_NO_ERROR)
+            {
+               cgDestroyProgram(chain->font_material_shader);
+               chain->font_material_shader = NULL;
+            }
+         }
+      }
+   }
 
    cgD3D9BindProgram((CGprogram)chain->stock_shader.fprg);
    cgD3D9BindProgram((CGprogram)chain->stock_shader.vprg);
@@ -5370,7 +5442,7 @@ static font_renderer_t d3d9_cg_font = {
    d3d9_cg_font_render_msg,
    "d3d9_cg",
    d3d9_cg_font_get_glyph,
-   NULL, /* bind_block */
+   d3d9_cg_font_bind_block,
    NULL, /* flush */
    d3d9_cg_font_get_message_width,
    d3d9_cg_font_get_line_metrics

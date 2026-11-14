@@ -1170,8 +1170,6 @@ static void xmb_draw_icon(
          matrix_4x4_multiply(mymat_tmp, matrix_scaled, mymat_tmp);
       }
    }
-   else if (mymat)
-      mymat_tmp = *mymat;
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -1190,7 +1188,7 @@ static void xmb_draw_icon(
    draw.rotation        = rotation;
    draw.scale_factor    = scale_factor;
    draw.coords          = &coords;
-   draw.matrix_data     = &mymat_tmp;
+   draw.matrix_data     = dispctx->handles_transform ? mymat : &mymat_tmp;
    draw.texture         = texture;
    draw.pipeline_id     = 0;
 
@@ -1202,11 +1200,11 @@ static void xmb_draw_icon(
          0.0f, 0.0f, 0.0f, 0.0f,
          0.0f, 0.0f, 0.0f, 0.0f,
       };
-      gfx_display_set_alpha(shadow_color, color[3] * GFX_SHADOW_ALPHA * 0.75f);
+      gfx_display_set_alpha(shadow_color, color[3] * GFX_SHADOW_ALPHA * 0.18f);
 
       coords.color      = shadow_color;
-      draw.pos          = VIDEO_POS_PACK(VIDEO_PX(x + shadow_offset),
-            VIDEO_PX(height - y - shadow_offset));
+      draw.pos          = VIDEO_POS_PACK(VIDEO_PX(x),
+            VIDEO_PX(height - y + shadow_offset));
 
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
       if (scale_factor < 1)
@@ -1222,6 +1220,7 @@ static void xmb_draw_icon(
    }
 
    coords.color         = (const float*)color;
+   draw.pipeline_id     = VIDEO_SHADER_XMB_MATERIAL;
    draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x), VIDEO_PX(height - y));
 
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
@@ -8777,6 +8776,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (ctx_gen != xmb->context_generation)
       goto ctx_destroyed;
 
+   xmb->raster_block.xmb_material  = true;
+   xmb->raster_block2.xmb_material = true;
    font_driver_bind_block(xmb->font,  &xmb->raster_block);
    font_driver_bind_block(xmb->font2, &xmb->raster_block2);
 

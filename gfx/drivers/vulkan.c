@@ -643,6 +643,7 @@ typedef struct vk
    struct
    {
       VkPipeline alpha_blend;
+      VkPipeline xmb_font;
       VkPipeline font;
       VkPipeline rgb565_to_rgba8888;
       VkPipeline yuv420_to_rgba8888;
@@ -662,6 +663,7 @@ typedef struct vk
       VkPipeline hdr_opaque; /* Game RGB is opaque, as in SDR. */
       VkPipeline hdr_to_sdr; /* for readback */
       VkPipeline alpha_blend_sdr; /* for SDR offscreen compositing */
+      VkPipeline xmb_font_sdr;
       VkPipeline font_sdr;        /* for SDR offscreen compositing */
 #endif /* VULKAN_HDR_SWAPCHAIN */
       VkDescriptorSetLayout set_layout;
@@ -684,10 +686,11 @@ typedef struct vk
        *   [5] snow
        *   [6] bokeh
        *   [7] snowflake
+       *   [8] XMB icon material
        * All entries are TRIANGLE_STRIP topology. */
-      VkPipeline pipelines[8];
+      VkPipeline pipelines[9];
 #ifdef VULKAN_HDR_SWAPCHAIN
-      VkPipeline pipelines_sdr[8]; /* SDR offscreen variants, same layout */
+      VkPipeline pipelines_sdr[9]; /* SDR offscreen variants, same layout */
       /* The HDR UI layer's blended strip for an RGBA16F texture, linear
        * scRGB: alpha_blend_linear.frag, under sdr_render_pass */
       VkPipeline pipeline_linear_sdr;
@@ -4020,6 +4023,17 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
 #else
             call.pipeline     = vk->display.pipelines[disp_pipeline];
 #endif
+            if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL)
+            {
+#ifdef VULKAN_HDR_SWAPCHAIN
+               VkPipeline material = (vk->flags & VK_FLAG_SDR_PIPELINE)
+                  ? vk->display.pipelines_sdr[8] : vk->display.pipelines[8];
+#else
+               VkPipeline material = vk->display.pipelines[8];
+#endif
+               if (material != VK_NULL_HANDLE)
+                  call.pipeline = material;
+            }
             call.texture      = texture;
             call.sampler      = (texture->flags & VK_TEX_FLAG_MIPMAP)
                ? vk->samplers.mipmap_linear
@@ -4823,6 +4837,17 @@ static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font)
 #else
       VkPipeline font_pipe = vk->pipelines.font;
 #endif
+   if (font->block && font->block->xmb_material)
+   {
+#ifdef VULKAN_HDR_SWAPCHAIN
+      VkPipeline material = (vk->flags & VK_FLAG_SDR_PIPELINE)
+         ? vk->pipelines.xmb_font_sdr : vk->pipelines.xmb_font;
+#else
+      VkPipeline material = vk->pipelines.xmb_font;
+#endif
+      if (material)
+         font_pipe = material;
+   }
    if (font_pipe != vk->tracker.pipeline)
    {
       VkRect2D sci;
@@ -5896,6 +5921,15 @@ static void vulkan_init_pipelines(vk_t *vk)
          1, &pipe, NULL, &vk->pipelines.font);
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
+   module_info.codeSize = spirv_xmb_font_frag_size;
+   module_info.pCode    = spirv_xmb_font_frag;
+   shader_stages[1].module = VK_NULL_HANDLE;
+   if (vkCreateShaderModule(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module) == VK_SUCCESS)
+      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->pipelines.xmb_font);
+   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+
    /* Alpha-blended pipeline. */
    module_info.codeSize   = spirv_alpha_blend_frag_size;
    module_info.pCode      = spirv_alpha_blend_frag;
@@ -5960,6 +5994,15 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->display.pipelines[i]);
    }
+
+   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+   module_info.codeSize = spirv_xmb_material_frag_size;
+   module_info.pCode    = spirv_xmb_material_frag;
+   shader_stages[1].module = VK_NULL_HANDLE;
+   if (vkCreateShaderModule(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module) == VK_SUCCESS)
+      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->display.pipelines[8]);
 
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
@@ -6084,6 +6127,15 @@ static void vulkan_init_pipelines(vk_t *vk)
             1, &pipe, NULL, &vk->pipelines.font_sdr);
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
+      module_info.codeSize = spirv_xmb_font_frag_size;
+      module_info.pCode    = spirv_xmb_font_frag;
+      shader_stages[1].module = VK_NULL_HANDLE;
+      if (vkCreateShaderModule(vk->context->device,
+               &module_info, NULL, &shader_stages[1].module) == VK_SUCCESS)
+         vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+               1, &pipe, NULL, &vk->pipelines.xmb_font_sdr);
+      vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+
       /* SDR alpha_blend pipeline */
       module_info.codeSize   = spirv_alpha_blend_frag_size;
       module_info.pCode      = spirv_alpha_blend_frag;
@@ -6108,6 +6160,15 @@ static void vulkan_init_pipelines(vk_t *vk)
          vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
                1, &pipe, NULL, &vk->display.pipelines_sdr[i]);
       }
+
+      vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+      module_info.codeSize = spirv_xmb_material_frag_size;
+      module_info.pCode    = spirv_xmb_material_frag;
+      shader_stages[1].module = VK_NULL_HANDLE;
+      if (vkCreateShaderModule(vk->context->device,
+               &module_info, NULL, &shader_stages[1].module) == VK_SUCCESS)
+         vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+               1, &pipe, NULL, &vk->display.pipelines_sdr[8]);
 
       /* The blended strip again for a linear scRGB texture: the same
        * vertex shader, alpha_blend_linear.frag */
@@ -6508,6 +6569,8 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.font, NULL);
    vkDestroyPipeline(vk->context->device,
+         vk->pipelines.xmb_font, NULL);
+   vkDestroyPipeline(vk->context->device,
          vk->pipelines.rgb565_to_rgba8888, NULL);
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.yuv420_to_rgba8888, NULL);
@@ -6540,6 +6603,8 @@ if ((vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT) || vk->views.ui_sdr)
 {
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.font_sdr, NULL);
+   vkDestroyPipeline(vk->context->device,
+         vk->pipelines.xmb_font_sdr, NULL);
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.alpha_blend_sdr, NULL);
 
