@@ -3958,31 +3958,31 @@ static void video_driver_set_viewport_square_pixel(
    struct retro_game_geometry *geom,
    unsigned int rotation)
 {
-   unsigned _len, i, aspect_x, aspect_y;
-   unsigned highest                  = 1;
+   unsigned aspect_x, aspect_y;
    unsigned width                    = geom->base_width;
    unsigned height                   = geom->base_height;
+   unsigned divisor                  = width;
+   unsigned remainder                = height;
 
    if (width == 0 || height == 0)
       return;
 
-   _len                              = MIN(width, height);
-
-   for (i = 1; i < _len; i++)
+   while (remainder)
    {
-      if ((width % i) == 0 && (height % i) == 0)
-         highest = i;
+      unsigned next = divisor % remainder;
+      divisor       = remainder;
+      remainder     = next;
    }
 
    if (rotation % 2)
    {
-      aspect_x = height / highest;
-      aspect_y = width  / highest;
+      aspect_x = height / divisor;
+      aspect_y = width  / divisor;
    }
    else
    {
-      aspect_x = width  / highest;
-      aspect_y = height / highest;
+      aspect_x = width  / divisor;
+      aspect_y = height / divisor;
    }
 
    snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,

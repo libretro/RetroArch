@@ -3328,6 +3328,92 @@ static void lane_replay_swap_count(void)
 /* Lane: geometry and AV-info changes                                 */
 /* ------------------------------------------------------------------ */
 
+static void lane_square_pixel_geometry(void)
+{
+   static const unsigned cases[][4] = {
+      {320, 240, 4, 3},
+      {320, 160, 2, 1},
+      {160, 320, 1, 2},
+      {1920, 1080, 16, 9},
+      {8191, 8190, 8191, 8190},
+      {8192, 8192, 1, 1},
+      {1, 1, 1, 1}
+   };
+   settings_t *settings = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct retro_game_geometry saved = video_st->av_info.geometry;
+   struct retro_game_geometry geom = saved;
+   struct aspect_ratio_elem saved_square = aspectratio_lut[ASPECT_RATIO_SQUARE];
+   unsigned saved_aspect = settings->uints.video_aspect_ratio_idx;
+   unsigned saved_rotation = settings->uints.video_rotation;
+   bool saved_pause = video_st->frame_delay_pause;
+   unsigned had = failures;
+   unsigned i, rotation;
+   char expected[sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name)];
+   retro_time_t start;
+
+   settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_SQUARE;
+   for (rotation = 0; rotation < 4; rotation++)
+   {
+      settings->uints.video_rotation = rotation;
+      for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+      {
+         unsigned x = cases[i][2];
+         unsigned y = cases[i][3];
+         geom.base_width = cases[i][0];
+         geom.base_height = cases[i][1];
+         /* Rotation alone need not make SET_GEOMETRY notify the driver. */
+         runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
+         video_driver_set_aspect_ratio();
+         if (retroarch_get_rotation() % 2)
+         {
+            unsigned tmp = x;
+            x = y;
+            y = tmp;
+         }
+         snprintf(expected, sizeof(expected),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_SQUARE_PIXEL),
+               x, y);
+         CHECK(!strcmp(aspectratio_lut[ASPECT_RATIO_SQUARE].name, expected),
+               "square pixels: %ux%u rotation %u label %s, expected %s",
+               geom.base_width, geom.base_height, rotation,
+               aspectratio_lut[ASPECT_RATIO_SQUARE].name, expected);
+         CHECK(fabs(aspectratio_lut[ASPECT_RATIO_SQUARE].value
+                  - (float)x / y) < 0.000001,
+               "square pixels: wrong aspect for %ux%u rotation %u",
+               geom.base_width, geom.base_height, rotation);
+      }
+   }
+   geom.base_width = 0;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
+   CHECK(!strcmp(aspectratio_lut[ASPECT_RATIO_SQUARE].name, expected),
+         "square pixels: zero width changed the aspect label");
+   geom.base_width = 1;
+   geom.base_height = 0;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
+   CHECK(!strcmp(aspectratio_lut[ASPECT_RATIO_SQUARE].name, expected),
+         "square pixels: zero height changed the aspect label");
+
+   geom.base_height = 8190;
+   start = cpu_features_get_time_usec();
+   for (i = 0; i < 1000; i++)
+   {
+      geom.base_width = 8191 + (i & 1);
+      runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
+   }
+   fprintf(stderr, "[info] square-pixel geometry %.3f us/call\n",
+         (double)(cpu_features_get_time_usec() - start) / 1000.0);
+
+   settings->uints.video_rotation = saved_rotation;
+   settings->uints.video_aspect_ratio_idx = saved_aspect;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &saved);
+   aspectratio_lut[ASPECT_RATIO_SQUARE] = saved_square;
+   video_driver_set_aspect_ratio();
+   video_st->frame_delay_pause = saved_pause;
+   if (failures == had)
+      fprintf(stderr, "[pass] square-pixel geometry: reduced ratios, rotation and zero sizes\n");
+}
+
 static unsigned avc_aspects;
 static unsigned avc_cursors;
 static unsigned avc_nonblocks;
@@ -13244,6 +13330,7 @@ int main(int argc, char *argv[])
    if (getenv("HARNESS_GEOMETRY_ONLY"))
    {
       set_threaded_via_setting(false);
+      lane_square_pixel_geometry();
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
@@ -13283,6 +13370,7 @@ int main(int argc, char *argv[])
    if (!real_driver())
    {
       set_threaded_via_setting(false);
+      lane_square_pixel_geometry();
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
