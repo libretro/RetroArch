@@ -21,13 +21,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <features/features_cpu.h>
 
 #include "gfx/gfx_display.h"
 #include "gfx/video_driver.h"
 
 static int fails = 0;
 #define CHECK(c, m) do { if (!(c)) { printf("  FAIL: %s\n", m); fails++; } } while (0)
-#define NEAR(a, b) (fabsf((a) - (b)) < 1e-5f)
+#define TEST_NEAR(a, b) (fabsf((a) - (b)) < 1e-5f)
 
 /* ---- what gfx_display.c reaches outside itself -------------------- */
 
@@ -35,6 +36,9 @@ void video_coord_array_free(video_coord_array_t *ca) { (void)ca; }
 void RARCH_LOG(const char *f, ...)  { (void)f; }
 void RARCH_WARN(const char *f, ...) { (void)f; }
 void RARCH_ERR(const char *f, ...)  { (void)f; }
+
+static retro_time_t test_time = 1000000;
+retro_time_t cpu_features_get_time_usec(void) { return test_time; }
 
 /* ---- a recording display driver ------------------------------------ */
 
@@ -61,6 +65,7 @@ static void rec_draw(gfx_display_ctx_draw_t *d, void *data, unsigned vd)
 }
 static const float *rec_effect_vertex;
 static unsigned     rec_effect_vertices;
+static float        rec_effect_time;
 static void rec_pipeline(gfx_display_ctx_draw_t *d, gfx_display_t *p,
       void *data, unsigned vd)
 {
@@ -70,6 +75,22 @@ static void rec_pipeline(gfx_display_ctx_draw_t *d, gfx_display_t *p,
    rec_pipeline_id     = d->pipeline_id;
    rec_effect_vertex   = ec ? ec->vertex : NULL;
    rec_effect_vertices = ec ? ec->vertices : 0;
+   rec_effect_time     = p->effect_time;
+}
+
+static unsigned rec_bloom_begin(void *data, unsigned vd)
+{
+   (void)data;
+   test_time += 50000;
+   return vd;
+}
+
+static void rec_bloom_end(void *data, unsigned vd)
+{
+   (void)data; (void)vd;
+   CHECK(TEST_NEAR(rec_effect_time, 0.6f),
+         "bloom capture uses the frame's animation time");
+   test_time += 50000;
 }
 static const float def_vert[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
 static const float def_tex[8]  = { 0, 1, 1, 1, 0, 0, 1, 0 };
@@ -150,15 +171,15 @@ int main(void)
    gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
    CHECK(rec_draws == 1 && rec_vertices == 10, "two triangles are ten strip vertices, one draw");
    CHECK(rec_texture == 7, "TEXTURED draws with its texture");
-   CHECK(   NEAR(rec_xy[0], 0.0f) && NEAR(rec_xy[1], 0.0f)
-         && NEAR(rec_xy[2], 0.0f) && NEAR(rec_xy[3], 0.0f)
-         && NEAR(rec_xy[4], 1.0f) && NEAR(rec_xy[5], 0.0f)
-         && NEAR(rec_xy[6], 0.0f) && NEAR(rec_xy[7], 1.0f)
-         && NEAR(rec_xy[8], 0.0f) && NEAR(rec_xy[9], 1.0f),
+   CHECK(   TEST_NEAR(rec_xy[0], 0.0f) && TEST_NEAR(rec_xy[1], 0.0f)
+         && TEST_NEAR(rec_xy[2], 0.0f) && TEST_NEAR(rec_xy[3], 0.0f)
+         && TEST_NEAR(rec_xy[4], 1.0f) && TEST_NEAR(rec_xy[5], 0.0f)
+         && TEST_NEAR(rec_xy[6], 0.0f) && TEST_NEAR(rec_xy[7], 1.0f)
+         && TEST_NEAR(rec_xy[8], 0.0f) && TEST_NEAR(rec_xy[9], 1.0f),
          "clip space -1..1 lands on 0..1, the first triangle a a b c c");
-   CHECK(NEAR(rec_xy[18], 1.0f) && NEAR(rec_xy[19], 1.0f), "the last vertex is the far corner");
-   CHECK(NEAR(rec_uv[18], 1.0f) && NEAR(rec_uv[19], 1.0f), "texture coordinates in 1/65535ths");
-   CHECK(NEAR(rec_col[0], 1.0f) && NEAR(rec_col[1], 0.0f) && NEAR(rec_col[39], 128.0f / 255.0f),
+   CHECK(TEST_NEAR(rec_xy[18], 1.0f) && TEST_NEAR(rec_xy[19], 1.0f), "the last vertex is the far corner");
+   CHECK(TEST_NEAR(rec_uv[18], 1.0f) && TEST_NEAR(rec_uv[19], 1.0f), "texture coordinates in 1/65535ths");
+   CHECK(TEST_NEAR(rec_col[0], 1.0f) && TEST_NEAR(rec_col[1], 0.0f) && TEST_NEAR(rec_col[39], 128.0f / 255.0f),
          "colours from the vertices");
 
    /* tint, COLORED */
@@ -168,7 +189,7 @@ int main(void)
       for (i = 0; i < 16; i++) tint[i] = 0.5f;
       md.color = tint; md.program = GFX_MESH_PROGRAM_COLORED; md.texture = 7;
       gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
-      CHECK(NEAR(rec_col[0], 0.5f) && NEAR(rec_col[3], 0.5f), "the tint multiplies the vertex colour");
+      CHECK(TEST_NEAR(rec_col[0], 0.5f) && TEST_NEAR(rec_col[3], 0.5f), "the tint multiplies the vertex colour");
       CHECK(rec_texture != 7, "COLORED draws with the white texture, not the one handed in");
    }
 
@@ -185,7 +206,7 @@ int main(void)
       tri = make(t, 3, NULL, 0, GFX_MESH_TRIANGLES, 0);
       md.mvp = proj; md.color = white; md.program = GFX_MESH_PROGRAM_COLORED;
       gfx_display_mesh_draw(p_disp, NULL, vd, tri, &md);
-      CHECK(rec_vertices == 5 && NEAR(rec_xy[8], 0.75f) && NEAR(rec_xy[9], 0.75f),
+      CHECK(rec_vertices == 5 && TEST_NEAR(rec_xy[8], 0.75f) && TEST_NEAR(rec_xy[9], 0.75f),
             "the perspective divide: (1,1,-2) lands at 0.75");
       /* the same triangle in front of the eye: w = -2 */
       reset();
@@ -204,7 +225,7 @@ int main(void)
       gfx_display_mesh_t *strip = make(v, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, 0);
       md.program = GFX_MESH_PROGRAM_TEXTURED; md.texture = 3;
       gfx_display_mesh_draw(p_disp, NULL, vd, strip, &md);
-      CHECK(rec_vertices == 4 && NEAR(rec_xy[6], 1.0f) && NEAR(rec_xy[7], 1.0f), "a strip goes as it is");
+      CHECK(rec_vertices == 4 && TEST_NEAR(rec_xy[6], 1.0f) && TEST_NEAR(rec_xy[7], 1.0f), "a strip goes as it is");
       gfx_display_mesh_free(strip);
    }
 
@@ -236,7 +257,37 @@ int main(void)
       gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
       CHECK(rec_pipeline_calls == 0 && rec_draws == 0,
             "a mesh with no positions draws no effect");
-      CHECK(NEAR(white[3], 1.0f), "the effect leaves the colour's alpha as it was");
+      CHECK(TEST_NEAR(white[3], 1.0f), "the effect leaves the colour's alpha as it was");
+   }
+
+   {
+      static const unsigned rates[] = { 30, 60, 144 };
+      unsigned rate, frame;
+      md.program = GFX_MESH_PROGRAM_RIBBON;
+      for (rate = 0; rate < sizeof(rates) / sizeof(rates[0]); rate++)
+      {
+         p_disp->effect_start_time = 0;
+         test_time = 1000000;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         for (frame = 1; frame <= rates[rate]; frame++)
+         {
+            test_time = 1000000 + (retro_time_t)frame * 1000000 / rates[rate];
+            gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         }
+         CHECK(TEST_NEAR(rec_effect_time, 0.6f), "one second has the same phase at 30, 60 and 144 Hz");
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         CHECK(TEST_NEAR(rec_effect_time, 0.6f), "a repeated timestamp does not advance the effect");
+      }
+      rec_ctx.bloom_begin = rec_bloom_begin;
+      rec_ctx.bloom_end   = rec_bloom_end;
+      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      CHECK(TEST_NEAR(rec_effect_time, 0.6f) && TEST_NEAR(p_disp->effect_time, 0.6f),
+            "bloom and base use the same phase despite time spent drawing");
+      rec_ctx.bloom_begin = NULL;
+      rec_ctx.bloom_end   = NULL;
+      test_time = 500000;
+      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      CHECK(TEST_NEAR(rec_effect_time, 0.0f), "a clock reset restarts the effect");
    }
 
    /* quads-only */

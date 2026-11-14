@@ -128,6 +128,9 @@ struct gl3_views_fbo
 
 typedef struct gl3
 {
+#ifdef HAVE_GL_MENU_BLOOM
+   gl_menu_bloom_t *menu_bloom;
+#endif
    const gfx_ctx_driver_t *ctx_driver;
    void *ctx_data;
    /* The frame's swap: how long it took, and whether it was one that
@@ -1034,6 +1037,8 @@ static void gfx_display_gl3_draw_pipeline(
       switch (draw->pipeline_id)
       {
          case VIDEO_SHADER_MENU:
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+            break;
          case VIDEO_SHADER_MENU_2:
             glBlendFunc(GL_DST_COLOR, GL_ONE);
             break;
@@ -1092,6 +1097,7 @@ static void gfx_display_gl3_draw_pipeline(
    {
       static struct video_coords blank_coords;
       static uint8_t ubo_scratch_data[768];
+      static float ribbon_ubo[4];
       float output_size[2];
       output_size[0]                = (float)video_width;
       output_size[1]                = (float)video_height;
@@ -1104,13 +1110,12 @@ static void gfx_display_gl3_draw_pipeline(
          case VIDEO_SHADER_MENU_2:
             if (!(draw->coords = gfx_display_effect_coords(p_disp)))
                return;
-            draw->backend_data               = ubo_scratch_data;
-            draw->backend_data_size          = 2 * sizeof(float);
-
-            /* Match UBO layout in shader. */
-            yflip = 1.0f;
-            memcpy(ubo_scratch_data, &t, sizeof(t));
-            memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
+            ribbon_ubo[0]                   = t;
+            ribbon_ubo[1]                   = 1.0f;
+            ribbon_ubo[2]                   = draw->color ? draw->color[3] : 1.0f;
+            ribbon_ubo[3]                   = 0.0f;
+            draw->backend_data              = ribbon_ubo;
+            draw->backend_data_size         = sizeof(ribbon_ubo);
             break;
 
          /* Snow simple */
@@ -1271,6 +1276,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       switch (draw->pipeline_id)
       {
          case VIDEO_SHADER_MENU:
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+            break;
          case VIDEO_SHADER_MENU_2:
             glBlendFunc(GL_DST_COLOR, GL_ONE);
             break;
@@ -4419,6 +4426,9 @@ static void gl3_free(void *data)
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+#ifdef HAVE_GL_MENU_BLOOM
+   gl_menu_bloom_free(&gl->menu_bloom);
+#endif
 #ifdef HAVE_GL3_XR
    gl3_xr_free(gl);
 #endif
@@ -9171,6 +9181,28 @@ video_driver_t video_gl3 = {
    true /* max_geometry_in_place */
 };
 
+#ifdef HAVE_GL_MENU_BLOOM
+static unsigned gfx_display_gl3_bloom_begin(void *data, unsigned dims)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return 0;
+   return gl_menu_bloom_begin(&gl->menu_bloom, dims, true,
+#ifdef HAVE_OPENGLES
+         true
+#else
+         false
+#endif
+         );
+}
+
+static void gfx_display_gl3_bloom_end(void *data, unsigned dims)
+{
+   gl3_t *gl = (gl3_t*)data;
+   gl_menu_bloom_end(gl->menu_bloom, dims);
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    gfx_display_gl3_draw,
    gfx_display_gl3_draw_pipeline,
@@ -9187,8 +9219,14 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    gfx_display_gl3_scissor_begin,
    gfx_display_gl3_scissor_end,
 #ifdef HAVE_SLANG
-   gfx_display_gl3_mesh_draw
+   gfx_display_gl3_mesh_draw,
 #else
-   NULL
+   NULL,
+#endif
+#ifdef HAVE_GL_MENU_BLOOM
+   gfx_display_gl3_bloom_begin,
+   gfx_display_gl3_bloom_end
+#else
+   NULL, NULL
 #endif
 };

@@ -1041,15 +1041,10 @@ static void gl_glsl_compile_menu_shader(glsl_shader_data_t *glsl, unsigned idx)
       shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern;
       shader_prog_info.fragment = core_stock_fragment_xmb;
    }
-   else if (gl_query_extension("GL_OES_standard_derivatives"))
+   else
    {
       shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
       shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
-   }
-   else
-   {
-      shader_prog_info.vertex = stock_vertex_xmb_ribbon_simple_legacy;
-      shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
    }
 #endif
 #else

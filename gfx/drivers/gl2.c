@@ -887,7 +887,7 @@ static void gfx_display_gl2_draw_pipeline(
    gl2_t             *gl            = (gl2_t*)data;
    /* The effects' clock, one step ahead, as this driver has always
     * drawn them */
-   float t                          = p_disp->effect_time + 0.01f;
+   float t                          = p_disp->effect_time;
 
    draw->pos                        = VIDEO_POS_PACK(0, 0);
    draw->coords                     = gfx_display_effect_coords(p_disp);
@@ -898,6 +898,8 @@ static void gfx_display_gl2_draw_pipeline(
    switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
+         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+         break;
       case VIDEO_SHADER_MENU_2:
          glBlendFunc(GL_DST_COLOR, GL_ONE);
          break;
@@ -935,6 +937,15 @@ static void gfx_display_gl2_draw_pipeline(
 
          gl->shader->set_uniform_parameter(gl->shader_data,
                &uniform_param, NULL);
+#ifdef HAVE_CG
+         if (draw->pipeline_id == VIDEO_SHADER_MENU
+               && gl->shader->type == RARCH_SHADER_CG)
+         {
+            uniform_param.lookup.type = SHADER_PROGRAM_FRAGMENT;
+            gl->shader->set_uniform_parameter(gl->shader_data,
+                  &uniform_param, NULL);
+         }
+#endif
          break;
    }
 
@@ -8060,6 +8071,9 @@ static void gl2_free(void *data)
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+#ifdef HAVE_GL_MENU_BLOOM
+   gl_menu_bloom_free(&gl->menu_bloom);
+#endif
 #ifdef HAVE_GL2_XR
    gl2_desktop_xr_free(gl);
 #endif
@@ -10704,6 +10718,28 @@ video_driver_t video_gl2 = {
    true /* max_geometry_in_place */
 };
 
+#ifdef HAVE_GL_MENU_BLOOM
+static unsigned gfx_display_gl2_bloom_begin(void *data, unsigned dims)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !(gl->flags & GL2_FLAG_HAVE_FBO))
+      return 0;
+   return gl_menu_bloom_begin(&gl->menu_bloom, dims, gl_query_core_context_in_use(),
+#ifdef HAVE_OPENGLES
+         true
+#else
+         false
+#endif
+         );
+}
+
+static void gfx_display_gl2_bloom_end(void *data, unsigned dims)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl_menu_bloom_end(gl->menu_bloom, dims);
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl2_draw,
    gfx_display_gl2_draw_pipeline,
@@ -10720,8 +10756,14 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl2_scissor_begin,
    gfx_display_gl2_scissor_end,
 #ifdef HAVE_GLSL
-   gfx_display_gl2_mesh_draw
+   gfx_display_gl2_mesh_draw,
 #else
-   NULL
+   NULL,
+#endif
+#ifdef HAVE_GL_MENU_BLOOM
+   gfx_display_gl2_bloom_begin,
+   gfx_display_gl2_bloom_end
+#else
+   NULL, NULL
 #endif
 };

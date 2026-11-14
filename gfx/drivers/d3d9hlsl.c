@@ -1163,7 +1163,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
 {
-   static float t                        = 0.0f;
+   float t;
    struct video_coords *ca               = NULL;
    d3d9_video_t *d3d                     = (d3d9_video_t*)data;
 
@@ -1239,10 +1239,9 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
 
          draw->coords->vertices = ca->vertices;
 
-         /* Set pipeline blend state — ribbon uses multiplicative blend
-          * (DESTCOLOR + ONE) matching D3D11's blend_pipeline. */
          IDirect3DDevice9_SetRenderState(d3d->dev,
-               D3DRS_SRCBLEND,  D3DBLEND_DESTCOLOR);
+               D3DRS_SRCBLEND, draw->pipeline_id == VIDEO_SHADER_MENU
+                  ? D3DBLEND_SRCALPHA : D3DBLEND_DESTCOLOR);
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_DESTBLEND, D3DBLEND_ONE);
          IDirect3DDevice9_SetRenderState(d3d->dev,
@@ -1318,13 +1317,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
          return;
    }
 
-   /* Update time uniform - mirrors d3d10 ubo_values.time increment.
-    * Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
-   t += 0.01f;
+   t = p_disp->effect_time;
    if (t > 65536.0f)
       t -= 65536.0f;
 
@@ -6951,6 +6944,32 @@ static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
       (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
 #include "../common/d3d9_views.h"
 
+#include "d3d_shaders/bloom_sm3.hlsl.h"
+
+static bool d3d9_hlsl_bloom_ps_make(d3d9_video_t *d3d)
+{
+   bool ok;
+   D3DBlob code = NULL;
+   if (!d3d_compile(bloom_ps_source, strlen(bloom_ps_source), "bloom", "main_fragment", "ps_3_0",
+            &code))
+      return false;
+   ok = SUCCEEDED(IDirect3DDevice9_CreatePixelShader(d3d->dev,
+            (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+            (LPDIRECT3DPIXELSHADER9*)&d3d->bloom.ps));
+   d3d->bloom.ps_reg = d3d9_hlsl_ctab_find_register(
+         (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+         code->lpVtbl->GetBufferSize(code) / sizeof(DWORD), "p",
+         NULL, NULL);
+   code->lpVtbl->Release(code);
+   return ok;
+}
+
+#define D3D9B_FN(name) d3d9_hlsl_##name
+#define D3D9B_FREE(d) IDirect3DPixelShader9_Release((LPDIRECT3DPIXELSHADER9)(d)->bloom.ps)
+#define D3D9B_BIND(d) IDirect3DDevice9_SetPixelShader((d)->dev, (LPDIRECT3DPIXELSHADER9)(d)->bloom.ps)
+#include "../common/d3d9_bloom.h"
+
+
 #ifdef D3D9_HW_RENDER
 /* View @v of the core's texture @src copied into @c's frame for this
  * draw, the texels as they are; false if it can't be */
@@ -7439,6 +7458,7 @@ static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
 
 #ifdef D3D9_VIEWS
    /* Its targets are in the default pool, which a reset drops. */
+   d3d9_hlsl_bloom_free(d3d);
    d3d9_hlsl_views_release(d3d);
 #endif
 
@@ -9966,5 +9986,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    true,
    true,
    gfx_display_d3d9_hlsl_scissor_begin,
-   gfx_display_d3d9_hlsl_scissor_end
+   gfx_display_d3d9_hlsl_scissor_end,
+   NULL,
+#ifdef D3D9_VIEWS
+   d3d9_hlsl_bloom_begin,
+   d3d9_hlsl_bloom_end
+#else
+   NULL, NULL
+#endif
 };

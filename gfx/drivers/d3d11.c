@@ -361,6 +361,7 @@ typedef struct ALIGN(16)
       float height;
    } OutputSize;
    float time;
+   float alpha;
 } d3d11_uniform_t;
 
 typedef struct d3d11_shader_t
@@ -613,6 +614,20 @@ typedef struct
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
    D3D11BlendState       blend_pipeline;
+   D3D11BlendState       blend_ribbon;
+   struct
+   {
+      d3d11_texture_t tex[2];
+      d3d11_shader_t shader;
+      D3D11Buffer ubo;
+      D3D11BlendState blend;
+      D3D11RenderTargetView target;
+      D3D11DepthStencilView depth;
+      D3D11RasterizerState raster;
+      D3D11_VIEWPORT viewport;
+      unsigned dims;
+      bool failed;
+   } bloom;
    /* gfx_display meshes: the shader and constant buffer they draw with,
     * and each mesh's own buffers by mesh id. The one drawn longest ago
     * gives way when all are taken; the runtime keeps a released buffer
@@ -1160,6 +1175,149 @@ static void d3d11_update_texture(
  * DISPLAY DRIVER
  */
 
+#include "../common/menu_bloom.h"
+#include "d3d_shaders/bloom_sm4.hlsl.h"
+
+static INLINE void d3d11_release_shader(d3d11_shader_t* shader);
+
+static void d3d11_bloom_free(d3d11_video_t *d3d11)
+{
+   unsigned i;
+   for (i = 0; i < 2; i++)
+      d3d11_release_texture(&d3d11->bloom.tex[i]);
+   d3d11_release_shader(&d3d11->bloom.shader);
+   Release(d3d11->bloom.ubo);
+   Release(d3d11->bloom.blend);
+}
+
+static unsigned gfx_display_d3d11_bloom_begin(void *data, unsigned dims)
+{
+   static const float clear[4] = {0, 0, 0, 0};
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   D3D11DeviceContext ctx;
+   D3D11_VIEWPORT vp;
+   unsigned i, bloom_dims = menu_bloom_dims(dims);
+   UINT count = 1;
+   if (!d3d11 || !bloom_dims || d3d11->bloom.failed)
+      return 0;
+   ctx = d3d11->context;
+   if (!d3d11->bloom.shader.vs)
+   {
+      D3D11_BUFFER_DESC desc;
+      D3D11_BLEND_DESC blend;
+      if (!d3d11_init_shader(d3d11->device, bloom_vs_source,
+               sizeof(bloom_vs_source), NULL, "VSMain", NULL, NULL,
+               NULL, 0, &d3d11->bloom.shader, D3D11_FEATURE_LEVEL_HINT_DONTCARE)
+            || !d3d11_init_shader(d3d11->device, bloom_ps_source,
+               sizeof(bloom_ps_source), NULL, NULL, "PSMain", NULL,
+               NULL, 0, &d3d11->bloom.shader, D3D11_FEATURE_LEVEL_HINT_DONTCARE)
+            || !d3d11->bloom.shader.vs || !d3d11->bloom.shader.ps)
+         goto error;
+      desc.ByteWidth           = 16;
+      desc.Usage               = D3D11_USAGE_DYNAMIC;
+      desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+      desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+      desc.MiscFlags           = 0;
+      desc.StructureByteStride = 0;
+      if (FAILED(d3d11->device->lpVtbl->CreateBuffer(d3d11->device,
+                  &desc, NULL, &d3d11->bloom.ubo)))
+         goto error;
+      d3d11->blend_ribbon->lpVtbl->GetDesc(d3d11->blend_ribbon, &blend);
+      blend.RenderTarget[0].SrcBlend      = D3D11_BLEND_ONE;
+      blend.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+      blend.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+      if (FAILED(d3d11->device->lpVtbl->CreateBlendState(d3d11->device,
+                  &blend, &d3d11->bloom.blend)))
+         goto error;
+   }
+   if (bloom_dims != d3d11->bloom.dims)
+   {
+      for (i = 0; i < 2; i++)
+      {
+         d3d11_texture_t *t = &d3d11->bloom.tex[i];
+         d3d11_release_texture(t);
+         memset(t, 0, sizeof(*t));
+         t->desc.Width     = VIDEO_SCALE_W(bloom_dims);
+         t->desc.Height    = VIDEO_SCALE_H(bloom_dims);
+         t->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+         t->desc.Usage     = D3D11_USAGE_DEFAULT;
+         t->desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+         if (!d3d11_init_texture_ex(d3d11->device, t, false)
+               || !t->view || !t->rt_view)
+            goto error;
+      }
+      d3d11->bloom.dims = bloom_dims;
+   }
+   ctx->lpVtbl->OMGetRenderTargets(ctx, 1, &d3d11->bloom.target,
+         &d3d11->bloom.depth);
+   ctx->lpVtbl->RSGetViewports(ctx, &count, &d3d11->bloom.viewport);
+   ctx->lpVtbl->RSGetState(ctx, &d3d11->bloom.raster);
+   ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &d3d11->bloom.tex[0].rt_view, NULL);
+   ctx->lpVtbl->RSSetState(ctx, d3d11->scissor_disabled);
+   vp.TopLeftX = vp.TopLeftY = 0;
+   vp.Width    = VIDEO_SCALE_W(bloom_dims);
+   vp.Height   = VIDEO_SCALE_H(bloom_dims);
+   vp.MinDepth = 0.0f;
+   vp.MaxDepth = 1.0f;
+   ctx->lpVtbl->RSSetViewports(ctx, 1, &vp);
+   ctx->lpVtbl->ClearRenderTargetView(ctx, d3d11->bloom.tex[0].rt_view, clear);
+   return bloom_dims;
+error:
+   d3d11->bloom.failed = true;
+   return 0;
+}
+
+static void gfx_display_d3d11_bloom_end(void *data, unsigned dims)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   D3D11DeviceContext ctx = d3d11->context;
+   D3D11ShaderResourceView empty = NULL;
+   unsigned i;
+   (void)dims;
+   ctx->lpVtbl->IASetInputLayout(ctx, NULL);
+   ctx->lpVtbl->VSSetShader(ctx, d3d11->bloom.shader.vs, NULL, 0);
+   ctx->lpVtbl->PSSetShader(ctx, d3d11->bloom.shader.ps, NULL, 0);
+   ctx->lpVtbl->GSSetShader(ctx, NULL, NULL, 0);
+   ctx->lpVtbl->PSSetConstantBuffers(ctx, 0, 1, &d3d11->bloom.ubo);
+   ctx->lpVtbl->PSSetSamplers(ctx, 0, 1,
+         &d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE]);
+   ctx->lpVtbl->IASetPrimitiveTopology(ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   for (i = 0; i < 3; i++)
+   {
+      D3D11_MAPPED_SUBRESOURCE mapped;
+      D3D11RenderTargetView target = i == 2 ? d3d11->bloom.target
+         : d3d11->bloom.tex[1 - i].rt_view;
+      float *p;
+      if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)d3d11->bloom.ubo,
+                  0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+         break;
+      p = (float*)mapped.pData;
+      p[0] = i == 0 ? 2.0f / VIDEO_SCALE_W(d3d11->bloom.dims) : 0.0f;
+      p[1] = i == 1 ? 2.0f / VIDEO_SCALE_H(d3d11->bloom.dims) : 0.0f;
+      p[2] = i == 0 ? 0.20f : 0.0f;
+      p[3] = i == 2 ? 0.75f : 1.0f;
+      ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->bloom.ubo, 0);
+      ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &empty);
+      ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &target, NULL);
+      ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1,
+            &d3d11->bloom.tex[i == 1 ? 1 : 0].view);
+      ctx->lpVtbl->OMSetBlendState(ctx,
+            i == 2 ? d3d11->bloom.blend : d3d11->blend_disable,
+            NULL, D3D11_DEFAULT_SAMPLE_MASK);
+      if (i == 2)
+         ctx->lpVtbl->RSSetViewports(ctx, 1, &d3d11->bloom.viewport);
+      ctx->lpVtbl->Draw(ctx, 4, 0);
+   }
+   ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &empty);
+   ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &d3d11->bloom.target, d3d11->bloom.depth);
+   ctx->lpVtbl->RSSetViewports(ctx, 1, &d3d11->bloom.viewport);
+   ctx->lpVtbl->RSSetState(ctx, d3d11->bloom.raster);
+   ctx->lpVtbl->PSSetConstantBuffers(ctx, 0, 1, &d3d11->ubo);
+   Release(d3d11->bloom.target);
+   Release(d3d11->bloom.depth);
+   Release(d3d11->bloom.raster);
+}
+
 static void gfx_display_d3d11_blend_begin(void *data)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
@@ -1623,7 +1781,8 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
                &d3d11->meshes[slot].vbo, &stride, &offset);
          draw->coords->vertices = mesh->vertex_count;
          d3d11->context->lpVtbl->OMSetBlendState(
-               d3d11->context, d3d11->blend_pipeline,
+               d3d11->context, draw->pipeline_id == VIDEO_SHADER_MENU
+                  ? d3d11->blend_ribbon : d3d11->blend_pipeline,
                NULL, D3D11_DEFAULT_SAMPLE_MASK);
          break;
       }
@@ -1650,9 +1809,8 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
    d3d11->context->lpVtbl->IASetPrimitiveTopology(
          d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   /* The effects' clock, one step ahead, as this driver has always
-    * drawn them */
-   d3d11->ubo_values.time = p_disp->effect_time + 0.01f;
+   d3d11->ubo_values.time = p_disp->effect_time;
+   d3d11->ubo_values.alpha = draw->color ? draw->color[3] : 1.0f;
    if (d3d11->ubo_values.time > 65536.0f)
       d3d11->ubo_values.time -= 65536.0f;
 
@@ -4120,6 +4278,8 @@ static void d3d11_gfx_free(void* data)
       d3d11->meshes[i].id = 0;
    }
    Release(d3d11->blend_pipeline);
+   Release(d3d11->blend_ribbon);
+   d3d11_bloom_free(d3d11);
 
    Release(d3d11->ubo);
 
@@ -5073,8 +5233,11 @@ static void *d3d11_gfx_init(const video_info_t* video)
       d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
             &d3d11->blend_enable);
 
-      blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_DEST_COLOR;
       blend_desc.RenderTarget[0].DestBlend             = D3D11_BLEND_ONE;
+      d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
+            &d3d11->blend_ribbon);
+
+      blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_DEST_COLOR;
       d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
             &d3d11->blend_pipeline);
 
@@ -10423,5 +10586,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
    true,
    gfx_display_d3d11_scissor_begin,
    gfx_display_d3d11_scissor_end,
-   gfx_display_d3d11_mesh_draw
+   gfx_display_d3d11_mesh_draw,
+   gfx_display_d3d11_bloom_begin,
+   gfx_display_d3d11_bloom_end
 };

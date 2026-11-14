@@ -1,7 +1,7 @@
 #version 310 es
 
 layout(location = 0) in vec2 Position;
-layout(location = 0) out vec3 vEC;
+layout(location = 0) out vec4 vEC;
 
 layout(std140, set = 0, binding = 0) uniform UBO
 {
@@ -10,51 +10,38 @@ layout(std140, set = 0, binding = 0) uniform UBO
    float alpha;
 } constants;
 
-float iqhash(float n)
-{
-   return fract(sin(n) * 43758.5453);
-}
-
-float noise(vec3 x)
-{
-   vec3 p = floor(x);
-   vec3 f = fract(x);
-   f = f * f * (3.0 - 2.0 * f);
-   float n = p.x + p.y * 57.0 + 113.0 * p.z;
-   return mix(mix(mix(iqhash(n), iqhash(n + 1.0), f.x),
-              mix(iqhash(n + 57.0), iqhash(n + 58.0), f.x), f.y),
-              mix(mix(iqhash(n + 113.0), iqhash(n + 114.0), f.x),
-              mix(iqhash(n + 170.0), iqhash(n + 171.0), f.x), f.y), f.z);
-}
-
-float xmb_noise2(vec3 x)
-{
-   return cos(x.z * 4.0) * cos(x.z + constants.time / 10.0 + x.x);
-}
-
-/* Position is the ribbon mesh's grid as gfx_display stores it. Where
- * yflip turns clip space over (-1) the grid's depth axis turns with it
- * and runs 1 - y; where it does not (1) it runs y. */
 void main()
 {
-   vec3 v = vec3(Position.x, 0.0,
-         0.5 * (1.0 - constants.yflip) + constants.yflip * Position.y);
-   vec3 v2 = v;
-   vec3 v3 = v;
-
-   v.y = xmb_noise2(v2) / 8.0;
-
-   v3.x -= constants.time / 5.0;
-   v3.x /= 4.0;
-
-   v3.z -= constants.time / 10.0;
-   v3.y -= constants.time / 100.0;
-
-   v.z -= noise(v3 * 7.0) / 15.0;
-   v.y -= noise(v3 * 7.0) / 15.0 + cos(v.x * 2.0 - constants.time / 2.0) / 5.0 - 0.3;
-   v.y = -v.y;
-
-   vEC = v;
-   gl_Position = vec4(v.xy, 0.0, 1.0);
+   float x = Position.x;
+   float row = floor((Position.y + 1.0) * 31.5 + 0.5);
+   float z = min(row, 53.0) * (2.0 / 53.0) - 1.0;
+   float a = x * 1.45 + constants.time * 0.08;
+   float b = z * 1.75 + x * (1.2 + 0.45 * z) - constants.time * 0.06;
+   float c = z * (5.8 + 1.2 * z) + x * 0.75 - constants.time * 0.09;
+   float d = z * 10.0 + x * (2.2 - 0.6 * z) + constants.time * 0.075;
+   float width = 0.13 + 0.05 * cos(a);
+   float y = -0.28 + 0.12 * sin(a) + width * cos(b) * cos(c)
+         + 0.04 * sin(d) + 0.06 * z;
+   float dx = 0.174 * cos(a) - 0.0725 * sin(a) * cos(b) * cos(c)
+         - width * ((1.2 + 0.45 * z) * sin(b) * cos(c) + 0.75 * cos(b) * sin(c))
+         + 0.04 * (2.2 - 0.6 * z) * cos(d);
+   float dz = -width * ((1.75 + 0.45 * x) * sin(b) * cos(c)
+         + (5.8 + 2.4 * z) * cos(b) * sin(c))
+         + 0.04 * (10.0 - 0.6 * x) * cos(d) + 0.06;
+   float stripes = 0.65 + 0.35 * cos(z * 28.0);
+   float w = 1.0 + 0.10 * z;
+   vec3 normal = vec3(dx, -1.12, 1.12 * dz);
+   vec3 eye = vec3(-0.112 * x, -0.10 * y, -w);
+   float angle = dot(normal, eye) / sqrt(dot(normal, normal) * dot(eye, eye));
+   vEC = vec4(angle, (dz * w - 0.10 * y) / (w * w), z,
+         stripes * (1.0 - step(52.5, row)));
+   gl_Position = vec4(1.12 * x, y, 0.0, w);
+   if (row > 54.5)
+   {
+      float layer = floor((row - 55.0) / 3.0);
+      float t = row - 56.0 - 3.0 * layer;
+      vEC = vec4(x, t, 2.0 + layer, 1.0 - abs(t));
+      gl_Position = vec4(x, -0.28 + 0.06 * sin(a) + t * (0.70 + 0.12 * layer), 0.0, 1.0);
+   }
    gl_Position.y *= constants.yflip;
 }

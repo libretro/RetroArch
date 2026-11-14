@@ -161,6 +161,9 @@ struct gl2
       uint32_t id;
    } meshes[8];
    uint64_t mesh_draws;
+#ifdef HAVE_GL_MENU_BLOOM
+   gl_menu_bloom_t *menu_bloom;
+#endif
    const shader_backend_t *shader;
    void *shader_data;
    void *renderchain_data;

@@ -157,6 +157,10 @@ typedef struct gfx_display_ctx_driver
    bool (*mesh_draw)(void *data, unsigned video_dims,
          const struct gfx_display_mesh *mesh, const float *mvp,
          uintptr_t texture, const float *tint);
+   /* A cleared ribbon target, then its filtered light onto the saved
+    * target. Zero declines; a successful begin must be ended. */
+   unsigned (*bloom_begin)(void *data, unsigned video_dims);
+   void (*bloom_end)(void *data, unsigned video_dims);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw
@@ -285,9 +289,8 @@ struct gfx_display
 
    uint8_t flags;
 
-   /* The menu effects' clock, in the step every driver used to keep
-    * for itself: 0.01 an effect drawn, wrapped at 65536. Read by the
-    * driver while it draws an effect, advanced once it has. */
+   retro_time_t effect_start_time;
+   /* Elapsed seconds scaled by 0.6, shared by every effect pass. */
    float     effect_time;
    /* The mesh an effect is being drawn over, for the driver's pipeline
     * code to draw from; NULL outside that draw. */

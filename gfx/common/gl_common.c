@@ -58,6 +58,304 @@ void gl_finish(void)
    glFinish();
 }
 
+#ifdef HAVE_GL_MENU_BLOOM
+#include "menu_bloom.h"
+
+struct gl_menu_bloom
+{
+   GLuint tex[2];
+   GLuint fbo[2];
+   GLuint prog;
+   GLuint vbo;
+   GLuint vao;
+   GLint source;
+   GLint step;
+   GLint threshold;
+   GLint gain;
+   GLint target;
+   GLint read_target;
+   GLint viewport[4];
+   GLint program;
+   GLint active_texture;
+   GLint texture;
+   GLint buffer;
+   GLfloat clear[4];
+   unsigned dims;
+   GLboolean scissor;
+   bool failed;
+   bool core;
+};
+
+static GLuint gl_menu_bloom_shader(GLenum type, const char *prefix,
+      const char *body)
+{
+   const GLchar *src[2];
+   GLint ok = 0;
+   GLuint shader = glCreateShader(type);
+   src[0] = prefix;
+   src[1] = body;
+   glShaderSource(shader, 2, src, NULL);
+   glCompileShader(shader);
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
+   if (!ok)
+   {
+      glDeleteShader(shader);
+      return 0;
+   }
+   return shader;
+}
+
+static bool gl_menu_bloom_program(gl_menu_bloom_t *b, bool core, bool es)
+{
+   static const char vertex[] =
+      "IN vec2 Position; OUT vec2 uv;"
+      "void main(){uv=Position*0.5+0.5;gl_Position=vec4(Position,0.,1.);}";
+   static const char fragment[] =
+      "IN vec2 uv;uniform sampler2D Source;uniform vec2 Step;"
+      "uniform float Threshold;uniform float Gain;"
+      "vec3 light(vec2 p){return max(TEX(Source,p).rgb-Threshold,0.);}"
+      "void main(){vec3 c=light(uv);if(dot(Step,Step)>0.){c*=.227027;"
+      "c+=(light(uv+Step*1.384615)+light(uv-Step*1.384615))*.316216;"
+      "c+=(light(uv+Step*3.230769)+light(uv-Step*3.230769))*.0702703;}"
+      "COLOR=vec4(c*Gain,0.);}";
+   static const GLfloat quad[8] = {-1,-1, 1,-1, -1,1, 1,1};
+   const char *vp = core ? (es
+      ? "#version 300 es\n#define IN in\n#define OUT out\n"
+      : "#version 150\n#define IN in\n#define OUT out\n")
+      : "#define IN attribute\n#define OUT varying\n";
+   const char *fp = core ? (es
+      ? "#version 300 es\nprecision mediump float;\n#define IN in\n#define TEX texture\n#define COLOR FragColor\nout vec4 FragColor;\n"
+      : "#version 150\n#define IN in\n#define TEX texture\n#define COLOR FragColor\nout vec4 FragColor;\n")
+      : (es
+      ? "precision mediump float;\n#define IN varying\n#define TEX texture2D\n#define COLOR gl_FragColor\n"
+      : "#define IN varying\n#define TEX texture2D\n#define COLOR gl_FragColor\n");
+   GLuint vs = gl_menu_bloom_shader(GL_VERTEX_SHADER, vp, vertex);
+   GLuint fs = gl_menu_bloom_shader(GL_FRAGMENT_SHADER, fp, fragment);
+   GLint ok  = 0;
+   if (vs && fs)
+   {
+      b->prog = glCreateProgram();
+      glAttachShader(b->prog, vs);
+      glAttachShader(b->prog, fs);
+      glBindAttribLocation(b->prog, 0, "Position");
+      glLinkProgram(b->prog);
+      glGetProgramiv(b->prog, GL_LINK_STATUS, &ok);
+   }
+   if (vs)
+      glDeleteShader(vs);
+   if (fs)
+      glDeleteShader(fs);
+   if (!ok)
+      return false;
+   b->source    = glGetUniformLocation(b->prog, "Source");
+   b->step      = glGetUniformLocation(b->prog, "Step");
+   b->threshold = glGetUniformLocation(b->prog, "Threshold");
+   b->gain      = glGetUniformLocation(b->prog, "Gain");
+   glGenBuffers(1, &b->vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
+   glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+#ifndef HAVE_OPENGLES2
+   if (core)
+   {
+      glGenVertexArrays(1, &b->vao);
+      if (!b->vao)
+         return false;
+   }
+#endif
+   return b->vbo != 0;
+}
+
+void gl_menu_bloom_free(gl_menu_bloom_t **bloom)
+{
+   gl_menu_bloom_t *b = *bloom;
+   if (!b)
+      return;
+   glDeleteTextures(2, b->tex);
+   glDeleteFramebuffers(2, b->fbo);
+#ifndef HAVE_OPENGLES2
+   if (b->vao)
+      glDeleteVertexArrays(1, &b->vao);
+#endif
+   if (b->vbo)
+      glDeleteBuffers(1, &b->vbo);
+   if (b->prog)
+      glDeleteProgram(b->prog);
+   free(b);
+   *bloom = NULL;
+}
+
+static void gl_menu_bloom_restore(gl_menu_bloom_t *b)
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, b->target);
+#ifndef HAVE_OPENGLES2
+   if (b->core)
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, b->read_target);
+#endif
+   glViewport(b->viewport[0], b->viewport[1],
+         b->viewport[2], b->viewport[3]);
+   glClearColor(b->clear[0], b->clear[1], b->clear[2], b->clear[3]);
+   glBindBuffer(GL_ARRAY_BUFFER, b->buffer);
+   glUseProgram(b->program);
+   glBindTexture(GL_TEXTURE_2D, b->texture);
+   glActiveTexture(b->active_texture);
+   if (b->scissor)
+      glEnable(GL_SCISSOR_TEST);
+}
+
+unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
+      unsigned dims, bool core, bool es)
+{
+   gl_menu_bloom_t *b = *bloom;
+   unsigned w = VIDEO_SCALE_W(dims);
+   unsigned h = VIDEO_SCALE_H(dims);
+   unsigned i, small;
+   if (!w || !h)
+      return 0;
+#ifndef HAVE_OPENGLES
+   if (!glCreateShader || !glGenFramebuffers)
+      return 0;
+#endif
+   if (!b && !(b = *bloom = (gl_menu_bloom_t*)calloc(1, sizeof(*b))))
+      return 0;
+   if (b->failed)
+      return 0;
+   small = menu_bloom_dims(dims);
+   w = VIDEO_SCALE_W(small);
+   h = VIDEO_SCALE_H(small);
+   b->core = core;
+   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &b->target);
+#ifndef HAVE_OPENGLES2
+   if (b->core)
+      glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &b->read_target);
+#endif
+   glGetIntegerv(GL_VIEWPORT, b->viewport);
+   glGetIntegerv(GL_CURRENT_PROGRAM, &b->program);
+   glGetIntegerv(GL_ACTIVE_TEXTURE, &b->active_texture);
+   glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &b->buffer);
+   glGetFloatv(GL_COLOR_CLEAR_VALUE, b->clear);
+   b->scissor = glIsEnabled(GL_SCISSOR_TEST);
+   glActiveTexture(GL_TEXTURE0);
+   glGetIntegerv(GL_TEXTURE_BINDING_2D, &b->texture);
+   glDisable(GL_SCISSOR_TEST);
+   if (!b->prog && !gl_menu_bloom_program(b, core, es))
+      goto error;
+   if (small != b->dims)
+   {
+      glDeleteTextures(2, b->tex);
+      glDeleteFramebuffers(2, b->fbo);
+      glGenTextures(2, b->tex);
+      glGenFramebuffers(2, b->fbo);
+      for (i = 0; i < 2; i++)
+      {
+         glBindTexture(GL_TEXTURE_2D, b->tex[i]);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+         glBindFramebuffer(GL_FRAMEBUFFER, b->fbo[i]);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+               GL_TEXTURE_2D, b->tex[i], 0);
+         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            goto error;
+      }
+      b->dims = small;
+   }
+   glBindFramebuffer(GL_FRAMEBUFFER, b->fbo[0]);
+   glViewport(0, 0, w, h);
+   glClearColor(0, 0, 0, 0);
+   glClear(GL_COLOR_BUFFER_BIT);
+   return small;
+error:
+   b->failed = true;
+   gl_menu_bloom_restore(b);
+   return 0;
+}
+
+void gl_menu_bloom_end(gl_menu_bloom_t *b, unsigned dims)
+{
+   unsigned w = VIDEO_SCALE_W(b->dims);
+   unsigned h = VIDEO_SCALE_H(b->dims);
+   unsigned i;
+   GLint enabled = 0, buffer = 0, size = 0, type = 0, normalized = 0, stride = 0;
+#ifndef HAVE_OPENGLES2
+   GLint vao = 0;
+   GLint sampler = 0;
+   bool sampler_bound = false;
+#endif
+   void *pointer = NULL;
+#ifndef HAVE_OPENGLES2
+   if (b->core)
+   {
+      glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao);
+      glBindVertexArray(b->vao);
+   }
+   else
+#endif
+   {
+      glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled);
+      glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer);
+      glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_SIZE, &size);
+      glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_TYPE, &type);
+      glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, &normalized);
+      glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &stride);
+      glGetVertexAttribPointerv(0, GL_VERTEX_ATTRIB_ARRAY_POINTER, &pointer);
+   }
+   glDisable(GL_BLEND);
+   glUseProgram(b->prog);
+   glUniform1i(b->source, 0);
+   glActiveTexture(GL_TEXTURE0);
+#ifndef HAVE_OPENGLES2
+   if (b->core
+#ifndef HAVE_OPENGLES
+         && glBindSampler
+#endif
+      )
+   {
+      glGetIntegerv(GL_SAMPLER_BINDING, &sampler);
+      glBindSampler(0, 0);
+      sampler_bound = true;
+   }
+#endif
+   glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
+   glEnableVertexAttribArray(0);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+   for (i = 0; i < 3; i++)
+   {
+      glBindFramebuffer(GL_FRAMEBUFFER, i == 2 ? (GLuint)b->target : b->fbo[1 - i]);
+      glBindTexture(GL_TEXTURE_2D, b->tex[i == 1 ? 1 : 0]);
+      glUniform2f(b->step, i == 0 ? 2.0f / w : 0.0f,
+            i == 1 ? 2.0f / h : 0.0f);
+      glUniform1f(b->threshold, i == 0 ? 0.20f : 0.0f);
+      glUniform1f(b->gain, i == 2 ? 0.75f : 1.0f);
+      if (i == 2)
+      {
+         glViewport(0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+         glEnable(GL_BLEND);
+         glBlendFunc(GL_ONE, GL_ONE);
+      }
+      else
+         glViewport(0, 0, w, h);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   }
+#ifndef HAVE_OPENGLES2
+   if (sampler_bound)
+      glBindSampler(0, sampler);
+   if (b->core)
+      glBindVertexArray(vao);
+   else
+#endif
+   {
+      glBindBuffer(GL_ARRAY_BUFFER, buffer);
+      glVertexAttribPointer(0, size, type, normalized, stride, pointer);
+      if (!enabled)
+         glDisableVertexAttribArray(0);
+   }
+   gl_menu_bloom_restore(b);
+}
+#endif
+
 #ifdef HAVE_GL_FRAME_MEM
 #include <gfx/gl_capabilities.h>
 

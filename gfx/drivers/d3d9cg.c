@@ -798,14 +798,8 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
             /* Set uniforms after binding. */
             {
-               static float t = 0.0f;
+               float t = disp_get_ptr()->effect_time;
                CGparameter param;
-               t += 0.01f;
-               /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-                * exactly representable up to t ~ 167772 (where 0.5*ulp first
-                * exceeds 0.01), so 65536 has wide margin and wraps roughly
-                * every 30 h of cumulative menu time, making the discontinuity
-                * effectively unobservable. */
                if (t > 65536.0f)
                   t -= 65536.0f;
 
@@ -1215,10 +1209,9 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
          draw->coords->vertices = ca->vertices;
 
-         /* Set pipeline blend state — ribbon uses multiplicative blend
-          * (DESTCOLOR + ONE) matching D3D11's blend_pipeline. */
          IDirect3DDevice9_SetRenderState(d3d->dev,
-               D3DRS_SRCBLEND,  D3DBLEND_DESTCOLOR);
+               D3DRS_SRCBLEND, draw->pipeline_id == VIDEO_SHADER_MENU
+                  ? D3DBLEND_SRCALPHA : D3DBLEND_DESTCOLOR);
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_DESTBLEND, D3DBLEND_ONE);
          IDirect3DDevice9_SetRenderState(d3d->dev,
@@ -3319,6 +3312,38 @@ static bool d3d9_cg_views_ps_make(d3d9_video_t *d3d, unsigned i,
 #define D3D9V_CHAINS_FREE(d, first) ((void)0)
 #define D3D9V_PASS(p, d, c, r, cut, again) ((void)0)
 #include "../common/d3d9_views.h"
+
+#include "d3d_shaders/bloom_sm3.hlsl.h"
+
+static bool d3d9_cg_bloom_ps_make(d3d9_video_t *d3d)
+{
+   CGprogram prog;
+   CGparameter param;
+   cg_renderchain_t *chain = (cg_renderchain_t*)d3d->renderchain_data;
+   if (!chain)
+      return false;
+   cgGetError();
+   if (!(prog = cgCreateProgram(chain->cgCtx, CG_SOURCE, bloom_ps_source,
+               CG_PROFILE_PS_3_0, "main_fragment", NULL)))
+      return false;
+   cgD3D9LoadProgram(prog, CG_FALSE, 0);
+   if (cgGetError() != CG_NO_ERROR)
+   {
+      cgDestroyProgram(prog);
+      return false;
+   }
+   param                = cgGetNamedParameter(prog, "p");
+   d3d->bloom.ps     = prog;
+   d3d->bloom.ps_reg = param
+      ? (int)cgGetParameterResourceIndex(param) : -1;
+   return true;
+}
+
+#define D3D9B_FN(name) d3d9_cg_##name
+#define D3D9B_FREE(d) cgDestroyProgram((CGprogram)(d)->bloom.ps)
+#define D3D9B_BIND(d) cgD3D9BindProgram((CGprogram)(d)->bloom.ps)
+#include "../common/d3d9_bloom.h"
+
 #endif
 
 static uint32_t d3d9_cg_get_flags(void *data)
@@ -3365,6 +3390,7 @@ static void d3d9_cg_deinitialize(d3d9_video_t *d3d)
 #ifdef D3D9_VIEWS
    /* Its targets are in the default pool, which a reset drops, and its
     * programs in the chain's context. */
+   d3d9_cg_bloom_free(d3d);
    d3d9_cg_views_release(d3d);
 #endif
 
@@ -5394,5 +5420,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
    true,
    true,
    gfx_display_d3d9_cg_scissor_begin,
-   gfx_display_d3d9_cg_scissor_end
+   gfx_display_d3d9_cg_scissor_end,
+   NULL,
+#ifdef D3D9_VIEWS
+   d3d9_cg_bloom_begin,
+   d3d9_cg_bloom_end
+#else
+   NULL, NULL
+#endif
 };

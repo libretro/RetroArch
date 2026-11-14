@@ -16,6 +16,7 @@
  */
 #include <math.h>
 
+#include <features/features_cpu.h>
 #include <string/stdstring.h>
 
 #include "gfx_display.h"
@@ -868,6 +869,7 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
 #ifdef HAVE_SHADERPIPELINE
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
+   retro_time_t now;
 
    draw.pos          = VIDEO_POS_PACK(0, 0);
    draw.texture      = md->texture;
@@ -909,17 +911,34 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
          break;
    }
 
+   now = cpu_features_get_time_usec();
+   if (!p_disp->effect_start_time || now < p_disp->effect_start_time)
+      p_disp->effect_start_time = now;
+   p_disp->effect_time = (float)fmod(
+         (now - p_disp->effect_start_time) * 0.0000006, 65536.0);
    p_disp->effect_mesh = mesh;
+   if (     md->program == GFX_MESH_PROGRAM_RIBBON
+         && dispctx->bloom_begin && dispctx->bloom_end)
+   {
+      unsigned bloom_dims;
+      unsigned output_dims = gfx_display_output_dims(p_disp, video_dims);
+      gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
+      bloom_dims = dispctx->bloom_begin(userdata, output_dims);
+      if (bloom_dims)
+      {
+         draw.dims = bloom_dims;
+         if (dispctx->draw_pipeline)
+            dispctx->draw_pipeline(&draw, p_disp, userdata, bloom_dims);
+         dispctx->draw(&draw, userdata, bloom_dims);
+         dispctx->bloom_end(userdata, output_dims);
+         draw.dims = video_dims;
+      }
+   }
    if (dispctx->draw_pipeline)
       dispctx->draw_pipeline(&draw, p_disp, userdata, video_dims);
    gfx_display_draw(dispctx, &draw, userdata, video_dims);
    p_disp->effect_mesh = NULL;
 
-   /* Wrapped where the step is still exact: 0.01 stays representable
-    * to about 167772, and a wrap every 30 hours of menu is not seen */
-   p_disp->effect_time += 0.01f;
-   if (p_disp->effect_time > 65536.0f)
-      p_disp->effect_time -= 65536.0f;
 #endif
 }
 

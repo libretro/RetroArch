@@ -207,8 +207,13 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 #  define METAL_HDR_AVAILABLE 0
 #endif
 
+#include "../common/menu_bloom.h"
+
 @interface Context : NSObject
 
+@property (nonatomic, readonly) unsigned bloomDims;
+- (unsigned)beginBloom:(unsigned)dims;
+- (void)endBloom:(unsigned)dims;
 @property (nonatomic, readonly) id<MTLDevice> device;
 @property (nonatomic, readonly) id<MTLLibrary> library;
 @property (nonatomic, readonly) void *frameSDRPipeline;
@@ -1684,6 +1689,14 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
 @implementation Context
 {
+   MTLRenderPassDescriptor *_renderPass;
+   MTLRenderPassDescriptor *_bloomRestore;
+   id<MTLTexture> _bloomTex[2];
+   id<MTLRenderPipelineState> _bloomState;
+   id<MTLRenderPipelineState> _bloomAddState;
+   MTLPixelFormat _bloomFormat;
+   unsigned _bloomDims;
+   BOOL _bloomFailed;
    void *_frameSDRPipeline;
    id<MTLCommandQueue> _commandQueue;
    CAMetalLayer *_layer;
@@ -1906,6 +1919,12 @@ static void buffer_chain_discard(buffer_chain_t *chain);
          [(id)_statesF16[i][j] release];
       }
    }
+   [_renderPass release];
+   [_bloomRestore release];
+   [_bloomTex[0] release];
+   [_bloomTex[1] release];
+   [_bloomState release];
+   [_bloomAddState release];
    [(id)_clearState release];
    [(id)_clearStateF16 release];
    [(id)_linearStateF16 release];
@@ -2384,7 +2403,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
    psd.label                       = @"ribbon_blend";
    ca.blendingEnabled              = YES;
-   ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
+   ca.sourceRGBBlendFactor         = MTLBlendFactorSourceAlpha;
    ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
    _states[VIDEO_SHADER_MENU][1]   = [self sdrState:psd error:&err];
    _statesF16[VIDEO_SHADER_MENU][1] = [self twinF16:psd];
@@ -3692,6 +3711,7 @@ static float metal_hdr_pq_to_nits(float pq)
          rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
          rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
          rpd.colorAttachments[0].texture    = _sdrOverlayTex;
+         RARCH_ASSIGN(_renderPass, rpd);
          RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:rpd]);
          _rce.label = @"SDR overlay encoder (HDR frame)";
          _sdrOverlayDirty = true;
@@ -3710,14 +3730,110 @@ static float metal_hdr_pq_to_nits(float pq)
       rpd.colorAttachments[0].clearColor = _clearColor;
       rpd.colorAttachments[0].loadAction = _drawableBegun
          ? MTLLoadActionLoad : MTLLoadActionClear;
+      rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
       rpd.colorAttachments[0].texture = drawable.texture;
       _drawableBegun = true;
       if (_captureEnabled)
          RARCH_ASSIGN(_backBuffer, drawable.texture);
+      RARCH_ASSIGN(_renderPass, rpd);
       RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:rpd]);
       _rce.label = @"Frame command encoder";
    }
    return _rce;
+}
+
+- (unsigned)bloomDims { return _bloomDims; }
+
+- (unsigned)beginBloom:(unsigned)dims
+{
+   unsigned small = menu_bloom_dims(dims);
+   id<MTLRenderCommandEncoder> encoder = self.rce;
+   MTLPixelFormat format = _renderPass.colorAttachments[0].texture.pixelFormat;
+   if (!encoder || !small || _bloomFailed)
+      return 0;
+   if (!_bloomState || _bloomFormat != format)
+   {
+      MTLRenderPipelineDescriptor *psd = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
+      psd.vertexFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_vertex"]);
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_fragment"]);
+      psd.colorAttachments[0].pixelFormat = format;
+      RARCH_RELEASE_NIL(_bloomState);
+      RARCH_RELEASE_NIL(_bloomAddState);
+      _bloomState = [_device newRenderPipelineStateWithDescriptor:psd error:nil];
+      psd.colorAttachments[0].blendingEnabled = YES;
+      psd.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+      psd.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+      psd.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+      psd.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+      _bloomAddState = [_device newRenderPipelineStateWithDescriptor:psd error:nil];
+      if (!_bloomState || !_bloomAddState)
+      {
+         _bloomFailed = YES;
+         return 0;
+      }
+      _bloomFormat = format;
+   }
+   if (!_bloomTex[0] || _bloomTex[0].width != VIDEO_SCALE_W(small)
+         || _bloomTex[0].height != VIDEO_SCALE_H(small)
+         || _bloomTex[0].pixelFormat != format)
+   {
+      unsigned i;
+      MTLTextureDescriptor *td = [MTLTextureDescriptor
+         texture2DDescriptorWithPixelFormat:format width:VIDEO_SCALE_W(small)
+         height:VIDEO_SCALE_H(small) mipmapped:NO];
+      td.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+      td.storageMode = MTLStorageModePrivate;
+      for (i = 0; i < 2; i++)
+      {
+         RARCH_RELEASE_NIL(_bloomTex[i]);
+         _bloomTex[i] = [_device newTextureWithDescriptor:td];
+         if (!_bloomTex[i])
+         {
+            _bloomFailed = YES;
+            return 0;
+         }
+      }
+   }
+   RARCH_ASSIGN(_bloomRestore, _renderPass);
+   _bloomDims = small;
+   [self beginLayer:_bloomTex[0]];
+   return small;
+}
+
+- (void)endBloom:(unsigned)dims
+{
+   unsigned i;
+   unsigned small = _bloomDims;
+   [self endLayer];
+   for (i = 0; i < 3; i++)
+   {
+      id<MTLRenderCommandEncoder> encoder;
+      MTLViewport vp = {0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small), 0, 1};
+      simd_float4 params = simd_make_float4(
+            i == 0 ? 2.0f / VIDEO_SCALE_W(small) : 0.0f,
+            i == 1 ? 2.0f / VIDEO_SCALE_H(small) : 0.0f,
+            i == 0 ? 0.20f : 0.0f, i == 2 ? 0.75f : 1.0f);
+      if (i == 2)
+      {
+         _bloomRestore.colorAttachments[0].loadAction = MTLLoadActionLoad;
+         RARCH_ASSIGN(_renderPass, _bloomRestore);
+         RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:_renderPass]);
+         vp.width = VIDEO_SCALE_W(dims);
+         vp.height = VIDEO_SCALE_H(dims);
+      }
+      else
+         [self beginLayer:_bloomTex[1 - i]];
+      encoder = _rce;
+      [encoder setViewport:vp];
+      [encoder setRenderPipelineState:i == 2 ? _bloomAddState : _bloomState];
+      [encoder setFragmentTexture:_bloomTex[i == 1 ? 1 : 0] atIndex:0];
+      [encoder setFragmentBytes:&params length:sizeof(params) atIndex:0];
+      [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+      if (i != 2)
+         [self endLayer];
+   }
+   _bloomDims = 0;
+   RARCH_RELEASE_NIL(_bloomRestore);
 }
 
 - (void)beginLayer:(id<MTLTexture>)tex
@@ -3735,6 +3851,7 @@ static float metal_hdr_pq_to_nits(float pq)
    rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
    rpd.colorAttachments[0].texture     = tex;
+   RARCH_ASSIGN(_renderPass, rpd);
    RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:rpd]);
    _rce.label = @"Views UI layer";
 }
@@ -3746,6 +3863,7 @@ static float metal_hdr_pq_to_nits(float pq)
       [_rce endEncoding];
       RARCH_RELEASE_NIL(_rce);
    }
+   RARCH_RELEASE_NIL(_renderPass);
 }
 
 - (void)resetRenderViewport:(ViewportResetMode)mode
@@ -3837,6 +3955,8 @@ static float metal_hdr_pq_to_nits(float pq)
       [_rce endEncoding];
       RARCH_RELEASE_NIL(_rce);
    }
+
+   RARCH_RELEASE_NIL(_renderPass);
 
    id<CAMetalDrawable> drawable = self.nextDrawable;
 #ifdef HAVE_RECORD_METAL
@@ -4233,6 +4353,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    uint32_t _meshId[4];
    uint64_t _meshLast[4];
    uint64_t _meshDraws;
+   id<MTLBuffer> _ribbonVbo;
+   uint32_t _ribbonMeshId;
    /* Sampled by a quad drawn with no texture: solid colour */
    Texture *_white;
 }
@@ -4258,6 +4380,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
       [_meshVbo[i] release];
       [_meshIbo[i] release];
    }
+   [_ribbonVbo release];
    [_meshState release];
    [_meshStateF16 release];
    [_white release];
@@ -4371,7 +4494,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 
    /* The effects' clock, one step ahead, as this driver has always
     * drawn them */
-   _uniforms.time = disp_get_ptr()->effect_time + 0.01f;
+   _uniforms.time = disp_get_ptr()->effect_time;
    if (_uniforms.time > 65536.0f)
       _uniforms.time -= 65536.0f;
 }
@@ -4596,28 +4719,50 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 {
    unsigned i;
    BufferRange range;
-   NSUInteger vertex_count;
+   NSUInteger vertex_count = draw->coords->vertices;
    SpriteVertex *pv;
    const float *vertex    = draw->coords->vertex ?: MenuDisplay.defaultVertices;
    const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;
    const float *color     = draw->coords->color ?: MenuDisplay.defaultColor;
-   NSUInteger needed      = draw->coords->vertices * sizeof(SpriteVertex);
-   if (![_context allocRange:&range length:needed])
-      return;
-
-   vertex_count           = draw->coords->vertices;
-   pv                     = (SpriteVertex *)range.data;
-
-   for (i = 0; i < draw->coords->vertices; i++, pv++)
+   NSUInteger needed      = vertex_count * sizeof(SpriteVertex);
+   if (draw->pipeline_id == VIDEO_SHADER_MENU || draw->pipeline_id == VIDEO_SHADER_MENU_2)
    {
-      pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
-      vertex += 2;
-
-      pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
-      tex_coord += 2;
-
-      pv->color = rgba16_pack(color);
-      color += 4;
+      const gfx_display_mesh_t *mesh = disp_get_ptr()->effect_mesh;
+      if (!mesh)
+         return;
+      if (!_ribbonVbo || _ribbonMeshId != mesh->id)
+      {
+         RARCH_RELEASE_NIL(_ribbonVbo);
+         _ribbonVbo = [_context.device newBufferWithLength:needed
+            options:MTLResourceStorageModeShared];
+         if (!_ribbonVbo)
+            return;
+         pv = (SpriteVertex *)_ribbonVbo.contents;
+         for (i = 0; i < vertex_count; i++, pv++, vertex += 2)
+         {
+            pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
+            pv->texCoord = simd_make_float2(0.0f, 0.0f);
+            pv->color = RGBA16_WHITE;
+         }
+         _ribbonMeshId = mesh->id;
+      }
+      range.buffer = _ribbonVbo;
+      range.offset = 0;
+   }
+   else
+   {
+      if (![_context allocRange:&range length:needed])
+         return;
+      pv = (SpriteVertex *)range.data;
+      for (i = 0; i < vertex_count; i++, pv++)
+      {
+         pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
+         vertex += 2;
+         pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
+         tex_coord += 2;
+         pv->color = rgba16_pack(color);
+         color += 4;
+      }
    }
 
    id<MTLRenderCommandEncoder> rce = _context.rce;
@@ -4638,8 +4783,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 
    MTLViewport vp = {
       .originX = VIDEO_POS_X(draw->pos),
-      .originY = VIDEO_POS_FLIP_Y(VIDEO_SCALE_H(_context.viewport->full_dims),
-            draw->pos, draw->dims),
+      .originY = _context.bloomDims ? 0 : VIDEO_POS_FLIP_Y(
+            VIDEO_SCALE_H(_context.viewport->full_dims), draw->pos, draw->dims),
       .width   = VIDEO_SCALE_W(draw->dims),
       .height  = VIDEO_SCALE_H(draw->dims),
       .znear   = 0,
@@ -4647,7 +4792,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    };
    [rce setViewport:vp];
 
-   if (_useScissorRect)
+   if (_useScissorRect && !_context.bloomDims)
       [rce setScissorRect:_scissorRect];
 
    switch (draw->pipeline_id)
@@ -4939,6 +5084,18 @@ static bool gfx_display_metal_mesh_draw(void *data, unsigned video_dims,
       return false;
    return [md.display drawMesh:mesh mvp:mvp texture:texture tint:tint
       dims:video_dims] ? true : false;
+}
+
+static unsigned gfx_display_metal_bloom_begin(void *data, unsigned dims)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return [md.context beginBloom:dims];
+}
+
+static void gfx_display_metal_bloom_end(void *data, unsigned dims)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   [md.context endBloom:dims];
 }
 
 static void gfx_display_metal_draw_pipeline(
@@ -10722,5 +10879,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    true,
    gfx_display_metal_scissor_begin,
    gfx_display_metal_scissor_end,
-   gfx_display_metal_mesh_draw
+   gfx_display_metal_mesh_draw,
+   gfx_display_metal_bloom_begin,
+   gfx_display_metal_bloom_end
 };
