@@ -873,6 +873,13 @@ for tu in libretro-common/crypto/crypto.c libretro-common/crypto/kdf.c libretro-
    android_clang "android clang/aarch64: $(basename $tu)" "$ANDROID_NET" "$tu"
 done
 android_clang "android clang/aarch64: camera" "-Itools/platform_stubs/android -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_CAMERA -DRARCH_INTERNAL -include tools/platform_stubs/android/jni.h -include frontend/drivers/platform_unix.h -include verbosity.h" camera/drivers/android.c
+# core_signature_io.c's Android branch, otherwise compiled only inside
+# griffin on the Android job
+CORESIG_ANDROID="-Itools/platform_stubs/android -DHAVE_CRYPTO -DHAVE_DYNAMIC -DHAVE_CORE_SIGNATURES -DHAVE_CORE_LOAD_CHECK -DRARCH_INTERNAL -D_GNU_SOURCE -include tools/platform_stubs/android/jni.h"
+for tu in core_signature.c core_signature_io.c core_trust_runtime.c core_install_check.c; do
+   android_clang "android clang/aarch64: $tu" "$CORESIG_ANDROID" "$tu"
+   check "android: $tu" "-DANDROID -D__ANDROID__ $CORESIG_ANDROID $CDECL" "$tu"
+done
 # rwebaudio is its own translation unit in the emscripten build, not
 # part of griffin's, and nothing else compiles it at all.
 check "emscripten: rwebaudio"  "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN -DHAVE_RWEBAUDIO $CDECL" audio/drivers/rwebaudio.c

@@ -110,6 +110,7 @@
 
 #if defined(ANDROID)
 #include <android/api-level.h>
+#include "frontend/drivers/platform_unix.h"
 #endif
 
 #ifdef HAVE_PRESENCE
@@ -250,6 +251,10 @@
 
 #ifdef HAVE_GAME_AI
 #include "ai/game_ai.h"
+#endif
+
+#ifdef HAVE_CORE_SIGNATURES
+#include "core_trust_runtime.h"
 #endif
 
 /* RetroArch provides its own entry point (main, below) and runloop,
@@ -5677,6 +5682,11 @@ bool command_event(enum event_command cmd, void *data)
          menu_first_run_download_start();
 #endif
          break;
+      case CMD_EVENT_CORE_SIGNATURE_CHECK_OFF:
+#ifdef HAVE_CORE_SIGNATURES
+         core_trust_runtime_set_checks(false);
+#endif
+         break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          /* Same as at quit: the companion's live layout first. */
          ui_companion_event_command(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
@@ -7063,6 +7073,9 @@ void main_exit(void *args)
    /* A blocking cloud sync driver's worker: one bounded wait on the
     * way out, so no driver call runs into the teardown below. */
    cloud_sync_deinit(1000);
+#endif
+#ifdef HAVE_CORE_SIGNATURES
+   core_trust_runtime_deinit();
 #endif
 
    video_driver_restore_cached(settings);
@@ -9990,6 +10003,22 @@ bool retroarch_main_init_core(int argc, char *argv[],
       retroarch_init_task_queue();
    else
       retroarch_task_queue_configure();
+#ifdef HAVE_CORE_SIGNATURES
+   /* Before the first core is opened, -L's and launcher intents' too */
+   {
+      char core_ext[16];
+#ifdef ANDROID
+      /* The app's own folder, never the one an intent extra names: none,
+       * and no seed this launch, when it couldn't be read */
+      const char *seed_dir = android_app_cores_dir();
+#else
+      const char *seed_dir = g_defaults.dirs[DEFAULT_DIR_CORE];
+#endif
+      if (!frontend_driver_get_core_extension(core_ext, sizeof(core_ext)))
+         core_ext[0] = '\0';
+      core_trust_runtime_init(NULL, seed_dir, core_ext);
+   }
+#endif
 
    {
       const char    *fullpath  = p_rarch->path_content;
@@ -10220,6 +10249,9 @@ bool retroarch_main_init_drivers(bool staged,
 
    drivers_init(settings, init_flags,
          (enum driver_lifetime_flags)init_lifetime, verbosity_enabled);
+#ifdef HAVE_CORE_SIGNATURES
+   core_trust_runtime_notify();
+#endif
 #ifdef HAVE_COMMAND
    input_driver_refresh_command(input_st, settings);
 #endif

@@ -589,6 +589,10 @@ void frontend_android_get_version_sdk(int32_t *sdk);
  * @path: the checked path is then the opened one. */
 bool android_core_path_resolve(const char *path, char *s, size_t len);
 
+/* ApplicationInfo.dataDir's cores folder, which no intent extra moves;
+ * NULL when it couldn't be read */
+const char *android_app_cores_dir(void);
+
 bool is_screen_reader_enabled(void);
 
 /* Pushes the live values of the window-affecting settings to the

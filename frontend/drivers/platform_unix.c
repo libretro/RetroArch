@@ -140,6 +140,8 @@ static char android_core_dirs[2][DIR_MAX_LENGTH];
  * Play installs move the code folder mid-session. */
 static char android_install_dir[DIR_MAX_LENGTH];
 static char android_code_prefix[NAME_MAX_LENGTH];
+/* <dataDir>/cores, whatever DATADIR says */
+static char android_cores_dir[PATH_MAX_LENGTH];
 static char android_config_path[PATH_MAX_LENGTH];
 /* Set in android_app_create on the UI thread, so the
  * permissionsResolved upcall can reach the app state before the
@@ -1547,6 +1549,10 @@ static void android_env_derive_application_info(JNIEnv *env, jobject activity)
       __android_log_print(ANDROID_LOG_INFO,
          "RetroArch", "[ENV] Core folder: \"%s\".\n", android_core_dirs[i]);
    }
+   *android_cores_dir = '\0';
+   if (*android_core_dirs[0])
+      fill_pathname_join_special(android_cores_dir, android_core_dirs[0],
+            "cores", sizeof(android_cores_dir));
    if (!android_env_derive_install_dir(env, appinfo, appinfo_class))
    {
       *android_install_dir = '\0';
@@ -1607,6 +1613,11 @@ bool android_core_path_resolve(const char *path, char *s, size_t len)
       return false;
    }
    return true;
+}
+
+const char *android_app_cores_dir(void)
+{
+   return *android_cores_dir ? android_cores_dir : NULL;
 }
 
 /* getPackageManager().getPackageInfo(getPackageName(), 0).versionCode. */

@@ -5285,9 +5285,15 @@ static void rgui_render_messagebox(
    size_t wrapped_len;
    uint16_t *frame_buf_data   = rgui->frame_buf.data;
    struct menu_state *menu_st = menu_state_get_ptr();
-   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
+   menu_dialog_buttons_t buttons;
+   int button_w[MENU_DIALOG_BUTTONS_MAX];
+   int button_x[MENU_DIALOG_BUTTONS_MAX];
+   unsigned button_rows       = 0;
+   int row_step               = 0;
+   int rows_y                 = 0;
 
    wrapped_message[0]         = '\0';
+   menu_dialog_get_buttons(menu_st, &buttons);
 
    msg_len                    = strlen(message);
 
@@ -5328,13 +5334,49 @@ static void rgui_render_messagebox(
       glyphs_width          = MAX(glyphs_width, msglen);
    }
 
+   /* The buttons: a glyph either side of each label, two between */
+   if (buttons.count)
+   {
+      int stride = (int)rgui->font_width_stride;
+      /* The most glyphs a box on this framebuffer can be wide */
+      int fit    = ((int)fb_width - 15) / stride;
+      int need;
+      unsigned b;
+      for (b = 0; b < buttons.count; b++)
+         button_w[b] = ((int)utf8len(msg_hash_to_str(
+               (enum msg_hash_enums)buttons.label[b])) + 2) * stride;
+      need        = menu_dialog_buttons_layout(button_w, buttons.count,
+            stride * 2, 0, 0, NULL);
+      row_step    = (int)rgui->font_height_stride + 2;
+      button_rows = 1;
+      /* Wider than the widest box: one button per line */
+      if (need > fit * stride)
+      {
+         button_rows = buttons.count;
+         need        = 0;
+         for (b = 0; b < buttons.count; b++)
+            need     = MAX(need, button_w[b]);
+      }
+      if (need > (int)glyphs_width * stride)
+      {
+         int cells = (need + stride - 1) / stride;
+         if (cells > fit)
+            cells  = fit;
+         if (cells > (int)glyphs_width)
+         {
+            glyphs_width = (unsigned)cells;
+            width        = glyphs_width * stride - 1 + 6 + 10;
+         }
+      }
+   }
+
    height                   = (unsigned)(rgui->font_height_stride * line_count + 6 + 10);
    x                        = ((int)fb_width  - (int)width) / 2;
    y                        = ((int)fb_height - (int)height) / 2;
 
-   /* Extra room for confirm buttons */
-   if (confirm_dialog)
-      height               += rgui->font_height_stride * 2;
+   if (buttons.count)
+      height               += (unsigned)(row_step * (int)button_rows)
+            + rgui->font_height_stride;
 
    if (height > fb_height)
       height                = fb_height;
@@ -5342,6 +5384,12 @@ static void rgui_render_messagebox(
       x                     = 0;
    if (y < 0)
       y                     = 0;
+   /* The buttons make the box taller than it was centred for */
+   if (y + (int)height > (int)fb_height)
+      y                     = (int)fb_height - (int)height;
+   if (buttons.count)
+      rows_y                = y + (int)height - row_step * (int)button_rows
+            - (int)(rgui->font_height_stride / 2) - 2;
 
    if (frame_buf_data)
    {
@@ -5402,84 +5450,60 @@ static void rgui_render_messagebox(
           * framebuffer */
          if (text_y > (int)fb_height - 10 - (int)rgui->font_height_stride)
             break;
+         /* A box taller than the screen keeps its buttons */
+         if (buttons.count && text_y + (int)rgui->font_height_stride > rows_y)
+            break;
 
          rgui_blit_line(rgui, fb_width, text_x, text_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       }
 
-      if (confirm_dialog)
+      if (buttons.count)
       {
-         const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL);
-         const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
-         size_t str_back_width                  = strlen(str_back) * rgui->font_width_stride;
-         size_t str_ok_width                    = strlen(str_ok) * rgui->font_width_stride;
-         /* Every offset here is a whole number of framebuffer
-          * pixels: the half a glyph the padding used to be always
-          * appeared in pairs that added back up to one. The two
-          * that do not - the hit box's top edge and its height -
-          * are the halves the float arithmetic truncated away. */
-         unsigned icon_size                     = rgui->font_width_stride;
-         int icon_x                             = x + (int)(icon_size * 4);
-         int icon_y                             = (int)fb_height - y;
-         int cursor_x                           = icon_x - (int)icon_size;
-         int cursor_y                           = icon_y - (int)((icon_size + 1) / 2);
-         int cursor_w                           = (int)(icon_size * 2 + str_back_width);
-         int cursor_h                           = (int)((icon_size * 5) / 2);
+         int cursor_h = (int)rgui->font_height_stride;
+         int hover    = -1;
+         unsigned b;
 
-         /* Back */
-         if (     VIDEO_POS_X(rgui->pointer.pos) >= cursor_x
-               && VIDEO_POS_X(rgui->pointer.pos) <= cursor_x + cursor_w
-               && VIDEO_POS_Y(rgui->pointer.pos) >= cursor_y
-               && VIDEO_POS_Y(rgui->pointer.pos) <= cursor_y + cursor_h)
-         {
-            menu_st->dialog_st.confirm_hover_back = true;
-
-            rgui_fill_rect(frame_buf_data, fb_dims,
-                  cursor_x,
-                  cursor_y,
-                  cursor_w,
-                  cursor_h,
-                  rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
-                  (rgui->flags & RGUI_FLAG_BG_THICKNESS) ? true : false);
-         }
+         if (button_rows == 1)
+            menu_dialog_buttons_layout(button_w, buttons.count,
+                  (int)rgui->font_width_stride * 2, x + 8,
+                  (int)(glyphs_width * rgui->font_width_stride), button_x);
          else
-            menu_st->dialog_st.confirm_hover_back = false;
+            for (b = 0; b < buttons.count; b++)
+               button_x[b] = x + ((int)width - button_w[b]) / 2;
 
-         rgui_blit_line(rgui, fb_width, icon_x, icon_y, str_back,
-               (menu_st->dialog_st.confirm_hover_back)
-                     ? rgui->colors.hover_color
-                     : rgui->colors.normal_color,
-               rgui->colors.shadow_color);
-
-         /* OK */
-         icon_x  += (int)width - (int)(icon_size * 8) - (int)str_ok_width;
-
-         cursor_x = icon_x - (int)icon_size;
-         cursor_w = (int)(icon_size * 2 + str_ok_width);
-
-         if (     VIDEO_POS_X(rgui->pointer.pos) >= cursor_x
-               && VIDEO_POS_X(rgui->pointer.pos) <= cursor_x + cursor_w
-               && VIDEO_POS_Y(rgui->pointer.pos) >= cursor_y
-               && VIDEO_POS_Y(rgui->pointer.pos) <= cursor_y + cursor_h)
+         for (b = 0; b < buttons.count; b++)
          {
-            menu_st->dialog_st.confirm_hover_ok = true;
+            const char *str = msg_hash_to_str(
+                  (enum msg_hash_enums)buttons.label[b]);
+            int label_y     = rows_y
+                  + ((button_rows == 1) ? 0 : row_step * (int)b);
+            int cursor_y    = label_y - 2;
+            /* A button wider than the screen is lit where it shows */
+            int fill_x      = MAX(button_x[b], 0);
+            bool lit;
 
-            rgui_fill_rect(frame_buf_data, fb_dims,
-                  cursor_x,
-                  cursor_y,
-                  cursor_w,
-                  cursor_h,
-                  rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
-                  (rgui->flags & RGUI_FLAG_BG_THICKNESS) ? true : false);
+            if (     VIDEO_POS_X(rgui->pointer.pos) >= button_x[b]
+                  && VIDEO_POS_X(rgui->pointer.pos) <= button_x[b] + button_w[b]
+                  && VIDEO_POS_Y(rgui->pointer.pos) >= cursor_y
+                  && VIDEO_POS_Y(rgui->pointer.pos) <= cursor_y + cursor_h)
+               hover = (int)b;
+
+            lit = ((int)b == buttons.highlight) || ((int)b == hover);
+            if (lit)
+               rgui_fill_rect(frame_buf_data, fb_dims,
+                     fill_x, cursor_y, button_w[b] - (fill_x - button_x[b]),
+                     cursor_h,
+                     rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
+                     (rgui->flags & RGUI_FLAG_BG_THICKNESS) ? true : false);
+
+            rgui_blit_line(rgui, fb_width,
+                  button_x[b] + (int)rgui->font_width_stride, label_y, str,
+                  lit ? rgui->colors.hover_color : rgui->colors.normal_color,
+                  rgui->colors.shadow_color);
          }
-         else
-            menu_st->dialog_st.confirm_hover_ok = false;
 
-         rgui_blit_line(rgui, fb_width, icon_x, icon_y, str_ok,
-               (menu_st->dialog_st.confirm_hover_ok)
-                     ? rgui->colors.hover_color
-                     : rgui->colors.normal_color,
-               rgui->colors.shadow_color);
+         menu_dialog_set_hover(menu_st, hover);
       }
    }
 }

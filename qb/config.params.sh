@@ -88,6 +88,9 @@ C89_DISCORD=no
 # Crypto, TLS and network filesystems
 HAVE_CRYPTO=yes            # Cleanroom crypto library (libretro-common/crypto)
 HAVE_KEYCHAIN=yes          # Encrypt credentials in retroarch-keychain.cfg (needs HAVE_CRYPTO)
+HAVE_CORE_SIGNATURES=yes   # Check that cores come from libretro (needs HAVE_DYNAMIC and HAVE_CRYPTO)
+HAVE_CORE_LOAD_CHECK=no    # Check every core as it loads (needs HAVE_CORE_SIGNATURES)
+HAVE_CORE_SIGNING_TEST_KEY=no # Trust the public test signing key, never for a release (needs HAVE_CORE_SIGNATURES)
 HAVE_SSL=auto              # SSL support
 C89_SSL=no
 HAVE_RETROSSL=auto         # Use built-in TLS client on libretro-common/crypto (needs HAVE_CRYPTO)

@@ -95,6 +95,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef HAVE_CORE_SIGNATURES
+#include "../core_trust_runtime.h"
+#endif
+
 #ifdef HAVE_COCOATOUCH
 #include "../ui/drivers/cocoa/apple_platform.h"
 #include <compat/strl.h>
@@ -429,6 +433,11 @@ struct menu_state *menu_state_get_ptr(void)
    return &menu_driver_state;
 }
 
+static void menu_dialog_press(struct menu_state *menu_st, int idx);
+#ifdef HAVE_CORE_SIGNATURES
+static void menu_core_warning_text(char *s, size_t len);
+#endif
+
 static bool menu_should_pop_stack(const char *label)
 {
    /* > Info box */
@@ -563,6 +572,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          switch (entry->type)
          {
             case MENU_SETTING_ACTION_CORE_LOCK:
+            case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
                entry->setting_type  = ST_BOOL;
                break;
             default:
@@ -3793,7 +3803,8 @@ static enum action_iterate_type action_iterate_type(const char *label, struct me
    /* a combination being set by holding its buttons: over any list */
    if (input_entry_capture_running())
       return ITERATE_TYPE_ENTRY_CAPTURE;
-   if (menu_st->dialog_st.confirm_msg && menu_st->dialog_st.confirm_cmd)
+   if (     (menu_st->dialog_st.confirm_msg && menu_st->dialog_st.confirm_cmd)
+         || menu_st->dialog_st.button_count)
       return ITERATE_TYPE_CONFIRM;
    if (!strcmp(label, "info_screen"))
       return ITERATE_TYPE_INFO;
@@ -6083,7 +6094,8 @@ unsigned menu_event(
    unsigned ok_current                             =
             BIT256_GET_PTR(p_input, menu_ok_btn)
          || (   (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT)
-             && !menu_driver_state.dialog_st.confirm_cmd);
+             && !menu_driver_state.dialog_st.confirm_cmd
+             && !menu_driver_state.dialog_st.button_count);
    unsigned ok_trigger                             = ok_current & ~ok_old;
    unsigned ok_trigger_release                     = !ok_current && ok_old;
    static unsigned navigation_initial              = 0;
@@ -6854,6 +6866,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
    static uint16_t dy_start_up_max                 = 0;
    static uint16_t dy_start_down_max               = 0;
    static bool last_select_pressed                 = false;
+   static uint8_t press_epoch                      = 0;
    static bool last_cancel_pressed                 = false;
    static bool last_left_pressed                   = false;
    static bool last_right_pressed                  = false;
@@ -6941,6 +6954,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
             accel0                    = 0.0f;
             accel1                    = 0.0f;
             last_press_direction_time = 0;
+            press_epoch               = menu_st->dialog_st.button_epoch;
 
             /* If we are not currently showing the onscreen
              * keyboard or a message box, trigger a 'pointer
@@ -7235,15 +7249,26 @@ MENU_NOINLINE static int menu_input_post_iterate(
              * anywhere else cancels, so it cannot be left half-closed */
             unsigned confirm_cmd = menu_st->dialog_st.confirm_cmd;
             bool hover_ok        = menu_st->dialog_st.confirm_hover_ok;
+            int hover            = menu_st->dialog_st.button_hover;
 
-            menu_input_pointer_close_messagebox(menu_st);
-
-            if (confirm_cmd)
+            /* Named buttons: the one tapped, anywhere else Cancel; a
+             * press that began on a box since replaced chooses nothing */
+            if (menu_st->dialog_st.button_count)
             {
-               if (hover_ok)
-                  menu_dialog_confirm(menu_st);
-               else
-                  menu_dialog_confirm_clear(menu_st);
+               if (press_epoch == menu_st->dialog_st.button_epoch)
+                  menu_dialog_press(menu_st, (hover >= 0) ? hover : 0);
+            }
+            else
+            {
+               menu_input_pointer_close_messagebox(menu_st);
+
+               if (confirm_cmd)
+               {
+                  if (hover_ok)
+                     menu_dialog_confirm(menu_st);
+                  else
+                     menu_dialog_confirm_clear(menu_st);
+               }
             }
          }
          /* Normal menu input */
@@ -7390,8 +7415,13 @@ MENU_NOINLINE static int menu_input_post_iterate(
       /* If currently showing a message box, close it */
       if (messagebox_active)
       {
-         menu_input_pointer_close_messagebox(menu_st);
-         menu_dialog_confirm_clear(menu_st);
+         if (menu_st->dialog_st.button_count)
+            menu_dialog_press(menu_st, 0);
+         else
+         {
+            menu_input_pointer_close_messagebox(menu_st);
+            menu_dialog_confirm_clear(menu_st);
+         }
       }
       /* If onscreen keyboard is shown, send a 'backspace' */
       else if (osk_active)
@@ -8426,6 +8456,36 @@ int action_cycle_thumbnail(unsigned mode)
    return 0;
 }
 
+/* Named buttons: Left/Up and Right/Down move the highlight and stop at
+ * the ends, OK presses it, Back and Info press Cancel (the first) */
+static void menu_dialog_buttons_action(struct menu_state *menu_st,
+      enum menu_action action)
+{
+   menu_dialog_t *d = &menu_st->dialog_st;
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_UP:
+         if (d->button_highlight > 0)
+            d->button_highlight--;
+         break;
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_DOWN:
+         if (d->button_highlight + 1 < (int)d->button_count)
+            d->button_highlight++;
+         break;
+      case MENU_ACTION_OK:
+         menu_dialog_press(menu_st, d->button_highlight);
+         break;
+      case MENU_ACTION_CANCEL:
+      case MENU_ACTION_INFO:
+         menu_dialog_press(menu_st, 0);
+         break;
+      default:
+         break;
+   }
+}
+
 /**
  * menu_iterate:
  * @input                    : input sample for this frame
@@ -8514,12 +8574,21 @@ static int generic_menu_iterate(
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_CONFIRM:
-         strlcpy(menu->menu_state_msg,
-               msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
-               sizeof(menu->menu_state_msg));
+#ifdef HAVE_CORE_SIGNATURES
+         if (menu_st->dialog_st.button_count)
+            menu_core_warning_text(menu->menu_state_msg,
+                  sizeof(menu->menu_state_msg));
+         else
+#endif
+            strlcpy(menu->menu_state_msg,
+                  msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
+                  sizeof(menu->menu_state_msg));
 
 #ifdef HAVE_ACCESSIBILITY
-         if (     (iterate_type != last_iterate_type)
+         /* Also when the warning comes up after a confirm or a newer
+          * request replaces it: the type stays CONFIRM */
+         if (     (   (iterate_type != last_iterate_type)
+                   || menu_st->dialog_st.button_announce)
                && is_accessibility_enabled(
                   accessibility_enable,
                   access_st->enabled))
@@ -8528,9 +8597,35 @@ static int generic_menu_iterate(
                   accessibility_narrator_speech_speed,
                   menu->menu_state_msg, 10);
 #endif
+         menu_st->dialog_st.button_announce = false;
 
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
+
+         /* Named buttons answer for themselves, and the box is no
+          * screen of the stack's */
+         if (menu_st->dialog_st.button_count)
+         {
+#ifdef HAVE_ACCESSIBILITY
+            int was = menu_st->dialog_st.button_highlight;
+#endif
+            menu_dialog_buttons_action(menu_st, action);
+#ifdef HAVE_ACCESSIBILITY
+            if (     menu_st->dialog_st.button_count
+                  && menu_st->dialog_st.button_highlight != was
+                  && is_accessibility_enabled(
+                     accessibility_enable,
+                     access_st->enabled))
+               accessibility_speak_priority(
+                     accessibility_enable,
+                     accessibility_narrator_speech_speed,
+                     msg_hash_to_str((enum msg_hash_enums)
+                        menu_st->dialog_st.button_label[
+                        menu_st->dialog_st.button_highlight]), 10);
+#endif
+            break;
+         }
+
          if (     action == MENU_ACTION_OK
                || action == MENU_ACTION_SELECT
                || action == MENU_ACTION_CANCEL
@@ -9911,6 +10006,9 @@ static void menu_dialog_confirm_reset(struct menu_state *menu_st)
 
    menu_st->dialog_st.confirm_hover_ok     = false;
    menu_st->dialog_st.confirm_hover_back   = false;
+   menu_st->dialog_st.button_count         = 0;
+   menu_st->dialog_st.button_highlight     = -1;
+   menu_st->dialog_st.button_hover         = -1;
 
    BIT64_CLEAR(menu_st->driver_data->state, MENU_STATE_RENDER_MESSAGEBOX);
    menu_st->driver_data->menu_state_msg[0] = '\0';
@@ -9918,6 +10016,14 @@ static void menu_dialog_confirm_reset(struct menu_state *menu_st)
 
 void menu_dialog_confirm_set(struct menu_state *menu_st, unsigned msg, unsigned cmd)
 {
+   /* A Cancel/OK confirm takes over from named buttons; the warning
+    * waits for it and comes back */
+   menu_st->dialog_st.button_count     = 0;
+   menu_st->dialog_st.button_highlight = -1;
+   menu_st->dialog_st.button_hover     = -1;
+   menu_st->dialog_st.confirm_hover_ok     = false;
+   menu_st->dialog_st.confirm_hover_back   = false;
+   menu_st->dialog_st.button_epoch++;
    menu_st->dialog_st.confirm_msg = msg;
    menu_st->dialog_st.confirm_cmd = cmd;
    menu_st->dialog_st.pending_cmd = CMD_EVENT_NONE;
@@ -9933,4 +10039,250 @@ void menu_dialog_confirm(struct menu_state *menu_st)
 {
    menu_st->dialog_st.pending_cmd = menu_st->dialog_st.confirm_cmd;
    menu_dialog_confirm_reset(menu_st);
+}
+
+void menu_dialog_get_buttons(struct menu_state *menu_st,
+      menu_dialog_buttons_t *b)
+{
+   menu_dialog_t *d = &menu_st->dialog_st;
+   unsigned i;
+   d->button_drawn = d->button_epoch;
+   b->count     = d->button_count;
+   b->highlight = -1;
+   b->hover     = -1;
+   b->classic   = false;
+   if (d->button_count)
+   {
+      /* Cancel (the first) always shows its icon, the others OK's,
+       * dimmed unless highlighted */
+      for (i = 0; i < b->count; i++)
+      {
+         b->label[i] = d->button_label[i];
+         b->icon[i]  = (i == 0) ? MENU_DIALOG_ICON_CANCEL
+               : ((int)i == d->button_highlight) ? MENU_DIALOG_ICON_OK
+               : MENU_DIALOG_ICON_OK_DIM;
+      }
+      b->highlight = d->button_highlight;
+      b->hover     = d->button_hover;
+      return;
+   }
+   if (!d->confirm_cmd)
+      return;
+   b->count    = 2;
+   b->classic  = true;
+   b->label[0] = MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL;
+   b->label[1] = MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK;
+   b->icon[0]  = MENU_DIALOG_ICON_CANCEL;
+   b->icon[1]  = MENU_DIALOG_ICON_OK;
+   if (d->confirm_hover_back)
+      b->hover = 0;
+   else if (d->confirm_hover_ok)
+      b->hover = 1;
+}
+
+void menu_dialog_set_hover(struct menu_state *menu_st, int idx)
+{
+   menu_dialog_t *d = &menu_st->dialog_st;
+   /* Measured on a box replaced since (threaded video) */
+   if (d->button_drawn != d->button_epoch)
+      return;
+   if (d->button_count)
+      d->button_hover = (idx >= 0 && idx < (int)d->button_count) ? idx : -1;
+   else
+   {
+      d->confirm_hover_back = (idx == 0);
+      d->confirm_hover_ok   = (idx == 1);
+   }
+}
+
+int menu_dialog_buttons_layout(const int *w, unsigned count, int gap,
+      int box_x, int box_w, int *x)
+{
+   unsigned i;
+   int need  = 0;
+   int extra = 0;
+   int at    = box_x;
+   for (i = 0; i < count; i++)
+      need += w[i] + (i ? gap : 0);
+   if (!x)
+      return need;
+   if (box_w > need)
+   {
+      if (count > 1)
+         extra = (box_w - need) / (int)(count - 1);
+      else
+         at   += (box_w - need) / 2;
+   }
+   for (i = 0; i < count; i++)
+   {
+      x[i] = at;
+      at  += w[i] + gap + extra;
+   }
+   return need;
+}
+
+#ifdef HAVE_CORE_SIGNATURES
+/* core_warning_serial() of the request the box went up for, 0 for none */
+static unsigned menu_core_warning_shown = 0;
+
+/* Named buttons, the first highlighted */
+static void menu_dialog_buttons_set(struct menu_state *menu_st,
+      const unsigned *labels, unsigned count)
+{
+   menu_dialog_t *d = &menu_st->dialog_st;
+   unsigned i;
+   if (count > MENU_DIALOG_BUTTONS_MAX)
+      count = MENU_DIALOG_BUTTONS_MAX;
+   for (i = 0; i < count; i++)
+      d->button_label[i] = labels[i];
+   d->confirm_msg        = MSG_UNKNOWN;
+   d->confirm_cmd        = CMD_EVENT_NONE;
+   d->confirm_hover_ok   = false;
+   d->confirm_hover_back = false;
+   d->button_count       = (uint8_t)count;
+   d->button_highlight   = 0;
+   d->button_hover       = -1;
+   d->button_announce    = true;
+   d->button_epoch++;
+}
+
+static unsigned menu_core_warning_label(enum core_warning_choice choice)
+{
+   switch (choice)
+   {
+      case CORE_WARNING_INSTALL_AND_TRUST:
+         return MENU_ENUM_LABEL_VALUE_CORE_WARNING_INSTALL_TRUST;
+      case CORE_WARNING_LOAD_ONCE:
+         return MENU_ENUM_LABEL_VALUE_CORE_WARNING_LOAD_ONCE;
+      case CORE_WARNING_ALWAYS_TRUST:
+         return MENU_ENUM_LABEL_VALUE_CORE_WARNING_ALWAYS_TRUST;
+      default:
+         break;
+   }
+   return MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL;
+}
+
+static void menu_core_warning_text(char *s, size_t len)
+{
+   enum core_check_result result = CORE_CHECK_ERROR;
+   core_warning_pending(NULL, &result);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_WARNING), len);
+   strlcat(s, "\n", len);
+   strlcat(s, msg_hash_to_str(core_warning_reason(result)), len);
+   strlcat(s, "\n\n", len);
+   strlcat(s, msg_hash_to_str(MSG_CORE_WARNING_FULL_ACCESS), len);
+   strlcat(s, "\n\n", len);
+   strlcat(s, msg_hash_to_str(MSG_CORE_WARNING_TURN_OFF), len);
+}
+
+static void menu_core_warning_raise(struct menu_state *menu_st)
+{
+   enum core_warning_choice choices[CORE_WARNING_CHOICES_MAX];
+   unsigned labels[CORE_WARNING_CHOICES_MAX];
+   unsigned n = core_warning_choices(choices);
+   unsigned i;
+   for (i = 0; i < n; i++)
+      labels[i] = menu_core_warning_label(choices[i]);
+   menu_dialog_buttons_set(menu_st, labels, n);
+   menu_core_warning_shown = core_warning_serial();
+}
+
+/* Brings the box in line with the request pending; true when it went up */
+static bool menu_core_warning_sync(struct menu_state *menu_st)
+{
+   menu_dialog_t *d = &menu_st->dialog_st;
+   if (!core_warning_pending(NULL, NULL))
+   {
+      /* Answered away from the box, or at deinit */
+      if (d->button_count)
+      {
+         if (menu_st->driver_data)
+            menu_dialog_confirm_clear(menu_st);
+         else
+            d->button_count = 0;
+      }
+      menu_core_warning_shown = 0;
+      return false;
+   }
+   /* It waits for what the user is already answering: an open Cancel/OK
+    * confirm, the command its OK left for this frame, an entry capture
+    * or the on-screen keyboard. A driver that shows nothing never gets
+    * the box. */
+   if (     !menu_st->driver_data
+         || !menu_core_warning_can_open()
+         || (d->confirm_cmd && !d->button_count)
+         || d->pending_cmd != CMD_EVENT_NONE
+         || input_entry_capture_running()
+         || (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
+      return false;
+   menu_core_warning_raise(menu_st);
+   return true;
+}
+
+static void menu_core_warning_press(struct menu_state *menu_st, int idx)
+{
+   static const char *const names[] = {
+      "Cancel", "Install and Trust", "Load Once", "Always Trust" };
+   enum core_warning_choice choices[CORE_WARNING_CHOICES_MAX];
+   unsigned n;
+   /* The box shows a request a newer push already cancelled: show the
+    * newer one and choose nothing */
+   if (menu_core_warning_shown != core_warning_serial())
+   {
+      menu_core_warning_sync(menu_st);
+      return;
+   }
+   n = core_warning_choices(choices);
+   if (idx < 0 || idx >= (int)n)
+      idx = 0;
+   RARCH_LOG("[Core] Security Warning answered: %s.\n", names[choices[idx]]);
+   /* Down first: the callback may raise another box */
+   menu_dialog_confirm_clear(menu_st);
+   menu_core_warning_shown = 0;
+   core_warning_choose(choices[idx]);
+}
+
+void menu_core_warning_open(void)
+{
+   /* Before the menu driver exists it waits for the first menu frame */
+   if (     !(menu_driver_state.flags & MENU_ST_FLAG_ALIVE)
+         && menu_driver_state.driver_data)
+      retroarch_menu_running();
+}
+
+bool menu_core_warning_can_open(void)
+{
+   const char *ident = menu_driver_ident();
+   /* Before the drivers are chosen: the one the config names */
+   if (!ident)
+      ident = config_get_ptr()->arrays.menu_driver;
+   return !string_is_equal(ident, "null");
+}
+
+bool menu_core_warning_user_only(void)
+{
+   return core_warning_pending(NULL, NULL)
+      || menu_driver_state.dialog_st.confirm_cmd
+         == CMD_EVENT_CORE_SIGNATURE_CHECK_OFF;
+}
+
+bool menu_core_warning_iterate(struct menu_state *menu_st)
+{
+   unsigned serial = core_warning_serial();
+   /* Up for the request pending, or nothing pending and nothing up */
+   if (     menu_core_warning_shown == serial
+         && (!serial || menu_st->dialog_st.button_count))
+      return false;
+   return menu_core_warning_sync(menu_st);
+}
+#endif
+
+static void menu_dialog_press(struct menu_state *menu_st, int idx)
+{
+#ifdef HAVE_CORE_SIGNATURES
+   menu_core_warning_press(menu_st, idx);
+#else
+   (void)idx;
+   menu_dialog_confirm_clear(menu_st);
+#endif
 }

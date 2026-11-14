@@ -60,6 +60,10 @@
 #include "../../core_updater_list.h"
 #endif
 
+#ifdef HAVE_CORE_SIGNATURES
+#include "../../core_trust_runtime.h"
+#endif
+
 #ifndef BIND_ACTION_START
 #define BIND_ACTION_START(cbs, name) (cbs)->action_start = (name)
 #endif
@@ -844,6 +848,16 @@ static int action_start_core_lock(
    return ret;
 }
 
+#ifdef HAVE_CORE_SIGNATURES
+static int action_start_core_signature_check(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   core_trust_runtime_set_checks(true);
+   return 0;
+}
+#endif
+
 static int action_start_core_set_standalone_exempt(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -1095,6 +1109,11 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_START(cbs, action_start_core_lock);
             break;
+#ifdef HAVE_CORE_SIGNATURES
+         case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
+            BIND_ACTION_START(cbs, action_start_core_signature_check);
+            break;
+#endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
             BIND_ACTION_START(cbs, action_start_core_set_standalone_exempt);
             break;
