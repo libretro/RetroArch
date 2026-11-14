@@ -42,6 +42,9 @@
 #include "file_path_special.h"
 #include "msg_hash.h"
 #include "runloop.h"
+#ifdef HAVE_RUNAHEAD
+#include "runahead.h"
+#endif
 #include "verbosity.h"
 #ifdef HAVE_CHEATS
 #include "cheat_manager.h"
@@ -372,6 +375,10 @@ void autosave_check(void)
        * until the flag clears. */
       if (!retro_atomic_load_acquire_int(&handle->snapshot_requested))
          continue;
+#ifdef HAVE_RUNAHEAD
+      if (!serialization_usable())
+         continue;
+#endif
       memcpy(handle->snapshot, handle->retro_buffer, handle->bufsize);
       retro_atomic_store_release_int(&handle->snapshot_requested, 0);
       retro_eventcount_notify(&handle->ec);
