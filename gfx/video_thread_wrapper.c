@@ -2215,20 +2215,79 @@ void video_thread_async_poll(void)
  * The scaler and the narrowing scratch buffer hold still while frames
  * are in flight; the video driver deinit waits this thread idle before
  * freeing them. */
-static void video_thread_convert(thread_video_t *thr,
+static void *video_thread_convert_lend(thread_video_t *thr,
+      const void *data, unsigned dims, unsigned in_pitch, unsigned *pitch)
+{
+   struct retro_framebuffer fb;
+   uintptr_t src = (uintptr_t)data;
+   uintptr_t dst;
+   size_t src_size = (size_t)in_pitch * VIDEO_SCALE_H(dims);
+   size_t dst_size;
+   if (     !thr->poke || !thr->poke->get_current_software_framebuffer
+         || !thr->driver_data || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims)
+         || retro_atomic_load_acquire_size(&thr->video_st->frame_cache_keeper))
+      return NULL;
+   fb.data         = NULL;
+   fb.width        = VIDEO_SCALE_W(dims);
+   fb.height       = VIDEO_SCALE_H(dims);
+   fb.pitch        = 0;
+   fb.format       = RETRO_PIXEL_FORMAT_UNKNOWN;
+   fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+   fb.memory_flags = 0;
+   /* The driver owns the loan through frame(); keep the raw cached source. */
+   retro_atomic_store_release_size(&thr->video_st->frame_cache_keeper,
+         VIDEO_CACHE_KEEPER);
+   if (     !thr->poke->get_current_software_framebuffer(thr->driver_data, &fb)
+         || !fb.data || fb.width != VIDEO_SCALE_W(dims)
+         || fb.height != VIDEO_SCALE_H(dims)
+         || fb.format != RETRO_PIXEL_FORMAT_RGB565
+         || fb.pitch < (size_t)VIDEO_SCALE_W(dims) * sizeof(uint16_t)
+         || fb.pitch > INT_MAX || (fb.pitch & 1)
+         || ((uintptr_t)fb.data & 1))
+      goto decline;
+   dst      = (uintptr_t)fb.data;
+   dst_size = fb.pitch * VIDEO_SCALE_H(dims);
+   if (     src_size / VIDEO_SCALE_H(dims) != in_pitch
+         || dst_size / VIDEO_SCALE_H(dims) != fb.pitch
+         || (dst >= src ? dst - src < src_size : src - dst < dst_size))
+      goto decline;
+   *pitch = (unsigned)fb.pitch;
+   return fb.data;
+
+decline:
+   retro_atomic_store_release_size(&thr->video_st->frame_cache_keeper, 0);
+   return NULL;
+}
+
+static bool video_thread_convert(thread_video_t *thr,
       unsigned kind, const void **data,
-      unsigned dims, unsigned *pitch)
+      unsigned dims, unsigned *pitch, bool allow_lend)
 {
    video_driver_state_t *video_st = thr->video_st;
 
    if (!*data)
-      return;
+      return false;
 
    switch (kind)
    {
       case VIDEO_THREAD_CONVERT_0RGB1555:
          if (video_st->scaler_ptr)
          {
+            unsigned out_pitch = VIDEO_SCALE_W(dims) * sizeof(uint16_t);
+            void *lent = allow_lend ? video_thread_convert_lend(thr,
+                  *data, dims, *pitch, &out_pitch) : NULL;
+            if (lent)
+            {
+               struct scaler_ctx *scaler = video_st->scaler_ptr->scaler;
+               scaler->in_width   = scaler->out_width  = VIDEO_SCALE_W(dims);
+               scaler->in_height  = scaler->out_height = VIDEO_SCALE_H(dims);
+               scaler->in_stride  = (int)*pitch;
+               scaler->out_stride = (int)out_pitch;
+               scaler_ctx_scale_direct(scaler, lent, *data);
+               *data  = lent;
+               *pitch = out_pitch;
+               return true;
+            }
             video_pixel_frame_scale(
                   video_st->scaler_ptr->scaler,
                   video_st->scaler_ptr->scaler_out,
@@ -2252,6 +2311,7 @@ static void video_thread_convert(thread_video_t *thr,
       default:
          break;
    }
+   return false;
 }
 
 void video_thread_defer_convert(enum video_thread_convert kind)
@@ -3018,6 +3078,7 @@ static void video_thread_loop(void *data)
                             + thr->frame.slot[slot].offset;
                   unsigned fdims    = thr->frame.slot[slot].dims;
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
+                  bool convert_lent = false;
                   /* A dupe of a hardware frame draws the last presented
                    * HW slot again, and on Vulkan so does a software
                    * frame, so it is installed and fenced like the frame
@@ -3026,8 +3087,15 @@ static void video_thread_loop(void *data)
                   int dupe_hw_slot  = video_thread_hw_dupe_slot(thr,
                         thr->frame.slot[slot].dupe);
                   if (fdata && thr->frame.slot[slot].convert)
-                     video_thread_convert(thr, thr->frame.slot[slot].convert,
-                           &fdata, fdims, &fpitch);
+                     convert_lent = video_thread_convert(thr,
+                           thr->frame.slot[slot].convert,
+                           &fdata, fdims, &fpitch,
+#ifdef HAVE_VIDEO_FILTER
+                           !thr->frame.slot[slot].filter_bpp
+#else
+                           true
+#endif
+                           );
 #ifdef HAVE_VIDEO_FILTER
                   if (fdata && thr->frame.slot[slot].filter_bpp)
                      video_thread_filter(thr, thr->frame.slot[slot].filter,
@@ -3044,6 +3112,9 @@ static void video_thread_loop(void *data)
                      *thr->frame.slot[slot].msg
                         ? thr->frame.slot[slot].msg : NULL,
                      video_info);
+                  if (convert_lent)
+                     retro_atomic_store_release_size(
+                           &thr->video_st->frame_cache_keeper, 0);
 #ifdef HAVE_VIDEO_FILTER
                   if (thr->frame.slot[slot].filter_bpp)
                      retro_atomic_store_release_size(
@@ -3954,7 +4025,7 @@ static VIDEO_NOINLINE bool video_thread_frame_replay(thread_video_t *thr,
       if (frame_ && frame_ != RETRO_HW_FRAME_BUFFER_VALID && height > rows)
          dims = VIDEO_SCALE_PACK(width, rows);
       if (convert)
-         video_thread_convert(thr, convert, &frame_, dims, &pitch);
+         video_thread_convert(thr, convert, &frame_, dims, &pitch, false);
 #ifdef HAVE_VIDEO_FILTER
       if (filter_bpp)
          video_thread_filter(NULL, thr->video_st->state_filter,
