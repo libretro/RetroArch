@@ -17581,6 +17581,17 @@ void input_driver_hold_held_input(void)
    input_driver_st.held_bits_phase = 1;
 }
 
+/* As input_driver_hold_held_input(), for the end of a text entry. The
+ * key that ended it can reach the poll a frame after its key event -
+ * on Windows with the Qt desktop menu - so the hold looks again on the
+ * next frame if nothing is down on the first, and the Return that
+ * closed the keyboard does not then press OK in the menu. */
+void input_driver_hold_held_input_late(void)
+{
+   input_driver_hold_core_input();
+   input_driver_st.held_bits_phase = 4;
+}
+
 void input_driver_hold_clear(void)
 {
    memset(input_driver_st.core_hold_mask, 0,
@@ -17668,6 +17679,16 @@ bool input_driver_hold_bits(input_bits_t *bits)
          if (enabler)
             BIT256_SET_PTR(bits, RARCH_ENABLE_HOTKEY);
          return true;
+      }
+      phase = 1;
+   }
+   if (phase == 4)
+   {
+      /* after a text entry: see input_driver_hold_held_input_late() */
+      if (!bits_any_set(bits->data, ARRAY_SIZE(bits->data)))
+      {
+         input_st->held_bits_phase = (uint8_t)(1 | hotkey);
+         return false;
       }
       phase = 1;
    }

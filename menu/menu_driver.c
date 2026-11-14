@@ -5196,7 +5196,7 @@ void menu_input_dialog_end(void)
 
    /* Avoid triggering states on pressing return. */
    /* Held back until everything held now is let go. */
-   input_driver_hold_held_input();
+   input_driver_hold_held_input_late();
 
 #ifdef HAVE_COCOATOUCH
    /* Dismiss iOS/tvOS native keyboard if it's currently open */
