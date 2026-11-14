@@ -11,6 +11,7 @@
 RETRO_BEGIN_DECLS
 struct video_frame_info;
 extern const record_driver_t record_mediacodec;
+bool record_mediacodec_can_stream(void);
 void record_mediacodec_frame_info(struct video_frame_info *info, bool capture);
 void record_mediacodec_poll(void);
 void record_mediacodec_stop(void);

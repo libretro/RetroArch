@@ -45,7 +45,7 @@ typedef struct record_mc_context
    enum record_dispatch_mediacodec_state final_state;
    int error, file_error, system_error;
    bool armed, stopped, failed, audio_closed, gpu_closed;
-   bool resetting, reset_ready, menu_source;
+   bool resetting, reset_ready, menu_source, streaming;
 } record_mc_context_t;
 static record_mc_context_t *record_mc_active, *record_mc_retired;
 static bool record_mc_start_requested;
@@ -174,7 +174,8 @@ static int record_mc_level(const mediacodec_encoder_request_t *video)
 }
 
 static bool record_mc_options(
-      const char *path, mediacodec_encoder_request_t *video, bool *audio)
+      const char *path, mediacodec_encoder_request_t *video, bool *audio,
+      record_dispatch_mediacodec_stream_config_t *stream, unsigned *audio_bitrate)
 {
    config_file_t *config;
    struct config_file_entry entry;
@@ -203,7 +204,20 @@ static bool record_mc_options(
    }
    if (config_get_entry(config, "format")
          && (!config_get_array(config, "format", format, sizeof(format))
-               || !string_is_equal(format, "mp4")))
+               || !string_is_equal(format, stream ? "flv" : "mp4")))
+      goto done;
+   if (config_get_entry(config, "rtmp_legacy_commands")
+         && (!stream || !config_get_bool(config, "rtmp_legacy_commands", &stream->legacy_commands)))
+      goto done;
+   if (config_get_entry(config, "acodec")
+         && (!stream || !config_get_array(config, "acodec", codec, sizeof(codec))
+               || !string_is_equal(codec, "aac")))
+      goto done;
+   if (config_get_entry(config, "audio_bit_rate")
+         && (!stream || !audio_bitrate
+               || !config_get_uint(config, "audio_bit_rate", audio_bitrate)
+               || (*audio_bitrate != 96000 && *audio_bitrate != 128000
+                  && *audio_bitrate != 160000 && *audio_bitrate != 192000)))
       goto done;
    if (config_get_entry(config, "video_bit_rate")
          && (!config_get_uint(config, "video_bit_rate", &video->bitrate)
@@ -223,7 +237,10 @@ static bool record_mc_options(
                && !string_is_equal(entry.key, "vcodec")
                && !string_is_equal(entry.key, "format")
                && !string_is_equal(entry.key, "video_bit_rate")
-               && !string_is_equal(entry.key, "video_level"))
+               && !string_is_equal(entry.key, "video_level")
+               && !(stream && (string_is_equal(entry.key, "rtmp_legacy_commands")
+                     || string_is_equal(entry.key, "acodec")
+                     || string_is_equal(entry.key, "audio_bit_rate"))))
             goto done;
       } while (config_get_entry_list_next(&entry));
    ok = true;
@@ -317,20 +334,33 @@ static void *record_mc_init(const struct record_params *params)
    mediacodec_encoder_request_t encoder;
    video_device_info_t device;
    struct retro_hdr_metadata hdr;
+   record_dispatch_mediacodec_stream_config_t stream;
    record_mc_context_t *ctx;
    settings_t *settings = config_get_ptr();
-   unsigned num, den, count, rate = 0, channels = 0;
+   unsigned num, den, count, rate = 0, channels = 0, audio_bitrate = 128000;
    size_t capacity = 0, path_length;
    bool audio;
+   bool streaming = recording_state_get_ptr()->streaming_enable;
    if (!params || !settings || record_mc_active || record_mc_retired
          || !params->filename || !*params->filename || !params->video_gpu_record
-         || recording_state_get_ptr()->streaming_enable
          || settings->bools.video_record_game_only
          || audio_driver_has_callback() || !video_driver_get_device(&device)
          || device.api != VIDEO_DEVICE_VULKAN)
       return NULL;
+#if !defined(HAVE_NETWORKING) || !defined(HAVE_CRYPTO) || !defined(HAVE_RTMP) || !defined(HAVE_RFLV)
+   if (streaming)
+      return NULL;
+#endif
+   if (streaming && strncmp(params->filename, "rtmp://", 7)
+         && strncmp(params->filename, "rtmps://", 8))
+      return NULL;
+#ifndef HAVE_SSL
+   if (streaming && !strncmp(params->filename, "rtmps://", 8))
+      return NULL;
+#endif
    memset(&encoder, 0, sizeof(encoder));
    memset(&hdr, 0, sizeof(hdr));
+   memset(&stream, 0, sizeof(stream));
    hdr.version = 1;
    hdr.size = sizeof(hdr);
    if (!video_driver_get_display_metadata(
@@ -344,7 +374,8 @@ static void *record_mc_init(const struct record_params *params)
    if (!encoder.width || !encoder.height
          || ((encoder.width | encoder.height) & 1) || encoder.width > 16384
          || encoder.height > 16384 || !record_mc_rate(params->fps, &num, &den)
-         || !record_mc_options(params->config, &encoder, &audio)
+         || !record_mc_options(params->config, &encoder, &audio,
+               streaming ? &stream : NULL, &audio_bitrate)
          || !record_mc_color(&encoder, &hdr)
          || (!hdr.output_mode
                && settings->uints.video_swapchain_bit_depth == 2))
@@ -380,11 +411,15 @@ static void *record_mc_init(const struct record_params *params)
    }
    if (path_length == PATH_MAX_LENGTH)
       return NULL;
-   ctx = (record_mc_context_t *)calloc(1, sizeof(*ctx) + path_length + 1);
+   ctx = (record_mc_context_t *)calloc(1, sizeof(*ctx) + (streaming ? 0 : path_length + 1));
    if (!ctx)
       return NULL;
-   ctx->path = (char *)(ctx + 1);
-   memcpy(ctx->path, params->filename, path_length + 1);
+   if (!streaming)
+   {
+      ctx->path = (char *)(ctx + 1);
+      memcpy(ctx->path, params->filename, path_length + 1);
+   }
+   ctx->streaming = streaming;
    /* Vulkan and encoder surfaces have opposite row origins. */
    ctx->config = record_android_capture_config_new(
          &device, encoder.width, encoder.height, count, hdr.output_mode, true);
@@ -401,8 +436,27 @@ static void *record_mc_init(const struct record_params *params)
    ctx->menu_source = params->menu_source;
    ctx->rate = rate;
    ctx->channels = channels;
-   ctx->io = record_dispatch_mediacodec_new(&encoder, 2, rate, channels,
-         audio ? 128000 : 0, audio ? 4096 : 0, capacity, ctx->path);
+   if (streaming)
+   {
+      stream.mux.codec = string_is_equal(encoder.mime, "video/hevc")
+         ? RECORD_MC_STREAM_HEVC : RECORD_MC_STREAM_AVC;
+      stream.mux.bit_depth = encoder.color ? 10 : 8;
+      stream.mux.max_packet_size = 0xfffff7;
+      stream.mux.color.primaries = stream.mux.color.matrix = encoder.color ? 9 : 1;
+      stream.mux.color.transfer = encoder.color ? 16 : 1;
+      stream.mux.color.range = encoder.range;
+      if (encoder.color)
+      {
+         stream.mux.color.max_cll = encoder.hdr_static[21] | (unsigned)encoder.hdr_static[22] << 8;
+         stream.mux.color.max_fall = encoder.hdr_static[23] | (unsigned)encoder.hdr_static[24] << 8;
+      }
+      ctx->io = record_dispatch_mediacodec_new_stream(&encoder, 2, rate, channels,
+            audio ? audio_bitrate : 0, audio ? 4096 : 0, capacity,
+            params->filename, &stream);
+   }
+   else
+      ctx->io = record_dispatch_mediacodec_new(&encoder, 2, rate, channels,
+            audio ? 128000 : 0, audio ? 4096 : 0, capacity, ctx->path);
    if (!ctx->io)
    {
       record_android_capture_config_free(ctx->config);
@@ -723,7 +777,7 @@ void record_mediacodec_poll(void)
           * of these; publish only after successful I/O collection. */
          {
             settings_t *settings = config_get_ptr();
-            if (settings && settings->bools.history_list_enable
+            if (!ctx->streaming && settings && settings->bools.history_list_enable
                   && g_defaults.video_history)
             {
                struct playlist_entry entry = {0};
@@ -778,3 +832,13 @@ bool record_mediacodec_cancel_start(void)
    return false;
 }
 #endif
+
+bool record_mediacodec_can_stream(void)
+{
+#if defined(HAVE_RECORD_MEDIACODEC) && defined(HAVE_NETWORKING) && defined(HAVE_CRYPTO) \
+      && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+   return true;
+#else
+   return false;
+#endif
+}

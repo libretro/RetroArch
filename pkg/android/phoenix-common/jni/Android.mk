@@ -213,6 +213,9 @@ endif
 
 ifeq ($(HAVE_VULKAN),1)
 # slang shaders (Vulkan, GLES 3) are compiled by rslc
+ifeq ($(HAVE_CRYPTO),1)
+DEFINES += -DHAVE_RTMP -DHAVE_RFLV
+endif
 DEFINES += -DHAVE_VULKAN \
 	   -DHAVE_SLANG \
 	   -DHAVE_RSLC \

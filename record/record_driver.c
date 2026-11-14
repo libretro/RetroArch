@@ -181,6 +181,8 @@ bool recording_driver_can_stream(const char *ident)
       return record_metal_can_stream();
    if (driver == &record_nvenc)
       return record_nvenc_can_stream();
+   if (driver == &record_mediacodec)
+      return record_mediacodec_can_stream();
    return false;
 }
 
