@@ -757,6 +757,19 @@ static bool gtm_alt(const char *c, size_t n, bool nocase)
             && gtm_digits(c + 4, n - 4));
 }
 
+/* No-Intro tape "2 sides" */
+static bool gtm_sides(const char *c, size_t n, bool nocase)
+{
+   size_t d = gtm_span_digits(c, n);
+   return d && n == d + 6 && gtm_same(c + d, " sides", 6, nocase);
+}
+
+/* Redump mastering code "1M" */
+static bool gtm_mastering(const char *c, size_t n)
+{
+   return n > 1 && c[n - 1] == 'M' && gtm_digits(c, n - 1);
+}
+
 static bool gtm_store(const char *c, size_t n, bool nocase)
 {
    return gtm_contains(c, n, "Virtual Console", nocase)
@@ -872,6 +885,7 @@ static bool gtm_paren_known(struct gtm_parse *p, const char *c, size_t n,
    }
    else if (gtm_language(c, n, nocase) || (tosec && gtm_date(c, n))
          || gtm_alt(c, n, nocase)
+         || gtm_sides(c, n, nocase) || gtm_mastering(c, n)
          || gtm_has_suffix(c, n, " Enhanced", nocase)
          || gtm_has_suffix(c, n, " Compatible", nocase))
       p->ntags++;
