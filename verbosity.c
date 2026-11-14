@@ -284,27 +284,32 @@ void retro_main_log_file_deinit(void)
 static const char *rarch_log_line_format(char *line, size_t line_size,
       char **heap, const char *tag_v, const char *fmt, va_list ap)
 {
-   int t_len    = snprintf(line, line_size, "%s ", tag_v);
+   size_t t_len = strlen(tag_v);
    int b_len;
    va_list ap_cp;
 
    *heap = NULL;
 
-   if (t_len < 0 || t_len >= (int)line_size)
+   if (line_size < 2 || t_len >= line_size - 1)
       t_len = 0;
+   else
+   {
+      /* Snapshot before formatting: %n may modify the caller's tag. */
+      memcpy(line, tag_v, t_len);
+      line[t_len++] = ' ';
+   }
 
    va_copy(ap_cp, ap);
-   b_len = vsnprintf(line + t_len, line_size - (size_t)t_len,
-         fmt, ap_cp);
+   b_len = vsnprintf(line + t_len, line_size - t_len, fmt, ap_cp);
    va_end(ap_cp);
 
-   if (b_len >= (int)(line_size - (size_t)t_len))
+   if (b_len >= (int)(line_size - t_len))
    {
-      size_t need = (size_t)t_len + (size_t)b_len + 1;
+      size_t need = t_len + (size_t)b_len + 1;
       if ((*heap = (char*)malloc(need)))
       {
-         memcpy(*heap, line, (size_t)t_len);
-         vsnprintf(*heap + t_len, need - (size_t)t_len, fmt, ap);
+         memcpy(*heap, line, t_len);
+         vsnprintf(*heap + t_len, need - t_len, fmt, ap);
          return *heap;
       }
    }
