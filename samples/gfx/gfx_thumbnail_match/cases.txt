@@ -58,6 +58,18 @@
 -|Game (USA)|Game (USA, Europe) (En,Fr).png|t3|+Game (USA, Europe) (Disc 1).png|+Game (USA, Europe) (En,Fr).png
 -|Game (Europe)|Game (Europe) (Disk 1 of 2).png|t3|+Game (Europe) (Disk 2 of 2).png|+Game (Europe) (Disk 1 of 2).png
 -|Game (Japan)|Game (Japan) (Disc A).png|t3|+Game (Japan) (Disc B).png|+Game (Japan) (Disc A).png
+-|Command & Conquer (USA) (NOD Disc)|Command _ Conquer (USA) (Disc 2) (NOD Disc).png|t3|+Command _ Conquer (USA) (Disc 1) (GDI Disc).png|+Command _ Conquer (USA) (Disc 2) (NOD Disc).png
+-|Langrisser IV & V - Final Edition (Japan) (Langrisser V Disc)|Langrisser IV _ V - Final Edition (Japan) (Disc 2) (Langrisser V Disc).png|t3|+Langrisser IV _ V - Final Edition (Japan) (Disc 1) (Langrisser IV Disc).png|+Langrisser IV _ V - Final Edition (Japan) (Disc 2) (Langrisser V Disc).png
+-|Game (USA) (Bonus Disc)|Game (USA) (Disc 2) (Bonus Disc) (En,Fr).png|t3|+Game (USA) (Disc 3) (Bonus Disc).png|+Game (USA) (Disc 2) (Bonus Disc) (En,Fr).png
+-|Game (USA) (Bonus Disc) (En)|Game (USA) (Bonus Disc).png|t3|+Game (USA) (Disc 1) (Bonus Disc).png|+Game (USA) (Bonus Disc).png
+-|Command & Conquer (USA)|-|-|+Command _ Conquer (USA) (Disc 1) (GDI Disc).png|+Command _ Conquer (USA) (Disc 2) (NOD Disc).png
+-|Game (Europe) (Bonus Tape)|-|-|+Game (Europe) (Side B) (Bonus Tape).png|+Game (Europe) (Tape 2) (Bonus Tape).png
+-|Card Sharks (1987)(Accolade)|-|-|+Card Sharks (1987)(Accolade)(Disk 2 of 2).png
+-|X (1994)(Magic Disk)|-|-|+X (1994)(Magic Disk)(Disk 2 of 2).png
+-|X (1990)(Commodore Disc)|-|-|+X (1990)(Commodore Disc)(Disk 2 of 2).png
+-|Game (USA) [h1]|-|-|+Game (USA) (Disk 2) [h1].png
+-|Game (USA) [Data Disk]|-|-|+Game (USA) (Disk 2) [Data Disk].png
+-|X (1990)(Pub)(Character Disk)|X (1990)(Pub)(Disk 2 of 2)(Character Disk).png|t3|+X (1990)(Pub)(Disk 2 of 2)(Character Disk).png
 -|Game (USA) (Rev 3)|Game (USA) (Rev 2).png|t3|+Game (USA) (Rev 1).png|+Game (USA) (Rev 2).png
 -|Game (USA) (Rev 3)|Game (USA).png|t3|+Game (USA) (Rev 2).png|+Game (USA).png
 -|Super Mario Bros. (World)|Super Mario Bros. (Europe).png|t3|+Super Mario Bros. (USA) (Virtual Console).png|+Super Mario Bros. (Europe).png

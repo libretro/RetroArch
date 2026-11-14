@@ -392,6 +392,8 @@ size_t gfx_thumbnail_match_fold(const char *in, char *out, size_t len)
 #define GTM_NOTAGS 0x02
 #define GTM_WEST   0x04
 #define GTM_EAST   0x08
+#define GTM_TAPE   0x10
+#define GTM_GROUP  0x40
 
 #define GTM_USA    0x00000001UL
 #define GTM_EUROPE 0x00000002UL
@@ -816,8 +818,10 @@ static bool gtm_revision(const char *c, size_t n, unsigned *v, bool nocase)
    return true;
 }
 
-/* Disc 1, Disc A, Disk 1 of 2, Side B, Tape 2: A is 1. */
-static bool gtm_disc(const char *c, size_t n, unsigned *v, bool nocase)
+/* Disc 1, Disc A, Disk 1 of 2, Side B, Tape 2: A is 1.
+ * tape: the word is Side or Tape. */
+static bool gtm_disc(const char *c, size_t n, unsigned *v, bool *tape,
+      bool nocase)
 {
    static const char *const words[] = { "Disc ", "Disk ", "Side ", "Tape " };
    size_t i, k;
@@ -826,6 +830,7 @@ static bool gtm_disc(const char *c, size_t n, unsigned *v, bool nocase)
          break;
    if (i == GTM_COUNT(words))
       return false;
+   *tape = i >= 2;
    c += 5;
    n -= 5;
    if ((*v = gtm_letter(c[0], nocase)))
@@ -877,6 +882,7 @@ static bool gtm_paren_known(struct gtm_parse *p, const char *c, size_t n,
 {
    unsigned v    = 0;
    unsigned fam  = 0;
+   bool tape     = false;
    uint32_t bits = gtm_region(c, n, &fam, nocase);
    if (bits)
    {
@@ -896,22 +902,34 @@ static bool gtm_paren_known(struct gtm_parse *p, const char *c, size_t n,
    }
    else if (gtm_revision(c, n, &v, nocase))
       p->rev = v;
-   else if (!p->disc && gtm_disc(c, n, &v, nocase))
+   else if (!p->disc && gtm_disc(c, n, &v, &tape, nocase))
+   {
       p->disc = v;
+      if (tape)
+         p->flags |= GTM_TAPE;
+   }
    else
       return false;
    return true;
 }
 
 /* A tag unknown as written is tried again ignoring case. "PT-BR" in any
- * case marks a Brazilian translation, not two TOSEC countries. */
+ * case marks a Brazilian translation, not two TOSEC countries.
+ * publisher: the TOSEC publisher slot, so "(Magic Disk)" names no disc
+ * group. */
 static void gtm_paren(struct gtm_parse *p, const char *c, size_t n,
-      bool tosec)
+      bool tosec, bool publisher)
 {
    if (     (n == 5 && gtm_equal_nocase(c, "pt-br", 5))
          || (     !gtm_paren_known(p, c, n, tosec, false)
                && !gtm_paren_known(p, c, n, tosec, true)))
+   {
+      if (     !publisher
+            && (     gtm_has_suffix(c, n, " Disc", true)
+                  || gtm_has_suffix(c, n, " Disk", true)))
+         p->flags |= GTM_GROUP;
       gtm_identity(p, c, c + n, true);
+   }
 }
 
 /* [!] [a1] [b] [o] [f] [u] [cr Name] are dump flags. */
@@ -933,6 +951,7 @@ static void gtm_bracket(struct gtm_parse *p, const char *c, size_t n)
 
 static void gtm_parse_tags(struct gtm_parse *p, const char *s, const char *e)
 {
+   bool date = false;
    while (s < e)
    {
       const char *q;
@@ -951,8 +970,12 @@ static void gtm_parse_tags(struct gtm_parse *p, const char *s, const char *e)
                break;
          }
          if (open == '(')
-            gtm_paren(p, s + 1, (size_t)(q - s - 1),
-                  q + 1 < e && q[1] == '(');
+         {
+            size_t n   = (size_t)(q - s - 1);
+            bool tosec = q + 1 < e && q[1] == '(';
+            gtm_paren(p, s + 1, n, tosec, date);
+            date       = tosec && gtm_date(s + 1, n);
+         }
          else
             gtm_bracket(p, s + 1, (size_t)(q - s - 1));
          s = (q < e) ? q + 1 : e;
@@ -1434,6 +1457,16 @@ static unsigned gtm_rev_rank(unsigned c, unsigned q)
    return 2 + ((c > q) ? c - q : q - c);
 }
 
+/* A query without a disc ranks no disc, then the lowest. */
+static unsigned gtm_disc_rank(unsigned c, unsigned q)
+{
+   if (c == q)
+      return 0;
+   if (q)
+      return 1;
+   return c;
+}
+
 /* Both have a region family and share none. */
 static unsigned gtm_crosses(unsigned c, unsigned q)
 {
@@ -1468,8 +1501,8 @@ static bool gtm_better(const struct gtm_rec *a, const struct gtm_rec *b,
    y = gtm_rev_rank(b->rev, q->rev);
    if (x != y)
       return x < y;
-   x = (unsigned)(a->disc != q->disc);
-   y = (unsigned)(b->disc != q->disc);
+   x = gtm_disc_rank(a->disc, q->disc);
+   y = gtm_disc_rank(b->disc, q->disc);
    if (x != y)
       return x < y;
    if (a->ntags != b->ntags)
@@ -1480,11 +1513,13 @@ static bool gtm_better(const struct gtm_rec *a, const struct gtm_rec *b,
 }
 
 /* Equal identity tags; the same disc, or a candidate without one.
- * A query without a disc (an m3u label) also takes disc 1. */
+ * A query without a disc (an m3u label) also takes disc 1, and any
+ * Disc/Disk when a tag names its disc group, "(NOD Disc)". */
 static bool gtm_same_game(const struct gtm_rec *r, const struct gtm_parse *q)
 {
    return !(r->flags & GTM_NOTAGS)
-      && (r->disc == q->disc || !r->disc || (!q->disc && r->disc == 1))
+      && (r->disc == q->disc || !r->disc || (!q->disc && r->disc == 1)
+         || (!q->disc && (q->flags & GTM_GROUP) && !(r->flags & GTM_TAPE)))
       && !strcmp(r->ident, q->ident);
 }
 
