@@ -36,6 +36,7 @@ record_stream_mediacodec_t *record_stream_mediacodec_new(
    if (fault == 12)
       return NULL;
    stream_output.live = 1; stream_output.retired = stream_output.busy = 0;
+   session_network_active = true;
    return &stream_output;
 }
 const record_mediacodec_output_ops_t *record_stream_mediacodec_ops(void)
@@ -72,7 +73,7 @@ bool record_stream_mediacodec_free(record_stream_mediacodec_t *p)
    if (!p) return true;
    assert(p == &stream_output && p->live && !worker.live && video.live);
    if (!session_output_retired()) return false;
-   p->live = 0; return true;
+   p->live = 0; session_network_active = false; return true;
 }
 static record_session_mediacodec_t *open_stream(bool has_audio)
 {
