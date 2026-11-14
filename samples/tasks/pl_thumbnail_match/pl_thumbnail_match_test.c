@@ -966,12 +966,19 @@ static bool push_other_regions = true;
 
 static bool push(const char *dir_database)
 {
-   playlist_config_t config;
-   memset(&config, 0, sizeof(config));
-   config.capacity = 8192;
-   playlist_config_set_path(&config, pl_path);
-   return task_push_pl_thumbnail_match(&config, NULL, thumbs_dir,
+   bool ret;
+   /* 3 KB of paths, kept off the stack */
+   playlist_config_t *config = (playlist_config_t*)calloc(1,
+         sizeof(*config));
+
+   if (!config)
+      return false;
+   config->capacity = 8192;
+   playlist_config_set_path(config, pl_path);
+   ret = task_push_pl_thumbnail_match(config, NULL, thumbs_dir,
          dir_database, false, push_other_regions);
+   free(config);
+   return ret;
 }
 
 /* Pumps the queue dry; returns the checks it took. A finished task's
@@ -1243,13 +1250,20 @@ static void lane_history(void)
 {
    char hist[128];
    char hist_cache[128];
-   playlist_config_t config;
    playlist_t *playlist;
    void *buf    = NULL;
    int64_t len  = 0;
    char *cache  = NULL;
    unsigned had = failures;
+   /* 3 KB of paths, kept off the stack */
+   playlist_config_t *config = (playlist_config_t*)calloc(1,
+         sizeof(*config));
 
+   if (!config)
+   {
+      CHECK(false, "OOM for the history lane config");
+      return;
+   }
    fixture_init();
    fill_pathname_join_special(hist, FIX, FILE_PATH_CONTENT_HISTORY,
          sizeof(hist));
@@ -1266,15 +1280,14 @@ static void lane_history(void)
          "{\"path\": \"/roms/" SYS "/kid.nes\", \"label\": \"Kid Icarus (U)\", "
          "\"core_path\": \"/cores/other_libretro.so\", "
          "\"core_name\": \"Other\", \"crc32\": \"\", \"db_name\": \"\"}]}\n");
-   memset(&config, 0, sizeof(config));
-   config.capacity = 8192;
-   playlist_config_set_path(&config, hist);
+   config->capacity = 8192;
+   playlist_config_set_path(config, hist);
    hist_core.databases = (char*)SYS "|Nintendo - Family Computer Disk System";
 
    task_queue_init(false, NULL);
-   playlist = playlist_init(&config);
+   playlist = playlist_init(config);
    CHECK(playlist && playlist_size(playlist) == 3, "history loads");
-   CHECK(task_push_pl_thumbnail_match(&config, playlist, thumbs_dir, "",
+   CHECK(task_push_pl_thumbnail_match(config, playlist, thumbs_dir, "",
          false, true), "push history");
    /* The task keeps nothing of the caller's playlist */
    playlist_free(playlist);
@@ -1296,7 +1309,7 @@ static void lane_history(void)
    /* After a reset, a push without the playlist only loads, so the
     * next push with it resolves with its cores */
    gfx_thumbnail_results_deinit();
-   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "",
+   CHECK(task_push_pl_thumbnail_match(config, NULL, thumbs_dir, "",
          false, true), "re-push history without its playlist");
    run(0);
    CHECK(string_is_equal(find_box("/roms/smb.nes", "super mario bros", SYS),
@@ -1309,8 +1322,8 @@ static void lane_history(void)
    CHECK(cache && strstr(cache, "/roms/smb.nes"),
          "no playlist given: the cache keeps the match");
    free(cache);
-   playlist = playlist_init(&config);
-   CHECK(playlist && task_push_pl_thumbnail_match(&config, playlist,
+   playlist = playlist_init(config);
+   CHECK(playlist && task_push_pl_thumbnail_match(config, playlist,
          thumbs_dir, "", false, true),
          "the next push with the playlist resolves");
    playlist_free(playlist);
@@ -1322,17 +1335,18 @@ static void lane_history(void)
    /* With no cache, a push without the playlist leaves it to resolve */
    gfx_thumbnail_results_deinit();
    filestream_delete(hist_cache);
-   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "",
+   CHECK(task_push_pl_thumbnail_match(config, NULL, thumbs_dir, "",
          false, true), "push history without its playlist");
    run(0);
    CHECK(!find_box("/roms/smb.nes", "super mario bros", SYS),
          "no playlist given: no folder");
-   CHECK(gfx_thumbnail_results_open(config.path)
+   CHECK(gfx_thumbnail_results_open(config->path)
          & GFX_THUMBNAIL_RESULTS_RESOLVE,
          "no playlist given: still to resolve");
    hist_core.databases = NULL;
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
+   free(config);
    if (failures == had)
       fprintf(stderr, "[pass] history\n");
 }
@@ -1534,9 +1548,16 @@ static void t1_database_list(void)
 {
    char hist[128];
    char hist_cache[128];
-   playlist_config_t config;
    playlist_t *playlist;
+   /* 3 KB of paths, kept off the stack */
+   playlist_config_t *config = (playlist_config_t*)calloc(1,
+         sizeof(*config));
 
+   if (!config)
+   {
+      CHECK(false, "OOM for the history config");
+      return;
+   }
    fill_pathname_join_special(hist, FIX, FILE_PATH_CONTENT_HISTORY,
          sizeof(hist));
    strlcpy(hist_cache, hist, sizeof(hist_cache));
@@ -1546,12 +1567,11 @@ static void t1_database_list(void)
          "{\"path\": \"/roms/ng.nes\", \"label\": \"nes_ninja\", "
          "\"core_path\": \"" HIST_CORE "\", \"core_name\": \"NES\", "
          "\"crc32\": \"1A2B3C4D|crc\", \"db_name\": \"\"}]}\n");
-   memset(&config, 0, sizeof(config));
-   config.capacity = 8192;
-   playlist_config_set_path(&config, hist);
+   config->capacity = 8192;
+   playlist_config_set_path(config, hist);
    hist_core.databases = (char*)SYS "|Nintendo - Family Computer Disk System";
-   playlist = playlist_init(&config);
-   CHECK(task_push_pl_thumbnail_match(&config, playlist, thumbs_dir, db_dir,
+   playlist = playlist_init(config);
+   CHECK(task_push_pl_thumbnail_match(config, playlist, thumbs_dir, db_dir,
          false, true), "push history");
    playlist_free(playlist);
    run(0);
@@ -1560,6 +1580,7 @@ static void t1_database_list(void)
          find_box("/roms/ng.nes", "nes_ninja", SYS));
    hist_core.databases = NULL;
    filestream_delete(hist_cache);
+   free(config);
 }
 
 static void lane_t1(void)
@@ -1904,23 +1925,29 @@ static void lane_forget_race(void)
 static void lane_portable(void)
 {
    char tmp[128];
-   playlist_config_t config;
    void *before       = NULL;
    void *after        = NULL;
    int64_t before_len = 0;
    int64_t after_len  = 0;
    unsigned had       = failures;
+   /* 3 KB of paths, kept off the stack */
+   playlist_config_t *config = (playlist_config_t*)calloc(1,
+         sizeof(*config));
 
+   if (!config)
+   {
+      CHECK(false, "OOM for the portable config");
+      return;
+   }
    fixture_init();
    strlcpy(tmp, pl_path, sizeof(tmp));
    strlcat(tmp, ".tmp", sizeof(tmp));
    filestream_read_file(pl_path, &before, &before_len);
-   memset(&config, 0, sizeof(config));
-   config.capacity = 8192;
-   playlist_config_set_path(&config, pl_path);
-   playlist_config_set_base_content_directory(&config, FIX "/moved");
+   config->capacity = 8192;
+   playlist_config_set_path(config, pl_path);
+   playlist_config_set_base_content_directory(config, FIX "/moved");
    task_queue_init(false, NULL);
-   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false,
+   CHECK(task_push_pl_thumbnail_match(config, NULL, thumbs_dir, "", false,
          true), "push");
    run(0);
    filestream_read_file(pl_path, &after, &after_len);
@@ -1933,6 +1960,7 @@ static void lane_portable(void)
    free(after);
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
+   free(config);
    if (failures == had)
       fprintf(stderr, "[pass] portable paths\n");
 }
@@ -1998,14 +2026,20 @@ static void lane_evict_resolve(void)
 /* The menu reloads its art only when the table can differ. */
 static void lane_refresh(void)
 {
-   playlist_config_t config;
    unsigned had = failures;
+   /* 3 KB of paths, kept off the stack */
+   playlist_config_t *config = (playlist_config_t*)calloc(1,
+         sizeof(*config));
 
+   if (!config)
+   {
+      CHECK(false, "OOM for the refresh config");
+      return;
+   }
    fixture_init();
-   memset(&config, 0, sizeof(config));
-   config.capacity = 8192;
-   playlist_config_set_path(&config, pl_path);
-   CHECK(playlist_init_cached(&config), "the menu shows the playlist");
+   config->capacity = 8192;
+   playlist_config_set_path(config, pl_path);
+   CHECK(playlist_init_cached(config), "the menu shows the playlist");
    task_queue_init(false, NULL);
    push("");
    run(0);
@@ -2020,6 +2054,7 @@ static void lane_refresh(void)
    playlist_free_cached();
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
+   free(config);
    if (failures == had)
       fprintf(stderr, "[pass] refresh\n");
 }
@@ -2032,13 +2067,20 @@ static void lane_refresh(void)
 static bool push_other(unsigned i)
 {
    char path[128];
-   playlist_config_t config;
-   memset(&config, 0, sizeof(config));
-   config.capacity = 8192;
+   bool ret;
+   /* 3 KB of paths, kept off the stack */
+   playlist_config_t *config = (playlist_config_t*)calloc(1,
+         sizeof(*config));
+
+   if (!config)
+      return false;
+   config->capacity = 8192;
    snprintf(path, sizeof(path), FIX "/out%u.lpl", i);
-   playlist_config_set_path(&config, path);
-   return task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, "", false,
+   playlist_config_set_path(config, path);
+   ret = task_push_pl_thumbnail_match(config, NULL, thumbs_dir, "", false,
          push_other_regions);
+   free(config);
+   return ret;
 }
 
 /* Four other playlists' pushes push Test.lpl out of the store */
@@ -2435,14 +2477,20 @@ static void lane_save_stale(void)
 /* Reopened while its save writes: the save hands its table back. */
 static void lane_save_reopen(void)
 {
-   playlist_config_t config;
    unsigned had = failures;
+   /* 3 KB of paths, kept off the stack */
+   playlist_config_t *config = (playlist_config_t*)calloc(1,
+         sizeof(*config));
 
+   if (!config)
+   {
+      CHECK(false, "OOM for the reopen config");
+      return;
+   }
    fixture_init();
-   memset(&config, 0, sizeof(config));
-   config.capacity = 8192;
-   playlist_config_set_path(&config, pl_path);
-   CHECK(playlist_init_cached(&config), "the menu shows the playlist");
+   config->capacity = 8192;
+   playlist_config_set_path(config, pl_path);
+   CHECK(playlist_init_cached(config), "the menu shows the playlist");
    task_queue_init(false, NULL);
    push("");
    run(0);
@@ -2464,6 +2512,7 @@ static void lane_save_reopen(void)
    playlist_free_cached();
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
+   free(config);
    if (failures == had)
       fprintf(stderr, "[pass] reopen during its save\n");
 }
@@ -3401,9 +3450,16 @@ static void lane_bounded(void)
 {
    char big_pl[128];
    char big_cache[128];
-   playlist_config_t config;
    unsigned had = failures;
+   /* 3 KB of paths, kept off the stack */
+   playlist_config_t *config = (playlist_config_t*)calloc(1,
+         sizeof(*config));
 
+   if (!config)
+   {
+      CHECK(false, "OOM for the big playlist config");
+      return;
+   }
    fixture_init();
    fill_pathname_join_special(big_pl, FIX, "Big.lpl", sizeof(big_pl));
    strlcpy(big_cache, big_pl, sizeof(big_cache));
@@ -3411,9 +3467,8 @@ static void lane_bounded(void)
    filestream_delete(big_cache);
    write_big(big_pl);
 
-   memset(&config, 0, sizeof(config));
-   config.capacity = BIG_ENTRIES;
-   playlist_config_set_path(&config, big_pl);
+   config->capacity = BIG_ENTRIES;
+   playlist_config_set_path(config, big_pl);
    most_moves  = most_sum = most_reads = 0;
    all_moves   = all_sum  = all_reads  = 0;
    index_items = t1_items = 0;
@@ -3422,12 +3477,12 @@ static void lane_bounded(void)
    crc_item      = read_item = 0;
    task_queue_init(false, NULL);
    task_queue_set_slow_handler_cb(measure_item, 1);
-   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, db_dir,
+   CHECK(task_push_pl_thumbnail_match(config, NULL, thumbs_dir, db_dir,
          false, true), "push the big playlist");
    run(ONE_ITEM);
    /* The next session loads the big cache, then resolves it again */
    gfx_thumbnail_results_deinit();
-   CHECK(task_push_pl_thumbnail_match(&config, NULL, thumbs_dir, db_dir,
+   CHECK(task_push_pl_thumbnail_match(config, NULL, thumbs_dir, db_dir,
          false, true), "push it again");
    run(ONE_ITEM);
    CHECK(string_is_equal(find_box("/roms/s04242.nes", "Synth 04242 (U)",
@@ -3481,6 +3536,7 @@ static void lane_bounded(void)
    task_queue_set_slow_handler_cb(NULL, 0);
    task_queue_deinit();
    gfx_thumbnail_results_deinit();
+   free(config);
    if (failures == had)
       fprintf(stderr, "[pass] bounded (at most %u moves, %u bytes and %u "
             "records an item, of %u, %u and %u; %u index and %u T1 sort "
