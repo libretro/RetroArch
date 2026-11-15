@@ -3309,7 +3309,8 @@ static void d3d8_views_menu_viewport(d3d8_video_t *d3d, unsigned dims)
 {
    struct video_viewport vp;
    D3DVIEWPORT8 out;
-   memset(&vp, 0, sizeof(vp));
+   vp.pos       = 0;
+   vp.dims      = 0;
    vp.full_dims = dims;
    video_driver_update_viewport(&vp, false, d3d->keep_aspect, true);
    out.X        = (VIDEO_POS_X(vp.pos) > 0) ? VIDEO_POS_X(vp.pos) : 0;

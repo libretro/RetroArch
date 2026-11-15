@@ -299,10 +299,16 @@ void record_metal_poll(void)
    if (record_metal_start_requested)
    {
       struct video_viewport vp;
-      memset(&vp,0,sizeof(vp));
-      if (!recording_state_get_ptr()->enable) record_metal_start_requested=false;
+      vp.pos        = 0;
+      vp.dims       = 0;
+      vp.full_dims  = 0;
+      if (!recording_state_get_ptr()->enable)
+         record_metal_start_requested=false;
       else if (video_driver_get_viewport_info(&vp) && VIDEO_SCALE_W(vp.dims) && VIDEO_SCALE_H(vp.dims))
-      { record_metal_start_requested=false; command_event(CMD_EVENT_RECORD_INIT,NULL); }
+      {
+         record_metal_start_requested=false;
+         command_event(CMD_EVENT_RECORD_INIT,NULL);
+      }
    }
    if (record_metal_active)
    {

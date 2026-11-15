@@ -493,15 +493,14 @@ static void cocoa_input_poll(void *data)
       cocoa_touch_data_t *touch = &apple->touches[i];
       int screen_x              = COCOA_POS_X(touch->screen_pos) * backing_scale_factor;
       int screen_y              = COCOA_POS_Y(touch->screen_pos) * backing_scale_factor;
-
-      memset(&vp, 0, sizeof(vp));
-
-      /* each position is written whole by the translation, and left as
+      vp.pos                    = 0;
+      vp.dims                   = 0;
+      vp.full_dims              = 0;
+      /* Each position is written whole by the translation, and left as
        * it was if that fails */
       input_driver_translate_coord_viewport_confined_wrap(
             &vp, screen_x, screen_y,
             &touch->confined_pos, &touch->full_pos);
-
       input_driver_translate_coord_viewport_wrap(
             &vp, screen_x, screen_y,
             &touch->fixed_pos, &touch->full_pos);

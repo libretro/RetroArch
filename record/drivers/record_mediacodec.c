@@ -239,31 +239,33 @@ static bool record_mc_color(
    float light[2];
    if (hdr->version != 1 || hdr->size < sizeof(*hdr) || hdr->output_mode > 2)
       return false;
-   video->color = hdr->output_mode != 0;
+   video->color   = hdr->output_mode != 0;
    video->profile = video->color ? 4096 : 1;
-   video->range = 1;
-   if (!video->color)
-      return true;
-   if (!string_is_equal(video->mime, "video/hevc")
-         || !((hdr->output_mode == 1 && hdr->color_primaries == 9
-                    && hdr->transfer_function == 16)
-               || (hdr->output_mode == 2 && hdr->color_primaries == 1
-                     && hdr->transfer_function == 8)))
-      return false;
-   /* The core ABI does not supply mastering-display chromaticities.
-    * Unknown fields stay zero; never invent them from panel capabilities.
-    * The GLES worker converts scRGB to PQ once, before the encoder Surface. */
-   video->hdr_static_size = 25;
-   light[0] = hdr->max_cll;
-   light[1] = hdr->max_fall;
-   for (i = 0; i < 2; i++)
+   video->range   = 1;
+   if (video->color)
    {
-      unsigned n;
-      if (!(light[i] >= 0.0f && light[i] <= 65535.0f))
+      if (!string_is_equal(video->mime, "video/hevc")
+            || !((hdr->output_mode == 1 && hdr->color_primaries == 9
+                  && hdr->transfer_function == 16)
+               || (hdr->output_mode == 2 && hdr->color_primaries == 1
+                  && hdr->transfer_function == 8)))
          return false;
-      n = (unsigned)(light[i] + 0.5f);
-      video->hdr_static[21 + 2 * i] = (unsigned char)n;
-      video->hdr_static[22 + 2 * i] = (unsigned char)(n >> 8);
+      /* The core ABI does not supply mastering-display chromaticities.
+       * Unknown fields stay zero; never invent them from panel capabilities.
+       * The GLES worker converts scRGB to PQ once, 
+       * before the encoder Surface. */
+      video->hdr_static_size = 25;
+      light[0] = hdr->max_cll;
+      light[1] = hdr->max_fall;
+      for (i = 0; i < 2; i++)
+      {
+         unsigned n;
+         if (!(light[i] >= 0.0f && light[i] <= 65535.0f))
+            return false;
+         n = (unsigned)(light[i] + 0.5f);
+         video->hdr_static[21 + 2 * i] = (unsigned char)n;
+         video->hdr_static[22 + 2 * i] = (unsigned char)(n >> 8);
+      }
    }
    return true;
 }
@@ -274,11 +276,12 @@ static void record_mc_fail(record_mc_context_t *ctx)
    ctx->armed = false;
    record_dispatch_mediacodec_cancel(ctx->io);
 }
+
 static void record_mc_close(record_mc_context_t *ctx)
 {
    if (ctx->menu_source && ctx->armed)
    {
-      int64_t now = cpu_features_get_time_usec();
+      int64_t now      = cpu_features_get_time_usec();
       uint64_t maximum = (((uint64_t)1 << 63) - 1) / 1000;
       if (now >= ctx->menu_origin)
       {
@@ -314,6 +317,7 @@ static int record_mc_mixed_audio(
 }
 static void *record_mc_init(const struct record_params *params)
 {
+   bool audio;
    mediacodec_encoder_request_t encoder;
    video_device_info_t device;
    struct retro_hdr_metadata hdr;
@@ -321,7 +325,6 @@ static void *record_mc_init(const struct record_params *params)
    settings_t *settings = config_get_ptr();
    unsigned num, den, count, rate = 0, channels = 0;
    size_t capacity = 0, path_length;
-   bool audio;
    if (!params || !settings || record_mc_active || record_mc_retired
          || !params->filename || !*params->filename || !params->video_gpu_record
          || recording_state_get_ptr()->streaming_enable
@@ -331,16 +334,16 @@ static void *record_mc_init(const struct record_params *params)
       return NULL;
    memset(&encoder, 0, sizeof(encoder));
    memset(&hdr, 0, sizeof(hdr));
-   hdr.version = 1;
-   hdr.size = sizeof(hdr);
+   hdr.version        = 1;
+   hdr.size           = sizeof(hdr);
    if (!video_driver_get_display_metadata(
              RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr))
       return NULL;
-   encoder.width = VIDEO_SCALE_W(params->out_dims);
-   encoder.height = VIDEO_SCALE_H(params->out_dims);
+   encoder.width      = VIDEO_SCALE_W(params->out_dims);
+   encoder.height     = VIDEO_SCALE_H(params->out_dims);
    encoder.frame_rate = params->fps;
-   encoder.bitrate = 16000000;
-   encoder.mime = hdr.output_mode ? "video/hevc" : "video/avc";
+   encoder.bitrate    = 16000000;
+   encoder.mime       = hdr.output_mode ? "video/hevc" : "video/avc";
    if (!encoder.width || !encoder.height
          || ((encoder.width | encoder.height) & 1) || encoder.width > 16384
          || encoder.height > 16384 || !record_mc_rate(params->fps, &num, &den)
@@ -626,7 +629,9 @@ void record_mediacodec_poll(void)
    if (record_mc_start_requested)
    {
       struct video_viewport vp;
-      memset(&vp, 0, sizeof(vp));
+      vp.pos       = 0;
+      vp.dims      = 0;
+      vp.full_dims = 0;
       if (!recording_state_get_ptr()->enable)
          record_mc_start_requested = false;
       else if (video_driver_get_viewport_info(&vp))
@@ -644,15 +649,17 @@ void record_mediacodec_poll(void)
    }
    if (record_mc_active)
    {
-      record_mc_context_t *ctx = record_mc_active;
-      video_device_info_t device;
-      struct retro_hdr_metadata hdr;
       struct video_viewport vp;
+      struct retro_hdr_metadata hdr;
+      video_device_info_t device;
+      record_mc_context_t *ctx = record_mc_active;
       enum record_dispatch_mediacodec_state state
             = record_dispatch_mediacodec_status(ctx->io, NULL, NULL, NULL);
       memset(&hdr, 0, sizeof(hdr));
-      memset(&vp, 0, sizeof(vp));
-      hdr.version = 1;
+      vp.pos       = 0;
+      vp.dims      = 0;
+      vp.full_dims = 0;
+      hdr.version  = 1;
       hdr.size = sizeof(hdr);
       if (!video_driver_get_device(&device) || device.device != ctx->device
             || !video_driver_get_display_metadata(

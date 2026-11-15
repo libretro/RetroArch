@@ -464,7 +464,8 @@ static void D3D9V_FN(views_menu_viewport)(d3d9_video_t *d3d, unsigned dims)
 {
    struct video_viewport vp;
    D3DVIEWPORT9 out;
-   memset(&vp, 0, sizeof(vp));
+   vp.pos       = 0;
+   vp.dims      = 0;
    vp.full_dims = dims;
    video_driver_update_viewport(&vp, false, d3d->keep_aspect, true);
    out.X        = (VIDEO_POS_X(vp.pos) > 0) ? VIDEO_POS_X(vp.pos) : 0;

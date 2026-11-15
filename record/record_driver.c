@@ -549,18 +549,36 @@ bool recording_init(void)
    if (gpu_native)
    {
       struct video_viewport vp;
-      memset(&vp, 0, sizeof(vp));
-      if (!video_driver_get_viewport_info(&vp)) return false;
-      if (!VIDEO_SCALE_W(menu_source ? vp.full_dims : vp.dims)
-            || !VIDEO_SCALE_H(menu_source ? vp.full_dims : vp.dims))
+      vp.pos        = 0;
+      vp.dims       = 0;
+      vp.full_dims  = 0;
+      if (!video_driver_get_viewport_info(&vp))
+         return false;
+
+      if (menu_source)
       {
-         recording_st->driver = mc_native ? &record_mediacodec
+         if (!VIDEO_SCALE_W(vp.full_dims) || !VIDEO_SCALE_H(vp.full_dims))
+         {
+            recording_st->driver = mc_native ? &record_mediacodec
                : metal_native ? &record_metal : &record_nvenc;
-         return recording_gpu_defer_start(recording_st->driver);
+            return recording_gpu_defer_start(recording_st->driver);
+         }
+         params.out_dims     = vp.full_dims;
+         params.fb_dims      = vp.full_dims;
       }
-      params.out_dims = params.fb_dims = menu_source ? vp.full_dims : vp.dims;
-      params.pix_fmt = FFEMU_PIX_ARGB8888;
-      params.aspect_ratio = (float)VIDEO_SCALE_W(params.out_dims)
+      else
+      {
+         if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
+         {
+            recording_st->driver = mc_native ? &record_mediacodec
+               : metal_native ? &record_metal : &record_nvenc;
+            return recording_gpu_defer_start(recording_st->driver);
+         }
+         params.out_dims     = vp.dims;
+         params.fb_dims      = vp.dims;
+      }
+      params.pix_fmt         = FFEMU_PIX_ARGB8888;
+      params.aspect_ratio    = (float)VIDEO_SCALE_W(params.out_dims)
             / VIDEO_SCALE_H(params.out_dims);
       recording_st->gpu_dims = params.out_dims;
       recording_st->gpu_bgrx = false;

@@ -6132,7 +6132,9 @@ static void input_overlay_get_eightway_contact(const input_overlay_t *ol,
    float w        = 0.0f;
    float h        = 0.0f;
 
-   memset(&vp, 0, sizeof(vp));
+   vp.pos         = 0;
+   vp.dims        = 0;
+   vp.full_dims   = 0;
    if (     touch_idx >= 0
          && (unsigned)touch_idx < input_touch_contact_count
          && input_driver_poll_viewport(&vp))
@@ -6173,10 +6175,10 @@ static bool input_overlay_poll(
       int16_t norm_x, int16_t norm_y, float touch_scale)
 {
    size_t i, j;
+   bool use_range_mod;
    struct overlay_desc *descs = ol->active->descs;
    unsigned int highest_prio  = 0;
    bool any_hitbox_pressed    = false;
-   bool use_range_mod;
 
    /* norm_x and norm_y is in [-0x7fff, 0x7fff] range,
     * like RETRO_DEVICE_POINTER. */

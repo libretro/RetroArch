@@ -9195,10 +9195,12 @@ static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
       menu_driver_media_startup_ready(startup_token);
    if (!view->visible || rect->w <= 0 || rect->h <= 0
          || !VIDEO_SCALE_W(view->source_dims) || !VIDEO_SCALE_H(view->source_dims)) return;
-   memset(&vp, 0, sizeof(vp));
+   vp.pos       = 0;
+   vp.dims      = 0;
+   vp.full_dims = 0;
    if (!video_driver_get_viewport_info(&vp)
          || !VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
-      vp.dims = dims;
+      vp.dims   = dims;
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
             video_st->data, dims, true, false);

@@ -8947,8 +8947,9 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
    if (c->rt_frame_dims != dims || c->rt_vp_dims != vp_dims)
    {
       struct video_viewport vp;
-      memset(&vp, 0, sizeof(vp));
-      vp.dims = vp_dims;
+      vp.pos           = 0;
+      vp.dims          = vp_dims;
+      vp.full_dims     = 0;
       d3d12_chain_init_render_targets(d3d12, c, v->width, v->height, &vp);
       c->rt_frame_dims = dims;
       c->rt_vp_dims    = vp_dims;
@@ -8966,8 +8967,8 @@ static void d3d12_views_draw_pass(d3d12_video_t *d3d12,
       const struct d3d12_views_draw *d, d3d12_filter_chain_t *c,
       const video_views_rect_t *dst, const video_views_rect_t *cut)
 {
-   D3D12_VIEWPORT vp, vp_cut;
    D3D12_RECT sc_dst, sc;
+   D3D12_VIEWPORT vp, vp_cut;
    D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
 
    if (c->final)
