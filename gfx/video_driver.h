@@ -2411,6 +2411,12 @@ const void *video_driver_convert_xrgb2101010(
 void video_driver_convert_xrgb2101010_into(void *output,
       const void *data, unsigned dims, size_t in_pitch, size_t out_pitch);
 
+/* True holds a driver loan and the cached-frame keeper through frame(). */
+bool video_driver_convert_frame(video_driver_state_t *video_st,
+      const video_poke_interface_t *poke, void *driver_data,
+      enum retro_pixel_format format, const void **data,
+      unsigned dims, unsigned *pitch, bool allow_lend);
+
 /**
  * config_get_video_driver_options:
  *

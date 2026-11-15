@@ -2210,122 +2210,24 @@ void video_thread_async_poll(void)
    video_thread_async_deliver(thr);
 }
 
-/* Source pixel format conversion, on the thread that draws: a frame
- * staged by video_thread_defer_convert() arrives in the core's format.
- * The scaler and the narrowing scratch buffer hold still while frames
- * are in flight; the video driver deinit waits this thread idle before
- * freeing them. */
-static void *video_thread_convert_lend(thread_video_t *thr,
-      const void *data, unsigned dims, unsigned in_pitch,
-      unsigned bpp, unsigned *pitch)
-{
-   struct retro_framebuffer fb;
-   uintptr_t src = (uintptr_t)data;
-   uintptr_t dst;
-   size_t src_size = (size_t)in_pitch * VIDEO_SCALE_H(dims);
-   size_t dst_size;
-   if (     !thr->poke || !thr->poke->get_current_software_framebuffer
-         || !thr->driver_data || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims)
-         || retro_atomic_load_acquire_size(&thr->video_st->frame_cache_keeper))
-      return NULL;
-   fb.data         = NULL;
-   fb.width        = VIDEO_SCALE_W(dims);
-   fb.height       = VIDEO_SCALE_H(dims);
-   fb.pitch        = 0;
-   fb.format       = RETRO_PIXEL_FORMAT_UNKNOWN;
-   fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
-   fb.memory_flags = 0;
-   /* The driver owns the loan through frame(); keep the raw cached source. */
-   retro_atomic_store_release_size(&thr->video_st->frame_cache_keeper,
-         VIDEO_CACHE_KEEPER);
-   if (     !thr->poke->get_current_software_framebuffer(thr->driver_data, &fb)
-         || !fb.data || fb.width != VIDEO_SCALE_W(dims)
-         || fb.height != VIDEO_SCALE_H(dims)
-         || fb.format != (bpp == sizeof(uint32_t)
-            ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)
-         || fb.pitch < (size_t)VIDEO_SCALE_W(dims) * bpp
-         || fb.pitch > INT_MAX || (fb.pitch & (bpp - 1))
-         || ((uintptr_t)fb.data & (bpp - 1)))
-      goto decline;
-   dst      = (uintptr_t)fb.data;
-   dst_size = fb.pitch * VIDEO_SCALE_H(dims);
-   if (     src_size / VIDEO_SCALE_H(dims) != in_pitch
-         || dst_size / VIDEO_SCALE_H(dims) != fb.pitch
-         || (dst >= src ? dst - src < src_size : src - dst < dst_size))
-      goto decline;
-   *pitch = (unsigned)fb.pitch;
-   return fb.data;
-
-decline:
-   retro_atomic_store_release_size(&thr->video_st->frame_cache_keeper, 0);
-   return NULL;
-}
-
 static bool video_thread_convert(thread_video_t *thr,
       unsigned kind, const void **data,
       unsigned dims, unsigned *pitch, bool allow_lend)
 {
-   video_driver_state_t *video_st = thr->video_st;
-
-   if (!*data)
-      return false;
-
+   enum retro_pixel_format format;
    switch (kind)
    {
       case VIDEO_THREAD_CONVERT_0RGB1555:
-         if (video_st->scaler_ptr)
-         {
-            unsigned out_pitch = VIDEO_SCALE_W(dims) * sizeof(uint16_t);
-            void *lent = allow_lend ? video_thread_convert_lend(thr,
-                  *data, dims, *pitch, sizeof(uint16_t), &out_pitch) : NULL;
-            if (lent)
-            {
-               struct scaler_ctx *scaler = video_st->scaler_ptr->scaler;
-               scaler->in_width   = scaler->out_width  = VIDEO_SCALE_W(dims);
-               scaler->in_height  = scaler->out_height = VIDEO_SCALE_H(dims);
-               scaler->in_stride  = (int)*pitch;
-               scaler->out_stride = (int)out_pitch;
-               scaler_ctx_scale_direct(scaler, lent, *data);
-               *data  = lent;
-               *pitch = out_pitch;
-               return true;
-            }
-            video_pixel_frame_scale(
-                  video_st->scaler_ptr->scaler,
-                  video_st->scaler_ptr->scaler_out,
-                  *data, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), *pitch);
-            *data  = video_st->scaler_ptr->scaler_out;
-            *pitch = video_st->scaler_ptr->scaler->out_stride;
-         }
+         format = RETRO_PIXEL_FORMAT_0RGB1555;
          break;
       case VIDEO_THREAD_CONVERT_XRGB2101010:
-         {
-            unsigned out_pitch = VIDEO_SCALE_W(dims) * sizeof(uint32_t);
-            void *lent = allow_lend ? video_thread_convert_lend(thr,
-                  *data, dims, *pitch, sizeof(uint32_t), &out_pitch) : NULL;
-            size_t      conv_pitch = *pitch;
-            const void *converted;
-            if (lent)
-            {
-               video_driver_convert_xrgb2101010_into(lent, *data,
-                     dims, *pitch, out_pitch);
-               *data  = lent;
-               *pitch = out_pitch;
-               return true;
-            }
-            converted = video_driver_convert_xrgb2101010(
-                  video_st, *data, dims, *pitch, &conv_pitch);
-            if (converted)
-            {
-               *data  = converted;
-               *pitch = (unsigned)conv_pitch;
-            }
-         }
+         format = RETRO_PIXEL_FORMAT_XRGB2101010;
          break;
       default:
-         break;
+         return false;
    }
-   return false;
+   return video_driver_convert_frame(thr->video_st, thr->poke,
+         thr->driver_data, format, data, dims, pitch, allow_lend);
 }
 
 void video_thread_defer_convert(enum video_thread_convert kind)

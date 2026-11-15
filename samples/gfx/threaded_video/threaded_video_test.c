@@ -11483,6 +11483,9 @@ static void pixlane_skip_conversion(bool threaded)
    input_driver_state_t *input = input_state_get_ptr();
    settings_t *settings = config_get_ptr();
    recording_state_t saved_rec = *rec;
+   const video_poke_interface_t *saved_poke = video_st->poke;
+   video_poke_interface_t poke;
+   unsigned lend_calls;
    bool saved_skip = settings->bools.fastforward_frameskip;
    unsigned saved_nonblock = input->flags & INP_FLAG_NONBLOCKING;
    unsigned ff_mask = VIDEO_FLAG_FF_DECIDED | VIDEO_FLAG_FF_SKIP_FRAME
@@ -11512,6 +11515,12 @@ static void pixlane_skip_conversion(bool threaded)
    if (threaded)
       video_thread_wait_idle();
    swaps = video_st->swap_count;
+   memset(&poke, 0, sizeof(poke));
+   if (saved_poke)
+      poke = *saved_poke;
+   poke.get_current_software_framebuffer = pixlane_lend;
+   video_st->poke = &poke;
+   lend_calls = pixlane_lend_calls;
    memset(scratch, 0xa5, bytes);
    video_st->main_flags |= VIDEO_FLAG_FF_DECIDED | VIDEO_FLAG_FF_SKIP_FRAME;
    video_driver_frame(pixlane_lend_buffer(), PIXLANE_W, 240, PIXLANE_W * bpp);
@@ -11536,6 +11545,13 @@ static void pixlane_skip_conversion(bool threaded)
    CHECK(video_st->swap_count == swaps, "conversion skip: recorded drop presented");
 
    *rec = saved_rec;
+   video_st->main_flags = (video_st->main_flags & ~ff_mask) | VIDEO_FLAG_FF_DECIDED;
+   video_driver_cached_frame();
+   if (threaded)
+      video_thread_wait_idle();
+   CHECK(pixlane_lend_calls == lend_calls,
+         "conversion skip: dropped, recorded or replayed frame requested a loan");
+   video_st->poke = saved_poke;
    settings->bools.fastforward_frameskip = saved_skip;
    input->flags = (input->flags & ~INP_FLAG_NONBLOCKING) | saved_nonblock;
    video_st->main_flags = (video_st->main_flags & ~ff_mask) | saved_ff;
@@ -11556,6 +11572,8 @@ static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
    unsigned i, bad;
    video_poke_interface_t poke;
    const video_poke_interface_t *saved_poke = NULL;
+   uint8_t *scratch = NULL;
+   size_t scratch_bytes = 0;
 
    CHECK(set_format && freeze, "harness core lacks the format exports");
    if (!set_format || !freeze)
@@ -11574,6 +11592,13 @@ static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
    pixlane_lend_mode  = lend_mode;
    pixlane_lend_calls = 0;
    pixlane_lend_bad   = 0;
+   if (lend_mode == 1)
+   {
+      scratch = pixlane_wide ? (uint8_t*)video_st->pix10_convert_buf
+         : (uint8_t*)video_st->scaler_ptr->scaler_out;
+      scratch_bytes = PIXLANE_W * 240 * (pixlane_wide ? 4u : 2u);
+      memset(scratch, 0xa5, scratch_bytes);
+   }
    retro_atomic_store_release_int(&pixlane_frames, 0);
    if (threaded)
    {
@@ -11598,6 +11623,15 @@ static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
       pixlane_driver         = *video_st->current_video;
       pixlane_driver.frame   = pixlane_frame;
       video_st->current_video = &pixlane_driver;
+      if (lend_mode)
+      {
+         saved_poke = video_st->poke;
+         memset(&poke, 0, sizeof(poke));
+         if (saved_poke)
+            poke = *saved_poke;
+         poke.get_current_software_framebuffer = pixlane_lend;
+         video_st->poke = &poke;
+      }
    }
 
    freeze(pixlane_seed());
@@ -11617,7 +11651,11 @@ static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
       set_driver((thread_video_t*)video_st->data, pixlane_inner);
    }
    else
+   {
+      if (lend_mode)
+         video_st->poke = saved_poke;
       video_st->current_video = (video_driver_t*)pixlane_inner;
+   }
 
    CHECK(retro_atomic_load_acquire_int(&pixlane_frames) >= 2,
          "pixel format lane (%s, %s): no frame reached the driver", name,
@@ -11659,6 +11697,12 @@ static void pixlane_once(unsigned fmt, bool threaded, unsigned lend_mode)
       CHECK(!retro_atomic_load_acquire_size(&video_st->frame_cache_keeper),
             "conversion lend %u retained the cached-frame keeper", lend_mode);
    }
+   if (scratch)
+   {
+      size_t at;
+      for (at = 0; at < scratch_bytes && scratch[at] == 0xa5; at++) { }
+      CHECK(at == scratch_bytes, "conversion loan (%s, %s) wrote scratch", name, mode);
+   }
    pixlane_lend_mode = 0;
    if (!lend_mode)
       pixlane_skip_conversion(threaded);
@@ -11685,6 +11729,8 @@ static void lane_pixel_format(void)
    {
       pixlane_once(RETRO_PIXEL_FORMAT_0RGB1555, true, lend_mode);
       pixlane_once(RETRO_PIXEL_FORMAT_XRGB2101010, true, lend_mode);
+      pixlane_once(RETRO_PIXEL_FORMAT_0RGB1555, false, lend_mode);
+      pixlane_once(RETRO_PIXEL_FORMAT_XRGB2101010, false, lend_mode);
    }
 
    /* Back to the core's own format, the driver made for it */

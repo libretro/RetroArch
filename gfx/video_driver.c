@@ -17,6 +17,7 @@
 #include <memory/mem_stats.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <math.h>
 
 #include <retro_atomic.h>
@@ -9132,6 +9133,121 @@ VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
    return video_st->pix10_convert_buf;
 }
 
+static void *video_driver_convert_lend(video_driver_state_t *video_st,
+      const video_poke_interface_t *poke, void *driver_data,
+      const void *data, unsigned dims, unsigned in_pitch,
+      unsigned bpp, unsigned *pitch)
+{
+   struct retro_framebuffer fb;
+   uintptr_t src = (uintptr_t)data;
+   uintptr_t dst;
+   size_t src_size = (size_t)in_pitch * VIDEO_SCALE_H(dims);
+   size_t dst_size;
+   if (     !poke || !poke->get_current_software_framebuffer
+         || !driver_data || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims)
+         || retro_atomic_load_acquire_size(&video_st->frame_cache_keeper))
+      return NULL;
+   fb.data         = NULL;
+   fb.width        = VIDEO_SCALE_W(dims);
+   fb.height       = VIDEO_SCALE_H(dims);
+   fb.pitch        = 0;
+   fb.format       = RETRO_PIXEL_FORMAT_UNKNOWN;
+   fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+   fb.memory_flags = 0;
+   /* The driver owns the loan through frame(); keep the raw cached source. */
+   retro_atomic_store_release_size(&video_st->frame_cache_keeper,
+         VIDEO_CACHE_KEEPER);
+   if (     !poke->get_current_software_framebuffer(driver_data, &fb)
+         || !fb.data || fb.width != VIDEO_SCALE_W(dims)
+         || fb.height != VIDEO_SCALE_H(dims)
+         || fb.format != (bpp == sizeof(uint32_t)
+            ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)
+         || fb.pitch < (size_t)VIDEO_SCALE_W(dims) * bpp
+         || fb.pitch > INT_MAX || (fb.pitch & (bpp - 1))
+         || ((uintptr_t)fb.data & (bpp - 1)))
+      goto decline;
+   dst      = (uintptr_t)fb.data;
+   dst_size = fb.pitch * VIDEO_SCALE_H(dims);
+   if (     src_size / VIDEO_SCALE_H(dims) != in_pitch
+         || dst_size / VIDEO_SCALE_H(dims) != fb.pitch
+         || (dst >= src ? dst - src < src_size : src - dst < dst_size))
+      goto decline;
+   *pitch = (unsigned)fb.pitch;
+   return fb.data;
+
+decline:
+   retro_atomic_store_release_size(&video_st->frame_cache_keeper, 0);
+   return NULL;
+}
+
+bool video_driver_convert_frame(video_driver_state_t *video_st,
+      const video_poke_interface_t *poke, void *driver_data,
+      enum retro_pixel_format format, const void **data,
+      unsigned dims, unsigned *pitch, bool allow_lend)
+{
+   if (!*data)
+      return false;
+
+   switch (format)
+   {
+      case RETRO_PIXEL_FORMAT_0RGB1555:
+         if (video_st->scaler_ptr)
+         {
+            unsigned out_pitch = VIDEO_SCALE_W(dims) * sizeof(uint16_t);
+            void *lent = allow_lend ? video_driver_convert_lend(video_st,
+                  poke, driver_data, *data, dims, *pitch,
+                  sizeof(uint16_t), &out_pitch) : NULL;
+            if (lent)
+            {
+               struct scaler_ctx *scaler = video_st->scaler_ptr->scaler;
+               scaler->in_width   = scaler->out_width  = VIDEO_SCALE_W(dims);
+               scaler->in_height  = scaler->out_height = VIDEO_SCALE_H(dims);
+               scaler->in_stride  = (int)*pitch;
+               scaler->out_stride = (int)out_pitch;
+               scaler_ctx_scale_direct(scaler, lent, *data);
+               *data  = lent;
+               *pitch = out_pitch;
+               return true;
+            }
+            video_pixel_frame_scale(
+                  video_st->scaler_ptr->scaler,
+                  video_st->scaler_ptr->scaler_out,
+                  *data, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), *pitch);
+            *data  = video_st->scaler_ptr->scaler_out;
+            *pitch = video_st->scaler_ptr->scaler->out_stride;
+         }
+         break;
+      case RETRO_PIXEL_FORMAT_XRGB2101010:
+         {
+            unsigned out_pitch = VIDEO_SCALE_W(dims) * sizeof(uint32_t);
+            void *lent = allow_lend ? video_driver_convert_lend(video_st,
+                  poke, driver_data, *data, dims, *pitch,
+                  sizeof(uint32_t), &out_pitch) : NULL;
+            size_t      conv_pitch = *pitch;
+            const void *converted;
+            if (lent)
+            {
+               video_driver_convert_xrgb2101010_into(lent, *data,
+                     dims, *pitch, out_pitch);
+               *data  = lent;
+               *pitch = out_pitch;
+               return true;
+            }
+            converted = video_driver_convert_xrgb2101010(
+                  video_st, *data, dims, *pitch, &conv_pitch);
+            if (converted)
+            {
+               *data  = converted;
+               *pitch = (unsigned)conv_pitch;
+            }
+         }
+         break;
+      default:
+         break;
+   }
+   return false;
+}
+
 /* Swaps a single driver frame call puts on the display: the light
  * frame, its BFI dark frames, and each shader sub-frame of every one of
  * those. The same product video_driver_get_refresh_rate() scales by. */
@@ -9183,6 +9299,22 @@ static bool video_driver_convert_on_worker(video_driver_state_t *video_st,
    return true;
 }
 #endif
+
+static bool video_driver_convert_at_present(video_driver_state_t *video_st,
+      const video_driver_t *vid, recording_state_t *recording_st,
+      bool render_frame, size_t pitch)
+{
+   return render_frame && vid && vid->frame && video_st->data
+      && video_st->poke && video_st->poke->get_current_software_framebuffer
+      && !video_driver_thread_wrapper_active() && !video_st->frame_repeat
+      && !(video_st->main_flags & VIDEO_FLAG_STUB_FRAME)
+      && !recording_st->data && !recording_st->start_pending
+#ifdef HAVE_VIDEO_FILTER
+      && !video_st->state_filter
+#endif
+      && pitch <= INT_MAX
+      && !retro_atomic_load_acquire_size(&video_st->frame_cache_keeper);
+}
 
 /* Appends to the statistics text, which stays terminated and within
  * VIDEO_STAT_TEXT_SIZE whatever is asked of it: a full buffer takes
@@ -9634,6 +9766,8 @@ void video_driver_frame(const void *data, unsigned width,
     * to ensure that the first frame is rendered */
    static bool last_frame_duped   = true;
    bool render_frame              = true;
+   bool convert_deferred          = false;
+   bool convert_lent              = false;
    retro_time_t new_time;
    video_frame_info_t video_info;
    size_t _len                    = 0;
@@ -9806,12 +9940,18 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
       )
    {
-      video_pixel_frame_scale(
-            video_st->scaler_ptr->scaler,
-            video_st->scaler_ptr->scaler_out,
-            data, width, height, pitch);
-      data                = video_st->scaler_ptr->scaler_out;
-      pitch               = video_st->scaler_ptr->scaler->out_stride;
+      if (video_driver_convert_at_present(video_st, vid, recording_st,
+               render_frame, pitch))
+         convert_deferred = true;
+      else
+      {
+         video_pixel_frame_scale(
+               video_st->scaler_ptr->scaler,
+               video_st->scaler_ptr->scaler_out,
+               data, width, height, pitch);
+         data                = video_st->scaler_ptr->scaler_out;
+         pitch               = video_st->scaler_ptr->scaler->out_stride;
+      }
    }
 
    /* XRGB2101010 fallback: if the active video driver cannot present a native
@@ -9831,14 +9971,20 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
       )
    {
-      size_t      conv_pitch = pitch;
-      const void *converted  = video_driver_convert_xrgb2101010(
-            video_st, data, dims, pitch,
-            &conv_pitch);
-      if (converted)
+      if (video_driver_convert_at_present(video_st, vid, recording_st,
+               render_frame, pitch))
+         convert_deferred = true;
+      else
       {
-         data  = converted;
-         pitch = conv_pitch;
+         size_t      conv_pitch = pitch;
+         const void *converted  = video_driver_convert_xrgb2101010(
+               video_st, data, dims, pitch,
+               &conv_pitch);
+         if (converted)
+         {
+            data  = converted;
+            pitch = conv_pitch;
+         }
       }
    }
 
@@ -10399,6 +10545,14 @@ void video_driver_frame(const void *data, unsigned width,
        * there instead */
       if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
          font_driver_frame_begin();
+      if (convert_deferred)
+      {
+         unsigned convert_pitch = (unsigned)pitch;
+         convert_lent = video_driver_convert_frame(video_st, video_st->poke,
+               video_st->data, video_driver_pix_fmt, &data, dims,
+               &convert_pitch, true);
+         pitch = convert_pitch;
+      }
       if (frame_cb(
                video_st->data, data, dims,
                video_st->frame_count, (unsigned)pitch,
@@ -10414,6 +10568,9 @@ void video_driver_frame(const void *data, unsigned width,
          video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
       else
          video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
+
+      if (convert_lent)
+         retro_atomic_store_release_size(&video_st->frame_cache_keeper, 0);
 
 #ifdef HAVE_VIDEO_FILTER
       if (filter_lent)
