@@ -2158,7 +2158,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    switch (index)
    {
       case VIDEO_SHADER_STOCK_BLEND:
-      case VIDEO_SHADER_XMB_MATERIAL:
+      case VIDEO_SHADER_XMB_PLASTIC:
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
@@ -2174,7 +2174,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    if (_bloomDims && index == VIDEO_SHADER_MENU)
       return _statesF16[index][blend ? 1 : 0];
 
-   if (index == VIDEO_SHADER_XMB_MATERIAL)
+   if (index == VIDEO_SHADER_XMB_PLASTIC)
    {
       blend = YES;
       if (!_states[index][1] || (_hdrEnabled && !_statesF16[index][1]))
@@ -2331,13 +2331,13 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       return NO;
    }
 
-   psd.label = @"xmb_material";
+   psd.label = @"xmb_plastic";
    psd.fragmentFunction = RARCH_AUTORELEASE_R([_library
-         newFunctionWithName:@"xmb_material_fragment"]);
+         newFunctionWithName:@"xmb_plastic_fragment"]);
    if (psd.fragmentFunction)
    {
-      _states[VIDEO_SHADER_XMB_MATERIAL][1] = [self sdrState:psd error:&err];
-      _statesF16[VIDEO_SHADER_XMB_MATERIAL][1] = [self twinF16:psd];
+      _states[VIDEO_SHADER_XMB_PLASTIC][1] = [self sdrState:psd error:&err];
+      _statesF16[VIDEO_SHADER_XMB_PLASTIC][1] = [self twinF16:psd];
    }
    err = nil;
 
@@ -4852,8 +4852,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    }
    else
       [rce setRenderPipelineState:[_context getStockShader:
-            draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL
-               ? VIDEO_SHADER_XMB_MATERIAL : VIDEO_SHADER_STOCK_BLEND
+            draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC
+               ? VIDEO_SHADER_XMB_PLASTIC : VIDEO_SHADER_STOCK_BLEND
             blend:_blend]];
 
    Uniforms uniforms = {
@@ -5169,8 +5169,8 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    size_t _esz;
    id<MTLTexture> _texture;
 
-   id<MTLRenderPipelineState> _materialState;
-   id<MTLRenderPipelineState> _materialStateF16;
+   id<MTLRenderPipelineState> _plasticState;
+   id<MTLRenderPipelineState> _plasticStateF16;
    id<MTLRenderPipelineState> _state;
    id<MTLRenderPipelineState> _stateF16; /* the HDR UI overlay's */
    id<MTLSamplerState> _sampler;
@@ -5183,7 +5183,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 }
 
 @property (readonly) struct font_atlas *atlas;
-@property (nonatomic) bool xmbMaterial;
+@property (nonatomic) bool xmbPlastic;
 
 - (void)deinit;
 - (instancetype)initWithDriver:(MetalDriver *)driver fontPath:(const char *)font_path fontSize:(unsigned)font_size;
@@ -5212,8 +5212,8 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 #if !__has_feature(objc_arc)
    [_context release];
    [(id)_texture release];
-   [(id)_materialState release];
-   [(id)_materialStateF16 release];
+   [(id)_plasticState release];
+   [(id)_plasticStateF16 release];
    [(id)_state release];
    [(id)_stateF16 release];
    [(id)_sampler release];
@@ -5355,8 +5355,8 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
             newFunctionWithName:@"xmb_font_fragment"]);
       if (psd.fragmentFunction)
       {
-         _materialState    = [_context sdrState:psd error:&err];
-         _materialStateF16 = [_context twinF16:psd];
+         _plasticState    = [_context sdrState:psd error:&err];
+         _plasticStateF16 = [_context twinF16:psd];
       }
    }
 
@@ -5519,12 +5519,12 @@ static INLINE void write_quad6(SpriteVertex *pv,
    [_context resetRenderViewport:kFullscreenViewport];
    id<MTLRenderPipelineState> state = (_context.hdrEnabled && _stateF16)
       ? _stateF16 : _state;
-   if (self.xmbMaterial)
+   if (self.xmbPlastic)
    {
-      id<MTLRenderPipelineState> material = _context.hdrEnabled
-         ? _materialStateF16 : _materialState;
-      if (material)
-         state = material;
+      id<MTLRenderPipelineState> plastic = _context.hdrEnabled
+         ? _plasticStateF16 : _plasticState;
+      if (plastic)
+         state = plastic;
    }
    [rce setRenderPipelineState:state];
    [rce setVertexBytes:&_uniforms length:sizeof(Uniforms) atIndex:BufferIndexUniforms];
@@ -5753,7 +5753,7 @@ static void metal_raster_font_bind_block(void *data, void *userdata)
 {
    MetalRaster *r = (__bridge MetalRaster *)data;
    video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
-   r.xmbMaterial = block && block->xmb_material;
+   r.xmbPlastic = block && block->xmb_plastic;
 }
 
 static void metal_raster_font_render_msg(

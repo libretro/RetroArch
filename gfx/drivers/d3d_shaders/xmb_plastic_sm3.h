@@ -1,6 +1,6 @@
-#include "../../common/xmb_material.h"
+#include "../../common/xmb_plastic.h"
 
-#define XMB_MATERIAL_SM3_PREFIX \
+#define XMB_PLASTIC_SM3_PREFIX \
    "#define vec2 float2\n#define vec3 float3\n#define vec4 float4\n" \
    "#define mix lerp\n#define XMB_SAMPLE(p) tex2D(s0,p)\n" \
    "#define dFdx ddx\n#define dFdy ddy\n" \

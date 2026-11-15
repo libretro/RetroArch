@@ -286,7 +286,7 @@ SRC(
 
 )
 
-#include "../xmb_material.h"
+#include "../xmb_plastic.h"
 #define vec2 float2
 #define vec3 float3
 #define vec4 float4
@@ -299,11 +299,11 @@ SRC(
       float2 uv = input.texcoord;
       float4 tint = input.color;
 )
-XMB_SRC(XMB_MATERIAL_SAMPLE)
-XMB_SRC(XMB_MATERIAL_LIGHT)
-XMB_SRC(XMB_MATERIAL_COLOR)
+XMB_SRC(XMB_PLASTIC_SAMPLE)
+XMB_SRC(XMB_PLASTIC_LIGHT)
+XMB_SRC(XMB_PLASTIC_COLOR)
 SRC(
-      return SpriteEncodeHDR(material);
+      return SpriteEncodeHDR(plastic);
    }
 )
 #define dFdx ddx
@@ -319,7 +319,7 @@ XMB_SRC(XMB_FONT_SAMPLE)
 XMB_SRC(XMB_FONT_LIGHT)
 XMB_SRC(XMB_FONT_COLOR)
 SRC(
-      return SpriteEncodeHDR(material);
+      return SpriteEncodeHDR(plastic);
    }
 )
 #undef XMB_COVERAGE
@@ -334,7 +334,7 @@ XMB_SRC(XMB_FONT_SAMPLE)
 XMB_SRC(XMB_FONT_LIGHT)
 XMB_SRC(XMB_FONT_COLOR)
 SRC(
-      return SpriteEncodeHDR(material);
+      return SpriteEncodeHDR(plastic);
    }
 )
 #undef XMB_COVERAGE

@@ -1113,7 +1113,7 @@ static void xmb_draw_icon(
       gfx_display_ctx_driver_t *dispctx,
       unsigned video_dims,
       bool shadows_enable,
-      bool material,
+      bool plastic,
       int icon_size_x,
       int icon_size_y,
       uintptr_t texture,
@@ -1222,8 +1222,8 @@ static void xmb_draw_icon(
    }
 
    coords.color         = (const float*)color;
-   draw.pipeline_id     = material
-      ? VIDEO_SHADER_XMB_MATERIAL : VIDEO_SHADER_STOCK_BLEND;
+   draw.pipeline_id     = plastic
+      ? VIDEO_SHADER_XMB_PLASTIC : VIDEO_SHADER_STOCK_BLEND;
    draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x), VIDEO_PX(height - y));
 
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
@@ -8786,9 +8786,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (ctx_gen != xmb->context_generation)
       goto ctx_destroyed;
 
-   xmb->raster_block.xmb_material  =
+   xmb->raster_block.xmb_plastic  =
          (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0;
-   xmb->raster_block2.xmb_material = xmb->raster_block.xmb_material;
+   xmb->raster_block2.xmb_plastic = xmb->raster_block.xmb_plastic;
    font_driver_bind_block(xmb->font,  &xmb->raster_block);
    font_driver_bind_block(xmb->font2, &xmb->raster_block2);
 

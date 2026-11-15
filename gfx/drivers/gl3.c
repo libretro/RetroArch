@@ -277,7 +277,7 @@ typedef struct gl3
    struct
    {
       GLuint alpha_blend;
-      GLuint xmb_material;
+      GLuint xmb_plastic;
       GLuint xmb_font;
       GLuint font;
 #ifdef HAVE_SHADERPIPELINE
@@ -290,7 +290,7 @@ typedef struct gl3
       GLuint snowflake;
 #endif /* HAVE_SHADERPIPELINE */
       struct gl3_buffer_locations alpha_blend_loc;
-      struct gl3_buffer_locations xmb_material_loc;
+      struct gl3_buffer_locations xmb_plastic_loc;
       struct gl3_buffer_locations xmb_font_loc;
       struct gl3_buffer_locations font_loc;
       /* Half-float (linear scRGB) textures under the scRGB composite:
@@ -298,7 +298,7 @@ typedef struct gl3
       GLuint alpha_blend_linear;
       struct gl3_buffer_locations alpha_blend_linear_loc;
       bool   alpha_blend_linear_tried;
-      bool   xmb_material_tried;
+      bool   xmb_plastic_tried;
       bool   xmb_font_tried;
       /* stock_rect.frag, made the first time the stock chain would draw
        * a view or a padded frame: with its nearest and linear samplers,
@@ -1240,8 +1240,8 @@ static bool gl3_fp16_is(GLuint id)
 
 #ifdef HAVE_SLANG
 static GLuint gl3_linear_program(gl3_t *gl);
-static GLuint gl3_material_program(gl3_t *gl);
-static GLuint gl3_font_material_program(gl3_t *gl);
+static GLuint gl3_plastic_program(gl3_t *gl);
+static GLuint gl3_font_plastic_program(gl3_t *gl);
 #else
 static GLuint gl3_linear_program(gl3_t *gl) { (void)gl; return 0; }
 #endif
@@ -1276,9 +1276,9 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       glBindTexture(GL_TEXTURE_2D, draw->texture
             ? (GLuint)draw->texture : gl->white_texture);
 
-      if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL)
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
          gl->chain.shader->use(gl, gl->chain.shader_data,
-               VIDEO_SHADER_XMB_MATERIAL, true);
+               VIDEO_SHADER_XMB_PLASTIC, true);
       gl->chain.shader->set_coords(gl->chain.shader_data, &coords);
       gl->chain.shader->set_mvp(gl->chain.shader_data,
             draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
@@ -1286,7 +1286,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 
       /* Menu draws use a triangle-strip layout. */
       glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
-      if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL)
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
          gl->chain.shader->use(gl, gl->chain.shader_data,
                VIDEO_SHADER_STOCK_BLEND, true);
    }
@@ -1350,11 +1350,11 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 #endif /* HAVE_SHADERPIPELINE */
 
          default:
-            if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL
-                  && gl3_material_program(gl))
+            if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC
+                  && gl3_plastic_program(gl))
             {
-               glUseProgram(gl->pipelines.xmb_material);
-               stock_loc = &gl->pipelines.xmb_material_loc;
+               glUseProgram(gl->pipelines.xmb_plastic);
+               stock_loc = &gl->pipelines.xmb_plastic_loc;
                break;
             }
             /* A half-float texture is linear scRGB: under the scRGB
@@ -1764,14 +1764,14 @@ static void gl3_raster_font_draw_vertices(gl3_t *gl,
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
 
-      if (font->block && font->block->xmb_material)
+      if (font->block && font->block->xmb_plastic)
          gl->chain.shader->use(gl, gl->chain.shader_data,
-               VIDEO_SHADER_XMB_FONT_MATERIAL, true);
+               VIDEO_SHADER_XMB_FONT_PLASTIC, true);
       gl->chain.shader->set_coords(gl->chain.shader_data, coords);
       gl->chain.shader->set_mvp(gl->chain.shader_data, &gl->mvp_no_rot);
 
       glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
-      if (font->block && font->block->xmb_material)
+      if (font->block && font->block->xmb_plastic)
          gl->chain.shader->use(gl, gl->chain.shader_data,
                VIDEO_SHADER_STOCK_BLEND, true);
    }
@@ -1779,8 +1779,8 @@ static void gl3_raster_font_draw_vertices(gl3_t *gl,
    else
    {
       struct gl3_buffer_locations *loc = &gl->pipelines.font_loc;
-      if (font->block && font->block->xmb_material
-            && gl3_font_material_program(gl))
+      if (font->block && font->block->xmb_plastic
+            && gl3_font_plastic_program(gl))
       {
          glUseProgram(gl->pipelines.xmb_font);
          loc = &gl->pipelines.xmb_font_loc;
@@ -2553,10 +2553,10 @@ static void gl3_destroy_resources(gl3_t *gl)
       glDeleteProgram(gl->pipelines.alpha_blend);
       gl->pipelines.alpha_blend = 0;
    }
-   if (gl->pipelines.xmb_material)
-      glDeleteProgram(gl->pipelines.xmb_material);
-   gl->pipelines.xmb_material = 0;
-   gl->pipelines.xmb_material_tried = false;
+   if (gl->pipelines.xmb_plastic)
+      glDeleteProgram(gl->pipelines.xmb_plastic);
+   gl->pipelines.xmb_plastic = 0;
+   gl->pipelines.xmb_plastic_tried = false;
    if (gl->pipelines.xmb_font)
       glDeleteProgram(gl->pipelines.xmb_font);
    gl->pipelines.xmb_font = 0;
@@ -2972,20 +2972,20 @@ static void gl3_set_viewport(gl3_t *gl,
 }
 
 #ifdef HAVE_SLANG
-static GLuint gl3_material_program(gl3_t *gl)
+static GLuint gl3_plastic_program(gl3_t *gl)
 {
-   if (!gl->pipelines.xmb_material_tried)
+   if (!gl->pipelines.xmb_plastic_tried)
    {
-      gl->pipelines.xmb_material_tried = true;
-      gl->pipelines.xmb_material = gl3_cross_compile_program(
+      gl->pipelines.xmb_plastic_tried = true;
+      gl->pipelines.xmb_plastic = gl3_cross_compile_program(
             spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
-            spirv_xmb_material_frag, spirv_xmb_material_frag_size,
-            &gl->pipelines.xmb_material_loc, true);
+            spirv_xmb_plastic_frag, spirv_xmb_plastic_frag_size,
+            &gl->pipelines.xmb_plastic_loc, true);
    }
-   return gl->pipelines.xmb_material;
+   return gl->pipelines.xmb_plastic;
 }
 
-static GLuint gl3_font_material_program(gl3_t *gl)
+static GLuint gl3_font_plastic_program(gl3_t *gl)
 {
    if (!gl->pipelines.xmb_font_tried)
    {

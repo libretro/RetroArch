@@ -53,7 +53,7 @@
 #include "../include/Cg/cg.h"
 
 #include "../video_shader_parse.h"
-#include "../common/xmb_material.h"
+#include "../common/xmb_plastic.h"
 #include "../../core.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -1140,7 +1140,7 @@ static void *gl_cg_init(void *data, const char *path)
 
    /* No need to apply Android hack in Cg. */
    cg->prg[VIDEO_SHADER_STOCK_BLEND] = cg->prg[0];
-   for (i = VIDEO_SHADER_XMB_MATERIAL; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
+   for (i = VIDEO_SHADER_XMB_PLASTIC; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
    {
       char source[2048];
       struct shader_program_info info;
@@ -1156,12 +1156,12 @@ static void *gl_cg_init(void *data, const char *path)
          "uniform sampler2D s0:TEXUNIT0):COLOR{"
          "float2 uv=vert.tex;float4 tint=vert.color;";
       const char *suffix =
-         "return material;}void main_vertex(out float4 oPosition:POSITION,"
+         "return plastic;}void main_vertex(out float4 oPosition:POSITION,"
          "input IN,out vertex_data vert){"
          "oPosition=mul(IN.mvp_matrix,IN.vertex_coord);"
          "vert=vertex_data(IN.tex_coord,IN.color);}";
-      if (xmb_material_source(source, sizeof(source), prefix, suffix,
-               i == VIDEO_SHADER_XMB_FONT_MATERIAL))
+      if (xmb_plastic_source(source, sizeof(source), prefix, suffix,
+               i == VIDEO_SHADER_XMB_FONT_PLASTIC))
       {
          info.combined = source;
          info.is_file = false;
@@ -1187,8 +1187,8 @@ error:
 static void gl_cg_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
-   if (cg && (idx == VIDEO_SHADER_XMB_MATERIAL
-         || idx == VIDEO_SHADER_XMB_FONT_MATERIAL)
+   if (cg && (idx == VIDEO_SHADER_XMB_PLASTIC
+         || idx == VIDEO_SHADER_XMB_FONT_PLASTIC)
          && (!cg->prg[idx].vprg || !cg->prg[idx].fprg))
       idx = VIDEO_SHADER_STOCK_BLEND;
    if (cg && cg->prg[idx].vprg && cg->prg[idx].fprg)

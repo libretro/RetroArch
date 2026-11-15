@@ -686,7 +686,7 @@ typedef struct vk
        *   [5] snow
        *   [6] bokeh
        *   [7] snowflake
-       *   [8] XMB icon material
+       *   [8] XMB icon plastic
        * All entries are TRIANGLE_STRIP topology. */
       VkPipeline pipelines[9];
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -4028,16 +4028,16 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
 #else
             call.pipeline     = vk->display.pipelines[disp_pipeline];
 #endif
-            if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL)
+            if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
             {
 #ifdef VULKAN_HDR_SWAPCHAIN
-               VkPipeline material = (vk->flags & VK_FLAG_SDR_PIPELINE)
+               VkPipeline plastic = (vk->flags & VK_FLAG_SDR_PIPELINE)
                   ? vk->display.pipelines_sdr[8] : vk->display.pipelines[8];
 #else
-               VkPipeline material = vk->display.pipelines[8];
+               VkPipeline plastic = vk->display.pipelines[8];
 #endif
-               if (material != VK_NULL_HANDLE)
-                  call.pipeline = material;
+               if (plastic != VK_NULL_HANDLE)
+                  call.pipeline = plastic;
             }
             call.texture      = texture;
             call.sampler      = (texture->flags & VK_TEX_FLAG_MIPMAP)
@@ -4842,16 +4842,16 @@ static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font)
 #else
       VkPipeline font_pipe = vk->pipelines.font;
 #endif
-   if (font->block && font->block->xmb_material)
+   if (font->block && font->block->xmb_plastic)
    {
 #ifdef VULKAN_HDR_SWAPCHAIN
-      VkPipeline material = (vk->flags & VK_FLAG_SDR_PIPELINE)
+      VkPipeline plastic = (vk->flags & VK_FLAG_SDR_PIPELINE)
          ? vk->pipelines.xmb_font_sdr : vk->pipelines.xmb_font;
 #else
-      VkPipeline material = vk->pipelines.xmb_font;
+      VkPipeline plastic = vk->pipelines.xmb_font;
 #endif
-      if (material)
-         font_pipe = material;
+      if (plastic)
+         font_pipe = plastic;
    }
    if (font_pipe != vk->tracker.pipeline)
    {
@@ -6005,8 +6005,8 @@ static void vulkan_init_pipelines(vk_t *vk)
    }
 
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-   module_info.codeSize = spirv_xmb_material_frag_size;
-   module_info.pCode    = spirv_xmb_material_frag;
+   module_info.codeSize = spirv_xmb_plastic_frag_size;
+   module_info.pCode    = spirv_xmb_plastic_frag;
    shader_stages[1].module = VK_NULL_HANDLE;
    if (vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[1].module) == VK_SUCCESS)
@@ -6174,8 +6174,8 @@ static void vulkan_init_pipelines(vk_t *vk)
       }
 
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-      module_info.codeSize = spirv_xmb_material_frag_size;
-      module_info.pCode    = spirv_xmb_material_frag;
+      module_info.codeSize = spirv_xmb_plastic_frag_size;
+      module_info.pCode    = spirv_xmb_plastic_frag;
       shader_stages[1].module = VK_NULL_HANDLE;
       if (vkCreateShaderModule(vk->context->device,
                &module_info, NULL, &shader_stages[1].module) == VK_SUCCESS)

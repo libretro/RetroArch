@@ -29,7 +29,7 @@ RETRO_BEGIN_DECLS
 
 SPIRV_SHADER(alpha_blend_vert)
 SPIRV_SHADER(alpha_blend_frag)
-SPIRV_SHADER(xmb_material_frag)
+SPIRV_SHADER(xmb_plastic_frag)
 SPIRV_SHADER(xmb_font_frag)
 SPIRV_SHADER(alpha_blend_linear_frag)
 SPIRV_SHADER(mesh_vert)

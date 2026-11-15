@@ -6,7 +6,7 @@ layout(location = 1) in vec4 vColor;
 layout(location = 0) out vec4 FragColor;
 layout(set = 0, binding = 1) uniform highp sampler2D uTex;
 #define XMB_COVERAGE(p) texture(uTex, p).r
-#include "../xmb_material.h"
+#include "../xmb_plastic.h"
 
 void main()
 {
@@ -15,5 +15,5 @@ void main()
    XMB_FONT_SAMPLE
    XMB_FONT_LIGHT
    XMB_FONT_COLOR
-   FragColor = material;
+   FragColor = plastic;
 }

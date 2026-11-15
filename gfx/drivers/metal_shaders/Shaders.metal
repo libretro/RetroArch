@@ -124,21 +124,21 @@ fragment float4 stock_fragment(FontFragmentIn  in  [[ stage_in ]],
     return colorSample * in.color;
 }
 
-#include "../xmb_material.h"
+#include "../xmb_plastic.h"
 #define vec2 float2
 #define vec3 float3
 #define vec4 float4
 #define XMB_SAMPLE(p) tex.sample(samp, p)
-fragment float4 xmb_material_fragment(FontFragmentIn in [[stage_in]],
+fragment float4 xmb_plastic_fragment(FontFragmentIn in [[stage_in]],
       texture2d<float> tex [[texture(TextureIndexColor)]],
       sampler samp [[sampler(SamplerIndexDraw)]])
 {
    float2 uv = in.texCoord.xy;
    float4 tint = in.color;
-   XMB_MATERIAL_SAMPLE
-   XMB_MATERIAL_LIGHT
-   XMB_MATERIAL_COLOR
-   return material;
+   XMB_PLASTIC_SAMPLE
+   XMB_PLASTIC_LIGHT
+   XMB_PLASTIC_COLOR
+   return plastic;
 }
 #define dFdx dfdx
 #define dFdy dfdy
@@ -152,7 +152,7 @@ fragment float4 xmb_font_fragment(FontFragmentIn in [[stage_in]],
    XMB_FONT_SAMPLE
    XMB_FONT_LIGHT
    XMB_FONT_COLOR
-   return material;
+   return plastic;
 }
 #undef XMB_COVERAGE
 #undef dFdx

@@ -699,9 +699,9 @@ typedef struct
    {
       d3d11_shader_t shader;
       d3d11_shader_t shader_font;
-      d3d11_shader_t shader_material;
-      d3d11_shader_t shader_font_material;
-      d3d11_shader_t shader_font_material_a16;
+      d3d11_shader_t shader_plastic;
+      d3d11_shader_t shader_font_plastic;
+      d3d11_shader_t shader_font_plastic_a16;
 #ifdef HAVE_DXGI_HDR
       /* HDR-aware sprite/font shaders (PSMainHDR / PSMainA8HDR):
        * used whenever HDR output is enabled; sprite_hdr_mode 0 in
@@ -1596,15 +1596,15 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
 #endif
    }
 
-   if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL
-         && vertex_count == 1 && d3d11->sprites.shader_material.ps)
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC
+         && vertex_count == 1 && d3d11->sprites.shader_plastic.ps)
       d3d11->context->lpVtbl->PSSetShader(d3d11->context,
-            d3d11->sprites.shader_material.ps, NULL, 0);
+            d3d11->sprites.shader_plastic.ps, NULL, 0);
 
    d3d11->context->lpVtbl->Draw(d3d11->context, vertex_count,
          d3d11->sprites.offset);
    d3d11->sprites.offset += vertex_count;
-   if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL && vertex_count == 1)
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && vertex_count == 1)
       d3d11->context->lpVtbl->PSSetShader(d3d11->context, d3d11_sprite_shader(d3d11)->ps, NULL, 0);
 #ifdef HAVE_DXGI_HDR
    if (linear)
@@ -2539,14 +2539,14 @@ static void d3d11_font_draw_sprites(d3d11_video_t *d3d11,
 #endif
    d3d11->context->lpVtbl->PSSetShader(
          d3d11->context, d3d11_sprite_font_shader(d3d11)->ps, NULL, 0);
-   if (font->block && font->block->xmb_material)
+   if (font->block && font->block->xmb_plastic)
    {
-      D3D11PixelShader material = font->atlas->format == FONT_ATLAS_FORMAT_A16
-         ? d3d11->sprites.shader_font_material_a16.ps
-         : d3d11->sprites.shader_font_material.ps;
-      if (material)
+      D3D11PixelShader plastic = font->atlas->format == FONT_ATLAS_FORMAT_A16
+         ? d3d11->sprites.shader_font_plastic_a16.ps
+         : d3d11->sprites.shader_font_plastic.ps;
+      if (plastic)
          d3d11->context->lpVtbl->PSSetShader(
-               d3d11->context, material, NULL, 0);
+               d3d11->context, plastic, NULL, 0);
    }
    d3d11->context->lpVtbl->Draw(
          d3d11->context, total_count, start_offset);
@@ -4294,9 +4294,9 @@ static void d3d11_gfx_free(void* data)
 
    d3d11_release_shader(&d3d11->sprites.shader);
    d3d11_release_shader(&d3d11->sprites.shader_font);
-   d3d11_release_shader(&d3d11->sprites.shader_material);
-   d3d11_release_shader(&d3d11->sprites.shader_font_material);
-   d3d11_release_shader(&d3d11->sprites.shader_font_material_a16);
+   d3d11_release_shader(&d3d11->sprites.shader_plastic);
+   d3d11_release_shader(&d3d11->sprites.shader_font_plastic);
+   d3d11_release_shader(&d3d11->sprites.shader_font_plastic_a16);
 #ifdef HAVE_DXGI_HDR
    d3d11_release_shader(&d3d11->sprites.shader_hdr);
    d3d11_release_shader(&d3d11->sprites.shader_font_hdr);
@@ -5206,15 +5206,15 @@ static void *d3d11_gfx_init(const video_info_t* video)
 
       d3d11_init_shader(d3d11->device, shader, sizeof(shader), NULL,
             NULL, "PSMainXMB", NULL, NULL, 0,
-            &d3d11->sprites.shader_material,
+            &d3d11->sprites.shader_plastic,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE);
       d3d11_init_shader(d3d11->device, shader, sizeof(shader), NULL,
             NULL, "PSMainXMBFont", NULL, NULL, 0,
-            &d3d11->sprites.shader_font_material,
+            &d3d11->sprites.shader_font_plastic,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE);
       d3d11_init_shader(d3d11->device, shader, sizeof(shader), NULL,
             NULL, "PSMainXMBFontA16", NULL, NULL, 0,
-            &d3d11->sprites.shader_font_material_a16,
+            &d3d11->sprites.shader_font_plastic_a16,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE);
       if (!d3d11_init_shader(
                d3d11->device, shader,

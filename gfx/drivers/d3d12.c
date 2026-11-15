@@ -805,14 +805,14 @@ typedef struct
       D3D12PipelineState       pipe_blend;
       D3D12PipelineState       pipe_noblend;
       D3D12PipelineState       pipe_font;
-      D3D12PipelineState       pipe_material;
-      D3D12PipelineState       pipe_font_material;
+      D3D12PipelineState       pipe_plastic;
+      D3D12PipelineState       pipe_font_plastic;
 #ifdef HAVE_DXGI_HDR      
       D3D12PipelineState       pipe_blend_hdr;
       D3D12PipelineState       pipe_noblend_hdr;
       D3D12PipelineState       pipe_font_hdr;
-      D3D12PipelineState       pipe_material_hdr;
-      D3D12PipelineState       pipe_font_material_hdr;
+      D3D12PipelineState       pipe_plastic_hdr;
+      D3D12PipelineState       pipe_font_plastic_hdr;
       /* RGBA16F textures (linear scRGB) on the swapchain's HDR format */
       D3D12PipelineState       pipe_linear_hdr;
       /* The same pipes for an R16G16B16A16_FLOAT target - the UI layer
@@ -821,8 +821,8 @@ typedef struct
       D3D12PipelineState       pipe_blend_f16;
       D3D12PipelineState       pipe_noblend_f16;
       D3D12PipelineState       pipe_font_f16;
-      D3D12PipelineState       pipe_material_f16;
-      D3D12PipelineState       pipe_font_material_f16;
+      D3D12PipelineState       pipe_plastic_f16;
+      D3D12PipelineState       pipe_font_plastic_f16;
       D3D12PipelineState       pipe_linear_f16;
       D3D12PipelineState       pipe_stock_blend_f16;
 #endif 
@@ -2522,22 +2522,22 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 #endif
    }
 
-   if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL && vertex_count == 1)
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && vertex_count == 1)
    {
 #ifdef HAVE_DXGI_HDR
-      D3D12PipelineState material = d3d12_rt_pipe(d3d12,
-            d3d12->sprites.pipe_material, d3d12->sprites.pipe_material_hdr,
-            d3d12->sprites.pipe_material_f16);
+      D3D12PipelineState plastic = d3d12_rt_pipe(d3d12,
+            d3d12->sprites.pipe_plastic, d3d12->sprites.pipe_plastic_hdr,
+            d3d12->sprites.pipe_plastic_f16);
 #else
-      D3D12PipelineState material = d3d12->sprites.pipe_material;
+      D3D12PipelineState plastic = d3d12->sprites.pipe_plastic;
 #endif
-      if (material)
-         cmd->lpVtbl->SetPipelineState(cmd, material);
+      if (plastic)
+         cmd->lpVtbl->SetPipelineState(cmd, plastic);
    }
 
    cmd->lpVtbl->DrawInstanced(cmd, vertex_count, 1, d3d12->sprites.offset, 0);
    d3d12->sprites.offset += vertex_count;
-   if (draw->pipeline_id == VIDEO_SHADER_XMB_MATERIAL && vertex_count == 1)
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && vertex_count == 1)
       cmd->lpVtbl->SetPipelineState(cmd,
             (D3D12PipelineState)d3d12->sprites.pipe);
 #ifdef HAVE_DXGI_HDR
@@ -3464,18 +3464,18 @@ static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
 #else
    cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_font);
 #endif
-   if (font->block && font->block->xmb_material)
+   if (font->block && font->block->xmb_plastic)
    {
 #ifdef HAVE_DXGI_HDR
-      D3D12PipelineState material = d3d12_rt_pipe(d3d12,
-            d3d12->sprites.pipe_font_material,
-            d3d12->sprites.pipe_font_material_hdr,
-            d3d12->sprites.pipe_font_material_f16);
+      D3D12PipelineState plastic = d3d12_rt_pipe(d3d12,
+            d3d12->sprites.pipe_font_plastic,
+            d3d12->sprites.pipe_font_plastic_hdr,
+            d3d12->sprites.pipe_font_plastic_f16);
 #else
-      D3D12PipelineState material = d3d12->sprites.pipe_font_material;
+      D3D12PipelineState plastic = d3d12->sprites.pipe_font_plastic;
 #endif
-      if (material)
-         cmd->lpVtbl->SetPipelineState(cmd, material);
+      if (plastic)
+         cmd->lpVtbl->SetPipelineState(cmd, plastic);
    }
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
          font->texture.gpu_descriptor[0]);
@@ -5469,38 +5469,38 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
 
       Release(ps_code);
       ps_code = NULL;
-      Release(d3d12->sprites.pipe_material_hdr);
-      Release(d3d12->sprites.pipe_material_f16);
-      d3d12->sprites.pipe_material_hdr = NULL;
-      d3d12->sprites.pipe_material_f16 = NULL;
+      Release(d3d12->sprites.pipe_plastic_hdr);
+      Release(d3d12->sprites.pipe_plastic_f16);
+      d3d12->sprites.pipe_plastic_hdr = NULL;
+      d3d12->sprites.pipe_plastic_f16 = NULL;
       if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMB", "ps_5_0", &ps_code))
       {
          d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
-               &desc, &d3d12->sprites.pipe_material_hdr);
+               &desc, &d3d12->sprites.pipe_plastic_hdr);
          if (format != DXGI_FORMAT_R16G16B16A16_FLOAT)
          {
             desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
             d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
-                  &desc, &d3d12->sprites.pipe_material_f16);
+                  &desc, &d3d12->sprites.pipe_plastic_f16);
             desc.RTVFormats[0] = format;
          }
       }
 
       Release(ps_code);
       ps_code = NULL;
-      Release(d3d12->sprites.pipe_font_material_hdr);
-      Release(d3d12->sprites.pipe_font_material_f16);
-      d3d12->sprites.pipe_font_material_hdr = NULL;
-      d3d12->sprites.pipe_font_material_f16 = NULL;
+      Release(d3d12->sprites.pipe_font_plastic_hdr);
+      Release(d3d12->sprites.pipe_font_plastic_f16);
+      d3d12->sprites.pipe_font_plastic_hdr = NULL;
+      d3d12->sprites.pipe_font_plastic_f16 = NULL;
       if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMBFont", "ps_5_0", &ps_code))
       {
          d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
-               &desc, &d3d12->sprites.pipe_font_material_hdr);
+               &desc, &d3d12->sprites.pipe_font_plastic_hdr);
          if (format != DXGI_FORMAT_R16G16B16A16_FLOAT)
          {
             desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
             d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
-                  &desc, &d3d12->sprites.pipe_font_material_f16);
+                  &desc, &d3d12->sprites.pipe_font_plastic_f16);
             desc.RTVFormats[0] = format;
          }
       }
@@ -5689,13 +5689,13 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       ps_code = NULL;
       if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMB", "ps_5_0", &ps_code))
          d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
-               &desc, &d3d12->sprites.pipe_material);
+               &desc, &d3d12->sprites.pipe_plastic);
 
       Release(ps_code);
       ps_code = NULL;
       if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMBFont", "ps_5_0", &ps_code))
          d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
-               &desc, &d3d12->sprites.pipe_font_material);
+               &desc, &d3d12->sprites.pipe_font_plastic);
 
       /* Sprite HDR pipes are created by d3d12_gfx_init_hdr_pipes() above */
 
@@ -5886,20 +5886,20 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->sprites.pipe_blend);
    Release(d3d12->sprites.pipe_noblend);
    Release(d3d12->sprites.pipe_font);
-   Release(d3d12->sprites.pipe_material);
-   Release(d3d12->sprites.pipe_font_material);
+   Release(d3d12->sprites.pipe_plastic);
+   Release(d3d12->sprites.pipe_font_plastic);
 #ifdef HAVE_DXGI_HDR
    Release(d3d12->sprites.pipe_blend_hdr);
    Release(d3d12->sprites.pipe_noblend_hdr);
    Release(d3d12->sprites.pipe_font_hdr);
-   Release(d3d12->sprites.pipe_material_hdr);
-   Release(d3d12->sprites.pipe_font_material_hdr);
+   Release(d3d12->sprites.pipe_plastic_hdr);
+   Release(d3d12->sprites.pipe_font_plastic_hdr);
    Release(d3d12->sprites.pipe_linear_hdr);
    Release(d3d12->sprites.pipe_noblend_f16);
    Release(d3d12->sprites.pipe_blend_f16);
    Release(d3d12->sprites.pipe_font_f16);
-   Release(d3d12->sprites.pipe_material_f16);
-   Release(d3d12->sprites.pipe_font_material_f16);
+   Release(d3d12->sprites.pipe_plastic_f16);
+   Release(d3d12->sprites.pipe_font_plastic_f16);
    Release(d3d12->sprites.pipe_linear_f16);
    Release(d3d12->sprites.pipe_stock_blend_f16);
 #endif

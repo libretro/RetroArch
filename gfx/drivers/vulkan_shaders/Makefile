@@ -19,18 +19,18 @@ GLSL_SRC := alpha_blend.vert alpha_blend.frag alpha_blend_linear.frag \
             pipeline_snow.frag pipeline_bokeh.frag pipeline_snowflake.frag
 GLSL_INC := $(GLSL_SRC:=.src.inc)
 
-GLSL_INC += xmb_material.frag.src.inc xmb_font.frag.src.inc
+GLSL_INC += xmb_plastic.frag.src.inc xmb_font.frag.src.inc
 
 all: $(SPIRV) $(GLSL_INC)
 
 pipeline_ribbon.vert.inc pipeline_ribbon.frag.inc: ../menu_ribbon_shader.h
 
-xmb_material.frag.inc xmb_font.frag.inc: ../xmb_material.h
+xmb_plastic.frag.inc xmb_font.frag.inc: ../xmb_plastic.h
 
 pipeline_ribbon.vert.src.inc pipeline_ribbon.frag.src.inc: ../menu_ribbon_shader.h
-xmb_material.frag.src.inc xmb_font.frag.src.inc: ../xmb_material.h
+xmb_plastic.frag.src.inc xmb_font.frag.src.inc: ../xmb_plastic.h
 
-pipeline_ribbon.vert.src.inc pipeline_ribbon.frag.src.inc xmb_material.frag.src.inc xmb_font.frag.src.inc: %.src.inc: %
+pipeline_ribbon.vert.src.inc pipeline_ribbon.frag.src.inc xmb_plastic.frag.src.inc xmb_font.frag.src.inc: %.src.inc: %
 	$(GLSLANG) -E $< | sed '/^#extension GL_GOOGLE_include_directive/d; /^#line/d' | od -An -v -tu1 | sed 's/ *$$/,/; s/  */,/g; s/^,//' > $@
 	echo 0 >> $@
 

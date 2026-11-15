@@ -1,7 +1,7 @@
-#ifndef XMB_MATERIAL_H
-#define XMB_MATERIAL_H
+#ifndef XMB_PLASTIC_H
+#define XMB_PLASTIC_H
 
-#define XMB_MATERIAL_SAMPLE \
+#define XMB_PLASTIC_SAMPLE \
    vec4 base = XMB_SAMPLE(uv); \
    float right = max(0.0, base.a - XMB_SAMPLE(uv + vec2(0.010, 0.0)).a); \
    float left = max(0.0, base.a - XMB_SAMPLE(uv - vec2(0.020, 0.0)).a); \
@@ -11,7 +11,7 @@
    float curve = max(0.0, base.a - max(XMB_SAMPLE(uv + tangent).a, \
          XMB_SAMPLE(uv - tangent).a));
 
-#define XMB_MATERIAL_LIGHT \
+#define XMB_PLASTIC_LIGHT \
    vec2 edge = max(vec2(left - right, top - bottom), vec2(0.0, 0.0)); \
    float facing = 2.0 * edge.x * edge.y / max(dot(edge, edge), 0.001); \
    float glint = smoothstep(0.0, 0.45, curve) * pow(facing, 8.0); \
@@ -19,8 +19,8 @@
          + 0.12 * glint + 0.85 * glint * glint); \
    vec3 body = base.rgb * tint.rgb * (1.0 - 0.24 * top - 0.07 * bottom);
 
-#define XMB_MATERIAL_COLOR \
-   vec4 material = vec4(mix(body, vec3(1.0, 1.0, 1.0), \
+#define XMB_PLASTIC_COLOR \
+   vec4 plastic = vec4(mix(body, vec3(1.0, 1.0, 1.0), \
          reflection), base.a * tint.a * min(1.0, 0.60 + reflection));
 
 #define XMB_FONT_SAMPLE \
@@ -41,7 +41,7 @@
    float brightness = clamp(max(tint.r, max(tint.g, tint.b)), 0.0, 1.0);
 
 #define XMB_FONT_COLOR \
-   vec4 material = vec4(tint.rgb, coverage * tint.a * \
+   vec4 plastic = vec4(tint.rgb, coverage * tint.a * \
          mix(0.22, min(1.0, 0.88 + light - shade), brightness));
 
 #endif

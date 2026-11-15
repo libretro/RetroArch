@@ -1,21 +1,21 @@
-#ifndef GFX_XMB_MATERIAL_H
-#define GFX_XMB_MATERIAL_H
+#ifndef GFX_XMB_PLASTIC_H
+#define GFX_XMB_PLASTIC_H
 
 #include <string.h>
 #include <boolean.h>
-#include "../drivers/xmb_material.h"
+#include "../drivers/xmb_plastic.h"
 
 #define XMB_STRING_IMPL(x) #x
 #define XMB_STRING(x) XMB_STRING_IMPL(x)
 
-static size_t xmb_material_source(char *dst, size_t capacity,
+static size_t xmb_plastic_source(char *dst, size_t capacity,
       const char *prefix, const char *suffix, bool font)
 {
    static const char *const body[2][3] = {
       {
-         XMB_STRING(XMB_MATERIAL_SAMPLE),
-         XMB_STRING(XMB_MATERIAL_LIGHT),
-         XMB_STRING(XMB_MATERIAL_COLOR)
+         XMB_STRING(XMB_PLASTIC_SAMPLE),
+         XMB_STRING(XMB_PLASTIC_LIGHT),
+         XMB_STRING(XMB_PLASTIC_COLOR)
       },
       {
          XMB_STRING(XMB_FONT_SAMPLE),

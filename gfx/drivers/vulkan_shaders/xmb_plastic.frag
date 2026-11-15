@@ -6,14 +6,14 @@ layout(location = 1) in vec4 vColor;
 layout(location = 0) out vec4 FragColor;
 layout(set = 0, binding = 1) uniform highp sampler2D uTex;
 #define XMB_SAMPLE(p) texture(uTex, p)
-#include "../xmb_material.h"
+#include "../xmb_plastic.h"
 
 void main()
 {
    vec2 uv = vTexCoord;
    vec4 tint = vColor;
-   XMB_MATERIAL_SAMPLE
-   XMB_MATERIAL_LIGHT
-   XMB_MATERIAL_COLOR
-   FragColor = material;
+   XMB_PLASTIC_SAMPLE
+   XMB_PLASTIC_LIGHT
+   XMB_PLASTIC_COLOR
+   FragColor = plastic;
 }

@@ -32,7 +32,7 @@
 
 #include "shader_glsl.h"
 #include "glsl_rect.h"
-#include "../common/xmb_material.h"
+#include "../common/xmb_plastic.h"
 #include "../video_shader_parse.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
@@ -242,7 +242,7 @@ typedef struct glsl_shader_data
    /* The menu effects already compiled or tried, one bit each, so one
     * that will not compile is not tried again every frame */
    uint8_t menu_shaders_tried;
-   uint8_t material_tried;
+   uint8_t plastic_tried;
    struct glsl_in_place in_place;
    /* Compiling something that may fail, with the copy to fall back on */
    bool quiet;
@@ -988,7 +988,7 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
    glsl->active_idx         = 0;
    glsl->menu_shaders_tried = 0;
-   glsl->material_tried    = false;
+   glsl->plastic_tried      = false;
 
    gl_glsl_deinit_shader(glsl);
 
@@ -1989,11 +1989,11 @@ static uint8_t gl_glsl_menu_shader_bit(unsigned idx)
    return 0;
 }
 
-static void gl_glsl_compile_material(glsl_shader_data_t *glsl, unsigned idx)
+static void gl_glsl_compile_plastic(glsl_shader_data_t *glsl, unsigned idx)
 {
    char source[2048];
    struct shader_program_info info;
-   bool font = idx == VIDEO_SHADER_XMB_FONT_MATERIAL;
+   bool font = idx == VIDEO_SHADER_XMB_FONT_PLASTIC;
 #if defined(VITA)
    const char *prefix =
       "#define vec2 float2\n#define vec3 float3\n#define vec4 float4\n"
@@ -2002,7 +2002,7 @@ static void gl_glsl_compile_material(glsl_shader_data_t *glsl, unsigned idx)
       "#define XMB_COVERAGE(p) XMB_SAMPLE(p).a\n"
       "void main(uniform sampler2D vTexture,float2 uv:TEXCOORD0,"
       "float4 tint:COLOR,out float4 result:COLOR){";
-   const char *suffix = "result=material;}";
+   const char *suffix = "result=plastic;}";
    info.vertex = stock_vertex_modern_blend;
 #else
    const char *prefix = glsl_core
@@ -2023,11 +2023,11 @@ static void gl_glsl_compile_material(glsl_shader_data_t *glsl, unsigned idx)
         "uniform sampler2D Texture;varying vec2 tex_coord;varying vec4 color;"
         "void main(){vec2 uv=tex_coord;vec4 tint=color;";
    const char *suffix = glsl_core
-      ? "FragColor=material;}" : "gl_FragColor=material;}";
+      ? "FragColor=plastic;}" : "gl_FragColor=plastic;}";
    info.vertex = glsl_core ? stock_vertex_core_blend : stock_vertex_modern_blend;
 #endif
-   glsl->material_tried |= font ? 2 : 1;
-   if (!xmb_material_source(source, sizeof(source), prefix, suffix, font))
+   glsl->plastic_tried |= font ? 2 : 1;
+   if (!xmb_plastic_source(source, sizeof(source), prefix, suffix, font))
       return;
    info.fragment = source;
    info.is_file  = false;
@@ -2056,12 +2056,12 @@ static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_ac
             gl_glsl_compile_menu_shader(glsl, idx);
          }
       }
-      if (idx == VIDEO_SHADER_XMB_MATERIAL
-            || idx == VIDEO_SHADER_XMB_FONT_MATERIAL)
+      if (idx == VIDEO_SHADER_XMB_PLASTIC
+            || idx == VIDEO_SHADER_XMB_FONT_PLASTIC)
       {
-         unsigned bit = idx == VIDEO_SHADER_XMB_MATERIAL ? 1 : 2;
-         if (!(glsl->material_tried & bit))
-            gl_glsl_compile_material(glsl, idx);
+         unsigned bit = idx == VIDEO_SHADER_XMB_PLASTIC ? 1 : 2;
+         if (!(glsl->plastic_tried & bit))
+            gl_glsl_compile_plastic(glsl, idx);
          if (!glsl->prg[idx].id)
             idx = VIDEO_SHADER_STOCK_BLEND;
       }
