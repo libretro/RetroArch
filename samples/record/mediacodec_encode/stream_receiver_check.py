@@ -117,9 +117,16 @@ def main():
             video_encoding = ['-c:v', 'libaom-av1', '-cpu-used', '8', '-threads', '1',
                               '-lag-in-frames', '0', '-g', '12', '-crf', '30',
                               '-color_primaries', 'bt709', '-color_trc', 'bt709',
-                              '-colorspace', 'bt709', '-color_range', 'tv', '-f', 'ivf']
+                              '-colorspace', 'bt709', '-color_range', 'tv',
+                              '-bsf:v', 'av1_metadata=color_primaries=1:transfer_characteristics=1:matrix_coefficients=1:color_range=0',
+                              '-f', 'ivf']
         command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=64x48:rate=60',
                  '-frames:v', '24'] + video_encoding + ['-y', video])
+        if av1:
+            source_info = json.loads(command([probe, '-v', 'error', '-show_streams',
+                                              '-of', 'json', video]).stdout)['streams'][0]
+            assert source_info['color_primaries'] == source_info['color_transfer'] == 'bt709'
+            assert source_info['color_space'] == 'bt709' and source_info['color_range'] == 'tv'
         input_epoch = coded_origin = audio_epoch = video_epoch_us = 0
         full_pcm = root / 'input.pcm'
         if args.worker:
