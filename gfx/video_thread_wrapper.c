@@ -5397,19 +5397,22 @@ static float thread_get_headset_refresh(void *data, float *rates,
 static struct video_thread_menu_texture *thread_menu_texture_back(
       thread_video_t *thr, bool rgb32, unsigned dims)
 {
-   struct video_thread_menu_texture *t;
-   size_t width        = VIDEO_SCALE_W(dims);
-   size_t height       = VIDEO_SCALE_H(dims);
-   size_t bpp          = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   size_t required;
+   size_t width  = VIDEO_SCALE_W(dims);
+   size_t height = VIDEO_SCALE_H(dims);
+   size_t bpp    = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    if (!thr || !width || !height || width > (size_t)-1 / height / bpp)
       return NULL;
-   required = width * height * bpp;
 
    /* The back slot is the main thread's alone until it is published. */
-   t = (struct video_thread_menu_texture*)
+   return (struct video_thread_menu_texture*)
       retro_triple_buffer_back(&thr->texture.frames);
+}
+
+/* Dimensions have already been checked by thread_menu_texture_back. */
+static INLINE void *thread_menu_texture_host(struct video_thread_menu_texture *t,
+      size_t required)
+{
    if (!t->frame || required > t->frame_cap)
    {
       void *tmp_frame = realloc(t->frame, required);
@@ -5418,7 +5421,7 @@ static struct video_thread_menu_texture *thread_menu_texture_back(
       t->frame     = tmp_frame;
       t->frame_cap = required;
    }
-   return t;
+   return t->frame;
 }
 
 void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32,
@@ -5467,8 +5470,9 @@ void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32,
          }
          retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_READY);
       }
+      return thread_menu_texture_host(t, tight_pitch * height);
    }
-   return t ? t->frame : NULL;
+   return NULL;
 }
 
 static void thread_set_texture_frame(void *data, const void *frame,
@@ -5491,9 +5495,18 @@ static void thread_set_texture_frame(void *data, const void *frame,
             return;
       }
    }
-   if (!t->mem && frame != t->frame)
-      memcpy(t->frame, frame, (size_t)VIDEO_SCALE_W(dims) *
-            VIDEO_SCALE_H(dims) * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
+   if (!t->mem)
+   {
+      size_t size = ((size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims))
+         << (rgb32 ? 2 : 1);
+      if (!t->frame || size > t->frame_cap)
+      {
+         if (frame == t->frame || !thread_menu_texture_host(t, size))
+            return;
+      }
+      if (frame != t->frame)
+         memcpy(t->frame, frame, size);
+   }
    t->rgb32 = rgb32;
    t->dims  = dims;
    t->alpha = alpha;

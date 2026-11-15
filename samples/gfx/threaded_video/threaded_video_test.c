@@ -5174,6 +5174,66 @@ static void lane_menu_texture(void)
          not_drained++;
    }
 
+   video_thread_wait_idle();
+   {
+      static uint16_t driver_pixels[MENUTEX_W * MENUTEX_H];
+      struct video_thread_menu_texture *back =
+         (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
+      struct video_thread_menu_mem *m = &thr->texture.mem[0];
+      uint16_t *pixels;
+      CHECK(!m->ptr, "synthetic menu memory slot was already occupied");
+      if (!m->ptr)
+      {
+         /* Only the producer can touch the back slot. */
+         free(back->frame);
+         back->frame = NULL;
+         back->frame_cap = 0;
+         m->ptr = driver_pixels;
+         m->size = sizeof(driver_pixels);
+         m->pitch_align = 1;
+         retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_READY);
+         pixels = (uint16_t*)video_thread_get_menu_framebuffer(
+               VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false, NULL);
+         CHECK(pixels == driver_pixels, "menu did not use driver-lent pixels");
+         CHECK(!back->frame && !back->frame_cap,
+               "driver-lent menu allocated unused host storage");
+         if (pixels)
+         {
+            for (i = 0; i < MENUTEX_W * MENUTEX_H; i++)
+               pixels[i] = MENUTEX_MARK | 0x40;
+            video_st->poke->set_texture_frame(video_st->data, pixels, false,
+                  VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), 1.0f);
+            CHECK(!back->frame && !back->frame_cap,
+                  "publishing a driver-lent menu allocated host storage");
+            run_frames(1);
+            video_thread_wait_idle();
+         }
+         back = (struct video_thread_menu_texture*)
+            retro_triple_buffer_back(&thr->texture.frames);
+         free(back->frame);
+         back->frame = NULL;
+         back->frame_cap = 0;
+         retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_READY);
+         pixels = (uint16_t*)video_thread_get_menu_framebuffer(
+               VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false, NULL);
+         CHECK(pixels == driver_pixels, "second driver menu loan was refused");
+         for (i = 0; i < MENUTEX_W * MENUTEX_H; i++)
+            buf[i] = MENUTEX_MARK | 0x41;
+         video_st->poke->set_texture_frame(video_st->data, buf, false,
+               VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), 1.0f);
+         CHECK(back->frame && back->frame_cap >= sizeof(buf) && !back->mem,
+               "foreign menu pixels did not acquire host fallback storage");
+         if (back->frame)
+            CHECK(!memcmp(back->frame, buf, sizeof(buf)), "foreign menu copy differs");
+         CHECK(retro_atomic_load_acquire_int(&m->state) == VIDEO_THREAD_MENU_READY,
+               "foreign menu publication retained an unused driver loan");
+         run_frames(1);
+         video_thread_wait_idle();
+         m->ptr = NULL;
+         m->size = 0;
+         retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_EMPTY);
+      }
+   }
    menutex_slow = false;
    video_thread_wait_idle();
 
@@ -14078,6 +14138,11 @@ int main(int argc, char *argv[])
    if (getenv("HARNESS_RECORD_GPU_LEASE"))
    {
       record_gpu_stop_in_flight();
+      goto shutdown;
+   }
+   if (getenv("HARNESS_MENU_ONLY"))
+   {
+      lane_menu_texture();
       goto shutdown;
    }
    if (getenv("HARNESS_CAPACITY_ONLY"))
