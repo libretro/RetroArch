@@ -3913,6 +3913,11 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #else
 #define MENU_ENUM_LABEL_STEAM_SETTINGS_STR "steam_settings"
 #endif
+#if defined(HAVE_MENU) && (((defined(HAVE_CORE_SIGNING_TEST_KEY))))
+#define MENU_ENUM_LABEL_NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY)
+#else
+#define MENU_ENUM_LABEL_NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY_STR "notification_show_core_signing_test_key"
+#endif
 #if defined(HAVE_MENU) && (((defined(_3DS))))
 #define MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS)
 #else

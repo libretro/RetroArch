@@ -57,6 +57,12 @@ static int  g_err_count;
 static char g_err_last[256];
 static bool g_err_expected;
 
+settings_t *config_get_ptr(void)
+{
+   static settings_t settings;
+   return &settings;
+}
+
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }

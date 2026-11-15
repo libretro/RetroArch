@@ -24,6 +24,7 @@
 #include "../../../core_trust_runtime.h"
 #include "../../../runloop.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../verbosity.h"
 
 #define TMP_DIR "core_trust_runtime_test_tmp"
 
@@ -43,8 +44,25 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    return s;
 }
 
+static settings_t test_settings;
+
+settings_t *config_get_ptr(void)
+{
+   return &test_settings;
+}
+
+/* Log lines that say the build trusts a test key */
+static unsigned log_test_key;
+
+void RARCH_LOG(const char *fmt, ...)
+{
+   if (strstr(fmt, "test signing key"))
+      log_test_key++;
+}
+
 #define OSD_MAX 16
 static char osd[OSD_MAX][32];
+static unsigned osd_dur[OSD_MAX];
 static unsigned osd_count;
 
 void runloop_msg_queue_push(const char *msg, size_t len,
@@ -52,10 +70,13 @@ void runloop_msg_queue_push(const char *msg, size_t len,
       char *title, enum message_queue_icon icon,
       enum message_queue_category category)
 {
-   (void)len; (void)prio; (void)duration; (void)flush;
+   (void)len; (void)prio; (void)flush;
    (void)title; (void)icon; (void)category;
    if (osd_count < OSD_MAX)
+   {
       strlcpy(osd[osd_count], msg, sizeof(osd[0]));
+      osd_dur[osd_count] = duration;
+   }
    osd_count++;
 }
 
@@ -86,6 +107,21 @@ static unsigned osd_shown(enum msg_hash_enums msg)
          n++;
    return n;
 }
+
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+/* Frames msg's last showing lasts, 0 if it never showed */
+static unsigned osd_duration(enum msg_hash_enums msg)
+{
+   char want[32];
+   unsigned i;
+   unsigned d = 0;
+   sprintf(want, "msg %d", (int)msg);
+   for (i = 0; i < osd_count && i < OSD_MAX; i++)
+      if (string_is_equal(osd[i], want))
+         d = osd_dur[i];
+   return d;
+}
+#endif
 
 /* The shared I/O window: a floor of one item per open, then
  * window_items more; 0 is a window already spent */
@@ -507,6 +543,10 @@ static void test_snapshot_threads(void)
 
 static void test_test_key_notice(void)
 {
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   test_settings.bools.notification_show_core_signing_test_key = true;
+   log_test_key = 0;
+#endif
    osd_count = 0;
    CHECK(core_trust_runtime_init(tmp("notice"), NULL, NULL));
    /* Nothing before messages can show */
@@ -515,6 +555,7 @@ static void test_test_key_notice(void)
    core_trust_runtime_notify();
 #ifdef HAVE_CORE_SIGNING_TEST_KEY
    CHECK(osd_shown(MSG_CORE_SIGNING_TEST_KEY) == 1);
+   CHECK(osd_duration(MSG_CORE_SIGNING_TEST_KEY) == 180);
 #else
    CHECK(osd_shown(MSG_CORE_SIGNING_TEST_KEY) == 0);
 #endif
@@ -524,8 +565,29 @@ static void test_test_key_notice(void)
    core_trust_runtime_notify();
 #ifdef HAVE_CORE_SIGNING_TEST_KEY
    CHECK(osd_shown(MSG_CORE_SIGNING_TEST_KEY) == 2);
+   CHECK(log_test_key == 2);
 #endif
    core_trust_runtime_deinit();
+}
+
+/* Off: no notice, but the log still says so every launch */
+static void test_test_key_notice_off(void)
+{
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   test_settings.bools.notification_show_core_signing_test_key = false;
+   osd_count    = 0;
+   log_test_key = 0;
+   CHECK(core_trust_runtime_init(tmp("notice-off"), NULL, NULL));
+   core_trust_runtime_notify();
+   core_trust_runtime_notify();
+   core_trust_runtime_deinit();
+   CHECK(core_trust_runtime_init(tmp("notice-off"), NULL, NULL));
+   core_trust_runtime_notify();
+   core_trust_runtime_deinit();
+   CHECK(osd_shown(MSG_CORE_SIGNING_TEST_KEY) == 0);
+   CHECK(log_test_key == 2);
+   test_settings.bools.notification_show_core_signing_test_key = true;
+#endif
 }
 
 /* A "core": size bytes (at least 2), the first two the tag, so no two
@@ -1113,6 +1175,7 @@ int main(void)
       test_apply_always();
       test_snapshot_threads();
       test_test_key_notice();
+      test_test_key_notice_off();
       test_seed_walk();
 #ifdef HAVE_CORE_LOAD_CHECK
       test_seed_paced();
