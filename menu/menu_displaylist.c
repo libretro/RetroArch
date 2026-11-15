@@ -4162,11 +4162,23 @@ static int menu_displaylist_parse_playlist(
 }
 
 #ifdef HAVE_LIBRETRODB
-static int create_string_list_rdb_entry_string(
+/* strlcpy_append for the first @n bytes of @src. */
+static void rdb_entry_append_n(char *s, size_t len, size_t *pos,
+      const char *src, size_t n)
+{
+   if (*pos + n > len - 1)
+      n = len - 1 - *pos;
+   memcpy(s + *pos, src, n);
+   *pos   += n;
+   s[*pos] = '\0';
+}
+
+static int create_string_list_rdb_entry_string_n(
       enum msg_hash_enums enum_idx,
       const char *desc,
       const char *label,
       const char *actual_string,
+      size_t actual_len,
       const char *path,
       file_list_t *list)
 {
@@ -4175,17 +4187,57 @@ static int create_string_list_rdb_entry_string(
    size_t _len = 0;
    strlcpy_append(out_lbl, sizeof(out_lbl), &_len, label);
    strlcpy_append(out_lbl, sizeof(out_lbl), &_len, "|");
-   strlcpy_append(out_lbl, sizeof(out_lbl), &_len, actual_string);
+   rdb_entry_append_n(out_lbl, sizeof(out_lbl), &_len,
+         actual_string, actual_len);
    strlcpy_append(out_lbl, sizeof(out_lbl), &_len, "|");
    strlcpy_append(out_lbl, sizeof(out_lbl), &_len, path);
    _len = 0;
    strlcpy_append(tmp, sizeof(tmp), &_len, desc);
    strlcpy_append(tmp, sizeof(tmp), &_len, ": ");
-   strlcpy_append(tmp, sizeof(tmp), &_len, actual_string);
+   rdb_entry_append_n(tmp, sizeof(tmp), &_len, actual_string, actual_len);
    menu_entries_append(list, tmp, out_lbl,
          enum_idx,
          0, 0, 0, NULL);
    return 0;
+}
+
+static int create_string_list_rdb_entry_string(
+      enum msg_hash_enums enum_idx,
+      const char *desc,
+      const char *label,
+      const char *actual_string,
+      const char *path,
+      file_list_t *list)
+{
+   return create_string_list_rdb_entry_string_n(enum_idx, desc, label,
+         actual_string, strlen(actual_string), path, list);
+}
+
+/* One entry per " / "-separated value, as Explore splits them. */
+static int create_string_list_rdb_entry_list(
+      enum msg_hash_enums enum_idx,
+      const char *desc,
+      const char *label,
+      const char *actual_string,
+      const char *path,
+      file_list_t *list)
+{
+   const char *s = actual_string;
+   for (;;)
+   {
+      const char *sep = strstr(s, " / ");
+      const char *end = sep ? sep : s + strlen(s);
+      while (*s == ' ')
+         s++;
+      while (end > s && end[-1] == ' ')
+         end--;
+      if (end > s)
+         create_string_list_rdb_entry_string_n(enum_idx, desc, label,
+               s, (size_t)(end - s), path, list);
+      if (!sep)
+         return 0;
+      s = sep + 3;
+   }
 }
 
 static int create_string_list_rdb_entry_int(
@@ -4247,7 +4299,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       )
 {
    size_t _len;
-   unsigned i, j, k;
+   unsigned i, j;
    char query[256];
    char path_base[NAME_MAX_LENGTH];
    playlist_config_t playlist_config;
@@ -4432,6 +4484,17 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error; \
       }
 
+#define RDB_ENTRY_LIST(field, enum_label, enum_val_label) \
+      if (db_info_entry->field) \
+      { \
+         if (create_string_list_rdb_entry_list( \
+                  enum_label, \
+                  msg_hash_to_str(enum_val_label), \
+                  msg_hash_to_str(enum_label), \
+                  db_info_entry->field, info->path, info->list) == -1) \
+            goto error; \
+      }
+
 #define RDB_ENTRY_INT(field, enum_label, enum_val_label) \
       if (db_info_entry->field) \
       { \
@@ -4455,62 +4518,46 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error; \
       }
 
-      RDB_ENTRY_STR(genre,       MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
+      RDB_ENTRY_LIST(genre,      MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE)
-      RDB_ENTRY_STR(publisher,   MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER,
+      RDB_ENTRY_LIST(publisher,  MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER)
-      RDB_ENTRY_STR(category,    MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
+      RDB_ENTRY_LIST(category,   MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY)
-      RDB_ENTRY_STR(language,    MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
+      RDB_ENTRY_LIST(language,   MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE)
-      RDB_ENTRY_STR(region,      MENU_ENUM_LABEL_RDB_ENTRY_REGION,
+      RDB_ENTRY_LIST(region,     MENU_ENUM_LABEL_RDB_ENTRY_REGION,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION)
-      RDB_ENTRY_STR(score,       MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
+      RDB_ENTRY_LIST(score,      MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE)
-      RDB_ENTRY_STR(media,       MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
+      RDB_ENTRY_LIST(media,      MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA)
-      RDB_ENTRY_STR(controls,    MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
+      RDB_ENTRY_LIST(controls,   MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS)
-      RDB_ENTRY_STR(artstyle,    MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
+      RDB_ENTRY_LIST(artstyle,   MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE)
-      RDB_ENTRY_STR(gameplay,    MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
+      RDB_ENTRY_LIST(gameplay,   MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY)
-      RDB_ENTRY_STR(narrative,   MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
+      RDB_ENTRY_LIST(narrative,  MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE)
-      RDB_ENTRY_STR(pacing,      MENU_ENUM_LABEL_RDB_ENTRY_PACING,
+      RDB_ENTRY_LIST(pacing,     MENU_ENUM_LABEL_RDB_ENTRY_PACING,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING)
-      RDB_ENTRY_STR(perspective, MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
+      RDB_ENTRY_LIST(perspective, MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE)
-      RDB_ENTRY_STR(setting,     MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
+      RDB_ENTRY_LIST(setting,    MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING)
-      RDB_ENTRY_STR(visual,      MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
+      RDB_ENTRY_LIST(visual,     MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL)
-      RDB_ENTRY_STR(vehicular,   MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
+      RDB_ENTRY_LIST(vehicular,  MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR)
-
-      if (db_info_entry->developer)
-      {
-         const char *val_rdb_entry_dev =
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER);
-         const char *rdb_entry_dev     =
-            MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER_STR;
-         for (k = 0; k < db_info_entry->developer->size; k++)
-         {
-            if (db_info_entry->developer->elems[k].data)
-            {
-               if (create_string_list_rdb_entry_string(
-                        MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
-                        val_rdb_entry_dev, rdb_entry_dev,
-                        db_info_entry->developer->elems[k].data,
-                        info->path, info->list) == -1)
-                  goto error;
-            }
-         }
-      }
+      RDB_ENTRY_LIST(tags,       MENU_ENUM_LABEL_RDB_ENTRY_TAGS,
+                                  MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS)
+      RDB_ENTRY_LIST(developer,  MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
+                                  MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER)
 
       RDB_ENTRY_STR(origin,              MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN)
-      RDB_ENTRY_STR(franchise,           MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE,
+      RDB_ENTRY_LIST(franchise,          MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE)
 
       RDB_ENTRY_INT(max_users,           MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS,
@@ -4597,6 +4644,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    }
 
 #undef RDB_ENTRY_STR
+#undef RDB_ENTRY_LIST
 #undef RDB_ENTRY_INT
 #undef RDB_ENTRY_BOOL
 

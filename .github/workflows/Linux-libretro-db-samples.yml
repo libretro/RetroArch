@@ -107,6 +107,8 @@ jobs:
             rmsgpack_overflow_test
             rmsgpack_window_test
             libretrodb_leak_test
+            c_converter_case_test
+            c_converter_missing_key_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).

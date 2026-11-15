@@ -462,6 +462,7 @@ struct dat_converter_match_key_t
    char* value;
    uint32_t hash;
    dat_converter_match_key_t* next;
+   bool fold_case;
 };
 
 static dat_converter_match_key_t* dat_converter_match_key_create(
@@ -472,9 +473,10 @@ static dat_converter_match_key_t* dat_converter_match_key_create(
    dat_converter_match_key_t*
       match_key     = (dat_converter_match_key_t*)
       malloc(sizeof(*match_key));
-   match_key->value = strdup(format);
-   match_key->next  = NULL;
-   current_mk       = match_key;
+   match_key->value     = strdup(format);
+   match_key->next      = NULL;
+   match_key->fold_case = false;
+   current_mk           = match_key;
 
    dot              = match_key->value;
 
@@ -550,6 +552,7 @@ static dat_converter_list_t* dat_converter_parser(
    dat_converter_list_item_t* current = lexer_list->values;
    bool skip                          = true;
    bool warning_displayed             = false;
+   bool fold_case                     = match_key && match_key->fold_case;
 
    map.key                            = NULL;
    map.type                           = DAT_CONVERTER_LIST_MAP;
@@ -584,20 +587,28 @@ static dat_converter_list_t* dat_converter_parser(
                if (match_key)
                {
                   map.key = dat_converter_get_match(map.value.list, match_key);
+                  /* The key points into the DAT's buffer, and its hex
+                   * reads the same in either case. */
+                  if (map.key && fold_case)
+                     string_to_upper((char*)map.key);
                   // If the key is not found, report, and mark it to be skipped.
                   if (!map.key)
                   {
                      if (warning_displayed == false)
                      {
+                        /* A walk of its own: the entries after this
+                         * one are matched by the whole key. */
+                        dat_converter_match_key_t* mk = match_key;
                         printf("    - Missing match key '");
-                        while (match_key->next)
+                        while (mk->next)
                         {
-                           printf("%s.", match_key->value);
-                           match_key = match_key->next;
+                           printf("%s.", mk->value);
+                           mk = mk->next;
                         }
-                        printf("%s' on line %d\n", match_key->value, current->token.line_no);
+                        printf("%s' on line %d\n", mk->value, current->token.line_no);
                         warning_displayed = true;
                      }
+                     dat_converter_list_free(map.value.list);
                      skip = true;
                   }
                }
@@ -847,7 +858,13 @@ int main(int argc, char** argv)
 
    if (argc > 1 &&** argv)
    {
+      size_t i;
       match_key = dat_converter_match_key_create(*argv);
+      /* DATs write hex in either case; merge "abbe02fa" with "ABBE02FA" */
+      for (i = 0; i < sizeof(rdb_mappings) / sizeof(*rdb_mappings); i++)
+         if (   rdb_mappings[i].format == DAT_CONVERTER_RDB_TYPE_HEX
+             && string_is_equal(rdb_mappings[i].dat_key, *argv))
+            match_key->fold_case = true;
       argc--;
       argv++;
    }
@@ -913,6 +930,7 @@ int main(int argc, char** argv)
    dat_converter_value_provider_free();
 
    intfstream_close(rdb_file);
+   free(rdb_file);
 
    dat_converter_list_free(dat_parser_list);
 

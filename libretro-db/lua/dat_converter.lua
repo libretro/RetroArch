@@ -1,5 +1,10 @@
 local dat_obj = {}
 local match_key = nil
+-- DATs write hex in either case; merge "abbe02fa" with "ABBE02FA"
+local hex_match_keys = {
+    ["rom.crc"] = true, ["rom.md5"] = true, ["rom.sha1"] = true,
+    set_fp1 = true, set_fpm1 = true,
+}
 
 local function dat_lexer(f, fname)
     local line, err = f:read("*l")
@@ -121,8 +126,8 @@ end
 
 local function get_match_key(mk, t)
     for p in string.gmatch(mk, "(%w+)[.]?") do
-        if p == nil or t == nil then
-            error("Invalid match key '"..mk.."'")
+        if type(t) ~= "table" then
+            return nil
         end
         t = t[p]
     end
@@ -156,17 +161,26 @@ function init(...)
         print("  " .. dat_path)
         local objs = dat_parser(dat_lexer(dat_file, dat_path))
         dat_file:close()
+        local warning_displayed = false
         for _, obj in pairs(objs) do
             if match_key then
                 local mk = get_match_key(match_key, obj)
+                -- Report, and skip just this entry, as c_converter does
                 if mk == nil then
-                    error("  missing match key '" .. match_key .. "' in one of the entries")
+                    if not warning_displayed then
+                        print("    - Missing match key '" .. match_key .. "'")
+                        warning_displayed = true
+                    end
+                else
+                    if hex_match_keys[match_key] then
+                        mk = string.upper(mk)
+                    end
+                    if dat_hash[mk] == nil then
+                        dat_hash[mk] = {}
+                        table.insert(dat_obj, dat_hash[mk])
+                    end
+                    table.update(dat_hash[mk], obj)
                 end
-                if dat_hash[mk] == nil then
-                    dat_hash[mk] = {}
-                    table.insert(dat_obj, dat_hash[mk])
-                end
-                table.update(dat_hash[mk], obj)
             else
                 table.insert(dat_obj, obj)
             end

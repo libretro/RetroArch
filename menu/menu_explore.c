@@ -66,6 +66,7 @@ enum
    EXPLORE_BY_SETTING,
    EXPLORE_BY_VISUAL,
    EXPLORE_BY_VEHICULAR,
+   EXPLORE_BY_ENHANCEMENT_HW,
    EXPLORE_BY_ORIGIN,
    EXPLORE_BY_REGION,
    EXPLORE_BY_FRANCHISE,
@@ -169,9 +170,10 @@ explore_by_info[EXPLORE_CAT_COUNT] =
    { "setting",            MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,             MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,            true,  false, false, false },
    { "visual",             MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,              MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,             true,  false, false, false },
    { "vehicular",          MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,          true,  false, false, false },
+   { "enhancement_hw",     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,      MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ENHANCEMENT_HW,     false, false, false, false },
    { "origin",             MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,              MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,             false, false, false, false },
-   { "region",             MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,       MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,             false, false, false, false },
-   { "franchise",          MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,          false, false, false, false },
+   { "region",             MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,       MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,             true,  false, false, false },
+   { "franchise",          MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,          true,  false, false, false },
    { "tags",               MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,          MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,                true,  false, false, false },
    { "system",             MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,         MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,        false, false, false, false },
 };
@@ -326,8 +328,6 @@ static void explore_add_unique_string(
       explore_string_t ***split_buf)
 {
    bool is_company;
-   const char *p;
-   const char *p_next;
    if (!str || !*str)
    {
       state->has_unknown[cat] = true;
@@ -338,84 +338,58 @@ static void explore_add_unique_string(
       split_buf = NULL;
    is_company   = explore_by_info[cat].is_company;
 
-   for (p = str + 1;; p++)
+   for (;;)
    {
       size_t _len             = 0;
       uint32_t hash           = 0;
       explore_string_t* entry = NULL;
+      const char *sep         = split_buf ? strstr(str, " / ") : NULL;
+      const char *p           = sep ? sep : str + strlen(str);
 
-      if (*p != '/' && *p != ',' && *p != '|' && *p != '\0')
-         continue;
-
-      if (!split_buf && *p != '\0')
-         continue;
-
-      p_next = p;
       while (*str == ' ')
          str++;
-      while (p[-1] == ' ')
+      while (p > str && p[-1] == ' ')
          p--;
-
-      if (p == str)
-      {
-         if (*p == '\0')
-            return;
-         continue;
-      }
 
       if (is_company && p - str > 5)
       {
          p -= explore_check_company_suffix(p, true);
-         while (p[-1] == ' ')
+         while (p > str && (p[-1] == ' ' || p[-1] == ','))
             p--;
       }
 
-      _len                    = p - str;
-      hash                    = ex_hash32_nocase_filtered(
-            (unsigned char*)str, _len, '0', 255);
-      entry                   = RHMAP_GET(maps[cat], hash);
-
-      if (!entry)
+      if (p > str)
       {
-         entry                = (explore_string_t*)
-            ex_arena_alloc(&state->arena,
-                  sizeof(explore_string_t) + _len);
-         /* NULL-check: ex_arena_alloc returns NULL on OOM now.
-          * On failure skip this entry - the surrounding loop
-          * iterates over chars in the input string splitting on
-          * separators, so one missed entry just means one
-          * category value doesn't get indexed this pass.  Picked
-          * up on the next scan once memory is available. */
+         _len                 = p - str;
+         hash                 = ex_hash32_nocase_filtered(
+               (unsigned char*)str, _len, '0', 255);
+         entry                = RHMAP_GET(maps[cat], hash);
+
          if (!entry)
-            continue;
-         memcpy(entry->str, str, _len);
-         entry->str[_len]      = '\0';
-         RBUF_PUSH(state->by[cat], entry);
-         RHMAP_SET(maps[cat], hash, entry);
+         {
+            /* On OOM this value goes unindexed until the next scan. */
+            if ((entry = (explore_string_t*)ex_arena_alloc(&state->arena,
+                        sizeof(explore_string_t) + _len)))
+            {
+               memcpy(entry->str, str, _len);
+               entry->str[_len] = '\0';
+               RBUF_PUSH(state->by[cat], entry);
+               RHMAP_SET(maps[cat], hash, entry);
+            }
+         }
+
+         if (entry)
+         {
+            if (!e->by[cat])
+               e->by[cat] = entry;
+            else
+               RBUF_PUSH(*split_buf, entry);
+         }
       }
 
-      if (!e->by[cat])
-         e->by[cat] = entry;
-      else
-         RBUF_PUSH(*split_buf, entry);
-
-      if (*p_next == '\0')
+      if (!sep)
          return;
-      if (is_company && *p_next == ',')
-      {
-         p = p_next + 1;
-         while (*p == ' ')
-            p++;
-         p += explore_check_company_suffix(p, false);
-         while (*p == ' ')
-            p++;
-         if (*p == '\0')
-            return;
-         if (*p == '/' || *p == ',' || *p == '|')
-            p_next = p;
-      }
-      p = p_next;
-      str = p + 1;
+      str = sep + 3;
    }
 }
 
