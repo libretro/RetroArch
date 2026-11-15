@@ -4982,11 +4982,12 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
             SLOT(onListViewClicked()));
    viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS),
-            mainwindow->viewOptionsDialog(), SLOT(showDialog()));
-   viewMenu->addAction(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS),
             mainwindow->shortcutsDialog(), SLOT(showDialog()));
+   viewMenu->addSeparator();
+   viewMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS),
+            mainwindow->viewOptionsDialog(), SLOT(showDialog()));
 
    helpMenu = menu->addMenu(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
