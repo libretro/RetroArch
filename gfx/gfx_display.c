@@ -20,6 +20,7 @@
 #include <string/stdstring.h>
 
 #include "gfx_display.h"
+#include "common/menu_ribbon.h"
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "common/win32_common.h"
 #endif
@@ -793,7 +794,7 @@ gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
    size_t vbytes, ibytes, pbytes;
    unsigned i;
 
-   if (     !desc || !desc->vertices || !desc->vertex_count
+   if (     !desc || !desc->vertex_count
          || desc->vertex_count > 65536
          || (desc->indices && !desc->index_count))
       return NULL;
@@ -822,11 +823,14 @@ gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
    mesh->index_count  = desc->indices ? desc->index_count : 0;
    mesh->topology     = desc->topology;
    mesh->id           = gfx_display_mesh_next_id++;
-   memcpy(mesh->vertices, desc->vertices, vbytes);
+   if (desc->vertices)
+      memcpy(mesh->vertices, desc->vertices, vbytes);
+   else
+      memset(mesh->vertices, 0, vbytes + pbytes);
    if (ibytes)
       memcpy(mesh->indices, desc->indices, ibytes);
 
-   if (mesh->positions)
+   if (mesh->positions && desc->vertices)
       for (i = 0; i < desc->vertex_count; i++)
       {
          mesh->positions[2 * i]     = desc->vertices[i].x;
@@ -843,6 +847,27 @@ void gfx_display_mesh_free(gfx_display_mesh_t *mesh)
 const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void)
 {
    return &gfx_display_mesh_fs;
+}
+
+const float *gfx_display_ribbon_ubo(gfx_display_t *p_disp, float yflip)
+{
+   if (!p_disp || !p_disp->ribbon)
+      return NULL;
+   p_disp->ribbon->header[0] = p_disp->ribbon->data[0][0];
+   p_disp->ribbon->header[1] = yflip;
+   p_disp->ribbon->header[2] = p_disp->ribbon->data[64][2];
+   return p_disp->ribbon->header;
+}
+
+const float *gfx_display_ribbon_data(gfx_display_t *p_disp)
+{
+   return p_disp && p_disp->ribbon ? &p_disp->ribbon->data[0][0] : NULL;
+}
+
+void gfx_display_ribbon_vertex(const float *data, const float *p,
+      float *position, float *lighting)
+{
+   menu_ribbon_vertex(data, p, position, lighting);
 }
 
 struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp)
@@ -916,6 +941,16 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
       p_disp->effect_start_time = now;
    p_disp->effect_time = (float)fmod(
          (now - p_disp->effect_start_time) * 0.0000006, 65536.0);
+   if (md->program == GFX_MESH_PROGRAM_RIBBON)
+   {
+      unsigned dims = gfx_display_output_dims(p_disp, video_dims);
+      if (!p_disp->ribbon)
+         p_disp->ribbon = (menu_ribbon_t*)calloc(1, sizeof(*p_disp->ribbon));
+      if (!p_disp->ribbon)
+         return;
+      menu_ribbon_update(p_disp->ribbon, now * 0.000001,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), md->color[3]);
+   }
    p_disp->effect_mesh = mesh;
    if (     md->program == GFX_MESH_PROGRAM_RIBBON
          && dispctx->bloom_begin && dispctx->bloom_end)
@@ -1725,6 +1760,8 @@ enum texture_filter_type gfx_display_texture_filter_latched(void)
 void gfx_display_free(void)
 {
    gfx_display_t *p_disp       = &dispgfx_st;
+   free(p_disp->ribbon);
+   p_disp->ribbon = NULL;
    free(gfx_display_mesh_scratch);
    gfx_display_mesh_scratch     = NULL;
    gfx_display_mesh_scratch_cap = 0;

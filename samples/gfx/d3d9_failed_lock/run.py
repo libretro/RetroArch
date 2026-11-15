@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise production D3D9 HLSL lock failures and subsequent retries."""
+"""Exercise production D3D9 lock failures and ribbon mesh replacement."""
 import os
 from pathlib import Path
 import shlex
@@ -35,3 +35,20 @@ with tempfile.TemporaryDirectory() as directory:
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root / 'libretro-common/include'),
                    str(Path(__file__).with_name('test.c')), '-o', str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+    for backend in ('hlsl', 'cg'):
+        source = (root / ('gfx/drivers/d3d9' + backend + '.c')).read_text()
+        start = source.index('static void gfx_display_d3d9_' + backend + '_draw_pipeline(')
+        start = source.index('      case VIDEO_SHADER_MENU_2:', start)
+        (tmp / 'ribbon.inc').write_text(block(start))
+        prefix = 'd3d9_' + backend + '_menu_pipeline_'
+        declarations = '\n'.join(line for line in source.splitlines()
+                                 if line.startswith('static ') and prefix in line)
+        (tmp / 'ribbon_state.inc').write_text(declarations)
+        subprocess.run(cc + flags + ['-I' + str(tmp),
+                       '-I' + str(root / 'libretro-common/include'),
+                       '-D' + prefix + 'vbo=pipeline_vbo',
+                       '-D' + prefix + 'mesh_id=pipeline_mesh_id',
+                       str(Path(__file__).with_name('ribbon_test.c')),
+                       '-o', str(exe)], check=True)
+        subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+        print('D3D9 ' + backend + ' ribbon mesh replacement PASS', flush=True)

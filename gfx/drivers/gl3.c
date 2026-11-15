@@ -282,6 +282,7 @@ typedef struct gl3
       GLuint font;
 #ifdef HAVE_SHADERPIPELINE
       GLuint ribbon;
+      GLuint ribbon_ubo;
       GLuint ribbon_simple;
       GLuint snow_simple;
       GLuint snow;
@@ -1043,7 +1044,7 @@ static void gfx_display_gl3_draw_pipeline(
       switch (draw->pipeline_id)
       {
          case VIDEO_SHADER_MENU:
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+            glBlendFunc(GL_ONE, GL_ONE);
             break;
          case VIDEO_SHADER_MENU_2:
             glBlendFunc(GL_DST_COLOR, GL_ONE);
@@ -1077,6 +1078,14 @@ static void gfx_display_gl3_draw_pipeline(
 
             uniform_param.result.f.v0       = t;
 
+            if (draw->pipeline_id == VIDEO_SHADER_MENU)
+            {
+               uniform_param.type = UNIFORM_4FV;
+               uniform_param.count = 65;
+               uniform_param.lookup.ident = "Ribbon";
+               uniform_param.lookup.add_prefix = false;
+               uniform_param.result.floatv = (float*)gfx_display_ribbon_data(p_disp);
+            }
             gl->chain.shader->set_uniform_parameter(gl->chain.shader_data,
                   &uniform_param, NULL);
             break;
@@ -1122,6 +1131,11 @@ static void gfx_display_gl3_draw_pipeline(
             ribbon_ubo[3]                   = 0.0f;
             draw->backend_data              = ribbon_ubo;
             draw->backend_data_size         = sizeof(ribbon_ubo);
+            if (draw->pipeline_id == VIDEO_SHADER_MENU)
+            {
+               draw->backend_data = (void*)gfx_display_ribbon_ubo(p_disp, 1.0f);
+               draw->backend_data_size = 66 * 4 * sizeof(float);
+            }
             break;
 
          /* Snow simple */
@@ -1291,7 +1305,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       switch (draw->pipeline_id)
       {
          case VIDEO_SHADER_MENU:
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+            glBlendFunc(GL_ONE, GL_ONE);
             break;
          case VIDEO_SHADER_MENU_2:
             glBlendFunc(GL_DST_COLOR, GL_ONE);
@@ -1320,6 +1334,17 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
                if (!prog)
                   return;
                glUseProgram(prog);
+               if (draw->pipeline_id == VIDEO_SHADER_MENU
+                     && loc->buffer_index_ubo_vertex != GL_INVALID_INDEX)
+               {
+                  if (!gl->pipelines.ribbon_ubo)
+                     glGenBuffers(1, &gl->pipelines.ribbon_ubo);
+                  glBindBuffer(GL_UNIFORM_BUFFER, gl->pipelines.ribbon_ubo);
+                  glBufferData(GL_UNIFORM_BUFFER, draw->backend_data_size,
+                        draw->backend_data, GL_STREAM_DRAW);
+                  glUniformBlockBinding(prog, loc->buffer_index_ubo_vertex, 0);
+                  glBindBufferBase(GL_UNIFORM_BUFFER, 0, gl->pipelines.ribbon_ubo);
+               }
             }
             break;
 #endif /* HAVE_SHADERPIPELINE */
@@ -2600,6 +2625,8 @@ static void gl3_destroy_resources(gl3_t *gl)
       gl->scrgb.ui_tex = 0;
    }
 #ifdef HAVE_SHADERPIPELINE
+   glDeleteBuffers(1, &gl->pipelines.ribbon_ubo);
+   gl->pipelines.ribbon_ubo = 0;
    if (gl->pipelines.ribbon)
    {
       glDeleteProgram(gl->pipelines.ribbon);
@@ -3035,7 +3062,8 @@ static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
          return 0;
    }
    if (!*prog)
-      *prog = gl3_cross_compile_program(vs, vs_size, fs, fs_size, l, true);
+      *prog = gl3_cross_compile_program(vs, vs_size, fs, fs_size, l,
+            pipeline_id != VIDEO_SHADER_MENU);
    *loc = l;
    return *prog;
 }

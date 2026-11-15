@@ -24,7 +24,9 @@
 #include <features/features_cpu.h>
 
 #include "gfx/gfx_display.h"
+#include "gfx/common/menu_ribbon.h"
 #include "gfx/video_driver.h"
+#include "configuration.h"
 
 static int fails = 0;
 #define CHECK(c, m) do { if (!(c)) { printf("  FAIL: %s\n", m); fails++; } } while (0)
@@ -36,6 +38,21 @@ void video_coord_array_free(video_coord_array_t *ca) { (void)ca; }
 void RARCH_LOG(const char *f, ...)  { (void)f; }
 void RARCH_WARN(const char *f, ...) { (void)f; }
 void RARCH_ERR(const char *f, ...)  { (void)f; }
+
+bool win32_message_modal_active(void) { return false; }
+bool video_context_driver_get_metrics(gfx_ctx_metrics_t *m) { (void)m; return false; }
+void *video_driver_get_ptr(void) { return NULL; }
+video_driver_state_t *video_state_get_ptr(void) { return NULL; }
+bool input_osk_native_active(void) { return false; }
+settings_t *config_get_ptr(void) { return NULL; }
+bool video_driver_has_windowed(void) { return false; }
+const char *video_driver_get_ident(void) { return "test"; }
+font_data_t *font_driver_init_first(void *data, const char *path,
+      float size, bool hint, bool threaded, const font_renderer_t *backend)
+{
+   (void)data; (void)path; (void)size; (void)hint; (void)threaded; (void)backend;
+   return NULL;
+}
 
 static retro_time_t test_time = 1000000;
 retro_time_t cpu_features_get_time_usec(void) { return test_time; }
@@ -122,6 +139,82 @@ static void vtx(gfx_display_mesh_vertex_t *v, float x, float y, float z,
    v->rgba[0] = r; v->rgba[1] = g; v->rgba[2] = b; v->rgba[3] = a;
 }
 
+static void ribbon_motion(void)
+{
+   menu_ribbon_t *a = (menu_ribbon_t*)calloc(1, sizeof(*a));
+   menu_ribbon_t *b = (menu_ribbon_t*)calloc(1, sizeof(*b));
+   unsigned i;
+   float time, lo = 100.0f, hi = 0.0f;
+   CHECK(a && b, "ribbon state allocation");
+   if (!a || !b)
+   {
+      free(a);
+      free(b);
+      return;
+   }
+   for (i = 0; i <= 1200; i++)
+      menu_ribbon_update(a, i / 30.0, 1280, 720, 1.0f);
+   for (i = 0; i <= 4800; i++)
+      menu_ribbon_update(b, i / 120.0, 1280, 720, 1.0f);
+   for (i = 0; i < MENU_RIBBON_UNIFORMS * 4; i++)
+      CHECK(fabsf(a->data[i / 4][i % 4] - b->data[i / 4][i % 4]) < 0.001f,
+            "ribbon and dust motion are independent of refresh rate");
+   for (i = 0; i < MENU_RIBBON_PARTICLES; i++)
+   {
+      float light = a->data[16 + i][3];
+      if (light < lo)
+         lo = light;
+      if (light > hi)
+         hi = light;
+      CHECK(a->particles[i].age >= 0.0f
+            && a->particles[i].age < a->particles[i].life,
+            "particles renew their own lifetimes");
+      CHECK(fabsf(a->particles[i].y) < 0.9f,
+            "dust remains near the ribbon");
+   }
+   CHECK(hi - lo > 0.2f, "particle brightness is not synchronized");
+   time = a->time;
+   menu_ribbon_update(a, 3600.0, 1280, 720, 0.4f);
+   CHECK(a->time - time <= 0.067f, "resume has a bounded simulation step");
+   CHECK(a->data[64][2] == 0.4f, "menu fading reaches both sheet and dust");
+   free(a);
+   free(b);
+}
+
+static void ribbon_reference(void)
+{
+   static const float points[6][2] = {
+      {-1.0f, -1.0f}, {-0.73f, -0.65f}, {-0.2f, -0.25f},
+      {0.25f, 0.15f}, {0.67f, 0.55f}, {1.0f, 1.0f}
+   };
+   /* Committed sheet at animation phases 0 and 6. */
+   static const float expected[2][6] = {
+      {-0.533256722f, -0.430433463f, -0.329685062f, -0.123421512f, -0.095636221f, -0.147437462f},
+      {-0.570829380f, -0.390650537f, -0.340452917f, -0.020468937f, -0.095842270f, -0.194557165f}
+   };
+   menu_ribbon_t *r = (menu_ribbon_t*)calloc(1, sizeof(*r));
+   unsigned frame, i;
+   CHECK(r != NULL, "reference state allocation");
+   if (!r)
+      return;
+   for (frame = 0; frame <= 600; frame++)
+   {
+      menu_ribbon_update(r, frame / 60.0, 1280, 720, 1.0f);
+      if (frame != 0 && frame != 600)
+         continue;
+      for (i = 0; i < 6; i++)
+      {
+         float position[4], lighting[4];
+         gfx_display_ribbon_vertex(&r->data[0][0], points[i], position, lighting);
+         CHECK(TEST_NEAR(position[0], 1.12f * points[i][0])
+               && TEST_NEAR(position[1], expected[frame / 600][i])
+               && TEST_NEAR(position[3], 1.0f + 0.1f * points[i][1]),
+               "the sheet retains the committed folds and perspective");
+      }
+   }
+   free(r);
+}
+
 int main(void)
 {
    gfx_display_t *p_disp = disp_get_ptr();
@@ -131,6 +224,9 @@ int main(void)
    float white[16];
    unsigned i;
    const unsigned vd = VIDEO_SCALE_PACK(640, 480);
+
+   ribbon_motion();
+   ribbon_reference();
 
    for (i = 0; i < 16; i++)
       white[i] = 1.0f;
@@ -153,6 +249,17 @@ int main(void)
       CHECK(!make(v, 4, bad, 3, GFX_MESH_TRIANGLES, 0), "an index past the vertices is refused");
       CHECK(!make(v, 4, good, 5, GFX_MESH_TRIANGLES, 0), "a part triangle is refused");
       CHECK(!make(v, 0, NULL, 0, GFX_MESH_TRIANGLE_STRIP, 0), "no vertices is refused");
+      mesh = make(NULL, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, GFX_MESH_FLAG_POSITIONS);
+      CHECK(mesh && mesh->positions, "the owner can fill a mesh in place");
+      if (mesh)
+      {
+         CHECK(mesh->vertices[3].x == 0.0f && mesh->positions[7] == 0.0f,
+               "unfilled mesh streams start at zero");
+         mesh->vertices[3].x = 0.75f;
+         mesh->positions[6] = mesh->vertices[3].x;
+         CHECK(mesh->positions[6] == 0.75f, "the effect reads the owner's stream");
+         gfx_display_mesh_free(mesh);
+      }
       mesh = make(v, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, GFX_MESH_FLAG_POSITIONS);
       CHECK(mesh && mesh->positions
             && mesh->positions[0] == -1 && mesh->positions[1] == -1
@@ -244,8 +351,9 @@ int main(void)
          reset();
          md.program = map[i].p; md.color = white; md.texture = 0;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
-         CHECK(rec_pipeline_calls == 1 && rec_pipeline_id == map[i].id && rec_draws == 1,
-               "an effect reaches the pipeline under its id, then draws");
+         CHECK(rec_pipeline_calls == 1
+               && rec_pipeline_id == map[i].id && rec_draws == rec_pipeline_calls,
+               "each effect reaches its pipeline, then draws");
          CHECK(rec_effect_vertex == gfx_display_mesh_fullscreen()->positions
                && rec_effect_vertices == 4,
                "the effect coordinates are the mesh it is drawn over");

@@ -12,7 +12,7 @@ SRC    := gfx_display_mesh_test.c $(RA)/gfx/gfx_display.c \
 
 all: gfx_display_mesh_test
 
-gfx_display_mesh_test: $(SRC) $(RA)/gfx/gfx_display.h
+gfx_display_mesh_test: $(SRC) $(RA)/gfx/gfx_display.h $(RA)/gfx/common/menu_ribbon.h
 	$(CC) $(CFLAGS) -no-pie -o $@ $(SRC) -no-pie \
 	   -Wl,--unresolved-symbols=ignore-all -lm
 

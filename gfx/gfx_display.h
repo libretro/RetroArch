@@ -289,6 +289,7 @@ struct gfx_display
 
    uint8_t flags;
 
+   struct menu_ribbon *ribbon;
    retro_time_t effect_start_time;
    /* Elapsed seconds scaled by 0.6, shared by every effect pass. */
    float     effect_time;
@@ -426,7 +427,7 @@ typedef struct gfx_display_mesh_vertex
 
 typedef struct gfx_display_mesh_desc
 {
-   const gfx_display_mesh_vertex_t *vertices;
+   const gfx_display_mesh_vertex_t *vertices; /* NULL: zeroed, filled by owner */
    const uint16_t *indices;        /* NULL: drawn in vertex order */
    unsigned vertex_count;
    unsigned index_count;
@@ -473,6 +474,11 @@ const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void);
  * positions as coordinates, for drivers that stream them; NULL when
  * the mesh keeps none. Drawing thread only. */
 struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp);
+/* Borrowed until the next effect draw, on the drawing thread. */
+const float *gfx_display_ribbon_ubo(gfx_display_t *p_disp, float yflip);
+const float *gfx_display_ribbon_data(gfx_display_t *p_disp);
+void gfx_display_ribbon_vertex(const float *data, const float *p,
+      float *position, float *lighting);
 void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
       unsigned video_dims, const gfx_display_mesh_t *mesh,
       const gfx_display_mesh_draw_t *draw);

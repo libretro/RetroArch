@@ -1036,23 +1036,23 @@ static void gl_glsl_compile_menu_shader(glsl_shader_data_t *glsl, unsigned idx)
    {
 #ifdef HAVE_OPENGLES
 #if defined(VITA)
-   shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern;
-   shader_prog_info.fragment = stock_fragment_xmb;
+   shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern();
+   shader_prog_info.fragment = stock_fragment_xmb();
 #else
    if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
    {
-      shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern;
-      shader_prog_info.fragment = core_stock_fragment_xmb;
+      shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern();
+      shader_prog_info.fragment = core_stock_fragment_xmb();
    }
    else
    {
-      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
-      shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
+      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern() : stock_vertex_xmb_ribbon_legacy();
+      shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb() : stock_fragment_xmb();
    }
 #endif
 #else
-   shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
-   shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
+   shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern() : stock_vertex_xmb_ribbon_legacy();
+   shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb() : stock_fragment_xmb();
 #endif
 
    RARCH_LOG("[GLSL] Compiling ribbon shader...\n");
@@ -1469,7 +1469,7 @@ static void gl_glsl_set_uniform_parameter(
          glUniform3fv(location, 1, param->result.floatv);
          break;
       case UNIFORM_4FV:
-         glUniform4fv(location, 1, param->result.floatv);
+         glUniform4fv(location, param->count ? param->count : 1, param->result.floatv);
          break;
       case UNIFORM_1I:
          glUniform1i(location, (GLint)param->result.integer.v0);

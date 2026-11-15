@@ -282,7 +282,10 @@ static void gl_cg_set_uniform_parameter(
          cgGLSetParameter3fv(location, param->result.floatv);
          break;
       case UNIFORM_4FV:
-         cgGLSetParameter3fv(location, param->result.floatv);
+         if (param->count)
+            cgGLSetParameterArray4f(location, 0, param->count, param->result.floatv);
+         else
+            cgGLSetParameter4fv(location, param->result.floatv);
          break;
       case UNIFORM_1I:
          /* Unimplemented - Cg limitation */
@@ -1004,7 +1007,7 @@ static void gl_cg_init_menu_shaders(void *data)
 #ifdef HAVE_SHADERPIPELINE
    shader_prog_info.is_file  = false;
 
-   shader_prog_info.combined = stock_xmb_ribbon;
+   shader_prog_info.combined = stock_xmb_ribbon();
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU,

@@ -362,6 +362,7 @@ typedef struct ALIGN(16)
    } OutputSize;
    float time;
    float alpha;
+   float ribbon[65][4];
 } d3d11_uniform_t;
 
 typedef struct d3d11_shader_t
@@ -1180,6 +1181,7 @@ static void d3d11_update_texture(
 
 #include "../common/menu_bloom.h"
 #include "d3d_shaders/bloom_sm4.hlsl.h"
+#include "../common/menu_ribbon_shader.h"
 
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader);
 
@@ -1235,6 +1237,14 @@ static unsigned gfx_display_d3d11_bloom_begin(void *data, unsigned dims)
    }
    if (bloom_dims != d3d11->bloom.dims)
    {
+      UINT support = 0;
+      DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      UINT required = D3D11_FORMAT_SUPPORT_RENDER_TARGET
+         | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE | D3D11_FORMAT_SUPPORT_BLENDABLE;
+      if (SUCCEEDED(d3d11->device->lpVtbl->CheckFormatSupport(d3d11->device,
+                  DXGI_FORMAT_R16G16B16A16_FLOAT, &support))
+            && (support & required) == required)
+         format = DXGI_FORMAT_R16G16B16A16_FLOAT;
       for (i = 0; i < 2; i++)
       {
          d3d11_texture_t *t = &d3d11->bloom.tex[i];
@@ -1242,7 +1252,7 @@ static unsigned gfx_display_d3d11_bloom_begin(void *data, unsigned dims)
          memset(t, 0, sizeof(*t));
          t->desc.Width     = VIDEO_SCALE_W(bloom_dims);
          t->desc.Height    = VIDEO_SCALE_H(bloom_dims);
-         t->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+         t->desc.Format    = format;
          t->desc.Usage     = D3D11_USAGE_DEFAULT;
          t->desc.BindFlags = D3D11_BIND_RENDER_TARGET;
          if (!d3d11_init_texture_ex(d3d11->device, t, false)
@@ -1285,30 +1295,35 @@ static void gfx_display_d3d11_bloom_end(void *data, unsigned dims)
    ctx->lpVtbl->PSSetSamplers(ctx, 0, 1,
          &d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE]);
    ctx->lpVtbl->IASetPrimitiveTopology(ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < MENU_BLOOM_PASSES; i++)
    {
       D3D11_MAPPED_SUBRESOURCE mapped;
-      D3D11RenderTargetView target = i == 2 ? d3d11->bloom.target
-         : d3d11->bloom.tex[1 - i].rt_view;
+      D3D11RenderTargetView target = i % 3 == 2 ? d3d11->bloom.target
+         : d3d11->bloom.tex[1 - i % 3].rt_view;
       float *p;
       if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)d3d11->bloom.ubo,
                   0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
          break;
       p = (float*)mapped.pData;
-      p[0] = i == 0 ? 2.0f / VIDEO_SCALE_W(d3d11->bloom.dims) : 0.0f;
-      p[1] = i == 1 ? 2.0f / VIDEO_SCALE_H(d3d11->bloom.dims) : 0.0f;
-      p[2] = i == 0 ? 0.20f : 0.0f;
-      p[3] = i == 2 ? 0.75f : 1.0f;
+      menu_bloom_params(p, i, d3d11->bloom.dims);
       ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->bloom.ubo, 0);
       ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &empty);
       ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &target, NULL);
       ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1,
-            &d3d11->bloom.tex[i == 1 ? 1 : 0].view);
+            &d3d11->bloom.tex[i % 3 == 1 ? 1 : 0].view);
       ctx->lpVtbl->OMSetBlendState(ctx,
-            i == 2 ? d3d11->bloom.blend : d3d11->blend_disable,
+            i % 3 == 2 ? d3d11->bloom.blend : d3d11->blend_disable,
             NULL, D3D11_DEFAULT_SAMPLE_MASK);
-      if (i == 2)
+      if (i % 3 == 2)
          ctx->lpVtbl->RSSetViewports(ctx, 1, &d3d11->bloom.viewport);
+      else
+      {
+         D3D11_VIEWPORT vp = d3d11->bloom.viewport;
+         vp.TopLeftX = vp.TopLeftY = 0;
+         vp.Width = VIDEO_SCALE_W(d3d11->bloom.dims);
+         vp.Height = VIDEO_SCALE_H(d3d11->bloom.dims);
+         ctx->lpVtbl->RSSetViewports(ctx, 1, &vp);
+      }
       ctx->lpVtbl->Draw(ctx, 4, 0);
    }
    ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &empty);
@@ -1349,9 +1364,7 @@ static bool d3d11_effect_shader(d3d11_video_t *d3d11, unsigned pipeline_id)
       { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
          0, offsetof(d3d11_vertex_t, texcoord), D3D11_INPUT_PER_VERTEX_DATA, 0 },
    };
-   static const char ribbon[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-      ;
+   static char ribbon[4096];
    static const char ribbon_simple[] =
 #include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
       ;
@@ -1376,7 +1389,10 @@ static bool d3d11_effect_shader(d3d11_video_t *d3d11, unsigned pipeline_id)
    switch (pipeline_id)
    {
       case VIDEO_SHADER_MENU:
-         src = ribbon;        size = sizeof(ribbon);        bit = 1 << 0;
+         src =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+            ;
+         size = strlen(src);        bit = 1 << 0;
          desc = ribbon_desc;  count = countof(ribbon_desc);
          break;
       case VIDEO_SHADER_MENU_2:
@@ -1818,6 +1834,10 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
    d3d11->context->lpVtbl->IASetPrimitiveTopology(
          d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+   if (draw->pipeline_id == VIDEO_SHADER_MENU)
+      memcpy(d3d11->ubo_values.ribbon, gfx_display_ribbon_data(p_disp),
+            sizeof(d3d11->ubo_values.ribbon));
 
    d3d11->ubo_values.time = p_disp->effect_time;
    d3d11->ubo_values.alpha = draw->color ? draw->color[3] : 1.0f;
@@ -5267,6 +5287,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
       d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
             &d3d11->blend_enable);
 
+      blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
       blend_desc.RenderTarget[0].DestBlend             = D3D11_BLEND_ONE;
       d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
             &d3d11->blend_ribbon);

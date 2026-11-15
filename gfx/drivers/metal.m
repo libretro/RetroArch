@@ -2171,6 +2171,9 @@ static void buffer_chain_discard(buffer_chain_t *chain);
          break;
    }
 
+   if (_bloomDims && index == VIDEO_SHADER_MENU)
+      return _statesF16[index][blend ? 1 : 0];
+
    if (index == VIDEO_SHADER_XMB_MATERIAL)
    {
       blend = YES;
@@ -2420,7 +2423,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
    psd.label                       = @"ribbon_blend";
    ca.blendingEnabled              = YES;
-   ca.sourceRGBBlendFactor         = MTLBlendFactorSourceAlpha;
+   ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
    ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
    _states[VIDEO_SHADER_MENU][1]   = [self sdrState:psd error:&err];
    _statesF16[VIDEO_SHADER_MENU][1] = [self twinF16:psd];
@@ -3773,10 +3776,11 @@ static float metal_hdr_pq_to_nits(float pq)
       MTLRenderPipelineDescriptor *psd = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
       psd.vertexFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_vertex"]);
       psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_fragment"]);
-      psd.colorAttachments[0].pixelFormat = format;
+      psd.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
       RARCH_RELEASE_NIL(_bloomState);
       RARCH_RELEASE_NIL(_bloomAddState);
       _bloomState = [_device newRenderPipelineStateWithDescriptor:psd error:nil];
+      psd.colorAttachments[0].pixelFormat = format;
       psd.colorAttachments[0].blendingEnabled = YES;
       psd.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
       psd.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
@@ -3792,11 +3796,11 @@ static float metal_hdr_pq_to_nits(float pq)
    }
    if (!_bloomTex[0] || _bloomTex[0].width != VIDEO_SCALE_W(small)
          || _bloomTex[0].height != VIDEO_SCALE_H(small)
-         || _bloomTex[0].pixelFormat != format)
+         || _bloomTex[0].pixelFormat != MTLPixelFormatRGBA16Float)
    {
       unsigned i;
       MTLTextureDescriptor *td = [MTLTextureDescriptor
-         texture2DDescriptorWithPixelFormat:format width:VIDEO_SCALE_W(small)
+         texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float width:VIDEO_SCALE_W(small)
          height:VIDEO_SCALE_H(small) mipmapped:NO];
       td.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
       td.storageMode = MTLStorageModePrivate;
@@ -3822,15 +3826,13 @@ static float metal_hdr_pq_to_nits(float pq)
    unsigned i;
    unsigned small = _bloomDims;
    [self endLayer];
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < MENU_BLOOM_PASSES; i++)
    {
       id<MTLRenderCommandEncoder> encoder;
       MTLViewport vp = {0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small), 0, 1};
-      simd_float4 params = simd_make_float4(
-            i == 0 ? 2.0f / VIDEO_SCALE_W(small) : 0.0f,
-            i == 1 ? 2.0f / VIDEO_SCALE_H(small) : 0.0f,
-            i == 0 ? 0.20f : 0.0f, i == 2 ? 0.75f : 1.0f);
-      if (i == 2)
+      simd_float4 params;
+      menu_bloom_params((float*)&params, i, small);
+      if (i % 3 == 2)
       {
          _bloomRestore.colorAttachments[0].loadAction = MTLLoadActionLoad;
          RARCH_ASSIGN(_renderPass, _bloomRestore);
@@ -3839,14 +3841,14 @@ static float metal_hdr_pq_to_nits(float pq)
          vp.height = VIDEO_SCALE_H(dims);
       }
       else
-         [self beginLayer:_bloomTex[1 - i]];
+         [self beginLayer:_bloomTex[1 - i % 3]];
       encoder = _rce;
       [encoder setViewport:vp];
-      [encoder setRenderPipelineState:i == 2 ? _bloomAddState : _bloomState];
-      [encoder setFragmentTexture:_bloomTex[i == 1 ? 1 : 0] atIndex:0];
+      [encoder setRenderPipelineState:i % 3 == 2 ? _bloomAddState : _bloomState];
+      [encoder setFragmentTexture:_bloomTex[i % 3 == 1 ? 1 : 0] atIndex:0];
       [encoder setFragmentBytes:&params length:sizeof(params) atIndex:0];
       [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
-      if (i != 2)
+      if (i + 1 < MENU_BLOOM_PASSES)
          [self endLayer];
    }
    _bloomDims = 0;
@@ -4512,6 +4514,9 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    /* The effects' clock, one step ahead, as this driver has always
     * drawn them */
    _uniforms.time = disp_get_ptr()->effect_time;
+   if (draw->pipeline_id == VIDEO_SHADER_MENU)
+      memcpy(_uniforms.ribbon, gfx_display_ribbon_data(disp_get_ptr()),
+            sizeof(_uniforms.ribbon));
    if (_uniforms.time > 65536.0f)
       _uniforms.time -= 65536.0f;
 }

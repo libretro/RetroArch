@@ -146,6 +146,15 @@ const size_t spirv_hdr_scrgb_frag_size = sizeof(spirv_hdr_scrgb_frag);
 #endif
 
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG) && defined(HAVE_RSLC) && !defined(HAVE_SPIRV_CROSS)
+#ifdef HAVE_SHADERPIPELINE
+static const char ribbon_vert_glsl[] = {
+#include "../drivers/vulkan_shaders/pipeline_ribbon.vert.src.inc"
+};
+static const char ribbon_frag_glsl[] = {
+#include "../drivers/vulkan_shaders/pipeline_ribbon.frag.src.inc"
+};
+#endif
+
 static const char xmb_font_glsl[] = {
 #include "../drivers/vulkan_shaders/xmb_font.frag.src.inc"
 };
@@ -198,12 +207,8 @@ static const struct
 #include "../drivers/vulkan_shaders/hdr_scrgb.frag.src.inc"
    },
 #ifdef HAVE_SHADERPIPELINE
-   { spirv_pipeline_ribbon_vert,
-#include "../drivers/vulkan_shaders/pipeline_ribbon.vert.src.inc"
-   },
-   { spirv_pipeline_ribbon_frag,
-#include "../drivers/vulkan_shaders/pipeline_ribbon.frag.src.inc"
-   },
+   { spirv_pipeline_ribbon_vert, ribbon_vert_glsl },
+   { spirv_pipeline_ribbon_frag, ribbon_frag_glsl },
    { spirv_pipeline_ribbon_simple_vert,
 #include "../drivers/vulkan_shaders/pipeline_ribbon_simple.vert.src.inc"
    },

@@ -28,10 +28,25 @@ static unsigned D3D9B_FN(bloom_begin)(void *data, unsigned dims)
    }
    if (bloom_dims != d3d->bloom.dims)
    {
+      D3DFORMAT format = D3DFMT_A8R8G8B8;
+      D3DDEVICE_CREATION_PARAMETERS creation;
+      D3DDISPLAYMODE mode;
+      LPDIRECT3D9 api = NULL;
+      if (SUCCEEDED(IDirect3DDevice9_GetDirect3D(d3d->dev, &api)))
+      {
+         if (SUCCEEDED(IDirect3DDevice9_GetCreationParameters(d3d->dev, &creation))
+               && SUCCEEDED(IDirect3DDevice9_GetDisplayMode(d3d->dev, 0, &mode))
+               && SUCCEEDED(IDirect3D9_CheckDeviceFormat(api, creation.AdapterOrdinal,
+                     creation.DeviceType, mode.Format, D3DUSAGE_RENDERTARGET
+                        | D3DUSAGE_QUERY_FILTER | D3DUSAGE_QUERY_POSTPIXELSHADER_BLENDING,
+                     D3DRTYPE_TEXTURE, D3DFMT_A16B16G16R16F)))
+            format = D3DFMT_A16B16G16R16F;
+         IDirect3D9_Release(api);
+      }
       for (i = 0; i < 2; i++)
       {
          D3D9B_FN(views_target_retire)(d3d, &d3d->bloom.tex[i]);
-         if (!D3D9B_FN(views_target_make)(d3d, &d3d->bloom.tex[i], bloom_dims))
+         if (!D3D9B_FN(views_target_make_format)(d3d, &d3d->bloom.tex[i], bloom_dims, format))
             goto error;
       }
       d3d->bloom.dims = bloom_dims;
@@ -71,22 +86,19 @@ static void D3D9B_FN(bloom_end)(void *data, unsigned dims)
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLENDALPHA, D3DBLEND_ONE);
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_ONE);
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_ONE);
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < MENU_BLOOM_PASSES; i++)
    {
       float params[4];
       video_views_rect_t rect;
       rect.pos = 0;
-      rect.dims = i == 2 ? dims : d3d->bloom.dims;
-      params[0] = i == 0 ? 2.0f / VIDEO_SCALE_W(d3d->bloom.dims) : 0.0f;
-      params[1] = i == 1 ? 2.0f / VIDEO_SCALE_H(d3d->bloom.dims) : 0.0f;
-      params[2] = i == 0 ? 0.20f : 0.0f;
-      params[3] = i == 2 ? 0.75f : 1.0f;
+      rect.dims = i % 3 == 2 ? dims : d3d->bloom.dims;
+      menu_bloom_params(params, i, d3d->bloom.dims);
       IDirect3DDevice9_SetTexture(d3d->dev, 0, NULL);
       IDirect3DDevice9_SetRenderTarget(d3d->dev, 0,
-            i == 2 ? d3d->bloom.target : d3d->bloom.tex[1 - i].surf);
-      IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, i == 2);
+            i % 3 == 2 ? d3d->bloom.target : d3d->bloom.tex[1 - i % 3].surf);
+      IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, i % 3 == 2);
       IDirect3DDevice9_SetPixelShaderConstantF(d3d->dev, d3d->bloom.ps_reg, params, 1);
-      D3D9B_FN(views_sample)(d3d, d3d->bloom.tex[i == 1 ? 1 : 0].tex, D3DTEXF_LINEAR);
+      D3D9B_FN(views_sample)(d3d, d3d->bloom.tex[i % 3 == 1 ? 1 : 0].tex, D3DTEXF_LINEAR);
       D3D9B_FN(views_quad)(d3d, &rect, uv, 0);
    }
    IDirect3DDevice9_SetTexture(d3d->dev, 0, NULL);

@@ -60,6 +60,17 @@ void gl_finish(void)
 
 #ifdef HAVE_GL_MENU_BLOOM
 #include "menu_bloom.h"
+#include <gfx/gl_capabilities.h>
+
+#ifndef GL_RGBA16F
+#define GL_RGBA16F 0x881A
+#endif
+#ifndef GL_HALF_FLOAT
+#define GL_HALF_FLOAT 0x140B
+#endif
+#ifndef GL_HALF_FLOAT_OES
+#define GL_HALF_FLOAT_OES 0x8D61
+#endif
 
 struct gl_menu_bloom
 {
@@ -208,7 +219,7 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
    gl_menu_bloom_t *b = *bloom;
    unsigned w = VIDEO_SCALE_W(dims);
    unsigned h = VIDEO_SCALE_H(dims);
-   unsigned i, small;
+   unsigned i, attempt, small;
    if (!w || !h)
       return 0;
 #ifndef HAVE_OPENGLES
@@ -245,21 +256,38 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
       glDeleteFramebuffers(2, b->fbo);
       glGenTextures(2, b->tex);
       glGenFramebuffers(2, b->fbo);
-      for (i = 0; i < 2; i++)
+      for (attempt = 0; attempt < 2; attempt++)
       {
-         glBindTexture(GL_TEXTURE_2D, b->tex[i]);
-         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-         glBindFramebuffer(GL_FRAMEBUFFER, b->fbo[i]);
-         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-               GL_TEXTURE_2D, b->tex[i], 0);
-         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            goto error;
+         bool es3 = es && gl_check_capability(GL_CAPS_GLES3_SUPPORTED);
+         bool floating = attempt == 0 && (es
+            ? (es3 ? gl_query_extension("EXT_color_buffer_float")
+                  || gl_query_extension("EXT_color_buffer_half_float")
+               : gl_query_extension("EXT_color_buffer_half_float")
+                  && gl_query_extension("OES_texture_half_float_linear"))
+            : gl_check_capability(GL_CAPS_FP_FBO));
+         for (i = 0; i < 2; i++)
+         {
+            glBindTexture(GL_TEXTURE_2D, b->tex[i]);
+            glTexImage2D(GL_TEXTURE_2D, 0,
+                  floating && (!es || es3) ? GL_RGBA16F : GL_RGBA,
+                  w, h, 0, GL_RGBA, floating
+                     ? (es && !es3 ? GL_HALF_FLOAT_OES : GL_HALF_FLOAT)
+                     : GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glBindFramebuffer(GL_FRAMEBUFFER, b->fbo[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                  GL_TEXTURE_2D, b->tex[i], 0);
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+               break;
+         }
+         if (i == 2)
+            break;
       }
+      if (i != 2)
+         goto error;
       b->dims = small;
    }
    glBindFramebuffer(GL_FRAMEBUFFER, b->fbo[0]);
@@ -321,24 +349,30 @@ void gl_menu_bloom_end(gl_menu_bloom_t *b, unsigned dims)
    glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
    glEnableVertexAttribArray(0);
    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < MENU_BLOOM_PASSES; i++)
    {
-      glBindFramebuffer(GL_FRAMEBUFFER, i == 2 ? (GLuint)b->target : b->fbo[1 - i]);
-      glBindTexture(GL_TEXTURE_2D, b->tex[i == 1 ? 1 : 0]);
-      glUniform2f(b->step, i == 0 ? 2.0f / w : 0.0f,
-            i == 1 ? 2.0f / h : 0.0f);
-      glUniform1f(b->threshold, i == 0 ? 0.20f : 0.0f);
-      glUniform1f(b->gain, i == 2 ? 0.75f : 1.0f);
-      if (i == 2)
+      unsigned pass = i % 3;
+      float params[4];
+      menu_bloom_params(params, i, b->dims);
+      glBindFramebuffer(GL_FRAMEBUFFER, pass == 2 ? (GLuint)b->target : b->fbo[1 - pass]);
+      glBindTexture(GL_TEXTURE_2D, b->tex[pass == 1 ? 1 : 0]);
+      glUniform2f(b->step, params[0], params[1]);
+      glUniform1f(b->threshold, params[2]);
+      glUniform1f(b->gain, params[3]);
+      if (pass == 2)
       {
          glViewport(0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
          glEnable(GL_BLEND);
          glBlendFunc(GL_ONE, GL_ONE);
       }
       else
+      {
+         glDisable(GL_BLEND);
          glViewport(0, 0, w, h);
+      }
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
+
 #ifndef HAVE_OPENGLES2
    if (sampler_bound)
       glBindSampler(0, sampler);

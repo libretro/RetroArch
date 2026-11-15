@@ -904,7 +904,7 @@ static void gfx_display_gl2_draw_pipeline(
    switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
-         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+         glBlendFunc(GL_ONE, GL_ONE);
          break;
       case VIDEO_SHADER_MENU_2:
          glBlendFunc(GL_DST_COLOR, GL_ONE);
@@ -941,17 +941,16 @@ static void gfx_display_gl2_draw_pipeline(
 
          uniform_param.result.f.v0       = t;
 
+         if (draw->pipeline_id == VIDEO_SHADER_MENU)
+         {
+            uniform_param.type = UNIFORM_4FV;
+            uniform_param.count = 65;
+            uniform_param.lookup.ident = "Ribbon";
+            uniform_param.lookup.add_prefix = false;
+            uniform_param.result.floatv = (float*)gfx_display_ribbon_data(p_disp);
+         }
          gl->shader->set_uniform_parameter(gl->shader_data,
                &uniform_param, NULL);
-#ifdef HAVE_CG
-         if (draw->pipeline_id == VIDEO_SHADER_MENU
-               && gl->shader->type == RARCH_SHADER_CG)
-         {
-            uniform_param.lookup.type = SHADER_PROGRAM_FRAGMENT;
-            gl->shader->set_uniform_parameter(gl->shader_data,
-                  &uniform_param, NULL);
-         }
-#endif
          break;
    }
 

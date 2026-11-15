@@ -712,6 +712,7 @@ typedef struct vk
       const struct vk_image *target;
       struct vk_image images[2];
       VkPipeline pipelines[2][2];
+      VkPipeline ribbon;
       VkRenderPass keep_sdr_pass;
       VkRect2D scissor;
       VkFormat format;
@@ -3440,13 +3441,19 @@ static void gfx_display_vk_draw_pipeline(
                return;
             mesh_coords.vertices          = p_disp->effect_mesh->vertex_count;
             draw->coords                  = &mesh_coords;
-            draw->backend_data            = ubo_scratch_data;
-            draw->backend_data_size       = 3 * sizeof(float);
-
-            /* Match UBO layout in shader. */
-            memcpy(ubo_scratch_data, &t, sizeof(t));
-            memcpy(ubo_scratch_data + sizeof(float), &ribbon_yflip, sizeof(ribbon_yflip));
-            memcpy(ubo_scratch_data + 2 * sizeof(float), &alpha, sizeof(alpha));
+            if (draw->pipeline_id == VIDEO_SHADER_MENU)
+            {
+               draw->backend_data = (void*)gfx_display_ribbon_ubo(p_disp, ribbon_yflip);
+               draw->backend_data_size = 66 * 4 * sizeof(float);
+            }
+            else
+            {
+               draw->backend_data = ubo_scratch_data;
+               draw->backend_data_size = 3 * sizeof(float);
+               memcpy(ubo_scratch_data, &t, sizeof(t));
+               memcpy(ubo_scratch_data + sizeof(float), &ribbon_yflip, sizeof(ribbon_yflip));
+               memcpy(ubo_scratch_data + 2 * sizeof(float), &alpha, sizeof(alpha));
+            }
          }
          break;
 
@@ -3988,12 +3995,10 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             struct vk_draw_triangles call;
             unsigned idx = to_menu_pipeline(draw->pipeline_id);
 
-#ifdef VULKAN_HDR_SWAPCHAIN
-            call.pipeline     = vulkan_effect_pipeline(vk, idx - 2,
-                  (vk->flags & VK_FLAG_SDR_PIPELINE) ? true : false);
-#else
-            call.pipeline     = vulkan_effect_pipeline(vk, idx - 2, false);
-#endif
+            call.pipeline = vulkan_effect_pipeline(vk, idx - 2,
+                  vk->bloom.active
+                     ? vk->bloom.format == VK_FORMAT_R16G16B16A16_SFLOAT
+                     : (vk->flags & VK_FLAG_SDR_PIPELINE) != 0);
             if (call.pipeline == VK_NULL_HANDLE)
                return;
             call.texture      = NULL;
@@ -5511,6 +5516,9 @@ static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr)
    VkPipeline *slot;
    unsigned bit = 1u << (i + (sdr ? 6 : 0));
 
+   if (sdr && i == 0)
+      slot = &vk->bloom.ribbon;
+   else
 #ifdef VULKAN_HDR_SWAPCHAIN
    slot = sdr ? &vk->display.pipelines_sdr[2 + i] : &vk->display.pipelines[2 + i];
 #else
@@ -5549,7 +5557,8 @@ static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr)
    }
    else
    {
-      t.blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+      t.blend_attachment.srcColorBlendFactor = i == 0
+         ? VK_BLEND_FACTOR_ONE : VK_BLEND_FACTOR_SRC_ALPHA;
       t.blend_attachment.dstColorBlendFactor = i == 0
          ? VK_BLEND_FACTOR_ONE : VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
    }
@@ -6084,6 +6093,9 @@ static void vulkan_init_pipelines(vk_t *vk)
          &input_assembly, &vertex_input, attributes, &binding, &raster,
          &blend_attachment, &blend, &multisample, &vp, &depth_stencil,
          &dynamic);
+
+   vk->display.effect_tpl[1] = vk->display.effect_tpl[0];
+   vk->display.effect_tpl[1].pipe.renderPass = vk->sdr_render_pass;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* When HDR is supported, the menu is rendered into an SDR
@@ -6732,6 +6744,8 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
    vulkan_destroy_hdr_buffer(vk->context->device, &vk->bloom.images[1]);
    vk->bloom.dims = 0;
    vk->bloom.target = NULL;
+   vkDestroyPipeline(vk->context->device, vk->bloom.ribbon, NULL);
+   vk->bloom.ribbon = VK_NULL_HANDLE;
    vkDestroyRenderPass(vk->context->device, vk->bloom.keep_sdr_pass, NULL);
 
    if (vk->views.canvas.image)
@@ -11113,16 +11127,23 @@ static unsigned gfx_display_vk_bloom_begin(void *data, unsigned dims)
    vk_t *vk = (vk_t*)data;
    unsigned small = menu_bloom_dims(dims);
    unsigned i;
-   bool sdr;
+   bool sdr, floating;
+   VkFormatProperties props;
    VkFormat format;
    VkRenderPass pass;
    if (!vk || !small || !vk->bloom.target || vk->bloom.failed)
       return 0;
    sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
-   format = sdr ? VK_FORMAT_R16G16B16A16_SFLOAT : vk->context->swapchain_format;
-   pass = sdr ? vk->sdr_render_pass : vk->views.render_pass;
+   vkGetPhysicalDeviceFormatProperties(vk->context->gpu,
+         VK_FORMAT_R16G16B16A16_SFLOAT, &props);
+   floating = (props.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+         | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+      == (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+         | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT);
+   format = floating ? VK_FORMAT_R16G16B16A16_SFLOAT : vk->context->swapchain_format;
+   pass = floating ? vk->sdr_render_pass : vk->views.render_pass;
    if (!pass || !(sdr ? vk->bloom.keep_sdr_pass : vk->keep_render_pass)
-         || !vulkan_bloom_pipeline(vk, sdr, false)
+         || !vulkan_bloom_pipeline(vk, floating, false)
          || !vulkan_bloom_pipeline(vk, sdr, true))
       goto error;
    if (vk->bloom.dims != small || vk->bloom.format != format)
@@ -11162,16 +11183,17 @@ static void gfx_display_vk_bloom_end(void *data, unsigned dims)
 {
    vk_t *vk = (vk_t*)data;
    bool sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
-   VkRenderPass pass = sdr ? vk->sdr_render_pass : vk->views.render_pass;
+   bool floating = vk->bloom.format == VK_FORMAT_R16G16B16A16_SFLOAT;
+   VkRenderPass pass = floating ? vk->sdr_render_pass : vk->views.render_pass;
    unsigned i;
    vulkan_views_end(vk, &vk->bloom.images[0]);
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < MENU_BLOOM_PASSES; i++)
    {
       float params[4];
-      unsigned target_dims = i == 2 ? dims : vk->bloom.dims;
+      unsigned target_dims = i % 3 == 2 ? dims : vk->bloom.dims;
       struct vk_texture tex;
       struct vk_draw_triangles call;
-      if (i == 2)
+      if (i % 3 == 2)
       {
          VkRenderPassBeginInfo rp;
          VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->bloom.target->image,
@@ -11194,7 +11216,7 @@ static void gfx_display_vk_bloom_end(void *data, unsigned dims)
          vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
       }
       else
-         vulkan_views_begin(vk, &vk->bloom.images[1 - i], target_dims, pass);
+         vulkan_views_begin(vk, &vk->bloom.images[1 - i % 3], target_dims, pass);
       vk->tracker.pipeline = VK_NULL_HANDLE;
       vk->vk_vp.x = vk->vk_vp.y = 0.0f;
       vk->vk_vp.width = VIDEO_SCALE_W(target_dims);
@@ -11203,13 +11225,10 @@ static void gfx_display_vk_bloom_end(void *data, unsigned dims)
       vk->vk_vp.maxDepth = 1.0f;
       vk->tracker.scissor.extent.width = VIDEO_SCALE_W(target_dims);
       vk->tracker.scissor.extent.height = VIDEO_SCALE_H(target_dims);
-      params[0] = i == 0 ? 2.0f / VIDEO_SCALE_W(vk->bloom.dims) : 0.0f;
-      params[1] = i == 1 ? 2.0f / VIDEO_SCALE_H(vk->bloom.dims) : 0.0f;
-      params[2] = i == 0 ? 0.20f : 0.0f;
-      params[3] = i == 2 ? 0.75f : 1.0f;
-      vulkan_views_texture(&vk->bloom.images[i == 1 ? 1 : 0],
+      menu_bloom_params(params, i, vk->bloom.dims);
+      vulkan_views_texture(&vk->bloom.images[i % 3 == 1 ? 1 : 0],
             vk->bloom.dims, vk->bloom.format, &tex);
-      call.pipeline = vulkan_bloom_pipeline(vk, sdr, i == 2);
+      call.pipeline = vulkan_bloom_pipeline(vk, i % 3 == 2 ? sdr : floating, i % 3 == 2);
       call.texture = &tex;
       call.sampler = vk->samplers.linear;
       call.uniform = params;
@@ -11218,8 +11237,10 @@ static void gfx_display_vk_bloom_end(void *data, unsigned dims)
       call.vertices = 4;
       if (vulkan_draw_bind(vk, &call))
          vkCmdDraw(vk->cmd, 4, 1, 0, 0);
-      if (i != 2)
-         vulkan_views_end(vk, &vk->bloom.images[1 - i]);
+      if (i % 3 != 2)
+         vulkan_views_end(vk, &vk->bloom.images[1 - i % 3]);
+      else if (i + 1 < MENU_BLOOM_PASSES)
+         vkCmdEndRenderPass(vk->cmd);
    }
    vk->bloom.active = false;
    vk->tracker.scissor = vk->bloom.scissor;

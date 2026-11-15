@@ -23,4 +23,16 @@ static unsigned menu_bloom_dims(unsigned dims)
    return VIDEO_SCALE_PACK(w, h);
 }
 
+#define MENU_BLOOM_PASSES 6
+
+static void menu_bloom_params(float *p, unsigned pass, unsigned dims)
+{
+   unsigned axis = pass % 3;
+   float radius = pass < 3 ? 1.2f : 5.0f;
+   p[0] = axis == 0 ? radius / VIDEO_SCALE_W(dims) : 0.0f;
+   p[1] = axis == 1 ? radius / VIDEO_SCALE_H(dims) : 0.0f;
+   p[2] = pass == 0 ? 0.12f : 0.0f;
+   p[3] = axis == 2 ? (pass < 3 ? 0.45f : 0.90f) : 1.0f;
+}
+
 #endif

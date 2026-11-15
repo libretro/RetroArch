@@ -34,6 +34,7 @@
 
 #include <boolean.h>
 #include <retro_math.h>
+#include "../common/menu_ribbon_shader.h"
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -425,6 +426,7 @@ typedef struct ALIGN(16)
    } OutputSize;
    float time;
    float alpha;
+   float ribbon[65][4];
 } d3d12_uniform_t;
 
 typedef struct d3d12_pass
@@ -916,6 +918,7 @@ typedef struct
    {
       d3d12_texture_t tex[2];
       D3D12PipelineState pipes[3][2];
+      D3D12PipelineState ribbon;
       D3D12Resource cb;
       uint8_t *mapped;
       D3D12_GPU_VIRTUAL_ADDRESS cb_va;
@@ -924,6 +927,8 @@ typedef struct
       unsigned dims;
       unsigned slot;
       unsigned next;
+      bool active;
+      bool ribbon_tried;
       bool failed;
    } bloom;
    /* The pipeline state the menu effects are made from when first
@@ -2222,9 +2227,7 @@ static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
       { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
    };
-   static const char ribbon[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-      ;
+   static char ribbon[4096];
    static const char ribbon_simple[] =
 #include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
       ;
@@ -2247,11 +2250,16 @@ static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
    size_t size      = 0;
    bool ribbons     = false;
    unsigned bit;
+   D3D12PipelineState *out = d3d12->bloom.active
+      ? &d3d12->bloom.ribbon : &d3d12->pipes[pipeline_id];
 
    switch (pipeline_id)
    {
       case VIDEO_SHADER_MENU:
-         src = ribbon;        size = sizeof(ribbon);        bit = 1 << 0; ribbons = true;
+         src =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+            ;
+         size = strlen(src);        bit = 1 << 0; ribbons = true;
          break;
       case VIDEO_SHADER_MENU_2:
          src = ribbon_simple; size = sizeof(ribbon_simple); bit = 1 << 1; ribbons = true;
@@ -2290,22 +2298,29 @@ static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
       d3d12->effect_rt_format = d3d12->chain.current_rt_format;
    }
 #endif
-   if (d3d12->pipes[pipeline_id])
+   if (*out)
       return true;
-   if ((d3d12->effects_tried & bit) || !d3d12->effect_desc_valid)
+   if ((d3d12->bloom.active ? d3d12->bloom.ribbon_tried
+            : (d3d12->effects_tried & bit) != 0)
+         || !d3d12->effect_desc_valid)
       return false;
-   d3d12->effects_tried |= bit;
+   if (d3d12->bloom.active)
+      d3d12->bloom.ribbon_tried = true;
+   else
+      d3d12->effects_tried |= bit;
 
    desc                       = d3d12->effect_desc;
 #ifdef HAVE_DXGI_HDR
    if (d3d12->effect_rt_format != DXGI_FORMAT_UNKNOWN)
       desc.RTVFormats[0]      = d3d12->effect_rt_format;
 #endif
+   if (d3d12->bloom.active)
+      desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
    desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
    if (ribbons)
    {
       desc.BlendState.RenderTarget[0].SrcBlend  = pipeline_id == VIDEO_SHADER_MENU
-         ? D3D12_BLEND_SRC_ALPHA : D3D12_BLEND_DEST_COLOR;
+         ? D3D12_BLEND_ONE : D3D12_BLEND_DEST_COLOR;
       desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
       desc.InputLayout.pInputElementDescs       = ribbon_desc;
       desc.InputLayout.NumElements              = countof(ribbon_desc);
@@ -2327,16 +2342,17 @@ static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
    if (     d3d_compile(src, size, NULL, "VSMain", "vs_5_0", &vs_code)
          && d3d_compile(src, size, NULL, "PSMain", "ps_5_0", &ps_code))
       d3d12_init_pipeline(d3d12->device, vs_code, ps_code, NULL, &desc,
-            &d3d12->pipes[pipeline_id]);
+            out);
    Release(vs_code);
    Release(ps_code);
-   return d3d12->pipes[pipeline_id] != NULL;
+   return *out != NULL;
 }
 
 static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
    D3D12GraphicsCommandList cmd;
+   D3D12PipelineState effect;
    int vertex_count     = 1;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
 #ifdef HAVE_DXGI_HDR
@@ -2357,9 +2373,11 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
          /* Made by the pipeline call before this, or not at all */
-         if (!d3d12->pipes[draw->pipeline_id])
+         effect = d3d12->bloom.active ? d3d12->bloom.ribbon
+            : d3d12->pipes[draw->pipeline_id];
+         if (!effect)
             return;
-         cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->pipes[draw->pipeline_id]);
+         cmd->lpVtbl->SetPipelineState(cmd, effect);
          cmd->lpVtbl->DrawInstanced(cmd, draw->coords->vertices, 1, 0, 0);
          cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
          cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
@@ -2767,6 +2785,10 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
    /* The effects' clock, one step ahead, as this driver has always
     * drawn them */
+   if (draw->pipeline_id == VIDEO_SHADER_MENU)
+      memcpy(d3d12->ubo_values.ribbon, gfx_display_ribbon_data(p_disp),
+            sizeof(d3d12->ubo_values.ribbon));
+
    d3d12->ubo_values.time   = p_disp->effect_time;
    if (d3d12->ubo_values.time > 65536.0f)
       d3d12->ubo_values.time -= 65536.0f;
@@ -8640,6 +8662,7 @@ static void d3d12_bloom_free(d3d12_video_t *d3d12)
       d3d12_release_texture(d3d12, &d3d12->bloom.tex[i]);
    for (i = 0; i < 6; i++)
       Release(d3d12->bloom.pipes[i / 2][i % 2]);
+   Release(d3d12->bloom.ribbon);
    Release(d3d12->bloom.cb);
    memset(&d3d12->bloom, 0, sizeof(d3d12->bloom));
 }
@@ -8672,10 +8695,11 @@ static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims)
          desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
          desc.InputLayout.pInputElementDescs = NULL;
          desc.InputLayout.NumElements = 0;
-         desc.RTVFormats[0] = format;
+         desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
          desc.BlendState.RenderTarget[0] = d3d12_blend_disable_desc;
          d3d12_init_pipeline(d3d12->device, vs, ps, NULL, &desc,
                &d3d12->bloom.pipes[slot][0]);
+         desc.RTVFormats[0] = format;
          desc.BlendState.RenderTarget[0].BlendEnable = TRUE;
          desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
          desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
@@ -8701,9 +8725,9 @@ static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims)
          goto error;
       d3d12->bloom.mapped = (uint8_t*)mapped;
    }
-   if (d3d12->bloom.next + 3 > (d3d12->queue.slot + 1) * 12)
+   if (d3d12->bloom.next + MENU_BLOOM_PASSES > (d3d12->queue.slot + 1) * 12)
       return 0;
-   if (bloom_dims != d3d12->bloom.dims || format != d3d12->bloom.format)
+   if (bloom_dims != d3d12->bloom.dims)
    {
       for (i = 0; i < 2; i++)
       {
@@ -8712,14 +8736,14 @@ static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims)
             goto error;
          t->desc.Width = VIDEO_SCALE_W(bloom_dims);
          t->desc.Height = VIDEO_SCALE_H(bloom_dims);
-         t->desc.Format = format;
+         t->desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
          t->desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
          t->srv_heap = &d3d12->desc.srv_heap;
          t->rt_view.ptr = d3d12->desc.rtv_heap.cpu.ptr
             + (countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 4 + i)
                * d3d12->desc.rtv_heap.stride;
          d3d12_init_texture(d3d12->device, t);
-         if (!t->handle || t->desc.Format != format)
+         if (!t->handle || t->desc.Format != DXGI_FORMAT_R16G16B16A16_FLOAT)
             goto error;
       }
       d3d12->bloom.dims = bloom_dims;
@@ -8739,6 +8763,7 @@ static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims)
    sc.bottom = VIDEO_SCALE_H(bloom_dims);
    cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
    cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
+   d3d12->bloom.active = true;
    return bloom_dims;
 error:
    d3d12->bloom.failed = true;
@@ -8752,36 +8777,46 @@ static void gfx_display_d3d12_bloom_end(void *data, unsigned dims)
    unsigned i;
    (void)dims;
    cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < MENU_BLOOM_PASSES; i++)
    {
       unsigned index = d3d12->bloom.next++;
-      d3d12_texture_t *source = &d3d12->bloom.tex[i == 1 ? 1 : 0];
-      D3D12_CPU_DESCRIPTOR_HANDLE target = i == 2 ? d3d12->bloom.target
-         : d3d12->bloom.tex[1 - i].rt_view;
+      d3d12_texture_t *source = &d3d12->bloom.tex[i % 3 == 1 ? 1 : 0];
+      D3D12_CPU_DESCRIPTOR_HANDLE target = i % 3 == 2 ? d3d12->bloom.target
+         : d3d12->bloom.tex[1 - i % 3].rt_view;
       float *p = (float*)(d3d12->bloom.mapped + index * D3D12_MESH_CB_SIZE);
-      p[0] = i == 0 ? 2.0f / VIDEO_SCALE_W(d3d12->bloom.dims) : 0.0f;
-      p[1] = i == 1 ? 2.0f / VIDEO_SCALE_H(d3d12->bloom.dims) : 0.0f;
-      p[2] = i == 0 ? 0.20f : 0.0f;
-      p[3] = i == 2 ? 0.75f : 1.0f;
+      menu_bloom_params(p, i, d3d12->bloom.dims);
       D3D12_RESOURCE_TRANSITION(cmd, source->handle,
             D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
       cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &target, FALSE, NULL);
-      cmd->lpVtbl->SetPipelineState(cmd, d3d12->bloom.pipes[d3d12->bloom.slot][i == 2]);
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->bloom.pipes[d3d12->bloom.slot][i % 3 == 2]);
       cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
             d3d12->bloom.cb_va + index * D3D12_MESH_CB_SIZE);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
             source->gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
             d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE]);
-      if (i == 2)
+      if (i % 3 == 2)
       {
          cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
          cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+      }
+      else
+      {
+         D3D12_VIEWPORT vp = {0};
+         D3D12_RECT sc = {0};
+         vp.Width = VIDEO_SCALE_W(d3d12->bloom.dims);
+         vp.Height = VIDEO_SCALE_H(d3d12->bloom.dims);
+         vp.MaxDepth = 1.0f;
+         sc.right = VIDEO_SCALE_W(d3d12->bloom.dims);
+         sc.bottom = VIDEO_SCALE_H(d3d12->bloom.dims);
+         cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
+         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
       }
       cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
       D3D12_RESOURCE_TRANSITION(cmd, source->handle,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
    }
+   d3d12->bloom.active = false;
 }
 
 

@@ -717,6 +717,7 @@ static bool d3d9_hlsl_load_program_ex(
  * Stored as a file-static since the d3d9 menu_display struct
  * does not have a pipeline_vbo member like d3d10_video_t does. */
 static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_pipeline_vbo = NULL;
+static uint32_t d3d9_hlsl_menu_pipeline_mesh_id;
 static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_fullscreen_vbo = NULL;
 static LPDIRECT3DVERTEXDECLARATION9 d3d9_hlsl_pipeline_decl = NULL;
 static LPDIRECT3DVERTEXDECLARATION9 d3d9_hlsl_overlay_decl = NULL;
@@ -844,6 +845,9 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_6:
       {
          hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+
+         if (!draw->coords || draw->coords->vertices < 3)
+            return;
 
          /* Compiled by the pipeline call before this, or not at all */
          if (_chain && (_chain->pipeline_ready
@@ -1202,60 +1206,66 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         /* Create a pipeline vertex buffer from the coordinate
-          * array data if it doesn't already exist.
-          * Adapted from d3d10 gfx_display_d3d10_draw_pipeline. */
-         if (!d3d9_hlsl_menu_pipeline_vbo && ca->vertices)
+         uint32_t mesh_id = p_disp->effect_mesh->id;
+
+         if (     d3d9_hlsl_menu_pipeline_vbo
+               && d3d9_hlsl_menu_pipeline_mesh_id != mesh_id)
+         {
+            IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
+            d3d9_hlsl_menu_pipeline_vbo = NULL;
+         }
+
+         if (!d3d9_hlsl_menu_pipeline_vbo)
          {
             unsigned i;
-            Vertex *verts    = NULL;
-            unsigned vcount  = ca->vertices;
+            Vertex *verts = NULL;
 
-            d3d9_hlsl_menu_pipeline_vbo = NULL;
-                  if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
-                              d3d->dev,
-                              vcount * sizeof(Vertex),
-                              D3DUSAGE_WRITEONLY, 0,
-                              D3DPOOL_DEFAULT,
-                              (LPDIRECT3DVERTEXBUFFER9*)&d3d9_hlsl_menu_pipeline_vbo, NULL)))
-                     d3d9_hlsl_menu_pipeline_vbo = NULL;
-
-            if (d3d9_hlsl_menu_pipeline_vbo)
+            if (FAILED(IDirect3DDevice9_CreateVertexBuffer(
+                        d3d->dev, ca->vertices * sizeof(Vertex),
+                        D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT,
+                        &d3d9_hlsl_menu_pipeline_vbo, NULL)))
             {
-               IDirect3DVertexBuffer9_Lock(
-                     (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_pipeline_vbo,
-                     0, 0, (void**)&verts, 0);
-
-               if (verts)
-               {
-                  for (i = 0; i < vcount; i++)
-                  {
-                     verts[i].x     = ca->vertex[i * 2 + 0];
-                     verts[i].y     = ca->vertex[i * 2 + 1];
-                     verts[i].z     = 0.5f;
-                     verts[i].u     = 0.0f;
-                     verts[i].v     = 0.0f;
-                     verts[i].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
-                  }
-
-                  IDirect3DVertexBuffer9_Unlock(
-                        (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_pipeline_vbo);
-               }
+               d3d9_hlsl_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
             }
+
+            if (FAILED(IDirect3DVertexBuffer9_Lock(
+                        d3d9_hlsl_menu_pipeline_vbo, 0, 0, (void**)&verts, 0)))
+            {
+               IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
+               d3d9_hlsl_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
+            }
+
+            for (i = 0; i < ca->vertices; i++)
+            {
+               verts[i].x     = ca->vertex[i * 2 + 0];
+               verts[i].y     = ca->vertex[i * 2 + 1];
+               verts[i].z     = 0.5f;
+               verts[i].u     = 0.0f;
+               verts[i].v     = 0.0f;
+               verts[i].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+            }
+
+            if (FAILED(IDirect3DVertexBuffer9_Unlock(
+                        d3d9_hlsl_menu_pipeline_vbo)))
+            {
+               IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
+               d3d9_hlsl_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
+            }
+            d3d9_hlsl_menu_pipeline_mesh_id = mesh_id;
          }
 
-         if (d3d9_hlsl_menu_pipeline_vbo)
-         {
-            IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
-                  (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_pipeline_vbo,
-                  0, sizeof(Vertex));
-         }
-
-         draw->coords->vertices = ca->vertices;
+         IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+               d3d9_hlsl_menu_pipeline_vbo, 0, sizeof(Vertex));
 
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_SRCBLEND, draw->pipeline_id == VIDEO_SHADER_MENU
-                  ? D3DBLEND_SRCALPHA : D3DBLEND_DESTCOLOR);
+                  ? D3DBLEND_ONE : D3DBLEND_DESTCOLOR);
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_DESTBLEND, D3DBLEND_ONE);
          IDirect3DDevice9_SetRenderState(d3d->dev,
@@ -1345,6 +1355,15 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
       {
          unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
          hlsl_pass_data_t *pd = &_chain->pipeline_data[idx];
+
+         if (draw->pipeline_id == VIDEO_SHADER_MENU)
+         {
+            int reg = d3d9_hlsl_ctab_find_register(pd->vs_bytecode,
+                  pd->vs_bytecode_dwords, "Ribbon", NULL, NULL);
+            if (reg >= 0)
+               d3d9_hlsl_set_vs_const(d3d->dev, reg,
+                     gfx_display_ribbon_data(p_disp), 65);
+         }
 
          /* Set time uniform for all pipeline shaders */
          d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords,
@@ -2858,7 +2877,7 @@ static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
    chain->pipeline_tried |= bit;
    switch (idx)
    {
-      case 0:  src = hlsl_ribbon_program;        break;
+      case 0:  src = hlsl_ribbon_program();        break;
       case 1:  src = hlsl_ribbon_simple_program; break;
       case 2:  src = hlsl_simple_snow_program;   break;
       case 3:  src = hlsl_snow_program;          break;
@@ -7560,6 +7579,7 @@ static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
       IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
       d3d9_hlsl_menu_pipeline_vbo = NULL;
    }
+   d3d9_hlsl_menu_pipeline_mesh_id = 0;
 
    if (d3d9_hlsl_overlay_decl)
    {

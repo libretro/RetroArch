@@ -353,6 +353,7 @@ typedef struct xmb_handle
 {
    /* The ribbon's grid, drawn by the ribbon programs */
    gfx_display_mesh_t *ribbon_mesh;
+   gfx_display_mesh_t *simple_ribbon_mesh;
    /* Keeps track of the last time tabs were switched
     * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
    retro_time_t last_tab_switch_time; /* uint64_t alignment */
@@ -8024,6 +8025,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx,
       const gfx_display_mesh_t *ribbon_mesh,
+      const gfx_display_mesh_t *simple_ribbon_mesh,
       unsigned video_dims,
       unsigned menu_shader_pipeline,
       unsigned xmb_color_theme,
@@ -8099,7 +8101,7 @@ XMB_NOINLINE static void xmb_draw_bg(
             break;
          case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
             md.program = GFX_MESH_PROGRAM_RIBBON_SIMPLE;
-            mesh       = ribbon_mesh;
+            mesh       = simple_ribbon_mesh;
             break;
 #if !defined(VITA)
          case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
@@ -8818,6 +8820,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             p_disp,
             dispctx,
             xmb->ribbon_mesh,
+            xmb->simple_ribbon_mesh,
             video_info->dims,
             menu_shader_pipeline,
             color_theme,
@@ -9792,45 +9795,57 @@ ctx_destroyed:
    } /* end of context generation scope */
 }
 
-static void xmb_init_ribbon(xmb_handle_t * xmb)
+static gfx_display_mesh_t *xmb_create_ribbon(bool simple)
 {
    gfx_display_mesh_desc_t desc;
-   unsigned r, c, col;
-   unsigned i                          = 0;
-   unsigned vertices_total             = XMB_RIBBON_VERTICES;
-   gfx_display_mesh_vertex_t *vertices = (gfx_display_mesh_vertex_t*)
-      calloc(vertices_total, sizeof(*vertices));
-
-   /* The ribbon is a decorative background; without memory for it the
-    * menu goes without */
-   if (!vertices)
-      return;
-
-   /* One strip over the 64x64 grid, row after row, each row running
-    * back the way the one before came. The ribbon programs read the
-    * position only. */
-   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
-   {
-      for (c = 0; c < XMB_RIBBON_COLS; c++)
-      {
-         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
-         vertices[i].x     = ((float)col) / (XMB_RIBBON_COLS - 1) * 2.0f - 1.0f;
-         vertices[i].y     = ((float)r)   / (XMB_RIBBON_ROWS - 1) * 2.0f - 1.0f;
-         vertices[i + 1].x = ((float)col) / (XMB_RIBBON_COLS - 1) * 2.0f - 1.0f;
-         vertices[i + 1].y = ((float)(r + 1)) / (XMB_RIBBON_ROWS - 1) * 2.0f - 1.0f;
-         i                += 2;
-      }
-   }
-
-   desc.vertices     = vertices;
+   gfx_display_mesh_t *mesh;
+   unsigned r, c, col, i = 0;
+   desc.vertices     = NULL;
    desc.indices      = NULL;
-   desc.vertex_count = vertices_total;
+   desc.vertex_count = XMB_RIBBON_VERTICES + (simple ? 0 : 48 * 6);
    desc.index_count  = 0;
    desc.topology     = GFX_MESH_TRIANGLE_STRIP;
    desc.flags        = GFX_MESH_FLAG_POSITIONS;
-   xmb->ribbon_mesh  = gfx_display_mesh_create(&desc);
+   if (!(mesh = gfx_display_mesh_create(&desc)))
+      return NULL;
+   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
+      for (c = 0; c < XMB_RIBBON_COLS; c++)
+      {
+         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
+         mesh->vertices[i].x = (float)col / (XMB_RIBBON_COLS - 1) * 2.0f - 1.0f;
+         mesh->vertices[i].y = (float)r / (XMB_RIBBON_ROWS - 1) * 2.0f - 1.0f;
+         mesh->vertices[i + 1].x = mesh->vertices[i].x;
+         mesh->vertices[i + 1].y = (float)(r + 1) / (XMB_RIBBON_ROWS - 1) * 2.0f - 1.0f;
+         i += 2;
+      }
+   if (!simple)
+      for (r = 0; r < 48; r++)
+      {
+         /* Repeated endpoints disconnect each billboard's strip. */
+         mesh->vertices[i] = mesh->vertices[i - 1];
+         mesh->vertices[i + 1].x = -1.0f;
+         mesh->vertices[i + 1].y = 2.0f + 4.0f * r;
+         mesh->vertices[i + 2] = mesh->vertices[i + 1];
+         mesh->vertices[i + 3].x = -1.0f;
+         mesh->vertices[i + 3].y = 3.0f + 4.0f * r;
+         mesh->vertices[i + 4].x = 1.0f;
+         mesh->vertices[i + 4].y = 2.0f + 4.0f * r;
+         mesh->vertices[i + 5].x = 1.0f;
+         mesh->vertices[i + 5].y = 3.0f + 4.0f * r;
+         i += 6;
+      }
+   for (i = 0; i < mesh->vertex_count; i++)
+   {
+      mesh->positions[2 * i] = mesh->vertices[i].x;
+      mesh->positions[2 * i + 1] = mesh->vertices[i].y;
+   }
+   return mesh;
+}
 
-   free(vertices);
+static void xmb_init_ribbon(xmb_handle_t *xmb)
+{
+   xmb->ribbon_mesh = xmb_create_ribbon(false);
+   xmb->simple_ribbon_mesh = xmb_create_ribbon(true);
 }
 
 static void xmb_menu_animation_update_time(
@@ -10004,6 +10019,8 @@ static void xmb_free(void *data)
       video_coord_array_free(&xmb->raster_block.carr);
       video_coord_array_free(&xmb->raster_block2.carr);
 
+      gfx_display_mesh_free(xmb->simple_ribbon_mesh);
+      xmb->simple_ribbon_mesh = NULL;
       gfx_display_mesh_free(xmb->ribbon_mesh);
       xmb->ribbon_mesh = NULL;
 

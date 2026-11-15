@@ -196,6 +196,7 @@ typedef struct ALIGN(16)
    } OutputSize;
    float time;
    float alpha;
+   float ribbon[65][4];
 } d3d10_uniform_t;
 
 typedef struct d3d10_shader_t
@@ -939,6 +940,7 @@ static bool d3d10_init_shader(
 
 #include "../common/menu_bloom.h"
 #include "d3d_shaders/bloom_sm4.hlsl.h"
+#include "../common/menu_ribbon_shader.h"
 
 static void d3d10_bloom_free(d3d10_video_t *d3d10)
 {
@@ -991,6 +993,14 @@ static unsigned gfx_display_d3d10_bloom_begin(void *data, unsigned dims)
    }
    if (bloom_dims != d3d10->bloom.dims)
    {
+      UINT support = 0;
+      DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      UINT required = D3D10_FORMAT_SUPPORT_RENDER_TARGET
+         | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE | D3D10_FORMAT_SUPPORT_BLENDABLE;
+      if (SUCCEEDED(d3d10->device->lpVtbl->CheckFormatSupport(d3d10->device,
+                  DXGI_FORMAT_R16G16B16A16_FLOAT, &support))
+            && (support & required) == required)
+         format = DXGI_FORMAT_R16G16B16A16_FLOAT;
       for (i = 0; i < 2; i++)
       {
          d3d10_texture_t *t = &d3d10->bloom.tex[i];
@@ -998,7 +1008,7 @@ static unsigned gfx_display_d3d10_bloom_begin(void *data, unsigned dims)
          memset(t, 0, sizeof(*t));
          t->desc.Width     = VIDEO_SCALE_W(bloom_dims);
          t->desc.Height    = VIDEO_SCALE_H(bloom_dims);
-         t->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+         t->desc.Format    = format;
          t->desc.Usage     = D3D10_USAGE_DEFAULT;
          t->desc.BindFlags = D3D10_BIND_RENDER_TARGET;
          d3d10_init_texture(d3d10->device, t);
@@ -1045,28 +1055,33 @@ static void gfx_display_d3d10_bloom_end(void *data, unsigned dims)
    ctx->lpVtbl->PSSetSamplers(ctx, 0, 1,
          &d3d10->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE]);
    ctx->lpVtbl->IASetPrimitiveTopology(ctx, D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < MENU_BLOOM_PASSES; i++)
    {
-      D3D10RenderTargetView target = i == 2 ? d3d10->bloom.target
-         : d3d10->bloom.tex[1 - i].rt_view;
+      D3D10RenderTargetView target = i % 3 == 2 ? d3d10->bloom.target
+         : d3d10->bloom.tex[1 - i % 3].rt_view;
       float *p;
       if (FAILED(d3d10->bloom.ubo->lpVtbl->Map(d3d10->bloom.ubo,
                   D3D10_MAP_WRITE_DISCARD, 0, (void**)&p)))
          break;
-      p[0] = i == 0 ? 2.0f / VIDEO_SCALE_W(d3d10->bloom.dims) : 0.0f;
-      p[1] = i == 1 ? 2.0f / VIDEO_SCALE_H(d3d10->bloom.dims) : 0.0f;
-      p[2] = i == 0 ? 0.20f : 0.0f;
-      p[3] = i == 2 ? 0.75f : 1.0f;
+      menu_bloom_params(p, i, d3d10->bloom.dims);
       d3d10->bloom.ubo->lpVtbl->Unmap(d3d10->bloom.ubo);
       ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &empty);
       ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &target, NULL);
       ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1,
-            &d3d10->bloom.tex[i == 1 ? 1 : 0].view);
+            &d3d10->bloom.tex[i % 3 == 1 ? 1 : 0].view);
       ctx->lpVtbl->OMSetBlendState(ctx,
-            i == 2 ? d3d10->bloom.blend : d3d10->blend_disable,
+            i % 3 == 2 ? d3d10->bloom.blend : d3d10->blend_disable,
             NULL, D3D10_DEFAULT_SAMPLE_MASK);
-      if (i == 2)
+      if (i % 3 == 2)
          ctx->lpVtbl->RSSetViewports(ctx, 1, &d3d10->bloom.viewport);
+      else
+      {
+         D3D10_VIEWPORT vp = d3d10->bloom.viewport;
+         vp.TopLeftX = vp.TopLeftY = 0;
+         vp.Width = VIDEO_SCALE_W(d3d10->bloom.dims);
+         vp.Height = VIDEO_SCALE_H(d3d10->bloom.dims);
+         ctx->lpVtbl->RSSetViewports(ctx, 1, &vp);
+      }
       ctx->lpVtbl->Draw(ctx, 4, 0);
    }
    ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &empty);
@@ -1116,9 +1131,7 @@ static bool d3d10_effect_shader(d3d10_video_t *d3d10, unsigned pipeline_id)
       { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
          0, offsetof(d3d10_vertex_t, texcoord), D3D10_INPUT_PER_VERTEX_DATA, 0 },
    };
-   static const char ribbon[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-      ;
+   static char ribbon[4096];
    static const char ribbon_simple[] =
 #include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
       ;
@@ -1143,7 +1156,10 @@ static bool d3d10_effect_shader(d3d10_video_t *d3d10, unsigned pipeline_id)
    switch (pipeline_id)
    {
       case VIDEO_SHADER_MENU:
-         src = ribbon;        size = sizeof(ribbon);        bit = 1 << 0;
+         src =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+            ;
+         size = strlen(src);        bit = 1 << 0;
          desc = ribbon_desc;  count = countof(ribbon_desc);
          break;
       case VIDEO_SHADER_MENU_2:
@@ -1527,6 +1543,10 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
 
    d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
          D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+   if (draw->pipeline_id == VIDEO_SHADER_MENU)
+      memcpy(d3d10->ubo_values.ribbon, gfx_display_ribbon_data(p_disp),
+            sizeof(d3d10->ubo_values.ribbon));
 
    d3d10->ubo_values.time = p_disp->effect_time;
    d3d10->ubo_values.alpha = draw->color ? draw->color[3] : 1.0f;
@@ -3403,6 +3423,7 @@ static void *d3d10_gfx_init(const video_info_t* video)
       d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
             &d3d10->blend_enable);
 
+      blend_desc.SrcBlend = D3D10_BLEND_ONE;
       blend_desc.DestBlend = D3D10_BLEND_ONE;
       d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
             &d3d10->blend_ribbon);
