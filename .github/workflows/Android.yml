@@ -226,6 +226,8 @@ jobs:
           java-version: '21'
       - name: Android encoder, AAC, mux and worker contracts
         run: make -C samples/record/mediacodec_encode check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Aligned fractional S16 conversion
+        run: make -C samples/audio/sinc_aligned check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Cold session, Surface timestamps and terminal output contracts
         run: make -C samples/gfx/mediacodec_session session-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Opaque frame leases, HDR refinement and concurrent handoffs

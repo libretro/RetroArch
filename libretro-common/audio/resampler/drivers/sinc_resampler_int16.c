@@ -698,6 +698,22 @@ void sinc_resampler_int16_reset(void *re_)
    re->fade_left   = 0;
 }
 
+size_t sinc_resampler_int16_start_aligned(void *re_)
+{
+   rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
+   uint32_t phases;
+   unsigned delay;
+   if (!re)
+      return 0;
+   phases = 1u << (re->phase_bits + re->subphase_bits);
+   delay = re->taps / 2 + 1;
+   if (delay > (uint32_t)-1 / phases)
+      return 0;
+   sinc_resampler_int16_reset(re);
+   re->time = delay * phases;
+   return delay;
+}
+
 void sinc_resampler_int16_free(void *re_)
 {
    rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;

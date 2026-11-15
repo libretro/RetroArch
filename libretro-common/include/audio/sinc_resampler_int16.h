@@ -76,6 +76,12 @@ void  sinc_resampler_int16_process(void *re,
  * Call on the processing owner, or after processing has stopped. NULL is safe. */
 void  sinc_resampler_int16_reset(void *re);
 
+/* Processing owner only. Reset for fixed-ratio offline conversion, with the
+ * first output centered on source frame zero. Returns input lookahead frames
+ * (zero on failure). Supply that many trailing zero frames to drain the tail,
+ * then trim output to the source duration. Keep the initialization ratio. */
+size_t sinc_resampler_int16_start_aligned(void *re);
+
 void  sinc_resampler_int16_free(void *re);
 
 /* A fresh stream over re's tables, freed like any instance; the tables
