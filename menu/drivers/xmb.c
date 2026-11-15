@@ -1113,6 +1113,7 @@ static void xmb_draw_icon(
       gfx_display_ctx_driver_t *dispctx,
       unsigned video_dims,
       bool shadows_enable,
+      bool material,
       int icon_size_x,
       int icon_size_y,
       uintptr_t texture,
@@ -1221,7 +1222,8 @@ static void xmb_draw_icon(
    }
 
    coords.color         = (const float*)color;
-   draw.pipeline_id     = VIDEO_SHADER_XMB_MATERIAL;
+   draw.pipeline_id     = material
+      ? VIDEO_SHADER_XMB_MATERIAL : VIDEO_SHADER_STOCK_BLEND;
    draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x), VIDEO_PX(height - y));
 
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
@@ -1664,6 +1666,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             dispctx,
             video_dims,
             true,
+            true,
             icon_size,
             icon_size,
             input_menu_swap_ok_cancel_buttons
@@ -1727,6 +1730,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             p_disp,
             dispctx,
             video_dims,
+            true,
             true,
             icon_size,
             icon_size,
@@ -5879,6 +5883,7 @@ XMB_NOINLINE static int xmb_draw_item(
             ctx->dispctx,
             video_dims,
             (show_icon_thumbnail) ? false : shadows_enable,
+            true,
             gfx_icon_width,
             gfx_icon_height,
             texture,
@@ -5908,6 +5913,7 @@ XMB_NOINLINE static int xmb_draw_item(
             ctx->dispctx,
             video_dims,
             shadows_enable,
+            true,
             xmb->icon_size,
             xmb->icon_size,
             texture_switch,
@@ -5956,6 +5962,7 @@ XMB_NOINLINE static int xmb_draw_item(
                ctx->dispctx,
                video_dims,
                shadows_enable,
+               true,
                icon_size,
                icon_size,
                tex,
@@ -8203,6 +8210,7 @@ static void xmb_draw_no_thumbnail_available(
                dispctx,
                video_dims,
                false,
+               true,
                icon_size,
                icon_size,
                GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_IMAGE]),
@@ -8971,6 +8979,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                shadows_enable,
+               true,
                icon_size,
                icon_size,
                xmb->current_menu_icon,
@@ -8993,6 +9002,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                shadows_enable,
+               true,
                xmb->icon_size,
                xmb->icon_size,
                tex_list[XMB_TEXTURE_ARROW],
@@ -9053,6 +9063,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   dispctx,
                   video_info->dims,
                   shadows_enable,
+                  true,
                   xmb->icon_size,
                   xmb->icon_size,
                   texture,
@@ -9484,6 +9495,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   dispctx,
                   video_info->dims,
                   shadows_enable,
+                  false,
                   icon_size,
                   icon_size,
                   tex_list[
@@ -9548,6 +9560,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                shadows_enable,
+               false,
                icon_size,
                icon_size,
                tex_list[XMB_TEXTURE_CLOCK],
