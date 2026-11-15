@@ -167,17 +167,18 @@ static INLINE int32_t input_groups_join(input_groups_t *g, int rule,
          return grp->members[0];
       }
    }
-   if (role == INPUT_GROUP_FOLLOWS)
-      return -1;
-   for (i = 0; i < INPUT_GROUPS; i++)
+   if (role != INPUT_GROUP_FOLLOWS)
    {
-      grp = &g->group[i];
-      if (!grp->count)
+      for (i = 0; i < INPUT_GROUPS; i++)
       {
-         grp->rule       = rule;
-         grp->members[0] = id;
-         grp->count      = 1;
-         return id;
+         grp = &g->group[i];
+         if (!grp->count)
+         {
+            grp->rule       = rule;
+            grp->members[0] = id;
+            grp->count      = 1;
+            return id;
+         }
       }
    }
    return -1;
@@ -189,17 +190,18 @@ static INLINE int32_t input_groups_join(input_groups_t *g, int rule,
  * as any other. */
 static INLINE int32_t input_groups_leave(input_groups_t *g, int32_t id)
 {
-   unsigned m;
    input_group_t *grp = input_groups_of(g, id);
 
-   if (!grp)
-      return -1;
-   for (m = 0; m < grp->count && grp->members[m] != id; m++) { }
-   for (; m + 1 < grp->count; m++)
-      grp->members[m] = grp->members[m + 1];
-   if (--grp->count == 0)
-      return -1;
-   return grp->members[0];
+   if (grp)
+   {
+      unsigned m;
+      for (m = 0; m < grp->count && grp->members[m] != id; m++) { }
+      for (; m + 1 < grp->count; m++)
+         grp->members[m] = grp->members[m + 1];
+      if (--grp->count != 0)
+         return grp->members[0];
+   }
+   return -1;
 }
 
 /* The group led by @lead, ended: its members leave together, as when a

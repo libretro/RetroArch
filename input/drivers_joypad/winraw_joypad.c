@@ -723,8 +723,7 @@ static bool winraw_joypad_sixaxis_out(const winraw_joypad_out_dev_t *dev,
    if (player && player != sent_player)
    {
       /* LED 4 first: 0 off, 1 on */
-      uint8_t lights[4];
-      memset(lights, 0, sizeof(lights));
+      uint8_t lights[4] = { 0, 0, 0, 0 };
       if (player > 0)
          lights[3 - ((player - 1) % 4)] = 1;
       ok = winraw_joypad_sixaxis_write(dev, 1, lights, sizeof(lights)) && ok;

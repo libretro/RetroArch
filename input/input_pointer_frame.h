@@ -133,9 +133,11 @@ static bool input_pointer_viewport(void)
 {
    if (!input_pointers.vp_asked)
    {
-      memset(&input_pointers.vp, 0, sizeof(input_pointers.vp));
-      input_pointers.vp_ok    = video_driver_get_viewport_info(&input_pointers.vp);
-      input_pointers.vp_asked = true;
+      input_pointers.vp.pos       = 0;
+      input_pointers.vp.dims      = 0;
+      input_pointers.vp.full_dims = 0;
+      input_pointers.vp_ok        = video_driver_get_viewport_info(&input_pointers.vp);
+      input_pointers.vp_asked     = true;
    }
    return input_pointers.vp_ok;
 }
