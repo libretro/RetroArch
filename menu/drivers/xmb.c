@@ -1666,7 +1666,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             dispctx,
             video_dims,
             true,
-            true,
+            (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
             icon_size,
             icon_size,
             input_menu_swap_ok_cancel_buttons
@@ -1731,7 +1731,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             dispctx,
             video_dims,
             true,
-            true,
+            (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
             icon_size,
             icon_size,
             input_menu_swap_ok_cancel_buttons
@@ -5883,7 +5883,7 @@ XMB_NOINLINE static int xmb_draw_item(
             ctx->dispctx,
             video_dims,
             (show_icon_thumbnail) ? false : shadows_enable,
-            true,
+            (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
             gfx_icon_width,
             gfx_icon_height,
             texture,
@@ -5913,7 +5913,7 @@ XMB_NOINLINE static int xmb_draw_item(
             ctx->dispctx,
             video_dims,
             shadows_enable,
-            true,
+            (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
             xmb->icon_size,
             xmb->icon_size,
             texture_switch,
@@ -5962,7 +5962,7 @@ XMB_NOINLINE static int xmb_draw_item(
                ctx->dispctx,
                video_dims,
                shadows_enable,
-               true,
+               (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                icon_size,
                icon_size,
                tex,
@@ -8210,7 +8210,7 @@ static void xmb_draw_no_thumbnail_available(
                dispctx,
                video_dims,
                false,
-               true,
+               (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                icon_size,
                icon_size,
                GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_IMAGE]),
@@ -8786,8 +8786,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (ctx_gen != xmb->context_generation)
       goto ctx_destroyed;
 
-   xmb->raster_block.xmb_material  = true;
-   xmb->raster_block2.xmb_material = true;
+   xmb->raster_block.xmb_material  =
+         (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0;
+   xmb->raster_block2.xmb_material = xmb->raster_block.xmb_material;
    font_driver_bind_block(xmb->font,  &xmb->raster_block);
    font_driver_bind_block(xmb->font2, &xmb->raster_block2);
 
@@ -8979,7 +8980,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                shadows_enable,
-               true,
+               (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                icon_size,
                icon_size,
                xmb->current_menu_icon,
@@ -9002,7 +9003,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                shadows_enable,
-               true,
+               (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                xmb->icon_size,
                xmb->icon_size,
                tex_list[XMB_TEXTURE_ARROW],
@@ -9063,7 +9064,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   dispctx,
                   video_info->dims,
                   shadows_enable,
-                  true,
+                  (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                   xmb->icon_size,
                   xmb->icon_size,
                   texture,

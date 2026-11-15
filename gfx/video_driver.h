@@ -519,7 +519,8 @@ enum video_frame_menu_flags
    VIDEO_MENU_FLAG_XMB_FONT_IS_DEFAULT                          = (1u << 25),
    VIDEO_MENU_FLAG_USE_PREFERRED_SYSTEM_COLOR_THEME             = (1u << 26),
    VIDEO_MENU_FLAG_SAVESTATE_THUMBNAIL_ENABLE                   = (1u << 27),
-   VIDEO_MENU_FLAG_SHOW_SUBLABELS                               = (1u << 28)
+   VIDEO_MENU_FLAG_SHOW_SUBLABELS                               = (1u << 28),
+   VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE                    = (1u << 29)
 };
 
 typedef struct video_frame_menu_settings
