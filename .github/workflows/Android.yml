@@ -190,6 +190,7 @@ jobs:
       fail-fast: false
       matrix:
         cc: [gcc, clang]
+        target: [receiver-check, worker-receiver-check]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v4
@@ -200,16 +201,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg openssl
       - name: Replayed encoded packets over real RTMP and TLS
         env:
-          MC_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/mc-wire-${{ matrix.cc }}
-        run: make -C samples/record/mediacodec_encode receiver-check CC=${{ matrix.cc }} SANITIZER=address,undefined
+          MC_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/mc-wire-${{ matrix.cc }}-${{ matrix.target }}
+        run: make -C samples/record/mediacodec_encode ${{ matrix.target }} CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Save exact wire and independent decode evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mc-wire-${{ matrix.cc }}
+          name: mc-wire-${{ matrix.cc }}-${{ matrix.target }}
           path: |
-            ${{ runner.temp }}/mc-wire-${{ matrix.cc }}
-            !${{ runner.temp }}/mc-wire-${{ matrix.cc }}/objects/**
+            ${{ runner.temp }}/mc-wire-${{ matrix.cc }}-${{ matrix.target }}
+            !${{ runner.temp }}/mc-wire-${{ matrix.cc }}-${{ matrix.target }}/objects/**
 
   codec-session:
     runs-on: ubuntu-latest

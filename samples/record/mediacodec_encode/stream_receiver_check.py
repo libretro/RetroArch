@@ -2,9 +2,11 @@
 """AVC/AAC packet replay through the production MediaCodec output and real RTMP(S).
 
 Uses independent FFmpeg generation/reception/decoding. Encoder metadata getters
-are mocked; this does not establish native MediaCodec or source priming proof.
+are mocked. --worker adds actual AAC calibration, PCM feeding and worker
+draining; neither mode establishes native MediaCodec device acceptance.
 """
 import argparse
+from array import array
 from contextlib import ExitStack
 import json
 import hashlib
@@ -27,6 +29,7 @@ def main():
     parser.add_argument('--artifacts', type=Path, default=os.environ.get('MC_STREAM_ARTIFACT_DIR'))
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--first-case', action='store_true')
+    parser.add_argument('--worker', action='store_true', help='exercise the real worker and AAC calibration')
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
     repo = here.parents[2]
@@ -38,6 +41,7 @@ def main():
     if args.artifacts:
         root.mkdir(parents=True, exist_ok=False)
     evidence = dict(result='running', scope=__doc__, codecs='AVC/AAC', commands=[], cases=[])
+    evidence['worker'] = args.worker
 
     def save():
         (root / 'evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
@@ -76,7 +80,8 @@ def main():
             link = next(shlex.split(line) for line in dry.stdout.decode().splitlines()
                         if ' -o rtmps_client_native_test ' in line)
             link[link.index('-o') + 1] = str(binary)
-            link[link.index('rtmp_client_native_test.c')] = str(here / 'stream_receiver_test.c')
+            link[link.index('rtmp_client_native_test.c')] = str(here / (
+                'stream_worker_receiver_test.c' if args.worker else 'stream_receiver_test.c'))
             javac_path = shutil.which('javac')
             assert javac_path, 'JDK headers are required'
             javac = Path(javac_path).resolve()
@@ -86,6 +91,13 @@ def main():
                             else 'darwin' if sys.platform == 'darwin' else 'linux'))]
             link += [str(repo / name) for name in ('record/record_stream_mediacodec.c',
                                                   'record/record_mediacodec_stream_config.c')]
+            if args.worker:
+                link += ['-DHAVE_RAAC', '-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections']
+                link += [str(repo / name) for name in (
+                    'record/record_mediacodec_worker.c', 'record/record_aac_probe.c',
+                    'record/record_mux_mediacodec.c',
+                    'record/record_aac_stream_timing.c', 'record/record_audio_queue.c',
+                    'libretro-common/queues/retro_spsc.c', 'libretro-common/formats/aac/raac.c')]
             command(link, cwd=network)
         evidence['binary'] = dict(path=str(binary), supplied=bool(args.binary),
                                   sha256=hashlib.sha256(binary.read_bytes()).hexdigest())
@@ -95,8 +107,23 @@ def main():
                  '-frames:v', '24', '-c:v', 'libx264', '-profile:v', 'baseline',
                  '-x264-params', 'bframes=0:keyint=12:min-keyint=12:scenecut=0:aud=1:repeat-headers=1',
                  '-f', 'h264', '-y', video])
-        command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=997:sample_rate=48000',
-                 '-t', '0.4', '-ac', '2', '-c:a', 'aac', '-b:a', '128k', '-f', 'adts', '-y', audio])
+        input_epoch = coded_origin = audio_epoch = video_epoch_us = 0
+        full_pcm = root / 'input.pcm'
+        if args.worker:
+            prefix = root / 'probe.pcm'
+            command([binary, '--dump-probe', prefix])
+            input_epoch, coded_origin, audio_epoch, video_epoch_us = map(
+                int, command([binary, '--epochs']).stdout.split())
+            source = command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i',
+                              'sine=frequency=997:sample_rate=48000', '-t', '0.4',
+                              '-ac', '2', '-f', 's16le', '-']).stdout
+            assert len(source) == 19200 * 4
+            full_pcm.write_bytes(prefix.read_bytes() + bytes((input_epoch - 8192) * 4) + source)
+            audio_input = ['-f', 's16le', '-ar', '48000', '-ac', '2', '-i', str(full_pcm)]
+        else:
+            audio_input = ['-f', 'lavfi', '-i', 'sine=frequency=997:sample_rate=48000', '-t', '0.4', '-ac', '2']
+        command([ffmpeg, '-v', 'error'] + audio_input +
+                ['-c:a', 'aac', '-b:a', '128k', '-f', 'adts', '-y', audio])
         data = video.read_bytes()
         starts = list(re.finditer(rb'\x00\x00(?:\x00)?\x01', data))
         nals = [(match.start(), data[match.end()] & 31,
@@ -162,7 +189,10 @@ def main():
                         env['RTMPS_CA'] = str(relay.ca)
                     deadline = time.monotonic() + 20
                     while True:
-                        result = command([binary, url, fixture, 'legacy' if legacy else 'standard'],
+                        replay_args = [binary, url, fixture, 'legacy' if legacy else 'standard']
+                        if args.worker:
+                            replay_args += [full_pcm, str(input_epoch)]
+                        result = command(replay_args,
                                          env=env, timeout=30, check=False)
                         if result.returncode != 78 or server.poll() is not None:
                             break
@@ -171,6 +201,8 @@ def main():
                         time.sleep(0.01)
                     result.check_returncode()
                     assert b'native_mediacodec=0' in result.stdout
+                    if args.worker:
+                        assert b'worker=1' in result.stdout
                     assert server.wait(timeout=15) == 0
                 finally:
                     if server.poll() is None:
@@ -190,7 +222,8 @@ def main():
             coded_video = [p for p in info['packets'] if p['stream_index'] == video_index]
             assert len(coded_video) == 24
             for i, packet in enumerate(coded_video):
-                assert abs(float(packet['pts_time']) - i / 60) < .0011
+                offset = video_epoch_us / 1000000 if args.worker and with_audio else 0
+                assert abs(float(packet['pts_time']) - offset - i / 60) < .0011
             decoded = command([ffmpeg, '-v', 'error', '-i', received, '-map', '0:v:0',
                                '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']).stdout
             assert decoded == reference_video
@@ -198,16 +231,28 @@ def main():
                 assert audio_streams[0]['codec_name'] == 'aac'
                 assert int(audio_streams[0]['sample_rate']) == 48000 and audio_streams[0]['channels'] == 2
                 coded_audio = [p for p in info['packets'] if p['stream_index'] == audio_streams[0]['index']]
-                assert len(coded_audio) == len(packets)
+                assert len(coded_audio) == len(packets) - coded_origin // 1024
                 for i, packet in enumerate(coded_audio):
                     assert abs(float(packet['pts_time']) - i * 1024 / 48000) < .0011
                 decoded_audio = command([ffmpeg, '-v', 'error', '-i', received, '-map', '0:a:0',
                                          '-f', 'f32le', '-']).stdout
-                assert decoded_audio == reference_audio
+                if args.worker:
+                    samples = array('f')
+                    samples.frombytes(decoded_audio[:1024 * 2 * 4])
+                    assert max(map(abs, samples)) < .0001, 'calibration leaked into preroll'
+                    source_bytes = 19200 * 2 * 4
+                    start = audio_epoch * 2 * 4
+                    reference_start = (input_epoch + 1024) * 2 * 4
+                    assert decoded_audio[start:start + source_bytes] == reference_audio[
+                        reference_start:reference_start + source_bytes]
+                    assert len(decoded_audio[start:start + source_bytes]) == source_bytes
+                else:
+                    assert decoded_audio == reference_audio
             evidence['cases'].append(dict(name=name, video_packets=24,
-                                           audio_packets=len(packets) if with_audio else 0,
+                                           audio_packets=len(coded_audio) if with_audio else 0,
                                            pixels='byte-identical independent decode',
-                                           audio='byte-identical independent decode' if with_audio else None,
+                                           audio=('silent preroll and byte-identical source window' if args.worker
+                                                  else 'byte-identical independent decode') if with_audio else None,
                                            timestamps='within FLV millisecond rounding', result='PASS'))
             save()
             print('PASS', name, flush=True)
