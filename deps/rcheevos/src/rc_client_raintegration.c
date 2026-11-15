@@ -112,9 +112,8 @@ static void rc_client_raintegration_load_dll(rc_client_t* client,
     raintegration->shutdown = rc_client_raintegration_natvis_helper;
   }
   else {
-    rc_mutex_lock(&client->state.mutex);
+
     client->state.raintegration = raintegration;
-    rc_mutex_unlock(&client->state.mutex);
 
     RC_CLIENT_LOG_INFO_FORMATTED(client, "RA_Integration.dll %s loaded", client->state.raintegration->get_version());
   }
@@ -553,11 +552,9 @@ void rc_client_unload_raintegration(rc_client_t* client)
   if (client->state.raintegration->shutdown)
     client->state.raintegration->shutdown();
 
-  rc_mutex_lock(&client->state.mutex);
   hDLL = client->state.raintegration->hDLL;
   client->state.raintegration = NULL;
   client->state.external_client = NULL;
-  rc_mutex_unlock(&client->state.mutex);
 
   if (hDLL)
     FreeLibrary(hDLL);

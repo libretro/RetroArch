@@ -22,6 +22,7 @@
 #include <formats/image.h>
 #include <queues/task_queue.h>
 #include <retro_atomic.h>
+#include <queues/mpsc_stack.h>
 
 #include "cheevos.h"
 
@@ -38,156 +39,232 @@ void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size
    strlcpy(badge_file + _len, FILE_PATH_PNG_EXTENSION, badge_file_size - _len);
 }
 
-/* --- Badge textures ---------------------------------------------------
- * Nothing here reads a file, decodes or uploads on the thread that
- * asks. rcheevos_get_badge_texture() only looks a badge up in a small
- * table: a surface that is ready is handed over, anything else answers
- * NULL and the caller asks again on a later frame, which every caller
- * already does for a badge that is still downloading. A badge that is
- * not in the table is written into it as a request, and that is all an
- * asking thread ever does - so any thread may ask. Under the threaded
- * video wrapper the achievement widgets are iterated and drawn on the
- * video thread and ask from there; the menu asks from the main thread.
- *
- * The main thread does the work (rcheevos_badge_cache_service(), at
- * once when the asker is the main thread, else from the runloop): the
- * file check, the download request for a missing file, and the image
- * task (decode on a worker) whose completion gives the image to a
- * still surface, which uploads it (on the video thread under threaded
- * video). Nothing waits on anything.
- *
- * Each surface handed out belongs to the caller, who frees it. The
- * server default badge, which many menu entries show at once while
- * their own is on its way, can also be borrowed
- * (rcheevos_get_default_badge_texture()): that one has a slot of its
- * own, is loaded once, and its surface stays the cache's.
- *
- * The table is small and round-robin. A slot evicted or reset while
- * its load is in flight has its sequence bumped, so the late delivery
- * is freed instead of landing in whatever reuses the slot. A failed
- * load stays failed until the slot is reused or the file is downloaded
- * again, so a bad file is not decoded once a frame.
- *
- * The lock word guards the table only. No file, task, driver or
- * allocator call is made holding it. */
-#define RCHEEVOS_BADGE_SLOTS        16
-#define RCHEEVOS_BADGE_DEFAULT_SLOT RCHEEVOS_BADGE_SLOTS
-#define RCHEEVOS_BADGE_DEFAULT_NAME "00000"
-#define RCHEEVOS_BADGE_KEY_LEN      16
-
-enum rcheevos_badge_slot_state
-{
-   RCHEEVOS_BADGE_SLOT_EMPTY = 0,  /* slot not in use */
-   RCHEEVOS_BADGE_SLOT_REQUESTED,  /* asked for; the main thread has not looked yet */
-   RCHEEVOS_BADGE_SLOT_FETCHING,   /* badge being downloaded */
-   RCHEEVOS_BADGE_SLOT_LOADING,    /* badge being decoded and uploaded */
-   RCHEEVOS_BADGE_SLOT_READY,      /* surface waiting to be taken */
-   RCHEEVOS_BADGE_SLOT_FAILED      /* missing, or download or load failed */
-};
-
-typedef struct
-{
-   char key[RCHEEVOS_BADGE_KEY_LEN]; /* badge name: "NNNNN" */
-   gfx_surface_t *surface;           /* READY: the badge, waiting to be taken */
-   uint32_t seq;                     /* matched against the load tag, so a load
-                                      * outlived by its slot is not delivered */
-   uint8_t state;                    /* enum rcheevos_badge_slot_state */
-   uint8_t locked;                   /* non-zero for the _lock version of the badge */
-   uint8_t download;                 /* REQUESTED: fetch the file if it is missing */
-} rcheevos_badge_slot_t;
-
-/* One load: the surface is the tag's until it lands in its slot */
-typedef struct
-{
-   gfx_surface_t *surface;
-   unsigned slot;
-   uint32_t seq;
-} rcheevos_badge_load_tag_t;
-
-static rcheevos_badge_slot_t rcheevos_badge_slots[RCHEEVOS_BADGE_SLOTS + 1];
-static unsigned              rcheevos_badge_slots_next;
-
-/* Same gate as the font file list (gfx/font_driver.c): a target with
- * no lock-free compare-and-swap must not spin, and has no second
- * thread asking for badges either. */
-#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int) \
- && defined(RETRO_ATOMIC_LOCK_FREE)
-static retro_atomic_int_t rcheevos_badge_lock_word;
-static retro_atomic_int_t rcheevos_badge_requests;
-#define RCHEEVOS_BADGE_LOCK() \
-   do { while (!retro_atomic_cas_int(&rcheevos_badge_lock_word, 0, 1)) { } } while (0)
-#define RCHEEVOS_BADGE_UNLOCK() \
-   retro_atomic_store_release_int(&rcheevos_badge_lock_word, 0)
-#define RCHEEVOS_BADGE_REQUESTS_SET(v) \
-   retro_atomic_store_release_int(&rcheevos_badge_requests, (v))
-#define RCHEEVOS_BADGE_REQUESTS_GET() \
-   retro_atomic_load_acquire_int(&rcheevos_badge_requests)
+/* Like mpsc_stack, targets without pointer atomics are single-context. */
+#ifdef RETRO_ATOMIC_HAS_PTR
+typedef retro_atomic_ptr_t badge_ptr_t;
+#define badge_ptr_load retro_atomic_load_acquire_ptr
+#define badge_ptr_store retro_atomic_store_release_ptr
+#define badge_ptr_exchange retro_atomic_exchange_ptr
+#define badge_ptr_cas retro_atomic_cas_ptr
 #else
-static int rcheevos_badge_requests;
-#define RCHEEVOS_BADGE_LOCK()            do { } while (0)
-#define RCHEEVOS_BADGE_UNLOCK()          do { } while (0)
-#define RCHEEVOS_BADGE_REQUESTS_SET(v)   (rcheevos_badge_requests = (v))
-#define RCHEEVOS_BADGE_REQUESTS_GET()    (rcheevos_badge_requests)
+typedef void *badge_ptr_t;
+#define badge_ptr_load(p) (*(p))
+#define badge_ptr_store(p, v) (*(p) = (v))
+static void *badge_ptr_exchange(badge_ptr_t *p, void *value)
+{
+   void *old = *p;
+   *p = value;
+   return old;
+}
+static bool badge_ptr_cas(badge_ptr_t *p, void *expected, void *value)
+{
+   if (*p != expected)
+      return false;
+   *p = value;
+   return true;
+}
 #endif
 
-/* Caller holds the lock. Returns the surface the slot was holding,
- * for the caller to free once the lock is dropped. */
-static gfx_surface_t *rcheevos_badge_slot_clear(rcheevos_badge_slot_t* slot)
+static bool badge_claim_request(retro_atomic_int_t *asked)
 {
-   gfx_surface_t *s = (slot->state == RCHEEVOS_BADGE_SLOT_READY)
-      ? slot->surface : NULL;
-
-   slot->surface  = NULL;
-   slot->state    = RCHEEVOS_BADGE_SLOT_EMPTY;
-   slot->download = 0;
-   slot->key[0]   = '\0';
-   slot->seq++; /* orphans any load still in flight */
-   return s;
+#ifdef RETRO_ATOMIC_HAS_CAS
+   return retro_atomic_cas_int(asked, 0, 1) != 0;
+#else
+   if (*asked)
+      return false;
+   *asked = 1;
+   return true;
+#endif
 }
 
-/* A load is over, with the badge up on the tag's surface or not. If
- * the slot no longer waits for this load the surface is nobody's,
- * and is freed. */
-static void rcheevos_badge_load_done(rcheevos_badge_load_tag_t *tag, bool landed)
-{
-   gfx_surface_t *s            = tag->surface;
-   rcheevos_badge_slot_t *slot = &rcheevos_badge_slots[tag->slot];
+/* Keys are immutable while published. Only the main thread changes the
+ * index; upload completions publish surfaces and producers queue requests. */
+#define RCHEEVOS_BADGE_SLOTS 16
+#define RCHEEVOS_BADGE_DEFAULT_SLOT RCHEEVOS_BADGE_SLOTS
+#define RCHEEVOS_BADGE_DEFAULT_NAME "00000"
+#define RCHEEVOS_BADGE_KEY_LEN 16
 
-   RCHEEVOS_BADGE_LOCK();
-   if (slot->seq == tag->seq && slot->state == RCHEEVOS_BADGE_SLOT_LOADING)
+enum
+{
+   BADGE_REQUESTED,
+   BADGE_FETCHING,
+   BADGE_LOADING,
+   BADGE_READY,
+   BADGE_FAILED
+};
+enum
+{
+   BADGE_ASK,
+   BADGE_DOWNLOADED,
+   BADGE_DONE
+};
+typedef struct rcheevos_badge_entry
+{
+   badge_ptr_t next;
+   badge_ptr_t surface;
+   retro_atomic_int_t state, retired, download, asked;
+   struct rcheevos_badge_entry *retire_next;
+   unsigned inflight;
+   int generation;
+   bool locked, shared;
+   char key[RCHEEVOS_BADGE_KEY_LEN];
+} rcheevos_badge_entry_t;
+
+typedef struct rcheevos_badge_message
+{
+   mpsc_stack_node_t node;
+   unsigned type;
+   int generation;
+   bool locked, download, shared;
+   char key[RCHEEVOS_BADGE_KEY_LEN];
+} rcheevos_badge_message_t;
+
+typedef struct
+{
+   rcheevos_badge_message_t message;
+   rcheevos_badge_entry_t *entry;
+   gfx_surface_t *surface;
+} rcheevos_badge_load_tag_t;
+
+static mpsc_stack_t badge_messages;
+static badge_ptr_t badge_head;
+static retro_atomic_int_t badge_readers;
+static retro_atomic_int_t badge_generation;
+static rcheevos_badge_entry_t *badge_slots[RCHEEVOS_BADGE_SLOTS + 1];
+static rcheevos_badge_entry_t *badge_retired;
+static unsigned badge_next;
+static int badge_owned_generation;
+static bool badge_servicing, badge_work;
+
+static void badge_read_begin(void)
+{
+   /* Pairs with unlink/collect: reclamation cannot miss an active reader. */
+   retro_atomic_fetch_add_seq_cst_int(&badge_readers, 1);
+}
+static void badge_read_end(void)
+{
+   retro_atomic_fetch_add_seq_cst_int(&badge_readers, -1);
+}
+static rcheevos_badge_entry_t *badge_find(const char *key, bool locked,
+                                          bool shared)
+{
+   rcheevos_badge_entry_t *e =
+       (rcheevos_badge_entry_t *)badge_ptr_load(&badge_head);
+   for (; e; e = (rcheevos_badge_entry_t *)badge_ptr_load(&e->next))
+      if (e->generation == retro_atomic_load_acquire_int(&badge_generation) &&
+          e->locked == locked && e->shared == shared &&
+          string_is_equal(e->key, key))
+         return e;
+   return NULL;
+}
+static void badge_retire(rcheevos_badge_entry_t *entry)
+{
+   badge_ptr_t *link = &badge_head;
+   rcheevos_badge_entry_t *e;
+   retro_atomic_store_release_int(&entry->retired, 1);
+   while ((e = (rcheevos_badge_entry_t *)badge_ptr_load(link)))
    {
-      if (landed)
+      if (e == entry)
       {
-         slot->surface = s;
-         s             = NULL;
+         badge_ptr_store(link, badge_ptr_load(&e->next));
+         break;
       }
-      slot->state = landed ? RCHEEVOS_BADGE_SLOT_READY : RCHEEVOS_BADGE_SLOT_FAILED;
+      link = &e->next;
    }
-   RCHEEVOS_BADGE_UNLOCK();
-
-   if (s)
-      gfx_surface_free(s);
-   free(tag);
+   entry->retire_next = badge_retired;
+   badge_retired = entry;
 }
-
-/* Main thread, from the surface once a queued upload has completed */
+static void badge_collect(void)
+{
+   rcheevos_badge_entry_t **link = &badge_retired;
+   retro_atomic_thread_fence_seq_cst();
+   if (retro_atomic_load_seq_cst_int(&badge_readers))
+      return;
+   while (*link)
+   {
+      rcheevos_badge_entry_t *e = *link;
+      gfx_surface_t *s = (gfx_surface_t *)badge_ptr_exchange(&e->surface, NULL);
+      if (s)
+         gfx_surface_free(s);
+      if (e->inflight)
+         link = &e->retire_next;
+      else
+      {
+         *link = e->retire_next;
+         free(e);
+      }
+   }
+}
+static bool badge_post(unsigned type, const char *key, bool locked,
+                       bool download, bool shared)
+{
+   rcheevos_badge_message_t *m =
+       (rcheevos_badge_message_t *)calloc(1, sizeof(*m));
+   if (!m)
+      return false;
+   m->generation = retro_atomic_load_acquire_int(&badge_generation);
+   m->type = type;
+   m->locked = locked;
+   m->download = download;
+   m->shared = shared;
+   if (key)
+      strlcpy(m->key, key, sizeof(m->key));
+   mpsc_stack_push(&badge_messages, &m->node);
+   return true;
+}
+static void badge_reset_owned(void)
+{
+   unsigned i;
+   int generation = retro_atomic_load_acquire_int(&badge_generation);
+   for (i = 0; i < RCHEEVOS_BADGE_SLOTS + 1; i++)
+      if (badge_slots[i] && badge_slots[i]->generation != generation)
+      {
+         badge_retire(badge_slots[i]);
+         badge_slots[i] = NULL;
+      }
+   badge_owned_generation = generation;
+   badge_collect();
+}
+void rcheevos_badge_cache_reset(void)
+{
+   retro_atomic_fetch_add_seq_cst_int(&badge_generation, 1);
+   if (task_is_on_main_thread())
+      badge_reset_owned();
+}
+static void rcheevos_badge_load_done(rcheevos_badge_load_tag_t *tag,
+                                     bool landed)
+{
+   rcheevos_badge_entry_t *e = tag->entry;
+   if (landed && !retro_atomic_load_acquire_int(&e->retired))
+   {
+      badge_ptr_store(&e->surface, tag->surface);
+      tag->surface = NULL;
+      retro_atomic_store_release_int(&e->state, BADGE_READY);
+   }
+   else
+   {
+      if (tag->surface)
+         gfx_surface_free(tag->surface);
+      tag->surface = NULL;
+      retro_atomic_store_release_int(&e->state, BADGE_FAILED);
+   }
+   tag->message.type = BADGE_DONE;
+   mpsc_stack_push(&badge_messages, &tag->message.node);
+   rcheevos_badge_cache_service();
+}
 static void rcheevos_badge_landed(void *user, gfx_surface_t *s, unsigned slot)
 {
    (void)slot;
-   rcheevos_badge_load_done((rcheevos_badge_load_tag_t*)user, s->handle != 0);
+   rcheevos_badge_load_done((rcheevos_badge_load_tag_t *)user, s->handle != 0);
 }
-
-/* Main thread: the decode finished; the still takes the image. With
- * nothing in flight afterwards the texture is up now; otherwise the
- * surface says when. */
-static void rcheevos_badge_decode_done(retro_task_t *task,
-      void *task_data, void *user_data, const char *error)
+static void rcheevos_badge_decode_done(retro_task_t *task, void *task_data,
+                                       void *user_data, const char *error)
 {
-   struct texture_image      *img = (struct texture_image*)task_data;
-   rcheevos_badge_load_tag_t *tag = (rcheevos_badge_load_tag_t*)user_data;
+   struct texture_image *img = (struct texture_image *)task_data;
+   rcheevos_badge_load_tag_t *tag = (rcheevos_badge_load_tag_t *)user_data;
    gfx_surface_t *s;
-   (void)task; (void)error;
-
+   (void)task;
+   (void)error;
    if (!tag)
    {
       if (img)
@@ -197,355 +274,271 @@ static void rcheevos_badge_decode_done(retro_task_t *task,
       }
       return;
    }
-
-   s          = tag->surface;
+   s = tag->surface;
    s->release = rcheevos_badge_landed;
-   s->user    = tag;
+   s->user = tag;
    if (!gfx_surface_submit_image(s, img))
       rcheevos_badge_load_done(tag, false);
    else if (!s->inflight)
       rcheevos_badge_load_done(tag, s->handle != 0);
 }
-
-/* Caller holds the lock. */
-static rcheevos_badge_slot_t *rcheevos_badge_slot_find(const char *key, bool locked)
-{
-   rcheevos_badge_slot_t* slot       = rcheevos_badge_slots;
-   const rcheevos_badge_slot_t* stop = slot + RCHEEVOS_BADGE_SLOTS;
-
-   for (; slot < stop; ++slot)
-   {
-      if (     slot->state != RCHEEVOS_BADGE_SLOT_EMPTY
-            && slot->locked == (uint8_t)locked
-            && string_is_equal(slot->key, key))
-         return slot;
-   }
-
-   return NULL;
-}
-
-/* Caller holds the lock. The first empty slot from the cursor on; with
- * none empty a failed one, else the one at the cursor, whose surface
- * (if it held one) comes back in @evicted. Returned EMPTY, with its
- * key. */
-static rcheevos_badge_slot_t* rcheevos_badge_slot_alloc(const char* key,
-      bool locked, gfx_surface_t **evicted)
-{
-   unsigned i;
-   rcheevos_badge_slot_t* slot = NULL;
-
-   for (i = 0; i < RCHEEVOS_BADGE_SLOTS; i++)
-   {
-      unsigned idx = (rcheevos_badge_slots_next + i) % RCHEEVOS_BADGE_SLOTS;
-      if (rcheevos_badge_slots[idx].state == RCHEEVOS_BADGE_SLOT_EMPTY)
-      {
-         slot = &rcheevos_badge_slots[idx];
-         break;
-      }
-   }
-
-   /* Full: a failed load is the cheapest thing to forget */
-   for (i = 0; !slot && i < RCHEEVOS_BADGE_SLOTS; i++)
-   {
-      unsigned idx = (rcheevos_badge_slots_next + i) % RCHEEVOS_BADGE_SLOTS;
-      if (rcheevos_badge_slots[idx].state == RCHEEVOS_BADGE_SLOT_FAILED)
-         slot = &rcheevos_badge_slots[idx];
-   }
-
-   if (!slot)
-      slot = &rcheevos_badge_slots[rcheevos_badge_slots_next];
-
-   if (slot->state != RCHEEVOS_BADGE_SLOT_EMPTY)
-      *evicted = rcheevos_badge_slot_clear(slot);
-
-   rcheevos_badge_slots_next =
-      ((unsigned)(slot - rcheevos_badge_slots) + 1) % RCHEEVOS_BADGE_SLOTS;
-
-   strlcpy(slot->key, key, sizeof(slot->key));
-   slot->locked = locked ? 1 : 0;
-   return slot;
-}
-
-/* Drop every cached or in-flight badge: the menu list is being
- * rebuilt, or the game unloaded. Ready surfaces are freed, loads in
- * flight orphaned. */
-void rcheevos_badge_cache_reset(void)
-{
-   unsigned i;
-   unsigned count = 0;
-   gfx_surface_t *ready[RCHEEVOS_BADGE_SLOTS + 1];
-
-   RCHEEVOS_BADGE_LOCK();
-   for (i = 0; i < RCHEEVOS_BADGE_SLOTS + 1; i++)
-   {
-      gfx_surface_t *s = rcheevos_badge_slot_clear(&rcheevos_badge_slots[i]);
-      if (s)
-         ready[count++] = s;
-   }
-   RCHEEVOS_BADGE_UNLOCK();
-
-   for (i = 0; i < count; i++)
-      gfx_surface_free(ready[i]);
-}
-
-/* Move slot @idx from LOADING to @state, unless it was reused since. */
-static void rcheevos_badge_slot_settle(unsigned idx, uint32_t seq, uint8_t state)
-{
-   rcheevos_badge_slot_t* slot = &rcheevos_badge_slots[idx];
-
-   RCHEEVOS_BADGE_LOCK();
-   if (slot->seq == seq && slot->state == RCHEEVOS_BADGE_SLOT_LOADING)
-      slot->state = state;
-   RCHEEVOS_BADGE_UNLOCK();
-}
-
-/* Main thread: start the load of one requested badge. The slot is
- * LOADING by now; every exit leaves it LOADING with a task on the way,
- * FETCHING with a download on the way, or FAILED. */
-static void rcheevos_badge_start_load(unsigned idx, uint32_t seq,
-      const char* badge, bool locked, bool download_if_missing)
+static void badge_start_load(rcheevos_badge_entry_t *e)
 {
    gfx_surface_requirements_t req;
    char badge_file[RCHEEVOS_BADGE_KEY_LEN + 16];
    char fullpath[PATH_MAX_LENGTH];
-   rcheevos_badge_load_tag_t* tag;
-
-   fill_pathname_application_special(fullpath, sizeof(fullpath),
-      APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
-   rcheevos_get_local_badge_filename(badge_file, sizeof(badge_file), badge, locked);
+   rcheevos_badge_load_tag_t *tag;
+   e->inflight++;
+   retro_atomic_store_release_int(&e->state, BADGE_LOADING);
+   fill_pathname_application_special(
+       fullpath, sizeof(fullpath),
+       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+   rcheevos_get_local_badge_filename(badge_file, sizeof(badge_file), e->key,
+                                     e->locked);
    fill_pathname_join(fullpath, fullpath, badge_file, sizeof(fullpath));
-
    if (!path_is_valid(fullpath))
    {
-      if (download_if_missing)
-      {
-         /* FETCHING before the request: the download's completion
-          * looks for a slot in that state. */
-         rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FETCHING);
-         rcheevos_badge_request_download(badge, locked);
-      }
-      else
-         rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FAILED);
+      bool download = retro_atomic_load_acquire_int(&e->download) != 0;
+      retro_atomic_store_release_int(&e->state,
+                                     download ? BADGE_FETCHING : BADGE_FAILED);
+      if (download)
+         rcheevos_badge_request_download(e->key, e->locked);
+      e->inflight--;
       return;
    }
-
-   if (!(tag = (rcheevos_badge_load_tag_t*)malloc(sizeof(*tag))))
+   tag = (rcheevos_badge_load_tag_t *)calloc(1, sizeof(*tag));
+   if (!tag)
    {
-      rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FAILED);
+      retro_atomic_store_release_int(&e->state, BADGE_FAILED);
+      e->inflight--;
       return;
    }
-
-   tag->slot    = idx;
-   tag->seq     = seq;
+   tag->entry = e;
    tag->surface = gfx_surface_new_still(gfx_display_texture_filter_latched());
-
    gfx_surface_query_requirements(0, &req);
-   if (     !tag->surface
-         || !task_push_image_load(fullpath, req.rgba,
-               0, 0, rcheevos_badge_decode_done, tag))
-   {
-      gfx_surface_free(tag->surface);
-      free(tag);
-      rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FAILED);
-   }
+   if (!tag->surface || !task_push_image_load(fullpath, req.rgba, 0, 0,
+                                              rcheevos_badge_decode_done, tag))
+      rcheevos_badge_load_done(tag, false);
 }
-
-/* Main thread: start the load of every badge asked for since the last
- * call. With nothing asked for this is one atomic load. */
+static void badge_process(rcheevos_badge_message_t *m)
+{
+   rcheevos_badge_entry_t *e;
+   unsigned index;
+   int state;
+   if (m->type == BADGE_DONE)
+   {
+      rcheevos_badge_load_tag_t *tag = (rcheevos_badge_load_tag_t *)m;
+      tag->entry->inflight--;
+      free(tag);
+      return;
+   }
+   if (m->generation != retro_atomic_load_acquire_int(&badge_generation))
+   {
+      free(m);
+      return;
+   }
+   if (m->type == BADGE_DOWNLOADED)
+   {
+      for (index = 0; index < RCHEEVOS_BADGE_SLOTS + 1; index++)
+      {
+         e = badge_slots[index];
+         if (!e || e->generation != m->generation || e->locked != m->locked ||
+             !string_is_equal(e->key, m->key))
+            continue;
+         state = retro_atomic_load_acquire_int(&e->state);
+         if (state == BADGE_FETCHING || state == BADGE_FAILED)
+         {
+            retro_atomic_store_release_int(&e->download, 0);
+            retro_atomic_store_release_int(&e->state, BADGE_REQUESTED);
+            badge_work = true;
+         }
+      }
+      free(m);
+      return;
+   }
+   e = badge_find(m->key, m->locked, m->shared);
+   if (!e && m->type == BADGE_ASK)
+   {
+      e = (rcheevos_badge_entry_t *)calloc(1, sizeof(*e));
+      if (!e)
+      {
+         free(m);
+         return;
+      }
+      e->generation = m->generation;
+      strlcpy(e->key, m->key, sizeof(e->key));
+      e->locked = m->locked;
+      e->shared = m->shared;
+#ifdef RETRO_ATOMIC_HAS_PTR
+      retro_atomic_ptr_init(&e->surface, NULL);
+      retro_atomic_ptr_init(&e->next, NULL);
+#endif
+      retro_atomic_int_init(&e->state, BADGE_REQUESTED);
+      retro_atomic_int_init(&e->retired, 0);
+      retro_atomic_int_init(&e->download, m->download);
+      retro_atomic_int_init(&e->asked, 0);
+      index = m->shared ? RCHEEVOS_BADGE_DEFAULT_SLOT : badge_next;
+      if (!m->shared)
+         badge_next = (badge_next + 1) % RCHEEVOS_BADGE_SLOTS;
+      if (badge_slots[index])
+         badge_retire(badge_slots[index]);
+      badge_slots[index] = e;
+      badge_ptr_store(&e->next, badge_ptr_load(&badge_head));
+      badge_ptr_store(&badge_head, e);
+   }
+   if (e)
+   {
+      state = retro_atomic_load_acquire_int(&e->state);
+      if (m->type == BADGE_ASK)
+      {
+         if (state == BADGE_READY && !badge_ptr_load(&e->surface))
+            retro_atomic_store_release_int(&e->state, BADGE_REQUESTED);
+         if (m->download && !retro_atomic_load_acquire_int(&e->download))
+         {
+            retro_atomic_store_release_int(&e->download, 1);
+            if (state == BADGE_FAILED)
+               retro_atomic_store_release_int(&e->state, BADGE_REQUESTED);
+         }
+      }
+      retro_atomic_store_release_int(&e->asked, 0);
+      badge_work = true;
+   }
+   free(m);
+}
 void rcheevos_badge_cache_service(void)
 {
-   if (!RCHEEVOS_BADGE_REQUESTS_GET() || !task_is_on_main_thread())
+   unsigned pass, i;
+   if (!task_is_on_main_thread() || badge_servicing)
       return;
-
-   RCHEEVOS_BADGE_REQUESTS_SET(0);
-
-   for (;;)
+   if (badge_owned_generation !=
+       retro_atomic_load_acquire_int(&badge_generation))
+      badge_reset_owned();
+   if (!badge_work && !badge_retired && mpsc_stack_empty(&badge_messages))
+      return;
+   badge_servicing = true;
+   for (pass = 0; pass < 2; pass++)
    {
-      unsigned i;
-      uint32_t seq  = 0;
-      bool locked   = false;
-      bool download = false;
-      char key[RCHEEVOS_BADGE_KEY_LEN];
-
-      RCHEEVOS_BADGE_LOCK();
-      for (i = 0; i < RCHEEVOS_BADGE_SLOTS + 1; i++)
+      mpsc_stack_node_t *fifo =
+          mpsc_stack_reverse(mpsc_stack_drain(&badge_messages));
+      while (fifo)
       {
-         rcheevos_badge_slot_t* slot = &rcheevos_badge_slots[i];
-         if (slot->state != RCHEEVOS_BADGE_SLOT_REQUESTED)
-            continue;
-         slot->state = RCHEEVOS_BADGE_SLOT_LOADING;
-         seq         = slot->seq;
-         locked      = slot->locked != 0;
-         download    = slot->download != 0;
-         strlcpy(key, slot->key, sizeof(key));
-         break;
+         mpsc_stack_node_t *n = fifo;
+         fifo = n->next;
+         badge_process((rcheevos_badge_message_t *)n);
       }
-      RCHEEVOS_BADGE_UNLOCK();
-
-      if (i == RCHEEVOS_BADGE_SLOTS + 1)
-         break;
-
-      rcheevos_badge_start_load(i, seq, key, locked, download);
+      if (!pass)
+      {
+         badge_work = false;
+         for (i = 0; i < RCHEEVOS_BADGE_SLOTS + 1; i++)
+            if (badge_slots[i] &&
+                retro_atomic_load_acquire_int(&badge_slots[i]->state) ==
+                    BADGE_REQUESTED)
+               badge_start_load(badge_slots[i]);
+      }
    }
+   badge_collect();
+   badge_servicing = false;
 }
-
-/* @shared: the default badge's own slot, whose surface is lent rather
- * than given. */
-static gfx_surface_t *rcheevos_badge_ask(const char* badge, bool locked,
-      bool download_if_missing, bool shared, bool *pending)
+static gfx_surface_t *rcheevos_badge_ask(const char *key, bool locked,
+                                         bool download, bool shared,
+                                         bool *pending)
 {
-   rcheevos_badge_slot_t *slot;
-   gfx_surface_t *tex     = NULL;
-   gfx_surface_t *evicted = NULL;
-   bool requested         = false;
-
+   unsigned attempt;
    if (pending)
       *pending = false;
-
-   if (!badge || !badge[0] || strlen(badge) >= RCHEEVOS_BADGE_KEY_LEN)
+   if (!key || !*key || strlen(key) >= RCHEEVOS_BADGE_KEY_LEN)
       return NULL;
-
-   RCHEEVOS_BADGE_LOCK();
-   if (shared)
+   rcheevos_badge_cache_service();
+   for (attempt = 0; attempt < 2; attempt++)
    {
-      /* Never evicted */
-      slot = &rcheevos_badge_slots[RCHEEVOS_BADGE_DEFAULT_SLOT];
-      if (slot->state == RCHEEVOS_BADGE_SLOT_EMPTY)
+      rcheevos_badge_entry_t *e;
+      gfx_surface_t *surface = NULL;
+      bool request = false, waiting = true;
+      badge_read_begin();
+      e = badge_find(key, locked, shared);
+      if (e && !retro_atomic_load_acquire_int(&e->retired))
       {
-         strlcpy(slot->key, badge, sizeof(slot->key));
-         slot->locked = locked ? 1 : 0;
+         int state = retro_atomic_load_acquire_int(&e->state);
+         if (state == BADGE_READY)
+         {
+            surface = (gfx_surface_t *)badge_ptr_load(&e->surface);
+            if (surface && !shared &&
+                !badge_ptr_cas(&e->surface, surface, NULL))
+               surface = NULL;
+            if (surface && (retro_atomic_load_acquire_int(&e->retired) ||
+                            e->generation != retro_atomic_load_acquire_int(
+                                                 &badge_generation)))
+            {
+               if (!shared)
+                  gfx_surface_free(surface);
+               surface = NULL;
+            }
+            request = !surface;
+         }
+         else if (state == BADGE_FAILED)
+         {
+            waiting = download && !retro_atomic_load_acquire_int(&e->download);
+            request = waiting;
+         }
+         else
+         {
+            waiting = state == BADGE_REQUESTED || state == BADGE_LOADING;
+            if (download && !retro_atomic_load_acquire_int(&e->download))
+               request = true;
+         }
+         if (request && !badge_claim_request(&e->asked))
+            request = false;
+         if (request && !badge_post(BADGE_ASK, key, locked, download, shared))
+            retro_atomic_store_release_int(&e->asked, 0);
       }
-   }
-   else if (!(slot = rcheevos_badge_slot_find(badge, locked)))
-      slot = rcheevos_badge_slot_alloc(badge, locked, &evicted);
-
-   switch (slot->state)
-   {
-      case RCHEEVOS_BADGE_SLOT_READY:
-         tex = slot->surface;
-         if (!shared)
-         {
-            /* the caller's from here on; the slot is free again */
-            slot->surface = NULL;
-            slot->state   = RCHEEVOS_BADGE_SLOT_EMPTY;
-            slot->key[0]  = '\0';
-         }
-         break;
-
-      case RCHEEVOS_BADGE_SLOT_EMPTY:
-         slot->state    = RCHEEVOS_BADGE_SLOT_REQUESTED;
-         slot->download = download_if_missing ? 1 : 0;
-         requested      = true;
-         break;
-
-      case RCHEEVOS_BADGE_SLOT_REQUESTED:
-         if (download_if_missing)
-            slot->download = 1;
-         break;
-
-      case RCHEEVOS_BADGE_SLOT_FAILED:
-         /* Failed for an asker that did not want a download; this
-          * one does, once */
-         if (download_if_missing && !slot->download)
-         {
-            slot->state    = RCHEEVOS_BADGE_SLOT_REQUESTED;
-            slot->download = 1;
-            requested      = true;
-         }
-         break;
-
-      default:
-         /* On its way */
-         break;
-   }
-   /* A local load is a few frames; a download or a failure is not
-    * something to wait for */
-   if (pending)
-      *pending = (   slot->state == RCHEEVOS_BADGE_SLOT_REQUESTED
-                  || slot->state == RCHEEVOS_BADGE_SLOT_LOADING);
-   RCHEEVOS_BADGE_UNLOCK();
-
-   if (evicted)
-      gfx_surface_free(evicted);
-
-   if (requested)
-   {
-      RCHEEVOS_BADGE_REQUESTS_SET(1);
-      /* Off the main thread the runloop picks the request up */
-      rcheevos_badge_cache_service();
-
-      /* On it, the file check has just been made: say what it found */
+      else
+         request = true;
+      if (!e && request)
+         badge_post(BADGE_ASK, key, locked, download, shared);
+      badge_read_end();
+      if (surface)
+         return surface;
       if (pending)
-      {
-         RCHEEVOS_BADGE_LOCK();
-         slot = shared
-            ? &rcheevos_badge_slots[RCHEEVOS_BADGE_DEFAULT_SLOT]
-            : rcheevos_badge_slot_find(badge, locked);
-         *pending = slot
-            && (   slot->state == RCHEEVOS_BADGE_SLOT_REQUESTED
-                || slot->state == RCHEEVOS_BADGE_SLOT_LOADING);
-         RCHEEVOS_BADGE_UNLOCK();
-      }
+         *pending = waiting;
+      if (!task_is_on_main_thread() || !request)
+         return NULL;
+      rcheevos_badge_cache_service();
    }
-
-   return tex;
+   return NULL;
 }
-
-gfx_surface_t *rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
+gfx_surface_t *rcheevos_get_badge_texture(const char *badge, bool locked,
+                                          bool download)
 {
-   return rcheevos_badge_ask(badge, locked, download_if_missing, false, NULL);
+   return rcheevos_badge_ask(badge, locked, download, false, NULL);
 }
-
-gfx_surface_t *rcheevos_get_badge_texture_ex(const char* badge, bool locked,
-      bool download_if_missing, bool *pending)
+gfx_surface_t *rcheevos_get_badge_texture_ex(const char *badge, bool locked,
+                                             bool download, bool *pending)
 {
-   return rcheevos_badge_ask(badge, locked, download_if_missing, false, pending);
+   return rcheevos_badge_ask(badge, locked, download, false, pending);
 }
-
 gfx_surface_t *rcheevos_get_default_badge_texture(void)
 {
-   return rcheevos_badge_ask(RCHEEVOS_BADGE_DEFAULT_NAME, false, false, true, NULL);
+   return rcheevos_badge_ask(RCHEEVOS_BADGE_DEFAULT_NAME, false, false, true,
+                             NULL);
 }
-
-/* Main thread: @badge_name ("NNNNN" or "NNNNN_lock") has just been
- * written to disk. If the cache was waiting for it, load it. */
-void rcheevos_update_badge_references(const char* badge_name)
+void rcheevos_update_badge_references(const char *badge)
 {
-   rcheevos_badge_slot_t* slot;
-   char unlocked_badge_name[RCHEEVOS_BADGE_KEY_LEN];
-   bool locked                 = false;
-   bool requested              = false;
-   const size_t badge_name_len = badge_name ? strlen(badge_name) : 0;
-
-   if (!badge_name_len)
+   char key[RCHEEVOS_BADGE_KEY_LEN];
+   size_t len = badge ? strlen(badge) : 0;
+   bool locked = false;
+   if (!len)
       return;
-
-   if (     badge_name_len > 5
-         && badge_name_len < sizeof(unlocked_badge_name) + 5
-         && string_is_equal(&badge_name[badge_name_len - 5], "_lock"))
+   if (len > 5 && string_is_equal(badge + len - 5, "_lock"))
    {
-      memcpy(unlocked_badge_name, badge_name, badge_name_len - 5);
-      unlocked_badge_name[badge_name_len - 5] = '\0';
-      badge_name = unlocked_badge_name;
-      locked     = true;
+      len -= 5;
+      locked = true;
    }
-
-   RCHEEVOS_BADGE_LOCK();
-   slot = rcheevos_badge_slot_find(badge_name, locked);
-   if (slot && (   slot->state == RCHEEVOS_BADGE_SLOT_FETCHING
-                || slot->state == RCHEEVOS_BADGE_SLOT_FAILED))
-   {
-      slot->state    = RCHEEVOS_BADGE_SLOT_REQUESTED;
-      slot->download = 0;
-      requested      = true;
-   }
-   RCHEEVOS_BADGE_UNLOCK();
-
-   if (requested)
-   {
-      RCHEEVOS_BADGE_REQUESTS_SET(1);
-      rcheevos_badge_cache_service();
-   }
+   if (len >= sizeof(key))
+      return;
+   memcpy(key, badge, len);
+   key[len] = 0;
+   badge_post(BADGE_DOWNLOADED, key, locked, false, false);
+   rcheevos_badge_cache_service();
 }
 
 bool rcheevos_is_badge_available(const char* badge, bool locked)

@@ -181,8 +181,6 @@ rc_client_t* rc_client_create(rc_client_read_memory_func_t read_memory_function,
   rc_client_set_legacy_peek(client, RC_CLIENT_LEGACY_PEEK_AUTO);
   rc_client_set_get_time_millisecs_function(client, NULL);
 
-  rc_mutex_init(&client->state.mutex);
-
   rc_buffer_init(&client->state.buffer);
 
   return client;
@@ -193,7 +191,6 @@ void rc_client_destroy(rc_client_t* client)
   if (!client)
     return;
 
-  rc_mutex_lock(&client->state.mutex);
   {
     size_t i;
     for (i = 0; i < sizeof(client->state.async_handles) / sizeof(client->state.async_handles[0]); ++i) {
@@ -206,7 +203,6 @@ void rc_client_destroy(rc_client_t* client)
       client->state.load = NULL;
     }
   }
-  rc_mutex_unlock(&client->state.mutex);
 
   rc_client_unload_game(client);
 
@@ -220,8 +216,6 @@ void rc_client_destroy(rc_client_t* client)
 #endif
 
   rc_buffer_destroy(&client->state.buffer);
-
-  rc_mutex_destroy(&client->state.mutex);
 
   free(client);
 }
@@ -427,38 +421,31 @@ void rc_client_set_get_time_millisecs_function(rc_client_t* client, rc_get_time_
 
 int rc_client_async_handle_aborted(rc_client_t* client, rc_client_async_handle_t* async_handle)
 {
-  int aborted;
-
-  rc_mutex_lock(&client->state.mutex);
-  aborted = async_handle->aborted;
-  rc_mutex_unlock(&client->state.mutex);
-
-  return aborted;
+  (void)client;
+  return async_handle->aborted;
 }
 
 static void rc_client_begin_async(rc_client_t* client, rc_client_async_handle_t* async_handle)
 {
   size_t i;
 
-  rc_mutex_lock(&client->state.mutex);
   for (i = 0; i < sizeof(client->state.async_handles) / sizeof(client->state.async_handles[0]); ++i) {
     if (!client->state.async_handles[i]) {
       client->state.async_handles[i] = async_handle;
       break;
     }
   }
-  rc_mutex_unlock(&client->state.mutex);
+
 }
 
 static int rc_client_end_async(rc_client_t* client, rc_client_async_handle_t* async_handle)
 {
   int aborted = async_handle->aborted;
 
-  /* if client was destroyed, mutex doesn't exist and we don't need to remove the handle from the collection */
+  /* A destroyed client no longer has a handle collection. */
   if (aborted != RC_CLIENT_ASYNC_DESTROYED) {
     size_t i;
 
-    rc_mutex_lock(&client->state.mutex);
     for (i = 0; i < sizeof(client->state.async_handles) / sizeof(client->state.async_handles[0]); ++i) {
       if (client->state.async_handles[i] == async_handle) {
         client->state.async_handles[i] = NULL;
@@ -467,7 +454,6 @@ static int rc_client_end_async(rc_client_t* client, rc_client_async_handle_t* as
     }
     aborted = async_handle->aborted;
 
-    rc_mutex_unlock(&client->state.mutex);
   }
 
   return aborted;
@@ -483,9 +469,8 @@ void rc_client_abort_async(rc_client_t* client, rc_client_async_handle_t* async_
     }
 #endif
 
-    rc_mutex_lock(&client->state.mutex);
     async_handle->aborted = RC_CLIENT_ASYNC_ABORTED;
-    rc_mutex_unlock(&client->state.mutex);
+
   }
 }
 
@@ -497,7 +482,6 @@ static int rc_client_async_handle_valid(rc_client_t* client, rc_client_async_han
   /* there is a small window of opportunity where the client could have been destroyed before calling
    * this function, but this function assumes the possibility that the handle has been destroyed, so
    * we can't check it for RC_CLIENT_ASYNC_DESTROYED before attempting to scan the client data */
-  rc_mutex_lock(&client->state.mutex);
 
   for (i = 0; i < sizeof(client->state.async_handles) / sizeof(client->state.async_handles[0]); ++i) {
     if (client->state.async_handles[i] == async_handle) {
@@ -505,8 +489,6 @@ static int rc_client_async_handle_valid(rc_client_t* client, rc_client_async_han
       break;
     }
   }
-
-  rc_mutex_unlock(&client->state.mutex);
 
   return valid;
 }
@@ -555,8 +537,6 @@ static void rc_client_update_disconnect_state(rc_client_t* client)
   rc_client_scheduled_callback_data_t* scheduled_callback;
   uint8_t new_state = RC_CLIENT_DISCONNECT_HIDDEN;
 
-  rc_mutex_lock(&client->state.mutex);
-
   scheduled_callback = client->state.scheduled_callbacks;
   for (; scheduled_callback; scheduled_callback = scheduled_callback->next) {
     if (scheduled_callback->callback == rc_client_award_achievement_retry ||
@@ -576,7 +556,6 @@ static void rc_client_update_disconnect_state(rc_client_t* client)
     client->state.disconnect = new_state;
   }
 
-  rc_mutex_unlock(&client->state.mutex);
 }
 
 static void rc_client_raise_disconnect_events(rc_client_t* client)
@@ -584,15 +563,11 @@ static void rc_client_raise_disconnect_events(rc_client_t* client)
   rc_client_event_t client_event;
   uint8_t new_state;
 
-  rc_mutex_lock(&client->state.mutex);
-
   if (client->state.disconnect & RC_CLIENT_DISCONNECT_SHOW_PENDING)
     new_state = RC_CLIENT_DISCONNECT_VISIBLE;
   else
     new_state = RC_CLIENT_DISCONNECT_HIDDEN;
   client->state.disconnect = new_state;
-
-  rc_mutex_unlock(&client->state.mutex);
 
   memset(&client_event, 0, sizeof(client_event));
   client_event.type = (new_state == RC_CLIENT_DISCONNECT_VISIBLE) ?
@@ -715,10 +690,9 @@ static void rc_client_login_callback(const rc_api_server_response_t* server_resp
   result = rc_api_process_login_server_response(&login_response, server_response);
   error_message = rc_client_server_error_message(&result, server_response->http_status_code, &login_response.response);
   if (error_message) {
-    rc_mutex_lock(&client->state.mutex);
+
     client->state.user = RC_CLIENT_USER_STATE_NONE;
     load_state = client->state.load;
-    rc_mutex_unlock(&client->state.mutex);
 
     RC_CLIENT_LOG_ERR_FORMATTED(client, "Login failed: %s", error_message);
     if (login_callback_data->callback)
@@ -742,10 +716,8 @@ static void rc_client_login_callback(const rc_api_server_response_t* server_resp
     client->user.score_softcore = login_response.score_softcore;
     client->user.num_unread_messages = login_response.num_unread_messages;
 
-    rc_mutex_lock(&client->state.mutex);
     client->state.user = RC_CLIENT_USER_STATE_LOGGED_IN;
     load_state = client->state.load;
-    rc_mutex_unlock(&client->state.mutex);
 
     RC_CLIENT_LOG_INFO_FORMATTED(client, "%s logged in successfully", login_response.display_name);
 
@@ -769,7 +741,6 @@ static rc_client_async_handle_t* rc_client_begin_login(rc_client_t* client,
   const char* error_message = rc_error_str(result);
 
   if (result == RC_OK) {
-    rc_mutex_lock(&client->state.mutex);
 
     if (client->state.user == RC_CLIENT_USER_STATE_LOGIN_REQUESTED) {
       error_message = "Login already in progress";
@@ -777,7 +748,6 @@ static rc_client_async_handle_t* rc_client_begin_login(rc_client_t* client,
     }
     client->state.user = RC_CLIENT_USER_STATE_LOGIN_REQUESTED;
 
-    rc_mutex_unlock(&client->state.mutex);
   }
 
   if (result != RC_OK) {
@@ -801,10 +771,9 @@ static rc_client_async_handle_t* rc_client_begin_login(rc_client_t* client,
   rc_api_destroy_request(&request);
 
   /* if the user state has changed, the async operation completed synchronously */
-  rc_mutex_lock(&client->state.mutex);
+
   if (client->state.user != RC_CLIENT_USER_STATE_LOGIN_REQUESTED)
     callback_data = NULL;
-  rc_mutex_unlock(&client->state.mutex);
 
   return callback_data ? &callback_data->async_handle : NULL;
 }
@@ -899,14 +868,10 @@ void rc_client_logout(rc_client_t* client)
       break;
   }
 
-  rc_mutex_lock(&client->state.mutex);
-
   client->state.user = RC_CLIENT_USER_STATE_NONE;
   memset(&client->user, 0, sizeof(client->user));
 
   load_state = client->state.load;
-
-  rc_mutex_unlock(&client->state.mutex);
 
   rc_client_unload_game(client);
 
@@ -963,8 +928,6 @@ static void rc_client_subset_get_user_game_summary(const rc_client_t* client,
   const uint8_t unlock_bit = (client->state.hardcore) ?
     RC_CLIENT_ACHIEVEMENT_UNLOCKED_HARDCORE : RC_CLIENT_ACHIEVEMENT_UNLOCKED_SOFTCORE;
 
-  rc_mutex_lock((rc_mutex_t*)&client->state.mutex); /* remove const cast for mutex access */
-
   for (; achievement < stop; ++achievement) {
     switch (achievement->public_.category) {
       case RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE:
@@ -1012,8 +975,6 @@ static void rc_client_subset_get_user_game_summary(const rc_client_t* client,
         continue;
     }
   }
-
-  rc_mutex_unlock((rc_mutex_t*)&client->state.mutex); /* remove const cast for mutex access */
 
   if (summary->num_unlocked_achievements == summary->num_core_achievements)
     summary->completed_time = last_unlock_time;
@@ -1225,12 +1186,10 @@ static void rc_client_free_load_state(rc_client_load_state_t* load_state)
 
 static void rc_client_begin_load_state(rc_client_load_state_t* load_state, uint8_t state, uint8_t num_requests)
 {
-  rc_mutex_lock(&load_state->client->state.mutex);
 
   load_state->progress = state;
   load_state->outstanding_requests += num_requests;
 
-  rc_mutex_unlock(&load_state->client->state.mutex);
 }
 
 static int rc_client_end_load_state(rc_client_load_state_t* load_state)
@@ -1238,16 +1197,12 @@ static int rc_client_end_load_state(rc_client_load_state_t* load_state)
   int remaining_requests = 0;
   int aborted = 0;
 
-  rc_mutex_lock(&load_state->client->state.mutex);
-
   if (load_state->outstanding_requests > 0)
     --load_state->outstanding_requests;
   remaining_requests = load_state->outstanding_requests;
 
   if (load_state->client->state.load != load_state)
     aborted = 1;
-
-  rc_mutex_unlock(&load_state->client->state.mutex);
 
   if (aborted) {
     /* we can't actually free the load_state itself if there are any outstanding requests
@@ -1273,15 +1228,11 @@ static void rc_client_load_error(rc_client_load_state_t* load_state, int result,
 {
   int remaining_requests = 0;
 
-  rc_mutex_lock(&load_state->client->state.mutex);
-
   load_state->progress = RC_CLIENT_LOAD_GAME_STATE_ABORTED;
   if (load_state->client->state.load == load_state)
     load_state->client->state.load = NULL;
 
   remaining_requests = load_state->outstanding_requests;
-
-  rc_mutex_unlock(&load_state->client->state.mutex);
 
   RC_CLIENT_LOG_ERR_FORMATTED(load_state->client, "Load failed (%d): %s", result, error_message);
 
@@ -1805,10 +1756,8 @@ static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_s
 {
   rc_client_t* client = load_state->client;
 
-  rc_mutex_lock(&client->state.mutex);
   load_state->progress = (client->state.load == load_state) ?
       RC_CLIENT_LOAD_GAME_STATE_DONE : RC_CLIENT_LOAD_GAME_STATE_ABORTED;
-  rc_mutex_unlock(&client->state.mutex);
 
   if (load_state->progress != RC_CLIENT_LOAD_GAME_STATE_DONE) {
     /* previous load state was aborted */
@@ -1829,7 +1778,7 @@ static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_s
     }
 
     /* make the loaded game active if another game is not aleady being loaded. */
-    rc_mutex_lock(&client->state.mutex);
+
     if (client->state.load == load_state) {
       client->game = load_state->game;
       client->state.frames_processed = client->state.frames_at_last_ping = 0;
@@ -1837,16 +1786,13 @@ static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_s
     else {
       load_state->progress = RC_CLIENT_LOAD_GAME_STATE_ABORTED;
     }
-    rc_mutex_unlock(&client->state.mutex);
 
     if (load_state->progress != RC_CLIENT_LOAD_GAME_STATE_ABORTED) {
       /* if a change media request is pending, kick it off */
       rc_client_pending_media_t* pending_media;
 
-      rc_mutex_lock(&load_state->client->state.mutex);
       pending_media = load_state->pending_media;
       load_state->pending_media = NULL;
-      rc_mutex_unlock(&load_state->client->state.mutex);
 
       if (pending_media) {
         /* rc_client_check_pending_media will fail if it can't find the game in client->game or
@@ -1865,10 +1811,9 @@ static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_s
         rc_client_free_pending_media(pending_media);
       }
 
-      rc_mutex_lock(&client->state.mutex);
       if (client->state.load != load_state)
         load_state->progress = RC_CLIENT_LOAD_GAME_STATE_ABORTED;
-      rc_mutex_unlock(&client->state.mutex);
+
     }
 
     /* if the game is still being loaded, make sure all the required memory addresses are accessible
@@ -1877,10 +1822,9 @@ static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_s
       /* ASSERT: client->game must be set before calling this function so the read_memory callback can query the console_id */
       rc_client_validate_addresses(load_state->game, client);
 
-      rc_mutex_lock(&client->state.mutex);
       if (client->state.load != load_state)
         load_state->progress = RC_CLIENT_LOAD_GAME_STATE_ABORTED;
-      rc_mutex_unlock(&client->state.mutex);
+
     }
 
     /* if the game is still being loaded, load any active acheivements/leaderboards into the runtime */
@@ -1889,12 +1833,12 @@ static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_s
       rc_client_activate_leaderboards(load_state->game, client);
 
       /* detach the load state to indicate that loading is fully complete */
-      rc_mutex_lock(&client->state.mutex);
+
       if (client->state.load == load_state)
         client->state.load = NULL;
       else
         load_state->progress = RC_CLIENT_LOAD_GAME_STATE_ABORTED;
-      rc_mutex_unlock(&client->state.mutex);
+
     }
 
     /* one last sanity check to make sure the game is still being loaded. */
@@ -2403,13 +2347,12 @@ static void rc_client_fetch_game_sets_callback(const rc_api_server_response_t* s
       load_state->subset = first_subset;
 
       /* core set */
-      rc_mutex_lock(&load_state->client->state.mutex);
+
       load_state->game->public_.title = rc_buffer_strcpy(&load_state->game->buffer, fetch_game_sets_response.title);
       load_state->game->subsets = first_subset;
       load_state->game->public_.badge_name = first_subset->public_.badge_name;
       load_state->game->public_.badge_url = first_subset->public_.badge_url;
       load_state->game->public_.console_id = fetch_game_sets_response.console_id;
-      rc_mutex_unlock(&load_state->client->state.mutex);
 
       if (fetch_game_sets_response.rich_presence_script && fetch_game_sets_response.rich_presence_script[0]) {
         result = rc_runtime_activate_richpresence(&load_state->game->runtime, fetch_game_sets_response.rich_presence_script, NULL, 0);
@@ -2466,10 +2409,9 @@ static int rc_client_attach_load_state(rc_client_t* client, rc_client_load_state
       }
     }
 
-    rc_mutex_lock(&client->state.mutex);
     client->state.load = load_state;
     client->state.frames_processed = client->state.frames_at_last_ping = 0;
-    rc_mutex_unlock(&client->state.mutex);
+
   }
   else if (client->state.load != load_state) {
     /* previous load was aborted */
@@ -2506,11 +2448,9 @@ static void rc_client_external_load_state_callback(int result, const char* error
     return;
   }
 
-  rc_mutex_lock(&client->state.mutex);
   load_state->progress = (client->state.load == load_state) ?
     RC_CLIENT_LOAD_GAME_STATE_DONE : RC_CLIENT_LOAD_GAME_STATE_ABORTED;
   client->state.load = NULL;
-  rc_mutex_unlock(&client->state.mutex);
 
   if (load_state->progress != RC_CLIENT_LOAD_GAME_STATE_DONE) {
     /* previous load state was aborted */
@@ -2699,13 +2639,11 @@ static void rc_client_begin_fetch_game_sets(rc_client_load_state_t* load_state)
   rc_api_request_t request;
   int result;
 
-  rc_mutex_lock(&client->state.mutex);
   result = client->state.user;
   if (result == RC_CLIENT_USER_STATE_LOGIN_REQUESTED)
     load_state->progress = RC_CLIENT_LOAD_GAME_STATE_AWAIT_LOGIN;
   else
     load_state->progress = RC_CLIENT_LOAD_GAME_STATE_FETCHING_GAME_DATA;
-  rc_mutex_unlock(&client->state.mutex);
 
   switch (result) {
     case RC_CLIENT_USER_STATE_LOGGED_IN:
@@ -2795,7 +2733,6 @@ rc_client_game_hash_t* rc_client_find_game_hash(rc_client_t* client, const char*
 {
   rc_client_game_hash_t* game_hash;
 
-  rc_mutex_lock(&client->state.mutex);
   game_hash = client->hashes;
   while (game_hash) {
     if (strcasecmp(game_hash->hash, hash) == 0)
@@ -2812,7 +2749,6 @@ rc_client_game_hash_t* rc_client_find_game_hash(rc_client_t* client, const char*
     game_hash->next = client->hashes;
     client->hashes = game_hash;
   }
-  rc_mutex_unlock(&client->state.mutex);
 
   return game_hash;
 }
@@ -2921,17 +2857,13 @@ static void rc_client_abort_load_in_progress(rc_client_t* client)
 {
   rc_client_load_state_t* load_state;
 
-  rc_mutex_lock(&client->state.mutex);
-
   load_state = client->state.load;
   if (load_state) {
-    /* this mimics rc_client_abort_async without nesting the lock */
+    /* Cancel the pending load. */
     load_state->async_handle.aborted = RC_CLIENT_ASYNC_ABORTED;
 
     client->state.load = NULL;
   }
-
-  rc_mutex_unlock(&client->state.mutex);
 
   if (load_state && load_state->callback)
     load_state->callback(RC_ABORTED, "The requested game is no longer active", load_state->client, load_state->callback_userdata);
@@ -3174,13 +3106,11 @@ void rc_client_unload_game(rc_client_t* client)
   }
 #endif
 
-  rc_mutex_lock(&client->state.mutex);
-
   game = client->game;
   client->game = NULL;
 
   if (client->state.load) {
-    /* this mimics rc_client_abort_async without nesting the lock */
+    /* Cancel the pending load. */
     client->state.load->async_handle.aborted = RC_CLIENT_ASYNC_ABORTED;
 
     /* if the game is still being loaded, let the load process clean it up */
@@ -3214,8 +3144,6 @@ void rc_client_unload_game(rc_client_t* client)
       last = &next->next;
     } while (1);
   }
-
-  rc_mutex_unlock(&client->state.mutex);
 
   if (game != NULL) {
     rc_client_raise_pending_events(client, game);
@@ -3343,7 +3271,6 @@ static rc_client_game_info_t* rc_client_check_pending_media(rc_client_t* client,
   rc_client_game_info_t* game;
   rc_client_pending_media_t* pending_media = NULL;
 
-  rc_mutex_lock(&client->state.mutex);
   if (client->state.load) {
     game = client->state.load->game;
     if (!game || game->public_.console_id == 0) {
@@ -3354,7 +3281,7 @@ static rc_client_game_info_t* rc_client_check_pending_media(rc_client_t* client,
 
       pending_media = (rc_client_pending_media_t*)malloc(sizeof(*pending_media));
       if (!pending_media) {
-        rc_mutex_unlock(&client->state.mutex);
+
         media->callback(RC_OUT_OF_MEMORY, rc_error_str(RC_OUT_OF_MEMORY), client, media->callback_userdata);
         return NULL;
       }
@@ -3370,7 +3297,7 @@ static rc_client_game_info_t* rc_client_check_pending_media(rc_client_t* client,
       if (media->data && media->data_size) {
         pending_media->data = (uint8_t*)malloc(media->data_size);
         if (!pending_media->data) {
-          rc_mutex_unlock(&client->state.mutex);
+
           media->callback(RC_OUT_OF_MEMORY, rc_error_str(RC_OUT_OF_MEMORY), client, media->callback_userdata);
           return NULL;
         }
@@ -3386,7 +3313,6 @@ static rc_client_game_info_t* rc_client_check_pending_media(rc_client_t* client,
   else {
     game = client->game;
   }
-  rc_mutex_unlock(&client->state.mutex);
 
   if (!game) {
     media->callback(RC_NO_GAME_LOADED, rc_error_str(RC_NO_GAME_LOADED), client, media->callback_userdata);
@@ -3441,14 +3367,13 @@ rc_client_async_handle_t* rc_client_begin_identify_and_change_media(rc_client_t*
 
   /* check to see if we've already hashed this file */
   path_djb2 = rc_djb2(file_path);
-  rc_mutex_lock(&client->state.mutex);
+
   for (media_hash = game->media_hash; media_hash; media_hash = media_hash->next) {
     if (media_hash->path_djb2 == path_djb2) {
       game_hash = media_hash->game_hash;
       break;
     }
   }
-  rc_mutex_unlock(&client->state.mutex);
 
   if (!game_hash) {
     char hash[33];
@@ -3472,10 +3397,8 @@ rc_client_async_handle_t* rc_client_begin_identify_and_change_media(rc_client_t*
     media_hash->game_hash = game_hash;
     media_hash->path_djb2 = path_djb2;
 
-    rc_mutex_lock(&client->state.mutex);
     media_hash->next = game->media_hash;
     game->media_hash = media_hash;
-    rc_mutex_unlock(&client->state.mutex);
 
     if (!result) {
 #ifdef RC_CLIENT_SUPPORTS_EXTERNAL
@@ -3623,8 +3546,6 @@ rc_client_subset_list_t* rc_client_create_subset_list(rc_client_t* client)
   if (!client->game)
     return (rc_client_subset_list_t*)calloc(1, list_size);
 
-  rc_mutex_lock(&client->state.mutex);
-
   subset = client->game->subsets;
   for (; subset; subset = subset->next) {
     if (subset->active)
@@ -3639,8 +3560,6 @@ rc_client_subset_list_t* rc_client_create_subset_list(rc_client_t* client)
     if (subset->active)
       *subset_ptr++ = &subset->public_;
   }
-
-  rc_mutex_unlock(&client->state.mutex);
 
   list->destroy_func = NULL;
   list->public_.num_subsets = (uint32_t)(subset_ptr - list->public_.subsets);
@@ -4308,8 +4227,6 @@ rc_client_achievement_list_t* rc_client_create_achievement_list(rc_client_t* cli
 
   memset(&bucket_counts, 0, sizeof(bucket_counts));
 
-  rc_mutex_lock(&client->state.mutex);
-
   subset = client->game->subsets;
   for (; subset; subset = subset->next) {
     if (!subset->active)
@@ -4447,8 +4364,6 @@ rc_client_achievement_list_t* rc_client_create_achievement_list(rc_client_t* cli
     }
   }
 
-  rc_mutex_unlock(&client->state.mutex);
-
   list->destroy_func = NULL;
   list->public_.num_buckets = (uint32_t)(bucket_ptr - list->public_.buckets);
   return &list->public_;
@@ -4479,8 +4394,6 @@ int rc_client_has_achievements(rc_client_t* client)
   if (!client->game)
     return 0;
 
-  rc_mutex_lock(&client->state.mutex);
-
   subset = client->game->subsets;
   result = 0;
   for (; subset; subset = subset->next)
@@ -4494,8 +4407,6 @@ int rc_client_has_achievements(rc_client_t* client)
     }
   }
 
-  rc_mutex_unlock(&client->state.mutex);
-
   return result;
 }
 
@@ -4508,9 +4419,9 @@ static const rc_client_achievement_t* rc_client_subset_get_achievement_info(
   for (; achievement < stop; ++achievement) {
     if (achievement->public_.id == id) {
       const time_t recent_unlock_time = time(NULL) - RC_CLIENT_RECENT_UNLOCK_DELAY_SECONDS;
-      rc_mutex_lock((rc_mutex_t*)(&client->state.mutex));
+
       rc_client_update_achievement_display_information(client, achievement, recent_unlock_time);
-      rc_mutex_unlock((rc_mutex_t*)(&client->state.mutex));
+
       return &achievement->public_;
     }
   }
@@ -4602,7 +4513,6 @@ const rc_client_achievement_t* rc_client_get_next_achievement_info(rc_client_t* 
   return NULL;
 }
 
-
 int rc_client_achievement_get_image_url(const rc_client_achievement_t* achievement, int state, char buffer[], size_t buffer_size)
 {
   const int image_type = (state == RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED) ?
@@ -4645,7 +4555,6 @@ typedef struct rc_client_award_achievement_callback_data_t
 
 static int rc_client_is_award_achievement_pending(const rc_client_t* client, uint32_t achievement_id)
 {
-  /* assume lock already held */
   rc_client_scheduled_callback_data_t* scheduled_callback = client->state.scheduled_callbacks;
   for (; scheduled_callback; scheduled_callback = scheduled_callback->next)
   {
@@ -4809,8 +4718,6 @@ static void rc_client_award_achievement(rc_client_t* client, rc_client_achieveme
 {
   rc_client_award_achievement_callback_data_t* callback_data;
 
-  rc_mutex_lock(&client->state.mutex);
-
   if (client->state.hardcore) {
     achievement->public_.unlock_time = achievement->unlock_time_hardcore = time(NULL);
     if (achievement->unlock_time_softcore == 0)
@@ -4829,8 +4736,6 @@ static void rc_client_award_achievement(rc_client_t* client, rc_client_achieveme
   achievement->public_.state = RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED;
   achievement->public_.unlocked |= (client->state.hardcore) ?
     RC_CLIENT_ACHIEVEMENT_UNLOCKED_BOTH : RC_CLIENT_ACHIEVEMENT_UNLOCKED_SOFTCORE;
-
-  rc_mutex_unlock(&client->state.mutex);
 
   if (achievement->public_.id >= RC_CLIENT_ACHIEVEMENT_WARNING_ID) {
     RC_CLIENT_LOG_INFO_FORMATTED(client, "Unlocked warning achievement %u: %s", achievement->public_.id, achievement->public_.title);
@@ -4866,7 +4771,7 @@ static void rc_client_award_achievement(rc_client_t* client, rc_client_achieveme
   callback_data->hardcore = client->state.hardcore;
   callback_data->unlock_time = client->callbacks.get_time_millisecs(client);
 
-  if (client->game) /* may be NULL if this gets called while unloading the game (from another thread - events are raised outside the lock) */
+  if (client->game) /* An event handler may unload the game. */
     callback_data->game_hash = client->game->public_.hash;
 
   RC_CLIENT_LOG_INFO_FORMATTED(client, "Awarding achievement %u: %s", achievement->public_.id, achievement->public_.title);
@@ -5030,8 +4935,6 @@ rc_client_leaderboard_list_t* rc_client_create_leaderboard_list(rc_client_t* cli
 
   memset(&bucket_counts, 0, sizeof(bucket_counts));
 
-  rc_mutex_lock(&client->state.mutex);
-
   subset = client->game->subsets;
   for (; subset; subset = subset->next) {
     if (!subset->active)
@@ -5158,8 +5061,6 @@ rc_client_leaderboard_list_t* rc_client_create_leaderboard_list(rc_client_t* cli
     }
   }
 
-  rc_mutex_unlock(&client->state.mutex);
-
   list->destroy_func = NULL;
   list->public_.num_buckets = (uint32_t)(bucket_ptr - list->public_.buckets);
   return &list->public_;
@@ -5191,8 +5092,6 @@ int rc_client_has_leaderboards(rc_client_t* client)
   if (!client->game)
     return 0;
 
-  rc_mutex_lock(&client->state.mutex);
-
   result = 0;
   for (subset = client->game->subsets; subset; subset = subset->next)
   {
@@ -5209,8 +5108,6 @@ int rc_client_has_leaderboards(rc_client_t* client)
     if (result)
       break;
   }
-
-  rc_mutex_unlock(&client->state.mutex);
 
   return result;
 }
@@ -5761,17 +5658,13 @@ static void rc_client_ping(rc_client_scheduled_callback_data_t* callback_data, r
 
     if (!client->callbacks.rich_presence_override ||
         !client->callbacks.rich_presence_override(client, buffer, sizeof(buffer))) {
-      rc_mutex_lock(&client->state.mutex);
 
       rc_runtime_get_richpresence(&client->game->runtime, buffer, sizeof(buffer),
           client->state.legacy_peek, client, NULL);
 
-      rc_mutex_unlock(&client->state.mutex);
     }
 
-    /* there's a miniscule chance the game will be changed out while we're waiting for the lock.
-     * if that happens, discard this ping. the new game will have scheduled its own ping.
-     * don't reschedule this one. */
+    /* A rich presence handler may replace the game. */
     if (!client->game || client->game->public_.id != api_params.game_id) {
       return;
     }
@@ -5820,12 +5713,8 @@ size_t rc_client_get_rich_presence_message(rc_client_t* client, char buffer[], s
   if (!client->game)
     return 0;
 
-  rc_mutex_lock(&client->state.mutex);
-
   result = rc_runtime_get_richpresence(&client->game->runtime, buffer, (unsigned)buffer_size,
       client->state.legacy_peek, client, NULL);
-
-  rc_mutex_unlock(&client->state.mutex);
 
   if (result == 0) {
     result = snprintf(buffer, buffer_size, "Playing %s", client->game->public_.title);
@@ -6112,7 +6001,7 @@ static void rc_client_do_frame_process_achievements(rc_client_t* client, rc_clie
 
 static void rc_client_hide_progress_tracker(rc_client_t* client, rc_client_game_info_t* game)
 {
-  /* ASSERT: this should only be called if the mutex is held */
+  /* Owner-thread client state. */
 
   if (game->progress_tracker.hide_callback &&
       game->progress_tracker.hide_callback->when &&
@@ -6131,12 +6020,10 @@ static void rc_client_progress_tracker_timer_elapsed(rc_client_scheduled_callbac
   (void)callback_data;
   (void)now;
 
-  rc_mutex_lock(&client->state.mutex);
   if (client->game->progress_tracker.action == RC_CLIENT_PROGRESS_TRACKER_ACTION_NONE) {
     client->game->progress_tracker.hide_callback->when = 0;
     client_event.type = RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_HIDE;
   }
-  rc_mutex_unlock(&client->state.mutex);
 
   if (client_event.type)
     client->callbacks.event_handler(&client_event, client);
@@ -6144,7 +6031,7 @@ static void rc_client_progress_tracker_timer_elapsed(rc_client_scheduled_callbac
 
 static void rc_client_do_frame_update_progress_tracker(rc_client_t* client, rc_client_game_info_t* game)
 {
-  /* ASSERT: this should only be called if the mutex is held */
+  /* Owner-thread client state. */
 
   if (!game->progress_tracker.hide_callback) {
     game->progress_tracker.hide_callback = (rc_client_scheduled_callback_data_t*)
@@ -6430,9 +6317,9 @@ static void rc_client_raise_pending_events(rc_client_t* client, rc_client_game_i
 
   /* if any achievements were unlocked, resync the active achievements list */
   if (game->pending_events & RC_CLIENT_GAME_PENDING_EVENT_UPDATE_ACTIVE_ACHIEVEMENTS) {
-    rc_mutex_lock(&client->state.mutex);
+
     rc_client_update_active_achievements(game);
-    rc_mutex_unlock(&client->state.mutex);
+
   }
 
   game->pending_events = RC_CLIENT_GAME_PENDING_EVENT_NONE;
@@ -6453,8 +6340,6 @@ void rc_client_do_frame(rc_client_t* client)
   if (client->game && !client->game->waiting_for_reset) {
     rc_runtime_richpresence_t* richpresence;
     rc_client_subset_info_t* subset;
-
-    rc_mutex_lock(&client->state.mutex);
 
     rc_client_reset_pending_events(client);
 
@@ -6478,8 +6363,6 @@ void rc_client_do_frame(rc_client_t* client)
     richpresence = client->game->runtime.richpresence;
     if (richpresence && richpresence->richpresence)
       rc_update_richpresence_internal(richpresence->richpresence, client->state.legacy_peek, client);
-
-    rc_mutex_unlock(&client->state.mutex);
 
     rc_client_raise_pending_events(client, client->game);
 
@@ -6526,7 +6409,6 @@ void rc_client_idle(rc_client_t* client)
     const rc_clock_t now = client->callbacks.get_time_millisecs(client);
 
     do {
-      rc_mutex_lock(&client->state.mutex);
       scheduled_callback = client->state.scheduled_callbacks;
       if (scheduled_callback) {
         if (scheduled_callback->when > now) {
@@ -6539,7 +6421,6 @@ void rc_client_idle(rc_client_t* client)
           scheduled_callback->next = NULL;
         }
       }
-      rc_mutex_unlock(&client->state.mutex);
 
       if (!scheduled_callback)
         break;
@@ -6557,8 +6438,6 @@ void rc_client_schedule_callback(rc_client_t* client, rc_client_scheduled_callba
   rc_client_scheduled_callback_data_t** last;
   rc_client_scheduled_callback_data_t* next;
 
-  rc_mutex_lock(&client->state.mutex);
-
   last = &client->state.scheduled_callbacks;
   do {
     next = *last;
@@ -6571,7 +6450,6 @@ void rc_client_schedule_callback(rc_client_t* client, rc_client_scheduled_callba
     last = &next->next;
   } while (1);
 
-  rc_mutex_unlock(&client->state.mutex);
 }
 
 static void rc_client_reschedule_callback(rc_client_t* client,
@@ -6580,7 +6458,7 @@ static void rc_client_reschedule_callback(rc_client_t* client,
   rc_client_scheduled_callback_data_t** last;
   rc_client_scheduled_callback_data_t* next;
 
-  /* ASSERT: this should only be called if the mutex is held */
+  /* Owner-thread client state. */
 
   callback->when = when;
 
@@ -6671,15 +6549,11 @@ void rc_client_reset(rc_client_t* client)
 
   RC_CLIENT_LOG_INFO(client, "Resetting runtime");
 
-  rc_mutex_lock(&client->state.mutex);
-
   client->game->waiting_for_reset = 0;
   rc_client_reset_pending_events(client);
 
   rc_client_hide_progress_tracker(client, client->game);
   rc_client_reset_all(client);
-
-  rc_mutex_unlock(&client->state.mutex);
 
   rc_client_raise_pending_events(client, client->game);
 }
@@ -6745,9 +6619,7 @@ size_t rc_client_progress_size(rc_client_t* client)
   if (!rc_client_is_game_loaded(client))
     return 0;
 
-  rc_mutex_lock(&client->state.mutex);
   result = rc_runtime_progress_size(&client->game->runtime, NULL);
-  rc_mutex_unlock(&client->state.mutex);
 
   return result;
 }
@@ -6775,9 +6647,7 @@ int rc_client_serialize_progress_sized(rc_client_t* client, uint8_t* buffer, siz
   if (!buffer)
     return RC_INVALID_STATE;
 
-  rc_mutex_lock(&client->state.mutex);
   result = rc_runtime_serialize_progress_sized(buffer, (uint32_t)buffer_size, &client->game->runtime, NULL);
-  rc_mutex_unlock(&client->state.mutex);
 
   return result;
 }
@@ -6896,8 +6766,6 @@ int rc_client_deserialize_progress_sized(rc_client_t* client, const uint8_t* ser
   if (!rc_client_is_game_loaded(client))
     return RC_NO_GAME_LOADED;
 
-  rc_mutex_lock(&client->state.mutex);
-
   rc_client_reset_pending_events(client);
 
   for (subset = client->game->subsets; subset; subset = subset->next)
@@ -6915,8 +6783,6 @@ int rc_client_deserialize_progress_sized(rc_client_t* client, const uint8_t* ser
 
   for (subset = client->game->subsets; subset; subset = subset->next)
     rc_client_subset_after_deserialize_progress(client->game, subset);
-
-  rc_mutex_unlock(&client->state.mutex);
 
   rc_client_raise_pending_events(client, client->game);
 
@@ -6969,8 +6835,6 @@ void rc_client_set_hardcore_enabled(rc_client_t* client, int enabled)
   }
 #endif
 
-  rc_mutex_lock(&client->state.mutex);
-
   enabled = enabled ? 1 : 0;
   if (client->state.hardcore != enabled) {
     if (enabled)
@@ -6981,9 +6845,6 @@ void rc_client_set_hardcore_enabled(rc_client_t* client, int enabled)
     changed = 1;
   }
 
-  rc_mutex_unlock(&client->state.mutex);
-
-  /* events must be raised outside of lock */
   if (changed && client->game) {
     if (enabled) {
       /* if enabling hardcore, notify client that a reset is requested */

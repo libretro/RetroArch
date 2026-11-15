@@ -3093,6 +3093,11 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 timeout 60 ./badge_cache_test
           echo "[pass] badge_cache_test (ASan)"
           make clean
+          make -j$(nproc) SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R timeout 60 ./badge_cache_test
+          make clean
+          make -j$(nproc) check EXTRA_CFLAGS=-DRETRO_ATOMIC_FORCE_VOLATILE
+          make clean
 
       - name: Build and run progress_bounds_test (ASan + UBSan)
         shell: bash
@@ -3108,9 +3113,14 @@ jobs:
           # wrap would loop forever, which the timeout ends.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 timeout 60 ./progress_bounds_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 ./client_owner_queue_test
+          make clean
+          make -j$(nproc) SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R timeout 60 ./client_owner_queue_test
           make clean
           make CC=x86_64-w64-mingw32-gcc TARGET=progress_bounds_test.exe
           test -f progress_bounds_test.exe
+          test -f client_owner_queue_test.exe
           make clean TARGET=progress_bounds_test.exe
           echo "[pass] progress_bounds_test (ASan + UBSan, and a mingw-w64 build)"
 

@@ -1777,10 +1777,12 @@ void rcheevos_download_next_badge(retro_task_t* task)
    const rc_client_achievement_t* first_locked_achievement =
       rc_client_get_next_achievement_info(rcheevos_locals.client,
       (const rc_client_achievement_t*)task->user_data, bucket);
+   unsigned examined = 0;
 
    while (first_locked_achievement)
    {
       bool result;
+      task->user_data = (void*)first_locked_achievement;
 
       if (pass == 1)
       {
@@ -1795,6 +1797,13 @@ void rcheevos_download_next_badge(retro_task_t* task)
 
       if (result)
          break;
+
+      /* Resume cached-file traversal on a later owner-thread tick. */
+      if (++examined == 16)
+      {
+         task->when = cpu_features_get_time_usec() + 1000;
+         return;
+      }
 
       first_locked_achievement =
          rc_client_get_next_achievement_info(rcheevos_locals.client, first_locked_achievement, bucket);
@@ -1853,6 +1862,8 @@ static void rcheevos_finalize_game_load(rc_client_t* client)
       task = task_init();
       if (task)
       {
+         /* The iterator reads owner-thread client state. */
+         task->flags |= RETRO_TASK_FLG_MAIN_THREAD;
          task->handler = rcheevos_download_next_badge;
          task->user_data = (void*)first_locked_achievement;
          task->when = cpu_features_get_time_usec() + 5*60*1000000; /* five minutes */
