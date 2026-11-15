@@ -45,6 +45,7 @@ typedef struct poke video_poke_interface_t;
 typedef struct {
    const video_poke_interface_t *poke;
    void *driver_data;
+   retro_atomic_int_t aspect_ratio_pending;
    struct {
       retro_triple_buffer_t frames;
       struct video_thread_menu_texture slot[3];
@@ -85,6 +86,7 @@ typedef struct {
 typedef struct { unsigned flags, framebuf_dims; } gfx_display_t;
 typedef struct { struct { unsigned menu_rgui_internal_upscale_level; } uints; } settings_t;
 struct poke {
+   void (*set_aspect_ratio)(void*, unsigned);
    void (*set_texture_frame)(void*, const void*, bool, unsigned, float);
    void *(*get_menu_framebuffer)(void*, bool, unsigned, size_t*);
    void *(*menu_mem_alloc)(void*, size_t, uintptr_t*);
@@ -111,6 +113,43 @@ static void video_driver_get_viewport_info(struct video_viewport *vp)
 FRONTEND
 RENDER
 WORKER
+
+static unsigned aspect_calls, aspect_seen;
+static void mock_set_aspect(void *data, unsigned aspect)
+{
+   assert(data);
+   aspect_calls++;
+   aspect_seen = aspect;
+}
+static void check_aspect(thread_video_t *thr)
+{
+   struct poke poke;
+   memset(&poke, 0, sizeof(poke));
+   poke.set_aspect_ratio = mock_set_aspect;
+   thr->poke = &poke;
+   thr->driver_data = thr;
+   thread_update_driver_state(thr);
+   assert(!aspect_calls);
+   retro_atomic_store_release_int(&thr->aspect_ratio_pending, 4);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 1 && aspect_seen == 3);
+   assert(!retro_atomic_load_acquire_int(&thr->aspect_ratio_pending));
+   retro_atomic_store_release_int(&thr->aspect_ratio_pending, 1);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 2 && aspect_seen == 0);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 2);
+   poke.set_aspect_ratio = NULL;
+   retro_atomic_store_release_int(&thr->aspect_ratio_pending, 2);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 2 && !retro_atomic_load_acquire_int(&thr->aspect_ratio_pending));
+   poke.set_aspect_ratio = mock_set_aspect;
+   thr->driver_data = NULL;
+   retro_atomic_store_release_int(&thr->aspect_ratio_pending, 2);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 2 && !retro_atomic_load_acquire_int(&thr->aspect_ratio_pending));
+   thr->poke = NULL;
+}
 
 static uint16_t direct_pixels[256];
 static unsigned direct_submits;
@@ -415,6 +454,7 @@ int main(void)
    memset(&thr, 0, sizeof(thr));
    retro_triple_buffer_init(&thr.texture.frames, &thr.texture.slot[0],
          &thr.texture.slot[1], &thr.texture.slot[2]);
+   check_aspect(&thr);
    assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
    video_thread_thr_capture = &thr;
    assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
@@ -483,14 +523,15 @@ int main(void)
 }
 '''
 cc = shlex.split(os.environ.get("CC", "cc"))
+windows = os.name == "nt" or any("mingw" in part for part in cc)
 flags = shlex.split(os.environ.get("CFLAGS", ""))
 with tempfile.TemporaryDirectory(prefix="retroarch-menu-framebuffer-") as directory:
     directory = Path(directory)
     src = directory / "menu.c"
-    exe = directory / ("menu.exe" if os.name == "nt" else "menu")
+    exe = directory / ("menu.exe" if windows else "menu")
     src.write_text(fixture.replace("STRUCTURE", structure).replace("FUNCTIONS", functions).replace("FRONTEND", frontend).replace("RENDER", render).replace("WORKER", worker), encoding="utf-8")
     subprocess.run(cc + flags + ["-std=gnu89", "-O1", "-Wall", "-Wextra", "-Werror",
                    "-Werror=declaration-after-statement", "-Wno-unused-parameter", "-DHAVE_THREADS", "-DHAVE_MENU", "-I" + str(root),
                    "-I" + str(root / "libretro-common/include"), str(src), str(root / "libretro-common/rthreads/rthreads.c"),
-                   "-lwinmm" if os.name == "nt" else "-lpthread", "-o", str(exe)], check=True)
+                   "-lwinmm" if windows else "-lpthread", "-o", str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)
