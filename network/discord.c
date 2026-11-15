@@ -1493,8 +1493,6 @@ void Discord_Initialize(const char *application_id,
 {
    (void)auto_register;
    (void)optional_steam_id;
-   if (!discord_rpc_inst)
-      return;
 
    /* Seed the cheap backoff jitter once. */
    srand((unsigned)time(NULL));
