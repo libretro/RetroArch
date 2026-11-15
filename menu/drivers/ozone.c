@@ -52,6 +52,8 @@
 
 #include "../../config.def.h"
 #include "../../configuration.h"
+#include "../../paths.h"
+#include <file/config_file.h>
 #include "../../content.h"
 #include "../../core_info.h"
 #include "../../defaults.h"
@@ -1763,6 +1765,126 @@ static ozone_theme_t ozone_theme_selenium = {
    NULL,                                            /* name */
 };
 
+/* ============================================================
+ * Omarchy: a user-definable colour theme.
+ *
+ * Unlike the built-in themes, its colours are not fixed at compile
+ * time: they are (re)loaded on every theme-set from "ozone_omarchy.cfg"
+ * next to retroarch.cfg, so an external program (e.g. the Omarchy
+ * desktop shell) can keep the menu in sync with the active desktop
+ * palette. Keys are 0xRRGGBB; any key left out keeps the dark fallback.
+ * ============================================================ */
+static float ozone_background_omarchy[16]              = COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00f);
+static float ozone_sidebar_background_omarchy[16]      = COLOR_HEX_TO_FLOAT(0x333333, 1.00f);
+static float ozone_sidebar_gradient_top_omarchy[16]    = COLOR_HEX_TO_FLOAT(0x333333, 1.00f);
+static float ozone_sidebar_gradient_bottom_omarchy[16] = COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00f);
+static float ozone_border_0_omarchy[16]                = COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00f);
+static float ozone_border_1_omarchy[16]                = COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00f);
+
+static ozone_theme_t ozone_theme_omarchy = {
+   COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00f),                  /* background */
+   ozone_background_libretro_running_dark,               /* background_libretro_running */
+
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00f),                  /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00f),                  /* text */
+   COLOR_HEX_TO_FLOAT(0x212227, 1.00f),                  /* selection */
+   COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00f),                  /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x51514F, 1.00f),                  /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00f),                  /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0x00D9AE, 1.00f),                  /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x464646, 1.00f),                  /* message_background */
+
+   0xFFFFFFFF,                                           /* text_rgba */
+   0xFFFFFFFF,                                           /* text_sidebar_rgba */
+   0x00FFC5FF,                                           /* text_selected_rgba */
+   0x9F9FA1FF,                                           /* text_sublabel_rgba */
+
+   0xFFFFFF,                                             /* screensaver_tint */
+
+   ozone_sidebar_background_omarchy,                     /* sidebar_background */
+   ozone_sidebar_gradient_top_omarchy,                   /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_omarchy,                /* sidebar_bottom_gradient */
+
+   ozone_border_0_omarchy,                               /* cursor_border_0 */
+   ozone_border_1_omarchy,                               /* cursor_border_1 */
+
+   {0},                                                  /* textures */
+
+   "omarchy"                                             /* name */
+};
+
+static void ozone_omarchy_hex16(float *dst, unsigned hex)
+{
+   unsigned i;
+   float r = HEX_R(hex);
+   float g = HEX_G(hex);
+   float b = HEX_B(hex);
+   for (i = 0; i < 16; i += 4)
+   {
+      dst[i]     = r;
+      dst[i + 1] = g;
+      dst[i + 2] = b;
+      dst[i + 3] = 1.0f;
+   }
+}
+
+static void ozone_load_omarchy_theme(void)
+{
+   char path[PATH_MAX_LENGTH];
+   config_file_t *conf = NULL;
+   const char *cfg     = path_get(RARCH_PATH_CONFIG);
+   unsigned v          = 0;
+
+   if (!cfg || !*cfg)
+      return;
+
+   fill_pathname_basedir(path, cfg, sizeof(path));
+   strlcat(path, "ozone_omarchy.cfg", sizeof(path));
+
+   if (!path_is_valid(path))
+      return;
+   if (!(conf = config_file_new_from_path_to_string(path)))
+      return;
+
+   if (config_get_hex(conf, "ozone_background", &v))
+   {
+      ozone_omarchy_hex16(ozone_theme_omarchy.background, v);
+      ozone_theme_omarchy.screensaver_tint = v;
+   }
+   if (config_get_hex(conf, "ozone_sidebar", &v))
+   {
+      ozone_omarchy_hex16(ozone_sidebar_background_omarchy,      v);
+      ozone_omarchy_hex16(ozone_sidebar_gradient_top_omarchy,    v);
+      ozone_omarchy_hex16(ozone_sidebar_gradient_bottom_omarchy, v);
+   }
+   if (config_get_hex(conf, "ozone_accent", &v))
+   {
+      ozone_omarchy_hex16(ozone_theme_omarchy.selection_border, v);
+      ozone_omarchy_hex16(ozone_theme_omarchy.text_selected,    v);
+      ozone_omarchy_hex16(ozone_border_0_omarchy,               v);
+      ozone_omarchy_hex16(ozone_border_1_omarchy,               v);
+      ozone_theme_omarchy.text_selected_rgba = (v << 8) | 0xFF;
+   }
+   if (config_get_hex(conf, "ozone_text", &v))
+   {
+      ozone_omarchy_hex16(ozone_theme_omarchy.text,                    v);
+      ozone_omarchy_hex16(ozone_theme_omarchy.entries_icon,           v);
+      ozone_omarchy_hex16(ozone_theme_omarchy.header_footer_separator, v);
+      ozone_theme_omarchy.text_rgba         = (v << 8) | 0xFF;
+      ozone_theme_omarchy.text_sidebar_rgba = (v << 8) | 0xFF;
+   }
+   if (config_get_hex(conf, "ozone_text_sublabel", &v))
+      ozone_theme_omarchy.text_sublabel_rgba = (v << 8) | 0xFF;
+   if (config_get_hex(conf, "ozone_selection", &v))
+      ozone_omarchy_hex16(ozone_theme_omarchy.selection, v);
+   if (config_get_hex(conf, "ozone_entries_border", &v))
+      ozone_omarchy_hex16(ozone_theme_omarchy.entries_border, v);
+   if (config_get_hex(conf, "ozone_message_background", &v))
+      ozone_omarchy_hex16(ozone_theme_omarchy.message_background, v);
+
+   config_file_free(conf);
+}
+
 static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_light,
    &ozone_theme_dark,
@@ -1779,6 +1901,7 @@ static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_purple_rain,
    &ozone_theme_selenium,
    &ozone_theme_evergarden,
+   &ozone_theme_omarchy,
 };
 
 /* Forward declarations */
@@ -1881,6 +2004,9 @@ static void ozone_set_color_theme(ozone_handle_t *ozone,
 
    if (!color_theme)
       color_theme = DEFAULT_OZONE_COLOR_THEME;
+
+   if (string_is_equal(color_theme, "omarchy"))
+      ozone_load_omarchy_theme();
 
    for (i = 0; i < ARRAY_SIZE(ozone_color_themes); i++)
       if (string_is_equal(color_theme, ozone_color_themes[i].ident))
