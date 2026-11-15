@@ -136,6 +136,7 @@ static int rc_api_process_fetch_game_data_achievements(rc_api_response_t* respon
   memset(&iterator, 0, sizeof(iterator));
   iterator.json = array_field->value_start;
   iterator.end = array_field->value_end;
+  iterator.validated = array_field->validated;
 
   while (rc_json_get_array_entry_object(achievement_fields, sizeof(achievement_fields) / sizeof(achievement_fields[0]), &iterator)) {
     if (!rc_json_get_required_unum(&achievement->id, response, &achievement_fields[0], "ID"))
@@ -240,6 +241,7 @@ static int rc_api_process_fetch_game_data_leaderboards(rc_api_response_t* respon
   memset(&iterator, 0, sizeof(iterator));
   iterator.json = array_field->value_start;
   iterator.end = array_field->value_end;
+  iterator.validated = array_field->validated;
 
   while (rc_json_get_array_entry_object(leaderboard_fields, sizeof(leaderboard_fields) / sizeof(leaderboard_fields[0]), &iterator)) {
     if (!rc_json_get_required_unum(&leaderboard->id, response, &leaderboard_fields[0], "ID"))
@@ -422,6 +424,7 @@ static int rc_api_process_fetch_game_sets_achievement_sets(rc_api_fetch_game_set
   memset(&iterator, 0, sizeof(iterator));
   iterator.json = subset_array_field->value_start;
   iterator.end = subset_array_field->value_end;
+  iterator.validated = subset_array_field->validated;
 
   while (rc_json_get_array_entry_object(subset_fields, sizeof(subset_fields) / sizeof(subset_fields[0]), &iterator)) {
     if (!rc_json_get_required_unum(&subset->id, &response->response, &subset_fields[0], "AchievementSetId"))
@@ -874,6 +877,7 @@ int rc_api_process_submit_lboard_entry_server_response(rc_api_submit_lboard_entr
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array_field.value_start;
     iterator.end = array_field.value_end;
+    iterator.validated = array_field.validated;
 
     entry = response->top_entries;
     while (rc_json_get_array_entry_object(entry_fields, sizeof(entry_fields) / sizeof(entry_fields[0]), &iterator)) {

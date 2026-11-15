@@ -41,6 +41,19 @@ int api_json_test(void)
    CHECK(response.succeeded && !response.error_message);
    CHECK(fields[3].value_start >= document && fields[3].value_end < document + sizeof(document));
    CHECK(fields[4].array_size == 2 && fields[5].array_size == 2);
+   CHECK(fields[3].validated && fields[4].validated && fields[5].validated);
+   CHECK(!fields[6].validated);
+   {
+      rc_json_field_t nested[] = {RC_JSON_NEW_FIELD("second"), RC_JSON_NEW_FIELD("first")};
+      rc_json_field_t raw = RC_JSON_NEW_FIELD("Raw");
+      static const char invalid[] = "{\"first\":+1}";
+      CHECK(rc_json_get_required_object(nested, 2, &response, &fields[5], "Nested"));
+      CHECK(nested[0].validated && nested[0].array_size == 0 && nested[1].validated);
+      raw.value_start = invalid;
+      raw.value_end = invalid + sizeof(invalid) - 1;
+      CHECK(!rc_json_get_required_object(nested, 2, &response, &raw, "Raw"));
+      CHECK(!nested[0].validated && !nested[1].validated);
+   }
    CHECK(rc_json_get_required_string(&name, &response, &fields[3], "Name"));
    CHECK(name && !strcmp(name, "A\b\f\n\r\t/\\\"\xc3\xa9\xf0\x9f\x98\x80"));
    CHECK(rc_json_field_string_matches(&fields[3], name));

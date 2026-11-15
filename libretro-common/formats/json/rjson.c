@@ -432,6 +432,152 @@ bool rjson_read_span(const void *data, size_t length, rjson_span_t *value,
    return ok;
 }
 
+static const char *_rjson_span_space(const char *p, const char *end)
+{
+   while (p != end && (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r'))
+      p++;
+   return p;
+}
+
+static const char *_rjson_span_string(const char *p, const char *end)
+{
+   const char *begin = p + 1;
+   p = begin;
+   while (p != end)
+   {
+      const char *escape;
+      p = (const char *)memchr(p, '"', (size_t)(end - p));
+      if (!p)
+         return NULL;
+      escape = p;
+      while (escape != begin && escape[-1] == '\\')
+         escape--;
+      if (!((size_t)(p - escape) & 1))
+         return p + 1;
+      p++;
+   }
+   return NULL;
+}
+
+/* Only delimiters need inspecting after the grammar has accepted the input. */
+static const char *_rjson_span_value(const char *p, const char *end,
+      rjson_span_t *value)
+{
+   const char *start = p;
+   size_t depth = 1;
+   value->data  = p;
+   value->count = 0;
+   switch (*p)
+   {
+      case '"':
+         value->type = RJSON_STRING;
+         p = _rjson_span_string(p, end);
+         if (!p)
+            return NULL;
+         break;
+      case '{':
+      case '[':
+         value->type = *p == '{' ? RJSON_OBJECT : RJSON_ARRAY;
+         p = _rjson_span_space(p + 1, end);
+         if (p == end)
+            return NULL;
+         if (*p != '}' && *p != ']')
+            value->count = 1;
+         for (; p != end; p++)
+         {
+            switch (*p)
+            {
+               case '"':
+                  p = _rjson_span_string(p, end);
+                  if (!p)
+                     return NULL;
+                  p--;
+                  break;
+               case '{':
+               case '[':
+                  depth++;
+                  break;
+               case '}':
+               case ']':
+                  if (!--depth)
+                  {
+                     p++;
+                     goto finished;
+                  }
+                  break;
+               case ',':
+                  if (depth == 1)
+                     value->count++;
+                  break;
+            }
+         }
+         return NULL;
+      default:
+         value->type = *p == 't' ? RJSON_TRUE : *p == 'f' ? RJSON_FALSE :
+               *p == 'n' ? RJSON_NULL : RJSON_NUMBER;
+         while (p != end && (unsigned char)*p > ' ' &&
+               *p != ',' && *p != '}' && *p != ']')
+            p++;
+         if (p == start)
+            return NULL;
+         break;
+   }
+finished:
+   value->length = (size_t)(p - start);
+   return p;
+}
+
+bool rjson_read_span_validated(const void *data, size_t length,
+      rjson_span_t *value, rjson_span_member_t member, void *context)
+{
+   const char *p, *end;
+   if (!data || !length || !value)
+      return false;
+   end = (const char *)data + length;
+   p   = _rjson_span_space((const char *)data, end);
+   if (p == end)
+      return false;
+   if (*p != '{' || !member)
+      return _rjson_span_value(p, end, value) != NULL;
+
+   value->data  = p;
+   value->count = 0;
+   value->type  = RJSON_OBJECT;
+   p = _rjson_span_space(p + 1, end);
+   while (p != end && *p != '}')
+   {
+      rjson_span_t name, child;
+      if (*p != '"')
+         return false;
+      name.data  = p;
+      name.count = 0;
+      name.type  = RJSON_STRING;
+      p = _rjson_span_string(p, end);
+      if (!p)
+         return false;
+      name.length = (size_t)(p - name.data);
+      p = _rjson_span_space(p, end);
+      if (p == end || *p++ != ':')
+         return false;
+      p = _rjson_span_space(p, end);
+      if (p == end)
+         return false;
+      p = _rjson_span_value(p, end, &child);
+      if (!p || !member(context, &name, &child))
+         return false;
+      value->count++;
+      p = _rjson_span_space(p, end);
+      if (p != end && *p == ',')
+         p = _rjson_span_space(p + 1, end);
+      else
+         break;
+   }
+   if (p == end || *p != '}')
+      return false;
+   value->length = (size_t)(p + 1 - value->data);
+   return true;
+}
+
 bool rjson_decode_string(const char *data, size_t length,
       char *output, size_t capacity, size_t *written)
 {
@@ -442,7 +588,8 @@ bool rjson_decode_string(const char *data, size_t length,
    _rjson_setup_borrowed(&json, data, length);
    json.string = output;
    json.string_cap = capacity;
-   ok = _rjson_next_borrowed(&json) == RJSON_STRING && json.input_p == json.input_end;
+   json.input_p++; /* The opening quote was checked above. */
+   ok = _rjson_read_string_borrowed(&json) == RJSON_STRING && json.input_p == json.input_end;
    if (ok)
    {
       if (json.string_pass_through)

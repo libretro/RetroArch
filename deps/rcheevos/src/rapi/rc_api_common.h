@@ -26,7 +26,7 @@ const char* rc_url_builder_finalize(rc_api_url_builder_t* builder);
 
 extern rc_api_host_t g_host;
 
-#define RC_JSON_NEW_FIELD(n) {NULL,NULL,n,sizeof(n)-1,0}
+#define RC_JSON_NEW_FIELD(n) {NULL,NULL,n,sizeof(n)-1,0,0}
 
 typedef struct rc_json_field_t {
   const char* value_start;
@@ -34,12 +34,14 @@ typedef struct rc_json_field_t {
   const char* name;
   size_t name_len;
   uint32_t array_size;
+  uint8_t validated;
 }
 rc_json_field_t;
 
 typedef struct rc_json_iterator_t {
   const char* json;
   const char* end;
+  int validated;
 }
 rc_json_iterator_t;
 

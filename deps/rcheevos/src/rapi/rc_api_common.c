@@ -58,17 +58,20 @@ static int rc_json_find_substring(rc_json_iterator_t* iterator, const char* subs
 typedef struct rc_json_fields_t {
   rc_json_field_t* fields;
   size_t count;
+  size_t next;
 } rc_json_fields_t;
 
 static int rc_json_parse_field(rc_json_iterator_t* iterator, rc_json_field_t* field) {
   rjson_span_t value;
   if (iterator->json >= iterator->end ||
-      !rjson_read_span(iterator->json, iterator->end - iterator->json, &value, NULL, NULL) ||
+      !(iterator->validated ? rjson_read_span_validated : rjson_read_span)(
+        iterator->json, iterator->end - iterator->json, &value, NULL, NULL) ||
       value.count > UINT32_MAX)
     return RC_INVALID_JSON;
   field->value_start = value.data;
   field->value_end = value.data + value.length;
   field->array_size = (uint32_t)value.count;
+  field->validated = 1;
   iterator->json = field->value_end;
   return RC_OK;
 }
@@ -79,7 +82,7 @@ static bool rc_json_collect_field(void* context, const rjson_span_t* name, const
   int escaped = memchr(name->data + 1, '\\', name->length - 2) != NULL;
   if (value->count > UINT32_MAX)
     return false;
-  for (i = 0; i < selected->count; ++i) {
+  for (i = selected->next; i < selected->count; ++i) {
     rc_json_field_t* field = &selected->fields[i];
     if (!field->value_start && (escaped ?
         rjson_string_equal(name->data, name->length, field->name) :
@@ -88,6 +91,9 @@ static bool rc_json_collect_field(void* context, const rjson_span_t* name, const
       field->value_start = value->data;
       field->value_end = value->data + value->length;
       field->array_size = (uint32_t)value->count;
+      field->validated = 1;
+      while (selected->next < selected->count && selected->fields[selected->next].value_start)
+        ++selected->next;
       break;
     }
   }
@@ -97,7 +103,8 @@ static bool rc_json_collect_field(void* context, const rjson_span_t* name, const
 static int rc_json_get_next_field(rc_json_iterator_t* iterator, rc_json_field_t* field) {
   rjson_span_t name;
   if (iterator->json >= iterator->end ||
-      !rjson_read_span(iterator->json, iterator->end - iterator->json, &name, NULL, NULL) ||
+      !(iterator->validated ? rjson_read_span_validated : rjson_read_span)(
+        iterator->json, iterator->end - iterator->json, &name, NULL, NULL) ||
       name.type != RJSON_STRING)
     return RC_INVALID_JSON;
   field->name = name.data + 1;
@@ -117,14 +124,18 @@ static int rc_json_parse_object(rc_json_iterator_t* iterator, rc_json_field_t* f
   rc_json_fields_t selected;
   rjson_span_t object;
   size_t i;
-  for (i = 0; i < field_count; ++i)
+  for (i = 0; i < field_count; ++i) {
     fields[i].value_start = fields[i].value_end = NULL;
+    fields[i].validated = 0;
+  }
   if (fields_seen)
     *fields_seen = 0;
   selected.fields = fields;
   selected.count = field_count;
+  selected.next = 0;
   if (iterator->json >= iterator->end ||
-      !rjson_read_span(iterator->json, iterator->end - iterator->json, &object,
+      !(iterator->validated ? rjson_read_span_validated : rjson_read_span)(
+        iterator->json, iterator->end - iterator->json, &object,
         field_count ? rc_json_collect_field : NULL, &selected) ||
       object.type != RJSON_OBJECT || object.count > UINT32_MAX)
     return RC_INVALID_JSON;
@@ -329,6 +340,7 @@ int rc_json_get_required_object(rc_json_field_t* fields, size_t field_count, rc_
   memset(&iterator, 0, sizeof(iterator));
   iterator.json = field->value_start;
   iterator.end = field->value_end;
+  iterator.validated = field->validated;
   return (rc_json_parse_object(&iterator, fields, field_count, &field->array_size) == RC_OK);
 }
 
@@ -364,6 +376,7 @@ static int rc_json_get_unum_array(uint32_t** entries, uint32_t* num_entries, rc_
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array->value_start;
     iterator.end = array->value_end;
+    iterator.validated = array->validated;
 
     entry = *entries;
     while (rc_json_get_array_entry_value(&value, &iterator)) {
@@ -415,6 +428,7 @@ static int rc_json_get_string_array(const char*** entries, uint32_t* num_entries
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array->value_start;
     iterator.end = array->value_end;
+    iterator.validated = array->validated;
 
     entry = *entries;
     while (rc_json_get_array_entry_value(&value, &iterator)) {

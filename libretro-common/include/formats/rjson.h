@@ -82,6 +82,14 @@ typedef bool (*rjson_span_member_t)(void *context,
 bool rjson_read_span(const void *data, size_t length, rjson_span_t *value,
       rjson_span_member_t member, void *context);
 
+/* Navigate values inside immutable input already accepted by rjson_read_span.
+ * No syntax or encoding validation is repeated. The input must start at a
+ * complete value (optionally preceded by whitespace) within that validated
+ * document; the entire supplied range must be inside a validated span.
+ * Span lifetimes and visitor behavior match rjson_read_span. */
+bool rjson_read_span_validated(const void *data, size_t length,
+      rjson_span_t *value, rjson_span_member_t member, void *context);
+
 /* Decode a quoted span directly into caller storage. Capacity must be at least
  * length - 1 (the maximum decoded size plus NUL). written excludes the NUL. */
 bool rjson_decode_string(const char *data, size_t length,
