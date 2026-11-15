@@ -107,8 +107,6 @@ size_t rpng_apng_stream_consumed(const rpng_apng_stream_t *s);
 void rpng_apng_stream_next_span(const rpng_apng_stream_t *s,
       size_t *lo, size_t *hi);
 
-rpng_t *rpng_alloc(void);
-
 void rpng_free(rpng_t *rpng);
 
 bool rpng_iterate_image(rpng_t *rpng);
