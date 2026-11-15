@@ -2086,6 +2086,25 @@ static bool runloop_uses_core_aspect_hint(const settings_t *settings)
             && settings->bools.video_aspect_ratio_auto);
 }
 
+/* The caller handles base-size changes separately. */
+static bool runloop_aspect_hint_changes_viewport(const settings_t *settings,
+      const struct retro_game_geometry *geom,
+      const struct retro_game_geometry *next)
+{
+   bool old_provided = geom->aspect_ratio > 0.0f;
+   bool new_provided = next->aspect_ratio > 0.0f;
+   float provided;
+
+   if (!runloop_uses_core_aspect_hint(settings))
+      return false;
+   if (old_provided == new_provided)
+      return old_provided && geom->aspect_ratio != next->aspect_ratio;
+   if (!geom->base_width || !geom->base_height)
+      return true;
+   provided = old_provided ? geom->aspect_ratio : next->aspect_ratio;
+   return provided != (float)geom->base_width / geom->base_height;
+}
+
 bool runloop_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
@@ -3522,7 +3541,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   || info->geometry.max_height != av_info->geometry.max_height;
             bool aspect_changed                   = info->geometry.aspect_ratio != av_info->geometry.aspect_ratio;
             bool viewport_changed                 = base_size_changed
-                  || (aspect_changed && runloop_uses_core_aspect_hint(settings));
+                  || (aspect_changed && runloop_aspect_hint_changes_viewport(
+                           settings, &av_info->geometry, &info->geometry));
             bool geometry_changed                 = base_size_changed || aspect_changed || max_size_changed;
             bool max_size_fits                     = !max_size_changed;
 
@@ -3815,6 +3835,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          const struct retro_game_geometry *in_geom= (const struct retro_game_geometry*)data;
          bool base_size_changed;
          bool aspect_changed;
+         bool viewport_changed;
 
          if (!in_geom)
             return false;
@@ -3822,6 +3843,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          base_size_changed = geom->base_width != in_geom->base_width
                           || geom->base_height != in_geom->base_height;
          aspect_changed = geom->aspect_ratio != in_geom->aspect_ratio;
+         viewport_changed = base_size_changed
+               || (aspect_changed && runloop_aspect_hint_changes_viewport(
+                        settings, geom, in_geom));
 
          if (     verbosity_get_log_level() == RETRO_LOG_DEBUG
                && verbosity_is_enabled())
@@ -3845,7 +3869,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (aspect_changed)
                geom->aspect_ratio = in_geom->aspect_ratio;
 
-            if (base_size_changed || runloop_uses_core_aspect_hint(settings))
+            if (viewport_changed)
             {
                command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 

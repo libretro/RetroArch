@@ -3651,7 +3651,7 @@ static void lane_aspect_hint_changes(void)
    bool saved_delay_auto = settings->bools.video_frame_delay_auto;
    bool saved_pause = video_st->frame_delay_pause;
    unsigned had = failures;
-   unsigned mode, api;
+   unsigned mode, api, step;
 
    memset(&poke, 0, sizeof(poke));
    poke.set_aspect_ratio = avc_aspect;
@@ -3692,6 +3692,42 @@ static void lane_aspect_hint_changes(void)
                "aspect hint: base-size update rejected");
          CHECK(avc_aspects == 1 && video_st->frame_delay_pause,
                "aspect hint: mode %u API %u missed base-size resize", mode, api);
+
+         info = saved;
+         info.geometry.aspect_ratio = 0.0f;
+         runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+         for (step = 0; step < 6; step++)
+         {
+            bool resize = false;
+            float fallback = (float)info.geometry.base_width / info.geometry.base_height;
+            switch (step)
+            {
+               case 0: info.geometry.aspect_ratio = -1.0f; break;
+               case 1: info.geometry.aspect_ratio = fallback; break;
+               case 2: info.geometry.aspect_ratio = 0.0f; break;
+               case 3:
+                  info.geometry.aspect_ratio = fallback + 0.25f;
+                  resize = modes[mode].resize;
+                  break;
+               case 4:
+                  info.geometry.aspect_ratio = -2.0f;
+                  resize = modes[mode].resize;
+                  break;
+               default: info.geometry.aspect_ratio = -3.0f; break;
+            }
+            avc_aspects = 0;
+            video_st->frame_delay_pause = false;
+            video_st->frame_delay_target = 5;
+            CHECK(runloop_environment_cb(cmd, api ? (void*)&info : (void*)&info.geometry),
+                  "aspect hint: equivalent update rejected");
+            CHECK(video_st->av_info.geometry.aspect_ratio == info.geometry.aspect_ratio,
+                  "aspect hint: equivalent metadata discarded");
+            CHECK(avc_aspects == (unsigned)resize
+                     && video_st->frame_delay_pause == resize
+                     && video_st->frame_delay_target == 5,
+                  "aspect hint: mode %u API %u step %u resize %u, pause %u",
+                  mode, api, step, avc_aspects, video_st->frame_delay_pause);
+         }
       }
    }
    settings->uints.video_aspect_ratio_idx = saved_aspect;
@@ -3826,6 +3862,34 @@ static void lane_av_info_recording(void)
       run_frames(3);
       CHECK(retro_atomic_load_acquire_int(&avr_frames) > frames,
             "AV-info recording: frames stopped after ignored hint");
+
+      {
+         float ignored_hint = info.geometry.aspect_ratio;
+         settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_CORE;
+         info.geometry.aspect_ratio = 0.0f;
+         runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry);
+         video_driver_set_aspect_ratio();
+         for (step = 0; step < 4; step++)
+         {
+            info.geometry.aspect_ratio = step == 1
+               ? (float)info.geometry.base_width / info.geometry.base_height
+               : -(float)step;
+            CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+                  "AV-info recording: equivalent hint rejected");
+            CHECK(avr_inits == 1 && !avr_frees && !avr_finalizes
+                     && rec_st->data == owner && rec_st->enable,
+                  "AV-info recording: equivalent hint restarted encoder (stream %u step %u)",
+                  stream, step);
+         }
+         frames = retro_atomic_load_acquire_int(&avr_frames);
+         run_frames(3);
+         CHECK(retro_atomic_load_acquire_int(&avr_frames) > frames,
+               "AV-info recording: equivalent hints stopped frames");
+         settings->uints.video_aspect_ratio_idx = ASPECT_RATIO_4_3;
+         info.geometry.aspect_ratio = ignored_hint;
+         runloop_environment_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry);
+         video_driver_set_aspect_ratio();
+      }
 
       for (step = 0; step < 5; step++)
       {
