@@ -81,6 +81,11 @@ void  sinc_resampler_int16_reset(void *re);
  * (zero on failure). Supply that many trailing zero frames to drain the tail,
  * then trim output to the source duration. Keep the initialization ratio. */
 size_t sinc_resampler_int16_start_aligned(void *re);
+/* Fixed-ratio aligned owner, at most 256 input frames per call. Carry starts
+ * at zero and retains sub-phase rounding between calls, avoiding long-stream
+ * clock drift. No adaptive decimation; use the initialization ratio. */
+int sinc_resampler_int16_process_aligned(void *re,
+      struct resampler_data_int16 *data, double *carry);
 
 void  sinc_resampler_int16_free(void *re);
 

@@ -714,6 +714,39 @@ size_t sinc_resampler_int16_start_aligned(void *re_)
    return delay;
 }
 
+static int sinc_i16_advance_aligned(rarch_sinc_resampler_int16_t *re,
+      size_t frames, double step, double *carry)
+{
+   double fraction = *carry + frames * (step - floor(step));
+   uint32_t correction;
+   if (!(fraction >= 0.0 && fraction < (double)(uint32_t)-1))
+      return 0;
+   correction = (uint32_t)fraction;
+   if (re->time > (uint32_t)-1 - correction)
+      return 0;
+   re->time += correction;
+   *carry = fraction - correction;
+   return 1;
+}
+
+int sinc_resampler_int16_process_aligned(void *re_,
+      struct resampler_data_int16 *data, double *carry)
+{
+   rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
+   double step;
+   uint32_t phases;
+   if (!re || !data || !carry || !(*carry >= 0.0 && *carry < 1.0)
+         || data->input_frames > 256 || !data->data_in || !data->data_out
+         || !sinc_resampler_ratio_valid(data->ratio,
+               re->phase_bits, re->subphase_bits)
+         || data->ratio < re->design_ratio || re->dec_stages || re->fade_left)
+      return 0;
+   phases = 1u << (re->phase_bits + re->subphase_bits);
+   step = phases / data->ratio;
+   sinc_i16_kernel(re, data);
+   return sinc_i16_advance_aligned(re, data->output_frames, step, carry);
+}
+
 void sinc_resampler_int16_free(void *re_)
 {
    rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
