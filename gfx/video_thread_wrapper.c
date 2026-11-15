@@ -243,6 +243,11 @@ static int video_thread_mem_take_from(thread_video_t *thr,
       int take, int cached_cur)
 {
    int i, host = -1, empty = -1;
+   /* Ownership stays fixed during this scan. Bit zero represents -1. */
+   unsigned held = (1U << (thr->frame.slot[0].mem + 1))
+      | (1U << (thr->frame.slot[1].mem + 1))
+      | (1U << (thr->frame.spare_mem + 1));
+   size_t size = thr->frame.buffer_size;
    for (i = 0; i < VIDEO_THREAD_FRAME_MEM; i++)
    {
       if (!thr->frame.mem[i].ptr)
@@ -251,8 +256,8 @@ static int video_thread_mem_take_from(thread_video_t *thr,
             empty = i;
          continue;
       }
-      if (     video_thread_mem_held(thr, i)
-            || thr->frame.mem[i].size < thr->frame.buffer_size
+      if (     (held & (2U << i))
+            || thr->frame.mem[i].size < size
             || !video_thread_mem_writable(thr, i))
          continue;
       if (thr->frame.mem[i].id)
