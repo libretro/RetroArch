@@ -6702,8 +6702,8 @@ void video_driver_cached_frame(void)
 static retro_atomic_ptr_t frame_cache_hazard[FRAME_CACHE_HAZARD_SLOTS];
 
 /* Bumped by every retire.  A reader that sees it move between
- * arming and re-validating knows a teardown raced it and retries
- * against the new state. */
+ * arming and re-validating knows a teardown raced it and drops
+ * the read. */
 static retro_atomic_int_t frame_cache_generation;
 
 /* Arm a hazard slot with @ptr.  Returns the slot index, or -1 when
@@ -6936,75 +6936,68 @@ void video_driver_cached_frame_read(
    if (!cb)
       return;
 
-   for (;;)
+#ifdef FRAME_CACHE_HAZARDS
+   /* Sample the generation BEFORE the tuple.  Every retire from
+    * this point on is then caught by the re-validate below.
+    * Sampling it after the snapshot leaves a window in which a
+    * whole retire fits: it frees the buffer and bumps the
+    * generation, the re-validate compares equal, and the callback
+    * runs on freed memory.  samples/gfx/cached_frame_hazard
+    * guards this ordering. */
+   gen = retro_atomic_load_acquire_int(&frame_cache_generation);
+#endif
+   frame_cache_snapshot(&data, &dims, &pitch);
+
+   /* Nothing to guard: the sentinel is not a pointer and an
+    * empty cache has nothing to free.  Hand the callback NULL so
+    * the consumer doesn't have to special-case either, matching
+    * cached_frame_info()'s has_cpu_pixels == false. */
+   if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
    {
-#ifdef FRAME_CACHE_HAZARDS
-      /* Sample the generation BEFORE the tuple.  Every retire from
-       * this point on is then caught by the re-validate below.
-       * Sampling it after the snapshot leaves a window in which a
-       * whole retire fits: it frees the buffer and bumps the
-       * generation, the re-validate compares equal, and the callback
-       * runs on freed memory.  samples/gfx/cached_frame_hazard
-       * guards this ordering. */
-      gen = retro_atomic_load_acquire_int(&frame_cache_generation);
-#endif
-      frame_cache_snapshot(&data, &dims, &pitch);
-
-      /* Nothing to guard: the sentinel is not a pointer and an
-       * empty cache has nothing to free.  Hand the callback NULL so
-       * the consumer doesn't have to special-case either, matching
-       * cached_frame_info()'s has_cpu_pixels == false. */
-      if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
-      {
-         cb(userdata, NULL, 0, 0);
-         return;
-      }
-
-#ifdef FRAME_CACHE_HAZARDS
-      hazard = frame_cache_hazard_acquire(data);
-      if (hazard < 0)
-      {
-         /* Every slot busy.  Report no pixels rather than spin: the
-          * caller gets the same answer an invalidated cache would
-          * give it, and nothing upstream of here is allowed to block
-          * on a reader. */
-         cb(userdata, NULL, 0, 0);
-         return;
-      }
-
-      /* Re-validate under the hazard.  If a retire ran between the
-       * snapshot above and the arm, the generation moved and the
-       * pointer we are holding may already be gone -- drop it and
-       * start over against whatever is published now.  If the retire
-       * starts after this point it will see our slot and wait. */
-      if (retro_atomic_load_acquire_int(&frame_cache_generation) != gen)
-      {
-         frame_cache_hazard_release(hazard);
-         hazard = -1;
-         continue;
-      }
-#else
-      /* No hazard support on this target (no threads, or no
-       * lock-free atomics): hold the tuple lock across the callback
-       * instead.  Correct, at the cost of stalling a concurrent
-       * publish for the callback's duration.  Single-threaded builds
-       * degenerate to no-op locking and pay nothing. */
-      cached_frame_lock_acquire();
-      data   = frame_cache_data;
-      dims   = frame_cache_dims;
-      pitch  = frame_cache_pitch;
-      if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
-      {
-         data   = NULL;
-         dims   = 0;
-         pitch  = 0;
-      }
-      cb(userdata, data, dims, pitch);
-      cached_frame_lock_release();
+      cb(userdata, NULL, 0, 0);
       return;
-#endif
-      break;
    }
+
+#ifdef FRAME_CACHE_HAZARDS
+   hazard = frame_cache_hazard_acquire(data);
+   if (hazard < 0)
+   {
+      /* Every slot busy.  Report no pixels rather than spin: the
+       * caller gets the same answer an invalidated cache would
+       * give it, and nothing upstream of here is allowed to block
+       * on a reader. */
+      cb(userdata, NULL, 0, 0);
+      return;
+   }
+
+   /* A changed generation can name freed memory. Drop the read
+    * rather than retry behind repeated retirement. */
+   if (retro_atomic_load_acquire_int(&frame_cache_generation) != gen)
+   {
+      frame_cache_hazard_release(hazard);
+      cb(userdata, NULL, 0, 0);
+      return;
+   }
+#else
+   /* No hazard support on this target (no threads, or no
+    * lock-free atomics): hold the tuple lock across the callback
+    * instead.  Correct, at the cost of stalling a concurrent
+    * publish for the callback's duration.  Single-threaded builds
+    * degenerate to no-op locking and pay nothing. */
+   cached_frame_lock_acquire();
+   data   = frame_cache_data;
+   dims   = frame_cache_dims;
+   pitch  = frame_cache_pitch;
+   if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      data   = NULL;
+      dims   = 0;
+      pitch  = 0;
+   }
+   cb(userdata, data, dims, pitch);
+   cached_frame_lock_release();
+   return;
+#endif
 
    cb(userdata, data, dims, pitch);
    frame_cache_hazard_release(hazard);

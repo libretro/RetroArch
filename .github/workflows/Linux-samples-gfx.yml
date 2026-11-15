@@ -3124,6 +3124,24 @@ jobs:
           make clean TARGET=progress_bounds_test.exe
           echo "[pass] progress_bounds_test (ASan + UBSan, and a mingw-w64 build)"
 
+      - name: Cached frame progress and lifetime
+        shell: bash
+        working-directory: samples/gfx/cached_frame_hazard
+        run: |
+          set -eu
+          make clean
+          make -j$(nproc) check SANITIZER=address,undefined
+          make clean
+          make -j$(nproc) check TORTURE=1 SANITIZER=address,undefined
+          make clean
+          make -j$(nproc) SANITIZER=thread TORTURE=1
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R timeout 60 ./cached_frame_hazard_test
+          make clean
+          make -j$(nproc) CC=x86_64-w64-mingw32-gcc TARGET=cached_frame_hazard_test.exe LDFLAGS="-static -lpthread"
+          test -f cached_frame_progress_test.exe
+          test -f cached_frame_progress_fallback_test.exe
+          make clean TARGET=cached_frame_hazard_test.exe
+
       - name: Build and run achievements AES (shared, AES-only, scalar)
         shell: bash
         working-directory: samples/cheevos/aes_shim

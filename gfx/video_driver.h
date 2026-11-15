@@ -2308,8 +2308,8 @@ bool video_driver_cached_frame_info(
  * callback returns, so keep it short -- but note that ordinary
  * frame publishing is never blocked by a reader.
  *
- * If every hazard slot is busy the callback is invoked with
- * data == NULL rather than waiting.
+ * If every hazard slot is busy or retirement races the read, the
+ * callback is invoked with data == NULL rather than waiting.
  */
 void video_driver_cached_frame_read(
       void *userdata,
