@@ -828,6 +828,8 @@ typedef struct thread_video
        * core's declared maximum geometry. A core that hands over a
        * larger frame than it declared is clamped to this. */
       size_t   buffer_size;
+      /* Main thread: buffer_size / current bytes per pixel. */
+      size_t   pixel_capacity;
       struct video_thread_frame_slot
       {
          video_thread_movie_t movie;

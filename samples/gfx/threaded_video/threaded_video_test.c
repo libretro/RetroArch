@@ -7938,6 +7938,103 @@ static void lane_zero_copy_mode(int mode, const char *name)
             name, g1 - g0, zc1 - zc0);
 }
 
+static bool capacity_accept_format;
+
+static bool capacity_set_format(void *data, bool rgb32, unsigned scale)
+{
+   (void)data; (void)rgb32; (void)scale;
+   return capacity_accept_format;
+}
+
+static void framebuffer_capacity_updates(video_driver_state_t *video_st,
+      thread_video_t *thr)
+{
+   const video_poke_interface_t *saved_poke = thr->poke;
+   video_poke_interface_t poke = *saved_poke;
+   bool rgb32 = thr->info.rgb32;
+   unsigned scale = thr->info.input_scale;
+   size_t bytes = thr->frame.buffer_size;
+
+   poke.set_frame_format = capacity_set_format;
+   set_poke(thr, &poke);
+   capacity_accept_format = false;
+   CHECK(!video_st->poke->set_frame_format(video_st->data, !rgb32, scale * 2),
+         "rejected framebuffer format reported success");
+   CHECK(thr->frame.buffer_size > bytes && thr->info.rgb32 == rgb32
+         && thr->frame.pixel_capacity == thr->frame.buffer_size /
+            (thr->info.source_fp16 ? 8 : (rgb32 ? 4 : 2)),
+         "growth followed by format refusal left a stale pixel capacity");
+   capacity_accept_format = true;
+   CHECK(video_st->poke->set_frame_format(video_st->data, !rgb32, scale * 2),
+         "new framebuffer format was refused");
+   CHECK(thr->frame.pixel_capacity == thr->frame.buffer_size /
+         (thr->info.source_fp16 ? 8 : (!rgb32 ? 4 : 2)),
+         "format change left a stale pixel capacity");
+   CHECK(video_st->poke->set_frame_format(video_st->data, rgb32, scale),
+         "original framebuffer format was not restored");
+   CHECK(thr->frame.pixel_capacity == thr->frame.buffer_size /
+         (thr->info.source_fp16 ? 8 : (rgb32 ? 4 : 2)),
+         "restored framebuffer format left a stale pixel capacity");
+   set_poke(thr, saved_poke);
+}
+
+static void framebuffer_capacity_cases(video_driver_state_t *video_st,
+      thread_video_t *thr)
+{
+   static const unsigned heights[] = {32, 16, 8};
+   static const size_t capacities[] = {512, 256, 128};
+   static const size_t pitches[] = {32, 64, 128};
+   struct retro_framebuffer fb;
+   size_t saved_size = thr->frame.buffer_size;
+   size_t saved_capacity = thr->frame.pixel_capacity;
+   bool saved_rgb32 = thr->info.rgb32;
+   bool saved_fp16 = thr->info.source_fp16;
+   unsigned fmt;
+
+   thr->frame.buffer_size = 1025;
+   for (fmt = 0; fmt < 3; fmt++)
+   {
+      thr->info.rgb32 = fmt == 1;
+      thr->info.source_fp16 = fmt == 2;
+      thr->frame.pixel_capacity = capacities[fmt];
+      memset(&fb, 0, sizeof(fb));
+      fb.width = 16;
+      fb.height = heights[fmt];
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+      CHECK(video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+            "exact-capacity framebuffer refused for format %u", fmt);
+      CHECK(fb.pitch == pitches[fmt], "framebuffer pitch differs for format %u", fmt);
+      fb.height++;
+      CHECK(!video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+            "oversized framebuffer accepted for format %u", fmt);
+      fb.width = 0;
+      CHECK(!video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+            "zero-width framebuffer accepted");
+      fb.width = 16;
+      fb.height = 0;
+      CHECK(!video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+            "zero-height framebuffer accepted");
+      fb.width = fb.height = 65536;
+      CHECK(!video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+            "32-bit byte-count overflow accepted for format %u", fmt);
+      fb.width = fb.height = 1u << 31;
+      CHECK(!video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+            "64-bit byte-count overflow accepted for format %u", fmt);
+      fb.width = fb.height = UINT_MAX;
+      CHECK(!video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+            "maximum unsigned dimensions accepted for format %u", fmt);
+   }
+   thr->frame.buffer_size = 0;
+   thr->frame.pixel_capacity = 0;
+   fb.width = fb.height = 1;
+   CHECK(!video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+         "empty framebuffer capacity accepted pixels");
+   thr->info.rgb32 = saved_rgb32;
+   thr->info.source_fp16 = saved_fp16;
+   thr->frame.buffer_size = saved_size;
+   thr->frame.pixel_capacity = saved_capacity;
+}
+
 static void lane_cached_framebuffer(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -7954,6 +8051,9 @@ static void lane_cached_framebuffer(void)
    expect_wrapper(true, "cached framebuffer preference");
    thr = (thread_video_t*)video_st->data;
    video_thread_wait_idle();
+   CHECK(thr->frame.pixel_capacity == thr->frame.buffer_size /
+         (thr->info.source_fp16 ? 8 : (thr->info.rgb32 ? 4 : 2)),
+         "initial framebuffer pixel capacity is stale");
    CHECK(!thr->frame.mem_busy, "synthetic framebuffer pool needs an idle driver");
    if (thr->frame.mem_busy)
       return;
@@ -8034,6 +8134,8 @@ static void lane_cached_framebuffer(void)
    CHECK(fb.data == &uncached && !(fb.memory_flags & RETRO_MEMORY_TYPE_CACHED),
          "uncached fallback was misreported");
 
+   framebuffer_capacity_cases(video_st, thr);
+
    /* No pixels were submitted; all synthetic storage stays test-owned. */
    memcpy(thr->frame.mem, saved_mem, sizeof(saved_mem));
    for (i = 0; i < 2; i++)
@@ -8044,9 +8146,10 @@ static void lane_cached_framebuffer(void)
    thr->frame.spare = saved_spare;
    thr->frame.spare_mem = saved_spare_mem;
    thr->frame.lent = saved_lent;
+   framebuffer_capacity_updates(video_st, thr);
    set_threaded_via_setting(false);
    if (failures == had)
-      fprintf(stderr, "[pass] cached framebuffer preference and uncached fallback\n");
+      fprintf(stderr, "[pass] cached framebuffer preference, fallback and capacity bounds\n");
 }
 
 static void lane_zero_copy(void)

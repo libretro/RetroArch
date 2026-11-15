@@ -4511,6 +4511,8 @@ static bool video_thread_init(thread_video_t *thr,
 
       thr->frame.spare_mem   = -1;
       thr->frame.buffer_size = max_size;
+      thr->frame.pixel_capacity = max_size
+         >> (info.source_fp16 ? 3 : (info.rgb32 ? 2 : 1));
       thr->frame.lent        = -1;
       retro_atomic_int_init(&thr->frame.state, VIDEO_THREAD_RING_MAKE(0, 0, false));
    }
@@ -5340,6 +5342,8 @@ static bool video_thread_frame_slots_fit(thread_video_t *thr,
       thr->frame.slot[i].buffer = buf[i];
    }
    thr->frame.buffer_size = size;
+   thr->frame.pixel_capacity = size
+      >> (thr->info.source_fp16 ? 3 : (thr->info.rgb32 ? 2 : 1));
    return true;
 }
 
@@ -5367,6 +5371,8 @@ static bool thread_set_frame_format(void *data, bool rgb32,
 
    thr->info.rgb32       = rgb32;
    thr->info.input_scale = input_scale;
+   thr->frame.pixel_capacity = thr->frame.buffer_size
+      >> (thr->info.source_fp16 ? 3 : (rgb32 ? 2 : 1));
    return true;
 }
 
@@ -5531,18 +5537,15 @@ static bool thread_get_current_software_framebuffer(void *data,
       struct retro_framebuffer *fb)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   unsigned bpp, slot;
-   size_t   need;
+   unsigned slot;
    int      mem, take;
 
    if (!thr || !fb)
       return false;
 
    thr->handoff.asked++;
-   bpp  = thr->info.source_fp16 ? 8 :
-      (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
-   need = (size_t)fb->width * bpp * fb->height;
-   if (!fb->width || !fb->height || need > thr->frame.buffer_size)
+   /* The wide product cannot wrap; subtracting one also rejects zero. */
+   if ((uint64_t)fb->width * fb->height - 1 >= thr->frame.pixel_capacity)
    {
       thr->handoff.declined_size++;
       return false;
@@ -5580,7 +5583,8 @@ static bool thread_get_current_software_framebuffer(void *data,
    mem              = (slot == VIDEO_THREAD_LEND_SPARE)
       ? thr->frame.spare_mem : thr->frame.slot[slot].mem;
    fb->data         = thr->frame.mem[mem].ptr;
-   fb->pitch        = (size_t)fb->width * bpp;
+   fb->pitch        = (size_t)fb->width * (thr->info.source_fp16 ? 8 :
+      (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
    fb->format       = thr->info.source_fp16
       ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F : (thr->info.source_hdr10
       ? RETRO_PIXEL_FORMAT_HDR10_2101010 : (thr->info.source_10bit
