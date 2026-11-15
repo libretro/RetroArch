@@ -470,7 +470,15 @@ static int32_t winusb_hid_control(winusb_device_t *dev, UCHAR type,
    setup.Value       = value;
    setup.Index       = 0; /* the interface */
    setup.Length      = (USHORT)len;
-   memset(&ov, 0, sizeof(ov));
+   ov.Internal       = 0;
+   ov.InternalHigh   = 0;
+#if defined(NONAMELESSUNION) || (defined(_MSC_VER) && !defined(_MSC_EXTENSIONS))
+   ov.u.s.Offset     = 0;
+   ov.u.s.OffsetHigh = 0;
+#else
+   ov.Offset         = 0;
+   ov.OffsetHigh     = 0;
+#endif
    ov.hEvent         = dev->ctrl_event;
    ResetEvent(ov.hEvent);
    if (     !winusb_api.ControlTransfer(dev->usb, setup, data, (ULONG)len,
@@ -490,13 +498,21 @@ static int32_t winusb_hid_control(winusb_device_t *dev, UCHAR type,
 static int32_t winusb_switch2_transfer(winusb_device_t *dev, UCHAR pipe,
       uint8_t *data, ULONG len, DWORD ms)
 {
+   BOOL ok;
    OVERLAPPED ov;
    HANDLE events[2];
-   ULONG got = 0;
-   BOOL ok;
+   ULONG got         = 0;
 
-   memset(&ov, 0, sizeof(ov));
-   ov.hEvent = dev->ctrl_event;
+   ov.Internal       = 0;
+   ov.InternalHigh   = 0;
+#if defined(NONAMELESSUNION) || (defined(_MSC_VER) && !defined(_MSC_EXTENSIONS))
+   ov.u.s.Offset     = 0;
+   ov.u.s.OffsetHigh = 0;
+#else
+   ov.Offset         = 0;
+   ov.OffsetHigh     = 0;
+#endif
+   ov.hEvent         = dev->ctrl_event;
    ResetEvent(ov.hEvent);
    ok = (pipe & 0x80)
       ? winusb_api.ReadPipe(dev->bulk_usb, pipe, data, len, NULL, &ov)
@@ -519,14 +535,14 @@ static int32_t winusb_switch2_transfer(winusb_device_t *dev, UCHAR pipe,
  * puts them out. Taken once the pad is reporting, not while it wakes. */
 static void winusb_switch2_lights(winusb_device_t *dev, unsigned player)
 {
+   uint8_t reply[64];
    static const uint8_t pattern[8] = {
       0x01, 0x03, 0x07, 0x0f, 0x09, 0x05, 0x0d, 0x06 };
-   uint8_t lights[16] = {
+   uint8_t lights[16]              = {
       0x09, 0x91, 0x00, 0x07, 0x00, 0x08, 0x00, 0x00 };
-   uint8_t reply[64];
 
-   memset(lights + 8, 0, 8);
-   lights[8] = player ? pattern[(player - 1) % 8] : 0;
+   if (player)
+      lights[8] = pattern[(player - 1) % 8];
    if (     winusb_switch2_transfer(dev, dev->bulk_out, lights,
                sizeof(lights), 1000) != (int32_t)sizeof(lights))
       RARCH_WARN("[WinUSB] \"%s\": its lights were not taken.\n",
@@ -585,7 +601,15 @@ static void winusb_hid_reader(void *data)
    HANDLE events[2];
    winusb_device_t *dev = (winusb_device_t*)data;
 
-   memset(&ov, 0, sizeof(ov));
+   ov.Internal       = 0;
+   ov.InternalHigh   = 0;
+#if defined(NONAMELESSUNION) || (defined(_MSC_VER) && !defined(_MSC_EXTENSIONS))
+   ov.u.s.Offset     = 0;
+   ov.u.s.OffsetHigh = 0;
+#else
+   ov.Offset         = 0;
+   ov.OffsetHigh     = 0;
+#endif
    if (!(ov.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL)))
    {
       retro_atomic_store_release_int(&dev->gone, 1);
@@ -601,9 +625,9 @@ static void winusb_hid_reader(void *data)
 
    while (!retro_atomic_load_acquire_int(&dev->quit))
    {
+      BOOL ok;
       ULONG got = 0;
       int w     = dev->write_idx;
-      BOOL ok;
 
       ResetEvent(ov.hEvent);
       if (dev->hidclass)
@@ -649,10 +673,10 @@ static void winusb_hid_reader(void *data)
       {
          int old;
          retro_time_t now = cpu_features_get_time_usec();
-         dev->len[w]    = got;
-         old            = retro_atomic_exchange_int(&dev->middle,
+         dev->len[w]      = got;
+         old              = retro_atomic_exchange_int(&dev->middle,
                w | WINUSB_FRESH);
-         dev->write_idx = old & 3;
+         dev->write_idx   = old & 3;
          dev->reports++;
          if (old & WINUSB_FRESH)
             dev->unseen++;
@@ -764,20 +788,20 @@ static void winusb_generic_setup(winusb_generic_t *gen,
       PHIDP_PREPARSED_DATA pp, const HIDP_BUTTON_CAPS *bcaps, USHORT nb,
       const HIDP_VALUE_CAPS *vcaps, USHORT nv, bool xinput)
 {
-   bool taken[WINUSB_GEN_AXES];
-   bool hat = false;
    USHORT i;
    unsigned a;
+   bool taken[WINUSB_GEN_AXES];
+   bool hat     = false;
 
    gen->pp      = pp;
    gen->values  = 0;
    memset(&gen->view, 0, sizeof(gen->view));
    for (a = 0; a < WINUSB_GEN_AXES; a++)
-      taken[a]      = false;
+      taken[a]   = false;
    gen->xbox     = xinput;
    gen->wgi      = NULL;
    if (xinput)
-      taken[4] = taken[5] = true;
+      taken[4]   = taken[5] = true;
    gen->btn_page = 0;
    for (i = 0; i < nb && !gen->btn_page; i++)
    {
@@ -789,10 +813,10 @@ static void winusb_generic_setup(winusb_generic_t *gen,
    }
    for (i = 0; i < nv && gen->values < WINUSB_GEN_VALUES; i++)
    {
+      int index;
       winusb_gen_value_t *v = &gen->value[gen->values];
       USAGE usage           = vcaps[i].IsRange
          ? vcaps[i].Range.UsageMin : vcaps[i].NotRange.Usage;
-      int index;
 
       v->page  = vcaps[i].UsagePage;
       v->usage = usage;
@@ -865,10 +889,10 @@ static void winusb_hidclass_write(winusb_device_t *dev,
  * at a poll, as every pad's rumble goes. */
 static void winusb_generic_send_rumble(winusb_generic_t *gen)
 {
-   winusb_device_t *dev = gen->dev;
    uint8_t r[WINUSB_OUT_MAX];
+   winusb_device_t *dev = gen->dev;
 
-   gen->motors_due = false;
+   gen->motors_due      = false;
    if (     dev->out_len <= sizeof(r)
          && hid_sjoy_output_report(&gen->out, gen->pp, r, dev->out_len,
                gen->motors[0], gen->motors[1],
@@ -909,9 +933,9 @@ static void winusb_generic_packet(void *data, uint8_t *report,
    }
    for (i = 0; i < gen->values; i++)
    {
+      LONG val;
       const winusb_gen_value_t *v = &gen->value[i];
       ULONG raw                   = 0;
-      LONG val;
 
       if (winusb_hidclass_api.GetUsageValue(HidP_Input, v->page, 0, v->usage,
                &raw, gen->pp, (PCHAR)report, size) != HIDP_STATUS_SUCCESS)
@@ -1142,16 +1166,27 @@ static void winusb_hid_pipes(winusb_device_t *dev, bool control_out)
    winusb_interface_desc_t desc;
    UCHAR i;
 
-   dev->ep_in  = WINUSB_EP_IN;
-   dev->ep_out = 0;
-   memset(&desc, 0, sizeof(desc));
+   dev->ep_in              = WINUSB_EP_IN;
+   dev->ep_out             = 0;
+   desc.bLength            = 0;
+   desc.bDescriptorType    = 0;
+   desc.bInterfaceNumber   = 0;
+   desc.bAlternateSetting  = 0;
+   desc.bNumEndpoints      = 0;
+   desc.bInterfaceClass    = 0;
+   desc.bInterfaceSubClass = 0;
+   desc.bInterfaceProtocol = 0;
+   desc.iInterface         = 0;
    if (     !winusb_api.QueryInterfaceSettings || !winusb_api.QueryPipe
          || !winusb_api.QueryInterfaceSettings(dev->usb, 0, &desc))
       return;
    for (i = 0; i < desc.bNumEndpoints; i++)
    {
       winusb_pipe_info_t pipe;
-      memset(&pipe, 0, sizeof(pipe));
+      pipe.PipeType          = 0;
+      pipe.PipeId            = 0;
+      pipe.MaximumPacketSize = 0;
+      pipe.Interval          = 0;
       if (     !winusb_api.QueryPipe(dev->usb, 0, i, &pipe)
             || pipe.PipeType != WINUSB_PIPE_INTERRUPT)
          continue;
@@ -1170,9 +1205,9 @@ static void winusb_hid_pipes(winusb_device_t *dev, bool control_out)
 /* That interface opened, and its bulk pipes found, for the reader. */
 static bool winusb_switch2_open(winusb_hid_t *hid, winusb_device_t *dev)
 {
+   UCHAR i;
    char path[MAX_PATH];
    winusb_interface_desc_t desc;
-   UCHAR i;
 
    if (     !winusb_api.WritePipe || !winusb_api.QueryInterfaceSettings
          || !winusb_api.QueryPipe
@@ -1188,12 +1223,23 @@ static bool winusb_switch2_open(winusb_hid_t *hid, winusb_device_t *dev)
       dev->bulk_usb = NULL;
       return false;
    }
-   memset(&desc, 0, sizeof(desc));
+   desc.bLength            = 0;
+   desc.bDescriptorType    = 0;
+   desc.bInterfaceNumber   = 0;
+   desc.bAlternateSetting  = 0;
+   desc.bNumEndpoints      = 0;
+   desc.bInterfaceClass    = 0;
+   desc.bInterfaceSubClass = 0;
+   desc.bInterfaceProtocol = 0;
+   desc.iInterface         = 0;
    if (winusb_api.QueryInterfaceSettings(dev->bulk_usb, 0, &desc))
       for (i = 0; i < desc.bNumEndpoints; i++)
       {
          winusb_pipe_info_t pipe;
-         memset(&pipe, 0, sizeof(pipe));
+         pipe.PipeType          = 0;
+         pipe.PipeId            = 0;
+         pipe.MaximumPacketSize = 0;
+         pipe.Interval          = 0;
          if (     !winusb_api.QueryPipe(dev->bulk_usb, 0, i, &pipe)
                || pipe.PipeType != WINUSB_PIPE_BULK)
             continue;
