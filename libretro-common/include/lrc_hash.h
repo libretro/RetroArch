@@ -39,6 +39,20 @@
 
 RETRO_BEGIN_DECLS
 
+/* Lowercase hexadecimal, NUL terminated. out needs 2 * size + 1 bytes;
+ * the digest and output must not overlap. */
+static INLINE void hash_digest_to_hex(char *out, const uint8_t *digest, size_t size)
+{
+   static const char hex[] = "0123456789abcdef";
+   size_t i;
+   for (i = 0; i < size; i++)
+   {
+      out[2 * i]     = hex[digest[i] >> 4];
+      out[2 * i + 1] = hex[digest[i] & 15];
+   }
+   out[2 * size] = '\0';
+}
+
 /**
  * sha256_hash:
  * @s                 : Output.

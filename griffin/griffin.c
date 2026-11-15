@@ -239,10 +239,6 @@ ACHIEVEMENTS
 
 #if defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD)
 #include "../libretro-common/formats/rvz/rvz.c"
-#ifndef HAVE_CRYPTO
-/* its AES, without the rest of the crypto library */
-#include "../libretro-common/crypto/crypto.c"
-#endif
 #ifndef HAVE_7ZIP
 /* its LZMA and LZMA2, without the 7z backend */
 #include "../libretro-common/formats/7z/r7z_lzma_stream.c"
@@ -271,12 +267,13 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
-/* the hashes' AES: the crypto library's wherever it is built */
-#if defined(HAVE_CRYPTO) || (defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD))
-#include "../cheevos/cheevos_aes.c"
-#else
-#include "../deps/rcheevos/src/rhash/aes.c"
+#ifndef HAVE_CRYPTO
+#ifndef CRYPTO_AES_ONLY
+#define CRYPTO_AES_ONLY
 #endif
+#include "../libretro-common/crypto/crypto.c"
+#endif
+#include "../cheevos/cheevos_aes.c"
 #include "../deps/rcheevos/src/rhash/cdreader.c"
 #include "../deps/rcheevos/src/rhash/hash.c"
 #include "../deps/rcheevos/src/rhash/hash_rom.c"

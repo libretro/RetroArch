@@ -1,11 +1,12 @@
 TARGET := aes_shim_test
 
-# cheevos/cheevos_aes.c against the rcheevos AES it stands in for.
+# cheevos/cheevos_aes.c against known blocks and a frozen reference corpus.
 #    make && make check
 REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
 
 CFLAGS += -Wall -std=gnu99 -g1 -O1 -I$(LRC)/include
+CFLAGS += $(EXTRA_CFLAGS)
 
 ifneq ($(SANITIZER),)
    CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
@@ -16,9 +17,10 @@ ifneq ($(findstring undefined,$(SANITIZER)),)
    LDFLAGS += -fno-sanitize-recover=undefined
 endif
 
-SOURCES := aes_shim_test.c ref_aes.c \
+SOURCES := aes_shim_test.c \
    $(REPO_ROOT)/cheevos/cheevos_aes.c \
    $(LRC)/crypto/crypto.c \
+   $(LRC)/utils/md5.c \
    $(LRC)/features/features_cpu.c \
    $(LRC)/compat/compat_strl.c \
    $(LRC)/time/rtime.c

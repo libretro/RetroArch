@@ -31,9 +31,9 @@
 
 RETRO_BEGIN_DECLS
 
-/* Built only under HAVE_CRYPTO (Makefile.common, griffin); the small
- * consoles leave it out and anything optional on top of it - the
- * keychain, the cleanroom TLS, SMB and NFS clients - is gated on it.
+/* HAVE_CRYPTO enables the full library. CRYPTO_AES_ONLY builds just the
+ * basic block, CTR, CFB and CBC primitives for independent consumers.
+ * Keychain, TLS, SMB and NFS remain gated on the full library.
  *
  * Symmetric primitives: constant-time helpers, AES (block, CTR, GCM,
  * CMAC), ChaCha20, Poly1305 and the AEAD front over them. Hashes are

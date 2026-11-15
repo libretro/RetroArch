@@ -16,9 +16,8 @@
 /* rcheevos' AES interface (deps/rcheevos/src/rhash/aes.h) on
  * libretro-common's cipher, which runs on AES instructions where the
  * CPU has them and decrypts CBC several blocks at a time. The context
- * keeps the 16-octet key where rcheevos keeps its schedule, and its
- * counter as rcheevos does: a 128-bit big-endian number, stepped once
- * per keystream block, a partial block included. */
+ * retains the expanded schedule, and its counter is a 128-bit big-endian
+ * number, stepped once per keystream block, a partial block included. */
 
 #include <string.h>
 
@@ -28,13 +27,13 @@
 
 void AES_init_ctx(struct AES_ctx *ctx, const uint8_t key[AES_KEYLEN])
 {
-   memcpy(ctx->RoundKey, key, AES_KEYLEN);
+   aes_init(&ctx->cipher, key, AES_KEYLEN);
 }
 
 void AES_init_ctx_iv(struct AES_ctx *ctx, const uint8_t key[AES_KEYLEN],
       const uint8_t iv[AES_BLOCKLEN])
 {
-   memcpy(ctx->RoundKey, key, AES_KEYLEN);
+   aes_init(&ctx->cipher, key, AES_KEYLEN);
    memcpy(ctx->Iv, iv, AES_BLOCKLEN);
 }
 
@@ -45,16 +44,11 @@ void AES_ctx_set_iv(struct AES_ctx *ctx, const uint8_t iv[AES_BLOCKLEN])
 
 void AES_CBC_decrypt_buffer(struct AES_ctx *ctx, uint8_t *buf, size_t length)
 {
-   struct aes_ctx a;
-   aes_init(&a, ctx->RoundKey, AES_KEYLEN);
-   aes_cbc_decrypt(&a, ctx->Iv, buf, buf, length);
-   crypto_memzero(&a, sizeof(a));
+   aes_cbc_decrypt(&ctx->cipher, ctx->Iv, buf, buf, length);
 }
 
 void AES_CTR_xcrypt_buffer(struct AES_ctx *ctx, uint8_t *buf, size_t length)
 {
-   struct aes_ctx a;
-   aes_init(&a, ctx->RoundKey, AES_KEYLEN);
    /* aes_ctr_crypt() steps the low 32 bits; runs end where they wrap,
     * and the carry goes on into the octets above */
    while (length)
@@ -67,7 +61,7 @@ void AES_CTR_xcrypt_buffer(struct AES_ctx *ctx, uint8_t *buf, size_t length)
       size_t   n      = length;
       if ((uint64_t)(n / AES_BLOCKLEN) >= blocks)
          n = (size_t)(blocks * AES_BLOCKLEN);
-      aes_ctr_crypt(&a, ctx->Iv, buf, buf, n);
+      aes_ctr_crypt(&ctx->cipher, ctx->Iv, buf, buf, n);
       if ((uint64_t)((n + AES_BLOCKLEN - 1) / AES_BLOCKLEN) == blocks)
       {
          int i;
@@ -76,5 +70,4 @@ void AES_CTR_xcrypt_buffer(struct AES_ctx *ctx, uint8_t *buf, size_t length)
       buf    += n;
       length -= n;
    }
-   crypto_memzero(&a, sizeof(a));
 }

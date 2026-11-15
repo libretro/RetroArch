@@ -57,6 +57,12 @@ static INLINE uint32_t SWAP32(uint32_t x)
 
 #endif
 
+/* Swap the bytes within both 16-bit lanes of a packed 32-bit word. */
+static INLINE uint32_t retro_swap16x2(uint32_t value)
+{
+   return ((value & 0xff00ff00U) >> 8) | ((value & 0x00ff00ffU) << 8);
+}
+
 #if defined(_MSC_VER) && _MSC_VER <= 1200
 static INLINE uint64_t SWAP64(uint64_t val)
 {
@@ -416,9 +422,9 @@ typedef struct retro_unaligned_uint64_s retro_unaligned_uint64_t;
  * @return The first two bytes of \c addr as a 16-bit unsigned integer,
  * byteswapped from big-endian to host-native order if necessary.
  */
-static INLINE uint16_t retro_get_unaligned_16be(void *addr)
+static INLINE uint16_t retro_get_unaligned_16be(const void *addr)
 {
-   return retro_be_to_cpu16(retro_unaligned16(addr));
+   return retro_be_to_cpu16(((const retro_unaligned_uint16_t*)addr)->val);
 }
 
 /**
@@ -432,9 +438,9 @@ static INLINE uint16_t retro_get_unaligned_16be(void *addr)
  * @return The first four bytes of \c addr as a 32-bit unsigned integer,
  * byteswapped from big-endian to host-native order if necessary.
  */
-static INLINE uint32_t retro_get_unaligned_32be(void *addr)
+static INLINE uint32_t retro_get_unaligned_32be(const void *addr)
 {
-   return retro_be_to_cpu32(retro_unaligned32(addr));
+   return retro_be_to_cpu32(((const retro_unaligned_uint32_t*)addr)->val);
 }
 
 /**
@@ -448,9 +454,9 @@ static INLINE uint32_t retro_get_unaligned_32be(void *addr)
  * @return The first eight bytes of \c addr as a 64-bit unsigned integer,
  * byteswapped from big-endian to host-native order if necessary.
  */
-static INLINE uint64_t retro_get_unaligned_64be(void *addr)
+static INLINE uint64_t retro_get_unaligned_64be(const void *addr)
 {
-   return retro_be_to_cpu64(retro_unaligned64(addr));
+   return retro_be_to_cpu64(((const retro_unaligned_uint64_t*)addr)->val);
 }
 
 /**
@@ -464,9 +470,9 @@ static INLINE uint64_t retro_get_unaligned_64be(void *addr)
  * @return The first two bytes of \c addr as a 16-bit unsigned integer,
  * byteswapped from little-endian to host-native order if necessary.
  */
-static INLINE uint16_t retro_get_unaligned_16le(void *addr)
+static INLINE uint16_t retro_get_unaligned_16le(const void *addr)
 {
-   return retro_le_to_cpu16(retro_unaligned16(addr));
+   return retro_le_to_cpu16(((const retro_unaligned_uint16_t*)addr)->val);
 }
 
 /**
@@ -480,9 +486,9 @@ static INLINE uint16_t retro_get_unaligned_16le(void *addr)
  * @return The first four bytes of \c addr as a 32-bit unsigned integer,
  * byteswapped from little-endian to host-native order if necessary.
  */
-static INLINE uint32_t retro_get_unaligned_32le(void *addr)
+static INLINE uint32_t retro_get_unaligned_32le(const void *addr)
 {
-   return retro_le_to_cpu32(retro_unaligned32(addr));
+   return retro_le_to_cpu32(((const retro_unaligned_uint32_t*)addr)->val);
 }
 
 /**
@@ -496,9 +502,9 @@ static INLINE uint32_t retro_get_unaligned_32le(void *addr)
  * @return The first eight bytes of \c addr as a 64-bit unsigned integer,
  * byteswapped from little-endian to host-native order if necessary.
  */
-static INLINE uint64_t retro_get_unaligned_64le(void *addr)
+static INLINE uint64_t retro_get_unaligned_64le(const void *addr)
 {
-   return retro_le_to_cpu64(retro_unaligned64(addr));
+   return retro_le_to_cpu64(((const retro_unaligned_uint64_t*)addr)->val);
 }
 
 /**
@@ -591,5 +597,59 @@ static INLINE void retro_set_unaligned_64be(void *addr, uint64_t v)
    retro_unaligned64(addr) = retro_cpu_to_be64(v);
 }
 
+/* In-place swaps of complete lanes. Unaligned buffers are supported;
+ * an incomplete trailing lane is left unchanged. */
+static INLINE void retro_bswap16_buffer(void *data, size_t size)
+{
+   uint8_t *p = (uint8_t*)data;
+   size_t words = size / 4;
+   if (!size)
+      return;
+   if (!((uintptr_t)p & 3))
+   {
+      typedef uint32_t alias_word_t MAY_ALIAS;
+      alias_word_t *word = (alias_word_t*)p;
+      const alias_word_t *end = word + words;
+      while (word < end)
+      {
+         *word = retro_swap16x2(*word);
+         word++;
+      }
+      p = (uint8_t*)word;
+   }
+   else
+      while (words--)
+      {
+         retro_unaligned32(p) = retro_swap16x2(retro_unaligned32(p));
+         p += 4;
+      }
+   if (size & 2)
+      retro_unaligned16(p) = SWAP16(retro_unaligned16(p));
+}
+
+static INLINE void retro_bswap32_buffer(void *data, size_t size)
+{
+   uint8_t *p = (uint8_t*)data;
+   size_t words = size / 4;
+   if (!size)
+      return;
+   if (!((uintptr_t)p & 3))
+   {
+      typedef uint32_t alias_word_t MAY_ALIAS;
+      alias_word_t *word = (alias_word_t*)p;
+      const alias_word_t *end = word + words;
+      while (word < end)
+      {
+         *word = SWAP32(*word);
+         word++;
+      }
+   }
+   else
+      while (words--)
+      {
+         retro_unaligned32(p) = SWAP32(retro_unaligned32(p));
+         p += 4;
+      }
+}
 
 #endif

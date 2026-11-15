@@ -1,21 +1,22 @@
 #ifndef AES_H
 #define AES_H
 
-/* This file is sourced from https://github.com/kokke/tiny-AES-c, with unused code excised.
+/* AES-128 compatibility interface backed by libretro-common, derived from
+ * https://github.com/kokke/tiny-AES-c, with unused code excised.
  * This code is licensed under the Unlicense license, effectively public domain.
  * https://github.com/kokke/tiny-AES-c/blob/f06ac37/unlicense.txt
  */
 
 #include <stdint.h>
 #include <stddef.h>
+#include <crypto/crypto.h>
 
 #define AES_BLOCKLEN 16 /* Block length in bytes - AES is 128b block only */
 #define AES_KEYLEN 16   /* Key length in bytes */
-#define AES_keyExpSize 176
 
 struct AES_ctx
 {
-  uint8_t RoundKey[AES_keyExpSize];
+  struct aes_ctx cipher;
   uint8_t Iv[AES_BLOCKLEN];
 };
 

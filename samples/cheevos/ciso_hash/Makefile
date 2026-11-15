@@ -8,7 +8,7 @@ RC        := $(REPO_ROOT)/deps/rcheevos
 LRC       := $(REPO_ROOT)/libretro-common
 
 CFLAGS += -Wall -std=gnu99 -g1 -O1 -I$(RC)/include -I$(LRC)/include \
-   -DRC_CLIENT_SUPPORTS_HASH -DRC_NO_THREADS
+   -DRC_CLIENT_SUPPORTS_HASH -DCRYPTO_AES_ONLY
 
 ifneq ($(SANITIZER),)
    CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
@@ -19,7 +19,7 @@ ifneq ($(findstring undefined,$(SANITIZER)),)
    LDFLAGS += -fno-sanitize-recover=undefined
 endif
 
-SOURCES := ciso_hash_test.c \
+SOURCES := ciso_hash_test.c rhash_primitives_test.c \
    $(REPO_ROOT)/cheevos/cheevos_ciso.c \
    $(LRC)/formats/ciso/ciso.c \
    $(RC)/src/rhash/hash.c \
@@ -28,7 +28,8 @@ SOURCES := ciso_hash_test.c \
    $(RC)/src/rhash/hash_rom.c \
    $(RC)/src/rhash/hash_zip.c \
    $(RC)/src/rhash/cdreader.c \
-   $(RC)/src/rhash/aes.c \
+   $(REPO_ROOT)/cheevos/cheevos_aes.c \
+   $(LRC)/crypto/crypto.c \
    $(RC)/src/rc_util.c \
    $(RC)/src/rc_compat.c \
    $(LRC)/utils/md5.c \

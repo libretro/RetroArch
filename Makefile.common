@@ -2923,9 +2923,6 @@ ifeq ($(HAVE_NETWORKING), 1)
          ifneq ($(HAVE_RBZIP2), 1)
             OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.o
          endif
-         ifneq ($(HAVE_CRYPTO), 1)
-            OBJ += $(LIBRETRO_COMM_DIR)/crypto/crypto.o
-         endif
          # LZMA and LZMA2 groups, decoded as the 7z backend does
          ifneq ($(HAVE_7ZIP), 1)
             OBJ += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.o \
@@ -2940,12 +2937,10 @@ ifeq ($(HAVE_NETWORKING), 1)
          OBJ += $(LIBRETRO_COMM_DIR)/formats/ciso/ciso.o
       endif
 
-      # The hashes' AES (3DS titles) is the crypto library's wherever
-      # crypto.o is built, rcheevos' own elsewhere.
-      ifneq ($(filter 1,$(HAVE_CRYPTO) $(HAVE_CHEEVOS_RVZ)),)
-         OBJ += cheevos/cheevos_aes.o
-      else
-         OBJ += deps/rcheevos/src/rhash/aes.o
+      OBJ += cheevos/cheevos_aes.o
+      ifneq ($(HAVE_CRYPTO), 1)
+         OBJ += $(LIBRETRO_COMM_DIR)/crypto/crypto.o
+         DEFINES += -DCRYPTO_AES_ONLY
       endif
 
       ifeq ($(HAVE_LUA), 1)

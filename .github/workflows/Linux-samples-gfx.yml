@@ -3124,6 +3124,20 @@ jobs:
           make clean TARGET=progress_bounds_test.exe
           echo "[pass] progress_bounds_test (ASan + UBSan, and a mingw-w64 build)"
 
+      - name: Build and run achievements AES (shared, AES-only, scalar)
+        shell: bash
+        working-directory: samples/cheevos/aes_shim
+        run: |
+          set -eu
+          for flags in "" "-DCRYPTO_AES_ONLY" "-DCRYPTO_AES_ONLY -DAES_NO_X86 -DAES_NO_ARM"; do
+            make clean
+            make -j$(nproc) check SANITIZER=address,undefined EXTRA_CFLAGS="$flags"
+          done
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=aes_shim_test.exe
+          test -f aes_shim_test.exe
+          make clean TARGET=aes_shim_test.exe
+
       - name: Build and run ciso_hash_test (ASan + UBSan)
         shell: bash
         working-directory: samples/cheevos/ciso_hash

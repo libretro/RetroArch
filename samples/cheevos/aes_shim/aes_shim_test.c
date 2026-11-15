@@ -1,22 +1,12 @@
-/* cheevos/cheevos_aes.c serves rcheevos' AES interface on
- * libretro-common's cipher. Against rcheevos' own AES: CBC decryption
- * continued across calls, and CTR from counters whose low words, and
- * the octets above them, are about to carry, in runs that end on and
- * off a block boundary - the counter left after each the same, so the
- * next run goes on from it. */
+/* Shared AES adapter: frozen output from the removed implementation's
+ * deterministic CBC/CTR corpus, chaining and full-width counter carries. */
 
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <lrc_hash.h>
 
 #include "../../../deps/rcheevos/src/rhash/aes.h"
-
-void ref_AES_init_ctx_iv(struct AES_ctx *ctx, const uint8_t *key,
-      const uint8_t *iv);
-void ref_AES_CBC_decrypt_buffer(struct AES_ctx *ctx, uint8_t *buf,
-      size_t length);
-void ref_AES_CTR_xcrypt_buffer(struct AES_ctx *ctx, uint8_t *buf,
-      size_t length);
 
 static uint32_t seed = 12345;
 static int      failures;
@@ -49,6 +39,11 @@ int main(void)
    struct AES_ctx got, ref;
    uint8_t  key[16], iv[16];
    unsigned it;
+   MD5_CTX cbc, ctr;
+   unsigned char digest[16];
+   char hex[33];
+   MD5_Init(&cbc);
+   MD5_Init(&ctr);
 
    for (it = 0; it < 2000; it++)
    {
@@ -59,12 +54,14 @@ int main(void)
       fill(a, len);
       memcpy(b, a, len);
       AES_init_ctx_iv(&got, key, iv);
-      ref_AES_init_ctx_iv(&ref, key, iv);
+      AES_init_ctx_iv(&ref, key, iv);
       AES_CBC_decrypt_buffer(&got, a, cut);
       AES_CBC_decrypt_buffer(&got, a + cut, len - cut);
-      ref_AES_CBC_decrypt_buffer(&ref, b, len);
+      AES_CBC_decrypt_buffer(&ref, b, len);
       check(!memcmp(a, b, len), "CBC plaintext", it);
       check(!memcmp(got.Iv, ref.Iv, 16), "CBC chaining value", it);
+      MD5_Update(&cbc, a, (unsigned long)len);
+      MD5_Update(&cbc, got.Iv, 16);
    }
 
    for (it = 0; it < 4000; it++)
@@ -91,24 +88,54 @@ int main(void)
             memset(iv, 0xff, 12);
       }
       AES_init_ctx_iv(&got, key, iv);
-      ref_AES_init_ctx_iv(&ref, key, iv);
+      memcpy(ref.Iv, iv, 16);
       for (run = 0; run < 3; run++)
       {
          size_t len = (rnd() & 1) ? rnd() % 1200 : 16 * (rnd() % 75);
          fill(a, len);
-         memcpy(b, a, len);
          AES_CTR_xcrypt_buffer(&got, a, len);
-         ref_AES_CTR_xcrypt_buffer(&ref, b, len);
-         check(!memcmp(a, b, len), "CTR keystream", it);
+         {
+            size_t blocks = (len + 15) / 16;
+            while (blocks--)
+            {
+               int i;
+               for (i = 15; i >= 0; i--)
+                  if (++ref.Iv[i])
+                     break;
+            }
+         }
+         MD5_Update(&ctr, a, (unsigned long)len);
+         MD5_Update(&ctr, got.Iv, 16);
          check(!memcmp(got.Iv, ref.Iv, 16), "CTR counter", it);
       }
    }
 
+   MD5_Final(digest, &cbc);
+   hash_digest_to_hex(hex, digest, sizeof(digest));
+   check(!strcmp(hex, "70fa5351a7ccc4c7ce35bcd95800aa3d"), "frozen CBC corpus", 0);
+   MD5_Final(digest, &ctr);
+   hash_digest_to_hex(hex, digest, sizeof(digest));
+   check(!strcmp(hex, "133f1d7a8f97dd0130c3cecd91b3db24"), "frozen CTR corpus", 0);
+   {
+      static const uint8_t zero[16] = {0};
+      static const uint8_t encrypted[16] = {
+         0x66,0xe9,0x4b,0xd4,0xef,0x8a,0x2c,0x3b,
+         0x88,0x4c,0xfa,0x59,0xca,0x34,0x2b,0x2e
+      };
+      AES_init_ctx(&got, zero);
+      AES_ctx_set_iv(&got, zero);
+      memcpy(a, encrypted, 16);
+      AES_CBC_decrypt_buffer(&got, a, 16);
+      check(!memcmp(a, zero, 16), "known AES-128 CBC block", 0);
+      AES_ctx_set_iv(&got, zero);
+      AES_CTR_xcrypt_buffer(&got, a, 16);
+      check(!memcmp(a, encrypted, 16), "known AES-128 CTR block", 0);
+   }
    if (failures)
    {
       printf("%d failure(s)\n", failures);
       return 1;
    }
-   printf("aes_shim_test: CBC and CTR match rcheevos' AES\n");
+   printf("aes_shim_test: known blocks, frozen CBC/CTR corpus and carries passed\n");
    return 0;
 }
