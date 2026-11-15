@@ -29,6 +29,11 @@ static unsigned fault;
 static bool empty;
 static bool live_mode;
 static unsigned live_delay;
+static bool resampling;
+static unsigned encoded_source_frames(void)
+{
+   return empty ? 0 : resampling ? 26 : 17;
+}
 static record_aac_stream_timing_t live_timing;
 
 const int16_t *record_aac_probe_input(record_aac_probe_t *p,
@@ -95,7 +100,7 @@ int record_mediacodec_encoder_audio_submit(record_mediacodec_encoder_t *e,
          assert(samples[i] == 0);
    else
       for (i = 0; i < count; i++)
-         assert(samples[i] == 7);
+         assert(resampling ? samples[i] > 0 && samples[i] <= 8 : samples[i] == 7);
    *accepted = fault == 2 ? frames + 1 : count;
    e->accepted += count;
    return 1;
@@ -103,7 +108,7 @@ int record_mediacodec_encoder_audio_submit(record_mediacodec_encoder_t *e,
 int record_mediacodec_encoder_audio_finish(record_mediacodec_encoder_t *e,
       uint64_t end)
 {
-   assert(e->audio && end == (live_mode ? live_timing.input_epoch : RECORD_AAC_PROBE_FRAMES) + (empty ? 0 : 17)
+   assert(e->audio && end == (live_mode ? live_timing.input_epoch : RECORD_AAC_PROBE_FRAMES) + encoded_source_frames()
          && e->accepted == end);
    e->eos = true;
    return 1;
@@ -175,7 +180,7 @@ bool record_mux_mediacodec_write(record_mux_mediacodec_t *m, bool audio,
 bool record_mux_mediacodec_end(record_mux_mediacodec_t *m,
       bool audio, int64_t end)
 {
-   assert(end == (audio ? live_mode ? (int64_t)((uint64_t)(2048 + (empty ? 0 : 17)) * 1000000 / 48000)
+   assert(end == (audio ? live_mode ? (int64_t)((uint64_t)(2048 + encoded_source_frames()) * 1000000 / 48000)
                : (empty ? 170666 : 234666) : 1000000 + (live_mode ? live_timing.video_epoch_us : 0)));
    m->ends[audio]++;
    return true;
@@ -227,7 +232,10 @@ static void exercise_mode(unsigned failure, bool cancel, bool no_pcm, bool backp
    w = backpressure
       ? record_mediacodec_worker_new_output(&video, &audio, q, &busy_ops, &output, 1, 48000)
       : record_mediacodec_worker_new(&video, &audio, q, &mux, 1, 48000);
-   assert(w && (live ? record_mediacodec_worker_calibrate_live(w, &probe)
+   assert(w);
+   if (resampling)
+      assert(record_mediacodec_worker_resample(w, 32040.5));
+   assert((live ? record_mediacodec_worker_calibrate_live(w, &probe)
             : record_mediacodec_worker_calibrate(w, &probe)));
    assert(!record_mediacodec_worker_calibrate(w, &probe));
    assert(!record_mediacodec_worker_calibrate_live(w, &probe));
@@ -256,15 +264,15 @@ static void exercise_mode(unsigned failure, bool cancel, bool no_pcm, bool backp
       if (live)
       {
          assert(!record_mediacodec_worker_audio_edit(w, &skip, &source, &roll));
-         assert(audio.accepted == live_timing.input_epoch + (empty ? 0 : 17));
+         assert(audio.accepted == live_timing.input_epoch + encoded_source_frames());
          assert(mux.packets[1] == (empty ? 2u : 3u));
          assert(audio.packets - mux.packets[1] == live_timing.coded_origin / 1024);
       }
       else
       {
          assert(record_mediacodec_worker_audio_edit(w, &skip, &source, &roll));
-         assert(skip == 10240 && source == (empty ? 0 : 17) && roll == 2);
-         assert(audio.accepted == (empty ? 8192 : 8209)
+         assert(skip == 10240 && source == encoded_source_frames() && roll == 2);
+         assert(audio.accepted == 8192 + encoded_source_frames()
                && mux.packets[1] == (empty ? 8 : 11));
       }
    }
@@ -297,6 +305,15 @@ int main(void)
    {
       exercise_mode(0, false, false, false, true, delays[i]);
       exercise_mode(0, false, true, false, true, delays[i]);
+      exercise_mode(0, false, false, true, true, delays[i]);
+      exercise_mode(0, false, true, true, true, delays[i]);
+      exercise_mode(0, true, false, true, true, delays[i]);
+   }
+   resampling = true;
+   exercise(0, false, false, true);
+   exercise(0, false, true, true);
+   for (i = 0; i < sizeof(delays) / sizeof(delays[0]); i++)
+   {
       exercise_mode(0, false, false, true, true, delays[i]);
       exercise_mode(0, false, true, true, true, delays[i]);
       exercise_mode(0, true, false, true, true, delays[i]);

@@ -45,6 +45,10 @@ record_mediacodec_worker_t *record_mediacodec_worker_new(
 /* Before service starts; caller retains the probe until worker retirement. */
 bool record_mediacodec_worker_calibrate(record_mediacodec_worker_t *worker,
       record_aac_probe_t *probe);
+/* Cold worker setup, before step/finish. PCM and finish timestamps use source
+ * frames; calibration, AAC timestamps and file edits use encoder-rate frames. */
+bool record_mediacodec_worker_resample(record_mediacodec_worker_t *worker,
+      double source_rate);
 /* Live output only, before service. Uses measured delay and silent preroll;
  * calibration packets never reach output. Original PCM timestamps stay in
  * the source epoch; output video is shifted to match the audible source.

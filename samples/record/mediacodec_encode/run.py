@@ -46,7 +46,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
     binary = Path(directory) / ("encoder_test.exe" if os.name == "nt" else "encoder_test")
     for source, extra in (("test.c", []), ("stream_config_test.c", []), ("stream_output_test.c", []), ("stream_timing_test.c", []), ("audio_test.c", []),
                           ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"]),
-                          ("worker_test.c", []), ("calibrated_worker_test.c", []),
+                          ("worker_test.c", []), ("calibrated_worker_test.c", []), ("resampled_worker_test.c", []),
                           ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
                           ("capture_submit_test.c", []), ("capture_pipe_test.c", []),
@@ -69,13 +69,16 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "libretro-common/formats/flv/rflv_mux.c")]
             if source == "stream_output_test.c":
                 command += [str(root / "record/record_stream_mediacodec.c")]
-        if source in ("worker_test.c", "calibrated_worker_test.c"):
+        if source in ("worker_test.c", "calibrated_worker_test.c", "resampled_worker_test.c"):
             command += ["-DHAVE_THREADS",
                         str(root / "record/record_mediacodec_worker.c"),
                         str(root / "record/record_aac_stream_timing.c"),
                         str(root / "record/record_audio_queue.c"),
                         str(root / "libretro-common/queues/retro_spsc.c")]
-            if source == "worker_test.c":
+            command += [str(root / "record/record_pcm_resample.c"),
+                        str(root / "libretro-common/audio/resampler/drivers/sinc_resampler_int16.c"),
+                        str(root / "libretro-common/memmap/memalign.c"), "-lm"]
+            if source != "calibrated_worker_test.c":
                 command += [str(root / "record/record_aac_probe.c")]
         if source in ("session_test.c", "session_stream_test.c"):
             command += ["-DHAVE_THREADS",
@@ -184,6 +187,9 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
             continue
         arguments = [str(binary)] + ([directory] if source == "file_test.c" else [])
         subprocess.run(arguments, check=True, timeout=30)
+        if source == "resampled_worker_test.c":
+            subprocess.run([sys.executable, str(here / "duration_check.py"),
+                            str(binary)], check=True, timeout=35)
         if source == "file_test.c":
             assert (Path(directory) / "record-\u00e9.mp4").read_bytes() == b"sentinel"
             assert not (Path(directory) / "nonexistent-recording").exists()

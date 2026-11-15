@@ -1739,6 +1739,7 @@ RECORDING
 #include "../record/record_mediacodec_encoder.c"
 #include "../record/record_mux_mediacodec.c"
 #include "../record/record_aac_stream_timing.c"
+#include "../record/record_pcm_resample.c"
 #include "../record/record_mediacodec_worker.c"
 #if defined(HAVE_RTMP) && defined(HAVE_RFLV)
 #include "../record/record_mediacodec_stream_config.c"

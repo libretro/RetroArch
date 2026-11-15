@@ -98,6 +98,9 @@ def main():
                 link += [str(repo / name) for name in (
                     'record/record_mediacodec_worker.c', 'record/record_aac_probe.c',
                     'record/record_mux_mediacodec.c',
+                    'record/record_pcm_resample.c',
+                    'libretro-common/audio/resampler/drivers/sinc_resampler_int16.c',
+                    'libretro-common/memmap/memalign.c',
                     'record/record_aac_stream_timing.c', 'record/record_audio_queue.c',
                     'libretro-common/queues/retro_spsc.c', 'libretro-common/formats/aac/raac.c')]
             command(link, cwd=network)

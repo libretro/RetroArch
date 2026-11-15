@@ -2,14 +2,16 @@
  * GPL-3.0-or-later */
 #include "record_mediacodec_worker.h"
 #include "record_aac_stream_timing.h"
+#include "record_pcm_resample.h"
 #include <stdlib.h>
 
 struct record_mediacodec_worker
 {
-   uint64_t audio_end_sample, coded_frames;
+   uint64_t audio_end_sample, source_end_sample, coded_frames;
    int64_t end_us[2];
    record_mediacodec_encoder_t *encoder[2];
    record_audio_queue_t *pcm;
+   record_pcm_resample_t *resampler;
    record_mediacodec_output_ops_t output;
    void *output_context;
    record_mediacodec_packet_t pending[2];
@@ -22,6 +24,18 @@ struct record_mediacodec_worker
    bool started, finished, failed;
    bool live_probe, timing_ready;
 };
+
+bool record_mediacodec_worker_resample(record_mediacodec_worker_t *w,
+      double source_rate)
+{
+   if (!w || !w->encoder[1] || w->active || w->closing || w->failed
+         || w->resampler || !(source_rate >= 8000.0 && source_rate <= 192000.0))
+      return false;
+   if (source_rate == w->rate)
+      return true;
+   w->resampler = record_pcm_resample_new(w->pcm, source_rate, w->rate);
+   return w->resampler != NULL;
+}
 
 static bool record_mcw_samples_us(uint64_t frames, unsigned rate,
       int64_t *timestamp)
@@ -136,11 +150,15 @@ record_mediacodec_worker_t *record_mediacodec_worker_new(
 bool record_mediacodec_worker_finish(record_mediacodec_worker_t *w,
       int64_t video_end_us, uint64_t audio_end_sample)
 {
+   uint64_t source_end = audio_end_sample;
    if (!w || w->failed || video_end_us <= 0)
       return false;
    if (w->closing)
       return w->end_us[0] == video_end_us
-            && w->audio_end_sample == audio_end_sample;
+            && w->source_end_sample == source_end;
+   if (w->resampler && !record_pcm_resample_duration(w->resampler,
+             source_end, &audio_end_sample))
+      return false;
    if (w->encoder[1])
    {
       if ((!audio_end_sample && !w->probe)
@@ -152,6 +170,7 @@ bool record_mediacodec_worker_finish(record_mediacodec_worker_t *w,
    }
    w->end_us[0] = video_end_us;
    w->audio_end_sample = audio_end_sample;
+   w->source_end_sample = source_end;
    w->closing = true;
    return true;
 }
@@ -293,7 +312,17 @@ static int record_mcw_input(record_mediacodec_worker_t *w)
    }
    if (!w->pcm_end)
    {
-      result = record_audio_queue_peek(w->pcm, &samples, &frames, &timestamp);
+      if (w->resampler)
+      {
+         result = record_pcm_resample_peek(w->resampler, &samples, &frames, &timestamp);
+         if (result == RECORD_PCM_PROGRESS)
+            return 1;
+         result = result == RECORD_PCM_PACKET ? RECORD_AUDIO_OK
+            : result == RECORD_PCM_END ? RECORD_AUDIO_END
+            : result == RECORD_PCM_BUSY ? RECORD_AUDIO_BUSY : RECORD_AUDIO_ERROR;
+      }
+      else
+         result = record_audio_queue_peek(w->pcm, &samples, &frames, &timestamp);
       if (result == RECORD_AUDIO_BUSY)
          return 0;
       if (result == RECORD_AUDIO_END)
@@ -318,7 +347,8 @@ static int record_mcw_input(record_mediacodec_worker_t *w)
          w->consumed += accepted;
          if (w->consumed == frames)
          {
-            if (!record_audio_queue_ack(w->pcm))
+            if (!(w->resampler ? record_pcm_resample_ack(w->resampler)
+                     : record_audio_queue_ack(w->pcm)))
                return -1;
             w->consumed = 0;
          }
@@ -329,6 +359,13 @@ static int record_mcw_input(record_mediacodec_worker_t *w)
    }
    if (!w->closing)
       return 0;
+   if (w->resampler)
+   {
+      uint64_t source, output;
+      if (!record_pcm_resample_end(w->resampler, &source, &output)
+            || source != w->source_end_sample || output != w->audio_end_sample)
+         return -1;
+   }
    result = record_mediacodec_encoder_audio_finish(
          w->encoder[1], w->audio_end_sample
                + (w->live_probe ? w->live_timing.input_epoch
@@ -460,6 +497,9 @@ bool record_mediacodec_worker_free(record_mediacodec_worker_t *w)
    if (w && w->active && !w->failed && !w->finished)
       return false;
    if (w && !w->output.retire(w->output_context))
+      return false;
+   if (w && w->resampler && (!record_pcm_resample_cancel(w->resampler)
+             || !record_pcm_resample_free(w->resampler)))
       return false;
    free(w);
    return true;
