@@ -335,8 +335,11 @@ static void test_open_user_tiny_block(void)
    printf("[SUCCESS] open_user with tiny io_block_size floors cleanly\n");
 }
 
+int rjson_span_test(void);
+
 int main(void)
 {
+   failures += rjson_span_test();
    test_parser_happy_path();
    test_parser_long_string();
    test_parser_deep_nesting();

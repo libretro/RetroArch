@@ -98,11 +98,14 @@ static void entries_done(int result, const char *error,
       rc_client_destroy_leaderboard_entry_list(list);
    callbacks++;
 }
+int api_json_test(void);
+
 int main(void)
 {
    rc_client_t *client;
    rc_client_async_handle_t *handle;
    unsigned i;
+   failures += api_json_test();
    owner = (uintptr_t)sthread_get_current_thread_id();
    mpsc_stack_init(&responses);
    client = rc_client_create(NULL, server_call);

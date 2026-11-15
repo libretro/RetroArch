@@ -25,8 +25,9 @@ SOURCES := progress_bounds_test.c \
    $(LRC)/utils/md5.c
 
 OWNER_TARGET := client_owner_queue_test$(if $(findstring mingw,$(CC)),.exe,)
-OWNER_SOURCES := client_owner_queue_test.c $(filter-out progress_bounds_test.c,$(SOURCES)) \
+OWNER_SOURCES := client_owner_queue_test.c api_json_test.c $(filter-out progress_bounds_test.c,$(SOURCES)) \
    $(RC)/src/rc_client.c $(wildcard $(RC)/src/rapi/*.c) \
+   $(LRC)/formats/json/rjson.c $(LRC)/string/rstrtod.c \
    $(LRC)/rthreads/rthreads.c $(LRC)/rthreads/retro_eventcount.c
 OWNER_LIBS := -lpthread
 
