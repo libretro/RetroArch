@@ -891,8 +891,6 @@ static void gfx_display_gl2_draw_pipeline(
 #ifdef HAVE_SHADERPIPELINE
    struct uniform_info uniform_param;
    gl2_t             *gl            = (gl2_t*)data;
-   /* The effects' clock, one step ahead, as this driver has always
-    * drawn them */
    float t                          = p_disp->effect_time;
 
    draw->pos                        = VIDEO_POS_PACK(0, 0);
@@ -925,9 +923,6 @@ static void gfx_display_gl2_draw_pipeline(
          gl->shader->use(gl, gl->shader_data, draw->pipeline_id,
                true);
 
-         if (t > 65536.0f)
-            t -= 65536.0f;
-
          uniform_param.type              = UNIFORM_1F;
          uniform_param.enabled           = true;
          uniform_param.location          = 0;
@@ -944,7 +939,7 @@ static void gfx_display_gl2_draw_pipeline(
          if (draw->pipeline_id == VIDEO_SHADER_MENU)
          {
             uniform_param.type = UNIFORM_4FV;
-            uniform_param.count = 65;
+            uniform_param.count = 50;
             uniform_param.lookup.ident = "Ribbon";
             uniform_param.lookup.add_prefix = false;
             uniform_param.result.floatv = (float*)gfx_display_ribbon_data(p_disp);

@@ -3444,7 +3444,7 @@ static void gfx_display_vk_draw_pipeline(
             if (draw->pipeline_id == VIDEO_SHADER_MENU)
             {
                draw->backend_data = (void*)gfx_display_ribbon_ubo(p_disp, ribbon_yflip);
-               draw->backend_data_size = 66 * 4 * sizeof(float);
+               draw->backend_data_size = 51 * 4 * sizeof(float);
             }
             else
             {

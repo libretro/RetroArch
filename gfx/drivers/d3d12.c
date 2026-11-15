@@ -426,7 +426,7 @@ typedef struct ALIGN(16)
    } OutputSize;
    float time;
    float alpha;
-   float ribbon[65][4];
+   float ribbon[50][4];
 } d3d12_uniform_t;
 
 typedef struct d3d12_pass
@@ -923,7 +923,6 @@ typedef struct
       uint8_t *mapped;
       D3D12_GPU_VIRTUAL_ADDRESS cb_va;
       D3D12_CPU_DESCRIPTOR_HANDLE target;
-      DXGI_FORMAT format;
       unsigned dims;
       unsigned slot;
       unsigned next;
@@ -2783,15 +2782,11 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   /* The effects' clock, one step ahead, as this driver has always
-    * drawn them */
    if (draw->pipeline_id == VIDEO_SHADER_MENU)
       memcpy(d3d12->ubo_values.ribbon, gfx_display_ribbon_data(p_disp),
             sizeof(d3d12->ubo_values.ribbon));
 
    d3d12->ubo_values.time   = p_disp->effect_time;
-   if (d3d12->ubo_values.time > 65536.0f)
-      d3d12->ubo_values.time -= 65536.0f;
    d3d12->ubo_values.alpha  = draw->color ? draw->color[3] : 1.0f;
 
    /* The frame's slot now, the others when their frames come */
@@ -8747,7 +8742,6 @@ static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims)
             goto error;
       }
       d3d12->bloom.dims = bloom_dims;
-      d3d12->bloom.format = format;
    }
    d3d12->bloom.slot = slot;
    cmd = d3d12->queue.cmd;

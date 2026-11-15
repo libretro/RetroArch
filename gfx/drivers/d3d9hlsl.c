@@ -1342,8 +1342,6 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    }
 
    t = p_disp->effect_time;
-   if (t > 65536.0f)
-      t -= 65536.0f;
 
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
@@ -1362,7 +1360,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
                   pd->vs_bytecode_dwords, "Ribbon", NULL, NULL);
             if (reg >= 0)
                d3d9_hlsl_set_vs_const(d3d->dev, reg,
-                     gfx_display_ribbon_data(p_disp), 65);
+                     gfx_display_ribbon_data(p_disp), 50);
          }
 
          /* Set time uniform for all pipeline shaders */

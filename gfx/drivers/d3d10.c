@@ -196,7 +196,7 @@ typedef struct ALIGN(16)
    } OutputSize;
    float time;
    float alpha;
-   float ribbon[65][4];
+   float ribbon[50][4];
 } d3d10_uniform_t;
 
 typedef struct d3d10_shader_t
@@ -1550,8 +1550,6 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
 
    d3d10->ubo_values.time = p_disp->effect_time;
    d3d10->ubo_values.alpha = draw->color ? draw->color[3] : 1.0f;
-   if (d3d10->ubo_values.time > 65536.0f)
-      d3d10->ubo_values.time -= 65536.0f;
 
    {
       void *mapped_ubo              = NULL;

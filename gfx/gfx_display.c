@@ -855,7 +855,7 @@ const float *gfx_display_ribbon_ubo(gfx_display_t *p_disp, float yflip)
       return NULL;
    p_disp->ribbon->header[0] = p_disp->ribbon->data[0][0];
    p_disp->ribbon->header[1] = yflip;
-   p_disp->ribbon->header[2] = p_disp->ribbon->data[64][2];
+   p_disp->ribbon->header[2] = p_disp->ribbon->data[49][2];
    return p_disp->ribbon->header;
 }
 

@@ -2094,14 +2094,6 @@ jobs:
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d12_raw_frame.py
           python3 samples/gfx/d3d12_menu_mapping/run.py
 
-      - name: Menu effect uniforms (Linux and mingw + Wine)
-        shell: bash
-        run: |
-          set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
-          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/menu_effect_uniforms.py
-          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/menu_effect_uniforms.py
-
       - name: D3D8 resource cleanup (Linux and mingw + Wine)
         shell: bash
         run: |

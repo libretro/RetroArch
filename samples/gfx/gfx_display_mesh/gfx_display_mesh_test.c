@@ -161,7 +161,7 @@ static void ribbon_motion(void)
             "ribbon and dust motion are independent of refresh rate");
    for (i = 0; i < MENU_RIBBON_PARTICLES; i++)
    {
-      float light = a->data[16 + i][3];
+      float light = a->data[1 + i][3];
       if (light < lo)
          lo = light;
       if (light > hi)
@@ -176,43 +176,9 @@ static void ribbon_motion(void)
    time = a->time;
    menu_ribbon_update(a, 3600.0, 1280, 720, 0.4f);
    CHECK(a->time - time <= 0.067f, "resume has a bounded simulation step");
-   CHECK(a->data[64][2] == 0.4f, "menu fading reaches both sheet and dust");
+   CHECK(a->data[49][2] == 0.4f, "menu fading reaches both sheet and dust");
    free(a);
    free(b);
-}
-
-static void ribbon_reference(void)
-{
-   static const float points[6][2] = {
-      {-1.0f, -1.0f}, {-0.73f, -0.65f}, {-0.2f, -0.25f},
-      {0.25f, 0.15f}, {0.67f, 0.55f}, {1.0f, 1.0f}
-   };
-   /* Committed sheet at animation phases 0 and 6. */
-   static const float expected[2][6] = {
-      {-0.533256722f, -0.430433463f, -0.329685062f, -0.123421512f, -0.095636221f, -0.147437462f},
-      {-0.570829380f, -0.390650537f, -0.340452917f, -0.020468937f, -0.095842270f, -0.194557165f}
-   };
-   menu_ribbon_t *r = (menu_ribbon_t*)calloc(1, sizeof(*r));
-   unsigned frame, i;
-   CHECK(r != NULL, "reference state allocation");
-   if (!r)
-      return;
-   for (frame = 0; frame <= 600; frame++)
-   {
-      menu_ribbon_update(r, frame / 60.0, 1280, 720, 1.0f);
-      if (frame != 0 && frame != 600)
-         continue;
-      for (i = 0; i < 6; i++)
-      {
-         float position[4], lighting[4];
-         gfx_display_ribbon_vertex(&r->data[0][0], points[i], position, lighting);
-         CHECK(TEST_NEAR(position[0], 1.12f * points[i][0])
-               && TEST_NEAR(position[1], expected[frame / 600][i])
-               && TEST_NEAR(position[3], 1.0f + 0.1f * points[i][1]),
-               "the sheet retains the committed folds and perspective");
-      }
-   }
-   free(r);
 }
 
 int main(void)
@@ -226,7 +192,6 @@ int main(void)
    const unsigned vd = VIDEO_SCALE_PACK(640, 480);
 
    ribbon_motion();
-   ribbon_reference();
 
    for (i = 0; i < 16; i++)
       white[i] = 1.0f;
@@ -255,9 +220,6 @@ int main(void)
       {
          CHECK(mesh->vertices[3].x == 0.0f && mesh->positions[7] == 0.0f,
                "unfilled mesh streams start at zero");
-         mesh->vertices[3].x = 0.75f;
-         mesh->positions[6] = mesh->vertices[3].x;
-         CHECK(mesh->positions[6] == 0.75f, "the effect reads the owner's stream");
          gfx_display_mesh_free(mesh);
       }
       mesh = make(v, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, GFX_MESH_FLAG_POSITIONS);

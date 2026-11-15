@@ -6,10 +6,10 @@ void ribbon_vertex(vec2 p, RIBBON_PARAMS RIBBON_OUT position, RIBBON_OUT vEC) { 
    if (p.y > 1.5) { \
       int id = int(floor((p.y-2.0)*0.25)); \
       vec2 corner = vec2(p.x,(p.y-2.0-float(id)*4.0)*2.0-1.0); \
-      vec4 star = Ribbon[16+id]; \
-      vec2 radius = star.z*Ribbon[64].y*vec2(Ribbon[64].x,1.0); \
+      vec4 star = Ribbon[1+id]; \
+      vec2 radius = star.z*Ribbon[49].y*vec2(Ribbon[49].x,1.0); \
       position = vec4(star.xy+corner*radius,0.0,1.0); \
-      vEC = vec4(corner,2.0,star.w*Ribbon[64].z); \
+      vEC = vec4(corner,2.0,star.w*Ribbon[49].z); \
    } else { \
       float x = p.x; \
       float z = p.y; \
@@ -36,7 +36,7 @@ void ribbon_vertex(vec2 p, RIBBON_PARAMS RIBBON_OUT position, RIBBON_OUT vEC) { 
       float facing = dot(normal,eye)/sqrt(dot(normal,normal)*dot(eye,eye)); \
       float stripes = 0.65+0.35*cos(z*28.0); \
       position = vec4(1.12*x,y,0.0,w); \
-      vEC = vec4(facing,(dz*w-0.10*y)/(w*w),z,stripes*Ribbon[64].z); \
+      vEC = vec4(facing,(dz*w-0.10*y)/(w*w),z,stripes*Ribbon[49].z); \
    } \
 }
 

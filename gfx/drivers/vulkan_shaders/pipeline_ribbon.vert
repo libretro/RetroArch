@@ -10,7 +10,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
    float yflip;
    float alpha;
    float padding;
-   vec4 Ribbon[65];
+   vec4 Ribbon[50];
 } constants;
 
 #define RIBBON_PARAMS

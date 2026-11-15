@@ -679,8 +679,6 @@ static void gfx_display_wiiu_draw_pipeline(
       wiiu->menu_shader_ubo->time = 0.0f;
    }
    wiiu->menu_shader_ubo->time = p_disp->effect_time;
-   if (wiiu->menu_shader_ubo->time > 65536.0f)
-      wiiu->menu_shader_ubo->time -= 65536.0f;
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->menu_shader_ubo, sizeof(*wiiu->menu_shader_ubo));
    GX2SetVertexUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);

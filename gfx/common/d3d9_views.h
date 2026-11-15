@@ -126,7 +126,6 @@ static bool D3D9V_FN(views_target_retire)(d3d9_video_t *d3d,
    return true;
 }
 
-/* A render target of ARGB8 sized @dims */
 static bool D3D9V_FN(views_target_make_format)(d3d9_video_t *d3d,
       d3d9_views_target_t *t, unsigned dims, D3DFORMAT format)
 {

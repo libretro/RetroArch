@@ -1081,7 +1081,7 @@ static void gfx_display_gl3_draw_pipeline(
             if (draw->pipeline_id == VIDEO_SHADER_MENU)
             {
                uniform_param.type = UNIFORM_4FV;
-               uniform_param.count = 65;
+               uniform_param.count = 50;
                uniform_param.lookup.ident = "Ribbon";
                uniform_param.lookup.add_prefix = false;
                uniform_param.result.floatv = (float*)gfx_display_ribbon_data(p_disp);
@@ -1134,7 +1134,7 @@ static void gfx_display_gl3_draw_pipeline(
             if (draw->pipeline_id == VIDEO_SHADER_MENU)
             {
                draw->backend_data = (void*)gfx_display_ribbon_ubo(p_disp, 1.0f);
-               draw->backend_data_size = 66 * 4 * sizeof(float);
+               draw->backend_data_size = 51 * 4 * sizeof(float);
             }
             break;
 

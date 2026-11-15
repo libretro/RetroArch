@@ -25,13 +25,12 @@ all: $(SPIRV) $(GLSL_INC)
 
 pipeline_ribbon.vert.inc pipeline_ribbon.frag.inc: ../menu_ribbon_shader.h
 
-pipeline_ribbon.vert.src.inc pipeline_ribbon.frag.src.inc: %.src.inc: % ../menu_ribbon_shader.h
-	$(GLSLANG) -E $< | sed '/^#extension GL_GOOGLE_include_directive/d; /^#line/d' | od -An -v -tu1 | sed 's/ *$$/,/; s/  */,/g; s/^,//' > $@
-	echo 0 >> $@
-
 xmb_material.frag.inc xmb_font.frag.inc: ../xmb_material.h
 
-xmb_material.frag.src.inc xmb_font.frag.src.inc: %.src.inc: % ../xmb_material.h
+pipeline_ribbon.vert.src.inc pipeline_ribbon.frag.src.inc: ../menu_ribbon_shader.h
+xmb_material.frag.src.inc xmb_font.frag.src.inc: ../xmb_material.h
+
+pipeline_ribbon.vert.src.inc pipeline_ribbon.frag.src.inc xmb_material.frag.src.inc xmb_font.frag.src.inc: %.src.inc: %
 	$(GLSLANG) -E $< | sed '/^#extension GL_GOOGLE_include_directive/d; /^#line/d' | od -An -v -tu1 | sed 's/ *$$/,/; s/  */,/g; s/^,//' > $@
 	echo 0 >> $@
 

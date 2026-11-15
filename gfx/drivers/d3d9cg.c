@@ -807,8 +807,6 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
             {
                float t = disp_get_ptr()->effect_time;
                CGparameter param;
-               if (t > 65536.0f)
-                  t -= 65536.0f;
 
                param = cgGetNamedParameter(
                      (CGprogram)_chain->pipeline_vprg[idx], "time");
@@ -827,7 +825,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
                   param = cgGetNamedParameter(
                         (CGprogram)_chain->pipeline_vprg[idx], "Ribbon");
                   if (param)
-                     cgSetParameterValuefr(param, 65 * 4,
+                     cgSetParameterValuefr(param, 50 * 4,
                            gfx_display_ribbon_data(disp_get_ptr()));
                }
 

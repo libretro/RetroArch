@@ -9856,12 +9856,6 @@ static gfx_display_mesh_t *xmb_create_ribbon(bool simple)
    return mesh;
 }
 
-static void xmb_init_ribbon(xmb_handle_t *xmb)
-{
-   xmb->ribbon_mesh = xmb_create_ribbon(false);
-   xmb->simple_ribbon_mesh = xmb_create_ribbon(true);
-}
-
 static void xmb_menu_animation_update_time(
       float *ticker_pixel_increment,
       unsigned video_dims)
@@ -9933,7 +9927,8 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb_init_horizontal_list(xmb);
 
-   xmb_init_ribbon(xmb);
+   xmb->ribbon_mesh = xmb_create_ribbon(false);
+   xmb->simple_ribbon_mesh = xmb_create_ribbon(true);
 
    /* Initialise screensaver */
    if (!(xmb->screensaver = menu_screensaver_init()))

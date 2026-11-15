@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #define MENU_RIBBON_PARTICLES 48
-#define MENU_RIBBON_UNIFORMS 65
+#define MENU_RIBBON_UNIFORMS 50
 
 typedef struct menu_ribbon_particle
 {
@@ -67,22 +67,22 @@ static void menu_ribbon_vertex(const float *data, const float *p,
    if (p[1] > 1.5f)
    {
       unsigned id = (unsigned)((p[1] - 2.0f) * 0.25f);
-      const float *star = data + (16 + id) * 4;
+      const float *star = data + (1 + id) * 4;
       float cy = (p[1] - 2.0f - id * 4.0f) * 2.0f - 1.0f;
-      float radius = star[2] * data[257];
-      position[0] = star[0] + p[0] * radius * data[256];
+      float radius = star[2] * data[197];
+      position[0] = star[0] + p[0] * radius * data[196];
       position[1] = star[1] + cy * radius;
       position[2] = 0.0f;
       position[3] = 1.0f;
       lighting[0] = p[0];
       lighting[1] = cy;
       lighting[2] = 2.0f;
-      lighting[3] = star[3] * data[258];
+      lighting[3] = star[3] * data[198];
    }
    else
    {
       menu_ribbon_surface(p[0], p[1], data[0], position, lighting);
-      lighting[3] *= data[258];
+      lighting[3] *= data[198];
    }
 }
 
@@ -162,15 +162,15 @@ static void menu_ribbon_update(menu_ribbon_t *r, double now,
       if (fade > 1.0f)
          fade = 1.0f;
       fade *= fade * (3.0f - 2.0f * fade);
-      data[16 + i][0] = p->x;
-      data[16 + i][1] = p->y;
-      data[16 + i][2] = 1.25f + 3.8f * p->depth * p->depth * p->depth;
-      data[16 + i][3] = fade * (0.16f + 0.22f * p->depth + 2.0f * sparkle);
+      data[1 + i][0] = p->x;
+      data[1 + i][1] = p->y;
+      data[1 + i][2] = 1.25f + 3.8f * p->depth * p->depth * p->depth;
+      data[1 + i][3] = fade * (0.16f + 0.22f * p->depth + 2.0f * sparkle);
    }
    r->data[0][0] = (float)(r->time * 0.6);
-   r->data[64][0] = width ? (float)height / width : 1.0f;
-   r->data[64][1] = height ? 2.0f / height : 0.0f;
-   r->data[64][2] = alpha;
+   r->data[49][0] = width ? (float)height / width : 1.0f;
+   r->data[49][1] = height ? 2.0f / height : 0.0f;
+   r->data[49][2] = alpha;
 }
 
 #endif

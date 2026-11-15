@@ -90,7 +90,7 @@ typedef struct
    matrix_float4x4 projectionMatrix;
    vector_float2 outputSize;
    float time;
-   vector_float4 ribbon[65];
+   vector_float4 ribbon[50];
 } Uniforms;
 
 typedef struct

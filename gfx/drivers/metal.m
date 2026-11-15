@@ -4511,14 +4511,10 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
       }
    }
 
-   /* The effects' clock, one step ahead, as this driver has always
-    * drawn them */
    _uniforms.time = disp_get_ptr()->effect_time;
    if (draw->pipeline_id == VIDEO_SHADER_MENU)
       memcpy(_uniforms.ribbon, gfx_display_ribbon_data(disp_get_ptr()),
             sizeof(_uniforms.ribbon));
-   if (_uniforms.time > 65536.0f)
-      _uniforms.time -= 65536.0f;
 }
 
 /* gfx_display meshes. The shader is compiled here from its source
