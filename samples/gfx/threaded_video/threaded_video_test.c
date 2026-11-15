@@ -7938,6 +7938,117 @@ static void lane_zero_copy_mode(int mode, const char *name)
             name, g1 - g0, zc1 - zc0);
 }
 
+static void lane_cached_framebuffer(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   unsigned had = failures, i;
+   unsigned char saved_mem[sizeof(((thread_video_t*)0)->frame.mem)];
+   uint8_t *saved_buffer[2], *saved_spare;
+   int saved_index[2], saved_spare_mem, saved_lent;
+   static uint8_t uncached, cached, host;
+   struct retro_framebuffer fb;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "cached framebuffer preference");
+   thr = (thread_video_t*)video_st->data;
+   video_thread_wait_idle();
+   CHECK(!thr->frame.mem_busy, "synthetic framebuffer pool needs an idle driver");
+   if (thr->frame.mem_busy)
+      return;
+   memcpy(saved_mem, thr->frame.mem, sizeof(saved_mem));
+   saved_spare = thr->frame.spare;
+   saved_spare_mem = thr->frame.spare_mem;
+   saved_lent = thr->frame.lent;
+   for (i = 0; i < 2; i++)
+   {
+      saved_buffer[i] = thr->frame.slot[i].buffer;
+      saved_index[i] = thr->frame.slot[i].mem;
+      thr->frame.slot[i].mem = 0;
+      thr->frame.slot[i].buffer = &uncached;
+   }
+   thr->frame.spare_mem = -1;
+   thr->frame.spare = NULL;
+   for (i = 0; i < VIDEO_THREAD_FRAME_MEM; i++)
+   {
+      thr->frame.mem[i].ptr = &host;
+      thr->frame.mem[i].size = thr->frame.buffer_size;
+      thr->frame.mem[i].id = 0;
+      thr->frame.mem[i].cached = true;
+      retro_atomic_store_release_int(&thr->frame.mem[i].busy, 1);
+   }
+   thr->frame.mem[0].ptr = &uncached;
+   thr->frame.mem[0].id = 1;
+   thr->frame.mem[0].cached = false;
+   retro_atomic_store_release_int(&thr->frame.mem[0].busy, 0);
+   thr->frame.mem[1].ptr = &cached;
+   thr->frame.mem[1].id = 2;
+   retro_atomic_store_release_int(&thr->frame.mem[1].busy, 0);
+
+   retro_atomic_store_release_int(&thr->frame.mem[3].busy, 0);
+   memset(&fb, 0, sizeof(fb));
+   fb.width = fb.height = 16;
+   fb.access_flags = RETRO_MEMORY_ACCESS_WRITE | RETRO_MEMORY_ACCESS_READ;
+   CHECK(video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+         "read/write framebuffer was declined");
+   CHECK(fb.data == &cached && (fb.memory_flags & RETRO_MEMORY_TYPE_CACHED),
+         "read/write loan ignored available cached driver memory");
+
+   for (i = 0; i < 2; i++)
+   {
+      thr->frame.slot[i].mem = 2;
+      thr->frame.slot[i].buffer = &host;
+   }
+   retro_atomic_store_release_int(&thr->frame.mem[2].busy, 0);
+   retro_atomic_store_release_int(&thr->frame.mem[3].busy, 1);
+   thr->frame.mem[1].cached = false;
+   CHECK(video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+         "cached current framebuffer was declined");
+   CHECK(fb.data == &host && (fb.memory_flags & RETRO_MEMORY_TYPE_CACHED),
+         "read/write loan displaced writable cached host memory");
+
+   thr->frame.mem[1].cached = true;
+   CHECK(video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+         "cached driver upgrade was declined");
+   CHECK(fb.data == &cached, "cached driver memory lost its zero-copy preference");
+   for (i = 0; i < 2; i++)
+   {
+      thr->frame.slot[i].mem = 2;
+      thr->frame.slot[i].buffer = &host;
+   }
+   fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+   CHECK(video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+         "write-only framebuffer was declined");
+   CHECK(fb.data == &uncached, "write-only loan lost driver-memory preference");
+   for (i = 0; i < 2; i++)
+   {
+      thr->frame.slot[i].mem = 0;
+      thr->frame.slot[i].buffer = &uncached;
+   }
+   thr->frame.mem[1].cached = false;
+   retro_atomic_store_release_int(&thr->frame.mem[2].busy, 1);
+   fb.access_flags |= RETRO_MEMORY_ACCESS_READ;
+   CHECK(video_st->poke->get_current_software_framebuffer(video_st->data, &fb),
+         "read/write uncached fallback was declined");
+   CHECK(fb.data == &uncached && !(fb.memory_flags & RETRO_MEMORY_TYPE_CACHED),
+         "uncached fallback was misreported");
+
+   /* No pixels were submitted; all synthetic storage stays test-owned. */
+   memcpy(thr->frame.mem, saved_mem, sizeof(saved_mem));
+   for (i = 0; i < 2; i++)
+   {
+      thr->frame.slot[i].buffer = saved_buffer[i];
+      thr->frame.slot[i].mem = saved_index[i];
+   }
+   thr->frame.spare = saved_spare;
+   thr->frame.spare_mem = saved_spare_mem;
+   thr->frame.lent = saved_lent;
+   set_threaded_via_setting(false);
+   if (failures == had)
+      fprintf(stderr, "[pass] cached framebuffer preference and uncached fallback\n");
+}
+
 static void lane_zero_copy(void)
 {
    lane_zero_copy_mode(1, "zero-copy lane");
@@ -14140,6 +14251,11 @@ int main(int argc, char *argv[])
       record_gpu_stop_in_flight();
       goto shutdown;
    }
+   if (getenv("HARNESS_READ_LEND_ONLY"))
+   {
+      lane_cached_framebuffer();
+      goto shutdown;
+   }
    if (getenv("HARNESS_MENU_ONLY"))
    {
       lane_menu_texture();
@@ -14236,6 +14352,8 @@ int main(int argc, char *argv[])
       lane_pacing_after_stall();
       lane_pacing_rate();
    }
+   if (!real_driver())
+      lane_cached_framebuffer();
    lane_zero_copy();
    lane_zero_copy_ring_full();
    if (real_driver())

@@ -233,14 +233,14 @@ static INLINE bool video_thread_mem_held(thread_video_t *thr, int i)
 }
 
 /* Which frame buffers video_thread_mem_take_from() takes */
-#define VIDEO_THREAD_TAKE_ANY    0 /* the driver's before host memory */
-#define VIDEO_THREAD_TAKE_HOST   1 /* host memory only */
-#define VIDEO_THREAD_TAKE_DRIVER 2 /* the driver's only, none made */
+#define VIDEO_THREAD_TAKE_ANY     0 /* the driver's before host memory */
+#define VIDEO_THREAD_TAKE_CACHED  1 /* cached memory only */
+#define VIDEO_THREAD_TAKE_DRIVER  2 /* the driver's only, none made */
 
-/* Main thread: a frame buffer neither slot nor the spare holds and no
- * frame in flight reads, as @take says; a new host buffer when host
- * memory will do and there is none. -1 when there is none to be had. */
-static int video_thread_mem_take_from(thread_video_t *thr, int take)
+/* Main thread: take an unheld writable buffer, or retain @cached_cur.
+ * Allocate host storage only when neither is available. */
+static int video_thread_mem_take_from(thread_video_t *thr,
+      int take, int cached_cur)
 {
    int i, host = -1, empty = -1;
    for (i = 0; i < VIDEO_THREAD_FRAME_MEM; i++)
@@ -257,7 +257,7 @@ static int video_thread_mem_take_from(thread_video_t *thr, int take)
          continue;
       if (thr->frame.mem[i].id)
       {
-         if (take != VIDEO_THREAD_TAKE_HOST)
+         if (take != VIDEO_THREAD_TAKE_CACHED || thr->frame.mem[i].cached)
             return i;
       }
       else if (host < 0)
@@ -265,6 +265,8 @@ static int video_thread_mem_take_from(thread_video_t *thr, int take)
    }
    if (take == VIDEO_THREAD_TAKE_DRIVER)
       return -1;
+   if (cached_cur >= 0)
+      return cached_cur;
    if (host >= 0)
       return host;
    if (     empty >= 0
@@ -279,29 +281,32 @@ static int video_thread_mem_take_from(thread_video_t *thr, int take)
    return -1;
 }
 
-/* Main thread: frame buffer @cur, or another to write in its place -
- * the driver's frame memory where @cur is host memory and one is free,
- * any when @cur is still read by a frame in flight. -1 for none. */
-static int video_thread_mem_writable_for(thread_video_t *thr, int cur)
+/* Prefer cached driver memory for reads, any driver memory for writes.
+ * Keep a writable cached host buffer before taking another host buffer. */
+static int video_thread_mem_writable_for(thread_video_t *thr, int cur, int take)
 {
    int i;
    bool ok = video_thread_mem_writable(thr, cur);
-   if (ok && thr->frame.mem[cur].id)
+   if (ok && thr->frame.mem[cur].id
+         && (take != VIDEO_THREAD_TAKE_CACHED || thr->frame.mem[cur].cached))
       return cur;
-   if ((i = video_thread_mem_take_from(thr, VIDEO_THREAD_TAKE_DRIVER)) >= 0)
+   if ((i = video_thread_mem_take_from(thr, take,
+               ok && take == VIDEO_THREAD_TAKE_CACHED
+               && thr->frame.mem[cur].cached
+               ? cur : -1)) >= 0)
       return i;
    if (ok)
       return cur;
-   return video_thread_mem_take_from(thr, VIDEO_THREAD_TAKE_ANY);
+   return video_thread_mem_take_from(thr, VIDEO_THREAD_TAKE_ANY, -1);
 }
 
 /* Main thread: the spare, taken when a loan needs one, moved into the
  * driver's frame memory where it can be, and away from a buffer a frame
  * in flight still reads. Any frame buffer fits a slot, since a push
  * swaps the spare into one. */
-static bool video_thread_spare_take(thread_video_t *thr)
+static bool video_thread_spare_take(thread_video_t *thr, int take)
 {
-   int i = video_thread_mem_writable_for(thr, thr->frame.spare_mem);
+   int i = video_thread_mem_writable_for(thr, thr->frame.spare_mem, take);
    if (i < 0)
    {
       thr->frame.spare_mem = -1;
@@ -315,9 +320,9 @@ static bool video_thread_spare_take(thread_video_t *thr)
 
 /* Main thread: slot @s's buffer, moved as the spare is; false when it
  * is read by a frame in flight and there is none to move to */
-static bool video_thread_slot_writable(thread_video_t *thr, unsigned s)
+static bool video_thread_slot_writable(thread_video_t *thr, unsigned s, int take)
 {
-   int i = video_thread_mem_writable_for(thr, thr->frame.slot[s].mem);
+   int i = video_thread_mem_writable_for(thr, thr->frame.slot[s].mem, take);
    if (i < 0)
       return false;
    thr->frame.slot[s].mem    = i;
@@ -4207,7 +4212,7 @@ static bool video_thread_frame(void *data, const void *frame_,
        * free one. With none to be had, which takes the GPU holding
        * every one, the frame is not taken: the push stands as a dupe. */
       if (     src && !zero_copy
-            && !video_thread_slot_writable(thr, slot))
+            && !video_thread_slot_writable(thr, slot, VIDEO_THREAD_TAKE_DRIVER))
       {
          thr->miss_count++;
          src = NULL;
@@ -5528,7 +5533,7 @@ static bool thread_get_current_software_framebuffer(void *data,
    thread_video_t *thr = (thread_video_t*)data;
    unsigned bpp, slot;
    size_t   need;
-   int      mem;
+   int      mem, take;
 
    if (!thr || !fb)
       return false;
@@ -5542,6 +5547,9 @@ static bool thread_get_current_software_framebuffer(void *data,
       thr->handoff.declined_size++;
       return false;
    }
+
+   take = (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
+      ? VIDEO_THREAD_TAKE_CACHED : VIDEO_THREAD_TAKE_DRIVER;
 
    /* A slot that is neither queued nor being rendered stays free until
     * this thread publishes it: the video thread only ever moves a slot
@@ -5560,8 +5568,8 @@ static bool thread_get_current_software_framebuffer(void *data,
    /* A buffer a frame in flight still reads is swapped for one that is
     * free, never waited on */
    if (!(slot == VIDEO_THREAD_LEND_SPARE
-            ? video_thread_spare_take(thr)
-            : video_thread_slot_writable(thr, slot)))
+            ? video_thread_spare_take(thr, take)
+            : video_thread_slot_writable(thr, slot, take)))
    {
       thr->handoff.declined_ring++;
       return false;
@@ -5571,28 +5579,6 @@ static bool thread_get_current_software_framebuffer(void *data,
 
    mem              = (slot == VIDEO_THREAD_LEND_SPARE)
       ? thr->frame.spare_mem : thr->frame.slot[slot].mem;
-   /* A core that reads its frame back gets memory it reads at cached
-    * speed, which driver frame memory need not be: a host buffer, the
-    * frame then copied as before. Kept when there is none. */
-   if (     (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
-         && !thr->frame.mem[mem].cached)
-   {
-      int host = video_thread_mem_take_from(thr, VIDEO_THREAD_TAKE_HOST);
-      if (host >= 0)
-      {
-         mem = host;
-         if (slot == VIDEO_THREAD_LEND_SPARE)
-         {
-            thr->frame.spare_mem = host;
-            thr->frame.spare     = thr->frame.mem[host].ptr;
-         }
-         else
-         {
-            thr->frame.slot[slot].mem    = host;
-            thr->frame.slot[slot].buffer = thr->frame.mem[host].ptr;
-         }
-      }
-   }
    fb->data         = thr->frame.mem[mem].ptr;
    fb->pitch        = (size_t)fb->width * bpp;
    fb->format       = thr->info.source_fp16
