@@ -39,6 +39,13 @@ static void stream_case(unsigned mode, const char *key, const char *value, bool 
       assert(stream_audio_bitrate == 192000);
    if (key && !strcmp(key, "audio_enable"))
       assert(!ctx->channels && !stream_audio_bitrate);
+   if (key && !strcmp(key, "vcodec"))
+   {
+      assert(!strcmp(encoded.mime, "video/av01"));
+      assert(stream_observed.mux.codec == RECORD_MC_STREAM_AV1);
+      assert(encoded.profile == (mode ? 4096 : 1));
+      assert(encoded.level > 0);
+   }
    drain(false);
    assert(history_writes == writes);
 }
@@ -56,6 +63,7 @@ int main(void)
    stream_case(1, "audio_bit_rate", "192000", false);
    stream_case(0, "rtmp_legacy_commands", "true", false);
    stream_case(0, "audio_enable", "false", false);
+   for (i = 0; i < 3; i++) stream_case(i, "vcodec", "av1", false);
    stream_case(0, NULL, NULL, true);
    for (i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
    {

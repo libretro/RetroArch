@@ -273,7 +273,8 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_stream(
    assert(!strcmp(url, "rtmp://localhost/live/test")
          || !strcmp(url, "rtmps://localhost/live/test"));
    assert(config->mux.codec == (!strcmp(v->mime, "video/hevc")
-            ? RECORD_MC_STREAM_HEVC : RECORD_MC_STREAM_AVC));
+            ? RECORD_MC_STREAM_HEVC : !strcmp(v->mime, "video/av01")
+            ? RECORD_MC_STREAM_AV1 : RECORD_MC_STREAM_AVC));
    assert(config->mux.bit_depth == (v->color ? 10u : 8u));
    assert(config->mux.color.primaries == (v->color ? 9u : 1u));
    assert(config->mux.color.transfer == (v->color ? 16u : 1u));
@@ -739,6 +740,27 @@ static void video_only(void)
    drain(false);
    assert(history_writes == writes);
 }
+static void av1_file(void)
+{
+   struct record_params p;
+   record_mc_context_t *ctx;
+   unsigned mode;
+   for (mode = 0; mode < 3; mode++)
+   {
+      reset(mode);
+      p = parameters();
+      p.config = "options";
+      option_key = "vcodec";
+      option_value = "av1";
+      ctx = (record_mc_context_t*)record_mediacodec.init(&p);
+      assert(ctx && !strcmp(encoded.mime, "video/av01"));
+      assert(encoded.profile == (mode ? 4096 : 1) && encoded.level == 512);
+      recording.data = ctx;
+      recording.driver = &record_mediacodec;
+      arm(ctx);
+      drain(false);
+   }
+}
 static void menu_capture(void)
 {
    static int16_t mixed[10000];
@@ -912,6 +934,40 @@ static void level_selection(void)
    option_value = "65536";
    assert(record_mc_options("options", &v, &audio, NULL, NULL));
    assert(v.level == 65536);
+   memset(&v, 0, sizeof(v));
+   v.mime = "video/av01";
+   v.width = 1920;
+   v.height = 1080;
+   v.frame_rate = 30.0;
+   v.bitrate = 12000000;
+   assert(record_mc_level(&v) == 256);
+   v.bitrate++;
+   assert(record_mc_level(&v) == 512);
+   v.bitrate = 12000000;
+   v.frame_rate = 60.0;
+   assert(record_mc_level(&v) == 512);
+   v.width = 3840;
+   v.height = 2160;
+   assert(record_mc_level(&v) == 8192);
+   v.width = 7680;
+   v.height = 4320;
+   assert(record_mc_level(&v) == 131072);
+   v.width = 512;
+   v.height = 288;
+   v.frame_rate = 30.0;
+   v.bitrate = 1500000;
+   assert(record_mc_level(&v) == 1);
+   v.frame_rate = 30.0001;
+   assert(record_mc_level(&v) == 2);
+   v.width = 16;
+   v.height = 4000;
+   v.frame_rate = 1.0;
+   assert(record_mc_level(&v) == 4096);
+   v.frame_rate = 301.0;
+   assert(!record_mc_level(&v));
+   v.frame_rate = 30.0;
+   v.width = v.height = 16384;
+   assert(!record_mc_level(&v));
 }
 static void admission(void)
 {
@@ -982,6 +1038,7 @@ static void admission(void)
 }
 int main(void)
 {
+   av1_file();
    clocks(0);
    clocks(1);
    clocks(2);

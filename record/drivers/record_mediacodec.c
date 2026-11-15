@@ -90,6 +90,40 @@ static bool record_mc_rate(double fps, unsigned *num, unsigned *den)
    return false;
 }
 
+/* AV1 Annex A main-tier display limits; Android levels are 1 << seq_level_idx.
+ * https://aomediacodec.github.io/av1-spec/#levels */
+static int record_mc_av1_level(const mediacodec_encoder_request_t *video)
+{
+   static const struct record_mc_av1_limit
+   {
+      double rate;
+      unsigned size, width, height, bitrate;
+      int level;
+   } limits[] = {
+         {4423680, 147456, 2048, 1152, 1500000, 1},
+         {8363520, 278784, 2816, 1584, 3000000, 2},
+         {19975680, 665856, 4352, 2448, 6000000, 16},
+         {31950720, 1065024, 5504, 3096, 10000000, 32},
+         {70778880, 2359296, 6144, 3456, 12000000, 256},
+         {141557760, 2359296, 6144, 3456, 20000000, 512},
+         {267386880, 8912896, 8192, 4352, 30000000, 4096},
+         {534773760, 8912896, 8192, 4352, 40000000, 8192},
+         {1069547520, 8912896, 8192, 4352, 60000000, 16384},
+         {1069547520, 35651584, 16384, 8704, 60000000, 65536},
+         {2139095040, 35651584, 16384, 8704, 100000000, 131072},
+         {4278190080.0, 35651584, 16384, 8704, 160000000, 262144}};
+   double size = (double)video->width * video->height;
+   size_t i;
+   for (i = 0; i < sizeof(limits) / sizeof(limits[0]); i++)
+      if (size <= limits[i].size && video->width <= limits[i].width
+            && video->height <= limits[i].height
+            && size * video->frame_rate <= limits[i].rate
+            && video->frame_rate <= (limits[i].level < 256 ? 150.0 : 300.0)
+            && video->bitrate <= limits[i].bitrate)
+         return limits[i].level;
+   return 0;
+}
+
 /* Android CodecProfileLevel values and picture/rate/bitrate limits:
  * AOSP MediaCodecInfo.VideoCapabilities (AVC baseline, HEVC main/high tier).
  * This selects a minimum request, not proof of hardware/session support.
@@ -142,6 +176,8 @@ static int record_mc_level(const mediacodec_encoder_request_t *video)
    if (!video->width || !video->height || !video->bitrate
          || !(video->frame_rate > 0.0 && video->frame_rate <= 1000.0))
       return 0;
+   if (string_is_equal(video->mime, "video/av01"))
+      return record_mc_av1_level(video);
    if (is_hevc)
    {
       width = video->width;
@@ -199,6 +235,8 @@ static bool record_mc_options(
          video->mime = "video/avc";
       else if (string_is_equal(codec, "hevc"))
          video->mime = "video/hevc";
+      else if (string_is_equal(codec, "av1"))
+         video->mime = "video/av01";
       else
          goto done;
    }
@@ -261,7 +299,8 @@ static bool record_mc_color(
    video->range   = 1;
    if (video->color)
    {
-      if (!string_is_equal(video->mime, "video/hevc")
+      if ((!string_is_equal(video->mime, "video/hevc")
+               && !string_is_equal(video->mime, "video/av01"))
             || !((hdr->output_mode == 1 && hdr->color_primaries == 9
                   && hdr->transfer_function == 16)
                || (hdr->output_mode == 2 && hdr->color_primaries == 1
@@ -442,7 +481,8 @@ static void *record_mc_init(const struct record_params *params)
    if (streaming)
    {
       stream.mux.codec = string_is_equal(encoder.mime, "video/hevc")
-         ? RECORD_MC_STREAM_HEVC : RECORD_MC_STREAM_AVC;
+         ? RECORD_MC_STREAM_HEVC : string_is_equal(encoder.mime, "video/av01")
+         ? RECORD_MC_STREAM_AV1 : RECORD_MC_STREAM_AVC;
       stream.mux.bit_depth = encoder.color ? 10 : 8;
       stream.mux.max_packet_size = 0xfffff7;
       stream.mux.color.primaries = stream.mux.color.matrix = encoder.color ? 9 : 1;
