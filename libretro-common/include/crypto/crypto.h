@@ -177,6 +177,23 @@ void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
       const uint8_t *in, uint8_t *out, size_t len);
 
 /**
+ * aes_ctr128_crypt:
+ * @counter           : 16-octet counter block, incremented per block as
+ *                      one 128-bit big-endian number (SP 800-38A's
+ *                      standard incrementing function, as OpenSSL's
+ *                      CRYPTO_ctr128 and mbedtls's aes_crypt_ctr); the
+ *                      block is updated in place.
+ *
+ * aes_ctr_crypt() with the carry out of the low 32 bits taken into the
+ * rest of the block, for formats whose initial counter is a random
+ * 128-bit value rather than GCM's nonce and 32-bit counter. Runs on the
+ * same multi-block paths. @in and @out may alias. Partial trailing
+ * blocks are allowed but a continuation must start on a block boundary.
+ **/
+void aes_ctr128_crypt(const struct aes_ctx *ctx, uint8_t *counter,
+      const uint8_t *in, uint8_t *out, size_t len);
+
+/**
  * aes_cfb128_encrypt:
  * @iv                : 16 octets; left holding the feedback register,
  *                      so a caller can continue the stream.

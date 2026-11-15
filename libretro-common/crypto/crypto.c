@@ -1627,6 +1627,40 @@ void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
    crypto_memzero(ks, sizeof(ks));
 }
 
+void aes_ctr128_crypt(const struct aes_ctx *ctx, uint8_t *counter,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   while (len)
+   {
+      /* Blocks before the low 32 bits wrap: aes_ctr_crypt() takes them
+       * as they are, the carry goes into octets 0..11 by hand. */
+      uint64_t left  = (uint64_t)0x100000000ULL
+         - crypto_load32_be(counter + 12);
+      size_t   n     = len;
+      int      wraps = 0;
+      int      i;
+
+      if ((uint64_t)len >= left * 16)
+      {
+         n     = (size_t)(left * 16);
+         wraps = 1;
+      }
+      else if ((uint64_t)len > (left - 1) * 16)
+         wraps = 1; /* a partial last block takes the last counter */
+
+      aes_ctr_crypt(ctx, counter, in, out, n);
+
+      if (wraps)
+         for (i = 11; i >= 0; i--)
+            if (++counter[i])
+               break;
+
+      in  += n;
+      out += n;
+      len -= n;
+   }
+}
+
 /* The register holds ciphertext: encrypting it gives the next
  * keystream block, and each ciphertext octet goes back into it. */
 void aes_cfb128_encrypt(const struct aes_ctx *ctx, uint8_t *iv,
