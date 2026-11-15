@@ -236,9 +236,7 @@ int main(int argc, char **argv)
             retro_sleep(1);
       }
    } while (state != NET_RTMP_CLIENT_READY);
-   memset(&mux, 0, sizeof(mux));
-   mux.bit_depth = 8;
-   mux.max_packet_size = 0xfffff7;
+   receiver_mux_config(&mux);
    stream = record_stream_mediacodec_new(&video, audio.bytes ? &audio : NULL, client,
                                          &mux);
    assert(stream);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AVC/AAC packet replay through the production MediaCodec output and real RTMP(S).
+"""AVC/HEVC/AV1 and AAC through the production MediaCodec output and real RTMP(S).
 
 Uses independent FFmpeg generation/reception/decoding. Encoder metadata getters
 are mocked. --worker adds actual AAC calibration, PCM feeding and worker
@@ -30,6 +30,7 @@ def main():
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--first-case', action='store_true')
     parser.add_argument('--worker', action='store_true', help='exercise the real worker and AAC calibration')
+    parser.add_argument('--codec', choices=['avc', 'hevc', 'hevc10', 'av1'], default='avc')
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
     repo = here.parents[2]
@@ -42,6 +43,7 @@ def main():
         root.mkdir(parents=True, exist_ok=False)
     evidence = dict(result='running', scope=__doc__, codecs='AVC/AAC', commands=[], cases=[])
     evidence['worker'] = args.worker
+    evidence['codecs'] = args.codec + '/AAC'
 
     def save():
         (root / 'evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
@@ -101,12 +103,23 @@ def main():
             command(link, cwd=network)
         evidence['binary'] = dict(path=str(binary), supplied=bool(args.binary),
                                   sha256=hashlib.sha256(binary.read_bytes()).hexdigest())
-        video = root / 'source.h264'
+        hevc = args.codec in ('hevc', 'hevc10')
+        av1 = args.codec == 'av1'
+        video = root / ('source.ivf' if av1 else 'source.hevc' if hevc else 'source.h264')
         audio = root / 'source.aac'
-        command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=64x48:rate=60',
-                 '-frames:v', '24', '-c:v', 'libx264', '-profile:v', 'baseline',
+        video_encoding = (['-c:v', 'libx265', '-pix_fmt', 'yuv420p10le' if args.codec == 'hevc10' else 'yuv420p',
+                           '-x265-params', 'bframes=0:keyint=12:min-keyint=12:scenecut=0:aud=1:repeat-headers=1:pools=none:frame-threads=1' +
+                           (':colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc' if args.codec == 'hevc10' else ''),
+                           '-f', 'hevc'] if hevc else ['-c:v', 'libx264', '-profile:v', 'baseline',
                  '-x264-params', 'bframes=0:keyint=12:min-keyint=12:scenecut=0:aud=1:repeat-headers=1',
-                 '-f', 'h264', '-y', video])
+                 '-f', 'h264'])
+        if av1:
+            video_encoding = ['-c:v', 'libaom-av1', '-cpu-used', '8', '-threads', '1',
+                              '-lag-in-frames', '0', '-g', '12', '-crf', '30',
+                              '-color_primaries', 'bt709', '-color_trc', 'bt709',
+                              '-colorspace', 'bt709', '-color_range', 'tv', '-f', 'ivf']
+        command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=64x48:rate=60',
+                 '-frames:v', '24'] + video_encoding + ['-y', video])
         input_epoch = coded_origin = audio_epoch = video_epoch_us = 0
         full_pcm = root / 'input.pcm'
         if args.worker:
@@ -126,12 +139,32 @@ def main():
                 ['-c:a', 'aac', '-b:a', '128k', '-f', 'adts', '-y', audio])
         data = video.read_bytes()
         starts = list(re.finditer(rb'\x00\x00(?:\x00)?\x01', data))
-        nals = [(match.start(), data[match.end()] & 31,
+        nals = [(match.start(), (data[match.end()] >> 1) & 63 if hevc else data[match.end()] & 31,
                  data[match.start():starts[i + 1].start() if i + 1 < len(starts) else len(data)])
                 for i, match in enumerate(starts)]
-        csd = b''.join(next(blob for _, kind, blob in nals if kind == wanted) for wanted in (7, 8))
-        boundaries = [at for at, kind, _ in nals if kind == 9] + [len(data)]
+        csd = b'' if av1 else b''.join(next(blob for _, kind, blob in nals if kind == wanted)
+                       for wanted in ((32, 33, 34) if hevc else (7, 8)))
+        boundaries = [at for at, kind, _ in nals if kind == (35 if hevc else 9)] + [len(data)]
         pictures = [data[a:b] for a, b in zip(boundaries, boundaries[1:])]
+        if av1:
+            mp4 = root / 'config.mp4'
+            command([ffmpeg, '-v', 'error', '-i', video, '-c', 'copy', '-y', mp4])
+            boxes = mp4.read_bytes()
+            assert boxes.count(b'av1C') == 1
+            at = boxes.index(b'av1C')
+            length = struct.unpack('>I', boxes[at - 4:at])[0]
+            assert 12 <= length <= 65543 and at - 4 + length <= len(boxes)
+            csd = boxes[at + 4:at - 4 + length]
+            assert csd[0] == 0x81
+            assert data[:4] == b'DKIF' and data[8:12] == b'AV01'
+            pictures = []
+            at = struct.unpack_from('<H', data, 6)[0]
+            while at < len(data):
+                length = struct.unpack_from('<I', data, at)[0]
+                assert length and at + 12 + length <= len(data)
+                pictures.append(data[at + 12:at + 12 + length])
+                at += 12 + length
+            assert at == len(data)
         assert len(pictures) == 24
         encoded = audio.read_bytes()
         packets = []
@@ -147,8 +180,9 @@ def main():
         rate_index = (encoded[2] >> 2) & 15
         channels = ((encoded[2] & 1) << 2) | (encoded[3] >> 6)
         asc = bytes([(profile << 3) | (rate_index >> 1), ((rate_index & 1) << 7) | (channels << 3)])
+        pixel_format = 'yuv420p10le' if args.codec == 'hevc10' else 'rgb24'
         reference_video = command([ffmpeg, '-v', 'error', '-i', video, '-fps_mode', 'passthrough',
-                                   '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']).stdout
+                                   '-f', 'rawvideo', '-pix_fmt', pixel_format, '-']).stdout
         reference_audio = command([ffmpeg, '-v', 'error', '-i', audio, '-f', 'f32le', '-']).stdout
         assert len(reference_video) == 24 * 64 * 48 * 3
         cases = [('rtmp', None, False, True), ('legacy', None, True, True),
@@ -183,6 +217,7 @@ def main():
                 try:
                     relay = stack.enter_context(TlsRelay(directory, port, tls)) if tls else None
                     env = os.environ.copy()
+                    env['MC_STREAM_CODEC'] = args.codec
                     env.pop('RTMPS_CA', None)
                     if relay:
                         url = f'rtmps://localhost:{relay.port}/live/test'
@@ -216,7 +251,18 @@ def main():
                                        '-of', 'json', received]).stdout)
             video_index = next(s['index'] for s in info['streams'] if s['codec_type'] == 'video')
             assert len(info['streams']) == (2 if with_audio else 1)
-            assert next(s for s in info['streams'] if s['index'] == video_index)['codec_name'] == 'h264'
+            video_stream = next(s for s in info['streams'] if s['index'] == video_index)
+            assert video_stream['codec_name'] == ('av1' if av1 else 'hevc' if hevc else 'h264')
+            if args.codec == 'hevc10':
+                assert video_stream['pix_fmt'] == 'yuv420p10le'
+                assert video_stream['color_primaries'] == 'bt2020'
+                assert video_stream['color_transfer'] == 'smpte2084'
+                assert video_stream['color_space'] == 'bt2020nc'
+            if av1:
+                assert video_stream['color_primaries'] == 'bt709'
+                assert video_stream['color_transfer'] == 'bt709'
+                assert video_stream['color_space'] == 'bt709'
+                assert video_stream['color_range'] == 'tv'
             audio_streams = [s for s in info['streams'] if s['codec_type'] == 'audio']
             assert bool(audio_streams) == with_audio
             coded_video = [p for p in info['packets'] if p['stream_index'] == video_index]
@@ -225,7 +271,7 @@ def main():
                 offset = video_epoch_us / 1000000 if args.worker and with_audio else 0
                 assert abs(float(packet['pts_time']) - offset - i / 60) < .0011
             decoded = command([ffmpeg, '-v', 'error', '-i', received, '-map', '0:v:0',
-                               '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']).stdout
+                               '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', pixel_format, '-']).stdout
             assert decoded == reference_video
             if with_audio:
                 assert audio_streams[0]['codec_name'] == 'aac'

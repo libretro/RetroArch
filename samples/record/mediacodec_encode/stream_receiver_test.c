@@ -61,6 +61,27 @@ static void load_config(FILE *file, record_mediacodec_encoder_t *s)
    s->data = s->bytes ? malloc(s->bytes) : NULL;
    assert(!s->bytes || (s->data && fread(s->data, 1, s->bytes, file) == s->bytes));
 }
+static void receiver_mux_config(record_mediacodec_stream_config_t *mux)
+{
+   const char *codec = getenv("MC_STREAM_CODEC");
+   memset(mux, 0, sizeof(*mux));
+   mux->bit_depth = 8;
+   mux->max_packet_size = 0xfffff7;
+   if (codec && (!strcmp(codec, "hevc") || !strcmp(codec, "hevc10")))
+   {
+      mux->codec = RECORD_MC_STREAM_HEVC;
+      mux->bit_depth = !strcmp(codec, "hevc10") ? 10 : 8;
+      mux->color.primaries = mux->color.matrix = mux->bit_depth == 10 ? 9 : 1;
+      mux->color.transfer = mux->bit_depth == 10 ? 16 : 1;
+      mux->color.range = 1;
+   }
+   else if (codec && !strcmp(codec, "av1"))
+   {
+      mux->codec = RECORD_MC_STREAM_AV1;
+      mux->color.primaries = mux->color.matrix = mux->color.transfer = 1;
+      mux->color.range = 1;
+   }
+}
 int main(int argc, char **argv)
 {
    static uint8_t random[1528];
@@ -120,7 +141,7 @@ int main(int argc, char **argv)
          else retro_sleep(1);
       }
    } while (state != NET_RTMP_CLIENT_READY);
-   memset(&mux, 0, sizeof(mux)); mux.bit_depth = 8; mux.max_packet_size = 0xfffff7;
+   receiver_mux_config(&mux);
    stream = record_stream_mediacodec_new(&video, audio.bytes ? &audio : NULL, client, &mux);
    assert(stream && ops->track(stream, false, &video));
    if (audio.bytes) assert(ops->track(stream, true, &audio));
