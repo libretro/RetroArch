@@ -891,6 +891,9 @@ typedef struct settings
       bool notification_show_autoconfig_fails;
       bool notification_show_cheats_applied;
       bool notification_show_patch_applied;
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+      bool notification_show_core_signing_test_key;
+#endif
       bool notification_show_remap_load;
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;

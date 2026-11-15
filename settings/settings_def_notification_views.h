@@ -94,6 +94,13 @@ S_BOOL(notification_show_patch_applied, NOTIFICATION_SHOW_PATCH_APPLIED,
       "Patch Notifications",
       "Display an on-screen message when soft-patching ROMs.")
 #endif
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+S_BOOL(notification_show_core_signing_test_key, NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY,
+      "notification_show_core_signing_test_key",
+      DEFAULT_NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY, SD_FLAG_NONE, 0, 0,
+      "Test Signing Key Notifications",
+      "Show the reminder that this build trusts a test signing key.")
+#endif
 S_BOOL(notification_show_remap_load, NOTIFICATION_SHOW_REMAP_LOAD,
       "notification_show_remap_load",
       DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD, SD_FLAG_NONE, 0, 0,

@@ -1365,6 +1365,12 @@
  * IPS/BPS/UPS/Xdelta patch file */
 #define DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED true
 
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+/* Display the reminder that this build trusts
+ * a test signing key */
+#define DEFAULT_NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY true
+#endif
+
 /* Display a notification when loading an
  * input remap file */
 #define DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD true

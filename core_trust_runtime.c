@@ -16,6 +16,7 @@
 #include "core_trust_runtime.h"
 #include "runloop.h"
 #include "tasks/tasks_internal.h"
+#include "verbosity.h"
 
 static struct
 {
@@ -150,10 +151,15 @@ static void core_trust_runtime_show(void)
 #ifdef HAVE_CORE_SIGNING_TEST_KEY
    if (!core_trust_rt.test_key_shown)
    {
-      const char *msg = msg_hash_to_str(MSG_CORE_SIGNING_TEST_KEY);
       core_trust_rt.test_key_shown = true;
-      runloop_msg_queue_push(msg, strlen(msg), 2, 180, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      RARCH_LOG("[Core] This build trusts a test signing key: "
+            "cores anyone can sign will run.\n");
+      if (config_get_ptr()->bools.notification_show_core_signing_test_key)
+      {
+         const char *msg = msg_hash_to_str(MSG_CORE_SIGNING_TEST_KEY);
+         runloop_msg_queue_push(msg, strlen(msg), 2, 180, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      }
    }
 #endif
    if (core_trust_rt.seed_notice)
