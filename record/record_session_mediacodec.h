@@ -7,6 +7,9 @@
 #include <net/net_rtmp_client.h>
 RETRO_BEGIN_DECLS
 typedef struct record_session_mediacodec record_session_mediacodec_t;
+/* Cold I/O owner, before service. Queue/finish samples stay at source rate. */
+bool record_session_mediacodec_resample(record_session_mediacodec_t *session,
+      double source_rate);
 enum record_session_mediacodec_error
 {
    RECORD_MC_SESSION_NONE,

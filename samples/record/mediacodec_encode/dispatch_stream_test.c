@@ -107,6 +107,7 @@ static record_dispatch_mediacodec_t *start_stream(void)
    char mime[] = "video/hevc", url[] = "rtmp://localhost/live/test";
    v.mime = mime; v.width = 320; v.height = 192;
    config.mux.codec = RECORD_MC_STREAM_HEVC;
+   config.source_rate = 32040.5;
    config.mux.bit_depth = 8; config.mux.max_packet_size = 1024;
    j = record_dispatch_mediacodec_new_stream(&v, 2, 48000, 2, 128000,
          1024, 65536, url, &config);
@@ -125,14 +126,17 @@ int main(void)
    retro_atomic_int_init(&test_clock, 1000000);
    retro_atomic_int_init(&dns_hold, 0); retro_atomic_int_init(&dns_live, 0);
    retro_atomic_int_init(&client_live, 0);
-   for (mode = 0; mode < 3; mode++)
+   for (mode = 0; mode < 4; mode++)
    {
-      retro_atomic_store_release_int(&dns_hold, mode != 0);
+      retro_atomic_store_release_int(&resample_fault, mode == 3);
+      retro_atomic_store_release_int(&dns_hold, mode == 1 || mode == 2);
       j = start_stream(); assert(j);
       for (at = 0; at < 10000 && !retro_atomic_load_acquire_int(&client_live); at++) pause_test();
       assert(at < 10000);
       if (!mode)
          wait_state(j, RECORD_MC_DISPATCH_READY);
+      else if (mode == 3)
+         wait_state(j, RECORD_MC_DISPATCH_DRAINING);
       else
       {
          assert(record_dispatch_mediacodec_status(j, NULL, NULL, NULL) == RECORD_MC_DISPATCH_STARTING);

@@ -20,8 +20,14 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
       const mediacodec_encoder_request_t *video, unsigned interval,
       unsigned rate, unsigned channels, unsigned bitrate,
       size_t max_audio_frames, size_t audio_capacity, const char *path);
+record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_resampled(
+      const mediacodec_encoder_request_t *video, unsigned interval,
+      unsigned rate, unsigned channels, unsigned bitrate,
+      size_t max_audio_frames, size_t audio_capacity, const char *path,
+      double source_rate);
 typedef struct record_dispatch_mediacodec_stream_config
 {
+   double source_rate; /* zero keeps the encoder-rate input path */
    record_mediacodec_stream_config_t mux;
    bool legacy_commands;
 } record_dispatch_mediacodec_stream_config_t;

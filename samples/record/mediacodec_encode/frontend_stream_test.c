@@ -57,6 +57,7 @@ int main(void)
    static const char *const keys[] = {"format","acodec","audio_bit_rate","rtmp_legacy_commands","sample_rate","unknown"};
    static const char *const values[] = {"mp4","opus","1","bad","48000","yes"};
    assert(file_frontend_acceptance() == 0);
+   fractional_frontend(true);
    for (i = 0; i < 3; i++) stream_case(i, NULL, NULL, false);
    stream_case(0, "format", "flv", false);
    stream_case(0, "acodec", "aac", false);

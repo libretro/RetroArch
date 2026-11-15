@@ -20,6 +20,8 @@
 static retro_atomic_int_t fault, env_fault, startup_fault, output_fault;
 static retro_atomic_int_t inputs, live, descriptors;
 static retro_atomic_int_t hold_start;
+static retro_atomic_int_t resample_fault;
+static double dispatch_source_rate;
 static void pause_test(void);
 struct record_session_mediacodec
 {
@@ -115,6 +117,12 @@ record_session_mediacodec_t *record_session_mediacodec_new(JNIEnv *env,
    s->owner = pthread_self();
    retro_atomic_fetch_add_int(&live, 1);
    return s;
+}
+bool record_session_mediacodec_resample(record_session_mediacodec_t *s, double rate)
+{
+   owner(s);
+   assert(rate == 32040.5);
+   return !retro_atomic_load_acquire_int(&resample_fault);
 }
 void *record_session_mediacodec_surface(record_session_mediacodec_t *s)
 {
@@ -220,8 +228,12 @@ static record_dispatch_mediacodec_t *start(void)
    v.mime = mime;
    v.width = 320;
    v.height = 192;
-   j = record_dispatch_mediacodec_new(
-         &v, 2, 48000, 2, 128000, 1024, 65536, path);
+   if (dispatch_source_rate)
+      j = record_dispatch_mediacodec_new_resampled(
+            &v, 2, 48000, 2, 128000, 1024, 65536, path, dispatch_source_rate);
+   else
+      j = record_dispatch_mediacodec_new(
+            &v, 2, 48000, 2, 128000, 1024, 65536, path);
    memset(mime, 0, sizeof(mime));
    memset(path, 0, sizeof(path));
    return j;
@@ -260,6 +272,7 @@ int main(void)
    retro_atomic_int_init(&live, 0);
    retro_atomic_int_init(&descriptors, 0);
    retro_atomic_int_init(&hold_start, 0);
+   retro_atomic_int_init(&resample_fault, 0);
    for (i = 1; i <= 2; i++)
    {
       retro_atomic_store_release_int(&fault, i);
@@ -281,6 +294,7 @@ int main(void)
    collect(j);
    for (i = 0; i < 64; i++)
    {
+      dispatch_source_rate = i == 0 ? 32040.5 : 0;
       retro_atomic_store_release_int(&fault, i == 0 ? 3 : 0);
       j = start();
       assert(j);
@@ -305,10 +319,12 @@ int main(void)
       collect(j);
    }
    assert(retro_atomic_load_acquire_int(&inputs) == 64000);
-   for (i = 0; i < 6; i++)
+   for (i = 0; i < 7; i++)
    {
       unsigned at;
-      retro_atomic_store_release_int(&fault, i >= 4 ? i : 0);
+      retro_atomic_store_release_int(&fault, i == 4 || i == 5 ? i : 0);
+      retro_atomic_store_release_int(&resample_fault, i == 6);
+      dispatch_source_rate = i == 6 ? 32040.5 : 0;
       retro_atomic_store_release_int(&env_fault, i == 1);
       retro_atomic_store_release_int(&startup_fault, i == 2);
       retro_atomic_store_release_int(&output_fault, i == 3);
@@ -337,10 +353,12 @@ int main(void)
       assert(record_dispatch_mediacodec_gpu_released(j));
       wait_state(j, RECORD_MC_DISPATCH_FAILED);
       record_dispatch_mediacodec_status(j, &error, &detail, &system);
-      assert(error && system == (i >= 4 ? EIO : 0)
+      assert(error && system == (i == 4 || i == 5 ? EIO : 0)
             && detail == (i == 3 ? 5 : 0));
       collect(j);
    }
+   retro_atomic_store_release_int(&resample_fault, 0);
+   dispatch_source_rate = 0;
    puts("PASS: independent I/O thread, 64000 notifications, JNI thread "
         "ownership, "
         "deep copies, startup/detach faults and deferred GPU/PCM closure; "

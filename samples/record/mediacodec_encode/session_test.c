@@ -68,6 +68,11 @@ void record_aac_probe_free(record_aac_probe_t *p)
    assert(p == &probe && p->live && !worker.live);
    p->live = 0;
 }
+bool record_mediacodec_worker_resample(record_mediacodec_worker_t *w, double rate)
+{
+   assert(w == &worker && w->live && rate == 32040.5);
+   return true;
+}
 bool record_mediacodec_worker_calibrate(record_mediacodec_worker_t *w,
       record_aac_probe_t *p)
 {
@@ -314,6 +319,7 @@ int main(void)
    balanced();
    s = open_session(true);
    assert(s && record_session_mediacodec_surface(s) == &video);
+   assert(record_session_mediacodec_resample(s, 32040.5));
    assert(!record_session_mediacodec_free(s));
    assert(!record_session_mediacodec_gpu_released(s));
    assert(record_session_mediacodec_audio(s, pcm, 2, 0) == RECORD_AUDIO_OK);

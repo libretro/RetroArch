@@ -48,6 +48,7 @@ static const char *option_key, *option_value;
 static int config_token;
 static unsigned history_writes;
 static unsigned stream_dispatches, stream_audio_bitrate;
+static double resampled_rate;
 static record_dispatch_mediacodec_stream_config_t stream_observed;
 static int native_error, native_file_error, native_system_error;
 static bool settings_available = true;
@@ -255,7 +256,8 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
    assert((!rate && !channels && !bitrate && !max_frames && !capacity)
          || (rate == 48000 && (channels == 1 || channels == 2)
                && bitrate == 128000 && max_frames == 4096
-               && capacity >= (size_t)48000 * channels * 4));
+               && capacity >= (size_t)ceil(resampled_rate ? resampled_rate : 48000)
+                     * channels * 4));
    io_creates++;
    encoded = *v;
    if (io_fault)
@@ -263,6 +265,16 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
    io.live = true;
    io.state = RECORD_MC_DISPATCH_STARTING;
    return &io;
+}
+record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_resampled(
+      const mediacodec_encoder_request_t *v, unsigned interval, unsigned rate,
+      unsigned channels, unsigned bitrate, size_t max_frames, size_t capacity,
+      const char *path, double source_rate)
+{
+   assert(source_rate != rate && source_rate >= 8000 && source_rate <= 192000);
+   resampled_rate = source_rate;
+   return record_dispatch_mediacodec_new(v, interval, rate, channels, bitrate,
+         max_frames, capacity, path);
 }
 record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_stream(
       const mediacodec_encoder_request_t *v, unsigned interval, unsigned rate,
@@ -285,6 +297,7 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_stream(
    stream_dispatches++;
    stream_audio_bitrate = bitrate;
    stream_observed = *config;
+   resampled_rate = config->source_rate;
    return record_dispatch_mediacodec_new(v, interval, rate, channels,
          channels ? 128000 : 0, max_frames, capacity, "test.mp4");
 }
@@ -489,6 +502,7 @@ static void reset(unsigned mode)
 #endif
    audio_result = RECORD_AUDIO_OK;
    option_key = option_value = NULL;
+   resampled_rate = 0;
 }
 static record_mc_context_t *start(void)
 {
@@ -739,6 +753,36 @@ static void video_only(void)
    assert(record_mediacodec.push_audio(ctx, &audio) && !audio_calls);
    drain(false);
    assert(history_writes == writes);
+}
+static void fractional_frontend(bool streaming)
+{
+   static const double rates[] = {32040.5, 44100.5, 192000};
+   static const int16_t pcm[32] = {0};
+   struct record_params p;
+   struct record_audio_data audio;
+   record_mc_context_t *ctx;
+   unsigned i;
+   for (i = 0; i < sizeof(rates) / sizeof(rates[0]); i++)
+   {
+      reset(0);
+      recording.streaming_enable = streaming;
+      p = parameters();
+      p.samplerate = rates[i];
+      if (streaming)
+         p.filename = "rtmp://localhost/live/test";
+      video.av_info.timing.sample_rate = rates[i];
+      ctx = (record_mc_context_t*)record_mediacodec.init(&p);
+      assert(ctx && ctx->rate == 48000 && ctx->source_rate == rates[i]
+            && resampled_rate == rates[i]);
+      recording.data = ctx;
+      recording.driver = &record_mediacodec;
+      arm(ctx);
+      audio.data = pcm;
+      audio.frames = 16;
+      assert(record_mediacodec.push_audio(ctx, &audio) && expected_audio == 16);
+      drain(false);
+      assert(closed_audio == 16);
+   }
 }
 static void av1_file(void)
 {
@@ -1038,6 +1082,7 @@ static void admission(void)
 }
 int main(void)
 {
+   fractional_frontend(false);
    av1_file();
    clocks(0);
    clocks(1);

@@ -24,6 +24,7 @@
 
 struct record_dispatch_mediacodec
 {
+   double source_rate;
    mediacodec_encoder_request_t video;
    uint64_t audio_end;
    int64_t video_end;
@@ -154,6 +155,11 @@ static int record_mcd_connect(record_dispatch_mediacodec_t *j)
          j->capacity, j->client, &j->stream.mux);
    if (!j->session)
       return -1;
+   if (j->source_rate && !record_session_mediacodec_resample(j->session, j->source_rate))
+   {
+      retro_atomic_store_release_int(&j->error, RECORD_MC_SESSION_OUTPUT);
+      return -1;
+   }
    j->window = record_session_mediacodec_surface(j->session);
    if (!j->window)
       return -1;
@@ -227,7 +233,10 @@ static int record_mcd_service(record_dispatch_mediacodec_t *j)
       {
          result = record_mcd_connect(j);
          if (result < 0)
-            retro_atomic_store_release_int(&j->error, RECORD_MC_SESSION_NETWORK);
+         {
+            retro_atomic_cas_int(&j->error, 0, RECORD_MC_SESSION_NETWORK);
+            retro_atomic_store_release_int(&j->cancelled, 1);
+         }
          else if (!j->session)
             return result ? RECORD_MC_WORKER_PROGRESS : RECORD_MC_WORKER_BUSY;
       }
@@ -309,7 +318,14 @@ static void *record_mcd_run(void *opaque)
             j->rate, j->channels, j->bitrate, j->max_frames, j->capacity,
             j->path);
    if (j->session)
+   {
+      if (j->source_rate && !record_session_mediacodec_resample(j->session, j->source_rate))
+      {
+         retro_atomic_store_release_int(&j->error, RECORD_MC_SESSION_OUTPUT);
+         retro_atomic_store_release_int(&j->cancelled, 1);
+      }
       j->window = record_session_mediacodec_surface(j->session);
+   }
    if (
 #ifdef RECORD_MCD_NETWORK
          !j->network &&
@@ -382,7 +398,7 @@ static record_dispatch_mediacodec_t *record_mcd_new(
       const mediacodec_encoder_request_t *video, unsigned interval,
       unsigned rate, unsigned channels, unsigned bitrate,
       size_t max_audio_frames, size_t audio_capacity, const char *path,
-      const record_dispatch_mediacodec_stream_config_t *stream)
+      const record_dispatch_mediacodec_stream_config_t *stream, double source_rate)
 {
    record_dispatch_mediacodec_t *j;
    size_t path_length, mime_length;
@@ -391,6 +407,9 @@ static record_dispatch_mediacodec_t *record_mcd_new(
       return NULL;
 #endif
    if (!video || !video->mime || !path || !*path)
+      return NULL;
+   if (source_rate && (!(source_rate >= 8000.0 && source_rate <= 192000.0)
+            || !channels || (rate != 44100 && rate != 48000)))
       return NULL;
    for (path_length = 0; path_length < 32768 && path[path_length];
          path_length++)
@@ -421,6 +440,7 @@ static record_dispatch_mediacodec_t *record_mcd_new(
    j->video.mime = j->mime;
    j->interval = interval;
    j->rate = rate;
+   j->source_rate = source_rate;
    j->channels = channels;
    j->bitrate = bitrate;
    j->max_frames = max_audio_frames;
@@ -471,7 +491,18 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
       size_t max_audio_frames, size_t audio_capacity, const char *path)
 {
    return record_mcd_new(video, interval, rate, channels, bitrate,
-         max_audio_frames, audio_capacity, path, NULL);
+         max_audio_frames, audio_capacity, path, NULL, 0);
+}
+record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_resampled(
+      const mediacodec_encoder_request_t *video, unsigned interval,
+      unsigned rate, unsigned channels, unsigned bitrate,
+      size_t max_audio_frames, size_t audio_capacity, const char *path,
+      double source_rate)
+{
+   if (!source_rate)
+      return NULL;
+   return record_mcd_new(video, interval, rate, channels, bitrate,
+         max_audio_frames, audio_capacity, path, NULL, source_rate);
 }
 
 record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_stream(
@@ -483,7 +514,7 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_stream(
    if (!config)
       return NULL;
    return record_mcd_new(video, interval, rate, channels, bitrate,
-         max_audio_frames, audio_capacity, url, config);
+         max_audio_frames, audio_capacity, url, config, config->source_rate);
 }
 
 void *record_dispatch_mediacodec_surface(record_dispatch_mediacodec_t *j)
@@ -628,6 +659,16 @@ bool record_dispatch_mediacodec_free(record_dispatch_mediacodec_t *j)
    return true;
 }
 #else
+record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_resampled(
+      const mediacodec_encoder_request_t *video, unsigned interval,
+      unsigned rate, unsigned channels, unsigned bitrate,
+      size_t max_audio_frames, size_t audio_capacity, const char *path,
+      double source_rate)
+{
+   (void)source_rate;
+   return record_dispatch_mediacodec_new(video, interval, rate, channels,
+         bitrate, max_audio_frames, audio_capacity, path);
+}
 record_dispatch_mediacodec_t *record_dispatch_mediacodec_new_stream(
       const mediacodec_encoder_request_t *video, unsigned interval,
       unsigned rate, unsigned channels, unsigned bitrate,

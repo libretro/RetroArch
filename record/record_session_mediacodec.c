@@ -26,6 +26,13 @@ struct record_session_mediacodec
    bool finishing, draining, retired, network;
 };
 
+bool record_session_mediacodec_resample(record_session_mediacodec_t *s,
+      double source_rate)
+{
+   return s && s->worker
+      && record_mediacodec_worker_resample(s->worker, source_rate);
+}
+
 static void record_mcs_fail(record_session_mediacodec_t *s, int error)
 {
    if (!retro_atomic_load_acquire_int(&s->error))

@@ -30,6 +30,7 @@
 
 typedef struct record_mc_context
 {
+   double source_rate;
    uint64_t next_us, step, carry, audio_frames, offered;
    int64_t menu_origin;
    uint64_t last_menu_pts;
@@ -207,6 +208,17 @@ static int record_mc_level(const mediacodec_encoder_request_t *video)
                && video->bitrate <= limits[i].bitrate)
             return limits[i].level;
    return 0;
+}
+
+static unsigned record_mc_audio_rate(double source_rate)
+{
+   static const unsigned rates[] = {8000, 11025, 12000, 16000, 22050,
+      24000, 32000, 44100, 48000, 64000, 88200, 96000};
+   size_t i;
+   for (i = 0; i < sizeof(rates) / sizeof(rates[0]); i++)
+      if (source_rate == rates[i])
+         return rates[i];
+   return 48000;
 }
 
 static bool record_mc_options(
@@ -434,16 +446,17 @@ static void *record_mc_init(const struct record_params *params)
    {
       double sr = params->samplerate;
       uint32_t layout = recording_state_get_ptr()->layout;
-      if (!(sr >= 8000.0 && sr <= 192000.0) || floor(sr) != sr
+      if (!(sr >= 8000.0 && sr <= 192000.0)
+            || (params->menu_source && floor(sr) != sr)
             || !params->channels || params->channels > 2
             || audio_layout_channels(layout) != params->channels
             || layout
                   != (params->channels == 1 ? AUDIO_SPEAKER_FRONT_CENTER
                                             : AUDIO_LAYOUT_STEREO))
          return NULL;
-      rate = (unsigned)sr;
+      rate = record_mc_audio_rate(sr);
       channels = params->channels;
-      capacity = (size_t)rate * channels * sizeof(int16_t) * 2 + 4096;
+      capacity = (size_t)ceil(sr) * channels * sizeof(int16_t) * 2 + 4096;
    }
    count = recording_native_buffer_count("mediacodec", params->video_fifo_frames);
    for (path_length = 0;
@@ -477,9 +490,11 @@ static void *record_mc_init(const struct record_params *params)
    ctx->divisor = num;
    ctx->menu_source = params->menu_source;
    ctx->rate = rate;
+   ctx->source_rate = audio ? params->samplerate : 0;
    ctx->channels = channels;
    if (streaming)
    {
+      stream.source_rate = audio && ctx->source_rate != rate ? ctx->source_rate : 0;
       stream.mux.codec = string_is_equal(encoder.mime, "video/hevc")
          ? RECORD_MC_STREAM_HEVC : string_is_equal(encoder.mime, "video/av01")
          ? RECORD_MC_STREAM_AV1 : RECORD_MC_STREAM_AVC;
@@ -497,6 +512,9 @@ static void *record_mc_init(const struct record_params *params)
             audio ? audio_bitrate : 0, audio ? 4096 : 0, capacity,
             params->filename, &stream);
    }
+   else if (audio && ctx->source_rate != rate)
+      ctx->io = record_dispatch_mediacodec_new_resampled(&encoder, 2, rate, channels,
+            128000, 4096, capacity, ctx->path, ctx->source_rate);
    else
       ctx->io = record_dispatch_mediacodec_new(&encoder, 2, rate, channels,
             audio ? 128000 : 0, audio ? 4096 : 0, capacity, ctx->path);
@@ -508,7 +526,7 @@ static void *record_mc_init(const struct record_params *params)
    }
    if (ctx->menu_source && audio)
    {
-      ctx->tap = record_audio_tap_new(rate, record_mc_mixed_audio, ctx->io);
+      ctx->tap = record_audio_tap_new((unsigned)ctx->source_rate, record_mc_mixed_audio, ctx->io);
       if (!ctx->tap)
       {
          record_mc_fail(ctx);
@@ -555,7 +573,7 @@ static bool record_mc_audio(void *data, const struct record_audio_data *audio)
    if (!ctx->channels || !ctx->armed || (audio && !audio->frames))
       return true;
    if (!audio || !audio->data
-         || video_state_get_ptr()->av_info.timing.sample_rate != ctx->rate
+         || video_state_get_ptr()->av_info.timing.sample_rate != ctx->source_rate
          || audio->frames > (~(size_t)0) / ctx->channels / sizeof(int16_t)
          || ctx->audio_frames > ~(uint64_t)0 - audio->frames)
       goto failed;
