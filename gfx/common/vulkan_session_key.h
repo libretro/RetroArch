@@ -104,7 +104,8 @@ static void vulkan_session_feature_key(vulkan_session_key_t *key,
          offset = offsetof(type, first); \
          size = offsetof(type, last) + sizeof(((type*)0)->last) - offset; \
          break
-      switch (node->sType)
+      /* Compatibility tags may not be members of the SDK's enum. */
+      switch ((uint32_t)node->sType)
       {
          VULKAN_SESSION_FEATURE(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
                VkPhysicalDeviceFeatures2, features, features);
