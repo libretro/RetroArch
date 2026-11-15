@@ -1476,6 +1476,7 @@ struct raac
    float    qmf_z64[64], qmf_m[64];            /* analysis transform    */
    float    qmf_xim[64];                       /* synthesis transform   */
    float    qmf_m0[64], qmf_m1[64];
+   float    qmf_slot_re[64], qmf_slot_im[64]; /* sequential slot output */
    int      quant[RAAC_FRAME];                 /* quantised spectrum    */
    uint32_t noise_state;                        /* PNS LCG               */
 };
@@ -1900,6 +1901,7 @@ static int raac_section_data(raac_t *a, raac_bits *b, raac_ch *c)
    int sect_bits = (c->window_sequence == 2) ? 3 : 5;
    int esc       = (1 << sect_bits) - 1;
    int g;
+   (void)a;
    for (g = 0; g < c->num_window_groups; g++)
    {
       int k = 0;
@@ -2008,6 +2010,7 @@ static int raac_tns_data(raac_t *a, raac_bits *b, raac_ch *c)
 {
    int short_win = (c->window_sequence == 2);
    int w;
+   (void)a;
    for (w = 0; w < c->num_windows; w++)
    {
       int nf = (int)raac_getbits(b, short_win ? 1 : 2);
@@ -6563,7 +6566,8 @@ static int raac_upsample_frame(raac_t *a)
       memcpy(q->W[0], q->W[1], sizeof(q->W[0]));
       for (s = 0; s < 32; s++)
       {
-         float Wr[32], Wi[32];
+         float *Wr = a->qmf_slot_re;
+         float *Wi = a->qmf_slot_im;
          raac_qmf_analysis_slot(a, q, a->pcm[ch] + s * 32, Wr, Wi);
          for (k = 0; k < 32; k++)
          {
@@ -6606,7 +6610,8 @@ static int raac_upsample_frame(raac_t *a)
       }
       for (s = 0; s < 32; s++)
       {
-         float Xr[64], Xi[64];
+         float *Xr = a->qmf_slot_re;
+         float *Xi = a->qmf_slot_im;
          if (full)
             for (k = 0; k < 64; k++)
             {
