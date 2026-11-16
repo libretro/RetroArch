@@ -81,6 +81,7 @@
 #define D3D10_MAX_GPU_COUNT 16
 
 #define D3D10_SW_LEND_SLOTS 3
+#define D3D10_FRAME_MEM_MAX 5
 
 enum d3d10_video_flags
 {
@@ -387,6 +388,17 @@ typedef struct
       unsigned               dims;
       DXGI_FORMAT            format;
    } sw_lend;
+   struct
+   {
+      D3D10Texture2D texture;
+      D3D10_MAPPED_TEXTURE2D mapped;
+      unsigned width;
+      unsigned height;
+      DXGI_FORMAT format;
+      bool valid;
+      retro_atomic_int_t cache_exposed;
+   } frame_mem[D3D10_FRAME_MEM_MAX];
+
    /* Views: the stock chain draws each straight from the frame; a
     * preset each through a chain of its own, whose history a software
     * frame's view is written straight into. The canvas holds both eyes
@@ -703,6 +715,193 @@ static bool d3d10_sw_direct_upload(d3d10_video_t *d3d10,
    return true;
 }
 
+static void d3d10_frame_mem_free(void *data, uintptr_t id)
+{
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
+   unsigned i = (unsigned)(id - 1);
+   if (!d3d10 || !id || id > D3D10_FRAME_MEM_MAX || !d3d10->frame_mem[i].texture)
+      return;
+   if (d3d10->frame_mem[i].valid)
+   {
+      if (retro_atomic_load_acquire_int(&d3d10->frame_mem[i].cache_exposed))
+         video_driver_cached_frame_retire();
+      d3d10->frame_mem[i].texture->lpVtbl->Unmap(
+            d3d10->frame_mem[i].texture, 0);
+   }
+   Release(d3d10->frame_mem[i].texture);
+   d3d10->frame_mem[i].texture = NULL;
+   d3d10->frame_mem[i].valid = false;
+}
+
+static void *d3d10_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
+   D3D10_TEXTURE2D_DESC desc;
+   unsigned i, edge = 1, width, height;
+   DXGI_FORMAT format;
+   /* A preset already needs a GPU copy; stock uploads use a dynamic texture. */
+   if (!d3d10 || !d3d10->device || !size
+         || !d3d10->chain.shader_preset
+         || d3d10->format != DXGI_FORMAT_B8G8R8X8_UNORM)
+      return NULL;
+   format = d3d10_get_closest_match(d3d10->device, d3d10->format,
+         D3D10_FORMAT_SUPPORT_TEXTURE2D | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE);
+   if (format != DXGI_FORMAT_R8G8B8A8_UNORM
+         && format != DXGI_FORMAT_B8G8R8A8_UNORM
+         && format != DXGI_FORMAT_B8G8R8X8_UNORM)
+      return NULL;
+   while ((uint64_t)edge * edge * 4 < size && edge < 16384)
+      edge <<= 1;
+   if ((uint64_t)edge * edge * 4 < size)
+      return NULL;
+   width = d3d10->chain.history[0].desc.Format == format
+      ? d3d10->chain.history[0].desc.Width : 0;
+   if (!width || width > 16384
+         || size / ((size_t)width * 4)
+            + (size % ((size_t)width * 4) != 0) > 16384)
+      width = edge;
+   height = (unsigned)(size / ((size_t)width * 4)
+         + (size % ((size_t)width * 4) != 0));
+   for (i = 0; i < D3D10_FRAME_MEM_MAX; i++)
+      if (!d3d10->frame_mem[i].texture)
+         break;
+   if (i == D3D10_FRAME_MEM_MAX)
+      return NULL;
+   retro_atomic_int_init(&d3d10->frame_mem[i].cache_exposed, 0);
+   memset(&desc, 0, sizeof(desc));
+   desc.Width = width;
+   desc.Height = height;
+   desc.MipLevels = desc.ArraySize = desc.SampleDesc.Count = 1;
+   desc.Format = format;
+   desc.Usage = D3D10_USAGE_STAGING;
+   desc.CPUAccessFlags = D3D10_CPU_ACCESS_READ | D3D10_CPU_ACCESS_WRITE;
+   if (FAILED(d3d10->device->lpVtbl->CreateTexture2D(d3d10->device,
+               &desc, NULL, &d3d10->frame_mem[i].texture)))
+      return NULL;
+   if (FAILED(d3d10->frame_mem[i].texture->lpVtbl->Map(
+               d3d10->frame_mem[i].texture, 0,
+               D3D10_MAP_READ_WRITE, D3D10_MAP_FLAG_DO_NOT_WAIT,
+               &d3d10->frame_mem[i].mapped)))
+   {
+      d3d10_frame_mem_free(d3d10, (uintptr_t)i + 1);
+      return NULL;
+   }
+   d3d10->frame_mem[i].valid = true;
+   if (     !d3d10->frame_mem[i].mapped.pData
+         || ((uintptr_t)d3d10->frame_mem[i].mapped.pData & 15)
+         || d3d10->frame_mem[i].mapped.RowPitch < width * 4
+         || d3d10->frame_mem[i].mapped.RowPitch > (size_t)-1 / height)
+   {
+      d3d10_frame_mem_free(d3d10, (uintptr_t)i + 1);
+      return NULL;
+   }
+   d3d10->frame_mem[i].width = width;
+   d3d10->frame_mem[i].height = height;
+   d3d10->frame_mem[i].format = format;
+   *pitch_align = d3d10->frame_mem[i].mapped.RowPitch;
+   *cached = true;
+   *id = (uintptr_t)i + 1;
+   return d3d10->frame_mem[i].mapped.pData;
+}
+
+static bool d3d10_frame_mem_ready(void *data, uintptr_t id)
+{
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
+   unsigned i = (unsigned)(id - 1);
+   if (!d3d10 || !id || id > D3D10_FRAME_MEM_MAX || !d3d10->frame_mem[i].texture)
+      return false;
+   if (!d3d10->frame_mem[i].valid)
+   {
+      if (FAILED(d3d10->frame_mem[i].texture->lpVtbl->Map(
+                  d3d10->frame_mem[i].texture, 0,
+                  D3D10_MAP_READ_WRITE, D3D10_MAP_FLAG_DO_NOT_WAIT,
+                  &d3d10->frame_mem[i].mapped)))
+         return false;
+      d3d10->frame_mem[i].valid = true;
+   }
+   return true;
+}
+
+static bool d3d10_frame_mem_map(void *data, uintptr_t id,
+      video_frame_memory_t *mapping)
+{
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
+   unsigned i = (unsigned)(id - 1);
+   if (!d3d10 || !id || id > D3D10_FRAME_MEM_MAX || !d3d10->frame_mem[i].valid)
+      return false;
+   mapping->cache_exposed = &d3d10->frame_mem[i].cache_exposed;
+   mapping->data = d3d10->frame_mem[i].mapped.pData;
+   mapping->pitch = d3d10->frame_mem[i].mapped.RowPitch;
+   mapping->width = d3d10->frame_mem[i].width;
+   mapping->height = d3d10->frame_mem[i].height;
+   if (mapping->pitch > (size_t)-1 / mapping->height)
+      return false;
+   mapping->size = mapping->pitch * (mapping->height - 1)
+      + (size_t)mapping->width * 4;
+   mapping->format = RETRO_PIXEL_FORMAT_XRGB8888;
+   return mapping->data && !((uintptr_t)mapping->data & 15);
+}
+
+static bool d3d10_frame_mem_push(d3d10_video_t *d3d10,
+      const void *frame, unsigned width,
+      unsigned height, unsigned pitch)
+{
+   unsigned i;
+   d3d10_texture_t *hist = &d3d10->chain.history[0];
+   if (!frame || !width || !height || !pitch || !hist->handle
+         || !d3d10->chain.shader_preset
+         || d3d10->format != DXGI_FORMAT_B8G8R8X8_UNORM
+         || hist->desc.Width != width || hist->desc.Height != height)
+      return false;
+   for (i = 0; i < D3D10_FRAME_MEM_MAX; i++)
+   {
+      uintptr_t base, src = (uintptr_t)frame;
+      size_t off, size;
+      unsigned x, y;
+      D3D10_BOX box;
+      bool exposed;
+      if (!d3d10->frame_mem[i].valid
+            || d3d10->frame_mem[i].format != hist->desc.Format
+            || d3d10->frame_mem[i].mapped.RowPitch != pitch)
+         continue;
+      base = (uintptr_t)d3d10->frame_mem[i].mapped.pData;
+      size = (size_t)pitch * (d3d10->frame_mem[i].height - 1)
+         + (size_t)d3d10->frame_mem[i].width * 4;
+      if (src < base || src - base >= size)
+         continue;
+      off = (size_t)(src - base);
+      if (off % pitch % 4)
+         return false;
+      x = (unsigned)(off % pitch / 4);
+      y = (unsigned)(off / pitch);
+      if (x >= d3d10->frame_mem[i].width || width > d3d10->frame_mem[i].width - x
+            || height > d3d10->frame_mem[i].height - y)
+         return false;
+      exposed = retro_atomic_load_acquire_int(&d3d10->frame_mem[i].cache_exposed) != 0;
+      if (exposed && !video_driver_cached_frame_try_retire((const void*)base, size))
+         return false;
+      /* Convert in cached mapped memory after its last CPU reader retires. */
+      if (d3d10->frame_mem[i].format != d3d10->format)
+         dxgi_copy(width, height, d3d10->format, pitch, frame,
+               d3d10->frame_mem[i].format, pitch, (void*)frame);
+      box.left = x; box.top = y; box.front = 0;
+      box.right = x + width; box.bottom = y + height; box.back = 1;
+      d3d10->frame_mem[i].texture->lpVtbl->Unmap(
+            d3d10->frame_mem[i].texture, 0);
+      d3d10->frame_mem[i].valid = false;
+      if (exposed)
+         retro_atomic_store_release_int(&d3d10->frame_mem[i].cache_exposed, 0);
+      d3d10->device->lpVtbl->CopySubresourceRegion(d3d10->device,
+            (D3D10Resource)hist->handle, 0, 0, 0, 0,
+            (D3D10Resource)d3d10->frame_mem[i].texture, 0, &box);
+      if (hist->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
+         d3d10->device->lpVtbl->GenerateMips(d3d10->device, hist->view);
+      return true;
+   }
+   return false;
+}
+
 /* The lent slots go, unmapped first. A cached frame may point into a
  * mapped one, so it is retired before the memory goes. */
 static void d3d10_sw_lend_release(d3d10_video_t *d3d10)
@@ -863,10 +1062,13 @@ static bool d3d10_sw_lend_push(d3d10_video_t *d3d10, int slot,
    box.right  = x + width;
    box.bottom = y + height;
    box.back   = 1;
+   if (!video_driver_cached_frame_try_retire(d3d10->sw_lend.mapped[slot].pData,
+            (size_t)d3d10->sw_lend.mapped[slot].RowPitch
+               * VIDEO_SCALE_H(d3d10->sw_lend.dims)))
+      return false;
    d3d10->sw_lend.staging[slot]->lpVtbl->Unmap(
          d3d10->sw_lend.staging[slot], 0);
    d3d10->sw_lend.mapped_bits &= ~(1u << slot);
-   video_driver_cached_frame_retire();
    d3d10->device->lpVtbl->CopySubresourceRegion(d3d10->device,
          (D3D10Resource)hist->handle, 0, 0, 0, 0,
          (D3D10Resource)d3d10->sw_lend.staging[slot], 0, &box);
@@ -2975,6 +3177,8 @@ static void d3d10_gfx_free(void* data)
    d3d10_release_texture(&d3d10->chain.history[0]);
    d3d10_release_texture(&d3d10->sw_direct.texture);
    d3d10_sw_lend_release(d3d10);
+   for (i = 0; i < D3D10_FRAME_MEM_MAX; i++)
+      d3d10_frame_mem_free(d3d10, (uintptr_t)i + 1);
    d3d10_views_release(d3d10);
    d3d10_record_free(d3d10);
    Release(d3d10->frame.ubo);
@@ -4788,7 +4992,8 @@ static bool d3d10_gfx_frame(
          unsigned lx = 0, ly = 0;
          int slot = d3d10_sw_lend_find(d3d10, frame, width, height,
                pitch, &lx, &ly);
-         lent = d3d10_sw_lend_push(d3d10, slot, lx, ly, width, height);
+         lent = d3d10_frame_mem_push(d3d10, frame, width, height, pitch)
+            || d3d10_sw_lend_push(d3d10, slot, lx, ly, width, height);
       }
       /* Without a preset a software frame is drawn from where it was
        * written; a preset's passes read frame.texture[0]. */
@@ -5970,7 +6175,27 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait */
-   d3d10_set_view_count
+   d3d10_set_view_count,
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   d3d10_frame_mem_alloc,
+   d3d10_frame_mem_ready,
+   d3d10_frame_mem_free,
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   NULL, /* get_menu_framebuffer */
+   NULL, /* menu_mem_alloc */
+   0,    /* menu_mem_pitch_align */
+   false, /* texture_lend_per_write */
+   NULL, /* driver_pacing_set */
+   NULL, /* driver_pacing_wait */
+   NULL, /* driver_pacing_mark */
+   NULL, /* prepare_import_texture */
+   d3d10_frame_mem_map
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

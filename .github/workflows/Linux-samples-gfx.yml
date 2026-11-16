@@ -1210,6 +1210,7 @@ jobs:
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/frame_memory.py
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/frame_memory.py
           CC=x86_64-w64-mingw32-gcc RUNNER='xvfb-run -a wine' python3 samples/gfx/threaded_video/frame_memory.py
+          CC=x86_64-w64-mingw32-gcc RUNNER='xvfb-run -a wine' python3 samples/gfx/threaded_video/frame_memory.py --d3d10
 
       - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
         shell: bash

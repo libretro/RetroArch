@@ -3,7 +3,11 @@
 #define COBJMACROS
 #ifdef _WIN32
 #include <windows.h>
+#ifdef TEST_D3D10
+#include <d3d10.h>
+#else
 #include <d3d11.h>
+#endif
 #endif
 #include <assert.h>
 #include <stdio.h>
@@ -251,7 +255,9 @@ static void retirement(void)
    puts("PASS: bounded retirement refuses pinned readers and keepers without unmapping");
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(TEST_D3D10)
+#include "frame_memory_d3d10_test.h"
+#elif defined(_WIN32)
 typedef ID3D11Device *D3D11Device;
 typedef ID3D11DeviceContext *D3D11DeviceContext;
 typedef ID3D11Texture2D *D3D11Texture2D;
