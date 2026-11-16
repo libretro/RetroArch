@@ -1,0 +1,140 @@
+name: CI Linux glcore without slang
+
+# glcore built without slang draws through the GLSL shader backend and
+# makes the XMB effects from their GLSL. Before, the window contexts
+# offered glcore slang only and configure dropped glcore without it:
+# such a build had no shader backend and drew a black screen, and the
+# effects came only from SPIR-V. This builds retroarch with X11, OpenGL
+# and the menu and no slang, runs it under Xvfb on Mesa's software
+# rasteriser and checks that glcore takes GLSL, the menu is drawn, and
+# the Ribbon (with its glow) and Bokeh show.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'gfx/drivers/gl3.c'
+      - 'gfx/drivers_shader/shader_glsl.*'
+      - 'gfx/gfx_display.*'
+      - 'gfx/common/gl_common.*'
+      - 'gfx/drivers/gl_shaders/**'
+      - 'menu/drivers/xmb.c'
+      - 'menu/drivers/xmb_effects.h'
+      - 'gfx/drivers_context/x_ctx.c'
+      - 'qb/config.libs.sh'
+      - 'samples/gfx/glcore_glsl_menu/**'
+      - '.github/workflows/Linux-glcore-glsl.yml'
+  pull_request:
+    paths:
+      - 'gfx/drivers/gl3.c'
+      - 'gfx/drivers_shader/shader_glsl.*'
+      - 'gfx/gfx_display.*'
+      - 'gfx/common/gl_common.*'
+      - 'gfx/drivers/gl_shaders/**'
+      - 'menu/drivers/xmb.c'
+      - 'menu/drivers/xmb_effects.h'
+      - 'gfx/drivers_context/x_ctx.c'
+      - 'qb/config.libs.sh'
+      - 'samples/gfx/glcore_glsl_menu/**'
+      - '.github/workflows/Linux-glcore-glsl.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Only pull requests cancel a superseded run.  On master every push
+# gets its own group (keyed by the commit), so a burst of pushes queues
+# instead of cancelling the run for the commit before it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  glcore-glsl:
+    name: Run retroarch's glcore without slang under Xvfb and look at the menu
+    runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential zlib1g-dev ccache python3 xvfb imagemagick libgl1-mesa-dri libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxxf86vm-dev libxrandr-dev libxinerama-dev libgl-dev libegl-dev
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 250M
+          ccache -z
+
+      - name: Build RetroArch (X11 + OpenGL + the menu, no slang)
+        shell: bash
+        run: |
+          set -eu
+          ./configure --disable-qt --disable-wayland --disable-sdl \
+                      --disable-sdl2 --disable-ffmpeg --disable-vulkan \
+                      --disable-pulse --disable-discord \
+                      --disable-networking --disable-cheevos \
+                      --disable-glslang --disable-slang \
+                      --disable-spirv_cross \
+                      --disable-materialui --disable-ozone \
+                      --disable-7zip --disable-flac \
+                      --disable-audiomixer --disable-translate \
+                      --disable-accessibility --disable-crtswitchres \
+                      --disable-langextra --disable-libretrodb \
+                      --disable-video_filter --disable-dsp_filter
+          grep -q '^HAVE_OPENGL_CORE = 1' config.mk
+          grep -q '^HAVE_SLANG = 0' config.mk
+          make -j$(nproc)
+          ccache -s
+
+      - name: Run glcore_glsl_menu (still, Ribbon with glow, Bokeh)
+        shell: bash
+        run: |
+          set -eu
+          timeout 300 python3 samples/gfx/glcore_glsl_menu/run.py ./retroarch \
+            "$RUNNER_TEMP/glcore-glsl"
+
+      - name: Keep the shots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glcore-glsl-shots
+          path: ${{ runner.temp }}/glcore-glsl

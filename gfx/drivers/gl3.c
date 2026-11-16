@@ -3104,6 +3104,9 @@ static enum rarch_shader_type gl3_get_fallback_shader_type(enum rarch_shader_typ
 #if defined(HAVE_SLANG) || defined(HAVE_GLSL)
    int i;
    gfx_ctx_flags_t flags;
+#ifdef HAVE_GLSL
+   bool slang_offered;
+#endif
    flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
@@ -3112,9 +3115,18 @@ static enum rarch_shader_type gl3_get_fallback_shader_type(enum rarch_shader_typ
     * wayland_ctx.c, etc.  Cg requires the legacy fixed-function / ARB
     * asm pipeline that Core Profile contexts don't expose, so no
     * RARCH_SHADER_CG path is wired up here.  GLSL and slang are both
-    * Core Profile-compatible and remain valid; in practice context
-    * drivers advertise SLANG for glcore but the GLSL fallback is kept
-    * for builds without slang/spirv-cross. */
+    * Core Profile-compatible and remain valid. Most context drivers
+    * advertise only SLANG for glcore, and nothing at all where the
+    * build has no slang or nothing to cross-compile it with: there
+    * glcore takes GLSL, which every GL context runs, rather than be
+    * left with no shader backend and draw nothing. */
+#ifdef HAVE_GLSL
+#ifdef HAVE_SLANG
+   slang_offered = BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#else
+   slang_offered = false;
+#endif
+#endif
    if (type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
    {
       type = GL3_DEFAULT_SHADER_TYPE;
@@ -3129,7 +3141,8 @@ static enum rarch_shader_type gl3_get_fallback_shader_type(enum rarch_shader_typ
       {
          case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+            if (     BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)
+                  || !slang_offered)
                return type;
 #endif
             type = RARCH_SHADER_SLANG;

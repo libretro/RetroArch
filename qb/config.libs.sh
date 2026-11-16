@@ -1062,19 +1062,19 @@ HAVE_CRTSWITCHRES="$HAVE_MODELINE"
 
 check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
-check_enabled SLANG OPENGL_CORE 'OpenGL core' 'slang is' false
+check_enabled 'SLANG GLSL' OPENGL_CORE 'OpenGL core' 'slang and GLSL are' false
 check_enabled SLANG VULKAN vulkan 'slang is' false
 check_enabled SLANG METAL metal 'slang is' false
 
 check_enabled 'GLSLANG RSLC' SLANG slang 'glslang is' false
 check_enabled GLSLANG SPIRV_CROSS SPIRV-Cross 'glslang is' false
-check_enabled 'GLSLANG RSLC' OPENGL_CORE 'OpenGL core' 'glslang is' false
+check_enabled 'GLSLANG RSLC GLSL' OPENGL_CORE 'OpenGL core' 'glslang and GLSL are' false
 check_enabled 'GLSLANG RSLC' VULKAN vulkan 'glslang is' false
 check_enabled 'GLSLANG RSLC' METAL metal 'glslang is' false
 
 check_enabled 'SPIRV_CROSS RSLC' SLANG slang 'SPIRV-Cross is' false
 check_enabled SPIRV_CROSS GLSLANG glslang 'SPIRV-Cross is' false
-check_enabled 'SPIRV_CROSS RSLC' OPENGL_CORE 'OpenGL core' 'SPIRV-Cross is' false
+check_enabled 'SPIRV_CROSS RSLC GLSL' OPENGL_CORE 'OpenGL core' 'SPIRV-Cross and GLSL are' false
 check_enabled 'SPIRV_CROSS RSLC' VULKAN vulkan 'SPIRV-Cross is' false
 check_enabled 'SPIRV_CROSS RSLC' METAL metal 'SPIRV-Cross is' false
 
@@ -1089,6 +1089,15 @@ add_define MAKEFILE OS "$OS"
 if [ "$ARCHITECTURE_NAME" = 'Power Macintosh' ]; then
    HAVE_LANGEXTRA='no'
 fi
+
+# glcore needs a GL 3.2 core context, which no PowerPC Mac OS X has
+# (Leopard stops at GL 2.1). Without slang it was dropped before GLSL
+# could keep it; this keeps it off there, native or cross-built.
+case "$ARCHITECTURE_NAME:${CROSS_COMPILE:-}" in
+   'Power Macintosh:'*|*:powerpc*-apple-darwin*)
+      HAVE_OPENGL_CORE='no'
+      ;;
+esac
 
 if [ "$HAVE_DEBUG" = 'yes' ]; then
    add_define MAKEFILE DEBUG 1
