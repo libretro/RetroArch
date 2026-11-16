@@ -12,6 +12,7 @@ import tempfile
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--cc', default=os.environ.get('CC', 'cc'))
 parser.add_argument('--sanitizer', default='')
+parser.add_argument('--runner', default='')
 parser.add_argument('--artifacts', type=Path)
 args = parser.parse_args()
 here = Path(__file__).resolve().parent
@@ -159,7 +160,7 @@ if args.sanitizer:
     flags += ['-fsanitize=' + args.sanitizer, '-fno-omit-frame-pointer']
 binary = root / ('wrapper.exe' if os.name == 'nt' else 'wrapper')
 subprocess.run(compiler + flags + [str(unit), '-o', str(binary)], check=True, timeout=60)
-subprocess.run([str(binary)], check=True, timeout=15)
+subprocess.run(shlex.split(args.runner) + [str(binary)], check=True, timeout=15)
 (root / 'evidence.json').write_text(json.dumps(dict(result='PASS',
     source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
     wrapper_sha256=hashlib.sha256(wrapper.encode()).hexdigest(),

@@ -2612,11 +2612,11 @@ static const char *vulkan_optional_instance_extensions[] = {
    "VK_KHR_get_surface_capabilities2",
 #endif
 #ifdef VULKAN_HDR_SWAPCHAIN
-   VULKAN_COLORSPACE_EXTENSION_NAME
+   VULKAN_COLORSPACE_EXTENSION_NAME,
 #endif
 #if defined(_WIN32) && !defined(__WINRT__)
-   , "VK_KHR_external_memory_capabilities"
-   , "VK_KHR_external_semaphore_capabilities"
+   "VK_KHR_external_memory_capabilities",
+   "VK_KHR_external_semaphore_capabilities",
 #endif
 };
 
@@ -2626,7 +2626,7 @@ static unsigned vulkan_optional_instance_count(const gfx_ctx_vulkan_data_t *vk)
    unsigned count = ARRAY_SIZE(vulkan_optional_instance_extensions);
 #if defined(_WIN32) && !defined(__WINRT__)
    if (!vk->context.swapchain_settings.dxgi_present)
-      count -= 3;
+      count -= 2;
 #else
    (void)vk;
 #endif

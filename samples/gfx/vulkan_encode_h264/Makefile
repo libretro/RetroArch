@@ -97,6 +97,7 @@ capture_test$(EXE): capture_test.c $(RA)/gfx/common/vulkan_encode_capture.c $(CA
 capture_shader_test$(EXE): $(CAPTURE_SHADER_SOURCES) $(CAPTURE_HEADERS) $(RA)/libretro-common/include/gfx/shaders/rslc.h $(RA)/libretro-common/gfx/shaders/rslc_share.h
 	$(CC) $(CFLAGS) -DRSLC_EXTENDED -DRSLC_NO_DXBC $(CAPTURE_SHADER_SOURCES) -o $@ $(LDFLAGS) -lm
 check: all
+	python3 instance_extensions_test.py --cc "$(CC)" --runner "$(RUNNER)"
 	$(RUNNER) ./hevc_params_test$(EXE)
 	$(RUNNER) ./hevc_session_test$(EXE)
 	$(RUNNER) ./hevc_picture_test$(EXE)
@@ -105,7 +106,7 @@ check: all
 	$(RUNNER) ./hevc_worker_test$(EXE)
 	$(RUNNER) ./renderer_test$(EXE)
 	$(RUNNER) ./device_plan_test$(EXE)
-	python3 device_wrapper_test.py --cc "$(CC)" --sanitizer "$(SANITIZER)"
+	python3 device_wrapper_test.py --cc "$(CC)" --sanitizer "$(SANITIZER)" --runner "$(RUNNER)"
 	$(RUNNER) ./params_test$(EXE)
 	$(RUNNER) ./session_test$(EXE)
 	$(RUNNER) ./picture_test$(EXE)
