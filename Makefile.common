@@ -3454,6 +3454,9 @@ ifeq ($(HAVE_RECORD_VULKAN), 1)
    VULKAN_RECORD_OBJ := record/drivers/record_vulkan.o \
       gfx/common/vulkan_encode_h264.o gfx/common/vulkan_encode_h264_session.o \
       gfx/common/vulkan_encode_h264_submit.o gfx/common/vulkan_encode_pool.o \
+      gfx/common/vulkan_encode_hevc.o gfx/common/vulkan_encode_hevc_session.o \
+      gfx/common/vulkan_encode_hevc_submit.o record/record_gpu_dispatch_vulkan_hevc.o \
+      record/record_gpu_session_vulkan_hevc.o record/record_gpu_worker_vulkan_hevc.o \
       gfx/common/vulkan_encode_capture.o gfx/common/vulkan_encode_capture_shader.o \
       record/record_gpu_dispatch_vulkan.o record/record_gpu_renderer_vulkan.o \
       record/record_gpu_session_vulkan.o record/record_gpu_worker_vulkan.o \

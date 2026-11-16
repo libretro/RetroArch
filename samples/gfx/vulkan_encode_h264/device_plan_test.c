@@ -27,7 +27,8 @@ static void device_release(void *p)
 static const char *available[] = {
    VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
    VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME, VK_KHR_VIDEO_ENCODE_H264_EXTENSION_NAME,
-   VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME};
+   VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+   VK_KHR_VIDEO_ENCODE_H265_EXTENSION_NAME};
 static VkDeviceCreateInfo request;
 static VkDeviceQueueCreateInfo queues[3], saved_queues[3];
 static VkPhysicalDeviceFeatures requested_features;
@@ -39,10 +40,11 @@ static VkPhysicalDeviceVulkan11Features version11;
 static float priorities[] = {.25f,.75f,.5f,.125f};
 static bool extensions_missing, features_off, compute_off, exhausted, grow, no_dedicated;
 static unsigned features_calls, family_calls;
+static bool hevc_extension, hevc_queue;
 static VKAPI_ATTR VkResult VKAPI_CALL device_extensions(VkPhysicalDevice physical,
       const char *layer, uint32_t *count, VkExtensionProperties *out)
 {
-   unsigned i, n = extensions_missing ? 1 : 6;
+   unsigned i, n = extensions_missing ? 1 : hevc_extension ? 7 : 6;
    assert(physical && !layer);
    if (out)
    {
@@ -71,6 +73,8 @@ static VKAPI_ATTR void VKAPI_CALL device_families(VkPhysicalDevice physical,
          out[i].queueFamilyProperties.queueFlags = i ? VK_QUEUE_VIDEO_ENCODE_BIT_KHR :
             VK_QUEUE_GRAPHICS_BIT | (compute_off ? 0 : VK_QUEUE_COMPUTE_BIT);
          video->videoCodecOperations = i ? VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR : 0;
+         if (i && hevc_queue)
+            video->videoCodecOperations |= VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
       }
    }
    *count = out && grow ? 4 : 3;
@@ -95,6 +99,7 @@ static void setup(void)
    unsigned i;
    assert(!live);
    allocations = fail_at = features_calls = family_calls = 0;
+   hevc_extension = hevc_queue = false;
    extensions_missing = features_off = compute_off = exhausted = grow = no_dedicated = false;
    memset(&request, 0, sizeof(request));
    memset(queues, 0, sizeof(queues));
@@ -242,11 +247,35 @@ static void refusal(void)
       assert(!plan(VK_API_VERSION_1_1) && !live);
    }
 }
+static void optional_hevc(void)
+{
+   unsigned mode, i, count;
+   vulkan_encode_device_plan_t *p;
+   const VkDeviceCreateInfo *info;
+   assert(!vulkan_encode_device_plan_hevc(NULL));
+   for (mode = 0; mode < 4; mode++)
+   {
+      setup();
+      hevc_extension = (mode & 1) != 0;
+      hevc_queue = (mode & 2) != 0;
+      p = plan(VK_API_VERSION_1_1);
+      assert(p && vulkan_encode_device_plan_hevc(p) == (mode == 3));
+      info = vulkan_encode_device_plan_info(p);
+      count = 0;
+      for (i = 0; i < info->enabledExtensionCount; i++)
+         if (!strcmp(info->ppEnabledExtensionNames[i], VK_KHR_VIDEO_ENCODE_H265_EXTENSION_NAME))
+            count++;
+      assert(count == (mode == 3 ? 1u : 0u));
+      vulkan_encode_device_plan_free(p);
+      assert(!live);
+   }
+}
 int main(void)
 {
    normal();
    feature_chains();
    refusal();
+   optional_hevc();
    puts("Vulkan encode device: dedicated queues, feature-chain preservation, extension dependencies and refusal PASS");
    return 0;
 }

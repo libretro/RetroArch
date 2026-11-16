@@ -24,6 +24,8 @@ vulkan_encode_device_plan_t *vulkan_encode_device_plan_new(
 const VkDeviceCreateInfo *vulkan_encode_device_plan_info(const vulkan_encode_device_plan_t *plan);
 bool vulkan_encode_device_plan_queue(const vulkan_encode_device_plan_t *plan,
       uint32_t *family, uint32_t *index, bool *storage_images);
+/* True only when HEVC is enabled on the reserved encode queue. */
+bool vulkan_encode_device_plan_hevc(const vulkan_encode_device_plan_t *plan);
 void vulkan_encode_device_plan_free(vulkan_encode_device_plan_t *plan);
 RETRO_END_DECLS
 #endif

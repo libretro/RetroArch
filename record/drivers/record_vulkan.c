@@ -4,6 +4,9 @@
 #endif
 #include "record_vulkan.h"
 #ifdef HAVE_RECORD_VULKAN
+#include "../record_gpu_dispatch_vulkan_hevc.h"
+#endif
+#ifdef HAVE_RECORD_VULKAN
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
@@ -194,7 +197,7 @@ static bool rvk_rate(double fps, unsigned *num, unsigned *den)
    }
    return false;
 }
-static bool rvk_config(const char *path, bool *audio, unsigned *qp)
+static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, unsigned *depth)
 {
    config_file_t *config;
    struct config_file_entry entry;
@@ -202,6 +205,8 @@ static bool rvk_config(const char *path, bool *audio, unsigned *qp)
    bool ok = false;
    *audio = true;
    *qp = 24;
+   *hevc = false;
+   *depth = 8;
    if (!path || !*path)
       return true;
    config = config_file_new_from_path_to_string(path);
@@ -210,15 +215,26 @@ static bool rvk_config(const char *path, bool *audio, unsigned *qp)
    if ((config_get_entry(config, "audio_enable") && !config_get_bool(config, "audio_enable", audio))
          || (config_get_entry(config, "video_qp") && (!config_get_uint(config, "video_qp", qp) || *qp > 51))
          || (config_get_entry(config, "vcodec") && (!config_get_array(config, "vcodec", text, sizeof(text))
-               || !string_is_equal(text, "h264")))
+               || (!string_is_equal(text, "h264") && !string_is_equal(text, "hevc"))))
          || (config_get_entry(config, "format") && (!config_get_array(config, "format", text, sizeof(text))
                || !string_is_equal(text, "mp4"))))
+      goto done;
+   if (config_get_entry(config, "vcodec"))
+   {
+      if (!config_get_array(config, "vcodec", text, sizeof(text)))
+         goto done;
+      *hevc = string_is_equal(text, "hevc");
+   }
+   if (config_get_entry(config, "video_bit_depth")
+         && (!config_get_uint(config, "video_bit_depth", depth)
+            || (*depth != 8 && *depth != 10) || (!*hevc && *depth != 8)))
       goto done;
    if (config_get_entry_list_head(config, &entry))
       do
       {
          if (!string_is_equal(entry.key, "audio_enable") && !string_is_equal(entry.key, "video_qp")
-               && !string_is_equal(entry.key, "vcodec") && !string_is_equal(entry.key, "format"))
+               && !string_is_equal(entry.key, "vcodec") && !string_is_equal(entry.key, "format")
+               && !string_is_equal(entry.key, "video_bit_depth"))
             goto done;
       } while (config_get_entry_list_next(&entry));
    ok = true;
@@ -248,6 +264,61 @@ static void rvk_fail(record_vk_context_t *c)
    retro_atomic_store_release_int(&c->failed, 1);
    record_gpu_dispatch_vulkan_cancel(c->job);
 }
+static record_gpu_dispatch_vulkan_t *rvk_hevc_job(record_vk_context_t *c,
+      const record_gpu_output_vulkan_config_t *output, unsigned depth)
+{
+   vulkan_encode_hevc_open_t encoder;
+   vulkan_encode_hevc_ops_t ops;
+   memset(&encoder, 0, sizeof(encoder));
+   encoder.session.physical = c->encoder.session.physical;
+   encoder.session.device = c->encoder.session.device;
+   encoder.session.family = c->encoder.session.family;
+   encoder.session.video.width = c->encoder.session.video.width;
+   encoder.session.video.height = c->encoder.session.video.height;
+   encoder.session.video.fps_num = c->encoder.session.video.fps_num;
+   encoder.session.video.fps_den = c->encoder.session.video.fps_den;
+   encoder.session.video.bitrate = c->encoder.session.video.bitrate;
+   encoder.session.video.bit_depth = depth;
+   encoder.session.video.color = VULKAN_ENCODE_HEVC_BT709;
+   encoder.session.video.ctb_size = 0;
+   encoder.queue = c->encoder.queue;
+   encoder.packet_size = c->encoder.packet_size;
+   encoder.producer_family = c->encoder.producer_family;
+   encoder.slots = c->encoder.slots;
+   encoder.gop = c->encoder.gop;
+   encoder.qp = c->encoder.qp;
+   encoder.storage_image_extended_formats = c->encoder.storage_image_extended_formats;
+   ops.session.families = c->ops.session.families;
+   ops.session.memory = c->ops.session.memory;
+   ops.session.capabilities = c->ops.session.capabilities;
+   ops.session.formats = c->ops.session.formats;
+   ops.session.create = c->ops.session.create;
+   ops.session.destroy = c->ops.session.destroy;
+   ops.session.requirements = c->ops.session.requirements;
+   ops.session.bind = c->ops.session.bind;
+   ops.session.allocate = c->ops.session.allocate;
+   ops.session.free_memory = c->ops.session.free_memory;
+   ops.session.parameters = c->ops.session.parameters;
+   ops.session.destroy_parameters = c->ops.session.destroy_parameters;
+   ops.session.headers = c->ops.session.headers;
+   ops.submit.reset_command = c->ops.submit.reset_command;
+   ops.submit.begin = c->ops.submit.begin;
+   ops.submit.end = c->ops.submit.end;
+   ops.submit.barrier = c->ops.submit.barrier;
+   ops.submit.reset_query = c->ops.submit.reset_query;
+   ops.submit.begin_query = c->ops.submit.begin_query;
+   ops.submit.end_query = c->ops.submit.end_query;
+   ops.submit.begin_coding = c->ops.submit.begin_coding;
+   ops.submit.control = c->ops.submit.control;
+   ops.submit.encode = c->ops.submit.encode;
+   ops.submit.end_coding = c->ops.submit.end_coding;
+   ops.submit.reset_fence = c->ops.submit.reset_fence;
+   ops.submit.submit = c->ops.submit.submit;
+   ops.submit.status = c->ops.submit.status;
+   ops.submit.feedback = c->ops.submit.feedback;
+   ops.pool = c->ops.pool;
+   return record_gpu_dispatch_vulkan_new_hevc(&encoder, &ops, output, c->path, &c->capture_ops);
+}
 static void *rvk_init(const struct record_params *params)
 {
    record_gpu_output_vulkan_config_t output;
@@ -257,13 +328,13 @@ static void *rvk_init(const struct record_params *params)
    struct retro_hdr_metadata hdr;
    settings_t *settings = config_get_ptr();
    size_t length;
-   unsigned num, den, qp;
-   bool audio;
+   unsigned num, den, qp, depth;
+   bool audio, hevc;
    if (!params || !settings || !params->filename || !*params->filename
          || record_vk_active || record_vk_retired || recording_state_get_ptr()->streaming_enable)
       return NULL;
    if (!params->video_gpu_record || settings->bools.video_record_game_only || audio_driver_has_callback()
-         || !rvk_rate(params->fps, &num, &den) || !rvk_config(params->config, &audio, &qp))
+         || !rvk_rate(params->fps, &num, &den) || !rvk_config(params->config, &audio, &qp, &hevc, &depth))
    {
       RARCH_ERR("[Vulkan recording] Requires viewport capture, synchronous audio and a native MP4 profile.\n");
       return NULL;
@@ -275,6 +346,11 @@ static void *rvk_init(const struct record_params *params)
       return NULL;
    }
    snapshot = (const record_vulkan_device_t*)device.recording;
+   if (hevc && !snapshot->hevc)
+   {
+      RARCH_ERR("[Vulkan recording] Reserved encode queue has no enabled HEVC support.\n");
+      return NULL;
+   }
    if (snapshot->device != device.device || !snapshot->queue || !snapshot->get_proc)
       return NULL;
    memset(&hdr, 0, sizeof(hdr));
@@ -283,7 +359,7 @@ static void *rvk_init(const struct record_params *params)
    if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr)
          || hdr.output_mode || settings->uints.video_swapchain_bit_depth == 2)
    {
-      RARCH_ERR("[Vulkan recording] H.264 capture requires SDR 8-bit output.\n");
+      RARCH_ERR("[Vulkan recording] %s capture requires SDR 8-bit output.\n", hevc ? "HEVC" : "H.264");
       return NULL;
    }
    if (!VIDEO_SCALE_W(params->out_dims) || !VIDEO_SCALE_H(params->out_dims)
@@ -348,7 +424,8 @@ static void *rvk_init(const struct record_params *params)
    retro_atomic_int_init(&c->failed, 0);
    retro_atomic_int_init(&c->stop, 0);
    retro_atomic_int_init(&c->native_error, 0);
-   c->job = record_gpu_dispatch_vulkan_new_capture(&c->encoder, &c->ops, &output, c->path, &c->capture_ops);
+   c->job = hevc ? rvk_hevc_job(c, &output, depth)
+      : record_gpu_dispatch_vulkan_new_capture(&c->encoder, &c->ops, &output, c->path, &c->capture_ops);
    if (!c->job)
       goto failed;
    c->renderer = record_gpu_renderer_vulkan_new(c->job, den, c->encoder.gop, c->counter);
@@ -361,7 +438,7 @@ static void *rvk_init(const struct record_params *params)
       return NULL;
    }
    record_vk_active = c;
-   RARCH_LOG("[Vulkan recording] Starting native H.264%s at %u/%u fps.\n", audio ? "/AC-3" : "", num, den);
+   RARCH_LOG("[Vulkan recording] Starting native %s%s at %u/%u fps.\n", hevc ? "HEVC" : "H.264", audio ? "/AC-3" : "", num, den);
    return c;
 failed:
    free(c);

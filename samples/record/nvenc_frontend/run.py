@@ -23,7 +23,9 @@ parser.add_argument('--audio', nargs='+', choices=['false', 'true'], default=['f
 parser.add_argument('--rates', nargs='+', type=int, default=[32000, 44100, 48000])
 parser.add_argument('--layouts', nargs='+', type=lambda x: int(x, 0), default=[3])
 parser.add_argument('--float', action='store_true', dest='floating')
+parser.add_argument('--skip-admission', action='store_true')
 parser.add_argument('--lifecycle', choices=['resize', 'reinit', 'stop'])
+parser.add_argument('--bit-depth', type=int, choices=[8, 10], default=8)
 parser.add_argument('--hdr-mode', type=int, choices=[0, 1, 2], default=0)
 args = parser.parse_args()
 if not args.retroarch:
@@ -31,8 +33,8 @@ if not args.retroarch:
     raise SystemExit(0)
 if sys.platform != 'win32':
     raise SystemExit('Native frontend GPU acceptance requires Windows')
-if args.driver == 'vulkan' and args.codecs != ['h264']:
-    parser.error('the Vulkan file driver currently requires --codecs h264')
+if args.driver == 'vulkan' and any(codec not in ('h264', 'hevc') for codec in args.codecs):
+    parser.error('the Vulkan file driver requires H264 or HEVC')
 ffmpeg = shutil.which('ffmpeg')
 assert ffmpeg, 'test-only ffmpeg decoder required'
 exe, core = str(Path(args.retroarch).resolve()), str(Path(args.core).resolve())
@@ -72,6 +74,9 @@ savestate_auto_load = "false"
     quality = 'video_qp = "24"' if args.driver == 'vulkan' else 'video_bit_rate = "8000000"'
     record.write_text(f'audio_enable = "{"true" if audio else "false"}"\n'
                       f'vcodec = "{codec}"\nformat = "mp4"\n{quality}\n', encoding='utf-8')
+    if args.driver == 'vulkan':
+        with record.open('a', encoding='utf-8') as stream:
+            stream.write('video_bit_depth = "%d"\n' % (args.bit_depth if codec == 'hevc' else 8))
     if kind == 'exists':
         movie.write_bytes(b'preserve existing output')
     frames = '1' if kind == 'early' else '240' if args.lifecycle and kind == 'normal' else '120' if kind == 'normal' else '10'
@@ -128,6 +133,8 @@ savestate_auto_load = "false"
     text = decoded.stderr.decode(errors='replace')
     source = text.split('Output #', 1)[0]
     assert ('Audio:' in source) == audio and codec in source, source
+    if args.driver == 'vulkan' and codec == 'hevc':
+        assert ('yuv420p10le' in source) == (args.bit_depth == 10), source
     assert 'time_base: 1/60000' in text and 'frame_rate: 60000/1001' in text, text[:5000]
     pts = [int(x) for x in re.findall(r'\bn:\s*\d+\s+pts:\s*(-?\d+)', text)]
     size = re.search(r'\bs:(\d+)x(\d+)', text)
@@ -205,11 +212,11 @@ try:
                 for rate in args.rates if audio == 'true' else [48000]:
                     for layout in args.layouts if audio == 'true' else [3]:
                         run_case(root, codec, threaded, audio=audio == 'true', rate=rate, layout=layout)
-    if not args.hdr_mode:
+    if not args.hdr_mode and not args.skip_admission:
         for layout in (0x33, 0x3f, 0x63f):
-            run_case(root, 'h264', 'true', 'layout', audio=True, layout=layout)
+            run_case(root, args.codecs[0], 'true', 'layout', audio=True, layout=layout)
         for kind in ('rate', 'exists', 'early'):
-            run_case(root, 'h264', 'true', kind, audio=True)
+            run_case(root, args.codecs[0], 'true', kind, audio=True)
 finally:
     if temporary:
         temporary.cleanup()

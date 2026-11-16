@@ -233,7 +233,7 @@ void vulkan_context_session_cache_free(void)
 }
 /* The video decode queues a cached device was made with */
 static uint32_t                      cached_video_vk[6];
-static uint32_t                      cached_recording_vk[4];
+static uint32_t                      cached_recording_vk[5];
 #if defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
             || defined(HAVE_RECORD_MEDIACODEC))
@@ -1469,6 +1469,7 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
 {
    vk->context.recording_device = false;
    vk->context.recording_storage_images = false;
+   vk->context.recording_hevc = false;
 #if defined(HAVE_THREADS) && defined(HAVE_RMP4) && defined(HAVE_RAC3) \
       && !defined(ANDROID) && !defined(__ANDROID__) \
       && (defined(__linux__) || (defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)))
@@ -1503,6 +1504,7 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
             vulkan_encode_device_plan_queue(plan, &vk->context.recording_family,
                   &vk->context.recording_queue_index, &vk->context.recording_storage_images);
             vk->context.recording_device = true;
+            vk->context.recording_hevc = vulkan_encode_device_plan_hevc(plan);
             vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
          }
          vulkan_encode_device_plan_free(plan);
@@ -1944,6 +1946,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    vk->context.video_xfer_first    = 0;
    vk->context.recording_device = false;
    vk->context.recording_storage_images = false;
+   vk->context.recording_hevc = false;
    vk->context.recording_family = 0;
    vk->context.recording_queue_index = 0;
 
@@ -2347,6 +2350,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.recording_family = cached_recording_vk[1];
          vk->context.recording_queue_index = cached_recording_vk[2];
          vk->context.recording_storage_images = cached_recording_vk[3] != 0;
+         vk->context.recording_hevc = cached_recording_vk[4] != 0;
          if (cached_video_vk[5]) vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
          else vk->context.flags &= ~VK_CTX_FLAG_VIDEO_GENERAL;
 #if defined(ANDROID) \
@@ -6290,6 +6294,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_recording_vk[1] = vk->context.recording_family;
       cached_recording_vk[2] = vk->context.recording_queue_index;
       cached_recording_vk[3] = vk->context.recording_storage_images ? 1 : 0;
+      cached_recording_vk[4] = vk->context.recording_hevc ? 1 : 0;
 #if defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
             || defined(HAVE_RECORD_MEDIACODEC))

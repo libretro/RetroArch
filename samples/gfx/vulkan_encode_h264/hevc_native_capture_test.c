@@ -10,6 +10,7 @@ struct native_capture_command
    VkClearColorValue color;
    VkTimelineSemaphoreSubmitInfo timeline;
    VkSubmitInfo submit;
+   VkFence fence;
    VkPipelineStageFlags wait_stage;
    vulkan_encode_capture_source_t source;
    uint64_t ready, done;
@@ -50,7 +51,7 @@ static void load_capture(struct native_hevc_capture *n)
    n->capture_ops.barrier = (PFN_vkCmdPipelineBarrier2)c->device_proc(c->device, "vkCmdPipelineBarrier2");
    n->capture_ops.copy = (PFN_vkCmdCopyBufferToImage)c->device_proc(c->device, "vkCmdCopyBufferToImage");
 }
-static void capture_new(struct native_hevc_capture *c,const vulkan_encode_pool_t *pool)
+static void capture_new_source(struct native_hevc_capture *c,const vulkan_encode_pool_t *pool)
 {
    VkImageCreateInfo image;
    VkMemoryRequirements requirements;
@@ -101,6 +102,10 @@ static void capture_new(struct native_hevc_capture *c,const vulkan_encode_pool_t
    command.level=VK_COMMAND_BUFFER_LEVEL_PRIMARY;
    command.commandBufferCount=2;
    assert(c->adapter.ops.pool.allocate_command(c->adapter.gpu.base.device,&command,c->adapter.gpu.producer)==VK_SUCCESS);
+}
+static void capture_new(struct native_hevc_capture *c,const vulkan_encode_pool_t *pool)
+{
+   capture_new_source(c, pool);
    c->capture=vulkan_encode_capture_new_compiled(pool,&c->capture_ops,
          c->shader_error,sizeof(c->shader_error));
    if (!c->capture) fprintf(stderr,"%s\n",c->shader_error);
@@ -174,14 +179,19 @@ static void capture_frame(struct native_hevc_capture *c,const vulkan_encode_pool
    r->submit.waitSemaphoreCount=frame>=2?1:0;
    r->submit.pWaitSemaphores=frame>=2?&pool->done:NULL;
    r->submit.pWaitDstStageMask=frame>=2?&r->wait_stage:NULL;
-   assert(c->adapter.ops.submit.submit(c->adapter.gpu.base.producer_queue,1,&r->submit,VK_NULL_HANDLE)==VK_SUCCESS);
+   assert(c->adapter.ops.submit.submit(c->adapter.gpu.base.producer_queue,1,&r->submit,r->fence)==VK_SUCCESS);
 }
-static void capture_free(struct native_hevc_capture *c)
+static void capture_free_source(struct native_hevc_capture *c)
 {
-   vulkan_encode_capture_free(c->capture);
    c->adapter.ops.pool.destroy_view(c->adapter.gpu.base.device,c->rgb_view,NULL);
    c->adapter.ops.pool.destroy_image(c->adapter.gpu.base.device,c->rgb,NULL);
    c->adapter.ops.pool.free_memory(c->adapter.gpu.base.device,c->rgb_memory,NULL);
+}
+
+static void capture_free(struct native_hevc_capture *c)
+{
+   vulkan_encode_capture_free(c->capture);
+   capture_free_source(c);
 }
 
 #ifndef HEVC_NATIVE_CAPTURE_HELPERS_ONLY

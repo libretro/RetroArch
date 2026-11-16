@@ -37,7 +37,7 @@ typedef struct wrapper_context
    VkPhysicalDeviceProperties gpu_properties;
    uint32_t instance_api_version, graphics_queue_index, recording_family, recording_queue_index;
    uint16_t flags;
-   bool recording_device, recording_storage_images;
+   bool recording_device, recording_storage_images, recording_hevc;
    void *xr;
 } wrapper_context_t;
 typedef struct gfx_ctx_vulkan_data { wrapper_context_t context; } gfx_ctx_vulkan_data_t;
@@ -67,7 +67,7 @@ static VkResult vulkan_context_create_device_plain(gfx_ctx_vulkan_data_t *vk,
    {
       augmented++;
       assert(info->queueCreateInfoCount == 3 && info->pEnabledFeatures == &requested_features);
-      assert(info->enabledExtensionCount == 6);
+      assert(info->enabledExtensionCount == (hevc_extension && hevc_queue ? 7u : 6u));
       if (refuse_augmentation)
       {
          *device = (VkDevice)(uintptr_t)99;
@@ -106,6 +106,12 @@ static VkResult wrapper_create(void)
 }
 int main(void)
 {
+   wrapper_setup();
+   hevc_extension = hevc_queue = true;
+   assert(wrapper_create() == VK_SUCCESS && ctx.context.recording_hevc);
+   wrapper_setup();
+   hevc_extension = true;
+   assert(wrapper_create() == VK_SUCCESS && !ctx.context.recording_hevc);
    wrapper_setup();
    assert(wrapper_create() == VK_SUCCESS && created == 1 && augmented == 1);
    assert(ctx.context.recording_device && ctx.context.recording_family == 2);

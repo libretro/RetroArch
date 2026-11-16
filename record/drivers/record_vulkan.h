@@ -15,7 +15,7 @@ typedef struct record_vulkan_device
    PFN_vkGetInstanceProcAddr get_proc;
    uint32_t api_version;
    unsigned family, producer_family;
-   bool storage_images;
+   bool storage_images, hevc;
 } record_vulkan_device_t;
 extern const record_driver_t record_vulkan;
 struct video_frame_info;

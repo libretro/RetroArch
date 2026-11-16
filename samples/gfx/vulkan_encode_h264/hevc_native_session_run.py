@@ -50,6 +50,7 @@ def verify_file(path, depth, audio):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--native-test', required=True, type=Path)
+    parser.add_argument("--with-cancel", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='hevc-native-session-') as directory:
         for depth in (8, 10):
@@ -63,6 +64,13 @@ def main():
                         raise SystemExit(77)
                     result.check_returncode()
                     verify_file(path, depth, audio)
+                    if args.with_cancel:
+                        cancelled = path.with_name("cancel-" + path.name)
+                        result = subprocess.run([str(args.native_test.resolve()), str(depth),
+                                                 str(cancelled), str(direct), str(int(audio)),
+                                                 '--cancel'], check=False, timeout=30)
+                        result.check_returncode()
+                        print('PASS native HEVC dispatcher cancellation and retirement')
 
 
 if __name__ == '__main__':

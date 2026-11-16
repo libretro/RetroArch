@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
-#include "record_gpu_dispatch_vulkan.h"
+#include "record_gpu_dispatch_vulkan_backend.h"
 #include <retro_atomic.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,8 +16,8 @@
 #endif
 struct record_gpu_dispatch_vulkan
 {
-   vulkan_encode_h264_open_t encoder;
-   vulkan_encode_h264_ops_t ops;
+   record_gpu_dispatch_vulkan_config_t config;
+   record_gpu_dispatch_vulkan_start_t start;
    vulkan_encode_capture_ops_t capture_ops;
    record_gpu_output_vulkan_config_t output;
    uint64_t last_end, last_ready, audio_frames;
@@ -87,7 +87,7 @@ static void *record_vkd_run(void *opaque)
       error = RECORD_VULKAN_SESSION_CANCELLED;
    else
    {
-      j->session = record_gpu_session_vulkan_new(&j->encoder, &j->ops, &j->output, j->path);
+      j->session = j->start(&j->config, &j->output, j->path);
       error = record_gpu_session_vulkan_error(j->session, NULL);
       if (!error && j->capture_enabled
             && !retro_atomic_load_acquire_int(&j->cancelled)
@@ -145,8 +145,31 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new(
    return record_gpu_dispatch_vulkan_new_capture(encoder, ops, output, path, NULL);
 }
 
+static record_gpu_session_vulkan_t *record_vkd_h264_start(
+      const record_gpu_dispatch_vulkan_config_t *config,
+      const record_gpu_output_vulkan_config_t *output, const char *path)
+{
+   return record_gpu_session_vulkan_new(&config->h264.encoder,
+         &config->h264.ops, output, path);
+}
+
 record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
       const vulkan_encode_h264_open_t *encoder, const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *output, const char *path,
+      const vulkan_encode_capture_ops_t *capture_ops)
+{
+   record_gpu_dispatch_vulkan_config_t config;
+   if (!encoder || !ops)
+      return NULL;
+   config.h264.encoder = *encoder;
+   config.h264.ops = *ops;
+   return record_gpu_dispatch_vulkan_new_backend(&config, record_vkd_h264_start,
+         output, path, capture_ops);
+}
+
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend(
+      const record_gpu_dispatch_vulkan_config_t *config,
+      record_gpu_dispatch_vulkan_start_t start,
       const record_gpu_output_vulkan_config_t *output, const char *path,
       const vulkan_encode_capture_ops_t *capture_ops)
 {
@@ -157,7 +180,7 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
    pthread_t thread;
    int result;
 #endif
-   if (!encoder || !ops || !output || !path || !*path
+   if (!config || !start || !output || !path || !*path
          || output->video.headers || output->video.headers_size
          || output->video.ac3_header || output->video.ac3_header_size)
       return NULL;
@@ -171,8 +194,8 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
    if (!j->path)
       goto failed;
    memcpy(j->path, path, length + 1);
-   j->encoder = *encoder;
-   j->ops = *ops;
+   j->config = *config;
+   j->start = start;
    j->output = *output;
    if (capture_ops)
    {
@@ -341,6 +364,12 @@ bool record_gpu_dispatch_vulkan_free(record_gpu_dispatch_vulkan_t *j)
    return true;
 }
 #else
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend(
+      const record_gpu_dispatch_vulkan_config_t *c,
+      record_gpu_dispatch_vulkan_start_t start,
+      const record_gpu_output_vulkan_config_t *o, const char *p,
+      const vulkan_encode_capture_ops_t *ops)
+{ (void)c; (void)start; (void)o; (void)p; (void)ops; return NULL; }
 bool record_gpu_dispatch_vulkan_audio_frames(const record_gpu_dispatch_vulkan_t *j,
       uint64_t *frames)
 { (void)j; (void)frames; return false; }

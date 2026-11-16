@@ -8489,6 +8489,7 @@ static void *vulkan_init(const video_info_t *video)
       record->family = vk->context->recording_family;
       record->producer_family = vk->context->graphics_queue_index;
       record->storage_images = vk->context->recording_storage_images;
+      record->hevc = vk->context->recording_hevc;
       record->api_version = vk->context->instance_api_version;
       if (record->api_version > vk->context->gpu_properties.apiVersion)
          record->api_version = vk->context->gpu_properties.apiVersion;

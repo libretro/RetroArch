@@ -12,8 +12,10 @@ are enabled. Use `--disable-record-vulkan` to omit it; makefile integrations can
 select `HAVE_RECORD_VULKAN=1` explicitly.
 It requires Vulkan, threads, configuration files, RMP4 and RSLC. Select
 `video_driver = "vulkan"`, `record_driver = "vulkan"`, and viewport recording
-(Game Only disabled). Current admission is SDR H.264 in MP4, with optional
-native AC-3 at 32, 44.1 or 48 kHz. Unsupported devices, HDR, asynchronous core
+(Game Only disabled). Current admission is SDR H.264 or HEVC Main/Main10 in MP4, with optional
+native AC-3 at 32, 44.1 or 48 kHz. HEVC requires an enabled codec extension
+on the reserved encode queue. Ten-bit encoding preserves SDR BT.709; it does
+not enable HDR input capture. Unsupported devices, HDR, asynchronous core
 audio and unsupported speaker layouts are refused. Existing files are preserved.
 Native Linux GPU acceptance remains separate from a successful Linux build.
 
@@ -26,8 +28,11 @@ format = "mp4"
 video_qp = 24
 ```
 
+For HEVC, set `vcodec = "hevc"` and optionally `video_bit_depth = 10`
+(the default is 8). H.264 accepts only bit depth 8.
+
 Run the shared native frontend oracle with `python
-../nvenc_frontend/run.py --driver vulkan --codecs h264 --core CORE
+../nvenc_frontend/run.py --driver vulkan --codecs hevc --bit-depth 10 --core CORE
 --retroarch RETROARCH --output-dir OUTPUT`. On Windows, supply
 `--desktop-runner RUNNER` to use the existing isolated desktop harness.
 The shared oracle checks independently decoded pictures, packet timestamps,

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <file/config_file.h>
 #include "../../../record/drivers/record_vulkan.h"
+#include "../../../record/record_gpu_dispatch_vulkan_hevc.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include "../../../audio/audio_driver.h"
@@ -28,6 +29,7 @@ static video_driver_state_t video;
 static struct retro_hdr_metadata hdr;
 static record_vulkan_device_t device;
 static vulkan_encode_h264_open_t offered;
+static vulkan_encode_hevc_open_t hevc_offered;
 static record_gpu_output_vulkan_config_t output;
 static const char *profile = "", *missing;
 static unsigned starts, finishes, frees, records, commits, audio_calls, deinit_calls, init_calls;
@@ -101,11 +103,22 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL get_device_proc(VkDevice d, cons
    assert(d == device.device);
    return missing && !strcmp(name, missing) ? NULL : unused_proc;
 }
+static VKAPI_ATTR VkResult VKAPI_CALL hevc_capabilities(VkPhysicalDevice physical,
+      const VkVideoProfileInfoKHR *profile, VkVideoCapabilitiesKHR *caps)
+{
+   (void)physical;
+   (void)profile;
+   (void)caps;
+   assert(!"HEVC capabilities must be queried on the I/O worker");
+   return VK_ERROR_FORMAT_NOT_SUPPORTED;
+}
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL get_instance_proc(VkInstance i, const char *name)
 {
    assert(i == device.instance);
    if (!strcmp(name, "vkGetDeviceProcAddr"))
       return (PFN_vkVoidFunction)get_device_proc;
+   if (!strcmp(name, "vkGetPhysicalDeviceVideoCapabilitiesKHR"))
+      return (PFN_vkVoidFunction)hevc_capabilities;
    return unused_proc;
 }
 record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
@@ -116,6 +129,18 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
    assert(ops && ops->submit.submit && capture && capture->dispatch && path && *path);
    starts++;
    offered = *encoder;
+   output = *mux;
+   job.state = RECORD_VKD_STARTING;
+   return &job;
+}
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_hevc(
+      const vulkan_encode_hevc_open_t *encoder, const vulkan_encode_hevc_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *mux, const char *path,
+      const vulkan_encode_capture_ops_t *capture)
+{
+   assert(ops && ops->submit.submit && capture && capture->dispatch && path && *path);
+   hevc_offered = *encoder;
+   starts++;
    output = *mux;
    job.state = RECORD_VKD_STARTING;
    return &job;
@@ -370,9 +395,37 @@ static void lifecycle(void)
    assert(init_calls == 1 && !record_vk_start_requested);
    free(info);
 }
+static void hevc_admission(void)
+{
+   struct record_params params;
+   record_vk_context_t *c;
+   unsigned depth;
+   for (depth = 8; depth <= 10; depth += 2)
+   {
+      reset(&params);
+      device.hevc = true;
+      profile = depth == 8 ? "vcodec = hevc\nvideo_bit_depth = 8\n"
+         : "vcodec = hevc\nvideo_bit_depth = 10\n";
+      c = (record_vk_context_t*)record_vulkan.init(&params);
+      assert(c && starts == 1 && hevc_offered.session.video.bit_depth == depth);
+      assert(hevc_offered.session.video.color == VULKAN_ENCODE_HEVC_BT709);
+      assert(!hevc_offered.session.video.ctb_size && hevc_offered.gop == 120);
+      assert(hevc_offered.session.video.fps_num == 60000 && hevc_offered.session.video.fps_den == 1001);
+      recording.data = c;
+      recording.driver = &record_vulkan;
+      close_recording();
+   }
+   reset(&params); device.hevc = true; profile = "vcodec = hevc\nvideo_bit_depth = 9\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   reset(&params); device.hevc = true; profile = "vcodec = h264\nvideo_bit_depth = 10\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   reset(&params); device.hevc = true; profile = "vcodec = hevc\n"; hdr.output_mode = 1;
+   assert(!record_vulkan.init(&params) && !starts);
+}
 int main(void)
 {
    admission();
+   hevc_admission();
    lifecycle();
    puts("Vulkan frontend admission, PCM, frame snapshots and asynchronous retirement PASS");
    return 0;
