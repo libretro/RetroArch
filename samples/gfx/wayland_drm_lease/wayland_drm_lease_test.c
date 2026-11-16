@@ -115,6 +115,12 @@ LOG_FN(RARCH_WARN)
 LOG_FN(RARCH_ERR)
 LOG_FN(RARCH_DBG)
 
+void wayland_window_output_name(char *s, size_t len)
+{
+   if (len)
+      s[0] = '\0';
+}
+
 static bool log_saw(const char *needle)
 {
    int i;

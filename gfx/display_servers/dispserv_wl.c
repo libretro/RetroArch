@@ -326,14 +326,23 @@ static void wl_display_server_destroy(void *data)
    free(serv);
 }
 
+/* The output the window is on, else the one first bound */
+static const char *wl_display_server_target_name(
+      const dispserv_wl_t *serv, char *buf, size_t len)
+{
+   wayland_window_output_name(buf, len);
+   if (*buf)
+      return buf;
+   return serv->name[0] ? serv->name : NULL;
+}
+
 #ifdef RARCH_HAVE_MUTTER_DC
-/* The head this client's wl_output names (wl_output v4), else
- * Mutter's primary */
-static void wl_display_server_mutter_target(dispserv_wl_t *serv,
+/* The head the window is on (wl_output v4), else Mutter's primary */
+static void wl_display_server_mutter_target(const char *connector,
       int monitor_index, mutter_dc_target_t *t)
 {
    memset(t, 0, sizeof(*t));
-   t->connector     = serv->name[0] ? serv->name : NULL;
+   t->connector     = connector;
    t->monitor_index = monitor_index;
 }
 #endif
@@ -346,18 +355,21 @@ static void wl_display_server_mutter_target(dispserv_wl_t *serv,
 static void *wl_display_server_get_resolution_list(void *data,
       unsigned *len)
 {
+   char target[32];
+   const char *connector;
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
    wl_display_server_pump((dispserv_wl_t*)data);
 
    *len = 0;
    if (!serv)
       return NULL;
+   connector = wl_display_server_target_name(serv, target, sizeof(target));
 #ifdef RARCH_HAVE_MUTTER_DC
    if (mutter_displayconfig_available())
    {
       mutter_dc_target_t t;
       video_display_config_t *list = NULL;
-      wl_display_server_mutter_target(serv, 0, &t);
+      wl_display_server_mutter_target(connector, 0, &t);
       if (mutter_displayconfig_get_resolution_list(&t, &list, len)
             != MUTTER_DC_OK)
          return NULL;
@@ -365,11 +377,9 @@ static void *wl_display_server_get_resolution_list(void *data,
    }
 #endif
    if (kwin_outputs_ready(&serv->kwin))
-      return kwin_outputs_resolution_list(&serv->kwin,
-            serv->name[0] ? serv->name : NULL, len);
+      return kwin_outputs_resolution_list(&serv->kwin, connector, len);
    if (wlr_outputs_ready(&serv->wlr))
-      return wlr_outputs_resolution_list(&serv->wlr,
-            serv->name[0] ? serv->name : NULL, len);
+      return wlr_outputs_resolution_list(&serv->wlr, connector, len);
    return NULL;
 }
 
@@ -377,16 +387,19 @@ static bool wl_display_server_set_resolution(void *data,
       unsigned dims, int int_hz, float hz, int center,
       int monitor_index, int xoffset, int padjust)
 {
+   char target[32];
+   const char *connector;
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
    wl_display_server_pump((dispserv_wl_t*)data);
 
    if (!serv)
       return false;
+   connector = wl_display_server_target_name(serv, target, sizeof(target));
 #ifdef RARCH_HAVE_MUTTER_DC
    if (mutter_displayconfig_available())
    {
       mutter_dc_target_t t;
-      wl_display_server_mutter_target(serv, monitor_index, &t);
+      wl_display_server_mutter_target(connector, monitor_index, &t);
       /* Asked of Mutter's worker, which applies it later; the new
        * mode's wl_output events arrive through this connection's pump
        * then, so there is nothing here to wait for */
@@ -397,12 +410,10 @@ static bool wl_display_server_set_resolution(void *data,
    /* KWin answers applied or failed later, through this connection's
     * events; the request is what can be known now */
    if (kwin_outputs_ready(&serv->kwin))
-      return kwin_outputs_set_mode(&serv->kwin,
-            serv->name[0] ? serv->name : NULL,
+      return kwin_outputs_set_mode(&serv->kwin, connector,
             VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), int_hz, hz);
    if (wlr_outputs_ready(&serv->wlr))
-      return wlr_outputs_set_mode(&serv->wlr,
-            serv->name[0] ? serv->name : NULL,
+      return wlr_outputs_set_mode(&serv->wlr, connector,
             VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), int_hz, hz);
    return false;
 }
@@ -497,8 +508,11 @@ static bool wl_display_server_get_metrics(void *data,
  * compositor below wl_output v4) the first enabled connector's. */
 static int wl_display_server_get_edid(void *data, uint8_t *out, size_t max)
 {
+   char target[32];
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
-   const char *name    = (serv && serv->name[0]) ? serv->name : NULL;
+   const char *name    = serv
+      ? wl_display_server_target_name(serv, target, sizeof(target))
+      : NULL;
    int n               = edid_sysfs_read(name, out, max);
    wl_display_server_pump((dispserv_wl_t*)data);
    if (n < 0 && name)

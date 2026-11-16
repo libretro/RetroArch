@@ -200,6 +200,7 @@ typedef struct output_info
    unsigned scale;
    char *make;
    char *model;
+   char name[32];
 } output_info_t;
 
 typedef struct display_output
