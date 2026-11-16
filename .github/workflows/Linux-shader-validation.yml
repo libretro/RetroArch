@@ -1,0 +1,58 @@
+name: CI extended shader validation
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libretro-common/gfx/shaders/**'
+      - 'libretro-common/include/gfx/shaders/**'
+      - 'libretro-common/samples/gfx/rslc*/**'
+      - '.github/workflows/scripts/setup-spirv-validator.py'
+      - '.github/workflows/Linux-shader-validation.yml'
+  pull_request:
+    paths:
+      - 'libretro-common/gfx/shaders/**'
+      - 'libretro-common/include/gfx/shaders/**'
+      - 'libretro-common/samples/gfx/rslc*/**'
+      - '.github/workflows/scripts/setup-spirv-validator.py'
+      - '.github/workflows/Linux-shader-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      APT_PKGS: build-essential cmake ninja-build python3 git glslang-tools
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install compiler and independent GLSL validator
+        timeout-minutes: 5
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Restore pinned SPIR-V validator build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/retroarch-spirv-validator
+          key: spirv-validator-ubuntu24-${{ runner.arch }}-${{ hashFiles('.github/workflows/scripts/setup-spirv-validator.py') }}
+
+      - name: Build and identify the extension-aware validator
+        timeout-minutes: 12
+        run: python3 .github/workflows/scripts/setup-spirv-validator.py --cache-dir "$HOME/.cache/retroarch-spirv-validator" --jobs 2
+
+      - name: Compile and independently validate extended shaders
+        timeout-minutes: 3
+        working-directory: libretro-common/samples/gfx/rslc_ext
+        run: |
+          set -eu
+          command -v spirv-val
+          command -v glslangValidator
+          make check SANITIZER=address,undefined

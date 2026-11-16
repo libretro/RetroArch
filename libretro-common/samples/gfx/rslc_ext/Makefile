@@ -65,10 +65,9 @@ check: $(TARGET) $(TARGET_TEST2) plane-check
 	./$(TARGET) obj
 	./$(TARGET_TEST2)
 	@if command -v spirv-val >/dev/null 2>&1; then \
-		for f in obj/*.spv; do \
-			env=vulkan1.0; case $$f in */subgroup.spv) env=vulkan1.1;; esac; \
-			spirv-val --target-env $$env $$f || exit 1; \
-		done; \
+		python3 validate_spirv.py obj; \
+	else \
+		echo "SKIP: independent Vulkan validation requires spirv-val"; \
 	fi
 	@if command -v glslangValidator >/dev/null 2>&1; then \
 		glslangValidator -S frag obj/subgroup.glsl && glslangValidator -S frag obj/depth_unchanged.glsl \
