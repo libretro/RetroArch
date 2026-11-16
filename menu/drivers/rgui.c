@@ -351,6 +351,8 @@ typedef struct
     * it (the output may be a loaned driver buffer, which is not read
     * back). Grown only when the output gets wider. */
    uint16_t *upscale_line;
+   /* The menu's own text, drawn by the next rgui_render() */
+   const char *msgbox;
    unsigned upscale_line_width;
    unsigned upscale_map_src_width;
    unsigned upscale_map_width;
@@ -412,7 +414,6 @@ typedef struct
    char entry_index_offset;
 
    char menu_title[NAME_MAX_LENGTH];              /* Must be a fixed length array... */
-   char msgbox[1024];
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    char theme_preset_path[PATH_MAX_LENGTH];       /* Must be a fixed length array... */
    char theme_dynamic_path[PATH_MAX_LENGTH];      /* Must be a fixed length array... */
@@ -5260,10 +5261,7 @@ static void rgui_set_message(void *data, const char *message)
    if (!rgui || !message)
       return;
 
-   rgui->msgbox[0] = '\0';
-
-   if (message && *message)
-      strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
+   rgui->msgbox    = message;
 
    rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
 }
@@ -7148,12 +7146,12 @@ static void rgui_render(void *data, unsigned dims,
       menu_driver_media_startup_ready(menu_driver_media_startup_token());
    if (!show_fs_thumbnail)
       rgui_media_gpu_cutout(rgui, p_disp->framebuf_dims);
-   if (*rgui->msgbox)
+   if (rgui->msgbox && *rgui->msgbox)
    {
       /* Draw popup directly on top of the menu; the messagebox
        * paints its own opaque background within its footprint. */
       rgui_render_messagebox(rgui, rgui->msgbox, p_disp->framebuf_dims);
-      rgui->msgbox[0]    = '\0';
+      rgui->msgbox       = NULL;
       rgui->flags       |=  RGUI_FLAG_FORCE_REDRAW;
    }
 
