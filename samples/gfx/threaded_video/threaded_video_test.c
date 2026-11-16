@@ -6736,12 +6736,12 @@ static void lane_window_answers(void)
 /*   is run: the runloop's read alone has to bring the true answer.   */
 /* ------------------------------------------------------------------ */
 
-static volatile int prlane_presentable;
+static retro_atomic_int_t prlane_presentable;
 
 static bool prlane_presentable_cb(void *data)
 {
    (void)data;
-   return prlane_presentable != 0;
+   return retro_atomic_load_acquire_int(&prlane_presentable) != 0;
 }
 
 static void lane_presentable_refresh(void)
@@ -6760,7 +6760,7 @@ static void lane_presentable_refresh(void)
    saved    = video_st->current_video_context.presentable;
 
    /* The context goes away for a frame, which publishes it. */
-   prlane_presentable = 0;
+   retro_atomic_store_release_int(&prlane_presentable, 0);
    video_st->current_video_context.presentable = prlane_presentable_cb;
    run_frames(2);
    video_thread_wait_idle();
@@ -6768,7 +6768,7 @@ static void lane_presentable_refresh(void)
          "presentable refresh lane: a context that said false read true");
 
    /* It is back, and no frame comes. */
-   prlane_presentable = 1;
+   retro_atomic_store_release_int(&prlane_presentable, 1);
    frames = core_frames();
    for (i = 0; i < 1000 && !video_context_driver_presentable(); i++)
       retro_sleep(1);
