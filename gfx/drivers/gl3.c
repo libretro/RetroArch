@@ -3589,11 +3589,25 @@ static bool gl3_create_fbo_targets(gl3_t *gl)
          ? (smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : mag_filter;
 
-      glBindTexture(GL_TEXTURE_2D, gl->hw_render_texture);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+      unsigned i;
+
+      /* Every slot of a threaded core's ring is drawn as the frame in
+       * its turn, not only the one current now: one left as made
+       * repeats and filters linearly, which bleeds the far edge into
+       * the frame's border. */
+      for (i = 0; i < 3; i++)
+      {
+         GLuint tex = gl->hw_ring_texture[i];
+         if (!i && !tex)
+            tex = gl->hw_render_texture;
+         if (!tex)
+            continue;
+         glBindTexture(GL_TEXTURE_2D, tex);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+      }
    }
 
    if (gl->chain.num_fbo_passes == 0)
