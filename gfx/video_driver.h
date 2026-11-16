@@ -1033,6 +1033,10 @@ typedef struct gfx_ctx_driver
    /* Optional: windows of their own for secondary screens, on the
     * thread that runs the context. Placed last, as above. */
    const gfx_ctx_window_driver_t *windows;
+   /* Optional, for a video driver with no present_immediate poke of
+    * its own: the same question, asked on the thread that runs the
+    * context. Placed last, as above. */
+   bool (*present_immediate)(void *data);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode
@@ -3010,6 +3014,10 @@ bool video_context_driver_presentable(void);
 /* The same question asked of the context itself; only for callers
  * running on the thread that owns it. */
 bool video_context_driver_presentable_direct(void);
+
+/* The context's present_immediate, false where it has none; for the
+ * thread that owns the context. */
+bool video_context_driver_present_immediate_direct(void);
 
 void video_context_driver_bind_hw_render(bool enable);
 

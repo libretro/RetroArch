@@ -57,6 +57,9 @@ struct ra_wgl_dxgi
 int ra_wgl_dxgi_presentable(ra_wgl_dxgi_t *p)
 { return ra_dxgi_bridge_presentable(p->bridge); }
 
+int ra_wgl_dxgi_immediate(ra_wgl_dxgi_t *p)
+{ return p ? ra_dxgi_bridge_immediate(p->bridge) : 0; }
+
 static void ra_wgl_dxgi_destroy_images(ra_wgl_dxgi_t *p)
 {
    GLint old_draw;

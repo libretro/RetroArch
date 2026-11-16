@@ -396,6 +396,11 @@ int64_t ra_vulkan_dxgi_present_time(ra_vulkan_dxgi_t *p)
    return p ? ra_dxgi_bridge_present_time(p->bridge) : 0;
 }
 
+int ra_vulkan_dxgi_immediate(ra_vulkan_dxgi_t *p)
+{
+   return p ? ra_dxgi_bridge_immediate(p->bridge) : 0;
+}
+
 VkImage ra_vulkan_dxgi_image(ra_vulkan_dxgi_t *p, unsigned index)
 { return index < 2 ? p->images[index] : VK_NULL_HANDLE; }
 

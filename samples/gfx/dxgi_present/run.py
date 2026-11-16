@@ -43,11 +43,25 @@ with tempfile.TemporaryDirectory(prefix="retroarch-dxgi-") as directory:
     images_start = frontend.index("         for (i = 0; i < 2; i++)", reuse_end)
     images_end = frontend.index("         vk->context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;", images_start)
     (directory / "images.inc").write_text(frontend[images_start:images_end])
+    output_start = source.index("typedef struct bridge_output6 bridge_output6_t;")
+    output_end = source.index("struct ra_dxgi_bridge\n", output_start)
+    ask_start = source.index("static void ra_dxgi_bridge_ask_output(")
+    ask_end = source.index("static int ra_dxgi_bridge_color_space(", ask_start)
+    (directory / "output.inc").write_text(source[output_start:output_end])
+    (directory / "ask.inc").write_text(source[ask_start:ask_end])
+    # The slot the bridge calls IDXGIOutput6 through, against the
+    # interface as the tree's own SDK header declares it
+    sdk = (root / "gfx/include/dxsdk/dxgi1_6.h").read_text()
+    vtbl = sdk[sdk.index("typedef struct IDXGIOutput6Vtbl"):sdk.index("} IDXGIOutput6Vtbl;")]
+    slots = [m.split("*")[1].split(")")[0].strip() for m in vtbl.split("STDMETHODCALLTYPE ")[1:]]
+    slot = slots.index("CheckHardwareCompositionSupport")
+    assert "void *before[%u];" % slot in source[output_start:output_end], \
+        "IDXGIOutput6::CheckHardwareCompositionSupport is slot %u" % slot
     wgl = (root / "gfx/common/win_wgl_dxgi.c").read_text()
     wgl_start = wgl.index("static void ra_wgl_dxgi_destroy_images(")
     wgl_end = wgl.index("int ra_wgl_dxgi_resize(", wgl_start)
     (directory / "wgl_images.inc").write_text(wgl[wgl_start:wgl_end])
-    for name in ("test", "teardown", "acquire", "wait", "frontend", "wgl"):
+    for name in ("test", "teardown", "acquire", "wait", "frontend", "wgl", "output"):
         executable = directory / (name + ".exe")
         subprocess.run([os.environ.get("CC", "cc"), "-std=c89", "-pedantic", "-Wall",
                         "-Wextra", "-Werror", "-I" + str(directory),

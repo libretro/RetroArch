@@ -9959,9 +9959,15 @@ static bool vulkan_present_immediate(void *data)
    if (!vk || !vk->context)
       return false;
 #if defined(_WIN32) && !defined(__WINRT__)
-   /* Presented through DXGI, the swapchain's mode is not what shows */
-   if (VULKAN_CTX_DATA_FROM_CONTEXT(vk->context)->dxgi_presenter)
-      return false;
+   /* Presented through DXGI, the swapchain's mode is not what shows:
+    * the presenter's own answer, for the interval it is given */
+   {
+      gfx_ctx_vulkan_data_t *ctx = VULKAN_CTX_DATA_FROM_CONTEXT(vk->context);
+      if (ctx->dxgi_presenter)
+         return vk->context->swap_interval <= 0
+            && ra_vulkan_dxgi_immediate(
+                  (ra_vulkan_dxgi_t*)ctx->dxgi_presenter);
+   }
 #endif
    return vk->context->swapchain_present_mode
       == VK_PRESENT_MODE_IMMEDIATE_KHR;

@@ -2536,6 +2536,7 @@ void video_context_driver_destroy(gfx_ctx_driver_t *ctx_driver)
    ctx_driver->bind_hw_render             = NULL;
    ctx_driver->get_context_data           = NULL;
    ctx_driver->make_current               = NULL;
+   ctx_driver->present_immediate          = NULL;
 }
 
 const gfx_ctx_driver_t *video_context_driver_init(
@@ -7877,6 +7878,14 @@ bool video_context_driver_presentable_direct(void)
    if (ctx && ctx->presentable)
       return ctx->presentable((void*)video_st->context_data);
    return true;
+}
+
+bool video_context_driver_present_immediate_direct(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
+   return ctx->present_immediate
+      && ctx->present_immediate((void*)video_st->context_data);
 }
 
 /* The threaded wrapper's single-context ring: the driver's one context

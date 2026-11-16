@@ -5872,6 +5872,38 @@ static void lane_vblank_pacing(void)
          vblane_asks);
    settings->floats.video_refresh_rate = saved_hz;
 
+   /* A driver with no answer of its own - the GL drivers - leaves it
+    * to its context */
+   {
+      bool (*saved_ctx)(void*) =
+         video_st->current_video_context.present_immediate;
+      set_poke(thr, vblane_inner_poke);
+      CHECK(!vblane_inner_poke->present_immediate,
+            "vblank pacing: the harness driver has a present_immediate of its own");
+      video_thread_wait_idle();
+      video_st->current_video_context.present_immediate =
+         vblane_present_immediate;
+      run_frames(3);
+      video_thread_wait_idle();
+      vblane_reset(thr, 60.0f);
+      display_pacing_measure(60.0f, 30, 60.0f, "the context's present tears");
+      CHECK(vblane_waits >= 20,
+            "vblank pacing, the context's answer: %u frames of 36 waited on a vblank",
+            vblane_waits);
+      video_thread_wait_idle();
+      video_st->current_video_context.present_immediate = saved_ctx;
+      run_frames(3);
+      video_thread_wait_idle();
+      vblane_reset(thr, 60.0f);
+      display_pacing_measure(60.0f, 30, 60.0f, "neither driver nor context says");
+      CHECK(!vblane_asks,
+            "vblank pacing, no answer: the vblank clock was asked %u times",
+            vblane_asks);
+      set_poke(thr, &vblane_poke);
+      run_frames(3);
+      video_thread_wait_idle();
+   }
+
    /* Wherever a present does not go straight out, or the setting is
     * off, windowed, or a variable refresh rate is in use, the timer
     * paces and the vblank clock is not asked */

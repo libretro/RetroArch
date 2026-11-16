@@ -3341,9 +3341,11 @@ static void video_thread_loop(void *data)
                      ? (retro_time_t)(1000000.0f * (float)presents / hz) : 0;
                   new_repeat = video_info->retain_output;
                   new_ask    = video_info->present_timing_from_display;
-                  thr->present_immediate = thr->poke
-                     && thr->poke->present_immediate
-                     && thr->poke->present_immediate(thr->driver_data);
+                  /* The driver's answer, or its context's */
+                  thr->present_immediate =
+                     (thr->poke && thr->poke->present_immediate)
+                     ? thr->poke->present_immediate(thr->driver_data)
+                     : video_context_driver_present_immediate_direct();
                }
                else
                   thr->present_repeat = false;

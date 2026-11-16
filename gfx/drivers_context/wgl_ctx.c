@@ -1081,6 +1081,20 @@ static bool gfx_ctx_wgl_presentable(void *data)
 #endif
 }
 
+/* Only presented through DXGI can it tell: a swap of its own is the
+ * compositor's to show. */
+static bool gfx_ctx_wgl_present_immediate(void *data)
+{
+#ifdef __WINRT__
+   (void)data;
+   return false;
+#else
+   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t *)data;
+   return wgl && wgl->dxgi && win32_interval <= 0
+      && ra_wgl_dxgi_immediate((ra_wgl_dxgi_t *)wgl->dxgi);
+#endif
+}
+
 /* When the last vertical blank happened, from the compositor, on the QPC
  * clock cpu_features_get_time_usec() keeps here. DWM reports it rather
  * than estimating from a scanline, and composition is on for windowed
@@ -1135,10 +1149,12 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
    gfx_ctx_wgl_shared_context_new,
    gfx_ctx_wgl_shared_context_bind,
-   gfx_ctx_wgl_shared_context_free
+   gfx_ctx_wgl_shared_context_free,
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
 #endif
+   NULL, /* windows */
+   gfx_ctx_wgl_present_immediate
 };

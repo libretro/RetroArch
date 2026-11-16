@@ -84,6 +84,10 @@ static int ra_dxgi_bridge_create_buffers(ra_dxgi_bridge_t *b,
    }
    ++allocations; return 1;
 }
+/* the output is asked again once the chain has its new buffers */
+static unsigned output_asks;
+static void ra_dxgi_bridge_ask_output(ra_dxgi_bridge_t *b)
+{ (void)b; assert(allocations == 1); ++output_asks; }
 #include "resize.inc"
 
 static ra_dxgi_bridge_t *make_bridge(object *p, UINT64 sequence)
@@ -144,6 +148,8 @@ int main(void)
    assert(b->width == 640 && b->height == 480 && b->format == 28);
    assert(b->queue == &p && b->done == &p && b->device == &p && b->chain == &p);
    assert(b->sequence == 8 && resizes == 1 && allocations == 1 && releases == 4);
+   /* ...and neither an unchanged size nor a refused one asked */
+   assert(output_asks == 1);
    expected = 9; completed = 8; drained = 0; released_before_wait = releases;
    ra_dxgi_bridge_destroy(b);
    assert(releases == 18);
@@ -151,6 +157,7 @@ int main(void)
    resizes = allocations = 0; resize_result = -1;
    assert(!ra_dxgi_bridge_resize(b, 640, 480, 28) && b->failed);
    assert(resizes == 1 && allocations == 0 && releases == 4);
+   assert(output_asks == 1);
    expected = 9; completed = 8; drained = 0; released_before_wait = releases;
    ra_dxgi_bridge_destroy(b);
    assert(releases == 14);

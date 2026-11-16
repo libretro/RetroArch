@@ -23,6 +23,7 @@ void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak) { }
 unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
 { return 2; }
 int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *b) { return 0; }
+int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *b) { return 0; }
 void *ra_dxgi_bridge_device(ra_dxgi_bridge_t *b) { return NULL; }
 uint64_t ra_dxgi_bridge_last_use(ra_dxgi_bridge_t *b, unsigned index)
 { return 0; }
@@ -48,6 +49,19 @@ static const GUID bridge_ID3D12GraphicsCommandList = {0x5b160d0f, 0xac1b, 0x4185
 static const GUID bridge_ID3D12Resource = {0x696442be, 0xa72e, 0x4059, {0xbc, 0x79, 0x5b, 0x5c, 0x98, 0x04, 0x0f, 0xad}};
 static const GUID bridge_IDXGIFactory2 = {0x50c83a1c, 0xe072, 0x4c48, {0x87, 0xb0, 0x36, 0x30, 0xfa, 0x36, 0xa6, 0xd0}};
 static const GUID bridge_IDXGISwapChain3 = {0x94d99bdb, 0xf1f8, 0x4ab0, {0xb2, 0x36, 0x7d, 0xa0, 0x17, 0x0e, 0xda, 0xb1}};
+static const GUID bridge_IDXGIOutput6 = {0x068346e8, 0xaaec, 0x4b84, {0xad, 0xd7, 0x13, 0x7f, 0x51, 0x3f, 0x77, 0xa1}};
+
+/* IDXGIOutput6 is in dxgi1_6.h, which an SDK that has dxgi1_5.h need
+ * not have: its vtable as far as the one method called. */
+typedef struct bridge_output6 bridge_output6_t;
+typedef struct
+{
+   void *before[28];
+   HRESULT (STDMETHODCALLTYPE *CheckHardwareCompositionSupport)(
+         bridge_output6_t *self, UINT *flags);
+} bridge_output6_vtbl_t;
+struct bridge_output6 { const bridge_output6_vtbl_t *lpVtbl; };
+#define BRIDGE_COMPOSITION_FULLSCREEN 1
 
 struct ra_dxgi_bridge
 {
@@ -66,6 +80,7 @@ struct ra_dxgi_bridge
    UINT chain_flags;
    int failed;
    BOOL tearing;
+   int flips;
    int occluded, resized;
    UINT64 sequence, last_use[2];
 };
@@ -233,6 +248,31 @@ error:
    return 0;
 }
 
+/* Whether the chain's output flips a fullscreen window straight to
+ * the scanout; where it cannot, or cannot say, DWM composes it. */
+static void ra_dxgi_bridge_ask_output(ra_dxgi_bridge_t *b)
+{
+   UINT support              = 0;
+   IDXGIOutput *output       = NULL;
+   bridge_output6_t *output6 = NULL;
+   b->flips                  = 0;
+   if (     FAILED(b->chain->lpVtbl->GetContainingOutput(b->chain, &output))
+         || !output)
+      return;
+   if (SUCCEEDED(output->lpVtbl->QueryInterface(output,
+               &bridge_IDXGIOutput6, (void **)&output6)) && output6)
+   {
+      if (SUCCEEDED(output6->lpVtbl->CheckHardwareCompositionSupport(
+                  output6, &support)))
+         b->flips = (support & BRIDGE_COMPOSITION_FULLSCREEN) != 0;
+      ((IUnknown *)output6)->lpVtbl->Release((IUnknown *)output6);
+   }
+   DROP(output);
+}
+
+int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *b)
+{ return b && !b->failed && b->tearing && b->flips; }
+
 static int ra_dxgi_bridge_color_space(ra_dxgi_bridge_t *b, unsigned format)
 {
    DXGI_COLOR_SPACE_TYPE space = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
@@ -257,6 +297,7 @@ int ra_dxgi_bridge_resize(ra_dxgi_bridge_t *b,
    if (!ra_dxgi_bridge_color_space(b, format)) goto error;
    if (!ra_dxgi_bridge_create_buffers(b, width, height, format)) goto error;
    b->width = width; b->height = height; b->format = format;
+   ra_dxgi_bridge_ask_output(b);
    b->last_use[0] = b->last_use[1] = 0;
    b->current_index = 0;
    b->occluded = 0;
@@ -384,6 +425,7 @@ ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
    if (!b->event) goto error;
    if (!ra_dxgi_bridge_create_buffers(b, width, height, format)) goto error;
    b->width = width; b->height = height; b->format = format;
+   ra_dxgi_bridge_ask_output(b);
    return b;
 error:
    DROP(adapter);

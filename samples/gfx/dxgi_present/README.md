@@ -9,6 +9,8 @@ buffers are allocated only once. Resize fence tests check queue locking,
 submission and wait ordering, reuse, and failures.
 Frontend resize tests check synchronization retention and fallback cleanup.
 GL tests check framebuffer reuse, attachment release, and failure teardown.
+Output tests check the composition query, its IDXGIOutput6 slot and the
+immediate-present answer.
 
 For MinGW and Wine:
 
