@@ -38,7 +38,8 @@ with tempfile.TemporaryDirectory() as directory:
     for backend in ('hlsl', 'cg'):
         source = (root / ('gfx/drivers/d3d9' + backend + '.c')).read_text()
         start = source.index('static void gfx_display_d3d9_' + backend + '_draw_pipeline(')
-        start = source.index('      case VIDEO_SHADER_MENU_2:', start)
+        # The mesh effects' case, which the ribbon falls into
+        start = source.index('      case 1:\n      {\n         uint32_t mesh_id', start)
         (tmp / 'ribbon.inc').write_text(block(start))
         prefix = 'd3d9_' + backend + '_menu_pipeline_'
         declarations = '\n'.join(line for line in source.splitlines()

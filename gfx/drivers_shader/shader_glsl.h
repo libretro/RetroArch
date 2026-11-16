@@ -23,6 +23,30 @@
 
 void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor);
 
+#ifdef HAVE_SHADERPIPELINE
+#include "../gfx_display.h"
+
+/* A menu effect's GLSL program, made by the GL drivers apart from the
+ * shader backend, which comes and goes with the presets; with the
+ * locations of what it reads, -1 for what it does not */
+typedef struct gl_glsl_effect
+{
+   unsigned prog;
+   int vertex_coord;
+   int tex_coord;
+   int color;
+   int mvp;
+   int time;
+   int ribbon;
+   int output_size;
+} gl_glsl_effect_t;
+
+/* From the dialect the context takes; false when the effect has none
+ * or it does not build */
+bool gl_glsl_effect_compile(gl_glsl_effect_t *fx,
+      const gfx_display_effect_desc_t *desc);
+#endif
+
 /* Draws a gfx_display mesh from @vbo (and @ibo, when not 0: @count is
  * then indices, else vertices) with the texture bound to unit 0, under
  * @mvp and @tint, through a program of its own; the program the

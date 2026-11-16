@@ -62,14 +62,6 @@ struct cache_vbo
    size_t len_secondary;
    GLfloat *buffer_primary;
    GLfloat *buffer_secondary;
-   /* The static vertex array vbo_primary holds, for the ribbon
-    * pipelines: its address, length and first and last floats, so a
-    * rebuilt array at the same address is not taken for it. NULL when
-    * the buffer holds anything else. */
-   const GLfloat *static_src;
-   size_t static_vertices;
-   GLfloat static_head[4];
-   GLfloat static_tail[4];
 };
 
 struct shader_program_glsl_data
@@ -146,12 +138,6 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/modern_alpha_blend.cg.vert.h"
 #include "../drivers/gl_shaders/modern_alpha_blend.cg.frag.h"
 
-#ifdef HAVE_SHADERPIPELINE
-#include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.cg.vert.h"
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.frag.h"
-#include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.cg.vert.h"
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon.cg.frag.h"
-#endif
 
 #else
 #include "../drivers/gl_shaders/modern_opaque.glsl.vert.h"
@@ -165,27 +151,6 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.vert.h"
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.frag.h"
 
-#ifdef HAVE_SHADERPIPELINE
-#include "../drivers/gl_shaders/core_pipeline_snow.glsl.frag.h"
-#include "../drivers/gl_shaders/core_pipeline_snow_simple.glsl.frag.h"
-#include "../drivers/gl_shaders/core_pipeline_xmb_ribbon.glsl.frag.h"
-#include "../drivers/gl_shaders/core_pipeline_xmb_ribbon_simple.glsl.frag.h"
-#include "../drivers/gl_shaders/core_pipeline_bokeh.glsl.frag.h"
-#include "../drivers/gl_shaders/core_pipeline_snowflake.glsl.frag.h"
-#include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
-#include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
-#include "../drivers/gl_shaders/pipeline_snow.glsl.frag.h"
-#include "../drivers/gl_shaders/pipeline_snow.glsl.vert.h"
-#include "../drivers/gl_shaders/pipeline_snow_core.glsl.vert.h"
-#include "../drivers/gl_shaders/pipeline_snow_simple.glsl.frag.h"
-#include "../drivers/gl_shaders/legacy_pipeline_snow.glsl.vert.h"
-#include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
-#include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
-#include "../drivers/gl_shaders/pipeline_bokeh.glsl.frag.h"
-#include "../drivers/gl_shaders/pipeline_snowflake.glsl.frag.h"
-#endif
 #endif
 
 /* A pass rewritten to read the frame where it lies (glsl_rect.h) */
@@ -239,9 +204,6 @@ typedef struct glsl_shader_data
    GLint  mesh_tint;
    GLint  mesh_attr[3];
    bool   mesh_failed;
-   /* The menu effects already compiled or tried, one bit each, so one
-    * that will not compile is not tried again every frame */
-   uint8_t menu_shaders_tried;
    uint8_t plastic_tried;
    struct glsl_in_place in_place;
    /* Compiling something that may fail, with the copy to fall back on */
@@ -987,7 +949,6 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    memset(glsl->prg, 0, sizeof(glsl->prg));
    memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
    glsl->active_idx         = 0;
-   glsl->menu_shaders_tried = 0;
    glsl->plastic_tried      = false;
 
    gl_glsl_deinit_shader(glsl);
@@ -1021,159 +982,6 @@ static void gl_glsl_deinit(void *data)
    free(glsl);
 }
 
-/* One menu effect's program, made the first time the effect is used
- * rather than all six at start: at most one is ever on screen */
-static void gl_glsl_compile_menu_shader(glsl_shader_data_t *glsl, unsigned idx)
-{
-#ifdef HAVE_SHADERPIPELINE
-   struct shader_program_info shader_prog_info;
-
-   if (!glsl)
-      return;
-   shader_prog_info.is_file = false;
-
-   if (idx == VIDEO_SHADER_MENU)
-   {
-#ifdef HAVE_OPENGLES
-#if defined(VITA)
-   shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern();
-   shader_prog_info.fragment = stock_fragment_xmb();
-#else
-   if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
-   {
-      shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern();
-      shader_prog_info.fragment = core_stock_fragment_xmb();
-   }
-   else
-   {
-      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern() : stock_vertex_xmb_ribbon_legacy();
-      shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb() : stock_fragment_xmb();
-   }
-#endif
-#else
-   shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern() : stock_vertex_xmb_ribbon_legacy();
-   shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb() : stock_fragment_xmb();
-#endif
-
-   RARCH_LOG("[GLSL] Compiling ribbon shader...\n");
-   gl_glsl_compile_program(
-         glsl,
-         VIDEO_SHADER_MENU,
-         &glsl->prg[VIDEO_SHADER_MENU],
-         &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
-         &glsl->uniforms[VIDEO_SHADER_MENU]);
-   }
-
-   if (idx == VIDEO_SHADER_MENU_2)
-   {
-#if defined(VITA)
-   shader_prog_info.vertex = stock_vertex_xmb_simple_modern;
-   shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
-#else
-   shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_ribbon_simple_legacy;
-   shader_prog_info.fragment = glsl_core ? stock_fragment_xmb_ribbon_simple_core : stock_fragment_xmb_ribbon_simple;
-#endif
-
-   RARCH_LOG("[GLSL] Compiling simple ribbon shader...\n");
-   gl_glsl_compile_program(
-         glsl,
-         VIDEO_SHADER_MENU_2,
-         &glsl->prg[VIDEO_SHADER_MENU_2],
-         &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_2].id,
-         &glsl->uniforms[VIDEO_SHADER_MENU_2]);
-   }
-
-#if !defined(VITA)
-   if (idx == VIDEO_SHADER_MENU_3)
-   {
-#if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow;
-   shader_prog_info.fragment = stock_fragment_xmb_simple_snow;
-#else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_core : stock_vertex_xmb_snow_legacy;
-   shader_prog_info.fragment = glsl_core ? stock_fragment_xmb_simple_snow_core : stock_fragment_xmb_simple_snow;
-#endif
-
-   RARCH_LOG("[GLSL] Compiling snow shader...\n");
-   gl_glsl_compile_program(
-         glsl,
-         VIDEO_SHADER_MENU_3,
-         &glsl->prg[VIDEO_SHADER_MENU_3],
-         &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_3].id,
-         &glsl->uniforms[VIDEO_SHADER_MENU_3]);
-   }
-
-   if (idx == VIDEO_SHADER_MENU_4)
-   {
-#if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow;
-   shader_prog_info.fragment = stock_fragment_xmb_snow;
-#else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_core : stock_vertex_xmb_snow_legacy;
-   shader_prog_info.fragment = glsl_core ? stock_fragment_xmb_snow_core : stock_fragment_xmb_snow;
-#endif
-
-   RARCH_LOG("[GLSL] Compiling modern snow shader...\n");
-   gl_glsl_compile_program(
-         glsl,
-         VIDEO_SHADER_MENU_4,
-         &glsl->prg[VIDEO_SHADER_MENU_4],
-         &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_4].id,
-         &glsl->uniforms[VIDEO_SHADER_MENU_4]);
-   }
-
-   if (idx == VIDEO_SHADER_MENU_5)
-   {
-#if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow;
-   shader_prog_info.fragment = stock_fragment_xmb_bokeh;
-#else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_core  : stock_vertex_xmb_snow_legacy;
-   shader_prog_info.fragment = glsl_core ? stock_fragment_xmb_bokeh_core : stock_fragment_xmb_bokeh;
-#endif
-
-   RARCH_LOG("[GLSL] Compiling bokeh shader...\n");
-   gl_glsl_compile_program(
-         glsl,
-         VIDEO_SHADER_MENU_5,
-         &glsl->prg[VIDEO_SHADER_MENU_5],
-         &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_5].id,
-         &glsl->uniforms[VIDEO_SHADER_MENU_5]);
-   }
-
-   if (idx == VIDEO_SHADER_MENU_6)
-   {
-#if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow;
-   shader_prog_info.fragment = stock_fragment_xmb_snowflake;
-#else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_core : stock_vertex_xmb_snow_legacy;
-   shader_prog_info.fragment = glsl_core ? stock_fragment_xmb_snowflake_core : stock_fragment_xmb_snowflake;
-#endif
-
-   RARCH_LOG("[GLSL] Compiling snowflake shader...\n");
-   gl_glsl_compile_program(
-         glsl,
-         VIDEO_SHADER_MENU_6,
-         &glsl->prg[VIDEO_SHADER_MENU_6],
-         &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_6].id,
-         &glsl->uniforms[VIDEO_SHADER_MENU_6]);
-   }
-#endif
-#endif
-}
-
-static void gl_glsl_init_menu_shaders(void *data)
-{
-   /* The menu effects are compiled when first used */
-   (void)data;
-}
 
 static void *gl_glsl_init(void *data, const char *path)
 {
@@ -1829,7 +1637,6 @@ static bool gl_glsl_set_coords(void *shader_data,
    size_t               attribs_size = 0;
    size_t                       size = 0;
    GLfloat *buffer                   = short_buffer;
-   const GLfloat *static_src         = NULL;
    glsl_shader_data_t          *glsl = (glsl_shader_data_t*)shader_data;
    const struct shader_uniforms *uni = glsl
       ? &glsl->uniforms[glsl->active_idx] : NULL;
@@ -1876,44 +1683,6 @@ static bool gl_glsl_set_coords(void *shader_data,
    }
 #endif
 
-#ifdef HAVE_SHADERPIPELINE
-   /* The ribbon pipelines draw one grid the menu driver builds once and
-    * hands back every frame, as their only attribute. When the buffer
-    * already holds that array, bind it as it is: no copy into the
-    * scratch, no comparison against the last upload. */
-   if (     (  glsl->active_idx == VIDEO_SHADER_MENU
-            || glsl->active_idx == VIDEO_SHADER_MENU_2)
-         && uni->vertex_coord >= 0 && coords->vertex && coords->vertices >= 4
-         && (uni->tex_coord     < 0 || !coords->tex_coord)
-         && (uni->color         < 0 || !coords->color)
-         && (uni->lut_tex_coord < 0 || !coords->lut_tex_coord))
-   {
-      struct cache_vbo *cache = &glsl->vbo[glsl->active_idx];
-      const GLfloat *tail     = coords->vertex + 2 * coords->vertices - 4;
-
-      if (     cache->static_src      == coords->vertex
-            && cache->static_vertices == coords->vertices
-            && !memcmp(cache->static_head, coords->vertex,
-               sizeof(cache->static_head))
-            && !memcmp(cache->static_tail, tail,
-               sizeof(cache->static_tail)))
-      {
-         if (glsl->attribs_index < ARRAY_SIZE(glsl->attribs_elems))
-         {
-            glBindBuffer(GL_ARRAY_BUFFER, cache->vbo_primary);
-            glEnableVertexAttribArray(uni->vertex_coord);
-            glVertexAttribPointer(uni->vertex_coord, 2, GL_FLOAT,
-                  GL_FALSE, 0, (const GLvoid*)0);
-            glsl->attribs_elems[glsl->attribs_index++] = uni->vertex_coord;
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-         }
-         return true;
-      }
-
-      /* Uploaded the usual way below, then known by its address */
-      static_src = coords->vertex;
-   }
-#endif
 
 
    if (uni->tex_coord >= 0 && coords->tex_coord)
@@ -1952,42 +1721,66 @@ static bool gl_glsl_set_coords(void *shader_data,
             buffer, size,
             attribs, attribs_size);
 
-   {
-      /* Whatever went in last is what the buffer holds now */
-      struct cache_vbo *cache = &glsl->vbo[glsl->active_idx];
-      cache->static_src       = static_src;
-      if (static_src)
-      {
-         cache->static_vertices = coords->vertices;
-         memcpy(cache->static_head, static_src, sizeof(cache->static_head));
-         memcpy(cache->static_tail, static_src + 2 * coords->vertices - 4,
-               sizeof(cache->static_tail));
-      }
-   }
-
    return true;
 }
 
-static void gl_glsl_compile_menu_shader(glsl_shader_data_t *glsl, unsigned idx);
-
-/* Which bit of menu_shaders_tried a menu effect has; 0 for anything else */
-static uint8_t gl_glsl_menu_shader_bit(unsigned idx)
-{
 #ifdef HAVE_SHADERPIPELINE
-   switch (idx)
-   {
-      case VIDEO_SHADER_MENU:   return 1 << 0;
-      case VIDEO_SHADER_MENU_2: return 1 << 1;
-      case VIDEO_SHADER_MENU_3: return 1 << 2;
-      case VIDEO_SHADER_MENU_4: return 1 << 3;
-      case VIDEO_SHADER_MENU_5: return 1 << 4;
-      case VIDEO_SHADER_MENU_6: return 1 << 5;
-      default:
-         break;
-   }
+bool gl_glsl_effect_compile(gl_glsl_effect_t *fx,
+      const gfx_display_effect_desc_t *desc)
+{
+   /* The settings the compile reads: no alias defines, not quiet */
+   static glsl_shader_data_t compile;
+   unsigned dialect = glsl_core ? 1 : 0;
+   GLuint vs, fs, id;
+   bool ok;
+#if defined(HAVE_OPENGLES) && !defined(VITA)
+   /* Outside glsl_core only a source naming its own version is given
+    * one; the in/out sources that leave it to glsl_core would be read
+    * as GLSL ES 1.00 */
+   if (     gl_check_capability(GL_CAPS_GLES3_SUPPORTED)
+         && desc->glsl_vertex[1] && strstr(desc->glsl_vertex[1], "#version"))
+      dialect = 1;
 #endif
-   return 0;
+   memset(fx, 0, sizeof(*fx));
+   if (!desc->glsl_vertex[dialect] || !desc->glsl_fragment[dialect])
+      return false;
+   if (!(id = glCreateProgram()))
+      return false;
+   vs = glCreateShader(GL_VERTEX_SHADER);
+   fs = glCreateShader(GL_FRAGMENT_SHADER);
+   ok =     gl_glsl_compile_shader(&compile, vs,
+               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n#define _HAS_SWAPCOUNT_UNIFORM\n",
+               desc->glsl_vertex[dialect])
+         && gl_glsl_compile_shader(&compile, fs,
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n#define _HAS_SWAPCOUNT_UNIFORM\n",
+               desc->glsl_fragment[dialect]);
+   if (ok)
+   {
+      glAttachShader(id, vs);
+      glAttachShader(id, fs);
+      ok = gl_glsl_link_program(id, false);
+      glUseProgram(0);
+   }
+   glDeleteShader(vs);
+   glDeleteShader(fs);
+   if (!ok)
+   {
+      glDeleteProgram(id);
+      return false;
+   }
+   fx->prog          = id;
+   fx->vertex_coord  = glGetAttribLocation(id, "VertexCoord");
+   fx->tex_coord     = glGetAttribLocation(id, "TexCoord");
+   fx->color         = glGetAttribLocation(id, "Color");
+   fx->mvp           = glGetUniformLocation(id, "MVPMatrix");
+   fx->time          = glGetUniformLocation(id, "time");
+   if (fx->time < 0)
+      fx->time       = glGetUniformLocation(id, "Time");
+   fx->ribbon        = glGetUniformLocation(id, "Ribbon");
+   fx->output_size   = glGetUniformLocation(id, "OutputSize");
+   return true;
 }
+#endif
 
 static void gl_glsl_compile_plastic(glsl_shader_data_t *glsl, unsigned idx)
 {
@@ -2048,14 +1841,6 @@ static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_ac
       if (!glsl)
          return;
 
-      {
-         uint8_t bit = gl_glsl_menu_shader_bit(idx);
-         if (bit && !(glsl->menu_shaders_tried & bit))
-         {
-            glsl->menu_shaders_tried |= bit;
-            gl_glsl_compile_menu_shader(glsl, idx);
-         }
-      }
       if (idx == VIDEO_SHADER_XMB_PLASTIC
             || idx == VIDEO_SHADER_XMB_FONT_PLASTIC)
       {
@@ -2515,7 +2300,6 @@ void gl_glsl_in_place_end(void *shader_data)
 
 const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,
-   gl_glsl_init_menu_shaders,
    gl_glsl_deinit,
    gl_glsl_set_params,
    gl_glsl_set_uniform_parameter,

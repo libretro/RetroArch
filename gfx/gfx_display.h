@@ -113,6 +113,61 @@ struct gfx_display_mesh;
 
 typedef struct gfx_display gfx_display_t;
 
+/* Effects: the programs a menu installs to draw its backgrounds with.
+ * The menu owns what an effect is - its sources in every shading
+ * language a driver may take, its geometry, its blend and the inputs
+ * it reads - and the driver makes one program of it, which it draws
+ * the effect with from then on. */
+enum gfx_display_effect_flags
+{
+   /* Draws the positions of a mesh made with GFX_MESH_FLAG_POSITIONS;
+    * without it, the full-screen quad */
+   GFX_EFFECT_MESH         = (1 << 0),
+   /* Adds: ONE, ONE */
+   GFX_EFFECT_BLEND_ADD    = (1 << 1),
+   /* Lights what is under it: DST_COLOR, ONE. With neither, the
+    * effect blends by its alpha. */
+   GFX_EFFECT_BLEND_SCREEN = (1 << 2),
+   /* Reads the ribbon's 50 vec4s (gfx_display_ribbon_data), and may be
+    * drawn into the glow. A mesh effect without it reads the time,
+    * a y flip and the alpha. */
+   GFX_EFFECT_RIBBON       = (1 << 3),
+   /* A quad effect shading by its pixel's position, which it takes
+    * bottom-up */
+   GFX_EFFECT_YFLIP        = (1 << 4)
+};
+
+typedef struct gfx_display_effect_desc
+{
+   unsigned flags;                    /* enum gfx_display_effect_flags */
+   /* GLSL: [0] with attribute/varying, for a legacy context; [1] with
+    * in/out, for a core or GLES 3 one. Vertex inputs VertexCoord,
+    * TexCoord and Color; uniforms time, Ribbon, OutputSize and
+    * MVPMatrix, those it reads. */
+   const char *glsl_vertex[2];
+   const char *glsl_fragment[2];
+   /* SPIR-V, for Vulkan and GL core */
+   const uint32_t *spirv_vertex;
+   const uint32_t *spirv_fragment;
+   size_t spirv_vertex_size;
+   size_t spirv_fragment_size;
+   /* HLSL: shader model 3 with main_vertex and main_fragment, for
+    * D3D9; shader model 4 with VSMain and PSMain, for D3D10 to 12 */
+   const char *hlsl_sm3;
+   const char *hlsl_sm4;
+   /* Metal: functions of the stock library, the fragment one
+    * specialised by these float function constants */
+   const char *metal_vertex;
+   const char *metal_fragment;
+   const char *const *metal_constant_names;
+   const float *metal_constants;
+   unsigned metal_constant_count;
+   /* Wii U: the GX2 shader group */
+   const void *gx2;
+} gfx_display_effect_desc_t;
+
+typedef struct gfx_display_effect gfx_display_effect_t;
+
 typedef struct gfx_display_ctx_driver
 {
    /* Draw graphics to the screen. @video_dims carries both axes of
@@ -167,6 +222,12 @@ typedef struct gfx_display_ctx_driver
    unsigned (*bloom_begin)(void *data, unsigned video_dims, bool defer);
    void (*bloom_end)(void *data, unsigned video_dims, bool defer);
    void (*bloom_composite)(void *data, unsigned video_dims);
+   /* Optional. Makes the driver's program for an effect, NULL where it
+    * cannot draw it. Called on the drawing thread; the program is the
+    * driver's, freed with it. Draws of the effect come to
+    * draw_pipeline and draw with draw->effect set to it. */
+   void *(*effect_install)(void *data,
+         const gfx_display_effect_desc_t *desc);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw
@@ -191,6 +252,8 @@ struct gfx_display_ctx_draw
     * each driver on its way out. */
    unsigned pos;
    unsigned pipeline_id;
+   /* An effect's program, as effect_install made it; else NULL */
+   void *effect;
    float rotation;
    float scale_factor;
 };
@@ -308,6 +371,7 @@ struct gfx_display
     * a frame asked for it, whether this frame's is ready to composite
     * and whether the prepass already moved the ribbon on this frame */
    const struct gfx_display_mesh *bloom_mesh;
+   void *bloom_effect;
    unsigned bloom_vertices;
    unsigned bloom_dims;
    float bloom_alpha;
@@ -411,13 +475,7 @@ enum gfx_display_mesh_program
 {
    GFX_MESH_PROGRAM_TEXTURED = 0,  /* texture times vertex colour */
    GFX_MESH_PROGRAM_COLORED,       /* vertex colour */
-   GFX_MESH_PROGRAM_BLEND,         /* the driver's stock blend */
-   GFX_MESH_PROGRAM_RIBBON,        /* the effects: the mesh animated */
-   GFX_MESH_PROGRAM_RIBBON_SIMPLE, /* by time in the vertex stage */
-   GFX_MESH_PROGRAM_SNOW_SIMPLE,   /* the effects: shaded per pixel */
-   GFX_MESH_PROGRAM_SNOW,          /* over the full-screen quad */
-   GFX_MESH_PROGRAM_BOKEH,
-   GFX_MESH_PROGRAM_SNOWFLAKE,
+   GFX_MESH_PROGRAM_EFFECT,        /* gfx_display_mesh_draw_t's effect */
    GFX_MESH_PROGRAM_LAST
 };
 
@@ -483,7 +541,10 @@ typedef struct gfx_display_mesh_draw
    float *color;
    uintptr_t texture;
    enum gfx_display_mesh_program program;
-   /* RIBBON only: also draw its glow, where the driver has one */
+   /* EFFECT: which; NULL draws nothing */
+   const gfx_display_effect_t *effect;
+   /* An effect with GFX_EFFECT_RIBBON: also draw its glow, where the
+    * driver has one */
    bool bloom;
    /* Effects: the first this many vertices; 0 draws them all */
    unsigned vertex_count;
@@ -508,6 +569,16 @@ const float *gfx_display_ribbon_ubo(gfx_display_t *p_disp, float yflip);
 const float *gfx_display_ribbon_data(gfx_display_t *p_disp);
 void gfx_display_ribbon_vertex(const float *data, const float *p,
       float *position, float *lighting);
+/* Installs an effect, returning its handle, or NULL when no more fit.
+ * @desc and what it points to stay as they are for as long as the
+ * process runs; installing the same @desc again returns the same
+ * handle. The drivers make their programs of every installed effect
+ * on the drawing thread, before the first effect draw after the
+ * install or after a video driver comes up. */
+gfx_display_effect_t *gfx_display_effect_install(
+      const gfx_display_effect_desc_t *desc);
+/* The video driver is gone, and the programs it made with it */
+void gfx_display_effects_lost(void);
 /* For a driver with bloom_composite: the glow's small passes for this
  * frame, outside the pass the menu is drawn in. Drawing thread. */
 void gfx_display_bloom_prepass(void *userdata);

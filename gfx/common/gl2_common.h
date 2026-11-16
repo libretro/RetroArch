@@ -34,6 +34,9 @@
 
 #include "../video_driver.h"
 #include "gl_common.h"
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+#include "../drivers_shader/shader_glsl.h"
+#endif
 
 /* A software core's frames sampled where it writes them, on KMS */
 #if defined(HAVE_KMS) && defined(HAVE_EGL) && !defined(HAVE_PSGL)
@@ -161,6 +164,15 @@ struct gl2
       uint32_t id;
    } meshes[8];
    uint64_t mesh_draws;
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+   /* The menu effects' programs, as installed */
+   struct gl2_effect
+   {
+      gl_glsl_effect_t glsl;
+      unsigned flags;
+   } effects[16];
+   unsigned effect_count;
+#endif
 #ifdef HAVE_GL_MENU_BLOOM
    gl_menu_bloom_t *menu_bloom;
 #endif

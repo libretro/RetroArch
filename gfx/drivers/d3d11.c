@@ -650,7 +650,13 @@ typedef struct
     * gives way when all are taken; the runtime keeps a released buffer
     * alive for as long as queued work uses it. */
    /* The menu effects tried so far, one bit each */
-   unsigned              effects_tried;
+   /* The menu effects, made when installed */
+   struct d3d11_effect
+   {
+      d3d11_shader_t shader;
+      unsigned flags;
+   } effects[16];
+   unsigned              effect_count;
    d3d11_shader_t        mesh_shader;
    D3D11Buffer           mesh_ubo;
    struct
@@ -1375,14 +1381,14 @@ static void gfx_display_d3d11_blend_end(void *data)
    d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
-/* A menu effect's shaders, compiled the first time the effect is drawn
- * rather than all six at start: at most one is ever on screen, and the
- * effects are no longer XMB's alone. False when they cannot be had, and
- * the effect is not drawn; one that will not compile is not tried again
- * until the driver is. */
-static bool d3d11_effect_shader(d3d11_video_t *d3d11, unsigned pipeline_id)
+/* Compiles a menu effect the menu driver installed, from its SM4 HLSL.
+ * Runs on the drawing thread, when the first effect is drawn, for every
+ * effect installed so far. NULL when it will not compile; the effect is
+ * then not drawn, and not tried again until the driver is remade. */
+static void *gfx_display_d3d11_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
 {
-   static const D3D11_INPUT_ELEMENT_DESC ribbon_desc[] = {
+   static const D3D11_INPUT_ELEMENT_DESC mesh_desc[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
    };
    static const D3D11_INPUT_ELEMENT_DESC quad_desc[] = {
@@ -1391,65 +1397,27 @@ static bool d3d11_effect_shader(d3d11_video_t *d3d11, unsigned pipeline_id)
       { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
          0, offsetof(d3d11_vertex_t, texcoord), D3D11_INPUT_PER_VERTEX_DATA, 0 },
    };
-   static char ribbon[4096];
-   static const char ribbon_simple[] =
-#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-      ;
-   static const char simple_snow[] =
-#include "d3d_shaders/simple_snow_sm4.hlsl.h"
-      ;
-   static const char snow[] =
-#include "d3d_shaders/snow_sm4.hlsl.h"
-      ;
-   static const char bokeh[] =
-#include "d3d_shaders/bokeh_sm4.hlsl.h"
-      ;
-   static const char snowflake[] =
-#include "d3d_shaders/snowflake_sm4.hlsl.h"
-      ;
-   const char *src                         = NULL;
-   size_t size                             = 0;
-   const D3D11_INPUT_ELEMENT_DESC *desc    = quad_desc;
-   UINT count                              = countof(quad_desc);
-   unsigned bit;
-
-   switch (pipeline_id)
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   struct d3d11_effect *fx;
+   bool mesh;
+   if (     !d3d11 || !desc || !desc->hlsl_sm4
+         || d3d11->effect_count >= countof(d3d11->effects))
+      return NULL;
+   fx   = &d3d11->effects[d3d11->effect_count];
+   mesh = (desc->flags & GFX_EFFECT_MESH) != 0;
+   memset(&fx->shader, 0, sizeof(fx->shader));
+   if (!d3d11_init_shader(d3d11->device, desc->hlsl_sm4,
+            strlen(desc->hlsl_sm4), NULL, "VSMain", "PSMain", NULL,
+            mesh ? mesh_desc : quad_desc,
+            mesh ? countof(mesh_desc) : countof(quad_desc),
+            &fx->shader, D3D11_FEATURE_LEVEL_HINT_DONTCARE))
    {
-      case VIDEO_SHADER_MENU:
-         src =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-         size = strlen(src);        bit = 1 << 0;
-         desc = ribbon_desc;  count = countof(ribbon_desc);
-         break;
-      case VIDEO_SHADER_MENU_2:
-         src = ribbon_simple; size = sizeof(ribbon_simple); bit = 1 << 1;
-         desc = ribbon_desc;  count = countof(ribbon_desc);
-         break;
-      case VIDEO_SHADER_MENU_3:
-         src = simple_snow;   size = sizeof(simple_snow);   bit = 1 << 2;
-         break;
-      case VIDEO_SHADER_MENU_4:
-         src = snow;          size = sizeof(snow);          bit = 1 << 3;
-         break;
-      case VIDEO_SHADER_MENU_5:
-         src = bokeh;         size = sizeof(bokeh);         bit = 1 << 4;
-         break;
-      case VIDEO_SHADER_MENU_6:
-         src = snowflake;     size = sizeof(snowflake);     bit = 1 << 5;
-         break;
-      default:
-         return false;
+      d3d11_release_shader(&fx->shader);
+      return NULL;
    }
-   if (d3d11->shaders[pipeline_id].vs)
-      return true;
-   if (d3d11->effects_tried & bit)
-      return false;
-   d3d11->effects_tried |= bit;
-   return d3d11_init_shader(d3d11->device, src, size, NULL,
-            "VSMain", "PSMain", NULL, desc, count,
-            &d3d11->shaders[pipeline_id],
-            D3D11_FEATURE_LEVEL_HINT_DONTCARE);
+   fx->flags = desc->flags;
+   d3d11->effect_count++;
+   return fx;
 }
 
 static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
@@ -1464,19 +1432,11 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
    if (!d3d11 || !draw)
       return;
 
-   switch (draw->pipeline_id)
+   switch (draw->effect ? 1 : 0)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         /* Compiled by the pipeline call before this, or not at all */
-         if (!d3d11->shaders[draw->pipeline_id].vs)
-            return;
+      case 1:
          {
-            d3d11_shader_t *shader = &d3d11->shaders[draw->pipeline_id];
+            d3d11_shader_t *shader = &((struct d3d11_effect*)draw->effect)->shader;
             d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
             d3d11->context->lpVtbl->VSSetShader(d3d11->context, shader->vs, NULL, 0);
             d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
@@ -1808,55 +1768,43 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   const struct d3d11_effect *fx;
 
-   if (!d3d11 || !draw)
-      return;
-   /* Before anything is bound for it */
-   if (!d3d11_effect_shader(d3d11, draw->pipeline_id))
+   if (!d3d11 || !draw || !(fx = (const struct d3d11_effect*)draw->effect))
       return;
 
-   switch (draw->pipeline_id)
+   if (fx->flags & GFX_EFFECT_MESH)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      if (p_disp->effect_mesh)
+      /* From the mesh's own buffer, its position only */
+      const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+      UINT stride = sizeof(gfx_display_mesh_vertex_t);
+      UINT offset = 0;
+      int slot;
+      /* Nothing to draw it from */
+      if (!mesh || (slot = d3d11_mesh_slot(d3d11, mesh)) < 0)
       {
-         /* From the ribbon mesh's own buffer, its position only */
-         const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
-         int slot = d3d11_mesh_slot(d3d11, mesh);
-         UINT stride = sizeof(gfx_display_mesh_vertex_t);
-         UINT offset = 0;
-         if (slot < 0)
-            return;
-         d3d11->meshes[slot].last_draw = ++d3d11->mesh_draws;
-         d3d11->context->lpVtbl->IASetVertexBuffers(
-               d3d11->context, 0, 1,
-               &d3d11->meshes[slot].vbo, &stride, &offset);
-         draw->coords->vertices = p_disp->effect_vertices;
+         draw->coords->vertices = 0;
+         return;
+      }
+      d3d11->meshes[slot].last_draw = ++d3d11->mesh_draws;
+      d3d11->context->lpVtbl->IASetVertexBuffers(
+            d3d11->context, 0, 1,
+            &d3d11->meshes[slot].vbo, &stride, &offset);
+      draw->coords->vertices = p_disp->effect_vertices;
+      if (fx->flags & (GFX_EFFECT_BLEND_ADD | GFX_EFFECT_BLEND_SCREEN))
          d3d11->context->lpVtbl->OMSetBlendState(
-               d3d11->context, draw->pipeline_id == VIDEO_SHADER_MENU
+               d3d11->context, (fx->flags & GFX_EFFECT_BLEND_ADD)
                   ? d3d11->blend_ribbon : d3d11->blend_pipeline,
                NULL, D3D11_DEFAULT_SAMPLE_MASK);
-         break;
-      }
-      /* Nothing to draw it from */
-      return;
-
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         {
-            UINT stride = sizeof(d3d11_vertex_t);
-            UINT offset = 0;
-            d3d11->context->lpVtbl->IASetVertexBuffers(
-                  d3d11->context, 0, 1,
-                  &d3d11->frame.vbo, &stride, &offset);
-         }
-         draw->coords->vertices = 4;
-         break;
-      default:
-         return;
+   }
+   else
+   {
+      UINT stride = sizeof(d3d11_vertex_t);
+      UINT offset = 0;
+      d3d11->context->lpVtbl->IASetVertexBuffers(
+            d3d11->context, 0, 1,
+            &d3d11->frame.vbo, &stride, &offset);
+      draw->coords->vertices = 4;
    }
 
    d3d11->context->lpVtbl->IASetPrimitiveTopology(
@@ -1868,7 +1816,7 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
    {
       /* Only the ribbon reads its data: written straight from
        * gfx_display */
-      const float *ribbon = draw->pipeline_id == VIDEO_SHADER_MENU
+      const float *ribbon = (fx->flags & GFX_EFFECT_RIBBON)
          ? gfx_display_ribbon_data(p_disp) : NULL;
       D3D11_MAPPED_SUBRESOURCE mapped_ubo;
       if (     SUCCEEDED(d3d11->context->lpVtbl->Map(
@@ -4343,6 +4291,9 @@ static void d3d11_gfx_free(void* data)
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
       d3d11_release_shader(&d3d11->shaders[i]);
+   for (i = 0; i < (int)d3d11->effect_count; i++)
+      d3d11_release_shader(&d3d11->effects[i].shader);
+   d3d11->effect_count = 0;
 
    d3d11_release_shader(&d3d11->mesh_shader);
    Release(d3d11->mesh_ubo);
@@ -10871,5 +10822,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
    gfx_display_d3d11_scissor_end,
    gfx_display_d3d11_mesh_draw,
    gfx_display_d3d11_bloom_begin,
-   gfx_display_d3d11_bloom_end
+   gfx_display_d3d11_bloom_end,
+   NULL,                                     /* bloom_composite */
+   gfx_display_d3d11_effect_install
 };

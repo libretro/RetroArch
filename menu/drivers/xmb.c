@@ -50,6 +50,7 @@
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
+#include "xmb_effects.h"
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../../gfx/common/win32_common.h"
 #endif
@@ -353,6 +354,10 @@ typedef struct xmb_handle
 {
    /* The ribbon's grid, drawn by the ribbon programs */
    gfx_display_mesh_t *ribbon_mesh;
+#ifdef HAVE_SHADERPIPELINE
+   /* The background effects, installed once */
+   const gfx_display_effect_t *effects[XMB_EFFECT_COUNT];
+#endif
    /* Keeps track of the last time tabs were switched
     * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
    retro_time_t last_tab_switch_time; /* uint64_t alignment */
@@ -1192,6 +1197,7 @@ static void xmb_draw_icon(
    draw.matrix_data     = dispctx->handles_transform ? mymat : &mymat_tmp;
    draw.texture         = texture;
    draw.pipeline_id     = 0;
+   draw.effect          = NULL;
 
    if (shadows_enable)
    {
@@ -8176,6 +8182,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx,
       const gfx_display_mesh_t *ribbon_mesh,
+      const gfx_display_effect_t *const *effects,
       unsigned video_dims,
       unsigned menu_shader_pipeline,
       unsigned xmb_color_theme,
@@ -8202,6 +8209,7 @@ XMB_NOINLINE static void xmb_draw_bg(
    draw.tex_coord            = NULL;
    draw.vertex_count         = 4;
    draw.pipeline_id          = 0;
+   draw.effect               = NULL;
 
    if (!video_width || !video_height)
       return;
@@ -8242,14 +8250,12 @@ XMB_NOINLINE static void xmb_draw_bg(
       const gfx_display_mesh_t *mesh = gfx_display_mesh_fullscreen();
 
       md.vertex_count = 0;
+      md.program      = GFX_MESH_PROGRAM_EFFECT;
+      md.effect       = NULL;
       switch (menu_shader_pipeline)
       {
-         default:
-         case XMB_SHADER_PIPELINE_WALLPAPER:
-            md.program = GFX_MESH_PROGRAM_BLEND;
-            break;
          case XMB_SHADER_PIPELINE_RIBBON:
-            md.program = GFX_MESH_PROGRAM_RIBBON;
+            md.effect  = effects[XMB_EFFECT_RIBBON];
             mesh       = ribbon_mesh;
             /* The dust follows the sheet in the mesh */
             if (!particles)
@@ -8257,24 +8263,24 @@ XMB_NOINLINE static void xmb_draw_bg(
             break;
          case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
             /* The sheet alone: the grid comes before the dust */
-            md.program      = GFX_MESH_PROGRAM_RIBBON_SIMPLE;
+            md.effect       = effects[XMB_EFFECT_RIBBON_SIMPLE];
             md.vertex_count = XMB_RIBBON_VERTICES;
             mesh            = ribbon_mesh;
             break;
-#if !defined(VITA)
          case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-            md.program = GFX_MESH_PROGRAM_SNOW_SIMPLE;
+            md.effect = effects[XMB_EFFECT_SNOW_SIMPLE];
             break;
          case XMB_SHADER_PIPELINE_SNOW:
-            md.program = GFX_MESH_PROGRAM_SNOW;
+            md.effect = effects[XMB_EFFECT_SNOW];
             break;
          case XMB_SHADER_PIPELINE_BOKEH:
-            md.program = GFX_MESH_PROGRAM_BOKEH;
+            md.effect = effects[XMB_EFFECT_BOKEH];
             break;
          case XMB_SHADER_PIPELINE_SNOWFLAKE:
-            md.program = GFX_MESH_PROGRAM_SNOWFLAKE;
+            md.effect = effects[XMB_EFFECT_SNOWFLAKE];
             break;
-#endif
+         default:
+            break;
       }
 
       md.mvp     = NULL;
@@ -8314,6 +8320,7 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
    draw.vertex_count    = 4;
    draw.texture         = 0;
    draw.pipeline_id     = 0;
+   draw.effect          = NULL;
 
    gfx_display_blend_begin(dispctx, userdata);
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, MIN(xmb->alpha, alpha));
@@ -8981,6 +8988,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             p_disp,
             dispctx,
             xmb->ribbon_mesh,
+#ifdef HAVE_SHADERPIPELINE
+            xmb->effects,
+#else
+            NULL,
+#endif
             video_info->dims,
             menu_shader_pipeline,
             color_theme,
@@ -10082,6 +10094,14 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb_init_horizontal_list(xmb);
 
    xmb->ribbon_mesh = xmb_create_ribbon();
+#ifdef HAVE_SHADERPIPELINE
+   xmb_effects_describe();
+   {
+      unsigned i;
+      for (i = 0; i < XMB_EFFECT_COUNT; i++)
+         xmb->effects[i] = gfx_display_effect_install(&xmb_effect_descs[i]);
+   }
+#endif
 
    /* Initialise screensaver */
    if (!(xmb->screensaver = menu_screensaver_init()))

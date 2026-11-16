@@ -10,10 +10,14 @@
  *              texture coordinates and tinted colours, triangles as
  *              five strip vertices each, strips as they are, triangles
  *              behind the eye dropped, the white texture for COLORED.
- *  effects     each effect program reaches the driver's pipeline code
- *              under its pipeline id, over the background's state,
- *              with the effect coordinates naming the mesh it is
- *              drawn over; a mesh with no positions draws no effect.
+ *  effects     an effect installed twice is one effect; the driver
+ *              makes every installed effect's program at the first
+ *              effect draw, once, and again after it goes; each draw
+ *              reaches the driver's pipeline code with its program,
+ *              over the background's state, with the effect
+ *              coordinates naming the mesh it is drawn over; a mesh
+ *              with no positions, or a driver that makes no programs,
+ *              draws no effect.
  *  quads-only  a driver that takes no strips is handed nothing.
  *  stretch     with an output size set, quads and draws laid out at
  *              another width reach the driver across the output's. */
@@ -61,7 +65,8 @@ retro_time_t cpu_features_get_time_usec(void) { return test_time; }
 /* ---- a recording display driver ------------------------------------ */
 
 static float    rec_xy[4096], rec_uv[4096], rec_col[8192];
-static unsigned rec_vertices, rec_draws, rec_pipeline_calls, rec_pipeline_id;
+static unsigned rec_vertices, rec_draws, rec_pipeline_calls;
+static void    *rec_pipeline_effect;
 static unsigned rec_pos, rec_dims, rec_vd;
 static uintptr_t rec_texture;
 
@@ -90,7 +95,7 @@ static void rec_pipeline(gfx_display_ctx_draw_t *d, gfx_display_t *p,
    struct video_coords *ec = gfx_display_effect_coords(p);
    (void)data; (void)vd;
    rec_pipeline_calls++;
-   rec_pipeline_id     = d->pipeline_id;
+   rec_pipeline_effect = d->effect;
    rec_effect_vertex   = ec ? ec->vertex : NULL;
    rec_effect_vertices = ec ? ec->vertices : 0;
    rec_effect_time     = p->effect_time;
@@ -118,6 +123,16 @@ static void rec_bloom_end(void *data, unsigned vd, bool defer)
    test_time += 50000;
 }
 
+/* The program the driver makes of an effect: its description, counted */
+static unsigned rec_installs;
+static void *rec_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   (void)data;
+   rec_installs++;
+   return (void*)desc;
+}
+
 static void rec_bloom_composite(void *data, unsigned vd)
 {
    (void)data; (void)vd;
@@ -133,7 +148,8 @@ static gfx_display_ctx_driver_t rec_ctx;
 
 static void reset(void)
 {
-   rec_vertices = rec_draws = rec_pipeline_calls = rec_pipeline_id = 0;
+   rec_vertices = rec_draws = rec_pipeline_calls = 0;
+   rec_pipeline_effect = NULL;
    rec_texture  = 0;
 }
 
@@ -323,6 +339,7 @@ int main(void)
    memset(&rec_ctx, 0, sizeof(rec_ctx));
    rec_ctx.draw                   = rec_draw;
    rec_ctx.draw_pipeline          = rec_pipeline;
+   rec_ctx.effect_install         = rec_effect_install;
    rec_ctx.get_default_vertices   = rec_def_vert;
    rec_ctx.get_default_tex_coords = rec_def_tex;
    rec_ctx.handles_vertex_strip   = true;
@@ -427,22 +444,31 @@ int main(void)
 
    /* effects */
    {
-      static const struct { enum gfx_display_mesh_program p; unsigned id; } map[] = {
-         { GFX_MESH_PROGRAM_BLEND,         VIDEO_SHADER_STOCK_BLEND },
-         { GFX_MESH_PROGRAM_RIBBON,        VIDEO_SHADER_MENU },
-         { GFX_MESH_PROGRAM_RIBBON_SIMPLE, VIDEO_SHADER_MENU_2 },
-         { GFX_MESH_PROGRAM_SNOW_SIMPLE,   VIDEO_SHADER_MENU_3 },
-         { GFX_MESH_PROGRAM_SNOW,          VIDEO_SHADER_MENU_4 },
-         { GFX_MESH_PROGRAM_BOKEH,         VIDEO_SHADER_MENU_5 },
-         { GFX_MESH_PROGRAM_SNOWFLAKE,     VIDEO_SHADER_MENU_6 } };
-      for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+      static gfx_display_effect_desc_t descs[4];
+      const gfx_display_effect_t *fx[4];
+      descs[0].flags = GFX_EFFECT_MESH | GFX_EFFECT_BLEND_ADD | GFX_EFFECT_RIBBON;
+      descs[1].flags = GFX_EFFECT_MESH | GFX_EFFECT_BLEND_SCREEN;
+      descs[2].flags = 0;
+      descs[3].flags = GFX_EFFECT_YFLIP;
+      for (i = 0; i < 4; i++)
+         fx[i] = gfx_display_effect_install(&descs[i]);
+      CHECK(fx[0] && fx[3] && fx[0] != fx[3]
+            && gfx_display_effect_install(&descs[2]) == fx[2],
+            "an effect installed twice is one effect");
+      rec_installs = 0;
+      md.program = GFX_MESH_PROGRAM_EFFECT; md.texture = 0;
+      md.vertex_count = 0; md.bloom = false;
+      for (i = 0; i < 4; i++)
       {
          reset();
-         md.program = map[i].p; md.color = white; md.texture = 0;
+         md.effect = fx[i]; md.color = white;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         CHECK(rec_installs == 4,
+               "every installed effect's program is made at the first effect draw, once");
          CHECK(rec_pipeline_calls == 1
-               && rec_pipeline_id == map[i].id && rec_draws == rec_pipeline_calls,
-               "each effect reaches its pipeline, then draws");
+               && rec_pipeline_effect == (void*)&descs[i]
+               && rec_draws == rec_pipeline_calls,
+               "each effect reaches its pipeline with its program, then draws");
          CHECK(rec_effect_vertex == gfx_display_mesh_fullscreen()->positions
                && rec_effect_vertices == 4,
                "the effect coordinates are the mesh it is drawn over");
@@ -457,7 +483,7 @@ int main(void)
          if (shared)
          {
             reset();
-            md.program = GFX_MESH_PROGRAM_RIBBON_SIMPLE; md.color = white;
+            md.effect = fx[1]; md.color = white;
             md.vertex_count = 4;
             gfx_display_mesh_draw(p_disp, NULL, vd, shared, &md);
             CHECK(rec_effect_vertex == shared->positions
@@ -472,17 +498,36 @@ int main(void)
       CHECK(gfx_display_effect_coords(p_disp) == NULL,
             "and there are none outside the draw");
       reset();
-      md.program = GFX_MESH_PROGRAM_RIBBON;
+      md.effect = fx[0];
       gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
       CHECK(rec_pipeline_calls == 0 && rec_draws == 0,
             "a mesh with no positions draws no effect");
       CHECK(TEST_NEAR(white[3], 1.0f), "the effect leaves the colour's alpha as it was");
+
+      /* The driver goes, and a driver that makes no programs comes */
+      gfx_display_effects_lost();
+      rec_ctx.effect_install = NULL;
+      reset();
+      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      CHECK(rec_pipeline_calls == 0 && rec_draws == 0,
+            "a driver that makes no programs draws no effect");
+      gfx_display_effects_lost();
+      rec_ctx.effect_install = rec_effect_install;
+      rec_installs = 0;
+      reset();
+      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      CHECK(rec_installs == 4 && rec_pipeline_calls == 1,
+            "the programs are made again after the driver goes");
    }
 
    {
       static const unsigned rates[] = { 30, 60, 144 };
       unsigned rate, frame;
-      md.program = GFX_MESH_PROGRAM_RIBBON;
+      static gfx_display_effect_desc_t ribbon_desc;
+      ribbon_desc.flags = GFX_EFFECT_MESH | GFX_EFFECT_BLEND_ADD | GFX_EFFECT_RIBBON;
+      md.program = GFX_MESH_PROGRAM_EFFECT;
+      md.effect  = gfx_display_effect_install(&ribbon_desc);
+      md.vertex_count = 0;
       for (rate = 0; rate < sizeof(rates) / sizeof(rates[0]); rate++)
       {
          p_disp->effect_start_time = 0;

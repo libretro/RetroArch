@@ -411,38 +411,17 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
    if (!wiiu || !draw)
       return;
 
-   if (draw->pipeline_id >= VIDEO_SHADER_MENU_6
-         && draw->pipeline_id <= VIDEO_SHADER_MENU)
+   if (draw->effect)
    {
+      const gfx_display_effect_desc_t *fx =
+         (const gfx_display_effect_desc_t*)draw->effect;
       GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
+      GX2SetShader((GX2Shader*)fx->gx2);
 
-      switch(draw->pipeline_id)
+      switch ((fx->flags & GFX_EFFECT_RIBBON) ? 0
+            : (fx->flags & GFX_EFFECT_MESH) ? 1 : 2)
       {
-         case VIDEO_SHADER_MENU:
-            GX2SetShader(&ribbon_shader);
-            break;
-         case VIDEO_SHADER_MENU_2:
-            GX2SetShader(&ribbon_simple_shader);
-            break;
-         case VIDEO_SHADER_MENU_3:
-            GX2SetShader(&snow_simple_shader);
-            break;
-         case VIDEO_SHADER_MENU_4:
-            GX2SetShader(&snow_shader);
-            break;
-         case VIDEO_SHADER_MENU_5:
-            GX2SetShader(&bokeh_shader);
-            break;
-         case VIDEO_SHADER_MENU_6:
-            GX2SetShader(&snowflake_shader);
-            break;
-         default:
-            break;
-      }
-
-      switch(draw->pipeline_id)
-      {
-         case VIDEO_SHADER_MENU:
+         case 0:
             GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP,
                   draw->coords->vertices, 0, 1);
             if (wiiu->ribbon_dust && wiiu->ribbon_vertices)
@@ -460,7 +439,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
                   GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
                   GX2_BLEND_COMBINE_MODE_ADD);
             break;
-         case VIDEO_SHADER_MENU_2:
+         case 1:
             GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, draw->coords->vertices,
                   0, 1);
             GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
@@ -468,10 +447,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
                   GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
                   GX2_BLEND_COMBINE_MODE_ADD);
             break;
-         case VIDEO_SHADER_MENU_3:
-         case VIDEO_SHADER_MENU_4:
-         case VIDEO_SHADER_MENU_5:
-         case VIDEO_SHADER_MENU_6:
+         default:
             GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
             break;
       }
@@ -632,13 +608,15 @@ static void gfx_display_wiiu_draw_pipeline(
 {
    struct video_coords *ca        = NULL;
    wiiu_video_t             *wiiu = (wiiu_video_t*)data;
+   const gfx_display_effect_desc_t *fx;
 
-   if (!wiiu || !draw)
+   if (!wiiu || !draw || !(fx = (const gfx_display_effect_desc_t*)draw->effect))
       return;
 
-   switch(draw->pipeline_id)
+   switch ((fx->flags & GFX_EFFECT_RIBBON) ? 0
+         : (fx->flags & GFX_EFFECT_MESH) ? 1 : 2)
    {
-      case VIDEO_SHADER_MENU:
+      case 0:
          {
             /* The sheet on the GPU from the mesh in place; the dust here */
             const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
@@ -679,7 +657,7 @@ static void gfx_display_wiiu_draw_pipeline(
                GX2_ENABLE, GX2_BLEND_MODE_ZERO, GX2_BLEND_MODE_ONE,
                GX2_BLEND_COMBINE_MODE_ADD);
          break;
-      case VIDEO_SHADER_MENU_2:
+      case 1:
          if (!(ca = gfx_display_effect_coords(p_disp)))
             return;
          /* Read in place: mesh positions are allocated GPU-aligned */
@@ -696,16 +674,11 @@ static void gfx_display_wiiu_draw_pipeline(
                GX2_DISABLE, 0, 0, 0);
 
          break;
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      default:
          GX2SetAttribBuffer(0,
                4 * sizeof(*wiiu->v),
                sizeof(*wiiu->v), wiiu->v);
          break;
-      default:
-         return;
    }
 
    if (!wiiu->menu_shader_ubo)
@@ -719,7 +692,7 @@ static void gfx_display_wiiu_draw_pipeline(
       wiiu->menu_shader_ubo->time = 0.0f;
    }
    wiiu->menu_shader_ubo->time = p_disp->effect_time;
-   if (draw->pipeline_id == VIDEO_SHADER_MENU)
+   if (fx->flags & GFX_EFFECT_RIBBON)
    {
       const float *ribbon = gfx_display_ribbon_data(p_disp);
       wiiu->menu_shader_ubo->ribbon_time  = ribbon[0];
@@ -731,6 +704,15 @@ static void gfx_display_wiiu_draw_pipeline(
    GX2SetPixelUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);
 }
 
+
+/* The shaders are built in and set up with the driver, so the
+ * description, which names its shader, is the program */
+static void *gfx_display_wiiu_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   (void)data;
+   return (desc && desc->gx2) ? (void*)desc : NULL;
+}
 
 static unsigned gfx_display_wiiu_bloom_begin(void *data, unsigned dims,
       bool defer)
@@ -3267,5 +3249,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    NULL,
    gfx_display_wiiu_bloom_begin,
    gfx_display_wiiu_bloom_end,
-   NULL
+   NULL,
+   gfx_display_wiiu_effect_install
 };

@@ -272,7 +272,6 @@
 		05A8C60620DB72F000FF7857 /* pipeline_xmb_ribbon_simple.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_xmb_ribbon_simple.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C60720DB72F000FF7857 /* core_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_alpha_blend.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C60820DB72F000FF7857 /* modern_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_alpha_blend.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C60920DB72F000FF7857 /* pipeline_xmb_ribbon_simple.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_xmb_ribbon_simple.cg.h; sourceTree = "<group>"; };
 		05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_alpha_blend.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_alpha_blend.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.vert.h; sourceTree = "<group>"; };
@@ -283,7 +282,6 @@
 		05A8C61620DB72F000FF7857 /* legacy_pipeline_xmb_ribbon.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_pipeline_xmb_ribbon.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61720DB72F000FF7857 /* legacy_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_opaque.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61820DB72F000FF7857 /* modern_pipeline_xmb_ribbon_simple.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_pipeline_xmb_ribbon_simple.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61920DB72F000FF7857 /* pipeline_snow.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_snow.cg.h; sourceTree = "<group>"; };
 		05A8C61A20DB72F000FF7857 /* legacy_pipeline_snow.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_pipeline_snow.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61B20DB72F000FF7857 /* legacy_pipeline_xmb_ribbon_simple.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_pipeline_xmb_ribbon_simple.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61C20DB72F000FF7857 /* legacy_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_opaque.glsl.frag.h; sourceTree = "<group>"; };
@@ -898,7 +896,6 @@
 				05A8C60620DB72F000FF7857 /* pipeline_xmb_ribbon_simple.glsl.frag.h */,
 				05A8C60720DB72F000FF7857 /* core_alpha_blend.glsl.vert.h */,
 				05A8C60820DB72F000FF7857 /* modern_alpha_blend.glsl.frag.h */,
-				05A8C60920DB72F000FF7857 /* pipeline_xmb_ribbon_simple.cg.h */,
 				05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */,
 				05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */,
 				05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */,
@@ -909,7 +906,6 @@
 				05A8C61620DB72F000FF7857 /* legacy_pipeline_xmb_ribbon.glsl.vert.h */,
 				05A8C61720DB72F000FF7857 /* legacy_opaque.glsl.vert.h */,
 				05A8C61820DB72F000FF7857 /* modern_pipeline_xmb_ribbon_simple.glsl.vert.h */,
-				05A8C61920DB72F000FF7857 /* pipeline_snow.cg.h */,
 				05A8C61A20DB72F000FF7857 /* legacy_pipeline_snow.glsl.vert.h */,
 				05A8C61B20DB72F000FF7857 /* legacy_pipeline_xmb_ribbon_simple.glsl.vert.h */,
 				05A8C61C20DB72F000FF7857 /* legacy_opaque.glsl.frag.h */,

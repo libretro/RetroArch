@@ -796,7 +796,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev
+      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev spirv-tools
 
     steps:
       - name: Checkout
@@ -1146,6 +1146,22 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 120 make check SANITIZER=address,undefined
           echo "[pass] glsl_rect_test, glsl_in_place_test"
+
+      - name: XMB menu effects on every backend's sources, GL and GLES programs drawn (Mesa EGL, ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/menu_effects
+        run: |
+          set -eu
+          # The effects XMB installs carry a source for every backend,
+          # with the inputs and uniforms the drivers set for their
+          # flags; each GLSL program is made through shader_glsl.c as
+          # gl2 makes it (GL legacy and core profile, GLES 3 and 2) and
+          # drawn once; the SPIR-V passes spirv-val.
+          make clean
+          LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 make check SANITIZER=address,undefined
+          make clean
 
       - name: GLES texture loan capability and ownership (ASan + UBSan)
         shell: bash
@@ -2220,6 +2236,17 @@ jobs:
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d9_failed_lock/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d9_failed_lock/run.py
 
+      - name: XMB menu effects' HLSL compiled as D3D9 to 12 compile it (mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # What Wine's compiler does not yet take (SM1 branches and
+          # loops, atan) is reported as skipped; on Windows all of it
+          # must compile.
+          make -C samples/gfx/menu_effects clean check-wine
+          make -C samples/gfx/menu_effects clean
+
       - name: GPU selection identity (Linux and mingw + Wine)
         shell: bash
         run: |
@@ -2936,9 +2963,10 @@ jobs:
           # its refusals, the CPU path a plain program takes on drivers
           # that do not draw meshes (the transform, the perspective
           # divide, triangles joined into one strip, triangles behind
-          # the eye dropped, the tint), each effect program reaching the
-          # driver's pipeline under its id, and nothing handed to a
-          # driver that takes no strips.
+          # the eye dropped, the tint), an installed effect made once on
+          # the drawing thread and again under a new driver, none drawn
+          # without its install, and nothing handed to a driver that
+          # takes no strips.
           make clean && make -j$(nproc) all
           timeout 120 make check
           make clean

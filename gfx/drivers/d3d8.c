@@ -1138,10 +1138,13 @@ static void gfx_display_d3d8_draw_pipeline(
    if (ca)
       draw->coords   = ca;
 
-   switch (draw->pipeline_id)
+   if (!draw->effect)
+      return;
+
+   switch ((((const gfx_display_effect_desc_t*)draw->effect)->flags
+            & GFX_EFFECT_MESH) ? 1 : 0)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
+      case 1:
          /* XMB ribbon: multiplicative blend so the ribbon mesh
           * darkens / tints whatever is behind it. Matches the
           * blend setup d3d10/d3d11 use for the ribbon pass. */
@@ -1153,10 +1156,7 @@ static void gfx_display_d3d8_draw_pipeline(
                D3DRS_ALPHABLENDENABLE, TRUE);
          break;
 
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      default:
          /* Snow / bokeh / snowflake: standard alpha blend. The
           * the effect geometry alone won't produce a particle effect
           * without the pixel shader, but at least the blend mode
@@ -1169,12 +1169,16 @@ static void gfx_display_d3d8_draw_pipeline(
          IDirect3DDevice8_SetRenderState(d3d->dev,
                D3DRS_ALPHABLENDENABLE, TRUE);
          break;
-
-      default:
-         /* Unknown pipeline ID — leave blend state alone and let
-          * the regular draw path render whatever was set up. */
-         break;
    }
+}
+
+/* Without shaders an effect is its geometry and its blend, which its
+ * description carries: the description is the program */
+static void *gfx_display_d3d8_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   (void)data;
+   return (void*)desc;
 }
 
 /* Soft scissor for D3D8.
@@ -4298,6 +4302,11 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
    false,
    true,
    gfx_display_d3d8_scissor_begin,
-   gfx_display_d3d8_scissor_end
+   gfx_display_d3d8_scissor_end,
+   NULL,                                     /* mesh_draw */
+   NULL,                                     /* bloom_begin */
+   NULL,                                     /* bloom_end */
+   NULL,                                     /* bloom_composite */
+   gfx_display_d3d8_effect_install
 };
 

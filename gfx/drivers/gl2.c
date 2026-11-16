@@ -782,6 +782,11 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
 }
 #endif
 
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+static void gl2_draw_effect(gl2_t *gl, const struct gl2_effect *fx,
+      const gfx_display_ctx_draw_t *draw, const video_coords_t *coords);
+#endif
+
 static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -819,6 +824,15 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
    glBindTexture(GL_TEXTURE_2D, draw->texture
          ? (GLuint)draw->texture : gl->white_texture);
+
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+   if (draw->effect)
+   {
+      gl2_draw_effect(gl, (const struct gl2_effect*)draw->effect, draw,
+            &coords);
+      return;
+   }
+#endif
 
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    /* A half-float texture is linear scRGB: into an RGBA16F layer,
@@ -888,84 +902,24 @@ static void gfx_display_gl2_draw_pipeline(
       void *data,
       unsigned video_dims)
 {
-#ifdef HAVE_SHADERPIPELINE
-   struct uniform_info uniform_param;
-   gl2_t             *gl            = (gl2_t*)data;
-   float t                          = p_disp->effect_time;
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+   gl2_t *gl                        = (gl2_t*)data;
+   const struct gl2_effect *fx      = (const struct gl2_effect*)draw->effect;
 
+   if (!fx)
+      return;
    draw->pos                        = VIDEO_POS_PACK(0, 0);
    draw->coords                     = gfx_display_effect_coords(p_disp);
    if (!draw->coords)
       return;
    draw->matrix_data                = NULL;
 
-   switch (draw->pipeline_id)
-   {
-      case VIDEO_SHADER_MENU:
-         glBlendFunc(GL_ONE, GL_ONE);
-         break;
-      case VIDEO_SHADER_MENU_2:
-         glBlendFunc(GL_DST_COLOR, GL_ONE);
-         break;
-      default:
-         gl2_blend_alpha(gl);
-         break;
-   }
-
-   switch (draw->pipeline_id)
-   {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         gl->shader->use(gl, gl->shader_data, draw->pipeline_id,
-               true);
-
-         uniform_param.type              = UNIFORM_1F;
-         uniform_param.enabled           = true;
-         uniform_param.location          = 0;
-         uniform_param.count             = 0;
-
-         uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
-         uniform_param.lookup.ident      = "time";
-         uniform_param.lookup.idx        = draw->pipeline_id;
-         uniform_param.lookup.add_prefix = true;
-         uniform_param.lookup.enable     = true;
-
-         uniform_param.result.f.v0       = t;
-
-         if (draw->pipeline_id == VIDEO_SHADER_MENU)
-         {
-            uniform_param.type = UNIFORM_4FV;
-            uniform_param.count = 50;
-            uniform_param.lookup.ident = "Ribbon";
-            uniform_param.lookup.add_prefix = false;
-            uniform_param.result.floatv = (float*)gfx_display_ribbon_data(p_disp);
-         }
-         gl->shader->set_uniform_parameter(gl->shader_data,
-               &uniform_param, NULL);
-         break;
-   }
-
-   switch (draw->pipeline_id)
-   {
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-#ifndef HAVE_PSGL
-         uniform_param.type              = UNIFORM_2F;
-         uniform_param.lookup.ident      = "OutputSize";
-         uniform_param.result.f.v0       = VIDEO_SCALE_W(draw->dims);
-         uniform_param.result.f.v1       = VIDEO_SCALE_H(draw->dims);
-
-         gl->shader->set_uniform_parameter(gl->shader_data,
-               &uniform_param, NULL);
-#endif
-         break;
-   }
+   if (fx->flags & GFX_EFFECT_BLEND_ADD)
+      glBlendFunc(GL_ONE, GL_ONE);
+   else if (fx->flags & GFX_EFFECT_BLEND_SCREEN)
+      glBlendFunc(GL_DST_COLOR, GL_ONE);
+   else
+      gl2_blend_alpha(gl);
 #endif
 }
 
@@ -1045,6 +999,93 @@ static int gl2_mesh_slot(gl2_t *gl, const gfx_display_mesh_t *mesh)
    gl->meshes[slot].id = mesh->id;
    return slot;
 }
+
+#ifdef HAVE_SHADERPIPELINE
+/* An effect, with its own program: the uniform locations were found
+ * when it was made, and a mesh effect reads the mesh's own buffer */
+static void gl2_draw_effect(gl2_t *gl, const struct gl2_effect *fx,
+      const gfx_display_ctx_draw_t *draw, const video_coords_t *coords)
+{
+   gfx_display_t *p_disp          = disp_get_ptr();
+   const gl_glsl_effect_t *prg    = &fx->glsl;
+   const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+   unsigned vertices              = coords->vertices;
+   int slot                       = -1;
+
+   if (prg->vertex_coord < 0)
+      return;
+   glUseProgram(prg->prog);
+   if (prg->mvp >= 0)
+      glUniformMatrix4fv(prg->mvp, 1, GL_FALSE, gl->mvp_no_rot.data);
+   if (prg->time >= 0)
+      glUniform1f(prg->time, p_disp->effect_time);
+   if (prg->ribbon >= 0 && (fx->flags & GFX_EFFECT_RIBBON))
+   {
+      const float *ribbon = gfx_display_ribbon_data(p_disp);
+      if (ribbon)
+         glUniform4fv(prg->ribbon, 50, ribbon);
+   }
+   if (prg->output_size >= 0 && !(fx->flags & GFX_EFFECT_MESH))
+      glUniform2f(prg->output_size, (float)VIDEO_SCALE_W(draw->dims),
+            (float)VIDEO_SCALE_H(draw->dims));
+
+   glEnableVertexAttribArray(prg->vertex_coord);
+   /* The ribbon's grid and the quads' full-screen mesh alike are kept
+    * in a buffer: nothing read from client memory each draw */
+   if (mesh && (slot = gl2_mesh_slot(gl, mesh)) >= 0)
+   {
+      gl->meshes[slot].last_draw = ++gl->mesh_draws;
+      glBindBuffer(GL_ARRAY_BUFFER, gl->meshes[slot].vbo);
+      glVertexAttribPointer(prg->vertex_coord, 2, GL_FLOAT, GL_FALSE,
+            sizeof(gfx_display_mesh_vertex_t), (const GLvoid*)0);
+   }
+   /* Client memory, which a core profile refuses */
+   else if (!gl_query_core_context_in_use())
+   {
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+      glVertexAttribPointer(prg->vertex_coord, 2, GL_FLOAT, GL_FALSE, 0,
+            coords->vertex);
+      if (prg->tex_coord >= 0 && coords->tex_coord)
+      {
+         glEnableVertexAttribArray(prg->tex_coord);
+         glVertexAttribPointer(prg->tex_coord, 2, GL_FLOAT, GL_FALSE, 0,
+               coords->tex_coord);
+      }
+   }
+   else
+      vertices = 0;
+   if (vertices)
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, vertices);
+   glDisableVertexAttribArray(prg->vertex_coord);
+   if (prg->tex_coord >= 0)
+      glDisableVertexAttribArray(prg->tex_coord);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+}
+
+static void *gfx_display_gl2_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   gl2_t *gl = (gl2_t*)data;
+   struct gl2_effect *fx;
+   if (!gl || !desc || gl->effect_count >= ARRAY_SIZE(gl->effects))
+      return NULL;
+   fx = &gl->effects[gl->effect_count];
+   if (!gl_glsl_effect_compile(&fx->glsl, desc))
+      return NULL;
+   fx->flags = desc->flags;
+   gl->effect_count++;
+   return fx;
+}
+
+static void gl2_free_effects(gl2_t *gl)
+{
+   unsigned i;
+   for (i = 0; i < gl->effect_count; i++)
+      glDeleteProgram(gl->effects[i].glsl.prog);
+   gl->effect_count = 0;
+}
+#endif
 
 static bool gfx_display_gl2_mesh_draw(void *data, unsigned video_dims,
       const gfx_display_mesh_t *mesh, const float *mvp,
@@ -3687,7 +3728,6 @@ static const shader_backend_t *gl_shader_driver_set_backend(
 static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
 {
    void            *tmp = NULL;
-   settings_t *settings = config_get_ptr();
 
    if (!init->shader || !init->shader->init)
    {
@@ -3701,13 +3741,6 @@ static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
 
    if (!tmp)
       return false;
-
-   if (string_is_equal(settings->arrays.menu_driver, "xmb")
-         && init->shader->init_menu_shaders)
-   {
-      RARCH_LOG("[GL] Setting up menu pipeline shaders for XMB...\n");
-      init->shader->init_menu_shaders(tmp);
-   }
 
    init->shader_data = tmp;
 
@@ -8155,6 +8188,9 @@ static void gl2_free(void *data)
 #endif
 #ifdef HAVE_GLSL
    gl2_free_meshes(gl);
+#ifdef HAVE_SHADERPIPELINE
+   gl2_free_effects(gl);
+#endif
 #endif
 
 #if defined(HAVE_PSGL)
@@ -10794,8 +10830,13 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
 #ifdef HAVE_GL_MENU_BLOOM
    gfx_display_gl2_bloom_begin,
    gfx_display_gl2_bloom_end,
-   gfx_display_gl2_bloom_composite
+   gfx_display_gl2_bloom_composite,
 #else
-   NULL, NULL
+   NULL, NULL, NULL,
+#endif
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+   gfx_display_gl2_effect_install
+#else
+   NULL
 #endif
 };

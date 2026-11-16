@@ -59,12 +59,6 @@
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
 #define VIDEO_SHADER_STOCK_BLEND          (GFX_MAX_SHADERS - 1)
-#define VIDEO_SHADER_MENU                 (GFX_MAX_SHADERS - 2)
-#define VIDEO_SHADER_MENU_2               (GFX_MAX_SHADERS - 3)
-#define VIDEO_SHADER_MENU_3               (GFX_MAX_SHADERS - 4)
-#define VIDEO_SHADER_MENU_4               (GFX_MAX_SHADERS - 5)
-#define VIDEO_SHADER_MENU_5               (GFX_MAX_SHADERS - 6)
-#define VIDEO_SHADER_MENU_6               (GFX_MAX_SHADERS - 7)
 #define VIDEO_SHADER_STOCK_HDR            (GFX_MAX_SHADERS - 8)
 #define VIDEO_SHADER_STOCK_NOBLEND_HDR    (GFX_MAX_SHADERS - 9)
 #define VIDEO_SHADER_STOCK_NOBLEND        (GFX_MAX_SHADERS - 10)
@@ -319,7 +313,6 @@ struct uniform_info
 typedef struct shader_backend
 {
    void *(*init)(void *data, const char *path);
-   void (*init_menu_shaders)(void *data);
    void (*deinit)(void *data);
 
    /* Set shader parameters. */

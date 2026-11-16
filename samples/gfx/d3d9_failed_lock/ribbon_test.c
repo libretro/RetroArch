@@ -6,8 +6,9 @@
 #define SUCCEEDED(hr) ((hr) >= 0)
 #define FAILED(hr) ((hr) < 0)
 #define TRUE true
-#define VIDEO_SHADER_MENU 1
-#define VIDEO_SHADER_MENU_2 2
+/* The drivers' mesh case is "case 1:"; the ribbon falls into it */
+#define TEST_RIBBON_SIMPLE 1
+#define TEST_RIBBON 2
 #define D3DUSAGE_WRITEONLY 0
 #define D3DPOOL_DEFAULT 0
 #define D3DCOLOR_ARGB(a,r,g,b) 0xFFFFFFFFu
@@ -18,7 +19,7 @@ typedef struct buffer { Vertex *data; unsigned count; } *LPDIRECT3DVERTEXBUFFER9
 struct video_coords { const float *vertex; unsigned vertices; };
 typedef struct { uint32_t id; unsigned vertex_count; } gfx_display_mesh_t;
 typedef struct { const gfx_display_mesh_t *effect_mesh; } gfx_display_t;
-typedef struct { struct video_coords *coords; unsigned pipeline_id; } gfx_display_ctx_draw_t;
+typedef struct { struct video_coords *coords; unsigned which; } gfx_display_ctx_draw_t;
 typedef struct { void *dev; } d3d9_video_t;
 
 static unsigned creates, releases, locks, unlocks;
@@ -86,9 +87,9 @@ static void pipeline(gfx_display_ctx_draw_t *draw, gfx_display_t *p_disp,
 {
    (void)p_disp;
    draw->coords = ca;
-   switch (draw->pipeline_id)
+   switch (draw->which)
    {
-      case VIDEO_SHADER_MENU:
+      case TEST_RIBBON:
 #include "ribbon.inc"
    }
 }
@@ -117,16 +118,18 @@ int main(void)
    for (i = 0; i < 8352 * 2; i++)
       positions[i] = (float)i;
    coords.vertex = positions;
-   coords.vertices = mesh.vertex_count = 8064;
-   draw.pipeline_id = VIDEO_SHADER_MENU_2;
+   coords.vertices = 8064;
+   mesh.vertex_count = coords.vertices;
+   draw.which = TEST_RIBBON_SIMPLE;
    pipeline(&draw, &display, &driver, &coords);
    check_buffer(&coords);
    pipeline(&draw, &display, &driver, &coords);
    assert(creates == 1 && locks == 1);
 
    mesh.id++;
-   coords.vertices = mesh.vertex_count = 8352;
-   draw.pipeline_id = VIDEO_SHADER_MENU;
+   coords.vertices = 8352;
+   mesh.vertex_count = coords.vertices;
+   draw.which = TEST_RIBBON;
    pipeline(&draw, &display, &driver, &coords);
    check_buffer(&coords);
    assert(creates == 2 && locks == 2 && releases == 1);
@@ -138,8 +141,9 @@ int main(void)
    assert(creates == 3 && locks == 3 && releases == 2);
 
    mesh.id++;
-   coords.vertices = mesh.vertex_count = 8064;
-   draw.pipeline_id = VIDEO_SHADER_MENU_2;
+   coords.vertices = 8064;
+   mesh.vertex_count = coords.vertices;
+   draw.which = TEST_RIBBON_SIMPLE;
    pipeline(&draw, &display, &driver, &coords);
    check_buffer(&coords);
 

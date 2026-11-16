@@ -3304,6 +3304,7 @@ static void ozone_draw_icon(
    draw.matrix_data     = mymat;
    draw.texture         = texture;
    draw.pipeline_id     = 0;
+   draw.effect          = NULL;
 
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
    {

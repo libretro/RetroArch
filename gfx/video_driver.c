@@ -3861,6 +3861,8 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
+   /* The effect programs went with it */
+   gfx_display_effects_lost();
    /* No driver follows to take what this one left up */
    if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
       VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();

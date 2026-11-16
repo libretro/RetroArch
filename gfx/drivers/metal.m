@@ -263,6 +263,11 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped;
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst;
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
+/* A menu effect's pipelines, made from its desc: an object the context
+ * keeps until it goes, NULL when they cannot be had */
+- (void *)installEffect:(const gfx_display_effect_desc_t *)desc;
+/* An installed effect's pipeline for the target bound now */
+- (id<MTLRenderPipelineState>)effectState:(void *)effect blend:(bool)blend;
 /* The overlay pipeline for an RGBA16Float (linear scRGB) texture while
  * HDR is on; nil otherwise. Takes the menu nits and the composite's
  * ExpandGamut as a float4 at fragment buffer 0. */
@@ -1680,6 +1685,32 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 @property (nonatomic, readwrite, strong) id<MTLBuffer> staging;
 @end
 
+/* An installed menu effect: [0] unblended, [1] blended, each for the
+ * BGRA8 targets and for the RGBA16Float HDR overlay and glow */
+@interface MetalEffect : NSObject
+{
+@public
+   id<MTLRenderPipelineState> _states[2];
+   id<MTLRenderPipelineState> _statesF16[2];
+   unsigned _flags;
+}
+@end
+
+@implementation MetalEffect
+#if !__has_feature(objc_arc)
+- (void)dealloc
+{
+   int i;
+   for (i = 0; i < 2; i++)
+   {
+      [(id)_states[i] release];
+      [(id)_statesF16[i] release];
+   }
+   [super dealloc];
+}
+#endif
+@end
+
 @interface Context()
 - (bool)_initConversionFilters;
 #if METAL_HDR_AVAILABLE
@@ -1690,6 +1721,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
 @implementation Context
 {
+   /* The installed menu effects, kept for as long as the context */
+   NSMutableArray *_effects;
    MTLRenderPassDescriptor *_renderPass;
    MTLRenderPassDescriptor *_bloomRestore;
    id<MTLTexture> _bloomTex[2];
@@ -1908,6 +1941,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    for (i = 0; i < CHAIN_LENGTH; i++)
       buffer_chain_destroy(&_chain[i]);
 #if !__has_feature(objc_arc)
+   [_effects release];
    {
    int j;
    for (i = 0; i < (int)(TEXTURE_FILTER_MIPMAP_NEAREST + 1); i++)
@@ -2164,20 +2198,11 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    {
       case VIDEO_SHADER_STOCK_BLEND:
       case VIDEO_SHADER_XMB_PLASTIC:
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
          break;
       default:
          index = VIDEO_SHADER_STOCK_BLEND;
          break;
    }
-
-   if (_bloomDims && index == VIDEO_SHADER_MENU)
-      return _statesF16[index][blend ? 1 : 0];
 
    if (index == VIDEO_SHADER_XMB_PLASTIC)
    {
@@ -2188,6 +2213,87 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    return _hdrEnabled && _statesF16[index][blend ? 1 : 0]
       ? _statesF16[index][blend ? 1 : 0]
       : _states[index][blend ? 1 : 0];
+}
+
+- (void *)installEffect:(const gfx_display_effect_desc_t *)desc
+{
+   NSError *err = nil;
+   unsigned i;
+   MetalEffect *fx;
+   MTLRenderPipelineDescriptor *psd;
+   MTLRenderPipelineColorAttachmentDescriptor *ca;
+   bool mesh;
+   if (!desc || !desc->metal_vertex || !desc->metal_fragment || !_library)
+      return NULL;
+   mesh = (desc->flags & GFX_EFFECT_MESH) != 0;
+   psd  = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
+   ca   = psd.colorAttachments[0];
+   /* As the stock pipelines: BGRA8Unorm, the SDR overlay or the drawable */
+   ca.pixelFormat                 = MTLPixelFormatBGRA8Unorm;
+   ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
+   ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
+   ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
+   ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+   psd.sampleCount                = 1;
+   psd.vertexDescriptor           = [self _spriteVertexDescriptor];
+   psd.label                      = [NSString stringWithUTF8String:desc->metal_fragment];
+   psd.vertexFunction             = RARCH_AUTORELEASE_R([_library
+         newFunctionWithName:[NSString stringWithUTF8String:desc->metal_vertex]]);
+   if (desc->metal_constant_count)
+   {
+      MTLFunctionConstantValues *vals = RARCH_AUTORELEASE_R([MTLFunctionConstantValues new]);
+      for (i = 0; i < desc->metal_constant_count; i++)
+         [vals setConstantValue:&desc->metal_constants[i] type:MTLDataTypeFloat
+            withName:[NSString stringWithUTF8String:desc->metal_constant_names[i]]];
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_library
+            newFunctionWithName:[NSString stringWithUTF8String:desc->metal_fragment]
+            constantValues:vals error:&err]);
+   }
+   else
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_library
+            newFunctionWithName:[NSString stringWithUTF8String:desc->metal_fragment]]);
+   if (!psd.vertexFunction || !psd.fragmentFunction || err != nil)
+      return NULL;
+
+   fx         = RARCH_AUTORELEASE_R([MetalEffect new]);
+   fx->_flags = desc->flags;
+   /* The mesh effects are drawn unblended too, and blended by adding;
+    * the others blended by their alpha only */
+   if (mesh)
+   {
+      ca.blendingEnabled      = NO;
+      fx->_states[0]          = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      fx->_statesF16[0]       = [self twinF16:psd];
+      ca.sourceRGBBlendFactor      = MTLBlendFactorOne;
+      ca.destinationRGBBlendFactor = MTLBlendFactorOne;
+   }
+   ca.blendingEnabled         = YES;
+   fx->_states[1]             = [self sdrState:psd error:&err];
+   fx->_statesF16[1]          = [self twinF16:psd];
+   if (err != nil || !fx->_states[1])
+   {
+      RARCH_ERR("[Metal] Error creating a menu effect's pipeline state %s.\n",
+            err ? err.localizedDescription.UTF8String : "");
+      return NULL;
+   }
+   if (!_effects)
+      _effects = [NSMutableArray new];
+   [_effects addObject:fx];
+   return (__bridge void *)fx;
+}
+
+- (id<MTLRenderPipelineState>)effectState:(void *)effect blend:(bool)blend
+{
+   MetalEffect *fx = (__bridge MetalEffect *)effect;
+   unsigned i      = blend ? 1 : 0;
+   if (!fx)
+      return nil;
+   if (!fx->_states[i])
+      i = 1;
+   /* The glow's small images are RGBA16Float */
+   if (_bloomDims)
+      return fx->_statesF16[i];
+   return _hdrEnabled && fx->_statesF16[i] ? fx->_statesF16[i] : fx->_states[i];
 }
 
 - (id<MTLRenderPipelineState>)linearShader
@@ -2345,122 +2451,6 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       _statesF16[VIDEO_SHADER_XMB_PLASTIC][1] = [self twinF16:psd];
    }
    err = nil;
-
-   MTLFunctionConstantValues *vals;
-
-   psd.label          = @"snow_simple";
-   ca.blendingEnabled = YES;
-   {
-      vals            = RARCH_AUTORELEASE_R([MTLFunctionConstantValues new]);
-      float values[3] = {
-         1.25f,   /* baseScale */
-         0.50f,   /* density   */
-         0.15f,   /* speed     */
-      };
-      [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
-      [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
-      [vals setConstantValue:&values[2] type:MTLDataTypeFloat withName:@"snowSpeed"];
-   }
-   psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err]);
-   _states[VIDEO_SHADER_MENU_3][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_3][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label          = @"snow";
-   ca.blendingEnabled = YES;
-   {
-      vals            = RARCH_AUTORELEASE_R([MTLFunctionConstantValues new]);
-      float values[3] = {
-         3.50f,   /* baseScale */
-         0.70f,   /* density   */
-         0.25f,   /* speed     */
-      };
-      [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
-      [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
-      [vals setConstantValue:&values[2] type:MTLDataTypeFloat withName:@"snowSpeed"];
-   }
-   psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err]);
-   _states[VIDEO_SHADER_MENU_4][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_4][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"bokeh";
-   ca.blendingEnabled              = YES;
-   psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bokeh_fragment"]);
-   _states[VIDEO_SHADER_MENU_5][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_5][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"snowflake";
-   ca.blendingEnabled              = YES;
-   psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snowflake_fragment"]);
-   _states[VIDEO_SHADER_MENU_6][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_6][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"ribbon";
-   ca.blendingEnabled              = NO;
-   psd.vertexFunction              = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_vertex"]);
-   psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_fragment"]);
-   _states[VIDEO_SHADER_MENU][0]   = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU][0] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"ribbon_blend";
-   ca.blendingEnabled              = YES;
-   ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
-   ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
-   _states[VIDEO_SHADER_MENU][1]   = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"ribbon_simple";
-   ca.blendingEnabled              = NO;
-   psd.vertexFunction              = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_simple_vertex"]);
-   psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_simple_fragment"]);
-   _states[VIDEO_SHADER_MENU_2][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_2][0] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"ribbon_simple_blend";
-   ca.blendingEnabled              = YES;
-   ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
-   ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
-   _states[VIDEO_SHADER_MENU_2][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_2][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
 
    return YES;
 }
@@ -4555,27 +4545,17 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    draw->backend_data      = &_uniforms;
    draw->backend_data_size = sizeof(_uniforms);
 
-   switch (draw->pipeline_id)
+   if (!draw->effect)
+      return;
+   if (((__bridge MetalEffect *)draw->effect)->_flags & GFX_EFFECT_MESH)
    {
-      /* ribbon */
-      default:
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      {
-         if (!(draw->coords = gfx_display_effect_coords(disp_get_ptr())))
-            return;
-         break;
-      }
-
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-      {
-         draw->coords          = &blank_coords;
-         blank_coords.vertices = 4;
-         break;
-      }
+      if (!(draw->coords = gfx_display_effect_coords(disp_get_ptr())))
+         return;
+   }
+   else
+   {
+      draw->coords          = &blank_coords;
+      blank_coords.vertices = 4;
    }
 
    _uniforms.time = disp_get_ptr()->effect_time;
@@ -4807,7 +4787,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;
    const float *color     = draw->coords->color ?: MenuDisplay.defaultColor;
    NSUInteger needed      = vertex_count * sizeof(SpriteVertex);
-   if (draw->pipeline_id == VIDEO_SHADER_MENU || draw->pipeline_id == VIDEO_SHADER_MENU_2)
+   if (     draw->effect
+         && (((__bridge MetalEffect *)draw->effect)->_flags & GFX_EFFECT_MESH))
    {
       const gfx_display_mesh_t *mesh = disp_get_ptr()->effect_mesh;
       if (!mesh)
@@ -4880,18 +4861,17 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    if (_useScissorRect && !_context.bloomDims)
       [rce setScissorRect:_scissorRect];
 
-   switch (draw->pipeline_id)
+   switch (draw->effect ? 1 : 0)
    {
 #if HAVE_SHADERPIPELINE
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         [rce setRenderPipelineState:[_context getStockShader:draw->pipeline_id blend:_blend]];
+      case 1:
+      {
+         id<MTLRenderPipelineState> state = [_context effectState:draw->effect blend:_blend];
+         if (!state)
+            return;
+         [rce setRenderPipelineState:state];
          [rce setVertexBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
-         if (draw->pipeline_id == VIDEO_SHADER_MENU)
+         if (((__bridge MetalEffect *)draw->effect)->_flags & GFX_EFFECT_RIBBON)
          {
             /* Lent straight from gfx_display; Metal takes its copy here */
             const float *ribbon = gfx_display_ribbon_data(disp_get_ptr());
@@ -4904,6 +4884,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
          /* Menu draws use a triangle-strip layout. */
          [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:vertex_count];
          return;
+      }
 #endif
       default:
          break;
@@ -5210,6 +5191,13 @@ static void gfx_display_metal_draw_pipeline(
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md && draw)
       [md.display drawPipeline:draw];
+}
+
+static void *gfx_display_metal_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return md ? [md.context installEffect:desc] : NULL;
 }
 
 static void gfx_display_metal_scissor_begin(void *data, unsigned video_dims,
@@ -11024,5 +11012,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    gfx_display_metal_mesh_draw,
    gfx_display_metal_bloom_begin,
    gfx_display_metal_bloom_end,
-   gfx_display_metal_bloom_composite
+   gfx_display_metal_bloom_composite,
+   gfx_display_metal_effect_install
 };

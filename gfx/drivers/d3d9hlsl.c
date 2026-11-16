@@ -691,13 +691,6 @@ typedef struct hlsl_renderchain
    hlsl_pass_data_t pass_data[GFX_MAX_SHADERS + 1];
    unsigned pass_data_count;
    hlsl_pass_data_t stock_data;
-   /* XMB pipeline shaders */
-   struct shader_pass pipeline_shaders[6]; /* MENU..MENU_6 */
-   hlsl_pass_data_t  pipeline_data[6];
-   /* Which menu effects' programs are compiled, and which have been
-    * tried; one bit each, MENU at bit 0 */
-   uint8_t           pipeline_ready;
-   uint8_t           pipeline_tried;
    /* A view's chain: its view, the viewport its passes are sized for,
     * that viewport's size packed, its last pass's input size, and
     * whether it ran this frame */
@@ -711,15 +704,32 @@ typedef struct hlsl_renderchain
    bool              hw;
 } hlsl_renderchain_t;
 
-static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev, unsigned idx);
+/* The menu effects, compiled when installed, kept with the driver
+ * rather than the chain, which presets remake: with the registers of
+ * what they read, -1 for what they do not */
+struct d3d9_hlsl_effect
+{
+   struct shader_pass shader;
+   hlsl_pass_data_t data;
+   int vs_mvp;
+   int vs_ribbon;
+   int vs_time;
+   int ps_time;
+   int vs_output_size;
+   int ps_output_size;
+   int vs_alpha;
+   int ps_alpha;
+   unsigned flags;
+};
+static struct d3d9_hlsl_effect d3d9_hlsl_effects[16];
+static unsigned d3d9_hlsl_effect_count;
 static bool d3d9_hlsl_load_program_ex(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
       const char *prog,
       hlsl_pass_data_t *pd);
 
-/* Pipeline vertex buffer for menu shader effects (VIDEO_SHADER_MENU, etc.).
+/* Vertex buffer for the menu's mesh effects.
  * Stored as a file-static since the d3d9 menu_display struct
  * does not have a pipeline_vbo member like d3d10_video_t does. */
 static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_pipeline_vbo = NULL;
@@ -841,38 +851,28 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
 
    dev                           = d3d->dev;
 
-   switch (draw->pipeline_id)
+   switch (draw->effect ? 1 : 0)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      case 1:
       {
          hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+         const struct d3d9_hlsl_effect *fx =
+            (const struct d3d9_hlsl_effect*)draw->effect;
 
          if (!draw->coords || draw->coords->vertices < 3)
             return;
 
-         /* Compiled by the pipeline call before this, or not at all */
-         if (_chain && (_chain->pipeline_ready
-                  & (1u << (VIDEO_SHADER_MENU - draw->pipeline_id))))
          {
-            unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
-            struct shader_pass *shader = &_chain->pipeline_shaders[idx];
-
             IDirect3DDevice9_SetVertexShader(dev,
-                  (LPDIRECT3DVERTEXSHADER9)shader->vprg);
+                  (LPDIRECT3DVERTEXSHADER9)fx->shader.vprg);
             IDirect3DDevice9_SetPixelShader(dev,
-                  (LPDIRECT3DPIXELSHADER9)shader->fprg);
+                  (LPDIRECT3DPIXELSHADER9)fx->shader.fprg);
             IDirect3DDevice9_SetVertexDeclaration(dev,
                   (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
 
-            /* Snow/bokeh/snowflake need MVP matrix set */
-            if (draw->pipeline_id <= VIDEO_SHADER_MENU_3)
+            /* The quad effects take the MVP */
+            if (fx->vs_mvp >= 0 && !(fx->flags & GFX_EFFECT_MESH))
             {
-               hlsl_pass_data_t *pd = &_chain->pipeline_data[idx];
                /* Row-major ortho for mul(matrix, vector) in shader.
                 * D3D9 SetVertexShaderConstantF stores rows sequentially.
                 * mul(M, v) computes dot(row[i], v) — correct with row-major.
@@ -883,25 +883,9 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
                    0.0f,  0.0f, 1.0f, 0.0f,
                   -1.0f, -1.0f, 0.0f, 1.0f
                };
-               {
-                  int reg = d3d9_hlsl_ctab_find_register(
-                        pd->vs_bytecode, pd->vs_bytecode_dwords,
-                        "modelViewProj", NULL, NULL);
-                  if (reg >= 0)
-                     d3d9_hlsl_set_vs_const(dev, reg, ortho_mvp, 4);
-               }
+               d3d9_hlsl_set_vs_const(dev, fx->vs_mvp, ortho_mvp, 4);
             }
 
-            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
-                  0, draw->coords->vertices - 2);
-         }
-         else if (_chain)
-         {
-            /* Fallback to stock shader */
-            IDirect3DDevice9_SetVertexShader(dev,
-                  (LPDIRECT3DVERTEXSHADER9)(&_chain->stock_shader)->vprg);
-            IDirect3DDevice9_SetPixelShader(dev,
-                  (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
             IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                   0, draw->coords->vertices - 2);
          }
@@ -1190,6 +1174,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    float t;
    struct video_coords *ca               = NULL;
    d3d9_video_t *d3d                     = (d3d9_video_t*)data;
+   const struct d3d9_hlsl_effect *fx;
 
    if (!d3d || !draw)
       return;
@@ -1207,10 +1192,15 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    if (ca)
       draw->coords                       = ca;
 
-   switch (draw->pipeline_id)
+   if (!(fx = (const struct d3d9_hlsl_effect*)draw->effect))
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
+      draw->coords = NULL;
+      return;
+   }
+
+   switch ((fx->flags & GFX_EFFECT_MESH) ? 1 : 0)
+   {
+      case 1:
       {
          uint32_t mesh_id = p_disp->effect_mesh->id;
 
@@ -1270,7 +1260,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
                d3d9_hlsl_menu_pipeline_vbo, 0, sizeof(Vertex));
 
          IDirect3DDevice9_SetRenderState(d3d->dev,
-               D3DRS_SRCBLEND, draw->pipeline_id == VIDEO_SHADER_MENU
+               D3DRS_SRCBLEND, (fx->flags & GFX_EFFECT_BLEND_ADD)
                   ? D3DBLEND_ONE : D3DBLEND_DESTCOLOR);
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_DESTBLEND, D3DBLEND_ONE);
@@ -1279,10 +1269,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
          break;
       }
 
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      default:
       {
          static struct video_coords blank_coords = {0};
 
@@ -1342,85 +1329,48 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
                D3DRS_ALPHABLENDENABLE, true);
          break;
       }
-
-      default:
-         return;
    }
 
    t = p_disp->effect_time;
 
    {
-      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
-      if (_chain
-            && draw->pipeline_id <= VIDEO_SHADER_MENU
-            && draw->pipeline_id >= VIDEO_SHADER_MENU_6
-            && hlsl_d3d9_pipeline_ready(_chain, d3d->dev,
-               VIDEO_SHADER_MENU - draw->pipeline_id))
+      float v4[4];
+      v4[1] = v4[2] = v4[3] = 0.0f;
+      if (fx->vs_ribbon >= 0 && (fx->flags & GFX_EFFECT_RIBBON))
       {
-         unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
-         hlsl_pass_data_t *pd = &_chain->pipeline_data[idx];
-
-         if (draw->pipeline_id == VIDEO_SHADER_MENU)
-         {
-            int reg = d3d9_hlsl_ctab_find_register(pd->vs_bytecode,
-                  pd->vs_bytecode_dwords, "Ribbon", NULL, NULL);
-            if (reg >= 0)
-               d3d9_hlsl_set_vs_const(d3d->dev, reg,
-                     gfx_display_ribbon_data(p_disp), 50);
-         }
-
-         /* Set time uniform for all pipeline shaders */
-         d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords,
-               true, d3d->dev, "time", &t);
-         d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords,
-               false, d3d->dev, "time", &t);
-
-         /* Set OutputSize for snow/bokeh/snowflake shaders */
-         if (draw->pipeline_id <= VIDEO_SHADER_MENU_3)
-         {
-            D3DVIEWPORT9 vp;
-            IDirect3DDevice9_GetViewport(d3d->dev, &vp);
-            {
-               float output_size[4];
-               int reg;
-               output_size[0] = (float)vp.Width;
-               output_size[1] = (float)vp.Height;
-               output_size[2] = 0.0f;
-               output_size[3] = 0.0f;
-               /* Set OutputSize as a full register (float2 occupies one register) */
-               reg = d3d9_hlsl_ctab_find_register(
-                     pd->vs_bytecode, pd->vs_bytecode_dwords,
-                     "OutputSize", NULL, NULL);
-               if (reg >= 0)
-                  d3d9_hlsl_set_vs_const(d3d->dev, reg, output_size, 1);
-               reg = d3d9_hlsl_ctab_find_register(
-                     pd->ps_bytecode, pd->ps_bytecode_dwords,
-                     "OutputSize", NULL, NULL);
-               if (reg >= 0)
-                  d3d9_hlsl_set_ps_const(d3d->dev, reg, output_size, 1);
-            }
-         }
-
-         /* Set alpha for ribbon shaders */
-         if (draw->pipeline_id >= VIDEO_SHADER_MENU_2)
-         {
-            float alpha_val = draw->color ? draw->color[3] : 1.0f;
-            d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords,
-                  true, d3d->dev, "alpha", &alpha_val);
-            d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords,
-                  false, d3d->dev, "alpha", &alpha_val);
-         }
+         const float *ribbon = gfx_display_ribbon_data(p_disp);
+         if (ribbon)
+            d3d9_hlsl_set_vs_const(d3d->dev, fx->vs_ribbon, ribbon, 50);
       }
-      else if (_chain)
+
+      /* Time, for every effect */
+      v4[0] = t;
+      if (fx->vs_time >= 0)
+         d3d9_hlsl_set_vs_const(d3d->dev, fx->vs_time, v4, 1);
+      if (fx->ps_time >= 0)
+         d3d9_hlsl_set_ps_const(d3d->dev, fx->ps_time, v4, 1);
+
+      /* OutputSize, for the quad effects */
+      if (!(fx->flags & GFX_EFFECT_MESH))
       {
-         d3d9_hlsl_set_param_1f(
-               _chain->stock_data.vs_bytecode,
-               _chain->stock_data.vs_bytecode_dwords, true,
-               d3d->dev, "IN.frame_count", &t);
-         d3d9_hlsl_set_param_1f(
-               _chain->stock_data.ps_bytecode,
-               _chain->stock_data.ps_bytecode_dwords, false,
-               d3d->dev, "IN.frame_count", &t);
+         D3DVIEWPORT9 vp;
+         IDirect3DDevice9_GetViewport(d3d->dev, &vp);
+         /* float2 occupies one full register */
+         v4[0] = (float)vp.Width;
+         v4[1] = (float)vp.Height;
+         if (fx->vs_output_size >= 0)
+            d3d9_hlsl_set_vs_const(d3d->dev, fx->vs_output_size, v4, 1);
+         if (fx->ps_output_size >= 0)
+            d3d9_hlsl_set_ps_const(d3d->dev, fx->ps_output_size, v4, 1);
+      }
+      else
+      {
+         /* The alpha, for the mesh effects */
+         v4[0] = draw->color ? draw->color[3] : 1.0f;
+         if (fx->vs_alpha >= 0)
+            d3d9_hlsl_set_vs_const(d3d->dev, fx->vs_alpha, v4, 1);
+         if (fx->ps_alpha >= 0)
+            d3d9_hlsl_set_ps_const(d3d->dev, fx->ps_alpha, v4, 1);
       }
    }
 }
@@ -2846,60 +2796,59 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
       chain->font_plastic_shader = NULL;
    }
 
-   /* The menu effects compiled so far */
-   {
-      unsigned i;
-      for (i = 0; i < 6; i++)
-      {
-         if (!(chain->pipeline_ready & (1u << i)))
-            continue;
-         d3d9_hlsl_release_programs(&chain->pipeline_shaders[i]);
-         hlsl_pass_data_free(&chain->pipeline_data[i]);
-      }
-      chain->pipeline_ready = 0;
-      chain->pipeline_tried = 0;
-   }
 }
 
-/* Menu effect @idx's program (0..5: ribbon, simple ribbon, simple snow,
- * snow, bokeh, snowflake), compiled the first time the effect is drawn
- * rather than all six when the chain is made: at most one is ever on
- * screen. False when it cannot be had, and the effect is not drawn; one
- * that will not compile is not tried again until the chain is remade. */
-static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev, unsigned idx)
+static int d3d9_hlsl_effect_register(const hlsl_pass_data_t *pd,
+      bool vertex, const char *name)
 {
-   const char *src;
-   uint8_t bit;
-   if (idx > 5)
-      return false;
-   bit = (uint8_t)(1u << idx);
-   if (chain->pipeline_ready & bit)
-      return true;
-   if (chain->pipeline_tried & bit)
-      return false;
-   chain->pipeline_tried |= bit;
-   switch (idx)
+   const DWORD *code = vertex ? pd->vs_bytecode : pd->ps_bytecode;
+   size_t dwords     = vertex ? pd->vs_bytecode_dwords : pd->ps_bytecode_dwords;
+   if (!code || !dwords)
+      return -1;
+   return d3d9_hlsl_ctab_find_register(code, dwords, name, NULL, NULL);
+}
+
+static void *gfx_display_d3d9_hlsl_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   struct d3d9_hlsl_effect *fx;
+   if (     !d3d || !d3d->dev || !desc || !desc->hlsl_sm3
+         || d3d9_hlsl_effect_count >= ARRAY_SIZE(d3d9_hlsl_effects))
+      return NULL;
+   fx = &d3d9_hlsl_effects[d3d9_hlsl_effect_count];
+   memset(fx, 0, sizeof(*fx));
+   hlsl_uniform_map_init(&fx->data.vs_map);
+   hlsl_uniform_map_init(&fx->data.ps_map);
+   if (!d3d9_hlsl_load_program_ex(d3d->dev, &fx->shader, desc->hlsl_sm3,
+            &fx->data))
    {
-      case 0:  src = hlsl_ribbon_program();        break;
-      case 1:  src = hlsl_ribbon_simple_program; break;
-      case 2:  src = hlsl_simple_snow_program;   break;
-      case 3:  src = hlsl_snow_program;          break;
-      case 4:  src = hlsl_bokeh_program;         break;
-      default: src = hlsl_snowflake_program;     break;
+      RARCH_WARN("[D3D9 HLSL] Could not compile a menu effect, it is not drawn.\n");
+      return NULL;
    }
-   hlsl_uniform_map_init(&chain->pipeline_data[idx].vs_map);
-   hlsl_uniform_map_init(&chain->pipeline_data[idx].ps_map);
-   chain->pipeline_data[idx].vs_bytecode = NULL;
-   chain->pipeline_data[idx].ps_bytecode = NULL;
-   if (!d3d9_hlsl_load_program_ex(dev, &chain->pipeline_shaders[idx], src,
-            &chain->pipeline_data[idx]))
+   fx->flags          = desc->flags;
+   /* Found once, rather than read out of the bytecode every frame */
+   fx->vs_mvp         = d3d9_hlsl_effect_register(&fx->data, true,  "modelViewProj");
+   fx->vs_ribbon      = d3d9_hlsl_effect_register(&fx->data, true,  "Ribbon");
+   fx->vs_time        = d3d9_hlsl_effect_register(&fx->data, true,  "time");
+   fx->ps_time        = d3d9_hlsl_effect_register(&fx->data, false, "time");
+   fx->vs_output_size = d3d9_hlsl_effect_register(&fx->data, true,  "OutputSize");
+   fx->ps_output_size = d3d9_hlsl_effect_register(&fx->data, false, "OutputSize");
+   fx->vs_alpha       = d3d9_hlsl_effect_register(&fx->data, true,  "alpha");
+   fx->ps_alpha       = d3d9_hlsl_effect_register(&fx->data, false, "alpha");
+   d3d9_hlsl_effect_count++;
+   return fx;
+}
+
+static void d3d9_hlsl_effects_free(void)
+{
+   unsigned i;
+   for (i = 0; i < d3d9_hlsl_effect_count; i++)
    {
-      RARCH_WARN("[D3D9 HLSL] Could not compile menu effect %u, it is not drawn.\n", idx);
-      return false;
+      d3d9_hlsl_release_programs(&d3d9_hlsl_effects[i].shader);
+      hlsl_pass_data_free(&d3d9_hlsl_effects[i].data);
    }
-   chain->pipeline_ready |= bit;
-   return true;
+   d3d9_hlsl_effect_count = 0;
 }
 
 static void hlsl_d3d9_renderchain_free(void *data)
@@ -3004,11 +2953,6 @@ static bool hlsl_d3d9_renderchain_init(
 
    IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
    IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
-
-   /* The menu effects' programs are compiled when first drawn; see
-    * hlsl_d3d9_pipeline_ready */
-   chain->pipeline_ready = 0;
-   chain->pipeline_tried = 0;
 
    return true;
 }
@@ -7591,6 +7535,7 @@ static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
       d3d9_hlsl_menu_pipeline_vbo = NULL;
    }
    d3d9_hlsl_menu_pipeline_mesh_id = 0;
+   d3d9_hlsl_effects_free();
 
    if (d3d9_hlsl_overlay_decl)
    {
@@ -10109,8 +10054,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    NULL,
 #ifdef D3D9_VIEWS
    d3d9_hlsl_bloom_begin,
-   d3d9_hlsl_bloom_end
+   d3d9_hlsl_bloom_end,
 #else
-   NULL, NULL
+   NULL, NULL,
 #endif
+   NULL,                                     /* bloom_composite */
+   gfx_display_d3d9_hlsl_effect_install
 };

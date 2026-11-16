@@ -40,16 +40,6 @@
 #include "../include/Cg/cgGL.h"
 #endif
 
-#ifdef HAVE_SHADERPIPELINE
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
-#include "../drivers/gl_shaders/pipeline_snow_simple.cg.h"
-#include "../drivers/gl_shaders/pipeline_snow_heavy.cg.h"
-#include "../drivers/gl_shaders/pipeline_snow.cg.h"
-#include "../drivers/gl_shaders/pipeline_bokeh.cg.h"
-#include "../drivers/gl_shaders/pipeline_snowflake.cg.h"
-#endif
-
 #include "../include/Cg/cg.h"
 
 #include "../video_shader_parse.h"
@@ -996,67 +986,6 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    }
 }
 
-static void gl_cg_init_menu_shaders(void *data)
-{
-   struct shader_program_info shader_prog_info;
-   cg_shader_data_t *cg = (cg_shader_data_t*)data;
-
-   if (!cg)
-      return;
-
-#ifdef HAVE_SHADERPIPELINE
-   shader_prog_info.is_file  = false;
-
-   shader_prog_info.combined = stock_xmb_ribbon();
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU,
-         &cg->prg[VIDEO_SHADER_MENU],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU);
-
-   shader_prog_info.combined = stock_xmb_ribbon_simple;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_2,
-         &cg->prg[VIDEO_SHADER_MENU_2],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_2);
-
-   shader_prog_info.combined = stock_xmb_simple_snow;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_3,
-         &cg->prg[VIDEO_SHADER_MENU_3],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_3);
-
-   shader_prog_info.combined = stock_xmb_snow_heavy;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_4,
-         &cg->prg[VIDEO_SHADER_MENU_4],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_4);
-
-   shader_prog_info.combined = stock_xmb_bokeh;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_5,
-         &cg->prg[VIDEO_SHADER_MENU_5],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_5);
-
-   shader_prog_info.combined = stock_xmb_snowflake;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_6,
-         &cg->prg[VIDEO_SHADER_MENU_6],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_6);
-#endif
-}
-
 static void *gl_cg_init(void *data, const char *path)
 {
    unsigned i;
@@ -1292,7 +1221,6 @@ static void gl_cg_get_flags(uint32_t *flags)
 
 const shader_backend_t gl_cg_backend = {
    gl_cg_init,
-   gl_cg_init_menu_shaders,
    gl_cg_deinit,
    gl_cg_set_params,
    gl_cg_set_uniform_parameter,

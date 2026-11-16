@@ -924,7 +924,6 @@ typedef struct
       D3D12PipelineState pipes[3][2];
       /* Added onto a small image */
       D3D12PipelineState add;
-      D3D12PipelineState ribbon;
       menu_bloom_pass_t plan[MENU_BLOOM_PASSES];
       unsigned passes;
       D3D12Resource cb;
@@ -935,14 +934,24 @@ typedef struct
       unsigned slot;
       unsigned next;
       bool active;
-      bool ribbon_tried;
       bool failed;
    } bloom;
-   /* The pipeline state the menu effects are made from when first
-    * drawn, and which of them have been tried, one bit each */
+   /* The pipeline state the menu effects are made from, and the
+    * effects: their bytecode, compiled once when installed, and their
+    * pipes, for the target format and for the glow's RGBA16F */
    D3D12_GRAPHICS_PIPELINE_STATE_DESC effect_desc;
    bool                            effect_desc_valid;
-   unsigned                        effects_tried;
+   struct d3d12_effect
+   {
+      D3DBlob vs;
+      D3DBlob ps;
+      D3D12PipelineState pipe;
+      D3D12PipelineState glow;
+      unsigned flags;
+      bool tried;
+      bool glow_tried;
+   }                               effects[16];
+   unsigned                        effect_count;
    /* The target format the effect pipes in pipes[] were made for; they
     * are made again for another (the HDR UI layer is FP16) */
    DXGI_FORMAT                     effect_rt_format;
@@ -2239,14 +2248,26 @@ static void d3d12_init_pipeline(
       D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
       D3D12PipelineState*                 out);
 
-/* A menu effect's pipeline, made the first time the effect is drawn
- * rather than all six at start: at most one is ever on screen, and the
- * effects are no longer XMB's alone. False when it cannot be had, and
- * the effect is not drawn; one that will not compile is not tried again
- * until the driver is. */
-static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
+/* The pipes made for one target format go when another is drawn into */
+static void d3d12_effects_release_pipes(d3d12_video_t *d3d12)
 {
-   static const D3D12_INPUT_ELEMENT_DESC ribbon_desc[] = {
+   unsigned i;
+   for (i = 0; i < d3d12->effect_count; i++)
+   {
+      Release(d3d12->effects[i].pipe);
+      d3d12->effects[i].pipe  = NULL;
+      d3d12->effects[i].tried = false;
+   }
+}
+
+/* An effect's pipe for the target bound now, made from its bytecode
+ * when it has none for it; NULL when it cannot be had, and the effect
+ * is not drawn. One that will not build is not tried again until the
+ * target or the driver changes. */
+static D3D12PipelineState d3d12_effect_pipe(d3d12_video_t *d3d12,
+      struct d3d12_effect *fx)
+{
+   static const D3D12_INPUT_ELEMENT_DESC mesh_desc[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
    };
@@ -2256,125 +2277,94 @@ static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
       { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
    };
-   static char ribbon[4096];
-   static const char ribbon_simple[] =
-#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-      ;
-   static const char simple_snow[] =
-#include "d3d_shaders/simple_snow_sm4.hlsl.h"
-      ;
-   static const char snow[] =
-#include "d3d_shaders/snow_sm4.hlsl.h"
-      ;
-   static const char bokeh[] =
-#include "d3d_shaders/bokeh_sm4.hlsl.h"
-      ;
-   static const char snowflake[] =
-#include "d3d_shaders/snowflake_sm4.hlsl.h"
-      ;
    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
-   D3DBlob vs_code  = NULL;
-   D3DBlob ps_code  = NULL;
-   const char *src  = NULL;
-   size_t size      = 0;
-   bool ribbons     = false;
-   unsigned bit;
-   D3D12PipelineState *out = d3d12->bloom.active
-      ? &d3d12->bloom.ribbon : &d3d12->pipes[pipeline_id];
-
-   switch (pipeline_id)
-   {
-      case VIDEO_SHADER_MENU:
-         src =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-         size = strlen(src);        bit = 1 << 0; ribbons = true;
-         break;
-      case VIDEO_SHADER_MENU_2:
-         src = ribbon_simple; size = sizeof(ribbon_simple); bit = 1 << 1; ribbons = true;
-         break;
-      case VIDEO_SHADER_MENU_3:
-         src = simple_snow;   size = sizeof(simple_snow);   bit = 1 << 2;
-         break;
-      case VIDEO_SHADER_MENU_4:
-         src = snow;          size = sizeof(snow);          bit = 1 << 3;
-         break;
-      case VIDEO_SHADER_MENU_5:
-         src = bokeh;         size = sizeof(bokeh);         bit = 1 << 4;
-         break;
-      case VIDEO_SHADER_MENU_6:
-         src = snowflake;     size = sizeof(snowflake);     bit = 1 << 5;
-         break;
-      default:
-         return false;
-   }
+   bool glow                = d3d12->bloom.active;
+   D3D12PipelineState *out  = glow ? &fx->glow : &fx->pipe;
+   bool *tried              = glow ? &fx->glow_tried : &fx->tried;
 #ifdef HAVE_DXGI_HDR
    /* An effect is drawn into the target bound now - under HDR the FP16
     * UI layer, not the swapchain the descriptor was made for - and a
     * pipe must be made for its target's format: those made for another
-    * go, and are made again as they are drawn. */
+    * go, and are made again from the bytecode as they are drawn. */
    if (     d3d12->chain.current_rt_format != DXGI_FORMAT_UNKNOWN
          && d3d12->chain.current_rt_format != d3d12->effect_rt_format)
    {
-      unsigned i;
-      /* The six effect ids run downwards, MENU_6 lowest */
-      for (i = VIDEO_SHADER_MENU_6; i <= VIDEO_SHADER_MENU; i++)
-      {
-         Release(d3d12->pipes[i]);
-         d3d12->pipes[i] = NULL;
-      }
-      d3d12->effects_tried    = 0;
+      d3d12_effects_release_pipes(d3d12);
       d3d12->effect_rt_format = d3d12->chain.current_rt_format;
    }
 #endif
    if (*out)
-      return true;
-   if ((d3d12->bloom.active ? d3d12->bloom.ribbon_tried
-            : (d3d12->effects_tried & bit) != 0)
-         || !d3d12->effect_desc_valid)
-      return false;
-   if (d3d12->bloom.active)
-      d3d12->bloom.ribbon_tried = true;
-   else
-      d3d12->effects_tried |= bit;
+      return *out;
+   if (*tried || !d3d12->effect_desc_valid)
+      return NULL;
+   *tried = true;
 
    desc                       = d3d12->effect_desc;
 #ifdef HAVE_DXGI_HDR
    if (d3d12->effect_rt_format != DXGI_FORMAT_UNKNOWN)
       desc.RTVFormats[0]      = d3d12->effect_rt_format;
 #endif
-   if (d3d12->bloom.active)
+   if (glow)
       desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
    desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-   if (ribbons)
+   if (fx->flags & (GFX_EFFECT_BLEND_ADD | GFX_EFFECT_BLEND_SCREEN))
    {
-      desc.BlendState.RenderTarget[0].SrcBlend  = pipeline_id == VIDEO_SHADER_MENU
+      desc.BlendState.RenderTarget[0].SrcBlend  =
+         (fx->flags & GFX_EFFECT_BLEND_ADD)
          ? D3D12_BLEND_ONE : D3D12_BLEND_DEST_COLOR;
       desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
-      desc.InputLayout.pInputElementDescs       = ribbon_desc;
-      desc.InputLayout.NumElements              = countof(ribbon_desc);
    }
    else
    {
-      /* Standard alpha blending for snow, bokeh and snowflake: the
-       * simple ribbon's multiplicative blend would make white snowflakes
-       * vanish against coloured backgrounds */
+      /* Standard alpha blending: the simple ribbon's multiplicative
+       * blend would make white snowflakes vanish against coloured
+       * backgrounds */
       desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
       desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
-      desc.InputLayout.pInputElementDescs            = quad_desc;
-      desc.InputLayout.NumElements                   = countof(quad_desc);
    }
-   if (     d3d_compile(src, size, NULL, "VSMain", "vs_5_0", &vs_code)
-         && d3d_compile(src, size, NULL, "PSMain", "ps_5_0", &ps_code))
-      d3d12_init_pipeline(d3d12->device, vs_code, ps_code, NULL, &desc,
-            out);
-   Release(vs_code);
-   Release(ps_code);
-   return *out != NULL;
+   if (fx->flags & GFX_EFFECT_MESH)
+   {
+      desc.InputLayout.pInputElementDescs = mesh_desc;
+      desc.InputLayout.NumElements        = countof(mesh_desc);
+   }
+   else
+   {
+      desc.InputLayout.pInputElementDescs = quad_desc;
+      desc.InputLayout.NumElements        = countof(quad_desc);
+   }
+   d3d12_init_pipeline(d3d12->device, fx->vs, fx->ps, NULL, &desc, out);
+   return *out;
+}
+
+static void *gfx_display_d3d12_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   struct d3d12_effect *fx;
+   size_t size;
+   if (     !d3d12 || !desc || !desc->hlsl_sm4
+         || d3d12->effect_count >= countof(d3d12->effects))
+      return NULL;
+   fx   = &d3d12->effects[d3d12->effect_count];
+   memset(fx, 0, sizeof(*fx));
+   size = strlen(desc->hlsl_sm4);
+   if (     !d3d_compile(desc->hlsl_sm4, size, NULL, "VSMain", "vs_5_0", &fx->vs)
+         || !d3d_compile(desc->hlsl_sm4, size, NULL, "PSMain", "ps_5_0", &fx->ps))
+   {
+      Release(fx->vs);
+      Release(fx->ps);
+      return NULL;
+   }
+   fx->flags = desc->flags;
+   d3d12->effect_count++;
+   /* Its pipe for the target now, rather than when first drawn */
+   if (!d3d12->bloom.active)
+      d3d12_effect_pipe(d3d12, fx);
+   return fx;
 }
 
 static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
@@ -2393,17 +2383,13 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 
    cmd                  = d3d12->queue.cmd;
 
-   switch (draw->pipeline_id)
+   switch (draw->effect ? 1 : 0)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      case 1:
          /* Made by the pipeline call before this, or not at all */
-         effect = d3d12->bloom.active ? d3d12->bloom.ribbon
-            : d3d12->pipes[draw->pipeline_id];
+         effect = d3d12->bloom.active
+            ? ((struct d3d12_effect*)draw->effect)->glow
+            : ((struct d3d12_effect*)draw->effect)->pipe;
          if (!effect)
             return;
          cmd->lpVtbl->SetPipelineState(cmd, effect);
@@ -2770,44 +2756,36 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
 {
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   struct d3d12_effect *fx;
 
-   if (!d3d12 || !draw)
+   if (!d3d12 || !draw || !(fx = (struct d3d12_effect*)draw->effect))
       return;
 
    /* Before anything is bound for it */
-   if (!d3d12_effect_pipe(d3d12, draw->pipeline_id))
+   if (!d3d12_effect_pipe(d3d12, fx))
       return;
    cmd                  = d3d12->queue.cmd;
 
-   switch (draw->pipeline_id)
+   if (fx->flags & GFX_EFFECT_MESH)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-         if (p_disp->effect_mesh)
-         {
-            /* From the ribbon mesh's own buffer, its position only */
-            const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
-            int slot = d3d12_mesh_slot(d3d12, mesh);
-            if (slot < 0)
-               return;
-            d3d12->meshes[slot].last_draw = ++d3d12->mesh_draws;
-            cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1,
-                  &d3d12->meshes[slot].view);
-            draw->coords->vertices = p_disp->effect_vertices;
-            break;
-         }
-         /* Nothing to draw it from */
+      /* From the mesh's own buffer, its position only */
+      const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+      int slot;
+      /* Nothing to draw it from */
+      if (!mesh || (slot = d3d12_mesh_slot(d3d12, mesh)) < 0)
+      {
+         draw->coords->vertices = 0;
          return;
-
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
-         draw->coords->vertices = 4;
-         break;
-      default:
-         return;
+      }
+      d3d12->meshes[slot].last_draw = ++d3d12->mesh_draws;
+      cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1,
+            &d3d12->meshes[slot].view);
+      draw->coords->vertices = p_disp->effect_vertices;
+   }
+   else
+   {
+      cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
+      draw->coords->vertices = 4;
    }
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
@@ -2822,7 +2800,7 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    d3d12->ubo_stale   = (1u << D3D12_FRAMES) - 1u;
    if (d3d12_cb_write_slot2(d3d12->ubo, &d3d12->ubo_view, d3d12->queue.slot,
             &d3d12->ubo_values, D3D12_UBO_HEAD,
-            draw->pipeline_id == VIDEO_SHADER_MENU
+            (fx->flags & GFX_EFFECT_RIBBON)
                ? gfx_display_ribbon_data(p_disp) : NULL,
             sizeof(d3d12->ubo_values.ribbon)))
       d3d12->ubo_stale &= ~(1u << d3d12->queue.slot);
@@ -5738,11 +5716,11 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       gs_code = NULL;
    }
 
-   /* The menu effects are made from this when first drawn; see
+   /* The menu effects' pipes are made from this; see
     * d3d12_effect_pipe */
    d3d12->effect_desc       = desc;
    d3d12->effect_desc_valid = true;
-   d3d12->effects_tried     = 0;
+   d3d12_effects_release_pipes(d3d12);
 
    {
       static const char shader[] =
@@ -5908,6 +5886,14 @@ static void d3d12_gfx_free(void* data)
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
       Release(d3d12->pipes[i]);
+   for (i = 0; i < d3d12->effect_count; i++)
+   {
+      Release(d3d12->effects[i].pipe);
+      Release(d3d12->effects[i].glow);
+      Release(d3d12->effects[i].vs);
+      Release(d3d12->effects[i].ps);
+   }
+   d3d12->effect_count = 0;
 
    Release(d3d12->mipmapgen_pipe);
    Release(d3d12->planar_pipe);
@@ -8698,7 +8684,12 @@ static void d3d12_bloom_free(d3d12_video_t *d3d12)
    for (i = 0; i < 6; i++)
       Release(d3d12->bloom.pipes[i / 2][i % 2]);
    Release(d3d12->bloom.add);
-   Release(d3d12->bloom.ribbon);
+   for (i = 0; i < d3d12->effect_count; i++)
+   {
+      Release(d3d12->effects[i].glow);
+      d3d12->effects[i].glow       = NULL;
+      d3d12->effects[i].glow_tried = false;
+   }
    Release(d3d12->bloom.cb);
    memset(&d3d12->bloom, 0, sizeof(d3d12->bloom));
 }
@@ -13873,5 +13864,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    gfx_display_d3d12_scissor_end,
    gfx_display_d3d12_mesh_draw,
    gfx_display_d3d12_bloom_begin,
-   gfx_display_d3d12_bloom_end
+   gfx_display_d3d12_bloom_end,
+   NULL,                                     /* bloom_composite */
+   gfx_display_d3d12_effect_install
 };
