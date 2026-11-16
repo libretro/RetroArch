@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
 #include <compat/strl.h>
 #include <retro_environment.h>
 #include <retro_atomic.h>
@@ -2593,6 +2595,16 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
    UINT adapter_idx          = 0;
    bool supported            = false;
    float best_intersect_area = -1;
+
+#ifndef __WINRT__
+   /* RETROARCH_DXGI_HDR=1 takes the display as HDR-capable, so the HDR
+    * path can be drawn and checked where no output reports it (Wine) */
+   {
+      const char *want = getenv("RETROARCH_DXGI_HDR");
+      if (want && want[0] == '1')
+         return true;
+   }
+#endif
 
 #ifdef __WINRT__
 #ifdef __cplusplus

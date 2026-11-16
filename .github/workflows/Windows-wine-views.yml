@@ -31,6 +31,12 @@ on:
       - 'configuration.*'
       - 'samples/settings/video_screens/**'
       - 'samples/cores/video_views/**'
+      - 'samples/gfx/d3d_hdr_menu/**'
+      - 'gfx/common/dxgi_common.*'
+      - 'gfx/drivers/d3d_shaders/**'
+      - 'gfx/gfx_display.*'
+      - 'menu/drivers/xmb.c'
+      - 'menu/drivers/xmb_effects.h'
       - '.github/workflows/Windows-wine-views.yml'
   pull_request:
     paths:
@@ -50,6 +56,12 @@ on:
       - 'configuration.*'
       - 'samples/settings/video_screens/**'
       - 'samples/cores/video_views/**'
+      - 'samples/gfx/d3d_hdr_menu/**'
+      - 'gfx/common/dxgi_common.*'
+      - 'gfx/drivers/d3d_shaders/**'
+      - 'gfx/gfx_display.*'
+      - 'menu/drivers/xmb.c'
+      - 'menu/drivers/xmb_effects.h'
       - '.github/workflows/Windows-wine-views.yml'
   workflow_dispatch:
 
@@ -176,12 +188,32 @@ jobs:
           RETROARCH_D3D9EX=0 RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
             ./retroarch.exe "$RUNNER_TEMP/views-e2e-legacy" d3d9_hlsl
 
+      - name: XMB colours under HDR on D3D11 and D3D12 (Wine, Xvfb, lavapipe)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          # The XMB icons and font, nothing else of the assets
+          a="$RUNNER_TEMP/retroarch-assets"
+          git clone -q --depth 1 --filter=blob:none --sparse \
+            https://github.com/libretro/retroarch-assets.git "$a"
+          git -C "$a" sparse-checkout set xmb/monochrome
+          # The plastic icons and labels, and the snow, keep their place
+          # against the menu background with HDR10 out: under HDR the menu
+          # is a layer composited by its alpha, and a draw that lowered it
+          # showed darker than what is under it.
+          python3 samples/gfx/d3d_hdr_menu/run.py ./retroarch.exe "$a" \
+            "$RUNNER_TEMP/d3d-hdr-menu"
+
       - name: Preserve views logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: windows-wine-views-logs
-          path: ${{ runner.temp }}/views-e2e/**/*.log
+          path: |
+            ${{ runner.temp }}/views-e2e/**/*.log
+            ${{ runner.temp }}/d3d-hdr-menu/*
           if-no-files-found: ignore
 
       - name: Save ccache
