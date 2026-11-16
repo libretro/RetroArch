@@ -25,6 +25,8 @@ static struct object objects[4096];
 static unsigned used, live, calls, fail_call, memory_mode, format_mode;
 static VkVideoProfileInfoKHR profile;
 static VkVideoEncodeH264ProfileInfoKHR codec;
+static VkVideoEncodeH265ProfileInfoKHR codec10;
+static bool p010;
 static VkVideoCapabilitiesKHR capabilities;
 static vulkan_encode_pool_config_t config;
 static VkResult result(void)
@@ -105,7 +107,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL image_properties(VkPhysicalDevice physical
 static VKAPI_ATTR void VKAPI_CALL format_properties(VkPhysicalDevice physical,
       VkFormat format, VkFormatProperties2 *properties)
 {
-   assert(physical == config.physical && (format == VK_FORMAT_R8_UNORM || format == VK_FORMAT_R8G8_UNORM));
+   assert(physical == config.physical && (p010 ?
+         format == VK_FORMAT_R16_UNORM || format == VK_FORMAT_R16G16_UNORM :
+         format == VK_FORMAT_R8_UNORM || format == VK_FORMAT_R8G8_UNORM));
    properties->formatProperties.optimalTilingFeatures = format_mode == 2 ? 0 : VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 }
 static VKAPI_ATTR VkResult VKAPI_CALL create_image(VkDevice d,
@@ -116,7 +120,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL create_image(VkDevice d,
    device(d); assert(!allocator && info->format == config.format && info->pNext);
    assert(info->extent.width == config.extent.width && info->extent.height == config.extent.height);
    assert(info->initialLayout == VK_IMAGE_LAYOUT_UNDEFINED);
-   id = make(IMAGE,0,(VkDeviceSize)info->extent.width * info->extent.height * 3 / 2,&status);
+   id = make(IMAGE,0,(VkDeviceSize)info->extent.width * info->extent.height * 3 /
+         (p010 ? 1 : 2),&status);
    *image = HANDLE(VkImage,id);
    if (status == VK_SUCCESS)
    {
@@ -162,8 +167,13 @@ static VKAPI_ATTR VkResult VKAPI_CALL create_view(VkDevice d,
    if (info->subresourceRange.aspectMask == VK_IMAGE_ASPECT_COLOR_BIT)
       assert(info->format == config.format && usage->usage == (image->input ?
                VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR : VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR));
-   else assert(image->storage && usage->usage == VK_IMAGE_USAGE_STORAGE_BIT &&
-         (info->format == VK_FORMAT_R8_UNORM || info->format == VK_FORMAT_R8G8_UNORM));
+   else
+   {
+      assert(image->storage && usage->usage == VK_IMAGE_USAGE_STORAGE_BIT);
+      assert(info->format == (info->subresourceRange.aspectMask == VK_IMAGE_ASPECT_PLANE_0_BIT
+            ? p010 ? VK_FORMAT_R16_UNORM : VK_FORMAT_R8_UNORM
+            : p010 ? VK_FORMAT_R16G16_UNORM : VK_FORMAT_R8G8_UNORM));
+   }
    *view = HANDLE(VkImageView,make(VIEW,ID(info->image),0,&status)); return status;
 }
 static VKAPI_ATTR void VKAPI_CALL destroy_view(VkDevice d, VkImageView view, const VkAllocationCallbacks *allocator)
@@ -320,10 +330,20 @@ static void setup(bool storage)
    config.profile = &profile; config.capabilities = &capabilities;
    config.extent.width = 192; config.extent.height = 128;
    config.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM; config.packet_size = 1000;
+   if (p010)
+   {
+      config.format = VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16;
+      codec10.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_KHR;
+      codec10.pNext = NULL;
+      codec10.stdProfileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN_10;
+      profile.pNext = &codec10;
+      profile.videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
+      profile.lumaBitDepth = profile.chromaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR;
+   }
    config.slots = 4; config.encode_family = 4; config.producer_family = 0;
    config.storage_image_extended_formats = storage;
 }
-int main(void)
+static int pool_checks(void)
 {
    vulkan_encode_pool_t *pool;
    vulkan_encode_pool_ops_t missing;
@@ -335,6 +355,9 @@ int main(void)
       total = calls; heaps = allocations;
       for (i=0;i<pool->count;i++)
       {
+         if (!mode)
+            assert(pool->slot[i].conversion.size == (VkDeviceSize)config.extent.width *
+                  config.extent.height * 3 / (p010 ? 1 : 2));
          assert(pool->slot[i].output.mapped && pool->slot[i].output.size == 1024);
          assert(pool->slot[i].output.properties & VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
          assert(mode ? pool->slot[i].planes[0] && !pool->slot[i].conversion.buffer :
@@ -436,5 +459,13 @@ int main(void)
       assert(pool && pool->count == j); vulkan_encode_pool_free(pool); assert(!live);
    }
    printf("Vulkan encoder pool ownership/fallback/cache %u injected faults PASS\n",faults);
+   return 0;
+}
+
+int main(void)
+{
+   pool_checks();
+   p010 = true;
+   pool_checks();
    return 0;
 }

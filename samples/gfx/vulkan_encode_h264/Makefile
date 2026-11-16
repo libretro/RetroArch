@@ -10,6 +10,38 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: native_test$(EXE) params_test$(EXE) session_test$(EXE) picture_test$(EXE) submit_test$(EXE) pool_test$(EXE) encoder_test$(EXE) worker_test$(EXE) capture_test$(EXE) capture_shader_test$(EXE)
 all: device_plan_test$(EXE) renderer_test$(EXE)
+all: hevc_params_test$(EXE)
+all: hevc_session_test$(EXE)
+all: hevc_picture_test$(EXE) hevc_submit_test$(EXE)
+
+hevc_picture_test$(EXE): hevc_picture_test.c $(RA)/gfx/common/vulkan_encode_hevc_picture.h $(RA)/gfx/include/vk_video/vulkan_video_codec_h265std_encode.h
+	$(CC) $(CFLAGS) hevc_picture_test.c -o $@ $(LDFLAGS)
+hevc_submit_test$(EXE): hevc_submit_test.c $(RA)/gfx/common/vulkan_encode_hevc_submit.c $(RA)/gfx/common/vulkan_encode_hevc_submit.h $(RA)/gfx/common/vulkan_encode_hevc_picture.h $(RA)/gfx/common/vulkan_encode_hevc_session.h $(RA)/gfx/common/vulkan_encode_hevc_params.h
+	$(CC) $(CFLAGS) hevc_submit_test.c -o $@ $(LDFLAGS)
+
+hevc_session_test$(EXE): hevc_session_test.c $(RA)/gfx/common/vulkan_encode_hevc_session.c $(RA)/gfx/common/vulkan_encode_hevc_session.h $(RA)/gfx/common/vulkan_encode_hevc_params.h
+	$(CC) $(CFLAGS) hevc_session_test.c -o $@ $(LDFLAGS)
+
+HEVC_NATIVE_SOURCES := hevc_native_params_test.c $(RA)/gfx/common/vulkan_encode_hevc_session.c \
+   $(RA)/libretro-common/dynamic/dylib.c $(RA)/libretro-common/encodings/encoding_utf.c \
+   $(RA)/libretro-common/compat/compat_strl.c
+hevc_native_params_test$(EXE): $(HEVC_NATIVE_SOURCES) hevc_native_context.h $(RA)/gfx/common/vulkan_encode_hevc_session.h $(RA)/gfx/common/vulkan_encode_hevc_params.h
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+hevc_headers_test$(EXE): hevc_headers_test.c $(RA)/libretro-common/formats/h265/rh265.c $(RA)/libretro-common/include/formats/rh265.h
+	$(CC) $(CFLAGS) -Wno-unused-parameter hevc_headers_test.c $(RA)/libretro-common/formats/h265/rh265.c -o $@ $(LDFLAGS) -lm
+hevc-native-params-check: hevc_native_params_test$(EXE) hevc_headers_test$(EXE)
+	python3 hevc_native_params_run.py --native-test ./hevc_native_params_test$(EXE) --headers-test ./hevc_headers_test$(EXE)
+.PHONY: hevc-native-params-check
+HEVC_ENCODE_SOURCES := $(filter-out hevc_native_params_test.c,$(HEVC_NATIVE_SOURCES)) \
+   hevc_native_encode_test.c $(RA)/gfx/common/vulkan_encode_hevc_submit.c $(RA)/gfx/common/vulkan_encode_pool.c
+hevc_native_encode_test$(EXE): $(HEVC_ENCODE_SOURCES) hevc_native_context.h $(RA)/gfx/common/vulkan_encode_hevc_submit.h $(RA)/gfx/common/vulkan_encode_hevc_picture.h $(RA)/gfx/common/vulkan_encode_hevc_params.h $(RA)/gfx/common/vulkan_encode_pool.h
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_ENCODE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+hevc-native-check: hevc_native_encode_test$(EXE)
+	python3 hevc_native_encode_run.py --native-test ./hevc_native_encode_test$(EXE)
+.PHONY: hevc-native-check
+
+hevc_params_test$(EXE): hevc_params_test.c $(RA)/gfx/common/vulkan_encode_hevc_params.h $(RA)/gfx/include/vk_video/vulkan_video_codec_h265std.h
+	$(CC) $(CFLAGS) hevc_params_test.c -o $@ $(LDFLAGS)
 
 renderer_test$(EXE): renderer_test.c $(RA)/record/record_gpu_renderer_vulkan.c $(RA)/record/record_gpu_renderer_vulkan.h $(RA)/record/record_gpu_dispatch_vulkan.h $(RA)/record/record_gpu_session_vulkan.h $(RA)/gfx/common/vulkan_encode_capture.h $(RA)/gfx/common/vulkan_encode_pool.h $(RA)/record/record_gpu_queue.h
 	$(CC) $(CFLAGS) renderer_test.c -o $@ $(LDFLAGS)
@@ -39,6 +71,10 @@ capture_test$(EXE): capture_test.c $(RA)/gfx/common/vulkan_encode_capture.c $(CA
 capture_shader_test$(EXE): $(CAPTURE_SHADER_SOURCES) $(CAPTURE_HEADERS) $(RA)/libretro-common/include/gfx/shaders/rslc.h $(RA)/libretro-common/gfx/shaders/rslc_share.h
 	$(CC) $(CFLAGS) -DRSLC_EXTENDED -DRSLC_NO_DXBC $(CAPTURE_SHADER_SOURCES) -o $@ $(LDFLAGS) -lm
 check: all
+	$(RUNNER) ./hevc_params_test$(EXE)
+	$(RUNNER) ./hevc_session_test$(EXE)
+	$(RUNNER) ./hevc_picture_test$(EXE)
+	$(RUNNER) ./hevc_submit_test$(EXE)
 	$(RUNNER) ./renderer_test$(EXE)
 	$(RUNNER) ./device_plan_test$(EXE)
 	python3 device_wrapper_test.py --cc "$(CC)" --sanitizer "$(SANITIZER)"
@@ -52,6 +88,9 @@ check: all
 	$(RUNNER) ./capture_test$(EXE)
 	$(RUNNER) ./capture_shader_test$(EXE)
 clean:
+	rm -f hevc_params_test hevc_params_test.exe
+	rm -f hevc_session_test hevc_session_test.exe hevc_native_params_test hevc_native_params_test.exe hevc_headers_test hevc_headers_test.exe
+	rm -f hevc_picture_test hevc_picture_test.exe hevc_submit_test hevc_submit_test.exe hevc_native_encode_test hevc_native_encode_test.exe
 	rm -f renderer_test renderer_test.exe
 	rm -f device_plan_test device_plan_test.exe
 	rm -f native_test native_test.exe

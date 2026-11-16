@@ -74,8 +74,10 @@ static bool vep_storage(const vulkan_encode_pool_config_t *c,
        !vep_image_format(c, ops, profiles, VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR |
              VK_IMAGE_USAGE_STORAGE_BIT, flags))
       return false;
-   formats[0] = VK_FORMAT_R8_UNORM;
-   formats[1] = VK_FORMAT_R8G8_UNORM;
+   formats[0] = c->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+      ? VK_FORMAT_R8_UNORM : VK_FORMAT_R16_UNORM;
+   formats[1] = c->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+      ? VK_FORMAT_R8G8_UNORM : VK_FORMAT_R16G16_UNORM;
    for (i = 0; i < 2; i++)
    {
       properties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
@@ -200,9 +202,11 @@ static bool vep_image(vulkan_encode_pool_t *p,
        !vep_view(p, *image, c->format, VK_IMAGE_ASPECT_COLOR_BIT, video_usage, view))
       return false;
    if (input && p->storage_images)
-      return vep_view(p, *image, VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT,
+      return vep_view(p, *image, c->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+                  ? VK_FORMAT_R8_UNORM : VK_FORMAT_R16_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT,
                   VK_IMAGE_USAGE_STORAGE_BIT, &planes[0]) &&
-            vep_view(p, *image, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT,
+            vep_view(p, *image, c->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+                  ? VK_FORMAT_R8G8_UNORM : VK_FORMAT_R16G16_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT,
                   VK_IMAGE_USAGE_STORAGE_BIT, &planes[1]);
    return true;
 }
@@ -313,7 +317,8 @@ vulkan_encode_pool_t *vulkan_encode_pool_new(
        !c->slots || c->slots > VULKAN_ENCODE_POOL_SLOTS ||
        !c->extent.width || c->extent.width > 8192 || (c->extent.width & 1) ||
        !c->extent.height || c->extent.height > 8192 || (c->extent.height & 1) ||
-       c->format != VK_FORMAT_G8_B8R8_2PLANE_420_UNORM ||
+       (c->format != VK_FORMAT_G8_B8R8_2PLANE_420_UNORM &&
+        c->format != VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16) ||
        c->encode_family == UINT32_MAX || c->producer_family == UINT32_MAX ||
        !c->packet_size || c->packet_size > 64u * 1024u * 1024u ||
        !ops->memory_properties || !ops->video_formats || !ops->image_properties ||
@@ -430,7 +435,8 @@ vulkan_encode_pool_t *vulkan_encode_pool_new(
                &slot->image, &slot->memory, &slot->view, slot->planes) ||
           !vep_buffer(p, &properties, &profiles, bytes, true, &slot->output) ||
           (!p->storage_images && !vep_buffer(p, &properties, &profiles,
-                (VkDeviceSize)c->extent.width * c->extent.height * 3 / 2,
+                (VkDeviceSize)c->extent.width * c->extent.height * 3 /
+                (c->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM ? 2 : 1),
                 false, &slot->conversion)))
          goto fail;
    }

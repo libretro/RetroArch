@@ -90,7 +90,7 @@ typedef struct vulkan_encode_pool
 } vulkan_encode_pool_t;
 
 /* Worker startup, no submissions. Device enables video encode, timeline and
- * both queue families. NV12 only. Config/profile/caps are borrowed during
+ * both queue families. NV12 or P010. Config/profile/caps are borrowed during
  * construction; device/dispatch through free. Resources stay on one device.
  * Storage plane views are preferred; otherwise conversion uses a GPU
  * packed buffer followed by an image copy. Output is coherently mapped, cached
