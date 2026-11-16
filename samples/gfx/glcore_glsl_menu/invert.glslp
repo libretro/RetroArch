@@ -1,0 +1,4 @@
+shaders = 1
+shader0 = invert.glsl
+filter_linear0 = false
+scale_type0 = source

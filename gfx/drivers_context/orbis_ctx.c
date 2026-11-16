@@ -288,6 +288,9 @@ static uint32_t orbis_ctx_get_flags(void *data)
    {
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#elif defined(HAVE_GLSL)
+      /* No slang to draw through: glcore draws through GLSL */
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
    }
    else

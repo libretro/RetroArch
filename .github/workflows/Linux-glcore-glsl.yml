@@ -7,7 +7,10 @@ name: CI Linux glcore without slang
 # effects came only from SPIR-V. This builds retroarch with X11, OpenGL
 # and the menu and no slang, runs it under Xvfb on Mesa's software
 # rasteriser and checks that glcore takes GLSL, the menu is drawn, and
-# the Ribbon (with its glow) and Bokeh show.
+# the Ribbon (with its glow) and Bokeh show. Then a test core's frames,
+# software and hardware, 320x240 and 640x480, with no preset and through
+# a GLSL preset: each where it belongs and the right way up, inverted
+# through the preset.
 
 on:
   push:
@@ -125,11 +128,11 @@ jobs:
           make -j$(nproc)
           ccache -s
 
-      - name: Run glcore_glsl_menu (still, Ribbon with glow, Bokeh)
+      - name: Run glcore_glsl_menu (the menu and its effects, then a core's frames with and without a preset)
         shell: bash
         run: |
           set -eu
-          timeout 300 python3 samples/gfx/glcore_glsl_menu/run.py ./retroarch \
+          timeout 600 python3 samples/gfx/glcore_glsl_menu/run.py ./retroarch \
             "$RUNNER_TEMP/glcore-glsl"
 
       - name: Keep the shots on failure

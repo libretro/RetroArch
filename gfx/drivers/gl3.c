@@ -3104,9 +3104,6 @@ static enum rarch_shader_type gl3_get_fallback_shader_type(enum rarch_shader_typ
 #if defined(HAVE_SLANG) || defined(HAVE_GLSL)
    int i;
    gfx_ctx_flags_t flags;
-#ifdef HAVE_GLSL
-   bool slang_offered;
-#endif
    flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
@@ -3115,18 +3112,9 @@ static enum rarch_shader_type gl3_get_fallback_shader_type(enum rarch_shader_typ
     * wayland_ctx.c, etc.  Cg requires the legacy fixed-function / ARB
     * asm pipeline that Core Profile contexts don't expose, so no
     * RARCH_SHADER_CG path is wired up here.  GLSL and slang are both
-    * Core Profile-compatible and remain valid. Most context drivers
-    * advertise only SLANG for glcore, and nothing at all where the
-    * build has no slang or nothing to cross-compile it with: there
-    * glcore takes GLSL, which every GL context runs, rather than be
-    * left with no shader backend and draw nothing. */
-#ifdef HAVE_GLSL
-#ifdef HAVE_SLANG
-   slang_offered = BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#else
-   slang_offered = false;
-#endif
-#endif
+    * Core Profile-compatible and remain valid: context drivers
+    * advertise SLANG for glcore, or GLSL where the build has no slang
+    * to draw through. */
    if (type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
    {
       type = GL3_DEFAULT_SHADER_TYPE;
@@ -3141,8 +3129,7 @@ static enum rarch_shader_type gl3_get_fallback_shader_type(enum rarch_shader_typ
       {
          case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
-            if (     BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)
-                  || !slang_offered)
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                return type;
 #endif
             type = RARCH_SHADER_SLANG;
@@ -5222,8 +5209,11 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       struct gl3_streamed_texture *streamed,
       const void *frame, unsigned dims, unsigned pitch, bool write)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
+   /* The frame's own size, which is all there is to write */
+   unsigned frame_w = VIDEO_SCALE_W(dims);
+   unsigned frame_h = VIDEO_SCALE_H(dims);
+   unsigned width   = frame_w;
+   unsigned height  = frame_h;
    if (gl->chain.active)
    {
       /* The input texture is expected to be square with a power of 2 size when not using Slang */
@@ -5265,8 +5255,10 @@ static void gl3_update_cpu_texture(gl3_t *gl,
    else
       glBindTexture(GL_TEXTURE_2D, streamed->tex);
 
+   /* The frame alone: the texture is a power-of-two square around it,
+    * and the core's buffer holds no more than the frame */
    if (write)
-      gl3_write_cpu_texture(gl, frame, width, height, pitch);
+      gl3_write_cpu_texture(gl, frame, frame_w, frame_h, pitch);
 }
 
 #ifdef HAVE_SLANG
@@ -7510,6 +7502,9 @@ static bool gl3_frame(void *data, const void *frame,
       params.fbo_info      = NULL;
       params.fbo_info_cnt  = 0;
 
+      /* The preset's first pass draws the frame, whatever the menu or
+       * the last frame's passes left bound, as gl2 does */
+      gl->chain.shader->use(gl, gl->chain.shader_data, 1, true);
       glBindTexture(GL_TEXTURE_2D, texture.image);
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);

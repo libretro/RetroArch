@@ -325,12 +325,16 @@ static uint32_t sdl3_ctx_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
    /* Shader usage depends on the video driver:
-    * - glcore uses slang
-    * - gl uses GLSLS
+    * - glcore uses slang, or GLSL in a build with no slang to draw
+    *   through
+    * - gl uses GLSL
     * - gl1 is fixed-function, without shaders */
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    if (string_is_equal(video_driver_get_ident(), "glcore"))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#elif defined(HAVE_GLSL)
+   if (string_is_equal(video_driver_get_ident(), "glcore"))
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
 #ifdef HAVE_GLSL
    if (string_is_equal(video_driver_get_ident(), "gl"))
