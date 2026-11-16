@@ -4820,15 +4820,24 @@ static void video_thread_set_nonblock_state(void *data, bool state,
 
    if (thr)
    {
-      thread_packet_t pkt;
+      thread_packet_t fallback;
+      int head, tail;
+      thread_packet_t *pkt = video_thread_defer_begin(thr, &head, &tail);
+      bool queued = pkt != NULL;
+
       /* nonblock also drives this side's paced wait in
        * video_thread_frame(); the wrapped driver gets all three. */
-      thr->nonblock                    = state;
-      pkt.type                         = CMD_SET_NONBLOCK;
-      pkt.data.nonblock.nonblock       = state;
-      pkt.data.nonblock.adaptive_vsync = adaptive_vsync_enabled;
-      pkt.data.nonblock.swap_interval  = swap_interval;
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      thr->nonblock = state;
+      if (!queued)
+         pkt = &fallback;
+      pkt->type                         = CMD_SET_NONBLOCK;
+      pkt->data.nonblock.nonblock       = state;
+      pkt->data.nonblock.adaptive_vsync = adaptive_vsync_enabled;
+      pkt->data.nonblock.swap_interval  = swap_interval;
+      if (queued)
+         video_thread_defer_commit(thr, head, tail);
+      else
+         video_thread_send_and_wait_user_to_thread(thr, pkt);
    }
 }
 

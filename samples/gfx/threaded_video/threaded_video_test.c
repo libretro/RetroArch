@@ -4468,6 +4468,128 @@ static uintptr_t geometry_fence(void *data)
    return 0;
 }
 
+static unsigned nonblock_calls;
+static unsigned nonblock_values[8];
+static uintptr_t nonblock_thread;
+
+static void nonblock_record(void *data, bool state, bool adaptive,
+      unsigned interval)
+{
+   (void)data;
+   if (nonblock_calls < 8)
+      nonblock_values[nonblock_calls] = (interval << 2)
+         | (adaptive ? 2 : 0) | (state ? 1 : 0);
+   nonblock_calls++;
+   nonblock_thread = sthread_get_current_thread_id();
+}
+
+static uintptr_t nonblock_reentrant(void *data)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   (void)data;
+   video_st->current_video->set_nonblock_state(video_st->data, false, true, 3);
+   return nonblock_calls;
+}
+
+static uintptr_t nonblock_ring_swap(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)video_state_get_ptr()->data;
+   thread_packet_t **ring = (thread_packet_t**)data;
+   thread_packet_t *saved = thr->deferred;
+   thr->deferred = *ring;
+   *ring = saved;
+   return 0;
+}
+
+static void lane_nonblock_queue(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct retro_system_av_info orig = video_st->av_info;
+   struct retro_system_av_info info = orig;
+   const video_driver_t *saved_driver;
+   video_driver_t driver;
+   geometry_gate_t gate;
+   thread_packet_t *ring = NULL;
+   thread_video_t *thr;
+   unsigned had = failures;
+   unsigned i;
+   int head;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   video_thread_wait_idle();
+   thr = (thread_video_t*)video_st->data;
+   saved_driver = thr->driver;
+   driver = *saved_driver;
+   driver.set_nonblock_state = nonblock_record;
+   set_driver(thr, &driver);
+   nonblock_calls = 0;
+   memset(&gate, 0, sizeof(gate));
+   retro_atomic_int_init(&gate.held, 0);
+   retro_atomic_int_init(&gate.done, 0);
+   if (!retro_eventcount_init(&gate.event))
+   {
+      CHECK(false, "nonblock queue: eventcount allocation failed");
+      set_driver(thr, saved_driver);
+      set_threaded_via_setting(false);
+      return;
+   }
+   CHECK(video_thread_run_queued(geometry_park, &gate),
+         "nonblock queue: could not queue gate");
+   CHECK(geometry_gate_wait(&gate, &gate.held),
+         "nonblock queue: worker did not enter gate");
+   head = retro_atomic_load_acquire_int(&thr->deferred_head);
+   video_st->current_video->set_nonblock_state(thr, true, false, 1);
+   CHECK(thr->nonblock, "nonblock queue: producer state was not updated");
+   video_st->current_video->set_nonblock_state(thr, false, true, 2);
+   video_st->current_video->set_nonblock_state(thr, false, false, 1);
+   video_st->current_video->set_nonblock_state(thr, false, false, 1);
+   CHECK(!thr->nonblock, "nonblock queue: producer state was not restored");
+   info.timing.fps *= 0.999;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+         "nonblock queue: FPS update rejected");
+   CHECK(retro_atomic_load_acquire_int(&thr->deferred_head) == head + 5,
+         "nonblock queue: setters did not remain queued");
+   retro_atomic_store_release_int(&gate.done, 1);
+   retro_eventcount_notify(&gate.event);
+   video_thread_run_blocking(geometry_fence, NULL);
+   CHECK(gate.completed, "nonblock queue: setter waited for the worker");
+   CHECK(nonblock_calls == 5 && nonblock_values[0] == 5
+         && nonblock_values[1] == 10 && nonblock_values[2] == 4
+         && nonblock_values[3] == 4,
+         "nonblock queue: lost, reordered or coalesced settings");
+   CHECK(nonblock_thread == sthread_get_thread_id(thr->thread),
+         "nonblock queue: callback ran on the wrong thread");
+   CHECK(video_thread_run_blocking(nonblock_reentrant, NULL) == 6
+         && nonblock_values[5] == 14,
+         "nonblock queue: reentrant setter did not run inline");
+
+   retro_atomic_store_relaxed_int(&gate.held, 0);
+   retro_atomic_store_relaxed_int(&gate.done, 0);
+   CHECK(video_thread_run_queued(geometry_park, &gate),
+         "nonblock queue: could not queue full-ring gate");
+   CHECK(geometry_gate_wait(&gate, &gate.held),
+         "nonblock queue: full-ring worker did not enter gate");
+   for (i = 0; i < VIDEO_THREAD_DEFERRED_MAX - 1; i++)
+      CHECK(video_thread_run_queued(geometry_fence, NULL),
+            "nonblock queue: could not fill ring");
+   video_st->current_video->set_nonblock_state(thr, true, true, 4);
+   CHECK(nonblock_calls == 7 && nonblock_values[6] == 19,
+         "nonblock queue: full-ring fallback lost settings");
+   video_thread_run_blocking(nonblock_ring_swap, &ring);
+   video_st->current_video->set_nonblock_state(thr, false, false, 2);
+   CHECK(nonblock_calls == 8 && nonblock_values[7] == 8,
+         "nonblock queue: missing-ring fallback lost settings");
+   video_thread_run_blocking(nonblock_ring_swap, &ring);
+   set_driver(thr, saved_driver);
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &orig);
+   video_thread_run_blocking(geometry_fence, NULL);
+   retro_eventcount_free(&gate.event);
+   set_threaded_via_setting(false);
+   if (failures == had)
+      fprintf(stderr, "[pass] nonblock queue: FPS update, FIFO, repeat, reentrant and fallback\n");
+}
+
 static void lane_geometry_burst(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -14796,6 +14918,7 @@ int main(int argc, char *argv[])
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
+      lane_nonblock_queue();
       lane_geometry_burst();
       lane_reentrant_from_frame();
       goto shutdown;
@@ -14844,6 +14967,7 @@ int main(int argc, char *argv[])
    }
    if (real_driver() && video_state_get_ptr()->max_geometry_capacity)
       lane_max_geometry_live();
+   lane_nonblock_queue();
    lane_geometry_burst();
    lane_reentrant_from_frame();
    lane_window_thread_present();
