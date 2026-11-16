@@ -185,6 +185,10 @@ def shoot(exe, out_dir, name, scene):
                 if cur is None:
                     continue
                 latest = cur
+                # Black is RetroArch not up yet, not a settled screen; a
+                # menu that never draws is still judged at the deadline
+                if not cur.strip(b'\x00'):
+                    continue
                 seen += 1
                 if scene in (RIBBON, BOKEH) or scene.get('_flip'):
                     if seen >= 6:
