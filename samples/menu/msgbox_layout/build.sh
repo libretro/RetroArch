@@ -62,7 +62,7 @@ if [ ! -s "$ld_line" ]; then
 fi
 
 sed -e 's#obj-unix/release/retroarch\.o#samples/menu/msgbox_layout/retroarch_nomain.o samples/menu/msgbox_layout/harness_main.o#' \
-    -e 's#-o retroarch #-o samples/menu/msgbox_layout/msgbox_layout_test #' \
+    -e 's#-o retroarch #-o samples/menu/msgbox_layout/msgbox_layout_test -Wl,--wrap=gfx_display_draw_quad #' \
    "$ld_line" | sh
 
 echo "built samples/menu/msgbox_layout/msgbox_layout_test"
