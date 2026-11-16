@@ -99,6 +99,11 @@ if result.returncode == 0 and args.pictures:
     try:
         dimensions = re.search(r'extent=(\d+)x(\d+)', output)
         assert dimensions and 'PASS native coded pictures=12' in output
+        if args.capture:
+            assert 'PASS native two in-flight pictures, full-ring BUSY, borrowed cancellation and drain' in output
+            evidence['submitted_pictures_including_cancellation'] = 14
+            evidence['maximum_in_flight'] = 2
+            evidence['cancelled_output_pictures'] = 2
         width, height = map(int, dimensions.groups())
         probe = run([args.ffprobe, '-v', 'error', '-show_streams', '-show_frames',
                      '-of', 'json', coded], 30)

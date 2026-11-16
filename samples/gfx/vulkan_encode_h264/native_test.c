@@ -546,7 +546,7 @@ static int encode_pictures(struct native_encoder *c,const char *path,unsigned ca
    vulkan_encode_packet_t *packet=&c->packets[0],*again=&c->packets[1];
    PFN_vkWaitForFences wait_fence;
    size_t bytes=0;
-   unsigned frame;
+   unsigned frame, first, batch = capture_mode ? 2 : 1;
    FILE *file=fopen(path,"wb");
    assert(file);
    c->config.slots=2;
@@ -570,23 +570,56 @@ static int encode_pictures(struct native_encoder *c,const char *path,unsigned ca
    else upload_new(c,pool);
    wait_fence=(PFN_vkWaitForFences)c->device_proc(c->device,"vkWaitForFences");
    assert(wait_fence);
-   for (frame=0;frame<12;frame++)
+   for (first=0;first<12;first+=batch)
    {
-      if (capture_mode) capture_frame(c,pool,frame);
-      else upload_frame(c,pool,frame);
-      assert(vulkan_encode_h264_submit(encoder,frame%2,frame,1,frame+1,false)==VULKAN_ENCODE_OK);
-      /* Test orchestration only; the shipping encoder polls without waits. */
-      assert(wait_fence(c->device,1,&pool->slot[frame%2].fence,VK_TRUE,2000000000)==VK_SUCCESS);
-      assert(vulkan_encode_h264_poll(encoder,packet)==VULKAN_ENCODE_OK);
-      assert(packet->data && packet->size && packet->timestamp==frame && packet->duration==1);
-      assert(packet->keyframe==(frame%4==0));
-      assert(vulkan_encode_h264_poll(encoder,again)==VULKAN_ENCODE_OK);
-      assert(packet->data==again->data && packet->size==again->size && packet->slot==again->slot);
-      assert(fwrite(packet->data,1,packet->size,file)==packet->size);
-      assert(vulkan_encode_h264_release(encoder));
+      for (frame=first;frame<first+batch;frame++)
+      {
+         if (capture_mode) capture_frame(c,pool,frame);
+         else upload_frame(c,pool,frame);
+         assert(vulkan_encode_h264_submit(encoder,frame%2,frame,1,frame+1,false)==VULKAN_ENCODE_OK);
+      }
+      if (capture_mode)
+         assert(vulkan_encode_h264_submit(encoder,0,first+2,1,first+3,false)==VULKAN_ENCODE_BUSY);
+      for (frame=first;frame<first+batch;frame++)
+      {
+         /* Test orchestration only; the shipping encoder polls without waits. */
+         assert(wait_fence(c->device,1,&pool->slot[frame%2].fence,VK_TRUE,2000000000)==VK_SUCCESS);
+         assert(vulkan_encode_h264_poll(encoder,packet)==VULKAN_ENCODE_OK);
+         assert(packet->data && packet->size && packet->timestamp==frame && packet->duration==1);
+         assert(packet->keyframe==(frame%4==0));
+         assert(vulkan_encode_h264_poll(encoder,again)==VULKAN_ENCODE_OK);
+         assert(packet->data==again->data && packet->size==again->size && packet->slot==again->slot);
+         assert(fwrite(packet->data,1,packet->size,file)==packet->size);
+         assert(vulkan_encode_h264_release(encoder));
+      }
    }
-   assert(vulkan_encode_h264_finish(encoder)==VULKAN_ENCODE_OK);
-   assert(vulkan_encode_h264_poll(encoder,packet)==VULKAN_ENCODE_END);
+   if (capture_mode)
+   {
+      for (frame=12;frame<14;frame++)
+      {
+         capture_frame(c,pool,frame);
+         assert(vulkan_encode_h264_submit(encoder,frame%2,frame,1,frame+1,false)==VULKAN_ENCODE_OK);
+      }
+      assert(wait_fence(c->device,1,&pool->slot[0].fence,VK_TRUE,2000000000)==VK_SUCCESS);
+      assert(vulkan_encode_h264_poll(encoder,packet)==VULKAN_ENCODE_OK);
+      assert(packet->timestamp==12 && packet->data && packet->size);
+      bytes=packet->size<sizeof(c->headers)?packet->size:sizeof(c->headers);
+      memcpy(c->headers,packet->data,bytes);
+      assert(!vulkan_encode_h264_free(encoder));
+      assert(!vulkan_encode_h264_drain(encoder));
+      assert(!memcmp(c->headers,packet->data,bytes));
+      assert(vulkan_encode_h264_submit(encoder,0,14,1,15,false)==VULKAN_ENCODE_ERROR);
+      assert(vulkan_encode_h264_release(encoder));
+      /* Producer commands precede encoder completion on the ready timeline. */
+      assert(wait_fence(c->device,1,&pool->slot[1].fence,VK_TRUE,2000000000)==VK_SUCCESS);
+      assert(vulkan_encode_h264_drain(encoder));
+      puts("PASS native two in-flight pictures, full-ring BUSY, borrowed cancellation and drain");
+   }
+   else
+   {
+      assert(vulkan_encode_h264_finish(encoder)==VULKAN_ENCODE_OK);
+      assert(vulkan_encode_h264_poll(encoder,packet)==VULKAN_ENCODE_END);
+   }
    c->ops.pool.destroy_commands(c->device,c->producer_commands,NULL);
    if (capture_mode) capture_free(c);
    else
