@@ -288,6 +288,24 @@ jobs:
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test rgui
           make -C samples/menu/menu_icon_ownership clean
 
+      - name: Build and run msgbox_layout_test
+        shell: bash
+        run: |
+          set -eu
+          # A confirm box drawn by Ozone, XMB and MaterialUI through a
+          # recording font: its words all drawn, in order, on the
+          # screen and above the buttons; the next frame drawn the same,
+          # from the wrap the driver kept; and a frame at another size
+          # laid out as afresh. The tall lane fills the box on a small
+          # screen, where Ozone and MaterialUI cut the text short.
+          # Shares the non-Qt build made above.
+          samples/menu/msgbox_layout/build.sh
+          for d in ozone xmb materialui; do
+            ./samples/menu/msgbox_layout/msgbox_layout_test "$d" short
+            ./samples/menu/msgbox_layout/msgbox_layout_test "$d" tall
+          done
+          make -C samples/menu/msgbox_layout clean
+
       - name: Build and run ozone_sublabel_scroll_test
         shell: bash
         run: |
