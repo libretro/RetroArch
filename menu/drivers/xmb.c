@@ -510,6 +510,29 @@ typedef struct xmb_handle
    char entry_index_str[32];
    char entry_index_offset;
 
+   /* The message box's text as last wrapped and measured, by the
+    * thread that draws it: a box whose text and layout are unchanged
+    * draws from here. len is 0 when it holds nothing. */
+   struct
+   {
+      char *lines[512];
+      font_data_t *font;
+      size_t len;
+      uint32_t font_generation;
+      float font_size;
+      float margins_dialog;
+      unsigned dims;
+      unsigned line_count;
+      unsigned buttons;
+      int wideglyph_width;
+      int stack_h;
+      int usable_width;
+      int longest_width;
+      bool assets_missing;
+      char text[MENU_LABEL_MAX_LENGTH];
+      char wrapped[MENU_LABEL_MAX_LENGTH];
+   } box_wrap;
+
    /* The menu font path the fonts are built from. xmb_render()
     * watches it alongside the scale factor and schedules the same
     * deferred rebuild. */
@@ -1363,8 +1386,13 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    bool stacked                        = false;
    bool input_dialog_display_kb        = false;
    size_t wrapped_len                  = 0;
-   char wrapped_message[MENU_LABEL_MAX_LENGTH];
-   char *lines[512];
+   size_t msg_len                      = strlen(message);
+   char wrapped_buf[MENU_LABEL_MAX_LENGTH];
+   char *lines_buf[512];
+   char *wrapped_message               = wrapped_buf;
+   char **lines                        = lines_buf;
+   bool keep_wrap                      = false;
+   uint32_t font_generation            = 0;
    char *start, *nl, *end;
 
    menu_dialog_get_buttons(menu_st, &buttons);
@@ -1372,15 +1400,6 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    usable_width = (int)video_width - (xmb->margins_dialog * (landscape ? 4 : 1));
    if (usable_width < 1)
       usable_width = video_width;
-
-   wrapped_len = (xmb->word_wrap)(
-         wrapped_message, sizeof(wrapped_message),
-         message, strlen(message),
-         usable_width / (xmb->font_size * 0.85f),
-         xmb->wideglyph_width, 0);
-
-   if (wrapped_len == 0)
-      return;
 
    if (buttons.count)
    {
@@ -1436,62 +1455,120 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          row_need = row_max;
    }
 
-   /* A box that would still be taller than the screen after the lift
-    * wraps by the font's measured width, when that fits more on a line */
-   if (buttons.count)
+   /* A box's text is wrapped and measured again only when it or its
+    * layout changes; an input line changes as it is typed */
+   if (!draw_caret && msg_len < sizeof(xmb->box_wrap.text))
    {
-      unsigned n = string_count_occurrences_single_character(
-            wrapped_message, '\n')
-            + (wrapped_message[wrapped_len - 1] != '\n');
-      if (xmb_confirm_box_h(xmb, xmb->font->size * 1.30f, n, stack_h,
-            NULL) > (int)video_height)
+      wrapped_message = xmb->box_wrap.wrapped;
+      lines           = xmb->box_wrap.lines;
+      keep_wrap       = true;
+      font_generation = font_driver_get_generation();
+      if (     xmb->box_wrap.len             == msg_len
+            && xmb->box_wrap.font            == xmb->font
+            && xmb->box_wrap.font_generation == font_generation
+            && xmb->box_wrap.font_size       == xmb->font_size
+            && xmb->box_wrap.margins_dialog  == xmb->margins_dialog
+            && xmb->box_wrap.dims            == video_dims
+            && xmb->box_wrap.buttons         == buttons.count
+            && xmb->box_wrap.wideglyph_width == xmb->wideglyph_width
+            && xmb->box_wrap.stack_h         == stack_h
+            && xmb->box_wrap.assets_missing  == xmb->assets_missing
+            && !memcmp(xmb->box_wrap.text, message, msg_len))
       {
-         int char_w = font_driver_get_message_width(
-               xmb->font, "a", 1, 1.0f);
-         int wide   = (int)video_width
-               - (int)(xmb->margins_dialog * 4);
-         if (wide > usable_width)
-            wide    = usable_width;
-         if (     char_w > 0
-               && wide / char_w
-                  > (int)(usable_width / (xmb->font_size * 0.85f)))
+         line_count    = xmb->box_wrap.line_count;
+         usable_width  = xmb->box_wrap.usable_width;
+         longest_width = xmb->box_wrap.longest_width;
+      }
+   }
+
+   if (!line_count)
+   {
+      if (keep_wrap)
+         xmb->box_wrap.len = 0;
+      wrapped_len = (xmb->word_wrap)(
+            wrapped_message, MENU_LABEL_MAX_LENGTH,
+            message, msg_len,
+            usable_width / (xmb->font_size * 0.85f),
+            xmb->wideglyph_width, 0);
+
+      if (wrapped_len == 0)
+         return;
+
+      /* A box that would still be taller than the screen after the lift
+       * wraps by the font's measured width, when that fits more on a line */
+      if (buttons.count)
+      {
+         unsigned n = string_count_occurrences_single_character(
+               wrapped_message, '\n')
+               + (wrapped_message[wrapped_len - 1] != '\n');
+         if (xmb_confirm_box_h(xmb, xmb->font->size * 1.30f, n, stack_h,
+               NULL) > (int)video_height)
          {
-            usable_width = wide;
-            wrapped_len  = (xmb->word_wrap)(
-                  wrapped_message, sizeof(wrapped_message),
-                  message, strlen(message),
-                  usable_width / char_w,
-                  xmb->wideglyph_width, 0);
-            if (wrapped_len == 0)
-               return;
+            int char_w = font_driver_get_message_width(
+                  xmb->font, "a", 1, 1.0f);
+            int wide   = (int)video_width
+                  - (int)(xmb->margins_dialog * 4);
+            if (wide > usable_width)
+               wide    = usable_width;
+            if (     char_w > 0
+                  && wide / char_w
+                     > (int)(usable_width / (xmb->font_size * 0.85f)))
+            {
+               usable_width = wide;
+               wrapped_len  = (xmb->word_wrap)(
+                     wrapped_message, MENU_LABEL_MAX_LENGTH,
+                     message, msg_len,
+                     usable_width / char_w,
+                     xmb->wideglyph_width, 0);
+               if (wrapped_len == 0)
+                  return;
+            }
          }
       }
-   }
 
-   /* Single-pass: find lines, null-terminate, measure width */
-   start = wrapped_message;
-   end   = wrapped_message + wrapped_len;
+      /* Single-pass: find lines, null-terminate, measure width */
+      start = wrapped_message;
+      end   = wrapped_message + wrapped_len;
 
-   while (start < end && line_count < 512)
-   {
-      nl = (char *)memchr(start, '\n', end - start);
-      if (nl)
-         *nl = '\0';
-      lines[line_count++] = start;
-      if (*start)
+      while (start < end && line_count < 512)
       {
-         int msg_width = font_driver_get_message_width(
-               xmb->font, start, (nl ? nl : end) - start, 1.0f);
-         if (msg_width > longest_width)
-            longest_width = msg_width;
-         if (longest_width > usable_width)
-            longest_width = usable_width;
+         nl = (char *)memchr(start, '\n', end - start);
+         if (nl)
+            *nl = '\0';
+         lines[line_count++] = start;
+         if (*start)
+         {
+            int msg_width = font_driver_get_message_width(
+                  xmb->font, start, (nl ? nl : end) - start, 1.0f);
+            if (msg_width > longest_width)
+               longest_width = msg_width;
+            if (longest_width > usable_width)
+               longest_width = usable_width;
+         }
+         start = nl ? nl + 1 : end + 1;
       }
-      start = nl ? nl + 1 : end + 1;
-   }
 
-   if (line_count == 0)
-      return;
+      if (line_count == 0)
+         return;
+
+      if (keep_wrap)
+      {
+         memcpy(xmb->box_wrap.text, message, msg_len);
+         xmb->box_wrap.font            = xmb->font;
+         xmb->box_wrap.font_generation = font_generation;
+         xmb->box_wrap.font_size       = xmb->font_size;
+         xmb->box_wrap.margins_dialog  = xmb->margins_dialog;
+         xmb->box_wrap.dims            = video_dims;
+         xmb->box_wrap.buttons         = buttons.count;
+         xmb->box_wrap.wideglyph_width = xmb->wideglyph_width;
+         xmb->box_wrap.stack_h         = stack_h;
+         xmb->box_wrap.assets_missing  = xmb->assets_missing;
+         xmb->box_wrap.line_count      = line_count;
+         xmb->box_wrap.usable_width    = usable_width;
+         xmb->box_wrap.longest_width   = longest_width;
+         xmb->box_wrap.len             = msg_len;
+      }
+   }
 
    input_dialog_display_kb = menu_input_dialog_get_display_kb();
    line_height             = xmb->font->size * 1.30f;
@@ -1613,6 +1690,8 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             {
                char *s     = lines[line_count - 1];
                size_t len  = strlen(s);
+               /* The kept lines are cut: wrap again next frame */
+               xmb->box_wrap.len = 0;
                int dots_w  = font_driver_get_message_width(
                      xmb->font, "...", 3, 1.0f);
                while (len && font_driver_get_message_width(
@@ -1625,7 +1704,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                while (len && s[len - 1] == ' ')
                   len--;
                if ((size_t)(s - wrapped_message) + len + 4
-                     <= sizeof(wrapped_message))
+                     <= MENU_LABEL_MAX_LENGTH)
                   memcpy(s + len, "...", 4);
             }
          }
