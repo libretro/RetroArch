@@ -438,6 +438,7 @@ VIDEO CONTEXT
 #include "../record/record_android_capture_device.c"
 #endif
 #include "../gfx/common/vulkan_common.c"
+#include "../gfx/common/vulkan_encode_device.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
 #ifdef HAVE_RMP4
 #include "../gfx/common/vulkan_video_decode.c"

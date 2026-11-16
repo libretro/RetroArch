@@ -1862,6 +1862,7 @@ ifeq ($(HAVE_VULKAN), 1)
 
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
+          gfx/common/vulkan_encode_device.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o
 
    ifeq ($(ANDROID)$(HAVE_THREADS), 11)

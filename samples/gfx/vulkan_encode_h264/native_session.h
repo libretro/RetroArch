@@ -181,7 +181,8 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
       }
       assert(retry<10000);
    }
-   wait_ready=(PFN_vkWaitSemaphores)c->device_proc(c->device,"vkWaitSemaphores");
+   wait_ready=(PFN_vkWaitSemaphores)c->device_proc(c->device,
+         c->api_version<VK_API_VERSION_1_2?"vkWaitSemaphoresKHR":"vkWaitSemaphores");
    assert(wait_ready);
    memset(&wait,0,sizeof(wait));
    wait.sType=VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;

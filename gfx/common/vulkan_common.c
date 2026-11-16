@@ -26,6 +26,7 @@
 #endif
 
 #include "vulkan_common.h"
+#include "vulkan_encode_device.h"
 #ifdef HAVE_VAAPI
 #include "vaapi_hevc_vulkan_cache.h"
 #include "vulkan_prime_device.h"
@@ -115,8 +116,8 @@ static dylib_t                       vulkan_library;
 static bool                          vulkan_library_custom;
 #endif
 static VkInstance                    cached_instance_vk;
-#ifdef HAVE_VAAPI
 static uint32_t                      cached_instance_api_vk;
+#ifdef HAVE_VAAPI
 static bool                          cached_instance_properties2_vk;
 static bool                          cached_prime_import_vk;
 #endif
@@ -232,6 +233,7 @@ void vulkan_context_session_cache_free(void)
 }
 /* The video decode queues a cached device was made with */
 static uint32_t                      cached_video_vk[6];
+static uint32_t                      cached_recording_vk[4];
 #if defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
             || defined(HAVE_RECORD_MEDIACODEC))
@@ -1358,7 +1360,7 @@ static const void *vulkan_upscaler_features(gfx_ctx_vulkan_data_t *vk,
 #define vulkan_upscaler_features(vk, gpu, pnext) (pnext)
 #endif
 
-static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
+static VkResult vulkan_context_create_device_plain(gfx_ctx_vulkan_data_t *vk,
       VkPhysicalDevice gpu, const VkDeviceCreateInfo *info,
       const VkAllocationCallbacks *allocator, VkDevice *device)
 {
@@ -1459,6 +1461,58 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
 #else
    return vkCreateDevice(gpu, info, allocator, device);
 #endif
+}
+
+static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
+      VkPhysicalDevice gpu, const VkDeviceCreateInfo *info,
+      const VkAllocationCallbacks *allocator, VkDevice *device)
+{
+   vk->context.recording_device = false;
+   vk->context.recording_storage_images = false;
+#if defined(HAVE_THREADS) && defined(HAVE_RMP4) && defined(HAVE_RAC3) \
+      && !defined(ANDROID) && !defined(__ANDROID__) \
+      && (defined(__linux__) || (defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)))
+   if (vk->context.properties2_instance == vk->context.instance
+#ifdef HAVE_OPENXR
+         && !vk->context.xr
+#endif
+      )
+   {
+      PFN_vkGetInstanceProcAddr proc = vulkan_symbol_wrapper_instance_proc_addr();
+      vulkan_encode_device_ops_t ops;
+      vulkan_encode_device_plan_t *plan;
+      uint32_t version = vk->context.instance_api_version;
+      VkResult result;
+      if (!proc)
+         return vulkan_context_create_device_plain(vk, gpu, info, allocator, device);
+      if (version > vk->context.gpu_properties.apiVersion)
+         version = vk->context.gpu_properties.apiVersion;
+      ops.features = (PFN_vkGetPhysicalDeviceFeatures2)proc(vk->context.instance,
+            "vkGetPhysicalDeviceFeatures2");
+      ops.families = (PFN_vkGetPhysicalDeviceQueueFamilyProperties2)proc(vk->context.instance,
+            "vkGetPhysicalDeviceQueueFamilyProperties2");
+      ops.extensions = vkEnumerateDeviceExtensionProperties;
+      plan = vulkan_encode_device_plan_new(gpu, version,
+            vk->context.graphics_queue_index, info, &ops);
+      if (plan)
+      {
+         result = vulkan_context_create_device_plain(vk, gpu,
+               vulkan_encode_device_plan_info(plan), allocator, device);
+         if (result == VK_SUCCESS)
+         {
+            vulkan_encode_device_plan_queue(plan, &vk->context.recording_family,
+                  &vk->context.recording_queue_index, &vk->context.recording_storage_images);
+            vk->context.recording_device = true;
+            vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+         }
+         vulkan_encode_device_plan_free(plan);
+         if (result == VK_SUCCESS)
+            return result;
+         *device = VK_NULL_HANDLE;
+      }
+   }
+#endif
+   return vulkan_context_create_device_plain(vk, gpu, info, allocator, device);
 }
 
 #ifdef HAVE_OPENXR
@@ -1888,6 +1942,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    vk->context.video_decode_family = 0;
    vk->context.video_xfer_family   = 0;
    vk->context.video_xfer_first    = 0;
+   vk->context.recording_device = false;
+   vk->context.recording_storage_images = false;
+   vk->context.recording_family = 0;
+   vk->context.recording_queue_index = 0;
 
    if (!vulkan_context_init_gpu(vk))
       return false;
@@ -2285,6 +2343,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.video_xfer_first    = cached_video_vk[2];
          vk->context.video_lanes         = cached_video_vk[3];
          vk->context.video_codec_operations = cached_video_vk[4];
+         vk->context.recording_device = cached_recording_vk[0] != 0;
+         vk->context.recording_family = cached_recording_vk[1];
+         vk->context.recording_queue_index = cached_recording_vk[2];
+         vk->context.recording_storage_images = cached_recording_vk[3] != 0;
          if (cached_video_vk[5]) vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
          else vk->context.flags &= ~VK_CTX_FLAG_VIDEO_GENERAL;
 #if defined(ANDROID) \
@@ -2798,11 +2860,11 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       goto end;
    }
 
-#ifdef HAVE_VAAPI
    vk->context.properties2_instance = instance;
    vk->context.instance_api_version = info.pApplicationInfo
          && info.pApplicationInfo->apiVersion
          ? info.pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
+#ifdef HAVE_VAAPI
    vk->context.instance_properties2 = false;
    for (i = 0; i < info.enabledExtensionCount; i++)
       if (string_is_equal(info.ppEnabledExtensionNames[i],
@@ -5969,9 +6031,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
       vk->context.instance = cached_instance_vk;
       cached_instance_vk   = NULL;
-#ifdef HAVE_VAAPI
       vk->context.properties2_instance = vk->context.instance;
       vk->context.instance_api_version = cached_instance_api_vk;
+#ifdef HAVE_VAAPI
       vk->context.instance_properties2 = cached_instance_properties2_vk;
 #endif
       /* Only the create wrapper sees the enabled extensions. */
@@ -6206,10 +6268,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_gpu_vk            = vk->context.gpu;
       cached_gpu_index_vk      = vk->context.gpu_index;
       cached_instance_vk       = vk->context.instance;
-#ifdef HAVE_VAAPI
-      cached_prime_import_vk   = vk->context.prime_import_device;
       cached_instance_api_vk   = vk->context.properties2_instance == vk->context.instance
             ? vk->context.instance_api_version : 0;
+#ifdef HAVE_VAAPI
+      cached_prime_import_vk   = vk->context.prime_import_device;
       cached_instance_properties2_vk = vk->context.properties2_instance == vk->context.instance
             && vk->context.instance_properties2;
 #endif
@@ -6224,6 +6286,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_video_vk[3]       = vk->context.video_lanes;
       cached_video_vk[4]       = vk->context.video_codec_operations;
       cached_video_vk[5]       = vk->context.flags & VK_CTX_FLAG_VIDEO_GENERAL;
+      cached_recording_vk[0] = vk->context.recording_device ? 1 : 0;
+      cached_recording_vk[1] = vk->context.recording_family;
+      cached_recording_vk[2] = vk->context.recording_queue_index;
+      cached_recording_vk[3] = vk->context.recording_storage_images ? 1 : 0;
 #if defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
             || defined(HAVE_RECORD_MEDIACODEC))

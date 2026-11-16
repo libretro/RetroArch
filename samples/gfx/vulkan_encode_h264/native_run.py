@@ -19,6 +19,7 @@ parser.add_argument('--binary', type=Path, help='reuse a previously built native
 parser.add_argument('--capture', choices=['direct', 'buffer'], help='GPU RGB clear through the shipping conversion shader')
 parser.add_argument('--session', action='store_true', help='native MP4/AC3 file output through the session owner; requires --capture')
 parser.add_argument('--dispatcher', action='store_true', help='run the recording session on its dedicated worker; requires --session')
+parser.add_argument('--device-plan', action='store_true', help='provision encode queue from a graphics-only Vulkan 1.1 request; requires --dispatcher')
 parser.add_argument('--pictures', action='store_true', help='submit test-only uploaded NV12 pictures and independently decode')
 parser.add_argument('--ffmpeg', default=shutil.which('ffmpeg'))
 parser.add_argument('--ffprobe', default=shutil.which('ffprobe'))
@@ -32,6 +33,8 @@ if args.session and not args.capture:
     parser.error('--session requires --capture direct or buffer')
 if args.dispatcher and not args.session:
     parser.error('--dispatcher requires --session')
+if args.device_plan and not args.dispatcher:
+    parser.error('--device-plan requires --dispatcher')
 if args.pictures and (not args.ffmpeg or not args.ffprobe):
     parser.error('--pictures requires independent FFmpeg and FFprobe executables')
 here = Path(__file__).resolve().parent
@@ -48,6 +51,8 @@ if args.session:
     evidence['scope'] = 'Native Vulkan GPU capture and recording session MP4/AC3 file output; independent picture/sample/timestamp oracle'
 if args.dispatcher:
     evidence['scope'] += '; session/file operations owned by dedicated dispatcher worker'
+if args.device_plan:
+    evidence['scope'] += '; shipping renderer device plan, Vulkan 1.1 instance and KHR synchronization/timeline entrypoints'
 evidence['source'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
 evidence['dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=repo))
 
@@ -96,7 +101,7 @@ if not args.binary:
         'record/record_file_posix.c', 'record/record_mediacodec_file.c', 'libretro-common/queues/retro_spsc.c',
         'libretro-common/formats/ac3/rac3_frame.c', 'libretro-common/formats/ac3/rac3_encode.c']
     sources += ['record/record_gpu_dispatch_vulkan.c', 'samples/record/gpu_av_output/rthreads_compat.c',
-        'libretro-common/rthreads/retro_eventcount.c']
+        'libretro-common/rthreads/retro_eventcount.c', 'gfx/common/vulkan_encode_device.c']
     result = run(compiler + flags + [str(repo / name) for name in sources] + ['-o', str(binary)]
                  + (['-lm'] if os.name == 'nt' else ['-pthread', '-ldl', '-lm']), 120)
     if result.returncode:
@@ -105,7 +110,7 @@ if not args.binary:
         result.check_returncode()
 evidence['binary_sha256'] = hashlib.sha256(binary.read_bytes()).hexdigest()
 coded = root / ('output.mp4' if args.session else 'output.h264')
-mode = ('--dispatch-' if args.dispatcher else '--session-' if args.session else '--capture-') + args.capture if args.capture else '--pictures'
+mode = ('--plan-' if args.device_plan else '--dispatch-' if args.dispatcher else '--session-' if args.session else '--capture-') + args.capture if args.capture else '--pictures'
 result = run([binary] + ([mode, coded] if args.pictures else []), 30)
 output = result.stdout.decode(errors='replace')
 print(output, end='', flush=True)
@@ -115,6 +120,9 @@ if result.returncode == 0:
         evidence['result'] = 'FAIL output contract'
         save()
         raise AssertionError(output)
+    if args.device_plan:
+        assert 'device_plan=1 instance_api=4198400' in output
+        evidence['instance_api'] = '1.1'
 if result.returncode == 0 and args.pictures:
     try:
         dimensions = re.search(r'extent=(\d+)x(\d+)', output)

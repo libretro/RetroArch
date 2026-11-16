@@ -11,6 +11,7 @@
 #include "../../../gfx/common/vulkan_encode_h264.h"
 #include "../../../gfx/common/vulkan_encode_capture.h"
 #include "../../../record/record_gpu_session_vulkan.h"
+#include "../../../gfx/common/vulkan_encode_device.h"
 
 struct native_capture_command
 {
@@ -37,6 +38,8 @@ struct native_encoder
    unsigned validation_errors;
    PFN_vkDestroyDebugUtilsMessengerEXT destroy_messenger;
    unsigned family;
+   unsigned encode_queue_index;
+   uint32_t api_version;
    VkQueueFlags queue_flags;
    VkCommandPool producer_commands;
    VkCommandBuffer producer[2];
@@ -75,6 +78,11 @@ struct native_encoder
 } while (0)
 #define DEVICE(member, name) do { \
    c->member=(PFN_vk##name)c->device_proc(c->device,"vk" #name); \
+   assert(c->member); \
+} while (0)
+#define DEVICE_SYNC(member) do { \
+   c->member=(PFN_vkCmdPipelineBarrier2)c->device_proc(c->device, \
+         c->api_version<VK_API_VERSION_1_3?"vkCmdPipelineBarrier2KHR":"vkCmdPipelineBarrier2"); \
    assert(c->member); \
 } while (0)
 
@@ -153,7 +161,7 @@ static void load_ops(struct native_encoder *c)
    DEVICE(ops.submit.reset_command, ResetCommandBuffer);
    DEVICE(ops.submit.begin, BeginCommandBuffer);
    DEVICE(ops.submit.end, EndCommandBuffer);
-   DEVICE(ops.submit.barrier, CmdPipelineBarrier2);
+   DEVICE_SYNC(ops.submit.barrier);
    DEVICE(ops.submit.reset_query, CmdResetQueryPool);
    DEVICE(ops.submit.begin_query, CmdBeginQuery);
    DEVICE(ops.submit.end_query, CmdEndQuery);
@@ -182,7 +190,7 @@ static void load_capture_ops(struct native_encoder *c)
    DEVICE(capture_ops.destroy_shader, DestroyShaderModule);
    DEVICE(capture_ops.create_pipelines, CreateComputePipelines);
    DEVICE(capture_ops.destroy_pipeline, DestroyPipeline);
-   DEVICE(capture_ops.barrier, CmdPipelineBarrier2);
+   DEVICE_SYNC(capture_ops.barrier);
    DEVICE(capture_ops.bind_pipeline, CmdBindPipeline);
    DEVICE(capture_ops.bind_sets, CmdBindDescriptorSets);
    DEVICE(capture_ops.push, CmdPushConstants);
@@ -262,7 +270,7 @@ static bool select_device(struct native_encoder *c)
    free(devices);
    return found;
 }
-static bool startup(struct native_encoder *c,bool capture)
+static bool startup(struct native_encoder *c,bool capture,bool planned)
 {
    VkApplicationInfo application;
    VkDebugUtilsMessengerCreateInfoEXT debug;
@@ -296,7 +304,8 @@ static bool startup(struct native_encoder *c,bool capture)
    memset(&application,0,sizeof(application));
    application.sType=VK_STRUCTURE_TYPE_APPLICATION_INFO;
    application.pApplicationName="RetroArch native encoder acceptance";
-   application.apiVersion=VK_API_VERSION_1_3;
+   c->api_version=planned?VK_API_VERSION_1_1:VK_API_VERSION_1_3;
+   application.apiVersion=c->api_version;
    memset(&instance,0,sizeof(instance));
    instance.sType=VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
    instance.pApplicationInfo=&application;
@@ -327,12 +336,12 @@ static bool startup(struct native_encoder *c,bool capture)
    features=(PFN_vkGetPhysicalDeviceFeatures2)c->instance_proc(c->instance,"vkGetPhysicalDeviceFeatures2");
    assert(features);
    c->features.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-   c->features.pNext=&c->version12;
+   c->features.pNext=planned?NULL:&c->version12;
    c->version12.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
    c->version12.pNext=&c->version13;
    c->version13.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
    features(c->physical,&c->features);
-   if (!c->version12.timelineSemaphore || !c->version13.synchronization2) return false;
+   if (!planned && (!c->version12.timelineSemaphore || !c->version13.synchronization2)) return false;
    storage=c->features.features.shaderStorageImageExtendedFormats!=0;
    memset(&enabled,0,sizeof(enabled));
    enabled.shaderStorageImageExtendedFormats=storage;
@@ -361,12 +370,34 @@ static bool startup(struct native_encoder *c,bool capture)
    device.enabledExtensionCount=3;
    device.ppEnabledExtensionNames=extensions;
    create_device=(PFN_vkCreateDevice)c->instance_proc(c->instance,"vkCreateDevice");
-   assert(create_device && create_device(c->physical,&device,NULL,&c->device)==VK_SUCCESS);
+   assert(create_device);
+   if (planned)
+   {
+      vulkan_encode_device_ops_t ops;
+      vulkan_encode_device_plan_t *plan;
+      bool plan_storage;
+      device.pNext=NULL;
+      device.queueCreateInfoCount=1;
+      queue[0].queueFamilyIndex=c->producer_family;
+      device.enabledExtensionCount=0;
+      ops.features=features;
+      ops.families=(PFN_vkGetPhysicalDeviceQueueFamilyProperties2)c->instance_proc(c->instance,"vkGetPhysicalDeviceQueueFamilyProperties2");
+      ops.extensions=(PFN_vkEnumerateDeviceExtensionProperties)c->instance_proc(c->instance,"vkEnumerateDeviceExtensionProperties");
+      plan=vulkan_encode_device_plan_new(c->physical,c->api_version,c->producer_family,&device,&ops);
+      if (!plan) return false;
+      assert(vulkan_encode_device_plan_queue(plan,&c->family,&c->encode_queue_index,&plan_storage));
+      assert(plan_storage==storage);
+      assert(create_device(c->physical,vulkan_encode_device_plan_info(plan),NULL,&c->device)==VK_SUCCESS);
+      printf("device_plan=1 instance_api=%u family=%u queue_index=%u extensions=%u\n",
+            c->api_version,c->family,c->encode_queue_index,vulkan_encode_device_plan_info(plan)->enabledExtensionCount);
+      vulkan_encode_device_plan_free(plan);
+   }
+   else assert(create_device(c->physical,&device,NULL,&c->device)==VK_SUCCESS);
    INSTANCE(device_proc,GetDeviceProcAddr);
    DEVICE(destroy_device,DestroyDevice);
    get_queue=(PFN_vkGetDeviceQueue)c->device_proc(c->device,"vkGetDeviceQueue");
    assert(get_queue);
-   get_queue(c->device,c->family,0,&c->queue);
+   get_queue(c->device,c->family,c->encode_queue_index,&c->queue);
    get_queue(c->device,c->producer_family,0,&c->producer_queue);
    load_ops(c);
    if (capture) load_capture_ops(c);
@@ -649,9 +680,10 @@ int main(int argc,char **argv)
    assert(c && (argc==1 || (argc==3 && (!strcmp(argv[1],"--pictures")
                || !strcmp(argv[1],"--capture-direct") || !strcmp(argv[1],"--capture-buffer")
                || !strcmp(argv[1],"--session-direct") || !strcmp(argv[1],"--session-buffer")
-               || !strcmp(argv[1],"--dispatch-direct") || !strcmp(argv[1],"--dispatch-buffer")))));
+               || !strcmp(argv[1],"--dispatch-direct") || !strcmp(argv[1],"--dispatch-buffer")
+               || !strcmp(argv[1],"--plan-direct") || !strcmp(argv[1],"--plan-buffer")))));
    packet=&c->packets[0];
-   if (!startup(c,argc==3 && strcmp(argv[1],"--pictures")))
+   if (!startup(c,argc==3 && strcmp(argv[1],"--pictures"),argc==3 && !strncmp(argv[1],"--plan-",7)))
       puts("UNAVAILABLE Vulkan validation layer or Vulkan 1.3 H.264 encode device/features");
    else
    {
@@ -679,9 +711,10 @@ int main(int argc,char **argv)
          puts("UNAVAILABLE test upload on the selected encode queue");
       else
       {
-         result=argc==3 && (!strncmp(argv[1],"--session-",10) || !strncmp(argv[1],"--dispatch-",11))
+         result=argc==3 && (!strncmp(argv[1],"--session-",10) || !strncmp(argv[1],"--dispatch-",11) || !strncmp(argv[1],"--plan-",7))
             ? session_pictures(c,argv[2],!strcmp(argv[1],"--session-direct")
-                  || !strcmp(argv[1],"--dispatch-direct"),!strncmp(argv[1],"--dispatch-",11))
+                  || !strcmp(argv[1],"--dispatch-direct") || !strcmp(argv[1],"--plan-direct"),
+                  !strncmp(argv[1],"--dispatch-",11) || !strncmp(argv[1],"--plan-",7))
             :argc==3?encode_pictures(c,argv[2],!strcmp(argv[1],"--capture-direct")
                ?1:!strcmp(argv[1],"--capture-buffer")?2:0):0;
       }
