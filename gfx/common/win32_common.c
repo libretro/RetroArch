@@ -275,99 +275,163 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #define MIN_HEIGHT 240
 
 #ifdef HAVE_D3DKMT
-static d3dkmt_adapter_t d3dkmt_adapter;
+/* The adapter and VidPn source of the monitor the window is on, under
+ * a seqlock: the window's thread rebinds them (win32_d3dkmt_follow),
+ * and the video and main threads read them. */
+static HMONITOR d3dkmt_monitor;
+static retro_atomic_int_t d3dkmt_seq     = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t d3dkmt_adapter = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t d3dkmt_source  = RETRO_ATOMIC_INT_INITIALIZER(0);
 
-static void d3dkmt_init(void)
+static bool d3dkmt_bound(D3DKMT_HANDLE *adapter, UINT *source)
 {
-   if (!pD3DKMTOpenAdapterFromHdc)
+   for (;;)
    {
-      unsigned d3dkmt_adapter_hAdapter = 0;
-      unsigned d3dkmt_adapter_VidPnSourceId = 0;
-      unsigned adapter_index = 0;
-      DISPLAY_DEVICE add;
+      int seq = retro_atomic_load_acquire_int(&d3dkmt_seq);
+      if (seq & 1)
+         continue;
+      *adapter = (D3DKMT_HANDLE)retro_atomic_load_relaxed_int(&d3dkmt_adapter);
+      *source  = (UINT)retro_atomic_load_relaxed_int(&d3dkmt_source);
+      retro_atomic_thread_fence_acquire();
+      if (retro_atomic_load_relaxed_int(&d3dkmt_seq) == seq)
+         break;
+   }
+   return *adapter != 0;
+}
 
-      add.cb = sizeof(add);
-
-      pD3DKMTOpenAdapterFromHdc = (D3DKMTOPENADAPTERFROMHDC)
-            GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTOpenAdapterFromHdc");
-      pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
-            GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTGetScanLine");
-      /* Optional: only the phase anchor depends on it, and
-       * d3dkmt_wait_vblank() reports its absence so the caller can
-       * fall back. Not part of the guard below for that reason. */
-      pD3DKMTWaitForVerticalBlankEvent = (D3DKMTWAITFORVERTICALBLANKEVENT)
-            GetProcAddress(GetModuleHandle("gdi32.dll"),
-                  "D3DKMTWaitForVerticalBlankEvent");
-
-      /* Both exports are WDDM, so they are absent under XDDM - there
-       * are no D3DKMT entry points in gdi32 before Vista at all.
-       * pD3DKMTGetScanLine is null-checked at its two use sites;
-       * pD3DKMTOpenAdapterFromHdc was not, and it is called inside the
-       * loop below, so a missing export was a call through NULL on the
-       * first display device. Leave the scanline state zeroed and let
-       * d3dkmt_scanline_get() report -1, which
-       * video_driver_scanline_after_frame() treats as unsupported. */
-      if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
+static bool d3dkmt_open(const char *device, D3DKMT_HANDLE *adapter,
+      UINT *source)
+{
+   bool ret = false;
+   HDC hdc  = CreateDC(NULL, device, NULL, NULL);
+   if (hdc)
+   {
+      D3DKMT_OPENADAPTERFROMHDC desc;
+      desc.hDc                  = hdc;
+      desc.hAdapter             = 0;
+      desc.AdapterLuid.LowPart  = 0;
+      desc.AdapterLuid.HighPart = 0;
+      desc.VidPnSourceId        = 0;
+      if (     pD3DKMTOpenAdapterFromHdc(&desc) == STATUS_SUCCESS
+            && desc.hAdapter)
       {
-         memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
-         return;
+         *adapter = desc.hAdapter;
+         *source  = desc.VidPnSourceId;
+         ret      = true;
       }
+      DeleteDC(hdc);
+   }
+   return ret;
+}
 
-      while (EnumDisplayDevices(NULL, adapter_index, &add, 0))
+static void d3dkmt_bind(D3DKMT_HANDLE adapter, UINT source)
+{
+   int seq           = retro_atomic_load_relaxed_int(&d3dkmt_seq);
+   D3DKMT_HANDLE old = (D3DKMT_HANDLE)
+      retro_atomic_load_relaxed_int(&d3dkmt_adapter);
+   retro_atomic_store_relaxed_int(&d3dkmt_seq, seq + 1);
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_relaxed_int(&d3dkmt_adapter, (int)adapter);
+   retro_atomic_store_relaxed_int(&d3dkmt_source, (int)source);
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_release_int(&d3dkmt_seq, seq + 2);
+   /* A call still in flight on the old handle fails or completes */
+   if (old && pD3DKMTCloseAdapter)
+   {
+      D3DKMT_CLOSEADAPTER close_data;
+      close_data.hAdapter = old;
+      pD3DKMTCloseAdapter(&close_data);
+   }
+}
+
+/* Without a monitor to follow: the first display device that opens */
+static void d3dkmt_bind_first(void)
+{
+   unsigned i;
+   DISPLAY_DEVICE add;
+   add.cb = sizeof(add);
+   for (i = 0; EnumDisplayDevices(NULL, i, &add, 0); i++)
+   {
+      D3DKMT_HANDLE adapter = 0;
+      UINT source           = 0;
+      if (d3dkmt_open(add.DeviceName, &adapter, &source))
       {
-         HDC hdc = CreateDC(NULL, add.DeviceName, NULL, NULL);
-         if (hdc != NULL)
-         {
-            D3DKMT_OPENADAPTERFROMHDC OpenAdapterData = {0};
-            OpenAdapterData.hDc = hdc;
-            if (pD3DKMTOpenAdapterFromHdc(&OpenAdapterData) == STATUS_SUCCESS)
-            {
-               d3dkmt_adapter_hAdapter      = OpenAdapterData.hAdapter;
-               d3dkmt_adapter_VidPnSourceId = OpenAdapterData.VidPnSourceId;
-            }
-            DeleteDC(hdc);
-
-            if (d3dkmt_adapter_hAdapter)
-               break;
-         }
-         adapter_index++;
-      }
-
-      memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
-
-      if (pD3DKMTGetScanLine)
-      {
-         D3DKMT_GETSCANLINE sl = {0};
-         sl.hAdapter           = d3dkmt_adapter_hAdapter;
-         sl.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
-         d3dkmt_adapter.sl     = sl;
-      }
-
-      {
-         D3DKMT_WAITFORVERTICALBLANKEVENT vb = {0};
-         vb.hAdapter           = d3dkmt_adapter_hAdapter;
-         vb.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
-         /* hDevice is documented optional and is not needed to wait on
-          * a VidPn source. */
-         d3dkmt_adapter.vb     = vb;
+         d3dkmt_bind(adapter, source);
+         break;
       }
    }
 }
 
+void win32_d3dkmt_follow(HWND hwnd, bool force)
+{
+   MONITORINFOEX info;
+   D3DKMT_HANDLE adapter = 0;
+   UINT source           = 0;
+   HMONITOR mon          = hwnd
+      ? MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) : NULL;
+   /* Both exports are WDDM, absent under XDDM: nothing is bound, and
+    * d3dkmt_scanline_get() reports -1. */
+   if (     !pD3DKMTOpenAdapterFromHdc
+         || !mon
+         || (mon == d3dkmt_monitor && !force))
+      return;
+   /* Whether or not it opens: a window being dragged asks on every
+    * move */
+   d3dkmt_monitor = mon;
+   memset(&info, 0, sizeof(info));
+   info.cbSize    = sizeof(MONITORINFOEX);
+   if (     GetMonitorInfo(mon, (LPMONITORINFO)&info)
+         && d3dkmt_open(info.szDevice, &adapter, &source))
+      d3dkmt_bind(adapter, source);
+}
+
+static void d3dkmt_init(void)
+{
+   D3DKMT_HANDLE adapter;
+   UINT source;
+   if (!pD3DKMTOpenAdapterFromHdc)
+   {
+      HMODULE gdi32 = GetModuleHandle("gdi32.dll");
+      pD3DKMTOpenAdapterFromHdc = (D3DKMTOPENADAPTERFROMHDC)
+            GetProcAddress(gdi32, "D3DKMTOpenAdapterFromHdc");
+      pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
+            GetProcAddress(gdi32, "D3DKMTGetScanLine");
+      /* Optional: d3dkmt_wait_vblank() reports its absence so the
+       * caller can fall back, and an adapter left open is only that. */
+      pD3DKMTWaitForVerticalBlankEvent = (D3DKMTWAITFORVERTICALBLANKEVENT)
+            GetProcAddress(gdi32, "D3DKMTWaitForVerticalBlankEvent");
+      pD3DKMTCloseAdapter = (D3DKMTCLOSEADAPTER)
+            GetProcAddress(gdi32, "D3DKMTCloseAdapter");
+      if (!pD3DKMTGetScanLine)
+         pD3DKMTOpenAdapterFromHdc = NULL;
+   }
+   /* Until a window says which monitor it is on */
+   if (pD3DKMTOpenAdapterFromHdc && !d3dkmt_bound(&adapter, &source))
+      d3dkmt_bind_first();
+}
+
 bool d3dkmt_wait_vblank(void)
 {
-   if (!pD3DKMTWaitForVerticalBlankEvent || !d3dkmt_adapter.vb.hAdapter)
+   D3DKMT_WAITFORVERTICALBLANKEVENT vb;
+   if (     !pD3DKMTWaitForVerticalBlankEvent
+         || !d3dkmt_bound(&vb.hAdapter, &vb.VidPnSourceId))
       return false;
-   return (pD3DKMTWaitForVerticalBlankEvent(&d3dkmt_adapter.vb)
-         == STATUS_SUCCESS);
+   /* hDevice is documented optional and is not needed to wait on a
+    * VidPn source. */
+   vb.hDevice = 0;
+   return (pD3DKMTWaitForVerticalBlankEvent(&vb) == STATUS_SUCCESS);
 }
 
 int d3dkmt_scanline_get(void)
 {
-   if (pD3DKMTGetScanLine)
+   D3DKMT_GETSCANLINE sl;
+   if (     pD3DKMTGetScanLine
+         && d3dkmt_bound(&sl.hAdapter, &sl.VidPnSourceId))
    {
-      if (pD3DKMTGetScanLine(&d3dkmt_adapter.sl) == STATUS_SUCCESS)
-         return d3dkmt_adapter.sl.ScanLine;
+      sl.InVerticalBlank = FALSE;
+      sl.ScanLine        = 0;
+      if (pD3DKMTGetScanLine(&sl) == STATUS_SUCCESS)
+         return sl.ScanLine;
    }
    return -1;
 }
@@ -1005,6 +1069,9 @@ static LRESULT CALLBACK wnd_proc_common(
          /* fall-through */
       case WM_MOVE:
          win32_save_position();
+#ifdef HAVE_D3DKMT
+         win32_d3dkmt_follow(hwnd, false);
+#endif
          /* It may be on another monitor now */
          video_driver_window_output_changed();
          break;
@@ -1453,6 +1520,9 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
       HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
       if (mon)
          win32_resize_after_display_change(hwnd, mon);
+#ifdef HAVE_D3DKMT
+      win32_d3dkmt_follow(hwnd, true);
+#endif
       video_driver_window_output_changed();
    }
 
@@ -2083,6 +2153,9 @@ static bool win32_window_create(void *data, unsigned style,
    }
    if (!main_window.hwnd)
       return false;
+#ifdef HAVE_D3DKMT
+   win32_d3dkmt_follow(main_window.hwnd, false);
+#endif
 
    window_accelerators = win32_resources_get_accelerator();
 

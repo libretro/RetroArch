@@ -319,12 +319,8 @@ typedef NTSTATUS(CALLBACK* D3DKMTGETSCANLINE)(D3DKMT_GETSCANLINE*);
 static D3DKMTGETSCANLINE pD3DKMTGetScanLine;
 typedef NTSTATUS(CALLBACK* D3DKMTWAITFORVERTICALBLANKEVENT)(D3DKMT_WAITFORVERTICALBLANKEVENT*);
 static D3DKMTWAITFORVERTICALBLANKEVENT pD3DKMTWaitForVerticalBlankEvent;
-
-typedef struct d3dkmt_adapter
-{
-   D3DKMT_GETSCANLINE sl;
-   D3DKMT_WAITFORVERTICALBLANKEVENT vb;
-} d3dkmt_adapter_t;
+typedef NTSTATUS(CALLBACK* D3DKMTCLOSEADAPTER)(const D3DKMT_CLOSEADAPTER*);
+static D3DKMTCLOSEADAPTER pD3DKMTCloseAdapter;
 
 extern int d3dkmt_scanline_get(void);
 
@@ -337,6 +333,11 @@ extern int d3dkmt_scanline_get(void);
  * That makes it a usable phase reference; GetScanLine at ~223 us a call
  * is not. */
 extern bool d3dkmt_wait_vblank(void);
+
+/* Binds the two above to the monitor @hwnd is on. Called by the
+ * window's thread whenever the window may have changed monitors;
+ * @force rebinds the same monitor too, after a display change. */
+void win32_d3dkmt_follow(HWND hwnd, bool force);
 #endif /* HAVE_D3DKMT */
 
 RETRO_END_DECLS

@@ -2438,6 +2438,15 @@ jobs:
           samples/gfx/win32_window_proc/run.sh
           python3 samples/gfx/win32_window_proc/modal_frame_run.py
 
+      - name: D3DKMT binding (mingw + Wine, headless)
+        shell: bash
+        run: |
+          set -o pipefail
+          # win32_common.c with HAVE_D3DKMT, which no other Linux job
+          # compiles, on entry points of the test's own: the binding
+          # follows the window's monitor and closes what it leaves.
+          samples/gfx/win32_d3dkmt/run.sh
+
       - name: Build and run window_driver_test for Windows (Wine)
         shell: bash
         working-directory: samples/input/window_driver
