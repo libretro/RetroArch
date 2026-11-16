@@ -85,6 +85,9 @@ typedef struct gfx_ctx_x_data
 #endif
 
    int interval;
+   /* Whether a swap goes past a compositor: the window asked to, or
+    * there is none (gfx_ctx_x_present_immediate) */
+   bool uncomposed;
 } gfx_ctx_x_data_t;
 
 /* TODO/FIXME - static globals */
@@ -275,6 +278,13 @@ static retro_time_t gfx_ctx_x_last_present_time(void *data)
    return (retro_time_t)ust;
 }
 #endif
+
+/* A swap with no interval tears where no compositor shows it. */
+static bool gfx_ctx_x_present_immediate(void *data)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   return x && x->interval == 0 && x->uncomposed;
+}
 
 static void gfx_ctx_x_swap_interval(void *data, int interval)
 {
@@ -610,6 +620,19 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
       RARCH_LOG("[GLX] Requesting compositor bypass.\n");
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
+   }
+
+   {
+      char cm[16]   = "_NET_WM_CM_S";
+      int screen    = DefaultScreen(g_x11_dpy);
+      size_t _len   = 12;
+      if (screen >= 10)
+         cm[_len++] = (char)('0' + (screen / 10) % 10);
+      cm[_len++]    = (char)('0' + screen % 10);
+      cm[_len]      = '\0';
+      x->uncomposed = (fullscreen && disable_composition)
+         || XGetSelectionOwner(g_x11_dpy,
+               XInternAtom(g_x11_dpy, cm, False)) == None;
    }
 
    if (opacity < (unsigned)-1)
@@ -1343,10 +1366,12 @@ const gfx_ctx_driver_t gfx_ctx_x = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
    gfx_ctx_x_shared_context_new,
    gfx_ctx_x_shared_context_bind,
-   gfx_ctx_x_shared_context_free
+   gfx_ctx_x_shared_context_free,
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
 #endif
+   NULL, /* windows */
+   gfx_ctx_x_present_immediate
 };

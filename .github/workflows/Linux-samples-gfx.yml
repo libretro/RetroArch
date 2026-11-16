@@ -881,6 +881,7 @@ jobs:
           # full C89_BUILD covers them only after a complete build.
           DEF="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_MODELINE"
           DEF="$DEF -DHAVE_X11 -DHAVE_XRANDR -DHAVE_CONFIGFILE -DHAVE_DYNAMIC"
+          DEF="$DEF -DHAVE_XCB"
           for f in gfx/modeline/modeline_core.c \
                    gfx/modeline/modeline_monitor.c \
                    gfx/modeline/modeline_list.c \
@@ -1903,6 +1904,25 @@ jobs:
              && make clean all SANITIZER=thread \
              && TSAN_OPTIONS=halt_on_error=1 timeout 120 ./x11_refresh_rate_test)
           echo "[pass] x11_refresh_rate_test"
+          # The X display server's vblank clock, from Present on a
+          # connection of its own: vblanks in order and waited for,
+          # their stamps on the monotonic clock, a current one after a
+          # pause, a destroyed window given up and the next taken up.
+          # On Xvfb, which counts vblanks off a timer.
+          Xvfb :98 -screen 0 640x480x24 > /tmp/xvfb-vblank.out 2>&1 &
+          XVFB_VBLANK_PID=$!
+          for i in $(seq 1 30); do
+             DISPLAY=:98 xrandr >/dev/null 2>&1 && break
+             sleep 0.2
+          done
+          (cd samples/gfx/x11_vblank \
+             && make clean all SANITIZER=address,undefined \
+             && DISPLAY=:98 ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                timeout 60 ./x11_vblank_test \
+             && make clean all SANITIZER=thread \
+             && DISPLAY=:98 TSAN_OPTIONS=halt_on_error=1 timeout 60 ./x11_vblank_test \
+             && make clean)
+          kill $XVFB_VBLANK_PID
           (cd samples/gfx/display_servers_sdl2_live \
              && make clean all SANITIZER=address,undefined \
              && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \

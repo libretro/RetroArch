@@ -1,4 +1,5 @@
 # Future
+- X11: 'Display Pacing On VBlank Events' holds on the vblanks of the window's CRTC, from the Present extension, with Vulkan in immediate mode and with OpenGL where no compositor shows the window
 - KMS: 'Display Pacing On VBlank Events' holds on the CRTC's vblanks with OpenGL on KMS, where V-Sync off page flips are asynchronous
 - VULKAN/OPENGL: 'Display Pacing On VBlank Events' also holds Vulkan and OpenGL where they present through DXGI, tear, and the display flips the fullscreen window itself
 - D3D11/D3D12: 'Display Pacing On VBlank Events' holds only where the display flips a fullscreen window straight to the scanout; where DWM composes it, as across two GPUs, the timer paces
