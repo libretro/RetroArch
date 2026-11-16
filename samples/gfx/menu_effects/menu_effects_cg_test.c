@@ -53,7 +53,7 @@ bool gl_check_capability(enum gl_capability_enum cap)
 { (void)cap; return false; }
 bool gl_query_extension(const char *ext) { (void)ext; return false; }
 void image_yuv_coefficients(unsigned flags, float c[6])
-{ (void)flags; (void)c; }
+{ unsigned i; (void)flags; for (i = 0; i < 6; i++) c[i] = 0.0f; }
 
 static const char *const effect_names[XMB_EFFECT_COUNT] = {
    "ribbon", "simple ribbon", "simple snow", "snow", "bokeh", "snowflake"
