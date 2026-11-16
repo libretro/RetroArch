@@ -506,9 +506,6 @@ enum ozone_handle_flags
    OZONE_FLAG_EMPTY_PLAYLIST                  = (1 << 17),
    /* true = display it, false = don't */
    OZONE_FLAG_OSK_CURSOR                      = (1 << 18),
-   OZONE_FLAG_MSGBOX_STATE                    = (1 << 19),
-   OZONE_FLAG_MSGBOX_STATE_OLD                = (1 << 20),
-   OZONE_FLAG_SHOULD_DRAW_MSGBOX              = (1 << 21),
    OZONE_FLAG_WANT_THUMBNAIL_BAR              = (1 << 22),
    OZONE_FLAG_SKIP_THUMBNAIL_RESET            = (1 << 23),
    OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE = (1 << 24),
@@ -782,6 +779,9 @@ struct ozone_handle
    bool show_playlist_tabs;
    bool sidebar_collapsed;
    bool font_unicode;
+   /* frame() drew a message box or the keyboard last time: frame()'s
+    * own, so the main thread never writes it */
+   bool msgbox_shown;
    /* Set when a pending NEED_COMPUTE was raised by something that
     * changed entry geometry without touching the list. The compute
     * pass then keeps the view where it is, rather than re-deriving
@@ -9386,10 +9386,6 @@ static enum menu_action ozone_parse_menu_entry_action(
          ? (unsigned)ozone->horizontal_list.size
          : 0;
 
-   if (menu_input_dialog_get_display_kb())
-      ozone->flags           |=  OZONE_FLAG_MSGBOX_STATE;
-   else
-      ozone->flags           &= ~OZONE_FLAG_MSGBOX_STATE;
    selection_buf              = MENU_LIST_GET_SELECTION(menu_list, 0);
    tag                        = (uintptr_t)selection_buf;
    selection                  = menu_st->selection_ptr;
@@ -10982,10 +10978,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
                                             | OZONE_FLAG_FADE_DIRECTION
                                             | OZONE_FLAG_CURSOR_IN_SIDEBAR
                                             | OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD
-                                            | OZONE_FLAG_MSGBOX_STATE
-                                            | OZONE_FLAG_MSGBOX_STATE_OLD
-                                            | OZONE_FLAG_SHOULD_DRAW_MSGBOX
                                              );
+      ozone->msgbox_shown                 = false;
 
       ozone->flags2                      &= ~OZONE_FLAG2_CURSOR_WIGGLING;
 
@@ -11518,7 +11512,10 @@ static void ozone_render(void *data,
               (ozone->flags  & OZONE_FLAG_CURSOR_MODE)
          && (!(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS))
          && !menu_input_dialog_get_display_kb()
-         && (!(ozone->flags & OZONE_FLAG_SHOULD_DRAW_MSGBOX));
+         && !(     menu_st->driver_data
+               && BIT64_GET(menu_st->driver_data->state,
+                  MENU_STATE_RENDER_MESSAGEBOX)
+               && *MENU_STATE_TEXT(menu_st->driver_data));
 
    /* Process pointer input, if required */
    if (pointer_enabled)
@@ -13180,13 +13177,6 @@ static void ozone_navigation_alphabet(void *data, size_t *unused)
    ozone_selection_changed(ozone, true);
 }
 
-static void ozone_messagebox_fadeout_cb(void *userdata)
-{
-   ozone_handle_t *ozone = (ozone_handle_t*)userdata;
-
-   ozone->flags                 &= ~OZONE_FLAG_SHOULD_DRAW_MSGBOX;
-}
-
 static void ozone_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat                  = {{ 0.0f }};
@@ -13278,9 +13268,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       draw_osk_old = draw_osk;
       if (!draw_osk)
       {
-         ozone->flags                       &= ~(OZONE_FLAG_SHOULD_DRAW_MSGBOX
-                                               | OZONE_FLAG_MSGBOX_STATE
-                                               | OZONE_FLAG_MSGBOX_STATE_OLD);
+         ozone->msgbox_shown                 = false;
          ozone->animations.messagebox_alpha  = 0.0f;
       }
    }
@@ -13539,17 +13527,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_flush(video_info->dims, &ozone->fonts.footer);
 
    /* Message box & OSK - second layer of text */
-   if (    (ozone->flags & OZONE_FLAG_SHOULD_DRAW_MSGBOX)
-         || draw_osk)
+   if (video_info->menu.msgbox || draw_osk)
    {
       /* Fade in animation */
-      if (     (((ozone->flags & OZONE_FLAG_MSGBOX_STATE_OLD) > 0) != ((ozone->flags & OZONE_FLAG_MSGBOX_STATE) > 0))
-            && (((ozone->flags & OZONE_FLAG_MSGBOX_STATE) > 0)))
+      if (!ozone->msgbox_shown)
       {
-         if (ozone->flags & OZONE_FLAG_MSGBOX_STATE)
-            ozone->flags                   |=  OZONE_FLAG_MSGBOX_STATE_OLD;
-         else
-            ozone->flags                   &= ~OZONE_FLAG_MSGBOX_STATE_OLD;
+         ozone->msgbox_shown                = true;
 
          gfx_animation_kill_by_tag(&messagebox_tag);
          ozone->animations.messagebox_alpha = 0.0f;
@@ -13563,40 +13546,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          entry.userdata                     = NULL;
 
          gfx_animation_push(&entry);
-      }
-      /* Fade out animation */
-      else if   (((ozone->flags & OZONE_FLAG_MSGBOX_STATE_OLD) > 0) != ((ozone->flags & OZONE_FLAG_MSGBOX_STATE) > 0)
-            &&  (!(ozone->flags & OZONE_FLAG_MSGBOX_STATE)))
-      {
-         bool animate = false;
-
-         if (ozone->flags & OZONE_FLAG_MSGBOX_STATE)
-            ozone->flags                   &= ~OZONE_FLAG_MSGBOX_STATE_OLD;
-         else
-            ozone->flags                   &= ~OZONE_FLAG_MSGBOX_STATE_OLD;
-         ozone->flags                      &= ~OZONE_FLAG_MSGBOX_STATE;
-
-         gfx_animation_kill_by_tag(&messagebox_tag);
-
-         if (animate)
-         {
-            ozone->animations.messagebox_alpha = 1.0f;
-
-            entry.cb                           = ozone_messagebox_fadeout_cb;
-            entry.duration                     = ANIMATION_PUSH_ENTRY_DURATION;
-            entry.easing_enum                  = OZONE_EASING_ALPHA;
-            entry.subject                      = &ozone->animations.messagebox_alpha;
-            entry.tag                          = messagebox_tag;
-            entry.target_value                 = 0.0f;
-            entry.userdata                     = ozone;
-
-            gfx_animation_push(&entry);
-         }
-         else
-         {
-            ozone->animations.messagebox_alpha = 0.0f;
-            ozone_messagebox_fadeout_cb(ozone);
-         }
       }
 
       ozone_draw_backdrop(userdata,
@@ -13635,6 +13584,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_height), &ozone->fonts.footer);
       font_flush(VIDEO_SCALE_PACK(video_width,
             video_height), &ozone->fonts.entries_label);
+   }
+   else if (ozone->msgbox_shown)
+   {
+      ozone->msgbox_shown                = false;
+      gfx_animation_kill_by_tag(&messagebox_tag);
+      ozone->animations.messagebox_alpha = 0.0f;
    }
 
    /* Cursor */
@@ -14448,17 +14403,6 @@ static int ozone_environ_cb(enum menu_environ_cb type, void *data, void *userdat
    return 0;
 }
 
-static void ozone_messagebox(void *data, const char *message)
-{
-   ozone_handle_t *ozone = (ozone_handle_t*) data;
-
-   if (!ozone || !message || !*message)
-      return;
-
-   ozone->flags                 |= OZONE_FLAG_SHOULD_DRAW_MSGBOX
-                                 | OZONE_FLAG_MSGBOX_STATE;
-}
-
 static int ozone_deferred_push_content_actions(menu_displaylist_info_t *info)
 {
    settings_t *settings         = config_get_ptr();
@@ -14749,7 +14693,7 @@ static int ozone_pointer_up(void *userdata,
 
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
-   ozone_messagebox,
+   NULL,                         /* render_messagebox */
    ozone_render,
    ozone_frame,
    ozone_init,
