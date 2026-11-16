@@ -228,8 +228,8 @@ static void test_identity(void)
    uint8_t got[CORE_SHA256_LEN];
    core_file_t *f;
    int step;
-   size_t i;
 #ifdef __linux__
+   size_t i;
    struct statfs fs;
 #endif
 
