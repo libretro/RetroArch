@@ -314,10 +314,11 @@ bool sdl3_video_window_take(void *owner, unsigned screen,
       SDL_WindowFlags flags);
 /* Kept windows nobody took go; on the thread of the context */
 void sdl3_video_windows_release_kept(void);
-/* Any thread: whether the window, or the window SDL gives this ID,
- * is a secondary screen's (the ID of one destroyed lately too); NULL
- * and 0 are none */
-bool sdl3_video_window_is_screen(const SDL_Window *win, SDL_WindowID id);
+/* Any thread: the screen whose window @win is, or the window SDL gives
+ * @id, with the generation it was made with; RETRO_VIDEO_VIEWS_MAX for
+ * one destroyed lately, 0 for none. NULL and 0 are none. */
+unsigned sdl3_video_window_screen(const SDL_Window *win, SDL_WindowID id,
+      unsigned *generation);
 /* Hands each window 'owner' still has to 'destroy'. */
 void sdl3_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window));

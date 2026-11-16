@@ -58,10 +58,13 @@ void flush_wayland_fd(void *data);
 static bool wayland_context_gettouchpos(
       gfx_ctx_wayland_data_t *wl,
       unsigned id,
-      unsigned* touch_x, unsigned* touch_y)
+      unsigned* touch_x, unsigned* touch_y,
+      input_video_window_t *window)
 {
-   *touch_x = wl->active_touch_positions[id].x;
-   *touch_y = wl->active_touch_positions[id].y;
+   *touch_x           = wl->active_touch_positions[id].x;
+   *touch_y           = wl->active_touch_positions[id].y;
+   window->window     = wl->active_touch_positions[id].window;
+   window->generation = wl->active_touch_positions[id].generation;
    return wl->active_touch_positions[id].active;
 }
 
@@ -70,6 +73,7 @@ static void input_wl_poll(void *data)
    int id;
    unsigned touch_x             = 0;
    unsigned touch_y             = 0;
+   input_video_window_t touch_windows[MAX_TOUCHES];
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
    if (!wl)
       return;
@@ -84,7 +88,7 @@ static void input_wl_poll(void *data)
       wl->mouse.delta = 0;
    }
 
-   if (wl->gfx->locked_pointer)
+   if (wl->gfx->locked_pointer && !wl->mouse.window)
    {
       /* Clamp X */
       if (VIDEO_POS_X(wl->mouse.pos) < 0)
@@ -101,7 +105,8 @@ static void input_wl_poll(void *data)
 
    for (id = 0; id < MAX_TOUCHES; id++)
    {
-      if (wayland_context_gettouchpos(wl->gfx, id, &touch_x, &touch_y))
+      if (wayland_context_gettouchpos(wl->gfx, id, &touch_x, &touch_y,
+               &touch_windows[id]))
          wl->touches[id].active = true;
       else
          wl->touches[id].active = false;
@@ -158,9 +163,21 @@ static void input_wl_poll(void *data)
             down      |= (1 << id);
       }
       /* the one mouse is every port's; it stands for three touches */
+#ifdef HAVE_VIDEO_WINDOWS
+      {
+         input_video_window_t mouse_window;
+         mouse_window.window     = wl->mouse.window;
+         mouse_window.generation = wl->mouse.generation;
+         input_driver_publish_window_pointers(frame, &mouse_window, 1,
+               INPUT_POINTERS_MOUSE_3_TOUCHES);
+      }
+      input_driver_publish_window_touches(touch_pos, touch_windows,
+            MAX_TOUCHES, present, down);
+#else
       input_driver_publish_pointers(frame, 1,
             INPUT_POINTERS_MOUSE_3_TOUCHES);
       input_driver_publish_touches(touch_pos, MAX_TOUCHES, present, down);
+#endif
    }
 }
 

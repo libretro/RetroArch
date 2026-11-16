@@ -117,6 +117,8 @@ retro_atomic_int_t g_x11_size;
  * input driver takes that window's keys too. Written by the event
  * pump, read by the input driver's poll. */
 retro_atomic_int_t g_x11_key_windows[RETRO_VIDEO_VIEWS_MAX];
+/* ... and the generation it was made with, stored before it */
+retro_atomic_int_t g_x11_key_window_gens[RETRO_VIDEO_VIEWS_MAX];
 #endif
 Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
@@ -1488,6 +1490,9 @@ static bool x11_video_window_event(XEvent *event)
          state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(SUSPEND);
          state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(RESUME);
          /* The server has made it, so another connection can select on it */
+         retro_atomic_store_release_int(
+               &g_x11_key_window_gens[state->common.request.screen],
+               (int)window->generation);
          retro_atomic_store_release_int(
                &g_x11_key_windows[state->common.request.screen],
                (int)state->handle);

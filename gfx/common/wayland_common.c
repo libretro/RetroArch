@@ -1839,6 +1839,10 @@ typedef struct
    retro_atomic_int_t  focused;
    /* A generation whose focus loss found the queue full */
    retro_atomic_int_t  lost;
+   /* The surface's size and its buffer's, packed: what turns a place
+    * on the surface into one in the window */
+   retro_atomic_int_t  surface_dims;
+   retro_atomic_int_t  buffer_dims;
 } wl_video_window_ids_t;
 
 static wl_video_window_t *wl_video_windows[RETRO_VIDEO_VIEWS_MAX];
@@ -1910,6 +1914,39 @@ void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
       wl_video_window_focus(i, (unsigned)generation, focused);
       return;
    }
+}
+
+unsigned wl_video_window_point(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy,
+      unsigned *generation, uint32_t *pos)
+{
+   unsigned i;
+   *generation = 0;
+   if (!surface || surface == wl->surface)
+      return 0;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      wl_video_window_ids_t *ids = &wl_video_window_ids[i];
+      int gen = retro_atomic_load_acquire_int(&ids->generation);
+      unsigned sd, bd;
+      if (     !gen
+            || retro_atomic_load_acquire_size(&ids->surface)
+               != (size_t)(uintptr_t)surface)
+         continue;
+      sd = (unsigned)retro_atomic_load_acquire_int(&ids->surface_dims);
+      bd = (unsigned)retro_atomic_load_acquire_int(&ids->buffer_dims);
+      if (VIDEO_SCALE_W(sd) && VIDEO_SCALE_H(sd))
+         *pos = VIDEO_POS_PACK(
+               (int)((double)wl_fixed_to_double(sx)
+                  * VIDEO_SCALE_W(bd) / VIDEO_SCALE_W(sd)),
+               (int)((double)wl_fixed_to_double(sy)
+                  * VIDEO_SCALE_H(bd) / VIDEO_SCALE_H(sd)));
+      else
+         *pos = VIDEO_POS_PACK(wl_fixed_to_int(sx), wl_fixed_to_int(sy));
+      *generation = (unsigned)gen;
+      return i;
+   }
+   return 0;
 }
 
 bool wl_video_windows_not_main(gfx_ctx_wayland_data_t *wl,
@@ -2002,6 +2039,13 @@ static void wl_video_window_resized(wl_video_window_t *state)
       return;
    dims = wl_scaled_dims(state->dims, state->fractional_scale != NULL,
          state->fractional_scale_num, state->scale);
+   if (state->common.request.screen < RETRO_VIDEO_VIEWS_MAX)
+   {
+      wl_video_window_ids_t *ids =
+         &wl_video_window_ids[state->common.request.screen];
+      retro_atomic_store_release_int(&ids->surface_dims, (int)state->dims);
+      retro_atomic_store_release_int(&ids->buffer_dims, (int)dims);
+   }
    if (dims != window->dims)
    {
       window->dims    = dims;

@@ -149,6 +149,9 @@ input_pointer_frame_t *input_driver_pointers_lend(void)
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
 { (void)frames; (void)count; (void)flags; }
+void input_driver_publish_window_pointers(const input_pointer_frame_t *frames,
+      const input_video_window_t *windows, unsigned count, unsigned flags)
+{ (void)frames; (void)windows; (void)count; (void)flags; }
 uint32_t *input_driver_touches_lend(void)
 {
    static uint32_t lent[32];
@@ -168,6 +171,11 @@ bool video_driver_has_focus(void) { return true; }
 /* an open screen's own window in front */
 static bool stub_screen_focus;
 bool win32_video_window_open(HWND hwnd) { (void)hwnd; return stub_screen_focus; }
+/* no screen's own window is under the cursor */
+unsigned win32_video_window_under(POINT screen, unsigned *generation,
+      POINT *client)
+{ (void)screen; (void)client; *generation = 0; return 0; }
+bool input_config_get_video_windows_enable(void) { return stub_screen_focus; }
 void win32_clip_window(bool grab) { (void)grab; }
 void win32_hotplug_arm(void) { }
 bool win32_hotplug_due(void) { return false; }

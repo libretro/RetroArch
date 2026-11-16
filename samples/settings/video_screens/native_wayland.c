@@ -394,11 +394,12 @@ static void native_wl_flood(gfx_ctx_wayland_data_t *wl,
    native_wl_input(wl, true);
 }
 
-/* The pointer's place, its wheel and touches are the main window's
- * alone: over the screen's window they leave the main window's as
- * they were, while relative motion is still taken. Handed to the seat's
- * handlers as libwayland would, the frontend's thread stopped; the
- * seat's state is put back after. */
+/* Over the screen's window the pointer's place, its wheel, clicks and
+ * touches are that window's, placed in it; over any other surface of
+ * the client they leave the main window's as they were, while relative
+ * motion is still taken. Handed to the seat's handlers as libwayland
+ * would, the frontend's thread stopped; the seat's state is put back
+ * after. */
 static void native_wl_pointer(gfx_ctx_wayland_data_t *wl,
       struct wl_surface *surface)
 {
@@ -423,9 +424,11 @@ static void native_wl_pointer(gfx_ctx_wayland_data_t *wl,
 
    pointer_listener.enter(wl, wl->wl_pointer, 3, surface,
          wl_fixed_from_int(50), wl_fixed_from_int(60));
-   CHECK(wl->input.mouse.pos == pos);
+   CHECK(wl->input.mouse.window != 0);
+   CHECK(wl->input.mouse.pos != pos);
    pointer_listener.motion(wl, wl->wl_pointer, 0, x, y);
-   CHECK(wl->input.mouse.pos == pos);
+   CHECK(wl->input.mouse.window != 0);
+   CHECK(VIDEO_POS_X(wl->input.mouse.pos) > 0);
    wl->input.mouse.delta = 0;
    relative_pointer_listener.relative_motion(wl, NULL, 0, 0,
          wl_fixed_from_int(5), wl_fixed_from_int(6),
@@ -435,12 +438,18 @@ static void native_wl_pointer(gfx_ctx_wayland_data_t *wl,
    pointer_listener.axis_discrete(wl, wl->wl_pointer,
          WL_POINTER_AXIS_VERTICAL_SCROLL, -1);
    pointer_listener.frame(wl, wl->wl_pointer);
-   CHECK(!wl->input.mouse.wu && !wl->input.mouse.wd);
+   CHECK(wl->input.mouse.wu);
+   wl->input.mouse.wu = false;
 #endif
    touch_listener.down(wl, NULL, 4, 0, surface, 7, x, y);
-   CHECK(wl->num_active_touches == touches);
+   CHECK(wl->num_active_touches == touches + 1);
+   CHECK(wl->active_touch_positions[touches].window
+         == wl->input.mouse.window);
    touch_listener.up(wl, NULL, 5, 0, 7);
+   CHECK(wl->num_active_touches == touches);
    pointer_listener.leave(wl, wl->wl_pointer, 6, surface);
+   CHECK(wl->input.mouse.window == 0);
+   pos = wl->input.mouse.pos;
 
    /* Nor over another of the client's surfaces, as a libdecor title
     * bar is, or one libwayland no longer knows */
@@ -463,20 +472,22 @@ static void native_wl_pointer(gfx_ctx_wayland_data_t *wl,
    CHECK(wl->input.mouse.pos == pos);
    pointer_listener.leave(wl, wl->wl_pointer, 16, NULL);
 
-   /* Nor a click over the screen's window once the main window's surface
-    * has entered an output */
+   /* A click over the screen's window is its own, the main window's
+    * surface on an output or not */
    pointer_listener.enter(wl, wl->wl_pointer, 17, surface, x, y);
    wl_surface_listener.enter(wl, wl->surface, NULL);
    pointer_listener.button(wl, wl->wl_pointer, 18, 0, BTN_LEFT,
          WL_POINTER_BUTTON_STATE_PRESSED);
-   CHECK(!wl->input.mouse.left);
+   CHECK(wl->input.mouse.left && wl->input.mouse.window != 0);
    pointer_listener.button(wl, wl->wl_pointer, 19, 0, BTN_LEFT,
          WL_POINTER_BUTTON_STATE_RELEASED);
    pointer_listener.leave(wl, wl->wl_pointer, 20, surface);
 
-   /* The same over the main window is taken */
+   /* The same over the main window is taken, as the main window's */
+   wl->input.mouse.pos = VIDEO_POS_PACK(-1, -1);
    pointer_listener.enter(wl, wl->wl_pointer, 7, wl->surface, x, y);
-   CHECK(wl->input.mouse.pos != pos);
+   CHECK(wl->input.mouse.pos != VIDEO_POS_PACK(-1, -1));
+   CHECK(wl->input.mouse.window == 0 && !wl->input.mouse.gated);
 #ifdef WL_POINTER_FRAME_SINCE_VERSION
    pointer_listener.axis_discrete(wl, wl->wl_pointer,
          WL_POINTER_AXIS_VERTICAL_SCROLL, -1);
@@ -510,10 +521,12 @@ static void native_wl_pointer_gone(const gfx_ctx_driver_t *ctx, void *data,
    pointer_listener.enter(wl, wl->wl_pointer, 3,
          (struct wl_surface*)window->surface,
          wl_fixed_from_int(50), wl_fixed_from_int(60));
+   CHECK(wl->input.mouse.window != 0);
+   pos   = wl->input.mouse.pos;
    ctx->windows->destroy(data, window);
    pointer_listener.motion(wl, wl->wl_pointer, 0,
          wl_fixed_from_int(70), wl_fixed_from_int(90));
-   CHECK(wl->input.mouse.pos == pos);
+   CHECK(wl->input.mouse.pos == pos && wl->input.mouse.window != 0);
 #ifdef WL_POINTER_FRAME_SINCE_VERSION
    pointer_listener.axis_discrete(wl, wl->wl_pointer,
          WL_POINTER_AXIS_VERTICAL_SCROLL, -1);

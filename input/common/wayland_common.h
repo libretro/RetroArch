@@ -184,9 +184,14 @@ typedef struct
 
 typedef struct touch_pos
 {
+   /* The surface it went down on: a screen's own window's, or NULL */
+   struct wl_surface *surface;
    int32_t id;
    unsigned x;
    unsigned y;
+   /* The screen's own window it is in; 0 for the main window */
+   unsigned window;
+   unsigned generation;
    bool active;
 } touch_pos_t;
 
@@ -249,6 +254,9 @@ typedef struct input_ctx_wayland_data
    struct
    {
       struct wl_surface *surface;
+      /* The screen's own window it is in; 0 for the main window */
+      unsigned window;
+      unsigned generation;
       uint32_t last_pos;   /* VIDEO_POS_PACK */
       uint32_t pos;        /* VIDEO_POS_PACK */
       uint32_t delta;      /* VIDEO_POS_PACK */
@@ -475,6 +483,11 @@ void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
  * the main window's: a screen's, or a decoration's. Any thread. */
 bool wl_video_windows_not_main(gfx_ctx_wayland_data_t *wl,
       struct wl_surface *surface);
+/* The screen whose window @surface is, with its generation, and the
+ * place @sx,@sy on it as one in the window; 0 for none. Any thread. */
+unsigned wl_video_window_point(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy,
+      unsigned *generation, uint32_t *pos);
 /* An output's properties changed: secondary screens' windows on it
  * take its scale again. On the thread that runs the context. */
 void wl_video_windows_rescale(void);

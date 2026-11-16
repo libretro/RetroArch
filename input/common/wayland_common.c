@@ -245,18 +245,45 @@ void gfx_ctx_wl_show_mouse(void *data, bool state)
    wl->cursor.visible = state;
 }
 
-/* With a screen's window open, any surface but the main window's (that
- * window, a libdecor title bar) would bring its place, wheel and touches
- * to the menu: only relative motion is taken there. A NULL surface (one
- * libwayland no longer knows) is not the main window either. */
+/* With a screen's window open, a surface that is neither the main
+ * window's nor a screen's (a libdecor title bar) would bring its place,
+ * wheel and touches to the menu: only relative motion is taken there.
+ * A NULL surface (one libwayland no longer knows) is neither. */
 static bool wl_takes_pointer(gfx_ctx_wayland_data_t *wl,
       struct wl_surface *surface)
 {
 #ifdef HAVE_VIDEO_WINDOWS
-   return surface && !wl_video_windows_not_main(wl, surface);
+   unsigned generation;
+   uint32_t pos;
+   return surface && (!wl_video_windows_not_main(wl, surface)
+         || wl_video_window_point(wl, surface, 0, 0, &generation, &pos));
 #else
    return true;
 #endif
+}
+
+/* The place @sx,@sy on @surface: in the main window, or in the screen's
+ * own window the surface is, which @window and @generation then name */
+static uint32_t wl_pointer_place(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy,
+      unsigned *window, unsigned *generation)
+{
+#ifdef HAVE_VIDEO_WINDOWS
+   uint32_t pos;
+   if ((*window = wl_video_window_point(wl, surface, sx, sy, generation,
+               &pos)))
+      return pos;
+#else
+   *window     = 0;
+   *generation = 0;
+#endif
+   return VIDEO_POS_PACK(
+         wl->fractional_scale
+         ? (int)FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sx), wl->fractional_scale_num)
+         : wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale),
+         wl->fractional_scale
+         ? (int)FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sy), wl->fractional_scale_num)
+         : wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale));
 }
 
 static void wl_pointer_handle_enter(void *data,
@@ -272,13 +299,8 @@ static void wl_pointer_handle_enter(void *data,
    wl->input.mouse.gated      = !wl_takes_pointer(wl, surface);
    if (!wl->input.mouse.gated)
    {
-      wl->input.mouse.last_pos   = VIDEO_POS_PACK(
-            wl->fractional_scale
-            ? (int)FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sx), wl->fractional_scale_num)
-            : wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale),
-            wl->fractional_scale
-            ? (int)FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sy), wl->fractional_scale_num)
-            : wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale));
+      wl->input.mouse.last_pos   = wl_pointer_place(wl, surface, sx, sy,
+            &wl->input.mouse.window, &wl->input.mouse.generation);
       wl->input.mouse.pos        = wl->input.mouse.last_pos;
    }
    wl->input.mouse.focus      = true;
@@ -302,7 +324,11 @@ static void wl_pointer_handle_leave(void *data,
    wl->input.mouse.extra      = false;
 
    if (wl->input.mouse.surface == surface)
-      wl->input.mouse.surface = NULL;
+   {
+      wl->input.mouse.surface    = NULL;
+      wl->input.mouse.window     = 0;
+      wl->input.mouse.generation = 0;
+   }
 }
 
 static void wl_pointer_handle_motion(void *data,
@@ -311,17 +337,23 @@ static void wl_pointer_handle_motion(void *data,
       wl_fixed_t sx,
       wl_fixed_t sy)
 {
+   unsigned window, generation;
+   uint32_t pos;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl_input_event_seen(wl);
    if (wl->input.mouse.gated)
       return;
-   wl->input.mouse.pos = VIDEO_POS_PACK(
-         wl->fractional_scale
-         ? (int)FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sx), wl->fractional_scale_num)
-         : wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sx),
-         wl->fractional_scale
-         ? (int)FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sy), wl->fractional_scale_num)
-         : wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sy));
+   pos = wl_pointer_place(wl, wl->input.mouse.surface, sx, sy,
+         &window, &generation);
+   /* the screen's window it is over has gone: nothing more is its */
+   if (wl->input.mouse.window && !window)
+   {
+      wl->input.mouse.gated = true;
+      return;
+   }
+   wl->input.mouse.pos        = pos;
+   wl->input.mouse.window     = window;
+   wl->input.mouse.generation = generation;
 }
 
 static void wl_pointer_handle_button(void *data,
@@ -336,7 +368,8 @@ static void wl_pointer_handle_button(void *data,
    wl_input_event_seen(wl);
 
    if (     wl->input.mouse.gated
-         || wl->input.mouse.surface != wl->surface)
+         || (     wl->input.mouse.surface != wl->surface
+               && !wl->input.mouse.window))
       return;
 
    if (state == WL_POINTER_BUTTON_STATE_PRESSED)
@@ -346,7 +379,8 @@ static void wl_pointer_handle_button(void *data,
          case BTN_LEFT:
             wl->input.mouse.left = true;
 
-            if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
+            if (     BIT_GET(wl->input.key_state, KEY_LEFTALT)
+                  && !wl->input.mouse.window)
             {
 #ifdef HAVE_LIBDECOR_H
                if (wl->libdecor)
@@ -398,6 +432,15 @@ static void wl_pointer_handle_button(void *data,
 static void wl_pointer_scroll(gfx_ctx_wayland_data_t *wl,
       uint32_t axis, int direction)
 {
+#ifdef HAVE_VIDEO_WINDOWS
+   unsigned generation;
+   uint32_t pos;
+   /* nor a gone window's */
+   if (     wl->input.mouse.window
+         && !wl_video_window_point(wl, wl->input.mouse.surface, 0, 0,
+            &generation, &pos))
+      wl->input.mouse.gated = true;
+#endif
    if (wl->input.mouse.gated)
       return;
    switch (axis)
@@ -549,14 +592,14 @@ static void wl_touch_handle_down(void *data,
          /* Use next empty slot */
          if (!wl->active_touch_positions[i].active)
          {
-            wl->active_touch_positions[wl->num_active_touches].active = true;
-            wl->active_touch_positions[wl->num_active_touches].id     = id;
-            wl->active_touch_positions[wl->num_active_touches].x      = wl->fractional_scale ?
-               FRACTIONAL_SCALE_MULT(wl_fixed_to_int(x), wl->fractional_scale_num) :
-               (unsigned) wl_fixed_to_int(x * (wl_fixed_t)wl->buffer_scale);
-            wl->active_touch_positions[wl->num_active_touches].y      = wl->fractional_scale ?
-               FRACTIONAL_SCALE_MULT(wl_fixed_to_int(y), wl->fractional_scale_num) :
-               (unsigned) wl_fixed_to_int(y * (wl_fixed_t)wl->buffer_scale);
+            touch_pos_t *t = &wl->active_touch_positions[wl->num_active_touches];
+            uint32_t pos   = wl_pointer_place(wl, surface, x, y,
+                  &t->window, &t->generation);
+            t->active  = true;
+            t->id      = id;
+            t->surface = t->window ? surface : NULL;
+            t->x       = (unsigned)VIDEO_POS_X(pos);
+            t->y       = (unsigned)VIDEO_POS_Y(pos);
             wl->num_active_touches++;
             break;
          }
@@ -578,16 +621,10 @@ static void wl_reorder_touches(gfx_ctx_wayland_data_t *wl)
          {
             if (wl->active_touch_positions[j].active)
             {
-               wl->active_touch_positions[i].active =
-                  wl->active_touch_positions[j].active;
-               wl->active_touch_positions[i].id     =
-                  wl->active_touch_positions[j].id;
-               wl->active_touch_positions[i].x      = wl->active_touch_positions[j].x;
-               wl->active_touch_positions[i].y      = wl->active_touch_positions[j].y;
-               wl->active_touch_positions[j].active = false;
-               wl->active_touch_positions[j].id     = -1;
-               wl->active_touch_positions[j].x      = (unsigned) 0;
-               wl->active_touch_positions[j].y      = (unsigned) 0;
+               wl->active_touch_positions[i] = wl->active_touch_positions[j];
+               memset(&wl->active_touch_positions[j], 0,
+                     sizeof(wl->active_touch_positions[j]));
+               wl->active_touch_positions[j].id = -1;
                break;
             }
 
@@ -612,10 +649,9 @@ static void wl_touch_handle_up(void *data,
       if (     wl->active_touch_positions[i].active
             && wl->active_touch_positions[i].id == id)
       {
-         wl->active_touch_positions[i].active = false;
+         memset(&wl->active_touch_positions[i], 0,
+               sizeof(wl->active_touch_positions[i]));
          wl->active_touch_positions[i].id     = -1;
-         wl->active_touch_positions[i].x      = (unsigned)0;
-         wl->active_touch_positions[i].y      = (unsigned)0;
          wl->num_active_touches--;
       }
    }
@@ -637,12 +673,17 @@ static void wl_touch_handle_motion(void *data,
       if (  wl->active_touch_positions[i].active &&
             wl->active_touch_positions[i].id == id)
       {
-         wl->active_touch_positions[i].x = wl->fractional_scale ?
-            FRACTIONAL_SCALE_MULT(wl_fixed_to_int(x), wl->fractional_scale_num) :
-            (unsigned) wl_fixed_to_int(x * (wl_fixed_t)wl->buffer_scale);
-         wl->active_touch_positions[i].y = wl->fractional_scale ?
-            FRACTIONAL_SCALE_MULT(wl_fixed_to_int(y), wl->fractional_scale_num) :
-            (unsigned) wl_fixed_to_int(y * (wl_fixed_t)wl->buffer_scale);
+         unsigned window, generation;
+         touch_pos_t *t = &wl->active_touch_positions[i];
+         uint32_t pos   = wl_pointer_place(wl, t->surface, x, y,
+               &window, &generation);
+         /* its window gone: it stays out of the main window */
+         if (t->surface && !window)
+            continue;
+         t->window     = window;
+         t->generation = generation;
+         t->x          = (unsigned)VIDEO_POS_X(pos);
+         t->y          = (unsigned)VIDEO_POS_Y(pos);
       }
    }
 }

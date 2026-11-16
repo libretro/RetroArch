@@ -108,6 +108,7 @@ static unsigned sdl3_video_window_count;
  * tells a screen's window by on the frontend's thread */
 static retro_atomic_size_t sdl3_video_window_wins[RETRO_VIDEO_VIEWS_MAX];
 static retro_atomic_int_t  sdl3_video_window_ids[RETRO_VIDEO_VIEWS_MAX];
+static retro_atomic_int_t  sdl3_video_window_gens[RETRO_VIDEO_VIEWS_MAX];
 /* The IDs of the windows destroyed last: what is still queued for one
  * is a screen's too. SDL 3 never gives an ID out again. */
 static retro_atomic_int_t  sdl3_video_window_gone[RETRO_VIDEO_VIEWS_MAX];
@@ -1348,6 +1349,8 @@ bool sdl3_video_window_create(void *owner, SDL_WindowFlags flags,
    window->configured    = true;
    sdl3_video_windows[request->screen] = state;
    sdl3_video_window_count++;
+   retro_atomic_store_release_int(&sdl3_video_window_gens[request->screen],
+         (int)request->generation);
    retro_atomic_store_release_size(&sdl3_video_window_wins[request->screen],
          (size_t)(uintptr_t)state->win);
    retro_atomic_store_release_int(&sdl3_video_window_ids[request->screen],
@@ -1479,20 +1482,28 @@ void sdl3_video_window_destroy(void *owner, video_window_native_t *window)
    memset(window, 0, sizeof(*window));
 }
 
-bool sdl3_video_window_is_screen(const SDL_Window *win, SDL_WindowID id)
+unsigned sdl3_video_window_screen(const SDL_Window *win, SDL_WindowID id,
+      unsigned *generation)
 {
    unsigned i;
+   *generation = 0;
+   if (!win && !id)
+      return 0;
    for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
       if (     (win && retro_atomic_load_acquire_size(
                   &sdl3_video_window_wins[i]) == (size_t)(uintptr_t)win)
             || (id  && (SDL_WindowID)retro_atomic_load_acquire_int(
                   &sdl3_video_window_ids[i]) == id))
-         return true;
+      {
+         *generation = (unsigned)retro_atomic_load_acquire_int(
+               &sdl3_video_window_gens[i]);
+         return i;
+      }
    for (i = 0; id && i < RETRO_VIDEO_VIEWS_MAX; i++)
       if ((SDL_WindowID)retro_atomic_load_acquire_int(
                &sdl3_video_window_gone[i]) == id)
-         return true;
-   return false;
+         return RETRO_VIDEO_VIEWS_MAX;
+   return 0;
 }
 
 /* On Windows a window is its thread's, which alone takes it or lets it

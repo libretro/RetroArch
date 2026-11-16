@@ -772,6 +772,16 @@ static void native_sdl_pen(SDL_WindowID id, bool by)
    SDL_PushEvent(&event);
 }
 
+/* No touch, nor a pen, on the main window's screen: one in the screen's
+ * own window is that window's */
+static bool native_sdl_off_main(void)
+{
+   return !input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+            RETRO_DEVICE_ID_POINTER_COUNT)
+      || input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
+            RETRO_DEVICE_ID_POINTER_X) == -0x8000;
+}
+
 /* The driver's poll with its fingers read again, as when one moves */
 static void native_sdl_reread(void *in)
 {
@@ -804,7 +814,8 @@ static bool native_sdl_mid_press(void *userdata, unsigned code)
    return true;
 }
 
-/* Nor is a finger or a pen over the screen's window the main window's.
+/* A finger or a pen over the screen's window is that window's, not the
+ * main window's.
  * The finger is the one SDL makes of the left button; the pen's events
  * are sent as SDL sends them. The driver is RetroArch's, so the window
  * pump leaves its events queued. */
@@ -833,8 +844,7 @@ static void native_sdl_touch(const gfx_ctx_driver_t *ctx, void *data,
       list = SDL_GetTouchFingers(SDL_MOUSE_TOUCHID, &fingers);
       SDL_free(list);
       CHECK(fingers == 1);
-      CHECK(!input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-               RETRO_DEVICE_ID_POINTER_COUNT));
+      CHECK(native_sdl_off_main());
       CHECK(native_sdl_button(ctx, data, request, secondary, false));
       native_sdl_touch_poll(in);
    }
@@ -853,9 +863,8 @@ static void native_sdl_touch(const gfx_ctx_driver_t *ctx, void *data,
 
    native_sdl_pen(SDL_GetWindowID(secondary), true);
    native_sdl_touch_poll(in);
-   CHECK(!input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-            RETRO_DEVICE_ID_POINTER_COUNT));
-   CHECK(!input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+   CHECK(native_sdl_off_main());
+   CHECK(!input_driver_device_state(0, RARCH_DEVICE_MOUSE_SCREEN, 0,
             RETRO_DEVICE_ID_MOUSE_RIGHT));
    native_sdl_pen(SDL_GetWindowID(primary), false);
    native_sdl_pen(SDL_GetWindowID(primary), true);
@@ -898,8 +907,7 @@ static void native_sdl_touch(const gfx_ctx_driver_t *ctx, void *data,
       {
          CHECK(native_sdl_warp(ctx, data, request, secondary, 80, 100));
          native_sdl_touch_poll(in);
-         CHECK(!input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-                  RETRO_DEVICE_ID_POINTER_COUNT));
+         CHECK(native_sdl_off_main());
          CHECK(native_sdl_button(ctx, data, request, secondary, false));
          native_sdl_touch_poll(in);
       }
@@ -921,8 +929,7 @@ static void native_sdl_touch(const gfx_ctx_driver_t *ctx, void *data,
       CHECK(native_sdl_button(ctx, data, request, secondary, true));
       SDL_FlushEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED);
       native_sdl_reread(in);
-      CHECK(!input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-               RETRO_DEVICE_ID_POINTER_COUNT));
+      CHECK(native_sdl_off_main());
       CHECK(native_sdl_button(ctx, data, request, secondary, false));
       native_sdl_touch_poll(in);
    }
@@ -951,8 +958,7 @@ static void native_sdl_touch(const gfx_ctx_driver_t *ctx, void *data,
             && native_sdl_button(ctx, data, request, secondary, true))
       {
          native_sdl_touch_poll(in);
-         CHECK(!input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-                  RETRO_DEVICE_ID_POINTER_COUNT));
+         CHECK(native_sdl_off_main());
          CHECK(native_sdl_button(ctx, data, request, secondary, false));
          native_sdl_touch_poll(in);
       }
@@ -1012,15 +1018,13 @@ static void native_sdl_touch_held(const gfx_ctx_driver_t *ctx, void *data,
    if (fingers == 1)
    {
       native_sdl_touch_poll(in);
-      CHECK(!input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-               RETRO_DEVICE_ID_POINTER_COUNT));
+      CHECK(native_sdl_off_main());
       /* Moved, so the driver reads its fingers again; over the new
        * screen's window, so the mouse is not counted */
       if (native_sdl_warp(ctx, data, request, secondary, 80, 100))
       {
          native_sdl_touch_poll(in);
-         CHECK(!input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-                  RETRO_DEVICE_ID_POINTER_COUNT));
+         CHECK(native_sdl_off_main());
       }
    }
    else
@@ -1038,9 +1042,9 @@ static void native_sdl_touch_held(const gfx_ctx_driver_t *ctx, void *data,
 }
 #endif
 
-/* The menu's mouse is the main window's alone: over the screen's
- * window its place stays and a click is not taken, while over the
- * main window both are */
+/* Over the screen's window the mouse has no place on the main window's
+ * screen, and a click is taken, unless the menu is up; over the main
+ * window both are as ever */
 static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
       const video_window_request_t *request, SDL_Window *secondary)
 {
@@ -1064,15 +1068,24 @@ static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
 
    if (native_sdl_warp(ctx, data, request, secondary, 70, 90))
    {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      uint32_t menu_flags        = menu_st->flags;
       NATIVE_SDL_INPUT.poll(in);
-      CHECK(input_driver_device_pos(0, RARCH_DEVICE_MOUSE_SCREEN, 0) == pos);
+      CHECK(input_driver_device_pos(0, RARCH_DEVICE_MOUSE_SCREEN, 0)
+            == VIDEO_POS_PACK(-0x8000, -0x8000));
       if (native_sdl_button(ctx, data, request, secondary, true))
       {
+         menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
          NATIVE_SDL_INPUT.poll(in);
          CHECK(input_driver_device_pos(0, RARCH_DEVICE_MOUSE_SCREEN, 0)
-               == pos);
+               == VIDEO_POS_PACK(-0x8000, -0x8000));
+         CHECK(input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+                  RETRO_DEVICE_ID_MOUSE_LEFT));
+         menu_st->flags |= MENU_ST_FLAG_ALIVE;
+         NATIVE_SDL_INPUT.poll(in);
          CHECK(!input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
                   RETRO_DEVICE_ID_MOUSE_LEFT));
+         menu_st->flags  = menu_flags;
          CHECK(native_sdl_button(ctx, data, request, secondary, false));
       }
       else
@@ -1157,9 +1170,10 @@ static bool SDLCALL native_sdl_dying(void *userdata, SDL_Event *event)
          && event->type <= SDL_EVENT_WINDOW_LAST
          && event->window.windowID == dying->id)
    {
+      unsigned generation;
       dying->sent++;
-      if (     !sdl3_video_window_is_screen(dying->win, 0)
-            || !sdl3_video_window_is_screen(NULL, dying->id))
+      if (     !sdl3_video_window_screen(dying->win, 0, &generation)
+            || !sdl3_video_window_screen(NULL, dying->id, &generation))
          dying->open++;
    }
    return true;
@@ -1171,9 +1185,9 @@ static int SDLCALL native_sdl_dying(void *userdata, SDL_Event *event)
    if (     event->type == SDL_WINDOWEVENT
          && event->window.windowID == dying->id)
    {
+      unsigned generation;
       dying->sent++;
-      if (     !sdl2_video_window_is_screen(dying->win, 0)
-            || !sdl2_video_window_is_screen(NULL, dying->id))
+      if (!sdl2_video_window_screen(dying->win, &generation))
          dying->open++;
    }
    return 1;

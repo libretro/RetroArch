@@ -2336,6 +2336,15 @@ INPUT_NOINLINE static void input_combos_frame(
    }
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_MENU) && !defined(ANDROID)
+static int input_pointer_menu_window(void)
+{
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      return -1;
+   return (int)video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU);
+}
+#endif
+
 #include "input_pointer_frame.h"
 
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
@@ -17122,7 +17131,7 @@ bool input_config_get_nowinkey_enable(void)
 }
 #endif
 
-#if defined(HAVE_DINPUT) && defined(HAVE_VIDEO_WINDOWS)
+#ifdef HAVE_VIDEO_WINDOWS
 bool input_config_get_video_windows_enable(void)
 {
    settings_t *settings = config_get_ptr();

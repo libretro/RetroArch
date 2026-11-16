@@ -1411,9 +1411,10 @@ static void native_w32_dinput_switch(const gfx_ctx_driver_t *ctx,
 
 /* DirectInput's keyboard: with Separate Screen Windows on, read with
  * the main window or a screen's own window in front, not with another,
- * of this process too. With it off, or the Windows keys disabled, the
- * main window's foreground level alone. A switch of the setting holds
- * without a restart. */
+ * of this process too; with the Windows keys disabled too, the main
+ * window keeping its foreground level. With it off, the main window's
+ * foreground level alone. A switch of the setting holds without a
+ * restart. */
 static void native_w32_dinput(const gfx_ctx_driver_t *ctx, void *data,
       const video_window_request_t *request, HWND secondary)
 {
@@ -1431,7 +1432,9 @@ static void native_w32_dinput(const gfx_ctx_driver_t *ctx, void *data,
    settings->bools.video_windows_enable  = true;
    if ((di = input_dinput.init(NULL)))
    {
-      CHECK(!native_w32_dinput_at(ctx, data, request, di, secondary));
+      CHECK(native_w32_dinput_at(ctx, data, request, di, secondary));
+      CHECK(!native_w32_dinput_at(ctx, data, request, di, foreign));
+      CHECK(native_w32_dinput_at(ctx, data, request, di, main_window.hwnd));
       input_dinput.free(di);
    }
    else

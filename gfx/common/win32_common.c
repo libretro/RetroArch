@@ -2372,6 +2372,10 @@ static bool win32_window_create(void *data, unsigned style,
 
 /* Secondary screens' windows, by screen */
 static win32_video_window_t *win32_video_windows[RETRO_VIDEO_VIEWS_MAX];
+/* By screen, its HWND and the generation it was made with, for the
+ * input drivers on the frontend's thread; the generation first */
+static retro_atomic_size_t win32_video_window_hwnds[RETRO_VIDEO_VIEWS_MAX];
+static retro_atomic_int_t  win32_video_window_gens[RETRO_VIDEO_VIEWS_MAX];
 static unsigned win32_video_window_count;
 static void win32_video_window_let_go(win32_video_window_t *state);
 
@@ -2388,6 +2392,41 @@ static win32_video_window_t *win32_video_window_of(HWND hwnd)
       if (win32_video_windows[i] && win32_video_windows[i]->hwnd == hwnd)
          return win32_video_windows[i];
    return NULL;
+}
+
+unsigned win32_video_window_under(POINT screen, unsigned *generation,
+      POINT *client)
+{
+   unsigned i;
+   HWND hwnd   = WindowFromPoint(screen);
+   *generation = 0;
+   if (!hwnd)
+      return 0;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (retro_atomic_load_acquire_size(&win32_video_window_hwnds[i])
+            == (size_t)(uintptr_t)hwnd)
+      {
+         *generation = (unsigned)retro_atomic_load_acquire_int(
+               &win32_video_window_gens[i]);
+         *client     = screen;
+         ScreenToClient(hwnd, client);
+         return i;
+      }
+   return 0;
+}
+
+bool win32_video_window_point(unsigned window, unsigned generation,
+      POINT screen, POINT *client)
+{
+   HWND hwnd;
+   if (     !window || window >= RETRO_VIDEO_VIEWS_MAX
+         || (unsigned)retro_atomic_load_acquire_int(
+               &win32_video_window_gens[window]) != generation
+         || !(hwnd = (HWND)(uintptr_t)retro_atomic_load_acquire_size(
+               &win32_video_window_hwnds[window])))
+      return false;
+   *client = screen;
+   return ScreenToClient(hwnd, client) != 0;
 }
 
 /* Asks Windows alone, so it changes with the foreground in one step */
@@ -2510,7 +2549,9 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
 
    switch (message)
    {
-      /* Keys go where the main window's go */
+      /* Keys, touches, the pen and the wheel go where the main
+       * window's go: the input driver places them by the window under
+       * them */
       case WM_KEYDOWN:
       case WM_KEYUP:
       case WM_SYSKEYDOWN:
@@ -2518,6 +2559,11 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
       case WM_CHAR:
       case WM_IME_COMPOSITION:
       case WM_IME_ENDCOMPOSITION:
+      case WM_POINTERDOWN:
+      case WM_POINTERUP:
+      case WM_POINTERUPDATE:
+      case WM_MOUSEWHEEL:
+      case WM_MOUSEHWHEEL:
          return win32_wnd_proc_route(hwnd, message, wparam, lparam);
       case WM_WINDOWPOSCHANGED:
          /* the WM_SIZE and WM_MOVE it makes first */
@@ -2910,6 +2956,10 @@ bool win32_video_window_create(void *owner,
    video_window_placed(&state->common, state->common.pos, window->dims,
          cpu_features_get_time_usec());
    win32_video_windows[request->screen] = state;
+   retro_atomic_store_release_int(&win32_video_window_gens[request->screen],
+         (int)request->generation);
+   retro_atomic_store_release_size(&win32_video_window_hwnds[request->screen],
+         (size_t)(uintptr_t)state->hwnd);
    win32_video_window_count++;
    return true;
 }
@@ -2982,6 +3032,8 @@ void win32_video_window_destroy(void *owner, video_window_native_t *window)
       return;
    /* out of the table first: nothing destroying it sends is reported */
    win32_video_windows[state->common.request.screen] = NULL;
+   retro_atomic_store_release_size(
+         &win32_video_window_hwnds[state->common.request.screen], 0);
    win32_video_window_count--;
    /* as win32_pump_cancel() does: its loop ends when it next runs */
    if (state->sizemove && !state->destroyed)

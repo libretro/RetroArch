@@ -98,6 +98,9 @@ typedef struct
     * per frame. Two writers doing read-modify-write here was a
     * lost-update race that no amount of atomicity would have fixed. */
    uint32_t pos;   /* x, y in the window: VIDEO_POS_PACK */
+   /* The window @pos is in: a screen's own, or 0 for the main one;
+    * written by winraw_poll() alone */
+   input_video_window_t window;
    /* Produced by the wndproc, drained once per frame by winraw_poll().
     * The snapshot in winraw_input_t::mice is single-threaded; only the
     * g_mice originals are ever accessed concurrently.
@@ -2019,8 +2022,18 @@ static void winraw_publish_pointers(winraw_input_t *wr)
    for (; touch && touches < 16; touch = touch->next)
       touch_pos[touches++] = touch->pointer_pos;
 
+#ifdef HAVE_VIDEO_WINDOWS
+   {
+      input_video_window_t windows[MAX_USERS];
+      for (i = 0; i < count; i++)
+         windows[i] = wr->mice[i].window;
+      input_driver_publish_window_pointers(frame, windows, count,
+            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+   }
+#else
    input_driver_publish_pointers(frame, count,
          INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+#endif
    /* each one listed is there, and down */
    input_driver_publish_touches(touch_pos, touches,
          (1u << touches) - 1, (1u << touches) - 1);
@@ -2030,10 +2043,16 @@ static void winraw_poll(void *data)
 {
    unsigned i;
    POINT crs_pos          = {0, 0};
+#ifdef HAVE_VIDEO_WINDOWS
+   POINT crs_client;
+#endif
+   input_video_window_t crs_window;
    bool crs_pos_valid     = false;
    winraw_input_t *wr     = (winraw_input_t*)data;
    bool cursor_for_all;
 
+   crs_window.window      = 0;
+   crs_window.generation  = 0;
    wr->focus              = winraw_focus;
    /* The flag is the window's focus messages, and a video driver
     * restart can leave it saying unfocused while the window is in
@@ -2048,8 +2067,8 @@ static void winraw_poll(void *data)
    }
    wr->kb_focus           = wr->focus;
 #ifdef HAVE_VIDEO_WINDOWS
-   /* Keys come in front of a screen's own window too; the mouse stays
-    * the main window's */
+   /* Keys and the mouse's buttons come in front of a screen's own
+    * window too */
    if (!wr->kb_focus && win32_video_window_open(GetForegroundWindow()))
       wr->kb_focus        = true;
 #endif
@@ -2165,21 +2184,38 @@ static void winraw_poll(void *data)
          if (!crs_pos_valid)
          {
             HWND wnd = (HWND)video_driver_window_get();
+            crs_window.window     = 0;
+            crs_window.generation = 0;
             if (!GetCursorPos(&crs_pos))
                RARCH_DBG("[WinRaw] GetCursorPos failed with error %lu.\n", GetLastError());
+#ifdef HAVE_VIDEO_WINDOWS
+            /* over a screen's own window, in that window */
+            else if (input_config_get_video_windows_enable()
+                  && (crs_window.window = win32_video_window_under(crs_pos,
+                        &crs_window.generation, &crs_client)))
+            {
+               crs_pos       = crs_client;
+               crs_pos_valid = true;
+            }
+#endif
             else if (!wnd || !ScreenToClient(wnd, &crs_pos))
                RARCH_DBG("[WinRaw] ScreenToClient failed with error %lu.\n", GetLastError());
             else
                crs_pos_valid = true;
          }
          if (crs_pos_valid)
-            g_mice[i].pos = VIDEO_POS_PACK(crs_pos.x, crs_pos.y);
+         {
+            g_mice[i].pos    = VIDEO_POS_PACK(crs_pos.x, crs_pos.y);
+            g_mice[i].window = crs_window;
+         }
       }
       else if (source == WINRAW_MOUSE_ABSOLUTE)
       {
          /* the report's word is the position's */
-         g_mice[i].pos = (uint32_t)retro_atomic_load_acquire_int(
+         g_mice[i].pos               = (uint32_t)retro_atomic_load_acquire_int(
                &g_mice[i].abs_pos);
+         g_mice[i].window.window     = 0;
+         g_mice[i].window.generation = 0;
       }
       else if (dx || dy)
       {
@@ -2196,14 +2232,18 @@ static void winraw_poll(void *data)
          else if (ny > wr->active_rect.bottom)
             ny = wr->active_rect.bottom;
 
-         g_mice[i].pos = VIDEO_POS_PACK(nx, ny);
+         g_mice[i].pos               = VIDEO_POS_PACK(nx, ny);
+         g_mice[i].window.window     = 0;
+         g_mice[i].window.generation = 0;
       }
 
       wr->mice[i].pos     = g_mice[i].pos;
+      wr->mice[i].window  = g_mice[i].window;
       wr->mice[i].dlt     = dlt;
       wr->mice[i].whl     = retro_atomic_exchange_int(&g_mice[i].whl, 0);
+      /* a screen's own window in front has the buttons too */
       wr->mice[i].flags   = (uint8_t)winraw_mouse_buttons_snapshot(
-            &g_mice[i].buttons, wr->focus);
+            &g_mice[i].buttons, wr->kb_focus);
    }
 
    winraw_publish_pointers(wr);

@@ -227,6 +227,14 @@ void win32_video_windows_free(void *owner,
 /* Whether 'hwnd' is an open screen's own window of this process; any
  * thread */
 bool win32_video_window_open(HWND hwnd);
+/* Any thread: the screen whose open window is under @screen, with its
+ * generation, and the point in its client area; 0 for none */
+unsigned win32_video_window_under(POINT screen, unsigned *generation,
+      POINT *client);
+/* Any thread: @screen in screen @window's client area, while it is the
+ * window of @generation */
+bool win32_video_window_point(unsigned window, unsigned generation,
+      POINT screen, POINT *client);
 
 /* The native operations alone, for drivers without a context. D3D11
  * and D3D12 pass their own video data as the owner, and call

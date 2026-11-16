@@ -82,6 +82,13 @@ typedef struct sdl3_input
    /* The video driver's window last polled through, 0 for none */
    SDL_WindowID window_id;
 
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The window the mouse, the pen and each finger are in */
+   input_video_window_t mouse_window;
+   input_video_window_t pen_window;
+   input_video_window_t touch_windows[SDL3_MAX_TOUCH];
+   SDL_WindowID pen_window_id;
+#endif
    /* Number of active fingers across all touch devices. */
    int num_touches;
    struct
@@ -96,6 +103,7 @@ typedef struct sdl3_input
    {
       SDL_TouchID touch;
       SDL_FingerID finger;
+      input_video_window_t window;
       bool missed; /* the last read did not list it */
    } screen_fingers[SDL3_MAX_TOUCH];
 #endif
@@ -474,6 +482,14 @@ static bool sdl3_set_sensor_state(void *data, unsigned port,
 /* SDL reports mouse and pen coordinates in window coordinates,
  * while the video driver's viewport metrics are in output
  * pixels. */
+#ifdef HAVE_VIDEO_WINDOWS
+static float sdl3_density_of(SDL_Window *win)
+{
+   float density = SDL_GetWindowPixelDensity(win);
+   return density > 0.0f ? density : 1.0f;
+}
+#endif
+
 static float sdl3_window_pixel_density(sdl3_input_t *sdl)
 {
    if (sdl->window)
@@ -538,18 +554,19 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
    sdl->mouse_rel_x -= (float)VIDEO_POS_X(sdl->mouse_delta);
    sdl->mouse_rel_y -= (float)VIDEO_POS_Y(sdl->mouse_delta);
 
+   density = sdl3_window_pixel_density(sdl);
 #ifdef HAVE_VIDEO_WINDOWS
-   /* Over a screen's window, its place and clicks would reach the menu
-    * as the main window's: only the motion is taken there */
-   if (sdl3_video_window_is_screen(SDL_GetMouseFocus(), 0))
-      btn = 0;
-   else
-#endif
    {
-      density = sdl3_window_pixel_density(sdl);
-      sdl->mouse_abs_x = ax * density;
-      sdl->mouse_abs_y = ay * density;
+      /* Over a screen's own window, the place is in that window */
+      SDL_Window *focus = SDL_GetMouseFocus();
+      sdl->mouse_window.window = sdl3_video_window_screen(focus, 0,
+            &sdl->mouse_window.generation);
+      if (sdl->mouse_window.window && focus)
+         density = sdl3_density_of(focus);
    }
+#endif
+   sdl->mouse_abs_x = ax * density;
+   sdl->mouse_abs_y = ay * density;
 
    sdl->mouse_l = (SDL_BUTTON_MASK(SDL_BUTTON_LEFT) & btn) != 0;
    sdl->mouse_r = (SDL_BUTTON_MASK(SDL_BUTTON_RIGHT) & btn) != 0;
@@ -560,8 +577,7 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
 
 #ifdef HAVE_VIDEO_WINDOWS
 /* Takes the finger events, keeping the fingers that went down on a
- * screen's window: they would reach the menu and the core as the main
- * window's. True when there were any. */
+ * screen's window and which window. True when there were any. */
 static bool sdl3_take_fingers(sdl3_input_t *sdl)
 {
    SDL_Event event;
@@ -585,14 +601,20 @@ static bool sdl3_take_fingers(sdl3_input_t *sdl)
       if (     event.type == SDL_EVENT_FINGER_DOWN
             && sdl->num_screen_fingers < SDL3_MAX_TOUCH
             && event.tfinger.touchID != SDL_PEN_TOUCHID
-            && sdl3_video_window_is_screen(NULL, event.tfinger.windowID)
             && SDL_GetTouchDeviceType(event.tfinger.touchID)
                == SDL_TOUCH_DEVICE_DIRECT)
       {
+         unsigned generation;
+         unsigned window = sdl3_video_window_screen(NULL,
+               event.tfinger.windowID, &generation);
+         if (!window)
+            continue;
          i = sdl->num_screen_fingers++;
-         sdl->screen_fingers[i].touch  = event.tfinger.touchID;
-         sdl->screen_fingers[i].finger = event.tfinger.fingerID;
-         sdl->screen_fingers[i].missed = false;
+         sdl->screen_fingers[i].touch             = event.tfinger.touchID;
+         sdl->screen_fingers[i].finger            = event.tfinger.fingerID;
+         sdl->screen_fingers[i].window.window     = window;
+         sdl->screen_fingers[i].window.generation = generation;
+         sdl->screen_fingers[i].missed            = false;
       }
    }
    return took;
@@ -718,13 +740,20 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
 #ifdef HAVE_VIDEO_WINDOWS
          int k = sdl3_screen_finger(sdl, devices[i], fingers[j]->id);
          if (k >= 0)
-         {
             held |= 1u << k;
-            continue;
-         }
 #endif
          if (sdl->num_touches >= SDL3_MAX_TOUCH)
             continue;
+#ifdef HAVE_VIDEO_WINDOWS
+         if (k >= 0)
+            sdl->touch_windows[sdl->num_touches] =
+               sdl->screen_fingers[k].window;
+         else
+         {
+            sdl->touch_windows[sdl->num_touches].window     = 0;
+            sdl->touch_windows[sdl->num_touches].generation = 0;
+         }
+#endif
          sdl->touches[sdl->num_touches].x = fingers[j]->x;
          sdl->touches[sdl->num_touches].y = fingers[j]->y;
          sdl->num_touches++;
@@ -754,16 +783,10 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
          SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS) > 0)
    {
 #ifdef HAVE_VIDEO_WINDOWS
-      /* Over a screen's window the pen has left the main window. Every
-       * pen event starts as a proximity event does. */
-      if (sdl3_video_window_is_screen(NULL, event.pproximity.windowID))
-      {
-         sdl->pen_in_proximity = false;
-         sdl->pen_down         = false;
-         sdl->pen_b1           = false;
-         sdl->pen_b2           = false;
-         continue;
-      }
+      /* Every pen event starts as a proximity event does */
+      sdl->pen_window_id     = event.pproximity.windowID;
+      sdl->pen_window.window = sdl3_video_window_screen(NULL,
+            sdl->pen_window_id, &sdl->pen_window.generation);
 #endif
       switch (event.type)
       {
@@ -801,15 +824,29 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
 
    /* Barrel buttons act as the right/middle mouse buttons (the
     * usual OS mapping). sdl3_poll_mouse has already run, so this
-    * ORs on top of the polled state. */
-   sdl->mouse_r |= sdl->pen_b1;
-   sdl->mouse_m |= sdl->pen_b2;
+    * ORs on top of the polled state; in the window the mouse is in. */
+#ifdef HAVE_VIDEO_WINDOWS
+   if (sdl->pen_window.window == sdl->mouse_window.window)
+#endif
+   {
+      sdl->mouse_r |= sdl->pen_b1;
+      sdl->mouse_m |= sdl->pen_b2;
+   }
 
    /* If the pen isn't in proximity, skip calculating its position. */
    if (!sdl->pen_in_proximity)
       return;
 
    density = sdl3_window_pixel_density(sdl);
+#ifdef HAVE_VIDEO_WINDOWS
+   if (     sdl->pen_window.window
+         && sdl->pen_window.window < RETRO_VIDEO_VIEWS_MAX)
+   {
+      SDL_Window *win = SDL_GetWindowFromID(sdl->pen_window_id);
+      if (win)
+         density = sdl3_density_of(win);
+   }
+#endif
    sdl->pen_abs_x = sdl->pen_raw_x * density;
    sdl->pen_abs_y = sdl->pen_raw_y * density;
 }
@@ -1023,20 +1060,27 @@ static void sdl3_publish_pointers(sdl3_input_t *sdl)
 
    if (sdl->num_touches > 0)
    {
-      /* a finger's place is a fraction of the output */
+      /* a finger's place is a fraction of the output, or of its own
+       * window's */
       video_viewport_t vp = {0};
-      if (input_driver_poll_viewport(&vp))
+      unsigned main_dims  = input_driver_poll_viewport(&vp)
+         ? vp.full_dims : 0;
+      for (; touches < (unsigned)sdl->num_touches; touches++)
       {
-         float w = (float)VIDEO_SCALE_W(vp.full_dims);
-         float h = (float)VIDEO_SCALE_H(vp.full_dims);
-         for (; touches < (unsigned)sdl->num_touches; touches++)
-            touch_pos[touches] = VIDEO_POS_PACK(
-                  (int)(sdl->touches[touches].x * w),
-                  (int)(sdl->touches[touches].y * h));
-         /* each finger listed is there, and down */
-         present = (1u << touches) - 1;
-         down    = present;
+         unsigned dims = main_dims;
+#ifdef HAVE_VIDEO_WINDOWS
+         if (sdl->touch_windows[touches].window)
+            video_driver_window_shown(sdl->touch_windows[touches].window,
+                  &dims);
+#endif
+         touch_pos[touches] = VIDEO_POS_PACK(
+               (int)(sdl->touches[touches].x * VIDEO_SCALE_W(dims)),
+               (int)(sdl->touches[touches].y * VIDEO_SCALE_H(dims)));
+         /* each finger listed that has a place is there, and down */
+         if (dims)
+            present |= 1u << touches;
       }
+      down = present;
    }
    else if (sdl->pen_in_proximity)
    {
@@ -1045,14 +1089,27 @@ static void sdl3_publish_pointers(sdl3_input_t *sdl)
       /* in the air it is there, and not down */
       present      = 1;
       down         = sdl->pen_down ? 1 : 0;
+#ifdef HAVE_VIDEO_WINDOWS
+      sdl->touch_windows[0] = sdl->pen_window;
+#endif
    }
 
+#ifdef HAVE_VIDEO_WINDOWS
+   input_driver_publish_window_pointers(frame, &sdl->mouse_window, 1,
+           INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
+         | INPUT_POINTERS_GUN_BUTTONS_BOUND
+         | INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT
+         | INPUT_POINTERS_POINTER_OFFSCREEN | INPUT_POINTERS_TOUCH_ALONE);
+   input_driver_publish_window_touches(touch_pos, sdl->touch_windows,
+         touches, present, down);
+#else
    input_driver_publish_pointers(frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
          | INPUT_POINTERS_GUN_BUTTONS_BOUND
          | INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT
          | INPUT_POINTERS_POINTER_OFFSCREEN | INPUT_POINTERS_TOUCH_ALONE);
    input_driver_publish_touches(touch_pos, touches, present, down);
+#endif
 }
 
 static void sdl3_input_poll(void *data)
@@ -1229,10 +1286,6 @@ static void sdl3_input_poll(void *data)
 #else
          float wx = event.wheel.x;
          float wy = event.wheel.y;
-#endif
-#ifdef HAVE_VIDEO_WINDOWS
-         if (sdl3_video_window_is_screen(NULL, event.wheel.windowID))
-            continue;
 #endif
 
          /* FLIPPED = "natural" scrolling: SDL delivers inverted

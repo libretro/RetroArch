@@ -131,10 +131,10 @@ void sdl2_set_handles(void *data, enum rarch_display_type display_type)
 static sdl2_video_window_t *sdl2_video_windows[RETRO_VIDEO_VIEWS_MAX];
 static void sdl2_video_window_let_go(sdl2_video_window_t *state);
 static unsigned sdl2_video_window_count;
-/* By screen, its window and SDL's ID for it, which the input driver
- * tells a screen's window by on the frontend's thread */
+/* By screen, its window and the generation it was made with, which
+ * the input driver tells a screen's window by on the frontend's thread */
 static retro_atomic_size_t sdl2_video_window_wins[RETRO_VIDEO_VIEWS_MAX];
-static retro_atomic_int_t  sdl2_video_window_ids[RETRO_VIDEO_VIEWS_MAX];
+static retro_atomic_int_t  sdl2_video_window_gens[RETRO_VIDEO_VIEWS_MAX];
 
 /* The displays last published for the screens' Display setting, on the
  * context's thread. dirty: enumerate again; own_dirty: the main window
@@ -749,10 +749,10 @@ bool sdl2_video_window_create(void *owner, SDL_Window *primary,
    window->configured    = true;
    sdl2_video_windows[request->screen] = state;
    sdl2_video_window_count++;
+   retro_atomic_store_release_int(&sdl2_video_window_gens[request->screen],
+         (int)request->generation);
    retro_atomic_store_release_size(&sdl2_video_window_wins[request->screen],
          (size_t)(uintptr_t)state->win);
-   retro_atomic_store_release_int(&sdl2_video_window_ids[request->screen],
-         (int)state->id);
 
    sdl2_window_set_icon(state->win);
 #ifdef SDL_HINT_WINDOW_NO_ACTIVATION_WHEN_SHOWN
@@ -874,7 +874,7 @@ void sdl2_video_window_destroy(void *owner, video_window_native_t *window)
    retro_atomic_store_release_size(
          &sdl2_video_window_wins[state->common.request.screen], 0);
    retro_atomic_store_release_int(
-         &sdl2_video_window_ids[state->common.request.screen], 0);
+         &sdl2_video_window_gens[state->common.request.screen], 0);
    /* nor is what is still queued for it, which the main window's
     * handling would take */
    SDL_FilterEvents(sdl2_video_window_unqueue, &id);
@@ -882,16 +882,22 @@ void sdl2_video_window_destroy(void *owner, video_window_native_t *window)
    memset(window, 0, sizeof(*window));
 }
 
-bool sdl2_video_window_is_screen(const SDL_Window *win, Uint32 id)
+unsigned sdl2_video_window_screen(const SDL_Window *win,
+      unsigned *generation)
 {
    unsigned i;
+   *generation = 0;
+   if (!win)
+      return 0;
    for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
-      if (     (win && retro_atomic_load_acquire_size(
-                  &sdl2_video_window_wins[i]) == (size_t)(uintptr_t)win)
-            || (id  && (Uint32)retro_atomic_load_acquire_int(
-                  &sdl2_video_window_ids[i]) == id))
-         return true;
-   return false;
+      if (retro_atomic_load_acquire_size(&sdl2_video_window_wins[i])
+            == (size_t)(uintptr_t)win)
+      {
+         *generation = (unsigned)retro_atomic_load_acquire_int(
+               &sdl2_video_window_gens[i]);
+         return i;
+      }
+   return 0;
 }
 
 /* On Windows a window is its thread's, which alone takes it or lets it

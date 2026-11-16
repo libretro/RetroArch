@@ -62,6 +62,29 @@ static struct
    bool     vp_ok;
 } input_pointers;
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_MENU) && !defined(ANDROID)
+/* The includer's: the window the menu is up in, 0 for the main one;
+ * -1 while it is not up */
+static int input_pointer_menu_window(void);
+
+/* @count windows' bits that press nothing: while the menu is up, those
+ * of the screens' own windows it is not in */
+static uint32_t input_pointer_windows_muted(
+      const input_video_window_t *windows, unsigned count, uint32_t in)
+{
+   unsigned i;
+   uint32_t muted = 0;
+   int menu       = in ? input_pointer_menu_window() : -1;
+   if (menu < 0)
+      return 0;
+   for (i = 0; i < count; i++)
+      if (     (in & ((uint32_t)1 << i))
+            && windows[i].window != (unsigned)menu)
+         muted |= (uint32_t)1 << i;
+   return muted;
+}
+#endif
+
 #ifdef HAVE_VIDEO_WINDOWS
 /* @count windows kept, and a bit for each in a screen's own; NULL is
  * the main window's. */
@@ -91,6 +114,18 @@ static void input_pointer_frames_set(const input_pointer_frame_t *frames,
 #ifdef HAVE_VIDEO_WINDOWS
    input_pointers.in_window     = (uint16_t)input_pointer_windows_set(
          input_pointers.window, windows, count);
+#if defined(HAVE_MENU) && !defined(ANDROID)
+   /* While the menu is up, nothing presses in a screen's own window it
+    * is not in */
+   {
+      unsigned i;
+      uint32_t muted = input_pointer_windows_muted(input_pointers.window,
+            count, input_pointers.in_window);
+      for (i = 0; muted; i++, muted >>= 1)
+         if (muted & 1)
+            input_pointers.frame[i].buttons = 0;
+   }
+#endif
 #else
    (void)windows;
 #endif
@@ -119,6 +154,10 @@ static void input_pointer_touches_set(const uint32_t *pos,
 #ifdef HAVE_VIDEO_WINDOWS
    input_pointers.touch_in_window = input_pointer_windows_set(
          input_pointers.touch_window, windows, count);
+#if defined(HAVE_MENU) && !defined(ANDROID)
+   down &= ~input_pointer_windows_muted(input_pointers.touch_window, count,
+         input_pointers.touch_in_window);
+#endif
 #else
    (void)windows;
 #endif
