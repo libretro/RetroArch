@@ -10035,6 +10035,26 @@ const char *menu_dialog_firmware_path_line(const struct menu_state *menu_st,
    return NULL;
 }
 
+/* A path's underline as last measured: the line it is under and the
+ * font it was measured in, so the box's frames after the first draw it
+ * without measuring again. Only the thread that draws the menu's frames
+ * reads and writes these. */
+#define MENU_PATH_UNDERLINES 4
+
+typedef struct
+{
+   font_data_t *font;
+   size_t len;
+   float size;
+   uint32_t font_generation;
+   int x;     /* from the line's start */
+   int width;
+   char line[128];
+} menu_path_underline_t;
+
+static menu_path_underline_t menu_path_underlines[MENU_PATH_UNDERLINES];
+static unsigned menu_path_underline_next;
+
 void menu_dialog_draw_path_underline(const struct menu_state *menu_st,
       unsigned *state, const char *line, font_data_t *font,
       gfx_display_t *p_disp, void *userdata, unsigned video_dims,
@@ -10043,16 +10063,55 @@ void menu_dialog_draw_path_underline(const struct menu_state *menu_st,
    unsigned i;
    float rgba[16];
    int width;
+   size_t len;
+   uint32_t gen;
+   menu_path_underline_t *u = NULL;
    const char *path = menu_dialog_firmware_path_line(menu_st, line, state);
 
    if (!path)
       return;
 
-   width = font_driver_get_message_width(font, path, strlen(path), 1.0f);
-   if (width <= 0)
-      return;
-
-   x += font_driver_get_message_width(font, line, path - line, 1.0f);
+   len = strlen(line);
+   gen = font_driver_get_generation();
+   for (i = 0; i < MENU_PATH_UNDERLINES; i++)
+   {
+      menu_path_underline_t *c = &menu_path_underlines[i];
+      if (     c->font == font && c->font_generation == gen
+            && c->size == font->size
+            && c->len  == len  && !memcmp(c->line, line, len))
+      {
+         u = c;
+         break;
+      }
+   }
+   if (!u)
+   {
+      int at;
+      if (     (width = font_driver_get_message_width(font, path,
+                  strlen(path), 1.0f)) <= 0
+            || (at = font_driver_get_message_width(font, line,
+                  path - line, 1.0f)) < 0)
+         return;
+      if (len < sizeof(u->line))
+      {
+         u = &menu_path_underlines[menu_path_underline_next];
+         menu_path_underline_next = (menu_path_underline_next + 1)
+               % MENU_PATH_UNDERLINES;
+         memcpy(u->line, line, len);
+         u->font            = font;
+         u->size            = font->size;
+         u->font_generation = gen;
+         u->len             = len;
+         u->x               = at;
+         u->width           = width;
+      }
+      x += at;
+   }
+   else
+   {
+      width = u->width;
+      x    += u->x;
+   }
 
    for (i = 0; i < 4; i++)
    {

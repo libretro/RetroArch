@@ -303,6 +303,7 @@ jobs:
           for d in ozone xmb materialui; do
             ./samples/menu/msgbox_layout/msgbox_layout_test "$d" short
             ./samples/menu/msgbox_layout/msgbox_layout_test "$d" tall
+            ./samples/menu/msgbox_layout/msgbox_layout_test "$d" firmware
           done
           # The input dialog's caret, at the wrap's line breaks too.
           ./samples/menu/msgbox_layout/msgbox_layout_test xmb caret

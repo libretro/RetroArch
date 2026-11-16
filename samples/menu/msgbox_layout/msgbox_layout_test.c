@@ -27,6 +27,10 @@
  *               here) the text stops above the buttons, cut short
  *               with "..."
  *
+ *   firmware    the missing firmware dialog: one underline under the
+ *               file's path, not its number, as wide as the path, in
+ *               the frames drawn from what was measured before too
+ *
  *   caret       XMB and MaterialUI: the input dialog with 40 words typed,
  *               wrapped over several lines, and the cursor put at the
  *               start, inside a word, at the start of each line the
@@ -41,7 +45,7 @@
  *               button, its text - and once when it goes; never every
  *               frame it is up
  *
- * Usage: msgbox_layout_test ozone|xmb|materialui short|tall
+ * Usage: msgbox_layout_test ozone|xmb|materialui short|tall|firmware
  *        msgbox_layout_test xmb|materialui caret
  *        msgbox_layout_test rgui redraw
  *
@@ -805,6 +809,71 @@ static void caret_lane(unsigned w, unsigned h)
    printf("[caret] %u cursor position(s) at %ux%u\n", checked, w, h);
 }
 
+/* --- the missing firmware dialog's underlines ---------------------- */
+
+/* The path of each missing file is underlined: a quad 1 px high under
+ * the path, not under its number, as wide as the path - in every frame,
+ * the ones drawn from what was measured before too */
+static void firmware_lane(unsigned w, unsigned h)
+{
+   static const char *line_want = "1. tos.img";
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   unsigned frame;
+
+   menu_dialog_confirm_set(menu_st, MSG_CORE_FIRMWARE_MISSING,
+         CMD_EVENT_CORE_FIRMWARE_DOWNLOAD);
+   strlcpy(box_text, "Required firmware is missing:\n\n1. tos.img\n"
+         "[This firmware must be supplied manually.]\n"
+         "tos.img (TOS 1.02 US aka Mega TOS)", sizeof(box_text));
+
+   for (frame = 0; frame < 3; frame++)
+   {
+      const drawn_t *line = NULL;
+      unsigned i, lines = 0;
+      unsigned found    = 0;
+      one_frame(w, h);
+      if (!frame)
+         continue; /* fading in */
+      for (i = 0; i < drawn_count; i++)
+         if (string_is_equal(drawn[i].text, line_want))
+         {
+            line = &drawn[i];
+            lines++;
+         }
+      CHECK(lines == 1, "[firmware] \"%s\" drawn %u time(s)", line_want,
+            lines);
+      if (!line)
+         continue;
+      {
+         float glyph  = line->w / (float)strlen(line_want);
+         float want_x = line->x * w + glyph * 3;
+         float want_w = glyph * 7;
+         float baseline = (1.0f - line->y) * h;
+         for (i = 0; i < quad_count; i++)
+         {
+            /* A line 1 px high just under the line's baseline; the
+             * menus' other 1 px lines (separators) are elsewhere */
+            if (     quads[i].h != 1
+                  || (float)quads[i].y < baseline - 0.5f
+                  || (float)quads[i].y > baseline + 2.5f)
+               continue;
+            found++;
+            CHECK(   quads[i].x - want_x < 1.5f && want_x - quads[i].x < 1.5f
+                  && (float)quads[i].w - want_w < 1.5f
+                  && want_w - (float)quads[i].w < 1.5f,
+                  "[firmware] frame %u: underline at x %d, %u wide; want "
+                  "%.1f, %.1f wide", frame, quads[i].x, quads[i].w, want_x,
+                  want_w);
+         }
+      }
+      CHECK(found == 1, "[firmware] frame %u: %u underline(s), want 1",
+            frame, found);
+   }
+   box_text[0] = '\0';
+   menu_dialog_confirm_clear(menu_st);
+   printf("[firmware] one underline under the path\n");
+}
+
 /* --- RGUI ---------------------------------------------------------- */
 
 /* One iteration as the runloop runs it: the box's text handed over
@@ -900,10 +969,11 @@ int main(int argc, char *argv[])
       ident = NULL;
    if (!ident || (!string_is_equal(which, "short")
             && !string_is_equal(which, "tall")
+            && !string_is_equal(which, "firmware")
             && !string_is_equal(which, "caret")
             && !string_is_equal(which, "redraw")))
    {
-      fprintf(stderr, "usage: %s ozone|xmb|materialui short|tall\n"
+      fprintf(stderr, "usage: %s ozone|xmb|materialui short|tall|firmware\n"
             "       %s xmb|materialui caret\n"
             "       %s rgui redraw\n", argv[0], argv[0], argv[0]);
       return 2;
@@ -958,6 +1028,11 @@ int main(int argc, char *argv[])
          lane("short", 40, 1280, 720, 0);
       else if (string_is_equal(which, "tall"))
          lane("tall", 199, 480, 272, -1);
+      else if (string_is_equal(which, "firmware"))
+      {
+         menu_dialog_confirm_clear(menu_st);
+         firmware_lane(1280, 720);
+      }
       else
       {
          menu_dialog_confirm_clear(menu_st);
