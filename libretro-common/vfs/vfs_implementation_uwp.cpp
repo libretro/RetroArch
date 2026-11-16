@@ -336,6 +336,15 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     if (!stream)
         return NULL;
 
+    /* A stable open promises what this backend can't keep (a handle no
+     * one else can write through, a regular file vouched for by its
+     * handle), so it is refused rather than quietly opened */
+    if (hints & RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE)
+    {
+        free(stream);
+        return NULL;
+    }
+
     stream->fd        = 0;
     stream->hints     = hints;
     stream->size      = 0;
@@ -805,6 +814,27 @@ const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
     * is installed, and this file replaces vfs_implementation.c
     * wholesale on UWP, so leaving it out is a link error rather than
     * a fallback. */
+   (void)stream;
+   if (len)
+      *len = 0;
+   return NULL;
+}
+
+bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
+      struct retro_vfs_file_identity *id)
+{
+   /* Only a stable or descriptor-path stream has one, and this backend
+    * opens neither. Defined because it replaces vfs_implementation.c. */
+   (void)stream;
+   if (id)
+      memset(id, 0, sizeof(*id));
+   return false;
+}
+
+const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
+      int64_t *len)
+{
+   /* No mapping on this backend, as retro_vfs_file_get_mapped_ptr_impl */
    (void)stream;
    if (len)
       *len = 0;

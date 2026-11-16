@@ -122,6 +122,55 @@ const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
 int64_t retro_vfs_file_view_impl(libretro_vfs_implementation_file *stream,
       uint64_t len, const uint8_t **ptr);
 
+/* An open hint this implementation honours and the frontend VFS ABI does
+ * not carry: a read-only open of a local file that has to stay the file
+ * it opened, for a caller that checks what it reads (a core's signature).
+ * Implies the descriptor path, with no stdio buffer. The open fails
+ * unless the path names a regular file; it never waits (a FIFO), never
+ * becomes a controlling terminal and is not inherited by a child. On
+ * Windows no other handle can write the file or delete it for as long as
+ * this one is open. Ignored by any other mode or scheme, which open as
+ * before. */
+#define RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE (1 << 16)
+
+/* Which file an open stream is, read from the open handle itself rather
+ * than by path, so it describes the file being read even after the path
+ * has been pointed elsewhere. */
+struct retro_vfs_file_identity
+{
+   uint64_t dev;          /* the volume                                 */
+   uint64_t size;
+   int64_t  mtime;        /* last write, seconds since 1970             */
+   int64_t  ctime;        /* last status change (Windows: ChangeTime),
+                           * 0 where the platform has none             */
+   uint32_t mtime_nsec;
+   uint32_t ctime_nsec;
+   uint8_t  id[16];       /* the file on the volume: Windows' 128-bit
+                           * id, else the inode, big-endian, in the
+                           * last 8 octets                              */
+};
+
+/* Fills @id for a plain-file stream opened on the descriptor path
+ * (RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK, ..._FREQUENT_ACCESS or
+ * ..._IMPL_STABLE). One fstat() on POSIX. False for any other stream. */
+bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
+      struct retro_vfs_file_identity *id);
+
+/* Maps the whole of a descriptor-path stream read-only, on demand, and
+ * returns it; the stream owns the mapping and drops it at close. Reads,
+ * seeks and the position are untouched by it, and a second call returns
+ * the same mapping. NULL where the stream or platform can't map (the
+ * caller then reads), including an empty file or one too big for the
+ * address space.
+ *
+ * Reading the mapping is reading the file: where another process can
+ * shorten the file, a touch past its new end faults (SIGBUS on POSIX),
+ * and a removable or network volume can fail a touch the same way. A
+ * caller maps only a file nothing else can change, on a local fixed
+ * volume. */
+const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
+      int64_t *len);
+
 /**
  * retro_vfs_file_prefetch_impl:
  * @offset : first byte of the range about to be read

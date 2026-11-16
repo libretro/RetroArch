@@ -45,6 +45,7 @@
 
 #    include <fcntl.h>
 #    include <direct.h>
+#    include <share.h>
 #    include <windows.h>
 #  endif
 #    include <io.h>
@@ -340,6 +341,9 @@ static void vfs_unix_to_filetime(int64_t unix_s, FILETIME *ft)
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 /* opened both to read and to write ("w+b", "r+b") */
 #define RFILE_HINT_UPDATE     (1 << 12)
+/* mapped on demand by retro_vfs_file_map_impl(): the stream owns the
+ * mapping, and reads and seeks never look at it */
+#define RFILE_HINT_LENT_MAP   (1 << 13)
 
 /* A stream on Windows NT opens a handle of its own rather than a C
  * runtime FILE, keeps its own position and a 64 KiB buffer, and reads
@@ -1150,9 +1154,47 @@ static int64_t vfs_open_size(libretro_vfs_implementation_file *stream)
    return -1;
 }
 
+/* A stable open's file size, or -1 unless it is a regular file: one
+ * fstat() on POSIX, GetFileType and a size query on Windows. The open
+ * takes its size from here rather than probing again. */
+static int64_t vfs_stable_size(libretro_vfs_implementation_file *stream)
+{
+#if defined(_WIN32) && !defined(_XBOX)
+   HANDLE h = (HANDLE)_get_osfhandle(stream->fd);
+   if (h == INVALID_HANDLE_VALUE || GetFileType(h) != FILE_TYPE_DISK)
+      return -1;
+#if defined(LEGACY_WIN32)
+   {
+      DWORD hi = 0;
+      DWORD lo = GetFileSize(h, &hi);
+      if (lo == (DWORD)0xFFFFFFFF && GetLastError() != NO_ERROR)
+         return -1;
+      return (int64_t)(((uint64_t)hi << 32) | lo);
+   }
+#else
+   {
+      LARGE_INTEGER sz;
+      if (!GetFileSizeEx(h, &sz))
+         return -1;
+      return (int64_t)sz.QuadPart;
+   }
+#endif
+#elif defined(VFS_OPEN_FSTAT)
+   struct stat st;
+   if (fstat(stream->fd, &st) != 0 || !S_ISREG(st.st_mode))
+      return -1;
+   return (int64_t)st.st_size;
+#else
+   /* No stable open where there is no fstat to vouch for the file */
+   (void)stream;
+   return -1;
+#endif
+}
+
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       const char *path, unsigned mode, unsigned hints)
 {
+   int64_t                      stable_size = -1;
    int                                flags = 0;
    const char                     *mode_str = NULL;
    libretro_vfs_implementation_file *stream =
@@ -1310,6 +1352,17 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    if (     mode != RETRO_VFS_FILE_ACCESS_READ
          && mode != RETRO_VFS_FILE_ACCESS_WRITE)
       stream->hints |= RFILE_HINT_UPDATE;
+
+   /* A stable open is a plain file read on the descriptor path; any
+    * other mode or scheme opens as it always has */
+   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE)
+   {
+      if (     mode == RETRO_VFS_FILE_ACCESS_READ
+            && stream->scheme == VFS_SCHEME_NONE)
+         stream->hints |= RFILE_HINT_UNBUFFERED;
+      else
+         stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE;
+   }
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
@@ -1506,11 +1559,20 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          default:
             {
 #if defined(_WIN32) && !defined(_XBOX)
+               /* A stable open shares the file for reading only: while
+                * it is open nothing writes, truncates or deletes it */
+               bool stable = (stream->hints
+                     & RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE) != 0;
+               int  sflags = flags | _O_NOINHERIT | _O_SEQUENTIAL;
 #if defined(LEGACY_WIN32_RUNTIME)
                if (win32_needs_local_encoding())
                {
                   char *path_local    = utf8_to_local_string_alloc(path);
-                  stream->fd          = open(path_local, flags,
+                  if (stable)
+                     stream->fd       = path_local
+                        ? _sopen(path_local, sflags, _SH_DENYWR) : -1;
+                  else
+                     stream->fd       = open(path_local, flags,
                         _S_IREAD | _S_IWRITE);
                   if (path_local)
                      free(path_local);
@@ -1518,14 +1580,22 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
                else
                {
                   wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
-                  stream->fd          = _wopen(path_wide, flags,
+                  if (stable)
+                     stream->fd       = path_wide
+                        ? _wsopen(path_wide, sflags, _SH_DENYWR) : -1;
+                  else
+                     stream->fd       = _wopen(path_wide, flags,
                         _S_IREAD | _S_IWRITE);
                   if (path_wide)
                      free(path_wide);
                }
 #elif defined(LEGACY_WIN32)
                char *path_local    = utf8_to_local_string_alloc(path);
-               stream->fd          = open(path_local, flags,
+               if (stable)
+                  stream->fd       = path_local
+                     ? _sopen(path_local, sflags, _SH_DENYWR) : -1;
+               else
+                  stream->fd       = open(path_local, flags,
                      _S_IREAD | _S_IWRITE);
                if (path_local)
                   free(path_local);
@@ -1534,7 +1604,11 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
                /* A file this creates is writable afterwards, as one
                 * fopen() makes is: without _S_IWRITE it would be made
                 * read-only */
-               stream->fd          = _wopen(path_wide, flags,
+               if (stable)
+                  stream->fd       = path_wide
+                     ? _wsopen(path_wide, sflags, _SH_DENYWR) : -1;
+               else
+                  stream->fd       = _wopen(path_wide, flags,
                      _S_IREAD | _S_IWRITE);
                if (path_wide)
                   free(path_wide);
@@ -1569,6 +1643,20 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
                   stream->fd = (uid < 0) ? -1 : (int)uid;
                }
 #else
+               /* A stable open never waits for a FIFO's writer, never
+                * takes a controlling terminal and stays out of a child */
+               if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE)
+               {
+#ifdef O_NONBLOCK
+                  flags |= O_NONBLOCK;
+#endif
+#ifdef O_NOCTTY
+                  flags |= O_NOCTTY;
+#endif
+#ifdef O_CLOEXEC
+                  flags |= O_CLOEXEC;
+#endif
+               }
                /* What fopen() creates a file with, less the umask */
                stream->fd          = open(path, flags,
                      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
@@ -1579,6 +1667,12 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       }
 
       if (stream->fd == -1)
+         goto error;
+
+      /* A stable open is of a regular file only, its size taken from
+       * the same call that says so */
+      if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE)
+            && (stable_size = vfs_stable_size(stream)) < 0)
          goto error;
 
 #ifdef VFS_HAVE_FILE_MAPPING
@@ -1662,7 +1756,8 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    if (     mode != RETRO_VFS_FILE_ACCESS_WRITE
          && mode != RETRO_VFS_FILE_ACCESS_READ_WRITE)
    {
-      int64_t known = vfs_open_size(stream);
+      int64_t known = stable_size >= 0 ? stable_size
+         : vfs_open_size(stream);
       if (known >= 0)
          stream->size = known;
       else
@@ -1755,7 +1850,9 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    else
    {
 #ifdef VFS_HAVE_FILE_MAPPING
-      if (stream->mapped && (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS))
+      if (     stream->mapped
+            && (stream->hints & (RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS
+                  | RFILE_HINT_LENT_MAP)))
       {
 #if defined(HAVE_MMAP)
          munmap(stream->mapped, stream->mapsize);
@@ -3758,6 +3855,174 @@ const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
    (void)stream;
 #endif
    return NULL;
+}
+
+#if defined(_WIN32) && !defined(_XBOX)
+/* FILE_BASIC_INFO and FILE_ID_INFO, which older SDKs lack */
+struct vfs_file_basic_info
+{
+   LARGE_INTEGER creation;
+   LARGE_INTEGER access;
+   LARGE_INTEGER write;
+   LARGE_INTEGER change;
+   DWORD attributes;
+};
+
+struct vfs_file_id_info
+{
+   ULONGLONG volume;
+   BYTE id[16];
+};
+
+/* GetFileInformationByHandleEx, Vista and later */
+typedef BOOL (WINAPI *vfs_file_info_ex_t)(HANDLE, int, LPVOID, DWORD);
+#define VFS_FILE_BASIC_INFO 0
+#define VFS_FILE_ID_INFO    18
+
+/* FILETIME ticks (100 ns from 1601) to seconds from 1970 */
+static void vfs_file_time(uint64_t ticks, int64_t *sec, uint32_t *nsec)
+{
+   *sec  = (int64_t)(ticks / 10000000) - (int64_t)11644473600LL;
+   *nsec = (uint32_t)(ticks % 10000000) * 100;
+}
+#endif
+
+bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
+      struct retro_vfs_file_identity *id)
+{
+#if defined(_WIN32) && !defined(_XBOX)
+   BY_HANDLE_FILE_INFORMATION info;
+   struct vfs_file_basic_info basic;
+   struct vfs_file_id_info fid;
+   vfs_file_info_ex_t info_ex;
+   HANDLE h;
+   unsigned i;
+#elif defined(VFS_OPEN_FSTAT)
+   struct stat st;
+   uint64_t ino;
+   unsigned i;
+#endif
+   if (!id)
+      return false;
+   memset(id, 0, sizeof(*id));
+   if (     !stream
+         || stream->scheme != VFS_SCHEME_NONE
+         || !(stream->hints & RFILE_HINT_UNBUFFERED)
+         || stream->fd < 0)
+      return false;
+#if defined(_WIN32) && !defined(_XBOX)
+   if ((h = (HANDLE)_get_osfhandle(stream->fd)) == INVALID_HANDLE_VALUE
+         || !GetFileInformationByHandle(h, &info))
+      return false;
+   id->dev  = info.dwVolumeSerialNumber;
+   id->size = ((uint64_t)info.nFileSizeHigh << 32) | info.nFileSizeLow;
+   for (i = 0; i < 4; i++)
+   {
+      id->id[8 + i]  = (uint8_t)(info.nFileIndexHigh >> (24 - 8 * i));
+      id->id[12 + i] = (uint8_t)(info.nFileIndexLow  >> (24 - 8 * i));
+   }
+   vfs_file_time(((uint64_t)info.ftLastWriteTime.dwHighDateTime << 32)
+         | info.ftLastWriteTime.dwLowDateTime, &id->mtime, &id->mtime_nsec);
+   if ((info_ex = (vfs_file_info_ex_t)GetProcAddress(
+               GetModuleHandleA("kernel32.dll"),
+               "GetFileInformationByHandleEx")))
+   {
+      /* 128-bit ids: ReFS can reuse a 64-bit index */
+      if (info_ex(h, VFS_FILE_ID_INFO, &fid, sizeof(fid)))
+      {
+         id->dev = fid.volume;
+         memcpy(id->id, fid.id, sizeof(id->id));
+      }
+      if (info_ex(h, VFS_FILE_BASIC_INFO, &basic, sizeof(basic)))
+         vfs_file_time((uint64_t)basic.change.QuadPart,
+               &id->ctime, &id->ctime_nsec);
+   }
+   return true;
+#elif !defined(VFS_OPEN_FSTAT)
+   return false;
+#else
+   if (fstat(stream->fd, &st) != 0)
+      return false;
+   id->dev   = (uint64_t)st.st_dev;
+   id->size  = (uint64_t)st.st_size;
+   id->mtime = (int64_t)st.st_mtime;
+   id->ctime = (int64_t)st.st_ctime;
+#if defined(__APPLE__)
+   id->mtime_nsec = (uint32_t)st.st_mtimespec.tv_nsec;
+   id->ctime_nsec = (uint32_t)st.st_ctimespec.tv_nsec;
+#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) \
+   || defined(__OpenBSD__) || defined(__DragonFly__)
+   id->mtime_nsec = (uint32_t)st.st_mtim.tv_nsec;
+   id->ctime_nsec = (uint32_t)st.st_ctim.tv_nsec;
+#endif
+   ino = (uint64_t)st.st_ino;
+   for (i = 0; i < 8; i++)
+      id->id[8 + i] = (uint8_t)(ino >> (56 - 8 * i));
+   return true;
+#endif
+}
+
+const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
+      int64_t *len)
+{
+#ifdef VFS_HAVE_FILE_MAPPING
+   uint64_t size;
+#endif
+   if (len)
+      *len = 0;
+#ifdef VFS_HAVE_FILE_MAPPING
+   if (     !stream
+         || stream->scheme != VFS_SCHEME_NONE
+         || !(stream->hints & RFILE_HINT_UNBUFFERED)
+         || stream->fd < 0)
+      return NULL;
+   /* Mapped already, by the hint or by an earlier call */
+   if (stream->mapped && (stream->hints
+            & (RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS | RFILE_HINT_LENT_MAP)))
+   {
+      if (len)
+         *len = (int64_t)stream->mapsize;
+      return stream->mapped;
+   }
+   if (stream->mapped || stream->size <= 0)
+      return NULL;
+   /* Its size as opened: a stable open's can't have changed */
+   size = (uint64_t)stream->size;
+   if (size > (uint64_t)(size_t)-1)
+      return NULL;
+#if defined(HAVE_MMAP)
+   {
+      void *p = mmap(NULL, (size_t)size, PROT_READ, MAP_SHARED,
+            stream->fd, 0);
+      if (p == MAP_FAILED)
+         return NULL;
+      stream->mapped = (uint8_t*)p;
+   }
+#else
+   {
+      HANDLE fh = (HANDLE)_get_osfhandle(stream->fd);
+      HANDLE mh;
+      if (fh == INVALID_HANDLE_VALUE
+            || !(mh = CreateFileMapping(fh, NULL, PAGE_READONLY, 0, 0, NULL)))
+         return NULL;
+      if (!(stream->mapped = (uint8_t*)MapViewOfFile(mh, FILE_MAP_READ,
+                  0, 0, (SIZE_T)size)))
+      {
+         CloseHandle(mh);
+         return NULL;
+      }
+      stream->map_handle = mh;
+   }
+#endif
+   stream->mapsize = size;
+   stream->hints  |= RFILE_HINT_LENT_MAP;
+   if (len)
+      *len = (int64_t)size;
+   return stream->mapped;
+#else
+   (void)stream;
+   return NULL;
+#endif
 }
 
 #if defined(_WIN32) && !defined(VITA) && !defined(__PSL1GHT__) && !defined(__PS3__)
