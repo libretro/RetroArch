@@ -382,11 +382,20 @@ bool core_folder_key_with(const char *path, bool per_folder, uint8_t *key);
 bool core_check_record(const core_trust_set_t *s, const struct core_check *c);
 /* A record matches this file in all but its fs-verity digest and has
  * one: the file's must be measured for the record to hold */
+/* core_check_record() for a record that holds whatever folder its core
+ * is in: one with no build time or kept at any age, or whose build no
+ * folder has a newer one of (the usual case: the newest seen). The
+ * quick check takes it without the folder's key, which costs a walk of
+ * the folder's path. */
+bool core_check_record_folderless(const core_trust_set_t *s,
+      const struct core_check *c);
 bool core_check_wants_verity(const core_trust_set_t *s,
       const struct core_check *c);
 /* The check up to hashing: true when c->result is final.
- * Fills c->rec.name, and c->rec.id and c->folder unless the check is
- * off, for core_check_finish(). */
+ * Fills c->rec.name, and c->rec.id unless the check is off; c->folder
+ * whenever it returns false, for core_check_finish(). A pass from a
+ * record that holds in any folder (core_check_record_folderless())
+ * leaves c->folder zero: a pass is never applied to the store. */
 bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
       const char *path, struct core_check *c);
 /* The same with the identity core_file_open_id() handed back for f */

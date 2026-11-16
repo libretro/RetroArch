@@ -378,6 +378,26 @@ bool core_check_record(const core_trust_set_t *s, const struct core_check *c)
    return r && !core_trust_too_old(s, r, c->folder);
 }
 
+bool core_check_record_folderless(const core_trust_set_t *s,
+      const struct core_check *c)
+{
+   unsigned i;
+   const struct core_trust_record *r = core_trust_may_record(s, &c->rec.id)
+      ? core_trust_find(s, &c->rec.id, c->rec.name) : NULL;
+   if (!r)
+      return false;
+   /* Never too old in any folder: core_trust_too_old() can't be true */
+   if (!r->build_time || (r->flags & CORE_TRUST_RECORD_ANY_AGE))
+      return true;
+   /* Too old only where a folder has a newer build of its name: with
+    * none newer anywhere, no folder's key can change the answer */
+   for (i = 0; i < s->num_newest; i++)
+      if (     s->newest[i].build_time > r->build_time
+            && string_is_equal(s->newest[i].name, r->name))
+         return false;
+   return true;
+}
+
 bool core_check_wants_verity(const core_trust_set_t *s,
       const struct core_check *c)
 {

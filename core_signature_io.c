@@ -880,8 +880,7 @@ bool core_check_quick_id(const core_trust_set_t *s, core_file_t *f,
       return true;
    if (id)
       c->rec.id = *id;
-   if (     (!id && !core_file_identity(f, &c->rec.id))
-         || !core_folder_key(path, c->folder))
+   else if (!core_file_identity(f, &c->rec.id))
    {
       c->result = CORE_CHECK_ERROR;
       return true;
@@ -889,6 +888,15 @@ bool core_check_quick_id(const core_trust_set_t *s, core_file_t *f,
    /* A record with an fs-verity digest holds only with the kernel's */
    if (core_check_wants_verity(s, c))
       core_file_verity_measure(f, &c->rec.id);
+   /* A record that holds in any folder answers without the folder's
+    * key: a pass is never applied to the store, so nothing reads it */
+   if (core_check_record_folderless(s, c))
+      return true;
+   if (!core_folder_key(path, c->folder))
+   {
+      c->result = CORE_CHECK_ERROR;
+      return true;
+   }
    return core_check_record(s, c)
       || core_file_unwritable(f, path,
             core_self_find(&self) ? &self : NULL)

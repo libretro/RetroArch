@@ -1479,6 +1479,7 @@ static void test_record_older(void)
    s = core_trust_get(t);
    CHECK((f = core_file_open(core)) != NULL);
    CHECK(!core_check_quick(s, f, core, &c));
+   CHECK(!memcmp(c.folder, c2.folder, sizeof(c.folder)));
    core_file_close(f);
    core_trust_set_put(s);
    CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OLDER);
@@ -1499,6 +1500,19 @@ static void test_record_older(void)
    CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OLDER);
    CHECK(core_trust_always(t, &c));
    CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OK && c.record == !kept);
+   /* Kept at any age, its record answers the quick check without the
+    * folder's key, which stays unfilled; while a newer build in the
+    * folder still decides, the key is taken */
+   if (kept)
+   {
+      static const uint8_t zero[CORE_SHA256_LEN];
+      s = core_trust_get(t);
+      CHECK((f = core_file_open(core)) != NULL);
+      CHECK(core_check_quick(s, f, core, &c2) && c2.result == CORE_CHECK_OK);
+      CHECK(!memcmp(c2.folder, zero, sizeof(zero)));
+      core_file_close(f);
+      core_trust_set_put(s);
+   }
 
    /* Two checks in flight: the older one is not recorded */
    core_trust_free(t);
@@ -1532,6 +1546,59 @@ static void test_record_older(void)
    core_trust_set_put(s);
    core_trust_free(t);
    core_trust_free(u);
+}
+
+/* Which records answer without the folder's key: those no folder's
+ * newest build can make too old */
+static void test_record_folderless(void)
+{
+   static const uint8_t zero[CORE_SHA256_LEN];
+   core_trust_t *t = fx_store();
+   core_trust_set_t *s;
+   struct core_check c, unsigned_c, other, q;
+   check_of(&c, "a_libretro.so", 1, 0xa1, 10);
+   check_of(&unsigned_c, "b_libretro.so", 2, 0xb2, 0);
+   check_of(&other, "c_libretro.so", 3, 0xc3, 0);
+   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_apply(t, &unsigned_c));
+   s = core_trust_get(t);
+   /* A signed build that is the newest of its name anywhere: no folder
+    * can make it too old */
+   CHECK(core_check_record(s, &c));
+   CHECK(core_check_record_folderless(s, &c));
+   core_trust_set_put(s);
+   /* A newer build of its name seen in some folder: the folder decides,
+    * so its key is needed */
+   {
+      struct core_check newer;
+      check_of(&newer, "a_libretro.so", 9, 0xa9, 20);
+      newer.record = false;
+      CHECK(core_trust_apply(t, &newer));
+   }
+   s = core_trust_get(t);
+   CHECK(!core_check_record_folderless(s, &c));
+   /* No build time: never too old */
+   CHECK(core_check_record_folderless(s, &unsigned_c));
+   /* No record */
+   CHECK(!core_check_record_folderless(s, &other));
+   core_trust_set_put(s);
+   /* Kept at any age by Always Trust */
+   CHECK(core_trust_always(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_check_record_folderless(s, &c));
+   /* A signed record of a name no folder has a newest build for: as of
+    * a store that kept the record and lost the newest builds */
+   q = c;
+   q.rec.id.ino[0] = 7;
+   q.raise_newest  = false;
+   strlcpy(q.rec.name, "d_libretro.so", sizeof(q.rec.name));
+   core_trust_set_put(s);
+   CHECK(core_trust_apply(t, &q));
+   s = core_trust_get(t);
+   CHECK(core_check_record_folderless(s, &q));
+   CHECK(!memcmp(q.folder, zero, sizeof(zero)));
+   core_trust_set_put(s);
+   core_trust_free(t);
 }
 
 static void test_ctime_kept(void)
@@ -2621,6 +2688,7 @@ int main(int argc, char *argv[])
    test_trust_merge_cap();
    test_trust_temp();
    test_record_older();
+   test_record_folderless();
    test_ctime_kept();
    test_store_device();
    test_self_device();
