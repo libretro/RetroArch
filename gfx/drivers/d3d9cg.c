@@ -3411,7 +3411,7 @@ static bool d3d9_cg_bloom_ps_make(d3d9_video_t *d3d)
    if (!chain)
       return false;
    cgGetError();
-   if (!(prog = cgCreateProgram(chain->cgCtx, CG_SOURCE, bloom_ps_source,
+   if (!(prog = cgCreateProgram(chain->cgCtx, CG_SOURCE, bloom_sm3_ps_source,
                CG_PROFILE_PS_3_0, "main_fragment", NULL)))
       return false;
    cgD3D9LoadProgram(prog, CG_FALSE, 0);

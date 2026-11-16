@@ -1,3 +1,6 @@
+#ifndef BLOOM_SM4_HLSL_H
+#define BLOOM_SM4_HLSL_H
+
 static const char bloom_vs_source[] =
    "struct O{float4 p:SV_POSITION;float2 uv:TEXCOORD0;};"
    "O VSMain(uint id:SV_VertexID){O o;o.uv=float2(id&1,id>>1);"
@@ -11,3 +14,4 @@ static const char bloom_ps_source[] =
    "c+=(light(uv+p.xy*1.384615)+light(uv-p.xy*1.384615))*.316216;"
    "c+=(light(uv+p.xy*3.230769)+light(uv-p.xy*3.230769))*.0702703;}"
    "return float4(c*p.w,0);}";
+#endif

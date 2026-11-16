@@ -7037,7 +7037,7 @@ static bool d3d9_hlsl_bloom_ps_make(d3d9_video_t *d3d)
 {
    bool ok;
    D3DBlob code = NULL;
-   if (!d3d_compile(bloom_ps_source, strlen(bloom_ps_source), "bloom", "main_fragment", "ps_3_0",
+   if (!d3d_compile(bloom_sm3_ps_source, strlen(bloom_sm3_ps_source), "bloom", "main_fragment", "ps_3_0",
             &code))
       return false;
    ok = SUCCEEDED(IDirect3DDevice9_CreatePixelShader(d3d->dev,

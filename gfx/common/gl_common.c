@@ -59,6 +59,25 @@ void gl_finish(void)
 }
 
 #ifdef HAVE_GL_MENU_BLOOM
+/* Desktop OpenGL against a macOS SDK before 10.12 names the
+ * framebuffer objects with the EXT suffix only */
+#if defined(__MACH__) && !defined(HAVE_OPENGLES) \
+   && defined(MAC_OS_X_VERSION_MAX_ALLOWED) \
+   && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200)
+#define GL_MENU_BLOOM_FRAMEBUFFER              GL_FRAMEBUFFER_EXT
+#define GL_MENU_BLOOM_FRAMEBUFFER_BINDING      GL_FRAMEBUFFER_BINDING_EXT
+#define GL_MENU_BLOOM_FRAMEBUFFER_COMPLETE     GL_FRAMEBUFFER_COMPLETE_EXT
+#define GL_MENU_BLOOM_COLOR_ATTACHMENT0        GL_COLOR_ATTACHMENT0_EXT
+#define GL_MENU_BLOOM_READ_FRAMEBUFFER         GL_READ_FRAMEBUFFER_EXT
+#define GL_MENU_BLOOM_READ_FRAMEBUFFER_BINDING GL_READ_FRAMEBUFFER_BINDING_EXT
+#else
+#define GL_MENU_BLOOM_FRAMEBUFFER              GL_FRAMEBUFFER
+#define GL_MENU_BLOOM_FRAMEBUFFER_BINDING      GL_FRAMEBUFFER_BINDING
+#define GL_MENU_BLOOM_FRAMEBUFFER_COMPLETE     GL_FRAMEBUFFER_COMPLETE
+#define GL_MENU_BLOOM_COLOR_ATTACHMENT0        GL_COLOR_ATTACHMENT0
+#define GL_MENU_BLOOM_READ_FRAMEBUFFER         GL_READ_FRAMEBUFFER
+#define GL_MENU_BLOOM_READ_FRAMEBUFFER_BINDING GL_READ_FRAMEBUFFER_BINDING
+#endif
 #include "menu_bloom.h"
 #include <gfx/gl_capabilities.h>
 
@@ -187,13 +206,13 @@ void gl_menu_bloom_free(gl_menu_bloom_t **bloom)
 static void gl_menu_bloom_restore(gl_menu_bloom_t *b)
 {
    if (b->defer)
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, 0);
    else
    {
-      glBindFramebuffer(GL_FRAMEBUFFER, b->target);
+      glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, b->target);
 #ifndef HAVE_OPENGLES2
       if (b->core)
-         glBindFramebuffer(GL_READ_FRAMEBUFFER, b->read_target);
+         glBindFramebuffer(GL_MENU_BLOOM_READ_FRAMEBUFFER, b->read_target);
 #endif
    }
    glViewport(b->viewport[0], b->viewport[1],
@@ -233,10 +252,10 @@ static bool gl_menu_bloom_targets(gl_menu_bloom_t *b, unsigned small,
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-         glBindFramebuffer(GL_FRAMEBUFFER, b->fbo[i]);
-         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, b->fbo[i]);
+         glFramebufferTexture2D(GL_MENU_BLOOM_FRAMEBUFFER, GL_MENU_BLOOM_COLOR_ATTACHMENT0,
                GL_TEXTURE_2D, b->tex[i], 0);
-         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+         if (glCheckFramebufferStatus(GL_MENU_BLOOM_FRAMEBUFFER) != GL_MENU_BLOOM_FRAMEBUFFER_COMPLETE)
             break;
       }
       if (i == 2)
@@ -272,10 +291,10 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
    glGetIntegerv(GL_VIEWPORT, b->viewport);
    if (!defer)
    {
-      glGetIntegerv(GL_FRAMEBUFFER_BINDING, &b->target);
+      glGetIntegerv(GL_MENU_BLOOM_FRAMEBUFFER_BINDING, &b->target);
 #ifndef HAVE_OPENGLES2
       if (core)
-         glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &b->read_target);
+         glGetIntegerv(GL_MENU_BLOOM_READ_FRAMEBUFFER_BINDING, &b->read_target);
 #endif
    }
    glActiveTexture(GL_TEXTURE0);
@@ -293,7 +312,7 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
       gl_menu_bloom_restore(b);
       return 0;
    }
-   glBindFramebuffer(GL_FRAMEBUFFER, b->fbo[0]);
+   glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, b->fbo[0]);
    glViewport(0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small));
 #ifndef HAVE_OPENGLES2
    if (core)
@@ -337,12 +356,12 @@ static void gl_menu_bloom_passes(gl_menu_bloom_t *b, unsigned dims,
          if (b->defer && !into_bound)
             continue;
          if (!into_bound)
-            glBindFramebuffer(GL_FRAMEBUFFER, b->target);
+            glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, b->target);
          glViewport(0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
       }
       else
       {
-         glBindFramebuffer(GL_FRAMEBUFFER, b->fbo[pass->dst]);
+         glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, b->fbo[pass->dst]);
          glViewport(0, 0, VIDEO_SCALE_W(b->dims), VIDEO_SCALE_H(b->dims));
       }
       glBindTexture(GL_TEXTURE_2D, b->tex[pass->src]);
