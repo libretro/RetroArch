@@ -136,30 +136,6 @@ bool core_identity_equal(const struct core_identity *a,
          && !memcmp(a->verity, b->verity, a->verity_len);
 }
 
-bool core_fs_magic_keeps_ctime(unsigned long f_type)
-{
-   /* ext2/3/4, xfs, btrfs, f2fs, tmpfs, zfs, bcachefs */
-   static const unsigned long kept[] = { 0xEF53UL, 0x58465342UL,
-      0x9123683EUL, 0xF2F52010UL, 0x01021994UL, 0x2FC12FC1UL,
-      0xCA451A4EUL };
-   size_t i;
-   for (i = 0; i < sizeof(kept) / sizeof(kept[0]); i++)
-      if (f_type == kept[i])
-         return true;
-   return false;
-}
-
-bool core_fs_name_keeps_ctime(const char *name)
-{
-   static const char *const kept[] = { "apfs", "hfs", "ufs", "ffs", "zfs",
-      "tmpfs" };
-   size_t i;
-   for (i = 0; i < sizeof(kept) / sizeof(kept[0]); i++)
-      if (string_is_equal(name, kept[i]))
-         return true;
-   return false;
-}
-
 struct core_trust_newest
 {
    uint64_t build_time;
@@ -964,33 +940,6 @@ bool core_mount_in_package(const uint64_t *core_mnt,
       const uint64_t *self_mnt, bool read_only)
 {
    return core_mnt && self_mnt && *core_mnt == *self_mnt && read_only;
-}
-
-bool core_fdinfo_mount(const char *text, uint64_t *mnt)
-{
-   static const char key[] = "mnt_id:";
-   const char *s = text;
-   while (s && *s)
-   {
-      if (!strncmp(s, key, sizeof(key) - 1))
-      {
-         char *end;
-         unsigned long v;
-         s += sizeof(key) - 1;
-         while (*s == ' ' || *s == '\t')
-            s++;
-         if (*s < '0' || *s > '9')
-            return false;
-         v = strtoul(s, &end, 10);
-         if (*end != '\n' && *end != '\0')
-            return false;
-         *mnt = (uint64_t)v;
-         return true;
-      }
-      if ((s = strchr(s, '\n')))
-         s++;
-   }
-   return false;
 }
 
 void core_check_finish(const core_trust_set_t *s,

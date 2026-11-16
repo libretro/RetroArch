@@ -1,8 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #if defined(__linux__) && !defined(_GNU_SOURCE)
-/* statx, fstatvfs, realpath, st_mtim, O_CLOEXEC and O_PATH; strict C89
- * hides them */
+/* realpath, O_CLOEXEC and O_PATH; strict C89 hides them */
 #define _GNU_SOURCE
 #endif
 
@@ -16,8 +15,6 @@
 #else
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/statvfs.h>
 #include <sys/types.h>
 #include <unistd.h>
 #if !defined(__linux__) || defined(ANDROID)
@@ -25,13 +22,12 @@
 #endif
 #if defined(__linux__)
 #include <sys/ioctl.h>
-#include <sys/vfs.h>
-#define CORE_FS_MAGIC
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) \
-   || defined(__DragonFly__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#define CORE_FS_NAME
+#endif
+/* Where one statfs() tells both a file's filesystem and its mount flags:
+ * the open asks it once for ctime_kept and read_only together */
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+   || defined(__OpenBSD__) || defined(__DragonFly__)
+#define CORE_VOLUME_AT_OPEN
 #endif
 #if defined(__APPLE__)
 #include <limits.h>
@@ -105,8 +101,8 @@ int core_file_fd(core_file_t *f)
 static void core_identity_from_vfs(core_file_t *f,
       const struct retro_vfs_file_identity *v, struct core_identity *id)
 {
-#if defined(CORE_FS_MAGIC) || defined(CORE_FS_NAME)
-   struct statfs fs;
+#if defined(CORE_VOLUME_AT_OPEN)
+   struct retro_vfs_volume vol;
 #endif
    memset(id, 0, sizeof(*id));
    id->dev        = v->dev;
@@ -116,6 +112,15 @@ static void core_identity_from_vfs(core_file_t *f,
    id->mtime_nsec = v->mtime_nsec;
    id->ctime_nsec = v->ctime_nsec;
    memcpy(id->ino, v->id, sizeof(id->ino));
+   if (v->flags & RETRO_VFS_IDENTITY_HAS_OWNER)
+   {
+      id->has_owner = true;
+      id->uid       = v->uid;
+      id->gid       = v->gid;
+      id->mode      = (uint16_t)(v->perm
+            | (v->type == RETRO_VFS_IDENTITY_DIRECTORY ? 0040000
+            :  v->type == RETRO_VFS_IDENTITY_REGULAR   ? 0100000 : 0));
+   }
 #ifdef _WIN32
    /* Kept in the store as Windows has them, in seconds from 1601, so
     * the records already made still match. ctime_kept stays false: any
@@ -124,12 +129,13 @@ static void core_identity_from_vfs(core_file_t *f,
    id->mtime += (int64_t)11644473600LL;
    if (v->ctime || v->ctime_nsec)
       id->ctime += (int64_t)11644473600LL;
-#elif defined(CORE_FS_MAGIC)
-   id->ctime_kept = fstatfs(f->fd, &fs) == 0
-         && core_fs_magic_keeps_ctime((unsigned long)fs.f_type);
-#elif defined(CORE_FS_NAME)
-   id->ctime_kept = fstatfs(f->fd, &fs) == 0
-         && core_fs_name_keeps_ctime(fs.f_fstypename);
+#elif defined(CORE_VOLUME_AT_OPEN)
+   if (retro_vfs_file_volume_impl(f, RETRO_VFS_VOLUME_WANT_FLAGS, &vol))
+   {
+      id->ctime_kept = (vol.flags & RETRO_VFS_VOLUME_CTIME_KEPT) != 0;
+      id->read_only  = (vol.flags & RETRO_VFS_VOLUME_READ_ONLY) != 0;
+      id->vol_known  = true;
+   }
 #else
    (void)f;
 #endif
@@ -170,19 +176,10 @@ core_file_t *core_file_open_id(const char *path, struct core_identity *id)
  * shorten the file: its handle denies writes. */
 static bool core_hash_map(struct core_hash *h, core_file_t *f)
 {
-   const char *path = retro_vfs_file_get_path_impl(f);
+   struct retro_vfs_volume vol;
    int64_t pos, len = 0;
-   char root[4];
-   if (     !path
-         || !(     (path[0] >= 'A' && path[0] <= 'Z')
-               ||  (path[0] >= 'a' && path[0] <= 'z'))
-         || path[1] != ':' || (path[2] != '\\' && path[2] != '/'))
-      return false;
-   root[0] = path[0];
-   root[1] = ':';
-   root[2] = '\\';
-   root[3] = '\0';
-   if (GetDriveTypeA(root) != DRIVE_FIXED)
+   if (     !retro_vfs_file_volume_impl(f, RETRO_VFS_VOLUME_WANT_KIND, &vol)
+         || vol.kind != RETRO_VFS_VOLUME_FIXED)
       return false;
 #if !defined(_WIN64)
    /* A 32-bit process keeps its address space for the core it loads:
@@ -603,8 +600,23 @@ static bool core_self_lookup(struct core_self *self)
          || retro_vfs_stat_identity_impl(info.dli_fname, &v) != 1)
       return false;
 #endif
-   self->dev = v.dev;
-   self->uid = (unsigned long)v.uid;
+   self->dev     = v.dev;
+   self->uid     = (unsigned long)v.uid;
+   self->mnt     = 0;
+   self->has_mnt = false;
+#if defined(__linux__) && !defined(ANDROID)
+   {
+      /* Its mount, for the in-package rule: the binary we run, even one
+       * we may only execute */
+      struct retro_vfs_volume vol;
+      if (retro_vfs_stat_volume_impl("/proc/self/exe",
+               RETRO_VFS_VOLUME_WANT_MOUNT, &vol) == 1)
+      {
+         self->mnt     = vol.mount;
+         self->has_mnt = true;
+      }
+   }
+#endif
    return true;
 }
 
@@ -678,39 +690,49 @@ static unsigned core_identity_mode(const struct retro_vfs_file_identity *v)
    return mode;
 }
 
-static bool core_identity_exempt(const struct core_owner *who,
-      unsigned long self_uid, const struct retro_vfs_file_identity *v,
-      bool read_only_mount)
-{
-   return (v->flags & RETRO_VFS_IDENTITY_HAS_OWNER)
-      && core_mode_exempt(who, self_uid, (unsigned long)v->uid,
-            (unsigned long)v->gid, core_identity_mode(v), read_only_mount);
-}
-
 static bool core_path_exempt(const struct core_owner *who,
       unsigned long self_uid, const struct retro_vfs_file_identity *v,
-      bool read_only_mount, const char *path)
+      const char *path)
 {
+   struct retro_vfs_volume vol;
    /* access() also sees ACLs and read-only mounts */
-   return core_identity_exempt(who, self_uid, v, read_only_mount)
+   return (v->flags & RETRO_VFS_IDENTITY_HAS_OWNER)
+      && core_mode_exempt(who, self_uid, (unsigned long)v->uid,
+            (unsigned long)v->gid, core_identity_mode(v),
+            retro_vfs_stat_volume_impl(path, RETRO_VFS_VOLUME_WANT_FLAGS,
+               &vol) == 1 && (vol.flags & RETRO_VFS_VOLUME_READ_ONLY))
       && access(path, W_OK) != 0;
 }
 
-static bool core_identity_same(const struct retro_vfs_file_identity *a,
-      const struct retro_vfs_file_identity *b)
+/* A file's mount is read-only: as the open found it, else asked now */
+static bool core_file_read_only(core_file_t *f,
+      const struct core_identity *id)
 {
-   return a->dev == b->dev && !memcmp(a->id, b->id, sizeof(a->id));
+   struct retro_vfs_volume vol;
+   if (id->vol_known)
+      return id->read_only;
+   return retro_vfs_file_volume_impl(f, RETRO_VFS_VOLUME_WANT_FLAGS, &vol)
+      && (vol.flags & RETRO_VFS_VOLUME_READ_ONLY);
+}
+
+static bool core_identity_is(const struct retro_vfs_file_identity *v,
+      const struct core_identity *id)
+{
+   return v->dev == id->dev && !memcmp(v->id, id->ino, sizeof(id->ino));
 }
 #endif
 
 bool core_file_unwritable(core_file_t *f, const char *path,
-      const struct core_self *self)
+      const struct core_identity *id, const struct core_self *self)
 {
 #ifdef _WIN32
+   (void)f;
+   (void)path;
+   (void)id;
+   (void)self;
    return false;
 #else
-   struct retro_vfs_file_identity st, pst;
-   struct statvfs vfs;
+   struct retro_vfs_file_identity pst;
    struct core_owner who;
    unsigned long *gids = NULL;
    gid_t *list         = NULL;
@@ -720,8 +742,9 @@ bool core_file_unwritable(core_file_t *f, const char *path,
    int n, i;
    /* Only beside RetroArch: a disk or image the user mounted is not */
    if (     !self
-         || !retro_vfs_file_identity_impl(f, &st)
-         || st.dev != self->dev
+         || !id
+         || !id->has_owner
+         || id->dev != self->dev
          || (n = getgroups(0, NULL)) < 0)
       return false;
    list = (gid_t*)malloc(((size_t)n + 1) * sizeof(*list));
@@ -735,13 +758,13 @@ bool core_file_unwritable(core_file_t *f, const char *path,
    who.num_gids = (size_t)n + 1;
    who.uid      = (unsigned long)geteuid();
    who.overflow_uid = core_overflow_uid();
-   if (!core_identity_exempt(&who, self->uid, &st,
-            fstatvfs(f->fd, &vfs) == 0 && (vfs.f_flag & ST_RDONLY)))
+   if (!core_mode_exempt(&who, self->uid, (unsigned long)id->uid,
+            (unsigned long)id->gid, id->mode, core_file_read_only(f, id)))
       goto end;
    /* The folders of the real path, which must name this same file */
    if (     !(dir = realpath(path, NULL))
          || retro_vfs_stat_identity_impl(dir, &pst) != 1
-         || !core_identity_same(&pst, &st)
+         || !core_identity_is(&pst, id)
          || access(dir, W_OK) == 0)
       goto end;
    for (;;)
@@ -750,8 +773,7 @@ bool core_file_unwritable(core_file_t *f, const char *path,
          goto end;
       slash[slash == dir ? 1 : 0] = '\0';
       if (     retro_vfs_stat_identity_impl(dir, &pst) != 1
-            || !core_path_exempt(&who, self->uid, &pst,
-                  statvfs(dir, &vfs) == 0 && (vfs.f_flag & ST_RDONLY), dir))
+            || !core_path_exempt(&who, self->uid, &pst, dir))
          goto end;
       if (string_is_equal(dir, "/"))
          break;
@@ -765,82 +787,51 @@ end:
 #endif
 }
 
-#if defined(__linux__) && !defined(ANDROID)
-/* The mount fd is on: statx's STATX_MNT_ID (Linux 5.8), else /proc's */
-bool core_fd_mount(int fd, uint64_t *mnt)
-{
-   char text[512];
-   char name[64];
-   size_t got;
-   FILE *fp;
-#ifdef STATX_MNT_ID
-   struct statx stx;
-   if (     statx(fd, "", AT_EMPTY_PATH, STATX_MNT_ID, &stx) == 0
-         && (stx.stx_mask & STATX_MNT_ID))
-   {
-      *mnt = (uint64_t)stx.stx_mnt_id;
-      return true;
-   }
-#endif
-   snprintf(name, sizeof(name), "/proc/self/fdinfo/%d", fd);
-   if (!(fp = fopen(name, "r")))
-      return false;
-   got       = fread(text, 1, sizeof(text) - 1, fp);
-   text[got] = '\0';
-   fclose(fp);
-   return core_fdinfo_mount(text, mnt);
-}
-#endif
-
-bool core_file_in_package(core_file_t *f, const char *path)
+bool core_file_in_package(core_file_t *f, const char *path,
+      const struct core_identity *id, const struct core_self *self)
 {
 #if defined(__APPLE__)
    char bundle[PATH_MAX];
-   struct retro_vfs_file_identity st, rst;
+   struct retro_vfs_file_identity rst;
    CFBundleRef app = CFBundleGetMainBundle();
    CFURLRef url    = app ? CFBundleCopyBundleURL(app) : NULL;
    char *core_real = NULL;
    char *app_real  = NULL;
    bool ok         = false;
-   if (!url)
+   (void)f;
+   (void)self;
+   if (!url || !id)
+   {
+      if (url)
+         CFRelease(url);
       return false;
+   }
    /* The real path must name the file that was checked */
    if (     CFURLGetFileSystemRepresentation(url, true, (UInt8*)bundle,
                sizeof(bundle))
          && (app_real = realpath(bundle, NULL))
          && (core_real = realpath(path, NULL))
-         && retro_vfs_file_identity_impl(f, &st)
          && retro_vfs_stat_identity_impl(core_real, &rst) == 1
-         && core_identity_same(&st, &rst))
+         && core_identity_is(&rst, id))
       ok = core_path_in_app(core_real, app_real);
    CFRelease(url);
    free(core_real);
    free(app_real);
    return ok;
 #elif defined(__linux__) && !defined(ANDROID)
-   struct statvfs vfs;
-   uint64_t mnt, self_mnt;
-   bool has_mnt  = core_fd_mount(f->fd, &mnt);
-   bool has_self = false;
-   int self_fd;
-#ifdef O_PATH
-   /* The binary itself, even one we may only execute */
-   int flags     = O_PATH | O_CLOEXEC;
-#else
-   int flags     = O_RDONLY | O_CLOEXEC;
-#endif
+   /* The mount it is on against RetroArch's own, found once */
+   struct retro_vfs_volume vol;
+   bool has_mnt = retro_vfs_file_volume_impl(f, RETRO_VFS_VOLUME_WANT_MOUNT,
+         &vol);
    (void)path;
-   if ((self_fd = open("/proc/self/exe", flags)) >= 0)
-   {
-      has_self = core_fd_mount(self_fd, &self_mnt);
-      close(self_fd);
-   }
-   return core_mount_in_package(has_mnt ? &mnt : NULL,
-         has_self ? &self_mnt : NULL,
-         fstatvfs(f->fd, &vfs) == 0 && (vfs.f_flag & ST_RDONLY));
+   return core_mount_in_package(has_mnt ? &vol.mount : NULL,
+         self && self->has_mnt ? &self->mnt : NULL,
+         id && core_file_read_only(f, id));
 #else
    (void)f;
    (void)path;
+   (void)id;
+   (void)self;
    return false;
 #endif
 }
@@ -932,6 +923,7 @@ bool core_check_quick_id(const core_trust_set_t *s, core_file_t *f,
       const char *path, const struct core_identity *id, struct core_check *c)
 {
    struct core_self self;
+   bool found;
    memset(c, 0, sizeof(*c));
    c->result = CORE_CHECK_OK;
    strlcpy(c->rec.name, path_basename_nocompression(path),
@@ -957,10 +949,11 @@ bool core_check_quick_id(const core_trust_set_t *s, core_file_t *f,
       c->result = CORE_CHECK_ERROR;
       return true;
    }
-   return core_check_record(s, c)
-      || core_file_unwritable(f, path,
-            core_self_find(&self) ? &self : NULL)
-      || core_file_in_package(f, path);
+   if (core_check_record(s, c))
+      return true;
+   found = core_self_find(&self);
+   return core_file_unwritable(f, path, &c->rec.id, found ? &self : NULL)
+      || core_file_in_package(f, path, &c->rec.id, found ? &self : NULL);
 }
 
 bool core_check_quick(const core_trust_set_t *s, core_file_t *f,

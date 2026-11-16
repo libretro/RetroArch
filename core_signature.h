@@ -83,15 +83,20 @@ struct core_identity
    /* Its filesystem keeps ctime itself, so no writer can forge a record
     * of it: only then is one made or honoured. Never stored. */
    bool     ctime_kept;
+   /* As opened, never stored: its owner, group and st_mode (POSIX, with
+    * has_owner), and whether its mount is read-only (with vol_known),
+    * so the exemption rules ask nothing again */
+   bool     has_owner;
+   bool     vol_known;
+   bool     read_only;
+   uint16_t mode;
+   uint32_t uid;
+   uint32_t gid;
 };
 
 bool core_identity_equal(const struct core_identity *a,
       const struct core_identity *b);
 
-/* Filesystems whose kernel keeps ctime and that aren't stacked on
- * another: Linux's statfs f_type, the BSDs' and macOS's f_fstypename */
-bool core_fs_magic_keeps_ctime(unsigned long f_type);
-bool core_fs_name_keeps_ctime(const char *name);
 
 /* A core opened for checking: the VFS's stable open of it
  * (RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE), a regular file read on its
@@ -333,7 +338,9 @@ bool core_mode_exempt_with(const struct core_owner *who,
 struct core_self
 {
    uint64_t dev;
+   uint64_t mnt;      /* its mount (Linux), with has_mnt */
    unsigned long uid;
+   bool has_mnt;
 };
 
 /* POSIX: false when unknown, and always on Windows */
@@ -351,22 +358,17 @@ size_t core_self_path_len(const char *path);
  * Android: other apps' library folders are system's too, so
  * android_core_path_resolve must come first. */
 bool core_file_unwritable(core_file_t *f, const char *path,
-      const struct core_self *self);
+      const struct core_identity *id, const struct core_self *self);
 /* RetroArch's own package: Apple, a core whose real path lies inside
  * RetroArch's .app bundle; Linux, one on the read-only mount RetroArch's
  * binary is on (Flatpak, AppImage, Snap). Never on Windows, Android or
  * the BSDs. */
-bool core_file_in_package(core_file_t *f, const char *path);
-/* Its parts, for tests: real paths; mount ids, NULL when unknown; the
- * mnt_id line of /proc/self/fdinfo/<fd> */
+bool core_file_in_package(core_file_t *f, const char *path,
+      const struct core_identity *id, const struct core_self *self);
+/* Its parts, for tests: real paths; mount ids, NULL when unknown */
 bool core_path_in_app(const char *core_real, const char *app_real);
 bool core_mount_in_package(const uint64_t *core_mnt,
       const uint64_t *self_mnt, bool read_only);
-bool core_fdinfo_mount(const char *text, uint64_t *mnt);
-#if defined(__linux__) && !defined(ANDROID)
-/* The mount fd is on */
-bool core_fd_mount(int fd, uint64_t *mnt);
-#endif
 
 /* The key of the folder holding path, for its newest build times: its
  * canonical path, so ., .., repeated separators and symlinks (POSIX) or

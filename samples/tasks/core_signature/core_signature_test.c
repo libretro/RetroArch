@@ -216,20 +216,12 @@ static bool records_for(const char *path)
 
 static void test_identity(void)
 {
-   /* ext2/3/4, xfs, btrfs, f2fs, tmpfs, zfs, bcachefs */
+#ifdef __linux__
+   /* ext2/3/4, xfs, btrfs, f2fs, tmpfs, zfs, bcachefs: the VFS's list */
    static const unsigned long kept_magic[] = { 0xEF53UL, 0x58465342UL,
       0x9123683EUL, 0xF2F52010UL, 0x01021994UL, 0x2FC12FC1UL,
       0xCA451A4EUL };
-   /* overlay, FUSE, NFS, CIFS, SMB2, FAT, exFAT, NTFS, squashfs, erofs,
-    * iso9660, proc */
-   static const unsigned long other_magic[] = { 0x794C7630UL, 0x65735546UL,
-      0x6969UL, 0xFF534D42UL, 0xFE534D42UL, 0x4D44UL, 0x2011BAB0UL,
-      0x5346544EUL, 0x73717368UL, 0xE0F5E1E2UL, 0x9660UL, 0x9FA0UL };
-   static const char *const kept_name[] = { "apfs", "hfs", "ufs", "ffs",
-      "zfs", "tmpfs" };
-   static const char *const other_name[] = { "msdos", "exfat", "ntfs",
-      "smbfs", "nfs", "fusefs", "nullfs", "unionfs", "cd9660", "hammer2",
-      "APFS", "" };
+#endif
    struct core_identity a, b;
    struct core_hash h;
    uint8_t want[CORE_SHA256_LEN];
@@ -278,15 +270,6 @@ static void test_identity(void)
    CHECK(!core_file_open(TMP_DIR));
 
    /* Records only where the filesystem keeps ctime itself */
-   for (i = 0; i < sizeof(kept_magic) / sizeof(kept_magic[0]); i++)
-      CHECK(core_fs_magic_keeps_ctime(kept_magic[i]));
-   for (i = 0; i < sizeof(other_magic) / sizeof(other_magic[0]); i++)
-      CHECK(!core_fs_magic_keeps_ctime(other_magic[i]));
-   for (i = 0; i < sizeof(kept_name) / sizeof(kept_name[0]); i++)
-      CHECK(core_fs_name_keeps_ctime(kept_name[i]));
-   for (i = 0; i < sizeof(other_name) / sizeof(other_name[0]); i++)
-      CHECK(!core_fs_name_keeps_ctime(other_name[i]));
-   CHECK(!core_fs_name_keeps_ctime(NULL));
 #ifdef _WIN32
    CHECK(!records_for(tmp("a.so")));
 #else
@@ -294,8 +277,13 @@ static void test_identity(void)
       printf("note: no identity records on %s's filesystem\n", TMP_DIR);
 #endif
 #ifdef __linux__
-   CHECK(statfs(TMP_DIR, &fs) == 0 && records_for(tmp("a.so"))
-         == core_fs_magic_keeps_ctime((unsigned long)fs.f_type));
+   CHECK(statfs(TMP_DIR, &fs) == 0);
+   {
+      bool kept = false;
+      for (i = 0; i < sizeof(kept_magic) / sizeof(kept_magic[0]); i++)
+         kept |= (unsigned long)fs.f_type == kept_magic[i];
+      CHECK(records_for(tmp("a.so")) == kept);
+   }
    if ((f = core_file_open("/proc/self/stat")))
    {
       CHECK(core_file_identity(f, &b) && !b.ctime_kept);
@@ -2104,9 +2092,10 @@ static void test_check_exempt(core_trust_t *t)
    /* Our own files are writable; on Windows nothing is exempt */
    CHECK((f = core_file_open(tmp(FX_NAME))) != NULL);
    CHECK(core_file_identity(f, &id));
+   memset(&self, 0, sizeof(self));
    self.dev = id.dev;
    self.uid = 0;
-   CHECK(!core_file_unwritable(f, tmp(FX_NAME), &self));
+   CHECK(!core_file_unwritable(f, tmp(FX_NAME), &id, &self));
    core_file_close(f);
 #ifndef _WIN32
    /* A system file */
@@ -2118,11 +2107,12 @@ static void test_check_exempt(core_trust_t *t)
       CHECK(core_file_identity(f, &id));
       /* Only on RetroArch's own filesystem, which must be known */
       self.dev = id.dev + 1;
-      CHECK(!core_file_unwritable(f, "/bin/sh", &self));
-      CHECK(!core_file_unwritable(f, "/bin/sh", NULL));
+      CHECK(!core_file_unwritable(f, "/bin/sh", &id, &self));
+      CHECK(!core_file_unwritable(f, "/bin/sh", &id, NULL));
+      CHECK(!core_file_unwritable(f, "/bin/sh", NULL, &self));
       /* Exempt when this user is not root */
       self.dev = id.dev;
-      if (!core_file_unwritable(f, "/bin/sh", &self))
+      if (!core_file_unwritable(f, "/bin/sh", &id, &self))
          printf("note: /bin/sh is writable here (root?), not checked\n");
       else
       {
@@ -2150,13 +2140,13 @@ static void test_check_exempt(core_trust_t *t)
          CHECK(core_file_identity(f, &id));
          self.dev = id.dev;
          self.uid = (unsigned long)st.st_uid;
-         if (core_file_unwritable(f, others[i], &self))
+         if (core_file_unwritable(f, others[i], &id, &self))
          {
             found++;
             self.uid = 0;
-            CHECK(!core_file_unwritable(f, others[i], &self));
+            CHECK(!core_file_unwritable(f, others[i], &id, &self));
             self.uid = (unsigned long)geteuid();
-            CHECK(!core_file_unwritable(f, others[i], &self));
+            CHECK(!core_file_unwritable(f, others[i], &id, &self));
          }
          core_file_close(f);
       }
@@ -2192,7 +2182,11 @@ static uint64_t fdinfo_mount(core_file_t *f)
    got       = fread(text, 1, sizeof(text) - 1, fp);
    text[got] = '\0';
    fclose(fp);
-   return core_fdinfo_mount(text, &mnt) ? mnt : 0;
+   {
+      const char *at = strstr(text, "mnt_id:");
+      mnt = at ? (uint64_t)strtoul(at + 7, NULL, 10) : 0;
+   }
+   return mnt;
 }
 #endif
 
@@ -2211,9 +2205,17 @@ static void test_fd_mount(void)
    {
       /* One file's two opens share a mount, the one /proc gives; /proc
        * is another */
-      CHECK(core_fd_mount(core_file_fd(one), &a));
-      CHECK(core_fd_mount(core_file_fd(two), &b));
-      CHECK(core_fd_mount(core_file_fd(proc), &p));
+      struct retro_vfs_volume v;
+      struct core_self me;
+      CHECK(retro_vfs_file_volume_impl(one, RETRO_VFS_VOLUME_WANT_MOUNT, &v));
+      a = v.mount;
+      CHECK(retro_vfs_file_volume_impl(two, RETRO_VFS_VOLUME_WANT_MOUNT, &v));
+      b = v.mount;
+      CHECK(retro_vfs_stat_volume_impl("/proc/self/status",
+               RETRO_VFS_VOLUME_WANT_MOUNT, &v) == 1);
+      p = v.mount;
+      /* RetroArch's own, found once with the rest of it */
+      CHECK(core_self_find(&me) && me.has_mnt && me.mnt == a);
       CHECK(a && a == b && a == fdinfo_mount(one));
       CHECK(p && p != a);
    }
@@ -2228,7 +2230,6 @@ static void test_in_package(void)
 {
    static const char app[] = "/Applications/RetroArch.app";
    const uint64_t one = 1, two = 2;
-   uint64_t mnt = 0;
    core_trust_t *t = core_trust_new();
    core_trust_set_t *s;
    struct core_check c;
@@ -2256,13 +2257,6 @@ static void test_in_package(void)
    CHECK(!core_mount_in_package(&one, &two, true));
    CHECK(!core_mount_in_package(NULL, &one, true));
    CHECK(!core_mount_in_package(&one, NULL, true));
-   CHECK(core_fdinfo_mount("pos:\t0\nflags:\t02100000\nmnt_id:\t144\nino:\t1234\n", &mnt) && mnt == 144);
-   CHECK(core_fdinfo_mount("pos:\t0\nflags:\t0100000\nmnt_id:\t29", &mnt) && mnt == 29);
-   CHECK(!core_fdinfo_mount("pos:\t0\nflags:\t02100000\n", &mnt));
-   CHECK(!core_fdinfo_mount("pos:\t0\nxmnt_id:\t5\n", &mnt));
-   CHECK(!core_fdinfo_mount("mnt_id:\t\nino:\t5\n", &mnt));
-   CHECK(!core_fdinfo_mount("mnt_id:\t12x\n", &mnt));
-   CHECK(!core_fdinfo_mount("", &mnt));
 
    /* Our own files are on a writable mount: never in the package, so
     * an unsigned one needs hashing */
@@ -2271,7 +2265,21 @@ static void test_in_package(void)
    CHECK((g = core_file_open(core)) != NULL);
    if (g)
    {
-      CHECK(!core_file_in_package(g, core));
+      struct core_identity gid;
+      struct core_self me;
+      bool found = core_self_find(&me);
+      CHECK(core_file_identity(g, &gid));
+      CHECK(!core_file_in_package(g, core, &gid, found ? &me : NULL));
+#if defined(__linux__) && !defined(ANDROID)
+      /* Same mount as RetroArch here, but writable: not in it; read-only
+       * as told, it would be */
+      CHECK(found && me.has_mnt);
+      CHECK(!gid.read_only && gid.vol_known);
+      gid.read_only = true;
+      CHECK(core_file_in_package(g, core, &gid, &me));
+      me.mnt++;
+      CHECK(!core_file_in_package(g, core, &gid, &me));
+#endif
       s = core_trust_get(t);
       CHECK(!core_check_quick(s, g, core, &c));
       core_trust_set_put(s);
@@ -2660,8 +2668,12 @@ int main(int argc, char *argv[])
    /* For a run inside a read-only bind mount, outside CI */
    if (argc == 3 && string_is_equal(argv[1], "--in-package"))
    {
-      core_file_t *f = core_file_open(argv[2]);
-      bool in        = f && core_file_in_package(f, argv[2]);
+      struct core_identity id;
+      struct core_self self;
+      bool found     = core_self_find(&self);
+      core_file_t *f = core_file_open_id(argv[2], &id);
+      bool in        = f && core_file_in_package(f, argv[2], &id,
+            found ? &self : NULL);
       core_file_close(f);
       printf("%s\n", in ? "in package" : "not in package");
       return 0;
