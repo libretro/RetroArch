@@ -10194,6 +10194,20 @@ int menu_dialog_buttons_layout(const int *w, unsigned count, int gap,
    return need;
 }
 
+bool menu_input_dialog_text_is(const char *text, size_t len,
+      const char *label, const char *str)
+{
+   size_t llen = strlen(label);
+   size_t slen;
+   if (!str || !*str)
+      str     = " ";
+   slen       = strlen(str);
+   return     len == llen + 1 + slen
+         && text[llen] == '\n'
+         && !memcmp(text, label, llen)
+         && !memcmp(text + llen + 1, str, slen);
+}
+
 size_t menu_wrap_offset(const char *src, size_t at,
       const char *wrapped, size_t wrapped_len)
 {

@@ -2973,7 +2973,9 @@ static void materialui_render_messagebox(
 
       if (keep_wrap)
       {
-         memcpy(mui->box_wrap.text, msg, msg_len);
+         /* The input dialog may hand back the kept text itself */
+         if (msg != mui->box_wrap.text)
+            memcpy(mui->box_wrap.text, msg, msg_len);
          mui->box_wrap.font            = mui->font_data.list.font;
          mui->box_wrap.font_generation = mui->font_data.list.metrics_generation;
          mui->box_wrap.columns         = columns;
@@ -8895,6 +8897,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       size_t _len;
       char msg[NAME_MAX_LENGTH];
+      const char *text;
       const char *str                = menu_input_dialog_get_buffer();
       const char *label              = menu_st->input_dialog_kb_label;
 
@@ -8911,15 +8914,24 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             mui->colors.screen_fade,
             NULL);
 
-      /* Draw message box */
-      _len = 0;
-      strlcpy_append(msg, sizeof(msg), &_len, label);
-      strlcpy_append(msg, sizeof(msg), &_len, "\n");
-      strlcpy_append(msg, sizeof(msg), &_len, (str && *str) ? str : " ");
+      /* Draw message box: from the text last wrapped while it is
+       * unchanged */
+      if (     mui->box_wrap.len
+            && menu_input_dialog_text_is(mui->box_wrap.text,
+               mui->box_wrap.len, label, str))
+         text = mui->box_wrap.text;
+      else
+      {
+         _len = 0;
+         strlcpy_append(msg, sizeof(msg), &_len, label);
+         strlcpy_append(msg, sizeof(msg), &_len, "\n");
+         strlcpy_append(msg, sizeof(msg), &_len, (str && *str) ? str : " ");
+         text = msg;
+      }
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_info->dims,
-            video_height / 4, msg, true, true,
+            video_height / 4, text, true, true,
             &mymat);
 
       /* Draw onscreen keyboard */

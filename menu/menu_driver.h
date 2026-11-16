@@ -945,6 +945,12 @@ int menu_dialog_buttons_layout(const int *w, unsigned count, int gap,
 size_t menu_wrap_offset(const char *src, size_t at,
       const char *wrapped, size_t wrapped_len);
 
+/* Whether text, len long, is the input dialog's: label and the typed
+ * str (" " for none) on lines of their own. Lets a driver draw text
+ * it kept instead of joining them again every frame. */
+bool menu_input_dialog_text_is(const char *text, size_t len,
+      const char *label, const char *str);
+
 /* A box's button labels as last measured, kept by the driver on the
  * thread that draws the box */
 typedef struct menu_dialog_label_widths

@@ -1558,7 +1558,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
       if (keep_wrap)
       {
-         memcpy(xmb->box_wrap.text, message, msg_len);
+         /* The input dialog may hand back the kept text itself */
+         if (message != xmb->box_wrap.text)
+            memcpy(xmb->box_wrap.text, message, msg_len);
          xmb->box_wrap.font            = xmb->font;
          xmb->box_wrap.font_generation = font_generation;
          xmb->box_wrap.font_size       = xmb->font_size;
@@ -9959,12 +9961,20 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       const char *str             = menu_input_dialog_get_buffer();
       const char *label           = menu_st->input_dialog_kb_label;
-      size_t _len                 = strlcpy(msg, label, sizeof(msg) - 2);
-      msg[  _len]                 = '\n';
-      msg[++_len]                 = '\0';
-      strlcpy(msg       + _len,
-            (str && *str) ? str : " ",
-            sizeof(msg) - _len);
+      /* Unchanged since it was last wrapped: drawn from there */
+      if (     xmb->box_wrap.len
+            && menu_input_dialog_text_is(xmb->box_wrap.text,
+               xmb->box_wrap.len, label, str))
+         box                      = xmb->box_wrap.text;
+      else
+      {
+         size_t _len              = strlcpy(msg, label, sizeof(msg) - 2);
+         msg[  _len]              = '\n';
+         msg[++_len]              = '\0';
+         strlcpy(msg       + _len,
+               (str && *str) ? str : " ",
+               sizeof(msg) - _len);
+      }
       render_background           = true;
       draw_caret                  = true;
    }
