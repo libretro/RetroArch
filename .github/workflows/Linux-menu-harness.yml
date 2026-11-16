@@ -304,6 +304,9 @@ jobs:
             ./samples/menu/msgbox_layout/msgbox_layout_test "$d" short
             ./samples/menu/msgbox_layout/msgbox_layout_test "$d" tall
           done
+          # RGUI uploads its framebuffer once per change to the box,
+          # not every frame the box is up.
+          ./samples/menu/msgbox_layout/msgbox_layout_test rgui redraw
           make -C samples/menu/msgbox_layout clean
 
       - name: Build and run ozone_sublabel_scroll_test

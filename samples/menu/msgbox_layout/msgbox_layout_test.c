@@ -27,7 +27,14 @@
  *               here) the text stops above the buttons, cut short
  *               with "..."
  *
+ *   redraw      RGUI only: the box is drawn into RGUI's framebuffer,
+ *               which goes to the video driver once when the box comes
+ *               up, once for each change to it - a newer box, the lit
+ *               button, its text - and once when it goes; never every
+ *               frame it is up
+ *
  * Usage: msgbox_layout_test ozone|xmb|materialui short|tall
+ *        msgbox_layout_test rgui redraw
  *
  * Requires a completed non-Qt build, same as the other menu harnesses:
  *
@@ -226,6 +233,21 @@ static void harness_unload_texture(void *data, bool threaded, uintptr_t id)
    (void)id;
 }
 
+/* RGUI hands the video driver its framebuffer here: one call, one
+ * upload */
+static unsigned uploads;
+
+static void harness_set_texture_frame(void *data, const void *frame,
+      bool rgb32, unsigned dims, float alpha)
+{
+   (void)data;
+   (void)frame;
+   (void)rgb32;
+   (void)dims;
+   (void)alpha;
+   uploads++;
+}
+
 static const video_poke_interface_t harness_poke = {
    NULL, /* get_flags */
    harness_load_texture,
@@ -240,7 +262,7 @@ static const video_poke_interface_t harness_poke = {
    NULL, /* get_proc_address */
    NULL, /* set_aspect_ratio */
    NULL, /* apply_state_changes */
-   NULL, /* set_texture_frame */
+   harness_set_texture_frame,
    NULL, /* set_texture_enable */
    harness_set_osd_msg,
    NULL, /* show_mouse */
@@ -576,6 +598,78 @@ static void lane(const char *lane_name, unsigned words, unsigned w,
          cut ? ", cut short" : "");
 }
 
+/* --- RGUI ---------------------------------------------------------- */
+
+/* One iteration as the runloop runs it: the box's text handed over
+ * while one is up, the render, the frame, and the framebuffer handed
+ * to the video driver if RGUI marked it changed */
+static void rgui_iteration(bool box)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   video_frame_info_t vinfo;
+   if (box)
+      menu_st->driver_ctx->render_messagebox(menu_st->userdata, box_text);
+   video_driver_build_info(&vinfo);
+   vinfo.dims = VIDEO_SCALE_PACK(640, 480);
+   menu_st->driver_ctx->render(menu_st->userdata, vinfo.dims, false);
+   menu_driver_frame(true, &vinfo);
+   menu_st->driver_ctx->set_texture(menu_st->userdata);
+}
+
+/* How many of n iterations sent the framebuffer to the video driver */
+static unsigned rgui_uploads(unsigned n, bool box)
+{
+   unsigned had = uploads;
+   unsigned i;
+   for (i = 0; i < n; i++)
+      rgui_iteration(box);
+   return uploads - had;
+}
+
+/* RGUI keeps the box in its framebuffer: it draws and uploads it again
+ * only when something in it changed, not every frame it is up */
+static void rgui_redraw_lane(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned n;
+
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(640, 480));
+   /* Whatever the menu does as it comes up, done */
+   rgui_uploads(30, false);
+   n = rgui_uploads(10, false);
+   CHECK(n == 0, "fixture: the menu alone uploaded %u frame(s) of 10", n);
+
+   set_text(12);
+   n = rgui_uploads(10, true);
+   CHECK(n == 1, "the box coming up uploaded %u frame(s) of 10, want 1",
+         n);
+
+   /* A newer box in its place, with named buttons, the first lit:
+    * what the Security Warning raises. Left and Right move the light. */
+   menu_st->dialog_st.button_count     = 2;
+   menu_st->dialog_st.button_label[0]  =
+         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL;
+   menu_st->dialog_st.button_label[1]  =
+         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK;
+   menu_st->dialog_st.button_highlight = 0;
+   menu_st->dialog_st.button_epoch++;
+   n = rgui_uploads(10, true);
+   CHECK(n == 1, "a newer box uploaded %u frame(s) of 10, want 1", n);
+   menu_st->dialog_st.button_highlight = 1;
+   n = rgui_uploads(10, true);
+   CHECK(n == 1, "the light moving to OK uploaded %u frame(s) of 10, "
+         "want 1", n);
+
+   set_text(13);
+   n = rgui_uploads(10, true);
+   CHECK(n == 1, "new text uploaded %u frame(s) of 10, want 1", n);
+
+   n = rgui_uploads(10, false);
+   CHECK(n == 1, "the box going uploaded %u frame(s) of 10, want 1", n);
+
+   printf("[redraw] one upload per change to the box\n");
+}
+
 int main(int argc, char *argv[])
 {
    const char *driver = argc > 1 ? argv[1] : "";
@@ -589,13 +683,16 @@ int main(int argc, char *argv[])
       ident = "glui";
    else if (string_is_equal(driver, "ozone") || string_is_equal(driver, "xmb"))
       ident = driver;
+   else if (string_is_equal(driver, "rgui") && string_is_equal(which, "redraw"))
+      ident = driver;
    else
       ident = NULL;
    if (!ident || (!string_is_equal(which, "short")
-            && !string_is_equal(which, "tall")))
+            && !string_is_equal(which, "tall")
+            && !string_is_equal(which, "redraw")))
    {
-      fprintf(stderr, "usage: %s ozone|xmb|materialui short|tall\n",
-            argv[0]);
+      fprintf(stderr, "usage: %s ozone|xmb|materialui short|tall\n"
+            "       %s rgui redraw\n", argv[0], argv[0]);
       return 2;
    }
 
@@ -632,20 +729,25 @@ int main(int argc, char *argv[])
          (menu_st->driver_ctx && menu_st->driver_ctx->ident)
             ? menu_st->driver_ctx->ident : "(none)", ident);
 
-   /* The fonts made again, now with the recording backend */
-   disp_get_ptr()->dispctx = &harness_dispctx;
-   menu_st->driver_ctx->context_destroy(menu_st->userdata);
-   menu_st->driver_ctx->context_reset(menu_st->userdata, false);
-   one_frame(1280, 720);
-
    /* A Cancel/OK confirm */
    menu_dialog_confirm_set(menu_st, MSG_UNKNOWN, CMD_EVENT_QUIT);
 
-   if (string_is_equal(which, "short"))
-      lane("short", 40, 1280, 720, 0);
+   if (string_is_equal(which, "redraw"))
+      rgui_redraw_lane();
    else
-      lane("tall", 199, 480, 272, -1);
+   {
+      /* The fonts made again, now with the recording backend */
+      disp_get_ptr()->dispctx = &harness_dispctx;
+      menu_st->driver_ctx->context_destroy(menu_st->userdata);
+      menu_st->driver_ctx->context_reset(menu_st->userdata, false);
+      one_frame(1280, 720);
+      if (string_is_equal(which, "short"))
+         lane("short", 40, 1280, 720, 0);
+      else
+         lane("tall", 199, 480, 272, -1);
+   }
 
+   menu_st->dialog_st.button_count = 0;
    menu_dialog_confirm_clear(menu_st);
    main_exit(NULL);
    fixture_remove();
