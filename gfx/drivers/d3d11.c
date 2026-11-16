@@ -5264,7 +5264,13 @@ static void *d3d11_gfx_init(const video_info_t* video)
       blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
       blend_desc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
       blend_desc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
-      blend_desc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_SRC_ALPHA;
+      /* Alpha accumulates as coverage: under HDR the menu and widgets
+       * are drawn into a UI layer composited by its alpha, and anything
+       * drawn with less than full alpha - a snowflake, a plastic icon's
+       * body, a glyph's edge - would otherwise lower it there and show
+       * darker than what is under it. The swapchain's alpha is not
+       * shown, so nothing drawn straight to it changes. */
+      blend_desc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
       blend_desc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_INV_SRC_ALPHA;
       blend_desc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
       blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;

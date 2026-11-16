@@ -1091,13 +1091,21 @@ typedef struct
    unsigned                      retired_count;
 } d3d12_font_t;
 
+/* Colour blends by the source's alpha; alpha itself accumulates as
+ * coverage (one, inverse source alpha). Under HDR the menu and widgets
+ * are drawn into a UI layer that is composited by its alpha, as is the
+ * views UI layer: with alpha blended by itself, anything drawn with less
+ * than full alpha - a snowflake, a plastic icon's body, an antialiased
+ * glyph edge - would lower the layer's alpha where it lands and show
+ * darker than what is under it. The swapchain's own alpha is not shown,
+ * so nothing drawn straight to it changes. */
 static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
    TRUE,
    FALSE,
    D3D12_BLEND_SRC_ALPHA,
    D3D12_BLEND_INV_SRC_ALPHA,
    D3D12_BLEND_OP_ADD,
-   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_ONE,
    D3D12_BLEND_INV_SRC_ALPHA,
    D3D12_BLEND_OP_ADD,
    D3D12_LOGIC_OP_NOOP,
@@ -2318,11 +2326,13 @@ static D3D12PipelineState d3d12_effect_pipe(d3d12_video_t *d3d12,
    {
       /* Standard alpha blending: the simple ribbon's multiplicative
        * blend would make white snowflakes vanish against coloured
-       * backgrounds */
+       * backgrounds. Alpha accumulates as coverage, as every UI draw's
+       * does (d3d12_blend_enable_desc): the HDR UI layer is composited
+       * by it, and a flake must not lower it. */
       desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
-      desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_ONE;
       desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
    }
