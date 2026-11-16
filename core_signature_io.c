@@ -363,29 +363,11 @@ int core_file_verity_enable(core_file_t *f)
  * directory, or a FIFO, whose open would wait for a writer */
 static int core_trust_file_kind(const char *path)
 {
-#ifdef _WIN32
-   DWORD attr, err;
-#ifdef LEGACY_WIN32
-   attr = GetFileAttributesA(path);
-   err  = GetLastError();
-#else
-   wchar_t *wpath = utf8_to_utf16_string_alloc(path);
-   if (!wpath)
-      return -1;
-   attr = GetFileAttributesW(wpath);
-   err  = GetLastError();
-   free(wpath);
-#endif
-   if (attr == INVALID_FILE_ATTRIBUTES)
-      return (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
-         ? 0 : -1;
-   return (attr & FILE_ATTRIBUTE_DIRECTORY) ? -1 : 1;
-#else
-   struct stat st;
-   if (stat(path, &st) != 0)
-      return errno == ENOENT ? 0 : -1;
-   return S_ISREG(st.st_mode) ? 1 : -1;
-#endif
+   struct retro_vfs_file_identity v;
+   int found = retro_vfs_stat_identity_impl(path, &v);
+   if (found <= 0)
+      return found;
+   return v.type == RETRO_VFS_IDENTITY_REGULAR ? 1 : -1;
 }
 
 /* The device of the folder holding path; Windows has no records */
@@ -394,7 +376,7 @@ static bool core_trust_folder_dev(const char *path, uint64_t *dev)
 #ifdef _WIN32
    return false;
 #else
-   struct stat st;
+   struct retro_vfs_file_identity v;
    size_t n  = (size_t)(path_basename_nocompression(path) - path);
    char *dir = (char*)malloc(n + 2);
    bool ok;
@@ -404,8 +386,8 @@ static bool core_trust_folder_dev(const char *path, uint64_t *dev)
    if (!n)
       dir[n++] = '.';
    dir[n] = '\0';
-   if ((ok = stat(dir, &st) == 0))
-      *dev = (uint64_t)st.st_dev;
+   if ((ok = retro_vfs_stat_identity_impl(dir, &v) == 1))
+      *dev = v.dev;
    free(dir);
    return ok;
 #endif
@@ -592,9 +574,9 @@ bool core_trust_default_path(char *s, size_t len)
 #ifndef _WIN32
 static bool core_self_lookup(struct core_self *self)
 {
-   struct stat st;
+   struct retro_vfs_file_identity v;
 #if defined(__linux__) && !defined(ANDROID)
-   if (stat("/proc/self/exe", &st) != 0)
+   if (retro_vfs_stat_identity_impl("/proc/self/exe", &v) != 1)
       return false;
 #elif defined(ANDROID)
    /* /proc/self/exe is app_process: our own library, or the APK it was
@@ -609,7 +591,7 @@ static bool core_self_lookup(struct core_self *self)
       return false;
    memcpy(own, info.dli_fname, n);
    own[n] = '\0';
-   ok     = stat(own, &st) == 0;
+   ok     = retro_vfs_stat_identity_impl(own, &v) == 1;
    free(own);
    if (!ok)
       return false;
@@ -618,11 +600,11 @@ static bool core_self_lookup(struct core_self *self)
    if (     !dladdr((const void*)(uintptr_t)core_self_lookup, &info)
          || !info.dli_fname
          || info.dli_fname[0] != '/'
-         || stat(info.dli_fname, &st) != 0)
+         || retro_vfs_stat_identity_impl(info.dli_fname, &v) != 1)
       return false;
 #endif
-   self->dev = (uint64_t)st.st_dev;
-   self->uid = (unsigned long)st.st_uid;
+   self->dev = v.dev;
+   self->uid = (unsigned long)v.uid;
    return true;
 }
 
@@ -685,14 +667,39 @@ static unsigned long core_overflow_uid(void)
 #endif
 }
 
+/* The POSIX mode the rules read: permission bits and the type */
+static unsigned core_identity_mode(const struct retro_vfs_file_identity *v)
+{
+   unsigned mode = v->perm;
+   if (v->type == RETRO_VFS_IDENTITY_DIRECTORY)
+      mode |= 0040000;
+   else if (v->type == RETRO_VFS_IDENTITY_REGULAR)
+      mode |= 0100000;
+   return mode;
+}
+
+static bool core_identity_exempt(const struct core_owner *who,
+      unsigned long self_uid, const struct retro_vfs_file_identity *v,
+      bool read_only_mount)
+{
+   return (v->flags & RETRO_VFS_IDENTITY_HAS_OWNER)
+      && core_mode_exempt(who, self_uid, (unsigned long)v->uid,
+            (unsigned long)v->gid, core_identity_mode(v), read_only_mount);
+}
+
 static bool core_path_exempt(const struct core_owner *who,
-      unsigned long self_uid, const struct stat *st, bool read_only_mount,
-      const char *path)
+      unsigned long self_uid, const struct retro_vfs_file_identity *v,
+      bool read_only_mount, const char *path)
 {
    /* access() also sees ACLs and read-only mounts */
-   return core_mode_exempt(who, self_uid, (unsigned long)st->st_uid,
-         (unsigned long)st->st_gid, (unsigned)st->st_mode, read_only_mount)
+   return core_identity_exempt(who, self_uid, v, read_only_mount)
       && access(path, W_OK) != 0;
+}
+
+static bool core_identity_same(const struct retro_vfs_file_identity *a,
+      const struct retro_vfs_file_identity *b)
+{
+   return a->dev == b->dev && !memcmp(a->id, b->id, sizeof(a->id));
 }
 #endif
 
@@ -702,7 +709,7 @@ bool core_file_unwritable(core_file_t *f, const char *path,
 #ifdef _WIN32
    return false;
 #else
-   struct stat st, pst;
+   struct retro_vfs_file_identity st, pst;
    struct statvfs vfs;
    struct core_owner who;
    unsigned long *gids = NULL;
@@ -713,8 +720,8 @@ bool core_file_unwritable(core_file_t *f, const char *path,
    int n, i;
    /* Only beside RetroArch: a disk or image the user mounted is not */
    if (     !self
-         || fstat(f->fd, &st) != 0
-         || (uint64_t)st.st_dev != self->dev
+         || !retro_vfs_file_identity_impl(f, &st)
+         || st.dev != self->dev
          || (n = getgroups(0, NULL)) < 0)
       return false;
    list = (gid_t*)malloc(((size_t)n + 1) * sizeof(*list));
@@ -728,15 +735,13 @@ bool core_file_unwritable(core_file_t *f, const char *path,
    who.num_gids = (size_t)n + 1;
    who.uid      = (unsigned long)geteuid();
    who.overflow_uid = core_overflow_uid();
-   if (!core_mode_exempt(&who, self->uid, (unsigned long)st.st_uid,
-            (unsigned long)st.st_gid, (unsigned)st.st_mode,
+   if (!core_identity_exempt(&who, self->uid, &st,
             fstatvfs(f->fd, &vfs) == 0 && (vfs.f_flag & ST_RDONLY)))
       goto end;
    /* The folders of the real path, which must name this same file */
    if (     !(dir = realpath(path, NULL))
-         || stat(dir, &pst) != 0
-         || pst.st_dev != st.st_dev
-         || pst.st_ino != st.st_ino
+         || retro_vfs_stat_identity_impl(dir, &pst) != 1
+         || !core_identity_same(&pst, &st)
          || access(dir, W_OK) == 0)
       goto end;
    for (;;)
@@ -744,7 +749,7 @@ bool core_file_unwritable(core_file_t *f, const char *path,
       if (!(slash = strrchr(dir, '/')))
          goto end;
       slash[slash == dir ? 1 : 0] = '\0';
-      if (     stat(dir, &pst) != 0
+      if (     retro_vfs_stat_identity_impl(dir, &pst) != 1
             || !core_path_exempt(&who, self->uid, &pst,
                   statvfs(dir, &vfs) == 0 && (vfs.f_flag & ST_RDONLY), dir))
          goto end;
@@ -791,7 +796,7 @@ bool core_file_in_package(core_file_t *f, const char *path)
 {
 #if defined(__APPLE__)
    char bundle[PATH_MAX];
-   struct stat st, rst;
+   struct retro_vfs_file_identity st, rst;
    CFBundleRef app = CFBundleGetMainBundle();
    CFURLRef url    = app ? CFBundleCopyBundleURL(app) : NULL;
    char *core_real = NULL;
@@ -804,10 +809,9 @@ bool core_file_in_package(core_file_t *f, const char *path)
                sizeof(bundle))
          && (app_real = realpath(bundle, NULL))
          && (core_real = realpath(path, NULL))
-         && fstat(f->fd, &st) == 0
-         && stat(core_real, &rst) == 0
-         && st.st_dev == rst.st_dev
-         && st.st_ino == rst.st_ino)
+         && retro_vfs_file_identity_impl(f, &st)
+         && retro_vfs_stat_identity_impl(core_real, &rst) == 1
+         && core_identity_same(&st, &rst))
       ok = core_path_in_app(core_real, app_real);
    CFRelease(url);
    free(core_real);
