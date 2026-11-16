@@ -552,7 +552,6 @@ struct ozone_handle
 
    ozone_theme_t *theme;
    ozone_theme_t *default_theme;
-   char *pending_message;
    const char *pending_color_theme;
    ozone_old_entry_t *entries_old;                 /* ptr alignment */
    size_t entries_old_size;
@@ -745,6 +744,7 @@ struct ozone_handle
    char selection_lastplayed[NAME_MAX_LENGTH];
    char selection_entry_enumeration[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
+   char pending_message[MENU_LABEL_MAX_LENGTH];
 
    /* The menu font path the fonts are built from. ozone_render()
     * watches it alongside the scale factors and rebuilds them in
@@ -10209,7 +10209,6 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->flags                                |= OZONE_FLAG_DRAW_SIDEBAR;
    ozone->sidebar_offset                        = 0;
    ozone->categories_selection_ptr              = 0;
-   ozone->pending_message                       = NULL;
 
    ozone->flags                                |= OZONE_FLAG_FIRST_FRAME;
 
@@ -10381,9 +10380,6 @@ static void ozone_free(void *data)
          free(ozone->entries_old);
       ozone->entries_old      = NULL;
       ozone->entries_old_size = 0;
-
-      if (ozone->pending_message && *ozone->pending_message)
-         free(ozone->pending_message);
 
       menu_screensaver_free(ozone->screensaver);
    }
@@ -10936,7 +10932,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       /* Messagebox */
       ozone->animations.messagebox_alpha  = 0.0f;
-      ozone->pending_message              = NULL;
+      ozone->pending_message[0]           = '\0';
 
       /* Thumbnails */
       if (!runloop_is_content_switching())
@@ -13123,8 +13119,7 @@ static void ozone_messagebox_fadeout_cb(void *userdata)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)userdata;
 
-   free(ozone->pending_message);
-   ozone->pending_message        = NULL;
+   ozone->pending_message[0]     = '\0';
    ozone->flags                 &= ~OZONE_FLAG_SHOULD_DRAW_MSGBOX;
 }
 
@@ -14396,13 +14391,8 @@ static void ozone_messagebox(void *data, const char *message)
    if (!ozone || !message || !*message)
       return;
 
-   if (ozone->pending_message)
-   {
-      free(ozone->pending_message);
-      ozone->pending_message     = NULL;
-   }
-
-   ozone->pending_message        = strdup(message);
+   strlcpy(ozone->pending_message, message,
+         sizeof(ozone->pending_message));
    ozone->flags                 |= OZONE_FLAG_SHOULD_DRAW_MSGBOX
                                  | OZONE_FLAG_MSGBOX_STATE;
 }
