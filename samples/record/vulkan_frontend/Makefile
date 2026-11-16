@@ -47,3 +47,8 @@ stream-check: frontend_stream_test$(EXE)
 	$(RUNNER) ./frontend_stream_test$(EXE)
 .PHONY: stream-check
 endif
+
+check: platform-check
+platform-check:
+	python3 platform_test.py
+.PHONY: platform-check

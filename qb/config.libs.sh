@@ -1128,6 +1128,10 @@ if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
 # Native recording is optional; Vulkan device admission still requires the
 # encode extensions and a separate queue, without changing renderer fallback.
 check_platform 'Linux Win32' RECORD_VULKAN 'Vulkan recording is' true
+case "$OS" in
+   Linux|Win32) ;;
+   *) HAVE_RECORD_VULKAN=no ;;
+esac
 check_enabled VULKAN RECORD_VULKAN 'Vulkan recording' 'Vulkan is' false
 check_enabled THREADS RECORD_VULKAN 'Vulkan recording' 'Threads are' false
 check_enabled CONFIGFILE RECORD_VULKAN 'Vulkan recording' 'Configuration files are' false
