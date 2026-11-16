@@ -5281,6 +5281,7 @@ static void rgui_render_messagebox(
    unsigned height            = 0;
    unsigned line_count        = 0;
    char *lines[128];
+   unsigned glyphs[128];
    size_t msg_len;
    size_t wrapped_len;
    uint16_t *frame_buf_data   = rgui->frame_buf.data;
@@ -5327,9 +5328,9 @@ static void rgui_render_messagebox(
 
    for (i = 0; i < line_count; i++)
    {
-      char     *msg         = lines[i];
-      unsigned msglen       = (unsigned)utf8len(msg);
+      unsigned msglen       = (unsigned)utf8len(lines[i]);
       unsigned line_width   = msglen * rgui->font_width_stride - 1 + 6 + 10;
+      glyphs[i]             = msglen;
       width                 = MAX(width, line_width);
       glyphs_width          = MAX(glyphs_width, msglen);
    }
@@ -5439,7 +5440,7 @@ static void rgui_render_messagebox(
       for (i = 0; i < line_count; i++)
       {
          const char *msg = lines[i];
-         int offset_x    = (int)(rgui->font_width_stride * (glyphs_width - utf8len(msg)) / 2);
+         int offset_x    = (int)(rgui->font_width_stride * (glyphs_width - glyphs[i]) / 2);
          int offset_y    = (int)(rgui->font_height_stride * i);
          int text_x      = x + 8 + offset_x;
          int text_y      = y + 8 + offset_y;
