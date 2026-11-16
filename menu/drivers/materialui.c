@@ -2867,7 +2867,6 @@ static void materialui_render_messagebox(
    int *lengths               = lengths_buf;
    bool keep_wrap             = false;
    struct menu_state *menu_st = menu_state_get_ptr();
-   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape             = video_width >= video_height;
    menu_dialog_buttons_t buttons;
    int button_w[MENU_DIALOG_BUTTONS_MAX];
@@ -3160,10 +3159,6 @@ static void materialui_render_messagebox(
          }
       }
    }
-
-   if (confirm_dialog)
-      slice_h             += 70 * mui->last_scale_factor + mui->margin * 2.0
-            - (mui->font_data.list.line_height - mui->font_data.list.line_ascender);
 
    if (draw_focus)
    {

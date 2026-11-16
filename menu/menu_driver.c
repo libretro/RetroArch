@@ -8581,10 +8581,10 @@ static int generic_menu_iterate(
                   sizeof(menu->menu_state_msg));
          else
 #endif
-            strlcpy(menu->menu_state_msg,
-               menu_st->dialog_st.confirm_text ? menu_st->dialog_st.confirm_text
-               : msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
-               sizeof(menu->menu_state_msg));
+            menu->menu_state_text = menu_st->dialog_st.confirm_text
+                  ? menu_st->dialog_st.confirm_text
+                  : msg_hash_to_str(
+                     (enum msg_hash_enums)menu_st->dialog_st.confirm_msg);
 
 #ifdef HAVE_ACCESSIBILITY
          /* Also when the warning comes up after a confirm or a newer

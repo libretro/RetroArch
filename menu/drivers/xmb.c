@@ -1377,7 +1377,6 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    unsigned cursor_line                = 0;
    int cursor_x                        = 0;
    struct menu_state *menu_st          = menu_state_get_ptr();
-   bool confirm_dialog                 = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool landscape                      = video_width >= video_height;
    menu_dialog_buttons_t buttons;
    int button_w[MENU_DIALOG_BUTTONS_MAX];
@@ -1696,11 +1695,6 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          }
       }
    }
-
-   if (confirm_dialog)
-      slice_h             += 70 * xmb->last_scale_factor
-            + xmb->margins_slice + xmb->margins_dialog
-            - 0.15f * line_height;
 
    if (input_dialog_display_kb)
    {

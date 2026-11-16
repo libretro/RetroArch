@@ -5292,7 +5292,6 @@ static void rgui_render_messagebox(
    unsigned button_rows       = 0;
    int row_step               = 0;
    int rows_y                 = 0;
-   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
    unsigned firmware_line_state = 0;
 
    wrapped_message[0]         = '\0';

@@ -2422,6 +2422,10 @@ static void content_load_job_free(struct content_load_job *job)
 #ifdef HAVE_MENU
    if (job->firmware)
    {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      /* The dialog borrows the message: it goes with it */
+      if (menu_st->dialog_st.confirm_text == job->firmware->message)
+         menu_dialog_confirm_clear(menu_st);
       free(job->firmware);
       job->firmware = NULL;
    }
