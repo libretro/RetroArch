@@ -128,6 +128,9 @@ struct gl3_views_fbo
 
 typedef struct gl3
 {
+#ifdef HAVE_GL_MENU_BLOOM
+   gl_menu_bloom_t *menu_bloom;
+#endif
    const gfx_ctx_driver_t *ctx_driver;
    void *ctx_data;
    /* The frame's swap: how long it took, and whether it was one that
@@ -274,9 +277,12 @@ typedef struct gl3
    struct
    {
       GLuint alpha_blend;
+      GLuint xmb_plastic;
+      GLuint xmb_font;
       GLuint font;
 #ifdef HAVE_SHADERPIPELINE
       GLuint ribbon;
+      GLuint ribbon_ubo;
       GLuint ribbon_simple;
       GLuint snow_simple;
       GLuint snow;
@@ -284,12 +290,16 @@ typedef struct gl3
       GLuint snowflake;
 #endif /* HAVE_SHADERPIPELINE */
       struct gl3_buffer_locations alpha_blend_loc;
+      struct gl3_buffer_locations xmb_plastic_loc;
+      struct gl3_buffer_locations xmb_font_loc;
       struct gl3_buffer_locations font_loc;
       /* Half-float (linear scRGB) textures under the scRGB composite:
        * alpha_blend_linear.frag, made the first time one is drawn */
       GLuint alpha_blend_linear;
       struct gl3_buffer_locations alpha_blend_linear_loc;
       bool   alpha_blend_linear_tried;
+      bool   xmb_plastic_tried;
+      bool   xmb_font_tried;
       /* stock_rect.frag, made the first time the stock chain would draw
        * a view or a padded frame: with its nearest and linear samplers,
        * it draws them straight from the frame's texture. */
@@ -1034,6 +1044,8 @@ static void gfx_display_gl3_draw_pipeline(
       switch (draw->pipeline_id)
       {
          case VIDEO_SHADER_MENU:
+            glBlendFunc(GL_ONE, GL_ONE);
+            break;
          case VIDEO_SHADER_MENU_2:
             glBlendFunc(GL_DST_COLOR, GL_ONE);
             break;
@@ -1066,6 +1078,14 @@ static void gfx_display_gl3_draw_pipeline(
 
             uniform_param.result.f.v0       = t;
 
+            if (draw->pipeline_id == VIDEO_SHADER_MENU)
+            {
+               uniform_param.type = UNIFORM_4FV;
+               uniform_param.count = 50;
+               uniform_param.lookup.ident = "Ribbon";
+               uniform_param.lookup.add_prefix = false;
+               uniform_param.result.floatv = (float*)gfx_display_ribbon_data(p_disp);
+            }
             gl->chain.shader->set_uniform_parameter(gl->chain.shader_data,
                   &uniform_param, NULL);
             break;
@@ -1092,6 +1112,7 @@ static void gfx_display_gl3_draw_pipeline(
    {
       static struct video_coords blank_coords;
       static uint8_t ubo_scratch_data[768];
+      static float ribbon_ubo[4];
       float output_size[2];
       output_size[0]                = (float)video_width;
       output_size[1]                = (float)video_height;
@@ -1104,13 +1125,17 @@ static void gfx_display_gl3_draw_pipeline(
          case VIDEO_SHADER_MENU_2:
             if (!(draw->coords = gfx_display_effect_coords(p_disp)))
                return;
-            draw->backend_data               = ubo_scratch_data;
-            draw->backend_data_size          = 2 * sizeof(float);
-
-            /* Match UBO layout in shader. */
-            yflip = 1.0f;
-            memcpy(ubo_scratch_data, &t, sizeof(t));
-            memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
+            ribbon_ubo[0]                   = t;
+            ribbon_ubo[1]                   = 1.0f;
+            ribbon_ubo[2]                   = draw->color ? draw->color[3] : 1.0f;
+            ribbon_ubo[3]                   = 0.0f;
+            draw->backend_data              = ribbon_ubo;
+            draw->backend_data_size         = sizeof(ribbon_ubo);
+            if (draw->pipeline_id == VIDEO_SHADER_MENU)
+            {
+               draw->backend_data = (void*)gfx_display_ribbon_ubo(p_disp, 1.0f);
+               draw->backend_data_size = 51 * 4 * sizeof(float);
+            }
             break;
 
          /* Snow simple */
@@ -1215,6 +1240,8 @@ static bool gl3_fp16_is(GLuint id)
 
 #ifdef HAVE_SLANG
 static GLuint gl3_linear_program(gl3_t *gl);
+static GLuint gl3_plastic_program(gl3_t *gl);
+static GLuint gl3_font_plastic_program(gl3_t *gl);
 #else
 static GLuint gl3_linear_program(gl3_t *gl) { (void)gl; return 0; }
 #endif
@@ -1249,6 +1276,9 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       glBindTexture(GL_TEXTURE_2D, draw->texture
             ? (GLuint)draw->texture : gl->white_texture);
 
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
+         gl->chain.shader->use(gl, gl->chain.shader_data,
+               VIDEO_SHADER_XMB_PLASTIC, true);
       gl->chain.shader->set_coords(gl->chain.shader_data, &coords);
       gl->chain.shader->set_mvp(gl->chain.shader_data,
             draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
@@ -1256,6 +1286,9 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 
       /* Menu draws use a triangle-strip layout. */
       glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
+         gl->chain.shader->use(gl, gl->chain.shader_data,
+               VIDEO_SHADER_STOCK_BLEND, true);
    }
 #ifdef HAVE_SLANG
    else
@@ -1263,6 +1296,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       const struct
          gl3_buffer_locations
          *loc                   = NULL;
+      const struct gl3_buffer_locations *stock_loc = &gl->pipelines.alpha_blend_loc;
 
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, draw->texture
@@ -1271,6 +1305,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       switch (draw->pipeline_id)
       {
          case VIDEO_SHADER_MENU:
+            glBlendFunc(GL_ONE, GL_ONE);
+            break;
          case VIDEO_SHADER_MENU_2:
             glBlendFunc(GL_DST_COLOR, GL_ONE);
             break;
@@ -1298,11 +1334,29 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
                if (!prog)
                   return;
                glUseProgram(prog);
+               if (draw->pipeline_id == VIDEO_SHADER_MENU
+                     && loc->buffer_index_ubo_vertex != GL_INVALID_INDEX)
+               {
+                  if (!gl->pipelines.ribbon_ubo)
+                     glGenBuffers(1, &gl->pipelines.ribbon_ubo);
+                  glBindBuffer(GL_UNIFORM_BUFFER, gl->pipelines.ribbon_ubo);
+                  glBufferData(GL_UNIFORM_BUFFER, draw->backend_data_size,
+                        draw->backend_data, GL_STREAM_DRAW);
+                  glUniformBlockBinding(prog, loc->buffer_index_ubo_vertex, 0);
+                  glBindBufferBase(GL_UNIFORM_BUFFER, 0, gl->pipelines.ribbon_ubo);
+               }
             }
             break;
 #endif /* HAVE_SHADERPIPELINE */
 
          default:
+            if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC
+                  && gl3_plastic_program(gl))
+            {
+               glUseProgram(gl->pipelines.xmb_plastic);
+               stock_loc = &gl->pipelines.xmb_plastic_loc;
+               break;
+            }
             /* A half-float texture is linear scRGB: under the scRGB
              * composite, through the program that inverts its encode */
             if (     gl->scrgb.active
@@ -1348,8 +1402,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
                glUniform4fv(gl->pipelines.alpha_blend_linear_loc.flat_ubo_fragment,
                      5, ubo);
          }
-         else if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
-            glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
+         else if (stock_loc->flat_ubo_vertex >= 0)
+            glUniform4fv(stock_loc->flat_ubo_vertex,
                          4, mat->data);
       }
 
@@ -1370,7 +1424,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
                   sizeof(gfx_display_mesh_vertex_t), (void *)(uintptr_t)0);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, mesh->vertex_count);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0,
+                  disp_get_ptr()->effect_vertices);
             glDisableVertexAttribArray(0);
          }
       }
@@ -1710,14 +1765,29 @@ static void gl3_raster_font_draw_vertices(gl3_t *gl,
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
 
+      if (font->block && font->block->xmb_plastic)
+         gl->chain.shader->use(gl, gl->chain.shader_data,
+               VIDEO_SHADER_XMB_FONT_PLASTIC, true);
       gl->chain.shader->set_coords(gl->chain.shader_data, coords);
       gl->chain.shader->set_mvp(gl->chain.shader_data, &gl->mvp_no_rot);
 
       glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
+      if (font->block && font->block->xmb_plastic)
+         gl->chain.shader->use(gl, gl->chain.shader_data,
+               VIDEO_SHADER_STOCK_BLEND, true);
    }
 #ifdef HAVE_SLANG
    else
    {
+      struct gl3_buffer_locations *loc = &gl->pipelines.font_loc;
+      if (font->block && font->block->xmb_plastic
+            && gl3_font_plastic_program(gl))
+      {
+         glUseProgram(gl->pipelines.xmb_font);
+         loc = &gl->pipelines.xmb_font_loc;
+      }
+      else
+         glUseProgram(gl->pipelines.font);
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, font->tex);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
@@ -1725,8 +1795,8 @@ static void gl3_raster_font_draw_vertices(gl3_t *gl,
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
 
-      if (gl->pipelines.font_loc.flat_ubo_vertex >= 0)
-         glUniform4fv(gl->pipelines.font_loc.flat_ubo_vertex,
+      if (loc->flat_ubo_vertex >= 0)
+         glUniform4fv(loc->flat_ubo_vertex,
                       4, gl->mvp_no_rot.data);
 
       glEnableVertexAttribArray(0);
@@ -2484,6 +2554,15 @@ static void gl3_destroy_resources(gl3_t *gl)
       glDeleteProgram(gl->pipelines.alpha_blend);
       gl->pipelines.alpha_blend = 0;
    }
+   if (gl->pipelines.xmb_plastic)
+      glDeleteProgram(gl->pipelines.xmb_plastic);
+   gl->pipelines.xmb_plastic = 0;
+   gl->pipelines.xmb_plastic_tried = false;
+   if (gl->pipelines.xmb_font)
+      glDeleteProgram(gl->pipelines.xmb_font);
+   gl->pipelines.xmb_font = 0;
+   gl->pipelines.xmb_font_tried = false;
+
    if (gl->pipelines.alpha_blend_linear)
    {
       glDeleteProgram(gl->pipelines.alpha_blend_linear);
@@ -2547,6 +2626,8 @@ static void gl3_destroy_resources(gl3_t *gl)
       gl->scrgb.ui_tex = 0;
    }
 #ifdef HAVE_SHADERPIPELINE
+   glDeleteBuffers(1, &gl->pipelines.ribbon_ubo);
+   gl->pipelines.ribbon_ubo = 0;
    if (gl->pipelines.ribbon)
    {
       glDeleteProgram(gl->pipelines.ribbon);
@@ -2892,6 +2973,32 @@ static void gl3_set_viewport(gl3_t *gl,
 }
 
 #ifdef HAVE_SLANG
+static GLuint gl3_plastic_program(gl3_t *gl)
+{
+   if (!gl->pipelines.xmb_plastic_tried)
+   {
+      gl->pipelines.xmb_plastic_tried = true;
+      gl->pipelines.xmb_plastic = gl3_cross_compile_program(
+            spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
+            spirv_xmb_plastic_frag, spirv_xmb_plastic_frag_size,
+            &gl->pipelines.xmb_plastic_loc, true);
+   }
+   return gl->pipelines.xmb_plastic;
+}
+
+static GLuint gl3_font_plastic_program(gl3_t *gl)
+{
+   if (!gl->pipelines.xmb_font_tried)
+   {
+      gl->pipelines.xmb_font_tried = true;
+      gl->pipelines.xmb_font = gl3_cross_compile_program(
+            spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
+            spirv_xmb_font_frag, spirv_xmb_font_frag_size,
+            &gl->pipelines.xmb_font_loc, true);
+   }
+   return gl->pipelines.xmb_font;
+}
+
 /* The program for a half-float texture under the scRGB composite, made
  * the first time one is drawn; 0 where it cannot be. */
 static GLuint gl3_linear_program(gl3_t *gl)
@@ -2956,7 +3063,8 @@ static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
          return 0;
    }
    if (!*prog)
-      *prog = gl3_cross_compile_program(vs, vs_size, fs, fs_size, l, true);
+      *prog = gl3_cross_compile_program(vs, vs_size, fs, fs_size, l,
+            pipeline_id != VIDEO_SHADER_MENU);
    *loc = l;
    return *prog;
 }
@@ -4419,6 +4527,9 @@ static void gl3_free(void *data)
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+#ifdef HAVE_GL_MENU_BLOOM
+   gl_menu_bloom_free(&gl->menu_bloom);
+#endif
 #ifdef HAVE_GL3_XR
    gl3_xr_free(gl);
 #endif
@@ -7071,6 +7182,10 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
    glBindVertexArray(gl->vao);
+#ifdef HAVE_GL_MENU_BLOOM
+   /* Before the frame draws into any framebuffer of its own */
+   gfx_display_bloom_prepass(gl);
+#endif
 
    if (gl->chain.active)
       gl->chain.shader->use(gl, gl->chain.shader_data, 1, true);
@@ -9171,6 +9286,35 @@ video_driver_t video_gl3 = {
    true /* max_geometry_in_place */
 };
 
+#ifdef HAVE_GL_MENU_BLOOM
+static unsigned gfx_display_gl3_bloom_begin(void *data, unsigned dims,
+      bool defer)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return 0;
+   return gl_menu_bloom_begin(&gl->menu_bloom, dims, true,
+#ifdef HAVE_OPENGLES
+         true,
+#else
+         false,
+#endif
+         defer);
+}
+
+static void gfx_display_gl3_bloom_end(void *data, unsigned dims, bool defer)
+{
+   gl3_t *gl = (gl3_t*)data;
+   gl_menu_bloom_end(gl->menu_bloom, dims, defer);
+}
+
+static void gfx_display_gl3_bloom_composite(void *data, unsigned dims)
+{
+   gl3_t *gl = (gl3_t*)data;
+   gl_menu_bloom_composite(gl->menu_bloom, dims);
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    gfx_display_gl3_draw,
    gfx_display_gl3_draw_pipeline,
@@ -9187,8 +9331,15 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    gfx_display_gl3_scissor_begin,
    gfx_display_gl3_scissor_end,
 #ifdef HAVE_SLANG
-   gfx_display_gl3_mesh_draw
+   gfx_display_gl3_mesh_draw,
 #else
-   NULL
+   NULL,
+#endif
+#ifdef HAVE_GL_MENU_BLOOM
+   gfx_display_gl3_bloom_begin,
+   gfx_display_gl3_bloom_end,
+   gfx_display_gl3_bloom_composite
+#else
+   NULL, NULL
 #endif
 };

@@ -157,6 +157,16 @@ typedef struct gfx_display_ctx_driver
    bool (*mesh_draw)(void *data, unsigned video_dims,
          const struct gfx_display_mesh *mesh, const float *mvp,
          uintptr_t texture, const float *tint);
+   /* The glow: begin binds a cleared small target for the ribbon and
+    * returns its dims, zero declining; a successful begin is ended. End
+    * runs the passes after it, all of them, or with defer only the ones
+    * into the small images, for bloom_composite to add onto the target
+    * later in the frame. A driver with bloom_composite calls
+    * gfx_display_bloom_prepass before the pass that draws the menu, so
+    * no pass is split; it declines a deferred begin it cannot split. */
+   unsigned (*bloom_begin)(void *data, unsigned video_dims, bool defer);
+   void (*bloom_end)(void *data, unsigned video_dims, bool defer);
+   void (*bloom_composite)(void *data, unsigned video_dims);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw
@@ -285,13 +295,24 @@ struct gfx_display
 
    uint8_t flags;
 
-   /* The menu effects' clock, in the step every driver used to keep
-    * for itself: 0.01 an effect drawn, wrapped at 65536. Read by the
-    * driver while it draws an effect, advanced once it has. */
+   struct menu_ribbon *ribbon;
+   retro_time_t effect_start_time;
+   /* Elapsed seconds scaled by 0.6, shared by every effect pass. */
    float     effect_time;
    /* The mesh an effect is being drawn over, for the driver's pipeline
     * code to draw from; NULL outside that draw. */
    const struct gfx_display_mesh *effect_mesh;
+   /* How many of its vertices the effect draws, from the first */
+   unsigned effect_vertices;
+   /* The ribbon the next prepass draws the glow of, its alpha, whether
+    * a frame asked for it, whether this frame's is ready to composite
+    * and whether the prepass already moved the ribbon on this frame */
+   const struct gfx_display_mesh *bloom_mesh;
+   unsigned bloom_dims;
+   float bloom_alpha;
+   bool bloom_wanted;
+   bool bloom_ready;
+   bool ribbon_fresh;
 
    /* What the batch did during the menu frame being drawn, counted
     * where it happens on the drawing thread and published as a whole
@@ -421,9 +442,11 @@ typedef struct gfx_display_mesh_vertex
    uint8_t  rgba[4];
 } gfx_display_mesh_vertex_t;
 
+#define GFX_DISPLAY_MESH_ALIGN 64
+
 typedef struct gfx_display_mesh_desc
 {
-   const gfx_display_mesh_vertex_t *vertices;
+   const gfx_display_mesh_vertex_t *vertices; /* NULL: zeroed, filled by owner */
    const uint16_t *indices;        /* NULL: drawn in vertex order */
    unsigned vertex_count;
    unsigned index_count;
@@ -443,7 +466,8 @@ struct gfx_display_mesh
    unsigned index_count;
    enum gfx_display_mesh_topology topology;
    uint32_t id;
-   /* x,y of each vertex, for GFX_MESH_FLAG_POSITIONS; else NULL */
+   /* x,y of each vertex, for GFX_MESH_FLAG_POSITIONS; else NULL.
+    * GFX_DISPLAY_MESH_ALIGN aligned, so a GPU can read it in place. */
    float *positions;
 };
 typedef struct gfx_display_mesh gfx_display_mesh_t;
@@ -458,6 +482,10 @@ typedef struct gfx_display_mesh_draw
    float *color;
    uintptr_t texture;
    enum gfx_display_mesh_program program;
+   /* RIBBON only: also draw its glow, where the driver has one */
+   bool bloom;
+   /* Effects: the first this many vertices; 0 draws them all */
+   unsigned vertex_count;
 } gfx_display_mesh_draw_t;
 
 gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc);
@@ -470,6 +498,18 @@ const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void);
  * positions as coordinates, for drivers that stream them; NULL when
  * the mesh keeps none. Drawing thread only. */
 struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp);
+/* Borrowed until the next effect draw, on the drawing thread.
+ * gfx_display_ribbon_data is GFX_DISPLAY_RIBBON_BYTES long: 50 vec4s. */
+#define GFX_DISPLAY_RIBBON_BYTES (50 * 4 * sizeof(float))
+/* The ribbon mesh ends with its dust: six strip vertices a speck */
+#define GFX_DISPLAY_RIBBON_STAR_VERTICES (48 * 6)
+const float *gfx_display_ribbon_ubo(gfx_display_t *p_disp, float yflip);
+const float *gfx_display_ribbon_data(gfx_display_t *p_disp);
+void gfx_display_ribbon_vertex(const float *data, const float *p,
+      float *position, float *lighting);
+/* For a driver with bloom_composite: the glow's small passes for this
+ * frame, outside the pass the menu is drawn in. Drawing thread. */
+void gfx_display_bloom_prepass(void *userdata);
 void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
       unsigned video_dims, const gfx_display_mesh_t *mesh,
       const gfx_display_mesh_draw_t *draw);

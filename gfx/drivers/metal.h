@@ -47,7 +47,9 @@
 typedef NS_ENUM(NSInteger, BufferIndex)
 {
    BufferIndexPositions = 0,
-   BufferIndexUniforms = 1
+   BufferIndexUniforms = 1,
+   /* The ribbon's 50 float4s, bound for the ribbon draw alone */
+   BufferIndexRibbon = 2
 };
 
 typedef NS_ENUM(NSInteger, VertexAttribute)

@@ -31,6 +31,16 @@ const uint32_t spirv_alpha_blend_frag[] =
       ;
 const size_t spirv_alpha_blend_frag_size = sizeof(spirv_alpha_blend_frag);
 
+const uint32_t spirv_xmb_font_frag[] =
+#include "../drivers/vulkan_shaders/xmb_font.frag.inc"
+;
+const size_t spirv_xmb_font_frag_size = sizeof(spirv_xmb_font_frag);
+
+const uint32_t spirv_xmb_plastic_frag[] =
+#include "../drivers/vulkan_shaders/xmb_plastic.frag.inc"
+      ;
+const size_t spirv_xmb_plastic_frag_size = sizeof(spirv_xmb_plastic_frag);
+
 const uint32_t spirv_alpha_blend_linear_frag[] =
 #include "../drivers/vulkan_shaders/alpha_blend_linear.frag.inc"
       ;
@@ -136,11 +146,30 @@ const size_t spirv_hdr_scrgb_frag_size = sizeof(spirv_hdr_scrgb_frag);
 #endif
 
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG) && defined(HAVE_RSLC) && !defined(HAVE_SPIRV_CROSS)
+#ifdef HAVE_SHADERPIPELINE
+static const char ribbon_vert_glsl[] = {
+#include "../drivers/vulkan_shaders/pipeline_ribbon.vert.src.inc"
+};
+static const char ribbon_frag_glsl[] = {
+#include "../drivers/vulkan_shaders/pipeline_ribbon.frag.src.inc"
+};
+#endif
+
+static const char xmb_font_glsl[] = {
+#include "../drivers/vulkan_shaders/xmb_font.frag.src.inc"
+};
+
+static const char xmb_plastic_glsl[] = {
+#include "../drivers/vulkan_shaders/xmb_plastic.frag.src.inc"
+};
+
 static const struct
 {
    const uint32_t *spirv;
    const char     *glsl;
 } spirv_glsl[] = {
+   { spirv_xmb_plastic_frag, xmb_plastic_glsl },
+   { spirv_xmb_font_frag, xmb_font_glsl },
    { spirv_alpha_blend_vert,
 #include "../drivers/vulkan_shaders/alpha_blend.vert.src.inc"
    },
@@ -178,12 +207,8 @@ static const struct
 #include "../drivers/vulkan_shaders/hdr_scrgb.frag.src.inc"
    },
 #ifdef HAVE_SHADERPIPELINE
-   { spirv_pipeline_ribbon_vert,
-#include "../drivers/vulkan_shaders/pipeline_ribbon.vert.src.inc"
-   },
-   { spirv_pipeline_ribbon_frag,
-#include "../drivers/vulkan_shaders/pipeline_ribbon.frag.src.inc"
-   },
+   { spirv_pipeline_ribbon_vert, ribbon_vert_glsl },
+   { spirv_pipeline_ribbon_frag, ribbon_frag_glsl },
    { spirv_pipeline_ribbon_simple_vert,
 #include "../drivers/vulkan_shaders/pipeline_ribbon_simple.vert.src.inc"
    },

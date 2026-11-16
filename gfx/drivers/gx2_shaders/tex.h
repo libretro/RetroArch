@@ -16,6 +16,7 @@
 #ifndef TEX_SHADER_H
 #define TEX_SHADER_H
 
+#include <stddef.h>
 #include <os/wiiu/shader_utils.h>
 
 #ifdef __cplusplus
@@ -46,6 +47,7 @@ typedef struct
 }tex_shader_vertex_t;
 
 extern GX2Shader tex_shader;
+const void *gx2_bloom_program(size_t *size);
 
 #ifdef __cplusplus
 }

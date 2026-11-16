@@ -30,6 +30,7 @@
 #include <formats/image.h>
 
 #include "d3d_common.h"
+#include "menu_bloom.h"
 #include "../../verbosity.h"
 
 /* Views on the PC: Xbox 360 cores have none */
@@ -190,6 +191,20 @@ typedef struct d3d9_video
    d3d9_sw_fb_t sw_fb;
 #ifdef D3D9_VIEWS
    d3d9_views_t views;
+   struct
+   {
+      d3d9_views_target_t tex[2];
+      LPDIRECT3DSURFACE9 target;
+      LPDIRECT3DSURFACE9 depth;
+      LPDIRECT3DSTATEBLOCK9 state;
+      void *ps;
+      D3DVIEWPORT9 viewport;
+      menu_bloom_pass_t plan[MENU_BLOOM_PASSES];
+      int ps_reg;
+      unsigned dims;
+      unsigned passes;
+      bool failed;
+   } bloom;
 #endif
 #ifdef D3D9_HW_RENDER
    /* A core rendering with this device: libretro_d3d9.h */

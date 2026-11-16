@@ -659,6 +659,7 @@ typedef struct video_font_raster_block
 {
    video_coord_array_t carr; /* ptr alignment */
    bool fullscreen;
+   bool xmb_plastic;
 } video_font_raster_block_t;
 
 

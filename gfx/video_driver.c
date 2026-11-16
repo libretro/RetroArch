@@ -7653,6 +7653,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
          video_info->menu.flags |= VIDEO_MENU_FLAG_SAVESTATE_THUMBNAIL_ENABLE;
       if (settings->bools.menu_show_sublabels)
          video_info->menu.flags |= VIDEO_MENU_FLAG_SHOW_SUBLABELS;
+      if (settings->bools.menu_xmb_plastic_effect_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE;
+      if (settings->bools.menu_xmb_ribbon_bloom_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_RIBBON_BLOOM_ENABLE;
    }
    else
 #endif

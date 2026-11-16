@@ -60,6 +60,7 @@
 #include "../../os/wiiu/system/memory.h"
 #include "../../os/wiiu/wiiu_dbg.h"
 
+#include "../common/menu_bloom.h"
 #include "../font_driver.h"
 
 #undef _X
@@ -131,7 +132,10 @@ typedef struct
    int width;
    int height;
 
-   float* menu_shader_vbo;
+   unsigned ribbon_offset;
+   unsigned ribbon_vertices;
+   /* The mesh whose positions were last flushed for the GPU */
+   uint32_t positions_mesh_id;
    menu_shader_uniform_t* menu_shader_ubo;
 
    struct
@@ -152,6 +156,18 @@ typedef struct
    void *tv_scan_buffer;
    void *cmd_buffer;
    GX2ColorBuffer color_buffer;
+   struct
+   {
+      tex_shader_vertex_t *v;
+      GX2_mat4x4 *mvp;
+      GX2PixelShader ps;
+      GX2ColorBuffer cb[2];
+      GX2Texture tex[2];
+      menu_bloom_pass_t plan[MENU_BLOOM_PASSES];
+      unsigned dims;
+      unsigned passes;
+      bool failed;
+   } bloom;
    GX2ContextState *ctx_state;
    struct video_shader *shader_preset;
    struct
@@ -393,7 +409,8 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
    if (!wiiu || !draw)
       return;
 
-   if (draw->pipeline_id)
+   if (draw->pipeline_id >= VIDEO_SHADER_MENU_6
+         && draw->pipeline_id <= VIDEO_SHADER_MENU)
    {
       GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
 
@@ -424,12 +441,27 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
       switch(draw->pipeline_id)
       {
          case VIDEO_SHADER_MENU:
-         case VIDEO_SHADER_MENU_2:
-            GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, draw->coords->vertices, 0, 1);
+            GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP,
+                  draw->coords->vertices, 0, 1);
+            GX2SetShader(&ribbon_stars_shader);
+            GX2SetAttribBuffer(0, wiiu->vertex_cache_tex.size
+                  * sizeof(*wiiu->vertex_cache_tex.v),
+                  sizeof(*wiiu->vertex_cache_tex.v), wiiu->vertex_cache_tex.v);
+            GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP,
+                  wiiu->ribbon_vertices, wiiu->ribbon_offset, 1);
             GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
                   GX2_BLEND_COMBINE_MODE_ADD,
                   GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
                   GX2_BLEND_COMBINE_MODE_ADD);
+            break;
+         case VIDEO_SHADER_MENU_2:
+            GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, draw->coords->vertices,
+                  0, 1);
+            GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
+                  GX2_BLEND_COMBINE_MODE_ADD,
+                  GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
+                  GX2_BLEND_COMBINE_MODE_ADD);
+            break;
          case VIDEO_SHADER_MENU_3:
          case VIDEO_SHADER_MENU_4:
          case VIDEO_SHADER_MENU_5:
@@ -576,6 +608,17 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
          wiiu->vertex_cache.v);
 }
 
+/* Mesh positions never change once made: flush them once */
+static void wiiu_mesh_positions(wiiu_video_t *wiiu,
+      const gfx_display_mesh_t *mesh)
+{
+   if (wiiu->positions_mesh_id == mesh->id)
+      return;
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, mesh->positions,
+         mesh->vertex_count * 2 * sizeof(float));
+   wiiu->positions_mesh_id = mesh->id;
+}
+
 static void gfx_display_wiiu_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
@@ -590,21 +633,55 @@ static void gfx_display_wiiu_draw_pipeline(
    switch(draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
+         {
+            /* The sheet on the GPU from the mesh in place; the dust here */
+            const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+            const float *ribbon            = gfx_display_ribbon_data(p_disp);
+            unsigned first;
+            if (     !mesh || !ribbon || !mesh->positions
+                  || mesh->vertex_count <= GFX_DISPLAY_RIBBON_STAR_VERTICES)
+               return;
+            first = mesh->vertex_count - GFX_DISPLAY_RIBBON_STAR_VERTICES;
+            wiiu_mesh_positions(wiiu, mesh);
+            if (!wiiu->ribbon_vertices)
+            {
+               unsigned i;
+               tex_shader_vertex_t *vertices;
+               if (wiiu->vertex_cache_tex.current
+                     + GFX_DISPLAY_RIBBON_STAR_VERTICES
+                     > (unsigned)wiiu->vertex_cache_tex.size)
+                  return;
+               wiiu->ribbon_offset   = wiiu->vertex_cache_tex.current;
+               wiiu->ribbon_vertices = GFX_DISPLAY_RIBBON_STAR_VERTICES;
+               vertices = wiiu->vertex_cache_tex.v + wiiu->ribbon_offset;
+               for (i = 0; i < GFX_DISPLAY_RIBBON_STAR_VERTICES; i++)
+                  gfx_display_ribbon_vertex(ribbon,
+                        mesh->positions + (first + i) * 2,
+                        (float*)&vertices[i], &vertices[i].color.r);
+               GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
+                     vertices,
+                     GFX_DISPLAY_RIBBON_STAR_VERTICES * sizeof(*vertices));
+               wiiu->vertex_cache_tex.current += GFX_DISPLAY_RIBBON_STAR_VERTICES;
+            }
+            draw->coords->vertices = first;
+            GX2SetAttribBuffer(0, mesh->vertex_count * 2 * sizeof(float),
+                  2 * sizeof(float), mesh->positions);
+         }
+         GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_ONE,
+               GX2_BLEND_MODE_ONE, GX2_BLEND_COMBINE_MODE_ADD,
+               GX2_ENABLE, GX2_BLEND_MODE_ZERO, GX2_BLEND_MODE_ONE,
+               GX2_BLEND_COMBINE_MODE_ADD);
+         break;
       case VIDEO_SHADER_MENU_2:
          if (!(ca = gfx_display_effect_coords(p_disp)))
             return;
-         if (!wiiu->menu_shader_vbo)
-         {
-            wiiu->menu_shader_vbo = MEM2_alloc(ca->vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
-            memcpy(wiiu->menu_shader_vbo, ca->vertex, ca->vertices * 2 * sizeof(float));
-            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu_shader_vbo, ca->vertices * 2 * sizeof(float));
-         }
-
-         draw->coords->vertex             = wiiu->menu_shader_vbo;
+         /* Read in place: mesh positions are allocated GPU-aligned */
+         wiiu_mesh_positions(wiiu, p_disp->effect_mesh);
+         draw->coords->vertex             = ca->vertex;
          draw->coords->vertices           = ca->vertices;
          GX2SetAttribBuffer(0,
-               draw->coords->vertices * 2 * sizeof(float),
-               2 * sizeof(float), wiiu->menu_shader_vbo);
+               p_disp->effect_mesh->vertex_count * 2 * sizeof(float),
+               2 * sizeof(float), (void*)ca->vertex);
          GX2SetBlendControl(GX2_RENDER_TARGET_0,
                GX2_BLEND_MODE_SRC_ALPHA,
                GX2_BLEND_MODE_ONE,
@@ -634,21 +711,130 @@ static void gfx_display_wiiu_draw_pipeline(
       wiiu->menu_shader_ubo->OutputSize.height = wiiu->color_buffer.surface.height;
       wiiu->menu_shader_ubo->time = 0.0f;
    }
-   else
+   wiiu->menu_shader_ubo->time = p_disp->effect_time;
+   if (draw->pipeline_id == VIDEO_SHADER_MENU)
    {
-      wiiu->menu_shader_ubo->time += 0.01f;
-      /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-       * exactly representable up to t ~ 167772 (where 0.5*ulp first
-       * exceeds 0.01), so 65536 has wide margin and wraps roughly
-       * every 30 h of cumulative menu time, making the discontinuity
-       * effectively unobservable. */
-      if (wiiu->menu_shader_ubo->time > 65536.0f)
-         wiiu->menu_shader_ubo->time -= 65536.0f;
+      const float *ribbon = gfx_display_ribbon_data(p_disp);
+      wiiu->menu_shader_ubo->ribbon_time  = ribbon[0];
+      wiiu->menu_shader_ubo->ribbon_alpha = ribbon[49 * 4 + 2];
    }
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->menu_shader_ubo, sizeof(*wiiu->menu_shader_ubo));
    GX2SetVertexUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);
    GX2SetPixelUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);
+}
+
+
+static unsigned gfx_display_wiiu_bloom_begin(void *data, unsigned dims,
+      bool defer)
+{
+   wiiu_video_t *wiiu = (wiiu_video_t*)data;
+   unsigned small = menu_bloom_dims(VIDEO_SCALE_PACK(
+         wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height));
+   unsigned i, j;
+   (void)dims;
+   (void)defer;
+   if (wiiu->bloom.failed)
+      return 0;
+   if (!wiiu->bloom.dims)
+   {
+      size_t size;
+      const void *code = gx2_bloom_program(&size);
+      wiiu->bloom.ps = tex_shader.ps;
+      wiiu->bloom.ps.program = MEM2_alloc(size, GX2_SHADER_ALIGNMENT);
+      wiiu->bloom.ps.size = size;
+      wiiu->bloom.ps.regs.sq_pgm_resources_ps.num_gprs = 6;
+      wiiu->bloom.v = MEM2_alloc(MENU_BLOOM_PASSES * 4 * sizeof(*wiiu->bloom.v), GX2_VERTEX_BUFFER_ALIGNMENT);
+      wiiu->bloom.mvp = MEM2_alloc(sizeof(*wiiu->bloom.mvp), GX2_UNIFORM_BLOCK_ALIGNMENT);
+      if (!wiiu->bloom.ps.program || !wiiu->bloom.v || !wiiu->bloom.mvp)
+         goto error;
+      memcpy(wiiu->bloom.ps.program, code, size);
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, wiiu->bloom.ps.program, size);
+      matrix_4x4_identity((*wiiu->bloom.mvp));
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK,
+            wiiu->bloom.mvp, sizeof(*wiiu->bloom.mvp));
+      wiiu->bloom.passes = menu_bloom_plan(wiiu->bloom.plan, small, true);
+      for (i = 0; i < wiiu->bloom.passes; i++)
+         for (j = 0; j < 4; j++)
+         {
+            tex_shader_vertex_t *v = &wiiu->bloom.v[i * 4 + j];
+            v->coord.u = (float)(j & 1);
+            v->coord.v = (float)(j >> 1);
+            v->pos.x = v->coord.u * 2.0f - 1.0f;
+            v->pos.y = 1.0f - v->coord.v * 2.0f;
+            memcpy(&v->color.r, wiiu->bloom.plan[i].params,
+                  sizeof(wiiu->bloom.plan[i].params));
+         }
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
+            wiiu->bloom.v, MENU_BLOOM_PASSES * 4 * sizeof(*wiiu->bloom.v));
+      for (i = 0; i < 2; i++)
+      {
+         GX2Texture *t = &wiiu->bloom.tex[i];
+         GX2ColorBuffer *cb = &wiiu->bloom.cb[i];
+         t->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
+         t->surface.width = VIDEO_SCALE_W(small);
+         t->surface.height = VIDEO_SCALE_H(small);
+         t->surface.depth = 1;
+         t->surface.mipLevels = 1;
+         t->surface.format = GX2_SURFACE_FORMAT_FLOAT_R16_G16_B16_A16;
+         t->surface.use = GX2_SURFACE_USE_TEXTURE | GX2_SURFACE_USE_COLOR_BUFFER;
+         t->viewNumSlices = 1;
+         t->viewNumMips = 1;
+         t->compMap = GX2_COMP_SEL(_R, _G, _B, _A);
+         GX2CalcSurfaceSizeAndAlignment(&t->surface);
+         t->surface.image = MEM2_alloc(t->surface.imageSize, t->surface.alignment);
+         if (!t->surface.image)
+            goto error;
+         GX2Invalidate(GX2_INVALIDATE_MODE_CPU, t->surface.image, t->surface.imageSize);
+         GX2InitTextureRegs(t);
+         cb->surface = t->surface;
+         cb->viewNumSlices = 1;
+         GX2InitColorBufferRegs(cb);
+      }
+      wiiu->bloom.dims = small;
+   }
+   GX2ClearColor(&wiiu->bloom.cb[0], 0, 0, 0, 0);
+   GX2SetColorBuffer(&wiiu->bloom.cb[0], GX2_RENDER_TARGET_0);
+   GX2SetViewport(0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small), 0, 1);
+   GX2SetScissor(0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small));
+   return small;
+error:
+   wiiu->bloom.failed = true;
+   return 0;
+}
+
+static void gfx_display_wiiu_bloom_end(void *data, unsigned dims, bool defer)
+{
+   wiiu_video_t *wiiu = (wiiu_video_t*)data;
+   unsigned i;
+   (void)defer;
+   for (i = 0; i < wiiu->bloom.passes; i++)
+   {
+      const menu_bloom_pass_t *pass = &wiiu->bloom.plan[i];
+      bool output                   = pass->dst == MENU_BLOOM_OUTPUT;
+      GX2Texture *source            = &wiiu->bloom.tex[pass->src];
+      unsigned target_dims          = output ? dims : wiiu->bloom.dims;
+      /* Added onto a cleared image is written over it */
+      if (!output && !pass->add)
+         GX2ClearColor(&wiiu->bloom.cb[pass->dst], 0, 0, 0, 0);
+      GX2Invalidate(GX2_INVALIDATE_MODE_TEXTURE, source->surface.image,
+            source->surface.imageSize);
+      GX2SetColorBuffer(output ? &wiiu->color_buffer
+            : &wiiu->bloom.cb[pass->dst], GX2_RENDER_TARGET_0);
+      GX2SetViewport(0, 0, VIDEO_SCALE_W(target_dims), VIDEO_SCALE_H(target_dims), 0, 1);
+      GX2SetScissor(0, 0, VIDEO_SCALE_W(target_dims), VIDEO_SCALE_H(target_dims));
+      GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
+      GX2SetShader(&tex_shader);
+      GX2SetPixelShader(&wiiu->bloom.ps);
+      GX2SetVertexUniformBlock(1, sizeof(*wiiu->bloom.mvp), wiiu->bloom.mvp);
+      GX2SetAttribBuffer(0, MENU_BLOOM_PASSES * 4 * sizeof(*wiiu->bloom.v), sizeof(*wiiu->bloom.v), wiiu->bloom.v);
+      GX2SetPixelTexture(source, 0);
+      GX2SetPixelSampler(&wiiu->sampler_linear[RARCH_WRAP_EDGE], 0);
+      GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_ONE,
+            GX2_BLEND_MODE_ONE, GX2_BLEND_COMBINE_MODE_ADD,
+            GX2_ENABLE, GX2_BLEND_MODE_ZERO, GX2_BLEND_MODE_ONE, GX2_BLEND_COMBINE_MODE_ADD);
+      GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, 4, i * 4, 1);
+   }
 }
 
 static void gfx_display_wiiu_scissor_begin(void *data, unsigned video_dims,
@@ -1188,6 +1374,7 @@ static void *gx2_init(const video_info_t *video)
    GX2InitShader(&sprite_shader);
    GX2InitShader(&ribbon_simple_shader);
    GX2InitShader(&ribbon_shader);
+   GX2InitShader(&ribbon_stars_shader);
    GX2InitShader(&bokeh_shader);
    GX2InitShader(&snow_shader);
    GX2InitShader(&snow_simple_shader);
@@ -1282,7 +1469,7 @@ static void *gx2_init(const video_info_t *video)
    wiiu->vertex_cache.v                = MEM2_alloc(wiiu->vertex_cache.size
          * sizeof(*wiiu->vertex_cache.v), GX2_VERTEX_BUFFER_ALIGNMENT);
 
-   wiiu->vertex_cache_tex.size         = 0x1000;
+   wiiu->vertex_cache_tex.size         = 0x4000;
    wiiu->vertex_cache_tex.current      = 0;
    wiiu->vertex_cache_tex.v            = MEM2_alloc(wiiu->vertex_cache_tex.size
          * sizeof(*wiiu->vertex_cache_tex.v), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -1808,10 +1995,16 @@ static void gx2_free(void *data)
    GX2SetDRCEnable(GX2_DISABLE);
 
    GX2DestroyShader(&frame_shader);
+   MEM2_free(wiiu->bloom.v);
+   MEM2_free(wiiu->bloom.mvp);
+   MEM2_free(wiiu->bloom.ps.program);
+   MEM2_free(wiiu->bloom.tex[0].surface.image);
+   MEM2_free(wiiu->bloom.tex[1].surface.image);
    GX2DestroyShader(&tex_shader);
    GX2DestroyShader(&sprite_shader);
    GX2DestroyShader(&ribbon_simple_shader);
    GX2DestroyShader(&ribbon_shader);
+   GX2DestroyShader(&ribbon_stars_shader);
    GX2DestroyShader(&bokeh_shader);
    GX2DestroyShader(&snow_shader);
    GX2DestroyShader(&snow_simple_shader);
@@ -1842,7 +2035,6 @@ static void gx2_free(void *data)
    MEM2_free(wiiu->menu.v);
    MEM2_free(wiiu->vertex_cache.v);
    MEM2_free(wiiu->vertex_cache_tex.v);
-   MEM2_free(wiiu->menu_shader_vbo);
    MEM2_free(wiiu->menu_shader_ubo);
 
    MEM1_free(wiiu->color_buffer.surface.image);
@@ -2565,6 +2757,7 @@ static bool gx2_frame(void *data, const void *frame,
 
    wiiu->vertex_cache.current     = 0;
    wiiu->vertex_cache_tex.current = 0;
+   wiiu->ribbon_vertices = 0;
    GX2SetAttribBuffer(0, wiiu->vertex_cache.size * sizeof(*wiiu->vertex_cache.v),
                       sizeof(*wiiu->vertex_cache.v), wiiu->vertex_cache.v);
    GX2SetPixelSampler(&wiiu->sampler_linear[RARCH_WRAP_EDGE],
@@ -3050,5 +3243,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    true,
    true,
    gfx_display_wiiu_scissor_begin,
-   gfx_display_wiiu_scissor_end
+   gfx_display_wiiu_scissor_end,
+   NULL,
+   gfx_display_wiiu_bloom_begin,
+   gfx_display_wiiu_bloom_end,
+   NULL
 };

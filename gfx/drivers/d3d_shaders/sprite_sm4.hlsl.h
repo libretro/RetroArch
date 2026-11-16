@@ -285,3 +285,64 @@ SRC(
       };
 
 )
+
+#include "../xmb_plastic.h"
+#define vec2 float2
+#define vec3 float3
+#define vec4 float4
+#define mix lerp
+#define XMB_SAMPLE(p) t0.Sample(s0, p)
+#define XMB_SRC(x) SRC(x)
+SRC(
+   float4 PSMainXMB(PSInput input) : SV_TARGET
+   {
+      float2 uv = input.texcoord;
+      float4 tint = input.color;
+)
+XMB_SRC(XMB_PLASTIC_SAMPLE)
+XMB_SRC(XMB_PLASTIC_LIGHT)
+XMB_SRC(XMB_PLASTIC_COLOR)
+SRC(
+      return SpriteEncodeHDR(plastic);
+   }
+)
+#define dFdx ddx
+#define dFdy ddy
+#define XMB_COVERAGE(p) XMB_SAMPLE(p).a
+SRC(
+   float4 PSMainXMBFont(PSInput input) : SV_TARGET
+   {
+      float2 uv = input.texcoord;
+      float4 tint = input.color;
+)
+XMB_SRC(XMB_FONT_SAMPLE)
+XMB_SRC(XMB_FONT_LIGHT)
+XMB_SRC(XMB_FONT_COLOR)
+SRC(
+      return SpriteEncodeHDR(plastic);
+   }
+)
+#undef XMB_COVERAGE
+#define XMB_COVERAGE(p) XMB_SAMPLE(p).r
+SRC(
+   float4 PSMainXMBFontA16(PSInput input) : SV_TARGET
+   {
+      float2 uv = input.texcoord;
+      float4 tint = input.color;
+)
+XMB_SRC(XMB_FONT_SAMPLE)
+XMB_SRC(XMB_FONT_LIGHT)
+XMB_SRC(XMB_FONT_COLOR)
+SRC(
+      return SpriteEncodeHDR(plastic);
+   }
+)
+#undef XMB_COVERAGE
+#undef dFdx
+#undef dFdy
+#undef XMB_SRC
+#undef XMB_SAMPLE
+#undef mix
+#undef vec2
+#undef vec3
+#undef vec4

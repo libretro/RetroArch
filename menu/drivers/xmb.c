@@ -1112,6 +1112,7 @@ static void xmb_draw_icon(
       gfx_display_ctx_driver_t *dispctx,
       unsigned video_dims,
       bool shadows_enable,
+      bool plastic,
       int icon_size_x,
       int icon_size_y,
       uintptr_t texture,
@@ -1170,8 +1171,6 @@ static void xmb_draw_icon(
          matrix_4x4_multiply(mymat_tmp, matrix_scaled, mymat_tmp);
       }
    }
-   else if (mymat)
-      mymat_tmp = *mymat;
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -1190,7 +1189,7 @@ static void xmb_draw_icon(
    draw.rotation        = rotation;
    draw.scale_factor    = scale_factor;
    draw.coords          = &coords;
-   draw.matrix_data     = &mymat_tmp;
+   draw.matrix_data     = dispctx->handles_transform ? mymat : &mymat_tmp;
    draw.texture         = texture;
    draw.pipeline_id     = 0;
 
@@ -1202,11 +1201,11 @@ static void xmb_draw_icon(
          0.0f, 0.0f, 0.0f, 0.0f,
          0.0f, 0.0f, 0.0f, 0.0f,
       };
-      gfx_display_set_alpha(shadow_color, color[3] * GFX_SHADOW_ALPHA * 0.75f);
+      gfx_display_set_alpha(shadow_color, color[3] * GFX_SHADOW_ALPHA * 0.18f);
 
       coords.color      = shadow_color;
-      draw.pos          = VIDEO_POS_PACK(VIDEO_PX(x + shadow_offset),
-            VIDEO_PX(height - y - shadow_offset));
+      draw.pos          = VIDEO_POS_PACK(VIDEO_PX(x),
+            VIDEO_PX(height - y + shadow_offset));
 
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
       if (scale_factor < 1)
@@ -1222,6 +1221,8 @@ static void xmb_draw_icon(
    }
 
    coords.color         = (const float*)color;
+   if (plastic)
+      draw.pipeline_id  = VIDEO_SHADER_XMB_PLASTIC;
    draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x), VIDEO_PX(height - y));
 
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
@@ -1664,6 +1665,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             dispctx,
             video_dims,
             true,
+            (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
             icon_size,
             icon_size,
             input_menu_swap_ok_cancel_buttons
@@ -1728,6 +1730,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             dispctx,
             video_dims,
             true,
+            (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
             icon_size,
             icon_size,
             input_menu_swap_ok_cancel_buttons
@@ -5879,6 +5882,7 @@ XMB_NOINLINE static int xmb_draw_item(
             ctx->dispctx,
             video_dims,
             (show_icon_thumbnail) ? false : shadows_enable,
+            (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
             gfx_icon_width,
             gfx_icon_height,
             texture,
@@ -5908,6 +5912,7 @@ XMB_NOINLINE static int xmb_draw_item(
             ctx->dispctx,
             video_dims,
             shadows_enable,
+            (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
             xmb->icon_size,
             xmb->icon_size,
             texture_switch,
@@ -5956,6 +5961,7 @@ XMB_NOINLINE static int xmb_draw_item(
                ctx->dispctx,
                video_dims,
                shadows_enable,
+               (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                icon_size,
                icon_size,
                tex,
@@ -8030,6 +8036,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       unsigned xmb_color_theme,
       float menu_wallpaper_opacity,
       bool libretro_running,
+      bool bloom,
       float alpha,
       uintptr_t texture_id,
       const char *bg_file_path,
@@ -8088,6 +8095,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_mesh_draw_t md;
       const gfx_display_mesh_t *mesh = gfx_display_mesh_fullscreen();
 
+      md.vertex_count = 0;
       switch (menu_shader_pipeline)
       {
          default:
@@ -8099,8 +8107,10 @@ XMB_NOINLINE static void xmb_draw_bg(
             mesh       = ribbon_mesh;
             break;
          case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
-            md.program = GFX_MESH_PROGRAM_RIBBON_SIMPLE;
-            mesh       = ribbon_mesh;
+            /* The sheet alone: the grid comes before the dust */
+            md.program      = GFX_MESH_PROGRAM_RIBBON_SIMPLE;
+            md.vertex_count = XMB_RIBBON_VERTICES;
+            mesh            = ribbon_mesh;
             break;
 #if !defined(VITA)
          case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
@@ -8121,6 +8131,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       md.mvp     = NULL;
       md.color   = draw.color;
       md.texture = draw.texture;
+      md.bloom   = bloom;
       gfx_display_mesh_draw(p_disp, userdata, video_dims, mesh, &md);
    }
 #endif
@@ -8202,6 +8213,7 @@ static void xmb_draw_no_thumbnail_available(
                dispctx,
                video_dims,
                false,
+               (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                icon_size,
                icon_size,
                GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_IMAGE]),
@@ -8777,6 +8789,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (ctx_gen != xmb->context_generation)
       goto ctx_destroyed;
 
+   xmb->raster_block.xmb_plastic  =
+         (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0;
+   xmb->raster_block2.xmb_plastic = xmb->raster_block.xmb_plastic;
    font_driver_bind_block(xmb->font,  &xmb->raster_block);
    font_driver_bind_block(xmb->font2, &xmb->raster_block2);
 
@@ -8822,6 +8837,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             color_theme,
             MIN(xmb->alpha, menu_wallpaper_opacity),
             libretro_running,
+            (video_info->menu.flags
+             & VIDEO_MENU_FLAG_XMB_RIBBON_BLOOM_ENABLE) != 0,
             MIN(xmb->alpha, alpha_factor / 100),
             tex_bg,
             xmb->bg_file_path,
@@ -8967,6 +8984,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                shadows_enable,
+               (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                icon_size,
                icon_size,
                xmb->current_menu_icon,
@@ -8989,6 +9007,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                shadows_enable,
+               (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                xmb->icon_size,
                xmb->icon_size,
                tex_list[XMB_TEXTURE_ARROW],
@@ -9049,6 +9068,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   dispctx,
                   video_info->dims,
                   shadows_enable,
+                  (video_info->menu.flags & VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE) != 0,
                   xmb->icon_size,
                   xmb->icon_size,
                   texture,
@@ -9480,6 +9500,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   dispctx,
                   video_info->dims,
                   shadows_enable,
+                  false,
                   icon_size,
                   icon_size,
                   tex_list[
@@ -9544,6 +9565,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                shadows_enable,
+               false,
                icon_size,
                icon_size,
                tex_list[XMB_TEXTURE_CLOCK],
@@ -9791,45 +9813,50 @@ ctx_destroyed:
    } /* end of context generation scope */
 }
 
-static void xmb_init_ribbon(xmb_handle_t * xmb)
+static gfx_display_mesh_t *xmb_create_ribbon(void)
 {
    gfx_display_mesh_desc_t desc;
-   unsigned r, c, col;
-   unsigned i                          = 0;
-   unsigned vertices_total             = XMB_RIBBON_VERTICES;
-   gfx_display_mesh_vertex_t *vertices = (gfx_display_mesh_vertex_t*)
-      calloc(vertices_total, sizeof(*vertices));
-
-   /* The ribbon is a decorative background; without memory for it the
-    * menu goes without */
-   if (!vertices)
-      return;
-
-   /* One strip over the 64x64 grid, row after row, each row running
-    * back the way the one before came. The ribbon programs read the
-    * position only. */
-   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
-   {
-      for (c = 0; c < XMB_RIBBON_COLS; c++)
-      {
-         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
-         vertices[i].x     = ((float)col) / (XMB_RIBBON_COLS - 1) * 2.0f - 1.0f;
-         vertices[i].y     = ((float)r)   / (XMB_RIBBON_ROWS - 1) * 2.0f - 1.0f;
-         vertices[i + 1].x = ((float)col) / (XMB_RIBBON_COLS - 1) * 2.0f - 1.0f;
-         vertices[i + 1].y = ((float)(r + 1)) / (XMB_RIBBON_ROWS - 1) * 2.0f - 1.0f;
-         i                += 2;
-      }
-   }
-
-   desc.vertices     = vertices;
+   gfx_display_mesh_t *mesh;
+   unsigned r, c, col, i = 0;
+   desc.vertices     = NULL;
    desc.indices      = NULL;
-   desc.vertex_count = vertices_total;
+   desc.vertex_count = XMB_RIBBON_VERTICES + GFX_DISPLAY_RIBBON_STAR_VERTICES;
    desc.index_count  = 0;
    desc.topology     = GFX_MESH_TRIANGLE_STRIP;
    desc.flags        = GFX_MESH_FLAG_POSITIONS;
-   xmb->ribbon_mesh  = gfx_display_mesh_create(&desc);
-
-   free(vertices);
+   if (!(mesh = gfx_display_mesh_create(&desc)))
+      return NULL;
+   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
+      for (c = 0; c < XMB_RIBBON_COLS; c++)
+      {
+         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
+         mesh->vertices[i].x = (float)col / (XMB_RIBBON_COLS - 1) * 2.0f - 1.0f;
+         mesh->vertices[i].y = (float)r / (XMB_RIBBON_ROWS - 1) * 2.0f - 1.0f;
+         mesh->vertices[i + 1].x = mesh->vertices[i].x;
+         mesh->vertices[i + 1].y = (float)(r + 1) / (XMB_RIBBON_ROWS - 1) * 2.0f - 1.0f;
+         i += 2;
+      }
+   for (r = 0; r < 48; r++)
+   {
+      /* Repeated endpoints disconnect each billboard's strip. */
+      mesh->vertices[i] = mesh->vertices[i - 1];
+      mesh->vertices[i + 1].x = -1.0f;
+      mesh->vertices[i + 1].y = 2.0f + 4.0f * r;
+      mesh->vertices[i + 2] = mesh->vertices[i + 1];
+      mesh->vertices[i + 3].x = -1.0f;
+      mesh->vertices[i + 3].y = 3.0f + 4.0f * r;
+      mesh->vertices[i + 4].x = 1.0f;
+      mesh->vertices[i + 4].y = 2.0f + 4.0f * r;
+      mesh->vertices[i + 5].x = 1.0f;
+      mesh->vertices[i + 5].y = 3.0f + 4.0f * r;
+      i += 6;
+   }
+   for (i = 0; i < mesh->vertex_count; i++)
+   {
+      mesh->positions[2 * i] = mesh->vertices[i].x;
+      mesh->positions[2 * i + 1] = mesh->vertices[i].y;
+   }
+   return mesh;
 }
 
 static void xmb_menu_animation_update_time(
@@ -9903,7 +9930,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb_init_horizontal_list(xmb);
 
-   xmb_init_ribbon(xmb);
+   xmb->ribbon_mesh = xmb_create_ribbon();
 
    /* Initialise screensaver */
    if (!(xmb->screensaver = menu_screensaver_init()))

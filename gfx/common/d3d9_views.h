@@ -126,20 +126,27 @@ static bool D3D9V_FN(views_target_retire)(d3d9_video_t *d3d,
    return true;
 }
 
-/* A render target of ARGB8 sized @dims */
-static bool D3D9V_FN(views_target_make)(d3d9_video_t *d3d,
-      d3d9_views_target_t *t, unsigned dims)
+static bool D3D9V_FN(views_target_make_format)(d3d9_video_t *d3d,
+      d3d9_views_target_t *t, unsigned dims, D3DFORMAT format)
 {
    if (     SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
                VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), 1,
-               D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
+               D3DUSAGE_RENDERTARGET, format, D3DPOOL_DEFAULT,
                &t->tex, NULL))
          && SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(t->tex, 0,
                &t->surf)))
       return true;
+   D3D9V_FN(views_target_retire)(d3d, t);
+   return false;
+}
+
+static bool D3D9V_FN(views_target_make)(d3d9_video_t *d3d,
+      d3d9_views_target_t *t, unsigned dims)
+{
+   if (D3D9V_FN(views_target_make_format)(d3d, t, dims, D3DFMT_A8R8G8B8))
+      return true;
    RARCH_WARN(D3D9V_TAG " Views can't draw into a %ux%u image. "
          "Drawing without it.\n", VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
-   D3D9V_FN(views_target_retire)(d3d, t);
    return false;
 }
 

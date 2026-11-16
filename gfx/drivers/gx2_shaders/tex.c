@@ -171,3 +171,117 @@ GX2Shader tex_shader =
    },
    .attribute_stream = attribute_stream,
 };
+
+__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+static struct
+{
+   u64 cf[16];
+   u64 coords[16];
+   u64 color[64];
+   u64 tex[10];
+} bloom_program =
+{
+   {
+      ALU(16, 16),
+      TEX(96, 5) VALID_PIX,
+      ALU(32, 64),
+      EXP_DONE(PIX0, _R0, _x, _y, _z, _w) END_OF_PROGRAM
+   },
+   {
+      ALU_MULADD(_R2,_x, _R1,_x, ALU_SRC_LITERAL,_x, _R0,_x) ALU_LAST,
+      ALU_LITERAL(0x3FB13B10),
+      ALU_MULADD(_R2,_y, _R1,_y, ALU_SRC_LITERAL,_x, _R0,_y) ALU_LAST,
+      ALU_LITERAL(0x3FB13B10),
+      ALU_MULADD(_R3,_x, _R1,_x, ALU_SRC_LITERAL,_x, _R0,_x) ALU_LAST,
+      ALU_LITERAL(0xBFB13B10),
+      ALU_MULADD(_R3,_y, _R1,_y, ALU_SRC_LITERAL,_x, _R0,_y) ALU_LAST,
+      ALU_LITERAL(0xBFB13B10),
+      ALU_MULADD(_R4,_x, _R1,_x, ALU_SRC_LITERAL,_x, _R0,_x) ALU_LAST,
+      ALU_LITERAL(0x404EC4EB),
+      ALU_MULADD(_R4,_y, _R1,_y, ALU_SRC_LITERAL,_x, _R0,_y) ALU_LAST,
+      ALU_LITERAL(0x404EC4EB),
+      ALU_MULADD(_R5,_x, _R1,_x, ALU_SRC_LITERAL,_x, _R0,_x) ALU_LAST,
+      ALU_LITERAL(0xC04EC4EB),
+      ALU_MULADD(_R5,_y, _R1,_y, ALU_SRC_LITERAL,_x, _R0,_y) ALU_LAST,
+      ALU_LITERAL(0xC04EC4EB)
+   },
+   {
+      ALU_ADD(_R0,_x, _R0,_x, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R0,_x, _R0,_x, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R0,_y, _R0,_y, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R0,_y, _R0,_y, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R0,_z, _R0,_z, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R0,_z, _R0,_z, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R2,_x, _R2,_x, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R2,_x, _R2,_x, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R2,_y, _R2,_y, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R2,_y, _R2,_y, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R2,_z, _R2,_z, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R2,_z, _R2,_z, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R3,_x, _R3,_x, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R3,_x, _R3,_x, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R3,_y, _R3,_y, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R3,_y, _R3,_y, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R3,_z, _R3,_z, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R3,_z, _R3,_z, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R4,_x, _R4,_x, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R4,_x, _R4,_x, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R4,_y, _R4,_y, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R4,_y, _R4,_y, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R4,_z, _R4,_z, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R4,_z, _R4,_z, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R5,_x, _R5,_x, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R5,_x, _R5,_x, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R5,_y, _R5,_y, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R5,_y, _R5,_y, ALU_SRC_0,_x) ALU_LAST,
+      ALU_ADD(_R5,_z, _R5,_z, _R1 _NEG,_z) ALU_LAST,
+      ALU_MAX(_R5,_z, _R5,_z, ALU_SRC_0,_x) ALU_LAST,
+      ALU_MUL(_R0,_x, _R0,_x, ALU_SRC_LITERAL,_x) ALU_LAST,
+      ALU_LITERAL(0x3E6879C4),
+      ALU_MULADD(_R0,_x, _R2,_x, ALU_SRC_LITERAL,_x, _R0,_x) ALU_LAST,
+      ALU_LITERAL(0x3EA1E710),
+      ALU_MULADD(_R0,_x, _R3,_x, ALU_SRC_LITERAL,_x, _R0,_x) ALU_LAST,
+      ALU_LITERAL(0x3EA1E710),
+      ALU_MULADD(_R0,_x, _R4,_x, ALU_SRC_LITERAL,_x, _R0,_x) ALU_LAST,
+      ALU_LITERAL(0x3D8FE9E0),
+      ALU_MULADD(_R0,_x, _R5,_x, ALU_SRC_LITERAL,_x, _R0,_x) ALU_LAST,
+      ALU_LITERAL(0x3D8FE9E0),
+      ALU_MUL(_R0,_x, _R0,_x, _R1,_w) ALU_LAST,
+      ALU_MUL(_R0,_y, _R0,_y, ALU_SRC_LITERAL,_x) ALU_LAST,
+      ALU_LITERAL(0x3E6879C4),
+      ALU_MULADD(_R0,_y, _R2,_y, ALU_SRC_LITERAL,_x, _R0,_y) ALU_LAST,
+      ALU_LITERAL(0x3EA1E710),
+      ALU_MULADD(_R0,_y, _R3,_y, ALU_SRC_LITERAL,_x, _R0,_y) ALU_LAST,
+      ALU_LITERAL(0x3EA1E710),
+      ALU_MULADD(_R0,_y, _R4,_y, ALU_SRC_LITERAL,_x, _R0,_y) ALU_LAST,
+      ALU_LITERAL(0x3D8FE9E0),
+      ALU_MULADD(_R0,_y, _R5,_y, ALU_SRC_LITERAL,_x, _R0,_y) ALU_LAST,
+      ALU_LITERAL(0x3D8FE9E0),
+      ALU_MUL(_R0,_y, _R0,_y, _R1,_w) ALU_LAST,
+      ALU_MUL(_R0,_z, _R0,_z, ALU_SRC_LITERAL,_x) ALU_LAST,
+      ALU_LITERAL(0x3E6879C4),
+      ALU_MULADD(_R0,_z, _R2,_z, ALU_SRC_LITERAL,_x, _R0,_z) ALU_LAST,
+      ALU_LITERAL(0x3EA1E710),
+      ALU_MULADD(_R0,_z, _R3,_z, ALU_SRC_LITERAL,_x, _R0,_z) ALU_LAST,
+      ALU_LITERAL(0x3EA1E710),
+      ALU_MULADD(_R0,_z, _R4,_z, ALU_SRC_LITERAL,_x, _R0,_z) ALU_LAST,
+      ALU_LITERAL(0x3D8FE9E0),
+      ALU_MULADD(_R0,_z, _R5,_z, ALU_SRC_LITERAL,_x, _R0,_z) ALU_LAST,
+      ALU_LITERAL(0x3D8FE9E0),
+      ALU_MUL(_R0,_z, _R0,_z, _R1,_w) ALU_LAST,
+      ALU_MOV(_R0,_w, ALU_SRC_0,_x) ALU_LAST
+   },
+   {
+      TEX_SAMPLE(_R0,_x,_y,_z,_w, _R0,_x,_y,_0,_0, _t0, _s0),
+      TEX_SAMPLE(_R2,_x,_y,_z,_w, _R2,_x,_y,_0,_0, _t0, _s0),
+      TEX_SAMPLE(_R3,_x,_y,_z,_w, _R3,_x,_y,_0,_0, _t0, _s0),
+      TEX_SAMPLE(_R4,_x,_y,_z,_w, _R4,_x,_y,_0,_0, _t0, _s0),
+      TEX_SAMPLE(_R5,_x,_y,_z,_w, _R5,_x,_y,_0,_0, _t0, _s0)
+   }
+};
+
+const void *gx2_bloom_program(size_t *size)
+{
+   *size = sizeof(bloom_program);
+   return &bloom_program;
+}

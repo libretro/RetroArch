@@ -53,6 +53,7 @@
 #include "../include/Cg/cg.h"
 
 #include "../video_shader_parse.h"
+#include "../common/xmb_plastic.h"
 #include "../../core.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -187,7 +188,7 @@ typedef struct cg_shader_data
    CGparameter attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    CGprofile cgVProf;
    CGprofile cgFProf;
-   struct shader_program_cg prg[GFX_MAX_SHADERS];
+   struct shader_program_cg prg[VIDEO_SHADER_PROGRAM_COUNT];
    size_t attribs_index;
    GLuint lut_textures[GFX_MAX_TEXTURES];
    unsigned active_idx;
@@ -281,7 +282,10 @@ static void gl_cg_set_uniform_parameter(
          cgGLSetParameter3fv(location, param->result.floatv);
          break;
       case UNIFORM_4FV:
-         cgGLSetParameter3fv(location, param->result.floatv);
+         if (param->count)
+            cgGLSetParameterArray4f(location, 0, param->count, param->result.floatv);
+         else
+            cgGLSetParameter4fv(location, param->result.floatv);
          break;
       case UNIFORM_1I:
          /* Unimplemented - Cg limitation */
@@ -527,7 +531,7 @@ static void gl_cg_deinit_progs(void *data)
    cgGLUnbindProgram(cg->cgVProf);
 
    /* Programs may alias [0]. */
-   for (i = 1; i < GFX_MAX_SHADERS; i++)
+   for (i = 1; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
    {
       if (cg->prg[i].fprg && cg->prg[i].fprg != cg->prg[0].fprg)
          cgDestroyProgram(cg->prg[i].fprg);
@@ -1003,7 +1007,7 @@ static void gl_cg_init_menu_shaders(void *data)
 #ifdef HAVE_SHADERPIPELINE
    shader_prog_info.is_file  = false;
 
-   shader_prog_info.combined = stock_xmb_ribbon;
+   shader_prog_info.combined = stock_xmb_ribbon();
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU,
@@ -1136,6 +1140,36 @@ static void *gl_cg_init(void *data, const char *path)
 
    /* No need to apply Android hack in Cg. */
    cg->prg[VIDEO_SHADER_STOCK_BLEND] = cg->prg[0];
+   for (i = VIDEO_SHADER_XMB_PLASTIC; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
+   {
+      char source[2048];
+      struct shader_program_info info;
+      const char *prefix =
+         "#define vec2 float2\n#define vec3 float3\n#define vec4 float4\n"
+         "#define mix lerp\n#define XMB_SAMPLE(p) tex2D(s0,p)\n"
+         "#define dFdx ddx\n#define dFdy ddy\n"
+         "#define XMB_COVERAGE(p) XMB_SAMPLE(p).a\n"
+         "struct input{float2 tex_coord;float4 color;float4 vertex_coord;"
+         "uniform float4x4 mvp_matrix;};"
+         "struct vertex_data{float2 tex;float4 color;};"
+         "float4 main_fragment(input IN,vertex_data vert,"
+         "uniform sampler2D s0:TEXUNIT0):COLOR{"
+         "float2 uv=vert.tex;float4 tint=vert.color;";
+      const char *suffix =
+         "return plastic;}void main_vertex(out float4 oPosition:POSITION,"
+         "input IN,out vertex_data vert){"
+         "oPosition=mul(IN.mvp_matrix,IN.vertex_coord);"
+         "vert=vertex_data(IN.tex_coord,IN.color);}";
+      if (xmb_plastic_source(source, sizeof(source), prefix, suffix,
+               i == VIDEO_SHADER_XMB_FONT_PLASTIC))
+      {
+         info.combined = source;
+         info.is_file = false;
+         if (gl_cg_compile_program(cg, i,
+                  &cg->prg[i], &info))
+            gl_cg_set_program_attributes(cg, i);
+      }
+   }
 
    gl_cg_set_shaders(cg->prg[1].fprg, cg->prg[1].vprg);
 
@@ -1153,6 +1187,10 @@ error:
 static void gl_cg_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
+   if (cg && (idx == VIDEO_SHADER_XMB_PLASTIC
+         || idx == VIDEO_SHADER_XMB_FONT_PLASTIC)
+         && (!cg->prg[idx].vprg || !cg->prg[idx].fprg))
+      idx = VIDEO_SHADER_STOCK_BLEND;
    if (cg && cg->prg[idx].vprg && cg->prg[idx].fprg)
    {
       if (set_active)

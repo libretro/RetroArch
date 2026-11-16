@@ -864,6 +864,9 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    }
 #endif
 
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
+      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_XMB_PLASTIC, true);
+
    gl->shader->set_coords(gl->shader_data, &coords);
    gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
@@ -872,6 +875,9 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
 
    /* Menu draws use a triangle-strip layout. */
    glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
+
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
+      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.color     = gl->white_color_ptr;
 }
@@ -885,9 +891,7 @@ static void gfx_display_gl2_draw_pipeline(
 #ifdef HAVE_SHADERPIPELINE
    struct uniform_info uniform_param;
    gl2_t             *gl            = (gl2_t*)data;
-   /* The effects' clock, one step ahead, as this driver has always
-    * drawn them */
-   float t                          = p_disp->effect_time + 0.01f;
+   float t                          = p_disp->effect_time;
 
    draw->pos                        = VIDEO_POS_PACK(0, 0);
    draw->coords                     = gfx_display_effect_coords(p_disp);
@@ -898,6 +902,8 @@ static void gfx_display_gl2_draw_pipeline(
    switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
+         glBlendFunc(GL_ONE, GL_ONE);
+         break;
       case VIDEO_SHADER_MENU_2:
          glBlendFunc(GL_DST_COLOR, GL_ONE);
          break;
@@ -917,9 +923,6 @@ static void gfx_display_gl2_draw_pipeline(
          gl->shader->use(gl, gl->shader_data, draw->pipeline_id,
                true);
 
-         if (t > 65536.0f)
-            t -= 65536.0f;
-
          uniform_param.type              = UNIFORM_1F;
          uniform_param.enabled           = true;
          uniform_param.location          = 0;
@@ -933,6 +936,14 @@ static void gfx_display_gl2_draw_pipeline(
 
          uniform_param.result.f.v0       = t;
 
+         if (draw->pipeline_id == VIDEO_SHADER_MENU)
+         {
+            uniform_param.type = UNIFORM_4FV;
+            uniform_param.count = 50;
+            uniform_param.lookup.ident = "Ribbon";
+            uniform_param.lookup.add_prefix = false;
+            uniform_param.result.floatv = (float*)gfx_display_ribbon_data(p_disp);
+         }
          gl->shader->set_uniform_parameter(gl->shader_data,
                &uniform_param, NULL);
          break;
@@ -1325,12 +1336,17 @@ static void gl2_raster_font_draw_vertices(gl2_t *gl,
 
    if (gl->shader)
    {
+      if (font->block && font->block->xmb_plastic)
+         gl->shader->use(gl, gl->shader_data,
+               VIDEO_SHADER_XMB_FONT_PLASTIC, true);
       gl->shader->set_coords(gl->shader_data, coords);
       gl->shader->set_mvp(gl->shader_data,
             &gl->mvp_no_rot);
    }
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
+   if (gl->shader && font->block && font->block->xmb_plastic)
+      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 }
 
 #define GL2_RASTER_FONT_FLUSH() \
@@ -7354,6 +7370,11 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
       glBindVertexArray(chain->vao);
 #endif
+#ifdef HAVE_GL_MENU_BLOOM
+   /* Before the frame draws into any framebuffer of its own */
+   if (gl->flags & GL2_FLAG_HAVE_FBO)
+      gfx_display_bloom_prepass(gl);
+#endif
 
    gl->shader->use(gl, gl->shader_data, 1, true);
 
@@ -8060,6 +8081,9 @@ static void gl2_free(void *data)
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+#ifdef HAVE_GL_MENU_BLOOM
+   gl_menu_bloom_free(&gl->menu_bloom);
+#endif
 #ifdef HAVE_GL2_XR
    gl2_desktop_xr_free(gl);
 #endif
@@ -10704,6 +10728,35 @@ video_driver_t video_gl2 = {
    true /* max_geometry_in_place */
 };
 
+#ifdef HAVE_GL_MENU_BLOOM
+static unsigned gfx_display_gl2_bloom_begin(void *data, unsigned dims,
+      bool defer)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !(gl->flags & GL2_FLAG_HAVE_FBO))
+      return 0;
+   return gl_menu_bloom_begin(&gl->menu_bloom, dims, gl_query_core_context_in_use(),
+#ifdef HAVE_OPENGLES
+         true,
+#else
+         false,
+#endif
+         defer);
+}
+
+static void gfx_display_gl2_bloom_end(void *data, unsigned dims, bool defer)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl_menu_bloom_end(gl->menu_bloom, dims, defer);
+}
+
+static void gfx_display_gl2_bloom_composite(void *data, unsigned dims)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl_menu_bloom_composite(gl->menu_bloom, dims);
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl2_draw,
    gfx_display_gl2_draw_pipeline,
@@ -10720,8 +10773,15 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl2_scissor_begin,
    gfx_display_gl2_scissor_end,
 #ifdef HAVE_GLSL
-   gfx_display_gl2_mesh_draw
+   gfx_display_gl2_mesh_draw,
 #else
-   NULL
+   NULL,
+#endif
+#ifdef HAVE_GL_MENU_BLOOM
+   gfx_display_gl2_bloom_begin,
+   gfx_display_gl2_bloom_end,
+   gfx_display_gl2_bloom_composite
+#else
+   NULL, NULL
 #endif
 };

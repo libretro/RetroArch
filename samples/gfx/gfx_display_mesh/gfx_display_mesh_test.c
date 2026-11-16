@@ -21,13 +21,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <features/features_cpu.h>
 
 #include "gfx/gfx_display.h"
+#include "gfx/common/menu_ribbon.h"
+#include "gfx/common/menu_bloom.h"
 #include "gfx/video_driver.h"
+#include "configuration.h"
 
 static int fails = 0;
 #define CHECK(c, m) do { if (!(c)) { printf("  FAIL: %s\n", m); fails++; } } while (0)
-#define NEAR(a, b) (fabsf((a) - (b)) < 1e-5f)
+#define TEST_NEAR(a, b) (fabsf((a) - (b)) < 1e-5f)
 
 /* ---- what gfx_display.c reaches outside itself -------------------- */
 
@@ -35,6 +39,24 @@ void video_coord_array_free(video_coord_array_t *ca) { (void)ca; }
 void RARCH_LOG(const char *f, ...)  { (void)f; }
 void RARCH_WARN(const char *f, ...) { (void)f; }
 void RARCH_ERR(const char *f, ...)  { (void)f; }
+
+bool win32_message_modal_active(void) { return false; }
+bool video_context_driver_get_metrics(gfx_ctx_metrics_t *m) { (void)m; return false; }
+void *video_driver_get_ptr(void) { return NULL; }
+video_driver_state_t *video_state_get_ptr(void) { return NULL; }
+bool input_osk_native_active(void) { return false; }
+settings_t *config_get_ptr(void) { return NULL; }
+bool video_driver_has_windowed(void) { return false; }
+const char *video_driver_get_ident(void) { return "test"; }
+font_data_t *font_driver_init_first(void *data, const char *path,
+      float size, bool hint, bool threaded, const font_renderer_t *backend)
+{
+   (void)data; (void)path; (void)size; (void)hint; (void)threaded; (void)backend;
+   return NULL;
+}
+
+static retro_time_t test_time = 1000000;
+retro_time_t cpu_features_get_time_usec(void) { return test_time; }
 
 /* ---- a recording display driver ------------------------------------ */
 
@@ -61,6 +83,7 @@ static void rec_draw(gfx_display_ctx_draw_t *d, void *data, unsigned vd)
 }
 static const float *rec_effect_vertex;
 static unsigned     rec_effect_vertices;
+static float        rec_effect_time;
 static void rec_pipeline(gfx_display_ctx_draw_t *d, gfx_display_t *p,
       void *data, unsigned vd)
 {
@@ -70,6 +93,36 @@ static void rec_pipeline(gfx_display_ctx_draw_t *d, gfx_display_t *p,
    rec_pipeline_id     = d->pipeline_id;
    rec_effect_vertex   = ec ? ec->vertex : NULL;
    rec_effect_vertices = ec ? ec->vertices : 0;
+   rec_effect_time     = p->effect_time;
+}
+
+static unsigned rec_bloom_calls, rec_bloom_deferred, rec_bloom_composites;
+static unsigned rec_bloom_draws_at_composite;
+static bool rec_bloom_check_time = true;
+static unsigned rec_bloom_begin(void *data, unsigned vd, bool defer)
+{
+   (void)data;
+   rec_bloom_calls++;
+   if (defer)
+      rec_bloom_deferred++;
+   test_time += 50000;
+   return vd;
+}
+
+static void rec_bloom_end(void *data, unsigned vd, bool defer)
+{
+   (void)data; (void)vd;
+   if (!defer && rec_bloom_check_time)
+      CHECK(TEST_NEAR(rec_effect_time, 0.6f),
+            "bloom capture uses the frame's animation time");
+   test_time += 50000;
+}
+
+static void rec_bloom_composite(void *data, unsigned vd)
+{
+   (void)data; (void)vd;
+   rec_bloom_composites++;
+   rec_bloom_draws_at_composite = rec_draws;
 }
 static const float def_vert[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
 static const float def_tex[8]  = { 0, 1, 1, 1, 0, 0, 1, 0 };
@@ -101,6 +154,157 @@ static void vtx(gfx_display_mesh_vertex_t *v, float x, float y, float z,
    v->rgba[0] = r; v->rgba[1] = g; v->rgba[2] = b; v->rgba[3] = a;
 }
 
+static void ribbon_motion(void)
+{
+   menu_ribbon_t *a = (menu_ribbon_t*)calloc(1, sizeof(*a));
+   menu_ribbon_t *b = (menu_ribbon_t*)calloc(1, sizeof(*b));
+   unsigned i;
+   float time, lo = 100.0f, hi = 0.0f;
+   CHECK(a && b, "ribbon state allocation");
+   if (!a || !b)
+   {
+      free(a);
+      free(b);
+      return;
+   }
+   for (i = 0; i <= 1200; i++)
+      menu_ribbon_update(a, i / 30.0, 1280, 720, 1.0f);
+   for (i = 0; i <= 4800; i++)
+      menu_ribbon_update(b, i / 120.0, 1280, 720, 1.0f);
+   for (i = 0; i < MENU_RIBBON_UNIFORMS * 4; i++)
+      CHECK(fabsf(a->data[i / 4][i % 4] - b->data[i / 4][i % 4]) < 0.001f,
+            "ribbon and dust motion are independent of refresh rate");
+   for (i = 0; i < MENU_RIBBON_PARTICLES; i++)
+   {
+      float light = a->data[1 + i][3];
+      if (light < lo)
+         lo = light;
+      if (light > hi)
+         hi = light;
+      CHECK(a->particles[i].age >= 0.0f
+            && a->particles[i].age < a->particles[i].life,
+            "particles renew their own lifetimes");
+      CHECK(fabsf(a->particles[i].y) < 0.9f,
+            "dust remains near the ribbon");
+   }
+   CHECK(hi - lo > 0.2f, "particle brightness is not synchronized");
+   {
+      /* Above 60 Hz every frame moves on by the time it covers */
+      unsigned still = 0, uneven = 0;
+      float prev;
+      memset(b, 0, sizeof(*b));
+      menu_ribbon_update(b, 0.0, 1280, 720, 1.0f);
+      prev = b->data[0][0];
+      for (i = 1; i <= 1440; i++)
+      {
+         float step;
+         menu_ribbon_update(b, i / 144.0, 1280, 720, 1.0f);
+         step = b->data[0][0] - prev;
+         prev = b->data[0][0];
+         if (step <= 0.0f)
+            still++;
+         if (fabsf(step - 0.6f / 144.0f) > 1e-4f)
+            uneven++;
+      }
+      CHECK(still == 0, "the ribbon moves on every frame at 144 Hz");
+      CHECK(uneven == 0, "each 144 Hz frame moves the ribbon by its own time");
+   }
+   time = a->time;
+   menu_ribbon_update(a, 3600.0, 1280, 720, 0.4f);
+   CHECK(a->time - time <= 0.067f, "resume has a bounded simulation step");
+   CHECK(a->data[49][2] == 0.4f, "menu fading reaches both sheet and dust");
+   free(a);
+   free(b);
+}
+
+/* The glow's passes as the GPU runs them: bilinear, clamped reads */
+#define BW 24
+#define BH 12
+static float bloom_read(const float *img, float u, float v)
+{
+   float x = u * BW - 0.5f, y = v * BH - 0.5f;
+   int x0 = (int)floorf(x), y0 = (int)floorf(y);
+   float fx = x - x0, fy = y - y0, r = 0.0f;
+   int i, j;
+   for (j = 0; j < 2; j++)
+      for (i = 0; i < 2; i++)
+      {
+         int xi = x0 + i < 0 ? 0 : (x0 + i >= BW ? BW - 1 : x0 + i);
+         int yj = y0 + j < 0 ? 0 : (y0 + j >= BH ? BH - 1 : y0 + j);
+         r += img[yj * BW + xi] * (i ? fx : 1.0f - fx) * (j ? fy : 1.0f - fy);
+      }
+   return r;
+}
+
+static float bloom_light(const float *img, float u, float v, float t)
+{
+   float c = bloom_read(img, u, v) - t;
+   return c > 0.0f ? c : 0.0f;
+}
+
+static void bloom_run(bool floating, const float *capture, float *out)
+{
+   static float img[2][BW * BH];
+   menu_bloom_pass_t plan[MENU_BLOOM_PASSES];
+   unsigned n = menu_bloom_plan(plan, VIDEO_SCALE_PACK(BW, BH), floating);
+   unsigned i;
+   int x, y;
+   memcpy(img[0], capture, sizeof(img[0]));
+   memset(out, 0, BW * BH * sizeof(float));
+   for (i = 0; i < n; i++)
+   {
+      static float tmp[BW * BH];
+      const float *p = plan[i].params;
+      for (y = 0; y < BH; y++)
+         for (x = 0; x < BW; x++)
+         {
+            float u = (x + 0.5f) / BW, v = (y + 0.5f) / BH;
+            const float *src = img[plan[i].src];
+            float c = bloom_light(src, u, v, p[2]);
+            if (p[0] != 0.0f || p[1] != 0.0f)
+            {
+               c *= 0.227027f;
+               c += (bloom_light(src, u + p[0] * 1.384615f, v + p[1] * 1.384615f, p[2])
+                   + bloom_light(src, u - p[0] * 1.384615f, v - p[1] * 1.384615f, p[2]))
+                  * 0.316216f;
+               c += (bloom_light(src, u + p[0] * 3.230769f, v + p[1] * 3.230769f, p[2])
+                   + bloom_light(src, u - p[0] * 3.230769f, v - p[1] * 3.230769f, p[2]))
+                  * 0.0702703f;
+            }
+            tmp[y * BW + x] = c * p[3];
+         }
+      for (x = 0; x < BW * BH; x++)
+      {
+         float *dst = plan[i].dst == MENU_BLOOM_OUTPUT
+            ? &out[x] : &img[plan[i].dst][x];
+         *dst = plan[i].add ? *dst + tmp[x] : tmp[x];
+      }
+   }
+}
+
+static void bloom_plans(void)
+{
+   static float capture[BW * BH], two[BW * BH], one[BW * BH];
+   menu_bloom_pass_t plan[MENU_BLOOM_PASSES];
+   float worst = 0.0f, peak = 0.0f;
+   int i;
+   for (i = 0; i < BW * BH; i++)
+      capture[i] = (float)((i * 7919) % 97) / 40.0f;
+   bloom_run(false, capture, two);
+   bloom_run(true, capture, one);
+   for (i = 0; i < BW * BH; i++)
+   {
+      float d = fabsf(two[i] - one[i]);
+      worst = d > worst ? d : worst;
+      peak  = two[i] > peak ? two[i] : peak;
+   }
+   CHECK(peak > 0.1f && worst < 1e-5f * peak,
+         "float images glow the same in five passes as in six");
+   CHECK(menu_bloom_plan(plan, VIDEO_SCALE_PACK(BW, BH), true) == 5
+         && plan[4].dst == MENU_BLOOM_OUTPUT,
+         "and only the last of the five writes the output");
+}
+
 int main(void)
 {
    gfx_display_t *p_disp = disp_get_ptr();
@@ -110,6 +314,9 @@ int main(void)
    float white[16];
    unsigned i;
    const unsigned vd = VIDEO_SCALE_PACK(640, 480);
+
+   ribbon_motion();
+   bloom_plans();
 
    for (i = 0; i < 16; i++)
       white[i] = 1.0f;
@@ -132,6 +339,14 @@ int main(void)
       CHECK(!make(v, 4, bad, 3, GFX_MESH_TRIANGLES, 0), "an index past the vertices is refused");
       CHECK(!make(v, 4, good, 5, GFX_MESH_TRIANGLES, 0), "a part triangle is refused");
       CHECK(!make(v, 0, NULL, 0, GFX_MESH_TRIANGLE_STRIP, 0), "no vertices is refused");
+      mesh = make(NULL, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, GFX_MESH_FLAG_POSITIONS);
+      CHECK(mesh && mesh->positions, "the owner can fill a mesh in place");
+      if (mesh)
+      {
+         CHECK(mesh->vertices[3].x == 0.0f && mesh->positions[7] == 0.0f,
+               "unfilled mesh streams start at zero");
+         gfx_display_mesh_free(mesh);
+      }
       mesh = make(v, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, GFX_MESH_FLAG_POSITIONS);
       CHECK(mesh && mesh->positions
             && mesh->positions[0] == -1 && mesh->positions[1] == -1
@@ -147,18 +362,20 @@ int main(void)
    /* cpu: two indexed triangles, identity transform */
    reset();
    md.mvp = NULL; md.color = white; md.texture = 7; md.program = GFX_MESH_PROGRAM_TEXTURED;
+   md.bloom = false;
+   md.vertex_count = 0;
    gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
    CHECK(rec_draws == 1 && rec_vertices == 10, "two triangles are ten strip vertices, one draw");
    CHECK(rec_texture == 7, "TEXTURED draws with its texture");
-   CHECK(   NEAR(rec_xy[0], 0.0f) && NEAR(rec_xy[1], 0.0f)
-         && NEAR(rec_xy[2], 0.0f) && NEAR(rec_xy[3], 0.0f)
-         && NEAR(rec_xy[4], 1.0f) && NEAR(rec_xy[5], 0.0f)
-         && NEAR(rec_xy[6], 0.0f) && NEAR(rec_xy[7], 1.0f)
-         && NEAR(rec_xy[8], 0.0f) && NEAR(rec_xy[9], 1.0f),
+   CHECK(   TEST_NEAR(rec_xy[0], 0.0f) && TEST_NEAR(rec_xy[1], 0.0f)
+         && TEST_NEAR(rec_xy[2], 0.0f) && TEST_NEAR(rec_xy[3], 0.0f)
+         && TEST_NEAR(rec_xy[4], 1.0f) && TEST_NEAR(rec_xy[5], 0.0f)
+         && TEST_NEAR(rec_xy[6], 0.0f) && TEST_NEAR(rec_xy[7], 1.0f)
+         && TEST_NEAR(rec_xy[8], 0.0f) && TEST_NEAR(rec_xy[9], 1.0f),
          "clip space -1..1 lands on 0..1, the first triangle a a b c c");
-   CHECK(NEAR(rec_xy[18], 1.0f) && NEAR(rec_xy[19], 1.0f), "the last vertex is the far corner");
-   CHECK(NEAR(rec_uv[18], 1.0f) && NEAR(rec_uv[19], 1.0f), "texture coordinates in 1/65535ths");
-   CHECK(NEAR(rec_col[0], 1.0f) && NEAR(rec_col[1], 0.0f) && NEAR(rec_col[39], 128.0f / 255.0f),
+   CHECK(TEST_NEAR(rec_xy[18], 1.0f) && TEST_NEAR(rec_xy[19], 1.0f), "the last vertex is the far corner");
+   CHECK(TEST_NEAR(rec_uv[18], 1.0f) && TEST_NEAR(rec_uv[19], 1.0f), "texture coordinates in 1/65535ths");
+   CHECK(TEST_NEAR(rec_col[0], 1.0f) && TEST_NEAR(rec_col[1], 0.0f) && TEST_NEAR(rec_col[39], 128.0f / 255.0f),
          "colours from the vertices");
 
    /* tint, COLORED */
@@ -168,7 +385,7 @@ int main(void)
       for (i = 0; i < 16; i++) tint[i] = 0.5f;
       md.color = tint; md.program = GFX_MESH_PROGRAM_COLORED; md.texture = 7;
       gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
-      CHECK(NEAR(rec_col[0], 0.5f) && NEAR(rec_col[3], 0.5f), "the tint multiplies the vertex colour");
+      CHECK(TEST_NEAR(rec_col[0], 0.5f) && TEST_NEAR(rec_col[3], 0.5f), "the tint multiplies the vertex colour");
       CHECK(rec_texture != 7, "COLORED draws with the white texture, not the one handed in");
    }
 
@@ -185,7 +402,7 @@ int main(void)
       tri = make(t, 3, NULL, 0, GFX_MESH_TRIANGLES, 0);
       md.mvp = proj; md.color = white; md.program = GFX_MESH_PROGRAM_COLORED;
       gfx_display_mesh_draw(p_disp, NULL, vd, tri, &md);
-      CHECK(rec_vertices == 5 && NEAR(rec_xy[8], 0.75f) && NEAR(rec_xy[9], 0.75f),
+      CHECK(rec_vertices == 5 && TEST_NEAR(rec_xy[8], 0.75f) && TEST_NEAR(rec_xy[9], 0.75f),
             "the perspective divide: (1,1,-2) lands at 0.75");
       /* the same triangle in front of the eye: w = -2 */
       reset();
@@ -204,7 +421,7 @@ int main(void)
       gfx_display_mesh_t *strip = make(v, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, 0);
       md.program = GFX_MESH_PROGRAM_TEXTURED; md.texture = 3;
       gfx_display_mesh_draw(p_disp, NULL, vd, strip, &md);
-      CHECK(rec_vertices == 4 && NEAR(rec_xy[6], 1.0f) && NEAR(rec_xy[7], 1.0f), "a strip goes as it is");
+      CHECK(rec_vertices == 4 && TEST_NEAR(rec_xy[6], 1.0f) && TEST_NEAR(rec_xy[7], 1.0f), "a strip goes as it is");
       gfx_display_mesh_free(strip);
    }
 
@@ -223,11 +440,34 @@ int main(void)
          reset();
          md.program = map[i].p; md.color = white; md.texture = 0;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
-         CHECK(rec_pipeline_calls == 1 && rec_pipeline_id == map[i].id && rec_draws == 1,
-               "an effect reaches the pipeline under its id, then draws");
+         CHECK(rec_pipeline_calls == 1
+               && rec_pipeline_id == map[i].id && rec_draws == rec_pipeline_calls,
+               "each effect reaches its pipeline, then draws");
          CHECK(rec_effect_vertex == gfx_display_mesh_fullscreen()->positions
                && rec_effect_vertices == 4,
                "the effect coordinates are the mesh it is drawn over");
+      }
+      {
+         /* One mesh lent to two effects: the second draws its first part */
+         gfx_display_mesh_t *shared = make(NULL, 8, NULL, 0,
+               GFX_MESH_TRIANGLE_STRIP, GFX_MESH_FLAG_POSITIONS);
+         CHECK(shared && !((uintptr_t)shared->positions
+                  % GFX_DISPLAY_MESH_ALIGN),
+               "mesh positions are aligned for a GPU to read in place");
+         if (shared)
+         {
+            reset();
+            md.program = GFX_MESH_PROGRAM_RIBBON_SIMPLE; md.color = white;
+            md.vertex_count = 4;
+            gfx_display_mesh_draw(p_disp, NULL, vd, shared, &md);
+            CHECK(rec_effect_vertex == shared->positions
+                  && rec_effect_vertices == 4,
+                  "an effect drawn over part of a mesh reads that part in place");
+            md.vertex_count = 0;
+            gfx_display_mesh_draw(p_disp, NULL, vd, shared, &md);
+            CHECK(rec_effect_vertices == 8, "and 0 draws all of it");
+            gfx_display_mesh_free(shared);
+         }
       }
       CHECK(gfx_display_effect_coords(p_disp) == NULL,
             "and there are none outside the draw");
@@ -236,7 +476,72 @@ int main(void)
       gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
       CHECK(rec_pipeline_calls == 0 && rec_draws == 0,
             "a mesh with no positions draws no effect");
-      CHECK(NEAR(white[3], 1.0f), "the effect leaves the colour's alpha as it was");
+      CHECK(TEST_NEAR(white[3], 1.0f), "the effect leaves the colour's alpha as it was");
+   }
+
+   {
+      static const unsigned rates[] = { 30, 60, 144 };
+      unsigned rate, frame;
+      md.program = GFX_MESH_PROGRAM_RIBBON;
+      for (rate = 0; rate < sizeof(rates) / sizeof(rates[0]); rate++)
+      {
+         p_disp->effect_start_time = 0;
+         test_time = 1000000;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         for (frame = 1; frame <= rates[rate]; frame++)
+         {
+            test_time = 1000000 + (retro_time_t)frame * 1000000 / rates[rate];
+            gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         }
+         CHECK(TEST_NEAR(rec_effect_time, 0.6f), "one second has the same phase at 30, 60 and 144 Hz");
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         CHECK(TEST_NEAR(rec_effect_time, 0.6f), "a repeated timestamp does not advance the effect");
+      }
+      rec_ctx.bloom_begin = rec_bloom_begin;
+      rec_ctx.bloom_end   = rec_bloom_end;
+      rec_bloom_calls     = 0;
+      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      CHECK(rec_bloom_calls == 0, "no glow unless the menu asks for it");
+      md.bloom = true;
+      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      CHECK(rec_bloom_calls == 1, "the glow is drawn when the menu asks for it");
+      CHECK(TEST_NEAR(rec_effect_time, 0.6f) && TEST_NEAR(p_disp->effect_time, 0.6f),
+            "bloom and base use the same phase despite time spent drawing");
+      {
+         /* A driver that composites: the next frame's glow is drawn by
+          * the prepass, outside the pass, and added in before the ribbon */
+         unsigned draws;
+         rec_ctx.bloom_composite = rec_bloom_composite;
+         rec_bloom_check_time    = false;
+         rec_bloom_calls = rec_bloom_deferred = rec_bloom_composites = 0;
+         gfx_display_bloom_prepass(NULL);
+         CHECK(rec_bloom_calls == 0, "no prepass before the ribbon asks for one");
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         CHECK(rec_bloom_calls == 1 && rec_bloom_deferred == 0
+               && rec_bloom_composites == 0,
+               "the first frame draws its glow in place");
+         gfx_display_bloom_prepass(NULL);
+         CHECK(rec_bloom_calls == 2 && rec_bloom_deferred == 1,
+               "the prepass draws the next frame's glow, deferred");
+         draws = rec_draws;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         CHECK(rec_bloom_calls == 2 && rec_bloom_composites == 1
+               && rec_bloom_draws_at_composite == draws,
+               "the ribbon adds the ready glow in, before it is drawn");
+         md.bloom = false;
+         gfx_display_bloom_prepass(NULL);
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+         CHECK(rec_bloom_composites == 1, "nor is one added in without it");
+         gfx_display_bloom_prepass(NULL);
+         CHECK(rec_bloom_calls == 3, "a frame without the glow asks for none");
+         rec_ctx.bloom_composite = NULL;
+      }
+      md.bloom = false;
+      rec_ctx.bloom_begin = NULL;
+      rec_ctx.bloom_end   = NULL;
+      test_time = 500000;
+      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      CHECK(TEST_NEAR(rec_effect_time, 0.0f), "a clock reset restarts the effect");
    }
 
    /* quads-only */
