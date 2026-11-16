@@ -8,7 +8,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: params_test$(EXE) session_test$(EXE) picture_test$(EXE) submit_test$(EXE) pool_test$(EXE) encoder_test$(EXE) worker_test$(EXE) capture_test$(EXE) capture_shader_test$(EXE)
+all: native_test$(EXE) params_test$(EXE) session_test$(EXE) picture_test$(EXE) submit_test$(EXE) pool_test$(EXE) encoder_test$(EXE) worker_test$(EXE) capture_test$(EXE) capture_shader_test$(EXE)
 params_test$(EXE): params_test.c $(RA)/gfx/common/vulkan_encode_h264_params.h $(RA)/gfx/include/vk_video/vulkan_video_codec_h264std.h
 	$(CC) $(CFLAGS) params_test.c -o $@ $(LDFLAGS)
 session_test$(EXE): session_test.c $(RA)/gfx/common/vulkan_encode_h264_session.c $(RA)/gfx/common/vulkan_encode_h264_session.h $(RA)/gfx/common/vulkan_encode_h264_params.h
@@ -43,5 +43,16 @@ check: all
 	$(RUNNER) ./capture_test$(EXE)
 	$(RUNNER) ./capture_shader_test$(EXE)
 clean:
+	rm -f native_test native_test.exe
 	rm -f params_test params_test.exe session_test session_test.exe picture_test picture_test.exe submit_test submit_test.exe pool_test pool_test.exe encoder_test encoder_test.exe worker_test worker_test.exe capture_test capture_test.exe capture_shader_test capture_shader_test.exe
 .PHONY: all check clean
+
+NATIVE_SOURCES := native_test.c $(RA)/gfx/common/vulkan_encode_h264.c \
+   $(RA)/gfx/common/vulkan_encode_h264_session.c $(RA)/gfx/common/vulkan_encode_h264_submit.c \
+   $(RA)/gfx/common/vulkan_encode_pool.c $(RA)/libretro-common/dynamic/dylib.c \
+   $(RA)/libretro-common/encodings/encoding_utf.c $(RA)/libretro-common/compat/compat_strl.c
+native_test$(EXE): $(NATIVE_SOURCES)
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+native-check: native_test$(EXE)
+	$(RUNNER) ./native_test$(EXE)
+.PHONY: native-check
