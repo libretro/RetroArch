@@ -104,6 +104,10 @@ void core_file_close(core_file_t *f);
 /* Bytes read, 0 at the end, -1 on error */
 int64_t core_file_read(core_file_t *f, void *buf, size_t len);
 bool core_file_identity(core_file_t *f, struct core_identity *id);
+/* core_file_open() and core_file_identity() in one: the identity the
+ * open vouched for the file with, without a query of its own. id is
+ * zeroed when the open fails. */
+core_file_t *core_file_open_id(const char *path, struct core_identity *id);
 #ifndef _WIN32
 /* The open file itself, for loading the core from it. It stays f's:
  * close f, never it. */
@@ -385,6 +389,9 @@ bool core_check_wants_verity(const core_trust_set_t *s,
  * off, for core_check_finish(). */
 bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
       const char *path, struct core_check *c);
+/* The same with the identity core_file_open_id() handed back for f */
+bool core_check_quick_id(const core_trust_set_t *s, core_file_t *f,
+      const char *path, const struct core_identity *id, struct core_check *c);
 /* The rest, given the core's SHA-256 and its .sig (NULL or empty when none) */
 void core_check_finish(const core_trust_set_t *s,
       const uint8_t *keys, size_t num_keys,

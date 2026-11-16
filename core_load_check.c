@@ -764,6 +764,7 @@ static void core_load_check_stage_start(void)
 {
    const char *path    = core_load_rt.stage_path;
    core_trust_set_t *s = core_trust_runtime_get();
+   struct core_identity id;
    core_file_t *f      = NULL;
    core_file_t *g      = NULL;   /* a record's file */
    bool lent           = false;
@@ -774,12 +775,13 @@ static void core_load_check_stage_start(void)
          || !core_load_check_file_path(path, core_load_rt.check_path,
             sizeof(core_load_rt.check_path))
          || (g = core_load_loaded_file(path, &lent))
-         || !(f = core_file_open(core_load_rt.check_path)))
+         || !(f = core_file_open_id(core_load_rt.check_path, &id)))
    {
       core_load_rt.stage = CORE_LOAD_STAGE_DONE;
       goto end;
    }
-   if (core_check_quick(s, f, core_load_rt.check_path, &core_load_rt.c))
+   if (core_check_quick_id(s, f, core_load_rt.check_path, &id,
+            &core_load_rt.c))
    {
       bool pass = (core_load_rt.c.result == CORE_CHECK_OK);
       if (pass)
@@ -994,6 +996,7 @@ static void core_load_park_start(void)
 {
    struct core_load_park *p = &core_load_rt.park;
    core_trust_set_t *s      = core_trust_runtime_get();
+   struct core_identity id;
    core_file_t *f           = NULL;
    core_file_t *g           = NULL;   /* the slot's file */
    bool lent                = false;
@@ -1001,12 +1004,12 @@ static void core_load_park_start(void)
    if (     !s
          || !core_load_check_file_path(p->path, core_load_rt.check_path,
             sizeof(core_load_rt.check_path))
-         || !(f = core_file_open(core_load_rt.check_path)))
+         || !(f = core_file_open_id(core_load_rt.check_path, &id)))
    {
       core_load_park_fail();
       goto end;
    }
-   if (core_check_quick(s, f, core_load_rt.check_path, &p->c))
+   if (core_check_quick_id(s, f, core_load_rt.check_path, &id, &p->c))
    {
       p->f = f;
       f    = NULL;
@@ -1136,6 +1139,7 @@ enum core_load_gate core_load_check_open(const char *path, dylib_t *lib)
 {
    enum core_load_gate ret = CORE_LOAD_GATE_REFUSED;
    core_trust_set_t *s     = NULL;
+   struct core_identity id;
    core_file_t *f          = NULL;
    core_file_t *g          = NULL;   /* a kept record's file */
    bool lent               = false;
@@ -1170,7 +1174,7 @@ enum core_load_gate core_load_check_open(const char *path, dylib_t *lib)
       goto end;
    }
    /* Unreadable or gone: no check's refusal, so the caller reports it */
-   if (!(f = core_file_open(core_load_rt.check_path)))
+   if (!(f = core_file_open_id(core_load_rt.check_path, &id)))
    {
       RARCH_ERR("[Core] Could not open \"%s\".\n", path);
       goto end;
@@ -1178,7 +1182,8 @@ enum core_load_gate core_load_check_open(const char *path, dylib_t *lib)
    checked = true;
    /* First: checks off, a record or an exemption answer whatever the
     * slot holds */
-   if (core_check_quick(s, f, core_load_rt.check_path, &core_load_rt.c))
+   if (core_check_quick_id(s, f, core_load_rt.check_path, &id,
+            &core_load_rt.c))
    {
       if (core_load_rt.c.result == CORE_CHECK_OK)
       {

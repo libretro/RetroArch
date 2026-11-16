@@ -14,16 +14,17 @@ bool core_install_check_begin(struct core_install_check *ic,
       const core_trust_set_t *s, const char *staged,
       const char *install_path)
 {
+   struct core_identity id;
    memset(ic, 0, sizeof(*ic));
    ic->step     = -1;
    ic->c.result = CORE_CHECK_ERROR;
    strlcpy(ic->c.rec.name, path_basename_nocompression(staged),
          sizeof(ic->c.rec.name));
-   if (!(ic->f = core_file_open(staged)))
+   if (!(ic->f = core_file_open_id(staged, &id)))
       return false;
    /* A record or the folder rule vouches for a file in place, not for
     * a download: only ERROR, or checks off, ends it before hashing */
-   if (     core_check_quick(s, ic->f, staged, &ic->c)
+   if (     core_check_quick_id(s, ic->f, staged, &id, &ic->c)
          && (     ic->c.result == CORE_CHECK_ERROR
                || (core_trust_flags(s) & CORE_TRUST_CHECK_OFF)))
    {

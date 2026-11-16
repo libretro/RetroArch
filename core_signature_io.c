@@ -100,28 +100,28 @@ int core_file_fd(core_file_t *f)
 }
 #endif
 
-bool core_file_identity(core_file_t *f, struct core_identity *id)
+/* id from the VFS's identity of f, as the trust store keeps it */
+static void core_identity_from_vfs(core_file_t *f,
+      const struct retro_vfs_file_identity *v, struct core_identity *id)
 {
-   struct retro_vfs_file_identity v;
 #if defined(CORE_FS_MAGIC) || defined(CORE_FS_NAME)
    struct statfs fs;
 #endif
    memset(id, 0, sizeof(*id));
-   if (!retro_vfs_file_identity_impl(f, &v))
-      return false;
-   id->dev        = v.dev;
-   id->size       = v.size;
-   id->mtime      = v.mtime;
-   id->ctime      = v.ctime;
-   id->mtime_nsec = v.mtime_nsec;
-   id->ctime_nsec = v.ctime_nsec;
-   memcpy(id->ino, v.id, sizeof(id->ino));
+   id->dev        = v->dev;
+   id->size       = v->size;
+   id->mtime      = v->mtime;
+   id->ctime      = v->ctime;
+   id->mtime_nsec = v->mtime_nsec;
+   id->ctime_nsec = v->ctime_nsec;
+   memcpy(id->ino, v->id, sizeof(id->ino));
 #ifdef _WIN32
    /* Kept in the store as Windows has them, in seconds from 1601, so
     * the records already made still match. ctime_kept stays false: any
     * writer can set ChangeTime. */
+   (void)f;
    id->mtime += (int64_t)11644473600LL;
-   if (v.ctime || v.ctime_nsec)
+   if (v->ctime || v->ctime_nsec)
       id->ctime += (int64_t)11644473600LL;
 #elif defined(CORE_FS_MAGIC)
    id->ctime_kept = fstatfs(f->fd, &fs) == 0
@@ -129,8 +129,32 @@ bool core_file_identity(core_file_t *f, struct core_identity *id)
 #elif defined(CORE_FS_NAME)
    id->ctime_kept = fstatfs(f->fd, &fs) == 0
          && core_fs_name_keeps_ctime(fs.f_fstypename);
+#else
+   (void)f;
 #endif
+}
+
+bool core_file_identity(core_file_t *f, struct core_identity *id)
+{
+   struct retro_vfs_file_identity v;
+   if (!retro_vfs_file_identity_impl(f, &v))
+   {
+      memset(id, 0, sizeof(*id));
+      return false;
+   }
+   core_identity_from_vfs(f, &v, id);
    return true;
+}
+
+core_file_t *core_file_open_id(const char *path, struct core_identity *id)
+{
+   struct retro_vfs_file_identity v;
+   core_file_t *f = retro_vfs_file_open_stable_impl(path, &v);
+   if (f)
+      core_identity_from_vfs(f, &v, id);
+   else
+      memset(id, 0, sizeof(*id));
+   return f;
 }
 
 #ifdef _WIN32
@@ -844,8 +868,8 @@ bool core_folder_key(const char *path, uint8_t *key)
 #endif
 }
 
-bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
-      const char *path, struct core_check *c)
+bool core_check_quick_id(const core_trust_set_t *s, core_file_t *f,
+      const char *path, const struct core_identity *id, struct core_check *c)
 {
    struct core_self self;
    memset(c, 0, sizeof(*c));
@@ -854,7 +878,9 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
          sizeof(c->rec.name));
    if (core_trust_flags(s) & CORE_TRUST_CHECK_OFF)
       return true;
-   if (     !core_file_identity(f, &c->rec.id)
+   if (id)
+      c->rec.id = *id;
+   if (     (!id && !core_file_identity(f, &c->rec.id))
          || !core_folder_key(path, c->folder))
    {
       c->result = CORE_CHECK_ERROR;
@@ -867,6 +893,12 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
       || core_file_unwritable(f, path,
             core_self_find(&self) ? &self : NULL)
       || core_file_in_package(f, path);
+}
+
+bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
+      const char *path, struct core_check *c)
+{
+   return core_check_quick_id(s, f, path, NULL, c);
 }
 
 char *core_sig_path(const char *path)
@@ -889,9 +921,14 @@ int64_t core_sig_read(const char *path, uint8_t *sig)
    char *sig_path  = core_sig_path(path);
    if (sig_path && (f = core_file_open(sig_path)))
    {
-      for (sig_len = 0; sig_len < CORE_SIG_MAX_LEN + 1; sig_len += got)
+      /* The size as opened: read that much (or one past the most a .sig
+       * may hold) and stop, with no read of its own to find the end */
+      int64_t want = retro_vfs_file_size_impl(f);
+      if (want < 0 || want > CORE_SIG_MAX_LEN + 1)
+         want = CORE_SIG_MAX_LEN + 1;
+      for (sig_len = 0; sig_len < want; sig_len += got)
          if ((got = core_file_read(f, sig + (size_t)sig_len,
-                     CORE_SIG_MAX_LEN + 1 - (size_t)sig_len)) <= 0)
+                     (size_t)(want - sig_len))) <= 0)
             break;
       core_file_close(f);
       if (got < 0)
@@ -927,8 +964,9 @@ enum core_check_result core_check_file(const core_trust_set_t *s,
 {
    struct core_hash h;
    int step       = -1;
-   core_file_t *f = core_file_open(path);
-   if (!f || core_check_quick(s, f, path, c))
+   struct core_identity id;
+   core_file_t *f = core_file_open_id(path, &id);
+   if (!f || core_check_quick_id(s, f, path, &id, c))
    {
       if (!f)
       {
