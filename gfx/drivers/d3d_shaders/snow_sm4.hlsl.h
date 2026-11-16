@@ -43,6 +43,7 @@ float random_dots(float2 co)
 {
    float part = 1.0 / 20.0;
    float2 cd = floor(co / part);
+   cd -= 256.0 * floor(cd / 256.0);
    float p = rand(cd);
 
    if (p > 0.005 * (density * 40.0))
@@ -60,11 +61,11 @@ float snow(float2 pos, float time, float scale)
 {
    // add wobble
    pos.x += cos(pos.y * 1.2 + time * 3.14159 * 2.0 + 1.0 / scale) / (8.0 / scale) * 4.0;
-   // add gravity
-   // add gravity — use frac to keep position offsets small and prevent
-   // precision loss in the random_dots grid lookup over long sessions
-   float2 scroll = time * scale * float2(-0.5, 1.0) * 4.0;
-   pos += frac(scroll / 0.05) * 0.05;
+   /* add gravity: the cells repeat every 256 (12.8 of
+    * pos / scale), so the fall wraps there without a seam,
+    * and the offset stays small however long it has run */
+   float2 fall = time * float2(-0.5, 1.0) * 4.0;
+   pos += (fall - 12.8 * floor(fall / 12.8)) * scale;
    return random_dots(pos / scale) * (scale * 0.5 + 0.5);
 }
 

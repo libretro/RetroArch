@@ -122,6 +122,73 @@ static int has(const char *src, const char *word)
    return src && strstr(src, word) != NULL;
 }
 
+/* The Vulkan snow sources, as their SPIR-V was compiled from */
+static const char vk_snow_frag[] =
+#include "../../../gfx/drivers/vulkan_shaders/pipeline_snow.frag.src.inc"
+      ;
+static const char vk_snow_simple_frag[] =
+#include "../../../gfx/drivers/vulkan_shaders/pipeline_snow_simple.frag.src.inc"
+      ;
+
+static char *read_text(const char *path)
+{
+   char *buf = NULL;
+   long len;
+   FILE *fp  = fopen(path, "rb");
+   if (!fp)
+      return NULL;
+   if (     !fseek(fp, 0, SEEK_END) && (len = ftell(fp)) > 0
+         && !fseek(fp, 0, SEEK_SET) && (buf = (char*)malloc(len + 1)))
+   {
+      buf[fread(buf, 1, len, fp)] = '\0';
+   }
+   fclose(fp);
+   return buf;
+}
+
+/* The snow falls through a grid of cells, each lit or not by a hash of
+ * its index. Drawn by the GL family, a moment's fall is checked above;
+ * every other backend's source is held to the same form here: the hash
+ * repeats every 256 cells, and the fall wraps at 12.8 (256 cells) of
+ * pos / scale, where the repeat makes the wrap seamless. A fall wrapped
+ * anywhere else - the fract(scroll / 0.05) it once had - moves the
+ * largest flakes to new places five times a second. */
+static void check_snow_source(const char *n, const char *what,
+      const char *src)
+{
+   check(     src && strstr(src, "256.0") && strstr(src, "12.8")
+         && !strstr(src, "/ 0.05)"),
+         "%s: %s repeats its cells every 256 and wraps its fall there",
+         n, what);
+}
+
+static void check_snow_sources(void)
+{
+   char *metal;
+   unsigned i;
+   static const unsigned snows[2] = { XMB_EFFECT_SNOW_SIMPLE, XMB_EFFECT_SNOW };
+   for (i = 0; i < 2; i++)
+   {
+      const gfx_display_effect_desc_t *d = &xmb_effect_descs[snows[i]];
+      const char *n = effect_names[snows[i]];
+      check_snow_source(n, "GLSL legacy", d->glsl_fragment[0]);
+      check_snow_source(n, "GLSL core", d->glsl_fragment[1]);
+      check_snow_source(n, "SM3", d->hlsl_sm3);
+      check_snow_source(n, "SM4", d->hlsl_sm4);
+   }
+   check_snow_source("simple snow", "Vulkan", vk_snow_simple_frag);
+   check_snow_source("snow", "Vulkan", vk_snow_frag);
+   /* One snow function, both snows */
+   if ((metal = read_text("../../../gfx/drivers/metal_shaders/Shaders.metal")))
+   {
+      const char *ns = strstr(metal, "namespace snow");
+      check_snow_source("snow", "Metal", ns);
+      free(metal);
+   }
+   else
+      printf("  [skip] Shaders.metal not found from here\n");
+}
+
 /* --- What every driver takes from the table ------------------------ */
 
 static void check_table(const char *spirv_dir)
@@ -382,6 +449,95 @@ static void draw_and_check(const gl_glsl_effect_t *fx, unsigned idx,
    glDeleteRenderbuffers(1, &rb);
 }
 
+/* A falling effect moves continuously: drawn a moment apart - 0.0002
+ * of its time, about a twentieth of a frame at 240 Hz - next to no
+ * pixel moves by more than a quarter. Checked across the moments where
+ * a fall that wraps could jump: every eighth of a time unit, where the
+ * snow's fall once wrapped and its largest flakes snapped to new places
+ * five times a second, and at 32 and 64, where it wraps now. The
+ * snowflakes spin fast enough to change a few dozen pixels in any
+ * moment, and are left out. */
+#define MOTION_SIZE 512
+#define MOTION_DT   0.0002f
+#define MOTION_MAX  8
+
+static void motion_render(const gl_glsl_effect_t *fx, float t,
+      uint8_t *alpha)
+{
+   static uint8_t px[MOTION_SIZE * MOTION_SIZE * 4];
+   static const float mvp[16] = {
+      2, 0, 0, 0,   0, 2, 0, 0,   0, 0, -1, 0,   -1, -1, 0, 1 };
+   unsigned i;
+   glClear(GL_COLOR_BUFFER_BIT);
+   glUseProgram(fx->prog);
+   if (fx->mvp >= 0)
+      glUniformMatrix4fv(fx->mvp, 1, GL_FALSE, mvp);
+   if (fx->time >= 0)
+      glUniform1f(fx->time, t);
+   if (fx->output_size >= 0)
+      glUniform2f(fx->output_size, MOTION_SIZE, MOTION_SIZE);
+   glEnableVertexAttribArray(fx->vertex_coord);
+   glVertexAttribPointer(fx->vertex_coord, 2, GL_FLOAT, GL_FALSE, 0,
+         (const GLvoid*)0);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDisableVertexAttribArray(fx->vertex_coord);
+   glUseProgram(0);
+   glReadPixels(0, 0, MOTION_SIZE, MOTION_SIZE, GL_RGBA, GL_UNSIGNED_BYTE,
+         px);
+   for (i = 0; i < MOTION_SIZE * MOTION_SIZE; i++)
+      alpha[i] = px[i * 4 + 3];
+}
+
+static void check_motion(const gl_glsl_effect_t *fx, const char *n,
+      const char *ctx)
+{
+   static const float quad[8] = { -1, -1, 1, -1, -1, 1, 1, 1 };
+   static const float at[] = {
+      0.125f, 0.25f, 0.375f, 0.5f, 0.625f, 0.75f, 0.875f, 1.0f,
+      2.5f, 4.0f, 8.0f, 12.8f, 16.0f, 25.6f, 31.875f, 32.0f,
+      38.4f, 48.0f, 51.2f, 63.875f, 64.0f, 64.125f, 96.0f, 128.0f };
+   static uint8_t a0[MOTION_SIZE * MOTION_SIZE];
+   static uint8_t a1[MOTION_SIZE * MOTION_SIZE];
+   GLuint fbo, rb, vbo;
+   unsigned k, i, worst = 0;
+   float worst_t = 0.0f;
+   glGenFramebuffers(1, &fbo);
+   glGenRenderbuffers(1, &rb);
+   glBindRenderbuffer(GL_RENDERBUFFER, rb);
+   glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, MOTION_SIZE, MOTION_SIZE);
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_RENDERBUFFER, rb);
+   glViewport(0, 0, MOTION_SIZE, MOTION_SIZE);
+   glClearColor(0, 0, 0, 0);
+   glGenBuffers(1, &vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+   for (k = 0; k < sizeof(at) / sizeof(at[0]); k++)
+   {
+      float t          = at[k] - MOTION_DT * 0.5f;
+      unsigned changed = 0;
+      motion_render(fx, t, a0);
+      motion_render(fx, t + MOTION_DT, a1);
+      for (i = 0; i < MOTION_SIZE * MOTION_SIZE; i++)
+         if (a0[i] - a1[i] > 64 || a1[i] - a0[i] > 64)
+            changed++;
+      if (changed > worst)
+      {
+         worst   = changed;
+         worst_t = at[k];
+      }
+   }
+   check(worst <= MOTION_MAX, "%s, %s: moves without jumps (at most %u "
+         "pixels change in a moment, %u at %.3f)", n, ctx, MOTION_MAX,
+         worst, worst_t);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDeleteBuffers(1, &vbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   glDeleteFramebuffers(1, &fbo);
+   glDeleteRenderbuffers(1, &rb);
+}
+
 static void check_programs(const char *ctx)
 {
    unsigned i;
@@ -405,6 +561,8 @@ static void check_programs(const char *ctx)
          check(fx.output_size >= 0, "%s, %s: OutputSize found", n, ctx);
       if (fx.vertex_coord >= 0)
          draw_and_check(&fx, i, d, n, ctx);
+      if (fx.vertex_coord >= 0 && !mesh && i != XMB_EFFECT_SNOWFLAKE)
+         check_motion(&fx, n, ctx);
       glDeleteProgram(fx.prog);
    }
 }
@@ -513,6 +671,7 @@ int main(int argc, char **argv)
       spirv_dir = argv[2];
 
    check_table(spirv_dir);
+   check_snow_sources();
 #if defined(_WIN32)
    check_hlsl();
 #else
