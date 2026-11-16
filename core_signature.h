@@ -9,6 +9,7 @@
 #include <boolean.h>
 #include <lrc_hash.h>
 #include <retro_common_api.h>
+#include <vfs/vfs.h>
 
 RETRO_BEGIN_DECLS
 
@@ -92,9 +93,11 @@ bool core_identity_equal(const struct core_identity *a,
 bool core_fs_magic_keeps_ctime(unsigned long f_type);
 bool core_fs_name_keeps_ctime(const char *name);
 
-/* A core opened for checking. On Windows nothing can write or delete
- * it until it is closed. */
-typedef struct core_file core_file_t;
+/* A core opened for checking: the VFS's stable open of it
+ * (RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE), a regular file read on its
+ * descriptor. On Windows nothing can write, rename or delete it until it
+ * is closed. */
+typedef libretro_vfs_implementation_file core_file_t;
 
 core_file_t *core_file_open(const char *path);
 void core_file_close(core_file_t *f);
@@ -129,15 +132,12 @@ struct core_hash
    uint8_t *buf;
    uint64_t done;
 #ifdef _WIN32
-   /* Hashed in place from a mapping where the file allows one (its
-    * handle denies writes, so nothing can cut it short): no copy into
-    * buf, which is then never allocated */
-   void *map;              /* the file mapping, NULL when read      */
-   const uint8_t *view;    /* the mapped window                     */
-   uint64_t view_off;      /* file offset of view                   */
+   /* Hashed in place from the file's mapping, lent by the VFS, where the
+    * file allows one (its handle denies writes, so nothing can cut it
+    * short): no copy into buf, which is then never allocated */
+   const uint8_t *map;     /* the file's bytes, NULL when read      */
    uint64_t start;         /* file offset the hash began at         */
    uint64_t size;          /* file size, for the mapped path        */
-   size_t view_len;
    unsigned char mode;     /* CORE_HASH_UNSET / _MAPPED / _READ     */
 #endif
 };

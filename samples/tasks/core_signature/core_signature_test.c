@@ -350,11 +350,11 @@ static bool hash_whole(const char *path, uint8_t *got, unsigned *mode,
    return step == 0;
 }
 
-/* On a local fixed drive a core is hashed from a mapping, a window at a
- * time; by any other path it is read. Both give the file's digest. */
+/* On a local fixed drive a core is hashed in place from the mapping the
+ * VFS lends; by any other path it is read. Both give the file's digest. */
 static void test_hash_mapped(void)
 {
-   /* Past one 32 MiB view and not a whole number of chunks */
+   /* Not a whole number of chunks */
    size_t len  = 40 * 1024 * 1024 + 4099;
    uint8_t *buf = (uint8_t*)malloc(len);
    uint8_t want[CORE_SHA256_LEN], got[CORE_SHA256_LEN];

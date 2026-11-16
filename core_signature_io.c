@@ -6,6 +6,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +46,8 @@
 #include <lrc_hash.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <vfs/vfs.h>
+#include <vfs/vfs_implementation.h>
 
 #include "core_signature.h"
 #include "file_path_special.h"
@@ -56,110 +59,38 @@
 /* .<pid>.<stamp>.tmp, 64-bit numbers */
 #define CORE_TRUST_TEMP_TAIL 48
 
-struct core_file
-{
-#ifdef _WIN32
-   HANDLE h;
-   /* The path's drive letter, 0 when it names none (a UNC or relative
-    * path): only a file on a local fixed drive is hashed from a mapping */
-   char drive;
-#else
-   int fd;
-#endif
-};
-
 core_file_t *core_file_open(const char *path)
 {
-   core_file_t *f = (core_file_t*)malloc(sizeof(*f));
-#ifdef _WIN32
-#ifndef LEGACY_WIN32
-   wchar_t *wpath;
-#endif
-#else
-   struct stat st;
-   int flags = O_RDONLY;
-#endif
-   if (!f)
-      return NULL;
-#ifdef _WIN32
-   /* No write or delete sharing: nothing can change it while open */
-#ifdef LEGACY_WIN32
-   f->h = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL,
-         OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-#else
-   if (!(wpath = utf8_to_utf16_string_alloc(path)))
+   core_file_t *f = retro_vfs_file_open_impl(path,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE);
+   /* A scheme the VFS opens another way (smb://, cdrom://) drops the
+    * hint: such a file is not one that can be checked */
+   if (f && !(f->hints & RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE))
    {
-      free(f);
+      retro_vfs_file_close_impl(f);
       return NULL;
    }
-   f->h = CreateFileW(wpath, GENERIC_READ, FILE_SHARE_READ, NULL,
-         OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-   free(wpath);
-#endif
-   if (f->h == INVALID_HANDLE_VALUE)
-   {
-      free(f);
-      return NULL;
-   }
-   f->drive = 0;
-   if (     ((path[0] >= 'A' && path[0] <= 'Z')
-         ||  (path[0] >= 'a' && path[0] <= 'z'))
-         && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
-      f->drive = path[0];
-#else
-#ifdef O_CLOEXEC
-   flags |= O_CLOEXEC;
-#endif
-   /* A FIFO would block until a writer opens it */
-#ifdef O_NONBLOCK
-   flags |= O_NONBLOCK;
-#endif
-#ifdef O_NOCTTY
-   flags |= O_NOCTTY;
-#endif
-   if ((f->fd = open(path, flags)) < 0)
-   {
-      free(f);
-      return NULL;
-   }
-   if (fstat(f->fd, &st) != 0 || !S_ISREG(st.st_mode))
-   {
-      close(f->fd);
-      free(f);
-      return NULL;
-   }
-#endif
    return f;
 }
 
 void core_file_close(core_file_t *f)
 {
-   if (!f)
-      return;
-#ifdef _WIN32
-   CloseHandle(f->h);
-#else
-   close(f->fd);
-#endif
-   free(f);
+   if (f)
+      retro_vfs_file_close_impl(f);
 }
 
 int64_t core_file_read(core_file_t *f, void *buf, size_t len)
 {
-#ifdef _WIN32
-   DWORD got = 0;
-   if (len > 0x40000000)
-      len = 0x40000000;
-   if (!ReadFile(f->h, buf, (DWORD)len, &got, NULL))
-      return -1;
-   return (int64_t)got;
-#else
-   ssize_t got;
+   int64_t got;
+   /* -1 only when nothing was read, so a retry starts where it was */
    do
-      got = read(f->fd, buf, len);
+      got = retro_vfs_file_read_impl(f, buf, len);
+#ifdef EINTR
    while (got < 0 && errno == EINTR);
-   return (int64_t)got;
+#else
+   while (0);
 #endif
+   return got;
 }
 
 #ifndef _WIN32
@@ -169,203 +100,81 @@ int core_file_fd(core_file_t *f)
 }
 #endif
 
-#ifdef _WIN32
-/* FILE_BASIC_INFO and FILE_ID_INFO, which older SDKs lack */
-struct core_file_basic_info
-{
-   LARGE_INTEGER creation;
-   LARGE_INTEGER access;
-   LARGE_INTEGER write;
-   LARGE_INTEGER change;
-   DWORD attributes;
-};
-
-struct core_file_id_info
-{
-   ULONGLONG volume;
-   BYTE id[16];
-};
-
-/* GetFileInformationByHandleEx, Vista and later */
-typedef BOOL (WINAPI *core_file_info_ex_t)(HANDLE, int, LPVOID, DWORD);
-#define CORE_FILE_BASIC_INFO 0
-#define CORE_FILE_ID_INFO    18
-
-static void core_file_time(uint64_t ticks, int64_t *sec, uint32_t *nsec)
-{
-   *sec  = (int64_t)(ticks / 10000000);
-   *nsec = (uint32_t)(ticks % 10000000) * 100;
-}
-#endif
-
 bool core_file_identity(core_file_t *f, struct core_identity *id)
 {
-#ifdef _WIN32
-   BY_HANDLE_FILE_INFORMATION info;
-   struct core_file_basic_info basic;
-   struct core_file_id_info fid;
-   core_file_info_ex_t info_ex = (core_file_info_ex_t)GetProcAddress(
-         GetModuleHandleA("kernel32.dll"), "GetFileInformationByHandleEx");
-   unsigned i;
-   /* ctime_kept stays false: any writer can set ChangeTime */
-   memset(id, 0, sizeof(*id));
-   if (!GetFileInformationByHandle(f->h, &info))
-      return false;
-   id->dev  = info.dwVolumeSerialNumber;
-   id->size = ((uint64_t)info.nFileSizeHigh << 32) | info.nFileSizeLow;
-   for (i = 0; i < 4; i++)
-   {
-      id->ino[8 + i]  = (uint8_t)(info.nFileIndexHigh >> (24 - 8 * i));
-      id->ino[12 + i] = (uint8_t)(info.nFileIndexLow  >> (24 - 8 * i));
-   }
-   core_file_time(((uint64_t)info.ftLastWriteTime.dwHighDateTime << 32)
-         | info.ftLastWriteTime.dwLowDateTime, &id->mtime, &id->mtime_nsec);
-   if (info_ex)
-   {
-      /* 128-bit ids: ReFS can reuse a 64-bit index */
-      if (info_ex(f->h, CORE_FILE_ID_INFO, &fid, sizeof(fid)))
-      {
-         id->dev = fid.volume;
-         memcpy(id->ino, fid.id, sizeof(id->ino));
-      }
-      if (info_ex(f->h, CORE_FILE_BASIC_INFO, &basic, sizeof(basic)))
-         core_file_time((uint64_t)basic.change.QuadPart,
-               &id->ctime, &id->ctime_nsec);
-   }
-   return true;
-#else
-   struct stat st;
+   struct retro_vfs_file_identity v;
 #if defined(CORE_FS_MAGIC) || defined(CORE_FS_NAME)
    struct statfs fs;
 #endif
-   uint64_t ino;
-   unsigned i;
    memset(id, 0, sizeof(*id));
-   if (fstat(f->fd, &st) != 0)
+   if (!retro_vfs_file_identity_impl(f, &v))
       return false;
-#if defined(CORE_FS_MAGIC)
+   id->dev        = v.dev;
+   id->size       = v.size;
+   id->mtime      = v.mtime;
+   id->ctime      = v.ctime;
+   id->mtime_nsec = v.mtime_nsec;
+   id->ctime_nsec = v.ctime_nsec;
+   memcpy(id->ino, v.id, sizeof(id->ino));
+#ifdef _WIN32
+   /* Kept in the store as Windows has them, in seconds from 1601, so
+    * the records already made still match. ctime_kept stays false: any
+    * writer can set ChangeTime. */
+   id->mtime += (int64_t)11644473600LL;
+   if (v.ctime || v.ctime_nsec)
+      id->ctime += (int64_t)11644473600LL;
+#elif defined(CORE_FS_MAGIC)
    id->ctime_kept = fstatfs(f->fd, &fs) == 0
          && core_fs_magic_keeps_ctime((unsigned long)fs.f_type);
 #elif defined(CORE_FS_NAME)
    id->ctime_kept = fstatfs(f->fd, &fs) == 0
          && core_fs_name_keeps_ctime(fs.f_fstypename);
 #endif
-   id->dev   = (uint64_t)st.st_dev;
-   id->size  = (uint64_t)st.st_size;
-   id->mtime = (int64_t)st.st_mtime;
-   id->ctime = (int64_t)st.st_ctime;
-#if defined(__APPLE__)
-   id->mtime_nsec = (uint32_t)st.st_mtimespec.tv_nsec;
-   id->ctime_nsec = (uint32_t)st.st_ctimespec.tv_nsec;
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) \
-   || defined(__OpenBSD__)
-   id->mtime_nsec = (uint32_t)st.st_mtim.tv_nsec;
-   id->ctime_nsec = (uint32_t)st.st_ctim.tv_nsec;
-#endif
-   ino = (uint64_t)st.st_ino;
-   for (i = 0; i < 8; i++)
-      id->ino[8 + i] = (uint8_t)(ino >> (56 - 8 * i));
    return true;
-#endif
 }
 
 #ifdef _WIN32
 #define CORE_HASH_UNSET  0
 #define CORE_HASH_MAPPED 1
 #define CORE_HASH_READ   2
-/* Mapped a window at a time, so a 32-bit process needs no address
- * space the size of the core */
-#define CORE_HASH_VIEW   (32 * 1024 * 1024)
 
-static void core_hash_unmap(struct core_hash *h)
-{
-   if (h->view)
-      UnmapViewOfFile((LPCVOID)h->view);
-   if (h->map)
-      CloseHandle((HANDLE)h->map);
-   h->view     = NULL;
-   h->map      = NULL;
-   h->view_len = 0;
-}
-
-/* Hashed from a mapping only on a local fixed drive: a read through a
- * mapping fails as an exception, not an error, and a network share or a
- * removable drive can fail mid-file, where ReadFile reports it */
+/* The file's mapping, from the VFS, to hash in place. Only on a local
+ * fixed drive: a read through a mapping fails as an exception, not an
+ * error, and a network share or a removable drive can fail mid-file,
+ * where a read reports it and the check refuses cleanly. Nothing can
+ * shorten the file: its handle denies writes. */
 static bool core_hash_map(struct core_hash *h, core_file_t *f)
 {
-#ifdef LEGACY_WIN32
-   /* No SetFilePointerEx or GetFileSizeEx before Windows 2000 */
-   (void)h;
-   (void)f;
-   return false;
-#else
-   LARGE_INTEGER zero, pos, size;
+   const char *path = retro_vfs_file_get_path_impl(f);
+   int64_t pos, len = 0;
    char root[4];
-   if (!f->drive)
+   if (     !path
+         || !(     (path[0] >= 'A' && path[0] <= 'Z')
+               ||  (path[0] >= 'a' && path[0] <= 'z'))
+         || path[1] != ':' || (path[2] != '\\' && path[2] != '/'))
       return false;
-   root[0] = f->drive;
+   root[0] = path[0];
    root[1] = ':';
    root[2] = '\\';
    root[3] = '\0';
-   zero.QuadPart = 0;
-   if (     GetDriveTypeA(root) != DRIVE_FIXED
-         || !SetFilePointerEx(f->h, zero, &pos, FILE_CURRENT)
-         || !GetFileSizeEx(f->h, &size)
-         || size.QuadPart <= pos.QuadPart
-         || !(h->map = (void*)CreateFileMappingA(f->h, NULL, PAGE_READONLY,
-               0, 0, NULL)))
+   if (GetDriveTypeA(root) != DRIVE_FIXED)
       return false;
-   h->start = (uint64_t)pos.QuadPart;
-   h->size  = (uint64_t)size.QuadPart;
+#if !defined(_WIN64)
+   /* A 32-bit process keeps its address space for the core it loads:
+    * the mapping lives as long as the file is open */
+   if (retro_vfs_file_size_impl(f) > 256 * 1024 * 1024)
+      return false;
+#endif
+   if (     (pos = retro_vfs_file_tell_impl(f)) < 0
+         || !(h->map = retro_vfs_file_map_impl(f, &len))
+         || len <= pos)
+   {
+      h->map = NULL;
+      return false;
+   }
+   h->start = (uint64_t)pos;
+   h->size  = (uint64_t)len;
    return true;
-#endif
-}
-
-/* The view holding the hash's position, mapped if it isn't yet */
-static const uint8_t *core_hash_view(struct core_hash *h, size_t *len)
-{
-   uint64_t pos = h->start + h->done;
-   if (pos < h->view_off || pos >= h->view_off + h->view_len)
-   {
-      SYSTEM_INFO si;
-      uint64_t off, n;
-      GetSystemInfo(&si);
-      if (h->view)
-         UnmapViewOfFile((LPCVOID)h->view);
-      off         = pos - pos % si.dwAllocationGranularity;
-      n           = h->size - off;
-      if (n > CORE_HASH_VIEW)
-         n = CORE_HASH_VIEW;
-      h->view_len = 0;
-      if (!(h->view = (const uint8_t*)MapViewOfFile((HANDLE)h->map,
-               FILE_MAP_READ, (DWORD)(off >> 32), (DWORD)off, (SIZE_T)n)))
-         return NULL;
-      h->view_off = off;
-      h->view_len = (size_t)n;
-   }
-   *len = (size_t)(h->view_off + h->view_len - pos);
-   return h->view + (size_t)(pos - h->view_off);
-}
-
-/* The rest is read: from where the mapping stopped, into buf */
-static bool core_hash_to_read(struct core_hash *h, core_file_t *f)
-{
-   bool mapped = h->mode == CORE_HASH_MAPPED;
-   core_hash_unmap(h);
-   h->mode     = CORE_HASH_READ;
-#ifndef LEGACY_WIN32
-   if (mapped)
-   {
-      LARGE_INTEGER pos;
-      pos.QuadPart = (LONGLONG)(h->start + h->done);
-      if (!SetFilePointerEx(f->h, pos, NULL, FILE_BEGIN))
-         return false;
-   }
-#else
-   (void)f;
-   (void)mapped;
-#endif
-   return h->buf || (h->buf = (uint8_t*)malloc(CORE_HASH_CHUNK));
 }
 #endif
 
@@ -374,14 +183,11 @@ bool core_hash_init(struct core_hash *h)
    sha256_stream_init(&h->sha, 0);
    h->done = 0;
 #ifdef _WIN32
-   h->buf      = NULL;
-   h->map      = NULL;
-   h->view     = NULL;
-   h->view_off = 0;
-   h->view_len = 0;
-   h->start    = 0;
-   h->size     = 0;
-   h->mode     = CORE_HASH_UNSET;
+   h->buf   = NULL;
+   h->map   = NULL;
+   h->start = 0;
+   h->size  = 0;
+   h->mode  = CORE_HASH_UNSET;
    return true;
 #else
    return (h->buf = (uint8_t*)malloc(CORE_HASH_CHUNK)) != NULL;
@@ -396,27 +202,22 @@ int core_hash_step(struct core_hash *h, core_file_t *f)
    {
       if (core_hash_map(h, f))
          h->mode = CORE_HASH_MAPPED;
-      else if (!core_hash_to_read(h, f))
+      else if (!(h->buf = (uint8_t*)malloc(CORE_HASH_CHUNK)))
          return -1;
+      else
+         h->mode = CORE_HASH_READ;
    }
    if (h->mode == CORE_HASH_MAPPED)
    {
-      const uint8_t *p;
-      size_t len;
-      /* The handle denies writes, so the size can't have changed */
-      if (h->start + h->done >= h->size)
+      uint64_t pos = h->start + h->done;
+      uint64_t len = h->size - pos;
+      if (pos >= h->size)
          return 0;
-      if ((p = core_hash_view(h, &len)))
-      {
-         if (len > CORE_HASH_CHUNK)
-            len = CORE_HASH_CHUNK;
-         sha256_stream_update(&h->sha, p, len);
-         h->done += (uint64_t)len;
-         return 1;
-      }
-      /* No address space for a view: read the rest */
-      if (!core_hash_to_read(h, f))
-         return -1;
+      if (len > CORE_HASH_CHUNK)
+         len = CORE_HASH_CHUNK;
+      sha256_stream_update(&h->sha, h->map + pos, (size_t)len);
+      h->done += len;
+      return 1;
    }
 #endif
    if ((got = core_file_read(f, h->buf, CORE_HASH_CHUNK)) < 0)
@@ -436,11 +237,12 @@ void core_hash_final(struct core_hash *h, uint8_t *sha256)
 
 void core_hash_free(struct core_hash *h)
 {
-#ifdef _WIN32
-   core_hash_unmap(h);
-#endif
+   /* A mapping is the file's, dropped when it closes */
    free(h->buf);
    h->buf = NULL;
+#ifdef _WIN32
+   h->map = NULL;
+#endif
 }
 
 #ifdef __linux__
