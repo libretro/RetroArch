@@ -2,6 +2,7 @@
 bool	accessibility_enable	1	0
 bool	load_dummy_on_core_shutdown	1	1
 bool	core_info_cache_enable	1	0
+bool	core_firmware_notification_enable	1	1
 bool	core_set_supports_no_game_enable	1	1
 bool	builtin_mediaplayer_enable	1	0
 bool	builtin_imageviewer_enable	1	1
@@ -46,6 +47,7 @@ bool	video_waitable_swapchains	1	1
 bool	video_d3d9ex_present	1	0
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
+bool	video_threaded_pacing_vblank	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_skip_dupe_frames	1	0
 bool	video_hard_sync	1	0
@@ -744,6 +746,7 @@ size	rewind_buffer_size	1	(20 << 20)
 bool	accessibility_enable	1	0
 bool	load_dummy_on_core_shutdown	1	0
 bool	core_info_cache_enable	1	0
+bool	core_firmware_notification_enable	1	1
 bool	core_set_supports_no_game_enable	1	1
 bool	builtin_mediaplayer_enable	1	0
 bool	builtin_imageviewer_enable	1	1
@@ -788,6 +791,7 @@ bool	video_waitable_swapchains	1	1
 bool	video_d3d9ex_present	1	0
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
+bool	video_threaded_pacing_vblank	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_skip_dupe_frames	1	0
 bool	video_hard_sync	1	0
@@ -1473,6 +1477,7 @@ size	rewind_buffer_size	1	(20 << 20)
 bool	accessibility_enable	1	0
 bool	load_dummy_on_core_shutdown	1	1
 bool	core_info_cache_enable	1	0
+bool	core_firmware_notification_enable	1	1
 bool	core_set_supports_no_game_enable	1	1
 bool	builtin_mediaplayer_enable	1	0
 bool	builtin_imageviewer_enable	1	1
@@ -1519,6 +1524,7 @@ bool	video_waitable_swapchains	1	1
 bool	video_d3d9ex_present	1	0
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
+bool	video_threaded_pacing_vblank	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_skip_dupe_frames	1	0
 bool	video_hard_sync	1	0
