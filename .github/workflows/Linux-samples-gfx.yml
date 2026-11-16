@@ -3327,6 +3327,16 @@ jobs:
       - name: D3D11 resized readback destination guard
         run: python3 samples/gfx/d3d11_readback_resize/run.py
 
+      - name: DXGI bridge and its Vulkan and WGL presenters against COM mocks
+        shell: bash
+        run: |
+          set -eu
+          # The bridge's pacing, submission, resize and teardown, and
+          # the presenters' acquire, drain and image handling, cut from
+          # their sources. No job ran it, and it fell behind them.
+          python3 samples/gfx/dxgi_present/run.py
+          CC=x86_64-w64-mingw32-gcc TEST_RUNNER=wine WINEDEBUG=-all python3 samples/gfx/dxgi_present/run.py
+
       - name: D3D11 and D3D12 report a present as immediate only past the compositor
         shell: bash
         run: |

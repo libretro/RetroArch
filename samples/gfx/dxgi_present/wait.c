@@ -9,6 +9,11 @@
 typedef int VkResult;
 typedef unsigned VkFence;
 typedef struct { unsigned sType, flags; const void *pNext; } VkFenceCreateInfo;
+#define VK_STRUCTURE_TYPE_SUBMIT_INFO 4
+typedef struct {
+   unsigned sType, waitSemaphoreCount, commandBufferCount, signalSemaphoreCount;
+   const void *pNext;
+} VkSubmitInfo;
 typedef unsigned slock_t;
 typedef struct { unsigned device, queue; VkFence resize_fence; int submitted; void *queue_lock; } ra_vulkan_dxgi_t;
 static unsigned locked;
@@ -25,9 +30,13 @@ static VkResult vkCreateFence(unsigned device, const VkFenceCreateInfo *info,
    return create_result;
 }
 static VkResult vkQueueSubmit(unsigned queue, unsigned count,
-      const void *submit, VkFence fence)
+      const VkSubmitInfo *submit, VkFence fence)
 {
-   assert(queue == 2 && count == 0 && !submit && fence == 9 && step == 0 && locked);
+   assert(queue == 2 && fence == 9 && step == 0 && locked);
+   /* an empty batch, not a NULL one */
+   assert(count == 1 && submit && submit->sType == VK_STRUCTURE_TYPE_SUBMIT_INFO
+         && !submit->pNext && !submit->waitSemaphoreCount
+         && !submit->commandBufferCount && !submit->signalSemaphoreCount);
    ++submits; step = 1; return submit_result;
 }
 static VkResult vkWaitForFences(unsigned device, unsigned count,
