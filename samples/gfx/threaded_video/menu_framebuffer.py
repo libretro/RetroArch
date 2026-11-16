@@ -24,7 +24,10 @@ functions = source[start:end]
 rgui = (root / "menu/drivers/rgui.c").read_text(encoding="utf-8")
 start = rgui.index("static void rgui_set_texture_frame(")
 end = rgui.index("\n}\n", rgui.index("static void rgui_set_texture(", start)) + 3
-render = rgui[start:end]
+macro_start = rgui.index("#if defined(__OPTIMIZE_SIZE__)")
+macro_end = rgui.index("\n#endif", macro_start) + len("\n#endif")
+render = (rgui[macro_start:macro_end] + "\n" + rgui[start:end]).replace("cols[x_dst] = (uint16_t)x_src;",
+                                "cols[x_dst] = (uint16_t)x_src; map_writes++;")
 frontend = (root / "gfx/video_driver.c").read_text(encoding="utf-8")
 start = frontend.index("void *video_driver_get_menu_framebuffer(")
 frontend = frontend[start:frontend.index("\n}\n", start) + 3]
@@ -55,7 +58,7 @@ typedef struct {
    } texture;
 } thread_video_t;
 static thread_video_t *video_thread_thr_capture;
-static unsigned copied, allocated;
+static unsigned copied, allocated, map_writes;
 static bool active, fail_alloc;
 static bool video_driver_thread_wrapper_active(void) { return active; }
 static void *counted_copy(void *dst, const void *src, size_t size)
@@ -82,6 +85,7 @@ typedef struct {
    frame_buf_t frame_buf, upscale_buf;
    uint16_t *upscale_line;
    unsigned upscale_line_width;
+   unsigned upscale_map_src_width, upscale_map_width;
 } rgui_t;
 typedef struct { unsigned flags, framebuf_dims; } gfx_display_t;
 typedef struct { struct { unsigned menu_rgui_internal_upscale_level; } uints; } settings_t;
@@ -175,6 +179,25 @@ static void direct_submit(void *data, const void *frame, bool rgb32,
    direct_submits++;
 }
 
+static void check_upscale_map(thread_video_t *thr, rgui_t *rgui,
+      unsigned width, unsigned height, unsigned level, bool rebuild)
+{
+   unsigned x, y, writes = map_writes;
+   unsigned out_width = width * level, out_height = height * level;
+   struct video_thread_menu_texture *taken;
+   display.framebuf_dims = VIDEO_SCALE_PACK(width, height);
+   display.flags = GFX_DISP_FLAG_FB_DIRTY;
+   settings.uints.menu_rgui_internal_upscale_level = level;
+   rgui_set_texture(rgui);
+   taken = (struct video_thread_menu_texture*)retro_triple_buffer_take(&thr->texture.frames);
+   assert(taken && taken->dims == VIDEO_SCALE_PACK(out_width, out_height));
+   assert(map_writes == writes + (rebuild ? out_width : 0));
+   for (y = 0; y < out_height; y++)
+      for (x = 0; x < out_width; x++)
+         assert(((uint16_t*)taken->frame)[y * out_width + x]
+               == rgui->frame_buf.data[(y / level) * width + x / level]);
+}
+
 static void check_upscale(thread_video_t *thr)
 {
    struct poke poke;
@@ -209,9 +232,26 @@ static void check_upscale(thread_video_t *thr)
             unsigned sy = y * 4 / width;
             assert(((uint16_t*)taken->frame)[y * width + x] == pixels[sy * 4 + sx]);
          }
+      {
+         unsigned writes = map_writes;
+         display.flags = GFX_DISP_FLAG_FB_DIRTY;
+         pixels[0]++;
+         rgui_set_texture(&rgui);
+         taken = (struct video_thread_menu_texture*)retro_triple_buffer_take(&thr->texture.frames);
+         assert(taken && map_writes == writes);
+         assert(((uint16_t*)taken->frame)[0] == pixels[0]);
+         pixels[0]--;
+      }
       rgui_set_texture(&rgui);
       assert(!retro_triple_buffer_take(&thr->texture.frames));
    }
+   check_upscale_map(thr, &rgui, 4, 4, 2, true);
+   check_upscale_map(thr, &rgui, 2, 4, 4, true);
+   check_upscale_map(thr, &rgui, 2, 2, 4, false);
+   check_upscale_map(thr, &rgui, 4, 4, 4, true);
+   check_upscale_map(thr, &rgui, 4, 4, 2, true);
+   check_upscale_map(thr, &rgui, 4, 4, 4, true);
+   check_upscale_map(thr, &rgui, 4, 4, 2, true);
    active = false;
    settings.uints.menu_rgui_internal_upscale_level = 2;
    display.flags = GFX_DISP_FLAG_FB_DIRTY;

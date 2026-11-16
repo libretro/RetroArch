@@ -352,6 +352,8 @@ typedef struct
     * back). Grown only when the output gets wider. */
    uint16_t *upscale_line;
    unsigned upscale_line_width;
+   unsigned upscale_map_src_width;
+   unsigned upscale_map_width;
 
    thumbnail_t fs_thumbnail;
    thumbnail_t mini_thumbnail;
@@ -7987,8 +7989,10 @@ static void rgui_free(void *data)
    rgui_buffers_free(rgui);
    rgui_upscale_buf_free(&rgui->upscale_buf);
    free(rgui->upscale_line);
-   rgui->upscale_line       = NULL;
-   rgui->upscale_line_width = 0;
+   rgui->upscale_line          = NULL;
+   rgui->upscale_line_width    = 0;
+   rgui->upscale_map_src_width = 0;
+   rgui->upscale_map_width     = 0;
 }
 
 static void rgui_set_texture_frame(video_driver_state_t *video_st,
@@ -7999,6 +8003,21 @@ static void rgui_set_texture_frame(video_driver_state_t *video_st,
          && video_st->poke->set_texture_frame)
       video_st->poke->set_texture_frame(video_st->data,
             frame, rgb32, dims, alpha);
+}
+
+RGUI_NOINLINE static void rgui_upscale_map(rgui_t *rgui,
+      unsigned fb_width, unsigned out_width)
+{
+   unsigned x_dst, x_src, rem;
+   uint16_t *cols = rgui->upscale_line;
+   for (x_dst = 0, x_src = 0, rem = 0; x_dst < out_width; x_dst++)
+   {
+      cols[x_dst] = (uint16_t)x_src;
+      for (rem += fb_width; rem >= out_width; rem -= out_width)
+         x_src++;
+   }
+   rgui->upscale_map_src_width = fb_width;
+   rgui->upscale_map_width     = out_width;
 }
 
 static void rgui_set_texture(void *data)
@@ -8052,7 +8071,7 @@ static void rgui_set_texture(void *data)
       {
          unsigned out_width;
          unsigned out_height;
-         unsigned x_src, y_src, prev_y_src, rem;
+         unsigned y_src, prev_y_src, rem;
          unsigned x_dst, y_dst;
          size_t out_pitch;
          uint16_t *cols, *line;
@@ -8122,12 +8141,9 @@ static void rgui_set_texture(void *data)
          /* Source of each output pixel: floor(dst * fb / out),
           * stepped, so at a whole factor each source pixel is
           * repeated exactly that many times */
-         for (x_dst = 0, x_src = 0, rem = 0; x_dst < out_width; x_dst++)
-         {
-            cols[x_dst] = (uint16_t)x_src;
-            for (rem += fb_width; rem >= out_width; rem -= out_width)
-               x_src++;
-         }
+         if (     rgui->upscale_map_src_width != fb_width
+               || rgui->upscale_map_width != out_width)
+            rgui_upscale_map(rgui, fb_width, out_width);
 
          for (y_dst = 0, y_src = 0, rem = 0; y_dst < out_height; y_dst++)
          {
@@ -9590,8 +9606,10 @@ static void rgui_toggle(void *userdata, bool menu_on)
          rgui->upscale_buf.data = NULL;
       }
       free(rgui->upscale_line);
-      rgui->upscale_line       = NULL;
-      rgui->upscale_line_width = 0;
+      rgui->upscale_line          = NULL;
+      rgui->upscale_line_width    = 0;
+      rgui->upscale_map_src_width = 0;
+      rgui->upscale_map_width     = 0;
    }
 }
 
