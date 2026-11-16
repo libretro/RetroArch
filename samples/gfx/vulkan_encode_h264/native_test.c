@@ -8,6 +8,20 @@
 #include <string.h>
 #include <dynamic/dylib.h>
 #include "../../../gfx/common/vulkan_encode_h264.h"
+#include "../../../gfx/common/vulkan_encode_capture.h"
+
+struct native_capture_command
+{
+   VkCommandBufferBeginInfo begin;
+   VkImageMemoryBarrier2 image;
+   VkDependencyInfo dependency;
+   VkClearColorValue color;
+   VkTimelineSemaphoreSubmitInfo timeline;
+   VkSubmitInfo submit;
+   VkPipelineStageFlags wait_stage;
+   vulkan_encode_capture_source_t source;
+   uint64_t ready,done;
+};
 
 struct native_encoder
 {
@@ -15,7 +29,8 @@ struct native_encoder
    VkInstance instance;
    VkPhysicalDevice physical;
    VkDevice device;
-   VkQueue queue;
+   VkQueue queue,producer_queue;
+   unsigned producer_family;
    VkDebugUtilsMessengerEXT messenger;
    unsigned validation_errors;
    PFN_vkDestroyDebugUtilsMessengerEXT destroy_messenger;
@@ -40,7 +55,15 @@ struct native_encoder
    VkVideoCapabilitiesKHR caps;
    VkVideoEncodeCapabilitiesKHR encode_caps;
    VkVideoEncodeH264CapabilitiesKHR codec_caps;
+   struct native_capture_command capture_command;
+   vulkan_encode_capture_ops_t capture_ops;
+   vulkan_encode_capture_t *capture;
+   VkImage rgb;
+   VkImageView rgb_view;
+   VkDeviceMemory rgb_memory;
+   char shader_error[512];
    vulkan_encode_h264_ops_t ops;
+   vulkan_encode_packet_t packets[2];
    vulkan_encode_h264_open_t config;
    uint8_t headers[65536];
 };
@@ -141,6 +164,29 @@ static void load_ops(struct native_encoder *c)
    DEVICE(ops.submit.status, GetFenceStatus);
    DEVICE(ops.submit.feedback, GetQueryPoolResults);
 }
+static void load_capture_ops(struct native_encoder *c)
+{
+   DEVICE(capture_ops.create_set_layout, CreateDescriptorSetLayout);
+   DEVICE(capture_ops.destroy_set_layout, DestroyDescriptorSetLayout);
+   DEVICE(capture_ops.create_descriptor_pool, CreateDescriptorPool);
+   DEVICE(capture_ops.destroy_descriptor_pool, DestroyDescriptorPool);
+   DEVICE(capture_ops.allocate_sets, AllocateDescriptorSets);
+   DEVICE(capture_ops.update_sets, UpdateDescriptorSets);
+   DEVICE(capture_ops.create_sampler, CreateSampler);
+   DEVICE(capture_ops.destroy_sampler, DestroySampler);
+   DEVICE(capture_ops.create_pipeline_layout, CreatePipelineLayout);
+   DEVICE(capture_ops.destroy_pipeline_layout, DestroyPipelineLayout);
+   DEVICE(capture_ops.create_shader, CreateShaderModule);
+   DEVICE(capture_ops.destroy_shader, DestroyShaderModule);
+   DEVICE(capture_ops.create_pipelines, CreateComputePipelines);
+   DEVICE(capture_ops.destroy_pipeline, DestroyPipeline);
+   DEVICE(capture_ops.barrier, CmdPipelineBarrier2);
+   DEVICE(capture_ops.bind_pipeline, CmdBindPipeline);
+   DEVICE(capture_ops.bind_sets, CmdBindDescriptorSets);
+   DEVICE(capture_ops.push, CmdPushConstants);
+   DEVICE(capture_ops.dispatch, CmdDispatch);
+   DEVICE(capture_ops.copy, CmdCopyBufferToImage);
+}
 static bool select_device(struct native_encoder *c)
 {
    PFN_vkEnumeratePhysicalDevices enumerate;
@@ -202,20 +248,29 @@ static bool select_device(struct native_encoder *c)
             c->queue_flags=queues[j].queueFamilyProperties.queueFlags;
             found=true; break;
          }
+      c->producer_family=c->family;
+      if (found)
+         for (j=0;j<n;j++)
+            if (queues[j].queueFamilyProperties.queueCount
+                  && (queues[j].queueFamilyProperties.queueFlags&VK_QUEUE_COMPUTE_BIT)
+                  && (queues[j].queueFamilyProperties.queueFlags&VK_QUEUE_TRANSFER_BIT))
+            { c->producer_family=j; break; }
       free(video); free(queues);
    }
    free(devices);
    return found;
 }
-static bool startup(struct native_encoder *c)
+static bool startup(struct native_encoder *c,bool capture)
 {
    VkApplicationInfo application;
    VkDebugUtilsMessengerCreateInfoEXT debug;
+   VkValidationFeaturesEXT validation;
+   VkValidationFeatureEnableEXT synchronization=VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT;
    PFN_vkCreateDebugUtilsMessengerEXT create_messenger;
    const char *layer="VK_LAYER_KHRONOS_validation";
-   const char *debug_extension=VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+   const char *debug_extensions[]={VK_EXT_DEBUG_UTILS_EXTENSION_NAME,VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME};
    VkInstanceCreateInfo instance;
-   VkDeviceQueueCreateInfo queue;
+   VkDeviceQueueCreateInfo queue[2];
    VkDeviceCreateInfo device;
    VkPhysicalDeviceFeatures enabled;
    PFN_vkCreateInstance create_instance;
@@ -250,11 +305,16 @@ static bool startup(struct native_encoder *c)
       |VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
    debug.pfnUserCallback=debug_message;
    debug.pUserData=c;
-   instance.pNext=&debug;
+   memset(&validation,0,sizeof(validation));
+   validation.sType=VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+   validation.pNext=&debug;
+   validation.enabledValidationFeatureCount=1;
+   validation.pEnabledValidationFeatures=&synchronization;
+   instance.pNext=&validation;
    instance.enabledLayerCount=1;
    instance.ppEnabledLayerNames=&layer;
-   instance.enabledExtensionCount=1;
-   instance.ppEnabledExtensionNames=&debug_extension;
+   instance.enabledExtensionCount=2;
+   instance.ppEnabledExtensionNames=debug_extensions;
    if (create_instance(&instance,NULL,&c->instance)!=VK_SUCCESS) return false;
    INSTANCE(destroy_instance,DestroyInstance);
    INSTANCE(destroy_messenger,DestroyDebugUtilsMessengerEXT);
@@ -281,17 +341,21 @@ static bool startup(struct native_encoder *c)
    c->version12.timelineSemaphore=VK_TRUE;
    c->version13.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
    c->version13.synchronization2=VK_TRUE;
-   memset(&queue,0,sizeof(queue));
-   queue.sType=VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-   queue.queueFamilyIndex=c->family;
-   queue.queueCount=1;
-   queue.pQueuePriorities=&priority;
+   if (!capture) c->producer_family=c->family;
+   if (capture && c->producer_family==c->family && !(c->queue_flags&VK_QUEUE_COMPUTE_BIT))
+      return false;
+   memset(queue,0,sizeof(queue));
+   queue[0].sType=queue[1].sType=VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+   queue[0].queueFamilyIndex=c->family;
+   queue[1].queueFamilyIndex=c->producer_family;
+   queue[0].queueCount=queue[1].queueCount=1;
+   queue[0].pQueuePriorities=queue[1].pQueuePriorities=&priority;
    memset(&device,0,sizeof(device));
    device.sType=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
    device.pNext=&c->version12;
    device.pEnabledFeatures=&enabled;
-   device.queueCreateInfoCount=1;
-   device.pQueueCreateInfos=&queue;
+   device.queueCreateInfoCount=c->family==c->producer_family?1:2;
+   device.pQueueCreateInfos=queue;
    device.enabledExtensionCount=3;
    device.ppEnabledExtensionNames=extensions;
    create_device=(PFN_vkCreateDevice)c->instance_proc(c->instance,"vkCreateDevice");
@@ -301,7 +365,9 @@ static bool startup(struct native_encoder *c)
    get_queue=(PFN_vkGetDeviceQueue)c->device_proc(c->device,"vkGetDeviceQueue");
    assert(get_queue);
    get_queue(c->device,c->family,0,&c->queue);
+   get_queue(c->device,c->producer_family,0,&c->producer_queue);
    load_ops(c);
+   if (capture) load_capture_ops(c);
    c->codec_profile.sType=VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR;
    c->codec_profile.stdProfileIdc=STD_VIDEO_H264_PROFILE_IDC_HIGH;
    c->profile.sType=VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
@@ -339,7 +405,7 @@ static bool startup(struct native_encoder *c)
    c->config.session.video.fps_den=1;
    c->config.session.video.bitrate=2000000;
    c->config.queue=c->queue;
-   c->config.producer_family=c->family;
+   c->config.producer_family=c->producer_family;
    c->config.slots=2;
    c->config.packet_size=1048576;
    c->config.gop=30; c->config.qp=22;
@@ -381,7 +447,7 @@ static void upload_new(struct native_encoder *c,const vulkan_encode_pool_t *pool
    memset(&commands,0,sizeof(commands));
    commands.sType=VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
    commands.flags=VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-   commands.queueFamilyIndex=c->family;
+   commands.queueFamilyIndex=c->producer_family;
    assert(c->ops.pool.create_commands(c->device,&commands,NULL,&c->producer_commands)==VK_SUCCESS);
    memset(&command,0,sizeof(command));
    command.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -472,11 +538,12 @@ static void upload_frame(struct native_encoder *c,const vulkan_encode_pool_t *po
    submit.pSignalSemaphores=&pool->ready;
    assert(c->ops.submit.submit(c->queue,1,&submit,VK_NULL_HANDLE)==VK_SUCCESS);
 }
-static void encode_pictures(struct native_encoder *c,const char *path)
+#include "native_capture.h"
+static int encode_pictures(struct native_encoder *c,const char *path,unsigned capture_mode)
 {
    vulkan_encode_h264_t *encoder;
    const vulkan_encode_pool_t *pool;
-   vulkan_encode_packet_t packet,again;
+   vulkan_encode_packet_t *packet=&c->packets[0],*again=&c->packets[1];
    PFN_vkWaitForFences wait_fence;
    size_t bytes=0;
    unsigned frame;
@@ -484,52 +551,69 @@ static void encode_pictures(struct native_encoder *c,const char *path)
    assert(file);
    c->config.slots=2;
    c->config.gop=4;
-   c->config.storage_image_extended_formats=false;
+   c->config.storage_image_extended_formats=capture_mode==1
+      && c->features.features.shaderStorageImageExtendedFormats;
    encoder=vulkan_encode_h264_open(&c->config,&c->ops);
    assert(encoder);
    pool=vulkan_encode_h264_pool(encoder);
-   assert(pool && !pool->storage_images);
+   assert(pool);
+   if (capture_mode==1 && !pool->storage_images)
+   {
+      assert(vulkan_encode_h264_free(encoder) && !fclose(file));
+      puts("UNAVAILABLE direct storage capture format");
+      return 77;
+   }
+   if (capture_mode!=1) assert(!pool->storage_images);
    assert(vulkan_encode_h264_headers(encoder,c->headers,sizeof(c->headers),&bytes));
    assert(fwrite(c->headers,1,bytes,file)==bytes);
-   upload_new(c,pool);
+   if (capture_mode) capture_new(c,pool);
+   else upload_new(c,pool);
    wait_fence=(PFN_vkWaitForFences)c->device_proc(c->device,"vkWaitForFences");
    assert(wait_fence);
    for (frame=0;frame<12;frame++)
    {
-      upload_frame(c,pool,frame);
+      if (capture_mode) capture_frame(c,pool,frame);
+      else upload_frame(c,pool,frame);
       assert(vulkan_encode_h264_submit(encoder,frame%2,frame,1,frame+1,false)==VULKAN_ENCODE_OK);
       /* Test orchestration only; the shipping encoder polls without waits. */
       assert(wait_fence(c->device,1,&pool->slot[frame%2].fence,VK_TRUE,2000000000)==VK_SUCCESS);
-      assert(vulkan_encode_h264_poll(encoder,&packet)==VULKAN_ENCODE_OK);
-      assert(packet.data && packet.size && packet.timestamp==frame && packet.duration==1);
-      assert(packet.keyframe==(frame%4==0));
-      assert(vulkan_encode_h264_poll(encoder,&again)==VULKAN_ENCODE_OK);
-      assert(packet.data==again.data && packet.size==again.size && packet.slot==again.slot);
-      assert(fwrite(packet.data,1,packet.size,file)==packet.size);
+      assert(vulkan_encode_h264_poll(encoder,packet)==VULKAN_ENCODE_OK);
+      assert(packet->data && packet->size && packet->timestamp==frame && packet->duration==1);
+      assert(packet->keyframe==(frame%4==0));
+      assert(vulkan_encode_h264_poll(encoder,again)==VULKAN_ENCODE_OK);
+      assert(packet->data==again->data && packet->size==again->size && packet->slot==again->slot);
+      assert(fwrite(packet->data,1,packet->size,file)==packet->size);
       assert(vulkan_encode_h264_release(encoder));
    }
    assert(vulkan_encode_h264_finish(encoder)==VULKAN_ENCODE_OK);
-   assert(vulkan_encode_h264_poll(encoder,&packet)==VULKAN_ENCODE_END);
+   assert(vulkan_encode_h264_poll(encoder,packet)==VULKAN_ENCODE_END);
    c->ops.pool.destroy_commands(c->device,c->producer_commands,NULL);
-   c->ops.pool.unmap(c->device,c->upload_memory);
-   c->ops.pool.destroy_buffer(c->device,c->upload,NULL);
-   c->ops.pool.free_memory(c->device,c->upload_memory,NULL);
+   if (capture_mode) capture_free(c);
+   else
+   {
+      c->ops.pool.unmap(c->device,c->upload_memory);
+      c->ops.pool.destroy_buffer(c->device,c->upload,NULL);
+      c->ops.pool.free_memory(c->device,c->upload_memory,NULL);
+   }
    assert(vulkan_encode_h264_free(encoder));
    assert(!fclose(file));
-   puts("PASS native coded pictures=12 GOP=4 stable output borrows; test-only CPU upload");
+   printf("PASS native coded pictures=12 GOP=4 stable output borrows capture=%u\n",capture_mode);
+   return 0;
 }
 int main(int argc,char **argv)
 {
    struct native_encoder *c=(struct native_encoder*)calloc(1,sizeof(*c));
    vulkan_encode_h264_t *encoder;
-   vulkan_encode_packet_t packet;
+   vulkan_encode_packet_t *packet;
    size_t bytes;
    unsigned cycle;
    bool storage;
    const vulkan_encode_pool_t *pool;
    int result=77;
-   assert(c && (argc==1 || (argc==3 && !strcmp(argv[1],"--pictures"))));
-   if (!startup(c))
+   assert(c && (argc==1 || (argc==3 && (!strcmp(argv[1],"--pictures")
+               || !strcmp(argv[1],"--capture-direct") || !strcmp(argv[1],"--capture-buffer")))));
+   packet=&c->packets[0];
+   if (!startup(c,argc==3 && strcmp(argv[1],"--pictures")))
       puts("UNAVAILABLE Vulkan validation layer or Vulkan 1.3 H.264 encode device/features");
    else
    {
@@ -548,7 +632,7 @@ int main(int argc,char **argv)
          assert(vulkan_encode_h264_headers(encoder,c->headers,sizeof(c->headers),&bytes));
          assert(bytes && bytes<=sizeof(c->headers));
          assert(vulkan_encode_h264_finish(encoder)==VULKAN_ENCODE_OK);
-         assert(vulkan_encode_h264_poll(encoder,&packet)==VULKAN_ENCODE_END);
+         assert(vulkan_encode_h264_poll(encoder,packet)==VULKAN_ENCODE_END);
          assert(vulkan_encode_h264_free(encoder));
          printf("PASS native cold H264 session/pool/header/empty drain cycle=%u headers=%lu\n",
                cycle,(unsigned long)bytes);
@@ -557,15 +641,15 @@ int main(int argc,char **argv)
          puts("UNAVAILABLE test upload on the selected encode queue");
       else
       {
-         if (argc==3) encode_pictures(c,argv[2]);
-         result=0;
+         result=argc==3?encode_pictures(c,argv[2],!strcmp(argv[1],"--capture-direct")
+               ?1:!strcmp(argv[1],"--capture-buffer")?2:0):0;
       }
    }
    if (c->device) c->destroy_device(c->device,NULL);
    if (c->messenger) c->destroy_messenger(c->instance,c->messenger,NULL);
    if (c->instance) c->destroy_instance(c->instance,NULL);
    if (c->validation_errors) result=1;
-   printf("validation_errors=%u\n",c->validation_errors);
+   printf("validation_sync=1\nvalidation_errors=%u\n",c->validation_errors);
    if (c->library) dylib_close(c->library);
    free(c);
    return result;

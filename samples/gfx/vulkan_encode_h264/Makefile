@@ -51,8 +51,11 @@ NATIVE_SOURCES := native_test.c $(RA)/gfx/common/vulkan_encode_h264.c \
    $(RA)/gfx/common/vulkan_encode_h264_session.c $(RA)/gfx/common/vulkan_encode_h264_submit.c \
    $(RA)/gfx/common/vulkan_encode_pool.c $(RA)/libretro-common/dynamic/dylib.c \
    $(RA)/libretro-common/encodings/encoding_utf.c $(RA)/libretro-common/compat/compat_strl.c
-native_test$(EXE): $(NATIVE_SOURCES)
-	$(CC) $(CFLAGS) -DHAVE_DYLIB $(NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+NATIVE_SOURCES += $(RA)/gfx/common/vulkan_encode_capture.c $(RA)/gfx/common/vulkan_encode_capture_shader.c \
+   $(RA)/libretro-common/gfx/shaders/rslc_front.c $(RA)/libretro-common/gfx/shaders/rslc_ir.c \
+   $(RA)/libretro-common/gfx/shaders/rslc_emit.c
+native_test$(EXE): $(NATIVE_SOURCES) native_capture.h
+	$(CC) $(CFLAGS) -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl) -lm
 native-check: native_test$(EXE)
 	$(RUNNER) ./native_test$(EXE)
 .PHONY: native-check

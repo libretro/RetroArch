@@ -14,6 +14,7 @@ import sys
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--native', action='store_true')
 parser.add_argument('--binary', type=Path, help='reuse a previously built native fixture')
+parser.add_argument('--capture', choices=['direct', 'buffer'], help='GPU RGB clear through the shipping conversion shader')
 parser.add_argument('--pictures', action='store_true', help='submit test-only uploaded NV12 pictures and independently decode')
 parser.add_argument('--ffmpeg', default=shutil.which('ffmpeg'))
 parser.add_argument('--ffprobe', default=shutil.which('ffprobe'))
@@ -21,6 +22,8 @@ parser.add_argument('--artifacts', type=Path, required=True)
 args = parser.parse_args()
 if not args.native:
     parser.error('--native is required; a real device and validation layer are mandatory')
+if args.capture:
+    args.pictures = True
 if args.pictures and (not args.ffmpeg or not args.ffprobe):
     parser.error('--pictures requires independent FFmpeg and FFprobe executables')
 here = Path(__file__).resolve().parent
@@ -28,9 +31,11 @@ repo = here.parents[2]
 root = args.artifacts.resolve()
 root.mkdir(parents=True, exist_ok=True)
 evidence = dict(scope=__doc__, result='running', commands=[], submitted_pictures=0,
-                validation_layer='VK_LAYER_KHRONOS_validation required')
+                validation_layer='VK_LAYER_KHRONOS_validation required', synchronization_validation=True)
 if args.pictures:
     evidence['scope'] = 'Native cold resources and 12 H.264 pictures from test-only CPU upload; GPU capture not exercised'
+if args.capture:
+    evidence['scope'] = 'Native GPU RGB clear, shipping RGB-to-NV12 shader and H264 encoder; independent decoded-plane oracle'
 evidence['source'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
 evidence['dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=repo))
 
@@ -61,28 +66,32 @@ evidence['binary_supplied'] = args.binary is not None
 if not args.binary:
     compiler = shlex.split(os.environ.get('CC', 'gcc' if os.name == 'nt' else 'cc'))
     flags = ['-O1', '-g1', '-std=c89', '-pedantic', '-Wall', '-Wextra', '-Werror',
-             '-Wno-long-long', '-Wframe-larger-than=2048', '-DHAVE_DYLIB',
+             '-Wno-long-long', '-Wframe-larger-than=2048', '-DHAVE_DYLIB', '-DRSLC_EXTENDED', '-DRSLC_NO_DXBC',
              '-I' + str(repo / 'libretro-common/include'), '-I' + str(repo / 'gfx/include')]
     if 'clang' in subprocess.check_output(compiler + ['--version'], text=True).lower():
         flags += ['-Wno-c99-extensions']
     sources = ['samples/gfx/vulkan_encode_h264/native_test.c', 'gfx/common/vulkan_encode_h264.c',
                'gfx/common/vulkan_encode_h264_session.c', 'gfx/common/vulkan_encode_h264_submit.c',
-               'gfx/common/vulkan_encode_pool.c', 'libretro-common/dynamic/dylib.c',
+               'gfx/common/vulkan_encode_pool.c', 'gfx/common/vulkan_encode_capture.c',
+               'gfx/common/vulkan_encode_capture_shader.c', 'libretro-common/gfx/shaders/rslc_front.c',
+               'libretro-common/gfx/shaders/rslc_ir.c', 'libretro-common/gfx/shaders/rslc_emit.c',
+               'libretro-common/dynamic/dylib.c',
                'libretro-common/encodings/encoding_utf.c', 'libretro-common/compat/compat_strl.c']
     result = run(compiler + flags + [str(repo / name) for name in sources] + ['-o', str(binary)]
-                 + ([] if os.name == 'nt' else ['-ldl']), 120)
+                 + (['-lm'] if os.name == 'nt' else ['-ldl', '-lm']), 120)
     if result.returncode:
         evidence['result'] = 'FAIL compile'
         save()
         result.check_returncode()
 evidence['binary_sha256'] = hashlib.sha256(binary.read_bytes()).hexdigest()
 coded = root / 'output.h264'
-result = run([binary] + (['--pictures', coded] if args.pictures else []), 30)
+mode = '--capture-' + args.capture if args.capture else '--pictures'
+result = run([binary] + ([mode, coded] if args.pictures else []), 30)
 output = result.stdout.decode(errors='replace')
 print(output, end='', flush=True)
 evidence['result'] = 'UNAVAILABLE' if result.returncode == 77 else 'VERIFYING' if result.returncode == 0 else 'FAIL'
 if result.returncode == 0:
-    if output.count('PASS native cold H264') != 3 or 'validation_errors=0' not in output:
+    if output.count('PASS native cold H264') != 3 or 'validation_errors=0' not in output or 'validation_sync=1' not in output:
         evidence['result'] = 'FAIL output contract'
         save()
         raise AssertionError(output)
@@ -124,18 +133,34 @@ if result.returncode == 0 and args.pictures:
         size = luma * 3 // 2
         assert len(decoded.stdout) == 12 * size
         planes = []
+        references = []
         for frame in range(12):
-            for name, offset, count, reference in (('Y', 0, luma, 32 + frame * 12),
-                    ('U', luma, luma // 4, 128), ('V', luma * 5 // 4, luma // 4, 128)):
+            if args.capture:
+                rgb = [(32 + frame * 12 if frame % 3 == channel else 16) / 255
+                       for channel in range(3)]
+                kr, kb = .2126, .0722
+                y = kr * rgb[0] + (1 - kr - kb) * rgb[1] + kb * rgb[2]
+                references.append([round(16 + 219 * y),
+                    round(128 + 224 * (rgb[2] - y) / (2 * (1 - kb))),
+                    round(128 + 224 * (rgb[0] - y) / (2 * (1 - kr)))])
+            else:
+                references.append([32 + frame * 12, 128, 128])
+        for frame in range(12):
+            for name, offset, count, reference in (('Y', 0, luma, references[frame][0]),
+                    ('U', luma, luma // 4, references[frame][1]),
+                    ('V', luma * 5 // 4, luma // 4, references[frame][2])):
                 start = frame * size + offset
                 errors = [abs(value - reference) for value in decoded.stdout[start:start + count]]
                 planes.append(dict(frame=frame, plane=name, peak=max(errors),
                                    mean=sum(errors) / count))
         evidence['pictures'] = dict(frames=12, keyframes=keys, width=width, height=height,
-            source='Test-only constant NV12 upload; changing luma across every picture',
+            source='GPU cleared RGB primary colors' if args.capture else 'Test-only NV12 upload',
+            capture=args.capture, references=references,
             planes=planes, timing=timing, raw_probe_rate=stream['r_frame_rate'], decoded_sha256=hashlib.sha256(decoded.stdout).hexdigest())
         save()
-        assert all(p['peak'] <= 2 and p['mean'] <= .5 for p in planes)
+        limits = (4, 2) if args.capture else (2, .5)
+        evidence['pictures']['limits'] = dict(peak=limits[0], mean=limits[1])
+        assert all(p['peak'] <= limits[0] and p['mean'] <= limits[1] for p in planes)
         evidence['submitted_pictures'] = 12
     except Exception:
         evidence['result'] = 'FAIL picture oracle'
