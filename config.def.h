@@ -1928,6 +1928,8 @@
 
 #define DEFAULT_PLAYLIST_ALLOW_NON_PNG false
 
+#define DEFAULT_PLAYLIST_SHOW_LOAD_STATE true
+
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 
