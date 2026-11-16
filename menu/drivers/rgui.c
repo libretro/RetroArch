@@ -5373,12 +5373,13 @@ static void rgui_render_messagebox(
    }
 
    height                   = (unsigned)(rgui->font_height_stride * line_count + 6 + 10);
-   x                        = ((int)fb_width  - (int)width) / 2;
-   y                        = ((int)fb_height - (int)height) / 2;
 
    if (buttons.count)
       height               += (unsigned)(row_step * (int)button_rows)
             + rgui->font_height_stride;
+
+   x                        = ((int)fb_width  - (int)width) / 2;
+   y                        = ((int)fb_height - (int)height) / 2;
 
    if (height > fb_height)
       height                = fb_height;
@@ -5386,9 +5387,6 @@ static void rgui_render_messagebox(
       x                     = 0;
    if (y < 0)
       y                     = 0;
-   /* The buttons make the box taller than it was centred for */
-   if (y + (int)height > (int)fb_height)
-      y                     = (int)fb_height - (int)height;
    if (buttons.count)
       rows_y                = y + (int)height - row_step * (int)button_rows
             - (int)(rgui->font_height_stride / 2) - 2;
