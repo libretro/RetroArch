@@ -32,7 +32,18 @@ frontend_test$(EXE): $(OBJS)
 check: all
 	$(RUNNER) ./frontend_test$(EXE)
 clean:
+	rm -f frontend_stream_test.exe
 	rm -f frontend_test frontend_test.exe
 	rm -f frontend_test.o frontend_test.d
 	rm -rf $(SAMPLE_OBJDIR)
 .PHONY: all check clean
+
+ifeq ($(EXE),.exe)
+all: frontend_stream_test$(EXE)
+check: stream-check
+frontend_stream_test$(EXE): frontend_test.c $(RA)/record/drivers/record_vulkan.c $(filter-out frontend_test.o,$(OBJS))
+	$(CC) $(CFLAGS) -DHAVE_NETWORKING -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -DHAVE_CRYPTO $< $(filter-out frontend_test.o,$(OBJS)) -o $@ $(LDFLAGS) -Wl,--gc-sections -lm
+stream-check: frontend_stream_test$(EXE)
+	$(RUNNER) ./frontend_stream_test$(EXE)
+.PHONY: stream-check
+endif

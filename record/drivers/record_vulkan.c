@@ -45,7 +45,7 @@ typedef struct record_vk_context
    uint32_t api_version;
    unsigned dims, duration, audio_rate, output_mode;
    retro_atomic_int_t failed, stop, native_error;
-   bool armed, audio_enabled, video_closed, allow_drop, have_offered;
+   bool armed, audio_enabled, video_closed, allow_drop, have_offered, streaming;
 } record_vk_context_t;
 static record_vk_context_t *record_vk_active, *record_vk_retired;
 static bool record_vk_start_requested;
@@ -197,7 +197,8 @@ static bool rvk_rate(double fps, unsigned *num, unsigned *den)
    }
    return false;
 }
-static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, unsigned *depth)
+static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, unsigned *depth,
+      bool streaming, bool *legacy)
 {
    config_file_t *config;
    struct config_file_entry entry;
@@ -207,6 +208,7 @@ static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, 
    *qp = 24;
    *hevc = false;
    *depth = 8;
+   *legacy = false;
    if (!path || !*path)
       return true;
    config = config_file_new_from_path_to_string(path);
@@ -217,7 +219,10 @@ static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, 
          || (config_get_entry(config, "vcodec") && (!config_get_array(config, "vcodec", text, sizeof(text))
                || (!string_is_equal(text, "h264") && !string_is_equal(text, "hevc"))))
          || (config_get_entry(config, "format") && (!config_get_array(config, "format", text, sizeof(text))
-               || !string_is_equal(text, "mp4"))))
+               || !string_is_equal(text, streaming ? "flv" : "mp4"))))
+      goto done;
+   if (config_get_entry(config, "rtmp_legacy_commands")
+         && (!streaming || !config_get_bool(config, "rtmp_legacy_commands", legacy)))
       goto done;
    if (config_get_entry(config, "vcodec"))
    {
@@ -234,7 +239,8 @@ static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, 
       {
          if (!string_is_equal(entry.key, "audio_enable") && !string_is_equal(entry.key, "video_qp")
                && !string_is_equal(entry.key, "vcodec") && !string_is_equal(entry.key, "format")
-               && !string_is_equal(entry.key, "video_bit_depth"))
+               && !string_is_equal(entry.key, "video_bit_depth")
+               && !(streaming && string_is_equal(entry.key, "rtmp_legacy_commands")))
             goto done;
       } while (config_get_entry_list_next(&entry));
    ok = true;
@@ -265,7 +271,7 @@ static void rvk_fail(record_vk_context_t *c)
    record_gpu_dispatch_vulkan_cancel(c->job);
 }
 static record_gpu_dispatch_vulkan_t *rvk_hevc_job(record_vk_context_t *c,
-      const record_gpu_output_vulkan_config_t *output, unsigned depth)
+      const record_gpu_output_vulkan_config_t *output, unsigned depth, bool legacy)
 {
    vulkan_encode_hevc_open_t encoder;
    vulkan_encode_hevc_ops_t ops;
@@ -317,7 +323,9 @@ static record_gpu_dispatch_vulkan_t *rvk_hevc_job(record_vk_context_t *c,
    ops.submit.status = c->ops.submit.status;
    ops.submit.feedback = c->ops.submit.feedback;
    ops.pool = c->ops.pool;
-   return record_gpu_dispatch_vulkan_new_hevc(&encoder, &ops, output, c->path, &c->capture_ops);
+   return c->streaming
+      ? record_gpu_dispatch_vulkan_new_hevc_stream(&encoder, &ops, output, c->path, &c->capture_ops, legacy)
+      : record_gpu_dispatch_vulkan_new_hevc(&encoder, &ops, output, c->path, &c->capture_ops);
 }
 static void *rvk_init(const struct record_params *params)
 {
@@ -329,14 +337,21 @@ static void *rvk_init(const struct record_params *params)
    settings_t *settings = config_get_ptr();
    size_t length;
    unsigned num, den, qp, depth;
-   bool audio, hevc;
+   bool audio, hevc, legacy;
+   bool streaming = recording_state_get_ptr()->streaming_enable;
    if (!params || !settings || !params->filename || !*params->filename
-         || record_vk_active || record_vk_retired || recording_state_get_ptr()->streaming_enable)
+         || record_vk_active || record_vk_retired)
       return NULL;
-   if (!params->video_gpu_record || settings->bools.video_record_game_only || audio_driver_has_callback()
-         || !rvk_rate(params->fps, &num, &den) || !rvk_config(params->config, &audio, &qp, &hevc, &depth))
+   if (streaming && (!record_vulkan_can_stream()
+            || (strncmp(params->filename, "rtmp://", 7) && strncmp(params->filename, "rtmps://", 8))))
    {
-      RARCH_ERR("[Vulkan recording] Requires viewport capture, synchronous audio and a native MP4 profile.\n");
+      RARCH_ERR("[Vulkan recording] Streaming requires a native RTMP build and an RTMP/RTMPS URL.\n");
+      return NULL;
+   }
+   if (!params->video_gpu_record || settings->bools.video_record_game_only || audio_driver_has_callback()
+         || !rvk_rate(params->fps, &num, &den) || !rvk_config(params->config, &audio, &qp, &hevc, &depth, streaming, &legacy))
+   {
+      RARCH_ERR("[Vulkan recording] Requires viewport capture, synchronous audio and a native MP4/FLV profile.\n");
       return NULL;
    }
    if (!video_driver_get_device(&device) || device.api != VIDEO_DEVICE_VULKAN
@@ -369,13 +384,19 @@ static void *rvk_init(const struct record_params *params)
          || ((VIDEO_SCALE_W(params->out_dims) | VIDEO_SCALE_H(params->out_dims)) & 1))
       return NULL;
    memset(&output, 0, sizeof(output));
-   output.video.max_packet_size = 16 * 1024 * 1024;
+   output.video.codec = hevc ? RECORD_MP4_HEVC : RECORD_MP4_H264;
+   output.video.max_packet_size = streaming ? (hevc ? 0xfffff7u : 0xfffffau) : 16 * 1024 * 1024;
    if (audio)
    {
       if ((params->samplerate != 32000.0 && params->samplerate != 44100.0 && params->samplerate != 48000.0)
             || !rvk_layout(recording_state_get_ptr()->layout, params->channels))
       {
          RARCH_ERR("[Vulkan recording] Audio requires an AC-3 speaker layout at 32, 44.1 or 48 kHz.\n");
+         return NULL;
+      }
+      if (streaming && (params->samplerate == 32000.0 || params->channels > 2))
+      {
+         RARCH_ERR("[Vulkan recording] AAC streaming requires mono/stereo at 44.1 or 48 kHz.\n");
          return NULL;
       }
       output.audio_rate = (unsigned)params->samplerate;
@@ -424,10 +445,12 @@ static void *rvk_init(const struct record_params *params)
    c->audio_enabled = audio;
    c->audio_rate = output.audio_rate;
    c->allow_drop = params->allow_frame_drop;
+   c->streaming = streaming;
    retro_atomic_int_init(&c->failed, 0);
    retro_atomic_int_init(&c->stop, 0);
    retro_atomic_int_init(&c->native_error, 0);
-   c->job = hevc ? rvk_hevc_job(c, &output, depth)
+   c->job = hevc ? rvk_hevc_job(c, &output, depth, legacy)
+      : streaming ? record_gpu_dispatch_vulkan_new_stream(&c->encoder, &c->ops, &output, c->path, &c->capture_ops, legacy)
       : record_gpu_dispatch_vulkan_new_capture(&c->encoder, &c->ops, &output, c->path, &c->capture_ops);
    if (!c->job)
       goto failed;
@@ -441,7 +464,9 @@ static void *rvk_init(const struct record_params *params)
       return NULL;
    }
    record_vk_active = c;
-   RARCH_LOG("[Vulkan recording] Starting native %s%s at %u/%u fps.\n", hevc ? "HEVC" : "H.264", audio ? "/AC-3" : "", num, den);
+   RARCH_LOG("[Vulkan recording] Starting native %s%s at %u/%u fps %s.\n",
+         hevc ? "HEVC" : "H.264", audio ? (streaming ? "/AAC" : "/AC-3") : "",
+         num, den, streaming ? "streaming" : "recording");
    return c;
 failed:
    free(c);
@@ -677,7 +702,7 @@ void record_vulkan_poll(void)
          if (c->audio_enabled)
             RARCH_LOG("[Vulkan recording] Audio finalized (%llu PCM frames).\n", (unsigned long long)c->audio_frames);
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
-         if (config_get_ptr()->bools.history_list_enable)
+         if (!c->streaming && config_get_ptr()->bools.history_list_enable)
          {
             struct playlist_entry entry = {0};
             entry.path = c->path;
@@ -693,5 +718,18 @@ void record_vulkan_poll(void)
       *link = c->next;
       free(c);
    }
+}
+#endif
+
+#ifdef HAVE_RECORD_VULKAN
+bool record_vulkan_can_stream(void)
+{
+#if defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX) \
+      && defined(HAVE_THREADS) && defined(HAVE_NETWORKING) && defined(HAVE_MF_AUDIO) \
+      && defined(HAVE_RTMP) && defined(HAVE_RFLV) && defined(HAVE_CRYPTO)
+   return true;
+#else
+   return false;
+#endif
 }
 #endif

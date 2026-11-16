@@ -20,6 +20,7 @@ typedef struct record_vulkan_device
 extern const record_driver_t record_vulkan;
 struct video_frame_info;
 bool record_vulkan_frame_info(struct video_frame_info *info, bool capture);
+bool record_vulkan_can_stream(void);
 void record_vulkan_poll(void);
 void record_vulkan_stop(void);
 bool record_vulkan_pending(void);

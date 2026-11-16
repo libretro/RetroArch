@@ -55,3 +55,8 @@ clean:
 	rm -f frontend_core.dll frontend_core.so rate_fragment.c rate_test rate_test.exe audio_fragment.c video_fragment.c audio_test audio_test.exe layout_fragment.c layout_test layout_test.exe float_fragment.c float_negotiation_test float_negotiation_test.exe
 	rm -f color_fragment.c color_test color_test.exe
 .PHONY: all check clean
+
+check: stream-wait-check
+stream-wait-check:
+	python3 stream_wait_test.py
+.PHONY: stream-wait-check

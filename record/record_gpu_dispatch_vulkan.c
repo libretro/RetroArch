@@ -487,6 +487,20 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
          output, path, capture_ops);
 }
 
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_stream(
+      const vulkan_encode_h264_open_t *encoder, const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *output, const char *url,
+      const vulkan_encode_capture_ops_t *capture_ops, bool legacy)
+{
+   record_gpu_dispatch_vulkan_config_t config;
+   if (!encoder || !ops || !output || output->video.codec != RECORD_MP4_H264)
+      return NULL;
+   config.h264.encoder = *encoder;
+   config.h264.ops = *ops;
+   return record_gpu_dispatch_vulkan_new_backend_stream(&config, record_vkd_h264_start,
+         output, url, capture_ops, legacy);
+}
+
 static record_gpu_dispatch_vulkan_t *record_vkd_new(
       const record_gpu_dispatch_vulkan_config_t *config,
       record_gpu_dispatch_vulkan_start_t start,
@@ -730,6 +744,12 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend(
       const record_gpu_output_vulkan_config_t *o, const char *p,
       const vulkan_encode_capture_ops_t *ops)
 { (void)c; (void)start; (void)o; (void)p; (void)ops; return NULL; }
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_stream(
+      const vulkan_encode_h264_open_t *e, const vulkan_encode_h264_ops_t *o,
+      const record_gpu_output_vulkan_config_t *c, const char *url,
+      const vulkan_encode_capture_ops_t *ops, bool legacy)
+{ (void)e; (void)o; (void)c; (void)url; (void)ops; (void)legacy; return NULL; }
+
 record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend_stream(
       const record_gpu_dispatch_vulkan_config_t *c,
       record_gpu_dispatch_vulkan_start_t start,

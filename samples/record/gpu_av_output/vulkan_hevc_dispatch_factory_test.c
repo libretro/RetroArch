@@ -19,6 +19,16 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend(
    worker_start = start;
    return (record_gpu_dispatch_vulkan_t*)(uintptr_t)1;
 }
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend_stream(
+      const record_gpu_dispatch_vulkan_config_t *config,
+      record_gpu_dispatch_vulkan_start_t start,
+      const record_gpu_output_vulkan_config_t *output, const char *path,
+      const vulkan_encode_capture_ops_t *ops, bool legacy)
+{
+   (void)legacy;
+   return record_gpu_dispatch_vulkan_new_backend(config, start, output, path, ops);
+}
+
 static VKAPI_ATTR VkResult VKAPI_CALL capabilities(VkPhysicalDevice physical,
       const VkVideoProfileInfoKHR *profile, VkVideoCapabilitiesKHR *out)
 {

@@ -35,6 +35,8 @@ static const char *profile = "", *missing;
 static unsigned starts, finishes, frees, records, commits, audio_calls, deinit_calls, init_calls;
 static int finish_result, frame_result, audio_result;
 static bool asynchronous, wrapper, in_flight, renderer_fail;
+static unsigned stream_requests;
+static bool stream_legacy;
 settings_t *config_get_ptr(void)
 {
    return &settings;
@@ -145,6 +147,29 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_hevc(
    job.state = RECORD_VKD_STARTING;
    return &job;
 }
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_stream(
+      const vulkan_encode_h264_open_t *e, const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *mux, const char *url,
+      const vulkan_encode_capture_ops_t *capture, bool legacy)
+{
+   assert(mux->video.codec == RECORD_MP4_H264 && mux->video.max_packet_size == 0xfffffa);
+   assert(!strncmp(url, "rtmp", 4));
+   stream_requests++;
+   stream_legacy = legacy;
+   return record_gpu_dispatch_vulkan_new_capture(e, ops, mux, url, capture);
+}
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_hevc_stream(
+      const vulkan_encode_hevc_open_t *e, const vulkan_encode_hevc_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *mux, const char *url,
+      const vulkan_encode_capture_ops_t *capture, bool legacy)
+{
+   assert(mux->video.codec == RECORD_MP4_HEVC && mux->video.max_packet_size == 0xfffff7);
+   assert(!strncmp(url, "rtmp", 4));
+   stream_requests++;
+   stream_legacy = legacy;
+   return record_gpu_dispatch_vulkan_new_hevc(e, ops, mux, url, capture);
+}
+
 record_gpu_renderer_vulkan_t *record_gpu_renderer_vulkan_new(record_gpu_dispatch_vulkan_t *j,
       unsigned duration, unsigned gop, PFN_vkGetSemaphoreCounterValue counter)
 {
@@ -298,7 +323,8 @@ static void reset(struct record_params *params)
    profile = "audio_enable = true\nvcodec = h264\nformat = mp4\nvideo_qp = 24\n";
    missing = NULL;
    starts = finishes = frees = records = commits = audio_calls = deinit_calls = init_calls = 0;
-   asynchronous = wrapper = in_flight = renderer_fail = false;
+   asynchronous = wrapper = in_flight = renderer_fail = stream_legacy = false;
+   stream_requests = 0;
    finish_result = frame_result = RECORD_GPU_QUEUE_OK;
    audio_result = RECORD_VULKAN_OUTPUT_PROGRESS;
 }
@@ -470,9 +496,48 @@ static void hdr_lifecycle(void)
    hdr.output_mode = 3;
    assert(!record_vulkan.init(&params) && !starts);
 }
+static void stream_admission(void)
+{
+   struct record_params params;
+   record_vk_context_t *c;
+   unsigned codec;
+   reset(&params);
+   profile = "rtmp_legacy_commands = true\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   for (codec = 0; codec < 3; codec++)
+   {
+      reset(&params);
+      recording.streaming_enable = true; params.filename = "rtmps://localhost/live/test";
+      device.hevc = true;
+      profile = codec == 0 ? "audio_enable = true\nvcodec = h264\nformat = flv\n"
+         : codec == 1 ? "audio_enable = true\nvcodec = hevc\nformat = flv\nvideo_bit_depth = 10\nrtmp_legacy_commands = true\n"
+         : "audio_enable = false\nvcodec = hevc\nformat = flv\n";
+      if (!record_vulkan_can_stream())
+      {
+         assert(!record_vulkan.init(&params) && !starts);
+         continue;
+      }
+      c = (record_vk_context_t*)record_vulkan.init(&params);
+      assert(c && stream_requests == 1 && stream_legacy == (codec == 1));
+      assert(c->streaming && c->audio_enabled == (codec != 2));
+      if (codec != 2) assert(output.audio_follow_video && output.audio_rate == 48000);
+      close_recording();
+   }
+   reset(&params); recording.streaming_enable = true; params.filename = "rtmp://localhost/live/test";
+   params.samplerate = 32000; profile = "format = flv\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   reset(&params); recording.streaming_enable = true; params.filename = "rtmp://localhost/live/test";
+   params.channels = 6; recording.layout = 0x607; profile = "format = flv\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   reset(&params); recording.streaming_enable = true; params.filename = "rtmp://localhost/live/test";
+   profile = "format = mp4\n";
+   assert(!record_vulkan.init(&params) && !starts);
+}
+
 int main(void)
 {
    admission();
+   stream_admission();
    hevc_admission();
    hdr_lifecycle();
    lifecycle();
