@@ -59,5 +59,7 @@ int record_stream_gpu_step(record_stream_gpu_t *stream,
 void record_stream_gpu_abort(record_stream_gpu_t *stream);
 enum record_gpu_output_error record_stream_gpu_error(const record_stream_gpu_t *stream);
 bool record_stream_gpu_free(record_stream_gpu_t *stream);
+/* I/O owner only, before free: submitted source PCM frames, excluding AAC padding. */
+uint64_t record_stream_gpu_audio_frames(const record_stream_gpu_t *stream);
 RETRO_END_DECLS
 #endif

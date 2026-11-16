@@ -294,3 +294,9 @@ bool record_gpu_session_vulkan_free(record_gpu_session_vulkan_t *s)
    free(s);
    return true;
 }
+
+bool record_gpu_session_vulkan_network(const record_gpu_session_vulkan_t *s,
+      int *fd, bool *read, bool *write)
+{
+   return record_gpu_output_vulkan_network(s ? s->output : NULL, fd, read, write);
+}

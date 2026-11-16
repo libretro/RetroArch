@@ -27,6 +27,8 @@ typedef struct record_gpu_output_config
    unsigned audio_rate, audio_kbps;
    uint32_t audio_layout;
    size_t audio_fifo_frames;
+   /* Shared streaming consumer: cap source PCM at accepted coded video time. */
+   bool stream_audio_follow_video;
 } record_gpu_output_config_t;
 
 #endif

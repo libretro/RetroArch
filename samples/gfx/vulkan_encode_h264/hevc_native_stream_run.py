@@ -10,6 +10,8 @@ import tempfile
 parser = argparse.ArgumentParser()
 parser.add_argument('--native-test', type=Path, required=True)
 parser.add_argument('--artifacts', type=Path)
+parser.add_argument('--session', action='store_true', help='use the complete recording session owner')
+parser.add_argument('--output', action='store_true', help='use the session output wrapper')
 a = parser.parse_args()
 if sys.platform != 'win32':
     raise SystemExit('Native Vulkan/AAC streaming requires the Windows AAC backend')
@@ -24,6 +26,12 @@ print(f'Native Vulkan streaming artifacts: {root}', flush=True)
 for name, depth, color, tls, scrgb in cases:
     env = os.environ.copy()
     env.pop('VULKAN_STREAM_SCRGB', None)
+    env.pop('VULKAN_STREAM_OUTPUT', None)
+    env.pop('VULKAN_STREAM_SESSION', None)
+    if a.session:
+        env['VULKAN_STREAM_SESSION'] = '1'
+    if a.output:
+        env['VULKAN_STREAM_OUTPUT'] = '1'
     if scrgb:
         env['VULKAN_STREAM_SCRGB'] = '1'
     command = [sys.executable, str(oracle), str(a.native_test.resolve()), '--producer', 'Vulkan',

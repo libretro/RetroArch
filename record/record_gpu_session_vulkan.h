@@ -15,7 +15,10 @@ enum record_gpu_session_vulkan_error
  * encoder dispatch until retirement. Owns encoder, queue, pump and output.
  * Startup/file I/O may block that owner; never call from a task/frame path.
  * Output headers, colour and timescale must be empty: actual encoder output
- * supplies them. A non-NULL session may report startup failure; close both
+ * supplies them. An optional READY output->stream_client stays borrowed
+ * through session retirement; never drive it concurrently with session step.
+ * The caller frees it afterwards, canceling first on failed startup/abort.
+ * A non-NULL session may report startup failure; close both
  * producers and service it to terminal ERROR before free. No scheduler here. */
 record_gpu_session_vulkan_t *record_gpu_session_vulkan_new(
       const vulkan_encode_h264_open_t *encoder,
@@ -53,5 +56,8 @@ enum record_gpu_session_vulkan_error record_gpu_session_vulkan_error(
 /* Worker-only snapshot after terminal step, before free. */
 uint64_t record_gpu_session_vulkan_audio_frames(const record_gpu_session_vulkan_t *session);
 bool record_gpu_session_vulkan_free(record_gpu_session_vulkan_t *session);
+/* I/O owner only, after step; readiness never services the transport. */
+bool record_gpu_session_vulkan_network(const record_gpu_session_vulkan_t *session,
+      int *fd, bool *read, bool *write);
 RETRO_END_DECLS
 #endif

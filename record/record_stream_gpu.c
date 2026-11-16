@@ -14,7 +14,7 @@ enum stream_producer
 struct record_stream_gpu
 {
    retro_spsc_t audio;
-   uint64_t audio_pts;
+   uint64_t audio_pts, audio_limit;
    void *worker;
    record_stream_worker_ops_t ops;
    net_rtmp_client_t *client;
@@ -24,10 +24,11 @@ struct record_stream_gpu
    int16_t *input;
    size_t input_frames, staged, frame_bytes, fifo_bytes;
    retro_atomic_int_t audio_closed, failed;
+   unsigned audio_rate, video_timescale;
    enum stream_producer producer;
    bool prepared, sending, video_end, audio_end, audio_turn;
    bool audio_finishing, finishing, ended, retired;
-   bool av1;
+   bool av1, audio_follow_video;
 };
 
 static int stream_fail(record_stream_gpu_t *p, enum record_gpu_output_error error)
@@ -59,6 +60,9 @@ record_stream_gpu_t *record_stream_gpu_new(void *worker,
       return NULL;
    p->worker = worker;
    p->ops = *ops;
+   p->audio_rate = config->audio_rate;
+   p->video_timescale = config->video.timescale;
+   p->audio_follow_video = config->stream_audio_follow_video;
    p->av1 = config->video.codec == RECORD_MP4_AV1;
    p->client = client;
    p->session = view.session;
@@ -169,6 +173,31 @@ static int stream_audio(record_stream_gpu_t *p)
    if (!p->prepared)
    {
       frames = retro_spsc_read_avail(&p->audio) / p->frame_bytes;
+      if (p->audio_follow_video)
+      {
+         uint64_t consumed, available;
+         if (p->audio_pts > (uint64_t)-1 - p->staged)
+            return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
+         consumed = p->audio_pts + p->staged;
+         if (consumed > p->audio_limit)
+            return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
+         available = p->audio_limit - consumed;
+         if (frames > available)
+            frames = (size_t)available;
+         closed = closed && p->video_end;
+         /* Once both producers end, discard only PCM beyond the last coded
+          * picture. A partially staged native input remains owned for submit. */
+         if (closed && !available)
+         {
+            size_t trailing = retro_spsc_read_avail(&p->audio);
+            if (trailing)
+            {
+               if (retro_spsc_skip(&p->audio, trailing) != trailing)
+                  return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
+               return RECORD_GPU_OUTPUT_PROGRESS;
+            }
+         }
+      }
       if (!p->input && !frames)
       {
          if (!closed)
@@ -284,6 +313,8 @@ int record_stream_gpu_step(record_stream_gpu_t *p,
    {
       if (!p->finishing)
          return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_NETWORK);
+      wait->network.fd = -1;
+      wait->network.read = wait->network.write = wait->network.again = false;
       p->ended = true;
       return RECORD_GPU_OUTPUT_END;
    }
@@ -349,6 +380,18 @@ int record_stream_gpu_step(record_stream_gpu_t *p,
                : rflv_mux_push_annexb(p->mux, packet.data, packet.size,
                   packet.timestamp, packet.timestamp, packet.keyframe)) != RFLV_PROGRESS)
             return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_MUX);
+         if (p->audio_follow_video && p->audio_rate)
+         {
+            uint64_t end, whole, part;
+            if (packet.timestamp > (uint64_t)-1 - packet.duration)
+               return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
+            end = packet.timestamp + packet.duration;
+            whole = end / p->video_timescale;
+            part = (end % p->video_timescale) * p->audio_rate / p->video_timescale;
+            if (whole > ((uint64_t)-1 - part) / p->audio_rate)
+               return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
+            p->audio_limit = whole * p->audio_rate + part;
+         }
          return RECORD_GPU_OUTPUT_PROGRESS;
       }
       if (result == RECORD_STREAM_WORKER_END)
@@ -398,4 +441,9 @@ bool record_stream_gpu_free(record_stream_gpu_t *p)
    retro_spsc_free(&p->audio);
    free(p);
    return true;
+}
+
+uint64_t record_stream_gpu_audio_frames(const record_stream_gpu_t *p)
+{
+   return p ? p->audio_pts : 0;
 }

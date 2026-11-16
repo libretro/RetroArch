@@ -3,6 +3,8 @@
 #include "hevc_native_capture_test.c"
 #include "../../../record/record_gpu_worker_vulkan_hevc.h"
 #include "../../../record/record_stream_vulkan.h"
+#include "../../../record/record_gpu_output_vulkan.h"
+#include "../../../record/record_gpu_session_vulkan_hevc.h"
 #include <net/net_compat.h>
 #include <net/net_socket_ssl.h>
 #include <crypto/kdf.h>
@@ -11,6 +13,8 @@
 
 static FILE *stream_raw;
 static unsigned stream_packets;
+static record_gpu_output_vulkan_t *native_output;
+static record_gpu_session_vulkan_t *native_session;
 static int stream_native_packet(record_gpu_worker_vulkan_t *worker, vulkan_encode_packet_t *packet)
 {
    int result = record_gpu_worker_vulkan_step(worker, packet);
@@ -27,10 +31,24 @@ static int stream_native_packet(record_gpu_worker_vulkan_t *worker, vulkan_encod
 #include "../../../record/record_stream_vulkan.c"
 #undef record_gpu_worker_vulkan_step
 
+static bool stream_session_headers(vulkan_encode_hevc_t *encoder,
+      void *data, size_t capacity, size_t *size)
+{
+   if (!vulkan_encode_hevc_headers(encoder, data, capacity, size))
+      return false;
+   assert(fwrite(data, 1, *size, stream_raw) == *size);
+   return true;
+}
+/* Observe the real session encoder's cold headers, not a separate seed. */
+#define vulkan_encode_hevc_headers stream_session_headers
+#include "../../../record/record_gpu_session_vulkan_hevc.c"
+#undef vulkan_encode_hevc_headers
+
 struct native_stream_fixture
 {
    struct native_hevc_capture capture;
    record_gpu_output_config_t output;
+   record_gpu_output_vulkan_config_t routed;
    net_rtmp_client_config_t client_config;
    char *trust;
    int16_t pcm[3200];
@@ -67,7 +85,23 @@ static bool stream_trust(struct native_stream_fixture *n)
 static int stream_service(record_stream_gpu_t *stream)
 {
    record_stream_wait_t wait;
-   int result = record_stream_gpu_step(stream, 0, &wait);
+   int result;
+   if (native_session)
+   {
+      int fd;
+      bool read, write;
+      result = record_gpu_session_vulkan_step(native_session);
+      (void)record_gpu_session_vulkan_network(native_session, &fd, &read, &write);
+   }
+   else if (native_output)
+   {
+      int fd;
+      bool read, write;
+      result = record_gpu_output_vulkan_step(native_output);
+      (void)record_gpu_output_vulkan_network(native_output, &fd, &read, &write);
+   }
+   else
+      result = record_stream_gpu_step(stream, 0, &wait);
    assert(result != RECORD_GPU_OUTPUT_ERROR);
    if (result == RECORD_GPU_OUTPUT_BUSY) Sleep(1); /* Fixture deadline/retry only. */
    return result;
@@ -91,7 +125,7 @@ int main(int argc, char **argv)
    char *pcm_path;
    size_t size, path_size;
    unsigned depth, color, rate, channels, index, i, sample, frames;
-   bool direct;
+   bool direct, routed, session_route;
    int result = 77;
    assert(n && argc == 8 && atoi(argv[1]) == 1 && !atoi(argv[6]));
    depth = atoi(argv[2]) == 3 ? 10 : 8;
@@ -103,6 +137,8 @@ int main(int argc, char **argv)
    channels = rate == 44100 ? 1 : 2;
    frames = rate / 30;
    direct = atoi(argv[7]) == 1;
+   session_route = getenv("VULKAN_STREAM_SESSION") != NULL;
+   routed = session_route || getenv("VULKAN_STREAM_OUTPUT") != NULL;
    c = &n->capture.adapter.gpu.base;
    if (color == 2)
    {
@@ -121,11 +157,9 @@ int main(int argc, char **argv)
    }
    pool = vulkan_encode_hevc_pool(encoder);
    assert(pool && pool->storage_images == direct);
-   load_capture(&n->capture);
-   capture_new(&n->capture, pool);
-   queue = record_gpu_queue_new(2);
-   worker = record_gpu_worker_vulkan_new_hevc(queue, encoder);
-   assert(queue && worker && network_init() && stream_trust(n));
+   queue = NULL;
+   worker = NULL;
+   assert(network_init() && stream_trust(n));
    n->client_config.url = getenv("NVENC_TEST_STREAM_URL");
    assert(crypto_random_bytes(n->random, sizeof(n->random)) == 0);
    n->client_config.random = n->random;
@@ -146,7 +180,9 @@ int main(int argc, char **argv)
    assert(i < 30000);
    assert(vulkan_encode_hevc_headers(encoder, n->headers, sizeof(n->headers), &size));
    stream_raw = fopen(argv[3], "wb");
-   assert(stream_raw && fwrite(n->headers, 1, size, stream_raw) == size);
+   assert(stream_raw);
+   if (!session_route)
+      assert(fwrite(n->headers, 1, size, stream_raw) == size);
    n->output.video.headers = n->headers;
    n->output.video.headers_size = size;
    n->output.video.codec = RECORD_MP4_HEVC;
@@ -161,8 +197,56 @@ int main(int argc, char **argv)
    n->output.audio_layout = channels == 1 ? 4 : 3;
    n->output.audio_kbps = 128;
    n->output.audio_fifo_frames = rate;
-   stream = record_stream_vulkan_new(worker, &n->output, client);
-   assert(stream);
+   stream = NULL;
+   if (!session_route)
+   {
+      queue = record_gpu_queue_new(2);
+      worker = record_gpu_worker_vulkan_new_hevc(queue, encoder);
+      assert(queue && worker);
+   }
+   if (routed)
+   {
+      n->routed.video = n->output.video;
+      n->routed.stream_client = client;
+      n->routed.video.color_primaries = n->output.stream_color.primaries;
+      n->routed.video.transfer_characteristics = n->output.stream_color.transfer;
+      n->routed.video.matrix_coefficients = n->output.stream_color.matrix;
+      n->routed.video.full_range = n->output.stream_color.range == 2;
+      n->routed.video.max_cll = n->output.stream_color.max_cll;
+      n->routed.video.max_fall = n->output.stream_color.max_fall;
+      n->routed.video.mastering = n->output.stream_color.mastering;
+      n->routed.audio_rate = n->output.audio_rate;
+      n->routed.audio_layout = n->output.audio_layout;
+      n->routed.audio_kbps = n->output.audio_kbps;
+      n->routed.audio_fifo_frames = n->output.audio_fifo_frames;
+      n->routed.audio_follow_video = true;
+      if (session_route)
+      {
+         assert(vulkan_encode_hevc_free(encoder));
+         encoder = NULL;
+         memset(&n->routed.video, 0, sizeof(n->routed.video));
+         n->routed.video.max_packet_size = 1048576;
+         native_session = record_gpu_session_vulkan_new_hevc(&n->capture.adapter.config,
+               &n->capture.adapter.ops, &n->routed, n->client_config.url);
+         assert(native_session);
+         assert(record_gpu_session_vulkan_error(native_session, NULL) == RECORD_VULKAN_SESSION_NONE);
+         pool = record_gpu_session_vulkan_pool(native_session);
+         queue = record_gpu_session_vulkan_queue(native_session);
+         assert(pool && queue && pool->storage_images == direct);
+      }
+      else
+      {
+         native_output = record_gpu_output_vulkan_new(worker, &n->routed, n->client_config.url);
+         assert(native_output);
+      }
+   }
+   else
+   {
+      stream = record_stream_vulkan_new(worker, &n->output, client);
+      assert(stream);
+   }
+   load_capture(&n->capture);
+   capture_new(&n->capture, pool);
    path_size = strlen(argv[3]) + sizeof(".av.pcm");
    pcm_path = (char*)malloc(path_size);
    assert(pcm_path);
@@ -186,7 +270,9 @@ int main(int argc, char **argv)
       assert(fwrite(n->pcm, sizeof(int16_t), frames * channels, pcm) == frames * channels);
       for (i = 0; i < 10000; i++)
       {
-         int pushed = record_stream_gpu_audio(stream, n->pcm, frames);
+         int pushed = native_session ? record_gpu_session_vulkan_audio(native_session, n->pcm, frames)
+            : native_output ? record_gpu_output_vulkan_audio(native_output, n->pcm, frames)
+            : record_stream_gpu_audio(stream, n->pcm, frames);
          if (pushed == RECORD_GPU_OUTPUT_PROGRESS) break;
          assert(pushed == RECORD_GPU_OUTPUT_BUSY); stream_service(stream);
       }
@@ -195,16 +281,39 @@ int main(int argc, char **argv)
       assert(stream_packets == index + 1);
    }
    /* Observed packets prove all capture/encode commands for those slots retired. */
-   assert(record_gpu_queue_finish(queue) && record_stream_gpu_audio_finish(stream));
+   capture_free(&n->capture);
+   if (native_session)
+   {
+      assert(record_gpu_session_vulkan_video_finish(native_session));
+      assert(record_gpu_session_vulkan_audio_finish(native_session));
+   }
+   else
+   {
+      assert(record_gpu_queue_finish(queue));
+      assert(native_output ? record_gpu_output_vulkan_audio_finish(native_output)
+            : record_stream_gpu_audio_finish(stream));
+   }
    for (i = 0; i < 30000; i++) if (stream_service(stream) == RECORD_GPU_OUTPUT_END) break;
    assert(i < 30000 && stream_packets == 24);
-   assert(record_stream_gpu_free(stream) && net_rtmp_client_free(client));
-   assert(record_gpu_worker_vulkan_free(worker));
-   capture_free(&n->capture);
-   assert(vulkan_encode_hevc_free(encoder) && record_gpu_queue_free(queue));
+   assert((native_session ? record_gpu_session_vulkan_audio_frames(native_session)
+         : native_output ? record_gpu_output_vulkan_audio_frames(native_output)
+         : record_stream_gpu_audio_frames(stream)) == (uint64_t)24 * frames);
+   if (native_session)
+   {
+      assert(record_gpu_session_vulkan_free(native_session));
+      native_session = NULL;
+   }
+   else
+   {
+      assert(native_output ? record_gpu_output_vulkan_free(native_output) : record_stream_gpu_free(stream));
+      native_output = NULL;
+      assert(record_gpu_worker_vulkan_free(worker));
+      assert(vulkan_encode_hevc_free(encoder) && record_gpu_queue_free(queue));
+   }
+   assert(net_rtmp_client_free(client));
    assert(!fclose(stream_raw) && !fclose(pcm));
-   printf("Vulkan HEVC stream depth=%u direct=%u color=%u validation_errors=%u\n",
-         depth, direct ? 1u : 0u, color, c->validation_errors);
+   printf("Vulkan HEVC stream depth=%u direct=%u color=%u output=%u session=%u validation_errors=%u\n",
+         depth, direct ? 1u : 0u, color, routed ? 1u : 0u, session_route ? 1u : 0u, c->validation_errors);
    result = c->validation_errors ? 1 : 0;
 done:
    ssl_socket_retro_set_trust_pem(NULL, 0);
