@@ -117,6 +117,7 @@ check: all
 	$(RUNNER) ./capture_test$(EXE)
 	$(RUNNER) ./capture_shader_test$(EXE)
 clean:
+	rm -f hevc_native_stream_test.exe
 	rm -f hevc_native_hdr_test hevc_native_hdr_test.exe
 	rm -f hevc_native_dispatch_test hevc_native_dispatch_test.exe
 	rm -f hevc_native_session_test hevc_native_session_test.exe
@@ -190,3 +191,15 @@ hevc-native-hdr-check: hevc_native_hdr_test$(EXE)
 	python3 hevc_native_capture_run.py --native-test ./hevc_native_hdr_test$(EXE) --hdr-mode 2 --negative
 	python3 hevc_native_capture_run.py --native-test ./hevc_native_hdr_test$(EXE) --hdr-mode 2 --full --negative
 .PHONY: hevc-native-hdr-check
+
+LRC := $(RA)/libretro-common
+STREAM_NET := $(wildcard $(LRC)/net/net_rtmp_*.c) $(LRC)/net/net_resolve.c $(LRC)/net/net_socket.c $(LRC)/net/net_compat.c
+STREAM_COMMON := $(LRC)/features/features_cpu.c $(LRC)/string/stdstring.c $(LRC)/string/rstrtod.c $(LRC)/compat/compat_posix_string.c $(LRC)/time/rtime.c $(LRC)/rthreads/rthreads.c $(LRC)/rthreads/retro_eventcount.c $(LRC)/crypto/kdf.c $(LRC)/formats/flv/rflv_mux.c
+STREAM_COMMON += $(LRC)/crypto/crypto.c $(LRC)/hash/lrc_hash.c $(LRC)/utils/md5.c
+STREAM_COMMON += $(LRC)/net/net_socket_ssl_retro.c $(LRC)/crypto/pk.c $(LRC)/crypto/x509.c $(LRC)/encodings/encoding_base64.c $(LRC)/streams/file_stream.c $(LRC)/vfs/vfs_implementation.c $(LRC)/file/file_path.c $(LRC)/file/file_path_io.c $(LRC)/compat/fopen_utf8.c
+HEVC_STREAM_SOURCES := $(filter-out hevc_native_capture_test.c,$(HEVC_CAPTURE_SOURCES)) hevc_native_stream_test.c $(RA)/record/record_gpu_worker_vulkan.c $(RA)/record/record_gpu_worker_vulkan_hevc.c $(RA)/record/record_gpu_queue.c $(RA)/record/record_stream_gpu.c $(RA)/record/record_mf_audio.c $(RA)/gfx/common/vulkan_encode_h264.c $(RA)/gfx/common/vulkan_encode_h264_session.c $(RA)/gfx/common/vulkan_encode_h264_submit.c $(LRC)/queues/retro_spsc.c $(STREAM_NET) $(STREAM_COMMON)
+hevc_native_stream_test.exe: $(HEVC_STREAM_SOURCES) hevc_native_capture_test.c $(RA)/record/record_stream_vulkan.c $(RA)/record/record_stream_vulkan.h
+	$(CC) $(filter-out -Werror -std=c89 -pedantic,$(CFLAGS)) -std=gnu89 -Werror=declaration-after-statement -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -DHAVE_CRYPTO -DHAVE_SSL -DHAVE_RETROSSL -D_WIN32_WINNT=0x0601 -DRSLC_EXTENDED -DRSLC_NO_DXBC $(HEVC_STREAM_SOURCES) -o $@ $(LDFLAGS) -lm -lws2_32
+hevc-native-stream-check: hevc_native_stream_test.exe
+	python3 hevc_native_stream_run.py --native-test ./hevc_native_stream_test.exe
+.PHONY: hevc-native-stream-check

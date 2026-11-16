@@ -30,7 +30,7 @@ def decode(ffmpeg, path, audio=False, depth=8):
 
 
 def check(binary, ffmpeg, probe, root, rate, capture, tls=None,
-          codec='h264', depth=8, color=1, metadata=0):
+          codec='h264', depth=8, color=1, metadata=0, fps=60, width=320, height=192, producer="NVENC"):
     root.mkdir(parents=True, exist_ok=False)
     source, received = root / ('source.' + codec), root / 'received.flv'
     with socket.socket() as reserve:
@@ -91,7 +91,7 @@ def check(binary, ffmpeg, probe, root, rate, capture, tls=None,
                 server.kill()
             server.wait(timeout=5)
     expected, actual = decode(ffmpeg, source, depth=depth), decode(ffmpeg, received, depth=depth)
-    assert len(expected) == 24 * 320 * 192 * 3 // 2 * (2 if depth == 10 else 1)
+    assert len(expected) == 24 * width * height * 3 // 2 * (2 if depth == 10 else 1)
     assert actual == expected, ('video differs or truncated', len(expected), len(actual))
     info = json.loads(run([probe, '-v', 'error', '-show_streams', '-show_packets',
                           '-of', 'json', received], capture_output=True).stdout)
@@ -100,8 +100,8 @@ def check(binary, ffmpeg, probe, root, rate, capture, tls=None,
     channels = 1 if rate == 44100 else 2
     assert video['codec_name'] == codec and audio['codec_name'] == 'aac'
     assert int(audio['sample_rate']) == rate and audio['channels'] == channels
-    total = 24 * rate // 60
-    for stream, count, duration in ((video, 24, 1 / 60),
+    total = 24 * rate // fps
+    for stream, count, duration in ((video, 24, 1 / fps),
                                     (audio, math.ceil(total / 1024), 1024 / rate)):
         packets = [p for p in info['packets'] if p['stream_index'] == stream['index']]
         assert len(packets) == count, (stream['codec_name'], len(packets), count)
@@ -124,10 +124,10 @@ def check(binary, ffmpeg, probe, root, rate, capture, tls=None,
         assert .9 < gain < 1.1 and snr > 15, (channel, lag, gain, snr)
         measurements.append(dict(delay=lag, gain=gain, snr=snr))
     result = dict(rate=rate, channels=channels, capture=capture, frames=24, tls=tls,
-                  codec=codec, depth=depth, color=color, metadata=metadata,
+                  codec=codec, depth=depth, color=color, metadata=metadata, producer=producer, fps=fps,
                   audio=measurements)
     (root / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
-    print('PASS native GPU capture -> NVENC/AAC -> RTMP: ' + json.dumps(result), flush=True)
+    print(f'PASS native GPU capture -> {producer}/AAC -> RTMP: ' + json.dumps(result), flush=True)
 
 
 if __name__ == '__main__':
@@ -140,10 +140,16 @@ if __name__ == '__main__':
     parser.add_argument('--codec', choices=['h264', 'hevc'], default='h264')
     parser.add_argument('--depth', type=int, choices=[8, 10], default=8)
     parser.add_argument('--color', type=int, choices=[0, 1, 2, 3], default=1)
+    parser.add_argument('--producer', choices=['NVENC', 'Vulkan'], default='NVENC')
+    parser.add_argument('--fps', type=int, default=60)
+    parser.add_argument('--width', type=int, default=320)
+    parser.add_argument('--height', type=int, default=192)
     parser.add_argument('--metadata', type=int, choices=[0, 1, 2, 3], default=0)
     args = parser.parse_args()
+    if args.fps <= 0 or args.width <= 0 or args.height <= 0 or (args.width | args.height) & 1:
+        parser.error('positive frame rate and positive even dimensions required')
     for rate in (48000, 44100):
         for capture in (1, 2):
             check(args.binary.resolve(), args.ffmpeg, args.ffprobe,
                   args.output_dir.resolve() / f'{rate}-{capture}', rate, capture, args.tls,
-                  args.codec, args.depth, args.color, args.metadata)
+                  args.codec, args.depth, args.color, args.metadata, args.fps, args.width, args.height, args.producer)

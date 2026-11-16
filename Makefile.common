@@ -2080,8 +2080,14 @@ ifeq ($(HAVE_MF_AUDIO), 1)
       OBJ += record/record_mf_audio.o
       ifeq ($(HAVE_RTMP), 1)
          ifeq ($(HAVE_RFLV), 1)
+            ifneq ($(filter 1,$(HAVE_D3D12) $(HAVE_RECORD_VULKAN)),)
+               OBJ += record/record_stream_gpu.o
+            endif
             ifeq ($(HAVE_D3D12), 1)
-               OBJ += record/record_stream_gpu.o record/record_stream_d3d12.o
+               OBJ += record/record_stream_d3d12.o
+            endif
+            ifeq ($(HAVE_RECORD_VULKAN), 1)
+               OBJ += record/record_stream_vulkan.o
             endif
          endif
       endif

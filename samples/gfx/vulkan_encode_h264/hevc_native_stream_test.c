@@ -1,0 +1,214 @@
+/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+#define HEVC_NATIVE_CAPTURE_HELPERS_ONLY
+#include "hevc_native_capture_test.c"
+#include "../../../record/record_gpu_worker_vulkan_hevc.h"
+#include "../../../record/record_stream_vulkan.h"
+#include <net/net_compat.h>
+#include <net/net_socket_ssl.h>
+#include <crypto/kdf.h>
+#include <rthreads/rthreads.h>
+#include <windows.h>
+
+static FILE *stream_raw;
+static unsigned stream_packets;
+static int stream_native_packet(record_gpu_worker_vulkan_t *worker, vulkan_encode_packet_t *packet)
+{
+   int result = record_gpu_worker_vulkan_step(worker, packet);
+   if (result == RECORD_GPU_VULKAN_PACKET)
+   {
+      assert(packet->timestamp == stream_packets && packet->duration == 1);
+      assert(fwrite(packet->data, 1, packet->size, stream_raw) == packet->size);
+      stream_packets++;
+   }
+   return result;
+}
+/* Test-only observation of the borrowed native packet, before network muxing. */
+#define record_gpu_worker_vulkan_step stream_native_packet
+#include "../../../record/record_stream_vulkan.c"
+#undef record_gpu_worker_vulkan_step
+
+struct native_stream_fixture
+{
+   struct native_hevc_capture capture;
+   record_gpu_output_config_t output;
+   net_rtmp_client_config_t client_config;
+   char *trust;
+   int16_t pcm[3200];
+   uint8_t random[1528], headers[65536];
+};
+static bool stream_resolve(void (*work)(void*), void *job, void *userdata)
+{
+   sthread_t *thread = sthread_create(work, job);
+   (void)userdata;
+   if (!thread) return false;
+   assert(sthread_detach(thread) == 0);
+   return true;
+}
+static bool stream_trust(struct native_stream_fixture *n)
+{
+   const char *path = getenv("RTMPS_CA");
+   FILE *file;
+   long size;
+   bool ok;
+   if (!path) return true;
+   file = fopen(path, "rb");
+   if (!file) return false;
+   ok = !fseek(file, 0, SEEK_END) && (size = ftell(file)) > 0
+      && size < 65536 && !fseek(file, 0, SEEK_SET);
+   if (ok)
+   {
+      n->trust = (char*)malloc((size_t)size);
+      ok = n->trust && fread(n->trust, 1, (size_t)size, file) == (size_t)size;
+      if (ok) ssl_socket_retro_set_trust_pem(n->trust, (size_t)size);
+   }
+   fclose(file);
+   return ok;
+}
+static int stream_service(record_stream_gpu_t *stream)
+{
+   record_stream_wait_t wait;
+   int result = record_stream_gpu_step(stream, 0, &wait);
+   assert(result != RECORD_GPU_OUTPUT_ERROR);
+   if (result == RECORD_GPU_OUTPUT_BUSY) Sleep(1); /* Fixture deadline/retry only. */
+   return result;
+}
+int main(int argc, char **argv)
+{
+   struct native_stream_fixture *n = (struct native_stream_fixture*)calloc(1, sizeof(*n));
+   struct native_encoder *c;
+   vulkan_encode_hevc_t *encoder;
+   const vulkan_encode_pool_t *pool;
+   record_gpu_queue_t *queue;
+   record_gpu_worker_vulkan_t *worker;
+   record_stream_gpu_t *stream;
+   net_rtmp_client_t *client;
+   net_rtmp_client_view_t view;
+   net_rtmp_codec_capability_t video = {NET_RTMP_CODEC_ENCODE, "hvc1"};
+   net_rtmp_codec_capability_t audio = {NET_RTMP_CODEC_ENCODE, "mp4a"};
+   net_rtmp_codec_caps_t caps;
+   record_gpu_frame_t frame;
+   FILE *pcm;
+   char *pcm_path;
+   size_t size, path_size;
+   unsigned depth, color, rate, channels, index, i, sample, frames;
+   bool direct;
+   int result = 77;
+   assert(n && argc == 8 && atoi(argv[1]) == 1 && !atoi(argv[6]));
+   depth = atoi(argv[2]) == 3 ? 10 : 8;
+   color = (unsigned)atoi(argv[4]);
+   assert(color == 1 || (color == 2 && depth == 10));
+   assert(getenv("NVENC_TEST_AUDIO_RATE"));
+   rate = (unsigned)atoi(getenv("NVENC_TEST_AUDIO_RATE"));
+   assert(rate == 44100 || rate == 48000);
+   channels = rate == 44100 ? 1 : 2;
+   frames = rate / 30;
+   direct = atoi(argv[7]) == 1;
+   c = &n->capture.adapter.gpu.base;
+   if (color == 2)
+   {
+      n->capture.output_mode = getenv("VULKAN_STREAM_SCRGB") ? 2 : 1;
+      n->capture.rgb_format = n->capture.output_mode == 1
+         ? VK_FORMAT_A2B10G10R10_UNORM_PACK32 : VK_FORMAT_R16G16B16A16_SFLOAT;
+   }
+   encoder = native_adapter_new_mode(&n->capture.adapter, depth, true, direct, false);
+   if (!encoder) goto done;
+   if (color == 2)
+   {
+      assert(vulkan_encode_hevc_free(encoder));
+      n->capture.adapter.config.session.video.color = VULKAN_ENCODE_HEVC_PQ;
+      encoder = vulkan_encode_hevc_open(&n->capture.adapter.config, &n->capture.adapter.ops);
+      assert(encoder);
+   }
+   pool = vulkan_encode_hevc_pool(encoder);
+   assert(pool && pool->storage_images == direct);
+   load_capture(&n->capture);
+   capture_new(&n->capture, pool);
+   queue = record_gpu_queue_new(2);
+   worker = record_gpu_worker_vulkan_new_hevc(queue, encoder);
+   assert(queue && worker && network_init() && stream_trust(n));
+   n->client_config.url = getenv("NVENC_TEST_STREAM_URL");
+   assert(crypto_random_bytes(n->random, sizeof(n->random)) == 0);
+   n->client_config.random = n->random;
+   n->client_config.dispatch = stream_resolve;
+   n->client_config.max_reply = 65536;
+   n->client_config.streams = 8;
+   caps.video = &video; caps.video_count = 1;
+   caps.audio = &audio; caps.audio_count = 1;
+   client = net_rtmp_client_new_caps(&n->client_config, &caps);
+   assert(client);
+   for (i = 0; i < 30000; i++)
+   {
+      enum net_rtmp_client_state state = net_rtmp_client_step(client, 0, &view);
+      assert(state != NET_RTMP_CLIENT_FAILED);
+      if (state == NET_RTMP_CLIENT_READY) break;
+      Sleep(1);
+   }
+   assert(i < 30000);
+   assert(vulkan_encode_hevc_headers(encoder, n->headers, sizeof(n->headers), &size));
+   stream_raw = fopen(argv[3], "wb");
+   assert(stream_raw && fwrite(n->headers, 1, size, stream_raw) == size);
+   n->output.video.headers = n->headers;
+   n->output.video.headers_size = size;
+   n->output.video.codec = RECORD_MP4_HEVC;
+   n->output.video.bit_depth = depth;
+   n->output.video.timescale = 30;
+   n->output.video.max_packet_size = 1048576;
+   n->output.stream_color.primaries = color == 1 ? 1 : 9;
+   n->output.stream_color.transfer = color == 1 ? 1 : 16;
+   n->output.stream_color.matrix = color == 1 ? 1 : 9;
+   n->output.stream_color.range = 1;
+   n->output.audio_rate = rate;
+   n->output.audio_layout = channels == 1 ? 4 : 3;
+   n->output.audio_kbps = 128;
+   n->output.audio_fifo_frames = rate;
+   stream = record_stream_vulkan_new(worker, &n->output, client);
+   assert(stream);
+   path_size = strlen(argv[3]) + sizeof(".av.pcm");
+   pcm_path = (char*)malloc(path_size);
+   assert(pcm_path);
+   snprintf(pcm_path, path_size, "%s.av.pcm", argv[3]);
+   pcm = fopen(pcm_path, "wb"); free(pcm_path); assert(pcm);
+   for (index = 0; index < 24; index++)
+   {
+      for (i = 0; i < 10000; i++)
+      {
+         if (record_gpu_queue_acquire(queue, &frame.slot) == RECORD_GPU_QUEUE_OK) break;
+         stream_service(stream);
+      }
+      assert(i < 10000 && frame.slot == index % 2);
+      capture_frame(&n->capture, pool, index);
+      frame.timestamp = index; frame.duration = 1;
+      frame.ready_value = index + 1; frame.keyframe = index == 7;
+      assert(record_gpu_queue_submit(queue, &frame));
+      for (sample = 0; sample < frames * channels; sample++)
+         n->pcm[sample] = (int16_t)(6000 * sin((index * frames + sample / channels)
+                  * (sample % channels ? 660.0 : 440.0) * 6.283185307179586 / rate));
+      assert(fwrite(n->pcm, sizeof(int16_t), frames * channels, pcm) == frames * channels);
+      for (i = 0; i < 10000; i++)
+      {
+         int pushed = record_stream_gpu_audio(stream, n->pcm, frames);
+         if (pushed == RECORD_GPU_OUTPUT_PROGRESS) break;
+         assert(pushed == RECORD_GPU_OUTPUT_BUSY); stream_service(stream);
+      }
+      assert(i < 10000);
+      for (i = 0; i < 10000 && stream_packets <= index; i++) stream_service(stream);
+      assert(stream_packets == index + 1);
+   }
+   /* Observed packets prove all capture/encode commands for those slots retired. */
+   assert(record_gpu_queue_finish(queue) && record_stream_gpu_audio_finish(stream));
+   for (i = 0; i < 30000; i++) if (stream_service(stream) == RECORD_GPU_OUTPUT_END) break;
+   assert(i < 30000 && stream_packets == 24);
+   assert(record_stream_gpu_free(stream) && net_rtmp_client_free(client));
+   assert(record_gpu_worker_vulkan_free(worker));
+   capture_free(&n->capture);
+   assert(vulkan_encode_hevc_free(encoder) && record_gpu_queue_free(queue));
+   assert(!fclose(stream_raw) && !fclose(pcm));
+   printf("Vulkan HEVC stream depth=%u direct=%u color=%u validation_errors=%u\n",
+         depth, direct ? 1u : 0u, color, c->validation_errors);
+   result = c->validation_errors ? 1 : 0;
+done:
+   ssl_socket_retro_set_trust_pem(NULL, 0);
+   free(n->trust);
+   native_adapter_context_free(&n->capture.adapter);
+   return result;
+}
