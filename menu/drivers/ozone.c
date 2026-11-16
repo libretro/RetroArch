@@ -8061,18 +8061,17 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       if (buttons.count)
       {
          int box_top;
+         int lift;
          slice_new_h       += (line_height + font_data.line_ascender) * 2;
          slice_new_h       += stack_h;
          box_top            = slice_y - (int)(16 * scale_factor);
-         /* Up until its bottom is on screen, but not above the top */
-         if (box_top + (int)slice_new_h > (int)height)
-         {
-            int lift        = box_top + (int)slice_new_h - (int)height;
-            if (lift > box_top)
-               lift         = box_top;
-            slice_y        -= lift;
-            y               = (size_t)((int)y - lift);
-         }
+         /* Centred with its buttons, but not above the top */
+         lift               = box_top + (int)slice_new_h / 2
+               - (int)y_position;
+         if (lift > box_top)
+            lift            = box_top;
+         slice_y           -= lift;
+         y                  = (size_t)((int)y - lift);
          row_y              = slice_y + (int)slice_new_h - stack_h
                - (int)((70 + 16) * scale_factor) - (int)(slice_margin / 2);
          /* Still taller than the screen: as tall as the screen, the

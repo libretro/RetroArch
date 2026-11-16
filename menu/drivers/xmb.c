@@ -1596,16 +1596,13 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             ? 0 : (int)(xmb->margins_slice * xmb->last_scale_factor));
       int box_h            = xmb_confirm_box_h(xmb, line_height,
             line_count, stack_h, &slice_h);
-      /* Up until its bottom is on screen, but not above the top */
-      if (box_top + box_h > (int)video_height)
-      {
-         int lift          = box_top + box_h - (int)video_height;
-         if (lift > box_top)
-            lift           = box_top;
-         y                -= lift;
-         slice_y          -= lift;
-         box_top          -= lift;
-      }
+      /* Centred with its buttons, but not above the top */
+      int lift             = box_top + box_h / 2 - (int)y_position;
+      if (lift > box_top)
+         lift              = box_top;
+      y                   -= lift;
+      slice_y             -= lift;
+      box_top             -= lift;
       row_y                = box_top + box_h - cursor_h - stack_h
             - (int)(xmb->margins_dialog / 2);
       /* Still taller than the screen: as tall as the screen, the row

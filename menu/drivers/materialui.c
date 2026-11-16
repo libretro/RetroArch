@@ -3065,17 +3065,15 @@ static void materialui_render_messagebox(
    /* Extra room for confirm buttons */
    if (buttons.count)
    {
+      int lift;
       slice_h             += (mui->font_data.list.line_height + mui->margin) * 2;
       slice_h             += stack_h;
-      /* Up until its bottom is on screen, but not above the top */
-      if (slice_y + slice_h > (int)video_height)
-      {
-         int lift          = slice_y + slice_h - (int)video_height;
-         if (lift > slice_y)
-            lift           = slice_y;
-         y                -= lift;
-         slice_y          -= lift;
-      }
+      /* Centred with its buttons, but not above the top */
+      lift                 = slice_y + slice_h / 2 - y_centre;
+      if (lift > slice_y)
+         lift              = slice_y;
+      y                   -= lift;
+      slice_y             -= lift;
       row_y                = slice_y + slice_h - row_h - stack_h
             - (int)mui->margin;
       /* Still taller than the screen: as tall as the screen, the row

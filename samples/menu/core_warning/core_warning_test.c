@@ -28,6 +28,8 @@
  *    through RGUI drawing the box under a scripted mouse; a click that
  *    wakes the screensaver presses nothing, and so does one pressed
  *    on a box a newer request replaced;
+ *  - RGUI centres the box on the screen with its buttons, the warnings'
+ *    and a classic confirm's alike (lane_centred);
  *  - Settings > Core > Check Core Signatures: Off asks even with
  *    confirmations off and Back keeps the checks; On and Start ask
  *    nothing; a read-only store changes nothing; an inactive one hides
@@ -830,6 +832,151 @@ static void click(void)
    }
 }
 
+/* RGUI's frame as it hands it to the video driver */
+static video_poke_interface_t shot_poke;
+static const video_poke_interface_t *real_poke;
+static uint16_t *shot_px;
+static size_t shot_cap;
+static unsigned shot_w, shot_h;
+static unsigned under_w, under_h;
+
+static void shot_set_texture_frame(void *data, const void *frame,
+      bool rgb32, unsigned dims, float alpha)
+{
+   size_t n = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims);
+   (void)data;
+   (void)alpha;
+   if (rgb32 || !frame || !n)
+      return;
+   if (n > shot_cap)
+   {
+      free(shot_px);
+      shot_px  = (uint16_t*)malloc(n * sizeof(uint16_t));
+      shot_cap = shot_px ? n : 0;
+      if (!shot_px)
+         return;
+   }
+   memcpy(shot_px, frame, n * sizeof(uint16_t));
+   shot_w = VIDEO_SCALE_W(dims);
+   shot_h = VIDEO_SCALE_H(dims);
+}
+
+/* A fresh frame, copied: the one a box will come up over */
+static uint16_t *shot_under(void)
+{
+   uint16_t *under;
+   disp_get_ptr()->flags |= GFX_DISP_FLAG_FB_DIRTY;
+   pump(3);
+   if (!(under = (uint16_t*)malloc((size_t)shot_w * shot_h
+         * sizeof(uint16_t))))
+      return NULL;
+   memcpy(under, shot_px, (size_t)shot_w * shot_h * sizeof(uint16_t));
+   under_w = shot_w;
+   under_h = shot_h;
+   return under;
+}
+
+/* The rows a box covers (those that differ from the frame under it)
+ * are centred on the screen, within a row */
+static void box_centred(const uint16_t *under, const char *name)
+{
+   unsigned x, y;
+   int top    = -1;
+   int bottom = -1;
+   char what[160];
+   CHECK(shot_w == under_w && shot_h == under_h,
+         "centred: the frame changed size under the box");
+   if (shot_w != under_w || shot_h != under_h)
+      return;
+   for (y = 0; y < shot_h; y++)
+      for (x = 0; x < shot_w; x++)
+         if (shot_px[y * shot_w + x] != under[y * shot_w + x])
+         {
+            if (top < 0)
+               top = (int)y;
+            bottom = (int)y;
+            break;
+         }
+   sprintf(what, "centred: the %s box %d..%d isn't centred on %u rows",
+         name, top, bottom, shot_h);
+   CHECK(top >= 0 && bottom < (int)shot_h
+         && abs(top + bottom - ((int)shot_h - 1)) <= 2, what);
+   fprintf(stderr, "[info] %s box rows %d..%d of %u\n", name, top, bottom,
+         shot_h);
+}
+
+static void centred(enum core_warning_kind kind,
+      enum core_check_result result, const char *name)
+{
+   uint16_t *under = shot_under();
+   if (!under)
+      return;
+   push(&seen_a, kind, 0x7a, result);
+   pump(3);
+   CHECK(shown(), "centred: the warning didn't come up");
+   box_centred(under, name);
+   answer(MENU_ACTION_CANCEL);
+   pump(3);
+   free(under);
+}
+
+/* RGUI centres the box with its buttons, not its text alone */
+static void lane_centred(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   bool timedate                  = settings->bools.menu_timedate_enable;
+   uint16_t *under;
+   size_t i;
+   /* No clock, so only the box differs between the two frames */
+   configuration_set_bool(settings, settings->bools.menu_timedate_enable,
+         false);
+   scripted_install();
+   real_poke                     = video_st->poke;
+   memset(&shot_poke, 0, sizeof(shot_poke));
+   if (real_poke)
+      shot_poke                  = *real_poke;
+   shot_poke.set_texture_frame   = shot_set_texture_frame;
+   video_st->poke                = &shot_poke;
+   disp_get_ptr()->flags        |= GFX_DISP_FLAG_FB_DIRTY;
+   pump(3);
+   CHECK(shot_px && shot_w && shot_h, "centred: RGUI handed over no frame");
+   if (shot_px)
+   {
+      centred(CORE_WARNING_INSTALL, CORE_CHECK_UNSIGNED, "install");
+      centred(CORE_WARNING_LOAD, CORE_CHECK_OLDER, "load");
+
+      /* A classic Cancel/OK confirm: Check Core Signatures Off */
+      if (!core_trust_runtime_checks_on())
+         core_trust_runtime_set_checks(true);
+      push_core_settings();
+      i = row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK);
+      CHECK(i != NO_ROW, "centred: no Check Core Signatures row");
+      /* Selected first, so only the box differs between the frames */
+      if (i != NO_ROW)
+         menu_state_get_ptr()->selection_ptr = i;
+      if (i != NO_ROW && (under = shot_under()))
+      {
+         ok_on(i);
+         pump(3);
+         CHECK(box().classic && box().count == 2,
+               "centred: the turn-off confirm didn't come up");
+         box_centred(under, "classic confirm");
+         answer(MENU_ACTION_CANCEL);
+         free(under);
+      }
+      CHECK(core_trust_runtime_checks_on(),
+            "centred: Back turned the checks off");
+   }
+   video_st->poke                = real_poke;
+   scripted_remove();
+   free(shot_px);
+   shot_px  = NULL;
+   shot_cap = 0;
+   configuration_set_bool(settings, settings->bools.menu_timedate_enable,
+         timedate);
+}
+
 /* A tap on a button presses it, anywhere else is Cancel whatever is
  * highlighted; a classic confirm's OK still confirms */
 static void lane_pointer(void)
@@ -1396,6 +1543,7 @@ int main(int argc, char *argv[])
 #endif
       synthetic_install();
       lane_synthetic();
+      lane_centred();
       lane_pointer();
       lane_held();
       lane_replaced();
