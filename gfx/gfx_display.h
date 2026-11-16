@@ -308,6 +308,7 @@ struct gfx_display
     * a frame asked for it, whether this frame's is ready to composite
     * and whether the prepass already moved the ribbon on this frame */
    const struct gfx_display_mesh *bloom_mesh;
+   unsigned bloom_vertices;
    unsigned bloom_dims;
    float bloom_alpha;
    bool bloom_wanted;

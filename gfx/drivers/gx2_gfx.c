@@ -134,6 +134,8 @@ typedef struct
 
    unsigned ribbon_offset;
    unsigned ribbon_vertices;
+   /* Whether the ribbon being drawn has its dust */
+   bool ribbon_dust;
    /* The mesh whose positions were last flushed for the GPU */
    uint32_t positions_mesh_id;
    menu_shader_uniform_t* menu_shader_ubo;
@@ -443,12 +445,16 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
          case VIDEO_SHADER_MENU:
             GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP,
                   draw->coords->vertices, 0, 1);
-            GX2SetShader(&ribbon_stars_shader);
-            GX2SetAttribBuffer(0, wiiu->vertex_cache_tex.size
-                  * sizeof(*wiiu->vertex_cache_tex.v),
-                  sizeof(*wiiu->vertex_cache_tex.v), wiiu->vertex_cache_tex.v);
-            GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP,
-                  wiiu->ribbon_vertices, wiiu->ribbon_offset, 1);
+            if (wiiu->ribbon_dust && wiiu->ribbon_vertices)
+            {
+               GX2SetShader(&ribbon_stars_shader);
+               GX2SetAttribBuffer(0, wiiu->vertex_cache_tex.size
+                     * sizeof(*wiiu->vertex_cache_tex.v),
+                     sizeof(*wiiu->vertex_cache_tex.v),
+                     wiiu->vertex_cache_tex.v);
+               GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP,
+                     wiiu->ribbon_vertices, wiiu->ribbon_offset, 1);
+            }
             GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
                   GX2_BLEND_COMBINE_MODE_ADD,
                   GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
@@ -642,8 +648,9 @@ static void gfx_display_wiiu_draw_pipeline(
                   || mesh->vertex_count <= GFX_DISPLAY_RIBBON_STAR_VERTICES)
                return;
             first = mesh->vertex_count - GFX_DISPLAY_RIBBON_STAR_VERTICES;
+            wiiu->ribbon_dust = p_disp->effect_vertices >= mesh->vertex_count;
             wiiu_mesh_positions(wiiu, mesh);
-            if (!wiiu->ribbon_vertices)
+            if (wiiu->ribbon_dust && !wiiu->ribbon_vertices)
             {
                unsigned i;
                tex_shader_vertex_t *vertices;

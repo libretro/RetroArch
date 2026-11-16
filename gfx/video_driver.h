@@ -523,6 +523,8 @@ enum video_frame_menu_flags
    VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE                    = (1u << 29),
    VIDEO_MENU_FLAG_XMB_RIBBON_BLOOM_ENABLE                      = (1u << 30)
 };
+/* Past what an enum constant may hold in C89 */
+#define VIDEO_MENU_FLAG_XMB_RIBBON_PARTICLES_ENABLE (1u << 31)
 
 typedef struct video_frame_menu_settings
 {

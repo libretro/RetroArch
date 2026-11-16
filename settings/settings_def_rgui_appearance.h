@@ -113,5 +113,10 @@ S_BOOL(menu_xmb_ribbon_bloom_enable, XMB_RIBBON_BLOOM_ENABLE,
       DEFAULT_XMB_RIBBON_BLOOM_ENABLE, SD_FLAG_NONE, 0, 0,
       "Ribbon Glow",
       "Add a soft glow to the Ribbon menu shader. This has a performance hit.")
+S_BOOL(menu_xmb_ribbon_particles_enable, XMB_RIBBON_PARTICLES_ENABLE,
+      "xmb_ribbon_particles_enable",
+      DEFAULT_XMB_RIBBON_PARTICLES_ENABLE, SD_FLAG_NONE, 0, 0,
+      "Ribbon Particles",
+      "Draw drifting specks of light over the Ribbon menu shader.")
 #endif
 #endif

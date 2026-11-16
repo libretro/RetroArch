@@ -977,6 +977,7 @@ typedef struct settings
       bool menu_xmb_shadows_enable;
       bool menu_xmb_plastic_effect_enable;
       bool menu_xmb_ribbon_bloom_enable;
+      bool menu_xmb_ribbon_particles_enable;
       bool menu_xmb_show_horizontal_list;
       bool menu_xmb_show_title_header;
       bool menu_xmb_entry_icons;

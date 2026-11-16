@@ -8037,6 +8037,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       float menu_wallpaper_opacity,
       bool libretro_running,
       bool bloom,
+      bool particles,
       float alpha,
       uintptr_t texture_id,
       const char *bg_file_path,
@@ -8105,6 +8106,9 @@ XMB_NOINLINE static void xmb_draw_bg(
          case XMB_SHADER_PIPELINE_RIBBON:
             md.program = GFX_MESH_PROGRAM_RIBBON;
             mesh       = ribbon_mesh;
+            /* The dust follows the sheet in the mesh */
+            if (!particles)
+               md.vertex_count = XMB_RIBBON_VERTICES;
             break;
          case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
             /* The sheet alone: the grid comes before the dust */
@@ -8839,6 +8843,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             libretro_running,
             (video_info->menu.flags
              & VIDEO_MENU_FLAG_XMB_RIBBON_BLOOM_ENABLE) != 0,
+            (video_info->menu.flags
+             & VIDEO_MENU_FLAG_XMB_RIBBON_PARTICLES_ENABLE) != 0,
             MIN(xmb->alpha, alpha_factor / 100),
             tex_bg,
             xmb->bg_file_path,

@@ -7657,6 +7657,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
          video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE;
       if (settings->bools.menu_xmb_ribbon_bloom_enable)
          video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_RIBBON_BLOOM_ENABLE;
+      if (settings->bools.menu_xmb_ribbon_particles_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_RIBBON_PARTICLES_ENABLE;
    }
    else
 #endif

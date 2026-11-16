@@ -179,6 +179,7 @@ bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
 bool	xmb_plastic_effect_enable	1	0
 bool	xmb_ribbon_bloom_enable	1	0
+bool	xmb_ribbon_particles_enable	1	0
 bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
@@ -920,6 +921,7 @@ bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
 bool	xmb_plastic_effect_enable	1	0
 bool	xmb_ribbon_bloom_enable	1	0
+bool	xmb_ribbon_particles_enable	1	0
 bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
@@ -1658,6 +1660,7 @@ bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
 bool	xmb_plastic_effect_enable	1	0
 bool	xmb_ribbon_bloom_enable	1	0
+bool	xmb_ribbon_particles_enable	1	0
 bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0

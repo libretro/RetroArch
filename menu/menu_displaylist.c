@@ -15211,6 +15211,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE,                           PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_XMB_PLASTIC_EFFECT_ENABLE,                    PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_XMB_RIBBON_BLOOM_ENABLE,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_XMB_RIBBON_PARTICLES_ENABLE,                  PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_TEXTURE_MIPMAPPING,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,             PARSE_ONLY_BOOL,   false},

@@ -605,6 +605,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_switch_icons,                   
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_plastic_effect_enable,             MENU_ENUM_SUBLABEL_XMB_PLASTIC_EFFECT_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_ribbon_bloom_enable,               MENU_ENUM_SUBLABEL_XMB_RIBBON_BLOOM_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_ribbon_particles_enable,           MENU_ENUM_SUBLABEL_XMB_RIBBON_PARTICLES_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_vertical_thumbnails,               MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_alpha_factor,                 MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_vertical_fade_factor,         MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR)
@@ -3402,6 +3403,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_XMB_RIBBON_BLOOM_ENABLE:
 #ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_ribbon_bloom_enable);
+#endif
+            break;
+         case MENU_ENUM_LABEL_XMB_RIBBON_PARTICLES_ENABLE:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_ribbon_particles_enable);
 #endif
             break;
          case MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS:

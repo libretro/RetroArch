@@ -1073,6 +1073,7 @@
 #define DEFAULT_XMB_THEME XMB_THEME_ELECTRIC_BLUE
 #define DEFAULT_XMB_PLASTIC_EFFECT_ENABLE false
 #define DEFAULT_XMB_RIBBON_BLOOM_ENABLE false
+#define DEFAULT_XMB_RIBBON_PARTICLES_ENABLE false
 
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
 #define DEFAULT_XMB_SHADOWS_ENABLE false

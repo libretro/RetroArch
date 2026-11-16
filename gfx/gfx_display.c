@@ -985,8 +985,9 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
       gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
       if (dispctx->bloom_composite)
       {
-         p_disp->bloom_mesh   = mesh;
-         p_disp->bloom_dims   = output_dims;
+         p_disp->bloom_mesh     = mesh;
+         p_disp->bloom_vertices = p_disp->effect_vertices;
+         p_disp->bloom_dims     = output_dims;
          p_disp->bloom_alpha  = md->color[3];
          p_disp->bloom_wanted = true;
       }
@@ -1059,7 +1060,9 @@ void gfx_display_bloom_prepass(void *userdata)
    draw.pipeline_id  = VIDEO_SHADER_MENU;
 
    p_disp->effect_mesh     = mesh;
-   p_disp->effect_vertices = mesh->vertex_count;
+   p_disp->effect_vertices = (p_disp->bloom_vertices
+         && p_disp->bloom_vertices < mesh->vertex_count)
+      ? p_disp->bloom_vertices : mesh->vertex_count;
    gfx_display_blend_begin(dispctx, userdata);
    if (dispctx->draw_pipeline)
       dispctx->draw_pipeline(&draw, p_disp, userdata, bloom_dims);
