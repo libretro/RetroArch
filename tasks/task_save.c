@@ -229,11 +229,23 @@ static bool save_state_disable_undo        = false;
 static retro_task_t *state_tasks_held[STATE_TASKS_HELD_MAX];
 static unsigned      state_tasks_held_count     = 0;
 
+/* A state task pushed whose callback has yet to run. The queue does
+ * not say: one finished on its thread no longer blocks a push, while
+ * the next of its chain - the save after its backup load - is only
+ * pushed from its callback. */
+static bool state_task_in_flight(void)
+{
+   return   save_state_tasks_pending + load_state_tasks_pending
+          > state_tasks_held_count;
+}
+
 /* Pushes @task, or holds it behind the state task in flight; false
  * only when the hold is full. Anything already held goes first. */
 static bool state_task_push(retro_task_t *task)
 {
-   if (!state_tasks_held_count && task_queue_push(task))
+   if (     !state_tasks_held_count
+         && !state_task_in_flight()
+         && task_queue_push(task))
       return true;
    if (state_tasks_held_count >= STATE_TASKS_HELD_MAX)
       return false;
@@ -262,6 +274,7 @@ static void state_tasks_release(void)
 {
    unsigned i;
    if (     !state_tasks_held_count
+         || state_task_in_flight()
          || !task_queue_push(state_tasks_held[0]))
       return;
    for (i = 1; i < state_tasks_held_count; i++)

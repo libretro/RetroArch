@@ -2457,6 +2457,10 @@ static void lane_state_slot_reply(void)
  * case fires Load State as the hotkey does and runs frames until the
  * core has unserialized the state; a load is a few frames' work. */
 #define STATE_LOAD_MAX_FRAMES 30
+/* The harness's frames take microseconds and the load is the task
+ * thread's work: on a busy machine the bound is that many frames of
+ * a display's instead. */
+#define STATE_LOAD_MAX_USEC (STATE_LOAD_MAX_FRAMES * 16667)
 
 static void core_mark_state(unsigned mark)
 {
@@ -2502,16 +2506,59 @@ static bool state_save_marked(unsigned mark)
 static unsigned state_load_frames(unsigned mark)
 {
    unsigned n;
+   retro_time_t start, held = 0;
    /* the core runs on with another mark until the load lands */
    core_mark_state((mark + 1) & 0xff);
    command_event(CMD_EVENT_LOAD_STATE, NULL);
-   for (n = 1; n <= STATE_LOAD_MAX_FRAMES; n++)
+   start = cpu_features_get_time_usec();
+   for (n = 1; ; n++)
    {
+      retro_time_t now;
       pump(1);
       if (core_export_ul("harness_core_state_loaded") == mark)
-         return n;
+         return n < STATE_LOAD_MAX_FRAMES ? n : STATE_LOAD_MAX_FRAMES;
+      now = cpu_features_get_time_usec();
+      /* held behind a save still writing, the load has not begun: its
+       * frames are those after the save, which has a minute */
+      if (content_save_state_in_progress(NULL))
+      {
+         if (now - start > 60000000)
+            break;
+         held  = now - start;
+         n     = 0;
+      }
+      else if (  n >= STATE_LOAD_MAX_FRAMES
+            && now - start - held > STATE_LOAD_MAX_USEC)
+         break;
    }
    return 0;
+}
+
+static bool state_task_done(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   return (task_get_flags(task) & RETRO_TASK_FLG_FINISHED) != 0;
+}
+
+/* Waits, running no frame, until the task thread is through with the
+ * state task in flight: finished, its callback still to come. */
+static bool state_task_wait_done(void)
+{
+   task_finder_data_t find;
+   unsigned i;
+   find.func     = state_task_done;
+   find.userdata = NULL;
+   for (i = 0; i < 5000; i++)
+   {
+      if (task_queue_find(&find))
+      {
+         /* and off the thread's hands */
+         retro_sleep(20);
+         return true;
+      }
+      retro_sleep(1);
+   }
+   return false;
 }
 
 static void lane_state_load_latency(void)
@@ -2524,7 +2571,8 @@ static void lane_state_load_latency(void)
    static const char *const cases[] = {
       "after the save", "beside the save's thumbnail",
       "beside a screenshot", "after a video reinit",
-      "straight after Save State" };
+      "straight after Save State",
+      "between a save's backup load and the save" };
 
    run_harness_core();
    /* threaded tasks and compressed states, as most users run */
@@ -2540,18 +2588,25 @@ static void lane_state_load_latency(void)
    for (round = 0; round < 3; round++)
    {
       unsigned c;
-      for (c = 0; c < 5; c++)
+      for (c = 0; c < 6; c++)
       {
-         unsigned mark = 0x10 + round * 5 + c;
+         unsigned mark = 0x10 + round * 6 + c;
          configuration_set_bool(settings,
                settings->bools.savestate_thumbnail_enable, c == 1);
          /* the last: Load State in the same frame as Save State, the
           * save still writing - held behind it, it loads what it wrote */
-         if (c == 4)
+         if (c >= 4)
          {
             core_mark_state(mark);
             CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL),
                   "the save was not taken (%s)", cases[c]);
+            /* the file is there, so the save starts by loading it for
+             * the undo: that load done on its thread and the save not
+             * yet pushed by its callback, no state task is running -
+             * pushed then, the load read the file the save replaces */
+            if (c == 5)
+               CHECK(state_task_wait_done(),
+                     "the save's backup load did not finish");
          }
          else
             CHECK(state_save_marked(mark), "the save did not finish (%s)",
