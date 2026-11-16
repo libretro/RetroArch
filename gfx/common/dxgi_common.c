@@ -2519,6 +2519,38 @@ DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt)
    return DXGI_FORMAT_UNKNOWN;
 }
 
+bool dxgi_chain_flips_fullscreen(DXGISwapChain swap_chain)
+{
+   UINT support        = 0;
+   DXGIOutput output   = NULL;
+   DXGIOutput6 output6 = NULL;
+   if (     !swap_chain
+         || FAILED(DXGIGetContainingOutput(swap_chain, &output))
+         || !output)
+      return false;
+#ifdef __cplusplus
+   if (SUCCEEDED(output->QueryInterface(
+               libretro_IID_IDXGIOutput6, (void**)&output6)))
+   {
+      if (FAILED(output6->CheckHardwareCompositionSupport(&support)))
+         support = 0;
+      output6->Release();
+   }
+   output->Release();
+#else
+   if (SUCCEEDED(output->lpVtbl->QueryInterface(output,
+               &libretro_IID_IDXGIOutput6, (void**)&output6)))
+   {
+      if (FAILED(output6->lpVtbl->CheckHardwareCompositionSupport(
+                  output6, &support)))
+         support = 0;
+      Release(output6);
+   }
+   Release(output);
+#endif
+   return (support & DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAG_FULLSCREEN) != 0;
+}
+
 #ifdef HAVE_DXGI_HDR
 typedef struct display_chromaticities
 {

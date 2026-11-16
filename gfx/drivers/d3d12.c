@@ -148,7 +148,12 @@ enum d3d12_video_flags
     * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
     * must pass them through rather than encode them a second time. */
    D3D12_ST_FLAG_SOURCE_HDR10          = (1 << 17),
-   D3D12_ST_FLAG_SOURCE_FP16           = (1 << 18)
+   D3D12_ST_FLAG_SOURCE_FP16           = (1 << 18),
+   /* The swap chain's output flips a fullscreen window straight to
+    * the scanout (dxgi_chain_flips_fullscreen), once asked: again
+    * after each resize of the chain. */
+   D3D12_ST_FLAG_FLIPS_FULLSCREEN      = (1 << 19),
+   D3D12_ST_FLAG_FLIPS_ASKED           = (1 << 20)
 };
 
 typedef enum
@@ -7796,7 +7801,22 @@ static bool d3d12_present_immediate(void *data)
 {
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
    /* as d3d12_gfx_frame() chooses DXGI_PRESENT_ALLOW_TEARING */
-   return d3d12 && !(d3d12->flags & D3D12_ST_FLAG_VSYNC);
+   if (!d3d12 || (d3d12->flags & D3D12_ST_FLAG_VSYNC))
+      return false;
+#if !defined(__WINRT__) && !defined(_XBOX)
+   /* ...and it tears only past the compositor */
+   if (!(d3d12->flags & D3D12_ST_FLAG_FLIPS_ASKED))
+   {
+      d3d12->flags |=  D3D12_ST_FLAG_FLIPS_ASKED;
+      if (dxgi_chain_flips_fullscreen(d3d12->chain.handle))
+         d3d12->flags |=  D3D12_ST_FLAG_FLIPS_FULLSCREEN;
+      else
+         d3d12->flags &= ~D3D12_ST_FLAG_FLIPS_FULLSCREEN;
+   }
+   return (d3d12->flags & D3D12_ST_FLAG_FLIPS_FULLSCREEN) != 0;
+#else
+   return true;
+#endif
 }
 
 static retro_time_t d3d12_get_last_present_time(void *data)
@@ -9987,7 +10007,8 @@ static bool d3d12_gfx_frame_body(
             d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
             d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
 
-            d3d12->flags                       &= ~D3D12_ST_FLAG_RESIZE_CHAIN;
+            d3d12->flags                       &= ~(D3D12_ST_FLAG_RESIZE_CHAIN
+                  | D3D12_ST_FLAG_FLIPS_ASKED);
             d3d12->flags                       |=  D3D12_ST_FLAG_RESIZE_VIEWPORT;
 
             video_driver_set_output_dims(VIDEO_SCALE_PACK(video_width, video_height));

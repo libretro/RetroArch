@@ -3327,6 +3327,17 @@ jobs:
       - name: D3D11 resized readback destination guard
         run: python3 samples/gfx/d3d11_readback_resize/run.py
 
+      - name: D3D11 and D3D12 report a present as immediate only past the compositor
+        shell: bash
+        run: |
+          set -eu
+          # The drivers' present_immediate and the output query behind
+          # it, cut from their sources: tearing allowed, vsync off, and
+          # an output that flips a fullscreen window itself - asked
+          # once, and again after the chain is resized.
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/dxgi_present_immediate/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/dxgi_present_immediate/run.py
+
       - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/hw_ring_fence

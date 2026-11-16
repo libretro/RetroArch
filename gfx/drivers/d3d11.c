@@ -139,7 +139,12 @@ enum d3d11_state_flags
    /* A GPU screenshot waits for this frame's back buffer: the frame
     * copies it into the recording ring before Present. */
    D3D11_ST_FLAG_READBACK_PENDING    = (1 << 20),
-   D3D11_ST_FLAG_SOURCE_FP16           = (1 << 21)
+   D3D11_ST_FLAG_SOURCE_FP16           = (1 << 21),
+   /* The swap chain's output flips a fullscreen window straight to
+    * the scanout (dxgi_chain_flips_fullscreen), once asked: again
+    * after each resize of the chain. */
+   D3D11_ST_FLAG_FLIPS_FULLSCREEN    = (1 << 22),
+   D3D11_ST_FLAG_FLIPS_ASKED         = (1 << 23)
 };
 
 enum d3d11_feature_level_hint
@@ -5981,9 +5986,24 @@ static bool d3d11_present_immediate(void *data)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
    /* as d3d11_gfx_frame() chooses DXGI_PRESENT_ALLOW_TEARING */
-   return d3d11
-      &&  (d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING)
-      && !(d3d11->flags & D3D11_ST_FLAG_VSYNC);
+   if (     !d3d11
+         || !(d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING)
+         ||  (d3d11->flags & D3D11_ST_FLAG_VSYNC))
+      return false;
+#if !defined(__WINRT__) && !defined(_XBOX)
+   /* ...and it tears only past the compositor */
+   if (!(d3d11->flags & D3D11_ST_FLAG_FLIPS_ASKED))
+   {
+      d3d11->flags |=  D3D11_ST_FLAG_FLIPS_ASKED;
+      if (dxgi_chain_flips_fullscreen(d3d11->swapChain))
+         d3d11->flags |=  D3D11_ST_FLAG_FLIPS_FULLSCREEN;
+      else
+         d3d11->flags &= ~D3D11_ST_FLAG_FLIPS_FULLSCREEN;
+   }
+   return (d3d11->flags & D3D11_ST_FLAG_FLIPS_FULLSCREEN) != 0;
+#else
+   return true;
+#endif
 }
 
 static retro_time_t d3d11_get_last_present_time(void *data)
@@ -7806,7 +7826,8 @@ static bool d3d11_gfx_frame_body(
       d3d11->ubo_values.OutputSize.width        = d3d11->viewport.Width;
       d3d11->ubo_values.OutputSize.height       = d3d11->viewport.Height;
 
-      d3d11->flags                              &= ~D3D11_ST_FLAG_RESIZE_CHAIN;
+      d3d11->flags                              &= ~(D3D11_ST_FLAG_RESIZE_CHAIN
+            | D3D11_ST_FLAG_FLIPS_ASKED);
       d3d11->flags                              |=  D3D11_ST_FLAG_RESIZE_VIEWPORT;
 
       video_driver_set_output_dims(VIDEO_SCALE_PACK(video_width, video_height));

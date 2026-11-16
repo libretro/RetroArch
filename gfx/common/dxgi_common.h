@@ -520,6 +520,11 @@ void dxgi_copy(
  * IDXGISwapChain2, which Windows 7's and Wine's are not */
 bool dxgi_swapchain_waitable(DXGISwapChain chain);
 
+/* Whether the output @swap_chain is on can flip a fullscreen window
+ * straight to the scanout. Where it cannot, DWM composes a borderless
+ * one, and its presents wait for a vblank whatever their flags. */
+bool dxgi_chain_flips_fullscreen(DXGISwapChain swap_chain);
+
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd);
