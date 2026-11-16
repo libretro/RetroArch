@@ -188,7 +188,7 @@ jobs:
           RETROARCH_D3D9EX=0 RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
             ./retroarch.exe "$RUNNER_TEMP/views-e2e-legacy" d3d9_hlsl
 
-      - name: XMB colours under HDR on D3D11 and D3D12 (Wine, Xvfb, lavapipe)
+      - name: XMB colours and effects under HDR on D3D11 and D3D12 (Wine, Xvfb, lavapipe)
         shell: bash
         run: |
           set -eu
@@ -202,7 +202,9 @@ jobs:
           # The plastic icons and labels, and the snow, keep their place
           # against the menu background with HDR10 out: under HDR the menu
           # is a layer composited by its alpha, and a draw that lowered it
-          # showed darker than what is under it.
+          # showed darker than what is under it. The Ribbon and its glow
+          # show and hide nothing: a ribbon D3D12 could not draw left the
+          # glow's state bound, and the icons after it were lost.
           python3 samples/gfx/d3d_hdr_menu/run.py ./retroarch.exe "$a" \
             "$RUNNER_TEMP/d3d-hdr-menu"
 

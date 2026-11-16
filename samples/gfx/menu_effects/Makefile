@@ -27,7 +27,9 @@ DEPS := menu_effects_test.c \
         $(REPO_ROOT)/gfx/drivers_shader/shader_glsl.c \
         $(REPO_ROOT)/gfx/common/menu_ribbon.h \
         $(wildcard $(REPO_ROOT)/gfx/drivers/gl_shaders/*pipeline*.h) \
-        $(wildcard $(REPO_ROOT)/gfx/drivers/d3d_shaders/*snow*.h) \
+        $(wildcard $(REPO_ROOT)/gfx/drivers/d3d_shaders/*.h) \
+        $(REPO_ROOT)/gfx/drivers/menu_ribbon_shader.h \
+        $(REPO_ROOT)/gfx/common/menu_ribbon_shader.h \
         $(wildcard $(REPO_ROOT)/gfx/drivers/vulkan_shaders/pipeline_*.src.inc)
 
 BASE := -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL -DHAVE_SHADERPIPELINE \

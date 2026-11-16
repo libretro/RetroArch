@@ -36,6 +36,7 @@
 #include <windows.h>
 #include "../../../gfx/common/d3dcompiler_common.h"
 #include "../../../gfx/drivers/gl_shaders/shaders_common.h"
+#include "../../../gfx/drivers/d3d_shaders/bloom_sm4.hlsl.h"
 #else
 #include "../../../gfx/drivers_shader/shader_glsl.c"
 #include <EGL/egl.h>
@@ -294,33 +295,156 @@ static bool wine_gap(void)
          || strstr(last_err, "\"atan2\" is not defined"));
 }
 
-/* 1 compiled, 0 failed, -1 a gap in Wine's compiler */
-static int compiles(const char *src, const char *entry, const char *target)
+/* 1 compiled, 0 failed, -1 a gap in Wine's compiler; the bytecode in
+ * *out when it is wanted */
+static int compiles(const char *src, const char *entry, const char *target,
+      D3DBlob *out)
 {
    D3DBlob blob = NULL;
    bool ok;
    last_err[0] = '\0';
    ok          = d3d_compile(src, strlen(src), NULL, entry, target, &blob);
-   if (blob)
+   if (ok && out)
+      *out = blob;
+   else if (blob)
       blob->lpVtbl->Release(blob);
    return ok ? 1 : wine_gap() ? -1 : 0;
 }
 
+/* --- Linkage: what the vertex stage writes, the pixel stage reads ---
+ *
+ * From SM4 on, a pixel shader's inputs are matched to the stage before
+ * by register, not by name: each must sit in the register the vertex
+ * (or geometry) shader writes it to. A pixel shader that leaves out an
+ * output ahead of what it reads - the SV_POSITION in front of a
+ * TEXCOORD - reads it from the wrong register. The D3D12 runtime then
+ * refuses the pipeline; D3D10 and 11 draw it with whatever the driver
+ * makes of it. vkd3d matches by name and draws it right, so only this
+ * catches it under Wine. */
+
+typedef struct sig_elem
+{
+   const char *name;
+   unsigned index;
+   unsigned sv;
+   unsigned reg;
+} sig_elem_t;
+
+static unsigned rd32(const unsigned char *p)
+{
+   return p[0] | (p[1] << 8) | (p[2] << 16) | ((unsigned)p[3] << 24);
+}
+
+/* The elements of the bytecode's input (ISGN) or output (OSGN) chunk;
+ * how many, or -1 without one */
+static int dxbc_signature(D3DBlob blob, bool output, sig_elem_t *e,
+      int max)
+{
+   const unsigned char *b = (const unsigned char*)
+      blob->lpVtbl->GetBufferPointer(blob);
+   size_t size            = blob->lpVtbl->GetBufferSize(blob);
+   unsigned i, chunks;
+   if (size < 32 || memcmp(b, "DXBC", 4))
+      return -1;
+   chunks = rd32(b + 28);
+   for (i = 0; i < chunks && 32 + 4 * i + 4 <= size; i++)
+   {
+      unsigned off = rd32(b + 32 + 4 * i);
+      const unsigned char *c, *d;
+      unsigned stride, skip, count, j, len;
+      if (off + 8 > size)
+         return -1;
+      c   = b + off;
+      len = rd32(c + 4);
+      d   = c + 8;
+      if (off + 8 + len > size)
+         return -1;
+      if (!memcmp(c, output ? "OSGN" : "ISGN", 4))
+         stride = 24, skip = 0;
+      else if (!memcmp(c, output ? "OSG5" : "ISG5", 4))
+         stride = 28, skip = 4;
+      else if (!memcmp(c, output ? "OSG1" : "ISG1", 4))
+         stride = 32, skip = 4;
+      else
+         continue;
+      count = rd32(d);
+      if (8 + count * stride > len)
+         return -1;
+      for (j = 0; j < count && (int)j < max; j++)
+      {
+         const unsigned char *el = d + 8 + j * stride + skip;
+         unsigned name           = rd32(el);
+         if (name >= len)
+            return -1;
+         e[j].name  = (const char*)d + name;
+         e[j].index = rd32(el + 4);
+         e[j].sv    = rd32(el + 8);
+         e[j].reg   = rd32(el + 16);
+      }
+      return (int)j;
+   }
+   return -1;
+}
+
+/* Values the rasteriser makes for the pixel stage itself */
+static bool sig_rasterised(const sig_elem_t *e)
+{
+   /* D3D_NAME_PRIMITIVE_ID, IS_FRONT_FACE, SAMPLE_INDEX */
+   return e->sv == 7 || e->sv == 9 || e->sv == 10;
+}
+
+/* Every pixel input in the register the stage before writes it to */
+static void check_linkage(const char *n, const char *what, D3DBlob vs,
+      D3DBlob ps)
+{
+   sig_elem_t out[32], in[32];
+   int o = dxbc_signature(vs, true, out, 32);
+   int i = dxbc_signature(ps, false, in, 32);
+   int a, b;
+   if (o < 0 || i < 0)
+   {
+      check(0, "%s: %s - no signature in the bytecode", n, what);
+      return;
+   }
+   for (a = 0; a < i; a++)
+   {
+      int written = -1;
+      if (sig_rasterised(&in[a]))
+         continue;
+      for (b = 0; b < o && written < 0; b++)
+         if (     !strcasecmp(in[a].name, out[b].name)
+               && in[a].index == out[b].index)
+            written = (int)out[b].reg;
+      check(written == (int)in[a].reg,
+            "%s: %s - pixel input %s%u read from register %u, written "
+            "to %d", n, what, in[a].name, in[a].index, in[a].reg, written);
+   }
+}
+
 static void check_pair(const char *n, const char *what, const char *src,
       const char *vs, const char *ps, const char *vs_target,
-      const char *ps_target)
+      const char *ps_target, bool linkage)
 {
-   int v = compiles(src, vs, vs_target);
-   int p = compiles(src, ps, ps_target);
+   D3DBlob vb = NULL, pb = NULL;
+   int v = compiles(src, vs, vs_target, linkage ? &vb : NULL);
+   int p = compiles(src, ps, ps_target, linkage ? &pb : NULL);
    if (v < 0 || p < 0)
    {
       if (v != 0 && p != 0)
-      {
          printf("  [skip] %s: %s - beyond Wine's HLSL compiler\n", n, what);
-         return;
-      }
+      else
+         check(0, "%s: %s", n, what);
    }
-   check(v == 1 && p == 1, "%s: %s", n, what);
+   else
+   {
+      check(v == 1 && p == 1, "%s: %s", n, what);
+      if (vb && pb)
+         check_linkage(n, what, vb, pb);
+   }
+   if (vb)
+      vb->lpVtbl->Release(vb);
+   if (pb)
+      pb->lpVtbl->Release(pb);
 }
 
 static void check_hlsl(void)
@@ -338,11 +462,27 @@ static void check_hlsl(void)
       const gfx_display_effect_desc_t *d = &xmb_effect_descs[i];
       const char *n = effect_names[i];
       check_pair(n, "SM3 compiles for D3D9", d->hlsl_sm3,
-            "main_vertex", "main_fragment", "vs_3_0", "ps_3_0");
+            "main_vertex", "main_fragment", "vs_3_0", "ps_3_0", false);
       check_pair(n, "SM4 compiles for D3D10 and 11", d->hlsl_sm4,
-            "VSMain", "PSMain", "vs_4_0", "ps_4_0");
+            "VSMain", "PSMain", "vs_4_0", "ps_4_0", true);
       check_pair(n, "SM5 compiles for D3D12", d->hlsl_sm4,
-            "VSMain", "PSMain", "vs_5_0", "ps_5_0");
+            "VSMain", "PSMain", "vs_5_0", "ps_5_0", true);
+   }
+   /* The ribbon's glow, its passes drawn by D3D10, 11 and 12 */
+   {
+      size_t vl = strlen(bloom_vs_source), pl = strlen(bloom_ps_source);
+      char *bloom = (char*)malloc(vl + pl + 2);
+      if (bloom)
+      {
+         memcpy(bloom, bloom_vs_source, vl);
+         bloom[vl] = '\n';
+         memcpy(bloom + vl + 1, bloom_ps_source, pl + 1);
+         check_pair("ribbon glow", "SM4 compiles for D3D10 and 11", bloom,
+               "VSMain", "PSMain", "vs_4_0", "ps_4_0", true);
+         check_pair("ribbon glow", "SM5 compiles for D3D12", bloom,
+               "VSMain", "PSMain", "vs_5_0", "ps_5_0", true);
+         free(bloom);
+      }
    }
 }
 

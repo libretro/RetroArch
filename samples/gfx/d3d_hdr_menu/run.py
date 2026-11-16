@@ -10,8 +10,9 @@ snow, grey icons and grey labels. Nothing like it shows with HDR off.
 retroarch.exe runs under Wine (vkd3d, lavapipe) on an Xvfb screen of its
 own, with the display taken as HDR-capable (RETROARCH_DXGI_HDR=1), and
 the screen is read with ImageMagick's import. For each driver it is shot
-four times: XMB still (plastic on, no clock, no background effect) and
-with the Snow effect, each with HDR off and with HDR10 out. Then:
+six times: XMB still (plastic on, no clock, no background effect), with
+the Snow effect and with the Ribbon (its glow on), each with HDR off and
+with HDR10 out. Then:
 
 - still, HDR10 against HDR off: the same picture through the HDR10
   encode, which is the same for every pixel and keeps brighter brighter.
@@ -20,8 +21,12 @@ with the Snow effect, each with HDR off and with HDR10 out. Then:
   label shown darker than the background breaks that order.
 - snow against still, HDR off and HDR10: snow only adds white over the
   menu, so next to no pixel may come out darker than in the still shot.
+- ribbon against still, the same: the ribbon and its glow only add
+  light. A ribbon whose pipeline D3D12 refused left the glow's state
+  bound, and the icons after it were not drawn. The ribbon must also
+  show: some of the screen brighter than in the still shot.
 
-Shows a 4x2 grid of the shots in <output dir>/sheet.png on failure.
+Shows a grid of the shots in <output dir>/sheet.png on failure.
 
 Usage: run.py <retroarch.exe> <XMB assets dir> <output dir> [driver ...]
        (drivers: d3d11 d3d12, both by default)
@@ -60,6 +65,16 @@ SNOW = {
     'menu_shader_pipeline': '4',
     'xmb_menu_shader_pipeline': '4',
 }
+RIBBON = {
+    'menu_shader_pipeline': '2',
+    'xmb_menu_shader_pipeline': '2',
+    'xmb_ribbon_bloom_enable': 'true',
+    'xmb_ribbon_particles_enable': 'true',
+}
+# The ribbon shows: at least this share of the screen this much
+# brighter than in the still shot
+BRIGHTER_BY = 6
+BRIGHTER_SHARE = 0.01
 
 
 def winpath(v):
@@ -150,7 +165,8 @@ def shoot(exe, assets, out_dir, driver, hdr, scene_name, scene):
                               cwd=os.path.dirname(exe), env=env,
                               stdout=log, stderr=subprocess.STDOUT)
         # Settled: the still menu twice the same two seconds apart. The
-        # snow never settles; it is shot once the still one would have.
+        # effects never settle; they are shot once the still one would
+        # have.
         deadline = time.monotonic() + 90
         last = None
         steady = 0
@@ -159,7 +175,7 @@ def shoot(exe, assets, out_dir, driver, hdr, scene_name, scene):
             cur = grab(display)
             if cur is None:
                 continue
-            if scene is SNOW:
+            if scene is not STILL:
                 steady += 1
                 if steady >= 8:
                     shot = cur
@@ -214,10 +230,18 @@ def check_order(sdr, hdr):
     return worst
 
 
-def darker_share(still, snow):
+def darker_share(still, fx):
     n = 0
-    for a, b in zip(luma(still), luma(snow)):
+    for a, b in zip(luma(still), luma(fx)):
         if b < a - DARKER_BY:
+            n += 1
+    return n / float(W * H)
+
+
+def brighter_share(still, fx):
+    n = 0
+    for a, b in zip(luma(still), luma(fx)):
+        if b > a + BRIGHTER_BY:
             n += 1
     return n / float(W * H)
 
@@ -235,7 +259,8 @@ def main():
     for driver in drivers:
         shots = {}
         for hdr in (False, True):
-            for name, scene in (('still', STILL), ('snow', SNOW)):
+            for name, scene in (('still', STILL), ('snow', SNOW),
+                                ('ribbon', RIBBON)):
                 shots[(hdr, name)] = shoot(exe, assets, out_dir, driver,
                                            hdr, name, scene)
         missing = [k for k, v in shots.items() if v is None]
@@ -254,21 +279,32 @@ def main():
             print('PASS %s: still menu keeps its brightness order under HDR10'
                   % driver)
         for hdr in (False, True):
-            share = darker_share(shots[(hdr, 'still')], shots[(hdr, 'snow')])
             what = '%s %s' % (driver, 'HDR10' if hdr else 'HDR off')
-            if share > DARKER_SHARE:
-                print('FAIL %s: the snow darkens %.3f%% of the screen'
-                      % (what, share * 100))
+            for name in ('snow', 'ribbon'):
+                share = darker_share(shots[(hdr, 'still')],
+                                     shots[(hdr, name)])
+                if share > DARKER_SHARE:
+                    print('FAIL %s: the %s darkens %.3f%% of the screen'
+                          % (what, name, share * 100))
+                    fails += 1
+                else:
+                    print('PASS %s: the %s darkens nothing (%.3f%%)'
+                          % (what, name, share * 100))
+            share = brighter_share(shots[(hdr, 'still')],
+                                   shots[(hdr, 'ribbon')])
+            if share < BRIGHTER_SHARE:
+                print('FAIL %s: the ribbon does not show (%.3f%% of the '
+                      'screen brighter)' % (what, share * 100))
                 fails += 1
             else:
-                print('PASS %s: the snow darkens nothing (%.3f%%)'
-                      % (what, share * 100))
+                print('PASS %s: the ribbon shows (%.3f%% of the screen '
+                      'brighter)' % (what, share * 100))
     if fails:
         names = sorted(f for f in os.listdir(out_dir) if f.endswith('.png'))
         if names:
             subprocess.run(['montage'] + [os.path.join(out_dir, n)
                                           for n in names] +
-                           ['-tile', '4x', '-geometry', '480x270+2+2',
+                           ['-tile', '6x', '-geometry', '480x270+2+2',
                             os.path.join(out_dir, 'sheet.png')])
     print('d3d_hdr_menu: %s' % ('%d check(s) failed' % fails if fails
                                  else 'all checks passed'))

@@ -8876,6 +8876,15 @@ static void gfx_display_d3d12_bloom_end(void *data, unsigned dims,
       D3D12_RESOURCE_TRANSITION(cmd, source->handle,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
    }
+   /* Back to what the sprites draw with. The effect's own draw sets
+    * its state again, but an effect that has no pipe is not drawn,
+    * and the sprites after would draw through the last glow pass:
+    * its pipe, its constants and a strip for their points. */
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12_cb_slot(&d3d12->ubo_view, d3d12->queue.slot));
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
    d3d12->bloom.active = false;
 }
 
