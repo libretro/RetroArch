@@ -12,6 +12,7 @@ static VkResult counter_result;
 static uint64_t completed;
 static unsigned next_slot, records, publications, cancellations, closures, queries;
 static bool reserved, busy, capture_ok, publish_ok, cancel_ok, initialized, pool_unavailable;
+static bool cancelled;
 const vulkan_encode_pool_t *record_gpu_dispatch_vulkan_pool(const record_gpu_dispatch_vulkan_t *j)
 { assert(j == job); return state == RECORD_VKD_READY && !pool_unavailable ? &pool : NULL; }
 vulkan_encode_capture_t *record_gpu_dispatch_vulkan_capture(const record_gpu_dispatch_vulkan_t *j)
@@ -49,6 +50,8 @@ bool record_gpu_dispatch_vulkan_submit(record_gpu_dispatch_vulkan_t *j, const re
 }
 bool record_gpu_dispatch_vulkan_video_finish(record_gpu_dispatch_vulkan_t *j)
 { assert(j == job && !reserved); closures++; return true; }
+void record_gpu_dispatch_vulkan_cancel(record_gpu_dispatch_vulkan_t *j)
+{ assert(j == job); cancelled = true; }
 bool vulkan_encode_capture_record(vulkan_encode_capture_t *c, unsigned slot,
       VkCommandBuffer command, const vulkan_encode_capture_source_t *source, bool reused)
 {
@@ -75,7 +78,7 @@ static record_gpu_renderer_vulkan_t *setup(void)
    counter_result = VK_SUCCESS;
    completed = 0;
    next_slot = records = publications = cancellations = closures = queries = 0;
-   reserved = busy = initialized = pool_unavailable = false;
+   reserved = busy = initialized = pool_unavailable = cancelled = false;
    capture_ok = publish_ok = cancel_ok = true;
    return record_gpu_renderer_vulkan_new(job, 1001, 4, query);
 }
@@ -152,7 +155,7 @@ static void ownership(void)
    state = RECORD_VKD_DRAINING;
    assert(record_gpu_renderer_vulkan_finish(r, false) == RECORD_GPU_QUEUE_BUSY && !closures);
    counter_result = VK_ERROR_DEVICE_LOST;
-   assert(record_gpu_renderer_vulkan_finish(r, false) == RECORD_GPU_QUEUE_ERROR && !closures);
+   assert(record_gpu_renderer_vulkan_finish(r, false) == RECORD_VKR_DEVICE_LOST && !closures);
    counter_result = VK_SUCCESS;
    completed = 2;
    assert(record_gpu_renderer_vulkan_finish(r, false) == RECORD_GPU_QUEUE_OK && closures == 1);
@@ -222,8 +225,9 @@ static void failures(void)
    assert(!record_gpu_renderer_vulkan_submitted(r, VK_ERROR_DEVICE_LOST));
    assert(record_gpu_renderer_vulkan_finish(r, false) == RECORD_GPU_QUEUE_BUSY && reserved);
    counter_result = VK_ERROR_DEVICE_LOST;
-   assert(record_gpu_renderer_vulkan_finish(r, false) == RECORD_GPU_QUEUE_ERROR && reserved);
-   assert(record_gpu_renderer_vulkan_finish(r, true) == RECORD_GPU_QUEUE_OK && !reserved);
+   assert(record_gpu_renderer_vulkan_finish(r, false) == RECORD_VKR_DEVICE_LOST && reserved);
+   assert(!record_gpu_renderer_vulkan_abandon_lost(r, VK_ERROR_OUT_OF_DEVICE_MEMORY) && reserved && !cancelled);
+   assert(record_gpu_renderer_vulkan_abandon_lost(r, VK_ERROR_DEVICE_LOST) && !reserved && cancelled);
    assert(record_gpu_renderer_vulkan_free(r));
 }
 static void bounds(void)

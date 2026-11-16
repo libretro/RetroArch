@@ -3439,3 +3439,27 @@ ifeq ($(HAVE_RECORD_MEDIACODEC), 1)
    MEDIA_RECORD_OBJ := $(filter-out $(OBJ),$(MEDIA_RECORD_OBJ))
    OBJ += $(MEDIA_RECORD_OBJ)
 endif
+
+ifeq ($(HAVE_RECORD_VULKAN), 1)
+   ifneq ($(HAVE_VULKAN)$(HAVE_THREADS)$(HAVE_CONFIGFILE)$(HAVE_RMP4)$(HAVE_RSLC), 11111)
+      $(error Vulkan recording requires Vulkan, threads, config files, MP4, AC-3 and RSLC)
+   endif
+   ifeq ($(filter Linux Win32,$(OS)),)
+      $(error Vulkan recording requires desktop Linux or Windows)
+   endif
+   ifeq ($(ANDROID), 1)
+      $(error Android recording uses MediaCodec)
+   endif
+   DEFINES += -DHAVE_RECORD_VULKAN
+   VULKAN_RECORD_OBJ := record/drivers/record_vulkan.o \
+      gfx/common/vulkan_encode_h264.o gfx/common/vulkan_encode_h264_session.o \
+      gfx/common/vulkan_encode_h264_submit.o gfx/common/vulkan_encode_pool.o \
+      gfx/common/vulkan_encode_capture.o gfx/common/vulkan_encode_capture_shader.o \
+      record/record_gpu_dispatch_vulkan.o record/record_gpu_renderer_vulkan.o \
+      record/record_gpu_session_vulkan.o record/record_gpu_worker_vulkan.o \
+      record/record_gpu_output_vulkan.o record/record_gpu_queue.o \
+      record/record_mux_mp4.o record/record_file_posix.o record/record_mediacodec_file.o
+   OBJ += $(filter-out $(OBJ),$(VULKAN_RECORD_OBJ))
+   $(addprefix $(OBJDIR)/,$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_front.o \
+      $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_ir.o $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_emit.o): DEFINES += -DRSLC_EXTENDED -DRSLC_NO_DXBC
+endif

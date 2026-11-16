@@ -28,6 +28,9 @@ typedef struct record_gpu_output_vulkan_config
    unsigned audio_rate, audio_kbps;
    uint32_t audio_layout;
    size_t audio_fifo_frames;
+   /* Bound consumed PCM to accepted video time. Drop queued trailing PCM at
+    * video EOS, before AC-3 padding; the worker never encodes ahead of video. */
+   bool audio_follow_video;
 } record_gpu_output_vulkan_config_t;
 
 /* Construct/service/destroy on an I/O worker, never main/render/audio threads.
@@ -48,6 +51,8 @@ int record_gpu_output_vulkan_audio(record_gpu_output_vulkan_t *output,
  * block is zero-padded to 1536 samples; at most 1535 padded samples are stored.
  * Close the video producer through its existing capture/queue owner too. */
 bool record_gpu_output_vulkan_audio_finish(record_gpu_output_vulkan_t *output);
+/* I/O worker only: actual consumed PCM, excluding padding and discarded tail. */
+uint64_t record_gpu_output_vulkan_audio_frames(const record_gpu_output_vulkan_t *output);
 /* Bounded step: file completion/submission, one GPU worker step, or one audio
  * block. Disk backpressure holds mux output, then the GPU input pool fills.
  * END requires video EOS, audio close/drain, mux acknowledgement and successful

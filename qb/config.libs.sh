@@ -1125,6 +1125,18 @@ fi
 check_enabled NETWORKING RETRONFS 'built-in NFS client' 'Networking is' false
 if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
 
+# Native recording is optional; Vulkan device admission still requires the
+# encode extensions and a separate queue, without changing renderer fallback.
+check_platform 'Linux Win32' RECORD_VULKAN 'Vulkan recording is' true
+check_enabled VULKAN RECORD_VULKAN 'Vulkan recording' 'Vulkan is' false
+check_enabled THREADS RECORD_VULKAN 'Vulkan recording' 'Threads are' false
+check_enabled CONFIGFILE RECORD_VULKAN 'Vulkan recording' 'Configuration files are' false
+check_enabled RMP4 RECORD_VULKAN 'Vulkan recording' 'RMP4 is' false
+check_enabled RSLC RECORD_VULKAN 'Vulkan recording' 'RSLC is' false
+if [ "$HAVE_RECORD_VULKAN" = 'auto' ]; then
+   HAVE_RECORD_VULKAN=yes
+fi
+
 check_enabled NETWORKING RTMP 'RTMP publishing' 'Networking is' false
 check_enabled CRYPTO RTMP 'RTMP publishing' 'crypto is' false
 if [ "$HAVE_RTMP" = 'auto' ]; then

@@ -50,6 +50,8 @@ bool record_gpu_session_vulkan_retry_needed(const record_gpu_session_vulkan_t *s
 enum record_gpu_session_vulkan_error record_gpu_session_vulkan_error(
       const record_gpu_session_vulkan_t *session, int *file_error);
 /* All callers quiescent. Refuses until session retirement. */
+/* Worker-only snapshot after terminal step, before free. */
+uint64_t record_gpu_session_vulkan_audio_frames(const record_gpu_session_vulkan_t *session);
 bool record_gpu_session_vulkan_free(record_gpu_session_vulkan_t *session);
 RETRO_END_DECLS
 #endif

@@ -13,6 +13,7 @@ struct record_gpu_session_vulkan
    record_gpu_queue_t *queue;
    record_gpu_worker_vulkan_t *worker;
    record_gpu_output_vulkan_t *output;
+   uint64_t audio_frames;
    retro_atomic_int_t video_closed, audio_closed, cancelled, error, file_error;
    enum record_vulkan_session_stage stage;
 };
@@ -181,6 +182,7 @@ int record_gpu_session_vulkan_step(record_gpu_session_vulkan_t *s)
                return RECORD_VULKAN_OUTPUT_BUSY;
             retro_atomic_cas_int(&s->file_error, 0,
                   record_gpu_output_vulkan_file_error(s->output));
+            s->audio_frames = record_gpu_output_vulkan_audio_frames(s->output);
             if (!closed || !record_gpu_output_vulkan_free(s->output))
                return RECORD_VULKAN_OUTPUT_BUSY;
             s->output = NULL;
@@ -232,6 +234,11 @@ enum record_gpu_session_vulkan_error record_gpu_session_vulkan_error(
       *file_error = s ? retro_atomic_load_acquire_int(&s->file_error) : 0;
    return s ? (enum record_gpu_session_vulkan_error)retro_atomic_load_acquire_int(&s->error)
       : RECORD_VULKAN_SESSION_STARTUP;
+}
+
+uint64_t record_gpu_session_vulkan_audio_frames(const record_gpu_session_vulkan_t *s)
+{
+   return s ? s->audio_frames : 0;
 }
 
 bool record_gpu_session_vulkan_free(record_gpu_session_vulkan_t *s)

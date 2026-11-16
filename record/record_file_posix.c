@@ -3,7 +3,8 @@
 #include "record_mediacodec_file.h"
 #include <stdlib.h>
 #include <errno.h>
-#if defined(__linux__) || defined(RECORD_FILE_POSIX_TEST)
+#if defined(__linux__) || defined(RECORD_FILE_POSIX_TEST) \
+      || (defined(_WIN32) && defined(HAVE_RECORD_VULKAN))
 #ifdef _WIN32
 #include <io.h>
 #ifndef RECORD_FP_WRITE

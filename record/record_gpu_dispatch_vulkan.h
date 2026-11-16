@@ -54,6 +54,10 @@ enum record_gpu_dispatch_vulkan_state record_gpu_dispatch_vulkan_status(
       enum record_gpu_session_vulkan_error *error, int *file_error);
 /* Cold controller, all producer/status calls quiescent. Nonblocking; refuses
  * active resources or worker. Retry later; no join or wait-for-idle. */
+/* Controller: succeeds only after terminal state publication. No hot-path
+ * 64-bit atomics; the worker publishes this immutable result with its state. */
+bool record_gpu_dispatch_vulkan_audio_frames(const record_gpu_dispatch_vulkan_t *job,
+      uint64_t *frames);
 bool record_gpu_dispatch_vulkan_free(record_gpu_dispatch_vulkan_t *job);
 RETRO_END_DECLS
 #endif

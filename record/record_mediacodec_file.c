@@ -3,7 +3,8 @@
 #include "record_mediacodec_file.h"
 #include <errno.h>
 #include <stdlib.h>
-#if defined(__ANDROID__) || defined(__linux__) || defined(RECORD_MEDIACODEC_FILE_TEST)
+#if defined(__ANDROID__) || defined(__linux__) || defined(RECORD_MEDIACODEC_FILE_TEST) \
+      || (defined(_WIN32) && defined(HAVE_RECORD_VULKAN))
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>

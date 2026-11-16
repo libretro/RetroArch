@@ -78,6 +78,44 @@ static int wrapped_audio(void)
    }
    return 0;
 }
+static int video_bounded_audio(void)
+{
+   static const unsigned rates[] = {32000, 44100, 48000};
+   record_gpu_output_vulkan_config_t c;
+   record_gpu_worker_vulkan_t w;
+   record_gpu_output_vulkan_t *p;
+   int16_t *samples = (int16_t*)calloc(4800 * 2, sizeof(*samples));
+   unsigned rate, i;
+   CHECK(samples != NULL);
+   for (rate = 0; rate < sizeof(rates) / sizeof(rates[0]); rate++)
+   {
+      uint64_t expected;
+      setup(&c, &w);
+      c.video.timescale = 60000;
+      w.duration = 1001;
+      w.busy = true;
+      c.audio_rate = rates[rate];
+      c.audio_layout = 3;
+      c.audio_kbps = 192;
+      c.audio_fifo_frames = 4800;
+      c.audio_follow_video = true;
+      p = record_gpu_output_vulkan_new(&w, &c, "unused");
+      CHECK(p && record_gpu_output_vulkan_audio(p, samples, 4800) == RECORD_VULKAN_OUTPUT_PROGRESS);
+      CHECK(record_gpu_output_vulkan_audio_finish(p));
+      for (i = 0; i < 100; i++)
+         CHECK(record_gpu_output_vulkan_step(p) >= RECORD_VULKAN_OUTPUT_BUSY);
+      CHECK(!p->audio_end && !p->audio_frames && !p->staged && !p->audio_pts);
+      w.busy = false;
+      expected = (uint64_t)4 * 1001 * rates[rate] / 60000;
+      CHECK(drain(p) == RECORD_VULKAN_OUTPUT_END);
+      CHECK(record_gpu_output_vulkan_audio_frames(p) == expected);
+      CHECK(p->audio_pts == (expected + 1535) / 1536 * 1536);
+      CHECK(retro_spsc_read_avail(&p->audio) == (4800 - expected) * 4);
+      CHECK(record_gpu_output_vulkan_free(p));
+   }
+   free(samples);
+   return 0;
+}
 int main(void)
 {
    record_gpu_output_vulkan_config_t c;
@@ -243,6 +281,7 @@ int main(void)
    file_open_fail = true;
    CHECK(!record_gpu_output_vulkan_new(&w, &c, "unused"));
    CHECK(wrapped_audio() == 0);
+   CHECK(video_bounded_audio() == 0);
    puts("PASS: GPU/PCM output backpressure, short audio tail, error ownership and "
         "abort");
    return 0;

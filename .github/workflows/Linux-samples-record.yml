@@ -6,6 +6,11 @@ on:
       - master
     paths:
       - 'record/**'
+      - 'gfx/common/vulkan_encode*'
+      - 'gfx/drivers/vulkan.c'
+      - 'gfx/video_driver.h'
+      - 'Makefile.common'
+      - 'qb/config.*.sh'
       - 'libretro-common/net/net_rtmp*'
       - 'libretro-common/net/net_socket.c'
       - 'libretro-common/net/net_resolve.c'
@@ -27,6 +32,11 @@ on:
       - master
     paths:
       - 'record/**'
+      - 'gfx/common/vulkan_encode*'
+      - 'gfx/drivers/vulkan.c'
+      - 'gfx/video_driver.h'
+      - 'Makefile.common'
+      - 'qb/config.*.sh'
       - 'libretro-common/net/net_rtmp*'
       - 'libretro-common/net/net_socket.c'
       - 'libretro-common/net/net_resolve.c'
@@ -276,6 +286,16 @@ jobs:
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make check SANITIZER=address,undefined
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
+      - name: Vulkan recording frontend admission and retirement (sanitizers, mingw-w64)
+        working-directory: samples/record/vulkan_frontend
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean && make check SANITIZER=address,undefined
+          make clean && make check CC=clang SANITIZER=address,undefined
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 

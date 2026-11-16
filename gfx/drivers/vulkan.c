@@ -97,6 +97,7 @@
 #endif
 
 #include "../../record/record_driver.h"
+#include "../../record/drivers/record_vulkan.h"
 #if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
 #include "../../record/record_android_capture_renderer.h"
 #endif
@@ -538,6 +539,9 @@ typedef struct vk
    } xr;
 #endif
    vulkan_context_t *context;
+#ifdef HAVE_RECORD_VULKAN
+   record_vulkan_device_t record_device;
+#endif
    void *ctx_data;
    const gfx_ctx_driver_t *ctx_driver;
    struct vk_per_frame *chain;
@@ -8373,6 +8377,8 @@ static void *vulkan_init(const video_info_t *video)
       goto error;
    }
 
+
+
 #ifdef VULKAN_HDR_SWAPCHAIN
    vk->hdr.max_output_nits            = 1000.0f;
    vk->hdr.min_output_nits            = 0.001f;
@@ -8472,6 +8478,27 @@ static void *vulkan_init(const video_info_t *video)
       RARCH_ERR("[Vulkan] Failed to get context data.\n");
       goto error;
    }
+
+#ifdef HAVE_RECORD_VULKAN
+   if (vk->context->recording_device)
+   {
+      record_vulkan_device_t *record = &vk->record_device;
+      record->instance = vk->context->instance;
+      record->physical = vk->context->gpu;
+      record->device = vk->context->device;
+      record->family = vk->context->recording_family;
+      record->producer_family = vk->context->graphics_queue_index;
+      record->storage_images = vk->context->recording_storage_images;
+      record->api_version = vk->context->instance_api_version;
+      if (record->api_version > vk->context->gpu_properties.apiVersion)
+         record->api_version = vk->context->gpu_properties.apiVersion;
+      record->get_proc = vulkan_symbol_wrapper_instance_proc_addr();
+      vkGetDeviceQueue(record->device, record->family,
+            vk->context->recording_queue_index, &record->queue);
+      if (record->queue == vk->context->queue)
+         record->queue = VK_NULL_HANDLE;
+   }
+#endif
 
 #ifdef HAVE_OPENXR
    /* A headset's own context has no window to present to. */
@@ -8662,8 +8689,11 @@ static void *vulkan_init(const video_info_t *video)
 
    /* Not a frame yet, so the recording state is read here, on the
     * thread that writes it: video_thread_init() has not returned. */
-   vulkan_init_readback(vk, settings->bools.video_gpu_record,
-         recording_state_get_ptr()->enable);
+#ifdef HAVE_RECORD_VULKAN
+   if (!string_is_equal(settings->arrays.record_driver, "vulkan"))
+#endif
+      vulkan_init_readback(vk, settings->bools.video_gpu_record,
+            recording_state_get_ptr()->enable);
 
    /* Driver resources now match the context's current swapchain. */
    vk->context->flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
@@ -10628,6 +10658,12 @@ static void vulkan_apply_pending_resize(vk_t *vk,
             vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
       }
 
+#ifdef HAVE_RECORD_VULKAN
+      /* The resize may skip an acquired image before capture sees its new
+       * dimensions. Close admission now, before audio gets another frame. */
+      if (video_info->dims != vk->vp.full_dims)
+         record_vulkan_gpu_reconfigure(video_info->recording_gpu);
+#endif
       if (vk->ctx_driver->set_resize)
          vk->ctx_driver->set_resize(vk->ctx_data, video_info->dims);
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -12920,6 +12956,41 @@ static void vulkan_menu_upload(vk_t *vk, unsigned frame_index)
 }
 #endif
 
+#ifdef HAVE_RECORD_VULKAN
+static bool vulkan_record_native(vk_t *vk, const video_frame_info_t *info,
+      const struct vk_image *backbuffer)
+{
+   vulkan_encode_capture_source_t source;
+   unsigned mode = 0;
+   if (!info->recording_gpu || !info->recording_gpu_capture || info->frame_repeat
+         || !backbuffer->image || !backbuffer->view || !vk->cmd
+         || !(vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         || (vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)
+         || (vk->flags & VK_FLAG_OPEN_XR))
+      return false;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+      mode = vk->context->flags & VK_CTX_FLAG_HDR_SCRGB ? 2 : 1;
+#endif
+   memset(&source, 0, sizeof(source));
+   source.image = backbuffer->image;
+   source.view = backbuffer->view;
+   source.format = vk->context->swapchain_format;
+   source.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   source.stage = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+   source.access = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+   source.width = VIDEO_SCALE_W(vk->vp.full_dims);
+   source.height = VIDEO_SCALE_H(vk->vp.full_dims);
+   source.crop_x = (unsigned)VIDEO_POS_X(vk->vp.pos);
+   source.crop_y = (unsigned)VIDEO_POS_Y(vk->vp.pos);
+   source.valid_width = VIDEO_SCALE_W(vk->vp.dims);
+   source.valid_height = VIDEO_SCALE_H(vk->vp.dims);
+   source.limited_range = true;
+   return record_vulkan_gpu_capture(info->recording_gpu, vk->cmd, &source,
+         info->recording_gpu_timestamp, vk->vp.dims, mode);
+}
+#endif
+
 #if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
 static record_android_capture_renderer_t *vulkan_record_gpu(vk_t *vk,
       const video_frame_info_t *info, const struct vk_image *backbuffer)
@@ -13061,6 +13132,9 @@ static bool vulkan_frame(void *data, const void *frame,
    VkRenderPassBeginInfo rp_info;
    VkCommandBufferBeginInfo begin_info;
    VkSemaphore signal_semaphores[2 + RETRO_VIDEO_VIEWS_MAX];
+#ifdef HAVE_RECORD_VULKAN
+   bool native_recording = false;
+#endif
 #if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
    record_android_capture_renderer_t *recording = NULL;
    VkResult recording_result;
@@ -14532,6 +14606,9 @@ static bool vulkan_frame(void *data, const void *frame,
 #if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
    recording = vulkan_record_gpu(vk, video_info, backbuffer);
 #endif
+#ifdef HAVE_RECORD_VULKAN
+   native_recording = vulkan_record_native(vk, video_info, backbuffer);
+#endif
 
    if (
             (backbuffer->image != VK_NULL_HANDLE)
@@ -14843,9 +14920,43 @@ static bool vulkan_frame(void *data, const void *frame,
       return false;
    }
 #endif
-   vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
-         &submit_info, vk->context->swapchain_fences[frame_index]));
-   vk->context->swapchain_fences_signalled[frame_index] = true;
+#ifdef HAVE_RECORD_VULKAN
+   if (native_recording)
+   {
+      const VkSubmitInfo *record_submit = record_vulkan_gpu_submission(video_info->recording_gpu, &submit_info);
+      VkResult result;
+      if (!record_submit)
+      {
+         /* This primary is detached; its capture can never be submitted. */
+         vkResetCommandBuffer(vk->cmd, 0);
+         vk->cmd = VK_NULL_HANDLE;
+         record_vulkan_gpu_discard(video_info->recording_gpu);
+         vk->context->swapchain_fences_signalled[frame_index] = false;
+#ifdef HAVE_THREADS
+         slock_unlock(vk->context->queue_lock);
+#endif
+         return false;
+      }
+      result = vkQueueSubmit(vk->context->queue, 1, record_submit,
+            vk->context->swapchain_fences[frame_index]);
+      record_vulkan_gpu_submitted(video_info->recording_gpu, result);
+      vulkan_check_device_lost(vk, result);
+      vk->context->swapchain_fences_signalled[frame_index] = result == VK_SUCCESS;
+      if (result != VK_SUCCESS)
+      {
+#ifdef HAVE_THREADS
+         slock_unlock(vk->context->queue_lock);
+#endif
+         return false;
+      }
+   }
+   else
+#endif
+   {
+      vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
+            &submit_info, vk->context->swapchain_fences[frame_index]));
+      vk->context->swapchain_fences_signalled[frame_index] = true;
+   }
 #endif
 #ifdef HAVE_TEMPORAL_UPSCALER
    if (vk->ngx)
@@ -16660,6 +16771,13 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->queue                  = (void*)vk->context->queue;
    info->queue_lock             = NULL;
    info->recording_caps         = 0;
+#ifdef HAVE_RECORD_VULKAN
+   if (vk->record_device.queue)
+   {
+      info->recording = &vk->record_device;
+      info->recording_caps |= VIDEO_DEVICE_CAP_VULKAN_ENCODE;
+   }
+#endif
 #if defined(ANDROID) && defined(HAVE_THREADS)
    info->queue_lock             = vk->context->queue_lock;
 #if defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \

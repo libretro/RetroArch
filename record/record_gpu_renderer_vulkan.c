@@ -193,9 +193,22 @@ bool record_gpu_renderer_vulkan_discard(record_gpu_renderer_vulkan_t *r)
    r->recorded = r->prepared = false;
    return true;
 }
+static int rgv_close(record_gpu_renderer_vulkan_t *r)
+{
+   if (r->closed)
+      return RECORD_GPU_QUEUE_OK;
+   if (r->recorded && !record_gpu_dispatch_vulkan_cancel_slot(r->job))
+      return RECORD_GPU_QUEUE_BUSY;
+   r->recorded = false;
+   if (!record_gpu_dispatch_vulkan_video_finish(r->job))
+      return RECORD_GPU_QUEUE_BUSY;
+   r->closed = true;
+   return RECORD_GPU_QUEUE_OK;
+}
 int record_gpu_renderer_vulkan_finish(record_gpu_renderer_vulkan_t *r, bool quiesced)
 {
    uint64_t value, required;
+   VkResult result;
    if (!r)
       return RECORD_GPU_QUEUE_ERROR;
    r->stopping = true;
@@ -208,19 +221,23 @@ int record_gpu_renderer_vulkan_finish(record_gpu_renderer_vulkan_t *r, bool quie
       required = r->uncertain ? r->frame.ready_value : r->last_submit;
       if (required)
       {
-         if (r->counter(r->pool->device, r->pool->ready, &value) != VK_SUCCESS)
-            return RECORD_GPU_QUEUE_ERROR;
+         result = r->counter(r->pool->device, r->pool->ready, &value);
+         if (result != VK_SUCCESS)
+            return result == VK_ERROR_DEVICE_LOST ? RECORD_VKR_DEVICE_LOST : RECORD_GPU_QUEUE_ERROR;
          if (value < required)
             return RECORD_GPU_QUEUE_BUSY;
       }
    }
-   if (r->recorded && !record_gpu_dispatch_vulkan_cancel_slot(r->job))
-      return RECORD_GPU_QUEUE_BUSY;
-   r->recorded = false;
-   if (!record_gpu_dispatch_vulkan_video_finish(r->job))
-      return RECORD_GPU_QUEUE_BUSY;
-   r->closed = true;
-   return RECORD_GPU_QUEUE_OK;
+   return rgv_close(r);
+}
+bool record_gpu_renderer_vulkan_abandon_lost(record_gpu_renderer_vulkan_t *r,
+      VkResult native_result)
+{
+   if (!r || native_result != VK_ERROR_DEVICE_LOST)
+      return false;
+   r->stopping = r->failed = true;
+   record_gpu_dispatch_vulkan_cancel(r->job);
+   return rgv_close(r) == RECORD_GPU_QUEUE_OK;
 }
 bool record_gpu_renderer_vulkan_free(record_gpu_renderer_vulkan_t *r)
 {

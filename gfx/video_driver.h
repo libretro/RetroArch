@@ -1081,7 +1081,8 @@ enum video_device_api
 
 enum video_device_recording_cap
 {
-   VIDEO_DEVICE_CAP_ANDROID_CAPTURE_INTEROP = 1
+   VIDEO_DEVICE_CAP_ANDROID_CAPTURE_INTEROP = 1,
+   VIDEO_DEVICE_CAP_VULKAN_ENCODE = 2
 };
 
 typedef struct video_device_info
@@ -1098,6 +1099,8 @@ typedef struct video_device_info
    void *queue;
    /* Existing Vulkan queue serialization; cold render-owner jobs only. */
    void *queue_lock;
+   /* Optional immutable recording device descriptor, owned by the renderer. */
+   const void *recording;
    retro_proc_address_t get_instance_proc_addr;
    /* The driver's queue family: an image the driver imports is either
     * exclusive to it or shared with it (concurrent). */

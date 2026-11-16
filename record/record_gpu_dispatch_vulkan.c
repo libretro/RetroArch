@@ -20,7 +20,7 @@ struct record_gpu_dispatch_vulkan
    vulkan_encode_h264_ops_t ops;
    vulkan_encode_capture_ops_t capture_ops;
    record_gpu_output_vulkan_config_t output;
-   uint64_t last_end, last_ready;
+   uint64_t last_end, last_ready, audio_frames;
    record_gpu_session_vulkan_t *session;
    record_gpu_queue_t *queue;
    const vulkan_encode_pool_t *pool;
@@ -67,6 +67,7 @@ static int record_vkd_service(record_gpu_dispatch_vulkan_t *j)
       record_vkd_error(j, error, file_error);
    if (result == RECORD_VULKAN_OUTPUT_END || result == RECORD_VULKAN_OUTPUT_ERROR)
    {
+      j->audio_frames = record_gpu_session_vulkan_audio_frames(j->session);
       if (!record_gpu_session_vulkan_free(j->session))
          return RECORD_VULKAN_OUTPUT_BUSY;
       j->session = NULL;
@@ -314,6 +315,14 @@ enum record_gpu_dispatch_vulkan_state record_gpu_dispatch_vulkan_status(
       state = RECORD_VKD_DRAINING;
    return (enum record_gpu_dispatch_vulkan_state)state;
 }
+bool record_gpu_dispatch_vulkan_audio_frames(const record_gpu_dispatch_vulkan_t *j,
+      uint64_t *frames)
+{
+   if (!j || !frames || retro_atomic_load_acquire_int(&j->state) < RECORD_VKD_DONE)
+      return false;
+   *frames = j->audio_frames;
+   return true;
+}
 bool record_gpu_dispatch_vulkan_free(record_gpu_dispatch_vulkan_t *j)
 {
    if (!j)
@@ -332,6 +341,9 @@ bool record_gpu_dispatch_vulkan_free(record_gpu_dispatch_vulkan_t *j)
    return true;
 }
 #else
+bool record_gpu_dispatch_vulkan_audio_frames(const record_gpu_dispatch_vulkan_t *j,
+      uint64_t *frames)
+{ (void)j; (void)frames; return false; }
 record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
       const vulkan_encode_h264_open_t *e, const vulkan_encode_h264_ops_t *ops,
       const record_gpu_output_vulkan_config_t *o, const char *p,

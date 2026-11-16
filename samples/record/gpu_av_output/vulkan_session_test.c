@@ -236,6 +236,7 @@ static void normal(bool audio)
    assert(releases == 2 && opens == frees && file_writes == (audio ? 4u : 3u));
    assert(record_gpu_session_vulkan_video_finish(s));
    assert(!record_gpu_session_vulkan_retry_needed(s));
+   assert(record_gpu_session_vulkan_audio_frames(s) == (audio ? 2u : 0u));
    assert(record_gpu_session_vulkan_free(s));
 }
 static void cancellation(void)

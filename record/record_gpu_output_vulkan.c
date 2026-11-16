@@ -10,7 +10,7 @@
 struct record_gpu_output_vulkan
 {
    retro_spsc_t audio;
-   uint64_t audio_pts;
+   uint64_t audio_pts, audio_frames, audio_limit;
    record_gpu_worker_vulkan_t *worker;
    record_mux_mp4_t *mux;
    record_file_posix_t *file;
@@ -18,9 +18,9 @@ struct record_gpu_output_vulkan
    float *pcm;
    uint8_t *packet;
    size_t frame_bytes, fifo_bytes;
-   unsigned rate, channels, staged;
+   unsigned rate, channels, staged, timescale;
    retro_atomic_int_t audio_closed, failed;
-   bool writing, video_end, audio_end, audio_turn, ended;
+   bool writing, video_end, audio_end, audio_turn, ended, audio_follow_video;
 };
 
 static int record_gpu_output_vulkan_fail(record_gpu_output_vulkan_t *p,
@@ -58,6 +58,8 @@ record_gpu_output_vulkan_new(record_gpu_worker_vulkan_t *worker,
    retro_atomic_int_init(&p->failed, 0);
    p->worker = worker;
    p->rate = config->audio_rate;
+   p->timescale = config->video.timescale;
+   p->audio_follow_video = config->audio_follow_video;
    mux = config->video;
    if (p->rate)
    {
@@ -146,6 +148,20 @@ static int record_gpu_output_vulkan_audio_step(record_gpu_output_vulkan_t *p)
    frames = bytes / p->frame_bytes;
    if (frames > 1536 - p->staged)
       frames = 1536 - p->staged;
+   if (p->audio_follow_video)
+   {
+      uint64_t available;
+      if (p->audio_limit < p->audio_frames)
+         return record_gpu_output_vulkan_fail(p, RECORD_VULKAN_OUTPUT_ERROR_AUDIO);
+      available = p->audio_limit - p->audio_frames;
+      if (frames > available)
+         frames = (size_t)available;
+      /* Producer closure alone cannot flush a partial block: more submitted
+       * pictures may still be queued on the GPU and extend the audio limit. */
+      closed = closed && p->video_end;
+   }
+   if (frames > (uint64_t)-1 - p->audio_frames)
+      return record_gpu_output_vulkan_fail(p, RECORD_VULKAN_OUTPUT_ERROR_AUDIO);
    if (frames)
    {
       size_t converted = 0;
@@ -173,6 +189,7 @@ static int record_gpu_output_vulkan_audio_step(record_gpu_output_vulkan_t *p)
       if (converted != bytes)
          return record_gpu_output_vulkan_fail(p, RECORD_VULKAN_OUTPUT_ERROR_AUDIO);
       p->staged += (unsigned)frames;
+      p->audio_frames += frames;
    }
    if (p->staged < 1536 && !closed)
    {
@@ -256,10 +273,25 @@ int record_gpu_output_vulkan_step(record_gpu_output_vulkan_t *p)
       if (result == RECORD_GPU_VULKAN_PACKET)
       {
          int mux_result = RECORD_MP4_ERROR;
-         if (packet.duration && packet.duration <= 0xffffffffu)
+         if (packet.duration && packet.duration <= 0xffffffffu
+               && packet.timestamp <= (uint64_t)-1 - packet.duration)
+         {
+            uint64_t end = packet.timestamp + packet.duration;
+            if (p->audio_follow_video && p->rate)
+            {
+               uint64_t whole = end / p->timescale;
+               uint64_t part = (end % p->timescale) * p->rate / p->timescale;
+               if (whole > ((uint64_t)-1 - part) / p->rate)
+               {
+                  record_gpu_worker_vulkan_release(p->worker);
+                  return record_gpu_output_vulkan_fail(p, RECORD_VULKAN_OUTPUT_ERROR_AUDIO);
+               }
+               p->audio_limit = whole * p->rate + part;
+            }
             mux_result = record_mux_mp4_push(
                 p->mux, 1, packet.data, packet.size, packet.timestamp,
                 (uint32_t)packet.duration, packet.keyframe);
+         }
          if (!record_gpu_worker_vulkan_release(p->worker))
             return record_gpu_output_vulkan_fail(p, RECORD_VULKAN_OUTPUT_ERROR_VIDEO);
          if (mux_result != RECORD_MP4_OK)
@@ -276,6 +308,11 @@ int record_gpu_output_vulkan_step(record_gpu_output_vulkan_t *p)
       }
    }
    return record_gpu_output_vulkan_audio_step(p);
+}
+
+uint64_t record_gpu_output_vulkan_audio_frames(const record_gpu_output_vulkan_t *p)
+{
+   return p ? p->audio_frames : 0;
 }
 
 bool record_gpu_output_vulkan_retry_needed(const record_gpu_output_vulkan_t *p)

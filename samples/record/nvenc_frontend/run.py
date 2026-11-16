@@ -12,6 +12,7 @@ import sys
 import tempfile
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--driver', choices=['nvenc', 'vulkan'], default='nvenc')
 parser.add_argument('--core', required=True)
 parser.add_argument('--retroarch')
 parser.add_argument('--desktop-runner')
@@ -22,24 +23,28 @@ parser.add_argument('--audio', nargs='+', choices=['false', 'true'], default=['f
 parser.add_argument('--rates', nargs='+', type=int, default=[32000, 44100, 48000])
 parser.add_argument('--layouts', nargs='+', type=lambda x: int(x, 0), default=[3])
 parser.add_argument('--float', action='store_true', dest='floating')
+parser.add_argument('--lifecycle', choices=['resize', 'reinit', 'stop'])
 parser.add_argument('--hdr-mode', type=int, choices=[0, 1, 2], default=0)
 args = parser.parse_args()
 if not args.retroarch:
-    print('SKIP: provide a native Windows RetroArch build with D3D12/NVENC')
+    print(f'SKIP: provide a native Windows RetroArch build with {args.driver}')
     raise SystemExit(0)
 if sys.platform != 'win32':
     raise SystemExit('Native frontend GPU acceptance requires Windows')
+if args.driver == 'vulkan' and args.codecs != ['h264']:
+    parser.error('the Vulkan file driver currently requires --codecs h264')
 ffmpeg = shutil.which('ffmpeg')
 assert ffmpeg, 'test-only ffmpeg decoder required'
 exe, core = str(Path(args.retroarch).resolve()), str(Path(args.core).resolve())
 
 
 def run_case(root, codec, threaded, kind='normal', audio=False, rate=48000, layout=3):
-    path = root / f'{codec}-{threaded}-{kind}-av{rate if audio else 0}-mask{layout:x}-{'float' if args.floating else 's16'}'
+    case_kind = args.lifecycle if args.lifecycle and kind == 'normal' else kind
+    path = root / f'{codec}-{threaded}-{case_kind}-av{rate if audio else 0}-mask{layout:x}-{'float' if args.floating else 's16'}'
     path.mkdir()
     config, record, movie = path / 'retroarch.cfg', path / 'record.cfg', path / 'output.mp4'
     config.write_text(f'''
-video_driver = "d3d12"
+video_driver = "{'vulkan' if args.driver == 'vulkan' else 'd3d12'}"
 video_threaded = "{threaded}"
 video_fullscreen = "false"
 video_scale = "1.0"
@@ -52,7 +57,7 @@ video_hdr_scanlines = "0"
 video_record_game_only = "false"
 video_record_allow_frame_drop = "true"
 video_font_enable = "false"
-record_driver = "nvenc"
+record_driver = "{args.driver}"
 audio_driver = "null"
 audio_format_negotiation = "1"
 audio_fastpath_s16 = "false"
@@ -64,11 +69,12 @@ pause_nonactive = "false"
 savestate_auto_save = "false"
 savestate_auto_load = "false"
 ''', encoding='utf-8')
+    quality = 'video_qp = "24"' if args.driver == 'vulkan' else 'video_bit_rate = "8000000"'
     record.write_text(f'audio_enable = "{"true" if audio else "false"}"\n'
-                      f'vcodec = "{codec}"\nformat = "mp4"\nvideo_bit_rate = "8000000"\n', encoding='utf-8')
+                      f'vcodec = "{codec}"\nformat = "mp4"\n{quality}\n', encoding='utf-8')
     if kind == 'exists':
         movie.write_bytes(b'preserve existing output')
-    frames = '1' if kind == 'early' else '120' if kind == 'normal' else '10'
+    frames = '1' if kind == 'early' else '240' if args.lifecycle and kind == 'normal' else '120' if kind == 'normal' else '10'
     environment = os.environ.copy()
     environment['NATIVE_RECORD_RATE'] = str(22050 if kind == 'rate' else rate)
     environment['NATIVE_RECORD_LAYOUT'] = str(layout)
@@ -79,14 +85,21 @@ savestate_auto_load = "false"
                              '--max-frames', frames]
     if args.desktop_runner:
         command = [str(Path(args.desktop_runner).resolve()), subprocess.list2cmdline(command)]
-    result = subprocess.run(command, cwd=path,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=45, env=environment)
+    if args.lifecycle and kind == 'normal':
+        from window_lifecycle import run_lifecycle
+        assert args.desktop_runner, '--lifecycle requires the isolated desktop runner'
+        result = run_lifecycle(command, path, config, environment, args.lifecycle)
+    else:
+        result = subprocess.run(command, cwd=path,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=45, env=environment)
     log = result.stdout.decode(errors='replace')
     (path / 'run.log').write_text(log, encoding='utf-8')
     assert result.returncode == 0, (path, result.returncode, log[-5000:])
+    assert not re.search(r'Validation Error|SYNC-HAZARD|VUID-', log), (path, log)
     assert f'[fixture] {"float" if args.floating else "s16"} source, mask {layout:x}' in log, log
     if args.hdr_mode and codec == 'h264':
-        assert not movie.exists() and 'HDR recording requires HEVC or AV1' in log, log
+        reason = 'H.264 capture requires SDR' if args.driver == 'vulkan' else 'HDR recording requires HEVC or AV1'
+        assert not movie.exists() and reason in log, log
         print('[pass] active HDR H.264 refused before file creation', flush=True)
         return
     if kind in ('rate', 'layout'):
