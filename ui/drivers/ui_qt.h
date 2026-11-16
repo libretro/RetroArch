@@ -34,6 +34,8 @@
 #include <QHash>
 #include <QPersistentModelIndex>
 #include <QAbstractTableModel>
+#include <QAtomicInt>
+#include <QSharedPointer>
 #include <QIcon>
 #include <QImage>
 #include <QPointer>
@@ -43,6 +45,7 @@
 #include <QVBoxLayout>
 #include <QCache>
 #include <QSortFilterProxyModel>
+#include <QSet>
 #include <QDir>
 #include <QThread>
 #include <QMutex>
@@ -362,6 +365,17 @@ public:
  * listing (enumerated, stat'ed and formatted off the UI thread, shared
  * by every companion): this class only paints it. Columns are Qt's
  * Name / Size / Type / Date Modified. A search filter keeps a row map. */
+struct BrowseSearchEntry
+{
+   QString path;
+   QString name;
+   QString type;
+   qint64 size;
+   QDateTime modified;
+   bool isDir;
+};
+Q_DECLARE_METATYPE(QVector<BrowseSearchEntry>)
+
 class BrowseTableModel : public QAbstractTableModel
 {
    Q_OBJECT
@@ -374,6 +388,7 @@ public:
    /* The core listing changed: rebuild the row map and reset. */
    void reload();
    void setFilter(const QRegularExpression &re);
+   Q_INVOKABLE void setSearchResults(const QVector<BrowseSearchEntry> &entries, quint64 generation);
    /* Header click: the core sorts, every companion the same way. */
    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
    /* Browse index (into the core listing) behind a table row, or -1. */
@@ -383,7 +398,36 @@ public:
 private:
    QVector<long> m_rows;   /* table row -> browse index */
    QRegularExpression m_filter;
+   QVector<BrowseSearchEntry> m_searchEntries;
+   bool m_recursiveSearch = false;
+   quint64 m_searchGeneration = 0;
+   int m_searchSortColumn = 0;
+   Qt::SortOrder m_searchSortOrder = Qt::AscendingOrder;
+   bool m_applyingSearchResults = false;
+   QSharedPointer<QAtomicInt> m_searchCancel;
    QIcon m_folderIcon, m_fileIcon, m_driveIcon;
+};
+
+/* Playlist filtering is performed off the UI thread. This proxy only
+ * applies the completed row-index set, keeping the view's sorting and
+ * selection behaviour unchanged. */
+class PlaylistSearchProxyModel : public QSortFilterProxyModel
+{
+   Q_OBJECT
+public:
+   PlaylistSearchProxyModel(QObject *parent = 0)
+      : QSortFilterProxyModel(parent), m_searchActive(false), m_generation(0) {}
+   Q_INVOKABLE void setSearchRows(const QVector<int> &rows,
+         quint64 generation, bool active);
+signals:
+   void searchResultsChanged();
+protected:
+   bool filterAcceptsRow(int sourceRow,
+         const QModelIndex &sourceParent) const;
+private:
+   QSet<int> m_searchRows;
+   bool m_searchActive;
+   quint64 m_generation;
 };
 
 class LoadCoreTableWidget : public QTableWidget
@@ -589,6 +633,7 @@ private slots:
    void onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onPlaylistModelLoaded();
+   void onPlaylistSearchResultsReady();
    void onScanDirectoryClicked();
    void onQuitRetroArchClicked();
    void onCurrentListItemDataChanged(QListWidgetItem *item);
@@ -607,6 +652,7 @@ private slots:
    void onSearchResetClicked();
    void onLaunchWithComboBoxIndexChanged(int index);
    void onFileBrowserTreeContextMenuRequested(const QPoint &pos);
+   void onFileBrowserTableContextMenuRequested(const QPoint &pos);
    void onPlaylistWidgetContextMenuRequested(const QPoint &pos);
    void onStopClicked();
    void onZoomValueChanged(int value);
@@ -652,7 +698,9 @@ private:
    void setupSignalConnections();
 
    PlaylistModel *m_playlistModel;
-   QSortFilterProxyModel *m_proxyModel;
+   PlaylistSearchProxyModel *m_proxyModel;
+   QSharedPointer<QAtomicInt> m_playlistSearchCancel;
+   quint64 m_playlistSearchGeneration = 0;
    BrowseTableModel *m_browseModel;
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
@@ -668,6 +716,7 @@ private:
    FileDropWidget *m_playlistViews;
    QWidget *m_searchWidget;
    QLineEdit *m_searchLineEdit;
+   QTimer *m_searchDebounceTimer;
    QDockWidget *m_searchDock;
    QStringList m_playlistFiles;
    QComboBox *m_launchWithComboBox;
@@ -726,17 +775,14 @@ private:
    unsigned m_failedThumbnails;
    bool m_playlistThumbnailDownloadWasCanceled;
    bool m_hasBeenShown;
+   bool m_fileBrowserInitialized;
    QString m_pendingDirScrollPath;
 
    QTimer *m_thumbnailTimer;
    QTimer *m_persistTimer;
    GridItem m_gridItem;
    BrowserType m_currentBrowser;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    QRegularExpression m_searchRegularExpression;
-#else
-   QRegExp m_searchRegExp;
-#endif
    QByteArray m_fileTableHeaderState;
    QWidget *m_zoomWidget;
    QString m_itemsCountLiteral;
