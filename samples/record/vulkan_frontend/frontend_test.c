@@ -422,10 +422,59 @@ static void hevc_admission(void)
    reset(&params); device.hevc = true; profile = "vcodec = hevc\n"; hdr.output_mode = 1;
    assert(!record_vulkan.init(&params) && !starts);
 }
+static void hdr_lifecycle(void)
+{
+   struct record_params params;
+   record_vk_context_t *c;
+   vulkan_encode_capture_source_t source;
+   unsigned mode;
+   for (mode = 1; mode <= 2; mode++)
+   {
+      reset(&params);
+      device.hevc = true;
+      profile = "vcodec = hevc\nvideo_bit_depth = 10\n";
+      hdr.output_mode = mode;
+      c = (record_vk_context_t*)record_vulkan.init(&params);
+      assert(c && starts == 1 && c->output_mode == mode);
+      assert(hevc_offered.session.video.color == VULKAN_ENCODE_HEVC_PQ);
+      recording.data = c;
+      recording.driver = &record_vulkan;
+      job.state = RECORD_VKD_READY;
+      record_vulkan_poll();
+      assert(record_vk_active == c && !retro_atomic_load_acquire_int(&c->stop));
+      memset(&source, 0, sizeof(source));
+      source.output_mode = mode;
+      source.format = mode == 1 ? VK_FORMAT_A2B10G10R10_UNORM_PACK32 : VK_FORMAT_R16G16B16A16_SFLOAT;
+      assert(record_vulkan_gpu_capture(c, (VkCommandBuffer)(uintptr_t)5, &source, 0, c->dims, mode));
+      record_vulkan_gpu_submitted(c, VK_SUCCESS);
+      assert(!record_vulkan_gpu_capture(c, (VkCommandBuffer)(uintptr_t)5, &source, 1, c->dims, 0));
+      assert(retro_atomic_load_acquire_int(&c->stop));
+      close_recording();
+   }
+   reset(&params);
+   device.hevc = true;
+   profile = "vcodec = hevc\nvideo_bit_depth = 10\n";
+   hdr.output_mode = 1;
+   c = (record_vk_context_t*)record_vulkan.init(&params);
+   assert(c);
+   recording.data = c;
+   recording.driver = &record_vulkan;
+   job.state = RECORD_VKD_READY;
+   record_vulkan_poll();
+   hdr.output_mode = 2;
+   record_vulkan_poll();
+   assert(!record_vulkan_pending() && frees == 1 && job.cancelled);
+   reset(&params);
+   device.hevc = true;
+   profile = "vcodec = hevc\nvideo_bit_depth = 10\n";
+   hdr.output_mode = 3;
+   assert(!record_vulkan.init(&params) && !starts);
+}
 int main(void)
 {
    admission();
    hevc_admission();
+   hdr_lifecycle();
    lifecycle();
    puts("Vulkan frontend admission, PCM, frame snapshots and asynchronous retirement PASS");
    return 0;

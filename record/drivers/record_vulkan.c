@@ -43,7 +43,7 @@ typedef struct record_vk_context
    VkDevice device;
    char *path;
    uint32_t api_version;
-   unsigned dims, duration, audio_rate;
+   unsigned dims, duration, audio_rate, output_mode;
    retro_atomic_int_t failed, stop, native_error;
    bool armed, audio_enabled, video_closed, allow_drop, have_offered;
 } record_vk_context_t;
@@ -279,7 +279,7 @@ static record_gpu_dispatch_vulkan_t *rvk_hevc_job(record_vk_context_t *c,
    encoder.session.video.fps_den = c->encoder.session.video.fps_den;
    encoder.session.video.bitrate = c->encoder.session.video.bitrate;
    encoder.session.video.bit_depth = depth;
-   encoder.session.video.color = VULKAN_ENCODE_HEVC_BT709;
+   encoder.session.video.color = c->output_mode ? VULKAN_ENCODE_HEVC_PQ : VULKAN_ENCODE_HEVC_BT709;
    encoder.session.video.ctb_size = 0;
    encoder.queue = c->encoder.queue;
    encoder.packet_size = c->encoder.packet_size;
@@ -357,7 +357,9 @@ static void *rvk_init(const struct record_params *params)
    hdr.version = 1;
    hdr.size = sizeof(hdr);
    if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr)
-         || hdr.output_mode || settings->uints.video_swapchain_bit_depth == 2)
+         || hdr.output_mode > 2
+         || (hdr.output_mode && (!hevc || depth != 10))
+         || (!hdr.output_mode && settings->uints.video_swapchain_bit_depth == 2))
    {
       RARCH_ERR("[Vulkan recording] %s capture requires SDR 8-bit output.\n", hevc ? "HEVC" : "H.264");
       return NULL;
@@ -417,6 +419,7 @@ static void *rvk_init(const struct record_params *params)
    c->encoder.qp = qp;
    c->encoder.storage_image_extended_formats = snapshot->storage_images;
    c->dims = params->out_dims;
+   c->output_mode = hdr.output_mode;
    c->duration = den;
    c->audio_enabled = audio;
    c->audio_rate = output.audio_rate;
@@ -515,9 +518,14 @@ bool record_vulkan_gpu_capture(void *data, VkCommandBuffer command,
    stop = retro_atomic_load_acquire_int(&c->stop);
    if ((stop && stop != 2) || retro_atomic_load_acquire_int(&c->failed))
       return false;
-   if (dims != c->dims || output_mode)
+   if (dims != c->dims || output_mode != c->output_mode)
    {
       retro_atomic_cas_int(&c->stop, 0, 1);
+      return false;
+   }
+   if (!source || source->output_mode != output_mode)
+   {
+      rvk_fail(c);
       return false;
    }
    if (c->have_offered && timestamp == c->offered)
@@ -614,7 +622,8 @@ void record_vulkan_poll(void)
       memset(&hdr, 0, sizeof(hdr));
       hdr.version = 1;
       hdr.size = sizeof(hdr);
-      if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr) || hdr.output_mode)
+      if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr)
+            || hdr.output_mode != c->output_mode)
          retro_atomic_cas_int(&c->stop, 0, 4);
       if (state >= RECORD_VKD_DRAINING || retro_atomic_load_acquire_int(&c->stop)
             || retro_atomic_load_acquire_int(&c->failed))

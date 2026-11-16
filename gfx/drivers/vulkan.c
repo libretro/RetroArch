@@ -12987,6 +12987,7 @@ static bool vulkan_record_native(vk_t *vk, const video_frame_info_t *info,
    source.valid_width = VIDEO_SCALE_W(vk->vp.dims);
    source.valid_height = VIDEO_SCALE_H(vk->vp.dims);
    source.limited_range = true;
+   source.output_mode = mode;
    return record_vulkan_gpu_capture(info->recording_gpu, vk->cmd, &source,
          info->recording_gpu_timestamp, vk->vp.dims, mode);
 }
