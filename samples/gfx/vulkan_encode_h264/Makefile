@@ -87,7 +87,7 @@ encoder_test$(EXE): encoder_test.c $(RA)/gfx/common/vulkan_encode_h264.c $(RA)/g
 	$(CC) $(CFLAGS) encoder_test.c -o $@ $(LDFLAGS)
 worker_test$(EXE): worker_test.c $(RA)/record/record_gpu_worker_vulkan.c $(RA)/record/record_gpu_worker_vulkan.h $(RA)/record/record_gpu_queue.c $(RA)/record/record_gpu_queue.h $(RA)/libretro-common/queues/retro_spsc.c $(RA)/gfx/common/vulkan_encode_h264.h $(RA)/gfx/common/vulkan_encode_pool.h $(RA)/gfx/common/vulkan_encode_h264_submit.h $(RA)/gfx/common/vulkan_encode_h264_picture.h $(RA)/gfx/common/vulkan_encode_h264_session.h $(RA)/gfx/common/vulkan_encode_h264_params.h
 	$(CC) $(CFLAGS) worker_test.c $(RA)/record/record_gpu_worker_vulkan.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c -o $@ $(LDFLAGS)
-CAPTURE_HEADERS := $(RA)/gfx/common/vulkan_encode_capture.h $(RA)/gfx/common/vulkan_encode_pool.h
+CAPTURE_HEADERS := $(RA)/gfx/common/vulkan_encode_capture.h $(RA)/gfx/common/vulkan_encode_pool.h $(RA)/gfx/common/vulkan_encode_capture_p010.h
 CAPTURE_SHADER_SOURCES := capture_shader_test.c $(RA)/gfx/common/vulkan_encode_capture_shader.c \
    $(RA)/libretro-common/gfx/shaders/rslc_front.c \
    $(RA)/libretro-common/gfx/shaders/rslc_ir.c \
@@ -116,6 +116,7 @@ check: all
 	$(RUNNER) ./capture_test$(EXE)
 	$(RUNNER) ./capture_shader_test$(EXE)
 clean:
+	rm -f hevc_native_capture_test hevc_native_capture_test.exe
 	rm -f hevc_params_test hevc_params_test.exe
 	rm -f hevc_session_test hevc_session_test.exe hevc_native_params_test hevc_native_params_test.exe hevc_headers_test hevc_headers_test.exe
 	rm -f hevc_picture_test hevc_picture_test.exe hevc_submit_test hevc_submit_test.exe hevc_native_encode_test hevc_native_encode_test.exe
@@ -146,3 +147,14 @@ native_test$(EXE): $(NATIVE_SOURCES) native_capture.h native_session.h $(RA)/rec
 native-check: native_test$(EXE)
 	$(RUNNER) ./native_test$(EXE)
 .PHONY: native-check
+
+native_test$(EXE): $(CAPTURE_HEADERS)
+
+HEVC_CAPTURE_SOURCES := $(filter-out hevc_native_adapter_test.c,$(HEVC_ADAPTER_SOURCES)) \
+   hevc_native_capture_test.c $(RA)/gfx/common/vulkan_encode_capture.c \
+   $(filter-out capture_shader_test.c,$(CAPTURE_SHADER_SOURCES))
+hevc_native_capture_test$(EXE): $(HEVC_CAPTURE_SOURCES) hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(CAPTURE_HEADERS)
+	$(CC) $(CFLAGS) -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(HEVC_CAPTURE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl) -lm
+hevc-native-capture-check: hevc_native_capture_test$(EXE)
+	python3 hevc_native_capture_run.py --native-test ./hevc_native_capture_test$(EXE)
+.PHONY: hevc-native-capture-check

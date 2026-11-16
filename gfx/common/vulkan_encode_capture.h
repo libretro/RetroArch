@@ -58,7 +58,8 @@ vulkan_encode_capture_t *vulkan_encode_capture_new(
 vulkan_encode_capture_t *vulkan_encode_capture_new_compiled(
       const vulkan_encode_pool_t *pool, const vulkan_encode_capture_ops_t *ops,
       char *error, size_t capacity);
-/* One producer, outside a render pass, on its existing command buffer.
+/* NV12 and P010 output preserve SDR transfer; P010 alone does not imply HDR.
+ * One producer, outside a render pass, on its existing command buffer.
  * The caller owns a free pool slot, waits for its previous done value on the
  * GPU, then signals ready after submission. Source image/view and this
  * component survive producer completion. Source is sampled SDR UNORM with

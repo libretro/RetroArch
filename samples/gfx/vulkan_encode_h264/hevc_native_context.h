@@ -19,6 +19,8 @@ struct native_encoder
    VkInstance instance;
    VkPhysicalDevice physical;
    VkDevice device;
+   VkQueue queue, producer_queue;
+   VkPhysicalDeviceFeatures enabled_features;
    VkDebugUtilsMessengerEXT messenger;
    PFN_vkGetInstanceProcAddr instance_proc;
    PFN_vkGetDeviceProcAddr device_proc;
@@ -28,7 +30,7 @@ struct native_encoder
    VkPhysicalDeviceProperties properties;
    vulkan_encode_hevc_session_ops_t ops;
    VkQueueFlags queue_flags;
-   unsigned family, validation_errors;
+   unsigned family, producer_family, validation_errors;
 };
 #define INSTANCE(member, name) do { \
    c->member=(PFN_vk##name)c->instance_proc(c->instance,"vk" #name); \
@@ -69,7 +71,7 @@ static bool validation_available(struct native_encoder *c)
    free(layers);
    return found;
 }
-static bool select_device(struct native_encoder *c)
+static bool select_device(struct native_encoder *c, bool compute)
 {
    PFN_vkEnumeratePhysicalDevices enumerate;
    PFN_vkGetPhysicalDeviceProperties properties;
@@ -139,25 +141,42 @@ static bool select_device(struct native_encoder *c)
             found=true;
             break;
          }
+      c->producer_family=c->family;
+      if (found && compute)
+      {
+         bool producer=false;
+         for (j=0;j<n;j++)
+            if (queues[j].queueFamilyProperties.queueCount &&
+                  (queues[j].queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT))
+            {
+               c->producer_family=j;
+               producer=true;
+               break;
+            }
+         found=producer;
+      }
       free(video);
       free(queues);
    }
    free(devices);
    return found;
 }
-static bool startup(struct native_encoder *c)
+static bool startup_mode(struct native_encoder *c, bool compute)
 {
    VkApplicationInfo app;
    VkInstanceCreateInfo instance;
    VkDebugUtilsMessengerCreateInfoEXT debug;
-   VkDeviceQueueCreateInfo queue;
+   VkDeviceQueueCreateInfo queue[2];
    VkDeviceCreateInfo device;
    PFN_vkCreateInstance create_instance;
+   VkValidationFeaturesEXT validation;
+   VkValidationFeatureEnableEXT synchronization = VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT;
    PFN_vkCreateDevice create_device;
+   PFN_vkGetDeviceQueue get_queue;
    PFN_vkGetPhysicalDeviceFeatures2 get_features;
    PFN_vkCreateDebugUtilsMessengerEXT create_messenger;
    const char *layer = "VK_LAYER_KHRONOS_validation";
-   const char *debug_extension = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+   const char *debug_extensions[] = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME};
    const char *extensions[] = {VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
       VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME, VK_KHR_VIDEO_ENCODE_H265_EXTENSION_NAME};
    float priority = 1;
@@ -190,25 +209,33 @@ static bool startup(struct native_encoder *c)
    debug.pUserData = c;
    instance.flags = 0;
    instance.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-   instance.pNext = &debug;
+   validation.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+   validation.pNext = &debug;
+   validation.enabledValidationFeatureCount = 1;
+   validation.pEnabledValidationFeatures = &synchronization;
+   validation.disabledValidationFeatureCount = 0;
+   validation.pDisabledValidationFeatures = NULL;
+   instance.pNext = &validation;
    instance.pApplicationInfo = &app;
-   instance.enabledLayerCount = instance.enabledExtensionCount = 1;
+   instance.enabledLayerCount = 1;
+   instance.enabledExtensionCount = 2;
    instance.ppEnabledLayerNames = &layer;
-   instance.ppEnabledExtensionNames = &debug_extension;
+   instance.ppEnabledExtensionNames = debug_extensions;
    assert(create_instance(&instance, NULL, &c->instance) == VK_SUCCESS);
    INSTANCE(destroy_instance, DestroyInstance);
    INSTANCE(destroy_messenger, DestroyDebugUtilsMessengerEXT);
    create_messenger = (PFN_vkCreateDebugUtilsMessengerEXT)c->instance_proc(c->instance,
          "vkCreateDebugUtilsMessengerEXT");
    assert(create_messenger && create_messenger(c->instance, &debug, NULL, &c->messenger) == VK_SUCCESS);
-   if (!select_device(c))
+   if (!select_device(c, compute))
       return false;
-   queue.pNext = NULL;
-   queue.flags = 0;
-   queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-   queue.queueFamilyIndex = c->family;
-   queue.queueCount = 1;
-   queue.pQueuePriorities = &priority;
+   queue[0].pNext = queue[1].pNext = NULL;
+   queue[0].flags = queue[1].flags = 0;
+   queue[0].sType = queue[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+   queue[0].queueFamilyIndex = c->family;
+   queue[1].queueFamilyIndex = c->producer_family;
+   queue[0].queueCount = queue[1].queueCount = 1;
+   queue[0].pQueuePriorities = queue[1].pQueuePriorities = &priority;
    get_features = (PFN_vkGetPhysicalDeviceFeatures2)c->instance_proc(c->instance,
          "vkGetPhysicalDeviceFeatures2");
    assert(get_features);
@@ -229,16 +256,22 @@ static bool startup(struct native_encoder *c)
    device.flags = 0;
    device.enabledLayerCount = 0;
    device.ppEnabledLayerNames = NULL;
-   device.pEnabledFeatures = NULL;
+   c->enabled_features.shaderStorageImageExtendedFormats = compute &&
+         c->features.features.shaderStorageImageExtendedFormats;
+   device.pEnabledFeatures = &c->enabled_features;
    device.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-   device.queueCreateInfoCount = 1;
-   device.pQueueCreateInfos = &queue;
+   device.queueCreateInfoCount = c->family == c->producer_family ? 1 : 2;
+   device.pQueueCreateInfos = queue;
    device.enabledExtensionCount = 3;
    device.ppEnabledExtensionNames = extensions;
    create_device = (PFN_vkCreateDevice)c->instance_proc(c->instance, "vkCreateDevice");
    assert(create_device && create_device(c->physical, &device, NULL, &c->device) == VK_SUCCESS);
    INSTANCE(device_proc, GetDeviceProcAddr);
    DEVICE(destroy_device, DestroyDevice);
+   get_queue = (PFN_vkGetDeviceQueue)c->device_proc(c->device, "vkGetDeviceQueue");
+   assert(get_queue);
+   get_queue(c->device, c->family, 0, &c->queue);
+   get_queue(c->device, c->producer_family, 0, &c->producer_queue);
    INSTANCE(ops.families, GetPhysicalDeviceQueueFamilyProperties2);
    INSTANCE(ops.memory, GetPhysicalDeviceMemoryProperties);
    INSTANCE(ops.capabilities, GetPhysicalDeviceVideoCapabilitiesKHR);
@@ -255,4 +288,5 @@ static bool startup(struct native_encoder *c)
    return true;
 }
 
+#define startup(c) startup_mode((c), false)
 #endif

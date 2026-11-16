@@ -24,7 +24,7 @@ static vulkan_encode_pool_t pool;
 static vulkan_encode_capture_ops_t ops;
 static unsigned calls, fail_at, live, barriers, copies, binds, pushes,
     dispatches, updates;
-static bool direct, initialized;
+static bool direct, initialized, p010;
 static VkImageLayout source_layout;
 static VkResult startup(unsigned bit, uintptr_t *handle)
 {
@@ -352,7 +352,7 @@ static VKAPI_ATTR void VKAPI_CALL push(VkCommandBuffer cmd,
 static VKAPI_ATTR void VKAPI_CALL dispatch(VkCommandBuffer cmd, uint32_t x,
                                            uint32_t y, uint32_t z)
 {
-   assert(cmd == HANDLE(VkCommandBuffer, 500) && x == (direct ? 12u : 6u) &&
+   assert(cmd == HANDLE(VkCommandBuffer, 500) && x == (direct || p010 ? 12u : 6u) &&
           y == 8 && z == 1 && pushes == 1 && binds == 2);
    dispatches++;
 }
@@ -368,9 +368,11 @@ static VKAPI_ATTR void VKAPI_CALL copy(VkCommandBuffer cmd, VkBuffer buffer,
           layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && count == 2 &&
           barriers == 2 && dispatches == 1);
    for (i = 0; i < 2; i++)
+   {
       assert(
-          p[i].bufferOffset == (i ? 192u * 128u : 0u) &&
-          !p[i].bufferRowLength && !p[i].bufferImageHeight &&
+          p[i].bufferOffset == (i ? 192u * 128u * (p010 ? 2u : 1u) : 0u) &&
+          !p[i].bufferRowLength && !p[i].bufferImageHeight);
+      assert(
           p[i].imageSubresource.aspectMask ==
               (i ? VK_IMAGE_ASPECT_PLANE_1_BIT : VK_IMAGE_ASPECT_PLANE_0_BIT) &&
           !p[i].imageSubresource.mipLevel &&
@@ -380,6 +382,7 @@ static VKAPI_ATTR void VKAPI_CALL copy(VkCommandBuffer cmd, VkBuffer buffer,
           p[i].imageExtent.width == (192u >> i) &&
           p[i].imageExtent.height == (128u >> i) &&
           p[i].imageExtent.depth == 1);
+   }
    copies++;
 }
 static void setup(bool storage)
@@ -393,7 +396,8 @@ static void setup(bool storage)
    pool.count = 16;
    pool.extent.width = 192;
    pool.extent.height = 128;
-   pool.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+   pool.format = p010 ? VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
+      : VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
    pool.storage_images = storage;
    for (i = 0; i < 16; i++)
    {
@@ -401,7 +405,7 @@ static void setup(bool storage)
       pool.slot[i].planes[0] = HANDLE(VkImageView, 300 + i);
       pool.slot[i].planes[1] = HANDLE(VkImageView, 400 + i);
       pool.slot[i].conversion.buffer = HANDLE(VkBuffer, 700 + i);
-      pool.slot[i].conversion.size = 192 * 128 * 3 / 2;
+      pool.slot[i].conversion.size = 192 * 128 * 3 / (p010 ? 1 : 2);
    }
    ops.create_set_layout = create_set;
    ops.destroy_set_layout = destroy_set;
@@ -425,7 +429,7 @@ static void setup(bool storage)
    ops.copy = copy;
    calls = fail_at = 0;
 }
-int main(void)
+static int capture_checks(void)
 {
    static const uint32_t code[5] = {0x07230203, 0, 0, 0, 0};
    vulkan_encode_capture_config_t config;
@@ -571,5 +575,13 @@ int main(void)
    vulkan_encode_capture_free(NULL);
    puts("Vulkan capture direct/fallback barriers, descriptors, bounds and "
         "startup retirement PASS");
+   return 0;
+}
+
+int main(void)
+{
+   capture_checks();
+   p010 = true;
+   capture_checks();
    return 0;
 }

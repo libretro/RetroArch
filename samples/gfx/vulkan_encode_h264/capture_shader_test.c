@@ -41,13 +41,14 @@ vulkan_encode_capture_t *vulkan_encode_capture_new(
          config->code_bytes > 20 && !(config->code_bytes & 3) &&
          config->code[0] == 0x07230203);
    assert(instructions(config, 17, 1, 49) == (config->pool->storage_images ? 1u : 0u));
-   assert(instructions(config, 25, 8, 15) == (config->pool->storage_images ? 1u : 0u));
-   assert(instructions(config, 25, 8, 13) == (config->pool->storage_images ? 1u : 0u));
+   assert(instructions(config, 25, 8, config->pool->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM ? 15 : 14) == (config->pool->storage_images ? 1u : 0u));
+   assert(instructions(config, 25, 8, config->pool->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM ? 13 : 12) == (config->pool->storage_images ? 1u : 0u));
    assert(instructions(config, 16, 2, 17) == 1);
    if (prefix && !fail_new)
    {
       assert(strlen(prefix) < sizeof(path) - 32);
-      sprintf(path, "%s-%s.spv", prefix,
+      sprintf(path, "%s%s-%s.spv", prefix,
+            config->pool->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM ? "" : "-p010",
             config->pool->storage_images ? "direct" : "buffer");
       file = fopen(path, "wb");
       assert(file && fwrite(config->code, 1, config->code_bytes, file) ==
@@ -67,9 +68,11 @@ int main(int argc, char **argv)
    prefix = argc == 2 ? argv[1] : NULL;
    memset(&pool, 0, sizeof(pool));
    memset(&ops, 0, sizeof(ops));
-   for (mode = 0; mode < 2; mode++)
+   for (mode = 0; mode < 4; mode++)
    {
-      pool.storage_images = mode != 0;
+      pool.storage_images = (mode & 1) != 0;
+      pool.format = mode < 2 ? VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+         : VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16;
       capture = vulkan_encode_capture_new_compiled(&pool, &ops, error, sizeof(error));
 #ifdef EXPECT_NO_EXTENDED
       assert(!capture && !calls && error[0]);
@@ -81,7 +84,7 @@ int main(int argc, char **argv)
 #endif
    }
 #ifndef EXPECT_NO_EXTENDED
-   assert(calls == 4);
+   assert(calls == 8);
 #endif
    memset(error, 'x', sizeof(error));
    assert(!vulkan_encode_capture_new_compiled(NULL, &ops, error, sizeof(error)) && !error[0]);

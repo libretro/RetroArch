@@ -10,14 +10,15 @@ struct native_hevc_adapter
    vulkan_encode_hevc_open_t config;
 };
 
-static vulkan_encode_hevc_t *native_adapter_new(struct native_hevc_adapter *a, unsigned depth)
+static vulkan_encode_hevc_t *native_adapter_new_mode(struct native_hevc_adapter *a,
+      unsigned depth, bool compute, bool storage, bool full_range)
 {
    struct native_hevc_encoder *e = &a->gpu;
    struct native_encoder *c = &e->base;
    vulkan_encode_hevc_t *encoder = NULL;
    PFN_vkGetDeviceQueue get_queue;
    unsigned ctb;
-   if (!startup(c) || !(c->queue_flags & VK_QUEUE_TRANSFER_BIT))
+   if (!startup_mode(c, compute) || (!compute && !(c->queue_flags & VK_QUEUE_TRANSFER_BIT)))
       return NULL;
    load_frame_ops(e);
    get_queue = (PFN_vkGetDeviceQueue)c->device_proc(c->device, "vkGetDeviceQueue");
@@ -35,12 +36,14 @@ static vulkan_encode_hevc_t *native_adapter_new(struct native_hevc_adapter *a, u
    a->config.session.video.fps_den = 1;
    a->config.session.video.bitrate = 2000000;
    a->config.session.video.bit_depth = depth;
-   a->config.session.video.color = a->config.session.video.bit_depth == 10
+   a->config.session.video.color = !compute && a->config.session.video.bit_depth == 10
       ? VULKAN_ENCODE_HEVC_PQ : VULKAN_ENCODE_HEVC_BT709;
    a->config.queue = e->queue;
    a->config.packet_size = 1048576;
    a->config.slots = 2;
-   a->config.producer_family = c->family;
+   a->config.producer_family = c->producer_family;
+   a->config.storage_image_extended_formats = storage && c->enabled_features.shaderStorageImageExtendedFormats;
+   a->config.session.video.full_range = full_range;
    a->config.gop = 8;
    a->config.qp = 22;
    for (ctb = 64; ctb >= 16 && !encoder; ctb /= 2)
@@ -49,7 +52,8 @@ static vulkan_encode_hevc_t *native_adapter_new(struct native_hevc_adapter *a, u
       encoder = vulkan_encode_hevc_open(&a->config, &a->ops);
    }
    assert(encoder);
-   upload_new(e, vulkan_encode_hevc_pool(encoder));
+   if (!compute)
+      upload_new(e, vulkan_encode_hevc_pool(encoder));
    return encoder;
 }
 
@@ -76,6 +80,7 @@ static void native_adapter_context_free(struct native_hevc_adapter *a)
    free(a);
 }
 
+#define native_adapter_new(a, depth) native_adapter_new_mode((a), (depth), false, false, false)
 #ifndef HEVC_NATIVE_ADAPTER_HELPERS_ONLY
 int main(int argc, char **argv)
 {

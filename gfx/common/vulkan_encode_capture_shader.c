@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "vulkan_encode_capture.h"
+#include "vulkan_encode_capture_p010.h"
 #include <gfx/shaders/rslc.h>
 #include <stdlib.h>
 #include <string.h>
@@ -141,11 +142,22 @@ vulkan_encode_capture_t *vulkan_encode_capture_new_compiled(
    vulkan_encode_capture_t *capture;
    if (error && capacity)
       error[0] = '\0';
-   if (!pool || !ops)
+   if (!pool || !ops ||
+       (pool->format != VK_FORMAT_G8_B8R8_2PLANE_420_UNORM &&
+        pool->format != VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16))
       return NULL;
-   parts = pool->storage_images ? vec_direct_source : vec_buffer_source;
-   count = pool->storage_images ? sizeof(vec_direct_source) / sizeof(*parts)
-      : sizeof(vec_buffer_source) / sizeof(*parts);
+   if (pool->format == VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16)
+   {
+      parts = pool->storage_images ? vec_p010_direct_source : vec_p010_buffer_source;
+      count = pool->storage_images ? sizeof(vec_p010_direct_source) / sizeof(*parts)
+         : sizeof(vec_p010_buffer_source) / sizeof(*parts);
+   }
+   else
+   {
+      parts = pool->storage_images ? vec_direct_source : vec_buffer_source;
+      count = pool->storage_images ? sizeof(vec_direct_source) / sizeof(*parts)
+         : sizeof(vec_buffer_source) / sizeof(*parts);
+   }
    for (i = 0; i < count; i++)
       length += strlen(parts[i]);
    source = (char*)malloc(length + 1);
