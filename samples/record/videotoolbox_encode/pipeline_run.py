@@ -37,7 +37,7 @@ ffmpeg, ffprobe = shutil.which('ffmpeg'), shutil.which('ffprobe')
 if not ffmpeg or not ffprobe:
     raise SystemExit('Independent native pipeline checks require test-only ffmpeg/ffprobe')
 compiler = shlex.split(os.environ.get('CC', 'cc'))
-flags = ['-DHAVE_THREADS', '-O2', '-std=c89', '-pedantic', '-Wall', '-Wextra', '-Werror',
+flags = ['-DHAVE_AVF', '-DHAVE_THREADS', '-O2', '-std=c89', '-pedantic', '-Wall', '-Wextra', '-Werror',
          '-Wno-long-long', '-Wno-c99-extensions', '-Wframe-larger-than=2048',
          '-mmacosx-version-min=10.14', '-I' + str(root / 'libretro-common/include')]
 subprocess.run([sys.executable, str(root / 'record/shaders/generate_metal.py'), '--check'], check=True)
@@ -51,7 +51,7 @@ workspace = (contextlib.nullcontext(artifact_dir) if artifact_dir else
 with workspace as temp:
     directory = Path(temp)
     objects = []
-    for source in ('record/record_gpu_worker_vt.c', 'record/record_vt_packet.c', 'record/record_gpu_queue.c', 'record/record_audio_queue.c', 'record/record_avfoundation_worker.c', 'record/record_avfoundation_session.c',
+    for source in ('record/record_at_resample.c', 'record/record_gpu_worker_vt.c', 'record/record_vt_packet.c', 'record/record_gpu_queue.c', 'record/record_audio_queue.c', 'record/record_avfoundation_worker.c', 'record/record_avfoundation_session.c',
                    'libretro-common/queues/retro_spsc.c', 'libretro-common/formats/flv/rflv_mux.c', 'libretro-common/formats/h265/rh265_sps_crop.c'):
         obj = directory / (Path(source).stem + '.o')
         subprocess.run(compiler + flags + ['-c', str(root / source), '-o', str(obj)], check=True)

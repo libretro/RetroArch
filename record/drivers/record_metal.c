@@ -176,7 +176,6 @@ static void *record_metal_init(const struct record_params *params)
       uint32_t layout=recording_state_get_ptr()->layout;
       double sample_rate=params->samplerate;
       if (sample_rate!=sample_rate || sample_rate<8000.0 || sample_rate>192000.0
-            || (!streaming && floor(sample_rate)!=sample_rate)
             || !params->channels || params->channels>(streaming?2u:8u)
             || audio_layout_channels(layout)!=params->channels
             || (layout&~0x63fu)) return NULL;
@@ -190,10 +189,11 @@ static void *record_metal_init(const struct record_params *params)
       }
       else
       {
-         rate=(unsigned)sample_rate;
+         rate=floor(sample_rate)==sample_rate?(unsigned)sample_rate:48000;
+         if (sample_rate!=rate) output.source_rate=sample_rate;
          output.audio_rate=rate; output.channels=params->channels; output.audio_layout=layout;
          output.audio_bitrate=params->channels>2?384000:128000; output.max_audio_frames=4096;
-         audio_capacity=(size_t)rate*params->channels*2+1024;
+         audio_capacity=(size_t)ceil(sample_rate)*params->channels*2+1024;
       }
    }
    else stream.audio_rate=0;

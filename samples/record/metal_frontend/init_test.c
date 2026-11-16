@@ -70,11 +70,14 @@ record_gpu_dispatch_metal_t *record_gpu_dispatch_metal_new_stream(void *device,
       return NULL;
    return (record_gpu_dispatch_metal_t*)&job_token;
 }
+static record_mux_avfoundation_config_t offered_file;
 record_gpu_dispatch_metal_t *record_gpu_dispatch_metal_new(void *device,
       const record_gpu_session_metal_config_t *video,
       const record_mux_avfoundation_config_t *output,size_t capacity,const char *path)
 {
    assert(device == &device_token && video && output && capacity && path);
+   offered_file=*output;
+   assert(capacity>=(size_t)ceil(output->source_rate?output->source_rate:output->audio_rate)*output->channels*2);
    file_calls++;
    return (record_gpu_dispatch_metal_t*)&job_token;
 }
@@ -200,6 +203,15 @@ int main(void)
    reset(&params);
    params.out_dims = VIDEO_SCALE_PACK(959,576);
    assert(!record_metal_init(&params) && !stream_calls);
+   reset(&params);
+   recording.streaming_enable=false;
+   params.filename="fractional.mp4";
+   params.samplerate=32040.5;
+   ctx=(record_metal_context_t*)record_metal_init(&params);
+   assert(ctx && ctx==record_metal_active && !ctx->streaming && ctx->path);
+   assert(file_calls==1 && !stream_calls && offered_file.source_rate==32040.5
+         && offered_file.audio_rate==48000 && ctx->audio_rate==32040.5);
+   retire(ctx);
    puts("PASS actual Metal frontend stream admission, packet bounds, clocks, video-only and HDR configuration");
    return 0;
 }

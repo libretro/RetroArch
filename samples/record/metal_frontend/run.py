@@ -15,7 +15,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--retroarch', required=True)
 parser.add_argument('--core', required=True)
 parser.add_argument('--output-dir', required=True)
+parser.add_argument('--source-rate', type=float, default=48000)
 args = parser.parse_args()
+assert 8000 <= args.source_rate <= 192000
 assert sys.platform == 'darwin', 'Native frontend acceptance requires macOS'
 exe, core = str(Path(args.retroarch).resolve()), str(Path(args.core).resolve())
 root = Path(args.output_dir).resolve()
@@ -53,7 +55,7 @@ savestate_auto_save = "false"
 savestate_auto_load = "false"
 ''', encoding='utf-8')
             record.write_text(f'audio_enable = "{audio}"\nvcodec = "{codec}"\nformat = "mp4"\nvideo_bit_rate = "8000000"\n', encoding='utf-8')
-            env = dict(os.environ, NATIVE_RECORD_RATE='48000', NATIVE_RECORD_LAYOUT='3')
+            env = dict(os.environ, NATIVE_RECORD_RATE=repr(args.source_rate), NATIVE_RECORD_LAYOUT='3')
             env.pop('NATIVE_RECORD_FLOAT', None)
             result = subprocess.run([exe, '-v', '--config', str(config), '-L', core,
                 '--record', str(movie), '--recordconfig', str(record), '--max-frames', '180'],
@@ -92,11 +94,11 @@ savestate_auto_load = "false"
             if audios:
                 a=audios[0]
                 assert a['codec_name']=='aac' and int(a['sample_rate'])==48000 and a['channels']==2,a
-                assert abs(float(a['duration'])-int(done[2])/48000)<.05,(a,done.groups())
+                assert abs(float(a['duration'])-int(done[2])/args.source_rate)<.05,(a,done.groups())
                 pcm = subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(movie),
                     '-map', '0:a:0', '-f', 'f32le', '-'], timeout=30)
                 samples = array.array('f', pcm)
-                assert len(samples)%2==0 and abs(len(samples)//2-int(done[2]))<=2048, (len(samples),done.groups())
+                assert len(samples)%2==0 and abs(len(samples)//2-math.ceil(int(done[2])*48000/args.source_rate))<=2048, (len(samples),done.groups())
                 for channel,frequency in enumerate((440,660)):
                     values=samples[4096:min(len(samples),20480)][channel::2]
                     assert len(values)>2000, len(values)

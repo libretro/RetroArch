@@ -5,6 +5,22 @@
 #include "record_audio_queue.h"
 RETRO_BEGIN_DECLS
 typedef struct record_avfoundation_worker record_avfoundation_worker_t;
+enum
+{
+   RECORD_AVF_SOURCE_PROGRESS = 3
+};
+
+typedef struct record_avfoundation_audio_source
+{
+   void *context;
+   /* RECORD_AUDIO_* or RECORD_AVF_SOURCE_PROGRESS. Borrow until ack. */
+   int (*peek)(void *context, const int16_t **samples, size_t *frames,
+         uint64_t *timestamp);
+   bool (*ack)(void *context);
+   /* Session retirement, after the pump stops and before queue destruction. */
+   bool (*retire)(void *context);
+} record_avfoundation_audio_source_t;
+
 typedef struct record_avfoundation_worker_ops
 {
    /* RECORD_AVF_ERROR/BUSY/OK. BUSY consumes nothing. Accepted samples must
@@ -21,6 +37,12 @@ enum record_avfoundation_worker_result
 record_avfoundation_worker_t *record_avfoundation_worker_new(
       record_gpu_worker_vt_t *video,record_audio_queue_t *audio,void *mux,
       const record_avfoundation_worker_ops_t *ops);
+/* Optional converted PCM source. Cold construction; table is copied.
+ * The session owns source retirement; this pump only borrows it. */
+record_avfoundation_worker_t *record_avfoundation_worker_new_source(
+      record_gpu_worker_vt_t *video, record_audio_queue_t *audio, void *mux,
+      const record_avfoundation_worker_ops_t *ops,
+      const record_avfoundation_audio_source_t *source);
 /* Bounded service: one video pump call, one PCM packet, one finalization poll.
  * Retains borrows across BUSY, services audio while video is stalled, and
  * finalizes only after video and audio report drained END. Errors are sticky.

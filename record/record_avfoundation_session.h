@@ -48,6 +48,13 @@ record_avfoundation_session_t *record_avfoundation_session_new(
       record_gpu_queue_t *queue,record_gpu_worker_vt_t *video,
       record_audio_queue_t *audio,void *context,
       const record_avfoundation_session_ops_t *ops);
+/* Converted file PCM follows the same adoption contract. Retirement retries
+ * before the source queue is drained, including empty-video startup failure. */
+record_avfoundation_session_t *record_avfoundation_session_new_source(
+      record_gpu_queue_t *queue, record_gpu_worker_vt_t *video,
+      record_audio_queue_t *audio, void *context,
+      const record_avfoundation_session_ops_t *ops,
+      const record_avfoundation_audio_source_t *source);
 /* Same adoption/retirement contract, with an output-owned producer pump.
  * step uses RECORD_AVF_WORKER_*; retry/network only observe worker interests.
  * No network or codec dependency is installed in the session controller. */

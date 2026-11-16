@@ -10,6 +10,7 @@ typedef struct record_mux_avfoundation record_mux_avfoundation_t;
 typedef struct record_mux_avfoundation_config
 {
    const void *video_format; /* Borrowed H.264/HEVC CMVideoFormatDescription. */
+   double source_rate; /* Native session input rate; zero uses audio_rate. */
    int64_t epoch;
    unsigned timescale, audio_rate, channels, audio_layout, audio_bitrate, max_audio_frames;
 } record_mux_avfoundation_config_t;

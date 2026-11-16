@@ -52,7 +52,7 @@ record_mux_avfoundation_t *record_mux_avfoundation_new(
 {
    record_mux_avfoundation_t *mux;
    unsigned count=0, mask;
-   if (!c || !c->video_format || !path || !*path || c->epoch<0
+   if (!c || c->source_rate || !c->video_format || !path || !*path || c->epoch<0
          || !c->timescale || c->timescale>INT32_MAX) return NULL;
    mask=c->audio_layout;
    while (mask) { count+=mask&1; mask>>=1; }

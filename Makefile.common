@@ -1721,6 +1721,7 @@ ifeq ($(HAVE_METAL), 1)
              record/record_audio_queue.o \
              record/record_gpu_worker_vt.o \
              record/record_avfoundation_worker.o \
+             record/record_at_resample.o \
              record/record_avfoundation_session.o \
              record/record_gpu_capture_metal.o \
              record/record_mux_avfoundation.o \
@@ -1732,7 +1733,6 @@ ifeq ($(HAVE_METAL), 1)
             ifeq ($(HAVE_RFLV), 1)
                OBJ += record/record_stream_vt.o \
                       record/record_stream_output_vt.o \
-                      record/record_at_resample.o \
                       record/record_vt_packet.o \
                       $(LIBRETRO_COMM_DIR)/net/net_wake.o
             endif

@@ -318,11 +318,14 @@ jobs:
           command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
           cc -dynamiclib -std=gnu89 -Ilibretro-common/include samples/record/metal_frontend/core.c -o "$RUNNER_TEMP/metal-record-core.dylib" -lm
           python3 samples/record/metal_frontend/run.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-record-core.dylib" --output-dir "$RUNNER_TEMP/metal-frontend-recordings"
+          python3 samples/record/metal_frontend/run.py --source-rate 32040.5 --retroarch ./retroarch --core "$RUNNER_TEMP/metal-record-core.dylib" --output-dir "$RUNNER_TEMP/metal-frontend-fractional"
       - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: metal-frontend-recordings
-          path: ${{ runner.temp }}/metal-frontend-recordings
+          path: |
+            ${{ runner.temp }}/metal-frontend-recordings
+            ${{ runner.temp }}/metal-frontend-fractional
           if-no-files-found: warn
 
   frontend-stream-build:

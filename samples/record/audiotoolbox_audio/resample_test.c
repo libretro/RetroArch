@@ -107,18 +107,18 @@ OSStatus AudioConverterDispose(AudioConverterRef c)
 
 static void lane(unsigned channels, bool cancel, bool gap)
 {
-   record_audio_queue_t *q = record_audio_queue_new(channels, 8, 48);
+   record_audio_queue_t *q = record_audio_queue_new(channels, 8, 8 * channels * 2 + 32);
    record_at_resample_t *e;
    record_audio_queue_t *configured;
    const int16_t *borrow;
-   int16_t input[16], output[16];
+   int16_t input[64], output[64];
    size_t frames, count;
    uint64_t timestamp, accepted, produced;
    unsigned i;
    unsigned rate, configured_channels;
    int result;
    assert(q);
-   for (i = 0; i < 16; i++)
+   for (i = 0; i < 8 * channels; i++)
       input[i] = (int16_t)(i + 100);
    assert(record_audio_queue_push(q, input, 8, gap ? 1 : 0) == RECORD_AUDIO_OK);
    assert(record_audio_queue_peek_lend(q, &borrow, &count, &timestamp) == RECORD_AUDIO_OK);
@@ -203,6 +203,9 @@ int main(void)
    lane(1, true, false);
    lane(2, false, true);
    assert(quality == 6 && priming == 6 && resets == 3 && disposed == 7);
+   lane(6, false, false);
+   lane(8, true, false);
+   assert(quality == 8 && priming == 8 && disposed == 9);
    puts("PASS: direct SRC output, native input borrow retirement, clocks, EOF and cancellation");
    return 0;
 }

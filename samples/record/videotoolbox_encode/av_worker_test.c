@@ -13,7 +13,46 @@ struct fixture
    int sample;
    bool packet,with_audio;
    const int16_t *borrow;
+   record_audio_queue_t *source_queue;
+   unsigned source_progress,source_retired,source_retire_busy;
+   bool source_held,source_enabled;
+   int16_t converted[8];
 };
+#ifdef RECORD_AVF_SESSION_TEST
+static bool use_source;
+static int source_peek(void *data,const int16_t **samples,size_t *frames,uint64_t *timestamp)
+{
+   struct fixture *f=(struct fixture*)data;
+   int result;
+   unsigned i;
+   if (!f->source_progress++) return RECORD_AVF_SOURCE_PROGRESS;
+   result=record_audio_queue_peek_lend(f->source_queue,samples,frames,timestamp);
+   f->source_held=result==RECORD_AUDIO_OK;
+   if (f->source_held)
+   {
+      assert(*frames==4);
+      for (i=0;i<8;i++) f->converted[i]=(int16_t)((*samples)[i]+100);
+      *samples=f->converted;
+   }
+   return result;
+}
+static bool source_ack(void *data)
+{
+   struct fixture *f=(struct fixture*)data;
+   assert(f->source_held);
+   f->source_held=false;
+   return record_audio_queue_ack(f->source_queue);
+}
+static bool source_retire(void *data)
+{
+   struct fixture *f=(struct fixture*)data;
+   assert(!f->encoder_destroyed && !f->source_retired);
+   if (f->source_retire_busy) { f->source_retire_busy--; return false; }
+   if (f->source_held) assert(source_ack(f));
+   f->source_retired++;
+   return true;
+}
+#endif
 static int ready(void *data,unsigned slot)
 { struct fixture *f=(struct fixture*)data; assert(slot<2); if (f->gpu_busy) { f->gpu_busy--; return 0; } return 1; }
 static void *buffer(void *data,unsigned slot) { assert(slot<2); return data; }
@@ -47,7 +86,7 @@ static int mux_audio(void *data,const int16_t *samples,size_t frames,uint64_t pt
    unsigned i;
    f->audio_calls++; assert(f->with_audio && frames==4 && pts==(f->audios?200u:100u));
    if (f->borrow) assert(samples==f->borrow);
-   for (i=0;i<8;i++) assert(samples[i]==(int16_t)(f->audios+1));
+   for (i=0;i<8;i++) assert(samples[i]==(int16_t)(f->audios+1+(f->source_enabled?100:0)));
    if (f->fail==2) return RECORD_AVF_ERROR;
    if (f->audio_busy) { f->audio_busy--; f->borrow=samples; return RECORD_AVF_BUSY; }
    f->audios++; f->borrow=NULL; return RECORD_AVF_OK;
@@ -158,6 +197,7 @@ static void session_test(unsigned failure,unsigned cancel,bool empty)
    struct fixture f;
    record_gpu_worker_vt_ops_t video_ops;
    record_avfoundation_session_ops_t ops;
+   record_avfoundation_audio_source_t source;
    record_gpu_queue_t *queue=record_gpu_queue_new(2);
    record_audio_queue_t *audio=record_audio_queue_new(2,4,64);
    record_gpu_worker_vt_t *video;
@@ -174,7 +214,12 @@ static void session_test(unsigned failure,unsigned cancel,bool empty)
    ops.open=session_open; ops.mux.video=mux_video; ops.mux.audio=mux_audio; ops.mux.finish=mux_finish;
    ops.cancel=session_cancel; ops.free_mux=session_mux_free;
    ops.destroy_encoder=session_encoder_destroy; ops.destroy_context=session_context_destroy;
-   session=record_avfoundation_session_new(queue,video,audio,&f,&ops); assert(session);
+   f.source_queue=audio; f.source_retire_busy=2; f.source_enabled=use_source;
+   source.context=&f; source.peek=source_peek; source.ack=source_ack; source.retire=source_retire;
+   session=use_source?record_avfoundation_session_new_source(queue,video,audio,&f,&ops,&source)
+      :record_avfoundation_session_new(queue,video,audio,&f,&ops);
+   assert(session);
+   memset(&source,0,sizeof(source));
    assert(record_avfoundation_session_step(session)==RECORD_AVF_WORKER_BUSY);
    assert(!record_avfoundation_session_retry_needed(session));
    memset(&ops,0,sizeof(ops));
@@ -212,6 +257,7 @@ static void session_test(unsigned failure,unsigned cancel,bool empty)
    }
    assert(i<150 && result==((failure || cancel || empty)?RECORD_AVF_WORKER_ERROR:RECORD_AVF_WORKER_END));
    assert(f.encoder_destroyed==1 && f.context_destroyed==1);
+   assert(f.source_retired==(use_source?1u:0u));
    assert(record_avfoundation_session_step(session)==result);
    assert(!record_avfoundation_session_retry_needed(session));
    assert(record_avfoundation_session_free(session));
@@ -223,6 +269,10 @@ int main(void)
    assert(!record_avfoundation_session_new(NULL,NULL,NULL,NULL,NULL));
    assert(record_avfoundation_session_free(NULL));
    session_test(0,0,false); session_test(0,1,false); session_test(0,2,false); session_test(0,3,false); session_test(0,0,true);
+   for (i=1;i<=4;i++) session_test(i,false,false);
+   use_source=true;
+   session_test(0,0,false); session_test(0,1,false); session_test(0,2,false);
+   session_test(0,3,false); session_test(0,0,true);
    for (i=1;i<=4;i++) session_test(i,false,false);
    puts("PASS: owned A/V session first-sample binding, close/cancel barriers, callback/GPU retirement and queued PCM cleanup");
    return 0;

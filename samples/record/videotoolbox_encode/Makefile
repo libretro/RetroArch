@@ -11,7 +11,7 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: hardware_id_test$(EXE) av_output_test$(EXE) audio_lend_test$(EXE) packet_test$(EXE) session_gpu_refusal_test$(EXE) av_session_test$(EXE) crop_test$(EXE) av_worker_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE) audio_rate_native_test$(EXE)
 av_output_test$(EXE): av_output_test.c av_worker_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_session.h
-	$(CC) $(CFLAGS) -Wno-unused-function -o $@ av_output_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -Wno-unused-function -o $@ av_output_test.c $(RA)/record/record_at_resample.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 audio_lend_test$(EXE): audio_lend_test.c $(RA)/record/record_audio_queue.c $(RA)/record/record_audio_queue.h
 	$(CC) $(CFLAGS) -o $@ audio_lend_test.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 av_session_thread_test: av_session_thread_test.c $(RA)/record/record_avfoundation_session.c

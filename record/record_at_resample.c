@@ -81,7 +81,7 @@ record_at_resample_t *record_at_resample_new(record_audio_queue_t *source,
    unsigned channels = record_audio_queue_channels(source);
    if (!(input_rate >= 8000.0 && input_rate <= 192000.0)
          || (output_rate != 44100 && output_rate != 48000)
-         || input_rate == output_rate || !channels || channels > 2)
+         || input_rate == output_rate || !channels || channels > 8)
       return NULL;
    e = (record_at_resample_t*)calloc(1, sizeof(*e));
    if (!e)

@@ -7,6 +7,7 @@ struct record_avfoundation_worker
    record_gpu_worker_vt_t *video;
    record_audio_queue_t *audio;
    void *mux;
+   record_avfoundation_audio_source_t source;
    record_avfoundation_worker_ops_t ops;
    bool started,video_end,audio_end,failed,ended,audio_busy;
 };
@@ -18,6 +19,20 @@ record_avfoundation_worker_t *record_avfoundation_worker_new(
    if (!video || !mux || !ops || !ops->video || !ops->finish || (audio && !ops->audio)) return NULL;
    w=(record_avfoundation_worker_t*)calloc(1,sizeof(*w));
    if (w) { w->video=video; w->audio=audio; w->mux=mux; w->ops=*ops; w->audio_end=!audio; }
+   return w;
+}
+record_avfoundation_worker_t *record_avfoundation_worker_new_source(
+      record_gpu_worker_vt_t *video, record_audio_queue_t *audio, void *mux,
+      const record_avfoundation_worker_ops_t *ops,
+      const record_avfoundation_audio_source_t *source)
+{
+   record_avfoundation_worker_t *w;
+   if (!audio || !source || !source->context || !source->peek || !source->ack
+         || !source->retire)
+      return NULL;
+   w = record_avfoundation_worker_new(video, audio, mux, ops);
+   if (w)
+      w->source = *source;
    return w;
 }
 int record_avfoundation_worker_step(record_avfoundation_worker_t *w)
@@ -49,17 +64,24 @@ int record_avfoundation_worker_step(record_avfoundation_worker_t *w)
       const int16_t *samples=NULL;
       size_t frames=0;
       uint64_t timestamp=0;
-      result=record_audio_queue_peek_lend(w->audio,&samples,&frames,&timestamp);
+      result=w->source.peek
+         ?w->source.peek(w->source.context,&samples,&frames,&timestamp)
+         :record_audio_queue_peek_lend(w->audio,&samples,&frames,&timestamp);
       if (result==RECORD_AUDIO_ERROR) goto failed;
       if (result==RECORD_AUDIO_END) { w->audio_end=true; progress=true; }
       else if (result==RECORD_AUDIO_OK)
       {
          result=w->ops.audio(w->mux,samples,frames,timestamp);
          if (result==RECORD_AVF_OK)
-         { if (!record_audio_queue_ack(w->audio)) goto failed; progress=true; }
+         {
+            if (!(w->source.ack ? w->source.ack(w->source.context)
+                     : record_audio_queue_ack(w->audio))) goto failed;
+            progress=true;
+         }
          else if (result==RECORD_AVF_BUSY) w->audio_busy=true;
          else goto failed;
       }
+      else if (w->source.peek && result==RECORD_AVF_SOURCE_PROGRESS) progress=true;
       else if (result!=RECORD_AUDIO_BUSY) goto failed;
    }
    if (w->video_end && w->audio_end)

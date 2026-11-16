@@ -10,6 +10,7 @@ struct record_avfoundation_session
    record_gpu_worker_vt_t *video;
    record_audio_queue_t *audio;
    record_avfoundation_worker_t *pump;
+   record_avfoundation_audio_source_t source;
    void *context,*mux;
    record_avfoundation_session_ops_t ops;
    record_avfoundation_session_output_ops_t output_ops;
@@ -45,6 +46,21 @@ record_avfoundation_session_t *record_avfoundation_session_new(
          || !ops->destroy_encoder || !ops->destroy_context) return NULL;
    s=record_avfoundation_session_alloc(queue,video,audio,context);
    if (s) s->ops=*ops;
+   return s;
+}
+record_avfoundation_session_t *record_avfoundation_session_new_source(
+      record_gpu_queue_t *queue, record_gpu_worker_vt_t *video,
+      record_audio_queue_t *audio, void *context,
+      const record_avfoundation_session_ops_t *ops,
+      const record_avfoundation_audio_source_t *source)
+{
+   record_avfoundation_session_t *s;
+   if (!audio || !source || !source->context || !source->peek || !source->ack
+         || !source->retire)
+      return NULL;
+   s = record_avfoundation_session_new(queue, video, audio, context, ops);
+   if (s)
+      s->source = *source;
    return s;
 }
 record_avfoundation_session_t *record_avfoundation_session_new_output(
@@ -106,7 +122,9 @@ int record_avfoundation_session_step(record_avfoundation_session_t *s)
             else
             {
                s->mux=s->ops.open(s->context,sample);
-               if (s->mux) s->pump=record_avfoundation_worker_new(s->video,s->audio,s->mux,&s->ops.mux);
+               if (s->mux) s->pump=s->source.peek
+                  ?record_avfoundation_worker_new_source(s->video,s->audio,s->mux,&s->ops.mux,&s->source)
+                  :record_avfoundation_worker_new(s->video,s->audio,s->mux,&s->ops.mux);
             }
             if (!s->mux || (!s->external_output && !s->pump)) record_avf_session_fail(s,RECORD_AVF_SESSION_MUX);
             else s->stage=AVFS_RUN;
@@ -132,6 +150,10 @@ int record_avfoundation_session_step(record_avfoundation_session_t *s)
          {
             record_avfoundation_worker_abort(s->pump);
             if (!record_avfoundation_worker_free(s->pump)) return RECORD_AVF_WORKER_BUSY;
+            s->pump=NULL;
+            if (s->source.retire && !s->source.retire(s->source.context))
+               return RECORD_AVF_WORKER_BUSY;
+            s->source.retire=NULL;
          }
          s->pump=NULL; s->stage=AVFS_MUX; return RECORD_AVF_WORKER_PROGRESS;
       case AVFS_MUX:
