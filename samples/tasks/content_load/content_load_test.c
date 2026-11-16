@@ -1540,8 +1540,10 @@ static void lane_queue_survives(void)
  * the close unloads the library), and the wait is spent in the frame
  * loop - frames presented, retro_run never entered - rather than
  * blocking inside one frame. */
-/* Frames the close waits with the save held inside the core */
-#define CLOSE_SAVE_HELD_FRAMES 3
+/* Frames a close or quit waits with the save held inside the core */
+#define SAVE_HELD_FRAMES 3
+/* A close or quit that has not ended in this long never will */
+#define SAVE_WAIT_MAX_USEC 60000000
 
 static void core_hold_serialize(unsigned on)
 {
@@ -1559,6 +1561,7 @@ static void lane_close_waits_for_save(void)
    unsigned had = failures;
    unsigned i, runs_at_wait = 0, presented_waiting = 0, waited = 0;
    bool ran_while_closing = false, held = false;
+   retro_time_t deadline;
    settings_t *settings = config_get_ptr();
 
    /* The core runs (menu closed) so a save can be taken. */
@@ -1596,9 +1599,11 @@ static void lane_close_waits_for_save(void)
 
    /* The save is written under the per-frame I/O window, so the frames
     * it takes follow the machine's speed: a dozen on a release build,
-    * some five hundred under TSan.  The bound only stops a close that
-    * never ends. */
-   for (i = 0; i < 20000 && runloop_is_content_switching(); i++)
+    * some five hundred under TSan.  The bound is time, as the frames
+    * are not paced; it only stops a close that never ends. */
+   deadline = cpu_features_get_time_usec() + SAVE_WAIT_MAX_USEC;
+   for (i = 0;    cpu_features_get_time_usec() < deadline
+               && runloop_is_content_switching(); i++)
    {
       unsigned before = presented;
       pump(1);
@@ -1614,7 +1619,7 @@ static void lane_close_waits_for_save(void)
          presented_waiting += presented - before;
          CHECK(!content_save_state_in_progress(NULL) || hook_installed(),
                "drivers rebuilt while the close was still waiting");
-         if (held && waited == CLOSE_SAVE_HELD_FRAMES)
+         if (held && waited == SAVE_HELD_FRAMES)
          {
             CHECK(core_export("harness_core_serialize_held"),
                   "the save was not inside the core while the close "
@@ -1680,7 +1685,8 @@ static void lane_quit_waits_for_save(void)
    settings_t *settings        = config_get_ptr();
    unsigned had = failures;
    unsigned i, runs_at_quit, presented_waiting = 0, waited = 0;
-   bool shutdown_early = false;
+   bool shutdown_early = false, held = false, armed = false, seen_held = false;
+   retro_time_t deadline;
    int ret = 1;
 
    if (menu_is_up())
@@ -1696,6 +1702,24 @@ static void lane_quit_waits_for_save(void)
             sizeof(state_dir));
       path_mkdir(state_dir);
    }
+   /* As in the close lane: a background save on the threaded queue,
+    * held inside the core, so the quit finds it in flight however fast
+    * the machine writes it. */
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   task_queue_check();
+   if (task_queue_is_threaded())
+   {
+      set_save_state_in_background(true);
+      core_hold_serialize(1);
+      held  = true;
+      armed = true;
+   }
+   else
+      fprintf(stderr, "[note] quit-waits-for-save lane: no threaded "
+            "queue, the save is not held\n");
+
    /* The slot's file exists from the lanes before, so the save first
     * loads it into the undo buffer and is only pushed once that load
     * is through: the quit has to wait for the pair. */
@@ -1712,9 +1736,13 @@ static void lane_quit_waits_for_save(void)
    CHECK(!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED),
          "shutdown began before the save was written");
 
-   /* As the main loop drives it, the queue checked after each frame;
-    * the bound only stops a quit that never ends. */
-   for (i = 0; i < 20000; i++)
+   /* As the main loop drives it, the queue checked after each frame.
+    * The bound is time, not frames: this loop's frames are not paced,
+    * and a threaded queue's tasks take what time they take - a
+    * hundred thousand frames go by in the 100 ms the save needs. It
+    * only stops a quit that never ends. */
+   deadline = cpu_features_get_time_usec() + SAVE_WAIT_MAX_USEC;
+   for (i = 0; cpu_features_get_time_usec() < deadline; i++)
    {
       unsigned before = presented;
       ret = runloop_iterate();
@@ -1725,7 +1753,25 @@ static void lane_quit_waits_for_save(void)
       presented_waiting += presented - before;
       if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
          shutdown_early = true;
+      /* The save reaches the core once its backup load is through:
+       * held there for some frames, then let go. */
+      if (held && waited >= SAVE_HELD_FRAMES
+            && core_export("harness_core_serialize_held"))
+      {
+         seen_held = true;
+         core_hold_serialize(0);
+         held = false;
+      }
    }
+   /* Never leave a worker inside the core */
+   core_hold_serialize(0);
+   CHECK(!armed || seen_held,
+         "the save was never inside the core while the quit waited");
+   set_save_state_in_background(false);
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   task_queue_check();
    CHECK(ret == -1, "the loop did not end after the save (%u frames)", waited);
    CHECK(waited >= 1, "the quit never waited for the save (%u frames)", waited);
    CHECK(presented_waiting >= 1,
