@@ -30,8 +30,19 @@ menu's blending on (an XRGB frame's alpha is empty), drew the first
 pass with whatever program was bound, and read the frame from a
 texture of the size gl2 uses rather than its own.
 
+Then the rest of what a GLSL preset does, on the software frame:
+
+- multi.glslp: two passes, the first into a framebuffer twice the
+  frame's size, the second to the viewport: inverted, where it belongs;
+- history.glslp, with the frame swapping its halves every frame: each
+  half the average of this frame and the last (PrevTexture), so an
+  even yellow;
+- feedback.glslp: half the frame and half the pass's own last output
+  (PassFeedback0), which settles on the frame itself;
+- invert.glslp with the menu opened and closed over it: still inverted.
+
 Usage: run.py <retroarch> <output dir>
-Needs Xvfb, ImageMagick and a C compiler.
+Needs Xvfb, ImageMagick, xdotool and a C compiler.
 """
 
 import os
@@ -63,6 +74,8 @@ def write_cfg(path, d, scene):
     scene.pop('_hw', None)
     scene.pop('_preset', None)
     scene.pop('_big', None)
+    scene.pop('_flip', None)
+    scene.pop('_menu', None)
     cfg = {
         'video_driver': 'glcore',
         'video_context_driver': '',
@@ -130,6 +143,9 @@ def shoot(exe, out_dir, name, scene):
     env = dict(os.environ, DISPLAY=display, LIBGL_ALWAYS_SOFTWARE='1')
     env.pop('PATTERN_HW', None)
     env.pop('PATTERN_BIG', None)
+    env.pop('PATTERN_FLIP', None)
+    if scene.get('_flip'):
+        env['PATTERN_FLIP'] = '1'
     if scene.get('_hw'):
         env['PATTERN_HW'] = '1'
     if scene.get('_big'):
@@ -155,6 +171,14 @@ def shoot(exe, out_dir, name, scene):
             last = None
             latest = None
             seen = 0
+            if scene.get('_menu'):
+                # Up, then back to the game, before anything is judged
+                time.sleep(4)
+                for _ in range(2):
+                    subprocess.run(['xdotool', 'keydown', 'F1'], env=env)
+                    time.sleep(0.3)
+                    subprocess.run(['xdotool', 'keyup', 'F1'], env=env)
+                    time.sleep(3)
             while time.monotonic() < deadline and ra.poll() is None:
                 time.sleep(1)
                 cur = grab(display)
@@ -162,7 +186,7 @@ def shoot(exe, out_dir, name, scene):
                     continue
                 latest = cur
                 seen += 1
-                if scene in (RIBBON, BOKEH):
+                if scene in (RIBBON, BOKEH) or scene.get('_flip'):
                     if seen >= 6:
                         shot = cur
                         break
@@ -293,6 +317,33 @@ def main():
                       'right edge and bottom left %s, want %s'
                       % (name, got, want))
                 fails += 1
+
+    # The rest of a preset, on the software frame
+    yellow = (128, 128, 0)
+    for name, scene, want in (
+            ('sw-multi', {'_preset': os.path.join(HERE, 'multi.glslp')},
+             inverted),
+            ('sw-history', {'_preset': os.path.join(HERE, 'history.glslp'),
+                            '_flip': True},
+             ((0, 0, 255), yellow, yellow, yellow, yellow)),
+            ('sw-feedback', {'_preset': os.path.join(HERE,
+                                                     'feedback.glslp')},
+             plain),
+            ('sw-preset-menu', {'_preset': preset, '_menu': True},
+             inverted)):
+        scene['_core'] = core
+        shot, _ = shoot(exe, out_dir, name, scene)
+        got = shot and (pixel(shot, W // 2, H // 10),
+                        pixel(shot, W // 4, H * 3 // 5),
+                        pixel(shot, W * 3 // 4, H * 3 // 5),
+                        pixel(shot, W * 39 // 40, H * 3 // 5),
+                        pixel(shot, W // 40, H * 39 // 40))
+        if got and all(near(g, w) for g, w in zip(got, want)):
+            print('PASS %s: as the preset draws it %s' % (name, got))
+        else:
+            print('FAIL %s: the frame at the top, left, right, right edge '
+                  'and bottom left %s, want %s' % (name, got, want))
+            fails += 1
 
     print('glcore_glsl_menu: %s' % ('%d check(s) failed' % fails if fails
                                     else 'all checks passed'))

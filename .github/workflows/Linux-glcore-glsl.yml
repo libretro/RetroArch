@@ -10,7 +10,9 @@ name: CI Linux glcore without slang
 # the Ribbon (with its glow) and Bokeh show. Then a test core's frames,
 # software and hardware, 320x240 and 640x480, with no preset and through
 # a GLSL preset: each where it belongs and the right way up, inverted
-# through the preset.
+# through the preset. Then two passes at their own sizes, a shader that
+# reads the frame before, one that reads its own last output, and the
+# menu opened and closed over a preset.
 
 on:
   push:
@@ -58,7 +60,7 @@ jobs:
     name: Run retroarch's glcore without slang under Xvfb and look at the menu
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential zlib1g-dev ccache python3 xvfb imagemagick libgl1-mesa-dri libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxxf86vm-dev libxrandr-dev libxinerama-dev libgl-dev libegl-dev
+      APT_PKGS: build-essential zlib1g-dev ccache python3 xvfb imagemagick xdotool libgl1-mesa-dri libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxxf86vm-dev libxrandr-dev libxinerama-dev libgl-dev libegl-dev
     timeout-minutes: 25
 
     steps:

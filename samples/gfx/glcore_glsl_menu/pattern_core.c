@@ -4,8 +4,9 @@
  * draws on a GL 3.2 core-profile hardware context, by scissored clears
  * with every GL entry point from the frontend; otherwise it hands over
  * an XRGB8888 software frame. With PATTERN_BIG set the frame is 640x480,
- * larger than the 512 texels a 320x240 frame fits in. It needs no
- * content. */
+ * larger than the 512 texels a 320x240 frame fits in. With PATTERN_FLIP
+ * set a software frame swaps its red and green halves every frame, for
+ * shaders that read the frame before. It needs no content. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,9 @@ static retro_video_refresh_t video_cb;
 static retro_environment_t env_cb;
 static retro_input_poll_t poll_cb;
 static struct retro_hw_render_callback hw;
-static int use_hw, have_ctx;
+static int use_hw, have_ctx, flip;
+static unsigned frames;
+static uint32_t fb_flipped[MAX_W * MAX_H];
 static uint32_t fb[MAX_W * MAX_H];
 static unsigned W = 320, H = 240;
 
@@ -62,6 +65,7 @@ void retro_set_input_state(retro_input_state_t cb) { (void)cb; }
 void retro_init(void)
 {
    use_hw = getenv("PATTERN_HW") != NULL;
+   flip   = getenv("PATTERN_FLIP") != NULL;
    if (getenv("PATTERN_BIG"))
    {
       W = MAX_W;
@@ -110,8 +114,12 @@ bool retro_load_game(const struct retro_game_info *g)
       unsigned x, y;
       for (y = 0; y < H; y++)
          for (x = 0; x < W; x++)
+         {
             fb[y * W + x] = y < H / 4 ? 0x0000FFu
                : (x < W / 2 ? 0xFF0000u : 0x00FF00u);
+            fb_flipped[y * W + x] = y < H / 4 ? 0x0000FFu
+               : (x < W / 2 ? 0x00FF00u : 0xFF0000u);
+         }
    }
    return true;
 }
@@ -120,7 +128,7 @@ void retro_run(void)
    poll_cb();
    if (!use_hw)
    {
-      video_cb(fb, W, H, W * 4);
+      video_cb((flip && (frames++ & 1)) ? fb_flipped : fb, W, H, W * 4);
       return;
    }
    if (!have_ctx)

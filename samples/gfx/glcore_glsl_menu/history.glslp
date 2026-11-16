@@ -1,0 +1,3 @@
+shaders = 1
+shader0 = history.glsl
+filter_linear0 = false
