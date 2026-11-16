@@ -368,7 +368,6 @@ typedef struct xmb_handle
     * when no retry is pending */
    retro_time_t current_menu_icon_retry_until;
 
-   char *box_message;
    char *bg_file_path;
 
    file_list_t horizontal_list;   /* ptr alignment */
@@ -510,6 +509,9 @@ typedef struct xmb_handle
 
    char entry_index_str[32];
    char entry_index_offset;
+
+   /* The message box's text, taken each iteration and drawn once */
+   char box_message[MENU_LABEL_MAX_LENGTH];
 
    /* The menu font path the fonts are built from. xmb_render()
     * watches it alongside the scale factor and schedules the same
@@ -1305,19 +1307,7 @@ static void xmb_messagebox(void *data, const char *message)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (xmb && message && *message)
-   {
-      /* Free any previously-set box_message before overwriting.
-       * The render path at line ~9215 consumes box_message
-       * exactly once (strlcpy to stack msg, then free + NULL),
-       * but nothing prevents xmb_messagebox from being called
-       * twice between renders (e.g. rapid error notifications,
-       * or a second messagebox triggered by a background task
-       * completion before the menu has repainted).  Pre-patch
-       * the second strdup leaked the first one. */
-      if (xmb->box_message)
-         free(xmb->box_message);
-      xmb->box_message = strdup(message);
-   }
+      strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
 /* A confirm box's height on screen with n lines of text and stack_h
@@ -8811,6 +8801,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned i;
    char title_msg[128];
    char msg[1024];
+   const char *box                     = msg;
    char title_truncated[NAME_MAX_LENGTH];
    gfx_thumbnail_shadow_t thumbnail_shadow;
    size_t selection                    = 0;
@@ -9919,11 +9910,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       draw_caret                  = true;
    }
 
-   if (xmb->box_message && *xmb->box_message)
+   if (*xmb->box_message)
    {
-      strlcpy(msg, xmb->box_message, sizeof(msg));
-      free(xmb->box_message);
-      xmb->box_message  = NULL;
+      box               = xmb->box_message;
       render_background = true;
       draw_caret        = false;
    }
@@ -9934,11 +9923,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb_draw_dark_layer(xmb, p_disp, dispctx,
                userdata, video_info->dims,
                (input_dialog_display_kb) ? 0.95f : 0.75f);
-      if (xmb->font && *msg)
+      if (xmb->font && *box)
          xmb_render_messagebox_internal(userdata, video_info, p_disp,
                dispctx,
                video_info->dims,
-               xmb, msg, draw_caret, &mymat);
+               xmb, box, draw_caret, &mymat);
+      xmb->box_message[0] = '\0';
    }
 
    /* Cursor image */
@@ -10201,8 +10191,6 @@ static void xmb_free(void *data)
       gfx_display_mesh_free(xmb->ribbon_mesh);
       xmb->ribbon_mesh = NULL;
 
-      if (xmb->box_message)
-         free(xmb->box_message);
       if (xmb->bg_file_path)
          free(xmb->bg_file_path);
       free(xmb->wrap_scratch);
