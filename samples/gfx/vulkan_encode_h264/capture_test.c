@@ -23,7 +23,7 @@ static void *test_calloc(size_t count, size_t bytes)
 static vulkan_encode_pool_t pool;
 static vulkan_encode_capture_ops_t ops;
 static unsigned calls, fail_at, live, barriers, copies, binds, pushes,
-    dispatches, updates;
+    dispatches, updates, expected_mode;
 static bool direct, initialized, p010;
 static VkImageLayout source_layout;
 static VkResult startup(unsigned bit, uintptr_t *handle)
@@ -346,7 +346,7 @@ static VKAPI_ATTR void VKAPI_CALL push(VkCommandBuffer cmd,
           layout == HANDLE(VkPipelineLayout, 8) &&
           flags == VK_SHADER_STAGE_COMPUTE_BIT && !offset && size == 32);
    assert(p[0] == 192 && p[1] == 128 && p[2] == 3 && p[3] == 2 && p[4] == 185 &&
-          p[5] == 123 && p[6] == 1 && p[7] == 1);
+          p[5] == 123 && p[6] == 1 && p[7] == (1u | (expected_mode << 1)));
    pushes++;
 }
 static VKAPI_ATTR void VKAPI_CALL dispatch(VkCommandBuffer cmd, uint32_t x,
@@ -518,6 +518,21 @@ static int capture_checks(void)
                    copies == (direct ? 0u : 1u) && binds == 2 && pushes == 1 &&
                    dispatches == 1 && updates == 1 && calls == 7 && allocations == allocated);
          }
+      if (p010)
+      {
+         for (expected_mode = 1; expected_mode <= 2; expected_mode++)
+         {
+            source.output_mode = expected_mode;
+            source.format = expected_mode == 1 ? VK_FORMAT_A2B10G10R10_UNORM_PACK32
+               : VK_FORMAT_R16G16B16A16_SFLOAT;
+            barriers = copies = binds = pushes = dispatches = updates = 0;
+            assert(vulkan_encode_capture_record(
+                  c, 15, HANDLE(VkCommandBuffer, 500), &source, initialized));
+            assert(allocations == allocated && updates == 1 && pushes == 1);
+         }
+         expected_mode = source.output_mode = 0;
+         source.format = VK_FORMAT_B8G8R8A8_UNORM;
+      }
 #define BAD(field, value)                                                      \
    do                                                                          \
    {                                                                           \
@@ -531,6 +546,9 @@ static int capture_checks(void)
       BAD(image, VK_NULL_HANDLE);
       BAD(view, VK_NULL_HANDLE);
       BAD(stage, 0);
+      BAD(output_mode, 3);
+      BAD(output_mode, 1);
+      BAD(output_mode, 2);
       BAD(image, pool.slot[15].image);
       BAD(format, VK_FORMAT_B8G8R8A8_SRGB);
       BAD(format, VK_FORMAT_R16G16B16A16_SFLOAT);

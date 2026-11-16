@@ -42,14 +42,17 @@ typedef struct vulkan_encode_capture_source
    VkPipelineStageFlags2 stage;
    VkAccessFlags2 access;
    unsigned width, height, crop_x, crop_y, valid_width, valid_height;
+   /* 0: SDR BT.709; 1: BT.2020/PQ; 2: linear scRGB, 1.0 = 80 nits. */
+   unsigned output_mode;
    bool limited_range, flip_y;
 } vulkan_encode_capture_source_t;
 /* Cold worker startup. Shader matches the pool's direct-plane or packed
  * buffer mode. Code is borrowed only during construction; pool/device/ops
  * through free. Packed NV12 requires a coded width divisible by four.
- * Shader: source sampler at0; direct Y/UV at1/2 or packed NV12 buffer at1.
- * Workgroup8x8, each invocation covers2x2(direct) or4x2(buffer) pixels.
- * Push words: coded width/height,crop x/y,valid width/height,limited,flip. */
+ * Shader: source sampler at0; direct Y/UV at1/2 or packed conversion buffer at1.
+ * Workgroup8x8, each invocation covers2x2(P010/direct) or4x2(NV12 buffer).
+ * Push words: coded width/height,crop x/y,valid width/height,limited,flags.
+ * Flags: bit0 flip; bits1/2 PQ/scRGB input (P010 only). */
 vulkan_encode_capture_t *vulkan_encode_capture_new(
       const vulkan_encode_capture_config_t *config,
       const vulkan_encode_capture_ops_t *ops);
@@ -58,12 +61,12 @@ vulkan_encode_capture_t *vulkan_encode_capture_new(
 vulkan_encode_capture_t *vulkan_encode_capture_new_compiled(
       const vulkan_encode_pool_t *pool, const vulkan_encode_capture_ops_t *ops,
       char *error, size_t capacity);
-/* NV12 and P010 output preserve SDR transfer; P010 alone does not imply HDR.
+/* SDR stays BT.709. HDR input requires P010 with BT.2020/PQ encoder tags.
  * One producer, outside a render pass, on its existing command buffer.
  * The caller owns a free pool slot, waits for its previous done value on the
  * GPU, then signals ready after submission. Source image/view and this
- * component survive producer completion. Source is sampled SDR UNORM with
- * BT.709 primaries. Encoded transfer is preserved and tagged by the encoder.
+ * component survive producer completion. PQ RGB10 passes through; linear
+ * scRGB FP16 converts to BT.2020/PQ once. No tone mapping is applied.
  * Source is restored to its supplied layout/stage/access.
  * No submission, allocation, polling or host readback. False records nothing.
  * initialized describes whether this slot's image already reached GENERAL. */

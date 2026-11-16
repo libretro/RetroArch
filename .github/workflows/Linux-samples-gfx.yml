@@ -70,7 +70,7 @@ jobs:
           make -C libretro-common/samples/formats/h265 rh265_slice_info_test CC=${{ matrix.cc }} SANITIZER=address,undefined
           libretro-common/samples/formats/h265/rh265_slice_info_test
       - name: Vulkan H264 encoder parameter contracts
-        run: make -C samples/gfx/vulkan_encode_h264 check hevc_native_capture_test hevc_native_session_test hevc_native_dispatch_test CC=${{ matrix.cc }} SANITIZER=address,undefined
+        run: make -C samples/gfx/vulkan_encode_h264 check hevc_native_capture_test hevc_native_session_test hevc_native_dispatch_test hevc_native_hdr_test CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Execute sampled-plane conversion, foreign ownership and native pixel oracle
         run: ASAN_OPTIONS=detect_leaks=0 make -C samples/gfx/vaapi_hevc gpu-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Opaque VA producer and renderer return publication under TSan

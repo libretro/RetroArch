@@ -2,6 +2,7 @@
 #define HEVC_NATIVE_ADAPTER_HELPERS_ONLY
 #include "hevc_native_adapter_test.c"
 #include "../../../gfx/common/vulkan_encode_capture.h"
+#include <math.h>
 struct native_capture_command
 {
    VkCommandBufferBeginInfo begin;
@@ -24,6 +25,9 @@ struct native_hevc_capture
    VkImage rgb;
    VkImageView rgb_view;
    VkDeviceMemory rgb_memory;
+   VkFormat rgb_format;
+   unsigned output_mode;
+   bool pq_signal;
    char shader_error[512];
 };
 static void load_capture(struct native_hevc_capture *n)
@@ -63,7 +67,7 @@ static void capture_new_source(struct native_hevc_capture *c,const vulkan_encode
    memset(&image,0,sizeof(image));
    image.sType=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
    image.imageType=VK_IMAGE_TYPE_2D;
-   image.format=VK_FORMAT_R8G8B8A8_UNORM;
+   image.format=c->rgb_format ? c->rgb_format : VK_FORMAT_R8G8B8A8_UNORM;
    image.extent.width=pool->extent.width;
    image.extent.height=pool->extent.height;
    image.extent.depth=image.mipLevels=image.arrayLayers=1;
@@ -111,6 +115,36 @@ static void capture_new(struct native_hevc_capture *c,const vulkan_encode_pool_t
    if (!c->capture) fprintf(stderr,"%s\n",c->shader_error);
    assert(c->capture);
 }
+static void capture_hdr_color(struct native_hevc_capture *c, unsigned frame,
+      float *color)
+{
+   static const double to709[3][3] = {
+      {1.6604910, -0.5876411, -0.0728499},
+      {-0.1245505, 1.1328999, -0.0083494},
+      {-0.0181508, -0.1005789, 1.1187297}
+   };
+   static const double peaks[8] = {0, 0.01, 1, 16, 200, 1000, 4000, 12000};
+   double nits[3], value, power, peak = peaks[(frame / 3) % 8];
+   unsigned i, j;
+   for (i = 0; i < 3; i++)
+      nits[i] = frame % 3 == i ? peak : peak / 16.0;
+   for (i = 0; i < 3; i++)
+   {
+      if (c->output_mode == 1 || c->pq_signal)
+      {
+         power = pow(nits[i] / 10000.0, 2610.0 / 16384.0);
+         value = pow((3424.0 / 4096.0 + (2413.0 / 128.0) * power)
+               / (1.0 + (2392.0 / 128.0) * power), 2523.0 / 32.0);
+      }
+      else
+      {
+         value = 0;
+         for (j = 0; j < 3; j++)
+            value += to709[i][j] * nits[j] / 80.0;
+      }
+      color[i] = (float)value;
+   }
+}
 static void capture_frame(struct native_hevc_capture *c,const vulkan_encode_pool_t *pool,
       unsigned frame)
 {
@@ -144,12 +178,15 @@ static void capture_frame(struct native_hevc_capture *c,const vulkan_encode_pool
    r->dependency.pImageMemoryBarriers=&r->image;
    c->adapter.ops.submit.barrier(command,&r->dependency);
    for (i=0;i<3;i++) r->color.float32[i]=(float)(frame%3==i?base:16)/255.0f;
+   if (c->output_mode)
+      capture_hdr_color(c, frame, r->color.float32);
    r->color.float32[3]=1;
    clear(command,c->rgb,VK_IMAGE_LAYOUT_GENERAL,&r->color,1,&r->image.subresourceRange);
    memset(&r->source,0,sizeof(r->source));
    r->source.image=c->rgb;
    r->source.view=c->rgb_view;
-   r->source.format=VK_FORMAT_R8G8B8A8_UNORM;
+   r->source.format=c->rgb_format ? c->rgb_format : VK_FORMAT_R8G8B8A8_UNORM;
+   r->source.output_mode=c->output_mode;
    r->source.layout=VK_IMAGE_LAYOUT_GENERAL;
    r->source.stage=VK_PIPELINE_STAGE_2_TRANSFER_BIT;
    r->source.access=VK_ACCESS_2_TRANSFER_WRITE_BIT;

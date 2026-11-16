@@ -116,6 +116,7 @@ check: all
 	$(RUNNER) ./capture_test$(EXE)
 	$(RUNNER) ./capture_shader_test$(EXE)
 clean:
+	rm -f hevc_native_hdr_test hevc_native_hdr_test.exe
 	rm -f hevc_native_dispatch_test hevc_native_dispatch_test.exe
 	rm -f hevc_native_session_test hevc_native_session_test.exe
 	rm -f hevc_native_capture_test hevc_native_capture_test.exe
@@ -177,3 +178,14 @@ hevc-native-dispatch-check: hevc_native_dispatch_test$(EXE)
 	python3 hevc_native_session_run.py --native-test ./hevc_native_dispatch_test$(EXE) --with-cancel
 .PHONY: hevc-native-dispatch-check
 hevc_native_session_test$(EXE) hevc_native_dispatch_test$(EXE) native_test$(EXE): $(RA)/record/record_gpu_dispatch_vulkan_backend.h $(RA)/record/record_gpu_dispatch_vulkan_hevc.h
+
+HEVC_NATIVE_HDR_SOURCES := $(filter-out hevc_native_capture_test.c,$(HEVC_CAPTURE_SOURCES)) hevc_native_hdr_test.c
+hevc_native_hdr_test$(EXE): $(HEVC_NATIVE_HDR_SOURCES) hevc_native_capture_test.c hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(CAPTURE_HEADERS)
+	$(CC) $(CFLAGS) -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(HEVC_NATIVE_HDR_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl) -lm
+
+hevc-native-hdr-check: hevc_native_hdr_test$(EXE)
+	python3 hevc_native_capture_run.py --native-test ./hevc_native_hdr_test$(EXE) --hdr-mode 1
+	python3 hevc_native_capture_run.py --native-test ./hevc_native_hdr_test$(EXE) --hdr-mode 1 --full
+	python3 hevc_native_capture_run.py --native-test ./hevc_native_hdr_test$(EXE) --hdr-mode 2 --negative
+	python3 hevc_native_capture_run.py --native-test ./hevc_native_hdr_test$(EXE) --hdr-mode 2 --full --negative
+.PHONY: hevc-native-hdr-check
