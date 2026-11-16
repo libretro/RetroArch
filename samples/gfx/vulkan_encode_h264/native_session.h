@@ -122,6 +122,10 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
       c->capture=record_gpu_dispatch_vulkan_capture(owner.job);
       c->capture_borrowed=true;
       assert(c->capture);
+      c->renderer=record_gpu_renderer_vulkan_new(owner.job,1,4,
+            (PFN_vkGetSemaphoreCounterValue)c->device_proc(c->device,
+               c->api_version<VK_API_VERSION_1_2?"vkGetSemaphoreCounterValueKHR":"vkGetSemaphoreCounterValue"));
+      assert(c->renderer);
       queue=NULL;
    }
    else
@@ -137,6 +141,12 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
    assert(pool);
    if (direct && !pool->storage_images)
    {
+      if (c->renderer)
+      {
+         assert(record_gpu_renderer_vulkan_finish(c->renderer,false)==RECORD_GPU_QUEUE_OK);
+         assert(record_gpu_renderer_vulkan_free(c->renderer));
+         c->renderer=NULL;
+      }
       if (owner.job) record_gpu_dispatch_vulkan_cancel(owner.job);
       else record_gpu_session_vulkan_cancel(owner.session);
       assert(session_finish_native(&owner));
@@ -150,24 +160,30 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
    }
    if (!direct) assert(!pool->storage_images);
    capture_new(c,pool);
+   if (c->renderer)
+      capture_discard_native(c,pool);
    for (frame=0;frame<12;frame++)
    {
-      for (retry=0;retry<10000;retry++)
+      if (!owner.job)
       {
-         result=owner.job ? record_gpu_dispatch_vulkan_acquire(owner.job,&descriptor.slot)
-            : record_gpu_queue_acquire(queue,&descriptor.slot);
-         if (result==RECORD_GPU_QUEUE_OK) break;
-         assert(result==RECORD_GPU_QUEUE_BUSY);
-         assert(session_step_native(c,&owner)!=RECORD_VULKAN_OUTPUT_ERROR);
+         for (retry=0;retry<10000;retry++)
+         {
+            result=record_gpu_queue_acquire(queue,&descriptor.slot);
+            if (result==RECORD_GPU_QUEUE_OK) break;
+            assert(result==RECORD_GPU_QUEUE_BUSY);
+            assert(session_step_native(c,&owner)!=RECORD_VULKAN_OUTPUT_ERROR);
+         }
+         assert(retry<10000 && descriptor.slot==frame%2);
       }
-      assert(retry<10000 && descriptor.slot==frame%2);
       capture_frame(c,pool,frame);
-      descriptor.timestamp=frame;
-      descriptor.duration=1;
-      descriptor.ready_value=frame+1;
-      descriptor.keyframe=frame%4==0;
-      assert(owner.job ? record_gpu_dispatch_vulkan_submit(owner.job,&descriptor)
-            : record_gpu_queue_submit(queue,&descriptor));
+      if (!owner.job)
+      {
+         descriptor.timestamp=frame;
+         descriptor.duration=1;
+         descriptor.ready_value=frame+1;
+         descriptor.keyframe=frame%4==0;
+         assert(record_gpu_queue_submit(queue,&descriptor));
+      }
       for (i=0;i<1600;i++)
       {
          double phase=6.2831853071795864769*(frame*1600+i)/48000.0;
@@ -184,17 +200,38 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
       }
       assert(retry<10000);
    }
-   wait_ready=(PFN_vkWaitSemaphores)c->device_proc(c->device,
-         c->api_version<VK_API_VERSION_1_2?"vkWaitSemaphoresKHR":"vkWaitSemaphores");
-   assert(wait_ready);
-   memset(&wait,0,sizeof(wait));
-   wait.sType=VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
-   wait.semaphoreCount=1;
-   wait.pSemaphores=&pool->ready;
-   wait.pValues=&ready;
-   assert(wait_ready(c->device,&wait,2000000000)==VK_SUCCESS);
+   if (c->renderer)
+   {
+      for (retry=0;retry<10000;retry++)
+      {
+         result=record_gpu_renderer_vulkan_finish(c->renderer,false);
+         if (result==RECORD_GPU_QUEUE_OK) break;
+         assert(result==RECORD_GPU_QUEUE_BUSY);
+         native_record_pause();
+      }
+      assert(retry<10000 && c->producer_completion[1]==13);
+      puts("PASS native renderer reset/discard and ready-value gap");
+   }
+   else
+   {
+      wait_ready=(PFN_vkWaitSemaphores)c->device_proc(c->device,
+            c->api_version<VK_API_VERSION_1_2?"vkWaitSemaphoresKHR":"vkWaitSemaphores");
+      assert(wait_ready);
+      memset(&wait,0,sizeof(wait));
+      wait.sType=VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+      wait.semaphoreCount=1;
+      wait.pSemaphores=&pool->ready;
+      wait.pValues=&ready;
+      assert(wait_ready(c->device,&wait,2000000000)==VK_SUCCESS);
+   }
    c->ops.pool.destroy_commands(c->device,c->producer_commands,NULL);
    capture_free(c);
+   if (c->renderer)
+   {
+      assert(record_gpu_renderer_vulkan_finish(c->renderer,false)==RECORD_GPU_QUEUE_OK);
+      assert(record_gpu_renderer_vulkan_free(c->renderer));
+      c->renderer=NULL;
+   }
    assert(session_finish_native(&owner));
    for (retry=0;retry<10000;retry++)
    {

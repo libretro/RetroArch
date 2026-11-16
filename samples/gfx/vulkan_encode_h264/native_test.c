@@ -11,6 +11,7 @@
 #include "../../../gfx/common/vulkan_encode_h264.h"
 #include "../../../gfx/common/vulkan_encode_capture.h"
 #include "../../../record/record_gpu_session_vulkan.h"
+#include "../../../record/record_gpu_renderer_vulkan.h"
 #include "../../../gfx/common/vulkan_encode_device.h"
 
 struct native_capture_command
@@ -23,7 +24,7 @@ struct native_capture_command
    VkSubmitInfo submit;
    VkPipelineStageFlags wait_stage;
    vulkan_encode_capture_source_t source;
-   uint64_t ready,done;
+   uint64_t ready,done,binary_value;
 };
 
 struct native_encoder
@@ -43,6 +44,7 @@ struct native_encoder
    VkQueueFlags queue_flags;
    VkCommandPool producer_commands;
    VkCommandBuffer producer[2];
+   uint64_t producer_completion[2];
    VkBuffer upload;
    VkDeviceMemory upload_memory;
    void *upload_data;
@@ -63,10 +65,12 @@ struct native_encoder
    struct native_capture_command capture_command;
    vulkan_encode_capture_ops_t capture_ops;
    vulkan_encode_capture_t *capture;
+   record_gpu_renderer_vulkan_t *renderer;
    bool capture_borrowed;
    VkImage rgb;
    VkImageView rgb_view;
    VkDeviceMemory rgb_memory;
+   VkSemaphore capture_signals[2];
    char shader_error[512];
    vulkan_encode_h264_ops_t ops;
    vulkan_encode_packet_t packets[2];
@@ -572,6 +576,7 @@ static void upload_frame(struct native_encoder *c,const vulkan_encode_pool_t *po
    submit.pSignalSemaphores=&pool->ready;
    assert(c->ops.submit.submit(c->queue,1,&submit,VK_NULL_HANDLE)==VK_SUCCESS);
 }
+static void native_record_pause(void);
 #include "native_capture.h"
 static int encode_pictures(struct native_encoder *c,const char *path,unsigned capture_mode)
 {

@@ -9,6 +9,7 @@ static void capture_new(struct native_encoder *c,const vulkan_encode_pool_t *poo
    VkImageViewCreateInfo view;
    VkCommandPoolCreateInfo commands;
    VkCommandBufferAllocateInfo command;
+   VkSemaphoreCreateInfo semaphore;
    unsigned i;
    memset(&image,0,sizeof(image));
    image.sType=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -52,11 +53,46 @@ static void capture_new(struct native_encoder *c,const vulkan_encode_pool_t *poo
    command.level=VK_COMMAND_BUFFER_LEVEL_PRIMARY;
    command.commandBufferCount=2;
    assert(c->ops.pool.allocate_command(c->device,&command,c->producer)==VK_SUCCESS);
+   if (c->renderer)
+   {
+      semaphore.sType=VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+      semaphore.pNext=NULL;
+      semaphore.flags=0;
+      for (i=0;i<2;i++)
+         assert(c->ops.pool.create_semaphore(c->device,&semaphore,NULL,&c->capture_signals[i])==VK_SUCCESS);
+   }
    if (!c->capture_borrowed)
       c->capture=vulkan_encode_capture_new_compiled(pool,&c->capture_ops,
             c->shader_error,sizeof(c->shader_error));
    if (!c->capture) fprintf(stderr,"%s\n",c->shader_error);
    assert(c->capture);
+}
+static void capture_discard_native(struct native_encoder *c,const vulkan_encode_pool_t *pool)
+{
+   VkCommandBufferBeginInfo begin;
+   VkSubmitInfo submit;
+   vulkan_encode_capture_source_t source;
+   memset(&begin,0,sizeof(begin));
+   begin.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   assert(c->ops.submit.begin(c->producer[0],&begin)==VK_SUCCESS);
+   memset(&source,0,sizeof(source));
+   source.image=c->rgb;
+   source.view=c->rgb_view;
+   source.format=VK_FORMAT_R8G8B8A8_UNORM;
+   source.layout=VK_IMAGE_LAYOUT_GENERAL;
+   source.stage=VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+   source.access=VK_ACCESS_2_TRANSFER_WRITE_BIT;
+   source.width=source.valid_width=pool->extent.width;
+   source.height=source.valid_height=pool->extent.height;
+   assert(record_gpu_renderer_vulkan_record(c->renderer,c->producer[0],&source,0)==RECORD_GPU_QUEUE_OK);
+   assert(c->ops.submit.end(c->producer[0])==VK_SUCCESS);
+   memset(&submit,0,sizeof(submit));
+   submit.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.commandBufferCount=1;
+   submit.pCommandBuffers=&c->producer[0];
+   assert(record_gpu_renderer_vulkan_submission(c->renderer,&submit));
+   assert(c->ops.submit.reset_command(c->producer[0],0)==VK_SUCCESS);
+   assert(record_gpu_renderer_vulkan_discard(c->renderer));
 }
 static void capture_frame(struct native_encoder *c,const vulkan_encode_pool_t *pool,
       unsigned frame)
@@ -64,7 +100,25 @@ static void capture_frame(struct native_encoder *c,const vulkan_encode_pool_t *p
    struct native_capture_command *r=&c->capture_command;
    PFN_vkCmdClearColorImage clear;
    VkCommandBuffer command=c->producer[frame%2];
-   unsigned i,base=32+frame*12;
+   const VkSubmitInfo *submission;
+   VkSemaphoreWaitInfo reuse;
+   PFN_vkWaitSemaphores wait_reuse;
+   uint64_t previous=c->producer_completion[frame%2];
+   unsigned i,retry,base=32+frame*12;
+   int result;
+   if (c->renderer && frame>=2)
+   {
+      /* Fixture command reuse, independent of encoder slot ownership. */
+      wait_reuse=(PFN_vkWaitSemaphores)c->device_proc(c->device,
+            c->api_version<VK_API_VERSION_1_2?"vkWaitSemaphoresKHR":"vkWaitSemaphores");
+      assert(wait_reuse);
+      memset(&reuse,0,sizeof(reuse));
+      reuse.sType=VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+      reuse.semaphoreCount=1;
+      reuse.pSemaphores=&pool->ready;
+      reuse.pValues=&previous;
+      assert(wait_reuse(c->device,&reuse,2000000000)==VK_SUCCESS);
+   }
    r->ready=frame+1;
    r->done=frame-1;
    r->wait_stage=VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
@@ -103,7 +157,19 @@ static void capture_frame(struct native_encoder *c,const vulkan_encode_pool_t *p
    r->source.width=r->source.valid_width=pool->extent.width;
    r->source.height=r->source.valid_height=pool->extent.height;
    r->source.limited_range=true;
-   assert(vulkan_encode_capture_record(c->capture,frame%2,command,&r->source,frame>=2));
+   if (c->renderer)
+   {
+      for (retry=0;retry<10000;retry++)
+      {
+         result=record_gpu_renderer_vulkan_record(c->renderer,command,&r->source,frame);
+         if (result==RECORD_GPU_QUEUE_OK) break;
+         assert(result==RECORD_GPU_QUEUE_BUSY);
+         native_record_pause();
+      }
+      assert(retry<10000);
+   }
+   else
+      assert(vulkan_encode_capture_record(c->capture,frame%2,command,&r->source,frame>=2));
    assert(c->ops.submit.end(command)==VK_SUCCESS);
    memset(&r->timeline,0,sizeof(r->timeline));
    r->timeline.sType=VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
@@ -120,13 +186,43 @@ static void capture_frame(struct native_encoder *c,const vulkan_encode_pool_t *p
    r->submit.waitSemaphoreCount=frame>=2?1:0;
    r->submit.pWaitSemaphores=frame>=2?&pool->done:NULL;
    r->submit.pWaitDstStageMask=frame>=2?&r->wait_stage:NULL;
-   assert(c->ops.submit.submit(c->producer_queue,1,&r->submit,VK_NULL_HANDLE)==VK_SUCCESS);
+   if (c->renderer)
+   {
+      /* Preserve the renderer's binary dependencies and timeline node. */
+      r->binary_value=0;
+      r->timeline.signalSemaphoreValueCount=1;
+      r->timeline.pSignalSemaphoreValues=&r->binary_value;
+      r->timeline.waitSemaphoreValueCount=frame?1:0;
+      r->timeline.pWaitSemaphoreValues=frame?&r->binary_value:NULL;
+      r->submit.waitSemaphoreCount=frame?1:0;
+      r->submit.signalSemaphoreCount=1;
+      r->submit.pWaitSemaphores=frame?&c->capture_signals[(frame-1)%2]:NULL;
+      r->submit.pSignalSemaphores=&c->capture_signals[frame%2];
+      r->submit.pWaitDstStageMask=frame?&r->wait_stage:NULL;
+      submission=record_gpu_renderer_vulkan_submission(c->renderer,&r->submit);
+      assert(submission);
+      for (i=0;i<submission->signalSemaphoreCount;i++)
+         if (submission->pSignalSemaphores[i]==pool->ready)
+            c->producer_completion[frame%2]=((const VkTimelineSemaphoreSubmitInfo*)submission->pNext)->pSignalSemaphoreValues[i];
+      assert(c->producer_completion[frame%2]>previous);
+      assert(c->ops.submit.submit(c->producer_queue,1,submission,VK_NULL_HANDLE)==VK_SUCCESS);
+      assert(record_gpu_renderer_vulkan_submitted(c->renderer,VK_SUCCESS));
+   }
+   else
+      assert(c->ops.submit.submit(c->producer_queue,1,&r->submit,VK_NULL_HANDLE)==VK_SUCCESS);
 }
 static void capture_free(struct native_encoder *c)
 {
+   unsigned i;
    if (!c->capture_borrowed)
       vulkan_encode_capture_free(c->capture);
    c->capture=NULL;
+   for (i=0;i<2;i++)
+      if (c->capture_signals[i])
+      {
+         c->ops.pool.destroy_semaphore(c->device,c->capture_signals[i],NULL);
+         c->capture_signals[i]=VK_NULL_HANDLE;
+      }
    c->ops.pool.destroy_view(c->device,c->rgb_view,NULL);
    c->ops.pool.destroy_image(c->device,c->rgb,NULL);
    c->ops.pool.free_memory(c->device,c->rgb_memory,NULL);

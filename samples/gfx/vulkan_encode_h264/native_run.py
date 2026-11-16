@@ -50,7 +50,7 @@ if args.capture:
 if args.session:
     evidence['scope'] = 'Native Vulkan GPU capture and recording session MP4/AC3 file output; independent picture/sample/timestamp oracle'
 if args.dispatcher:
-    evidence['scope'] += '; session/file and capture compiler/resource lifetime owned by dedicated dispatcher worker'
+    evidence['scope'] += '; session/file and capture compiler/resource lifetime owned by dedicated dispatcher worker; shipping renderer submission bridge and producer timeline retirement'
 if args.device_plan:
     evidence['scope'] += '; shipping renderer device plan, Vulkan 1.1 instance and KHR synchronization/timeline entrypoints'
 evidence['source'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
@@ -101,7 +101,8 @@ if not args.binary:
         'record/record_file_posix.c', 'record/record_mediacodec_file.c', 'libretro-common/queues/retro_spsc.c',
         'libretro-common/formats/ac3/rac3_frame.c', 'libretro-common/formats/ac3/rac3_encode.c']
     sources += ['record/record_gpu_dispatch_vulkan.c', 'samples/record/gpu_av_output/rthreads_compat.c',
-        'libretro-common/rthreads/retro_eventcount.c', 'gfx/common/vulkan_encode_device.c']
+        'libretro-common/rthreads/retro_eventcount.c', 'gfx/common/vulkan_encode_device.c',
+        'record/record_gpu_renderer_vulkan.c']
     result = run(compiler + flags + [str(repo / name) for name in sources] + ['-o', str(binary)]
                  + (['-lm'] if os.name == 'nt' else ['-pthread', '-ldl', '-lm']), 120)
     if result.returncode:
@@ -127,6 +128,8 @@ if result.returncode == 0 and args.pictures:
     try:
         dimensions = re.search(r'extent=(\d+)x(\d+)', output)
         assert dimensions and ('PASS native dispatcher A/V pictures=12' if args.dispatcher else 'PASS native session A/V pictures=12' if args.session else 'PASS native coded pictures=12') in output
+        if args.dispatcher:
+            assert 'PASS native renderer reset/discard and ready-value gap' in output
         if args.capture and not args.session:
             assert 'PASS native two in-flight pictures, full-ring BUSY, borrowed cancellation and drain' in output
             evidence['submitted_pictures_including_cancellation'] = 14

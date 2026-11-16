@@ -9,7 +9,10 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: native_test$(EXE) params_test$(EXE) session_test$(EXE) picture_test$(EXE) submit_test$(EXE) pool_test$(EXE) encoder_test$(EXE) worker_test$(EXE) capture_test$(EXE) capture_shader_test$(EXE)
-all: device_plan_test$(EXE)
+all: device_plan_test$(EXE) renderer_test$(EXE)
+
+renderer_test$(EXE): renderer_test.c $(RA)/record/record_gpu_renderer_vulkan.c $(RA)/record/record_gpu_renderer_vulkan.h $(RA)/record/record_gpu_dispatch_vulkan.h $(RA)/record/record_gpu_session_vulkan.h $(RA)/gfx/common/vulkan_encode_capture.h $(RA)/gfx/common/vulkan_encode_pool.h $(RA)/record/record_gpu_queue.h
+	$(CC) $(CFLAGS) renderer_test.c -o $@ $(LDFLAGS)
 device_plan_test$(EXE): device_plan_test.c $(RA)/gfx/common/vulkan_encode_device.c $(RA)/gfx/common/vulkan_encode_device.h
 	$(CC) $(CFLAGS) device_plan_test.c -o $@ $(LDFLAGS)
 params_test$(EXE): params_test.c $(RA)/gfx/common/vulkan_encode_h264_params.h $(RA)/gfx/include/vk_video/vulkan_video_codec_h264std.h
@@ -36,6 +39,7 @@ capture_test$(EXE): capture_test.c $(RA)/gfx/common/vulkan_encode_capture.c $(CA
 capture_shader_test$(EXE): $(CAPTURE_SHADER_SOURCES) $(CAPTURE_HEADERS) $(RA)/libretro-common/include/gfx/shaders/rslc.h $(RA)/libretro-common/gfx/shaders/rslc_share.h
 	$(CC) $(CFLAGS) -DRSLC_EXTENDED -DRSLC_NO_DXBC $(CAPTURE_SHADER_SOURCES) -o $@ $(LDFLAGS) -lm
 check: all
+	$(RUNNER) ./renderer_test$(EXE)
 	$(RUNNER) ./device_plan_test$(EXE)
 	python3 device_wrapper_test.py --cc "$(CC)" --sanitizer "$(SANITIZER)"
 	$(RUNNER) ./params_test$(EXE)
@@ -48,6 +52,7 @@ check: all
 	$(RUNNER) ./capture_test$(EXE)
 	$(RUNNER) ./capture_shader_test$(EXE)
 clean:
+	rm -f renderer_test renderer_test.exe
 	rm -f device_plan_test device_plan_test.exe
 	rm -f native_test native_test.exe
 	rm -f params_test params_test.exe session_test session_test.exe picture_test picture_test.exe submit_test submit_test.exe pool_test pool_test.exe encoder_test encoder_test.exe worker_test worker_test.exe capture_test capture_test.exe capture_shader_test capture_shader_test.exe
@@ -67,7 +72,8 @@ NATIVE_SOURCES += $(RA)/record/record_gpu_session_vulkan.c $(RA)/record/record_g
    $(RA)/libretro-common/formats/ac3/rac3_encode.c
 NATIVE_SOURCES += $(RA)/record/record_gpu_dispatch_vulkan.c ../../record/gpu_av_output/rthreads_compat.c $(RA)/libretro-common/rthreads/retro_eventcount.c
 NATIVE_SOURCES += $(RA)/gfx/common/vulkan_encode_device.c
-native_test$(EXE): $(NATIVE_SOURCES) native_capture.h native_session.h $(RA)/record/record_gpu_dispatch_vulkan.h
+NATIVE_SOURCES += $(RA)/record/record_gpu_renderer_vulkan.c
+native_test$(EXE): $(NATIVE_SOURCES) native_capture.h native_session.h $(RA)/record/record_gpu_dispatch_vulkan.h $(RA)/record/record_gpu_renderer_vulkan.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread -ldl) -lm
 native-check: native_test$(EXE)
 	$(RUNNER) ./native_test$(EXE)
