@@ -203,7 +203,7 @@ static void ribbon_motion(void)
          prev = b->data[0][0];
          if (step <= 0.0f)
             still++;
-         if (fabsf(step - 0.6f / 144.0f) > 1e-4f)
+         if (fabsf(step - (float)MENU_RIBBON_SPEED / 144.0f) > 1e-4f)
             uneven++;
       }
       CHECK(still == 0, "the ribbon moves on every frame at 144 Hz");

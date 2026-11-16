@@ -8,6 +8,8 @@
 
 #define MENU_RIBBON_PARTICLES 48
 #define MENU_RIBBON_UNIFORMS 50
+/* The sheet's phase a second of menu time */
+#define MENU_RIBBON_SPEED 1.2
 
 typedef struct menu_ribbon_particle
 {
@@ -96,7 +98,8 @@ static INLINE void menu_ribbon_spawn(menu_ribbon_t *r,
    float x = menu_ribbon_random(r) * 2.0f - 1.0f;
    float z = menu_ribbon_random(r) * 1.8f - 0.9f;
    float position[4], lighting[4];
-   menu_ribbon_surface(x, z, (float)(born * 0.6), position, lighting);
+   menu_ribbon_surface(x, z, (float)(born * MENU_RIBBON_SPEED),
+         position, lighting);
    p->born  = born;
    p->x0    = position[0] / position[3];
    p->y0    = position[1] / position[3]
@@ -172,7 +175,7 @@ static INLINE void menu_ribbon_update(menu_ribbon_t *r, double now,
       data[1 + i][2] = 1.25f + 3.8f * p->depth * p->depth * p->depth;
       data[1 + i][3] = fade * (0.16f + 0.22f * p->depth + 2.0f * sparkle);
    }
-   data[0][0]  = (float)(r->time * 0.6);
+   data[0][0]  = (float)(r->time * MENU_RIBBON_SPEED);
    data[49][0] = width ? (float)height / width : 1.0f;
    data[49][1] = height ? 2.0f / height : 0.0f;
    data[49][2] = alpha;
