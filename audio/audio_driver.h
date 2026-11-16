@@ -1718,6 +1718,8 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
  * and ring, and the rate control threshold. The consumer is parked
  * while the state changes hands.
  *
+ * An intentionally inactive output only updates its rate metadata.
+ *
  * Returns: false when the configuration needs the full reinit instead
  * (a DSP filter, time stretch, a core audio callback or discrete extra
  * channels); nothing is changed then.

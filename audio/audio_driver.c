@@ -11460,7 +11460,18 @@ bool audio_driver_set_input_rate(double input)
 #endif
          || settings->bools.audio_time_stretch
          || settings->bools.audio_time_stretch_lowpass)
+   {
+      /* An intentionally idle output has no resampler or device to restart. */
+      if (     !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+            && !audio_st->context_audio_data && !audio_st->resampler_data
+            && (!settings->bools.audio_enable
+               || (audio_st->current_audio && !audio_st->current_audio->init)))
+      {
+         audio_st->input = (float)input;
+         return true;
+      }
       return false;
+   }
 #ifdef HAVE_THREADS
    if (audio_st->pipe_transport_mode != AUDIO_TRANSPORT_NONE)
       return false;

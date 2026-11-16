@@ -582,9 +582,44 @@ static void mixer_session_case(bool threaded, bool playing)
       failures++;
 }
 
+static void idle_rate_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   audio_driver_t driver = audio_null;
+   bool ok;
+   st->current_audio = &driver;
+   settings->bools.audio_enable = true;
+   ok = audio_driver_set_input_rate(44100.0) && st->input == 44100.0f;
+   driver.init = test_init;
+   settings->bools.audio_enable = false;
+   ok = audio_driver_set_input_rate(48000.0) && st->input == 48000.0f && ok;
+   settings->bools.audio_enable = true;
+   ok = !audio_driver_set_input_rate(32000.0) && st->input == 48000.0f && ok;
+   st->current_audio = NULL;
+   ok = !audio_driver_set_input_rate(32000.0) && st->input == 48000.0f && ok;
+   st->current_audio = &driver;
+   settings->bools.audio_enable = false;
+   st->context_audio_data = &driver;
+   ok = !audio_driver_set_input_rate(32000.0) && st->input == 48000.0f && ok;
+   st->context_audio_data = NULL;
+   st->resampler_data = &driver;
+   ok = !audio_driver_set_input_rate(32000.0) && st->input == 48000.0f && ok;
+   st->resampler_data = NULL;
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE);
+   ok = !audio_driver_set_input_rate(32000.0) && st->input == 48000.0f && ok;
+   AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_ACTIVE);
+   ok = !audio_driver_set_input_rate(0.0) && !audio_driver_set_input_rate(-1.0) && ok;
+   printf("idle audio rate metadata and failed-backend recovery: %s\n", ok ? "PASS" : "FAIL");
+   if (!ok)
+      failures++;
+   st->current_audio = NULL;
+   st->input = 0.0f;
+}
 int main(void)
 {
    unsigned format, threaded;
+   idle_rate_case();
    audio_null.init          = test_init;
    audio_null.write         = test_write;
    audio_null.free          = test_free;

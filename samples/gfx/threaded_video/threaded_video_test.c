@@ -38,6 +38,7 @@
 #include "../../../configuration.h"
 #include "../../../command.h"
 #include "../../../driver.h"
+#include "../../../audio/audio_driver.h"
 #include "../../../frontend/frontend_driver.h"
 #include "../../../frontend/frontend.h"
 #include "../../../gfx/video_driver.h"
@@ -3937,6 +3938,53 @@ static void lane_av_info_recording(void)
    video_st->frame_delay_target = saved_target;
    if (failures == had)
       fprintf(stderr, "[pass] AV-info recording: ignored hints retain encoder; parameter changes restart\n");
+}
+
+static void lane_av_info_silent_audio(void)
+{
+   settings_t *settings = config_get_ptr();
+   audio_driver_state_t *audio_st = audio_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct retro_system_av_info orig = video_st->av_info;
+   bool enabled = settings->bools.audio_enable;
+   unsigned th, off, timing, had = failures;
+   settings->bools.audio_enable = true;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   for (th = 0; th < 2; th++)
+   {
+      set_threaded_via_setting(th != 0);
+      run_frames(3);
+      video_thread_wait_idle();
+      CHECK(!audio_st->context_audio_data && !audio_st->resampler_data,
+            "silent AV info: unexpected live audio context");
+      for (off = 0; off < 2; off++)
+         for (timing = 0; timing < 2; timing++)
+         {
+            struct retro_system_av_info info = orig;
+            float *input = audio_st->input_data;
+            const float marker = 0.125f;
+            CHECK(input != NULL, "silent AV info: missing recording scratch");
+            if (!input)
+               continue;
+            settings->bools.audio_enable = off == 0;
+            input[0] = marker;
+            if (timing)
+               info.timing.fps *= 0.999;
+            else
+               info.timing.sample_rate += 44.0;
+            CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info),
+                  "silent AV info: update rejected");
+            CHECK(audio_st->input_data == input && audio_st->input_data[0] == marker,
+                  "silent AV info: timing update recreated audio scratch");
+            runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &orig);
+         }
+   }
+   if (audio_st->input_data)
+      audio_st->input_data[0] = 0.0f;
+   settings->bools.audio_enable = enabled;
+   set_threaded_via_setting(false);
+   if (failures == had)
+      fprintf(stderr, "[pass] silent AV info: timing changes retain scratch, threaded and inline\n");
 }
 
 static void lane_av_info_changes(void)
@@ -14744,6 +14792,7 @@ int main(int argc, char *argv[])
       lane_square_pixel_geometry();
       lane_aspect_hint_changes();
       lane_av_info_recording();
+      lane_av_info_silent_audio();
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
@@ -14788,6 +14837,7 @@ int main(int argc, char *argv[])
       lane_square_pixel_geometry();
       lane_aspect_hint_changes();
       lane_av_info_recording();
+      lane_av_info_silent_audio();
       lane_av_info_changes();
       lane_max_geometry_capacity();
       lane_reinit_frame_ownership();
