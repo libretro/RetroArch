@@ -6,10 +6,12 @@
 #include <string.h>
 #include <stdint.h>
 #include <libretro.h>
+#include <retro_atomic.h>
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <pthread.h>
+#include <sched.h>
 #endif
 
 /* The thread the library was opened on (constructor) and the one
@@ -192,9 +194,32 @@ static unsigned char state_loaded   = 0;
 RETRO_API void harness_core_set_state_mark(unsigned mark)
 { state_mark = (unsigned char)mark; state_loaded = 0; }
 RETRO_API unsigned harness_core_state_loaded(void) { return state_loaded; }
+/* While held, a serialize off the frame-loop thread - a background
+ * save on a task worker - stays inside the core until released, so a
+ * lane can keep a save in flight for as many frames as it needs,
+ * whatever the machine's speed. Never on the frame-loop thread, which
+ * the release has to come from. */
+static retro_atomic_int_t serialize_hold;
+static retro_atomic_int_t serialize_held;
+RETRO_API void harness_core_hold_serialize(unsigned on)
+{ retro_atomic_store_release_int(&serialize_hold, on ? 1 : 0); }
+RETRO_API unsigned harness_core_serialize_held(void)
+{ return (unsigned)retro_atomic_load_acquire_int(&serialize_held); }
 size_t retro_serialize_size(void) { state_calls++; return STATE_SIZE; }
 bool retro_serialize(void *data, size_t size)
 {
+   if (     retro_atomic_load_acquire_int(&serialize_hold)
+         && harness_self_tid() != harness_init_tid)
+   {
+      retro_atomic_store_release_int(&serialize_held, 1);
+      while (retro_atomic_load_acquire_int(&serialize_hold))
+#ifdef _WIN32
+         SwitchToThread();
+#else
+         sched_yield();
+#endif
+      retro_atomic_store_release_int(&serialize_held, 0);
+   }
    state_calls++;
    if (size < STATE_SIZE)
       return false;

@@ -1540,12 +1540,25 @@ static void lane_queue_survives(void)
  * the close unloads the library), and the wait is spent in the frame
  * loop - frames presented, retro_run never entered - rather than
  * blocking inside one frame. */
+/* Frames the close waits with the save held inside the core */
+#define CLOSE_SAVE_HELD_FRAMES 3
+
+static void core_hold_serialize(unsigned on)
+{
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   void (*fn)(unsigned) = lib
+      ? (void (*)(unsigned))dylib_proc(lib, "harness_core_hold_serialize")
+      : NULL;
+   if (fn)
+      fn(on);
+}
+
 static void lane_close_waits_for_save(void)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned had = failures;
    unsigned i, runs_at_wait = 0, presented_waiting = 0, waited = 0;
-   bool ran_while_closing = false;
+   bool ran_while_closing = false, held = false;
    settings_t *settings = config_get_ptr();
 
    /* The core runs (menu closed) so a save can be taken. */
@@ -1553,6 +1566,23 @@ static void lane_close_waits_for_save(void)
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    pump(2);
    CHECK(core_is_up() && !menu_is_up(), "not running the core");
+
+   /* A background save on the threaded queue serializes on a worker,
+    * where the harness core holds it: the save is in flight when the
+    * close comes however fast the machine writes it. */
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   task_queue_check();
+   if (task_queue_is_threaded())
+   {
+      set_save_state_in_background(true);
+      core_hold_serialize(1);
+      held = true;
+   }
+   else
+      fprintf(stderr, "[note] close-waits-for-save lane: no threaded "
+            "queue, the save is not held\n");
 
    configuration_set_int(settings, settings->ints.state_slot, 0);
    CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL), "save state not started");
@@ -1584,8 +1614,23 @@ static void lane_close_waits_for_save(void)
          presented_waiting += presented - before;
          CHECK(!content_save_state_in_progress(NULL) || hook_installed(),
                "drivers rebuilt while the close was still waiting");
+         if (held && waited == CLOSE_SAVE_HELD_FRAMES)
+         {
+            CHECK(core_export("harness_core_serialize_held"),
+                  "the save was not inside the core while the close "
+                  "waited");
+            core_hold_serialize(0);
+            held = false;
+         }
       }
    }
+   /* Never leave a worker inside the core */
+   core_hold_serialize(0);
+   set_save_state_in_background(false);
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   task_queue_check();
    CHECK(!runloop_is_content_switching(), "the close did not finish");
    CHECK(waited >= 1, "the close never waited for the save (%u frames)", waited);
    CHECK(presented_waiting >= 1,
