@@ -3,6 +3,8 @@
 import argparse
 import hashlib
 import json
+import math
+import struct
 import os
 from pathlib import Path
 import re
@@ -15,6 +17,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--native', action='store_true')
 parser.add_argument('--binary', type=Path, help='reuse a previously built native fixture')
 parser.add_argument('--capture', choices=['direct', 'buffer'], help='GPU RGB clear through the shipping conversion shader')
+parser.add_argument('--session', action='store_true', help='native MP4/AC3 file output through the session owner; requires --capture')
 parser.add_argument('--pictures', action='store_true', help='submit test-only uploaded NV12 pictures and independently decode')
 parser.add_argument('--ffmpeg', default=shutil.which('ffmpeg'))
 parser.add_argument('--ffprobe', default=shutil.which('ffprobe'))
@@ -24,6 +27,8 @@ if not args.native:
     parser.error('--native is required; a real device and validation layer are mandatory')
 if args.capture:
     args.pictures = True
+if args.session and not args.capture:
+    parser.error('--session requires --capture direct or buffer')
 if args.pictures and (not args.ffmpeg or not args.ffprobe):
     parser.error('--pictures requires independent FFmpeg and FFprobe executables')
 here = Path(__file__).resolve().parent
@@ -36,6 +41,8 @@ if args.pictures:
     evidence['scope'] = 'Native cold resources and 12 H.264 pictures from test-only CPU upload; GPU capture not exercised'
 if args.capture:
     evidence['scope'] = 'Native GPU RGB clear, shipping RGB-to-NV12 shader and H264 encoder; independent decoded-plane oracle'
+if args.session:
+    evidence['scope'] = 'Native Vulkan GPU capture and recording session MP4/AC3 file output; independent picture/sample/timestamp oracle'
 evidence['source'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
 evidence['dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=repo))
 
@@ -70,6 +77,8 @@ if not args.binary:
              '-I' + str(repo / 'libretro-common/include'), '-I' + str(repo / 'gfx/include')]
     if 'clang' in subprocess.check_output(compiler + ['--version'], text=True).lower():
         flags += ['-Wno-c99-extensions']
+    if os.name == 'nt':
+        flags += ['-DRECORD_FILE_POSIX_TEST', '-DRECORD_MEDIACODEC_FILE_TEST']
     sources = ['samples/gfx/vulkan_encode_h264/native_test.c', 'gfx/common/vulkan_encode_h264.c',
                'gfx/common/vulkan_encode_h264_session.c', 'gfx/common/vulkan_encode_h264_submit.c',
                'gfx/common/vulkan_encode_pool.c', 'gfx/common/vulkan_encode_capture.c',
@@ -77,6 +86,10 @@ if not args.binary:
                'libretro-common/gfx/shaders/rslc_ir.c', 'libretro-common/gfx/shaders/rslc_emit.c',
                'libretro-common/dynamic/dylib.c',
                'libretro-common/encodings/encoding_utf.c', 'libretro-common/compat/compat_strl.c']
+    sources += ['record/record_gpu_session_vulkan.c', 'record/record_gpu_worker_vulkan.c',
+        'record/record_gpu_queue.c', 'record/record_gpu_output_vulkan.c', 'record/record_mux_mp4.c',
+        'record/record_file_posix.c', 'record/record_mediacodec_file.c', 'libretro-common/queues/retro_spsc.c',
+        'libretro-common/formats/ac3/rac3_frame.c', 'libretro-common/formats/ac3/rac3_encode.c']
     result = run(compiler + flags + [str(repo / name) for name in sources] + ['-o', str(binary)]
                  + (['-lm'] if os.name == 'nt' else ['-ldl', '-lm']), 120)
     if result.returncode:
@@ -84,8 +97,8 @@ if not args.binary:
         save()
         result.check_returncode()
 evidence['binary_sha256'] = hashlib.sha256(binary.read_bytes()).hexdigest()
-coded = root / 'output.h264'
-mode = '--capture-' + args.capture if args.capture else '--pictures'
+coded = root / ('output.mp4' if args.session else 'output.h264')
+mode = ('--session-' if args.session else '--capture-') + args.capture if args.capture else '--pictures'
 result = run([binary] + ([mode, coded] if args.pictures else []), 30)
 output = result.stdout.decode(errors='replace')
 print(output, end='', flush=True)
@@ -98,14 +111,14 @@ if result.returncode == 0:
 if result.returncode == 0 and args.pictures:
     try:
         dimensions = re.search(r'extent=(\d+)x(\d+)', output)
-        assert dimensions and 'PASS native coded pictures=12' in output
-        if args.capture:
+        assert dimensions and ('PASS native session A/V pictures=12' if args.session else 'PASS native coded pictures=12') in output
+        if args.capture and not args.session:
             assert 'PASS native two in-flight pictures, full-ring BUSY, borrowed cancellation and drain' in output
             evidence['submitted_pictures_including_cancellation'] = 14
             evidence['maximum_in_flight'] = 2
             evidence['cancelled_output_pictures'] = 2
         width, height = map(int, dimensions.groups())
-        probe = run([args.ffprobe, '-v', 'error', '-show_streams', '-show_frames',
+        probe = run([args.ffprobe, '-v', 'error', '-select_streams', 'v:0', '-show_streams', '-show_frames',
                      '-of', 'json', coded], 30)
         probe.check_returncode()
         info = json.loads(probe.stdout)
@@ -117,7 +130,7 @@ if result.returncode == 0 and args.pictures:
         assert stream['color_range'] == 'tv' and stream['color_space'] == 'bt709'
         assert stream['color_transfer'] == 'bt709' and stream['color_primaries'] == 'bt709'
         trace = run([args.ffmpeg, '-v', 'trace', '-i', coded, '-c', 'copy',
-                     '-bsf:v', 'trace_headers', '-f', 'null', '-'], 30)
+                     '-map', '0:v:0', '-bsf:v', 'trace_headers', '-f', 'null', '-'], 30)
         trace.check_returncode()
         timing = {}
         for name, expected in (('num_units_in_tick', 1), ('time_scale', 60),
@@ -166,6 +179,56 @@ if result.returncode == 0 and args.pictures:
         limits = (4, 2) if args.capture else (2, .5)
         evidence['pictures']['limits'] = dict(peak=limits[0], mean=limits[1])
         assert all(p['peak'] <= limits[0] and p['mean'] <= limits[1] for p in planes)
+        if args.session:
+            assert stream['time_base'] == '1/30' and stream['avg_frame_rate'] == '30/1'
+            assert [int(f['pts']) for f in frames] == list(range(12))
+            video_probe = run([args.ffprobe, '-v', 'error', '-select_streams', 'v:0',
+                               '-show_packets', '-of', 'json', coded], 30)
+            video_probe.check_returncode()
+            video_packets = json.loads(video_probe.stdout)['packets']
+            assert len(video_packets) == 12
+            assert [int(p['pts']) for p in video_packets] == list(range(12))
+            assert all(int(p['dts']) == int(p['pts']) and int(p['duration']) == 1 for p in video_packets)
+            audio_probe = run([args.ffprobe, '-v', 'error', '-show_streams', '-show_packets',
+                               '-select_streams', 'a:0', '-of', 'json', coded], 30)
+            audio_probe.check_returncode()
+            audio_info = json.loads(audio_probe.stdout)
+            audio_stream, = audio_info['streams']
+            packets = audio_info['packets']
+            assert audio_stream['codec_name'] == 'ac3' and audio_stream['channels'] == 2
+            assert audio_stream['sample_rate'] == '48000' and audio_stream['time_base'] == '1/48000'
+            assert len(packets) == 13
+            assert [int(p['pts']) for p in packets] == list(range(0, 19968, 1536))
+            assert all(int(p['duration']) == 1536 for p in packets)
+            audio = run([args.ffmpeg, '-v', 'error', '-i', coded, '-map', '0:a:0',
+                         '-f', 'f32le', '-acodec', 'pcm_f32le', '-'], 30)
+            audio.check_returncode()
+            assert len(audio.stdout) == 19968 * 2 * 4
+            samples = struct.unpack('<' + 'f' * (len(audio.stdout) // 4), audio.stdout)
+            assert all(math.isfinite(value) for value in samples)
+            tones = []
+            for channel, frequency in enumerate((1000, 2300)):
+                values = samples[1536 * 2 + channel:17664 * 2:2]
+                n = len(values)
+                def amplitude(hz):
+                    cosine = sum(v * math.cos(2 * math.pi * hz * i / 48000) for i, v in enumerate(values))
+                    sine = sum(v * math.sin(2 * math.pi * hz * i / 48000) for i, v in enumerate(values))
+                    return 2 * math.hypot(cosine, sine) / n, 2 * cosine / n, 2 * sine / n
+                level, cosine, sine = amplitude(frequency)
+                other = amplitude(2300 if channel == 0 else 1000)[0]
+                residual = math.sqrt(sum((value - cosine * math.cos(2 * math.pi * frequency * i / 48000)
+                    - sine * math.sin(2 * math.pi * frequency * i / 48000)) ** 2
+                    for i, value in enumerate(values)) / n)
+                assert .18 <= level <= .22 and other < .01 and residual < .02, (channel, level, other, residual)
+                tones.append(dict(channel=channel, hz=frequency, amplitude=level,
+                    other_channel_tone=other, residual_rms=residual))
+            evidence['audio'] = dict(source_frames=19200, decoded_frames=19968, padding_frames=768,
+                rate=48000, channels=2, packets=13, tones=tones,
+                packet_pts=[int(p['pts']) for p in packets],
+                decoded_sha256=hashlib.sha256(audio.stdout).hexdigest(),
+                scope='Packet timing, duration and channel tones; intrinsic AC3 delay/trim is not calibrated here')
+            evidence['pictures']['packet_pts'] = [int(p['pts']) for p in video_packets]
+            evidence['pictures']['packet_durations'] = [int(p['duration']) for p in video_packets]
         evidence['submitted_pictures'] = 12
     except Exception:
         evidence['result'] = 'FAIL picture oracle'

@@ -6,9 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <dynamic/dylib.h>
 #include "../../../gfx/common/vulkan_encode_h264.h"
 #include "../../../gfx/common/vulkan_encode_capture.h"
+#include "../../../record/record_gpu_session_vulkan.h"
 
 struct native_capture_command
 {
@@ -633,6 +635,7 @@ static int encode_pictures(struct native_encoder *c,const char *path,unsigned ca
    printf("PASS native coded pictures=12 GOP=4 stable output borrows capture=%u\n",capture_mode);
    return 0;
 }
+#include "native_session.h"
 int main(int argc,char **argv)
 {
    struct native_encoder *c=(struct native_encoder*)calloc(1,sizeof(*c));
@@ -644,7 +647,8 @@ int main(int argc,char **argv)
    const vulkan_encode_pool_t *pool;
    int result=77;
    assert(c && (argc==1 || (argc==3 && (!strcmp(argv[1],"--pictures")
-               || !strcmp(argv[1],"--capture-direct") || !strcmp(argv[1],"--capture-buffer")))));
+               || !strcmp(argv[1],"--capture-direct") || !strcmp(argv[1],"--capture-buffer")
+               || !strcmp(argv[1],"--session-direct") || !strcmp(argv[1],"--session-buffer")))));
    packet=&c->packets[0];
    if (!startup(c,argc==3 && strcmp(argv[1],"--pictures")))
       puts("UNAVAILABLE Vulkan validation layer or Vulkan 1.3 H.264 encode device/features");
@@ -674,7 +678,9 @@ int main(int argc,char **argv)
          puts("UNAVAILABLE test upload on the selected encode queue");
       else
       {
-         result=argc==3?encode_pictures(c,argv[2],!strcmp(argv[1],"--capture-direct")
+         result=argc==3 && !strncmp(argv[1],"--session-",10)
+            ? session_pictures(c,argv[2],!strcmp(argv[1],"--session-direct"))
+            :argc==3?encode_pictures(c,argv[2],!strcmp(argv[1],"--capture-direct")
                ?1:!strcmp(argv[1],"--capture-buffer")?2:0):0;
       }
    }
