@@ -9036,10 +9036,6 @@ static enum runloop_state_enum runloop_check_state(
 
          if (menu)
          {
-            if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER)
-                  != BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX))
-               BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
-
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
                p_disp->flags |= GFX_DISP_FLAG_FB_DIRTY;
 

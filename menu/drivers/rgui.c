@@ -353,6 +353,10 @@ typedef struct
    uint16_t *upscale_line;
    /* The menu's own text, drawn by the next rgui_render() */
    const char *msgbox;
+   /* The dialog's buttons as the framebuffer shows them */
+   int msgbox_highlight;
+   int msgbox_hover;
+   uint8_t msgbox_epoch;
    unsigned upscale_line_width;
    unsigned upscale_map_src_width;
    unsigned upscale_map_width;
@@ -414,6 +418,8 @@ typedef struct
    char entry_index_offset;
 
    char menu_title[NAME_MAX_LENGTH];              /* Must be a fixed length array... */
+   /* The message box text the framebuffer shows, empty for none */
+   char msgbox_drawn[MENU_LABEL_MAX_LENGTH];
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    char theme_preset_path[PATH_MAX_LENGTH];       /* Must be a fixed length array... */
    char theme_dynamic_path[PATH_MAX_LENGTH];      /* Must be a fixed length array... */
@@ -5254,16 +5260,32 @@ static void rgui_set_blit_functions(
  * rgui_blit_line/rgui_blit_symbol() END
  * ============================== */
 
+/* The button under the pointer, as the dialog's buttons show it */
+static int rgui_msgbox_hover(const menu_dialog_t *d)
+{
+   if (d->button_count)
+      return d->button_hover;
+   if (d->confirm_hover_back)
+      return 0;
+   return d->confirm_hover_ok ? 1 : -1;
+}
+
 static void rgui_set_message(void *data, const char *message)
 {
    rgui_t           *rgui = (rgui_t*)data;
+   const menu_dialog_t *d = &menu_state_get_ptr()->dialog_st;
 
    if (!rgui || !message)
       return;
 
    rgui->msgbox    = message;
 
-   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+   /* The framebuffer keeps the box: drawn again only when it changed */
+   if (     rgui->msgbox_epoch     != d->button_epoch
+         || rgui->msgbox_highlight != d->button_highlight
+         || rgui->msgbox_hover     != rgui_msgbox_hover(d)
+         || strcmp(rgui->msgbox_drawn, message))
+      rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
 }
 
 static void rgui_render_messagebox(
@@ -6321,10 +6343,21 @@ static void rgui_render(void *data, unsigned dims,
                                   = settings->bools.menu_rgui_particle_effect_screensaver;
    bool current_display_cb        = false;
    bool show_fs_thumbnail         = (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL);
+   const char *msgbox             = NULL;
 
    /* Sanity check */
    if (!rgui || !rgui->frame_buf.data)
       return;
+
+   /* This iteration's box, if it has one; a box gone since it was
+    * drawn is painted over */
+   msgbox       = rgui->msgbox;
+   rgui->msgbox = NULL;
+   if (!msgbox && *rgui->msgbox_drawn)
+   {
+      rgui->msgbox_drawn[0] = '\0';
+      rgui->flags          |= RGUI_FLAG_FORCE_REDRAW;
+   }
 
    /* Show thumbnails only after certain period to prevent flashing */
    if (rgui->mini_thumbnail_delay > 0)
@@ -7157,13 +7190,17 @@ static void rgui_render(void *data, unsigned dims,
       menu_driver_media_startup_ready(menu_driver_media_startup_token());
    if (!show_fs_thumbnail)
       rgui_media_gpu_cutout(rgui, p_disp->framebuf_dims);
-   if (rgui->msgbox && *rgui->msgbox)
+   if (msgbox && *msgbox)
    {
+      const menu_dialog_t *d = &menu_st->dialog_st;
       /* Draw popup directly on top of the menu; the messagebox
        * paints its own opaque background within its footprint. */
-      rgui_render_messagebox(rgui, rgui->msgbox, p_disp->framebuf_dims);
-      rgui->msgbox       = NULL;
-      rgui->flags       |=  RGUI_FLAG_FORCE_REDRAW;
+      rgui_render_messagebox(rgui, msgbox, p_disp->framebuf_dims);
+      if (strcmp(rgui->msgbox_drawn, msgbox))
+         strlcpy(rgui->msgbox_drawn, msgbox, sizeof(rgui->msgbox_drawn));
+      rgui->msgbox_epoch     = d->button_epoch;
+      rgui->msgbox_highlight = d->button_highlight;
+      rgui->msgbox_hover     = rgui_msgbox_hover(d);
    }
 
    if (rgui->flags & RGUI_FLAG_SHOW_MOUSE)
