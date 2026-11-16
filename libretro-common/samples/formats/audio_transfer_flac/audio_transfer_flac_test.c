@@ -9,7 +9,10 @@
  *     the frames as delimited packets, all given up front;
  *   - demuxed input grown a packet at a time, each growth only after
  *     the decoder has run dry - the progressive source the growth
- *     contract in <formats/audio.h> is written for.
+ *     contract in <formats/audio.h> is written for;
+ *   - seeks in a native .flac buffer that carries a seek table, which
+ *     take the table's shortcut, each landing on the frame asked for
+ *     (rflac_seek_point gives the seek point's own frame as well).
  *
  * FLAC is lossless, so every lane must give back exactly the PCM that
  * went in: every sample, and not one frame more or less. The fixture
@@ -27,6 +30,7 @@
 #include <math.h>
 
 #include <formats/audio.h>
+#include <formats/rflac.h>
 #include <formats/rwebm.h>
 #include <streams/file_stream.h>
 
@@ -263,6 +267,64 @@ static void lane_demuxed(const struct demuxed *d, int grow)
    free(pcm);
 }
 
+/* Seeks in a buffer with a seek table: points at frames 0, 4096, 8192
+ * and 12288. Each lands on the frame asked for, between the points and
+ * on them, forward and back; resumed from a point at its own frame, not
+ * at frame 0 (which landed a seek the point's frames past its target). */
+static void lane_seek(const char *path)
+{
+   static const uint64_t targets[] = { 10000, 4096, 15000, 100, 12288,
+      19999, 6000 };
+   const char *lane = "native .flac buffer, seek table";
+   size_t   len, i;
+   void    *buf = load(path, &len);
+   void    *ctx = audio_transfer_new(AUDIO_TYPE_FLAC);
+   int16_t  pcm[1000 * 2];
+   rflac_t *f   = rflac_new();
+   uint64_t at = 0, point = 0;
+
+   /* The point itself, straight from rflac */
+   CHECK(f != NULL, "%s: rflac_new", lane);
+   if (f)
+   {
+      rflac_set_in(f, (const uint8_t*)buf, len);
+      rflac_set_eof(f);
+      while (!rflac_format(f))
+         if (rflac_process(f, NULL, NULL) != RFLAC_PROCESS_NEXT)
+            break;
+      CHECK(rflac_seek_point(f, 10000, &at, &point) == RFLAC_PROCESS_NEXT
+            && point == 8192 && at > 0 && at < len,
+            "%s: the point for frame 10000 is frame %lu at byte %lu", lane,
+            (unsigned long)point, (unsigned long)at);
+      rflac_free(f);
+   }
+
+   audio_transfer_set_buffer_ptr(ctx, AUDIO_TYPE_FLAC, buf, len);
+   CHECK(audio_transfer_start(ctx, AUDIO_TYPE_FLAC), "%s: start failed", lane);
+   for (i = 0; i < sizeof(targets) / sizeof(targets[0]); i++)
+   {
+      const size_t want = SRC_FRAMES - targets[i] < 1000
+            ? (size_t)(SRC_FRAMES - targets[i]) : 1000;
+      size_t got, k;
+      CHECK(audio_transfer_seek(ctx, AUDIO_TYPE_FLAC, targets[i]),
+            "%s: seek to %lu refused", lane, (unsigned long)targets[i]);
+      got = drain(ctx, pcm, 0, want, 1000);
+      CHECK(got == want, "%s: %lu frames after a seek to %lu, %lu wanted",
+            lane, (unsigned long)got, (unsigned long)targets[i],
+            (unsigned long)want);
+      for (k = 0; k < got; k++)
+         if (     pcm[k * 2]     != src_pcm[(targets[i] + k) * 2]
+               || pcm[k * 2 + 1] != src_pcm[(targets[i] + k) * 2 + 1])
+         {
+            CHECK(0, "%s: after a seek to %lu, frame %lu differs", lane,
+                  (unsigned long)targets[i], (unsigned long)k);
+            break;
+         }
+   }
+   audio_transfer_free(ctx, AUDIO_TYPE_FLAC);
+   free(buf);
+}
+
 int main(void)
 {
    struct demuxed d;
@@ -273,6 +335,7 @@ int main(void)
    lane_buffer("native .flac buffer", "fixtures/tone.flac");
    lane_buffer("Matroska buffer", "fixtures/tone.mka");
    lane_windowed("fixtures/tone.mka", 4096, 2048);
+   lane_seek("fixtures/tone_seektable.flac");
 
    mka = load("fixtures/tone.mka", &mka_len);
    demux_mka((const uint8_t*)mka, mka_len, &d);

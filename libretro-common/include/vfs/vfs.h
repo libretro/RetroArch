@@ -187,6 +187,9 @@ struct libretro_vfs_implementation_file
 #endif
 {
    int64_t size;
+   /* where a stdio stream stands, kept here so a write need not ask
+    * stdio to keep size; -1 when not known, and stdio is asked */
+   int64_t stdio_pos;
    uint64_t mappos;
    uint64_t mapsize;
 #if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP)
@@ -199,6 +202,14 @@ struct libretro_vfs_implementation_file
    HANDLE fh;
    /* CreateFileMapping handle backing `mapped`; NULL when unmapped */
    HANDLE map_handle;
+   /* A stream on a handle of its own (not VFS_WIN32_NO_NATIVE): its
+    * position, the part of the file `buf` holds - read from it, or, with
+    * ndirty set, written to it and not yet to the file - and an error */
+   uint64_t npos;
+   uint64_t nbuf_at;
+   size_t   nbuf_len;
+   int      nerr;
+   int      ndirty;
 #if !defined(_XBOX) && !defined(HAVE_MMAP)
    void *warm;   /* mapped read-ahead thread, NULL until used */
 #endif
@@ -247,6 +258,17 @@ struct libretro_vfs_implementation_file
    retro_atomic_size_t append_end;
 #ifdef VFS_HAVE_AT_HANDLE
    retro_atomic_ptr_t  at_handle;
+   /* at_handle is synchronous - Windows' cached-read fast path - and
+    * held by one call at a time, at_sync_busy saying so; a call that
+    * finds it held takes at_ovl, the same file opened for overlapped
+    * I/O, whose calls Windows runs side by side. Each overlapped call
+    * waits on an event of its own: one of at_ev, claimed by its bit in
+    * at_ev_busy and made at first use, or a passing one when all are in
+    * use. A native stream's own handle serves as its at_handle. */
+   retro_atomic_ptr_t  at_ovl;
+   HANDLE              at_ev[8];
+   retro_atomic_int_t  at_ev_busy;
+   retro_atomic_int_t  at_sync_busy;
 #endif
 };
 #endif

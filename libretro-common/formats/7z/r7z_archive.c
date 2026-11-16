@@ -2343,7 +2343,7 @@ static void r7z_progress_state(r7z_archive_t *a, int state)
 }
 
 /* What a reader is to see from now on: nothing while it is written */
-static void r7z_progress_set(r7z_archive_t *a, const uint8_t *buf,
+static void r7z_progress_set(r7z_archive_t *a, uint8_t *buf,
       uint32_t folder, size_t pos, int state)
 {
    r7z_progress_state(a, 0);

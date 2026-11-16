@@ -16,3 +16,6 @@
 /color_fragment.c
 /color_test
 /color_test.exe
+/buffer_fragment.c
+/buffer_test
+/buffer_test.exe

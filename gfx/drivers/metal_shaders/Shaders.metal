@@ -24,6 +24,38 @@
 
 using namespace metal;
 
+struct BloomVertex
+{
+   float4 position [[position]];
+   float2 uv;
+};
+
+vertex BloomVertex bloom_vertex(uint id [[vertex_id]])
+{
+   BloomVertex out;
+   out.uv = float2(id & 1, id >> 1);
+   out.position = float4(out.uv * float2(2, -2) + float2(-1, 1), 0, 1);
+   return out;
+}
+
+fragment float4 bloom_fragment(BloomVertex in [[stage_in]],
+      texture2d<float> tex [[texture(0)]], constant float4 &p [[buffer(0)]])
+{
+   constexpr sampler linearSampler(coord::normalized, address::clamp_to_edge,
+         filter::linear);
+   float3 c = max(tex.sample(linearSampler, in.uv).rgb - p.z, 0.0);
+   if (dot(p.xy, p.xy) > 0.0)
+   {
+      c *= 0.227027;
+      c += (max(tex.sample(linearSampler, in.uv + p.xy * 1.384615).rgb - p.z, 0.0)
+          + max(tex.sample(linearSampler, in.uv - p.xy * 1.384615).rgb - p.z, 0.0)) * 0.316216;
+      c += (max(tex.sample(linearSampler, in.uv + p.xy * 3.230769).rgb - p.z, 0.0)
+          + max(tex.sample(linearSampler, in.uv - p.xy * 3.230769).rgb - p.z, 0.0)) * 0.0702703;
+   }
+   return float4(c * p.w, 0);
+}
+
+
 #pragma mark - functions using projected coordinates
 
 vertex ColorInOut basic_vertex_proj_tex(const Vertex in [[ stage_in ]],
@@ -92,6 +124,44 @@ fragment float4 stock_fragment(FontFragmentIn  in  [[ stage_in ]],
     return colorSample * in.color;
 }
 
+#include "../xmb_plastic.h"
+#define vec2 float2
+#define vec3 float3
+#define vec4 float4
+#define XMB_SAMPLE(p) tex.sample(samp, p)
+fragment float4 xmb_plastic_fragment(FontFragmentIn in [[stage_in]],
+      texture2d<float> tex [[texture(TextureIndexColor)]],
+      sampler samp [[sampler(SamplerIndexDraw)]])
+{
+   float2 uv = in.texCoord.xy;
+   float4 tint = in.color;
+   XMB_PLASTIC_SAMPLE
+   XMB_PLASTIC_LIGHT
+   XMB_PLASTIC_COLOR
+   return plastic;
+}
+#define dFdx dfdx
+#define dFdy dfdy
+#define XMB_COVERAGE(p) XMB_SAMPLE(p).r
+fragment float4 xmb_font_fragment(FontFragmentIn in [[stage_in]],
+      texture2d<float> tex [[texture(TextureIndexColor)]],
+      sampler samp [[sampler(SamplerIndexDraw)]])
+{
+   float2 uv = in.texCoord.xy;
+   float4 tint = in.color;
+   XMB_FONT_SAMPLE
+   XMB_FONT_LIGHT
+   XMB_FONT_COLOR
+   return plastic;
+}
+#undef XMB_COVERAGE
+#undef dFdx
+#undef dFdy
+#undef XMB_SAMPLE
+#undef vec2
+#undef vec3
+#undef vec4
+
 fragment half4 stock_fragment_color(FontFragmentIn in [[ stage_in ]])
 {
     return half4(in.color);
@@ -150,11 +220,6 @@ float noise(float3 x)
                  mix(iqhash(n + 170.0), iqhash(n + 171.0), f.x), f.y), f.z);
 }
 
-float xmb_noise2(float3 x, const device Uniforms &constants)
-{
-  return cos(x.z * 4.0) * cos(x.z + constants.time / 10.0 + x.x);
-}
-
 }
 
 #pragma mark - ribbon simple
@@ -186,46 +251,37 @@ fragment float4 ribbon_simple_fragment()
 typedef struct
 {
    vector_float4 position [[position]];
-   vector_float3 vEC;
+   vector_float4 vEC;
 } RibbonOutIn;
 
-vertex RibbonOutIn ribbon_vertex(const SpriteVertex in [[ stage_in ]], const device Uniforms &constants [[ buffer(BufferIndexUniforms) ]])
+#include "../menu_ribbon_shader.h"
+#define vec2 float2
+#define vec3 float3
+#define vec4 float4
+#define RIBBON_PARAMS constant float4 *Ribbon,
+#define RIBBON_OUT thread float4 &
+RIBBON_VERTEX
+RIBBON_FRAGMENT
+#undef RIBBON_OUT
+#undef RIBBON_PARAMS
+#undef vec2
+#undef vec3
+#undef vec4
+
+vertex RibbonOutIn ribbon_vertex(const SpriteVertex in [[ stage_in ]],
+      constant float4 *ribbon [[ buffer(BufferIndexRibbon) ]])
 {
-   float4 t = (constants.projectionMatrix * float4(in.position, 0, 1));
-
-   float3 v = float3(t.x, 0.0, 1.0-t.y);
-   float3 v2 = v;
-   float3 v3 = v;
-
-   v.y = ribbon::xmb_noise2(v2, constants) / 8.0;
-
-   v3.x -= constants.time / 5.0;
-   v3.x /= 4.0;
-
-   v3.z -= constants.time / 10.0;
-   v3.y -= constants.time / 100.0;
-
-   v.z -= ribbon::noise(v3 * 7.0) / 15.0;
-   v.y -= ribbon::noise(v3 * 7.0) / 15.0 + cos(v.x * 2.0 - constants.time / 2.0) / 5.0 - 0.3;
-   v.y = -v.y;
-
    RibbonOutIn out;
-   out.vEC = v;
-   out.position = float4(v, 1.0);
+   ribbon_vertex(float2(in.position.x, 1.0-in.position.y),
+         ribbon, out.position, out.vEC);
    return out;
 }
 
 fragment float4 ribbon_fragment(RibbonOutIn in [[ stage_in ]])
 {
-   const float3 up = float3(0.0, 0.0, 1.0);
-   float3 x = dfdx(in.vEC);
-   float3 y = dfdy(in.vEC);
-   y = -y; /* Flip Y derivative to match Vulkan's yflip */
-   float3 normal = normalize(cross(x, y));
-   float c = 1.0 - dot(normal, up);
-   c = (1.0 - cos(c * c)) / 3.0;
-   return float4(c, c, c, 1.0);
+   return ribbon_fragment(in.vEC);
 }
+
 
 #pragma mark - snow constants
 

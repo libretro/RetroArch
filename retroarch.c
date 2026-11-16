@@ -110,6 +110,7 @@
 
 #if defined(ANDROID)
 #include <android/api-level.h>
+#include "frontend/drivers/platform_unix.h"
 #endif
 
 #ifdef HAVE_PRESENCE
@@ -132,6 +133,9 @@
 #include "location_driver.h"
 
 #include "runloop.h"
+#ifdef HAVE_VULKAN
+#include "gfx/common/vulkan_common.h"
+#endif
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
@@ -250,6 +254,13 @@
 
 #ifdef HAVE_GAME_AI
 #include "ai/game_ai.h"
+#endif
+
+#ifdef HAVE_CORE_SIGNATURES
+#include "core_trust_runtime.h"
+#endif
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "core_load_check.h"
 #endif
 
 /* RetroArch provides its own entry point (main, below) and runloop,
@@ -1575,7 +1586,7 @@ static void driver_adjust_system_rates(
       runloop_state_t *runloop_st,
       video_driver_state_t *video_st,
       settings_t *settings,
-      double *audio_input)
+      double *audio_input, bool video_timing_changed)
 {
    double input_sample_rate               = video_st->av_info.timing.sample_rate;
    double input_fps                       = video_st->av_info.timing.fps;
@@ -1589,14 +1600,15 @@ static void driver_adjust_system_rates(
    unsigned sync_plan                     = RUNLOOP_SYNC_VSYNC_HOLDS
          | (vrr_runloop_enable ? RUNLOOP_SYNC_EXACT_RATE : 0);
 #ifdef HAVE_OPENXR
-   unsigned headset_fit                   = video_xr_pace_interval(
-         video_st->headset_hz, (float)input_fps, audio_max_timing_skew,
-         MAXIMUM_SWAP_INTERVAL);
+   unsigned headset_fit                   = video_timing_changed
+      ? video_xr_pace_interval(video_st->headset_hz, (float)input_fps,
+            audio_max_timing_skew, MAXIMUM_SWAP_INTERVAL) : 0;
 #endif
 
    /* Update video swap interval if automatic
     * switching is enabled */
-   runloop_set_video_swap_interval(settings);
+   if (video_timing_changed)
+      runloop_set_video_swap_interval(settings);
    video_swap_interval = runloop_get_video_swap_interval(video_swap_interval);
 
 #ifdef HAVE_OPENXR
@@ -1604,17 +1616,20 @@ static void driver_adjust_system_rates(
     * its rate and interval stand in for the display's. Not under
     * threaded video, where the driver's frame, which waits for the
     * headset, does not hold the core. */
-   video_st->headset_vsync    = settings->bools.video_vsync;
-   video_st->headset_interval = (video_st->headset_vsync
-         && !video_driver_thread_wrapper_active()) ? headset_fit : 0;
-   /* A headset's own context begins and ends its frame in every core
-    * frame, so with no fit the core runs at the headset's rate; with a
-    * window, the window's vsync paces, and the wrapper holds the core
-    * at its own rate. */
-   video_st->headset_runloop_hz = (     !video_st->headset_interval
-         && !video_driver_thread_wrapper_active()
-         && video_context_driver_headset_inline())
-      ? video_st->headset_hz : 0.0f;
+   if (video_timing_changed)
+   {
+      video_st->headset_vsync    = settings->bools.video_vsync;
+      video_st->headset_interval = (video_st->headset_vsync
+            && !video_driver_thread_wrapper_active()) ? headset_fit : 0;
+      /* A headset's own context begins and ends its frame in every core
+       * frame, so with no fit the core runs at the headset's rate; with a
+       * window, the window's vsync paces, and the wrapper holds the core
+       * at its own rate. */
+      video_st->headset_runloop_hz = (     !video_st->headset_interval
+            && !video_driver_thread_wrapper_active()
+            && video_context_driver_headset_inline())
+         ? video_st->headset_hz : 0.0f;
+   }
    if (video_st->headset_interval)
    {
       video_refresh_rate    = video_st->headset_hz;
@@ -1623,10 +1638,12 @@ static void driver_adjust_system_rates(
       shader_subframes      = 1;
       vrr_runloop_enable    = false;
       sync_plan             = RUNLOOP_SYNC_VSYNC_HOLDS;
-      RARCH_LOG("[Video] The headset paces the core: %.2f Hz / %u.\n",
-            video_st->headset_hz, video_st->headset_interval);
+      if (video_timing_changed)
+         RARCH_LOG("[Video] The headset paces the core: %.2f Hz / %u.\n",
+               video_st->headset_hz, video_st->headset_interval);
    }
-   driver_headset_notice(runloop_st, video_st, headset_fit, input_fps);
+   if (video_timing_changed)
+      driver_headset_notice(runloop_st, video_st, headset_fit, input_fps);
 #endif
 
    if (input_fps > 0.0)
@@ -1635,18 +1652,20 @@ static void driver_adjust_system_rates(
 
       if (retro_atomic_load_acquire_int(&video_st->crt_switching_active))
          timing_skew_hz             = input_fps;
-      video_st->core_hz             = input_fps;
+      if (video_timing_changed)
+         video_st->core_hz          = input_fps;
 
       sync_plan = runloop_sync_plan_for(timing_skew_hz, (float)input_fps,
             ((float)black_frame_insertion + 1.0f)
             * (float)video_swap_interval * (float)shader_subframes,
             audio_max_timing_skew, vrr_runloop_enable);
 
-      if (!(sync_plan & RUNLOOP_SYNC_WITHIN_SKEW) && !vrr_runloop_enable)
+      if (video_timing_changed
+            && !(sync_plan & RUNLOOP_SYNC_WITHIN_SKEW) && !vrr_runloop_enable)
          RARCH_LOG("[Video] Timings deviate too much. Will not adjust."
                " (Display = %.2f Hz, Game = %.2f Hz)\n",
                timing_skew_hz, (float)input_fps);
-      else if (vrr_runloop_enable
+      else if (video_timing_changed && vrr_runloop_enable
             && (sync_plan & RUNLOOP_SYNC_VSYNC_HOLDS)
             && !(sync_plan & RUNLOOP_SYNC_EXACT_RATE))
          RARCH_LOG("[Video] Game FPS above what the display presents at "
@@ -1673,8 +1692,12 @@ static void driver_adjust_system_rates(
       else
          audio_st->input = input;
 
-      RARCH_LOG("[Audio] Set audio input rate to: %.2f Hz.\n", input);
+      if (video_timing_changed)
+         RARCH_LOG("[Audio] Set audio input rate to: %.2f Hz.\n", input);
    }
+
+   if (!video_timing_changed)
+      return;
 
    runloop_st->flags &= ~RUNLOOP_FLAG_FORCE_NONBLOCK;
 
@@ -1701,11 +1724,11 @@ static void driver_adjust_system_rates(
       driver_set_nonblock_state();
 }
 
-bool driver_set_audio_input_rate(void)
+bool driver_set_audio_input_rate(bool video_timing_changed)
 {
    double input = 0.0;
    driver_adjust_system_rates(runloop_state_get_ptr(), video_state_get_ptr(),
-         config_get_ptr(), &input);
+         config_get_ptr(), &input, video_timing_changed);
    return audio_driver_set_input_rate(input);
 }
 
@@ -1890,7 +1913,7 @@ void drivers_init(
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
       driver_adjust_system_rates(runloop_st, video_st, settings,
             (lifetime_flags & DRIVER_LIFETIME_AUDIO_CARRIED)
-            ? &carried_input : NULL);
+            ? &carried_input : NULL, true);
 
    if (     (lifetime_flags & DRIVER_LIFETIME_AUDIO_CARRIED)
          && !audio_driver_session_carry(carried_input))
@@ -2253,7 +2276,10 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
                                 | DRIVER_LIFETIME_SESSION_SWITCH))
             && (flags & DRIVER_VIDEO_MASK),
             video_st->data);
+      if (lifetime_flags & DRIVER_LIFETIME_SESSION_SWITCH)
+         video_driver_modify_disp_flags(VIDEO_FLAG_KEEP_VULKAN_SESSION, 0);
       video_driver_free_internal();
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_KEEP_VULKAN_SESSION);
 #ifdef HAVE_THREADS
 #ifndef RETRO_ATOMIC_HAS_PTR
       /* The volatile-backend title fallback's lock - the only
@@ -2443,7 +2469,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                   && runloop_st->current_core_type == CORE_TYPE_DUMMY)
                video_st->av_info.timing.fps = *hz;
 
-            driver_adjust_system_rates(runloop_st, video_st, settings, NULL);
+            driver_adjust_system_rates(runloop_st, video_st, settings, NULL, true);
 
             /* Use the input rate adjusted for the new display timing. */
             audio_st->src_ratio_orig   =
@@ -5677,6 +5703,11 @@ bool command_event(enum event_command cmd, void *data)
          menu_first_run_download_start();
 #endif
          break;
+      case CMD_EVENT_CORE_SIGNATURE_CHECK_OFF:
+#ifdef HAVE_CORE_SIGNATURES
+         core_trust_runtime_set_checks(false);
+#endif
+         break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          /* Same as at quit: the companion's live layout first. */
          ui_companion_event_command(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
@@ -7064,6 +7095,12 @@ void main_exit(void *args)
     * way out, so no driver call runs into the teardown below. */
    cloud_sync_deinit(1000);
 #endif
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_deinit();
+#endif
+#ifdef HAVE_CORE_SIGNATURES
+   core_trust_runtime_deinit();
+#endif
 
    video_driver_restore_cached(settings);
 
@@ -7121,6 +7158,9 @@ void main_exit(void *args)
    runloop_core_probe_cache_free();
 #endif
    driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+#ifdef HAVE_VULKAN
+   vulkan_context_session_cache_free();
+#endif
    /* an input driver kept for drivers that then failed to start */
    input_driver_drop_kept();
 
@@ -7292,6 +7332,7 @@ int rarch_main(int argc, char *argv[], void *data)
    retroarch_deinit_drivers(&runloop_st->retro_ctx);
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
+   p_rarch->flags &= ~RARCH_FLAGS_QUIT_FAILURE;
 
    frontend_driver_init_first(data);
 
@@ -7404,7 +7445,7 @@ int rarch_main(int argc, char *argv[], void *data)
    main_exit(data);
 #endif
 
-   return 0;
+   return (p_rarch->flags & RARCH_FLAGS_QUIT_FAILURE) ? 1 : 0;
 }
 
 #if defined(__EMSCRIPTEN__)
@@ -9990,6 +10031,22 @@ bool retroarch_main_init_core(int argc, char *argv[],
       retroarch_init_task_queue();
    else
       retroarch_task_queue_configure();
+#ifdef HAVE_CORE_SIGNATURES
+   /* Before the first core is opened, -L's and launcher intents' too */
+   {
+      char core_ext[16];
+#ifdef ANDROID
+      /* The app's own folder, never the one an intent extra names: none,
+       * and no seed this launch, when it couldn't be read */
+      const char *seed_dir = android_app_cores_dir();
+#else
+      const char *seed_dir = g_defaults.dirs[DEFAULT_DIR_CORE];
+#endif
+      if (!frontend_driver_get_core_extension(core_ext, sizeof(core_ext)))
+         core_ext[0] = '\0';
+      core_trust_runtime_init(NULL, seed_dir, core_ext);
+   }
+#endif
 
    {
       const char    *fullpath  = p_rarch->path_content;
@@ -10102,10 +10159,34 @@ bool retroarch_main_init_core(int argc, char *argv[],
    /* Handle core initialization failure */
    if (init_failed)
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      /* A startup core the check holds back falls back to the dummy
+       * core, parked to run again from there. Refused with no menu to
+       * ask on, it fails whatever --load-menu-on-error says. */
+      bool parked = false;
+      switch (core_load_check_startup_take())
+      {
+         case CORE_LOAD_STARTUP_NONE:
+            /* A marked load's refusal, before the dummy core's init
+             * probes that core: from a cached probe the menu would
+             * describe it as loaded */
+            task_content_load_refused(p_rarch->path_libretro);
+            break;
+         case CORE_LOAD_STARTUP_FAILED:
+            return retroarch_main_init_fail();
+         default:
+            parked = task_content_park_startup(p_rarch->path_libretro,
+                  p_rarch->path_content);
+            break;
+      }
+#endif
 #ifdef HAVE_DYNAMIC
       /* Check if menu was active prior to core initialization */
       if (   (!(rarch_st.flags & RARCH_FLAGS_LAUNCHED_FROM_CLI))
           ||   (rarch_st.flags & RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR)
+#ifdef HAVE_CORE_LOAD_CHECK
+          ||   parked
+#endif
 #ifdef HAVE_MENU
           ||  (menu_st->flags & MENU_ST_FLAG_ALIVE)
 #endif
@@ -10220,6 +10301,12 @@ bool retroarch_main_init_drivers(bool staged,
 
    drivers_init(settings, init_flags,
          (enum driver_lifetime_flags)init_lifetime, verbosity_enabled);
+#ifdef HAVE_CORE_SIGNATURES
+   core_trust_runtime_notify();
+#endif
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_notify();
+#endif
 #ifdef HAVE_COMMAND
    input_driver_refresh_command(input_st, settings);
 #endif
@@ -11263,6 +11350,12 @@ bool retroarch_main_quit_poll(void)
    runloop_st->quit_pending = false;
    retroarch_main_quit_finish(true);
    return true;
+}
+
+void retroarch_main_quit_failure(void)
+{
+   rarch_st.flags                 |= RARCH_FLAGS_QUIT_FAILURE;
+   runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 }
 
 enum retro_language retroarch_get_language_from_iso(const char *iso639)

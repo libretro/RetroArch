@@ -61,6 +61,7 @@ typedef struct fake_ngx_record
    unsigned ext_calls;   /* extension queries */
    /* Knobs the test turns */
    int unavailable;
+   int overlap_fails;
    int create_fails;
    int optiscaler;    /* the tables carry OptiScaler's key, as its stand-in's do */
    int eval_fails;

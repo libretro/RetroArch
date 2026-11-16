@@ -60,6 +60,9 @@
 
 /* Forward declarations */
 int action_ok_core_lock(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+#ifdef HAVE_CORE_SIGNATURES
+int action_ok_core_signature_check(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+#endif
 int action_ok_core_set_standalone_exempt(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
@@ -253,6 +256,9 @@ static int action_right_scroll(unsigned type, const char *label,
    unsigned scroll_speed      = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
    unsigned fast_scroll_speed = 10 * scroll_speed;
    size_t entries_end         = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+
+   if (!config_get_ptr()->bools.menu_scroll_quick)
+      return 0;
 
    if (selection + fast_scroll_speed < entries_end)
    {
@@ -1186,6 +1192,14 @@ static int action_right_core_lock(unsigned type, const char *label,
    return action_ok_core_lock(label, label, type, 0, 0);
 }
 
+#ifdef HAVE_CORE_SIGNATURES
+static int action_right_core_signature_check(unsigned type, const char *label,
+      bool wraparound)
+{
+   return action_ok_core_signature_check(label, label, type, 0, 0);
+}
+#endif
+
 static int action_right_core_set_standalone_exempt(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1366,6 +1380,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_RIGHT(cbs, action_right_core_lock);
             break;
+#ifdef HAVE_CORE_SIGNATURES
+         case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
+            BIND_ACTION_RIGHT(cbs, action_right_core_signature_check);
+            break;
+#endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
             BIND_ACTION_RIGHT(cbs, action_right_core_set_standalone_exempt);
             break;

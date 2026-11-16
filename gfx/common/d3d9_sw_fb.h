@@ -141,6 +141,56 @@ static INLINE void d3d9_sw_fb_drop(d3d9_sw_fb_t *fb)
    fb->tex = NULL;
 }
 
+/* x86 CRT backward moves are slow for tightly overlapping rows. */
+#if defined(_WIN32) && (defined(__i386__) || defined(_M_IX86))
+#define D3D9_SW_FB_STACK_ROWS
+#if defined(__GNUC__)
+__attribute__((noinline))
+#elif defined(_MSC_VER)
+__declspec(noinline)
+#endif
+static void d3d9_sw_fb_repack_rows(
+#else
+static INLINE void d3d9_sw_fb_repack_rows(
+#endif
+      uint8_t *bits, unsigned dst_pitch, const uint8_t *src, unsigned pitch,
+      size_t row, unsigned height, size_t off)
+{
+#ifdef D3D9_SW_FB_STACK_ROWS
+   uint8_t scratch[2048];
+#endif
+   size_t crossing = off / (dst_pitch - pitch);
+   unsigned split = crossing >= height ? height : (unsigned)crossing + 1;
+   unsigned y;
+   /* Before the crossing, destinations precede their sources. After
+    * it, copy backwards so no row overwrites an unread source. */
+   for (y = 0; y < split; y++)
+      memmove(bits + (size_t)y * dst_pitch, src + (size_t)y * pitch, row);
+   for (y = height; y > split;)
+   {
+      uint8_t *dst;
+      const uint8_t *from;
+      y--;
+      dst = bits + (size_t)y * dst_pitch;
+      from = src + (size_t)y * pitch;
+#ifdef D3D9_SW_FB_STACK_ROWS
+      if ((size_t)(dst - from) < row)
+      {
+         size_t left = row;
+         while (left)
+         {
+            size_t chunk = left < sizeof(scratch) ? left : sizeof(scratch);
+            left -= chunk;
+            memcpy(scratch, from + left, chunk);
+            memcpy(dst + left, scratch, chunk);
+         }
+      }
+      else
+#endif
+         memmove(dst, from, row);
+   }
+}
+
 static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
       unsigned width, unsigned height, unsigned pitch, unsigned bpp,
       unsigned last_dims)
@@ -155,8 +205,14 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
       return;
    bits     = fb->bits;
    row      = (size_t)width * bpp;
-   tex_row  = (size_t)VIDEO_SCALE_W(fb->tex_dims) * bpp;
    tex_h    = VIDEO_SCALE_H(fb->tex_dims);
+   /* An unchanged loan needs neither repacking nor border clearing. */
+   if (     src && src == bits && height && pitch == fb->pitch
+         && width <= VIDEO_SCALE_W(fb->tex_dims) && height <= tex_h
+         && row <= pitch && fb->dims == VIDEO_SCALE_PACK(width, height)
+         && last_dims == fb->dims)
+      goto settled;
+   tex_row  = (size_t)VIDEO_SCALE_W(fb->tex_dims) * bpp;
    span     = (size_t)fb->pitch * tex_h;
    lend_row = (size_t)VIDEO_SCALE_W(fb->dims) * bpp;
 
@@ -203,22 +259,15 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
    {
       if (pitch >= fb->pitch)
       {
+         unsigned dst_pitch = fb->pitch;
          /* Each row lands at or before where it is read */
          for (y = 0; y < height; y++)
-            memmove(bits + (size_t)y * fb->pitch,
+            memmove(bits + (size_t)y * dst_pitch,
                   src + (size_t)y * pitch, row);
       }
       else
       {
-         uint8_t *tmp = (uint8_t*)malloc(row * height);
-         if (tmp)
-         {
-            for (y = 0; y < height; y++)
-               memcpy(tmp + y * row, src + (size_t)y * pitch, row);
-            for (y = 0; y < height; y++)
-               memcpy(bits + (size_t)y * fb->pitch, tmp + y * row, row);
-            free(tmp);
-         }
+         d3d9_sw_fb_repack_rows(bits, fb->pitch, src, pitch, row, height, off);
       }
    }
 
@@ -231,6 +280,7 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
          memset(bits + (size_t)y * fb->pitch, 0, tex_row);
    }
 
+settled:
    d3d9_tex_unlock(fb->tex, 0, true);
    fb->frame     = src;
    fb->frame_tex = fb->tex;

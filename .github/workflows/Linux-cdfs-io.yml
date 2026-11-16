@@ -60,6 +60,7 @@ jobs:
           ./cdfs_dir_record_test
           ./cdfs_pure_api_test
           ./cdfs_io_error_test
+          ./cdfs_file_test
         env:
           ASAN_OPTIONS: detect_leaks=1
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
@@ -72,3 +73,4 @@ jobs:
           WINEDEBUG=-all wine ./cdfs_dir_record_test.exe
           WINEDEBUG=-all wine ./cdfs_pure_api_test.exe
           WINEDEBUG=-all wine ./cdfs_io_error_test.exe
+          WINEDEBUG=-all wine ./cdfs_file_test.exe

@@ -60,6 +60,8 @@ int main(int argc, char **argv)
    caps.video_count = caps.audio_count = 1;
    if (getenv("RTMP_TEST_AV1"))
       memcpy(video.fourcc, "av01", 4);
+   if (getenv("RTMP_TEST_HEVC"))
+      memcpy(video.fourcc, "hvc1", 4);
    active_client = getenv("RTMP_TEST_CAPS") ? net_rtmp_client_new_caps(&config, &caps)
       : net_rtmp_client_new(&config);
    memset(&video, 0, sizeof(video));

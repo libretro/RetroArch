@@ -91,6 +91,9 @@ void vulkan_ngx_frame_done(vulkan_ngx_t *ngx);
 /* The device is idle (context teardown): everything released. */
 void vulkan_ngx_free(vulkan_ngx_t *ngx);
 
+/* The device is idle: discard game history, keeping NGX initialized. */
+void vulkan_ngx_reset(vulkan_ngx_t *ngx);
+
 RETRO_END_DECLS
 
 #endif

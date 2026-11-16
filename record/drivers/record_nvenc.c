@@ -4,6 +4,7 @@
 #endif
 #include "record_nvenc.h"
 #include "../../gfx/video_driver.h"
+#include "../record_native_buffer.h"
 #ifdef HAVE_RECORD_NVENC
 #include <stdlib.h>
 #include <string.h>
@@ -193,7 +194,8 @@ static void *record_nvenc_init(const struct record_params *params)
    hdr.version = 1; hdr.size = sizeof(hdr);
    if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr))
       return NULL;
-   encoder.device = device.device; encoder.slots = 4;
+   encoder.device = device.device;
+   encoder.slots = recording_native_buffer_count("nvenc", params->video_fifo_frames);
    encoder.width = VIDEO_SCALE_W(params->out_dims);
    encoder.height = VIDEO_SCALE_H(params->out_dims);
    encoder.bitrate = 16000000;
@@ -412,7 +414,9 @@ void record_nvenc_poll(void)
    if (record_nvenc_start_requested)
    {
       struct video_viewport vp;
-      memset(&vp, 0, sizeof(vp));
+      vp.pos         = 0;
+      vp.dims        = 0;
+      vp.full_dims   = 0;
       if (!recording_state_get_ptr()->enable)
          record_nvenc_start_requested = false;
       else if (video_driver_get_viewport_info(&vp) && VIDEO_SCALE_W(vp.dims)
@@ -514,3 +518,13 @@ void record_nvenc_gpu_capture(void *data, void *source, unsigned state,
       unsigned pos, unsigned dims, uint64_t timestamp, unsigned output_mode)
 { (void)data; (void)source; (void)state; (void)pos; (void)dims; (void)timestamp; (void)output_mode; }
 #endif
+
+bool record_nvenc_can_stream(void)
+{
+#if defined(HAVE_RECORD_NVENC) && defined(HAVE_NETWORKING) && defined(HAVE_MF_AUDIO) \
+      && defined(HAVE_RTMP) && defined(HAVE_RFLV) && defined(HAVE_CRYPTO)
+   return true;
+#else
+   return false;
+#endif
+}

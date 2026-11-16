@@ -19,6 +19,7 @@
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <formats/image_yuv_blit.h>
+#include <streams/image_texture_file.h>
 
 #include "gfx_surface.h"
 #include "gfx_instrument.h"

@@ -96,6 +96,7 @@ void vulkan_upscaler_frame_done(vulkan_upscaler_t *up);
 
 /* The device is idle (context teardown): everything released. */
 void vulkan_upscaler_free(vulkan_upscaler_t *up);
+void vulkan_upscaler_reset(vulkan_upscaler_t *up);
 
 /* What the backends share: an output image of their own, the layout
  * moves around a dispatch, and the ring that retires an image and

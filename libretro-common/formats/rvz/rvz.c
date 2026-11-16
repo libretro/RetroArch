@@ -240,6 +240,51 @@ static bool rvz_grow(uint8_t **buf, size_t *cap, size_t need)
    return true;
 }
 
+/* Room, from the time the image is opened, for the largest group the
+ * tables tell of: as stored, and as its data. Reading then takes no
+ * memory but for what the tables could not tell, exception lists
+ * above all, and for a group a damaged table makes out larger than a
+ * group's data can be twice over; those grow what holds them as they
+ * come. */
+static bool rvz_reserve(rvz_t *z)
+{
+   size_t   most   = 2 * z->data_max + 0x10000;
+   size_t   stored = 0;
+   size_t   data   = z->data_max;
+   bool     packed = false;
+   uint32_t i;
+
+   for (i = 0; i < z->n_groups; i++)
+   {
+      const struct rvz_group *grp = &z->groups[i];
+      if (grp->size > stored)
+         stored = grp->size;
+      if (grp->packed)
+      {
+         packed = true;
+         if (grp->packed > data)
+            data = grp->packed;
+      }
+   }
+   if (stored > most)
+      stored = most;
+   if (data > most)
+      data = most;
+   if (stored > data)
+      data = stored;
+
+   if (     !rvz_grow(&z->zbuf, &z->zbuf_cap, stored)
+         || !rvz_grow(&z->raw.raw, &z->raw.raw_cap, data)
+         || (packed && !rvz_grow(&z->raw.out, &z->raw.out_cap, z->data_max)))
+      return false;
+   for (i = 0; z->slots && i < z->n_slots; i++)
+      if (     !rvz_grow(&z->slots[i].raw, &z->slots[i].raw_cap, data)
+            || (packed && !rvz_grow(&z->slots[i].out, &z->slots[i].out_cap,
+                     z->data_max)))
+         return false;
+   return true;
+}
+
 /* An LZMA stream carries no end: a group is decoded as far as its
  * @n_lists exception lists say, then @tail octets more. */
 static int rvz_lzma(rvz_t *z, uint8_t *dst, size_t cap,
@@ -1339,7 +1384,7 @@ static int rvz_open_regions(rvz_t *z)
       for (i = 0; i < z->n_slots; i++)
          z->slots[i].group = UINT32_MAX;
    }
-   return RVZ_OK;
+   return rvz_reserve(z) ? RVZ_OK : RVZ_ERROR_MEM;
 }
 
 /* Reads the heads and the tables, a stage at a time */

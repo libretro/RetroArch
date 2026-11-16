@@ -54,6 +54,7 @@ static bool load_vulkan(void) { return true; }
 #include "../../../gfx/video_upscaler.h"
 #include "../../../gfx/common/vulkan_ngx.h"
 #include "../../../gfx/common/vulkan_upscaler.h"
+#include "../../../gfx/common/vulkan_session_key.h"
 #include <file/file_path.h>
 #include "fake_ngx.h"
 
@@ -1427,6 +1428,106 @@ static void test_nr(settings_t *settings, image_t *color, image_t *mv,
    video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_DLSS);
 }
 
+static void test_session_keys(void)
+{
+   VkApplicationInfo app = {0};
+   VkInstanceCreateInfo instance_info = {0};
+   VkDeviceCreateInfo device_info = {0};
+   VkDeviceQueueCreateInfo queue_info = {0};
+   VkPhysicalDeviceTimelineSemaphoreFeatures a = {0}, b = {0};
+   VkPhysicalDeviceExtendedDynamicStateFeaturesEXT dynamic = {0};
+   VkPhysicalDeviceExtendedDynamicState2FeaturesEXT dynamic2 = {0};
+   VkPhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic3 = {0};
+   VkBaseInStructure unknown = {0};
+   vulkan_session_key_t first, second;
+   float priority = 1.0f;
+   char extension[] = "VK_KHR_timeline_semaphore";
+   const char *names[] = {extension};
+   app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+   app.apiVersion = VK_API_VERSION_1_2;
+   app.pApplicationName = "test";
+   instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+   instance_info.pApplicationInfo = &app;
+   first = vulkan_session_instance_key(&instance_info);
+   second = vulkan_session_instance_key(&instance_info);
+   CHECK(vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   app.apiVersion = VK_API_VERSION_1_1;
+   second = vulkan_session_instance_key(&instance_info);
+   CHECK(!vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   instance_info.pNext = &unknown;
+   second = vulkan_session_instance_key(&instance_info);
+   CHECK(second.failed && !vulkan_session_key_equal(&second, &second));
+   vulkan_session_key_free(&first);
+   vulkan_session_key_free(&second);
+
+   queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+   queue_info.queueCount = 1;
+   queue_info.pQueuePriorities = &priority;
+   a.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+   a.timelineSemaphore = VK_TRUE;
+   b = a;
+   device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+   device_info.pNext = &a;
+   device_info.queueCreateInfoCount = 1;
+   device_info.pQueueCreateInfos = &queue_info;
+   device_info.enabledExtensionCount = 1;
+   device_info.ppEnabledExtensionNames = names;
+   first = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   device_info.pNext = &b;
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   CHECK(vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)2, &device_info);
+   CHECK(!vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   queue_info.queueFamilyIndex = 1;
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   CHECK(!vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   queue_info.queueFamilyIndex = 0;
+   b.timelineSemaphore = VK_FALSE;
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   CHECK(!vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   b.timelineSemaphore = VK_TRUE;
+   priority = 0.5f;
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   CHECK(!vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   priority = 1.0f;
+   extension[0] = 'X';
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   CHECK(!vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   b.pNext = &unknown;
+   unknown.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   CHECK(second.failed && !vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&first);
+   vulkan_session_key_free(&second);
+
+   dynamic.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
+   dynamic.extendedDynamicState = VK_TRUE;
+   dynamic.pNext = &dynamic2;
+   dynamic2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
+   dynamic2.extendedDynamicState2 = VK_TRUE;
+   dynamic2.pNext = &dynamic3;
+   dynamic3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT;
+   dynamic3.extendedDynamicState3ColorBlendEnable = VK_TRUE;
+   device_info.pNext = &dynamic;
+   first = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   CHECK(vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&second);
+   dynamic3.extendedDynamicState3ColorBlendEnable = VK_FALSE;
+   second = vulkan_session_device_key((VkPhysicalDevice)(uintptr_t)1, &device_info);
+   CHECK(!vulkan_session_key_equal(&first, &second));
+   vulkan_session_key_free(&first);
+   vulkan_session_key_free(&second);
+}
+
 int main(void)
 {
    settings_t *settings = (settings_t*)config_get_ptr();
@@ -1440,6 +1541,8 @@ int main(void)
    const struct retro_hw_render_upscaler_interface *iface;
    unsigned render_dims, min_dims, max_dims;
    unsigned i;
+
+   test_session_keys();
 
    /* Until a core asks for it, nothing loads the NGX library: not the
     * log of what the upscaler would find, nor (on Windows, where a
@@ -1781,8 +1884,20 @@ int main(void)
    vkDeviceWaitIdle(device);
    {
       unsigned releases = rec->releases;
-      vulkan_ngx_free(ngx);
+      unsigned inits = rec->init_calls;
+      unsigned shutdowns = rec->shutdown_calls;
+      vulkan_ngx_reset(ngx);
       CHECK(rec->releases == releases + 5);  /* the five retired */
+      CHECK(rec->init_calls == inits && rec->shutdown_calls == shutdowns);
+      CHECK(rec->params_destroyed == 0);
+      begin_frame();
+      CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_PERF, 0,
+               VIDEO_SCALE_PACK(2560, 1440), &out));
+      end_frame();
+      CHECK(rec->eval[(rec->evals - 1) % FAKE_NGX_MAX].reset);
+      CHECK(rec->init_calls == inits && rec->shutdown_calls == shutdowns);
+      vkDeviceWaitIdle(device);
+      vulkan_ngx_free(ngx);
       CHECK(rec->shutdown_calls == 2 && rec->params_destroyed == 2);
       CHECK(rec->shutdown_path0 == 'Z');
    }
@@ -1850,6 +1965,43 @@ int main(void)
 
    test_ffx(settings, &color, &mv, &depth);
    test_xess(settings, &color, &mv, &depth);
+
+   /* Device handoff keeps the replacement SDK session alive. These
+    * handles are used only by the stand-in, never by Vulkan. */
+   {
+      const ngx_lib_t *lib = ngx_lib_get();
+      ngx_parameter_t *caps = NULL;
+      vulkan_ngx_t *old_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)2, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      vulkan_ngx_t *new_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)3, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      CHECK(old_session != NULL && new_session != NULL);
+      vulkan_ngx_free(old_session);
+      CHECK(!NGX_FAILED(lib->vulkan.get_capability_parameters(&caps)));
+      CHECK(vulkan_ngx_optimal(new_session, NGX_PERF_QUALITY_MAX_QUALITY,
+               VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
+      vulkan_ngx_free(new_session);
+      CHECK(NGX_FAILED(lib->vulkan.get_capability_parameters(&caps)));
+      rec->overlap_fails = 1;
+      old_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)2, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      CHECK(old_session != NULL);
+      new_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)3, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      CHECK(new_session == NULL);
+      vulkan_ngx_free(old_session);
+      vulkan_ngx_free(new_session);
+      new_session = vulkan_ngx_init(instance, gpu,
+            (VkDevice)(uintptr_t)3, (PFN_vkGetInstanceProcAddr)(uintptr_t)1,
+            (PFN_vkGetDeviceProcAddr)(uintptr_t)1, &mem_props, "Zdir");
+      CHECK(new_session != NULL);
+      vulkan_ngx_free(new_session);
+      rec->overlap_fails = 0;
+   }
 
    free_image(&color);
    free_image(&mv);

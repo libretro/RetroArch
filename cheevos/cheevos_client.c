@@ -24,6 +24,7 @@
 #include <string/stdstring.h>
 
 #include <sys/stat.h>
+#include <assert.h>
 
 #include "../frontend/frontend_driver.h"
 #include "../tasks/tasks_internal.h"
@@ -248,12 +249,14 @@ typedef struct rc_client_http_task_data_t
    void* callback_data;
 } rc_client_http_task_data_t;
 
+/* libretro-common retires HTTP task callbacks on the client owner thread. */
 static void rcheevos_client_http_task_callback(retro_task_t* task,
    void* task_data, void* user_data, const char* error)
 {
    rc_client_http_task_data_t* callback_data = (rc_client_http_task_data_t*)user_data;
    http_transfer_data_t* http_data = (http_transfer_data_t*)task_data;
    rc_api_server_response_t server_response;
+   assert(task_is_on_main_thread());
    memset(&server_response, 0, sizeof(server_response));
 
    if (!http_data)

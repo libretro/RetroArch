@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #include <formats/audio.h>
 #if defined(HAVE_RWEBM) && (defined(HAVE_RVORBIS) || defined(HAVE_ROPUS))
 #include <formats/rwebm.h>

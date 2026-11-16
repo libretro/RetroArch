@@ -15,7 +15,7 @@ SOURCES := audio_transfer_flac_test.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/formats/audio_transfer.c \
-	$(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
+	$(LIBRETRO_COMM_DIR)/formats/data_transfer.c $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.c \
 	$(LIBRETRO_COMM_DIR)/formats/flac/rflac.c \
 	$(LIBRETRO_COMM_DIR)/formats/webm/rwebm.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memmap.c \

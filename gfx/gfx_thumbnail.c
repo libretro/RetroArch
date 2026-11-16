@@ -2573,6 +2573,7 @@ void gfx_thumbnail_draw(
       draw.matrix_data     = &mymat;
       draw.texture         = thumb_texture;
       draw.pipeline_id     = 0;
+      draw.effect          = NULL;
 
       /* Set thumbnail alignment within bounding box */
       switch (alignment)

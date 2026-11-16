@@ -3,6 +3,7 @@
 
 #include "rc_hash.h"
 #include "md5.h"
+#include <retro_endianness.h>
 
 RC_BEGIN_C_DECLS
 
@@ -29,8 +30,14 @@ void rc_hash_merge_callbacks(rc_hash_iterator_t* iterator, const rc_hash_callbac
 int rc_hash_finalize(const rc_hash_iterator_t* iterator, md5_state_t* md5, char hash[33]);
 
 int rc_hash_buffer(char hash[33], const uint8_t* buffer, size_t buffer_size, const rc_hash_iterator_t* iterator);
-void rc_hash_byteswap16(uint8_t* buffer, const uint8_t* stop);
-void rc_hash_byteswap32(uint8_t* buffer, const uint8_t* stop);
+static INLINE void rc_hash_byteswap16(uint8_t* buffer, const uint8_t* stop)
+{
+  retro_bswap16_buffer(buffer, (size_t)(stop - buffer));
+}
+static INLINE void rc_hash_byteswap32(uint8_t* buffer, const uint8_t* stop)
+{
+  retro_bswap32_buffer(buffer, (size_t)(stop - buffer));
+}
 
 
 const char* rc_path_get_filename(const char* path);

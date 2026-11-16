@@ -76,7 +76,6 @@ enum thread_cmd
    CMD_POKE_SET_FBO_STATE,
    CMD_POKE_GET_FBO_STATE,
 
-   CMD_POKE_SET_ASPECT_RATIO,
    CMD_FONT_INIT,
    CMD_CUSTOM_COMMAND,
 
@@ -829,6 +828,8 @@ typedef struct thread_video
        * core's declared maximum geometry. A core that hands over a
        * larger frame than it declared is clamped to this. */
       size_t   buffer_size;
+      /* Main thread: buffer_size / current bytes per pixel. */
+      size_t   pixel_capacity;
       struct video_thread_frame_slot
       {
          video_thread_movie_t movie;
@@ -1017,6 +1018,10 @@ typedef struct thread_video
    unsigned char pad_ring[VIDEO_THREAD_LINE];
 
    retro_atomic_int_t deferred_tail;
+
+   unsigned char pad_aspect[VIDEO_THREAD_LINE];
+   /* Latest aspect index plus one; zero means no resize pending. */
+   retro_atomic_int_t aspect_ratio_pending;
 } thread_video_t;
 
 /**

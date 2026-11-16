@@ -31,6 +31,7 @@
 #endif
 
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
@@ -40,6 +41,7 @@
 #include <encodings/utf.h>
 
 #include <string.h>
+#include "d3d_shaders/xmb_plastic_sm3.h"
 #include <retro_inline.h>
 #include <retro_math.h>
 #include <math.h>
@@ -318,11 +320,11 @@ static INLINE void d3d9_recompute_pass_sizes(
    int i;
    struct LinkInfo link_info;
    /* The first pass's texture is the frame's, which
-    * d3d9_hlsl_renderchain_fit_frame sizes. */
-   unsigned current_width            = VIDEO_SCALE_W(
-         chain->passes->data[0].info.tex_dims);
-   unsigned current_height           = VIDEO_SCALE_H(
-         chain->passes->data[0].info.tex_dims);
+    * d3d9_hlsl_renderchain_fit_frame sizes; an "original" pass is
+    * scaled from it while current_* moves on with each pass. */
+   unsigned orig_dims                = chain->passes->data[0].info.tex_dims;
+   unsigned current_width            = VIDEO_SCALE_W(orig_dims);
+   unsigned current_height           = VIDEO_SCALE_H(orig_dims);
    unsigned out_width                = 0;
    unsigned out_height               = 0;
 
@@ -341,6 +343,9 @@ static INLINE void d3d9_recompute_pass_sizes(
          case RARCH_SCALE_INPUT:
             out_width = link_info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = link_info.pass->fbo.scale_x * VIDEO_SCALE_W(orig_dims);
+            break;
       }
       switch (link_info.pass->fbo.type_y)
       {
@@ -352,6 +357,9 @@ static INLINE void d3d9_recompute_pass_sizes(
             break;
          case RARCH_SCALE_INPUT:
             out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = link_info.pass->fbo.scale_y * VIDEO_SCALE_H(orig_dims);
             break;
       }
 
@@ -677,17 +685,12 @@ typedef struct hlsl_renderchain
 {
    struct d3d9_hlsl_renderchain chain;
    struct shader_pass stock_shader;
+   LPDIRECT3DPIXELSHADER9 plastic_shader;
+   LPDIRECT3DPIXELSHADER9 font_plastic_shader;
    /* Per-pass HLSL uniform data for shader presets */
    hlsl_pass_data_t pass_data[GFX_MAX_SHADERS + 1];
    unsigned pass_data_count;
    hlsl_pass_data_t stock_data;
-   /* XMB pipeline shaders */
-   struct shader_pass pipeline_shaders[6]; /* MENU..MENU_6 */
-   hlsl_pass_data_t  pipeline_data[6];
-   /* Which menu effects' programs are compiled, and which have been
-    * tried; one bit each, MENU at bit 0 */
-   uint8_t           pipeline_ready;
-   uint8_t           pipeline_tried;
    /* A view's chain: its view, the viewport its passes are sized for,
     * that viewport's size packed, its last pass's input size, and
     * whether it ran this frame */
@@ -701,18 +704,36 @@ typedef struct hlsl_renderchain
    bool              hw;
 } hlsl_renderchain_t;
 
-static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev, unsigned idx);
+/* The menu effects, compiled when installed, kept with the driver
+ * rather than the chain, which presets remake: with the registers of
+ * what they read, -1 for what they do not */
+struct d3d9_hlsl_effect
+{
+   struct shader_pass shader;
+   hlsl_pass_data_t data;
+   int vs_mvp;
+   int vs_ribbon;
+   int vs_time;
+   int ps_time;
+   int vs_output_size;
+   int ps_output_size;
+   int vs_alpha;
+   int ps_alpha;
+   unsigned flags;
+};
+static struct d3d9_hlsl_effect d3d9_hlsl_effects[16];
+static unsigned d3d9_hlsl_effect_count;
 static bool d3d9_hlsl_load_program_ex(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
       const char *prog,
       hlsl_pass_data_t *pd);
 
-/* Pipeline vertex buffer for menu shader effects (VIDEO_SHADER_MENU, etc.).
+/* Vertex buffer for the menu's mesh effects.
  * Stored as a file-static since the d3d9 menu_display struct
  * does not have a pipeline_vbo member like d3d10_video_t does. */
 static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_pipeline_vbo = NULL;
+static uint32_t d3d9_hlsl_menu_pipeline_mesh_id;
 static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_fullscreen_vbo = NULL;
 static LPDIRECT3DVERTEXDECLARATION9 d3d9_hlsl_pipeline_decl = NULL;
 static LPDIRECT3DVERTEXDECLARATION9 d3d9_hlsl_overlay_decl = NULL;
@@ -830,35 +851,28 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
 
    dev                           = d3d->dev;
 
-   switch (draw->pipeline_id)
+   switch (draw->effect ? 1 : 0)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      case 1:
       {
          hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+         const struct d3d9_hlsl_effect *fx =
+            (const struct d3d9_hlsl_effect*)draw->effect;
 
-         /* Compiled by the pipeline call before this, or not at all */
-         if (_chain && (_chain->pipeline_ready
-                  & (1u << (VIDEO_SHADER_MENU - draw->pipeline_id))))
+         if (!draw->coords || draw->coords->vertices < 3)
+            return;
+
          {
-            unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
-            struct shader_pass *shader = &_chain->pipeline_shaders[idx];
-
             IDirect3DDevice9_SetVertexShader(dev,
-                  (LPDIRECT3DVERTEXSHADER9)shader->vprg);
+                  (LPDIRECT3DVERTEXSHADER9)fx->shader.vprg);
             IDirect3DDevice9_SetPixelShader(dev,
-                  (LPDIRECT3DPIXELSHADER9)shader->fprg);
+                  (LPDIRECT3DPIXELSHADER9)fx->shader.fprg);
             IDirect3DDevice9_SetVertexDeclaration(dev,
                   (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
 
-            /* Snow/bokeh/snowflake need MVP matrix set */
-            if (draw->pipeline_id <= VIDEO_SHADER_MENU_3)
+            /* The quad effects take the MVP */
+            if (fx->vs_mvp >= 0 && !(fx->flags & GFX_EFFECT_MESH))
             {
-               hlsl_pass_data_t *pd = &_chain->pipeline_data[idx];
                /* Row-major ortho for mul(matrix, vector) in shader.
                 * D3D9 SetVertexShaderConstantF stores rows sequentially.
                 * mul(M, v) computes dot(row[i], v) — correct with row-major.
@@ -869,25 +883,9 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
                    0.0f,  0.0f, 1.0f, 0.0f,
                   -1.0f, -1.0f, 0.0f, 1.0f
                };
-               {
-                  int reg = d3d9_hlsl_ctab_find_register(
-                        pd->vs_bytecode, pd->vs_bytecode_dwords,
-                        "modelViewProj", NULL, NULL);
-                  if (reg >= 0)
-                     d3d9_hlsl_set_vs_const(dev, reg, ortho_mvp, 4);
-               }
+               d3d9_hlsl_set_vs_const(dev, fx->vs_mvp, ortho_mvp, 4);
             }
 
-            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
-                  0, draw->coords->vertices - 2);
-         }
-         else if (_chain)
-         {
-            /* Fallback to stock shader */
-            IDirect3DDevice9_SetVertexShader(dev,
-                  (LPDIRECT3DVERTEXSHADER9)(&_chain->stock_shader)->vprg);
-            IDirect3DDevice9_SetPixelShader(dev,
-                  (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
             IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                   0, draw->coords->vertices - 2);
          }
@@ -936,6 +934,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
        * normalized [0,1] space, written straight into the menu's
        * vertex buffer (a stack copy for DrawPrimitiveUP if it
        * cannot be locked). */
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
       D3DCOLOR col[4];
       Vertex quad_up[4];
       Vertex *quad;
@@ -1066,6 +1065,10 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       }
 
       gfx_display_d3d9_bind_texture(draw, d3d);
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC
+            && _chain && _chain->plastic_shader)
+         IDirect3DDevice9_SetPixelShader(dev,
+               _chain->plastic_shader);
 
       if (quad != quad_up)
       {
@@ -1075,11 +1078,17 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
                0, sizeof(Vertex));
          IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                vb_start, 2);
+         if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && _chain)
+            IDirect3DDevice9_SetPixelShader(dev,
+                  (LPDIRECT3DPIXELSHADER9)_chain->stock_shader.fprg);
          return;
       }
 
       IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP,
             2, quad, sizeof(Vertex));
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && _chain)
+         IDirect3DDevice9_SetPixelShader(dev,
+               (LPDIRECT3DPIXELSHADER9)_chain->stock_shader.fprg);
 
       /* DrawPrimitiveUP unbinds the stream source, re-bind it */
       IDirect3DDevice9_SetStreamSource(dev, 0,
@@ -1162,9 +1171,10 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
 {
-   static float t                        = 0.0f;
+   float t;
    struct video_coords *ca               = NULL;
    d3d9_video_t *d3d                     = (d3d9_video_t*)data;
+   const struct d3d9_hlsl_effect *fx;
 
    if (!d3d || !draw)
       return;
@@ -1182,66 +1192,76 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    if (ca)
       draw->coords                       = ca;
 
-   switch (draw->pipeline_id)
+   if (!(fx = (const struct d3d9_hlsl_effect*)draw->effect))
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
+      draw->coords = NULL;
+      return;
+   }
+
+   switch ((fx->flags & GFX_EFFECT_MESH) ? 1 : 0)
+   {
+      case 1:
       {
-         /* Create a pipeline vertex buffer from the coordinate
-          * array data if it doesn't already exist.
-          * Adapted from d3d10 gfx_display_d3d10_draw_pipeline. */
-         if (!d3d9_hlsl_menu_pipeline_vbo && ca->vertices)
+         uint32_t mesh_id = p_disp->effect_mesh->id;
+
+         if (     d3d9_hlsl_menu_pipeline_vbo
+               && d3d9_hlsl_menu_pipeline_mesh_id != mesh_id)
+         {
+            IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
+            d3d9_hlsl_menu_pipeline_vbo = NULL;
+         }
+
+         if (!d3d9_hlsl_menu_pipeline_vbo)
          {
             unsigned i;
-            Vertex *verts    = NULL;
-            unsigned vcount  = ca->vertices;
+            Vertex *verts = NULL;
 
-            d3d9_hlsl_menu_pipeline_vbo = NULL;
-                  if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
-                              d3d->dev,
-                              vcount * sizeof(Vertex),
-                              D3DUSAGE_WRITEONLY, 0,
-                              D3DPOOL_DEFAULT,
-                              (LPDIRECT3DVERTEXBUFFER9*)&d3d9_hlsl_menu_pipeline_vbo, NULL)))
-                     d3d9_hlsl_menu_pipeline_vbo = NULL;
-
-            if (d3d9_hlsl_menu_pipeline_vbo)
+            if (FAILED(IDirect3DDevice9_CreateVertexBuffer(
+                        d3d->dev, p_disp->effect_mesh->vertex_count * sizeof(Vertex),
+                        D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT,
+                        &d3d9_hlsl_menu_pipeline_vbo, NULL)))
             {
-               IDirect3DVertexBuffer9_Lock(
-                     (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_pipeline_vbo,
-                     0, 0, (void**)&verts, 0);
-
-               if (verts)
-               {
-                  for (i = 0; i < vcount; i++)
-                  {
-                     verts[i].x     = ca->vertex[i * 2 + 0];
-                     verts[i].y     = ca->vertex[i * 2 + 1];
-                     verts[i].z     = 0.5f;
-                     verts[i].u     = 0.0f;
-                     verts[i].v     = 0.0f;
-                     verts[i].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
-                  }
-
-                  IDirect3DVertexBuffer9_Unlock(
-                        (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_pipeline_vbo);
-               }
+               d3d9_hlsl_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
             }
+
+            if (FAILED(IDirect3DVertexBuffer9_Lock(
+                        d3d9_hlsl_menu_pipeline_vbo, 0, 0, (void**)&verts, 0)))
+            {
+               IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
+               d3d9_hlsl_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
+            }
+
+            for (i = 0; i < p_disp->effect_mesh->vertex_count; i++)
+            {
+               verts[i].x     = ca->vertex[i * 2 + 0];
+               verts[i].y     = ca->vertex[i * 2 + 1];
+               verts[i].z     = 0.5f;
+               verts[i].u     = 0.0f;
+               verts[i].v     = 0.0f;
+               verts[i].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+            }
+
+            if (FAILED(IDirect3DVertexBuffer9_Unlock(
+                        d3d9_hlsl_menu_pipeline_vbo)))
+            {
+               IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
+               d3d9_hlsl_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
+            }
+            d3d9_hlsl_menu_pipeline_mesh_id = mesh_id;
          }
 
-         if (d3d9_hlsl_menu_pipeline_vbo)
-         {
-            IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
-                  (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_pipeline_vbo,
-                  0, sizeof(Vertex));
-         }
+         IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+               d3d9_hlsl_menu_pipeline_vbo, 0, sizeof(Vertex));
 
-         draw->coords->vertices = ca->vertices;
-
-         /* Set pipeline blend state — ribbon uses multiplicative blend
-          * (DESTCOLOR + ONE) matching D3D11's blend_pipeline. */
          IDirect3DDevice9_SetRenderState(d3d->dev,
-               D3DRS_SRCBLEND,  D3DBLEND_DESTCOLOR);
+               D3DRS_SRCBLEND, (fx->flags & GFX_EFFECT_BLEND_ADD)
+                  ? D3DBLEND_ONE : D3DBLEND_DESTCOLOR);
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_DESTBLEND, D3DBLEND_ONE);
          IDirect3DDevice9_SetRenderState(d3d->dev,
@@ -1249,10 +1269,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
          break;
       }
 
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      default:
       {
          static struct video_coords blank_coords = {0};
 
@@ -1312,84 +1329,48 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
                D3DRS_ALPHABLENDENABLE, true);
          break;
       }
-
-      default:
-         return;
    }
 
-   /* Update time uniform - mirrors d3d10 ubo_values.time increment.
-    * Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
-   t += 0.01f;
-   if (t > 65536.0f)
-      t -= 65536.0f;
+   t = p_disp->effect_time;
 
    {
-      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
-      if (_chain
-            && draw->pipeline_id <= VIDEO_SHADER_MENU
-            && draw->pipeline_id >= VIDEO_SHADER_MENU_6
-            && hlsl_d3d9_pipeline_ready(_chain, d3d->dev,
-               VIDEO_SHADER_MENU - draw->pipeline_id))
+      float v4[4];
+      v4[1] = v4[2] = v4[3] = 0.0f;
+      if (fx->vs_ribbon >= 0 && (fx->flags & GFX_EFFECT_RIBBON))
       {
-         unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
-         hlsl_pass_data_t *pd = &_chain->pipeline_data[idx];
-
-         /* Set time uniform for all pipeline shaders */
-         d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords,
-               true, d3d->dev, "time", &t);
-         d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords,
-               false, d3d->dev, "time", &t);
-
-         /* Set OutputSize for snow/bokeh/snowflake shaders */
-         if (draw->pipeline_id <= VIDEO_SHADER_MENU_3)
-         {
-            D3DVIEWPORT9 vp;
-            IDirect3DDevice9_GetViewport(d3d->dev, &vp);
-            {
-               float output_size[4];
-               int reg;
-               output_size[0] = (float)vp.Width;
-               output_size[1] = (float)vp.Height;
-               output_size[2] = 0.0f;
-               output_size[3] = 0.0f;
-               /* Set OutputSize as a full register (float2 occupies one register) */
-               reg = d3d9_hlsl_ctab_find_register(
-                     pd->vs_bytecode, pd->vs_bytecode_dwords,
-                     "OutputSize", NULL, NULL);
-               if (reg >= 0)
-                  d3d9_hlsl_set_vs_const(d3d->dev, reg, output_size, 1);
-               reg = d3d9_hlsl_ctab_find_register(
-                     pd->ps_bytecode, pd->ps_bytecode_dwords,
-                     "OutputSize", NULL, NULL);
-               if (reg >= 0)
-                  d3d9_hlsl_set_ps_const(d3d->dev, reg, output_size, 1);
-            }
-         }
-
-         /* Set alpha for ribbon shaders */
-         if (draw->pipeline_id >= VIDEO_SHADER_MENU_2)
-         {
-            float alpha_val = draw->color ? draw->color[3] : 1.0f;
-            d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords,
-                  true, d3d->dev, "alpha", &alpha_val);
-            d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords,
-                  false, d3d->dev, "alpha", &alpha_val);
-         }
+         const float *ribbon = gfx_display_ribbon_data(p_disp);
+         if (ribbon)
+            d3d9_hlsl_set_vs_const(d3d->dev, fx->vs_ribbon, ribbon, 50);
       }
-      else if (_chain)
+
+      /* Time, for every effect */
+      v4[0] = t;
+      if (fx->vs_time >= 0)
+         d3d9_hlsl_set_vs_const(d3d->dev, fx->vs_time, v4, 1);
+      if (fx->ps_time >= 0)
+         d3d9_hlsl_set_ps_const(d3d->dev, fx->ps_time, v4, 1);
+
+      /* OutputSize, for the quad effects */
+      if (!(fx->flags & GFX_EFFECT_MESH))
       {
-         d3d9_hlsl_set_param_1f(
-               _chain->stock_data.vs_bytecode,
-               _chain->stock_data.vs_bytecode_dwords, true,
-               d3d->dev, "IN.frame_count", &t);
-         d3d9_hlsl_set_param_1f(
-               _chain->stock_data.ps_bytecode,
-               _chain->stock_data.ps_bytecode_dwords, false,
-               d3d->dev, "IN.frame_count", &t);
+         D3DVIEWPORT9 vp;
+         IDirect3DDevice9_GetViewport(d3d->dev, &vp);
+         /* float2 occupies one full register */
+         v4[0] = (float)vp.Width;
+         v4[1] = (float)vp.Height;
+         if (fx->vs_output_size >= 0)
+            d3d9_hlsl_set_vs_const(d3d->dev, fx->vs_output_size, v4, 1);
+         if (fx->ps_output_size >= 0)
+            d3d9_hlsl_set_ps_const(d3d->dev, fx->ps_output_size, v4, 1);
+      }
+      else
+      {
+         /* The alpha, for the mesh effects */
+         v4[0] = draw->color ? draw->color[3] : 1.0f;
+         if (fx->vs_alpha >= 0)
+            d3d9_hlsl_set_vs_const(d3d->dev, fx->vs_alpha, v4, 1);
+         if (fx->ps_alpha >= 0)
+            d3d9_hlsl_set_ps_const(d3d->dev, fx->ps_alpha, v4, 1);
       }
    }
 }
@@ -1445,6 +1426,7 @@ typedef struct
    /* Scratch buffer to avoid per-line malloc/free in font rendering */
    Vertex                       *scratch_verts;
    unsigned                      scratch_capacity; /* in Vertex count */
+   bool xmb_plastic;
 } d3d9_font_t;
 
 static void *d3d9_font_init(void *data,
@@ -1665,6 +1647,14 @@ static void d3d9_font_draw_verts(d3d9_video_t *d3d, d3d9_font_t *font,
          0, sizeof(Vertex));
 }
 
+static void d3d9_font_bind_block(void *data, void *userdata)
+{
+   d3d9_font_t *font = (d3d9_font_t*)data;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
+   if (font)
+      font->xmb_plastic = block && block->xmb_plastic;
+}
+
 static void d3d9_font_render_msg(
       void *userdata, void *data,
       const char *msg, size_t msg_len,
@@ -1830,7 +1820,10 @@ static void d3d9_font_render_msg(
       if (_chain)
       {
          IDirect3DDevice9_SetVertexShader(d3d->dev, (LPDIRECT3DVERTEXSHADER9)(&_chain->stock_shader)->vprg);
-         IDirect3DDevice9_SetPixelShader(d3d->dev, (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
+         IDirect3DDevice9_SetPixelShader(d3d->dev,
+               font->xmb_plastic && _chain->font_plastic_shader
+               ? _chain->font_plastic_shader
+               : (LPDIRECT3DPIXELSHADER9)_chain->stock_shader.fprg);
       }
    }
 
@@ -1955,6 +1948,13 @@ static void d3d9_font_render_msg(
       } while (0)
 #include "../font_layout.h"
 #undef D3D9_FONT_QUAD
+   }
+
+   if (font->xmb_plastic)
+   {
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      if (_chain)
+         IDirect3DDevice9_SetPixelShader(d3d->dev, (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
    }
 
 }
@@ -2788,62 +2788,67 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
       for (i = 0; i < chain->chain.passes->count; i++)
          d3d9_hlsl_release_programs(&chain->chain.passes->data[i]);
       d3d9_hlsl_release_programs(&chain->stock_shader);
+      if (chain->plastic_shader)
+         IDirect3DPixelShader9_Release(chain->plastic_shader);
+      chain->plastic_shader = NULL;
+      if (chain->font_plastic_shader)
+         IDirect3DPixelShader9_Release(chain->font_plastic_shader);
+      chain->font_plastic_shader = NULL;
    }
 
-   /* The menu effects compiled so far */
-   {
-      unsigned i;
-      for (i = 0; i < 6; i++)
-      {
-         if (!(chain->pipeline_ready & (1u << i)))
-            continue;
-         d3d9_hlsl_release_programs(&chain->pipeline_shaders[i]);
-         hlsl_pass_data_free(&chain->pipeline_data[i]);
-      }
-      chain->pipeline_ready = 0;
-      chain->pipeline_tried = 0;
-   }
 }
 
-/* Menu effect @idx's program (0..5: ribbon, simple ribbon, simple snow,
- * snow, bokeh, snowflake), compiled the first time the effect is drawn
- * rather than all six when the chain is made: at most one is ever on
- * screen. False when it cannot be had, and the effect is not drawn; one
- * that will not compile is not tried again until the chain is remade. */
-static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev, unsigned idx)
+static int d3d9_hlsl_effect_register(const hlsl_pass_data_t *pd,
+      bool vertex, const char *name)
 {
-   const char *src;
-   uint8_t bit;
-   if (idx > 5)
-      return false;
-   bit = (uint8_t)(1u << idx);
-   if (chain->pipeline_ready & bit)
-      return true;
-   if (chain->pipeline_tried & bit)
-      return false;
-   chain->pipeline_tried |= bit;
-   switch (idx)
+   const DWORD *code = vertex ? pd->vs_bytecode : pd->ps_bytecode;
+   size_t dwords     = vertex ? pd->vs_bytecode_dwords : pd->ps_bytecode_dwords;
+   if (!code || !dwords)
+      return -1;
+   return d3d9_hlsl_ctab_find_register(code, dwords, name, NULL, NULL);
+}
+
+static void *gfx_display_d3d9_hlsl_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   struct d3d9_hlsl_effect *fx;
+   if (     !d3d || !d3d->dev || !desc || !desc->hlsl_sm3
+         || d3d9_hlsl_effect_count >= ARRAY_SIZE(d3d9_hlsl_effects))
+      return NULL;
+   fx = &d3d9_hlsl_effects[d3d9_hlsl_effect_count];
+   memset(fx, 0, sizeof(*fx));
+   hlsl_uniform_map_init(&fx->data.vs_map);
+   hlsl_uniform_map_init(&fx->data.ps_map);
+   if (!d3d9_hlsl_load_program_ex(d3d->dev, &fx->shader, desc->hlsl_sm3,
+            &fx->data))
    {
-      case 0:  src = hlsl_ribbon_program;        break;
-      case 1:  src = hlsl_ribbon_simple_program; break;
-      case 2:  src = hlsl_simple_snow_program;   break;
-      case 3:  src = hlsl_snow_program;          break;
-      case 4:  src = hlsl_bokeh_program;         break;
-      default: src = hlsl_snowflake_program;     break;
+      RARCH_WARN("[D3D9 HLSL] Could not compile a menu effect, it is not drawn.\n");
+      return NULL;
    }
-   hlsl_uniform_map_init(&chain->pipeline_data[idx].vs_map);
-   hlsl_uniform_map_init(&chain->pipeline_data[idx].ps_map);
-   chain->pipeline_data[idx].vs_bytecode = NULL;
-   chain->pipeline_data[idx].ps_bytecode = NULL;
-   if (!d3d9_hlsl_load_program_ex(dev, &chain->pipeline_shaders[idx], src,
-            &chain->pipeline_data[idx]))
+   fx->flags          = desc->flags;
+   /* Found once, rather than read out of the bytecode every frame */
+   fx->vs_mvp         = d3d9_hlsl_effect_register(&fx->data, true,  "modelViewProj");
+   fx->vs_ribbon      = d3d9_hlsl_effect_register(&fx->data, true,  "Ribbon");
+   fx->vs_time        = d3d9_hlsl_effect_register(&fx->data, true,  "time");
+   fx->ps_time        = d3d9_hlsl_effect_register(&fx->data, false, "time");
+   fx->vs_output_size = d3d9_hlsl_effect_register(&fx->data, true,  "OutputSize");
+   fx->ps_output_size = d3d9_hlsl_effect_register(&fx->data, false, "OutputSize");
+   fx->vs_alpha       = d3d9_hlsl_effect_register(&fx->data, true,  "alpha");
+   fx->ps_alpha       = d3d9_hlsl_effect_register(&fx->data, false, "alpha");
+   d3d9_hlsl_effect_count++;
+   return fx;
+}
+
+static void d3d9_hlsl_effects_free(void)
+{
+   unsigned i;
+   for (i = 0; i < d3d9_hlsl_effect_count; i++)
    {
-      RARCH_WARN("[D3D9 HLSL] Could not compile menu effect %u, it is not drawn.\n", idx);
-      return false;
+      d3d9_hlsl_release_programs(&d3d9_hlsl_effects[i].shader);
+      hlsl_pass_data_free(&d3d9_hlsl_effects[i].data);
    }
-   chain->pipeline_ready |= bit;
-   return true;
+   d3d9_hlsl_effect_count = 0;
 }
 
 static void hlsl_d3d9_renderchain_free(void *data)
@@ -2921,22 +2926,42 @@ static bool hlsl_d3d9_renderchain_init(
             stock_hlsl_program, &chain->stock_data))
       return false;
 
+   {
+      char source[1536];
+      D3DBlob code = NULL;
+      size_t len = xmb_plastic_source(source, sizeof(source),
+            XMB_PLASTIC_SM3_PREFIX, "return plastic;}", false);
+      if (len && d3d_compile(source, len, NULL, "main", "ps_3_0", &code))
+         IDirect3DDevice9_CreatePixelShader(dev,
+               (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+               &chain->plastic_shader);
+      if (code)
+         code->lpVtbl->Release(code);
+   }
+   {
+      char source[1536];
+      D3DBlob code = NULL;
+      size_t len = xmb_plastic_source(source, sizeof(source),
+            XMB_PLASTIC_SM3_PREFIX, "return plastic;}", true);
+      if (len && d3d_compile(source, len, NULL, "main", "ps_3_0", &code))
+         IDirect3DDevice9_CreatePixelShader(dev,
+               (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+               &chain->font_plastic_shader);
+      if (code)
+         code->lpVtbl->Release(code);
+   }
+
    IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
    IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
-
-   /* The menu effects' programs are compiled when first drawn; see
-    * hlsl_d3d9_pipeline_ready */
-   chain->pipeline_ready = 0;
-   chain->pipeline_tried = 0;
 
    return true;
 }
 
-/* The output size of @pass's scale for an input of @in_w x @in_h, into
- * *out_w and *out_h */
+/* The output size of @pass's scale for an input of @in_w x @in_h, the
+ * core's frame being @orig_dims, into *out_w and *out_h */
 static void d3d9_hlsl_pass_out_size(const hlsl_renderchain_t *chain,
       const struct shader_pass *pass, unsigned in_w, unsigned in_h,
-      unsigned *out_w, unsigned *out_h)
+      unsigned orig_dims, unsigned *out_w, unsigned *out_h)
 {
    switch (pass->info.pass->fbo.type_x)
    {
@@ -2949,6 +2974,9 @@ static void d3d9_hlsl_pass_out_size(const hlsl_renderchain_t *chain,
       case RARCH_SCALE_INPUT:
          *out_w = pass->info.pass->fbo.scale_x * in_w;
          break;
+      case RARCH_SCALE_ORIGINAL:
+         *out_w = pass->info.pass->fbo.scale_x * VIDEO_SCALE_W(orig_dims);
+         break;
    }
    switch (pass->info.pass->fbo.type_y)
    {
@@ -2960,6 +2988,9 @@ static void d3d9_hlsl_pass_out_size(const hlsl_renderchain_t *chain,
          break;
       case RARCH_SCALE_INPUT:
          *out_h = pass->info.pass->fbo.scale_y * in_h;
+         break;
+      case RARCH_SCALE_ORIGINAL:
+         *out_h = pass->info.pass->fbo.scale_y * VIDEO_SCALE_H(orig_dims);
          break;
    }
 }
@@ -3029,7 +3060,8 @@ static void d3d9_hlsl_renderchain_run(d3d9_video_t *d3d,
       IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, target);
 
       d3d9_hlsl_pass_out_size(chain, from_pass, current_width,
-            current_height, &out_width, &out_height);
+            current_height, VIDEO_SCALE_PACK(width, height),
+            &out_width, &out_height);
 
       /* Clear out whole FBO. */
       viewport.Width  = VIDEO_SCALE_W(to_pass->info.tex_dims);
@@ -6755,6 +6787,12 @@ static hlsl_renderchain_t *d3d9_hlsl_views_chain_new(d3d9_video_t *d3d,
    c->view              = view;
    hlsl_uniform_map_init(&c->stock_data.vs_map);
    hlsl_uniform_map_init(&c->stock_data.ps_map);
+   c->plastic_shader = main->plastic_shader;
+   if (c->plastic_shader)
+      IDirect3DPixelShader9_AddRef(c->plastic_shader);
+   c->font_plastic_shader = main->font_plastic_shader;
+   if (c->font_plastic_shader)
+      IDirect3DPixelShader9_AddRef(c->font_plastic_shader);
    c->stock_shader      = main->stock_shader;
    if (c->stock_shader.vprg)
       IDirect3DVertexShader9_AddRef(
@@ -6949,6 +6987,32 @@ static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
 #define D3D9V_PS_BIND(d, i)        IDirect3DDevice9_SetPixelShader((d)->dev, \
       (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
 #include "../common/d3d9_views.h"
+
+#include "d3d_shaders/bloom_sm3.hlsl.h"
+
+static bool d3d9_hlsl_bloom_ps_make(d3d9_video_t *d3d)
+{
+   bool ok;
+   D3DBlob code = NULL;
+   if (!d3d_compile(bloom_sm3_ps_source, strlen(bloom_sm3_ps_source), "bloom", "main_fragment", "ps_3_0",
+            &code))
+      return false;
+   ok = SUCCEEDED(IDirect3DDevice9_CreatePixelShader(d3d->dev,
+            (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+            (LPDIRECT3DPIXELSHADER9*)&d3d->bloom.ps));
+   d3d->bloom.ps_reg = d3d9_hlsl_ctab_find_register(
+         (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+         code->lpVtbl->GetBufferSize(code) / sizeof(DWORD), "p",
+         NULL, NULL);
+   code->lpVtbl->Release(code);
+   return ok;
+}
+
+#define D3D9B_FN(name) d3d9_hlsl_##name
+#define D3D9B_FREE(d) IDirect3DPixelShader9_Release((LPDIRECT3DPIXELSHADER9)(d)->bloom.ps)
+#define D3D9B_BIND(d) IDirect3DDevice9_SetPixelShader((d)->dev, (LPDIRECT3DPIXELSHADER9)(d)->bloom.ps)
+#include "../common/d3d9_bloom.h"
+
 
 #ifdef D3D9_HW_RENDER
 /* View @v of the core's texture @src copied into @c's frame for this
@@ -7438,6 +7502,7 @@ static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
 
 #ifdef D3D9_VIEWS
    /* Its targets are in the default pool, which a reset drops. */
+   d3d9_hlsl_bloom_free(d3d);
    d3d9_hlsl_views_release(d3d);
 #endif
 
@@ -7469,6 +7534,8 @@ static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
       IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
       d3d9_hlsl_menu_pipeline_vbo = NULL;
    }
+   d3d9_hlsl_menu_pipeline_mesh_id = 0;
+   d3d9_hlsl_effects_free();
 
    if (d3d9_hlsl_overlay_decl)
    {
@@ -7529,6 +7596,10 @@ static void d3d9_hlsl_log_info(const struct LinkInfo *info)
       case RARCH_SCALE_ABSOLUTE:
          RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
          break;
+
+      case RARCH_SCALE_ORIGINAL:
+         RARCH_LOG("Original @ %fx\n", info->pass->fbo.scale_x);
+         break;
    }
 
    RARCH_LOG("\tScale type (Y): ");
@@ -7545,6 +7616,10 @@ static void d3d9_hlsl_log_info(const struct LinkInfo *info)
 
       case RARCH_SCALE_ABSOLUTE:
          RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
+         break;
+
+      case RARCH_SCALE_ORIGINAL:
+         RARCH_LOG("Original @ %fx\n", info->pass->fbo.scale_y);
          break;
    }
 
@@ -7640,6 +7715,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    struct LinkInfo link_info;
 #ifndef _XBOX
    unsigned current_width, current_height, out_width, out_height;
+   unsigned orig_dims;
 #endif
    unsigned i           = 0;
    settings_t *settings = config_get_ptr();
@@ -7681,6 +7757,9 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    d3d9_hlsl_log_info(&link_info);
 
 #ifndef _XBOX
+   /* The largest frame the core can send; current_* moves on with
+    * each pass, and an "original" pass is sized from this instead */
+   orig_dims      = link_info.tex_dims;
    current_width  = VIDEO_SCALE_W(link_info.tex_dims);
    current_height = VIDEO_SCALE_H(link_info.tex_dims);
    out_width      = 0;
@@ -7699,6 +7778,9 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
          case RARCH_SCALE_INPUT:
             out_width = link_info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = link_info.pass->fbo.scale_x * VIDEO_SCALE_W(orig_dims);
+            break;
       }
       switch (link_info.pass->fbo.type_y)
       {
@@ -7710,6 +7792,9 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
             break;
          case RARCH_SCALE_INPUT:
             out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = link_info.pass->fbo.scale_y * VIDEO_SCALE_H(orig_dims);
             break;
       }
 
@@ -9900,7 +9985,7 @@ static font_renderer_t d3d9_hlsl_font = {
    d3d9_font_render_msg,
    "d3d9_hlsl",
    d3d9_font_get_glyph,
-   NULL, /* bind_block */
+   d3d9_font_bind_block,
    NULL, /* flush */
    d3d9_font_get_message_width,
    d3d9_font_get_line_metrics
@@ -9965,5 +10050,14 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    true,
    true,
    gfx_display_d3d9_hlsl_scissor_begin,
-   gfx_display_d3d9_hlsl_scissor_end
+   gfx_display_d3d9_hlsl_scissor_end,
+   NULL,
+#ifdef D3D9_VIEWS
+   d3d9_hlsl_bloom_begin,
+   d3d9_hlsl_bloom_end,
+#else
+   NULL, NULL,
+#endif
+   NULL,                                     /* bloom_composite */
+   gfx_display_d3d9_hlsl_effect_install
 };

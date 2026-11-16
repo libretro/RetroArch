@@ -754,6 +754,7 @@ typedef struct settings
       bool video_threaded_display_pacing;
       bool video_d3d9ex_present;
       bool video_present_timing_from_display;
+      bool video_skip_dupe_frames;
       bool video_font_enable;
       bool video_disable_composition;
       bool video_post_filter_record;
@@ -890,6 +891,9 @@ typedef struct settings
       bool notification_show_autoconfig_fails;
       bool notification_show_cheats_applied;
       bool notification_show_patch_applied;
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+      bool notification_show_core_signing_test_key;
+#endif
       bool notification_show_remap_load;
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
@@ -924,6 +928,7 @@ typedef struct settings
       bool menu_linear_filter;
       bool menu_texture_mipmapping;
       bool menu_horizontal_animation;
+      bool menu_scroll_quick;
       bool menu_scroll_fast;
       bool menu_show_online_updater;
       bool menu_show_full_paths;
@@ -973,6 +978,9 @@ typedef struct settings
       bool menu_rgui_switch_icons;
       bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
+      bool menu_xmb_plastic_effect_enable;
+      bool menu_xmb_ribbon_bloom_enable;
+      bool menu_xmb_ribbon_particles_enable;
       bool menu_xmb_show_horizontal_list;
       bool menu_xmb_show_title_header;
       bool menu_xmb_entry_icons;

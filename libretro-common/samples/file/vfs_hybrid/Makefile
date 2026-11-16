@@ -23,10 +23,19 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-# -DHAVE_MMAP so the local branch really produces a mapping; without
+# HAVE_MMAP so the local branch really produces a mapping; without
 # it the zero-copy check has nothing to assert and only reports a skip.
-CFLAGS += -Wall -pedantic -std=gnu99 -g1 -DHAVE_MMAP \
-	-I$(LIBRETRO_COMM_DIR)/include
+# Windows maps through vfs.h's _WIN32 backend and has no <sys/mman.h>.
+UNAME_S := $(shell uname -s 2>/dev/null)
+ifneq (,$(filter MINGW% MSYS% CYGWIN%,$(UNAME_S)))
+   MMAP ?= 0
+else
+   MMAP ?= 1
+endif
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include
+ifeq ($(MMAP),1)
+   CFLAGS += -DHAVE_MMAP
+endif
 
 # The wrapper-allocation failure cases exist because that path is
 # otherwise unreachable: calloc does not fail on demand, so the branch

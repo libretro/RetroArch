@@ -9,8 +9,8 @@
 #else
 #include <unistd.h>
 #endif
-#include <formats/rdvd_vfs.h>
-#include <formats/rdvd_stream.h>
+#include <streams/rdvd_vfs.h>
+#include <streams/rdvd_stream.h>
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
 #include <features/features_cpu.h>

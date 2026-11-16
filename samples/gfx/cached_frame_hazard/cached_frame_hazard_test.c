@@ -25,8 +25,7 @@
  *
  * The protocol is reproduced here rather than linked, so the test
  * stays self-contained (the real thing lives in a TU that drags in
- * most of the frontend).  Keep the two in step: the reader and
- * retire sequences below are line-for-line the ones in
+ * most of the frontend). Keep the reader and retire ordering in step with
  * video_driver_cached_frame_read() and
  * video_driver_cached_frame_retire().
  *
@@ -97,7 +96,7 @@ static retro_atomic_int_t stop;
  * plain. */
 static retro_atomic_int_t reads_with_pixels;
 static retro_atomic_int_t reads_empty;
-static retro_atomic_int_t revalidate_retries;
+static retro_atomic_int_t revalidate_drops;
 static long               retires;
 static long               drain_spins;
 
@@ -197,7 +196,7 @@ static void cached_frame_retire(void)
    cached_frame_invalidate();
    /* Bump first, then scan: a reader that armed before the bump is
     * visible to the scan, one that arms after it sees the new
-    * generation and retries. */
+    * generation and drops the read. */
    retro_atomic_fetch_add_int(&generation, 1);
    hazard_drain();
 }
@@ -242,8 +241,9 @@ static void cached_frame_read(void)
       {
          hazard_release(slot);
          slot = -1;
-         retro_atomic_inc_int(&revalidate_retries);
-         continue;
+         retro_atomic_inc_int(&revalidate_drops);
+         retro_atomic_inc_int(&reads_empty);
+         return;
       }
       break;
    }
@@ -329,12 +329,12 @@ int main(void)
    {
       int pixels  = retro_atomic_load_acquire_int(&reads_with_pixels);
       int empty   = retro_atomic_load_acquire_int(&reads_empty);
-      int retried = retro_atomic_load_acquire_int(&revalidate_retries);
+      int dropped = retro_atomic_load_acquire_int(&revalidate_drops);
 
       printf("retires=%ld reads_with_pixels=%d reads_empty=%d\n",
             retires, pixels, empty);
-      printf("drain_spins=%ld revalidate_retries=%d\n",
-            drain_spins, retried);
+      printf("drain_spins=%ld revalidate_drops=%d\n",
+            drain_spins, dropped);
 
       /* A run that never contended proves nothing.  The two builds
        * reach different halves of the protocol, so each asserts on
@@ -347,7 +347,7 @@ int main(void)
          return 1;
       }
 #ifdef TORTURE
-      if (!retried)
+      if (!dropped)
       {
          printf("FAIL: no reader ever caught a racing retire; "
                "the re-validate path went untested\n");

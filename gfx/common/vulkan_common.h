@@ -46,6 +46,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_atomic.h>
 #include <rthreads/retro_eventcount.h>
+#include <rthreads/rthreads.h>
 
 #include <libretro.h>
 #include <libretro_vulkan.h>
@@ -272,6 +273,10 @@ typedef struct vulkan_context
    /* Headset output, or NULL. Always present, like debug_callback: every
     * translation unit that includes this header shares the layout. */
    struct vulkan_openxr *xr;
+   struct vulkan_session_key *session_instance_key;
+   struct vulkan_session_key *session_device_key;
+   struct vulkan_upscaler *session_upscaler;
+   char *session_upscaler_dir;
 
    VkInstance instance;
    VkPhysicalDevice gpu;
@@ -701,6 +706,12 @@ const char *vulkan_get_moltenvk_version(void);
 
 void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       bool destroy_surface);
+
+/* After all video drivers have stopped, including a non-Vulkan one. */
+void vulkan_context_session_cache_free(void);
+/* Keep native NGX from keep_dir until its replacement is ready.
+ * NULL retires all cached sessions. Returns whether a session remains. */
+bool vulkan_context_session_cache_prune(const char *keep_dir);
 
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,

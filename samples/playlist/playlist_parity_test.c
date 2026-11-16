@@ -1859,6 +1859,186 @@ static void lane_push_starts_without_thumbnail_flags(void)
       fprintf(stderr, "  [pass] a pushed entry starts without thumbnail flags\n");
 }
 
+/* ------------------------------------------------------------------ */
+/* push order: pushes put the newest first, a push of what is there  */
+/* moves it to the top, a full playlist drops its last entry; checked */
+/* against a list kept here through pushes, unchecked pushes, deletes */
+/* and clears, on a playlist that was loaded first and one that grows */
+/* past where its storage started.                                     */
+/* ------------------------------------------------------------------ */
+
+#define ORDER_MAX 4096
+
+static unsigned order_seed = 0x9e3779b9u;
+
+static unsigned order_rnd(unsigned n)
+{
+   order_seed ^= order_seed << 13;
+   order_seed ^= order_seed >> 17;
+   order_seed ^= order_seed << 5;
+   return n ? order_seed % n : 0;
+}
+
+static bool order_push(playlist_t *pl, unsigned id, bool unchecked)
+{
+   char p[64];
+   struct playlist_entry e;
+   memset(&e, 0, sizeof(e));
+   snprintf(p, sizeof(p), "/games/order/%04u.bin", id);
+   e.path      = p;
+   e.label     = p + 13;
+   e.core_path = (char*)"/cores/order_libretro.so";
+   e.core_name = (char*)"Order";
+   return unchecked ? playlist_push_unchecked(pl, &e)
+                    : playlist_push(pl, &e);
+}
+
+/* The playlist holds @model[0..@n), newest first */
+static bool order_matches(playlist_t *pl, const unsigned *model,
+      size_t n, const char *what, unsigned step)
+{
+   size_t i;
+   if (playlist_size(pl) != n)
+   {
+      CHECK(false, "%s: step %u: size %u, wanted %u", what, step,
+            (unsigned)playlist_size(pl), (unsigned)n);
+      return false;
+   }
+   for (i = 0; i < n; i++)
+   {
+      char want[64];
+      const struct playlist_entry *e = NULL;
+      playlist_get_index(pl, i, &e);
+      snprintf(want, sizeof(want), "/games/order/%04u.bin", model[i]);
+      if (!e || !e->path || strcmp(e->path, want))
+      {
+         CHECK(false, "%s: step %u: entry %u is %s, wanted %s", what,
+               step, (unsigned)i, (e && e->path) ? e->path : "(none)",
+               want);
+         return false;
+      }
+   }
+   return true;
+}
+
+static size_t order_find(const unsigned *model, size_t n, unsigned id)
+{
+   size_t i;
+   for (i = 0; i < n; i++)
+      if (model[i] == id)
+         return i;
+   return n;
+}
+
+/* the model's push: to the front, the last out when full */
+static size_t order_model_push(unsigned *model, size_t n, size_t cap,
+      unsigned id)
+{
+   if (n == cap)
+      n--;
+   memmove(model + 1, model, n * sizeof(*model));
+   model[0] = id;
+   return n + 1;
+}
+
+static void lane_push_order(void)
+{
+   unsigned had = failures;
+   static unsigned model[ORDER_MAX];
+   char path[512];
+   char doc[4096];
+   size_t _len = 0, n = 0, cap = 37;
+   unsigned i, step, next_id = 0;
+   playlist_config_t config;
+   playlist_t *pl;
+
+   /* loaded first: ten entries appended where the file lists them */
+   _len += (size_t)snprintf(doc + _len, sizeof(doc) - _len,
+         "{\n  \"version\": \"1.5\",\n  \"items\": [\n");
+   for (i = 0; i < 10; i++)
+      _len += (size_t)snprintf(doc + _len, sizeof(doc) - _len,
+            "    { \"path\": \"/games/order/%04u.bin\", \"label\": \"%04u.bin\","
+            " \"core_path\": \"/cores/order_libretro.so\", \"core_name\": \"Order\" }%s\n",
+            next_id + i, next_id + i, (i < 9) ? "," : "");
+   _len += (size_t)snprintf(doc + _len, sizeof(doc) - _len, "  ]\n}\n");
+   snprintf(path, sizeof(path), "%s/order.lpl", fixture_dir);
+   CHECK(write_whole(path, doc), "fixture write");
+   config_defaults(&config, path);
+   config.capacity = cap;
+   if (!(pl = playlist_init(&config)))
+   {
+      CHECK(false, "push order: init failed");
+      return;
+   }
+   for (i = 0; i < 10; i++)
+      model[n++] = next_id++;
+   order_matches(pl, model, n, "push order: loaded", 0);
+
+   for (step = 1; step <= 3000 && failures == had; step++)
+   {
+      unsigned op = order_rnd(100);
+      if (op < 40)
+      {
+         /* new: either push puts it first */
+         unsigned id = next_id++;
+         CHECK(order_push(pl, id, op < 20), "push order: step %u: new push failed", step);
+         n = order_model_push(model, n, cap, id);
+      }
+      else if (op < 70 && n)
+      {
+         /* there already: to the top, or nothing where it is first */
+         size_t at   = order_rnd((unsigned)n);
+         unsigned id = model[at];
+         bool pushed = order_push(pl, id, false);
+         CHECK(pushed == (at != 0), "push order: step %u: push of entry %u returned %d",
+               step, (unsigned)at, (int)pushed);
+         if (at)
+         {
+            memmove(model + 1, model, at * sizeof(*model));
+            model[0] = id;
+         }
+      }
+      else if (op < 90 && n)
+      {
+         size_t at = order_rnd((unsigned)n);
+         playlist_delete_index(pl, at);
+         memmove(model + at, model + at + 1, (n - at - 1) * sizeof(*model));
+         n--;
+      }
+      else if (op < 92)
+      {
+         playlist_clear(pl);
+         n = 0;
+      }
+      else
+         continue;
+      order_matches(pl, model, n, "push order", step);
+   }
+   playlist_free(pl);
+
+   /* grown: thousands of pushes to the front of one playlist */
+   config_defaults(&config, path);
+   config.capacity = ORDER_MAX;
+   remove(path);
+   if (!(pl = playlist_init(&config)))
+   {
+      CHECK(false, "push order: second init failed");
+      return;
+   }
+   n = 0;
+   for (i = 0; i < ORDER_MAX - 1; i++)
+   {
+      unsigned id = next_id++;
+      CHECK(order_push(pl, id, (i & 1) != 0), "push order: grow push %u failed", i);
+      n = order_model_push(model, n, ORDER_MAX, id);
+   }
+   order_matches(pl, model, n, "push order: grown", 0);
+   playlist_free(pl);
+
+   if (failures == had)
+      printf("  [pass] pushes keep the newest first, bump, evict and delete as a list would\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -1910,6 +2090,7 @@ int main(int argc, char *argv[])
    lane_update_survives_failed_copy();
    lane_push_runtime_survives_failed_copy();
    lane_push_starts_without_thumbnail_flags();
+   lane_push_order();
 
 #ifdef _WIN32
    {

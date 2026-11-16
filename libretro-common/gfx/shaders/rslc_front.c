@@ -853,7 +853,15 @@ static bool rslc_pp_expand_token(struct rslc_pp *pp, const struct rslc_tok *t,
    if (!m)
       return true;
    if (sym->flags & RSLC_SYM_BUSY)
+   {
+      /* Its own name inside its own expansion: painted, so it is never
+       * a macro again however often those tokens are scanned from here
+       * on - as an argument prescanned and then rescanned in the body
+       * it was substituted into is.  Both callers hold the token they
+       * go on to emit. */
+      ((struct rslc_tok*)t)->flags |= RSLC_TF_NOEXPAND;
       return true;
+   }
 
    if (m->function_like)
    {
@@ -1327,6 +1335,13 @@ static bool rslc_pp_version(struct rslc_pp *pp, uint32_t line)
          }
       }
       if (ok && pp->c->version != 450 && pp->c->version != 460
+#ifdef RSLC_EXTENDED
+            /* an emulator's own stages say 420 to 440 as well and mean
+             * the same dialect: the layout qualifiers they need came
+             * with 420 */
+            && !(!pp->c->es && (pp->c->version == 420 || pp->c->version == 430
+                  || pp->c->version == 440))
+#endif
             && !(pp->c->es && (pp->c->version == 310 || pp->c->version == 320)))
       {
          rslc_err(pp->c, "unsupported #version", NULL, line);
@@ -1767,6 +1782,7 @@ struct rslc_quals
    bool     has_storage;
    bool     push_constant;
    bool     std140;
+   bool     std430;       /* said so: RSLC_EXTENDED honours it on a uniform block */
    bool     is_uniform;
    bool     is_const;
    bool     is_in;
@@ -2051,6 +2067,9 @@ static bool rslc_ty_converts(const struct rslc_type *from, const struct rslc_typ
       return false;
    if (from->kind != RSLC_TY_SCALAR && from->kind != RSLC_TY_VEC)
       return false;
+   if (to->base == RSLC_BASE_DOUBLE)
+      return to->kind == RSLC_TY_SCALAR && (from->base == RSLC_BASE_INT
+            || from->base == RSLC_BASE_UINT || from->base == RSLC_BASE_FLOAT);
    if (to->base == RSLC_BASE_FLOAT)
       return from->base == RSLC_BASE_INT || from->base == RSLC_BASE_UINT;
    if (to->base == RSLC_BASE_UINT)
@@ -2146,6 +2165,17 @@ static uint32_t rslc_p_convert(struct rslc_parser *p, uint32_t e,
       return e;
    if (n->op == RSLC_OP_CONST && n->type->kind == RSLC_TY_SCALAR && to->kind == RSLC_TY_SCALAR)
    {
+      /* A literal made a double keeps the value it was written with:
+       * the node carries the 64 bits, as a float literal's does */
+      if (to->base == RSLC_BASE_DOUBLE && n->type->base != RSLC_BASE_BOOL)
+      {
+         double   d = n->type->base == RSLC_BASE_FLOAT ? rslc_p_const_double(n)
+            : n->type->base == RSLC_BASE_INT ? (double)(int32_t)n->a : (double)n->a;
+         uint64_t bits;
+         memcpy(&bits, &d, sizeof(bits));
+         return rslc_p_mk(p, RSLC_OP_CONST, to, rslc_float_bits((float)d),
+               (uint32_t)bits, (uint32_t)(bits >> 32), 0, n->line, 0);
+      }
       /* Fold a scalar literal. */
       if (to->base == RSLC_BASE_FLOAT)
       {
@@ -2848,6 +2878,9 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
    /* a failed compile's nodes may name lists and nodes never made */
    if (!e || p->c->failed || n->nonconstant)
       return false;
+   /* a double is calculated where it runs: no constant has 64 bits here */
+   if (n->type && n->type->base == RSLC_BASE_DOUBLE)
+      return false;
    switch (n->op)
    {
       case RSLC_OP_CONST:
@@ -3051,11 +3084,12 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
  *   2 3 4     vec2 vec3 vec4; i2.. ivec, u2.. uvec, b2.. bvec
  *   S         sampler2D
  *   A N Z     sampler2DArray, sampler2DMSArray, samplerBuffer
- *   J K       image2D, image2DArray; g the gvec4 of the image's base,
- *             matched exactly
- *   D1 D3 DC DR  sampler1D, sampler3D, samplerCube, samplerCubeArray
+ *   J K L     image2D, image2DArray, image2DMS; g the gvec4 of the
+ *             image's base, matched exactly
+ *   D1 D3 DC DR DM  sampler1D, sampler3D, samplerCube, samplerCubeArray,
+ *             sampler2DMS
  *   H1 H2 HA HC HR  the shadow sampler1D, 2D, 2DArray, Cube, CubeArray
- *   P         subpassInput
+ *   P W       subpassInput, subpassInputMS
  *             (RSLC_EXTENDED; their overloads are absent otherwise)
  *   M         any matrix;  Q square matrix;  T transposed M result
  *   X         any scalar or vector, same type as other X
@@ -3132,7 +3166,7 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_BITFIELDREVERSE, "bitfieldReverse", "I:I;U:U" },
    { RSLC_BFN_BITCOUNT, "bitCount", "I:I;U:I" },
    { RSLC_BFN_FINDLSB, "findLSB", "I:I;U:I" }, { RSLC_BFN_FINDMSB, "findMSB", "I:I;U:I" },
-   { RSLC_BFN_TEXTURESIZE, "textureSize", "S i:i2" RSLC_X(";A i:i3;N:i3;Z:i"
+   { RSLC_BFN_TEXTURESIZE, "textureSize", "S i:i2" RSLC_X(";A i:i3;N:i3;Z:i;DM:i2"
          ";D1 i:i;D3 i:i3;DC i:i2;DR i:i3;H1 i:i;H2 i:i2;HA i:i3;HC i:i2;HR i:i3") },
    { RSLC_BFN_TEXTUREQUERYLOD, "textureQueryLod", "S 2:2" RSLC_X(";A 2:2"
          ";D1 f:2;D3 3:2;DC 3:2;DR 3:2;H1 f:2;H2 2:2;HA 2:2;HC 3:2;HR 3:2") },
@@ -3147,7 +3181,7 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_TEXTUREOFFSET, "textureOffset", "S 2 i2:4;S 2 i2 f:4" RSLC_X(";A 3 i2:4;A 3 i2 f:4"
          ";D1 f i:4;D1 f i f:4;D3 3 i3:4;D3 3 i3 f:4"
          ";H1 3 i:f;H1 3 i f:f;H2 3 i2:f;H2 3 i2 f:f;HA 4 i2:f") },
-   { RSLC_BFN_TEXELFETCH, "texelFetch", "S i2 i:4" RSLC_X(";A i3 i:4;N i3 i:4;Z i:4;D1 i i:4;D3 i3 i:4") },
+   { RSLC_BFN_TEXELFETCH, "texelFetch", "S i2 i:4" RSLC_X(";A i3 i:4;N i3 i:4;Z i:4;D1 i i:4;D3 i3 i:4;DM i2 i:4") },
    { RSLC_BFN_TEXELFETCHOFFSET, "texelFetchOffset", "S i2 i i2:4" },
    { RSLC_BFN_TEXTUREPROJOFFSET, "textureProjOffset", "S 3 i2:4;S 4 i2:4;S 3 i2 f:4;S 4 i2 f:4" },
    { RSLC_BFN_TEXTURELODOFFSET, "textureLodOffset", "S 2 f i2:4" RSLC_X(";A 3 f i2:4"
@@ -3185,10 +3219,11 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_MEMORYBARRIERBUFFER, "memoryBarrierBuffer", ":v" },
    { RSLC_BFN_MEMORYBARRIERIMAGE, "memoryBarrierImage", ":v" },
    { RSLC_BFN_GROUPMEMORYBARRIER, "groupMemoryBarrier", ":v" },
-   { RSLC_BFN_IMAGESTORE, "imageStore", "J i2 g:v;K i3 g:v" },
-   { RSLC_BFN_IMAGELOAD, "imageLoad", "J i2:4;K i3:4" },
-   { RSLC_BFN_IMAGESIZE, "imageSize", "J:i2;K:i3" },
-   { RSLC_BFN_SUBPASSLOAD, "subpassLoad", "P:4" },
+   { RSLC_BFN_IMAGESTORE, "imageStore", "J i2 g:v;K i3 g:v;L i2 i g:v" },
+   { RSLC_BFN_IMAGELOAD, "imageLoad", "J i2:4;K i3:4;L i2 i:4" },
+   { RSLC_BFN_IMAGESIZE, "imageSize", "J:i2;K:i3;L:i2" },
+   { RSLC_BFN_SUBPASSLOAD, "subpassLoad", "P:4;W i:4" },
+   { RSLC_BFN_TEXTURESAMPLES, "textureSamples", "DM:i;N:i" },
    { RSLC_BFN_SUBGROUPELECT, "subgroupElect", ":b" },
    { RSLC_BFN_SUBGROUPMIN, "subgroupMin", "F:F;I:I;U:U" },
    { RSLC_BFN_SUBGROUPMAX, "subgroupMax", "F:F;I:I;U:U" }
@@ -3284,20 +3319,22 @@ static bool rslc_bsig_match_tok(struct rslc_parser *p, const char *tok, unsigned
    else if (len == 2 && (tok[0] == 'D' || tok[0] == 'H'))
    {
       unsigned dim = tok[1] == '1' ? RSLC_SDIM_1D
-         : (tok[1] == '2' || tok[1] == 'A') ? RSLC_SDIM_2D
+         : (tok[1] == '2' || tok[1] == 'A' || tok[1] == 'M') ? RSLC_SDIM_2D
          : tok[1] == '3' ? RSLC_SDIM_3D : RSLC_SDIM_CUBE;
       unsigned fl  = ((tok[1] == 'A' || tok[1] == 'R') ? RSLC_SX_ARRAY : 0)
+         | (tok[1] == 'M' ? RSLC_SX_MS : 0)
          | (tok[0] == 'H' ? RSLC_SX_SHADOW : 0);
       if (t->kind != RSLC_TY_SAMPLERX || t->rows != dim || t->cols != fl)
          return false;
       *sbase = t->base;
       return true;
    }
-   else if (len == 1 && tok[0] == 'P')
-      return t->kind == RSLC_TY_SUBPASSINPUT;
-   else if (len == 1 && (tok[0] == 'J' || tok[0] == 'K'))
+   else if (len == 1 && (tok[0] == 'P' || tok[0] == 'W'))
+      return t->kind == RSLC_TY_SUBPASSINPUT && t->cols == (tok[0] == 'W' ? 2u : 1u);
+   else if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'L'))
    {
-      if (t->kind != (tok[0] == 'J' ? RSLC_TY_IMAGE2D : RSLC_TY_IMAGE2DARRAY))
+      if (t->kind != (tok[0] == 'J' ? RSLC_TY_IMAGE2D
+               : tok[0] == 'K' ? RSLC_TY_IMAGE2DARRAY : RSLC_TY_IMAGE2DMS))
          return false;
       *sbase = t->base;
       return true;
@@ -3391,7 +3428,7 @@ static const struct rslc_type *rslc_bsig_param_type(struct rslc_parser *p,
    if (len == 1 && (tok[0] == 'S' || tok[0] == 'A' || tok[0] == 'N' || tok[0] == 'Z'))
       return actual;
 #ifdef RSLC_EXTENDED
-   if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'P'))
+   if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'L' || tok[0] == 'P' || tok[0] == 'W'))
       return actual;
    if (len == 2 && (tok[0] == 'D' || tok[0] == 'H'))
       return actual;
@@ -3612,11 +3649,12 @@ static bool rslc_p_is_lvalue(struct rslc_parser *p, uint32_t e)
                || v->storage == RSLC_ST_MEMBER)
             return false;
          if (v->storage == RSLC_ST_PARAM && v->dir == RSLC_DIR_IN)
-            return true;   /* in params are writable locals */
+            return !(v->quals & RSLC_VQ_PRECISE);   /* in params are writable locals; const in ones are not */
          if (v->storage == RSLC_ST_BUILTIN)
             return v->builtin == RSLC_BI_POSITION || v->builtin == RSLC_BI_FRAGDEPTH
                || v->builtin == RSLC_BI_POINTSIZE || v->builtin == RSLC_BI_CLIPDISTANCE
                || v->builtin == RSLC_BI_CULLDISTANCE
+               || v->builtin == RSLC_BI_FRAGSTENCILREF
                || (v->builtin == RSLC_BI_LAYER && v->dir == RSLC_DIR_OUT);
          return true;
       }
@@ -3927,6 +3965,42 @@ static uint32_t rslc_p_call(struct rslc_parser *p, struct rslc_sym *name, uint32
       const struct rslc_type *ret = NULL;
       uint8_t  prec = 0;
       uint32_t i;
+#ifdef RSLC_EXTENDED
+      /* The rounding, range and selection functions on doubles: every
+       * number among the arguments a double, and so the result */
+      for (i = 0; i < nargs; i++)
+         if (rslc_p_node(p, args[i])->type->base == RSLC_BASE_DOUBLE)
+            break;
+      if (i < nargs)
+      {
+         const struct rslc_type *dt = rslc_type_basic(p->c, RSLC_TY_SCALAR, RSLC_BASE_DOUBLE, 1, 1);
+         unsigned want = (name->bfn == RSLC_BFN_MIX || name->bfn == RSLC_BFN_CLAMP) ? 3
+            : (name->bfn == RSLC_BFN_MIN || name->bfn == RSLC_BFN_MAX) ? 2
+            : (name->bfn == RSLC_BFN_ABS || name->bfn == RSLC_BFN_SIGN || name->bfn == RSLC_BFN_FLOOR
+                  || name->bfn == RSLC_BFN_CEIL || name->bfn == RSLC_BFN_TRUNC || name->bfn == RSLC_BFN_ROUND
+                  || name->bfn == RSLC_BFN_FRACT || name->bfn == RSLC_BFN_SQRT) ? 1 : 0;
+         if (!want || nargs != want)
+         {
+            rslc_err(p->c, "not a function of doubles: ", name->str, line);
+            return 0;
+         }
+         for (i = 0; i < nargs; i++)
+         {
+            const struct rslc_type *at = rslc_p_node(p, args[i])->type;
+            if (name->bfn == RSLC_BFN_MIX && i == 2 && at->kind == RSLC_TY_SCALAR && at->base == RSLC_BASE_BOOL)
+               continue;
+            if (!rslc_ty_converts(at, dt))
+            {
+               rslc_err(p->c, "an argument that is not a number, in ", name->str, line);
+               return 0;
+            }
+            args[i] = rslc_p_convert(p, args[i], dt);
+         }
+         r = rslc_p_mk(p, RSLC_OP_BUILTIN, dt, name->bfn, rslc_list_new(p->c, args, nargs), 0, 0, line, 0);
+         rslc_scratch_release(p->c, &mark);
+         return r;
+      }
+#endif
       if (!rslc_p_resolve_builtin(p, bs, args, nargs, &ret, line))
          return 0;
 #ifdef RSLC_EXTENDED
@@ -3975,7 +4049,8 @@ static uint32_t rslc_p_var_ref(struct rslc_parser *p, struct rslc_var *v, uint32
       v->precision = rslc_p_default_prec(p, v->type, 0);   /* as glslang: the default applies */
 #ifdef RSLC_EXTENDED
    if (v->storage == RSLC_ST_BUILTIN
-         && (v->builtin == RSLC_BI_POINTCOORD || v->builtin == RSLC_BI_PRIMITIVEID))
+         && (v->builtin == RSLC_BI_POINTCOORD || v->builtin == RSLC_BI_PRIMITIVEID
+            || v->builtin == RSLC_BI_BARYCOORD || v->builtin == RSLC_BI_BARYCOORDNOPERSP))
       p->c->prog.spirv_only = v->name->str;
 #endif
    e = rslc_p_mk(p, RSLC_OP_VAR, v->type, v->id, 0, 0, 0, line, v->precision);
@@ -4054,8 +4129,32 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
                rslc_prec_max(v->precision, f->precision));
       }
 #endif
+#ifdef RSLC_EXTENDED
+      if (     sym->decl && sym->decl->kind == RSLC_DK_VAR
+            && ((struct rslc_var*)sym->decl->ptr)->storage == RSLC_ST_BUILTIN
+            && ((struct rslc_var*)sym->decl->ptr)->builtin == RSLC_BI_FRAGSTENCILREF
+            && !p->c->prog.spirv_only)
+         p->c->prog.spirv_only = "gl_FragStencilRefARB";
+#endif
       if (sym->decl && sym->decl->kind == RSLC_DK_VAR)
          return rslc_p_var_ref(p, (struct rslc_var*)sym->decl->ptr, line);
+#ifdef RSLC_EXTENDED
+      /* gl_WorkGroupSize: the constant the local size layout before it
+       * made (1 where it named none) */
+      if (     p->c->stage == RSLC_STAGE_COMPUTE && !sym->decl
+            && !strcmp(sym->str, "gl_WorkGroupSize"))
+      {
+         uint32_t args[3];
+         unsigned k;
+         for (k = 0; k < 3; k++)
+         {
+            uint32_t n = p->c->prog.cs_local[k];
+            if (!(args[k] = rslc_p_const_uint(p, n ? n : 1, line)))
+               return 0;
+         }
+         return rslc_p_construct(p, rslc_ty_vecn(p, RSLC_BASE_UINT, 3), args, 3, line);
+      }
+#endif
       rslc_err(p->c, "undeclared identifier ", sym->str, line);
       return 0;
    }
@@ -4185,6 +4284,17 @@ static uint32_t rslc_p_postfix_ops(struct rslc_parser *p, uint32_t e)
          {
             if (!rslc_p_expect(p, RSLC_P_LPAREN, "'('") || !rslc_p_expect(p, RSLC_P_RPAREN, "')'"))
                return 0;
+#ifdef RSLC_EXTENDED
+            if (!bt->array_len)
+            {
+               /* an unsized array: how long it is is the buffer's to say */
+               e = rslc_p_mk(p, RSLC_OP_UNARY, p->t_int, e, 0, 0, RSLC_UN_ARRAYLEN, line, 0);
+               if (!e)
+                  return 0;
+               p->c->prog.spirv_only = "length() of an unsized array";
+               continue;
+            }
+#endif
             e = rslc_p_const_int(p, (int32_t)bt->array_len, line);
             continue;
          }
@@ -4370,7 +4480,9 @@ static const struct rslc_type *rslc_p_binary_type(struct rslc_parser *p, uint16_
    if (ta->base != tb->base)
    {
       const struct rslc_type *ca, *cb;
-      enum rslc_base base = (ta->base == RSLC_BASE_FLOAT || tb->base == RSLC_BASE_FLOAT)
+      enum rslc_base base = (ta->base == RSLC_BASE_DOUBLE || tb->base == RSLC_BASE_DOUBLE)
+         ? RSLC_BASE_DOUBLE
+         : (ta->base == RSLC_BASE_FLOAT || tb->base == RSLC_BASE_FLOAT)
          ? RSLC_BASE_FLOAT : RSLC_BASE_UINT;
       ca = rslc_type_basic(p->c, ta->kind, base, ta->rows, ta->cols);
       cb = rslc_type_basic(p->c, tb->kind, base, tb->rows, tb->cols);
@@ -4621,6 +4733,11 @@ static bool rslc_p_image_format(const char *s, uint32_t len, uint8_t *fmt)
       { "rgba32f", RSLC_IMGFMT_RGBA32F }, { "rgba16f", RSLC_IMGFMT_RGBA16F },
       { "r32f", RSLC_IMGFMT_R32F }, { "rgba8", RSLC_IMGFMT_RGBA8 },
       { "rg8", RSLC_IMGFMT_RG8 }, { "r8", RSLC_IMGFMT_R8 },
+      { "rgba8_snorm", RSLC_IMGFMT_RGBA8_SNORM }, { "rg32f", RSLC_IMGFMT_RG32F },
+      { "rg16f", RSLC_IMGFMT_RG16F }, { "r11f_g11f_b10f", RSLC_IMGFMT_R11G11B10F },
+      { "r16f", RSLC_IMGFMT_R16F }, { "rgba16", RSLC_IMGFMT_RGBA16 },
+      { "rgb10_a2", RSLC_IMGFMT_RGB10_A2 }, { "rg16", RSLC_IMGFMT_RG16 },
+      { "r16", RSLC_IMGFMT_R16 },
       { "rgba32i", RSLC_IMGFMT_RGBA32I }, { "rgba16i", RSLC_IMGFMT_RGBA16I },
       { "rgba8i", RSLC_IMGFMT_RGBA8I }, { "r32i", RSLC_IMGFMT_R32I },
       { "rgba32ui", RSLC_IMGFMT_RGBA32UI }, { "rgba16ui", RSLC_IMGFMT_RGBA16UI },
@@ -4658,7 +4775,7 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       else if (len == 6 && !memcmp(s, "offset", 6))   slot = &q->offset;
       else if (len == 13 && !memcmp(s, "push_constant", 13)) q->push_constant = true;
       else if (len == 6 && !memcmp(s, "std140", 6))   q->std140 = true;
-      else if (len == 6 && !memcmp(s, "std430", 6))   { }
+      else if (len == 6 && !memcmp(s, "std430", 6))   q->std430 = true;
       else if (len == 12 && !memcmp(s, "column_major", 12)) { }
       else if (len == 9 && !memcmp(s, "row_major", 9))
          return rslc_p_fail(p, "row_major is not supported", NULL);
@@ -4751,6 +4868,12 @@ static bool rslc_p_quals(struct rslc_parser *p, struct rslc_quals *q)
          case RSLC_KW_WRITEONLY: q->writeonly = true; break;
          case RSLC_KW_RESTRICT:
          case RSLC_KW_VOLATILE:  break;
+         /* GL_EXT_fragment_shader_barycentric: the input is each
+          * vertex's value, an array of three */
+         case RSLC_KW_PERVERTEX:
+            q->interp = RSLC_INTERP_PERVERTEX;
+            p->c->prog.spirv_only = "pervertexEXT";
+            break;
 #endif
          default:
             return true;
@@ -4819,13 +4942,41 @@ static const struct rslc_type *rslc_p_type_spec(struct rslc_parser *p,
          ty = rslc_type_sampler2d(p->c, RSLC_BASE_UINT);
       else if (k == RSLC_KW_SUBPASSINPUT)
          ty = rslc_type_basic(p->c, RSLC_TY_SUBPASSINPUT, RSLC_BASE_FLOAT, 1, 1);
-      else if (k >= RSLC_KW_IMAGE2D && k <= RSLC_KW_UIMAGE2DARRAY)
+      else if (k == RSLC_KW_DOUBLE)
+      {
+         /* a 64-bit scalar: converted to and from, calculated with,
+          * compared; never a constant, a vector or a block member */
+         ty = rslc_type_basic(p->c, RSLC_TY_SCALAR, RSLC_BASE_DOUBLE, 1, 1);
+#ifdef RSLC_EXTENDED
+         p->c->prog.spirv_only = "double";
+#endif
+      }
+      else if (k == RSLC_KW_SUBPASSINPUTMS)
+      {
+         /* a multisampled attachment: cols 2 */
+         ty = rslc_type_basic(p->c, RSLC_TY_SUBPASSINPUT, RSLC_BASE_FLOAT, 1, 2);
+#ifdef RSLC_EXTENDED
+         p->c->prog.spirv_only = "a multisampled subpass input";
+#endif
+      }
+      else if (k >= RSLC_KW_IMAGE2D && k <= RSLC_KW_UIMAGE2DMS)
       {
          /* the format is the declaration's layout; it is applied there */
          static const uint8_t bases[3] = { RSLC_BASE_FLOAT, RSLC_BASE_INT, RSLC_BASE_UINT };
          unsigned i = k - RSLC_KW_IMAGE2D;
-         ty = rslc_type_basic(p->c, i < 3 ? RSLC_TY_IMAGE2D : RSLC_TY_IMAGE2DARRAY,
+         ty = rslc_type_basic(p->c, i < 3 ? RSLC_TY_IMAGE2D
+               : i < 6 ? RSLC_TY_IMAGE2DARRAY : RSLC_TY_IMAGE2DMS,
                (enum rslc_base)bases[i % 3], 1, 0);
+#ifdef RSLC_EXTENDED
+         if (i >= 6 && !p->c->prog.spirv_only)
+            p->c->prog.spirv_only = "a multisampled image";
+#endif
+      }
+      else if (k >= RSLC_KW_SAMPLER2DMS && k <= RSLC_KW_USAMPLER2DMS)
+      {
+         static const uint8_t bases[3] = { RSLC_BASE_FLOAT, RSLC_BASE_INT, RSLC_BASE_UINT };
+         ty = rslc_type_basic(p->c, RSLC_TY_SAMPLERX,
+               (enum rslc_base)bases[k - RSLC_KW_SAMPLER2DMS], RSLC_SDIM_2D, RSLC_SX_MS);
       }
       else if (k >= RSLC_KW_SAMPLER2DARRAY && k <= RSLC_KW_USAMPLERBUFFER)
       {
@@ -5013,7 +5164,7 @@ static bool rslc_p_starts_declaration(struct rslc_parser *p)
    s = rslc_tok_sym(p->c, t);
    if (s->kw >= RSLC_KW_CONST && s->kw <= RSLC_KW_STRUCT)
       return true;
-   if (s->kw >= RSLC_KW_BUFFER && s->kw <= RSLC_KW_SHARED)
+   if (s->kw >= RSLC_KW_BUFFER && s->kw <= RSLC_KW_PERVERTEX)
       return true;   /* RSLC_EXTENDED: only seeded there */
    if (s->kw >= RSLC_KW_VOID && s->kw <= RSLC_KW_LAST_TYPE)
    {
@@ -5613,18 +5764,30 @@ static bool rslc_p_block_make(struct rslc_parser *p, const struct rslc_quals *q,
    b->push     = idx == 1;
    b->std140   = idx == 0 || q->std140;
 #ifdef RSLC_EXTENDED
-   /* a further uniform block is std140 as the first is; a storage
-    * buffer std430 unless it says otherwise, and only its last member
-    * may be an array of unstated length */
+   /* a further uniform block is std140 as the first is, unless it says
+    * std430 (GL_EXT_scalar_block_layout lets a uniform block say so, and
+    * its members are then placed as glslang places them); a storage
+    * buffer std430 unless it says otherwise.  Only a block's last member
+    * may be an array of unstated length: a storage buffer's, or a
+    * uniform block's (GL_EXT_uniform_buffer_unsized_array), which only
+    * the SPIR-V destination takes. */
    b->buffer   = q->is_buffer;
    b->readonly = q->readonly;
    b->coherent = q->coherent;
    if (idx >= 2 && !q->is_buffer)
       b->std140 = true;
+   if (idx != 1 && !q->is_buffer && q->std430 && !q->std140)
+      b->std140 = false;
    for (i = 0; i < nfields; i++)
-      if (fields[i].type->kind == RSLC_TY_ARRAY && !fields[i].type->array_len
-            && (!q->is_buffer || i + 1 != nfields))
-         return rslc_p_fail(p, "only a storage buffer's last member may be unsized", NULL);
+      if (fields[i].type->kind == RSLC_TY_ARRAY && !fields[i].type->array_len)
+      {
+         if (i + 1 != nfields)
+            return rslc_p_fail(p, "only a block's last member may be unsized", NULL);
+         if (idx == 1)
+            return rslc_p_fail(p, "a push constant block's member may not be unsized", NULL);
+         if (!q->is_buffer && !p->c->prog.spirv_only)
+            p->c->prog.spirv_only = "an unsized array in a uniform block";
+      }
 #endif
    pr->has_block[idx] = true;
 
@@ -5706,6 +5869,18 @@ static bool rslc_p_block_decl(struct rslc_parser *p, struct rslc_quals *q,
          fields[nfields].name      = rslc_tok_sym(p->c, nt);
          fields[nfields].line      = nt->line;
          fields[nfields].precision = rslc_p_default_prec(p, mt, fq.precision);
+#ifdef RSLC_EXTENDED
+         /* layout(offset = n) on a member: it is placed there and the
+          * rest follow, as a fragment stage's half of a push block shared
+          * with the vertex stage starts past the vertex stage's.  SPIR-V
+          * only: nothing printed says it. */
+         if (fq.offset != RSLC_UNSET)
+         {
+            fields[nfields].offset_p1 = fq.offset + 1;
+            if (!p->c->prog.spirv_only)
+               p->c->prog.spirv_only = "a block member's layout(offset)";
+         }
+#endif
          nfields++;
          if (rslc_p_accept(p, RSLC_P_COMMA))
             continue;
@@ -6189,11 +6364,15 @@ static struct rslc_var *rslc_p_var_make(struct rslc_parser *p, const struct rslc
          rslc_p_fail(p, "an image must be a global uniform", NULL);
          return NULL;
       }
-      if (!q->img_fmt)
+      /* an image that is only written may leave its format out; the
+       * device then has to write without one */
+      if (!q->img_fmt && !q->writeonly)
       {
-         rslc_p_fail(p, "an image needs its format in the layout", NULL);
+         rslc_p_fail(p, "an image that is read needs its format in the layout", NULL);
          return NULL;
       }
+      if (!q->img_fmt && !p->c->prog.spirv_only)
+         p->c->prog.spirv_only = "an image without a format";
       /* rows carries the access: 1 read-write, 2 write only, 3 read only */
       v->type = rslc_type_basic(p->c, (enum rslc_tkind)vt->kind, (enum rslc_base)vt->base,
             q->writeonly ? RSLC_IMG_WRITEONLY : q->readonly ? RSLC_IMG_READONLY : RSLC_IMG_READWRITE,
@@ -6328,6 +6507,31 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       return 0;
 
 #ifdef RSLC_EXTENDED
+   /* invariant gl_Position;  - a variable already declared, a built-in
+    * or an output, made invariant after the fact */
+   if (global && (q.vq & RSLC_VQ_INVARIANT) && P_TOK(p)->kind == RSLC_TK_IDENT
+         && rslc_tok_sym(p->c, P_TOK(p))->kw == RSLC_KW_NONE
+         && rslc_tok_sym(p->c, P_TOK(p))->decl
+         && rslc_tok_sym(p->c, P_TOK(p))->decl->kind == RSLC_DK_VAR
+         && (rslc_tok_is_punct(P_PEEK(p, 1), RSLC_P_SEMI) || rslc_tok_is_punct(P_PEEK(p, 1), RSLC_P_COMMA)))
+   {
+      for (;;)
+      {
+         struct rslc_sym *s = P_TOK(p)->kind == RSLC_TK_IDENT ? rslc_tok_sym(p->c, P_TOK(p)) : NULL;
+         struct rslc_var *v;
+         if (!s || !s->decl || s->decl->kind != RSLC_DK_VAR)
+            return rslc_p_fail(p, "invariant names a variable", NULL);
+         v = (struct rslc_var*)s->decl->ptr;
+         if (v->storage != RSLC_ST_OUT && v->storage != RSLC_ST_BUILTIN)
+            return rslc_p_fail(p, "only an output can be made invariant", NULL);
+         v->quals |= RSLC_VQ_INVARIANT;
+         p->c->prog.spirv_only = "invariant on a declared variable";
+         rslc_p_next(p);
+         if (!rslc_p_accept(p, RSLC_P_COMMA))
+            break;
+      }
+      return rslc_p_expect(p, RSLC_P_SEMI, "';'") ? 1 : 0;
+   }
    if (global && P_TOK(p)->kind == RSLC_TK_IDENT && P_TOK(p)->len == 20
          && !memcmp(rslc_tok_text(p->c, P_TOK(p)), "spirv_execution_mode", 20))
       return rslc_p_spirv_execution_mode(p) ? 1 : 0;
@@ -6611,6 +6815,15 @@ static bool rslc_p_stage_builtins(struct rslc_parser *p)
             || !rslc_p_builtin_var(p, "gl_FrontFacing", p->t_bool, RSLC_BI_FRONTFACING, RSLC_DIR_IN))
          return false;
 #ifdef RSLC_EXTENDED
+      /* GL_ARB_shader_stencil_export: the stencil reference written by
+       * the stage */
+      if (!rslc_p_builtin_var(p, "gl_FragStencilRefARB", p->t_int, RSLC_BI_FRAGSTENCILREF, RSLC_DIR_OUT))
+         return false;
+      if (     !rslc_p_builtin_var(p, "gl_BaryCoordEXT", rslc_ty_vecn(p, RSLC_BASE_FLOAT, 3),
+                  RSLC_BI_BARYCOORD, RSLC_DIR_IN)
+            || !rslc_p_builtin_var(p, "gl_BaryCoordNoPerspEXT", rslc_ty_vecn(p, RSLC_BASE_FLOAT, 3),
+                  RSLC_BI_BARYCOORDNOPERSP, RSLC_DIR_IN))
+         return false;
       if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN)
             || !rslc_p_builtin_var(p, "gl_HelperInvocation", p->t_bool,
                   RSLC_BI_HELPERINVOCATION, RSLC_DIR_IN)
@@ -7300,6 +7513,22 @@ uint32_t rslc_b_member(struct rslc_builder *b, uint32_t e, uint32_t field)
    return rslc_p_mk(b->p, RSLC_OP_MEMBER, bt->fields[field].type, e, field, 0, 0, b->line,
          rslc_prec_max(rslc_b_node(b, e)->prec, bt->fields[field].precision));
 }
+
+#ifdef RSLC_EXTENDED
+uint32_t rslc_b_length(struct rslc_builder *b, uint32_t e)
+{
+   const struct rslc_type *bt;
+   if (!rslc_b_ok(b) || !e)
+      return 0;
+   bt = rslc_b_node(b, e)->type;
+   if (bt->kind != RSLC_TY_ARRAY)
+      return rslc_b_fail(b, "length() of what is not an array", NULL);
+   if (bt->array_len)
+      return rslc_p_const_int(b->p, (int32_t)bt->array_len, b->line);
+   b->c.prog.spirv_only = "length() of an unsized array";
+   return rslc_p_mk(b->p, RSLC_OP_UNARY, b->p->t_int, e, 0, 0, RSLC_UN_ARRAYLEN, b->line, 0);
+}
+#endif
 
 uint32_t rslc_b_index(struct rslc_builder *b, uint32_t e, uint32_t idx)
 {

@@ -19,6 +19,11 @@ S_UINT_EX(menu_scroll_delay, MENU_SCROLL_DELAY,
       DEFAULT_MENU_SCROLL_DELAY, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 1, 999, 1, 1, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Scroll Delay",
       "Initial delay in milliseconds when holding a direction to scroll.")
+S_BOOL(menu_scroll_quick, MENU_SCROLL_QUICK,
+      "menu_scroll_quick",
+      DEFAULT_MENU_SCROLL_QUICK, SD_FLAG_NONE, 0, 0,
+      "Quick Scroll With Left+Right",
+      "Allow left+right for quick scrolling on items that are not settings.")
 #endif
 /* Descriptor and configuration rows are guarded by the same condition
  * as HAVE_COMPANION_WIMP in ui/ui_companion_driver.h (Qt, Cocoa, or

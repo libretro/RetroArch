@@ -4,6 +4,8 @@
 
 #include "../rc_compat.h"
 
+#include <formats/rjson.h>
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +20,6 @@ rc_api_host_t g_host = { NULL, NULL };
 /* --- rc_json --- */
 
 static int rc_json_parse_object(rc_json_iterator_t* iterator, rc_json_field_t* fields, size_t field_count, uint32_t* fields_seen);
-static int rc_json_parse_array(rc_json_iterator_t* iterator, rc_json_field_t* field);
 
 static int rc_json_match_char(rc_json_iterator_t* iterator, char c)
 {
@@ -54,195 +55,93 @@ static int rc_json_find_substring(rc_json_iterator_t* iterator, const char* subs
   return 0;
 }
 
-static int rc_json_find_closing_quote(rc_json_iterator_t* iterator)
-{
-  while (iterator->json < iterator->end) {
-    if (*iterator->json == '"')
-      return 1;
-
-    if (*iterator->json == '\\') {
-      ++iterator->json;
-      if (iterator->json == iterator->end)
-        return 0;
-    }
-
-    if (*iterator->json == '\0')
-      return 0;
-
-    ++iterator->json;
-  }
-
-  return 0;
-}
+typedef struct rc_json_fields_t {
+  rc_json_field_t* fields;
+  size_t count;
+  size_t next;
+} rc_json_fields_t;
 
 static int rc_json_parse_field(rc_json_iterator_t* iterator, rc_json_field_t* field) {
-  int result;
-
-  if (iterator->json >= iterator->end)
+  rjson_span_t value;
+  if (iterator->json >= iterator->end ||
+      !(iterator->validated ? rjson_read_span_validated : rjson_read_span)(
+        iterator->json, iterator->end - iterator->json, &value, NULL, NULL) ||
+      value.count > UINT32_MAX)
     return RC_INVALID_JSON;
-
-  field->value_start = iterator->json;
-
-  switch (*iterator->json)
-  {
-    case '"': /* quoted string */
-      ++iterator->json;
-      if (!rc_json_find_closing_quote(iterator))
-        return RC_INVALID_JSON;
-      ++iterator->json;
-      break;
-
-    case '-':
-    case '+': /* signed number */
-      ++iterator->json;
-      /* fallthrough to number */
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9': /* number */
-      while (iterator->json < iterator->end && *iterator->json >= '0' && *iterator->json <= '9')
-        ++iterator->json;
-
-      if (rc_json_match_char(iterator, '.')) {
-        while (iterator->json < iterator->end && *iterator->json >= '0' && *iterator->json <= '9')
-          ++iterator->json;
-      }
-      break;
-
-    case '[': /* array */
-      result = rc_json_parse_array(iterator, field);
-      if (result != RC_OK)
-        return result;
-
-      break;
-
-    case '{': /* object */
-      result = rc_json_parse_object(iterator, NULL, 0, &field->array_size);
-      if (result != RC_OK)
-        return result;
-
-      break;
-
-    default: /* non-quoted text [true,false,null] */
-      if (!isalpha((unsigned char)*iterator->json))
-        return RC_INVALID_JSON;
-
-      while (iterator->json < iterator->end && isalnum((unsigned char)*iterator->json))
-        ++iterator->json;
-      break;
-  }
-
-  field->value_end = iterator->json;
+  field->value_start = value.data;
+  field->value_end = value.data + value.length;
+  field->array_size = (uint32_t)value.count;
+  field->validated = 1;
+  iterator->json = field->value_end;
   return RC_OK;
 }
 
-static int rc_json_parse_array(rc_json_iterator_t* iterator, rc_json_field_t* field) {
-  rc_json_field_t unused_field;
-  int result;
-
-  if (!rc_json_match_char(iterator, '['))
-    return RC_INVALID_JSON;
-
-  field->array_size = 0;
-
-  if (rc_json_match_char(iterator, ']')) /* empty array */
-    return RC_OK;
-
-  do
-  {
-    rc_json_skip_whitespace(iterator);
-
-    result = rc_json_parse_field(iterator, &unused_field);
-    if (result != RC_OK)
-      return result;
-
-    ++field->array_size;
-
-    rc_json_skip_whitespace(iterator);
-  } while (rc_json_match_char(iterator, ','));
-
-  if (!rc_json_match_char(iterator, ']'))
-    return RC_INVALID_JSON;
-
-  return RC_OK;
+static bool rc_json_collect_field(void* context, const rjson_span_t* name, const rjson_span_t* value) {
+  rc_json_fields_t* selected = (rc_json_fields_t*)context;
+  size_t i;
+  int escaped = memchr(name->data + 1, '\\', name->length - 2) != NULL;
+  if (value->count > UINT32_MAX)
+    return false;
+  for (i = selected->next; i < selected->count; ++i) {
+    rc_json_field_t* field = &selected->fields[i];
+    if (!field->value_start && (escaped ?
+        rjson_string_equal(name->data, name->length, field->name) :
+        (field->name_len == name->length - 2 &&
+         !memcmp(field->name, name->data + 1, field->name_len)))) {
+      field->value_start = value->data;
+      field->value_end = value->data + value->length;
+      field->array_size = (uint32_t)value->count;
+      field->validated = 1;
+      while (selected->next < selected->count && selected->fields[selected->next].value_start)
+        ++selected->next;
+      break;
+    }
+  }
+  return true;
 }
 
 static int rc_json_get_next_field(rc_json_iterator_t* iterator, rc_json_field_t* field) {
-  rc_json_skip_whitespace(iterator);
-
-  if (!rc_json_match_char(iterator, '"'))
+  rjson_span_t name;
+  if (iterator->json >= iterator->end ||
+      !(iterator->validated ? rjson_read_span_validated : rjson_read_span)(
+        iterator->json, iterator->end - iterator->json, &name, NULL, NULL) ||
+      name.type != RJSON_STRING)
     return RC_INVALID_JSON;
-
-  field->name = iterator->json;
-  while (iterator->json < iterator->end && *iterator->json != '"') {
-    if (!*iterator->json)
-      return RC_INVALID_JSON;
-    ++iterator->json;
-  }
-
-  if (iterator->json == iterator->end)
-    return RC_INVALID_JSON;
-
-  field->name_len = iterator->json - field->name;
-  ++iterator->json;
-
+  field->name = name.data + 1;
+  field->name_len = name.length - 2;
+  iterator->json = name.data + name.length;
   rc_json_skip_whitespace(iterator);
-
   if (!rc_json_match_char(iterator, ':'))
     return RC_INVALID_JSON;
-
   rc_json_skip_whitespace(iterator);
-
-  if (rc_json_parse_field(iterator, field) < 0)
+  if (rc_json_parse_field(iterator, field) != RC_OK)
     return RC_INVALID_JSON;
-
   rc_json_skip_whitespace(iterator);
-
   return RC_OK;
 }
 
 static int rc_json_parse_object(rc_json_iterator_t* iterator, rc_json_field_t* fields, size_t field_count, uint32_t* fields_seen) {
+  rc_json_fields_t selected;
+  rjson_span_t object;
   size_t i;
-  uint32_t num_fields = 0;
-  rc_json_field_t field;
-  int result;
-
+  for (i = 0; i < field_count; ++i) {
+    fields[i].value_start = fields[i].value_end = NULL;
+    fields[i].validated = 0;
+  }
   if (fields_seen)
     *fields_seen = 0;
-
-  for (i = 0; i < field_count; ++i)
-    fields[i].value_start = fields[i].value_end = NULL;
-
-  if (!rc_json_match_char(iterator, '{'))
+  selected.fields = fields;
+  selected.count = field_count;
+  selected.next = 0;
+  if (iterator->json >= iterator->end ||
+      !(iterator->validated ? rjson_read_span_validated : rjson_read_span)(
+        iterator->json, iterator->end - iterator->json, &object,
+        field_count ? rc_json_collect_field : NULL, &selected) ||
+      object.type != RJSON_OBJECT || object.count > UINT32_MAX)
     return RC_INVALID_JSON;
-
-  if (rc_json_match_char(iterator, '}')) /* empty object */
-    return RC_OK;
-
-  do
-  {
-    result = rc_json_get_next_field(iterator, &field);
-    if (result != RC_OK)
-      return result;
-
-    for (i = 0; i < field_count; ++i) {
-      if (!fields[i].value_start && fields[i].name_len == field.name_len &&
-          memcmp(fields[i].name, field.name, field.name_len) == 0) {
-        fields[i].value_start = field.value_start;
-        fields[i].value_end = field.value_end;
-        fields[i].array_size = field.array_size;
-        break;
-      }
-    }
-
-    ++num_fields;
-
-  } while (rc_json_match_char(iterator, ','));
-
-  if (!rc_json_match_char(iterator, '}'))
-    return RC_INVALID_JSON;
-
+  iterator->json = object.data + object.length;
   if (fields_seen)
-    *fields_seen = num_fields;
-
+    *fields_seen = (uint32_t)object.count;
   return RC_OK;
 }
 
@@ -254,17 +153,11 @@ int rc_json_get_next_object_field(rc_json_iterator_t* iterator, rc_json_field_t*
 }
 
 int rc_json_get_object_string_length(const char* json) {
-  rc_json_iterator_t iterator;
-  memset(&iterator, 0, sizeof(iterator));
-  iterator.json = json;
-  iterator.end = json + (1024 * 1024 * 1024); /* arbitrary 1GB limit on JSON response */
-
-  rc_json_parse_object(&iterator, NULL, 0, NULL);
-
-  if (iterator.json == json) /* not JSON */
-    return (int)strlen(json);
-
-  return (int)(iterator.json - json);
+  rjson_span_t object;
+  size_t length = strlen(json);
+  if (rjson_read_span(json, length, &object, NULL, NULL) && object.type == RJSON_OBJECT)
+    return (int)(object.data + object.length - json);
+  return (int)length;
 }
 
 static int rc_json_extract_html_error(rc_api_response_t* response, const rc_api_server_response_t* server_response) {
@@ -447,6 +340,7 @@ int rc_json_get_required_object(rc_json_field_t* fields, size_t field_count, rc_
   memset(&iterator, 0, sizeof(iterator));
   iterator.json = field->value_start;
   iterator.end = field->value_end;
+  iterator.validated = field->validated;
   return (rc_json_parse_object(&iterator, fields, field_count, &field->array_size) == RC_OK);
 }
 
@@ -482,6 +376,7 @@ static int rc_json_get_unum_array(uint32_t** entries, uint32_t* num_entries, rc_
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array->value_start;
     iterator.end = array->value_end;
+    iterator.validated = array->validated;
 
     entry = *entries;
     while (rc_json_get_array_entry_value(&value, &iterator)) {
@@ -533,6 +428,7 @@ static int rc_json_get_string_array(const char*** entries, uint32_t* num_entries
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array->value_start;
     iterator.end = array->value_end;
+    iterator.validated = array->validated;
 
     entry = *entries;
     while (rc_json_get_array_entry_value(&value, &iterator)) {
@@ -618,220 +514,70 @@ int rc_json_get_array_entry_object(rc_json_field_t* fields, size_t field_count, 
   return 1;
 }
 
-static uint32_t rc_json_decode_hex4(const char* input) {
-  char hex[5];
-
-  memcpy(hex, input, 4);
-  hex[4] = '\0';
-
-  return (uint32_t)strtoul(hex, NULL, 16);
-}
-
-static int rc_json_ucs32_to_utf8(uint8_t* dst, uint32_t ucs32_char) {
-  if (ucs32_char < 0x80) {
-    dst[0] = (ucs32_char & 0x7F);
-    return 1;
-  }
-
-  if (ucs32_char < 0x0800) {
-    dst[1] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[0] = 0xC0 | (ucs32_char & 0x1F);
-    return 2;
-  }
-
-  if (ucs32_char < 0x010000) {
-    dst[2] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[1] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[0] = 0xE0 | (ucs32_char & 0x0F);
-    return 3;
-  }
-
-  if (ucs32_char < 0x200000) {
-    dst[3] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[2] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[1] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[0] = 0xF0 | (ucs32_char & 0x07);
-    return 4;
-  }
-
-  if (ucs32_char < 0x04000000) {
-    dst[4] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[3] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[2] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[1] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-    dst[0] = 0xF8 | (ucs32_char & 0x03);
-    return 5;
-  }
-
-  dst[5] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-  dst[4] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-  dst[3] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-  dst[2] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-  dst[1] = 0x80 | (ucs32_char & 0x3F); ucs32_char >>= 6;
-  dst[0] = 0xFC | (ucs32_char & 0x01);
-  return 6;
-}
-
 int rc_json_get_string(const char** out, rc_buffer_t* buffer, const rc_json_field_t* field, const char* field_name) {
   const char* src = field->value_start;
-  size_t len = field->value_end - field->value_start;
   char* dst;
-
+  size_t length, written;
 #ifndef NDEBUG
   if (strcmp(field->name, field_name) != 0)
     return 0;
 #else
   (void)field_name;
 #endif
-
-  if (!src) {
-    *out = NULL;
+  if (!src)
     return 0;
+  length = field->value_end - src;
+  if (length == 4 && !memcmp(src, "null", 4)) {
+    *out = NULL;
+    return 1;
   }
-
-  if (len == 0) {
-    /* simple optimization for empty string - don't allocate space */
+  if (!length || (length == 2 && src[0] == '"' && src[1] == '"')) {
     *out = "";
     return 1;
   }
-
-  if (len == 4 && memcmp(field->value_start, "null", 4) == 0) {
-    *out = NULL;
-    return 1;
-  }
-
-  if (*src == '\"') {
-    ++src;
-
-    if (*src == '\"') {
-      /* simple optimization for empty string - don't allocate space */
-      *out = "";
-      return 1;
+  if (*src == '"') {
+    if (length < 2 || src[length - 1] != '"')
+      return 0;
+    dst = (char*)rc_buffer_reserve(buffer, length - 1);
+    if (!dst)
+      return 0;
+    if (memchr(src + 1, '\\', length - 2)) {
+      if (!rjson_decode_string(src, length, dst, length - 1, &written))
+        return 0;
     }
-
-    *out = dst = (char*)rc_buffer_reserve(buffer, len - 1); /* -2 for quotes, +1 for null terminator */
-
-    do {
-      if (*src == '\\') {
-        ++src;
-        if (*src == 'n') {
-          /* newline */
-          ++src;
-          *dst++ = '\n';
-          continue;
-        }
-
-        if (*src == 'r') {
-          /* carriage return */
-          ++src;
-          *dst++ = '\r';
-          continue;
-        }
-
-        if (*src == 'u') {
-          /* unicode character */
-          uint32_t ucs32_char;
-          if (src + 5 >= field->value_end) /* incomplete unicode character */
-            return 0;
-
-          ucs32_char = rc_json_decode_hex4(src + 1);
-          src += 5;
-
-          if (ucs32_char >= 0xD800 && ucs32_char < 0xE000) {
-            /* surrogate lead - look for surrogate tail */
-            if (ucs32_char < 0xDC00 && src[0] == '\\' && src[1] == 'u') {
-              const uint32_t surrogate = rc_json_decode_hex4(src + 2);
-              src += 6;
-
-              if (surrogate >= 0xDC00 && surrogate < 0xE000) {
-                /* found a surrogate tail, merge them */
-                ucs32_char = (((ucs32_char - 0xD800) << 10) | (surrogate - 0xDC00)) + 0x10000;
-              }
-            }
-
-            if (!(ucs32_char & 0xFFFF0000)) {
-              /* invalid surrogate pair, fallback to replacement char */
-              ucs32_char = 0xFFFD;
-            }
-          }
-
-          dst += rc_json_ucs32_to_utf8((unsigned char*)dst, ucs32_char);
-          continue;
-        }
-
-        if (*src == 't') {
-          /* tab */
-          ++src;
-          *dst++ = '\t';
-          continue;
-        }
-
-        /* just an escaped character, fallthrough to normal copy */
-      }
-
-      *dst++ = *src++;
-    } while (*src != '\"');
-
-  } else {
-    *out = dst = (char*)rc_buffer_reserve(buffer, len + 1); /* +1 for null terminator */
-    memcpy(dst, src, len);
-    dst += len;
+    else {
+      /* The span reader already validated this literal. */
+      written = length - 2;
+      memcpy(dst, src + 1, written);
+      dst[written] = '\0';
+    }
   }
-
-  *dst++ = '\0';
-  rc_buffer_consume(buffer, (uint8_t*)(*out), (uint8_t*)dst);
+  else {
+    dst = (char*)rc_buffer_reserve(buffer, length + 1);
+    if (!dst)
+      return 0;
+    memcpy(dst, src, length);
+    written = length;
+    dst[written] = '\0';
+  }
+  *out = dst;
+  rc_buffer_consume(buffer, (uint8_t*)dst, (uint8_t*)dst + written + 1);
   return 1;
 }
 
 int rc_json_field_string_matches(const rc_json_field_t* field, const char* text) {
-  int is_quoted = 0;
-  const char* ptr = field->value_start;
-  if (!ptr || !text)
+  size_t length;
+  if (!field->value_start || !text)
     return 0;
-
-  if (*ptr == '"') {
-    is_quoted = 1;
-    ++ptr;
+  length = field->value_end - field->value_start;
+  if (*field->value_start == '"') {
+    if (length < 2)
+      return 0;
+    if (memchr(field->value_start + 1, '\\', length - 2))
+      return rjson_string_equal(field->value_start, length, text);
+    return strlen(text) == length - 2 && !memcmp(field->value_start + 1, text, length - 2);
   }
-
-  while (ptr < field->value_end) {
-    if (*ptr != *text) {
-      if (*ptr != '\\') {
-        if (*ptr == '"' && is_quoted && (*text == '\0')) {
-          is_quoted = 0;
-          ++ptr;
-          continue;
-        }
-
-        return 0;
-      }
-
-      ++ptr;
-      switch (*ptr) {
-        case 'n':
-          if (*text != '\n')
-            return 0;
-          break;
-        case 'r':
-          if (*text != '\r')
-            return 0;
-          break;
-        case 't':
-          if (*text != '\t')
-            return 0;
-          break;
-        default:
-          if (*text != *ptr)
-            return 0;
-          break;
-      }
-    }
-
-    ++text;
-    ++ptr;
-  }
-
-  return !is_quoted && (*text == '\0');
+  return strlen(text) == length && !memcmp(field->value_start, text, length);
 }
 
 void rc_json_get_optional_string(const char** out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name, const char* default_value) {

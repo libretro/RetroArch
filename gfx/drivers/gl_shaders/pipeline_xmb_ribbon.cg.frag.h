@@ -1,17 +1,11 @@
-#include "shaders_common.h"
+#include "../../common/menu_ribbon_shader.h"
 
-static const char *stock_fragment_xmb = CG(
-   void main(
-      uniform float Time,
-      float3 TexCoord : TEXCOORD0,
-      float4 out oColor : COLOR)
-   {
-      const float3 up = float3(1.0, 0.0, 0.0);
-      float3 x = ddx(TexCoord);
-      float3 y = ddy(TexCoord);
-      float3 normal = normalize(cross(x, y));
-      float c = 1.0 - dot(normal, up);
-      c = (1.0 - cos(c * c)) / 3.0;
-      oColor = float4(c, c, c, 1.0);
-   }
-);
+static const char *stock_fragment_xmb(void)
+{
+   static char source[4096];
+   if (source[0])
+      return source;
+   return menu_ribbon_shader(source, sizeof(source),
+         "#define vec2 float2\n#define vec3 float3\n#define vec4 float4\n#define RIBBON_PARAMS\n#define RIBBON_OUT out float4\n",
+         "float4 main(float4 vEC : TEXCOORD0) : COLOR { return ribbon_fragment(vEC); }", 2);
+}

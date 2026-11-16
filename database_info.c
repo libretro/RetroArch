@@ -339,6 +339,11 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
                db_info->size = (uint64_t)val->val.uint_;
             else if (memcmp(str, "coop", 4) == 0)
                db_info->coop_supported = (int)val->val.uint_;
+            else if (memcmp(str, "tags", 4) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->tags = strdup(val_string);
+            }
             else if (memcmp(str, "sha1", 4) == 0)
             {
                if (val->type == RDT_BINARY)
@@ -449,7 +454,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             else if (memcmp(str, "developer", 9) == 0)
             {
                if (val_string && *val_string)
-                  db_info->developer = string_split(val_string, "|");
+                  db_info->developer = strdup(val_string);
             }
             else if (memcmp(str, "narrative", 9) == 0)
             {
@@ -2172,6 +2177,10 @@ database_info_list_t *database_info_list_new_filtered(
                free(db_info.visual);
             if (db_info.vehicular)
                free(db_info.vehicular);
+            if (db_info.tags)
+               free(db_info.tags);
+            if (db_info.developer)
+               free(db_info.developer);
             if (db_info.name)
                free(db_info.name);
             if (db_info.origin)
@@ -2287,12 +2296,14 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->visual);
       if (info->vehicular)
          free(info->vehicular);
+      if (info->tags)
+         free(info->tags);
       if (info->description)
          free(info->description);
       if (info->publisher)
          free(info->publisher);
       if (info->developer)
-         string_list_free(info->developer);
+         free(info->developer);
       if (info->origin)
          free(info->origin);
       if (info->franchise)

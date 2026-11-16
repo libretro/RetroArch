@@ -2824,11 +2824,12 @@ static void gdi_views_ui_begin(gdi_t *gdi, video_frame_info_t *video_info)
     * from the game viewport, fitted to the layer. */
    video_views_ui_enter(&gdi->views.saved, &video_info->dims,
          &gdi->vp.full_dims, ui_dims);
-   gdi->views.vp = gdi->vp;
-   memset(&vp, 0, sizeof(vp));
-   vp.full_dims  = ui_dims;
+   gdi->views.vp      = gdi->vp;
+   vp.pos             = 0;
+   vp.dims            = 0;
+   vp.full_dims       = ui_dims;
    video_driver_update_viewport(&vp, false, gdi->keep_aspect, true);
-   gdi->vp       = vp;
+   gdi->vp            = vp;
    gdi->views.ui_pass = true;
 }
 

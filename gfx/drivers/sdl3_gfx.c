@@ -905,13 +905,14 @@ static void sdl3_views_ui_end(sdl3_video_t *vid,
 static void sdl3_views_menu_rect(sdl3_video_t *vid, SDL_FRect *out)
 {
    struct video_viewport vp;
-   memset(&vp, 0, sizeof(vp));
+   vp.pos       = 0;
+   vp.dims      = 0;
    vp.full_dims = vid->vp.full_dims;
    video_driver_update_viewport(&vp, false, vid->video.force_aspect, true);
-   out->x = (float)VIDEO_POS_X(vp.pos);
-   out->y = (float)VIDEO_POS_Y(vp.pos);
-   out->w = (float)VIDEO_SCALE_W(vp.dims);
-   out->h = (float)VIDEO_SCALE_H(vp.dims);
+   out->x       = (float)VIDEO_POS_X(vp.pos);
+   out->y       = (float)VIDEO_POS_Y(vp.pos);
+   out->w       = (float)VIDEO_SCALE_W(vp.dims);
+   out->h       = (float)VIDEO_SCALE_H(vp.dims);
 }
 
 static void sdl3_set_view_count(void *data, unsigned count)

@@ -29,9 +29,12 @@ __attribute__((aligned (16)))
    GX2_mat4x4 mvp;
    GX2_vec2 OutputSize;
    float time;
+   float ribbon_time;
+   float ribbon_alpha;
 }menu_shader_uniform_t;
 
 extern GX2Shader ribbon_shader;
+extern GX2Shader ribbon_stars_shader;
 extern GX2Shader ribbon_simple_shader;
 extern GX2Shader snow_simple_shader;
 extern GX2Shader snow_shader;

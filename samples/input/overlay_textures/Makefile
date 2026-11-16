@@ -17,7 +17,7 @@ SOURCES := \
 	$(REPO_ROOT)/gfx/gfx_surface_player.c \
 	$(LIBRETRO_COMM_DIR)/formats/video_player.c \
 	$(REPO_ROOT)/libretro-common/formats/image/image_yuv_blit.c \
-	$(LIBRETRO_COMM_DIR)/formats/image_texture.c \
+	$(LIBRETRO_COMM_DIR)/formats/image_texture.c $(LIBRETRO_COMM_DIR)/streams/image_texture_file.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
 	$(LIBRETRO_COMM_DIR)/formats/dds/rdds.c \

@@ -7,6 +7,9 @@ CFLAGS += -Wno-c99-extensions -Wno-c11-extensions
 endif
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+ifneq ($(findstring undefined,$(SANITIZER)),)
+CFLAGS += -fno-sanitize-recover=undefined
+endif
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 TARGETS := rtmp_chunk_test$(EXE) rtmp_handshake_test$(EXE) rtmp_receive_test$(EXE) rtmp_command_test$(EXE) rtmp_reply_test$(EXE) rtmp_publish_test$(EXE) rtmp_control_test$(EXE) rtmp_session_test$(EXE) rtmp_socket_test$(EXE) rtmp_socket_native_test$(EXE) rtmp_connect_test$(EXE) rtmp_connect_select_test$(EXE)

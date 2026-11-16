@@ -535,6 +535,46 @@ failure:
 }
 #endif
 
+#ifdef HAVE_DYNAMIC
+/* A join whose core the check refused is said, as for subsystem
+ * content, not parked: nothing of it is left to connect a later load */
+static bool task_netplay_join_refused(const char *core)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_core_refused_notify(core))
+   {
+      path_clear(RARCH_PATH_CORE);
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
+      /* No host: drops the deferred one */
+      init_netplay_deferred(NULL, 0, NULL);
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+      return true;
+   }
+#endif
+   return false;
+}
+
+/* The join's core push refused: no load follows it */
+static bool task_netplay_core_refused(const char *core)
+{
+   if (!task_netplay_join_refused(core))
+      return false;
+   command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+   return true;
+}
+
+/* The load that opens the join's core: the one just pushed, or the
+ * unload's, still in flight, which takes that core at its core stage.
+ * With the core's probe cached the push opened nothing: that load's
+ * open is the one the check refuses. */
+static void task_netplay_join_no_park(void)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   task_content_load_no_park(task_netplay_join_refused);
+#endif
+}
+#endif
+
 static void task_netplay_crc_scan_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
@@ -576,10 +616,13 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   data->hostname);
             }
 
-            task_push_load_new_core(data->core,
-               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+            if (     !task_push_load_new_core(data->core,
+                     NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL)
+                  && task_netplay_core_refused(data->core))
+               break;
             task_push_load_content_with_core(content_path,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+            task_netplay_join_no_park();
 #else
 
             static_load(data->core, NULL, content_path, data->hostname);
@@ -639,7 +682,17 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             }
             else
             {
-               RARCH_ERR("[Lobby] Subsystem not found.\n");
+#ifdef HAVE_CORE_LOAD_CHECK
+               /* Held back by its check: the dummy core starts without
+                * it, as if it had never been set */
+               if (task_content_core_refused_notify(data->core))
+               {
+                  path_clear(RARCH_PATH_CORE);
+                  runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
+               }
+               else
+#endif
+                  RARCH_ERR("[Lobby] Subsystem not found.\n");
 
                /* Disable netplay if we don't have the subsystem. */
                netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
@@ -676,9 +729,12 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   data->hostname);
             }
 
-            task_push_load_new_core(data->core,
-               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+            if (     !task_push_load_new_core(data->core,
+                     NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL)
+                  && task_netplay_core_refused(data->core))
+               break;
             task_push_start_current_core(&content_info);
+            task_netplay_join_no_park();
 #else
             static_load(data->core, NULL, NULL, data->hostname);
 #endif
@@ -706,8 +762,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                      data->hostname);
                }
 
-               task_push_load_new_core(data->core,
-                  NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+               if (     !task_push_load_new_core(data->core,
+                        NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL)
+                     && task_netplay_core_refused(data->core))
+                  break;
 
                if (*data->current.subsystem)
                {

@@ -103,5 +103,20 @@ S_BOOL(menu_xmb_shadows_enable, XMB_SHADOWS_ENABLE,
       DEFAULT_XMB_SHADOWS_ENABLE, SD_FLAG_NONE, 0, 0,
       "Shadow Effects",
       "Draw drop shadows for icons, thumbnails and letters. This will have a minor performance hit.")
+S_BOOL(menu_xmb_plastic_effect_enable, XMB_PLASTIC_EFFECT_ENABLE,
+      "xmb_plastic_effect_enable",
+      DEFAULT_XMB_PLASTIC_EFFECT_ENABLE, SD_FLAG_NONE, 0, 0,
+      "Plastic Effect",
+      "Apply translucent plastic shading and highlights to XMB icons and text.")
+S_BOOL(menu_xmb_ribbon_bloom_enable, XMB_RIBBON_BLOOM_ENABLE,
+      "xmb_ribbon_bloom_enable",
+      DEFAULT_XMB_RIBBON_BLOOM_ENABLE, SD_FLAG_NONE, 0, 0,
+      "Ribbon Glow",
+      "Add a soft glow to the Ribbon menu shader. This has a performance hit.")
+S_BOOL(menu_xmb_ribbon_particles_enable, XMB_RIBBON_PARTICLES_ENABLE,
+      "xmb_ribbon_particles_enable",
+      DEFAULT_XMB_RIBBON_PARTICLES_ENABLE, SD_FLAG_NONE, 0, 0,
+      "Ribbon Particles",
+      "Draw drifting specks of light over the Ribbon menu shader.")
 #endif
 #endif

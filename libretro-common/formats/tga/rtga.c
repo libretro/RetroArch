@@ -88,9 +88,48 @@ struct rtga
     * process() and nothing below changes behaviour. */
    uint8_t *true_end;
    size_t   avail_req;           /* frontier asked for, clamped at IDLE */
+   /* rtga_decode_rows: where the rows go, the row being written (NULL
+    * until the row's first pixel), and rtga's own row, kept for the
+    * next image */
+   const struct rtga_rows *rows;
+   uint32_t *dst;
+   uint32_t *own_row;
+   unsigned  own_row_width;
    bool     avail_set;
    bool     need_more;           /* last slice stopped at the wall */
 };
+
+/* Row y of the image: the surface's, or with rtga_decode_rows the
+ * caller's, or rtga's own when the caller names none. */
+static uint32_t *rtga_row(rtga_t *tga, int y)
+{
+   uint8_t *p;
+   if (!tga->rows)
+      return tga->output_image + (size_t)y * (size_t)tga->width;
+   p = tga->rows->row ? tga->rows->row(tga->rows->user, (unsigned)y) : NULL;
+   return p ? (uint32_t*)p : tga->own_row;
+}
+
+/* Row y is written.  A row handed out by rtga_decode_rows holds bytes
+ * in order, which the pixel words are on a little-endian host. */
+static void rtga_row_done(rtga_t *tga, int y, uint32_t *dst)
+{
+   if (!tga->rows)
+      return;
+#ifdef MSB_FIRST
+   {
+      int col;
+      for (col = 0; col < tga->width; col++)
+      {
+         uint32_t v = dst[col];
+         dst[col] = (v >> 24) | ((v >> 8) & 0xFF00u)
+                  | ((v << 8) & 0xFF0000u) | (v << 24);
+      }
+   }
+#endif
+   if (tga->rows->done)
+      tga->rows->done(tga->rows->user, (unsigned)y, (const uint8_t*)dst);
+}
 
 static INLINE uint8_t rtga_get8(rtga_context *s)
 {
@@ -209,7 +248,7 @@ static void rtga_indexed_pixels(rtga_t *tga, int npix)
 {
    rtga_context ctx;
    rtga_context *s     = &ctx;
-   uint32_t *output    = tga->output_image;
+   uint32_t *dst       = tga->dst;
    const uint32_t *p32 = tga->pal32;
    int width           = tga->width;
    int height          = tga->height;
@@ -237,15 +276,19 @@ static void rtga_indexed_pixels(rtga_t *tga, int npix)
             && s->img_buffer >= s->img_buffer_end)
          break;
       dst_row = inverted ? (height - 1 - cur_row) : cur_row;
-      output[(size_t)dst_row * (size_t)width + (size_t)cur_col] =
-         p32[rtga_get8(s)];
+      if (!dst)
+         dst = rtga_row(tga, dst_row);
+      dst[cur_col] = p32[rtga_get8(s)];
       if (++cur_col >= width)
       {
+         rtga_row_done(tga, dst_row, dst);
+         dst     = NULL;
          cur_col = 0;
          ++cur_row;
       }
    }
 
+   tga->dst     = dst;
    tga->pixel_i = i;
    tga->cur_col = cur_col;
    tga->cur_row = cur_row;
@@ -343,11 +386,33 @@ static bool rtga_begin(rtga_t *tga, bool supports_rgba)
    if (tga_width > 0x4000 || tga_height > 0x4000)
       return false;
 #endif
-   output = (uint32_t*)malloc(
-         (size_t)tga_width * (size_t)tga_height * sizeof(uint32_t));
-   if (!output)
-      return false;
-   tga->output_image = output;
+   tga->width          = tga_width;
+   tga->height         = tga_height;
+   if (tga->rows)
+   {
+      if (     tga->rows->size
+            && !tga->rows->size(tga->rows->user,
+               (unsigned)tga_width, (unsigned)tga_height))
+         return false;
+      if ((unsigned)tga_width > tga->own_row_width)
+      {
+         uint32_t *row = (uint32_t*)realloc(tga->own_row,
+               (size_t)tga_width * sizeof(uint32_t));
+         if (!row)
+            return false;
+         tga->own_row       = row;
+         tga->own_row_width = (unsigned)tga_width;
+      }
+   }
+   else
+   {
+      output = (uint32_t*)malloc(
+            (size_t)tga_width * (size_t)tga_height * sizeof(uint32_t));
+      if (!output)
+         return false;
+      tga->output_image = output;
+   }
+   tga->dst = NULL;
 
    /* skip to the data's starting position (offset usually = 0) */
    rtga_skip(s, tga_offset);
@@ -439,7 +504,6 @@ static void rtga_fast_rows(rtga_t *tga, int nrows)
     * decoder. */
    rtga_context ctx;
    rtga_context *s    = &ctx;
-   uint32_t *output   = tga->output_image;
    int tga_width      = tga->width;
    int tga_height     = tga->height;
    int tga_comp       = tga->comp;
@@ -458,15 +522,13 @@ static void rtga_fast_rows(rtga_t *tga, int nrows)
    for (; row < last; ++row)
    {
          int dst_row     = tga_inverted ? (tga_height - 1 - row) : row;
-         /* size_t index so dst_row * tga_width does not overflow
-          * signed int for a legitimate 65535 x 65535 image - the
-          * same widening the indexed path below already does. */
-         uint32_t *dst   = output + (size_t)dst_row * (size_t)tga_width;
+         uint32_t *dst;
          int bytes_needed = tga_width * tga_comp;
          int col;
 
          if (s->img_buffer + bytes_needed > s->img_buffer_end)
             break;
+         dst = rtga_row(tga, dst_row);
 
          if (tga_comp == 4)
          {
@@ -535,6 +597,7 @@ static void rtga_fast_rows(rtga_t *tga, int nrows)
          }
 
          s->img_buffer += bytes_needed;
+         rtga_row_done(tga, dst_row, dst);
    }
 
    /* The body's only early exit is the truncation check, so stopping
@@ -563,8 +626,22 @@ static void rtga_fast_rows(rtga_t *tga, int nrows)
       return;
    }
 
-   if (row < last)
+   if (row < last && tga->rows)
    {
+      uint32_t fill = (tga_comp == 4) ? 0u : 0xFF000000u;
+      for (; row < tga_height; ++row)
+      {
+         int       dst_row = tga_inverted ? (tga_height - 1 - row) : row;
+         uint32_t *dst     = rtga_row(tga, dst_row);
+         int       col;
+         for (col = 0; col < tga_width; col++)
+            dst[col] = fill;
+         rtga_row_done(tga, dst_row, dst);
+      }
+   }
+   else if (row < last)
+   {
+      uint32_t *output = tga->output_image;
       size_t   n    = (size_t)(tga_height - row) * (size_t)tga_width;
       uint32_t fill = (tga_comp == 4) ? 0u : 0xFF000000u;
       uint32_t *p   = tga_inverted
@@ -592,7 +669,7 @@ static void rtga_generic_pixels(rtga_t *tga, int npix)
     * decoder. */
    rtga_context ctx;
    rtga_context *s            = &ctx;
-   uint32_t *output           = tga->output_image;
+   uint32_t *dst              = tga->dst;
    int tga_width              = tga->width;
    int tga_height             = tga->height;
    int tga_comp               = tga->comp;
@@ -711,14 +788,16 @@ static void rtga_generic_pixels(rtga_t *tga, int npix)
                   | ((uint32_t)g << 8)  | (uint32_t)b;
 
          /* Write to correct position using tracked row/col
-          * (avoids per-pixel division and modulo).  Use size_t for
-          * the index so dst_row * tga_width does not overflow
-          * signed int for a legitimate 65535 x 65535 image. */
+          * (avoids per-pixel division and modulo). */
          dst_row = tga_inverted ? (tga_height - 1 - cur_row) : cur_row;
-         output[(size_t)dst_row * (size_t)tga_width + (size_t)cur_col] = pixel;
+         if (!dst)
+            dst = rtga_row(tga, dst_row);
+         dst[cur_col] = pixel;
 
          if (++cur_col >= tga_width)
          {
+            rtga_row_done(tga, dst_row, dst);
+            dst     = NULL;
             cur_col = 0;
             ++cur_row;
          }
@@ -726,6 +805,7 @@ static void rtga_generic_pixels(rtga_t *tga, int npix)
          --RLE_count;
    }
 
+   tga->dst        = dst;
    tga->pixel_i    = i;
    tga->cur_col    = cur_col;
    tga->cur_row    = cur_row;
@@ -737,17 +817,14 @@ static void rtga_generic_pixels(rtga_t *tga, int npix)
    (void)tga_height;
 }
 
-/* Abandon an in-flight decode.  The END path clears output_image
- * first, transferring ownership, so this only frees what nobody
- * received. */
+/* Abandon an in-flight decode, or one rtga_begin() refused after
+ * making its surface.  The END path clears output_image first,
+ * transferring ownership, so this only frees what nobody received. */
 static void rtga_proc_reset(rtga_t *rtga)
 {
-   if (rtga->phase != RTGA_PHASE_IDLE)
-   {
-      free(rtga->output_image);
-      rtga->output_image = NULL;
-   }
-   rtga->phase   = RTGA_PHASE_IDLE;
+   free(rtga->output_image);
+   rtga->output_image = NULL;
+   rtga->phase        = RTGA_PHASE_IDLE;
 }
 
 /* Smallest prefix that rtga_begin can parse: the 18-byte header plus
@@ -937,6 +1014,53 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
    return IMAGE_PROCESS_END;
 }
 
+bool rtga_decode_rows(rtga_t *rtga, const uint8_t *data, size_t len,
+      bool rgba, const struct rtga_rows *rows,
+      unsigned *width, unsigned *height)
+{
+   bool ok;
+   if (width)
+      *width  = 0;
+   if (height)
+      *height = 0;
+   if (!rtga || !data || !rows || len < RTGA_MIN_HEADER
+         || len > (size_t)INT_MAX)
+      return false;
+
+   rtga_proc_reset(rtga);
+   rtga->buff_data             = (uint8_t*)data;
+   rtga->s.img_buffer          = (uint8_t*)data;
+   rtga->s.img_buffer_original = (uint8_t*)data;
+   rtga->s.img_buffer_end      = (uint8_t*)data + len;
+   rtga->true_end              = rtga->s.img_buffer_end;
+   rtga->avail_set             = false;
+   rtga->avail_req             = 0;
+   rtga->need_more             = false;
+   rtga->rows                  = rows;
+   rtga->width                 = 0;
+   rtga->height                = 0;
+
+   ok = rtga_begin(rtga, rgba);
+   if (width)
+      *width  = (unsigned)rtga->width;
+   if (height)
+      *height = (unsigned)rtga->height;
+   if (ok)
+   {
+      if (rtga->phase == RTGA_PHASE_FAST)
+         rtga_fast_rows(rtga, rtga->height);
+      else if (rtga->phase == RTGA_PHASE_INDEXED)
+         rtga_indexed_pixels(rtga, rtga->pixel_count);
+      else
+         rtga_generic_pixels(rtga, rtga->pixel_count);
+   }
+   rtga->rows      = NULL;
+   rtga->dst       = NULL;
+   rtga->phase     = RTGA_PHASE_IDLE;
+   rtga->buff_data = NULL;
+   return ok;
+}
+
 bool rtga_set_buf_ptr(rtga_t *rtga, void *data)
 {
    if (!rtga)
@@ -957,6 +1081,7 @@ void rtga_free(rtga_t *rtga)
    /* A finished decode handed its surface to the caller; an abandoned
     * one still holds a partial surface. */
    rtga_proc_reset(rtga);
+   free(rtga->own_row);
    free(rtga);
 }
 

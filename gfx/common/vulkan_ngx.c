@@ -1332,10 +1332,9 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    return true;
 }
 
-void vulkan_ngx_free(vulkan_ngx_t *ngx)
+void vulkan_ngx_reset(vulkan_ngx_t *ngx)
 {
    unsigned i;
-   int in_use = 0;
    if (!ngx)
       return;
    vulkan_ngx_retire(ngx);
@@ -1343,6 +1342,22 @@ void vulkan_ngx_free(vulkan_ngx_t *ngx)
    for (i = 0; i < VULKAN_NGX_RETIRED_MAX; i++)
       ngx->retired[i].frames = ngx->retired[i].frames ? 1 : 0;
    vulkan_ngx_frame_done(ngx);
+   ngx->failed_out_dims = 0;
+   ngx->failed_quality = 0;
+   ngx->unfit_dims = 0;
+   ngx->nr_pending_frames = 0;
+   ngx->nr_failed_word = 0;
+   ngx->nr_failed_dims = 0;
+   ngx->reset_pending = true;
+   ngx->nr_reset = true;
+}
+
+void vulkan_ngx_free(vulkan_ngx_t *ngx)
+{
+   int in_use = 0;
+   if (!ngx)
+      return;
+   vulkan_ngx_reset(ngx);
    RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature released.\n");
    if (ngx->nr_params)
       ngx->lib->vulkan.destroy_parameters(ngx->nr_params);

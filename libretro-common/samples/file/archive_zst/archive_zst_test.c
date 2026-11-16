@@ -58,6 +58,8 @@ static uint8_t       *data;
 static uint8_t       *frame;
 static size_t         frame_len;
 static uint64_t       read_octets;
+static unsigned       read_at_calls;
+static bool           positional; /* the VFS offers v6 reads at offsets */
 
 static void fail(const char *what, const char *detail)
 {
@@ -81,6 +83,17 @@ static int64_t count_read(struct retro_vfs_file_handle *h, void *s,
    return r;
 }
 
+static int64_t count_read_at(struct retro_vfs_file_handle *h, void *s,
+      uint64_t len, int64_t offset)
+{
+   int64_t r = retro_vfs_file_read_at_impl(
+         (libretro_vfs_implementation_file*)h, s, len, offset);
+   read_at_calls++;
+   if (r > 0)
+      read_octets += (uint64_t)r;
+   return r;
+}
+
 static void install_vfs(bool lend)
 {
    static struct retro_vfs_interface iface;
@@ -99,10 +112,16 @@ static void install_vfs(bool lend)
    iface.remove   = retro_vfs_file_remove_impl;
    iface.rename   = retro_vfs_file_rename_impl;
    info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+   if (positional)
+   {
+      iface.read_at                   = count_read_at;
+      info.required_interface_version = 6;
+   }
    info.iface                      = &iface;
    filestream_vfs_init(&info);
    filestream_set_mapped_ptr_cb(lend ? lend_mapped_ptr : NULL);
-   read_octets = 0;
+   read_octets   = 0;
+   read_at_calls = 0;
 }
 
 static int extract_cb(const char *name, const char *valid_exts,
@@ -280,11 +299,20 @@ int main(void)
       return 2;
    fclose(f);
 
+   /* without v6 an extract's blocks are sought and read; with it, read
+    * at their offsets */
    check_read("read, plain file", false);
    check_read("read, lent", true);
    check_extract("extract, plain file", false);
    check_extract("extract, lent", true);
    check_window();
+   positional = true;
+   check_read("read at offsets, plain file", false);
+   check_extract("extract at offsets, plain file", false);
+   if (!read_at_calls)
+      fail("extract at offsets, plain file", "no read at an offset");
+   check_window();
+   positional = false;
    install_vfs(false);
    if (     file_archive_get_file_crc32(ZST_PATH "#archive_zst_test.bin")
          != encoding_crc32(0, data, DATA_LEN))

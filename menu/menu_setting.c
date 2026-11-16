@@ -39,6 +39,7 @@
 #include "../config.h"
 #endif
 
+#include "../record/record_native_buffer.h"
 #include "menu_setting.h"
 #include "menu_displaylist.h"
 #include "menu_cbs.h"
@@ -1384,6 +1385,47 @@ static int setting_uint_action_right_default(
    }
 
    return 0;
+}
+
+static void setting_streaming_mode_adjust(rarch_setting_t *setting, bool forward)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned value, i;
+   if (!setting || !settings || !recording_driver_can_stream(settings->arrays.record_driver))
+      return;
+   value = setting_uint_get(setting);
+   if (value > STREAMING_MODE_CUSTOM)
+      value = forward ? STREAMING_MODE_TWITCH : STREAMING_MODE_CUSTOM;
+   /* A bounded walk of enum choices, never a wait for a backend. */
+   for (i = 0; i <= STREAMING_MODE_CUSTOM; i++)
+   {
+      if (recording_driver_streaming_mode_supported(settings->arrays.record_driver, value))
+      {
+         if (value != setting_uint_get(setting))
+            setting_uint_set(setting, value);
+         return;
+      }
+      if (forward)
+         value = value == STREAMING_MODE_CUSTOM ? STREAMING_MODE_TWITCH : value + 1;
+      else
+         value = value ? value - 1 : STREAMING_MODE_CUSTOM;
+   }
+}
+
+static int setting_uint_action_left_streaming_mode(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   int result = setting_uint_action_left_default(setting, idx, wraparound);
+   setting_streaming_mode_adjust(setting, false);
+   return result;
+}
+
+static int setting_uint_action_right_streaming_mode(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   int result = setting_uint_action_right_default(setting, idx, wraparound);
+   setting_streaming_mode_adjust(setting, true);
+   return result;
 }
 
 static int setting_bool_action_right_with_refresh(
@@ -12398,11 +12440,47 @@ static void update_streaming_url_write_handler(rarch_setting_t *setting)
    recording_driver_update_streaming_url();
 }
 
+static void setting_record_buffer_range(rarch_setting_t *setting)
+{
+   settings_t *settings = config_get_ptr();
+   const record_driver_t *driver;
+   if (!setting || !settings)
+      return;
+   driver = recording_driver_find(settings->arrays.record_driver);
+   if (recording_is_native_gpu(driver))
+   {
+      setting->min = recording_native_buffer_min(driver->ident);
+      setting->max = RECORD_GPU_QUEUE_SLOTS;
+      setting->step = 1;
+      setting->offset_by = (unsigned)setting->min;
+      setting->default_value.unsigned_integer = 4;
+      setting_uint_set(setting, recording_native_buffer_count(driver->ident,
+               setting_uint_get(setting)));
+   }
+   else
+   {
+      setting->min = MIN_VIDEO_RECORD_FIFO_FRAMES;
+      setting->max = MAX_VIDEO_RECORD_FIFO_FRAMES;
+      setting->step = 4;
+      setting->offset_by = MIN_VIDEO_RECORD_FIFO_FRAMES;
+      setting->default_value.unsigned_integer = DEFAULT_VIDEO_RECORD_FIFO_FRAMES;
+      if (setting_uint_get(setting) < MIN_VIDEO_RECORD_FIFO_FRAMES)
+         setting_uint_set(setting, MIN_VIDEO_RECORD_FIFO_FRAMES);
+   }
+}
+
 static void record_driver_write_handler(rarch_setting_t *setting)
 {
    /* Force the recording settings page to rebuild so that
     * driver-specific items are shown/hidden immediately. */
    struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   setting_record_buffer_range(menu_setting_find_enum(
+            MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES));
+   if (settings && recording_driver_can_stream(settings->arrays.record_driver)
+         && !recording_driver_streaming_mode_supported(
+            settings->arrays.record_driver, settings->uints.streaming_mode))
+      settings->uints.streaming_mode = STREAMING_MODE_CUSTOM;
    menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
                     | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 }
@@ -13181,6 +13259,8 @@ static void settings_list_add_desc(
                (enum ui_setting_type)d->ui_type;
       if (d->values)
          MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, d->values);
+      if (d->name_enum == MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES)
+         setting_record_buffer_range(&(*list)[list_info->index - 1]);
    }
 }
 
@@ -17898,6 +17978,8 @@ static void settings_build_recording(
             update_streaming_url_write_handler,
             general_read_handler);
             SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
+            SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_uint_action_left_streaming_mode)
+            SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_uint_action_right_streaming_mode)
             SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_streaming_mode)
          menu_settings_list_current_add_range(list, list_info, 0, STREAMING_MODE_CUSTOM, 1, true, true);
 

@@ -1,6 +1,7 @@
 /* rvorbis' codebook size bound: libvorbis' limit, so every table
  * sized from an accepted codebook stays under 2^24 entries, and a real
- * stream still decodes in full. */
+ * stream still decodes in full.  A sparse codebook with no entry in use
+ * and a lookup table frees the table's scratch (LeakSanitizer). */
 
 #include <stdio.h>
 
@@ -62,10 +63,63 @@ static void test_fixture_decodes(void)
    rvorbis_close(v);
 }
 
+/* Vorbis packs header fields from the low bit up */
+struct bitw { unsigned char *p; int bit; };
+
+static void put_bits(struct bitw *w, uint32_t v, int n)
+{
+   int i;
+   for (i = 0; i < n; i++, w->bit++)
+      if ((v >> i) & 1)
+         w->p[w->bit >> 3] |= (unsigned char)(1 << (w->bit & 7));
+}
+
+static void test_sparse_unused_lookup(void)
+{
+   static const unsigned char id[30] = {
+      1, 'v', 'o', 'r', 'b', 'i', 's', 0, 0, 0, 0,   /* version 0       */
+      1, 0x44, 0xAC, 0, 0,                         /* mono, 44100 Hz  */
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0xB8, 1                                      /* blocks 256/2048 */
+   };
+   unsigned char setup[128];
+   struct bitw w;
+   int i, err = 0;
+   rvorbis *v;
+
+   memset(setup, 0, sizeof(setup));
+   memcpy(setup, "\005vorbis", 7);
+   w.p   = setup;
+   w.bit = 7 * 8;
+   put_bits(&w, 0, 8);                  /* one codebook             */
+   put_bits(&w, 0x564342, 24);          /* its sync pattern         */
+   put_bits(&w, 1, 16);                 /* 1 dimension              */
+   put_bits(&w, 8, 24);                 /* 8 entries                */
+   put_bits(&w, 0, 1);                  /* not ordered              */
+   put_bits(&w, 1, 1);                  /* sparse                   */
+   for (i = 0; i < 8; i++)
+      put_bits(&w, 0, 1);               /* no entry in use          */
+   put_bits(&w, 1, 4);                  /* lookup type 1            */
+   put_bits(&w, 0, 32);                 /* minimum                  */
+   put_bits(&w, 0, 32);                 /* delta                    */
+   put_bits(&w, 3, 4);                  /* 4-bit values             */
+   put_bits(&w, 0, 1);                  /* no sequence              */
+   for (i = 0; i < 8; i++)
+      put_bits(&w, (uint32_t)i, 4);     /* the lookup table         */
+
+   /* what follows the codebook is not a valid setup; the codebook is
+    * read either way */
+   v = rvorbis_open_packets(id, (int)sizeof(id), setup, (int)sizeof(setup),
+         &err, NULL);
+   if (v)
+      rvorbis_close(v);
+}
+
 int main(void)
 {
    test_bounds();
    test_fixture_decodes();
+   test_sparse_unused_lookup();
    printf("rvorbis_codebook: %s (%d failures)\n",
          failures ? "FAIL" : "PASS", failures);
    return failures ? 1 : 0;

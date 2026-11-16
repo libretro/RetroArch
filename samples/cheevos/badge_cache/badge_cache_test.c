@@ -20,11 +20,15 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <compat/strl.h>
+#include <queues/mpsc_stack.h>
+#include <rthreads/rthreads.h>
 
 #include "../../../gfx/gfx_surface.h"
 #include "../../../cheevos/cheevos.h"
 
 extern int      st_on_main_thread;
+extern bool st_thread_mode;
+extern uintptr_t st_owner_thread;
 extern char     st_existing[32][64];
 extern unsigned st_existing_count;
 extern unsigned st_downloads;
@@ -75,6 +79,122 @@ static uintptr_t lent(gfx_surface_t *s)
 {
    return GFX_SURFACE_HANDLE(s);
 }
+
+#ifdef RETRO_ATOMIC_HAS_PTR
+typedef struct badge_return
+{
+   mpsc_stack_node_t node;
+   gfx_surface_t *surface;
+} badge_return_t;
+
+static mpsc_stack_t returned_surfaces;
+
+static void badge_reader(void *userdata)
+{
+   unsigned i;
+   (void)userdata;
+   for (i = 0; i < 2000; i++)
+   {
+      char key[16];
+      gfx_surface_t *s;
+      if (!(i % 257))
+         rcheevos_badge_cache_reset();
+      snprintf(key, sizeof(key), "%u", 80000 + i % 32);
+      rcheevos_get_badge_texture(key, false, false);
+      s = rcheevos_get_badge_texture("12345", false, false);
+      if (s)
+      {
+         badge_return_t *r = (badge_return_t *)malloc(sizeof(*r));
+         if (r)
+         {
+            r->surface = s;
+            mpsc_stack_push(&returned_surfaces, &r->node);
+         }
+         else
+            gfx_surface_free(s);
+      }
+   }
+}
+
+static void finish_badges(void)
+{
+   mpsc_stack_node_t *n;
+   while (st_parked_count)
+      st_finish_decode(0, true);
+   while (st_uploads_pending_count)
+      st_finish_upload(0, true);
+   n = mpsc_stack_drain(&returned_surfaces);
+   while (n)
+   {
+      badge_return_t *r = (badge_return_t *)n;
+      n = n->next;
+      gfx_surface_free(r->surface);
+      free(r);
+   }
+}
+
+static void concurrent_badges(void)
+{
+   sthread_t *readers[4];
+   unsigned i;
+   mpsc_stack_init(&returned_surfaces);
+   st_owner_thread = (uintptr_t)sthread_get_current_thread_id();
+   st_thread_mode = true;
+   for (i = 0; i < 4; i++)
+   {
+      readers[i] = sthread_create(badge_reader, NULL);
+      CHECK(readers[i] != NULL, "reader creation failed");
+   }
+   for (i = 0; i < 4000; i++)
+   {
+      rcheevos_badge_cache_service();
+      finish_badges();
+      if (!(i % 97))
+         rcheevos_badge_cache_reset();
+   }
+   for (i = 0; i < 4; i++)
+      if (readers[i])
+         sthread_join(readers[i]);
+   rcheevos_badge_cache_service();
+   rcheevos_badge_cache_reset();
+   finish_badges();
+   rcheevos_badge_cache_service();
+   st_thread_mode = false;
+   CHECK(st_surfaces_live == 0, "concurrent reset leaked %u surfaces", st_surfaces_live);
+}
+
+static void complete_upload(void *userdata)
+{
+   (void)userdata;
+   st_finish_upload(0, true);
+}
+
+static void concurrent_upload_reset(void)
+{
+   unsigned i;
+   st_thread_mode = true;
+   for (i = 0; i < 200; i++)
+   {
+      sthread_t *uploader;
+      gfx_surface_t *s = rcheevos_get_badge_texture("12345", false, false);
+      CHECK(s == NULL && st_parked_count == 1, "upload reset fixture did not load");
+      if (s)
+         gfx_surface_free(s);
+      st_finish_decode(0, true);
+      uploader = sthread_create(complete_upload, NULL);
+      CHECK(uploader != NULL, "uploader creation failed");
+      rcheevos_badge_cache_reset();
+      rcheevos_badge_cache_service();
+      if (uploader)
+         sthread_join(uploader);
+      else
+         complete_upload(NULL);
+      rcheevos_badge_cache_service();
+      CHECK(st_surfaces_live == 0, "late upload leaked %u surfaces", st_surfaces_live);
+   }
+   st_thread_mode = false;
+}
+#endif
 
 int main(void)
 {
@@ -326,6 +446,31 @@ int main(void)
          gfx_surface_free(kept[i]);
    }
    CHECK(st_surfaces_live == 0, "%u surface(s) still live", st_surfaces_live);
+
+   /* Both the shared default and a normal 00000 request recover on download. */
+   strcpy(st_existing[2], "not-present.png");
+   CHECK(rcheevos_get_default_badge_texture() == NULL, "missing default returned a surface");
+   CHECK(rcheevos_get_badge_texture("00000", false, false) == NULL, "missing badge returned a surface");
+   strcpy(st_existing[2], "00000.png");
+   rcheevos_update_badge_references("00000");
+   CHECK(st_parked_count == 2, "default download did not restart both loads");
+   while (st_parked_count)
+      st_finish_decode(0, true);
+   while (st_uploads_pending_count)
+      st_finish_upload(0, true);
+   {
+      gfx_surface_t *shared = rcheevos_get_default_badge_texture();
+      gfx_surface_t *owned = rcheevos_get_badge_texture("00000", false, false);
+      CHECK(shared && owned && shared != owned, "default and owned badge share ownership");
+      gfx_surface_free(owned);
+   }
+   rcheevos_badge_cache_reset();
+   CHECK(st_surfaces_live == 0, "default recovery leaked surfaces");
+
+#ifdef RETRO_ATOMIC_HAS_PTR
+   concurrent_badges();
+   concurrent_upload_reset();
+#endif
 
    if (failures)
    {

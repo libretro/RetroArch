@@ -578,6 +578,10 @@ check_val '' FLAC '-lFLAC' '' flac '' '' false
 
 check_enabled SSL RETROSSL 'retro ssl' 'ssl is' false
 check_enabled CRYPTO RETROSSL 'retro ssl' 'crypto is' false
+check_enabled DYNAMIC CORE_SIGNATURES 'core signatures' 'dynamic loading is' false
+check_enabled CRYPTO CORE_SIGNATURES 'core signatures' 'crypto is' false
+check_enabled CORE_SIGNATURES CORE_LOAD_CHECK 'core load check' 'core signatures is' false
+check_enabled CORE_SIGNATURES CORE_SIGNING_TEST_KEY 'core signing test key' 'core signatures is' false
 check_enabled SSL MBEDTLS 'system mbedtls' 'ssl is' false
 check_enabled SSL BEARSSL 'system bearssl' 'ssl is' false
 
@@ -1111,6 +1115,21 @@ fi
 
 check_enabled NETWORKING RETRONFS 'built-in NFS client' 'Networking is' false
 if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
+
+check_enabled NETWORKING RTMP 'RTMP publishing' 'Networking is' false
+check_enabled CRYPTO RTMP 'RTMP publishing' 'crypto is' false
+if [ "$HAVE_RTMP" = 'auto' ]; then
+   HAVE_RTMP=no
+   if [ "$OS" = 'Darwin' ] && [ "$HAVE_METAL" = 'yes' ] && \
+      [ "$HAVE_AVF" = 'yes' ] && [ "$HAVE_THREADS" = 'yes' ] && \
+      [ "$HAVE_CONFIGFILE" = 'yes' ]; then
+      HAVE_RTMP=yes
+   fi
+fi
+if [ "$HAVE_RFLV" = 'auto' ]; then
+   HAVE_RFLV=no
+   [ "$HAVE_RTMP" = 'yes' ] && HAVE_RFLV=yes
+fi
 
 # The built-in client is used unless a system libsmb2 was asked for
 # (--enable-libsmb, or --enable-smbclient); nothing is bundled any more,

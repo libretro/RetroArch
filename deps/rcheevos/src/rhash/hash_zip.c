@@ -2,6 +2,8 @@
 
 #include "../rc_compat.h"
 
+#include <retro_endianness.h>
+
 struct rc_hash_zip_idx
 {
   size_t length;
@@ -36,11 +38,6 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
     return rc_hash_iterator_error(iterator, "ZIP is too small");
 
   /* Macros used for reading ZIP and writing to a buffer for hashing (undefined again at the end of the function) */
-  #define RC_ZIP_READ_LE16(p) ((uint16_t)(((const uint8_t*)(p))[0]) | ((uint16_t)(((const uint8_t*)(p))[1]) << 8U))
-  #define RC_ZIP_READ_LE32(p) ((uint32_t)(((const uint8_t*)(p))[0]) | ((uint32_t)(((const uint8_t*)(p))[1]) << 8U) | ((uint32_t)(((const uint8_t*)(p))[2]) << 16U) | ((uint32_t)(((const uint8_t*)(p))[3]) << 24U))
-  #define RC_ZIP_READ_LE64(p) ((uint64_t)(((const uint8_t*)(p))[0]) | ((uint64_t)(((const uint8_t*)(p))[1]) << 8U) | ((uint64_t)(((const uint8_t*)(p))[2]) << 16U) | ((uint64_t)(((const uint8_t*)(p))[3]) << 24U) | ((uint64_t)(((const uint8_t*)(p))[4]) << 32U) | ((uint64_t)(((const uint8_t*)(p))[5]) << 40U) | ((uint64_t)(((const uint8_t*)(p))[6]) << 48U) | ((uint64_t)(((const uint8_t*)(p))[7]) << 56U))
-  #define RC_ZIP_WRITE_LE32(p,v) { ((uint8_t*)(p))[0] = (uint8_t)((uint32_t)(v) & 0xFF); ((uint8_t*)(p))[1] = (uint8_t)(((uint32_t)(v) >> 8) & 0xFF); ((uint8_t*)(p))[2] = (uint8_t)(((uint32_t)(v) >> 16) & 0xFF); ((uint8_t*)(p))[3] = (uint8_t)((uint32_t)(v) >> 24); }
-  #define RC_ZIP_WRITE_LE64(p,v) { ((uint8_t*)(p))[0] = (uint8_t)((uint64_t)(v) & 0xFF); ((uint8_t*)(p))[1] = (uint8_t)(((uint64_t)(v) >> 8) & 0xFF); ((uint8_t*)(p))[2] = (uint8_t)(((uint64_t)(v) >> 16) & 0xFF); ((uint8_t*)(p))[3] = (uint8_t)(((uint64_t)(v) >> 24) & 0xFF); ((uint8_t*)(p))[4] = (uint8_t)(((uint64_t)(v) >> 32) & 0xFF); ((uint8_t*)(p))[5] = (uint8_t)(((uint64_t)(v) >> 40) & 0xFF); ((uint8_t*)(p))[6] = (uint8_t)(((uint64_t)(v) >> 48) & 0xFF); ((uint8_t*)(p))[7] = (uint8_t)((uint64_t)(v) >> 56); }
 
   /* Find the end of central directory record by scanning the file from the end towards the beginning */
   for (ecdh_ofs = archive_size - sizeof(buf); ; ecdh_ofs -= (sizeof(buf) - 3)) {
@@ -55,7 +52,7 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
       return rc_hash_iterator_error(iterator, "ZIP read error");
 
     for (i = n - 4; i >= 0; --i) {
-      if (buf[i] == 'P' && RC_ZIP_READ_LE32(buf + i) == 0x06054b50) /* end of central directory header signature */
+      if (buf[i] == 'P' && retro_get_unaligned_32le(buf + i) == 0x06054b50) /* end of central directory header signature */
         break;
     }
 
@@ -74,9 +71,9 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
     return rc_hash_iterator_error(iterator, "Failed to read ZIP central directory");
 
   /* Read central dir information from end of central directory header */
-  total_files = RC_ZIP_READ_LE16(buf + 0x0A);
-  cdir_size = RC_ZIP_READ_LE32(buf + 0x0C);
-  cdir_ofs = RC_ZIP_READ_LE32(buf + 0x10);
+  total_files = retro_get_unaligned_16le(buf + 0x0A);
+  cdir_size = retro_get_unaligned_32le(buf + 0x0C);
+  cdir_ofs = retro_get_unaligned_32le(buf + 0x10);
 
   /* Check if this is a Zip64 file. In the block of code below:
    * - 20 is the size of the ZIP64 end of central directory locator
@@ -85,15 +82,15 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
   if ((cdir_ofs == 0xFFFFFFFF || cdir_size == 0xFFFFFFFF || total_files == 0xFFFF) && ecdh_ofs >= (20 + 56)) {
     /* Read the ZIP64 end of central directory locator if it actually exists */
     rc_file_seek(iterator, file_handle, ecdh_ofs - 20, SEEK_SET);
-    if (rc_file_read(iterator, file_handle, buf, 20) == 20 && RC_ZIP_READ_LE32(buf) == 0x07064b50) { /* locator signature */
+    if (rc_file_read(iterator, file_handle, buf, 20) == 20 && retro_get_unaligned_32le(buf) == 0x07064b50) { /* locator signature */
       /* Found the locator, now read the actual ZIP64 end of central directory header */
-      int64_t ecdh64_ofs = (int64_t)RC_ZIP_READ_LE64(buf + 0x08);
+      int64_t ecdh64_ofs = (int64_t)retro_get_unaligned_64le(buf + 0x08);
       if (ecdh64_ofs <= (archive_size - 56)) {
         rc_file_seek(iterator, file_handle, ecdh64_ofs, SEEK_SET);
-        if (rc_file_read(iterator, file_handle, buf, 56) == 56 && RC_ZIP_READ_LE32(buf) == 0x06064b50) { /* header signature */
-          total_files = RC_ZIP_READ_LE64(buf + 0x20);
-          cdir_size = RC_ZIP_READ_LE64(buf + 0x28);
-          cdir_ofs = RC_ZIP_READ_LE64(buf + 0x30);
+        if (rc_file_read(iterator, file_handle, buf, 56) == 56 && retro_get_unaligned_32le(buf) == 0x06064b50) { /* header signature */
+          total_files = retro_get_unaligned_64le(buf + 0x20);
+          cdir_size = retro_get_unaligned_64le(buf + 0x28);
+          cdir_ofs = retro_get_unaligned_64le(buf + 0x30);
         }
       }
     }
@@ -133,16 +130,16 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
   /* Now process the central directory file records */
   for (i_file = nparents = 0, cdir = cdir_start; i_file < total_files && cdir >= cdir_start && cdir <= cdir_max; i_file++, cdir += cdir_entry_len) {
     const uint8_t* name, * name_end;
-    uint32_t signature = RC_ZIP_READ_LE32(cdir + 0x00);
-    uint32_t method = RC_ZIP_READ_LE16(cdir + 0x0A);
-    uint32_t crc32 = RC_ZIP_READ_LE32(cdir + 0x10);
-    uint64_t comp_size = RC_ZIP_READ_LE32(cdir + 0x14);
-    uint64_t decomp_size = RC_ZIP_READ_LE32(cdir + 0x18);
-    uint32_t filename_len = RC_ZIP_READ_LE16(cdir + 0x1C);
-    int32_t  extra_len = RC_ZIP_READ_LE16(cdir + 0x1E);
-    int32_t  comment_len = RC_ZIP_READ_LE16(cdir + 0x20);
-    int32_t  external_attr = RC_ZIP_READ_LE16(cdir + 0x26);
-    uint64_t local_hdr_ofs = RC_ZIP_READ_LE32(cdir + 0x2A);
+    uint32_t signature = retro_get_unaligned_32le(cdir + 0x00);
+    uint32_t method = retro_get_unaligned_16le(cdir + 0x0A);
+    uint32_t crc32 = retro_get_unaligned_32le(cdir + 0x10);
+    uint64_t comp_size = retro_get_unaligned_32le(cdir + 0x14);
+    uint64_t decomp_size = retro_get_unaligned_32le(cdir + 0x18);
+    uint32_t filename_len = retro_get_unaligned_16le(cdir + 0x1C);
+    int32_t  extra_len = retro_get_unaligned_16le(cdir + 0x1E);
+    int32_t  comment_len = retro_get_unaligned_16le(cdir + 0x20);
+    int32_t  external_attr = retro_get_unaligned_16le(cdir + 0x26);
+    uint64_t local_hdr_ofs = retro_get_unaligned_32le(cdir + 0x2A);
     cdir_entry_len = cdirhdr_size + filename_len + extra_len + comment_len;
 
     if (signature != 0x02014b50) /* expected central directory entry signature */
@@ -159,8 +156,8 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
       const uint8_t* x = cdir + cdirhdr_size + filename_len, * xEnd, * field, * fieldEnd;
       for (xEnd = x + extra_len; (x + (sizeof(uint16_t) * 2)) < xEnd; x = fieldEnd) {
         field = x + (sizeof(uint16_t) * 2);
-        fieldEnd = field + RC_ZIP_READ_LE16(x + 2);
-        if (RC_ZIP_READ_LE16(x) != 0x0001 || fieldEnd > xEnd)
+        fieldEnd = field + retro_get_unaligned_16le(x + 2);
+        if (retro_get_unaligned_16le(x) != 0x0001 || fieldEnd > xEnd)
           continue; /* Not the Zip64 extended information extra field */
 
         if (decomp_size == 0xFFFFFFFF) {
@@ -169,7 +166,7 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
             break;
           }
 
-          decomp_size = RC_ZIP_READ_LE64(field);
+          decomp_size = retro_get_unaligned_64le(field);
           field += sizeof(uint64_t);
         }
 
@@ -179,7 +176,7 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
             break;
           }
 
-          comp_size = RC_ZIP_READ_LE64(field);
+          comp_size = retro_get_unaligned_64le(field);
           field += sizeof(uint64_t);
         }
 
@@ -189,7 +186,7 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
             break;
           }
 
-          local_hdr_ofs = RC_ZIP_READ_LE64(field);
+          local_hdr_ofs = retro_get_unaligned_64le(field);
           field += sizeof(uint64_t);
         }
 
@@ -238,9 +235,9 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
 
     /* Add zero terminator, CRC32 and decompressed size to the hash data buffer */
     *(hashdata++) = '\0';
-    RC_ZIP_WRITE_LE32(hashdata, crc32);
+    retro_set_unaligned_32le(hashdata, crc32);
     hashdata += 4;
-    RC_ZIP_WRITE_LE64(hashdata, decomp_size);
+    retro_set_unaligned_64le(hashdata, decomp_size);
     hashdata += 8;
   }
 
@@ -257,11 +254,6 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle,
 
   return 1;
 
-  #undef RC_ZIP_READ_LE16
-  #undef RC_ZIP_READ_LE32
-  #undef RC_ZIP_READ_LE64
-  #undef RC_ZIP_WRITE_LE32
-  #undef RC_ZIP_WRITE_LE64
 }
 
 /* ===================================================== */

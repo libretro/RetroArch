@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <formats/cdfs.h>
+#include <streams/cdfs_file.h>
 #include <streams/chd_stream.h>
 #include <rc_hash.h>
 

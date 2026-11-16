@@ -60,6 +60,7 @@
 #include <boolean.h>
 #include <audio/audio_mixer.h>
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 
 #define MIX_FRAMES          1024
 #define MIX_RATE            48000

@@ -6,6 +6,7 @@ LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
 	rjson_test.c \
+	rjson_span_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/json/rjson.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
@@ -51,6 +52,8 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+$(call sample_objs,$(LIBRETRO_COMM_DIR)/formats/json/rjson.o): $(LIBRETRO_COMM_DIR)/formats/json/rjson_parser.h
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)

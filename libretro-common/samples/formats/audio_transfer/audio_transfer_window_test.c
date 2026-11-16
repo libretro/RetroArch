@@ -56,6 +56,7 @@
 
 #include <formats/audio.h>
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #include <formats/rwebm.h>
 
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)

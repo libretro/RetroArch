@@ -95,6 +95,13 @@
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
 #include "../../gfx/common/vulkan_custom_driver.h"
 #endif
+#ifdef HAVE_CORE_SIGNATURES
+#include "../../core_install_check.h"
+#include "../../core_trust_runtime.h"
+#endif
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../../core_load_check.h"
+#endif
 #include "../../manual_content_scan.h"
 #ifdef __MACH__
 #include <TargetConditionals.h>
@@ -2572,6 +2579,10 @@ static int generic_action_ok(const char *path,
                      CORE_TYPE_PLAIN,
                      NULL, NULL))
             {
+#ifdef HAVE_CORE_LOAD_CHECK
+               /* Held back for its check: loads after it, or asks */
+               task_content_park_core_load(action_path);
+#endif
 #ifndef HAVE_DYNAMIC
                ret = -1;
 #endif
@@ -3291,6 +3302,10 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       if (!content_set_subsystem_by_name(entry->subsystem_ident))
       {
+#ifdef HAVE_CORE_LOAD_CHECK
+         if (task_content_core_refused_notify(core_path))
+            goto refused;
+#endif
          RARCH_LOG("[Playlist] Subsystem not found in implementation.\n");
          goto error;
       }
@@ -3337,6 +3352,9 @@ error:
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
+#ifdef HAVE_CORE_LOAD_CHECK
+refused:
+#endif
 
    /* Single-click playlist return */
    if (settings->bools.input_menu_singleclick_playlists)
@@ -6463,10 +6481,12 @@ static int action_ok_sideload_core(const char *path,
       char backup_path[PATH_MAX_LENGTH];
       fill_pathname_join_special(
             backup_path, menu_path, path, sizeof(backup_path));
-      pushed = task_push_core_restore(backup_path, dir_libretro, &core_loaded);
+      pushed = task_push_core_restore(backup_path, dir_libretro,
+            &core_loaded, false, NULL);
    }
    else
-      pushed = task_push_core_restore(path, dir_libretro, &core_loaded);
+      pushed = task_push_core_restore(path, dir_libretro, &core_loaded,
+            false, NULL);
 
    /* Flush stack
     * > Since the 'sideload core' option is present
@@ -6608,6 +6628,8 @@ static int action_ok_dialog_init(struct menu_state *menu_st)
 
 error:
    menu_displaylist_info_free(&info);
+   /* Never shown, it can't take a later OK */
+   menu_dialog_confirm_clear(menu_st);
    return -1;
 }
 
@@ -6653,6 +6675,32 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
    }
    return generic_action_ok_command(CMD_EVENT_CLOSE_CONTENT);
 }
+
+#ifdef HAVE_CORE_SIGNATURES
+int action_ok_core_signature_check(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *msg;
+   switch (core_trust_runtime_toggle_checks())
+   {
+      /* Always asks, whatever menu_show_confirm says */
+      case CORE_TRUST_TOGGLE_CONFIRM_OFF:
+         menu_dialog_confirm_set(menu_st,
+               MSG_CORE_SIGNATURE_CHECK_OFF_CONFIRM,
+               CMD_EVENT_CORE_SIGNATURE_CHECK_OFF);
+         return action_ok_dialog_init(menu_st);
+      case CORE_TRUST_TOGGLE_READ_ONLY:
+         msg = msg_hash_to_str(MSG_CORE_TRUST_READ_ONLY);
+         runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         break;
+      default:
+         break;
+   }
+   return 0;
+}
+#endif
 
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_cheat_apply_changes,      CMD_EVENT_CHEATS_APPLY)
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_save_new_config,          CMD_EVENT_MENU_SAVE_CONFIG)
@@ -9426,7 +9474,8 @@ static int action_ok_core_restore_backup(const char *path,
     *   (otherwise user will be faced with 'no information
     *   available' when popping the stack - this would be
     *   confusing/ugly) */
-   if (   task_push_core_restore(backup_path, dir_libretro, &core_loaded)
+   if (   task_push_core_restore(backup_path, dir_libretro, &core_loaded,
+            true, NULL)
        && core_loaded)
       menu_entries_flush_stack(NULL, 0);
    return 0;
@@ -9442,6 +9491,9 @@ static int action_ok_core_delete_backup(const char *path,
    /* Delete backup file (if it exists) */
    if (path_is_valid(backup_path))
       filestream_delete(backup_path);
+#ifdef HAVE_CORE_SIGNATURES
+   core_install_drop_sig(backup_path);
+#endif
    /* Refresh menu */
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
@@ -9602,6 +9654,10 @@ static int action_ok_core_delete(const char *path,
     * loaded - if so, unload it */
    if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
       generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_release_held();
+#endif
 
    /* Delete core file */
 #if defined(ANDROID)
@@ -9923,6 +9979,9 @@ static int action_ok_core_steam_uninstall(
    core_dlc = steam_get_core_dlc_by_name(core_dlc_list, label);
    if (core_dlc == NULL) return 0;
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_release_held();
+#endif
    steam_uninstall_core_dlc(core_dlc);
 
    return 0;
@@ -11088,6 +11147,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_OK(cbs, action_ok_core_lock);
             break;
+#ifdef HAVE_CORE_SIGNATURES
+         case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
+            BIND_ACTION_OK(cbs, action_ok_core_signature_check);
+            break;
+#endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
             BIND_ACTION_OK(cbs, action_ok_core_set_standalone_exempt);
             break;

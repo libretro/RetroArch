@@ -24,15 +24,27 @@ SOURCES := progress_bounds_test.c \
    $(RC)/src/rc_compat.c \
    $(LRC)/utils/md5.c
 
-all: $(TARGET)
+OWNER_TARGET := client_owner_queue_test$(if $(findstring mingw,$(CC)),.exe,)
+OWNER_SOURCES := client_owner_queue_test.c api_json_test.c $(filter-out progress_bounds_test.c,$(SOURCES)) \
+   $(RC)/src/rc_client.c $(wildcard $(RC)/src/rapi/*.c) \
+   $(LRC)/formats/json/rjson.c $(LRC)/string/rstrtod.c \
+   $(LRC)/rthreads/rthreads.c $(LRC)/rthreads/retro_eventcount.c
+OWNER_LIBS := -lpthread
+
+all: $(TARGET) $(OWNER_TARGET)
+
+$(OWNER_TARGET): $(OWNER_SOURCES) ../no_client_locks.h
+	$(CC) $(CFLAGS) -include ../no_client_locks.h -DHAVE_THREADS -o $@ $(OWNER_SOURCES) $(LDFLAGS) $(OWNER_LIBS) -lm
 
 $(TARGET): $(SOURCES)
 	$(CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS) -lm
 
-check: $(TARGET)
+check: $(TARGET) $(OWNER_TARGET)
 	./$(TARGET)
+	./$(OWNER_TARGET)
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe
+	rm -f $(OWNER_TARGET)
 
 .PHONY: all check clean

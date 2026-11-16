@@ -14,6 +14,7 @@ import tempfile
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--runner', default='')
+parser.add_argument('--slots-only', action='store_true', help='Require native H.264 with 4/8/16 slots, direct and GPU capture')
 parser.add_argument('binary')
 args = parser.parse_args()
 binary = str(Path(args.binary).resolve())
@@ -148,6 +149,23 @@ def check_pixels(ffmpeg, stream, codec, fmt):
     print(f'[pass] {name} {raw_format}: {frames} independently decoded frames, MAE {mean:.3f}, PSNR {psnr:.2f} dB', flush=True)
     return raw
 
+
+if args.slots_only:
+    ffmpeg = shutil.which('ffmpeg')
+    assert ffmpeg, 'Independent decode requires FFmpeg'
+    with tempfile.TemporaryDirectory(prefix='nvenc-ring-') as temporary:
+        for slots in (4, 8, 16):
+            for capture in (0, 1):
+                stream = Path(temporary) / f'slots-{slots}-capture-{capture}.h264'
+                env = dict(os.environ, NVENC_TEST_REQUIRE_HW='1', NVENC_TEST_SLOTS=str(slots))
+                subprocess.run([*runner, binary, '0', '1', str(stream), '1', '0', '0', str(capture)],
+                               env=env, check=True, timeout=60)
+                check_pixels(ffmpeg, stream, 0, 1)
+                check_mp4(ffmpeg, stream, 0, frames)
+                passed += 1
+    assert passed == 6
+    print('PASS native NVENC 4/8/16-slot direct/capture matrix: 144 independently decoded pictures', flush=True)
+    raise SystemExit(0)
 
 with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
     references = {}

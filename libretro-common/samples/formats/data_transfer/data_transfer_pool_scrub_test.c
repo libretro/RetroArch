@@ -63,6 +63,7 @@
 
 #include <boolean.h>
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 
 static int test_fails;
 

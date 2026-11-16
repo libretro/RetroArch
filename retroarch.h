@@ -132,7 +132,9 @@ enum rarch_state_flags
     * before loading; rarch_main() does not push another. */
    RARCH_FLAGS_CLOUD_SYNC_AT_INIT           = (1 << 23),
    /* See retroarch_user_dirs_hold(). */
-   RARCH_FLAGS_USER_DIRS_HELD               = (1 << 24)
+   RARCH_FLAGS_USER_DIRS_HELD               = (1 << 24),
+   /* See retroarch_main_quit_failure(). */
+   RARCH_FLAGS_QUIT_FAILURE                 = (1 << 25)
 };
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
@@ -198,6 +200,9 @@ bool retroarch_main_quit(void);
  * through retroarch_main_quit_poll(), which is true once it has. */
 bool retroarch_main_quit_staged(void);
 bool retroarch_main_quit_poll(void);
+/* A startup load that fails once the frame loop runs: quits, and
+ * rarch_main() returns 1 as it does for one that fails before */
+void retroarch_main_quit_failure(void);
 
 content_state_t *content_state_get_ptr(void);
 

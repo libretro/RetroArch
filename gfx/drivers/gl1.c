@@ -3202,7 +3202,8 @@ static bool gl1_frame(void *data, const void *frame,
             if (gl1->views.active)
             {
                struct video_viewport vp;
-               memset(&vp, 0, sizeof(vp));
+               vp.pos       = 0;
+               vp.dims      = 0;
                vp.full_dims = video_info->dims;
                video_driver_update_viewport(&vp, false,
                      (gl1->flags & GL1_FLAG_KEEP_ASPECT) ? true : false,

@@ -9,6 +9,8 @@
 #include <compat/strl.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
+#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/video_driver.h"
@@ -19,6 +21,8 @@
 
 /* ---- test-visible state ---- */
 int      st_on_main_thread = 1;
+bool st_thread_mode;
+uintptr_t st_owner_thread;
 char     st_badge_dir[256] = "/tmp";
 char     st_existing[32][64];          /* badge files that "exist" */
 unsigned st_existing_count;
@@ -51,7 +55,12 @@ int      st_async_available = 1;      /* 1: uploads park; 0: they land at once *
 int      st_upload_refused;           /* 1: the still refuses the image */
 
 /* ---- stubs ---- */
-bool task_is_on_main_thread(void) { return st_on_main_thread != 0; }
+bool task_is_on_main_thread(void)
+{
+   return st_thread_mode
+      ? (uintptr_t)sthread_get_current_thread_id() == st_owner_thread
+      : st_on_main_thread != 0;
+}
 
 /* image_texture_free from formats/image_texture.c pulls in every
  * decoder; the test's images are plain calloc pixels. */
@@ -133,7 +142,7 @@ gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter)
    if (s)
    {
       s->filter = filter;
-      st_surfaces_live++;
+      retro_atomic_fetch_add_int((retro_atomic_int_t*)&st_surfaces_live, 1);
    }
    return s;
 }
@@ -172,10 +181,10 @@ void gfx_surface_free(gfx_surface_t *s)
       return;
    if (s->handle)
    {
-      st_unloads++;
-      st_last_unloaded = s->handle;
+      retro_atomic_fetch_add_int((retro_atomic_int_t*)&st_unloads, 1);
+      retro_atomic_store_release_size((retro_atomic_size_t*)&st_last_unloaded, s->handle);
    }
-   st_surfaces_live--;
+   retro_atomic_fetch_add_int((retro_atomic_int_t*)&st_surfaces_live, -1);
    free(s);
 }
 

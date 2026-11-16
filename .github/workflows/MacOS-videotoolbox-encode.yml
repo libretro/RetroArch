@@ -19,6 +19,8 @@ on:
       - 'record/record_gpu_worker_vt*'
       - 'record/record_vt_packet.*'
       - 'record/record_stream_vt.*'
+      - 'record/record_stream_output_vt.*'
+      - 'record/record_stream_session_vt_native.h'
       - 'samples/record/rtmp_stream/**'
       - 'libretro-common/net/net_rtmp*'
       - 'libretro-common/include/net/net_rtmp*'
@@ -28,6 +30,7 @@ on:
       - 'libretro-common/include/formats/video_color.h'
       - 'record/record_audio_queue.*'
       - 'record/record_at_audio.*'
+      - 'record/record_at_resample.*'
       - 'samples/record/audiotoolbox_audio/**'
       - 'record/record_avfoundation_worker*'
       - 'record/record_avfoundation_session*'
@@ -55,6 +58,8 @@ on:
       - 'record/record_gpu_worker_vt*'
       - 'record/record_vt_packet.*'
       - 'record/record_stream_vt.*'
+      - 'record/record_stream_output_vt.*'
+      - 'record/record_stream_session_vt_native.h'
       - 'samples/record/rtmp_stream/**'
       - 'libretro-common/net/net_rtmp*'
       - 'libretro-common/include/net/net_rtmp*'
@@ -64,6 +69,7 @@ on:
       - 'libretro-common/include/formats/video_color.h'
       - 'record/record_audio_queue.*'
       - 'record/record_at_audio.*'
+      - 'record/record_at_resample.*'
       - 'samples/record/audiotoolbox_audio/**'
       - 'record/record_avfoundation_worker*'
       - 'record/record_avfoundation_session*'
@@ -75,14 +81,82 @@ on:
       - 'libretro-common/include/retro_atomic.h'
   workflow_dispatch:
     inputs:
+      ios_sdk_only:
+        description: 'Audit production VideoToolbox declarations against real iOS SDKs'
+        type: boolean
+        default: false
       native_aac_only:
         description: 'Run native AudioToolbox AAC acceptance without GPU/frontend jobs'
+        type: boolean
+        default: false
+      frontend_stream_only:
+        description: 'Run frontend streaming acceptance and both native frontend links'
         type: boolean
         default: false
 permissions:
   contents: read
 jobs:
+  stream-native:
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only && !inputs.frontend_stream_only }}
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install independent streaming receiver
+        run: command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
+      - name: Pollable producer wake and socket readiness
+        run: make -C libretro-common/samples/net/wake check
+      - name: Native VT and AAC over RTMP and TLS
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-stream-evidence
+        run: python3 samples/record/rtmp_stream/native_vt_run.py
+      - name: Save native streaming acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-stream-evidence
+          path: ${{ runner.temp }}/vt-stream-evidence
+          if-no-files-found: ignore
+      - name: Native Metal factory RTMP and TLS with ARC
+        if: ${{ !cancelled() }}
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-metal-stream-arc
+        run: python3 samples/record/rtmp_stream/native_vt_run.py --metal --ownership arc
+      - name: Native Metal factory RTMP and TLS with manual reference counting
+        if: ${{ !cancelled() }}
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-metal-stream-mrc
+        run: python3 samples/record/rtmp_stream/native_vt_run.py --metal --ownership mrc
+      - name: Save native Metal streaming acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-metal-stream-evidence
+          path: |
+            ${{ runner.temp }}/vt-metal-stream-arc
+            ${{ runner.temp }}/vt-metal-stream-mrc
+          if-no-files-found: ignore
+      - name: Native URL-owning Metal streaming dispatcher with ARC
+        if: ${{ !cancelled() }}
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-metal-dispatch-arc
+        run: python3 samples/record/rtmp_stream/native_vt_run.py --dispatcher --ownership arc
+      - name: Native URL-owning Metal streaming dispatcher with manual reference counting
+        if: ${{ !cancelled() }}
+        env:
+          VT_STREAM_ARTIFACT_DIR: ${{ runner.temp }}/vt-metal-dispatch-mrc
+        run: python3 samples/record/rtmp_stream/native_vt_run.py --dispatcher --ownership mrc
+      - name: Save native Metal dispatcher acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-metal-dispatch-evidence
+          path: |
+            ${{ runner.temp }}/vt-metal-dispatch-arc
+            ${{ runner.temp }}/vt-metal-dispatch-mrc
+          if-no-files-found: ignore
   aac-native:
+    if: ${{ !inputs.ios_sdk_only && (inputs.native_aac_only || !inputs.frontend_stream_only) }}
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -102,8 +176,19 @@ jobs:
           name: audiotoolbox-aac-evidence
           path: ${{ runner.temp }}/audiotoolbox-aac-evidence
           if-no-files-found: ignore
+      - name: Native source-rate conversion and independent AAC timing
+        env:
+          AUDIO_TOOLBOX_SRC_ARTIFACT_DIR: ${{ runner.temp }}/audiotoolbox-src-evidence
+        run: make -C samples/record/audiotoolbox_audio native-src-check
+      - name: Save AudioToolbox SRC acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audiotoolbox-src-evidence
+          path: ${{ runner.temp }}/audiotoolbox-src-evidence
+          if-no-files-found: ignore
   encode:
-    if: ${{ !inputs.native_aac_only }}
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only && !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -204,7 +289,7 @@ jobs:
           if-no-files-found: warn
 
   frontend-build:
-    if: ${{ !inputs.native_aac_only }}
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only && !inputs.frontend_stream_only }}
     runs-on: macos-latest
     timeout-minutes: 40
     steps:
@@ -240,10 +325,97 @@ jobs:
           path: ${{ runner.temp }}/metal-frontend-recordings
           if-no-files-found: warn
 
+  frontend-stream-build:
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only }}
+    runs-on: macos-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        threads: [enable, disable]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Configure network-enabled Metal frontend
+        run: |
+          set -eu
+          stream_options=
+          if [ "${{ matrix.threads }}" = disable ]; then
+            stream_options="--enable-rtmp --enable-rflv"
+          fi
+          ./configure --enable-metal --enable-avf --${{ matrix.threads }}-threads --enable-configfile --enable-webmplayer \
+            --disable-qt --disable-ffmpeg --disable-discord --disable-cheevos \
+            --enable-networking --disable-sdl2 --disable-sdl --disable-translate \
+            --disable-update_cores --disable-update_assets --disable-online_updater \
+            --disable-cdrom --disable-7zip --enable-ssl --enable-retrossl $stream_options
+          for feature in HAVE_METAL HAVE_AVF HAVE_NETWORKING HAVE_CRYPTO HAVE_RTMP HAVE_RFLV HAVE_RETROSSL; do
+            grep -Eq "^#define $feature 1" config.h
+          done
+      - name: Link network worker and threadless fallback
+        run: |
+          set -eu
+          make -j"$(sysctl -n hw.ncpu)" \
+            MINVERFLAGS="-mmacosx-version-min=$(sw_vers -productVersion)"
+          test -x retroarch
+          nm retroarch | grep '_record_gpu_dispatch_metal_new_stream'
+      - name: Native frontend streaming through command start and stop
+        if: ${{ matrix.threads == 'enable' }}
+        run: |
+          set -eu
+          command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
+          cc -dynamiclib -std=gnu89 -Ilibretro-common/include samples/record/metal_frontend/core.c -o "$RUNNER_TEMP/metal-stream-core.dylib" -lm
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --video-buffer-frames 2 --output-dir "$RUNNER_TEMP/metal-frontend-stream/h264"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --codec hevc --source-rate 32040.5 --video-buffer-frames 16 --output-dir "$RUNNER_TEMP/metal-frontend-stream/fractional"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --channels 1 --source-rate 44100 --video-buffer-frames 8 --output-dir "$RUNNER_TEMP/metal-frontend-stream/mono"
+          python3 samples/record/metal_frontend/stream.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-stream-core.dylib" --video-only --video-buffer-frames 4 --output-dir "$RUNNER_TEMP/metal-frontend-stream/video-only"
+      - name: Save real frontend streaming evidence
+        if: ${{ always() && matrix.threads == 'enable' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: metal-frontend-stream-evidence
+          path: ${{ runner.temp }}/metal-frontend-stream
+          if-no-files-found: ignore
+
   frontend-contracts:
-    if: ${{ !inputs.native_aac_only }}
+    if: ${{ !inputs.ios_sdk_only && !inputs.native_aac_only }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Source-clock capture and backpressure under sanitizers
         run: make -C samples/record/metal_frontend check SANITIZER=address,undefined
+
+  ios-sdk:
+    if: ${{ inputs.ios_sdk_only }}
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Compile production VideoToolbox headers for iOS and simulator
+        run: python3 samples/record/videotoolbox_encode/ios_sdk_check.py --output-dir "${{ runner.temp }}/vt-ios-sdk"
+      - name: Save actual SDK diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-ios-sdk
+          path: ${{ runner.temp }}/vt-ios-sdk
+          if-no-files-found: error
+
+  ios-app:
+    if: ${{ inputs.ios_sdk_only }}
+    needs: ios-sdk
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and link actual iOS application with native recording
+        run: python3 samples/record/videotoolbox_encode/ios_app_check.py --output-dir "${{ runner.temp }}/vt-ios-app"
+      - name: Save full application build evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vt-ios-app
+          path: |
+            ${{ runner.temp }}/vt-ios-app/*.json
+            ${{ runner.temp }}/vt-ios-app/*.log
+            ${{ runner.temp }}/vt-ios-app/*.txt
+            ${{ runner.temp }}/vt-ios-app/build.xcresult
+          if-no-files-found: error

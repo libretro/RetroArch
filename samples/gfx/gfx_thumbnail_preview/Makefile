@@ -57,8 +57,8 @@ SOURCES := gfx_thumbnail_preview_test.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/formats/audio_transfer.c \
-           $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
-           $(LIBRETRO_COMM_DIR)/formats/image_texture.c \
+           $(LIBRETRO_COMM_DIR)/formats/data_transfer.c $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.c \
+           $(LIBRETRO_COMM_DIR)/formats/image_texture.c $(LIBRETRO_COMM_DIR)/streams/image_texture_file.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_yuv_blit.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
@@ -127,7 +127,7 @@ DECODE_SOURCES := preview_audio_decode_test.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/formats/audio_transfer.c \
-           $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
+           $(LIBRETRO_COMM_DIR)/formats/data_transfer.c $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.c \
            $(LIBRETRO_COMM_DIR)/formats/aac/raac.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \
@@ -167,8 +167,8 @@ ANIM_WINDOW_SOURCES := preview_anim_window_test.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
-           $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
-           $(LIBRETRO_COMM_DIR)/formats/image_texture.c \
+           $(LIBRETRO_COMM_DIR)/formats/data_transfer.c $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.c \
+           $(LIBRETRO_COMM_DIR)/formats/image_texture.c $(LIBRETRO_COMM_DIR)/streams/image_texture_file.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
            $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \

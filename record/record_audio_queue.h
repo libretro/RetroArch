@@ -14,6 +14,8 @@ enum record_audio_queue_result
  * hard byte budget including per-packet headers, not a rounded ring limit. */
 record_audio_queue_t *record_audio_queue_new(unsigned channels,
       size_t max_frames,size_t capacity_bytes);
+/* Immutable format; zero for NULL. */
+unsigned record_audio_queue_channels(const record_audio_queue_t *queue);
 /* Producer: no allocation/wait. BUSY copies nothing and advances no clock.
  * Input is borrowed for this call only. Nonoverlapping monotonic timestamps
  * and complete packets are required; no silent trimming or replacement. */
@@ -21,10 +23,15 @@ int record_audio_queue_push(record_audio_queue_t *queue,const int16_t *samples,
       size_t frames,uint64_t timestamp);
 /* Producer, after its last push returns. Idempotent; no pushes after close. */
 bool record_audio_queue_finish(record_audio_queue_t *queue);
-/* Worker: borrowed staging remains unchanged through repeated peeks/BUSY at
+/* Worker: borrowed samples remain unchanged through repeated peeks/BUSY at
  * the downstream mux. Only ack permits the next packet to replace it. END
  * follows producer closure and acknowledgement of every complete packet. */
 int record_audio_queue_peek(record_audio_queue_t *queue,const int16_t **samples,
+      size_t *frames,uint64_t *timestamp);
+/* Offers contiguous ring memory until ack; wrapped packets use staging.
+ * A ring loan occupies queue capacity until ack. Either peek repeats an
+ * existing loan unchanged. No allocation, copy on a successful lend or wait. */
+int record_audio_queue_peek_lend(record_audio_queue_t *queue,const int16_t **samples,
       size_t *frames,uint64_t *timestamp);
 bool record_audio_queue_ack(record_audio_queue_t *queue);
 /* Both sides quiesced. Refuses queued or borrowed samples, including after

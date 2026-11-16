@@ -232,6 +232,62 @@ static void test_driver_fallback(void)
           "content's period exactly where a backend would have\n");
 }
 
+/* Skip Duplicate Frames: a repeat left unpresented reaches no present,
+ * so VSync and the threaded hold cannot keep the loop on it - with
+ * either alone, 30 fps content on a 60 Hz display ran two core frames
+ * per refresh, double speed. The timer holds the content's period
+ * wherever nothing that blocks without a present (audio, a scanline)
+ * does, and the driver's release, which waits on a present, stands
+ * aside. */
+static void test_dupe_skip(void)
+{
+   runloop_pace_facts_t d = PACE_FACT_FOCUSED | PACE_FACT_CORE_RAN
+      | PACE_FACT_PRESENTABLE | PACE_FACT_DUPE_SKIP;
+
+   DRIVER_ROW(d | PACE_FACT_VSYNC,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER,
+         "dupe skip, vsync: the timer, vsync cannot hold a skipped repeat");
+   DRIVER_ROW((d | PACE_FACT_VSYNC) & ~PACE_FACT_DUPE_SKIP,
+         RUNLOOP_PACE_VSYNC,
+         "no repeats skipped: VSync alone, as before");
+   DRIVER_ROW(d | PACE_FACT_WRAPPER | PACE_FACT_DISPLAY_PACING,
+         RUNLOOP_PACE_DISPLAY | RUNLOOP_PACE_TIMER,
+         "dupe skip, display pacing: the timer, the hold needs a push");
+   DRIVER_ROW(d, RUNLOOP_PACE_TIMER,
+         "dupe skip, nothing else: the timer, not unthrottled");
+   DRIVER_ROW(d | PACE_FACT_VSYNC | PACE_FACT_AUDIO_HOLDING,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO,
+         "dupe skip, audio sync: audio alone, never two clocks");
+   DRIVER_ROW(d | PACE_FACT_SCANLINE_SYNC | PACE_FACT_SCANLINE_LOCKED,
+         RUNLOOP_PACE_SCANLINE,
+         "dupe skip, scanline sync: the scanline alone");
+   DRIVER_ROW(d | PACE_FACT_VSYNC | PACE_FACT_VRR | PACE_FACT_FRAME_LIMIT,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER,
+         "dupe skip, VRR: its own timer, once");
+   DRIVER_ROW(d | PACE_FACT_VSYNC | PACE_FACT_DRIVER_PACING,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER,
+         "dupe skip, driver pacing: no release, which waits on a present");
+   DRIVER_ROW(d | PACE_FACT_DRIVER_PACING_MISSING,
+         RUNLOOP_PACE_TIMER,
+         "dupe skip, Driver Pacing without a backend: one timer");
+   DRIVER_ROW(d | PACE_FACT_VSYNC | PACE_FACT_FASTMOTION
+            | PACE_FACT_NONBLOCKING,
+         RUNLOOP_PACE_NONE,
+         "dupe skip, fast-forward: unthrottled");
+   DRIVER_ROW((d | PACE_FACT_VSYNC) & ~PACE_FACT_PRESENTABLE,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER,
+         "dupe skip, no window, vsync: the timer, nothing presents");
+   DRIVER_ROW(d & ~PACE_FACT_PRESENTABLE,
+         RUNLOOP_PACE_NOWINDOW,
+         "dupe skip, no window: the no-window wait alone");
+   check(runloop_pace_dupe_skip_engages(d, RUNLOOP_PACE_NOWINDOW) == false,
+         "dupe skip: the no-window wait is not paced twice");
+
+   printf("   dupe skip: the timer holds the content's period wherever "
+          "only the display would have, never beside audio, a scanline "
+          "or another timer, and the driver's release stands aside\n");
+}
+
 /* The interval each owned release hands the driver, from the whole
  * decision: a release with nothing else holding the loop keeps the
  * content's rate rather than none. */
@@ -1035,6 +1091,7 @@ int main(void)
    test_driver_pacing();
    test_driver_interval();
    test_driver_fallback();
+   test_dupe_skip();
 
    if (failures)
    {

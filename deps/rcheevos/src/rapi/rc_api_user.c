@@ -178,6 +178,7 @@ int rc_api_process_start_session_server_response(rc_api_start_session_response_t
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array_field.value_start;
     iterator.end = array_field.value_end;
+    iterator.validated = array_field.validated;
 
     unlock = response->unlocks;
     while (rc_json_get_array_entry_object(unlock_entry_fields, sizeof(unlock_entry_fields) / sizeof(unlock_entry_fields[0]), &iterator)) {
@@ -198,6 +199,7 @@ int rc_api_process_start_session_server_response(rc_api_start_session_response_t
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array_field.value_start;
     iterator.end = array_field.value_end;
+    iterator.validated = array_field.validated;
 
     unlock = response->hardcore_unlocks;
     while (rc_json_get_array_entry_object(unlock_entry_fields, sizeof(unlock_entry_fields) / sizeof(unlock_entry_fields[0]), &iterator)) {
@@ -344,6 +346,7 @@ int rc_api_process_fetch_followed_users_server_response(rc_api_fetch_followed_us
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array_field.value_start;
     iterator.end = array_field.value_end;
+    iterator.validated = array_field.validated;
 
     user = response->users;
     while (rc_json_get_array_entry_object(followed_user_entry_fields, sizeof(followed_user_entry_fields) / sizeof(followed_user_entry_fields[0]), &iterator)) {
@@ -451,6 +454,7 @@ int rc_api_process_fetch_all_user_progress_server_response(rc_api_fetch_all_user
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = fields[2].value_start;
     iterator.end = fields[2].value_end;
+    iterator.validated = fields[2].validated;
 
     entry = response->entries;
     while (rc_json_get_next_object_field(&iterator, &field))

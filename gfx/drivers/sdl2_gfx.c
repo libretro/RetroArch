@@ -986,13 +986,14 @@ static void sdl2_views_menu_rect(sdl2_video_t *vid, unsigned dims,
       SDL_Rect *out)
 {
    struct video_viewport vp;
-   memset(&vp, 0, sizeof(vp));
+   vp.pos       = 0;
+   vp.dims      = 0;
    vp.full_dims = dims;
    video_driver_update_viewport(&vp, false, vid->video.force_aspect, true);
-   out->x = VIDEO_POS_X(vp.pos);
-   out->y = VIDEO_POS_Y(vp.pos);
-   out->w = (int)VIDEO_SCALE_W(vp.dims);
-   out->h = (int)VIDEO_SCALE_H(vp.dims);
+   out->x       = VIDEO_POS_X(vp.pos);
+   out->y       = VIDEO_POS_Y(vp.pos);
+   out->w       = (int)VIDEO_SCALE_W(vp.dims);
+   out->h       = (int)VIDEO_SCALE_H(vp.dims);
 }
 
 static void sdl2_set_view_count(void *data, unsigned count)

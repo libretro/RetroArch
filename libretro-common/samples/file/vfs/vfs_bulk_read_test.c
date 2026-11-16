@@ -271,14 +271,36 @@ static void test_path_selection(void)
       retro_vfs_file_close_impl(s);
    }
 
-   /* No hint: unchanged, buffered. */
+   /* No hint: unchanged, buffered - on a handle of its own where
+    * Windows takes read-only streams off the C runtime. */
    s = retro_vfs_file_open_impl(path, RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
    CHECK(s != NULL, "plain open failed");
    if (s)
    {
+#if !defined(VFS_WIN32_NO_NATIVE) && defined(_WIN32) && !defined(_XBOX)
+      CHECK(s->fp == NULL && s->fh != NULL,
+            "plain read-only open is not on its own handle");
+#else
       CHECK(s->fp != NULL, "plain open left stdio");
+#endif
       retro_vfs_file_close_impl(s);
+   }
+
+   /* ... and so do write streams */
+   s = retro_vfs_file_open_impl("bulk_select_pw.bin",
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   CHECK(s != NULL, "plain write open failed");
+   if (s)
+   {
+#if !defined(VFS_WIN32_NO_NATIVE) && defined(_WIN32) && !defined(_XBOX)
+      CHECK(s->fp == NULL && s->fh != NULL,
+            "plain write open is not on its own handle");
+#else
+      CHECK(s->fp != NULL, "plain write open left stdio");
+#endif
+      retro_vfs_file_close_impl(s);
+      remove("bulk_select_pw.bin");
    }
 
    /* Write modes take the descriptor path where the platform lists

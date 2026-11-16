@@ -27,6 +27,18 @@ void gl_finish(void);
 
 void gl_flush(void);
 
+#if defined(HAVE_SHADERPIPELINE) && !defined(HAVE_PSGL) \
+      && (defined(HAVE_GLSL) || defined(HAVE_CG) || defined(HAVE_OPENGL_CORE))
+#define HAVE_GL_MENU_BLOOM
+#include <boolean.h>
+typedef struct gl_menu_bloom gl_menu_bloom_t;
+unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
+      unsigned dims, bool core, bool es, bool defer);
+void gl_menu_bloom_end(gl_menu_bloom_t *bloom, unsigned dims, bool defer);
+void gl_menu_bloom_composite(gl_menu_bloom_t *bloom, unsigned dims);
+void gl_menu_bloom_free(gl_menu_bloom_t **bloom);
+#endif
+
 /* Upload memory mapped for good: GL 4.4 or ARB_buffer_storage on the
  * desktop, GLES 3.0 with EXT_buffer_storage (checked at run time).
  * Texture lending additionally requires GLES 3.1 level queries. */

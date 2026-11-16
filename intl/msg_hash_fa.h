@@ -433,6 +433,7 @@ static const struct
    char s_9329c64c[13];
    char s_f8883f70[11];
    char s_09ba892e[17];
+   char s_047623ff[11];
    char s_58b9d895[25];
    char s_ffd0dac4[13];
    char s_91dd478e[33];
@@ -1460,6 +1461,7 @@ static const struct
    "\330\247\331\205\330\252\333\214\330\247\330\262",
    "\330\263\330\261\333\214\330\247\331\204",
    "\330\263\330\247\331\205\330\247\331\206\330\257\331\207\333\214",
+   "\330\250\330\261\332\206\330\263\330\250",
    "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 TGDB",
    "\330\257\333\214\330\257\330\247\330\261\333\214",
    "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214\342\200\214\331\207\330\247\333"
@@ -2371,7 +2373,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fa_blob_check[
-      (sizeof(msg_hash_fa_blob) == (28026u
+      (sizeof(msg_hash_fa_blob) == (28037u
 #ifdef HAVE_LAKKA
        + 13u
 #endif
@@ -2881,6 +2883,7 @@ static const msg_hash_id_t msg_hash_fa_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,

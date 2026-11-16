@@ -290,6 +290,9 @@ struct rslc_var *rslc_b_io_block(struct rslc_builder *b, const struct rslc_b_qua
       const char *type_name, const char *instance,
       const struct rslc_type *const *types, const char *const *names,
       const unsigned *interps, const unsigned *mquals, uint32_t n, int32_t array_len);
+/* length() of an array: its declared length, or for the unsized last
+ * member of a storage block what the buffer bound has (SPIR-V only). */
+uint32_t rslc_b_length(struct rslc_builder *b, uint32_t e);
 /* A layout on the stage's in or out alone: early_fragment_tests, a
  * local size, a geometry primitive, invocations or max_vertices. */
 bool rslc_b_layout(struct rslc_builder *b, const struct rslc_b_quals *q);

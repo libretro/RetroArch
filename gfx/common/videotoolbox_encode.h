@@ -9,6 +9,8 @@
 #else
 #define VT_ENCODE_AVAILABLE
 #endif
+#include "videotoolbox_encode_hardware.h"
+
 typedef struct videotoolbox_encode_config
 {
    unsigned width, height, slots, bitrate, key_interval, timescale, bit_depth;
@@ -57,7 +59,15 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
    videotoolbox_encode_t *encoder = NULL;
    CFMutableDictionaryRef spec = NULL, attrs = NULL, props = NULL;
    CFTypeRef hardware = NULL, selected_id = NULL;
+   CFStringRef admitted_id = NULL;
+#ifdef VT_ENCODE_MOBILE
+   bool query_hardware = false;
+#endif
    OSStatus status = kVTParameterErr;
+#ifdef VT_ENCODE_MOBILE
+   if (VT_ENCODE_HARDWARE_KEYS_AVAILABLE)
+      query_hardware = true;
+#endif
    if (error) *error = status;
    if ((encoder_id && !CFStringGetLength(encoder_id)) || !config || !config->width || !config->height || (config->width & 1)
          || (config->height & 1) || config->width > 16384 || config->height > 16384
@@ -68,6 +78,20 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
          || (config->bit_depth != 8 && config->bit_depth != 10)
          || (config->bit_depth == 10 && !config->hevc)
          || (config->hdr && config->bit_depth != 10)) return NULL;
+#ifdef VT_ENCODE_MOBILE
+   if (!query_hardware)
+   {
+      admitted_id = videotoolbox_encode_hardware_id(encoder_id,
+            config->hevc ? kCMVideoCodecType_HEVC : kCMVideoCodecType_H264);
+      if (!admitted_id)
+      {
+         if (error)
+            *error = kVTCouldNotFindVideoEncoderErr;
+         return NULL;
+      }
+      encoder_id = admitted_id;
+   }
+#endif
    encoder = (videotoolbox_encode_t*)calloc(1, sizeof(*encoder));
    spec = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
    attrs = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -76,7 +100,10 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
    encoder->config = *config;
    encoder->pool = videotoolbox_encode_slots_new(config->slots);
    if (!encoder->pool) { status = kVTAllocationFailedErr; goto done; }
-   CFDictionarySetValue(spec, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
+#ifdef VT_ENCODE_HAS_HARDWARE_KEYS
+   if (VT_ENCODE_HARDWARE_KEYS_AVAILABLE)
+      CFDictionarySetValue(spec, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
+#endif
    if (encoder_id) CFDictionarySetValue(spec,kVTVideoEncoderSpecification_EncoderID,encoder_id);
    if (gpu_registry_id)
    {
@@ -132,10 +159,15 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
    if (status) goto done;
    status = VTCompressionSessionPrepareToEncodeFrames(encoder->session);
    if (status) goto done;
-   status = VTSessionCopyProperty(encoder->session,
-         kVTCompressionPropertyKey_UsingHardwareAcceleratedVideoEncoder, NULL, &hardware);
-   if (!status && (!hardware || CFGetTypeID(hardware) != CFBooleanGetTypeID()
-            || !CFBooleanGetValue((CFBooleanRef)hardware))) status = kVTCouldNotFindVideoEncoderErr;
+#ifdef VT_ENCODE_HAS_HARDWARE_KEYS
+   if (VT_ENCODE_HARDWARE_KEYS_AVAILABLE)
+   {
+      status = VTSessionCopyProperty(encoder->session,
+            kVTCompressionPropertyKey_UsingHardwareAcceleratedVideoEncoder, NULL, &hardware);
+      if (!status && (!hardware || CFGetTypeID(hardware) != CFBooleanGetTypeID()
+               || !CFBooleanGetValue((CFBooleanRef)hardware))) status = kVTCouldNotFindVideoEncoderErr;
+   }
+#endif
    if (!status && encoder_id)
    {
       status=VTSessionCopyProperty(encoder->session,kVTCompressionPropertyKey_EncoderID,NULL,&selected_id);
@@ -143,6 +175,7 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
                || !CFEqual(selected_id,encoder_id))) status=kVTCouldNotFindVideoEncoderErr;
    }
 done:
+   if (admitted_id) CFRelease((CFTypeRef)admitted_id);
    if (selected_id) CFRelease(selected_id);
    if (hardware) CFRelease(hardware);
    if (props) CFRelease(props);

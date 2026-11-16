@@ -403,3 +403,4 @@ samples/record/ffmpeg_pipeline/record_finalize_fragment.c
 samples/record/ffmpeg_pipeline/record_start_fragment.c
 samples/input/sensor_subdevice/core_sensor_fragment.c
 samples/input/bind_capture/driver_code.inc
+samples/record/metal_frontend/profile_fragment.c

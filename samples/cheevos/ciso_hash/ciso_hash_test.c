@@ -114,6 +114,8 @@ static int write_disc(const char *iso, const char *ciso,
    return ok;
 }
 
+int rhash_primitives_test(const char *dir);
+
 int main(int argc, char *argv[])
 {
    static const uint8_t used[BLOCKS] =
@@ -124,6 +126,8 @@ int main(int argc, char *argv[])
    char iso[1024], ciso[1024], wii_iso[1024], wii_ciso[1024];
    char h_iso[33], h_ciso[33], h_raw[33];
    int  ok_iso, ok_ciso, ok_raw;
+
+   failures += rhash_primitives_test(dir);
 
    fill_pathname_join_special(iso,      dir, "ciso_hash_gc.iso",   sizeof(iso));
    fill_pathname_join_special(ciso,     dir, "ciso_hash_gc.ciso",  sizeof(ciso));

@@ -56,10 +56,11 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c Makefile
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CPPFLAGS) $(CFLAGS)
 
-# The wrap counts reads through the stream: mapped, the directory is
+# The wraps count reads through the stream: mapped, the directory is
 # read in place.
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=filestream_read
+	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=filestream_read \
+		-Wl,--wrap=filestream_read_at
 
 check: $(TARGET)
 	./$(TARGET)

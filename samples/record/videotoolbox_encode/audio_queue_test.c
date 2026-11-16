@@ -27,7 +27,7 @@ static void *produce(void *unused)
    }
    assert(record_audio_queue_finish(shared)); return NULL;
 }
-static void stress(void)
+static void stress(bool lend)
 {
    pthread_t producer;
    unsigned packet,frame,channel;
@@ -40,7 +40,8 @@ static void stress(void)
    assert(!pthread_create(&producer,NULL,produce,NULL));
    for (packet=0;packet<PACKETS;packet++)
    {
-      do { result=record_audio_queue_peek(shared,&pcm,&frames,&pts); }
+      do { result=lend?record_audio_queue_peek_lend(shared,&pcm,&frames,&pts)
+         :record_audio_queue_peek(shared,&pcm,&frames,&pts); }
       while (result==RECORD_AUDIO_BUSY);
       assert(result==RECORD_AUDIO_OK);
       if (!(packet%17)) timestamp+=3;
@@ -55,7 +56,8 @@ static void stress(void)
    assert(!pthread_join(producer,NULL));
    assert(record_audio_queue_peek(shared,&pcm,&frames,&pts)==RECORD_AUDIO_END);
    assert(record_audio_queue_free(shared));
-   puts("PASS: 20000 PCM packets, six channels, wrap/BUSY, stable borrows, gaps and threaded close");
+   printf("PASS: 20000 PCM packets, six channels, wrap/BUSY, %s borrows, gaps and threaded close\n",
+         lend?"ring/staging":"staging");
 }
 #endif
 int main(void)
@@ -102,7 +104,8 @@ int main(void)
    assert(record_audio_queue_free(NULL) && !record_audio_queue_finish(NULL));
    puts("PASS: PCM whole-packet budget, copied source, retained borrow, timestamp overflow/overlap and EOF");
 #ifdef RECORD_AUDIO_THREAD_TEST
-   stress();
+   stress(false);
+   stress(true);
 #endif
    return 0;
 }

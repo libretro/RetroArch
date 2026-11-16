@@ -52,6 +52,11 @@
  *    either, or the loose-file probe cost that the design promises to
  *    preserve is gone.
  *
+ * 4. Positional I/O (v6). A local handle reads and writes at an offset
+ *    without moving its position; a frontend handle reaches the
+ *    frontend's read_at and write_at only when it advertised v6, and
+ *    reports -1 otherwise so the caller seeks and reads.
+ *
  * Build:  make            (SANITIZER=address,undefined for a checked run)
  * Run:    ./vfs_hybrid_test
  */
@@ -170,6 +175,42 @@ static int fe_closedir(struct retro_vfs_dir_handle *d)
    return 0;
 }
 
+/* ---- v6 ---- */
+
+static int fe_read_ats;
+
+static int64_t fe_read_at(struct retro_vfs_file_handle *s, void *d,
+      uint64_t l, int64_t o)
+{
+   (void)s; (void)o;
+   fe_read_ats++;
+   memset(d, 'P', (size_t)l);
+   return (int64_t)l;
+}
+
+static int64_t fe_write_at(struct retro_vfs_file_handle *s, const void *d,
+      uint64_t l, int64_t o)
+{
+   (void)s; (void)d; (void)o;
+   return (int64_t)l;
+}
+
+static int64_t fe_read_at_poison(struct retro_vfs_file_handle *s, void *d,
+      uint64_t l, int64_t o)
+{
+   (void)s; (void)d; (void)l; (void)o;
+   fe_above_version = 1;
+   return 0;
+}
+
+static int64_t fe_write_at_poison(struct retro_vfs_file_handle *s,
+      const void *d, uint64_t l, int64_t o)
+{
+   (void)s; (void)d; (void)l; (void)o;
+   fe_above_version = 1;
+   return 0;
+}
+
 /* A frontend that filled only its v1 members.  Everything above is
  * poisoned rather than left NULL, so a version-gating slip is a
  * reported failure and not a NULL check that happens to save us. */
@@ -188,6 +229,31 @@ static struct retro_vfs_interface iface_v3 =
    fe_truncate,
    fe_stat, fe_mkdir, fe_opendir, fe_readdir,
    fe_dirent_name, fe_dirent_is_dir, fe_closedir
+};
+
+/* v5 with its v6 slots poisoned, and v6 */
+static struct retro_vfs_interface iface_v5 =
+{
+   fe_get_path, fe_open, fe_close, fe_size, fe_tell, fe_seek,
+   fe_read, fe_write, fe_flush, fe_remove, fe_rename,
+   fe_truncate,
+   fe_stat, fe_mkdir, fe_opendir, fe_readdir,
+   fe_dirent_name, fe_dirent_is_dir, fe_closedir,
+   NULL,
+   NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+   fe_read_at_poison, fe_write_at_poison
+};
+
+static struct retro_vfs_interface iface_v6 =
+{
+   fe_get_path, fe_open, fe_close, fe_size, fe_tell, fe_seek,
+   fe_read, fe_write, fe_flush, fe_remove, fe_rename,
+   fe_truncate,
+   fe_stat, fe_mkdir, fe_opendir, fe_readdir,
+   fe_dirent_name, fe_dirent_is_dir, fe_closedir,
+   NULL,
+   NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+   fe_read_at, fe_write_at
 };
 
 static struct retro_vfs_interface *iface_in_use;
@@ -364,6 +430,85 @@ int main(void)
          filestream_close(f);
 
       remove("hybrid_plain.bin");
+   }
+
+   /* ---- 4: positional I/O ---- */
+   {
+      RFILE *f;
+      char buf[8];
+      int64_t got;
+
+      {
+         FILE *w = fopen("hybrid_at.bin", "wb");
+         fwrite("0123456789", 1, 10, w);
+         fclose(w);
+      }
+
+      fe_reset(6);
+      iface_in_use = &iface_v6;
+      vfs_hybrid_init(env_cb, NULL);
+
+      f = filestream_open("hybrid_at.bin",
+            RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE
+            | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      CHECK(f != NULL, "v6 local: plain path opens");
+      if (f)
+      {
+         memset(buf, 0, sizeof(buf));
+         got = filestream_read_at(f, buf, 3, 6);
+#if defined(_WIN32) || defined(__unix__) || defined(__APPLE__)
+         CHECK(got == 3 && memcmp(buf, "678", 3) == 0,
+               "v6 local: read_at reads at the offset");
+         CHECK(filestream_write_at(f, "AB", 2, 2) == 2,
+               "v6 local: write_at writes at the offset");
+         memset(buf, 0, sizeof(buf));
+         got = filestream_read_at(f, buf, 4, 0);
+         CHECK(got == 4 && memcmp(buf, "01AB", 4) == 0,
+               "v6 local: the write is on disk");
+         CHECK(filestream_tell(f) == 0,
+               "v6 local: the position is where it was");
+#else
+         printf("skip: no positional I/O on this platform (%d)\n", (int)got);
+#endif
+         CHECK(fe_read_ats == 0, "v6 local: the frontend is not called");
+         filestream_close(f);
+      }
+
+      f = filestream_open("content://media/item",
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      CHECK(f != NULL, "v6: uri path opens through the frontend");
+      if (f)
+      {
+         memset(buf, 0, sizeof(buf));
+         got = filestream_read_at(f, buf, 2, 4);
+         CHECK(got == 2 && buf[0] == 'P' && fe_read_ats == 1,
+               "v6: read_at reaches the frontend's read_at");
+         CHECK(filestream_write_at(f, "x", 1, 0) == 1,
+               "v6: write_at reaches the frontend's write_at");
+         filestream_close(f);
+      }
+
+      fe_reset(5);
+      iface_in_use = &iface_v5;
+      vfs_hybrid_init(env_cb, NULL);
+
+      f = filestream_open("content://media/item",
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      CHECK(f != NULL, "v5: uri path opens through the frontend");
+      if (f)
+      {
+         got = filestream_read_at(f, buf, 2, 4);
+         CHECK(got == -1 && !fe_above_version,
+               "v5: read_at reports -1 without calling a v6 member");
+         got = filestream_write_at(f, "x", 1, 0);
+         CHECK(got == -1 && !fe_above_version,
+               "v5: write_at reports -1 without calling a v6 member");
+         filestream_close(f);
+      }
+      CHECK(fe_files_live == 0, "v6: frontend file handles released");
+
+      remove("hybrid_at.bin");
    }
 
    if (test_fails)

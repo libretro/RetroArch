@@ -77,6 +77,11 @@ S_BOOL(video_present_timing_from_display, VIDEO_PRESENT_TIMING_FROM_DISPLAY,
       DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Pace Repeats From The Display",
       "Time repeated frames from when the display says a present actually reached it, rather than from the frontend's own clock. Applies where the video driver can report it; the clock is used everywhere else, and wherever the report goes stale. Turn off to always use the clock.")
+S_BOOL(video_skip_dupe_frames, VIDEO_SKIP_DUPE_FRAMES,
+      "video_skip_dupe_frames",
+      DEFAULT_VIDEO_SKIP_DUPE_FRAMES, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Skip Duplicate Frames",
+      "Do not present a frame the core marks as a repeat of the previous one, so the display receives the content's own frame rate: 30 fps content arrives at 30 Hz. For frame generation and interpolation tools that work on presented frames. While repeats are skipped, audio sync, Scanline Sync or the frontend's timer paces the content instead of VSync. Needs Frame Duping in the core. Not applied with the menu open, fast-forward, Black Frame Insertion, shader sub-frames or Threaded Video Frame Repeat.")
 S_INT(video_max_frame_latency, VIDEO_MAX_FRAME_LATENCY,
       "video_max_frame_latency",
       DEFAULT_MAX_FRAME_LATENCY, SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, -1, MAXIMUM_MAX_FRAME_LATENCY, 1, -1, setting_action_ok_uint, NULL,

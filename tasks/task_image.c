@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>

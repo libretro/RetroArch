@@ -1,18 +1,11 @@
-#include "shaders_common.h"
+#include "../../common/menu_ribbon_shader.h"
 
-static const char *stock_fragment_xmb = GLSL_STANDARD_DERIVATIVES(
-   uniform float time;
-   varying vec3 fragVertexEc;
-   vec3 up = vec3(0, 0, 1);
-
-   void main()
-   {
-     vec3 X = dFdx(fragVertexEc);
-     vec3 Y = dFdy(fragVertexEc);
-     Y = -Y;
-     vec3 normal=normalize(cross(X,Y));
-     float c = (1.0 - dot(normal, up));
-     c = (1.0 - cos(c*c))/13.0;
-     gl_FragColor = vec4(c, c, c, 1.0);
-   }
-);
+static const char *stock_fragment_xmb(void)
+{
+   static char source[1024];
+   if (source[0])
+      return source;
+   return menu_ribbon_shader(source, sizeof(source),
+         "#ifdef GL_ES\nprecision mediump float;\n#endif\nvarying vec4 fragVertexEc;",
+         "void main() { gl_FragColor = ribbon_fragment(fragVertexEc); }", 2);
+}

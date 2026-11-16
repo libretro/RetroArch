@@ -1662,6 +1662,7 @@ static const struct
    char s_9329c64c[9];
    char s_f8883f70[26];
    char s_09ba892e[13];
+   char s_047623ff[13];
    char s_58b9d895[20];
    char s_0a2aa953[23];
    char s_ffd0dac4[25];
@@ -2196,10 +2197,6 @@ static const struct
    char s_482ee1f1[25];
    char s_214b7699[29];
    char s_ad14307a[17];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[82];
-   char s_774121c8[82];
-#endif
    char s_b0fb58d3[50];
    char s_b0fb58d4[50];
    char s_92a02470[62];
@@ -8168,6 +8165,7 @@ static const struct
    "\320\241\320\265\321\200\321\213\320\271\320\275\321\213 \320\275\321\203\320\274\320\260\321"
    "\200",
    "\320\241\320\265\321\202\321\213\320\275\320\263",
+   "\320\246\321\215\321\202\320\273\321\226\320\272",
    "\320\240\321\215\320\271\321\202\321\213\320\275\320\263 TGDB",
    "\320\234\320\260\321\210\321\213\320\275\321\226\320\267\320\260\321\206\321\213\321\217",
    "\320\222\321\226\320\267\321\203\320\260\320\273\321\226\320\267\320\260\321\206\321\213\321\217",
@@ -9109,16 +9107,6 @@ static const struct
    "\320\237\321\200\320\260\320\264\321\203\320\272\321\206\321\213\320\271\320\275\320\260\321\201"
    "\321\206\321\214",
    "\320\224\321\215\321\204\320\273\321\226\320\272\320\265\321\200",
-#if defined(RARCH_MOBILE)
-   "\320\227\321\200\321\203\321\205 \320\262\320\276\320\261\320\273\320\260\321\201\321\206\321"
-   "\226 \320\277\321\200\320\260\320\263\320\273\321\217\320\264\321\203 \320\277\320\260 X (\320"
-   "\277\320\260\321\200\321\202\321\200\321\215\321\202\320\275\321\213 \321\200\321\215\320\266"
-   "\321\213\320\274)",
-   "\320\227\321\200\321\203\321\205 \320\262\320\276\320\261\320\273\320\260\321\201\321\206\321"
-   "\226 \320\277\321\200\320\260\320\263\320\273\321\217\320\264\321\203 \320\277\320\260 Y (\320"
-   "\277\320\260\321\200\321\202\321\200\321\215\321\202\320\275\321\213 \321\200\321\215\320\266"
-   "\321\213\320\274)",
-#endif
    "\320\227\321\200\321\203\321\205 \320\262\320\276\320\261\320\273\320\260\321\201\321\206\321"
    "\226 \320\277\321\200\320\260\320\263\320\273\321\217\320\264\321\203 \320\277\320\260 X",
    "\320\227\321\200\321\203\321\205 \320\262\320\276\320\261\320\273\320\260\321\201\321\206\321"
@@ -16512,7 +16500,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_be_blob_check[
-      (sizeof(msg_hash_be_blob) == (259191u
+      (sizeof(msg_hash_be_blob) == (259204u
 #ifdef ANDROID
        + 531u
 #endif
@@ -16686,10 +16674,6 @@ typedef char msg_hash_be_blob_check[
 #endif
 #ifdef HAVE_ODROIDGO2
        + 29u
-#endif
-#if defined(RARCH_MOBILE)
-       + 82u
-       + 82u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -18513,6 +18497,7 @@ static const msg_hash_id_t msg_hash_be_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -19047,10 +19032,6 @@ static const msg_hash_id_t msg_hash_be_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,

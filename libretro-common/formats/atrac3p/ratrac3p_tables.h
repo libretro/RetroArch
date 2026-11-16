@@ -5136,9 +5136,13 @@ static const uint8_t r3p_cb_map[224] = {
    85, 88, 86, 87, 255, 255, 255, 255, 93, 85, 92, 94, 255, 255, 255, 255,
    85, 86, 87, 88, 89, 90, 91, 92, 93, 85, 92, 94, 95, 96, 97, 98,
 };
-/* dequantisation step a word length, relative to word length 7 */
+/* dequantisation step a word length, relative to word length 7:
+ * close to 63/3, 63/5, 63/7, 63/11, 63/15, 63/31 and 1, but those are
+ * up to 4 parts in 100000 off a reference decoder's output, which
+ * these were fitted to on three games' streams */
 static const float r3p_unit[8] = {
-   0.0f, 21.0f, 12.6f, 9.0f, 5.72727273f, 4.2f, 2.03225806f, 1.0f,
+   0.0f, 21.0000439f, 12.6003704f, 9.00026608f, 5.72722673f, 4.20005226f,
+   2.03234172f, 0.999999821f,
 };
 static const float r3p_noise[1024] = {
    -0.0269470166f, -0.111001208f, 0.0336716237f, -0.295102217f, -0.524126148f, -0.19632332f,

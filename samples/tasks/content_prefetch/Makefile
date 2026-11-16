@@ -16,7 +16,7 @@ SOURCES := content_prefetch_test.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
-           $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
+           $(LIBRETRO_COMM_DIR)/formats/data_transfer.c $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
            $(LIBRETRO_COMM_DIR)/file/archive_file.c \
            $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \

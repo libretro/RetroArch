@@ -181,6 +181,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_RESET,
    MENU_SETTING_ACTION_CORE_LOCK,
    MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT,
+   MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK,
    MENU_SETTING_ACTION_CORE_DELETE,
    MENU_SETTING_ACTION_FAVORITES_DIR, /* "Start Directory" */
    MENU_SETTING_STRING_OPTIONS,
@@ -890,6 +891,43 @@ size_t menu_playlists_tab_random_selection(size_t selection);
 void menu_dialog_confirm_set(struct menu_state *menu_st,
       unsigned msg, unsigned cmd);
 void menu_dialog_confirm_clear(struct menu_state *menu_st);
+
+enum menu_dialog_icon
+{
+   MENU_DIALOG_ICON_NONE = 0,
+   MENU_DIALOG_ICON_CANCEL,
+   MENU_DIALOG_ICON_OK,
+   MENU_DIALOG_ICON_OK_DIM
+};
+
+typedef struct menu_dialog_buttons
+{
+   unsigned label[MENU_DIALOG_BUTTONS_MAX]; /* enum msg_hash_enums */
+   unsigned count;   /* 0: no confirm is up */
+   int highlight;    /* -1: none */
+   int hover;        /* -1: none */
+   uint8_t icon[MENU_DIALOG_BUTTONS_MAX];   /* enum menu_dialog_icon */
+   bool classic;     /* Cancel and OK */
+} menu_dialog_buttons_t;
+
+/* The confirm box's buttons, left to right. Only for the code that
+ * draws the box: it marks that box drawn for menu_dialog_set_hover() */
+void menu_dialog_get_buttons(struct menu_state *menu_st,
+      menu_dialog_buttons_t *b);
+/* The button under the pointer, -1 for none: drivers set it as they
+ * draw the box from menu_dialog_get_buttons() */
+void menu_dialog_set_hover(struct menu_state *menu_st, int idx);
+/* Places a row of buttons w wide, gap apart, in a box: the first at
+ * its left edge, the last at its right, the spare width shared out
+ * between them; one alone in the middle. Fills x unless it is NULL.
+ * Returns the width the row needs. */
+int menu_dialog_buttons_layout(const int *w, unsigned count, int gap,
+      int box_x, int box_w, int *x);
+#ifdef HAVE_CORE_SIGNATURES
+/* Raises the Security Warning's box for the request pending, or takes
+ * it down when none is; true on the frame it went up */
+bool menu_core_warning_iterate(struct menu_state *menu_st);
+#endif
 
 #if defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING) && defined(HAVE_COMPRESSION) && defined(HAVE_CONFIGFILE)
 void menu_first_run_download_start(void);

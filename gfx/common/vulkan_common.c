@@ -45,6 +45,10 @@
 #ifdef HAVE_TEMPORAL_UPSCALER
 #include "vulkan_upscaler.h"
 #include "../video_upscaler.h"
+#if defined(_WIN64) && !defined(__WINRT__) && !defined(_XBOX) && !defined(HAVE_VULKAN_CUSTOM_DRIVER)
+#define VULKAN_SESSION_CACHE
+#include "vulkan_session_key.h"
+#endif
 #endif
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
 #include "vulkan_video_decode.h"
@@ -126,6 +130,106 @@ static int                           cached_gpu_index_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
 static bool                          cached_instance_hdr_vk;
 static bool                          cached_timeline_vk;
+#ifdef HAVE_TEMPORAL_UPSCALER
+static vulkan_context_t cached_upscaler_session;
+
+static void vulkan_session_move(vulkan_context_t *to, vulkan_context_t *from)
+{
+   to->session_instance_key = from->session_instance_key;
+   to->session_device_key   = from->session_device_key;
+   to->session_upscaler     = from->session_upscaler;
+   to->session_upscaler_dir = from->session_upscaler_dir;
+   from->session_instance_key = NULL;
+   from->session_device_key   = NULL;
+   from->session_upscaler     = NULL;
+   from->session_upscaler_dir = NULL;
+}
+
+static void vulkan_session_release(vulkan_context_t *ctx)
+{
+   vulkan_upscaler_free(ctx->session_upscaler);
+   ctx->session_upscaler = NULL;
+   free(ctx->session_upscaler_dir);
+   ctx->session_upscaler_dir = NULL;
+#ifdef VULKAN_SESSION_CACHE
+   if (ctx->session_instance_key)
+      vulkan_session_key_free(ctx->session_instance_key);
+   if (ctx->session_device_key)
+      vulkan_session_key_free(ctx->session_device_key);
+#endif
+   free(ctx->session_instance_key);
+   free(ctx->session_device_key);
+   ctx->session_instance_key = NULL;
+   ctx->session_device_key = NULL;
+}
+#endif
+
+#ifdef VULKAN_SESSION_CACHE
+static vulkan_context_t kept_dlss_session;
+static VkInstance kept_dlss_borrowed_instance;
+static PFN_vkDestroyDevice kept_dlss_destroy_device;
+static PFN_vkDestroyInstance kept_dlss_destroy_instance;
+
+static void vulkan_session_discard(void)
+{
+   vulkan_session_release(&kept_dlss_session);
+   if (kept_dlss_session.device)
+      kept_dlss_destroy_device(kept_dlss_session.device, NULL);
+   if (kept_dlss_session.instance)
+      kept_dlss_destroy_instance(kept_dlss_session.instance, NULL);
+   kept_dlss_session.device = VK_NULL_HANDLE;
+   kept_dlss_session.instance = VK_NULL_HANDLE;
+   kept_dlss_session.gpu = VK_NULL_HANDLE;
+   kept_dlss_borrowed_instance = VK_NULL_HANDLE;
+   kept_dlss_destroy_device = NULL;
+   kept_dlss_destroy_instance = NULL;
+}
+
+static void vulkan_session_key_store(struct vulkan_session_key **out,
+      vulkan_session_key_t *key)
+{
+   if (*out)
+   {
+      vulkan_session_key_free(*out);
+      free(*out);
+   }
+   *out = NULL;
+   if (!key->failed)
+      *out = (vulkan_session_key_t*)malloc(sizeof(**out));
+   if (*out)
+   {
+      **out = *key;
+      memset(key, 0, sizeof(*key));
+   }
+   vulkan_session_key_free(key);
+}
+#endif
+
+bool vulkan_context_session_cache_prune(const char *keep_dir)
+{
+#ifdef VULKAN_SESSION_CACHE
+   if (!keep_dir || video_upscaler_optiscaler()
+         || !kept_dlss_session.session_upscaler_dir
+         || strcmp(keep_dir, kept_dlss_session.session_upscaler_dir))
+      vulkan_session_discard();
+   return kept_dlss_session.device != VK_NULL_HANDLE;
+#else
+   (void)keep_dir;
+   return false;
+#endif
+}
+
+void vulkan_context_session_cache_free(void)
+{
+   vulkan_context_session_cache_prune(NULL);
+#ifdef VULKAN_SESSION_CACHE
+   if (vulkan_library && !cached_instance_vk)
+   {
+      dylib_close(vulkan_library);
+      vulkan_library = NULL;
+   }
+#endif
+}
 /* The video decode queues a cached device was made with */
 static uint32_t                      cached_video_vk[6];
 #if defined(ANDROID) \
@@ -1311,7 +1415,50 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
       vk->context.xr = NULL;
    }
 #endif
+#ifdef VULKAN_SESSION_CACHE
+   if (config_get_ptr()->uints.video_temporal_upscaler != VIDEO_TEMPORAL_UPSCALER_DLSS
+         || !video_upscaler_wanted())
+      return vkCreateDevice(gpu, info, allocator, device);
+   {
+      vulkan_session_key_t key = vulkan_session_device_key(gpu, info);
+      VkResult res;
+      if (key.unsupported_type)
+         RARCH_DBG("[Vulkan] DLSS session cache: unrecognized device feature %u.\n",
+               (unsigned)key.unsupported_type);
+      if (!allocator && vk->context.instance == kept_dlss_borrowed_instance)
+      {
+         if (vulkan_session_key_equal(kept_dlss_session.session_device_key, &key))
+         {
+            *device = kept_dlss_session.device;
+            kept_dlss_session.device = VK_NULL_HANDLE;
+            vk->context.session_device_key = kept_dlss_session.session_device_key;
+            vk->context.session_upscaler = kept_dlss_session.session_upscaler;
+            vk->context.session_upscaler_dir = kept_dlss_session.session_upscaler_dir;
+            kept_dlss_session.session_device_key = NULL;
+            kept_dlss_session.session_upscaler = NULL;
+            kept_dlss_session.session_upscaler_dir = NULL;
+            kept_dlss_borrowed_instance = VK_NULL_HANDLE;
+            vulkan_session_key_free(&key);
+            RARCH_LOG("[Vulkan] Reusing DLSS device and NGX session.\n");
+            return VK_SUCCESS;
+         }
+      }
+      res = vkCreateDevice(gpu, info, allocator, device);
+      if (kept_dlss_session.device
+            && (res == VK_ERROR_OUT_OF_DEVICE_MEMORY
+               || res == VK_ERROR_OUT_OF_HOST_MEMORY))
+      {
+         vulkan_session_discard();
+         res = vkCreateDevice(gpu, info, allocator, device);
+      }
+      if (res == VK_SUCCESS && !allocator)
+         vulkan_session_key_store(&vk->context.session_device_key, &key);
+      vulkan_session_key_free(&key);
+      return res;
+   }
+#else
    return vkCreateDevice(gpu, info, allocator, device);
+#endif
 }
 
 #ifdef HAVE_OPENXR
@@ -2123,6 +2270,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
+#ifdef HAVE_TEMPORAL_UPSCALER
+         vulkan_session_move(&vk->context, &cached_upscaler_session);
+#endif
 #ifdef HAVE_VAAPI
          vk->context.prime_import_device = cached_prime_import_vk;
 #endif
@@ -2259,6 +2409,16 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
    }
 
+#ifdef VULKAN_SESSION_CACHE
+   /* Keep NGX warm until a replacement DLSS session is initialized. */
+   if (kept_dlss_session.device
+         && (config_get_ptr()->uints.video_temporal_upscaler != VIDEO_TEMPORAL_UPSCALER_DLSS
+#ifdef HAVE_OPENXR
+             || vk->context.xr
+#endif
+            ))
+      vulkan_session_discard();
+#endif
    if (!vulkan_load_device_symbols(vk))
    {
       RARCH_ERR("[Vulkan] Failed to load device symbols.\n");
@@ -2423,7 +2583,37 @@ static VkResult vulkan_context_create_instance(gfx_ctx_vulkan_data_t *vk,
       vk->context.xr = NULL;
    }
 #endif
+#ifdef VULKAN_SESSION_CACHE
+   if (config_get_ptr()->uints.video_temporal_upscaler != VIDEO_TEMPORAL_UPSCALER_DLSS
+         || !video_upscaler_wanted())
+      return vkCreateInstance(info, NULL, instance);
+   {
+      vulkan_session_key_t key = vulkan_session_instance_key(info);
+      VkResult res;
+      if (video_upscaler_wanted()
+            && config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS
+#ifdef HAVE_OPENXR
+            && !vk->context.xr
+#endif
+            && vulkan_session_key_equal(kept_dlss_session.session_instance_key, &key))
+      {
+         *instance = kept_dlss_session.instance;
+         kept_dlss_borrowed_instance = *instance;
+         kept_dlss_session.instance = VK_NULL_HANDLE;
+         vk->context.session_instance_key = kept_dlss_session.session_instance_key;
+         kept_dlss_session.session_instance_key = NULL;
+         vulkan_session_key_free(&key);
+         return VK_SUCCESS;
+      }
+      res = vkCreateInstance(info, NULL, instance);
+      if (res == VK_SUCCESS)
+         vulkan_session_key_store(&vk->context.session_instance_key, &key);
+      vulkan_session_key_free(&key);
+      return res;
+   }
+#else
    return vkCreateInstance(info, NULL, instance);
+#endif
 }
 
 static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkInstanceCreateInfo *create_info)
@@ -5874,6 +6064,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    uint32_t video_st_flags        = 0;
+#ifdef VULKAN_SESSION_CACHE
+   VkResult session_idle = VK_NOT_READY;
+#endif
 #if defined(ANDROID) && defined(HAVE_THREADS)
    VkResult recording_idle = VK_NOT_READY;
 #endif
@@ -5883,6 +6076,14 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
    if (!vk->context.instance)
    {
+#ifdef VULKAN_SESSION_CACHE
+      if (!((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags)
+               & VIDEO_FLAG_KEEP_VULKAN_SESSION))
+         vulkan_session_discard();
+#endif
+#ifdef HAVE_TEMPORAL_UPSCALER
+      vulkan_session_release(&vk->context);
+#endif
 #ifdef HAVE_OPENXR
       vulkan_openxr_free(vk->context.xr);
       vk->context.xr = NULL;
@@ -5900,6 +6101,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
 #if defined(ANDROID) && defined(HAVE_THREADS)
       recording_idle =
+#endif
+#ifdef VULKAN_SESSION_CACHE
+      session_idle =
 #endif
          vkDeviceWaitIdle(vk->context.device);
    }
@@ -5957,8 +6161,47 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
    if (vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
       video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+#ifdef VULKAN_SESSION_CACHE
+   if (kept_dlss_borrowed_instance == vk->context.instance
+         || !(video_st_flags & VIDEO_FLAG_KEEP_VULKAN_SESSION)
+         || (vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
+         || session_idle == VK_ERROR_DEVICE_LOST
+         || config_get_ptr()->uints.video_temporal_upscaler != VIDEO_TEMPORAL_UPSCALER_DLSS)
+      vulkan_session_discard();
+   if (     (video_st_flags & VIDEO_FLAG_KEEP_VULKAN_SESSION)
+         && !(video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
+         && !(vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
+         && session_idle == VK_SUCCESS
+         && config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS
+#ifdef HAVE_OPENXR
+         && !vk->context.xr
+#endif
+         && destroy_surface
+         && vk->context.session_upscaler
+         && vk->context.session_instance_key
+         && vk->context.session_device_key)
+   {
+      if (vk->context.destroy_device)
+         vk->context.destroy_device();
+      vk->context.destroy_device = NULL;
+      vulkan_session_discard();
+      vulkan_session_move(&kept_dlss_session, &vk->context);
+      kept_dlss_session.instance = vk->context.instance;
+      kept_dlss_session.device   = vk->context.device;
+      kept_dlss_session.gpu      = vk->context.gpu;
+      kept_dlss_destroy_device   = vkDestroyDevice;
+      kept_dlss_destroy_instance = vkDestroyInstance;
+      vk->context.instance = VK_NULL_HANDLE;
+      vk->context.device   = VK_NULL_HANDLE;
+      RARCH_LOG("[Vulkan] Keeping DLSS device and NGX session.\n");
+   }
+   else
+#endif
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
+#ifdef HAVE_TEMPORAL_UPSCALER
+      vulkan_session_move(&cached_upscaler_session, &vk->context);
+#endif
       cached_device_vk         = vk->context.device;
       cached_gpu_vk            = vk->context.gpu;
       cached_gpu_index_vk      = vk->context.gpu_index;
@@ -5995,6 +6238,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    }
    else
    {
+#ifdef HAVE_TEMPORAL_UPSCALER
+      vulkan_session_release(&vk->context);
+#endif
 #ifdef HAVE_OPENXR
       /* The runtime's objects on the device go first. */
       vulkan_openxr_free(vk->context.xr);
@@ -6040,7 +6286,11 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
          vkDestroyInstance(vk->context.instance, NULL);
          vk->context.instance = NULL;
 
-         if (vulkan_library)
+         if (vulkan_library
+#ifdef VULKAN_SESSION_CACHE
+               && !kept_dlss_session.instance
+#endif
+               )
          {
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
             /* A linker namespace cannot be unloaded. */

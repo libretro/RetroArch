@@ -154,6 +154,14 @@ int record_at_audio_input(record_at_audio_t *e, int16_t **samples, size_t *frame
    return RECORD_AT_AUDIO_PROGRESS;
 }
 
+bool record_at_audio_input_release(record_at_audio_t *e)
+{
+   if (!e || e->loan < 0)
+      return false;
+   e->loan = -1;
+   return true;
+}
+
 int record_at_audio_submit(record_at_audio_t *e, size_t frames, uint64_t index)
 {
    uint64_t maximum = (~(uint64_t)0) >> 1;
@@ -327,6 +335,8 @@ int32_t record_at_audio_error(const record_at_audio_t *e)
    return e ? (int32_t)e->error : (int32_t)-1;
 }
 #else
+bool record_at_audio_input_release(record_at_audio_t *e)
+{ (void)e; return false; }
 record_at_audio_t *record_at_audio_new(unsigned r, unsigned c, unsigned b)
 { (void)r; (void)c; (void)b; return NULL; }
 int record_at_audio_input(record_at_audio_t *e, int16_t **p, size_t *n)

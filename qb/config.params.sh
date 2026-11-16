@@ -67,6 +67,8 @@ HAVE_RETROARCH_PLAYLIST_MANAGER=auto # iOS/tvOS + macOS 10.11+ playlist helper (
 
 # Networking and online services
 HAVE_NETWORKING=auto       # Networking features (recommended)
+HAVE_RTMP=auto             # Built-in RTMP/RTMPS publishing (requires networking and crypto)
+HAVE_RFLV=auto             # Built-in FLV muxing for native streaming
 HAVE_IFINFO=yes
 HAVE_NETPLAYDISCOVERY=yes  # Add netplay discovery (room creation, etc.)
 HAVE_NETWORKGAMEPAD=auto   # Networked game pad (plus baked-in core)
@@ -86,6 +88,9 @@ C89_DISCORD=no
 # Crypto, TLS and network filesystems
 HAVE_CRYPTO=yes            # Cleanroom crypto library (libretro-common/crypto)
 HAVE_KEYCHAIN=yes          # Encrypt credentials in retroarch-keychain.cfg (needs HAVE_CRYPTO)
+HAVE_CORE_SIGNATURES=yes   # Check that cores come from libretro (needs HAVE_DYNAMIC and HAVE_CRYPTO)
+HAVE_CORE_LOAD_CHECK=yes   # Check every core as it loads (needs HAVE_CORE_SIGNATURES)
+HAVE_CORE_SIGNING_TEST_KEY=no # Trust the public test signing key, never for a release (needs HAVE_CORE_SIGNATURES)
 HAVE_SSL=auto              # SSL support
 C89_SSL=no
 HAVE_RETROSSL=auto         # Use built-in TLS client on libretro-common/crypto (needs HAVE_CRYPTO)

@@ -396,7 +396,8 @@ static void test_config_file_hash_map_agreement(void)
     * accepted key alphabet (0x21..0x7e), then require that every
     * listed key resolves through config_get_entry to the entry
     * holding it. */
-   char cfgtext[8192];
+   char *cfgtext = (char*)malloc(8192);
+   const size_t capacity = 8192;
    size_t _len   = 0;
    int i;
    int checked   = 0;
@@ -404,25 +405,25 @@ static void test_config_file_hash_map_agreement(void)
    config_file_t *cfg           = NULL;
    struct config_file_entry ent;
 
+   if (!cfgtext)
+      abort();
+
    /* One key per accepted byte: k<byte>x = "v" */
    for (i = 0x21; i <= 0x7e; i++)
    {
       if (i == '=' || i == '#' || i == '"')
          continue; /* structural characters cannot appear bare */
-      _len += snprintf(cfgtext + _len, sizeof(cfgtext) - _len,
+      _len += snprintf(cfgtext + _len, capacity - _len,
             "k%cx = \"v%d\"\n", (char)i, i);
    }
    /* Plus long keys and a duplicate */
-   _len += snprintf(cfgtext + _len, sizeof(cfgtext) - _len,
+   _len += snprintf(cfgtext + _len, capacity - _len,
          "%s = \"long\"\n", "a_rather_long_configuration_key_name_to_cross_hash_word_sizes");
-   _len += snprintf(cfgtext + _len, sizeof(cfgtext) - _len,
+   _len += snprintf(cfgtext + _len, capacity - _len,
          "dup = \"first\"\ndup = \"second\"\n");
 
-   {
-      char *copy = strdup(cfgtext);
-      cfg        = config_file_new_from_string(copy, NULL);
-      free(copy);
-   }
+   cfg = config_file_new_from_string(cfgtext, NULL);
+   free(cfgtext);
 
    if (!cfg)
    {
@@ -608,7 +609,8 @@ static void test_config_file_long_reference_kept(void)
    /* A '#reference' is recorded relative to (or abbreviated against)
     * the referencing file; the recorded path must survive whole even
     * when it is longer than a single path component limit. */
-   const char *tmp = "/tmp/cfg_long_ref.cfg";
+   const char *tmp = "cfg_long_ref.cfg";
+   const char *actual;
    char ref[320];
    FILE *f;
    config_file_t *cfg;
@@ -616,7 +618,7 @@ static void test_config_file_long_reference_kept(void)
 
    for (i = 0; i < 300; i++)
       ref[i] = 'q';
-   strcpy(ref + 300, "/b.cfg");
+   strcpy(ref + 300, PATH_DEFAULT_SLASH() "b.cfg");
 
    if (!(f = fopen(tmp, "w")))
       abort();
@@ -625,14 +627,15 @@ static void test_config_file_long_reference_kept(void)
 
    if (!(cfg = config_file_new(tmp)))
       abort();
-   if (     !cfg->references
-         || !cfg->references->path
-         || strcmp(cfg->references->path, ref))
+   actual = cfg->references ? cfg->references->path : NULL;
+   if (actual && actual[0] == '.' && (actual[1] == '/' || actual[1] == '\\'))
+      actual += 2;
+   if (!actual || strcmp(actual, ref))
    {
-      printf("[FAILED] long #reference recorded as %zu bytes, wanted %zu\n",
+      printf("[FAILED] long #reference recorded as %zu bytes, wanted %zu: %s\n",
             (cfg->references && cfg->references->path)
                   ? strlen(cfg->references->path) : (size_t)0,
-            strlen(ref));
+            strlen(ref), actual ? actual : "(none)");
       abort();
    }
    printf("[SUCCESS] %zu-byte '#reference' recorded whole\n", strlen(ref));
@@ -649,8 +652,8 @@ static void test_config_file_borrowed_entry_lifecycle(void)
     * (borrowed skipped, owned freed, buffers released) - under the
     * suite's sanitizers this catches any wrong free or dangling
     * borrow. */
-   const char *tmp_a = "/tmp/cfg_borrow_a.cfg";
-   const char *tmp_b = "/tmp/cfg_borrow_b.cfg";
+   const char *tmp_a = "cfg_borrow_a.cfg";
+   const char *tmp_b = "cfg_borrow_b.cfg";
    FILE *f;
    config_file_t *cfg;
    char *out = NULL;
@@ -758,7 +761,7 @@ static void test_config_take_string(void)
     * STATUS_HEAP_CORRUPTION crash in core_info_free on Windows).
     * The take must hand out a real allocation in both ownership
     * modes, outliving the conf. */
-   const char *tmp_path = "/tmp/cfg_take.cfg";
+   const char *tmp_path = "cfg_take.cfg";
    FILE *f;
    config_file_t *cfg;
    char *taken_borrowed = NULL;
@@ -812,7 +815,7 @@ static void test_config_entry_cached_lengths(void)
     * entry after a parse and after each kind of mutation and assert
     * the cache either matches strlen exactly or is 0 ("unknown",
     * which readers must handle by measuring). */
-   const char *tmp_path = "/tmp/cfg_lens.cfg";
+   const char *tmp_path = "cfg_lens.cfg";
    FILE *f;
    config_file_t *cfg;
    struct config_file_entry it;
@@ -872,11 +875,11 @@ static void test_config_entry_cached_lengths(void)
 
    /* And the write path must still round-trip: read the dump back
     * and confirm the values survive intact. */
-   if (!config_file_write(cfg, "/tmp/cfg_lens_out.cfg", false))
+   if (!config_file_write(cfg, "cfg_lens_out.cfg", false))
       abort();
    config_file_free(cfg);
 
-   if (!(cfg = config_file_new("/tmp/cfg_lens_out.cfg")))
+   if (!(cfg = config_file_new("cfg_lens_out.cfg")))
       abort();
    more = config_get_entry_list_head(cfg, &it);
    while (more)
@@ -899,7 +902,7 @@ static void test_config_entry_cached_lengths(void)
    }
    config_file_free(cfg);
    remove(tmp_path);
-   remove("/tmp/cfg_lens_out.cfg");
+   remove("cfg_lens_out.cfg");
    printf("[SUCCESS] cached entry lengths agree with strlen and round-trip\n");
 }
 
@@ -914,9 +917,8 @@ static int test_io_reads = 0;
 
 static char *test_io_read_file(const char *path, int64_t *len, void *ud)
 {
-   const char *base = strrchr(path, '/');
+   const char *base = path_basename(path);
    size_t i;
-   base = base ? base + 1 : path;
    for (i = 0; test_io_members[i].name; i++)
       if (!strcmp(test_io_members[i].name, base))
       {
@@ -1368,8 +1370,8 @@ static void test_config_file_dump_sort_fallback(void)
  * dropped every parsed entry but the first. */
 static void test_config_tail_is_single_authority(void)
 {
-   const char *inc_path  = "/tmp/cfg_tail_inc.cfg";
-   const char *main_path = "/tmp/cfg_tail_main.cfg";
+   const char *inc_path  = "cfg_tail_inc.cfg";
+   const char *main_path = "cfg_tail_main.cfg";
    config_file_t *cfg;
    config_file_t *donor;
    const struct config_entry_list *e;
@@ -1435,10 +1437,10 @@ static void test_config_tail_is_single_authority(void)
  * that actually matters anyway. */
 static void test_config_include_order_preserved(void)
 {
-   const char *paths[3] = { "/tmp/cfg_inc_1.cfg",
-                            "/tmp/cfg_inc_2.cfg",
-                            "/tmp/cfg_inc_3.cfg" };
-   const char *main_path = "/tmp/cfg_inc_main.cfg";
+   const char *paths[3] = { "cfg_inc_1.cfg",
+                            "cfg_inc_2.cfg",
+                            "cfg_inc_3.cfg" };
+   const char *main_path = "cfg_inc_main.cfg";
    config_file_t *cfg;
    char *dumped;
    const char *p1;

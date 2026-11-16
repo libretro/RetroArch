@@ -1,8 +1,8 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: MIT */
 #include <stdio.h>
 #include <string.h>
-#include <formats/rdvd_vfs.h>
-#include <formats/rdvd_stream.h>
+#include <streams/rdvd_vfs.h>
+#include <streams/rdvd_stream.h>
 struct RFILE
 {
    uint64_t size, position;

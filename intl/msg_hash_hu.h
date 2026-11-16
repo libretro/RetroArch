@@ -1134,7 +1134,6 @@ static const struct
    char s_5b3c8098[24];
    char s_ceb820ad[9];
    char s_63af41a7[36];
-   char s_a4b769ca[38];
 #ifdef HAVE_MIST
    char s_53788998[28];
 #endif
@@ -1702,6 +1701,7 @@ static const struct
    char s_9329c64c[10];
    char s_f8883f70[8];
    char s_09ba892e[11];
+   char s_047623ff[9];
    char s_58b9d895[18];
    char s_0a2aa953[23];
    char s_ffd0dac4[9];
@@ -2301,10 +2301,6 @@ static const struct
    char s_214b7699[15];
    char s_f90edcc2[65];
    char s_ad14307a[24];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[53];
-   char s_774121c8[54];
-#endif
    char s_b0fb58d3[34];
    char s_b0fb58d4[35];
    char s_92a02470[30];
@@ -2934,7 +2930,6 @@ static const struct
    char s_7963c9c6[75];
    char s_ee3a489b[29];
    char s_236bd8d5[68];
-   char s_87c7d8b8[140];
 #ifdef HAVE_MIST
    char s_40e907c6[60];
 #endif
@@ -3542,10 +3537,8 @@ static const struct
    char s_7e96b5ce[41];
    char s_c2314d30[200];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[168];
-   char s_82c9e376[168];
+   char s_82c9e376[149];
 #endif
-   char s_73658ec1[149];
    char s_73658ec2[149];
    char s_8010a29e[84];
    char s_81120e85[86];
@@ -5583,7 +5576,6 @@ static const struct
    "G\303\266rget\303\251s gyors\303\255t\303\241sa",
    "Kin\303\251zet",
    "\"Konfigur\303\241ci\303\263s f\303\241jlok\" l\303\241that\303\263",
-   "Meger\305\221s\303\255t\305\221 ablakok megjelen\303\255t\303\251se",
 #ifdef HAVE_MIST
    "\"Magok kezel\303\251se\" l\303\241that\303\263",
 #endif
@@ -6179,6 +6171,7 @@ static const struct
    "Pontsz\303\241m",
    "Sorozat",
    "K\303\266rnyezet",
+   "C\303\255mk\303\251k",
    "TGDB \303\251rt\303\251kel\303\251s",
    "J\303\241rm\305\261vel kapcsolatos",
    "Kin\303\251zet",
@@ -6790,11 +6783,6 @@ static const struct
    "Metal argumens pufferek haszn\303\241lata (\303\272jraind\303\255t\303\241s sz\303\274ks\303\251"
    "ges)",
    "Vill\303\263dz\303\241smentes\303\255t\303\251s",
-#if defined(RARCH_MOBILE)
-   "N\303\251z\305\221ablak v\303\255zszintes eltol\303\241sa (\303\241ll\303\263 n\303\251zetben)",
-   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa (\303\241ll\303\263 n\303\251ze"
-   "tben)",
-#endif
    "N\303\251z\305\221ablak v\303\255zszintes eltol\303\241sa",
    "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa",
    "Egyedi k\303\251par\303\241ny (magass\303\241g)",
@@ -7915,9 +7903,6 @@ static const struct
    "A men\303\274k\303\251perny\305\221 kin\303\251zete.",
    "A \"Konfigur\303\241ci\303\263s f\303\241jlok\" lehet\305\221s\303\251g jelenjen meg a f\305\221"
    "men\303\274ben.",
-   "Meger\305\221s\303\255t\303\251s k\303\251r\303\251se kil\303\251p\303\251s, \303\272jraind\303"
-   "\255t\303\241s, vagy tartalom bez\303\241r\303\241sa el\305\221tt. Kikapcsolva ezek a m\305\261v"
-   "eletek azonnal v\303\251grehajt\303\263dnak.",
 #ifdef HAVE_MIST
    "A \"Magok kezel\303\251se\" lehet\305\221s\303\251g jelenjen meg a f\305\221men\303\274ben.",
 #endif
@@ -9079,16 +9064,10 @@ static const struct
    "erekn\303\251l, k\303\274l\303\266n\303\266sen r\303\251gi hardver vagy OS verzi\303\263 eset"
    "\303\251n.",
 #if defined(RARCH_MOBILE)
-   "A tartalom v\303\255zszintes helyzete, amikor a n\303\251z\305\221ablak sz\303\251lesebb ann\303"
-   "\241l. 0.0 a balra igaz\303\255t\303\241s, 0.5 a k\303\266z\303\251pre helyez\303\251s, 1.0 a jo"
-   "bbra igaz\303\255t\303\241s. (\303\201ll\303\263 n\303\251zetben)",
    "A tartalom f\303\274gg\305\221leges helyzete, amikor a n\303\251z\305\221ablak magasabb ann\303"
    "\241l. 0.0 a fentre igaz\303\255t\303\241s, 0.5 a k\303\266z\303\251pre helyez\303\251s, 1.0 a l"
-   "entre igaz\303\255t\303\241s. (\303\201ll\303\263 n\303\251zetben)",
+   "entre igaz\303\255t\303\241s.",
 #endif
-   "A tartalom v\303\255zszintes helyzete, amikor a n\303\251z\305\221ablak sz\303\251lesebb ann\303"
-   "\241l. 0.0 a balra igaz\303\255t\303\241s, 0.5 a k\303\266z\303\251pre helyez\303\251s, 1.0 a jo"
-   "bbra igaz\303\255t\303\241s.",
    "A tartalom f\303\274gg\305\221leges helyzete, amikor a n\303\251z\305\221ablak magasabb ann\303"
    "\241l. 0.0 a fentre igaz\303\255t\303\241s, 0.5 a k\303\266z\303\251pre helyez\303\251s, 1.0 a l"
    "entre igaz\303\255t\303\241s.",
@@ -9814,7 +9793,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187136u
+      (sizeof(msg_hash_hu_blob) == (186818u
 #ifdef ANDROID
        + 316u
 #endif
@@ -10028,10 +10007,6 @@ typedef char msg_hash_hu_blob_check[
 #ifdef HAVE_ODROIDGO2
        + 16u
 #endif
-#if defined(RARCH_MOBILE)
-       + 53u
-       + 54u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 67u
@@ -10224,8 +10199,7 @@ typedef char msg_hash_hu_blob_check[
        + 72u
 #endif
 #if defined(RARCH_MOBILE)
-       + 168u
-       + 168u
+       + 149u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -11379,7 +11353,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -11946,6 +11919,7 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -12545,10 +12519,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -13176,7 +13146,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -13784,10 +13753,8 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

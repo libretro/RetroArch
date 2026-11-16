@@ -48,6 +48,7 @@ class QLayout;
 class QPaintEvent;
 class QResizeEvent;
 class QVBoxLayout;
+class QDoubleSpinBox;
 /* Forward decls kept unconditional so that callers holding bare
  * pointers to these (e.g. ui_qt.h's QPointer<ShaderParamsDialog>
  * member) parse cleanly when HAVE_MENU is not defined. The full
@@ -100,6 +101,7 @@ public:
    void addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b);
    void addUIntSpinBox(rarch_setting_t *setting);
    void addFloatSpinBox(rarch_setting_t *setting);
+   void addRefreshRateControl(rarch_setting_t *setting);
    void addCheckBox(rarch_setting_t *setting);
    void addUIntComboBox(rarch_setting_t *setting);
    bool addBindButton(rarch_setting_t *setting);
@@ -117,6 +119,17 @@ public:
 
       if (!setting)
          return false;
+
+      /* These two refresh-rate rows share a float target but have distinct
+       * semantics: one stages a manual value, the other applies the
+       * display-reported value through its action callback. */
+      if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_REFRESH_RATE)
+      {
+         this->addRefreshRateControl(setting);
+         return true;
+      }
+      if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED)
+         return this->addBindButton(setting);
 
       ui_type = (enum ui_setting_type)setting->ui_type;
 
@@ -195,6 +208,17 @@ public:
       if (!setting)
          return false;
 
+      if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_REFRESH_RATE)
+      {
+         this->addRefreshRateControl(setting);
+         return true;
+      }
+      if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED)
+      {
+         this->addBindButton(setting);
+         return true;
+      }
+
       ui_type = (enum ui_setting_type)setting->ui_type;
 
       switch (ui_type)
@@ -265,6 +289,7 @@ private:
    void addUIntSpinBox(rarch_setting_t *setting);
    void addUIntComboBox(rarch_setting_t *setting);
    void addFloatSpinBox(rarch_setting_t *setting);
+   void addRefreshRateControl(rarch_setting_t *setting);
    void addFileSelector(rarch_setting_t *setting);
    void addDirectorySelector(rarch_setting_t *setting);
    void addFloatSliderAndSpinBox(rarch_setting_t *setting);
@@ -434,6 +459,25 @@ private slots:
    void paintEvent(QPaintEvent *event);
 private:
    rarch_setting_t *m_setting;
+};
+
+/* Manual refresh-rate editor. Values are staged locally and only applied
+ * when the user presses Set; this keeps it independent from the polled-rate
+ * action even though both settings reference the same float target. */
+class RefreshRateControl : public QWidget
+{
+public:
+   RefreshRateControl(rarch_setting_t *setting, QWidget *parent = 0);
+protected:
+   void paintEvent(QPaintEvent *event) override;
+private:
+   void syncValue();
+   rarch_setting_t *m_setting;
+   QSlider *m_slider;
+   QDoubleSpinBox *m_spinBox;
+   int m_scale;
+   float m_synced;
+   bool m_dirty;
 };
 
 class FloatSpinBox : public QDoubleSpinBox
@@ -1046,6 +1090,14 @@ public:
    QVector<OptionsPage*> pages();
 };
 
+class DriversPage : public OptionsPage
+{
+   Q_OBJECT
+public:
+   DriversPage(QObject *parent = nullptr);
+   QWidget *widget();
+};
+
 /***********************************************************
    AI Service
 ************************************************************/
@@ -1099,19 +1151,9 @@ public:
 private slots:
    void onResolutionComboIndexChanged(const QString& value);
    void onResolutionComboIndexChanged(int index);
-private:
-   QComboBox *m_resolutionCombo;
-};
-
-class CrtSwitchresPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   CrtSwitchresPage(QObject *parent = nullptr);
-   QWidget *widget();
-private slots:
    void onCrtSuperResolutionComboIndexChanged(int index);
 private:
+   QComboBox *m_resolutionCombo;
    QComboBox *m_crtSuperResolutionCombo;
 };
 

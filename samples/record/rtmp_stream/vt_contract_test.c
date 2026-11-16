@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../../../record/record_stream_vt.h"
 #include "../../../record/record_vt_packet.h"
+#include "../../../record/record_audio_queue.h"
 #include <stdlib.h>
 #define main session_reference_main
 #include "../../../libretro-common/samples/net/rtmp/rtmp_session_test.c"
@@ -61,6 +62,55 @@ struct record_at_audio
    bool loan, held, finishing, ended;
    uint8_t asc[2], bytes[8];
 };
+struct record_at_resample
+{
+   record_audio_queue_t *source;
+   const int16_t *samples;
+   uint64_t accepted, produced;
+   size_t frames, offset;
+   unsigned rate, channels;
+   bool failed, cancelled, ended;
+};
+static unsigned src_cancel_failures;
+bool record_at_resample_config(const record_at_resample_t *e,
+      record_audio_queue_t **q,unsigned *rate,unsigned *channels)
+{
+   if(!e || e->failed || e->cancelled) return false;
+   *q=e->source; *rate=e->rate; *channels=e->channels; return true;
+}
+bool record_at_resample_timing(const record_at_resample_t *e,uint64_t *in,uint64_t *out)
+{ *in=e->accepted; *out=e->produced; return true; }
+int record_at_resample_read(record_at_resample_t *e,int16_t *output,size_t capacity,size_t *frames)
+{
+   uint64_t timestamp;
+   size_t n,i;
+   int result;
+   *frames=0;
+   if(e->failed || e->cancelled) return RECORD_AT_RESAMPLE_ERROR;
+   if(e->samples && e->offset==e->frames)
+   { assert(record_audio_queue_ack(e->source)); e->samples=NULL; }
+   if(!e->samples)
+   {
+      result=record_audio_queue_peek_lend(e->source,&e->samples,&e->frames,&timestamp);
+      if(result==RECORD_AUDIO_END) { e->ended=true; return RECORD_AT_RESAMPLE_END; }
+      if(result==RECORD_AUDIO_BUSY) return RECORD_AT_RESAMPLE_BUSY;
+      assert(result==RECORD_AUDIO_OK);
+      e->offset=0;
+      if(timestamp!=e->accepted) { e->failed=true; return RECORD_AT_RESAMPLE_ERROR; }
+   }
+   n=e->frames-e->offset;
+   if(n>capacity/2) n=capacity/2;
+   for(i=0;i<n*e->channels;i++) assert(e->samples[e->offset*e->channels+i]==1234);
+   for(i=0;i<n*2*e->channels;i++) output[i]=1234;
+   e->offset+=n; e->accepted+=n; e->produced+=n*2; *frames=n*2;
+   return RECORD_AT_RESAMPLE_PROGRESS;
+}
+bool record_at_resample_cancel(record_at_resample_t *e)
+{
+   if(src_cancel_failures) { src_cancel_failures--; return false; }
+   if(e->samples) { assert(record_audio_queue_ack(e->source)); e->samples=NULL; }
+   e->cancelled=true; return true;
+}
 static record_vt_packet_t *active_view;
 static unsigned audio_releases;
 static const uint8_t headers[]={1,66,0,30,255,225,0,4,103,66,0,30,1,0,1,104};
@@ -113,6 +163,8 @@ int record_at_audio_submit(record_at_audio_t *e,size_t frames,uint64_t index)
    for(i=0;i<frames*e->channels;i++) assert(e->input[i]==1234);
    e->loan=false; e->pending=frames; e->consumed+=frames; return RECORD_AT_AUDIO_PROGRESS;
 }
+bool record_at_audio_input_release(record_at_audio_t *e)
+{ if(!e->loan) return false; e->loan=false; return true; }
 int record_at_audio_pump(record_at_audio_t *e,record_at_audio_packet_t *packet)
 {
    if(e->pending || (e->finishing && e->produced<e->consumed+2112))
@@ -125,7 +177,7 @@ int record_at_audio_pump(record_at_audio_t *e,record_at_audio_packet_t *packet)
    return RECORD_AT_AUDIO_BUSY;
 }
 bool record_at_audio_release(record_at_audio_t *e)
-{ assert(e->held); e->held=false; e->pending=0; e->produced+=1024; audio_releases++; return true; }
+{ if(!e->held) return false; e->held=false; e->pending=0; e->produced+=1024; audio_releases++; return true; }
 int record_at_audio_finish(record_at_audio_t *e)
 { assert(!e->held && !e->pending && !e->loan); e->finishing=true; return RECORD_AT_AUDIO_PROGRESS; }
 static void setup(struct net_rtmp_client *c,record_gpu_worker_vt_t *w,
@@ -137,10 +189,165 @@ static void setup(struct net_rtmp_client *c,record_gpu_worker_vt_t *w,
    cfg->audio_fifo_frames=2048; cfg->audio_epoch_frames=2112; cfg->video_epoch_ticks=2640;
    a->asc[0]=17; a->asc[1]=144; audio_releases=0;
 }
+#ifdef VT_STREAM_QUEUE_NEGATIVE
+static record_stream_vt_t *ignored_queue(record_gpu_worker_vt_t *worker,
+      record_at_audio_t *audio,net_rtmp_client_t *client,
+      const record_stream_vt_config_t *config,record_audio_queue_t *queue)
+{
+   record_stream_vt_config_t copy=*config;
+   (void)queue;
+   copy.audio_fifo_frames=2048;
+   return record_stream_vt_new(worker,audio,client,&copy);
+}
+#define record_stream_vt_new_queued ignored_queue
+#endif
+static void queued_source(void)
+{
+   struct net_rtmp_client client;
+   record_gpu_worker_vt_t worker;
+   static record_at_audio_t aac;
+   static int16_t pcm[3074];
+   record_stream_vt_config_t config;
+   record_stream_vt_wait_t wait;
+   record_stream_vt_t *stream;
+   record_audio_queue_t *source=record_audio_queue_new(2,1537,16384);
+   unsigned i;
+   int result=RECORD_STREAM_VT_BUSY;
+   assert(source);
+   for(i=0;i<3074;i++) pcm[i]=1234;
+   assert(record_audio_queue_push(source,pcm,1537,0)==RECORD_AUDIO_OK);
+   assert(record_audio_queue_push(source,pcm,512,1537)==RECORD_AUDIO_OK);
+   assert(record_audio_queue_finish(source));
+   setup(&client,&worker,&aac,&config);
+   config.audio_fifo_frames=0;
+#ifndef VT_STREAM_QUEUE_NEGATIVE
+   {
+      record_audio_queue_t *wrong=record_audio_queue_new(1,64,1024);
+      assert(wrong && record_audio_queue_channels(wrong)==1 && !record_audio_queue_channels(NULL));
+      assert(!record_stream_vt_new_queued(&worker,&aac,&client,&config,wrong));
+      assert(!record_stream_vt_new_queued(&worker,NULL,&client,&config,source));
+      assert(!record_stream_vt_new_queued(&worker,&aac,&client,&config,NULL));
+      config.audio_fifo_frames=2048;
+      assert(!record_stream_vt_new_queued(&worker,&aac,&client,&config,source));
+      config.audio_fifo_frames=0;
+      assert(record_audio_queue_free(wrong));
+   }
+#endif
+   stream=record_stream_vt_new_queued(&worker,&aac,&client,&config,source);
+   assert(stream && !record_stream_vt_free(stream));
+#ifdef VT_STREAM_QUEUE_NEGATIVE
+   assert(record_stream_vt_audio_finish(stream));
+#else
+   assert(record_stream_vt_audio(stream,pcm,1)==RECORD_STREAM_VT_ERROR);
+   assert(!record_stream_vt_audio_finish(stream));
+#endif
+   for(i=0;i<10000 && result!=RECORD_STREAM_VT_END;i++)
+   { result=record_stream_vt_step(stream,0,&wait); assert(result!=RECORD_STREAM_VT_ERROR); }
+   assert(result==RECORD_STREAM_VT_END && aac.consumed==2049 && aac.ended);
+   assert(record_stream_vt_free(stream) && record_audio_queue_free(source));
+   assert(net_rtmp_session_free(client.session));
+   setup(&client,&worker,&aac,&config); config.audio_fifo_frames=0;
+   source=record_audio_queue_new(2,1537,16384); assert(source);
+   assert(record_audio_queue_push(source,pcm,1537,0)==RECORD_AUDIO_OK);
+   stream=record_stream_vt_new_queued(&worker,&aac,&client,&config,source); assert(stream);
+   for(i=0;i<1000 && !aac.consumed;i++)
+      assert(record_stream_vt_step(stream,0,&wait)!=RECORD_STREAM_VT_ERROR);
+   assert(aac.consumed==1024 && !record_audio_queue_free(source));
+   record_stream_vt_abort(stream);
+   for(i=0;i<20 && !record_stream_vt_free(stream);i++)
+      assert(record_stream_vt_step(stream,0,&wait)<=RECORD_STREAM_VT_PROGRESS);
+   assert(i<20 && net_rtmp_session_free(client.session));
+   assert(record_audio_queue_push(source,pcm,2,1537)==RECORD_AUDIO_OK);
+   assert(record_audio_queue_finish(source));
+   {
+      const int16_t *samples;
+      size_t frames;
+      uint64_t timestamp;
+      assert(record_audio_queue_peek(source,&samples,&frames,&timestamp)==RECORD_AUDIO_OK);
+      assert(frames==2 && timestamp==1537 && samples[0]==1234);
+      assert(record_audio_queue_ack(source) && record_audio_queue_free(source));
+   }
+   setup(&client,&worker,&aac,&config); config.audio_fifo_frames=0;
+   source=record_audio_queue_new(2,257,2048); assert(source);
+   assert(record_audio_queue_push(source,pcm,257,1)==RECORD_AUDIO_OK);
+   stream=record_stream_vt_new_queued(&worker,&aac,&client,&config,source); assert(stream);
+   result=RECORD_STREAM_VT_BUSY;
+   for(i=0;i<1000 && result!=RECORD_STREAM_VT_ERROR;i++)
+      result=record_stream_vt_step(stream,0,&wait);
+   assert(result==RECORD_STREAM_VT_ERROR && !aac.consumed);
+   assert(record_stream_vt_error(stream)==RECORD_STREAM_VT_ERROR_AUDIO);
+   assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_ERROR);
+   assert(record_stream_vt_free(stream) && net_rtmp_session_free(client.session));
+   assert(record_audio_queue_finish(source) && record_audio_queue_free(source));
+   puts("PASS prebuffered PCM source, native-input chunk boundaries and exact source clock");
+}
+static void resampled_source(void)
+{
+   struct net_rtmp_client client;
+   record_gpu_worker_vt_t worker;
+   static record_at_audio_t aac;
+   static int16_t pcm[3074];
+   record_stream_vt_config_t config;
+   record_stream_vt_wait_t wait;
+   record_at_resample_t src;
+   record_stream_vt_t *stream;
+   record_audio_queue_t *source=record_audio_queue_new(2,1537,16384);
+   unsigned i;
+   int result=RECORD_STREAM_VT_BUSY;
+   assert(source);
+   for(i=0;i<3074;i++) pcm[i]=1234;
+   memset(&src,0,sizeof(src)); src.source=source; src.rate=48000; src.channels=2;
+   setup(&client,&worker,&aac,&config); config.audio_fifo_frames=0;
+   assert(!record_stream_vt_new_resampled(&worker,&aac,&client,&config,NULL));
+   src.rate=44100;
+   assert(!record_stream_vt_new_resampled(&worker,&aac,&client,&config,&src));
+   src.rate=48000; src.accepted=1;
+   assert(!record_stream_vt_new_resampled(&worker,&aac,&client,&config,&src));
+   src.accepted=0;
+   config.audio_fifo_frames=2048;
+   assert(!record_stream_vt_new_resampled(&worker,&aac,&client,&config,&src));
+   config.audio_fifo_frames=0;
+   stream=record_stream_vt_new_resampled(&worker,&aac,&client,&config,&src); assert(stream);
+   for(i=0;i<100;i++) assert(record_stream_vt_step(stream,0,&wait)>=0);
+   assert(!aac.loan && !aac.consumed && !src.accepted);
+   assert(record_audio_queue_push(source,pcm,1537,0)==RECORD_AUDIO_OK);
+   assert(record_audio_queue_push(source,pcm,512,1537)==RECORD_AUDIO_OK);
+   assert(record_audio_queue_finish(source));
+   for(i=0;i<10000 && result!=RECORD_STREAM_VT_END;i++)
+   { result=record_stream_vt_step(stream,0,&wait); assert(result>=0); }
+   assert(result==RECORD_STREAM_VT_END && aac.consumed==4098 && aac.ended);
+   assert(src.accepted==2049 && src.produced==4098 && !src.samples);
+   assert(record_stream_vt_free(stream) && net_rtmp_session_free(client.session));
+   assert(record_audio_queue_free(source));
+
+   source=record_audio_queue_new(2,1537,16384); assert(source);
+   assert(record_audio_queue_push(source,pcm,1537,0)==RECORD_AUDIO_OK);
+   memset(&src,0,sizeof(src)); src.source=source; src.rate=48000; src.channels=2;
+   setup(&client,&worker,&aac,&config); config.audio_fifo_frames=0;
+   stream=record_stream_vt_new_resampled(&worker,&aac,&client,&config,&src); assert(stream);
+   for(i=0;i<1000 && !src.samples;i++) assert(record_stream_vt_step(stream,0,&wait)>=0);
+   assert(src.samples && src.accepted==512 && aac.consumed==1024);
+   record_stream_vt_abort(stream);
+   assert(record_stream_vt_step(stream,0,&wait)==RECORD_STREAM_VT_ERROR);
+   assert(record_stream_vt_free(stream) && src.samples && !record_audio_queue_free(source));
+   assert(record_at_resample_cancel(&src));
+   assert(record_audio_queue_push(source,pcm,1,1537)==RECORD_AUDIO_OK);
+   {
+      const int16_t *samples;
+      size_t frames;
+      uint64_t timestamp;
+      assert(record_audio_queue_peek_lend(source,&samples,&frames,&timestamp)==RECORD_AUDIO_OK);
+      assert(frames==1 && timestamp==1537 && record_audio_queue_ack(source));
+   }
+   assert(record_audio_queue_finish(source) && record_audio_queue_free(source));
+   assert(net_rtmp_session_free(client.session));
+   puts("PASS resampled source/output clocks, direct AAC loans, empty input and caller-owned cancellation");
+}
 #ifdef VT_STREAM_THREAD_TEST
 #include <pthread.h>
 #include <sched.h>
-struct vt_pcm_producer { record_stream_vt_t *stream; const int16_t *samples; };
+struct vt_pcm_producer
+{ record_stream_vt_t *stream; const int16_t *samples; record_audio_queue_t *source; };
 static void *vt_pcm_produce(void *data)
 {
    struct vt_pcm_producer *p=(struct vt_pcm_producer*)data;
@@ -149,17 +356,21 @@ static void *vt_pcm_produce(void *data)
    while(sent<32769)
    {
       size_t count=32769-sent>257?257:32769-sent;
-      int result=record_stream_vt_audio(p->stream,p->samples,count);
+      int result=p->source?record_audio_queue_push(p->source,p->samples,count,sent)
+         :record_stream_vt_audio(p->stream,p->samples,count);
       assert(result!=RECORD_STREAM_VT_ERROR);
       if(result==RECORD_STREAM_VT_BUSY)
       { assert(++retries<1000000); sched_yield(); }
       else { assert(result==RECORD_STREAM_VT_PROGRESS); sent+=count; retries=0; }
    }
-   assert(record_stream_vt_audio_finish(p->stream));
+   assert(p->source?record_audio_queue_finish(p->source):record_stream_vt_audio_finish(p->stream));
    return NULL;
 }
 #endif
-int main(int argc,char **argv)
+#ifndef VT_STREAM_TEST_MAIN
+#define VT_STREAM_TEST_MAIN main
+#endif
+int VT_STREAM_TEST_MAIN(int argc,char **argv)
 {
    struct net_rtmp_client client;
    record_gpu_worker_vt_t worker;
@@ -237,24 +448,39 @@ int main(int argc,char **argv)
    worker.held=false; /* Caller retires the failed native worker after teardown. */
 #ifdef VT_STREAM_THREAD_TEST
    {
-      pthread_t producer;
-      struct vt_pcm_producer context;
-      setup(&client,&worker,&aac,&cfg);
-      stream=record_stream_vt_new(&worker,&aac,&client,&cfg); assert(stream);
-      context.stream=stream; context.samples=pcm;
-      assert(!pthread_create(&producer,NULL,vt_pcm_produce,&context));
-      result=RECORD_STREAM_VT_BUSY;
-      for(i=0;i<1000000 && result!=RECORD_STREAM_VT_END;i++)
+      unsigned queued;
+      for(queued=0;queued<3;queued++)
       {
-         result=record_stream_vt_step(stream,0,&wait); assert(result!=RECORD_STREAM_VT_ERROR);
-         if(result==RECORD_STREAM_VT_BUSY) sched_yield();
+         pthread_t producer;
+         struct vt_pcm_producer context;
+         record_audio_queue_t *source=queued?record_audio_queue_new(2,257,8192):NULL;
+         record_at_resample_t src;
+         assert(!queued || source);
+         setup(&client,&worker,&aac,&cfg);
+         if(queued) cfg.audio_fifo_frames=0;
+         memset(&src,0,sizeof(src)); src.source=source; src.rate=48000; src.channels=2;
+         stream=queued==2?record_stream_vt_new_resampled(&worker,&aac,&client,&cfg,&src)
+            :queued?record_stream_vt_new_queued(&worker,&aac,&client,&cfg,source)
+            :record_stream_vt_new(&worker,&aac,&client,&cfg); assert(stream);
+         context.stream=stream; context.samples=pcm; context.source=source;
+         assert(!pthread_create(&producer,NULL,vt_pcm_produce,&context));
+         result=RECORD_STREAM_VT_BUSY;
+         for(i=0;i<1000000 && result!=RECORD_STREAM_VT_END;i++)
+         {
+            result=record_stream_vt_step(stream,0,&wait); assert(result!=RECORD_STREAM_VT_ERROR);
+            if(result==RECORD_STREAM_VT_BUSY) sched_yield();
+         }
+         assert(result==RECORD_STREAM_VT_END && aac.consumed==(queued==2?65538u:32769u) && aac.ended);
+         assert(!pthread_join(producer,NULL));
+         assert(record_stream_vt_free(stream) && net_rtmp_session_free(client.session));
+         assert(record_audio_queue_free(source));
+         printf("PASS concurrent %s PCM producer and streaming I/O owner, 32769 source frames\n",
+               queued==2?"resampled":queued?"queued":"internal-ring");
       }
-      assert(result==RECORD_STREAM_VT_END && aac.consumed==32769 && aac.ended);
-      assert(!pthread_join(producer,NULL));
-      assert(record_stream_vt_free(stream) && net_rtmp_session_free(client.session));
-      puts("PASS concurrent PCM producer and exclusive streaming I/O owner, 32769 source frames");
    }
 #endif
+   queued_source();
+   resampled_source();
    puts("PASS VT/AAC stream explicit priming epoch, network-held borrows, source continuity, bounded PCM, partial drain and cancellation retirement");
    return 0;
 }

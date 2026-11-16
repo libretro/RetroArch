@@ -1,0 +1,125 @@
+name: CI macOS core signatures
+
+# The core signature harnesses run on Linux and under Wine in
+# Linux-samples-tasks.yml. macOS has paths of its own that nothing
+# builds there: the trust for cores inside RetroArch's own app bundle,
+# looked up through CoreFoundation, and the load check on Darwin's
+# loader. This runs each harness with Apple clang under ASan+UBSan and,
+# as on Linux, under TSan.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'core_signature.c'
+      - 'core_signature.h'
+      - 'core_signature_io.c'
+      - 'core_signing_keys.h'
+      - 'core_install_check.c'
+      - 'core_install_check.h'
+      - 'core_load_check.c'
+      - 'core_load_check.h'
+      - 'core_load_file.c'
+      - 'core_load_file.h'
+      - 'core_trust_runtime.c'
+      - 'core_trust_runtime.h'
+      - 'libretro-common/crypto/**'
+      - 'libretro-common/include/crypto/**'
+      - 'libretro-common/dynamic/dylib.c'
+      - 'libretro-common/vfs/**'
+      - 'libretro-common/file/**'
+      - 'libretro-common/streams/file_stream.c'
+      - 'libretro-common/rthreads/**'
+      - 'libretro-common/queues/task_queue.c'
+      - 'samples/tasks/core_signature/**'
+      - 'samples/tasks/core_install_check/**'
+      - 'samples/tasks/core_load_check/**'
+      - 'samples/sample_objdir.mk'
+      - '.github/workflows/MacOS-core-signatures.yml'
+  pull_request:
+    paths:
+      - 'core_signature.c'
+      - 'core_signature.h'
+      - 'core_signature_io.c'
+      - 'core_signing_keys.h'
+      - 'core_install_check.c'
+      - 'core_install_check.h'
+      - 'core_load_check.c'
+      - 'core_load_check.h'
+      - 'core_load_file.c'
+      - 'core_load_file.h'
+      - 'core_trust_runtime.c'
+      - 'core_trust_runtime.h'
+      - 'libretro-common/crypto/**'
+      - 'libretro-common/include/crypto/**'
+      - 'libretro-common/dynamic/dylib.c'
+      - 'libretro-common/vfs/**'
+      - 'libretro-common/file/**'
+      - 'libretro-common/streams/file_stream.c'
+      - 'libretro-common/rthreads/**'
+      - 'libretro-common/queues/task_queue.c'
+      - 'samples/tasks/core_signature/**'
+      - 'samples/tasks/core_install_check/**'
+      - 'samples/tasks/core_load_check/**'
+      - 'samples/sample_objdir.mk'
+      - '.github/workflows/MacOS-core-signatures.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  core-signatures-macos:
+    name: core signature harnesses on macOS
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      TSAN_OPTIONS: halt_on_error=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build and run core_signature_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_signature
+        run: |
+          set -eu
+          # macOS has no timeout(1): perl's alarm bounds each run.
+          run="perl -e 'alarm shift; exec @ARGV or die' 600"
+          jobs=$(sysctl -n hw.ncpu)
+          make clean && make -j$jobs SANITIZER=address,undefined \
+             RUNNER="$run" check
+          make clean && make -j$jobs SANITIZER=thread RUNNER="$run" check
+          # As configure --enable-core_signing_test_key builds it
+          make clean && make -j$jobs SANITIZER=address,undefined \
+             TEST_KEY=1 RUNNER="$run" check
+          make clean
+
+      - name: Build and run core_install_check_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/core_install_check
+        run: |
+          set -eu
+          run="perl -e 'alarm shift; exec @ARGV or die' 600"
+          jobs=$(sysctl -n hw.ncpu)
+          make clean && make -j$jobs SANITIZER=address,undefined \
+             RUNNER="$run" check
+          make clean
+
+      - name: Build and run core_load_check_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_load_check
+        run: |
+          set -eu
+          # The desktop build: its Makefile builds the Android one on
+          # Linux only.
+          run="perl -e 'alarm shift; exec @ARGV or die' 600"
+          jobs=$(sysctl -n hw.ncpu)
+          make clean && make -j$jobs SANITIZER=address,undefined \
+             RUNNER="$run" check
+          make clean && make -j$jobs SANITIZER=thread RUNNER="$run" check
+          make clean

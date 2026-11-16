@@ -130,7 +130,7 @@ dylib_t dylib_load(const char *path)
    return (dylib_t)(uintptr_t)(0x1000 + ++lib_loads);
 }
 
-dylib_t runloop_core_dylib_load(const char *path, bool quiet)
+dylib_t runloop_core_dylib_open(const char *path, bool quiet)
 {
    return dylib_load(path);
 }
@@ -143,6 +143,63 @@ void dylib_close(dylib_t lib)
       fs_log_put('C');
    }
 }
+
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../../core_load_check.h"
+
+/* The load check's side: what the copy must match, and whether it does */
+static enum core_load_copy copy_mode = CORE_LOAD_COPY_OFF;
+static int      match_result;
+static unsigned matches_made, matches_freed, match_steps;
+static char     warned[160];
+
+struct core_load_match { int left; char path[512]; };
+
+enum core_load_copy core_load_check_copy_source(const char *path,
+      struct core_load_source *src)
+{
+   (void)path;
+   memset(src, 0, sizeof(*src));
+   return copy_mode;
+}
+
+core_load_match_t *core_load_match_new(const char *copy_path,
+      const char *src_path, const struct core_load_source *src)
+{
+   core_load_match_t *m = (core_load_match_t*)calloc(1, sizeof(*m));
+   (void)src_path; (void)src;
+   if (!m)
+      return NULL;
+   m->left = 3;
+   strlcpy(m->path, copy_path, sizeof(m->path));
+   matches_made++;
+   return m;
+}
+
+int core_load_match_step(core_load_match_t *m)
+{
+   match_steps++;
+   return --m->left > 0 ? 1 : match_result;
+}
+
+dylib_t core_load_match_load(core_load_match_t *m)
+{
+   return dylib_load(m->path);
+}
+
+void core_load_match_free(core_load_match_t *m)
+{
+   if (!m)
+      return;
+   matches_freed++;
+   free(m);
+}
+
+void RARCH_WARN(const char *fmt, ...)
+{
+   strlcpy(warned, fmt, sizeof(warned));
+}
+#endif
 
 int filestream_delete(const char *path) { deleted++; fs_log_put('D'); strlcpy(last_deleted, path, sizeof(last_deleted)); return 0; }
 bool path_mkdir(const char *dir) { (void)dir; return true; }
@@ -580,6 +637,94 @@ static void t_input_list_oom(void)
    }
 }
 
+#ifdef HAVE_CORE_LOAD_CHECK
+static void t_check_match(void)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   check_match: the copy loads once it matches, from the file hashed\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   copy_mode    = CORE_LOAD_COPY_CHECK;
+   match_result = 0;
+   matches_made = matches_freed = match_steps = 0;
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   run_copy_to_completion();
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_READY && lib != NULL, "a matching copy was not handed over: %d", (int)st);
+   CHECK(matches_made == 1 && matches_freed == 1, "%u matches made, %u freed", matches_made, matches_freed);
+   CHECK(match_steps >= 3, "the match ran in %u step(s)", match_steps);
+   CHECK(lib_loads == 1, "the copy was opened %u times", lib_loads);
+   if (out) free(out);
+   copy_mode = CORE_LOAD_COPY_OFF;
+   task_queue_deinit();
+}
+
+static void t_check_mismatch(void)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   check_mismatch: no second instance, the copy deleted\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   copy_mode    = CORE_LOAD_COPY_CHECK;
+   match_result = -1;
+   warned[0]    = '\0';
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   run_copy_to_completion();
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_UNAVAILABLE, "a copy that didn't match gave %d", (int)st);
+   CHECK(lib_loads == 0, "a copy that didn't match was opened");
+   CHECK(deleted == 1, "the copy that didn't match was left on disk (%u deletes)", deleted);
+   CHECK(strstr(warned, "doesn't match") != NULL, "no log line said why");
+   copy_mode = CORE_LOAD_COPY_OFF;
+   task_queue_deinit();
+}
+
+/* Never READY without a library: secondary_core_create() would open the
+ * copy by path, through the gate, as a load of its own */
+static void t_check_noload(void)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   check_noload: a matching copy that won't load is not handed over\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   copy_mode    = CORE_LOAD_COPY_CHECK;
+   match_result = 0;
+   lib_refuse   = 1;
+   warned[0]    = '\0';
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   run_copy_to_completion();
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_UNAVAILABLE, "a copy that won't load gave %d", (int)st);
+   CHECK(deleted == 1, "the copy that won't load was left on disk (%u deletes)", deleted);
+   CHECK(strstr(warned, "won't load") != NULL, "no log line said why");
+   copy_mode = CORE_LOAD_COPY_OFF;
+   task_queue_deinit();
+}
+
+static void t_check_unknown(void)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   check_unknown: no copy of a core the check doesn't know\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   copy_mode = CORE_LOAD_COPY_NONE;
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_UNAVAILABLE, "poll gave %d", (int)st);
+   CHECK(!runahead_copy_task_pending, "a copy task was pushed");
+   CHECK(dst_count == 0, "%u copies opened", dst_count);
+   copy_mode = CORE_LOAD_COPY_OFF;
+   task_queue_deinit();
+}
+#endif
+
 int main(void)
 {
    /* A stray 'return false' from a status-returning function must
@@ -599,6 +744,12 @@ int main(void)
    t_generation_discard();
    t_stale_src();
    t_tmp_dir_not_private();
+#ifdef HAVE_CORE_LOAD_CHECK
+   t_check_match();
+   t_check_mismatch();
+   t_check_noload();
+   t_check_unknown();
+#endif
    reset_fs();
    if (failures)
    {

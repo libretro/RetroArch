@@ -85,6 +85,9 @@
 #include "../record/record_gpu_capture_metal.m"
 #include "../record/record_mux_avfoundation.m"
 #include "../record/record_gpu_session_metal.m"
+#if defined(HAVE_NETWORKING) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#include "../record/record_at_resample.c"
+#endif
 #include "../record/record_gpu_dispatch_metal.m"
 #endif
 #endif

@@ -47,6 +47,7 @@ bool	video_d3d9ex_present	1	0
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
 bool	video_present_timing_from_display	1	1
+bool	video_skip_dupe_frames	1	0
 bool	video_hard_sync	1	0
 bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
@@ -130,6 +131,7 @@ bool	audio_fastforward_speedup	1	0
 bool	audio_fastforward_callback	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
+bool	menu_scroll_quick	1	1
 bool	ai_service_enable	1	0
 bool	ai_service_pause	1	0
 bool	video_scale_integer	1	0
@@ -175,6 +177,9 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	xmb_plastic_effect_enable	1	0
+bool	xmb_ribbon_bloom_enable	1	0
+bool	xmb_ribbon_particles_enable	1	0
 bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
@@ -784,6 +789,7 @@ bool	video_d3d9ex_present	1	0
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
 bool	video_present_timing_from_display	1	1
+bool	video_skip_dupe_frames	1	0
 bool	video_hard_sync	1	0
 bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
@@ -867,6 +873,7 @@ bool	audio_fastforward_speedup	1	0
 bool	audio_fastforward_callback	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
+bool	menu_scroll_quick	1	1
 bool	ai_service_enable	1	0
 bool	ai_service_pause	1	0
 bool	video_scale_integer	1	0
@@ -912,6 +919,9 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	xmb_plastic_effect_enable	1	0
+bool	xmb_ribbon_bloom_enable	1	0
+bool	xmb_ribbon_particles_enable	1	0
 bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
@@ -1510,6 +1520,7 @@ bool	video_d3d9ex_present	1	0
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
 bool	video_present_timing_from_display	1	1
+bool	video_skip_dupe_frames	1	0
 bool	video_hard_sync	1	0
 bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
@@ -1593,6 +1604,7 @@ bool	audio_fastforward_speedup	1	0
 bool	audio_fastforward_callback	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
+bool	menu_scroll_quick	1	1
 bool	ui_companion_enable	1	0
 bool	ui_companion_start_on_boot	1	1
 bool	desktop_menu_enable	1	1
@@ -1646,6 +1658,9 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	xmb_plastic_effect_enable	1	0
+bool	xmb_ribbon_bloom_enable	1	0
+bool	xmb_ribbon_particles_enable	1	0
 bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0

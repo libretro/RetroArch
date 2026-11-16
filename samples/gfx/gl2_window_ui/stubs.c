@@ -13,6 +13,7 @@
 #include "../../../gfx/drivers_shader/shader_glsl.h"
 #include "../../../menu/menu_driver.h"
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <glsym/glsym.h>
 
 void RARCH_LOG(const char *fmt, ...)  { va_list ap; va_start(ap, fmt); printf("      [log] "); vprintf(fmt, ap); va_end(ap); }

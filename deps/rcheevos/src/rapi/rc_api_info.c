@@ -113,6 +113,7 @@ int rc_api_process_fetch_achievement_info_server_response(rc_api_fetch_achieveme
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array_field.value_start;
     iterator.end = array_field.value_end;
+    iterator.validated = array_field.validated;
 
     entry = response->recently_awarded;
     while (rc_json_get_array_entry_object(entry_fields, sizeof(entry_fields) / sizeof(entry_fields[0]), &iterator)) {
@@ -271,6 +272,7 @@ int rc_api_process_fetch_leaderboard_info_server_response(rc_api_fetch_leaderboa
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array_field.value_start;
     iterator.end = array_field.value_end;
+    iterator.validated = array_field.validated;
 
     entry = response->entries;
     while (rc_json_get_array_entry_object(entry_fields, sizeof(entry_fields) / sizeof(entry_fields[0]), &iterator)) {
@@ -385,6 +387,7 @@ int rc_api_process_fetch_games_list_server_response(rc_api_fetch_games_list_resp
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array_field.value_start;
     iterator.end = array_field.value_end;
+    iterator.validated = array_field.validated;
 
     entry = response->entries;
     while (rc_json_get_array_entry_object(game_fields, sizeof(game_fields) / sizeof(game_fields[0]), &iterator)) {
@@ -495,6 +498,7 @@ int rc_api_process_fetch_game_titles_server_response(rc_api_fetch_game_titles_re
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = array_field.value_start;
     iterator.end = array_field.value_end;
+    iterator.validated = array_field.validated;
 
     entry = response->entries;
     while (rc_json_get_array_entry_object(entry_fields, sizeof(entry_fields) / sizeof(entry_fields[0]), &iterator)) {
@@ -590,6 +594,7 @@ int rc_api_process_fetch_hash_library_server_response(rc_api_fetch_hash_library_
     memset(&iterator, 0, sizeof(iterator));
     iterator.json = fields[2].value_start;
     iterator.end = fields[2].value_end;
+    iterator.validated = fields[2].validated;
 
     entry = response->entries;
     while (rc_json_get_next_object_field(&iterator, &field)) {

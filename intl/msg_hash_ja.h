@@ -1588,6 +1588,7 @@ static const struct
    char s_9329c64c[10];
    char s_f8883f70[13];
    char s_09ba892e[7];
+   char s_047623ff[7];
    char s_58b9d895[12];
    char s_0a2aa953[10];
    char s_ffd0dac4[16];
@@ -2103,10 +2104,6 @@ static const struct
    char s_482ee1f1[13];
    char s_214b7699[22];
    char s_ad14307a[19];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[40];
-   char s_774121c8[40];
-#endif
    char s_b0fb58d3[28];
    char s_b0fb58d4[28];
    char s_92a02470[40];
@@ -7034,6 +7031,7 @@ static const struct
    "\343\202\271\343\202\263\343\202\242",
    "\343\202\267\343\203\252\343\202\242\343\203\253",
    "\350\250\255\345\256\232",
+   "\343\202\277\343\202\260",
    "TGDB \350\251\225\344\276\241",
    "\344\271\227\343\202\212\347\211\251",
    "\343\203\223\343\202\270\343\203\245\343\202\242\343\203\253",
@@ -7752,12 +7750,6 @@ static const struct
    "\343\203\220\343\203\251\343\203\263\343\202\271",
    "\343\203\221\343\203\225\343\202\251\343\203\274\343\203\236\343\203\263\343\202\271",
    "\343\201\241\343\202\211\343\201\244\343\201\215\346\212\221\345\210\266",
-#if defined(RARCH_MOBILE)
-   "\350\241\250\347\244\272\351\240\230\345\237\237 X \345\272\247\346\250\231\350\243\234\346\255"
-   "\243 (\347\270\246\345\220\221\343\201\215)",
-   "\350\241\250\347\244\272\351\240\230\345\237\237 Y \345\272\247\346\250\231\350\243\234\346\255"
-   "\243 (\347\270\246\345\220\221\343\201\215)",
-#endif
    "\350\241\250\347\244\272\351\240\230\345\237\237 X \345\272\247\346\250\231\350\243\234\346\255"
    "\243",
    "\350\241\250\347\244\272\351\240\230\345\237\237 Y \345\272\247\346\250\231\350\243\234\346\255"
@@ -13928,7 +13920,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (199220u
+      (sizeof(msg_hash_ja_blob) == (199227u
 #ifdef ANDROID
        + 484u
 #endif
@@ -14089,10 +14081,6 @@ typedef char msg_hash_ja_blob_check[
 #endif
 #ifdef HAVE_ODROIDGO2
        + 23u
-#endif
-#if defined(RARCH_MOBILE)
-       + 40u
-       + 40u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -15842,6 +15830,7 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -16357,10 +16346,6 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,

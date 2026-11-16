@@ -73,7 +73,12 @@ for mf in $makefiles; do
    if has HAVE_NFSCLIENT && ! has HAVE_NETWORKING; then bad="$bad HAVE_NFSCLIENT-without-networking"; fi
    if has HAVE_KEYCHAIN && ! has HAVE_CRYPTO;     then bad="$bad HAVE_KEYCHAIN-without-crypto"; fi
    if has HAVE_KEYCHAIN && ! has HAVE_CONFIGFILE; then bad="$bad HAVE_KEYCHAIN-without-configfile"; fi
+   if has HAVE_CORE_SIGNATURES && ! has HAVE_CRYPTO;  then bad="$bad HAVE_CORE_SIGNATURES-without-crypto"; fi
+   if has HAVE_CORE_SIGNATURES && ! has HAVE_DYNAMIC; then bad="$bad HAVE_CORE_SIGNATURES-without-dynamic"; fi
+   if has HAVE_CORE_LOAD_CHECK && ! has HAVE_CORE_SIGNATURES; then bad="$bad HAVE_CORE_LOAD_CHECK-without-signatures"; fi
+   if has HAVE_CORE_SIGNATURES && ! has HAVE_CORE_LOAD_CHECK; then bad="$bad HAVE_CORE_SIGNATURES-without-load-check"; fi
    if has HAVE_SSL && ! grep -q 'net_socket_ssl_' "$graph"; then bad="$bad HAVE_SSL-with-no-ssl-object"; fi
+   if has HAVE_CORE_LOAD_CHECK && ! grep -q 'core_load_check\.o' "$graph"; then bad="$bad HAVE_CORE_LOAD_CHECK-with-no-check-object"; fi
    if [ -n "$bad" ]; then
       echo "FAIL  $mf: inconsistent gates:$bad"; fail=1; continue
    fi

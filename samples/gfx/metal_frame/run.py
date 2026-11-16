@@ -18,6 +18,21 @@ def run(args):
     subprocess.run(list(map(str, args)), check=True)
 
 
+def inline_includes(path):
+    """The source with its quoted includes in place, as the Metal library
+    is built from a copy that is not next to the headers it names."""
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines(keepends=True):
+        name = line.strip()
+        if name.startswith('#include "') and name.endswith('"'):
+            target = (path.parent / name[len('#include "'):-1]).resolve()
+            if target.is_file():
+                out.append(inline_includes(target))
+                continue
+        out.append(line)
+    return "".join(out)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mock", action="store_true")
@@ -108,7 +123,7 @@ def main():
         if args.native:
             # Compile the actual stock MSL and render through its movie entry.
             header = (ROOT / "gfx/drivers/metal.h").read_text(encoding="utf-8")
-            stock = (ROOT / "gfx/drivers/metal_shaders/Shaders.metal").read_text(encoding="utf-8")
+            stock = inline_includes(ROOT / "gfx/drivers/metal_shaders/Shaders.metal")
             stock = stock.replace('#import "../metal.h"', header)
             stock_file = tmp / "stock.metal"
             stock_file.write_text(stock, encoding="utf-8")

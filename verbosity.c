@@ -114,9 +114,6 @@
 
 typedef struct verbosity_state
 {
-#ifdef HAVE_LIBNX
-   Mutex mtx;
-#endif
    /* If this is non-NULL, RARCH_LOG and friends
     * will write to this file. */
    FILE *fp;   /* pointer-sized: keep near top */
@@ -198,24 +195,9 @@ bool *verbosity_get_ptr(void)
 void retro_main_log_file_init(const char *path, bool append)
 {
    FILE *tmp;
-#ifdef HAVE_LIBNX
-   static bool mtx_inited = false;
-#endif
 
    if (main_verbosity_st.initialized)
       return;
-
-#ifdef HAVE_LIBNX
-   /* Once for the process: a file->console->file cycle re-enters
-    * here, and re-initializing a mutex another thread may be
-    * holding for a write is exactly the race the mutex exists to
-    * prevent. Deinit never destroys it for the same reason. */
-   if (!mtx_inited)
-   {
-      mutexInit(&main_verbosity_st.mtx);
-      mtx_inited = true;
-   }
-#endif
 
    /* Default to stderr; only override when a valid path is given */
    main_verbosity_st.fp = stderr;
@@ -284,27 +266,32 @@ void retro_main_log_file_deinit(void)
 static const char *rarch_log_line_format(char *line, size_t line_size,
       char **heap, const char *tag_v, const char *fmt, va_list ap)
 {
-   int t_len    = snprintf(line, line_size, "%s ", tag_v);
+   size_t t_len = strlen(tag_v);
    int b_len;
    va_list ap_cp;
 
    *heap = NULL;
 
-   if (t_len < 0 || t_len >= (int)line_size)
+   if (line_size < 2 || t_len >= line_size - 1)
       t_len = 0;
+   else
+   {
+      /* Snapshot before formatting: %n may modify the caller's tag. */
+      memcpy(line, tag_v, t_len);
+      line[t_len++] = ' ';
+   }
 
    va_copy(ap_cp, ap);
-   b_len = vsnprintf(line + t_len, line_size - (size_t)t_len,
-         fmt, ap_cp);
+   b_len = vsnprintf(line + t_len, line_size - t_len, fmt, ap_cp);
    va_end(ap_cp);
 
-   if (b_len >= (int)(line_size - (size_t)t_len))
+   if (b_len >= (int)(line_size - t_len))
    {
-      size_t need = (size_t)t_len + (size_t)b_len + 1;
+      size_t need = t_len + (size_t)b_len + 1;
       if ((*heap = (char*)malloc(need)))
       {
-         memcpy(*heap, line, (size_t)t_len);
-         vsnprintf(*heap + t_len, need - (size_t)t_len, fmt, ap);
+         memcpy(*heap, line, t_len);
+         vsnprintf(*heap + t_len, need - t_len, fmt, ap);
          return *heap;
       }
    }
@@ -314,7 +301,7 @@ static const char *rarch_log_line_format(char *line, size_t line_size,
    return line;
 }
 
-/* One write, one flush, under the LibNX mutex where it exists.
+/* One write, one flush.
  *
  * The flush is unconditional, for every tag. Buffering informational
  * lines was tried and taken back out: a log is read after a crash, and
@@ -324,16 +311,8 @@ static const char *rarch_log_line_format(char *line, size_t line_size,
  * until the buffer happens to fill. */
 static void rarch_log_line_emit(FILE *fp, const char *out)
 {
-#if defined(HAVE_LIBNX)
-   /* Around exactly one write and its flush; libnx newlib's stdio
-    * locking history is why this exists at all. */
-   mutexLock(&main_verbosity_st.mtx);
-#endif
    fputs(out, fp);
    fflush(fp);
-#if defined(HAVE_LIBNX)
-   mutexUnlock(&main_verbosity_st.mtx);
-#endif
 }
 
 #if defined(ANDROID)

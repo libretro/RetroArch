@@ -40,19 +40,10 @@
 #include "../include/Cg/cgGL.h"
 #endif
 
-#ifdef HAVE_SHADERPIPELINE
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
-#include "../drivers/gl_shaders/pipeline_snow_simple.cg.h"
-#include "../drivers/gl_shaders/pipeline_snow_heavy.cg.h"
-#include "../drivers/gl_shaders/pipeline_snow.cg.h"
-#include "../drivers/gl_shaders/pipeline_bokeh.cg.h"
-#include "../drivers/gl_shaders/pipeline_snowflake.cg.h"
-#endif
-
 #include "../include/Cg/cg.h"
 
 #include "../video_shader_parse.h"
+#include "../common/xmb_plastic.h"
 #include "../../core.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -187,7 +178,7 @@ typedef struct cg_shader_data
    CGparameter attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    CGprofile cgVProf;
    CGprofile cgFProf;
-   struct shader_program_cg prg[GFX_MAX_SHADERS];
+   struct shader_program_cg prg[VIDEO_SHADER_PROGRAM_COUNT];
    size_t attribs_index;
    GLuint lut_textures[GFX_MAX_TEXTURES];
    unsigned active_idx;
@@ -281,7 +272,10 @@ static void gl_cg_set_uniform_parameter(
          cgGLSetParameter3fv(location, param->result.floatv);
          break;
       case UNIFORM_4FV:
-         cgGLSetParameter3fv(location, param->result.floatv);
+         if (param->count)
+            cgGLSetParameterArray4f(location, 0, param->count, param->result.floatv);
+         else
+            cgGLSetParameter4fv(location, param->result.floatv);
          break;
       case UNIFORM_1I:
          /* Unimplemented - Cg limitation */
@@ -527,7 +521,7 @@ static void gl_cg_deinit_progs(void *data)
    cgGLUnbindProgram(cg->cgVProf);
 
    /* Programs may alias [0]. */
-   for (i = 1; i < GFX_MAX_SHADERS; i++)
+   for (i = 1; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
    {
       if (cg->prg[i].fprg && cg->prg[i].fprg != cg->prg[0].fprg)
          cgDestroyProgram(cg->prg[i].fprg);
@@ -992,67 +986,6 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    }
 }
 
-static void gl_cg_init_menu_shaders(void *data)
-{
-   struct shader_program_info shader_prog_info;
-   cg_shader_data_t *cg = (cg_shader_data_t*)data;
-
-   if (!cg)
-      return;
-
-#ifdef HAVE_SHADERPIPELINE
-   shader_prog_info.is_file  = false;
-
-   shader_prog_info.combined = stock_xmb_ribbon;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU,
-         &cg->prg[VIDEO_SHADER_MENU],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU);
-
-   shader_prog_info.combined = stock_xmb_ribbon_simple;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_2,
-         &cg->prg[VIDEO_SHADER_MENU_2],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_2);
-
-   shader_prog_info.combined = stock_xmb_simple_snow;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_3,
-         &cg->prg[VIDEO_SHADER_MENU_3],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_3);
-
-   shader_prog_info.combined = stock_xmb_snow_heavy;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_4,
-         &cg->prg[VIDEO_SHADER_MENU_4],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_4);
-
-   shader_prog_info.combined = stock_xmb_bokeh;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_5,
-         &cg->prg[VIDEO_SHADER_MENU_5],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_5);
-
-   shader_prog_info.combined = stock_xmb_snowflake;
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_6,
-         &cg->prg[VIDEO_SHADER_MENU_6],
-         &shader_prog_info);
-   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_6);
-#endif
-}
-
 static void *gl_cg_init(void *data, const char *path)
 {
    unsigned i;
@@ -1136,6 +1069,36 @@ static void *gl_cg_init(void *data, const char *path)
 
    /* No need to apply Android hack in Cg. */
    cg->prg[VIDEO_SHADER_STOCK_BLEND] = cg->prg[0];
+   for (i = VIDEO_SHADER_XMB_PLASTIC; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
+   {
+      char source[2048];
+      struct shader_program_info info;
+      const char *prefix =
+         "#define vec2 float2\n#define vec3 float3\n#define vec4 float4\n"
+         "#define mix lerp\n#define XMB_SAMPLE(p) tex2D(s0,p)\n"
+         "#define dFdx ddx\n#define dFdy ddy\n"
+         "#define XMB_COVERAGE(p) XMB_SAMPLE(p).a\n"
+         "struct input{float2 tex_coord;float4 color;float4 vertex_coord;"
+         "uniform float4x4 mvp_matrix;};"
+         "struct vertex_data{float2 tex;float4 color;};"
+         "float4 main_fragment(input IN,vertex_data vert,"
+         "uniform sampler2D s0:TEXUNIT0):COLOR{"
+         "float2 uv=vert.tex;float4 tint=vert.color;";
+      const char *suffix =
+         "return plastic;}void main_vertex(out float4 oPosition:POSITION,"
+         "input IN,out vertex_data vert){"
+         "oPosition=mul(IN.mvp_matrix,IN.vertex_coord);"
+         "vert=vertex_data(IN.tex_coord,IN.color);}";
+      if (xmb_plastic_source(source, sizeof(source), prefix, suffix,
+               i == VIDEO_SHADER_XMB_FONT_PLASTIC))
+      {
+         info.combined = source;
+         info.is_file = false;
+         if (gl_cg_compile_program(cg, i,
+                  &cg->prg[i], &info))
+            gl_cg_set_program_attributes(cg, i);
+      }
+   }
 
    gl_cg_set_shaders(cg->prg[1].fprg, cg->prg[1].vprg);
 
@@ -1153,6 +1116,10 @@ error:
 static void gl_cg_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
+   if (cg && (idx == VIDEO_SHADER_XMB_PLASTIC
+         || idx == VIDEO_SHADER_XMB_FONT_PLASTIC)
+         && (!cg->prg[idx].vprg || !cg->prg[idx].fprg))
+      idx = VIDEO_SHADER_STOCK_BLEND;
    if (cg && cg->prg[idx].vprg && cg->prg[idx].fprg)
    {
       if (set_active)
@@ -1254,7 +1221,6 @@ static void gl_cg_get_flags(uint32_t *flags)
 
 const shader_backend_t gl_cg_backend = {
    gl_cg_init,
-   gl_cg_init_menu_shaders,
    gl_cg_deinit,
    gl_cg_set_params,
    gl_cg_set_uniform_parameter,

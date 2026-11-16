@@ -59,16 +59,13 @@
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
 #define VIDEO_SHADER_STOCK_BLEND          (GFX_MAX_SHADERS - 1)
-#define VIDEO_SHADER_MENU                 (GFX_MAX_SHADERS - 2)
-#define VIDEO_SHADER_MENU_2               (GFX_MAX_SHADERS - 3)
-#define VIDEO_SHADER_MENU_3               (GFX_MAX_SHADERS - 4)
-#define VIDEO_SHADER_MENU_4               (GFX_MAX_SHADERS - 5)
-#define VIDEO_SHADER_MENU_5               (GFX_MAX_SHADERS - 6)
-#define VIDEO_SHADER_MENU_6               (GFX_MAX_SHADERS - 7)
 #define VIDEO_SHADER_STOCK_HDR            (GFX_MAX_SHADERS - 8)
 #define VIDEO_SHADER_STOCK_NOBLEND_HDR    (GFX_MAX_SHADERS - 9)
 #define VIDEO_SHADER_STOCK_NOBLEND        (GFX_MAX_SHADERS - 10)
 #define VIDEO_SHADER_STOCK_BLEND_HDR      (GFX_MAX_SHADERS - 11)
+#define VIDEO_SHADER_XMB_PLASTIC          GFX_MAX_SHADERS
+#define VIDEO_SHADER_XMB_FONT_PLASTIC     (GFX_MAX_SHADERS + 1)
+#define VIDEO_SHADER_PROGRAM_COUNT        (GFX_MAX_SHADERS + 2)
 
 #ifndef MAX_EGLIMAGE_TEXTURES
 #define MAX_EGLIMAGE_TEXTURES 32
@@ -190,7 +187,8 @@ enum video_driver_state_flags
    VIDEO_FLAG_FF_DECIDED                          = (1 << 25),
    /* main_flags: frames go to video_null.frame, whichever driver
     * is up (video_driver_set_stub_frame) */
-   VIDEO_FLAG_STUB_FRAME                          = (1 << 26)
+   VIDEO_FLAG_STUB_FRAME                          = (1 << 26),
+   VIDEO_FLAG_KEEP_VULKAN_SESSION                 = (1 << 27)
 };
 
 /* Driver pacing: the graphics driver releases each frame (NVIDIA
@@ -315,7 +313,6 @@ struct uniform_info
 typedef struct shader_backend
 {
    void *(*init)(void *data, const char *path);
-   void (*init_menu_shaders)(void *data);
    void (*deinit)(void *data);
 
    /* Set shader parameters. */
@@ -515,8 +512,12 @@ enum video_frame_menu_flags
    VIDEO_MENU_FLAG_XMB_FONT_IS_DEFAULT                          = (1u << 25),
    VIDEO_MENU_FLAG_USE_PREFERRED_SYSTEM_COLOR_THEME             = (1u << 26),
    VIDEO_MENU_FLAG_SAVESTATE_THUMBNAIL_ENABLE                   = (1u << 27),
-   VIDEO_MENU_FLAG_SHOW_SUBLABELS                               = (1u << 28)
+   VIDEO_MENU_FLAG_SHOW_SUBLABELS                               = (1u << 28),
+   VIDEO_MENU_FLAG_XMB_PLASTIC_EFFECT_ENABLE                    = (1u << 29),
+   VIDEO_MENU_FLAG_XMB_RIBBON_BLOOM_ENABLE                      = (1u << 30)
 };
+/* Past what an enum constant may hold in C89 */
+#define VIDEO_MENU_FLAG_XMB_RIBBON_PARTICLES_ENABLE (1u << 31)
 
 typedef struct video_frame_menu_settings
 {
@@ -1134,6 +1135,19 @@ typedef struct video_frame_import
    void *owner;
 } video_frame_import_t;
 
+/* A mapping is valid until frame() consumes it; renew on the driver thread. */
+typedef struct video_frame_memory
+{
+   void *data;
+   size_t size;
+   size_t pitch; /* zero for linear storage with flexible row pitch */
+   unsigned width;
+   unsigned height;
+   enum retro_pixel_format format; /* UNKNOWN is permitted for linear storage. */
+   /* Optional: producer sets before exposing pixels; driver clears after retire. */
+   retro_atomic_int_t *cache_exposed;
+} video_frame_memory_t;
+
 typedef struct video_poke_interface
 {
    uint32_t (*get_flags)(void *data);
@@ -1363,7 +1377,7 @@ typedef struct video_poke_interface
     * way up. All three are called on the driver's own thread.
     *
     * frame_mem_alloc maps @size bytes the CPU writes and the GPU reads,
-    * at least 64-byte aligned, names them in @id, sets @cached when
+    * at least 64-byte aligned (16 with frame_mem_map), names them in @id, sets @cached when
     * the CPU reads them back at cached speed, and @pitch_align to the
     * row pitch multiple frame() reads them at in place; NULL when it
     * has none.
@@ -1465,6 +1479,12 @@ typedef struct video_poke_interface
    /* Cold owner-thread preparation; all results retain the source lease. */
    enum video_texture_update (*prepare_import_texture)(void *data, uintptr_t id,
          const video_frame_import_t *frame);
+   /* Optional renewable frame memory. Requires all three frame_mem callbacks.
+    * After alloc() or ready(), returns the current mapping. No GPU calls on
+    * the producer.
+    * All mappings in a pool must use the same pitch (zero permits any pitch). */
+   bool (*frame_mem_map)(void *data, uintptr_t id,
+         video_frame_memory_t *mapping);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -1646,6 +1666,9 @@ typedef struct video_driver
     * recording skip the BGR24 conversion. */
    bool (*read_viewport_bgrx)(void *data, uint8_t *buffer, bool is_idle,
          bool *bottom_up);
+
+   /* Software maxima may change within the initial input-scale capacity. */
+   bool max_geometry_in_place;
 } video_driver_t;
 
 #ifdef HAVE_OPENXR
@@ -1905,6 +1928,10 @@ typedef struct
     * races such a read. */
    retro_atomic_int_t crt_switching_active;
 
+   /* Initial software-frame capacity, in pixels on each axis; zero opts out. */
+   unsigned max_geometry_capacity;
+   enum retro_pixel_format max_geometry_format;
+
 #ifdef HAVE_VIDEO_FILTER
    unsigned state_scale;
    unsigned state_out_bpp;
@@ -2054,6 +2081,10 @@ typedef struct
    unsigned driver_pacing_interval_us;
    uint8_t driver_pacing_mode;
    uint8_t driver_pacing_reason;
+   /* Skip Duplicate Frames: the core frames left before the runloop
+    * stops pacing for skipped repeats, rearmed by each one skipped.
+    * Main thread. */
+   uint8_t dupe_skip_hold;
 
    bool threaded;
 
@@ -2296,8 +2327,8 @@ bool video_driver_cached_frame_info(
  * callback returns, so keep it short -- but note that ordinary
  * frame publishing is never blocked by a reader.
  *
- * If every hazard slot is busy the callback is invoked with
- * data == NULL rather than waiting.
+ * If every hazard slot is busy or retirement races the read, the
+ * callback is invoked with data == NULL rather than waiting.
  */
 void video_driver_cached_frame_read(
       void *userdata,
@@ -2372,6 +2403,8 @@ void video_driver_cached_frame_invalidate(void);
  * Safe from any thread.
  */
 void video_driver_cached_frame_retire(void);
+/* Bounded frame-path retirement; false leaves the mapping valid for readers. */
+bool video_driver_cached_frame_try_retire(const void *data, size_t size);
 
 bool video_driver_is_hw_context(void);
 
@@ -2395,6 +2428,15 @@ const void *video_driver_convert_xrgb2101010(
       video_driver_state_t *video_st,
       const void *data, unsigned dims,
       size_t in_pitch, size_t *out_pitch);
+
+void video_driver_convert_xrgb2101010_into(void *output,
+      const void *data, unsigned dims, size_t in_pitch, size_t out_pitch);
+
+/* True holds a driver loan and the cached-frame keeper through frame(). */
+bool video_driver_convert_frame(video_driver_state_t *video_st,
+      const video_poke_interface_t *poke, void *driver_data,
+      enum retro_pixel_format format, const void **data,
+      unsigned dims, unsigned *pitch, bool allow_lend);
 
 /**
  * config_get_video_driver_options:
@@ -2606,6 +2648,11 @@ float video_driver_get_aspect_ratio(void);
 /* The aspect ratio, as the bits of the float in an atomic word. A
  * union, not a cast through a pointer, so it stays inside what the
  * standard allows and MSVC's aliasing rules. */
+
+/* Core frames a skipped repeat keeps the runloop's dupe-skip pacing on
+ * for: long enough to span the gaps between repeats down to 1 in 8. */
+#define VIDEO_DUPE_SKIP_HOLD 8
+
 #ifdef HAVE_THREADS
 #define VIDEO_CACHE_KEEPER ((size_t)sthread_get_current_thread_id())
 #else

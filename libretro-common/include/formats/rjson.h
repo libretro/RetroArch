@@ -62,6 +62,40 @@ enum rjson_option
 typedef int (*rjson_io_t)(void* buf, int len, void *user_data);
 typedef struct rjson rjson_t;
 
+typedef struct rjson_span
+{
+   const char *data;
+   size_t length;
+   size_t count;
+   enum rjson_type type;
+} rjson_span_t;
+
+typedef bool (*rjson_span_member_t)(void *context,
+      const rjson_span_t *name, const rjson_span_t *value);
+
+/* Read one value without copying or modifying the input. Spans include quotes
+ * and container delimiters and stay valid while the caller retains the input.
+ * count is the number of immediate array elements or object members.
+ * An optional visitor receives only the root object's members; returning false
+ * aborts the scan. On failure discard all visited spans. Trailing input is left
+ * unread; length excludes leading whitespace and ends after the value. */
+bool rjson_read_span(const void *data, size_t length, rjson_span_t *value,
+      rjson_span_member_t member, void *context);
+
+/* Navigate values inside immutable input already accepted by rjson_read_span.
+ * No syntax or encoding validation is repeated. The input must start at a
+ * complete value (optionally preceded by whitespace) within that validated
+ * document; the entire supplied range must be inside a validated span.
+ * Span lifetimes and visitor behavior match rjson_read_span. */
+bool rjson_read_span_validated(const void *data, size_t length,
+      rjson_span_t *value, rjson_span_member_t member, void *context);
+
+/* Decode a quoted span directly into caller storage. Capacity must be at least
+ * length - 1 (the maximum decoded size plus NUL). written excludes the NUL. */
+bool rjson_decode_string(const char *data, size_t length,
+      char *output, size_t capacity, size_t *written);
+bool rjson_string_equal(const char *data, size_t length, const char *text);
+
 /* Create a new parser instance from various sources */
 rjson_t *rjson_open_buffer(const void *buffer, size_t len);
 rjson_t *rjson_open_string(const char *string, size_t len);

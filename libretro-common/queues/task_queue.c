@@ -2822,8 +2822,14 @@ static void retro_task_threaded_gather(void)
  * running or parked, or one finished and not yet retired. */
 static bool task_threaded_busy(void)
 {
+   /* A finishing task counts itself finished before it stops counting
+    * as running, and goes on the finished stack only after both; the
+    * gather moves it to the retire list before it stops counting as
+    * finished. The count, not the stack, so a finish between the
+    * running count and the stack is never seen as nothing at all. */
    return retro_atomic_load_acquire_int(&tasks_running_count)
          > retro_atomic_load_acquire_int(&tasks_scheduled_count)
+      || retro_atomic_load_acquire_int(&tasks_finished_count)
       || retro_atomic_load_acquire_ptr(&task_finished_stack)
       || task_retire.front;
 }

@@ -90,6 +90,21 @@ uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes)
    return bytes;
 }
 
+int64_t memstream_read_at(memstream_t *stream, void *data, uint64_t bytes,
+      int64_t offset)
+{
+   uint64_t avail;
+   if (!stream || offset < 0)
+      return -1;
+   if ((uint64_t)offset >= stream->size)
+      return 0;
+   avail = stream->size - (uint64_t)offset;
+   if (bytes > avail)
+      bytes = avail;
+   memcpy(data, stream->buf + offset, (size_t)bytes);
+   return (int64_t)bytes;
+}
+
 uint64_t memstream_write(memstream_t *stream,
       const void *data, uint64_t bytes)
 {

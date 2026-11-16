@@ -22,11 +22,26 @@ static int injected_close(int fd)
    descriptor_closes++;
    return fail_descriptor ? -1 : result;
 }
+#ifdef _WIN32
+#include <windows.h>
+/* Streams on Windows NT close their own handle: that is the descriptor
+ * close there. Nothing else in these checks closes a handle. */
+static BOOL injected_close_handle(HANDLE h)
+{
+   BOOL result = CloseHandle(h);
+   descriptor_closes++;
+   return fail_descriptor ? FALSE : result;
+}
+#define CloseHandle injected_close_handle
+#endif
 #define fclose injected_fclose
 #define close injected_close
 #include "../../../vfs/vfs_implementation.c"
 #undef fclose
 #undef close
+#ifdef _WIN32
+#undef CloseHandle
+#endif
 
 static int RETRO_CALLCONV callback_close(struct retro_vfs_file_handle *file)
 {
@@ -49,11 +64,20 @@ int main(void)
    if (file)
    {
       CHECK(filestream_write(file, "data", 4) == 4);
+#ifdef VFS_NATIVE
+      /* written through its own handle, closed with it */
+      before = descriptor_closes;
+      fail_descriptor = 1;
+      CHECK(filestream_close(file) == -1);
+      CHECK(descriptor_closes == before + 1);
+      fail_descriptor = 0;
+#else
       before = stdio_closes;
       fail_stdio = 1;
       CHECK(filestream_close(file) == -1);
       CHECK(stdio_closes == before + 1);
       fail_stdio = 0;
+#endif
    }
    native = retro_vfs_file_open_impl("close_result.bin", RETRO_VFS_FILE_ACCESS_READ, 0);
    CHECK(native != NULL);

@@ -16,9 +16,12 @@
  */
 #include <math.h>
 
+#include <features/features_cpu.h>
+#include <memalign.h>
 #include <string/stdstring.h>
 
 #include "gfx_display.h"
+#include "common/menu_ribbon.h"
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "common/win32_common.h"
 #endif
@@ -745,6 +748,7 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
    draw.matrix_data        = NULL;
    draw.texture            = p_disp->batch_texture;
    draw.pipeline_id        = 0;
+   draw.effect             = NULL;
    draw.scale_factor       = 1.0f;
    draw.rotation           = 0.0f;
    p_disp->batch_quads     = 0;
@@ -789,10 +793,10 @@ static size_t  gfx_display_mesh_scratch_cap = 0;
 gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
 {
    gfx_display_mesh_t *mesh;
-   size_t vbytes, ibytes, pbytes;
+   size_t vbytes, ibytes, pbytes, poff;
    unsigned i;
 
-   if (     !desc || !desc->vertices || !desc->vertex_count
+   if (     !desc || !desc->vertex_count
          || desc->vertex_count > 65536
          || (desc->indices && !desc->index_count))
       return NULL;
@@ -810,22 +814,31 @@ gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
       ? 2 * sizeof(float) * (size_t)desc->vertex_count : 0;
    /* One allocation: the header, the vertices, the positions, then the
     * indices - in that order, which keeps each aligned for its type */
-   if (!(mesh = (gfx_display_mesh_t*)malloc(sizeof(*mesh)
-               + vbytes + pbytes + ibytes)))
+   poff = (sizeof(*mesh) + vbytes + GFX_DISPLAY_MESH_ALIGN - 1)
+      & ~(size_t)(GFX_DISPLAY_MESH_ALIGN - 1);
+   if (!(mesh = (gfx_display_mesh_t*)memalign_alloc(GFX_DISPLAY_MESH_ALIGN,
+               poff + pbytes + ibytes)))
       return NULL;
    mesh->vertices     = (gfx_display_mesh_vertex_t*)(mesh + 1);
-   mesh->positions    = pbytes ? (float*)((uint8_t*)mesh->vertices + vbytes) : NULL;
+   mesh->positions    = pbytes ? (float*)((uint8_t*)mesh + poff) : NULL;
    mesh->indices      = ibytes
-      ? (uint16_t*)((uint8_t*)mesh->vertices + vbytes + pbytes) : NULL;
+      ? (uint16_t*)((uint8_t*)mesh + poff + pbytes) : NULL;
    mesh->vertex_count = desc->vertex_count;
    mesh->index_count  = desc->indices ? desc->index_count : 0;
    mesh->topology     = desc->topology;
    mesh->id           = gfx_display_mesh_next_id++;
-   memcpy(mesh->vertices, desc->vertices, vbytes);
+   if (desc->vertices)
+      memcpy(mesh->vertices, desc->vertices, vbytes);
+   else
+   {
+      memset(mesh->vertices, 0, vbytes);
+      if (pbytes)
+         memset(mesh->positions, 0, pbytes);
+   }
    if (ibytes)
       memcpy(mesh->indices, desc->indices, ibytes);
 
-   if (mesh->positions)
+   if (mesh->positions && desc->vertices)
       for (i = 0; i < desc->vertex_count; i++)
       {
          mesh->positions[2 * i]     = desc->vertices[i].x;
@@ -836,12 +849,47 @@ gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
 
 void gfx_display_mesh_free(gfx_display_mesh_t *mesh)
 {
-   free(mesh);
+   if (mesh && mesh == dispgfx_st.bloom_mesh)
+   {
+      dispgfx_st.bloom_mesh   = NULL;
+      dispgfx_st.bloom_wanted = false;
+      dispgfx_st.bloom_ready  = false;
+   }
+   memalign_free(mesh);
 }
 
 const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void)
 {
    return &gfx_display_mesh_fs;
+}
+
+#ifdef HAVE_SHADERPIPELINE
+/* The ribbon's state, kept for the display's life rather than
+ * allocated on the first ribbon frame */
+static menu_ribbon_t gfx_display_ribbon_st;
+typedef char gfx_display_ribbon_bytes_check[
+   (sizeof(gfx_display_ribbon_st.data) == GFX_DISPLAY_RIBBON_BYTES) ? 1 : -1];
+#endif
+
+const float *gfx_display_ribbon_ubo(gfx_display_t *p_disp, float yflip)
+{
+   if (!p_disp || !p_disp->ribbon)
+      return NULL;
+   p_disp->ribbon->header[0] = p_disp->ribbon->data[0][0];
+   p_disp->ribbon->header[1] = yflip;
+   p_disp->ribbon->header[2] = p_disp->ribbon->data[49][2];
+   return p_disp->ribbon->header;
+}
+
+const float *gfx_display_ribbon_data(gfx_display_t *p_disp)
+{
+   return p_disp && p_disp->ribbon ? &p_disp->ribbon->data[0][0] : NULL;
+}
+
+void gfx_display_ribbon_vertex(const float *data, const float *p,
+      float *position, float *lighting)
+{
+   menu_ribbon_vertex(data, p, position, lighting);
 }
 
 struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp)
@@ -854,12 +902,89 @@ struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp)
    coords.tex_coord     = NULL;
    coords.color         = NULL;
    coords.lut_tex_coord = NULL;
-   coords.vertices      = mesh->vertex_count;
+   coords.vertices      = p_disp->effect_vertices;
    return &coords;
 }
 
-/* An effect, drawn the way the driver draws its menu pipelines: over
- * the background's draw state, with the pipeline's own geometry */
+/* The installed effects. A slot is filled once, on the menu's thread,
+ * and its desc never changes after; the driver's program is made and
+ * dropped on the drawing thread. */
+#define GFX_DISPLAY_EFFECTS_MAX 16
+
+struct gfx_display_effect
+{
+   const gfx_display_effect_desc_t *desc;
+   void *program;
+   /* The driver was asked for its program */
+   bool made;
+};
+
+static gfx_display_effect_t gfx_display_effects[GFX_DISPLAY_EFFECTS_MAX];
+static retro_atomic_int_t gfx_display_effect_count;
+/* Raised for a new effect or a new driver, lowered by the drawing
+ * thread once it has made every program */
+static retro_atomic_int_t gfx_display_effects_pending;
+
+gfx_display_effect_t *gfx_display_effect_install(
+      const gfx_display_effect_desc_t *desc)
+{
+   int i;
+   int count = retro_atomic_load_acquire_int(&gfx_display_effect_count);
+   if (!desc)
+      return NULL;
+   for (i = 0; i < count; i++)
+      if (gfx_display_effects[i].desc == desc)
+         return &gfx_display_effects[i];
+   if (count >= GFX_DISPLAY_EFFECTS_MAX)
+      return NULL;
+   gfx_display_effects[count].desc    = desc;
+   gfx_display_effects[count].program = NULL;
+   gfx_display_effects[count].made    = false;
+   retro_atomic_store_release_int(&gfx_display_effect_count, count + 1);
+   retro_atomic_store_release_int(&gfx_display_effects_pending, 1);
+   return &gfx_display_effects[count];
+}
+
+void gfx_display_effects_lost(void)
+{
+   int i;
+   int count = retro_atomic_load_acquire_int(&gfx_display_effect_count);
+   for (i = 0; i < count; i++)
+   {
+      gfx_display_effects[i].program = NULL;
+      gfx_display_effects[i].made    = false;
+   }
+   dispgfx_st.bloom_effect = NULL;
+   dispgfx_st.bloom_wanted = false;
+   dispgfx_st.bloom_ready  = false;
+   retro_atomic_store_release_int(&gfx_display_effects_pending, 1);
+}
+
+#ifdef HAVE_SHADERPIPELINE
+/* Every installed effect's program, made at once, so that a menu
+ * switching effects later never waits on a compile */
+static void gfx_display_effects_make(gfx_display_ctx_driver_t *dispctx,
+      void *userdata)
+{
+   int i, count;
+   if (!retro_atomic_load_acquire_int(&gfx_display_effects_pending))
+      return;
+   retro_atomic_store_release_int(&gfx_display_effects_pending, 0);
+   count = retro_atomic_load_acquire_int(&gfx_display_effect_count);
+   for (i = 0; i < count; i++)
+   {
+      gfx_display_effect_t *fx = &gfx_display_effects[i];
+      if (fx->made)
+         continue;
+      fx->made    = true;
+      fx->program = dispctx->effect_install
+         ? dispctx->effect_install(userdata, fx->desc) : NULL;
+   }
+}
+#endif
+
+/* An effect, drawn with the program the driver made of it: over the
+ * background's draw state, with the effect's own geometry */
 static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx, void *userdata,
       unsigned video_dims, const gfx_display_mesh_t *mesh,
@@ -868,6 +993,15 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
 #ifdef HAVE_SHADERPIPELINE
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
+   retro_time_t now;
+   unsigned flags;
+
+   if (!md->effect)
+      return;
+   gfx_display_effects_make(dispctx, userdata);
+   if (!md->effect->program)
+      return;
+   flags             = md->effect->desc->flags;
 
    draw.pos          = VIDEO_POS_PACK(0, 0);
    draw.texture      = md->texture;
@@ -877,49 +1011,132 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
    draw.tex_coord    = NULL;
    draw.vertex_count = 4;
    draw.pipeline_id  = 0;
+   draw.effect       = NULL;
    /* The drivers that stream an effect's geometry read its positions */
    if (!md->color || !mesh->positions)
       return;
    /* The colour keeps the alpha it carries */
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true,
          md->color[3]);
+   draw.effect       = md->effect->program;
 
-   switch (md->program)
+   now = cpu_features_get_time_usec();
+   if (!p_disp->effect_start_time || now < p_disp->effect_start_time)
+      p_disp->effect_start_time = now;
+   p_disp->effect_time = (float)fmod(
+         (now - p_disp->effect_start_time) * 0.0000006, 65536.0);
+   if (flags & GFX_EFFECT_RIBBON)
    {
-      case GFX_MESH_PROGRAM_RIBBON:
-         draw.pipeline_id = VIDEO_SHADER_MENU;
-         break;
-      case GFX_MESH_PROGRAM_RIBBON_SIMPLE:
-         draw.pipeline_id = VIDEO_SHADER_MENU_2;
-         break;
-      case GFX_MESH_PROGRAM_SNOW_SIMPLE:
-         draw.pipeline_id = VIDEO_SHADER_MENU_3;
-         break;
-      case GFX_MESH_PROGRAM_SNOW:
-         draw.pipeline_id = VIDEO_SHADER_MENU_4;
-         break;
-      case GFX_MESH_PROGRAM_BOKEH:
-         draw.pipeline_id = VIDEO_SHADER_MENU_5;
-         break;
-      case GFX_MESH_PROGRAM_SNOWFLAKE:
-         draw.pipeline_id = VIDEO_SHADER_MENU_6;
-         break;
-      default:
-         draw.pipeline_id = VIDEO_SHADER_STOCK_BLEND;
-         break;
+      unsigned dims  = gfx_display_output_dims(p_disp, video_dims);
+      p_disp->ribbon = &gfx_display_ribbon_st;
+      /* Moved on by the prepass already, for the glow it drew */
+      if (p_disp->ribbon_fresh)
+         p_disp->ribbon->data[49][2] = md->color[3];
+      else
+         menu_ribbon_update(p_disp->ribbon, now * 0.000001,
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), md->color[3]);
+      p_disp->ribbon_fresh = false;
    }
-
-   p_disp->effect_mesh = mesh;
+   p_disp->effect_mesh     = mesh;
+   p_disp->effect_vertices = (md->vertex_count
+         && md->vertex_count < mesh->vertex_count)
+      ? md->vertex_count : mesh->vertex_count;
+   if (     (flags & GFX_EFFECT_RIBBON) && md->bloom
+         && dispctx->bloom_begin && dispctx->bloom_end)
+   {
+      unsigned output_dims = gfx_display_output_dims(p_disp, video_dims);
+      gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
+      if (dispctx->bloom_composite)
+      {
+         p_disp->bloom_mesh     = mesh;
+         p_disp->bloom_effect   = draw.effect;
+         p_disp->bloom_vertices = p_disp->effect_vertices;
+         p_disp->bloom_dims     = output_dims;
+         p_disp->bloom_alpha  = md->color[3];
+         p_disp->bloom_wanted = true;
+      }
+      if (p_disp->bloom_ready)
+         dispctx->bloom_composite(userdata, output_dims);
+      else
+      {
+         unsigned bloom_dims = dispctx->bloom_begin(userdata, output_dims,
+               false);
+         if (bloom_dims)
+         {
+            draw.dims = bloom_dims;
+            if (dispctx->draw_pipeline)
+               dispctx->draw_pipeline(&draw, p_disp, userdata, bloom_dims);
+            dispctx->draw(&draw, userdata, bloom_dims);
+            dispctx->bloom_end(userdata, output_dims, false);
+            draw.dims = video_dims;
+         }
+      }
+      p_disp->bloom_ready = false;
+   }
    if (dispctx->draw_pipeline)
       dispctx->draw_pipeline(&draw, p_disp, userdata, video_dims);
    gfx_display_draw(dispctx, &draw, userdata, video_dims);
    p_disp->effect_mesh = NULL;
 
-   /* Wrapped where the step is still exact: 0.01 stays representable
-    * to about 167772, and a wrap every 30 hours of menu is not seen */
-   p_disp->effect_time += 0.01f;
-   if (p_disp->effect_time > 65536.0f)
-      p_disp->effect_time -= 65536.0f;
+#endif
+}
+
+void gfx_display_bloom_prepass(void *userdata)
+{
+#ifdef HAVE_SHADERPIPELINE
+   gfx_display_t *p_disp             = &dispgfx_st;
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   const gfx_display_mesh_t *mesh    = p_disp->bloom_mesh;
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
+   float color[16];
+   unsigned i, bloom_dims;
+   unsigned output_dims              = p_disp->bloom_dims;
+
+   p_disp->bloom_ready  = false;
+   p_disp->ribbon_fresh = false;
+   if (     !p_disp->bloom_wanted || !mesh || !dispctx
+         || !dispctx->bloom_composite || !output_dims
+         || !p_disp->bloom_effect)
+      return;
+   p_disp->bloom_wanted = false;
+
+   p_disp->ribbon = &gfx_display_ribbon_st;
+   menu_ribbon_update(p_disp->ribbon,
+         cpu_features_get_time_usec() * 0.000001,
+         VIDEO_SCALE_W(output_dims), VIDEO_SCALE_H(output_dims),
+         p_disp->bloom_alpha);
+   p_disp->ribbon_fresh = true;
+   if (!(bloom_dims = dispctx->bloom_begin(userdata, output_dims, true)))
+      return;
+
+   for (i = 0; i < 16; i++)
+      color[i] = 1.0f;
+   draw.pos          = VIDEO_POS_PACK(0, 0);
+   draw.texture      = 0;
+   draw.dims         = bloom_dims;
+   draw.color        = color;
+   draw.vertex       = NULL;
+   draw.tex_coord    = NULL;
+   draw.vertex_count = 4;
+   draw.pipeline_id  = 0;
+   draw.effect       = NULL;
+   gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true,
+         p_disp->bloom_alpha);
+   draw.effect       = p_disp->bloom_effect;
+
+   p_disp->effect_mesh     = mesh;
+   p_disp->effect_vertices = (p_disp->bloom_vertices
+         && p_disp->bloom_vertices < mesh->vertex_count)
+      ? p_disp->bloom_vertices : mesh->vertex_count;
+   gfx_display_blend_begin(dispctx, userdata);
+   if (dispctx->draw_pipeline)
+      dispctx->draw_pipeline(&draw, p_disp, userdata, bloom_dims);
+   dispctx->draw(&draw, userdata, bloom_dims);
+   gfx_display_blend_end(dispctx, userdata);
+   p_disp->effect_mesh     = NULL;
+   dispctx->bloom_end(userdata, output_dims, true);
+   p_disp->bloom_ready     = true;
 #endif
 }
 
@@ -1031,6 +1248,7 @@ static void gfx_display_mesh_draw_cpu(gfx_display_t *p_disp,
    draw.texture         = (md->program == GFX_MESH_PROGRAM_TEXTURED)
       ? md->texture : 0;
    draw.pipeline_id     = 0;
+   draw.effect          = NULL;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
    draw.color           = col;
@@ -1050,7 +1268,7 @@ void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
 
    if (!p_disp || !mesh || !md || !(dispctx = p_disp->dispctx))
       return;
-   if (md->program >= GFX_MESH_PROGRAM_BLEND)
+   if (md->program == GFX_MESH_PROGRAM_EFFECT)
    {
       gfx_display_mesh_draw_effect(p_disp, dispctx, userdata, video_dims,
             mesh, md);
@@ -1226,6 +1444,7 @@ void gfx_display_draw_quad(
    draw.matrix_data     = NULL;
    draw.texture         = texture ? *texture : 0;
    draw.pipeline_id     = 0;
+   draw.effect          = NULL;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
 
@@ -1371,6 +1590,7 @@ void gfx_display_draw_texture_slice(
    draw.coords              = &coords;
    draw.matrix_data         = mymat;
    draw.pipeline_id         = 0;
+   draw.effect              = NULL;
    coords.color             = (const float*)(color == NULL ? colors : color);
 
    draw.texture             = texture;
@@ -1552,6 +1772,7 @@ void gfx_display_draw_cursor(
    draw.matrix_data     = NULL;
    draw.texture         = texture;
    draw.pipeline_id     = 0;
+   draw.effect          = NULL;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
 
@@ -1706,6 +1927,15 @@ enum texture_filter_type gfx_display_texture_filter_latched(void)
 void gfx_display_free(void)
 {
    gfx_display_t *p_disp       = &dispgfx_st;
+#ifdef HAVE_SHADERPIPELINE
+   memset(&gfx_display_ribbon_st, 0, sizeof(gfx_display_ribbon_st));
+#endif
+   p_disp->ribbon = NULL;
+   p_disp->bloom_mesh   = NULL;
+   p_disp->bloom_effect = NULL;
+   p_disp->bloom_wanted = false;
+   p_disp->bloom_ready  = false;
+   p_disp->ribbon_fresh = false;
    free(gfx_display_mesh_scratch);
    gfx_display_mesh_scratch     = NULL;
    gfx_display_mesh_scratch_cap = 0;

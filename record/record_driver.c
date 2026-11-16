@@ -159,6 +159,46 @@ const char* config_get_record_driver_options(void)
    return char_list_new_special(STRING_LIST_RECORD_DRIVERS, NULL);
 }
 
+const record_driver_t *recording_driver_find(const char *ident)
+{
+   unsigned i;
+   if (!ident || !*ident)
+      return NULL;
+   for (i = 0; record_drivers[i]; i++)
+      if (strcmp(record_drivers[i]->ident, ident) == 0)
+         return record_drivers[i];
+   return NULL;
+}
+
+bool recording_driver_can_stream(const char *ident)
+{
+   const record_driver_t *driver = recording_driver_find(ident);
+   if (!driver || !driver->init)
+      return false;
+   if (strcmp(driver->ident, "ffmpeg") == 0)
+      return true;
+   if (driver == &record_metal)
+      return record_metal_can_stream();
+   if (driver == &record_nvenc)
+      return record_nvenc_can_stream();
+   return false;
+}
+
+bool recording_driver_streaming_mode_supported(const char *ident, unsigned mode)
+{
+   if (mode > STREAMING_MODE_CUSTOM || !recording_driver_can_stream(ident))
+      return false;
+   if (strcmp(ident, "ffmpeg") == 0)
+      return true;
+   if (mode == STREAMING_MODE_LOCAL)
+      return false;
+#ifndef HAVE_SSL
+   if (mode == STREAMING_MODE_FACEBOOK || mode == STREAMING_MODE_KICK)
+      return false;
+#endif
+   return true;
+}
+
 static void find_record_driver(void)
 {
    settings_t *settings = config_get_ptr();
@@ -509,18 +549,36 @@ bool recording_init(void)
    if (gpu_native)
    {
       struct video_viewport vp;
-      memset(&vp, 0, sizeof(vp));
-      if (!video_driver_get_viewport_info(&vp)) return false;
-      if (!VIDEO_SCALE_W(menu_source ? vp.full_dims : vp.dims)
-            || !VIDEO_SCALE_H(menu_source ? vp.full_dims : vp.dims))
+      vp.pos        = 0;
+      vp.dims       = 0;
+      vp.full_dims  = 0;
+      if (!video_driver_get_viewport_info(&vp))
+         return false;
+
+      if (menu_source)
       {
-         recording_st->driver = mc_native ? &record_mediacodec
+         if (!VIDEO_SCALE_W(vp.full_dims) || !VIDEO_SCALE_H(vp.full_dims))
+         {
+            recording_st->driver = mc_native ? &record_mediacodec
                : metal_native ? &record_metal : &record_nvenc;
-         return recording_gpu_defer_start(recording_st->driver);
+            return recording_gpu_defer_start(recording_st->driver);
+         }
+         params.out_dims     = vp.full_dims;
+         params.fb_dims      = vp.full_dims;
       }
-      params.out_dims = params.fb_dims = menu_source ? vp.full_dims : vp.dims;
-      params.pix_fmt = FFEMU_PIX_ARGB8888;
-      params.aspect_ratio = (float)VIDEO_SCALE_W(params.out_dims)
+      else
+      {
+         if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
+         {
+            recording_st->driver = mc_native ? &record_mediacodec
+               : metal_native ? &record_metal : &record_nvenc;
+            return recording_gpu_defer_start(recording_st->driver);
+         }
+         params.out_dims     = vp.dims;
+         params.fb_dims      = vp.dims;
+      }
+      params.pix_fmt         = FFEMU_PIX_ARGB8888;
+      params.aspect_ratio    = (float)VIDEO_SCALE_W(params.out_dims)
             / VIDEO_SCALE_H(params.out_dims);
       recording_st->gpu_dims = params.out_dims;
       recording_st->gpu_bgrx = false;

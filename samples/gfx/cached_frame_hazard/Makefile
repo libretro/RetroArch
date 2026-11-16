@@ -1,16 +1,15 @@
 include ../../sample_objdir.mk
 
 TARGET := cached_frame_hazard_test
+.DEFAULT_GOAL := all
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
 
-# Self-contained: the hazard protocol under test is reproduced in the
-# harness (see the file header for why), so the only tree dependency
-# is rthreads.c for portable threads and locks.  retro_atomic.h and
-# retro_miscellaneous.h are header-only.
+# Lifetime stress plus a deterministic progress oracle over the shipping reader.
 SOURCES := \
 	cached_frame_hazard_test.c \
-	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
@@ -30,17 +29,33 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+PROGRESS_TARGET := cached_frame_progress_test$(suffix $(TARGET))
+FALLBACK_TARGET := cached_frame_progress_fallback_test$(suffix $(TARGET))
+READER := $(SAMPLE_OBJDIR)/reader.inc
+
+$(READER): ../../../gfx/video_driver.c extract_reader.py
+	@mkdir -p $(@D)
+	python3 extract_reader.py $< $@
+
+$(PROGRESS_TARGET): cached_frame_progress_test.c $(READER)
+	$(CC) $(CFLAGS) -std=c89 -I$(SAMPLE_OBJDIR) -o $@ $< $(LDFLAGS)
+
+$(FALLBACK_TARGET): cached_frame_progress_test.c $(READER)
+	$(CC) $(CFLAGS) -std=c89 -DTEST_FALLBACK -I$(SAMPLE_OBJDIR) -o $@ $< $(LDFLAGS)
+
+all: $(TARGET) $(PROGRESS_TARGET) $(FALLBACK_TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
 check: all
 	./$(TARGET)
+	./$(PROGRESS_TARGET)
+	./$(FALLBACK_TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) $(PROGRESS_TARGET) $(FALLBACK_TARGET)
 
 .PHONY: all check clean
 

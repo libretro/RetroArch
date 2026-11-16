@@ -10,7 +10,9 @@
 
 RC_BEGIN_C_DECLS
 
-/* implementation abstracted in rc_client_internal.h */
+/* A client is owned by one thread. Call its APIs and deliver server responses
+ * on that thread; other threads hand work to the owner through a message queue.
+ * Implementation abstracted in rc_client_internal.h. */
 typedef struct rc_client_t rc_client_t;
 typedef struct rc_client_async_handle_t rc_client_async_handle_t;
 
@@ -26,6 +28,7 @@ typedef uint32_t (RC_CCONV *rc_client_read_memory_func_t)(uint32_t address, uint
 
 /**
  * Internal method passed to rc_client_server_call_t to process the server response.
+ * Callback data remains alive until its response is delivered.
  */
 typedef void (RC_CCONV *rc_client_server_callback_t)(const rc_api_server_response_t* server_response, void* callback_data);
 

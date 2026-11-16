@@ -587,6 +587,149 @@ static const char fs_subgroup[] =
    "   col = vec4(subgroupMax(gl_FragCoord.x));\n"
    "}\n";
 
+/* What an emulator's generated stages say that the frontend's never do:
+ * #version 430, gl_WorkGroupSize, a uniform block laid out std430 whose
+ * one member is an array of unstated length (GL_EXT_scalar_block_layout,
+ * GL_EXT_uniform_buffer_unsized_array), and macros that name themselves. */
+static const char cs_work_group[] =
+   "#version 430\n"
+   "layout(local_size_x = 32, local_size_y = 4) in;\n"
+   "layout(std430, set = 0, binding = 0) buffer ssbo { uint data[]; };\n"
+   "void main()\n"
+   "{\n"
+   "   uint row = gl_NumWorkGroups.x * gl_WorkGroupSize.x;\n"
+   "   uint at  = gl_GlobalInvocationID.y * row + gl_GlobalInvocationID.x;\n"
+   "   data[at] = gl_WorkGroupSize.x + gl_WorkGroupSize.y * 100u + gl_WorkGroupSize.z * 10000u;\n"
+   "}\n";
+
+static const char vs_unsized_uniform[] =
+   "#version 450\n"
+   "#extension GL_EXT_scalar_block_layout : require\n"
+   "#extension GL_EXT_uniform_buffer_unsized_array : require\n"
+   "struct ctx_t { mat4 m; uint a; uint b; float c; float tail[3]; };\n"
+   "layout(std430, set = 0, binding = 3) uniform Contexts { ctx_t ctxs[]; };\n"
+   "layout(std430, set = 0, binding = 4) uniform Constants { vec4 vc[]; };\n"
+   "layout(push_constant) uniform push { uint which; };\n"
+   "layout(location = 0) in vec4 pos;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = ctxs[which].m * pos * ctxs[which].tail[2] + vc[ctxs[which].a];\n"
+   "}\n";
+
+/* draw_offset names itself through params(): the name stays a member */
+static const char vs_self_macro[] =
+   "#version 450\n"
+   "struct params_t { uint draw_offset; uint bits; };\n"
+   "layout(std140, set = 0, binding = 0) uniform Params { params_t all_params[4]; };\n"
+   "layout(push_constant) uniform push { uint which; };\n"
+   "#define params() all_params[which]\n"
+   "#define draw_offset params().draw_offset\n"
+   "#define bits_of() params().bits\n"
+   "#define get_bits(v, at, n) (((v) >> (at)) & ((1u << (n)) - 1u))\n"
+   "#define enabled(i) (get_bits(bits_of() + draw_offset, (i) * 2, 2) != 0u)\n"
+   "layout(location = 0) in vec4 pos;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = enabled(1) ? pos : pos * float(draw_offset);\n"
+   "}\n";
+
+/* -- and ++ through several components of a vector at once; a fragment
+ * stage's part of a push block that starts where the vertex stage's ends;
+ * the stencil reference written by the stage. */
+static const char cs_swizzle_step[] =
+   "#version 450\n"
+   "layout(local_size_x = 8) in;\n"
+   "layout(std430, set = 0, binding = 0) buffer ssbo { uvec4 data[]; };\n"
+   "struct inv_t { uvec3 size; uvec3 size_log2; };\n"
+   "void main()\n"
+   "{\n"
+   "   inv_t inv;\n"
+   "   uvec2 was;\n"
+   "   inv.size      = uvec3(64u, 32u, 4u);\n"
+   "   inv.size_log2 = uvec3(6u, 5u, 2u);\n"
+   "   inv.size_log2.xy --;\n"
+   "   was = inv.size.xy++;\n"
+   "   ++inv.size.zx;\n"
+   "   data[gl_GlobalInvocationID.x] = uvec4(inv.size_log2.xy + was, inv.size.xz);\n"
+   "}\n";
+
+static const char fs_member_offset[] =
+   "#version 450\n"
+   "layout(push_constant) uniform FragmentConfiguration\n"
+   "{\n"
+   "   layout(offset = 68)\n"
+   "   uint  config;\n"
+   "   float timestamp;\n"
+   "   vec4  params;\n"
+   "};\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main() { col = params * timestamp * float(config); }\n";
+
+static const char fs_stencil_export[] =
+   "#version 450\n"
+   "#extension GL_ARB_shader_stencil_export : enable\n"
+   "layout(location = 0) in vec2 uv;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_FragDepth = uv.x;\n"
+   "   gl_FragStencilRefARB = int(uv.y * 255.0);\n"
+   "}\n";
+
+/* One multisampled image, read and written a sample at a time: as a
+ * storage image by a compute stage that resolves it, and as a sampler by
+ * a fragment stage that resolves depth and stencil. */
+static const char cs_resolve_ms[] =
+   "#version 450\n"
+   "layout(local_size_x = 8, local_size_y = 8) in;\n"
+   "layout(set = 0, binding = 0, rg16f) uniform readonly restrict image2DMS multisampled;\n"
+   "layout(set = 0, binding = 1) uniform writeonly restrict image2D resolve;\n"
+   "void main()\n"
+   "{\n"
+   "   ivec2 size = imageSize(multisampled);\n"
+   "   ivec2 at   = ivec2(gl_GlobalInvocationID.xy);\n"
+   "   vec4  sum  = vec4(0.0);\n"
+   "   int   i;\n"
+   "   if (any(greaterThanEqual(at, size)))\n"
+   "      return;\n"
+   "   for (i = 0; i < 4; i++)\n"
+   "      sum += imageLoad(multisampled, at, i);\n"
+   "   imageStore(resolve, at, sum * 0.25);\n"
+   "}\n";
+
+static const char cs_unresolve_ms[] =
+   "#version 450\n"
+   "layout(local_size_x = 8, local_size_y = 8) in;\n"
+   "layout(set = 0, binding = 0) uniform writeonly restrict image2DMS multisampled;\n"
+   "layout(set = 0, binding = 1, rgba8) uniform readonly restrict image2D resolve;\n"
+   "void main()\n"
+   "{\n"
+   "   ivec2 at = ivec2(gl_GlobalInvocationID.xy);\n"
+   "   imageStore(multisampled, at, int(gl_LocalInvocationID.x & 3u), imageLoad(resolve, at));\n"
+   "}\n";
+
+static const char fs_resolve_ms[] =
+   "#version 450\n"
+   "layout(set = 0, binding = 0) uniform sampler2DMS fs0;\n"
+   "layout(set = 0, binding = 1) uniform usampler2DMS fs1;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   ivec2 at = ivec2(gl_FragCoord.xy) % textureSize(fs0);\n"
+   "   col = vec4(texelFetch(fs0, at, 2).x, float(texelFetch(fs1, at, gl_SampleID).x), 0.0, 1.0);\n"
+   "}\n";
+
+static const char cs_read_no_format[] =
+   "#version 450\n"
+   "layout(local_size_x = 8) in;\n"
+   "layout(set = 0, binding = 0) uniform readonly image2D src;\n"
+   "layout(set = 0, binding = 1, rgba8) uniform writeonly image2D dst;\n"
+   "void main() { imageStore(dst, ivec2(0), imageLoad(src, ivec2(0))); }\n";
+
+static const char fs_old_version[] =
+   "#version 410\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main() { col = vec4(1.0); }\n";
+
 static enum rslc_stage cur_stage = RSLC_STAGE_FRAGMENT;
 
 static bool compile(const char *src, enum rslc_dst dst, unsigned version,
@@ -602,6 +745,104 @@ static bool compile(const char *src, enum rslc_dst dst, unsigned version,
 }
 
 /* Whether the module declares the capability. */
+/* GL_EXT_fragment_shader_barycentric: a varying as each vertex's value,
+ * interpolated by the stage itself. */
+static const char fs_barycentric[] =
+   "#version 450\n"
+   "#extension GL_EXT_fragment_shader_barycentric : require\n"
+   "layout(location = 0) pervertexEXT in vec4 tc_raw[3];\n"
+   "layout(location = 1) in vec4 plain;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "vec4 interpolate(const in vec4[3] v)\n"
+   "{\n"
+   "   return v[0] + (v[1] - v[0]) * gl_BaryCoordEXT.y + (v[2] - v[0]) * gl_BaryCoordEXT.z;\n"
+   "}\n"
+   "void main() { col = interpolate(tc_raw) + plain * gl_BaryCoordNoPerspEXT.x; }\n";
+
+/* A multisampled attachment read a sample at a time, and a multisampled
+ * sampler asked how many it has. */
+static const char fs_subpass_ms[] =
+   "#version 450\n"
+   "layout(input_attachment_index = 0, set = 0, binding = 0) uniform subpassInputMS att;\n"
+   "layout(input_attachment_index = 1, set = 0, binding = 1) uniform subpassInput plain;\n"
+   "layout(set = 0, binding = 2) uniform sampler2DMS tex;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   int n = textureSamples(tex);\n"
+   "   col = subpassLoad(att, gl_SampleID) + subpassLoad(plain) + vec4(float(n));\n"
+   "}\n";
+
+/* What the SPIR-V for ordinary code should look like: one access chain
+ * for a path into a block, a const in parameter handed over as a value,
+ * each pointer type and each constant vector made once. */
+static const char fs_lean[] =
+   "#version 450\n"
+   "struct item { vec4 a; vec4 b[2]; };\n"
+   "layout(set = 0, binding = 0, std140) uniform Block { item items[4]; int which; };\n"
+   "layout(location = 0) in vec4 v;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "vec4 pick(const in vec4 x, const in vec4[3] arr, in vec4 y, const in int i)\n"
+   "{\n"
+   "   y += x + vec4(0.0, 0.0, 0.0, 1.0);\n"
+   "   return arr[i] + y + arr[1];\n"
+   "}\n"
+   "void main()\n"
+   "{\n"
+   "   vec4 arr[3] = vec4[3](v, v * 2.0, vec4(0.0, 0.0, 0.0, 1.0));\n"
+   "   item whole = items[which];\n"
+   "   col = pick(items[which].b[1], arr, vec4(0.0, 0.0, 0.0, 1.0), which)\n"
+   "      * items[which].b[1].z + whole.a + items[which].a;\n"
+   "}\n";
+
+static const char fs_const_in_written[] =
+   "#version 450\n"
+   "layout(location = 0) out vec4 col;\n"
+   "float f(const in float x) { x = 1.0; return x; }\n"
+   "void main() { col = vec4(f(2.0)); }\n";
+
+/* length() of a buffer block's unsized last member: the buffer's to say,
+ * named bare and through the block's instance. */
+static const char cs_array_length[] =
+   "#version 450\n"
+   "layout(local_size_x = 32) in;\n"
+   "layout(set = 0, binding = 0, std430) readonly buffer In { uint head; uint src[]; };\n"
+   "layout(set = 0, binding = 1, std430) buffer Out { uint sum; uint seen[]; } o;\n"
+   "void main()\n"
+   "{\n"
+   "   if (gl_GlobalInvocationID.x < src.length() && int(gl_GlobalInvocationID.x) < o.seen.length())\n"
+   "      atomicAdd(o.sum, src[gl_GlobalInvocationID.x] + head);\n"
+   "}\n";
+
+/* What the parallel-ps3 vertex programs carry on a GPU with 64-bit floats
+ * and a driver that wants invariance asked for: a position made invariant
+ * after its declaration, and a depth worked out in doubles. */
+static const char vs_double[] =
+   "#version 450\n"
+   "layout(location = 0) in vec4 in_pos;\n"
+   "layout(location = 1) in vec2 planes;\n"
+   "invariant gl_Position;\n"
+   "vec4 apply_zclip_xform(const in vec4 pos, const in float near_plane, const in float far_plane)\n"
+   "{\n"
+   "   if (pos.w != 0.0)\n"
+   "   {\n"
+   "      const float real_n = min(far_plane, near_plane);\n"
+   "      const float real_f = max(far_plane, near_plane);\n"
+   "      const double depth_range = double(real_f - real_n);\n"
+   "      const double inv_range = (depth_range > 0.000001) ? (1.0 / (depth_range * pos.w)) : 0.0;\n"
+   "      const double actual_d = (double(pos.z) - double(real_n * pos.w)) * inv_range;\n"
+   "      const double nearest_d = floor(actual_d + 0.5);\n"
+   "      const double epsilon = (inv_range * pos.w) / 16777215.;\n"
+   "      const double d = mix(actual_d, nearest_d, abs(actual_d - nearest_d) < epsilon);\n"
+   "      return vec4(pos.xy, float(d * pos.w), pos.w);\n"
+   "   }\n"
+   "   else\n"
+   "   {\n"
+   "      return pos;\n"
+   "   }\n"
+   "}\n"
+   "void main() { gl_Position = apply_zclip_xform(in_pos, planes.x, planes.y); }\n";
+
 static bool has_capability(const uint32_t *w, size_t n, uint32_t cap)
 {
    size_t i = 5;
@@ -1346,6 +1587,415 @@ int main(int argc, char **argv)
          write_spirv(dir, "bool_depth", &r);
          rslc_result_free(&r, &o);
       }
+   }
+
+   /* An emulator's generated stages */
+   {
+      char err[256];
+      struct rslc_opts   o;
+      struct rslc_result r;
+      size_t at = 0;
+
+      /* #version 430 and gl_WorkGroupSize: a constant, (32, 4, 1) */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_work_group, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "work_group: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned c32 = 0, folded = 0;
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            /* OpConstant: the x size the row is multiplied by, and the
+             * three sizes folded into one number */
+            if ((r.spirv[i] & 0xffffu) == 43 && (r.spirv[i] >> 16) == 4)
+            {
+               c32    += r.spirv[i + 3] == 32;
+               folded += r.spirv[i + 3] == 32 + 4 * 100 + 1 * 10000;
+            }
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(c32 == 1 && folded == 1);
+         write_spirv(dir, "work_group", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_work_group, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      if (r.blob)
+         rslc_result_free(&r, &o);
+
+      /* 410 is still not this dialect */
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_old_version, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "#version") != NULL);
+
+      /* A uniform block that says std430 and ends unsized: two runtime
+       * arrays (29), the struct's float[3] straight after its three
+       * scalars at 76 - std140 would round it up to 80 - and SPIR-V only */
+      cur_stage = RSLC_STAGE_VERTEX;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(vs_unsized_uniform, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "unsized_uniform: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned tail_at_76 = 0, tail_at_80 = 0;
+         CHECK(count_op(r.spirv, r.spirv_len, 29, &at) == 2);
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            /* OpMemberDecorate type member Offset n, of member 4 */
+            if ((r.spirv[i] & 0xffffu) == 72 && (r.spirv[i] >> 16) == 5
+                  && r.spirv[i + 2] == 4 && r.spirv[i + 3] == 35)
+            {
+               tail_at_76 += r.spirv[i + 4] == 76;
+               tail_at_80 += r.spirv[i + 4] == 80;
+            }
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(tail_at_76 == 1 && tail_at_80 == 0);
+         write_spirv(dir, "unsized_uniform", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(vs_unsized_uniform, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* A macro that names itself through another, as an argument that
+       * is scanned twice: it compiles, the name a member the second time */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(vs_self_macro, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "self_macro: %s\n", err);
+      if (r.blob)
+      {
+         write_spirv(dir, "self_macro", &r);
+         rslc_result_free(&r, &o);
+      }
+
+      /* v.xy-- and ++v.zx: no one pointer to step through, so read,
+       * stepped and written back; the module is spirv-val's to check */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_swizzle_step, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "swizzle_step: %s\n", err);
+      if (r.blob)
+      {
+         write_spirv(dir, "swizzle_step", &r);
+         rslc_result_free(&r, &o);
+      }
+
+      /* A member that says its offset is placed there (68), the next
+       * ones after it (72, then the vec4 at 80); SPIR-V only */
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_member_offset, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "member_offset: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned right = 0, members = 0;
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            if ((r.spirv[i] & 0xffffu) == 72 && (r.spirv[i] >> 16) == 5 && r.spirv[i + 3] == 35)
+            {
+               static const uint32_t want[3] = { 68, 72, 80 };
+               members++;
+               right += r.spirv[i + 2] < 3 && r.spirv[i + 4] == want[r.spirv[i + 2]];
+            }
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(members == 3 && right == 3);
+         CHECK(r.refl->push.size == 96);
+         write_spirv(dir, "member_offset", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_member_offset, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* gl_FragStencilRefARB: StencilExportEXT (5013), its extension and
+       * StencilRefReplacingEXT (5027) on the entry point; SPIR-V only */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_stencil_export, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "stencil_export: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned mode = 0;
+         CHECK(has_capability(r.spirv, r.spirv_len, 5013));
+         CHECK(count_op(r.spirv, r.spirv_len, 10 /* OpExtension */, &at) == 1);
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            mode += (r.spirv[i] & 0xffffu) == 16 && r.spirv[i + 2] == 5027;
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(mode == 1);
+         write_spirv(dir, "stencil_export", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_stencil_export, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* A multisampled storage image: StorageImageMultisample (27), the
+       * rg16f format with StorageImageExtendedFormats (49), a write-only
+       * image without a format with StorageImageWriteWithoutFormat (56);
+       * the sample an operand of the read. SPIR-V only. */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_resolve_ms, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "resolve_ms: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(has_capability(r.spirv, r.spirv_len, 27));
+         CHECK(has_capability(r.spirv, r.spirv_len, 49));
+         CHECK(has_capability(r.spirv, r.spirv_len, 56));
+         /* OpImageRead with an operand mask: 7 words, the mask Sample (0x40) */
+         CHECK(count_op(r.spirv, r.spirv_len, 98, &at) == 1);
+         CHECK((r.spirv[at - 1] >> 16) == 7 && r.spirv[at + 4] == 0x40);
+         write_spirv(dir, "resolve_ms", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(cs_resolve_ms, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* The other way: OpImageWrite (99) with the sample */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_unresolve_ms, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "unresolve_ms: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(has_capability(r.spirv, r.spirv_len, 27));
+         CHECK(!has_capability(r.spirv, r.spirv_len, 49));
+         CHECK(count_op(r.spirv, r.spirv_len, 99, &at) == 1);
+         CHECK((r.spirv[at - 1] >> 16) == 6 && r.spirv[at + 3] == 0x40);
+         write_spirv(dir, "unresolve_ms", &r);
+         rslc_result_free(&r, &o);
+      }
+
+      /* An image that is read still needs its format */
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(cs_read_no_format, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "format") != NULL);
+
+      /* sampler2DMS and usampler2DMS: two fetches (95), each with its sample */
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_resolve_ms, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "fs_resolve_ms: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned ms_images = 0;
+         CHECK(count_op(r.spirv, r.spirv_len, 95, &at) == 2);
+         CHECK((r.spirv[at - 1] >> 16) == 7 && r.spirv[at + 4] == 0x40);
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            /* OpTypeImage: 2D (1), not arrayed, multisampled, sampled */
+            ms_images += (r.spirv[i] & 0xffffu) == 25 && r.spirv[i + 3] == 1
+               && r.spirv[i + 5] == 0 && r.spirv[i + 6] == 1 && r.spirv[i + 7] == 1;
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(ms_images == 2);
+         write_spirv(dir, "fs_resolve_ms", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_resolve_ms, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      cur_stage = RSLC_STAGE_FRAGMENT;
+
+      /* pervertexEXT and gl_BaryCoordEXT: FragmentBarycentricKHR (5284)
+       * with its extension, PerVertexKHR (5285) on the one input that asks
+       * for it, the two built-ins (5286, 5287); SPIR-V only */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_barycentric, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "barycentric: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned pervertex = 0, bary = 0, nopersp = 0;
+         CHECK(has_capability(r.spirv, r.spirv_len, 5284));
+         CHECK(count_op(r.spirv, r.spirv_len, 10 /* OpExtension */, &at) == 1);
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            if ((r.spirv[i] & 0xffffu) == 71 /* OpDecorate */)
+            {
+               pervertex += r.spirv[i + 2] == 5285;
+               bary      += r.spirv[i + 2] == 11 && r.spirv[i + 3] == 5286;
+               nopersp   += r.spirv[i + 2] == 11 && r.spirv[i + 3] == 5287;
+            }
+            i += r.spirv[i] >> 16;
+         }
+         CHECK(pervertex == 1 && bary == 1 && nopersp == 1);
+         write_spirv(dir, "barycentric", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_barycentric, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* subpassInputMS: its image type multisampled where the plain one's
+       * is not, the read with a Sample operand; textureSamples is
+       * OpImageQuerySamples (107). SPIR-V only. */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_subpass_ms, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "subpass_ms: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned ms = 0, single = 0, sampled = 0, unsampled = 0;
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            unsigned op = r.spirv[i] & 0xffffu, len = r.spirv[i] >> 16;
+            if (op == 25 /* OpTypeImage */ && r.spirv[i + 3] == 6 /* SubpassData */)
+            {
+               ms     += r.spirv[i + 6] == 1;
+               single += r.spirv[i + 6] == 0;
+            }
+            if (op == 98 /* OpImageRead */)
+            {
+               sampled   += len == 7 && r.spirv[i + 5] == 0x40;
+               unsampled += len == 5;
+            }
+            i += len;
+         }
+         CHECK(ms == 1 && single == 1);
+         CHECK(sampled == 1 && unsampled == 1);
+         CHECK(count_op(r.spirv, r.spirv_len, 107, &at) == 1);
+         CHECK(has_capability(r.spirv, r.spirv_len, 50 /* ImageQuery */));
+         write_spirv(dir, "subpass_ms", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_subpass_ms, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+
+      /* Lean code. No access chain starts from another's result; no
+       * pointer type and no constant vector is made twice; of pick's
+       * four parameters only the plain in one is a pointer; a const in
+       * parameter cannot be written. */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_lean, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "lean: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i, j;
+         unsigned chained = 0, longest = 0, twice = 0, params = 0, by_pointer = 0;
+         for (i = 5; i < r.spirv_len && (r.spirv[i] >> 16); i += r.spirv[i] >> 16)
+         {
+            unsigned op = r.spirv[i] & 0xffffu, len = r.spirv[i] >> 16;
+            if (op == 65 /* OpAccessChain */)
+            {
+               if (len - 4 > longest)
+                  longest = len - 4;
+               for (j = 5; j < r.spirv_len && (r.spirv[j] >> 16); j += r.spirv[j] >> 16)
+                  chained += (r.spirv[j] & 0xffffu) == 65 && r.spirv[j + 2] == r.spirv[i + 3];
+            }
+            if (op == 32 /* OpTypePointer */ || op == 44 /* OpConstantComposite */)
+               for (j = i + len; j < r.spirv_len && (r.spirv[j] >> 16); j += r.spirv[j] >> 16)
+                  if (r.spirv[j] == r.spirv[i]
+                        && (op == 32 ? r.spirv[j + 2] == r.spirv[i + 2] && r.spirv[j + 3] == r.spirv[i + 3]
+                           : r.spirv[j + 1] == r.spirv[i + 1]
+                              && !memcmp(r.spirv + j + 3, r.spirv + i + 3, (len - 3) * sizeof(uint32_t))))
+                     twice++;
+            if (op == 55 /* OpFunctionParameter */)
+            {
+               params++;
+               for (j = 5; j < r.spirv_len && (r.spirv[j] >> 16); j += r.spirv[j] >> 16)
+                  by_pointer += (r.spirv[j] & 0xffffu) == 32 && r.spirv[j + 1] == r.spirv[i + 1];
+            }
+         }
+         CHECK(chained == 0);
+         CHECK(longest == 4);   /* items, [which], b, [1] */
+         CHECK(twice == 0);
+         CHECK(params == 4 && by_pointer == 1);
+         write_spirv(dir, "lean", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_const_in_written, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+
+      /* length() of an unsized array is OpArrayLength (68) of the block
+       * and the member, not a constant: member 1 of each block here */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_array_length, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "array_length: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i;
+         unsigned lengths = 0, of_member_1 = 0;
+         for (i = 5; i < r.spirv_len && (r.spirv[i] >> 16); i += r.spirv[i] >> 16)
+            if ((r.spirv[i] & 0xffffu) == 68)
+            {
+               lengths++;
+               of_member_1 += r.spirv[i + 4] == 1;
+            }
+         CHECK(lengths == 2 && of_member_1 == 2);
+         write_spirv(dir, "array_length", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(cs_array_length, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+      cur_stage = RSLC_STAGE_FRAGMENT;
+
+      /* invariant gl_Position; decorates the block's member (Invariant,
+       * 18). double: Float64 (10), a 64-bit float type, conversions both
+       * ways (OpFConvert, 115), and a literal that keeps its value as a
+       * double - 0.000001 is 0x3EB0C6F7A0B5ED8D, not the float's
+       * 9.99999997e-7 widened. SPIR-V only. */
+      cur_stage = RSLC_STAGE_VERTEX;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(vs_double, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "vs_double: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i;
+         unsigned invariant = 0, wide = 0, exact = 0, converts = 0;
+         uint32_t dbl = 0;
+         for (i = 5; i < r.spirv_len && (r.spirv[i] >> 16); i += r.spirv[i] >> 16)
+         {
+            unsigned op = r.spirv[i] & 0xffffu, len = r.spirv[i] >> 16;
+            if (op == 72 /* OpMemberDecorate */ && r.spirv[i + 2] == 0 && r.spirv[i + 3] == 18)
+               invariant++;
+            if (op == 22 /* OpTypeFloat */ && r.spirv[i + 2] == 64)
+            {
+               wide++;
+               dbl = r.spirv[i + 1];
+            }
+            if (op == 43 /* OpConstant */ && len == 5 && r.spirv[i + 1] == dbl
+                  && r.spirv[i + 3] == 0xA0B5ED8Du && r.spirv[i + 4] == 0x3EB0C6F7u)
+               exact++;
+            converts += op == 115;
+         }
+         CHECK(invariant == 1);
+         CHECK(wide == 1 && exact == 1);
+         CHECK(converts >= 4);
+         CHECK(has_capability(r.spirv, r.spirv_len, 10));
+         write_spirv(dir, "vs_double", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(vs_double, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "SPIR-V") != NULL);
+      cur_stage = RSLC_STAGE_FRAGMENT;
    }
 
    if (fails)

@@ -17,7 +17,8 @@ SOURCES := badge_cache_test.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
-           $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+           $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 
 OBJECTS := $(call sample_objs,$(SOURCES:.c=.o))
 
@@ -27,6 +28,7 @@ CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DHAVE_MENU -DHAVE_CHEEVOS -DHAVE_THREADS -D
 LDFLAGS += -lm -lpthread
 
 CFLAGS  += $(EXTRA_CFLAGS)
+CFLAGS  += -include ../no_client_locks.h
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

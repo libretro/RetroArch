@@ -2,6 +2,16 @@
 #include "../../../record/record_avfoundation_session_native.h"
 #include "../../../record/record_gpu_session_metal.h"
 #include "dispatch_native_fixture.h"
+static record_avfoundation_session_t *session_cold_refuse(void *context,
+      record_gpu_queue_t *queue,record_gpu_capture_metal_t *capture,
+      struct videotoolbox_encode *encoder,unsigned width,unsigned height)
+{
+   unsigned *calls=(unsigned*)context;
+   assert(queue && capture && encoder && width==WIDTH && height==HEIGHT);
+   assert(encoder->config.width>=width && encoder->config.height>=height);
+   (*calls)++;
+   return NULL;
+}
 int main(int argc,char **argv)
 {
    if (getenv("SESSION_DISPATCH_CONTROL")) return dispatch_native_main(argc,argv);
@@ -48,10 +58,19 @@ int main(int argc,char **argv)
       {
          record_gpu_session_metal_config_t cold;
          enum record_gpu_session_metal_startup stage;
-         int32_t native_status;
+         enum record_gpu_session_metal_startup refused_stage;
+         int32_t native_status,refused_status;
+         record_gpu_capture_metal_t *refused_capture;
+         record_gpu_queue_t *refused_queue;
+         unsigned binds=0;
          memset(&cold,0,sizeof(cold)); cold.width=WIDTH; cold.height=HEIGHT; cold.slots=2;
          cold.bitrate=config.bitrate; cold.key_interval=config.key_interval; cold.timescale=config.timescale;
          cold.bit_depth=config.bit_depth; cold.mode=mode; cold.hevc=config.hevc;
+         assert(!record_gpu_session_metal_new_output((__bridge void*)device,&cold,NULL,&binds,
+                  &refused_capture,&refused_queue,&refused_stage,&refused_status));
+         assert(!binds && !refused_capture && !refused_queue && refused_stage==RECORD_METAL_STARTUP_CONFIG);
+         assert(!record_gpu_session_metal_new_output((__bridge void*)device,&cold,session_cold_refuse,&binds,
+                  &refused_capture,&refused_queue,&refused_stage,&refused_status));
          session=record_gpu_session_metal_new((__bridge void*)device,&cold,&output,4*(16+4096),
                argv[6],&capture,&queue,&stage,&native_status);
          if (!session)
@@ -61,6 +80,8 @@ int main(int argc,char **argv)
             RARCH_RELEASE(device); return native_status==kVTCouldNotFindVideoEncoderErr?77:1;
          }
          assert(stage==RECORD_METAL_STARTUP_NONE && !native_status);
+         assert(binds==1 && !refused_capture && !refused_queue && !refused_status
+               && refused_stage==RECORD_METAL_STARTUP_SESSION);
       }
       else
       {

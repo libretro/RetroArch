@@ -172,6 +172,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef HAVE_CORE_SIGNATURES
+#include "../core_trust_runtime.h"
+#endif
+
 #ifdef _3DS
 #include <3ds/services/cfgu.h> /* CFGU_GetSystemModel */
 #endif
@@ -4162,11 +4166,23 @@ static int menu_displaylist_parse_playlist(
 }
 
 #ifdef HAVE_LIBRETRODB
-static int create_string_list_rdb_entry_string(
+/* strlcpy_append for the first @n bytes of @src. */
+static void rdb_entry_append_n(char *s, size_t len, size_t *pos,
+      const char *src, size_t n)
+{
+   if (*pos + n > len - 1)
+      n = len - 1 - *pos;
+   memcpy(s + *pos, src, n);
+   *pos   += n;
+   s[*pos] = '\0';
+}
+
+static int create_string_list_rdb_entry_string_n(
       enum msg_hash_enums enum_idx,
       const char *desc,
       const char *label,
       const char *actual_string,
+      size_t actual_len,
       const char *path,
       file_list_t *list)
 {
@@ -4175,17 +4191,57 @@ static int create_string_list_rdb_entry_string(
    size_t _len = 0;
    strlcpy_append(out_lbl, sizeof(out_lbl), &_len, label);
    strlcpy_append(out_lbl, sizeof(out_lbl), &_len, "|");
-   strlcpy_append(out_lbl, sizeof(out_lbl), &_len, actual_string);
+   rdb_entry_append_n(out_lbl, sizeof(out_lbl), &_len,
+         actual_string, actual_len);
    strlcpy_append(out_lbl, sizeof(out_lbl), &_len, "|");
    strlcpy_append(out_lbl, sizeof(out_lbl), &_len, path);
    _len = 0;
    strlcpy_append(tmp, sizeof(tmp), &_len, desc);
    strlcpy_append(tmp, sizeof(tmp), &_len, ": ");
-   strlcpy_append(tmp, sizeof(tmp), &_len, actual_string);
+   rdb_entry_append_n(tmp, sizeof(tmp), &_len, actual_string, actual_len);
    menu_entries_append(list, tmp, out_lbl,
          enum_idx,
          0, 0, 0, NULL);
    return 0;
+}
+
+static int create_string_list_rdb_entry_string(
+      enum msg_hash_enums enum_idx,
+      const char *desc,
+      const char *label,
+      const char *actual_string,
+      const char *path,
+      file_list_t *list)
+{
+   return create_string_list_rdb_entry_string_n(enum_idx, desc, label,
+         actual_string, strlen(actual_string), path, list);
+}
+
+/* One entry per " / "-separated value, as Explore splits them. */
+static int create_string_list_rdb_entry_list(
+      enum msg_hash_enums enum_idx,
+      const char *desc,
+      const char *label,
+      const char *actual_string,
+      const char *path,
+      file_list_t *list)
+{
+   const char *s = actual_string;
+   for (;;)
+   {
+      const char *sep = strstr(s, " / ");
+      const char *end = sep ? sep : s + strlen(s);
+      while (*s == ' ')
+         s++;
+      while (end > s && end[-1] == ' ')
+         end--;
+      if (end > s)
+         create_string_list_rdb_entry_string_n(enum_idx, desc, label,
+               s, (size_t)(end - s), path, list);
+      if (!sep)
+         return 0;
+      s = sep + 3;
+   }
 }
 
 static int create_string_list_rdb_entry_int(
@@ -4247,7 +4303,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       )
 {
    size_t _len;
-   unsigned i, j, k;
+   unsigned i, j;
    char query[256];
    char path_base[NAME_MAX_LENGTH];
    playlist_config_t playlist_config;
@@ -4432,6 +4488,17 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error; \
       }
 
+#define RDB_ENTRY_LIST(field, enum_label, enum_val_label) \
+      if (db_info_entry->field) \
+      { \
+         if (create_string_list_rdb_entry_list( \
+                  enum_label, \
+                  msg_hash_to_str(enum_val_label), \
+                  msg_hash_to_str(enum_label), \
+                  db_info_entry->field, info->path, info->list) == -1) \
+            goto error; \
+      }
+
 #define RDB_ENTRY_INT(field, enum_label, enum_val_label) \
       if (db_info_entry->field) \
       { \
@@ -4455,62 +4522,46 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error; \
       }
 
-      RDB_ENTRY_STR(genre,       MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
+      RDB_ENTRY_LIST(genre,      MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE)
-      RDB_ENTRY_STR(publisher,   MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER,
+      RDB_ENTRY_LIST(publisher,  MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER)
-      RDB_ENTRY_STR(category,    MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
+      RDB_ENTRY_LIST(category,   MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY)
-      RDB_ENTRY_STR(language,    MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
+      RDB_ENTRY_LIST(language,   MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE)
-      RDB_ENTRY_STR(region,      MENU_ENUM_LABEL_RDB_ENTRY_REGION,
+      RDB_ENTRY_LIST(region,     MENU_ENUM_LABEL_RDB_ENTRY_REGION,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION)
-      RDB_ENTRY_STR(score,       MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
+      RDB_ENTRY_LIST(score,      MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE)
-      RDB_ENTRY_STR(media,       MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
+      RDB_ENTRY_LIST(media,      MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA)
-      RDB_ENTRY_STR(controls,    MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
+      RDB_ENTRY_LIST(controls,   MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS)
-      RDB_ENTRY_STR(artstyle,    MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
+      RDB_ENTRY_LIST(artstyle,   MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE)
-      RDB_ENTRY_STR(gameplay,    MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
+      RDB_ENTRY_LIST(gameplay,   MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY)
-      RDB_ENTRY_STR(narrative,   MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
+      RDB_ENTRY_LIST(narrative,  MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE)
-      RDB_ENTRY_STR(pacing,      MENU_ENUM_LABEL_RDB_ENTRY_PACING,
+      RDB_ENTRY_LIST(pacing,     MENU_ENUM_LABEL_RDB_ENTRY_PACING,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING)
-      RDB_ENTRY_STR(perspective, MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
+      RDB_ENTRY_LIST(perspective, MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE)
-      RDB_ENTRY_STR(setting,     MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
+      RDB_ENTRY_LIST(setting,    MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING)
-      RDB_ENTRY_STR(visual,      MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
+      RDB_ENTRY_LIST(visual,     MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL)
-      RDB_ENTRY_STR(vehicular,   MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
+      RDB_ENTRY_LIST(vehicular,  MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR)
-
-      if (db_info_entry->developer)
-      {
-         const char *val_rdb_entry_dev =
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER);
-         const char *rdb_entry_dev     =
-            MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER_STR;
-         for (k = 0; k < db_info_entry->developer->size; k++)
-         {
-            if (db_info_entry->developer->elems[k].data)
-            {
-               if (create_string_list_rdb_entry_string(
-                        MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
-                        val_rdb_entry_dev, rdb_entry_dev,
-                        db_info_entry->developer->elems[k].data,
-                        info->path, info->list) == -1)
-                  goto error;
-            }
-         }
-      }
+      RDB_ENTRY_LIST(tags,       MENU_ENUM_LABEL_RDB_ENTRY_TAGS,
+                                  MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS)
+      RDB_ENTRY_LIST(developer,  MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
+                                  MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER)
 
       RDB_ENTRY_STR(origin,              MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN)
-      RDB_ENTRY_STR(franchise,           MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE,
+      RDB_ENTRY_LIST(franchise,          MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE)
 
       RDB_ENTRY_INT(max_users,           MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS,
@@ -4597,6 +4648,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    }
 
 #undef RDB_ENTRY_STR
+#undef RDB_ENTRY_LIST
 #undef RDB_ENTRY_INT
 #undef RDB_ENTRY_BOOL
 
@@ -5098,8 +5150,7 @@ static int menu_displaylist_parse_load_content_settings(
                }
 
                if (     settings->bools.quick_menu_show_start_streaming
-                     && !strcmp(settings->arrays.record_driver,
-                        "ffmpeg"))
+                     && recording_driver_can_stream(settings->arrays.record_driver))
                {
                   if (menu_entries_append(list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
@@ -10780,6 +10831,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU,       PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK,               PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_MENU_SCROLL_QUICK,                  PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SCROLL_FAST,                   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SCROLL_DELAY,                  PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,          PARSE_ONLY_BOOL, true},
@@ -12290,11 +12342,12 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          {
             unsigned streaming_mode = settings->uints.streaming_mode;
-            bool is_ffmpeg          = !strcmp(
-                     settings->arrays.record_driver, "ffmpeg");
-            bool has_video          = is_ffmpeg
-               || !strcmp(
-                     settings->arrays.record_driver, "avfoundation");
+            const record_driver_t *driver = recording_driver_find(settings->arrays.record_driver);
+            bool is_ffmpeg          = driver && !strcmp(driver->ident, "ffmpeg");
+            bool is_native          = driver && recording_is_native_gpu(driver);
+            bool can_stream         = recording_driver_can_stream(settings->arrays.record_driver);
+            bool has_video          = is_native || is_ffmpeg
+               || (driver && !strcmp(driver->ident, "avfoundation"));
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_RECORD_DRIVER,                                         PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,           false},
@@ -12313,20 +12366,20 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_STREAMING_URL,                                         PARSE_ONLY_STRING,         false},
                {MENU_ENUM_LABEL_UDP_STREAM_PORT,                                       PARSE_ONLY_UINT,           false},
             };
-            build_list[1].checked  = has_video; /* MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY */
-            build_list[2].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_RECORD_CONFIG */
+            build_list[1].checked  = has_video && !is_native; /* MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY */
+            build_list[2].checked  = is_ffmpeg || is_native; /* MENU_ENUM_LABEL_RECORD_CONFIG */
             build_list[3].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_RECORD_THREADS */
-            build_list[4].checked  = has_video; /* MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD */
+            build_list[4].checked  = has_video && !is_native; /* MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD */
             build_list[5].checked  = has_video; /* MENU_ENUM_LABEL_VIDEO_GPU_RECORD */
-            build_list[6].checked  = has_video; /* MENU_ENUM_LABEL_VIDEO_RECORD_GAME_ONLY */
-            build_list[7].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_RECORD_ALLOW_FRAME_DROP */
+            build_list[6].checked  = has_video && !is_native; /* MENU_ENUM_LABEL_VIDEO_RECORD_GAME_ONLY */
+            build_list[7].checked  = is_ffmpeg || is_native; /* MENU_ENUM_LABEL_VIDEO_RECORD_ALLOW_FRAME_DROP */
             build_list[8].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_RECORD_HW_ENCODER */
-            build_list[9].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES */
-            build_list[10].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAMING_MODE */
+            build_list[9].checked  = is_ffmpeg || is_native; /* MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES */
+            build_list[10].checked = can_stream; /* MENU_ENUM_LABEL_STREAMING_MODE */
             build_list[11].checked = is_ffmpeg; /* MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY */
-            build_list[12].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAM_CONFIG */
+            build_list[12].checked = can_stream; /* MENU_ENUM_LABEL_STREAM_CONFIG */
             build_list[13].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAMING_TITLE */
-            build_list[14].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAMING_URL */
+            build_list[14].checked = can_stream; /* MENU_ENUM_LABEL_STREAMING_URL */
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -12907,6 +12960,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_SKIP_DUPE_FRAMES,     PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,    PARSE_ONLY_INT,  false},
                {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, PARSE_ONLY_UINT, false},
 #if defined(HAVE_D3DKMT) || defined(HAVE_KMS)
@@ -12963,8 +13017,6 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = *video_driver_get_threaded()
                         && !video_driver_is_hw_context()
                         && config_get_ptr()->bools.video_threaded_present_repeat;
-                     break;
-                     build_list[i].checked = *video_driver_get_threaded();
                      break;
                   case MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING:
                      build_list[i].checked = *video_driver_get_threaded()
@@ -14082,6 +14134,9 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_PATCH
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_PATCH_APPLIED,         PARSE_ONLY_BOOL,  false },
 #endif
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY, PARSE_ONLY_BOOL,  false },
+#endif
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,            PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,  PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,      PARSE_ONLY_BOOL,  false },
@@ -14831,6 +14886,15 @@ unsigned menu_displaylist_build_list(
             /* core_manager_list has no backing setting, so it cannot
              * be a PARSE_ACTION array entry; the raw append above is
              * the only mechanism for settingless action rows today. */
+#ifdef HAVE_CORE_SIGNATURES
+            if (     core_trust_runtime_active()
+                  && menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SIGNATURE_CHECK),
+                     MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK_STR,
+                     MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK,
+                     MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK, 0, 0, NULL))
+               count++;
+#endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -15161,6 +15225,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_LAYOUT,                                   PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_SHADOWS,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE,                           PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_XMB_PLASTIC_EFFECT_ENABLE,                    PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_XMB_RIBBON_BLOOM_ENABLE,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_XMB_RIBBON_PARTICLES_ENABLE,                  PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_TEXTURE_MIPMAPPING,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,             PARSE_ONLY_BOOL,   false},
@@ -19509,6 +19576,10 @@ static bool menu_displaylist_ctl_internal(
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     int val = i;
+                                    if (setting->enum_idx == MENU_ENUM_LABEL_STREAMING_MODE
+                                          && !recording_driver_streaming_mode_supported(
+                                             settings->arrays.record_driver, (unsigned)val))
+                                       continue;
                                     /* Mouse Index: the mice there are,
                                      * and the one chosen now whatever
                                      * it is */

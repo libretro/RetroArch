@@ -754,6 +754,13 @@ jobs:
           timeout 300 make check
           make clean
 
+      - name: D3D9 overlapping loan repacking (ASan/UBSan, Wine)
+        shell: bash
+        run: |
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/d3d9_sw_fb/repack.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d9_sw_fb/repack.py
+
       - name: Build and run the d3d9 software framebuffer loan test (mingw-w64, Wine)
         shell: bash
         working-directory: samples/gfx/d3d9_sw_fb
@@ -789,7 +796,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev
+      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev spirv-tools
 
     steps:
       - name: Checkout
@@ -1140,6 +1147,22 @@ jobs:
              timeout 120 make check SANITIZER=address,undefined
           echo "[pass] glsl_rect_test, glsl_in_place_test"
 
+      - name: XMB menu effects on every backend's sources, GL and GLES programs drawn (Mesa EGL, ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/menu_effects
+        run: |
+          set -eu
+          # The effects XMB installs carry a source for every backend,
+          # with the inputs and uniforms the drivers set for their
+          # flags; each GLSL program is made through shader_glsl.c as
+          # gl2 makes it (GL legacy and core profile, GLES 3 and 2) and
+          # drawn once; the SPIR-V passes spirv-val.
+          make clean
+          LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 make check SANITIZER=address,undefined
+          make clean
+
       - name: GLES texture loan capability and ownership (ASan + UBSan)
         shell: bash
         run: |
@@ -1198,9 +1221,19 @@ jobs:
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/menu_framebuffer.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/vulkan_menu.py
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/menu_framebuffer.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/menu_framebuffer.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/lend_refresh.py
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/lend_refresh.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/lend_refresh.py
+
+      - name: Renewable frame memory (ASan/UBSan, TSan, D3D11)
+        shell: bash
+        run: |
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/frame_memory.py
+          CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/frame_memory.py
+          CC=x86_64-w64-mingw32-gcc RUNNER='xvfb-run -a wine' python3 samples/gfx/threaded_video/frame_memory.py
+          CC=x86_64-w64-mingw32-gcc RUNNER='xvfb-run -a wine' python3 samples/gfx/threaded_video/frame_memory.py --d3d10
 
       - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
         shell: bash
@@ -2203,6 +2236,17 @@ jobs:
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d9_failed_lock/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d9_failed_lock/run.py
 
+      - name: XMB menu effects' HLSL compiled as D3D9 to 12 compile it (mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # What Wine's compiler does not yet take (SM1 branches and
+          # loops, atan) is reported as skipped; on Windows all of it
+          # must compile.
+          make -C samples/gfx/menu_effects clean check-wine
+          make -C samples/gfx/menu_effects clean
+
       - name: GPU selection identity (Linux and mingw + Wine)
         shell: bash
         run: |
@@ -2919,9 +2963,10 @@ jobs:
           # its refusals, the CPU path a plain program takes on drivers
           # that do not draw meshes (the transform, the perspective
           # divide, triangles joined into one strip, triangles behind
-          # the eye dropped, the tint), each effect program reaching the
-          # driver's pipeline under its id, and nothing handed to a
-          # driver that takes no strips.
+          # the eye dropped, the tint), an installed effect made once on
+          # the drawing thread and again under a new driver, none drawn
+          # without its install, and nothing handed to a driver that
+          # takes no strips.
           make clean && make -j$(nproc) all
           timeout 120 make check
           make clean
@@ -3093,6 +3138,11 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 timeout 60 ./badge_cache_test
           echo "[pass] badge_cache_test (ASan)"
           make clean
+          make -j$(nproc) SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R timeout 60 ./badge_cache_test
+          make clean
+          make -j$(nproc) check EXTRA_CFLAGS=-DRETRO_ATOMIC_FORCE_VOLATILE
+          make clean
 
       - name: Build and run progress_bounds_test (ASan + UBSan)
         shell: bash
@@ -3108,11 +3158,48 @@ jobs:
           # wrap would loop forever, which the timeout ends.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 timeout 60 ./progress_bounds_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 ./client_owner_queue_test
+          make clean
+          make -j$(nproc) SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R timeout 60 ./client_owner_queue_test
           make clean
           make CC=x86_64-w64-mingw32-gcc TARGET=progress_bounds_test.exe
           test -f progress_bounds_test.exe
+          test -f client_owner_queue_test.exe
           make clean TARGET=progress_bounds_test.exe
           echo "[pass] progress_bounds_test (ASan + UBSan, and a mingw-w64 build)"
+
+      - name: Cached frame progress and lifetime
+        shell: bash
+        working-directory: samples/gfx/cached_frame_hazard
+        run: |
+          set -eu
+          make clean
+          make -j$(nproc) check SANITIZER=address,undefined
+          make clean
+          make -j$(nproc) check TORTURE=1 SANITIZER=address,undefined
+          make clean
+          make -j$(nproc) SANITIZER=thread TORTURE=1
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R timeout 60 ./cached_frame_hazard_test
+          make clean
+          make -j$(nproc) CC=x86_64-w64-mingw32-gcc TARGET=cached_frame_hazard_test.exe LDFLAGS="-static -lpthread"
+          test -f cached_frame_progress_test.exe
+          test -f cached_frame_progress_fallback_test.exe
+          make clean TARGET=cached_frame_hazard_test.exe
+
+      - name: Build and run achievements AES (shared, AES-only, scalar)
+        shell: bash
+        working-directory: samples/cheevos/aes_shim
+        run: |
+          set -eu
+          for flags in "" "-DCRYPTO_AES_ONLY" "-DCRYPTO_AES_ONLY -DAES_NO_X86 -DAES_NO_ARM"; do
+            make clean
+            make -j$(nproc) check SANITIZER=address,undefined EXTRA_CFLAGS="$flags"
+          done
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=aes_shim_test.exe
+          test -f aes_shim_test.exe
+          make clean TARGET=aes_shim_test.exe
 
       - name: Build and run ciso_hash_test (ASan + UBSan)
         shell: bash

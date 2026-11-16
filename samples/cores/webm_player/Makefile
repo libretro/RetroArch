@@ -18,7 +18,7 @@ SOURCES := webm_player_test.c \
  $(COMMON)/features/features_cpu.c \
  $(COMMON)/file/file_path.c \
  $(COMMON)/file/file_path_io.c \
- $(COMMON)/formats/data_transfer.c \
+ $(COMMON)/formats/data_transfer.c $(COMMON)/streams/data_transfer_file.c \
  $(COMMON)/formats/h264/rh264.c $(COMMON)/formats/h265/rh265.c \
  $(COMMON)/formats/audio_transfer.c \
  $(COMMON)/formats/image/image_yuv_blit.c \

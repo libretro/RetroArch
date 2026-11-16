@@ -196,6 +196,12 @@ void vulkan_upscaler_free(vulkan_upscaler_t *up)
    free(up);
 }
 
+void vulkan_upscaler_reset(vulkan_upscaler_t *up)
+{
+   if (up)
+      vulkan_ngx_reset(up->ngx);
+}
+
 /* ---- What the backends share ---- */
 
 VkImageAspectFlags vulkan_upscaler_aspect(VkFormat format)

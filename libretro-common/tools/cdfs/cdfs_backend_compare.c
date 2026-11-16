@@ -11,7 +11,8 @@
  *
  *   cc -DHAVE_CHD -DHAVE_RCHD -DHAVE_RCHD_DEFLATE -DHAVE_RCHD_LZMA \
  *      -DHAVE_RCHD_FLAC -DHAVE_RCHD_ZSTD -I libretro-common/include \
- *      -o cdfs_rchd <this> libretro-common/formats/cdfs/cdfs.c ...
+ *      -o cdfs_rchd <this> libretro-common/formats/cdfs/cdfs.c \
+ *      libretro-common/streams/cdfs_file.c ...
  */
 /* Reads SYSTEM.CNF, follows it to the boot executable, and digests
  * that -- megabytes through cdfs rather than a 68-byte stub. Also
@@ -21,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <formats/cdfs.h>
+#include <streams/cdfs_file.h>
 static unsigned long long h64(const uint8_t *p, size_t n, unsigned long long h)
 { size_t i; for (i = 0; i < n; i++) h = (h ^ p[i]) * 1099511628211ULL; return h; }
 int main(int argc, char **argv)

@@ -100,8 +100,9 @@ typedef struct
    char *setting;
    char *visual;
    char *vehicular;
+   char *tags;
    char *publisher;
-   struct string_list *developer;
+   char *developer;
    char *origin;
    char *franchise;
    char *edge_magazine_review;

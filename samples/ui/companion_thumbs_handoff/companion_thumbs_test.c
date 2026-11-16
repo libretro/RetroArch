@@ -39,6 +39,7 @@
 #include <boolean.h>
 #include <retro_atomic.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <features/features_cpu.h>
 #include <rthreads/rthreads.h>
 

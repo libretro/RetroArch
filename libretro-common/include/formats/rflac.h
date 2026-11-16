@@ -261,8 +261,26 @@ uint64_t rflac_total_frames(const rflac_t *f);
  * is the common case: a table is optional, and a stream carried in a
  * container never has one. That is not a failure of the seek, only of
  * this shortcut, and the caller's fallback is the same as above.
+ *
+ * The frame the offset is at is not reported, and rflac_seek_resumed()
+ * needs it: rflac_seek_point() gives both.
  */
 int rflac_seek(rflac_t *f, uint64_t frame, uint64_t *byte_offset);
+
+/**
+ * rflac_seek_point:
+ * @f          : decoder
+ * @frame      : PCM frame to reach
+ * @byte_offset: receives where the caller should resume input
+ * @point_frame: receives the PCM frame that input starts at
+ *
+ * As rflac_seek(), and also the seek point's own frame (at or before
+ * @frame), which is what rflac_seek_resumed() is to be told and where
+ * output resumes: decoding forward @frame - @point_frame frames reaches
+ * the target.
+ */
+int rflac_seek_point(rflac_t *f, uint64_t frame, uint64_t *byte_offset,
+      uint64_t *point_frame);
 
 /**
  * rflac_seek_resumed:

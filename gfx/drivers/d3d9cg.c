@@ -26,6 +26,7 @@
 #define CINTERFACE
 
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
@@ -37,6 +38,7 @@
 #include <d3d9.h>
 
 #include <string.h>
+#include "d3d_shaders/xmb_plastic_sm3.h"
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H
@@ -324,6 +326,8 @@ static INLINE void d3d9_recompute_pass_sizes(
    struct LinkInfo link_info;
    unsigned input_scale              = d3d->video_info.input_scale
       * RARCH_SCALE_BASE;
+   /* Also the size an "original" pass is scaled from: the first
+    * pass's texture holds the largest frame the core can send */
    unsigned current_width            = input_scale;
    unsigned current_height           = input_scale;
    unsigned out_width                = 0;
@@ -346,6 +350,9 @@ static INLINE void d3d9_recompute_pass_sizes(
          case RARCH_SCALE_INPUT:
             out_width = link_info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = link_info.pass->fbo.scale_x * input_scale;
+            break;
       }
       switch (link_info.pass->fbo.type_y)
       {
@@ -357,6 +364,9 @@ static INLINE void d3d9_recompute_pass_sizes(
             break;
          case RARCH_SCALE_INPUT:
             out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = link_info.pass->fbo.scale_y * input_scale;
             break;
       }
 
@@ -434,17 +444,40 @@ typedef struct cg_renderchain
 {
    struct d3d9_cg_renderchain chain;
    struct shader_pass stock_shader;
+   CGprogram plastic_shader;
+   CGprogram font_plastic_shader;
    CGcontext cgCtx;
-   /* XMB pipeline shaders */
-   void *pipeline_vprg[6]; /* CGprogram vertex programs */
-   void *pipeline_fprg[6]; /* CGprogram fragment programs */
-   bool  pipeline_inited;
+   /* The installed menu effects' programs, in this chain's context,
+    * with the parameters they read; by d3d9_cg_effects' index */
+   struct d3d9_cg_effect_prog
+   {
+      CGprogram vprg;
+      CGprogram fprg;
+      CGparameter mvp;
+      CGparameter vtime;
+      CGparameter ftime;
+      CGparameter ribbon;
+      CGparameter voutput;
+      CGparameter foutput;
+      CGparameter alpha;
+   } effects[16];
 } cg_renderchain_t;
 
-/* Pipeline vertex buffer for menu shader effects (VIDEO_SHADER_MENU, etc.).
+/* The installed menu effects: what each is, and, as its chain made it,
+ * its program */
+struct d3d9_cg_effect
+{
+   const gfx_display_effect_desc_t *desc;
+   unsigned flags;
+};
+static struct d3d9_cg_effect d3d9_cg_effects[16];
+static unsigned d3d9_cg_effect_count;
+
+/* Vertex buffer for the menu's mesh effects.
  * Stored as a file-static since the d3d9 menu_display struct
  * does not have a pipeline_vbo member like d3d10_video_t does. */
 static LPDIRECT3DVERTEXBUFFER9 d3d9_cg_menu_pipeline_vbo = NULL;
+static uint32_t d3d9_cg_menu_pipeline_mesh_id;
 static LPDIRECT3DVERTEXBUFFER9 d3d9_cg_menu_fullscreen_vbo = NULL;
 
 static LPDIRECT3DTEXTURE9 d3d9_cg_white_texture = NULL;
@@ -757,29 +790,28 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
    dev                           = d3d->dev;
 
-   switch (draw->pipeline_id)
+   switch (draw->effect ? 1 : 0)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      case 1:
       {
          cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+         const struct d3d9_cg_effect *fx = (const struct d3d9_cg_effect*)draw->effect;
+         const struct d3d9_cg_effect_prog *prog = _chain
+            ? &_chain->effects[fx - d3d9_cg_effects] : NULL;
 
-         if (_chain && _chain->pipeline_inited)
+         if (!draw->coords || draw->coords->vertices < 3)
+            return;
+
+         if (prog && prog->vprg && prog->fprg)
          {
-            unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
-
-            cgD3D9BindProgram((CGprogram)_chain->pipeline_fprg[idx]);
-            cgD3D9BindProgram((CGprogram)_chain->pipeline_vprg[idx]);
+            cgD3D9BindProgram(prog->fprg);
+            cgD3D9BindProgram(prog->vprg);
             IDirect3DDevice9_SetVertexDeclaration(dev,
                   (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
 
-            /* Snow/bokeh/snowflake need MVP matrix — identity since
+            /* The quad effects take an MVP - identity, since the
              * fullscreen quad is already in clip space [-1,1]. */
-            if (draw->pipeline_id <= VIDEO_SHADER_MENU_3)
+            if (prog->mvp && !(fx->flags & GFX_EFFECT_MESH))
             {
                static const float identity_mvp[16] = {
                    1.0f,  0.0f, 0.0f, 0.0f,
@@ -787,71 +819,42 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
                    0.0f,  0.0f, 1.0f, 0.0f,
                    0.0f,  0.0f, 0.0f, 1.0f
                };
-               CGparameter cgp = cgGetNamedParameter(
-                     (CGprogram)_chain->pipeline_vprg[idx], "modelViewProj");
-               if (cgp)
-                  cgSetMatrixParameterfr(cgp, identity_mvp);
+               cgSetMatrixParameterfr(prog->mvp, identity_mvp);
             }
 
             CG_DEBUG_CHECK(_chain->cgCtx, "pipeline draw BindProgram");
 
-            /* Set uniforms after binding. */
+            /* Set uniforms after binding: their parameters were found
+             * when the programs were made */
             {
-               static float t = 0.0f;
-               CGparameter param;
-               t += 0.01f;
-               /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-                * exactly representable up to t ~ 167772 (where 0.5*ulp first
-                * exceeds 0.01), so 65536 has wide margin and wraps roughly
-                * every 30 h of cumulative menu time, making the discontinuity
-                * effectively unobservable. */
-               if (t > 65536.0f)
-                  t -= 65536.0f;
+               float t = disp_get_ptr()->effect_time;
+               if (prog->vtime)
+                  cgSetParameter1f(prog->vtime, t);
+               if (prog->ftime)
+                  cgSetParameter1f(prog->ftime, t);
 
-               param = cgGetNamedParameter(
-                     (CGprogram)_chain->pipeline_vprg[idx], "time");
-               if (param)
-                  cgSetParameter1f(param, t);
-               param = cgGetNamedParameter(
-                     (CGprogram)_chain->pipeline_fprg[idx], "time");
-               if (!param)
-                  param = cgGetNamedParameter(
-                        (CGprogram)_chain->pipeline_fprg[idx], "_time");
-               if (param)
-                  cgSetParameter1f(param, t);
+               if (prog->ribbon && (fx->flags & GFX_EFFECT_RIBBON))
+                  cgSetParameterValuefr(prog->ribbon, 50 * 4,
+                        gfx_display_ribbon_data(disp_get_ptr()));
 
-               if (draw->pipeline_id <= VIDEO_SHADER_MENU_3)
+               if (!(fx->flags & GFX_EFFECT_MESH))
                {
                   D3DVIEWPORT9 vp;
                   float output_size[2];
                   IDirect3DDevice9_GetViewport(dev, &vp);
                   output_size[0] = (float)vp.Width;
                   output_size[1] = (float)vp.Height;
-
-                  param = cgGetNamedParameter(
-                        (CGprogram)_chain->pipeline_vprg[idx], "OutputSize");
-                  if (param)
-                     cgSetParameter2fv(param, output_size);
-                  param = cgGetNamedParameter(
-                        (CGprogram)_chain->pipeline_fprg[idx], "OutputSize");
-                  if (!param)
-                     param = cgGetNamedParameter(
-                           (CGprogram)_chain->pipeline_fprg[idx], "_OutputSize");
-                  if (param)
-                     cgSetParameter2fv(param, output_size);
+                  if (prog->voutput)
+                     cgSetParameter2fv(prog->voutput, output_size);
+                  if (prog->foutput)
+                     cgSetParameter2fv(prog->foutput, output_size);
                }
+               else if (prog->alpha)
+                  cgSetParameter1f(prog->alpha,
+                        draw->color ? draw->color[3] : 1.0f);
 
-               if (draw->pipeline_id >= VIDEO_SHADER_MENU_2)
-               {
-                  float alpha_val = draw->color ? draw->color[3] : 1.0f;
-                  param = cgGetNamedParameter(
-                        (CGprogram)_chain->pipeline_fprg[idx], "alpha");
-                  if (param)
-                     cgSetParameter1f(param, alpha_val);
-               }
-
-               cgUpdateProgramParameters((CGprogram)_chain->pipeline_vprg[idx]);
-               cgUpdateProgramParameters((CGprogram)_chain->pipeline_fprg[idx]);
+               cgUpdateProgramParameters(prog->vprg);
+               cgUpdateProgramParameters(prog->fprg);
             }
 
             IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
@@ -905,6 +908,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
        * (v=0 at screen top, v=1 at screen bottom). Written straight
        * into the menu's vertex buffer, or a stack copy for
        * DrawPrimitiveUP if it cannot be locked. */
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
       D3DCOLOR col[4];
       Vertex quad_up[4];
       Vertex *quad;
@@ -1038,6 +1042,9 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       }
 
       gfx_display_d3d9_cg_bind_texture(draw, d3d);
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC
+            && _chain && _chain->plastic_shader)
+         cgD3D9BindProgram(_chain->plastic_shader);
 
       if (quad != quad_up)
       {
@@ -1047,11 +1054,15 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
                0, sizeof(Vertex));
          IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                vb_start, 2);
+         if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && _chain)
+            cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
          return;
       }
 
       IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP,
             2, quad, sizeof(Vertex));
+      if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && _chain)
+         cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
 
       /* DrawPrimitiveUP unbinds the stream source, re-bind it */
       IDirect3DDevice9_SetStreamSource(dev, 0,
@@ -1140,8 +1151,9 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
 {
    struct video_coords *ca               = NULL;
    d3d9_video_t *d3d                     = (d3d9_video_t*)data;
+   const struct d3d9_cg_effect *fx;
 
-   if (!d3d || !draw)
+   if (!d3d || !draw || !(fx = (const struct d3d9_cg_effect*)draw->effect))
       return;
 
    ca                                    = gfx_display_effect_coords(p_disp);
@@ -1157,67 +1169,70 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
    if (ca)
       draw->coords                       = ca;
 
-   switch (draw->pipeline_id)
+   switch ((fx->flags & GFX_EFFECT_MESH) ? 1 : 0)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
+      case 1:
       {
-         /* Create a pipeline vertex buffer from the coordinate
-          * array data if it doesn't already exist. */
-         if (!d3d9_cg_menu_pipeline_vbo && ca->vertices)
+         uint32_t mesh_id = p_disp->effect_mesh->id;
+
+         if (     d3d9_cg_menu_pipeline_vbo
+               && d3d9_cg_menu_pipeline_mesh_id != mesh_id)
+         {
+            IDirect3DVertexBuffer9_Release(d3d9_cg_menu_pipeline_vbo);
+            d3d9_cg_menu_pipeline_vbo = NULL;
+         }
+
+         if (!d3d9_cg_menu_pipeline_vbo)
          {
             unsigned i;
-            Vertex *verts    = NULL;
-            unsigned vcount  = ca->vertices;
+            Vertex *verts = NULL;
 
+            if (FAILED(IDirect3DDevice9_CreateVertexBuffer(
+                        d3d->dev, p_disp->effect_mesh->vertex_count * sizeof(Vertex),
+                        D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT,
+                        &d3d9_cg_menu_pipeline_vbo, NULL)))
             {
-               void *_vbuf = NULL;
-               if (SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
-                           d3d->dev,
-                           vcount * sizeof(Vertex),
-                           D3DUSAGE_WRITEONLY, 0,
-                           D3DPOOL_DEFAULT,
-                           (LPDIRECT3DVERTEXBUFFER9*)&_vbuf, NULL)))
-                  d3d9_cg_menu_pipeline_vbo = (LPDIRECT3DVERTEXBUFFER9)_vbuf;
+               d3d9_cg_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
             }
 
-            if (d3d9_cg_menu_pipeline_vbo)
+            if (FAILED(IDirect3DVertexBuffer9_Lock(
+                        d3d9_cg_menu_pipeline_vbo, 0, 0, (void**)&verts, 0)))
             {
-               IDirect3DVertexBuffer9_Lock(
-                     (LPDIRECT3DVERTEXBUFFER9)d3d9_cg_menu_pipeline_vbo,
-                     0, 0, (void**)&verts, 0);
-
-               if (verts)
-               {
-                  for (i = 0; i < vcount; i++)
-                  {
-                     verts[i].x     = ca->vertex[i * 2 + 0];
-                     verts[i].y     = ca->vertex[i * 2 + 1];
-                     verts[i].z     = 0.5f;
-                     verts[i].u     = 0.0f;
-                     verts[i].v     = 0.0f;
-                     verts[i].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
-                  }
-
-                  IDirect3DVertexBuffer9_Unlock(
-                        (LPDIRECT3DVERTEXBUFFER9)d3d9_cg_menu_pipeline_vbo);
-               }
+               IDirect3DVertexBuffer9_Release(d3d9_cg_menu_pipeline_vbo);
+               d3d9_cg_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
             }
+
+            for (i = 0; i < p_disp->effect_mesh->vertex_count; i++)
+            {
+               verts[i].x     = ca->vertex[i * 2 + 0];
+               verts[i].y     = ca->vertex[i * 2 + 1];
+               verts[i].z     = 0.5f;
+               verts[i].u     = 0.0f;
+               verts[i].v     = 0.0f;
+               verts[i].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+            }
+
+            if (FAILED(IDirect3DVertexBuffer9_Unlock(
+                        d3d9_cg_menu_pipeline_vbo)))
+            {
+               IDirect3DVertexBuffer9_Release(d3d9_cg_menu_pipeline_vbo);
+               d3d9_cg_menu_pipeline_vbo = NULL;
+               draw->coords = NULL;
+               return;
+            }
+            d3d9_cg_menu_pipeline_mesh_id = mesh_id;
          }
 
-         if (d3d9_cg_menu_pipeline_vbo)
-         {
-            IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
-                  (LPDIRECT3DVERTEXBUFFER9)d3d9_cg_menu_pipeline_vbo,
-                  0, sizeof(Vertex));
-         }
+         IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+               d3d9_cg_menu_pipeline_vbo, 0, sizeof(Vertex));
 
-         draw->coords->vertices = ca->vertices;
-
-         /* Set pipeline blend state — ribbon uses multiplicative blend
-          * (DESTCOLOR + ONE) matching D3D11's blend_pipeline. */
          IDirect3DDevice9_SetRenderState(d3d->dev,
-               D3DRS_SRCBLEND,  D3DBLEND_DESTCOLOR);
+               D3DRS_SRCBLEND, (fx->flags & GFX_EFFECT_BLEND_ADD)
+                  ? D3DBLEND_ONE : D3DBLEND_DESTCOLOR);
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_DESTBLEND, D3DBLEND_ONE);
          IDirect3DDevice9_SetRenderState(d3d->dev,
@@ -1225,10 +1240,7 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
          break;
       }
 
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      default:
       {
          static struct video_coords blank_coords = {0};
 
@@ -1293,9 +1305,6 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
                D3DRS_ALPHABLENDENABLE, TRUE);
          break;
       }
-
-      default:
-         return;
    }
 
    /* Time increment and uniform setting is handled in the draw
@@ -1354,6 +1363,7 @@ typedef struct
    /* Scratch buffer to avoid per-line malloc/free in font rendering */
    Vertex                       *scratch_verts;
    unsigned                      scratch_capacity; /* in Vertex count */
+   bool xmb_plastic;
 } d3d9_cg_font_t;
 
 static void *d3d9_cg_font_init(void *data,
@@ -1582,6 +1592,14 @@ static void d3d9_cg_font_draw_verts(d3d9_video_t *d3d, d3d9_cg_font_t *font,
          0, sizeof(Vertex));
 }
 
+static void d3d9_cg_font_bind_block(void *data, void *userdata)
+{
+   d3d9_cg_font_t *font = (d3d9_cg_font_t*)data;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
+   if (font)
+      font->xmb_plastic = block && block->xmb_plastic;
+}
+
 static void d3d9_cg_font_render_msg(
       void *userdata, void *data,
       const char *msg, size_t msg_len,
@@ -1745,7 +1763,9 @@ static void d3d9_cg_font_render_msg(
       cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
       if (_chain)
       {
-         cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
+         cgD3D9BindProgram(font->xmb_plastic && _chain->font_plastic_shader
+               ? _chain->font_plastic_shader
+               : (CGprogram)_chain->stock_shader.fprg);
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
          CG_DEBUG_CHECK(_chain->cgCtx, "font_render BindProgram");
       }
@@ -1872,6 +1892,13 @@ static void d3d9_cg_font_render_msg(
       } while (0)
 #include "../font_layout.h"
 #undef D3D9_FONT_QUAD
+   }
+
+   if (font->xmb_plastic)
+   {
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      if (_chain)
+         cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
    }
 
 }
@@ -2087,60 +2114,68 @@ error:
 }
 
 
-static bool d3d9_cg_init_pipeline_shaders(cg_renderchain_t *chain)
+/* Installed effect @i's programs in @chain's context, and the
+ * parameters they read, found now rather than every frame */
+static bool d3d9_cg_effect_compile(cg_renderchain_t *chain, unsigned i)
 {
-   const char *pipeline_sources[6];
-   unsigned i;
    CGcontext cgCtx            = chain->cgCtx;
    CGprofile vertex_profile   = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
-   const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
-   const char **vertex_opts   = cgD3D9GetOptimalOptions(vertex_profile);
+   const char *src            = d3d9_cg_effects[i].desc->hlsl_sm3;
+   struct d3d9_cg_effect_prog *prog = &chain->effects[i];
 
-   pipeline_sources[0] = hlsl_ribbon_program;
-   pipeline_sources[1] = hlsl_ribbon_simple_program;
-   pipeline_sources[2] = hlsl_simple_snow_program;
-   pipeline_sources[3] = hlsl_snow_program;
-   pipeline_sources[4] = hlsl_bokeh_program;
-   pipeline_sources[5] = hlsl_snowflake_program;
-
-   if (   fragment_profile == CG_PROFILE_UNKNOWN
+   memset(prog, 0, sizeof(*prog));
+   if (   !src
+       || fragment_profile == CG_PROFILE_UNKNOWN
        || vertex_profile   == CG_PROFILE_UNKNOWN)
       return false;
 
-   chain->pipeline_inited = true;
-   for (i = 0; i < 6; i++)
+   prog->fprg = cgCreateProgram(cgCtx, CG_SOURCE, src, fragment_profile,
+         "main_fragment", cgD3D9GetOptimalOptions(fragment_profile));
+   prog->vprg = cgCreateProgram(cgCtx, CG_SOURCE, src, vertex_profile,
+         "main_vertex", cgD3D9GetOptimalOptions(vertex_profile));
+   if (     !prog->fprg || !prog->vprg
+         || (cgD3D9LoadProgram(prog->fprg, true, 0), cgGetError() != CG_NO_ERROR)
+         || (cgD3D9LoadProgram(prog->vprg, true, 0), cgGetError() != CG_NO_ERROR))
    {
-      chain->pipeline_fprg[i] = cgCreateProgram(cgCtx, CG_SOURCE,
-            pipeline_sources[i], fragment_profile, "main_fragment", fragment_opts);
-      chain->pipeline_vprg[i] = cgCreateProgram(cgCtx, CG_SOURCE,
-            pipeline_sources[i], vertex_profile, "main_vertex", vertex_opts);
-
-      if (!chain->pipeline_fprg[i] || !chain->pipeline_vprg[i])
-      {
-         RARCH_WARN("[D3D9 Cg] Could not compile XMB pipeline shader %u, effects disabled.\n", i);
-         chain->pipeline_inited = false;
-         return false;
-      }
-
-      cgD3D9LoadProgram((CGprogram)chain->pipeline_fprg[i], true, 0);
-      if (cgGetError() != CG_NO_ERROR)
-      {
-         RARCH_WARN("[D3D9 Cg] Could not load XMB pipeline fragment shader %u.\n", i);
-         chain->pipeline_inited = false;
-         return false;
-      }
-
-      cgD3D9LoadProgram((CGprogram)chain->pipeline_vprg[i], true, 0);
-      if (cgGetError() != CG_NO_ERROR)
-      {
-         RARCH_WARN("[D3D9 Cg] Could not load XMB pipeline vertex shader %u.\n", i);
-         chain->pipeline_inited = false;
-         return false;
-      }
+      RARCH_WARN("[D3D9 Cg] Could not compile a menu effect, it is not drawn.\n");
+      if (prog->fprg)
+         cgDestroyProgram(prog->fprg);
+      if (prog->vprg)
+         cgDestroyProgram(prog->vprg);
+      memset(prog, 0, sizeof(*prog));
+      return false;
    }
-
+   prog->mvp     = cgGetNamedParameter(prog->vprg, "modelViewProj");
+   prog->vtime   = cgGetNamedParameter(prog->vprg, "time");
+   prog->ftime   = cgGetNamedParameter(prog->fprg, "time");
+   if (!prog->ftime)
+      prog->ftime = cgGetNamedParameter(prog->fprg, "_time");
+   prog->ribbon  = cgGetNamedParameter(prog->vprg, "Ribbon");
+   prog->voutput = cgGetNamedParameter(prog->vprg, "OutputSize");
+   prog->foutput = cgGetNamedParameter(prog->fprg, "OutputSize");
+   if (!prog->foutput)
+      prog->foutput = cgGetNamedParameter(prog->fprg, "_OutputSize");
+   prog->alpha   = cgGetNamedParameter(prog->fprg, "alpha");
    return true;
+}
+
+static void *gfx_display_d3d9_cg_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   cg_renderchain_t *chain;
+   unsigned i;
+   if (     !d3d || !desc || !desc->hlsl_sm3
+         || d3d9_cg_effect_count >= ARRAY_SIZE(d3d9_cg_effects))
+      return NULL;
+   i                         = d3d9_cg_effect_count++;
+   d3d9_cg_effects[i].desc   = desc;
+   d3d9_cg_effects[i].flags  = desc->flags;
+   /* The chain there is now; one made later makes it too */
+   if ((chain = (cg_renderchain_t*)d3d->renderchain_data))
+      d3d9_cg_effect_compile(chain, i);
+   return &d3d9_cg_effects[i];
 }
 
 static bool d3d9_cg_renderchain_init_shader_fvf(
@@ -2549,6 +2584,12 @@ static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
       }
    }
 
+   if (chain->plastic_shader)
+      cgDestroyProgram(chain->plastic_shader);
+   chain->plastic_shader = NULL;
+   if (chain->font_plastic_shader)
+      cgDestroyProgram(chain->font_plastic_shader);
+   chain->font_plastic_shader = NULL;
    if (chain->stock_shader.fprg)
       cgDestroyProgram((CGprogram)chain->stock_shader.fprg);
    if (chain->stock_shader.vprg)
@@ -2723,12 +2764,53 @@ static bool d3d9_cg_renderchain_init(
    if (!d3d9_cg_load_program((cg_renderchain_t*)chain, &chain->stock_shader, NULL, false))
       return false;
 
+   {
+      char source[1536];
+      if (xmb_plastic_source(source, sizeof(source),
+               XMB_PLASTIC_SM3_PREFIX, "return plastic;}", false))
+      {
+         chain->plastic_shader = cgCreateProgram(chain->cgCtx,
+               CG_SOURCE, source, CG_PROFILE_PS_3_0, "main", NULL);
+         if (chain->plastic_shader)
+         {
+            cgD3D9LoadProgram(chain->plastic_shader, true, 0);
+            if (cgGetError() != CG_NO_ERROR)
+            {
+               cgDestroyProgram(chain->plastic_shader);
+               chain->plastic_shader = NULL;
+            }
+         }
+      }
+   }
+   {
+      char source[1536];
+      if (xmb_plastic_source(source, sizeof(source),
+               XMB_PLASTIC_SM3_PREFIX, "return plastic;}", true))
+      {
+         chain->font_plastic_shader = cgCreateProgram(chain->cgCtx,
+               CG_SOURCE, source, CG_PROFILE_PS_3_0, "main", NULL);
+         if (chain->font_plastic_shader)
+         {
+            cgD3D9LoadProgram(chain->font_plastic_shader, true, 0);
+            if (cgGetError() != CG_NO_ERROR)
+            {
+               cgDestroyProgram(chain->font_plastic_shader);
+               chain->font_plastic_shader = NULL;
+            }
+         }
+      }
+   }
+
    cgD3D9BindProgram((CGprogram)chain->stock_shader.fprg);
    cgD3D9BindProgram((CGprogram)chain->stock_shader.vprg);
    CG_DEBUG_CHECK(chain->cgCtx, "renderchain_init BindProgram");
 
-   /* Compile XMB pipeline shaders */
-   d3d9_cg_init_pipeline_shaders(chain);
+   /* The installed menu effects, in this chain's context */
+   {
+      unsigned e;
+      for (e = 0; e < d3d9_cg_effect_count; e++)
+         d3d9_cg_effect_compile(chain, e);
+   }
 
    return true;
 }
@@ -3129,6 +3211,9 @@ static void d3d9_cg_renderchain_render(
       case RARCH_SCALE_INPUT:
          out_width = first_pass->info.pass->fbo.scale_x * current_width;
          break;
+      case RARCH_SCALE_ORIGINAL:
+         out_width = first_pass->info.pass->fbo.scale_x * width;
+         break;
    }
    switch (first_pass->info.pass->fbo.type_y)
    {
@@ -3140,6 +3225,9 @@ static void d3d9_cg_renderchain_render(
          break;
       case RARCH_SCALE_INPUT:
          out_height = first_pass->info.pass->fbo.scale_y * current_height;
+         break;
+      case RARCH_SCALE_ORIGINAL:
+         out_height = first_pass->info.pass->fbo.scale_y * height;
          break;
    }
 
@@ -3184,6 +3272,9 @@ static void d3d9_cg_renderchain_render(
          case RARCH_SCALE_INPUT:
             out_width = from_pass->info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = from_pass->info.pass->fbo.scale_x * width;
+            break;
       }
       switch (from_pass->info.pass->fbo.type_y)
       {
@@ -3195,6 +3286,9 @@ static void d3d9_cg_renderchain_render(
             break;
          case RARCH_SCALE_INPUT:
             out_height = from_pass->info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = from_pass->info.pass->fbo.scale_y * height;
             break;
       }
 
@@ -3240,6 +3334,9 @@ static void d3d9_cg_renderchain_render(
       case RARCH_SCALE_INPUT:
          out_width = last_pass->info.pass->fbo.scale_x * current_width;
          break;
+      case RARCH_SCALE_ORIGINAL:
+         out_width = last_pass->info.pass->fbo.scale_x * width;
+         break;
    }
    switch (last_pass->info.pass->fbo.type_y)
    {
@@ -3251,6 +3348,9 @@ static void d3d9_cg_renderchain_render(
          break;
       case RARCH_SCALE_INPUT:
          out_height = last_pass->info.pass->fbo.scale_y * current_height;
+         break;
+      case RARCH_SCALE_ORIGINAL:
+         out_height = last_pass->info.pass->fbo.scale_y * height;
          break;
    }
 
@@ -3318,6 +3418,38 @@ static bool d3d9_cg_views_ps_make(d3d9_video_t *d3d, unsigned i,
 #define D3D9V_CHAINS_FREE(d, first) ((void)0)
 #define D3D9V_PASS(p, d, c, r, cut, again) ((void)0)
 #include "../common/d3d9_views.h"
+
+#include "d3d_shaders/bloom_sm3.hlsl.h"
+
+static bool d3d9_cg_bloom_ps_make(d3d9_video_t *d3d)
+{
+   CGprogram prog;
+   CGparameter param;
+   cg_renderchain_t *chain = (cg_renderchain_t*)d3d->renderchain_data;
+   if (!chain)
+      return false;
+   cgGetError();
+   if (!(prog = cgCreateProgram(chain->cgCtx, CG_SOURCE, bloom_sm3_ps_source,
+               CG_PROFILE_PS_3_0, "main_fragment", NULL)))
+      return false;
+   cgD3D9LoadProgram(prog, CG_FALSE, 0);
+   if (cgGetError() != CG_NO_ERROR)
+   {
+      cgDestroyProgram(prog);
+      return false;
+   }
+   param                = cgGetNamedParameter(prog, "p");
+   d3d->bloom.ps     = prog;
+   d3d->bloom.ps_reg = param
+      ? (int)cgGetParameterResourceIndex(param) : -1;
+   return true;
+}
+
+#define D3D9B_FN(name) d3d9_cg_##name
+#define D3D9B_FREE(d) cgDestroyProgram((CGprogram)(d)->bloom.ps)
+#define D3D9B_BIND(d) cgD3D9BindProgram((CGprogram)(d)->bloom.ps)
+#include "../common/d3d9_bloom.h"
+
 #endif
 
 static uint32_t d3d9_cg_get_flags(void *data)
@@ -3364,6 +3496,7 @@ static void d3d9_cg_deinitialize(d3d9_video_t *d3d)
 #ifdef D3D9_VIEWS
    /* Its targets are in the default pool, which a reset drops, and its
     * programs in the chain's context. */
+   d3d9_cg_bloom_free(d3d);
    d3d9_cg_views_release(d3d);
 #endif
 
@@ -3384,6 +3517,9 @@ static void d3d9_cg_deinitialize(d3d9_video_t *d3d)
       IDirect3DVertexBuffer9_Release(d3d9_cg_menu_pipeline_vbo);
       d3d9_cg_menu_pipeline_vbo = NULL;
    }
+   d3d9_cg_menu_pipeline_mesh_id = 0;
+   /* Their programs went with the chains' contexts */
+   d3d9_cg_effect_count          = 0;
 
    if (d3d9_cg_white_texture)
    {
@@ -3436,6 +3572,10 @@ static void d3d9_cg_log_info(const struct LinkInfo *info)
       case RARCH_SCALE_ABSOLUTE:
          RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
          break;
+
+      case RARCH_SCALE_ORIGINAL:
+         RARCH_LOG("Original @ %fx\n", info->pass->fbo.scale_x);
+         break;
    }
 
    RARCH_LOG("\tScale type (Y): ");
@@ -3452,6 +3592,10 @@ static void d3d9_cg_log_info(const struct LinkInfo *info)
 
       case RARCH_SCALE_ABSOLUTE:
          RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
+         break;
+
+      case RARCH_SCALE_ORIGINAL:
+         RARCH_LOG("Original @ %fx\n", info->pass->fbo.scale_y);
          break;
    }
 
@@ -3554,6 +3698,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
    unsigned i = 0;
    struct LinkInfo link_info;
    unsigned current_width, current_height, out_width = 0, out_height = 0;
+   unsigned orig_dims;
    cg_renderchain_t *renderchain;
 
    /* Setup information for first pass. */
@@ -3587,6 +3732,9 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
 
    d3d9_cg_log_info(&link_info);
 
+   /* The largest frame the core can send; current_* moves on with
+    * each pass, and an "original" pass is sized from this instead */
+   orig_dims      = link_info.tex_dims;
    current_width  = VIDEO_SCALE_W(link_info.tex_dims);
    current_height = VIDEO_SCALE_H(link_info.tex_dims);
 
@@ -3603,6 +3751,9 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
          case RARCH_SCALE_INPUT:
             out_width = link_info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = link_info.pass->fbo.scale_x * VIDEO_SCALE_W(orig_dims);
+            break;
       }
       switch (link_info.pass->fbo.type_y)
       {
@@ -3614,6 +3765,9 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
             break;
          case RARCH_SCALE_INPUT:
             out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = link_info.pass->fbo.scale_y * VIDEO_SCALE_H(orig_dims);
             break;
       }
 
@@ -5343,7 +5497,7 @@ static font_renderer_t d3d9_cg_font = {
    d3d9_cg_font_render_msg,
    "d3d9_cg",
    d3d9_cg_font_get_glyph,
-   NULL, /* bind_block */
+   d3d9_cg_font_bind_block,
    NULL, /* flush */
    d3d9_cg_font_get_message_width,
    d3d9_cg_font_get_line_metrics
@@ -5393,5 +5547,14 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
    true,
    true,
    gfx_display_d3d9_cg_scissor_begin,
-   gfx_display_d3d9_cg_scissor_end
+   gfx_display_d3d9_cg_scissor_end,
+   NULL,
+#ifdef D3D9_VIEWS
+   d3d9_cg_bloom_begin,
+   d3d9_cg_bloom_end,
+#else
+   NULL, NULL,
+#endif
+   NULL,                                     /* bloom_composite */
+   gfx_display_d3d9_cg_effect_install
 };

@@ -438,7 +438,6 @@ void sha256_stream_block(struct sha256_state *p, const uint8_t *data)
 
 void sha256_hash(char *s, const uint8_t *in, size_t len)
 {
-   unsigned i;
    struct sha256_state sha;
 
    union
@@ -452,15 +451,7 @@ void sha256_hash(char *s, const uint8_t *in, size_t len)
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 
-   /* lowercase hex, one byte at a time; no stdio in the hot path and
-    * nothing the strict C89 lane rejects */
-   for (i = 0; i < 32; i++)
-   {
-      static const char hex[] = "0123456789abcdef";
-      s[2 * i]     = hex[shahash.u8[i] >> 4];
-      s[2 * i + 1] = hex[shahash.u8[i] & 0x0f];
-   }
-   s[64] = '\0';
+   hash_digest_to_hex(s, shahash.u8, sizeof(shahash.u8));
 }
 
 /* SHA-1 implementation. */

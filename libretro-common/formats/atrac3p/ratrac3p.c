@@ -1226,7 +1226,8 @@ static bool r3p_tone_counts(r3p_br_t *b, r3p_unit_t *u,
 }
 
 /* A band's frequencies: the first 10 bits, the rest each in the room
- * left above (ascending) or below (descending) the one before */
+ * left above (ascending) or below (descending) the one before - and
+ * one bit even when no room is left */
 static void r3p_tone_freqs(r3p_br_t *b, r3p_tone_t *t, unsigned n)
 {
    unsigned k, desc = n >= 2 ? r3p_bit(b) : 0, prev = r3p_get(b, 10);
@@ -1237,11 +1238,15 @@ static void r3p_tone_freqs(r3p_br_t *b, r3p_tone_t *t, unsigned n)
       if (!desc)
       {
          nb   = r3p_bitlen(1023 - prev);
+         if (!nb)
+            nb = 1;
          prev = 1024 - (1u << nb) + r3p_get(b, nb);
       }
       else
       {
          nb   = r3p_bitlen(prev);
+         if (!nb)
+            nb = 1;
          prev = r3p_get(b, nb);
       }
       t[k].freq = (uint16_t)prev;
@@ -1465,7 +1470,9 @@ static bool r3p_tones(r3p_br_t *b, const r3p_block_t *blk, r3p_unit_t *u,
       if (!share[i])
          list[n1++] = (uint8_t)i;
    memset(tmp[1].tband, 0, sizeof(tmp[1].tband));
-   if (!(s0 && !s1) && !r3p_tones_second(b, &tmp[0], &tmp[1], list, n1))
+   /* The second channel's section is in the stream even when that
+    * channel takes every band from the first one. */
+   if (!r3p_tones_second(b, &tmp[0], &tmp[1], list, n1))
       return false;
 
    /* swapped bands trade places, then the second channel's negated

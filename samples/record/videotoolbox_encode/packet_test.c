@@ -121,6 +121,10 @@ int main(void)
    block.size=16; block.error=1; assert(record_vt_packet_read(p,&sample,&v)==-1);
    block.error=0; assert(record_vt_packet_read(p,&sample,&v)==1); assert(record_vt_packet_release(p));
    assert(record_vt_packet_free(p));
+   p=record_vt_packet_new(&format,1000,RECORD_VT_PACKET_MAX_SIZE);
+   assert(p && record_vt_packet_free(p));
+   assert(!record_vt_packet_new(&format,1000,RECORD_VT_PACKET_MAX_SIZE+1u));
+   assert(!record_vt_packet_new(&format,1000,0xfffffau));
    format.lengths=2; assert(!record_vt_packet_new(&format,1000,32));
    format.lengths=4; format.codec=kCMVideoCodecType_HEVC; p=record_vt_packet_new(&format,1000,32); assert(p);
    assert(record_vt_packet_config(p,&headers,&header_size,&hevc) && hevc && headers==config_bytes);

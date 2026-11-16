@@ -20,9 +20,14 @@
  * Where the platform has no positional I/O at all the calls answer -1
  * and the test says so and passes: the caller's fallback is the seek
  * and read it had before. Built with VFS_POSITIONAL_TEST_REQUIRED on a
- * Unix host, which always has pread(), a -1 there fails instead - the
- * build without HAVE_MMAP (vfs_positional_nommap_test) is the one that
- * holds that, as Android builds. */
+ * Unix host, which always has pread(), or on Windows NT, which always
+ * has a second handle, a -1 there fails instead - the build without
+ * HAVE_MMAP (vfs_positional_nommap_test) holds that as Android builds,
+ * vfs_positional_pathreopen_test the path reopen,
+ * vfs_positional_ntverify_test the handle opened relative to the
+ * stream's, checked against it as NT before Vista has it checked, and
+ * vfs_positional_wide_test twelve threads at once - more than a
+ * Windows stream keeps events for, so some calls make their own. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,15 +69,17 @@ static void thread_join(test_thread_t t)
 #endif
 
 #define FILE_SIZE  (4u << 20)
+#ifndef THREADS
 #define THREADS    4
+#endif
 #define READS      20000
 #define RECORDS    5000
 #define RECORD_LEN 64
 
 static int failures;
 
-#if defined(VFS_POSITIONAL_TEST_REQUIRED) && !defined(_WIN32) \
-   && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
+#if defined(VFS_POSITIONAL_TEST_REQUIRED) && (defined(_WIN32) \
+   || defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
 #define POSITIONAL_REQUIRED 1
 #else
 #define POSITIONAL_REQUIRED 0

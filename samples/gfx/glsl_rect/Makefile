@@ -23,6 +23,8 @@ glsl_rect_test: glsl_rect_test.c $(CORE_DIR)/gfx/drivers_shader/glsl_rect.h
 
 glsl_in_place_test: glsl_in_place_test.c \
 		$(CORE_DIR)/gfx/drivers_shader/shader_glsl.c \
+		$(CORE_DIR)/gfx/common/xmb_plastic.h \
+		$(CORE_DIR)/gfx/drivers/xmb_plastic.h \
 		$(CORE_DIR)/gfx/drivers_shader/glsl_rect.h
 	$(CC) $(CFLAGS) -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_OPENGL \
 		-DHAVE_GLSL -DRARCH_INTERNAL -I$(CORE_DIR) -I$(CORE_DIR)/gfx/include \

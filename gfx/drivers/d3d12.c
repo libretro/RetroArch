@@ -34,12 +34,14 @@
 
 #include <boolean.h>
 #include <retro_math.h>
+#include "../common/menu_ribbon_shader.h"
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <encodings/utf.h>
 #include <lists/string_list.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <formats/image_yuv_blit.h>
 #include "../common/video_import_color.h"
 
@@ -60,6 +62,7 @@
 #include "../../configuration.h"
 #include "../../record/drivers/record_nvenc.h"
 #include "../../retroarch.h"
+#include "../common/menu_bloom.h"
 #include "../font_driver.h"
 #include "../gfx_instrument.h"
 #include "../common/win32_common.h"
@@ -424,7 +427,11 @@ typedef struct ALIGN(16)
    } OutputSize;
    float time;
    float alpha;
+   float ribbon[50][4];
 } d3d12_uniform_t;
+
+/* What every effect reads: the uniforms before the ribbon's data */
+#define D3D12_UBO_HEAD offsetof(d3d12_uniform_t, ribbon)
 
 typedef struct d3d12_pass
 {
@@ -802,10 +809,14 @@ typedef struct
       D3D12PipelineState       pipe_blend;
       D3D12PipelineState       pipe_noblend;
       D3D12PipelineState       pipe_font;
+      D3D12PipelineState       pipe_plastic;
+      D3D12PipelineState       pipe_font_plastic;
 #ifdef HAVE_DXGI_HDR      
       D3D12PipelineState       pipe_blend_hdr;
       D3D12PipelineState       pipe_noblend_hdr;
       D3D12PipelineState       pipe_font_hdr;
+      D3D12PipelineState       pipe_plastic_hdr;
+      D3D12PipelineState       pipe_font_plastic_hdr;
       /* RGBA16F textures (linear scRGB) on the swapchain's HDR format */
       D3D12PipelineState       pipe_linear_hdr;
       /* The same pipes for an R16G16B16A16_FLOAT target - the UI layer
@@ -814,6 +825,8 @@ typedef struct
       D3D12PipelineState       pipe_blend_f16;
       D3D12PipelineState       pipe_noblend_f16;
       D3D12PipelineState       pipe_font_f16;
+      D3D12PipelineState       pipe_plastic_f16;
+      D3D12PipelineState       pipe_font_plastic_f16;
       D3D12PipelineState       pipe_linear_f16;
       D3D12PipelineState       pipe_stock_blend_f16;
 #endif 
@@ -905,11 +918,40 @@ typedef struct
     * upload buffer kept mapped, each tagged with the fence value of the
     * frame that last used it */
    D3D12PipelineState              mesh_pipe;
-   /* The pipeline state the menu effects are made from when first
-    * drawn, and which of them have been tried, one bit each */
+   struct
+   {
+      d3d12_texture_t tex[2];
+      D3D12PipelineState pipes[3][2];
+      /* Added onto a small image */
+      D3D12PipelineState add;
+      menu_bloom_pass_t plan[MENU_BLOOM_PASSES];
+      unsigned passes;
+      D3D12Resource cb;
+      uint8_t *mapped;
+      D3D12_GPU_VIRTUAL_ADDRESS cb_va;
+      D3D12_CPU_DESCRIPTOR_HANDLE target;
+      unsigned dims;
+      unsigned slot;
+      unsigned next;
+      bool active;
+      bool failed;
+   } bloom;
+   /* The pipeline state the menu effects are made from, and the
+    * effects: their bytecode, compiled once when installed, and their
+    * pipes, for the target format and for the glow's RGBA16F */
    D3D12_GRAPHICS_PIPELINE_STATE_DESC effect_desc;
    bool                            effect_desc_valid;
-   unsigned                        effects_tried;
+   struct d3d12_effect
+   {
+      D3DBlob vs;
+      D3DBlob ps;
+      D3D12PipelineState pipe;
+      D3D12PipelineState glow;
+      unsigned flags;
+      bool tried;
+      bool glow_tried;
+   }                               effects[16];
+   unsigned                        effect_count;
    /* The target format the effect pipes in pipes[] were made for; they
     * are made again for another (the HDR UI layer is FP16) */
    DXGI_FORMAT                     effect_rt_format;
@@ -1012,6 +1054,7 @@ static void d3d12_record_free(d3d12_video_t *d3d12);
 static void d3d12_sw_fb_free(d3d12_video_t *d3d12);
 static void d3d12_record_teardown(d3d12_video_t *d3d12);
 static void d3d12_views_release(d3d12_video_t *d3d12);
+static void d3d12_bloom_free(d3d12_video_t *d3d12);
 static void d3d12_views_publish(d3d12_video_t *d3d12);
 
 #define D3D12_ROLLING_SCANLINE_SIMULATION
@@ -1213,6 +1256,28 @@ static bool d3d12_cb_write_slot(D3D12Resource buffer,
       return false;
    memcpy(mapped + (size_t)slot * D3D12_CB_STRIDE(view->SizeInBytes),
          src, len);
+   buffer->lpVtbl->Unmap(buffer, 0, NULL);
+   return true;
+}
+
+/* Two parts into one slot under one map: the second, when there is
+ * one, written right after the first */
+static bool d3d12_cb_write_slot2(D3D12Resource buffer,
+      const D3D12_CONSTANT_BUFFER_VIEW_DESC *view, unsigned slot,
+      const void *head, size_t head_len, const void *tail, size_t tail_len)
+{
+   D3D12_RANGE none;
+   uint8_t *mapped = NULL;
+   none.Begin      = 0;
+   none.End        = 0;
+   if (     !buffer
+         || FAILED(buffer->lpVtbl->Map(buffer, 0, &none, (void**)&mapped))
+         || !mapped)
+      return false;
+   mapped += (size_t)slot * D3D12_CB_STRIDE(view->SizeInBytes);
+   memcpy(mapped, head, head_len);
+   if (tail)
+      memcpy(mapped + head_len, tail, tail_len);
    buffer->lpVtbl->Unmap(buffer, 0, NULL);
    return true;
 }
@@ -1436,7 +1501,7 @@ static void d3d12_slot_begin(d3d12_video_t *d3d12)
    d3d12->sprites.offset = (int)slot * d3d12->sprites.capacity;
    if (     (d3d12->ubo_stale & (1u << slot))
          && d3d12_cb_write_slot(d3d12->ubo, &d3d12->ubo_view, slot,
-            &d3d12->ubo_written, sizeof(d3d12->ubo_written)))
+            &d3d12->ubo_written, D3D12_UBO_HEAD))
       d3d12->ubo_stale &= ~(1u << slot);
 }
 
@@ -2183,14 +2248,26 @@ static void d3d12_init_pipeline(
       D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
       D3D12PipelineState*                 out);
 
-/* A menu effect's pipeline, made the first time the effect is drawn
- * rather than all six at start: at most one is ever on screen, and the
- * effects are no longer XMB's alone. False when it cannot be had, and
- * the effect is not drawn; one that will not compile is not tried again
- * until the driver is. */
-static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
+/* The pipes made for one target format go when another is drawn into */
+static void d3d12_effects_release_pipes(d3d12_video_t *d3d12)
 {
-   static const D3D12_INPUT_ELEMENT_DESC ribbon_desc[] = {
+   unsigned i;
+   for (i = 0; i < d3d12->effect_count; i++)
+   {
+      Release(d3d12->effects[i].pipe);
+      d3d12->effects[i].pipe  = NULL;
+      d3d12->effects[i].tried = false;
+   }
+}
+
+/* An effect's pipe for the target bound now, made from its bytecode
+ * when it has none for it; NULL when it cannot be had, and the effect
+ * is not drawn. One that will not build is not tried again until the
+ * target or the driver changes. */
+static D3D12PipelineState d3d12_effect_pipe(d3d12_video_t *d3d12,
+      struct d3d12_effect *fx)
+{
+   static const D3D12_INPUT_ELEMENT_DESC mesh_desc[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
    };
@@ -2200,121 +2277,101 @@ static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
       { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
    };
-   static const char ribbon[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-      ;
-   static const char ribbon_simple[] =
-#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-      ;
-   static const char simple_snow[] =
-#include "d3d_shaders/simple_snow_sm4.hlsl.h"
-      ;
-   static const char snow[] =
-#include "d3d_shaders/snow_sm4.hlsl.h"
-      ;
-   static const char bokeh[] =
-#include "d3d_shaders/bokeh_sm4.hlsl.h"
-      ;
-   static const char snowflake[] =
-#include "d3d_shaders/snowflake_sm4.hlsl.h"
-      ;
    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
-   D3DBlob vs_code  = NULL;
-   D3DBlob ps_code  = NULL;
-   const char *src  = NULL;
-   size_t size      = 0;
-   bool ribbons     = false;
-   unsigned bit;
-
-   switch (pipeline_id)
-   {
-      case VIDEO_SHADER_MENU:
-         src = ribbon;        size = sizeof(ribbon);        bit = 1 << 0; ribbons = true;
-         break;
-      case VIDEO_SHADER_MENU_2:
-         src = ribbon_simple; size = sizeof(ribbon_simple); bit = 1 << 1; ribbons = true;
-         break;
-      case VIDEO_SHADER_MENU_3:
-         src = simple_snow;   size = sizeof(simple_snow);   bit = 1 << 2;
-         break;
-      case VIDEO_SHADER_MENU_4:
-         src = snow;          size = sizeof(snow);          bit = 1 << 3;
-         break;
-      case VIDEO_SHADER_MENU_5:
-         src = bokeh;         size = sizeof(bokeh);         bit = 1 << 4;
-         break;
-      case VIDEO_SHADER_MENU_6:
-         src = snowflake;     size = sizeof(snowflake);     bit = 1 << 5;
-         break;
-      default:
-         return false;
-   }
+   bool glow                = d3d12->bloom.active;
+   D3D12PipelineState *out  = glow ? &fx->glow : &fx->pipe;
+   bool *tried              = glow ? &fx->glow_tried : &fx->tried;
 #ifdef HAVE_DXGI_HDR
    /* An effect is drawn into the target bound now - under HDR the FP16
     * UI layer, not the swapchain the descriptor was made for - and a
     * pipe must be made for its target's format: those made for another
-    * go, and are made again as they are drawn. */
+    * go, and are made again from the bytecode as they are drawn. */
    if (     d3d12->chain.current_rt_format != DXGI_FORMAT_UNKNOWN
          && d3d12->chain.current_rt_format != d3d12->effect_rt_format)
    {
-      unsigned i;
-      /* The six effect ids run downwards, MENU_6 lowest */
-      for (i = VIDEO_SHADER_MENU_6; i <= VIDEO_SHADER_MENU; i++)
-      {
-         Release(d3d12->pipes[i]);
-         d3d12->pipes[i] = NULL;
-      }
-      d3d12->effects_tried    = 0;
+      d3d12_effects_release_pipes(d3d12);
       d3d12->effect_rt_format = d3d12->chain.current_rt_format;
    }
 #endif
-   if (d3d12->pipes[pipeline_id])
-      return true;
-   if ((d3d12->effects_tried & bit) || !d3d12->effect_desc_valid)
-      return false;
-   d3d12->effects_tried |= bit;
+   if (*out)
+      return *out;
+   if (*tried || !d3d12->effect_desc_valid)
+      return NULL;
+   *tried = true;
 
    desc                       = d3d12->effect_desc;
 #ifdef HAVE_DXGI_HDR
    if (d3d12->effect_rt_format != DXGI_FORMAT_UNKNOWN)
       desc.RTVFormats[0]      = d3d12->effect_rt_format;
 #endif
+   if (glow)
+      desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
    desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-   if (ribbons)
+   if (fx->flags & (GFX_EFFECT_BLEND_ADD | GFX_EFFECT_BLEND_SCREEN))
    {
-      /* The ribbons multiply what is under them */
-      desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_DEST_COLOR;
+      desc.BlendState.RenderTarget[0].SrcBlend  =
+         (fx->flags & GFX_EFFECT_BLEND_ADD)
+         ? D3D12_BLEND_ONE : D3D12_BLEND_DEST_COLOR;
       desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
-      desc.InputLayout.pInputElementDescs       = ribbon_desc;
-      desc.InputLayout.NumElements              = countof(ribbon_desc);
    }
    else
    {
-      /* Standard alpha blending for snow, bokeh and snowflake: the
-       * ribbons' multiplicative blend would make white snowflakes
-       * vanish against coloured backgrounds */
+      /* Standard alpha blending: the simple ribbon's multiplicative
+       * blend would make white snowflakes vanish against coloured
+       * backgrounds */
       desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
       desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
       desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
-      desc.InputLayout.pInputElementDescs            = quad_desc;
-      desc.InputLayout.NumElements                   = countof(quad_desc);
    }
-   if (     d3d_compile(src, size, NULL, "VSMain", "vs_5_0", &vs_code)
-         && d3d_compile(src, size, NULL, "PSMain", "ps_5_0", &ps_code))
-      d3d12_init_pipeline(d3d12->device, vs_code, ps_code, NULL, &desc,
-            &d3d12->pipes[pipeline_id]);
-   Release(vs_code);
-   Release(ps_code);
-   return d3d12->pipes[pipeline_id] != NULL;
+   if (fx->flags & GFX_EFFECT_MESH)
+   {
+      desc.InputLayout.pInputElementDescs = mesh_desc;
+      desc.InputLayout.NumElements        = countof(mesh_desc);
+   }
+   else
+   {
+      desc.InputLayout.pInputElementDescs = quad_desc;
+      desc.InputLayout.NumElements        = countof(quad_desc);
+   }
+   d3d12_init_pipeline(d3d12->device, fx->vs, fx->ps, NULL, &desc, out);
+   return *out;
+}
+
+static void *gfx_display_d3d12_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   struct d3d12_effect *fx;
+   size_t size;
+   if (     !d3d12 || !desc || !desc->hlsl_sm4
+         || d3d12->effect_count >= countof(d3d12->effects))
+      return NULL;
+   fx   = &d3d12->effects[d3d12->effect_count];
+   memset(fx, 0, sizeof(*fx));
+   size = strlen(desc->hlsl_sm4);
+   if (     !d3d_compile(desc->hlsl_sm4, size, NULL, "VSMain", "vs_5_0", &fx->vs)
+         || !d3d_compile(desc->hlsl_sm4, size, NULL, "PSMain", "ps_5_0", &fx->ps))
+   {
+      Release(fx->vs);
+      Release(fx->ps);
+      return NULL;
+   }
+   fx->flags = desc->flags;
+   d3d12->effect_count++;
+   /* Its pipe for the target now, rather than when first drawn */
+   if (!d3d12->bloom.active)
+      d3d12_effect_pipe(d3d12, fx);
+   return fx;
 }
 
 static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
    D3D12GraphicsCommandList cmd;
+   D3D12PipelineState effect;
    int vertex_count     = 1;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
 #ifdef HAVE_DXGI_HDR
@@ -2326,18 +2383,16 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 
    cmd                  = d3d12->queue.cmd;
 
-   switch (draw->pipeline_id)
+   switch (draw->effect ? 1 : 0)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      case 1:
          /* Made by the pipeline call before this, or not at all */
-         if (!d3d12->pipes[draw->pipeline_id])
+         effect = d3d12->bloom.active
+            ? ((struct d3d12_effect*)draw->effect)->glow
+            : ((struct d3d12_effect*)draw->effect)->pipe;
+         if (!effect)
             return;
-         cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->pipes[draw->pipeline_id]);
+         cmd->lpVtbl->SetPipelineState(cmd, effect);
          cmd->lpVtbl->DrawInstanced(cmd, draw->coords->vertices, 1, 0, 0);
          cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
          cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
@@ -2483,8 +2538,24 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 #endif
    }
 
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && vertex_count == 1)
+   {
+#ifdef HAVE_DXGI_HDR
+      D3D12PipelineState plastic = d3d12_rt_pipe(d3d12,
+            d3d12->sprites.pipe_plastic, d3d12->sprites.pipe_plastic_hdr,
+            d3d12->sprites.pipe_plastic_f16);
+#else
+      D3D12PipelineState plastic = d3d12->sprites.pipe_plastic;
+#endif
+      if (plastic)
+         cmd->lpVtbl->SetPipelineState(cmd, plastic);
+   }
+
    cmd->lpVtbl->DrawInstanced(cmd, vertex_count, 1, d3d12->sprites.offset, 0);
    d3d12->sprites.offset += vertex_count;
+   if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC && vertex_count == 1)
+      cmd->lpVtbl->SetPipelineState(cmd,
+            (D3D12PipelineState)d3d12->sprites.pipe);
 #ifdef HAVE_DXGI_HDR
    if (linear)
       cmd->lpVtbl->SetPipelineState(cmd,
@@ -2685,60 +2756,53 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
 {
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   struct d3d12_effect *fx;
 
-   if (!d3d12 || !draw)
+   if (!d3d12 || !draw || !(fx = (struct d3d12_effect*)draw->effect))
       return;
 
    /* Before anything is bound for it */
-   if (!d3d12_effect_pipe(d3d12, draw->pipeline_id))
+   if (!d3d12_effect_pipe(d3d12, fx))
       return;
    cmd                  = d3d12->queue.cmd;
 
-   switch (draw->pipeline_id)
+   if (fx->flags & GFX_EFFECT_MESH)
    {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-         if (p_disp->effect_mesh)
-         {
-            /* From the ribbon mesh's own buffer, its position only */
-            const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
-            int slot = d3d12_mesh_slot(d3d12, mesh);
-            if (slot < 0)
-               return;
-            d3d12->meshes[slot].last_draw = ++d3d12->mesh_draws;
-            cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1,
-                  &d3d12->meshes[slot].view);
-            draw->coords->vertices = mesh->vertex_count;
-            break;
-         }
-         /* Nothing to draw it from */
+      /* From the mesh's own buffer, its position only */
+      const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+      int slot;
+      /* Nothing to draw it from */
+      if (!mesh || (slot = d3d12_mesh_slot(d3d12, mesh)) < 0)
+      {
+         draw->coords->vertices = 0;
          return;
-
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
-         draw->coords->vertices = 4;
-         break;
-      default:
-         return;
+      }
+      d3d12->meshes[slot].last_draw = ++d3d12->mesh_draws;
+      cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1,
+            &d3d12->meshes[slot].view);
+      draw->coords->vertices = p_disp->effect_vertices;
+   }
+   else
+   {
+      cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
+      draw->coords->vertices = 4;
    }
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   /* The effects' clock, one step ahead, as this driver has always
-    * drawn them */
-   d3d12->ubo_values.time   = p_disp->effect_time + 0.01f;
-   if (d3d12->ubo_values.time > 65536.0f)
-      d3d12->ubo_values.time -= 65536.0f;
+   d3d12->ubo_values.time   = p_disp->effect_time;
    d3d12->ubo_values.alpha  = draw->color ? draw->color[3] : 1.0f;
 
-   /* The frame's slot now, the others when their frames come */
-   d3d12->ubo_written = d3d12->ubo_values;
+   /* The frame's slot now, the others when their frames come with the
+    * constants only: the ribbon draw writes its data into the slot it
+    * binds, straight from gfx_display. */
+   memcpy(&d3d12->ubo_written, &d3d12->ubo_values, D3D12_UBO_HEAD);
    d3d12->ubo_stale   = (1u << D3D12_FRAMES) - 1u;
-   if (d3d12_cb_write_slot(d3d12->ubo, &d3d12->ubo_view, d3d12->queue.slot,
-            &d3d12->ubo_values, sizeof(d3d12->ubo_values)))
+   if (d3d12_cb_write_slot2(d3d12->ubo, &d3d12->ubo_view, d3d12->queue.slot,
+            &d3d12->ubo_values, D3D12_UBO_HEAD,
+            (fx->flags & GFX_EFFECT_RIBBON)
+               ? gfx_display_ribbon_data(p_disp) : NULL,
+            sizeof(d3d12->ubo_values.ribbon)))
       d3d12->ubo_stale &= ~(1u << d3d12->queue.slot);
    cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
          d3d12_cb_slot(&d3d12->ubo_view, d3d12->queue.slot));
@@ -3409,6 +3473,19 @@ static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
 #else
    cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_font);
 #endif
+   if (font->block && font->block->xmb_plastic)
+   {
+#ifdef HAVE_DXGI_HDR
+      D3D12PipelineState plastic = d3d12_rt_pipe(d3d12,
+            d3d12->sprites.pipe_font_plastic,
+            d3d12->sprites.pipe_font_plastic_hdr,
+            d3d12->sprites.pipe_font_plastic_f16);
+#else
+      D3D12PipelineState plastic = d3d12->sprites.pipe_font_plastic;
+#endif
+      if (plastic)
+         cmd->lpVtbl->SetPipelineState(cmd, plastic);
+   }
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
          font->texture.gpu_descriptor[0]);
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
@@ -5399,6 +5476,44 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
          ps_hdr = NULL;
       }
 
+      Release(ps_code);
+      ps_code = NULL;
+      Release(d3d12->sprites.pipe_plastic_hdr);
+      Release(d3d12->sprites.pipe_plastic_f16);
+      d3d12->sprites.pipe_plastic_hdr = NULL;
+      d3d12->sprites.pipe_plastic_f16 = NULL;
+      if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMB", "ps_5_0", &ps_code))
+      {
+         d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
+               &desc, &d3d12->sprites.pipe_plastic_hdr);
+         if (format != DXGI_FORMAT_R16G16B16A16_FLOAT)
+         {
+            desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+            d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
+                  &desc, &d3d12->sprites.pipe_plastic_f16);
+            desc.RTVFormats[0] = format;
+         }
+      }
+
+      Release(ps_code);
+      ps_code = NULL;
+      Release(d3d12->sprites.pipe_font_plastic_hdr);
+      Release(d3d12->sprites.pipe_font_plastic_f16);
+      d3d12->sprites.pipe_font_plastic_hdr = NULL;
+      d3d12->sprites.pipe_font_plastic_f16 = NULL;
+      if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMBFont", "ps_5_0", &ps_code))
+      {
+         d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
+               &desc, &d3d12->sprites.pipe_font_plastic_hdr);
+         if (format != DXGI_FORMAT_R16G16B16A16_FLOAT)
+         {
+            desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+            d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
+                  &desc, &d3d12->sprites.pipe_font_plastic_f16);
+            desc.RTVFormats[0] = format;
+         }
+      }
+
       Release(vs_code);
       Release(ps_code);
       Release(gs_code);
@@ -5579,6 +5694,18 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       d3d12_init_pipeline(
             d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_font);
 
+      Release(ps_code);
+      ps_code = NULL;
+      if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMB", "ps_5_0", &ps_code))
+         d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
+               &desc, &d3d12->sprites.pipe_plastic);
+
+      Release(ps_code);
+      ps_code = NULL;
+      if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMBFont", "ps_5_0", &ps_code))
+         d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
+               &desc, &d3d12->sprites.pipe_font_plastic);
+
       /* Sprite HDR pipes are created by d3d12_gfx_init_hdr_pipes() above */
 
       Release(vs_code);
@@ -5589,11 +5716,11 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       gs_code = NULL;
    }
 
-   /* The menu effects are made from this when first drawn; see
+   /* The menu effects' pipes are made from this; see
     * d3d12_effect_pipe */
    d3d12->effect_desc       = desc;
    d3d12->effect_desc_valid = true;
-   d3d12->effects_tried     = 0;
+   d3d12_effects_release_pipes(d3d12);
 
    {
       static const char shader[] =
@@ -5678,6 +5805,7 @@ static void d3d12_gfx_free(void* data)
       d3d12->ngx = NULL;
    }
 #endif
+   d3d12_bloom_free(d3d12);
    d3d12_views_release(d3d12);
 #ifdef D3D12_FRAME_IMPORT
    d3d12_frame_import_deinit(d3d12);
@@ -5758,6 +5886,14 @@ static void d3d12_gfx_free(void* data)
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
       Release(d3d12->pipes[i]);
+   for (i = 0; i < d3d12->effect_count; i++)
+   {
+      Release(d3d12->effects[i].pipe);
+      Release(d3d12->effects[i].glow);
+      Release(d3d12->effects[i].vs);
+      Release(d3d12->effects[i].ps);
+   }
+   d3d12->effect_count = 0;
 
    Release(d3d12->mipmapgen_pipe);
    Release(d3d12->planar_pipe);
@@ -5767,14 +5903,20 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->sprites.pipe_blend);
    Release(d3d12->sprites.pipe_noblend);
    Release(d3d12->sprites.pipe_font);
+   Release(d3d12->sprites.pipe_plastic);
+   Release(d3d12->sprites.pipe_font_plastic);
 #ifdef HAVE_DXGI_HDR
    Release(d3d12->sprites.pipe_blend_hdr);
    Release(d3d12->sprites.pipe_noblend_hdr);
    Release(d3d12->sprites.pipe_font_hdr);
+   Release(d3d12->sprites.pipe_plastic_hdr);
+   Release(d3d12->sprites.pipe_font_plastic_hdr);
    Release(d3d12->sprites.pipe_linear_hdr);
    Release(d3d12->sprites.pipe_noblend_f16);
    Release(d3d12->sprites.pipe_blend_f16);
    Release(d3d12->sprites.pipe_font_f16);
+   Release(d3d12->sprites.pipe_plastic_f16);
+   Release(d3d12->sprites.pipe_font_plastic_f16);
    Release(d3d12->sprites.pipe_linear_f16);
    Release(d3d12->sprites.pipe_stock_blend_f16);
 #endif
@@ -6312,7 +6454,7 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
     * d3d12_gfx_read_viewport().  The reserved slot is at fixed offset
     * (countof(renderTargets) + GFX_MAX_SHADERS * 2). */
    d3d12->desc.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 1
-      + 3; /* views canvas/UI and HDR UI */
+      + 5; /* views canvas/UI, HDR UI and bloom */
    d3d12->desc.rtv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.rtv_heap);
 
@@ -7079,6 +7221,8 @@ static void d3d12_chain_init_render_targets(d3d12_video_t *d3d12,
    unsigned k;
    static const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
    D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   unsigned orig_width  = width;  /* frame size before any pass rescales it */
+   unsigned orig_height = height;
 
    if (!c->shader_preset)
       return;
@@ -7103,6 +7247,10 @@ static void d3d12_chain_init_render_targets(d3d12_video_t *d3d12,
                width = pass->fbo.abs_x;
                break;
 
+            case RARCH_SCALE_ORIGINAL:
+               width = orig_width * pass->fbo.scale_x;
+               break;
+
             default:
                break;
          }
@@ -7122,6 +7270,10 @@ static void d3d12_chain_init_render_targets(d3d12_video_t *d3d12,
 
             case RARCH_SCALE_ABSOLUTE:
                height = pass->fbo.abs_y;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               height = orig_height * pass->fbo.scale_y;
                break;
 
             default:
@@ -8522,6 +8674,195 @@ static bool d3d12_views_retire(d3d12_video_t *d3d12, d3d12_texture_t *t)
    return true;
 }
 
+#include "d3d_shaders/bloom_sm4.hlsl.h"
+
+static void d3d12_bloom_free(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   for (i = 0; i < 2; i++)
+      d3d12_release_texture(d3d12, &d3d12->bloom.tex[i]);
+   for (i = 0; i < 6; i++)
+      Release(d3d12->bloom.pipes[i / 2][i % 2]);
+   Release(d3d12->bloom.add);
+   for (i = 0; i < d3d12->effect_count; i++)
+   {
+      Release(d3d12->effects[i].glow);
+      d3d12->effects[i].glow       = NULL;
+      d3d12->effects[i].glow_tried = false;
+   }
+   Release(d3d12->bloom.cb);
+   memset(&d3d12->bloom, 0, sizeof(d3d12->bloom));
+}
+
+static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims,
+      bool defer)
+{
+   static const float clear[4] = {0, 0, 0, 0};
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   unsigned i, slot, bloom_dims = menu_bloom_dims(dims);
+   DXGI_FORMAT format;
+   D3D12GraphicsCommandList cmd;
+   D3D12_VIEWPORT vp;
+   D3D12_RECT sc;
+   (void)defer;
+   if (!d3d12 || !bloom_dims || d3d12->bloom.failed
+         || !d3d12->effect_desc_valid || !d3d12->bloom.target.ptr)
+      return 0;
+   format = d3d12->chain.current_rt_format;
+   slot = format == DXGI_FORMAT_R16G16B16A16_FLOAT ? 2
+      : (format == DXGI_FORMAT_R10G10B10A2_UNORM ? 1 : 0);
+   if (!d3d12->bloom.pipes[slot][0])
+   {
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = d3d12->effect_desc;
+      D3DBlob vs = NULL, ps = NULL;
+      bool ok = d3d_compile(bloom_vs_source, sizeof(bloom_vs_source), NULL,
+            "VSMain", "vs_5_0", &vs)
+         && d3d_compile(bloom_ps_source, sizeof(bloom_ps_source), NULL,
+            "PSMain", "ps_5_0", &ps);
+      if (ok)
+      {
+         desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+         desc.InputLayout.pInputElementDescs = NULL;
+         desc.InputLayout.NumElements = 0;
+         desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+         desc.BlendState.RenderTarget[0] = d3d12_blend_disable_desc;
+         d3d12_init_pipeline(d3d12->device, vs, ps, NULL, &desc,
+               &d3d12->bloom.pipes[slot][0]);
+         desc.RTVFormats[0] = format;
+         desc.BlendState.RenderTarget[0].BlendEnable = TRUE;
+         desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+         desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+         desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ZERO;
+         desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
+         d3d12_init_pipeline(d3d12->device, vs, ps, NULL, &desc,
+               &d3d12->bloom.pipes[slot][1]);
+         if (!d3d12->bloom.add)
+         {
+            desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+            d3d12_init_pipeline(d3d12->device, vs, ps, NULL, &desc,
+                  &d3d12->bloom.add);
+         }
+      }
+      Release(vs);
+      Release(ps);
+      if (     !d3d12->bloom.pipes[slot][0] || !d3d12->bloom.pipes[slot][1]
+            || !d3d12->bloom.add)
+         goto error;
+   }
+   if (!d3d12->bloom.cb)
+   {
+      D3D12_RANGE range;
+      void *mapped = NULL;
+      range.Begin = range.End = 0;
+      d3d12->bloom.cb_va = d3d12_create_buffer(d3d12->device,
+            d3d12->cpu_write_heap, D3D12_FRAMES * 12 * D3D12_MESH_CB_SIZE,
+            &d3d12->bloom.cb);
+      if (!d3d12->bloom.cb || FAILED(D3D12Map(d3d12->bloom.cb, 0, &range, &mapped)))
+         goto error;
+      d3d12->bloom.mapped = (uint8_t*)mapped;
+   }
+   if (d3d12->bloom.next + MENU_BLOOM_PASSES > (d3d12->queue.slot + 1) * 12)
+      return 0;
+   if (bloom_dims != d3d12->bloom.dims)
+   {
+      for (i = 0; i < 2; i++)
+      {
+         d3d12_texture_t *t = &d3d12->bloom.tex[i];
+         if (t->handle && !d3d12_views_retire(d3d12, t))
+            goto error;
+         t->desc.Width = VIDEO_SCALE_W(bloom_dims);
+         t->desc.Height = VIDEO_SCALE_H(bloom_dims);
+         t->desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+         t->desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+         t->srv_heap = &d3d12->desc.srv_heap;
+         t->rt_view.ptr = d3d12->desc.rtv_heap.cpu.ptr
+            + (countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 4 + i)
+               * d3d12->desc.rtv_heap.stride;
+         d3d12_init_texture(d3d12->device, t);
+         if (!t->handle || t->desc.Format != DXGI_FORMAT_R16G16B16A16_FLOAT)
+            goto error;
+      }
+      d3d12->bloom.passes = menu_bloom_plan(d3d12->bloom.plan, bloom_dims,
+            true);
+      d3d12->bloom.dims   = bloom_dims;
+   }
+   d3d12->bloom.slot = slot;
+   cmd = d3d12->queue.cmd;
+   cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &d3d12->bloom.tex[0].rt_view, FALSE, NULL);
+   cmd->lpVtbl->ClearRenderTargetView(cmd, d3d12->bloom.tex[0].rt_view, clear, 0, NULL);
+   vp.TopLeftX = vp.TopLeftY = 0;
+   vp.Width = VIDEO_SCALE_W(bloom_dims);
+   vp.Height = VIDEO_SCALE_H(bloom_dims);
+   vp.MinDepth = 0;
+   vp.MaxDepth = 1;
+   sc.left = sc.top = 0;
+   sc.right = VIDEO_SCALE_W(bloom_dims);
+   sc.bottom = VIDEO_SCALE_H(bloom_dims);
+   cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
+   d3d12->bloom.active = true;
+   return bloom_dims;
+error:
+   d3d12->bloom.failed = true;
+   return 0;
+}
+
+static void gfx_display_d3d12_bloom_end(void *data, unsigned dims,
+      bool defer)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   unsigned i;
+   (void)dims;
+   (void)defer;
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   for (i = 0; i < d3d12->bloom.passes; i++)
+   {
+      const menu_bloom_pass_t *pass  = &d3d12->bloom.plan[i];
+      unsigned index                 = d3d12->bloom.next++;
+      d3d12_texture_t *source        = &d3d12->bloom.tex[pass->src];
+      D3D12_CPU_DESCRIPTOR_HANDLE target = pass->dst == MENU_BLOOM_OUTPUT
+         ? d3d12->bloom.target : d3d12->bloom.tex[pass->dst].rt_view;
+      memcpy(d3d12->bloom.mapped + index * D3D12_MESH_CB_SIZE, pass->params,
+            sizeof(pass->params));
+      D3D12_RESOURCE_TRANSITION(cmd, source->handle,
+            D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+      cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &target, FALSE, NULL);
+      cmd->lpVtbl->SetPipelineState(cmd, pass->dst == MENU_BLOOM_OUTPUT
+            ? d3d12->bloom.pipes[d3d12->bloom.slot][1]
+            : (pass->add ? d3d12->bloom.add
+               : d3d12->bloom.pipes[d3d12->bloom.slot][0]));
+      cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+            d3d12->bloom.cb_va + index * D3D12_MESH_CB_SIZE);
+      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+            source->gpu_descriptor[0]);
+      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+            d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE]);
+      if (pass->dst == MENU_BLOOM_OUTPUT)
+      {
+         cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
+         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+      }
+      else
+      {
+         D3D12_VIEWPORT vp = {0};
+         D3D12_RECT sc = {0};
+         vp.Width = VIDEO_SCALE_W(d3d12->bloom.dims);
+         vp.Height = VIDEO_SCALE_H(d3d12->bloom.dims);
+         vp.MaxDepth = 1.0f;
+         sc.right = VIDEO_SCALE_W(d3d12->bloom.dims);
+         sc.bottom = VIDEO_SCALE_H(d3d12->bloom.dims);
+         cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
+         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
+      }
+      cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+      D3D12_RESOURCE_TRANSITION(cmd, source->handle,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+   }
+   d3d12->bloom.active = false;
+}
+
+
 /* A render target in the swap chain's format sized dims, at rest as
  * one, with an RTV slot of its own past the readback's */
 static bool d3d12_views_make(d3d12_video_t *d3d12, d3d12_texture_t *t,
@@ -8946,8 +9287,9 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
    if (c->rt_frame_dims != dims || c->rt_vp_dims != vp_dims)
    {
       struct video_viewport vp;
-      memset(&vp, 0, sizeof(vp));
-      vp.dims = vp_dims;
+      vp.pos           = 0;
+      vp.dims          = vp_dims;
+      vp.full_dims     = 0;
       d3d12_chain_init_render_targets(d3d12, c, v->width, v->height, &vp);
       c->rt_frame_dims = dims;
       c->rt_vp_dims    = vp_dims;
@@ -8965,8 +9307,8 @@ static void d3d12_views_draw_pass(d3d12_video_t *d3d12,
       const struct d3d12_views_draw *d, d3d12_filter_chain_t *c,
       const video_views_rect_t *dst, const video_views_rect_t *cut)
 {
-   D3D12_VIEWPORT vp, vp_cut;
    D3D12_RECT sc_dst, sc;
+   D3D12_VIEWPORT vp, vp_cut;
    D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
 
    if (c->final)
@@ -9025,6 +9367,7 @@ static bool d3d12_views_setup(d3d12_video_t *d3d12,
 
    /* The frame's slot's constants, from its first */
    d3d12->views.cb_next = d3d12->queue.slot * D3D12_VIEWS_CB_SLOTS;
+   d3d12->bloom.next = d3d12->queue.slot * 12;
    /* A target made for another format is made again. */
    if (     d3d12->views.format
          && d3d12->views.format != d3d12_views_format(d3d12))
@@ -10438,6 +10781,12 @@ recording_resize_deferred:;
 
 
 
+   d3d12->bloom.target = views_ui ? d3d12->views.ui.rt_view
+      : d3d12->chain.desc_handles[d3d12->chain.frame_index];
+#ifdef HAVE_DXGI_HDR
+   if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+      d3d12->bloom.target = d3d12->chain.ui_buffer.rt_view;
+#endif
    d3d12_sprites_begin(d3d12);
 
 #ifdef HAVE_OVERLAY
@@ -13490,7 +13839,12 @@ video_driver_t video_d3d12 = {
 #else
    NULL, /* read_viewport_hdr */
 #endif
-   &d3d12_font
+   &d3d12_font,
+#ifdef HAVE_OPENXR
+   NULL, /* set_vr_content_info */
+#endif
+   NULL, /* read_viewport_bgrx */
+   true /* max_geometry_in_place */
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
@@ -13508,5 +13862,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    true,
    gfx_display_d3d12_scissor_begin,
    gfx_display_d3d12_scissor_end,
-   gfx_display_d3d12_mesh_draw
+   gfx_display_d3d12_mesh_draw,
+   gfx_display_d3d12_bloom_begin,
+   gfx_display_d3d12_bloom_end,
+   NULL,                                     /* bloom_composite */
+   gfx_display_d3d12_effect_install
 };

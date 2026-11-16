@@ -27,6 +27,7 @@
 #include <retro_math.h>
 #include <compat/strl.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

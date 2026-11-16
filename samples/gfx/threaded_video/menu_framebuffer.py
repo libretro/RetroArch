@@ -24,7 +24,10 @@ functions = source[start:end]
 rgui = (root / "menu/drivers/rgui.c").read_text(encoding="utf-8")
 start = rgui.index("static void rgui_set_texture_frame(")
 end = rgui.index("\n}\n", rgui.index("static void rgui_set_texture(", start)) + 3
-render = rgui[start:end]
+macro_start = rgui.index("#if defined(__OPTIMIZE_SIZE__)")
+macro_end = rgui.index("\n#endif", macro_start) + len("\n#endif")
+render = (rgui[macro_start:macro_end] + "\n" + rgui[start:end]).replace("cols[x_dst] = (uint16_t)x_src;",
+                                "cols[x_dst] = (uint16_t)x_src; map_writes++;")
 frontend = (root / "gfx/video_driver.c").read_text(encoding="utf-8")
 start = frontend.index("void *video_driver_get_menu_framebuffer(")
 frontend = frontend[start:frontend.index("\n}\n", start) + 3]
@@ -45,6 +48,7 @@ typedef struct poke video_poke_interface_t;
 typedef struct {
    const video_poke_interface_t *poke;
    void *driver_data;
+   retro_atomic_int_t aspect_ratio_pending;
    struct {
       retro_triple_buffer_t frames;
       struct video_thread_menu_texture slot[3];
@@ -54,7 +58,7 @@ typedef struct {
    } texture;
 } thread_video_t;
 static thread_video_t *video_thread_thr_capture;
-static unsigned copied, allocated;
+static unsigned copied, allocated, map_writes;
 static bool active, fail_alloc;
 static bool video_driver_thread_wrapper_active(void) { return active; }
 static void *counted_copy(void *dst, const void *src, size_t size)
@@ -81,10 +85,12 @@ typedef struct {
    frame_buf_t frame_buf, upscale_buf;
    uint16_t *upscale_line;
    unsigned upscale_line_width;
+   unsigned upscale_map_src_width, upscale_map_width;
 } rgui_t;
 typedef struct { unsigned flags, framebuf_dims; } gfx_display_t;
 typedef struct { struct { unsigned menu_rgui_internal_upscale_level; } uints; } settings_t;
 struct poke {
+   void (*set_aspect_ratio)(void*, unsigned);
    void (*set_texture_frame)(void*, const void*, bool, unsigned, float);
    void *(*get_menu_framebuffer)(void*, bool, unsigned, size_t*);
    void *(*menu_mem_alloc)(void*, size_t, uintptr_t*);
@@ -112,6 +118,43 @@ FRONTEND
 RENDER
 WORKER
 
+static unsigned aspect_calls, aspect_seen;
+static void mock_set_aspect(void *data, unsigned aspect)
+{
+   assert(data);
+   aspect_calls++;
+   aspect_seen = aspect;
+}
+static void check_aspect(thread_video_t *thr)
+{
+   struct poke poke;
+   memset(&poke, 0, sizeof(poke));
+   poke.set_aspect_ratio = mock_set_aspect;
+   thr->poke = &poke;
+   thr->driver_data = thr;
+   thread_update_driver_state(thr);
+   assert(!aspect_calls);
+   retro_atomic_store_release_int(&thr->aspect_ratio_pending, 4);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 1 && aspect_seen == 3);
+   assert(!retro_atomic_load_acquire_int(&thr->aspect_ratio_pending));
+   retro_atomic_store_release_int(&thr->aspect_ratio_pending, 1);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 2 && aspect_seen == 0);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 2);
+   poke.set_aspect_ratio = NULL;
+   retro_atomic_store_release_int(&thr->aspect_ratio_pending, 2);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 2 && !retro_atomic_load_acquire_int(&thr->aspect_ratio_pending));
+   poke.set_aspect_ratio = mock_set_aspect;
+   thr->driver_data = NULL;
+   retro_atomic_store_release_int(&thr->aspect_ratio_pending, 2);
+   thread_update_driver_state(thr);
+   assert(aspect_calls == 2 && !retro_atomic_load_acquire_int(&thr->aspect_ratio_pending));
+   thr->poke = NULL;
+}
+
 static uint16_t direct_pixels[256];
 static unsigned direct_submits;
 static void *direct_get(void *data, bool rgb32, unsigned dims, size_t *pitch)
@@ -134,6 +177,25 @@ static void direct_submit(void *data, const void *frame, bool rgb32,
          assert(direct_pixels[y * 12 + x] == (x < 8
                ? (uint16_t)(10 + (y / 2) * 4 + x / 2) : 0xcdcd));
    direct_submits++;
+}
+
+static void check_upscale_map(thread_video_t *thr, rgui_t *rgui,
+      unsigned width, unsigned height, unsigned level, bool rebuild)
+{
+   unsigned x, y, writes = map_writes;
+   unsigned out_width = width * level, out_height = height * level;
+   struct video_thread_menu_texture *taken;
+   display.framebuf_dims = VIDEO_SCALE_PACK(width, height);
+   display.flags = GFX_DISP_FLAG_FB_DIRTY;
+   settings.uints.menu_rgui_internal_upscale_level = level;
+   rgui_set_texture(rgui);
+   taken = (struct video_thread_menu_texture*)retro_triple_buffer_take(&thr->texture.frames);
+   assert(taken && taken->dims == VIDEO_SCALE_PACK(out_width, out_height));
+   assert(map_writes == writes + (rebuild ? out_width : 0));
+   for (y = 0; y < out_height; y++)
+      for (x = 0; x < out_width; x++)
+         assert(((uint16_t*)taken->frame)[y * out_width + x]
+               == rgui->frame_buf.data[(y / level) * width + x / level]);
 }
 
 static void check_upscale(thread_video_t *thr)
@@ -170,9 +232,26 @@ static void check_upscale(thread_video_t *thr)
             unsigned sy = y * 4 / width;
             assert(((uint16_t*)taken->frame)[y * width + x] == pixels[sy * 4 + sx]);
          }
+      {
+         unsigned writes = map_writes;
+         display.flags = GFX_DISP_FLAG_FB_DIRTY;
+         pixels[0]++;
+         rgui_set_texture(&rgui);
+         taken = (struct video_thread_menu_texture*)retro_triple_buffer_take(&thr->texture.frames);
+         assert(taken && map_writes == writes);
+         assert(((uint16_t*)taken->frame)[0] == pixels[0]);
+         pixels[0]--;
+      }
       rgui_set_texture(&rgui);
       assert(!retro_triple_buffer_take(&thr->texture.frames));
    }
+   check_upscale_map(thr, &rgui, 4, 4, 2, true);
+   check_upscale_map(thr, &rgui, 2, 4, 4, true);
+   check_upscale_map(thr, &rgui, 2, 2, 4, false);
+   check_upscale_map(thr, &rgui, 4, 4, 4, true);
+   check_upscale_map(thr, &rgui, 4, 4, 2, true);
+   check_upscale_map(thr, &rgui, 4, 4, 4, true);
+   check_upscale_map(thr, &rgui, 4, 4, 2, true);
    active = false;
    settings.uints.menu_rgui_internal_upscale_level = 2;
    display.flags = GFX_DISP_FLAG_FB_DIRTY;
@@ -415,6 +494,7 @@ int main(void)
    memset(&thr, 0, sizeof(thr));
    retro_triple_buffer_init(&thr.texture.frames, &thr.texture.slot[0],
          &thr.texture.slot[1], &thr.texture.slot[2]);
+   check_aspect(&thr);
    assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
    video_thread_thr_capture = &thr;
    assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
@@ -483,14 +563,15 @@ int main(void)
 }
 '''
 cc = shlex.split(os.environ.get("CC", "cc"))
+windows = os.name == "nt" or any("mingw" in part for part in cc)
 flags = shlex.split(os.environ.get("CFLAGS", ""))
 with tempfile.TemporaryDirectory(prefix="retroarch-menu-framebuffer-") as directory:
     directory = Path(directory)
     src = directory / "menu.c"
-    exe = directory / ("menu.exe" if os.name == "nt" else "menu")
+    exe = directory / ("menu.exe" if windows else "menu")
     src.write_text(fixture.replace("STRUCTURE", structure).replace("FUNCTIONS", functions).replace("FRONTEND", frontend).replace("RENDER", render).replace("WORKER", worker), encoding="utf-8")
     subprocess.run(cc + flags + ["-std=gnu89", "-O1", "-Wall", "-Wextra", "-Werror",
                    "-Werror=declaration-after-statement", "-Wno-unused-parameter", "-DHAVE_THREADS", "-DHAVE_MENU", "-I" + str(root),
                    "-I" + str(root / "libretro-common/include"), str(src), str(root / "libretro-common/rthreads/rthreads.c"),
-                   "-lwinmm" if os.name == "nt" else "-lpthread", "-o", str(exe)], check=True)
+                   "-lwinmm" if windows else "-lpthread", "-o", str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)

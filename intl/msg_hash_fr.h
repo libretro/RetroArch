@@ -1294,7 +1294,6 @@ static const struct
    char s_5b3c8098[30];
    char s_ceb820ad[10];
    char s_63af41a7[37];
-   char s_a4b769ca[37];
 #ifdef HAVE_MIST
    char s_53788998[29];
 #endif
@@ -2597,10 +2596,6 @@ static const struct
    char s_2a5f7cd7[50];
    char s_f90edcc2[73];
    char s_ad14307a[32];
-#if defined(RARCH_MOBILE)
-   char s_774121c7[68];
-   char s_774121c8[68];
-#endif
    char s_b0fb58d3[45];
    char s_b0fb58d4[45];
    char s_92a02470[56];
@@ -3356,7 +3351,6 @@ static const struct
    char s_7963c9c6[77];
    char s_ee3a489b[56];
    char s_236bd8d5[70];
-   char s_87c7d8b8[164];
 #ifdef HAVE_MIST
    char s_40e907c6[61];
 #endif
@@ -4079,10 +4073,8 @@ static const struct
    char s_ecc9b2c5[418];
    char s_c2314d30[294];
 #if defined(RARCH_MOBILE)
-   char s_82c9e375[208];
-   char s_82c9e376[189];
+   char s_82c9e376[166];
 #endif
-   char s_73658ec1[185];
    char s_73658ec2[166];
    char s_8010a29e[108];
    char s_81120e85[108];
@@ -6276,7 +6268,6 @@ static const struct
    "Acc\303\251l\303\251ration au d\303\251filement",
    "Apparence",
    "Afficher 'Fichiers de configuration'",
-   "Afficher les bo\303\256tes de confirmation",
 #ifdef HAVE_MIST
    "Afficher 'G\303\251rer les c\305\223urs'",
 #endif
@@ -7596,10 +7587,6 @@ static const struct
    "Augmenter la priorit\303\251 du fil d'ex\303\251cution vid\303\251o",
    "Utiliser les m\303\251moires tampon d'arguments de Metal (Red\303\251marrage requis)",
    "\303\211limination des scintillements",
-#if defined(RARCH_MOBILE)
-   "Biais d'ancrage X de la fen\303\252tre d'affichage (orientation portrait)",
-   "Biais d'ancrage Y de la fen\303\252tre d'affichage (orientation portrait)",
-#endif
    "Biais d'ancrage X de la fen\303\252tre d'affichage",
    "Biais d'ancrage Y de la fen\303\252tre d'affichage",
    "Hauteur de l'affichage (Rapport d'aspect personnalis\303\251)",
@@ -8935,9 +8922,6 @@ static const struct
    "Vitesse de d\303\251placement maximale du curseur lors d'un d\303\251filement prolong\303\251.",
    "Modifier les r\303\251glages d'apparence de l'\303\251cran du menu.",
    "Afficher l'option 'Fichiers de configuration' dans le menu principal.",
-   "Demander confirmation avant d'arr\303\252ter, de r\303\251initialiser ou de fermer le contenu. L"
-   "orsque cette option est d\303\251sactiv\303\251e, ces actions se produisent imm\303\251diatement"
-   ".",
 #ifdef HAVE_MIST
    "Affiche l'option 'G\303\251rer les c\305\223urs' dans le menu principal.",
 #endif
@@ -10277,16 +10261,9 @@ static const struct
    "\252cher certains shaders de fonctionner, en particulier sur du mat\303\251riel ancien ou d'anci"
    "ennes versions du syst\303\250me d'exploitation.",
 #if defined(RARCH_MOBILE)
-   "Position horizontale du contenu lorsque la fen\303\252tre d'affichage est plus large que la larg"
-   "eur du contenu. 0,0 est \303\240 l'extr\303\252me gauche, 0,5 est au centre, 1,0 est \303\240 l'"
-   "extr\303\252me droite (orientation portrait).",
    "Position verticale du contenu lorsque la fen\303\252tre d'affichage est plus haute que la hauteu"
-   "r du contenu. 0,0 est tout en haut, 0,5 est au centre, 1,0 est tout en bas (orientation portrait"
-   ").",
+   "r du contenu. 0,0 est tout en haut, 0,5 est au centre, 1,0 est tout en bas.",
 #endif
-   "Position horizontale du contenu lorsque la fen\303\252tre d'affichage est plus large que la larg"
-   "eur du contenu. 0,0 est \303\240 l'extr\303\252me gauche, 0,5 est au centre, 1,0 est \303\240 l'"
-   "extr\303\252me droite.",
    "Position verticale du contenu lorsque la fen\303\252tre d'affichage est plus haute que la hauteu"
    "r du contenu. 0,0 est tout en haut, 0,5 est au centre, 1,0 est tout en bas.",
    "Hauteur de la fen\303\252tre d'affichage si le rapport d'aspect est r\303\251gl\303\251 sur 'Rap"
@@ -11025,7 +11002,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (257548u
+      (sizeof(msg_hash_fr_blob) == (257162u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11296,10 +11273,6 @@ typedef char msg_hash_fr_blob_check[
 #ifdef HAVE_ODROIDGO2
        + 23u
 #endif
-#if defined(RARCH_MOBILE)
-       + 68u
-       + 68u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 54u
@@ -11560,8 +11533,7 @@ typedef char msg_hash_fr_blob_check[
        + 73u
 #endif
 #if defined(RARCH_MOBILE)
-       + 208u
-       + 189u
+       + 166u
 #endif
 #if defined (WIIU)
 #ifdef WIIU
@@ -12869,7 +12841,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -14171,10 +14142,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-#if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -14917,7 +14884,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -15631,10 +15597,8 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

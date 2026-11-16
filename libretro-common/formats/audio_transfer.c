@@ -1571,7 +1571,7 @@ static bool audio_transfer_atrac_parse(struct audio_transfer_atrac *a)
 }
 
 /* the WAV shape for ATRAC3plus's channel count (see above) */
-static void audio_transfer_atrac_map(struct audio_transfer_atrac *a)
+static bool audio_transfer_atrac_map(struct audio_transfer_atrac *a)
 {
    static const signed char maps[9][8] = {
       { 0 }, { 0 }, { 0, 1 }, { 0, 1, 2 },
@@ -1582,18 +1582,23 @@ static void audio_transfer_atrac_map(struct audio_transfer_atrac *a)
       { 0, 1, 2, 7, 3, 4, 5, 6 }         /* FL FR FC BL BR SL SR LFE */
    };
    unsigned i, n = a->dec_channels;
-   a->channels = n == 4 ? 5 : n;
-   for (i = 0; i < a->channels; i++)
+   unsigned channels = n == 4 ? 5 : n;
+   if (!n || n >= sizeof(maps) / sizeof(maps[0])
+         || channels > sizeof(a->map) / sizeof(a->map[0]))
+      return false;
+   a->channels = channels;
+   for (i = 0; i < sizeof(a->map) / sizeof(a->map[0]) && i < channels; i++)
    {
       a->map[i]  = a->plus ? maps[n][i] : (signed char)i;
       a->gain[i] = (a->plus && n == 4 && i >= 3) ? 0.70710678f : 1.0f;
    }
    a->identity = true;
-   for (i = 0; i < a->channels; i++)
+   for (i = 0; i < sizeof(a->map) / sizeof(a->map[0]) && i < channels; i++)
       if (a->map[i] != (signed char)i || a->gain[i] != 1.0f)
          a->identity = false;
    if (a->channels != n)
       a->identity = false;
+   return true;
 }
 
 static size_t audio_transfer_atrac_end(const struct audio_transfer_atrac *a)
@@ -3635,12 +3640,18 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
 #endif
          && fl->data)
    {
-      uint64_t at = 0;
-      if (rflac_seek(fl->handle, frame, &at) == RFLAC_PROCESS_NEXT
+      uint64_t at    = 0;
+      uint64_t point = 0;
+      if (rflac_seek_point(fl->handle, frame, &at, &point)
+               == RFLAC_PROCESS_NEXT
             && at < fl->size)
       {
          uint64_t landed;
-         rflac_seek_resumed(fl->handle, 0);
+         /* Resumed at the seek point's own frame.  Told 0 instead, the
+          * decoder took the point for the start, and the remainder below
+          * was decoded on from the point as if from frame 0: the seek
+          * landed point frames past its target. */
+         rflac_seek_resumed(fl->handle, point);
          rflac_set_in(fl->handle, (const uint8_t*)fl->data + at,
                fl->size - (size_t)at);
          rflac_set_eof(fl->handle);
@@ -4637,7 +4648,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          if (!a || !a->buf || !audio_transfer_atrac_parse(a))
             return false;
          a->spf = a->plus ? 2048 : 1024;
-         audio_transfer_atrac_map(a);
+         if (!audio_transfer_atrac_map(a))
+            return false;
 #ifdef HAVE_RATRAC3P
          if (a->plus && !(a->d3p = ratrac3p_new(a->dec_channels, a->block_align)))
             return false;

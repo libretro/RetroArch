@@ -310,7 +310,6 @@ enum {
 struct rc_client_load_state_t;
 
 typedef struct rc_client_state_t {
-  rc_mutex_t mutex;
   rc_buffer_t buffer;
 
   rc_client_scheduled_callback_data_t* scheduled_callbacks;

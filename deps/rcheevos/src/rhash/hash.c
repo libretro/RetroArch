@@ -10,6 +10,8 @@
 #include <share.h>
 #endif
 
+#include <retro_endianness.h>
+
 #include <ctype.h>
 #include <stdarg.h>
 
@@ -356,43 +358,13 @@ int rc_path_compare_extension(const char* path, const char* ext)
 
 /* ===================================================== */
 
-void rc_hash_byteswap16(uint8_t* buffer, const uint8_t* stop)
-{
-  uint32_t* ptr = (uint32_t*)buffer;
-  const uint32_t* stop32 = (const uint32_t*)stop;
-  while (ptr < stop32) {
-    uint32_t temp = *ptr;
-    temp = (temp & 0xFF00FF00) >> 8 |
-           (temp & 0x00FF00FF) << 8;
-    *ptr++ = temp;
-  }
-}
-
-void rc_hash_byteswap32(uint8_t* buffer, const uint8_t* stop)
-{
-  uint32_t* ptr = (uint32_t*)buffer;
-  const uint32_t* stop32 = (const uint32_t*)stop;
-  while (ptr < stop32) {
-    uint32_t temp = *ptr;
-    temp = (temp & 0xFF000000) >> 24 |
-           (temp & 0x00FF0000) >> 8 |
-           (temp & 0x0000FF00) << 8 |
-           (temp & 0x000000FF) << 24;
-    *ptr++ = temp;
-  }
-}
-
 int rc_hash_finalize(const rc_hash_iterator_t* iterator, md5_state_t* md5, char hash[33])
 {
   md5_byte_t digest[16];
 
   md5_finish(md5, digest);
 
-  /* NOTE: sizeof(hash) is 4 because it's still treated like a pointer, despite specifying a size */
-  snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-    digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
-    digest[8], digest[9], digest[10], digest[11], digest[12], digest[13], digest[14], digest[15]
-  );
+  hash_digest_to_hex(hash, digest, sizeof(digest));
 
   rc_hash_iterator_verbose_formatted(iterator, "Generated hash %s", hash);
 

@@ -66,7 +66,7 @@ with tempfile.TemporaryDirectory() as directory:
             'encodings/encoding_crc32.c',
             'file/file_path.c',
             'file/file_path_io.c',
-            'formats/data_transfer.c',
+            'formats/data_transfer.c', 'streams/data_transfer_file.c',
             'formats/webm/rwebm.c',
             'formats/webm/rwebm_video.c',
             'lists/string_list.c',

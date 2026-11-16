@@ -20,7 +20,7 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/formats/audio_transfer.c \
 	$(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.c \
-	$(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
+	$(LIBRETRO_COMM_DIR)/formats/data_transfer.c $(LIBRETRO_COMM_DIR)/streams/data_transfer_file.c \
 	$(LIBRETRO_COMM_DIR)/formats/aac/raac.c \
 	$(LIBRETRO_COMM_DIR)/formats/opus/ropus.c \
 	$(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.c \

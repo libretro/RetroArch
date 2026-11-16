@@ -578,6 +578,7 @@ static void aes_x86_cbc_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
  * the next. As a little-endian 128-bit number it is a shift left by
  * one, the bit out of the low half carried into the high one and the
  * one out of the top folded back in as 0x87. */
+#ifndef CRYPTO_AES_ONLY
 AES_TARGET_X86
 static __m128i aes_x86_xts_next(__m128i t)
 {
@@ -690,6 +691,7 @@ static void aes_x86_xts(const struct aes_ctx *ctx, const uint8_t *tweak,
  * per round. The counter block is kept byte-reversed, where its 32-bit
  * big-endian counter is the low lane: one add steps it (mod 2^32, as
  * GCM's inc32) and one shuffle turns it back into a block. */
+#endif /* !CRYPTO_AES_ONLY */
 AES_TARGET_X86
 static void aes_x86_ctr(const struct aes_ctx *ctx, uint8_t *counter,
       const uint8_t *in, uint8_t *out, size_t len)
@@ -771,6 +773,7 @@ static void aes_x86_ctr(const struct aes_ctx *ctx, uint8_t *counter,
 }
 
 /* The unreduced 256-bit product of a and b, as *lo / *hi. */
+#ifndef CRYPTO_AES_ONLY
 AES_TARGET_X86
 static void aes_x86_clmul(__m128i a, __m128i b, __m128i *lo, __m128i *hi)
 {
@@ -900,6 +903,7 @@ static void aes_x86_ghash(const struct aes_gcm_ctx *ctx,
       *y_lo = crypto_load64_be(o + 8);
    }
 }
+#endif /* !CRYPTO_AES_ONLY */
 #endif
 
 #if defined(AES_HAVE_ARM_PATH)
@@ -1080,6 +1084,7 @@ static void aes_arm_cbc_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
 
 /* XTS's tweak times alpha, as the x86 form above: each half shifted
  * left, the carries exchanged and the top one folded in as 0x87. */
+#ifndef CRYPTO_AES_ONLY
 AES_TARGET_ARM
 static uint8x16_t aes_arm_xts_next(uint8x16_t t)
 {
@@ -1150,6 +1155,7 @@ static void aes_arm_xts(const struct aes_ctx *ctx, uint8x16_t t,
  * lane, where its big-endian counter is lane 3 as a native word: one
  * add steps it (mod 2^32, as GCM's inc32) and one vrev32 turns it back
  * into a block - the other lanes reverse twice to themselves. */
+#endif /* !CRYPTO_AES_ONLY */
 AES_TARGET_ARM
 static void aes_arm_ctr(const struct aes_ctx *ctx, uint8_t *counter,
       const uint8_t *in, uint8_t *out, size_t len)
@@ -1229,6 +1235,7 @@ static void aes_arm_ctr(const struct aes_ctx *ctx, uint8_t *counter,
  * as the x86 path, with the SSE lane shifts spelled as vext and the
  * word shifts as vshl / vshr. */
 /* The unreduced 256-bit product of a and b, as *lo / *hi. */
+#ifndef CRYPTO_AES_ONLY
 AES_TARGET_ARM
 static void aes_arm_clmul(uint8x16_t a, uint8x16_t b, uint8x16_t *lo, uint8x16_t *hi)
 {
@@ -1372,6 +1379,7 @@ static void aes_arm_ghash(const struct aes_gcm_ctx *ctx,
    *y_hi = crypto_load64_be(o);
    *y_lo = crypto_load64_be(o + 8);
 }
+#endif /* !CRYPTO_AES_ONLY */
 #endif
 
 int crypto_aes_hw(void)
@@ -1619,6 +1627,40 @@ void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
    crypto_memzero(ks, sizeof(ks));
 }
 
+void aes_ctr128_crypt(const struct aes_ctx *ctx, uint8_t *counter,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   while (len)
+   {
+      /* Blocks before the low 32 bits wrap: aes_ctr_crypt() takes them
+       * as they are, the carry goes into octets 0..11 by hand. */
+      uint64_t left  = (uint64_t)0x100000000ULL
+         - crypto_load32_be(counter + 12);
+      size_t   n     = len;
+      int      wraps = 0;
+      int      i;
+
+      if ((uint64_t)len >= left * 16)
+      {
+         n     = (size_t)(left * 16);
+         wraps = 1;
+      }
+      else if ((uint64_t)len > (left - 1) * 16)
+         wraps = 1; /* a partial last block takes the last counter */
+
+      aes_ctr_crypt(ctx, counter, in, out, n);
+
+      if (wraps)
+         for (i = 11; i >= 0; i--)
+            if (++counter[i])
+               break;
+
+      in  += n;
+      out += n;
+      len -= n;
+   }
+}
+
 /* The register holds ciphertext: encrypting it gives the next
  * keystream block, and each ciphertext octet goes back into it. */
 void aes_cfb128_encrypt(const struct aes_ctx *ctx, uint8_t *iv,
@@ -1728,6 +1770,8 @@ void aes_cbc_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
    }
    memcpy(iv, prev, 16);
 }
+
+#ifndef CRYPTO_AES_ONLY
 
 /* The tweak times alpha in GF(2^128), as a little-endian number: a
  * shift left, the bit out of the top folded back in as 0x87. */
@@ -3212,3 +3256,4 @@ int aead_decrypt(enum aead_alg alg,
    return -1;
 }
 
+#endif /* !CRYPTO_AES_ONLY */

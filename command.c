@@ -47,6 +47,9 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#ifdef HAVE_CORE_SIGNATURES
+#include "core_trust_runtime.h"
+#endif
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -78,6 +81,9 @@
 #include "version.h"
 #include "version_git.h"
 #include "tasks/task_content.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "core_load_check.h"
+#endif
 #ifdef HAVE_TRANSLATE
 #include "accessibility.h"
 #endif
@@ -1332,6 +1338,9 @@ static struct
    bool               has_index;
    bool               has_from;
    bool               lost;
+#ifdef HAVE_CORE_SIGNATURES
+   bool               refused;
+#endif
    /* the list the index was given in: how deep, and its label */
    size_t             depth;
    char               list[64];
@@ -1506,6 +1515,14 @@ unsigned command_menu_action(unsigned action)
    char               where[sizeof(command_menu_st.list)];
    if (!command_menu_st.pending || command_menu_st.frames < 2)
       return action;
+#ifdef HAVE_CORE_SIGNATURES
+   if (menu_core_warning_user_only())
+   {
+      command_menu_st.has_index = false;
+      command_menu_st.refused   = true;
+      return action;
+   }
+#endif
    /* a request is input, as a press is: no screensaver comes over it,
     * and one up takes the press that ends it */
    menu_st->input_last_time_us = menu_st->current_time_us;
@@ -1561,6 +1578,17 @@ void command_menu_iterated(void)
          && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
       return;
    command_menu_st.pending = false;
+#ifdef HAVE_CORE_SIGNATURES
+   if (command_menu_st.refused)
+   {
+      command_menu_st.refused = false;
+      command_deferred_send(&command_menu_st.deferred,
+            "MENU ERROR only the user can answer this screen\n",
+            STRLEN_CONST("MENU ERROR only the user can answer this "
+               "screen\n"), true);
+      return;
+   }
+#endif
    if (command_menu_st.lost)
    {
       command_menu_st.lost = false;
@@ -1753,6 +1781,9 @@ bool command_menu(command_t *cmd, const char *arg)
    command_menu_st.depth     = command_menu_where(command_menu_st.list,
          sizeof(command_menu_st.list));
    command_menu_st.lost      = false;
+#ifdef HAVE_CORE_SIGNATURES
+   command_menu_st.refused   = false;
+#endif
    command_menu_st.frames    = 2;
    command_menu_st.pending   = true;
    command_deferred_take(&command_menu_st.deferred, cmd);
@@ -5494,6 +5525,11 @@ static bool command_core_at(command_t *cmd, const char *name,
    }
    if (!libretro_get_system_info(path, &info, NULL))
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      /* A core its check holds back: the load after this parks it */
+      if (core_load_check_refused(path))
+         return true;
+#endif
       command_reply_error(cmd, name, "%s is not a libretro core", path);
       return false;
    }
@@ -5527,6 +5563,10 @@ bool command_load_core(command_t *cmd, const char* arg)
    if (!task_push_load_new_core(path, NULL,
             &content_info, CORE_TYPE_PLAIN, NULL, NULL))
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      if (task_content_park_core_load(path))
+         return true;
+#endif
       command_reply_error(cmd, "LOAD_CORE", "could not load %s", path);
       return false;
    }
@@ -7569,7 +7609,8 @@ static void command_reinit_snapshot_cb(void *userdata,
    if (!*ctx->buf_p)
       return;
 
-   memcpy(*ctx->buf_p, data, want);
+   if (*ctx->buf_p != data)
+      memcpy(*ctx->buf_p, data, want);
    ctx->dims = dims;
    ctx->p    = pitch;
    ctx->size = want;
@@ -7648,6 +7689,7 @@ bool command_event_reinit(const int flags)
 
 
 
+   if (flags & DRIVER_VIDEO_AND_INPUT_MASK)
    {
       struct command_reinit_snapshot_ctx ctx;
       ctx.buf_p = &cached_snapshot;

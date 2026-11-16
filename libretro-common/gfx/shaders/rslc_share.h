@@ -224,14 +224,19 @@ enum rslc_kw
    /* RSLC_EXTENDED: the depth comparing ones */
    RSLC_KW_SAMPLER1DSHADOW, RSLC_KW_SAMPLER2DSHADOW, RSLC_KW_SAMPLER2DARRAYSHADOW,
    RSLC_KW_SAMPLERCUBESHADOW, RSLC_KW_SAMPLERCUBEARRAYSHADOW,
+   /* RSLC_EXTENDED: one multisampled image, not an array of them */
+   RSLC_KW_SAMPLER2DMS, RSLC_KW_ISAMPLER2DMS, RSLC_KW_USAMPLER2DMS,
    /* RSLC_EXTENDED image types: float, int, uint of each */
    RSLC_KW_IMAGE2D, RSLC_KW_IIMAGE2D, RSLC_KW_UIMAGE2D,
    RSLC_KW_IMAGE2DARRAY, RSLC_KW_IIMAGE2DARRAY, RSLC_KW_UIMAGE2DARRAY,
+   RSLC_KW_IMAGE2DMS, RSLC_KW_IIMAGE2DMS, RSLC_KW_UIMAGE2DMS,
    /* RSLC_EXTENDED: a fragment stage's input attachment */
-   RSLC_KW_SUBPASSINPUT,
+   RSLC_KW_SUBPASSINPUT, RSLC_KW_SUBPASSINPUTMS,
+   /* RSLC_EXTENDED: a 64-bit float scalar */
+   RSLC_KW_DOUBLE,
    /* RSLC_EXTENDED qualifiers */
    RSLC_KW_BUFFER, RSLC_KW_READONLY, RSLC_KW_WRITEONLY, RSLC_KW_COHERENT,
-   RSLC_KW_RESTRICT, RSLC_KW_VOLATILE, RSLC_KW_SHARED,
+   RSLC_KW_RESTRICT, RSLC_KW_VOLATILE, RSLC_KW_SHARED, RSLC_KW_PERVERTEX,
    RSLC_KW_COUNT
 };
 
@@ -260,6 +265,7 @@ enum rslc_tkind
    /* RSLC_EXTENDED storage images; cols is the RSLC_IMGFMT_* */
    RSLC_TY_IMAGE2D,
    RSLC_TY_IMAGE2DARRAY,
+   RSLC_TY_IMAGE2DMS,       /* multisampled: read and written a sample at a time; SPIR-V only */
    /* RSLC_EXTENDED: a float input attachment */
    RSLC_TY_SUBPASSINPUT,
    /* RSLC_EXTENDED: any other sampler; rows is its RSLC_SDIM_*, cols its
@@ -273,8 +279,10 @@ enum rslc_tkind
 #define RSLC_SDIM_CUBE 4
 #define RSLC_SX_ARRAY  1u
 #define RSLC_SX_SHADOW 2u
+#define RSLC_SX_MS     4u   /* sampler2DMS: 2D, fetched a sample at a time */
 
-#define RSLC_TY_IS_IMAGE(k) ((k) == RSLC_TY_IMAGE2D || (k) == RSLC_TY_IMAGE2DARRAY)
+#define RSLC_TY_IS_IMAGE(k) ((k) == RSLC_TY_IMAGE2D || (k) == RSLC_TY_IMAGE2DARRAY \
+      || (k) == RSLC_TY_IMAGE2DMS)
 /* A storage image type's rows: its access. */
 #define RSLC_IMG_READWRITE 1
 #define RSLC_IMG_WRITEONLY 2
@@ -286,6 +294,19 @@ enum rslc_tkind
 #define RSLC_IMGFMT_RGBA16F  2
 #define RSLC_IMGFMT_R32F     3
 #define RSLC_IMGFMT_RGBA8    4
+#define RSLC_IMGFMT_RGBA8_SNORM 5
+#define RSLC_IMGFMT_RG32F    6
+#define RSLC_IMGFMT_RG16F    7
+#define RSLC_IMGFMT_R11G11B10F 8
+#define RSLC_IMGFMT_R16F     9
+#define RSLC_IMGFMT_RGBA16   10
+#define RSLC_IMGFMT_RGB10_A2 11
+#define RSLC_IMGFMT_RG16     12
+#define RSLC_IMGFMT_R16      14
+/* The formats every device with storage images has; the others need
+ * StorageImageExtendedFormats. */
+#define RSLC_IMGFMT_IS_BASE(f) ((f) <= RSLC_IMGFMT_RGBA8_SNORM || ((f) >= RSLC_IMGFMT_RGBA32I \
+      && (f) <= RSLC_IMGFMT_R32I) || ((f) >= RSLC_IMGFMT_RGBA32UI && (f) <= RSLC_IMGFMT_R32UI))
 #define RSLC_IMGFMT_RG8      13
 #define RSLC_IMGFMT_R8       15
 #define RSLC_IMGFMT_RGBA32I  21
@@ -298,7 +319,10 @@ enum rslc_tkind
 #define RSLC_IMGFMT_R32UI    33
 
 /* The last keyword that names a type. */
-#define RSLC_KW_LAST_TYPE RSLC_KW_SUBPASSINPUT
+#define RSLC_KW_LAST_TYPE RSLC_KW_DOUBLE
+
+/* float or double: the bases the floating-point operations take */
+#define RSLC_BASE_IS_REAL(b) ((b) == RSLC_BASE_FLOAT || (b) == RSLC_BASE_DOUBLE)
 
 /* Every sampler kind: sampler2D, and the RSLC_EXTENDED ones. */
 #define RSLC_TY_IS_SAMPLER(k) ((k) == RSLC_TY_SAMPLER2D \
@@ -316,6 +340,10 @@ struct rslc_field
    uint8_t                 interp;      /* RSLC_EXTENDED: an in / out block member's */
    uint8_t                 quals;       /* RSLC_VQ_* of that member */
    uint8_t                 pad;
+   uint32_t                offset_p1;   /* RSLC_EXTENDED, a block's member that
+                                           says layout(offset = n): n + 1, and
+                                           the members after it follow from
+                                           there; 0 when it does not */
 };
 
 struct rslc_type
@@ -364,6 +392,7 @@ enum rslc_storage
 #define RSLC_INTERP_FLAT          1
 #define RSLC_INTERP_NOPERSPECTIVE 2
 #define RSLC_INTERP_SMOOTH        3
+#define RSLC_INTERP_PERVERTEX     4   /* RSLC_EXTENDED: pervertexEXT, each vertex's value; SPIR-V only */
 
 #define RSLC_VQ_CENTROID  1u
 #define RSLC_VQ_SAMPLE    2u
@@ -425,6 +454,9 @@ struct rslc_var
 #define RSLC_BI_HELPERINVOCATION   18   /* RSLC_EXTENDED, fragment */
 #define RSLC_BI_POINTCOORD         19   /* RSLC_EXTENDED, fragment */
 #define RSLC_BI_PRIMITIVEID        20   /* RSLC_EXTENDED, geometry gl_PrimitiveIDIn */
+#define RSLC_BI_FRAGSTENCILREF     21   /* RSLC_EXTENDED, fragment out; SPIR-V only */
+#define RSLC_BI_BARYCOORD          22   /* RSLC_EXTENDED, fragment in; SPIR-V only */
+#define RSLC_BI_BARYCOORDNOPERSP   23
 
 /* RSLC_EXTENDED: a geometry stage's primitives, in and out. */
 #define RSLC_GS_POINTS              1
@@ -527,6 +559,7 @@ enum rslc_op
 #define RSLC_UN_PREDEC  5
 #define RSLC_UN_POSTINC 6
 #define RSLC_UN_POSTDEC 7
+#define RSLC_UN_ARRAYLEN 8   /* RSLC_EXTENDED: length() of a buffer block's unsized last member; SPIR-V only */
 
 #define RSLC_BIN_NONE   0
 #define RSLC_BIN_ADD    1
@@ -616,6 +649,7 @@ enum rslc_bfn
    RSLC_BFN_MEMORYBARRIERBUFFER, RSLC_BFN_MEMORYBARRIERIMAGE, RSLC_BFN_GROUPMEMORYBARRIER,
    RSLC_BFN_IMAGESTORE, RSLC_BFN_IMAGELOAD, RSLC_BFN_IMAGESIZE,
    RSLC_BFN_SUBPASSLOAD,   /* RSLC_EXTENDED, fragment */
+   RSLC_BFN_TEXTURESAMPLES,   /* RSLC_EXTENDED: a multisampled sampler's count */
    /* RSLC_EXTENDED: subgroup operations */
    RSLC_BFN_SUBGROUPELECT, RSLC_BFN_SUBGROUPMIN, RSLC_BFN_SUBGROUPMAX,
    RSLC_BFN_COUNT

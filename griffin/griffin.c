@@ -229,6 +229,7 @@ ACHIEVEMENTS
 #define RC_CLIENT_SUPPORTS_HASH 1
 
 #include "../libretro-common/formats/cdfs/cdfs.c"
+#include "../libretro-common/streams/cdfs_file.c"
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_client.c"
@@ -238,10 +239,6 @@ ACHIEVEMENTS
 
 #if defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD)
 #include "../libretro-common/formats/rvz/rvz.c"
-#ifndef HAVE_CRYPTO
-/* its AES, without the rest of the crypto library */
-#include "../libretro-common/crypto/crypto.c"
-#endif
 #ifndef HAVE_7ZIP
 /* its LZMA and LZMA2, without the 7z backend */
 #include "../libretro-common/formats/7z/r7z_lzma_stream.c"
@@ -270,12 +267,13 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
-/* the hashes' AES: the crypto library's wherever it is built */
-#if defined(HAVE_CRYPTO) || (defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD))
-#include "../cheevos/cheevos_aes.c"
-#else
-#include "../deps/rcheevos/src/rhash/aes.c"
+#ifndef HAVE_CRYPTO
+#ifndef CRYPTO_AES_ONLY
+#define CRYPTO_AES_ONLY
 #endif
+#include "../libretro-common/crypto/crypto.c"
+#endif
+#include "../cheevos/cheevos_aes.c"
 #include "../deps/rcheevos/src/rhash/cdreader.c"
 #include "../deps/rcheevos/src/rhash/hash.c"
 #include "../deps/rcheevos/src/rhash/hash_rom.c"
@@ -575,6 +573,7 @@ VIDEO IMAGE
 ============================================================ */
 
 #include "../libretro-common/formats/image_texture.c"
+#include "../libretro-common/streams/image_texture_file.c"
 #include "../libretro-common/formats/image/image_yuv_blit.c"
 #include "../libretro-common/formats/image_texture_scale.c"
 #include "../libretro-common/formats/image_texture_set.c"
@@ -613,6 +612,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/image_transfer.c"
 #include "../libretro-common/formats/video_player.c"
 #include "../libretro-common/formats/data_transfer.c"
+#include "../libretro-common/streams/data_transfer_file.c"
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_apng.c"
@@ -1634,6 +1634,20 @@ FRONTEND
 
 #include "../core_info.c"
 #include "../core_backup.c"
+#ifdef HAVE_CORE_SIGNATURES
+/* Signatures verify with crypto/pk.c */
+#ifndef HAVE_CRYPTO
+#error "HAVE_CORE_SIGNATURES needs HAVE_CRYPTO"
+#endif
+#include "../core_signature.c"
+#include "../core_signature_io.c"
+#include "../core_trust_runtime.c"
+#include "../core_install_check.c"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "../core_load_file.c"
+#include "../core_load_check.c"
+#endif
+#endif
 #include "../core_option_manager.c"
 
 #if defined(HAVE_NETWORKING)
@@ -1751,6 +1765,12 @@ RECORDING
 #include "../record/record_avfoundation_worker.c"
 #include "../record/record_avfoundation_session.c"
 #include "../libretro-common/formats/h265/rh265_sps_crop.c"
+#if defined(HAVE_NETWORKING) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#include "../record/record_stream_vt.c"
+#include "../record/record_stream_output_vt.c"
+#include "../record/record_vt_packet.c"
+#include "../libretro-common/net/net_wake.c"
+#endif
 #endif
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"

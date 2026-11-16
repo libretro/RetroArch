@@ -83,6 +83,16 @@ int64_t __wrap_filestream_read(RFILE *stream, void *data, int64_t len)
    return __real_filestream_read(stream, data, len);
 }
 
+/* Reads at an offset are reads through the stream too */
+int64_t __real_filestream_read_at(RFILE *stream, void *data, int64_t len,
+      int64_t offset);
+int64_t __wrap_filestream_read_at(RFILE *stream, void *data, int64_t len,
+      int64_t offset)
+{
+   stream_reads++;
+   return __real_filestream_read_at(stream, data, len, offset);
+}
+
 static void fail(const char *what, const char *detail)
 {
    printf("[FAIL] %s: %s\n", what, detail);

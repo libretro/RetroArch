@@ -100,8 +100,8 @@ uint32_t cdfs_get_first_sector(cdfs_file_t* file);
  * sector 16, assuming raw 2352-byte sectors.  If the probe fails
  * (e.g. a cooked 2048-byte image), stream_sector_size is left 0 and
  * the caller must fill in stream_sector_size / stream_sector_header_size
- * itself (the path adapters below derive them from the file size or
- * the cue sheet). */
+ * itself (the path adapters in streams/cdfs_file.c derive them from the
+ * file size or the cue sheet). */
 cdfs_track_t* cdfs_track_from_stream(
       intfstream_t* stream,
       unsigned first_sector_offset,
@@ -132,37 +132,14 @@ typedef struct cdfs_cue_info
 bool cdfs_parse_cue(const char *cue_text, size_t len,
       unsigned track_index, cdfs_cue_info_t *out);
 
-/* --- Path adapters: open by filename, then wrap ------------------------ */
+/* Sets @track's sector size and header size from its stream's length
+ * - 2352, 2048 or 2336 bytes a sector, whichever divides it - and
+ * leaves them 0 when none does. For a raw track whose ISO-9660 probe in
+ * cdfs_track_from_stream found nothing. */
+void cdfs_track_sector_size_from_length(cdfs_track_t* track);
 
-/* opens the specified track in a CD or virtual CD file - the resulting stream should be passed to
- * cdfs_open_file to get access to a file within the CD.
- *
- * supported files:
- *   real CD - path will be in the form "cdrom://drive1.cue" or "cdrom://d:/drive.cue"
- *   bin/cue - path will point to the cue file
- *   chd     - path will point to the chd file
- *
- * for bin/cue files, the following storage modes are supported:
- *   MODE2/2352
- *   MODE1/2352
- *   MODE1/2048 - untested
- *   MODE2/2336 - untested
- */
-cdfs_track_t* cdfs_open_track(const char* path, unsigned int track_index);
-
-/* opens the first data track in a CD or virtual CD file. see cdfs_open_track for supported file formats
- */
-cdfs_track_t* cdfs_open_data_track(const char* path);
-
-/* opens a raw track file for a CD or virtual CD.
- *
- * supported files:
- *   real CD - path will be in the form "cdrom://drive1-track01.bin" or "cdrom://d:/drive-track01.bin"
- *             BIN handles obtain their own validated geometry.
- *   bin     - path will point to the bin file
- *   iso     - path will point to the iso file
- */
-cdfs_track_t* cdfs_open_raw_track(const char* path);
+/* cdfs_open_track, cdfs_open_data_track and cdfs_open_raw_track, which
+ * open a track by filename, are in <streams/cdfs_file.h>. */
 
 /* closes the CD or virtual CD track and frees the associated memory */
 void cdfs_close_track(cdfs_track_t* track);

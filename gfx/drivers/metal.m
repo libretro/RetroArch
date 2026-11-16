@@ -34,6 +34,7 @@
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <formats/image.h>
+#include <streams/image_texture_file.h>
 #include <formats/image_yuv_blit.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
@@ -206,8 +207,14 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 #  define METAL_HDR_AVAILABLE 0
 #endif
 
+#include "../common/menu_bloom.h"
+
 @interface Context : NSObject
 
+@property (nonatomic, readonly) unsigned bloomDims;
+- (unsigned)beginBloom:(unsigned)dims defer:(BOOL)defer;
+- (void)endBloom:(unsigned)dims defer:(BOOL)defer;
+- (void)compositeBloom:(unsigned)dims;
 @property (nonatomic, readonly) id<MTLDevice> device;
 @property (nonatomic, readonly) id<MTLLibrary> library;
 @property (nonatomic, readonly) void *frameSDRPipeline;
@@ -256,6 +263,11 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped;
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst;
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
+/* A menu effect's pipelines, made from its desc: an object the context
+ * keeps until it goes, NULL when they cannot be had */
+- (void *)installEffect:(const gfx_display_effect_desc_t *)desc;
+/* An installed effect's pipeline for the target bound now */
+- (id<MTLRenderPipelineState>)effectState:(void *)effect blend:(bool)blend;
 /* The overlay pipeline for an RGBA16Float (linear scRGB) texture while
  * HDR is on; nil otherwise. Takes the menu nits and the composite's
  * ExpandGamut as a float4 at fragment buffer 0. */
@@ -1673,6 +1685,32 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 @property (nonatomic, readwrite, strong) id<MTLBuffer> staging;
 @end
 
+/* An installed menu effect: [0] unblended, [1] blended, each for the
+ * BGRA8 targets and for the RGBA16Float HDR overlay and glow */
+@interface MetalEffect : NSObject
+{
+@public
+   id<MTLRenderPipelineState> _states[2];
+   id<MTLRenderPipelineState> _statesF16[2];
+   unsigned _flags;
+}
+@end
+
+@implementation MetalEffect
+#if !__has_feature(objc_arc)
+- (void)dealloc
+{
+   int i;
+   for (i = 0; i < 2; i++)
+   {
+      [(id)_states[i] release];
+      [(id)_statesF16[i] release];
+   }
+   [super dealloc];
+}
+#endif
+@end
+
 @interface Context()
 - (bool)_initConversionFilters;
 #if METAL_HDR_AVAILABLE
@@ -1683,6 +1721,19 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
 @implementation Context
 {
+   /* The installed menu effects, kept for as long as the context */
+   NSMutableArray *_effects;
+   MTLRenderPassDescriptor *_renderPass;
+   MTLRenderPassDescriptor *_bloomRestore;
+   id<MTLTexture> _bloomTex[2];
+   id<MTLRenderPipelineState> _bloomState;
+   id<MTLRenderPipelineState> _bloomSmallAddState;
+   id<MTLRenderPipelineState> _bloomAddState;
+   menu_bloom_pass_t _bloomPlan[MENU_BLOOM_PASSES];
+   unsigned _bloomPasses;
+   MTLPixelFormat _bloomFormat;
+   unsigned _bloomDims;
+   BOOL _bloomFailed;
    void *_frameSDRPipeline;
    id<MTLCommandQueue> _commandQueue;
    CAMetalLayer *_layer;
@@ -1707,12 +1758,12 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    buffer_chain_t _chain[CHAIN_LENGTH];
    MTLClearColor _clearColor;
 
-   id<MTLRenderPipelineState> _states[GFX_MAX_SHADERS][2];
+   id<MTLRenderPipelineState> _states[VIDEO_SHADER_PROGRAM_COUNT][2];
    id<MTLRenderPipelineState> _clearState;
    /* The same for the HDR UI overlay, which is RGBA16Float: every UI
     * draw goes there while HDR is on (see rce), and a pipeline's colour
     * format must be its target's. getStockShader picks by hdrEnabled. */
-   id<MTLRenderPipelineState> _statesF16[GFX_MAX_SHADERS][2];
+   id<MTLRenderPipelineState> _statesF16[VIDEO_SHADER_PROGRAM_COUNT][2];
    id<MTLRenderPipelineState> _clearStateF16;
    /* An RGBA16Float texture, linear scRGB, into the overlay */
    id<MTLRenderPipelineState> _linearStateF16;
@@ -1890,6 +1941,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    for (i = 0; i < CHAIN_LENGTH; i++)
       buffer_chain_destroy(&_chain[i]);
 #if !__has_feature(objc_arc)
+   [_effects release];
    {
    int j;
    for (i = 0; i < (int)(TEXTURE_FILTER_MIPMAP_NEAREST + 1); i++)
@@ -1897,7 +1949,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    [(id)_planarKernel release];
    for (i = 0; i < (int)RPixelFormatCount; i++)
       [_filters[i] release];
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   for (i = 0; i < VIDEO_SHADER_PROGRAM_COUNT; i++)
    {
       for (j = 0; j < 2; j++)
       {
@@ -1905,6 +1957,13 @@ static void buffer_chain_discard(buffer_chain_t *chain);
          [(id)_statesF16[i][j] release];
       }
    }
+   [_renderPass release];
+   [_bloomRestore release];
+   [_bloomTex[0] release];
+   [_bloomTex[1] release];
+   [_bloomState release];
+   [_bloomSmallAddState release];
+   [_bloomAddState release];
    [(id)_clearState release];
    [(id)_clearStateF16 release];
    [(id)_linearStateF16 release];
@@ -2133,26 +2192,108 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend
 {
-   assert(index > 0 && index < GFX_MAX_SHADERS);
+   assert(index > 0 && index < VIDEO_SHADER_PROGRAM_COUNT);
 
    switch (index)
    {
       case VIDEO_SHADER_STOCK_BLEND:
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
+      case VIDEO_SHADER_XMB_PLASTIC:
          break;
       default:
          index = VIDEO_SHADER_STOCK_BLEND;
          break;
    }
 
+   if (index == VIDEO_SHADER_XMB_PLASTIC)
+   {
+      blend = YES;
+      if (!_states[index][1] || (_hdrEnabled && !_statesF16[index][1]))
+         index = VIDEO_SHADER_STOCK_BLEND;
+   }
    return _hdrEnabled && _statesF16[index][blend ? 1 : 0]
       ? _statesF16[index][blend ? 1 : 0]
       : _states[index][blend ? 1 : 0];
+}
+
+- (void *)installEffect:(const gfx_display_effect_desc_t *)desc
+{
+   NSError *err = nil;
+   unsigned i;
+   MetalEffect *fx;
+   MTLRenderPipelineDescriptor *psd;
+   MTLRenderPipelineColorAttachmentDescriptor *ca;
+   bool mesh;
+   if (!desc || !desc->metal_vertex || !desc->metal_fragment || !_library)
+      return NULL;
+   mesh = (desc->flags & GFX_EFFECT_MESH) != 0;
+   psd  = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
+   ca   = psd.colorAttachments[0];
+   /* As the stock pipelines: BGRA8Unorm, the SDR overlay or the drawable */
+   ca.pixelFormat                 = MTLPixelFormatBGRA8Unorm;
+   ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
+   ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
+   ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
+   ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+   psd.sampleCount                = 1;
+   psd.vertexDescriptor           = [self _spriteVertexDescriptor];
+   psd.label                      = [NSString stringWithUTF8String:desc->metal_fragment];
+   psd.vertexFunction             = RARCH_AUTORELEASE_R([_library
+         newFunctionWithName:[NSString stringWithUTF8String:desc->metal_vertex]]);
+   if (desc->metal_constant_count)
+   {
+      MTLFunctionConstantValues *vals = RARCH_AUTORELEASE_R([MTLFunctionConstantValues new]);
+      for (i = 0; i < desc->metal_constant_count; i++)
+         [vals setConstantValue:&desc->metal_constants[i] type:MTLDataTypeFloat
+            withName:[NSString stringWithUTF8String:desc->metal_constant_names[i]]];
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_library
+            newFunctionWithName:[NSString stringWithUTF8String:desc->metal_fragment]
+            constantValues:vals error:&err]);
+   }
+   else
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_library
+            newFunctionWithName:[NSString stringWithUTF8String:desc->metal_fragment]]);
+   if (!psd.vertexFunction || !psd.fragmentFunction || err != nil)
+      return NULL;
+
+   fx         = RARCH_AUTORELEASE_R([MetalEffect new]);
+   fx->_flags = desc->flags;
+   /* The mesh effects are drawn unblended too, and blended by adding;
+    * the others blended by their alpha only */
+   if (mesh)
+   {
+      ca.blendingEnabled      = NO;
+      fx->_states[0]          = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      fx->_statesF16[0]       = [self twinF16:psd];
+      ca.sourceRGBBlendFactor      = MTLBlendFactorOne;
+      ca.destinationRGBBlendFactor = MTLBlendFactorOne;
+   }
+   ca.blendingEnabled         = YES;
+   fx->_states[1]             = [self sdrState:psd error:&err];
+   fx->_statesF16[1]          = [self twinF16:psd];
+   if (err != nil || !fx->_states[1])
+   {
+      RARCH_ERR("[Metal] Error creating a menu effect's pipeline state %s.\n",
+            err ? err.localizedDescription.UTF8String : "");
+      return NULL;
+   }
+   if (!_effects)
+      _effects = [NSMutableArray new];
+   [_effects addObject:fx];
+   return (__bridge void *)fx;
+}
+
+- (id<MTLRenderPipelineState>)effectState:(void *)effect blend:(bool)blend
+{
+   MetalEffect *fx = (__bridge MetalEffect *)effect;
+   unsigned i      = blend ? 1 : 0;
+   if (!fx)
+      return nil;
+   if (!fx->_states[i])
+      i = 1;
+   /* The glow's small images are RGBA16Float */
+   if (_bloomDims)
+      return fx->_statesF16[i];
+   return _hdrEnabled && fx->_statesF16[i] ? fx->_statesF16[i] : fx->_states[i];
 }
 
 - (id<MTLRenderPipelineState>)linearShader
@@ -2301,121 +2442,15 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       return NO;
    }
 
-   MTLFunctionConstantValues *vals;
-
-   psd.label          = @"snow_simple";
-   ca.blendingEnabled = YES;
+   psd.label = @"xmb_plastic";
+   psd.fragmentFunction = RARCH_AUTORELEASE_R([_library
+         newFunctionWithName:@"xmb_plastic_fragment"]);
+   if (psd.fragmentFunction)
    {
-      vals            = RARCH_AUTORELEASE_R([MTLFunctionConstantValues new]);
-      float values[3] = {
-         1.25f,   /* baseScale */
-         0.50f,   /* density   */
-         0.15f,   /* speed     */
-      };
-      [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
-      [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
-      [vals setConstantValue:&values[2] type:MTLDataTypeFloat withName:@"snowSpeed"];
+      _states[VIDEO_SHADER_XMB_PLASTIC][1] = [self sdrState:psd error:&err];
+      _statesF16[VIDEO_SHADER_XMB_PLASTIC][1] = [self twinF16:psd];
    }
-   psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err]);
-   _states[VIDEO_SHADER_MENU_3][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_3][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label          = @"snow";
-   ca.blendingEnabled = YES;
-   {
-      vals            = RARCH_AUTORELEASE_R([MTLFunctionConstantValues new]);
-      float values[3] = {
-         3.50f,   /* baseScale */
-         0.70f,   /* density   */
-         0.25f,   /* speed     */
-      };
-      [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
-      [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
-      [vals setConstantValue:&values[2] type:MTLDataTypeFloat withName:@"snowSpeed"];
-   }
-   psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err]);
-   _states[VIDEO_SHADER_MENU_4][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_4][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"bokeh";
-   ca.blendingEnabled              = YES;
-   psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bokeh_fragment"]);
-   _states[VIDEO_SHADER_MENU_5][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_5][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"snowflake";
-   ca.blendingEnabled              = YES;
-   psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snowflake_fragment"]);
-   _states[VIDEO_SHADER_MENU_6][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_6][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"ribbon";
-   ca.blendingEnabled              = NO;
-   psd.vertexFunction              = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_vertex"]);
-   psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_fragment"]);
-   _states[VIDEO_SHADER_MENU][0]   = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU][0] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"ribbon_blend";
-   ca.blendingEnabled              = YES;
-   ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
-   ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
-   _states[VIDEO_SHADER_MENU][1]   = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"ribbon_simple";
-   ca.blendingEnabled              = NO;
-   psd.vertexFunction              = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_simple_vertex"]);
-   psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_simple_fragment"]);
-   _states[VIDEO_SHADER_MENU_2][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_2][0] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
-
-   psd.label                       = @"ribbon_simple_blend";
-   ca.blendingEnabled              = YES;
-   ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
-   ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
-   _states[VIDEO_SHADER_MENU_2][1] = [self sdrState:psd error:&err];
-   _statesF16[VIDEO_SHADER_MENU_2][1] = [self twinF16:psd];
-   if (err != nil)
-   {
-      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
-      return NO;
-   }
+   err = nil;
 
    return YES;
 }
@@ -3691,6 +3726,7 @@ static float metal_hdr_pq_to_nits(float pq)
          rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
          rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
          rpd.colorAttachments[0].texture    = _sdrOverlayTex;
+         RARCH_ASSIGN(_renderPass, rpd);
          RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:rpd]);
          _rce.label = @"SDR overlay encoder (HDR frame)";
          _sdrOverlayDirty = true;
@@ -3709,14 +3745,171 @@ static float metal_hdr_pq_to_nits(float pq)
       rpd.colorAttachments[0].clearColor = _clearColor;
       rpd.colorAttachments[0].loadAction = _drawableBegun
          ? MTLLoadActionLoad : MTLLoadActionClear;
+      rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
       rpd.colorAttachments[0].texture = drawable.texture;
       _drawableBegun = true;
       if (_captureEnabled)
          RARCH_ASSIGN(_backBuffer, drawable.texture);
+      RARCH_ASSIGN(_renderPass, rpd);
       RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:rpd]);
       _rce.label = @"Frame command encoder";
    }
    return _rce;
+}
+
+- (unsigned)bloomDims { return _bloomDims; }
+
+/* The additive glow into the target's format, made when it changes */
+- (BOOL)bloomAddStateFor:(MTLPixelFormat)format
+{
+   MTLRenderPipelineDescriptor *psd;
+   if (_bloomAddState && _bloomFormat == format)
+      return YES;
+   psd = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
+   psd.vertexFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_vertex"]);
+   psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_fragment"]);
+   psd.colorAttachments[0].pixelFormat = format;
+   psd.colorAttachments[0].blendingEnabled = YES;
+   psd.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+   psd.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+   psd.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+   psd.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+   RARCH_RELEASE_NIL(_bloomAddState);
+   _bloomAddState = [_device newRenderPipelineStateWithDescriptor:psd error:nil];
+   if (!_bloomAddState)
+      return NO;
+   _bloomFormat = format;
+   return YES;
+}
+
+/* Deferred, called before the frame's encoder exists: the small passes
+ * get encoders of their own and the frame's is not split */
+- (unsigned)beginBloom:(unsigned)dims defer:(BOOL)defer
+{
+   unsigned small_dims = menu_bloom_dims(dims);
+   if (!small_dims || _bloomFailed || !_commandBuffer)
+      return 0;
+   if (defer ? _rce != nil : !self.rce)
+      return 0;
+   if (!_bloomState || !_bloomSmallAddState)
+   {
+      MTLRenderPipelineDescriptor *psd = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
+      psd.vertexFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_vertex"]);
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_fragment"]);
+      psd.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
+      RARCH_RELEASE_NIL(_bloomState);
+      RARCH_RELEASE_NIL(_bloomSmallAddState);
+      _bloomState = [_device newRenderPipelineStateWithDescriptor:psd error:nil];
+      psd.colorAttachments[0].blendingEnabled = YES;
+      psd.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+      psd.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+      psd.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+      psd.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+      _bloomSmallAddState = [_device newRenderPipelineStateWithDescriptor:psd error:nil];
+      if (!_bloomState || !_bloomSmallAddState)
+      {
+         _bloomFailed = YES;
+         return 0;
+      }
+   }
+   if (!defer && ![self bloomAddStateFor:
+         _renderPass.colorAttachments[0].texture.pixelFormat])
+   {
+      _bloomFailed = YES;
+      return 0;
+   }
+   if (!_bloomTex[0] || _bloomTex[0].width != VIDEO_SCALE_W(small_dims)
+         || _bloomTex[0].height != VIDEO_SCALE_H(small_dims)
+         || _bloomTex[0].pixelFormat != MTLPixelFormatRGBA16Float)
+   {
+      unsigned i;
+      MTLTextureDescriptor *td = [MTLTextureDescriptor
+         texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float width:VIDEO_SCALE_W(small_dims)
+         height:VIDEO_SCALE_H(small_dims) mipmapped:NO];
+      td.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+      td.storageMode = MTLStorageModePrivate;
+      for (i = 0; i < 2; i++)
+      {
+         RARCH_RELEASE_NIL(_bloomTex[i]);
+         _bloomTex[i] = [_device newTextureWithDescriptor:td];
+         if (!_bloomTex[i])
+         {
+            _bloomFailed = YES;
+            return 0;
+         }
+      }
+      _bloomPasses = menu_bloom_plan(_bloomPlan, small_dims, true);
+   }
+   if (!defer)
+      RARCH_ASSIGN(_bloomRestore, _renderPass);
+   _bloomDims = small_dims;
+   [self beginLayer:_bloomTex[0]];
+   return small_dims;
+}
+
+- (void)endBloom:(unsigned)dims defer:(BOOL)defer
+{
+   unsigned i;
+   unsigned small_dims = _bloomDims;
+   [self endLayer];
+   for (i = 0; i < _bloomPasses; i++)
+   {
+      const menu_bloom_pass_t *pass = &_bloomPlan[i];
+      BOOL output = pass->dst == MENU_BLOOM_OUTPUT;
+      id<MTLRenderCommandEncoder> encoder;
+      MTLViewport vp = {0, 0, VIDEO_SCALE_W(small_dims), VIDEO_SCALE_H(small_dims), 0, 1};
+      if (output)
+      {
+         if (defer)
+            continue;
+         _bloomRestore.colorAttachments[0].loadAction = MTLLoadActionLoad;
+         RARCH_ASSIGN(_renderPass, _bloomRestore);
+         RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:_renderPass]);
+         vp.width = VIDEO_SCALE_W(dims);
+         vp.height = VIDEO_SCALE_H(dims);
+      }
+      else if (pass->add)
+      {
+         MTLRenderPassDescriptor *rpd = RARCH_AUTORELEASE_R([MTLRenderPassDescriptor new]);
+         rpd.colorAttachments[0].loadAction  = MTLLoadActionLoad;
+         rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+         rpd.colorAttachments[0].texture     = _bloomTex[pass->dst];
+         RARCH_ASSIGN(_renderPass, rpd);
+         RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:rpd]);
+      }
+      else
+         [self beginLayer:_bloomTex[pass->dst]];
+      encoder = _rce;
+      [encoder setViewport:vp];
+      [encoder setRenderPipelineState:output ? _bloomAddState
+         : (pass->add ? _bloomSmallAddState : _bloomState)];
+      [encoder setFragmentTexture:_bloomTex[pass->src] atIndex:0];
+      [encoder setFragmentBytes:pass->params length:sizeof(pass->params) atIndex:0];
+      [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+      /* The last one leaves the frame's encoder open, as begin found it */
+      if (!output || i + 1 < _bloomPasses)
+         [self endLayer];
+   }
+   _bloomDims = 0;
+   RARCH_RELEASE_NIL(_bloomRestore);
+}
+
+/* Deferred plans are float: one output pass, the last */
+- (void)compositeBloom:(unsigned)dims
+{
+   const menu_bloom_pass_t *pass;
+   id<MTLRenderCommandEncoder> encoder = self.rce;
+   MTLViewport vp = {0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), 0, 1};
+   if (     !encoder || !_bloomPasses
+         || ![self bloomAddStateFor:
+            _renderPass.colorAttachments[0].texture.pixelFormat])
+      return;
+   pass = &_bloomPlan[_bloomPasses - 1];
+   [encoder setViewport:vp];
+   [encoder setRenderPipelineState:_bloomAddState];
+   [encoder setFragmentTexture:_bloomTex[pass->src] atIndex:0];
+   [encoder setFragmentBytes:pass->params length:sizeof(pass->params) atIndex:0];
+   [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 }
 
 - (void)beginLayer:(id<MTLTexture>)tex
@@ -3734,6 +3927,7 @@ static float metal_hdr_pq_to_nits(float pq)
    rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
    rpd.colorAttachments[0].texture     = tex;
+   RARCH_ASSIGN(_renderPass, rpd);
    RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:rpd]);
    _rce.label = @"Views UI layer";
 }
@@ -3745,6 +3939,7 @@ static float metal_hdr_pq_to_nits(float pq)
       [_rce endEncoding];
       RARCH_RELEASE_NIL(_rce);
    }
+   RARCH_RELEASE_NIL(_renderPass);
 }
 
 - (void)resetRenderViewport:(ViewportResetMode)mode
@@ -3836,6 +4031,8 @@ static float metal_hdr_pq_to_nits(float pq)
       [_rce endEncoding];
       RARCH_RELEASE_NIL(_rce);
    }
+
+   RARCH_RELEASE_NIL(_renderPass);
 
    id<CAMetalDrawable> drawable = self.nextDrawable;
 #ifdef HAVE_RECORD_METAL
@@ -4232,6 +4429,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    uint32_t _meshId[4];
    uint64_t _meshLast[4];
    uint64_t _meshDraws;
+   id<MTLBuffer> _ribbonVbo;
+   uint32_t _ribbonMeshId;
    /* Sampled by a quad drawn with no texture: solid colour */
    Texture *_white;
 }
@@ -4257,6 +4456,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
       [_meshVbo[i] release];
       [_meshIbo[i] release];
    }
+   [_ribbonVbo release];
    [_meshState release];
    [_meshStateF16 release];
    [_white release];
@@ -4345,34 +4545,20 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    draw->backend_data      = &_uniforms;
    draw->backend_data_size = sizeof(_uniforms);
 
-   switch (draw->pipeline_id)
+   if (!draw->effect)
+      return;
+   if (((__bridge MetalEffect *)draw->effect)->_flags & GFX_EFFECT_MESH)
    {
-      /* ribbon */
-      default:
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      {
-         if (!(draw->coords = gfx_display_effect_coords(disp_get_ptr())))
-            return;
-         break;
-      }
-
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-      {
-         draw->coords          = &blank_coords;
-         blank_coords.vertices = 4;
-         break;
-      }
+      if (!(draw->coords = gfx_display_effect_coords(disp_get_ptr())))
+         return;
+   }
+   else
+   {
+      draw->coords          = &blank_coords;
+      blank_coords.vertices = 4;
    }
 
-   /* The effects' clock, one step ahead, as this driver has always
-    * drawn them */
-   _uniforms.time = disp_get_ptr()->effect_time + 0.01f;
-   if (_uniforms.time > 65536.0f)
-      _uniforms.time -= 65536.0f;
+   _uniforms.time = disp_get_ptr()->effect_time;
 }
 
 /* gfx_display meshes. The shader is compiled here from its source
@@ -4595,28 +4781,54 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 {
    unsigned i;
    BufferRange range;
-   NSUInteger vertex_count;
+   NSUInteger vertex_count = draw->coords->vertices;
    SpriteVertex *pv;
    const float *vertex    = draw->coords->vertex ?: MenuDisplay.defaultVertices;
    const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;
    const float *color     = draw->coords->color ?: MenuDisplay.defaultColor;
-   NSUInteger needed      = draw->coords->vertices * sizeof(SpriteVertex);
-   if (![_context allocRange:&range length:needed])
-      return;
-
-   vertex_count           = draw->coords->vertices;
-   pv                     = (SpriteVertex *)range.data;
-
-   for (i = 0; i < draw->coords->vertices; i++, pv++)
+   NSUInteger needed      = vertex_count * sizeof(SpriteVertex);
+   if (     draw->effect
+         && (((__bridge MetalEffect *)draw->effect)->_flags & GFX_EFFECT_MESH))
    {
-      pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
-      vertex += 2;
-
-      pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
-      tex_coord += 2;
-
-      pv->color = rgba16_pack(color);
-      color += 4;
+      const gfx_display_mesh_t *mesh = disp_get_ptr()->effect_mesh;
+      if (!mesh)
+         return;
+      /* The whole mesh, once: effects draw the first vertex_count */
+      if (!_ribbonVbo || _ribbonMeshId != mesh->id)
+      {
+         RARCH_RELEASE_NIL(_ribbonVbo);
+         _ribbonVbo = [_context.device
+            newBufferWithLength:mesh->vertex_count * sizeof(SpriteVertex)
+            options:MTLResourceStorageModeShared];
+         if (!_ribbonVbo)
+            return;
+         pv     = (SpriteVertex *)_ribbonVbo.contents;
+         vertex = mesh->positions;
+         for (i = 0; i < mesh->vertex_count; i++, pv++, vertex += 2)
+         {
+            pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
+            pv->texCoord = simd_make_float2(0.0f, 0.0f);
+            pv->color = RGBA16_WHITE;
+         }
+         _ribbonMeshId = mesh->id;
+      }
+      range.buffer = _ribbonVbo;
+      range.offset = 0;
+   }
+   else
+   {
+      if (![_context allocRange:&range length:needed])
+         return;
+      pv = (SpriteVertex *)range.data;
+      for (i = 0; i < vertex_count; i++, pv++)
+      {
+         pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
+         vertex += 2;
+         pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
+         tex_coord += 2;
+         pv->color = rgba16_pack(color);
+         color += 4;
+      }
    }
 
    id<MTLRenderCommandEncoder> rce = _context.rce;
@@ -4637,8 +4849,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 
    MTLViewport vp = {
       .originX = VIDEO_POS_X(draw->pos),
-      .originY = VIDEO_POS_FLIP_Y(VIDEO_SCALE_H(_context.viewport->full_dims),
-            draw->pos, draw->dims),
+      .originY = _context.bloomDims ? 0 : VIDEO_POS_FLIP_Y(
+            VIDEO_SCALE_H(_context.viewport->full_dims), draw->pos, draw->dims),
       .width   = VIDEO_SCALE_W(draw->dims),
       .height  = VIDEO_SCALE_H(draw->dims),
       .znear   = 0,
@@ -4646,25 +4858,33 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    };
    [rce setViewport:vp];
 
-   if (_useScissorRect)
+   if (_useScissorRect && !_context.bloomDims)
       [rce setScissorRect:_scissorRect];
 
-   switch (draw->pipeline_id)
+   switch (draw->effect ? 1 : 0)
    {
 #if HAVE_SHADERPIPELINE
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         [rce setRenderPipelineState:[_context getStockShader:draw->pipeline_id blend:_blend]];
+      case 1:
+      {
+         id<MTLRenderPipelineState> state = [_context effectState:draw->effect blend:_blend];
+         if (!state)
+            return;
+         [rce setRenderPipelineState:state];
          [rce setVertexBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
+         if (((__bridge MetalEffect *)draw->effect)->_flags & GFX_EFFECT_RIBBON)
+         {
+            /* Lent straight from gfx_display; Metal takes its copy here */
+            const float *ribbon = gfx_display_ribbon_data(disp_get_ptr());
+            if (!ribbon)
+               return;
+            [rce setVertexBytes:ribbon length:GFX_DISPLAY_RIBBON_BYTES atIndex:BufferIndexRibbon];
+         }
          [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
          [rce setFragmentBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
          /* Menu draws use a triangle-strip layout. */
          [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:vertex_count];
          return;
+      }
 #endif
       default:
          break;
@@ -4687,7 +4907,10 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
       [rce setFragmentBytes:&linParams length:sizeof(linParams) atIndex:0];
    }
    else
-      [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
+      [rce setRenderPipelineState:[_context getStockShader:
+            draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC
+               ? VIDEO_SHADER_XMB_PLASTIC : VIDEO_SHADER_STOCK_BLEND
+            blend:_blend]];
 
    Uniforms uniforms = {
       .projectionMatrix = draw->matrix_data ? make_matrix_float4x4((const float *)draw->matrix_data)
@@ -4940,6 +5163,25 @@ static bool gfx_display_metal_mesh_draw(void *data, unsigned video_dims,
       dims:video_dims] ? true : false;
 }
 
+static unsigned gfx_display_metal_bloom_begin(void *data, unsigned dims,
+      bool defer)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return [md.context beginBloom:dims defer:defer];
+}
+
+static void gfx_display_metal_bloom_end(void *data, unsigned dims, bool defer)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   [md.context endBloom:dims defer:defer];
+}
+
+static void gfx_display_metal_bloom_composite(void *data, unsigned dims)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   [md.context compositeBloom:dims];
+}
+
 static void gfx_display_metal_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
@@ -4949,6 +5191,13 @@ static void gfx_display_metal_draw_pipeline(
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md && draw)
       [md.display drawPipeline:draw];
+}
+
+static void *gfx_display_metal_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return md ? [md.context installEffect:desc] : NULL;
 }
 
 static void gfx_display_metal_scissor_begin(void *data, unsigned video_dims,
@@ -4990,6 +5239,8 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    size_t _esz;
    id<MTLTexture> _texture;
 
+   id<MTLRenderPipelineState> _plasticState;
+   id<MTLRenderPipelineState> _plasticStateF16;
    id<MTLRenderPipelineState> _state;
    id<MTLRenderPipelineState> _stateF16; /* the HDR UI overlay's */
    id<MTLSamplerState> _sampler;
@@ -5002,6 +5253,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 }
 
 @property (readonly) struct font_atlas *atlas;
+@property (nonatomic) bool xmbPlastic;
 
 - (void)deinit;
 - (instancetype)initWithDriver:(MetalDriver *)driver fontPath:(const char *)font_path fontSize:(unsigned)font_size;
@@ -5030,6 +5282,8 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 #if !__has_feature(objc_arc)
    [_context release];
    [(id)_texture release];
+   [(id)_plasticState release];
+   [(id)_plasticStateF16 release];
    [(id)_state release];
    [(id)_stateF16 release];
    [(id)_sampler release];
@@ -5167,6 +5421,13 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
       _stateF16                      = [_context twinF16:psd];
       if (err != nil)
          return NO;
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_context.library
+            newFunctionWithName:@"xmb_font_fragment"]);
+      if (psd.fragmentFunction)
+      {
+         _plasticState    = [_context sdrState:psd error:&err];
+         _plasticStateF16 = [_context twinF16:psd];
+      }
    }
 
    {
@@ -5326,8 +5587,16 @@ static INLINE void write_quad6(SpriteVertex *pv,
    [rce pushDebugGroup:@"render fonts"];
 
    [_context resetRenderViewport:kFullscreenViewport];
-   [rce setRenderPipelineState:(_context.hdrEnabled && _stateF16)
-      ? _stateF16 : _state];
+   id<MTLRenderPipelineState> state = (_context.hdrEnabled && _stateF16)
+      ? _stateF16 : _state;
+   if (self.xmbPlastic)
+   {
+      id<MTLRenderPipelineState> plastic = _context.hdrEnabled
+         ? _plasticStateF16 : _plasticState;
+      if (plastic)
+         state = plastic;
+   }
+   [rce setRenderPipelineState:state];
    [rce setVertexBytes:&_uniforms length:sizeof(Uniforms) atIndex:BufferIndexUniforms];
    [rce setVertexBuffer:_range.buffer offset:_range.offset atIndex:BufferIndexPositions];
    [rce setFragmentTexture:_texture atIndex:TextureIndexColor];
@@ -5548,6 +5817,13 @@ static int metal_raster_font_get_message_width(void *data, const char *msg,
 {
    MetalRaster *r = (__bridge MetalRaster *)data;
    return [r getWidthForMessage:msg length:(unsigned)msg_len scale:scale];
+}
+
+static void metal_raster_font_bind_block(void *data, void *userdata)
+{
+   MetalRaster *r = (__bridge MetalRaster *)data;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
+   r.xmbPlastic = block && block->xmb_plastic;
 }
 
 static void metal_raster_font_render_msg(
@@ -6714,6 +6990,10 @@ static void metal_views_render(metal_views_t *vs,
          if (memcmp(&vp, _viewport, sizeof(vp)) != 0)
             _context.viewport = _viewport;
          [_context begin];
+#ifdef HAVE_SHADERPIPELINE
+         /* Before the frame's encoder: the glow splits no pass */
+         gfx_display_bloom_prepass((__bridge void*)self);
+#endif
       }
 
       _frameView.frameCount      = frameCount;
@@ -8305,6 +8585,10 @@ struct metal_view_chain
                width = shader_pass->fbo.abs_x;
                break;
 
+            case RARCH_SCALE_ORIGINAL:
+               width = (NSUInteger)(src_w * shader_pass->fbo.scale_x);
+               break;
+
             default:
                break;
          }
@@ -8324,6 +8608,10 @@ struct metal_view_chain
 
             case RARCH_SCALE_ABSOLUTE:
                height = shader_pass->fbo.abs_y;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               height = (NSUInteger)(src_h * shader_pass->fbo.scale_y);
                break;
 
             default:
@@ -10657,7 +10945,7 @@ static font_renderer_t metal_raster_font = {
    metal_raster_font_render_msg,
    "metal",
    metal_raster_font_get_glyph,
-   NULL, /* bind_block  */
+   metal_raster_font_bind_block,
    NULL, /* flush_block */
    metal_raster_font_get_message_width,
    metal_get_line_metrics
@@ -10690,7 +10978,12 @@ video_driver_t video_metal = {
 #endif
    NULL, /* invalidate_hw_render_cache */
    metal_read_viewport_hdr,
-   &metal_raster_font
+   &metal_raster_font,
+#ifdef HAVE_OPENXR
+   NULL, /* set_vr_content_info */
+#endif
+   NULL, /* read_viewport_bgrx */
+   true /* max_geometry_in_place */
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_metal = {
@@ -10716,5 +11009,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    true,
    gfx_display_metal_scissor_begin,
    gfx_display_metal_scissor_end,
-   gfx_display_metal_mesh_draw
+   gfx_display_metal_mesh_draw,
+   gfx_display_metal_bloom_begin,
+   gfx_display_metal_bloom_end,
+   gfx_display_metal_bloom_composite,
+   gfx_display_metal_effect_install
 };

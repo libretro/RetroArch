@@ -158,15 +158,21 @@ data_transfer_t *data_transfer_open_source(size_t len,
  * NULL unless the transfer completed successfully. */
 uint8_t *data_transfer_source_detach(data_transfer_t *dt, size_t *len);
 
-data_transfer_t *data_transfer_open_window(const char *path, size_t keep);
-
 /* Borrow a seekable source for the window's lifetime. The callback writes
  * directly into final window storage, returning bytes read or -1 on error.
- * A short read fails the operation. Closing the window does not close ud. */
+ * A short read fails the operation. Closing the window does not close ud
+ * unless data_transfer_set_release() said how.
+ * data_transfer_open_window(path), which opens a file for it, is in
+ * <streams/data_transfer_file.h>. */
 typedef int64_t (*data_transfer_read_at_t)(void *ud, uint64_t offset,
       uint8_t *dst, size_t bytes);
 data_transfer_t *data_transfer_open_window_reader(size_t length, size_t keep,
       data_transfer_read_at_t read_at, void *ud);
+
+/* What frees a reader's ud when the transfer is freed */
+typedef void (*data_transfer_release_t)(void *ud);
+void data_transfer_set_release(data_transfer_t *dt,
+      data_transfer_release_t release);
 
 const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
 /* True when the transfer is genuinely windowed - address space was
@@ -253,8 +259,10 @@ bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
  * behind the consumer.  There the bytes at tell itself are what is
  * missing - a lap that landed past the head, an open that rebased -
  * and leaving them for a later tick leaves the consumer's very next
- * read on unresident pages; that catch-up is one unbudgeted extend,
- * exactly what window_feed has always done.  budget == 0 disables
+ * read on unresident pages; that catch-up is one unbudgeted extend
+ * from margin bytes behind tell, never from further back: a frontier
+ * further behind than that moves up first, so a gap the consumer has
+ * passed is never read in.  budget == 0 disables
  * the ceiling entirely, making this window_feed by another name.
  *
  * *resident_hi (may be NULL) reports the sequential bound this call
@@ -296,8 +304,10 @@ void data_transfer_arena_release(data_transfer_arena_t *a);
  * when commit_cap is 0.  There is no built-in ceiling: a caller that
  * asks for no cap gets no cap, and a file too large for memory is
  * refused at open rather than presented as a capped prefix. */
-data_transfer_t *data_transfer_open_prefix(const char *path,
-      size_t commit_cap);
+data_transfer_t *data_transfer_open_prefix_reader(size_t length,
+      size_t commit_cap, data_transfer_read_at_t read_at, void *ud);
+/* data_transfer_open_prefix(path, commit_cap), which opens a file for
+ * it, is in <streams/data_transfer_file.h>. */
 
 /* The fill stopped at commit_cap with the file continuing beyond it.
  * Terminal: iterate() will not advance further. */

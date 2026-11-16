@@ -28,6 +28,7 @@
 #include <streams/file_stream.h>
 #include <formats/image.h>
 #include <formats/data_transfer.h>
+#include <streams/data_transfer_file.h>
 #include <formats/video_player.h>
 #include <retro_atomic.h>
 #include <features/features_cpu.h>
