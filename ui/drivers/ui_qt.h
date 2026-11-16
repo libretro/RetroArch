@@ -39,6 +39,7 @@
 #include <QIcon>
 #include <QImage>
 #include <QPointer>
+#include <QDateTime>
 #include <QProgressBar>
 #include <QElapsedTimer>
 #include <QTableWidget>
