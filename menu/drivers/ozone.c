@@ -12090,6 +12090,50 @@ OZONE_NOINLINE static void ozone_draw_header(
          false);
 }
 
+/* "Press to Find" left of Manage, while a list of the controllers is
+ * shown and two connected ones show one name: placed, and drawn, only
+ * then. Left out where it would run off the left edge; never shortened.
+ * Nothing it shares the footer with is shown on those lists, but the
+ * labels to its left still move over for it, and the core title runs
+ * up to it. Its text joins the footer's batch like the others'
+ * wherever it is drawn. */
+static OZONE_NOINLINE void ozone_draw_footer_pad_find(
+      ozone_handle_t *ozone, const uintptr_t *icons_tex,
+      gfx_display_t *p_disp, void *userdata, unsigned video_dims,
+      math_matrix_4x4 *mymat, float *col, float icon_size, float icon_y,
+      float icon_spacer, float icon_padding_small, float footer_text_y,
+      float footer_margin)
+{
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   ozone_footer_label_t *label       = &ozone->footer_labels.pad_find;
+
+   label->x    = ozone->footer_labels.manage.x - label->width - icon_spacer;
+   label->show = label->x >= footer_margin;
+   if (!label->show)
+   {
+      /* the core title then runs where it would without it */
+      label->x = ozone->footer_labels.search.x;
+      return;
+   }
+
+   ozone->footer_labels.metadata_override.x -= label->width + icon_spacer;
+
+   if (dispctx && dispctx->draw)
+   {
+      gfx_display_blend_begin(dispctx, userdata);
+      gfx_display_set_alpha(col, 0.5f);
+      ozone_draw_icon(p_disp, userdata, video_dims, icon_size, icon_size,
+            icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS],
+            label->x, icon_y, 0.0f, 1.0f, col, mymat);
+      gfx_display_blend_end(dispctx, userdata);
+   }
+
+   gfx_display_draw_text(ozone->fonts.footer.font, label->str,
+         label->x + icon_size + icon_padding_small, footer_text_y,
+         video_dims, ozone->theme->text_rgba, TEXT_ALIGN_LEFT,
+         1.0f, false, 1.0f, false);
+}
+
 static void ozone_draw_footer(
       ozone_handle_t *ozone,
       const uintptr_t *icons_tex,
@@ -12173,8 +12217,6 @@ static void ozone_draw_footer(
          && ozone_combo_row_selected(selection);
    ozone->footer_labels.combo_left.show            =
          ozone->footer_labels.combo_right.show;
-
-   ozone->footer_labels.pad_find.show              = menu_st->pad_find_hint;
 
    ozone->footer_labels.help.show                  =
             !ozone->footer_labels.metadata_override.show
@@ -12283,20 +12325,14 @@ static void ozone_draw_footer(
          ? ozone->footer_labels.fullscreen_thumbnails.x - ozone->footer_labels.manage.width - icon_spacer
          : ozone->footer_labels.fullscreen_thumbnails.x;
 
-   ozone->footer_labels.pad_find.x              = (ozone->footer_labels.pad_find.show)
-         ? ozone->footer_labels.manage.x - ozone->footer_labels.pad_find.width - icon_spacer
-         : ozone->footer_labels.manage.x;
-
-   /* never shortened: left out where it would run off the left edge */
-   if (     ozone->footer_labels.pad_find.show
-         && ozone->footer_labels.pad_find.x < footer_margin)
-   {
-      ozone->footer_labels.pad_find.show = false;
-      ozone->footer_labels.pad_find.x    = ozone->footer_labels.manage.x;
-   }
-
-   ozone->footer_labels.metadata_override.x     = ozone->footer_labels.pad_find.x
+   ozone->footer_labels.metadata_override.x     = ozone->footer_labels.manage.x
          - ozone->footer_labels.metadata_override.width - icon_spacer;
+
+   /* > Press to find: the one test a frame it costs */
+   if (menu_st->pad_find_hint)
+      ozone_draw_footer_pad_find(ozone, icons_tex, p_disp, userdata,
+            video_dims, mymat, col, icon_size, icon_y, icon_spacer,
+            icon_padding_small, footer_text_y, footer_margin);
 
    /* Separator */
    if (separator)
@@ -12567,22 +12603,6 @@ static void ozone_draw_footer(
                   1.0f,
                   col,
                   mymat);
-
-         /* > Press to find */
-         if (ozone->footer_labels.pad_find.show)
-            ozone_draw_icon(
-                  p_disp,
-                  userdata,
-                  video_dims,
-                  icon_size,
-                  icon_size,
-                  icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS],
-                  ozone->footer_labels.pad_find.x,
-                  icon_y,
-                  0.0f,
-                  1.0f,
-                  col,
-                  mymat);
       }
 
       gfx_display_blend_end(dispctx, userdata);
@@ -12812,21 +12832,6 @@ static void ozone_draw_footer(
             1.0f,
             false);
 
-   /* > Press to find */
-   if (ozone->footer_labels.pad_find.show)
-      gfx_display_draw_text(
-            ozone->fonts.footer.font,
-            ozone->footer_labels.pad_find.str,
-            ozone->footer_labels.pad_find.x + icon_size + icon_padding_small,
-            footer_text_y,
-            video_dims,
-            ozone->theme->text_rgba,
-            TEXT_ALIGN_LEFT,
-            1.0f,
-            false,
-            1.0f,
-            false);
-
    /* Core title or Switch icon */
    if (menu_core_enable)
    {
@@ -12850,7 +12855,7 @@ static void ozone_draw_footer(
             ? ozone->footer_labels.metadata_override.x
             : ozone->footer_labels.fullscreen_thumbnails.show
             ? ozone->footer_labels.fullscreen_thumbnails.x
-            : ozone->footer_labels.pad_find.show
+            : menu_st->pad_find_hint
             ? ozone->footer_labels.pad_find.x
             : ozone->footer_labels.search.x;
       usable_width -= footer_margin + (icon_padding * 2);
@@ -14452,7 +14457,9 @@ static int ozone_tap_footer(
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_START);
    else if (ozone->footer_labels.manage.show && x > ozone->footer_labels.manage.x)
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_START);
-   else if (ozone->footer_labels.pad_find.show && x > ozone->footer_labels.pad_find.x)
+   else if (   menu_state_get_ptr()->pad_find_hint
+            && ozone->footer_labels.pad_find.show
+            && x > ozone->footer_labels.pad_find.x)
       return 0;
    else if (ozone->footer_labels.fullscreen_thumbnails.show && x > ozone->footer_labels.metadata_override.x)
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_INFO);

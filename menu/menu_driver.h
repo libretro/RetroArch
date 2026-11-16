@@ -84,6 +84,16 @@ RETRO_BEGIN_DECLS
 #define MENU_PAD_PRESSED_HOLD_US 1000000
 
 /* Whether a press on the controller in @slot marks its rows now */
+/* menu_state.frame_work: what a frame has to do beyond drawing */
+enum menu_frame_work
+{
+   /* a deferred playlist read (playlist_init_cached_deferred()) */
+   MENU_FRAME_WORK_PLAYLIST = (1 << 0),
+   /* presses to look for: two connected controllers show one name,
+    * or did at the last frame */
+   MENU_FRAME_WORK_PAD_FIND = (1 << 1)
+};
+
 #define MENU_PAD_MARKED(menu_st, slot) ((slot) < MAX_INPUT_DEVICES \
       && (((menu_st)->pads_marked >> (slot)) & 1))
 
@@ -638,6 +648,9 @@ struct menu_state
    /* A list of the controllers is shown and two connected ones show one
     * name: Ozone's footer says a press finds one */
    bool pad_find_hint;
+   /* enum menu_frame_work: a frame with none tests this alone */
+   uint8_t frame_work;
+
 };
 
 typedef struct menu_content_ctx_defer_info
@@ -739,9 +752,8 @@ void menu_explore_set_state(explore_state_t *state);
 
 const char *menu_driver_ident(void);
 
-/* Whether two connected controllers show the same name, so carry tags
- * (input_config_get_device_tag()) */
-bool menu_driver_pads_share_name(void);
+/* Two connected controllers came to show one name, or no longer do. */
+void menu_driver_pads_alike_changed(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 

@@ -4868,7 +4868,9 @@ static void menu_displaylist_set_new_playlist(
 
       if (pl_r == 0)
       {
-         /* Still parsing: come back next frame. */
+         /* Still parsing: come back next frame, where the menu's
+          * frame pumps it (MENU_FRAME_WORK_PLAYLIST). */
+         menu_state_get_ptr()->frame_work |= MENU_FRAME_WORK_PLAYLIST;
          menu_displaylist_dirwalk_refresh(0);
          return;
       }

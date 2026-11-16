@@ -378,6 +378,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_player_chat,   ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_fade_chat_toggle, MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_type,                MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_index,               MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_index,                MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_keyboard_index,             MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_aim_stick,                  MENU_ENUM_SUBLABEL_INPUT_AIM_STICK)
@@ -727,6 +728,32 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   const char *display_name, *config_name;
+   unsigned port;
+   if (!list || i >= list->size || list->list[i].entry_idx >= MAX_USERS)
+      return 0;
+   port         = (unsigned)list->list[i].entry_idx;
+   display_name = input_config_get_device_display_name(port);
+   config_name  = input_config_get_device_config_name(port);
+   snprintf(s, len,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO),
+         display_name ? display_name
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+         config_name  ? config_name
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+         input_config_get_device_vid(port),
+         input_config_get_device_pid(port));
+   return 0;
+}
+
+/* As action_bind_sublabel_systeminfo_controller_entry(), with the tag after a
+ * name another connected controller shows too: bound only while one does */
+static int action_bind_sublabel_systeminfo_controller_entry_tagged(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
    char name_buf[NAME_MAX_LENGTH];
    const char *display_name, *config_name;
    unsigned port;
@@ -1013,6 +1040,86 @@ static int action_bind_sublabel_audio_mixer_stream(
 #endif
 
 static int action_bind_sublabel_input_remap_port(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   size_t _len;
+   unsigned with, core;
+   unsigned user_idx     = 0;
+   unsigned display_port = 0;
+   menu_entry_t entry;
+
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
+   menu_entry_get(&entry, 0, i, NULL, false);
+
+   /* We need the actual frontend port index.
+    * This is difficult to obtain here - the only
+    * way to get it is to parse the entry label
+    * (input_remap_port_p<port_index+1>).
+    *
+    * The label format string is "input_remap_port_p%u"
+    * (MENU_ENUM_LABEL_INPUT_REMAP_PORT_STR). Match the literal
+    * prefix and then parse the trailing %u with strtoul to avoid
+    * the per-call strlen()/malloc() overhead some libcs incur on
+    * sscanf. */
+   {
+      static const char prefix[] = "input_remap_port_p";
+      const char       *p;
+      char             *endp;
+      unsigned long     v;
+
+      if (   !*entry.label
+          || !string_starts_with_size(entry.label, prefix,
+                STRLEN_CONST(prefix)))
+         return 0;
+      p = entry.label + STRLEN_CONST(prefix);
+      v = strtoul(p, &endp, 10);
+      if (endp == p)
+         return 0;
+      display_port = (unsigned)v;
+      if (display_port >= MAX_USERS + 1)
+         return 0;
+   }
+
+   if (display_port)
+      user_idx = display_port - 1;
+
+   /* playing as another user's player, it feeds that user's core
+    * port, whatever its own Mapped Port holds; the join can change
+    * while this is shown, so it is not kept */
+   if (     (with = input_remapping_join_user(user_idx)) < MAX_USERS
+         && (core = input_remapping_user_port(user_idx)) < MAX_USERS)
+   {
+      snprintf(s, len,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT_SHARING),
+            with + 1, core + 1);
+      return 0;
+   }
+
+   _len = snprintf(s, len,
+         msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
+         display_port);
+
+   /* Remove trailing dot */
+   snprintf(s + _len - 1, len - _len - 1, ": %s",
+           input_config_get_device_display_name(user_idx)
+         ? input_config_get_device_display_name(user_idx)
+         : (input_config_get_device_name(user_idx)
+         ? input_config_get_device_name(user_idx)
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+
+   /* We can safely cache the sublabel here, since
+    * frontend port index cannot change while the
+    * current menu is displayed */
+   return 1;
+}
+
+/* As action_bind_sublabel_input_remap_port(), with the tag after a
+ * name another connected controller shows too: bound only while one does */
+static int action_bind_sublabel_input_remap_port_tagged(
       file_list_t *list,
       unsigned type, unsigned i,
       const char *label, const char *path,
@@ -1621,15 +1728,16 @@ size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
 }
 
 /* While two connected controllers show one name, a second line says a
- * press finds one. Ozone says it in its footer. */
+ * press finds one: bound only then, and never for Ozone, which says it
+ * in its footer (menu_cbs_init_bind_sublabel_pad_find()). A row made
+ * before the names parted is made again, but says nothing meanwhile. */
 static void menu_cbs_sublabel_pad_find(char *s, size_t len)
 {
-   size_t _len = strlen(s);
-#ifdef HAVE_OZONE
-   if (string_is_equal(menu_driver_ident(), "ozone"))
+   size_t _len;
+   if (!INPUT_DEVICES_SHARE_NAME())
       return;
-#endif
-   if (_len + 1 < len && menu_driver_pads_share_name())
+   _len = strlen(s);
+   if (_len + 1 < len)
       snprintf(s + _len, len - _len, "\n%s",
             msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PAD_FIND));
 }
@@ -1658,7 +1766,6 @@ static int action_bind_sublabel_input_plays_as(
          snprintf(s, len,
                msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARED_BINDS),
                port);
-      menu_cbs_sublabel_pad_find(s, len);
       return 0;
    }
    switch (where)
@@ -1687,14 +1794,27 @@ static int action_bind_sublabel_input_plays_as(
                len);
          break;
    }
+   return 0;
+}
+
+/* As action_bind_sublabel_input_plays_as(), and a press finds it */
+static int action_bind_sublabel_input_plays_as_find(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned player, port;
+   action_bind_sublabel_input_plays_as(list, type, i, label, path, s, len);
    /* a press cannot find a controller that is gone */
-   if (where != INPUT_PLAYS_AS_GONE)
+   if (input_config_plays_as_where(type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN,
+            &player, &port) != INPUT_PLAYS_AS_GONE)
       menu_cbs_sublabel_pad_find(s, len);
    return 0;
 }
 
-/* Port N Controls' Device Index */
-static int action_bind_sublabel_input_device_index(
+/* Port N Controls' Device Index, and a press finds its controller */
+static int action_bind_sublabel_input_device_index_find(
       file_list_t *list,
       unsigned type, unsigned i,
       const char *label, const char *path,
@@ -1702,7 +1822,46 @@ static int action_bind_sublabel_input_device_index(
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX), len);
    menu_cbs_sublabel_pad_find(s, len);
-   return 1;
+   return 0;
+}
+
+/* While two connected controllers show one name, the rows that name a
+ * controller add its tag, and those a press finds it from a second
+ * line (not for Ozone, which says that in its footer). Looked at only
+ * then, as the list is made. */
+static bool menu_cbs_init_bind_sublabel_pad_find(menu_file_list_cbs_t *cbs,
+      unsigned type)
+{
+   if (type == MENU_SETTINGS_INPUT_INPUT_REMAP_PORT)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remap_port_tagged);
+      return true;
+   }
+   if (cbs->enum_idx == MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY)
+   {
+      BIND_ACTION_SUBLABEL(cbs,
+            action_bind_sublabel_systeminfo_controller_entry_tagged);
+      return true;
+   }
+#ifdef HAVE_OZONE
+   if (string_is_equal(menu_driver_ident(), "ozone"))
+      return false;
+#endif
+   if (     type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
+         && type <= MENU_SETTINGS_INPUT_PLAYS_AS_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_plays_as_find);
+      return true;
+   }
+   /* Device Index: its rows have their setting's enum */
+   if (     cbs->setting
+         && cbs->setting->enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+         && cbs->setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_device_index_find);
+      return true;
+   }
+   return false;
 }
 
 /* Add Controller: its player's user is in its entry_idx. */
@@ -1800,6 +1959,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
    if (!cbs)
       return -1;
+
+   if (     INPUT_DEVICES_SHARE_NAME()
+         && menu_cbs_init_bind_sublabel_pad_find(cbs, type))
+      return 0;
 
    BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_generic);
 

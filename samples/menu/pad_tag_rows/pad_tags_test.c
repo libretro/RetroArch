@@ -585,8 +585,18 @@ static bool has_find_line(const char *s)
       && string_is_equal(s + n - l, line);
 }
 
+/* The open list made again, as a hotplug or a driver switch makes it:
+ * its rows take their callbacks as it is made */
+static void remake_list(void)
+{
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                | MENU_ST_FLAG_PREVENT_POPULATE;
+   menu_frame();
+}
+
 #ifdef HAVE_OZONE
-/* Row @i's sublabel with the running menu driver named "ozone" */
+/* Row @i's sublabel with the running menu driver named "ozone", the
+ * list made under that name as a switch to Ozone makes it */
 static void row_sublabel_as_ozone(int i, char *s, size_t len)
 {
    static menu_ctx_driver_t as_ozone;
@@ -596,8 +606,10 @@ static void row_sublabel_as_ozone(int i, char *s, size_t len)
    as_ozone            = *real;
    as_ozone.ident      = "ozone";
    menu_st->driver_ctx = &as_ozone;
+   remake_list();
    row_sublabel(i, s, len);
    menu_st->driver_ctx = real;
+   remake_list();
 }
 #endif
 
@@ -1113,6 +1125,34 @@ static void lane_press_apart(void)
    input_config_set_device_display_name(1, "Harness Pad");
 }
 
+/* Port 1 Controls stays shown while names come to be shared and part
+ * with no hotplug: its rows take what a press marks, and the find
+ * line, only as the list is made, so it is made again each time. */
+static void lane_share_remakes(void)
+{
+   char v[NAME_MAX_LENGTH];
+
+   input_config_clear_device_display_name(1);
+   open_port_controls(1);
+   row_sublabel(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(!has_find_line(v),
+         "names apart: Device Index's sublabel has the find line: \"%s\"", v);
+   input_config_set_device_display_name(1, "Harness Pad");
+   menu_frame();
+   row_sublabel(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(has_find_line(v),
+         "names shared with Port 1 Controls shown: Device Index's "
+         "sublabel lacks the find line: \"%s\"", v);
+   input_config_clear_device_display_name(1);
+   menu_frame();
+   row_sublabel(row(DEVICE_INDEX_1), v, sizeof(v));
+   check(!has_find_line(v),
+         "names parted with Port 1 Controls shown: Device Index's "
+         "sublabel keeps the find line: \"%s\"", v);
+   input_config_set_device_display_name(1, "Harness Pad");
+   menu_frame();
+}
+
 int main(int argc, char *argv[])
 {
    FILE *f;
@@ -1193,6 +1233,7 @@ int main(int argc, char *argv[])
    lane_press_held();
    lane_press_add();
    lane_press_apart();
+   lane_share_remakes();
 
    filestream_delete(ratst_path);
    filestream_delete(cfg_path);

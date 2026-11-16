@@ -10871,6 +10871,8 @@ static unsigned input_plays_as_gen;
  * starts and finds them again - so this is for a start, or for a reset
  * that is followed by one, and not for putting the settings back to
  * their defaults under a running driver. */
+static void input_config_retag_devices(input_driver_state_t *input_st);
+
 void input_config_forget_controllers(void)
 {
    unsigned i;
@@ -10896,6 +10898,7 @@ void input_config_forget_controllers(void)
 
       input_config_reset_autoconfig_binds(i);
    }
+   input_config_retag_devices(input_st);
 }
 
 void input_config_set_device(unsigned port, unsigned id)
@@ -12940,6 +12943,8 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
          }
       }
    }
+
+   input_config_retag_devices(input_st);
 }
 
 const char *input_config_get_device_name(unsigned port)
@@ -13033,53 +13038,83 @@ static bool input_device_ident_before(const input_device_info_t *a,
    return slot_a < slot_b;
 }
 
+uint32_t input_devices_tagged = 0;
+
+/* Each connected controller's shown_tag, from the names shown and the
+ * tags: run as a name, display name, port path or identity changes,
+ * never as a row is drawn. */
+static void input_config_retag_devices(input_driver_state_t *input_st)
+{
+   unsigned port;
+   uint32_t tagged = 0;
+
+   for (port = 0; port < MAX_INPUT_DEVICES; port++)
+   {
+      unsigned i;
+      const char *shown;
+      input_device_info_t *d = &input_st->input_device_info[port];
+      unsigned same          = 0;
+      unsigned before        = 0;
+      unsigned clash         = 0;
+      unsigned clash_before  = 0;
+
+      d->shown_tag[0] = '\0';
+      if (!*d->name)
+         continue;
+      /* the name the menus show: a profile can give two names one */
+      shown = *d->display_name ? d->display_name : d->name;
+      for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      {
+         const input_device_info_t *o = &input_st->input_device_info[i];
+         if (     i == port
+               || !*o->name
+               || !string_is_equal(
+                     *o->display_name ? o->display_name : o->name, shown))
+            continue;
+         same++;
+         if (i < port)
+            before++;
+         if (*d->tag && string_is_equal(o->tag, d->tag))
+         {
+            clash++;
+            if (input_device_ident_before(o, i, d, port))
+               clash_before++;
+         }
+      }
+      if (!same)
+         continue;
+      if (!*d->tag)
+         snprintf(d->shown_tag, sizeof(d->shown_tag), " (#%u)", before + 1);
+      else if (clash)
+         snprintf(d->shown_tag, sizeof(d->shown_tag), " [%s #%u]",
+               d->tag, clash_before + 1);
+      else
+         snprintf(d->shown_tag, sizeof(d->shown_tag), " [%s]", d->tag);
+      tagged |= 1u << port;
+   }
+#ifdef HAVE_MENU
+   /* the menu's rows and frame look for presses only while names are
+    * shared: told as that starts or ends */
+   if (!input_devices_tagged != !tagged)
+   {
+      input_devices_tagged = tagged;
+      menu_driver_pads_alike_changed();
+      return;
+   }
+#endif
+   input_devices_tagged = tagged;
+}
+
 size_t input_config_get_device_tag(unsigned port, char *s, size_t len)
 {
-   unsigned i;
-   char tag[32];
-   const char *shown;
-   const input_device_info_t *d;
-   unsigned same                  = 0;
-   unsigned before                = 0;
-   unsigned clash                 = 0;
-   unsigned clash_before          = 0;
-   input_driver_state_t *input_st = &input_driver_st;
-
+   const char *tag;
    if (len)
       *s = '\0';
    if (port >= MAX_INPUT_DEVICES)
       return 0;
-   d = &input_st->input_device_info[port];
-   if (!*d->name)
+   tag = input_driver_st.input_device_info[port].shown_tag;
+   if (!*tag)
       return 0;
-   /* the name the menus show: a profile can give two names one */
-   shown = *d->display_name ? d->display_name : d->name;
-   for (i = 0; i < MAX_INPUT_DEVICES; i++)
-   {
-      const input_device_info_t *o = &input_st->input_device_info[i];
-      if (     i == port
-            || !*o->name
-            || !string_is_equal(
-                  *o->display_name ? o->display_name : o->name, shown))
-         continue;
-      same++;
-      if (i < port)
-         before++;
-      if (*d->tag && string_is_equal(o->tag, d->tag))
-      {
-         clash++;
-         if (input_device_ident_before(o, i, d, port))
-            clash_before++;
-      }
-   }
-   if (!same)
-      return 0;
-   if (!*d->tag)
-      snprintf(tag, sizeof(tag), " (#%u)", before + 1);
-   else if (clash)
-      snprintf(tag, sizeof(tag), " [%s #%u]", d->tag, clash_before + 1);
-   else
-      snprintf(tag, sizeof(tag), " [%s]", d->tag);
    return strlcpy(s, tag, len);
 }
 
@@ -13199,8 +13234,11 @@ void input_config_set_device_display_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
    if (name && *name)
+   {
       strlcpy(input_st->input_device_info[port].display_name, name,
             sizeof(input_st->input_device_info[port].display_name));
+      input_config_retag_devices(input_st);
+   }
 }
 
 void input_config_set_device_config_name(unsigned port, const char *name)
@@ -13227,6 +13265,7 @@ void input_config_set_device_phys(unsigned port, const char *phys)
             sizeof(input_st->input_device_info[port].phys));
    else
       input_st->input_device_info[port].phys[0] = '\0';
+   input_config_retag_devices(input_st);
 }
 
 void input_config_set_device_ident(unsigned port, uint32_t ident,
@@ -13236,6 +13275,7 @@ void input_config_set_device_ident(unsigned port, uint32_t ident,
    input_st->input_device_info[port].ident = ident;
    strlcpy(input_st->input_device_info[port].tag, tag ? tag : "",
          sizeof(input_st->input_device_info[port].tag));
+   input_config_retag_devices(input_st);
 }
 
 void input_config_set_device_vid(unsigned port, uint16_t vid)
@@ -13274,6 +13314,7 @@ void input_config_clear_device_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
    input_st->input_device_info[port].display_name[0] = '\0';
+   input_config_retag_devices(input_st);
 }
 
 void input_config_clear_device_config_name(unsigned port)

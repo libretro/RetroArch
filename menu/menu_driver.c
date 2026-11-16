@@ -9577,16 +9577,6 @@ static enum menu_action menu_driver_media_launch(struct menu_state *menu_st,
    return action;
 }
 
-bool menu_driver_pads_share_name(void)
-{
-   unsigned s;
-   char tag[32];
-   for (s = 0; s < MAX_INPUT_DEVICES; s++)
-      if (input_config_get_device_tag(s, tag, sizeof(tag)))
-         return true;
-   return false;
-}
-
 /* Whether the list shown lists the controllers: Controllers, Port N
  * Controls and its Controllers, Add Controller, or a Device Index
  * dropdown */
@@ -9616,15 +9606,38 @@ static bool menu_driver_lists_pads(void)
        && e <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST;
 }
 
-/* RGUI draws only what changed, so a mark coming or going asks it to. */
+/* Two connected controllers came to show one name, or no longer do
+ * (input_config_retag_devices()): the frame looks for presses until it
+ * has seen them part, and a list of the controllers on screen is made
+ * again, so its rows take or drop what a press marks. */
+void menu_driver_pads_alike_changed(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   const char *label          = NULL;
+   menu_st->frame_work       |= MENU_FRAME_WORK_PAD_FIND;
+   if (!menu_st->entries.list)
+      return;
+   /* the lists of the controllers, and those naming them with a tag */
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+   if (     menu_driver_lists_pads()
+         || string_is_equal(label, MENU_ENUM_LABEL_INPUT_INFORMATION_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR))
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                      | MENU_ST_FLAG_PREVENT_POPULATE;
+}
+
+/* While two connected controllers show one name, and once more after,
+ * to clear what was kept then. RGUI draws only what changed, so a mark
+ * coming or going asks it to. */
 static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
       gfx_display_t *p_disp, retro_time_t current_time)
 {
    unsigned s;
    uint32_t marked = 0;
-   bool lists      = menu_driver_lists_pads();
+   bool alike      = INPUT_DEVICES_SHARE_NAME();
    /* with no name shared, a mark would only hide the value */
-   bool share      = lists && menu_driver_pads_share_name();
+   bool share      = alike && menu_driver_lists_pads();
 
    if (share)
    {
@@ -9666,16 +9679,34 @@ static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
       /* unread here, so a button down when marks are back is new */
       memset(menu_st->pad_down, 0, sizeof(menu_st->pad_down));
       /* names parted: a press from before must not mark again */
-      if (lists)
+      if (!alike)
          memset(menu_st->pad_pressed_us, 0,
                sizeof(menu_st->pad_pressed_us));
    }
    menu_st->pad_find_hint = share;
+   if (!alike)
+      menu_st->frame_work &= ~MENU_FRAME_WORK_PAD_FIND;
    if (marked != menu_st->pads_marked)
    {
       menu_st->pads_marked = marked;
       p_disp->flags       |= GFX_DISP_FLAG_FB_DIRTY;
    }
+}
+
+/* What a frame has to do beyond drawing, rarely: a deferred playlist
+ * read to advance, presses to look for. Kept apart so that a frame
+ * with neither tests one word. */
+static VIDEO_NOINLINE void menu_driver_frame_work(struct menu_state *menu_st,
+      gfx_display_t *p_disp, settings_t *settings, retro_time_t current_time)
+{
+   if (menu_st->frame_work & MENU_FRAME_WORK_PLAYLIST)
+   {
+      menu_driver_pump_pending(menu_st, settings);
+      if (!playlist_init_cached_pending())
+         menu_st->frame_work &= ~MENU_FRAME_WORK_PLAYLIST;
+   }
+   if (menu_st->frame_work & MENU_FRAME_WORK_PAD_FIND)
+      menu_driver_mark_pressed_pads(menu_st, p_disp, current_time);
 }
 
 bool menu_driver_iterate(
@@ -9686,8 +9717,8 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time)
 {
-   menu_driver_pump_pending(menu_st, settings);
-   menu_driver_mark_pressed_pads(menu_st, p_disp, current_time);
+   if (menu_st->frame_work)
+      menu_driver_frame_work(menu_st, p_disp, settings, current_time);
    action = menu_driver_media_launch(menu_st, action);
 
 #ifdef RETRO_ATOMIC_HAS_PTR

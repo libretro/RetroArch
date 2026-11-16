@@ -356,6 +356,11 @@ typedef struct
    uint16_t vid;
    uint16_t pid;
    char tag[7];
+   /* What follows its name where another connected controller shows
+    * the same one (input_config_get_device_tag()), "" for a name of
+    * its own: kept by input_config_retag_devices() as they connect,
+    * go and change, so a row that shows it only copies it. */
+   char shown_tag[16];
    char joypad_driver[32];
    char name[128];
    char display_name[128];
@@ -2228,6 +2233,13 @@ unsigned input_config_get_device_name_index(unsigned port);
 
 uint32_t input_config_get_device_ident(unsigned port);
 const char *input_config_get_device_ident_tag(unsigned port);
+
+/* The slots whose input_device_info_t.shown_tag is set, a bit each:
+ * non-zero while two connected controllers show one name. Written only
+ * by input_driver.c as they connect, go and change; a global so that
+ * code run every frame tests it with one load. */
+extern uint32_t input_devices_tagged;
+#define INPUT_DEVICES_SHARE_NAME() (input_devices_tagged != 0)
 
 /* After the name of the controller in @port when another connected one
  * shows the same name: " [9f2b7e]", its tag; " [9f2b7e #2]" when the

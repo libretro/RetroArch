@@ -867,9 +867,6 @@ static size_t menu_action_setting_disp_set_label_input_plays_as(
    *w = 19;
    if (path && *path)
       strlcpy(s2, path, len2);
-   if (MENU_PAD_MARKED(menu_state_get_ptr(), row))
-      return strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED), len);
    player = (row < MAX_INPUT_DEVICES)
       ? input_config_plays_as_player(row)
       : input_config_plays_as_entry_player(row - MAX_INPUT_DEVICES);
@@ -886,6 +883,29 @@ static size_t menu_action_setting_disp_set_label_input_plays_as(
          break;
    }
    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
+}
+
+/* As menu_action_setting_disp_set_label_input_plays_as(), and "Pressed"
+ * while a press marks the controller */
+static size_t menu_action_setting_disp_set_label_input_plays_as_marked(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   if (MENU_PAD_MARKED(menu_state_get_ptr(),
+            type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN))
+   {
+      *w = 19;
+      if (path && *path)
+         strlcpy(s2, path, len2);
+      return strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED), len);
+   }
+   return menu_action_setting_disp_set_label_input_plays_as(list, w, type,
+         i, label, s, len, path, s2, len2);
 }
 
 static size_t menu_action_setting_disp_set_label_input_desc_kbd(
@@ -1992,14 +2012,19 @@ static size_t menu_action_setting_disp_set_label_input_device_index(
 {
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
-   settings_t *settings      = config_get_ptr();
-   size_t _len               = menu_action_setting_disp_set_label(list,
-         w, type, i, label, s, len, path, s2, len2);
+   /* a mark stands in for the value, which is then not made */
    if (MENU_PAD_MARKED(menu_state_get_ptr(),
-            settings->uints.input_joypad_index[cbs->setting->index_offset]))
+            config_get_ptr()->uints.input_joypad_index[
+               cbs->setting->index_offset]))
+   {
+      *w = 19;
+      if (path && *path)
+         strlcpy(s2, path, len2);
       return strlcpy(s,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED), len);
-   return _len;
+   }
+   return menu_action_setting_disp_set_label(list,
+         w, type, i, label, s, len, path, s2, len2);
 }
 
 /* An entry of Device Index's dropdown or Add Controller: "Pressed" while
@@ -2570,10 +2595,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case MENU_SETTING_NO_ITEM:
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_no_items);
          break;
-      case MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_input_pad_item);
-         break;
       case MENU_SETTING_ACTION_CORE_LOCK:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_lock);
@@ -2594,6 +2615,49 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
    return 0;
 }
 
+/* The rows that name a controller read "Pressed" while a press marks
+ * it, which happens only while two connected controllers show one
+ * name: these are bound only then, as the list is made, and the list
+ * is made again when names come to be shared or part. */
+static bool menu_cbs_init_bind_get_value_pad_find(menu_file_list_cbs_t *cbs,
+      const char *label, unsigned type)
+{
+   unsigned e;
+   if (     type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
+         && type <= MENU_SETTINGS_INPUT_PLAYS_AS_END)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_input_plays_as_marked);
+      return true;
+   }
+   if (type == MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_input_pad_item);
+      return true;
+   }
+   /* Device Index: its rows have their setting's enum ... */
+   if (     cbs->setting
+         && cbs->setting->enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+         && cbs->setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_input_device_index);
+      return true;
+   }
+   /* ... and its dropdown's entries are labelled with it */
+   if (     type == MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM
+         && label
+         && (e = string_to_unsigned(label)) >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+         && e <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_input_pad_item);
+      return true;
+   }
+   return false;
+}
+
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       const char *path,
       const char *label, size_t lbl_len,
@@ -2602,26 +2666,9 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   /* the rows of a group are appended with no enum but their setting */
-   if (     cbs->setting
-         && cbs->setting->enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
-         && cbs->setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
-   {
-      BIND_ACTION_GET_VALUE(cbs,
-            menu_action_setting_disp_set_label_input_device_index);
+   if (     INPUT_DEVICES_SHARE_NAME()
+         && menu_cbs_init_bind_get_value_pad_find(cbs, label, type))
       return 0;
-   }
-   /* the dropdown's entries are labelled with the setting's enum */
-   if (     type == MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM
-         && label
-         && string_to_unsigned(label) >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
-         && string_to_unsigned(label)
-            <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
-   {
-      BIND_ACTION_GET_VALUE(cbs,
-            menu_action_setting_disp_set_label_input_pad_item);
-      return 0;
-   }
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
