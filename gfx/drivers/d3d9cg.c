@@ -326,6 +326,8 @@ static INLINE void d3d9_recompute_pass_sizes(
    struct LinkInfo link_info;
    unsigned input_scale              = d3d->video_info.input_scale
       * RARCH_SCALE_BASE;
+   /* Also the size an "original" pass is scaled from: the first
+    * pass's texture holds the largest frame the core can send */
    unsigned current_width            = input_scale;
    unsigned current_height           = input_scale;
    unsigned out_width                = 0;
@@ -348,6 +350,9 @@ static INLINE void d3d9_recompute_pass_sizes(
          case RARCH_SCALE_INPUT:
             out_width = link_info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = link_info.pass->fbo.scale_x * input_scale;
+            break;
       }
       switch (link_info.pass->fbo.type_y)
       {
@@ -359,6 +364,9 @@ static INLINE void d3d9_recompute_pass_sizes(
             break;
          case RARCH_SCALE_INPUT:
             out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = link_info.pass->fbo.scale_y * input_scale;
             break;
       }
 
@@ -3211,6 +3219,9 @@ static void d3d9_cg_renderchain_render(
       case RARCH_SCALE_INPUT:
          out_width = first_pass->info.pass->fbo.scale_x * current_width;
          break;
+      case RARCH_SCALE_ORIGINAL:
+         out_width = first_pass->info.pass->fbo.scale_x * width;
+         break;
    }
    switch (first_pass->info.pass->fbo.type_y)
    {
@@ -3222,6 +3233,9 @@ static void d3d9_cg_renderchain_render(
          break;
       case RARCH_SCALE_INPUT:
          out_height = first_pass->info.pass->fbo.scale_y * current_height;
+         break;
+      case RARCH_SCALE_ORIGINAL:
+         out_height = first_pass->info.pass->fbo.scale_y * height;
          break;
    }
 
@@ -3266,6 +3280,9 @@ static void d3d9_cg_renderchain_render(
          case RARCH_SCALE_INPUT:
             out_width = from_pass->info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = from_pass->info.pass->fbo.scale_x * width;
+            break;
       }
       switch (from_pass->info.pass->fbo.type_y)
       {
@@ -3277,6 +3294,9 @@ static void d3d9_cg_renderchain_render(
             break;
          case RARCH_SCALE_INPUT:
             out_height = from_pass->info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = from_pass->info.pass->fbo.scale_y * height;
             break;
       }
 
@@ -3322,6 +3342,9 @@ static void d3d9_cg_renderchain_render(
       case RARCH_SCALE_INPUT:
          out_width = last_pass->info.pass->fbo.scale_x * current_width;
          break;
+      case RARCH_SCALE_ORIGINAL:
+         out_width = last_pass->info.pass->fbo.scale_x * width;
+         break;
    }
    switch (last_pass->info.pass->fbo.type_y)
    {
@@ -3333,6 +3356,9 @@ static void d3d9_cg_renderchain_render(
          break;
       case RARCH_SCALE_INPUT:
          out_height = last_pass->info.pass->fbo.scale_y * current_height;
+         break;
+      case RARCH_SCALE_ORIGINAL:
+         out_height = last_pass->info.pass->fbo.scale_y * height;
          break;
    }
 
@@ -3552,6 +3578,10 @@ static void d3d9_cg_log_info(const struct LinkInfo *info)
       case RARCH_SCALE_ABSOLUTE:
          RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
          break;
+
+      case RARCH_SCALE_ORIGINAL:
+         RARCH_LOG("Original @ %fx\n", info->pass->fbo.scale_x);
+         break;
    }
 
    RARCH_LOG("\tScale type (Y): ");
@@ -3568,6 +3598,10 @@ static void d3d9_cg_log_info(const struct LinkInfo *info)
 
       case RARCH_SCALE_ABSOLUTE:
          RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
+         break;
+
+      case RARCH_SCALE_ORIGINAL:
+         RARCH_LOG("Original @ %fx\n", info->pass->fbo.scale_y);
          break;
    }
 
@@ -3670,6 +3704,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
    unsigned i = 0;
    struct LinkInfo link_info;
    unsigned current_width, current_height, out_width = 0, out_height = 0;
+   unsigned orig_dims;
    cg_renderchain_t *renderchain;
 
    /* Setup information for first pass. */
@@ -3703,6 +3738,9 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
 
    d3d9_cg_log_info(&link_info);
 
+   /* The largest frame the core can send; current_* moves on with
+    * each pass, and an "original" pass is sized from this instead */
+   orig_dims      = link_info.tex_dims;
    current_width  = VIDEO_SCALE_W(link_info.tex_dims);
    current_height = VIDEO_SCALE_H(link_info.tex_dims);
 
@@ -3719,6 +3757,9 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
          case RARCH_SCALE_INPUT:
             out_width = link_info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = link_info.pass->fbo.scale_x * VIDEO_SCALE_W(orig_dims);
+            break;
       }
       switch (link_info.pass->fbo.type_y)
       {
@@ -3730,6 +3771,9 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
             break;
          case RARCH_SCALE_INPUT:
             out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = link_info.pass->fbo.scale_y * VIDEO_SCALE_H(orig_dims);
             break;
       }
 

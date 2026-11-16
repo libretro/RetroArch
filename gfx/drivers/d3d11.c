@@ -5489,6 +5489,8 @@ static void d3d11_chain_init_render_targets(d3d11_video_t *d3d11,
    size_t i;
    int rot;
    bool last_pass;
+   unsigned orig_width  = width;  /* frame size before any pass rescales it */
+   unsigned orig_height = height;
    c->mvp_last_pass = d3d11->ubo_values.mvp;
    rot                  = video_driver_get_rotation_snapshot();
 
@@ -5512,6 +5514,10 @@ static void d3d11_chain_init_render_targets(d3d11_video_t *d3d11,
                width = pass->fbo.abs_x;
                break;
 
+            case RARCH_SCALE_ORIGINAL:
+               width = orig_width * pass->fbo.scale_x;
+               break;
+
             default:
                break;
          }
@@ -5533,6 +5539,10 @@ static void d3d11_chain_init_render_targets(d3d11_video_t *d3d11,
                height = pass->fbo.abs_y;
                break;
 
+            case RARCH_SCALE_ORIGINAL:
+               height = orig_height * pass->fbo.scale_y;
+               break;
+
             default:
                break;
          }
@@ -5547,9 +5557,9 @@ static void d3d11_chain_init_render_targets(d3d11_video_t *d3d11,
       }
 
       RARCH_DBG("[D3D11] Updating framebuffer size %ux%u.\n", width, height);
-	  
+
 	  last_pass = i == (c->shader_preset->passes - 1);
-	  
+
 
       if (     !last_pass
 			|| pass->feedback
@@ -5564,17 +5574,17 @@ static void d3d11_chain_init_render_targets(d3d11_video_t *d3d11,
          c->pass[i].rt.desc.Height    = height;
          c->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
          c->pass[i].rt.desc.Format    = glslang_format_to_dxgi(c->pass[i].semantics.format);
-		 
+
 		 if (!last_pass)
 		 {
-			/* mipmap refers to the input of the pass */ 
+			/* mipmap refers to the input of the pass */
 		    struct video_shader_pass* nextPass = &c->shader_preset->pass[i + 1];
 		    if (nextPass && nextPass->mipmap)
 		    {
 		       c->pass[i].rt.desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 		    }
 		 }
-		 
+
          d3d11_release_texture(&c->pass[i].rt);
          d3d11_init_texture(d3d11->device, &c->pass[i].rt);
 
@@ -5595,13 +5605,13 @@ static void d3d11_chain_init_render_targets(d3d11_video_t *d3d11,
       else
       {
          c->mvp_last_pass = d3d11->mvp;
-		 
+
 		 if (rot % 2)
 		 {
 			unsigned tmp = width;
 			width = height;
 			height = tmp;
-		 }			 
+		 }
 
          c->pass[i].rt.size_data.x = width;
          c->pass[i].rt.size_data.y = height;

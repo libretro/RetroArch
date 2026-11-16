@@ -2107,6 +2107,11 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 
    if (wiiu->shader_preset)
    {
+      /* The frame as the core made it: width and height move on with
+       * each pass, and an "original" pass is sized from this instead */
+      unsigned orig_width  = width;
+      unsigned orig_height = height;
+
       for (i = 0; i < wiiu->shader_preset->passes; i++)
       {
          struct video_shader_pass *pass = &wiiu->shader_preset->pass[i];
@@ -2125,6 +2130,10 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
                width = pass->fbo.abs_x;
                break;
 
+            case RARCH_SCALE_ORIGINAL:
+               width = orig_width * pass->fbo.scale_x;
+               break;
+
             default:
                break;
          }
@@ -2141,6 +2150,10 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 
             case RARCH_SCALE_ABSOLUTE:
                height = pass->fbo.abs_y;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               height = orig_height * pass->fbo.scale_y;
                break;
 
             default:
