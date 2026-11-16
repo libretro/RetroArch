@@ -51,6 +51,44 @@ When implementing a feature, find an existing feature with similar behavior and 
 
 Do not make unrelated cleanup or refactoring changes.
 
+## Portability
+
+Code that builds with GCC or Clang on Linux can still break MSVC, UWP,
+griffin or old-SDK builds that you never ran. Check for these when
+writing the code:
+
+- Do not use a name that a Windows SDK header defines as a macro for a
+  variable, parameter, field or function. `rpcndr.h`, which windows.h,
+  D3D, DXGI, EGL and UWP headers all pull in, has `#define small char`
+  and `#define hyper __int64`. `windef.h` defines `near`, `far`, `IN`,
+  `OUT` and `OPTIONAL` as nothing, `objbase.h` defines `interface` as
+  `struct`, and windows.h defines `min` and `max` as function-like
+  macros. mingw-w64 guards some of these defines, so a mingw build is
+  no proof. `tools/win_macro_names_check.py` covers `small` and
+  `hyper`. To check a file by hand, compile it with `-Dsmall=char
+  -Dhyper=__int64`.
+- The griffin builds (MSVC, UWP and most consoles) compile almost every
+  .c file as one translation unit through `griffin/griffin.c`. So
+  file-scope `static` names must be unique across all the files griffin
+  joins, not just within one file. A header that defines data (shader
+  source strings and the like) needs an include guard, and a name of its
+  own if a sibling header for another backend defines similar data.
+  Check by running `x86_64-w64-mingw32-gcc -fsyntax-only` on
+  griffin.c with the build's defines, before and after the change,
+  and compare the two error lists.
+- Shared GL code does not spell framebuffer-object names directly.
+  macOS SDKs before 10.12 (the PPC build) have only the `_EXT` names,
+  and PSGL has the `_OES` names. Use the per-SDK macros the way gl2.c
+  and gl_common.c do.
+- A platform you cannot build still gets compiled. Force the
+  platform's branch of the `#if` on and compile it on Linux, and say
+  in the commit that it was checked only that way.
+- Some samples read a shipping file as text and build it from a copy in
+  a temporary directory. The Metal sample does this with
+  `Shaders.metal`, for example. Before adding an `#include` to such a
+  file, run `tools/ci_local.py which` on it and run the samples it
+  lists.
+
 ## Comments
 
 Keep comments as short as possible.
