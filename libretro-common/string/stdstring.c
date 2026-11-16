@@ -486,7 +486,10 @@ size_t word_wrap_wideglyph(char *s, size_t len,
 
          if (max_lines != 0 && lines >= max_lines)
             continue;
-         else if (lastwideglyph 
+         /* Not before a glyph that starts its line: one wider than
+          * the line would be put on a line of its own for ever */
+         else if (lastwideglyph
+              && lastwideglyph != s_start && lastwideglyph[-1] != '\n'
               && (!lastspace || lastwideglyph > lastspace))
          {
             /* Insert newline character */
@@ -495,6 +498,8 @@ size_t word_wrap_wideglyph(char *s, size_t len,
             src           -= s - lastwideglyph;
             s              = lastwideglyph + 1;
             lastwideglyph  = NULL;
+            /* A space before it is on the line ended here */
+            lastspace      = NULL;
 
             /* Early return if remaining src string
              * length is less than line width */
