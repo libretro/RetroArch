@@ -9,6 +9,7 @@ COMMON := mock_worker.c $(RA)/record/record_mux_mp4.c $(RA)/libretro-common/form
 OUTPUT := $(RA)/record/record_gpu_output_d3d12.c $(RA)/record/record_gpu_output_d3d12.h
 FILE := file_backend.c $(RA)/record/record_file_win32.c $(RA)/libretro-common/encodings/encoding_utf.c $(RA)/libretro-common/compat/compat_strl.c
 all: output_test$(EXE) pipeline_file$(EXE) thread_test$(EXE) session_test$(EXE) session_threadless$(EXE) vulkan_file_test$(EXE) vulkan_output_test$(EXE) vulkan_thread_test$(EXE) vulkan_native_file_test$(EXE) vulkan_session_test$(EXE) vulkan_session_thread_test$(EXE)
+all: vulkan_dispatch_test$(EXE) vulkan_dispatch_threadless$(EXE) vulkan_dispatch_fallback$(EXE)
 output_test$(EXE): output_test.c mock_file.c mock_file.h mock_worker.h $(COMMON) $(OUTPUT)
 	$(CC) $(CFLAGS) -o $@ output_test.c mock_file.c $(COMMON) $(LDFLAGS) -lm
 pipeline_file$(EXE): pipeline_file.c $(COMMON) $(FILE) $(OUTPUT)
@@ -43,7 +44,18 @@ vulkan_session_test$(EXE): $(VULKAN_SESSION_SOURCES) $(VULKAN_SESSION) $(VULKAN_
 	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) -UHAVE_THREADS $(VULKAN_SESSION_SOURCES) -o $@ $(LDFLAGS) -lm
 vulkan_session_thread_test$(EXE): $(VULKAN_SESSION_SOURCES) $(VULKAN_SESSION) $(VULKAN_HEADERS) $(VULKAN_OUTPUT) $(VULKAN_COMMON)
 	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L $(if $(filter .exe,$(EXE)),,-pthread) $(VULKAN_SESSION_SOURCES) -o $@ $(LDFLAGS) -lm
+VULKAN_DISPATCH := $(RA)/record/record_gpu_dispatch_vulkan.c $(RA)/record/record_gpu_dispatch_vulkan.h
+VULKAN_DISPATCH_SOURCES := vulkan_dispatch_test.c $(filter-out vulkan_session_test.c,$(VULKAN_SESSION_SOURCES)) $(RA)/record/record_gpu_dispatch_vulkan.c
+vulkan_dispatch_test$(EXE): $(VULKAN_DISPATCH_SOURCES) $(VULKAN_DISPATCH) vulkan_session_test.c $(VULKAN_SESSION) $(VULKAN_HEADERS) $(VULKAN_OUTPUT) rthreads_compat.c $(RA)/libretro-common/rthreads/rthreads.c $(RA)/libretro-common/rthreads/retro_eventcount.c
+	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L $(if $(filter .exe,$(EXE)),,-pthread) $(VULKAN_DISPATCH_SOURCES) rthreads_compat.c $(RA)/libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
+vulkan_dispatch_threadless$(EXE): $(VULKAN_DISPATCH_SOURCES) $(VULKAN_DISPATCH) vulkan_session_test.c $(VULKAN_SESSION) $(VULKAN_HEADERS) $(VULKAN_OUTPUT)
+	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) -UHAVE_THREADS $(VULKAN_DISPATCH_SOURCES) -o $@ $(LDFLAGS) -lm
+vulkan_dispatch_fallback$(EXE): $(VULKAN_DISPATCH_SOURCES) $(VULKAN_DISPATCH) vulkan_session_test.c $(VULKAN_SESSION) $(VULKAN_HEADERS) $(VULKAN_OUTPUT) rthreads_compat.c
+	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) -DHAVE_THREADS -DRETRO_EVENTCOUNT_FORCE_SCOND -D_POSIX_C_SOURCE=200809L $(if $(filter .exe,$(EXE)),,-pthread) $(VULKAN_DISPATCH_SOURCES) rthreads_compat.c $(RA)/libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
 check: all
+	$(RUNNER) ./vulkan_dispatch_test$(EXE)
+	$(RUNNER) ./vulkan_dispatch_threadless$(EXE)
+	$(RUNNER) ./vulkan_dispatch_fallback$(EXE)
 	$(RUNNER) ./vulkan_session_test$(EXE)
 	$(RUNNER) ./vulkan_session_thread_test$(EXE)
 	$(RUNNER) ./vulkan_file_test$(EXE)
@@ -56,6 +68,8 @@ check: all
 	$(RUNNER) ./session_threadless$(EXE)
 	python3 ../mp4_mux/run.py --runner "$(RUNNER)" ./pipeline_file$(EXE)
 clean:
+	rm -f vulkan_dispatch_test vulkan_dispatch_test.exe vulkan_dispatch_threadless vulkan_dispatch_threadless.exe
+	rm -f vulkan_dispatch_fallback vulkan_dispatch_fallback.exe
 	rm -f vulkan_session_test vulkan_session_test.exe vulkan_session_thread_test vulkan_session_thread_test.exe
 	rm -f session_threadless session_threadless.exe session_test session_test.exe output_test output_test.exe thread_test thread_test.exe pipeline_file pipeline_file.exe vulkan_file_test vulkan_file_test.exe vulkan_output_test vulkan_output_test.exe vulkan_thread_test vulkan_thread_test.exe vulkan_native_file_test vulkan_native_file_test.exe
 .PHONY: all check clean

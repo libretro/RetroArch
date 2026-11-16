@@ -648,7 +648,8 @@ int main(int argc,char **argv)
    int result=77;
    assert(c && (argc==1 || (argc==3 && (!strcmp(argv[1],"--pictures")
                || !strcmp(argv[1],"--capture-direct") || !strcmp(argv[1],"--capture-buffer")
-               || !strcmp(argv[1],"--session-direct") || !strcmp(argv[1],"--session-buffer")))));
+               || !strcmp(argv[1],"--session-direct") || !strcmp(argv[1],"--session-buffer")
+               || !strcmp(argv[1],"--dispatch-direct") || !strcmp(argv[1],"--dispatch-buffer")))));
    packet=&c->packets[0];
    if (!startup(c,argc==3 && strcmp(argv[1],"--pictures")))
       puts("UNAVAILABLE Vulkan validation layer or Vulkan 1.3 H.264 encode device/features");
@@ -674,12 +675,13 @@ int main(int argc,char **argv)
          printf("PASS native cold H264 session/pool/header/empty drain cycle=%u headers=%lu\n",
                cycle,(unsigned long)bytes);
       }
-      if (argc==3 && !(c->queue_flags&VK_QUEUE_TRANSFER_BIT))
+      if (argc==3 && !strcmp(argv[1],"--pictures") && !(c->queue_flags&VK_QUEUE_TRANSFER_BIT))
          puts("UNAVAILABLE test upload on the selected encode queue");
       else
       {
-         result=argc==3 && !strncmp(argv[1],"--session-",10)
-            ? session_pictures(c,argv[2],!strcmp(argv[1],"--session-direct"))
+         result=argc==3 && (!strncmp(argv[1],"--session-",10) || !strncmp(argv[1],"--dispatch-",11))
+            ? session_pictures(c,argv[2],!strcmp(argv[1],"--session-direct")
+                  || !strcmp(argv[1],"--dispatch-direct"),!strncmp(argv[1],"--dispatch-",11))
             :argc==3?encode_pictures(c,argv[2],!strcmp(argv[1],"--capture-direct")
                ?1:!strcmp(argv[1],"--capture-buffer")?2:0):0;
       }

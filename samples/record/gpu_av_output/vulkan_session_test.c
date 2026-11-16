@@ -16,6 +16,7 @@ struct vulkan_encode_h264
 };
 static bool open_fail, headers_fail, gpu_ready, release_fail;
 static unsigned opens, frees, drains, submits, releases;
+static void (*session_open_observer)(void);
 static const uint8_t session_headers[] = {0,0,0,1,0x67,0x42,0,0x1e,0x80,
    0,0,0,1,0x68,0x80};
 static const uint8_t session_idr[] = {0,0,0,1,0x65,0x80};
@@ -26,6 +27,8 @@ vulkan_encode_h264_t *vulkan_encode_h264_open(const vulkan_encode_h264_open_t *c
 {
    vulkan_encode_h264_t *e;
    assert(c && ops);
+   if (session_open_observer)
+      session_open_observer();
    if (open_fail)
       return NULL;
    e = (vulkan_encode_h264_t*)calloc(1, sizeof(*e));
@@ -137,6 +140,7 @@ static void reset(void)
 {
    assert(opens == frees);
    open_fail = headers_fail = release_fail = false;
+   session_open_observer = NULL;
    gpu_ready = true;
    file_open_fail = file_push_fail = file_step_fail = file_finish_fail = file_cancel_fail = false;
    file_delay = file_writes = submits = releases = drains = 0;

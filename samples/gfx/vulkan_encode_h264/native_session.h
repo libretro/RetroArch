@@ -1,6 +1,25 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef NATIVE_ENCODE_SESSION_H
 #define NATIVE_ENCODE_SESSION_H
+#include "../../../record/record_gpu_dispatch_vulkan.h"
+#ifdef _WIN32
+#include <windows.h>
+static void native_record_pause(void) { Sleep(1); }
+#else
+#include <time.h>
+static void native_record_pause(void)
+{
+   struct timespec delay;
+   delay.tv_sec=0;
+   delay.tv_nsec=1000000;
+   nanosleep(&delay,NULL);
+}
+#endif
+struct native_record_owner
+{
+   record_gpu_session_vulkan_t *session;
+   record_gpu_dispatch_vulkan_t *job;
+};
 static PFN_vkQueueSubmit native_session_submit;
 static VkFence native_session_fence;
 static unsigned native_session_submissions;
@@ -17,9 +36,18 @@ static VKAPI_ATTR VkResult VKAPI_CALL session_submit(VkQueue queue,
    }
    return result;
 }
-static int session_step_native(struct native_encoder *c,record_gpu_session_vulkan_t *s)
+static int session_step_native(struct native_encoder *c,struct native_record_owner *owner)
 {
-   int result=record_gpu_session_vulkan_step(s);
+   int result;
+   if (owner->job)
+   {
+      enum record_gpu_dispatch_vulkan_state state=record_gpu_dispatch_vulkan_status(owner->job,NULL,NULL);
+      if (state==RECORD_VKD_DONE) return RECORD_VULKAN_OUTPUT_END;
+      if (state==RECORD_VKD_FAILED) return RECORD_VULKAN_OUTPUT_ERROR;
+      native_record_pause();
+      return RECORD_VULKAN_OUTPUT_BUSY;
+   }
+   result=record_gpu_session_vulkan_step(owner->session);
    if (native_session_fence)
    {
       PFN_vkWaitForFences wait_fence=(PFN_vkWaitForFences)c->device_proc(c->device,"vkWaitForFences");
@@ -29,10 +57,28 @@ static int session_step_native(struct native_encoder *c,record_gpu_session_vulka
    }
    return result;
 }
-static int session_pictures(struct native_encoder *c,const char *path,bool direct)
+static bool session_finish_native(struct native_record_owner *owner)
+{
+   return owner->job ? record_gpu_dispatch_vulkan_audio_finish(owner->job)
+      && record_gpu_dispatch_vulkan_video_finish(owner->job)
+      : record_gpu_session_vulkan_audio_finish(owner->session)
+      && record_gpu_session_vulkan_video_finish(owner->session);
+}
+static void session_free_native(struct native_record_owner *owner)
+{
+   unsigned retry;
+   for (retry=0;retry<10000;retry++)
+   {
+      if (owner->job ? record_gpu_dispatch_vulkan_free(owner->job)
+            : record_gpu_session_vulkan_free(owner->session)) return;
+      native_record_pause();
+   }
+   assert(!"native owner did not retire");
+}
+static int session_pictures(struct native_encoder *c,const char *path,bool direct,bool dispatch)
 {
    record_gpu_output_vulkan_config_t output;
-   record_gpu_session_vulkan_t *s;
+   struct native_record_owner owner;
    const vulkan_encode_pool_t *pool;
    record_gpu_queue_t *queue;
    record_gpu_frame_t descriptor;
@@ -43,6 +89,12 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
    unsigned frame,i,retry;
    int result;
    assert(pcm);
+   if (dispatch && c->producer_queue==c->queue)
+   {
+      free(pcm);
+      puts("UNAVAILABLE independent encode and producer queues");
+      return 77;
+   }
    memset(&output,0,sizeof(output));
    output.video.max_packet_size=c->config.packet_size;
    output.audio_rate=48000;
@@ -53,21 +105,42 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
    c->config.gop=4;
    c->config.storage_image_extended_formats=direct
       && c->features.features.shaderStorageImageExtendedFormats;
-   native_session_submit=c->ops.submit.submit;
-   c->ops.submit.submit=session_submit;
-   s=record_gpu_session_vulkan_new(&c->config,&c->ops,&output,path);
-   assert(s && record_gpu_session_vulkan_error(s,NULL)==RECORD_VULKAN_SESSION_NONE);
-   pool=record_gpu_session_vulkan_pool(s);
-   queue=record_gpu_session_vulkan_queue(s);
-   assert(pool && queue);
+   memset(&owner,0,sizeof(owner));
+   if (dispatch)
+   {
+      owner.job=record_gpu_dispatch_vulkan_new(&c->config,&c->ops,&output,path);
+      assert(owner.job);
+      for (retry=0;retry<10000;retry++)
+      {
+         enum record_gpu_dispatch_vulkan_state state=record_gpu_dispatch_vulkan_status(owner.job,NULL,NULL);
+         if (state==RECORD_VKD_READY) break;
+         assert(state==RECORD_VKD_STARTING);
+         native_record_pause();
+      }
+      assert(retry<10000);
+      pool=record_gpu_dispatch_vulkan_pool(owner.job);
+      queue=NULL;
+   }
+   else
+   {
+      native_session_submit=c->ops.submit.submit;
+      c->ops.submit.submit=session_submit;
+      owner.session=record_gpu_session_vulkan_new(&c->config,&c->ops,&output,path);
+      assert(owner.session && record_gpu_session_vulkan_error(owner.session,NULL)==RECORD_VULKAN_SESSION_NONE);
+      pool=record_gpu_session_vulkan_pool(owner.session);
+      queue=record_gpu_session_vulkan_queue(owner.session);
+      assert(queue);
+   }
+   assert(pool);
    if (direct && !pool->storage_images)
    {
-      record_gpu_session_vulkan_cancel(s);
-      assert(record_gpu_session_vulkan_audio_finish(s));
-      assert(record_gpu_session_vulkan_video_finish(s));
+      if (owner.job) record_gpu_dispatch_vulkan_cancel(owner.job);
+      else record_gpu_session_vulkan_cancel(owner.session);
+      assert(session_finish_native(&owner));
       for (retry=0;retry<1000;retry++)
-         if (session_step_native(c,s)==RECORD_VULKAN_OUTPUT_ERROR) break;
-      assert(retry<1000 && record_gpu_session_vulkan_free(s));
+         if (session_step_native(c,&owner)==RECORD_VULKAN_OUTPUT_ERROR) break;
+      assert(retry<1000);
+      session_free_native(&owner);
       free(pcm);
       puts("UNAVAILABLE direct storage session format");
       return 77;
@@ -78,10 +151,11 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
    {
       for (retry=0;retry<10000;retry++)
       {
-         result=record_gpu_queue_acquire(queue,&descriptor.slot);
+         result=owner.job ? record_gpu_dispatch_vulkan_acquire(owner.job,&descriptor.slot)
+            : record_gpu_queue_acquire(queue,&descriptor.slot);
          if (result==RECORD_GPU_QUEUE_OK) break;
          assert(result==RECORD_GPU_QUEUE_BUSY);
-         assert(session_step_native(c,s)!=RECORD_VULKAN_OUTPUT_ERROR);
+         assert(session_step_native(c,&owner)!=RECORD_VULKAN_OUTPUT_ERROR);
       }
       assert(retry<10000 && descriptor.slot==frame%2);
       capture_frame(c,pool,frame);
@@ -89,7 +163,8 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
       descriptor.duration=1;
       descriptor.ready_value=frame+1;
       descriptor.keyframe=frame%4==0;
-      assert(record_gpu_queue_submit(queue,&descriptor));
+      assert(owner.job ? record_gpu_dispatch_vulkan_submit(owner.job,&descriptor)
+            : record_gpu_queue_submit(queue,&descriptor));
       for (i=0;i<1600;i++)
       {
          double phase=6.2831853071795864769*(frame*1600+i)/48000.0;
@@ -98,10 +173,11 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
       }
       for (retry=0;retry<10000;retry++)
       {
-         result=record_gpu_session_vulkan_audio(s,pcm,1600);
+         result=owner.job ? record_gpu_dispatch_vulkan_audio(owner.job,pcm,1600)
+            : record_gpu_session_vulkan_audio(owner.session,pcm,1600);
          if (result==RECORD_VULKAN_OUTPUT_PROGRESS) break;
          assert(result==RECORD_VULKAN_OUTPUT_BUSY);
-         assert(session_step_native(c,s)!=RECORD_VULKAN_OUTPUT_ERROR);
+         assert(session_step_native(c,&owner)!=RECORD_VULKAN_OUTPUT_ERROR);
       }
       assert(retry<10000);
    }
@@ -115,19 +191,18 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
    assert(wait_ready(c->device,&wait,2000000000)==VK_SUCCESS);
    c->ops.pool.destroy_commands(c->device,c->producer_commands,NULL);
    capture_free(c);
-   assert(record_gpu_session_vulkan_audio_finish(s));
-   assert(record_gpu_session_vulkan_video_finish(s));
+   assert(session_finish_native(&owner));
    for (retry=0;retry<10000;retry++)
    {
-      result=session_step_native(c,s);
+      result=session_step_native(c,&owner);
       assert(result!=RECORD_VULKAN_OUTPUT_ERROR);
       if (result==RECORD_VULKAN_OUTPUT_END) break;
    }
-   assert(retry<10000 && native_session_submissions==12);
-   assert(record_gpu_session_vulkan_free(s));
-   c->ops.submit.submit=native_session_submit;
+   assert(retry<10000 && (dispatch || native_session_submissions==12));
+   session_free_native(&owner);
+   if (!dispatch) c->ops.submit.submit=native_session_submit;
    free(pcm);
-   puts("PASS native session A/V pictures=12 PCM=19200 rate=48000 channels=2");
+   printf("PASS native %s A/V pictures=12 PCM=19200 rate=48000 channels=2\n",dispatch?"dispatcher":"session");
    return 0;
 }
 #endif

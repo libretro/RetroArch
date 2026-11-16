@@ -59,8 +59,9 @@ NATIVE_SOURCES += $(RA)/record/record_gpu_session_vulkan.c $(RA)/record/record_g
    $(RA)/record/record_file_posix.c $(RA)/record/record_mediacodec_file.c \
    $(RA)/libretro-common/queues/retro_spsc.c $(RA)/libretro-common/formats/ac3/rac3_frame.c \
    $(RA)/libretro-common/formats/ac3/rac3_encode.c
-native_test$(EXE): $(NATIVE_SOURCES) native_capture.h native_session.h
-	$(CC) $(CFLAGS) -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl) -lm
+NATIVE_SOURCES += $(RA)/record/record_gpu_dispatch_vulkan.c ../../record/gpu_av_output/rthreads_compat.c $(RA)/libretro-common/rthreads/retro_eventcount.c
+native_test$(EXE): $(NATIVE_SOURCES) native_capture.h native_session.h $(RA)/record/record_gpu_dispatch_vulkan.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread -ldl) -lm
 native-check: native_test$(EXE)
 	$(RUNNER) ./native_test$(EXE)
 .PHONY: native-check

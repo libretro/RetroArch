@@ -18,6 +18,7 @@ parser.add_argument('--native', action='store_true')
 parser.add_argument('--binary', type=Path, help='reuse a previously built native fixture')
 parser.add_argument('--capture', choices=['direct', 'buffer'], help='GPU RGB clear through the shipping conversion shader')
 parser.add_argument('--session', action='store_true', help='native MP4/AC3 file output through the session owner; requires --capture')
+parser.add_argument('--dispatcher', action='store_true', help='run the recording session on its dedicated worker; requires --session')
 parser.add_argument('--pictures', action='store_true', help='submit test-only uploaded NV12 pictures and independently decode')
 parser.add_argument('--ffmpeg', default=shutil.which('ffmpeg'))
 parser.add_argument('--ffprobe', default=shutil.which('ffprobe'))
@@ -29,6 +30,8 @@ if args.capture:
     args.pictures = True
 if args.session and not args.capture:
     parser.error('--session requires --capture direct or buffer')
+if args.dispatcher and not args.session:
+    parser.error('--dispatcher requires --session')
 if args.pictures and (not args.ffmpeg or not args.ffprobe):
     parser.error('--pictures requires independent FFmpeg and FFprobe executables')
 here = Path(__file__).resolve().parent
@@ -43,6 +46,8 @@ if args.capture:
     evidence['scope'] = 'Native GPU RGB clear, shipping RGB-to-NV12 shader and H264 encoder; independent decoded-plane oracle'
 if args.session:
     evidence['scope'] = 'Native Vulkan GPU capture and recording session MP4/AC3 file output; independent picture/sample/timestamp oracle'
+if args.dispatcher:
+    evidence['scope'] += '; session/file operations owned by dedicated dispatcher worker'
 evidence['source'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
 evidence['dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=repo))
 
@@ -73,7 +78,7 @@ evidence['binary_supplied'] = args.binary is not None
 if not args.binary:
     compiler = shlex.split(os.environ.get('CC', 'gcc' if os.name == 'nt' else 'cc'))
     flags = ['-O1', '-g1', '-std=c89', '-pedantic', '-Wall', '-Wextra', '-Werror',
-             '-Wno-long-long', '-Wframe-larger-than=2048', '-DHAVE_DYLIB', '-DRSLC_EXTENDED', '-DRSLC_NO_DXBC',
+             '-Wno-long-long', '-Wframe-larger-than=2048', '-DHAVE_DYLIB', '-DHAVE_THREADS', '-D_POSIX_C_SOURCE=200809L', '-DRSLC_EXTENDED', '-DRSLC_NO_DXBC',
              '-I' + str(repo / 'libretro-common/include'), '-I' + str(repo / 'gfx/include')]
     if 'clang' in subprocess.check_output(compiler + ['--version'], text=True).lower():
         flags += ['-Wno-c99-extensions']
@@ -90,15 +95,17 @@ if not args.binary:
         'record/record_gpu_queue.c', 'record/record_gpu_output_vulkan.c', 'record/record_mux_mp4.c',
         'record/record_file_posix.c', 'record/record_mediacodec_file.c', 'libretro-common/queues/retro_spsc.c',
         'libretro-common/formats/ac3/rac3_frame.c', 'libretro-common/formats/ac3/rac3_encode.c']
+    sources += ['record/record_gpu_dispatch_vulkan.c', 'samples/record/gpu_av_output/rthreads_compat.c',
+        'libretro-common/rthreads/retro_eventcount.c']
     result = run(compiler + flags + [str(repo / name) for name in sources] + ['-o', str(binary)]
-                 + (['-lm'] if os.name == 'nt' else ['-ldl', '-lm']), 120)
+                 + (['-lm'] if os.name == 'nt' else ['-pthread', '-ldl', '-lm']), 120)
     if result.returncode:
         evidence['result'] = 'FAIL compile'
         save()
         result.check_returncode()
 evidence['binary_sha256'] = hashlib.sha256(binary.read_bytes()).hexdigest()
 coded = root / ('output.mp4' if args.session else 'output.h264')
-mode = ('--session-' if args.session else '--capture-') + args.capture if args.capture else '--pictures'
+mode = ('--dispatch-' if args.dispatcher else '--session-' if args.session else '--capture-') + args.capture if args.capture else '--pictures'
 result = run([binary] + ([mode, coded] if args.pictures else []), 30)
 output = result.stdout.decode(errors='replace')
 print(output, end='', flush=True)
@@ -111,7 +118,7 @@ if result.returncode == 0:
 if result.returncode == 0 and args.pictures:
     try:
         dimensions = re.search(r'extent=(\d+)x(\d+)', output)
-        assert dimensions and ('PASS native session A/V pictures=12' if args.session else 'PASS native coded pictures=12') in output
+        assert dimensions and ('PASS native dispatcher A/V pictures=12' if args.dispatcher else 'PASS native session A/V pictures=12' if args.session else 'PASS native coded pictures=12') in output
         if args.capture and not args.session:
             assert 'PASS native two in-flight pictures, full-ring BUSY, borrowed cancellation and drain' in output
             evidence['submitted_pictures_including_cancellation'] = 14
