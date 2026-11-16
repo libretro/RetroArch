@@ -2588,6 +2588,13 @@ static void test_self_find(void)
    CHECK(core_self_find(&self));
    CHECK(stat(self_path, &st) == 0 && self.dev == (uint64_t)st.st_dev
          && self.uid == (unsigned long)st.st_uid);
+   /* Looked up once: the same answer again */
+   {
+      struct core_self again;
+      memset(&again, 0, sizeof(again));
+      CHECK(core_self_find(&again));
+      CHECK(again.dev == self.dev && again.uid == self.uid);
+   }
 #endif
 }
 

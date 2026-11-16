@@ -40,6 +40,7 @@
 #endif
 
 #include <compat/strl.h>
+#include <retro_atomic.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 #include <file/file_path.h>
@@ -588,11 +589,9 @@ bool core_trust_default_path(char *s, size_t len)
 #endif
 }
 
-bool core_self_find(struct core_self *self)
+#ifndef _WIN32
+static bool core_self_lookup(struct core_self *self)
 {
-#ifdef _WIN32
-   return false;
-#else
    struct stat st;
 #if defined(__linux__) && !defined(ANDROID)
    if (stat("/proc/self/exe", &st) != 0)
@@ -604,7 +603,7 @@ bool core_self_find(struct core_self *self)
    char *own;
    size_t n;
    bool ok;
-   if (     !dladdr((const void*)(uintptr_t)core_self_find, &info)
+   if (     !dladdr((const void*)(uintptr_t)core_self_lookup, &info)
          || !(n = core_self_path_len(info.dli_fname))
          || !(own = (char*)malloc(n + 1)))
       return false;
@@ -616,7 +615,7 @@ bool core_self_find(struct core_self *self)
       return false;
 #else
    Dl_info info;
-   if (     !dladdr((const void*)(uintptr_t)core_self_find, &info)
+   if (     !dladdr((const void*)(uintptr_t)core_self_lookup, &info)
          || !info.dli_fname
          || info.dli_fname[0] != '/'
          || stat(info.dli_fname, &st) != 0)
@@ -625,6 +624,44 @@ bool core_self_find(struct core_self *self)
    self->dev = (uint64_t)st.st_dev;
    self->uid = (unsigned long)st.st_uid;
    return true;
+}
+
+/* RetroArch's own file can't change under a running RetroArch, so it is
+ * looked up once. Lock-free: every caller that finds nothing published
+ * looks it up itself and uses its own answer, and the first to claim the
+ * slot publishes it; none waits on another. */
+#define CORE_SELF_CLAIMED (1 << 0)
+#define CORE_SELF_READY   (1 << 1)
+#define CORE_SELF_FOUND   (1 << 2)
+static retro_atomic_int_t core_self_state;
+static struct core_self core_self_cached;
+#endif
+
+bool core_self_find(struct core_self *self)
+{
+#ifdef _WIN32
+   (void)self;
+   return false;
+#else
+   bool found;
+   int state = retro_atomic_load_acquire_int(&core_self_state);
+   if (state & CORE_SELF_READY)
+   {
+      if (!(state & CORE_SELF_FOUND))
+         return false;
+      *self = core_self_cached;
+      return true;
+   }
+   found = core_self_lookup(self);
+   if (!(retro_atomic_fetch_or_int(&core_self_state, CORE_SELF_CLAIMED)
+            & CORE_SELF_CLAIMED))
+   {
+      if (found)
+         core_self_cached = *self;
+      retro_atomic_store_release_int(&core_self_state, CORE_SELF_CLAIMED
+            | CORE_SELF_READY | (found ? CORE_SELF_FOUND : 0));
+   }
+   return found;
 #endif
 }
 
