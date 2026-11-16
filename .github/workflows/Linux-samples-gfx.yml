@@ -1203,6 +1203,14 @@ jobs:
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/lend_refresh.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/lend_refresh.py
 
+      - name: Renewable frame memory (ASan/UBSan, TSan, D3D11)
+        shell: bash
+        run: |
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/frame_memory.py
+          CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/frame_memory.py
+          CC=x86_64-w64-mingw32-gcc RUNNER='xvfb-run -a wine' python3 samples/gfx/threaded_video/frame_memory.py
+
       - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
         shell: bash
         working-directory: samples/gfx/slang_hdr_bindings

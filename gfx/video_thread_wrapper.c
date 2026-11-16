@@ -194,8 +194,34 @@ static VIDEO_NOINLINE void video_thread_ring_drain(thread_video_t *thr)
       video_thread_hw_ctx_take(thr, false);
 }
 
-/* Host memory for frame buffers: cache-line aligned, and on the 3DS
- * from the linear heap the GPU reads */
+struct video_thread_rec;
+
+typedef struct video_thread_private
+{
+   thread_video_t base;
+   struct video_thread_rec *rec;
+   struct video_thread_rec *rec_retired;
+   struct video_thread_rec *rec_slot[2];
+   struct
+   {
+      video_frame_memory_t map;
+      retro_atomic_int_t ready;
+   } mapping[VIDEO_THREAD_FRAME_MEM];
+   struct
+   {
+      video_frame_memory_t map;
+      uintptr_t id;
+      unsigned align;
+      bool cached;
+      retro_atomic_int_t ready;
+   } mapping_pending[VIDEO_THREAD_FRAME_MEM_DRIVER];
+   unsigned mapping_mask;
+   size_t mapping_pitch;
+   video_poke_interface_t mapping_poke;
+   bool mapping_poke_ready;
+} video_thread_private_t;
+
+/* Host memory: cache-line aligned, and from the linear heap on 3DS. */
 static uint8_t *video_thread_host_alloc(size_t size)
 {
    uint8_t *p;
@@ -305,6 +331,179 @@ static int video_thread_mem_writable_for(thread_video_t *thr, int cur, int take)
    return video_thread_mem_take_from(thr, VIDEO_THREAD_TAKE_ANY, -1);
 }
 
+static bool video_thread_mapping_valid(thread_video_t *thr,
+      const video_frame_memory_t *map)
+{
+   size_t row;
+   unsigned bpp = map->format == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F ? 8
+      : (map->format == RETRO_PIXEL_FORMAT_RGB565
+            || map->format == RETRO_PIXEL_FORMAT_0RGB1555 ? 2
+      : (map->format == RETRO_PIXEL_FORMAT_XRGB8888
+            || map->format == RETRO_PIXEL_FORMAT_XRGB2101010
+            || map->format == RETRO_PIXEL_FORMAT_HDR10_2101010 ? 4 : 0));
+   if (!map->data || ((uintptr_t)map->data & 15)
+         || map->size < thr->frame.buffer_size
+         || map->pitch != (size_t)(unsigned)map->pitch)
+      return false;
+   if (!map->pitch)
+      return bpp || map->format == RETRO_PIXEL_FORMAT_UNKNOWN;
+   if (!bpp || !map->width || !map->height || map->width > (size_t)-1 / bpp)
+      return false;
+   row = (size_t)map->width * bpp;
+   return row <= map->pitch && row <= map->size
+      && (size_t)(map->height - 1) <= (map->size - row) / map->pitch;
+}
+
+/* Cold: the producer is parked while initial mappings are installed. */
+static bool video_thread_mapping_create(thread_video_t *thr, unsigned i)
+{
+   video_thread_private_t *priv = (video_thread_private_t*)thr;
+   video_frame_memory_t *map = &priv->mapping[i].map;
+   if (!thr->frame.mem_poke->frame_mem_map(thr->driver_data,
+            thr->frame.mem[i].id, map) || !video_thread_mapping_valid(thr, map))
+      return false;
+   if (priv->mapping_mask && map->pitch != priv->mapping_pitch)
+   {
+      thr->frame.pitch_align = (unsigned)priv->mapping_pitch;
+      return false;
+   }
+   priv->mapping_pitch = map->pitch;
+   priv->mapping_mask |= 1u << i;
+   thr->frame.mem[i].ptr = (uint8_t*)map->data;
+   retro_atomic_store_relaxed_int(&priv->mapping[i].ready, 0);
+   return true;
+}
+
+/* The mapping is published separately; only the producer changes mem[].ptr. */
+static bool video_thread_mapping_publish(thread_video_t *thr, unsigned i)
+{
+   video_thread_private_t *priv = (video_thread_private_t*)thr;
+   video_frame_memory_t *map = &priv->mapping[i].map;
+   if (!thr->frame.mem_poke->frame_mem_map(thr->driver_data,
+            thr->frame.mem[i].id, map) || !video_thread_mapping_valid(thr, map)
+         || map->pitch != priv->mapping_pitch)
+      return false;
+   if (map->data == thr->frame.mem[i].ptr)
+      retro_atomic_store_release_int(&thr->frame.mem[i].busy, 0);
+   else
+      retro_atomic_store_release_int(&priv->mapping[i].ready, 1);
+   return true;
+}
+
+static void video_thread_mapping_forget(thread_video_t *thr, unsigned i)
+{
+   video_thread_private_t *priv = (video_thread_private_t*)thr;
+   priv->mapping_mask &= ~(1u << i);
+   if (!priv->mapping_mask)
+   {
+      priv->mapping_pitch = 0;
+   }
+   retro_atomic_store_relaxed_int(&priv->mapping[i].ready, 0);
+}
+
+/* Shader commands may prepare mappings without parking the producer. */
+static void video_thread_mapping_prepare(thread_video_t *thr)
+{
+   video_thread_private_t *priv = (video_thread_private_t*)thr;
+   const video_poke_interface_t *poke = thr->frame.mem_poke;
+   unsigned i;
+   if (!poke || !poke->frame_mem_map || !poke->frame_mem_alloc
+         || !poke->frame_mem_free || !poke->frame_mem_ready)
+      return;
+   for (i = 0; i < VIDEO_THREAD_FRAME_MEM_DRIVER; i++)
+   {
+      uintptr_t id = 0;
+      unsigned align = 1;
+      bool cached = false;
+      void *ptr;
+      if (retro_atomic_load_acquire_int(&priv->mapping_pending[i].ready))
+         continue;
+      ptr = poke->frame_mem_alloc(thr->driver_data, thr->frame.buffer_size,
+            &id, &cached, &align);
+      if (!ptr)
+         break;
+      if (!poke->frame_mem_map(thr->driver_data, id,
+               &priv->mapping_pending[i].map)
+            || !video_thread_mapping_valid(thr, &priv->mapping_pending[i].map))
+      {
+         poke->frame_mem_free(thr->driver_data, id);
+         break;
+      }
+      priv->mapping_pending[i].id = id;
+      priv->mapping_pending[i].align = align;
+      priv->mapping_pending[i].cached = cached;
+      retro_atomic_store_release_int(&priv->mapping_pending[i].ready, 1);
+   }
+}
+
+static void video_thread_mapping_pending_free(thread_video_t *thr)
+{
+   video_thread_private_t *priv = (video_thread_private_t*)thr;
+   unsigned i;
+   for (i = 0; i < VIDEO_THREAD_FRAME_MEM_DRIVER; i++)
+      if (retro_atomic_load_relaxed_int(&priv->mapping_pending[i].ready))
+      {
+         thr->frame.mem_poke->frame_mem_free(thr->driver_data,
+               priv->mapping_pending[i].id);
+         priv->mapping_pending[i].id = 0;
+         retro_atomic_store_relaxed_int(&priv->mapping_pending[i].ready, 0);
+      }
+}
+
+static void video_thread_mapping_install(thread_video_t *thr)
+{
+   video_thread_private_t *priv = (video_thread_private_t*)thr;
+   unsigned n, i;
+   for (n = 0; n < VIDEO_THREAD_FRAME_MEM_DRIVER; n++)
+   {
+      video_frame_memory_t *map;
+      if (!retro_atomic_load_acquire_int(&priv->mapping_pending[n].ready))
+         continue;
+      map = &priv->mapping_pending[n].map;
+      if (!video_thread_mapping_valid(thr, map)
+            || (priv->mapping_mask && map->pitch != priv->mapping_pitch))
+         continue;
+      for (i = 0; i < VIDEO_THREAD_FRAME_MEM; i++)
+         if (!thr->frame.mem[i].ptr)
+            break;
+      if (i == VIDEO_THREAD_FRAME_MEM)
+         break;
+      if (!priv->mapping_mask)
+      {
+         priv->mapping_pitch = map->pitch;
+         thr->frame.pitch_align = priv->mapping_pending[n].align;
+      }
+      priv->mapping[i].map = *map;
+      thr->frame.mem[i].ptr = (uint8_t*)map->data;
+      thr->frame.mem[i].size = thr->frame.buffer_size;
+      thr->frame.mem[i].id = priv->mapping_pending[n].id;
+      thr->frame.mem[i].cached = priv->mapping_pending[n].cached;
+      priv->mapping_mask |= 1u << i;
+      priv->mapping_pending[n].id = 0;
+      retro_atomic_store_release_int(&priv->mapping_pending[n].ready, 0);
+   }
+}
+
+static void video_thread_mapping_refresh(thread_video_t *thr)
+{
+   video_thread_private_t *priv = (video_thread_private_t*)thr;
+   unsigned i, s;
+   video_thread_mapping_install(thr);
+   for (i = 0; i < VIDEO_THREAD_FRAME_MEM; i++)
+      if ((priv->mapping_mask & (1u << i))
+            && retro_atomic_load_acquire_int(&priv->mapping[i].ready))
+      {
+         thr->frame.mem[i].ptr = (uint8_t*)priv->mapping[i].map.data;
+         for (s = 0; s < 2; s++)
+            if (thr->frame.slot[s].mem == (int)i)
+               thr->frame.slot[s].buffer = thr->frame.mem[i].ptr;
+         if (thr->frame.spare_mem == (int)i)
+            thr->frame.spare = thr->frame.mem[i].ptr;
+         retro_atomic_store_release_int(&priv->mapping[i].ready, 0);
+         retro_atomic_store_release_int(&thr->frame.mem[i].busy, 0);
+      }
+}
+
 /* Main thread: the spare, taken when a loan needs one, moved into the
  * driver's frame memory where it can be, and away from a buffer a frame
  * in flight still reads. Any frame buffer fits a slot, since a push
@@ -355,8 +554,28 @@ static void video_thread_mem_poll(thread_video_t *thr)
    }
 }
 
+static void video_thread_mem_poll_mapped(thread_video_t *thr)
+{
+   unsigned m = thr->frame.mem_busy;
+   while (m)
+   {
+      unsigned i = 0;
+      while (!(m & (1u << i)))
+         i++;
+      m &= ~(1u << i);
+      if (thr->frame.mem_poke->frame_mem_ready(thr->driver_data,
+               thr->frame.mem[i].id))
+      {
+         if (!video_thread_mapping_publish(thr, i))
+            continue;
+         thr->frame.mem_busy &= ~(1u << i);
+      }
+   }
+}
+
 static void video_thread_mem_release(thread_video_t *thr, int i)
 {
+   video_thread_mapping_forget(thr, (unsigned)i);
    thr->frame.mem_poke->frame_mem_free(thr->driver_data,
          thr->frame.mem[i].id);
    thr->frame.mem_busy      &= ~(1u << i);
@@ -380,6 +599,8 @@ static void video_thread_mem_provision(thread_video_t *thr)
    if (     !thr->driver_data || !poke || !poke->frame_mem_alloc
          || !poke->frame_mem_ready || !poke->frame_mem_free)
       return;
+   if (poke->frame_mem_map)
+      video_thread_mapping_pending_free(thr);
 
    for (i = 0; i < VIDEO_THREAD_FRAME_MEM; i++)
    {
@@ -407,6 +628,11 @@ static void video_thread_mem_provision(thread_video_t *thr)
       thr->frame.mem[i].size   = thr->frame.buffer_size;
       thr->frame.mem[i].id     = id;
       thr->frame.mem[i].cached = cached;
+      if (poke->frame_mem_map && !video_thread_mapping_create(thr, (unsigned)i))
+      {
+         video_thread_mem_release(thr, i);
+         break;
+      }
       have++;
    }
    /* A slot lent to the core stays where the core is writing */
@@ -432,6 +658,7 @@ static void video_thread_mem_provision(thread_video_t *thr)
 static void video_thread_mem_unprovision(thread_video_t *thr)
 {
    int i, s;
+   video_thread_mapping_pending_free(thr);
    /* Two host buffers always remain (init, slots_fit), and with the
     * spare let go neither is held unless a slot holds it */
    thr->frame.spare_mem = -1;
@@ -1259,6 +1486,8 @@ static bool video_thread_handle_packet(
                pkt->data.set_shader.type, pkt->data.set_shader.path);
          else
             pkt->data.b = false;
+         if (pkt->data.b)
+            video_thread_mapping_prepare(thr);
          video_thread_reply(thr, pkt);
          break;
 
@@ -1293,6 +1522,8 @@ static bool video_thread_handle_packet(
             }
             if (!pkt->data.b)
                video_driver_shader_deferred_take(d, true);
+            if (d->state == SHADER_LOAD_DONE)
+               video_thread_mapping_prepare(thr);
             /* publishes the step's writes to the main thread's tick */
             retro_atomic_store_release_int(&d->busy, 0);
          }
@@ -2346,15 +2577,6 @@ typedef struct video_thread_rec
    bool bottom_up[3];
 } video_thread_rec_t;
 
-/* Keep the shared wrapper and frame-slot layouts unchanged. */
-typedef struct video_thread_private
-{
-   thread_video_t base;
-   video_thread_rec_t *rec;
-   video_thread_rec_t *rec_retired;
-   video_thread_rec_t *rec_slot[2];
-} video_thread_private_t;
-
 #ifdef VIDEO_THREAD_HAS_REC
 
 /* Resize on the worker, preserving the encoder's dimensions and aspect. */
@@ -2869,7 +3091,12 @@ static void video_thread_loop(void *data)
       if (thr->lend_busy)
          video_thread_lend_poll(thr);
       if (thr->frame.mem_busy)
-         video_thread_mem_poll(thr);
+      {
+         if (thr->frame.mem_poke->frame_mem_map)
+            video_thread_mem_poll_mapped(thr);
+         else
+            video_thread_mem_poll(thr);
+      }
 
       if (claimed)
       {
@@ -4493,6 +4720,7 @@ static bool video_thread_init(thread_video_t *thr,
 
    {
       unsigned i;
+      video_thread_private_t *priv = (video_thread_private_t*)thr;
       size_t max_size        = info.input_scale * RARCH_SCALE_BASE;
       max_size              *= max_size;
       max_size              *= info.source_fp16 ? 8 :
@@ -4503,7 +4731,12 @@ static bool video_thread_init(thread_video_t *thr,
        * both copies on aligned rows for the usual pitches. Two slots so
        * the copy of one frame overlaps the upload of the other. */
       for (i = 0; i < VIDEO_THREAD_FRAME_MEM; i++)
+      {
          retro_atomic_int_init(&thr->frame.mem[i].busy, 0);
+         retro_atomic_int_init(&priv->mapping[i].ready, 0);
+      }
+      for (i = 0; i < VIDEO_THREAD_FRAME_MEM_DRIVER; i++)
+         retro_atomic_int_init(&priv->mapping_pending[i].ready, 0);
       for (i = 0; i < 2; i++)
       {
          if (!(thr->frame.slot[i].buffer = video_thread_host_alloc(max_size)))
@@ -5602,6 +5835,122 @@ static bool thread_get_current_software_framebuffer(void *data,
    return true;
 }
 
+static bool thread_get_mapped_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   video_thread_private_t *priv = (video_thread_private_t*)thr;
+   unsigned slot, bpp, st, i, pass;
+   int cur, chosen = -1, empty = -1;
+   size_t tight;
+   enum retro_pixel_format format;
+   if (!thr || !fb)
+      return false;
+   if (video_thread_is_self(thr))
+   {
+      const video_poke_interface_t *poke = thr->frame.mem_poke;
+      return poke && poke->get_current_software_framebuffer
+         && poke->get_current_software_framebuffer(thr->driver_data, fb);
+   }
+   if (!priv->mapping_mask)
+      return thread_get_current_software_framebuffer(data, fb);
+   video_thread_mapping_refresh(thr);
+   thr->handoff.asked++;
+   if ((uint64_t)fb->width * fb->height - 1 >= thr->frame.pixel_capacity)
+   {
+      thr->handoff.declined_size++;
+      return false;
+   }
+   bpp = thr->info.source_fp16 ? 8 : (thr->info.rgb32 ? 4 : 2);
+   format = thr->info.source_fp16 ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F
+      : (thr->info.source_hdr10 ? RETRO_PIXEL_FORMAT_HDR10_2101010
+      : (thr->info.source_10bit ? RETRO_PIXEL_FORMAT_XRGB2101010
+      : (thr->info.rgb32 ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)));
+   tight = (size_t)fb->width * bpp;
+   st = (unsigned)video_thread_ring_load(thr);
+   slot = !VIDEO_THREAD_RING_PENDING_OF(st) ? VIDEO_THREAD_RING_TAIL_OF(st)
+      : (VIDEO_THREAD_RING_PENDING_OF(st) == 1 && !VIDEO_THREAD_RING_BUSY_OF(st)
+         ? VIDEO_THREAD_RING_TAIL_OF(st) ^ 1 : VIDEO_THREAD_LEND_SPARE);
+   cur = slot == VIDEO_THREAD_LEND_SPARE ? thr->frame.spare_mem
+      : thr->frame.slot[slot].mem;
+   /* Prefer a compatible driver mapping, then cached host storage. A padded
+    * GPU mapping is not offered to cores which may ignore fb->pitch. */
+   for (pass = 0; pass < 2 && chosen < 0; pass++)
+      for (i = 0; i <= VIDEO_THREAD_FRAME_MEM; i++)
+      {
+         int idx = i ? (int)i - 1 : cur;
+         if (idx < 0 || (i && idx == cur))
+            continue;
+         if (!thr->frame.mem[idx].ptr)
+         {
+            if (empty < 0) empty = idx;
+            continue;
+         }
+         if ((idx != cur && video_thread_mem_held(thr, idx))
+               || thr->frame.mem[idx].size < thr->frame.buffer_size
+               || !video_thread_mem_writable(thr, idx))
+            continue;
+         if (!pass)
+         {
+            const video_frame_memory_t *map = &priv->mapping[idx].map;
+            if (!(priv->mapping_mask & (1u << idx))
+                  || ((uintptr_t)map->data & 63)
+                  || (map->format != RETRO_PIXEL_FORMAT_UNKNOWN && map->format != format)
+                  || ((fb->access_flags & RETRO_MEMORY_ACCESS_READ)
+                     && !thr->frame.mem[idx].cached)
+                  || (map->pitch && (map->pitch != tight
+                        || fb->width > map->width || fb->height > map->height)))
+               continue;
+         }
+         else if (thr->frame.mem[idx].id)
+            continue;
+         chosen = idx;
+         break;
+      }
+   if (chosen < 0 && empty >= 0)
+      if ((thr->frame.mem[empty].ptr = video_thread_host_alloc(thr->frame.buffer_size)))
+      {
+         thr->frame.mem[empty].size = thr->frame.buffer_size;
+         thr->frame.mem[empty].cached = true;
+         chosen = empty;
+      }
+   if (chosen < 0)
+   {
+      thr->handoff.declined_ring++;
+      return false;
+   }
+   if (slot == VIDEO_THREAD_LEND_SPARE)
+   {
+      thr->frame.spare_mem = chosen;
+      thr->frame.spare = thr->frame.mem[chosen].ptr;
+   }
+   else
+   {
+      thr->frame.slot[slot].mem = chosen;
+      thr->frame.slot[slot].buffer = thr->frame.mem[chosen].ptr;
+   }
+   if ((priv->mapping_mask & (1u << chosen))
+         && priv->mapping[chosen].map.cache_exposed)
+      retro_atomic_store_release_int(priv->mapping[chosen].map.cache_exposed, 1);
+   thr->frame.lent = (int)slot;
+   thr->handoff.lent++;
+   fb->data = thr->frame.mem[chosen].ptr;
+   fb->pitch = tight;
+   fb->format = format;
+   fb->memory_flags = thr->frame.mem[chosen].cached ? RETRO_MEMORY_TYPE_CACHED : 0;
+   return true;
+}
+
+static bool video_thread_frame_mapped(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (thr && !video_thread_is_self(thr))
+      video_thread_mapping_refresh(thr);
+   return video_thread_frame(data, frame, dims, count, pitch, msg, info);
+}
+
 /* Proc addresses are properties of the driver's API, not of a thread. */
 static retro_proc_address_t thread_get_proc_address(void *data, const char *sym)
 {
@@ -6019,7 +6368,19 @@ static void video_thread_get_poke_interface(void *data,
       set.poke = NULL;
       thr->driver->poke_interface(thr->driver_data, &set.poke);
       video_thread_run_blocking(video_thread_set_poke, &set);
-      *iface   = &thread_poke;
+      if (thr->frame.mem_poke && thr->frame.mem_poke->frame_mem_map)
+      {
+         video_thread_private_t *priv = (video_thread_private_t*)thr;
+         if (!priv->mapping_poke_ready)
+         {
+            priv->mapping_poke = thread_poke;
+            priv->mapping_poke.get_current_software_framebuffer = thread_get_mapped_framebuffer;
+            priv->mapping_poke_ready = true;
+         }
+         *iface = &priv->mapping_poke;
+      }
+      else
+         *iface = &thread_poke;
    }
    else
       *iface = NULL;
@@ -6181,6 +6542,9 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
       *out_data   = NULL;
       return false;
    }
+
+   if (thr->frame.mem_poke && thr->frame.mem_poke->frame_mem_map)
+      thr->video_thread.frame = video_thread_frame_mapped;
 
    return true;
 }

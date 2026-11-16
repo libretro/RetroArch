@@ -292,6 +292,7 @@ typedef struct d3d11_vertex_t
  * may still be copying from, one the cached frame may point into, and
  * one to lend. */
 #define D3D11_SW_LEND_SLOTS 3
+#define D3D11_FRAME_MEM_MAX 5
 
 typedef struct
 {
@@ -579,6 +580,17 @@ typedef struct
       unsigned                 dims;
       DXGI_FORMAT              format;
    } sw_lend;
+   struct
+   {
+      D3D11Texture2D texture;
+      D3D11_MAPPED_SUBRESOURCE mapped;
+      unsigned width;
+      unsigned height;
+      DXGI_FORMAT format;
+      bool valid;
+      retro_atomic_int_t cache_exposed;
+   } frame_mem[D3D11_FRAME_MEM_MAX];
+
    /* The back buffer size the copy was made at, packed. */
    unsigned              retained_dims;
    unsigned              retained_light;
@@ -798,6 +810,7 @@ static void d3d11_gfx_unload_texture_internal(d3d11_video_t *d3d11, uintptr_t ha
 static void d3d11_record_free(d3d11_video_t *d3d11);
 static void d3d11_views_release(d3d11_video_t *d3d11);
 static void d3d11_sw_lend_release(d3d11_video_t *d3d11);
+static void d3d11_frame_mem_free(void *data, uintptr_t id);
 static void d3d11_views_publish(d3d11_video_t *d3d11);
 
 /* Sprite/font shader selection: HDR output uses the encoding
@@ -4290,6 +4303,8 @@ static void d3d11_gfx_free(void* data)
    d3d11_release_texture(&d3d11->chain.history[0]);
    d3d11_release_texture(&d3d11->sw_direct.texture);
    d3d11_sw_lend_release(d3d11);
+   for (i = 0; i < D3D11_FRAME_MEM_MAX; i++)
+      d3d11_frame_mem_free(d3d11, (uintptr_t)i + 1);
    d3d11_views_release(d3d11);
    Release(d3d11->frame.ubo);
    Release(d3d11->frame.vbo);
@@ -6030,6 +6045,184 @@ static retro_time_t d3d11_get_last_present_time(void *data)
 #endif
 }
 
+static void d3d11_frame_mem_free(void *data, uintptr_t id)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   unsigned i = (unsigned)(id - 1);
+   if (!d3d11 || !id || id > D3D11_FRAME_MEM_MAX || !d3d11->frame_mem[i].texture)
+      return;
+   if (d3d11->frame_mem[i].valid)
+   {
+      if (retro_atomic_load_acquire_int(&d3d11->frame_mem[i].cache_exposed))
+         video_driver_cached_frame_retire();
+      d3d11->context->lpVtbl->Unmap(d3d11->context,
+            (D3D11Resource)d3d11->frame_mem[i].texture, 0);
+   }
+   Release(d3d11->frame_mem[i].texture);
+   d3d11->frame_mem[i].texture = NULL;
+   d3d11->frame_mem[i].valid = false;
+}
+
+static void *d3d11_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   D3D11_TEXTURE2D_DESC desc;
+   unsigned i, edge = 1, width, height, bpp;
+   /* The stock renderer already avoids a GPU copy. Use staging only when
+    * a history preset needs that copy regardless of the CPU upload path. */
+   if (!d3d11 || !d3d11->context || !size
+         || !d3d11->chain.shader_preset || !d3d11->chain.shader_preset->history_size
+         || (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE)
+         || (d3d11->format != DXGI_FORMAT_B8G8R8X8_UNORM
+            && d3d11->format != DXGI_FORMAT_B5G6R5_UNORM))
+      return NULL;
+   bpp = d3d11_format_bytes(d3d11->format);
+   while ((uint64_t)edge * edge * bpp < size && edge < 16384)
+      edge <<= 1;
+   if ((uint64_t)edge * edge * bpp < size)
+      return NULL;
+   width = d3d11->chain.history[0].desc.Format == d3d11->format
+      ? d3d11->chain.history[0].desc.Width : 0;
+   if (!width || width > 16384
+         || size / ((size_t)width * bpp)
+            + (size % ((size_t)width * bpp) != 0) > 16384)
+      width = edge;
+   height = (unsigned)(size / ((size_t)width * bpp)
+         + (size % ((size_t)width * bpp) != 0));
+   for (i = 0; i < D3D11_FRAME_MEM_MAX; i++)
+      if (!d3d11->frame_mem[i].texture)
+         break;
+   if (i == D3D11_FRAME_MEM_MAX)
+      return NULL;
+   retro_atomic_int_init(&d3d11->frame_mem[i].cache_exposed, 0);
+   memset(&desc, 0, sizeof(desc));
+   desc.Width = width;
+   desc.Height = height;
+   desc.MipLevels = desc.ArraySize = desc.SampleDesc.Count = 1;
+   desc.Format = d3d11->format;
+   desc.Usage = D3D11_USAGE_STAGING;
+   desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+   if (FAILED(d3d11->device->lpVtbl->CreateTexture2D(d3d11->device,
+               &desc, NULL, &d3d11->frame_mem[i].texture)))
+      return NULL;
+   if (FAILED(d3d11->context->lpVtbl->Map(d3d11->context,
+               (D3D11Resource)d3d11->frame_mem[i].texture, 0,
+               D3D11_MAP_READ_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT,
+               &d3d11->frame_mem[i].mapped)))
+   {
+      d3d11_frame_mem_free(d3d11, (uintptr_t)i + 1);
+      return NULL;
+   }
+   d3d11->frame_mem[i].valid = true;
+   if (     !d3d11->frame_mem[i].mapped.pData
+         || ((uintptr_t)d3d11->frame_mem[i].mapped.pData & 15)
+         || d3d11->frame_mem[i].mapped.RowPitch < width * bpp
+         || d3d11->frame_mem[i].mapped.RowPitch > (size_t)-1 / height)
+   {
+      d3d11_frame_mem_free(d3d11, (uintptr_t)i + 1);
+      return NULL;
+   }
+   d3d11->frame_mem[i].width = width;
+   d3d11->frame_mem[i].height = height;
+   d3d11->frame_mem[i].format = d3d11->format;
+   *pitch_align = d3d11->frame_mem[i].mapped.RowPitch;
+   *cached = true;
+   *id = (uintptr_t)i + 1;
+   return d3d11->frame_mem[i].mapped.pData;
+}
+
+static bool d3d11_frame_mem_ready(void *data, uintptr_t id)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   unsigned i = (unsigned)(id - 1);
+   if (!d3d11 || !id || id > D3D11_FRAME_MEM_MAX || !d3d11->frame_mem[i].texture)
+      return false;
+   if (!d3d11->frame_mem[i].valid)
+   {
+      if (FAILED(d3d11->context->lpVtbl->Map(d3d11->context,
+                  (D3D11Resource)d3d11->frame_mem[i].texture, 0,
+                  D3D11_MAP_READ_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT,
+                  &d3d11->frame_mem[i].mapped)))
+         return false;
+      d3d11->frame_mem[i].valid = true;
+   }
+   return true;
+}
+
+static bool d3d11_frame_mem_map(void *data, uintptr_t id,
+      video_frame_memory_t *mapping)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   unsigned i = (unsigned)(id - 1);
+   if (!d3d11 || !id || id > D3D11_FRAME_MEM_MAX || !d3d11->frame_mem[i].valid)
+      return false;
+   mapping->cache_exposed = &d3d11->frame_mem[i].cache_exposed;
+   mapping->data = d3d11->frame_mem[i].mapped.pData;
+   mapping->pitch = d3d11->frame_mem[i].mapped.RowPitch;
+   mapping->width = d3d11->frame_mem[i].width;
+   mapping->height = d3d11->frame_mem[i].height;
+   if (mapping->pitch > (size_t)-1 / mapping->height)
+      return false;
+   mapping->size = mapping->pitch * (mapping->height - 1)
+      + (size_t)mapping->width * d3d11_format_bytes(d3d11->frame_mem[i].format);
+   mapping->format = d3d11->frame_mem[i].format == DXGI_FORMAT_B8G8R8X8_UNORM
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   return mapping->data && !((uintptr_t)mapping->data & 15);
+}
+
+static bool d3d11_frame_mem_push(d3d11_video_t *d3d11,
+      D3D11DeviceContext ctx, const void *frame, unsigned width,
+      unsigned height, unsigned pitch)
+{
+   unsigned i;
+   d3d11_texture_t *hist = &d3d11->chain.history[0];
+   if (!frame || !width || !height || !pitch || !hist->handle
+         || !d3d11->chain.shader_preset || !d3d11->chain.shader_preset->history_size
+         || hist->desc.Format != d3d11->format
+         || hist->desc.Width != width || hist->desc.Height != height)
+      return false;
+   for (i = 0; i < D3D11_FRAME_MEM_MAX; i++)
+   {
+      uintptr_t base, src = (uintptr_t)frame;
+      size_t off, size;
+      unsigned bpp, x, y;
+      D3D11_BOX box;
+      bool exposed;
+      if (!d3d11->frame_mem[i].valid
+            || d3d11->frame_mem[i].format != d3d11->format
+            || d3d11->frame_mem[i].mapped.RowPitch != pitch)
+         continue;
+      base = (uintptr_t)d3d11->frame_mem[i].mapped.pData;
+      bpp = d3d11_format_bytes(d3d11->format);
+      size = (size_t)pitch * (d3d11->frame_mem[i].height - 1)
+         + (size_t)d3d11->frame_mem[i].width * bpp;
+      if (src < base || src - base >= size)
+         continue;
+      off = (size_t)(src - base);
+      if (off % pitch % bpp)
+         return false;
+      x = (unsigned)(off % pitch / bpp);
+      y = (unsigned)(off / pitch);
+      if (x >= d3d11->frame_mem[i].width || width > d3d11->frame_mem[i].width - x
+            || height > d3d11->frame_mem[i].height - y)
+         return false;
+      exposed = retro_atomic_load_acquire_int(&d3d11->frame_mem[i].cache_exposed) != 0;
+      if (exposed && !video_driver_cached_frame_try_retire((const void*)base, size))
+         return false;
+      box.left = x; box.top = y; box.front = 0;
+      box.right = x + width; box.bottom = y + height; box.back = 1;
+      ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->frame_mem[i].texture, 0);
+      d3d11->frame_mem[i].valid = false;
+      if (exposed)
+         retro_atomic_store_release_int(&d3d11->frame_mem[i].cache_exposed, 0);
+      ctx->lpVtbl->CopySubresourceRegion(ctx, (D3D11Resource)hist->handle,
+            0, 0, 0, 0, (D3D11Resource)d3d11->frame_mem[i].texture, 0, &box);
+      return true;
+   }
+   return false;
+}
+
 /* The view to draw a version 3 core's texture through. A core rotates a
  * few textures, so a view per texture is made once and found again. */
 /* Writes a software frame into sw_direct's texture, made or remade at
@@ -6235,10 +6428,13 @@ static bool d3d11_sw_lend_push(d3d11_video_t *d3d11,
    box.right  = x + width;
    box.bottom = y + height;
    box.back   = 1;
+   if (!video_driver_cached_frame_try_retire(d3d11->sw_lend.mapped[slot].pData,
+            (size_t)d3d11->sw_lend.mapped[slot].RowPitch
+               * VIDEO_SCALE_H(d3d11->sw_lend.dims)))
+      return false;
    ctx->lpVtbl->Unmap(ctx,
          (D3D11Resource)d3d11->sw_lend.staging[slot], 0);
    d3d11->sw_lend.mapped_bits &= ~(1u << slot);
-   video_driver_cached_frame_retire();
    ctx->lpVtbl->CopySubresourceRegion(ctx, (D3D11Resource)hist->handle,
          0, 0, 0, 0, (D3D11Resource)d3d11->sw_lend.staging[slot], 0, &box);
    return true;
@@ -7938,8 +8134,10 @@ static bool d3d11_gfx_frame_body(
       sw_pending = false;
       /* Rendered into a lent slot: copied on the GPU, drawn from
        * history[0] like any staged frame */
-      if (d3d11_sw_lend_push(d3d11, context, sw_lend_slot,
-               sw_lend_x, sw_lend_y, width, height))
+      if ((video_info->shader_active && d3d11_frame_mem_push(d3d11,
+                  context, frame, width, height, pitch))
+            || d3d11_sw_lend_push(d3d11, context, sw_lend_slot,
+                  sw_lend_x, sw_lend_y, width, height))
          ;
       else if ((   !(d3d11->chain.shader_preset && video_info->shader_active)
                 || d3d11_preset_reads_in_place(d3d11, NULL,
@@ -10567,9 +10765,9 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
    d3d11_set_frame_format,
-   NULL, /* frame_mem_alloc */
-   NULL, /* frame_mem_ready */
-   NULL, /* frame_mem_free */
+   d3d11_frame_mem_alloc,
+   d3d11_frame_mem_ready,
+   d3d11_frame_mem_free,
    d3d11_get_device,
 #ifdef D3D11_FRAME_IMPORT
    d3d11_import_texture,
@@ -10589,7 +10787,9 @@ static const video_poke_interface_t d3d11_poke_interface = {
    true, /* texture_lend_per_write */
    d3d11_driver_pacing_set,
    d3d11_driver_pacing_wait,
-   d3d11_driver_pacing_mark
+   d3d11_driver_pacing_mark,
+   NULL, /* prepare_import_texture */
+   d3d11_frame_mem_map
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,

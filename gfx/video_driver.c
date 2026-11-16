@@ -7102,6 +7102,48 @@ void video_driver_cached_frame_retire(void)
    frame_cache_hazard_drain(NULL);
 }
 
+bool video_driver_cached_frame_try_retire(const void *data, size_t size)
+{
+#if defined(HAVE_THREADS) && !defined(FRAME_CACHE_HAZARDS)
+   /* No lock-free reader registry on this target. */
+   return false;
+#else
+   uintptr_t base = (uintptr_t)data;
+   uintptr_t held;
+   const void *cached;
+#ifdef FRAME_CACHE_HAZARDS
+   unsigned i;
+#endif
+   if (!data || !size)
+      return false;
+   held = retro_atomic_load_acquire_size(&video_driver_st.frame_cache_keeper);
+   if (held != VIDEO_CACHE_KEEPER && held >= base && held - base < size)
+      return false;
+   cached = (const void*)retro_atomic_load_acquire_ptr(&frame_cache_data);
+   if ((uintptr_t)cached >= base && (uintptr_t)cached - base < size)
+   {
+      if (held == VIDEO_CACHE_KEEPER)
+         return false;
+#ifdef HAVE_THREADS
+      if (!retro_atomic_cas_ptr(&frame_cache_data, (void*)cached, NULL))
+         return false;
+#else
+      frame_cache_data = NULL;
+#endif
+   }
+#ifdef FRAME_CACHE_HAZARDS
+   retro_atomic_fetch_add_int(&frame_cache_generation, 1);
+   for (i = 0; i < FRAME_CACHE_HAZARD_SLOTS; i++)
+   {
+      held = (uintptr_t)retro_atomic_load_acquire_ptr(&frame_cache_hazard[i]);
+      if (held >= base && held - base < size)
+         return false;
+   }
+#endif
+   return true;
+#endif
+}
+
 bool video_driver_has_focus(void)
 {
    video_driver_state_t *video_st = &video_driver_st;

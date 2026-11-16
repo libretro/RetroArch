@@ -1142,6 +1142,19 @@ typedef struct video_frame_import
    void *owner;
 } video_frame_import_t;
 
+/* A mapping is valid until frame() consumes it; renew on the driver thread. */
+typedef struct video_frame_memory
+{
+   void *data;
+   size_t size;
+   size_t pitch; /* zero for linear storage with flexible row pitch */
+   unsigned width;
+   unsigned height;
+   enum retro_pixel_format format; /* UNKNOWN is permitted for linear storage. */
+   /* Optional: producer sets before exposing pixels; driver clears after retire. */
+   retro_atomic_int_t *cache_exposed;
+} video_frame_memory_t;
+
 typedef struct video_poke_interface
 {
    uint32_t (*get_flags)(void *data);
@@ -1371,7 +1384,7 @@ typedef struct video_poke_interface
     * way up. All three are called on the driver's own thread.
     *
     * frame_mem_alloc maps @size bytes the CPU writes and the GPU reads,
-    * at least 64-byte aligned, names them in @id, sets @cached when
+    * at least 64-byte aligned (16 with frame_mem_map), names them in @id, sets @cached when
     * the CPU reads them back at cached speed, and @pitch_align to the
     * row pitch multiple frame() reads them at in place; NULL when it
     * has none.
@@ -1473,6 +1486,12 @@ typedef struct video_poke_interface
    /* Cold owner-thread preparation; all results retain the source lease. */
    enum video_texture_update (*prepare_import_texture)(void *data, uintptr_t id,
          const video_frame_import_t *frame);
+   /* Optional renewable frame memory. Requires all three frame_mem callbacks.
+    * After alloc() or ready(), returns the current mapping. No GPU calls on
+    * the producer.
+    * All mappings in a pool must use the same pitch (zero permits any pitch). */
+   bool (*frame_mem_map)(void *data, uintptr_t id,
+         video_frame_memory_t *mapping);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -2391,6 +2410,8 @@ void video_driver_cached_frame_invalidate(void);
  * Safe from any thread.
  */
 void video_driver_cached_frame_retire(void);
+/* Bounded frame-path retirement; false leaves the mapping valid for readers. */
+bool video_driver_cached_frame_try_retire(const void *data, size_t size);
 
 bool video_driver_is_hw_context(void);
 
