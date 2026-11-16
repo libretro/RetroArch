@@ -116,6 +116,7 @@ check: all
 	$(RUNNER) ./capture_test$(EXE)
 	$(RUNNER) ./capture_shader_test$(EXE)
 clean:
+	rm -f hevc_native_session_test hevc_native_session_test.exe
 	rm -f hevc_native_capture_test hevc_native_capture_test.exe
 	rm -f hevc_params_test hevc_params_test.exe
 	rm -f hevc_session_test hevc_session_test.exe hevc_native_params_test hevc_native_params_test.exe hevc_headers_test hevc_headers_test.exe
@@ -158,3 +159,11 @@ hevc_native_capture_test$(EXE): $(HEVC_CAPTURE_SOURCES) hevc_native_adapter_test
 hevc-native-capture-check: hevc_native_capture_test$(EXE)
 	python3 hevc_native_capture_run.py --native-test ./hevc_native_capture_test$(EXE)
 .PHONY: hevc-native-capture-check
+
+HEVC_NATIVE_SESSION_SOURCES := $(sort $(filter-out native_test.c hevc_native_capture_test.c,$(NATIVE_SOURCES) $(HEVC_CAPTURE_SOURCES)) hevc_native_session_test.c $(RA)/record/record_gpu_session_vulkan_hevc.c $(RA)/record/record_gpu_worker_vulkan_hevc.c)
+hevc_native_session_test$(EXE): $(HEVC_NATIVE_SESSION_SOURCES) hevc_native_capture_test.c hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(CAPTURE_HEADERS) $(RA)/record/record_gpu_session_vulkan_backend.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(HEVC_NATIVE_SESSION_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread -ldl) -lm
+
+hevc-native-session-check: hevc_native_session_test$(EXE)
+	python3 hevc_native_session_run.py --native-test ./hevc_native_session_test$(EXE)
+.PHONY: hevc-native-session-check

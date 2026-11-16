@@ -183,6 +183,8 @@ static void capture_free(struct native_hevc_capture *c)
    c->adapter.ops.pool.destroy_image(c->adapter.gpu.base.device,c->rgb,NULL);
    c->adapter.ops.pool.free_memory(c->adapter.gpu.base.device,c->rgb_memory,NULL);
 }
+
+#ifndef HEVC_NATIVE_CAPTURE_HELPERS_ONLY
 int main(int argc, char **argv)
 {
    struct native_hevc_capture *n = (struct native_hevc_capture*)calloc(1, sizeof(*n));
@@ -248,3 +250,5 @@ done:
    native_adapter_context_free(&n->adapter);
    return result;
 }
+
+#endif

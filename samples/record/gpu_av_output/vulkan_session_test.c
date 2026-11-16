@@ -120,6 +120,9 @@ bool vulkan_encode_h264_free(vulkan_encode_h264_t *e)
 }
 static record_gpu_session_vulkan_t *session_new(bool audio)
 {
+#ifdef SESSION_HEVC_TEST
+   return test_hevc_session_new(audio);
+#else
    vulkan_encode_h264_open_t c;
    record_gpu_output_vulkan_config_t output;
    static const vulkan_encode_h264_ops_t ops = { {0}, {0}, {0} };
@@ -138,6 +141,7 @@ static record_gpu_session_vulkan_t *session_new(bool audio)
       output.audio_fifo_frames = 1536;
    }
    return record_gpu_session_vulkan_new(&c, &ops, &output, "unused");
+#endif
 }
 static void reset(void)
 {
@@ -251,7 +255,7 @@ static void cancellation(void)
    for (i = 0; i < 20 && record_gpu_session_vulkan_error(s, NULL) == RECORD_VULKAN_SESSION_NONE; i++)
       record_gpu_session_vulkan_step(s);
    assert(record_gpu_session_vulkan_error(s, NULL) == RECORD_VULKAN_SESSION_OUTPUT);
-   assert(s->encoder->locked);
+   assert(((vulkan_encode_h264_t*)s->encoder)->locked);
    record_gpu_session_vulkan_cancel(s);
    assert(record_gpu_session_vulkan_audio_finish(s));
    for (i = 0; i < 10; i++)

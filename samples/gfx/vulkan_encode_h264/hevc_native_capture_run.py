@@ -10,7 +10,7 @@ import tempfile
 
 def verify(path, depth, full):
     probe = json.loads(subprocess.check_output([
-        'ffprobe', '-v', 'error', '-count_frames', '-show_streams',
+        'ffprobe', '-v', 'error', '-select_streams', 'v:0', '-count_frames', '-show_streams',
         '-show_frames', '-of', 'json', str(path)], timeout=30))
     stream = probe['streams'][0]
     assert stream['codec_name'] == 'hevc'
