@@ -851,6 +851,27 @@ int retro_vfs_stat_identity_impl(const char *path,
    return -1;
 }
 
+bool retro_vfs_file_volume_impl(libretro_vfs_implementation_file *stream,
+      unsigned want, struct retro_vfs_volume *vol)
+{
+   /* Not on this backend */
+   (void)stream;
+   (void)want;
+   if (vol)
+      memset(vol, 0, sizeof(*vol));
+   return false;
+}
+
+int retro_vfs_stat_volume_impl(const char *path, unsigned want,
+      struct retro_vfs_volume *vol)
+{
+   (void)path;
+   (void)want;
+   if (vol)
+      memset(vol, 0, sizeof(*vol));
+   return -1;
+}
+
 const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
       int64_t *len)
 {

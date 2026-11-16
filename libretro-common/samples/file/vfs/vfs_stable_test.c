@@ -24,6 +24,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#if defined(__linux__)
+#include <fcntl.h>
+#include <sys/statvfs.h>
+#include <sys/vfs.h>
+#endif
 #endif
 
 static unsigned checks, failures;
@@ -350,6 +355,123 @@ static void test_stat_identity(void)
 #endif
 }
 
+#if defined(__linux__)
+/* The mount /proc gives for a descriptor, 0 when none */
+static unsigned long fdinfo_mnt(int fd)
+{
+   char name[64];
+   char text[512];
+   char *at;
+   size_t got;
+   FILE *fp;
+   sprintf(name, "/proc/self/fdinfo/%d", fd);
+   if (!(fp = fopen(name, "r")))
+      return 0;
+   got       = fread(text, 1, sizeof(text) - 1, fp);
+   text[got] = '\0';
+   fclose(fp);
+   return (at = strstr(text, "mnt_id:")) ? strtoul(at + 7, NULL, 10) : 0;
+}
+
+static bool magic_kept(unsigned long t)
+{
+   return t == 0xEF53UL || t == 0x58465342UL || t == 0x9123683EUL
+      || t == 0xF2F52010UL || t == 0x01021994UL || t == 0x2FC12FC1UL
+      || t == 0xCA451A4EUL;
+}
+#endif
+
+/* A file's volume: its mount flags and filesystem as statfs/statvfs
+ * tell them, its mount as /proc does, Windows' drive type */
+static void test_volume(void)
+{
+   libretro_vfs_implementation_file *s, *t;
+   struct retro_vfs_file_identity id;
+   struct retro_vfs_volume v, w;
+#if defined(__linux__)
+   struct statfs fs;
+   struct statvfs svfs;
+#endif
+   s = retro_vfs_file_open_stable_impl(FILE_A, &id);
+   t = retro_vfs_file_open_stable_impl(FILE_A, &id);
+   CHECK(s && t);
+   if (!s || !t)
+      goto end;
+   CHECK(!retro_vfs_file_volume_impl(NULL, 0, &v));
+   CHECK(!retro_vfs_file_volume_impl(s, 0, NULL));
+   CHECK(retro_vfs_file_volume_impl(s, 0, &v) && !v.flags && !v.kind);
+   CHECK(retro_vfs_stat_volume_impl(DIR_NAME "/none",
+            RETRO_VFS_VOLUME_WANT_FLAGS, &v) == 0);
+   CHECK(retro_vfs_stat_volume_impl("", 0, &v) == -1);
+#if defined(__linux__)
+   CHECK(retro_vfs_file_volume_impl(s, RETRO_VFS_VOLUME_WANT_FLAGS, &v));
+   CHECK(statfs(FILE_A, &fs) == 0 && statvfs(FILE_A, &svfs) == 0);
+   CHECK(!!(v.flags & RETRO_VFS_VOLUME_READ_ONLY)
+         == !!(svfs.f_flag & ST_RDONLY));
+   CHECK(!!(v.flags & RETRO_VFS_VOLUME_CTIME_KEPT)
+         == magic_kept((unsigned long)fs.f_type));
+   CHECK(!(v.flags & RETRO_VFS_VOLUME_MOUNT));
+   CHECK(retro_vfs_stat_volume_impl(FILE_A, RETRO_VFS_VOLUME_WANT_FLAGS,
+            &w) == 1 && w.flags == v.flags);
+   /* Two opens share a mount, the one /proc names; by path too */
+   CHECK(retro_vfs_file_volume_impl(s, RETRO_VFS_VOLUME_WANT_MOUNT
+            | RETRO_VFS_VOLUME_WANT_FLAGS, &v));
+   {
+      int fd = open(FILE_A, O_RDONLY);
+      CHECK(fd >= 0);
+      CHECK((v.flags & RETRO_VFS_VOLUME_MOUNT) && v.mount
+            && v.mount == fdinfo_mnt(fd));
+      if (fd >= 0)
+         close(fd);
+   }
+   CHECK(retro_vfs_file_volume_impl(t, RETRO_VFS_VOLUME_WANT_MOUNT, &w)
+         && w.mount == v.mount);
+   CHECK(retro_vfs_stat_volume_impl(FILE_A, RETRO_VFS_VOLUME_WANT_MOUNT,
+            &w) == 1 && w.mount == v.mount);
+   CHECK(retro_vfs_stat_volume_impl("/proc/self/exe",
+            RETRO_VFS_VOLUME_WANT_MOUNT, &w) == 1 && w.mount);
+   CHECK(retro_vfs_stat_volume_impl(DIR_NAME "/none/x",
+            RETRO_VFS_VOLUME_WANT_MOUNT, &w) == 0);
+   /* /proc is another mount, and keeps no ctime */
+   CHECK(retro_vfs_stat_volume_impl("/proc/self/status",
+            RETRO_VFS_VOLUME_WANT_MOUNT | RETRO_VFS_VOLUME_WANT_FLAGS, &w)
+         == 1);
+   CHECK(w.mount && w.mount != v.mount
+         && !(w.flags & RETRO_VFS_VOLUME_CTIME_KEPT));
+#elif defined(_WIN32)
+   {
+      char full[1024];
+      libretro_vfs_implementation_file *a;
+      CHECK(!retro_vfs_file_volume_impl(s, RETRO_VFS_VOLUME_WANT_MOUNT, &v));
+      /* A relative path names no drive */
+      CHECK(retro_vfs_file_volume_impl(s, RETRO_VFS_VOLUME_WANT_KIND, &v)
+            && v.kind == 0);
+      CHECK(GetFullPathNameA(FILE_A, sizeof(full), full, NULL) > 0);
+      a = retro_vfs_file_open_stable_impl(full, &id);
+      CHECK(a != NULL);
+      if (a)
+      {
+         CHECK(retro_vfs_file_volume_impl(a, RETRO_VFS_VOLUME_WANT_KIND, &v));
+         printf("note: %s is drive kind %u\n", full, (unsigned)v.kind);
+         CHECK(v.kind == RETRO_VFS_VOLUME_FIXED);
+         if (retro_vfs_file_volume_impl(a, RETRO_VFS_VOLUME_WANT_FLAGS, &v))
+            CHECK(!(v.flags & (RETRO_VFS_VOLUME_READ_ONLY
+                        | RETRO_VFS_VOLUME_CTIME_KEPT)));
+         else
+            printf("note: no volume flags here\n");
+         retro_vfs_file_close_impl(a);
+      }
+      CHECK(retro_vfs_stat_volume_impl(full, RETRO_VFS_VOLUME_WANT_KIND,
+               &w) == 1 && w.kind == RETRO_VFS_VOLUME_FIXED);
+   }
+#endif
+end:
+   if (s)
+      retro_vfs_file_close_impl(s);
+   if (t)
+      retro_vfs_file_close_impl(t);
+}
+
 int main(void)
 {
    unsigned i;
@@ -372,6 +494,7 @@ int main(void)
    test_others_unchanged();
    test_open_stable_identity();
    test_stat_identity();
+   test_volume();
    test_identity_follows_handle();
    retro_vfs_file_remove_impl(FILE_A);
    retro_vfs_file_remove_impl(FILE_B);

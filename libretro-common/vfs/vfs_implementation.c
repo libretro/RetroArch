@@ -282,6 +282,24 @@ static void vfs_win32_warm_free(void *data);
 #endif
 #endif
 
+/* Volume facts: statfs() where it tells the filesystem and its mount
+ * flags in one call, statvfs() for the flags elsewhere */
+#if defined(__linux__) && !defined(VITA) && !defined(PSP) && !defined(PS2) \
+   && !defined(ORBIS)
+#include <sys/vfs.h>
+#include <sys/statvfs.h>
+#include <sys/syscall.h>
+#define VFS_VOLUME_MAGIC 1
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) \
+   || defined(__DragonFly__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#define VFS_VOLUME_NAME 1
+#elif defined(__NetBSD__) || defined(__HAIKU__)
+#include <sys/statvfs.h>
+#define VFS_VOLUME_STATVFS 1
+#endif
+
 /* Windows FILETIME is 100 ns ticks since 1601-01-01; Unix time is
  * seconds since 1970-01-01.  Both conversions run in uint64_t so the
  * epoch offset can never be a signed-overflow UB site. */
@@ -4198,6 +4216,392 @@ int retro_vfs_stat_identity_impl(const char *path,
    vfs_identity_stat(&st, id);
    return 1;
 #else
+   return -1;
+#endif
+}
+
+#if defined(VFS_VOLUME_MAGIC)
+/* ext2/3/4, xfs, btrfs, f2fs, tmpfs, zfs, bcachefs */
+static bool vfs_volume_ctime_kept(unsigned long f_type)
+{
+   static const unsigned long kept[] = { 0xEF53UL, 0x58465342UL,
+      0x9123683EUL, 0xF2F52010UL, 0x01021994UL, 0x2FC12FC1UL,
+      0xCA451A4EUL };
+   size_t i;
+   for (i = 0; i < sizeof(kept) / sizeof(kept[0]); i++)
+      if (f_type == kept[i])
+         return true;
+   return false;
+}
+
+/* statfs's f_flags holds the mount flags where ST_VALID says so
+ * (Linux 2.6.36 on): read-only from the same call as the filesystem */
+#ifndef ST_VALID
+#define ST_VALID 0x0020
+#endif
+static void vfs_volume_statfs(const struct statfs *fs,
+      struct retro_vfs_volume *vol)
+{
+   if (vfs_volume_ctime_kept((unsigned long)fs->f_type))
+      vol->flags |= RETRO_VFS_VOLUME_CTIME_KEPT;
+   if (fs->f_flags & ST_RDONLY)
+      vol->flags |= RETRO_VFS_VOLUME_READ_ONLY;
+}
+
+/* The mount an open descriptor is on: statx's STATX_MNT_ID (Linux 5.8,
+ * through syscall(), whose wrapper needs _GNU_SOURCE), else /proc's
+ * fdinfo. The layout is the kernel's, fixed. */
+struct vfs_statx_time { int64_t sec; uint32_t nsec; int32_t pad; };
+struct vfs_statx
+{
+   uint32_t mask, blksize;
+   uint64_t attributes;
+   uint32_t nlink, uid, gid;
+   uint16_t mode, pad0;
+   uint64_t ino, size, blocks, attributes_mask;
+   struct vfs_statx_time atime, btime, ctime, mtime;
+   uint32_t rdev_major, rdev_minor, dev_major, dev_minor;
+   uint64_t mnt_id;
+   uint64_t spare[13];
+};
+#define VFS_STATX_MNT_ID     0x1000U
+#define VFS_AT_EMPTY_PATH    0x1000
+
+static bool vfs_fdinfo_mount(int fd, uint64_t *mnt)
+{
+   static const char key[] = "mnt_id:";
+   char name[64];
+   char text[512];
+   const char *s = text;
+   ssize_t got;
+   int pfd;
+   snprintf(name, sizeof(name), "/proc/self/fdinfo/%d", fd);
+   if ((pfd = open(name, O_RDONLY | O_CLOEXEC)) < 0)
+      return false;
+   got = read(pfd, text, sizeof(text) - 1);
+   close(pfd);
+   if (got <= 0)
+      return false;
+   text[got] = '\0';
+   while (s && *s)
+   {
+      if (!strncmp(s, key, sizeof(key) - 1))
+      {
+         char *end;
+         unsigned long v;
+         s += sizeof(key) - 1;
+         while (*s == ' ' || *s == '\t')
+            s++;
+         if (*s < '0' || *s > '9')
+            return false;
+         v = strtoul(s, &end, 10);
+         if (*end != '\n' && *end != '\0')
+            return false;
+         *mnt = (uint64_t)v;
+         return true;
+      }
+      if ((s = strchr(s, '\n')))
+         s++;
+   }
+   return false;
+}
+
+static bool vfs_volume_mount(int dirfd, const char *path, int fd,
+      uint64_t *mnt)
+{
+#if defined(SYS_statx)
+   struct vfs_statx stx;
+   if (     syscall(SYS_statx, dirfd, path,
+               path[0] ? 0 : VFS_AT_EMPTY_PATH, VFS_STATX_MNT_ID, &stx) == 0
+         && (stx.mask & VFS_STATX_MNT_ID))
+   {
+      *mnt = stx.mnt_id;
+      return true;
+   }
+#else
+   (void)dirfd;
+   (void)path;
+#endif
+   return fd >= 0 && vfs_fdinfo_mount(fd, mnt);
+}
+#elif defined(VFS_VOLUME_NAME)
+static bool vfs_volume_ctime_kept(const char *name)
+{
+   static const char *const kept[] = { "apfs", "hfs", "ufs", "ffs", "zfs",
+      "tmpfs" };
+   size_t i;
+   for (i = 0; i < sizeof(kept) / sizeof(kept[0]); i++)
+      if (!strcmp(name, kept[i]))
+         return true;
+   return false;
+}
+
+static void vfs_volume_statfs(const struct statfs *fs,
+      struct retro_vfs_volume *vol)
+{
+   if (vfs_volume_ctime_kept(fs->f_fstypename))
+      vol->flags |= RETRO_VFS_VOLUME_CTIME_KEPT;
+   if (fs->f_flags & MNT_RDONLY)
+      vol->flags |= RETRO_VFS_VOLUME_READ_ONLY;
+}
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+/* The drive type of a path's drive letter (X:\ or \\?\X:\) */
+static uint8_t vfs_volume_kind(const char *path)
+{
+   char root[4];
+   if (!path)
+      return 0;
+   if (     (path[0] == '\\' || path[0] == '/')
+         && (path[1] == '\\' || path[1] == '/')
+         && path[2] == '?' && (path[3] == '\\' || path[3] == '/'))
+      path += 4;
+   if (     !(     (path[0] >= 'A' && path[0] <= 'Z')
+               ||  (path[0] >= 'a' && path[0] <= 'z'))
+         || path[1] != ':' || (path[2] != '\\' && path[2] != '/'))
+      return 0;
+   root[0] = path[0];
+   root[1] = ':';
+   root[2] = '\\';
+   root[3] = '\0';
+   switch (GetDriveTypeA(root))
+   {
+      case DRIVE_FIXED:     return RETRO_VFS_VOLUME_FIXED;
+      case DRIVE_REMOVABLE:
+      case DRIVE_CDROM:     return RETRO_VFS_VOLUME_REMOVABLE;
+      case DRIVE_REMOTE:    return RETRO_VFS_VOLUME_REMOTE;
+      case DRIVE_RAMDISK:   return RETRO_VFS_VOLUME_RAM;
+      default:              break;
+   }
+   return 0;
+}
+
+/* GetVolumeInformationByHandleW, Vista and later, by name; looked up
+ * once, lock-free: a caller that finds nothing published looks it up
+ * itself, and the first to claim the slot publishes */
+typedef BOOL (WINAPI *vfs_vol_info_t)(HANDLE, LPWSTR, DWORD, LPDWORD,
+      LPDWORD, LPDWORD, LPWSTR, DWORD);
+#define VFS_PROC_CLAIMED (1 << 0)
+#define VFS_PROC_READY   (1 << 1)
+static retro_atomic_int_t vfs_vol_info_state;
+static vfs_vol_info_t vfs_vol_info_cached;
+
+static vfs_vol_info_t vfs_vol_info(void)
+{
+   vfs_vol_info_t p;
+   if (retro_atomic_load_acquire_int(&vfs_vol_info_state) & VFS_PROC_READY)
+      return vfs_vol_info_cached;
+   p = (vfs_vol_info_t)GetProcAddress(GetModuleHandleA("kernel32.dll"),
+         "GetVolumeInformationByHandleW");
+   if (!(retro_atomic_fetch_or_int(&vfs_vol_info_state, VFS_PROC_CLAIMED)
+            & VFS_PROC_CLAIMED))
+   {
+      vfs_vol_info_cached = p;
+      retro_atomic_store_release_int(&vfs_vol_info_state,
+            VFS_PROC_CLAIMED | VFS_PROC_READY);
+   }
+   return p;
+}
+
+static bool vfs_volume_handle(HANDLE h, struct retro_vfs_volume *vol)
+{
+   DWORD fs_flags = 0;
+   vfs_vol_info_t info = vfs_vol_info();
+   if (!info || !info(h, NULL, 0, NULL, NULL, &fs_flags, NULL, 0))
+      return false;
+   /* ChangeTime is any writer's to set: never CTIME_KEPT */
+   if (fs_flags & FILE_READ_ONLY_VOLUME)
+      vol->flags |= RETRO_VFS_VOLUME_READ_ONLY;
+   return true;
+}
+#endif
+
+bool retro_vfs_file_volume_impl(libretro_vfs_implementation_file *stream,
+      unsigned want, struct retro_vfs_volume *vol)
+{
+#if defined(VFS_VOLUME_MAGIC) || defined(VFS_VOLUME_NAME)
+   struct statfs fs;
+#elif defined(VFS_VOLUME_STATVFS)
+   struct statvfs fs;
+#endif
+   if (!vol)
+      return false;
+   memset(vol, 0, sizeof(*vol));
+   if (     !stream
+         || stream->scheme != VFS_SCHEME_NONE
+         || !(stream->hints & RFILE_HINT_UNBUFFERED)
+         || stream->fd < 0)
+      return false;
+#if defined(_WIN32) && !defined(_XBOX)
+   if (want & RETRO_VFS_VOLUME_WANT_KIND)
+      vol->kind = vfs_volume_kind(stream->orig_path);
+   if (want & RETRO_VFS_VOLUME_WANT_MOUNT)
+      goto fail;
+   if (     (want & RETRO_VFS_VOLUME_WANT_FLAGS)
+         && !vfs_volume_handle((HANDLE)_get_osfhandle(stream->fd), vol))
+      goto fail;
+   return true;
+#else
+   if (want & RETRO_VFS_VOLUME_WANT_FLAGS)
+   {
+#if defined(VFS_VOLUME_MAGIC) || defined(VFS_VOLUME_NAME)
+      if (fstatfs(stream->fd, &fs) != 0)
+         goto fail;
+#if defined(VFS_VOLUME_MAGIC)
+      if (!(fs.f_flags & ST_VALID))
+      {
+         /* A kernel before 2.6.36: the flags from statvfs */
+         struct statvfs svfs;
+         if (fstatvfs(stream->fd, &svfs) != 0)
+            goto fail;
+         fs.f_flags = (svfs.f_flag & ST_RDONLY) ? ST_RDONLY : 0;
+      }
+#endif
+      vfs_volume_statfs(&fs, vol);
+#elif defined(VFS_VOLUME_STATVFS)
+      if (fstatvfs(stream->fd, &fs) != 0)
+         goto fail;
+      if (fs.f_flag & ST_RDONLY)
+         vol->flags |= RETRO_VFS_VOLUME_READ_ONLY;
+#else
+      goto fail;
+#endif
+   }
+   if (want & RETRO_VFS_VOLUME_WANT_MOUNT)
+   {
+#if defined(VFS_VOLUME_MAGIC)
+      if (!vfs_volume_mount(stream->fd, "", stream->fd, &vol->mount))
+         goto fail;
+      vol->flags |= RETRO_VFS_VOLUME_MOUNT;
+#else
+      goto fail;
+#endif
+   }
+   return true;
+#endif
+fail:
+   memset(vol, 0, sizeof(*vol));
+   return false;
+}
+
+int retro_vfs_stat_volume_impl(const char *path, unsigned want,
+      struct retro_vfs_volume *vol)
+{
+#if defined(_WIN32) && !defined(_XBOX)
+   HANDLE h;
+   DWORD err;
+#if !defined(LEGACY_WIN32)
+   wchar_t *wpath;
+#endif
+#elif defined(VFS_VOLUME_MAGIC) || defined(VFS_VOLUME_NAME)
+   struct statfs fs;
+#elif defined(VFS_VOLUME_STATVFS)
+   struct statvfs fs;
+#endif
+   if (!vol)
+      return -1;
+   memset(vol, 0, sizeof(*vol));
+   if (!path || !*path)
+      return -1;
+#if defined(_WIN32) && !defined(_XBOX)
+   if (want & RETRO_VFS_VOLUME_WANT_MOUNT)
+      return -1;
+#if defined(LEGACY_WIN32)
+   h = CreateFileA(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+         OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+#else
+   if (!(wpath = utf8_to_utf16_string_alloc(path)))
+      return -1;
+   h = CreateFileW(wpath, FILE_READ_ATTRIBUTES,
+         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+         OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+   free(wpath);
+#endif
+   if (h == INVALID_HANDLE_VALUE)
+   {
+      err = GetLastError();
+      return (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
+         ? 0 : -1;
+   }
+   if ((want & RETRO_VFS_VOLUME_WANT_FLAGS) && !vfs_volume_handle(h, vol))
+   {
+      CloseHandle(h);
+      memset(vol, 0, sizeof(*vol));
+      return -1;
+   }
+   CloseHandle(h);
+   if (want & RETRO_VFS_VOLUME_WANT_KIND)
+      vol->kind = vfs_volume_kind(path);
+   return 1;
+#elif defined(VFS_VOLUME_MAGIC) || defined(VFS_VOLUME_NAME) \
+   || defined(VFS_VOLUME_STATVFS)
+   if (want & RETRO_VFS_VOLUME_WANT_FLAGS)
+   {
+#if defined(VFS_VOLUME_STATVFS)
+      if (statvfs(path, &fs) != 0)
+         return errno == ENOENT ? 0 : -1;
+      if (fs.f_flag & ST_RDONLY)
+         vol->flags |= RETRO_VFS_VOLUME_READ_ONLY;
+#else
+      if (statfs(path, &fs) != 0)
+         return errno == ENOENT ? 0 : -1;
+#if defined(VFS_VOLUME_MAGIC)
+      if (!(fs.f_flags & ST_VALID))
+      {
+         struct statvfs svfs;
+         if (statvfs(path, &svfs) != 0)
+            return errno == ENOENT ? 0 : -1;
+         fs.f_flags = (svfs.f_flag & ST_RDONLY) ? ST_RDONLY : 0;
+      }
+#endif
+      vfs_volume_statfs(&fs, vol);
+#endif
+   }
+   if (want & RETRO_VFS_VOLUME_WANT_MOUNT)
+   {
+#if defined(VFS_VOLUME_MAGIC)
+      int fd = -1;
+      bool ok;
+#if defined(SYS_statx)
+      struct vfs_statx stx;
+      if (     syscall(SYS_statx, AT_FDCWD, path, 0, VFS_STATX_MNT_ID,
+                  &stx) == 0
+            && (stx.mask & VFS_STATX_MNT_ID))
+      {
+         vol->mount  = stx.mnt_id;
+         vol->flags |= RETRO_VFS_VOLUME_MOUNT;
+         return 1;
+      }
+#endif
+      /* Opened only to name it: O_PATH reaches a file we may only run */
+#ifdef O_PATH
+      fd = open(path, O_PATH | O_CLOEXEC);
+#else
+      fd = open(path, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
+#endif
+      if (fd < 0)
+      {
+         int e = errno;
+         memset(vol, 0, sizeof(*vol));
+         return e == ENOENT ? 0 : -1;
+      }
+      ok = vfs_fdinfo_mount(fd, &vol->mount);
+      close(fd);
+      if (!ok)
+      {
+         memset(vol, 0, sizeof(*vol));
+         return -1;
+      }
+      vol->flags |= RETRO_VFS_VOLUME_MOUNT;
+#else
+      memset(vol, 0, sizeof(*vol));
+      return -1;
+#endif
+   }
+   return 1;
+#else
+   (void)want;
    return -1;
 #endif
 }

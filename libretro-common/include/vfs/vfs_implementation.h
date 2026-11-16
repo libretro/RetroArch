@@ -178,6 +178,45 @@ bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
 int retro_vfs_stat_identity_impl(const char *path,
       struct retro_vfs_file_identity *id);
 
+/* What a file's volume is: how it is mounted and what kind of drive. */
+struct retro_vfs_volume
+{
+   uint64_t mount;   /* the mount's id, with RETRO_VFS_VOLUME_MOUNT (Linux) */
+   uint8_t  kind;    /* RETRO_VFS_VOLUME_FIXED..., 0 where not known */
+   uint8_t  flags;   /* RETRO_VFS_VOLUME_READ_ONLY... */
+};
+
+/* flags */
+#define RETRO_VFS_VOLUME_READ_ONLY  (1 << 0) /* mounted read-only */
+#define RETRO_VFS_VOLUME_CTIME_KEPT (1 << 1) /* a filesystem whose kernel
+                                              * alone sets change times,
+                                              * not stacked on another, so
+                                              * no user can forge one  */
+#define RETRO_VFS_VOLUME_MOUNT      (1 << 2) /* mount holds its id       */
+
+/* kind: Windows' drive type; elsewhere not known */
+#define RETRO_VFS_VOLUME_FIXED     1
+#define RETRO_VFS_VOLUME_REMOVABLE 2   /* removable or optical */
+#define RETRO_VFS_VOLUME_REMOTE    3
+#define RETRO_VFS_VOLUME_RAM       4
+
+/* What to ask: each costs a query of its own on some platforms */
+#define RETRO_VFS_VOLUME_WANT_FLAGS (1 << 0) /* READ_ONLY, CTIME_KEPT */
+#define RETRO_VFS_VOLUME_WANT_MOUNT (1 << 1)
+#define RETRO_VFS_VOLUME_WANT_KIND  (1 << 2)
+
+/* The volume of an open stream's file. True when everything in @want
+ * was told (a flag clear is then a no); false, @vol zeroed, where any of
+ * it can't be. A kind never told is 0 and doesn't make it false. One
+ * fstatfs() answers WANT_FLAGS on Linux, the BSDs and macOS. */
+bool retro_vfs_file_volume_impl(libretro_vfs_implementation_file *stream,
+      unsigned want, struct retro_vfs_volume *vol);
+
+/* The same for what @path names, following links: 1 told, 0 nothing
+ * there, -1 where it can't be told, as retro_vfs_stat_identity_impl(). */
+int retro_vfs_stat_volume_impl(const char *path, unsigned want,
+      struct retro_vfs_volume *vol);
+
 /* A stable open (RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE) that also
  * fills @id, from the query the open makes anyway to vouch for the file:
  * the identity as opened, without retro_vfs_file_identity_impl()'s own
