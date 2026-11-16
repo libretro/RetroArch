@@ -745,6 +745,24 @@ struct ozone_handle
    char selection_entry_enumeration[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
+   /* The message box's text as last wrapped and measured, by the
+    * thread that draws it: a box whose text and font are unchanged
+    * draws from here. len is 0 when it holds nothing. */
+   struct
+   {
+      char *lines[256];
+      size_t line_lengths[256];
+      font_data_t *font;
+      size_t len;
+      uint32_t font_generation;
+      unsigned columns;
+      unsigned wideglyph_width;
+      unsigned line_count;
+      int longest_width;
+      char text[MENU_LABEL_MAX_LENGTH];
+      char wrapped[MENU_LABEL_MAX_LENGTH];
+   } box_wrap;
+
    /* The menu font path the fonts are built from. ozone_render()
     * watches it alongside the scale factors and rebuilds them in
     * place when it moves. */
@@ -7888,8 +7906,11 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    unsigned video_width  = VIDEO_SCALE_W(video_dims);
    unsigned video_height = VIDEO_SCALE_H(video_dims);
    size_t x, y;
-   char wrapped_message[MENU_LABEL_MAX_LENGTH];
+   char wrapped_buf[MENU_LABEL_MAX_LENGTH];
+   char *wrapped_message      = wrapped_buf;
    size_t msg_len;
+   unsigned columns;
+   bool keep_wrap             = false;
    int longest_width          = 0;
    int usable_width           = 0;
    float scale_factor         = 0.0f;
@@ -7912,12 +7933,14 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    bool stacked               = false;
    gfx_display_ctx_driver_t
          *dispctx             = p_disp->dispctx;
-   char *lines[256];
-   size_t line_lengths[256];
+   char *lines_buf[256];
+   size_t line_lengths_buf[256];
+   char **lines               = lines_buf;
+   size_t *line_lengths       = line_lengths_buf;
    char *line;
    size_t remaining;
 
-   wrapped_message[0]         = '\0';
+   wrapped_buf[0]             = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
 
    /* Sanity check */
@@ -7931,35 +7954,88 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    if (usable_width < 1)
       usable_width = width;
 
-   /* Split message into lines */
-   remaining = (ozone->word_wrap)(
-         wrapped_message,
-         sizeof(wrapped_message),
-         message,
-         msg_len,
-         usable_width / (int)font_data.glyph_width,
-         font_data.wideglyph_width,
-         0);
+   columns                  = (unsigned)(usable_width
+         / (int)font_data.glyph_width);
 
-   line = wrapped_message;
-   while (line && *line && line_count < 256)
+   /* The box's text is wrapped and measured again only when it or the
+    * font changes */
+   if (msg_len < sizeof(ozone->box_wrap.text))
    {
-      char *next = (char*)memchr(line, '\n', remaining);
-      if (next)
+      wrapped_message = ozone->box_wrap.wrapped;
+      lines           = ozone->box_wrap.lines;
+      line_lengths    = ozone->box_wrap.line_lengths;
+      keep_wrap       = true;
+      if (     ozone->box_wrap.len             == msg_len
+            && ozone->box_wrap.font            == font_data.font
+            && ozone->box_wrap.font_generation
+               == font_data.metrics_generation
+            && ozone->box_wrap.columns         == columns
+            && ozone->box_wrap.wideglyph_width == font_data.wideglyph_width
+            && !memcmp(ozone->box_wrap.text, message, msg_len))
       {
-         *next                    = '\0';
-         line_lengths[line_count] = (size_t)(next - line);
-         remaining               -= (size_t)(next - line + 1);
-         next++;
+         line_count    = ozone->box_wrap.line_count;
+         longest_width = ozone->box_wrap.longest_width;
       }
-      else
-         line_lengths[line_count] = remaining;
-      lines[line_count++] = line;
-      line = next;
    }
 
-   if (line_count == 0)
-      return;
+   if (!line_count)
+   {
+      if (keep_wrap)
+         ozone->box_wrap.len = 0;
+      /* Split message into lines */
+      remaining = (ozone->word_wrap)(
+            wrapped_message,
+            MENU_LABEL_MAX_LENGTH,
+            message,
+            msg_len,
+            columns,
+            font_data.wideglyph_width,
+            0);
+
+      line = wrapped_message;
+      while (line && *line && line_count < 256)
+      {
+         char *next = (char*)memchr(line, '\n', remaining);
+         if (next)
+         {
+            *next                    = '\0';
+            line_lengths[line_count] = (size_t)(next - line);
+            remaining               -= (size_t)(next - line + 1);
+            next++;
+         }
+         else
+            line_lengths[line_count] = remaining;
+         lines[line_count++] = line;
+         line = next;
+      }
+
+      if (line_count == 0)
+         return;
+
+      /* Find the longest line width */
+      for (i = 0; i < line_count; i++)
+      {
+         const char *msg = lines[i];
+         if (msg && *msg)
+         {
+            int msg_width = font_driver_get_message_width(font_data.font, msg, line_lengths[i], 1.0f);
+            if (msg_width > longest_width)
+               longest_width = msg_width;
+         }
+      }
+
+      if (keep_wrap)
+      {
+         memcpy(ozone->box_wrap.text, message, msg_len);
+         ozone->box_wrap.font            = font_data.font;
+         ozone->box_wrap.font_generation = font_data.metrics_generation;
+         ozone->box_wrap.columns         = columns;
+         ozone->box_wrap.wideglyph_width = font_data.wideglyph_width;
+         ozone->box_wrap.line_count      = line_count;
+         ozone->box_wrap.longest_width   = longest_width;
+         ozone->box_wrap.len             = msg_len;
+      }
+   }
 
    y_position       = height / 2;
    if (menu_input_dialog_get_display_kb())
@@ -7968,17 +8044,6 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    x                = width  / 2;
    y                = y_position - (line_count * line_height) / 2;
 
-   /* Find the longest line width */
-   for (i = 0; i < line_count; i++)
-   {
-      const char *msg = lines[i];
-      if (msg && *msg)
-      {
-         int msg_width = font_driver_get_message_width(font_data.font, msg, line_lengths[i], 1.0f);
-         if (msg_width > longest_width)
-            longest_width = msg_width;
-      }
-   }
 
    if (buttons.count)
    {
@@ -8096,6 +8161,8 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                {
                   char *s    = lines[line_count - 1];
                   size_t len = line_lengths[line_count - 1];
+                  /* The kept lines are cut: wrap again next frame */
+                  ozone->box_wrap.len = 0;
                   int dots_w = font_driver_get_message_width(
                         font_data.font, "...", 3, 1.0f);
                   while (len && font_driver_get_message_width(
@@ -8109,7 +8176,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                   while (len && s[len - 1] == ' ')
                      len--;
                   if ((size_t)(s - wrapped_message) + len + 4
-                        <= sizeof(wrapped_message))
+                        <= MENU_LABEL_MAX_LENGTH)
                   {
                      memcpy(s + len, "...", 4);
                      line_lengths[line_count - 1] = len + 3;
