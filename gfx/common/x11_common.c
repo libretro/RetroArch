@@ -1284,6 +1284,25 @@ bool x11_has_focus_internal(void *data)
  * display as the only pacing the loop would spin. Unfocused is not
  * unmapped and is deliberately not tested here: a visible window that
  * happens not to have the keyboard must keep running at full rate. */
+bool x11_window_uncomposed(bool bypass)
+{
+   char cm[16] = "_NET_WM_CM_S";
+   size_t _len = 12;
+   int screen;
+   if (bypass)
+      return true;
+   if (!g_x11_dpy)
+      return false;
+   /* a compositing manager owns this selection of its screen */
+   screen      = DefaultScreen(g_x11_dpy);
+   if (screen >= 10)
+      cm[_len++] = (char)('0' + (screen / 10) % 10);
+   cm[_len++]  = (char)('0' + screen % 10);
+   cm[_len]    = '\0';
+   return XGetSelectionOwner(g_x11_dpy,
+         XInternAtom(g_x11_dpy, cm, False)) == None;
+}
+
 bool x11_presentable(void *data)
 {
    return g_x11_mapped;

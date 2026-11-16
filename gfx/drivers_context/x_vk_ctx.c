@@ -48,6 +48,9 @@ typedef struct gfx_ctx_x_vk_data
    bool should_reset_mode;
 #endif
    bool is_fullscreen;
+   /* Whether a present goes past a compositor
+    * (gfx_ctx_x_vk_present_immediate) */
+   bool uncomposed;
 
    int interval;
 
@@ -400,6 +403,8 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
    }
 
+   x->uncomposed = x11_window_uncomposed(fullscreen && disable_composition);
+
    if (opacity < (unsigned)-1)
    {
       Atom net_wm_opacity = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
@@ -582,6 +587,14 @@ static uint32_t gfx_ctx_x_vk_get_flags(void *data)
 
 static void gfx_ctx_x_vk_set_flags(void *data, uint32_t flags) { }
 
+/* The swapchain's mode is the driver's to know; whether a compositor
+ * shows the window is this context's. */
+static bool gfx_ctx_x_vk_present_immediate(void *data)
+{
+   gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
+   return x && x->uncomposed;
+}
+
 const gfx_ctx_driver_t gfx_ctx_vk_x = {
    gfx_ctx_x_vk_init,
    gfx_ctx_x_vk_destroy,
@@ -621,5 +634,12 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
    NULL, /* make_current */
    NULL, /* create_surface */
    NULL  /* destroy_surface */,
-   gfx_ctx_x_vk_presentable
+   gfx_ctx_x_vk_presentable,
+   NULL, /* last_present_time */
+   NULL, /* release_current */
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL, /* shared_context_free */
+   NULL, /* windows */
+   gfx_ctx_x_vk_present_immediate
 };

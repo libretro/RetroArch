@@ -90,6 +90,11 @@ bool x11_has_focus_internal(void *data);
 /* False while the window is unmapped; see gfx_ctx_driver_t::presentable. */
 bool x11_presentable(void *data);
 
+/* Whether what the window presents goes past a compositor: it asked
+ * to bypass one (@bypass), or none runs on its screen. Asks the
+ * server; for when the window is made. */
+bool x11_window_uncomposed(bool bypass);
+
 bool x11_alive(void *data);
 
 bool x11_connect(void);

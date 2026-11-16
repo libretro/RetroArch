@@ -10020,8 +10020,13 @@ static bool vulkan_present_immediate(void *data)
          && vk->flips_for == ctx->swapchain;
    }
 #else
+   /* and where the context can say a compositor shows the window
+    * instead, it does not tear */
    return vk->context->swapchain_present_mode
-      == VK_PRESENT_MODE_IMMEDIATE_KHR;
+         == VK_PRESENT_MODE_IMMEDIATE_KHR
+      && (   !vk->ctx_driver
+          || !vk->ctx_driver->present_immediate
+          || vk->ctx_driver->present_immediate(vk->ctx_data));
 #endif
 }
 

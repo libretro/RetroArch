@@ -1,4 +1,5 @@
 # Future
+- X11: 'Display Pacing On VBlank Events' holds Vulkan and OpenGL through EGL as well only where no compositor shows the window: it asked to bypass one, or none runs
 - X11: 'Display Pacing On VBlank Events' holds on the vblanks of the window's CRTC, from the Present extension, with Vulkan in immediate mode and with OpenGL where no compositor shows the window
 - KMS: 'Display Pacing On VBlank Events' holds on the CRTC's vblanks with OpenGL on KMS, where V-Sync off page flips are asynchronous
 - VULKAN/OPENGL: 'Display Pacing On VBlank Events' also holds Vulkan and OpenGL where they present through DXGI, tear, and the display flips the fullscreen window itself

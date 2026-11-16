@@ -622,18 +622,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
    }
 
-   {
-      char cm[16]   = "_NET_WM_CM_S";
-      int screen    = DefaultScreen(g_x11_dpy);
-      size_t _len   = 12;
-      if (screen >= 10)
-         cm[_len++] = (char)('0' + (screen / 10) % 10);
-      cm[_len++]    = (char)('0' + screen % 10);
-      cm[_len]      = '\0';
-      x->uncomposed = (fullscreen && disable_composition)
-         || XGetSelectionOwner(g_x11_dpy,
-               XInternAtom(g_x11_dpy, cm, False)) == None;
-   }
+   x->uncomposed = x11_window_uncomposed(fullscreen && disable_composition);
 
    if (opacity < (unsigned)-1)
    {

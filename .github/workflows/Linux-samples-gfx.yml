@@ -3373,6 +3373,12 @@ jobs:
           # once, and again after the chain is resized.
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/dxgi_present_immediate/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/dxgi_present_immediate/run.py
+          # The same question on X11: GLX and EGL with no swap interval,
+          # Vulkan in immediate mode, each only where no compositor shows
+          # the window - it asked to bypass one, or none owns the
+          # screen's selection.
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/x11_present_immediate/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/x11_present_immediate/run.py
 
       - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
         shell: bash

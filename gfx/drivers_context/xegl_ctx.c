@@ -57,6 +57,9 @@ typedef struct
 #endif
    /* The GPUs the GL GPU index chooses from, as published to the menu */
    struct string_list *gl_gpu_list;
+   /* Whether a swap goes past a compositor
+    * (gfx_ctx_xegl_present_immediate) */
+   bool uncomposed;
 } xegl_ctx_data_t;
 
 /* TODO/FIXME - static globals */
@@ -435,6 +438,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
    }
 
+   xegl->uncomposed = x11_window_uncomposed(
+         fullscreen && video_disable_composition);
+
    if (!egl_create_context(&xegl->egl, (attr != egl_attribs) ? egl_attribs : NULL))
    {
       egl_report_error();
@@ -621,6 +627,18 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 #endif
 }
 
+/* A swap with no interval tears where no compositor shows it. */
+static bool gfx_ctx_xegl_present_immediate(void *data)
+{
+#ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   return xegl && xegl->egl.interval == 0 && xegl->uncomposed;
+#else
+   (void)data;
+   return false;
+#endif
+}
+
 static void gfx_ctx_xegl_set_swap_interval(void *data, int swap_interval)
 {
 #ifdef HAVE_EGL
@@ -744,10 +762,12 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
 #ifdef HAVE_EGL
    gfx_ctx_xegl_shared_context_new,
    egl_shared_context_bind,
-   egl_shared_context_free
+   egl_shared_context_free,
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
 #endif
+   NULL, /* windows */
+   gfx_ctx_xegl_present_immediate
 };
