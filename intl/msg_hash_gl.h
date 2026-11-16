@@ -1806,6 +1806,7 @@ static const struct
    char s_9329c64c[12];
    char s_f8883f70[17];
    char s_09ba892e[8];
+   char s_047623ff[9];
    char s_58b9d895[20];
    char s_80a2b273[10];
    char s_91dd478e[29];
@@ -6398,6 +6399,7 @@ static const struct
    "Puntuaci\303\263n",
    "N\303\272mero de serie",
    "Axustes",
+   "Etiqueta",
    "Clasificaci\303\263n TGDB",
    "Reiniciar",
    "Configuraci\303\263n de gravaci\303\263n",
@@ -9770,7 +9772,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (210552u
+      (sizeof(msg_hash_gl_blob) == (210561u
 #ifdef ANDROID
        + 365u
 #endif
@@ -12017,6 +12019,7 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_REBOOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,

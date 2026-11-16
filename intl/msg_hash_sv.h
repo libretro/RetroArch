@@ -735,6 +735,7 @@ static const struct
    char s_8cfdee2a[24];
    char s_40582c14[21];
    char s_c9afcfe6[17];
+   char s_20def9c4[25];
    char s_75d123f3[16];
    char s_b84a6df0[16];
    char s_35da9191[12];
@@ -1292,6 +1293,7 @@ static const struct
    char s_c39e6c47[37];
    char s_ceb820ad[9];
    char s_63af41a7[25];
+   char s_a4b769ca[26];
 #ifdef HAVE_MIST
    char s_53788998[23];
 #endif
@@ -1901,6 +1903,7 @@ static const struct
    char s_9329c64c[7];
    char s_f8883f70[12];
    char s_09ba892e[13];
+   char s_047623ff[5];
    char s_58b9d895[11];
    char s_0a2aa953[7];
    char s_ffd0dac4[9];
@@ -2632,6 +2635,10 @@ static const struct
    char s_e595f6df[36];
    char s_2a5f7cd7[29];
    char s_f90edcc2[50];
+#if defined(RARCH_MOBILE)
+   char s_774121c7[60];
+   char s_774121c8[60];
+#endif
    char s_b0fb58d3[43];
    char s_b0fb58d4[43];
    char s_92a02470[27];
@@ -3417,6 +3424,7 @@ static const struct
    char s_a6aedb35[84];
    char s_ee3a489b[51];
    char s_236bd8d5[52];
+   char s_87c7d8b8[86];
 #ifdef HAVE_MIST
    char s_40e907c6[50];
 #endif
@@ -4204,8 +4212,10 @@ static const struct
    char s_ecc9b2c5[298];
    char s_c2314d30[215];
 #if defined(RARCH_MOBILE)
+   char s_82c9e375[133];
    char s_82c9e376[142];
 #endif
+   char s_73658ec1[133];
    char s_73658ec2[142];
    char s_8010a29e[96];
    char s_81120e85[96];
@@ -5871,6 +5881,7 @@ static const struct
    "Efter konsolen exklusiv",
    "Efter spelkontroller",
    "Efter utvecklare",
+   "Efter till\303\244ggsh\303\245rdvara",
    "Efter franchise",
    "Efter Spels\303\244tt",
    "Efter genre",
@@ -6429,6 +6440,7 @@ static const struct
    "Snabb bl\303\244ddring med v\303\244nster+h\303\266ger",
    "Utseende",
    "Visa 'Konfigurationsfil'",
+   "Visa bekr\303\244ftelsedialoger",
 #ifdef HAVE_MIST
    "Visa 'Hantera k\303\244rnor'",
 #endif
@@ -7047,6 +7059,7 @@ static const struct
    "Po\303\244ng",
    "Serienummer",
    "Inst\303\244llning",
+   "Tagg",
    "TGDB-betyg",
    "Fordon",
    "Visuellt",
@@ -7780,6 +7793,10 @@ static const struct
    "Upprepa bildrutor med tr\303\245dad video",
    "H\303\266j videotr\303\245dens prioritet",
    "Anv\303\244nd Metal-argumentbuffertar (kr\303\244ver omstart)",
+#if defined(RARCH_MOBILE)
+   "F\303\266rankringsf\303\266rskjutning X f\303\266r visningsomr\303\245de (st\303\245ende)",
+   "F\303\266rankringsf\303\266rskjutning Y f\303\266r visningsomr\303\245de (st\303\245ende)",
+#endif
    "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, X",
    "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, Y",
    "Anpassa bildformat (H\303\266jd)",
@@ -9135,6 +9152,8 @@ static const struct
    "\303\244r inst\303\244llningar.",
    "\303\204ndra inst\303\244llningar f\303\266r menysk\303\244rmens utseende.",
    "Visa alternativet 'Konfigurationsfil' i huvudmenyn.",
+   "Be om bekr\303\244ftelse innan programmet avslutas, inneh\303\245llet \303\245terst\303\244lls e"
+   "ller st\303\244ngs.",
 #ifdef HAVE_MIST
    "Visa alternativet 'Hantera k\303\244rnor' i huvudmenyn.",
 #endif
@@ -10564,10 +10583,16 @@ static const struct
    "entbuffertar. Vissa k\303\244rnor kan kr\303\244va detta. Detta kan g\303\266ra att vissa shader"
    "s slutar fungera, s\303\244rskilt p\303\245 \303\244ldre h\303\245rdvara eller operativsystem.",
 #if defined(RARCH_MOBILE)
+   "Inneh\303\245llets v\303\245gr\303\244ta position n\303\244r visningsomr\303\245det \303\244r br"
+   "edare \303\244n inneh\303\245llet. 0.0 \303\244r v\303\244nster, 0.5 \303\244r mitten, 1.0 \303"
+   "\244r h\303\266ger.",
    "Vertikal position f\303\266r inneh\303\245ll n\303\244r visningsomr\303\245det \303\244r h\303"
    "\266gre \303\244n inneh\303\245llets h\303\266jd. 0,0 \303\244r \303\266verst, 0,5 \303\244r i m"
    "itten, 1,0 \303\244r nederst.",
 #endif
+   "Inneh\303\245llets v\303\245gr\303\244ta position n\303\244r visningsomr\303\245det \303\244r br"
+   "edare \303\244n inneh\303\245llet. 0.0 \303\244r v\303\244nster, 0.5 \303\244r mitten, 1.0 \303"
+   "\244r h\303\266ger.",
    "Vertikal position f\303\266r inneh\303\245ll n\303\244r visningsomr\303\245det \303\244r h\303"
    "\266gre \303\244n inneh\303\245llets h\303\266jd. 0,0 \303\244r \303\266verst, 0,5 \303\244r i m"
    "itten, 1,0 \303\244r nederst.",
@@ -11384,7 +11409,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (236067u
+      (sizeof(msg_hash_sv_blob) == (236342u
 #ifdef ANDROID
        + 361u
 #endif
@@ -11662,6 +11687,10 @@ typedef char msg_hash_sv_blob_check[
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
        + 17u
 #endif
+#if defined(RARCH_MOBILE)
+       + 60u
+       + 60u
+#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 45u
@@ -11928,6 +11957,7 @@ typedef char msg_hash_sv_blob_check[
        + 183u
 #endif
 #if defined(RARCH_MOBILE)
+       + 133u
        + 142u
 #endif
 #if defined (WIIU)
@@ -12679,6 +12709,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ENHANCEMENT_HW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
@@ -13236,6 +13267,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_QUICK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -13844,6 +13876,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -14575,6 +14608,10 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+#if defined(RARCH_MOBILE)
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -15352,6 +15389,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_QUICK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -16133,8 +16171,10 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

@@ -1881,6 +1881,7 @@ static const struct
    char s_f751c497[23];
    char s_9329c64c[10];
    char s_f8883f70[13];
+   char s_047623ff[14];
    char s_58b9d895[15];
    char s_0a2aa953[12];
    char s_ffd0dac4[8];
@@ -6979,6 +6980,7 @@ static const struct
    "Vibration unterst\303\274tzt",
    "Bewertung",
    "Seriennummer",
+   "Tag (Etikett)",
    "TGDB-Bewertung",
    "Fahrzeugtyp",
    "Ansicht",
@@ -11168,7 +11170,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (254738u
+      (sizeof(msg_hash_de_blob) == (254752u
 #ifdef ANDROID
        + 358u
 #endif
@@ -13614,6 +13616,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,

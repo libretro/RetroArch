@@ -112,7 +112,9 @@ static const struct
    char s_342dd239[19];
    char s_1e1c0557[11];
    char s_feb1c160[8];
+   char s_97242f99[29];
    char s_8cefb843[21];
+   char s_177845b3[33];
    char s_8fe1a777[30];
    char s_881efe76[24];
    char s_1e4264a1[9];
@@ -122,6 +124,7 @@ static const struct
    char s_78071664[16];
    char s_78083010[16];
    char s_cc781d49[20];
+   char s_19e9df3c[93];
    char s_49c9bf91[10];
    char s_04ecbe77[9];
    char s_525068d3[25];
@@ -137,6 +140,7 @@ static const struct
    char s_c3f0e1ff[20];
 #endif
    char s_93e2fd9c[20];
+   char s_b95e3404[32];
    char s_734d2a61[7];
    char s_a7a97316[47];
    char s_145f5880[19];
@@ -163,9 +167,12 @@ static const struct
    char s_b92166cd[12];
    char s_b18effee[33];
    char s_6996339b[6];
+   char s_12c0a864[20];
    char s_690efede[10];
    char s_ab49119c[9];
+   char s_deed0812[18];
    char s_ddf679b9[7];
+   char s_f9fe3b9c[12];
    char s_10342503[11];
    char s_d31f6d88[16];
    char s_f03e9c42[21];
@@ -191,12 +198,15 @@ static const struct
    char s_db16b335[26];
    char s_10358d4e[15];
    char s_0ad18744[12];
+   char s_7a3aee46[24];
    char s_0b7c8e91[25];
+   char s_0bf63b67[28];
    char s_36b2a31c[17];
    char s_b2edd9fe[15];
    char s_721da345[21];
    char s_d235c6fc[14];
    char s_1ad1dee7[7];
+   char s_2976d474[21];
    char s_91f69bb0[13];
    char s_a578b37f[11];
    char s_99eb425d[13];
@@ -257,6 +267,7 @@ static const struct
    char s_ca2f1e0f[17];
    char s_ff1b8ce5[24];
    char s_9e66791a[12];
+   char s_168d155d[25];
    char s_c64d260f[10];
    char s_30a27169[21];
    char s_1939e675[21];
@@ -276,6 +287,7 @@ static const struct
    char s_074440cb[22];
    char s_a624fe50[19];
    char s_d9685b01[16];
+   char s_74b6dd31[10];
    char s_3e39918c[22];
    char s_4441ee26[24];
    char s_a497674d[31];
@@ -285,11 +297,20 @@ static const struct
    char s_3a0abeb9[4];
    char s_c3121580[5];
    char s_ac1af256[12];
+   char s_588e6899[13];
+   char s_588f29bc[14];
+   char s_6ab8fcc2[14];
+   char s_d47fce2d[16];
+   char s_58960843[13];
+   char s_d7149be9[15];
+   char s_2978f0ec[16];
    char s_954d16c1[12];
    char s_74260394[9];
+   char s_a72ca64c[12];
+   char s_8d566802[11];
    char s_25b24689[6];
    char s_781542e6[18];
-   char s_3c371cf3[9];
+   char s_3c371cf3[8];
    char s_0510a954[9];
    char s_f4c9faa6[4];
    char s_bc514c4d[31];
@@ -302,14 +323,17 @@ static const struct
    char s_17615fcf[9];
    char s_3a0a3fef[23];
    char s_1e09db79[9];
+   char s_0d2d8eef[7];
    char s_400523e5[22];
    char s_8b835c60[8];
-   char s_72898bf0[24];
+   char s_72898bf0[22];
+   char s_e3f09f98[34];
    char s_9b514f32[21];
    char s_39557f42[36];
    char s_bd50c8e2[6];
    char s_73897039[18];
    char s_5bb9bd63[8];
+   char s_5b3c8098[32];
    char s_ceb820ad[8];
    char s_63af41a7[48];
 #ifdef HAVE_MIST
@@ -350,7 +374,6 @@ static const struct
 #endif
    char s_8be7813a[10];
    char s_1757647b[7];
-   char s_e1a8f707[23];
    char s_51844cc2[20];
    char s_df610c7f[11];
    char s_3acb0241[20];
@@ -402,10 +425,14 @@ static const struct
    char s_ee71e86e[17];
    char s_46f50d5b[26];
    char s_c6e67d8a[28];
+   char s_69bfecad[18];
+   char s_097e2527[11];
    char s_690802fe[16];
    char s_9e5d0200[15];
    char s_9fd6f744[15];
    char s_bf5e903e[9];
+   char s_a2bb0576[12];
+   char s_fab0ac6c[11];
    char s_a51249d0[18];
    char s_b4200ac4[8];
    char s_705eee28[44];
@@ -470,6 +497,7 @@ static const struct
    char s_99d648f2[13];
    char s_dc2e5316[13];
    char s_6d0744cc[7];
+   char s_e4b4fc92[24];
    char s_2aeb5474[17];
    char s_dc83c30e[34];
    char s_7f6cd38e[9];
@@ -550,6 +578,20 @@ static const struct
    char s_a986c4da[12];
    char s_4ceac87e[11];
    char s_f62d1074[7];
+   char s_387a4176[20];
+   char s_131e934d[6];
+   char s_7745a38e[7];
+   char s_49e4b96c[8];
+   char s_2102d995[8];
+   char s_e69d6a8f[7];
+   char s_4e2cbad9[7];
+   char s_4e2cbb07[5];
+   char s_13ef7ee0[6];
+   char s_863f74bc[5];
+   char s_b28f6db3[8];
+   char s_6c9436e3[8];
+   char s_64ee333c[10];
+   char s_28863bc1[21];
    char s_9329c64c[12];
    char s_f8883f70[17];
    char s_58b9d895[23];
@@ -570,17 +612,19 @@ static const struct
    char s_d7677494[15];
    char s_0687039a[14];
    char s_d6fd403f[17];
-   char s_c2234c3e[18];
+   char s_c2234c3e[17];
    char s_e6b624b6[17];
    char s_ed6b98bf[18];
    char s_228e251b[14];
    char s_b449bf9e[9];
    char s_9bf2d834[15];
+   char s_7f2f8cd6[12];
+   char s_65b61fcc[11];
    char s_e7421530[18];
    char s_ffa9e8c2[8];
-   char s_a1558f31[17];
+   char s_a1558f31[16];
    char s_dda9087d[17];
-   char s_0dade48b[20];
+   char s_0dade48b[19];
    char s_b30b56ad[4];
    char s_b30d4c07[7];
    char s_9f8ecd1b[18];
@@ -623,6 +667,7 @@ static const struct
    char s_c561b96e[34];
    char s_ed013a05[31];
    char s_01a73130[31];
+   char s_44ebca0d[40];
    char s_d21c686b[31];
    char s_64a91b83[33];
 #ifdef HAVE_MIST
@@ -630,6 +675,7 @@ static const struct
 #endif
    char s_9374b989[18];
    char s_7943e750[28];
+   char s_be8e02b4[59];
    char s_bab74532[25];
    char s_7d2035c4[21];
    char s_b3565d3d[20];
@@ -639,6 +685,7 @@ static const struct
    char s_cd916c68[28];
    char s_43ac80a0[16];
    char s_6959ce80[18];
+   char s_886631ec[21];
    char s_ebe994b4[17];
    char s_da093426[22];
    char s_d9b00fbd[34];
@@ -669,6 +716,7 @@ static const struct
 #ifdef HAVE_LAKKA
    char s_597f7f13[13];
 #endif
+   char s_6bcbf80c[4];
    char s_f92cf1f5[6];
    char s_fff21e47[5];
    char s_214b2135[6];
@@ -706,7 +754,8 @@ static const struct
 #endif
    char s_d6fb8efe[35];
    char s_ad5ff591[15];
-   char s_c79d5013[24];
+   char s_a79acb40[25];
+   char s_c79d5013[22];
 #if defined(DINGUX)
    char s_bfd4c6ef[10];
    char s_ce997004[10];
@@ -725,6 +774,7 @@ static const struct
    char s_020e2bc5[25];
    char s_59f183c8[32];
    char s_59f183c9[30];
+   char s_14ed14d0[7];
    char s_1fba8831[37];
    char s_ff960910[20];
    char s_17690f5a[38];
@@ -741,6 +791,7 @@ static const struct
    char s_94c8d15f[6];
    char s_1f66aac3[5];
    char s_57665cff[7];
+   char s_a023adce[12];
    char s_eb4eab83[5];
    char s_c6d5bcb5[5];
    char s_7e8c6399[8];
@@ -762,6 +813,7 @@ static const struct
    char s_730df420[16];
    char s_bcddf275[8];
    char s_214b7699[12];
+   char s_3e628390[8];
    char s_6c52dfb1[25];
    char s_334daaaa[8];
    char s_84c46931[35];
@@ -779,14 +831,16 @@ static const struct
    char s_b736ca94[10];
    char s_9828524b[14];
    char s_e0cd1164[15];
-   char s_28c6d661[17];
+   char s_4cfcae06[12];
+   char s_ed2766fc[11];
+   char s_28c6d661[16];
    char s_9ea5154a[9];
    char s_b73b4ef9[12];
    char s_228341ad[17];
    char s_522b2492[17];
    char s_9eef0306[16];
    char s_13904abd[8];
-   char s_368db7bb[20];
+   char s_368db7bb[19];
    char s_25e89959[4];
    char s_a7468d68[28];
    char s_579b5e71[43];
@@ -814,10 +868,12 @@ static const struct
    char s_dc94fdb6[52];
    char s_544da5c1[62];
    char s_e0863b45[49];
+   char s_dc427c47[60];
    char s_684b0cb1[29];
    char s_a64647a4[59];
    char s_35f2309a[36];
    char s_35f24807[235];
+   char s_791acb32[88];
    char s_92cf524f[37];
    char s_48e88dc4[159];
    char s_79b8ce4a[65];
@@ -896,6 +952,7 @@ static const struct
    char s_061c8cb7[68];
    char s_86dc83bd[58];
    char s_0e319bcf[52];
+   char s_992f7725[53];
    char s_b4bf3f71[44];
    char s_a5962f42[88];
    char s_0c7750cd[91];
@@ -954,6 +1011,7 @@ static const struct
 #endif
    char s_63a238b1[22];
    char s_4bc02672[66];
+   char s_9dd9fdee[68];
    char s_187dc6d2[31];
    char s_3267601f[76];
    char s_f7e279a6[11];
@@ -971,6 +1029,8 @@ static const struct
    char s_42cf10ff[61];
    char s_eeabb721[11];
    char s_a3030e21[22];
+   char s_faafda68[62];
+   char s_b69a6428[71];
    char s_9759de44[14];
    char s_95b098ec[21];
    char s_95b223c3[21];
@@ -982,6 +1042,7 @@ static const struct
    char s_27bf01b6[42];
    char s_ed159cd6[23];
    char s_a56efbe2[7];
+   char s_265dbfa3[31];
    char s_a63c824a[10];
    char s_0e7aca8a[30];
    char s_3b7c0dd8[30];
@@ -1127,7 +1188,9 @@ static const struct
    "Amosar \302\253V\303\255deos\302\273",
    "Descargues",
    "Trampes",
+   "Crear una copia de seguranza",
    "Desaniciar el nucleu",
+   "Desaniciar la copia de seguranza",
    "Amosar el nome de los nucleos",
    "Informaci\303\263n del nucleu",
    "Autor\303\255a",
@@ -1137,6 +1200,8 @@ static const struct
    "Nome del nucleu",
    "Cam\303\255n completu",
    "Versi\303\263n del nucleu",
+   "Nota: la opci\303\263n \302\253Los ficheros del sistema t\303\241n nel direutoriu del conten\303"
+   "\255u\302\273 ta activada.",
    "Llicencia",
    "Permisos",
    "APIs gr\303\241fiques riqu\303\255es",
@@ -1152,6 +1217,7 @@ static const struct
    "Xesti\303\263n de nucleos",
 #endif
    "Opciones del nucleu",
+   "Restaurar la copia de seguranza",
    "Nucleu",
    "Escluyir del men\303\272 \302\253Nucleos ensin conten\303\255u\302\273",
    "Baxador de nucleos",
@@ -1178,9 +1244,12 @@ static const struct
    "Direutorios",
    "Presencia arriquecida de Discord",
    "Audiu",
+   " - Tama\303\261u: %.1f MB",
    "D'acuerdu",
    "En bruto",
+   "N\303\272mberu de serie",
    "Salida",
+   "Resoluci\303\263n",
    "Descargues",
    "Baxar un nucleu",
    "Baxador de conten\303\255u",
@@ -1206,12 +1275,15 @@ static const struct
    "Pol n\303\272mberu de xugadores",
    "Pol publicador",
    "Pola rex\303\263n",
+   "Pol mes de publicaci\303\263n",
    "Pol a\303\261u de publicaci\303\263n",
+   "Pola funci\303\263n de vibraci\303\263n",
    "Pola puntuaci\303\263n",
    "Pola tem\303\241tica",
    "Pol nome del sistema",
    "Pola etiqueta",
    "Rex\303\263n",
+   "A\303\261u de publicaci\303\263n",
    "%u elementos",
    "Amosar too",
    "Esploraci\303\263n",
@@ -1272,6 +1344,7 @@ static const struct
    "Pantalla t\303\241ctil",
    "Controles del puertu %u",
    "Controlador",
+   "Clave d'emisi\303\263n de Kick",
    "Servicios",
    "Miniatura secundaria",
    "Miniatura secundaria",
@@ -1291,6 +1364,7 @@ static const struct
    "Rexistrar nun ficheru",
    "Rexistru detall\303\241u",
    "Men\303\272 principal",
+   "Xestionar",
    "Nucleu predetermin\303\241u",
    "Estensiones de ficheros",
    "Buscar dientro de los ficheros",
@@ -1299,12 +1373,21 @@ static const struct
    "S\303\255",
    "Non",
    "Azul",
-   "Buxu azulao",
+   "Gris azulao",
+   "Azul guapino",
+   "Cianu guapino",
+   "Verde guapino",
+   "Naranxa guapino",
+   "Rosa guapino",
+   "Mor\303\241u guapino",
+   "Bermeyu guapino",
    "Azul escuro",
    "Dr\303\241cula",
+   "Gris escuro",
+   "Gris claro",
    "Verde",
    "Escurid\303\241 Gruvbox",
-   "Color\303\241u",
+   "Bermeyu",
    "Mariellu",
    "Non",
    "Amosar la barra de navegaci\303\263n",
@@ -1317,14 +1400,17 @@ static const struct
    "Enxam\303\241s",
    "Restolador de ficheros",
    "Opacid\303\241",
+   "Brillu",
    "Animaci\303\263n horizontal",
    "Siempre",
-   "Proporci\303\263n del aspeutu",
+   "Proporci\303\263n d'aspeutu",
+   "Bloquiar la proporci\303\263n d'aspeutu",
    "Animaci\303\263n del fondu",
    "Velocid\303\241 de l'animaci\303\263n del fondu",
    "Nieve",
    "Campu d'estrelles",
    "V\303\263rtiz",
+   "Aceleraci\303\263n del despalzamientu",
    "Aspeutu",
    "Amosar la opci\303\263n \302\253Ficheru de configuraci\303\263n\302\273",
 #ifdef HAVE_MIST
@@ -1365,7 +1451,6 @@ static const struct
 #endif
    "Controles",
    "Salida",
-   "Falta mas ye opcional:",
    "Falta mas r\303\255quese:",
    "Reproducir",
    "Reproducir en bucle",
@@ -1379,7 +1464,7 @@ static const struct
    "Permitir la posa",
    "Dexar d'agospiar",
    "Agospiar",
-   "Europa occidental",
+   "Europa Occidental",
    "Nome d'usuariu",
    "Contrase\303\261a del sirvidor",
    "Nomatu: %s",
@@ -1417,10 +1502,14 @@ static const struct
    "Avisos flotantes",
    "Visibilid\303\241 de los avisos",
    "Superposiciones del tecl\303\241u",
+   "\303\201rea de contautu",
+   "Direici\303\263n",
    "Superposiciones",
    "Prietu b\303\241sico",
    "Blancu b\303\241sico",
    "Dr\303\241cula",
+   "Gris escuro",
+   "Gris claro",
    "Escurid\303\241 Gruvbox",
    "Seleniu",
    "Posar el conten\303\255u cuando'l men\303\272 ta activu",
@@ -1485,6 +1574,7 @@ static const struct
    "Informaci\303\263n",
    "%1 elementos",
    "Cargar",
+   "Ta cargando'l nucleu\342\200\246",
    "Cargar un nucleu",
    "Cargar un nucleu personaliz\303\241u\342\200\246",
    "Rexistru",
@@ -1566,6 +1656,20 @@ static const struct
    "Perspeutiva",
    "Publicador",
    "Rex\303\263n",
+   "Mes de publicaci\303\263n",
+   "Abril",
+   "Agostu",
+   "Avientu",
+   "Febreru",
+   "Xineru",
+   "Xunetu",
+   "Xunu",
+   "Marzu",
+   "Mayu",
+   "Payares",
+   "Ochobre",
+   "Setiembre",
+   "A\303\261u de publicaci\303\263n",
    "Puntuaci\303\263n",
    "C\303\263digu de serie",
    "Clasificaci\303\263n de TGDB",
@@ -1584,19 +1688,21 @@ static const struct
    "Verde mazana",
    "Azul cl\303\241sico",
    "Verde cl\303\241sico",
-   "Buxu cl\303\241sico",
+   "Gris cl\303\241sico",
    "Naranxa cl\303\241sico",
-   "Color\303\241u cl\303\241sico",
+   "Bermeyu cl\303\241sico",
    "Violeta cl\303\241sico",
    "Mariellu cl\303\241sico",
    "Mor\303\241u escuro",
    "Dr\303\241cula",
    "Azul ll\303\251trico",
+   "Gris escuro",
+   "Gris claro",
    "Escurid\303\241 Gruvbox",
    "Llaguna",
-   "Color\303\241u heredao",
+   "Bermeyu heredao",
    "Azul nocherniego",
-   "Color\303\241u volc\303\241nico",
+   "Bermeyu volc\303\241nico",
    "Non",
    "Lloviu",
    "Campu d'estrelles",
@@ -1639,6 +1745,7 @@ static const struct
    "Amosar la configuraci\303\263n avanzada",
    "Amosar el men\303\272 pa escritorios",
    "Instalar o restaurar un nucleu",
+   "La instalaci\303\263n del nucleu foi correuta",
    "Aniciar el procesador de videu",
    "Comandos de la entrada est\303\241ndar",
 #ifdef HAVE_MIST
@@ -1646,6 +1753,7 @@ static const struct
 #endif
    "Nucleos suxer\303\255os",
    "Suspender el curiapantalles",
+   "Los ficheros del sistema t\303\241n nel direutoriu del conten\303\255u",
    "Informaci\303\263n del sistema",
    "Data de compilaci\303\263n",
    "Funciones de la CPU",
@@ -1655,6 +1763,7 @@ static const struct
    "Llargor de la pantalla (mm)",
    "Versi\303\263n de Git",
    "Versi\303\263n de Lakka",
+   "Versi\303\263n de MoltenVK",
    "Fonte d'enerx\303\255a",
    "Versi\303\263n de RetroArch",
    "Controlador del contestu de videu",
@@ -1685,6 +1794,7 @@ static const struct
 #ifdef HAVE_LAKKA
    "Fusu horariu",
 #endif
+   "Hai",
    "d\303\255es",
    "d\303\255a",
    "hores",
@@ -1722,7 +1832,8 @@ static const struct
 #endif
    "Sincronizaci\303\263n vertical adautable",
    "Configuraci\303\263n",
-   "Proporci\303\263n del aspeutu",
+   "Valor forn\303\255u pol nucleu",
+   "Proporci\303\263n d'aspeutu",
 #if defined(DINGUX)
    "Bic\303\272bicu",
    "Billinial",
@@ -1741,6 +1852,7 @@ static const struct
    "Mou de pantalla completa",
    "Llargor de la pantalla completa",
    "Altor de la pantalla completa",
+   "Brillu",
    "Color del fondu de los avisos (Azul)",
    "Fondu de los avisos",
    "Color del fondu de los avisos (Verde)",
@@ -1757,6 +1869,7 @@ static const struct
    "270\302\272",
    "90\302\272",
    "Salida",
+   "Ensin perda",
    "Alta",
    "Baxa",
    "Mediana",
@@ -1778,6 +1891,7 @@ static const struct
    "Sincronizaci\303\263n",
    "V\303\255deos",
    "Rindimientu",
+   "Calid\303\241",
    "Sincronizaci\303\263n vertical",
    "Sistema",
    "Mou de ventana a pantalla completa",
@@ -1795,14 +1909,16 @@ static const struct
    "Escurid\303\241",
    "Mor\303\241u escuro",
    "Azul ll\303\251trico",
-   "Color\303\241u heredao",
+   "Gris escuro",
+   "Gris claro",
+   "Bermeyu heredao",
    "Clarid\303\241",
    "Verde llima",
    "Azul nocherniego",
    "Mariellu Pikachu",
    "Imaxe del fondu",
    "Rellugu",
-   "Color\303\241u volc\303\241nico",
+   "Bermeyu volc\303\241nico",
    "S\303\255",
    "Clave d'emisi\303\263n de YouTube",
    "Xestiona les cuentes que t\303\241n configuraes.",
@@ -1837,12 +1953,14 @@ static const struct
    "Nesti direutoriu gu\303\241rdense les llistes de m\303\272sica.",
    "Accede a\303\255na a tola configuraci\303\263n rellacionada cola partida.",
    "Nesti direutoriu atr\303\263xense los ficheros baxaos.",
+   "Archiva una copia de seguranza del nucleu que ta instal\303\241u.",
    "Quita esti nucleu del discu.",
    "Visualiza la informaci\303\263n relativa a l'aplicaci\303\263n/nucleu.",
    "Seleiciona'l nucleu que quies usar.",
    "Impide la modificaci\303\263n del nucleu que ta instal\303\241u. Pues usar esta opci\303\263n pa"
    " evitar que s'anueve cuando'l conten\303\255u rica una versi\303\263n espec\303\255fica del nucl"
    "eu (conxuntos de ROMs arcade) o'l so formatu de los puntos de guard\303\241u camude.",
+   "Instala una versi\303\263n anterior del nucleu d'una llista de copies de seguranza archivaes.",
    "Camuda la configuraci\303\263n del nucleu.",
    "Impide qu'esti nucleu apaeza na seici\303\263n \302\253Nucelos ensin conten\303\255u\302\273.Est"
    "a opci\303\263n nam\303\241s s'aplica cuando'l mou d'apaici\303\263n ta configur\303\241u a \302"
@@ -1937,6 +2055,7 @@ static const struct
    "Baxa les miniatures de les entraes que t\303\241n na llista seleicionada.",
    "Permite que'l men\303\272 se controle con una pantalla t\303\241ctil.",
    "Camuda la configuraci\303\263n de la xesti\303\263n d'enerx\303\255a.",
+   "Amuesa un mensaxe cuando la busca de conten\303\255u fina.",
    "Opciones p'anular la configuraci\303\263n global.",
    "Cola de l'aplicaci\303\263n Retroarch. El guard\303\241u de la configuraci\303\263n al colar ta "
    "activ\303\241u.",
@@ -2011,6 +2130,7 @@ static const struct
 #endif
    "Amest\303\263se a Favoritos",
    "Tolos nucleos compatibles cambiaron a les versiones de Play Store",
+   "Primi'l bot\303\263n \302\253Drecha\302\273 cinco vegaes pa desaniciar toles trampes.",
    "Desanici\303\241ronse toles trampes.",
    "Nun hai abondu espaciu. El n\303\272mberu m\303\241ximu de trampes simult\303\241nees ye 100.",
    "Compilador",
@@ -2028,6 +2148,8 @@ static const struct
    "Hebo un error al escribir nel discu. Albort\303\263se'l volqui\303\241u.",
    "Ta baxando",
    "Volquiando'l discu\342\200\246",
+   "El nucleu de libretro rique conten\303\255u mas nun forniesti nada.",
+   "El nucleu de libretro rique conten\303\255u especial mas nun forniesti nada.",
    "Ta estrayendo",
    "Estrayendo'l nucleu ",
    "Estrayendo'l ficheru",
@@ -2039,6 +2161,7 @@ static const struct
    "Diendo en cata de la llista de nucleos\342\200\246",
    "Nun s'atop\303\263'l ficheru",
    "\303\215ndiz",
+   "Primi nel tecl\303\241u, mur o mandu",
    "Nel intre",
    "La contrase\303\261a ye incorreuta.",
    "La contrase\303\261a ye incorreuta.",
@@ -2086,7 +2209,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24571u
+      (sizeof(msg_hash_ast_blob) == (25937u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2272,7 +2395,9 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
@@ -2282,6 +2407,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
@@ -2297,6 +2423,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
@@ -2323,9 +2450,12 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -2351,12 +2481,15 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_MONTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
@@ -2417,6 +2550,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
@@ -2436,6 +2570,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MANAGE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
@@ -2445,8 +2580,17 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DRACULA,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
@@ -2462,14 +2606,17 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
 #ifdef HAVE_MIST
@@ -2510,7 +2657,6 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
@@ -2562,10 +2708,14 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_AREA,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_VECTOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
@@ -2630,6 +2780,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_LOAD,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_LOG,
@@ -2710,6 +2861,20 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_AUGUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_NOVEMBER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
@@ -2736,6 +2901,8 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LAGOON,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
@@ -2783,6 +2950,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST
@@ -2790,6 +2958,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
@@ -2799,6 +2968,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
@@ -2829,6 +2999,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEZONE,
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
@@ -2866,6 +3037,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
 #if defined(DINGUX)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -2885,6 +3057,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -2901,6 +3074,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
@@ -2922,6 +3096,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -2939,6 +3114,8 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIME,
@@ -2974,10 +3151,12 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_LIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_LOCK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
@@ -3056,6 +3235,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_POINTER_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
@@ -3114,6 +3294,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
 #endif
    (msg_hash_id_t)MSG_ADDED_TO_FAVORITES,
    (msg_hash_id_t)MSG_ALL_CORES_SWITCHED_PFD,
+   (msg_hash_id_t)MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    (msg_hash_id_t)MSG_CHEAT_DELETE_ALL_SUCCESS,
    (msg_hash_id_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
    (msg_hash_id_t)MSG_COMPILER,
@@ -3131,6 +3312,8 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
    (msg_hash_id_t)MSG_DOWNLOADING,
    (msg_hash_id_t)MSG_DUMPING_DISC,
+   (msg_hash_id_t)MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
+   (msg_hash_id_t)MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
    (msg_hash_id_t)MSG_EXTRACTING,
    (msg_hash_id_t)MSG_EXTRACTING_CORE,
    (msg_hash_id_t)MSG_EXTRACTING_FILE,
@@ -3142,6 +3325,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MSG_FETCHING_CORE_LIST,
    (msg_hash_id_t)MSG_FILE_NOT_FOUND,
    (msg_hash_id_t)MSG_INDEX_FILE,
+   (msg_hash_id_t)MSG_INPUT_BIND_PRESS,
    (msg_hash_id_t)MSG_INPUT_COMBO_INSTANT,
    (msg_hash_id_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (msg_hash_id_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,

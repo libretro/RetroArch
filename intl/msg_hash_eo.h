@@ -1739,6 +1739,7 @@ static const struct
    char s_9329c64c[9];
    char s_f8883f70[13];
    char s_09ba892e[6];
+   char s_047623ff[6];
    char s_58b9d895[16];
    char s_0a2aa953[13];
    char s_ffd0dac4[11];
@@ -6143,6 +6144,7 @@ static const struct
    "Poentaro",
    "Seria numero",
    "Etoso",
+   "Marko",
    "Rangigo de TGDB",
    "Veturilspeco",
    "Vidigstilo",
@@ -9148,7 +9150,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (170445u
+      (sizeof(msg_hash_eo_blob) == (170451u
 #ifdef ANDROID
        + 312u
 #endif
@@ -11312,6 +11314,7 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,

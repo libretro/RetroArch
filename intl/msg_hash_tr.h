@@ -1675,6 +1675,7 @@ static const struct
    char s_9329c64c[5];
    char s_f8883f70[5];
    char s_09ba892e[5];
+   char s_047623ff[7];
    char s_58b9d895[22];
    char s_0a2aa953[11];
    char s_ffd0dac4[8];
@@ -5932,6 +5933,7 @@ static const struct
    "Puan",
    "Seri",
    "Ayar",
+   "Etiket",
    "TGDB De\304\237erlendirmesi",
    "Ta\305\237\304\261tlar",
    "G\303\266rsel",
@@ -9176,7 +9178,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169135u
+      (sizeof(msg_hash_tr_blob) == (169142u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11206,6 +11208,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,

@@ -766,6 +766,7 @@ static const struct
    char s_8cfdee2a[25];
    char s_40582c14[19];
    char s_c9afcfe6[13];
+   char s_20def9c4[31];
    char s_75d123f3[25];
    char s_b84a6df0[18];
    char s_35da9191[17];
@@ -1339,6 +1340,7 @@ static const struct
    char s_c39e6c47[29];
    char s_ceb820ad[9];
    char s_63af41a7[33];
+   char s_a4b769ca[31];
 #ifdef HAVE_MIST
    char s_53788998[33];
 #endif
@@ -1973,6 +1975,7 @@ static const struct
    char s_9329c64c[6];
    char s_f8883f70[11];
    char s_09ba892e[7];
+   char s_047623ff[5];
    char s_58b9d895[14];
    char s_0a2aa953[13];
    char s_ffd0dac4[8];
@@ -2771,6 +2774,10 @@ static const struct
    char s_2a5f7cd7[34];
    char s_f90edcc2[66];
    char s_ad14307a[14];
+#if defined(RARCH_MOBILE)
+   char s_774121c7[42];
+   char s_774121c8[50];
+#endif
    char s_b0fb58d3[33];
    char s_b0fb58d4[33];
    char s_92a02470[36];
@@ -3567,6 +3574,7 @@ static const struct
    char s_a6aedb35[101];
    char s_ee3a489b[52];
    char s_236bd8d5[66];
+   char s_87c7d8b8[100];
 #ifdef HAVE_MIST
    char s_40e907c6[66];
 #endif
@@ -4359,8 +4367,10 @@ static const struct
    char s_ecc9b2c5[392];
    char s_c2314d30[267];
 #if defined(RARCH_MOBILE)
+   char s_82c9e375[176];
    char s_82c9e376[145];
 #endif
+   char s_73658ec1[176];
    char s_73658ec2[145];
    char s_8010a29e[112];
    char s_81120e85[115];
@@ -6167,6 +6177,7 @@ static const struct
    "De r\303\251ir Cons\303\263l eisiach",
    "De r\303\251ir Rialuithe",
    "Ag Forbr\303\263ir",
+   "Le Crua-earra\303\255 Feabhs\303\272ch\303\241in",
    "De r\303\251ir sainchead\303\272nais",
    "De r\303\251ir Gameplay",
    "De r\303\251ir Se\303\241nra",
@@ -6743,6 +6754,7 @@ static const struct
    "Scroll\303\272 tapa le Cl\303\251 + Deas",
    "Dealramh",
    "Taispe\303\241in 'Comhad Cumra\303\255ochta'",
+   "Taispe\303\241in Dial\303\263ga Deimhnithe",
 #ifdef HAVE_MIST
    "Taispe\303\241in 'Bainistigh cro\303\255the'",
 #endif
@@ -7393,6 +7405,7 @@ static const struct
    "Sc\303\263r",
    "Sraitheach",
    "Socr\303\272",
+   "Clib",
    "R\303\241t\303\241il TGDB",
    "Feithicleach",
    "Amhairc",
@@ -8201,6 +8214,10 @@ static const struct
    "Bain \303\272s\303\241id as Maol\303\241in Arg\303\263int\303\255 Miotail (Atos\303\272 ag teast"
    "\303\241il)",
    "D\303\255-caocha\303\255l",
+#if defined(RARCH_MOBILE)
+   "Claonadh Ancaire an Amhairc X (Portr\303\241id)",
+   "Claonadh Ancaire an Amhaircphoint\303\255 Y (Portr\303\241id)",
+#endif
    "Claonadh Ancaire Radharcphoirt X",
    "Claonadh Ancaire Radharcphoirt Y",
    "C\303\263imheas Gn\303\251 Saincheaptha (Airde)",
@@ -9803,6 +9820,8 @@ static const struct
    "\255 mh\303\255reanna nach socruithe iad.",
    "Athraigh socruithe cuma sc\303\241ile\303\241in an roghchl\303\241ir.",
    "Taispe\303\241in an rogha 'Comhad Cumra\303\255ochta' sa Phr\303\255omh-Roghchl\303\241r.",
+   "Iarr deimhni\303\272 sula scoirfidh t\303\272, sula nd\303\251anfaidh t\303\272 athshocr\303\272"
+   ", n\303\263 sula nd\303\272nfaidh t\303\272 \303\241bhar.",
 #ifdef HAVE_MIST
    "Taispe\303\241in an rogha 'Bainistigh cro\303\255the' sa Phr\303\255omh-Roghchl\303\241r.",
 #endif
@@ -11532,9 +11551,15 @@ static const struct
    "\251 seo roinnt sc\303\241thaitheoir\303\255 a bhriseadh, go h\303\241irithe ar sheanleaganacha "
    "crua-earra\303\255 n\303\263 OS.",
 #if defined(RARCH_MOBILE)
+   "Su\303\255omh cothrom\303\241nach an \303\241bhair nuair a bh\303\255onn an radharc-fhuinneog n"
+   "\303\255os leithne n\303\241 leithead an \303\241bhair. Seasann 0.0 don taobh cl\303\251, 0.5 do"
+   "n l\303\241r, agus 1.0 don taobh deas.",
    "Su\303\255omh ingearach an \303\241bhair nuair a bh\303\255onn an radharcphoirt n\303\255os aird"
    "e n\303\241 airde an \303\241bhair. Is \303\251 0.0 an barr, 0.5 an l\303\241r, agus 1.0 an bun.",
 #endif
+   "Su\303\255omh cothrom\303\241nach an \303\241bhair nuair a bh\303\255onn an radharc-fhuinneog n"
+   "\303\255os leithne n\303\241 leithead an \303\241bhair. Seasann 0.0 don taobh cl\303\251, 0.5 do"
+   "n l\303\241r, agus 1.0 don taobh deas.",
    "Su\303\255omh ingearach an \303\241bhair nuair a bh\303\255onn an radharcphoirt n\303\255os aird"
    "e n\303\241 airde an \303\241bhair. Is \303\251 0.0 an barr, 0.5 an l\303\241r, agus 1.0 an bun.",
    "Airde radhairc saincheaptha a \303\272s\303\241idtear m\303\241 t\303\241 an C\303\263imheas Gn"
@@ -12433,7 +12458,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (274601u
+      (sizeof(msg_hash_ga_blob) == (274944u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12704,6 +12729,10 @@ typedef char msg_hash_ga_blob_check[
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
        + 31u
 #endif
+#if defined(RARCH_MOBILE)
+       + 42u
+       + 50u
+#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 49u
@@ -12970,6 +12999,7 @@ typedef char msg_hash_ga_blob_check[
        + 196u
 #endif
 #if defined(RARCH_MOBILE)
+       + 176u
        + 145u
 #endif
 #if defined (WIIU)
@@ -13750,6 +13780,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ENHANCEMENT_HW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
@@ -14323,6 +14354,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_QUICK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -14956,6 +14988,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -15754,6 +15787,10 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#if defined(RARCH_MOBILE)
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -16538,6 +16575,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_QUICK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -17318,8 +17356,10 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

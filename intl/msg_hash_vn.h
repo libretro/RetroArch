@@ -770,6 +770,7 @@ static const struct
    char s_8cfdee2a[37];
    char s_40582c14[21];
    char s_c9afcfe6[24];
+   char s_20def9c4[36];
    char s_75d123f3[23];
    char s_b84a6df0[17];
    char s_35da9191[18];
@@ -1343,6 +1344,7 @@ static const struct
    char s_c39e6c47[33];
    char s_ceb820ad[12];
    char s_63af41a7[33];
+   char s_a4b769ca[39];
 #ifdef HAVE_MIST
    char s_53788998[45];
 #endif
@@ -1980,6 +1982,7 @@ static const struct
    char s_9329c64c[8];
    char s_f8883f70[12];
    char s_09ba892e[12];
+   char s_047623ff[6];
    char s_58b9d895[35];
    char s_0a2aa953[16];
    char s_ffd0dac4[19];
@@ -2792,6 +2795,10 @@ static const struct
    char s_2a5f7cd7[36];
    char s_f90edcc2[81];
    char s_ad14307a[19];
+#if defined(RARCH_MOBILE)
+   char s_774121c7[74];
+   char s_774121c8[74];
+#endif
    char s_b0fb58d3[43];
    char s_b0fb58d4[43];
    char s_92a02470[49];
@@ -3597,6 +3604,7 @@ static const struct
    char s_a6aedb35[97];
    char s_ee3a489b[67];
    char s_236bd8d5[64];
+   char s_87c7d8b8[91];
 #ifdef HAVE_MIST
    char s_40e907c6[76];
 #endif
@@ -4402,8 +4410,10 @@ static const struct
    char s_ecc9b2c5[467];
    char s_c2314d30[304];
 #if defined(RARCH_MOBILE)
+   char s_82c9e375[173];
    char s_82c9e376[165];
 #endif
+   char s_73658ec1[173];
    char s_73658ec2[165];
    char s_8010a29e[147];
    char s_81120e85[150];
@@ -6641,6 +6651,7 @@ static const struct
    "Theo \304\221\341\273\231c quy\341\273\201n tr\303\252n m\303\241y ch\306\241i",
    "Theo \304\221i\341\273\201u khi\341\273\203n",
    "Theo nh\303\240 ph\303\241t tri\341\273\203n",
+   "B\341\272\261ng ph\341\272\247n c\341\273\251ng t\304\203ng c\306\260\341\273\235ng",
    "Theo Nh\306\260\341\273\243ng quy\341\273\201n",
    "Theo l\341\273\221i ch\306\241i",
    "Theo th\341\273\203 lo\341\272\241i",
@@ -7282,6 +7293,7 @@ static const struct
    "Cu\341\273\231n nhanh b\341\272\261ng tr\303\241i+ph\341\272\243i",
    "Giao di\341\273\207n",
    "Hi\341\273\203n th\341\273\213 'T\341\273\207p C\341\272\245u h\303\254nh'",
+   "Hi\341\273\203n th\341\273\213 h\341\273\231p tho\341\272\241i x\303\241c nh\341\272\255n",
 #ifdef HAVE_MIST
    "Hi\341\273\203n th\341\273\213 'Qu\341\272\243n l\303\275 tr\303\254nh gi\341\272\243 l\341\272"
    "\255p'",
@@ -8055,6 +8067,7 @@ static const struct
    "\304\220i\341\273\203m",
    "S\341\273\221 s\303\252-ri",
    "C\303\240i \304\221\341\272\267t",
+   "Th\341\272\273",
    "\304\220\303\241nh gi\303\241 \304\221\341\273\231 tu\341\273\225i theo TGDB",
    "Ph\306\260\306\241ng ti\341\273\207n",
    "\304\220\341\273\223 ho\341\272\241 ch\303\255nh",
@@ -8971,6 +8984,12 @@ static const struct
    "\273\221 kim lo\341\272\241i (Y\303\252u c\341\272\247u kh\341\273\237i \304\221\341\273\231ng l"
    "\341\272\241i)",
    "Kh\341\273\255 nh\341\272\245p nh\303\241y",
+#if defined(RARCH_MOBILE)
+   "\304\220\341\273\231 l\341\273\207ch neo v\303\271ng hi\341\273\203n th\341\273\213 theo chi\341"
+   "\273\201u ngang (m\303\240n h\303\254nh d\341\273\215c)",
+   "\304\220\341\273\231 l\341\273\207ch neo v\303\271ng hi\341\273\203n th\341\273\213 theo chi\341"
+   "\273\201u d\341\273\215c (m\303\240n h\303\254nh d\341\273\215c)",
+#endif
    "\304\220\341\273\231 l\341\273\207ch neo khung nh\303\254n theo tr\341\273\245c X",
    "\304\220\341\273\231 l\341\273\207ch neo khung nh\303\254n theo tr\341\273\245c Y",
    "T\341\273\267 l\341\273\207 khung h\303\254nh t\303\271y ch\341\273\211nh (Chi\341\273\201u cao)",
@@ -11537,6 +11556,9 @@ static const struct
    "\213 c\341\273\247a m\303\240n h\303\254nh menu.",
    "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n 'T\341\273\207p C\341\272\245u h\303"
    "\254nh' trong Menu ch\303\255nh.",
+   "Y\303\252u c\341\272\247u x\303\241c nh\341\272\255n tr\306\260\341\273\233c khi tho\303\241t, k"
+   "h\341\273\237i \304\221\341\273\231ng l\341\272\241i ho\341\272\267c \304\221\303\263ng n\341"
+   "\273\231i dung.",
 #ifdef HAVE_MIST
    "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n 'Qu\341\272\243n l\303\275 tr\303\254n"
    "h gi\341\272\243 l\341\272\255p' trong Menu ch\303\255nh.",
@@ -14366,11 +14388,19 @@ static const struct
    "\207t l\303\240 tr\303\252n ph\341\272\247n c\341\273\251ng ho\341\272\267c phi\303\252n b\341"
    "\272\243n h\341\273\207 \304\221i\341\273\201u h\303\240nh c\305\251.",
 #if defined(RARCH_MOBILE)
+   "V\341\273\213 tr\303\255 ngang c\341\273\247a n\341\273\231i dung khi chi\341\273\201u r\341\273"
+   "\231ng v\303\271ng hi\341\273\203n th\341\273\213 l\341\273\233n h\306\241n chi\341\273\201u r"
+   "\341\273\231ng n\341\273\231i dung. 0.0 l\303\240 b\303\252n tr\303\241i, 0.5 l\303\240 ch\303"
+   "\255nh gi\341\273\257a, 1.0 l\303\240 b\303\252n ph\341\272\243i.",
    "V\341\273\213 tr\303\255 theo chi\341\273\201u d\341\273\215c c\341\273\247a n\341\273\231i dung"
    " khi khung nh\303\254n cao h\306\241n chi\341\273\201u cao c\341\273\247a n\341\273\231i dung. 0"
    ",0 l\303\240 tr\303\252n c\303\271ng, 0,5 l\303\240 \341\273\237 gi\341\273\257a, 1,0 l\303\240 "
    "d\306\260\341\273\233i c\303\271ng.",
 #endif
+   "V\341\273\213 tr\303\255 ngang c\341\273\247a n\341\273\231i dung khi chi\341\273\201u r\341\273"
+   "\231ng v\303\271ng hi\341\273\203n th\341\273\213 l\341\273\233n h\306\241n chi\341\273\201u r"
+   "\341\273\231ng n\341\273\231i dung. 0.0 l\303\240 b\303\252n tr\303\241i, 0.5 l\303\240 ch\303"
+   "\255nh gi\341\273\257a, 1.0 l\303\240 b\303\252n ph\341\272\243i.",
    "V\341\273\213 tr\303\255 theo chi\341\273\201u d\341\273\215c c\341\273\247a n\341\273\231i dung"
    " khi khung nh\303\254n cao h\306\241n chi\341\273\201u cao c\341\273\247a n\341\273\231i dung. 0"
    ",0 l\303\240 tr\303\252n c\303\271ng, 0,5 l\303\240 \341\273\237 gi\341\273\257a, 1,0 l\303\240 "
@@ -15681,7 +15711,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (313664u
+      (sizeof(msg_hash_vn_blob) == (314009u
 #ifdef ANDROID
        + 373u
 #endif
@@ -15963,6 +15993,10 @@ typedef char msg_hash_vn_blob_check[
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
        + 37u
 #endif
+#if defined(RARCH_MOBILE)
+       + 74u
+       + 74u
+#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 62u
@@ -16229,6 +16263,7 @@ typedef char msg_hash_vn_blob_check[
        + 225u
 #endif
 #if defined(RARCH_MOBILE)
+       + 173u
        + 165u
 #endif
 #if defined (WIIU)
@@ -17008,6 +17043,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ENHANCEMENT_HW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
@@ -17581,6 +17617,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_QUICK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -18217,6 +18254,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -19029,6 +19067,10 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#if defined(RARCH_MOBILE)
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -19815,6 +19857,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_QUICK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -20596,8 +20639,10 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

@@ -1776,6 +1776,7 @@ static const struct
    char s_9329c64c[5];
    char s_f8883f70[18];
    char s_09ba892e[14];
+   char s_047623ff[9];
    char s_58b9d895[21];
    char s_0a2aa953[10];
    char s_ffd0dac4[7];
@@ -6269,6 +6270,7 @@ static const struct
    "Nota",
    "N\303\272mero de s\303\251rie",
    "Ambienta\303\247\303\243o",
+   "Etiqueta",
    "Classifica\303\247\303\243o TGDB",
    "Ve\303\255culos",
    "Vis\303\243o",
@@ -9504,7 +9506,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193297u
+      (sizeof(msg_hash_pt_br_blob) == (193306u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11734,6 +11736,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,

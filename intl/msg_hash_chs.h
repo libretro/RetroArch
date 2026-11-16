@@ -1960,6 +1960,7 @@ static const struct
    char s_9329c64c[7];
    char s_f8883f70[10];
    char s_09ba892e[7];
+   char s_047623ff[7];
    char s_58b9d895[12];
    char s_0a2aa953[7];
    char s_ffd0dac4[7];
@@ -7773,6 +7774,7 @@ static const struct
    "\350\257\204\345\210\206",
    "\345\272\217\345\210\227\345\217\267",
    "\350\256\276\347\275\256",
+   "\346\240\207\347\255\276",
    "TGDB \350\257\204\345\210\206",
    "\350\275\275\345\205\267",
    "\350\247\206\350\247\222",
@@ -14940,7 +14942,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_chs_blob_check[
-      (sizeof(msg_hash_chs_blob) == (181808u
+      (sizeof(msg_hash_chs_blob) == (181815u
 #ifdef ANDROID
        + 220u
 #endif
@@ -17463,6 +17465,7 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,

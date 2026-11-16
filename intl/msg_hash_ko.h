@@ -1900,6 +1900,7 @@ static const struct
    char s_f8883f70[10];
    char s_09ba892e[7];
    char s_0475b47d[6];
+   char s_047623ff[7];
    char s_58b9d895[12];
    char s_0a2aa953[10];
    char s_ffd0dac4[10];
@@ -8119,6 +8120,7 @@ static const struct
    "\354\213\234\353\246\254\354\226\274",
    "\354\204\244\354\240\225",
    "SHA1:",
+   "\355\203\234\352\267\270",
    "TGDB \353\223\261\352\270\211",
    "\355\203\221\354\212\271\353\254\274",
    "\353\271\204\354\243\274\354\226\274",
@@ -16344,7 +16346,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ko_blob_check[
-      (sizeof(msg_hash_ko_blob) == (230992u
+      (sizeof(msg_hash_ko_blob) == (230999u
 #ifdef ANDROID
        + 436u
 #endif
@@ -18711,6 +18713,7 @@ static const msg_hash_id_t msg_hash_ko_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,

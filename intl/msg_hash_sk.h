@@ -1916,6 +1916,7 @@ static const struct
    char s_9329c64c[7];
    char s_f8883f70[14];
    char s_09ba892e[11];
+   char s_047623ff[9];
    char s_58b9d895[16];
    char s_0a2aa953[8];
    char s_ffd0dac4[8];
@@ -7145,6 +7146,7 @@ static const struct
    "Sk\303\263re",
    "S\303\251riov\303\251 \304\214.",
    "Nastavenie",
+   "\305\240t\303\255tok",
    "Hodnotenie TGDB",
    "Vozidlo",
    "Vzh\304\276ad",
@@ -11792,7 +11794,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (236479u
+      (sizeof(msg_hash_sk_blob) == (236488u
 #ifdef ANDROID
        + 389u
 #endif
@@ -14269,6 +14271,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,

@@ -1526,6 +1526,7 @@ static const struct
    char s_9329c64c[8];
    char s_f8883f70[12];
    char s_09ba892e[9];
+   char s_047623ff[9];
    char s_58b9d895[14];
    char s_0a2aa953[9];
    char s_ffd0dac4[13];
@@ -5084,6 +5085,7 @@ static const struct
    "Pisteet",
    "Sarjanumero",
    "Asetelma",
+   "Tunniste",
    "TGDB-luokitus",
    "Ajoneuvo",
    "Visuaalisuus",
@@ -7578,7 +7580,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123429u
+      (sizeof(msg_hash_fi_blob) == (123438u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9429,6 +9431,7 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TAGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
