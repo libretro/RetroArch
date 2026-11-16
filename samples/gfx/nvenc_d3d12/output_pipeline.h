@@ -17,6 +17,7 @@ static int nve_pipeline_worker_step(record_gpu_worker_d3d12_t *worker, nvenc_d3d
 }
 #define record_gpu_worker_d3d12_step nve_pipeline_worker_step
 #ifdef NVENC_TEST_STREAM
+#include "../../../record/record_stream_gpu.c"
 #include "../../../record/record_stream_d3d12.c"
 #endif
 #include "../../../record/record_gpu_output_d3d12.c"

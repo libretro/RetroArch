@@ -2,36 +2,10 @@
 #ifndef RECORD_GPU_OUTPUT_D3D12_H
 #define RECORD_GPU_OUTPUT_D3D12_H
 #include "record_gpu_worker_d3d12.h"
-#include "record_mux_mp4.h"
-#include <formats/video_color.h>
+#include "record_gpu_output_config.h"
 RETRO_BEGIN_DECLS
 
-enum record_gpu_output_result
-{
-   RECORD_GPU_OUTPUT_ERROR = -1, RECORD_GPU_OUTPUT_BUSY,
-   RECORD_GPU_OUTPUT_PROGRESS, RECORD_GPU_OUTPUT_END
-};
-enum record_gpu_output_error
-{
-   RECORD_GPU_OUTPUT_ERROR_NONE, RECORD_GPU_OUTPUT_ERROR_VIDEO,
-   RECORD_GPU_OUTPUT_ERROR_AUDIO, RECORD_GPU_OUTPUT_ERROR_MUX,
-   RECORD_GPU_OUTPUT_ERROR_FILE, RECORD_GPU_OUTPUT_ERROR_ABORTED,
-   RECORD_GPU_OUTPUT_ERROR_NETWORK
-};
 typedef struct record_gpu_output_d3d12 record_gpu_output_d3d12_t;
-struct net_rtmp_client;
-typedef struct record_gpu_output_config
-{
-   record_mp4_config_t video;
-   /* Coded source metadata for HEVC streaming, never display defaults.
-    * Session setup replaces this from its encoder configuration. */
-   video_color_metadata_t stream_color;
-   /* I/O-owner-only READY client; NULL selects file output. */
-   struct net_rtmp_client *stream_client;
-   unsigned audio_rate, audio_kbps;
-   uint32_t audio_layout;
-   size_t audio_fifo_frames;
-} record_gpu_output_config_t;
 
 /* Construct/service/destroy on an I/O worker, never main/render/audio threads.
  * Borrows the GPU worker; caller owns capture, encoder and their drain/free.
