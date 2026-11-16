@@ -9044,12 +9044,12 @@ static enum runloop_state_enum runloop_check_state(
                p_disp->flags |= GFX_DISP_FLAG_FB_DIRTY;
 
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX)
-                  && *menu->menu_state_msg)
+                  && *MENU_STATE_TEXT(menu))
             {
                if (menu->driver_ctx->render_messagebox)
                   menu->driver_ctx->render_messagebox(
                         menu->userdata,
-                        menu->menu_state_msg);
+                        MENU_STATE_TEXT(menu));
 
             }
 

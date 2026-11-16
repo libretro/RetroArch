@@ -20714,7 +20714,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          ids[19][0] = RETROK_ESCAPE;
 
          /* Escape cancels dialogs */
-         if (menu_st && menu_st->driver_data && *menu_st->driver_data->menu_state_msg)
+         if (menu_st && menu_st->driver_data && *MENU_STATE_TEXT(menu_st->driver_data))
             ids[19][1] = (swap_ok_cancel_buttons)
                   ? RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
 

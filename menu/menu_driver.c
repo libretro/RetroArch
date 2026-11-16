@@ -6630,7 +6630,7 @@ unsigned menu_event(
             ok_enum_idx = entry.enum_idx;
 
          /* Trigger on release during dialog boxes */
-         if (*menu->menu_state_msg)
+         if (*MENU_STATE_TEXT(menu))
          {
             if (ok_trigger)
                ok_enum_idx = MENU_ENUM_LABEL_MESSAGE;
@@ -6904,7 +6904,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
    if (menu)
       messagebox_active = BIT64_GET(
             menu->state, MENU_STATE_RENDER_MESSAGEBOX)
-            && *menu->menu_state_msg;
+            && *MENU_STATE_TEXT(menu);
 
    /* If onscreen keyboard is shown and we currently have
     * active mouse input, highlight key under mouse cursor */
@@ -8522,6 +8522,7 @@ static int generic_menu_iterate(
       label                        = list->list[list->size - 1].label;
 
    menu->menu_state_msg[0]         = '\0';
+   menu->menu_state_text           = NULL;
 
    /* buttons held on an empty combination row: what it is to do is
     * picked next, from a list opened over this one */
@@ -8580,9 +8581,8 @@ static int generic_menu_iterate(
                   sizeof(menu->menu_state_msg));
          else
 #endif
-            strlcpy(menu->menu_state_msg,
-                  msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
-                  sizeof(menu->menu_state_msg));
+            menu->menu_state_text = msg_hash_to_str(
+                  (enum msg_hash_enums)menu_st->dialog_st.confirm_msg);
 
 #ifdef HAVE_ACCESSIBILITY
          /* Also when the warning comes up after a confirm or a newer
@@ -8595,7 +8595,7 @@ static int generic_menu_iterate(
             accessibility_speak_priority(
                   accessibility_enable,
                   accessibility_narrator_speech_speed,
-                  menu->menu_state_msg, 10);
+                  MENU_STATE_TEXT(menu), 10);
 #endif
          menu_st->dialog_st.button_announce = false;
 
@@ -8745,9 +8745,8 @@ static int generic_menu_iterate(
                            strlcpy(menu->menu_state_msg, entry->description,
                                  sizeof(menu->menu_state_msg));
                         else
-                           strlcpy(menu->menu_state_msg,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
-                                 sizeof(menu->menu_state_msg));
+                           menu->menu_state_text = msg_hash_to_str(
+                                 MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE);
 
                         ret = 0;
                      }
@@ -8767,9 +8766,8 @@ static int generic_menu_iterate(
                                  core_info->description,
                                  sizeof(menu->menu_state_msg));
                         else
-                           strlcpy(menu->menu_state_msg,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
-                                 sizeof(menu->menu_state_msg));
+                           menu->menu_state_text = msg_hash_to_str(
+                                 MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE);
 
                         ret = 0;
                      }
@@ -8784,10 +8782,9 @@ static int generic_menu_iterate(
                         menu_driver_get_current_menu_sublabel(
                               menu_st,
                               menu->menu_state_msg, sizeof(menu->menu_state_msg));
-                        if (string_is_equal(menu->menu_state_msg, ""))
-                           strlcpy(menu->menu_state_msg,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
-                                 sizeof(menu->menu_state_msg));
+                        if (!*menu->menu_state_msg)
+                           menu->menu_state_text = msg_hash_to_str(
+                                 MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE);
                      }
                      break;
                }
@@ -8798,7 +8795,7 @@ static int generic_menu_iterate(
                         accessibility_enable,
                         access_st->enabled))
                {
-                  if (string_is_equal(menu->menu_state_msg,
+                  if (string_is_equal(MENU_STATE_TEXT(menu),
                            msg_hash_to_str(
                               MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
@@ -8810,7 +8807,7 @@ static int generic_menu_iterate(
                         accessibility_speak_priority(
                               accessibility_enable,
                               accessibility_narrator_speech_speed,
-                              menu->menu_state_msg, 10);
+                              MENU_STATE_TEXT(menu), 10);
                      else
                         accessibility_speak_priority(
                               accessibility_enable,
@@ -8821,7 +8818,7 @@ static int generic_menu_iterate(
                      accessibility_speak_priority(
                            accessibility_enable,
                            accessibility_narrator_speech_speed,
-                           menu->menu_state_msg, 10);
+                           MENU_STATE_TEXT(menu), 10);
                }
 #endif
             }
@@ -8919,10 +8916,8 @@ static int generic_menu_iterate(
                   }
                   else
                   {
-                     strlcpy(menu->menu_state_msg,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
-                           sizeof(menu->menu_state_msg));
-
+                     menu->menu_state_text = msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE);
                      ret = 0;
                   }
                }
@@ -10012,6 +10007,7 @@ static void menu_dialog_confirm_reset(struct menu_state *menu_st)
 
    BIT64_CLEAR(menu_st->driver_data->state, MENU_STATE_RENDER_MESSAGEBOX);
    menu_st->driver_data->menu_state_msg[0] = '\0';
+   menu_st->driver_data->menu_state_text   = NULL;
 }
 
 void menu_dialog_confirm_set(struct menu_state *menu_st, unsigned msg, unsigned cmd)

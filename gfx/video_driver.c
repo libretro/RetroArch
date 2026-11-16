@@ -7620,8 +7620,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
       if (     menu_st->driver_data
             && BIT64_GET(menu_st->driver_data->state,
                MENU_STATE_RENDER_MESSAGEBOX)
-            && *menu_st->driver_data->menu_state_msg)
-         video_info->menu.msgbox = menu_st->driver_data->menu_state_msg;
+            && *MENU_STATE_TEXT(menu_st->driver_data))
+         video_info->menu.msgbox = MENU_STATE_TEXT(menu_st->driver_data);
       video_info->menu.rgui_color_theme                       = settings->uints.menu_rgui_color_theme;
       video_info->menu.rgui_aspect_ratio                      = settings->uints.menu_rgui_aspect_ratio;
       video_info->menu.rgui_aspect_ratio_lock                 = settings->uints.menu_rgui_aspect_ratio_lock;

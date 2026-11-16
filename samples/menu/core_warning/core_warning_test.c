@@ -148,7 +148,7 @@ static bool icons(unsigned n, unsigned i0, unsigned i1, unsigned i2)
 static bool box_says(enum msg_hash_enums msg)
 {
    menu_handle_t *menu = menu_state_get_ptr()->driver_data;
-   return menu && strstr(menu->menu_state_msg, msg_hash_to_str(msg));
+   return menu && strstr(MENU_STATE_TEXT(menu), msg_hash_to_str(msg));
 }
 
 /* The menu's own input: what a pad's button press becomes */

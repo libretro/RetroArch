@@ -487,6 +487,9 @@ typedef struct
    } last_start_content;
 
    char menu_state_msg[MENU_LABEL_MAX_LENGTH];
+   /* A string that outlives the iteration (msg_hash's) shown in place
+    * of menu_state_msg without copying it there; NULL for the buffer */
+   const char *menu_state_text;
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -517,6 +520,10 @@ typedef struct
    unsigned plays_as_rows;
    unsigned plays_as_links;
 } menu_handle_t;
+
+/* The text the menu's message box shows */
+#define MENU_STATE_TEXT(menu) ((menu)->menu_state_text \
+      ? (menu)->menu_state_text : (menu)->menu_state_msg)
 
 struct menu_state
 {

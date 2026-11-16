@@ -1466,10 +1466,10 @@ static char *command_menu_answer(bool has_from, unsigned from,
       _len += (size_t)snprintf(out + _len, size - _len, "KEYBOARD %s\n",
             label);
    }
-   else if (menu_st->driver_data && *menu_st->driver_data->menu_state_msg)
+   else if (menu_st->driver_data && *MENU_STATE_TEXT(menu_st->driver_data))
    {
       char msg[sizeof(menu_st->driver_data->menu_state_msg)];
-      strlcpy(msg, menu_st->driver_data->menu_state_msg, sizeof(msg));
+      strlcpy(msg, MENU_STATE_TEXT(menu_st->driver_data), sizeof(msg));
       command_menu_clean(msg);
       _len += (size_t)snprintf(out + _len, size - _len, "MESSAGE %s\n",
             msg);
