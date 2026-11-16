@@ -63,6 +63,7 @@ struct native_encoder
    struct native_capture_command capture_command;
    vulkan_encode_capture_ops_t capture_ops;
    vulkan_encode_capture_t *capture;
+   bool capture_borrowed;
    VkImage rgb;
    VkImageView rgb_view;
    VkDeviceMemory rgb_memory;

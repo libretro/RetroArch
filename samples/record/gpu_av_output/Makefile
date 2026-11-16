@@ -44,7 +44,7 @@ vulkan_session_test$(EXE): $(VULKAN_SESSION_SOURCES) $(VULKAN_SESSION) $(VULKAN_
 	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) -UHAVE_THREADS $(VULKAN_SESSION_SOURCES) -o $@ $(LDFLAGS) -lm
 vulkan_session_thread_test$(EXE): $(VULKAN_SESSION_SOURCES) $(VULKAN_SESSION) $(VULKAN_HEADERS) $(VULKAN_OUTPUT) $(VULKAN_COMMON)
 	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L $(if $(filter .exe,$(EXE)),,-pthread) $(VULKAN_SESSION_SOURCES) -o $@ $(LDFLAGS) -lm
-VULKAN_DISPATCH := $(RA)/record/record_gpu_dispatch_vulkan.c $(RA)/record/record_gpu_dispatch_vulkan.h
+VULKAN_DISPATCH := $(RA)/record/record_gpu_dispatch_vulkan.c $(RA)/record/record_gpu_dispatch_vulkan.h $(RA)/gfx/common/vulkan_encode_capture.h
 VULKAN_DISPATCH_SOURCES := vulkan_dispatch_test.c $(filter-out vulkan_session_test.c,$(VULKAN_SESSION_SOURCES)) $(RA)/record/record_gpu_dispatch_vulkan.c
 vulkan_dispatch_test$(EXE): $(VULKAN_DISPATCH_SOURCES) $(VULKAN_DISPATCH) vulkan_session_test.c $(VULKAN_SESSION) $(VULKAN_HEADERS) $(VULKAN_OUTPUT) rthreads_compat.c $(RA)/libretro-common/rthreads/rthreads.c $(RA)/libretro-common/rthreads/retro_eventcount.c
 	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L $(if $(filter .exe,$(EXE)),,-pthread) $(VULKAN_DISPATCH_SOURCES) rthreads_compat.c $(RA)/libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm

@@ -2,6 +2,7 @@
 #ifndef RECORD_GPU_DISPATCH_VULKAN_H
 #define RECORD_GPU_DISPATCH_VULKAN_H
 #include "record_gpu_session_vulkan.h"
+#include "../gfx/common/vulkan_encode_capture.h"
 RETRO_BEGIN_DECLS
 typedef struct record_gpu_dispatch_vulkan record_gpu_dispatch_vulkan_t;
 enum record_gpu_dispatch_vulkan_state
@@ -18,6 +19,16 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new(
       const vulkan_encode_h264_open_t *encoder,
       const vulkan_encode_h264_ops_t *ops,
       const record_gpu_output_vulkan_config_t *output, const char *path);
+/* Also compiles/creates capture resources on the worker. Copies capture_ops;
+ * publishes capture with READY, retires it after video_finish's GPU proof. */
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
+      const vulkan_encode_h264_open_t *encoder,
+      const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *output, const char *path,
+      const vulkan_encode_capture_ops_t *capture_ops);
+/* Render producer only, READY borrow through its own video_finish. */
+vulkan_encode_capture_t *record_gpu_dispatch_vulkan_capture(
+      const record_gpu_dispatch_vulkan_t *job);
 /* Render producer. READY only; immutable pool borrow until video_finish.
  * Capture into an acquired slot, submit its producer commands, then publish
  * the descriptor. BUSY takes nothing; failed submit retains the reservation.

@@ -108,7 +108,7 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
    memset(&owner,0,sizeof(owner));
    if (dispatch)
    {
-      owner.job=record_gpu_dispatch_vulkan_new(&c->config,&c->ops,&output,path);
+      owner.job=record_gpu_dispatch_vulkan_new_capture(&c->config,&c->ops,&output,path,&c->capture_ops);
       assert(owner.job);
       for (retry=0;retry<10000;retry++)
       {
@@ -119,6 +119,9 @@ static int session_pictures(struct native_encoder *c,const char *path,bool direc
       }
       assert(retry<10000);
       pool=record_gpu_dispatch_vulkan_pool(owner.job);
+      c->capture=record_gpu_dispatch_vulkan_capture(owner.job);
+      c->capture_borrowed=true;
+      assert(c->capture);
       queue=NULL;
    }
    else

@@ -52,8 +52,9 @@ static void capture_new(struct native_encoder *c,const vulkan_encode_pool_t *poo
    command.level=VK_COMMAND_BUFFER_LEVEL_PRIMARY;
    command.commandBufferCount=2;
    assert(c->ops.pool.allocate_command(c->device,&command,c->producer)==VK_SUCCESS);
-   c->capture=vulkan_encode_capture_new_compiled(pool,&c->capture_ops,
-         c->shader_error,sizeof(c->shader_error));
+   if (!c->capture_borrowed)
+      c->capture=vulkan_encode_capture_new_compiled(pool,&c->capture_ops,
+            c->shader_error,sizeof(c->shader_error));
    if (!c->capture) fprintf(stderr,"%s\n",c->shader_error);
    assert(c->capture);
 }
@@ -123,7 +124,9 @@ static void capture_frame(struct native_encoder *c,const vulkan_encode_pool_t *p
 }
 static void capture_free(struct native_encoder *c)
 {
-   vulkan_encode_capture_free(c->capture);
+   if (!c->capture_borrowed)
+      vulkan_encode_capture_free(c->capture);
+   c->capture=NULL;
    c->ops.pool.destroy_view(c->device,c->rgb_view,NULL);
    c->ops.pool.destroy_image(c->device,c->rgb,NULL);
    c->ops.pool.free_memory(c->device,c->rgb_memory,NULL);

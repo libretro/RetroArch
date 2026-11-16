@@ -50,7 +50,7 @@ if args.capture:
 if args.session:
     evidence['scope'] = 'Native Vulkan GPU capture and recording session MP4/AC3 file output; independent picture/sample/timestamp oracle'
 if args.dispatcher:
-    evidence['scope'] += '; session/file operations owned by dedicated dispatcher worker'
+    evidence['scope'] += '; session/file and capture compiler/resource lifetime owned by dedicated dispatcher worker'
 if args.device_plan:
     evidence['scope'] += '; shipping renderer device plan, Vulkan 1.1 instance and KHR synchronization/timeline entrypoints'
 evidence['source'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()

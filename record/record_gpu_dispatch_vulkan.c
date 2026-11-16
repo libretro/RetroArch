@@ -18,14 +18,17 @@ struct record_gpu_dispatch_vulkan
 {
    vulkan_encode_h264_open_t encoder;
    vulkan_encode_h264_ops_t ops;
+   vulkan_encode_capture_ops_t capture_ops;
    record_gpu_output_vulkan_config_t output;
    uint64_t last_end, last_ready;
    record_gpu_session_vulkan_t *session;
    record_gpu_queue_t *queue;
    const vulkan_encode_pool_t *pool;
+   vulkan_encode_capture_t *capture;
    char *path;
    retro_eventcount_t wake;
    retro_atomic_int_t state, done, video_closed, audio_closed, cancelled, error, file_error;
+   bool capture_enabled;
 #ifdef _WIN32
    HANDLE thread;
 #endif
@@ -48,7 +51,12 @@ static int record_vkd_service(record_gpu_dispatch_vulkan_t *j)
    if (retro_atomic_load_acquire_int(&j->cancelled))
       record_gpu_session_vulkan_cancel(j->session);
    if (retro_atomic_load_acquire_int(&j->video_closed))
+   {
+      /* The producer's closure proves every capture command has retired. */
+      vulkan_encode_capture_free(j->capture);
+      j->capture = NULL;
       record_gpu_session_vulkan_video_finish(j->session);
+   }
    if (retro_atomic_load_acquire_int(&j->audio_closed))
       record_gpu_session_vulkan_audio_finish(j->session);
    if (closed)
@@ -80,6 +88,18 @@ static void *record_vkd_run(void *opaque)
    {
       j->session = record_gpu_session_vulkan_new(&j->encoder, &j->ops, &j->output, j->path);
       error = record_gpu_session_vulkan_error(j->session, NULL);
+      if (!error && j->capture_enabled
+            && !retro_atomic_load_acquire_int(&j->cancelled)
+            && !retro_atomic_load_acquire_int(&j->video_closed))
+      {
+         j->capture = vulkan_encode_capture_new_compiled(
+               record_gpu_session_vulkan_pool(j->session), &j->capture_ops, NULL, 0);
+         if (!j->capture)
+         {
+            error = RECORD_VULKAN_SESSION_STARTUP;
+            retro_atomic_store_release_int(&j->cancelled, 1);
+         }
+      }
    }
    if (error)
       record_vkd_error(j, error, 0);
@@ -121,6 +141,14 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new(
       const vulkan_encode_h264_open_t *encoder, const vulkan_encode_h264_ops_t *ops,
       const record_gpu_output_vulkan_config_t *output, const char *path)
 {
+   return record_gpu_dispatch_vulkan_new_capture(encoder, ops, output, path, NULL);
+}
+
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
+      const vulkan_encode_h264_open_t *encoder, const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *output, const char *path,
+      const vulkan_encode_capture_ops_t *capture_ops)
+{
    record_gpu_dispatch_vulkan_t *j;
    size_t length;
 #ifndef _WIN32
@@ -145,6 +173,11 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new(
    j->encoder = *encoder;
    j->ops = *ops;
    j->output = *output;
+   if (capture_ops)
+   {
+      j->capture_ops = *capture_ops;
+      j->capture_enabled = true;
+   }
    retro_atomic_int_init(&j->state, RECORD_VKD_STARTING);
    retro_atomic_int_init(&j->done, 0);
    retro_atomic_int_init(&j->video_closed, 0);
@@ -182,6 +215,10 @@ const vulkan_encode_pool_t *record_gpu_dispatch_vulkan_pool(const record_gpu_dis
    return j && !retro_atomic_load_acquire_int(&j->video_closed)
       && !retro_atomic_load_acquire_int(&j->cancelled)
       && retro_atomic_load_acquire_int(&j->state) == RECORD_VKD_READY ? j->pool : NULL;
+}
+vulkan_encode_capture_t *record_gpu_dispatch_vulkan_capture(const record_gpu_dispatch_vulkan_t *j)
+{
+   return record_gpu_dispatch_vulkan_pool(j) ? j->capture : NULL;
 }
 int record_gpu_dispatch_vulkan_acquire(record_gpu_dispatch_vulkan_t *j, unsigned *slot)
 {
@@ -295,6 +332,13 @@ bool record_gpu_dispatch_vulkan_free(record_gpu_dispatch_vulkan_t *j)
    return true;
 }
 #else
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
+      const vulkan_encode_h264_open_t *e, const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *o, const char *p,
+      const vulkan_encode_capture_ops_t *capture_ops)
+{ (void)e; (void)ops; (void)o; (void)p; (void)capture_ops; return NULL; }
+vulkan_encode_capture_t *record_gpu_dispatch_vulkan_capture(const record_gpu_dispatch_vulkan_t *j)
+{ (void)j; return NULL; }
 record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new(
       const vulkan_encode_h264_open_t *e, const vulkan_encode_h264_ops_t *ops,
       const record_gpu_output_vulkan_config_t *o, const char *p)

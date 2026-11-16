@@ -10,6 +10,48 @@ static DWORD dispatch_caller;
 static pthread_t dispatch_caller;
 #endif
 static retro_atomic_int_t dispatch_gate, dispatch_entered;
+static retro_atomic_int_t capture_created, capture_destroyed, capture_producer_retired;
+static bool capture_fail;
+struct vulkan_encode_capture { const vulkan_encode_pool_t *pool; };
+static struct vulkan_encode_capture capture_fixture;
+static void dispatch_not_caller(void)
+{
+#ifdef _WIN32
+   assert(GetCurrentThreadId() != dispatch_caller);
+#else
+   assert(!pthread_equal(pthread_self(), dispatch_caller));
+#endif
+}
+static VKAPI_ATTR void VKAPI_CALL capture_barrier(VkCommandBuffer command,
+      const VkDependencyInfo *info)
+{ (void)command; (void)info; }
+vulkan_encode_capture_t *vulkan_encode_capture_new_compiled(
+      const vulkan_encode_pool_t *pool, const vulkan_encode_capture_ops_t *ops,
+      char *error, size_t capacity)
+{
+   dispatch_not_caller();
+   assert(pool && ops && ops->barrier == capture_barrier && !error && !capacity);
+   if (capture_fail)
+      return NULL;
+   capture_fixture.pool = pool;
+   retro_atomic_store_release_int(&capture_created, 1);
+   return &capture_fixture;
+}
+void vulkan_encode_capture_free(vulkan_encode_capture_t *capture)
+{
+   if (!capture)
+      return;
+   dispatch_not_caller();
+   assert(capture == &capture_fixture && capture->pool->count == 2);
+   assert(retro_atomic_load_acquire_int(&capture_producer_retired));
+   assert(!retro_atomic_load_acquire_int(&capture_destroyed));
+   retro_atomic_store_release_int(&capture_destroyed, 1);
+}
+static void dispatch_pool_retire(void)
+{
+   assert(retro_atomic_load_acquire_int(&capture_created)
+         == retro_atomic_load_acquire_int(&capture_destroyed));
+}
 static void dispatch_startup_observe(void)
 {
    unsigned retry;
@@ -25,11 +67,12 @@ static void dispatch_startup_observe(void)
       SESSION_YIELD();
    }
 }
-static record_gpu_dispatch_vulkan_t *dispatch_new(bool audio, bool gate)
+static record_gpu_dispatch_vulkan_t *dispatch_create(bool audio, bool gate, bool capture)
 {
    vulkan_encode_h264_open_t config;
    record_gpu_output_vulkan_config_t output;
    static const vulkan_encode_h264_ops_t ops = {{0},{0},{0}};
+   vulkan_encode_capture_ops_t capture_ops;
    reset();
    memset(&config, 0, sizeof(config));
    memset(&output, 0, sizeof(output));
@@ -52,8 +95,24 @@ static record_gpu_dispatch_vulkan_t *dispatch_new(bool audio, bool gate)
 #endif
    retro_atomic_int_init(&dispatch_gate, gate ? 0 : 1);
    retro_atomic_int_init(&dispatch_entered, 0);
+   retro_atomic_int_init(&capture_created, 0);
+   retro_atomic_int_init(&capture_destroyed, 0);
+   retro_atomic_int_init(&capture_producer_retired, 0);
+   capture_fail = false;
    session_open_observer = dispatch_startup_observe;
+   session_free_observer = dispatch_pool_retire;
+   if (capture)
+   {
+      memset(&capture_ops, 0, sizeof(capture_ops));
+      capture_ops.barrier = capture_barrier;
+      return record_gpu_dispatch_vulkan_new_capture(&config, &ops, &output,
+            "unused", &capture_ops);
+   }
    return record_gpu_dispatch_vulkan_new(&config, &ops, &output, "unused");
+}
+static record_gpu_dispatch_vulkan_t *dispatch_new(bool audio, bool gate)
+{
+   return dispatch_create(audio, gate, false);
 }
 #ifndef RETRO_EVENTCOUNT_FORCE_SCOND
 static void dispatch_ready(record_gpu_dispatch_vulkan_t *job)
@@ -190,9 +249,9 @@ static void dispatch_run(bool cancel)
    if (!cancel)
       assert(submits == 64 && releases == 64);
 }
-static void dispatch_startup_cancel(void)
+static void dispatch_startup_cancel(bool capture)
 {
-   record_gpu_dispatch_vulkan_t *job = dispatch_new(true, true);
+   record_gpu_dispatch_vulkan_t *job = dispatch_create(true, true, capture);
    unsigned retry, slot;
    assert(job);
    for (retry = 0; !retro_atomic_load_acquire_int(&dispatch_entered); retry++)
@@ -208,6 +267,7 @@ static void dispatch_startup_cancel(void)
    assert(record_gpu_dispatch_vulkan_audio_finish(job));
    retro_atomic_store_release_int(&dispatch_gate, 1);
    dispatch_collect(job, RECORD_VULKAN_SESSION_CANCELLED);
+   assert(!retro_atomic_load_acquire_int(&capture_created));
 }
 static void dispatch_failure(bool startup)
 {
@@ -235,6 +295,52 @@ static void dispatch_failure(bool startup)
    assert(record_gpu_dispatch_vulkan_video_finish(job));
    dispatch_collect(job, startup ? RECORD_VULKAN_SESSION_STARTUP : RECORD_VULKAN_SESSION_OUTPUT);
 }
+static void dispatch_capture_lifetime(bool cancel, bool fail)
+{
+   record_gpu_dispatch_vulkan_t *job = dispatch_create(true, true, true);
+   unsigned retry;
+   assert(job && !record_gpu_dispatch_vulkan_capture(job));
+   for (retry = 0; !retro_atomic_load_acquire_int(&dispatch_entered); retry++)
+   {
+      assert(retry < 10000);
+      SESSION_YIELD();
+   }
+   capture_fail = fail;
+   retro_atomic_store_release_int(&dispatch_gate, 1);
+   if (fail)
+   {
+      for (retry = 0; record_gpu_dispatch_vulkan_status(job, NULL, NULL) != RECORD_VKD_DRAINING; retry++)
+      {
+         assert(retry < 10000);
+         SESSION_YIELD();
+      }
+      assert(!record_gpu_dispatch_vulkan_capture(job));
+   }
+   else
+   {
+      dispatch_ready(job);
+      assert(record_gpu_dispatch_vulkan_capture(job) == &capture_fixture);
+   }
+   if (cancel)
+   {
+      record_gpu_dispatch_vulkan_cancel(job);
+      assert(!record_gpu_dispatch_vulkan_capture(job));
+   }
+   assert(!retro_atomic_load_acquire_int(&capture_destroyed));
+   retro_atomic_store_release_int(&capture_producer_retired, 1);
+   assert(record_gpu_dispatch_vulkan_video_finish(job));
+   if (!fail)
+      for (retry = 0; !retro_atomic_load_acquire_int(&capture_destroyed); retry++)
+      {
+         assert(retry < 10000);
+         SESSION_YIELD();
+      }
+   assert(!record_gpu_dispatch_vulkan_capture(job));
+   assert(!record_gpu_dispatch_vulkan_free(job));
+   assert(record_gpu_dispatch_vulkan_audio_finish(job));
+   dispatch_collect(job, fail ? RECORD_VULKAN_SESSION_STARTUP
+         : cancel ? RECORD_VULKAN_SESSION_CANCELLED : RECORD_VULKAN_SESSION_NONE);
+}
 #endif
 int main(void)
 {
@@ -244,9 +350,13 @@ int main(void)
 #else
    dispatch_run(false);
    dispatch_run(true);
-   dispatch_startup_cancel();
+   dispatch_startup_cancel(false);
+   dispatch_startup_cancel(true);
    dispatch_failure(true);
    dispatch_failure(false);
+   dispatch_capture_lifetime(false, false);
+   dispatch_capture_lifetime(true, false);
+   dispatch_capture_lifetime(false, true);
    puts("Vulkan dispatcher: worker startup, two producers, cancellation and retirement PASS");
 #endif
    return 0;
@@ -256,6 +366,8 @@ int main(void)
 {
    assert(!record_gpu_dispatch_vulkan_new(NULL, NULL, NULL, "unused"));
    assert(!record_gpu_dispatch_vulkan_pool(NULL));
+   assert(!record_gpu_dispatch_vulkan_new_capture(NULL, NULL, NULL, "unused", NULL));
+   assert(!record_gpu_dispatch_vulkan_capture(NULL));
    assert(record_gpu_dispatch_vulkan_free(NULL));
    puts("Vulkan dispatcher: threadless unsupported admission PASS");
    return 0;
