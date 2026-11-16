@@ -11131,12 +11131,12 @@ static unsigned gfx_display_vk_bloom_begin(void *data, unsigned dims,
       bool defer)
 {
    vk_t *vk = (vk_t*)data;
-   unsigned small = menu_bloom_dims(dims);
+   unsigned small_dims = menu_bloom_dims(dims);
    unsigned i;
    bool sdr, floating;
    VkFormat format;
    VkRenderPass pass;
-   if (     !vk || !small || vk->bloom.failed
+   if (     !vk || !small_dims || vk->bloom.failed
          || (!defer && !vk->bloom.target))
       return 0;
    sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
@@ -11159,7 +11159,7 @@ static unsigned gfx_display_vk_bloom_begin(void *data, unsigned dims,
          || !vulkan_bloom_pipeline(vk, floating, false)
          || !vulkan_bloom_pipeline(vk, sdr, true))
       goto error;
-   if (vk->bloom.dims != small || vk->bloom.format != format)
+   if (vk->bloom.dims != small_dims || vk->bloom.format != format)
    {
       for (i = 0; i < 2; i++)
          if (vk->chain->bloom_retired[i].image)
@@ -11168,14 +11168,14 @@ static unsigned gfx_display_vk_bloom_begin(void *data, unsigned dims,
       {
          vk->chain->bloom_retired[i] = vk->bloom.images[i];
          memset(&vk->bloom.images[i], 0, sizeof(vk->bloom.images[i]));
-         vulkan_init_render_target(&vk->bloom.images[i], small,
+         vulkan_init_render_target(&vk->bloom.images[i], small_dims,
                format, pass, vk->context);
          if (!vk->bloom.images[i].memory || !vk->bloom.images[i].framebuffer)
             goto error;
       }
-      vk->bloom.dims   = small;
+      vk->bloom.dims   = small_dims;
       vk->bloom.format = format;
-      vk->bloom.passes = menu_bloom_plan(vk->bloom.plan, small, floating);
+      vk->bloom.passes = menu_bloom_plan(vk->bloom.plan, small_dims, floating);
    }
    /* Two composites cannot be split from the blurs */
    if (defer && !floating)
@@ -11184,14 +11184,14 @@ static unsigned gfx_display_vk_bloom_begin(void *data, unsigned dims,
    vk->bloom.use_scissor = (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR) != 0;
    vk->tracker.scissor.offset.x = 0;
    vk->tracker.scissor.offset.y = 0;
-   vk->tracker.scissor.extent.width = VIDEO_SCALE_W(small);
-   vk->tracker.scissor.extent.height = VIDEO_SCALE_H(small);
+   vk->tracker.scissor.extent.width = VIDEO_SCALE_W(small_dims);
+   vk->tracker.scissor.extent.height = VIDEO_SCALE_H(small_dims);
    vk->flags |= VK_FLAG_TRACKER_USE_SCISSOR;
    if (!defer)
       vkCmdEndRenderPass(vk->cmd);
-   vulkan_views_begin(vk, &vk->bloom.images[0], small, pass);
+   vulkan_views_begin(vk, &vk->bloom.images[0], small_dims, pass);
    vk->bloom.active = true;
-   return small;
+   return small_dims;
 error:
    vk->bloom.failed = true;
    return 0;

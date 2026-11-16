@@ -139,8 +139,8 @@ static bool uint32s_bucket_expand(struct uint32s_bucket *bucket, uint32_t idx)
 bool uint32s_bucket_remove(struct uint32s_bucket *bucket, uint32_t idx)
 {
    int i;
-   bool small     = bucket->len < 4;
-   uint32_t *coll = small ? bucket->contents.idxs : bucket->contents.vec.idxs;
+   bool inline_idxs     = bucket->len < 4;
+   uint32_t *coll = inline_idxs ? bucket->contents.idxs : bucket->contents.vec.idxs;
    if (idx == 0) /* never remove 0s pattern */
       return false;
 

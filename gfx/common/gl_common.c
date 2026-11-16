@@ -221,12 +221,12 @@ static void gl_menu_bloom_restore(gl_menu_bloom_t *b)
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static bool gl_menu_bloom_targets(gl_menu_bloom_t *b, unsigned small,
+static bool gl_menu_bloom_targets(gl_menu_bloom_t *b, unsigned small_dims,
       bool es)
 {
    unsigned i, attempt;
-   unsigned w = VIDEO_SCALE_W(small);
-   unsigned h = VIDEO_SCALE_H(small);
+   unsigned w = VIDEO_SCALE_W(small_dims);
+   unsigned h = VIDEO_SCALE_H(small_dims);
    glDeleteTextures(2, b->tex);
    glDeleteFramebuffers(2, b->fbo);
    glGenTextures(2, b->tex);
@@ -260,9 +260,9 @@ static bool gl_menu_bloom_targets(gl_menu_bloom_t *b, unsigned small,
       }
       if (i == 2)
       {
-         b->dims     = small;
+         b->dims     = small_dims;
          b->floating = floating;
-         b->passes   = menu_bloom_plan(b->plan, small, floating);
+         b->passes   = menu_bloom_plan(b->plan, small_dims, floating);
          return true;
       }
    }
@@ -274,7 +274,7 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
 {
    static const GLfloat clear[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
    gl_menu_bloom_t *b = *bloom;
-   unsigned small;
+   unsigned small_dims;
    if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return 0;
 #ifndef HAVE_OPENGLES
@@ -285,7 +285,7 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
       return 0;
    if (b->failed)
       return 0;
-   small    = menu_bloom_dims(dims);
+   small_dims    = menu_bloom_dims(dims);
    b->core  = core;
    b->defer = defer;
    glGetIntegerv(GL_VIEWPORT, b->viewport);
@@ -300,7 +300,7 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
    glActiveTexture(GL_TEXTURE0);
    glDisable(GL_SCISSOR_TEST);
    if (     (!b->prog && !gl_menu_bloom_program(b, core, es))
-         || (small != b->dims && !gl_menu_bloom_targets(b, small, es)))
+         || (small_dims != b->dims && !gl_menu_bloom_targets(b, small_dims, es)))
    {
       b->failed = true;
       gl_menu_bloom_restore(b);
@@ -313,7 +313,7 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
       return 0;
    }
    glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, b->fbo[0]);
-   glViewport(0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small));
+   glViewport(0, 0, VIDEO_SCALE_W(small_dims), VIDEO_SCALE_H(small_dims));
 #ifndef HAVE_OPENGLES2
    if (core)
       glClearBufferfv(GL_COLOR, 0, clear);
@@ -323,7 +323,7 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
       glClearColor(clear[0], clear[1], clear[2], clear[3]);
       glClear(GL_COLOR_BUFFER_BIT);
    }
-   return small;
+   return small_dims;
 }
 
 /* The passes from first to last: drawn with attribute 0 from the quad

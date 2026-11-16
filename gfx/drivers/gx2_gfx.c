@@ -729,7 +729,7 @@ static unsigned gfx_display_wiiu_bloom_begin(void *data, unsigned dims,
       bool defer)
 {
    wiiu_video_t *wiiu = (wiiu_video_t*)data;
-   unsigned small = menu_bloom_dims(VIDEO_SCALE_PACK(
+   unsigned small_dims = menu_bloom_dims(VIDEO_SCALE_PACK(
          wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height));
    unsigned i, j;
    (void)dims;
@@ -753,7 +753,7 @@ static unsigned gfx_display_wiiu_bloom_begin(void *data, unsigned dims,
       matrix_4x4_identity((*wiiu->bloom.mvp));
       GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK,
             wiiu->bloom.mvp, sizeof(*wiiu->bloom.mvp));
-      wiiu->bloom.passes = menu_bloom_plan(wiiu->bloom.plan, small, true);
+      wiiu->bloom.passes = menu_bloom_plan(wiiu->bloom.plan, small_dims, true);
       for (i = 0; i < wiiu->bloom.passes; i++)
          for (j = 0; j < 4; j++)
          {
@@ -772,8 +772,8 @@ static unsigned gfx_display_wiiu_bloom_begin(void *data, unsigned dims,
          GX2Texture *t = &wiiu->bloom.tex[i];
          GX2ColorBuffer *cb = &wiiu->bloom.cb[i];
          t->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
-         t->surface.width = VIDEO_SCALE_W(small);
-         t->surface.height = VIDEO_SCALE_H(small);
+         t->surface.width = VIDEO_SCALE_W(small_dims);
+         t->surface.height = VIDEO_SCALE_H(small_dims);
          t->surface.depth = 1;
          t->surface.mipLevels = 1;
          t->surface.format = GX2_SURFACE_FORMAT_FLOAT_R16_G16_B16_A16;
@@ -791,13 +791,13 @@ static unsigned gfx_display_wiiu_bloom_begin(void *data, unsigned dims,
          cb->viewNumSlices = 1;
          GX2InitColorBufferRegs(cb);
       }
-      wiiu->bloom.dims = small;
+      wiiu->bloom.dims = small_dims;
    }
    GX2ClearColor(&wiiu->bloom.cb[0], 0, 0, 0, 0);
    GX2SetColorBuffer(&wiiu->bloom.cb[0], GX2_RENDER_TARGET_0);
-   GX2SetViewport(0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small), 0, 1);
-   GX2SetScissor(0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small));
-   return small;
+   GX2SetViewport(0, 0, VIDEO_SCALE_W(small_dims), VIDEO_SCALE_H(small_dims), 0, 1);
+   GX2SetScissor(0, 0, VIDEO_SCALE_W(small_dims), VIDEO_SCALE_H(small_dims));
+   return small_dims;
 error:
    wiiu->bloom.failed = true;
    return 0;

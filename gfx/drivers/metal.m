@@ -3796,8 +3796,8 @@ static float metal_hdr_pq_to_nits(float pq)
  * get encoders of their own and the frame's is not split */
 - (unsigned)beginBloom:(unsigned)dims defer:(BOOL)defer
 {
-   unsigned small = menu_bloom_dims(dims);
-   if (!small || _bloomFailed || !_commandBuffer)
+   unsigned small_dims = menu_bloom_dims(dims);
+   if (!small_dims || _bloomFailed || !_commandBuffer)
       return 0;
    if (defer ? _rce != nil : !self.rce)
       return 0;
@@ -3828,14 +3828,14 @@ static float metal_hdr_pq_to_nits(float pq)
       _bloomFailed = YES;
       return 0;
    }
-   if (!_bloomTex[0] || _bloomTex[0].width != VIDEO_SCALE_W(small)
-         || _bloomTex[0].height != VIDEO_SCALE_H(small)
+   if (!_bloomTex[0] || _bloomTex[0].width != VIDEO_SCALE_W(small_dims)
+         || _bloomTex[0].height != VIDEO_SCALE_H(small_dims)
          || _bloomTex[0].pixelFormat != MTLPixelFormatRGBA16Float)
    {
       unsigned i;
       MTLTextureDescriptor *td = [MTLTextureDescriptor
-         texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float width:VIDEO_SCALE_W(small)
-         height:VIDEO_SCALE_H(small) mipmapped:NO];
+         texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float width:VIDEO_SCALE_W(small_dims)
+         height:VIDEO_SCALE_H(small_dims) mipmapped:NO];
       td.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
       td.storageMode = MTLStorageModePrivate;
       for (i = 0; i < 2; i++)
@@ -3848,26 +3848,26 @@ static float metal_hdr_pq_to_nits(float pq)
             return 0;
          }
       }
-      _bloomPasses = menu_bloom_plan(_bloomPlan, small, true);
+      _bloomPasses = menu_bloom_plan(_bloomPlan, small_dims, true);
    }
    if (!defer)
       RARCH_ASSIGN(_bloomRestore, _renderPass);
-   _bloomDims = small;
+   _bloomDims = small_dims;
    [self beginLayer:_bloomTex[0]];
-   return small;
+   return small_dims;
 }
 
 - (void)endBloom:(unsigned)dims defer:(BOOL)defer
 {
    unsigned i;
-   unsigned small = _bloomDims;
+   unsigned small_dims = _bloomDims;
    [self endLayer];
    for (i = 0; i < _bloomPasses; i++)
    {
       const menu_bloom_pass_t *pass = &_bloomPlan[i];
       BOOL output = pass->dst == MENU_BLOOM_OUTPUT;
       id<MTLRenderCommandEncoder> encoder;
-      MTLViewport vp = {0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small), 0, 1};
+      MTLViewport vp = {0, 0, VIDEO_SCALE_W(small_dims), VIDEO_SCALE_H(small_dims), 0, 1};
       if (output)
       {
          if (defer)
