@@ -314,6 +314,8 @@ jobs:
             vfs_stable_test
             # what a write stream says its size is, through every write
             vfs_size_contract_test
+            # the size after positional writes, from four threads at once
+            vfs_positional_size_test
             cdrom_cuesheet_overflow_test
             rdvd_h262_test
             rdvd_lpcm_test

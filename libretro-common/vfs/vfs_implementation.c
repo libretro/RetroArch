@@ -1185,6 +1185,44 @@ static int64_t vfs_descriptor_size(libretro_vfs_implementation_file *stream)
    retro_vfs_file_seek_internal(stream, cur, SEEK_SET);
    return end;
 }
+
+/* Any stream's size now. A descriptor writes straight to the file, so
+ * the file's size is it; stdio and the native Windows stream may still
+ * hold bytes of their own, so theirs is the larger of the file's and
+ * what their own writes reached. -1 when nothing answers. */
+static int64_t vfs_current_size(libretro_vfs_implementation_file *stream)
+{
+   int64_t file = -1;
+   int     fd;
+#ifdef VFS_NATIVE
+   if (stream->hints & RFILE_HINT_WIN32_NATIVE)
+   {
+      LARGE_INTEGER sz;
+      if (!GetFileSizeEx(stream->fh, &sz))
+         return -1;
+      return (int64_t)sz.QuadPart > stream->size
+         ? (int64_t)sz.QuadPart : stream->size;
+   }
+#endif
+   if (stream->hints & RFILE_HINT_UNBUFFERED)
+      return stream->fd >= 0 ? vfs_descriptor_size(stream) : -1;
+   if (!stream->fp || (fd = fileno(stream->fp)) < 0)
+      return -1;
+   {
+#if defined(_WIN32)
+      struct _stati64 st;
+      if (_fstati64(fd, &st) == 0)
+         file = (int64_t)st.st_size;
+#else
+      struct stat st;
+      if (fstat(fd, &st) == 0 && S_ISREG(st.st_mode))
+         file = (int64_t)st.st_size;
+#endif
+   }
+   if (file < 0)
+      return -1;
+   return file > stream->size ? file : stream->size;
+}
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -1902,6 +1940,7 @@ static libretro_vfs_implementation_file *vfs_file_open(
    /* Appends (retro_vfs_file_write_at_impl) start at the end as opened */
    retro_atomic_size_init(&stream->append_end,
          stream->size > 0 ? (size_t)stream->size : 0);
+   retro_atomic_int_init(&stream->size_grown, 0);
 #ifdef VFS_HAVE_AT_HANDLE
    retro_atomic_ptr_init(&stream->at_handle, NULL);
    retro_atomic_ptr_init(&stream->at_ovl, NULL);
@@ -2098,14 +2137,21 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
    if (!stream)
       return 0;
 #ifdef VFS_SIZE_LAZY
-   if (stream->hints & RFILE_HINT_SIZE_STALE)
+   if (     (stream->hints & RFILE_HINT_SIZE_STALE)
+         || retro_atomic_load_acquire_int(&stream->size_grown))
    {
-      int64_t size = vfs_descriptor_size(stream);
-      if (size >= 0)
+      int64_t size;
+      /* Cleared before the file is asked: a positional write landing
+       * after this marks it again, so none is missed */
+      int grown = retro_atomic_fetch_and_int(&stream->size_grown, 0);
+      if ((size = (stream->hints & RFILE_HINT_SIZE_STALE)
+               ? vfs_descriptor_size(stream) : vfs_current_size(stream)) >= 0)
       {
          stream->size   = size;
          stream->hints &= ~RFILE_HINT_SIZE_STALE;
       }
+      else if (grown)
+         retro_atomic_fetch_or_int(&stream->size_grown, 1);
    }
 #endif
    return stream->size;
@@ -3198,6 +3244,20 @@ int64_t retro_vfs_file_read_at_impl(libretro_vfs_implementation_file *stream,
 #endif
 }
 
+#if defined(VFS_POSITIONAL_POSIX) || defined(VFS_POSITIONAL_WIN32)
+/* A positional write wrote: the size is asked of the file next time.
+ * Looked at first, so writers on many threads don't all store to it. */
+static void vfs_size_grown(libretro_vfs_implementation_file *stream)
+{
+#ifdef VFS_SIZE_LAZY
+   if (!retro_atomic_load_relaxed_int(&stream->size_grown))
+      retro_atomic_fetch_or_int(&stream->size_grown, 1);
+#else
+   (void)stream;
+#endif
+}
+#endif
+
 int64_t retro_vfs_file_write_at_impl(libretro_vfs_implementation_file *stream,
       const void *s, uint64_t len, int64_t offset)
 {
@@ -3238,17 +3298,23 @@ int64_t retro_vfs_file_write_at_impl(libretro_vfs_implementation_file *stream,
                ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
          ssize_t _put   = VFS_PWRITE(fd, p, _chunk, offset + (int64_t)total);
          if (_put <= 0)
-            return (total != 0) ? (int64_t)total : -1;
+            break;
          total += (uint64_t)_put;
          p     += _put;
          len   -= (uint64_t)_put;
       }
+      if (total == 0)
+         return -1;
+      vfs_size_grown(stream);
       return (int64_t)total;
    }
 #elif defined(VFS_POSITIONAL_WIN32)
    {
-      return vfs_positional_io(stream, (void*)s, len, (uint64_t)offset,
-            true);
+      int64_t put = vfs_positional_io(stream, (void*)s, len,
+            (uint64_t)offset, true);
+      if (put > 0)
+         vfs_size_grown(stream);
+      return put;
    }
 #else
    (void)offset;

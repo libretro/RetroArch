@@ -256,6 +256,9 @@ struct libretro_vfs_implementation_file
     * its own on the file, with a position of its own, made at the first
     * positional call; NULL until then. */
    retro_atomic_size_t append_end;
+   /* Set by a positional write that wrote, so the size is asked of the
+    * file next time it is wanted; cleared by the query before it asks */
+   retro_atomic_int_t  size_grown;
 #ifdef VFS_HAVE_AT_HANDLE
    retro_atomic_ptr_t  at_handle;
    /* at_handle is synchronous - Windows' cached-read fast path - and
