@@ -971,7 +971,8 @@ enum runloop_frame_work
    RUNLOOP_WORK_CHEEVOS  = (1 << 4),  /* achievements attached to content */
    RUNLOOP_WORK_RUN_FRAMES = (1 << 5), /* RUN_FRAMES is advancing frames */
    RUNLOOP_WORK_PAUSE_LOADED = (1 << 6), /* pause once the content has run */
-   RUNLOOP_WORK_FREE_FRAME = (1 << 7) /* a frame with no job to tell of */
+   RUNLOOP_WORK_FREE_FRAME = (1 << 7), /* a frame with no job to tell of */
+   RUNLOOP_WORK_CORE_PARK  = (1 << 8)  /* a core load the check parked */
 };
 
 /* Raise or drop one frame_work bit from the product that owns it.

@@ -61,6 +61,23 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    return s;
 }
 
+/* The frame loop polls the park only while its frame_work bit is up */
+static unsigned frame_work;
+
+void runloop_frame_work_set(unsigned bit, bool on)
+{
+   if (on)
+      frame_work |= bit;
+   else
+      frame_work &= ~bit;
+}
+
+static void frame_iterate(void)
+{
+   if (frame_work & RUNLOOP_WORK_CORE_PARK)
+      core_load_check_iterate();
+}
+
 #define OSD_MAX 256
 static char osd[OSD_MAX][160];
 static unsigned osd_count;
@@ -1969,7 +1986,7 @@ static void park_wait(unsigned want_reruns)
    unsigned i;
    for (i = 0; i < 5000 && reruns < want_reruns; i++)
    {
-      core_load_check_iterate();
+      frame_iterate();
       pump(1);
    }
 }
@@ -1979,7 +1996,7 @@ static void park_frames(unsigned n)
 {
    while (n--)
    {
-      core_load_check_iterate();
+      frame_iterate();
       pump(1);
    }
 }
@@ -2022,19 +2039,22 @@ static void test_park_load_once(void)
    CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_REFUSED);
    opens = menu_opens;
    CHECK(park(core));
+   CHECK(frame_work & RUNLOOP_WORK_CORE_PARK);
    CHECK(queued() == 1);
    drain();
    CHECK(menu_opens == opens + 1);
    CHECK(core_warning_choose(CORE_WARNING_LOAD_ONCE));
    /* Not while a load is still on its way to the dummy core */
    load_pending = true;
-   core_load_check_iterate();
+   frame_iterate();
    CHECK(reruns == 0);
    load_pending = false;
    park_wait(1);
    CHECK(reruns == 1);
    CHECK(rerun_id == 1);
    CHECK(frees == 1);
+   /* Re-run and dropped: the frame loop stops polling it */
+   CHECK(!(frame_work & RUNLOOP_WORK_CORE_PARK));
    /* The pass is for the file the user saw, never one put there since */
 #ifdef _WIN32
    /* Its held handle is the binding: nothing replaces the file */
@@ -2229,7 +2249,7 @@ static void test_park_stage_drift(void)
       pump(1);
    CHECK(!drift_path[0]);
    /* The new check's callback can't have run yet */
-   core_load_check_iterate();
+   frame_iterate();
    CHECK(reruns == 0);
    park_wait(1);
    CHECK(reruns == 1);
@@ -2429,7 +2449,7 @@ static void test_park_seed(void)
    CHECK(queued() == 1);
    CHECK(park(core));
    CHECK(queued() == 1);
-   core_load_check_iterate();
+   frame_iterate();
    CHECK(reruns == 0);
    park_wait(1);
    CHECK(reruns == 1);
@@ -2589,7 +2609,7 @@ static void park_other_load(enum park_wait_kind kind, bool same)
          CHECK(core_warning_choose(CORE_WARNING_LOAD_ONCE));
          /* Waits for a load on its way */
          load_pending = true;
-         core_load_check_iterate();
+         frame_iterate();
          CHECK(reruns == 0);
          break;
    }
@@ -3345,7 +3365,7 @@ static void startup_seed_park(bool menu, enum seed_park_change change)
    if (change == SEED_PARK_CUT)
    {
       drain();
-      core_load_check_iterate();
+      frame_iterate();
       CHECK(queued() == 1);
       task_queue_reset();
    }

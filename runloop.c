@@ -10044,7 +10044,8 @@ int runloop_iterate(void)
    recording_gpu_poll();
    runloop_msg_queue_drain_deferred();
 #ifdef HAVE_CORE_LOAD_CHECK
-   if (!runloop_st->quit_pending)
+   if (     (runloop_st->frame_work & RUNLOOP_WORK_CORE_PARK)
+         && !runloop_st->quit_pending)
       core_load_check_iterate();
 #endif
 

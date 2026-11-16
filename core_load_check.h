@@ -83,7 +83,8 @@ typedef void (*core_load_rerun_t)(void *userdata);
  * load error beyond its failed probe's. */
 bool core_load_check_park(const char *path, core_load_rerun_t rerun,
       core_load_rerun_t free_cb, void *userdata);
-/* Each frame: the parked request's waits */
+/* Each frame while RUNLOOP_WORK_CORE_PARK is up, which a park raises
+ * and its drop lowers: the parked request's waits */
 void core_load_check_iterate(void);
 /* The drivers are up: a message held for them shows */
 void core_load_check_notify(void);

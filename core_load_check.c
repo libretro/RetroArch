@@ -861,6 +861,7 @@ static void core_load_park_drop(void)
       p->free_cb(p->userdata);
    memset(p, 0, sizeof(*p));
    p->serial                = serial;
+   runloop_frame_work_set(RUNLOOP_WORK_CORE_PARK, false);
 }
 
 /* Ended as the user's Cancel ends it: a warning up for it closes
@@ -1584,6 +1585,8 @@ bool core_load_check_park(const char *path, core_load_rerun_t rerun,
    core_load_park_start();
    if (p->state == CORE_LOAD_PARK_NONE)
       return false;
+   /* Polled each frame until it re-runs or is dropped */
+   runloop_frame_work_set(RUNLOOP_WORK_CORE_PARK, true);
    p->free_cb  = free_cb;
    if (     p->state == CORE_LOAD_PARK_SEED
          || p->state == CORE_LOAD_PARK_CHECK)
