@@ -10,6 +10,7 @@ import tempfile
 parser = argparse.ArgumentParser()
 parser.add_argument('--native-test', type=Path, required=True)
 parser.add_argument('--artifacts', type=Path)
+parser.add_argument('--dispatch', action='store_true', help='use the async recording dispatcher')
 parser.add_argument('--session', action='store_true', help='use the complete recording session owner')
 parser.add_argument('--output', action='store_true', help='use the session output wrapper')
 a = parser.parse_args()
@@ -28,6 +29,9 @@ for name, depth, color, tls, scrgb in cases:
     env.pop('VULKAN_STREAM_SCRGB', None)
     env.pop('VULKAN_STREAM_OUTPUT', None)
     env.pop('VULKAN_STREAM_SESSION', None)
+    env.pop('VULKAN_STREAM_DISPATCH', None)
+    if a.dispatch:
+        env['VULKAN_STREAM_DISPATCH'] = '1'
     if a.session:
         env['VULKAN_STREAM_SESSION'] = '1'
     if a.output:

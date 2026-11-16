@@ -26,5 +26,13 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend(
       record_gpu_dispatch_vulkan_start_t start,
       const record_gpu_output_vulkan_config_t *output, const char *path,
       const vulkan_encode_capture_ops_t *capture_ops);
+/* Owns connection setup and retirement on the existing I/O worker.
+ * Uses output.video.codec for truthful H.264/HEVC capabilities. Windows
+ * native AAC/RTMP builds only; unsupported builds refuse before startup. */
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend_stream(
+      const record_gpu_dispatch_vulkan_config_t *config,
+      record_gpu_dispatch_vulkan_start_t start,
+      const record_gpu_output_vulkan_config_t *output, const char *path,
+      const vulkan_encode_capture_ops_t *capture_ops, bool legacy);
 RETRO_END_DECLS
 #endif

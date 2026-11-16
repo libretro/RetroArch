@@ -32,6 +32,7 @@ check: all
 	$(RUNNER) ./contract_test$(EXE)
 	$(RUNNER) ./wrapper_test$(EXE)
 clean:
+	rm -f vulkan_dispatch_stream_test.exe
 	rm -f vulkan_session_test vulkan_session_test.exe
 	rm -f vulkan_output_test vulkan_output_test.exe
 	rm -f vulkan_mapping_test vulkan_mapping_test.exe
@@ -68,3 +69,13 @@ vulkan_output_test$(EXE): vulkan_output_test.c vulkan_contract_test.c contract_t
 VULKAN_SESSION_SOURCES := $(filter-out $(RA)/record/record_gpu_output_vulkan.c,$(VULKAN_OUTPUT_SOURCES)) $(RA)/record/record_gpu_worker_vulkan.c $(RA)/record/record_gpu_queue.c
 vulkan_session_test$(EXE): vulkan_session_test.c contract_test.c ../gpu_av_output/vulkan_session_test.c $(SOURCES) $(VULKAN_SESSION_SOURCES) $(RA)/record/record_stream_vulkan.c $(RA)/record/record_gpu_session_vulkan.c $(RA)/record/record_gpu_session_vulkan.h $(RA)/record/record_gpu_output_vulkan.c $(RA)/record/record_gpu_output_vulkan.h
 	$(CC) $(CFLAGS) -Wno-long-long -Wno-unused-function -I$(RA)/gfx/include -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -o $@ vulkan_session_test.c $(filter-out $(RA)/record/record_stream_d3d12.c,$(SOURCES)) $(RA)/record/record_stream_vulkan.c $(VULKAN_SESSION_SOURCES) $(LDFLAGS) -lm
+
+ifeq ($(EXE),.exe)
+all: vulkan_dispatch_stream_test$(EXE)
+check: vulkan-dispatch-stream-check
+vulkan-dispatch-stream-check: vulkan_dispatch_stream_test$(EXE)
+	$(RUNNER) ./vulkan_dispatch_stream_test$(EXE)
+vulkan_dispatch_stream_test$(EXE): vulkan_dispatch_stream_test.c $(RA)/record/record_gpu_dispatch_vulkan.c $(RA)/record/record_gpu_dispatch_vulkan_backend.h $(RA)/record/record_gpu_dispatch_vulkan.h $(RA)/record/record_gpu_session_vulkan.h
+	$(CC) $(CFLAGS) -Wno-long-long -DHAVE_THREADS -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -DHAVE_CRYPTO -I$(RA)/gfx/include $< ../gpu_av_output/rthreads_compat.c $(LRC)/rthreads/retro_eventcount.c $(RA)/record/record_gpu_queue.c $(LRC)/queues/retro_spsc.c -lws2_32 -o $@ $(LDFLAGS)
+.PHONY: vulkan-dispatch-stream-check
+endif
