@@ -20,11 +20,18 @@ struct native_encoder
    unsigned validation_errors;
    PFN_vkDestroyDebugUtilsMessengerEXT destroy_messenger;
    unsigned family;
+   VkQueueFlags queue_flags;
+   VkCommandPool producer_commands;
+   VkCommandBuffer producer[2];
+   VkBuffer upload;
+   VkDeviceMemory upload_memory;
+   void *upload_data;
    PFN_vkGetInstanceProcAddr instance_proc;
    PFN_vkGetDeviceProcAddr device_proc;
    PFN_vkDestroyInstance destroy_instance;
    PFN_vkDestroyDevice destroy_device;
    VkPhysicalDeviceProperties properties;
+   VkPhysicalDeviceMemoryProperties memory;
    VkPhysicalDeviceFeatures2 features;
    VkPhysicalDeviceVulkan12Features version12;
    VkPhysicalDeviceVulkan13Features version13;
@@ -191,7 +198,9 @@ static bool select_device(struct native_encoder *c)
                && (queues[j].queueFamilyProperties.queueFlags&VK_QUEUE_VIDEO_ENCODE_BIT_KHR)
                && (video[j].videoCodecOperations&VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR))
          {
-            c->physical=devices[i]; c->family=j; found=true; break;
+            c->physical=devices[i]; c->family=j;
+            c->queue_flags=queues[j].queueFamilyProperties.queueFlags;
+            found=true; break;
          }
       free(video); free(queues);
    }
@@ -340,7 +349,176 @@ static bool startup(struct native_encoder *c)
          c->properties.vendorID,c->properties.driverVersion,c->properties.apiVersion,c->family);
    return true;
 }
-int main(void)
+static void upload_new(struct native_encoder *c,const vulkan_encode_pool_t *pool)
+{
+   VkBufferCreateInfo buffer;
+   VkMemoryRequirements requirements;
+   VkMemoryAllocateInfo allocation;
+   VkCommandPoolCreateInfo commands;
+   VkCommandBufferAllocateInfo command;
+   unsigned i;
+   assert(c->queue_flags&VK_QUEUE_TRANSFER_BIT);
+   memset(&buffer,0,sizeof(buffer));
+   buffer.sType=VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   buffer.size=(VkDeviceSize)pool->extent.width*pool->extent.height*3/2;
+   buffer.usage=VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+   assert(c->ops.pool.create_buffer(c->device,&buffer,NULL,&c->upload)==VK_SUCCESS);
+   c->ops.pool.buffer_memory(c->device,c->upload,&requirements);
+   c->ops.pool.memory_properties(c->physical,&c->memory);
+   for (i=0;i<c->memory.memoryTypeCount;i++)
+      if ((requirements.memoryTypeBits&(1u<<i))
+            && (c->memory.memoryTypes[i].propertyFlags&(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  |VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+               ==(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) break;
+   assert(i<c->memory.memoryTypeCount);
+   memset(&allocation,0,sizeof(allocation));
+   allocation.sType=VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   allocation.allocationSize=requirements.size;
+   allocation.memoryTypeIndex=i;
+   assert(c->ops.pool.allocate(c->device,&allocation,NULL,&c->upload_memory)==VK_SUCCESS);
+   assert(c->ops.pool.bind_buffer(c->device,c->upload,c->upload_memory,0)==VK_SUCCESS);
+   assert(c->ops.pool.map(c->device,c->upload_memory,0,buffer.size,0,&c->upload_data)==VK_SUCCESS);
+   memset(&commands,0,sizeof(commands));
+   commands.sType=VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   commands.flags=VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+   commands.queueFamilyIndex=c->family;
+   assert(c->ops.pool.create_commands(c->device,&commands,NULL,&c->producer_commands)==VK_SUCCESS);
+   memset(&command,0,sizeof(command));
+   command.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   command.commandPool=c->producer_commands;
+   command.level=VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   command.commandBufferCount=2;
+   assert(c->ops.pool.allocate_command(c->device,&command,c->producer)==VK_SUCCESS);
+}
+static void upload_frame(struct native_encoder *c,const vulkan_encode_pool_t *pool,
+      unsigned frame)
+{
+   VkCommandBufferBeginInfo begin;
+   VkImageMemoryBarrier2 image;
+   VkBufferMemoryBarrier2 buffer;
+   VkDependencyInfo dependency;
+   VkBufferImageCopy regions[2];
+   VkTimelineSemaphoreSubmitInfo timeline;
+   VkSubmitInfo submit;
+   PFN_vkCmdCopyBufferToImage copy;
+   VkCommandBuffer command=c->producer[frame%2];
+   uint64_t ready=frame+1;
+   unsigned i;
+   size_t luma=(size_t)pool->extent.width*pool->extent.height;
+   memset(c->upload_data,32+frame*12,luma);
+   memset((uint8_t*)c->upload_data+luma,128,luma/2);
+   copy=(PFN_vkCmdCopyBufferToImage)c->device_proc(c->device,"vkCmdCopyBufferToImage");
+   assert(copy && c->ops.submit.reset_command(command,0)==VK_SUCCESS);
+   memset(&begin,0,sizeof(begin));
+   begin.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   assert(c->ops.submit.begin(command,&begin)==VK_SUCCESS);
+   memset(&image,0,sizeof(image));
+   image.sType=VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+   image.srcStageMask=frame<2?VK_PIPELINE_STAGE_2_NONE:VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR;
+   image.srcAccessMask=frame<2?0:VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR;
+   image.dstStageMask=VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+   image.dstAccessMask=VK_ACCESS_2_TRANSFER_WRITE_BIT;
+   image.oldLayout=frame<2?VK_IMAGE_LAYOUT_UNDEFINED:VK_IMAGE_LAYOUT_GENERAL;
+   image.newLayout=VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+   image.srcQueueFamilyIndex=image.dstQueueFamilyIndex=VK_QUEUE_FAMILY_IGNORED;
+   image.image=pool->slot[frame%2].image;
+   image.subresourceRange.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT;
+   image.subresourceRange.levelCount=image.subresourceRange.layerCount=1;
+   memset(&buffer,0,sizeof(buffer));
+   buffer.sType=VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+   buffer.srcStageMask=VK_PIPELINE_STAGE_2_HOST_BIT;
+   buffer.srcAccessMask=VK_ACCESS_2_HOST_WRITE_BIT;
+   buffer.dstStageMask=VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+   buffer.dstAccessMask=VK_ACCESS_2_TRANSFER_READ_BIT;
+   buffer.srcQueueFamilyIndex=buffer.dstQueueFamilyIndex=VK_QUEUE_FAMILY_IGNORED;
+   buffer.buffer=c->upload;
+   buffer.size=luma*3/2;
+   memset(&dependency,0,sizeof(dependency));
+   dependency.sType=VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+   dependency.imageMemoryBarrierCount=dependency.bufferMemoryBarrierCount=1;
+   dependency.pImageMemoryBarriers=&image;
+   dependency.pBufferMemoryBarriers=&buffer;
+   c->ops.submit.barrier(command,&dependency);
+   memset(regions,0,sizeof(regions));
+   for (i=0;i<2;i++)
+   {
+      regions[i].bufferOffset=i?luma:0;
+      regions[i].imageSubresource.aspectMask=i?VK_IMAGE_ASPECT_PLANE_1_BIT:VK_IMAGE_ASPECT_PLANE_0_BIT;
+      regions[i].imageSubresource.layerCount=1;
+      regions[i].imageExtent.width=pool->extent.width>>i;
+      regions[i].imageExtent.height=pool->extent.height>>i;
+      regions[i].imageExtent.depth=1;
+   }
+   copy(command,c->upload,pool->slot[frame%2].image,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,2,regions);
+   image.srcStageMask=VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+   image.srcAccessMask=VK_ACCESS_2_TRANSFER_WRITE_BIT;
+   image.dstStageMask=VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR;
+   image.dstAccessMask=VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR;
+   image.oldLayout=VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+   image.newLayout=VK_IMAGE_LAYOUT_GENERAL;
+   dependency.bufferMemoryBarrierCount=0;
+   dependency.pBufferMemoryBarriers=NULL;
+   c->ops.submit.barrier(command,&dependency);
+   assert(c->ops.submit.end(command)==VK_SUCCESS);
+   memset(&timeline,0,sizeof(timeline));
+   timeline.sType=VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+   timeline.signalSemaphoreValueCount=1;
+   timeline.pSignalSemaphoreValues=&ready;
+   memset(&submit,0,sizeof(submit));
+   submit.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.pNext=&timeline;
+   submit.commandBufferCount=submit.signalSemaphoreCount=1;
+   submit.pCommandBuffers=&command;
+   submit.pSignalSemaphores=&pool->ready;
+   assert(c->ops.submit.submit(c->queue,1,&submit,VK_NULL_HANDLE)==VK_SUCCESS);
+}
+static void encode_pictures(struct native_encoder *c,const char *path)
+{
+   vulkan_encode_h264_t *encoder;
+   const vulkan_encode_pool_t *pool;
+   vulkan_encode_packet_t packet,again;
+   PFN_vkWaitForFences wait_fence;
+   size_t bytes=0;
+   unsigned frame;
+   FILE *file=fopen(path,"wb");
+   assert(file);
+   c->config.slots=2;
+   c->config.gop=4;
+   c->config.storage_image_extended_formats=false;
+   encoder=vulkan_encode_h264_open(&c->config,&c->ops);
+   assert(encoder);
+   pool=vulkan_encode_h264_pool(encoder);
+   assert(pool && !pool->storage_images);
+   assert(vulkan_encode_h264_headers(encoder,c->headers,sizeof(c->headers),&bytes));
+   assert(fwrite(c->headers,1,bytes,file)==bytes);
+   upload_new(c,pool);
+   wait_fence=(PFN_vkWaitForFences)c->device_proc(c->device,"vkWaitForFences");
+   assert(wait_fence);
+   for (frame=0;frame<12;frame++)
+   {
+      upload_frame(c,pool,frame);
+      assert(vulkan_encode_h264_submit(encoder,frame%2,frame,1,frame+1,false)==VULKAN_ENCODE_OK);
+      /* Test orchestration only; the shipping encoder polls without waits. */
+      assert(wait_fence(c->device,1,&pool->slot[frame%2].fence,VK_TRUE,2000000000)==VK_SUCCESS);
+      assert(vulkan_encode_h264_poll(encoder,&packet)==VULKAN_ENCODE_OK);
+      assert(packet.data && packet.size && packet.timestamp==frame && packet.duration==1);
+      assert(packet.keyframe==(frame%4==0));
+      assert(vulkan_encode_h264_poll(encoder,&again)==VULKAN_ENCODE_OK);
+      assert(packet.data==again.data && packet.size==again.size && packet.slot==again.slot);
+      assert(fwrite(packet.data,1,packet.size,file)==packet.size);
+      assert(vulkan_encode_h264_release(encoder));
+   }
+   assert(vulkan_encode_h264_finish(encoder)==VULKAN_ENCODE_OK);
+   assert(vulkan_encode_h264_poll(encoder,&packet)==VULKAN_ENCODE_END);
+   c->ops.pool.destroy_commands(c->device,c->producer_commands,NULL);
+   c->ops.pool.unmap(c->device,c->upload_memory);
+   c->ops.pool.destroy_buffer(c->device,c->upload,NULL);
+   c->ops.pool.free_memory(c->device,c->upload_memory,NULL);
+   assert(vulkan_encode_h264_free(encoder));
+   assert(!fclose(file));
+   puts("PASS native coded pictures=12 GOP=4 stable output borrows; test-only CPU upload");
+}
+int main(int argc,char **argv)
 {
    struct native_encoder *c=(struct native_encoder*)calloc(1,sizeof(*c));
    vulkan_encode_h264_t *encoder;
@@ -350,7 +528,7 @@ int main(void)
    bool storage;
    const vulkan_encode_pool_t *pool;
    int result=77;
-   assert(c);
+   assert(c && (argc==1 || (argc==3 && !strcmp(argv[1],"--pictures"))));
    if (!startup(c))
       puts("UNAVAILABLE Vulkan validation layer or Vulkan 1.3 H.264 encode device/features");
    else
@@ -375,7 +553,13 @@ int main(void)
          printf("PASS native cold H264 session/pool/header/empty drain cycle=%u headers=%lu\n",
                cycle,(unsigned long)bytes);
       }
-      result=0;
+      if (argc==3 && !(c->queue_flags&VK_QUEUE_TRANSFER_BIT))
+         puts("UNAVAILABLE test upload on the selected encode queue");
+      else
+      {
+         if (argc==3) encode_pictures(c,argv[2]);
+         result=0;
+      }
    }
    if (c->device) c->destroy_device(c->device,NULL);
    if (c->messenger) c->destroy_messenger(c->instance,c->messenger,NULL);
