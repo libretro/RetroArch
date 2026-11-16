@@ -327,6 +327,83 @@ static void test_identity(void)
    core_file_close(f);
 }
 
+#ifdef _WIN32
+/* Hashes path to its end, reporting the mode core_hash_step took */
+static bool hash_whole(const char *path, uint8_t *got, unsigned *mode,
+      uint64_t *done)
+{
+   struct core_hash h;
+   core_file_t *f = core_file_open(path);
+   int step;
+   if (!f || !core_hash_init(&h))
+   {
+      core_file_close(f);
+      return false;
+   }
+   do
+      step = core_hash_step(&h, f);
+   while (step > 0);
+   *mode = h.mode;
+   *done = h.done;
+   core_hash_final(&h, got);
+   core_file_close(f);
+   return step == 0;
+}
+
+/* On a local fixed drive a core is hashed from a mapping, a window at a
+ * time; by any other path it is read. Both give the file's digest. */
+static void test_hash_mapped(void)
+{
+   /* Past one 32 MiB view and not a whole number of chunks */
+   size_t len  = 40 * 1024 * 1024 + 4099;
+   uint8_t *buf = (uint8_t*)malloc(len);
+   uint8_t want[CORE_SHA256_LEN], got[CORE_SHA256_LEN];
+   char full[MAX_PATH];
+   uint32_t x  = 2463534242u;
+   uint64_t done;
+   unsigned mode;
+   size_t i;
+   CHECK(buf != NULL);
+   if (!buf)
+      return;
+   for (i = 0; i < len; i++)
+   {
+      x ^= x << 13;
+      x ^= x >> 17;
+      x ^= x << 5;
+      buf[i] = (uint8_t)x;
+   }
+   sha(buf, len, want);
+   CHECK(filestream_write_file(tmp("big.dll"), buf, (int64_t)len));
+   free(buf);
+   CHECK(GetFullPathNameA(tmp("big.dll"), sizeof(full), full, NULL) > 0);
+   if (full[1] == ':')
+   {
+      char root[4];
+      root[0] = full[0];
+      root[1] = ':';
+      root[2] = '\\';
+      root[3] = '\0';
+      if (GetDriveTypeA(root) == DRIVE_FIXED)
+      {
+         CHECK(hash_whole(full, got, &mode, &done));
+         CHECK(mode == 1);   /* CORE_HASH_MAPPED */
+         CHECK(done == len);
+         CHECK(!memcmp(want, got, CORE_SHA256_LEN));
+      }
+      else
+         printf("note: %s is not on a fixed drive, mapping not checked\n",
+               full);
+   }
+   /* A relative path names no drive: read */
+   CHECK(hash_whole(tmp("big.dll"), got, &mode, &done));
+   CHECK(mode == 2);         /* CORE_HASH_READ */
+   CHECK(done == len);
+   CHECK(!memcmp(want, got, CORE_SHA256_LEN));
+   filestream_delete(tmp("big.dll"));
+}
+#endif
+
 #ifndef _WIN32
 /* The open file itself, for loading from it */
 static void test_file_fd(void)
@@ -2527,6 +2604,9 @@ int main(int argc, char *argv[])
    test_sig();
    test_builtin_keys();
    test_identity();
+#ifdef _WIN32
+   test_hash_mapped();
+#endif
 #ifndef _WIN32
    test_file_fd();
 #endif

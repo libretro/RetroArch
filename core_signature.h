@@ -128,6 +128,18 @@ struct core_hash
    struct sha256_state sha;
    uint8_t *buf;
    uint64_t done;
+#ifdef _WIN32
+   /* Hashed in place from a mapping where the file allows one (its
+    * handle denies writes, so nothing can cut it short): no copy into
+    * buf, which is then never allocated */
+   void *map;              /* the file mapping, NULL when read      */
+   const uint8_t *view;    /* the mapped window                     */
+   uint64_t view_off;      /* file offset of view                   */
+   uint64_t start;         /* file offset the hash began at         */
+   uint64_t size;          /* file size, for the mapped path        */
+   size_t view_len;
+   unsigned char mode;     /* CORE_HASH_UNSET / _MAPPED / _READ     */
+#endif
 };
 
 bool core_hash_init(struct core_hash *h);

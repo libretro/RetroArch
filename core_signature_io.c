@@ -60,6 +60,9 @@ struct core_file
 {
 #ifdef _WIN32
    HANDLE h;
+   /* The path's drive letter, 0 when it names none (a UNC or relative
+    * path): only a file on a local fixed drive is hashed from a mapping */
+   char drive;
 #else
    int fd;
 #endif
@@ -98,6 +101,11 @@ core_file_t *core_file_open(const char *path)
       free(f);
       return NULL;
    }
+   f->drive = 0;
+   if (     ((path[0] >= 'A' && path[0] <= 'Z')
+         ||  (path[0] >= 'a' && path[0] <= 'z'))
+         && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
+      f->drive = path[0];
 #else
 #ifdef O_CLOEXEC
    flags |= O_CLOEXEC;
@@ -261,17 +269,157 @@ bool core_file_identity(core_file_t *f, struct core_identity *id)
 #endif
 }
 
+#ifdef _WIN32
+#define CORE_HASH_UNSET  0
+#define CORE_HASH_MAPPED 1
+#define CORE_HASH_READ   2
+/* Mapped a window at a time, so a 32-bit process needs no address
+ * space the size of the core */
+#define CORE_HASH_VIEW   (32 * 1024 * 1024)
+
+static void core_hash_unmap(struct core_hash *h)
+{
+   if (h->view)
+      UnmapViewOfFile((LPCVOID)h->view);
+   if (h->map)
+      CloseHandle((HANDLE)h->map);
+   h->view     = NULL;
+   h->map      = NULL;
+   h->view_len = 0;
+}
+
+/* Hashed from a mapping only on a local fixed drive: a read through a
+ * mapping fails as an exception, not an error, and a network share or a
+ * removable drive can fail mid-file, where ReadFile reports it */
+static bool core_hash_map(struct core_hash *h, core_file_t *f)
+{
+#ifdef LEGACY_WIN32
+   /* No SetFilePointerEx or GetFileSizeEx before Windows 2000 */
+   (void)h;
+   (void)f;
+   return false;
+#else
+   LARGE_INTEGER zero, pos, size;
+   char root[4];
+   if (!f->drive)
+      return false;
+   root[0] = f->drive;
+   root[1] = ':';
+   root[2] = '\\';
+   root[3] = '\0';
+   zero.QuadPart = 0;
+   if (     GetDriveTypeA(root) != DRIVE_FIXED
+         || !SetFilePointerEx(f->h, zero, &pos, FILE_CURRENT)
+         || !GetFileSizeEx(f->h, &size)
+         || size.QuadPart <= pos.QuadPart
+         || !(h->map = (void*)CreateFileMappingA(f->h, NULL, PAGE_READONLY,
+               0, 0, NULL)))
+      return false;
+   h->start = (uint64_t)pos.QuadPart;
+   h->size  = (uint64_t)size.QuadPart;
+   return true;
+#endif
+}
+
+/* The view holding the hash's position, mapped if it isn't yet */
+static const uint8_t *core_hash_view(struct core_hash *h, size_t *len)
+{
+   uint64_t pos = h->start + h->done;
+   if (pos < h->view_off || pos >= h->view_off + h->view_len)
+   {
+      SYSTEM_INFO si;
+      uint64_t off, n;
+      GetSystemInfo(&si);
+      if (h->view)
+         UnmapViewOfFile((LPCVOID)h->view);
+      off         = pos - pos % si.dwAllocationGranularity;
+      n           = h->size - off;
+      if (n > CORE_HASH_VIEW)
+         n = CORE_HASH_VIEW;
+      h->view_len = 0;
+      if (!(h->view = (const uint8_t*)MapViewOfFile((HANDLE)h->map,
+               FILE_MAP_READ, (DWORD)(off >> 32), (DWORD)off, (SIZE_T)n)))
+         return NULL;
+      h->view_off = off;
+      h->view_len = (size_t)n;
+   }
+   *len = (size_t)(h->view_off + h->view_len - pos);
+   return h->view + (size_t)(pos - h->view_off);
+}
+
+/* The rest is read: from where the mapping stopped, into buf */
+static bool core_hash_to_read(struct core_hash *h, core_file_t *f)
+{
+   bool mapped = h->mode == CORE_HASH_MAPPED;
+   core_hash_unmap(h);
+   h->mode     = CORE_HASH_READ;
+#ifndef LEGACY_WIN32
+   if (mapped)
+   {
+      LARGE_INTEGER pos;
+      pos.QuadPart = (LONGLONG)(h->start + h->done);
+      if (!SetFilePointerEx(f->h, pos, NULL, FILE_BEGIN))
+         return false;
+   }
+#else
+   (void)f;
+   (void)mapped;
+#endif
+   return h->buf || (h->buf = (uint8_t*)malloc(CORE_HASH_CHUNK));
+}
+#endif
+
 bool core_hash_init(struct core_hash *h)
 {
    sha256_stream_init(&h->sha, 0);
    h->done = 0;
+#ifdef _WIN32
+   h->buf      = NULL;
+   h->map      = NULL;
+   h->view     = NULL;
+   h->view_off = 0;
+   h->view_len = 0;
+   h->start    = 0;
+   h->size     = 0;
+   h->mode     = CORE_HASH_UNSET;
+   return true;
+#else
    return (h->buf = (uint8_t*)malloc(CORE_HASH_CHUNK)) != NULL;
+#endif
 }
 
 int core_hash_step(struct core_hash *h, core_file_t *f)
 {
-   int64_t got = core_file_read(f, h->buf, CORE_HASH_CHUNK);
-   if (got < 0)
+   int64_t got;
+#ifdef _WIN32
+   if (h->mode == CORE_HASH_UNSET)
+   {
+      if (core_hash_map(h, f))
+         h->mode = CORE_HASH_MAPPED;
+      else if (!core_hash_to_read(h, f))
+         return -1;
+   }
+   if (h->mode == CORE_HASH_MAPPED)
+   {
+      const uint8_t *p;
+      size_t len;
+      /* The handle denies writes, so the size can't have changed */
+      if (h->start + h->done >= h->size)
+         return 0;
+      if ((p = core_hash_view(h, &len)))
+      {
+         if (len > CORE_HASH_CHUNK)
+            len = CORE_HASH_CHUNK;
+         sha256_stream_update(&h->sha, p, len);
+         h->done += (uint64_t)len;
+         return 1;
+      }
+      /* No address space for a view: read the rest */
+      if (!core_hash_to_read(h, f))
+         return -1;
+   }
+#endif
+   if ((got = core_file_read(f, h->buf, CORE_HASH_CHUNK)) < 0)
       return -1;
    if (got == 0)
       return 0;
@@ -288,6 +436,9 @@ void core_hash_final(struct core_hash *h, uint8_t *sha256)
 
 void core_hash_free(struct core_hash *h)
 {
+#ifdef _WIN32
+   core_hash_unmap(h);
+#endif
    free(h->buf);
    h->buf = NULL;
 }
