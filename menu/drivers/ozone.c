@@ -1781,9 +1781,20 @@ static float ozone_sidebar_gradient_bottom_omarchy[16] = COLOR_HEX_TO_FLOAT(0x2D
 static float ozone_border_0_omarchy[16]                = COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00f);
 static float ozone_border_1_omarchy[16]                = COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00f);
 
+/* Omarchy: mutable running-content background (also the menu bg when
+ * menu_framebuffer_opacity < 1.0, which is the RetroArch default). RGB is
+ * recoloured from ozone_background by the loader; the per-vertex alpha
+ * gradient is preserved. */
+static float ozone_background_libretro_running_omarchy[16]  = {
+   0.176f, 0.176f, 0.176f, 0.75f,
+   0.176f, 0.176f, 0.176f, 0.75f,
+   0.178f, 0.178f, 0.178f, 1.0f,
+   0.178f, 0.178f, 0.178f, 1.0f,
+};
+
 static ozone_theme_t ozone_theme_omarchy = {
    COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00f),                  /* background */
-   ozone_background_libretro_running_dark,               /* background_libretro_running */
+   ozone_background_libretro_running_omarchy,            /* background_libretro_running */
 
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00f),                  /* header_footer_separator */
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00f),                  /* text */
@@ -1848,8 +1859,18 @@ static void ozone_load_omarchy_theme(void)
 
    if (config_get_hex(conf, "ozone_background", &v))
    {
+      unsigned bi;
+      float br = HEX_R(v), bg = HEX_G(v), bb = HEX_B(v);
       ozone_omarchy_hex16(ozone_theme_omarchy.background, v);
       ozone_theme_omarchy.screensaver_tint = v;
+      /* Recolour the running-content background (menu bg at opacity < 1.0),
+       * keeping its top-to-bottom alpha gradient. */
+      for (bi = 0; bi < 16; bi += 4)
+      {
+         ozone_background_libretro_running_omarchy[bi]     = br;
+         ozone_background_libretro_running_omarchy[bi + 1] = bg;
+         ozone_background_libretro_running_omarchy[bi + 2] = bb;
+      }
    }
    if (config_get_hex(conf, "ozone_sidebar", &v))
    {
@@ -13345,8 +13366,15 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             NULL);
    }
 
-   /* Background (Always use running background due to overlays) */
-   if (menu_framebuffer_opacity < 1.0f)
+   /* Background (Always use running background due to overlays).
+    * Exception: the Omarchy theme may be a light palette, and the running
+    * background is composited at <1.0 alpha over a pure-black clear, which
+    * muddies a light menu (visible dark band in the header/top region). With
+    * no content running there is nothing to overlay, so paint the opaque
+    * themed background instead. */
+   if (menu_framebuffer_opacity < 1.0f
+         && (libretro_running
+            || !string_is_equal(ozone->theme->name, "omarchy")))
    {
       if (menu_framebuffer_opacity != ozone->last_framebuffer_opacity)
          if (ozone->theme->background_libretro_running)
