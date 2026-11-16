@@ -148,12 +148,34 @@ struct retro_vfs_file_identity
    uint8_t  id[16];       /* the file on the volume: Windows' 128-bit
                            * id, else the inode, big-endian, in the
                            * last 8 octets                              */
+   uint32_t uid;          /* owner and group, where flags has
+                           * RETRO_VFS_IDENTITY_HAS_OWNER (POSIX)       */
+   uint32_t gid;
+   uint16_t perm;         /* POSIX permission bits (07777), with owner */
+   uint8_t  type;         /* RETRO_VFS_IDENTITY_REGULAR, ..._DIRECTORY
+                           * or ..._OTHER                               */
+   uint8_t  flags;        /* RETRO_VFS_IDENTITY_HAS_OWNER              */
 };
+
+#define RETRO_VFS_IDENTITY_REGULAR   1
+#define RETRO_VFS_IDENTITY_DIRECTORY 2
+#define RETRO_VFS_IDENTITY_OTHER     3   /* a FIFO, device, socket... */
+
+#define RETRO_VFS_IDENTITY_HAS_OWNER (1 << 0)
 
 /* Fills @id for a plain-file stream opened on the descriptor path
  * (RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK, ..._FREQUENT_ACCESS or
  * ..._IMPL_STABLE). One fstat() on POSIX. False for any other stream. */
 bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
+      struct retro_vfs_file_identity *id);
+
+/* The identity of what @path names now, following symbolic links, with
+ * no stream opened (stat() on POSIX; a handle opened only to query, on
+ * Windows). 1 with @id filled; 0 where nothing is there (no such file or
+ * folder); -1 where it can't be told (no permission to look, a part of
+ * the path is a file on POSIX, or the platform can't), @id zeroed for
+ * both. */
+int retro_vfs_stat_identity_impl(const char *path,
       struct retro_vfs_file_identity *id);
 
 /* A stable open (RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE) that also

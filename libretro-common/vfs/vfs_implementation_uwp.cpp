@@ -841,6 +841,16 @@ libretro_vfs_implementation_file *retro_vfs_file_open_stable_impl(
    return NULL;
 }
 
+int retro_vfs_stat_identity_impl(const char *path,
+      struct retro_vfs_file_identity *id)
+{
+   /* Not on this backend: it can't be told */
+   (void)path;
+   if (id)
+      memset(id, 0, sizeof(*id));
+   return -1;
+}
+
 const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
       int64_t *len)
 {

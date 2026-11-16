@@ -277,6 +277,79 @@ static void test_open_stable_identity(void)
    CHECK(retro_vfs_file_open_stable_impl(FILE_A, NULL) == NULL);
 }
 
+/* Identity by path: what is there, followed through links; missing,
+ * or can't be told. Owner, group and permissions where POSIX has them. */
+static void test_stat_identity(void)
+{
+   libretro_vfs_implementation_file *s;
+   struct retro_vfs_file_identity a, b;
+#ifndef _WIN32
+   struct stat st;
+#endif
+   s = retro_vfs_file_open_stable_impl(FILE_A, &a);
+   CHECK(s != NULL);
+   if (s)
+      retro_vfs_file_close_impl(s);
+   CHECK(a.type == RETRO_VFS_IDENTITY_REGULAR);
+   CHECK(retro_vfs_stat_identity_impl(FILE_A, &b) == 1);
+   CHECK(b.type == RETRO_VFS_IDENTITY_REGULAR);
+   CHECK(b.dev == a.dev && !memcmp(b.id, a.id, sizeof(a.id))
+         && b.size == a.size && b.mtime == a.mtime);
+   CHECK(b.flags == a.flags && b.uid == a.uid && b.gid == a.gid
+         && b.perm == a.perm);
+#ifndef _WIN32
+   CHECK(stat(FILE_A, &st) == 0);
+   CHECK(a.flags & RETRO_VFS_IDENTITY_HAS_OWNER);
+   CHECK(a.uid == (uint32_t)st.st_uid && a.gid == (uint32_t)st.st_gid);
+   CHECK(a.perm == (uint16_t)(st.st_mode & 07777));
+#else
+   CHECK(!(a.flags & RETRO_VFS_IDENTITY_HAS_OWNER) && !a.uid && !a.perm);
+#endif
+   /* A folder */
+   CHECK(retro_vfs_stat_identity_impl(DIR_NAME, &b) == 1);
+   CHECK(b.type == RETRO_VFS_IDENTITY_DIRECTORY);
+   /* Nothing there */
+   memset(&b, 0xaa, sizeof(b));
+   CHECK(retro_vfs_stat_identity_impl(DIR_NAME "/none", &b) == 0);
+   CHECK(b.type == 0 && b.size == 0);
+   CHECK(retro_vfs_stat_identity_impl(DIR_NAME "/none/x", &b) == 0);
+   CHECK(retro_vfs_stat_identity_impl("", &b) == -1);
+   CHECK(retro_vfs_stat_identity_impl(FILE_A, NULL) == -1);
+#ifndef _WIN32
+   /* A file where a folder should be can't be told */
+   memset(&b, 0xaa, sizeof(b));
+   CHECK(retro_vfs_stat_identity_impl(FILE_A "/x", &b) == -1);
+   CHECK(b.type == 0 && b.size == 0);
+   /* Through a link, the file it names */
+   CHECK(symlink("a.bin", DIR_NAME "/link") == 0);
+   CHECK(retro_vfs_stat_identity_impl(DIR_NAME "/link", &b) == 1);
+   CHECK(!memcmp(b.id, a.id, sizeof(a.id)) && b.dev == a.dev);
+   unlink(DIR_NAME "/link");
+   /* A FIFO is there, and is neither */
+   CHECK(mkfifo(DIR_NAME "/fifo2", 0600) == 0);
+   CHECK(retro_vfs_stat_identity_impl(DIR_NAME "/fifo2", &b) == 1);
+   CHECK(b.type == RETRO_VFS_IDENTITY_OTHER);
+   unlink(DIR_NAME "/fifo2");
+   /* A folder we may not search: can't be told, which is not missing */
+   if (geteuid() == 0)
+      printf("note: running as root, unsearchable folder not checked\n");
+   else
+   {
+      CHECK(path_mkdir(DIR_NAME "/locked"));
+      CHECK(filestream_write_file(DIR_NAME "/locked/f", data, 1));
+      CHECK(chmod(DIR_NAME "/locked", 0600) == 0);
+      CHECK(retro_vfs_stat_identity_impl(DIR_NAME "/locked/f", &b) == -1);
+      CHECK(chmod(DIR_NAME "/locked", 0700) == 0);
+      retro_vfs_file_remove_impl(DIR_NAME "/locked/f");
+      path_rmdir(DIR_NAME "/locked");
+   }
+#else
+   /* A device is there, and is neither */
+   CHECK(retro_vfs_stat_identity_impl("NUL", &b) == 1);
+   CHECK(b.type == RETRO_VFS_IDENTITY_OTHER);
+#endif
+}
+
 int main(void)
 {
    unsigned i;
@@ -298,6 +371,7 @@ int main(void)
    test_stable_refuses();
    test_others_unchanged();
    test_open_stable_identity();
+   test_stat_identity();
    test_identity_follows_handle();
    retro_vfs_file_remove_impl(FILE_A);
    retro_vfs_file_remove_impl(FILE_B);

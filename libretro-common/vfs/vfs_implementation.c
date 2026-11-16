@@ -1264,6 +1264,9 @@ static bool vfs_identity_handle(HANDLE h, struct retro_vfs_file_identity *id)
    unsigned i;
    if (!GetFileInformationByHandle(h, &info))
       return false;
+   /* Only a file on a volume answers: a directory or a plain file */
+   id->type = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      ? RETRO_VFS_IDENTITY_DIRECTORY : RETRO_VFS_IDENTITY_REGULAR;
    id->dev  = info.dwVolumeSerialNumber;
    id->size = ((uint64_t)info.nFileSizeHigh << 32) | info.nFileSizeLow;
    for (i = 0; i < 4; i++)
@@ -1310,6 +1313,13 @@ static void vfs_identity_stat(const struct stat *st,
 #endif
    for (i = 0; i < 8; i++)
       id->id[8 + i] = (uint8_t)(ino >> (56 - 8 * i));
+   id->uid   = (uint32_t)st->st_uid;
+   id->gid   = (uint32_t)st->st_gid;
+   id->perm  = (uint16_t)(st->st_mode & 07777);
+   id->flags = RETRO_VFS_IDENTITY_HAS_OWNER;
+   id->type  = S_ISREG(st->st_mode) ? RETRO_VFS_IDENTITY_REGULAR
+      : S_ISDIR(st->st_mode) ? RETRO_VFS_IDENTITY_DIRECTORY
+      : RETRO_VFS_IDENTITY_OTHER;
 }
 #endif
 
@@ -4132,6 +4142,63 @@ bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
    return true;
 #else
    return false;
+#endif
+}
+
+int retro_vfs_stat_identity_impl(const char *path,
+      struct retro_vfs_file_identity *id)
+{
+#if defined(_WIN32) && !defined(_XBOX)
+   HANDLE h;
+   DWORD err;
+#if !defined(LEGACY_WIN32)
+   wchar_t *wpath;
+#endif
+#elif defined(VFS_OPEN_FSTAT)
+   struct stat st;
+#endif
+   if (!id)
+      return -1;
+   memset(id, 0, sizeof(*id));
+   if (!path || !*path)
+      return -1;
+#if defined(_WIN32) && !defined(_XBOX)
+   /* Opened only to be asked: no data access, shared with everyone, and
+    * a folder opens too */
+#if defined(LEGACY_WIN32)
+   h = CreateFileA(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+         OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+#else
+   if (!(wpath = utf8_to_utf16_string_alloc(path)))
+      return -1;
+   h = CreateFileW(wpath, FILE_READ_ATTRIBUTES,
+         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+         OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+   free(wpath);
+#endif
+   if (h == INVALID_HANDLE_VALUE)
+   {
+      err = GetLastError();
+      return (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
+         ? 0 : -1;
+   }
+   if (GetFileType(h) != FILE_TYPE_DISK || !vfs_identity_handle(h, id))
+   {
+      CloseHandle(h);
+      memset(id, 0, sizeof(*id));
+      /* there, but not a file on a volume: a device or a pipe */
+      id->type = RETRO_VFS_IDENTITY_OTHER;
+      return 1;
+   }
+   CloseHandle(h);
+   return 1;
+#elif defined(VFS_OPEN_FSTAT)
+   if (stat(path, &st) != 0)
+      return errno == ENOENT ? 0 : -1;
+   vfs_identity_stat(&st, id);
+   return 1;
+#else
+   return -1;
 #endif
 }
 
