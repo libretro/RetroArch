@@ -77,3 +77,15 @@ Only this test entry consumes the generated `RTMPS_CA`; production trust and
 host certificate stores stay unchanged. HDR signal checks use
 `--codec hevc --bit-depth 10 --hdr-mode 1` (PQ) or `2` (scRGB). They verify
 encoded signal values and metadata, not calibrated physical-display luminance.
+
+`../nvenc_frontend/stream_faults.py` exercises native Windows Vulkan connection
+refusal, cancellation after a silent peer receives C0/C1, and receiver loss
+while publishing. It checks frontend frame progress, automatic stream-state
+reset, clean asynchronous retirement and a fresh successful stream in the same
+process. Both H.264/HEVC and direct/threaded video are exercised. Supply the same
+`--retroarch`, `--core`, `--desktop-runner` and fresh `--output-dir` arguments as
+the normal stream oracle. Only the test's owned sockets/receiver processes are
+interrupted. The recovered stream must independently decode and retain the
+published packet count. These tests require actual native GPU execution and
+Vulkan validation; portable units do not substitute for them. They do not
+establish sustained network-backpressure or memory-bound acceptance.
