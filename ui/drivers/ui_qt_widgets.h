@@ -475,7 +475,6 @@ private:
    rarch_setting_t *m_setting;
    QSlider *m_slider;
    QDoubleSpinBox *m_spinBox;
-   QPushButton *m_setButton;
    int m_scale;
    float m_synced;
    bool m_dirty;
@@ -1317,13 +1316,11 @@ private:
    MainWindow *m_mainwindow;
 };
 
-class DesktopMenuPage;
-
 class UserInterfacePage : public OptionsPage
 {
    Q_OBJECT
 public:
-   UserInterfacePage(MainWindow *mainwindow, QObject *parent = nullptr);
+   UserInterfacePage(QObject *parent = nullptr);
    QWidget *widget();
 };
 
