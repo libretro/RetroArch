@@ -410,50 +410,69 @@ static bool core_trust_folder_dev(const char *path, uint64_t *dev)
 #endif
 }
 
+/* len bytes of f into buf, or false */
+static bool core_file_read_all(core_file_t *f, uint8_t *buf, size_t len)
+{
+   size_t done = 0;
+   while (done < len)
+   {
+      int64_t got = core_file_read(f, buf + done, len - done);
+      if (got <= 0)
+         return false;
+      done += (size_t)got;
+   }
+   return true;
+}
+
 enum core_trust_load core_trust_load_file(core_trust_t *t,
       const char *path)
 {
-   void *buf    = NULL;
-   int64_t len  = 0;
+   uint8_t *buf = NULL;
    bool renamed = false;
    struct core_self self;
+   core_file_t *f;
    uint64_t dev;
    int64_t size;
    size_t n;
    char *bad;
    enum core_trust_load ret;
-   int kind;
    core_trust_set_device(t, core_trust_folder_dev(path, &dev) ? &dev : NULL,
          core_self_find(&self) ? &self.dev : NULL);
-   if (!(kind = core_trust_file_kind(path)))
-      return CORE_TRUST_LOAD_MISSING;
+   /* Opened as a core is: a regular file or nothing, never waited on,
+    * and its size from the same answer, so no stat of the path first.
+    * Only a failed open asks whether there is a file at all. */
+   if (!(f = core_file_open(path)))
+      return core_trust_file_kind(path)
+         ? core_trust_parse(t, NULL, 0) : CORE_TRUST_LOAD_MISSING;
    /* core_trust_parse(t, NULL, 0) is UNREADABLE and read-only */
-   if (kind < 0 || (size = path_get_size(path)) < 0)
+   if ((size = retro_vfs_file_size_impl(f)) < 0)
+   {
+      core_file_close(f);
       return core_trust_parse(t, NULL, 0);
+   }
    if (size > CORE_TRUST_FILE_MAX)
    {
       /* Too big for ours: only its magic, which may say a newer one's */
       uint8_t head[sizeof(CORE_TRUST_MAGIC) - 1];
-      int64_t got = -1;
-      RFILE *file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
-      if (file)
-      {
-         got = filestream_read(file, head, sizeof(head));
-         filestream_close(file);
-      }
-      if (got != (int64_t)sizeof(head))
+      bool got = core_file_read_all(f, head, sizeof(head));
+      core_file_close(f);
+      if (!got)
          return core_trust_parse(t, NULL, 0);
       ret = core_trust_parse(t, head, sizeof(head));
    }
    else
    {
-      if (!filestream_read_file(path, &buf, &len))
+      /* Never NULL, even for an empty file: that one is damaged, not
+       * unreadable */
+      bool got = (buf = (uint8_t*)malloc(size ? (size_t)size : 1)) != NULL
+         && core_file_read_all(f, buf, (size_t)size);
+      core_file_close(f);
+      if (!got)
       {
          free(buf);
          return core_trust_parse(t, NULL, 0);
       }
-      ret = core_trust_parse(t, (const uint8_t*)buf, (size_t)len);
+      ret = core_trust_parse(t, buf, (size_t)size);
       free(buf);
    }
    if (ret != CORE_TRUST_LOAD_DAMAGED)
