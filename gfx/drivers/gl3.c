@@ -389,6 +389,17 @@ typedef struct gl3
       uint32_t id;
    } meshes[8];
    uint64_t mesh_frame;
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+   /* The menu effects made from their GLSL, in the dialect of the
+    * context, where they cannot be cross-compiled from SPIR-V: without
+    * slang, or when that fails */
+   struct gl3_glsl_effect
+   {
+      gl_glsl_effect_t glsl;
+      unsigned flags;
+   } glsl_effects[16];
+   unsigned glsl_effect_count;
+#endif
    GLuint hw_render_texture;
    GLuint hw_render_fbo;
    GLuint hw_render_rb_ds;
@@ -913,7 +924,7 @@ uint32_t gl3_get_cross_compiler_target_version(void)
    return 100 * major + 10 * minor;
 }
 
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) || (defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL))
 /* The slot whose buffers hold @mesh, uploaded the first time it is
  * drawn; -1 when they cannot be had, and the mesh is streamed */
 static int gl3_mesh_slot(gl3_t *gl, const gfx_display_mesh_t *mesh)
@@ -1010,13 +1021,94 @@ static const float *gfx_display_gl3_get_default_tex_coords(void)
    return &gl3_tex_coords[0];
 }
 
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+/* @effect, when it is one made from GLSL */
+static const struct gl3_glsl_effect *gl3_glsl_effect(const gl3_t *gl,
+      const void *effect)
+{
+   const struct gl3_glsl_effect *fx = (const struct gl3_glsl_effect*)effect;
+   if (     fx >= gl->glsl_effects
+         && fx <  gl->glsl_effects + gl->glsl_effect_count)
+      return fx;
+   return NULL;
+}
+
+/* An effect made from GLSL, as gl2 draws one: its own program, the
+ * uniforms it reads at the locations found when it was made, and the
+ * mesh from its buffer - a core profile reads nothing from client
+ * memory. The chain's program is put back after. */
+static void gl3_draw_glsl_effect(gl3_t *gl,
+      const struct gl3_glsl_effect *fx, const gfx_display_ctx_draw_t *draw)
+{
+   gfx_display_t *p_disp          = disp_get_ptr();
+   const gl_glsl_effect_t *prg    = &fx->glsl;
+   const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+   int slot;
+
+   if (     prg->vertex_coord < 0 || !mesh || !draw->coords
+         || (slot = gl3_mesh_slot(gl, mesh)) < 0)
+      return;
+
+   if (fx->flags & GFX_EFFECT_BLEND_ADD)
+      glBlendFunc(GL_ONE, GL_ONE);
+   else if (fx->flags & GFX_EFFECT_BLEND_SCREEN)
+      glBlendFunc(GL_DST_COLOR, GL_ONE);
+   else
+      gl3_blend_alpha(gl);
+
+   glUseProgram(prg->prog);
+   if (prg->mvp >= 0)
+      glUniformMatrix4fv(prg->mvp, 1, GL_FALSE, gl->mvp_no_rot.data);
+   if (prg->time >= 0)
+      glUniform1f(prg->time, p_disp->effect_time);
+   if (prg->ribbon >= 0 && (fx->flags & GFX_EFFECT_RIBBON))
+   {
+      const float *ribbon = gfx_display_ribbon_data(p_disp);
+      if (ribbon)
+         glUniform4fv(prg->ribbon, 50, ribbon);
+   }
+   if (prg->output_size >= 0 && !(fx->flags & GFX_EFFECT_MESH))
+      glUniform2f(prg->output_size, (float)VIDEO_SCALE_W(draw->dims),
+            (float)VIDEO_SCALE_H(draw->dims));
+
+   gl->meshes[slot].last_frame = gl->mesh_frame;
+   glBindBuffer(GL_ARRAY_BUFFER, gl->meshes[slot].vbo);
+   glEnableVertexAttribArray(prg->vertex_coord);
+   glVertexAttribPointer(prg->vertex_coord, 2, GL_FLOAT, GL_FALSE,
+         sizeof(gfx_display_mesh_vertex_t), (const GLvoid*)0);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+   glDisableVertexAttribArray(prg->vertex_coord);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+   gl3_blend_alpha(gl);
+   if (gl->chain.active && gl->chain.shader)
+      gl->chain.shader->use(gl, gl->chain.shader_data,
+            VIDEO_SHADER_STOCK_BLEND, true);
+}
+#endif
+
 static void gfx_display_gl3_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data,
       unsigned video_dims)
 {
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+   {
+      gl3_t *gl3 = (gl3_t*)data;
+      if (gl3 && draw && gl3_glsl_effect(gl3, draw->effect))
+      {
+         /* Drawn from the effect's mesh, at the origin, under the
+          * display's own MVP: gl3_draw_glsl_effect() */
+         draw->pos         = VIDEO_POS_PACK(0, 0);
+         draw->matrix_data = NULL;
+         draw->coords      = gfx_display_effect_coords(p_disp);
+         return;
+      }
+   }
+#endif
 #if defined(HAVE_SHADERPIPELINE) && defined(HAVE_SLANG)
+   {
    static struct video_coords blank_coords;
    static uint8_t ubo_scratch_data[768];
    static float ribbon_ubo[4];
@@ -1074,6 +1166,7 @@ static void gfx_display_gl3_draw_pipeline(
       draw->coords          = &blank_coords;
       blank_coords.vertices = 4;
    }
+   }
 #endif
 }
 
@@ -1129,6 +1222,9 @@ static void gl3_fp16_forget_all(void)
    gl3_fp16_cap   = 0;
 }
 
+#ifdef HAVE_SLANG
+/* Only the slang pipelines draw a half-float texture through the
+ * linear program */
 static bool gl3_fp16_is(GLuint id)
 {
    unsigned i;
@@ -1138,12 +1234,9 @@ static bool gl3_fp16_is(GLuint id)
    return false;
 }
 
-#ifdef HAVE_SLANG
 static GLuint gl3_linear_program(gl3_t *gl);
 static GLuint gl3_plastic_program(gl3_t *gl);
 static GLuint gl3_font_plastic_program(gl3_t *gl);
-#else
-static GLuint gl3_linear_program(gl3_t *gl) { (void)gl; return 0; }
 #endif
 
 static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
@@ -1151,7 +1244,9 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 {
    video_coords_t coords;
    gl3_t *gl                 = (gl3_t*)data;
+#ifdef HAVE_SLANG
    GLuint lin_prog           = 0;
+#endif
 
    if (!gl || !draw)
       return;
@@ -1169,6 +1264,17 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 
    glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
+
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+   {
+      const struct gl3_glsl_effect *gfx = gl3_glsl_effect(gl, draw->effect);
+      if (gfx)
+      {
+         gl3_draw_glsl_effect(gl, gfx, draw);
+         return;
+      }
+   }
+#endif
 
    /* An effect draws through its own program, whatever the chain */
    if (gl->chain.active && !draw->effect)
@@ -2167,22 +2273,7 @@ static void gl3_fence_iterate(gl3_t *gl, unsigned hard_sync_frames)
    }
 }
 
-#ifdef HAVE_OVERLAY
-static void gl3_free_overlay(gl3_t *gl)
-{
-   if (gl->overlay_tex && !(gl->flags & GL3_FLAG_OVERLAY_BORROWED))
-      glDeleteTextures(gl->overlays, gl->overlay_tex);
-   gl->flags &= ~GL3_FLAG_OVERLAY_BORROWED;
-
-   /* The three coordinate arrays are views into the overlay_tex block. */
-   free(gl->overlay_tex);
-   gl->overlay_tex          = NULL;
-   gl->overlay_vertex_coord = NULL;
-   gl->overlay_tex_coord    = NULL;
-   gl->overlay_color_coord  = NULL;
-   gl->overlays             = 0;
-}
-
+/* The streamed vertex buffers and the meshes kept on the GPU */
 static void gl3_free_scratch_vbos(gl3_t *gl)
 {
    int i;
@@ -2199,6 +2290,22 @@ static void gl3_free_scratch_vbos(gl3_t *gl)
       gl->meshes[i].ibo = 0;
       gl->meshes[i].id  = 0;
    }
+}
+
+#ifdef HAVE_OVERLAY
+static void gl3_free_overlay(gl3_t *gl)
+{
+   if (gl->overlay_tex && !(gl->flags & GL3_FLAG_OVERLAY_BORROWED))
+      glDeleteTextures(gl->overlays, gl->overlay_tex);
+   gl->flags &= ~GL3_FLAG_OVERLAY_BORROWED;
+
+   /* The three coordinate arrays are views into the overlay_tex block. */
+   free(gl->overlay_tex);
+   gl->overlay_tex          = NULL;
+   gl->overlay_vertex_coord = NULL;
+   gl->overlay_tex_coord    = NULL;
+   gl->overlay_color_coord  = NULL;
+   gl->overlays             = 0;
 }
 
 static void gl3_overlay_vertex_geom(void *data,
@@ -2530,7 +2637,15 @@ static void gl3_destroy_resources(gl3_t *gl)
 
 #ifdef HAVE_OVERLAY
    gl3_free_overlay(gl);
+#endif
    gl3_free_scratch_vbos(gl);
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+   {
+      unsigned e;
+      for (e = 0; e < gl->glsl_effect_count; e++)
+         glDeleteProgram(gl->glsl_effects[e].glsl.prog);
+      gl->glsl_effect_count = 0;
+   }
 #endif
    gl3_deinit_fences(gl);
    gl3_deinit_pbo_readback(gl);
@@ -2884,12 +2999,11 @@ static GLuint gl3_linear_program(gl3_t *gl)
 
 #ifdef HAVE_SHADERPIPELINE
 /* A menu effect's program, made when the menu installs it */
-static void *gfx_display_gl3_effect_install(void *data,
+static void *gl3_effect_install_spirv(gl3_t *gl,
       const gfx_display_effect_desc_t *desc)
 {
-   gl3_t *gl = (gl3_t*)data;
    struct gl3_effect *fx;
-   if (     !gl || !desc || !desc->spirv_vertex || !desc->spirv_fragment
+   if ( !desc->spirv_vertex || !desc->spirv_fragment
          || gl->pipelines.effect_count >= ARRAY_SIZE(gl->pipelines.effects))
       return NULL;
    fx = &gl->pipelines.effects[gl->pipelines.effect_count];
@@ -2905,6 +3019,37 @@ static void *gfx_display_gl3_effect_install(void *data,
 }
 #endif /* HAVE_SHADERPIPELINE */
 #endif /* HAVE_SLANG */
+
+#if defined(HAVE_SHADERPIPELINE) && (defined(HAVE_SLANG) || defined(HAVE_GLSL))
+/* A menu effect's program, made when the menu installs it: from its
+ * SPIR-V where slang can cross-compile it, else from its GLSL in the
+ * context's dialect, as a build without slang has always drawn them */
+static void *gfx_display_gl3_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   gl3_t *gl = (gl3_t*)data;
+   void *fx  = NULL;
+   if (!gl || !desc)
+      return NULL;
+#ifdef HAVE_SLANG
+   if ((fx = gl3_effect_install_spirv(gl, desc)))
+      return fx;
+#endif
+#ifdef HAVE_GLSL
+   if (gl->glsl_effect_count < ARRAY_SIZE(gl->glsl_effects))
+   {
+      struct gl3_glsl_effect *gfx = &gl->glsl_effects[gl->glsl_effect_count];
+      if (gl_glsl_effect_compile(&gfx->glsl, desc))
+      {
+         gfx->flags = desc->flags;
+         gl->glsl_effect_count++;
+         fx         = gfx;
+      }
+   }
+#endif
+   return fx;
+}
+#endif
 
 #ifdef HAVE_SLANG
 static bool gl3_init_pipelines(gl3_t *gl)
@@ -3615,8 +3760,9 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
    }
 
 #ifdef HAVE_GLSL
-   if (type == RARCH_SHADER_GLSL)
-      gl_glsl_set_context_type(
+   /* Whatever the backend: a menu effect that cannot be cross-compiled
+    * is made from GLSL in this dialect */
+   gl_glsl_set_context_type(
 #ifdef HAVE_OPENGLES
             false,
 #else
@@ -9183,7 +9329,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
 #else
    NULL, NULL, NULL,
 #endif
-#if defined(HAVE_SLANG) && defined(HAVE_SHADERPIPELINE)
+#if defined(HAVE_SHADERPIPELINE) && (defined(HAVE_SLANG) || defined(HAVE_GLSL))
    gfx_display_gl3_effect_install
 #else
    NULL
