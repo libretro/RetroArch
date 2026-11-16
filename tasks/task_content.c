@@ -2207,6 +2207,8 @@ static void content_firmware_download_start(struct content_firmware *firmware,
       const char *url)
 {
    char parent[PATH_MAX_LENGTH];
+   char title[NAME_MAX_LENGTH];
+   size_t _len;
    strlcpy(parent, firmware->download, sizeof(parent));
    path_basedir_wrapper(parent);
 
@@ -2220,10 +2222,17 @@ static void content_firmware_download_start(struct content_firmware *firmware,
 
    firmware->downloading = true;
 
-   /* The HTTP task copies the borrowed URL on submission. */
+   /* Named as every other download is: "Downloading: <file>" */
+   _len = 0;
+   strlcpy_append(title, sizeof(title), &_len,
+         msg_hash_to_str(MSG_DOWNLOADING));
+   strlcpy_append(title, sizeof(title), &_len, ": ");
+   strlcpy_append(title, sizeof(title), &_len,
+         path_basename(firmware->target));
+
+   /* The HTTP task copies the borrowed URL and title on submission. */
    if (!task_push_http_download_file(url, firmware->download,
-            false, msg_hash_to_str(MSG_FIRMWARE),
-            content_firmware_downloaded, firmware))
+            false, title, content_firmware_downloaded, firmware))
       content_firmware_download_finish(firmware, false);
 }
 #endif
