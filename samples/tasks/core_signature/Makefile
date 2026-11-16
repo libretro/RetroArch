@@ -1,6 +1,7 @@
 include ../../sample_objdir.mk
 
 TARGET := core_signature_test
+KEYS_TARGET := core_signing_keys_test
 
 # Core signature checks: .sig parsing and verification against
 # fixtures from tools/core_sign.py (gen_fixtures.py), file identity and
@@ -62,7 +63,9 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 # libretro-common is built as the tree builds it; core_signature*.c and
 # the test as C89
 STRICT_OBJS  := core_signature_test.o \
+                core_signing_keys_test.o \
                 $(call sample_objs,$(REPO_ROOT)/core_signature.o) \
+                $(SAMPLE_OBJDIR)/core_signature_android.o \
                 $(call sample_objs,$(REPO_ROOT)/core_signature_io.o) \
                 $(call sample_objs,$(REPO_ROOT)/core_load_file.o)
 STRICT_FLAGS := -std=c89 -pedantic -Wno-long-long \
@@ -81,7 +84,7 @@ endif
 # One library built twice, told apart by what core_load_test_id returns
 TEST_LIBS := core_load_test_a$(LIB_EXT) core_load_test_b$(LIB_EXT)
 
-all: $(TARGET)$(EXE) $(TEST_LIBS)
+all: $(TARGET)$(EXE) $(KEYS_TARGET)$(EXE) $(TEST_LIBS)
 
 core_load_test_a$(LIB_EXT): core_load_lib.c
 	$(CC) -shared $(LIB_FLAGS) -DCORE_LOAD_ID=1 -o $@ $<
@@ -99,11 +102,24 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET)$(EXE): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 
+# Only Android builds carry libretro's keys
+$(SAMPLE_OBJDIR)/core_signature_android.o: $(REPO_ROOT)/core_signature.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) -DANDROID
+
+$(KEYS_TARGET)$(EXE): core_signing_keys_test.o \
+      $(SAMPLE_OBJDIR)/core_signature_android.o \
+      $(filter-out core_signature_test.o \
+         $(call sample_objs,$(REPO_ROOT)/core_signature.o),$(OBJS))
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+
 check: all
 	$(RUNNER) ./$(TARGET)$(EXE)
+	$(RUNNER) ./$(KEYS_TARGET)$(EXE)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR) core_signature_test_tmp
 	rm -f $(TARGET) $(TARGET).exe $(OBJS) core_load_test_a.so core_load_test_b.so core_load_test_a.dll core_load_test_b.dll
+	rm -f $(KEYS_TARGET) $(KEYS_TARGET).exe core_signing_keys_test.o
 
 .PHONY: all check clean
