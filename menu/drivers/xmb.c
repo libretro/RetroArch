@@ -521,6 +521,7 @@ typedef struct xmb_handle
       char *lines[512];
       font_data_t *font;
       size_t len;
+      size_t wrapped_len;
       uint32_t font_generation;
       float font_size;
       float margins_dialog;
@@ -1458,8 +1459,8 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    }
 
    /* A box's text is wrapped and measured again only when it or its
-    * layout changes; an input line changes as it is typed */
-   if (!draw_caret && msg_len < sizeof(xmb->box_wrap.text))
+    * layout changes */
+   if (msg_len < sizeof(xmb->box_wrap.text))
    {
       wrapped_message = xmb->box_wrap.wrapped;
       lines           = xmb->box_wrap.lines;
@@ -1478,6 +1479,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             && !memcmp(xmb->box_wrap.text, message, msg_len))
       {
          line_count    = xmb->box_wrap.line_count;
+         wrapped_len   = xmb->box_wrap.wrapped_len;
          usable_width  = xmb->box_wrap.usable_width;
          longest_width = xmb->box_wrap.longest_width;
       }
@@ -1566,6 +1568,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          xmb->box_wrap.stack_h         = stack_h;
          xmb->box_wrap.assets_missing  = xmb->assets_missing;
          xmb->box_wrap.line_count      = line_count;
+         xmb->box_wrap.wrapped_len     = wrapped_len;
          xmb->box_wrap.usable_width    = usable_width;
          xmb->box_wrap.longest_width   = longest_width;
          xmb->box_wrap.len             = msg_len;
@@ -1599,52 +1602,31 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       if (input && line_text
             && (draw_selection || ((menu_driver_get_current_time() / 500000) & 1)))
       {
-         char cursor_src[MENU_LABEL_MAX_LENGTH];
-         char cursor_message[MENU_LABEL_MAX_LENGTH];
          size_t len = (size_t)(input - message + 1);
-         size_t ptr = line_cursor;
+         size_t at  = len + line_cursor;
+         size_t d, n;
+         unsigned l;
 
-         if (len < sizeof(cursor_src))
+         if (at > msg_len)
+            at = msg_len;
+         if (draw_selection)
          {
-            if (ptr >= sizeof(cursor_src) - len)
-               ptr = sizeof(cursor_src) - len - 1;
-
-            /* word_wrap()/word_wrap_wideglyph() require
-             * non-overlapping source and destination
-             * buffers, so stage the source separately */
-            memcpy(cursor_src, message, len);
-            if (draw_selection)
-            {
-               cursor_src[len] = '\0';
-               (xmb->word_wrap)(cursor_message, sizeof(cursor_message),
-                     cursor_src, len, usable_width / (xmb->font_size * 0.85f),
-                     xmb->wideglyph_width, 0);
-               selection_first_line = string_count_occurrences_single_character(
-                     cursor_message, '\n');
-               if (!selection_first_line)
-                  selection_first_line = 1;
-            }
-            memcpy(cursor_src + len, line_text, ptr);
-            cursor_src[len + ptr] = '\0';
-
-            (xmb->word_wrap)(
-                  cursor_message, sizeof(cursor_message),
-                  cursor_src, len + ptr,
-                  usable_width / (xmb->font_size * 0.85f),
-                  xmb->wideglyph_width, 0);
-
-            input = cursor_message;
-            while ((input = strchr(input, '\n')))
-            {
-               cursor_line++;
-               input++;
-            }
-            input    = strrchr(cursor_message, '\n');
-            input    = input ? input + 1 : cursor_message;
-            cursor_x = font_driver_get_message_width(xmb->font, input, strlen(input), 1.0f);
-
-            draw_caret = !draw_selection;
+            d = menu_wrap_offset(message, len, wrapped_message, wrapped_len);
+            for (l = line_count - 1;
+                  l > 0 && (size_t)(lines[l] - wrapped_message) > d; l--);
+            selection_first_line = l ? l : 1;
          }
+         d = menu_wrap_offset(message, at, wrapped_message, wrapped_len);
+         for (l = line_count - 1;
+               l > 0 && (size_t)(lines[l] - wrapped_message) > d; l--);
+         d -= (size_t)(lines[l] - wrapped_message);
+         if (d > (n = strlen(lines[l])))
+            d = n;
+         cursor_line = l;
+         cursor_x    = font_driver_get_message_width(xmb->font, lines[l], d,
+               1.0f);
+
+         draw_caret  = !draw_selection;
       }
    }
 

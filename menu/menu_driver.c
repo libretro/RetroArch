@@ -10117,6 +10117,31 @@ int menu_dialog_buttons_layout(const int *w, unsigned count, int gap,
    return need;
 }
 
+size_t menu_wrap_offset(const char *src, size_t at,
+      const char *wrapped, size_t wrapped_len)
+{
+   size_t i = 0;
+   size_t d = 0;
+   while (i < at && d < wrapped_len)
+   {
+      char w = wrapped[d];
+      char c = src[i];
+      if (w == c)
+         i++;
+      else if (w == '\0' || w == '\n')
+      {
+         /* A line end the wrap made of a space or kept, or one it put
+          * before a wide glyph, which takes no byte of src */
+         if (c == ' ' || c == '\n')
+            i++;
+      }
+      else
+         break;
+      d++;
+   }
+   return d;
+}
+
 const int *menu_dialog_label_widths(menu_dialog_label_widths_t *c,
       const menu_dialog_buttons_t *b, font_data_t *font, float size)
 {

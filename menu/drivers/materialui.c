@@ -780,6 +780,7 @@ typedef struct materialui_handle
       int lengths[64];
       font_data_t *font;
       size_t len;
+      size_t wrapped_len;
       uint32_t font_generation;
       unsigned columns;
       unsigned wideglyph_width;
@@ -2894,8 +2895,8 @@ static void materialui_render_messagebox(
    columns = (unsigned)(usable_width / (int)mui->font_data.list.glyph_width);
 
    /* A box's text is wrapped and measured again only when it or the
-    * font changes; an input line changes as it is typed */
-   if (!draw_caret && msg_len < sizeof(mui->box_wrap.text))
+    * font changes */
+   if (msg_len < sizeof(mui->box_wrap.text))
    {
       wrapped_msg = mui->box_wrap.wrapped;
       lines       = mui->box_wrap.lines;
@@ -2911,6 +2912,7 @@ static void materialui_render_messagebox(
             && !memcmp(mui->box_wrap.text, msg, msg_len))
       {
          line_count    = mui->box_wrap.line_count;
+         wrapped_len   = mui->box_wrap.wrapped_len;
          longest_width = mui->box_wrap.longest_width;
       }
    }
@@ -2976,6 +2978,7 @@ static void materialui_render_messagebox(
          mui->box_wrap.columns         = columns;
          mui->box_wrap.wideglyph_width = mui->font_data.list.wideglyph_width;
          mui->box_wrap.line_count      = line_count;
+         mui->box_wrap.wrapped_len     = wrapped_len;
          mui->box_wrap.longest_width   = longest_width;
          mui->box_wrap.len             = msg_len;
       }
@@ -3061,54 +3064,31 @@ static void materialui_render_messagebox(
       if (input && line_text
             && (draw_selection || ((menu_driver_get_current_time() / 500000) & 1)))
       {
-         char cursor_src[MENU_LABEL_MAX_LENGTH];
-         char cursor_msg[MENU_LABEL_MAX_LENGTH];
          size_t len = (size_t)(input - msg + 1);
-         size_t ptr = line_cursor;
+         size_t at  = len + line_cursor;
+         size_t d;
+         int l;
 
-         if (len < sizeof(cursor_src))
+         if (at > msg_len)
+            at = msg_len;
+         if (draw_selection)
          {
-            if (ptr >= sizeof(cursor_src) - len)
-               ptr = sizeof(cursor_src) - len - 1;
-
-            /* word_wrap()/word_wrap_wideglyph() require
-             * non-overlapping source and destination
-             * buffers, so stage the source separately */
-            memcpy(cursor_src, msg, len);
-            if (draw_selection)
-            {
-               cursor_src[len] = '\0';
-               (mui->word_wrap)(cursor_msg, sizeof(cursor_msg),
-                     cursor_src, len, usable_width / (int)mui->font_data.list.glyph_width,
-                     mui->font_data.list.wideglyph_width, 0);
-               selection_first_line = string_count_occurrences_single_character(
-                     cursor_msg, '\n');
-               if (!selection_first_line)
-                  selection_first_line = 1;
-            }
-            memcpy(cursor_src + len, line_text, ptr);
-            cursor_src[len + ptr] = '\0';
-
-            (mui->word_wrap)(
-                  cursor_msg, sizeof(cursor_msg),
-                  cursor_src, len + ptr,
-                  usable_width / (int)mui->font_data.list.glyph_width,
-                  mui->font_data.list.wideglyph_width, 0);
-
-            input = cursor_msg;
-            while ((input = strchr(input, '\n')))
-            {
-               cursor_line++;
-               input++;
-            }
-            input    = strrchr(cursor_msg, '\n');
-            input    = input ? input + 1 : cursor_msg;
-            cursor_x = font_driver_get_message_width(
-                  mui->font_data.list.font,
-                  input, strlen(input), 1.0f);
-
-            draw_caret = !draw_selection;
+            d = menu_wrap_offset(msg, len, wrapped_msg, wrapped_len);
+            for (l = line_count - 1;
+                  l > 0 && (size_t)(lines[l] - wrapped_msg) > d; l--);
+            selection_first_line = l ? (unsigned)l : 1;
          }
+         d = menu_wrap_offset(msg, at, wrapped_msg, wrapped_len);
+         for (l = line_count - 1;
+               l > 0 && (size_t)(lines[l] - wrapped_msg) > d; l--);
+         d -= (size_t)(lines[l] - wrapped_msg);
+         if (d > (size_t)lengths[l])
+            d = (size_t)lengths[l];
+         cursor_line = (unsigned)l;
+         cursor_x    = font_driver_get_message_width(
+               mui->font_data.list.font, lines[l], d, 1.0f);
+
+         draw_caret  = !draw_selection;
       }
    }
 

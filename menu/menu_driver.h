@@ -931,6 +931,13 @@ void menu_dialog_set_hover(struct menu_state *menu_st, int idx);
 int menu_dialog_buttons_layout(const int *w, unsigned count, int gap,
       int box_x, int box_w, int *x);
 
+/* Where byte at of src landed in wrapped, src's wrap by word_wrap() or
+ * word_wrap_wideglyph() with its line ends made '\0' or left '\n'. A
+ * wrap only turns whitespace into line ends and adds line ends, so the
+ * wrapped text itself says where, with no second wrap of a copy. */
+size_t menu_wrap_offset(const char *src, size_t at,
+      const char *wrapped, size_t wrapped_len);
+
 /* A box's button labels as last measured, kept by the driver on the
  * thread that draws the box */
 typedef struct menu_dialog_label_widths
