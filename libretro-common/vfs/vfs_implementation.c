@@ -344,6 +344,10 @@ static void vfs_unix_to_filetime(int64_t unix_s, FILETIME *ft)
 /* mapped on demand by retro_vfs_file_map_impl(): the stream owns the
  * mapping, and reads and seeks never look at it */
 #define RFILE_HINT_LENT_MAP   (1 << 13)
+/* written on the descriptor path since stream->size was last right: the
+ * size is asked of the file when wanted (vfs_descriptor_size) rather than
+ * the position before every write */
+#define RFILE_HINT_SIZE_STALE (1 << 14)
 
 /* A stream on Windows NT opens a handle of its own rather than a C
  * runtime FILE, keeps its own position and a 64 KiB buffer, and reads
@@ -1153,6 +1157,35 @@ static int64_t vfs_open_size(libretro_vfs_implementation_file *stream)
    (void)stream;
    return -1;
 }
+
+/* Where a descriptor's size can be asked of the file in one call, a
+ * descriptor write needn't track it by asking the position first */
+#if defined(VFS_OPEN_FSTAT) || (defined(_WIN32) && !defined(_XBOX))
+#define VFS_SIZE_LAZY 1
+
+/* A descriptor-path stream's size as the file has it now: one fstat()
+ * (_fstati64() on Windows), or a seek to the end and back if that
+ * fails. -1 when nothing answers. */
+static int64_t vfs_descriptor_size(libretro_vfs_implementation_file *stream)
+{
+   int64_t cur, end;
+#if defined(_WIN32)
+   struct _stati64 st;
+   if (_fstati64(stream->fd, &st) == 0)
+      return (int64_t)st.st_size;
+#else
+   struct stat st;
+   if (fstat(stream->fd, &st) == 0 && S_ISREG(st.st_mode))
+      return (int64_t)st.st_size;
+#endif
+   if ((cur = retro_vfs_file_tell_impl(stream)) < 0)
+      return -1;
+   end = retro_vfs_file_seek_internal(stream, 0, SEEK_END) == 0
+      ? retro_vfs_file_tell_impl(stream) : -1;
+   retro_vfs_file_seek_internal(stream, cur, SEEK_SET);
+   return end;
+}
+#endif
 
 #if defined(_WIN32) && !defined(_XBOX)
 /* FILE_BASIC_INFO and FILE_ID_INFO, which older SDKs lack */
@@ -2062,9 +2095,20 @@ int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
 
 int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
 {
-   if (stream)
-      return stream->size;
-   return 0;
+   if (!stream)
+      return 0;
+#ifdef VFS_SIZE_LAZY
+   if (stream->hints & RFILE_HINT_SIZE_STALE)
+   {
+      int64_t size = vfs_descriptor_size(stream);
+      if (size >= 0)
+      {
+         stream->size   = size;
+         stream->hints &= ~RFILE_HINT_SIZE_STALE;
+      }
+   }
+#endif
+   return stream->size;
 }
 
 /* Deallocate a range without changing the file's length. See
@@ -2443,7 +2487,8 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
       retro_vfs_fp_seek64(stream->fp, fp_pos, SEEK_SET);
    if (!done)
       return -1;
-   stream->size = len;
+   stream->size   = len;
+   stream->hints &= ~RFILE_HINT_SIZE_STALE;
    return 0;
 }
 
@@ -2720,7 +2765,9 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       return -1;
 #endif
 
+#ifndef VFS_SIZE_LAZY
    pos = retro_vfs_file_tell_impl(stream);
+#endif
    /* write() shares read()'s MAX_RW_COUNT clamp; loop for the full
     * count. */
    {
@@ -2750,8 +2797,15 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       ret = (ssize_t)total;
    }
 
+#ifdef VFS_SIZE_LAZY
+   /* No position asked before every write: the size is asked of the
+    * file when someone wants it */
+   if (ret > 0)
+      stream->hints |= RFILE_HINT_SIZE_STALE;
+#else
    if (ret != -1 && pos + ret > stream->size)
       stream->size = pos + ret;
+#endif
 
    return ret;
 }
@@ -2773,7 +2827,9 @@ int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
    if (     (stream->hints & RFILE_HINT_UNBUFFERED)
          && stream->scheme == VFS_SCHEME_NONE)
    {
+#ifndef VFS_SIZE_LAZY
       int64_t pos = retro_vfs_file_tell_impl(stream);
+#endif
       while (i < count)
       {
          struct iovec iov[VFS_WRITEV_MAX];
@@ -2811,8 +2867,13 @@ int64_t retro_vfs_file_writev_impl(libretro_vfs_implementation_file *stream,
          if (put < 0)
             return total ? total : -1;
          total += put;
+#ifdef VFS_SIZE_LAZY
+         if (put > 0)
+            stream->hints |= RFILE_HINT_SIZE_STALE;
+#else
          if (pos >= 0 && pos + total > stream->size)
             stream->size = pos + total;
+#endif
          if ((size_t)put < want)
             return total;
          i += n;
@@ -4030,9 +4091,9 @@ const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
          *len = (int64_t)stream->mapsize;
       return stream->mapped;
    }
-   if (stream->mapped || stream->size <= 0)
+   if (stream->mapped || retro_vfs_file_size_impl(stream) <= 0)
       return NULL;
-   /* Its size as opened: a stable open's can't have changed */
+   /* Its size now: a stable open's is as opened */
    size = (uint64_t)stream->size;
    if (size > (uint64_t)(size_t)-1)
       return NULL;

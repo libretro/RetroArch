@@ -245,6 +245,8 @@ jobs:
           ./vfs_write_mix_test.exe
           # a stable open shuts out writers; identity and mapping on demand
           ./vfs_stable_test.exe
+          # a write stream's size, through every kind of write
+          ./vfs_size_contract_test.exe
           # The same with streams on the C runtime (VFS_WIN32_NO_NATIVE):
           # the stream contract, the path an open takes, large files,
           # offsets from threads, writes.
@@ -259,6 +261,7 @@ jobs:
           ./vfs_positional_nommap_test.exe
           ./vfs_write_mix_test.exe
           ./vfs_stable_test.exe
+          ./vfs_size_contract_test.exe
 
       # The Win64 fastjmp_set stores xmm6-xmm15 with movaps and faults
       # on a misaligned buffer. Linux has no such stores, so the Linux
