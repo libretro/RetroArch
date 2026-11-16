@@ -16,7 +16,7 @@
 typedef struct { float x,y,z,u,v; uint32_t color; } Vertex;
 typedef struct buffer { Vertex *data; unsigned count; } *LPDIRECT3DVERTEXBUFFER9;
 struct video_coords { const float *vertex; unsigned vertices; };
-typedef struct { uint32_t id; } gfx_display_mesh_t;
+typedef struct { uint32_t id; unsigned vertex_count; } gfx_display_mesh_t;
 typedef struct { const gfx_display_mesh_t *effect_mesh; } gfx_display_t;
 typedef struct { struct video_coords *coords; unsigned pipeline_id; } gfx_display_ctx_draw_t;
 typedef struct { void *dev; } d3d9_video_t;
@@ -107,7 +107,7 @@ static void check_buffer(const struct video_coords *coords)
 int main(void)
 {
    unsigned i, mode;
-   gfx_display_mesh_t mesh = {1};
+   gfx_display_mesh_t mesh = {1, 0};
    gfx_display_t display = {&mesh};
    d3d9_video_t driver = {NULL};
    struct video_coords coords;
@@ -117,7 +117,7 @@ int main(void)
    for (i = 0; i < 8352 * 2; i++)
       positions[i] = (float)i;
    coords.vertex = positions;
-   coords.vertices = 8064;
+   coords.vertices = mesh.vertex_count = 8064;
    draw.pipeline_id = VIDEO_SHADER_MENU_2;
    pipeline(&draw, &display, &driver, &coords);
    check_buffer(&coords);
@@ -125,7 +125,7 @@ int main(void)
    assert(creates == 1 && locks == 1);
 
    mesh.id++;
-   coords.vertices = 8352;
+   coords.vertices = mesh.vertex_count = 8352;
    draw.pipeline_id = VIDEO_SHADER_MENU;
    pipeline(&draw, &display, &driver, &coords);
    check_buffer(&coords);
@@ -138,7 +138,7 @@ int main(void)
    assert(creates == 3 && locks == 3 && releases == 2);
 
    mesh.id++;
-   coords.vertices = 8064;
+   coords.vertices = mesh.vertex_count = 8064;
    draw.pipeline_id = VIDEO_SHADER_MENU_2;
    pipeline(&draw, &display, &driver, &coords);
    check_buffer(&coords);

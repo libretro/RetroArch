@@ -131,6 +131,7 @@ static HRESULT queue_signal(queue_t *q, fence_t *f, UINT64 v)
 static struct queue_vtbl queue_vtbl = { queue_execute, queue_signal };
 
 typedef struct { float mvp[4]; float time, alpha; } d3d12_uniform_t;
+#define D3D12_UBO_HEAD sizeof(d3d12_uniform_t)
 typedef struct { size_t ptr; } D3D12_CPU_DESCRIPTOR_HANDLE;
 typedef struct
 {
