@@ -435,7 +435,7 @@ struct menu_state *menu_state_get_ptr(void)
 
 static void menu_dialog_press(struct menu_state *menu_st, int idx);
 #ifdef HAVE_CORE_SIGNATURES
-static void menu_core_warning_text(char *s, size_t len);
+static const char *menu_core_warning_text(void);
 #endif
 
 static bool menu_should_pop_stack(const char *label)
@@ -8577,8 +8577,7 @@ static int generic_menu_iterate(
       case ITERATE_TYPE_CONFIRM:
 #ifdef HAVE_CORE_SIGNATURES
          if (menu_st->dialog_st.button_count)
-            menu_core_warning_text(menu->menu_state_msg,
-                  sizeof(menu->menu_state_msg));
+            menu->menu_state_text = menu_core_warning_text();
          else
 #endif
             menu->menu_state_text = menu_st->dialog_st.confirm_text
@@ -10300,17 +10299,33 @@ static unsigned menu_core_warning_label(enum core_warning_choice choice)
    return MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL;
 }
 
-static void menu_core_warning_text(char *s, size_t len)
+/* The Security Warning's text, built again only for another reason or
+ * another language (whose strings are other pointers) */
+static const char *menu_core_warning_text(void)
 {
-   enum core_check_result result = CORE_CHECK_ERROR;
+   static char text[MENU_LABEL_MAX_LENGTH];
+   static const char *built_title = NULL;
+   static int built_result        = -1;
+   enum core_check_result result  = CORE_CHECK_ERROR;
+   const char *title              = msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CORE_WARNING);
+   size_t _len                    = 0;
    core_warning_pending(NULL, &result);
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_WARNING), len);
-   strlcat(s, "\n", len);
-   strlcat(s, msg_hash_to_str(core_warning_reason(result)), len);
-   strlcat(s, "\n\n", len);
-   strlcat(s, msg_hash_to_str(MSG_CORE_WARNING_FULL_ACCESS), len);
-   strlcat(s, "\n\n", len);
-   strlcat(s, msg_hash_to_str(MSG_CORE_WARNING_TURN_OFF), len);
+   if ((int)result == built_result && title == built_title)
+      return text;
+   built_result = (int)result;
+   built_title  = title;
+   strlcpy_append(text, sizeof(text), &_len, title);
+   strlcpy_append(text, sizeof(text), &_len, "\n");
+   strlcpy_append(text, sizeof(text), &_len,
+         msg_hash_to_str(core_warning_reason(result)));
+   strlcpy_append(text, sizeof(text), &_len, "\n\n");
+   strlcpy_append(text, sizeof(text), &_len,
+         msg_hash_to_str(MSG_CORE_WARNING_FULL_ACCESS));
+   strlcpy_append(text, sizeof(text), &_len, "\n\n");
+   strlcpy_append(text, sizeof(text), &_len,
+         msg_hash_to_str(MSG_CORE_WARNING_TURN_OFF));
+   return text;
 }
 
 static void menu_core_warning_raise(struct menu_state *menu_st)

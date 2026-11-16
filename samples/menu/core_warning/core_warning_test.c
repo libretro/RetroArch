@@ -285,7 +285,7 @@ static void lane_open(void)
          "open: the box text lacks a part");
    /* English is about 344 B of the 1024; a translation twice the bytes
     * still fits whole */
-   CHECK(strlen(menu_state_get_ptr()->driver_data->menu_state_msg) < 512,
+   CHECK(strlen(MENU_STATE_TEXT(menu_state_get_ptr()->driver_data)) < 512,
          "open: the box text is near the buffer size");
    answer(MENU_ACTION_CANCEL);
    CHECK(seen_a.calls == 1, "fixture: Back didn't answer");
