@@ -8163,10 +8163,10 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                {
                   char *s    = lines[line_count - 1];
                   size_t len = line_lengths[line_count - 1];
-                  /* The kept lines are cut: wrap again next frame */
-                  ozone->box_wrap.len = 0;
                   int dots_w = font_driver_get_message_width(
                         font_data.font, "...", 3, 1.0f);
+                  /* The kept lines are cut: wrap again next frame */
+                  ozone->box_wrap.len = 0;
                   while (len && font_driver_get_message_width(
                         font_data.font, s, len, 1.0f) + dots_w
                         > longest_width)

@@ -1677,10 +1677,10 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             {
                char *s     = lines[line_count - 1];
                size_t len  = strlen(s);
-               /* The kept lines are cut: wrap again next frame */
-               xmb->box_wrap.len = 0;
                int dots_w  = font_driver_get_message_width(
                      xmb->font, "...", 3, 1.0f);
+               /* The kept lines are cut: wrap again next frame */
+               xmb->box_wrap.len = 0;
                while (len && font_driver_get_message_width(
                      xmb->font, s, len, 1.0f) + dots_w > longest_width)
                {

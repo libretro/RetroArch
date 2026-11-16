@@ -3137,11 +3137,11 @@ static void materialui_render_messagebox(
             {
                char *s     = wrapped_msg
                      + (lines[line_count - 1] - wrapped_msg);
-               /* The kept lines are cut: wrap again next frame */
-               mui->box_wrap.len = 0;
                int len     = lengths[line_count - 1];
                int dots_w  = font_driver_get_message_width(
                      mui->font_data.list.font, "...", 3, 1.0f);
+               /* The kept lines are cut: wrap again next frame */
+               mui->box_wrap.len = 0;
                while (len && font_driver_get_message_width(
                      mui->font_data.list.font, s, len, 1.0f) + dots_w
                      > longest_width)
