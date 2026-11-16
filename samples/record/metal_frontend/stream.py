@@ -171,7 +171,14 @@ def verify(args, root, threaded):
     assert len(packets) == int(finalized[1]), (len(packets), finalized[1])
     pts = [float(p['pts_time']) for p in packets]
     assert all(a < b for a, b in zip(pts, pts[1:]))
-    assert (0 < pts[0] < .12) if audios else abs(pts[0]) < .0011
+    # With audio, video and audio share the frame clock from arming, so
+    # the first frame lands at the AAC priming delay. Threaded, the
+    # newest frame wins a busy ring: frames dropped while the video
+    # thread starts keep their timestamps, and the stream starts that
+    # many frames later. Video-only starts at the first captured frame.
+    first_limit = 1.0 if threaded else .12
+    assert ((0 < pts[0] < first_limit) if audios else abs(pts[0]) < .0011), \
+        (threaded, pts[:4])
     for timestamp in pts:
         frame = round((timestamp - pts[0]) * 60000 / 1001)
         assert abs(timestamp - pts[0] - frame * 1001 / 60000) <= .0021, timestamp
