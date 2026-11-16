@@ -768,6 +768,9 @@ typedef struct materialui_handle
    char entry_index_str[32];
    char entry_index_offset;
 
+   /* The box's button labels as last measured */
+   menu_dialog_label_widths_t label_widths;
+
    /* The message box's text as last wrapped and measured, by the
     * thread that draws it: a box whose text and font are unchanged
     * draws from here. len is 0 when it holds nothing. */
@@ -2867,7 +2870,7 @@ static void materialui_render_messagebox(
    menu_dialog_buttons_t buttons;
    int button_w[MENU_DIALOG_BUTTONS_MAX];
    int button_x[MENU_DIALOG_BUTTONS_MAX];
-   int label_w[MENU_DIALOG_BUTTONS_MAX];
+   const int *label_w          = NULL;
    int row_h                  = 0;
    int row_y                  = 0;
    int stack_h                = 0;
@@ -2992,12 +2995,11 @@ static void materialui_render_messagebox(
       /* Text wider than that makes the box as wide */
       if (row_max < longest_width)
          row_max = longest_width;
+      label_w            = menu_dialog_label_widths(&mui->label_widths,
+            &buttons, mui->font_data.list.font,
+            (float)mui->font_data.list.line_height);
       for (b = 0; b < buttons.count; b++)
       {
-         const char *str = msg_hash_to_str(
-               (enum msg_hash_enums)buttons.label[b]);
-         label_w[b]      = font_driver_get_message_width(
-               mui->font_data.list.font, str, strlen(str), 1.0f);
          /* Every button keeps room for an icon */
          button_w[b]     = label_w[b] + (int)(icon_padding * 4)
             + (int)icon_size;

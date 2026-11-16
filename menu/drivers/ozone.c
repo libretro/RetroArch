@@ -742,6 +742,9 @@ struct ozone_handle
    char selection_entry_enumeration[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
+   /* The box's button labels as last measured */
+   menu_dialog_label_widths_t label_widths;
+
    /* The message box's text as last wrapped and measured, by the
     * thread that draws it: a box whose text and font are unchanged
     * draws from here. len is 0 when it holds nothing. */
@@ -7926,7 +7929,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    menu_dialog_buttons_t buttons;
    int button_w[MENU_DIALOG_BUTTONS_MAX];
    int button_x[MENU_DIALOG_BUTTONS_MAX];
-   int label_w[MENU_DIALOG_BUTTONS_MAX];
+   const int *label_w          = NULL;
    int row_y                  = 0;
    int stack_h                = 0;
    bool text_only             = false;
@@ -8044,7 +8047,6 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    x                = width  / 2;
    y                = y_position - (line_count * line_height) / 2;
 
-
    if (buttons.count)
    {
       float icon_size    = 50 * scale_factor;
@@ -8052,12 +8054,11 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       int row_max        = (int)video_width - (int)(100 * scale_factor);
       int row_need;
       unsigned b;
+      label_w            = menu_dialog_label_widths(&ozone->label_widths,
+            &buttons, ozone->fonts.footer.font,
+            (float)ozone->fonts.footer.line_height);
       for (b = 0; b < buttons.count; b++)
       {
-         const char *str = msg_hash_to_str(
-               (enum msg_hash_enums)buttons.label[b]);
-         label_w[b]      = font_driver_get_message_width(
-               ozone->fonts.footer.font, str, strlen(str), 1.0f);
          /* Every button keeps room for an icon */
          button_w[b]     = label_w[b] + (int)(icon_padding * 4)
             + (int)icon_size;

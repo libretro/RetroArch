@@ -510,6 +510,9 @@ typedef struct xmb_handle
    char entry_index_str[32];
    char entry_index_offset;
 
+   /* The box's button labels as last measured */
+   menu_dialog_label_widths_t label_widths;
+
    /* The message box's text as last wrapped and measured, by the
     * thread that draws it: a box whose text and layout are unchanged
     * draws from here. len is 0 when it holds nothing. */
@@ -1377,7 +1380,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    menu_dialog_buttons_t buttons;
    int button_w[MENU_DIALOG_BUTTONS_MAX];
    int button_x[MENU_DIALOG_BUTTONS_MAX];
-   int label_w[MENU_DIALOG_BUTTONS_MAX];
+   const int *label_w                  = NULL;
    int cursor_h                        = 0;
    int row_y                           = 0;
    int row_need                        = 0;
@@ -1407,12 +1410,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       float icon_padding = 10 * xmb->last_scale_factor;
       int row_max        = (int)video_width - (int)(xmb->margins_dialog * 4);
       unsigned b;
+      label_w            = menu_dialog_label_widths(&xmb->label_widths,
+            &buttons, xmb->font2,
+            xmb->last_scale_factor);
       for (b = 0; b < buttons.count; b++)
       {
-         const char *str = msg_hash_to_str(
-               (enum msg_hash_enums)buttons.label[b]);
-         label_w[b]      = font_driver_get_message_width(
-               xmb->font2, str, strlen(str), 1.0f);
          /* Every button keeps room for an icon */
          button_w[b]     = label_w[b] + (int)(icon_padding * 4)
             + (int)icon_size;

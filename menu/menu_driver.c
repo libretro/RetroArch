@@ -10117,6 +10117,32 @@ int menu_dialog_buttons_layout(const int *w, unsigned count, int gap,
    return need;
 }
 
+const int *menu_dialog_label_widths(menu_dialog_label_widths_t *c,
+      const menu_dialog_buttons_t *b, font_data_t *font, float size)
+{
+   unsigned i;
+   uint32_t gen = font_driver_get_generation();
+   bool same    = c->font == font && c->size == size
+         && c->font_generation == gen;
+   for (i = 0; i < b->count; i++)
+   {
+      /* A language's strings are its own: a new one is a new pointer */
+      const char *str = msg_hash_to_str((enum msg_hash_enums)b->label[i]);
+      if (!same || i >= c->count || c->str[i] != str)
+      {
+         c->str[i] = str;
+         c->w[i]   = font_driver_get_message_width(font, str,
+               strlen(str), 1.0f);
+      }
+   }
+   c->font            = font;
+   c->size            = size;
+   c->font_generation = gen;
+   if (!same || c->count < b->count)
+      c->count        = b->count;
+   return c->w;
+}
+
 #ifdef HAVE_CORE_SIGNATURES
 /* core_warning_serial() of the request the box went up for, 0 for none */
 static unsigned menu_core_warning_shown = 0;

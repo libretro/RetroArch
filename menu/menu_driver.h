@@ -930,6 +930,24 @@ void menu_dialog_set_hover(struct menu_state *menu_st, int idx);
  * Returns the width the row needs. */
 int menu_dialog_buttons_layout(const int *w, unsigned count, int gap,
       int box_x, int box_w, int *x);
+
+/* A box's button labels as last measured, kept by the driver on the
+ * thread that draws the box */
+typedef struct menu_dialog_label_widths
+{
+   const char *str[MENU_DIALOG_BUTTONS_MAX];
+   int w[MENU_DIALOG_BUTTONS_MAX];
+   font_data_t *font;
+   float size;
+   uint32_t font_generation;
+   unsigned count;
+} menu_dialog_label_widths_t;
+
+/* The width of each button's label in font, which the driver draws at
+ * size, in c: measured again only for a label, the language or the font
+ * that changed since c was filled */
+const int *menu_dialog_label_widths(menu_dialog_label_widths_t *c,
+      const menu_dialog_buttons_t *b, font_data_t *font, float size);
 #ifdef HAVE_CORE_SIGNATURES
 /* Raises the Security Warning's box for the request pending, or takes
  * it down when none is; true on the frame it went up */
