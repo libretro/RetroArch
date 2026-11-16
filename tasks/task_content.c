@@ -2210,11 +2210,13 @@ static void content_firmware_download_start(struct content_firmware *firmware,
    strlcpy(parent, firmware->download, sizeof(parent));
    path_basedir_wrapper(parent);
 
-   if (!path_mkdir(parent) || path_is_valid(firmware->download))
+   if (!path_mkdir(parent))
    {
       firmware->failed = true;
       return;
    }
+   /* Left by a download that was cut off: the name is ours */
+   filestream_delete(firmware->download);
 
    firmware->downloading = true;
 
