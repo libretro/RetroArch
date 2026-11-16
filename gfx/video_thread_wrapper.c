@@ -3894,6 +3894,31 @@ static VIDEO_NOINLINE void video_thread_handoff_latch(thread_video_t *thr,
    }
 }
 
+/* The hold's wait, to @target on the clock */
+static void video_thread_hold_until(thread_video_t *thr,
+      retro_time_t now, retro_time_t target)
+{
+   while (now < target)
+   {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      /* A timed wait on the ring is a kernel timeout, which on
+       * Windows ends on the system timer's tick - 15.6 ms unless
+       * something in the process has lowered it, as some GPU
+       * drivers do and others do not. The hold overshot to that
+       * tick: the loop ran at under the display's rate, frames were
+       * dropped and the audio starved. A ring wake only re-reads
+       * the clock, so the hold sleeps on the high resolution timer
+       * instead. */
+      retro_sleep_us((unsigned)(target - now));
+#else
+      /* A ring wake in between only re-reads the clock */
+      video_thread_ring_sleep(thr, video_thread_ring_load(thr),
+            target - now);
+#endif
+      now = cpu_features_get_time_usec();
+   }
+}
+
    /* Display pacing: hold the runloop here so the next core frame
     * starts as late as its display slot allows. The frame just pushed
     * is due at next_present; the one after it at next_present + period.
@@ -3921,7 +3946,7 @@ static VIDEO_NOINLINE void video_thread_handoff_latch(thread_video_t *thr,
     * Without one - a grid laid from the clock - the hold stands aside
     * rather than sleep a second time. */
 static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
-      retro_time_t now, bool driver_released)
+      retro_time_t now, bool driver_released, retro_time_t display_period)
 {
    video_thread_stat_snap_t snap;
 
@@ -4040,25 +4065,19 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
        * wrong. A drain holds one longer. */
       if (target > now + content * (drained ? 2 : 1))
          target = now + content * (drained ? 2 : 1);
-      while (now < target)
-      {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-         /* A timed wait on the ring is a kernel timeout, which on
-          * Windows ends on the system timer's tick - 15.6 ms unless
-          * something in the process has lowered it, as some GPU
-          * drivers do and others do not. The hold overshot to that
-          * tick: the loop ran at under the display's rate, frames were
-          * dropped and the audio starved. A ring wake only re-reads
-          * the clock, so the hold sleeps on the high resolution timer
-          * instead. */
-         retro_sleep_us((unsigned)(target - now));
-#else
-         /* A ring wake in between only re-reads the clock */
-         video_thread_ring_sleep(thr, video_thread_ring_load(thr),
-               target - now);
-#endif
-         now = cpu_features_get_time_usec();
-      }
+      video_thread_hold_until(thr, now, target);
+   }
+   else if (thr->nonblock && thr->run_start)
+   {
+      /* Nothing presented yet, so no period or vblank from the
+       * presenter - and a present that does not wait holds nothing
+       * either: a content period from this frame's start, on the
+       * clock */
+      double fps           = thr->video_st->av_info.timing.fps;
+      retro_time_t content = (thr->core_running || thr->menu_content_rate)
+            && fps > 1.0 ? (retro_time_t)(1000000.0 / fps) : display_period;
+      if (content > 0 && now - thr->run_start < content)
+         video_thread_hold_until(thr, now, thr->run_start + content);
    }
 }
 
@@ -4657,7 +4676,9 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (!dropped)
       thr->hit_count++;
 
-   video_thread_pace_hold(thr, now, video_info->driver_pacing_id != 0);
+   video_thread_pace_hold(thr, now, video_info->driver_pacing_id != 0,
+         video_info->refresh_rate > 0.0f
+         ? (retro_time_t)(1000000.0f / video_info->refresh_rate) : 0);
 
    /* One GL context: the publish handed it to the video thread with
     * the frame; taken back once that pass is done with it. */

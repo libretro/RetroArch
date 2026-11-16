@@ -1,4 +1,5 @@
 # Future
+- VIDEO/THREADED: With V-Sync off, Display Pacing holds the core to the content's rate before the first frame is presented too; at content start or after a driver reinit a core ran hundreds or thousands of frames at once with audio sync off as well
 - WIN32: Scanline Sync reads the scanline of the monitor the window is on, and follows the window to another; it read the first display's wherever the window was
 - LIBRETRO-COMMON/FLAC: 24- and 32-bit FLAC decoded to 16 bits is rounded to the nearest step instead of cut down (every sample was half a step low on average); 16-bit FLAC is unchanged
 - LIBRETRO-COMMON/FLAC: A seek in a FLAC that has a seek table lands on the frame asked for (it landed as far past it as the seek point was from the start); rflac_seek_point gives the seek point's frame

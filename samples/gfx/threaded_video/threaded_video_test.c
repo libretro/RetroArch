@@ -5723,6 +5723,86 @@ static void lane_blocking_present(void)
 /*   and nothing should be dropped: N frames take about N periods.     */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* Lane: display pacing before the first present                      */
+/*   With vsync off the present holds nothing, and until the video    */
+/*   thread's first completion the hold has no period from it: the    */
+/*   core ran every frame it could, thousands before a driver was up. */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t        fplane_driver;
+static const video_driver_t *fplane_inner;
+static geometry_gate_t       fplane_gate;
+
+static bool fplane_frame(void *data, const void *frame, unsigned dims,
+      uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
+{
+   /* the first frame, still being drawn */
+   if (!retro_atomic_load_acquire_int(&fplane_gate.done))
+      geometry_park(&fplane_gate);
+   return fplane_inner->frame(data, frame, dims, frame_count, pitch,
+         msg, video_info);
+}
+
+static void lane_first_present_hold(void)
+{
+   unsigned had                   = failures;
+   const unsigned n               = 30;
+   int flags                      = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   bool saved_pacing = settings->bools.video_threaded_display_pacing;
+   retro_time_t t0, took, expect;
+   thread_video_t *thr;
+
+   settings->bools.video_threaded_display_pacing = true;
+   set_threaded_via_setting(true);
+   run_frames(10);
+   expect_wrapper(true, "first-present lane");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(3);
+
+   /* A driver just made, its first frame not out yet */
+   command_event(CMD_EVENT_REINIT, &flags);
+   thr = (thread_video_t*)video_st->data;
+   memset(&fplane_gate, 0, sizeof(fplane_gate));
+   retro_eventcount_init(&fplane_gate.event);
+   fplane_inner        = thr->driver;
+   fplane_driver       = *thr->driver;
+   fplane_driver.frame = fplane_frame;
+   set_driver(thr, &fplane_driver);
+
+   t0     = cpu_features_get_time_usec();
+   run_frames(n);
+   took   = cpu_features_get_time_usec() - t0;
+   expect = (retro_time_t)n * 1000000 / 60;
+   CHECK(retro_atomic_load_acquire_int(&fplane_gate.held),
+         "first-present lane: no frame reached the driver");
+   CHECK(took > expect * 3 / 4,
+         "before the first present the hold did not hold: %u frames in %.1f ms, expected ~%.1f",
+         n, took / 1000.0, expect / 1000.0);
+   CHECK(took < expect * 3 / 2,
+         "before the first present the runloop stalled: %u frames in %.1f ms, expected ~%.1f",
+         n, took / 1000.0, expect / 1000.0);
+   fprintf(stderr, "   before the first present: %u frames in %.1f ms\n",
+         n, took / 1000.0);
+
+   retro_atomic_store_release_int(&fplane_gate.done, 1);
+   retro_eventcount_notify(&fplane_gate.event);
+   video_thread_wait_idle();
+   set_driver(thr, fplane_inner);
+   retro_eventcount_free(&fplane_gate.event);
+   run_frames(3);
+
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   settings->bools.video_threaded_display_pacing = saved_pacing;
+   if (failures == had)
+      fprintf(stderr, "[pass] first-present hold lane\n");
+}
+
 /* One measurement of the hold: n core frames with the display at
  * display_hz and the core at its own 60. The hold must pace to the
  * core's period on the display's grid: at 120 Hz a 60 fps core is due
@@ -14374,6 +14454,17 @@ int main(int argc, char *argv[])
       lane_pixel_format();
       goto shutdown;
    }
+   if (getenv("HARNESS_PACING_ONLY"))
+   {
+      lane_display_pacing();
+      lane_first_present_hold();
+      lane_blocking_present();
+      lane_pacing_queue_drain();
+      lane_pacing_fast_display();
+      lane_pacing_after_stall();
+      lane_pacing_rate();
+      goto shutdown;
+   }
    if (getenv("HARNESS_GEOMETRY_ONLY"))
    {
       set_threaded_via_setting(false);
@@ -14449,6 +14540,7 @@ int main(int argc, char *argv[])
    if (!real_driver())
    {
       lane_display_pacing();
+      lane_first_present_hold();
       lane_blocking_present();
       lane_pacing_queue_drain();
       lane_pacing_fast_display();
