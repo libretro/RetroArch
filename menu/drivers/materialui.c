@@ -768,6 +768,24 @@ typedef struct materialui_handle
    char entry_index_str[32];
    char entry_index_offset;
 
+   /* The message box's text as last wrapped and measured, by the
+    * thread that draws it: a box whose text and font are unchanged
+    * draws from here. len is 0 when it holds nothing. */
+   struct
+   {
+      const char *lines[64];
+      int lengths[64];
+      font_data_t *font;
+      size_t len;
+      uint32_t font_generation;
+      unsigned columns;
+      unsigned wideglyph_width;
+      int line_count;
+      int longest_width;
+      char text[MENU_LABEL_MAX_LENGTH];
+      char wrapped[MENU_LABEL_MAX_LENGTH];
+   } box_wrap;
+
    char menu_title[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
    char sysicons_path[PATH_MAX_LENGTH];
@@ -2835,9 +2853,15 @@ static void materialui_render_messagebox(
    unsigned cursor_line       = 0;
    int cursor_x               = 0;
    size_t wrapped_len         = 0;
-   char wrapped_msg[MENU_LABEL_MAX_LENGTH];
-   const char *lines[64];
-   int lengths[64];
+   size_t msg_len             = 0;
+   unsigned columns           = 0;
+   char wrapped_buf[MENU_LABEL_MAX_LENGTH];
+   const char *lines_buf[64];
+   int lengths_buf[64];
+   char *wrapped_msg          = wrapped_buf;
+   const char **lines         = lines_buf;
+   int *lengths               = lengths_buf;
+   bool keep_wrap             = false;
    struct menu_state *menu_st = menu_state_get_ptr();
    bool landscape             = video_width >= video_height;
    menu_dialog_buttons_t buttons;
@@ -2850,7 +2874,7 @@ static void materialui_render_messagebox(
    bool text_only             = false;
    bool stacked               = false;
 
-   wrapped_msg[0] = '\0';
+   wrapped_buf[0] = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
 
    /* Sanity check */
@@ -2863,58 +2887,100 @@ static void materialui_render_messagebox(
    if (usable_width < 1)
       usable_width = video_width;
 
-   /* Split message into lines */
-   wrapped_len = (mui->word_wrap)(
-         wrapped_msg, sizeof(wrapped_msg),
-         msg, strlen(msg),
-         usable_width / (int)mui->font_data.list.glyph_width,
-         mui->font_data.list.wideglyph_width, 0);
-   if (wrapped_len == 0)
-      return;
-   /* Replace newlines with null terminators,
-    * record line pointers and lengths */
+   msg_len = strlen(msg);
+   columns = (unsigned)(usable_width / (int)mui->font_data.list.glyph_width);
+
+   /* A box's text is wrapped and measured again only when it or the
+    * font changes; an input line changes as it is typed */
+   if (!draw_caret && msg_len < sizeof(mui->box_wrap.text))
    {
-      char *s          = wrapped_msg;
-      size_t remaining = wrapped_len;
-      lines[0] = wrapped_msg;
-      while (remaining > 0)
+      wrapped_msg = mui->box_wrap.wrapped;
+      lines       = mui->box_wrap.lines;
+      lengths     = mui->box_wrap.lengths;
+      keep_wrap   = true;
+      if (     mui->box_wrap.len == msg_len
+            && mui->box_wrap.font == mui->font_data.list.font
+            && mui->box_wrap.font_generation
+               == mui->font_data.list.metrics_generation
+            && mui->box_wrap.columns == columns
+            && mui->box_wrap.wideglyph_width
+               == mui->font_data.list.wideglyph_width
+            && !memcmp(mui->box_wrap.text, msg, msg_len))
       {
-         char *nl = (char *)memchr(s, '\n', remaining);
-         if (nl)
-         {
-            lengths[line_count] = (int)(nl - s);
-            *nl = '\0';
-            if (++line_count >= 64)
-               break;
-            lines[line_count] = nl + 1;
-            remaining         = wrapped_len - (size_t)(nl + 1 - wrapped_msg);
-            s                 = nl + 1;
-         }
-         else
-         {
-            lengths[line_count] = (int)remaining;
-            line_count++;
-            break;
-         }
+         line_count    = mui->box_wrap.line_count;
+         longest_width = mui->box_wrap.longest_width;
       }
    }
+
+   if (!line_count)
+   {
+      if (keep_wrap)
+         mui->box_wrap.len = 0;
+      /* Split message into lines */
+      wrapped_len = (mui->word_wrap)(
+            wrapped_msg, MENU_LABEL_MAX_LENGTH,
+            msg, msg_len, columns,
+            mui->font_data.list.wideglyph_width, 0);
+      if (wrapped_len == 0)
+         return;
+      /* Replace newlines with null terminators,
+       * record line pointers and lengths */
+      {
+         char *s          = wrapped_msg;
+         size_t remaining = wrapped_len;
+         lines[0] = wrapped_msg;
+         while (remaining > 0)
+         {
+            char *nl = (char *)memchr(s, '\n', remaining);
+            if (nl)
+            {
+               lengths[line_count] = (int)(nl - s);
+               *nl = '\0';
+               if (++line_count >= 64)
+                  break;
+               lines[line_count] = nl + 1;
+               remaining         = wrapped_len - (size_t)(nl + 1 - wrapped_msg);
+               s                 = nl + 1;
+            }
+            else
+            {
+               lengths[line_count] = (int)remaining;
+               line_count++;
+               break;
+            }
+         }
+      }
+      /* TODO/FIXME: Reduce text scale if width or height
+       * are too large to fit on screen */
+      /* Find the longest line width */
+      for (i = 0; i < line_count; i++)
+      {
+         if (lengths[i] > 0)
+         {
+            int msg_width     = font_driver_get_message_width(
+                  mui->font_data.list.font,
+                  lines[i], lengths[i], 1.0f);
+            longest_width = (msg_width > longest_width)
+                  ? msg_width : longest_width;
+         }
+      }
+
+      if (keep_wrap)
+      {
+         memcpy(mui->box_wrap.text, msg, msg_len);
+         mui->box_wrap.font            = mui->font_data.list.font;
+         mui->box_wrap.font_generation = mui->font_data.list.metrics_generation;
+         mui->box_wrap.columns         = columns;
+         mui->box_wrap.wideglyph_width = mui->font_data.list.wideglyph_width;
+         mui->box_wrap.line_count      = line_count;
+         mui->box_wrap.longest_width   = longest_width;
+         mui->box_wrap.len             = msg_len;
+      }
+   }
+
    /* Get coordinates of message box centre */
    x = video_width / 2;
    y = (int)(y_centre - (line_count * mui->font_data.list.line_height) / 2);
-   /* TODO/FIXME: Reduce text scale if width or height
-    * are too large to fit on screen */
-   /* Find the longest line width */
-   for (i = 0; i < line_count; i++)
-   {
-      if (lengths[i] > 0)
-      {
-         int msg_width     = font_driver_get_message_width(
-               mui->font_data.list.font,
-               lines[i], lengths[i], 1.0f);
-         longest_width = (msg_width > longest_width)
-               ? msg_width : longest_width;
-      }
-   }
 
    if (buttons.count)
    {
@@ -3086,6 +3152,8 @@ static void materialui_render_messagebox(
             {
                char *s     = wrapped_msg
                      + (lines[line_count - 1] - wrapped_msg);
+               /* The kept lines are cut: wrap again next frame */
+               mui->box_wrap.len = 0;
                int len     = lengths[line_count - 1];
                int dots_w  = font_driver_get_message_width(
                      mui->font_data.list.font, "...", 3, 1.0f);
@@ -3099,7 +3167,7 @@ static void materialui_render_messagebox(
                }
                while (len && s[len - 1] == ' ')
                   len--;
-               if ((size_t)(s - wrapped_msg) + len + 4 <= sizeof(wrapped_msg))
+               if ((size_t)(s - wrapped_msg) + len + 4 <= MENU_LABEL_MAX_LENGTH)
                {
                   memcpy(s + len, "...", 4);
                   lengths[line_count - 1] = len + 3;
