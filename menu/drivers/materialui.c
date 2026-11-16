@@ -3076,12 +3076,12 @@ static void materialui_render_messagebox(
             at = msg_len;
          if (draw_selection)
          {
-            d = menu_wrap_offset(msg, len, wrapped_msg, wrapped_len);
+            d = word_wrap_offset(msg, len, wrapped_msg, wrapped_len);
             for (l = line_count - 1;
                   l > 0 && (size_t)(lines[l] - wrapped_msg) > d; l--);
             selection_first_line = l ? (unsigned)l : 1;
          }
-         d = menu_wrap_offset(msg, at, wrapped_msg, wrapped_len);
+         d = word_wrap_offset(msg, at, wrapped_msg, wrapped_len);
          for (l = line_count - 1;
                l > 0 && (size_t)(lines[l] - wrapped_msg) > d; l--);
          d -= (size_t)(lines[l] - wrapped_msg);

@@ -256,6 +256,25 @@ size_t word_wrap_wideglyph(
       unsigned max_lines);
 
 /**
+ * word_wrap_offset:
+ * @src                : the string that was wrapped.
+ * @at                 : a byte offset into @src.
+ * @wrapped            : @src as word_wrap() or word_wrap_wideglyph()
+ *                       wrapped it; its line ends may since have been
+ *                       made '\0'.
+ * @wrapped_len        : the length the wrap returned.
+ *
+ * A wrap only turns whitespace into line ends and adds line ends
+ * before wide glyphs, so where a byte of @src landed can be read off
+ * the wrapped text, without wrapping a copy of @src up to it.
+ *
+ * Returns: the offset into @wrapped of @src's byte @at, or
+ * @wrapped_len when @at lies past what the wrap holds.
+ **/
+size_t word_wrap_offset(const char *src, size_t at,
+      const char *wrapped, size_t wrapped_len);
+
+/**
  * string_tokenize:
  *
  * Splits string into tokens separated by @delim

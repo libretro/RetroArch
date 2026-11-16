@@ -550,6 +550,35 @@ size_t word_wrap_wideglyph(char *s, size_t len,
    return (size_t)(s - s_start);
 }
 
+size_t word_wrap_offset(const char *src, size_t at,
+      const char *wrapped, size_t wrapped_len)
+{
+   size_t i = 0;
+   size_t d = 0;
+   while (i < at && d < wrapped_len)
+   {
+      char w = wrapped[d];
+      char c = src[i];
+      if (w == c)
+         i++;
+      else if (w == '\0' || w == '\n')
+      {
+         /* A line end the wrap made of a space or kept, or one it put
+          * before a wide glyph, which takes no byte of src */
+         if (c == ' ' || c == '\n')
+            i++;
+      }
+      else
+         break;
+      d++;
+   }
+   /* At a glyph a line end was put before: the glyph, not the end */
+   if (i == at && src[i] != ' ' && src[i] != '\n')
+      while (d < wrapped_len && (wrapped[d] == '\0' || wrapped[d] == '\n'))
+         d++;
+   return d;
+}
+
 /**
  * string_tokenize:
  *

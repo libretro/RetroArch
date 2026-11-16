@@ -1614,12 +1614,12 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             at = msg_len;
          if (draw_selection)
          {
-            d = menu_wrap_offset(message, len, wrapped_message, wrapped_len);
+            d = word_wrap_offset(message, len, wrapped_message, wrapped_len);
             for (l = line_count - 1;
                   l > 0 && (size_t)(lines[l] - wrapped_message) > d; l--);
             selection_first_line = l ? l : 1;
          }
-         d = menu_wrap_offset(message, at, wrapped_message, wrapped_len);
+         d = word_wrap_offset(message, at, wrapped_message, wrapped_len);
          for (l = line_count - 1;
                l > 0 && (size_t)(lines[l] - wrapped_message) > d; l--);
          d -= (size_t)(lines[l] - wrapped_message);
