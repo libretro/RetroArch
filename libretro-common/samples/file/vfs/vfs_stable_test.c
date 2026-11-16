@@ -245,6 +245,38 @@ static void test_identity_follows_handle(void)
       retro_vfs_file_close_impl(t);
 }
 
+/* The identity a stable open hands back is the one the stream answers
+ * with afterwards; a refused open hands back none */
+static void test_open_stable_identity(void)
+{
+   libretro_vfs_implementation_file *s;
+   struct retro_vfs_file_identity a, b;
+   uint8_t buf[16];
+   memset(&a, 0xaa, sizeof(a));
+   s = retro_vfs_file_open_stable_impl(FILE_A, &a);
+   CHECK(s != NULL);
+   if (s)
+   {
+      CHECK(retro_vfs_file_identity_impl(s, &b));
+      CHECK(!memcmp(&a, &b, sizeof(a)));
+      CHECK(a.size == LEN && retro_vfs_file_size_impl(s) == LEN);
+      CHECK(retro_vfs_file_read_impl(s, buf, sizeof(buf)) == sizeof(buf));
+      CHECK(!memcmp(buf, data, sizeof(buf)));
+#ifdef _WIN32
+      CHECK(!filestream_write_file(FILE_A, data, 1));
+#endif
+      retro_vfs_file_close_impl(s);
+   }
+   memset(&a, 0xaa, sizeof(a));
+   memset(&b, 0, sizeof(b));
+   CHECK(retro_vfs_file_open_stable_impl(DIR_NAME, &a) == NULL);
+   CHECK(!memcmp(&a, &b, sizeof(a)));
+   memset(&a, 0xaa, sizeof(a));
+   CHECK(retro_vfs_file_open_stable_impl(DIR_NAME "/none", &a) == NULL);
+   CHECK(!memcmp(&a, &b, sizeof(a)));
+   CHECK(retro_vfs_file_open_stable_impl(FILE_A, NULL) == NULL);
+}
+
 int main(void)
 {
    unsigned i;
@@ -265,6 +297,7 @@ int main(void)
    test_stable_read_and_map();
    test_stable_refuses();
    test_others_unchanged();
+   test_open_stable_identity();
    test_identity_follows_handle();
    retro_vfs_file_remove_impl(FILE_A);
    retro_vfs_file_remove_impl(FILE_B);

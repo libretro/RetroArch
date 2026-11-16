@@ -156,6 +156,16 @@ struct retro_vfs_file_identity
 bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
       struct retro_vfs_file_identity *id);
 
+/* A stable open (RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE) that also
+ * fills @id, from the query the open makes anyway to vouch for the file:
+ * the identity as opened, without retro_vfs_file_identity_impl()'s own
+ * query (one fstat() fewer on POSIX; on Windows the identity's queries
+ * stand in for the size query). NULL, with @id zeroed, unless the stream
+ * is a stable one: a path the VFS opens by another scheme is closed and
+ * refused. Ask retro_vfs_file_identity_impl() for the identity later. */
+libretro_vfs_implementation_file *retro_vfs_file_open_stable_impl(
+      const char *path, struct retro_vfs_file_identity *id);
+
 /* Maps the whole of a descriptor-path stream read-only, on demand, and
  * returns it; the stream owns the mapping and drops it at close. Reads,
  * seeks and the position are untouched by it, and a second call returns

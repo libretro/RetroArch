@@ -1154,15 +1154,108 @@ static int64_t vfs_open_size(libretro_vfs_implementation_file *stream)
    return -1;
 }
 
+#if defined(_WIN32) && !defined(_XBOX)
+/* FILE_BASIC_INFO and FILE_ID_INFO, which older SDKs lack */
+struct vfs_file_basic_info
+{
+   LARGE_INTEGER creation;
+   LARGE_INTEGER access;
+   LARGE_INTEGER write;
+   LARGE_INTEGER change;
+   DWORD attributes;
+};
+
+struct vfs_file_id_info
+{
+   ULONGLONG volume;
+   BYTE id[16];
+};
+
+/* GetFileInformationByHandleEx, Vista and later */
+typedef BOOL (WINAPI *vfs_file_info_ex_t)(HANDLE, int, LPVOID, DWORD);
+#define VFS_FILE_BASIC_INFO 0
+#define VFS_FILE_ID_INFO    18
+
+/* FILETIME ticks (100 ns from 1601) to seconds from 1970 */
+static void vfs_file_time(uint64_t ticks, int64_t *sec, uint32_t *nsec)
+{
+   *sec  = (int64_t)(ticks / 10000000) - (int64_t)11644473600LL;
+   *nsec = (uint32_t)(ticks % 10000000) * 100;
+}
+
+/* retro_vfs_file_identity_impl()'s answer for an open handle */
+static bool vfs_identity_handle(HANDLE h, struct retro_vfs_file_identity *id)
+{
+   BY_HANDLE_FILE_INFORMATION info;
+   struct vfs_file_basic_info basic;
+   struct vfs_file_id_info fid;
+   vfs_file_info_ex_t info_ex;
+   unsigned i;
+   if (!GetFileInformationByHandle(h, &info))
+      return false;
+   id->dev  = info.dwVolumeSerialNumber;
+   id->size = ((uint64_t)info.nFileSizeHigh << 32) | info.nFileSizeLow;
+   for (i = 0; i < 4; i++)
+   {
+      id->id[8 + i]  = (uint8_t)(info.nFileIndexHigh >> (24 - 8 * i));
+      id->id[12 + i] = (uint8_t)(info.nFileIndexLow  >> (24 - 8 * i));
+   }
+   vfs_file_time(((uint64_t)info.ftLastWriteTime.dwHighDateTime << 32)
+         | info.ftLastWriteTime.dwLowDateTime, &id->mtime, &id->mtime_nsec);
+   if ((info_ex = (vfs_file_info_ex_t)GetProcAddress(
+               GetModuleHandleA("kernel32.dll"),
+               "GetFileInformationByHandleEx")))
+   {
+      /* 128-bit ids: ReFS can reuse a 64-bit index */
+      if (info_ex(h, VFS_FILE_ID_INFO, &fid, sizeof(fid)))
+      {
+         id->dev = fid.volume;
+         memcpy(id->id, fid.id, sizeof(id->id));
+      }
+      if (info_ex(h, VFS_FILE_BASIC_INFO, &basic, sizeof(basic)))
+         vfs_file_time((uint64_t)basic.change.QuadPart,
+               &id->ctime, &id->ctime_nsec);
+   }
+   return true;
+}
+#elif defined(VFS_OPEN_FSTAT)
+/* retro_vfs_file_identity_impl()'s answer from an fstat() */
+static void vfs_identity_stat(const struct stat *st,
+      struct retro_vfs_file_identity *id)
+{
+   uint64_t ino = (uint64_t)st->st_ino;
+   unsigned i;
+   id->dev   = (uint64_t)st->st_dev;
+   id->size  = (uint64_t)st->st_size;
+   id->mtime = (int64_t)st->st_mtime;
+   id->ctime = (int64_t)st->st_ctime;
+#if defined(__APPLE__)
+   id->mtime_nsec = (uint32_t)st->st_mtimespec.tv_nsec;
+   id->ctime_nsec = (uint32_t)st->st_ctimespec.tv_nsec;
+#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) \
+   || defined(__OpenBSD__) || defined(__DragonFly__)
+   id->mtime_nsec = (uint32_t)st->st_mtim.tv_nsec;
+   id->ctime_nsec = (uint32_t)st->st_ctim.tv_nsec;
+#endif
+   for (i = 0; i < 8; i++)
+      id->id[8 + i] = (uint8_t)(ino >> (56 - 8 * i));
+}
+#endif
+
 /* A stable open's file size, or -1 unless it is a regular file: one
  * fstat() on POSIX, GetFileType and a size query on Windows. The open
- * takes its size from here rather than probing again. */
-static int64_t vfs_stable_size(libretro_vfs_implementation_file *stream)
+ * takes its size from here rather than probing again. With id, the
+ * file's identity as well, from the same answer on POSIX and with the
+ * identity's own queries standing in for the size query on Windows. */
+static int64_t vfs_stable_size(libretro_vfs_implementation_file *stream,
+      struct retro_vfs_file_identity *id)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    HANDLE h = (HANDLE)_get_osfhandle(stream->fd);
    if (h == INVALID_HANDLE_VALUE || GetFileType(h) != FILE_TYPE_DISK)
       return -1;
+   if (id)
+      return vfs_identity_handle(h, id) ? (int64_t)id->size : -1;
 #if defined(LEGACY_WIN32)
    {
       DWORD hi = 0;
@@ -1183,16 +1276,20 @@ static int64_t vfs_stable_size(libretro_vfs_implementation_file *stream)
    struct stat st;
    if (fstat(stream->fd, &st) != 0 || !S_ISREG(st.st_mode))
       return -1;
+   if (id)
+      vfs_identity_stat(&st, id);
    return (int64_t)st.st_size;
 #else
    /* No stable open where there is no fstat to vouch for the file */
    (void)stream;
+   (void)id;
    return -1;
 #endif
 }
 
-libretro_vfs_implementation_file *retro_vfs_file_open_impl(
-      const char *path, unsigned mode, unsigned hints)
+static libretro_vfs_implementation_file *vfs_file_open(
+      const char *path, unsigned mode, unsigned hints,
+      struct retro_vfs_file_identity *id)
 {
    int64_t                      stable_size = -1;
    int                                flags = 0;
@@ -1672,7 +1769,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       /* A stable open is of a regular file only, its size taken from
        * the same call that says so */
       if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE)
-            && (stable_size = vfs_stable_size(stream)) < 0)
+            && (stable_size = vfs_stable_size(stream, id)) < 0)
          goto error;
 
 #ifdef VFS_HAVE_FILE_MAPPING
@@ -1783,6 +1880,31 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 error:
    retro_vfs_file_close_impl(stream);
    return NULL;
+}
+
+libretro_vfs_implementation_file *retro_vfs_file_open_impl(
+      const char *path, unsigned mode, unsigned hints)
+{
+   return vfs_file_open(path, mode, hints, NULL);
+}
+
+libretro_vfs_implementation_file *retro_vfs_file_open_stable_impl(
+      const char *path, struct retro_vfs_file_identity *id)
+{
+   libretro_vfs_implementation_file *stream;
+   if (!id)
+      return NULL;
+   memset(id, 0, sizeof(*id));
+   stream = vfs_file_open(path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE, id);
+   /* A scheme opened another way drops the hint, and fills no id */
+   if (stream && !(stream->hints & RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE))
+   {
+      retro_vfs_file_close_impl(stream);
+      memset(id, 0, sizeof(*id));
+      return NULL;
+   }
+   return stream;
 }
 
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
@@ -3857,50 +3979,13 @@ const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
    return NULL;
 }
 
-#if defined(_WIN32) && !defined(_XBOX)
-/* FILE_BASIC_INFO and FILE_ID_INFO, which older SDKs lack */
-struct vfs_file_basic_info
-{
-   LARGE_INTEGER creation;
-   LARGE_INTEGER access;
-   LARGE_INTEGER write;
-   LARGE_INTEGER change;
-   DWORD attributes;
-};
-
-struct vfs_file_id_info
-{
-   ULONGLONG volume;
-   BYTE id[16];
-};
-
-/* GetFileInformationByHandleEx, Vista and later */
-typedef BOOL (WINAPI *vfs_file_info_ex_t)(HANDLE, int, LPVOID, DWORD);
-#define VFS_FILE_BASIC_INFO 0
-#define VFS_FILE_ID_INFO    18
-
-/* FILETIME ticks (100 ns from 1601) to seconds from 1970 */
-static void vfs_file_time(uint64_t ticks, int64_t *sec, uint32_t *nsec)
-{
-   *sec  = (int64_t)(ticks / 10000000) - (int64_t)11644473600LL;
-   *nsec = (uint32_t)(ticks % 10000000) * 100;
-}
-#endif
-
 bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
       struct retro_vfs_file_identity *id)
 {
 #if defined(_WIN32) && !defined(_XBOX)
-   BY_HANDLE_FILE_INFORMATION info;
-   struct vfs_file_basic_info basic;
-   struct vfs_file_id_info fid;
-   vfs_file_info_ex_t info_ex;
    HANDLE h;
-   unsigned i;
 #elif defined(VFS_OPEN_FSTAT)
    struct stat st;
-   uint64_t ino;
-   unsigned i;
 #endif
    if (!id)
       return false;
@@ -3911,54 +3996,15 @@ bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
          || stream->fd < 0)
       return false;
 #if defined(_WIN32) && !defined(_XBOX)
-   if ((h = (HANDLE)_get_osfhandle(stream->fd)) == INVALID_HANDLE_VALUE
-         || !GetFileInformationByHandle(h, &info))
-      return false;
-   id->dev  = info.dwVolumeSerialNumber;
-   id->size = ((uint64_t)info.nFileSizeHigh << 32) | info.nFileSizeLow;
-   for (i = 0; i < 4; i++)
-   {
-      id->id[8 + i]  = (uint8_t)(info.nFileIndexHigh >> (24 - 8 * i));
-      id->id[12 + i] = (uint8_t)(info.nFileIndexLow  >> (24 - 8 * i));
-   }
-   vfs_file_time(((uint64_t)info.ftLastWriteTime.dwHighDateTime << 32)
-         | info.ftLastWriteTime.dwLowDateTime, &id->mtime, &id->mtime_nsec);
-   if ((info_ex = (vfs_file_info_ex_t)GetProcAddress(
-               GetModuleHandleA("kernel32.dll"),
-               "GetFileInformationByHandleEx")))
-   {
-      /* 128-bit ids: ReFS can reuse a 64-bit index */
-      if (info_ex(h, VFS_FILE_ID_INFO, &fid, sizeof(fid)))
-      {
-         id->dev = fid.volume;
-         memcpy(id->id, fid.id, sizeof(id->id));
-      }
-      if (info_ex(h, VFS_FILE_BASIC_INFO, &basic, sizeof(basic)))
-         vfs_file_time((uint64_t)basic.change.QuadPart,
-               &id->ctime, &id->ctime_nsec);
-   }
-   return true;
-#elif !defined(VFS_OPEN_FSTAT)
-   return false;
-#else
+   return (h = (HANDLE)_get_osfhandle(stream->fd)) != INVALID_HANDLE_VALUE
+      && vfs_identity_handle(h, id);
+#elif defined(VFS_OPEN_FSTAT)
    if (fstat(stream->fd, &st) != 0)
       return false;
-   id->dev   = (uint64_t)st.st_dev;
-   id->size  = (uint64_t)st.st_size;
-   id->mtime = (int64_t)st.st_mtime;
-   id->ctime = (int64_t)st.st_ctime;
-#if defined(__APPLE__)
-   id->mtime_nsec = (uint32_t)st.st_mtimespec.tv_nsec;
-   id->ctime_nsec = (uint32_t)st.st_ctimespec.tv_nsec;
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) \
-   || defined(__OpenBSD__) || defined(__DragonFly__)
-   id->mtime_nsec = (uint32_t)st.st_mtim.tv_nsec;
-   id->ctime_nsec = (uint32_t)st.st_ctim.tv_nsec;
-#endif
-   ino = (uint64_t)st.st_ino;
-   for (i = 0; i < 8; i++)
-      id->id[8 + i] = (uint8_t)(ino >> (56 - 8 * i));
+   vfs_identity_stat(&st, id);
    return true;
+#else
+   return false;
 #endif
 }
 

@@ -831,6 +831,16 @@ bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
    return false;
 }
 
+libretro_vfs_implementation_file *retro_vfs_file_open_stable_impl(
+      const char *path, struct retro_vfs_file_identity *id)
+{
+   /* No stable open on this backend: see retro_vfs_file_open_impl() */
+   (void)path;
+   if (id)
+      memset(id, 0, sizeof(*id));
+   return NULL;
+}
+
 const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
       int64_t *len)
 {
