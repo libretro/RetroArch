@@ -1,3 +1,6 @@
+#ifndef D3D_SHADERS_RIBBON_SIMPLE_SM3_HLSL_H
+#define D3D_SHADERS_RIBBON_SIMPLE_SM3_HLSL_H
+
 
 static const char *hlsl_ribbon_simple_program = CG(
 
@@ -47,3 +50,5 @@ static const char *hlsl_ribbon_simple_program = CG(
       return OUT;
    }
 );
+
+#endif

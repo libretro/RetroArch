@@ -1,3 +1,6 @@
+#ifndef D3D_SHADERS_BOKEH_SM3_HLSL_H
+#define D3D_SHADERS_BOKEH_SM3_HLSL_H
+
 
 static const char *hlsl_bokeh_program = CG(
 
@@ -60,3 +63,5 @@ static const char *hlsl_bokeh_program = CG(
       return OUT;
    }
 );
+
+#endif

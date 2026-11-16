@@ -1,3 +1,6 @@
+#ifndef D3D_SHADERS_RIBBON_SM3_HLSL_H
+#define D3D_SHADERS_RIBBON_SM3_HLSL_H
+
 #include "../../common/menu_ribbon_shader.h"
 
 static const char *hlsl_ribbon_program(void)
@@ -10,3 +13,5 @@ static const char *hlsl_ribbon_program(void)
       "void main_vertex(float2 p : POSITION, out float4 position : POSITION, out float4 vEC : TEXCOORD0) { ribbon_vertex(p, position, vEC); }\nfloat4 main_fragment(float4 vEC : TEXCOORD0) : COLOR { return ribbon_fragment(vEC); }", 3)
 ;
 }
+
+#endif

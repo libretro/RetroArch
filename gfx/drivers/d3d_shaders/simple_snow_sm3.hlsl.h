@@ -1,3 +1,6 @@
+#ifndef D3D_SHADERS_SIMPLE_SNOW_SM3_HLSL_H
+#define D3D_SHADERS_SIMPLE_SNOW_SM3_HLSL_H
+
 
 static const char *hlsl_simple_snow_program = CG(
 
@@ -86,3 +89,5 @@ static const char *hlsl_simple_snow_program = CG(
       return OUT;
    }
 );
+
+#endif

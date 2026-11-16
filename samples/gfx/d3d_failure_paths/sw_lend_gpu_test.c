@@ -35,6 +35,16 @@ typedef struct
 } d3d11_video_t;
 static unsigned retired;
 static void video_driver_cached_frame_retire(void) { retired++; }
+/* A lend handed back retires the cached frame in its mapping first;
+ * no reader holds one here, so it always can. */
+static bool video_driver_cached_frame_try_retire(const void *data,
+      size_t size)
+{
+   (void)data;
+   (void)size;
+   retired++;
+   return true;
+}
 #include "sw_lend.inc"
 
 #define W 320
