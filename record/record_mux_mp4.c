@@ -281,6 +281,13 @@ static bool rmp4w_track(record_mux_mp4_t *m, const record_mp4_config_t *c, unsig
          rmp4w_uint(m, c->full_range ? 128 : 0, 1);
          rmp4w_end(m, box);
       }
+      if (c->max_cll || c->max_fall)
+      {
+         box = rmp4w_box(m, "clli");
+         rmp4w_uint(m, c->max_cll, 2);
+         rmp4w_uint(m, c->max_fall, 2);
+         rmp4w_end(m, box);
+      }
    }
    rmp4w_end(m, entry); rmp4w_end(m, stsd);
    box = rmp4w_full(m, "stts", 0); rmp4w_zero(m, 4); rmp4w_end(m, box);
@@ -308,6 +315,9 @@ record_mux_mp4_t *record_mux_mp4_new(const record_mp4_config_t *c)
             || !c->transfer_characteristics || c->transfer_characteristics > 65535
             || !c->matrix_coefficients || c->matrix_coefficients > 65535)
          return NULL;
+   if (c->max_cll > 65535 || c->max_fall > 65535
+         || (c->max_cll && c->max_fall > c->max_cll))
+      return NULL;
    m = (record_mux_mp4_t*)calloc(1, sizeof(*m));
    if (!m) return NULL;
    m->capacity = c->max_packet_size + 4096 + c->headers_size;

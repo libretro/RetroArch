@@ -87,7 +87,8 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
                 result = subprocess.run([*runner, binary, str(fixture), str(rejected),
                                          str(audio), *mismatch], capture_output=True)
                 assert result.returncode != 0 and not rejected.exists(), result
-            subprocess.run([*runner, binary, str(fixture), str(movie), str(audio), *tags], check=True)
+            light = ['1000', '400'] if transfer else []
+            subprocess.run([*runner, binary, str(fixture), str(movie), str(audio), *tags, *light], check=True)
             info = probe(movie)
             streams = info['streams']
             if codec == 2:
@@ -103,6 +104,30 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
                 assert streams[0]['color_range'] == 'tv', streams[0]
                 blob = movie.read_bytes()
                 assert blob.count(b'colrnclx') == 1
+                assert blob.count(b'clli') == 1
+                clli = blob.index(b'clli')
+                assert blob[clli-4:clli+8] == struct.pack('>I4sHH', 12, b'clli', 1000, 400)
+                side = streams[0].get('side_data_list', [])
+                levels = [x for x in side if x.get('side_data_type') == 'Content light level metadata']
+                assert len(levels) == 1 and levels[0]['max_content'] == 1000, side
+                assert levels[0]['max_average'] == 400, side
+            else:
+                assert b'clli' not in movie.read_bytes()
+            if transfer and not rate:
+                for maximum, average in ((1000, 0), (0, 400), (0, 0)):
+                    partial = root / f'partial-{codec}-{transfer}-{maximum}-{average}.mp4'
+                    subprocess.run([*runner, binary, str(fixture), str(partial), str(audio),
+                                    *tags, str(maximum), str(average)], check=True)
+                    partial_info = probe(partial)['streams'][0]
+                    levels = [x for x in partial_info.get('side_data_list', [])
+                              if x.get('side_data_type') == 'Content light level metadata']
+                    if maximum or average:
+                        assert len(levels) == 1, partial_info
+                        assert levels[0]['max_content'] == maximum, levels
+                        assert levels[0]['max_average'] == average, levels
+                    else:
+                        assert not levels and b'clli' not in partial.read_bytes(), partial_info
+                    assert decode(partial) == pixels, 'content light metadata changed pixels'
             assert decode(movie) == pixels, 'video pixels changed'
             assert decode(movie, start=8 * 1001 / 30000) == pixels[8 * 64 * 48 * 3:], 'keyframe seek differs'
             video = [q for q in info['packets'] if q['stream_index'] == 0]
