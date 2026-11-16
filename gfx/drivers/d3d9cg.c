@@ -466,6 +466,17 @@ struct d3d9_cg_effect
 static struct d3d9_cg_effect d3d9_cg_effects[16];
 static unsigned d3d9_cg_effect_count;
 
+/* Whether @fx is an effect its chain has programs for */
+static bool d3d9_cg_effect_drawable(const d3d9_video_t *d3d,
+      const struct d3d9_cg_effect *fx)
+{
+   const cg_renderchain_t *chain;
+   if (!fx || !d3d || !(chain = (const cg_renderchain_t*)d3d->renderchain_data))
+      return false;
+   return    chain->effects[fx - d3d9_cg_effects].vprg
+          && chain->effects[fx - d3d9_cg_effects].fprg;
+}
+
 /* Vertex buffer for the menu's mesh effects.
  * Stored as a file-static since the d3d9 menu_display struct
  * does not have a pipeline_vbo member like d3d10_video_t does. */
@@ -783,7 +794,12 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
    dev                           = d3d->dev;
 
-   switch (draw->effect ? 1 : 0)
+   /* An effect that would not compile is drawn as any quad is, with
+    * the stock shader, in the colour the menu gives the effect: the
+    * background under it, unchanged. draw_pipeline() left the draw
+    * as the background's. */
+   switch (d3d9_cg_effect_drawable(d3d,
+            (const struct d3d9_cg_effect*)draw->effect) ? 1 : 0)
    {
       case 1:
       {
@@ -850,14 +866,6 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
                cgUpdateProgramParameters(prog->fprg);
             }
 
-            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
-                  0, draw->coords->vertices - 2);
-         }
-         else if (_chain)
-         {
-            cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
-            cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
-            CG_DEBUG_CHECK(_chain->cgCtx, "pipeline draw BindProgram (fallback)");
             IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                   0, draw->coords->vertices - 2);
          }
@@ -1147,6 +1155,10 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
    const struct d3d9_cg_effect *fx;
 
    if (!d3d || !draw || !(fx = (const struct d3d9_cg_effect*)draw->effect))
+      return;
+   /* One that would not compile is drawn as the background is: its
+    * coordinates, blend and the stock shader are left as they are */
+   if (!d3d9_cg_effect_drawable(d3d, fx))
       return;
 
    ca                                    = gfx_display_effect_coords(p_disp);
@@ -2131,7 +2143,7 @@ static bool d3d9_cg_effect_compile(cg_renderchain_t *chain, unsigned i)
          || (cgD3D9LoadProgram(prog->fprg, true, 0), cgGetError() != CG_NO_ERROR)
          || (cgD3D9LoadProgram(prog->vprg, true, 0), cgGetError() != CG_NO_ERROR))
    {
-      RARCH_WARN("[D3D9 Cg] Could not compile a menu effect, it is not drawn.\n");
+      RARCH_WARN("[D3D9 Cg] Could not compile a menu effect, it is drawn with the stock shader.\n");
       if (prog->fprg)
          cgDestroyProgram(prog->fprg);
       if (prog->vprg)

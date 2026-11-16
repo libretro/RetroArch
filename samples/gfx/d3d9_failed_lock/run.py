@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Exercise production D3D9 lock failures and ribbon mesh replacement."""
+"""Exercise production D3D9 lock failures, ribbon mesh replacement, and
+the drawing of a menu effect that would not compile."""
 import os
 from pathlib import Path
 import shlex
@@ -53,3 +54,37 @@ with tempfile.TemporaryDirectory() as directory:
                        '-o', str(exe)], check=True)
         subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
         print('D3D9 ' + backend + ' ribbon mesh replacement PASS', flush=True)
+
+    # An effect that would not compile: drawn as the background is
+    for backend in ('hlsl', 'cg'):
+        source = (root / ('gfx/drivers/d3d9' + backend + '.c')).read_text()
+        struct = source.index('struct d3d9_' + backend + '_effect\n{')
+        types = source[struct:source.index('};', struct) + 2]
+        helper = block(source.index('static bool d3d9_' + backend + '_effect_drawable('))
+        start = source.index('static void gfx_display_d3d9_' + backend + '_draw_pipeline(')
+        start = source.index('{', start)
+        end = source.index('gfx_display_effect_coords(p_disp);', start)
+        end = source.index('\n', end) + 1
+        pipeline = source[start:end] + '   (void)ca;\n'
+        if '   float t;' in pipeline:
+            pipeline += '   (void)t;\n'
+        pipeline += '}\n'
+        draw = source.index('static void gfx_display_d3d9_' + backend + '_draw(')
+        sw = source.index('   switch (', draw) + len('   switch ')
+        depth, i = 0, sw
+        while True:
+            depth += (source[i] == '(') - (source[i] == ')')
+            i += 1
+            if not depth:
+                break
+        for name, text in [('fallback_types', types), ('fallback_helper', helper),
+                           ('fallback_pipeline', pipeline),
+                           ('fallback_switch', source[sw:i])]:
+            (tmp / (name + '.inc')).write_text(text)
+        subprocess.run(cc + flags + ['-I' + str(tmp),
+                       '-I' + str(root / 'libretro-common/include'),
+                       '-DTEST_' + backend.upper(),
+                       str(Path(__file__).with_name('fallback_test.c')),
+                       '-o', str(exe)], check=True)
+        subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+        print('D3D9 ' + backend + ' failed effect drawn as the background PASS', flush=True)

@@ -717,6 +717,13 @@ struct d3d9_hlsl_effect
 };
 static struct d3d9_hlsl_effect d3d9_hlsl_effects[16];
 static unsigned d3d9_hlsl_effect_count;
+
+/* Whether @fx is an effect with programs: one that would not compile
+ * is drawn as the background is */
+static bool d3d9_hlsl_effect_drawable(const struct d3d9_hlsl_effect *fx)
+{
+   return fx && fx->shader.vprg && fx->shader.fprg;
+}
 static bool d3d9_hlsl_load_program_ex(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
@@ -845,7 +852,12 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
 
    dev                           = d3d->dev;
 
-   switch (draw->effect ? 1 : 0)
+   /* An effect that would not compile is drawn as any quad is, with
+    * the stock shader, in the colour the menu gives the effect: the
+    * background under it, unchanged. draw_pipeline() left the draw
+    * as the background's. */
+   switch (d3d9_hlsl_effect_drawable(
+            (const struct d3d9_hlsl_effect*)draw->effect) ? 1 : 0)
    {
       case 1:
       {
@@ -1171,6 +1183,12 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    const struct d3d9_hlsl_effect *fx;
 
    if (!d3d || !draw)
+      return;
+
+   /* One that would not compile is drawn as the background is: its
+    * coordinates, blend and the stock shader are left as they are */
+   if (     (fx = (const struct d3d9_hlsl_effect*)draw->effect)
+         && !d3d9_hlsl_effect_drawable(fx))
       return;
 
    ca                                    = gfx_display_effect_coords(p_disp);
@@ -2814,13 +2832,28 @@ static void *gfx_display_d3d9_hlsl_effect_install(void *data,
    memset(fx, 0, sizeof(*fx));
    hlsl_uniform_map_init(&fx->data.vs_map);
    hlsl_uniform_map_init(&fx->data.ps_map);
+   fx->flags          = desc->flags;
    if (!d3d9_hlsl_load_program_ex(d3d->dev, &fx->shader, desc->hlsl_sm3,
             &fx->data))
    {
-      RARCH_WARN("[D3D9 HLSL] Could not compile a menu effect, it is not drawn.\n");
-      return NULL;
+      /* Drawn through the stock shader instead: no programs, and no
+       * registers to set */
+      RARCH_WARN("[D3D9 HLSL] Could not compile a menu effect, it is drawn with the stock shader.\n");
+      d3d9_hlsl_release_programs(&fx->shader);
+      hlsl_pass_data_free(&fx->data);
+      memset(&fx->shader, 0, sizeof(fx->shader));
+      memset(&fx->data, 0, sizeof(fx->data));
+      fx->vs_mvp         = -1;
+      fx->vs_ribbon      = -1;
+      fx->vs_time        = -1;
+      fx->ps_time        = -1;
+      fx->vs_output_size = -1;
+      fx->ps_output_size = -1;
+      fx->vs_alpha       = -1;
+      fx->ps_alpha       = -1;
+      d3d9_hlsl_effect_count++;
+      return fx;
    }
-   fx->flags          = desc->flags;
    /* Found once, rather than read out of the bytecode every frame */
    fx->vs_mvp         = d3d9_hlsl_effect_register(&fx->data, true,  "modelViewProj");
    fx->vs_ribbon      = d3d9_hlsl_effect_register(&fx->data, true,  "Ribbon");
