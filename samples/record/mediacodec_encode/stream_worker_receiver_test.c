@@ -4,6 +4,67 @@
 #include "stream_receiver_test.c"
 #undef main
 #include "../../../record/record_aac_stream_timing.h"
+#include "../../../record/record_pcm_resample.h"
+
+static int16_t *read_pcm(const char *path, size_t *frames)
+{
+   FILE *file = fopen(path, "rb");
+   long bytes;
+   int16_t *samples;
+   assert(file && !fseek(file, 0, SEEK_END));
+   bytes = ftell(file);
+   assert(bytes > 0 && bytes % 4 == 0 && bytes < 1048576);
+   samples = (int16_t*)malloc((size_t)bytes);
+   assert(samples && !fseek(file, 0, SEEK_SET));
+   assert(fread(samples, 1, (size_t)bytes, file) == (size_t)bytes);
+   fclose(file);
+   *frames = (size_t)bytes / 4;
+   return samples;
+}
+static record_audio_queue_t *queue_pcm(const int16_t *samples, size_t frames)
+{
+   record_audio_queue_t *q = record_audio_queue_new(2, 4096, 524288);
+   size_t at, count;
+   assert(q);
+   for (at = 0; at < frames; at += count)
+   {
+      count = frames - at;
+      if (count > 4096)
+         count = 4096;
+      assert(record_audio_queue_push(q, samples + at * 2, count, at) == RECORD_AUDIO_OK);
+   }
+   assert(record_audio_queue_finish(q));
+   return q;
+}
+static void dump_resampled(const char *rate, const char *input, const char *output)
+{
+   record_pcm_resample_t *converter;
+   record_audio_queue_t *q;
+   int16_t *data;
+   const int16_t *borrow;
+   uint64_t timestamp;
+   size_t frames;
+   FILE *file;
+   int result;
+   data = read_pcm(input, &frames);
+   q = queue_pcm(data, frames);
+   converter = record_pcm_resample_new(q, strtod(rate, NULL), 48000);
+   file = fopen(output, "wb");
+   assert(converter && file);
+   do
+   {
+      result = record_pcm_resample_peek(converter, &borrow, &frames, &timestamp);
+      assert(result != RECORD_PCM_ERROR && result != RECORD_PCM_BUSY);
+      if (result == RECORD_PCM_PACKET)
+      {
+         assert(fwrite(borrow, 4, frames, file) == frames);
+         assert(record_pcm_resample_ack(converter));
+      }
+   } while (result != RECORD_PCM_END);
+   fclose(file);
+   assert(record_pcm_resample_free(converter) && record_audio_queue_free(q));
+   free(data);
+}
 
 struct worker_replay
 {
@@ -129,12 +190,18 @@ int main(int argc, char **argv)
    retro_time_t deadline;
    FILE *file;
    long bytes;
-   size_t frames, at, count;
+   size_t frames, raw_frames = 0;
+   int16_t *raw_pcm = NULL;
    unsigned i, n, delay = 0, source_epoch, source_frames = 0;
    int result, output;
    char *pem = NULL;
    int64_t pem_size = 0;
    const char *ca = getenv("RTMPS_CA");
+   if (argc == 5 && !strcmp(argv[1], "--resample-source"))
+   {
+      dump_resampled(argv[2], argv[3], argv[4]);
+      return 0;
+   }
    if (argc == 3 && !strcmp(argv[1], "--dump-probe"))
    {
       const int16_t *input;
@@ -157,7 +224,9 @@ int main(int argc, char **argv)
              timing.audio_epoch, timing.video_epoch_us);
       return 0;
    }
-   assert(argc == 6 && network_init());
+   assert((argc == 6 || argc == 8) && network_init());
+   if (argc == 8)
+      raw_pcm = read_pcm(argv[6], &raw_frames);
    source_epoch = (unsigned)strtoul(argv[5], NULL, 10);
    file = fopen(argv[4], "rb");
    assert(file && !fseek(file, 0, SEEK_END));
@@ -224,6 +293,7 @@ int main(int argc, char **argv)
          free(video.data);
          free(audio.data);
          free(expected_pcm);
+         free(raw_pcm);
          ssl_socket_retro_set_trust_pem(NULL, 0);
          free(pem);
          return 78;
@@ -243,17 +313,9 @@ int main(int argc, char **argv)
    if (audio.bytes)
    {
       source_frames = (unsigned)(expected_frames - source_epoch);
-      pcm = record_audio_queue_new(2, 4096, 524288);
-      assert(pcm);
-      for (at = 0; at < source_frames; at += count)
-      {
-         count = source_frames - at;
-         if (count > 4096)
-            count = 4096;
-         assert(record_audio_queue_push(pcm, expected_pcm + (source_epoch + at) * 2,
-                                        count, at) == RECORD_AUDIO_OK);
-      }
-      assert(record_audio_queue_finish(pcm));
+      if (raw_pcm)
+         source_frames = (unsigned)raw_frames;
+      pcm = queue_pcm(raw_pcm ? raw_pcm : expected_pcm + source_epoch * 2, source_frames);
       probe = record_aac_probe_new(48000, 2);
       assert(probe);
    }
@@ -261,6 +323,8 @@ int main(int argc, char **argv)
        &video, audio.bytes ? &audio : NULL, pcm, record_stream_mediacodec_ops(),
        stream, audio.bytes ? 2 : 0, audio.bytes ? 48000 : 0);
    assert(worker);
+   if (audio.bytes && raw_pcm)
+      assert(record_mediacodec_worker_resample(worker, strtod(argv[7], NULL)));
    if (audio.bytes)
       assert(record_mediacodec_worker_calibrate_live(worker, probe));
    assert(record_mediacodec_worker_finish(worker, 400000, source_frames));
@@ -298,6 +362,7 @@ int main(int argc, char **argv)
    free(video.data);
    free(audio.data);
    free(expected_pcm);
+   free(raw_pcm);
    ssl_socket_retro_set_trust_pem(NULL, 0);
    free(pem);
    printf("PASS video=%u encoded_audio=%u worker=1 delay=%u source_frames=%u "

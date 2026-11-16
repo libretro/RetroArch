@@ -10,6 +10,7 @@ from array import array
 from contextlib import ExitStack
 import json
 import hashlib
+import math
 import os
 from pathlib import Path
 import re
@@ -31,7 +32,11 @@ def main():
     parser.add_argument('--first-case', action='store_true')
     parser.add_argument('--worker', action='store_true', help='exercise the real worker and AAC calibration')
     parser.add_argument('--codec', choices=['avc', 'hevc', 'hevc10', 'av1'], default='avc')
+    parser.add_argument('--source-rate', type=float)
     args = parser.parse_args()
+    if args.source_rate is not None and (not args.worker or not 8000 <= args.source_rate <= 192000
+                                        or args.source_rate == 48000):
+        parser.error('--source-rate requires worker mode and a distinct supported source rate')
     here = Path(__file__).resolve().parent
     repo = here.parents[2]
     network = repo / 'libretro-common/samples/net/rtmp'
@@ -44,6 +49,7 @@ def main():
     evidence = dict(result='running', scope=__doc__, codecs='AVC/AAC', commands=[], cases=[])
     evidence['worker'] = args.worker
     evidence['codecs'] = args.codec + '/AAC'
+    evidence['source_rate'] = args.source_rate or 48000
 
     def save():
         (root / 'evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
@@ -132,15 +138,36 @@ def main():
             assert source_info['color_space'] == 'bt709' and source_info['color_range'] == 'tv'
         input_epoch = coded_origin = audio_epoch = video_epoch_us = 0
         full_pcm = root / 'input.pcm'
+        raw_pcm = root / 'source.pcm'
+        source_frames = 19200
         if args.worker:
             prefix = root / 'probe.pcm'
             command([binary, '--dump-probe', prefix])
             input_epoch, coded_origin, audio_epoch, video_epoch_us = map(
                 int, command([binary, '--epochs']).stdout.split())
-            source = command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i',
-                              'sine=frequency=997:sample_rate=48000', '-t', '0.4',
-                              '-ac', '2', '-f', 's16le', '-']).stdout
-            assert len(source) == 19200 * 4
+            if args.source_rate:
+                from fractions import Fraction
+                raw_frames = math.ceil(args.source_rate * .4)
+                samples = array('h')
+                for i in range(raw_frames):
+                    value = int(12000 * math.sin(2 * math.pi * 997 * i / args.source_rate))
+                    samples.extend((value, -value))
+                if sys.byteorder != 'little':
+                    samples.byteswap()
+                raw_pcm.write_bytes(samples.tobytes())
+                normalized = root / 'normalized.pcm'
+                command([binary, '--resample-source', repr(args.source_rate), raw_pcm, normalized])
+                source = normalized.read_bytes()
+                numerator, denominator = Fraction.from_float(args.source_rate).as_integer_ratio()
+                source_frames = (raw_frames * 48000 * denominator + numerator - 1) // numerator
+                assert len(source) == source_frames * 4
+                evidence['normalization'] = dict(raw_frames=raw_frames, output_frames=source_frames,
+                    scope='Shipping sinc prepass for encoder replay bytes; worker independently converts raw PCM. Filter quality covered by mathematical tone/alias tests.')
+            else:
+                source = command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i',
+                                  'sine=frequency=997:sample_rate=48000', '-t', '0.4',
+                                  '-ac', '2', '-f', 's16le', '-']).stdout
+                assert len(source) == source_frames * 4
             full_pcm.write_bytes(prefix.read_bytes() + bytes((input_epoch - 8192) * 4) + source)
             audio_input = ['-f', 's16le', '-ar', '48000', '-ac', '2', '-i', str(full_pcm)]
         else:
@@ -237,6 +264,8 @@ def main():
                         replay_args = [binary, url, fixture, 'legacy' if legacy else 'standard']
                         if args.worker:
                             replay_args += [full_pcm, str(input_epoch)]
+                            if args.source_rate:
+                                replay_args += [raw_pcm, repr(args.source_rate)]
                         result = command(replay_args,
                                          env=env, timeout=30, check=False)
                         if result.returncode != 78 or server.poll() is not None:
@@ -296,7 +325,7 @@ def main():
                     samples = array('f')
                     samples.frombytes(decoded_audio[:1024 * 2 * 4])
                     assert max(map(abs, samples)) < .0001, 'calibration leaked into preroll'
-                    source_bytes = 19200 * 2 * 4
+                    source_bytes = source_frames * 2 * 4
                     start = audio_epoch * 2 * 4
                     reference_start = (input_epoch + 1024) * 2 * 4
                     assert decoded_audio[start:start + source_bytes] == reference_audio[
