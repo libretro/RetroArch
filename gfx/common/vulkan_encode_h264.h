@@ -2,15 +2,9 @@
 #ifndef RARCH_VULKAN_ENCODE_H264_H
 #define RARCH_VULKAN_ENCODE_H264_H
 #include "vulkan_encode_pool.h"
+#include "vulkan_encode_packet.h"
 #include "vulkan_encode_h264_submit.h"
 RETRO_BEGIN_DECLS
-enum vulkan_encode_result
-{
-   VULKAN_ENCODE_ERROR = -1,
-   VULKAN_ENCODE_OK,
-   VULKAN_ENCODE_BUSY,
-   VULKAN_ENCODE_END
-};
 typedef struct vulkan_encode_h264 vulkan_encode_h264_t;
 typedef struct vulkan_encode_h264_ops
 {
@@ -26,15 +20,6 @@ typedef struct vulkan_encode_h264_open
    unsigned slots, producer_family, gop, qp;
    bool storage_image_extended_formats;
 } vulkan_encode_h264_open_t;
-typedef struct vulkan_encode_packet
-{
-   const void *data;
-   size_t size;
-   uint64_t timestamp, duration;
-   unsigned slot;
-   bool keyframe;
-} vulkan_encode_packet_t;
-
 /* One worker owns encoder and queue. Device/dispatch remain borrowed until
  * free. Producer borrows fixed pool images and timelines through retirement.
  * No B frames, frame-path allocations or waits. */

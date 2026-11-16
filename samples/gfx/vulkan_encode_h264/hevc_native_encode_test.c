@@ -76,7 +76,7 @@ static void upload_new(struct native_hevc_encoder *c,const vulkan_encode_pool_t 
    assert(c->base.queue_flags&VK_QUEUE_TRANSFER_BIT);
    memset(&buffer,0,sizeof(buffer));
    buffer.sType=VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-   buffer.size=(VkDeviceSize)pool->extent.width*pool->extent.height*3/
+   buffer.size=(VkDeviceSize)pool->extent.width*pool->extent.height*6/
       (pool->format==VK_FORMAT_G8_B8R8_2PLANE_420_UNORM?2:1);
    buffer.usage=VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
    assert(c->pool_ops.create_buffer(c->base.device,&buffer,NULL,&c->upload)==VK_SUCCESS);
@@ -122,14 +122,17 @@ static void upload_frame(struct native_hevc_encoder *c,const vulkan_encode_pool_
    uint64_t ready=frame+1;
    unsigned i;
    size_t luma=(size_t)pool->extent.width*pool->extent.height;
+   size_t bytes=luma*3/(pool->format==VK_FORMAT_G8_B8R8_2PLANE_420_UNORM?2:1);
+   size_t offset=(frame%2)*bytes;
+   uint8_t *data=(uint8_t*)c->upload_data+offset;
    if (pool->format==VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
    {
-      memset(c->upload_data,32+frame*6,luma);
-      memset((uint8_t*)c->upload_data+luma,128,luma/2);
+      memset(data,32+frame*6,luma);
+      memset(data+luma,128,luma/2);
    }
    else
    {
-      uint16_t *samples=(uint16_t*)c->upload_data;
+      uint16_t *samples=(uint16_t*)data;
       for (i=0;i<luma;i++)
          samples[i]=(uint16_t)((128+frame*24)<<6);
       for (i=0;i<luma/2;i++)
@@ -161,7 +164,8 @@ static void upload_frame(struct native_hevc_encoder *c,const vulkan_encode_pool_
    buffer.dstAccessMask=VK_ACCESS_2_TRANSFER_READ_BIT;
    buffer.srcQueueFamilyIndex=buffer.dstQueueFamilyIndex=VK_QUEUE_FAMILY_IGNORED;
    buffer.buffer=c->upload;
-   buffer.size=luma*3/2;
+   buffer.offset=offset;
+   buffer.size=bytes;
    memset(&dependency,0,sizeof(dependency));
    dependency.sType=VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
    dependency.imageMemoryBarrierCount=dependency.bufferMemoryBarrierCount=1;
@@ -171,7 +175,7 @@ static void upload_frame(struct native_hevc_encoder *c,const vulkan_encode_pool_
    memset(regions,0,sizeof(regions));
    for (i=0;i<2;i++)
    {
-      regions[i].bufferOffset=i?luma:0;
+      regions[i].bufferOffset=offset+(i?luma:0);
       regions[i].imageSubresource.aspectMask=i?VK_IMAGE_ASPECT_PLANE_1_BIT:VK_IMAGE_ASPECT_PLANE_0_BIT;
       regions[i].imageSubresource.layerCount=1;
       regions[i].imageExtent.width=pool->extent.width>>i;
@@ -201,6 +205,7 @@ static void upload_frame(struct native_hevc_encoder *c,const vulkan_encode_pool_
    submit.pSignalSemaphores=&pool->ready;
    assert(c->submit_ops.submit(c->queue,1,&submit,VK_NULL_HANDLE)==VK_SUCCESS);
 }
+#ifndef HEVC_NATIVE_HELPERS_ONLY
 int main(int argc, char **argv)
 {
    struct native_hevc_encoder *e = (struct native_hevc_encoder*)calloc(1, sizeof(*e));
@@ -220,7 +225,7 @@ int main(int argc, char **argv)
    int result = 77;
    assert(e && headers && argc == 3);
    c = &e->base;
-   if (!startup(c))
+   if (!startup(c) || !(c->queue_flags & VK_QUEUE_TRANSFER_BIT))
    {
       puts("UNAVAILABLE native HEVC encode device or validation layer");
       goto done;
@@ -329,3 +334,5 @@ done:
    free(e);
    return result;
 }
+
+#endif

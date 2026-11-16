@@ -15,6 +15,20 @@ enum record_gpu_worker_vulkan_result
 };
 typedef struct record_gpu_worker_vulkan record_gpu_worker_vulkan_t;
 
+typedef struct record_gpu_worker_vulkan_encoder_ops
+{
+   int (*submit)(void *encoder, unsigned slot, uint64_t timestamp,
+         uint64_t duration, uint64_t ready, bool keyframe);
+   int (*poll)(void *encoder, vulkan_encode_packet_t *packet);
+   bool (*release)(void *encoder);
+   int (*finish)(void *encoder);
+} record_gpu_worker_vulkan_encoder_ops_t;
+
+/* Codec factories supply immutable dispatch borrowed through worker free. */
+record_gpu_worker_vulkan_t *record_gpu_worker_vulkan_new_encoder(
+      record_gpu_queue_t *queue, void *encoder,
+      const record_gpu_worker_vulkan_encoder_ops_t *ops);
+
 /* One worker owns this pump and the fresh encoder. Queue and encoder
  * are borrowed until free. The encoder pool must match the queue's slots.
  * Open/close the encoder on that worker, outside the display frame path. */

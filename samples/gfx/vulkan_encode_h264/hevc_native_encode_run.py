@@ -51,6 +51,7 @@ def main():
     source.add_argument('--native-test', type=Path)
     source.add_argument('--verify', type=Path)
     parser.add_argument('--depth', type=int, choices=(8, 10))
+    parser.add_argument('--with-cancel', action='store_true')
     args = parser.parse_args()
     if args.verify:
         if args.depth is None:
@@ -59,13 +60,16 @@ def main():
         return
     with tempfile.TemporaryDirectory(prefix='vulkan-hevc-pictures-') as directory:
         for depth in (8, 10):
-            output = Path(directory) / ('main%d.hevc' % depth)
-            result = subprocess.run([str(args.native_test.resolve()),
-                                     str(depth), str(output)], check=False)
-            if result.returncode == 77:
-                raise SystemExit(77)
-            result.check_returncode()
-            verify(output, depth)
+            for cancel in ((False, True) if args.with_cancel else (False,)):
+                output = Path(directory) / ('main%d-%d.hevc' % (depth, cancel))
+                command = [str(args.native_test.resolve()), str(depth), str(output)]
+                if cancel:
+                    command.append('--cancel')
+                result = subprocess.run(command, check=False)
+                if result.returncode == 77:
+                    raise SystemExit(77)
+                result.check_returncode()
+                verify(output, depth)
 
 
 if __name__ == '__main__':

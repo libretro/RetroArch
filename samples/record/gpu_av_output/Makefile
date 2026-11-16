@@ -30,6 +30,7 @@ VULKAN_OUTPUT := $(RA)/record/record_gpu_output_vulkan.c $(RA)/record/record_gpu
 VULKAN_HEADERS := $(RA)/record/record_gpu_worker_vulkan.h $(RA)/record/record_gpu_queue.h $(RA)/record/record_mux_mp4.h $(RA)/gfx/common/vulkan_encode_h264.h $(RA)/gfx/common/vulkan_encode_pool.h $(RA)/gfx/common/vulkan_encode_h264_submit.h $(RA)/gfx/common/vulkan_encode_h264_picture.h $(RA)/gfx/common/vulkan_encode_h264_session.h $(RA)/gfx/common/vulkan_encode_h264_params.h
 VULKAN_FILE := $(RA)/record/record_file_posix.c $(RA)/record/record_file_posix.h $(RA)/record/record_mediacodec_file.c $(RA)/record/record_mediacodec_file.h
 VULKAN_COMMON := vulkan_mock_file.c vulkan_mock_file.h vulkan_mock_worker.c vulkan_mock_worker.h $(filter-out mock_worker.c,$(COMMON))
+VULKAN_HEADERS += $(RA)/gfx/common/vulkan_encode_packet.h
 vulkan_file_test$(EXE): vulkan_file_test.c $(VULKAN_FILE)
 	$(CC) $(CFLAGS) $(VULKAN_CFLAGS) vulkan_file_test.c -o $@ $(LDFLAGS)
 vulkan_native_file_test$(EXE): vulkan_native_file_test.c $(VULKAN_FILE)

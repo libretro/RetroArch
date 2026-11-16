@@ -5,26 +5,61 @@
 struct record_gpu_worker_vulkan
 {
    record_gpu_queue_t *queue;
-   vulkan_encode_h264_t *encoder;
+   void *encoder;
+   const record_gpu_worker_vulkan_encoder_ops_t *ops;
    record_gpu_frame_t frame;
    vulkan_encode_packet_t packet;
    uint32_t owned;
    bool pending, packet_ready, unlocked, input_end, eos, ended, started, failed;
 };
 
-record_gpu_worker_vulkan_t *record_gpu_worker_vulkan_new(
-      record_gpu_queue_t *queue, vulkan_encode_h264_t *encoder)
+record_gpu_worker_vulkan_t *record_gpu_worker_vulkan_new_encoder(
+      record_gpu_queue_t *queue, void *encoder,
+      const record_gpu_worker_vulkan_encoder_ops_t *ops)
 {
    record_gpu_worker_vulkan_t *w;
-   if (!queue || !encoder)
+   if (!queue || !encoder || !ops || !ops->submit || !ops->poll ||
+         !ops->release || !ops->finish)
       return NULL;
    w = (record_gpu_worker_vulkan_t*)calloc(1, sizeof(*w));
    if (w)
    {
       w->queue = queue;
       w->encoder = encoder;
+      w->ops = ops;
    }
    return w;
+}
+
+static int rvgw_h264_submit(void *encoder, unsigned slot, uint64_t timestamp,
+      uint64_t duration, uint64_t ready, bool keyframe)
+{
+   return vulkan_encode_h264_submit((vulkan_encode_h264_t*)encoder, slot,
+         timestamp, duration, ready, keyframe);
+}
+
+static int rvgw_h264_poll(void *encoder, vulkan_encode_packet_t *packet)
+{
+   return vulkan_encode_h264_poll((vulkan_encode_h264_t*)encoder, packet);
+}
+
+static bool rvgw_h264_release(void *encoder)
+{
+   return vulkan_encode_h264_release((vulkan_encode_h264_t*)encoder);
+}
+
+static int rvgw_h264_finish(void *encoder)
+{
+   return vulkan_encode_h264_finish((vulkan_encode_h264_t*)encoder);
+}
+
+record_gpu_worker_vulkan_t *record_gpu_worker_vulkan_new(
+      record_gpu_queue_t *queue, vulkan_encode_h264_t *encoder)
+{
+   static const record_gpu_worker_vulkan_encoder_ops_t ops = {
+      rvgw_h264_submit, rvgw_h264_poll, rvgw_h264_release, rvgw_h264_finish
+   };
+   return record_gpu_worker_vulkan_new_encoder(queue, encoder, &ops);
 }
 
 static int record_gpu_worker_vulkan_fail(record_gpu_worker_vulkan_t *w)
@@ -49,7 +84,7 @@ int record_gpu_worker_vulkan_step(record_gpu_worker_vulkan_t *w,
       *packet = w->packet;
       return RECORD_GPU_VULKAN_PACKET;
    }
-   result = vulkan_encode_h264_poll(w->encoder, &w->packet);
+   result = w->ops->poll(w->encoder, &w->packet);
    if (result == VULKAN_ENCODE_ERROR)
       return record_gpu_worker_vulkan_fail(w);
    if (result == VULKAN_ENCODE_OK)
@@ -87,7 +122,7 @@ int record_gpu_worker_vulkan_step(record_gpu_worker_vulkan_t *w,
    }
    if (w->pending)
    {
-      result = vulkan_encode_h264_submit(w->encoder, w->frame.slot,
+      result = w->ops->submit(w->encoder, w->frame.slot,
             w->frame.timestamp, w->frame.duration,
             w->frame.ready_value, w->frame.keyframe);
       if (result == VULKAN_ENCODE_ERROR)
@@ -100,7 +135,7 @@ int record_gpu_worker_vulkan_step(record_gpu_worker_vulkan_t *w,
    }
    if (w->input_end && !w->eos)
    {
-      result = vulkan_encode_h264_finish(w->encoder);
+      result = w->ops->finish(w->encoder);
       if (result == VULKAN_ENCODE_ERROR)
          return record_gpu_worker_vulkan_fail(w);
       if (result == VULKAN_ENCODE_OK)
@@ -124,7 +159,7 @@ bool record_gpu_worker_vulkan_release(record_gpu_worker_vulkan_t *w)
       return false;
    if (!w->unlocked)
    {
-      if (!vulkan_encode_h264_release(w->encoder))
+      if (!w->ops->release(w->encoder))
          return false;
       w->unlocked = true;
    }

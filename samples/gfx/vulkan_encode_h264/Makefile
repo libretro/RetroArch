@@ -13,6 +13,15 @@ all: device_plan_test$(EXE) renderer_test$(EXE)
 all: hevc_params_test$(EXE)
 all: hevc_session_test$(EXE)
 all: hevc_picture_test$(EXE) hevc_submit_test$(EXE)
+all: hevc_encoder_test$(EXE) hevc_worker_test$(EXE)
+
+hevc_encoder_test$(EXE): hevc_encoder_test.c $(RA)/gfx/common/vulkan_encode_hevc.c $(RA)/gfx/common/vulkan_encode_hevc.h $(RA)/gfx/common/vulkan_encode_hevc_submit.h $(RA)/gfx/common/vulkan_encode_hevc_picture.h
+	$(CC) $(CFLAGS) hevc_encoder_test.c -o $@ $(LDFLAGS)
+HEVC_WORKER_SOURCES := hevc_worker_test.c $(RA)/record/record_gpu_worker_vulkan.c \
+   $(RA)/record/record_gpu_worker_vulkan_hevc.c $(RA)/record/record_gpu_queue.c \
+   $(RA)/libretro-common/queues/retro_spsc.c
+hevc_worker_test$(EXE): $(HEVC_WORKER_SOURCES) worker_test.c $(RA)/record/record_gpu_worker_vulkan_hevc.h $(RA)/record/record_gpu_worker_vulkan.h
+	$(CC) $(CFLAGS) $(HEVC_WORKER_SOURCES) -o $@ $(LDFLAGS)
 
 hevc_picture_test$(EXE): hevc_picture_test.c $(RA)/gfx/common/vulkan_encode_hevc_picture.h $(RA)/gfx/include/vk_video/vulkan_video_codec_h265std_encode.h
 	$(CC) $(CFLAGS) hevc_picture_test.c -o $@ $(LDFLAGS)
@@ -39,6 +48,23 @@ hevc_native_encode_test$(EXE): $(HEVC_ENCODE_SOURCES) hevc_native_context.h $(RA
 hevc-native-check: hevc_native_encode_test$(EXE)
 	python3 hevc_native_encode_run.py --native-test ./hevc_native_encode_test$(EXE)
 .PHONY: hevc-native-check
+HEVC_ADAPTER_SOURCES := $(filter-out hevc_native_encode_test.c,$(HEVC_ENCODE_SOURCES)) \
+   hevc_native_adapter_test.c $(RA)/gfx/common/vulkan_encode_hevc.c
+hevc_native_adapter_test$(EXE): $(HEVC_ADAPTER_SOURCES) hevc_native_encode_test.c hevc_native_context.h $(RA)/gfx/common/vulkan_encode_hevc.h $(RA)/gfx/common/vulkan_encode_hevc_picture.h
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_ADAPTER_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+hevc-native-adapter-check: hevc_native_adapter_test$(EXE)
+	python3 hevc_native_encode_run.py --native-test ./hevc_native_adapter_test$(EXE) --with-cancel
+HEVC_NATIVE_WORKER_SOURCES := $(filter-out hevc_native_adapter_test.c,$(HEVC_ADAPTER_SOURCES)) \
+   hevc_native_worker_test.c $(filter-out hevc_worker_test.c,$(HEVC_WORKER_SOURCES)) \
+   $(RA)/gfx/common/vulkan_encode_h264.c $(RA)/gfx/common/vulkan_encode_h264_session.c \
+   $(RA)/gfx/common/vulkan_encode_h264_submit.c
+hevc_native_worker_test$(EXE): $(HEVC_NATIVE_WORKER_SOURCES) hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(RA)/record/record_gpu_worker_vulkan_hevc.h $(RA)/record/record_gpu_worker_vulkan.h
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_NATIVE_WORKER_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+hevc-native-worker-check: hevc_native_worker_test$(EXE)
+	python3 hevc_native_encode_run.py --native-test ./hevc_native_worker_test$(EXE) --with-cancel
+.PHONY: hevc-native-adapter-check hevc-native-worker-check
+
+native_test$(EXE) encoder_test$(EXE) worker_test$(EXE) hevc_encoder_test$(EXE) hevc_worker_test$(EXE) hevc_native_adapter_test$(EXE) hevc_native_worker_test$(EXE): $(RA)/gfx/common/vulkan_encode_packet.h
 
 hevc_params_test$(EXE): hevc_params_test.c $(RA)/gfx/common/vulkan_encode_hevc_params.h $(RA)/gfx/include/vk_video/vulkan_video_codec_h265std.h
 	$(CC) $(CFLAGS) hevc_params_test.c -o $@ $(LDFLAGS)
@@ -75,6 +101,8 @@ check: all
 	$(RUNNER) ./hevc_session_test$(EXE)
 	$(RUNNER) ./hevc_picture_test$(EXE)
 	$(RUNNER) ./hevc_submit_test$(EXE)
+	$(RUNNER) ./hevc_encoder_test$(EXE)
+	$(RUNNER) ./hevc_worker_test$(EXE)
 	$(RUNNER) ./renderer_test$(EXE)
 	$(RUNNER) ./device_plan_test$(EXE)
 	python3 device_wrapper_test.py --cc "$(CC)" --sanitizer "$(SANITIZER)"
@@ -91,6 +119,7 @@ clean:
 	rm -f hevc_params_test hevc_params_test.exe
 	rm -f hevc_session_test hevc_session_test.exe hevc_native_params_test hevc_native_params_test.exe hevc_headers_test hevc_headers_test.exe
 	rm -f hevc_picture_test hevc_picture_test.exe hevc_submit_test hevc_submit_test.exe hevc_native_encode_test hevc_native_encode_test.exe
+	rm -f hevc_encoder_test hevc_encoder_test.exe hevc_worker_test hevc_worker_test.exe hevc_native_adapter_test hevc_native_adapter_test.exe hevc_native_worker_test hevc_native_worker_test.exe
 	rm -f renderer_test renderer_test.exe
 	rm -f device_plan_test device_plan_test.exe
 	rm -f native_test native_test.exe
