@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Independent codec/container/timestamp/AC-3 pixel and sample oracles."""
 import argparse
+from fractions import Fraction
 import json
 import os
 from pathlib import Path
@@ -87,7 +88,7 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
                 result = subprocess.run([*runner, binary, str(fixture), str(rejected),
                                          str(audio), *mismatch], capture_output=True)
                 assert result.returncode != 0 and not rejected.exists(), result
-            light = ['1000', '400'] if transfer else []
+            light = ['1000', '400', 'mastering'] if transfer else []
             subprocess.run([*runner, binary, str(fixture), str(movie), str(audio), *tags, *light], check=True)
             info = probe(movie)
             streams = info['streams']
@@ -111,14 +112,28 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
                 levels = [x for x in side if x.get('side_data_type') == 'Content light level metadata']
                 assert len(levels) == 1 and levels[0]['max_content'] == 1000, side
                 assert levels[0]['max_average'] == 400, side
+                assert blob.count(b'mdcv') == 1
+                mdcv = blob.index(b'mdcv')
+                assert blob[mdcv-4:mdcv+28] == struct.pack('>I4s8H2I', 32, b'mdcv',
+                    13250, 34500, 7500, 3000, 34000, 16000, 15635, 16450, 10000000, 50)
+                mastering = [x for x in side if x.get('side_data_type') == 'Mastering display metadata']
+                assert len(mastering) == 1, side
+                expected = dict(red_x=34000, red_y=16000, green_x=13250, green_y=34500,
+                                blue_x=7500, blue_y=3000, white_point_x=15635, white_point_y=16450)
+                for field, value in expected.items():
+                    assert Fraction(mastering[0][field]) == Fraction(value, 50000), mastering
+                assert Fraction(mastering[0]['max_luminance']) == 1000, mastering
+                assert Fraction(mastering[0]['min_luminance']) == Fraction(50, 10000), mastering
+
             else:
-                assert b'clli' not in movie.read_bytes()
+                assert b'clli' not in movie.read_bytes() and b'mdcv' not in movie.read_bytes()
             if transfer and not rate:
                 for maximum, average in ((1000, 0), (0, 400), (0, 0)):
                     partial = root / f'partial-{codec}-{transfer}-{maximum}-{average}.mp4'
                     subprocess.run([*runner, binary, str(fixture), str(partial), str(audio),
                                     *tags, str(maximum), str(average)], check=True)
                     partial_info = probe(partial)['streams'][0]
+                    assert b'mdcv' not in partial.read_bytes()
                     levels = [x for x in partial_info.get('side_data_list', [])
                               if x.get('side_data_type') == 'Content light level metadata']
                     if maximum or average:
