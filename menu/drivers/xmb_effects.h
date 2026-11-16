@@ -102,6 +102,17 @@ static const char *xmb_effect_ribbon_sm4(void)
 #include "../../gfx/drivers/gx2_shaders/menu_shaders.h"
 #endif
 
+/* Cg for GL, which gl2 draws with where it has no GLSL */
+#if defined(HAVE_CG) && defined(HAVE_OPENGL) && !defined(HAVE_OPENGLES)
+#define XMB_EFFECTS_CG_GL
+#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
+#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
+#include "../../gfx/drivers/gl_shaders/pipeline_snow_simple.cg.h"
+#include "../../gfx/drivers/gl_shaders/pipeline_snow_heavy.cg.h"
+#include "../../gfx/drivers/gl_shaders/pipeline_bokeh.cg.h"
+#include "../../gfx/drivers/gl_shaders/pipeline_snowflake.cg.h"
+#endif
+
 enum xmb_effect
 {
    XMB_EFFECT_RIBBON = 0,
@@ -231,6 +242,15 @@ static void xmb_effects_describe(void)
    d[XMB_EFFECT_SNOW].hlsl_sm4          = xmb_effect_snow_sm4;
    d[XMB_EFFECT_BOKEH].hlsl_sm4         = xmb_effect_bokeh_sm4;
    d[XMB_EFFECT_SNOWFLAKE].hlsl_sm4     = xmb_effect_snowflake_sm4;
+#endif
+
+#ifdef XMB_EFFECTS_CG_GL
+   d[XMB_EFFECT_RIBBON].cg_gl        = stock_xmb_ribbon();
+   d[XMB_EFFECT_RIBBON_SIMPLE].cg_gl = stock_xmb_ribbon_simple;
+   d[XMB_EFFECT_SNOW_SIMPLE].cg_gl   = stock_xmb_simple_snow;
+   d[XMB_EFFECT_SNOW].cg_gl          = stock_xmb_snow_heavy;
+   d[XMB_EFFECT_BOKEH].cg_gl         = stock_xmb_bokeh;
+   d[XMB_EFFECT_SNOWFLAKE].cg_gl     = stock_xmb_snowflake;
 #endif
 
 #ifdef __APPLE__

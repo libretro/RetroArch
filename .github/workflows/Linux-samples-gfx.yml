@@ -796,7 +796,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev spirv-tools
+      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev spirv-tools nvidia-cg-toolkit nvidia-cg-dev
 
     steps:
       - name: Checkout
@@ -1161,6 +1161,21 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 120 make check SANITIZER=address,undefined
+          make clean
+
+      - name: XMB menu effects through gl2's Cg backend (Mesa GLX on Xvfb, ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/menu_effects
+        run: |
+          set -eu
+          # A build with Cg and no GLSL draws the effects from their Cg:
+          # each compiles in the backend's ARB profiles and draws the
+          # same after the backend's own program as before it, and the
+          # ribbon's glow leaves no GLSL program bound over the Cg ones.
+          make clean
+          LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 make check-cg SANITIZER=address,undefined
           make clean
 
       - name: GLES texture loan capability and ownership (ASan + UBSan)

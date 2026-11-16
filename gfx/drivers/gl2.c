@@ -782,9 +782,13 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
 }
 #endif
 
-#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+#ifdef GL2_EFFECTS
 static void gl2_draw_effect(gl2_t *gl, const struct gl2_effect *fx,
       const gfx_display_ctx_draw_t *draw, const video_coords_t *coords);
+#ifdef GL2_EFFECT_CG
+static void gl2_draw_cg_effect(gl2_t *gl, const struct gl2_effect *fx,
+      const gfx_display_ctx_draw_t *draw, const video_coords_t *coords);
+#endif
 #endif
 
 static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
@@ -825,11 +829,16 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    glBindTexture(GL_TEXTURE_2D, draw->texture
          ? (GLuint)draw->texture : gl->white_texture);
 
-#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+#ifdef GL2_EFFECTS
    if (draw->effect)
    {
-      gl2_draw_effect(gl, (const struct gl2_effect*)draw->effect, draw,
-            &coords);
+      const struct gl2_effect *fx = (const struct gl2_effect*)draw->effect;
+#ifdef GL2_EFFECT_CG
+      if (fx->is_cg)
+         gl2_draw_cg_effect(gl, fx, draw, &coords);
+      else
+#endif
+         gl2_draw_effect(gl, fx, draw, &coords);
       return;
    }
 #endif
@@ -902,7 +911,7 @@ static void gfx_display_gl2_draw_pipeline(
       void *data,
       unsigned video_dims)
 {
-#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+#ifdef GL2_EFFECTS
    gl2_t *gl                        = (gl2_t*)data;
    const struct gl2_effect *fx      = (const struct gl2_effect*)draw->effect;
 
@@ -923,7 +932,7 @@ static void gfx_display_gl2_draw_pipeline(
 #endif
 }
 
-#ifdef HAVE_GLSL
+#if defined(HAVE_GLSL) || defined(GL2_EFFECTS)
 static void gl2_free_meshes(gl2_t *gl)
 {
    unsigned i;
@@ -1000,12 +1009,42 @@ static int gl2_mesh_slot(gl2_t *gl, const gfx_display_mesh_t *mesh)
    return slot;
 }
 
-#ifdef HAVE_SHADERPIPELINE
+#endif /* HAVE_GLSL || GL2_EFFECTS */
+
+#ifdef GL2_EFFECTS
+#ifdef GL2_EFFECT_CG
+/* An effect made from Cg, in the Cg backend's profiles: from the mesh's
+ * buffer only, as a Cg program has no client-memory fallback here */
+static void gl2_draw_cg_effect(gl2_t *gl, const struct gl2_effect *fx,
+      const gfx_display_ctx_draw_t *draw, const video_coords_t *coords)
+{
+   gfx_display_t *p_disp          = disp_get_ptr();
+   const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+   int slot;
+   if (     !gl->shader || gl->shader->type != RARCH_SHADER_CG
+         || !mesh || (slot = gl2_mesh_slot(gl, mesh)) < 0)
+      return;
+   gl->meshes[slot].last_draw = ++gl->mesh_draws;
+   glBindBuffer(GL_ARRAY_BUFFER, gl->meshes[slot].vbo);
+   gl_cg_effect_begin(gl->shader_data, &fx->cg, gl->mvp_no_rot.data,
+         p_disp->effect_time,
+         (fx->flags & GFX_EFFECT_RIBBON) ? gfx_display_ribbon_data(p_disp)
+         : NULL,
+         (float)VIDEO_SCALE_W(draw->dims), (float)VIDEO_SCALE_H(draw->dims),
+         sizeof(gfx_display_mesh_vertex_t));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, coords->vertices);
+   gl_cg_effect_end(&fx->cg);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+}
+#endif
+
 /* An effect, with its own program: the uniform locations were found
  * when it was made, and a mesh effect reads the mesh's own buffer */
 static void gl2_draw_effect(gl2_t *gl, const struct gl2_effect *fx,
       const gfx_display_ctx_draw_t *draw, const video_coords_t *coords)
 {
+#ifdef HAVE_GLSL
    gfx_display_t *p_disp          = disp_get_ptr();
    const gl_glsl_effect_t *prg    = &fx->glsl;
    const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
@@ -1061,6 +1100,7 @@ static void gl2_draw_effect(gl2_t *gl, const struct gl2_effect *fx,
       glDisableVertexAttribArray(prg->tex_coord);
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+#endif
 }
 
 static void *gfx_display_gl2_effect_install(void *data,
@@ -1070,22 +1110,50 @@ static void *gfx_display_gl2_effect_install(void *data,
    struct gl2_effect *fx;
    if (!gl || !desc || gl->effect_count >= ARRAY_SIZE(gl->effects))
       return NULL;
-   fx = &gl->effects[gl->effect_count];
-   if (!gl_glsl_effect_compile(&fx->glsl, desc))
-      return NULL;
+   fx        = &gl->effects[gl->effect_count];
    fx->flags = desc->flags;
-   gl->effect_count++;
-   return fx;
+   fx->is_cg = false;
+#ifdef HAVE_GLSL
+   if (gl_glsl_effect_compile(&fx->glsl, desc))
+   {
+      gl->effect_count++;
+      return fx;
+   }
+#endif
+#ifdef GL2_EFFECT_CG
+   /* Under a Cg backend, from the effect's Cg */
+   if (     gl->shader && gl->shader->type == RARCH_SHADER_CG
+         && gl_cg_effect_compile(gl->shader_data, &fx->cg, desc->cg_gl))
+   {
+      fx->is_cg = true;
+      gl->effect_count++;
+      return fx;
+   }
+#endif
+   return NULL;
 }
 
 static void gl2_free_effects(gl2_t *gl)
 {
    unsigned i;
    for (i = 0; i < gl->effect_count; i++)
+   {
+#ifdef GL2_EFFECT_CG
+      if (gl->effects[i].is_cg)
+      {
+         gl_cg_effect_free(&gl->effects[i].cg);
+         continue;
+      }
+#endif
+#ifdef HAVE_GLSL
       glDeleteProgram(gl->effects[i].glsl.prog);
+#endif
+   }
    gl->effect_count = 0;
 }
-#endif
+#endif /* GL2_EFFECTS */
+
+#ifdef HAVE_GLSL
 
 static bool gfx_display_gl2_mesh_draw(void *data, unsigned video_dims,
       const gfx_display_mesh_t *mesh, const float *mvp,
@@ -3775,9 +3843,10 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
    }
 
 #ifdef HAVE_GLSL
-   if (type == RARCH_SHADER_GLSL)
-      gl_glsl_set_context_type(gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE,
-            hwr->version_major, hwr->version_minor);
+   /* Whatever the backend: the menu effects are made from GLSL in this
+    * dialect, under a Cg chain too */
+   gl_glsl_set_context_type(gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE,
+         hwr->version_major, hwr->version_minor);
 #endif
 
    init_data.gl.core_context_enabled = (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) ? true : false;
@@ -8186,11 +8255,11 @@ static void gl2_free(void *data)
 #ifdef HAVE_OVERLAY
    gl2_free_overlay(gl);
 #endif
-#ifdef HAVE_GLSL
+#if defined(HAVE_GLSL) || defined(GL2_EFFECTS)
    gl2_free_meshes(gl);
-#ifdef HAVE_SHADERPIPELINE
-   gl2_free_effects(gl);
 #endif
+#ifdef GL2_EFFECTS
+   gl2_free_effects(gl);
 #endif
 
 #if defined(HAVE_PSGL)
@@ -10834,7 +10903,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
 #else
    NULL, NULL, NULL,
 #endif
-#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
+#ifdef GL2_EFFECTS
    gfx_display_gl2_effect_install
 #else
    NULL

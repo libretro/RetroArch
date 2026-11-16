@@ -378,6 +378,9 @@ static void gl_menu_bloom_passes(gl_menu_bloom_t *b, unsigned dims,
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
    glDisableVertexAttribArray(0);
+   /* Not left bound: a GLSL program wins over the Cg backend's ARB
+    * programs, which gl2 binds without touching this */
+   glUseProgram(0);
 }
 
 void gl_menu_bloom_end(gl_menu_bloom_t *b, unsigned dims, bool defer)

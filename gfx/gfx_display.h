@@ -155,6 +155,9 @@ typedef struct gfx_display_effect_desc
     * D3D9; shader model 4 with VSMain and PSMain, for D3D10 to 12 */
    const char *hlsl_sm3;
    const char *hlsl_sm4;
+   /* Cg for GL, with main_vertex and main_fragment: what gl2 draws
+    * with where it has no GLSL */
+   const char *cg_gl;
    /* Metal: functions of the stock library, the fragment one
     * specialised by these float function constants */
    const char *metal_vertex;

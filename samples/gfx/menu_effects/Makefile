@@ -7,6 +7,10 @@
 #                     it is installed
 #   make check-wine   the HLSL compiled as D3D9 to 12 compile it, cross-
 #                     built with mingw-w64 and run under Wine
+#   make check-cg     the Cg gl2 draws with where it has no GLSL, through
+#                     the Cg backend in a GLX context (Cg finds its
+#                     profiles through GLX): run under xvfb-run without a
+#                     display; needs libCg and libCgGL
 #
 # SANITIZER (e.g. address,undefined) instruments the Linux builds.
 
@@ -18,6 +22,7 @@ LRC       := $(REPO_ROOT)/libretro-common
 GL_TARGET   := menu_effects_gl_test
 GLES_TARGET := menu_effects_gles_test
 WIN_TARGET  := menu_effects_test.exe
+CG_TARGET   := menu_effects_cg_test
 MINGW_CC    ?= x86_64-w64-mingw32-gcc
 WINE        ?= wine
 
@@ -66,6 +71,15 @@ $(WIN_TARGET): $(DEPS) $(REPO_ROOT)/gfx/common/d3dcompiler_common.c
 	   $(LRC)/compat/compat_strl.c \
 	   $(SPIRV) $(REPO_ROOT)/gfx/common/spirv_shaders.c
 
+$(CG_TARGET): menu_effects_cg_test.c $(DEPS) \
+      $(REPO_ROOT)/gfx/drivers_shader/shader_gl_cg.c \
+      $(REPO_ROOT)/gfx/drivers_shader/shader_gl_cg.h \
+      $(REPO_ROOT)/gfx/common/gl_common.c
+	$(CC) $(SAN) $(BASE) -DHAVE_OPENGL -DHAVE_CG -o $@ menu_effects_cg_test.c \
+	   $(LRC)/glsym/glsym_gl.c $(LRC)/glsym/rglgen.c \
+	   $(LRC)/compat/compat_strl.c \
+	   -lCg -lCgGL -lGL -lX11 -lm
+
 check: all
 	@rm -rf spv && mkdir spv
 	EGL_PLATFORM=surfaceless ./$(GL_TARGET) --spirv spv
@@ -80,7 +94,11 @@ check: all
 check-wine: $(WIN_TARGET)
 	WINEDEBUG=-all $(WINE) ./$(WIN_TARGET)
 
-clean:
-	rm -rf $(GL_TARGET) $(GLES_TARGET) $(WIN_TARGET) spv
+check-cg: $(CG_TARGET)
+	@if [ -n "$$DISPLAY" ]; then ./$(CG_TARGET); \
+	 else xvfb-run -a ./$(CG_TARGET); fi
 
-.PHONY: all check check-wine clean
+clean:
+	rm -rf $(GL_TARGET) $(GLES_TARGET) $(WIN_TARGET) $(CG_TARGET) spv
+
+.PHONY: all check check-wine check-cg clean

@@ -37,6 +37,15 @@
 #if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
 #include "../drivers_shader/shader_glsl.h"
 #endif
+/* The menu effects: made from GLSL, or from Cg where the build has no
+ * GLSL or an effect's GLSL will not build */
+#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_CG) && !defined(HAVE_OPENGLES)
+#define GL2_EFFECT_CG
+#include "../drivers_shader/shader_gl_cg.h"
+#endif
+#if defined(HAVE_SHADERPIPELINE) && (defined(HAVE_GLSL) || defined(GL2_EFFECT_CG))
+#define GL2_EFFECTS
+#endif
 
 /* A software core's frames sampled where it writes them, on KMS */
 #if defined(HAVE_KMS) && defined(HAVE_EGL) && !defined(HAVE_PSGL)
@@ -164,12 +173,18 @@ struct gl2
       uint32_t id;
    } meshes[8];
    uint64_t mesh_draws;
-#if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
-   /* The menu effects' programs, as installed */
+#ifdef GL2_EFFECTS
+   /* The menu effects' programs, as installed: GLSL, or Cg when cg */
    struct gl2_effect
    {
+#ifdef HAVE_GLSL
       gl_glsl_effect_t glsl;
+#endif
+#ifdef GL2_EFFECT_CG
+      gl_cg_effect_t cg;
+#endif
       unsigned flags;
+      bool is_cg;
    } effects[16];
    unsigned effect_count;
 #endif

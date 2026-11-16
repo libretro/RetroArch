@@ -41,6 +41,7 @@
 #endif
 
 #include "../include/Cg/cg.h"
+#include "shader_gl_cg.h"
 
 #include "../video_shader_parse.h"
 #include "../common/xmb_plastic.h"
@@ -1218,6 +1219,121 @@ static void gl_cg_get_flags(uint32_t *flags)
 {
    BIT32_SET(*flags, GFX_CTX_FLAGS_SHADERS_CG);
 }
+
+#ifdef HAVE_SHADERPIPELINE
+/* The varying input a vertex program reads its position from */
+static CGparameter gl_cg_position_param(CGprogram prg)
+{
+   CGparameter param = cgGetFirstLeafParameter(prg, CG_PROGRAM);
+   for (; param; param = cgGetNextLeafParameter(param))
+   {
+      const char *semantic;
+      if (     cgGetParameterDirection(param)   != CG_IN
+            || cgGetParameterVariability(param) != CG_VARYING)
+         continue;
+      if (     (semantic = cgGetParameterSemantic(param))
+            && (!strcmp(semantic, "POSITION") || !strcmp(semantic, "POSITION0")))
+         return param;
+   }
+   return 0;
+}
+
+/* A uniform of either program, named plainly or in the IN struct */
+static CGparameter gl_cg_effect_param(CGprogram prg, const char *name,
+      const char *in_name)
+{
+   CGparameter param = cgGetNamedParameter(prg, name);
+   if (!param && in_name)
+      param = cgGetNamedParameter(prg, in_name);
+   return param;
+}
+
+/* The effects' own context: they outlive the backend's, which a preset
+ * change remakes, and go with the video driver */
+static CGcontext gl_cg_effect_ctx;
+static unsigned  gl_cg_effect_count;
+
+bool gl_cg_effect_compile(void *shader_data, gl_cg_effect_t *fx,
+      const char *source)
+{
+   cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
+   memset(fx, 0, sizeof(*fx));
+   if (!cg || !cg->cgCtx || !source)
+      return false;
+   if (!gl_cg_effect_ctx && !(gl_cg_effect_ctx = cgCreateContext()))
+      return false;
+   gl_cg_effect_count++;
+   fx->fprg = cgCreateProgram(gl_cg_effect_ctx, CG_SOURCE, source,
+         cg->cgFProf, "main_fragment", NULL);
+   fx->vprg = cgCreateProgram(gl_cg_effect_ctx, CG_SOURCE, source,
+         cg->cgVProf, "main_vertex", NULL);
+   if (     !fx->fprg || !fx->vprg
+         || !(fx->position = gl_cg_position_param(fx->vprg)))
+   {
+      RARCH_ERR("[Cg] Could not compile a menu effect: %s.\n",
+            cgGetErrorString(cgGetError()));
+      gl_cg_effect_free(fx);
+      return false;
+   }
+   cgGLLoadProgram(fx->fprg);
+   cgGLLoadProgram(fx->vprg);
+   fx->mvp           = cgGetNamedParameter(fx->vprg, "modelViewProj");
+   fx->ribbon        = cgGetNamedParameter(fx->vprg, "Ribbon");
+   fx->time_v        = gl_cg_effect_param(fx->vprg, "time", "IN.time");
+   fx->time_f        = gl_cg_effect_param(fx->fprg, "time", "IN.time");
+   fx->output_size_v = gl_cg_effect_param(fx->vprg, "OutputSize",
+         "IN.OutputSize");
+   fx->output_size_f = gl_cg_effect_param(fx->fprg, "OutputSize",
+         "IN.OutputSize");
+   return true;
+}
+
+void gl_cg_effect_begin(void *shader_data, const gl_cg_effect_t *fx,
+      const float *mvp, float time, const float *ribbon, float output_w,
+      float output_h, unsigned stride)
+{
+   /* The arrays the backend's own program left on: one of them may be
+    * the attribute the effect's position aliases, which would win */
+   if (shader_data)
+      gl_cg_reset_attrib(shader_data);
+   gl_cg_set_shaders(fx->fprg, fx->vprg);
+   if (fx->mvp && mvp)
+      cgGLSetMatrixParameterfc(fx->mvp, mvp);
+   if (fx->time_v)
+      cgGLSetParameter1f(fx->time_v, time);
+   if (fx->time_f)
+      cgGLSetParameter1f(fx->time_f, time);
+   if (fx->ribbon && ribbon)
+      cgGLSetParameterArray4f(fx->ribbon, 0, 50, ribbon);
+   if (fx->output_size_v)
+      cgGLSetParameter2f(fx->output_size_v, output_w, output_h);
+   if (fx->output_size_f)
+      cgGLSetParameter2f(fx->output_size_f, output_w, output_h);
+   cgGLSetParameterPointer(fx->position, 2, GL_FLOAT, (GLsizei)stride,
+         NULL);
+   cgGLEnableClientState(fx->position);
+}
+
+void gl_cg_effect_end(const gl_cg_effect_t *fx)
+{
+   cgGLDisableClientState(fx->position);
+}
+
+void gl_cg_effect_free(gl_cg_effect_t *fx)
+{
+   if (fx->fprg)
+      cgDestroyProgram(fx->fprg);
+   if (fx->vprg)
+      cgDestroyProgram(fx->vprg);
+   memset(fx, 0, sizeof(*fx));
+   /* The last one takes the context with it */
+   if (gl_cg_effect_count && !--gl_cg_effect_count && gl_cg_effect_ctx)
+   {
+      cgDestroyContext(gl_cg_effect_ctx);
+      gl_cg_effect_ctx = NULL;
+   }
+}
+#endif
 
 const shader_backend_t gl_cg_backend = {
    gl_cg_init,
