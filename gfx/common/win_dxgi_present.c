@@ -24,6 +24,7 @@ unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
 { return 2; }
 int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *b) { return 0; }
 int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *b) { return 0; }
+int ra_dxgi_window_flips_fullscreen(HWND window) { return 0; }
 void *ra_dxgi_bridge_device(ra_dxgi_bridge_t *b) { return NULL; }
 uint64_t ra_dxgi_bridge_last_use(ra_dxgi_bridge_t *b, unsigned index)
 { return 0; }
@@ -49,6 +50,7 @@ static const GUID bridge_ID3D12GraphicsCommandList = {0x5b160d0f, 0xac1b, 0x4185
 static const GUID bridge_ID3D12Resource = {0x696442be, 0xa72e, 0x4059, {0xbc, 0x79, 0x5b, 0x5c, 0x98, 0x04, 0x0f, 0xad}};
 static const GUID bridge_IDXGIFactory2 = {0x50c83a1c, 0xe072, 0x4c48, {0x87, 0xb0, 0x36, 0x30, 0xfa, 0x36, 0xa6, 0xd0}};
 static const GUID bridge_IDXGISwapChain3 = {0x94d99bdb, 0xf1f8, 0x4ab0, {0xb2, 0x36, 0x7d, 0xa0, 0x17, 0x0e, 0xda, 0xb1}};
+static const GUID bridge_IDXGIFactory1 = {0x770aae78, 0xf26f, 0x4dba, {0xa8, 0x29, 0x25, 0x3c, 0x83, 0xd1, 0xb3, 0x87}};
 static const GUID bridge_IDXGIOutput6 = {0x068346e8, 0xaaec, 0x4b84, {0xad, 0xd7, 0x13, 0x7f, 0x51, 0x3f, 0x77, 0xa1}};
 
 /* IDXGIOutput6 is in dxgi1_6.h, which an SDK that has dxgi1_5.h need
@@ -248,25 +250,32 @@ error:
    return 0;
 }
 
-/* Whether the chain's output flips a fullscreen window straight to
- * the scanout; where it cannot, or cannot say, DWM composes it. */
-static void ra_dxgi_bridge_ask_output(ra_dxgi_bridge_t *b)
+/* Whether @output flips a fullscreen window straight to the scanout;
+ * where it cannot, or cannot say, DWM composes it. */
+static int ra_dxgi_output_flips(IDXGIOutput *output)
 {
+   int flips                 = 0;
    UINT support              = 0;
-   IDXGIOutput *output       = NULL;
    bridge_output6_t *output6 = NULL;
-   b->flips                  = 0;
-   if (     FAILED(b->chain->lpVtbl->GetContainingOutput(b->chain, &output))
-         || !output)
-      return;
    if (SUCCEEDED(output->lpVtbl->QueryInterface(output,
                &bridge_IDXGIOutput6, (void **)&output6)) && output6)
    {
       if (SUCCEEDED(output6->lpVtbl->CheckHardwareCompositionSupport(
                   output6, &support)))
-         b->flips = (support & BRIDGE_COMPOSITION_FULLSCREEN) != 0;
+         flips = (support & BRIDGE_COMPOSITION_FULLSCREEN) != 0;
       ((IUnknown *)output6)->lpVtbl->Release((IUnknown *)output6);
    }
+   return flips;
+}
+
+static void ra_dxgi_bridge_ask_output(ra_dxgi_bridge_t *b)
+{
+   IDXGIOutput *output = NULL;
+   b->flips            = 0;
+   if (     FAILED(b->chain->lpVtbl->GetContainingOutput(b->chain, &output))
+         || !output)
+      return;
+   b->flips = ra_dxgi_output_flips(output);
    DROP(output);
 }
 
@@ -596,6 +605,49 @@ void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak)
    chain->lpVtbl->SetHDRMetaData(chain, DXGI_HDR_METADATA_TYPE_HDR10,
          sizeof(metadata), &metadata);
    DROP(chain);
+}
+
+int ra_dxgi_window_flips_fullscreen(HWND window)
+{
+   unsigned a, o;
+   create_factory_t create_factory;
+   IDXGIFactory1 *factory = NULL;
+   IDXGIAdapter1 *adapter = NULL;
+   IDXGIOutput *output    = NULL;
+   int found              = 0;
+   int flips              = 0;
+   HMONITOR monitor       = window
+      ? MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST) : NULL;
+   if (!monitor)
+      return 0;
+   if (!bridge_dxgi_dll)
+      bridge_dxgi_dll = LoadLibraryA("dxgi.dll");
+   if (!bridge_dxgi_dll)
+      return 0;
+   create_factory = (create_factory_t)GetProcAddress(bridge_dxgi_dll, "CreateDXGIFactory1");
+   if (     !create_factory
+         || FAILED(create_factory(&bridge_IDXGIFactory1, (void **)&factory))
+         || !factory)
+      return 0;
+   for (a = 0; !found && SUCCEEDED(factory->lpVtbl->EnumAdapters1(
+               factory, a, &adapter)) && adapter; a++)
+   {
+      for (o = 0; !found && SUCCEEDED(adapter->lpVtbl->EnumOutputs(
+                  adapter, o, &output)) && output; o++)
+      {
+         DXGI_OUTPUT_DESC desc;
+         if (     SUCCEEDED(output->lpVtbl->GetDesc(output, &desc))
+               && desc.Monitor == monitor)
+         {
+            found = 1;
+            flips = ra_dxgi_output_flips(output);
+         }
+         DROP(output);
+      }
+      DROP(adapter);
+   }
+   DROP(factory);
+   return flips;
 }
 
 #endif

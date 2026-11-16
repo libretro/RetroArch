@@ -401,6 +401,11 @@ int ra_vulkan_dxgi_immediate(ra_vulkan_dxgi_t *p)
    return p ? ra_dxgi_bridge_immediate(p->bridge) : 0;
 }
 
+int ra_vulkan_dxgi_window_flips_fullscreen(HWND window)
+{
+   return ra_dxgi_window_flips_fullscreen(window);
+}
+
 VkImage ra_vulkan_dxgi_image(ra_vulkan_dxgi_t *p, unsigned index)
 { return index < 2 ? p->images[index] : VK_NULL_HANDLE; }
 

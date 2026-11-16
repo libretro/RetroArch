@@ -413,6 +413,13 @@ enum vulkan_texture_support
 typedef struct vk
 {
    retro_time_t presented_at;
+#if defined(_WIN32) && !defined(__WINRT__)
+   /* The swapchain whose window's output was last asked whether it
+    * flips a fullscreen window itself, and the one it said so for
+    * (vulkan_present_immediate) */
+   VkSwapchainKHR flips_asked;
+   VkSwapchainKHR flips_for;
+#endif
    vulkan_filter_chain_t *filter_chain;
    vulkan_filter_chain_t *filter_chain_default;
    /* Views: one chain per view for the preset, one for the stock
@@ -9967,10 +9974,24 @@ static bool vulkan_present_immediate(void *data)
          return vk->context->swap_interval <= 0
             && ra_vulkan_dxgi_immediate(
                   (ra_vulkan_dxgi_t*)ctx->dxgi_presenter);
+      /* A swapchain of its own tears only past the compositor: its
+       * window's output is asked, once a swapchain */
+      if (     vk->context->swapchain_present_mode
+            != VK_PRESENT_MODE_IMMEDIATE_KHR)
+         return false;
+      if (vk->flips_asked != ctx->swapchain)
+      {
+         vk->flips_asked = ctx->swapchain;
+         vk->flips_for   = ra_vulkan_dxgi_window_flips_fullscreen(
+               (HWND)ctx->dxgi_window) ? ctx->swapchain : VK_NULL_HANDLE;
+      }
+      return ctx->swapchain != VK_NULL_HANDLE
+         && vk->flips_for == ctx->swapchain;
    }
-#endif
+#else
    return vk->context->swapchain_present_mode
       == VK_PRESENT_MODE_IMMEDIATE_KHR;
+#endif
 }
 
 static retro_time_t vulkan_get_last_present_time(void *data)

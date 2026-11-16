@@ -45,10 +45,15 @@ with tempfile.TemporaryDirectory(prefix="retroarch-dxgi-") as directory:
     (directory / "images.inc").write_text(frontend[images_start:images_end])
     output_start = source.index("typedef struct bridge_output6 bridge_output6_t;")
     output_end = source.index("struct ra_dxgi_bridge\n", output_start)
-    ask_start = source.index("static void ra_dxgi_bridge_ask_output(")
+    ask_start = source.index("static int ra_dxgi_output_flips(")
     ask_end = source.index("static int ra_dxgi_bridge_color_space(", ask_start)
     (directory / "output.inc").write_text(source[output_start:output_end])
     (directory / "ask.inc").write_text(source[ask_start:ask_end])
+    window_start = source.index("int ra_dxgi_window_flips_fullscreen(HWND window)\n{")
+    window_end = source.index("\n#endif\n#endif", window_start)
+    (directory / "window.inc").write_text(
+        source[ask_start:source.index("static void ra_dxgi_bridge_ask_output(")]
+        + source[window_start:window_end])
     # The slot the bridge calls IDXGIOutput6 through, against the
     # interface as the tree's own SDK header declares it
     sdk = (root / "gfx/include/dxsdk/dxgi1_6.h").read_text()
@@ -61,7 +66,7 @@ with tempfile.TemporaryDirectory(prefix="retroarch-dxgi-") as directory:
     wgl_start = wgl.index("static void ra_wgl_dxgi_destroy_images(")
     wgl_end = wgl.index("int ra_wgl_dxgi_resize(", wgl_start)
     (directory / "wgl_images.inc").write_text(wgl[wgl_start:wgl_end])
-    for name in ("test", "teardown", "acquire", "wait", "frontend", "wgl", "output"):
+    for name in ("test", "teardown", "acquire", "wait", "frontend", "wgl", "output", "window"):
         executable = directory / (name + ".exe")
         subprocess.run([os.environ.get("CC", "cc"), "-std=c89", "-pedantic", "-Wall",
                         "-Wextra", "-Werror", "-I" + str(directory),
