@@ -4693,6 +4693,16 @@ static bool video_thread_frame(void *data, const void *frame_,
                         video_info->menu.ozone_color_theme,
                         sizeof(thr->frame.slot[slot].menu_ozone_color_theme));
 #endif
+#ifdef HAVE_MENU
+         if (video_info->menu.msgbox)
+         {
+            strlcpy(thr->frame.slot[slot].menu_msgbox,
+                  video_info->menu.msgbox,
+                  sizeof(thr->frame.slot[slot].menu_msgbox));
+            thr->frame.slot[slot].video_info.menu.msgbox =
+                  thr->frame.slot[slot].menu_msgbox;
+         }
+#endif
          /* The text belongs to the main thread's buffer, which it
           * rewrites next frame: this frame keeps its own copy. */
          if (video_info->stat_text_len)

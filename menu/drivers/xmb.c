@@ -510,9 +510,6 @@ typedef struct xmb_handle
    char entry_index_str[32];
    char entry_index_offset;
 
-   /* The message box's text, taken each iteration and drawn once */
-   char box_message[MENU_LABEL_MAX_LENGTH];
-
    /* The menu font path the fonts are built from. xmb_render()
     * watches it alongside the scale factor and schedules the same
     * deferred rebuild. */
@@ -1301,13 +1298,6 @@ static void xmb_draw_text(
          video_dims, color, color_hp, text_align, scale_factor,
          shadows_enable,
          xmb->shadow_offset, false);
-}
-
-static void xmb_messagebox(void *data, const char *message)
-{
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
-   if (xmb && message && *message)
-      strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
 /* A confirm box's height on screen with n lines of text and stack_h
@@ -9910,9 +9900,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       draw_caret                  = true;
    }
 
-   if (*xmb->box_message)
+   if (video_info->menu.msgbox)
    {
-      box               = xmb->box_message;
+      box               = video_info->menu.msgbox;
       render_background = true;
       draw_caret        = false;
    }
@@ -9928,7 +9918,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx,
                video_info->dims,
                xmb, box, draw_caret, &mymat);
-      xmb->box_message[0] = '\0';
    }
 
    /* Cursor image */
@@ -10966,7 +10955,7 @@ static int xmb_pointer_up(void *userdata,
 
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
-   xmb_messagebox,
+   NULL,                         /* render_messagebox */
    xmb_render,
    xmb_frame,
    xmb_init,

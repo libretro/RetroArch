@@ -524,6 +524,9 @@ typedef struct video_frame_menu_settings
    const char *rgui_theme_preset;
    const char *dynamic_wallpapers_dir;
    const char *ozone_color_theme;
+   /* The message box's text this frame, NULL for none: the menu's
+    * own, or under the threaded wrapper the frame's copy */
+   const char *msgbox;
    unsigned rgui_color_theme;
    unsigned rgui_aspect_ratio;
    unsigned rgui_aspect_ratio_lock;

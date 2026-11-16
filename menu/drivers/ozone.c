@@ -744,7 +744,6 @@ struct ozone_handle
    char selection_lastplayed[NAME_MAX_LENGTH];
    char selection_entry_enumeration[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
-   char pending_message[MENU_LABEL_MAX_LENGTH];
 
    /* The menu font path the fonts are built from. ozone_render()
     * watches it alongside the scale factors and rebuilds them in
@@ -10932,7 +10931,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       /* Messagebox */
       ozone->animations.messagebox_alpha  = 0.0f;
-      ozone->pending_message[0]           = '\0';
 
       /* Thumbnails */
       if (!runloop_is_content_switching())
@@ -13119,7 +13117,6 @@ static void ozone_messagebox_fadeout_cb(void *userdata)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)userdata;
 
-   ozone->pending_message[0]     = '\0';
    ozone->flags                 &= ~OZONE_FLAG_SHOULD_DRAW_MSGBOX;
 }
 
@@ -13131,7 +13128,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_handle_t* ozone                  = (ozone_handle_t*)data;
    const char *color_theme                = video_info->menu.ozone_color_theme;
    bool use_preferred_system_color_theme  = ((video_info->menu.flags & VIDEO_MENU_FLAG_USE_PREFERRED_SYSTEM_COLOR_THEME) ? true : false);
-   uintptr_t messagebox_tag               = (uintptr_t)ozone->pending_message;
+   uintptr_t messagebox_tag               = (uintptr_t)&ozone->animations.messagebox_alpha;
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
    float *background_color                = NULL;
@@ -13553,13 +13550,13 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
                label,
                str);
       }
-      else if (*menu_st->driver_data->menu_state_msg)
+      else if (video_info->menu.msgbox)
          ozone_draw_messagebox(ozone,
                video_info,
                p_disp,
                userdata,
                VIDEO_SCALE_PACK(video_width, video_height),
-               ozone->pending_message,
+               video_info->menu.msgbox,
                &mymat);
 
       /* Guard: bail if context was destroyed during the draw pass */
@@ -14391,8 +14388,6 @@ static void ozone_messagebox(void *data, const char *message)
    if (!ozone || !message || !*message)
       return;
 
-   strlcpy(ozone->pending_message, message,
-         sizeof(ozone->pending_message));
    ozone->flags                 |= OZONE_FLAG_SHOULD_DRAW_MSGBOX
                                  | OZONE_FLAG_MSGBOX_STATE;
 }

@@ -878,6 +878,10 @@ typedef struct thread_video
 #ifdef HAVE_OZONE
          char menu_ozone_color_theme[32];
 #endif
+#ifdef HAVE_MENU
+         /* video_info.menu.msgbox points here when the frame has one */
+         char menu_msgbox[1024];
+#endif
 #ifdef HAVE_GFX_WIDGETS
          /* The on-screen panels' text for the widgets, which this
           * thread draws; zero length leaves what they show */

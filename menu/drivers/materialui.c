@@ -768,7 +768,6 @@ typedef struct materialui_handle
    char entry_index_str[32];
    char entry_index_offset;
 
-   char msgbox[1024];
    char menu_title[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
    char sysicons_path[PATH_MAX_LENGTH];
@@ -2800,19 +2799,6 @@ static void materialui_draw_thumbnail(
       default:
          break;
    }
-}
-
-static void materialui_get_message(void *data, const char *msg)
-{
-   materialui_handle_t *mui   = (materialui_handle_t*)data;
-
-   if (!mui || !msg || !*msg)
-      return;
-
-   mui->msgbox[0] = '\0';
-
-   if (msg && *msg)
-      strlcpy(mui->msgbox, msg, sizeof(mui->msgbox));
 }
 
 static void materialui_render_messagebox(
@@ -8898,7 +8884,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Draw message box */
-   if (*mui->msgbox)
+   if (video_info->menu.msgbox)
    {
       /* Darken screen */
       gfx_display_set_alpha(
@@ -8917,9 +8903,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_info->dims,
-            video_height / 2, mui->msgbox, false, false,
+            video_height / 2, video_info->menu.msgbox, false, false,
             &mymat);
-      mui->msgbox[0] = '\0';
 
       /* Flush message box text
        * > Message box only uses list font */
@@ -9962,9 +9947,6 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    mui->scroll_animation_selection        = 0;
    mui->transition_alpha_lock             = false;
-
-   /* Ensure message box string is empty */
-   mui->msgbox[0]                         = '\0';
 
    mui->mainmenu_selection_ptr            = 0;
    mui->settings_selection_ptr            = 0;
@@ -13208,7 +13190,7 @@ static void materialui_toggle(void *userdata, bool menu_on)
 
 menu_ctx_driver_t menu_ctx_mui = {
    NULL,
-   materialui_get_message,
+   NULL,                         /* render_messagebox */
    materialui_render,
    materialui_frame,
    materialui_init,
