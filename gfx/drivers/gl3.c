@@ -3296,6 +3296,10 @@ static void gl3_renderchain_recompute_pass_sizes(
    unsigned last_max_dims  = VIDEO_SCALE_PACK(
          RARCH_SCALE_BASE * gl->video_info.input_scale,
          RARCH_SCALE_BASE * gl->video_info.input_scale);
+   /* width x height stays the core's frame while last_dims moves on
+    * with each pass; an "original" pass is sized from it, and from
+    * the largest frame the core can send */
+   unsigned orig_max       = RARCH_SCALE_BASE * gl->video_info.input_scale;
 
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
 
@@ -3334,7 +3338,8 @@ static void gl3_renderchain_recompute_pass_sizes(
             break;
 
          case RARCH_SCALE_ORIGINAL:
-            img_w     = max_img_w = width;
+            img_w     = width      * fbo_scale->scale_x;
+            max_img_w = orig_max   * fbo_scale->scale_x;
             break;
       }
 
@@ -3357,7 +3362,8 @@ static void gl3_renderchain_recompute_pass_sizes(
             break;
 
          case RARCH_SCALE_ORIGINAL:
-            img_h     = max_img_h = height;
+            img_h     = height     * fbo_scale->scale_y;
+            max_img_h = orig_max   * fbo_scale->scale_y;
             break;
       }
 
