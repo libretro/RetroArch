@@ -7908,7 +7908,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
 {
    unsigned video_width  = VIDEO_SCALE_W(video_dims);
    unsigned video_height = VIDEO_SCALE_H(video_dims);
-   size_t x, y;
+   int x, y;
    char wrapped_buf[MENU_LABEL_MAX_LENGTH];
    char *wrapped_message      = wrapped_buf;
    size_t msg_len;
@@ -8046,7 +8046,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       y_position    = height / 4;
 
    x                = width  / 2;
-   y                = y_position - (line_count * line_height) / 2;
+   y                = (int)(y_position - (line_count * line_height) / 2);
 
    if (buttons.count)
    {
@@ -8117,7 +8117,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       unsigned slice_new_h  = line_height * (line_count + 2) + (slice_margin / 2);
       /* The edge of dialog-slice.png, which is square */
       unsigned slice_size   = 256;
-      int slice_x           = (int)(x - (longest_width / 2) - slice_margin);
+      int slice_x           = x - longest_width / 2 - (int)slice_margin;
       int slice_y           = y - line_height - (slice_margin / 4)
             + ((slice_new_h >= slice_size)
                   ? (16.0f * scale_factor)
@@ -8138,7 +8138,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
          if (lift > box_top)
             lift            = box_top;
          slice_y           -= lift;
-         y                  = (size_t)((int)y - lift);
+         y                 -= lift;
          row_y              = slice_y + (int)slice_new_h - stack_h
                - (int)((70 + 16) * scale_factor) - (int)(slice_margin / 2);
          /* Still taller than the screen: as tall as the screen, the
