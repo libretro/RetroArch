@@ -87,12 +87,6 @@
 #include "../../retroarch.h"
 
 #include "d3d_shaders/shaders_common.h"
-#include "d3d_shaders/ribbon_sm3.hlsl.h"
-#include "d3d_shaders/ribbon_simple_sm3.hlsl.h"
-#include "d3d_shaders/simple_snow_sm3.hlsl.h"
-#include "d3d_shaders/snow_sm3.hlsl.h"
-#include "d3d_shaders/bokeh_sm3.hlsl.h"
-#include "d3d_shaders/snowflake_sm3.hlsl.h"
 
 static const char *stock_hlsl_program = CG(
       void main_vertex
