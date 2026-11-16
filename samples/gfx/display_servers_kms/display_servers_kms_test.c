@@ -68,6 +68,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include <xf86drm.h>
 #include <xf86drmMode.h>
@@ -112,27 +116,71 @@ uint32_t g_crtc_id = 0;
 static int     s_seq_fail;
 static int     s_seq_zero;
 static int64_t s_seq_offset_ns;
+/* wait_vblank's side of it: the count, whether the CRTC is active,
+ * and what a queued sequence event does - arrives at once through the
+ * device's own description, as the kernel would write it, or not at
+ * all. s_vb_queue_fd is the description it was queued on. */
+static uint64_t s_seq_count = 1000;
+static int      s_seq_inactive;
+static int      s_vb_deliver;
+static int      s_vb_queue_fail;
+static int      s_vb_queue_fd = -1;
+static unsigned s_vb_queues;
+
+static int64_t mono_ns(void)
+{
+   struct timespec now;
+   clock_gettime(CLOCK_MONOTONIC, &now);
+   return (int64_t)now.tv_sec * 1000000000 + (int64_t)now.tv_nsec;
+}
+
+static void vb_arrive(uint64_t sequence)
+{
+   struct drm_event_crtc_sequence e;
+   memset(&e, 0, sizeof(e));
+   e.base.type   = DRM_EVENT_CRTC_SEQUENCE;
+   e.base.length = sizeof(e);
+   e.time_ns     = mono_ns();
+   e.sequence    = sequence;
+   if (write(g_drm_fd, &e, sizeof(e)) != (ssize_t)sizeof(e))
+      abort();
+}
 
 int drmIoctl(int fd, unsigned long request, void *arg)
 {
-   struct timespec now;
    struct drm_crtc_get_sequence *get_seq = (struct drm_crtc_get_sequence*)arg;
-   (void)fd;
+   if (request == DRM_IOCTL_CRTC_QUEUE_SEQUENCE)
+   {
+      struct drm_crtc_queue_sequence *queue =
+         (struct drm_crtc_queue_sequence*)arg;
+      if (     s_vb_queue_fail
+            || queue->crtc_id != g_crtc_id
+            || queue->flags != DRM_CRTC_SEQUENCE_RELATIVE
+            || queue->sequence != 1)
+      {
+         errno = EINVAL;
+         return -1;
+      }
+      s_vb_queues++;
+      s_vb_queue_fd = fd;
+      if (s_vb_deliver)
+         vb_arrive(++s_seq_count);
+      return 0;
+   }
    if (     request != DRM_IOCTL_CRTC_GET_SEQUENCE
          || s_seq_fail || get_seq->crtc_id != g_crtc_id)
    {
       errno = EINVAL;
       return -1;
    }
-   clock_gettime(CLOCK_MONOTONIC, &now);
-   get_seq->sequence = 1000;
+   get_seq->active   = !s_seq_inactive;
+   get_seq->sequence = s_seq_count;
    if (s_seq_zero)
    {
       get_seq->sequence_ns = 0;
       return 0;
    }
-   get_seq->sequence_ns = (int64_t)now.tv_sec * 1000000000 + (int64_t)now.tv_nsec
-      - s_seq_offset_ns;
+   get_seq->sequence_ns = mono_ns() - s_seq_offset_ns;
    return 0;
 }
 
@@ -1146,6 +1194,156 @@ static int test_geometry_metrics(void)
    return 0;
 }
 
+/* ------------------------------------------------------------------
+ * wait_vblank: the CRTC's sequence counted and timed, and the next one
+ * waited for, with a bound, as an event on a description of its own.
+ * A FIFO stands in for the device: the driver's second description of
+ * it is where the test's events arrive.
+ * ------------------------------------------------------------------ */
+
+static unsigned open_fds(void)
+{
+   unsigned n = 0;
+   DIR *d     = opendir("/proc/self/fd");
+   if (d)
+   {
+      while (readdir(d))
+         n++;
+      closedir(d);
+   }
+   return n;
+}
+
+static int expect_vb(const char *what, unsigned got, unsigned want)
+{
+   if (got == want)
+      return 0;
+   fprintf(stderr, "FAIL: wait_vblank, %s: %u, want %u\n", what, got, want);
+   return 1;
+}
+
+static int test_wait_vblank(void)
+{
+   char dir[]      = "/tmp/kms-vblank-XXXXXX";
+   char path[64];
+   retro_time_t at = 0;
+   int64_t t0, took;
+   unsigned fds, n;
+   void *server;
+   int fails       = 0;
+
+   if (!dispserv_kms.wait_vblank)
+   {
+      fputs("FAIL: dispserv_kms has no wait_vblank\n", stderr);
+      return 1;
+   }
+   if (!mkdtemp(dir))
+      return 1;
+   snprintf(path, sizeof(path), "%s/card", dir);
+   if (mkfifo(path, 0600) != 0)
+      return 1;
+
+   fds        = open_fds();
+   server     = dispserv_kms.init();
+   s_crtc_vrr = 0;
+   g_crtc_id  = 0;
+   g_drm_fd   = -1;
+   fails += expect_vb("no device", dispserv_kms.wait_vblank(server, 0, 0, &at), 0);
+   g_drm_fd   = open(path, O_RDWR);
+   fails += expect_vb("no CRTC", dispserv_kms.wait_vblank(server, 0, 0, &at), 0);
+   g_crtc_id  = 7;
+
+   /* the count and its time, without waiting or queueing */
+   fails += expect_vb("the count", dispserv_kms.wait_vblank(server, 0, 0, &at), 1000);
+   fails += expect_vb("  asked without a wait, nothing queued", s_vb_queues, 0);
+   if (at <= 0 || mono_ns() / 1000 - at > 1000000)
+   {
+      fputs("FAIL: wait_vblank's time is not the vblank's\n", stderr);
+      fails++;
+   }
+   fails += expect_vb("already past what was seen",
+         dispserv_kms.wait_vblank(server, 999, 100000, &at), 1000);
+   fails += expect_vb("  nothing queued", s_vb_queues, 0);
+
+   /* the next one, as an event on a description that is not the
+    * context's */
+   s_vb_deliver = 1;
+   fails += expect_vb("the next vblank",
+         dispserv_kms.wait_vblank(server, 1000, 100000, &at), 1001);
+   fails += expect_vb("  one event queued", s_vb_queues, 1);
+   if (s_vb_queue_fd == g_drm_fd || s_vb_queue_fd < 0)
+   {
+      fputs("FAIL: the event was queued among the context's page flips\n", stderr);
+      fails++;
+   }
+
+   /* none comes: the wait is bounded, and the event still pending is
+    * not queued a second time */
+   s_vb_deliver = 0;
+   t0   = mono_ns();
+   n    = dispserv_kms.wait_vblank(server, 1001, 30000, &at);
+   took = (mono_ns() - t0) / 1000;
+   fails += expect_vb("no vblank within the bound", n, 1001);
+   if (took < 25000 || took > 500000)
+   {
+      fprintf(stderr, "FAIL: a 30 ms bound waited %ld us\n", (long)took);
+      fails++;
+   }
+   fails += expect_vb("still none", dispserv_kms.wait_vblank(server, 1001, 10000, &at), 1001);
+   fails += expect_vb("  queued once for both", s_vb_queues, 2);
+
+   /* it arrives late, behind a page flip that is not ours to read */
+   {
+      struct drm_event_vblank flip;
+      memset(&flip, 0, sizeof(flip));
+      flip.base.type   = DRM_EVENT_FLIP_COMPLETE;
+      flip.base.length = sizeof(flip);
+      if (write(g_drm_fd, &flip, sizeof(flip)) != (ssize_t)sizeof(flip))
+         return 1;
+   }
+   vb_arrive(++s_seq_count);
+   fails += expect_vb("arrived since", dispserv_kms.wait_vblank(server, 1001, 0, &at), 1002);
+   fails += expect_vb("then none", dispserv_kms.wait_vblank(server, 1002, 10000, &at), 1002);
+   fails += expect_vb("  and that wait queued its own", s_vb_queues, 3);
+   vb_arrive(++s_seq_count);
+
+   /* nothing to count */
+   s_seq_inactive = 1;
+   fails += expect_vb("inactive CRTC", dispserv_kms.wait_vblank(server, 0, 0, &at), 0);
+   s_seq_inactive = 0;
+   s_seq_zero     = 1;
+   fails += expect_vb("no vblank stamp", dispserv_kms.wait_vblank(server, 0, 0, &at), 0);
+   s_seq_zero     = 0;
+   s_seq_fail     = 1;
+   fails += expect_vb("failed query", dispserv_kms.wait_vblank(server, 0, 0, &at), 0);
+   s_seq_fail     = 0;
+   s_vb_queue_fail = 1;
+   fails += expect_vb("an event that cannot be queued",
+         dispserv_kms.wait_vblank(server, (unsigned)s_seq_count, 10000, &at), 0);
+   s_vb_queue_fail = 0;
+
+   /* a variable refresh rate has no grid, asked when the CRTC changes */
+   s_crtc_vrr = 1;
+   g_crtc_id  = 8;
+   fails += expect_vb("VRR on", dispserv_kms.wait_vblank(server, 0, 0, &at), 0);
+   s_crtc_vrr = 0;
+   g_crtc_id  = 7;
+   fails += expect_vb("VRR off again", dispserv_kms.wait_vblank(server, 0, 0, &at),
+         (unsigned)s_seq_count);
+
+   close(g_drm_fd);
+   g_drm_fd  = -1;
+   g_crtc_id = 0;
+   dispserv_kms.destroy(server);
+   fails += expect_vb("descriptors left open", open_fds(), fds);
+   unlink(path);
+   rmdir(dir);
+   if (fails)
+      return 1;
+   puts("[pass] wait_vblank counts the CRTC's sequence, waits for the next with a bound on a description of its own, and counts nothing inactive or under VRR");
+   return 0;
+}
+
 int main(void)
 {
    if (test_scanline_from_time())
@@ -1169,6 +1367,8 @@ int main(void)
    if (test_list_is_sorted())
       return 1;
    if (test_current_mode_flagged())
+      return 1;
+   if (test_wait_vblank())
       return 1;
 
    puts("ALL OK");

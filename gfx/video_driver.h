@@ -788,8 +788,8 @@ typedef struct video_frame_info
     * vblank: the setting is on and the wrapper is running. */
    bool threaded_display_pacing;
    /* ...and may hold on the display's vblank events instead of a
-    * timer: its setting is on, and no variable refresh rate is in
-    * use. */
+    * timer: its setting is on, no variable refresh rate is in use,
+    * and the output is fullscreen. */
    bool threaded_pacing_vblank;
    bool present_timing_from_display;
    /* This frame's views and where each is drawn. views.num_views is 0

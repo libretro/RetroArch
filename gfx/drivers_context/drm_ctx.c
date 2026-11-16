@@ -1472,6 +1472,17 @@ static bool gfx_ctx_drm_shared_context_new(void *data,
 }
 #endif
 
+/* As gfx_ctx_drm_queue_flip() chooses an async page flip */
+static bool gfx_ctx_drm_present_immediate(void *data)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   return drm
+      && drm->interval == 0
+      && drm->async_flip
+      && !drm->async_flip_refused
+      && !drm->video_vsync;
+}
+
 const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
@@ -1516,10 +1527,12 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
 #ifdef HAVE_EGL
    gfx_ctx_drm_shared_context_new,
    egl_shared_context_bind,
-   egl_shared_context_free
+   egl_shared_context_free,
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
 #endif
+   NULL, /* windows */
+   gfx_ctx_drm_present_immediate
 };

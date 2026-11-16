@@ -248,6 +248,9 @@ jobs:
           # drm_surface_lifetime cannot say what a kernel refuses: a
           # turn set on its own, outside the commit that places the
           # plane, was refused here.
+          # Then dispserv_kms.c's vblank clock on the same kernel: its
+          # CRTC's vblanks counted one by one on a description that is
+          # not the master's, whose page flip event is left to it.
           make SANITIZER=address,undefined
           make check SANITIZER=address,undefined
 
@@ -2583,6 +2586,9 @@ jobs:
           test -x display_servers_kms_test
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
+
+      - name: KMS context reports an async page flip as an immediate present
+        run: CFLAGS='-fsanitize=address,undefined' python3 samples/gfx/drm_present_immediate/run.py
 
       - name: Build and run drm_hdr_test (ASan + UBSan)
         shell: bash

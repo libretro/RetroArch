@@ -4424,8 +4424,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->fast_forward   = video_info->input_driver_nonblock_state;
       thr->core_running   = video_info->core_running;
       thr->menu_content_rate = video_info->menu_content_rate;
-      thr->vblank_pacing  = video_info->threaded_pacing_vblank
-         && video_info->fullscreen;
+      thr->vblank_pacing  = video_info->threaded_pacing_vblank;
       retro_atomic_store_relaxed_int(&thr->display_pacing_pub,
             thr->display_pacing ? 1 : 0);
    }

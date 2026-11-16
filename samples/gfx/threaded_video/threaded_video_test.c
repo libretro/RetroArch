@@ -6103,6 +6103,24 @@ static void lane_vblank_pacing(void)
    run_frames(3);
    video_thread_wait_idle();
 
+   /* KMS shows nothing but fullscreen, whatever the setting says */
+   {
+      enum rarch_display_type saved_type = video_driver_display_type_get();
+      settings->bools.video_fullscreen   = false;
+      video_driver_display_type_set(RARCH_DISPLAY_KMS);
+      run_frames(3);
+      video_thread_wait_idle();
+      vblane_reset(thr, 60.0f);
+      display_pacing_measure(60.0f, 30, 60.0f, "KMS, fullscreen off");
+      CHECK(vblane_waits >= 20,
+            "vblank pacing on KMS: %u frames of 36 waited on a vblank",
+            vblane_waits);
+      video_driver_display_type_set(saved_type);
+      settings->bools.video_fullscreen   = true;
+      run_frames(3);
+      video_thread_wait_idle();
+   }
+
    /* The vblanks stop - the display went to sleep: the wait is bounded,
     * the hold stands down and the timer keeps the rate. Stopped again
     * before it has held long, it stands down for good. */

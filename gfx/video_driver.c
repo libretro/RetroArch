@@ -7522,6 +7522,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->fse_negotiation             = settings->uints.video_fse_negotiation;
    video_info->fullscreen                  = settings->bools.video_fullscreen
          || (disp_flags & VIDEO_FLAG_FORCE_FULLSCREEN);
+   /* A present tears past a compositor only fullscreen; KMS has no
+    * other way to show */
+   if (     !video_info->fullscreen
+         && video_st->display_type != RARCH_DISPLAY_KMS)
+      video_info->threaded_pacing_vblank   = false;
    video_info->menu_mouse_enable           = settings->bools.menu_mouse_enable;
    video_info->monitor_index               = settings->uints.video_monitor_index;
 
