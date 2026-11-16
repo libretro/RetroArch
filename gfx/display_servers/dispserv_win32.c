@@ -1649,10 +1649,11 @@ static int win32_display_server_get_scanline(void *data)
    return d3dkmt_scanline_get();
 }
 
-static bool win32_display_server_wait_vblank(void *data)
+static unsigned win32_display_server_wait_vblank(void *data,
+      unsigned seen, unsigned timeout_us, retro_time_t *at)
 {
    (void)data;
-   return d3dkmt_wait_vblank();
+   return d3dkmt_vblank_wait(seen, timeout_us, at);
 }
 #endif
 

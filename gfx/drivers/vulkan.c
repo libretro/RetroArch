@@ -9953,6 +9953,20 @@ static retro_time_t vulkan_get_last_present_wait(void *data, bool *shown)
    return data ? vulkan_present_wait : 0;
 }
 
+static bool vulkan_present_immediate(void *data)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context)
+      return false;
+#if defined(_WIN32) && !defined(__WINRT__)
+   /* Presented through DXGI, the swapchain's mode is not what shows */
+   if (VULKAN_CTX_DATA_FROM_CONTEXT(vk->context)->dxgi_presenter)
+      return false;
+#endif
+   return vk->context->swapchain_present_mode
+      == VK_PRESENT_MODE_IMMEDIATE_KHR;
+}
+
 static retro_time_t vulkan_get_last_present_time(void *data)
 {
    retro_time_t t;
@@ -17352,10 +17366,12 @@ static const video_poke_interface_t vulkan_poke_interface = {
 #if defined(HAVE_VAAPI) || (defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
             || defined(HAVE_RECORD_MEDIACODEC)))
-   vulkan_prepare_import_texture
+   vulkan_prepare_import_texture,
 #else
-   NULL
+   NULL,
 #endif
+   NULL, /* frame_mem_map */
+   vulkan_present_immediate
 };
 
 static void vulkan_get_poke_interface(void *data,

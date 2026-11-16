@@ -368,6 +368,7 @@ enum video_thread_vp_slot
 #define VIDEO_THREAD_STAT_F_PHASE_DISPLAY   (1 << 1)
 #define VIDEO_THREAD_STAT_F_LAT_DISPLAY     (1 << 2)
 #define VIDEO_THREAD_STAT_F_DISPLAY_PACING  (1 << 3)
+#define VIDEO_THREAD_STAT_F_PRESENT_IMMEDIATE (1 << 4)
 
 /* Cache-line padding, where two threads write fields that would
  * otherwise share a line. A line carrying a write from each is pulled
@@ -484,6 +485,8 @@ typedef struct thread_video
    /* Whether the last repeat deadline came from a display timestamp
     * the driver reported (true) or from the clock (false). Stats. */
    bool phase_from_display;
+   /* The driver's present_immediate() after the last frame. Stats. */
+   bool present_immediate;
    /* The wrapped driver's answer to get_refresh_rate, polled on the
     * video thread after each frame; 0 when it has none. The presenter
     * paces on it in preference to the setting. Video thread only -
@@ -545,6 +548,9 @@ typedef struct thread_video
     * info at the push: the hold keeps the content's period over the
     * stopped core */
    bool menu_content_rate;
+   /* Display Pacing On VBlank Events may hold this frame, from the
+    * frame info at the push */
+   bool vblank_pacing;
    /* What the main thread writes every frame, kept off the lines the
     * video thread writes (see VIDEO_THREAD_LINE): the push's clock and
     * display pacing's moving averages and schedule, then the values it
@@ -565,6 +571,17 @@ typedef struct thread_video
    retro_time_t content_due;
    retro_time_t content_period;
    retro_time_t run_start;
+   /* The hold on the display's vblank events
+    * (video_thread_hold_vblank): its own due time, the display
+    * server's vblank clock, the frames it stands aside for (~0u: for
+    * good), the frames it has held since it last stood down, and the
+    * vblanks that came late for their frame. Main thread. */
+   retro_time_t vblank_due;
+   unsigned (*vblank_wait)(unsigned seen, unsigned timeout_us,
+         retro_time_t *at);
+   unsigned vblank_off;
+   unsigned vblank_held;
+   unsigned vblank_late;
    /* Frames Driver Pacing released, the driver's sleep in the hold's
     * place (video_thread_pace_hold). Main thread. */
    uint64_t driver_released;

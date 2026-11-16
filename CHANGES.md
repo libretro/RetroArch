@@ -1,4 +1,5 @@
 # Future
+- VIDEO/THREADED: 'Display Pacing On VBlank Events' (off by default): with Display Pacing, V-Sync off and fullscreen, each core frame is released on the display's own vblank events instead of a timer, where the display server has them (Windows) and the driver's present tears (Direct3D 11/12, Vulkan immediate mode); the timer paces everywhere else and whenever the events stop or keep no fixed rate
 - VIDEO/THREADED: With V-Sync off, Display Pacing holds the core to the content's rate before the first frame is presented too; at content start or after a driver reinit a core ran hundreds or thousands of frames at once with audio sync off as well
 - WIN32: Scanline Sync reads the scanline of the monitor the window is on, and follows the window to another; it read the first display's wherever the window was
 - LIBRETRO-COMMON/FLAC: 24- and 32-bit FLAC decoded to 16 bits is rounded to the nearest step instead of cut down (every sample was half a step low on average); 16-bit FLAC is unchanged

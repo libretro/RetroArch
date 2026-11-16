@@ -33,6 +33,7 @@
 #endif
 
 #include "video_driver.h"
+#include "video_display_server.h"
 #include "video_thread_wrapper.h"
 #include "gfx_instrument.h"
 
@@ -1856,6 +1857,7 @@ static void video_thread_publish_stats(thread_video_t *thr)
    int flags             =
         (thr->present_repeat       ? VIDEO_THREAD_STAT_F_PRESENT_REPEAT : 0)
       | (thr->phase_from_display   ? VIDEO_THREAD_STAT_F_PHASE_DISPLAY  : 0)
+      | (thr->present_immediate    ? VIDEO_THREAD_STAT_F_PRESENT_IMMEDIATE : 0)
       | (thr->latency_from_display ? VIDEO_THREAD_STAT_F_LAT_DISPLAY    : 0)
       | (retro_atomic_load_relaxed_int(&thr->display_pacing_pub)
                                    ? VIDEO_THREAD_STAT_F_DISPLAY_PACING : 0);
@@ -3339,6 +3341,9 @@ static void video_thread_loop(void *data)
                      ? (retro_time_t)(1000000.0f * (float)presents / hz) : 0;
                   new_repeat = video_info->retain_output;
                   new_ask    = video_info->present_timing_from_display;
+                  thr->present_immediate = thr->poke
+                     && thr->poke->present_immediate
+                     && thr->poke->present_immediate(thr->driver_data);
                }
                else
                   thr->present_repeat = false;
@@ -3894,6 +3899,98 @@ static VIDEO_NOINLINE void video_thread_handoff_latch(thread_video_t *thr,
    }
 }
 
+/* Frames held on the display's vblanks that earn a failure a second
+ * chance, and how long it stands aside before taking it. */
+#define VIDEO_THREAD_VBLANK_TRUST 256
+
+static void video_thread_vblank_stand_down(thread_video_t *thr)
+{
+   thr->vblank_off  = thr->vblank_held < VIDEO_THREAD_VBLANK_TRUST
+      ? ~0u : VIDEO_THREAD_VBLANK_TRUST;
+   thr->vblank_held = 0;
+   thr->vblank_late = 0;
+   thr->vblank_due  = 0;
+}
+
+/* With vsync off and a present that tears, when a frame starts adds no
+ * latency, so the display's vblanks release it in place of a timer:
+ * each frame on the vblank nearest its due time, which accumulates in
+ * the content's period on the clock. The wait is bounded; vblanks that
+ * stop, or keep no fixed grid (a variable refresh rate), stand the
+ * hold down - for good the second time running. False: the caller's
+ * schedule. */
+static VIDEO_NOINLINE bool video_thread_hold_vblank(thread_video_t *thr,
+      retro_time_t now, retro_time_t content, retro_time_t period)
+{
+   retro_time_t bound;
+   retro_time_t at = 0;
+   bool waited     = false;
+   unsigned n;
+
+   /* Content faster than the display is due between vblanks, which
+    * only a timer can place */
+   if (content < period - period / 16)
+      return false;
+   if (thr->vblank_off)
+   {
+      if (thr->vblank_off != ~0u)
+         thr->vblank_off--;
+      return false;
+   }
+   n = thr->vblank_wait(0, 0, &at);
+   if (!n || now - at > period * 4)
+   {
+      /* None counted yet, none here, or the last one is old and the
+       * display is not scanning out: asked again shortly */
+      thr->vblank_off = 4;
+      thr->vblank_due = 0;
+      return false;
+   }
+   /* From the latest vblank at the start and after a stall: no backlog */
+   if (thr->vblank_due <= 0 || thr->vblank_due < now - content)
+      thr->vblank_due  = at;
+   else
+      thr->vblank_due += content;
+   bound = now + content * 2;
+   /* A frame went out a period late for having queued behind another:
+    * a content period more, so the queue drains */
+   if (retro_atomic_fetch_and_int(&thr->drain_pending, 0))
+   {
+      thr->vblank_due += content;
+      bound           += content;
+      thr->handoff.drains++;
+   }
+   while (at + period / 2 < thr->vblank_due)
+   {
+      unsigned seen     = n;
+      retro_time_t left = bound - cpu_features_get_time_usec();
+      if (left > 0)
+         n = thr->vblank_wait(seen, (unsigned)left, &at);
+      if (left <= 0 || !n || n == seen)
+      {
+         /* They stopped: the display is asleep, or gone */
+         video_thread_vblank_stand_down(thr);
+         thr->content_due = 0;
+         return true;
+      }
+      waited = true;
+   }
+   /* On a fixed grid the vblank waited for is within half a period of
+    * the due time */
+   if (waited && at > thr->vblank_due + period)
+   {
+      if (++thr->vblank_late >= 8)
+         video_thread_vblank_stand_down(thr);
+   }
+   else if (waited && thr->vblank_late)
+      thr->vblank_late--;
+   if (thr->vblank_held < VIDEO_THREAD_VBLANK_TRUST)
+      thr->vblank_held++;
+   /* The clock schedule starts over, should it pace again */
+   thr->content_due = 0;
+   return true;
+}
+
 /* The hold's wait, to @target on the clock */
 static void video_thread_hold_until(thread_video_t *thr,
       retro_time_t now, retro_time_t target)
@@ -4024,6 +4121,11 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       /* For the video thread, which judges a queued frame by it */
       retro_atomic_store_release_int(&thr->content_period_us,
             (int)content);
+      if (     thr->vblank_pacing
+            && thr->nonblock
+            && (snap.flags & VIDEO_THREAD_STAT_F_PRESENT_IMMEDIATE)
+            && video_thread_hold_vblank(thr, now, content, period))
+         return;
       if (thr->content_due <= 0 || thr->content_due < now - content)
          thr->content_due = next;
       else
@@ -4320,6 +4422,8 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->fast_forward   = video_info->input_driver_nonblock_state;
       thr->core_running   = video_info->core_running;
       thr->menu_content_rate = video_info->menu_content_rate;
+      thr->vblank_pacing  = video_info->threaded_pacing_vblank
+         && video_info->fullscreen;
       retro_atomic_store_relaxed_int(&thr->display_pacing_pub,
             thr->display_pacing ? 1 : 0);
    }
@@ -4799,6 +4903,8 @@ static bool video_thread_init(thread_video_t *thr,
    retro_atomic_int_init(&thr->repeat_request, 0);
    retro_atomic_int_init(&thr->repeat_group, 0);
    retro_atomic_int_init(&thr->drain_pending, 0);
+   thr->vblank_wait = video_display_server_wait_vblank;
+   thr->vblank_held = VIDEO_THREAD_VBLANK_TRUST;
    retro_atomic_int_init(&thr->movie_capable, 0);
    video_thread_movie_state_init(&thr->movie_state);
    retro_atomic_int_init(&thr->core_time_us, 0);

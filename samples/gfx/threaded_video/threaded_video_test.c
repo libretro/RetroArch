@@ -5724,6 +5724,244 @@ static void lane_blocking_present(void)
 /* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------ */
+/* Lane: display pacing on the display's vblank events                */
+/*   With its setting on, vsync off, fullscreen and a driver whose    */
+/*   present tears, the hold releases each frame on a vblank the      */
+/*   display server counted, at the content's rate whatever the       */
+/*   display's is. It stands aside wherever one of those is missing,  */
+/*   and stands down when the vblanks stop or keep no fixed rate.     */
+/* ------------------------------------------------------------------ */
+
+static video_poke_interface_t        vblane_poke;
+static const video_poke_interface_t *vblane_inner_poke;
+static retro_atomic_int_t            vblane_immediate;
+/* The display server's clock: a display at vblane_period from
+ * vblane_origin, stopped at vblane_stop. The hold's thread only. */
+static retro_time_t vblane_origin;
+static retro_time_t vblane_period;
+static retro_time_t vblane_stop;
+/* stop as the next wait starts: no vblank comes for it */
+static bool         vblane_stop_armed;
+static unsigned     vblane_asks;
+static unsigned     vblane_waits;
+
+static bool vblane_present_immediate(void *data)
+{
+   (void)data;
+   return retro_atomic_load_acquire_int(&vblane_immediate) != 0;
+}
+
+static unsigned vblane_count(retro_time_t now, retro_time_t *at)
+{
+   unsigned n;
+   if (vblane_stop && now > vblane_stop)
+      now = vblane_stop;
+   n   = (unsigned)((now - vblane_origin) / vblane_period);
+   *at = vblane_origin + (retro_time_t)n * vblane_period;
+   return n + 1;
+}
+
+static unsigned vblane_wait(unsigned seen, unsigned timeout_us,
+      retro_time_t *at)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   retro_time_t end = now + timeout_us;
+   unsigned n;
+   if (vblane_stop_armed && timeout_us)
+   {
+      vblane_stop       = now;
+      vblane_stop_armed = false;
+   }
+   n = vblane_count(now, at);
+   vblane_asks++;
+   if (n == seen && now < end)
+      vblane_waits++;
+   while (n == seen && now < end)
+   {
+      retro_time_t next = *at + vblane_period;
+      if (next > end || (vblane_stop && next > vblane_stop))
+         next = end;
+      if (next - now > 2500)
+         retro_sleep(1);
+      now = cpu_features_get_time_usec();
+      n   = vblane_count(now, at);
+   }
+   return n;
+}
+
+static void display_pacing_measure(float display_hz, unsigned n,
+      float expect_fps, const char *what);
+
+/* The hold as a driver just up has it */
+static void vblane_reset(thread_video_t *thr, float stub_hz)
+{
+   thr->vblank_off  = 0;
+   thr->vblank_held = 256;
+   thr->vblank_late = 0;
+   thr->vblank_due  = 0;
+   vblane_origin    = cpu_features_get_time_usec();
+   vblane_period    = (retro_time_t)(1000000.0f / stub_hz);
+   vblane_stop      = 0;
+   vblane_stop_armed = false;
+   vblane_asks      = 0;
+   vblane_waits     = 0;
+}
+
+static void lane_vblank_pacing(void)
+{
+   unsigned had                   = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   bool saved_pacing     = settings->bools.video_threaded_display_pacing;
+   bool saved_vblank     = settings->bools.video_threaded_pacing_vblank;
+   bool saved_fullscreen = settings->bools.video_fullscreen;
+   bool saved_vrr        = settings->bools.vrr_runloop_enable;
+   float saved_hz        = settings->floats.video_refresh_rate;
+   unsigned (*saved_wait)(unsigned, unsigned, retro_time_t*);
+   thread_video_t *thr;
+   unsigned i;
+
+   settings->bools.video_threaded_display_pacing = true;
+   settings->bools.video_threaded_pacing_vblank  = true;
+   settings->bools.video_fullscreen              = true;
+   settings->bools.vrr_runloop_enable            = false;
+   set_threaded_via_setting(true);
+   run_frames(10);
+   expect_wrapper(true, "vblank-pacing lane");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(3);
+   video_thread_wait_idle();
+
+   thr = (thread_video_t*)video_st->data;
+   CHECK(thr->nonblock, "vblank-pacing lane: the harness runs with vsync off");
+   thr->driver->poke_interface(thr->driver_data, &vblane_inner_poke);
+   vblane_poke                   = *vblane_inner_poke;
+   vblane_poke.present_immediate = vblane_present_immediate;
+   retro_atomic_store_release_int(&vblane_immediate, 1);
+   set_poke(thr, &vblane_poke);
+   saved_wait       = thr->vblank_wait;
+   thr->vblank_wait = vblane_wait;
+
+   /* On the display's vblanks, at the content's rate: 60 fps on 60 Hz,
+    * on 120 Hz every other one, and on 144 Hz two and three in turn */
+   {
+      static const float hz[] = { 60.0f, 120.0f, 144.0f };
+      for (i = 0; i < ARRAY_SIZE(hz); i++)
+      {
+         vblane_reset(thr, hz[i]);
+         display_pacing_measure(hz[i], 60, 60.0f, "on vblank events");
+         CHECK(vblane_waits >= 40,
+               "vblank pacing at %.0f Hz: %u frames of 66 waited on a vblank",
+               hz[i], vblane_waits);
+         CHECK(!thr->vblank_off && thr->vblank_held == 256,
+               "vblank pacing at %.0f Hz stood down (off %u, late %u)",
+               hz[i], thr->vblank_off, thr->vblank_late);
+      }
+   }
+
+   /* Content faster than the display is due between its vblanks: the
+    * timer's to place */
+   settings->floats.video_refresh_rate = 30.0f;
+   run_frames(6);
+   video_thread_wait_idle();
+   run_frames(2);
+   vblane_reset(thr, 30.0f);
+   display_pacing_measure(30.0f, 30, 60.0f, "display slower than the content");
+   CHECK(!vblane_asks, "display slower than the content: the vblank clock was asked %u times",
+         vblane_asks);
+   settings->floats.video_refresh_rate = saved_hz;
+
+   /* Wherever a present does not go straight out, or the setting is
+    * off, windowed, or a variable refresh rate is in use, the timer
+    * paces and the vblank clock is not asked */
+   for (i = 0; i < 4; i++)
+   {
+      static const char *const what[] = {
+         "present waits", "setting off", "windowed", "variable refresh" };
+      if (i == 0)
+         retro_atomic_store_release_int(&vblane_immediate, 0);
+      else if (i == 1)
+         settings->bools.video_threaded_pacing_vblank = false;
+      else if (i == 2)
+         settings->bools.video_fullscreen             = false;
+      else
+         settings->bools.vrr_runloop_enable           = true;
+      run_frames(3);
+      video_thread_wait_idle();
+      vblane_reset(thr, 60.0f);
+      display_pacing_measure(60.0f, 30, 60.0f, what[i]);
+      CHECK(!vblane_asks, "vblank pacing, %s: the vblank clock was asked %u times",
+            what[i], vblane_asks);
+      retro_atomic_store_release_int(&vblane_immediate, 1);
+      settings->bools.video_threaded_pacing_vblank = true;
+      settings->bools.video_fullscreen             = true;
+      settings->bools.vrr_runloop_enable           = false;
+   }
+   run_frames(3);
+   video_thread_wait_idle();
+
+   /* The vblanks stop - the display went to sleep: the wait is bounded,
+    * the hold stands down and the timer keeps the rate. Stopped again
+    * before it has held long, it stands down for good. */
+   vblane_reset(thr, 60.0f);
+   run_frames(10);
+   vblane_stop_armed = true;
+   display_pacing_measure(60.0f, 60, 60.0f, "vblanks stopped");
+   CHECK(vblane_stop && thr->vblank_off && thr->vblank_off != ~0u,
+         "vblanks stopped: the hold did not stand down (off %u)",
+         thr->vblank_off);
+   vblane_stop     = 0;
+   thr->vblank_off = 0;
+   run_frames(10);
+   CHECK(!thr->vblank_off, "vblanks back: the hold did not take them (off %u)",
+         thr->vblank_off);
+   vblane_stop_armed = true;
+   display_pacing_measure(60.0f, 30, 60.0f, "vblanks stopped again");
+   CHECK(vblane_stop && thr->vblank_off == ~0u,
+         "vblanks stopped twice: the hold is to stand down for good (off %u)",
+         thr->vblank_off);
+
+   /* Stopped before the hold asks - the display asleep all along - it
+    * neither waits nor releases frames on a vblank long past */
+   vblane_reset(thr, 60.0f);
+   vblane_stop = vblane_origin;
+   retro_sleep(100);
+   display_pacing_measure(60.0f, 30, 60.0f, "vblanks long stopped");
+   CHECK(!vblane_waits && thr->vblank_off != ~0u,
+         "vblanks long stopped: %u waits, off %u", vblane_waits,
+         thr->vblank_off);
+
+   /* Vblanks that keep no fixed rate - a variable refresh rate, where
+    * one comes only with a present: here 40 a second on what is said
+    * to be a 120 Hz display, each inside the wait's bound and late
+    * for its frame. The content's rate is kept by the timer once the
+    * hold has stood down. */
+   vblane_reset(thr, 40.0f);
+   settings->floats.video_refresh_rate = 120.0f;
+   run_frames(40);
+   CHECK(thr->vblank_off,
+         "vblanks off the display's grid: the hold did not stand down (late %u)",
+         thr->vblank_late);
+   display_pacing_measure(120.0f, 60, 60.0f, "vblanks off the grid");
+
+   video_thread_wait_idle();
+   thr->vblank_wait = saved_wait;
+   vblane_reset(thr, 60.0f);
+   set_poke(thr, vblane_inner_poke);
+   run_frames(3);
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   settings->bools.video_threaded_display_pacing = saved_pacing;
+   settings->bools.video_threaded_pacing_vblank  = saved_vblank;
+   settings->bools.video_fullscreen              = saved_fullscreen;
+   settings->bools.vrr_runloop_enable            = saved_vrr;
+   settings->floats.video_refresh_rate           = saved_hz;
+   if (failures == had)
+      fprintf(stderr, "[pass] vblank-pacing lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: display pacing before the first present                      */
 /*   With vsync off the present holds nothing, and until the video    */
 /*   thread's first completion the hold has no period from it: the    */
@@ -14458,6 +14696,7 @@ int main(int argc, char *argv[])
    {
       lane_display_pacing();
       lane_first_present_hold();
+      lane_vblank_pacing();
       lane_blocking_present();
       lane_pacing_queue_drain();
       lane_pacing_fast_display();
@@ -14541,6 +14780,7 @@ int main(int argc, char *argv[])
    {
       lane_display_pacing();
       lane_first_present_hold();
+      lane_vblank_pacing();
       lane_blocking_present();
       lane_pacing_queue_drain();
       lane_pacing_fast_display();

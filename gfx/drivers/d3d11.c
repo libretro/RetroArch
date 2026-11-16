@@ -5971,6 +5971,15 @@ static void d3d11_driver_pacing_mark(void *data, uint64_t frame_id,
          frame_id, marker);
 }
 
+static bool d3d11_present_immediate(void *data)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   /* as d3d11_gfx_frame() chooses DXGI_PRESENT_ALLOW_TEARING */
+   return d3d11
+      &&  (d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING)
+      && !(d3d11->flags & D3D11_ST_FLAG_VSYNC);
+}
+
 static retro_time_t d3d11_get_last_present_time(void *data)
 {
    DXGI_FRAME_STATISTICS stats;
@@ -10740,7 +10749,8 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_driver_pacing_wait,
    d3d11_driver_pacing_mark,
    NULL, /* prepare_import_texture */
-   d3d11_frame_mem_map
+   d3d11_frame_mem_map,
+   d3d11_present_immediate
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,

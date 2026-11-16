@@ -784,6 +784,10 @@ typedef struct video_frame_info
    /* The threaded presenter is holding each push to the display's
     * vblank: the setting is on and the wrapper is running. */
    bool threaded_display_pacing;
+   /* ...and may hold on the display's vblank events instead of a
+    * timer: its setting is on, and no variable refresh rate is in
+    * use. */
+   bool threaded_pacing_vblank;
    bool present_timing_from_display;
    /* This frame's views and where each is drawn. views.num_views is 0
     * when the frame is drawn whole. */
@@ -1485,6 +1489,11 @@ typedef struct video_poke_interface
     * All mappings in a pool must use the same pitch (zero permits any pitch). */
    bool (*frame_mem_map)(void *data, uintptr_t id,
          video_frame_memory_t *mapping);
+   /* Whether a present made now, with vsync off, goes straight to the
+    * scanout - it tears - rather than waiting for a vblank or a
+    * compositor. Called after a frame, on its thread. A driver that
+    * cannot tell leaves it NULL. */
+   bool (*present_immediate)(void *data);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a

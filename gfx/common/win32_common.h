@@ -324,15 +324,16 @@ static D3DKMTCLOSEADAPTER pD3DKMTCloseAdapter;
 
 extern int d3dkmt_scanline_get(void);
 
-/* Block until the display signals vertical blank. Returns false when
- * the entry point is unavailable or the wait fails, in which case the
- * caller has no anchor and must fall back to polling.
+/* The display's vblank count, and in @at when the latest one was on
+ * cpu_features_get_time_usec()'s clock, after waiting @timeout_us at
+ * most for the count to pass @seen. 0, without waiting, while none are
+ * being counted: the clock is starting, the display is not scanning
+ * out, or there are no vblank events here. One calling thread.
  *
  * Measured on a 4K120 panel: 0 intervals outside +-20%% of the median
- * across 499 samples, p1..p99 spread 30 us, period accurate to 0.02%%.
- * That makes it a usable phase reference; GetScanLine at ~223 us a call
- * is not. */
-extern bool d3dkmt_wait_vblank(void);
+ * across 499 samples, p1..p99 spread 30 us, period accurate to 0.02%%. */
+unsigned d3dkmt_vblank_wait(unsigned seen, unsigned timeout_us,
+      retro_time_t *at);
 
 /* Binds the two above to the monitor @hwnd is on. Called by the
  * window's thread whenever the window may have changed monitors;

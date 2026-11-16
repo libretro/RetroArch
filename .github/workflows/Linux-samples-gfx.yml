@@ -2438,13 +2438,16 @@ jobs:
           samples/gfx/win32_window_proc/run.sh
           python3 samples/gfx/win32_window_proc/modal_frame_run.py
 
-      - name: D3DKMT binding (mingw + Wine, headless)
+      - name: D3DKMT binding and vblank clock (mingw + Wine, headless)
         shell: bash
         run: |
           set -o pipefail
           # win32_common.c with HAVE_D3DKMT, which no other Linux job
           # compiles, on entry points of the test's own: the binding
-          # follows the window's monitor and closes what it leaves.
+          # follows the window's monitor and closes what it leaves, and
+          # the vblank clock counts, bounds its caller's wait when the
+          # display stops, does not spin on a wait that fails or comes
+          # straight back, and parks unasked.
           samples/gfx/win32_d3dkmt/run.sh
 
       - name: Build and run window_driver_test for Windows (Wine)

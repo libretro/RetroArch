@@ -109,6 +109,7 @@ typedef char win32_dwm_timing_info_size_check[
 #include <features/features_cpu.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 #ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
@@ -396,7 +397,7 @@ static void d3dkmt_init(void)
             GetProcAddress(gdi32, "D3DKMTOpenAdapterFromHdc");
       pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
             GetProcAddress(gdi32, "D3DKMTGetScanLine");
-      /* Optional: d3dkmt_wait_vblank() reports its absence so the
+      /* Optional: d3dkmt_vblank_wait() reports its absence so the
        * caller can fall back, and an adapter left open is only that. */
       pD3DKMTWaitForVerticalBlankEvent = (D3DKMTWAITFORVERTICALBLANKEVENT)
             GetProcAddress(gdi32, "D3DKMTWaitForVerticalBlankEvent");
@@ -410,16 +411,125 @@ static void d3dkmt_init(void)
       d3dkmt_bind_first();
 }
 
-bool d3dkmt_wait_vblank(void)
+#ifdef HAVE_THREADS
+/* The vblank clock. D3DKMTWaitForVerticalBlankEvent takes no timeout
+ * and cannot be interrupted, so a thread of its own waits on it and
+ * counts for d3dkmt_vblank_wait(). It parks once nobody has asked for
+ * D3DKMT_VBLANK_IDLE vblanks and while the wait fails, and is never
+ * joined. */
+#define D3DKMT_VBLANK_IDLE 256
+static retro_eventcount_t d3dkmt_vb_tick;
+static retro_eventcount_t d3dkmt_vb_wake;
+static retro_atomic_int_t d3dkmt_vb_count   = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* low 32 bits of the latest one's time */
+static retro_atomic_int_t d3dkmt_vb_at      = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t d3dkmt_vb_asked   = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t d3dkmt_vb_ticking = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* The caller's: 0 not started, 1 running, -1 cannot */
+static int d3dkmt_vb_state;
+
+static void d3dkmt_vblank_thread(void *userdata)
 {
-   D3DKMT_WAITFORVERTICALBLANKEVENT vb;
-   if (     !pD3DKMTWaitForVerticalBlankEvent
-         || !d3dkmt_bound(&vb.hAdapter, &vb.VidPnSourceId))
-      return false;
-   /* hDevice is documented optional and is not needed to wait on a
-    * VidPn source. */
-   vb.hDevice = 0;
-   return (pD3DKMTWaitForVerticalBlankEvent(&vb) == STATUS_SUCCESS);
+   unsigned idle  = 0;
+   unsigned quick = 0;
+   (void)userdata;
+   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+   for (;;)
+   {
+      int key;
+      D3DKMT_WAITFORVERTICALBLANKEVENT vb;
+      if (retro_atomic_exchange_int(&d3dkmt_vb_asked, 0))
+         idle = 0;
+      if (     idle++ < D3DKMT_VBLANK_IDLE
+            && d3dkmt_bound(&vb.hAdapter, &vb.VidPnSourceId))
+      {
+         retro_time_t before = cpu_features_get_time_usec();
+         /* hDevice is documented optional and is not needed to wait
+          * on a VidPn source. */
+         vb.hDevice = 0;
+         if (pD3DKMTWaitForVerticalBlankEvent(&vb) == STATUS_SUCCESS)
+         {
+            retro_time_t now = cpu_features_get_time_usec();
+            int n            = (int)((unsigned)
+               retro_atomic_load_relaxed_int(&d3dkmt_vb_count) + 1u);
+            /* Called just ahead of a vblank it comes straight back
+             * once; one that keeps doing so is not waiting at all */
+            quick            = (now - before < 200) ? quick + 1 : 0;
+            if (quick < 2)
+            {
+               retro_atomic_store_release_int(&d3dkmt_vb_at,
+                     (int)(uint32_t)now);
+               retro_atomic_store_release_int(&d3dkmt_vb_count,
+                     n ? n : 1);
+               retro_atomic_store_release_int(&d3dkmt_vb_ticking, 1);
+               retro_eventcount_notify(&d3dkmt_vb_tick);
+               continue;
+            }
+         }
+      }
+      retro_atomic_store_release_int(&d3dkmt_vb_ticking, 0);
+      retro_eventcount_notify(&d3dkmt_vb_tick);
+      key = retro_eventcount_prepare_wait(&d3dkmt_vb_wake);
+      if (retro_atomic_load_acquire_int(&d3dkmt_vb_asked))
+         retro_eventcount_cancel_wait(&d3dkmt_vb_wake);
+      else
+         retro_eventcount_commit_wait(&d3dkmt_vb_wake, key);
+      idle  = 0;
+      quick = 0;
+   }
+}
+#endif
+
+unsigned d3dkmt_vblank_wait(unsigned seen, unsigned timeout_us,
+      retro_time_t *at)
+{
+#ifdef HAVE_THREADS
+   unsigned n;
+   retro_time_t now, end;
+   if (d3dkmt_vb_state <= 0)
+   {
+      sthread_t *thread;
+      if (d3dkmt_vb_state < 0 || !pD3DKMTWaitForVerticalBlankEvent)
+         return 0;
+      d3dkmt_vb_state = -1;
+      if (     !retro_eventcount_init(&d3dkmt_vb_tick)
+            || !retro_eventcount_init(&d3dkmt_vb_wake)
+            || !(thread = sthread_create(d3dkmt_vblank_thread, NULL)))
+         return 0;
+      sthread_detach(thread);
+      d3dkmt_vb_state = 1;
+   }
+   if (!retro_atomic_load_relaxed_int(&d3dkmt_vb_asked))
+   {
+      retro_atomic_store_release_int(&d3dkmt_vb_asked, 1);
+      retro_eventcount_notify(&d3dkmt_vb_wake);
+   }
+   now = cpu_features_get_time_usec();
+   end = now + timeout_us;
+   for (;;)
+   {
+      int key = retro_eventcount_prepare_wait(&d3dkmt_vb_tick);
+      if (!retro_atomic_load_acquire_int(&d3dkmt_vb_ticking))
+      {
+         retro_eventcount_cancel_wait(&d3dkmt_vb_tick);
+         return 0;
+      }
+      n = (unsigned)retro_atomic_load_acquire_int(&d3dkmt_vb_count);
+      if (n != seen || now >= end)
+      {
+         retro_eventcount_cancel_wait(&d3dkmt_vb_tick);
+         break;
+      }
+      retro_eventcount_commit_wait_timeout(&d3dkmt_vb_tick, key, end - now);
+      now = cpu_features_get_time_usec();
+   }
+   now = cpu_features_get_time_usec();
+   *at = now - (retro_time_t)(uint32_t)((uint32_t)now
+         - (uint32_t)retro_atomic_load_acquire_int(&d3dkmt_vb_at));
+   return n;
+#else
+   return 0;
+#endif
 }
 
 int d3dkmt_scanline_get(void)

@@ -1,7 +1,8 @@
-/* The D3DKMT binding of gfx/common/win32_common.c, on entry points of
- * the test's own: Wine has neither D3DKMTGetScanLine nor
- * D3DKMTWaitForVerticalBlankEvent, and a CI machine has one display.
- * The file is included for its statics. */
+/* The D3DKMT binding and vblank clock of gfx/common/win32_common.c,
+ * on entry points of the test's own: Wine has neither
+ * D3DKMTGetScanLine nor D3DKMTWaitForVerticalBlankEvent, and a CI
+ * machine has no display to wait on. The file is included for its
+ * statics. */
 #include "../../../gfx/common/win32_common.c"
 
 #include <stdio.h>
@@ -19,6 +20,8 @@ static unsigned failures;
       } \
    } while (0)
 
+enum { FK_TICK = 0, FK_FAIL, FK_INSTANT, FK_BLOCK };
+
 static volatile LONG fk_opens;
 static volatile LONG fk_open_fails;
 static volatile LONG fk_closes;
@@ -26,6 +29,8 @@ static volatile LONG fk_closed;
 static volatile LONG fk_waits;
 static volatile LONG fk_wait_adapter;
 static volatile LONG fk_scan_adapter;
+static volatile LONG fk_mode;
+static volatile LONG fk_hz = 60;
 
 static NTSTATUS CALLBACK fk_open(D3DKMT_OPENADAPTERFROMHDC *d)
 {
@@ -52,16 +57,61 @@ static NTSTATUS CALLBACK fk_scan(D3DKMT_GETSCANLINE *d)
    return STATUS_SUCCESS;
 }
 
+/* A display at fk_hz, one that fails, one whose wait comes straight
+ * back, and one that has stopped scanning out */
 static NTSTATUS CALLBACK fk_wait(D3DKMT_WAITFORVERTICALBLANKEVENT *d)
 {
    InterlockedIncrement(&fk_waits);
    InterlockedExchange(&fk_wait_adapter, (LONG)d->hAdapter);
+   switch (fk_mode)
+   {
+      case FK_FAIL:
+         return 1;
+      case FK_INSTANT:
+         return STATUS_SUCCESS;
+      case FK_BLOCK:
+         while (fk_mode == FK_BLOCK)
+            Sleep(5);
+         return 1;
+      default:
+         break;
+   }
+   {
+      retro_time_t period = 1000000 / fk_hz;
+      retro_time_t now    = cpu_features_get_time_usec();
+      retro_time_t next   = (now / period + 1) * period;
+      while (now < next)
+      {
+         if (next - now > 2500)
+            Sleep(1);
+         now = cpu_features_get_time_usec();
+      }
+   }
    return STATUS_SUCCESS;
+}
+
+/* Asks until the clock answers @want_ticking, a second at most */
+static unsigned ask_until(bool want_ticking)
+{
+   unsigned i;
+   unsigned n      = 0;
+   retro_time_t at = 0;
+   for (i = 0; i < 200; i++)
+   {
+      n = d3dkmt_vblank_wait(0, 0, &at);
+      if ((n != 0) == want_ticking)
+         break;
+      Sleep(5);
+   }
+   return n;
 }
 
 int main(void)
 {
-   unsigned i;
+   unsigned i, n, seen;
+   LONG calls;
+   retro_time_t at = 0;
+   retro_time_t t0, took;
    D3DKMT_HANDLE adapter;
    UINT source;
    HWND hwnd;
@@ -72,7 +122,7 @@ int main(void)
    if (!pD3DKMTGetScanLine)
       CHECK(d3dkmt_scanline_get() == -1, "a scanline with no entry point");
    if (!pD3DKMTWaitForVerticalBlankEvent)
-      CHECK(!d3dkmt_wait_vblank(), "a vblank with no entry point");
+      CHECK(!d3dkmt_vblank_wait(0, 0, &at), "vblanks with no entry point");
 
    hwnd = CreateWindowA("STATIC", "d3dkmt", WS_OVERLAPPEDWINDOW,
          10, 10, 200, 200, NULL, NULL, GetModuleHandle(NULL), NULL);
@@ -89,7 +139,6 @@ int main(void)
    /* ---- the binding follows the window ---- */
    CHECK(!d3dkmt_bound(&adapter, &source), "bound before a window said where");
    CHECK(d3dkmt_scanline_get() == -1, "a scanline with nothing bound");
-   CHECK(!d3dkmt_wait_vblank() && !fk_waits, "a vblank with nothing bound");
    win32_d3dkmt_follow(hwnd, false);
    CHECK(fk_opens == 1 && d3dkmt_bound(&adapter, &source)
          && adapter == 0x101 && source == 3,
@@ -119,9 +168,97 @@ int main(void)
          "failed open: %ld closes, adapter %x", (long)fk_closes,
          (unsigned)adapter);
 
-   CHECK(d3dkmt_wait_vblank() && fk_waits == 1 && fk_wait_adapter == 0x102,
-         "vblank not waited for on the bound source: adapter %lx",
+   /* ---- the clock counts the display's vblanks ---- */
+   seen = ask_until(true);
+   CHECK(seen, "the vblank clock never started");
+   t0   = cpu_features_get_time_usec();
+   for (i = 0; i < 30; i++)
+   {
+      retro_time_t now;
+      n   = d3dkmt_vblank_wait(seen, 200000, &at);
+      now = cpu_features_get_time_usec();
+      CHECK(n && n != seen, "vblank %u: count %u after %u", i, n, seen);
+      CHECK(at <= now && now - at < 100000,
+            "vblank %u: timed %ld us before now", i, (long)(now - at));
+      seen = n;
+   }
+   took = cpu_features_get_time_usec() - t0;
+   CHECK(took > 350000 && took < 800000,
+         "30 vblanks at 60 Hz in %ld us", (long)took);
+   CHECK(fk_wait_adapter == 0x102, "waited on adapter %lx",
          (long)fk_wait_adapter);
+
+   /* ---- and follows a rebind ---- */
+   win32_d3dkmt_follow(hwnd, true);
+   for (i = 0; i < 10 && fk_wait_adapter != 0x104; i++)
+      seen = d3dkmt_vblank_wait(seen, 200000, &at);
+   CHECK(fk_wait_adapter == 0x104 && fk_closed == 0x102,
+         "after a rebind: waits on %lx, closed %lx",
+         (long)fk_wait_adapter, (long)fk_closed);
+   seen = ask_until(true);
+
+   /* ---- a display that stops: the caller's wait is bounded ---- */
+   InterlockedExchange(&fk_mode, FK_BLOCK);
+   took = 0;
+   for (i = 0; i < 3; i++)
+   {
+      t0   = cpu_features_get_time_usec();
+      n    = d3dkmt_vblank_wait(seen, 50000, &at);
+      took = cpu_features_get_time_usec() - t0;
+      if (n == seen)
+         break;
+      seen = n;
+   }
+   CHECK(n == seen && took >= 40000 && took < 500000,
+         "stopped display: count %u after %u, in %ld us", n, seen,
+         (long)took);
+
+   /* ---- a wait that fails: none counted, and no retry unasked ---- */
+   InterlockedExchange(&fk_mode, FK_FAIL);
+   CHECK(!ask_until(false), "a failing wait still counts");
+   Sleep(100);
+   calls = fk_waits;
+   Sleep(300);
+   CHECK(fk_waits == calls, "a failing wait retried unasked: %ld times",
+         (long)(fk_waits - calls));
+   InterlockedExchange(&fk_mode, FK_TICK);
+   CHECK(ask_until(true), "the clock did not come back");
+
+   /* ---- a wait that comes straight back is not spun on ---- */
+   InterlockedExchange(&fk_mode, FK_INSTANT);
+   calls = fk_waits;
+   for (i = 0; i < 30; i++)
+   {
+      d3dkmt_vblank_wait(0, 0, &at);
+      Sleep(10);
+   }
+   CHECK(fk_waits - calls < 200, "spun on a wait that does not wait: %ld calls",
+         (long)(fk_waits - calls));
+   InterlockedExchange(&fk_mode, FK_TICK);
+
+   /* ---- unasked, it parks after D3DKMT_VBLANK_IDLE vblanks ---- */
+   InterlockedExchange(&fk_hz, 1000);
+   CHECK(ask_until(true), "the clock did not come back at 1000 Hz");
+   /* counted from before the last ask, a few vblanks ahead of the one
+    * the clock takes it on */
+   calls = fk_waits;
+   d3dkmt_vblank_wait(0, 0, &at);
+   for (i = 0; i < 100; i++)
+   {
+      LONG before = fk_waits;
+      Sleep(200);
+      if (fk_waits == before || fk_waits - calls > D3DKMT_VBLANK_IDLE + 64)
+         break;
+   }
+   CHECK(fk_waits - calls >= D3DKMT_VBLANK_IDLE
+         && fk_waits - calls <= D3DKMT_VBLANK_IDLE + 64,
+         "unasked, the clock waited on %ld vblanks before parking",
+         (long)(fk_waits - calls));
+   calls = fk_waits;
+   Sleep(200);
+   CHECK(fk_waits == calls, "parked, the clock kept waiting: %ld vblanks",
+         (long)(fk_waits - calls));
+   CHECK(ask_until(true), "parked, the clock did not come back when asked");
 
    if (hwnd)
       DestroyWindow(hwnd);

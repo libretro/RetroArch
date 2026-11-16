@@ -571,6 +571,11 @@
  * times. Off: the fixed-timer pacing threaded video always had. */
 #define DEFAULT_VIDEO_THREADED_DISPLAY_PACING false
 
+/* With display pacing, vsync off and a present that tears: release
+ * each core frame on the display's vblank events instead of a timer.
+ * Off: the timer. */
+#define DEFAULT_VIDEO_THREADED_PACING_VBLANK false
+
 /* Leave a frame the core marks as a repeat unpresented, so the display
  * sees the content's own frame rate. Off: every repeat is presented. */
 #define DEFAULT_VIDEO_SKIP_DUPE_FRAMES false

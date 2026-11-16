@@ -7782,6 +7782,13 @@ static void d3d12_driver_pacing_mark(void *data, uint64_t frame_id,
          frame_id, marker);
 }
 
+static bool d3d12_present_immediate(void *data)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   /* as d3d12_gfx_frame() chooses DXGI_PRESENT_ALLOW_TEARING */
+   return d3d12 && !(d3d12->flags & D3D12_ST_FLAG_VSYNC);
+}
+
 static retro_time_t d3d12_get_last_present_time(void *data)
 {
    DXGI_FRAME_STATISTICS stats;
@@ -13784,7 +13791,10 @@ static const video_poke_interface_t d3d12_poke_interface = {
    false, /* texture_lend_per_write */
    d3d12_driver_pacing_set,
    d3d12_driver_pacing_wait,
-   d3d12_driver_pacing_mark
+   d3d12_driver_pacing_mark,
+   NULL, /* prepare_import_texture */
+   NULL, /* frame_mem_map */
+   d3d12_present_immediate
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

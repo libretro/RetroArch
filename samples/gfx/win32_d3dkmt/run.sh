@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds the D3DKMT binding test with mingw-w64 and
+# Builds the D3DKMT binding and vblank clock test with mingw-w64 and
 # runs it under Wine on a headless X server. It links the window
 # procedure sample's stand-ins for what win32_common.c calls.
 set -eu

@@ -25,6 +25,7 @@
 #include <boolean.h>
 
 #include <retro_inline.h>
+#include <libretro.h>
 
 #include "video_defines.h"
 #include "modeline/modeline_core.h"
@@ -96,8 +97,11 @@ typedef struct video_display_server
     *
     * get_scanline returns the current beam position in scanlines,
     * blanking included, or a negative value if unavailable.
-    * wait_vblank blocks until the next vertical blank and returns
-    * false if it cannot.
+    * wait_vblank returns the display's vblank count and, in @at, when
+    * the latest one was (cpu_features_get_time_usec's clock), after
+    * waiting @timeout_us at most for the count to pass @seen. It
+    * returns 0, without waiting, while it has no vblank events to
+    * count. For one calling thread.
     *
     * Both are optional and a server may implement one without the
     * other, but Scanline Sync needs get_scanline: it targets a specific
@@ -111,7 +115,8 @@ typedef struct video_display_server
     * from DRM's vblank timestamps. X11's glXWaitForMscOML and Wayland's
     * presentation-time are not wired up. */
    int  (*get_scanline)(void *data);
-   bool (*wait_vblank)(void *data);
+   unsigned (*wait_vblank)(void *data, unsigned seen,
+         unsigned timeout_us, retro_time_t *at);
 
    /* Video modeline application. The engine in gfx/modeline/ generates
     * a full video_modeline_t; these ops put it on the wire. A server
@@ -188,7 +193,8 @@ void video_display_server_media_refresh(unsigned num, unsigned den);
 bool video_display_server_get_flags(gfx_ctx_flags_t *flags);
 
 int  video_display_server_get_scanline(void);
-bool video_display_server_wait_vblank(void);
+unsigned video_display_server_wait_vblank(unsigned seen,
+      unsigned timeout_us, retro_time_t *at);
 
 /* The beam's line elapsed_ns after line 0 of a frame frame_ns long
  * and total_lines tall, blanking included. elapsed_ns may be

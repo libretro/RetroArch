@@ -3315,13 +3315,14 @@ bool video_display_server_has_scanline(void)
    return current_display_server && current_display_server->get_scanline;
 }
 
-bool video_display_server_wait_vblank(void)
+unsigned video_display_server_wait_vblank(unsigned seen,
+      unsigned timeout_us, retro_time_t *at)
 {
    video_driver_state_t *video_st = &video_driver_st;
    if (current_display_server && current_display_server->wait_vblank)
       return current_display_server->wait_vblank(
-            video_st->current_display_server_data);
-   return false;
+            video_st->current_display_server_data, seen, timeout_us, at);
+   return 0;
 }
 
 float video_display_server_get_refresh_rate(void)
@@ -7479,8 +7480,12 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #ifdef HAVE_THREADS
    video_info->threaded_display_pacing     = settings->bools.video_threaded_display_pacing
          && video_st->thread_wrapper_active;
+   video_info->threaded_pacing_vblank      = video_info->threaded_display_pacing
+         && settings->bools.video_threaded_pacing_vblank
+         && !settings->bools.vrr_runloop_enable;
 #else
    video_info->threaded_display_pacing     = false;
+   video_info->threaded_pacing_vblank      = false;
 #endif
    video_info->present_timing_from_display = settings->bools.video_present_timing_from_display;
    video_info->scan_subframes              = settings->bools.video_scan_subframes;
