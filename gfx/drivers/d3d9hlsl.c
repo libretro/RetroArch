@@ -318,11 +318,11 @@ static INLINE void d3d9_recompute_pass_sizes(
    int i;
    struct LinkInfo link_info;
    /* The first pass's texture is the frame's, which
-    * d3d9_hlsl_renderchain_fit_frame sizes. */
-   unsigned current_width            = VIDEO_SCALE_W(
-         chain->passes->data[0].info.tex_dims);
-   unsigned current_height           = VIDEO_SCALE_H(
-         chain->passes->data[0].info.tex_dims);
+    * d3d9_hlsl_renderchain_fit_frame sizes; an "original" pass is
+    * scaled from it while current_* moves on with each pass. */
+   unsigned orig_dims                = chain->passes->data[0].info.tex_dims;
+   unsigned current_width            = VIDEO_SCALE_W(orig_dims);
+   unsigned current_height           = VIDEO_SCALE_H(orig_dims);
    unsigned out_width                = 0;
    unsigned out_height               = 0;
 
@@ -341,6 +341,9 @@ static INLINE void d3d9_recompute_pass_sizes(
          case RARCH_SCALE_INPUT:
             out_width = link_info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = link_info.pass->fbo.scale_x * VIDEO_SCALE_W(orig_dims);
+            break;
       }
       switch (link_info.pass->fbo.type_y)
       {
@@ -352,6 +355,9 @@ static INLINE void d3d9_recompute_pass_sizes(
             break;
          case RARCH_SCALE_INPUT:
             out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = link_info.pass->fbo.scale_y * VIDEO_SCALE_H(orig_dims);
             break;
       }
 
@@ -2932,11 +2938,11 @@ static bool hlsl_d3d9_renderchain_init(
    return true;
 }
 
-/* The output size of @pass's scale for an input of @in_w x @in_h, into
- * *out_w and *out_h */
+/* The output size of @pass's scale for an input of @in_w x @in_h, the
+ * core's frame being @orig_dims, into *out_w and *out_h */
 static void d3d9_hlsl_pass_out_size(const hlsl_renderchain_t *chain,
       const struct shader_pass *pass, unsigned in_w, unsigned in_h,
-      unsigned *out_w, unsigned *out_h)
+      unsigned orig_dims, unsigned *out_w, unsigned *out_h)
 {
    switch (pass->info.pass->fbo.type_x)
    {
@@ -2949,6 +2955,9 @@ static void d3d9_hlsl_pass_out_size(const hlsl_renderchain_t *chain,
       case RARCH_SCALE_INPUT:
          *out_w = pass->info.pass->fbo.scale_x * in_w;
          break;
+      case RARCH_SCALE_ORIGINAL:
+         *out_w = pass->info.pass->fbo.scale_x * VIDEO_SCALE_W(orig_dims);
+         break;
    }
    switch (pass->info.pass->fbo.type_y)
    {
@@ -2960,6 +2969,9 @@ static void d3d9_hlsl_pass_out_size(const hlsl_renderchain_t *chain,
          break;
       case RARCH_SCALE_INPUT:
          *out_h = pass->info.pass->fbo.scale_y * in_h;
+         break;
+      case RARCH_SCALE_ORIGINAL:
+         *out_h = pass->info.pass->fbo.scale_y * VIDEO_SCALE_H(orig_dims);
          break;
    }
 }
@@ -3029,7 +3041,8 @@ static void d3d9_hlsl_renderchain_run(d3d9_video_t *d3d,
       IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, target);
 
       d3d9_hlsl_pass_out_size(chain, from_pass, current_width,
-            current_height, &out_width, &out_height);
+            current_height, VIDEO_SCALE_PACK(width, height),
+            &out_width, &out_height);
 
       /* Clear out whole FBO. */
       viewport.Width  = VIDEO_SCALE_W(to_pass->info.tex_dims);
@@ -7529,6 +7542,10 @@ static void d3d9_hlsl_log_info(const struct LinkInfo *info)
       case RARCH_SCALE_ABSOLUTE:
          RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
          break;
+
+      case RARCH_SCALE_ORIGINAL:
+         RARCH_LOG("Original @ %fx\n", info->pass->fbo.scale_x);
+         break;
    }
 
    RARCH_LOG("\tScale type (Y): ");
@@ -7545,6 +7562,10 @@ static void d3d9_hlsl_log_info(const struct LinkInfo *info)
 
       case RARCH_SCALE_ABSOLUTE:
          RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
+         break;
+
+      case RARCH_SCALE_ORIGINAL:
+         RARCH_LOG("Original @ %fx\n", info->pass->fbo.scale_y);
          break;
    }
 
@@ -7640,6 +7661,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    struct LinkInfo link_info;
 #ifndef _XBOX
    unsigned current_width, current_height, out_width, out_height;
+   unsigned orig_dims;
 #endif
    unsigned i           = 0;
    settings_t *settings = config_get_ptr();
@@ -7681,6 +7703,9 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    d3d9_hlsl_log_info(&link_info);
 
 #ifndef _XBOX
+   /* The largest frame the core can send; current_* moves on with
+    * each pass, and an "original" pass is sized from this instead */
+   orig_dims      = link_info.tex_dims;
    current_width  = VIDEO_SCALE_W(link_info.tex_dims);
    current_height = VIDEO_SCALE_H(link_info.tex_dims);
    out_width      = 0;
@@ -7699,6 +7724,9 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
          case RARCH_SCALE_INPUT:
             out_width = link_info.pass->fbo.scale_x * current_width;
             break;
+         case RARCH_SCALE_ORIGINAL:
+            out_width = link_info.pass->fbo.scale_x * VIDEO_SCALE_W(orig_dims);
+            break;
       }
       switch (link_info.pass->fbo.type_y)
       {
@@ -7710,6 +7738,9 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
             break;
          case RARCH_SCALE_INPUT:
             out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+         case RARCH_SCALE_ORIGINAL:
+            out_height = link_info.pass->fbo.scale_y * VIDEO_SCALE_H(orig_dims);
             break;
       }
 

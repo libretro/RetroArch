@@ -86,6 +86,9 @@ static int run_cases(bool (*init)(d3d9_video_t*, const char*))
    scale_set(&preset.pass[1].fbo, RARCH_SCALE_INPUT, 1.0f, 1.0f);
    CHECK(run_init(init, &d3d) == 3, "source at 1.0: a stock pass after it");
 
+   scale_set(&preset.pass[1].fbo, RARCH_SCALE_ORIGINAL, 1.0f, 1.0f);
+   CHECK(run_init(init, &d3d) == 3, "original at 1.0: a stock pass after it");
+
    scale_set(&preset.pass[1].fbo, RARCH_SCALE_VIEWPORT, 1.0f, 1.0f);
    preset.pass[1].fbo.flags |= FBO_SCALE_FLAG_FP_FBO;
    CHECK(run_init(init, &d3d) == 3, "float_framebuffer: a stock pass after it");
