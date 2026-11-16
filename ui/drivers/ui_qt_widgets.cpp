@@ -7488,7 +7488,14 @@ QWidget *VideoPage::widget()
    SettingsGroup *windowedGroup = new SettingsGroup("Windowed Mode");
    SettingsGroup *syncGroup = new SettingsGroup("Synchronization");
    SettingsGroup *miscGroup = new SettingsGroup("Miscellaneous");
-   SettingsGroup *stereo3dGroup = new SettingsGroup("Stereo 3D and Screens");
+   SettingsGroup *stereo3dGroup = new SettingsGroup(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS));
+   SettingsGroup *gameScreensGroup = new SettingsGroup(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_GAME_SCREENS_SETTINGS));
+#ifdef HAVE_OPENXR
+   SettingsGroup *headsetGroup = new SettingsGroup(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_HEADSET_SETTINGS));
+#endif
    CheckableSettingsGroup *vSyncGroup =
       new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
@@ -7718,6 +7725,12 @@ QWidget *VideoPage::widget()
 
    qt_settings_group_add_displaylist(stereo3dGroup,
          DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, NULL, 0, NULL, 0);
+   qt_settings_group_add_displaylist(gameScreensGroup,
+         DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST, NULL, 0, NULL, 0);
+#ifdef HAVE_OPENXR
+   qt_settings_group_add_displaylist(headsetGroup,
+         DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST, NULL, 0, NULL, 0);
+#endif
    qt_settings_group_add_list(miscGroup, videoList,
          filterEntries, ARRAY_SIZE(filterEntries), NULL, 0);
 
@@ -7774,6 +7787,10 @@ QWidget *VideoPage::widget()
    }
 #endif
    rightColumn->addWidget(stereo3dGroup);
+   rightColumn->addWidget(gameScreensGroup);
+#ifdef HAVE_OPENXR
+   rightColumn->addWidget(headsetGroup);
+#endif
    if (videoList)
       file_list_free(videoList);
 

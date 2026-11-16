@@ -72,6 +72,9 @@
 #endif
 
 #include <compat/strl.h>
+#ifdef HAVE_VIDEO_WINDOWS
+#include <encodings/utf.h>
+#endif
 
 #include "../video_display_server.h"
 #include "../gfx_media_display.h"
@@ -273,6 +276,40 @@ typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM
 
 typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
 typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* For DisplayConfigGetDeviceInfo, at the sizes Windows checks */
+typedef struct DISPLAYCONFIG_DEVICE_INFO_HEADER_CUSTOM
+{
+   UINT32 type;
+   UINT32 size;
+   LUID adapterId;
+   UINT32 id;
+} DISPLAYCONFIG_DEVICE_INFO_HEADER_CUSTOM;
+
+typedef struct DISPLAYCONFIG_SOURCE_DEVICE_NAME_CUSTOM
+{
+   DISPLAYCONFIG_DEVICE_INFO_HEADER_CUSTOM header;
+   WCHAR viewGdiDeviceName[32];
+} DISPLAYCONFIG_SOURCE_DEVICE_NAME_CUSTOM;
+
+typedef struct DISPLAYCONFIG_TARGET_DEVICE_NAME_CUSTOM
+{
+   DISPLAYCONFIG_DEVICE_INFO_HEADER_CUSTOM header;
+   UINT32 flags;
+   UINT32 outputTechnology;
+   UINT16 edidManufactureId;
+   UINT16 edidProductCodeId;
+   UINT32 connectorInstance;
+   WCHAR monitorFriendlyDeviceName[64];
+   WCHAR monitorDevicePath[128];
+} DISPLAYCONFIG_TARGET_DEVICE_NAME_CUSTOM;
+
+#define DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME_CUSTOM 1
+#define DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME_CUSTOM 2
+
+typedef LONG (WINAPI *DISPLAYCONFIGGETDEVICEINFO)(DISPLAYCONFIG_DEVICE_INFO_HEADER_CUSTOM*);
+#endif
 
 static void *win32_display_server_init(void)
 {
@@ -1064,6 +1101,148 @@ static float win32_display_config_refresh_rate(const POINTL *origin)
    return 0.0f;
 #endif
 }
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY as Linux names connectors */
+static const char *win32_display_config_prefix(UINT32 technology)
+{
+   switch (technology)
+   {
+      case 0:          /* HD15 */
+         return "VGA";
+      case 4:
+         return "DVI";
+      case 5:
+         return "HDMI";
+      case 6:
+         return "LVDS";
+      case 10:         /* DISPLAYPORT_EXTERNAL */
+      case 18:         /* DISPLAYPORT_USB_TUNNEL */
+         return "DP";
+      case 11:         /* DISPLAYPORT_EMBEDDED */
+         return "eDP";
+      case 13:         /* UDI_EMBEDDED */
+      case 0x80000000: /* INTERNAL */
+         return "Internal";
+      default:
+         break;
+   }
+   return "Output";
+}
+
+void win32_display_config_connectors(video_window_display_t *list,
+      unsigned count)
+{
+#if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
+   UINT32 i;
+   unsigned tries;
+   LONG res                              = ERROR_INSUFFICIENT_BUFFER;
+   UINT32 path_count                     = 0;
+   UINT32 mode_count                     = 0;
+   DISPLAYCONFIG_PATH_INFO_CUSTOM *paths = NULL;
+   DISPLAYCONFIG_MODE_INFO_CUSTOM *modes = NULL;
+#ifdef HAVE_DYLIB
+   static QUERYDISPLAYCONFIG          pQueryDisplayConfig;
+   static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
+   static DISPLAYCONFIGGETDEVICEINFO  pDisplayConfigGetDeviceInfo;
+
+   if (     !pQueryDisplayConfig || !pGetDisplayConfigBufferSizes
+         || !pDisplayConfigGetDeviceInfo)
+   {
+      HMODULE user32               = GetModuleHandle("user32.dll");
+      pQueryDisplayConfig          = (QUERYDISPLAYCONFIG)
+         GetProcAddress(user32, "QueryDisplayConfig");
+      pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)
+         GetProcAddress(user32, "GetDisplayConfigBufferSizes");
+      pDisplayConfigGetDeviceInfo  = (DISPLAYCONFIGGETDEVICEINFO)
+         GetProcAddress(user32, "DisplayConfigGetDeviceInfo");
+   }
+#else
+   static QUERYDISPLAYCONFIG          pQueryDisplayConfig          =
+      (QUERYDISPLAYCONFIG)QueryDisplayConfig;
+   static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
+   static DISPLAYCONFIGGETDEVICEINFO  pDisplayConfigGetDeviceInfo  =
+      (DISPLAYCONFIGGETDEVICEINFO)DisplayConfigGetDeviceInfo;
+#endif
+
+   if (     !count || !pQueryDisplayConfig || !pGetDisplayConfigBufferSizes
+         || !pDisplayConfigGetDeviceInfo)
+      return;
+   /* Paths added between the sizes and the query: sized again */
+   for (tries = 0; tries < 3 && res == ERROR_INSUFFICIENT_BUFFER; tries++)
+   {
+      free(modes);
+      free(paths);
+      modes = NULL;
+      paths = NULL;
+      if (     pGetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS,
+                  &path_count, &mode_count) != ERROR_SUCCESS
+            || !path_count || !mode_count
+            || !(paths = (DISPLAYCONFIG_PATH_INFO_CUSTOM*)
+                  malloc(sizeof(*paths) * path_count))
+            || !(modes = (DISPLAYCONFIG_MODE_INFO_CUSTOM*)
+                  malloc(sizeof(*modes) * mode_count)))
+         break;
+      res = pQueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &path_count, paths,
+            &mode_count, modes, NULL);
+   }
+   for (i = 0; res == ERROR_SUCCESS && i < path_count; i++)
+   {
+      DISPLAYCONFIG_SOURCE_DEVICE_NAME_CUSTOM source;
+      DISPLAYCONFIG_TARGET_DEVICE_NAME_CUSTOM target;
+      video_window_display_t *display = NULL;
+      char *friendly;
+      unsigned j, k;
+      memset(&source, 0, sizeof(source));
+      source.header.type      =
+         DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME_CUSTOM;
+      source.header.size      = sizeof(source);
+      source.header.adapterId = paths[i].sourceInfo.adapterId;
+      source.header.id        = paths[i].sourceInfo.id;
+      if (pDisplayConfigGetDeviceInfo(&source.header) != ERROR_SUCCESS)
+         continue;
+      /* GDI device names are ASCII; one renamed already no longer
+       * matches, so a cloned source keeps its first target */
+      for (k = 0; k < count && !display; k++)
+      {
+         const char *device = list[k].name;
+         j = 0;
+         while (     j < 31 && device[j]
+               && source.viewGdiDeviceName[j]
+                  == (WCHAR)(unsigned char)device[j])
+            j++;
+         if (!device[j] && !source.viewGdiDeviceName[j])
+            display = &list[k];
+      }
+      if (!display)
+         continue;
+      memset(&target, 0, sizeof(target));
+      target.header.type      =
+         DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME_CUSTOM;
+      target.header.size      = sizeof(target);
+      target.header.adapterId = paths[i].targetInfo.adapterId;
+      target.header.id        = paths[i].targetInfo.id;
+      if (pDisplayConfigGetDeviceInfo(&target.header) != ERROR_SUCCESS)
+         continue;
+      /* 0 is the only connector of its kind on the adapter */
+      snprintf(display->name, sizeof(display->name), "%s-%u",
+            win32_display_config_prefix(target.outputTechnology),
+            target.connectorInstance
+            ? (unsigned)target.connectorInstance : 1u);
+      target.monitorFriendlyDeviceName[63] = 0;
+      if ((friendly = utf16_to_utf8_string_alloc(
+            target.monitorFriendlyDeviceName)))
+      {
+         utf8cpy(display->model, sizeof(display->model), friendly,
+               (size_t)-1);
+         free(friendly);
+      }
+   }
+   free(modes);
+   free(paths);
+#endif
+}
+#endif
 
 static float win32_display_server_get_refresh_rate(void *data)
 {

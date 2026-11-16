@@ -1190,3 +1190,14 @@ else
       echo "SMB support enabled (system libsmb2)"
    fi
 fi
+
+# The screens' own windows need a desktop window system to make them
+# in: X11, Wayland or SDL (not SDL under Cocoa), or Win32's own.
+if [ "$HAVE_VIDEO_WINDOWS" != 'no' ] && [ "$OS" != 'Win32' ]; then
+   if [ "$OS" = 'Darwin' ] || [ "$OS" = 'Haiku' ]; then
+      HAVE_VIDEO_WINDOWS=no
+   else
+      check_enabled 'X11 WAYLAND SDL2 SDL3' VIDEO_WINDOWS \
+         "screens' own windows" 'X11, Wayland and SDL are' false
+   fi
+fi

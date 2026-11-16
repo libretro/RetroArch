@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds the Stereo 3D & Screens list harness.
+# Builds the Stereo 3D, Game Screens and Headset lists harness.
 #
 # Like playlist_nav, this links the SHIPPING objects of a built
 # RetroArch with only main() replaced; the Touch Buttons the

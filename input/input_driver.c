@@ -2409,6 +2409,11 @@ bool input_driver_window_touch(unsigned window, unsigned idx,
 {
    return input_pointer_window_touch(window, idx, screen_pos, down);
 }
+
+void input_driver_release_window(unsigned window)
+{
+   input_pointer_frames_forget(window);
+}
 #endif
 
 /* The keys a port's binds name, compiled when the binds change, and
@@ -17114,6 +17119,14 @@ bool input_config_get_nowinkey_enable(void)
 {
    settings_t *settings = config_get_ptr();
    return settings && settings->bools.input_nowinkey_enable;
+}
+#endif
+
+#if defined(HAVE_DINPUT) && defined(HAVE_VIDEO_WINDOWS)
+bool input_config_get_video_windows_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.video_windows_enable;
 }
 #endif
 

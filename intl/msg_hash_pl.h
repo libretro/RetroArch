@@ -2475,7 +2475,6 @@ static const struct
    char s_52e3d6ea[26];
    char s_2c868ae4[8];
    char s_9c535394[8];
-   char s_5c12d979[9];
    char s_3253994e[6];
    char s_c992346c[39];
    char s_580e244f[6];
@@ -2541,12 +2540,10 @@ static const struct
 #endif
    char s_84c46931[28];
    char s_ebf10493[15];
-   char s_539d5393[14];
    char s_a64b3a0b[27];
    char s_83e8dc72[28];
    char s_7cf985f0[37];
    char s_0f5266ce[16];
-   char s_0f97fdc1[7];
    char s_ea2674d3[32];
    char s_ea2674d4[30];
    char s_2d8cb7ce[23];
@@ -7230,7 +7227,6 @@ static const struct
    "Symulacja prze\305\233wietlania",
    "Poziomo",
    "Pionowo",
-   "Ekran %u",
    "Skala",
    "Prze\305\202\304\205czanie trybu wy\305\233wietlania SDL",
    "Wideo",
@@ -7296,12 +7292,10 @@ static const struct
 #endif
    "Tryb pe\305\202noekranowy w oknie",
    "Tryb okienkowy",
-   "Przy\305\202\304\205czone",
    "Maksymalna wysoko\305\233\304\207 okna",
    "Maksymalna szeroko\305\233\304\207 okna",
    "U\305\274yj niestandardowego rozmiaru okna",
    "Wysoko\305\233\304\207 okna",
-   "Ukryte",
    "Przesuni\304\231cie ekranu w poziomie",
    "Przesuni\304\231cie ekranu w pionie",
    "Przezroczysto\305\233\304\207 okna",
@@ -10236,7 +10230,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199514u
+      (sizeof(msg_hash_pl_blob) == (199484u
 #ifdef ANDROID
        + 385u
 #endif
@@ -13207,7 +13201,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -13273,12 +13266,10 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,

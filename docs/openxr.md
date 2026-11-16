@@ -18,7 +18,7 @@ drivers, and on the Meta Quest with `vulkan` and `gl`.
 - Quest: the `quest` gradle flavour.
 
 At run time an OpenXR runtime has to be active (SteamVR or Monado on
-Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
+Linux). Then turn on **Settings > Video > Headset > Headset
 Output (OpenXR)**. Under it come Edit Screens, Snap to Screens, Snap to
 Angles, Hinge Gap, Edit Smoothing and While Editing Screens, described
 below, then Headset Refresh Rate, Headset Performance Boost, Screen
@@ -77,7 +77,7 @@ Overrides save all three per game, core or content directory.
 
 ## Adjusting floating screens
 
-In **Settings > Video > Stereo 3D & Screens**, use **Screen** to choose
+In **Settings > Video > Headset**, use **Screen** to choose
 which floating screen to adjust. The number is the core's logical screen
 ID plus one, from 1 to 8. Only screens in the current frame's map are
 listed; a tracked projection's eyes are excluded. Without a map,
@@ -138,7 +138,7 @@ menu screen.
 
 **Edit Screens** moves the floating screens and the menu with the
 controllers instead of the menu's rows. Start it from **Settings > Video >
-Stereo 3D & Screens > Edit Screens** (shown with Headset Output on; the
+Headset > Edit Screens** (shown with Headset Output on; the
 menu closes into it), the **Edit Headset Screens** hotkey, the headset's
 own **Edit Screens** action, or the `HEADSET_EDIT_SCREENS` network
 command. It needs content running. The same hotkey, action or command

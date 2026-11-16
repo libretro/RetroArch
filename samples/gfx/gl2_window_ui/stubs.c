@@ -75,12 +75,20 @@ void video_driver_attach_windows(unsigned screens, unsigned restore)
 { (void)screens; (void)restore; }
 void video_driver_cached_frame(void) { }
 void video_driver_cached_frame_retire(void) { }
+void video_driver_close_windows(const video_windows_frame_t *frame,
+      unsigned screens) { (void)frame; (void)screens; }
 void video_driver_hw_context_shared_note(bool shared) { (void)shared; }
 uint32_t video_driver_get_disp_flags(void) { return 0; }
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 { static struct retro_hw_render_callback cb; return &cb; }
 unsigned video_driver_get_output_dims(void) { return 0; }
 void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits) { (void)set_bits; (void)clear_bits; }
+void video_driver_publish_window_bounds(unsigned window, unsigned screens,
+      unsigned edit, unsigned pos, unsigned dims, bool moved)
+{ (void)window; (void)screens; (void)edit; (void)pos; (void)dims; (void)moved; }
+void video_driver_publish_window_focus(unsigned window,
+      unsigned generation, bool focused)
+{ (void)window; (void)generation; (void)focused; }
 void video_driver_publish_window_layout(unsigned window,
       unsigned generation, unsigned display,
       const video_views_layout_t *layout,
@@ -106,10 +114,15 @@ bool video_thread_hw_allowed(void) { return false; }
 uint64_t video_thread_swap_count(void) { return 0; }
 uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
 { (void)data; (void)func; return 0; }
+void video_windows_held_saved(video_windows_held_t *held, unsigned w,
+      unsigned pos, unsigned dims, bool moved)
+{ (void)held; (void)w; (void)pos; (void)dims; (void)moved; }
 void video_windows_steps(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned *retire,
       unsigned *create)
 { (void)held; (void)frame; *retire = 0; *create = 0; }
+bool video_windows_usable(const gfx_ctx_window_driver_t *windows)
+{ return windows && (!windows->usable || windows->usable()); }
 
 static void stub_glsl_use(void *data, void *shader_data, unsigned index,
       bool set_active)

@@ -1202,6 +1202,15 @@ int main(void)
          input_pointer_touches_set(touch, NULL, 2, 3, 3);
          CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60,
                "touches published with no windows are the main window's");
+         input_pointer_frames_set(f, w, 2, 0);
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         input_pointer_frames_forget(1);
+         CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0
+            &&  rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == 0
+            &&  rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == -3
+            &&  input_pointers.touch_present == 2
+            &&  input_pointers.touch_down == 2,
+               "a window let go: its device's buttons, motion and touches; the main window's kept");
       }
       touches_set(touch, 0, 0);
       f[1].buttons = 0;

@@ -30,6 +30,8 @@ on:
       - 'gfx/drivers_context/wayland_vk_ctx.c'
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
+      - 'gfx/video_windows.*'
+      - 'samples/settings/video_screens/**'
       - 'samples/input/wayland_smoke/**'
       - 'samples/input/windows_wine_smoke/smoke_core.c'
       - '.github/workflows/Linux-wayland-input.yml'
@@ -44,6 +46,8 @@ on:
       - 'gfx/drivers_context/wayland_vk_ctx.c'
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
+      - 'gfx/video_windows.*'
+      - 'samples/settings/video_screens/**'
       - 'samples/input/wayland_smoke/**'
       - 'samples/input/windows_wine_smoke/smoke_core.c'
       - '.github/workflows/Linux-wayland-input.yml'
@@ -125,7 +129,8 @@ jobs:
                       --disable-audiomixer --disable-translate \
                       --disable-accessibility --disable-crtswitchres \
                       --disable-langextra --disable-libretrodb \
-                      --disable-video_filter --disable-dsp_filter
+                      --disable-video_filter --disable-dsp_filter \
+                      --enable-video_windows
           make -j$(nproc) CC="ccache gcc" CXX="ccache g++"
           ccache -s
           test -x retroarch
@@ -144,3 +149,31 @@ jobs:
         with:
           path: ~/.ccache
           key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+      - name: Native windows under Weston headless (libdecor)
+        shell: bash
+        run: |
+          set -eu
+          # The Wayland context's secondary-screen windows through its
+          # table, on a real main window, with libdecor's frames (no
+          # plugin draws here); the fixture's own deadlines bound each
+          # step.
+          python3 samples/settings/video_screens/build.py \
+             --output-dir "$RUNNER_TEMP/video-screens" --build-only
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg-runtime"
+          mkdir -p -m 0700 "$XDG_RUNTIME_DIR"
+          weston --backend=headless --renderer=pixman --width=1280 \
+             --height=720 --socket=ra-native --no-config \
+             > "$RUNNER_TEMP/weston.log" 2>&1 &
+          weston_pid=$!
+          trap 'kill $weston_pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 60); do
+             [ -S "$XDG_RUNTIME_DIR/ra-native" ] && break
+             sleep 0.5
+          done
+          unset DISPLAY
+          export WAYLAND_DISPLAY=ra-native LIBGL_ALWAYS_SOFTWARE=1
+          for c in wayland "wayland gl"; do
+             echo "== $c"
+             timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+                --native-windows $c
+          done

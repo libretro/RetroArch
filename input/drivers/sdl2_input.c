@@ -338,9 +338,18 @@ static void sdl2_poll_mouse(sdl2_input_t *sdl)
    int rx = 0, ry = 0, ax = 0, ay = 0;
    Uint8 btn     = SDL_GetRelativeMouseState(&rx, &ry);
 
-   SDL_GetMouseState(&ax, &ay);
    sdl->mouse_rel = VIDEO_POS_PACK(rx, ry);
-   sdl->mouse_abs = VIDEO_POS_PACK(ax, ay);
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Over a screen's window, its place and clicks would reach the menu
+    * as the main window's: only the motion is taken there */
+   if (sdl2_video_window_is_screen(SDL_GetMouseFocus(), 0))
+      btn = 0;
+   else
+#endif
+   {
+      SDL_GetMouseState(&ax, &ay);
+      sdl->mouse_abs = VIDEO_POS_PACK(ax, ay);
+   }
 
    sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
    sdl->mouse_r  = (SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn) ? 1 : 0;
@@ -529,6 +538,10 @@ static void sdl2_input_poll(void *data)
       }
       else if (event.type == SDL_MOUSEWHEEL)
       {
+#ifdef HAVE_VIDEO_WINDOWS
+         if (sdl2_video_window_is_screen(NULL, event.wheel.windowID))
+            continue;
+#endif
          /* SDL's y is positive for a turn away from the user: up */
          sdl->mouse_wu = event.wheel.y > 0;
          sdl->mouse_wd = event.wheel.y < 0;
