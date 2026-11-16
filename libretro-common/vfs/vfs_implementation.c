@@ -4239,12 +4239,26 @@ static bool vfs_volume_ctime_kept(unsigned long f_type)
 #ifndef ST_VALID
 #define ST_VALID 0x0020
 #endif
-static void vfs_volume_statfs(const struct statfs *fs,
+/* The word is f_flags in glibc 2.13 on, musl and bionic; glibc 2.12
+ * has it as f_spare[0], where the kernel puts it. uClibc (which says
+ * it is glibc 2.2) is left to statvfs: not every release names it. */
+#if defined(__UCLIBC__)
+#define VFS_STATFS_FLAGS(fs) 0UL
+#elif defined(__GLIBC__) && defined(__GLIBC_PREREQ)
+#if __GLIBC_PREREQ(2, 13)
+#define VFS_STATFS_FLAGS(fs) ((unsigned long)(fs).f_flags)
+#else
+#define VFS_STATFS_FLAGS(fs) ((unsigned long)(fs).f_spare[0])
+#endif
+#else
+#define VFS_STATFS_FLAGS(fs) ((unsigned long)(fs).f_flags)
+#endif
+static void vfs_volume_statfs(const struct statfs *fs, unsigned long flags,
       struct retro_vfs_volume *vol)
 {
    if (vfs_volume_ctime_kept((unsigned long)fs->f_type))
       vol->flags |= RETRO_VFS_VOLUME_CTIME_KEPT;
-   if (fs->f_flags & ST_RDONLY)
+   if (flags & ST_RDONLY)
       vol->flags |= RETRO_VFS_VOLUME_READ_ONLY;
 }
 
@@ -4449,16 +4463,22 @@ bool retro_vfs_file_volume_impl(libretro_vfs_implementation_file *stream,
       if (fstatfs(stream->fd, &fs) != 0)
          goto fail;
 #if defined(VFS_VOLUME_MAGIC)
-      if (!(fs.f_flags & ST_VALID))
       {
-         /* A kernel before 2.6.36: the flags from statvfs */
-         struct statvfs svfs;
-         if (fstatvfs(stream->fd, &svfs) != 0)
-            goto fail;
-         fs.f_flags = (svfs.f_flag & ST_RDONLY) ? ST_RDONLY : 0;
+         unsigned long flags = VFS_STATFS_FLAGS(fs);
+         if (!(flags & ST_VALID))
+         {
+            /* A kernel before 2.6.36, or a libc that does not name
+             * the word: the flags from statvfs */
+            struct statvfs svfs;
+            if (fstatvfs(stream->fd, &svfs) != 0)
+               goto fail;
+            flags = (svfs.f_flag & ST_RDONLY) ? ST_RDONLY : 0;
+         }
+         vfs_volume_statfs(&fs, flags, vol);
       }
-#endif
+#else
       vfs_volume_statfs(&fs, vol);
+#endif
 #elif defined(VFS_VOLUME_STATVFS)
       if (fstatvfs(stream->fd, &fs) != 0)
          goto fail;
@@ -4547,15 +4567,20 @@ int retro_vfs_stat_volume_impl(const char *path, unsigned want,
       if (statfs(path, &fs) != 0)
          return errno == ENOENT ? 0 : -1;
 #if defined(VFS_VOLUME_MAGIC)
-      if (!(fs.f_flags & ST_VALID))
       {
-         struct statvfs svfs;
-         if (statvfs(path, &svfs) != 0)
-            return errno == ENOENT ? 0 : -1;
-         fs.f_flags = (svfs.f_flag & ST_RDONLY) ? ST_RDONLY : 0;
+         unsigned long flags = VFS_STATFS_FLAGS(fs);
+         if (!(flags & ST_VALID))
+         {
+            struct statvfs svfs;
+            if (statvfs(path, &svfs) != 0)
+               return errno == ENOENT ? 0 : -1;
+            flags = (svfs.f_flag & ST_RDONLY) ? ST_RDONLY : 0;
+         }
+         vfs_volume_statfs(&fs, flags, vol);
       }
-#endif
+#else
       vfs_volume_statfs(&fs, vol);
+#endif
 #endif
    }
    if (want & RETRO_VFS_VOLUME_WANT_MOUNT)
