@@ -566,8 +566,9 @@ jobs:
           # open after it, refused again with no menu); the first run's
           # seed, with and without a menu and a refusal it holds;
           # run-ahead's copy; Load Once lasting until another core
-          # loads; another load ending a waiting park; and a built-in
-          # core's load, which ends a park as another core's load does.
+          # loads; another load ending a waiting park; a built-in
+          # core's load, which ends a park as another core's load does;
+          # and the firmware box, whose answer keeps the menu's level.
           make -C samples/tasks/core_load_paths check
           make -C samples/tasks/core_load_paths clean
 

@@ -8631,10 +8631,12 @@ static int generic_menu_iterate(
             break;
          }
 
-         if (     action == MENU_ACTION_OK
-               || action == MENU_ACTION_SELECT
-               || action == MENU_ACTION_CANCEL
-               || action == MENU_ACTION_INFO)
+         /* Pop only a screen the confirm pushed */
+         if (     (   action == MENU_ACTION_OK
+                   || action == MENU_ACTION_SELECT
+                   || action == MENU_ACTION_CANCEL
+                   || action == MENU_ACTION_INFO)
+               && menu_should_pop_stack(label))
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
 
          if (menu_st->dialog_st.confirm_cmd)

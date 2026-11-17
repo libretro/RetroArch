@@ -53,6 +53,10 @@
 #include "../../../runahead.h"
 #endif
 
+/* menu_cbs_ok.c's; no header declares it */
+int action_ok_close_content(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx);
+
 static unsigned failures;
 #define CHECK(cond, what) do { if (!(cond)) { \
    fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, what); \
@@ -65,6 +69,7 @@ static char bad_core[400];    /* another build: never trusted */
 static char nc_core[400];     /* needs content: never trusted */
 static char seeded[400];      /* in the first run's seed folder */
 static char broken[400];      /* a core file with no library */
+static char fw_core[400];     /* good_core's bytes; its info asks for firmware */
 static char game[400];
 static char sub_game[400];
 
@@ -1027,6 +1032,89 @@ static void mode_park_ends(void)
          "the parked core replaced the session");
 }
 
+static bool fw_box_up(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   return menu_st->dialog_st.confirm_msg == MSG_CORE_FIRMWARE_MISSING
+      && menu_st->dialog_st.confirm_cmd == CMD_EVENT_CORE_FIRMWARE_DOWNLOAD;
+}
+
+static void fw_pump(unsigned n)
+{
+   while (n--)
+      pump(1);
+}
+
+static bool fw_wait_box(unsigned frames)
+{
+   while (!fw_box_up() && frames--)
+      fw_pump(1);
+   return fw_box_up();
+}
+
+/* The firmware box answered as a pad does */
+static void fw_answer(enum menu_action action)
+{
+   menu_driver_iterate(menu_state_get_ptr(), disp_get_ptr(), anim_get_ptr(),
+         config_get_ptr(), action, cpu_features_get_time_usec());
+}
+
+static size_t stack_size(void)
+{
+   return MENU_LIST_GET_STACK_SIZE(menu_state_get_ptr()->entries.list, 0);
+}
+
+/* The firmware box pushes no screen: answering it leaves the menu's
+ * level. A confirm on its own info screen still pops that screen. */
+static void mode_fw_stack(void)
+{
+   settings_t *settings = config_get_ptr();
+   content_ctx_info_t info;
+   size_t s;
+   unsigned i;
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
+         ACTION_OK_DL_CORE_SETTINGS_LIST);
+   pump(3);
+   s = stack_size();
+   CHECK(s >= 2, "the settings list did not open");
+   snprintf(game, sizeof(game), "%s/title.bin", dir);
+   write_file(game);
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, game,
+            "fw", &info, NULL, NULL), "the playlist Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box");
+   fw_answer(MENU_ACTION_CANCEL);
+   CHECK(stack_size() == s, "Cancel on the firmware box popped a menu level");
+   for (i = 0; i < 600 && runloop_is_content_switching(); i++)
+      fw_pump(1);
+   CHECK(!runloop_is_content_switching(), "the cancelled Run did not end");
+   CHECK(stack_size() == s, "the cancelled Run's end changed the menu level");
+
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, game,
+            "fw", &info, NULL, NULL), "the second Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box for the second Run");
+   fw_answer(MENU_ACTION_OK);
+   CHECK(stack_size() == s, "OK on the firmware box popped a menu level");
+   CHECK(wait_for(warning_up, 600), "no Security Warning after OK");
+   CHECK(answer(CORE_WARNING_CANCEL), "the warning's Cancel not taken");
+   for (i = 0; i < 600 && runloop_is_content_switching(); i++)
+      fw_pump(1);
+   CHECK(!runloop_is_content_switching(), "the refused Run did not end");
+   CHECK(stack_size() == s, "the refused Run's end changed the menu level");
+
+   /* Close Content's confirm, over the info screen it pushes */
+   configuration_set_bool(settings, settings->bools.menu_show_confirm, true);
+   configuration_set_bool(settings, settings->bools.confirm_close, true);
+   s = stack_size();
+   action_ok_close_content(NULL, NULL, 0, 0, 0);
+   CHECK(stack_size() == s + 1, "Close Content's confirm pushed no screen");
+   fw_answer(MENU_ACTION_CANCEL);
+   CHECK(stack_size() == s, "a confirm on an info screen no longer pops it");
+}
+
 #ifdef HAVE_NETWORKGAMEPAD
 static bool pad_runs(void) { return core_is(CORE_TYPE_NETRETROPAD); }
 
@@ -1234,6 +1322,8 @@ static void clean_run(void)
    remove(nc_core);
    if (*broken)
       remove(broken);
+   if (*fw_core)
+      remove(fw_core);
    rmdir(cores);
    if (*seeded)
       remove(seeded);
@@ -1265,10 +1355,13 @@ static void clean_run(void)
    remove_in(dir, "harness.lpl");
    remove_in(dir, "core_probe.cache");
    remove_in(dir, "core_info.cache");
-   /* A netplay client's save folder */
+   remove_in(dir, "fw_libretro.info");
+   /* A netplay client's save folder; the fw- modes' system folder */
    {
       char path[PATH_MAX_LENGTH];
       snprintf(path, sizeof(path), "%s/.netplay", dir);
+      rmdir(path);
+      snprintf(path, sizeof(path), "%s/system", dir);
       rmdir(path);
    }
    rmdir(dir);
@@ -1398,6 +1491,29 @@ static void probe_earlier(const char *core)
    CHECK(path_is_valid(cache), "the earlier session's probe was not kept");
 }
 
+/* fw_core in a fw- mode: its info asks for a file the empty system
+ * folder lacks */
+static bool fw_setup(const char *argv0)
+{
+   char path[PATH_MAX_LENGTH];
+   FILE *f;
+   snprintf(fw_core, sizeof(fw_core), "%s/fw_libretro.%s", cores, ext);
+   snprintf(path, sizeof(path), "%s/system", dir);
+   if (!path_mkdir(path) || !copy_beside(argv0, "harness_core.so", fw_core))
+      return false;
+   snprintf(path, sizeof(path), "%s/fw_libretro.info", dir);
+   if (!(f = fopen(path, "wb")))
+      return false;
+   fprintf(f, "display_name = \"Firmware harness\"\n");
+   fprintf(f, "supports_no_game = \"true\"\n");
+   fprintf(f, "firmware_count = \"1\"\n");
+   fprintf(f, "firmware0_desc = \"fw.bin (harness)\"\n");
+   fprintf(f, "firmware0_path = \"harness/fw.bin\"\n");
+   fprintf(f, "firmware0_opt = \"false\"\n");
+   fclose(f);
+   return true;
+}
+
 int main(int argc, char *argv[])
 {
    static char env_xdg[400];
@@ -1427,6 +1543,8 @@ int main(int argc, char *argv[])
    bool outside         = cached_startup
                        || string_is_equal(mode, "startup-outside");
    bool verbatim_dot    = string_is_equal(mode, "startup-verbatim-dot");
+   bool fw_mode         = string_starts_with_size(mode, "fw-",
+         STRLEN_CONST("fw-"));
    bool inited;
    unsigned n;
    size_t i;
@@ -1529,6 +1647,12 @@ int main(int argc, char *argv[])
       clean_run();
       return 1;
    }
+   if (fw_mode && !fw_setup(argv[0]))
+   {
+      fprintf(stderr, "FAIL: no firmware core\n");
+      clean_run();
+      return 1;
+   }
 
    snprintf(cfg_path, sizeof(cfg_path), "%s/harness.cfg", dir);
    if (!(cfg = fopen(cfg_path, "wb")))
@@ -1568,6 +1692,12 @@ int main(int argc, char *argv[])
       fprintf(cfg, "libretro_directory = \"%s\"\n", cores);
    fprintf(cfg, "savefile_directory = \"%s\"\n", dir);
    fprintf(cfg, "savestate_directory = \"%s\"\n", dir);
+   if (fw_mode)
+   {
+      fprintf(cfg, "system_directory = \"%s/system\"\n", dir);
+      fprintf(cfg, "core_firmware_notification_enable = \"true\"\n");
+      fprintf(cfg, "core_info_cache_enable = \"false\"\n");
+   }
    fclose(cfg);
 
    rarch_argv[rarch_argc++] = (char*)"retroarch";
@@ -1769,6 +1899,8 @@ int main(int argc, char *argv[])
          mode_load_once();
       else if (string_is_equal(mode, "park-ends"))
          mode_park_ends();
+      else if (string_is_equal(mode, "fw-stack"))
+         mode_fw_stack();
       else if (string_is_equal(mode, "builtin"))
 #ifdef HAVE_NETWORKGAMEPAD
          mode_builtin();
