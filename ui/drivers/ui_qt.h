@@ -21,6 +21,7 @@
 #include <QObject>
 #include <QMainWindow>
 #include <QTreeView>
+#include <QTreeWidget>
 #include <QListWidget>
 #include <QTableView>
 #include <QFrame>
@@ -88,6 +89,7 @@ class QTimer;
 class QFileSystemModel;
 class QListWidgetItem;
 class QTableWidgetItem;
+class QTreeWidgetItem;
 class QResizeEvent;
 class QDockWidget;
 class QComboBox;
@@ -438,7 +440,8 @@ public:
    enum BrowserType
    {
       BROWSER_TYPE_PLAYLISTS,
-      BROWSER_TYPE_FILES
+      BROWSER_TYPE_FILES,
+      BROWSER_TYPE_UPDATER
    };
 
    enum Theme
@@ -473,6 +476,12 @@ public:
    QToolButton* runPushButton();
    QToolButton* stopPushButton();
    QTabWidget* browserAndPlaylistTabWidget();
+   QWidget* updaterHomeWidget();
+   QTableWidget* coreUpdaterTable();
+   QWidget* updaterNavigationWidget();
+   QWidget* updaterContentWidget();
+   QTreeWidget* updaterDirectoryTree();
+   QWidget* updaterEmptyWidget();
    QString getPlaylistDefaultCore(QString plName);
    ViewOptionsDialog* viewOptionsDialog();
    ShortcutsDialog* shortcutsDialog();
@@ -523,6 +532,17 @@ public slots:
    void onBrowserDownloadsClicked();
    void onBrowserUpClicked();
    void onBrowserStartClicked();
+   void onUpdaterActionClicked();
+   void onCoreUpdaterTableContextMenuRequested(const QPoint &pos);
+   void onCoreUpdaterListPoll();
+   void onUpdaterListingFinished(QStringList entries, int type, QString path);
+   void onUpdaterDownloadFinished(QString fileName, bool success);
+   void onUpdaterBackClicked();
+   void onUpdaterUpClicked();
+   void onUpdaterTopClicked();
+   void onUpdaterTableDoubleClicked(const QModelIndex &index);
+   void onUpdaterDirectoryExpanded(QTreeWidgetItem *item);
+   void onUpdaterDirectoryClicked(QTreeWidgetItem *item, int column);
    void initContentTableWidget();
    void onViewClosedDocksAboutToShow();
    void onShowHiddenDockWidgetAction();
@@ -676,6 +696,16 @@ private:
    QToolButton *m_runPushButton;
    QToolButton *m_stopPushButton;
    QTabWidget *m_browserAndPlaylistTabWidget;
+   QWidget *m_updaterHomeWidget;
+   QWidget *m_updaterEmptyWidget;
+   QWidget *m_updaterNavigationWidget;
+   QWidget *m_updaterContentWidget;
+   QString m_updaterContentPath;
+   int m_updaterViewType;
+   QTableWidget *m_coreUpdaterTable;
+   QTreeWidget *m_updaterDirectoryTree;
+   QTimer *m_coreUpdaterPollTimer;
+   int m_coreUpdaterPollAttempts;
    bool m_pendingRun;
    /* Sidebar (four thumbnail widgets) and file-browser preview: the
     * path each widget is waiting on from the model's engine. */
