@@ -123,7 +123,8 @@ static char *webdav_create_basic_auth(void)
    int         plain_len;
    char       *base64auth;
    char       *header;
-   char        userpass[512];
+   char        userpass[sizeof(((settings_t*)0)->arrays.webdav_username)
+                       + sizeof(((settings_t*)0)->arrays.webdav_password)];
    size_t      header_len;
    size_t      prefix_len = sizeof(prefix) - 1;
    settings_t *settings = config_get_ptr();
@@ -577,8 +578,9 @@ static char *webdav_get_auth_header(const char *method, const char *url)
 
    if (webdav_st->basic)
    {
-      if (!webdav_st->basic_auth_header)
-         webdav_st->basic_auth_header = webdav_create_basic_auth();
+      if (   !webdav_st->basic_auth_header
+          && !(webdav_st->basic_auth_header = webdav_create_basic_auth()))
+         return NULL;
       return strdup(webdav_st->basic_auth_header);
    }
 
