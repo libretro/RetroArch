@@ -135,6 +135,10 @@ bool is_running_on_xbox(void);
 
 bool win32_has_focus(void *data);
 
+/* GetForegroundWindow(), asked again only once the foreground has
+ * reached or left one of RetroArch's windows; any thread */
+HWND win32_foreground_window(void);
+
 /* When the compositor last saw a vertical blank, on the QPC clock
  * cpu_features_get_time_usec() keeps here, from
  * DwmGetCompositionTimingInfo; 0 when DWM cannot say (pre-Vista, or

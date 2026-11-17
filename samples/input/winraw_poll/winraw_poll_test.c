@@ -44,6 +44,7 @@
 #include <retro_atomic.h>
 
 #include "input/drivers/winraw_input.c"
+#include "gfx/common/win32_foreground.h"
 
 /* The frontend, as far as the driver links against it. */
 uint8_t g_win32_flags;
@@ -234,8 +235,14 @@ static DWORD  vt_tid;
 static void  *vt_init_result;
 static retro_atomic_int_t vt_do_init;
 
+static win32_foreground_t foreground;
+HWND win32_foreground_window(void) { return win32_foreground_get(&foreground); }
+
 static LRESULT CALLBACK plain_proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
-{ return DefWindowProcA(w, m, wp, lp); }
+{
+   win32_foreground_message(&foreground, m);
+   return DefWindowProcA(w, m, wp, lp);
+}
 
 static DWORD WINAPI video_thread(LPVOID arg)
 {

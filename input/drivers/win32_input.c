@@ -48,9 +48,7 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../../gfx/video_driver.h"
-#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
 #include "../../gfx/common/win32_common.h"
-#endif
 
 /* By scancode - the extended keys with 0x80 added, as the window
  * procedure hands them over: down. */
@@ -107,7 +105,7 @@ static void win32_input_poll(void *data)
    POINT pt;
    win32_input_t *w32 = (win32_input_t*)data;
    HWND hwnd          = (HWND)video_driver_window_get();
-   HWND front         = hwnd ? GetForegroundWindow() : NULL;
+   HWND front         = hwnd ? win32_foreground_window() : NULL;
    bool focused       = hwnd && front == hwnd;
 #if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
    input_video_window_t window;

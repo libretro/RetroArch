@@ -122,6 +122,7 @@ typedef char win32_dwm_timing_info_size_check[
 #include "win32_common.h"
 #include "win32_msg_route.h"
 #include "win32_ime.h"
+#include "win32_foreground.h"
 
 
 #ifdef HAVE_GDI
@@ -204,6 +205,7 @@ static HWND  win32_kept_hwnd;
 static DWORD win32_kept_tid;
 static int   win32_kept_family;
 static HWND  win32_retiring_hwnd;
+static win32_foreground_t win32_foreground;
 /* Which driver's window it is, within a family whose drivers cannot
  * all use each other's (win32_window_tag()), and whether the window in
  * use was taken from the last driver rather than made. */
@@ -657,7 +659,7 @@ static void win32_foreground_note(HWND hwnd)
    allow_t allow;
 
    win32_had_foreground_at = 0;
-   if (!hwnd || GetForegroundWindow() != hwnd)
+   if (!hwnd || win32_foreground_window() != hwnd)
       return;
    win32_had_foreground_at = GetTickCount() | 1;
    /* by name: not in every user32 this is built for */
@@ -1848,6 +1850,8 @@ void win32_text_entry(bool active)
 LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+   win32_foreground_message(&win32_foreground, message);
+
    /* A window left up for a driver that did not take it, being taken
     * down: the main window's state, the input driver and the video
     * driver are the next driver's, and what the desktop sends a
@@ -2501,6 +2505,8 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
    LRESULT ret;
    video_window_native_t *window;
    win32_video_window_t *state = win32_video_window_of(hwnd);
+
+   win32_foreground_message(&win32_foreground, message);
 
    if (!state)
       return DefWindowProc(hwnd, message, wparam, lparam);
@@ -3270,11 +3276,16 @@ retro_time_t win32_dwm_last_vblank_time(void)
 }
 
 #ifdef _XBOX
-static HWND GetForegroundWindow(void) { return main_window.hwnd; }
+HWND win32_foreground_window(void) { return main_window.hwnd; }
 BOOL IsIconic(HWND hwnd) { return FALSE; }
 bool win32_has_focus(void *data) { return true; }
 HWND win32_get_window(void) { return NULL; }
 #else
+HWND win32_foreground_window(void)
+{
+   return win32_foreground_get(&win32_foreground);
+}
+
 bool win32_has_focus(void *data)
 {
    settings_t *settings           = config_get_ptr();
@@ -3328,7 +3339,7 @@ bool win32_has_focus(void *data)
 
    if (g_win32_flags & WIN32_CMN_FLAG_INITED)
    {
-      HWND fg = GetForegroundWindow();
+      HWND fg = win32_foreground_window();
 #if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
       win32_video_window_t *state = fg ? win32_video_window_of(fg) : NULL;
       if (state && !state->common.closed)
