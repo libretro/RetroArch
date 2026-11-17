@@ -764,6 +764,18 @@ bool core_trust_runtime_forget(const char *core_path)
    return true;
 }
 
+enum core_trust_state core_trust_runtime_state(const char *core_path)
+{
+   enum core_trust_state state;
+   core_trust_set_t *s;
+   if (!core_trust_rt.t || !core_path)
+      return CORE_TRUST_STATE_UNCHECKED;
+   s     = core_trust_get(core_trust_rt.t);
+   state = core_trust_state_file(s, core_path, NULL);
+   core_trust_set_put(s);
+   return state;
+}
+
 bool core_trust_runtime_checks_on(void)
 {
    return core_trust_rt.t

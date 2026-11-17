@@ -363,6 +363,8 @@ static void test_inactive(void)
             warn_cb, NULL));
    CHECK(core_trust_runtime_toggle_checks() == CORE_TRUST_TOGGLE_READ_ONLY);
    CHECK(!core_trust_runtime_forget("/c/a_libretro.so"));
+   CHECK(core_trust_runtime_state("/c/a_libretro.so")
+         == CORE_TRUST_STATE_UNCHECKED);
    CHECK(!core_trust_runtime_can_save());
    core_trust_runtime_deinit();
 }
@@ -796,6 +798,34 @@ static void test_forget(void)
    pump(8);
    core_trust_runtime_deinit();
    CHECK(path_is_directory(store));
+}
+
+static void test_runtime_state(void)
+{
+   char dir[256], a[256], missing[256], store[256];
+   strlcpy(dir, tmp("state"), sizeof(dir));
+   strlcpy(store, tmp("state_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(a, dir, "a_libretro.core", sizeof(a));
+   fill_pathname_join_special(missing, dir, "missing_libretro.core",
+         sizeof(missing));
+   CHECK(put_file(a, 31, 1000));
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
+   CHECK(core_trust_runtime_state(missing) == CORE_TRUST_STATE_UNCHECKED);
+   CHECK(always_trust(a, true));
+   if (state_now(a) != CORE_TRUST_STATE_TRUSTED)
+   {
+      printf("note: test_runtime_state skipped, no records on %s's "
+            "filesystem\n", dir);
+      pump(8);
+      core_trust_runtime_deinit();
+      return;
+   }
+   CHECK(core_trust_runtime_state(a) == CORE_TRUST_STATE_TRUSTED);
+   CHECK(core_trust_runtime_forget(a));
+   CHECK(core_trust_runtime_state(a) == CORE_TRUST_STATE_UNCHECKED);
+   pump(8);
+   core_trust_runtime_deinit();
 }
 
 #ifdef HAVE_CORE_LOAD_CHECK
@@ -1824,6 +1854,7 @@ int main(void)
       test_deinit_writes();
       test_apply_always();
       test_forget();
+      test_runtime_state();
       test_snapshot_threads();
       test_test_key_notice();
       test_test_key_notice_off();

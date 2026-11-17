@@ -3141,6 +3141,10 @@ MSG_HASH(
    "core_signature_check"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_TRUST,
+   "core_trust"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT,
    "core_set_standalone_exempt"
    )

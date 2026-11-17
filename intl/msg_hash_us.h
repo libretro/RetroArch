@@ -1489,6 +1489,34 @@ MSG_HASH(
    "Warn before running a core that libretro didn't sign or that has changed since."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_TRUST,
+   "Core Trust"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_TRUST,
+   "RetroArch checks this core the next time it loads."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_TRUST_TRUSTED,
+   "Trusted by you"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_TRUST_TRUSTED,
+   "Loads without a Security Warning: you chose Always Trust or Install and Trust for it, or it was installed when signature checks started. Select to stop trusting it."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_TRUST_SIGNED,
+   "Signed by libretro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_TRUST_SIGNED,
+   "Loads without a Security Warning because libretro signed it."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_TRUST_UNCHECKED,
+   "Not checked yet"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Exclude From 'Contentless Cores' Menu"
    )
@@ -34040,6 +34068,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_LOAD_REFUSED_SEED_PENDING,
    "Core not loaded: RetroArch is still checking the installed cores. Try again in a moment."
+   )
+MSG_HASH(
+   MSG_CORE_TRUST_FORGOTTEN,
+   "Core no longer trusted: RetroArch checks it the next time it loads."
    )
 MSG_HASH(
    MSG_TO,

@@ -72,6 +72,9 @@
 int generic_action_ok_command(enum event_command cmd);
 int action_ok_push_playlist_manager_settings(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
 int action_ok_push_core_information_list(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+#ifdef HAVE_CORE_SIGNATURES
+int action_ok_core_trust(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+#endif
 
 #ifdef HAVE_AUDIOMIXER
 static int action_start_audio_mixer_stream_volume(
@@ -856,6 +859,13 @@ static int action_start_core_signature_check(
    core_trust_runtime_set_checks(true);
    return 0;
 }
+
+static int action_start_core_trust(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_core_trust(path, label, type, idx, entry_idx);
+}
 #endif
 
 static int action_start_core_set_standalone_exempt(
@@ -1112,6 +1122,9 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_CORE_SIGNATURES
          case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
             BIND_ACTION_START(cbs, action_start_core_signature_check);
+            break;
+         case MENU_SETTING_ACTION_CORE_TRUST:
+            BIND_ACTION_START(cbs, action_start_core_trust);
             break;
 #endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:

@@ -61,6 +61,7 @@
 int action_ok_core_lock(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
 #ifdef HAVE_CORE_SIGNATURES
 int action_ok_core_signature_check(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+int action_ok_core_trust(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
 #endif
 int action_ok_core_set_standalone_exempt(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
 
@@ -1013,6 +1014,12 @@ static int action_left_core_signature_check(unsigned type, const char *label,
 {
    return action_ok_core_signature_check(label, label, type, 0, 0);
 }
+
+static int action_left_core_trust(unsigned type, const char *label,
+      bool wraparound)
+{
+   return action_ok_core_trust(label, label, type, 0, 0);
+}
 #endif
 
 static int action_left_core_set_standalone_exempt(unsigned type, const char *label,
@@ -1521,6 +1528,9 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_CORE_SIGNATURES
          case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
             BIND_ACTION_LEFT(cbs, action_left_core_signature_check);
+            break;
+         case MENU_SETTING_ACTION_CORE_TRUST:
+            BIND_ACTION_LEFT(cbs, action_left_core_trust);
             break;
 #endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:

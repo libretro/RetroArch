@@ -38,6 +38,9 @@
 #endif
 #include "../../audio/audio_driver.h"
 #include "../../core_info.h"
+#ifdef HAVE_CORE_SIGNATURES
+#include "../../core_signature.h"
+#endif
 #include "../../verbosity.h"
 #ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"
@@ -784,6 +787,33 @@ static int action_bind_sublabel_systeminfo_controller_entry_tagged(
          input_config_get_device_pid(port));
    return 0;
 }
+
+#ifdef HAVE_CORE_SIGNATURES
+static int action_bind_sublabel_core_trust(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   enum msg_hash_enums sublabel = MENU_ENUM_SUBLABEL_CORE_TRUST;
+   if (list && i < list->size)
+   {
+      switch (list->list[i].entry_idx)
+      {
+         case CORE_TRUST_STATE_TRUSTED:
+            sublabel = MENU_ENUM_SUBLABEL_CORE_TRUST_TRUSTED;
+            break;
+         case CORE_TRUST_STATE_SIGNED:
+            sublabel = MENU_ENUM_SUBLABEL_CORE_TRUST_SIGNED;
+            break;
+         default:
+            break;
+      }
+   }
+   strlcpy(s, msg_hash_to_str(sublabel), len);
+   return 1;
+}
+#endif
 
 /* A keyboard's entry in Input Information: its own ids, where the
  * input driver knows them, and nothing where it does not. (It used to
@@ -3290,6 +3320,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_ENTRY, action_bind_sublabel_core_backup_entry },
       { MENU_ENUM_LABEL_CORE_DELETE_BACKUP_ENTRY, action_bind_sublabel_core_backup_entry },
       { MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD, action_bind_sublabel_input_plays_as_add },
+#ifdef HAVE_CORE_SIGNATURES
+      { MENU_ENUM_LABEL_CORE_TRUST, action_bind_sublabel_core_trust },
+#endif
    };
    {
       uint32_t key = (uint32_t)cbs->enum_idx;

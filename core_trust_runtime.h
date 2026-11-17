@@ -45,6 +45,8 @@ bool core_trust_runtime_always(const struct core_check *c);
  * the user trusted it, then ends the load check's passes for it. False,
  * changing nothing, otherwise or when inactive. */
 bool core_trust_runtime_forget(const char *core_path);
+/* core_trust_state_file() on the store; UNCHECKED when inactive */
+enum core_trust_state core_trust_runtime_state(const char *core_path);
 bool core_trust_runtime_checks_on(void);
 /* False, changing nothing, when inactive or read-only */
 bool core_trust_runtime_set_checks(bool on);

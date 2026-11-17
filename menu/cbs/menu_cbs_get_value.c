@@ -827,6 +827,39 @@ static size_t menu_action_setting_disp_set_label_core_signature_check(
    *w = (unsigned)_len;
    return _len;
 }
+
+static size_t menu_action_setting_disp_set_label_core_trust(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   size_t _len;
+   enum msg_hash_enums value = MENU_ENUM_LABEL_VALUE_CORE_TRUST_UNCHECKED;
+   const char *alt           = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   switch (list->list[i].entry_idx)
+   {
+      case CORE_TRUST_STATE_TRUSTED:
+         value = MENU_ENUM_LABEL_VALUE_CORE_TRUST_TRUSTED;
+         break;
+      case CORE_TRUST_STATE_SIGNED:
+         value = MENU_ENUM_LABEL_VALUE_CORE_TRUST_SIGNED;
+         break;
+      default:
+         break;
+   }
+   _len = strlcpy(s, msg_hash_to_str(value), len);
+   *w   = (unsigned)_len;
+   return _len;
+}
 #endif
 
 static size_t menu_action_setting_disp_set_label_input_desc(
@@ -2652,6 +2685,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_signature_check);
+         break;
+      case MENU_SETTING_ACTION_CORE_TRUST:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_core_trust);
          break;
 #endif
       case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:

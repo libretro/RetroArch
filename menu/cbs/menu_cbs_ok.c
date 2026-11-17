@@ -9629,6 +9629,27 @@ int action_ok_core_lock(const char *path,
    return ret;
 }
 
+#ifdef HAVE_CORE_SIGNATURES
+/* Do not declare this static - it is also used in
+ * menu_cbs_left.c, menu_cbs_right.c and menu_cbs_start.c */
+int action_ok_core_trust(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *msg;
+   /* A row built before the trust changed shows what is so now */
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
+   /* Does nothing else unless the core is Trusted by you */
+   if (!core_trust_runtime_forget(path))
+      return 0;
+   msg = msg_hash_to_str(MSG_CORE_TRUST_FORGOTTEN);
+   runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   return 0;
+}
+#endif
+
 /* Do not declare this static - it is also used
  * in menu_cbs_left.c and menu_cbs_right.c */
 int action_ok_core_set_standalone_exempt(const char *path,
@@ -11233,6 +11254,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_CORE_SIGNATURES
          case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
             BIND_ACTION_OK(cbs, action_ok_core_signature_check);
+            break;
+         case MENU_SETTING_ACTION_CORE_TRUST:
+            BIND_ACTION_OK(cbs, action_ok_core_trust);
             break;
 #endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
