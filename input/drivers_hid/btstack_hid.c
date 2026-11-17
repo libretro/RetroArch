@@ -749,8 +749,7 @@ static sthread_t *btstack_thread;
 #ifdef __APPLE__
 static CFRunLoopSourceRef btstack_quit_source;
 /* The btstack thread's run loop, for waking it: signalling a source
- * marks it ready but does not wake a run loop that is asleep, so the
- * stop request used to sit there until something else woke it. */
+ * marks it ready but does not wake a run loop that is asleep. */
 static CFRunLoopRef btstack_run_loop;
 /* Armed when power-off is requested, so the thread ends even if the
  * daemon never reports the power state that closes the connections
@@ -1290,13 +1289,11 @@ static void btstack_thread_stop_timeout(CFRunLoopTimerRef timer, void *info)
    RARCH_WARN("[BTstack] No power-off report; stopping the thread anyway.\n");
    CFRunLoopStop(CFRunLoopGetCurrent());
 }
-#endif
 
 static void btstack_thread_stop(void *data)
 {
    (void)data;
    bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
-#ifdef __APPLE__
    /* The power-off report closes the connections and stops the loop;
     * this stops it after a bound if that report never comes. */
    btstack_stop_timer = CFRunLoopTimerCreate(NULL,
@@ -1305,18 +1302,21 @@ static void btstack_thread_stop(void *data)
    if (btstack_stop_timer)
       CFRunLoopAddTimer(CFRunLoopGetCurrent(), btstack_stop_timer,
             kCFRunLoopCommonModes);
-#endif
 }
+#endif
 
 static void btstack_thread_func(void* data)
 {
+#ifdef __APPLE__
+   CFRunLoopSourceContext ctx = { 0, 0, 0, 0, 0, 0, 0, 0, 0, btstack_thread_stop };
+#endif
+
    RARCH_LOG("[BTstack] Thread started.\n");
 
    if (bt_open_ptr())
       return;
 
 #ifdef __APPLE__
-   CFRunLoopSourceContext ctx = { 0, 0, 0, 0, 0, 0, 0, 0, 0, btstack_thread_stop };
    /* Before the source: whoever sees the source can wake this loop. */
    btstack_run_loop    = CFRunLoopGetCurrent();
    btstack_quit_source = CFRunLoopSourceCreate(0, 0, &ctx);
@@ -1354,9 +1354,12 @@ static void btstack_set_poweron(bool on)
 
    if (on && !btstack_thread)
       btstack_thread = sthread_create(btstack_thread_func, NULL);
-   else if (!on && btstack_thread && btstack_quit_source)
+   else if (!on && btstack_thread)
    {
 #ifdef __APPLE__
+      /* no source yet: the thread has not reached its run loop */
+      if (!btstack_quit_source)
+         return;
       CFRunLoopSourceSignal(btstack_quit_source);
       CFRunLoopWakeUp(btstack_run_loop);
 #endif
