@@ -154,6 +154,19 @@ void rflac_set_in(rflac_t *f, const uint8_t *in, size_t in_size);
 void rflac_set_out_s16(rflac_t *f, int16_t *out, size_t out_frames);
 
 /**
+ * rflac_set_out_s16_order:
+ * @f          : decoder
+ * @out        : interleaved output, channels * @out_frames samples
+ * @out_frames : capacity in PCM frames
+ * @big_endian : store each sample most significant byte first
+ *
+ * As rflac_set_out_s16, with the samples stored in the stated byte
+ * order whatever the host's, for a destination whose format fixes it.
+ */
+void rflac_set_out_s16_order(rflac_t *f, int16_t *out, size_t out_frames,
+      int big_endian);
+
+/**
  * rflac_set_out_f32:
  *
  * As above, for float output normalised to [-1, 1).

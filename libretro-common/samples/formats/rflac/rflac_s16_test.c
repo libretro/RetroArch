@@ -12,7 +12,9 @@
  *   - a FIXED or LPC subframe whose predictor order exceeds its block is
  *     rejected before its warm-up samples are stored, with and without a
  *     header and on the 33-bit side channel, and one whose order equals
- *     its block decodes.
+ *     its block decodes;
+ *   - rflac_set_out_s16_order stores each of the above little and big
+ *     endian, whatever the host.
  *
  * Built twice: as the target builds (SSE2 on x86-64, NEON on ARM) and with
  * RFLAC_NO_SIMD, the scalar loops. The PCM is rebuilt here exactly as
@@ -89,7 +91,10 @@ static int16_t expect(int64_t v, unsigned bps)
    return (int16_t)(r > 32767 ? 32767 : r);
 }
 
-static void run(const char *name, const char *kind, unsigned bps, unsigned ch)
+/* @order: -1 host order through rflac_set_out_s16, else 0 little and 1
+ * big endian through rflac_set_out_s16_order */
+static void run(const char *name, const char *kind, unsigned bps, unsigned ch,
+      int order)
 {
    char      path[256];
    void     *buf = NULL;
@@ -114,7 +119,10 @@ static void run(const char *name, const char *kind, unsigned bps, unsigned ch)
    do
    {
       size_t wrote = 0;
-      rflac_set_out_s16(f, out + got * ch, FRAMES + 64 - got);
+      if (order < 0)
+         rflac_set_out_s16(f, out + got * ch, FRAMES + 64 - got);
+      else
+         rflac_set_out_s16_order(f, out + got * ch, FRAMES + 64 - got, order);
       result = rflac_process(f, NULL, &wrote);
       got   += wrote;
       idle   = wrote ? 0 : idle + 1;
@@ -126,14 +134,18 @@ static void run(const char *name, const char *kind, unsigned bps, unsigned ch)
    {
       int64_t v      = sample(kind, bps, (unsigned)(i % ch), (int64_t)(i / ch), &seed);
       int16_t want   = expect(v, bps);
-      if (out[i] != want)
+      const uint8_t *b = (const uint8_t*)&out[i];
+      int16_t have   = out[i];
+      if (order >= 0)
+         have = (int16_t)(order ? (b[0] << 8 | b[1]) : (b[1] << 8 | b[0]));
+      if (have != want)
       {
          if (!bad)
-            fprintf(stderr, "  %s: sample %lu is %d, %d wanted (from %lld)\n",
-                  name, (unsigned long)i, out[i], want, (long long)v);
+            fprintf(stderr, "  %s/%d: sample %lu is %d, %d wanted (from %lld)\n",
+                  name, order, (unsigned long)i, have, want, (long long)v);
          bad++;
       }
-      sum_err += out[i] - want;
+      sum_err += have - want;
    }
    CHECK(bad == 0, "%s: %u of %lu samples off", name, bad,
          (unsigned long)(got * ch));
@@ -324,13 +336,18 @@ static void predictor_order(void)
 
 int main(void)
 {
+   int order;
+
    predictor_order();
 
-   run("s16_stereo.flac", "stereo", 16, 2);
-   run("s24_stereo.flac", "stereo", 24, 2);
-   run("s24_mono.flac",   "mono",   24, 1);
-   run("s24_6ch.flac",    "multi",  24, 6);
-   run("s32_wide.flac",   "wide",   32, 2);
+   for (order = -1; order <= 1; order++)
+   {
+      run("s16_stereo.flac", "stereo", 16, 2, order);
+      run("s24_stereo.flac", "stereo", 24, 2, order);
+      run("s24_mono.flac",   "mono",   24, 1, order);
+      run("s24_6ch.flac",    "multi",  24, 6, order);
+      run("s32_wide.flac",   "wide",   32, 2, order);
+   }
 
    if (failures)
    {
