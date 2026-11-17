@@ -114,6 +114,26 @@ static HWND read_until(HWND want, int is)
    return got;
 }
 
+/* A switch to another process's window ends with messages that
+ * process's thread sends ours (WM_ACTIVATE, WM_ACTIVATEAPP,
+ * WM_KILLFOCUS), and they can come after the foreground has already
+ * moved. Each one rightly makes the next read ask again, so the steady
+ * reads wait for them: 100 ms with no activation message. */
+static void settle(void)
+{
+   int i, quiet = 0, moved = retro_atomic_load_acquire_int(&fg.moved);
+   for (i = 0; i < 200 && quiet < 10; i++)
+   {
+      int now;
+      pump();
+      Sleep(10);
+      now   = retro_atomic_load_acquire_int(&fg.moved);
+      quiet = (now == moved) ? quiet + 1 : 0;
+      moved = now;
+   }
+   win32_foreground_get(&fg);
+}
+
 static int steady_reads_ask_nothing(HWND want)
 {
    int i, ok = 1;
@@ -183,6 +203,7 @@ int main(void)
    CHECK(read_until(ours, 1) == ours, "RetroArch's window in front reads as in front");
 
    /* 2 */
+   settle();
    CHECK(steady_reads_ask_nothing(ours),
          "100000 reads with nothing changing asked Windows nothing");
 
@@ -195,6 +216,8 @@ int main(void)
    }
    got = read_until(ours, 0);
    CHECK(got != ours, "another program's window in front does not read as RetroArch's");
+   settle();
+   got = win32_foreground_get(&fg);
    CHECK(steady_reads_ask_nothing(got),
          "with another window in front, reads asked Windows nothing");
 
