@@ -184,6 +184,7 @@ struct audio_mixer_sound
    void *prepared_transfer;
    enum audio_type_enum prepared_type;
    unsigned prepared_rate;
+   unsigned container_track; /* zero: automatic; otherwise demux index + 1 */
    bool prepared_s16;
 #endif
    bool initial_paused;
@@ -1310,20 +1311,32 @@ audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size)
    return NULL;
 }
 
-audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size)
+audio_mixer_sound_t* audio_mixer_load_m4a_track(void *buffer, size_t size,
+      int track)
 {
 #ifdef HAVE_RAAC
-   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
+   audio_mixer_sound_t* sound;
+   if (track < -1)
+      return NULL;
+   sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
    if (sound)
    {
       sound->type              = AUDIO_MIXER_TYPE_M4A;
+      sound->container_track   = (unsigned)track + 1;
       sound->types.stream.size = size;
       sound->types.stream.data = buffer;
       return sound;
    }
+#else
+   (void)buffer; (void)size; (void)track;
 #endif
    return NULL;
+}
+
+audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size)
+{
+   return audio_mixer_load_m4a_track(buffer, size, -1);
 }
 
 audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size)
@@ -1390,8 +1403,8 @@ audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size)
    return NULL;
 }
 
-audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
-      size_t avail)
+audio_mixer_sound_t* audio_mixer_load_weba_track(void *buffer, size_t size,
+      size_t avail, int track)
 {
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
  || defined(HAVE_RAAC) || defined(HAVE_RFLAC))
@@ -1401,8 +1414,8 @@ audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
     * with the whole file's length it walked the segment straight off
     * the committed head of a windowed buffer and died inside
     * rwebm_open_memory_avail. */
-   enum audio_type_enum ty = audio_transfer_webm_audio_type(buffer,
-         (avail && avail < size) ? avail : size);
+   enum audio_type_enum ty = audio_transfer_webm_audio_track_type(buffer,
+         (avail && avail < size) ? avail : size, track);
    enum audio_mixer_type mt;
 
    /* Resolve to the existing sound type whose streaming arm accepts
@@ -1425,13 +1438,20 @@ audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
    if (!(sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound))))
       return NULL;
    sound->type           = mt;
+   sound->container_track = (unsigned)track + 1;
    sound->types.stream.size = size;
    sound->types.stream.data = buffer;
    return sound;
 #else
-   (void)avail;
+   (void)buffer; (void)size; (void)avail; (void)track;
    return NULL;
 #endif
+}
+
+audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
+      size_t avail)
+{
+   return audio_mixer_load_weba_track(buffer, size, avail, -1);
 }
 
 audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, size_t size)
@@ -1505,7 +1525,9 @@ bool audio_mixer_sound_set_prepared_transfer(audio_mixer_sound_t *sound,
    if (!sound || !transfer || !mix_rate || sound->prepared_transfer)
       return false;
    type = audio_mixer_sound_audio_type(sound);
-   if (type == AUDIO_TYPE_NONE || !audio_transfer_is_valid(transfer, type))
+   if (type == AUDIO_TYPE_NONE || !audio_transfer_is_valid(transfer, type)
+         || (sound->container_track && audio_transfer_container_track(transfer, type)
+               != (int)(sound->container_track - 1)))
       return false;
    sound->prepared_transfer = transfer;
    sound->prepared_type = type;
@@ -2134,7 +2156,8 @@ static bool audio_mixer_play_stream(
       audio_transfer_set_buffer_ptr(xfer, type,
             (void*)sound->types.stream.data, sound->types.stream.size);
 
-#if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
+#if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
+      || defined(HAVE_RAAC) || defined(HAVE_RFLAC))) \
     || (defined(HAVE_RAAC) && defined(HAVE_RMP4)) || defined(HAVE_RWMA)
       /* Windowed container: bound the header parse to the resident head,
        * so opening does not walk to the end of a file whose middle is
@@ -2177,6 +2200,10 @@ static bool audio_mixer_play_stream(
          }
       }
 #endif
+
+      if (sound->container_track && !audio_transfer_set_container_track(xfer,
+               type, (int)(sound->container_track - 1)))
+         goto error;
 
       if (!audio_transfer_start(xfer, type))
          goto error;
@@ -2309,7 +2336,8 @@ static bool audio_mixer_play_stream_s16(
    {
       audio_transfer_set_buffer_ptr(xfer, type,
             (void*)sound->types.stream.data, sound->types.stream.size);
-#if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
+#if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
+      || defined(HAVE_RAAC) || defined(HAVE_RFLAC))) \
     || (defined(HAVE_RAAC) && defined(HAVE_RMP4)) || defined(HAVE_RWMA)
       /* Windowed container: bound the header parse to the head (see the
        * f32 path). */
@@ -2341,6 +2369,13 @@ static bool audio_mixer_play_stream_s16(
          }
       }
 #endif
+
+      if (sound->container_track && !audio_transfer_set_container_track(xfer,
+               type, (int)(sound->container_track - 1)))
+      {
+         audio_transfer_free(xfer, type);
+         return false;
+      }
 
       if (!audio_transfer_start(xfer, type))
       {

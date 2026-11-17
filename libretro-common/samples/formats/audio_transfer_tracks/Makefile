@@ -32,5 +32,27 @@ $(TARGET): $(SOURCES) $(LRC)/include/formats/audio.h
 check: all
 	./$(TARGET)
 clean:
-	rm -f $(TARGET) $(TARGET).exe
+	rm -f $(TARGET) $(TARGET).exe $(MIXER_TARGET) $(MIXER_TARGET).exe
 .PHONY: all check clean
+
+MIXER_SOURCES := $(LRC)/audio/audio_mixer.c $(LRC)/audio/audio_mix.c \
+ $(LRC)/audio/conversion/float_to_s16.c $(LRC)/audio/conversion/s16_to_float.c \
+ $(LRC)/audio/resampler/audio_resampler.c $(LRC)/audio/resampler/audio_resampler_int16.c \
+ $(LRC)/audio/resampler/drivers/nearest_resampler.c \
+ $(LRC)/audio/resampler/drivers/nearest_resampler_int16.c \
+ $(LRC)/audio/resampler/drivers/sinc_resampler.c \
+ $(LRC)/audio/resampler/drivers/sinc_resampler_int16.c \
+ $(LRC)/memmap/memalign.c $(LRC)/file/config_file.c \
+ $(LRC)/file/config_file_io.c $(LRC)/file/config_file_userdata.c \
+ $(LRC)/file/file_path_io.c $(LRC)/lists/string_list.c \
+ $(LRC)/streams/file_stream.c $(LRC)/string/rstrtod.c \
+ $(LRC)/compat/fopen_utf8.c $(LRC)/vfs/vfs_implementation.c
+MIXER_TARGET := audio_mixer_tracks_test
+$(MIXER_TARGET): audio_mixer_tracks_test.c $(filter-out audio_transfer_tracks_test.c,$(SOURCES)) $(MIXER_SOURCES) $(LRC)/include/audio/audio_mixer.h
+	$(CC) $(CFLAGS) -DHAVE_NEAREST_RESAMPLER -o $@ audio_mixer_tracks_test.c $(filter-out audio_transfer_tracks_test.c,$(SOURCES)) $(MIXER_SOURCES) $(LDFLAGS)
+mixer-check: $(MIXER_TARGET)
+	./$(MIXER_TARGET)
+.PHONY: mixer-check
+
+all: $(MIXER_TARGET)
+check: mixer-check

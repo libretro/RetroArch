@@ -21,3 +21,11 @@ exceed this limit although the normal production build passes. Run both the
 normal and sanitizer checks; an instrumentation warning is not a production
 stack-budget pass. This sample supplies decoder selection, not a completed
 frontend audio-track UI.
+
+`make check` also runs the mixer integration test. Both float and S16 paths
+must play the requested 440/880 Hz track through repeats, including codec
+changes within the mixed container. Legacy automatic loads remain covered.
+A prepared decoder with the wrong track or output format is refused without
+consuming it; a matching prepared decoder is adopted once. Every sound's
+borrowed source owner is released exactly once after voice retirement.
+These mixer factories do not add a frontend menu control by themselves.
