@@ -410,6 +410,15 @@ static int32_t test_joypad_button(unsigned port_num, uint16_t joykey)
    return 0;
 }
 
+/* The buttons button() reads, all at once: so the snapshot bridge can
+ * stand in for this driver where a harness turns it on */
+static void test_joypad_get_buttons(unsigned port_num, input_bits_t *state)
+{
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port_num < DEFAULT_MAX_PADS)
+      state->data[0] = test_joypads[port_num].button_state;
+}
+
 static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    if (port_num >= DEFAULT_MAX_PADS)
@@ -584,7 +593,7 @@ input_device_driver_t test_joypad = {
    test_joypad_destroy,
    test_joypad_button,
    test_joypad_state,
-   NULL, /* get_buttons */
+   test_joypad_get_buttons,
    test_joypad_axis,
    test_joypad_poll,
    NULL, /* set_rumble */

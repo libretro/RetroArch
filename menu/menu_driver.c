@@ -9697,20 +9697,44 @@ static bool menu_driver_lists_pads(void)
        && e <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST;
 }
 
+/* Whether the list on screen lists the controllers, kept while two of
+ * them show one name: asked as a list is made and as names come to be
+ * shared, never as a frame runs. */
+static void menu_driver_pads_listed_update(struct menu_state *menu_st)
+{
+   bool listed = menu_driver_lists_pads();
+   /* the frame runs once more on a change, to begin or to clear */
+   if (listed != menu_st->pads_listed)
+      menu_st->frame_work |= MENU_FRAME_WORK_PAD_FIND;
+   menu_st->pads_listed = listed;
+}
+
+/* A list was made for the screen (menu_displaylist_process()) */
+void menu_driver_pads_list_made(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   if (INPUT_DEVICES_SHARE_NAME())
+      menu_driver_pads_listed_update(menu_st);
+}
+
 /* Two connected controllers came to show one name, or no longer do
- * (input_config_retag_devices()): the frame looks for presses until it
- * has seen them part, and a list of the controllers on screen is made
- * again, so its rows take or drop what a press marks. */
+ * (input_config_retag_devices()): a list of the controllers on screen
+ * is made again, so its rows take or drop what a press marks, and the
+ * frame looks for presses while they are shared on such a list. */
 void menu_driver_pads_alike_changed(void)
 {
    struct menu_state *menu_st = &menu_driver_state;
    const char *label          = NULL;
-   menu_st->frame_work       |= MENU_FRAME_WORK_PAD_FIND;
    if (!menu_st->entries.list)
+   {
+      menu_st->pads_listed = false;
       return;
+   }
+   menu_driver_pads_listed_update(menu_st);
+   menu_st->frame_work |= MENU_FRAME_WORK_PAD_FIND;
    /* the lists of the controllers, and those naming them with a tag */
    menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
-   if (     menu_driver_lists_pads()
+   if (     menu_st->pads_listed
          || string_is_equal(label, MENU_ENUM_LABEL_INPUT_INFORMATION_STR)
          || string_is_equal(label,
                MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR))
@@ -9718,47 +9742,35 @@ void menu_driver_pads_alike_changed(void)
                       | MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
-/* While two connected controllers show one name, and once more after,
- * to clear what was kept then. RGUI draws only what changed, so a mark
- * coming or going asks it to. */
+/* While two connected controllers show one name on a list of them, and
+ * once more after, to clear what was kept then. Each pad is read where
+ * the poll left it (input_driver_pads_held()). RGUI draws only what
+ * changed, so a mark coming or going asks it to. */
 static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
       gfx_display_t *p_disp, retro_time_t current_time)
 {
-   unsigned s;
    uint32_t marked = 0;
-   bool alike      = INPUT_DEVICES_SHARE_NAME();
    /* with no name shared, a mark would only hide the value */
-   bool share      = alike && menu_driver_lists_pads();
+   bool share      = INPUT_DEVICES_SHARE_NAME() && menu_st->pads_listed;
 
    if (share)
    {
+      uint32_t held[MAX_INPUT_DEVICES];
+      uint32_t named = input_driver_pads_held(held);
+      unsigned s;
       for (s = 0; s < MAX_INPUT_DEVICES; s++)
       {
-         unsigned w;
-         input_bits_t buttons;
-         uint16_t hats[MENU_MAX_HATS];
-         uint32_t down = 0;
-
-         if (!input_config_get_device_name(s))
+         if (!(named & (1u << s)))
          {
             menu_st->pad_pressed_us[s] = 0;
             menu_st->pad_down[s]       = 0;
             continue;
          }
-         BIT256_CLEAR_ALL(buttons);
-         memset(hats, 0, sizeof(hats));
-         input_driver_capture_pad(s, false, &buttons, MENU_MAX_BUTTONS,
-               NULL, 0, hats, MENU_MAX_HATS);
-         for (w = 0; w < ARRAY_SIZE(buttons.data); w++)
-            down |= buttons.data[w];
-         /* hats onto buttons 28-31, which few pads have */
-         for (w = 0; w < MENU_MAX_HATS; w++)
-            down |= (uint32_t)hats[w] << 16;
          /* only a new press marks: a button left down (a shifter in
           * gear, a toggle) would hide the row's value */
-         if (down & ~menu_st->pad_down[s])
+         if (held[s] & ~menu_st->pad_down[s])
             menu_st->pad_pressed_us[s] = current_time;
-         menu_st->pad_down[s] = down;
+         menu_st->pad_down[s] = held[s];
          if (     menu_st->pad_pressed_us[s]
                && current_time - menu_st->pad_pressed_us[s]
                   < MENU_PAD_PRESSED_HOLD_US)
@@ -9767,16 +9779,13 @@ static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
    }
    else
    {
-      /* unread here, so a button down when marks are back is new */
+      /* unread here, so a button down when marks are back is new, and
+       * a press from before must not mark again */
       memset(menu_st->pad_down, 0, sizeof(menu_st->pad_down));
-      /* names parted: a press from before must not mark again */
-      if (!alike)
-         memset(menu_st->pad_pressed_us, 0,
-               sizeof(menu_st->pad_pressed_us));
+      memset(menu_st->pad_pressed_us, 0, sizeof(menu_st->pad_pressed_us));
+      menu_st->frame_work &= ~MENU_FRAME_WORK_PAD_FIND;
    }
    menu_st->pad_find_hint = share;
-   if (!alike)
-      menu_st->frame_work &= ~MENU_FRAME_WORK_PAD_FIND;
    if (marked != menu_st->pads_marked)
    {
       menu_st->pads_marked = marked;

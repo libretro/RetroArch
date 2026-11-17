@@ -18330,6 +18330,83 @@ void input_driver_capture_pad(unsigned pad, bool poll,
    }
 }
 
+/* What each connected controller holds down, a word a slot, into
+ * @held[MAX_INPUT_DEVICES]: its buttons folded onto 32 bits, its hats'
+ * directions onto bits 28-31, so a new press sets a bit. Returns the
+ * slots that have a controller.
+ *
+ * For the menu's look for a press, every frame two controllers show
+ * one name. A pad read through the snapshot bridge is read where this
+ * poll left it - the driver's own state where the driver lends it, or
+ * the copy the core's and the hotkeys' reads already took - so nothing
+ * is copied and the driver is not called again; a hat no reader asked
+ * for joins the copy from here on, as for any reader. The rest are
+ * asked as input_driver_capture_pad() asks them. */
+uint32_t input_driver_pads_held(uint32_t *held)
+{
+   unsigned s;
+   uint32_t named                      = 0;
+   input_driver_state_t *input_st      = &input_driver_st;
+   const input_device_driver_t *joypad = INPUT_JOYPAD_FOR_READ(input_st,
+         input_st->primary_joypad);
+   bool bridged                        =
+         joypad == &input_snapshot_bridge.adapter;
+
+   for (s = 0; s < MAX_INPUT_DEVICES; s++)
+   {
+      unsigned w;
+      uint32_t down = 0;
+      uint32_t hats = 0;
+
+      if (!*input_st->input_device_info[s].name)
+         continue;
+      named |= 1u << s;
+      if (!joypad)
+      {
+         held[s] = 0;
+         continue;
+      }
+      if (bridged && s < MAX_USERS)
+      {
+         const input_pad_view_t *view = input_snapshot_view(s);
+         input_pad_snapshot_t *snap   = &input_snapshot_bridge.pads[s];
+         /* a copy holds the hats read before; a lent view, all */
+         if (view == &snap->copy)
+         {
+            unsigned h;
+            for (h = 0; h < INPUT_SNAPSHOT_HATS; h++)
+               if (!(snap->hats_known & (1 << h)))
+                  input_snapshot_fetch_hat(input_snapshot_bridge.real,
+                        &snap->copy, s, h);
+            snap->hats_known = snap->hats_used =
+               (1 << INPUT_SNAPSHOT_HATS) - 1;
+         }
+         for (w = 0; w < ARRAY_SIZE(view->buttons.data); w++)
+            down |= view->buttons.data[w];
+         hats = view->hats;
+      }
+      else
+      {
+         /* as the bind capture reads one: the buttons the menu binds */
+         uint16_t pad_hats[INPUT_PAD_VIEW_HATS];
+         input_bits_t buttons;
+         BIT256_CLEAR_ALL(buttons);
+         memset(pad_hats, 0, sizeof(pad_hats));
+         input_driver_capture_pad(s, false, &buttons, 219,
+               NULL, 0, pad_hats, INPUT_PAD_VIEW_HATS);
+         for (w = 0; w < ARRAY_SIZE(buttons.data); w++)
+            down |= buttons.data[w];
+         for (w = 0; w < INPUT_PAD_VIEW_HATS; w++)
+            hats |= (uint32_t)(pad_hats[w] >> HAT_RIGHT_SHIFT) << (w * 4);
+      }
+      /* every hat onto the same four bits */
+      hats   |= hats >> 8;
+      hats   |= hats >> 4;
+      held[s] = down | ((hats & 0xf) << 28);
+   }
+   return named;
+}
+
 /* The device drivers are polled, and nothing else of a poll is done:
  * for a driver restart, which must not act on what was read before
  * it. */

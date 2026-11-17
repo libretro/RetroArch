@@ -8337,6 +8337,9 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                menu_st->userdata, info->path,
                info->label, info->type);
    }
+   /* finding a controller by a press: one load while names differ */
+   if (INPUT_DEVICES_SHARE_NAME())
+      menu_driver_pads_list_made();
    return true;
 }
 

@@ -656,6 +656,9 @@ struct menu_state
    /* A list of the controllers is shown and two connected ones show one
     * name: Ozone's footer says a press finds one */
    bool pad_find_hint;
+   /* The list on screen lists the controllers: kept while two of them
+    * show one name (menu_driver_pads_list_made()) */
+   bool pads_listed;
    /* enum menu_frame_work: a frame with none tests this alone */
    uint8_t frame_work;
 
@@ -762,6 +765,10 @@ const char *menu_driver_ident(void);
 
 /* Two connected controllers came to show one name, or no longer do. */
 void menu_driver_pads_alike_changed(void);
+
+/* A list was made for the screen: tested as one load while every
+ * connected controller shows a name of its own */
+void menu_driver_pads_list_made(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 

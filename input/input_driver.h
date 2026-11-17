@@ -1644,6 +1644,11 @@ typedef struct input_pointer_view
 
 const input_pointer_view_t *input_driver_pointer_view(void);
 
+/* What each connected controller holds down, a word a slot, into
+ * @held[MAX_INPUT_DEVICES], read where this poll left it; returns the
+ * slots that have a controller (input_driver.c) */
+uint32_t input_driver_pads_held(uint32_t *held);
+
 /* A controller as the controller has it, for the capture of a bind:
  * each array that is given is filled - @buttons with whether each is
  * down, @axes with each axis's position, @hats with the directions

@@ -1153,6 +1153,29 @@ static void lane_share_remakes(void)
    menu_frame();
 }
 
+/* The press scan runs only on a list of the controllers: leaving one
+ * stops it within a frame, and coming back starts it again */
+static void lane_scan_leaves(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   open_port_controls(1);
+   menu_frame();
+   check(menu_st->frame_work & MENU_FRAME_WORK_PAD_FIND,
+         "Port 1 Controls with names shared: no press scan");
+   open_top();
+   menu_frame();
+   check(!(menu_st->frame_work & MENU_FRAME_WORK_PAD_FIND),
+         "Main Menu with names shared: the press scan still runs");
+   check(!menu_st->pad_find_hint, "Main Menu: Ozone's hint is up");
+   open_controllers();
+   menu_frame();
+   check(menu_st->frame_work & MENU_FRAME_WORK_PAD_FIND,
+         "back on Controllers: no press scan");
+   open_top();
+   menu_frame();
+}
+
 int main(int argc, char *argv[])
 {
    FILE *f;
@@ -1163,8 +1186,10 @@ int main(int argc, char *argv[])
    int rarch_argc  = 0;
    const char *tmp = getenv("TMPDIR");
 
-   (void)argc;
-   (void)argv;
+   /* --bridge: every lane again with the pads read through the
+    * snapshot bridge, as a checked driver's are - a press is found in
+    * the view the poll left */
+   bool bridge     = argc > 1 && string_is_equal(argv[1], "--bridge");
    if (!tmp || !*tmp)
       tmp = "/tmp";
    snprintf(dir, sizeof(dir), "%s/pad_tags_%lu", tmp,
@@ -1216,6 +1241,8 @@ int main(int argc, char *argv[])
       fprintf(stderr, "FAIL: retroarch_main_init failed\n");
       return 1;
    }
+   if (bridge)
+      input_driver_set_snapshot_bridge(true);
    retroarch_menu_running();
 
    phase_connect();
@@ -1234,6 +1261,7 @@ int main(int argc, char *argv[])
    lane_press_add();
    lane_press_apart();
    lane_share_remakes();
+   lane_scan_leaves();
 
    filestream_delete(ratst_path);
    filestream_delete(cfg_path);
@@ -1244,6 +1272,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "pad_tags_test: %u failure(s)\n", failures);
       return 1;
    }
-   printf("pad_tags_test: controllers of one name are told apart\n");
+   printf("pad_tags_test%s: controllers of one name are told apart\n",
+         bridge ? " --bridge" : "");
    return 0;
 }
