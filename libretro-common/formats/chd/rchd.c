@@ -2913,7 +2913,9 @@ int rchd_read_begin(rchd_t *chd, uint64_t offset, void *dst, size_t len)
 
 int rchd_read_hunk_begin(rchd_t *chd, uint32_t hunk, void *dst)
 {
-   if (!chd || !dst || chd->state != RCHD_OPEN_DONE
+   /* @dst NULL: the hunk stays where it is decoded, for
+    * rchd_hunk_cache() */
+   if (!chd || chd->state != RCHD_OPEN_DONE
          || hunk >= chd->info.hunk_count)
       return RCHD_ERROR_PARAM;
 
@@ -2932,6 +2934,11 @@ int rchd_read_hunk_begin(rchd_t *chd, uint32_t hunk, void *dst)
    chd->rd_offset = (uint64_t)hunk * chd->info.hunk_bytes;
    chd->reading   = 1;
    return RCHD_OK;
+}
+
+const uint8_t *rchd_hunk_cache(const rchd_t *chd)
+{
+   return chd ? chd->cache : NULL;
 }
 
 size_t rchd_read_progress(const rchd_t *chd)
@@ -2997,8 +3004,11 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
          /* A read covering the whole hunk decodes it straight into the
           * caller's buffer: the cache is left holding what it held,
           * which is still a valid hunk, and only a read of part of a
-          * hunk decodes into the cache to copy its slice out. */
-         int      whole = (skip == 0 && avail == chd->info.hunk_bytes);
+          * hunk decodes into the cache to copy its slice out. A hunk
+          * read with no buffer (rchd_hunk_cache) decodes into the cache
+          * and copies nothing. */
+         int      whole = (chd->rd_dst && skip == 0
+               && avail == chd->info.hunk_bytes);
          uint8_t *into  = whole ? chd->rd_dst + chd->rd_done : chd->cache;
          e = &chd->map[src_hunk];
 
@@ -3062,7 +3072,8 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
          chd->cached = src_hunk;
       }
 
-      memcpy(chd->rd_dst + chd->rd_done, chd->cache + skip, avail);
+      if (chd->rd_dst)
+         memcpy(chd->rd_dst + chd->rd_done, chd->cache + skip, avail);
       chd->rd_done += avail;
    }
 

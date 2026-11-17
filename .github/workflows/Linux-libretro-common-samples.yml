@@ -336,6 +336,7 @@ jobs:
             chd_stream_threads_test
             chd_stream_ahead_test
             chd_map_alloc_test
+            rchd_hunk_cache_test
             rvz_test
             ciso_test
             xdvdfs_test

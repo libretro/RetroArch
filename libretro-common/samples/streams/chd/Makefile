@@ -4,6 +4,7 @@ TARGET         := chd_meta_overflow_test
 TARGET_TEST    := chd_stream_threads_test$(EXE)
 TARGET_TEST2   := chd_stream_ahead_test$(EXE)
 TARGET_TEST3   := chd_map_alloc_test$(EXE)
+TARGET_TEST4   := rchd_hunk_cache_test$(EXE)
 .DEFAULT_GOAL  := all
 
 LIBRETRO_COMM_DIR := ../../..
@@ -70,7 +71,7 @@ else
    THREADS_LDLIBS += -lpthread
 endif
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -92,14 +93,20 @@ $(TARGET_TEST2): $(SAMPLE_OBJDIR)/chd_stream_ahead_test.o $(THREADS_OBJS)
 $(TARGET_TEST3): $(SAMPLE_OBJDIR)/chd_map_alloc_test.o $(LIBCHDR_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBCHDR_LDLIBS)
 
-check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+# rchd's in-place hunk read, over an image its own writer makes
+$(TARGET_TEST4): $(SAMPLE_OBJDIR)/rchd_hunk_cache_test.o $(THREADS_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
+
+check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
 	./$(TARGET_TEST3)
+	./$(TARGET_TEST4)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
+	   $(TARGET_TEST4) $(OBJS)
 
 .PHONY: all check clean
