@@ -874,6 +874,34 @@ static int64_t vfs_win32_io(HANDLE h, HANDLE ev, void *s, uint64_t len,
 }
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && (defined(VFS_NATIVE) \
+   || defined(VFS_POSITIONAL_WIN32) || !defined(LEGACY_WIN32) \
+   || defined(LEGACY_WIN32_RUNTIME))
+/* Room for a path in UTF-16 on the stack: MAX_PATH, so that a call
+ * takes little of a thread's stack, and every path but a long one fits */
+#define VFS_WIDE_STACK MAX_PATH
+
+/* @path in UTF-16 for the wide Win32 calls: in @buf (@n characters)
+ * where it fits, else in an allocation, so that opening, deleting or
+ * renaming a file allocates nothing for its name. As
+ * utf8_to_utf16_string_alloc: NULL for an empty path. Freed with
+ * vfs_wide_free. */
+static wchar_t *vfs_wide(const char *path, wchar_t *buf, int n)
+{
+   if (!path || !*path)
+      return NULL;
+   if (MultiByteToWideChar(CP_UTF8, 0, path, -1, buf, n))
+      return buf;
+   return utf8_to_utf16_string_alloc(path);
+}
+
+static void vfs_wide_free(wchar_t *wide, const wchar_t *buf)
+{
+   if (wide && wide != buf)
+      free(wide);
+}
+#endif
+
 #ifdef VFS_NATIVE
 /* Write streams as the C runtime opens them - "wb" and "w+b" create or
  * truncate, "r+b" opens what is there - shared for reading and writing
@@ -883,6 +911,7 @@ static int64_t vfs_win32_io(HANDLE h, HANDLE ev, void *s, uint64_t len,
 static bool vfs_native_open(libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode)
 {
+   wchar_t  wide_buf[VFS_WIDE_STACK];
    wchar_t *wide;
    HANDLE   h;
    DWORD    hi = 0, lo;
@@ -894,11 +923,12 @@ static bool vfs_native_open(libretro_vfs_implementation_file *stream,
    DWORD    create  = ((mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING)
          || !write) ? OPEN_EXISTING : CREATE_ALWAYS;
    /* NT only: 9x's ReadFile takes no offset on a file */
-   if ((GetVersion() & 0x80000000u) || !(wide = utf8_to_utf16_string_alloc(path)))
+   if (     (GetVersion() & 0x80000000u)
+         || !(wide = vfs_wide(path, wide_buf, VFS_WIDE_STACK)))
       return false;
    h = CreateFileW(wide, access, share, NULL, create, FILE_ATTRIBUTE_NORMAL,
          NULL);
-   free(wide);
+   vfs_wide_free(wide, wide_buf);
    if (h == INVALID_HANDLE_VALUE)
       return false;
    lo = GetFileSize(h, &hi);
@@ -1776,15 +1806,16 @@ static libretro_vfs_implementation_file *vfs_file_open(
                }
                else
                {
-                  wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
+                  wchar_t   path_buf[VFS_WIDE_STACK];
+                  wchar_t * path_wide = vfs_wide(path, path_buf,
+                        VFS_WIDE_STACK);
                   if (stable)
                      stream->fd       = path_wide
                         ? _wsopen(path_wide, sflags, _SH_DENYWR) : -1;
                   else
                      stream->fd       = _wopen(path_wide, flags,
                         _S_IREAD | _S_IWRITE);
-                  if (path_wide)
-                     free(path_wide);
+                  vfs_wide_free(path_wide, path_buf);
                }
 #elif defined(LEGACY_WIN32)
                char *path_local    = utf8_to_local_string_alloc(path);
@@ -1797,7 +1828,8 @@ static libretro_vfs_implementation_file *vfs_file_open(
                if (path_local)
                   free(path_local);
 #else
-               wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
+               wchar_t   path_buf[VFS_WIDE_STACK];
+               wchar_t * path_wide = vfs_wide(path, path_buf, VFS_WIDE_STACK);
                /* A file this creates is writable afterwards, as one
                 * fopen() makes is: without _S_IWRITE it would be made
                 * read-only */
@@ -1807,8 +1839,7 @@ static libretro_vfs_implementation_file *vfs_file_open(
                else
                   stream->fd       = _wopen(path_wide, flags,
                      _S_IREAD | _S_IWRITE);
-               if (path_wide)
-                  free(path_wide);
+               vfs_wide_free(path_wide, path_buf);
 #endif
 #elif defined(VITA)
                {
@@ -3073,8 +3104,9 @@ static HANDLE vfs_positional_reopen_path(HANDLE base, const char *path,
    DWORD    flags = FILE_ATTRIBUTE_NORMAL
       | (overlapped ? FILE_FLAG_OVERLAPPED : 0);
    HANDLE   made;
+   wchar_t  wide_buf[VFS_WIDE_STACK];
    wchar_t *wide;
-   if (!path || !(wide = utf8_to_utf16_string_alloc(path)))
+   if (!(wide = vfs_wide(path, wide_buf, VFS_WIDE_STACK)))
       return INVALID_HANDLE_VALUE;
    made = CreateFileW(wide, GENERIC_READ | GENERIC_WRITE,
          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
@@ -3083,7 +3115,7 @@ static HANDLE vfs_positional_reopen_path(HANDLE base, const char *path,
       made = CreateFileW(wide, GENERIC_READ,
             FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
             flags, NULL);
-   free(wide);
+   vfs_wide_free(wide, wide_buf);
    if (made != INVALID_HANDLE_VALUE && !vfs_positional_same_file(base, made))
    {
       CloseHandle(made);
@@ -3428,15 +3460,16 @@ int retro_vfs_file_remove_impl(const char *path)
       }
       else
       {
+         wchar_t  path_buf[VFS_WIDE_STACK];
          wchar_t *path_wide = NULL;
-         if ((path_wide = utf8_to_utf16_string_alloc(path)))
+         if ((path_wide = vfs_wide(path, path_buf, VFS_WIDE_STACK)))
          {
             /* We need to check if path is a directory */
             if ((retro_vfs_stat_impl(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
                ret = _wrmdir(path_wide);
             else
                ret = _wremove(path_wide);
-            free(path_wide);
+            vfs_wide_free(path_wide, path_buf);
          }
       }
 #elif defined(LEGACY_WIN32)
@@ -3451,15 +3484,16 @@ int retro_vfs_file_remove_impl(const char *path)
          free(path_local);
       }
 #else
+      wchar_t  path_buf[VFS_WIDE_STACK];
       wchar_t *path_wide = NULL;
-      if ((path_wide = utf8_to_utf16_string_alloc(path)))
+      if ((path_wide = vfs_wide(path, path_buf, VFS_WIDE_STACK)))
       {
          /* We need to check if path is a directory */
          if ((retro_vfs_stat_impl(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
             ret = _wrmdir(path_wide);
          else
             ret = _wremove(path_wide);
-         free(path_wide);
+         vfs_wide_free(path_wide, path_buf);
       }
 #endif
 #else
@@ -3597,21 +3631,24 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
    }
    else
    {
-      wchar_t *old_path_wide = utf8_to_utf16_string_alloc(old_path);
+      wchar_t  old_buf[VFS_WIDE_STACK];
+      wchar_t  new_buf[VFS_WIDE_STACK];
+      wchar_t *old_path_wide = vfs_wide(old_path, old_buf, VFS_WIDE_STACK);
 
       if (old_path_wide)
       {
-         wchar_t *new_path_wide = utf8_to_utf16_string_alloc(new_path);
+         wchar_t *new_path_wide = vfs_wide(new_path, new_buf,
+               VFS_WIDE_STACK);
 
          if (new_path_wide)
          {
             if (MoveFileExW(old_path_wide, new_path_wide,
                   MOVEFILE_REPLACE_EXISTING))
                ret = 0;
-            free(new_path_wide);
+            vfs_wide_free(new_path_wide, new_buf);
          }
 
-         free(old_path_wide);
+         vfs_wide_free(old_path_wide, old_buf);
       }
    }
 #elif defined(LEGACY_WIN32)
@@ -3633,21 +3670,24 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
    }
 #else
    {
-      wchar_t *old_path_wide = utf8_to_utf16_string_alloc(old_path);
+      wchar_t  old_buf[VFS_WIDE_STACK];
+      wchar_t  new_buf[VFS_WIDE_STACK];
+      wchar_t *old_path_wide = vfs_wide(old_path, old_buf, VFS_WIDE_STACK);
 
       if (old_path_wide)
       {
-         wchar_t *new_path_wide = utf8_to_utf16_string_alloc(new_path);
+         wchar_t *new_path_wide = vfs_wide(new_path, new_buf,
+               VFS_WIDE_STACK);
 
          if (new_path_wide)
          {
             if (MoveFileExW(old_path_wide, new_path_wide,
                   MOVEFILE_REPLACE_EXISTING))
                ret = 0;
-            free(new_path_wide);
+            vfs_wide_free(new_path_wide, new_buf);
          }
 
-         free(old_path_wide);
+         vfs_wide_free(old_path_wide, old_buf);
       }
    }
 #endif
@@ -4851,13 +4891,10 @@ static int vfs_stat_win32_wide(const char *path, size_t trim,
    WIN32_FILE_ATTRIBUTE_DATA ad;
    /* The wide path on the stack where it fits - every path but a long
     * one - instead of an allocation for each stat */
-   wchar_t  path_buf[PATH_MAX_LENGTH];
-   wchar_t *path_wide = path_buf;
+   wchar_t  path_buf[VFS_WIDE_STACK];
+   wchar_t *path_wide = vfs_wide(path, path_buf, VFS_WIDE_STACK);
    int      ok        = 1;
 
-   if (!MultiByteToWideChar(CP_UTF8, 0, path, -1, path_buf,
-            (int)(sizeof(path_buf) / sizeof(path_buf[0]))))
-      path_wide = utf8_to_utf16_string_alloc(path);
    if (!path_wide)
       return 0;
 
@@ -4866,7 +4903,7 @@ static int vfs_stat_win32_wide(const char *path, size_t trim,
       size_t length = wcslen(path_wide);
       if (length < trim)
       {
-         free(path_wide);
+         vfs_wide_free(path_wide, path_buf);
          return 0;
       }
       path_wide[length - trim] = 0;
@@ -4888,8 +4925,7 @@ static int vfs_stat_win32_wide(const char *path, size_t trim,
                | ad.nFileSizeLow);
    }
 
-   if (path_wide != path_buf)
-      free(path_wide);
+   vfs_wide_free(path_wide, path_buf);
    return ok;
 }
 #endif
