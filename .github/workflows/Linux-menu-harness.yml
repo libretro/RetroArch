@@ -571,7 +571,8 @@ jobs:
           # and the firmware box, whose answer keeps the menu's level,
           # which a contentless core's refused probe still shows, and
           # whose wait behind a confirm opens the menu to show it; with
-          # a null menu the load runs and says what firmware is missing.
+          # a null menu the load runs and says what firmware is missing;
+          # a load the Security Warning re-runs does not ask again.
           make -C samples/tasks/core_load_paths check
           make -C samples/tasks/core_load_paths clean
 

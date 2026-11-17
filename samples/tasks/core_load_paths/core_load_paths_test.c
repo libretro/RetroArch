@@ -1039,14 +1039,30 @@ static bool fw_box_up(void)
       && menu_st->dialog_st.confirm_cmd == CMD_EVENT_CORE_FIRMWARE_DOWNLOAD;
 }
 
+static unsigned fw_boxes;
+static bool fw_was_up;
+
+/* Counts the times the firmware box came up */
+static void fw_seen(void)
+{
+   bool up = fw_box_up();
+   if (up && !fw_was_up)
+      fw_boxes++;
+   fw_was_up = up;
+}
+
 static void fw_pump(unsigned n)
 {
    while (n--)
+   {
       pump(1);
+      fw_seen();
+   }
 }
 
 static bool fw_wait_box(unsigned frames)
 {
+   fw_seen();
    while (!fw_box_up() && frames--)
       fw_pump(1);
    return fw_box_up();
@@ -1055,8 +1071,10 @@ static bool fw_wait_box(unsigned frames)
 /* The firmware box answered as a pad does */
 static void fw_answer(enum menu_action action)
 {
+   fw_seen();
    menu_driver_iterate(menu_state_get_ptr(), disp_get_ptr(), anim_get_ptr(),
          config_get_ptr(), action, cpu_features_get_time_usec());
+   fw_seen();
 }
 
 static size_t stack_size(void)
@@ -1191,6 +1209,33 @@ static void mode_fw_hidden_confirm(void)
    CHECK(runloop_state_get_ptr()->lib_handle == handle
          && (content_state_get_ptr()->flags & CONTENT_ST_FLAG_IS_INITED),
          "the cancelled load did not keep the running core");
+}
+
+/* The firmware box is asked once: the load Always Trust re-runs does
+ * not ask again */
+static void mode_fw_twice(void)
+{
+   content_ctx_info_t info;
+   unsigned i;
+   snprintf(game, sizeof(game), "%s/title.bin", dir);
+   write_file(game);
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, game,
+            "fw", &info, NULL, NULL), "the playlist Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box");
+   fw_answer(MENU_ACTION_OK);
+   CHECK(wait_for(warning_up, 600), "no Security Warning after OK");
+   CHECK(answer(CORE_WARNING_ALWAYS_TRUST), "Always Trust not taken");
+   for (i = 0; i < 600 && !runs(fw_core); i++)
+   {
+      fw_pump(1);
+      if (fw_box_up())
+         fw_answer(MENU_ACTION_OK);
+   }
+   CHECK(runs(fw_core), "Always Trust did not run the firmware core");
+   if (fw_boxes != 1)
+      fprintf(stderr, "firmware boxes: %u\n", fw_boxes);
+   CHECK(fw_boxes == 1, "the firmware box was asked more than once");
 }
 
 /* Drains the queue: whether it said harness/fw.bin is missing */
@@ -2095,6 +2140,8 @@ int main(int argc, char *argv[])
          mode_fw_hidden_confirm();
       else if (string_is_equal(mode, "fw-null"))
          mode_fw_null();
+      else if (string_is_equal(mode, "fw-twice"))
+         mode_fw_twice();
       else if (string_is_equal(mode, "builtin"))
 #ifdef HAVE_NETWORKGAMEPAD
          mode_builtin();

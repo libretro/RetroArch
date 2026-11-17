@@ -2058,7 +2058,9 @@ enum content_load_after
    CONTENT_LOAD_AFTER_QUICK_MENU_KEEP  = 1 << 5, /* without a menu flush */
    CONTENT_LOAD_AFTER_MENU_ON_FAIL     = 1 << 6, /* retroarch_menu_running */
    CONTENT_LOAD_AFTER_DUMMY_IS_FAIL    = 1 << 7, /* the dummy core counts as failure */
-   CONTENT_LOAD_AFTER_QUIT_ON_FAIL     = 1 << 8  /* retroarch_main_quit_failure */
+   CONTENT_LOAD_AFTER_QUIT_ON_FAIL     = 1 << 8, /* retroarch_main_quit_failure */
+   /* Not after-work: a re-run whose box was up skips the firmware stage */
+   CONTENT_LOAD_AFTER_FIRMWARE_ASKED   = 1 << 9
 };
 
 #ifdef HAVE_CORE_LOAD_CHECK
@@ -2882,6 +2884,11 @@ static struct content_load_parked *content_load_parked_new(
    /* A menu load again: no startup argv */
    d->info.environ_get   = job->info.environ_get;
    d->after              = job->after;
+#ifdef HAVE_MENU
+   /* Asked before the Security Warning: its answer does not ask again */
+   if (job->firmware && job->firmware->shown)
+      d->after          |= CONTENT_LOAD_AFTER_FIRMWARE_ASKED;
+#endif
    d->core_path          = strdup(core_path ? core_path : "");
    d->content_path       = (content_path && *content_path)
       ? strdup(content_path) : NULL;
@@ -3346,7 +3353,8 @@ static bool content_load(content_ctx_info_t *info,
     * checks them when the load is through */
    if (!staged)
       job->firmware_tell = true;
-   else if (config_get_ptr()->bools.core_firmware_notification_enable)
+   else if (     config_get_ptr()->bools.core_firmware_notification_enable
+            && !(after & CONTENT_LOAD_AFTER_FIRMWARE_ASKED))
    {
       core_info_t *core = NULL;
       if (core_info_find(path_get(RARCH_PATH_CORE), &core)
