@@ -29,6 +29,9 @@ void core_trust_runtime_notify(void);
 bool core_trust_runtime_active(void);
 /* The store couldn't be read: changes last for this session only */
 bool core_trust_runtime_read_only(void);
+/* False when inactive, read-only, or from a failed write until one
+ * goes through */
+bool core_trust_runtime_can_save(void);
 /* NULL when inactive */
 core_trust_set_t *core_trust_runtime_get(void);
 /* core_trust_apply() and core_trust_always(), then saved */

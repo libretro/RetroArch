@@ -32,6 +32,8 @@ static struct
    bool notify_ready;
    /* Deinit is cancelling the warning: no new one */
    bool closing;
+   /* From a failed write until one goes through */
+   bool write_failed;
    bool seed_pending;
    bool seed_notice;
    bool seed_key_ok;
@@ -55,15 +57,23 @@ static struct
    bool cancelling;
 } core_warning_req;
 
+struct core_trust_seed;
+
 struct core_trust_save
 {
    core_trust_write_t *w;
    char *path;
+   /* The seed's own write: it walks once this went through */
+   struct core_trust_seed *sd;
    unsigned gen;
    bool written;
 };
 
-static void core_trust_runtime_save(void);
+static bool core_trust_runtime_save(struct core_trust_seed *sd);
+#ifdef HAVE_CORE_LOAD_CHECK
+static void core_trust_seed_saved(struct core_trust_seed *sd, bool walk);
+static void core_trust_seed_free(struct core_trust_seed *sd);
+#endif
 
 static void core_trust_save_handler(retro_task_t *task)
 {
@@ -82,8 +92,20 @@ static void core_trust_save_cb(retro_task_t *task, void *task_data,
       return;
    again = core_trust_write_end(core_trust_rt.t, st->w, st->written);
    st->w = NULL;
+   core_trust_rt.write_failed = !st->written;
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (st->sd)
+   {
+      if (!st->written)
+         RARCH_WARN("[Core] Could not save \"%s\": the cores already "
+               "installed are not trusted.\n", st->path);
+      core_trust_seed_saved(st->sd, st->written
+            && !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED));
+      st->sd = NULL;
+   }
+#endif
    if (again)
-      core_trust_runtime_save();
+      core_trust_runtime_save(NULL);
    else if (st->written)
       core_trust_rt.unsaved = false;
 }
@@ -91,22 +113,28 @@ static void core_trust_save_cb(retro_task_t *task, void *task_data,
 static void core_trust_save_cleanup(retro_task_t *task)
 {
    struct core_trust_save *st = (struct core_trust_save*)task->state;
+#ifdef HAVE_CORE_LOAD_CHECK
+   /* Its callback never ran */
+   if (st->sd)
+      core_trust_seed_free(st->sd);
+#endif
    free(st->path);
    free(st);
    task->state = NULL;
 }
 
-static void core_trust_runtime_save(void)
+/* True: the task is out, and owns sd */
+static bool core_trust_runtime_save(struct core_trust_seed *sd)
 {
    struct core_trust_save *st = NULL;
    retro_task_t *task         = NULL;
    core_trust_write_t *w;
    if (core_trust_rt.read_only)
-      return;
+      return false;
    core_trust_rt.unsaved = true;
    /* NULL: out of memory, or a write is out and runs again after it */
    if (!(w = core_trust_write_begin(core_trust_rt.t)))
-      return;
+      return false;
    if (     !(st = (struct core_trust_save*)calloc(1, sizeof(*st)))
          || !(st->path = strdup(core_trust_rt.path))
          || !(task = task_init()))
@@ -115,9 +143,10 @@ static void core_trust_runtime_save(void)
          free(st->path);
       free(st);
       core_trust_write_end(core_trust_rt.t, w, false);
-      return;
+      return false;
    }
    st->w          = w;
+   st->sd         = sd;
    st->gen        = core_trust_rt.gen;
    task->state    = st;
    task->handler  = core_trust_save_handler;
@@ -125,6 +154,7 @@ static void core_trust_runtime_save(void)
    task->cleanup  = core_trust_save_cleanup;
    task->flags   |= RETRO_TASK_FLG_MUTE;
    task_queue_push(task);
+   return true;
 }
 
 /* Saves when before is no longer the store's set */
@@ -135,7 +165,7 @@ static bool core_trust_runtime_changed(core_trust_set_t *before)
    core_trust_set_put(now);
    core_trust_set_put(before);
    if (changed)
-      core_trust_runtime_save();
+      core_trust_runtime_save(NULL);
    return changed;
 }
 
@@ -190,9 +220,6 @@ struct core_trust_seed
    unsigned num_found;
    unsigned gen;
    bool opened;
-   /* The folder is there but couldn't be opened: seeded at a later start */
-   bool unopened;
-   bool done;
 };
 
 /* One read, one directory entry or the folder's open: false when the
@@ -222,8 +249,7 @@ static bool core_trust_seed_step(struct core_trust_seed *sd)
    if (!sd->opened)
    {
       sd->opened = true;
-      if (!(sd->rdir = retro_opendir(sd->dir)))
-         sd->unopened = path_is_valid(sd->dir);
+      sd->rdir   = retro_opendir(sd->dir);
       return sd->rdir != NULL;
    }
    if (!sd->rdir || !retro_readdir(sd->rdir))
@@ -269,7 +295,6 @@ static void core_trust_seed_handler(retro_task_t *task)
    {
       if (!core_trust_seed_step(sd))
       {
-         sd->done = !sd->unopened;
          task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
          break;
       }
@@ -287,14 +312,11 @@ static void core_trust_seed_cb(retro_task_t *task, void *task_data,
    if (!core_trust_rt.t || sd->gen != core_trust_rt.gen)
       return;
    core_trust_rt.seed_pending = false;
-   /* Cancelled at quit, or the folder unopened: seeded on a later run */
-   if (!sd->done)
-      return;
+   /* Cut short at quit too: what it found is kept */
    before = core_trust_get(core_trust_rt.t);
    for (i = 0; i < sd->num_found; i++)
       if (core_trust_always(core_trust_rt.t, &sd->found[i]))
          trusted++;
-   core_trust_set_flag(core_trust_rt.t, CORE_TRUST_SEEDED, true);
    if (     trusted
          && !(core_trust_runtime_flags() & CORE_TRUST_NOTICE_SHOWN))
    {
@@ -305,9 +327,8 @@ static void core_trust_seed_cb(retro_task_t *task, void *task_data,
    core_trust_runtime_show();
 }
 
-static void core_trust_seed_cleanup(retro_task_t *task)
+static void core_trust_seed_free(struct core_trust_seed *sd)
 {
-   struct core_trust_seed *sd = (struct core_trust_seed*)task->state;
    if (sd->f)
    {
       core_hash_free(&sd->h);
@@ -318,23 +339,47 @@ static void core_trust_seed_cleanup(retro_task_t *task)
    core_trust_set_put(sd->set);
    free(sd->found);
    free(sd);
+}
+
+static void core_trust_seed_cleanup(retro_task_t *task)
+{
+   core_trust_seed_free((struct core_trust_seed*)task->state);
    task->state = NULL;
+}
+
+/* The seed's own write ended: nothing is hashed before SEEDED is on disk */
+static void core_trust_seed_saved(struct core_trust_seed *sd, bool walk)
+{
+   retro_task_t *task = NULL;
+   if (!walk || !(task = task_init()))
+   {
+      core_trust_rt.seed_pending = false;
+      core_trust_seed_free(sd);
+      return;
+   }
+   task->state    = sd;
+   task->handler  = core_trust_seed_handler;
+   task->callback = core_trust_seed_cb;
+   task->cleanup  = core_trust_seed_cleanup;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
 }
 
 static void core_trust_seed_start(const char *seed_dir,
       const char *core_ext)
 {
    struct core_trust_seed *sd;
-   retro_task_t *task = NULL;
    if (     core_trust_rt.read_only
          || string_is_empty(seed_dir)
          || string_is_empty(core_ext)
          || (core_trust_runtime_flags() & CORE_TRUST_SEEDED)
          || !(sd = (struct core_trust_seed*)calloc(1, sizeof(*sd))))
       return;
+   /* Seeded on disk before anything is hashed, so a seed cut short
+    * never runs again */
    if (     !(sd->found = (struct core_check*)malloc(
                CORE_TRUST_MAX_HASHES * sizeof(*sd->found)))
-         || !(task = task_init()))
+         || !core_trust_set_flag(core_trust_rt.t, CORE_TRUST_SEEDED, true))
    {
       free(sd->found);
       free(sd);
@@ -348,13 +393,9 @@ static void core_trust_seed_start(const char *seed_dir,
    fill_pathname_join_special(sd->path, seed_dir, "core", sizeof(sd->path));
    core_trust_rt.seed_key_ok  = core_folder_key_with(sd->path, true,
          core_trust_rt.seed_key);
-   core_trust_rt.seed_pending = true;
-   task->state    = sd;
-   task->handler  = core_trust_seed_handler;
-   task->callback = core_trust_seed_cb;
-   task->cleanup  = core_trust_seed_cleanup;
-   task->flags   |= RETRO_TASK_FLG_MUTE;
-   task_queue_push(task);
+   core_trust_rt.seed_pending = core_trust_runtime_save(sd);
+   if (!core_trust_rt.seed_pending)
+      core_trust_seed_free(sd);
 }
 #endif
 
@@ -445,6 +486,13 @@ bool core_trust_runtime_active(void)
 bool core_trust_runtime_read_only(void)
 {
    return core_trust_rt.read_only;
+}
+
+bool core_trust_runtime_can_save(void)
+{
+   return   core_trust_rt.t
+         && !core_trust_rt.read_only
+         && !core_trust_rt.write_failed;
 }
 
 core_trust_set_t *core_trust_runtime_get(void)
