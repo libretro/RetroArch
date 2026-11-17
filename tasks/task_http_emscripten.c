@@ -288,25 +288,22 @@ task_finished:
          bool failed    = false;
          int  status;
          /* Written here, past the cancel check.  Only a whole 2xx body
-          * replaces the file; it is written in place only when there
-          * is no file to lose.  An error response keeps the start of
+          * replaces the file, through a temporary one; with no file to
+          * lose it is written in place.  An error response keeps the start of
           * its body for the callback, as the native backend does. */
          if (http->sink_path)
          {
             if (resp->status >= 200 && resp->status <= 299)
             {
                const char *body = resp->data ? resp->data : "";
-               if (!filestream_write_file_atomic(http->sink_path, body,
+               if (path_is_valid(http->sink_path))
+                  failed = !filestream_write_file_atomic(http->sink_path,
+                        body, (int64_t)resp->len);
+               else if (!filestream_write_file(http->sink_path, body,
                         (int64_t)resp->len))
                {
-                  if (path_is_valid(http->sink_path))
-                     failed = true;
-                  else if (!filestream_write_file(http->sink_path, body,
-                           (int64_t)resp->len))
-                  {
-                     filestream_delete(http->sink_path);
-                     failed = true;
-                  }
+                  filestream_delete(http->sink_path);
+                  failed = true;
                }
                free(resp->data);
                resp->data = NULL;

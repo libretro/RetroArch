@@ -419,11 +419,14 @@ static void run_seeded_fail(const char *label, const struct step *script,
    remove(g_path);
 }
 
+static int g_renames;
+
 static int RETRO_CALLCONV refuse_rename(const char *old_path,
       const char *new_path)
 {
    (void)old_path;
    (void)new_path;
+   g_renames++;
    return -1;
 }
 
@@ -681,26 +684,28 @@ int main(void)
          path_is_valid(g_temp) ? "left behind" : "removed");
    remove(g_path);
 
-   /* No file to lose: copied */
+   /* No file to lose: written in place, so nothing to rename or copy */
    set_vfs(&vfs);
-   run("no existing file, rename refused", s_full, 1);
+   g_renames = 0;
+   run("no existing file, written in place", s_full, 1);
    set_vfs(NULL);
    len = file_matches(2, &ok);
-   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok && !path_is_valid(g_temp),
-         "rename refused, copied: err=%d len=%ld ok=%d temporary file %s",
+   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok
+         && !path_is_valid(g_temp) && g_renames == 0,
+         "in place: err=%d len=%ld ok=%d temporary file %s, %d renames",
          g_obs.had_error, len, ok,
-         path_is_valid(g_temp) ? "left behind" : "removed");
+         path_is_valid(g_temp) ? "left behind" : "removed", g_renames);
    remove(g_path);
 
-   /* The copy fails part way */
+   /* Written in place, the write fails part way: no file left */
    memset(&vfs, 0, sizeof(vfs));
    vfs.rename = refuse_rename;
    vfs.write  = short_write;
    set_vfs(&vfs);
-   run("no existing file, rename refused, copy fails", s_full, 1);
+   run("no existing file, write fails", s_full, 1);
    set_vfs(NULL);
    CHECK(g_obs.had_error && file_matches(2, &ok) < 0 && !path_is_valid(g_temp),
-         "copy failed: err=%d, file is %ld bytes, temporary file %s",
+         "write failed: err=%d, file is %ld bytes, temporary file %s",
          g_obs.had_error, file_matches(2, &ok),
          path_is_valid(g_temp) ? "left behind" : "removed");
    remove(g_path);

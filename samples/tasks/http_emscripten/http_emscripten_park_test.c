@@ -129,9 +129,12 @@ static void fake_target(int state, int atomic_fail, int direct_fail)
    retro_atomic_store_release_int(&direct_fails, direct_fail);
 }
 
+static retro_atomic_int_t atomic_writes;
+
 bool filestream_write_file(const char *path, const void *data, int64_t size)
 {
-   (void)path; (void)data; (void)size;
+   (void)path; (void)size;
+   written_body = data;
    retro_atomic_fetch_add_int(&writes, 1);
    if (retro_atomic_load_acquire_int(&direct_fails))
    {
@@ -147,6 +150,7 @@ bool filestream_write_file_atomic(const char *path, const void *data,
    (void)path; (void)size;
    written_body = data;
    retro_atomic_fetch_add_int(&writes, 1);
+   retro_atomic_fetch_add_int(&atomic_writes, 1);
    if (retro_atomic_load_acquire_int(&atomic_fails))
       return false;
    retro_atomic_store_release_int(&target, TARGET_NEW);
@@ -276,6 +280,7 @@ static bool run_download_status(bool cancel, bool mute,
 
    retro_atomic_store_release_int(&retired, 0);
    retro_atomic_store_release_int(&writes, 0);
+   retro_atomic_store_release_int(&atomic_writes, 0);
    t = (retro_task_t*)task_push_http_download_file(
          "http://example.invalid/f", "/x/f.png", mute, NULL, on_done, NULL);
    CHECK(t && in_flight, "the download did not start");
@@ -323,8 +328,30 @@ static void lane_download_written(void)
          retired_status, retired_body ? "kept" : "dropped", retired_err);
    CHECK(written_body == fetched_body,
          "the file was written from a copy, not the fetch's own body");
+   CHECK(retro_atomic_load_acquire_int(&atomic_writes) == 0,
+         "with no file there, it went through a temporary one");
    if (failures == had)
       fprintf(stderr, "[pass] a settled download is written\n");
+}
+
+/* A file already there is replaced through a temporary one */
+static void lane_download_replaces(void)
+{
+   unsigned had = failures;
+   fake_target(TARGET_OLD, 0, 0);
+   if (run_download(false, true))
+   {
+      CHECK(retro_atomic_load_acquire_int(&atomic_writes) == 1
+            && retro_atomic_load_acquire_int(&writes) == 1
+            && retro_atomic_load_acquire_int(&target) == TARGET_NEW,
+            "the existing file was replaced by %d atomic of %d writes, "
+            "now %d", retro_atomic_load_acquire_int(&atomic_writes),
+            retro_atomic_load_acquire_int(&writes),
+            retro_atomic_load_acquire_int(&target));
+   }
+   fake_target(TARGET_NONE, 0, 0);
+   if (failures == had)
+      fprintf(stderr, "[pass] an existing file is replaced through a temporary one\n");
 }
 
 static void lane_cancel_after_settle(void)
@@ -409,6 +436,7 @@ int main(void)
    task_queue_init(true, NULL);
    lane_parks_until_settled();
    lane_download_written();
+   lane_download_replaces();
    lane_cancel_after_settle();
    lane_write_fails_over_file(false);
    lane_write_fails_over_file(true);
