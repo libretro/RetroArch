@@ -3746,19 +3746,14 @@ void MainWindow::applySearch()
       case BROWSER_TYPE_UPDATER:
       {
          int row;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-         QString pattern = m_searchRegularExpression.pattern();
-#else
-         QString pattern = m_searchRegExp.pattern();
-#endif
          for (row = 0; row < m_coreUpdaterTable->rowCount(); row++)
          {
-            bool matches = pattern.isEmpty();
+            bool matches = m_searchRegularExpression.pattern().isEmpty();
             int column;
             for (column = 0; !matches && column < m_coreUpdaterTable->columnCount(); column++)
             {
                QTableWidgetItem *item = m_coreUpdaterTable->item(row, column);
-               if (item && item->text().contains(pattern, Qt::CaseInsensitive))
+               if (item && m_searchRegularExpression.match(item->text()).hasMatch())
                   matches = true;
             }
             m_coreUpdaterTable->setRowHidden(row, !matches);
