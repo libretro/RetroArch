@@ -44,14 +44,6 @@ RETRO_BEGIN_DECLS
 
 typedef struct companion_core companion_core_t;
 
-enum companion_download_result
-{
-   COMPANION_DL_OK = 0,
-   COMPANION_DL_ERR_NETWORK,       /* HTTP failed / non-200 */
-   COMPANION_DL_ERR_WRITE,         /* could not write the file */
-   COMPANION_DL_ERR_RENAME         /* could not rename .partial */
-};
-
 /* All callbacks are invoked on the main (UI) thread, from within the
  * request function that caused them or from companion_core_iterate().
  * Every member may be NULL. */
@@ -373,7 +365,8 @@ size_t companion_core_launch_options(companion_core_t *core,
 /* --- Thumbnail downloads (HAVE_NETWORKING) -------------------------- */
 
 /* Fetch <db_name>/<subdir>/<label>.png from the thumbnail server into
- * the repository (written via a .partial file, then renamed). One
+ * the repository, streamed to disk; a file already there is replaced
+ * only by a download that finishes cleanly. One
  * download is in flight at a time; a caller wanting several queues
  * them off on_thumbnail_downloaded. Returns false if the transfer could
  * not be started (no networking, or one is already running). */

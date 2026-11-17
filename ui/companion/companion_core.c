@@ -66,6 +66,7 @@
 #include "../../version.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../tasks/task_file_transfer.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -3613,8 +3614,9 @@ bool companion_core_playlist_push(companion_core_t *core,
 
 #ifdef HAVE_NETWORKING
 
-#define COMPANION_DL_USER_AGENT   "RetroArch-WIMP/" PACKAGE_VERSION
-#define COMPANION_DL_PARTIAL_EXT  ".partial"
+/* Sent as a request header: the download keeps its own User-Agent */
+#define COMPANION_DL_USER_AGENT   "User-Agent: RetroArch-WIMP/" \
+   PACKAGE_VERSION "\r\n"
 #define COMPANION_DL_THUMB_URL    FILE_PATH_CORE_THUMBNAILS_URL "/"
 #define COMPANION_DL_THUMB_EXT    ".png"
 
@@ -3629,7 +3631,7 @@ typedef struct companion_download
    char db_name[NAME_MAX_LENGTH];
    char label[NAME_MAX_LENGTH];
    char subdir[64];
-   char output_path[PATH_MAX_LENGTH];   /* .partial file */
+   char output_path[PATH_MAX_LENGTH];
 } companion_download_t;
 
 static void companion_core_download_orphan(companion_core_t *core)
@@ -3674,68 +3676,31 @@ static void companion_core_download_scrub(char *s)
       string_replace_all_chars(s, chars[i], '_');
 }
 
-/* Write the transfer to .partial, then move it over the final name.
- * Returns the result code; @final receives the final path. */
-static enum companion_download_result companion_core_download_commit(
-      const companion_download_t *d, const http_transfer_data_t *data,
-      const char *err, char *final, size_t len)
-{
-   char *ext;
-   char dir[PATH_MAX_LENGTH];
-
-   if (!data || !data->data || data->status != 200 || err)
-   {
-      RARCH_ERR("[Companion] Download failed (HTTP %d).\n",
-            data ? data->status : 0);
-      return COMPANION_DL_ERR_NETWORK;
-   }
-
-   strlcpy(dir, d->output_path, sizeof(dir));
-   path_basedir_wrapper(dir);
-   path_mkdir(dir);
-
-   if (!filestream_write_file(d->output_path, data->data, data->len))
-   {
-      RARCH_ERR("[Companion] Could not write \"%s\".\n", d->output_path);
-      return COMPANION_DL_ERR_WRITE;
-   }
-
-   strlcpy(final, d->output_path, len);
-   if ((ext = strstr(final, COMPANION_DL_PARTIAL_EXT)))
-      *ext = '\0';
-
-   if (path_is_valid(final))
-      filestream_delete(final);
-
-   if (filestream_rename(d->output_path, final) != 0)
-   {
-      RARCH_ERR("[Companion] Could not rename \"%s\".\n", d->output_path);
-      return COMPANION_DL_ERR_RENAME;
-   }
-   return COMPANION_DL_OK;
-}
-
+/* The transfer streamed the image to d->output_path as it arrived and
+ * replaced any file there only if it finished cleanly with a 2xx. */
 static void companion_core_download_http_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   char final[PATH_MAX_LENGTH];
-   companion_download_t *d   = (companion_download_t*)user_data;
+   const http_transfer_data_t *data = (const http_transfer_data_t*)task_data;
+   companion_download_t *d          = (companion_download_t*)user_data;
    companion_core_t *core;
-   enum companion_download_result r;
+   bool ok;
 
    (void)task;
    if (!d)
       return;
 
-   final[0] = '\0';
-   r        = companion_core_download_commit(d,
-         (const http_transfer_data_t*)task_data, err, final, sizeof(final));
-   core     = d->core;
+   ok   = data && data->status >= 200 && data->status <= 299
+      && (!err || !*err);
+   if (!ok)
+      RARCH_ERR("[Companion] Download failed (HTTP %d)%s%s.\n",
+            data ? data->status : 0, err && *err ? ": " : "",
+            err ? err : "");
+   core = d->core;
 
    if (core && core->cb.on_thumbnail_downloaded)
       core->cb.on_thumbnail_downloaded(core->ud, d->db_name, d->label,
-            d->subdir, r == COMPANION_DL_OK ? final : NULL,
-            r == COMPANION_DL_OK);
+            d->subdir, ok ? d->output_path : NULL, ok);
    companion_core_download_done(d);
 }
 
@@ -3760,13 +3725,13 @@ bool companion_core_thumbnail_download(companion_core_t *core,
    if (!d)
       return false;
 
-   /* <thumbnails>/<db>/<subdir>/<name>.png.partial */
+   /* <thumbnails>/<db>/<subdir>/<name>.png */
    companion_core_thumbnail_dir(core, db_name, subdir,
          d->output_path, sizeof(d->output_path));
    path_mkdir(d->output_path);
    _len = fill_pathname_join_special(d->output_path, d->output_path, name,
          sizeof(d->output_path));
-   strlcpy(d->output_path + _len, COMPANION_DL_THUMB_EXT COMPANION_DL_PARTIAL_EXT,
+   strlcpy(d->output_path + _len, COMPANION_DL_THUMB_EXT,
          sizeof(d->output_path) - _len);
 
    /* <thumbnail server>/<db>/<subdir>/<name>.png, each path
@@ -3785,8 +3750,9 @@ bool companion_core_thumbnail_download(companion_core_t *core,
 
    RARCH_LOG("[Companion] Downloading \"%s\".\n", url);
 
-   d->task = (retro_task_t*)task_push_http_transfer_with_user_agent(url, true,
-         NULL, COMPANION_DL_USER_AGENT, companion_core_download_http_cb, d);
+   d->task = (retro_task_t*)task_push_http_download_file_with_headers(url,
+         d->output_path, true, NULL, COMPANION_DL_USER_AGENT,
+         companion_core_download_http_cb, d);
    if (!d->task)
    {
       RARCH_ERR("[Companion] Failed to start thumbnail transfer.\n");

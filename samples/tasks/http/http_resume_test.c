@@ -283,7 +283,8 @@ static int srv_start(void)
 
 /* ---- task side ---- */
 
-struct obs { int fired; int had_error; int status; char err[128]; };
+struct obs { int fired; int had_error; int status; char err[128];
+   size_t body_len; char body[32]; };
 static struct obs g_obs;
 static char g_path[128];
 static char g_temp[160];
@@ -299,6 +300,10 @@ static void done_cb(retro_task_t *task, void *task_data, void *user_data,
    g_obs.had_error = (err && *err);
    g_obs.status    = data ? data->status : 0;
    snprintf(g_obs.err, sizeof(g_obs.err), "%s", err ? err : "");
+   g_obs.body_len  = (data && data->data) ? data->len : 0;
+   if (g_obs.body_len)
+      memcpy(g_obs.body, data->data, g_obs.body_len < sizeof(g_obs.body)
+            ? g_obs.body_len : sizeof(g_obs.body));
    pthread_mutex_unlock(&g_lock);
 }
 
@@ -444,6 +449,18 @@ static int64_t RETRO_CALLCONV short_write(struct retro_vfs_file_handle *stream,
    return retro_vfs_file_write_impl(f, s, len);
 }
 
+/* Bytes written to any file */
+static long g_written;
+static int64_t RETRO_CALLCONV count_write(struct retro_vfs_file_handle *stream,
+      const void *s, uint64_t len)
+{
+   pthread_mutex_lock(&g_lock);
+   g_written += (long)len;
+   pthread_mutex_unlock(&g_lock);
+   return retro_vfs_file_write_impl(
+         (libretro_vfs_implementation_file*)stream, s, len);
+}
+
 static void set_vfs(struct retro_vfs_interface *vfs)
 {
    struct retro_vfs_interface_info info;
@@ -556,6 +573,18 @@ int main(void)
    run_seeded_fail("existing file, 404", s_not_found, 1, g_port);
    CHECK(strstr(g_obs.err, "404") != NULL,
          "404: error '%s' does not say why", g_obs.err);
+
+   /* The error page reaches the callback, and never the disk */
+   memset(&vfs, 0, sizeof(vfs));
+   vfs.write = count_write;
+   set_vfs(&vfs);
+   g_written = 0;
+   run_seeded_fail("existing file, 404, error page", s_not_found, 1, g_port);
+   set_vfs(NULL);
+   CHECK(g_obs.body_len == 9 && !memcmp(g_obs.body, "not found", 9)
+         && g_written == 0,
+         "404 error page: %u bytes to the callback, %ld bytes written to disk",
+         (unsigned)g_obs.body_len, g_written);
 
    run_seeded_fail("existing file, dropped without resume", s_bare, 2, g_port);
 

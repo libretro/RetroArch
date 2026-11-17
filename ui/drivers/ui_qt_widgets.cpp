@@ -5282,8 +5282,8 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 #endif
 #endif
 
-/* Thumbnail downloads. URLs, .partial handling and the file
- * replacement rules are the companion core's
+/* Thumbnail downloads. URLs and the file replacement rules are the
+ * companion core's
  * (companion_core_thumbnail_download); Qt keeps the queues, counters
  * and progress dialogs. Results arrive through the driver's callback
  * table as onCoreThumbnailDownloaded. */

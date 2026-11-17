@@ -65,7 +65,7 @@ struct http_handle
     * buffers the whole response either way, so unlike the native
     * backend this is not a memory optimisation -- it exists so the
     * two backends honour the same API contract: body on disk,
-    * data == NULL in the callback. */
+    * data == NULL in the callback unless the response was an error. */
    char                 *sink_path;
    /* Set by the fetch callbacks on the thread that started the fetch,
     * after the response; read by the handler, which may be on the
@@ -84,6 +84,11 @@ typedef struct http_handle http_handle_t;
 
 /* Watchdog for a task waiting on its fetch, which wakes it. */
 #define HTTP_EMSCRIPTEN_PARK_USEC 1000000
+
+/* What a download's error response hands its callback; see
+ * task_push_http_download_file_with_headers(). */
+#define HTTP_EMSCRIPTEN_ERROR_BODY_MAX 4096
+#define HTTP_EMSCRIPTEN_ERR_WRITE "Download failed: cannot write the file."
 
 /* ------------------------------------------------------------------ */
 /* Header marshalling                                                  */
@@ -284,38 +289,43 @@ task_finished:
          int  status;
          /* Written here, past the cancel check.  Only a whole 2xx body
           * replaces the file; it is written in place only when there
-          * is no file to lose. */
+          * is no file to lose.  An error response keeps the start of
+          * its body for the callback, as the native backend does. */
          if (http->sink_path)
          {
-            if (     resp->status >= 200 && resp->status <= 299 && resp->data
-                  && !filestream_write_file_atomic(http->sink_path,
-                        resp->data, (int64_t)resp->len))
+            if (resp->status >= 200 && resp->status <= 299)
             {
-               if (path_is_valid(http->sink_path))
-                  failed = true;
-               else if (!filestream_write_file(http->sink_path, resp->data,
+               const char *body = resp->data ? resp->data : "";
+               if (!filestream_write_file_atomic(http->sink_path, body,
                         (int64_t)resp->len))
                {
-                  filestream_delete(http->sink_path);
-                  failed = true;
+                  if (path_is_valid(http->sink_path))
+                     failed = true;
+                  else if (!filestream_write_file(http->sink_path, body,
+                           (int64_t)resp->len))
+                  {
+                     filestream_delete(http->sink_path);
+                     failed = true;
+                  }
                }
+               free(resp->data);
+               resp->data = NULL;
+               resp->len  = 0;
             }
+            else if (resp->len > HTTP_EMSCRIPTEN_ERROR_BODY_MAX)
+               resp->len = HTTP_EMSCRIPTEN_ERROR_BODY_MAX;
             if (failed)
             {
                RARCH_ERR("[HTTP] Failed writing %s\n", http->sink_path);
                resp->status = -1;
             }
-            free(resp->data);
-            resp->data = NULL;
-            resp->len  = 0;
          }
          status         = resp->status;
          task_set_data(task, resp);
          http->response = NULL;
          if (failed)
-            task_set_error(task, strldup("Download failed: cannot write "
-                  "the file.", sizeof("Download failed: cannot write "
-                  "the file.")));
+            task_set_error(task, strldup(HTTP_EMSCRIPTEN_ERR_WRITE,
+                  sizeof(HTTP_EMSCRIPTEN_ERR_WRITE)));
          else if (!mute && status >= 400)
             task_set_error(task, strldup("Download failed.",
                sizeof("Download failed.")));
@@ -385,28 +395,16 @@ static void http_fetch_settle(emscripten_fetch_t *fetch)
       resp->status  = (int)fetch->status;
       resp->headers = http_response_headers(fetch);
 
-      /* fetch->data belongs to the fetch and dies with
-       * emscripten_fetch_close(), so it has to be copied out.  The
-       * old wget2 path handed the callback's buffer straight to the
-       * caller, which worked only because wget2 transferred
-       * ownership; fetch does not.  A download's body is written by
-       * the handler, which sees a cancel. */
+      /* fetch->data is malloc()ed in this heap and freed by
+       * emscripten_fetch_close(), which skips a NULL one: the body is
+       * taken over rather than copied out.  A download's body is
+       * written by the handler, which sees a cancel. */
       if (fetch->numBytes > 0 && fetch->data)
       {
-         if ((resp->data = (char*)malloc((size_t)fetch->numBytes)))
-         {
-            memcpy(resp->data, fetch->data, (size_t)fetch->numBytes);
-            resp->len = (size_t)fetch->numBytes;
-         }
-         else
-         {
-            /* Keep the status and headers so the caller still sees a
-             * coherent, if empty, response. */
-            RARCH_ERR("[HTTP] Out of memory buffering %llu byte response.\n",
-                  (unsigned long long)fetch->numBytes);
-            if (http->sink_path)
-               resp->status = -1;
-         }
+         resp->data      = (char*)fetch->data;
+         resp->len       = (size_t)fetch->numBytes;
+         fetch->data     = NULL;
+         fetch->numBytes = 0;
       }
 
       http->response = resp;

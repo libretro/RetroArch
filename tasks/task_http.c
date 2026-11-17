@@ -55,10 +55,15 @@ struct http_handle
     * body is written straight to disk as it arrives instead of being
     * accumulated and then written in one go.  NULL for every other
     * entry point.  sink_temp is the file written, renamed over
-    * sink_path at the end; NULL when sink_path is written itself. */
+    * sink_path at the end; NULL when sink_path is written itself.
+    * Both names share sink_path's allocation. */
    RFILE *sink_file;
    char  *sink_path;
    char  *sink_temp;
+   /* The start of an error response's body, for the callback: kept
+    * from the sink's spans, never written to the file. */
+   char  *error_body;
+   size_t error_body_len;
    /* Resume of an interrupted sink download (see task_http_resume()).
     * validator is the first response's strong ETag or Last-Modified,
     * owned; sink_written is the file's length so far; attempt_base is
@@ -73,6 +78,7 @@ struct http_handle
    bool headers_accept_err;
    bool sink_failed;
    bool attempt_started;       /* first body bytes of this attempt seen */
+   bool error_response;        /* this response is an error, not the file */
    bool resumable;             /* the first response allows a Range resume */
    /* Full request URL, owned.  This was a char[NAME_MAX_LENGTH]
     * filled by strlcpy, but task_http_finder() compares the stored
@@ -169,6 +175,35 @@ static bool task_http_range_starts_at(const char *v, uint64_t start)
    return task_http_parse_u64(&v, &n) && *v == '-' && n == start;
 }
 
+/* What a download to a file keeps of an error response for its
+ * callback: the start of the body, enough for a server's error message.
+ * Copied out of the receive buffer as it arrives, once, and handed to
+ * the callback as is; the rest is drained, so the connection can be
+ * reused.  A successful download hands its callback no body at all. */
+#define TASK_HTTP_ERROR_BODY_MAX 4096
+
+static void task_http_error_body_append(http_handle_t *http,
+      const struct net_http_span *spans, size_t count)
+{
+   size_t i;
+   if (!http->error_body)
+   {
+      if (!(http->error_body = (char*)malloc(TASK_HTTP_ERROR_BODY_MAX + 1)))
+         return;
+      http->error_body_len = 0;
+   }
+   for (i = 0; i < count
+         && http->error_body_len < TASK_HTTP_ERROR_BODY_MAX; i++)
+   {
+      size_t n = spans[i].len;
+      if (n > TASK_HTTP_ERROR_BODY_MAX - http->error_body_len)
+         n = TASK_HTTP_ERROR_BODY_MAX - http->error_body_len;
+      memcpy(http->error_body + http->error_body_len, spans[i].data, n);
+      http->error_body_len += n;
+   }
+   http->error_body[http->error_body_len] = '\0';
+}
+
 /* The first body bytes of an attempt: decide what the response means for
  * the file.  On the first attempt, note whether a resume will be possible
  * later.  On a resume, a 206 must continue exactly where the file ends;
@@ -196,6 +231,7 @@ static bool task_http_attempt_begin(http_handle_t *http)
       }
       if (len && !task_http_parse_u64(&len, &http->expected_total))
          http->expected_total = 0;
+      http->error_response = (status < 200 || status > 299);
       return true;
    }
    if (status == 206)
@@ -236,6 +272,11 @@ static bool task_http_file_sink_spans(void *userdata,
    {
       http->sink_failed = true;
       return false;
+   }
+   if (http->error_response)
+   {
+      task_http_error_body_append(http, spans, count);
+      return true;
    }
    for (i = 0; i < count; i++)
    {
@@ -294,37 +335,6 @@ static bool task_http_resume(http_handle_t *http, uint8_t flg)
    return true;
 }
 
-/* What a download to a file keeps of an error response for its
- * callback: the start of the body, enough for a server's error message,
- * read back from the file before it is removed.  Only on that error
- * path; a successful download hands its callback no body at all. */
-#define TASK_HTTP_ERROR_BODY_MAX 4096
-
-static char *task_http_error_body(const char *path, size_t *len)
-{
-   char   *body = NULL;
-   int64_t n    = 0;
-   RFILE  *f    = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!f)
-      return NULL;
-   if ((body = (char*)malloc(TASK_HTTP_ERROR_BODY_MAX + 1)))
-   {
-      if ((n = filestream_read(f, body, TASK_HTTP_ERROR_BODY_MAX)) > 0)
-      {
-         body[n] = '\0';
-         *len    = (size_t)n;
-      }
-      else
-      {
-         free(body);
-         body = NULL;
-      }
-   }
-   filestream_close(f);
-   return body;
-}
-
 /* Close the output file and put it in place if @keep, otherwise
  * remove it, leaving a file already at the path alone.  A partial file
  * left behind would otherwise be indistinguishable from a good one on
@@ -348,7 +358,6 @@ static bool task_http_sink_close(http_handle_t *http, bool keep)
          filestream_delete(http->sink_temp);
       }
       keep = (ret == 0);
-      free(http->sink_temp);
       http->sink_temp = NULL;
    }
    else if (http->sink_path && !keep)
@@ -475,8 +484,6 @@ static void task_http_transfer_handler(retro_task_t *task)
 {
    http_transfer_data_t *data = NULL;
    http_handle_t        *http = (http_handle_t*)task->state;
-   char *error_body           = NULL;
-   size_t error_body_len      = 0;
    uint8_t flg                = task_get_flags(task);
 
    if ((flg & RETRO_TASK_FLG_CANCELLED) > 0 || http->error)
@@ -519,18 +526,6 @@ task_finished:
              && !http->sink_failed
              && !net_http_error(http->handle)
              && ((flg & RETRO_TASK_FLG_CANCELLED) == 0);
-      /* An HTTP error response: its start, for the callback to log */
-      if (     !ok && http->handle && http->sink_file
-            && !http->sink_failed
-            && ((flg & RETRO_TASK_FLG_CANCELLED) == 0)
-            && net_http_status(http->handle) >= 300)
-      {
-         filestream_close(http->sink_file);
-         http->sink_file = NULL;
-         error_body      = task_http_error_body(
-               http->sink_temp ? http->sink_temp : http->sink_path,
-               &error_body_len);
-      }
       if (!task_http_sink_close(http, ok) && !task_get_error(task))
       {
          if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
@@ -551,11 +546,13 @@ task_finished:
 
       if (!tmp)
          tmp = (char*)net_http_data(http->handle, &_len, true);
-      if (!tmp && error_body)
+      /* An HTTP error response to a download: its start, for the
+       * callback to log, handed over as kept */
+      if (!tmp && http->error_body && http->error_body_len)
       {
-         tmp        = error_body;
-         _len       = error_body_len;
-         error_body = NULL;
+         tmp              = http->error_body;
+         _len             = http->error_body_len;
+         http->error_body = NULL;
       }
 
       if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
@@ -616,7 +613,8 @@ task_finished:
    else if (http->error && !task_get_error(task))
       task_set_error(task, strldup("Internal error.",
                sizeof("Internal error.")));
-   free(error_body);
+   free(http->error_body);
+   http->error_body = NULL;
 
    /* Deliberately NOT freeing `http` here.
     *
@@ -672,6 +670,7 @@ static void task_http_transfer_cleanup(retro_task_t *task)
          net_http_connection_free(http->connection.handle);
       free(http->connection_url);
       free(http->validator);
+      free(http->error_body);
       free(http);
    }
 }
@@ -744,6 +743,9 @@ static void *task_push_http_transfer_generic_titled(
    http->sink_file           = NULL;
    http->sink_path           = NULL;
    http->sink_temp           = NULL;
+   http->error_body          = NULL;
+   http->error_body_len      = 0;
+   http->error_response      = false;
    http->sink_failed         = false;
    http->validator           = NULL;
    http->sink_written        = 0;
@@ -760,17 +762,21 @@ static void *task_push_http_transfer_generic_titled(
     * cb_http_conn_default(). */
    if (sink_path)
    {
-      size_t _len = strlen(sink_path) + sizeof(".tmp");
-      if (!(http->sink_path = strdup(sink_path)))
+      /* One allocation: the path, then its temporary name */
+      size_t _len = strlen(sink_path) + 1;
+      if (!(http->sink_path = (char*)malloc(_len * 2 + sizeof(".tmp") - 1)))
          goto error;
-      if (     (http->sink_temp = (char*)malloc(_len))
-            && filestream_atomic_temp_name(http->sink_temp, _len, sink_path))
+      memcpy(http->sink_path, sink_path, _len);
+      if (filestream_atomic_temp_name(http->sink_path + _len,
+               _len + sizeof(".tmp") - 1, sink_path))
+      {
+         http->sink_temp = http->sink_path + _len;
          http->sink_file = filestream_open(http->sink_temp,
                RETRO_VFS_FILE_ACCESS_WRITE,
                RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+      }
       if (!http->sink_file)
       {
-         free(http->sink_temp);
          http->sink_temp = NULL;
          /* No file to lose: write it in place.  Otherwise the task
           * fails as soon as it runs, leaving that file alone. */

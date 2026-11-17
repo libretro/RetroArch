@@ -70,12 +70,35 @@ emscripten_fetch_t *emscripten_fetch(emscripten_fetch_attr_t *fetch_attr,
    return fetch;
 }
 
+/* As Emscripten's: the body was malloc()ed for the fetch and is freed
+ * with it. */
 EMSCRIPTEN_RESULT emscripten_fetch_close(emscripten_fetch_t *fetch)
 {
    if (fetch == in_flight)
       in_flight = NULL;
+   free((void*)fetch->data);
    free(fetch);
    return 0;
+}
+
+/* The body the browser handed the fetch, for the lanes to tell a lent
+ * body from a copy. */
+static const void *fetched_body;
+
+/* The browser settles the fetch in flight, on this thread. */
+static void settle(unsigned short status, const char *body)
+{
+   size_t len          = strlen(body);
+   char  *data         = (char*)malloc(len);
+   memcpy(data, body, len);
+   fetched_body        = data;
+   in_flight->status   = status;
+   in_flight->data     = data;
+   in_flight->numBytes = len;
+   if (status >= 200 && status <= 299)
+      in_flight->__attributes.onsuccess(in_flight);
+   else
+      in_flight->__attributes.onerror(in_flight);
 }
 
 size_t emscripten_fetch_get_response_headers_length(emscripten_fetch_t *fetch)
@@ -91,6 +114,7 @@ void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 const char *msg_hash_to_str(enum msg_hash_enums msg) { (void)msg; return ""; }
 void task_window_progress_cb(retro_task_t *task) { (void)task; }
 static retro_atomic_int_t writes;
+static const void        *written_body;
 
 /* The one file at the target, and which writes to it fail. */
 enum { TARGET_NONE = 0, TARGET_OLD, TARGET_PARTIAL, TARGET_NEW };
@@ -120,7 +144,8 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
 bool filestream_write_file_atomic(const char *path, const void *data,
       int64_t size)
 {
-   (void)path; (void)data; (void)size;
+   (void)path; (void)size;
+   written_body = data;
    retro_atomic_fetch_add_int(&writes, 1);
    if (retro_atomic_load_acquire_int(&atomic_fails))
       return false;
@@ -173,6 +198,8 @@ uint8_t __wrap_task_get_flags(retro_task_t *task)
 static retro_atomic_int_t retired;
 static int                retired_status;
 static bool               retired_body;
+static const void        *retired_ptr;
+static size_t             retired_len;
 static char               retired_err[64];
 
 static void on_done(retro_task_t *task, void *task_data, void *user_data,
@@ -182,6 +209,8 @@ static void on_done(retro_task_t *task, void *task_data, void *user_data,
    (void)task; (void)user_data;
    retired_status = data ? data->status : -1;
    retired_body   = data && data->data;
+   retired_ptr    = data ? data->data : NULL;
+   retired_len    = data ? data->len : 0;
    strlcpy(retired_err, err ? err : "", sizeof(retired_err));
    retro_atomic_store_release_int(&retired, 1);
 }
@@ -214,11 +243,8 @@ static void lane_parks_until_settled(void)
          retro_atomic_load_acquire_int(&passes));
 
    /* The browser settles it, on this thread. */
-   in_flight->status   = 200;
-   in_flight->data     = body;
-   in_flight->numBytes = sizeof(body) - 1;
    settled_at          = cpu_features_get_time_usec();
-   in_flight->__attributes.onsuccess(in_flight);
+   settle(200, body);
 
    for (i = 0; i < 3000 && !retro_atomic_load_acquire_int(&retired); i++)
    {
@@ -227,6 +253,8 @@ static void lane_parks_until_settled(void)
    }
    CHECK(retro_atomic_load_acquire_int(&retired) == 1, "the task did not retire");
    CHECK(retired_status == 200, "the response was %d", retired_status);
+   CHECK(retired_ptr == fetched_body && retired_len == sizeof(body) - 1,
+         "the body reached the callback as a copy, not the fetch's own");
    CHECK(cpu_features_get_time_usec() - settled_at < 500000,
          "the settle did not wake the task (%lld us)",
          (long long)(cpu_features_get_time_usec() - settled_at));
@@ -238,7 +266,8 @@ static void lane_parks_until_settled(void)
 
 /* A download the browser settles with a 200; @cancel cancels it right
  * after the settle. */
-static bool run_download(bool cancel, bool mute)
+static bool run_download_status(bool cancel, bool mute,
+      unsigned short status)
 {
    static char   body[] = "hello";
    retro_task_t *t;
@@ -265,10 +294,7 @@ static bool run_download(bool cancel, bool mute)
       retro_sleep(1);
    }
 
-   in_flight->status   = 200;
-   in_flight->data     = body;
-   in_flight->numBytes = sizeof(body) - 1;
-   in_flight->__attributes.onsuccess(in_flight);
+   settle(status, body);
 
    for (i = 0; i < 3000 && !retro_atomic_load_acquire_int(&retired); i++)
    {
@@ -278,6 +304,11 @@ static bool run_download(bool cancel, bool mute)
    retro_atomic_store_release_int(&cancel_armed, 0);
    CHECK(retro_atomic_load_acquire_int(&retired) == 1, "the task did not retire");
    return retro_atomic_load_acquire_int(&retired) == 1;
+}
+
+static bool run_download(bool cancel, bool mute)
+{
+   return run_download_status(cancel, mute, 200);
 }
 
 static void lane_download_written(void)
@@ -290,6 +321,8 @@ static void lane_download_written(void)
    CHECK(retired_status == 200 && !retired_body && !*retired_err,
          "the download retired with %d, body %s, error \"%s\"",
          retired_status, retired_body ? "kept" : "dropped", retired_err);
+   CHECK(written_body == fetched_body,
+         "the file was written from a copy, not the fetch's own body");
    if (failures == had)
       fprintf(stderr, "[pass] a settled download is written\n");
 }
@@ -348,6 +381,29 @@ static void lane_write_fails_no_file(bool mute)
             mute ? " (muted)" : "");
 }
 
+/* A download answered with an error page: no file, and the start of
+ * the page for the callback, as the native backend hands it. */
+static void lane_download_error_body(void)
+{
+   unsigned had = failures;
+   fake_target(TARGET_OLD, 0, 0);
+   if (run_download_status(false, true, 404))
+   {
+      CHECK(retro_atomic_load_acquire_int(&writes) == 0,
+            "an error page was written to the file %d times",
+            retro_atomic_load_acquire_int(&writes));
+      CHECK(retro_atomic_load_acquire_int(&target) == TARGET_OLD,
+            "the existing file is now %d",
+            retro_atomic_load_acquire_int(&target));
+      CHECK(retired_status == 404 && retired_body && retired_len == 5,
+            "the error retired with %d, body %s (%u bytes)", retired_status,
+            retired_body ? "kept" : "dropped", (unsigned)retired_len);
+   }
+   fake_target(TARGET_NONE, 0, 0);
+   if (failures == had)
+      fprintf(stderr, "[pass] a download's error page reaches its callback\n");
+}
+
 int main(void)
 {
    task_queue_init(true, NULL);
@@ -358,6 +414,7 @@ int main(void)
    lane_write_fails_over_file(true);
    lane_write_fails_no_file(false);
    lane_write_fails_no_file(true);
+   lane_download_error_body();
    task_queue_deinit();
 
    if (failures)
