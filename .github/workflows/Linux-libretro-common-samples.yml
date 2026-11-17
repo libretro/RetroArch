@@ -338,6 +338,8 @@ jobs:
             chd_stream_ahead_test
             chd_map_alloc_test
             rchd_hunk_cache_test
+            # rchd's cdfl, flac and A/V FLAC audio over coded images
+            rchd_flac_test
             rvz_test
             ciso_test
             xdvdfs_test
