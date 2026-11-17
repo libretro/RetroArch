@@ -89,3 +89,13 @@ interrupted. The recovered stream must independently decode and retain the
 published packet count. These tests require actual native GPU execution and
 Vulkan validation; portable units do not substitute for them. They do not
 establish sustained network-backpressure or memory-bound acceptance.
+
+The portable `samples/record/rtmp_stream/vulkan_pressure_test` fills the two-slot
+video queue and optional PCM FIFO while the RTMP transport holds a borrowed span.
+For 10,000 blocked service calls it requires BUSY without producer admission,
+packet mutation, encoder release or any allocation. A fixed test-only ledger
+instruments allocation calls in every linked shipping translation unit, without
+platform linker hooks. Resume must drain the accepted frames/samples; cancellation
+must retire all allocations. Both paths run with video alone and with audio.
+This is a bounded session/mux/queue contract with simulated encoder and transport;
+it does not replace native GPU/network slow-peer or operating-system memory tests.

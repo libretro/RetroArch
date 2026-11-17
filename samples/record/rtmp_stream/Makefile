@@ -15,13 +15,14 @@ endif
 SESSION := $(LRC)/net/net_rtmp_session.c $(LRC)/net/net_rtmp_handshake.c $(LRC)/net/net_rtmp_chunk.c $(LRC)/net/net_rtmp_receive.c $(LRC)/net/net_rtmp_publish.c $(LRC)/net/net_rtmp_command.c $(LRC)/net/net_rtmp_reply.c $(LRC)/net/net_rtmp_control.c
 SOURCES := $(RA)/record/record_stream_gpu.c $(RA)/record/record_stream_d3d12.c ../gpu_av_output/mock_worker.c $(LRC)/queues/retro_spsc.c $(LRC)/formats/flv/rflv_mux.c $(SESSION)
 GPU_HEADERS := $(RA)/record/record_stream_gpu.h $(RA)/record/record_gpu_output_config.h
-all: vulkan_session_test$(EXE) vulkan_output_test$(EXE) vulkan_mapping_test$(EXE) vulkan_contract_test$(EXE) contract_test$(EXE) wrapper_test$(EXE) vt_contract_test$(EXE) vt_output_test$(EXE)
+all: vulkan_pressure_test$(EXE) vulkan_session_test$(EXE) vulkan_output_test$(EXE) vulkan_mapping_test$(EXE) vulkan_contract_test$(EXE) contract_test$(EXE) wrapper_test$(EXE) vt_contract_test$(EXE) vt_output_test$(EXE)
 contract_test$(EXE): contract_test.c $(SOURCES) $(GPU_HEADERS) $(RA)/record/record_stream_d3d12.h $(LRC)/samples/net/rtmp/rtmp_session_test.c
 	$(CC) $(CFLAGS) -o $@ contract_test.c $(SOURCES) $(LDFLAGS)
 FILE_OUTPUT := $(RA)/record/record_gpu_output_d3d12.c $(RA)/record/record_mux_mp4.c ../gpu_av_output/mock_file.c $(LRC)/formats/ac3/rac3_frame.c $(LRC)/formats/ac3/rac3_encode.c
 wrapper_test$(EXE): wrapper_test.c contract_test.c $(SOURCES) $(FILE_OUTPUT) $(GPU_HEADERS)
 	$(CC) $(CFLAGS) -DHAVE_D3D12 -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -o $@ wrapper_test.c $(SOURCES) $(FILE_OUTPUT) $(LDFLAGS) -lm
 check: all
+	$(RUNNER) ./vulkan_pressure_test$(EXE)
 	$(RUNNER) ./vulkan_session_test$(EXE)
 	$(RUNNER) ./vulkan_output_test$(EXE)
 	$(RUNNER) ./vulkan_mapping_test$(EXE)
@@ -32,6 +33,7 @@ check: all
 	$(RUNNER) ./contract_test$(EXE)
 	$(RUNNER) ./wrapper_test$(EXE)
 clean:
+	rm -f vulkan_pressure_test vulkan_pressure_test.exe
 	rm -f vulkan_dispatch_stream_test.exe
 	rm -f vulkan_session_test vulkan_session_test.exe
 	rm -f vulkan_output_test vulkan_output_test.exe
@@ -79,3 +81,7 @@ vulkan_dispatch_stream_test$(EXE): vulkan_dispatch_stream_test.c $(RA)/record/re
 	$(CC) $(CFLAGS) -Wno-long-long -DHAVE_THREADS -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -DHAVE_CRYPTO -I$(RA)/gfx/include $< ../gpu_av_output/rthreads_compat.c $(LRC)/rthreads/retro_eventcount.c $(RA)/record/record_gpu_queue.c $(LRC)/queues/retro_spsc.c -lws2_32 -o $@ $(LDFLAGS)
 .PHONY: vulkan-dispatch-stream-check
 endif
+
+# Account for allocation calls in every production TU of this fixture.
+vulkan_pressure_test$(EXE): pressure_alloc.c pressure_alloc.h vulkan_pressure_test.c vulkan_session_test.c contract_test.c ../gpu_av_output/vulkan_session_test.c $(SOURCES) $(VULKAN_SESSION_SOURCES) $(RA)/record/record_stream_vulkan.c $(RA)/record/record_gpu_session_vulkan.c
+	$(CC) $(CFLAGS) -Wno-long-long -Wno-unused-function -I$(RA)/gfx/include -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -include pressure_alloc.h -o $@ vulkan_pressure_test.c pressure_alloc.c $(filter-out $(RA)/record/record_stream_d3d12.c,$(SOURCES)) $(RA)/record/record_stream_vulkan.c $(VULKAN_SESSION_SOURCES) $(LDFLAGS) -lm

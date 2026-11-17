@@ -100,6 +100,7 @@ static void stream_session_cancel(bool audio)
    assert(!record_gpu_session_vulkan_network(s, &fd, &read, &write));
    assert(record_gpu_session_vulkan_free(s) && net_rtmp_session_free(client.session));
 }
+#ifndef STREAM_PRESSURE_HELPERS_ONLY
 int main(void)
 {
    struct net_rtmp_client client;
@@ -126,3 +127,5 @@ int main(void)
    puts("PASS Vulkan stream session producer closure, network-held video/AAC, cancellation and startup retirement");
    return 0;
 }
+
+#endif
