@@ -13139,7 +13139,8 @@ static void input_config_retag_devices(input_driver_state_t *input_st)
    input_devices_tagged = tagged;
 }
 
-size_t input_config_get_device_tag(unsigned port, char *s, size_t len)
+size_t input_config_get_device_tag(unsigned port, bool slot_shown,
+      char *s, size_t len)
 {
    const char *tag;
    if (len)
@@ -13147,7 +13148,8 @@ size_t input_config_get_device_tag(unsigned port, char *s, size_t len)
    if (port >= MAX_INPUT_DEVICES)
       return 0;
    tag = input_driver_st.input_device_info[port].shown_tag;
-   if (!*tag)
+   /* " (#2)": a place among those of the name, the slot's number aside */
+   if (!*tag || (slot_shown && tag[1] == '('))
       return 0;
    return strlcpy(s, tag, len);
 }
@@ -18369,8 +18371,9 @@ void input_driver_capture_pad(unsigned pad, bool poll,
 
 /* What each connected controller holds down, a word a slot, into
  * @held[MAX_INPUT_DEVICES]: its buttons folded onto 32 bits, its hats'
- * directions onto bits 28-31, so a new press sets a bit. Returns the
- * slots that have a controller.
+ * directions onto bits 28-31, so a new press sets a bit; and where its
+ * axes are, into @axes[MAX_INPUT_DEVICES], each signed as axis() gives
+ * its two directions. Returns the slots that have a controller.
  *
  * For the menu's look for a press, every frame two controllers show
  * one name. A pad read through the snapshot bridge is read where this
@@ -18379,7 +18382,8 @@ void input_driver_capture_pad(unsigned pad, bool poll,
  * is copied and the driver is not called again; a hat no reader asked
  * for joins the copy from here on, as for any reader. The rest are
  * asked as input_driver_capture_pad() asks them. */
-uint32_t input_driver_pads_held(uint32_t *held)
+uint32_t input_driver_pads_held(uint32_t *held,
+      int16_t (*axes)[INPUT_PAD_VIEW_AXES])
 {
    unsigned s;
    uint32_t named                      = 0;
@@ -18401,13 +18405,15 @@ uint32_t input_driver_pads_held(uint32_t *held)
       if (!joypad)
       {
          held[s] = 0;
+         memset(axes[s], 0, sizeof(axes[s]));
          continue;
       }
       if (bridged && s < MAX_USERS)
       {
          const input_pad_view_t *view = input_snapshot_view(s);
          input_pad_snapshot_t *snap   = &input_snapshot_bridge.pads[s];
-         /* a copy holds the hats read before; a lent view, all */
+         /* a copy holds the hats and axes read before; a lent view,
+          * all */
          if (view == &snap->copy)
          {
             unsigned h;
@@ -18415,12 +18421,19 @@ uint32_t input_driver_pads_held(uint32_t *held)
                if (!(snap->hats_known & (1 << h)))
                   input_snapshot_fetch_hat(input_snapshot_bridge.real,
                         &snap->copy, s, h);
+            for (h = 0; h < INPUT_SNAPSHOT_AXES; h++)
+               if (!(snap->axes_known & (1 << h)))
+                  input_snapshot_fetch_axis(input_snapshot_bridge.real,
+                        &snap->copy, s, h);
             snap->hats_known = snap->hats_used =
                (1 << INPUT_SNAPSHOT_HATS) - 1;
+            snap->axes_known = snap->axes_used =
+               (1 << INPUT_SNAPSHOT_AXES) - 1;
          }
          for (w = 0; w < ARRAY_SIZE(view->buttons.data); w++)
             down |= view->buttons.data[w];
          hats = view->hats;
+         memcpy(axes[s], view->axes, sizeof(axes[s]));
       }
       else
       {
@@ -18430,7 +18443,7 @@ uint32_t input_driver_pads_held(uint32_t *held)
          BIT256_CLEAR_ALL(buttons);
          memset(pad_hats, 0, sizeof(pad_hats));
          input_driver_capture_pad(s, false, &buttons, 219,
-               NULL, 0, pad_hats, INPUT_PAD_VIEW_HATS);
+               axes[s], INPUT_PAD_VIEW_AXES, pad_hats, INPUT_PAD_VIEW_HATS);
          for (w = 0; w < ARRAY_SIZE(buttons.data); w++)
             down |= buttons.data[w];
          for (w = 0; w < INPUT_PAD_VIEW_HATS; w++)

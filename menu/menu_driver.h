@@ -603,6 +603,8 @@ struct menu_state
    uint32_t pads_marked;
    /* Each slot's buttons and hats down at the last scan, folded */
    uint32_t pad_down[MAX_INPUT_DEVICES];
+   /* The slots whose axes' rest is in pad_axis_rest, a bit each */
+   uint32_t pad_rest_known;
    menu_dialog_t dialog_st;
    enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
@@ -611,6 +613,12 @@ struct menu_state
 
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
+   /* Where each slot's axes were as the scan began: a trigger rests at
+    * one end, a stick in the middle */
+   int16_t pad_axis_rest[MAX_INPUT_DEVICES][INPUT_PAD_VIEW_AXES];
+   /* Each slot's axes half their range off that rest at the last scan,
+    * a bit each */
+   uint16_t pad_axis_off[MAX_INPUT_DEVICES];
 
    uint16_t flags;
 #ifdef HAVE_OVERLAY

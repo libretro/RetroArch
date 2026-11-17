@@ -1650,9 +1650,11 @@ typedef struct input_pointer_view
 const input_pointer_view_t *input_driver_pointer_view(void);
 
 /* What each connected controller holds down, a word a slot, into
- * @held[MAX_INPUT_DEVICES], read where this poll left it; returns the
+ * @held[MAX_INPUT_DEVICES], and where its axes are, into
+ * @axes[MAX_INPUT_DEVICES], read where this poll left it; returns the
  * slots that have a controller (input_driver.c) */
-uint32_t input_driver_pads_held(uint32_t *held);
+uint32_t input_driver_pads_held(uint32_t *held,
+      int16_t (*axes)[INPUT_PAD_VIEW_AXES]);
 
 /* A controller as the controller has it, for the capture of a bind:
  * each array that is given is filled - @buttons with whether each is
@@ -2254,9 +2256,11 @@ extern uint32_t input_devices_tagged;
 /* After the name of the controller in @port when another connected one
  * shows the same name: " [9f2b7e]", its tag; " [9f2b7e #2]" when the
  * other's tag is the same, in identity order; " (#2)", its place among
- * those of that name, with no identity. "" for a name of its own.
- * Returns strlcpy()'s. */
-size_t input_config_get_device_tag(unsigned port, char *s, size_t len);
+ * those of that name, with no identity - unless @slot_shown, where the
+ * row already numbers the slot and that is what tells them apart. ""
+ * for a name of its own. Returns strlcpy()'s. */
+size_t input_config_get_device_tag(unsigned port, bool slot_shown,
+      char *s, size_t len);
 
 
 /*****************************************************************************/

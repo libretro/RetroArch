@@ -556,11 +556,11 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # The tags that tell same-named controllers apart: the end of
-          # a pad's own serial or address, a placeholder one counting
-          # as none, else 6 hex digits of the identity hash, pinned to
-          # FNV-1a and to the menu's tags (a pad keeps its tag only
-          # while they stay as they are).
+          # The tags that tell same-named controllers apart: 6 hex
+          # digits of the identity hash - a pad's own serial or address,
+          # a placeholder one counting as none, else its port - showing
+          # no part of the serial, pinned to FNV-1a and to the menu's
+          # tags (a pad keeps its tag only while they stay as they are).
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/input/pad_tag clean check SANITIZER=address,undefined
           make -C samples/input/pad_tag clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine

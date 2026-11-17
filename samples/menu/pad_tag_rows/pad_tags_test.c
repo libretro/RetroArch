@@ -18,8 +18,9 @@
  * frame loop with the test joypad driver, whose script connects pads
  * named "(vid:pid) name@@port@@serial". Each phase checks the tag the
  * frontend gives each pad and the menu places that show it. Then,
- * while two pads share a name, a press of a pad's button marks its
- * rows "Pressed" for a second, on the menu's clock, the rows'
+ * while two pads share a name, a press of a pad's button or a pull of
+ * its trigger marks its rows "Pressed" for a second, on the menu's
+ * clock, the rows'
  * sublabels say a press finds one (never with Ozone), and Ozone's
  * footer hint is up on those pages only.
  * Requires a completed non-Qt build:
@@ -83,6 +84,11 @@
 #define F_PRESS_ADD    700
 #define F_PRESS_STALE  740
 #define F_PRESS_APART  780
+#define F_PULL         820
+/* the test driver's axis action for pad 1's axis 5, a trigger that
+ * rests at the far end, as XInput's and many HID pads' do */
+#define AXIS_P1_TRIGGER (1000 + 1 * 10 + 5)
+#define TRIGGER_REST    32769 /* -0x7fff as the driver's int16_t */
 /* button 10: no menu action is bound to it */
 #define BUTTON_10     1024
 
@@ -95,12 +101,12 @@
 #define ID_PORT1   0x8c6c6606UL
 #define ID_PORT2   0x8b6c6473UL
 #define ID_BT      0x3541d9beUL
-#define ID_SER11   0xad61c0ffUL
-#define ID_SER22   0xd271601fUL
+#define ID_SER11   0x98747233UL
+#define ID_SER22   0xfe49e169UL
 
 #define BT_ADDR    "A4:C1:38:9F:2B:7E"
-#define SER11      "AB-000123"
-#define SER22      "CD-000123"
+#define SER11      "SN-008437"
+#define SER22      "SN-005951"
 #define CLONE      "00:00:00:00:00:00"
 
 static unsigned failures;
@@ -137,6 +143,7 @@ static void write_script(FILE *f)
    step(f, F_CONNECT,    1, 0, PAD "@@port-1");
    step(f, F_CONNECT,    1, 1, PAD "@@port-2");
    step(f, F_CONNECT,    1, 2, "(045e:028e) Other Pad@@port-3");
+   step(f, 1, AXIS_P1_TRIGGER, TRIGGER_REST, NULL);
    step(f, F_SWAP_OUT,   2, 0, NULL);
    step(f, F_SWAP_OUT,   2, 1, NULL);
    step(f, F_SWAP_IN,    1, 0, PAD "@@port-2@@" CLONE);
@@ -175,6 +182,8 @@ static void write_script(FILE *f)
    step(f, F_PRESS_STALE + 2, 33, BUTTON_10, NULL);
    step(f, F_PRESS_APART,     17, BUTTON_10, NULL);
    step(f, F_PRESS_APART + 2, 33, BUTTON_10, NULL);
+   step(f, F_PULL,     AXIS_P1_TRIGGER, 0x7fff,       NULL);
+   step(f, F_PULL + 2, AXIS_P1_TRIGGER, TRIGGER_REST, NULL);
    fprintf(f, "]\n");
 }
 
@@ -211,11 +220,11 @@ static const char *with_tag(const char *fmt, unsigned long ident)
          tag = "9c309a";
          break;
       case ID_BT:
-         tag = "9f2b7e";
+         tag = "6e158d";
          break;
       case ID_SER11:
       case ID_SER22:
-         tag = "000123";
+         tag = "79849b";
          break;
    }
    snprintf(s, NAME_MAX_LENGTH, fmt, tag);
@@ -225,7 +234,7 @@ static const char *with_tag(const char *fmt, unsigned long ident)
 static void check_tag(unsigned slot, const char *want, const char *when)
 {
    char s[32];
-   input_config_get_device_tag(slot, s, sizeof(s));
+   input_config_get_device_tag(slot, false, s, sizeof(s));
    check(string_is_equal(s, want), "%s: slot %u's tag is \"%s\", not \"%s\"",
          when, slot, s, want);
 }
@@ -761,7 +770,7 @@ static void phase_serial(void)
          "a pad with an address");
 }
 
-/* Two serials ending alike, one tag: numbered in identity order,
+/* Two serials whose identities give one tag: numbered in identity order,
  * port-11's the lower, in either slot */
 static void phase_clash_order(void)
 {
@@ -801,14 +810,14 @@ static void phase_clash_tie(void)
    const char *own = input_config_get_device_phys(1);
 
    strlcpy(phys, own ? own : "", sizeof(phys));
-   input_config_set_device_ident(1, ID_SER22, "000123");
+   input_config_set_device_ident(1, ID_SER22, "79849b");
    check_tag(0, with_tag(" [%s #2]", ID_SER22), "one identity twice");
    check_tag(1, with_tag(" [%s #1]", ID_SER22), "one identity twice");
    input_config_set_device_phys(1, input_config_get_device_phys(0));
    check_tag(0, with_tag(" [%s #1]", ID_SER22), "one identity and path");
    check_tag(1, with_tag(" [%s #2]", ID_SER22), "one identity and path");
    input_config_set_device_phys(1, phys);
-   input_config_set_device_ident(1, ID_SER11, "000123");
+   input_config_set_device_ident(1, ID_SER11, "79849b");
 }
 
 /* No identity: the number */
@@ -823,6 +832,13 @@ static void phase_noid(void)
          "beside a pad with no identity");
    check_controllers(with_tag("Harness Pad [%s]", ID_SER22),
          "Harness Pad (#2)", "Other Pad", "a pad with no identity");
+   /* where the slot is numbered, its number tells it apart */
+   check_input_info(1, "Harness Pad", NULL, "a pad with no identity");
+   open_device_index_dropdown();
+   check(strncmp(row_path(dropdown_item(1)), "#2: Harness Pad", 15) == 0
+         && !strstr(row_path(dropdown_item(1)), "(#"),
+         "a pad with no identity: Device Index's dropdown lists slot 1 as"
+         " \"%s\"", row_path(dropdown_item(1)));
 }
 
 /* The name the menus show decides, not the driver's: as a profile's
@@ -843,7 +859,9 @@ static void phase_shown(void)
    check_tag(0, with_tag(" [%s]", ID_SER22), "two names shown as one");
    check_tag(1, with_tag(" [%s]", ID_PORT1), "two names shown as one");
    check_tag(2, "",         "beside two names shown as one");
-   check_input_info(1, with_tag("Wireless Pad [%s]", ID_PORT1),
+   /* the tag goes with the display name it tells apart, not the
+    * driver's name */
+   check_input_info(1, "Wireless Pad",
          with_tag("Harness Pad [%s]", ID_PORT1), "two names shown as one");
 }
 
@@ -1176,6 +1194,30 @@ static void lane_scan_leaves(void)
    menu_frame();
 }
 
+/* A trigger is a press too: pulled half its range from where it
+ * rests, the pad's row reads "Pressed". It has rested at the far end
+ * from the start, which marked nothing in the lanes before. */
+static void lane_press_trigger(void)
+{
+   char v[NAME_MAX_LENGTH];
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   open_controllers();
+   menu_frame();
+   forget_press(1);
+   run_until(F_PULL + 2);
+   check(menu_st->pad_pressed_us[1] != 0,
+         "a pulled trigger: no press seen on slot 1");
+   frame_at(menu_st->pad_pressed_us[1] + MENU_PAD_PRESSED_HOLD_US / 2);
+   row_value(row_of_type(MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1),
+         v, sizeof(v));
+   check(string_is_equal(v, PRESSED),
+         "a pulled trigger: slot 1's row reads \"%s\"", v);
+   check(!MENU_PAD_MARKED(menu_st, 0),
+         "a pulled trigger: slot 0 is marked too");
+   forget_press(1);
+}
+
 int main(int argc, char *argv[])
 {
    FILE *f;
@@ -1262,6 +1304,7 @@ int main(int argc, char *argv[])
    lane_press_apart();
    lane_share_remakes();
    lane_scan_leaves();
+   lane_press_trigger();
 
    filestream_delete(ratst_path);
    filestream_delete(cfg_path);

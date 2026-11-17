@@ -9756,21 +9756,40 @@ static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
    if (share)
    {
       uint32_t held[MAX_INPUT_DEVICES];
-      uint32_t named = input_driver_pads_held(held);
+      int16_t axes[MAX_INPUT_DEVICES][INPUT_PAD_VIEW_AXES];
+      uint32_t named = input_driver_pads_held(held, axes);
       unsigned s;
       for (s = 0; s < MAX_INPUT_DEVICES; s++)
       {
+         unsigned a;
+         uint16_t off = 0;
          if (!(named & (1u << s)))
          {
             menu_st->pad_pressed_us[s] = 0;
             menu_st->pad_down[s]       = 0;
+            menu_st->pad_axis_off[s]   = 0;
+            menu_st->pad_rest_known   &= ~(1u << s);
             continue;
+         }
+         /* an axis is pressed half its range from where it rested */
+         if (!(menu_st->pad_rest_known & (1u << s)))
+         {
+            memcpy(menu_st->pad_axis_rest[s], axes[s], sizeof(axes[s]));
+            menu_st->pad_rest_known |= 1u << s;
+         }
+         for (a = 0; a < INPUT_PAD_VIEW_AXES; a++)
+         {
+            int d = axes[s][a] - menu_st->pad_axis_rest[s][a];
+            if (d > 0x4000 || d < -0x4000)
+               off |= (uint16_t)(1u << a);
          }
          /* only a new press marks: a button left down (a shifter in
           * gear, a toggle) would hide the row's value */
-         if (held[s] & ~menu_st->pad_down[s])
+         if (     (held[s] & ~menu_st->pad_down[s])
+               || (off & ~menu_st->pad_axis_off[s]))
             menu_st->pad_pressed_us[s] = current_time;
-         menu_st->pad_down[s] = held[s];
+         menu_st->pad_down[s]     = held[s];
+         menu_st->pad_axis_off[s] = off;
          if (     menu_st->pad_pressed_us[s]
                && current_time - menu_st->pad_pressed_us[s]
                   < MENU_PAD_PRESSED_HOLD_US)
@@ -9782,7 +9801,9 @@ static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
       /* unread here, so a button down when marks are back is new, and
        * a press from before must not mark again */
       memset(menu_st->pad_down, 0, sizeof(menu_st->pad_down));
+      memset(menu_st->pad_axis_off, 0, sizeof(menu_st->pad_axis_off));
       memset(menu_st->pad_pressed_us, 0, sizeof(menu_st->pad_pressed_us));
+      menu_st->pad_rest_known = 0;
       menu_st->frame_work &= ~MENU_FRAME_WORK_PAD_FIND;
    }
    menu_st->pad_find_hint = share;

@@ -3111,8 +3111,13 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
       if (!name)
          continue;
       _len = strlcpy(name_buf, name, sizeof(name_buf));
-      if (_len < sizeof(name_buf))
-         input_config_get_device_tag(port, name_buf + _len,
+      /* the tag goes with the name it tells apart: the display name,
+       * where the controller has one of its own */
+      if (     _len < sizeof(name_buf)
+            && (   !input_config_get_device_display_name(port)
+                || string_is_equal(name,
+                      input_config_get_device_display_name(port))))
+         input_config_get_device_tag(port, true, name_buf + _len,
                sizeof(name_buf) - _len);
 
       /* Port and Device Name */
@@ -3141,7 +3146,7 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
             _len += strlcpy(entry + _len, display_name,
                   sizeof(entry) - _len);
             if (_len < sizeof(entry))
-               input_config_get_device_tag(port, entry + _len,
+               input_config_get_device_tag(port, true, entry + _len,
                      sizeof(entry) - _len);
          }
          else
@@ -9396,7 +9401,7 @@ static const char *menu_displaylist_controller_name(unsigned slot,
       name = input_config_get_device_display_name(slot);
    _len = strlcpy(s, name, len);
    if (_len < len)
-      input_config_get_device_tag(slot, s + _len, len - _len);
+      input_config_get_device_tag(slot, false, s + _len, len - _len);
    return s;
 }
 

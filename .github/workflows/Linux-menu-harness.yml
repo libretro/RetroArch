@@ -279,11 +279,12 @@ jobs:
         run: |
           set -eu
           # Two controllers shown with one name: each is told apart by
-          # a tag from its own identity (the end of its serial or
-          # address, else a hash of its port, never the slot), numbered
-          # when two tags are the same, "#N" with no identity. While two
-          # share a name, a press on a pad marks its rows "Pressed" for
-          # a second and the rows' sublabels say a
+          # a tag hashed from its own identity (its serial or address,
+          # none of which is shown, else its port, never the slot),
+          # numbered when two tags are the same, "#N" with no identity
+          # where no slot number is beside it. While two share a name,
+          # a press of a button or a pull of a trigger marks the pad's
+          # rows "Pressed" for a second and the rows' sublabels say a
           # press finds one, except in Ozone, whose footer hint is up on
           # the controller pages only. Test joypad pads through the real
           # frame loop. Shares the non-Qt build made above. --bridge

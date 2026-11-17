@@ -10784,7 +10784,8 @@ static size_t get_string_representation_input_device_index(
       /* with a name of its own, no call: one load and a bit */
       if (     (input_devices_tagged & (1u << map))
             && device_name && *device_name && _len < len)
-         _len += input_config_get_device_tag(map, s + _len, len - _len);
+         _len += input_config_get_device_tag(map, true, s + _len,
+               len - _len);
 
       /* several ports on one pad is allowed; say so, in case it is
        * not what was meant */

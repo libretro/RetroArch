@@ -2021,7 +2021,7 @@ bool input_autoconfigure_connect_uniq(
    uint32_t ident = input_pad_tag_ident(vid, pid, uniq, phys);
    return input_autoconfigure_connect_id(name, display_name, phys,
          driver, port, vid, pid, 0, ident,
-         input_pad_tag_text(ident, uniq, tag));
+         input_pad_tag_text(ident, tag));
 }
 
 /**

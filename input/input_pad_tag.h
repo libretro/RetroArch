@@ -23,9 +23,9 @@
 #include <boolean.h>
 #include <retro_inline.h>
 
-/* A controller's tag tells it from connected ones of its name: the
- * last 6 letters and digits of its own serial or Bluetooth address
- * (input_pad_tag_uniq()), else 6 hex digits of its identity hash. A
+/* A controller's tag tells it from connected ones of its name: 6 hex
+ * digits of its identity hash, which takes in its own serial or
+ * Bluetooth address where it has one, so no part of either is shown. A
  * controller keeps its tag across runs and versions only while the
  * hash and these rules stay as they are: do not change them without
  * reason. */
@@ -44,10 +44,10 @@ static INLINE uint32_t input_pad_tag_fnv1a(uint32_t h,
    return h;
 }
 
-/* @uniq's last INPUT_PAD_TAG_LEN letters and digits, lowercased, into
- * @s (INPUT_PAD_TAG_LEN + 1 bytes): a Bluetooth address's own half.
- * False with fewer, or all one character (a placeholder such as
- * 00:00:00:00:00:00): such a serial tells nothing apart. */
+/* Whether @uniq tells a controller apart: false with fewer than
+ * INPUT_PAD_TAG_LEN letters and digits, or its last INPUT_PAD_TAG_LEN
+ * all one character (a placeholder such as 00:00:00:00:00:00). @s
+ * (INPUT_PAD_TAG_LEN + 1 bytes) is worked in. */
 static INLINE bool input_pad_tag_uniq(const char *uniq, char *s)
 {
    size_t i;
@@ -94,17 +94,15 @@ static INLINE uint32_t input_pad_tag_ident(unsigned vid, unsigned pid,
    return h ? h : 1;
 }
 
-/* The tag of the controller input_pad_tag_ident() gave @ident from
- * @uniq, into @s (INPUT_PAD_TAG_LEN + 1 bytes); "" for no identity.
- * Returns @s. */
-static INLINE char *input_pad_tag_text(uint32_t ident, const char *uniq,
-      char *s)
+/* The tag of the controller input_pad_tag_ident() gave @ident, into
+ * @s (INPUT_PAD_TAG_LEN + 1 bytes); "" for no identity. Returns @s. */
+static INLINE char *input_pad_tag_text(uint32_t ident, char *s)
 {
    unsigned i;
    uint32_t h = ident;
    if (!ident)
       *s = '\0';
-   else if (!input_pad_tag_uniq(uniq, s))
+   else
    {
       /* murmur3's fmix32: ports a last character apart differ too */
       h ^= h >> 16;

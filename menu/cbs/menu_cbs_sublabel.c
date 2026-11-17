@@ -769,7 +769,7 @@ static int action_bind_sublabel_systeminfo_controller_entry_tagged(
    {
       size_t _len = strlcpy(name_buf, display_name, sizeof(name_buf));
       if (_len < sizeof(name_buf))
-         input_config_get_device_tag(port, name_buf + _len,
+         input_config_get_device_tag(port, true, name_buf + _len,
                sizeof(name_buf) - _len);
       display_name = name_buf;
    }
@@ -1194,7 +1194,7 @@ static int action_bind_sublabel_input_remap_port_tagged(
          ? input_config_get_device_name(user_idx)
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE))) - 1;
    if (_len < len)
-      input_config_get_device_tag(user_idx, s + _len, len - _len);
+      input_config_get_device_tag(user_idx, false, s + _len, len - _len);
 
    /* We can safely cache the sublabel here, since
     * frontend port index cannot change while the
