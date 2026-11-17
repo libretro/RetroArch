@@ -57,16 +57,17 @@ static void *ctr_joypad_init(void *data)
 
 static int32_t ctr_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   if (port_num >= DEFAULT_MAX_PADS)
+   /* the thirty-two pad_state holds; past them a shift would wrap */
+   if (port_num >= DEFAULT_MAX_PADS || joykey >= 32)
       return 0;
-   return (pad_state & (1 << joykey));
+   return (pad_state >> joykey) & 1;
 }
 
 static void ctr_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
    if (port_num < DEFAULT_MAX_PADS)
    {
-      BITS_COPY16_PTR( state, pad_state );
+      BITS_COPY32_PTR( state, pad_state );
    }
    else
       BIT256_CLEAR_ALL_PTR(state);
@@ -138,8 +139,8 @@ static int16_t ctr_joypad_state(
       const uint64_t joykey  = joykeys[i];
       const uint32_t joyaxis = joyaxes[i];
 
-      if ((uint16_t)joykey != NO_BTN &&
-            (pad_state & (1 << (uint16_t)joykey)))
+      if (joykey < 32 &&
+            ((pad_state >> joykey) & 1))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
             ((float)abs(ctr_joypad_axis_state(port_idx, joyaxis))

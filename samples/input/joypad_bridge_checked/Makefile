@@ -25,7 +25,10 @@ endif
 
 all: udev_checked_test linuxraw_checked_test sdl2_checked_test $(SDL3_TEST) \
      android_checked_test parport_checked_test sdl1_checked_test \
-     sdl_dingux_checked_test \
+     sdl_dingux_checked_test gekko_checked_test gekko_dol_checked_test \
+     gx_libogc_checked_test ps2_checked_test ps3_checked_test \
+     ps4_checked_test psp_checked_test vita_checked_test \
+     switch_checked_test ctr_checked_test qnx_checked_test xdk_checked_test \
      dinput_checked_test.exe xinput_checked_test.exe winmm_checked_test.exe
 
 sdl3_checked_test: sdl3_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/sdl3_joypad.c
@@ -65,6 +68,105 @@ sdl_dingux_checked_test: sdl_dingux_checked_test.c bridge_view.h stubs.c $(REPO_
 	   -o $@ sdl_dingux_checked_test.c stubs.c \
 	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c \
 	   $(REPO_ROOT)/input/common/output_writer.c
+
+# The consoles' drivers, built on the host against their platforms'
+# headers - the tree's own (os/gekko) or the SDK's fetched at a fixed
+# release - with the SDK calls their polls make answered by the tests,
+# and the host's identity shed so no Linux branch is taken.
+HOSTOFF    := -U__linux__ -U__gnu_linux__ -Ulinux -U__unix__ -U__unix -Uunix
+CONSOLE_CC := $(CC) -O1 -Wall -Wno-unused $(HOSTOFF) -DRARCH_INTERNAL \
+              -fsanitize=address,undefined -fno-sanitize-recover=all
+LIBOGC_TAG ?= v3.1.0
+LIBOGC_DIR ?= $(or $(TMPDIR),/tmp)/libogc-$(LIBOGC_TAG)
+
+$(LIBOGC_DIR)/gc/gccore.h:
+	rm -rf $(LIBOGC_DIR)
+	git -c advice.detachedHead=false clone -q --depth 1 \
+	   --branch $(LIBOGC_TAG) https://github.com/devkitPro/libogc $(LIBOGC_DIR)
+
+gekko_checked_test: gekko_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/gekko_joypad.c
+	$(CONSOLE_CC) -DGEKKO -DHW_RVL -I$(REPO_ROOT)/os/gekko/include $(INCS) \
+	   -o $@ gekko_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c
+
+gekko_dol_checked_test: gekko_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/gekko_joypad.c
+	$(CONSOLE_CC) -DGEKKO -DHW_DOL -I$(REPO_ROOT)/os/gekko/include $(INCS) \
+	   -o $@ gekko_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c
+
+gx_libogc_checked_test: gx_libogc_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/gx_joypad_libogc.c $(LIBOGC_DIR)/gc/gccore.h
+	$(CONSOLE_CC) -DGEKKO -DHW_RVL -DRARCH_CONSOLE -DHAVE_LIBOGC \
+	   -I$(LIBOGC_DIR)/gc -I$(REPO_ROOT)/tools/platform_stubs/gekko $(INCS) \
+	   -o $@ gx_libogc_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+# The Vita's controller headers: vitasdk's, at a fixed commit
+VITA_HEADERS_REV ?= c00157c2abd6dfa05c126e7f2f4efb29e8431ba6
+VITA_HEADERS     ?= $(or $(TMPDIR),/tmp)/vita-headers-$(VITA_HEADERS_REV)
+
+$(VITA_HEADERS)/include/psp2/ctrl.h:
+	rm -rf $(VITA_HEADERS)
+	git init -q $(VITA_HEADERS)
+	git -C $(VITA_HEADERS) fetch -q --depth 1 \
+	   https://github.com/vitasdk/vita-headers $(VITA_HEADERS_REV)
+	git -C $(VITA_HEADERS) -c advice.detachedHead=false checkout -q FETCH_HEAD
+
+ps2_checked_test: ps2_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/ps2_joypad.c
+	$(CONSOLE_CC) -DRARCH_CONSOLE -DPS2 -D_EE \
+	   -I$(REPO_ROOT)/tools/platform_stubs/ps2 $(INCS) \
+	   -o $@ ps2_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+ps3_checked_test: ps3_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/ps3_joypad.c
+	$(CONSOLE_CC) -DRARCH_CONSOLE -D__PS3__ -D__PSL1GHT__ \
+	   -I$(REPO_ROOT)/tools/platform_stubs/ps3 $(INCS) \
+	   -o $@ ps3_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+ps4_checked_test: ps4_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/ps4_joypad.c
+	$(CONSOLE_CC) -DRARCH_CONSOLE -DORBIS \
+	   -I$(REPO_ROOT)/tools/platform_stubs/orbis $(INCS) \
+	   -o $@ ps4_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+psp_checked_test: psp_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/psp_joypad.c
+	$(CONSOLE_CC) -DRARCH_CONSOLE -DPSP -D_POSIX_C_SOURCE=199309L \
+	   -I$(REPO_ROOT)/tools/platform_stubs/psp $(INCS) \
+	   -o $@ psp_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+vita_checked_test: psp_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/psp_joypad.c $(VITA_HEADERS)/include/psp2/ctrl.h
+	$(CONSOLE_CC) -DRARCH_CONSOLE -DVITA -DSN_TARGET_PSP2 \
+	   -I$(VITA_HEADERS)/include $(INCS) \
+	   -o $@ psp_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+switch_checked_test: switch_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/switch_joypad.c
+	$(CONSOLE_CC) -DRARCH_CONSOLE -DSWITCH -DHAVE_LIBNX -D__SWITCH__ \
+	   -I$(REPO_ROOT)/tools/platform_stubs/libnx $(INCS) \
+	   -o $@ switch_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+ctr_checked_test: ctr_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/ctr_joypad.c
+	$(CONSOLE_CC) -DRARCH_CONSOLE -D_3DS -D__3DS__ -DARM11 \
+	   -I$(REPO_ROOT)/tools/platform_stubs/ctr $(INCS) \
+	   -o $@ ctr_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+# QNX's input driver, whose devices are its pads, is built with it; the
+# SDK's headers are not public, so qnx_sdk/ names what it reaches for
+qnx_checked_test: qnx_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/qnx_joypad.c $(REPO_ROOT)/input/drivers/qnx_input.c $(wildcard qnx_sdk/*/*.h)
+	$(CONSOLE_CC) -DRARCH_CONSOLE -D__QNX__ -DHAVE_BB10 \
+	   -Iqnx_sdk -I$(REPO_ROOT)/tools/platform_stubs/qnx $(INCS) \
+	   -o $@ qnx_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+# The original Xbox's: its XDK is not public, so xdk_sdk/ names what the
+# driver reaches for
+xdk_checked_test: xdk_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/xdk_joypad.c xdk_sdk/xtl.h
+	$(CONSOLE_CC) -DRARCH_CONSOLE -D_XBOX -D_XBOX1 -Ixdk_sdk $(INCS) \
+	   -o $@ xdk_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
 
 # The web driver: emcc and node from an emsdk on the PATH
 EMCC ?= emcc
@@ -121,6 +223,18 @@ check: all
 	./parport_checked_test
 	./sdl1_checked_test
 	./sdl_dingux_checked_test
+	./gekko_checked_test
+	./gekko_dol_checked_test
+	./gx_libogc_checked_test
+	./ps2_checked_test
+	./ps3_checked_test
+	./ps4_checked_test
+	./psp_checked_test
+	./vita_checked_test
+	./switch_checked_test
+	./ctr_checked_test
+	./qnx_checked_test
+	./xdk_checked_test
 	./sdl2_checked_test
 	@if [ -n "$(SDL3_TEST)" ]; then ./sdl3_checked_test && ./sdl3_webos_reject_test; \
 	 else echo "[skip] sdl3_checked_test, sdl3_webos_reject_test: no SDL3 here (pkg-config sdl3, or SDL3_CFLAGS and SDL3_LIBS)"; fi
@@ -131,6 +245,10 @@ check: all
 clean:
 	rm -f udev_checked_test linuxraw_checked_test android_checked_test \
 	   parport_checked_test sdl1_checked_test sdl_dingux_checked_test \
+	   gekko_checked_test gekko_dol_checked_test gx_libogc_checked_test \
+	   ps2_checked_test ps3_checked_test ps4_checked_test psp_checked_test \
+	   vita_checked_test switch_checked_test ctr_checked_test qnx_checked_test \
+	   xdk_checked_test \
 	   rwebpad_checked_test.js rwebpad_checked_test.wasm \
 	   sdl2_checked_test sdl3_checked_test \
 	   sdl3_webos_reject_test \

@@ -242,6 +242,8 @@ static int32_t gx_joypad_button(unsigned port, uint16_t joykey)
     * The previous implementation returned the uint64_t mask directly,
     * which truncated to int32_t and reported "not pressed" for every
     * joykey >= 32 (i.e. every Wiimote/Classic/Nunchuk binding). */
+   if (joykey >= 64)
+      return 0;
    return (pad_state[port] & (UINT64_C(1) << joykey)) != 0;
 }
 
@@ -324,7 +326,7 @@ static int16_t gx_joypad_state(
       const uint64_t joykey  = joykeys[i];
       const uint32_t joyaxis = joyaxes[i];
       if (
-            (uint16_t)joykey != NO_BTN &&
+            joykey < 64 &&
             (pad_state[port_idx] & (UINT64_C(1) << joykey))
          )
          ret |= ( 1 << i);

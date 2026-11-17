@@ -71,16 +71,17 @@ static void *ps3_joypad_init(void *data)
 
 static int32_t ps3_joypad_button(unsigned port, uint16_t joykey)
 {
-   if (port >= DEFAULT_MAX_PADS)
+   /* the sixty-four pad_state holds; past them a shift is undefined */
+   if (port >= DEFAULT_MAX_PADS || joykey >= 64)
       return 0;
-   return pad_state[port] & (UINT64_C(1) << joykey);
+   return (pad_state[port] >> joykey) & 1;
 }
 
 static void ps3_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
    if (port_num < DEFAULT_MAX_PADS)
    {
-      BITS_COPY16_PTR( state, pad_state[port_num] );
+      BITS_COPY64_PTR( state, pad_state[port_num] );
    }
    else
       BIT256_CLEAR_ALL_PTR(state);
@@ -151,8 +152,8 @@ static int16_t ps3_joypad_state(
          const uint64_t joykey  = joykeys[i];
          const uint32_t joyaxis = joyaxes[i];
          if (
-               (uint16_t)joykey != NO_BTN
-               && pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey)
+               joykey < 64
+               && ((pad_state[port_idx] >> joykey) & 1)
             )
             ret |= ( 1 << i);
          else if (joyaxis != AXIS_NONE &&

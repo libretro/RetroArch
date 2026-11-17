@@ -1120,15 +1120,26 @@ void input_driver_set_snapshot_bridge(bool on)
  *   port rather than the one asked for; button() and state() read no
  *   further than the event holds.
  *
+ * - The consoles that keep a pad as a mask of buttons and a few stick
+ *   values, filled in their polls: gx (gekko_joypad.c, the native
+ *   GameCube/Wii driver, and gx_joypad_libogc.c), ps2, ps3, ps4, psp
+ *   and vita (psp_joypad.c), switch, ctr, qnx and xdk. Their button()
+ *   and state() shifted by any bind, past the bits the mask holds; they
+ *   read those bits now, and get_buttons() hands over all of them -
+ *   ps2's handed over none, ps3's, ps4's, psp's and the 3DS's sixteen
+ *   of wider masks. qnx and xdk had no get_buttons(); they have one
+ *   now, xdk's through the mapping button() makes. ps4's state() read
+ *   no axis binds; it reads them now, as the common loop does. None of
+ *   these has a hat: their d-pads are buttons.
+ *
  * - hid, with hidraw or WinUSB behind it: their handlers' state is
  *   what button(), axis() and get_buttons() answer, and they lend it.
  *   With a HID driver that does not lend, it is read directly.
  *
- * samples/input/joypad_bridge_checked holds udev, dinput, linuxraw,
- * sdl2, sdl3, android, winmm, parport, sdl, sdl_dingux, rwebpad and the
- * XInput-only driver to that: for random pads, binds
- * and thresholds, what the bridge would make of the driver's answers
- * is what the driver's own state() says.
+ * samples/input/joypad_bridge_checked holds every driver named here to
+ * that, the consoles' built on the host against their platforms'
+ * headers: for random pads, binds and thresholds, what the bridge would
+ * make of the driver's answers is what the driver's own state() says.
  *
  * Asked several times a frame, so the answer is kept with the driver
  * it was for. */
@@ -1154,6 +1165,16 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
              || string_is_equal(drv->ident, "sdl")
              || string_is_equal(drv->ident, "sdl_dingux")
              || string_is_equal(drv->ident, "rwebpad")
+             || string_is_equal(drv->ident, "gx")
+             || string_is_equal(drv->ident, "ps2")
+             || string_is_equal(drv->ident, "ps3")
+             || string_is_equal(drv->ident, "ps4")
+             || string_is_equal(drv->ident, "psp")
+             || string_is_equal(drv->ident, "vita")
+             || string_is_equal(drv->ident, "switch")
+             || string_is_equal(drv->ident, "ctr")
+             || string_is_equal(drv->ident, "qnx")
+             || string_is_equal(drv->ident, "xdk")
              /* HID's, where its HID driver lends its pads: the Mac's
               * does not, and its button() has pads its get_buttons()
               * does not */

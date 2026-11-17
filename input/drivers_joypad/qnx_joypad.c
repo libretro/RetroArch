@@ -44,6 +44,17 @@ static int32_t qnx_joypad_button(unsigned port, uint16_t joykey)
    return 0;
 }
 
+/* The buttons button() reads, all at once: the first twenty */
+static void qnx_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   qnx_input_t *qnx = (qnx_input_t*)input_driver_current_data();
+   BIT256_CLEAR_ALL_PTR(state);
+   if (!qnx || port >= DEFAULT_MAX_PADS)
+      return;
+   state->data[0] = (uint32_t)qnx->devices[port].buttons
+                  & ((UINT32_C(1) << 20) - 1);
+}
+
 static int16_t qnx_joypad_axis_state(
       qnx_input_t *qnx,
       qnx_input_device_t *controller,
@@ -152,7 +163,7 @@ input_device_driver_t qnx_joypad = {
    qnx_joypad_destroy,
    qnx_joypad_button,
    qnx_joypad_state,
-   NULL,
+   qnx_joypad_get_buttons,
    qnx_joypad_axis,
    qnx_joypad_poll,
    NULL, /* set_rumble */

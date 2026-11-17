@@ -81,9 +81,10 @@ static void *switch_joypad_init(void *data)
 
 static int32_t switch_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   if (port_num >= DEFAULT_MAX_PADS)
+   /* the sixteen button_state holds; past them a shift would wrap */
+   if (port_num >= DEFAULT_MAX_PADS || joykey >= 16)
       return 0;
-   return (button_state[port_num] & (1 << joykey));
+   return (button_state[port_num] >> joykey) & 1;
 }
 
 static void switch_joypad_get_buttons(unsigned port_num, input_bits_t *state)
@@ -164,8 +165,8 @@ static int16_t switch_joypad_state(
       const uint64_t joykey  = joykeys[i];
       const uint32_t joyaxis = joyaxes[i];
       if (
-               (uint16_t)joykey != NO_BTN
-            && (button_state[port_idx] & (1 << (uint16_t)joykey))
+               joykey < 16
+            && ((button_state[port_idx] >> joykey) & 1)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&

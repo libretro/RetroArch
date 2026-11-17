@@ -132,6 +132,21 @@ static int32_t xdk_joypad_button(unsigned port, uint16_t joykey)
    return xdk_joypad_button_state(pad, btn_word, port, joykey);
 }
 
+/* The buttons button() reads, all at once: the sixteen RetroPad ids it
+ * answers, each through the same mapping */
+static void xdk_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned i;
+   XINPUT_GAMEPAD *pad;
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port >= DEFAULT_MAX_PADS)
+      return;
+   pad = &(g_xinput_states[port].xstate.Gamepad);
+   for (i = 0; i < 16; i++)
+      if (xdk_joypad_button_state(pad, pad->wButtons, port, (uint16_t)i))
+         BIT256_SET_PTR(state, i);
+}
+
 static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
       unsigned port, uint32_t joyaxis)
 {
@@ -318,7 +333,7 @@ input_device_driver_t xdk_joypad = {
    xdk_joypad_destroy,
    xdk_joypad_button,
    xdk_joypad_state,
-   NULL,
+   xdk_joypad_get_buttons,
    xdk_joypad_axis,
    xdk_joypad_poll,
    NULL, /* set_rumble */
