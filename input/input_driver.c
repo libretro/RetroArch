@@ -1069,17 +1069,23 @@ void input_driver_set_snapshot_bridge(bool on)
  *   against the threshold as 32-bit integers, which agrees with the
  *   common loop at every threshold.
  *
- * - udev (udev_joypad.c) and linuxraw (linuxraw_joypad.c), Linux.
- *   get_buttons() hands over every button button() reads. udev pads
- *   can have more axes than a copy holds; those past the sixteenth are
- *   read from the driver.
+ * - udev (udev_joypad.c) and linuxraw (linuxraw_joypad.c), Linux. Both
+ *   keep each pad as a view their events fill in the poll, and lend
+ *   it. Their pads can have more axes than a view holds; those past the
+ *   sixteenth are read from the driver.
  *
  * - sdl2, sdl3 and sdl (SDL 1.2). get_buttons() walks the pad's buttons
  *   through the call button() makes, so SDL is asked once a poll.
  *
- * - android, winmm, parport, sdl_dingux and rwebpad (the web).
- *   get_buttons() hands over the buttons button() reads, of the ports
- *   it reads; android's and winmm's one hat answers through button().
+ * - android, parport and sdl_dingux keep each pad as a view filled in
+ *   their polls (android's in its input driver's events, a pad's row of
+ *   keys the bytes of its buttons) and lend it, through
+ *   input_pad_view.h as the consoles below do; android's one hat is
+ *   the view's.
+ *
+ * - winmm and rwebpad (the web). get_buttons() hands over the buttons
+ *   button() reads, of the ports it reads; winmm's one hat answers
+ *   through button().
  *
  * - The consoles: gx (gekko_joypad.c and gx_joypad_libogc.c), ps2, ps3,
  *   ps4, psp and vita (psp_joypad.c), switch, ctr, qnx, xdk, wiiu, mfi

@@ -24,24 +24,18 @@ void input_driver_set_platform_menu_button(bool down) { (void)down; }
 
 int main(void)
 {
-   unsigned n, i, bad = 0;
+   unsigned n, bad = 0;
 
    for (n = 0; n < 4000; n++)
    {
       dingux_joypad.connected = true;
-      dingux_joypad.pad_state = (uint16_t)bv_rand();
-      for (i = 0; i < 4; i++)
-      {
-         unsigned r = bv_rand() % 8;
-         dingux_joypad.analog_state[i >> 1][i & 1] = (r == 0) ? 0
-            : (r == 1) ? 0x7fff
-            : (r == 2) ? -0x7fff
-            : (r == 3) ? -0x8000
-            : (int16_t)bv_rand();
-      }
+      bv_fill_view(&dingux_joypad.view, 16, 4);
       /* the one pad there is, and the port past it */
       bad += bv_compare(&sdl_dingux_joypad, 0);
       bad += bv_compare(&sdl_dingux_joypad, 1);
+      bad += bv_compare_view(&sdl_dingux_joypad, 0);
+      if (sdl_dingux_joypad.view(1))
+         bad++;
    }
 
    if (bad)

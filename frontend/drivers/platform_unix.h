@@ -303,7 +303,6 @@ struct android_app
    bool     gravity_calibrated;
    char current_ime[NAME_MAX_LENGTH];
    bool input_alive;
-   int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
    int8_t hat_state[DEFAULT_MAX_PADS][2];
    jmethodID getIntent;
    jmethodID onRetroArchExit;

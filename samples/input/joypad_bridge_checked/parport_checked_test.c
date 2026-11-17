@@ -15,15 +15,18 @@ int main(void)
       struct parport_joypad *pad = &parport_pads[n % 3];
 
       pad->fd      = 1;
-      /* past the thirteen too: button() reads none of those */
-      pad->buttons = bv_rand();
+      /* the thirteen the poll fills */
+      bv_fill_view(&pad->view, PARPORT_NUM_BUTTONS, 0);
       bad += bv_compare(&parport_joypad, n % 3);
+      bad += bv_compare_view(&parport_joypad, n % 3);
    }
 
-   /* a port button() reads none of has no buttons */
+   /* a port button() reads none of has no buttons, and no view */
    {
       input_bits_t bits;
-      parport_pads[DEFAULT_MAX_PADS].buttons = 0xffffffff;
+      parport_pads[DEFAULT_MAX_PADS].view.buttons.data[0] = 0xffffffff;
+      if (parport_joypad.view(DEFAULT_MAX_PADS))
+         bad++;
       memset(&bits, 0xff, sizeof(bits));
       parport_joypad_get_buttons(DEFAULT_MAX_PADS, &bits);
       for (i = 0; i < 256; i++)

@@ -1,8 +1,10 @@
 /* The Android joypad driver, held to what the snapshot bridge assumes
  * of a driver it serves (see bridge_view.h). The driver is built into
- * griffin after android_input.c, whose key state and keycode bound it
- * reads, and against the platform's android_app; both are stood in for
- * here, with no JNI behind them, and filled by hand. */
+ * griffin after android_input.c, whose pad views it lends, and against
+ * the platform's android_app; both are stood in for here, with no JNI
+ * behind them, and the views filled as android_input.c fills them: a
+ * pad's keys set bit by bit in the bytes of its buttons, as its row of
+ * keys is written. */
 #include <stddef.h>
 #include "../../../input/input_driver.h"
 
@@ -32,7 +34,6 @@ struct android_app
    void *doVibrate;
    void *doVibrateUSB;
    void *doVibrateJoypad;
-   int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
    int8_t hat_state[DEFAULT_MAX_PADS][2];
    uint16_t rumble_last_strength_strong[DEFAULT_MAX_PADS];
    uint16_t rumble_last_strength_weak[DEFAULT_MAX_PADS];
@@ -43,11 +44,11 @@ struct android_app
 static struct android_app test_app;
 static struct android_app *g_android = &test_app;
 
-/* android_input.c's rows of key state, one a pad */
-static uint8_t test_key_state[DEFAULT_MAX_PADS + 1][(LAST_KEYCODE + 7) / 8];
-uint8_t *android_keyboard_state_get(unsigned port)
+/* android_input.c's pad views */
+static input_pad_view_t test_views[DEFAULT_MAX_PADS];
+struct input_pad_view *android_input_pad_view(unsigned port)
 {
-   return test_key_state[port];
+   return (port < DEFAULT_MAX_PADS) ? &test_views[port] : NULL;
 }
 
 #include "../../../input/drivers_joypad/android_joypad.c"
@@ -62,23 +63,24 @@ int main(void)
    {
       unsigned pad = n % 3;
 
-      for (i = 0; i < sizeof(test_key_state[pad]); i++)
-         test_key_state[pad][i] = (uint8_t)bv_rand();
-      /* past LAST_KEYCODE in the row's last byte: never set by the
-       * frontend, never read by button() */
-      test_key_state[pad][sizeof(test_key_state[pad]) - 1] |= 0xf8;
-      for (i = 0; i < 2; i++)
-         test_app.hat_state[pad][i] = (int8_t)((int)(bv_rand() % 3) - 1);
-      for (i = 0; i < MAX_AXIS; i++)
       {
-         unsigned r = bv_rand() % 8;
-         test_app.analog_state[pad][i] = (r == 0) ? 0
-                                       : (r == 1) ? 0x7fff
-                                       : (r == 2) ? -0x7fff
-                                       : (r == 3) ? -0x8000
-                                       : (int16_t)bv_rand();
+         /* the row of keys, written as android_key_state_write() does:
+          * bit by bit into the bytes, below LAST_KEYCODE */
+         uint8_t *row = (uint8_t*)test_views[pad].buttons.data;
+         memset(&test_views[pad], 0, sizeof(test_views[pad]));
+         for (i = 0; i < LAST_KEYCODE; i++)
+            if (bv_rand() & 1)
+               BIT_SET(row, i);
+         for (i = 0; i < LAST_KEYCODE; i++)
+            if (     (android_joypad.button(pad, (uint16_t)i) != 0)
+                  != (BIT_GET(row, i) != 0))
+               bad++;
       }
+      test_views[pad].hats = (uint16_t)(bv_rand() & 0xf);
+      for (i = 0; i < MAX_AXIS; i++)
+         test_views[pad].axes[i] = bv_rand_axis();
       bad += bv_compare(&android_joypad, pad);
+      bad += bv_compare_view(&android_joypad, pad);
    }
 
    /* a port past the pads the driver keeps has no buttons */
