@@ -31,6 +31,11 @@
 #define GetFileExInfoStandard 0
 #define FILE_ATTRIBUTE_DIRECTORY 16
 #define FILE_ATTRIBUTE_READONLY 1
+#define FILE_ATTRIBUTE_REPARSE_POINT 0x400
+#define MultiByteToWideChar mock_to_wide
+#define CP_UTF8 65001
+#define MAX_PATH 260
+#define __int64 int64_t
 #define RETRO_VFS_STAT_IS_VALID 1
 #define RETRO_VFS_STAT_IS_DIRECTORY 2
 #define RETRO_VFS_STAT_IS_READONLY 4
@@ -45,14 +50,16 @@ typedef struct
 {
    mock_dword dwFileAttributes;
    mock_filetime ftLastWriteTime;
+   mock_dword nFileSizeHigh;
+   mock_dword nFileSizeLow;
 } mock_attributes;
 struct mock_stat64
 {
    int64_t st_size;
 };
 static const char *original, *expected;
-static unsigned conversions, releases, attributes, stats;
-static int mode, fail_conversion, fail_attributes, fail_stat, dbcs;
+static unsigned conversions, releases, attributes, stats, stack_converts;
+static int mode, fail_conversion, fail_attributes, fail_stat, dbcs, reparse;
 
 int win32_needs_local_encoding(void)
 {
@@ -98,6 +105,19 @@ wchar_t *utf8_to_utf16_string_alloc(const char *path)
       native[i] = (unsigned char)path[i];
    return native;
 }
+/* Into the caller's stack buffer, where the path fits */
+int mock_to_wide(unsigned page, mock_dword flags, const char *path, int len,
+      wchar_t *buf, int n)
+{
+   size_t i, length = strlen(path);
+   assert(page == CP_UTF8 && !flags && len == -1 && path == original && !dbcs);
+   stack_converts++;
+   if (fail_conversion || (int)length + 1 > n)
+      return 0;
+   for (i = 0; i <= length; i++)
+      buf[i] = (unsigned char)path[i];
+   return (int)length + 1;
+}
 void mock_free(void *memory)
 {
    assert(memory);
@@ -124,8 +144,12 @@ int mock_attributes_w(const wchar_t *path, int kind, WIN32_FILE_ATTRIBUTE_DATA *
    check_wide(path);
    assert(!kind);
    attributes++;
-   data->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_READONLY;
+   data->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_READONLY
+         | (reparse ? FILE_ATTRIBUTE_REPARSE_POINT : 0);
    data->ftLastWriteTime.seconds = -123;
+   /* 8589934595, the size _wstat64 reports too */
+   data->nFileSizeHigh = 2;
+   data->nFileSizeLow  = 3;
    return !fail_attributes;
 }
 int mock_stat64(const char *path, struct mock_stat64 *data)
@@ -149,18 +173,50 @@ static void check(const char *path, const char *native)
 {
    int64_t size = 3, mtime = 4;
    int result;
+   /* The wide stat converts into a stack buffer, an allocation only
+    * for a path too long for it, and has the size from the attributes:
+    * _wstat64 only for a reparse point. The ANSI one allocates and
+    * stats as before. */
+#if PROFILE == 0
+   int wide = 1;
+#elif PROFILE == 1
+   int wide = 0;
+#else
+   int wide = !mode;
+#endif
+   int long_name = path && strlen(path) + 1 > MAX_PATH;
    original = path;
    expected = native;
-   conversions = releases = attributes = stats = 0;
+   conversions = releases = attributes = stats = stack_converts = 0;
    result = test_stat(path, &size, &mtime);
    if (!result)
       assert(size == 3 && mtime == 4);
    if (!path || !*path || !*native)
    {
-      assert(!result && !conversions && !releases && !attributes && !stats);
+      assert(!result && !conversions && !releases && !attributes && !stats
+            && !stack_converts);
       return;
    }
-   assert(conversions == 1);
+   if (wide)
+   {
+      assert(stack_converts == 1);
+      assert(conversions == (unsigned)(fail_conversion || long_name));
+      if (fail_conversion)
+      {
+         assert(!result && !releases && !attributes && !stats);
+         return;
+      }
+      assert(releases == (unsigned)long_name && attributes == 1);
+      if (fail_attributes)
+         assert(!result && !stats);
+      else if (reparse && fail_stat)
+         assert(!result && stats == 1);
+      else
+         assert(result == 7 && stats == (unsigned)reparse
+               && size == (int64_t)8589934595.0 && mtime == -123);
+      return;
+   }
+   assert(conversions == 1 && !stack_converts);
    if (fail_conversion)
       assert(!result && !releases && !attributes && !stats);
    else
@@ -206,6 +262,12 @@ int main(void)
       fail_stat = 1;
       check("file/", "file");
       fail_stat = 0;
+      /* A link: the target's size, from _wstat64 */
+      reparse = 1;
+      check("file/", "file");
+      fail_stat = 1;
+      check("file/", "file");
+      fail_stat = reparse = 0;
 #if PROFILE != 0
       if (mode || PROFILE == 1)
       {

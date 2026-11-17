@@ -17,6 +17,10 @@ source = (a.source or here.parents[2] / 'vfs/vfs_implementation.c').read_text(en
 start = source.index('#if defined(_WIN32) && !defined(VITA) && !defined(__PSL1GHT__) && !defined(__PS3__)')
 stop = source.index('/* One platform ladder', start)
 helpers = source[start:stop]
+# The wide name on the stack the wide stat converts into (vfs_wide)
+start = source.rindex('#if', 0, source.index('/* Room for a path in UTF-16 on the stack'))
+stop = source.index('#endif', source.index('static void vfs_wide_free', start)) + len('#endif')
+helpers = source[start:stop] + '\n' + helpers
 start = source.index('      /* Windows\n', source.index('static int retro_vfs_stat_full'))
 stop = source.index('#elif defined(GEKKO)', start)
 body = source[start:stop]
