@@ -678,10 +678,9 @@ static void *qnx_input_init(const char *joypad_driver)
 #ifdef HAVE_BB10
    qnx_discover_controllers(qnx);
 #else
-   /* Initialize Playbook keyboard. */
+   /* The PlayBook's keyboard: not a gamepad, so no profile to find */
    strlcpy_lit(qnx->devices[0].id, "0A5C-8502",
          sizeof(qnx->devices[0].id));
-   qnx_input_autodetect_gamepad(qnx, &qnx->devices[0]);
    qnx->pads_connected = 1;
 #endif
 

@@ -19,10 +19,9 @@
 #
 # Covered: input/drivers/qnx_input.c and
 # input/drivers_joypad/qnx_joypad.c, in the order the port's one
-# translation unit has them (griffin), with HAVE_BB10. Not covered: the
-# variant without HAVE_BB10, which calls a function only that define
-# provides; and qnx_ctx.c, platform_qnx.c and alsa_qsa.c, which use the
-# SDK's structures by their fields.
+# translation unit has them (griffin), with HAVE_BB10 and without it
+# (the PlayBook's). Not covered: qnx_ctx.c, platform_qnx.c and
+# alsa_qsa.c, which use the SDK's structures by their fields.
 set -eu
 
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -43,22 +42,25 @@ cat > "$tu" <<TU
 #include "$root/input/drivers_joypad/qnx_joypad.c"
 TU
 
-defs="-D__QNX__ -DHAVE_BB10 -DRARCH_INTERNAL -DRARCH_MOBILE -DHAVE_GRIFFIN
+defs="-D__QNX__ -DRARCH_INTERNAL -DRARCH_MOBILE -DHAVE_GRIFFIN
  -DHAVE_THREADS -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_MATERIALUI
  -DHAVE_OVERLAY -DHAVE_NETWORKING -DHAVE_ZLIB -DHAVE_DYNAMIC -DHAVE_DYLIB
  -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_CHEATS
  -DHAVE_SCREENSHOTS -DHAVE_LIBRETRODB -DHAVE_LANGEXTRA
  -DHAVE_VIDEO_FILTER -DHAVE_DSP_FILTER -D__LIBRETRO__"
 
-if ! $CC -fsyntax-only -std=gnu99 \
-      -Werror=implicit-function-declaration \
-      -Werror=incompatible-pointer-types \
-      $defs -isystem tools/qnx_standin \
-      -I. -Ilibretro-common/include -Ideps \
-      "$tu" > "$log" 2>&1
-then
-   grep -E 'error|note: ' "$log" | sed "s#$root/##g" | head -40
-   echo "FAIL qnx_standin_check: the QNX input drivers do not compile"
-   exit 1
-fi
-echo "PASS qnx_standin_check (qnx_input.c, qnx_joypad.c; HAVE_BB10; against stand-ins for the SDK)"
+for variant in "-DHAVE_BB10" ""; do
+   if ! $CC -fsyntax-only -std=gnu99 \
+         -Werror=implicit-function-declaration \
+         -Werror=incompatible-pointer-types \
+         $defs $variant -isystem tools/qnx_standin \
+         -I. -Ilibretro-common/include -Ideps \
+         "$tu" > "$log" 2>&1
+   then
+      grep -E 'error|note: ' "$log" | sed "s#$root/##g" | head -40
+      echo "FAIL qnx_standin_check: the QNX input drivers do not compile"\
+" (${variant:-without HAVE_BB10})"
+      exit 1
+   fi
+done
+echo "PASS qnx_standin_check (qnx_input.c, qnx_joypad.c; with and without HAVE_BB10; against stand-ins for the SDK)"
