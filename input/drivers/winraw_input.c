@@ -2054,6 +2054,7 @@ static void winraw_poll(void *data)
    crs_window.window      = 0;
    crs_window.generation  = 0;
    wr->focus              = winraw_focus;
+   wr->kb_focus           = false;
    /* The flag is the window's focus messages, and a video driver
     * restart can leave it saying unfocused while the window is in
     * front: the keyboard was then dead until the next Alt-Tab. When it
@@ -2062,16 +2063,18 @@ static void winraw_poll(void *data)
    if (!wr->focus)
    {
       HWND wnd            = (HWND)video_driver_window_get();
-      if (wnd && GetForegroundWindow() == wnd)
+      HWND front          = wnd ? GetForegroundWindow() : NULL;
+      if (front && front == wnd)
          wr->focus        = true;
-   }
-   wr->kb_focus           = wr->focus;
 #ifdef HAVE_VIDEO_WINDOWS
-   /* Keys and the mouse's buttons come in front of a screen's own
-    * window too */
-   if (!wr->kb_focus && win32_video_window_open(GetForegroundWindow()))
-      wr->kb_focus        = true;
+      /* Keys and the mouse's buttons come in front of a screen's own
+       * window too */
+      else if (front && input_config_get_video_windows_enable())
+         wr->kb_focus     = win32_video_window_open(front);
 #endif
+   }
+   if (wr->focus)
+      wr->kb_focus        = true;
 
    /* asked here for every report read below, and until the next poll */
    cursor_for_all = input_config_overlay_configured();

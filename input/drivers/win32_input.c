@@ -107,7 +107,7 @@ static void win32_input_poll(void *data)
    POINT pt;
    win32_input_t *w32 = (win32_input_t*)data;
    HWND hwnd          = (HWND)video_driver_window_get();
-   HWND front         = GetForegroundWindow();
+   HWND front         = hwnd ? GetForegroundWindow() : NULL;
    bool focused       = hwnd && front == hwnd;
 #if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
    input_video_window_t window;

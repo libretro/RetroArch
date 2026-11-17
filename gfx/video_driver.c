@@ -4975,7 +4975,8 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       uint32_t flags, bool redraw, retro_time_t now)
 {
    video_views_layout_params_t params;
-   video_windows_route_t route;
+   static const video_windows_route_t route_none;
+   const video_windows_route_t *route;
    unsigned i;
    unsigned forced            = video_st->windows_forced_attached
                               | video_st->windows_closed_attached;
@@ -5044,17 +5045,15 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    {
       video_windows_routes_t *box = &video_st->windows_routes;
       video_window_slot_take(&box->published, &box->held);
-      if (box->held)
-         route    = box->slot[box->held - 1];
-      else
-         memset(&route, 0, sizeof(route));
+      /* Read in place: held until this thread's next take */
+      route = box->held ? &box->slot[box->held - 1] : &route_none;
       /* An edit waits for the frame laid out with it */
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
-         out->settings[i].edit = route.edit[i];
+         out->settings[i].edit = route->edit[i];
       out->serial = video_st->windows_drawn;
       memset(out->ui, 0, sizeof(out->ui));
-      if (route.display)
-         out->window_ui[VIDEO_WINDOWS_PRESENTATION] = route.ui;
+      if (route->display)
+         out->window_ui[VIDEO_WINDOWS_PRESENTATION] = route->ui;
    }
    else
    {
@@ -5062,7 +5061,11 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       unsigned count;
       unsigned client = 0;
       const video_window_display_t *list;
-      memset(&route, 0, sizeof(route));
+      video_windows_routes_t *box = &video_st->windows_routes;
+      /* Laid out in the slot it is published in */
+      video_windows_route_t *lent = &box->slot[box->next];
+      memset(lent, 0, sizeof(*lent));
+      route        = lent;
       display_was = out->display;
       out->serial++;
       /* Read once, so placement and the UI agree */
@@ -5097,42 +5100,43 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
              | video_st->windows_closed_attached;
       if (list && !list[0].monitor)
          video_driver_windows_place(video_st, settings, list, count,
-               &in, &route);
+               &in, lent);
 #ifndef ANDROID
       else
          video_windows_resolve(list, count,
                (const char (*)[VIDEO_WINDOW_DISPLAY_NAME_SIZE])
                settings->arrays.video_screen_display, out->settings,
-               &route);
+               lent);
 #endif
-      video_driver_windows_ui(video_st, list, count, &route, &in, client,
+      video_driver_windows_ui(video_st, list, count, lent, &in, client,
             out);
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
-         route.edit[i] = video_st->windows_edit[i];
-      if (memcmp(&route, &video_st->windows_route, sizeof(route)))
+         lent->edit[i] = video_st->windows_edit[i];
+      if (memcmp(lent, &video_st->windows_route, sizeof(*lent)))
       {
-         video_st->windows_route = route;
-         video_driver_windows_route_publish(video_st);
+         video_st->windows_route = *lent;
+         video_window_slot_publish(&box->published, &box->next,
+               &box->last);
       }
    }
    out->restore     = video_st->windows_restore;
    out->retry       = video_st->windows_retry;
    video_windows_plan(&out->core, out->settings, true, true,
-         forced, (route.own || route.monitors) ? &route : NULL,
+         forced, (route->own || route->monitors) ? route : NULL,
          &out->plan);
    /* Each own window on its monitor */
-   if (route.monitors)
+   if (route->monitors)
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
          if (out->plan.separate_mask & (1u << i))
          {
             out->settings[i].mode    = VIDEO_WINDOW_SEPARATE;
-            out->settings[i].monitor = route.target[i];
+            out->settings[i].monitor = route->target[i];
          }
-   out->display     = route.display;
-   out->monitors    = route.monitors;
-   out->monitors_present = route.present;
-   out->window_keep = route.keep ? 1u << VIDEO_WINDOWS_PRESENTATION : 0;
-   out->logo        = route.logo;
+   out->display     = route->display;
+   out->monitors    = route->monitors;
+   out->monitors_present = route->present;
+   out->window_keep = route->keep ? 1u << VIDEO_WINDOWS_PRESENTATION : 0;
+   out->logo        = route->logo;
 #ifdef HAVE_GFX_WIDGETS
    /* Only the app thread loads it; a redraw shows what it has */
    out->logo_texture = redraw ? video_st->windows.logo_texture
@@ -5148,7 +5152,7 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
          if (out->plan.separate_mask & (1u << i))
             out->window_screens[i] = 1u << i;
    /* Game Screen 1's own window takes an id no screen's window has */
-   if (route.monitors && (out->plan.separate_mask & 1u))
+   if (route->monitors && (out->plan.separate_mask & 1u))
    {
       unsigned w = video_windows_spare_window(out->plan.separate_mask,
             out->core.num_screens);
@@ -5165,7 +5169,7 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    }
    out->window_named = 0;
    for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
-      if (out->window_screens[i] & route.named)
+      if (out->window_screens[i] & route->named)
          out->window_named |= 1u << i;
    if (!redraw)
       video_driver_windows_asked(video_st, out, display_was);
