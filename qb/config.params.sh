@@ -104,7 +104,6 @@ HAVE_LIBSMB=no             # Use a system libsmb2 for SMB in place of the built-
 # Video drivers
 HAVE_OPENGL=auto           # OpenGL 2.0 support
 HAVE_OPENGL_CORE=yes       # Modern OpenGL driver support (GLES3+/GL3.2 core+), requires OpenGL.
-C89_OPENGL_CORE=no
 HAVE_OPENGL1=yes           # OpenGL 1.1 support
 HAVE_OPENGLES=no           # Use GLESv2 instead of desktop GL
 HAVE_OPENGLES3=no          # OpenGLES3 support
@@ -114,7 +113,6 @@ HAVE_OPENGLES_LIBS=        # Link flags for custom GLES library
 HAVE_OPENGLES_CFLAGS=      # C-flags for custom GLES library
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
 HAVE_VULKAN=auto           # Vulkan support
-C89_VULKAN=no
 HAVE_VULKAN_DISPLAY=yes    # Vulkan KHR display backend support
 HAVE_OPENXR=no             # OpenXR headset output (Vulkan, or desktop GL on Linux; the vendored Khronos loader is built in-tree)
 C89_OPENXR=no
@@ -174,14 +172,12 @@ HAVE_GLSL=yes              # GLSL shaders support
 HAVE_CG=auto               # Cg shader support
 HAVE_HLSL=no               # HLSL9 shader support (for Direct3D9)
 HAVE_SLANG=auto            # slang support
-C89_SLANG=no
 HAVE_GLSLANG=no            # the system's glslang, next to rslc (requires C++11 and SPIRV-Cross)
 C89_GLSLANG=no
 HAVE_SPIRV_CROSS=no        # the system's SPIRV-Cross, next to rslc (requires C++11 and glslang)
 C89_SPIRV_CROSS=no
 HAVE_RSLC=yes              # rslc clean-room slang compiler (C89, libretro-common)
 HAVE_RECORD_VULKAN=auto    # Native desktop Vulkan H.264/AC-3 recording
-C89_RECORD_VULKAN=no
 
 # Audio drivers and resamplers
 HAVE_ALSA=auto             # ALSA support
