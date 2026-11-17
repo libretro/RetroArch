@@ -468,6 +468,12 @@ d3d_video "d3d12 XeSS backend" "$D3DDEFS -DHAVE_D3D12 -DHAVE_TEMPORAL_UPSCALER" 
    gfx/common/d3d12_xess.c
 d3d_video "d3d12 XeSS backend, no threads" \
    "$D3DDEFS -DHAVE_D3D12 -DHAVE_TEMPORAL_UPSCALER -UHAVE_THREADS" gfx/common/d3d12_xess.c
+# NVENC recording as a --disable-networking build has it: no
+# HAVE_NETWORKING and no HAVE_COMMAND, so nothing reaches command.h
+# through input_driver.h and the file has to include it itself.
+d3d_video "nvenc record, no networking" \
+   "$D3DDEFS -DHAVE_D3D12 -DHAVE_RAC3 -UHAVE_NETWORKING -UHAVE_COMMAND" \
+   record/drivers/record_nvenc.c
 # With the MP4 previews: frames from rh264's D3D11 video backend,
 # imported by D3D11 and D3D12 through shared handles and fences (11.4
 # interfaces from the bundled headers), and the backend itself.
