@@ -74,17 +74,21 @@ static int32_t wiiu_joypad_button(unsigned port, uint16_t joykey)
 
 static void wiiu_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-   input_device_driver_t *drv = wiiu_joypad_driver(port);
-   if (drv)
-      drv->get_buttons(port, state);
+   input_device_driver_t *drv;
+   if (port >= DEFAULT_MAX_PADS || !(drv = wiiu_joypad_driver(port)))
+   {
+      BIT256_CLEAR_ALL_PTR(state);
+      return;
+   }
+   drv->get_buttons(port, state);
 }
 
 static int16_t wiiu_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   input_device_driver_t *drv = wiiu_joypad_driver(port);
-   if (drv)
-      return drv->axis(port, joyaxis);
-   return 0;
+   input_device_driver_t *drv;
+   if (port >= DEFAULT_MAX_PADS || !(drv = wiiu_joypad_driver(port)))
+      return 0;
+   return drv->axis(port, joyaxis);
 }
 
 static int16_t wiiu_joypad_state(

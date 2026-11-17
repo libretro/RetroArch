@@ -234,11 +234,12 @@ static void wpad_destroy(void) { }
 
 static int32_t wpad_button(unsigned port, uint16_t joykey)
 {
-   if (wpad_query_pad(port))
+   if (joykey < 64 && wpad_query_pad(port))
    {
       VPADChan channel = wpad_to_gamepad_channel(port);
       if (channel >= 0)
-         return (joypad_state.wpad.pads[channel].button_state & (UINT64_C(1) << joykey));
+         return (int32_t)((joypad_state.wpad.pads[channel].button_state
+               >> joykey) & 1);
    }
    return 0;
 }
@@ -259,7 +260,7 @@ static void wpad_get_buttons(unsigned port, input_bits_t *state)
       return;
    }
 
-   BITS_COPY32_PTR(state, joypad_state.wpad.pads[channel].button_state);
+   BITS_COPY64_PTR(state, joypad_state.wpad.pads[channel].button_state);
 }
 
 static int16_t wpad_axis(unsigned port, uint32_t axis)

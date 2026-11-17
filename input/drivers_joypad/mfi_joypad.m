@@ -1212,19 +1212,27 @@ static int32_t apple_gamecontroller_joypad_button(
    else if (GET_HAT_DIR(joykey))
       return 0;
    else if (joykey < 32)
-      return ((mfi_buttons[port] & (1 << joykey)) != 0);
+      return (int32_t)((mfi_buttons[port] >> joykey) & 1);
    return 0;
 }
 
+/* All 32 bits: the home button sits past the RetroPad's sixteen */
 static void apple_gamecontroller_joypad_get_buttons(unsigned port,
       input_bits_t *state)
 {
-    BITS_COPY16_PTR(state, mfi_buttons[port]);
+    if (port >= DEFAULT_MAX_PADS)
+    {
+       BIT256_CLEAR_ALL_PTR(state);
+       return;
+    }
+    BITS_COPY32_PTR(state, mfi_buttons[port]);
 }
 
 static int16_t apple_gamecontroller_joypad_axis(
       unsigned port, uint32_t joyaxis)
 {
+    if (port >= DEFAULT_MAX_PADS)
+       return 0;
     if (AXIS_NEG_GET(joyaxis) < MAX_MFI_AXES)
     {
        int16_t axis = AXIS_NEG_GET(joyaxis);

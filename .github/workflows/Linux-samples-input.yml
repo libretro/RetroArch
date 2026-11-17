@@ -68,7 +68,7 @@ jobs:
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
 
-      - name: Build and run joypad_bridge_checked (udev, linuxraw, parport, SDL 1.2, Dingux, SDL2, Android and the consoles on the host; DirectInput, XInput, WinMM under Wine)
+      - name: Build and run joypad_bridge_checked (udev, linuxraw, parport, SDL 1.2, Dingux, SDL2, Android, the consoles and Apple MFi on the host; DirectInput, XInput, WinMM under Wine)
         shell: bash
         working-directory: samples/input/joypad_bridge_checked
         run: |

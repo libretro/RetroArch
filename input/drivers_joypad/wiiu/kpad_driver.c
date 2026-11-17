@@ -79,12 +79,12 @@ static void kpad_destroy(void)
 
 static int32_t kpad_button(unsigned port, uint16_t joykey)
 {
-   if (kpad_query_pad(port))
+   if (joykey < 64 && kpad_query_pad(port))
    {
       int channel = to_wiimote_channel(port);
       if (channel >= 0)
-         return (joypad_state.kpad.wiimotes[channel].button_state
-               & (UINT64_C(1) << joykey));
+         return (int32_t)((joypad_state.kpad.wiimotes[channel].button_state
+               >> joykey) & 1);
    }
    return 0;
 }
@@ -96,7 +96,7 @@ static void kpad_get_buttons(unsigned port, input_bits_t *state)
    if (!kpad_query_pad(port) || channel < 0)
       BIT256_CLEAR_ALL_PTR(state);
    else
-      BITS_COPY16_PTR(state, joypad_state.kpad.wiimotes[channel].button_state);
+      BITS_COPY64_PTR(state, joypad_state.kpad.wiimotes[channel].button_state);
 }
 
 static int16_t kpad_axis(unsigned port, uint32_t axis)

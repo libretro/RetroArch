@@ -1131,6 +1131,18 @@ void input_driver_set_snapshot_bridge(bool on)
  *   now, xdk's through the mapping button() makes. ps4's state() read
  *   no axis binds; it reads them now, as the common loop does. None of
  *   these has a hat: their d-pads are buttons.
+ * - wiiu, which hands each slot to the GamePad's, the Wiimotes' or USB
+ *   HID's driver. The first two shifted by any bind and returned the
+ *   bit where it lay, cut to 32; they read bits as the consoles above
+ *   do now, and hand over all 64 - the Wiimotes' handed over sixteen,
+ *   losing a Pro Controller's stick clicks. get_buttons() clears what
+ *   it is handed when no pad is there, and get_buttons() and axis()
+ *   answer for the ports button() does.
+ * - mfi, Apple's GameController pads. get_buttons() handed over sixteen
+ *   bits of 32, losing the home button; it hands over all of them, and
+ *   with axis() answers only for the ports button() does - past
+ *   MAX_USERS both read beyond their arrays. button() no longer shifts
+ *   a 1 into an int's sign bit. Its d-pad is buttons.
  *
  * - hid, with hidraw or WinUSB behind it: their handlers' state is
  *   what button(), axis() and get_buttons() answer, and they lend it.
@@ -1175,6 +1187,8 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
              || string_is_equal(drv->ident, "ctr")
              || string_is_equal(drv->ident, "qnx")
              || string_is_equal(drv->ident, "xdk")
+             || string_is_equal(drv->ident, "wiiu")
+             || string_is_equal(drv->ident, "mfi")
              /* HID's, where its HID driver lends its pads: the Mac's
               * does not, and its button() has pads its get_buttons()
               * does not */

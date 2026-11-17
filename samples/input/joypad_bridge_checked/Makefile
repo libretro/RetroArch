@@ -29,6 +29,7 @@ all: udev_checked_test linuxraw_checked_test sdl2_checked_test $(SDL3_TEST) \
      gx_libogc_checked_test ps2_checked_test ps3_checked_test \
      ps4_checked_test psp_checked_test vita_checked_test \
      switch_checked_test ctr_checked_test qnx_checked_test xdk_checked_test \
+     wiiu_checked_test mfi_checked_test \
      dinput_checked_test.exe xinput_checked_test.exe winmm_checked_test.exe
 
 sdl3_checked_test: sdl3_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/sdl3_joypad.c
@@ -168,6 +169,31 @@ xdk_checked_test: xdk_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/dr
 	   -o $@ xdk_checked_test.c stubs.c \
 	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
 
+# The Wii U's: its dispatcher and the GamePad, Wiimote and HID drivers
+# behind it, against the tree's own Wii U headers
+WIIU_DRIVERS := $(REPO_ROOT)/input/drivers_joypad/wiiu_joypad.c \
+   $(wildcard $(REPO_ROOT)/input/drivers_joypad/wiiu/*.c)
+wiiu_checked_test: wiiu_checked_test.c bridge_view.h stubs.c $(WIIU_DRIVERS) $(REPO_ROOT)/input/common/input_hid_common.c
+	$(CONSOLE_CC) -DRARCH_CONSOLE -DWIIU -D__WIIU__ -DHAVE_HID \
+	   -I$(REPO_ROOT)/os/wiiu/include -I$(REPO_ROOT)/tools/platform_stubs/wiiu $(INCS) \
+	   -o $@ wiiu_checked_test.c stubs.c \
+	   $(REPO_ROOT)/input/common/input_hid_common.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
+
+# Apple's GameController driver is Objective-C, but what the bridge reads
+# of it is plain C: those functions are lifted out of mfi_joypad.m as
+# they stand and built on the host
+MFI_SRC := $(REPO_ROOT)/input/drivers_joypad/mfi_joypad.m
+mfi_extract.inc: $(MFI_SRC)
+	awk '/^static int32_t apple_gamecontroller_joypad_button\(/{p=1} p{print} \
+	   p&&/^static int16_t apple_gamecontroller_joypad_state\(/{s=1} \
+	   p&&s&&/^}/{exit}' $(MFI_SRC) > $@
+	grep -q apple_gamecontroller_joypad_state $@
+mfi_checked_test: mfi_checked_test.c bridge_view.h mfi_extract.inc
+	$(CC) -O1 -Wall -Wno-unused -DRARCH_INTERNAL $(INCS) \
+	   -fsanitize=address,undefined -fno-sanitize-recover=all \
+	   -o $@ mfi_checked_test.c
+
 # The web driver: emcc and node from an emsdk on the PATH
 EMCC ?= emcc
 NODE ?= node
@@ -235,6 +261,8 @@ check: all
 	./ctr_checked_test
 	./qnx_checked_test
 	./xdk_checked_test
+	./wiiu_checked_test
+	./mfi_checked_test
 	./sdl2_checked_test
 	@if [ -n "$(SDL3_TEST)" ]; then ./sdl3_checked_test && ./sdl3_webos_reject_test; \
 	 else echo "[skip] sdl3_checked_test, sdl3_webos_reject_test: no SDL3 here (pkg-config sdl3, or SDL3_CFLAGS and SDL3_LIBS)"; fi
@@ -248,7 +276,7 @@ clean:
 	   gekko_checked_test gekko_dol_checked_test gx_libogc_checked_test \
 	   ps2_checked_test ps3_checked_test ps4_checked_test psp_checked_test \
 	   vita_checked_test switch_checked_test ctr_checked_test qnx_checked_test \
-	   xdk_checked_test \
+	   xdk_checked_test wiiu_checked_test mfi_checked_test mfi_extract.inc \
 	   rwebpad_checked_test.js rwebpad_checked_test.wasm \
 	   sdl2_checked_test sdl3_checked_test \
 	   sdl3_webos_reject_test \
