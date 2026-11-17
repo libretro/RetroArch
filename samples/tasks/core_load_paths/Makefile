@@ -11,7 +11,7 @@ MODES  := startup startup-always startup-outside startup-cached \
           probe load-core-start \
           load-core-moved load-core-broken null-load-core seed \
           seed-said runahead \
-          load-once park-ends builtin fw-stack
+          load-once park-ends builtin fw-stack fw-contentless
 
 all:
 	@MAKE_ARGS="$(MAKE_ARGS)" ./build.sh

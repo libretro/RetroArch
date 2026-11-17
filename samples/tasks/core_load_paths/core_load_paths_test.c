@@ -66,7 +66,7 @@ static char dir[256];
 static char ext[16];
 static char good_core[400];   /* never trusted before the mode trusts it */
 static char bad_core[400];    /* another build: never trusted */
-static char nc_core[400];     /* needs content: never trusted */
+static char nc_core[400];     /* needs content: untrusted until the mode trusts it */
 static char seeded[400];      /* in the first run's seed folder */
 static char broken[400];      /* a core file with no library */
 static char fw_core[400];     /* good_core's bytes; its info asks for firmware */
@@ -1115,6 +1115,34 @@ static void mode_fw_stack(void)
    CHECK(stack_size() == s, "a confirm on an info screen no longer pops it");
 }
 
+/* A contentless core whose probe is refused, after a core that needs
+ * content: its firmware is asked for before the warning */
+static void mode_fw_contentless(void)
+{
+   content_ctx_info_t info;
+   unsigned i;
+   snprintf(game, sizeof(game), "%s/title.bin", dir);
+   write_file(game);
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_new_core_from_menu(nc_core, game,
+            &info, CORE_TYPE_PLAIN, NULL, NULL), "the game was not started");
+   CHECK(wait_for(warning_up, 600), "no Security Warning for the content core");
+   CHECK(answer(CORE_WARNING_ALWAYS_TRUST), "Always Trust not taken");
+   CHECK(wait_for(is_plain, 600), "Always Trust did not run the content core");
+   CHECK(!runloop_state_get_ptr()->system.load_no_content,
+         "fixture: the content core did not clear load_no_content");
+
+   CHECK(task_push_load_contentless_core_from_menu(fw_core),
+         "the contentless load was not started");
+   CHECK(fw_wait_box(600) && !warning_up(),
+         "no firmware box before the warning for a contentless core");
+   fw_answer(MENU_ACTION_CANCEL);
+   for (i = 0; i < 600 && runloop_is_content_switching(); i++)
+      fw_pump(1);
+   CHECK(!runloop_is_content_switching(), "the cancelled load did not end");
+   CHECK(!warning_up(), "the cancelled load went on to the Security Warning");
+}
+
 #ifdef HAVE_NETWORKGAMEPAD
 static bool pad_runs(void) { return core_is(CORE_TYPE_NETRETROPAD); }
 
@@ -1901,6 +1929,8 @@ int main(int argc, char *argv[])
          mode_park_ends();
       else if (string_is_equal(mode, "fw-stack"))
          mode_fw_stack();
+      else if (string_is_equal(mode, "fw-contentless"))
+         mode_fw_contentless();
       else if (string_is_equal(mode, "builtin"))
 #ifdef HAVE_NETWORKGAMEPAD
          mode_builtin();

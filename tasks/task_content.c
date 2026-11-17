@@ -2255,12 +2255,14 @@ static bool content_load_firmware(struct content_load_job *job)
    if (firmware && firmware->downloading)
       return false;
 
+   /* A refused probe leaves load_no_content as the last core set it */
    if (!settings->bools.core_firmware_notification_enable
          || !menu_st->driver_data
-         || (string_is_empty(content)
-            && !runloop_state_get_ptr()->system.load_no_content)
          || !core_info_find(path_get(RARCH_PATH_CORE), &core)
-         || !core || !core->firmware_count)
+         || !core || !core->firmware_count
+         || (string_is_empty(content)
+            && !runloop_state_get_ptr()->system.load_no_content
+            && !(core->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)))
       return true;
 
    if (menu_st->dialog_st.confirm_cmd || menu_st->dialog_st.pending_cmd)
