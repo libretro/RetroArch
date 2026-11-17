@@ -23,6 +23,7 @@
 
 #include "hid_types.h"
 #include "../gamepad.h"
+#include "../input_pad_view.h"
 
 #include <wiiu/os.h>
 #include <wiiu/syshid.h>
@@ -55,24 +56,20 @@
 #define WIIU_ANALOG_FACTOR 0x7ff0
 #define WIIU_READ_STICK(stick) ((stick) * WIIU_ANALOG_FACTOR)
 
-struct _wiiu_pad_functions {
-   int16_t (*get_axis_value)(int32_t axis, int16_t state[3][2], bool is_negative);
-   void (*set_axis_value)(int16_t state[3][2], int16_t left_x, int16_t left_y,
-      int16_t right_x, int16_t right_y, int16_t touch_x, int16_t touch_y);
-   void (*read_axis_data)(uint32_t axis, axis_data *data);
-   void (*connect)(unsigned pad, input_device_driver_t *driver);
-};
+/* A GamePad's or a Wiimote's view (input_pad_view.h), as their polls
+ * fill it and lend it: axes 0-3 the sticks' x and y, 4 and 5 where the
+ * GamePad's screen is touched */
+#define WIIU_AXIS_TOUCH_X 4
+#define WIIU_AXIS_TOUCH_Y 5
 
 typedef struct _wiimote_state {
-   uint64_t button_state;
-   int16_t  analog_state[3][2];
+   input_pad_view_t view;
    uint8_t  type;
 } wiimote_state;
 
 typedef struct _drc_state
 {
-   uint64_t button_state;
-   int16_t  analog_state[3][2];
+   input_pad_view_t view;
 } drc_state;
 
 typedef struct wiiu_kpad {
@@ -102,7 +99,6 @@ typedef struct wiiu_joypad {
 } wiiu_joypad_t;
 
 extern wiiu_joypad_t joypad_state;
-extern wiiu_pad_functions_t pad_functions;
 extern input_device_driver_t wiiu_joypad;
 extern input_device_driver_t wpad_driver;
 extern input_device_driver_t kpad_driver;

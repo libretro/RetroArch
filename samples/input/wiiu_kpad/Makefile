@@ -19,12 +19,11 @@ ifneq ($(SAN),)
    LDFLAGS := -fsanitize=$(SAN) $(LDFLAGS)
 endif
 
-SOURCES := wiiu_kpad_test.c $(RARCH_DIR)/input/common/input_hid_common.c
+SOURCES := wiiu_kpad_test.c
 
 all: $(TARGET)
 
-$(TARGET): $(SOURCES) $(RARCH_DIR)/input/drivers_joypad/wiiu/kpad_driver.c \
-           $(RARCH_DIR)/input/drivers_joypad/wiiu/pad_functions.c
+$(TARGET): $(SOURCES) $(RARCH_DIR)/input/drivers_joypad/wiiu/kpad_driver.c
 	$(CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS)
 
 check: all

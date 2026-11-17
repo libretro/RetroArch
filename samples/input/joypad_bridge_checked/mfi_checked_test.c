@@ -3,21 +3,20 @@
  *
  * The driver is Objective-C against Apple's frameworks, but what the
  * bridge reads - its button(), get_buttons(), axis() and state() - is
- * plain C over the two arrays its poll fills. The Makefile lifts those
- * four functions out of mfi_joypad.m as they stand into mfi_extract.inc,
- * and they are built here on the host over arrays filled by hand as
- * that poll fills them: 32 bits of buttons, the home button past the
+ * plain C over the views its poll fills. The Makefile lifts those
+ * functions out of mfi_joypad.m as they stand into mfi_extract.inc, and
+ * they are built here on the host over views filled by hand as that
+ * poll fills them: 32 bits of buttons, the home button past the
  * RetroPad's sixteen, and six axes. */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
 #include "../../../input/input_driver.h"
+#include "../../../input/include/input_pad_view.h"
 
 /* As mfi_joypad.m has them */
-#define MAX_MFI_AXES 6
-static uint32_t mfi_buttons[MAX_USERS];
-static int16_t  mfi_axes[MAX_USERS][MAX_MFI_AXES];
+static input_pad_view_t mfi_pads[MAX_USERS];
 
 #include "mfi_extract.inc"
 
@@ -29,29 +28,22 @@ static input_device_driver_t mfi_lifted;
 
 int main(void)
 {
-   unsigned n, i, bad = 0;
+   unsigned n, bad = 0;
 
    mfi_lifted.query_pad   = mfi_query_pad;
    mfi_lifted.button      = apple_gamecontroller_joypad_button;
    mfi_lifted.state       = apple_gamecontroller_joypad_state;
    mfi_lifted.get_buttons = apple_gamecontroller_joypad_get_buttons;
    mfi_lifted.axis        = apple_gamecontroller_joypad_axis;
+   mfi_lifted.view        = apple_gamecontroller_joypad_view;
    mfi_lifted.ident       = "mfi";
 
    for (n = 0; n < 4000; n++)
    {
       unsigned pad     = n % 3;
-      mfi_buttons[pad] = bv_rand();
-      for (i = 0; i < MAX_MFI_AXES; i++)
-      {
-         unsigned r = bv_rand() % 8;
-         mfi_axes[pad][i] = (r == 0) ? 0
-            : (r == 1) ? 0x7fff
-            : (r == 2) ? -0x7fff
-            : (r == 3) ? -0x8000
-            : (int16_t)bv_rand();
-      }
+      bv_fill_view(&mfi_pads[pad], 32, 6);
       bad += bv_compare(&mfi_lifted, pad);
+      bad += bv_compare_view(&mfi_lifted, pad);
    }
 
    if (bad)

@@ -1081,13 +1081,14 @@ void input_driver_set_snapshot_bridge(bool on)
  *   get_buttons() hands over the buttons button() reads, of the ports
  *   it reads; android's and winmm's one hat answers through button().
  *
- * - The consoles, which keep a pad as a mask of buttons and a few stick
- *   values filled in their polls: gx (gekko_joypad.c and
- *   gx_joypad_libogc.c), ps2, ps3, ps4, psp and vita (psp_joypad.c),
- *   switch, ctr, qnx, xdk, wiiu (its GamePad, Wiimote and USB HID
- *   drivers alike), mfi (Apple's GameController pads) and dos, which
- *   reads no pad yet. button() reads only the bits the mask holds and
- *   get_buttons() hands over all of them; their d-pads are buttons.
+ * - The consoles: gx (gekko_joypad.c and gx_joypad_libogc.c), ps2, ps3,
+ *   ps4, psp and vita (psp_joypad.c), switch, ctr, qnx, xdk, wiiu, mfi
+ *   (Apple's GameController pads) and dos, which reads no pad yet. Each
+ *   keeps its pads as views filled in its poll (qnx's in its input
+ *   driver's events) and answers its reads from them through
+ *   input_pad_view.h, so the bridge reads the driver's own state and
+ *   copies nothing. Of wiiu's, the GamePad's and the Wiimotes' are
+ *   lent; USB HID's pads are copied.
  *
  * - hid, with hidraw or WinUSB behind it: their handlers' state is
  *   what button(), axis() and get_buttons() answer, and they lend it.

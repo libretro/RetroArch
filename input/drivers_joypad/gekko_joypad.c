@@ -29,6 +29,7 @@
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 #ifdef HW_RVL
 #include "../../gfx/video_driver.h"
 #endif
@@ -92,8 +93,9 @@ enum pad_kind
 
 #define BIT(n) (UINT64_C(1) << (n))
 
-static uint64_t          pad_state[DEFAULT_MAX_PADS];
-static int16_t           analog_state[DEFAULT_MAX_PADS][2][2];
+/* each pad as its poll left it, lent to the readers (input_pad_view.h):
+ * the GX_* buttons, axes 0-3 the sticks' x and y */
+static input_pad_view_t  gx_pads[DEFAULT_MAX_PADS];
 static uint8_t           pad_kind[DEFAULT_MAX_PADS];
 static volatile uint8_t  reset_pressed;
 static volatile uint8_t  power_pressed;
@@ -175,73 +177,44 @@ static bool gekko_joypad_query_pad(unsigned pad)
 
 static int32_t gekko_joypad_button(unsigned port, uint16_t joykey)
 {
-   if (port >= DEFAULT_MAX_PADS || joykey >= 64)
+   if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return (pad_state[port] & BIT(joykey)) != 0;
+   return input_pad_view_button(&gx_pads[port], joykey);
 }
 
 static void gekko_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
    if (port < DEFAULT_MAX_PADS)
-   {
-      BITS_COPY64_PTR(state, pad_state[port]);
-   }
+      *state = gx_pads[port].buttons;
    else
       BIT256_CLEAR_ALL_PTR(state);
 }
 
-static int16_t axis_value(unsigned port, unsigned axis)
-{
-   return axis < 2 ? analog_state[port][0][axis]
-      : analog_state[port][1][axis - 2];
-}
-
 static int16_t gekko_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int16_t v;
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   if (AXIS_NEG_GET(joyaxis) < 4)
-   {
-      v = axis_value(port, AXIS_NEG_GET(joyaxis));
-      return v < 0 ? v : 0;
-   }
-   if (AXIS_POS_GET(joyaxis) < 4)
-   {
-      v = axis_value(port, AXIS_POS_GET(joyaxis));
-      return v > 0 ? v : 0;
-   }
-   return 0;
+   return input_pad_view_axis(&gx_pads[port], joyaxis);
 }
 
 static int16_t gekko_joypad_state(rarch_joypad_info_t *joypad_info,
       const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port)
 {
-   unsigned i;
-   int16_t ret       = 0;
    uint16_t port_idx = joypad_info->joy_idx;
-
    if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if ((uint16_t)joykey != NO_BTN && joykey < 64
-            && (pad_state[port_idx] & BIT(joykey)))
-         ret |= (1 << i);
-      else if (joyaxis != AXIS_NONE
-            && ((float)abs(gekko_joypad_axis(port_idx, joyaxis)) / 0x8000)
-               > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-   return ret;
+   return input_pad_view_state(&gx_pads[port_idx], joypad_info,
+         joykeys, joyaxes);
 }
 
-static void gamecube_state(unsigned port, const gk_pad_t *p)
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *gekko_joypad_view(unsigned port)
 {
-   uint64_t *s = &pad_state[port];
+   return (port < DEFAULT_MAX_PADS) ? &gx_pads[port] : NULL;
+}
+
+static void gamecube_state(uint64_t *s, int16_t *axes, const gk_pad_t *p)
+{
    const uint64_t combo = BIT(GX_GC_START) | BIT(GX_GC_Z_TRIGGER)
       | BIT(GX_GC_L_TRIGGER) | BIT(GX_GC_R_TRIGGER);
    uint16_t b = p->buttons;
@@ -259,10 +232,10 @@ static void gamecube_state(unsigned port, const gk_pad_t *p)
    if ((b & GK_PAD_L) || p->trigger_l > 127) *s |= BIT(GX_GC_L_TRIGGER);
    if ((b & GK_PAD_R) || p->trigger_r > 127) *s |= BIT(GX_GC_R_TRIGGER);
 
-   analog_state[port][0][0] = (int16_t)(p->stick_x * 256);
-   analog_state[port][0][1] = (int16_t)(p->stick_y * -256);
-   analog_state[port][1][0] = (int16_t)(p->sub_x * 256);
-   analog_state[port][1][1] = (int16_t)(p->sub_y * -256);
+   axes[0] = (int16_t)(p->stick_x * 256);
+   axes[1] = (int16_t)(p->stick_y * -256);
+   axes[2] = (int16_t)(p->sub_x * 256);
+   axes[3] = (int16_t)(p->sub_y * -256);
 
    /* Start, Z, L and R together open the menu. */
    if ((*s & combo) == combo)
@@ -270,9 +243,8 @@ static void gamecube_state(unsigned port, const gk_pad_t *p)
 }
 
 #ifdef HW_RVL
-static void wiimote_state(unsigned port, const gk_wiimote_t *w)
+static void wiimote_state(uint64_t *s, int16_t *axes, const gk_wiimote_t *w)
 {
-   uint64_t *s = &pad_state[port];
    uint16_t b  = w->buttons;
    uint16_t e  = w->ext_buttons;
 
@@ -293,8 +265,8 @@ static void wiimote_state(unsigned port, const gk_wiimote_t *w)
       if (b & GK_WM_RIGHT) *s |= BIT(GX_WIIMOTE_RIGHT);
       if (e & GK_NC_Z)     *s |= BIT(GX_NUNCHUK_Z);
       if (e & GK_NC_C)     *s |= BIT(GX_NUNCHUK_C);
-      analog_state[port][0][0] = (int16_t)(w->stick[0][0] * 256);
-      analog_state[port][0][1] = (int16_t)(w->stick[0][1] * -256);
+      axes[0] = (int16_t)(w->stick[0][0] * 256);
+      axes[1] = (int16_t)(w->stick[0][1] * -256);
       return;
    }
 
@@ -311,9 +283,9 @@ static void wiimote_state(unsigned port, const gk_wiimote_t *w)
       if (e & GK_GH_DOWN)   *s |= BIT(GX_CLASSIC_DOWN);
       if (e & GK_GH_PLUS)   *s |= BIT(GX_CLASSIC_PLUS);
       if (e & GK_GH_MINUS)  *s |= BIT(GX_CLASSIC_MINUS);
-      analog_state[port][0][0] = (int16_t)(w->stick[0][0] * 256);
-      analog_state[port][0][1] = (int16_t)(w->stick[0][1] * -256);
-      analog_state[port][1][0] = (int16_t)(w->trigger[1] * 128);
+      axes[0] = (int16_t)(w->stick[0][0] * 256);
+      axes[1] = (int16_t)(w->stick[0][1] * -256);
+      axes[2] = (int16_t)(w->trigger[1] * 128);
       return;
    }
 
@@ -340,10 +312,10 @@ static void wiimote_state(unsigned port, const gk_wiimote_t *w)
       if (e & GK_CC_R)     *s |= BIT(GX_CLASSIC_R_TRIGGER);
       if (e & GK_CC_ZL)    *s |= BIT(GX_CLASSIC_ZL_TRIGGER);
       if (e & GK_CC_ZR)    *s |= BIT(GX_CLASSIC_ZR_TRIGGER);
-      analog_state[port][0][0] = (int16_t)(w->stick[0][0] * 256);
-      analog_state[port][0][1] = (int16_t)(w->stick[0][1] * -256);
-      analog_state[port][1][0] = (int16_t)(w->stick[1][0] * 256);
-      analog_state[port][1][1] = (int16_t)(w->stick[1][1] * -256);
+      axes[0] = (int16_t)(w->stick[0][0] * 256);
+      axes[1] = (int16_t)(w->stick[0][1] * -256);
+      axes[2] = (int16_t)(w->stick[1][0] * 256);
+      axes[3] = (int16_t)(w->stick[1][1] * -256);
    }
 }
 #endif
@@ -364,8 +336,8 @@ static void gekko_joypad_poll(void)
 #ifdef HW_RVL
    struct video_viewport vp = {0};
 #endif
-   uint64_t menu_keys;
-   unsigned port, i, j;
+   uint64_t menu_keys, pad0;
+   unsigned port, i;
 
    if (power_pressed)
    {
@@ -381,9 +353,11 @@ static void gekko_joypad_poll(void)
 
    for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
-      uint8_t kind = KIND_NONE;
-      pad_state[port] = 0;
-      memset(analog_state[port], 0, sizeof(analog_state[port]));
+      uint8_t kind        = KIND_NONE;
+      uint64_t bits       = 0;
+      input_pad_view_t *v = &gx_pads[port];
+      for (i = 0; i < 4; i++)
+         v->axes[i] = 0;
 #ifdef HW_RVL
       pointer[port].valid   = 0;
       pointer[port].buttons = 0;
@@ -391,7 +365,7 @@ static void gekko_joypad_poll(void)
 
       if (port < GK_PAD_PORTS && pads[port].connected)
       {
-         gamecube_state(port, &pads[port]);
+         gamecube_state(&bits, v->axes, &pads[port]);
          kind = KIND_GAMECUBE;
       }
 #ifdef HW_RVL
@@ -400,7 +374,7 @@ static void gekko_joypad_poll(void)
          gk_wiimote_t w;
          if (port < GK_WIIMOTE_SLOTS && !gk_wiimote_read(port, &w))
          {
-            wiimote_state(port, &w);
+            wiimote_state(&bits, v->axes, &w);
             kind = w.ext == GK_WM_EXT_NUNCHUK ? KIND_NUNCHUK
                : w.ext == GK_WM_EXT_CLASSIC ? KIND_CLASSIC
                : w.ext == GK_WM_EXT_GUITAR  ? KIND_GUITAR : KIND_WIIMOTE;
@@ -414,17 +388,17 @@ static void gekko_joypad_poll(void)
       if (kind != pad_kind[port])
          hotplug(port, kind);
 
-      for (i = 0; i < 2; i++)
-         for (j = 0; j < 2; j++)
-            if (analog_state[port][i][j] == -0x8000)
-               analog_state[port][i][j] = -0x7fff;
+      INPUT_PAD_VIEW_SET_BITS64(v, bits);
+      for (i = 0; i < 4; i++)
+         if (v->axes[i] == -0x8000)
+            v->axes[i] = -0x7fff;
    }
 
    /* The reset button opens the menu, as each pad's home does. */
    if (reset_pressed)
    {
       reset_pressed = 0;
-      pad_state[0] |= BIT(GX_GC_HOME);
+      BIT256_SET(gx_pads[0].buttons, GX_GC_HOME);
    }
 
    menu_keys = BIT(GX_GC_HOME);
@@ -432,7 +406,9 @@ static void gekko_joypad_poll(void)
    menu_keys |= BIT(GX_WIIMOTE_HOME) | BIT(GX_CLASSIC_HOME);
 #endif
    input_driver_set_platform_menu_button(false);
-   if (pad_state[0] & menu_keys)
+   pad0 = gx_pads[0].buttons.data[0]
+      | ((uint64_t)gx_pads[0].buttons.data[1] << 32);
+   if (pad0 & menu_keys)
       input_driver_set_platform_menu_button(true);
 }
 
@@ -492,4 +468,9 @@ input_device_driver_t gx_joypad = {
    NULL, /* get_sensor_input */
    gekko_joypad_name,
    "gx",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   gekko_joypad_view
 };

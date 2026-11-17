@@ -19,6 +19,7 @@ int main(void)
       if (BIT256_GET(bits, n % 256))
          bad++;
       bad += bv_compare(&dos_joypad, pad);
+      bad += bv_compare_view(&dos_joypad, pad);
    }
 
    if (bad)

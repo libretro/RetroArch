@@ -4,13 +4,12 @@
  * wiiu_joypad.c and the three drivers it hands a slot to - the GamePad's
  * (wpad), the Wiimotes' (kpad) and USB HID's (hidpad) - with their pad
  * state filled by hand as their polls fill it. The HID driver behind
- * hidpad is one of this test's, answering as a pad connection does;
- * the axes are decoded by the tree's input_hid_common.c. */
+ * hidpad is one of this test's, answering as a pad connection does.
+ * The GamePad and the Wiimotes lend their views; HID's pads are not. */
 #include "../../../input/drivers_joypad/wiiu_joypad.c"
 #include "../../../input/drivers_joypad/wiiu/wpad_driver.c"
 #include "../../../input/drivers_joypad/wiiu/kpad_driver.c"
 #include "../../../input/drivers_joypad/wiiu/hidpad_driver.c"
-#include "../../../input/drivers_joypad/wiiu/pad_functions.c"
 
 #include "bridge_view.h"
 
@@ -159,16 +158,12 @@ int main(void)
       switch (pad)
       {
          case SLOT_WPAD:
-            joypad_state.wpad.pads[0].button_state = rand_mask();
-            for (i = 0; i < 4; i++)
-               joypad_state.wpad.pads[0].analog_state[i >> 1][i & 1] =
-                  rand_axis();
+            /* the sticks and where the screen is touched */
+            bv_fill_view(&joypad_state.wpad.pads[0].view, 64,
+                  WIIU_AXIS_TOUCH_Y + 1);
             break;
          case SLOT_KPAD:
-            joypad_state.kpad.wiimotes[2].button_state = rand_mask();
-            for (i = 0; i < 4; i++)
-               joypad_state.kpad.wiimotes[2].analog_state[i >> 1][i & 1] =
-                  rand_axis();
+            bv_fill_view(&joypad_state.kpad.wiimotes[2].view, 64, 4);
             break;
          case SLOT_HID:
             hid_buttons = rand_mask();
@@ -179,6 +174,11 @@ int main(void)
             break;
       }
       bad += bv_compare(&wiiu_joypad, pad);
+      /* the GamePad and the Wiimote lend theirs; HID's pads are copied */
+      if (pad == SLOT_WPAD || pad == SLOT_KPAD)
+         bad += bv_compare_view(&wiiu_joypad, pad);
+      else if (wiiu_joypad.view(pad))
+         bad++;
    }
 
    if (bad)

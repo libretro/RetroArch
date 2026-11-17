@@ -20,23 +20,15 @@ u32 ioPadSetActDirect(u32 port, padActParam *act) { (void)port; (void)act; retur
 
 int main(void)
 {
-   unsigned n, i, bad = 0;
+   unsigned n, bad = 0;
 
    for (n = 0; n < 4000; n++)
    {
       /* as many pads as the platform keeps, up to three */
       unsigned pad   = n % ((DEFAULT_MAX_PADS < 3) ? DEFAULT_MAX_PADS : 3);
-      pad_state[pad] = ((uint64_t)bv_rand() << 32) | bv_rand();
-      for (i = 0; i < 2 * 2; i++)
-      {
-         unsigned r = bv_rand() % 8;
-         analog_state[pad][i >> 1][i & 1] = (r == 0) ? 0
-            : (r == 1) ? 0x7fff
-            : (r == 2) ? -0x7fff
-            : (r == 3) ? -0x8000
-            : (int16_t)bv_rand();
-      }
+      bv_fill_view(&ps3_pads[pad], 64, 4);
       bad += bv_compare(&ps3_joypad, pad);
+      bad += bv_compare_view(&ps3_joypad, pad);
    }
 
    if (bad)

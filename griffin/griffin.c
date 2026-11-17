@@ -1011,7 +1011,6 @@ INPUT
 #include "../input/drivers_joypad/wiiu/hidpad_driver.c"
 #include "../input/drivers_joypad/wiiu/kpad_driver.c"
 #include "../input/drivers_joypad/wiiu/wpad_driver.c"
-#include "../input/drivers_joypad/wiiu/pad_functions.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
 #ifdef _XBOX1

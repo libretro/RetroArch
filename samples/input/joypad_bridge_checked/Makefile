@@ -173,11 +173,10 @@ xdk_checked_test: xdk_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/dr
 # behind it, against the tree's own Wii U headers
 WIIU_DRIVERS := $(REPO_ROOT)/input/drivers_joypad/wiiu_joypad.c \
    $(wildcard $(REPO_ROOT)/input/drivers_joypad/wiiu/*.c)
-wiiu_checked_test: wiiu_checked_test.c bridge_view.h stubs.c $(WIIU_DRIVERS) $(REPO_ROOT)/input/common/input_hid_common.c
+wiiu_checked_test: wiiu_checked_test.c bridge_view.h stubs.c $(WIIU_DRIVERS)
 	$(CONSOLE_CC) -DRARCH_CONSOLE -DWIIU -D__WIIU__ -DHAVE_HID \
 	   -I$(REPO_ROOT)/os/wiiu/include -I$(REPO_ROOT)/tools/platform_stubs/wiiu $(INCS) \
 	   -o $@ wiiu_checked_test.c stubs.c \
-	   $(REPO_ROOT)/input/common/input_hid_common.c \
 	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -lm
 
 # Apple's GameController driver is Objective-C, but what the bridge reads

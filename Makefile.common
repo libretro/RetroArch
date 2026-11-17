@@ -1250,7 +1250,6 @@ ifeq ($(TARGET), retroarch_wiiu)
 	   input/drivers_joypad/wiiu_joypad.o \
 	   input/drivers_joypad/wiiu/wpad_driver.o \
 	   input/drivers_joypad/wiiu/kpad_driver.o \
-	   input/drivers_joypad/wiiu/pad_functions.o \
 	   audio/drivers/wiiu_audio.o \
 	   frontend/drivers/platform_wiiu.o
 

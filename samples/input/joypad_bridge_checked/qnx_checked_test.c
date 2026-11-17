@@ -73,7 +73,10 @@ int main(void)
          device->analog1[i] = (r == 0) ? 0 : (r == 1) ? 0x7fff
             : (r == 2) ? -0x7fff : (r == 3) ? -0x8000 : (int16_t)bv_rand();
       }
+      /* as the gamepad event leaves it */
+      qnx_controller_view(device);
       bad += bv_compare(&qnx_joypad, pad);
+      bad += bv_compare_view(&qnx_joypad, pad);
    }
 
    if (bad)

@@ -125,6 +125,16 @@ static int16_t wiiu_joypad_state(
    return ret;
 }
 
+/* The view of the driver behind @pad, where it lends one: the
+ * GamePad's and the Wiimotes' do, USB HID's pads are copied */
+static const input_pad_view_t *wiiu_joypad_view(unsigned pad)
+{
+   input_device_driver_t *drv;
+   if (pad >= DEFAULT_MAX_PADS || !(drv = wiiu_joypad_driver(pad)))
+      return NULL;
+   return drv->view ? drv->view(pad) : NULL;
+}
+
 static void wiiu_joypad_poll(void)
 {
    wpad_driver.poll();
@@ -156,4 +166,9 @@ input_device_driver_t wiiu_joypad =
   NULL, /* get_sensor_input */
   wiiu_joypad_name,
   "wiiu",
+  NULL, /* get_bt_host */
+  NULL, /* set_bt_host */
+  NULL, /* survives_video */
+  NULL, /* set_player */
+  wiiu_joypad_view
 };

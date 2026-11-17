@@ -42,7 +42,23 @@ int main(void)
          *thumbs[i] = (r == 0) ? 0 : (r == 1) ? 0x7fff : (r == 2) ? -0x7fff
                     : (r == 3) ? -0x8000 : (SHORT)bv_rand();
       }
+      /* as the poll leaves it */
+      xdk_joypad_make_view(&g_xinput_states[pad]);
       bad += bv_compare(&xdk_joypad, pad);
+      bad += bv_compare_view(&xdk_joypad, pad);
+      /* and what the view says is the pad's: a face button, the d-pad
+       * as hat 0, a stick's far end held off -0x8000 */
+      if (     (xdk_joypad.button(pad, RETRO_DEVICE_ID_JOYPAD_A) != 0)
+            != (gp->bAnalogButtons[XINPUT_GAMEPAD_B]
+                  > XINPUT_GAMEPAD_MAX_CROSSTALK))
+         bad++;
+      if (     (xdk_joypad.button(pad, HAT_MAP(0, HAT_LEFT_MASK)) != 0)
+            != ((gp->wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0))
+         bad++;
+      if (     xdk_joypad.axis(pad, AXIS_NEG(0))
+            != ((gp->sThumbLX == -0x8000) ? -0x7fff
+               : (gp->sThumbLX < 0) ? gp->sThumbLX : 0))
+         bad++;
    }
 
    if (bad)
