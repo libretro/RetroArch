@@ -603,6 +603,9 @@ static int runahead_copy_step(struct retro_vfs_copy_handle *copy)
    return -1;
 }
 
+/* Coprime to 100000 (prime, neither 2 nor 5) */
+#define RUNAHEAD_NAME_STRIDE 7919u
+
 /* Opens a VFS copy to a randomly named destination under @tmp_path,
  * used when the plain basename is taken (another instance holds it).
  * Only begin() runs here: no bytes move, so this cannot block.
@@ -618,9 +621,11 @@ static struct retro_vfs_copy_handle *copy_begin_with_random_name(
    const char *prefix       = "tmp";
    char *ext                = NULL;
    time_t time_value        = time(NULL);
-   /* The generator's state, advanced for every candidate: unsigned,
-    * so the wrap is defined. */
-   uint32_t lcg             = (uint32_t)time_value;
+   /* The first candidate's number, from the time; each next one steps
+    * by a stride coprime to the 100000 names, so no two tries repeat.
+    * Unsigned, so the wrap is defined. */
+   uint32_t lcg             = (uint32_t)time_value * 214013u + 2531011u;
+   unsigned number          = (lcg >> 14) % 100000u;
    const char *src          = path_get_extension(*temp_dll_path);
 
    if (src)
@@ -647,9 +652,8 @@ static struct retro_vfs_copy_handle *copy_begin_with_random_name(
    /* Try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
    {
-      unsigned number;
-      lcg    = lcg * 214013u + 2531011u;
-      number = (lcg >> 14) % 100000u;
+      if (i)
+         number = (number + RUNAHEAD_NAME_STRIDE) % 100000u;
 
       snprintf(number_buf, sizeof(number_buf), "%05u", number);
 

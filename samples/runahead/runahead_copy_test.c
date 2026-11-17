@@ -285,8 +285,20 @@ static bool runahead_tmp_dir_private(const char *dir)
    return tmp_dir_private;
 }
 
+/* The fragment's clock, which seeds its temporary names: pinned, so a
+ * case can try the seconds a name generator would trip on. */
+static time_t test_now = 1763300000;
+static time_t test_time(time_t *t)
+{
+   if (t)
+      *t = test_now;
+   return test_now;
+}
+
 /* The fragment, verbatim from runahead.c. */
+#define time(t) test_time(t)
 #include "runahead_copy_fragment.c"
+#undef time
 /* The preempt analog-mask bit rule, verbatim from runahead.c. */
 #include "preempt_mask_fragment.c"
 /* The dense input cache and the preempt slab, verbatim from runahead.c. */
@@ -480,6 +492,47 @@ static void t_lcg_all_fail(void)
    CHECK(!copy, "a copy was opened with every candidate refused");
    CHECK(dst_count == 30, "%u attempts, expected 30", dst_count);
    free(tmp);
+}
+
+/* Every one of the 30 tries is a name not tried before, whatever second
+ * seeds them: the seeds include ones where a generator stepping its own
+ * state repeats a name within five tries, and a sweep around them. */
+static void t_lcg_names_distinct(void)
+{
+   static const time_t seeds[] = { 1763301810, 1763302847, 1763309908,
+      1763319426, 1763354342 };
+   time_t   saved = test_now;
+   unsigned s, i, j, repeats = 0, first = 0;
+   time_t   bad   = 0;
+   printf("   lcg_names_distinct: 30 distinct names for every seed\n");
+   for (s = 0; s < sizeof(seeds) / sizeof(seeds[0]) + 4000; s++)
+   {
+      char *tmp = strdup("core_libretro.so");
+      struct retro_vfs_copy_handle *copy;
+      test_now = s < sizeof(seeds) / sizeof(seeds[0])
+         ? seeds[s] : (time_t)1763300000 + (time_t)s * 7;
+      reset_fs();
+      refuse_opens = 1000;
+      copy = copy_begin_with_random_name(&tmp, "/tmpdir",
+            "/cores/core_libretro.so");
+      if (copy)
+         filestream_copy_close(copy);
+      for (i = 0; i < dst_count; i++)
+         for (j = i + 1; j < dst_count; j++)
+            if (!strcmp(dst_paths[i], dst_paths[j]))
+            {
+               if (!repeats++)
+               {
+                  bad   = test_now;
+                  first = j;
+               }
+            }
+      free(tmp);
+   }
+   test_now = saved;
+   reset_fs();
+   CHECK(!repeats, "%u repeated names; seed %ld repeats one at try %u",
+         repeats, (long)bad, first + 1);
 }
 
 /* The protocol: poll pushes a task; the task runs in task_queue_check;
@@ -919,6 +972,7 @@ int main(void)
    t_preempt_slab();
    t_lcg_names();
    t_lcg_all_fail();
+   t_lcg_names_distinct();
    t_copy_protocol();
    t_open_refused();
    t_generation_discard();
