@@ -2266,7 +2266,12 @@ static bool content_load_firmware(struct content_load_job *job)
       return true;
 
    if (menu_st->dialog_st.confirm_cmd || menu_st->dialog_st.pending_cmd)
+   {
+      /* Show the confirm this waits behind */
+      if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+         retroarch_menu_running();
       return false;
+   }
 
    if (!firmware)
    {

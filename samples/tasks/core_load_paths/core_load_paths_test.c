@@ -1143,6 +1143,56 @@ static void mode_fw_contentless(void)
    CHECK(!warning_up(), "the cancelled load went on to the Security Warning");
 }
 
+static bool reset_confirm_shown(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   return (menu_st->flags & MENU_ST_FLAG_ALIVE)
+      && menu_st->dialog_st.confirm_msg == MSG_PRESS_AGAIN_TO_RESET;
+}
+
+/* A confirm set while the menu was closed: a staged load waiting
+ * behind it opens the menu, then shows its firmware box */
+static void mode_fw_hidden_confirm(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   content_ctx_info_t info;
+   char other[300];
+   dylib_t handle;
+   unsigned i;
+   staged_trust(good_core);
+   snprintf(game, sizeof(game), "%s/title.bin", dir);
+   write_file(game);
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(good_core, game,
+            "title", &info, NULL, NULL), "the playlist Run was not started");
+   CHECK(wait_for(good_runs_game, 600), "the playlist Run did not run");
+   if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!(menu_st->flags & MENU_ST_FLAG_ALIVE), "the menu did not close");
+
+   menu_dialog_confirm_set(menu_st, MSG_PRESS_AGAIN_TO_RESET, CMD_EVENT_RESET);
+   handle = runloop_state_get_ptr()->lib_handle;
+   snprintf(other, sizeof(other), "%s/other.bin", dir);
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_new_core_from_companion_ui(fw_core,
+            other, NULL, NULL, NULL, &info, NULL, NULL),
+         "the companion load was not started");
+   CHECK(wait_for(reset_confirm_shown, 5),
+         "the load waits behind a confirm the menu does not show");
+   /* Open it ourselves if the stage did not */
+   if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   fw_answer(MENU_ACTION_CANCEL);
+   CHECK(fw_wait_box(60), "no firmware box after the confirm's answer");
+   fw_answer(MENU_ACTION_CANCEL);
+   for (i = 0; i < 600 && runloop_is_content_switching(); i++)
+      fw_pump(1);
+   CHECK(!runloop_is_content_switching(), "the cancelled load did not end");
+   CHECK(runloop_state_get_ptr()->lib_handle == handle
+         && (content_state_get_ptr()->flags & CONTENT_ST_FLAG_IS_INITED),
+         "the cancelled load did not keep the running core");
+}
+
 #ifdef HAVE_NETWORKGAMEPAD
 static bool pad_runs(void) { return core_is(CORE_TYPE_NETRETROPAD); }
 
@@ -1931,6 +1981,8 @@ int main(int argc, char *argv[])
          mode_fw_stack();
       else if (string_is_equal(mode, "fw-contentless"))
          mode_fw_contentless();
+      else if (string_is_equal(mode, "fw-hidden-confirm"))
+         mode_fw_hidden_confirm();
       else if (string_is_equal(mode, "builtin"))
 #ifdef HAVE_NETWORKGAMEPAD
          mode_builtin();
