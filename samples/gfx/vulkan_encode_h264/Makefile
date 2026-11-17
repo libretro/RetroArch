@@ -35,7 +35,7 @@ HEVC_NATIVE_SOURCES := hevc_native_params_test.c $(RA)/gfx/common/vulkan_encode_
    $(RA)/libretro-common/dynamic/dylib.c $(RA)/libretro-common/encodings/encoding_utf.c \
    $(RA)/libretro-common/compat/compat_strl.c
 hevc_native_params_test$(EXE): $(HEVC_NATIVE_SOURCES) hevc_native_context.h $(RA)/gfx/common/vulkan_encode_hevc_session.h $(RA)/gfx/common/vulkan_encode_hevc_params.h
-	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl)
 hevc_headers_test$(EXE): hevc_headers_test.c $(RA)/libretro-common/formats/h265/rh265.c $(RA)/libretro-common/include/formats/rh265.h
 	$(CC) $(CFLAGS) -Wno-unused-parameter hevc_headers_test.c $(RA)/libretro-common/formats/h265/rh265.c -o $@ $(LDFLAGS) -lm
 hevc-native-params-check: hevc_native_params_test$(EXE) hevc_headers_test$(EXE)
@@ -44,14 +44,14 @@ hevc-native-params-check: hevc_native_params_test$(EXE) hevc_headers_test$(EXE)
 HEVC_ENCODE_SOURCES := $(filter-out hevc_native_params_test.c,$(HEVC_NATIVE_SOURCES)) \
    hevc_native_encode_test.c $(RA)/gfx/common/vulkan_encode_hevc_submit.c $(RA)/gfx/common/vulkan_encode_pool.c
 hevc_native_encode_test$(EXE): $(HEVC_ENCODE_SOURCES) hevc_native_context.h $(RA)/gfx/common/vulkan_encode_hevc_submit.h $(RA)/gfx/common/vulkan_encode_hevc_picture.h $(RA)/gfx/common/vulkan_encode_hevc_params.h $(RA)/gfx/common/vulkan_encode_pool.h
-	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_ENCODE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_ENCODE_SOURCES) -o $@ $(LDFLAGS) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl)
 hevc-native-check: hevc_native_encode_test$(EXE)
 	python3 hevc_native_encode_run.py --native-test ./hevc_native_encode_test$(EXE)
 .PHONY: hevc-native-check
 HEVC_ADAPTER_SOURCES := $(filter-out hevc_native_encode_test.c,$(HEVC_ENCODE_SOURCES)) \
    hevc_native_adapter_test.c $(RA)/gfx/common/vulkan_encode_hevc.c
 hevc_native_adapter_test$(EXE): $(HEVC_ADAPTER_SOURCES) hevc_native_encode_test.c hevc_native_context.h $(RA)/gfx/common/vulkan_encode_hevc.h $(RA)/gfx/common/vulkan_encode_hevc_picture.h
-	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_ADAPTER_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_ADAPTER_SOURCES) -o $@ $(LDFLAGS) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl)
 hevc-native-adapter-check: hevc_native_adapter_test$(EXE)
 	python3 hevc_native_encode_run.py --native-test ./hevc_native_adapter_test$(EXE) --with-cancel
 HEVC_NATIVE_WORKER_SOURCES := $(filter-out hevc_native_adapter_test.c,$(HEVC_ADAPTER_SOURCES)) \
@@ -59,7 +59,7 @@ HEVC_NATIVE_WORKER_SOURCES := $(filter-out hevc_native_adapter_test.c,$(HEVC_ADA
    $(RA)/gfx/common/vulkan_encode_h264.c $(RA)/gfx/common/vulkan_encode_h264_session.c \
    $(RA)/gfx/common/vulkan_encode_h264_submit.c
 hevc_native_worker_test$(EXE): $(HEVC_NATIVE_WORKER_SOURCES) hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(RA)/record/record_gpu_worker_vulkan_hevc.h $(RA)/record/record_gpu_worker_vulkan.h
-	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_NATIVE_WORKER_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl)
+	$(CC) $(CFLAGS) -DHAVE_DYLIB $(HEVC_NATIVE_WORKER_SOURCES) -o $@ $(LDFLAGS) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl)
 hevc-native-worker-check: hevc_native_worker_test$(EXE)
 	python3 hevc_native_encode_run.py --native-test ./hevc_native_worker_test$(EXE) --with-cancel
 .PHONY: hevc-native-adapter-check hevc-native-worker-check
@@ -148,7 +148,7 @@ NATIVE_SOURCES += $(RA)/record/record_gpu_dispatch_vulkan.c ../../record/gpu_av_
 NATIVE_SOURCES += $(RA)/gfx/common/vulkan_encode_device.c
 NATIVE_SOURCES += $(RA)/record/record_gpu_renderer_vulkan.c
 native_test$(EXE): $(NATIVE_SOURCES) native_capture.h native_session.h $(RA)/record/record_gpu_dispatch_vulkan.h $(RA)/record/record_gpu_renderer_vulkan.h
-	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread -ldl) -lm
+	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(NATIVE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl) -lm
 native-check: native_test$(EXE)
 	$(RUNNER) ./native_test$(EXE)
 .PHONY: native-check
@@ -159,14 +159,14 @@ HEVC_CAPTURE_SOURCES := $(filter-out hevc_native_adapter_test.c,$(HEVC_ADAPTER_S
    hevc_native_capture_test.c $(RA)/gfx/common/vulkan_encode_capture.c \
    $(filter-out capture_shader_test.c,$(CAPTURE_SHADER_SOURCES))
 hevc_native_capture_test$(EXE): $(HEVC_CAPTURE_SOURCES) hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(CAPTURE_HEADERS)
-	$(CC) $(CFLAGS) -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(HEVC_CAPTURE_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl) -lm
+	$(CC) $(CFLAGS) -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(HEVC_CAPTURE_SOURCES) -o $@ $(LDFLAGS) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl) -lm
 hevc-native-capture-check: hevc_native_capture_test$(EXE)
 	python3 hevc_native_capture_run.py --native-test ./hevc_native_capture_test$(EXE)
 .PHONY: hevc-native-capture-check
 
 HEVC_NATIVE_SESSION_SOURCES := $(sort $(filter-out native_test.c hevc_native_capture_test.c,$(NATIVE_SOURCES) $(HEVC_CAPTURE_SOURCES)) hevc_native_session_test.c $(RA)/record/record_gpu_session_vulkan_hevc.c $(RA)/record/record_gpu_worker_vulkan_hevc.c)
 hevc_native_session_test$(EXE): $(HEVC_NATIVE_SESSION_SOURCES) hevc_native_capture_test.c hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(CAPTURE_HEADERS) $(RA)/record/record_gpu_session_vulkan_backend.h
-	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(HEVC_NATIVE_SESSION_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread -ldl) -lm
+	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(HEVC_NATIVE_SESSION_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl) -lm
 
 hevc-native-session-check: hevc_native_session_test$(EXE)
 	python3 hevc_native_session_run.py --native-test ./hevc_native_session_test$(EXE)
@@ -174,7 +174,7 @@ hevc-native-session-check: hevc_native_session_test$(EXE)
 
 HEVC_NATIVE_DISPATCH_SOURCES := $(filter-out hevc_native_session_test.c,$(HEVC_NATIVE_SESSION_SOURCES)) hevc_native_dispatch_test.c $(RA)/record/record_gpu_dispatch_vulkan_hevc.c
 hevc_native_dispatch_test$(EXE): $(HEVC_NATIVE_DISPATCH_SOURCES) hevc_native_capture_test.c hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(CAPTURE_HEADERS) $(RA)/record/record_gpu_dispatch_vulkan_backend.h
-	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(HEVC_NATIVE_DISPATCH_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread -ldl) -lm
+	$(CC) $(CFLAGS) -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(if $(filter .exe,$(EXE)),-DRECORD_FILE_POSIX_TEST -DRECORD_MEDIACODEC_FILE_TEST,) $(HEVC_NATIVE_DISPATCH_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-pthread) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl) -lm
 
 hevc-native-dispatch-check: hevc_native_dispatch_test$(EXE)
 	python3 hevc_native_session_run.py --native-test ./hevc_native_dispatch_test$(EXE) --with-cancel
@@ -183,7 +183,7 @@ hevc_native_session_test$(EXE) hevc_native_dispatch_test$(EXE) native_test$(EXE)
 
 HEVC_NATIVE_HDR_SOURCES := $(filter-out hevc_native_capture_test.c,$(HEVC_CAPTURE_SOURCES)) hevc_native_hdr_test.c
 hevc_native_hdr_test$(EXE): $(HEVC_NATIVE_HDR_SOURCES) hevc_native_capture_test.c hevc_native_adapter_test.c hevc_native_encode_test.c hevc_native_context.h $(CAPTURE_HEADERS)
-	$(CC) $(CFLAGS) -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(HEVC_NATIVE_HDR_SOURCES) -o $@ $(LDFLAGS) $(if $(filter Windows_NT,$(OS)),,-ldl) -lm
+	$(CC) $(CFLAGS) -DHAVE_DYLIB -DRSLC_EXTENDED -DRSLC_NO_DXBC $(HEVC_NATIVE_HDR_SOURCES) -o $@ $(LDFLAGS) $(if $(or $(filter Windows_NT,$(OS)),$(filter .exe,$(EXE))),,-ldl) -lm
 
 hevc-native-hdr-check: hevc_native_hdr_test$(EXE)
 	python3 hevc_native_capture_run.py --native-test ./hevc_native_hdr_test$(EXE) --hdr-mode 1
