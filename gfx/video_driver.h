@@ -2264,6 +2264,12 @@ typedef struct
    /* The serial of the snapshot the driver draws: the video thread's
     * under the wrapper */
    unsigned windows_drawn;
+#ifdef ANDROID
+   /* Any thread sets it, the app thread takes it: the next frame sends
+    * Java the whole set, changed or not */
+   retro_atomic_int_t windows_blank_resend;
+   video_windows_blank_t windows_blank;
+#endif
 #endif
 } video_driver_state_t;
 
@@ -2687,6 +2693,11 @@ void video_driver_headset_recenter(void);
  * video_headset_view and return it; VIDEO_HEADSET_VIEW_LAST, unchanged,
  * without a presenting headset. */
 unsigned video_driver_headset_view_toggle(void);
+/* Main thread: flips Blank Unused Screens for the running content, sets
+ * @blanked to whether unused panels are covered now and @covered to how
+ * many there are to cover; false, with nothing changed, without content
+ * or off Android. */
+bool video_driver_blank_unused_toggle(bool *blanked, unsigned *covered);
 /* Main thread: the headset's edit mode, on or off, and its count of
  * let-go grabs, for the next frame snapshot. */
 void video_driver_headset_edit(bool editing, unsigned seq);

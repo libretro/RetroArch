@@ -1473,6 +1473,175 @@ static void test_place_no_ordinal(void)
    CHECK(place_r.menu == 2);
 }
 
+/* The Thor as Android 12 and later types it, with its display ids */
+static void blank_thor(video_window_display_t *d, unsigned own)
+{
+   test_thor(d, own);
+   d[0].id   = 0;
+   d[1].id   = 4;
+   d[2].id   = 9;
+   d[0].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   d[1].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   d[2].type = VIDEO_WINDOW_TYPE_EXTERNAL;
+   d[0].is_default = true;
+}
+
+static void test_blank_wanted(void)
+{
+   CHECK(!video_windows_blank_wanted(VIDEO_BLANK_UNUSED_OFF, false, false));
+   CHECK(!video_windows_blank_wanted(VIDEO_BLANK_UNUSED_OFF, false, true));
+   CHECK(!video_windows_blank_wanted(VIDEO_BLANK_UNUSED_OFF, true,  false));
+   CHECK( video_windows_blank_wanted(VIDEO_BLANK_UNUSED_OFF, true,  true));
+   CHECK(!video_windows_blank_wanted(VIDEO_BLANK_UNUSED_GAMES, false, false));
+   CHECK(!video_windows_blank_wanted(VIDEO_BLANK_UNUSED_GAMES, false, true));
+   CHECK( video_windows_blank_wanted(VIDEO_BLANK_UNUSED_GAMES, true,  false));
+   CHECK(!video_windows_blank_wanted(VIDEO_BLANK_UNUSED_GAMES, true,  true));
+   CHECK( video_windows_blank_wanted(VIDEO_BLANK_UNUSED_ALWAYS, false, false));
+   CHECK( video_windows_blank_wanted(VIDEO_BLANK_UNUSED_ALWAYS, false, true));
+   CHECK( video_windows_blank_wanted(VIDEO_BLANK_UNUSED_ALWAYS, true,  false));
+   CHECK(!video_windows_blank_wanted(VIDEO_BLANK_UNUSED_ALWAYS, true,  true));
+   /* Any other mode is OFF */
+   CHECK(!video_windows_blank_wanted(3, false, false));
+   CHECK(!video_windows_blank_wanted(3, false, true));
+   CHECK(!video_windows_blank_wanted(3, true,  false));
+   CHECK( video_windows_blank_wanted(3, true,  true));
+}
+
+static void test_blank_ids(void)
+{
+   video_window_display_t d[VIDEO_WINDOW_DISPLAYS_MAX + 1];
+   int ids[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned i;
+   /* RetroArch on the top panel: the bottom one, never the monitor */
+   blank_thor(d, 1);
+   CHECK(video_windows_blank_ids(d, 3, 0, ids) == 1 && ids[0] == 4);
+   /* The Presentation on the bottom panel, then on the monitor */
+   CHECK(video_windows_blank_ids(d, 3, 2, ids) == 0);
+   CHECK(video_windows_blank_ids(d, 3, 3, ids) == 1 && ids[0] == 4);
+   /* Shown naming RetroArch's own display, or one not listed */
+   CHECK(video_windows_blank_ids(d, 3, 1, ids) == 1 && ids[0] == 4);
+   CHECK(video_windows_blank_ids(d, 3, 7, ids) == 1 && ids[0] == 4);
+   /* RetroArch on the bottom panel: none, Android keeps Presentations
+    * off its default display */
+   blank_thor(d, 2);
+   CHECK(video_windows_blank_ids(d, 3, 0, ids) == 0);
+   CHECK(video_windows_blank_ids(d, 3, 3, ids) == 0);
+   /* The bottom panel untyped (Android 11 and older) */
+   blank_thor(d, 1);
+   d[1].type = VIDEO_WINDOW_TYPE_UNKNOWN;
+   CHECK(video_windows_blank_ids(d, 3, 0, ids) == 0);
+   /* Typed internal but not physical: a cast, the emulator's */
+   blank_thor(d, 1);
+   d[1].physical = false;
+   CHECK(video_windows_blank_ids(d, 3, 0, ids) == 0);
+   blank_thor(d, 1);
+   d[1].on = false;
+   CHECK(video_windows_blank_ids(d, 3, 0, ids) == 0);
+   blank_thor(d, 1);
+   d[1].valid = false;
+   CHECK(video_windows_blank_ids(d, 3, 0, ids) == 0);
+   blank_thor(d, 1);
+   d[1].is_private = true;
+   CHECK(video_windows_blank_ids(d, 3, 0, ids) == 0);
+   blank_thor(d, 1);
+   d[1].ordinal = 0;
+   CHECK(video_windows_blank_ids(d, 3, 3, ids) == 0);
+   /* Four panels, RetroArch on the first and the Presentation on the
+    * third: the second and the fourth, in list order */
+   for (i = 0; i < 4; i++)
+   {
+      test_display(&d[i], i + 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, i == 0);
+      d[i].id   = 10 + (int)i;
+      d[i].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   }
+   CHECK(video_windows_blank_ids(d, 4, 3, ids) == 2
+         && ids[0] == 11 && ids[1] == 13);
+   /* Eight: all but RetroArch's; one past the list's limit is not read */
+   for (i = 0; i < VIDEO_WINDOW_DISPLAYS_MAX + 1; i++)
+   {
+      test_display(&d[i], i + 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, i == 0);
+      d[i].id   = 10 + (int)i;
+      d[i].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   }
+   CHECK(video_windows_blank_ids(d, VIDEO_WINDOW_DISPLAYS_MAX, 0, ids) == 7
+         && ids[6] == 17);
+   CHECK(video_windows_blank_ids(d, VIDEO_WINDOW_DISPLAYS_MAX + 1, 0, ids)
+         == 7);
+}
+
+/* Frame to frame: Java hears of a set only when it changes */
+static void test_blank_state(void)
+{
+   video_window_display_t d[4];
+   video_windows_blank_t b;
+   unsigned i;
+   memset(&b, 0, sizeof(b));
+   blank_thor(d, 1);
+   CHECK(video_windows_blank_ids(d, 3, 0, NULL) == 1);
+   /* Off with nothing covered: the frame does not look */
+   CHECK(!video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+   CHECK(!video_windows_blank_active(&b, 3));
+   CHECK(video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_GAMES));
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            false, d, 3) && b.count == 1 && b.ids[0] == 4);
+   CHECK(!video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            false, d, 3));
+   /* A new controller gets the same set */
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            true, d, 3) && b.count == 1 && b.ids[0] == 4);
+   /* The Presentation placed on the bottom panel: from that frame */
+   b.placed = 2;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            false, d, 3) && b.count == 0);
+   b.placed = 0;
+   /* Turned off with a panel covered: looked at until it is uncovered */
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            false, d, 3) && b.count == 1);
+   CHECK(video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_OFF, true,
+            false, d, 3) && b.count == 0);
+   CHECK(!video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+
+   /* The hotkey covers for the content with the setting off */
+   CHECK(video_windows_blank_flip(&b, VIDEO_BLANK_UNUSED_OFF));
+   CHECK(video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_OFF, true,
+            false, d, 3) && b.count == 1);
+   /* Not without content */
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_OFF, false,
+            false, d, 3) && b.count == 0);
+   /* The setting changed: the flip goes, and is not back with it */
+   CHECK(video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_ALWAYS));
+   CHECK(!(b.flags & VIDEO_WINDOWS_BLANK_FLIPPED));
+   CHECK(!video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+   /* Flipped twice, as it was */
+   CHECK(!video_windows_blank_flip(&b, VIDEO_BLANK_UNUSED_GAMES));
+   CHECK(video_windows_blank_flip(&b, VIDEO_BLANK_UNUSED_GAMES));
+
+   /* Rewritten in place as the set grows and shrinks */
+   memset(&b, 0, sizeof(b));
+   for (i = 0; i < 4; i++)
+   {
+      test_display(&d[i], i + 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, i == 0);
+      d[i].id   = 10 + (int)i;
+      d[i].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   }
+   b.placed = 3;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_ALWAYS, false,
+            false, d, 4) && b.count == 2 && b.ids[0] == 11 && b.ids[1] == 13);
+   b.placed = 0;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_ALWAYS, false,
+            false, d, 4) && b.count == 3
+         && b.ids[0] == 11 && b.ids[1] == 12 && b.ids[2] == 13);
+   b.placed = 2;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_ALWAYS, false,
+            false, d, 4) && b.count == 2 && b.ids[0] == 12 && b.ids[1] == 13);
+   /* Another display swapped in at the same place */
+   d[3].id = 20;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_ALWAYS, false,
+            false, d, 4) && b.count == 2 && b.ids[1] == 20);
+}
+
 static void test_selected_layout(void)
 {
    video_views_map_t map;
@@ -2703,6 +2872,9 @@ int main(void)
    test_place_external();
    test_place_moves();
    test_place_no_ordinal();
+   test_blank_wanted();
+   test_blank_ids();
+   test_blank_state();
    test_selected_layout();
    test_second_output_touch();
    test_window_events();

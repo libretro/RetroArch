@@ -1178,7 +1178,6 @@ static void input_snapshot_fetch_hat(const input_device_driver_t *real,
 
 /* The pad's copy for this frame, taken now if this is the first read
  * since the poll. */
-/* Takes the copy of a pad for this poll. */
 INPUT_NOINLINE static void input_snapshot_pad_take(unsigned pad)
 {
    unsigned m;

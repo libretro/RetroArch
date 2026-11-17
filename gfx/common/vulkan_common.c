@@ -5440,7 +5440,10 @@ dxgi_unavailable:
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    if (vk->fse_supported)
    {
-      hmonitor                = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
+      /* The surface's own window: the active one may be another of
+       * this thread's, or none */
+      hmonitor                = MonitorFromWindow((HWND)vk->dxgi_window,
+            MONITOR_DEFAULTTONEAREST);
       fse_win32_info.hmonitor = hmonitor;
       fse_info.pNext          = &fse_win32_info;
       info.pNext              = &fse_info;

@@ -241,6 +241,7 @@ typedef struct response
 
 typedef struct request
 {
+   char *target; /* owns domain and path */
    char *domain;
    char *path;
    char *method;
@@ -1475,10 +1476,16 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->tls  = conn->tls;
    state->conn = NULL;
 
-   state->request.domain        = strdup(conn->domain);
-   state->request.path          = strdup(conn->path);
-   state->request.method        = strdup(conn->method);
-   state->request.contenttype   = conn->contenttype ? strdup(conn->contenttype) : NULL;
+   /* conn is freed right after this: its strings move, not copy.
+    * domain and path point into its url. */
+   state->request.target        = conn->url;
+   state->request.domain        = conn->domain;
+   state->request.path          = conn->path;
+   state->request.method        = conn->method;
+   state->request.contenttype   = conn->contenttype;
+   conn->url                    = NULL;
+   conn->method                 = NULL;
+   conn->contenttype            = NULL;
    state->request.contentlength = conn->contentlength;
    if (conn->postdata && conn->contentlength)
    {
@@ -1500,11 +1507,13 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.source        = conn->source;
    state->request.source_rewind = conn->source_rewind;
    state->request.source_data   = conn->source_data;
-   state->request.useragent= conn->useragent ? strdup(conn->useragent) : NULL;
+   state->request.useragent= conn->useragent;
+   conn->useragent         = NULL;
    /* Moved like postdata above: conn is freed right after this */
    state->request.headers  = conn->headers;
    conn->headers           = NULL;
-   state->request.auth     = conn->auth    ? strdup(conn->auth)    : NULL;
+   state->request.auth     = conn->auth;
+   conn->auth              = NULL;
    state->request.port     = conn->port;
    state->no_redirect      = conn->no_redirect;
 
@@ -1519,7 +1528,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
 
-   /* Any of the strdup / malloc calls above can return NULL on OOM.
+   /* The receive buffer is the one allocation here, and a connection
+    * net_http_connection_done() never split has no domain or path.
     * The dispatch path in net_http_update() dereferences
     * request.domain and writes to response.data without guards; fail
     * the whole setup early here rather than stack up NULL derefs
@@ -1531,11 +1541,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
     * exist yet; it is allocated with the first header line. */
    if (   !state->response.data
        || !state->request.domain
-       || !state->request.path
-       || !state->request.method
-       || (conn->contenttype && !state->request.contenttype)
-       || (conn->useragent && !state->request.useragent)
-       || (conn->auth      && !state->request.auth))
+       || !state->request.path)
    {
       /* Note: no postdata OOM check here.  Ownership of postdata is
        * moved from conn (above), not copied, so the transfer cannot
@@ -3157,8 +3163,9 @@ static bool net_http_redirect(struct http_t *state, const char *location)
     *
     * @location aliases the header list, which is cleared further
     * down; it is only read before that, by the join. */
-   char *new_domain = NULL;
-   char *new_path   = NULL;
+   char *new_target = NULL;
+   const char *new_path;
+   size_t path_len;
    char *tmp;
    char *base;
    char *url;
@@ -3253,16 +3260,14 @@ static bool net_http_redirect(struct http_t *state, const char *location)
 
    /* request.path is kept without its leading slash; the request line
     * supplies it. */
-   new_domain = (char*)malloc(host_len + 1);
-   new_path   = strdup(*auth_end == '/' ? auth_end + 1 : auth_end);
-   if (!new_domain || !new_path)
-   {
-      free(new_domain);
-      free(new_path);
+   new_path = *auth_end == '/' ? auth_end + 1 : auth_end;
+   path_len = strlen(new_path);
+   /* domain and path in one block, as net_http_new() leaves them */
+   if (!(new_target = (char*)malloc(host_len + 1 + path_len + 1)))
       goto fail;
-   }
-   memcpy(new_domain, host, host_len);
-   new_domain[host_len] = '\0';
+   memcpy(new_target, host, host_len);
+   new_target[host_len] = '\0';
+   memcpy(new_target + host_len + 1, new_path, path_len + 1);
    free(base);
 
    /* Credentials go only where the caller sent them: another host or
@@ -3271,7 +3276,7 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    if (state->request.headers || state->request.auth)
    {
       bool same_host = strlen(state->request.domain) == host_len
-            && !strncasecmp(new_domain, state->request.domain, host_len);
+            && !strncasecmp(new_target, state->request.domain, host_len);
       bool same_port = port == state->request.port
             || (!state->ssl && ssl
                   && state->request.port == 80 && port == 443);
@@ -3284,10 +3289,10 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       }
    }
 
-   free(state->request.domain);
-   free(state->request.path);
-   state->request.domain = new_domain;
-   state->request.path   = new_path;
+   free(state->request.target);
+   state->request.target = new_target;
+   state->request.domain = new_target;
+   state->request.path   = new_target + host_len + 1;
    state->request.port   = port;
    state->ssl            = ssl;
    state->request_sent       = false;
@@ -4100,10 +4105,7 @@ void net_http_delete(struct http_t *state)
       free(state->response.data);
    if (state->response.owns_headers)
       free(state->response.hdr);
-   if (state->request.domain)
-      free(state->request.domain);
-   if (state->request.path)
-      free(state->request.path);
+   free(state->request.target);
    if (state->request.method)
       free(state->request.method);
    if (state->request.contenttype)

@@ -10,7 +10,10 @@
  *    ids were negative, passed the id bound, and were stored at
  *    v->sps[id];
  *  - sps_max_latency_increase_plus1 at 2^32 - 2, which the spec
- *    allows and nothing reads, still parses.
+ *    allows and nothing reads, still parses;
+ *  - a conformance window that crops the whole width or height, or a
+ *    chroma_format_idc past 3, is malformed. Stored, its offsets moved
+ *    rh265_video_plane()'s pointer outside the plane.
  * Exit status is the outcome. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,7 +117,8 @@ static size_t hvcc(uint8_t *out, const uint8_t *const *nals,
 enum field { F_NONE = 0, F_ID_OVERLONG, F_ID_HUGE, F_WIDTH_HUGE,
    F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT, F_LT_TABLE,
    F_SEQUENCE, F_INFERRED, F_BAD_LAYERS, F_DPB_HUGE, F_BAD_REORDER, F_RPS_PRED,
-   F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_FIELD, F_VUI_SHORT };
+   F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_FIELD, F_VUI_SHORT,
+   F_BAD_CROP_V, F_EDGE_CROP, F_BAD_CHROMA };
 
 /* An SPS for a 64x64 8-bit-or-@depth 4:2:0 picture, one field crafted */
 static void sps(bitw *w, enum field f, int depth)
@@ -148,14 +152,20 @@ static void sps(bitw *w, enum field f, int depth)
       putue_overlong(w);
    else
       putue(w, f == F_ID_HUGE ? 0xfffffffeu : 0);   /* sps_id */
-   putue(w, 1);                      /* chroma_format_idc 4:2:0 */
+   putue(w, f == F_BAD_CHROMA ? 4 : 1);  /* chroma_format_idc 4:2:0 */
    putue(w, f == F_WIDTH_HUGE ? 0x1ffffffu : 64);
    putue(w, 64);
-   put1(w, f == F_CROP || f == F_BAD_CROP);
-   if (f == F_CROP || f == F_BAD_CROP)
+   /* offsets are in chroma units: 2x each in luma on the 64x64 picture */
+   put1(w, f == F_CROP || f == F_BAD_CROP || f == F_BAD_CROP_V
+         || f == F_EDGE_CROP);
+   if (f == F_CROP || f == F_BAD_CROP || f == F_BAD_CROP_V
+         || f == F_EDGE_CROP)
    {
-      putue(w, f == F_CROP ? 1 : 32); putue(w, f == F_CROP ? 2 : 0);
-      putue(w, 3); putue(w, 4);
+      putue(w, f == F_CROP ? 1 : f == F_BAD_CROP ? 32
+            : f == F_EDGE_CROP ? 31 : 0);
+      putue(w, f == F_CROP ? 2 : 0);
+      putue(w, f == F_BAD_CROP_V ? 16 : 3);
+      putue(w, f == F_BAD_CROP_V ? 16 : 4);
    }
    putue(w, (uint32_t)(depth - 8));  /* bit_depth_luma_minus8 */
    putue(w, (uint32_t)(depth - 8));  /* bit_depth_chroma_minus8 */
@@ -357,7 +367,10 @@ static void test_params(void)
    sps(&w, F_BAD_CROP, 8); lens[0] = nal(units_buf[0], 33, &w);
    n = hvcc(buf, units, lens, 2);
    expect("invalid crop input", rh265_video_set_extradata(v, buf, n), 0);
-   expect("invalid crop snapshot", rh265_video_get_params(v, 0, &out), -1);
+   /* refused as malformed: the SPS it would have replaced stays */
+   expect("invalid crop keeps prior SPS", rh265_video_get_params(v, 0, &out), 0);
+   if (out.crop_left != 2 || out.crop_right != 4 || out.crop_top != 6
+         || out.crop_bottom != 8) failures++;
    pps(&w, 0, 1); lens[0] = nal(units_buf[0], 34, &w);
    n = hvcc(buf, units, lens, 1);
    expect("missing SPS input", rh265_video_set_extradata(v, buf, n), 0);
@@ -365,6 +378,14 @@ static void test_params(void)
    expect("invalid PPS ID", rh265_video_get_params(v, ~0u, &out), -1);
    expect("null decoder", rh265_video_get_params(NULL, 0, &out), -1);
    expect("null snapshot", rh265_video_get_params(v, 0, NULL), -1);
+   rh265_video_close(v);
+   v = rh265_video_open();
+   if (!v) abort();
+   sps(&w, F_BAD_CROP, 8); lens[0] = nal(units_buf[0], 33, &w);
+   pps(&w, 0, 0); lens[1] = nal(units_buf[1], 34, &w);
+   n = hvcc(buf, units, lens, 2);
+   expect("invalid crop alone input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("invalid crop alone snapshot", rh265_video_get_params(v, 0, &out), -1);
    rh265_video_close(v);
 }
 
@@ -930,6 +951,10 @@ int main(void)
    expect("eight temporal layers are malformed", feed_sps(F_BAD_LAYERS, 9), 0);
    expect("oversized DPB is malformed", feed_sps(F_DPB_HUGE, 9), 0);
    expect("reorder limit exceeding DPB is malformed", feed_sps(F_BAD_REORDER, 9), 0);
+   expect("a crop of the full width is malformed", feed_sps(F_BAD_CROP, 9), 0);
+   expect("a crop of the full height is malformed", feed_sps(F_BAD_CROP_V, 9), 0);
+   expect("a crop leaving two columns is read", feed_sps(F_EDGE_CROP, 9), -1);
+   expect("chroma_format_idc 4 is malformed", feed_sps(F_BAD_CHROMA, 9), 0);
 
    if (failures)
       return 1;

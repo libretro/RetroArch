@@ -44,6 +44,13 @@ enum video_notifications_window
    VIDEO_NOTIFICATIONS_WITH_MENU
 };
 
+enum video_blank_unused
+{
+   VIDEO_BLANK_UNUSED_OFF = 0,
+   VIDEO_BLANK_UNUSED_GAMES,
+   VIDEO_BLANK_UNUSED_ALWAYS
+};
+
 typedef struct video_window_settings
 {
    unsigned pos;
@@ -583,6 +590,47 @@ bool video_windows_offer_main(const video_window_display_t *displays,
 bool video_windows_display_own(const video_window_display_t *displays,
       unsigned count, const char *key, unsigned screen);
 
+/* Whether unused panels are covered now. @mode a video_blank_unused (any
+ * other value acts as OFF), @game content is loaded, @flipped the hotkey's
+ * flip for it. Pure. */
+bool video_windows_blank_wanted(unsigned mode, bool game, bool flipped);
+
+/* The ids of @displays to cover, in list order, at most
+ * VIDEO_WINDOW_DISPLAYS_MAX into @ids, or only counted with @ids NULL;
+ * returns how many. @placed: the ordinal the Presentation is placed on,
+ * 0 for none. Pure. */
+unsigned video_windows_blank_ids(const video_window_display_t *displays,
+      unsigned count, unsigned placed, int *ids);
+
+/* Blank Unused Screens between frames; app thread */
+typedef struct video_windows_blank
+{
+   /* The set Java was last sent, lent to the send itself */
+   int ids[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned count;
+   /* The ordinal the Presentation is placed on, 0 for none */
+   unsigned placed;
+   /* The setting the hotkey flipped */
+   unsigned flip_mode;
+   unsigned flags;
+} video_windows_blank_t;
+
+#define VIDEO_WINDOWS_BLANK_FLIPPED (1u << 0)
+
+/* Drops a flip of another setting than @mode; false when nothing can be
+ * covered or left to uncover, so the frame need not look. */
+bool video_windows_blank_active(video_windows_blank_t *blank, unsigned mode);
+
+/* The hotkey: flips @mode for the content; returns whether panels are
+ * covered now. */
+bool video_windows_blank_flip(video_windows_blank_t *blank, unsigned mode);
+
+/* Rewrites @blank's set in place from @displays; true when it changed,
+ * or @resend, and Java must be sent it. */
+bool video_windows_blank_update(video_windows_blank_t *blank,
+      unsigned mode, bool game, bool resend,
+      const video_window_display_t *displays, unsigned count);
+
 /* A host that decides afresh on its next call */
 void video_windows_host_reset(video_windows_host_t *host);
 
@@ -631,6 +679,12 @@ const video_window_display_t *video_driver_published_window_displays(
  * place until the app thread's next take. For the menu's picker. */
 const video_window_display_t *video_driver_borrow_window_displays(
       unsigned *count);
+
+#ifdef ANDROID
+/* Any thread: the next frame sends Java the whole set of displays to
+ * cover, for a new controller that holds none. */
+void video_driver_blank_unused_resend(void);
+#endif
 
 /* A window showing @screens, from @frame's snapshot at @dims: the map
  * with every screen outside @screens left out. Any thread. */

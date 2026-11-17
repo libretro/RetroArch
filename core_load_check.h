@@ -121,6 +121,17 @@ enum core_load_copy
 enum core_load_copy core_load_check_copy_source(const char *path,
       struct core_load_source *src);
 
+#ifdef ANDROID
+/* Main thread: the running core's file at path for a second instance
+ * to load as it is (core_load_file_instance), the caller's to close,
+ * and in *load_path (malloc'd, the caller's to free) the path to load
+ * it by, as the running core was. With checks on, only the file the
+ * running core passed its check from, unchanged since; NULL otherwise,
+ * and the copy is made. */
+core_file_t *core_load_check_instance_file(const char *path,
+      char **load_path);
+#endif
+
 typedef struct core_load_match core_load_match_t;
 /* Any thread. NULL when the copy can't be opened, or the source (hashed
  * only when src has no hash) is no longer the file loaded. */

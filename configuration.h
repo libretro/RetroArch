@@ -312,6 +312,7 @@ typedef struct settings
       unsigned video_screen_window_dims[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_menu_follows;
       unsigned video_notifications_window;
+      unsigned video_blank_unused_screens;
 #endif
       unsigned video_openxr_refresh_rate;
       unsigned video_openxr_controllers;
@@ -953,10 +954,6 @@ typedef struct settings
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
-#if 0
-/* Thumbnailpack removal */
-      bool menu_show_legacy_thumbnail_updater;
-#endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
       bool menu_materialui_switch_icons;

@@ -2063,7 +2063,7 @@ static void winraw_poll(void *data)
    if (!wr->focus)
    {
       HWND wnd            = (HWND)video_driver_window_get();
-      HWND front          = wnd ? GetForegroundWindow() : NULL;
+      HWND front          = wnd ? win32_foreground_window() : NULL;
       if (front && front == wnd)
          wr->focus        = true;
 #ifdef HAVE_VIDEO_WINDOWS

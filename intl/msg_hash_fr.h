@@ -1706,7 +1706,6 @@ static const struct
    char s_9433fa60[17];
    char s_a38500d8[14];
    char s_76ac1944[36];
-   char s_ded7e809[35];
    char s_d8820ed7[70];
    char s_4c11d465[14];
    char s_50a04cd9[21];
@@ -1714,8 +1713,6 @@ static const struct
    char s_11121f30[30];
    char s_01badaa0[17];
    char s_6127cc52[36];
-   char s_9d52f73c[16];
-   char s_bc30b87a[23];
    char s_2fd5302f[41];
    char s_2dff21ec[29];
    char s_a2a28187[27];
@@ -1776,7 +1773,6 @@ static const struct
    char s_f24476fa[22];
    char s_97d90c67[23];
    char s_6d08238d[4];
-   char s_033bf99f[15];
    char s_8076aea7[26];
    char s_a00583cf[33];
    char s_e8a86d57[8];
@@ -1815,7 +1811,6 @@ static const struct
    char s_094e2bc9[18];
    char s_b71e6907[18];
    char s_d725639f[9];
-   char s_fef383d2[41];
    char s_4707850d[17];
    char s_cbddcf50[13];
    char s_9abb40fc[24];
@@ -6684,7 +6679,6 @@ static const struct
    "Options de c\305\223ur",
    "<Me demander>",
    "Impossible de supprimer le fichier.",
-   "Impossible de renommer le fichier.",
    "Erreur lors de la mise \303\240 jour de l'entr\303\251e dans la liste de lecture.",
    "Shader actuel",
    "Th\303\250me personnalis\303\251",
@@ -6692,8 +6686,6 @@ static const struct
    "Supprimer la liste de lecture",
    "Ne plus afficher",
    "T\303\251l\303\251charger toutes les miniatures",
-   "Syst\303\250me entier",
-   "Cette liste de lecture",
    "Un t\303\251l\303\251chargement est d\303\251j\303\240 en cours.",
    "R\303\251ussites : %1 \303\211checs : %2",
    "T\303\251l\303\251charger la miniature",
@@ -6754,7 +6746,6 @@ static const struct
    "D\303\251placer vers le bas",
    "D\303\251placer vers le haut",
    "Nom",
-   "Erreur r\303\251seau",
    "Nouvelle liste de lecture",
    "Entr\303\251e dans la liste de lecture",
    "C\305\223ur :",
@@ -6801,7 +6792,6 @@ static const struct
    "Niveau sup\303\251rieur",
    "Listes de lecture",
    "Jaquette",
-   "Miniatures t\303\251l\303\251charg\303\251es avec succ\303\250s.",
    "Capture d'\303\251cran",
    "\303\211cran titre",
    "Mise \303\240 jour \303\251chou\303\251e.",
@@ -11002,7 +10992,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (257162u
+      (sizeof(msg_hash_fr_blob) == (257032u
 #ifdef ANDROID
        + 373u
 #endif
@@ -13253,7 +13243,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -13261,8 +13250,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -13323,7 +13310,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -13361,7 +13347,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,

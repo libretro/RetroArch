@@ -321,7 +321,7 @@ static void dinput_poll(void *data)
     * foreground device: with it on, that one is read there. The mouse
     * takes the background device with a screen's own window in front. */
    windows   = input_config_get_video_windows_enable();
-   front     = windows ? GetForegroundWindow() : NULL;
+   front     = windows ? win32_foreground_window() : NULL;
    screen    = windows && win32_video_window_open(front);
    kb_bg     = di->keyboard_bg && (screen
          || (windows && !di->kb_nowinkey));

@@ -22,10 +22,22 @@
 #include <windows.h>
 
 #include "../../../input/drivers/win32_input.c"
+#include "../../../gfx/common/win32_foreground.h"
 
 /* ---- what the driver calls ---- */
 static HWND test_window;
 uintptr_t video_driver_window_get(void) { return (uintptr_t)test_window; }
+
+/* As the frontend has it: told by its own window only, not 'other' */
+static win32_foreground_t foreground;
+HWND win32_foreground_window(void) { return win32_foreground_get(&foreground); }
+static LRESULT CALLBACK test_proc(HWND hwnd, UINT message, WPARAM wparam,
+      LPARAM lparam)
+{
+   if (hwnd == test_window)
+      win32_foreground_message(&foreground, message);
+   return DefWindowProcA(hwnd, message, wparam, lparam);
+}
 
 static input_pointer_frame_t last_frame;
 static unsigned              last_flags;
@@ -86,7 +98,7 @@ int main(void)
    unsigned i;
 
    memset(&wc, 0, sizeof(wc));
-   wc.lpfnWndProc   = DefWindowProcA;
+   wc.lpfnWndProc   = test_proc;
    wc.hInstance     = GetModuleHandle(NULL);
    wc.lpszClassName = "win32_input_test";
    RegisterClassA(&wc);

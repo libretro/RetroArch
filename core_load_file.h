@@ -19,6 +19,15 @@ RETRO_BEGIN_DECLS
  * holds the file; elsewhere by path. f stays open: close it after. */
 dylib_t core_load_file(core_file_t *f, const char *path);
 
+#ifdef ANDROID
+/* A second instance of the core f (non-NULL) was opened from, mapped
+ * from f with its own data, beside any instance loaded already: no
+ * copy of the file. NULL where the linker can't (before Android 6).
+ * The caller makes sure the result is not the loaded instance itself,
+ * from a linker that ignored the request. f stays open. */
+dylib_t core_load_file_instance(core_file_t *f, const char *path);
+#endif
+
 /* Apple builds only, where dylib_load opens a .framework folder's
  * binary, <name>.framework/<name>, so the check must too. s must not
  * overlap path. False for other paths. */

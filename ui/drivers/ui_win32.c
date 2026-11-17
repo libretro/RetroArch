@@ -247,7 +247,7 @@ void ui_window_win32_set_droppable(void *data, bool droppable)
 static bool ui_window_win32_focused(void *data)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   return (GetForegroundWindow() == window->hwnd);
+   return (win32_foreground_window() == window->hwnd);
 }
 
 static ui_window_t ui_window_win32 = {

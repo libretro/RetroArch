@@ -415,6 +415,53 @@ static void test_redirect_credentials(void)
    net_http_deinit();
 }
 
+/* net_http_new() takes the connection's strings rather than copying
+ * them; a redirect keeps domain and path in one block. */
+static void test_new_takes_strings(void)
+{
+   struct http_t *h;
+   struct http_connection_t *conn =
+      net_http_connection_new("http://user:pw@example.invalid:8080/a/b",
+            "PUT", NULL);
+   char *url, *domain, *path, *method, *auth, *agent, *ctype, *hdrs;
+
+   net_http_init();
+   net_http_connection_iterate(conn);
+   net_http_connection_done(conn);
+   net_http_connection_set_user_agent(conn, "agent/1");
+   net_http_connection_set_headers(conn, "X-A: 1\r\n");
+   net_http_connection_set_content(conn, "text/plain", 2, "ab");
+   url    = conn->url;
+   domain = conn->domain;
+   path   = conn->path;
+   method = conn->method;
+   auth   = conn->auth;
+   agent  = conn->useragent;
+   ctype  = conn->contenttype;
+   hdrs   = conn->headers;
+   h      = net_http_new(conn);
+   check(h && h->request.target == url && h->request.domain == domain
+         && h->request.path == path && h->request.method == method
+         && h->request.auth == auth && h->request.useragent == agent
+         && h->request.contenttype == ctype && h->request.headers == hdrs
+         && !conn->url && !conn->method && !conn->auth
+         && !conn->useragent && !conn->contenttype && !conn->headers,
+         "net_http_new takes the connection's strings, no copies");
+   net_http_connection_free(conn);
+   check(h && !strcmp(h->request.domain, "example.invalid")
+         && !strcmp(h->request.path, "a/b") && h->request.port == 8080
+         && !strcmp(h->request.method, "PUT"),
+         "taken strings read as before");
+   check(h && !net_http_redirect(h, "/c/d")
+         && h->request.domain == h->request.target
+         && !strcmp(h->request.domain, "example.invalid")
+         && h->request.path == h->request.target + sizeof("example.invalid")
+         && !strcmp(h->request.path, "c/d"),
+         "redirect: domain and path in one block");
+   net_http_delete(h);
+   net_http_deinit();
+}
+
 int main(void)
 {
    test_dns_cap();
@@ -423,6 +470,7 @@ int main(void)
    test_ipv6_literals();
    test_redirect_scheme();
    test_redirect_credentials();
+   test_new_takes_strings();
    if (failures)
    {
       printf("%d check(s) failed\n", failures);

@@ -1482,7 +1482,6 @@ static const struct
    char s_a38500d8[11];
    char s_9544161a[9];
    char s_76ac1944[31];
-   char s_ded7e809[32];
    char s_d8820ed7[47];
    char s_4c11d465[16];
    char s_50a04cd9[20];
@@ -1490,8 +1489,6 @@ static const struct
    char s_11121f30[17];
    char s_01badaa0[19];
    char s_6127cc52[27];
-   char s_9d52f73c[15];
-   char s_bc30b87a[16];
    char s_2fd5302f[30];
    char s_2dff21ec[30];
    char s_a2a28187[18];
@@ -1551,7 +1548,6 @@ static const struct
    char s_f24476fa[16];
    char s_97d90c67[15];
    char s_6d08238d[5];
-   char s_033bf99f[15];
    char s_8076aea7[15];
    char s_a00583cf[18];
    char s_30834c9e[12];
@@ -1589,7 +1585,6 @@ static const struct
    char s_094e2bc9[3];
    char s_b71e6907[9];
    char s_d725639f[10];
-   char s_fef383d2[34];
    char s_cbddcf50[21];
    char s_9abb40fc[28];
    char s_a9dc9f21[94];
@@ -5725,7 +5720,6 @@ static const struct
    "<Chiedimi>",
    "Versione",
    "Impossibile eliminare il file.",
-   "Impossibile rinominare il file.",
    "Errore nell'aggiornare la voce della playlist.",
    "Shader corrente",
    "Tema Personalizzato",
@@ -5733,8 +5727,6 @@ static const struct
    "Elimina scaletta",
    "Non mostrarlo pi\303\271",
    "Scarica tutte le miniature",
-   "Intero sistema",
-   "Questa Playlist",
    "\303\210 gi\303\240 in corso un download.",
    "Riuscito: %1 non riuscito: %2",
    "Scarica miniatura",
@@ -5794,7 +5786,6 @@ static const struct
    "Sposta In Basso",
    "Sposta In Alto",
    "Nome",
-   "Errore Di Rete",
    "Nuova playlist",
    "Elemento Playlist",
    "Estensioni:",
@@ -5838,7 +5829,6 @@ static const struct
    "Su",
    "Playlist",
    "Copertina",
-   "Miniature scaricate con successo.",
    "Schermata del Titolo",
    "Aggiornamento non riuscito.",
    "RetroArch aggiornato con successo. Riavvia l'applicazione per rendere effettive le modifiche.",
@@ -8823,7 +8813,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182103u
+      (sizeof(msg_hash_it_blob) == (181991u
 #ifdef ANDROID
        + 376u
 #endif
@@ -10732,7 +10722,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -10740,8 +10729,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -10801,7 +10788,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
@@ -10838,7 +10824,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,

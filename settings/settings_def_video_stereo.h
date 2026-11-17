@@ -47,4 +47,12 @@ S_ACTION_EX(VIDEO_SCREEN_WINDOWS_RESTORE,
       "video_screen_windows_restore", SD_FLAG_NONE, setting_action_video_screen_windows_restore, NULL, 0,
       "Restore Screen Windows",
       "Reopen screen windows closed from their title bar, at their saved size and position, when the game resumes.")
+
+#if defined(ANDROID) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_UINT_EX(video_blank_unused_screens, VIDEO_BLANK_UNUSED_SCREENS,
+      "video_blank_unused_screens",
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_blank_unused_screens, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Blank Unused Screens",
+      "Cover built-in screens RetroArch isn't using with black. The screen is not switched off, so it saves power on OLED panels only. External displays are left alone, and Android's main screen can't be covered. Needs Android 12 or later.")
+#endif
 #endif
