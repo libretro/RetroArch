@@ -5995,22 +5995,37 @@ fixture:
 #define TZU_ZIPS    24
 #define TZU_SLOW_MS 500
 
+/* Linked with --wrap: the scan titles each entry as it begins it, one
+ * at a time, so as it begins the second the first one's verdict is in.
+ * While title_watch is set, title_slow_in keeps slow_in then. */
+static bool title_watch;
+static int  title_entries;
+static int  title_slow_in;
+
+void __real_task_set_title(retro_task_t *task, char *title);
+void __wrap_task_set_title(retro_task_t *task, char *title)
+{
+   if (title_watch && title && strstr(title, ".zip") && ++title_entries == 2)
+      title_slow_in = retro_atomic_load_acquire_int(&slow_in);
+   __real_task_set_title(task, title);
+}
+
 /* TorrentZip sets a zip database cannot hold by their size: once the
  * scan has kept one from a whole read, the readers stop reading the
- * next ones whole, whose CRCs the scan would drop.  Their whole reads
- * are slowed, so each reader has one under way when the scan rules on
- * the first set and may begin one more before it does: two rounds,
- * three allowed, of TZU_ZIPS without the stop.  Slowed well past what
- * the scan takes to rule: at 150 ms a sanitized scan on a loaded
- * four-core runner ruled after four rounds. */
+ * next ones whole, whose CRCs the scan would drop.  Counted against the
+ * scan's own progress, not a clock: by the time it begins its second
+ * entry it has ruled on the first set, and from then on a reader may
+ * begin only the one whole read it chose before that.  Their whole
+ * reads are slowed, so without the stop the readers are still reading
+ * the sets whole long after the ruling. */
 static void tz_unsized_lane(const char *root)
 {
    static uint8_t d[2][MF_MEMBER_LEN];
-   char           db[512], dir[512], p[1024], detail[64];
+   char           db[512], dir[512], p[1024], detail[96];
    db_rec_t       arc;
    zip_entry_t    e[2];
    unsigned       k, n = readers_expected();
-   int            scan, rdr;
+   int            scan, rdr, after;
    bool           started;
 
    if (!n)
@@ -6053,16 +6068,22 @@ static void tz_unsized_lane(const char *root)
    use_db(db);
    retro_atomic_store_release_int(&reads_begun,  0);
    retro_atomic_store_release_int(&reader_begun, 0);
-   begun_size = TZ_ZIP_LEN;
+   begun_size    = TZ_ZIP_LEN;
    slow_reset(TZ_ZIP_LEN, TZU_SLOW_MS);
-   started    = run_scan(dir) && scan_completed;
-   slow_size  = 0;
-   begun_size = 0;
-   rdr        = retro_atomic_load_acquire_int(&reader_begun);
-   scan       = retro_atomic_load_acquire_int(&reads_begun) - rdr;
-   sprintf(detail, "scan %d, readers %d of %u (%u readers)", scan, rdr,
-         TZU_ZIPS, n);
-   check(started && scan == 0 && rdr <= (int)(3 * n),
+   title_entries = 0;
+   title_slow_in = -1;
+   title_watch   = true;
+   started       = run_scan(dir) && scan_completed;
+   title_watch   = false;
+   slow_size     = 0;
+   begun_size    = 0;
+   rdr           = retro_atomic_load_acquire_int(&reader_begun);
+   scan          = retro_atomic_load_acquire_int(&reads_begun) - rdr;
+   after         = title_slow_in < 0 ? -1
+      : retro_atomic_load_acquire_int(&slow_in) - title_slow_in;
+   sprintf(detail, "scan %d, readers %d of %u, %d after the ruling "
+         "(%u readers)", scan, rdr, TZU_ZIPS, after, n);
+   check(   started && scan == 0 && after >= 0 && after <= (int)n,
          "unsized TorrentZip sets: readers stop reading whole", detail);
    return;
 
