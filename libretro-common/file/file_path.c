@@ -591,6 +591,7 @@ size_t fill_pathname_parent_dir(char *s,
    return path_parent_dir(s, _len);
 }
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 /**
  * fill_dated_filename:
  * @s                  : output filename
@@ -648,6 +649,8 @@ size_t fill_str_dated_filename(char *s,
    }
    return _len;
 }
+
+#endif /* RETRO_DISABLE_HOST_CLOCK */
 
 /**
  * path_basedir:

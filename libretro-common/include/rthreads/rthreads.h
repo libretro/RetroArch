@@ -325,7 +325,9 @@ void scond_wait(scond_t *cond, slock_t *lock);
  * @return \c false if \c timeout_us elapses
  * before \c cond is signaled or broadcast, otherwise \c true.
  */
+#ifndef RETRO_DISABLE_HOST_CLOCK
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us);
+#endif
 
 /**
  * Unblocks all threads waiting on the specified condition variable.

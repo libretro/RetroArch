@@ -185,6 +185,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 
 #include <string.h>
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 retro_perf_tick_t cpu_features_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
@@ -288,6 +289,8 @@ retro_time_t cpu_features_get_time_usec(void)
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
 }
+
+#endif /* RETRO_DISABLE_HOST_CLOCK */
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)
 #define CPU_X86
@@ -1845,6 +1848,7 @@ end:
 #endif
 }
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 /* Sleep until cpu_features_get_time_usec() reads at least @deadline.
  * It lives here, beside the clock it is measured on, and nowhere a
  * launcher compiles: the salamanders build rtime.c for localtime alone
@@ -1910,3 +1914,5 @@ void retro_sleep_until_us(retro_time_t deadline)
    }
 }
 #endif
+
+#endif /* RETRO_DISABLE_HOST_CLOCK */

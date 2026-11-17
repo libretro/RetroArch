@@ -205,6 +205,12 @@ typedef struct retro_eventcount
  */
 bool retro_eventcount_init(retro_eventcount_t *ec);
 
+/* As init, but fail before allocating a mutex/condition-variable fallback.
+ * Required by owners whose threading contract permits lock-free parking only.
+ * On failure the object must not be used or passed to free. */
+bool retro_eventcount_init_lock_free(retro_eventcount_t *ec);
+
+
 /**
  * retro_eventcount_free:
  * @ec : object to release.
@@ -285,8 +291,10 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key);
  * spurious early return reports true, so the caller's loop still owns
  * the decision.
  */
+#ifndef RETRO_DISABLE_HOST_CLOCK
 bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
       int key, int64_t timeout_us);
+#endif
 
 /**
  * retro_eventcount_spin_iters:
@@ -297,6 +305,9 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
  * on Windows it is only meaningful after the first
  * retro_eventcount_init().
  */
+/* RETRO_EVENTCOUNT_FIXED_SPIN selects an iteration-only default at build
+ * time. It bypasses host clock calibration; an explicit iteration-count
+ * environment override remains available. */
 unsigned retro_eventcount_spin_iters(void);
 
 /**

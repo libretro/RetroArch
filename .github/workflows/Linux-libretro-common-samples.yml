@@ -451,12 +451,19 @@ jobs:
             # call, loads, stores and fences none.
             retro_atomic_wiiu_backend_test
             retro_spsc_test
+            # Pairs written whole, views lent across the wrap, reservations
+            retro_spsc_pair_test
             mpsc_stack_test
+            retro_mpsc_test
             # A frame handoff where neither side waits: no read sees a
             # buffer being filled, the reader ends on the last frame.
             retro_triple_buffer_test
             retro_waitable_spsc_test
             retro_eventcount_test
+            # init_lock_free, and the builds with no host clock
+            retro_eventcount_lock_free_test
+            retro_eventcount_lock_free_test_scond
+            retro_eventcount_lock_free_test_clockless
             # Parking on the value of words and waking by address, over
             # the eventcount: a lost wake leaves a thread asleep and the
             # test's alarm ends it.
