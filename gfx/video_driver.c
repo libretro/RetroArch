@@ -10313,12 +10313,16 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static uint64_t last_fps_count;
+   /* Repeats Skip Duplicate Frames left off the display since the
+    * FPS window opened; the window counts only what was shown */
+   static unsigned fps_dupes_skipped;
    static uint64_t last_memory_count;
    static float last_fps, frame_time;
    /* Initialise 'last_frame_duped' to 'true'
     * to ensure that the first frame is rendered */
    static bool last_frame_duped   = true;
    bool render_frame              = true;
+   bool dupe_skipped              = false;
    bool convert_deferred          = false;
    bool convert_lent              = false;
    retro_time_t new_time;
@@ -10462,6 +10466,7 @@ void video_driver_frame(const void *data, unsigned width,
    {
       render_frame               = false;
       video_st->dupe_skip_hold   = VIDEO_DUPE_SKIP_HOLD;
+      dupe_skipped               = true;
    }
    else if (video_st->dupe_skip_hold && !video_st->frame_repeat)
       video_st->dupe_skip_hold--;
@@ -10753,7 +10758,7 @@ void video_driver_frame(const void *data, unsigned width,
       {
          size_t __len;
          last_fps = TIME_TO_FPS(curr_time, new_time,
-               video_st->frame_count - last_fps_count);
+               video_st->frame_count - last_fps_count - fps_dupes_skipped);
 
          /* Under the mailbox, window_title is this thread's scratch
           * and publishing is the exchange in video_title_publish();
@@ -10786,12 +10791,14 @@ void video_driver_frame(const void *data, unsigned width,
 
          curr_time                  = new_time;
          last_fps_count             = video_st->frame_count;
+         fps_dupes_skipped          = 0;
       }
    }
    else
    {
       curr_time = fps_time = new_time;
       last_fps_count = 0;
+      fps_dupes_skipped = 0;
       last_memory_count = 0;
 
       VIDEO_TITLE_LOCK(video_st);
@@ -10808,6 +10815,10 @@ void video_driver_frame(const void *data, unsigned width,
 
       status_text[0] = '\0';
    }
+
+   /* This call is counted from frame_count in the window it opens or
+    * continues, so its skip is too */
+   fps_dupes_skipped += dupe_skipped;
 
    /* Add core status message to status text */
    if (video_info.core_status_msg_show)

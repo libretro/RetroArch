@@ -101,10 +101,11 @@ if [ ! -s "$ld_line" ]; then
 fi
 
 # calloc() through the harness (its __wrap_calloc), for the lanes that
-# fail an allocation; Apple's linker has no --wrap, and the harness
-# leaves those lanes out there.
+# fail an allocation, and the clock (__wrap_cpu_features_get_time_usec)
+# for the lanes that move it themselves; Apple's linker has no --wrap,
+# and the harness leaves those lanes out there.
 rm -f $out/threaded_video_test $out/threaded_video_test.exe
-wrap="-Wl,--wrap=calloc"
+wrap="-Wl,--wrap=calloc -Wl,--wrap=cpu_features_get_time_usec"
 [ "$(uname -s)" = Darwin ] && wrap=""
 sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o $cocoa_objs#" \
     -e "s#-o retroarch #$wrap -o $out/threaded_video_test #" \

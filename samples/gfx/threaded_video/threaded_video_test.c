@@ -108,6 +108,22 @@ void *__wrap_calloc(size_t nmemb, size_t size)
    return __real_calloc(nmemb, size);
 }
 
+/* cpu_features_get_time_usec() through the same --wrap: armed, the
+ * thread that armed it reads harness_clock_now, which the lane moves
+ * itself; every other thread reads the real clock. */
+#define HARNESS_WRAP_CLOCK 1
+retro_time_t __real_cpu_features_get_time_usec(void);
+static int harness_clock_armed;
+static uintptr_t harness_clock_owner;
+static retro_time_t harness_clock_now;
+retro_time_t __wrap_cpu_features_get_time_usec(void)
+{
+   if (     retro_atomic_load_acquire_int(&harness_clock_armed)
+         && sthread_get_current_thread_id() == harness_clock_owner)
+      return harness_clock_now;
+   return __real_cpu_features_get_time_usec();
+}
+
 /* A GL driver whose own struct cannot be allocated returns no driver,
  * touching nothing (its init allocates that struct first). Run before
  * the frontend is up: the init's error path frees the current context
@@ -7605,6 +7621,29 @@ static void skiplane_push(const void *pix, bool threaded)
       video_thread_wait_idle();
 }
 
+#ifdef HARNESS_WRAP_CLOCK
+/* The FPS counter over real, repeat pairs, the clock moved one period
+ * per push: enough pushes that the last window the counter closed lies
+ * wholly inside them. Read from the window title, where the counter
+ * puts it. */
+#define SKIPLANE_FPS_INTERVAL 8
+#define SKIPLANE_FPS_PERIOD   5000
+static double skiplane_fps(const void *pix, bool threaded)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const char *fps;
+   unsigned i;
+
+   for (i = 0; i < 3 * SKIPLANE_FPS_INTERVAL; i++)
+   {
+      harness_clock_now += SKIPLANE_FPS_PERIOD;
+      skiplane_push((i & 1) ? NULL : pix, threaded);
+   }
+   fps = strstr(video_st->window_title, "FPS:");
+   return fps ? strtod(fps + 4, NULL) : -1.0;
+}
+#endif
+
 static void lane_dupe_skip(bool threaded)
 {
    unsigned had                   = failures;
@@ -7671,6 +7710,33 @@ static void lane_dupe_skip(bool threaded)
          "the runloop would not pace it", mode,
          (unsigned)video_st->dupe_skip_hold);
 
+#ifdef HARNESS_WRAP_CLOCK
+   /* The FPS counter counts what was shown: half the pushes when every
+    * other one is a skipped repeat, all of them with the setting off */
+   {
+      bool saved_fps_show     = settings->bools.video_fps_show;
+      unsigned saved_interval = settings->uints.fps_update_interval;
+      double on, off;
+      settings->bools.video_fps_show      = true;
+      settings->uints.fps_update_interval = SKIPLANE_FPS_INTERVAL;
+      harness_clock_now   = __real_cpu_features_get_time_usec();
+      harness_clock_owner = sthread_get_current_thread_id();
+      retro_atomic_store_release_int(&harness_clock_armed, 1);
+      on  = skiplane_fps(pix_a, threaded);
+      settings->bools.video_skip_dupe_frames = false;
+      off = skiplane_fps(pix_a, threaded);
+      retro_atomic_store_release_int(&harness_clock_armed, 0);
+      settings->bools.video_skip_dupe_frames = true;
+      settings->bools.video_fps_show      = saved_fps_show;
+      settings->uints.fps_update_interval = saved_interval;
+      video_st->dupe_skip_hold            = 0;
+      CHECK(on == 100.0 && off == 200.0,
+            "dupe skip lane (%s): FPS counter read %.2f with repeats "
+            "skipped and %.2f with them shown, want 100.00 and 200.00",
+            mode, on, off);
+   }
+#endif
+
    /* Black Frame Insertion: the presents are the effect */
    settings->uints.video_black_frame_insertion = 1;
    retro_atomic_store_release_size(&skiplane_count, 0);
@@ -7712,7 +7778,8 @@ static void lane_dupe_skip(bool threaded)
    run_frames(2);
    if (failures == had)
       fprintf(stderr, "[pass] dupe skip lane (%s: repeats unpresented, "
-            "BFI and setting off present them)\n", mode);
+            "FPS counts what was shown, BFI and setting off present "
+            "them)\n", mode);
 }
 
 /* ------------------------------------------------------------------ */
