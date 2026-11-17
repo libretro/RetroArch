@@ -38,6 +38,7 @@ static ui_companion_driver_t ui_companion_null = {
    NULL, /* iterate */
    NULL, /* event_command */
    NULL, /* notify_refresh */
+   NULL, /* notify_thumbnails */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */
    NULL, /* get_main_window */
@@ -323,6 +324,24 @@ void ui_companion_driver_notify_refresh(void)
       if (     (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)
             && uico_st->wimp && uico_st->wimp->notify_refresh)
          uico_st->wimp->notify_refresh(uico_st->wimp_data);
+#endif
+}
+
+void ui_companion_driver_notify_thumbnails(const char *playlist_path)
+{
+   uico_driver_state_t *uico_st    = &uico_driver_st;
+   const ui_companion_driver_t *ui = uico_st->drv;
+   if (!ui)
+      return;
+   if (ui->notify_thumbnails)
+      ui->notify_thumbnails(uico_st->data, playlist_path);
+
+#ifdef HAVE_COMPANION_WIMP
+   if (retro_atomic_load_relaxed_int(&uico_driver_st.desktop_menu_enable))
+      if (     (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)
+            && uico_st->wimp && uico_st->wimp->notify_thumbnails)
+         uico_st->wimp->notify_thumbnails(uico_st->wimp_data,
+               playlist_path);
 #endif
 }
 
