@@ -358,14 +358,12 @@ struct rchd
    rlzma_dec_t       *lzma;
 #endif
 
-   /* Three lookup tables, one channel of samples and the Huffman
+   /* Three lookup tables and the Huffman
     * decoders, for A/V hunks. The decoders are heap-held because the
     * five of them come to ~10 KiB, which overruns an 8 KiB thread
     * stack. All made on first use, so an image that is not
     * audio/video pays nothing for them. */
    uint16_t          *av_lookup;
-   int16_t           *av_samples;
-   uint32_t           av_samples_capacity;
    struct rchd_av_scratch *av_scratch;
 
    /* One decoded hunk, kept so a range spanning several hunks, or two
@@ -378,11 +376,16 @@ struct rchd
    uint8_t           *cd_scratch;
 
 #ifdef HAVE_RCHD_FLAC
-   /* The CD FLAC decoder. Every cdfl hunk of an image is headerless
-    * FLAC with one geometry, so one decoder is made and rewound per
-    * hunk instead of built and torn down for each. */
-   rflac_t           *cdfl;
-   uint32_t           cdfl_block_size;
+   /* The FLAC decoder every FLAC user (cdfl, flac, A/V audio) shares.
+    * An image's FLAC streams are headerless with one geometry, so one
+    * decoder is made and rewound per stream instead of built and torn
+    * down for each. */
+   rflac_t           *flac;
+   /* Where a FLAC stream bound for an odd byte decodes first. */
+   int16_t           *flac_bounce;
+   uint32_t           flac_channels;
+   uint32_t           flac_block_size;
+   uint32_t           flac_bounce_capacity;
 #endif
 
    rchd_track_t      *tracks;
@@ -1147,12 +1150,12 @@ void rchd_free(rchd_t *chd)
    free(chd->cache);
    free(chd->cd_scratch);
 #ifdef HAVE_RCHD_FLAC
-   rflac_free(chd->cdfl);
+   rflac_free(chd->flac);
+   free(chd->flac_bounce);
 #endif
    free(chd->tracks);
    free(chd->sec_frame);
    free(chd->av_lookup);
-   free(chd->av_samples);
    free(chd->av_scratch);
    free(chd);
 }
@@ -1461,6 +1464,75 @@ int rchd_register_codec(rchd_t *chd, uint32_t tag,
  * from measurement, and it is marked as such in place.
  */
 
+/* The shared FLAC decoder for headerless streams of @channels of
+ * 16-bit samples in blocks of at most @block_size frames, rewound to the
+ * start of a stream. A decoder sized for a larger block decodes a
+ * smaller one, so A/V audio, whose sample count moves by one between
+ * hunks, settles on its largest instead of being rebuilt every hunk. */
+static rflac_t *rchd_flac_decoder(rchd_t *chd, uint32_t channels,
+      uint32_t block_size)
+{
+   rflac_format_t fmt;
+
+   if (     chd->flac
+         && chd->flac_channels   == channels
+         && chd->flac_block_size >= block_size)
+   {
+      rflac_reset(chd->flac);
+      return chd->flac;
+   }
+
+   rflac_free(chd->flac);
+   chd->flac            = NULL;
+   fmt.sample_rate      = 44100;
+   fmt.channels         = channels;
+   fmt.bits_per_sample  = 16;
+   fmt.block_size       = block_size;
+   if (!(chd->flac = rflac_new_raw(&fmt)))
+      return NULL;
+   chd->flac_channels   = channels;
+   chd->flac_block_size = block_size;
+   return chd->flac;
+}
+
+/* Decodes up to @frames from @d's input into @out, each sample stored
+ * in the stated byte order, adding the input consumed to @used. Returns
+ * the frames produced. Every stream is handed over whole and marked
+ * ended, so the decoder keeps no rewind point between calls. */
+static size_t rchd_flac_run(rflac_t *d, int16_t *out, size_t frames,
+      int big_endian, size_t *used)
+{
+   size_t got = 0;
+
+   rflac_set_out_s16_order(d, out, frames, big_endian);
+   while (got < frames)
+   {
+      size_t rd = 0, wr = 0;
+      int    e  = rflac_process(d, &rd, &wr);
+      *used += rd;
+      got   += wr;
+      if (e != RFLAC_PROCESS_NEXT || wr == 0)
+         break;
+   }
+   return got;
+}
+
+/* Room for @samples, for a stream whose destination is on an odd byte. */
+static int16_t *rchd_flac_bounce(rchd_t *chd, uint32_t samples)
+{
+   if (samples > chd->flac_bounce_capacity)
+   {
+      int16_t *grown = (int16_t*)realloc(chd->flac_bounce,
+            (size_t)samples * sizeof(int16_t));
+
+      if (!grown)
+         return NULL;
+      chd->flac_bounce          = grown;
+      chd->flac_bounce_capacity = samples;
+   }
+   return chd->flac_bounce;
+}
+
 #define RCHD_AV_CODES    (256 + 16)
 #define RCHD_AV_MAX_BITS  16
 
@@ -1519,7 +1591,6 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
    rchd_av_scratch_t *s;
    rchd_av_plane_t   *plane;
    rhuff_bits_t    bits;
-   rflac_format_t  fmt;
    uint32_t        metasize;
    uint32_t        channels;
    uint32_t        samples;
@@ -1618,50 +1689,34 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
 
       if (mode == 0xffff)
       {
-      if (samples > chd->av_samples_capacity)
-      {
-         int16_t *grown = (int16_t*)realloc(chd->av_samples,
-               (size_t)samples * sizeof(int16_t));
-
-         if (!grown)
-            return RCHD_ERROR_MEM;
-         chd->av_samples          = grown;
-         chd->av_samples_capacity = samples;
-      }
-
-      fmt.sample_rate     = 44100;
-      fmt.channels        = 1;
-      fmt.bits_per_sample = 16;
-      fmt.block_size      = samples;
-
-      for (i = 0; i < channels; i++)
-      {
-         uint32_t clen = rchd_rd16(src + 10 + i * 2);
+         /* Each channel decodes big-endian straight into the hunk.
+          * The metadata ahead of it is any length, so a channel can
+          * start on an odd byte; that one goes through a bounce
+          * buffer, since a sample store needs its alignment. */
+         int16_t *bounce = NULL;
          rflac_t *d;
-         size_t   got = 0;
-         uint32_t k;
 
-         if (!(d = rflac_new_raw(&fmt)))
+         if (((size_t)out & 1) && !(bounce = rchd_flac_bounce(chd, samples)))
             return RCHD_ERROR_MEM;
-         rflac_set_out_s16(d, chd->av_samples, samples);
-         rflac_set_in(d, p, clen);
-         for (;;)
-         {
-            size_t rd = 0, wr = 0;
-            int    e  = rflac_process(d, &rd, &wr);
-            got += wr;
-            if (e != RFLAC_PROCESS_NEXT || wr == 0)
-               break;
-         }
-         rflac_free(d);
-         if (got != (size_t)samples)
-            return RCHD_ERROR_DATA;
 
-         for (k = 0; k < samples; k++)
+         if (!(d = rchd_flac_decoder(chd, 1, samples)))
+            return RCHD_ERROR_MEM;
+
+         for (i = 0; i < channels; i++)
          {
-            out[k * 2]     = (uint8_t)((uint16_t)chd->av_samples[k] >> 8);
-            out[k * 2 + 1] = (uint8_t)chd->av_samples[k];
-         }
+            uint32_t clen = rchd_rd16(src + 10 + i * 2);
+            int16_t *to   = bounce ? bounce : (int16_t*)(void*)out;
+            size_t   used = 0;
+
+            if (i)
+               rflac_reset(d);
+            rflac_set_in(d, p, clen);
+            rflac_set_eof(d);
+            if (rchd_flac_run(d, to, samples, 1, &used)
+                  != (size_t)samples)
+               return RCHD_ERROR_DATA;
+            if (bounce)
+               memcpy(out, bounce, (size_t)samples * 2);
             out += samples * 2;
             p   += clen;
          }
@@ -1979,33 +2034,16 @@ static void rchd_cd_rebuild(uint8_t *sec)
  * cost a handful of allocations for every audio hunk read. */
 static rflac_t *rchd_cdfl_decoder(rchd_t *chd, uint32_t sector_bytes)
 {
-   rflac_format_t fmt;
    /* The encoder sizes its blocks from the whole hunk rather than from
     * one sector: a quarter of the payload, halved until it is no larger
     * than a sector's worth of samples. A decoder told anything smaller
     * rejects the first frame it reads, because the block it declares
     * will not fit what the decoder allocated. */
-   uint32_t       bs = sector_bytes / 4;
+   uint32_t bs = sector_bytes / 4;
 
    while (bs > RCHD_CD_SECTOR_SIZE)
       bs /= 2;
-
-   if (chd->cdfl && chd->cdfl_block_size == bs)
-   {
-      rflac_reset(chd->cdfl);
-      return chd->cdfl;
-   }
-
-   rflac_free(chd->cdfl);
-   chd->cdfl            = NULL;
-   fmt.block_size       = bs;
-   fmt.sample_rate      = 44100;
-   fmt.channels         = 2;
-   fmt.bits_per_sample  = 16;
-   if (!(chd->cdfl = rflac_new_raw(&fmt)))
-      return NULL;
-   chd->cdfl_block_size = bs;
-   return chd->cdfl;
+   return rchd_flac_decoder(chd, 2, bs);
 }
 
 static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
@@ -2014,13 +2052,15 @@ static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
    uint32_t       frames = dst_len / RCHD_CD_FRAME_SIZE;
    uint32_t       sector_bytes;
    rflac_t       *d;
-   size_t         want;
-   size_t         got = 0;
    size_t         used = 0;
    uint8_t       *sectors;
    uint8_t       *subcode;
    uint32_t       i;
    int            err;
+   /* Sectors decode straight into their frames of @dst, unless @dst
+    * is on an odd byte, where a sample store would be misaligned and
+    * they decode into the scratch to be copied across. */
+   int            odd = (int)((size_t)dst & 1);
 
    if (!frames || dst_len % RCHD_CD_FRAME_SIZE)
       return RCHD_ERROR_DATA;
@@ -2036,34 +2076,21 @@ static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
    sectors = chd->cd_scratch;
    subcode = sectors + sector_bytes;
 
-   want = sector_bytes / 4;
-
    if (!(d = rchd_cdfl_decoder(chd, sector_bytes)))
       return RCHD_ERROR_MEM;
-   rflac_set_out_s16(d, (int16_t*)(void*)sectors, want);
    rflac_set_in(d, src, src_len);
-   for (;;)
-   {
-      size_t rd = 0, wr = 0;
-      int    e  = rflac_process(d, &rd, &wr);
-      used += rd;
-      got  += wr;
-      if (e != RFLAC_PROCESS_NEXT || wr == 0)
-         break;
-   }
-
-   if (got != want)
-      return RCHD_ERROR_DATA;
+   rflac_set_eof(d);
 
    /* The samples are stored most significant byte first where a disc
-    * image holds them least significant byte first. The stream decodes
-    * perfectly without this, which is why it has to be measured against
-    * real output rather than reasoned about. */
-   for (i = 0; i < sector_bytes; i += 2)
+    * image holds them least significant byte first, so the hunk holds
+    * them big-endian whatever the host. */
+   for (i = 0; i < frames; i++)
    {
-      uint8_t t          = sectors[i];
-      sectors[i]         = sectors[i + 1];
-      sectors[i + 1]     = t;
+      uint8_t *to = odd ? sectors + (size_t)i * RCHD_CD_SECTOR_SIZE
+                        : dst + (size_t)i * RCHD_CD_FRAME_SIZE;
+      if (rchd_flac_run(d, (int16_t*)(void*)to, RCHD_CD_SECTOR_SIZE / 4,
+               1, &used) != RCHD_CD_SECTOR_SIZE / 4)
+         return RCHD_ERROR_DATA;
    }
 
    /* Whatever the FLAC data did not consume is the subchannel. */
@@ -2079,8 +2106,9 @@ static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
    {
       uint8_t *out = dst + (size_t)i * RCHD_CD_FRAME_SIZE;
 
-      memcpy(out, sectors + (size_t)i * RCHD_CD_SECTOR_SIZE,
-            RCHD_CD_SECTOR_SIZE);
+      if (odd)
+         memcpy(out, sectors + (size_t)i * RCHD_CD_SECTOR_SIZE,
+               RCHD_CD_SECTOR_SIZE);
       memcpy(out + RCHD_CD_SECTOR_SIZE,
             subcode + (size_t)i * RCHD_CD_SUBCODE_SIZE,
             RCHD_CD_SUBCODE_SIZE);
@@ -2299,55 +2327,30 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
           * A hunk is read as interleaved 16-bit stereo whatever it
           * actually holds; the codec is a way of compressing bytes, and
           * nothing here has to mean audio. */
-         rflac_format_t fmt;
          rflac_t       *d;
          size_t         frames = dst_len / 4;
-         size_t         got    = 0;
-         int            little;
+         size_t         used   = 0;
+         int16_t       *to     = (int16_t*)(void*)dst;
 
          if (src_len < 2 || (src[0] != 'L' && src[0] != 'B'))
             return RCHD_ERROR_DATA;
-         little = (src[0] == 'L');
 
-         fmt.sample_rate     = 44100;
-         fmt.channels        = 2;
-         fmt.bits_per_sample = 16;
-         fmt.block_size      = (uint32_t)frames;
+         /* Straight into @dst in the hunk's own order, unless @dst is
+          * on an odd byte, where a sample store would be misaligned. */
+         if ((size_t)dst & 1)
+         {
+            if (!(to = rchd_flac_bounce(chd, (uint32_t)frames * 2)))
+               return RCHD_ERROR_MEM;
+         }
 
-         if (!(d = rflac_new_raw(&fmt)))
+         if (!(d = rchd_flac_decoder(chd, 2, (uint32_t)frames)))
             return RCHD_ERROR_MEM;
-
-         rflac_set_out_s16(d, (int16_t*)(void*)dst, frames);
          rflac_set_in(d, src + 1, src_len - 1);
-         for (;;)
-         {
-            size_t rd = 0, wr = 0;
-            int    e  = rflac_process(d, &rd, &wr);
-            got += wr;
-            if (e != RFLAC_PROCESS_NEXT || wr == 0)
-               break;
-         }
-         rflac_free(d);
-
-         if (got != frames)
+         rflac_set_eof(d);
+         if (rchd_flac_run(d, to, frames, src[0] == 'B', &used) != frames)
             return RCHD_ERROR_DATA;
-
-         /* The decoder wrote host-order samples; the marker says what
-          * the hunk's own order is. */
-         {
-            static const uint16_t probe = 1;
-            int host_little = *(const uint8_t*)&probe == 1;
-            if (host_little != little)
-            {
-               uint32_t i;
-               for (i = 0; i + 1 < dst_len; i += 2)
-               {
-                  uint8_t t = dst[i];
-                  dst[i]    = dst[i + 1];
-                  dst[i + 1] = t;
-               }
-            }
-         }
+         if (to != (int16_t*)(void*)dst)
+            memcpy(dst, to, frames * 4);
          return RCHD_OK;
       }
 #endif
