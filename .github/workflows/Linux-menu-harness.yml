@@ -573,7 +573,9 @@ jobs:
           # whose wait behind a confirm opens the menu to show it; with
           # a null menu the load runs and says what firmware is missing;
           # a load the Security Warning re-runs does not ask again; and
-          # the box's Cancel leaves the running game as it was.
+          # the box's Cancel leaves the running game as it was, a load
+          # asked for while the box waits turned away before it can
+          # change what the box's answer loads.
           make -C samples/tasks/core_load_paths check
           make -C samples/tasks/core_load_paths clean
 

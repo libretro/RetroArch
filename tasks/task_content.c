@@ -2701,6 +2701,16 @@ bool task_content_load_pending(void)
    return content_load_job.stage != CONTENT_LOAD_STAGE_NONE;
 }
 
+/* Asked before a request writes anything: the load in flight still
+ * reads the paths and state it would write */
+static bool content_load_in_flight(void)
+{
+   if (!task_content_load_pending())
+      return false;
+   RARCH_LOG("[Content] A content load is already in flight.\n");
+   return true;
+}
+
 #ifdef HAVE_MENU
 /* The session an entry point is about to write the next load's
  * identity over: what a firmware Cancel puts back */
@@ -2725,16 +2735,14 @@ static struct content_load_prev
    bool valid;
 } content_load_prev;
 
-/* A load in flight, or deferred, keeps the one taken for it: a second
- * request writes over the session too, before content_load() turns it
- * away. */
+/* A deferred load keeps the one taken for it: its request wrote over
+ * the session already */
 static void content_load_prev_save(void)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t *p_content  = content_state_get_ptr();
    core_info_t *core_info      = NULL;
-   if (     task_content_load_pending()
-         || (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING))
+   if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
       return;
    strlcpy(content_load_prev.core, path_get(RARCH_PATH_CORE),
          sizeof(content_load_prev.core));
@@ -3456,11 +3464,8 @@ static bool content_load(content_ctx_info_t *info,
    struct content_load_job *job      = &content_load_job;
    struct rarch_main_wrap *wrap_args = NULL;
 
-   if (job->stage != CONTENT_LOAD_STAGE_NONE)
-   {
-      RARCH_LOG("[Content] A content load is already in flight.\n");
+   if (content_load_in_flight())
       return false;
-   }
    if (!(wrap_args = (struct rarch_main_wrap*)
       malloc(sizeof(*wrap_args))))
       return false;
@@ -3924,7 +3929,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
    rarch_system_info_t *sys_info           = &runloop_st->system;
 
-   if (!content_info)
+   if (!content_info || content_load_in_flight())
       return false;
 
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
@@ -3968,6 +3973,8 @@ bool task_push_load_content_from_playlist_from_menu(
    bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
 #endif
 
+   if (content_load_in_flight())
+      return false;
    content_load_prev_save();
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
@@ -4058,7 +4065,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    settings_t *settings               = config_get_ptr();
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
 
-   if (!content_info)
+   if (!content_info || content_load_in_flight())
       return false;
 
 #ifdef HAVE_MENU
@@ -4144,7 +4151,7 @@ bool task_push_load_contentless_core_from_menu(
    bool flush_menu                       = true;
    const char *menu_label                = NULL;
 
-   if (!core_path || !*core_path)
+   if (!core_path || !*core_path || content_load_in_flight())
       return false;
 
    content_load_prev_save();
@@ -4465,6 +4472,8 @@ bool task_push_load_content_with_new_core_from_menu(
             type, cb, user_data);
 #endif
 
+   if (content_load_in_flight())
+      return false;
    content_load_prev_save();
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
@@ -4599,6 +4608,8 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content = content_state_get_ptr();
 
+   if (content_load_in_flight())
+      return false;
 #ifdef HAVE_MENU
    content_load_prev_save();
 #endif
@@ -4647,6 +4658,9 @@ bool task_push_start_builtin_core(
       retro_task_callback_t cb,
       void *user_data)
 {
+   if (content_load_in_flight())
+      return false;
+
    /* Clear content path */
    path_clear(RARCH_PATH_CONTENT);
 
@@ -4665,6 +4679,8 @@ bool task_push_load_content_with_core(
       retro_task_callback_t cb,
       void *user_data)
 {
+   if (content_load_in_flight())
+      return false;
 #ifdef HAVE_MENU
    content_load_prev_save();
 #endif
@@ -4681,6 +4697,8 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 {
    content_state_t  *p_content = content_state_get_ptr();
 
+   if (content_load_in_flight())
+      return false;
 #ifdef HAVE_MENU
    content_load_prev_save();
 #endif
@@ -4709,6 +4727,8 @@ bool task_push_load_subsystem_with_core(
    content_state_t  *p_content = content_state_get_ptr();
    runloop_state_t *runloop_st = runloop_state_get_ptr();
 
+   if (content_load_in_flight())
+      return false;
 #ifdef HAVE_MENU
    content_load_prev_save();
 #endif

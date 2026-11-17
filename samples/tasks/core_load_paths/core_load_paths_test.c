@@ -1529,8 +1529,7 @@ static void mode_fw_cancel_restores(void)
          "the contentless load was not started");
    fw_check_kept("a cancelled contentless load changed the session");
 
-   /* A request while the box is up writes the session's identity too,
-    * and is turned away */
+   /* A request while the box is up is turned away */
    memset(&info, 0, sizeof(info));
    CHECK(task_push_load_content_from_playlist_from_menu(fw_core, other,
             "other", &info, NULL, NULL), "the playlist Run was not started");
@@ -1538,6 +1537,27 @@ static void mode_fw_cancel_restores(void)
    CHECK(!task_push_load_contentless_core_from_menu(fw_core),
          "a load started while another waited on its firmware box");
    fw_check_kept("a turned away request outlived the Cancel");
+   /* A core with no firmware too: had it reached the paths, the load
+    * would pass its box */
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, other,
+            "other", &info, NULL, NULL), "the playlist Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box");
+   CHECK(!task_push_load_contentless_core_from_menu(good_core),
+         "a load started while another waited on its firmware box");
+   fw_check_kept("a turned away request for a firmware-less core outlived the Cancel");
+   /* The companion UI's load with a new core, which writes the most */
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, other,
+            "other", &info, NULL, NULL), "the playlist Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box");
+   memset(&info, 0, sizeof(info));
+   CHECK(!task_push_load_content_with_new_core_from_companion_ui(good_core,
+            other, "other", "db", "crc", &info, NULL, NULL),
+         "a companion load started while another waited on its firmware box");
+   CHECK(same_path(path_get(RARCH_PATH_CORE), fw_core),
+         "a turned away companion load named its core");
+   fw_check_kept("a turned away companion load outlived the Cancel");
 
    /* Loads into the running core */
    memset(&info, 0, sizeof(info));
@@ -1562,6 +1582,25 @@ static void mode_fw_cancel_restores(void)
             &info, CORE_TYPE_PLAIN, NULL, NULL),
          "the companion load into the running core was not started");
    fw_check_kept("a cancelled companion load into the running core changed the session");
+
+   /* The box's OK loads what it asked about, not a request turned away
+    * while it waited */
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, other,
+            "other", &info, NULL, NULL), "the playlist Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box");
+   CHECK(!task_push_load_contentless_core_from_menu(good_core),
+         "a load started while another waited on its firmware box");
+   fw_answer(MENU_ACTION_OK);
+   for (i = 0; i < 600 && !(runs(fw_core)
+            && same_path(path_get(RARCH_PATH_CONTENT), other)); i++)
+   {
+      fw_pump(1);
+      if (warning_up())
+         CHECK(answer(CORE_WARNING_ALWAYS_TRUST), "Always Trust not taken");
+   }
+   CHECK(runs(fw_core) && same_path(path_get(RARCH_PATH_CONTENT), other),
+         "the box's OK loaded a request turned away while it waited");
 
    /* A core that ran is probed by its Run before the box asks */
    unload();
