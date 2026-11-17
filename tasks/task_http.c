@@ -94,6 +94,10 @@ struct http_handle
 
 typedef struct http_handle http_handle_t;
 
+#define TASK_HTTP_ERR_WRITE "Download failed: cannot write the file."
+#define TASK_HTTP_ERR_TEMP  "Download failed: cannot create a " \
+   "temporary file beside the existing one."
+
 /* "Download failed." plus, when the transport never got as far as a
  * status, the stage that failed and the library's code for it, so a
  * log line reads "ssl_connect_failed (-0x7780)" instead of "HTTP -1". */
@@ -324,29 +328,26 @@ static char *task_http_error_body(const char *path, size_t *len)
 /* Close the output file and put it in place if @keep, otherwise
  * remove it, leaving a file already at the path alone.  A partial file
  * left behind would otherwise be indistinguishable from a good one on
- * the next run.  Returns 0 when the download is in place, 1 when an
- * existing file could not be replaced and was kept, -1 otherwise. */
-static int task_http_sink_close(http_handle_t *http, bool keep)
+ * the next run.  Returns true when the download is in place. */
+static bool task_http_sink_close(http_handle_t *http, bool keep)
 {
-   int ret;
    if (http->sink_file)
    {
       if (filestream_close(http->sink_file) != 0)
          keep = false;
       http->sink_file = NULL;
    }
-   ret = keep ? 0 : -1;
    if (http->sink_temp)
    {
-      ret = filestream_finish_atomic(http->sink_path, keep);
-      /* A VFS that cannot rename over a file (Android SAF).  A copy
-       * would truncate a file already there, so that one is kept. */
+      int ret = filestream_finish_atomic(http->sink_path, keep);
+      /* A VFS that cannot rename over a file (Android SAF): the
+       * temporary file holds the whole body, so it is copied over. */
       if (ret == 1)
       {
-         if (!path_is_valid(http->sink_path))
-            ret = filestream_copy(http->sink_temp, http->sink_path);
+         ret = filestream_copy(http->sink_temp, http->sink_path);
          filestream_delete(http->sink_temp);
       }
+      keep = (ret == 0);
       free(http->sink_temp);
       http->sink_temp = NULL;
    }
@@ -357,7 +358,7 @@ static int task_http_sink_close(http_handle_t *http, bool keep)
       free(http->sink_path);
       http->sink_path = NULL;
    }
-   return ret;
+   return keep;
 }
 
 static int task_http_con_iterate_transfer(http_handle_t *http)
@@ -518,7 +519,6 @@ task_finished:
              && !http->sink_failed
              && !net_http_error(http->handle)
              && ((flg & RETRO_TASK_FLG_CANCELLED) == 0);
-      int  ret;
       /* An HTTP error response: its start, for the callback to log */
       if (     !ok && http->handle && http->sink_file
             && !http->sink_failed
@@ -531,18 +531,14 @@ task_finished:
                http->sink_temp ? http->sink_temp : http->sink_path,
                &error_body_len);
       }
-      ret = task_http_sink_close(http, ok);
-      if (ret != 0 && !task_get_error(task))
+      if (!task_http_sink_close(http, ok) && !task_get_error(task))
       {
          if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
             task_set_error(task,
                   strldup("Task cancelled.", sizeof("Task cancelled.")));
-         else if (ret == 1)
-            task_set_error(task, strdup("Download failed: cannot replace "
-                     "the existing file on this storage."));
          else if (ok)
-            task_set_error(task,
-                  strdup("Download failed: cannot write the file."));
+            task_set_error(task, strldup(TASK_HTTP_ERR_WRITE,
+                     sizeof(TASK_HTTP_ERR_WRITE)));
          else
             task_set_error(task, task_http_failure_string(http->handle));
       }
@@ -801,8 +797,8 @@ static void *task_push_http_transfer_generic_titled(
       goto error;
 
    if (http->error)
-      task_set_error(t, strdup("Download failed: cannot create a "
-               "temporary file beside the existing one."));
+      task_set_error(t, strldup(TASK_HTTP_ERR_TEMP,
+               sizeof(TASK_HTTP_ERR_TEMP)));
 
    t->handler              = task_http_transfer_handler;
    t->state                = http;

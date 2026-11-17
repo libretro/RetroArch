@@ -291,15 +291,20 @@ void cb_http_task_download_pl_thumbnail(
    retro_atomic_store_release_int(&pl_thumb->http_done, 1);
    task_queue_wake(pl_thumb->ident);
 
-   /* Remaining sanity checks...
-    * > data->data is NULL by design: the body was streamed to
-    *   transf->path as it arrived, and task_push_http_download_file()
-    *   removes the partial file unless the transfer finished cleanly,
-    *   so there is nothing to write here. */
-   if (!data || !*transf->path)
+   /* data->data is NULL by design: the body was streamed to
+    * transf->path as it arrived, and task_push_http_download_file()
+    * replaces the file only when the transfer finished cleanly, so
+    * there is nothing to write here.  A transfer that got its 200 can
+    * still fail to put the file in place, which only @err reports. */
+   if (err && *err)
       goto finish;
 
-   /* Skip if data can't be good */
+   if (!data || !*transf->path)
+   {
+      err = "No response.";
+      goto finish;
+   }
+
    if (data->status != 200)
    {
       err = "File not found.";

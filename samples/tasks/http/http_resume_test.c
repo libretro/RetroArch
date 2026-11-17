@@ -17,9 +17,10 @@
  * the partial file was deleted.
  *
  * A file already at the path is replaced only by a download that
- * succeeds: a 404, a dropped or refused connection, a cancel and a
- * storage that cannot rename over it leave it as it was, and no
- * temporary file behind. */
+ * succeeds: a 404, a dropped or refused connection and a cancel
+ * leave it as it was, and no temporary file behind.  A storage that
+ * cannot rename over it (Android SAF) has the finished download copied
+ * over it. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -634,8 +635,8 @@ int main(void)
    remove(g_temp);
    remove(g_path);
 
-   /* A VFS that cannot rename over the file (Android SAF): copying
-    * would truncate the file first, so it is kept */
+   /* A VFS that cannot rename over the file (Android SAF): the
+    * temporary file holds the whole body, so it is copied over */
    memset(&vfs, 0, sizeof(vfs));
    vfs.rename = refuse_rename;
    vfs.remove = keep_target;
@@ -643,10 +644,11 @@ int main(void)
    seed_target();
    run("existing file, rename refused", s_full, 1);
    set_vfs(NULL);
-   CHECK(g_obs.had_error && strstr(g_obs.err, "replace") && seed_intact()
+   len = file_matches(2, &ok);
+   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok
          && !path_is_valid(g_temp),
-         "rename refused: err=\"%s\", existing file %s, temporary file %s",
-         g_obs.err, seed_intact() ? "kept" : "lost",
+         "rename refused: err=\"%s\" len=%ld ok=%d temporary file %s",
+         g_obs.err, len, ok,
          path_is_valid(g_temp) ? "left behind" : "removed");
    remove(g_path);
 
@@ -670,6 +672,21 @@ int main(void)
    set_vfs(NULL);
    CHECK(g_obs.had_error && file_matches(2, &ok) < 0 && !path_is_valid(g_temp),
          "copy failed: err=%d, file is %ld bytes, temporary file %s",
+         g_obs.had_error, file_matches(2, &ok),
+         path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_path);
+
+   /* The copy over an existing file fails part way: an error, and no
+    * part-written file left looking like a good one */
+   memset(&vfs, 0, sizeof(vfs));
+   vfs.rename = refuse_rename;
+   vfs.write  = short_write;
+   set_vfs(&vfs);
+   seed_target();
+   run("existing file, rename refused, copy fails", s_full, 1);
+   set_vfs(NULL);
+   CHECK(g_obs.had_error && file_matches(2, &ok) < 0 && !path_is_valid(g_temp),
+         "copy over failed: err=%d, file is %ld bytes, temporary file %s",
          g_obs.had_error, file_matches(2, &ok),
          path_is_valid(g_temp) ? "left behind" : "removed");
    remove(g_path);

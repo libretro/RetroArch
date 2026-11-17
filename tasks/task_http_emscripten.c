@@ -313,8 +313,9 @@ task_finished:
          task_set_data(task, resp);
          http->response = NULL;
          if (failed)
-            task_set_error(task,
-                  strdup("Download failed: cannot write the file."));
+            task_set_error(task, strldup("Download failed: cannot write "
+                  "the file.", sizeof("Download failed: cannot write "
+                  "the file.")));
          else if (!mute && status >= 400)
             task_set_error(task, strldup("Download failed.",
                sizeof("Download failed.")));

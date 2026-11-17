@@ -1162,9 +1162,9 @@ void cb_http_task_core_updater_download(
 
    /* The body was streamed to transf->path as it arrived, so
     * data->data is NULL by design and there is nothing to write here.
-    * task_push_http_download_file() removes the partial file unless
-    * the transfer finished cleanly, so a non-2xx means there is no
-    * file on disk to decompress. */
+    * task_push_http_download_file() replaces the file only when the
+    * transfer finished cleanly, so after a failure whatever is at the
+    * path is not this download and is not decompressed. */
    if (err && *err)
       goto finish;
 

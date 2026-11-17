@@ -3615,7 +3615,7 @@ bool companion_core_playlist_push(companion_core_t *core,
 
 #define COMPANION_DL_USER_AGENT   "RetroArch-WIMP/" PACKAGE_VERSION
 #define COMPANION_DL_PARTIAL_EXT  ".partial"
-#define COMPANION_DL_THUMB_URL    "https://thumbnails.libretro.com/"
+#define COMPANION_DL_THUMB_URL    FILE_PATH_CORE_THUMBNAILS_URL "/"
 #define COMPANION_DL_THUMB_EXT    ".png"
 
 /* Task user data. Owned by the task chain; the core only points at it
@@ -3769,7 +3769,7 @@ bool companion_core_thumbnail_download(companion_core_t *core,
    strlcpy(d->output_path + _len, COMPANION_DL_THUMB_EXT COMPANION_DL_PARTIAL_EXT,
          sizeof(d->output_path) - _len);
 
-   /* https://thumbnails.libretro.com/<db>/<subdir>/<name>.png, each path
+   /* <thumbnail server>/<db>/<subdir>/<name>.png, each path
     * component percent-encoded. */
    _len  = strlcpy(url, COMPANION_DL_THUMB_URL, sizeof(url));
    net_http_urlencode(&encoded, db_name);
