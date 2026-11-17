@@ -55,6 +55,7 @@ enum { HYB_LOCAL = 1, HYB_FRONT = 2 };
 
 typedef struct {
 	int   be;
+	int   map_hint;   /* opened for reading to be mapped */
 	void *h;          /* libretro_vfs_implementation_file* or frontend handle */
 	char *path;
 } hyb_file_t;
@@ -123,6 +124,8 @@ static struct retro_vfs_file_handle *hyb_open( const char *path, unsigned mode, 
 	}
 	f->be = be;
 	f->h = h;
+	f->map_hint = ( hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS )
+		&& mode == RETRO_VFS_FILE_ACCESS_READ;
 	/* strdup is POSIX, not C89: under a strict-C89 toolchain the
 	   prototype is hidden and the implicit int return truncates the
 	   pointer on LP64.  Copy manually with the headers we already
@@ -578,15 +581,20 @@ static int hyb_verity_enable( struct retro_vfs_file_handle *fh ) {
 	return 0;
 }
 
-/* the zero-copy sideband: local-backed handles expose their mapping,
-   frontend-backed ones honestly cannot */
+/* the zero-copy sideband: local-backed handles expose their mapping;
+   a frontend-backed one opened to be mapped, a v7 frontend's (SAF
+   content, which only the frontend can open, among them) */
 static const uint8_t *hyb_mapped_ptr( void *fh, int64_t *len ) {
 	hyb_file_t *f = (hyb_file_t *)fh;
 	if ( len )
 		*len = 0;
-	if ( !f || f->be != HYB_LOCAL )
+	if ( !f )
 		return NULL;
-	return retro_vfs_file_get_mapped_ptr_impl( (libretro_vfs_implementation_file *)f->h, len );
+	if ( f->be == HYB_LOCAL )
+		return retro_vfs_file_get_mapped_ptr_impl( (libretro_vfs_implementation_file *)f->h, len );
+	if ( f->map_hint && HYB_FRONT_V7( map ) )
+		return hyb_front->map( (struct retro_vfs_file_handle *)f->h, len );
+	return NULL;
 }
 
 static void hyb_prefetch( void *fh, uint64_t offset, uint64_t len ) {

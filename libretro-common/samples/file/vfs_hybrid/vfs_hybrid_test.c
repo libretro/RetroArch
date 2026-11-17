@@ -682,6 +682,28 @@ int main(void)
       }
       CHECK(filestream_stat_identity("content://media/item", &id) == 1
             && id.size == 78, "v7: identity by path reaches the frontend's");
+      /* filestream_get_mapped_ptr: the frontend's mapping of a file
+       * opened to be mapped, none of any other */
+      f = filestream_open("content://media/item",
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+      if (f)
+      {
+         p = filestream_get_mapped_ptr(f, &len);
+         CHECK(p == fe_bytes && len == 4,
+               "v7: a frontend file opened to be mapped lends its mapping");
+         filestream_close(f);
+      }
+      f = filestream_open("content://media/item",
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (f)
+      {
+         int calls = fe_v7_calls;
+         CHECK(!filestream_get_mapped_ptr(f, &len) && !len
+               && fe_v7_calls == calls,
+               "v7: one opened plainly is never mapped");
+         filestream_close(f);
+      }
       CHECK(filestream_stat_volume("content://media/item",
                RETRO_VFS_VOLUME_WANT_FLAGS, &vol) == 1
             && (vol.flags & RETRO_VFS_VOLUME_READ_ONLY),
@@ -703,6 +725,8 @@ int main(void)
          CHECK(!filestream_verity_measure(f, d, sizeof(d))
                && filestream_verity_enable(f) == 0, "v6: no fs-verity");
          CHECK(!filestream_map(f, &len) && !len, "v6: no mapping");
+         CHECK(!filestream_get_mapped_ptr(f, &len) && !len,
+               "v6: no mapped pointer either");
          CHECK(filestream_view(f, 2, &p) == -1, "v6: nothing lent");
          filestream_close(f);
       }
