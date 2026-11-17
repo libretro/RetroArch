@@ -148,6 +148,25 @@ bool gfx_media_cpu_seek(gfx_media_cpu_t *p, int64_t target_us,
    return result;
 }
 
+const gfx_anim_preview_t *gfx_media_cpu_session(const gfx_media_cpu_t *p)
+{
+   return p ? p->session : NULL;
+}
+
+bool gfx_media_cpu_request_audio(gfx_media_cpu_t *p, int index)
+{
+   return p && gfx_anim_preview_audio_set_track(p->session, index);
+}
+
+bool gfx_media_cpu_select_audio(gfx_media_cpu_t *p, int index,
+      unsigned mix_rate, bool s16, int64_t wall_us)
+{
+   bool result = p && gfx_media_player_select_audio(p->session, p->player,
+         index, mix_rate, s16, wall_us);
+   if (result) p->ended = p->completed_pending = false;
+   return result;
+}
+
 bool gfx_media_cpu_state(gfx_media_cpu_t *p, int64_t wall_us,
       gfx_media_playback_state_t *state)
 {

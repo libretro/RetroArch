@@ -1082,6 +1082,35 @@ bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *thumbnail,
          (int64_t)current_time, state);
 }
 
+bool gfx_thumbnail_request_audio(gfx_thumbnail_t *thumbnail, int index)
+{
+   return thumbnail && gfx_anim_preview_audio_set_track(
+         (gfx_anim_preview_t*)thumbnail->anim_sess, index);
+}
+
+bool gfx_thumbnail_select_audio(gfx_thumbnail_t *thumbnail, int index,
+      retro_time_t current_time)
+{
+   gfx_surface_player_t *player;
+   gfx_anim_preview_t *session;
+   unsigned rate = 0;
+   bool s16 = false;
+   bool result;
+   if (!thumbnail || thumbnail->anim_read_pending
+         || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
+         || !(player = (gfx_surface_player_t*)thumbnail->anim_player)
+         || !(session = (gfx_anim_preview_t*)thumbnail->anim_sess)) return false;
+#ifdef GFX_THUMB_PREVIEW_AUDIO
+   if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
+      audio_driver_mixer_prepare_format(&rate, &s16);
+#endif
+   result = gfx_media_player_select_audio(session, player->vp, index, rate,
+         s16, (int64_t)current_time);
+   if (result)
+      thumbnail->flags &= ~(GFX_THUMB_FLAG_MEDIA_ENDED | GFX_THUMB_FLAG_MEDIA_COMPLETED);
+   return result;
+}
+
 bool gfx_thumbnail_seek(gfx_thumbnail_t *thumbnail, int64_t target_us,
       retro_time_t current_time)
 {

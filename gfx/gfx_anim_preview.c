@@ -1027,12 +1027,13 @@ bool gfx_anim_preview_audio_set_track(gfx_anim_preview_t *p, int track)
 }
 
 bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
-      unsigned mix_rate, bool s16)
+      unsigned mix_rate, bool s16, bool preserve_position)
 {
    if (!p || !p->seekable || mix_rate > 0x3fffffffU)
       return false;
    retro_atomic_store_release_int(&p->seek_audio_format,
-         (int)(mix_rate | (s16 ? 0x40000000U : 0)));
+         (int)(mix_rate | (s16 ? 0x40000000U : 0)
+            | (preserve_position ? 0x80000000U : 0)));
    p->seeking = true;
    p->seek_failed = false;
    gfx_anim_preview_set_paused(p, p->paused);
@@ -1101,6 +1102,7 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
    {
       const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
       if (target_us < 0) target_us = 0;
+      p->seek_requested_us = target_us;
       target_us = target_us > maximum - p->timeline_start_us
          ? maximum : target_us + p->timeline_start_us;
       gfx_anim_preview_audio_prepare_free(p->seek_audio);
@@ -1178,6 +1180,8 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
       }
       p->seek_video_us = p->seek_video_us > p->timeline_start_us
          ? p->seek_video_us - p->timeline_start_us : 0;
+      /* Audio changes retain movie time between video pictures. */
+      if (p->seek_format & 0x80000000U) p->seek_video_us = p->seek_requested_us;
       p->seek_phase = 2;
       return VIDEO_PLAYER_SEEK_PROGRESS;
    }

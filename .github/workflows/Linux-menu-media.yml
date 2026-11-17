@@ -272,3 +272,48 @@ jobs:
             ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
               make -C "$sample" check THREADS=0 SANITIZER=address,undefined
           done
+
+
+  audio-track-menus:
+    runs-on: ubuntu-latest
+    env:
+      APT_PKGS: libasound2-dev
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        threads: [enable, disable]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Configure audio-enabled frontend
+        run: ./configure --enable-alsa --disable-qt --disable-vulkan --disable-wayland --disable-x11 --disable-opengl --disable-opengl1 --disable-opengl_core --disable-ffmpeg --disable-cheevos --disable-webmplayer --${{ matrix.threads }}-threads
+      - name: Build shipping frontend
+        run: make -j2
+      - name: Audio-track selection and video reinit across all four menus
+        run: |
+          set -eu
+          cp libretro-common/samples/formats/audio_transfer_tracks/fixtures/aac-mp4.bin samples/menu/rgui_media/audio-tracks.mp4
+          for driver in rgui ozone materialui xmb; do
+            MEDIA_TEST_AUDIO_TRACKS=1 python3 samples/menu/rgui_media/run.py --driver "$driver" samples/menu/rgui_media/audio-tracks.mp4
+          done

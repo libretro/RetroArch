@@ -3180,6 +3180,35 @@ static bool rgui_media_seek(void *user, int64_t target_us, int64_t now)
    return gfx_media_cpu_seek(((rgui_t*)user)->media_player, target_us, rate, s16, now);
 }
 
+static bool rgui_media_request_audio(void *user, int index)
+{
+   rgui_t *rgui = (rgui_t*)user;
+   return rgui->media_player ? gfx_media_cpu_request_audio(rgui->media_player, index)
+      : gfx_thumbnail_request_audio(&rgui->media_gpu, index);
+}
+
+static bool rgui_media_audio(void *user, int index, int64_t now)
+{
+   rgui_t *rgui = (rgui_t*)user;
+   unsigned rate = 0;
+   bool s16 = false;
+   if (!rgui->media_player) return gfx_thumbnail_select_audio(&rgui->media_gpu, index, now);
+#if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && defined(HAVE_AUDIOMIXER) && \
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+   if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
+      audio_driver_mixer_prepare_format(&rate, &s16);
+#endif
+   return gfx_media_cpu_select_audio(rgui->media_player, index, rate, s16, now);
+}
+
+static void rgui_media_audio_target(rgui_t *rgui, gfx_media_target_t *target)
+{
+   gfx_media_controls_audio_target(target, rgui->media_player
+         ? gfx_media_cpu_session(rgui->media_player)
+         : (const gfx_anim_preview_t*)rgui->media_gpu.anim_sess, rgui_media_audio,
+         rgui_media_request_audio);
+}
+
 static bool rgui_media_gpu_supported(void)
 {
    video_device_info_t info;
@@ -3318,9 +3347,11 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       target.pause = rgui_media_pause;
       target.seek = rgui_media_seek;
       target.source_path = rgui->media_path;
+      rgui_media_audio_target(rgui, &target);
       menu_media_controls_resume(&rgui->media, &target, now);
       memset(&target, 0, sizeof(target));
    }
+   if (target.user) rgui_media_audio_target(rgui, &target);
    target.source_path = target.user ? rgui->media_path : NULL;
    menu_input_get_pointer_state(&rgui->media_pointer);
    rgui->media.settings_user = rgui;
@@ -6229,10 +6260,10 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    gfx_media_rect_t bar;
    unsigned i, width = VIDEO_SCALE_W(dims);
    int64_t position;
-   char elapsed[24], duration[24], caption[56];
-   char seek_back[16], seek_forward[16];
+   char elapsed[24], duration[24], caption[128];
+   char seek_back[16], seek_forward[16], audio_label[16];
    size_t limit;
-   const char *labels[8];
+   const char *labels[9];
    gfx_media_controls_consume(&rgui->media.mailbox, view);
    rgui_media_subtitle_draw(rgui, dims);
    if (!view->visible || !view->layout.unit) return;
@@ -6255,6 +6286,9 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    menu_media_controls_time(elapsed, sizeof(elapsed), position);
    menu_media_controls_time(duration, sizeof(duration), view->playback.duration_us);
    snprintf(caption, sizeof(caption), "%s / %s", elapsed, duration);
+   if (view->audio_track_number)
+      snprintf(caption, sizeof(caption), "%s / %s | A%u %s", elapsed, duration,
+            view->audio_track_number, view->audio_language);
    limit = rgui->font_width_stride
       ? (width - view->layout.timeline.x - 2) / rgui->font_width_stride : 0;
    if (limit < sizeof(caption)) caption[limit] = '\0';
@@ -6268,13 +6302,20 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    labels[4] = "|<";
    labels[5] = ">|";
    labels[6] = "...";
+   if (view->audio_tracks)
+   {
+      snprintf(audio_label, sizeof(audio_label), "A%u", view->audio_track_number);
+      labels[view->layout.button_count - (view->subtitle_tracks ? 2 : 1)] = audio_label;
+   }
    if (view->subtitle_tracks)
       labels[view->layout.button_count - 1] = "CC";
    for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
-      bool enabled = (view->subtitle_tracks && i + 1 == view->layout.button_count)
+      bool enabled = (view->audio_tracks
+            && i + (view->subtitle_tracks ? 2 : 1) == view->layout.button_count)
+            || (view->subtitle_tracks && i + 1 == view->layout.button_count)
             || i == 6 || (i >= 4
             ? (view->directions & (i == 4 ? 1u : 2u)) != 0
             : !i || view->playback.seekable);

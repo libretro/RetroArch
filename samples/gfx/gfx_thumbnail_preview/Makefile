@@ -511,3 +511,10 @@ audio-track-metadata-check: preview_audio_tracks_test
 	./preview_audio_tracks_test
 check: audio-track-metadata-check
 .PHONY: audio-track-metadata-check
+
+audio-selection-check: $(TARGET)
+	mkdir -p fixtures
+	cp $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/aac-mp4.bin fixtures/audio-track-select.mp4
+	AUDIO_SELECT=1 ./$(TARGET) fixtures/audio-track-select.mp4
+check: audio-selection-check
+.PHONY: audio-selection-check

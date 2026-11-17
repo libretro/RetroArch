@@ -8,6 +8,25 @@ static bool gfx_media_inside(const gfx_media_rect_t *r, int x, int y)
       && x - r->x < r->w && y - r->y < r->h;
 }
 
+static unsigned gfx_media_audio_count(const gfx_media_target_t *target)
+{
+   unsigned i, count = 0;
+   if (!target->select_audio || !target->audio_tracks) return 0;
+   for (i = 0; i < target->audio_track_count; i++)
+      if (target->audio_tracks[i].supported) count++;
+   return count;
+}
+
+static unsigned gfx_media_audio_current(const gfx_media_target_t *target)
+{
+   unsigned i;
+   for (i = 0; i < target->audio_track_count; i++)
+      if (target->audio_tracks[i].supported
+            && (target->audio_track_index < 0
+               || target->audio_tracks[i].info.index == target->audio_track_index)) return i;
+   return target->audio_track_count;
+}
+
 void gfx_media_controls_cancel(gfx_media_controls_t *c)
 {
    if (!c) return;
@@ -85,7 +104,8 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    c->layout.timeline.w = (int)width - 4 * gap;
    c->layout.timeline.h = unit / 2;
    count = (target->settings ? 7 : target->step ? 6 : 4)
-      + (target->subtitle_tracks ? 1 : 0);
+      + (target->subtitle_tracks ? 1 : 0)
+      + (c->playback.seekable && gfx_media_audio_count(target) > 1 ? 1 : 0);
    c->layout.button_count = (unsigned)count;
    if (c->focus >= (unsigned)count) c->focus = 0;
    bw = (c->layout.panel.w - (count + 1) * gap) / count;
@@ -120,6 +140,23 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
             && c->playback.position_us >= c->playback.duration_us
             && !c->target.seek(c->target.user, 0, now)) return false;
       return c->target.pause(c->target.user, !c->playback.paused, now);
+   }
+   if (c->playback.seekable && gfx_media_audio_count(&c->target) > 1
+         && button + (c->target.subtitle_tracks ? 2 : 1) == c->layout.button_count)
+   {
+      unsigned i, current = gfx_media_audio_current(&c->target);
+      for (i = 0; i < c->target.audio_track_count; i++)
+      {
+         current = current + 1 < c->target.audio_track_count ? current + 1 : 0;
+         if (c->target.audio_tracks[current].supported)
+         {
+            int index = c->target.audio_tracks[current].info.index;
+            if (!c->target.select_audio(c->target.user, index, now)) return false;
+            c->target.audio_track_index = index;
+            return true;
+         }
+      }
+      return false;
    }
    if (c->target.subtitle_tracks && button + 1 == c->layout.button_count)
    {
@@ -206,7 +243,7 @@ void gfx_media_controls_pointer(gfx_media_controls_t *c, int x, int y,
       c->last_activity = now;
    }
    c->last_x = x; c->last_y = y;
-   c->hover = gfx_media_inside(&c->layout.panel, x, y) ? 8 : -1;
+   c->hover = gfx_media_inside(&c->layout.panel, x, y) ? (int)c->layout.button_count : -1;
    for (i = 0; i < (int)c->layout.button_count; i++)
       if (gfx_media_inside(&c->layout.buttons[i], x, y)) c->hover = i;
    if (pressed && !c->held)
@@ -260,6 +297,26 @@ static bool gfx_media_thumbnail_pause(void *user, bool paused, int64_t now)
 static bool gfx_media_thumbnail_seek(void *user, int64_t target, int64_t now)
 { return gfx_thumbnail_seek((gfx_thumbnail_t*)user, target, now); }
 
+static bool gfx_media_thumbnail_audio(void *user, int index, int64_t now)
+{ return gfx_thumbnail_select_audio((gfx_thumbnail_t*)user, index, now); }
+
+static bool gfx_media_thumbnail_request_audio(void *user, int index)
+{ return gfx_thumbnail_request_audio((gfx_thumbnail_t*)user, index); }
+
+void gfx_media_controls_audio_target(gfx_media_target_t *target,
+      const gfx_anim_preview_t *session,
+      bool (*select_audio)(void *user, int index, int64_t now),
+      bool (*request_audio)(void *user, int index))
+{
+   if (!target) return;
+   target->audio_tracks = session ? session->audio_tracks : NULL;
+   target->audio_track_count = session ? session->audio_track_count : 0;
+   target->audio_track_index = session
+      ? retro_atomic_load_acquire_int(&session->requested_audio_track) - 1 : -1;
+   target->select_audio = session ? select_audio : NULL;
+   target->request_audio = session ? request_audio : NULL;
+}
+
 void gfx_media_controls_thumbnail_target(gfx_thumbnail_t *thumbnail, gfx_media_target_t *out)
 {
    if (!out) return;
@@ -272,6 +329,8 @@ void gfx_media_controls_thumbnail_target(gfx_thumbnail_t *thumbnail, gfx_media_t
    out->state = gfx_media_thumbnail_state;
    out->pause = gfx_media_thumbnail_pause;
    out->seek = gfx_media_thumbnail_seek;
+   gfx_media_controls_audio_target(out, (const gfx_anim_preview_t*)thumbnail->anim_sess,
+         gfx_media_thumbnail_audio, gfx_media_thumbnail_request_audio);
 }
 
 void gfx_media_controls_publish(const gfx_media_controls_t *c, gfx_media_mailbox_t *m)
@@ -294,6 +353,18 @@ void gfx_media_controls_publish(const gfx_media_controls_t *c, gfx_media_mailbox
       v->seek_seconds = c->seek_seconds ? c->seek_seconds : 5;
       v->directions = c->target.directions;
       v->subtitle_tracks = c->target.subtitle_tracks;
+      v->audio_tracks = c->playback.seekable && gfx_media_audio_count(&c->target) > 1;
+      if (c->target.select_audio && c->target.audio_tracks && c->target.audio_track_count)
+      {
+         unsigned current = gfx_media_audio_current(&c->target);
+         if (current < c->target.audio_track_count)
+         {
+            v->audio_track_number = current + 1;
+            memcpy(v->audio_language, c->target.audio_tracks[current].language,
+                  sizeof(v->audio_language));
+            v->audio_language[sizeof(v->audio_language) - 1] = '\0';
+         }
+      }
       v->hover = c->hover;
       v->visible = c->visible;
       v->row_focus = c->row_focus;

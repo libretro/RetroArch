@@ -142,7 +142,7 @@ typedef struct gfx_anim_preview
    int seek_track; /* decoding-thread snapshot for this seek */
    unsigned seek_format, seek_phase; /* decoding-thread state below */
    size_t seek_feed_hi, seek_feed_anchor;
-   int64_t seek_video_us;
+   int64_t seek_video_us, seek_requested_us;
    gfx_anim_preview_audio_prepared_t *seek_audio;
    int64_t media_origin_us, media_clock_us, media_requested_us; /* main-thread position origin */
    bool media_clock_valid;
@@ -236,9 +236,10 @@ bool gfx_anim_preview_audio_set_track(gfx_anim_preview_t *p, int track);
 /* Main-thread request setup before the player is polled; rate0 disables
  * audio preparation. Step is a video_player seek callback on its decoder
  * thread. Commit only after that player completed the latest seek AND
- * accepted its first target picture, using the player's landed position. */
+ * accepted its first target picture. preserve_position retains movie time
+ * between pictures when replacing audio, rather than the picture landing. */
 bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
-      unsigned mix_rate, bool s16);
+      unsigned mix_rate, bool s16, bool preserve_position);
 int gfx_anim_preview_seek_step(void *user, int64_t target_us,
       bool restart, int64_t *position_us);
 void gfx_anim_preview_seek_cancel(gfx_anim_preview_t *p);

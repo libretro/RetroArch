@@ -123,6 +123,7 @@ static void render_subtitles(struct menu_state *menu_st)
 #include "native_media_capture.h"
 #include "win32_modal_test.h"
 #include "subtitle_media_test.h"
+#include "audio_media_test.h"
 
 #include "folder_playback_test.h"
 #include "external_settings_test.h"
@@ -309,7 +310,8 @@ int main(int argc,char **argv)
    video=video_state_get_ptr();old_poke=video->poke;
    if(!native_gpu)
    { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }
-   config_get_ptr()->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL;
+   config_get_ptr()->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL
+      || getenv("MEDIA_TEST_AUDIO_TRACKS") != NULL;
    if (getenv("MEDIA_TEST_HISTORY_IMAGE"))
    {
       fill_pathname_basedir(directory, argv[2], sizeof(directory));
@@ -586,6 +588,19 @@ int main(int argc,char **argv)
       CHECK("window fullscreen toggles retain seeking and updating pixels",
             native_gpu && media_native_window_toggle(menu_st, render,
                test_current_target));
+      goto media_test_done;
+   }
+   if (getenv("MEDIA_TEST_AUDIO_TRACKS"))
+   {
+      int selected;
+      CHECK("real menu audio selector preserves position and pause",
+            media_test_audio_tracks(&viewer->media, menu_st, render_subtitles));
+      selected = viewer->media.controls.target.audio_track_index;
+      driver_uninit(DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET);
+      drivers_init(config_get_ptr(), DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET, false);
+      viewer = (test_viewer_t*)menu_st->userdata;
+      CHECK("selected audio survives video reinit",
+            media_test_audio_restored(&viewer->media, selected, menu_st, render_subtitles));
       goto media_test_done;
    }
    CHECK("confirm pauses through menu adapter",

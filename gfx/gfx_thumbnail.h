@@ -515,6 +515,10 @@ bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *thumbnail,
 /* Main-thread absolute media seek, currently MP4. Latest request wins;
  * decoding and audio preparation use the existing player worker.
  * Keeps the last texture visible and preserves the user's pause state. */
+bool gfx_thumbnail_request_audio(gfx_thumbnail_t *thumbnail, int index);
+bool gfx_thumbnail_select_audio(gfx_thumbnail_t *thumbnail, int index,
+      retro_time_t current_time);
+
 bool gfx_thumbnail_seek(gfx_thumbnail_t *thumbnail, int64_t target_us,
       retro_time_t current_time);
 

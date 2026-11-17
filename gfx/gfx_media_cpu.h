@@ -23,6 +23,10 @@ bool gfx_media_cpu_take_completed(gfx_media_cpu_t *player);
 bool gfx_media_cpu_pause(gfx_media_cpu_t *player, bool paused, int64_t wall_us);
 bool gfx_media_cpu_seek(gfx_media_cpu_t *player, int64_t target_us,
       unsigned mix_rate, bool s16, int64_t wall_us);
+const gfx_anim_preview_t *gfx_media_cpu_session(const gfx_media_cpu_t *player);
+bool gfx_media_cpu_request_audio(gfx_media_cpu_t *player, int index);
+bool gfx_media_cpu_select_audio(gfx_media_cpu_t *player, int index,
+      unsigned mix_rate, bool s16, int64_t wall_us);
 bool gfx_media_cpu_state(gfx_media_cpu_t *player, int64_t wall_us,
       gfx_media_playback_state_t *state);
 /* Nonblocking. False retains everything until a later call succeeds.

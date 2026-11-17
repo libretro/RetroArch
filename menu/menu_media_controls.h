@@ -24,6 +24,7 @@ typedef struct menu_media_controls
    gfx_media_view_t view; /* render thread */
    gfx_media_subtitle_mailbox_t subtitle_mailbox;
    gfx_media_subtitle_view_t subtitle_view; /* render thread */
+   unsigned resume_audio_track; /* demux index + 1; zero automatic */
    bool subtitle_seeking, context_reset; /* main thread */
    bool settings_open, settings_returning; /* main thread */
 } menu_media_controls_t;
