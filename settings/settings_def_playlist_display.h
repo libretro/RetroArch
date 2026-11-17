@@ -39,7 +39,7 @@ S_BOOL(playlist_show_entry_idx, PLAYLIST_SHOW_ENTRY_IDX,
 S_BOOL(playlist_show_load_state, PLAYLIST_SHOW_LOAD_STATE,
       "playlist_show_load_state",
       DEFAULT_PLAYLIST_SHOW_LOAD_STATE, SD_FLAG_NONE, 0, 0,
-      "Show 'Load State' in Playlist Entry Menu",
+      "Show Load State",
       "Show the 'Load State' option when selecting a playlist entry.")
 S_BOOL(playlist_fuzzy_archive_match, PLAYLIST_FUZZY_ARCHIVE_MATCH,
       "playlist_fuzzy_archive_match",
