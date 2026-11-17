@@ -248,6 +248,9 @@ void core_trust_set_put(core_trust_set_t *s);
  * drops its oldest build. */
 bool core_trust_apply(core_trust_t *t, const struct core_check *c);
 bool core_trust_always(core_trust_t *t, const struct core_check *c);
+/* Untrusts the n hashes back to back at sha256 and retires every record
+ * carrying one of them. False, changing nothing, when out of memory. */
+bool core_trust_forget(core_trust_t *t, const uint8_t *sha256, unsigned n);
 bool core_trust_set_flag(core_trust_t *t, unsigned flag, bool on);
 /* Records are made and honoured only for files on dev, the store's own
  * filesystem, or on self_dev, RetroArch's own: whoever can write either
@@ -379,16 +382,33 @@ bool core_folder_key(const char *path, uint8_t *key);
 /* Either rule, per_folder false being Android's, for tests */
 bool core_folder_key_with(const char *path, bool per_folder, uint8_t *key);
 
-/* A record of this file, for a build no older than the newest seen in
- * c->folder unless the record may be older */
+enum core_trust_state
+{
+   CORE_TRUST_STATE_UNCHECKED = 0,
+   /* Its record's hash is trusted */
+   CORE_TRUST_STATE_TRUSTED,
+   /* Its record holds a .sig's build time */
+   CORE_TRUST_STATE_SIGNED
+};
+
+/* What c's record says, c as core_check_quick() fills it (a build older
+ * than its folder's newest needs CORE_TRUST_RECORD_ANY_AGE). sha256 (or
+ * NULL) gets the record's hash unless UNCHECKED. */
+enum core_trust_state core_trust_state_of(const core_trust_set_t *s,
+      const struct core_check *c, uint8_t *sha256);
+/* core_trust_state_of() for the file at path, which it doesn't read:
+ * UNCHECKED when it can't be opened */
+enum core_trust_state core_trust_state_file(const core_trust_set_t *s,
+      const char *path, uint8_t *sha256);
+/* A record answers for this file: core_trust_state_of() isn't UNCHECKED */
 bool core_check_record(const core_trust_set_t *s, const struct core_check *c);
 /* A record matches this file in all but its fs-verity digest and has
  * one: the file's must be measured for the record to hold */
 /* core_check_record() for a record that holds whatever folder its core
- * is in: one with no build time or kept at any age, or whose build no
- * folder has a newer one of (the usual case: the newest seen). The
- * quick check takes it without the folder's key, which costs a walk of
- * the folder's path. */
+ * is in: one with no build time and a trusted hash, or kept at any
+ * age, or whose build no folder has a newer one of (the usual case:
+ * the newest seen). The quick check takes it without the folder's
+ * key, which costs a walk of the folder's path. */
 bool core_check_record_folderless(const core_trust_set_t *s,
       const struct core_check *c);
 bool core_check_wants_verity(const core_trust_set_t *s,

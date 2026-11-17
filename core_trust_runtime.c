@@ -14,6 +14,9 @@
 #include <string/stdstring.h>
 
 #include "core_trust_runtime.h"
+#ifdef HAVE_CORE_LOAD_CHECK
+#include "core_load_check.h"
+#endif
 #include "runloop.h"
 #include "tasks/tasks_internal.h"
 #include "verbosity.h"
@@ -476,6 +479,27 @@ bool core_trust_runtime_always(const struct core_check *c)
       return false;
    }
    core_trust_runtime_changed(before);
+   return true;
+}
+
+bool core_trust_runtime_forget(const char *core_path)
+{
+   uint8_t sha256[CORE_SHA256_LEN];
+   core_trust_set_t *before;
+   if (!core_trust_rt.t || !core_path)
+      return false;
+   before = core_trust_get(core_trust_rt.t);
+   if (     core_trust_state_file(before, core_path, sha256)
+            != CORE_TRUST_STATE_TRUSTED
+         || !core_trust_forget(core_trust_rt.t, sha256, 1))
+   {
+      core_trust_set_put(before);
+      return false;
+   }
+   core_trust_runtime_changed(before);
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_load_check_untrust(core_path);
+#endif
    return true;
 }
 

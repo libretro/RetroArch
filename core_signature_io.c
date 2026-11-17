@@ -886,6 +886,28 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
    return core_check_quick_id(s, f, path, NULL, c);
 }
 
+enum core_trust_state core_trust_state_file(const core_trust_set_t *s,
+      const char *path, uint8_t *sha256)
+{
+   struct core_check c;
+   enum core_trust_state state = CORE_TRUST_STATE_UNCHECKED;
+   core_file_t *f              = core_file_open(path);
+   if (!f)
+      return state;
+   memset(&c, 0, sizeof(c));
+   strlcpy(c.rec.name, path_basename_nocompression(path),
+         sizeof(c.rec.name));
+   if (     core_file_identity(f, &c.rec.id)
+         && core_folder_key(path, c.folder))
+   {
+      if (core_check_wants_verity(s, &c))
+         core_file_verity_measure(f, &c.rec.id);
+      state = core_trust_state_of(s, &c, sha256);
+   }
+   core_file_close(f);
+   return state;
+}
+
 char *core_sig_path(const char *path)
 {
    size_t path_len = strlen(path);

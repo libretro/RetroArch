@@ -174,6 +174,17 @@ bool menu_core_warning_can_open(void)
    return menu_can_open;
 }
 
+#ifdef HAVE_CORE_LOAD_CHECK
+static unsigned forget_calls;
+static char forget_path[256];
+
+void core_load_check_untrust(const char *path)
+{
+   forget_calls++;
+   strlcpy(forget_path, path, sizeof(forget_path));
+}
+#endif
+
 struct warn_seen
 {
    struct core_check c;
@@ -286,13 +297,11 @@ static unsigned disk_flags(const char *path)
    return flags;
 }
 
-static bool disk_has_hash(const char *path, uint8_t byte)
+static bool disk_has_sha(const char *path, const uint8_t *sha256)
 {
-   uint8_t sha256[CORE_SHA256_LEN];
    core_trust_t *u = core_trust_new();
    bool has        = false;
    core_trust_set_t *s;
-   memset(sha256, byte, sizeof(sha256));
    if (core_trust_load_file(u, path) == CORE_TRUST_LOAD_OK)
    {
       s   = core_trust_get(u);
@@ -301,6 +310,13 @@ static bool disk_has_hash(const char *path, uint8_t byte)
    }
    core_trust_free(u);
    return has;
+}
+
+static bool disk_has_hash(const char *path, uint8_t byte)
+{
+   uint8_t sha256[CORE_SHA256_LEN];
+   memset(sha256, byte, sizeof(sha256));
+   return disk_has_sha(path, sha256);
 }
 
 static void test_inactive(void)
@@ -319,6 +335,7 @@ static void test_inactive(void)
    CHECK(!core_warning_push(&c, CORE_WARNING_LOAD, "/c/a_libretro.so",
             warn_cb, NULL));
    CHECK(core_trust_runtime_toggle_checks() == CORE_TRUST_TOGGLE_READ_ONLY);
+   CHECK(!core_trust_runtime_forget("/c/a_libretro.so"));
    core_trust_runtime_deinit();
 }
 
@@ -638,6 +655,96 @@ static unsigned store_flags(void)
    unsigned flags      = s ? core_trust_flags(s) : 0;
    core_trust_set_put(s);
    return flags;
+}
+
+/* What the Security Warning's Always Trust records for path */
+static bool always_trust(const char *path, bool ctime_kept)
+{
+   struct core_check c;
+   size_t num_keys     = 0;
+   const uint8_t *keys = core_sig_builtin_keys(&num_keys);
+   core_trust_set_t *s = core_trust_runtime_get();
+   if (!s)
+      return false;
+   core_check_file(s, keys, num_keys, path, 0, &c);
+   core_trust_set_put(s);
+   if (!ctime_kept)
+      c.rec.id.ctime_kept = false;
+   return core_trust_runtime_always(&c);
+}
+
+static enum core_trust_state state_now(const char *path)
+{
+   core_trust_set_t *s         = core_trust_runtime_get();
+   enum core_trust_state state = s ? core_trust_state_file(s, path, NULL)
+      : CORE_TRUST_STATE_UNCHECKED;
+   core_trust_set_put(s);
+   return state;
+}
+
+static void test_forget(void)
+{
+   uint8_t sha256[CORE_SHA256_LEN];
+   core_trust_set_t *s;
+   char dir[256], a[256], b[256], store[256];
+   strlcpy(dir, tmp("forget"), sizeof(dir));
+   strlcpy(store, tmp("forget_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(a, dir, "a_libretro.core", sizeof(a));
+   fill_pathname_join_special(b, dir, "b_libretro.core", sizeof(b));
+   CHECK(put_file(a, 21, 1000));
+   CHECK(put_file(b, 23, 1000));
+   file_sha(a, sha256);
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
+   CHECK(always_trust(a, true));
+   if (state_now(a) != CORE_TRUST_STATE_TRUSTED)
+   {
+      printf("note: test_forget skipped, no records on %s's filesystem\n",
+            dir);
+      pump(8);
+      core_trust_runtime_deinit();
+      return;
+   }
+   pump(8);
+   CHECK(disk_has_sha(store, sha256));
+   CHECK(core_trust_runtime_forget(a));
+   CHECK(!trusted(a));
+#ifdef HAVE_CORE_LOAD_CHECK
+   CHECK(forget_calls == 1);
+   CHECK(string_is_equal(forget_path, a));
+#endif
+   pump(8);
+   CHECK(!disk_has_sha(store, sha256));
+   CHECK(!core_trust_runtime_forget(a));
+#ifdef HAVE_CORE_LOAD_CHECK
+   CHECK(forget_calls == 1);
+#endif
+   /* Trusted by its hash alone: no record says this file is the one */
+   CHECK(always_trust(b, false));
+   CHECK(!core_trust_runtime_forget(b));
+   CHECK(trusted(b));
+   /* Replaced since: the new bytes aren't trusted, the old hash stays */
+   CHECK(always_trust(a, true));
+   CHECK(put_file(a, 22, 1001));
+   CHECK(state_now(a) == CORE_TRUST_STATE_UNCHECKED);
+   CHECK(!core_trust_runtime_forget(a));
+   s = core_trust_runtime_get();
+   CHECK(s && core_trust_has_hash(s, sha256));
+   core_trust_set_put(s);
+   CHECK(!trusted(a));
+   pump(8);
+   core_trust_runtime_deinit();
+   /* Read-only: taken back for this session, nothing written */
+   strlcpy(store, tmp("forget_read_only"), sizeof(store));
+   CHECK(path_mkdir(store));
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
+   CHECK(core_trust_runtime_read_only());
+   CHECK(always_trust(a, true));
+   CHECK(core_trust_runtime_forget(a));
+   CHECK(!trusted(a));
+   pump(8);
+   core_trust_runtime_deinit();
+   CHECK(path_is_directory(store));
 }
 
 #ifdef HAVE_CORE_LOAD_CHECK
@@ -1173,6 +1280,7 @@ int main(void)
       test_saves_chained();
       test_deinit_writes();
       test_apply_always();
+      test_forget();
       test_snapshot_threads();
       test_test_key_notice();
       test_test_key_notice_off();

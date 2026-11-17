@@ -1388,6 +1388,31 @@ void core_load_check_release_held(void)
       core_load_slot_clear(&core_load_rt.slot);
 }
 
+void core_load_check_untrust(const char *path)
+{
+   if (!path)
+      return;
+#ifdef ANDROID
+   if (!android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      return;
+   path = core_load_rt.check_path;
+#endif
+   core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+   path = core_load_rt.path;
+   if (core_load_slot_is(&core_load_rt.slot, path))
+      core_load_slot_clear(&core_load_rt.slot);
+   if (core_load_slot_is(&core_load_rt.quick, path))
+      core_load_slot_clear(&core_load_rt.quick);
+   if (!core_load_slot_is(&core_load_rt.loaded, path))
+      return;
+   core_file_close(core_load_rt.loaded.f);
+   core_load_rt.loaded.f    = NULL;
+   core_load_rt.loaded.pass = false;
+   if (!core_load_rt.running)
+      core_load_slot_clear(&core_load_rt.loaded);
+}
+
 void core_load_check_set_startup(bool on)
 {
    core_load_rt.startup       = on;

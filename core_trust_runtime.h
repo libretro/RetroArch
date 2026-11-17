@@ -34,6 +34,10 @@ core_trust_set_t *core_trust_runtime_get(void);
 /* core_trust_apply() and core_trust_always(), then saved */
 bool core_trust_runtime_apply(const struct core_check *c);
 bool core_trust_runtime_always(const struct core_check *c);
+/* Untrust: drops the hash of the core at core_path when its record says
+ * the user trusted it, then ends the load check's passes for it. False,
+ * changing nothing, otherwise or when inactive. */
+bool core_trust_runtime_forget(const char *core_path);
 bool core_trust_runtime_checks_on(void);
 /* False, changing nothing, when inactive or read-only */
 bool core_trust_runtime_set_checks(bool on);

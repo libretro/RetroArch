@@ -3018,6 +3018,57 @@ static void test_load_once_lasts(void)
    stop();
 }
 
+/* Untrust ends the passes kept for the core, however its path is
+ * spelled; the core running keeps its run-ahead source */
+static void test_forget_rechecks(void)
+{
+   struct core_load_source src;
+   dylib_t lib = NULL;
+   char core[256];
+   core_trust_set_t *s;
+   enum core_trust_state state;
+#ifdef COUNT_HASHES
+   unsigned n;
+#endif
+   start(false);
+   CHECK(put_core(core, "forget_libretro" LIB_EXT, 'a'));
+   CHECK(trust(core));
+   s     = core_trust_runtime_get();
+   state = s ? core_trust_state_file(s, core, NULL)
+      : CORE_TRUST_STATE_UNCHECKED;
+   core_trust_set_put(s);
+   if (state != CORE_TRUST_STATE_TRUSTED)
+   {
+      printf("note: test_forget_rechecks skipped, no records on this filesystem\n");
+      stop();
+      return;
+   }
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_OPENED);
+   CHECK(lib_id(lib) == 1);
+   core_load_check_loaded();
+#ifdef COUNT_HASHES
+   n = hashes;
+#endif
+   CHECK(core_trust_runtime_forget(
+         TMP_DIR "/cores/../cores/forget_libretro" LIB_EXT));
+   /* Its save */
+   drain();
+#ifdef COUNT_HASHES
+   CHECK(hashes == n);
+#endif
+   CHECK(core_load_check_copy_source(core, &src) == CORE_LOAD_COPY_CHECK);
+   if (lib)
+      dylib_close(lib);
+   lib = NULL;
+   core_load_check_unloaded();
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_REFUSED);
+   CHECK(!lib);
+   CHECK(queued() == 1);
+   drain();
+   CHECK(core_load_check_refused(core));
+   stop();
+}
+
 /* On real Windows a core's first load moves its ChangeTime: a Load
  * Once core whose re-run loaded it first still loads, and still passes
  * Close Content's reload, while its handle is held. On Linux nothing
@@ -4097,6 +4148,7 @@ int main(int argc, char *argv[])
    test_park_rerun_no_open();
    test_park_fallback();
    test_load_once_lasts();
+   test_forget_rechecks();
    test_held_ctime_moved();
    test_startup_seed();
    test_startup_refused();
