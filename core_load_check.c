@@ -1289,6 +1289,21 @@ bool core_load_check_refused_seed(const char *path)
    return core_load_rt.refused_seed && core_load_check_refused(path);
 }
 
+void core_load_check_forget(const char *path)
+{
+   if (!path || !*path)
+      return;
+#ifdef ANDROID
+   if (android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      path = core_load_rt.check_path;
+#endif
+   core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+   if (     core_load_rt.slot.pass
+         && core_load_slot_is(&core_load_rt.slot, core_load_rt.path))
+      core_load_slot_clear(&core_load_rt.slot);
+}
+
 void core_load_check_loaded(void)
 {
    struct core_load_slot *from = NULL;

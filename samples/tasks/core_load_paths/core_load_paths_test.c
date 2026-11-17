@@ -1632,6 +1632,56 @@ static void mode_fw_cancel_restores(void)
          "a cancelled re-run left a phantom session or restored the closed game");
 }
 
+/* A firmware Cancel ends the launch a Load Once was given for: the
+ * next launch asks again */
+static void mode_fw_load_once(void)
+{
+   content_ctx_info_t info;
+   unsigned i;
+   fw_record(&fw_ran);
+   CHECK(wait_for(warning_up, 120), "no Security Warning for the startup core");
+   CHECK(answer(CORE_WARNING_LOAD_ONCE), "Load Once not taken");
+   CHECK(fw_wait_box(600), "no firmware box after Load Once");
+   CHECK(fw_boxes == 1, "Load Once's launch asked for its firmware twice");
+   CHECK(fw_cancelled(), "the firmware box's Cancel did not end the launch");
+   /* The refused startup's dummy session keeps its paths */
+   CHECK(is_dummy(), "a cancelled launch left a phantom session");
+   CHECK(!warning_up() && !error_queued(),
+         "the cancelled launch's core asked or failed on its way back");
+   fw_record(&fw_now);
+   CHECK(   string_ends_with(fw_now.title,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
+         && string_is_equal(fw_now.info, fw_ran.info),
+         "the dummy session names the cancelled core");
+   fw_differs(true, "menu title", fw_ran.title, fw_now.title);
+   fw_differs(true, "core info", fw_ran.info, fw_now.info);
+
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_new_core_from_companion_ui(fw_core,
+            game, "fw", "db", "crc", &info, NULL, NULL),
+         "the relaunch was not started");
+   CHECK(fw_wait_box(600), "no firmware box for the relaunch");
+   fw_answer(MENU_ACTION_OK);
+   CHECK(wait_for(warning_up, 600), "Load Once outlived a cancelled launch");
+   CHECK(answer(CORE_WARNING_CANCEL), "the relaunch's Cancel not taken");
+   for (i = 0; i < 600 && (task_content_load_pending()
+            || runloop_is_content_switching()); i++)
+      fw_pump(1);
+   error_queued();
+
+   /* Refused now: the Cancel puts the dummy session back without
+    * opening that core again */
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_new_core_from_companion_ui(fw_core,
+            game, "fw", "db", "crc", &info, NULL, NULL),
+         "the refused core's launch was not started");
+   CHECK(fw_wait_box(600) && core_load_check_refused(fw_core),
+         "no firmware box, or its core not refused");
+   CHECK(fw_cancelled(), "the refused core's Cancel did not end the launch");
+   CHECK(is_dummy() && !warning_up() && !error_queued(),
+         "the refused core's Cancel left a session, asked or failed");
+}
+
 #ifdef HAVE_NETWORKGAMEPAD
 static bool pad_runs(void) { return core_is(CORE_TYPE_NETRETROPAD); }
 
@@ -2265,6 +2315,15 @@ int main(int argc, char *argv[])
       rarch_argv[rarch_argc++] = nc_core;
       startup_dummy            = true;
    }
+   else if (string_is_equal(mode, "fw-load-once"))
+   {
+      snprintf(game, sizeof(game), "%s/title.bin", dir);
+      write_file(game);
+      rarch_argv[rarch_argc++] = (char*)"-L";
+      rarch_argv[rarch_argc++] = fw_core;
+      rarch_argv[rarch_argc++] = game;
+      startup_dummy            = true;
+   }
 #ifdef _WIN32
    else if (verbatim_dot)
    {
@@ -2459,6 +2518,8 @@ int main(int argc, char *argv[])
          mode_fw_twice();
       else if (string_is_equal(mode, "fw-cancel-restores"))
          mode_fw_cancel_restores();
+      else if (string_is_equal(mode, "fw-load-once"))
+         mode_fw_load_once();
       else if (string_is_equal(mode, "builtin"))
 #ifdef HAVE_NETWORKGAMEPAD
          mode_builtin();

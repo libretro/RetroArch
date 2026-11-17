@@ -3283,6 +3283,10 @@ static void content_load_step(struct content_load_job *job,
             break;
          if (job->firmware && job->firmware->cancelled)
          {
+#ifdef HAVE_CORE_LOAD_CHECK
+            /* A Load Once ends with the launch it was for */
+            core_load_check_forget(path_get(RARCH_PATH_CORE));
+#endif
             content_load_prev_restore();
             job->after |= CONTENT_LOAD_AFTER_MENU_ON_FAIL;
             content_load_finish(job, p_content);
