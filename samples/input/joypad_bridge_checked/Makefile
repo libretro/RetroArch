@@ -30,7 +30,8 @@ all: udev_checked_test linuxraw_checked_test sdl2_checked_test $(SDL3_TEST) \
      ps4_checked_test psp_checked_test vita_checked_test \
      switch_checked_test ctr_checked_test qnx_checked_test xdk_checked_test \
      wiiu_checked_test mfi_checked_test dos_checked_test \
-     dinput_checked_test.exe xinput_checked_test.exe winmm_checked_test.exe
+     dinput_checked_test.exe xinput_checked_test.exe winmm_checked_test.exe \
+     xinput_hybrid_checked_test.exe
 
 sdl3_checked_test: sdl3_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/sdl3_joypad.c
 	$(CC) -O1 -Wall -Wno-unused -DRARCH_INTERNAL -DHAVE_SDL3 $(SDL3_CFLAGS) $(INCS) \
@@ -247,6 +248,21 @@ dinput_checked_test.exe: dinput_checked_test.c bridge_view.h stubs.c $(REPO_ROOT
 	   -o $@ dinput_checked_test.c stubs.c \
 	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -ldinput8 -ldxguid
 
+# The Windows driver with XInput and DirectInput pads side by side:
+# DirectInput's pad table from dinput_joypad.c, linked beside it
+xinput_hybrid_checked_test.exe: xinput_hybrid_checked_test.c bridge_view.h stubs.c \
+      $(REPO_ROOT)/input/drivers_joypad/xinput_hybrid_joypad.c \
+      $(REPO_ROOT)/input/drivers_joypad/dinput_joypad.c \
+      $(REPO_ROOT)/input/drivers_joypad/dinput_joypad.h
+	$(MINGW_CC) -std=gnu99 -O1 -Wall -Wno-unused -DRARCH_INTERNAL -DHAVE_XINPUT \
+	   -DHAVE_DINPUT -DHAVE_DYLIB -DHAVE_MENU -DHAVE_THREADS \
+	   -D_WIN32_WINNT=0x0601 $(INCS) \
+	   -o $@ xinput_hybrid_checked_test.c stubs.c \
+	   $(REPO_ROOT)/input/drivers_joypad/dinput_joypad.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c \
+	   $(REPO_ROOT)/input/common/output_writer.c \
+	   $(REPO_ROOT)/libretro-common/rthreads/rthreads.c -ldinput8 -ldxguid
+
 check: all
 	./udev_checked_test
 	./linuxraw_checked_test
@@ -274,6 +290,7 @@ check: all
 	 else echo "[skip] sdl3_checked_test, sdl3_webos_reject_test: no SDL3 here (pkg-config sdl3, or SDL3_CFLAGS and SDL3_LIBS)"; fi
 	WINEDEBUG=-all $(WINE) ./dinput_checked_test.exe
 	WINEDEBUG=-all $(WINE) ./xinput_checked_test.exe
+	WINEDEBUG=-all $(WINE) ./xinput_hybrid_checked_test.exe
 	WINEDEBUG=-all $(WINE) ./winmm_checked_test.exe
 
 clean:
@@ -287,6 +304,7 @@ clean:
 	   rwebpad_checked_test.js rwebpad_checked_test.wasm \
 	   sdl2_checked_test sdl3_checked_test \
 	   sdl3_webos_reject_test \
-	   dinput_checked_test.exe xinput_checked_test.exe winmm_checked_test.exe
+	   dinput_checked_test.exe xinput_checked_test.exe winmm_checked_test.exe \
+	   xinput_hybrid_checked_test.exe
 
 .PHONY: all check check-web clean

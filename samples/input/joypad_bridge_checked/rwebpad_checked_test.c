@@ -1,8 +1,9 @@
 /* The Emscripten (web) joypad driver, held to what the snapshot bridge
  * assumes of a driver it serves (see bridge_view.h). Built with emcc
  * and run under node: the driver source is included for its pad table,
- * which is filled here by hand as its poll fills it from the browser's
- * gamepad events. */
+ * whose gamepad events are filled here by hand and made each pad's
+ * view as the poll makes it; the view, and the axes past it read from
+ * the event, are held to what the event says. */
 #include "../../../input/drivers_joypad/rwebpad_joypad.c"
 
 #include "bridge_view.h"
@@ -36,7 +37,25 @@ int main(void)
             ? values[bv_rand() % (sizeof(values) / sizeof(values[0]))]
             : ((double)(int)(bv_rand() % 20001) - 10000.0) / 10000.0;
       }
+      /* as the poll makes it */
+      rwebpad_joypad_make_view(pad);
+      for (i = 0; i < 80; i++)
+      {
+         int want = (i < (unsigned)ev->numButtons && i < 64
+               && ev->digitalButton[i]);
+         if ((rwebpad_joypad.button(pad, (uint16_t)i) != 0) != want)
+            bad++;
+      }
+      for (i = 0; i < 70; i++)
+      {
+         int16_t want = (i < (unsigned)ev->numAxes && i < 64)
+            ? (int16_t)(CLAMPDOUBLE(ev->axis[i]) * 0x7FFF) : 0;
+         if ((int16_t)(rwebpad_joypad.axis(pad, AXIS_POS(i))
+                  + rwebpad_joypad.axis(pad, AXIS_NEG(i))) != want)
+            bad++;
+      }
       bad += bv_compare(&rwebpad_joypad, pad);
+      bad += bv_compare_view(&rwebpad_joypad, pad);
    }
 
    /* a pad gone, and a port past the pads the driver keeps, have no

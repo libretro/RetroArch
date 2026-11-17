@@ -1056,18 +1056,16 @@ void input_driver_set_snapshot_bridge(bool on)
  * through button() and axis() alone, and that state() is the common
  * loop over the binds.
  *
- * - xinput: xinput_hybrid_joypad.c, the Windows driver with XInput and
- *   DirectInput pads, and xinput_joypad.c, the XInput-only one (UWP,
- *   Xbox, builds without DirectInput). The hybrid's state() compares an
- *   axis against the threshold as integers where the common loop
- *   divides; the two agree for every threshold below 1.0, and at 1.0
- *   the driver's own reads every bound axis as pressed, which the
- *   bridge does not.
+ * - xinput (xinput_hybrid_joypad.c, the Windows driver with XInput and
+ *   DirectInput pads, and xinput_joypad.c, the XInput-only one: UWP,
+ *   Xbox, builds without DirectInput), dinput (dinput_joypad.c,
+ *   DirectInput only) and winmm (winmm_joypad.c). Each makes every pad
+ *   a view of what its poll read, an XInput pad's d-pad its hat 0, and
+ *   lends it.
  *
- * - winraw_joypad (winraw_joypad.c, Windows RawInput) and dinput
- *   (dinput_joypad.c, DirectInput only). Their state() compares an axis
- *   against the threshold as 32-bit integers, which agrees with the
- *   common loop at every threshold.
+ * - winraw_joypad (winraw_joypad.c, Windows RawInput). Its state()
+ *   compares an axis against the threshold as 32-bit integers, which
+ *   agrees with the common loop at every threshold.
  *
  * - udev (udev_joypad.c) and linuxraw (linuxraw_joypad.c), Linux. Both
  *   keep each pad as a view their events fill in the poll, and lend
@@ -1075,7 +1073,9 @@ void input_driver_set_snapshot_bridge(bool on)
  *   sixteenth are read from the driver.
  *
  * - sdl2, sdl3 and sdl (SDL 1.2). get_buttons() walks the pad's buttons
- *   through the call button() makes, so SDL is asked once a poll.
+ *   through the call button() makes, so SDL is asked once a poll. SDL
+ *   1.2 keeps the state, so its pads are copied: a view would ask it
+ *   for every pad open, read or not.
  *
  * - android, parport and sdl_dingux keep each pad as a view filled in
  *   their polls (android's in its input driver's events, a pad's row of
@@ -1083,9 +1083,9 @@ void input_driver_set_snapshot_bridge(bool on)
  *   input_pad_view.h as the consoles below do; android's one hat is
  *   the view's.
  *
- * - winmm and rwebpad (the web). get_buttons() hands over the buttons
- *   button() reads, of the ports it reads; winmm's one hat answers
- *   through button().
+ * - rwebpad (the web) makes each live pad a view of the gamepad event
+ *   its poll read, on the browser's thread, and lends it; axes past the
+ *   sixteenth are read from the event.
  *
  * - The consoles: gx (gekko_joypad.c and gx_joypad_libogc.c), ps2, ps3,
  *   ps4, psp and vita (psp_joypad.c), switch, ctr, qnx, xdk, wiiu, mfi

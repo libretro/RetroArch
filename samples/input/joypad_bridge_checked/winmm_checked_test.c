@@ -8,29 +8,31 @@
 
 int main(void)
 {
-   static const uint16_t hats[] = {
-      0, HAT_UP_MASK, HAT_DOWN_MASK, HAT_LEFT_MASK, HAT_RIGHT_MASK,
-      HAT_UP_MASK | HAT_LEFT_MASK, HAT_UP_MASK | HAT_RIGHT_MASK,
-      HAT_DOWN_MASK | HAT_LEFT_MASK, HAT_DOWN_MASK | HAT_RIGHT_MASK };
+   /* a hat's position, hundredths of a degree from up, and the
+    * directions it holds */
+   static const struct { DWORD pov; uint16_t up, down, left, right; } povs[] = {
+      { 0,     1, 0, 0, 0 }, { 4500,  1, 0, 0, 1 }, { 9000,  0, 0, 0, 1 },
+      { 13500, 0, 1, 0, 1 }, { 18000, 0, 1, 0, 0 }, { 22500, 0, 1, 1, 0 },
+      { 27000, 0, 0, 1, 0 }, { 31500, 1, 0, 1, 0 }, { 35999, 1, 0, 0, 0 },
+      { 36000, 0, 0, 0, 0 }, { 65535, 0, 0, 0, 0 } };
    unsigned n, i, bad = 0;
 
    for (n = 0; n < 4000; n++)
    {
       winmm_joypad_t *pad = &winmm_pads[n % 3];
 
+      unsigned k   = bv_rand() % (sizeof(povs) / sizeof(povs[0]));
       pad->present = true;
-      pad->buttons = bv_rand();
-      pad->hat     = hats[bv_rand() % (sizeof(hats) / sizeof(hats[0]))];
-      for (i = 0; i < WINMM_JOYPAD_AXES; i++)
-      {
-         unsigned r   = bv_rand() % 8;
-         pad->axes[i] = (r == 0) ? 0
-                      : (r == 1) ? 0x7fff
-                      : (r == 2) ? -0x7fff
-                      : (r == 3) ? -0x8000
-                      : (int16_t)bv_rand();
-      }
+      bv_fill_view(&pad->view, 32, WINMM_JOYPAD_AXES);
+      /* the hat as the poll reads it */
+      pad->view.hats = winmm_joypad_hat(povs[k].pov);
+      if (     !winmm_joypad.button(n % 3, HAT_MAP(0, HAT_UP_MASK))    != !povs[k].up
+            || !winmm_joypad.button(n % 3, HAT_MAP(0, HAT_DOWN_MASK))  != !povs[k].down
+            || !winmm_joypad.button(n % 3, HAT_MAP(0, HAT_LEFT_MASK))  != !povs[k].left
+            || !winmm_joypad.button(n % 3, HAT_MAP(0, HAT_RIGHT_MASK)) != !povs[k].right)
+         bad++;
       bad += bv_compare(&winmm_joypad, n % 3);
+      bad += bv_compare_view(&winmm_joypad, n % 3);
    }
 
    /* a port past the pads the driver keeps has no buttons */
