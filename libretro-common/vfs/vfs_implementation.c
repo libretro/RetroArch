@@ -4754,8 +4754,15 @@ static int vfs_stat_win32_wide(const char *path, size_t trim,
       struct _stat64 *stat_buf, DWORD *file_info, FILETIME *mtime_ft)
 {
    WIN32_FILE_ATTRIBUTE_DATA ad;
-   wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+   /* The wide path on the stack where it fits - every path but a long
+    * one - instead of an allocation for each stat */
+   wchar_t  path_buf[PATH_MAX_LENGTH];
+   wchar_t *path_wide = path_buf;
+   int      ok        = 1;
 
+   if (!MultiByteToWideChar(CP_UTF8, 0, path, -1, path_buf,
+            (int)(sizeof(path_buf) / sizeof(path_buf[0]))))
+      path_wide = utf8_to_utf16_string_alloc(path);
    if (!path_wide)
       return 0;
 
@@ -4771,21 +4778,24 @@ static int vfs_stat_win32_wide(const char *path, size_t trim,
    }
 
    if (!GetFileAttributesExW(path_wide, GetFileExInfoStandard, &ad))
+      ok = 0;
+   else
    {
-      free(path_wide);
-      return 0;
+      *file_info = ad.dwFileAttributes;
+      *mtime_ft  = ad.ftLastWriteTime;
+      /* The size from the same query: a second one (_wstat64) for it
+       * opened the path again. Only a link's own size is not its
+       * target's, so a reparse point still asks for the target. */
+      if (ad.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+         ok = _wstat64(path_wide, stat_buf) == 0;
+      else
+         stat_buf->st_size = (__int64)(((uint64_t)ad.nFileSizeHigh << 32)
+               | ad.nFileSizeLow);
    }
-   *file_info = ad.dwFileAttributes;
-   *mtime_ft  = ad.ftLastWriteTime;
 
-   if (_wstat64(path_wide, stat_buf) != 0)
-   {
+   if (path_wide != path_buf)
       free(path_wide);
-      return 0;
-   }
-
-   free(path_wide);
-   return 1;
+   return ok;
 }
 #endif
 #endif

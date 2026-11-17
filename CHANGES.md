@@ -1,4 +1,5 @@
 # Future
+- VFS/WIN32: A stat (path_stat, path_is_valid, path_is_directory, path_get_size, get_mtime) is one query of the file system instead of two - the size comes from the same GetFileAttributesExW as the attributes and the time, and only a reparse point still asks _wstat64 for its target's size - and the wide path is converted on the stack instead of allocated
 - X11: 'Display Pacing On VBlank Events' holds Vulkan and OpenGL through EGL as well only where no compositor shows the window: it asked to bypass one, or none runs
 - X11: 'Display Pacing On VBlank Events' holds on the vblanks of the window's CRTC, from the Present extension, with Vulkan in immediate mode and with OpenGL where no compositor shows the window
 - KMS: 'Display Pacing On VBlank Events' holds on the CRTC's vblanks with OpenGL on KMS, where V-Sync off page flips are asynchronous
