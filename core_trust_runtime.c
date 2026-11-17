@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #if defined(HAVE_CORE_LOAD_CHECK) && !defined(_WIN32)
 #include <sys/stat.h>
 #endif
@@ -11,6 +12,7 @@
 #include <queues/task_queue.h>
 #include <retro_dirent.h>
 #include <retro_miscellaneous.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "core_trust_runtime.h"
@@ -665,6 +667,38 @@ static bool core_trust_runtime_default_path(char *s, size_t len)
    return true;
 }
 
+/* Seconds: a save in flight is far younger */
+#define CORE_TRUST_TEMP_AGE 3600
+
+/* What a save killed before its rename left */
+static void core_trust_temp_sweep(void)
+{
+   const char *name;
+   struct RDIR *rdir;
+   int64_t mtime;
+   int flags;
+   char path[PATH_MAX_LENGTH];
+   const char *store = path_basename_nocompression(core_trust_rt.path);
+   int64_t before    = (int64_t)time(NULL) - CORE_TRUST_TEMP_AGE;
+   size_t n          = fill_pathname_basedir(path, core_trust_rt.path,
+         sizeof(path));
+   if (!(rdir = retro_opendir(path)))
+      return;
+   while (retro_readdir(rdir))
+   {
+      if (     !(name = retro_dirent_get_name(rdir))
+            || !core_trust_temp_of(name, store))
+         continue;
+      flags = retro_dirent_stat(rdir, NULL, &mtime);
+      if (     (flags & RETRO_VFS_STAT_IS_VALID)
+            && !(flags & RETRO_VFS_STAT_IS_DIRECTORY)
+            && mtime < before
+            && strlcpy(path + n, name, sizeof(path) - n) < sizeof(path) - n)
+         filestream_delete(path);
+   }
+   retro_closedir(rdir);
+}
+
 bool core_trust_runtime_init(const char *path, const char *seed_dir,
       const char *core_ext)
 {
@@ -690,6 +724,8 @@ bool core_trust_runtime_init(const char *path, const char *seed_dir,
       core_trust_rt.read_only  = core_trust_rt.newer
          || core_trust_rt.unreadable;
    }
+   if (!core_trust_rt.read_only)
+      core_trust_temp_sweep();
 #ifdef HAVE_CORE_LOAD_CHECK
    if (seed_dir)
       strlcpy(core_trust_rt.seed_dir, seed_dir,

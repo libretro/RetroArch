@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <compat/strl.h>
 #include <file/file_path.h>
@@ -515,6 +516,52 @@ static void test_can_save(void)
    CHECK(path_mkdir(path));
    CHECK(core_trust_runtime_init(path, NULL, NULL));
    CHECK(!core_trust_runtime_can_save());
+   core_trust_runtime_deinit();
+}
+
+/* What a save killed before its rename left, once an hour old */
+static void test_temp_sweep(void)
+{
+   int64_t now = (int64_t)time(NULL);
+   char store[256];
+   char old[256];
+   char recent[256];
+   char fresh[256];
+   char other[256];
+   char folder[256];
+   strlcpy(store, tmp("tmp_other"), sizeof(store));
+   CHECK(core_trust_temp_name(other, sizeof(other), store, 4, 0xd));
+   strlcpy(store, tmp("tmp_store"), sizeof(store));
+   CHECK(core_trust_temp_name(old, sizeof(old), store, 1, 0xa));
+   CHECK(core_trust_temp_name(recent, sizeof(recent), store, 2, 0xb));
+   CHECK(core_trust_temp_name(fresh, sizeof(fresh), store, 3, 0xc));
+   CHECK(core_trust_temp_name(folder, sizeof(folder), store, 5, 0xe));
+   CHECK(filestream_write_file(old, "x", 1));
+   CHECK(filestream_write_file(recent, "x", 1));
+   CHECK(filestream_write_file(fresh, "x", 1));
+   CHECK(filestream_write_file(other, "x", 1));
+   CHECK(path_set_mtime(old, now - 7200));
+   CHECK(path_set_mtime(recent, now - 3500));
+   CHECK(path_set_mtime(other, now - 7200));
+   /* Named like one, but a folder */
+   CHECK(path_mkdir(folder));
+   CHECK(path_set_mtime(folder, now - 7200));
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
+   CHECK(!path_is_valid(old));
+   CHECK(path_is_valid(recent));
+   CHECK(path_is_valid(fresh));
+   CHECK(path_is_valid(other));
+   CHECK(path_is_directory(folder));
+   core_trust_runtime_deinit();
+   /* Read-only: its folder is left alone */
+   strlcpy(store, tmp("tmp_dir_store"), sizeof(store));
+   CHECK(path_mkdir(store));
+   CHECK(core_trust_temp_name(old, sizeof(old), store, 1, 0xa));
+   CHECK(filestream_write_file(old, "x", 1));
+   CHECK(path_set_mtime(old, now - 7200));
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
+   CHECK(core_trust_runtime_read_only());
+   CHECK(path_is_valid(old));
    core_trust_runtime_deinit();
 }
 
@@ -1990,6 +2037,7 @@ int main(void)
       test_load_newer();
       test_toggle();
       test_can_save();
+      test_temp_sweep();
       test_save_failed_once();
       test_save_failed_quiet();
       test_default_path();

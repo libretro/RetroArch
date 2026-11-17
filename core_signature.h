@@ -304,6 +304,9 @@ uint8_t *core_trust_write_bytes(core_trust_write_t *w,
  * clock, as Flatpak's PID namespaces repeat pids. */
 bool core_trust_temp_name(char *s, size_t len, const char *path,
       unsigned long pid, unsigned long stamp);
+/* Whether name, with no folder, is a temporary temp_name made for the
+ * store file named store_name */
+bool core_trust_temp_of(const char *name, const char *store_name);
 
 /* An empty, writable store, for once a damaged file is set aside */
 bool core_trust_reset(core_trust_t *t);

@@ -404,6 +404,19 @@ bool core_trust_temp_name(char *s, size_t len, const char *path,
    return strlcat(s, tail, len) < len;
 }
 
+bool core_trust_temp_of(const char *name, const char *store_name)
+{
+   size_t n = strlen(store_name);
+   if (strncmp(name, store_name, n) || name[n] != '.')
+      return false;
+   name += n + 1;
+   if (!(n = strspn(name, "0123456789")) || name[n] != '.')
+      return false;
+   name += n + 1;
+   return (n = strspn(name, "0123456789abcdef"))
+      && string_is_equal(name + n, ".tmp");
+}
+
 /* As filestream_write_file_atomic, through a temporary of our own */
 static bool core_trust_save(const char *path, const uint8_t *buf,
       size_t len)

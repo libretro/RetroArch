@@ -1642,6 +1642,26 @@ static void test_trust_temp(void)
    core_trust_free(v);
 }
 
+static void test_trust_temp_of(void)
+{
+   char name[256];
+   CHECK(core_trust_temp_name(name, sizeof(name), "core_trust", 123, 0x1a2b));
+   CHECK(core_trust_temp_of(name, "core_trust"));
+   CHECK(core_trust_temp_of("core_trust.1.a.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.testkey.1.a.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.bad", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.1.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.x.1.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.1.g.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust..a.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.1.a.tmp.bak", "core_trust"));
+   CHECK(!core_trust_temp_of("other.1.a.tmp", "core_trust"));
+   CHECK(core_trust_temp_of("core_trust.testkey.1.a.tmp",
+         "core_trust.testkey"));
+}
+
 static void test_record_older(void)
 {
    core_trust_t *t = real_store();
@@ -2979,6 +2999,7 @@ int main(int argc, char *argv[])
    test_trust_merge_full();
    test_trust_merge_cap();
    test_trust_temp();
+   test_trust_temp_of();
    test_record_older();
    test_record_folderless();
    test_quick_inert_record();
