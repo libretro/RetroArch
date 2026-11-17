@@ -24,9 +24,8 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-TARGETS := retro_eventcount_lock_free_test \
-	retro_eventcount_lock_free_test_scond \
-	retro_eventcount_lock_free_test_clockless
+# One line: the samples workflow reads TARGETS from its first line only
+TARGETS := retro_eventcount_lock_free_test retro_eventcount_lock_free_test_scond retro_eventcount_lock_free_test_clockless
 
 all: $(TARGETS)
 

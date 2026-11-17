@@ -31,6 +31,7 @@
 
 
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 

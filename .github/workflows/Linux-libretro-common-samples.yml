@@ -225,6 +225,7 @@ jobs:
             rtags_test
             # A file's audio_transfer arm from its bytes, and the folds.
             audio_transfer_sniff_test
+            audio_transfer_tracks_test
             # ATRAC3 and ATRAC3plus in WAVE and OpenMG through audio_transfer.
             audio_transfer_atrac_test
             # AVI and ASF headers: streams, codecs, sizes, rates, length.
