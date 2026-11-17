@@ -31,6 +31,27 @@
  *               file's path, not its number, as wide as the path, in
  *               the frames drawn from what was measured before too
  *
+ *   heading     the Security Warning: a blank line under its heading
+ *               and a rule in it across the text's column, in the frame
+ *               that wrapped the text and the one drawn from what was
+ *               kept; the firmware lane checks its heading's rule too
+ *
+ *   heading_wrap  the same with a heading wrapped to two lines: the rule
+ *               under the second, none between them
+ *
+ *   heading_none  the same text in a confirm without a heading, after
+ *               the Security Warning: no blank line, no rule
+ *
+ *   heading_fit the heading and as many lines as fit with the rule, then
+ *               one more: drawn as without the rule, every line whole;
+ *               the box that fit with the rule on a screen a little
+ *               shorter: the same, and back on the first, the rule again;
+ *               with other buttons swapped in, at the same text and
+ *               size: as the box laid out afresh with them
+ *
+ *   heading_osk XMB and MaterialUI: the input dialog drawn while the
+ *               missing firmware box is set: no rule under its label
+ *
  *   caret       XMB and MaterialUI: the input dialog with 40 words typed,
  *               wrapped over several lines, and the cursor put at the
  *               start, inside a word, at the start of each line the
@@ -46,7 +67,9 @@
  *               frame it is up
  *
  * Usage: msgbox_layout_test ozone|xmb|materialui short|tall|firmware
- *        msgbox_layout_test xmb|materialui caret
+ *        msgbox_layout_test ozone|xmb|materialui heading|heading_wrap
+ *        msgbox_layout_test ozone|xmb|materialui heading_none|heading_fit
+ *        msgbox_layout_test xmb|materialui caret|heading_osk
  *        msgbox_layout_test rgui redraw
  *
  * Requires a completed non-Qt build, same as the other menu harnesses:
@@ -544,8 +567,9 @@ static bool check_words(const frame_t *f, unsigned words, const char *lane)
    return cut || next != words + 1;
 }
 
+/* even: every line a line height under the one before */
 static void check_lines(const frame_t *f, unsigned w, unsigned h,
-      const char *lane)
+      bool even, const char *lane)
 {
    unsigned i;
    CHECK(f->count > 0, "[%s] no line of the box drawn", lane);
@@ -571,7 +595,7 @@ static void check_lines(const frame_t *f, unsigned w, unsigned h,
          float gap = (f->line[i - 1].y - f->line[i].y) * h;
          CHECK(gap > 0.0f,
                "[%s] line %u is not below line %u", lane, i, i - 1);
-         if (i > 1)
+         if (even && i > 1)
          {
             float prev = (f->line[i - 2].y - f->line[i - 1].y) * h;
             CHECK(gap - prev < 0.5f && prev - gap < 0.5f,
@@ -621,7 +645,7 @@ static void lane(const char *lane_name, unsigned words, unsigned w,
    one_frame(w, h);
    one_frame(w, h);
    take_frame(&first);
-   check_lines(&first, w, h, lane_name);
+   check_lines(&first, w, h, true, lane_name);
    cut = check_words(&first, words, lane_name);
    if (expect_cut >= 0)
       CHECK(cut == (expect_cut != 0), "[%s] the text was %scut, want %scut",
@@ -634,7 +658,7 @@ static void lane(const char *lane_name, unsigned words, unsigned w,
 
    one_frame(w + 160, h + 90);
    take_frame(&other);
-   check_lines(&other, w + 160, h + 90, lane_name);
+   check_lines(&other, w + 160, h + 90, true, lane_name);
    fresh_frame(&other_fresh, words, w + 160, h + 90);
    CHECK(same_frame(&other, &other_fresh),
          "[%s] at %ux%u the box is laid out as for the screen before",
@@ -809,6 +833,478 @@ static void caret_lane(unsigned w, unsigned h)
    printf("[caret] %u cursor position(s) at %ux%u\n", checked, w, h);
 }
 
+/* --- the confirm box's heading ------------------------------------- */
+
+/* The Security Warning's text: its heading, then the body */
+#define WARN_HEADING "Security Warning"
+#define WARN_TEXT WARN_HEADING "\nThis core is not signed.\n" \
+      "It was built by someone else.\n\nA core can reach your files."
+
+static const unsigned warn_two[] = {
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK
+};
+
+/* The buttons of a core load's warning, which can stack */
+static const unsigned warn_three[] = {
+   MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL,
+   MENU_ENUM_LABEL_VALUE_CORE_WARNING_LOAD_ONCE,
+   MENU_ENUM_LABEL_VALUE_CORE_WARNING_ALWAYS_TRUST
+};
+
+/* The Security Warning's buttons, the first lit */
+static void warning_buttons(const unsigned *label, unsigned count)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned i;
+   for (i = 0; i < count; i++)
+      menu_st->dialog_st.button_label[i] = label[i];
+   menu_st->dialog_st.button_count     = (uint8_t)count;
+   menu_st->dialog_st.button_highlight = 0;
+   menu_st->dialog_st.button_epoch++;
+}
+
+/* What the Security Warning raises: named buttons, the first lit */
+static void warning_state(void)
+{
+   menu_dialog_confirm_clear(menu_state_get_ptr());
+   warning_buttons(warn_two, 2);
+}
+
+static bool within(float a, float b, float tolerance)
+{
+   return a - b <= tolerance && b - a <= tolerance;
+}
+
+/* The box's lines, from the first drawn that starts with first: the
+ * driver draws them one after another at one x. Their baselines go in
+ * b, px down the screen; empty lines are left out. */
+static unsigned box_lines(const char *first, unsigned h,
+      const drawn_t **line, float *b, unsigned max)
+{
+   size_t first_len = strlen(first);
+   unsigned n       = 0;
+   unsigned i, j;
+   for (i = 0; i < drawn_count; i++)
+      if (!strncmp(drawn[i].text, first, first_len))
+         break;
+   for (j = i; j < drawn_count && n < max; j++)
+   {
+      if (drawn[j].x != drawn[i].x)
+         break;
+      if (!*drawn[j].text)
+         continue;
+      line[n] = &drawn[j];
+      b[n++]  = (1.0f - drawn[j].y) * h;
+   }
+   return n;
+}
+
+/* The rule: a quad 1 px high strictly between two baselines, from the
+ * text's left edge; the menu behind the box draws others */
+static unsigned rules_between(float y0, float y1, float left,
+      const harness_quad_t **rule)
+{
+   unsigned n = 0;
+   unsigned i;
+   for (i = 0; i < quad_count; i++)
+      if (     quads[i].h == 1
+            && (float)quads[i].y > y0
+            && (float)quads[i].y < y1
+            && within((float)quads[i].x, left, 1.5f))
+      {
+         if (rule)
+            *rule = &quads[i];
+         n++;
+      }
+   return n;
+}
+
+/* A frame's text draws and quads, all of them */
+typedef struct
+{
+   drawn_t text[DRAWN_MAX];
+   harness_quad_t quad[QUADS_MAX];
+   unsigned texts;
+   unsigned quads;
+} shot_t;
+
+static void shot_take(shot_t *s)
+{
+   s->texts = drawn_count;
+   s->quads = quad_count;
+   memcpy(s->text, drawn, drawn_count * sizeof(*drawn));
+   memcpy(s->quad, quads, quad_count * sizeof(*quads));
+}
+
+static bool shot_same(const shot_t *a, const shot_t *b)
+{
+   unsigned i;
+   if (a->texts != b->texts || a->quads != b->quads)
+      return false;
+   for (i = 0; i < a->texts; i++)
+      if (     strcmp(a->text[i].text, b->text[i].text)
+            || a->text[i].x != b->text[i].x
+            || a->text[i].y != b->text[i].y
+            || a->text[i].w != b->text[i].w)
+         return false;
+   return !memcmp(a->quad, b->quad, a->quads * sizeof(*a->quad));
+}
+
+/* The box comes up with other text, so the next frame wraps text
+ * afresh rather than drawing from what the driver kept */
+static void heading_text(const char *text, unsigned w, unsigned h)
+{
+   strlcpy(box_text, "w001", sizeof(box_text));
+   one_frame(w, h);
+   strlcpy(box_text, text, sizeof(box_text));
+}
+
+/* The driver's line height: two body lines of the Security Warning
+ * with no blank line between them */
+static float heading_line_height(unsigned w, unsigned h)
+{
+   const drawn_t *line[8];
+   float b[8];
+   unsigned n;
+   warning_state();
+   heading_text(WARN_TEXT, w, h);
+   one_frame(w, h);
+   n = box_lines(WARN_HEADING, h, line, b, 8);
+   CHECK(n == 4, "fixture: %u line(s) of the Security Warning drawn, "
+         "want 4", n);
+   return n == 4 ? b[2] - b[1] : 0.0f;
+}
+
+/* The Security Warning: a blank line under its heading, with a rule in
+ * it across the text's column, in the frame that wrapped the text and
+ * the one drawn from what was kept */
+static void heading_lane(unsigned w, unsigned h)
+{
+   static shot_t shot[2];
+   static frame_t f;
+   unsigned frame;
+
+   warning_state();
+   heading_text(WARN_TEXT, w, h);
+   for (frame = 1; frame <= 2; frame++)
+   {
+      const harness_quad_t *rule = NULL;
+      const drawn_t *line[8];
+      float b[8];
+      float lh, left;
+      unsigned i, n, rules;
+
+      one_frame(w, h);
+      shot_take(&shot[frame - 1]);
+      n = box_lines(WARN_HEADING, h, line, b, 8);
+      CHECK(n == 4, "[heading] frame %u: %u line(s) drawn, want 4",
+            frame, n);
+      if (n != 4)
+         continue;
+      /* As the short lane checks its lines, but not for even spacing,
+       * which the blank row under the heading breaks */
+      take_frame(&f);
+      for (i = 0; i < n; i++)
+         f.line[i] = *line[i];
+      f.count = n;
+      check_lines(&f, w, h, false, "heading");
+      lh = b[2] - b[1];
+      CHECK(within(b[1] - b[0], 2.0f * lh, 0.5f),
+            "[heading] frame %u: heading and body %.1f apart, want 2 lines "
+            "of %.1f", frame, b[1] - b[0], lh);
+      left  = line[0]->x * w;
+      rules = rules_between(b[0], b[1], left, &rule);
+      CHECK(rules == 1, "[heading] frame %u: %u rule(s) under the heading, "
+            "want 1", frame, rules);
+      if (!rule)
+         continue;
+      /* The column the box centres, which its buttons may make wider
+       * than the text */
+      CHECK(within((float)rule->w, (float)w - 2.0f * left, 1.5f),
+            "[heading] frame %u: rule %u wide, want the text's column, "
+            "%.1f", frame, rule->w, (float)w - 2.0f * left);
+   }
+   CHECK(shot_same(&shot[0], &shot[1]),
+         "[heading] the frame drawn from what was kept differs");
+   printf("[heading] a rule under the heading at %ux%u\n", w, h);
+}
+
+/* A heading that wraps: the rule under its last line */
+static void heading_wrap_lane(unsigned w, unsigned h)
+{
+   const drawn_t *line[16];
+   float b[16];
+   float lh = heading_line_height(w, h);
+   unsigned repeats;
+   unsigned n = 0;
+
+   for (repeats = 2; repeats < 40; repeats++)
+   {
+      size_t _len = 0;
+      unsigned i, heading = 0;
+      box_text[0] = '\0';
+      for (i = 0; i < repeats; i++)
+         _len += strlcpy(box_text + _len, i ? " " WARN_HEADING : WARN_HEADING,
+               sizeof(box_text) - _len);
+      strlcpy(box_text + _len, &WARN_TEXT[sizeof(WARN_HEADING) - 1],
+            sizeof(box_text) - _len);
+      one_frame(w, h);
+      n = box_lines(WARN_HEADING, h, line, b, 16);
+      while (heading < n && strcmp(line[heading]->text,
+               "This core is not signed."))
+         heading++;
+      if (heading >= 2)
+      {
+         CHECK(heading == 2, "fixture: the heading wrapped to %u lines, "
+               "want 2", heading);
+         break;
+      }
+   }
+   CHECK(repeats < 40 && n == 5, "fixture: the heading did not wrap to "
+         "two lines");
+   if (repeats < 40 && n == 5)
+   {
+      float left     = line[0]->x * w;
+      unsigned rules = rules_between(b[1], b[2], left, NULL);
+      CHECK(within(b[1] - b[0], lh, 0.5f), "[heading_wrap] the heading's "
+            "lines %.1f apart, want %.1f", b[1] - b[0], lh);
+      CHECK(within(b[2] - b[1], 2.0f * lh, 0.5f), "[heading_wrap] heading "
+            "and body %.1f apart, want 2 lines of %.1f", b[2] - b[1], lh);
+      CHECK(!rules_between(b[0], b[1], left, NULL),
+            "[heading_wrap] a rule between the heading's lines");
+      CHECK(rules == 1, "[heading_wrap] %u rule(s) under the heading, "
+            "want 1", rules);
+   }
+   printf("[heading_wrap] heading of %u repeats on two lines at %ux%u\n",
+         repeats, w, h);
+}
+
+/* The same text in a confirm without a heading, after the Security
+ * Warning: drawn as it is, not from the warning's wrap */
+static void heading_none_lane(unsigned w, unsigned h)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned frame;
+
+   heading_line_height(w, h);
+   menu_dialog_confirm_set(menu_st, MSG_UNKNOWN, CMD_EVENT_QUIT);
+   for (frame = 1; frame <= 2; frame++)
+   {
+      const drawn_t *line[8];
+      float b[8];
+      unsigned n;
+      one_frame(w, h);
+      n = box_lines(WARN_HEADING, h, line, b, 8);
+      CHECK(n == 4, "[heading_none] frame %u: %u line(s) drawn, want 4",
+            frame, n);
+      if (n != 4)
+         continue;
+      CHECK(within(b[1] - b[0], b[2] - b[1], 0.5f), "[heading_none] frame "
+            "%u: first lines %.1f apart, want %.1f", frame, b[1] - b[0],
+            b[2] - b[1]);
+      CHECK(!rules_between(b[0], b[1], line[0]->x * w, NULL),
+            "[heading_none] frame %u: a rule under the first line", frame);
+   }
+   printf("[heading_none] no rule without a heading at %ux%u\n", w, h);
+}
+
+/* Whether the frame drew the heading's rule and its n one-word lines,
+ * none cut */
+static void heading_fit_drawn(unsigned n, unsigned w, unsigned h,
+      bool *rule, bool *whole, float *b)
+{
+   const drawn_t *line[200];
+   unsigned count = box_lines(WARN_HEADING, h, line, b, 200);
+   unsigned i;
+   *whole = count == n + 1 && !strcmp(line[0]->text, WARN_HEADING);
+   for (i = 1; *whole && i < count; i++)
+   {
+      char word[8];
+      snprintf(word, sizeof(word), "w%03u", i);
+      *whole = !strcmp(line[i]->text, word);
+   }
+   *rule  = count > 1
+         && rules_between(b[0], b[1], line[0]->x * w, NULL) > 0;
+}
+
+/* The heading and n one-word lines: whether the box drew the rule and
+ * every line, none cut */
+static void heading_fit_frame(unsigned n, unsigned w, unsigned h,
+      bool *rule, bool *whole, float *b)
+{
+   unsigned i;
+   size_t _len = strlcpy(box_text, WARN_HEADING, sizeof(box_text));
+   for (i = 1; i <= n; i++)
+   {
+      char word[8];
+      snprintf(word, sizeof(word), "\nw%03u", i);
+      _len += strlcpy(box_text + _len, word, sizeof(box_text) - _len);
+   }
+   one_frame(w, h);
+   one_frame(w, h);
+   heading_fit_drawn(n, w, h, rule, whole, b);
+}
+
+/* As heading_fit_frame(), after a frame with other text, so the box is
+ * laid out afresh */
+static void heading_fit_afresh(unsigned n, unsigned w, unsigned h,
+      bool *rule, bool *whole, float *b)
+{
+   strlcpy(box_text, "w001", sizeof(box_text));
+   one_frame(w, h);
+   heading_fit_frame(n, w, h, rule, whole, b);
+}
+
+/* The heading and n lines with other buttons swapped in, the text and
+ * size kept, which a driver may draw from the wrap it kept: laid out as
+ * afresh with them. Checked at a width where three buttons, stacked,
+ * leave no room for the rule and two do; XMB, whose kept wrap is keyed
+ * on the buttons, may have none. */
+static void heading_swap(unsigned n, unsigned w, unsigned h)
+{
+   float b[200], kept_b[200];
+   bool rule = false, whole = false;
+   unsigned w2, i, j;
+
+   for (w2 = w; w2 > w / 4; w2 -= 8)
+   {
+      warning_buttons(warn_three, 3);
+      heading_fit_afresh(n, w2, h, &rule, &whole, b);
+      if (rule)
+         continue;
+      warning_buttons(warn_two, 2);
+      heading_fit_afresh(n, w2, h, &rule, &whole, b);
+      if (rule && whole)
+         break;
+   }
+   if (w2 <= w / 4)
+   {
+      bool xmb = string_is_equal(menu_state_get_ptr()->driver_ctx->ident,
+            "xmb");
+      CHECK(xmb, "[heading_fit] three buttons take the rule's room at no "
+            "width from %u to %u", w, w / 4);
+      if (xmb)
+         printf("[heading_fit] three buttons take the rule's room at no "
+               "width from %u to %u: no swap checked\n", w, w / 4);
+      return;
+   }
+
+   /* Three buttons for the two, then two for the three */
+   for (i = 3; i >= 2; i--)
+   {
+      bool kept_rule, kept_whole, same;
+      warning_buttons(i == 3 ? warn_three : warn_two, i);
+      /* The first frame with them, drawn from the wrap kept: a box cut
+       * short wraps again on the next */
+      one_frame(w2, h);
+      heading_fit_drawn(n, w2, h, &kept_rule, &kept_whole, kept_b);
+      heading_fit_afresh(n, w2, h, &rule, &whole, b);
+      CHECK(kept_rule == (i == 2), "[heading_fit] %u line(s) at %ux%u, "
+            "%u buttons swapped in: %s", n, w2, h, i,
+            kept_rule ? "a rule" : "no rule");
+      same = kept_rule == rule && kept_whole == whole;
+      for (j = 0; same && whole && j <= n; j++)
+         same = within(kept_b[j], b[j], 0.01f);
+      CHECK(same, "[heading_fit] %u line(s) at %ux%u, %u buttons swapped "
+            "in: the box differs from one laid out afresh", n, w2, h, i);
+   }
+   printf("[heading_fit] %u line(s) at %ux%u: a rule with two buttons, "
+         "none with three, swapped either way\n", n, w2, h);
+}
+
+/* A box that fits only without the blank line: drawn without it, so no
+ * rule, every line whole and the heading a line height above the body.
+ * So is the box that fit with it, on a screen a little shorter, which a
+ * driver may draw from the wrap it kept; back on the first, the rule
+ * again. */
+static void heading_fit_lane(unsigned w, unsigned h)
+{
+   float b[200];
+   float lh = heading_line_height(w, h);
+   bool rule = false, whole = false;
+   unsigned n, h2;
+
+   for (n = 1; n < 150; n++)
+   {
+      heading_fit_frame(n, w, h, &rule, &whole, b);
+      if (!rule || !whole)
+         break;
+   }
+   CHECK(n > 1, "[heading_fit] no rule, even with one line under the "
+         "heading");
+   CHECK(n < 150, "fixture: 150 lines fit the box");
+   CHECK(!rule, "[heading_fit] %u line(s): a rule where the box fits only "
+         "without it", n);
+   CHECK(whole, "[heading_fit] %u line(s): not every line drawn whole", n);
+   if (whole)
+      CHECK(within(b[1] - b[0], lh, 0.5f), "[heading_fit] %u line(s): heading "
+            "and body %.1f apart, want %.1f", n, b[1] - b[0], lh);
+   if (n < 2 || n >= 150)
+      return;
+
+   for (h2 = h; h2 > h / 2; h2--)
+   {
+      heading_fit_frame(n - 1, w, h2, &rule, &whole, b);
+      if (!rule)
+         break;
+   }
+   CHECK(h2 > h / 2, "fixture: %u line(s) with a rule down to %ux%u",
+         n - 1, w, h2);
+   CHECK(h2 < h, "[heading_fit] %u line(s) at %ux%u: no rule", n - 1, w, h);
+   CHECK(whole, "[heading_fit] %u line(s) at %ux%u, too short for the "
+         "rule: not every line drawn whole", n - 1, w, h2);
+   heading_fit_frame(n - 1, w, h, &rule, &whole, b);
+   CHECK(rule && whole, "[heading_fit] %u line(s) back at %ux%u: %s",
+         n - 1, w, h, rule ? "not every line drawn whole" : "no rule");
+   printf("[heading_fit] a rule with up to %u line(s) at %ux%u, none at "
+         "%ux%u\n", n - 1, w, h, w, h2);
+   heading_swap(n - 1, w, h);
+}
+
+/* The input dialog drawn while the missing firmware box is set: its
+ * label is no heading, so no rule under it */
+static void heading_osk_lane(unsigned w, unsigned h)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_ctx_line_t dialog;
+   char typed[256];
+   size_t typed_len = type_tokens(typed, sizeof(typed));
+   unsigned frame;
+
+   menu_dialog_confirm_set(menu_st, MSG_CORE_FIRMWARE_MISSING,
+         CMD_EVENT_CORE_FIRMWARE_DOWNLOAD);
+   box_text[0]  = '\0';
+   memset(&dialog, 0, sizeof(dialog));
+   dialog.label = "Enter a name";
+   CHECK(menu_input_dialog_start(&dialog), "fixture: no input dialog");
+   input_keyboard_line_append(&input_st->keyboard_line, typed, typed_len);
+   input_st->keyboard_line.select_all = false;
+   input_st->keyboard_line.ptr        = typed_len;
+   menu_st->current_time_us           = 500000;
+
+   /* The first frame wraps the text, the second draws what was kept */
+   for (frame = 1; frame <= 2; frame++)
+   {
+      const drawn_t *line[16];
+      float b[16];
+      unsigned n;
+      one_frame(w, h);
+      menu_st->current_time_us = 500000;
+      n = box_lines(dialog.label, h, line, b, 16);
+      CHECK(n >= 2, "fixture: frame %u: %u line(s) of the input dialog "
+            "drawn", frame, n);
+      if (n >= 2)
+         CHECK(!rules_between(b[0], b[1], line[0]->x * w, NULL),
+               "[heading_osk] frame %u: a rule under the label", frame);
+   }
+
+   menu_input_dialog_end();
+   menu_dialog_confirm_clear(menu_st);
+   printf("[heading_osk] no rule under the input dialog's label\n");
+}
+
 /* --- the missing firmware dialog's underlines ---------------------- */
 
 /* The path of each missing file is underlined: a quad 1 px high under
@@ -868,6 +1364,33 @@ static void firmware_lane(unsigned w, unsigned h)
       }
       CHECK(found == 1, "[firmware] frame %u: %u underline(s), want 1",
             frame, found);
+      /* The heading's rule in the blank line under it, which the box
+       * already has: it grows by no line */
+      {
+         const drawn_t *head  = NULL;
+         const drawn_t *badge = NULL;
+         for (i = 0; i < drawn_count; i++)
+            if (string_is_equal(drawn[i].text,
+                     "Required firmware is missing:"))
+               head  = &drawn[i];
+            else if (string_is_equal(drawn[i].text,
+                     "[This firmware must be supplied manually.]"))
+               badge = &drawn[i];
+         CHECK(head && badge, "[firmware] frame %u: the heading or the "
+               "badge not drawn", frame);
+         if (head && badge)
+         {
+            float b0       = (1.0f - head->y) * h;
+            float b1       = (1.0f - line->y) * h;
+            float lh       = (line->y - badge->y) * h;
+            unsigned rules = rules_between(b0, b1, head->x * w, NULL);
+            CHECK(within(b1 - b0, 2.0f * lh, 0.5f), "[firmware] frame %u: "
+                  "heading and path %.1f apart, want 2 lines of %.1f",
+                  frame, b1 - b0, lh);
+            CHECK(rules == 1, "[firmware] frame %u: %u rule(s) under the "
+                  "heading, want 1", frame, rules);
+         }
+      }
    }
    box_text[0] = '\0';
    menu_dialog_confirm_clear(menu_st);
@@ -963,19 +1486,28 @@ int main(int argc, char *argv[])
       ident = driver;
    else
       ident = NULL;
-   if (     string_is_equal(which, "caret")
+   if (     (string_is_equal(which, "caret")
+            || string_is_equal(which, "heading_osk"))
          && !string_is_equal(driver, "xmb")
          && !string_is_equal(driver, "materialui"))
       ident = NULL;
    if (!ident || (!string_is_equal(which, "short")
             && !string_is_equal(which, "tall")
             && !string_is_equal(which, "firmware")
+            && !string_is_equal(which, "heading")
+            && !string_is_equal(which, "heading_wrap")
+            && !string_is_equal(which, "heading_none")
+            && !string_is_equal(which, "heading_fit")
+            && !string_is_equal(which, "heading_osk")
             && !string_is_equal(which, "caret")
             && !string_is_equal(which, "redraw")))
    {
       fprintf(stderr, "usage: %s ozone|xmb|materialui short|tall|firmware\n"
-            "       %s xmb|materialui caret\n"
-            "       %s rgui redraw\n", argv[0], argv[0], argv[0]);
+            "       %s ozone|xmb|materialui heading|heading_wrap\n"
+            "       %s ozone|xmb|materialui heading_none|heading_fit\n"
+            "       %s xmb|materialui caret|heading_osk\n"
+            "       %s rgui redraw\n", argv[0], argv[0], argv[0], argv[0],
+            argv[0]);
       return 2;
    }
 
@@ -1033,6 +1565,16 @@ int main(int argc, char *argv[])
          menu_dialog_confirm_clear(menu_st);
          firmware_lane(1280, 720);
       }
+      else if (string_is_equal(which, "heading"))
+         heading_lane(1280, 720);
+      else if (string_is_equal(which, "heading_wrap"))
+         heading_wrap_lane(1280, 720);
+      else if (string_is_equal(which, "heading_none"))
+         heading_none_lane(1280, 720);
+      else if (string_is_equal(which, "heading_fit"))
+         heading_fit_lane(1280, 720);
+      else if (string_is_equal(which, "heading_osk"))
+         heading_osk_lane(1280, 720);
       else
       {
          menu_dialog_confirm_clear(menu_st);

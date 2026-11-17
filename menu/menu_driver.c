@@ -10202,6 +10202,23 @@ const char *menu_dialog_firmware_path_line(const struct menu_state *menu_st,
    return NULL;
 }
 
+size_t menu_dialog_heading_len(const struct menu_state *menu_st,
+      const char *text)
+{
+   size_t _len;
+   bool heading = menu_st->dialog_st.confirm_msg
+         == MSG_CORE_FIRMWARE_MISSING;
+#ifdef HAVE_CORE_SIGNATURES
+   /* Only the Security Warning names its buttons */
+   if (menu_st->dialog_st.button_count)
+      heading = true;
+#endif
+   if (!heading || !text)
+      return 0;
+   _len = strcspn(text, "\n");
+   return (_len && text[_len] == '\n') ? _len : 0;
+}
+
 /* A path's underline as last measured: the line it is under and the
  * font it was measured in, so the box's frames after the first draw it
  * without measuring again. Only the thread that draws the menu's frames

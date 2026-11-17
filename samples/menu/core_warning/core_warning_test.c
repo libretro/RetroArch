@@ -30,6 +30,9 @@
  *    on a box a newer request replaced;
  *  - RGUI centres the box on the screen with its buttons, the warnings'
  *    and a classic confirm's alike (lane_centred);
+ *  - RGUI rules off the Security Warning's and the missing firmware
+ *    box's heading, in the blank line under it or a row added there,
+ *    only while the box fits the screen with it (lane_heading_rule);
  *  - Settings > Core > Check Core Signatures: Off asks even with
  *    confirmations off and Back keeps the checks; On and Start ask
  *    nothing; a read-only store changes nothing; an inactive one hides
@@ -65,6 +68,7 @@
 #include "../../../command.h"
 #include "../../../frontend/frontend_driver.h"
 #include "../../../frontend/frontend.h"
+#include "../../../gfx/bitmapfont.h"
 #include "../../../gfx/gfx_animation.h"
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/video_driver.h"
@@ -839,6 +843,8 @@ static uint16_t *shot_px;
 static size_t shot_cap;
 static unsigned shot_w, shot_h;
 static unsigned under_w, under_h;
+static bool shot_timedate;
+static bool shot_filler;
 
 static void shot_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
@@ -876,61 +882,116 @@ static uint16_t *shot_under(void)
    return under;
 }
 
-/* The rows a box covers (those that differ from the frame under it)
- * are centred on the screen, within a row */
-static void box_centred(const uint16_t *under, const char *name)
+/* The box: the rows and columns that differ from the frame under it */
+struct shot_box
+{
+   int top, bottom, left, right;
+};
+
+static bool box_find(const uint16_t *under, struct shot_box *b)
 {
    unsigned x, y;
-   int top    = -1;
-   int bottom = -1;
+   b->top    = -1;
+   b->bottom = -1;
+   b->left   = -1;
+   b->right  = -1;
+   if (shot_w != under_w || shot_h != under_h)
+      return false;
+   for (y = 0; y < shot_h; y++)
+      for (x = 0; x < shot_w; x++)
+         if (shot_px[y * shot_w + x] != under[y * shot_w + x])
+         {
+            if (b->top < 0)
+               b->top  = (int)y;
+            b->bottom  = (int)y;
+            if (b->left < 0 || (int)x < b->left)
+               b->left = (int)x;
+            if ((int)x > b->right)
+               b->right = (int)x;
+         }
+   return b->top >= 0;
+}
+
+/* The rows a box covers are centred on the screen, within a row */
+static void box_centred(const uint16_t *under, const char *name)
+{
+   struct shot_box b;
    char what[160];
    CHECK(shot_w == under_w && shot_h == under_h,
          "centred: the frame changed size under the box");
    if (shot_w != under_w || shot_h != under_h)
       return;
-   for (y = 0; y < shot_h; y++)
-      for (x = 0; x < shot_w; x++)
-         if (shot_px[y * shot_w + x] != under[y * shot_w + x])
-         {
-            if (top < 0)
-               top = (int)y;
-            bottom = (int)y;
-            break;
-         }
+   box_find(under, &b);
    sprintf(what, "centred: the %s box %d..%d isn't centred on %u rows",
-         name, top, bottom, shot_h);
-   CHECK(top >= 0 && bottom < (int)shot_h
-         && abs(top + bottom - ((int)shot_h - 1)) <= 2, what);
-   fprintf(stderr, "[info] %s box rows %d..%d of %u\n", name, top, bottom,
-         shot_h);
+         name, b.top, b.bottom, shot_h);
+   CHECK(b.top >= 0 && b.bottom < (int)shot_h
+         && abs(b.top + b.bottom - ((int)shot_h - 1)) <= 2, what);
+   fprintf(stderr, "[info] %s box rows %d..%d of %u\n", name, b.top,
+         b.bottom, shot_h);
+}
+
+/* A warning comes up over a fresh frame; that frame, or NULL */
+static uint16_t *warning_up(enum core_warning_kind kind,
+      enum core_check_result result)
+{
+   uint16_t *under = shot_under();
+   if (!under)
+      return NULL;
+   push(&seen_a, kind, 0x7a, result);
+   pump(3);
+   CHECK(shown(), "fixture: the warning didn't come up");
+   return under;
 }
 
 static void centred(enum core_warning_kind kind,
       enum core_check_result result, const char *name)
 {
-   uint16_t *under = shot_under();
+   uint16_t *under = warning_up(kind, result);
    if (!under)
       return;
-   push(&seen_a, kind, 0x7a, result);
-   pump(3);
-   CHECK(shown(), "centred: the warning didn't come up");
    box_centred(under, name);
    answer(MENU_ACTION_CANCEL);
    pump(3);
    free(under);
 }
 
-/* RGUI centres the box with its buttons, not its text alone */
-static void lane_centred(void)
+/* Check Core Signatures: Off's Cancel/OK confirm comes up over a fresh
+ * frame; that frame, or NULL */
+static uint16_t *turnoff_up(void)
+{
+   uint16_t *under;
+   size_t i;
+   if (!core_trust_runtime_checks_on())
+      core_trust_runtime_set_checks(true);
+   push_core_settings();
+   i = row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK);
+   CHECK(i != NO_ROW, "fixture: no Check Core Signatures row");
+   if (i == NO_ROW)
+      return NULL;
+   /* Selected first, so only the box differs between the frames */
+   menu_state_get_ptr()->selection_ptr = i;
+   if (!(under = shot_under()))
+      return NULL;
+   ok_on(i);
+   pump(3);
+   CHECK(box().classic && box().count == 2,
+         "fixture: the turn-off confirm didn't come up");
+   return under;
+}
+
+/* RGUI's frames go to the shot, with no clock so only a box differs
+ * between two frames, and no border filler, whose rows a box's border
+ * can match; false if RGUI hands over none */
+static bool shot_begin(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    settings_t *settings           = config_get_ptr();
-   bool timedate                  = settings->bools.menu_timedate_enable;
-   uint16_t *under;
-   size_t i;
-   /* No clock, so only the box differs between the two frames */
+   shot_timedate                  = settings->bools.menu_timedate_enable;
+   shot_filler                    = settings->bools.menu_rgui_border_filler_enable;
    configuration_set_bool(settings, settings->bools.menu_timedate_enable,
          false);
+   configuration_set_bool(settings,
+         settings->bools.menu_rgui_border_filler_enable, false);
    scripted_install();
    real_poke                     = video_st->poke;
    memset(&shot_poke, 0, sizeof(shot_poke));
@@ -940,27 +1001,37 @@ static void lane_centred(void)
    video_st->poke                = &shot_poke;
    disp_get_ptr()->flags        |= GFX_DISP_FLAG_FB_DIRTY;
    pump(3);
-   CHECK(shot_px && shot_w && shot_h, "centred: RGUI handed over no frame");
-   if (shot_px)
+   return shot_px && shot_w && shot_h;
+}
+
+static void shot_end(void)
+{
+   settings_t *settings        = config_get_ptr();
+   video_state_get_ptr()->poke = real_poke;
+   scripted_remove();
+   free(shot_px);
+   shot_px  = NULL;
+   shot_cap = 0;
+   configuration_set_bool(settings, settings->bools.menu_timedate_enable,
+         shot_timedate);
+   configuration_set_bool(settings,
+         settings->bools.menu_rgui_border_filler_enable, shot_filler);
+}
+
+/* RGUI centres the box with its buttons, not its text alone */
+static void lane_centred(void)
+{
+   uint16_t *under;
+   bool shot = shot_begin();
+   CHECK(shot, "centred: RGUI handed over no frame");
+   if (shot)
    {
       centred(CORE_WARNING_INSTALL, CORE_CHECK_UNSIGNED, "install");
       centred(CORE_WARNING_LOAD, CORE_CHECK_OLDER, "load");
 
       /* A classic Cancel/OK confirm: Check Core Signatures Off */
-      if (!core_trust_runtime_checks_on())
-         core_trust_runtime_set_checks(true);
-      push_core_settings();
-      i = row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK);
-      CHECK(i != NO_ROW, "centred: no Check Core Signatures row");
-      /* Selected first, so only the box differs between the frames */
-      if (i != NO_ROW)
-         menu_state_get_ptr()->selection_ptr = i;
-      if (i != NO_ROW && (under = shot_under()))
+      if ((under = turnoff_up()))
       {
-         ok_on(i);
-         pump(3);
-         CHECK(box().classic && box().count == 2,
-               "centred: the turn-off confirm didn't come up");
          box_centred(under, "classic confirm");
          answer(MENU_ACTION_CANCEL);
          free(under);
@@ -968,13 +1039,230 @@ static void lane_centred(void)
       CHECK(core_trust_runtime_checks_on(),
             "centred: Back turned the checks off");
    }
-   video_st->poke                = real_poke;
-   scripted_remove();
-   free(shot_px);
-   shot_px  = NULL;
-   shot_cap = 0;
-   configuration_set_bool(settings, settings->bools.menu_timedate_enable,
-         timedate);
+   shot_end();
+}
+
+/* The box's background: what its padding under the top border holds */
+static unsigned box_bg(const uint16_t *frame, const struct shot_box *b,
+      uint16_t *bg)
+{
+   unsigned n = 0;
+   int x, y;
+   for (y = b->top + 4; y < b->top + 8; y++)
+      for (x = b->left + 3; x <= b->right - 3; x++)
+      {
+         uint16_t px = frame[y * shot_w + x];
+         unsigned k;
+         for (k = 0; k < n && bg[k] != px; k++);
+         if (k == n && n < 4)
+            bg[n++] = px;
+      }
+   return n;
+}
+
+/* Ink (anything but the background) in row y between the box's
+ * borders: how many pixels, and the first and last of them */
+static int row_ink(const uint16_t *frame, const struct shot_box *b,
+      const uint16_t *bg, unsigned bg_n, int y, int *first, int *last)
+{
+   int n = 0;
+   int x;
+   *first = -1;
+   *last  = -1;
+   for (x = b->left + 3; x <= b->right - 3; x++)
+   {
+      uint16_t px = frame[y * shot_w + x];
+      unsigned k;
+      for (k = 0; k < bg_n && bg[k] != px; k++);
+      if (k < bg_n)
+         continue;
+      if (*first < 0)
+         *first = x;
+      *last = x;
+      n++;
+   }
+   return n;
+}
+
+/* Row y holds one unbroken run of ink from the box's left border + 8
+ * to its right border - 8, within 2 px */
+static bool rule_at(const uint16_t *frame, const struct shot_box *b,
+      const uint16_t *bg, unsigned bg_n, int y)
+{
+   int first, last;
+   int n = row_ink(frame, b, bg, bg_n, y, &first, &last);
+   return n && n == last - first + 1
+         && abs(first - (b->left  + 8)) <= 2
+         && abs(last  - (b->right - 8)) <= 2;
+}
+
+/* The first of two rows in a row inside the box's borders that each
+ * hold a rule; -1 for none. No text row or 1 px path underline does. */
+static int rule_row(const uint16_t *frame, const struct shot_box *b)
+{
+   uint16_t bg[4];
+   unsigned bg_n = box_bg(frame, b, bg);
+   int y;
+   for (y = b->top + 2; y + 1 <= b->bottom - 2; y++)
+      if (     rule_at(frame, b, bg, bg_n, y)
+            && rule_at(frame, b, bg, bg_n, y + 1))
+         return y;
+   return -1;
+}
+
+/* The box up over under has a rule right under its heading's lines,
+ * clear of the text above and below it; none when lines is 0 */
+static void heading_rule(const uint16_t *under, const char *name,
+      unsigned lines)
+{
+   struct shot_box b;
+   uint16_t bg[4];
+   unsigned bg_n;
+   unsigned bands = 0;
+   bool inked     = false;
+   int r, y, first, last;
+   char what[200];
+   if (!box_find(under, &b))
+   {
+      sprintf(what, "heading: no %s box", name);
+      CHECK(false, what);
+      return;
+   }
+   r = rule_row(shot_px, &b);
+   fprintf(stderr, "[info] %s box rows %d..%d, rule at row %d\n", name,
+         b.top, b.bottom, r);
+   if (!lines)
+   {
+      sprintf(what, "heading: the %s box has a rule at row %d", name, r);
+      CHECK(r < 0, what);
+      return;
+   }
+   sprintf(what, "heading: the %s box has no rule", name);
+   CHECK(r >= 0, what);
+   if (r < 0)
+      return;
+   bg_n = box_bg(shot_px, &b, bg);
+   for (y = b.top + 2; y < r; y++)
+   {
+      bool ink = row_ink(shot_px, &b, bg, bg_n, y, &first, &last) > 0;
+      if (ink && !inked)
+         bands++;
+      inked = ink;
+   }
+   sprintf(what, "heading: the %s box's rule is under %u line(s), want %u",
+         name, bands, lines);
+   CHECK(bands == lines, what);
+   for (y = r + 3; y <= b.bottom - 2
+         && !row_ink(shot_px, &b, bg, bg_n, y, &first, &last); y++);
+   sprintf(what, "heading: the %s box's rule at row %d touches the text or "
+         "has none under it", name, r);
+   CHECK(   !row_ink(shot_px, &b, bg, bg_n, r - 1, &first, &last)
+         && !row_ink(shot_px, &b, bg, bg_n, r + 2, &first, &last)
+         && y <= b.bottom - 2, what);
+}
+
+/* A Cancel/OK confirm, msg, shows text over a fresh frame; that frame,
+ * or NULL */
+static uint16_t *text_box_up(unsigned msg, unsigned cmd, const char *text)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   uint16_t *under            = shot_under();
+   if (!under)
+      return NULL;
+   menu_dialog_confirm_set(menu_st, msg, cmd);
+   menu_st->dialog_st.confirm_text = text;
+   pump(1);
+   CHECK(box().classic && box().count == 2,
+         "fixture: the confirm didn't come up");
+   return under;
+}
+
+static void text_box_down(uint16_t *under)
+{
+   menu_dialog_confirm_clear(menu_state_get_ptr());
+   pump(3);
+   free(under);
+}
+
+/* The Security Warning and the missing firmware box have a rule under
+ * their heading, in the blank line under it or a row added there, only
+ * while the box fits the screen with it; other boxes have none */
+static void lane_heading_rule(void)
+{
+   static char text[640];
+   static const char *body = "\n\n1. tos.img\n"
+         "[This firmware must be supplied manually.]\n"
+         "tos.img (TOS 1.02 US aka Mega TOS)";
+   struct shot_box plain = { -1, -1, -1, -1 };
+   struct shot_box ruled;
+   uint16_t *under;
+   size_t n = 0;
+   bool shot = shot_begin();
+   CHECK(shot, "heading: RGUI handed over no frame");
+   if (shot)
+   {
+      /* A row added under the heading */
+      if ((under = warning_up(CORE_WARNING_INSTALL, CORE_CHECK_UNSIGNED)))
+      {
+         heading_rule(under, "install", 1);
+         box_centred(under, "install with its rule");
+         answer(MENU_ACTION_CANCEL);
+         pump(3);
+         free(under);
+      }
+      /* It fills the screen already: no room for the row, no rule */
+      if ((under = warning_up(CORE_WARNING_LOAD, CORE_CHECK_OLDER)))
+      {
+         heading_rule(under, "load", 0);
+         answer(MENU_ACTION_CANCEL);
+         pump(3);
+         free(under);
+      }
+      if ((under = turnoff_up()))
+      {
+         heading_rule(under, "classic confirm", 0);
+         answer(MENU_ACTION_CANCEL);
+         free(under);
+      }
+
+      /* In the blank line under the heading: no taller than the same
+       * text in a box without one */
+      strlcpy(text, "Required firmware is missing:", sizeof(text));
+      strlcat(text, body, sizeof(text));
+      if ((under = text_box_up(MSG_CORE_SIGNATURE_CHECK_OFF_CONFIRM,
+            CMD_EVENT_CORE_SIGNATURE_CHECK_OFF, text)))
+      {
+         heading_rule(under, "unheaded firmware text", 0);
+         box_find(under, &plain);
+         text_box_down(under);
+      }
+      if ((under = text_box_up(MSG_CORE_FIRMWARE_MISSING,
+            CMD_EVENT_CORE_FIRMWARE_DOWNLOAD, text)))
+      {
+         heading_rule(under, "firmware", 1);
+         if (box_find(under, &ruled) && plain.top >= 0)
+            CHECK(ruled.top == plain.top && ruled.bottom == plain.bottom,
+                  "heading: the firmware box grew for its rule");
+         text_box_down(under);
+      }
+
+      /* A heading half as long again as one of RGUI's lines (the frame
+       * less 16 px a side): the rule under both its lines */
+      text[0] = '\0';
+      do
+         n = strlcat(text, "Missing firmware ", sizeof(text));
+      while (     n < (shot_w - 32) / FONT_WIDTH_STRIDE * 3 / 2
+            && n < sizeof(text) / 2);
+      text[n - 1] = ':';
+      strlcat(text, body, sizeof(text));
+      if ((under = text_box_up(MSG_CORE_FIRMWARE_MISSING,
+            CMD_EVENT_CORE_FIRMWARE_DOWNLOAD, text)))
+      {
+         heading_rule(under, "wrapped heading", 2);
+         text_box_down(under);
+      }
+   }
+   shot_end();
 }
 
 /* A tap on a button presses it, anywhere else is Cancel whatever is
@@ -1544,6 +1832,7 @@ int main(int argc, char *argv[])
       synthetic_install();
       lane_synthetic();
       lane_centred();
+      lane_heading_rule();
       lane_pointer();
       lane_held();
       lane_replaced();
