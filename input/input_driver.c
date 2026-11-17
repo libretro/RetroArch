@@ -1056,95 +1056,38 @@ void input_driver_set_snapshot_bridge(bool on)
  * through button() and axis() alone, and that state() is the common
  * loop over the binds.
  *
- * - xinput (xinput_hybrid_joypad.c, the Windows driver with XInput and
- *   DirectInput pads). Its state() compares an axis against the
- *   threshold as integers where the common loop divides; the two agree
- *   for every threshold below 1.0, and at 1.0 the driver's own wraps
- *   and reads every bound axis as pressed, which the bridge does not.
- *   The XInput-only driver of the same name has no get_buttons() and
- *   stays as it was.
+ * - xinput: xinput_hybrid_joypad.c, the Windows driver with XInput and
+ *   DirectInput pads, and xinput_joypad.c, the XInput-only one (UWP,
+ *   Xbox, builds without DirectInput). The hybrid's state() compares an
+ *   axis against the threshold as integers where the common loop
+ *   divides; the two agree for every threshold below 1.0, and at 1.0
+ *   the driver's own reads every bound axis as pressed, which the
+ *   bridge does not.
  *
- * - winraw_joypad (winraw_joypad.c, the Windows RawInput driver). Its
- *   state() is the common loop with the button and axis reads written
- *   out in place, and compares an axis against the threshold as 32-bit
- *   integers, which agrees with the common loop at every threshold.
+ * - winraw_joypad (winraw_joypad.c, Windows RawInput) and dinput
+ *   (dinput_joypad.c, DirectInput only). Their state() compares an axis
+ *   against the threshold as 32-bit integers, which agrees with the
+ *   common loop at every threshold.
  *
- * - udev (udev_joypad.c, Linux). get_buttons() hands over the same
- *   sixty-four bits button() reads, and its state() is the common
- *   loop as written. It has more axes than a copy holds; the ones
- *   past the sixteenth are read from the driver as before.
+ * - udev (udev_joypad.c) and linuxraw (linuxraw_joypad.c), Linux.
+ *   get_buttons() hands over every button button() reads. udev pads
+ *   can have more axes than a copy holds; those past the sixteenth are
+ *   read from the driver.
  *
- * - dinput (dinput_joypad.c, the DirectInput-only Windows driver). It
- *   had no get_buttons(); it has one now, over the same button array
- *   button() reads. Its state() compares an axis against the
- *   threshold as 32-bit integers, as winraw_joypad's does.
+ * - sdl2, sdl3 and sdl (SDL 1.2). get_buttons() walks the pad's buttons
+ *   through the call button() makes, so SDL is asked once a poll.
  *
- * - linuxraw (linuxraw_joypad.c, Linux). Its get_buttons() handed
- *   over sixteen of the thirty-two buttons button() reads; it hands
- *   over all of them now. No hats; state() is the common loop.
+ * - android, winmm, parport, sdl_dingux and rwebpad (the web).
+ *   get_buttons() hands over the buttons button() reads, of the ports
+ *   it reads; android's and winmm's one hat answers through button().
  *
- * - sdl2 (sdl2_joypad.c) and sdl3 (sdl3_joypad.c). Neither had a
- *   get_buttons(); each has one now, a walk of the pad's buttons
- *   through the call button() makes. state() is the common loop.
- *   With these drivers a read is a call into SDL, so here the copy
- *   also saves those.
- *
- * - xinput, the XInput-only driver (xinput_joypad.c: UWP, Xbox, and
- *   builds without DirectInput). It has a get_buttons() now, so it is
- *   served like the hybrid driver of the same name.
- *
- * - android (android_joypad.c). It had no get_buttons(); it has one
- *   now, over the row of key state button() reads, keycodes below
- *   LAST_KEYCODE. One hat, through button(); state() is the common
- *   loop.
- *
- * - winmm (winmm_joypad.c, Windows' oldest joystick API). Its
- *   get_buttons() hands over the thirty-two buttons button() reads;
- *   its one hat answers through button(); state() is the common loop.
- *
- * - parport (parport_joypad.c, Linux). Its get_buttons() handed over
- *   sixteen bits, and any port's; it hands over the thirteen buttons
- *   button() reads, of the ports it reads. No axes; state() is the
- *   common loop over the buttons alone, which is the same.
- *
- * - sdl (sdl1_joypad.c, SDL 1.2) and sdl_dingux (sdl_dingux_joypad.c,
- *   OpenDingux). The first had no get_buttons(); it has one now, a
- *   walk of the pad's buttons through the call button() makes, so
- *   SDL is asked once a poll here too. The second's button() and
- *   state() shifted by any bind, past the sixteen it keeps; they read
- *   those sixteen now, as its get_buttons() hands over.
- *
- * - rwebpad (rwebpad_joypad.c, the web). Its get_buttons() set the
- *   buttons down and left the rest as they were in what it was handed;
- *   it clears them now. Its state() read the pad on the frontend's
- *   port rather than the one asked for; button() and state() read no
- *   further than the event holds.
- *
- * - The consoles that keep a pad as a mask of buttons and a few stick
- *   values, filled in their polls: gx (gekko_joypad.c, the native
- *   GameCube/Wii driver, and gx_joypad_libogc.c), ps2, ps3, ps4, psp
- *   and vita (psp_joypad.c), switch, ctr, qnx and xdk. Their button()
- *   and state() shifted by any bind, past the bits the mask holds; they
- *   read those bits now, and get_buttons() hands over all of them -
- *   ps2's handed over none, ps3's, ps4's, psp's and the 3DS's sixteen
- *   of wider masks. qnx and xdk had no get_buttons(); they have one
- *   now, xdk's through the mapping button() makes. ps4's state() read
- *   no axis binds; it reads them now, as the common loop does. None of
- *   these has a hat: their d-pads are buttons.
- * - wiiu, which hands each slot to the GamePad's, the Wiimotes' or USB
- *   HID's driver. The first two shifted by any bind and returned the
- *   bit where it lay, cut to 32; they read bits as the consoles above
- *   do now, and hand over all 64 - the Wiimotes' handed over sixteen,
- *   losing a Pro Controller's stick clicks. get_buttons() clears what
- *   it is handed when no pad is there, and get_buttons() and axis()
- *   answer for the ports button() does.
- * - mfi, Apple's GameController pads. get_buttons() handed over sixteen
- *   bits of 32, losing the home button; it hands over all of them, and
- *   with axis() answers only for the ports button() does - past
- *   MAX_USERS both read beyond their arrays. button() no longer shifts
- *   a 1 into an int's sign bit. Its d-pad is buttons.
- * - dos, which reads no pad yet: every answer is none, and get_buttons()
- *   now says so too.
+ * - The consoles, which keep a pad as a mask of buttons and a few stick
+ *   values filled in their polls: gx (gekko_joypad.c and
+ *   gx_joypad_libogc.c), ps2, ps3, ps4, psp and vita (psp_joypad.c),
+ *   switch, ctr, qnx, xdk, wiiu (its GamePad, Wiimote and USB HID
+ *   drivers alike), mfi (Apple's GameController pads) and dos, which
+ *   reads no pad yet. button() reads only the bits the mask holds and
+ *   get_buttons() hands over all of them; their d-pads are buttons.
  *
  * - hid, with hidraw or WinUSB behind it: their handlers' state is
  *   what button(), axis() and get_buttons() answer, and they lend it.
