@@ -476,6 +476,7 @@ endif
 # a different SANITIZER=, and a clean that took the fixtures with it
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
+	rm -f preview_audio_tracks_test preview_audio_tracks_test.exe
 	rm -f $(AUDIO_TIMELINE_TARGET) $(AUDIO_TIMELINE_TARGET).exe
 	rm -f $(AUDIO_FEED_THREADED_TARGET) $(AUDIO_FEED_THREADED_TARGET).exe
 	rm -f $(AV1_HW_TARGET) $(AV1_HW_TARGET).exe av1-preview-fixture.mp4 av1-preview-fixture.webm
@@ -502,3 +503,11 @@ audio-track-check: $(AUDIO_FEED_TARGET)
 .PHONY: audio-track-check
 
 check: audio-track-check
+
+AUDIO_TRACKS_METADATA_SOURCES := preview_audio_tracks_test.c $(filter-out preview_anim_window_test.c,$(ANIM_WINDOW_SOURCES))
+preview_audio_tracks_test: $(AUDIO_TRACKS_METADATA_SOURCES)
+	$(CC) -o $@ $(AUDIO_TRACKS_METADATA_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
+audio-track-metadata-check: preview_audio_tracks_test
+	./preview_audio_tracks_test
+check: audio-track-metadata-check
+.PHONY: audio-track-metadata-check

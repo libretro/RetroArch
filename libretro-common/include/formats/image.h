@@ -30,6 +30,7 @@
 
 #include <boolean.h>
 #include <formats/video_hw_frame.h>
+#include <formats/video_audio_track.h>
 
 RETRO_BEGIN_DECLS
 
@@ -755,6 +756,12 @@ int64_t image_transfer_anim_stream_start_ns(void *stream, enum image_type_enum t
  * MP4 and WebM. Still-image decoding and decoder-specific raw seek
  * coordinates do not change. Generic seeks below use movie time. */
 int64_t image_transfer_anim_stream_frame_time_ns(void *stream, enum image_type_enum type);
+
+/* Decoder owner: enumerate audio without allocating, reading or seeking.
+ * Ordinals skip non-audio tracks; out->index retains the demux index.
+ * Borrowed fields expire with the stream/input. Clears out on failure. */
+bool image_transfer_anim_stream_audio_track(const void *stream,
+      enum image_type_enum type, unsigned ordinal, video_audio_track_t *out);
 
 bool image_transfer_anim_stream_seekable(void *stream, enum image_type_enum type);
 bool image_transfer_anim_stream_seek_begin(void *stream,

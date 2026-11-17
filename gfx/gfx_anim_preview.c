@@ -181,6 +181,57 @@ gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
    return gfx_anim_preview_open_internal(path, png_probe, false);
 }
 
+static void gfx_anim_preview_audio_catalog(gfx_anim_preview_t *p)
+{
+   video_audio_track_t info;
+   unsigned i;
+   for (i = 0; i < GFX_ANIM_PREVIEW_AUDIO_TRACKS; i++)
+   {
+      gfx_anim_preview_audio_track_t *track = &p->audio_tracks[i];
+      size_t size;
+      if (!image_transfer_anim_stream_audio_track(p->stream, p->type, i, &info))
+         break;
+      track->info = info;
+      if (info.language_kind == VIDEO_AUDIO_LANGUAGE_MP4_PACKED
+            && info.language && info.language_size == 2)
+      {
+         unsigned packed = ((unsigned)info.language[0] << 8) | info.language[1];
+         unsigned a = (packed >> 10) & 31;
+         unsigned b = (packed >> 5) & 31;
+         unsigned c = packed & 31;
+         if (a && a <= 26 && b && b <= 26 && c && c <= 26)
+         {
+            track->language[0] = (char)(a + 96);
+            track->language[1] = (char)(b + 96);
+            track->language[2] = (char)(c + 96);
+         }
+      }
+      else if (info.language && info.language_kind == VIDEO_AUDIO_LANGUAGE_TEXT)
+      {
+         size = info.language_size;
+         if (size >= sizeof(track->language)) size = sizeof(track->language) - 1;
+         memcpy(track->language, info.language, size);
+      }
+      track->info.language = (const uint8_t*)track->language;
+      track->info.language_size = strlen(track->language);
+      track->info.language_kind = *track->language
+         ? VIDEO_AUDIO_LANGUAGE_TEXT : VIDEO_AUDIO_LANGUAGE_NONE;
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAAC)
+      if (info.codec == VIDEO_AUDIO_AAC) track->supported = true;
+#endif
+      if (p->type == IMAGE_TYPE_WEBM)
+      {
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_ROPUS)
+         if (info.codec == VIDEO_AUDIO_OPUS) track->supported = true;
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RVORBIS)
+         if (info.codec == VIDEO_AUDIO_VORBIS) track->supported = true;
+#endif
+      }
+   }
+   p->audio_track_count = i;
+}
+
 gfx_anim_preview_t *gfx_anim_preview_open_hw(const char *path, int png_probe)
 {
    return gfx_anim_preview_open_internal(path, png_probe, true);
@@ -369,6 +420,7 @@ static gfx_anim_preview_t *gfx_anim_preview_open_internal(const char *path,
    p->len        = blen;
    p->type       = type;
    p->seekable   = image_transfer_anim_stream_seekable(stream, type);
+   gfx_anim_preview_audio_catalog(p);
    /* Movie time starts at the container origin, even when audio
     * precedes its first video picture. The player schedules that gap. */
    p->timeline_start_us = 0;
@@ -1461,6 +1513,7 @@ gfx_anim_preview_t *gfx_anim_preview_wrap(void *stream,
    p->len        = len;
    p->type       = type;
    p->seekable   = image_transfer_anim_stream_seekable(stream, type);
+   gfx_anim_preview_audio_catalog(p);
    p->timeline_start_us = 0;
    p->windowed   = windowed;
    p->audio_slot = -1;

@@ -116,6 +116,13 @@ const uint32_t *image_transfer_anim_stream_next(void *s,
 { (void)s; (void)t; (void)ms; abort(); return NULL; }
 int64_t image_transfer_anim_stream_start_ns(void *s, enum image_type_enum t)
 { (void)s; (void)t; return 0; }
+bool image_transfer_anim_stream_audio_track(const void *s,
+      enum image_type_enum t, unsigned ordinal, video_audio_track_t *out)
+{
+   (void)s; (void)t; (void)ordinal;
+   if (out) memset(out, 0, sizeof(*out));
+   return false;
+}
 bool image_transfer_anim_stream_seekable(void *s, enum image_type_enum t)
 { return s && (t == IMAGE_TYPE_MP4 || t == IMAGE_TYPE_WEBM); }
 bool image_transfer_anim_stream_seek_begin(void *s, enum image_type_enum t,

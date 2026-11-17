@@ -1030,6 +1030,42 @@ rwebm_video_stream_t *rwebm_video_stream_open_hw_avail(const uint8_t *buf,
    return rwebm_video_stream_open_avail_internal(buf, len, avail, need_more, 1);
 }
 
+bool rwebm_video_stream_audio_track(const rwebm_video_stream_t *s,
+      unsigned ordinal, video_audio_track_t *out)
+{
+   int i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!s) return false;
+   for (i = 0; i < rwebm_num_tracks(s->demux); i++)
+   {
+      const rwebm_track *track = rwebm_get_track(s->demux, i);
+      if (!track || track->type != RWEBM_TRACK_AUDIO) continue;
+      if (ordinal)
+      {
+         ordinal--;
+         continue;
+      }
+      out->index = i;
+      out->sample_rate = track->sample_rate;
+      out->channels = track->channels;
+      out->codec_id = track->codec_id;
+      out->language = (const uint8_t*)rwebm_get_track_language(s->demux, i,
+            &out->language_size, NULL);
+      if (out->language) out->language_kind = VIDEO_AUDIO_LANGUAGE_TEXT;
+      switch (track->codec)
+      {
+         case RWEBM_CODEC_AAC: out->codec = VIDEO_AUDIO_AAC; break;
+         case RWEBM_CODEC_OPUS: out->codec = VIDEO_AUDIO_OPUS; break;
+         case RWEBM_CODEC_VORBIS: out->codec = VIDEO_AUDIO_VORBIS; break;
+         case RWEBM_CODEC_FLAC: out->codec = VIDEO_AUDIO_FLAC; break;
+         default: break;
+      }
+      return true;
+   }
+   return false;
+}
+
 void rwebm_video_stream_close(rwebm_video_stream_t *s)
 {
    if (!s)

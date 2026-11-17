@@ -1180,6 +1180,45 @@ rmp4_video_stream_t *rmp4_video_stream_open_hw_avail(const uint8_t *buf,
                                                 need_lo, need_hi, 1);
 }
 
+bool rmp4_video_stream_audio_track(const rmp4_video_stream_t *s,
+      unsigned ordinal, video_audio_track_t *out)
+{
+   int i;
+   enum rmp4_language_kind kind;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!s) return false;
+   for (i = 0; i < rmp4_num_tracks(s->demux); i++)
+   {
+      const rmp4_track *track = rmp4_get_track(s->demux, i);
+      if (!track || track->type != RMP4_TRACK_AUDIO) continue;
+      if (ordinal)
+      {
+         ordinal--;
+         continue;
+      }
+      out->index = i;
+      out->sample_rate = track->sample_rate;
+      out->channels = track->channels;
+      out->codec_id = track->codec_id;
+      out->language = rmp4_get_track_language(s->demux, i,
+            &out->language_size, &kind);
+      if (kind == RMP4_LANGUAGE_MDHD)
+         out->language_kind = VIDEO_AUDIO_LANGUAGE_MP4_PACKED;
+      else if (kind == RMP4_LANGUAGE_BCP47)
+         out->language_kind = VIDEO_AUDIO_LANGUAGE_TEXT;
+      switch (track->codec)
+      {
+         case RMP4_CODEC_AAC: out->codec = VIDEO_AUDIO_AAC; break;
+         case RMP4_CODEC_OPUS: out->codec = VIDEO_AUDIO_OPUS; break;
+         case RMP4_CODEC_VORBIS: out->codec = VIDEO_AUDIO_VORBIS; break;
+         default: break;
+      }
+      return true;
+   }
+   return false;
+}
+
 void rmp4_video_stream_close(rmp4_video_stream_t *s)
 {
    if (!s)

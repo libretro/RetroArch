@@ -33,6 +33,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <formats/video_hw_frame.h>
+#include <formats/video_audio_track.h>
 
 RETRO_BEGIN_DECLS
 
@@ -162,6 +163,10 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
 /* ---- Streaming animation ---- */
 
 typedef struct rwebm_video_stream rwebm_video_stream_t;
+
+/* Zero-based audio ordinal; metadata borrows the live stream. */
+bool rwebm_video_stream_audio_track(const rwebm_video_stream_t *stream,
+      unsigned ordinal, video_audio_track_t *out);
 
 /* Take ownership of the stream a successful rwebm_video_process_image
  * left open, positioned just past the first displayed frame, so the

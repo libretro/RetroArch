@@ -76,6 +76,16 @@ typedef struct gfx_anim_preview_audio_prepared gfx_anim_preview_audio_prepared_t
 #define GFX_ANIM_PREVIEW_DUR_DEFAULT  100
 #define GFX_ANIM_PREVIEW_DUR_MIN      16
 
+/* Both container readers admit at most eight tracks. */
+#define GFX_ANIM_PREVIEW_AUDIO_TRACKS 8
+
+typedef struct gfx_anim_preview_audio_track
+{
+   video_audio_track_t info;
+   char language[64]; /* retained independently of sliding source pages */
+   bool supported;
+} gfx_anim_preview_audio_track_t;
+
 typedef struct gfx_anim_preview
 {
    void *stream;                 /* image_transfer anim stream */
@@ -106,6 +116,8 @@ typedef struct gfx_anim_preview
     * frame even though the order stands). */
    bool native_argb;
    char *path;
+   gfx_anim_preview_audio_track_t audio_tracks[GFX_ANIM_PREVIEW_AUDIO_TRACKS];
+   unsigned audio_track_count; /* immutable after session publication */
 
    /* preview audio (WEBM / MP4), main thread */
    struct data_transfer *audio_dt;

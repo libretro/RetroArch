@@ -34,6 +34,7 @@
 #include <retro_common_api.h>
 
 #include <formats/video_hw_frame.h>
+#include <formats/video_audio_track.h>
 
 RETRO_BEGIN_DECLS
 
@@ -81,6 +82,10 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
 /* ---- Streaming animation ---- */
 
 typedef struct rmp4_video_stream rmp4_video_stream_t;
+
+/* Zero-based audio ordinal; metadata borrows the live stream. */
+bool rmp4_video_stream_audio_track(const rmp4_video_stream_t *stream,
+      unsigned ordinal, video_audio_track_t *out);
 
 /* Take ownership of the stream a successful rmp4_video_process_image
  * left open, positioned just past the first displayed frame, so the
