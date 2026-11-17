@@ -8,10 +8,13 @@
  * with every row's publication held back at random - and every way
  * must give ffmpeg's frames. The cases cover transquant bypass, the
  * wavefront's substreams, deblocking and SAO, B-frames with a
- * pyramid, and 10-bit samples.
+ * pyramid, and 10-bit samples, and a stream whose SPS and PPS change
+ * content under the same ids at an IDR while pictures before it are
+ * still in flight.
  *
  * RH265_FILE=path decodes one file against its own ffmpeg reference
- * at one thread and, with RH265_FILE_THREADS=N, concurrently.
+ * at one thread and, with RH265_FILE_THREADS=N, concurrently;
+ * RH265_SW_ONLY leaves out the hardware sequencing.
  *
  * Needs ffmpeg with libx265 in PATH; that is a hard requirement, a
  * missing ffmpeg is a failure. */
@@ -87,6 +90,9 @@ static int run(const char *fmt, ...)
  * and would be shared between pictures decoding concurrently. Every
  * case is decoded at both. */
 static int g_contexts = 1;
+/* Software decode only: the hardware sequencing refuses an in-band
+ * parameter change by contract, the software decoder takes it. */
+static int g_sw_only;
 static unsigned g_expected_slices;
 /* Pool threads for the decode under test; 0 is the calling thread. With
  * a pool the pictures decode concurrently, a picture reading from one
@@ -144,6 +150,7 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
          break;
       if (pkt.track != trk)
          continue;
+      if (!g_sw_only)
       {
          static rh265_nal_t slices[128];
          rh265_access_unit_t au;
@@ -303,6 +310,7 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
       }
       frames++;
    }
+   if (!g_sw_only)
    {
       int shown;
       while ((shown = rh265_hw_output_pick(&hw_state, 0, true)) >= 0)
@@ -377,6 +385,66 @@ static void oracle_case(const char *name, const char *src, int frames,
    free(ref);
 }
 
+/* Two segments, same picture size, the second with another CTB size,
+ * SAO and wavefront setting - the SPS and PPS rewritten under ids 0 -
+ * joined at its IDR into one hev1 track carrying them in-band. */
+static void oracle_param_change(const char *name, int frames,
+      const char *x265_a, const char *x265_b)
+{
+   char base[512], label[160];
+   uint8_t *ref;
+   size_t rlen;
+   int nf = 0, total = 2 * frames;
+   long bad;
+   snprintf(base, sizeof(base), "%s/%s", dir, name);
+   snprintf(label, sizeof(label), "%s (SPS/PPS rewritten at the second IDR) byte-exact vs ffmpeg",
+         name);
+   if (run("ffmpeg -v error -y -f lavfi -i \"mandelbrot=s=176x144:r=10\" -frames:v %d "
+           "-c:v libx265 -pix_fmt yuv420p %s -f hevc '%s_a.hevc' && "
+           "ffmpeg -v error -y -f lavfi -i \"mandelbrot=s=176x144:r=10:start_scale=2\" -frames:v %d "
+           "-c:v libx265 -pix_fmt yuv420p %s -f hevc '%s_b.hevc' && "
+           "cat '%s_a.hevc' '%s_b.hevc' > '%s.hevc' && "
+           "ffmpeg -v error -y -f hevc -i '%s.hevc' -c copy -tag:v hev1 '%s.mp4' && "
+           "ffmpeg -v error -y -i '%s.hevc' -f rawvideo -pix_fmt yuv420p '%s.yuv'",
+           frames, x265_a, base, frames, x265_b, base,
+           base, base, base, base, base, base, base) != 0)
+   {
+      check(label, 0);
+      return;
+   }
+   {
+      char yuv[600], mp4[600];
+      snprintf(yuv, sizeof(yuv), "%s.yuv", base);
+      snprintf(mp4, sizeof(mp4), "%s.mp4", base);
+      if (!(ref = slurp(yuv, &rlen)))
+      {
+         check(label, 0);
+         return;
+      }
+      g_sw_only = 1;
+      bad = compare(mp4, ref, rlen, ref, 0, &nf);
+      check(label, bad == 0 && nf == total);
+      g_contexts = 4;
+      bad = compare(mp4, ref, rlen, ref, 0, &nf);
+      g_contexts = 1;
+      check("  same with 4 picture contexts in rotation", bad == 0 && nf == total);
+      if (g_pool)
+      {
+         g_threads = 4;
+         bad = compare(mp4, ref, rlen, ref, 0, &nf);
+         check("  same with 4 pictures decoding concurrently", bad == 0 && nf == total);
+         rh265_video_set_publish_delay(200);
+         bad = compare(mp4, ref, rlen, ref, 0, &nf);
+         rh265_video_set_publish_delay(0);
+         g_threads = 0;
+         check("  same concurrently with every row's publication delayed",
+               bad == 0 && nf == total);
+      }
+      g_sw_only = 0;
+      free(ref);
+   }
+}
+
 int main(void)
 {
    /* RH265_FILE=path RH265_REF=path.yuv: decode one file against its
@@ -411,6 +479,8 @@ int main(void)
       #ifdef HAVE_THREADS
       g_pool = tpool_create_with_stack_size(3, 512 * 1024);
       #endif
+      /* RH265_SW_ONLY: a file changing parameter sets in-band */
+      g_sw_only = getenv("RH265_SW_ONLY") != NULL;
       bad = compare(getenv("RH265_FILE"), ref, rlen, ref, 0, &nf);
       failed |= bad != 0;
       printf("one thread: %d frames, %ld differing samples, %d reads short of their rows\n",
@@ -494,6 +564,14 @@ int main(void)
          "-x265-params crf=24:slices=2:bframes=3:b-pyramid=1:wpp=1:frame-threads=1:pools=1");
    oracle_case("multi_slice_10", "mandelbrot=s=256x256:r=10", 12, "yuv420p10le",
          "-x265-params crf=24:slices=2:bframes=3:b-pyramid=1:wpp=1:frame-threads=1:pools=1");
+   /* CTB 32 to 16: the per-CTB tables grow and the pictures still in
+    * flight count their rows in the larger CTBs; then 16 to 32 */
+   oracle_param_change("param_change", 8,
+         "-x265-params crf=22:ctu=32:sao=1:deblock=1:bframes=2:wpp=0:frame-threads=1",
+         "-x265-params crf=24:ctu=16:sao=0:deblock=1:bframes=2:wpp=1:frame-threads=1");
+   oracle_param_change("param_change_up", 8,
+         "-x265-params crf=24:ctu=16:sao=0:deblock=1:bframes=2:wpp=1:frame-threads=1",
+         "-x265-params crf=22:ctu=32:sao=1:deblock=1:bframes=2:wpp=0:frame-threads=1");
    #ifdef HAVE_THREADS
    if (g_pool)
       tpool_destroy((tpool_t*)g_pool);

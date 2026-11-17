@@ -1708,6 +1708,7 @@ typedef struct
    int      needed_out;       /* not yet emitted through the API */
    int      discard_output;
    int      in_use;
+   int      rows;             /* CTB rows of its own SPS */
    /* CTB rows of this picture that are final - reconstructed,
     * deblocked, SAO'd, nothing writes them again - counted from the
     * top by the row hook and set to the whole picture at the finish.
@@ -1838,6 +1839,7 @@ typedef struct
    int part_mode;             /* RH265_PART_* */
    int cu_x, cu_y, cu_log2;   /* current CU geometry */
    int ct_depth_cur;          /* ctDepth of the current CU */
+   int meta_ctbs;             /* CTBs the per-CTB tables in meta hold */
    int max_merge;             /* MaxNumMergeCand */
    int slice_tmvp;            /* slice_temporal_mvp_enabled_flag */
 } rh265_dec;
@@ -4251,11 +4253,12 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
    d->pel_bytes = 1 + (d->bd > 8);
    d->fns       = rh265_get_fns(d->bd);
    if (v->alloc_w == s->width && v->alloc_h == s->height
-         && v->alloc_bd == d->bd && d->ipm)
+         && v->alloc_bd == d->bd && d->ipm
+         && d->meta_ctbs == s->pic_size_ctbs)
       return 0;
    /* The DPB and every context go when the geometry changes; a
-    * context arriving at a geometry the decoder already has takes
-    * only its own maps. */
+    * context arriving at a geometry the decoder already has, or with
+    * another CTB size, takes only its own maps. */
    if (v->alloc_w != s->width || v->alloc_h != s->height
          || v->alloc_bd != d->bd)
       rh265_free_frame(v);
@@ -4301,6 +4304,7 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
    d->ctb_slice     = (uint16_t*)(d->meta + o_slice);
    d->ctb_lf_across = d->meta + o_lfa;
    d->bypm          = d->meta + o_byp;
+   d->meta_ctbs     = s->pic_size_ctbs;
    v->alloc_w = s->width;
    v->alloc_h = s->height;
    v->out_pic = -1;
@@ -5355,6 +5359,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   cur->long_term  = 0;
                   cur->needed_out = shp->pic_output_flag;
                   cur->discard_output = 0;
+                  cur->rows       = sps->ctb_h;
                   cur->timestamp = v->packet_timestamp;
                   cur->in_use     = 1;
                   if (!RH265_IS_IDR(nal_type))
@@ -6182,7 +6187,7 @@ again:
    if (v->threaded)
    {
       rh265_pic *pic = &v->dpb[v->out_fifo[0]];
-      int rows = v->cur->sps ? v->cur->sps->ctb_h : 0;
+      int rows = pic->rows;
       if (rows && retro_atomic_load_acquire_int(&pic->rows_final) < rows)
       {
          if (v->out_count < RH265_MAX_DPB - 1)
