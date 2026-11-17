@@ -27,6 +27,20 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
+/* The header's own inline keyword. Not INLINE: a core may define that
+ * itself (FBNeo has it as "__inline static", which turns every
+ * "static INLINE" below into "static static"), and this header reaches
+ * every file that includes file_stream.h through vfs.h's handle. */
+#if defined(_WIN32) || defined(__INTEL_COMPILER)
+#define RETRO_ATOMIC_INLINE __inline
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
+#define RETRO_ATOMIC_INLINE inline
+#elif defined(__GNUC__)
+#define RETRO_ATOMIC_INLINE __inline__
+#else
+#define RETRO_ATOMIC_INLINE
+#endif
+
 /* Minimal portable atomic operations for SPSC patterns.
  *
  * This header consolidates the ad-hoc atomic shims previously duplicated
@@ -751,13 +765,13 @@ typedef volatile LONG_PTR retro_atomic_size_t;
 /* x86 TSO supplies acquire/release ordering for aligned native words.
  * Compiler barriers preserve it with either MSVC volatile mode. */
 #if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD)
-static INLINE int retro_atomic_msvc_load_acquire_int_(const volatile LONG *p)
+static RETRO_ATOMIC_INLINE int retro_atomic_msvc_load_acquire_int_(const volatile LONG *p)
 {
    LONG value = *p;
    _ReadWriteBarrier();
    return (int)value;
 }
-static INLINE void retro_atomic_msvc_store_release_int_(volatile LONG *p, LONG value)
+static RETRO_ATOMIC_INLINE void retro_atomic_msvc_store_release_int_(volatile LONG *p, LONG value)
 {
    _ReadWriteBarrier();
    *p = value;
@@ -799,7 +813,7 @@ static INLINE void retro_atomic_msvc_store_release_int_(volatile LONG *p, LONG v
  * It returns the value observed immediately before the successful
  * swap, which is exactly the fetch_* contract.  Both call sites are
  * uncontended flag words, so the loop cost is not a concern. */
-static INLINE LONG retro_atomic_fetch_or_int_cas(LONG volatile *p, LONG v)
+static RETRO_ATOMIC_INLINE LONG retro_atomic_fetch_or_int_cas(LONG volatile *p, LONG v)
 {
    LONG old;
    LONG prev;
@@ -812,7 +826,7 @@ static INLINE LONG retro_atomic_fetch_or_int_cas(LONG volatile *p, LONG v)
    return prev;
 }
 
-static INLINE LONG retro_atomic_fetch_and_int_cas(LONG volatile *p, LONG v)
+static RETRO_ATOMIC_INLINE LONG retro_atomic_fetch_and_int_cas(LONG volatile *p, LONG v)
 {
    LONG old;
    LONG prev;
@@ -876,13 +890,13 @@ static INLINE LONG retro_atomic_fetch_and_int_cas(LONG volatile *p, LONG v)
 #endif
 
 #if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD)
-static INLINE size_t retro_atomic_msvc_load_acquire_size_(const volatile LONG_PTR *p)
+static RETRO_ATOMIC_INLINE size_t retro_atomic_msvc_load_acquire_size_(const volatile LONG_PTR *p)
 {
    LONG_PTR value = *p;
    _ReadWriteBarrier();
    return (size_t)value;
 }
-static INLINE void retro_atomic_msvc_store_release_size_(volatile LONG_PTR *p, LONG_PTR value)
+static RETRO_ATOMIC_INLINE void retro_atomic_msvc_store_release_size_(volatile LONG_PTR *p, LONG_PTR value)
 {
    _ReadWriteBarrier();
    *p = value;
@@ -1023,12 +1037,12 @@ typedef volatile size_t retro_atomic_size_t;
  * plus one di/ei, and DIntr() carries the retry loop the EE's di
  * needs, which is why this calls into the SDK rather than emitting
  * the instructions here. */
-static INLINE int retro_atomic_ee_mask_(void)
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_mask_(void)
 {
    return DIntr();
 }
 
-static INLINE void retro_atomic_ee_unmask_(int masked)
+static RETRO_ATOMIC_INLINE void retro_atomic_ee_unmask_(int masked)
 {
    if (masked)
       EIntr();
@@ -1046,7 +1060,7 @@ static INLINE void retro_atomic_ee_unmask_(int masked)
 #define retro_atomic_store_release_size(p, v)    do { *(p) = (v); } while (0)
 #define retro_atomic_store_relaxed_size(p, v)    do { *(p) = (v); } while (0)
 
-static INLINE int retro_atomic_ee_fetch_add_int_(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_fetch_add_int_(retro_atomic_int_t *p, int v)
 {
    int old;
    int masked = retro_atomic_ee_mask_();
@@ -1056,7 +1070,7 @@ static INLINE int retro_atomic_ee_fetch_add_int_(retro_atomic_int_t *p, int v)
    return old;
 }
 
-static INLINE int retro_atomic_ee_fetch_sub_int_(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_fetch_sub_int_(retro_atomic_int_t *p, int v)
 {
    int old;
    int masked = retro_atomic_ee_mask_();
@@ -1066,7 +1080,7 @@ static INLINE int retro_atomic_ee_fetch_sub_int_(retro_atomic_int_t *p, int v)
    return old;
 }
 
-static INLINE int retro_atomic_ee_fetch_or_int_(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_fetch_or_int_(retro_atomic_int_t *p, int v)
 {
    int old;
    int masked = retro_atomic_ee_mask_();
@@ -1076,7 +1090,7 @@ static INLINE int retro_atomic_ee_fetch_or_int_(retro_atomic_int_t *p, int v)
    return old;
 }
 
-static INLINE int retro_atomic_ee_fetch_and_int_(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_fetch_and_int_(retro_atomic_int_t *p, int v)
 {
    int old;
    int masked = retro_atomic_ee_mask_();
@@ -1086,7 +1100,7 @@ static INLINE int retro_atomic_ee_fetch_and_int_(retro_atomic_int_t *p, int v)
    return old;
 }
 
-static INLINE size_t retro_atomic_ee_fetch_add_size_(retro_atomic_size_t *p,
+static RETRO_ATOMIC_INLINE size_t retro_atomic_ee_fetch_add_size_(retro_atomic_size_t *p,
       size_t v)
 {
    size_t old;
@@ -1097,7 +1111,7 @@ static INLINE size_t retro_atomic_ee_fetch_add_size_(retro_atomic_size_t *p,
    return old;
 }
 
-static INLINE size_t retro_atomic_ee_fetch_sub_size_(retro_atomic_size_t *p,
+static RETRO_ATOMIC_INLINE size_t retro_atomic_ee_fetch_sub_size_(retro_atomic_size_t *p,
       size_t v)
 {
    size_t old;
@@ -1170,7 +1184,7 @@ RETRO_END_DECLS
 #define retro_atomic_store_relaxed_size(p, v) \
    __atomic_store_n((p), (v), __ATOMIC_RELAXED)
 
-static INLINE int retro_atomic_wiiu_fetch_add_int_(retro_atomic_int_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_wiiu_fetch_add_int_(retro_atomic_int_t *p,
       int v)
 {
    int old;
@@ -1180,7 +1194,7 @@ static INLINE int retro_atomic_wiiu_fetch_add_int_(retro_atomic_int_t *p,
    return old;
 }
 
-static INLINE int retro_atomic_wiiu_fetch_add_seq_cst_int_(
+static RETRO_ATOMIC_INLINE int retro_atomic_wiiu_fetch_add_seq_cst_int_(
       retro_atomic_int_t *p, int v)
 {
    int old;
@@ -1190,7 +1204,7 @@ static INLINE int retro_atomic_wiiu_fetch_add_seq_cst_int_(
    return old;
 }
 
-static INLINE int retro_atomic_wiiu_fetch_or_int_(retro_atomic_int_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_wiiu_fetch_or_int_(retro_atomic_int_t *p,
       int v)
 {
    int old;
@@ -1200,7 +1214,7 @@ static INLINE int retro_atomic_wiiu_fetch_or_int_(retro_atomic_int_t *p,
    return old;
 }
 
-static INLINE int retro_atomic_wiiu_fetch_and_int_(retro_atomic_int_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_wiiu_fetch_and_int_(retro_atomic_int_t *p,
       int v)
 {
    int old;
@@ -1225,7 +1239,7 @@ static INLINE int retro_atomic_wiiu_fetch_and_int_(retro_atomic_int_t *p,
  * wider, as this backend's own test is, the word-wide calls cannot hold
  * it and the size operations take the builtins instead. */
 #if defined(__SIZEOF_SIZE_T__) && __SIZEOF_SIZE_T__ == 4
-static INLINE size_t retro_atomic_wiiu_fetch_add_size_(retro_atomic_size_t *p,
+static RETRO_ATOMIC_INLINE size_t retro_atomic_wiiu_fetch_add_size_(retro_atomic_size_t *p,
       size_t v)
 {
    size_t old;
@@ -1287,42 +1301,42 @@ typedef volatile size_t retro_atomic_size_t;
 #define retro_atomic_exchange_int(p, v) \
    retro_atomic_exchange_int_fb((p), (v))
 
-static INLINE int retro_atomic_fetch_add_int_fb(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_fetch_add_int_fb(retro_atomic_int_t *p, int v)
 {
    int old = *p;
    *p      = (int)((unsigned)old + (unsigned)v);
    return old;
 }
 
-static INLINE int retro_atomic_fetch_sub_int_fb(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_fetch_sub_int_fb(retro_atomic_int_t *p, int v)
 {
    int old = *p;
    *p      = (int)((unsigned)old - (unsigned)v);
    return old;
 }
 
-static INLINE int retro_atomic_fetch_or_int_fb(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_fetch_or_int_fb(retro_atomic_int_t *p, int v)
 {
    int old = *p;
    *p      = old | v;
    return old;
 }
 
-static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
 {
    int old = *p;
    *p      = old & v;
    return old;
 }
 
-static INLINE int retro_atomic_exchange_int_fb(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_exchange_int_fb(retro_atomic_int_t *p, int v)
 {
    int old = *p;
    *p      = v;
    return old;
 }
 
-static INLINE bool retro_atomic_cas_int_fb(retro_atomic_int_t *p,
+static RETRO_ATOMIC_INLINE bool retro_atomic_cas_int_fb(retro_atomic_int_t *p,
       int expected, int desired)
 {
    if (*p != expected)
@@ -1340,7 +1354,7 @@ static INLINE bool retro_atomic_cas_int_fb(retro_atomic_int_t *p,
 #define retro_atomic_fetch_sub_size(p, v) \
    retro_atomic_fetch_sub_size_fb((p), (v))
 
-static INLINE size_t retro_atomic_fetch_add_size_fb(retro_atomic_size_t *p,
+static RETRO_ATOMIC_INLINE size_t retro_atomic_fetch_add_size_fb(retro_atomic_size_t *p,
       size_t v)
 {
    size_t old = *p;
@@ -1348,7 +1362,7 @@ static INLINE size_t retro_atomic_fetch_add_size_fb(retro_atomic_size_t *p,
    return old;
 }
 
-static INLINE size_t retro_atomic_fetch_sub_size_fb(retro_atomic_size_t *p,
+static RETRO_ATOMIC_INLINE size_t retro_atomic_fetch_sub_size_fb(retro_atomic_size_t *p,
       size_t v)
 {
    size_t old = *p;
@@ -1379,7 +1393,7 @@ typedef _Atomic(void*) retro_atomic_ptr_t;
 #define retro_atomic_ptr_init(p, v)    atomic_init((p), (v))
 #define retro_atomic_exchange_int(p, v) \
    atomic_exchange_explicit((p), (v), memory_order_acq_rel)
-static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
 {
    int e = expected;
    return atomic_compare_exchange_strong_explicit(p, &e, desired,
@@ -1397,7 +1411,7 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    atomic_store_explicit((p), (v), memory_order_relaxed)
 #define retro_atomic_exchange_ptr(p, v) \
    atomic_exchange_explicit((p), (v), memory_order_acq_rel)
-static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
 {
    void *e = expected;
    return atomic_compare_exchange_strong_explicit(p, &e, desired,
@@ -1420,7 +1434,7 @@ typedef std::atomic<void*> retro_atomic_ptr_t;
 #define retro_atomic_ptr_init(p, v)    ((p)->store((v), std::memory_order_relaxed))
 #define retro_atomic_exchange_int(p, v) \
    ((p)->exchange((v), std::memory_order_acq_rel))
-static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
 {
    int e = expected;
    return p->compare_exchange_strong(e, desired,
@@ -1438,7 +1452,7 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    ((p)->store((v), std::memory_order_relaxed))
 #define retro_atomic_exchange_ptr(p, v) \
    ((p)->exchange((v), std::memory_order_acq_rel))
-static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
 {
    void *e = expected;
    return p->compare_exchange_strong(e, desired,
@@ -1461,7 +1475,7 @@ typedef void* retro_atomic_ptr_t;
 #define retro_atomic_ptr_init(p, v)    (*(p) = (v))
 #define retro_atomic_exchange_int(p, v) \
    __atomic_exchange_n((p), (v), __ATOMIC_ACQ_REL)
-static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
 {
    int e = expected;
    return __atomic_compare_exchange_n(p, &e, desired, 0,
@@ -1479,7 +1493,7 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    __atomic_store_n((p), (v), __ATOMIC_RELAXED)
 #define retro_atomic_exchange_ptr(p, v) \
    __atomic_exchange_n((p), (v), __ATOMIC_ACQ_REL)
-static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
 {
    void *e = expected;
    return __atomic_compare_exchange_n(p, &e, desired, 0,
@@ -1502,7 +1516,7 @@ typedef void* volatile retro_atomic_ptr_t;
 #define retro_atomic_ptr_init(p, v)    (*(p) = (v))
 #define retro_atomic_exchange_int(p, v) \
    ((int)InterlockedExchange((volatile LONG*)(p), (LONG)(v)))
-static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
 {
    return InterlockedCompareExchange((volatile LONG*)p, (LONG)desired,
          (LONG)expected) == (LONG)expected;
@@ -1525,13 +1539,13 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    (InterlockedCompareExchangePointer((void* volatile*)(p), (void*)(desired), \
          (void*)(expected)) == (void*)(expected))
 #if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD)
-static INLINE void *retro_atomic_msvc_load_acquire_ptr_(const retro_atomic_ptr_t *p)
+static RETRO_ATOMIC_INLINE void *retro_atomic_msvc_load_acquire_ptr_(const retro_atomic_ptr_t *p)
 {
    void *value = *p;
    _ReadWriteBarrier();
    return value;
 }
-static INLINE void retro_atomic_msvc_store_release_ptr_(retro_atomic_ptr_t *p, void *value)
+static RETRO_ATOMIC_INLINE void retro_atomic_msvc_store_release_ptr_(retro_atomic_ptr_t *p, void *value)
 {
    _ReadWriteBarrier();
    *p = value;
@@ -1544,7 +1558,7 @@ static INLINE void retro_atomic_msvc_store_release_ptr_(retro_atomic_ptr_t *p, v
    retro_atomic_msvc_store_release_ptr_((retro_atomic_ptr_t*)(p), (void*)(v))
 #endif
 /* Vulkan-Hpp undefines the Windows MemoryBarrier macro. */
-static INLINE void retro_atomic_msvc_thread_fence_(void)
+static RETRO_ATOMIC_INLINE void retro_atomic_msvc_thread_fence_(void)
 {
    volatile LONG barrier = 0;
    RETRO_ATOMIC_MSVC_ARM_FENCE();
@@ -1566,7 +1580,7 @@ static INLINE void retro_atomic_msvc_thread_fence_(void)
 
 typedef void* volatile retro_atomic_ptr_t;
 #define retro_atomic_ptr_init(p, v)    (*(p) = (v))
-static INLINE int retro_atomic_exchange_int_impl_(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_exchange_int_impl_(retro_atomic_int_t *p, int v)
 {
    int old;
    do { old = *p; } while (!OSAtomicCompareAndSwapIntBarrier(old, v, (volatile int*)p));
@@ -1576,7 +1590,7 @@ static INLINE int retro_atomic_exchange_int_impl_(retro_atomic_int_t *p, int v)
    retro_atomic_exchange_int_impl_((p), (v))
 #define retro_atomic_cas_int(p, expected, desired) \
    OSAtomicCompareAndSwapIntBarrier((expected), (desired), (volatile int*)(p))
-static INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
+static RETRO_ATOMIC_INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
 {
    void* v = *p;
    OSMemoryBarrier();
@@ -1588,14 +1602,14 @@ static INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
  * no OSMemoryBarrier. */
 #define retro_atomic_load_relaxed_ptr(p)      (*(p))
 #define retro_atomic_store_relaxed_ptr(p, v)  do { *(p) = (void*)(v); } while (0)
-static INLINE void retro_atomic_store_release_ptr_impl_(retro_atomic_ptr_t *p, void* v)
+static RETRO_ATOMIC_INLINE void retro_atomic_store_release_ptr_impl_(retro_atomic_ptr_t *p, void* v)
 {
    OSMemoryBarrier();
    *p = v;
 }
 #define retro_atomic_store_release_ptr(p, v) \
    retro_atomic_store_release_ptr_impl_((p), (void*)(v))
-static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void* v)
+static RETRO_ATOMIC_INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void* v)
 {
    void* old;
    do { old = *p; } while (!OSAtomicCompareAndSwapPtrBarrier(old, v, (void* volatile*)p));
@@ -1615,7 +1629,7 @@ static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void*
 
 typedef void* volatile retro_atomic_ptr_t;
 #define retro_atomic_ptr_init(p, v)    (*(p) = (v))
-static INLINE int retro_atomic_exchange_int_impl_(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_exchange_int_impl_(retro_atomic_int_t *p, int v)
 {
    int old;
    do { old = *p; } while (__sync_val_compare_and_swap(p, old, v) != old);
@@ -1625,7 +1639,7 @@ static INLINE int retro_atomic_exchange_int_impl_(retro_atomic_int_t *p, int v)
    retro_atomic_exchange_int_impl_((p), (v))
 #define retro_atomic_cas_int(p, expected, desired) \
    __sync_bool_compare_and_swap((p), (expected), (desired))
-static INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
+static RETRO_ATOMIC_INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
 {
    void* v = *(void* volatile*)p;
    __sync_synchronize();
@@ -1639,7 +1653,7 @@ static INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
 #define retro_atomic_store_relaxed_ptr(p, v)  do { *(p) = (void*)(v); } while (0)
 #define retro_atomic_store_release_ptr(p, v) \
    do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
-static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void* v)
+static RETRO_ATOMIC_INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void* v)
 {
    void* old;
    do { old = *(void* volatile*)p; } while (!__sync_bool_compare_and_swap((void* volatile*)p, old, v));
@@ -1660,7 +1674,7 @@ static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void*
 typedef void* volatile retro_atomic_ptr_t;
 #define retro_atomic_ptr_init(p, v)    (*(p) = (v))
 
-static INLINE int retro_atomic_ee_exchange_int_(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_exchange_int_(retro_atomic_int_t *p, int v)
 {
    int old;
    int masked = retro_atomic_ee_mask_();
@@ -1670,7 +1684,7 @@ static INLINE int retro_atomic_ee_exchange_int_(retro_atomic_int_t *p, int v)
    return old;
 }
 
-static INLINE int retro_atomic_ee_cas_int_(retro_atomic_int_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_cas_int_(retro_atomic_int_t *p,
       int expected, int desired)
 {
    int ok;
@@ -1681,7 +1695,7 @@ static INLINE int retro_atomic_ee_cas_int_(retro_atomic_int_t *p,
    return ok;
 }
 
-static INLINE void *retro_atomic_ee_exchange_ptr_(retro_atomic_ptr_t *p,
+static RETRO_ATOMIC_INLINE void *retro_atomic_ee_exchange_ptr_(retro_atomic_ptr_t *p,
       void *v)
 {
    void *old;
@@ -1692,7 +1706,7 @@ static INLINE void *retro_atomic_ee_exchange_ptr_(retro_atomic_ptr_t *p,
    return old;
 }
 
-static INLINE int retro_atomic_ee_cas_ptr_(retro_atomic_ptr_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_cas_ptr_(retro_atomic_ptr_t *p,
       void *expected, void *desired)
 {
    int ok;
@@ -1733,7 +1747,7 @@ static INLINE int retro_atomic_ee_cas_ptr_(retro_atomic_ptr_t *p,
 typedef void* retro_atomic_ptr_t;
 #define retro_atomic_ptr_init(p, v)    (*(p) = (v))
 
-static INLINE int retro_atomic_wiiu_exchange_int_(retro_atomic_int_t *p, int v)
+static RETRO_ATOMIC_INLINE int retro_atomic_wiiu_exchange_int_(retro_atomic_int_t *p, int v)
 {
    int old;
    __atomic_thread_fence(__ATOMIC_RELEASE);
@@ -1742,7 +1756,7 @@ static INLINE int retro_atomic_wiiu_exchange_int_(retro_atomic_int_t *p, int v)
    return old;
 }
 
-static INLINE int retro_atomic_wiiu_cas_int_(retro_atomic_int_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_wiiu_cas_int_(retro_atomic_int_t *p,
       int expected, int desired)
 {
    int ok;
@@ -1769,7 +1783,7 @@ static INLINE int retro_atomic_wiiu_cas_int_(retro_atomic_int_t *p,
 /* A pointer is a word on the console; off-target, as for size_t, a
  * wider one takes the builtins. */
 #if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 4
-static INLINE void *retro_atomic_wiiu_exchange_ptr_(retro_atomic_ptr_t *p,
+static RETRO_ATOMIC_INLINE void *retro_atomic_wiiu_exchange_ptr_(retro_atomic_ptr_t *p,
       void *v)
 {
    void *old;
@@ -1780,7 +1794,7 @@ static INLINE void *retro_atomic_wiiu_exchange_ptr_(retro_atomic_ptr_t *p,
    return old;
 }
 
-static INLINE int retro_atomic_wiiu_cas_ptr_(retro_atomic_ptr_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_wiiu_cas_ptr_(retro_atomic_ptr_t *p,
       void *expected, void *desired)
 {
    int ok;
@@ -1791,13 +1805,13 @@ static INLINE int retro_atomic_wiiu_cas_ptr_(retro_atomic_ptr_t *p,
    return ok;
 }
 #else
-static INLINE void *retro_atomic_wiiu_exchange_ptr_(retro_atomic_ptr_t *p,
+static RETRO_ATOMIC_INLINE void *retro_atomic_wiiu_exchange_ptr_(retro_atomic_ptr_t *p,
       void *v)
 {
    return __atomic_exchange_n(p, v, __ATOMIC_ACQ_REL);
 }
 
-static INLINE int retro_atomic_wiiu_cas_ptr_(retro_atomic_ptr_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_wiiu_cas_ptr_(retro_atomic_ptr_t *p,
       void *expected, void *desired)
 {
    void *e = expected;
@@ -1873,7 +1887,7 @@ static INLINE int retro_atomic_wiiu_cas_ptr_(retro_atomic_ptr_t *p,
 #if !defined(retro_atomic_load_seq_cst_int)
 /* A function rather than a comma expression: the fence is a statement
  * on the backends that spell it as inline asm. */
-static INLINE int retro_atomic_load_seq_cst_int_fb_(retro_atomic_int_t *p)
+static RETRO_ATOMIC_INLINE int retro_atomic_load_seq_cst_int_fb_(retro_atomic_int_t *p)
 {
    retro_atomic_thread_fence_seq_cst();
    return retro_atomic_load_acquire_int(p);
@@ -1916,7 +1930,7 @@ typedef _Atomic(int64_t) retro_atomic_64_t;
    atomic_store_explicit((p), (v), memory_order_release)
 #define retro_atomic_exchange_64(p, v) \
    atomic_exchange_explicit((p), (v), memory_order_acq_rel)
-static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
 {
    int64_t e = expected;
    return atomic_compare_exchange_strong_explicit(p, &e, desired,
@@ -1941,7 +1955,7 @@ typedef std::atomic<int64_t> retro_atomic_64_t;
    ((p)->store((v), std::memory_order_release))
 #define retro_atomic_exchange_64(p, v) \
    ((p)->exchange((v), std::memory_order_acq_rel))
-static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
 {
    int64_t e = expected;
    return p->compare_exchange_strong(e, desired,
@@ -1966,7 +1980,7 @@ typedef int64_t retro_atomic_64_t;
    __atomic_store_n((p), (v), __ATOMIC_RELEASE)
 #define retro_atomic_exchange_64(p, v) \
    __atomic_exchange_n((p), (v), __ATOMIC_ACQ_REL)
-static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
 {
    int64_t e = expected;
    return __atomic_compare_exchange_n(p, &e, desired, 0,
@@ -1999,7 +2013,7 @@ __int64 _InterlockedCompareExchange64(__int64 volatile*, __int64, __int64);
 #pragma intrinsic(_InterlockedCompareExchange64)
 #define RETRO_ATOMIC_MSVC_CMPX64_(p, d, e) \
    _InterlockedCompareExchange64((__int64 volatile*)(p), (d), (e))
-static INLINE LONGLONG retro_atomic_msvc_xchg_64_(LONGLONG volatile *p,
+static RETRO_ATOMIC_INLINE LONGLONG retro_atomic_msvc_xchg_64_(LONGLONG volatile *p,
       LONGLONG v)
 {
    LONGLONG old;
@@ -2030,7 +2044,7 @@ typedef LONGLONG volatile retro_atomic_64_t;
    ((void)RETRO_ATOMIC_MSVC_XCHG64_((p), (LONGLONG)(v)))
 #define retro_atomic_exchange_64(p, v) \
    RETRO_ATOMIC_MSVC_XCHG64_((p), (LONGLONG)(v))
-static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expected, LONGLONG desired)
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expected, LONGLONG desired)
 {
    return RETRO_ATOMIC_MSVC_CMPX64_(p, desired, expected) == expected;
 }
@@ -2054,13 +2068,13 @@ static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expec
    ((void)RETRO_ATOMIC_MSVC_XCHG64_((p), (LONGLONG)(v)))
 #endif
 #if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD) && defined(_WIN64)
-static INLINE LONGLONG retro_atomic_msvc_load_acquire_64_(const volatile LONGLONG *p)
+static RETRO_ATOMIC_INLINE LONGLONG retro_atomic_msvc_load_acquire_64_(const volatile LONGLONG *p)
 {
    LONGLONG value = *p;
    _ReadWriteBarrier();
    return value;
 }
-static INLINE void retro_atomic_msvc_store_release_64_(volatile LONGLONG *p, LONGLONG value)
+static RETRO_ATOMIC_INLINE void retro_atomic_msvc_store_release_64_(volatile LONGLONG *p, LONGLONG value)
 {
    _ReadWriteBarrier();
    *p = value;
@@ -2081,7 +2095,7 @@ static INLINE void retro_atomic_msvc_store_release_64_(volatile LONGLONG *p, LON
 #include <stdint.h>
 typedef int64_t volatile retro_atomic_64_t;
 #define retro_atomic_64_init(p, v)     (*(p) = (v))
-static INLINE int64_t retro_atomic_load_acquire_64_impl_(retro_atomic_64_t *p)
+static RETRO_ATOMIC_INLINE int64_t retro_atomic_load_acquire_64_impl_(retro_atomic_64_t *p)
 {
    int64_t v;
    do { v = *p; } while (!OSAtomicCompareAndSwap64Barrier(v, v, (volatile int64_t*)p));
@@ -2089,14 +2103,14 @@ static INLINE int64_t retro_atomic_load_acquire_64_impl_(retro_atomic_64_t *p)
 }
 #define retro_atomic_load_acquire_64(p) \
    retro_atomic_load_acquire_64_impl_((p))
-static INLINE void retro_atomic_store_release_64_impl_(retro_atomic_64_t *p, int64_t v)
+static RETRO_ATOMIC_INLINE void retro_atomic_store_release_64_impl_(retro_atomic_64_t *p, int64_t v)
 {
    int64_t old;
    do { old = *p; } while (!OSAtomicCompareAndSwap64Barrier(old, v, (volatile int64_t*)p));
 }
 #define retro_atomic_store_release_64(p, v) \
    retro_atomic_store_release_64_impl_((p), (v))
-static INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64_t v)
+static RETRO_ATOMIC_INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64_t v)
 {
    int64_t old;
    do { old = *p; } while (!OSAtomicCompareAndSwap64Barrier(old, v, (volatile int64_t*)p));
@@ -2131,7 +2145,7 @@ typedef int64_t volatile retro_atomic_64_t;
    __sync_fetch_and_add((int64_t volatile*)(p), (int64_t)0)
 #define retro_atomic_store_release_64(p, v) \
    do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
-static INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64_t v)
+static RETRO_ATOMIC_INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64_t v)
 {
    int64_t old;
    do { old = *p; } while (__sync_val_compare_and_swap(p, old, v) != old);
@@ -2164,7 +2178,7 @@ typedef volatile int64_t retro_atomic_64_t;
  * counterparts: the EE's ABI keeps a 64-bit integer in a register pair
  * and the compiler is free to move it in two instructions, so the
  * access is not indivisible on its own. */
-static INLINE int64_t retro_atomic_ee_load_64_(retro_atomic_64_t *p)
+static RETRO_ATOMIC_INLINE int64_t retro_atomic_ee_load_64_(retro_atomic_64_t *p)
 {
    int64_t v;
    int masked = retro_atomic_ee_mask_();
@@ -2173,7 +2187,7 @@ static INLINE int64_t retro_atomic_ee_load_64_(retro_atomic_64_t *p)
    return v;
 }
 
-static INLINE void retro_atomic_ee_store_64_(retro_atomic_64_t *p, int64_t v)
+static RETRO_ATOMIC_INLINE void retro_atomic_ee_store_64_(retro_atomic_64_t *p, int64_t v)
 {
    int masked = retro_atomic_ee_mask_();
    *p         = v;
@@ -2188,7 +2202,7 @@ static INLINE void retro_atomic_ee_store_64_(retro_atomic_64_t *p, int64_t v)
 #define retro_atomic_store_relaxed_64(p, v) \
    retro_atomic_ee_store_64_((p), (int64_t)(v))
 
-static INLINE int64_t retro_atomic_ee_exchange_64_(retro_atomic_64_t *p,
+static RETRO_ATOMIC_INLINE int64_t retro_atomic_ee_exchange_64_(retro_atomic_64_t *p,
       int64_t v)
 {
    int64_t old;
@@ -2199,7 +2213,7 @@ static INLINE int64_t retro_atomic_ee_exchange_64_(retro_atomic_64_t *p,
    return old;
 }
 
-static INLINE int retro_atomic_ee_cas_64_(retro_atomic_64_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_ee_cas_64_(retro_atomic_64_t *p,
       int64_t expected, int64_t desired)
 {
    int ok;
@@ -2279,7 +2293,7 @@ static INLINE int retro_atomic_ee_cas_64_(retro_atomic_64_t *p,
    RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
    InterlockedAnd64((LONGLONG volatile*)(p), (LONGLONG)(v)) )
 #elif defined(RETRO_ATOMIC_BACKEND_PS2)
-static INLINE int64_t retro_atomic_ee_fetch_op_64_(retro_atomic_64_t *p,
+static RETRO_ATOMIC_INLINE int64_t retro_atomic_ee_fetch_op_64_(retro_atomic_64_t *p,
       int64_t v, int op)
 {
    int64_t old;
@@ -2307,7 +2321,7 @@ static INLINE int64_t retro_atomic_ee_fetch_op_64_(retro_atomic_64_t *p,
 #ifndef RETRO_ATOMIC_INT64_
 #define RETRO_ATOMIC_INT64_ int64_t
 #endif
-static INLINE RETRO_ATOMIC_INT64_ retro_atomic_fetch_op_64_cas_(retro_atomic_64_t *p,
+static RETRO_ATOMIC_INLINE RETRO_ATOMIC_INT64_ retro_atomic_fetch_op_64_cas_(retro_atomic_64_t *p,
       RETRO_ATOMIC_INT64_ v, int op)
 {
    RETRO_ATOMIC_INT64_ old;
@@ -2387,7 +2401,7 @@ typedef volatile unsigned short retro_atomic_u16_t;
 typedef volatile uint16_t retro_atomic_u16_t;
 #define RETRO_ATOMIC_U16_T_ uint16_t
 #endif
-static INLINE RETRO_ATOMIC_U16_T_ retro_atomic_load_acquire_u16_fb_(
+static RETRO_ATOMIC_INLINE RETRO_ATOMIC_U16_T_ retro_atomic_load_acquire_u16_fb_(
       retro_atomic_u16_t *p)
 {
    RETRO_ATOMIC_U16_T_ v = *p;
@@ -2499,7 +2513,7 @@ typedef struct retro_atomic_128
 
 typedef uint64_t retro_atomic_v2du_ __attribute__((vector_size(16)));
 
-static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
       retro_u128_t *expected, retro_u128_t desired)
 {
    unsigned char ok;
@@ -2510,7 +2524,7 @@ static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
    return ok;
 }
 
-static INLINE retro_u128_t retro_atomic_load_acquire_128(
+static RETRO_ATOMIC_INLINE retro_u128_t retro_atomic_load_acquire_128(
       retro_atomic_128_t *p)
 {
    retro_atomic_v2du_ v;
@@ -2522,7 +2536,7 @@ static INLINE retro_u128_t retro_atomic_load_acquire_128(
    return r;
 }
 
-static INLINE void retro_atomic_store_release_128(retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE void retro_atomic_store_release_128(retro_atomic_128_t *p,
       retro_u128_t value)
 {
    retro_atomic_v2du_ v;
@@ -2534,7 +2548,7 @@ static INLINE void retro_atomic_store_release_128(retro_atomic_128_t *p,
 
 #elif defined(RETRO_ATOMIC_128_GNU_A64_)
 
-static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
       retro_u128_t *expected, retro_u128_t desired)
 {
    uint64_t seen_lo, seen_hi;
@@ -2570,7 +2584,7 @@ static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
 
 #else /* RETRO_ATOMIC_128_MSVC_ */
 
-static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
       retro_u128_t *expected, retro_u128_t desired)
 {
    __int64 seen[2];
@@ -2586,7 +2600,7 @@ static INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
 
 #endif
 
-static INLINE retro_u128_t retro_atomic_exchange_128(retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE retro_u128_t retro_atomic_exchange_128(retro_atomic_128_t *p,
       retro_u128_t value)
 {
    retro_u128_t seen;
@@ -2601,7 +2615,7 @@ static INLINE retro_u128_t retro_atomic_exchange_128(retro_atomic_128_t *p,
 #if !defined(RETRO_ATOMIC_128_GNU_X64_)
 /* No single access for sixteen bytes: the value swapped for itself is
  * the value, whole */
-static INLINE retro_u128_t retro_atomic_load_acquire_128(
+static RETRO_ATOMIC_INLINE retro_u128_t retro_atomic_load_acquire_128(
       retro_atomic_128_t *p)
 {
    retro_u128_t seen;
@@ -2613,14 +2627,14 @@ static INLINE retro_u128_t retro_atomic_load_acquire_128(
    return seen;
 }
 
-static INLINE void retro_atomic_store_release_128(retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE void retro_atomic_store_release_128(retro_atomic_128_t *p,
       retro_u128_t value)
 {
    (void)retro_atomic_exchange_128(p, value);
 }
 #endif
 
-static INLINE int retro_atomic_cas_128(retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE int retro_atomic_cas_128(retro_atomic_128_t *p,
       retro_u128_t expected, retro_u128_t desired)
 {
    return retro_atomic_cas_seen_128(p, &expected, desired);
@@ -2628,7 +2642,7 @@ static INLINE int retro_atomic_cas_128(retro_atomic_128_t *p,
 
 /* One aligned eight-byte half: single-copy atomic on both processors */
 #if defined(RETRO_ATOMIC_128_MSVC_)
-static INLINE uint64_t retro_atomic_128_half_(const retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE uint64_t retro_atomic_128_half_(const retro_atomic_128_t *p,
       int i)
 {
 #if defined(_M_ARM64)
@@ -2643,7 +2657,7 @@ static INLINE uint64_t retro_atomic_128_half_(const retro_atomic_128_t *p,
    return value;
 }
 #else
-static INLINE uint64_t retro_atomic_128_half_(const retro_atomic_128_t *p,
+static RETRO_ATOMIC_INLINE uint64_t retro_atomic_128_half_(const retro_atomic_128_t *p,
       int i)
 {
    return __atomic_load_n(&p->w[i], __ATOMIC_ACQUIRE);
