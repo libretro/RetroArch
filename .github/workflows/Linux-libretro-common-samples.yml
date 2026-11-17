@@ -145,6 +145,9 @@ jobs:
             snprintf
             unbase64_test
             crc32_test
+            # SHA-1/SHA-256 instructions against the scalar rounds; the
+            # cross lanes below run the ARM ones.
+            sha_hw_test
             # encoding_crc32.c through an assembler without VPCLMULQDQ,
             # and beside encoding_rzstd.c under an unguarded <cpuid.h>.
             crc32_gas_test
@@ -2399,6 +2402,25 @@ jobs:
           set -u
           set -o pipefail
           ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./crc32_test
+
+      - name: Build and run sha_hw_test under qemu-user
+        shell: bash
+        working-directory: libretro-common/samples/hash/sha_hw
+        run: |
+          set -euo pipefail
+          # The ARM legs must run the SHA instructions (qemu's default
+          # CPU has them); armv7 needs NEON on, which the armhf
+          # toolchain leaves off. PowerPC runs the scalar rounds
+          # big-endian.
+          require=--require-hw
+          cflags="${{ matrix.cflags }}"
+          case "${{ matrix.name }}" in
+             armv7) cflags="$cflags -mfpu=neon" ;;
+             powerpc-big-endian) require= ;;
+          esac
+          make clean
+          CC="${{ matrix.cc }}" CFLAGS="$cflags" make all
+          ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./sha_hw_test $require
 
       - name: Build and run pixconv_test under qemu-user
         shell: bash
