@@ -112,6 +112,10 @@ struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
    bool err_flag;
+   /* Opened for reading with RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS:
+    * the open asked for the file mapped, so a v7 frontend's mapping of
+    * it is what filestream_get_mapped_ptr() hands over */
+   bool map_hint;
    /* Set once filestream_rbuf_fill() has seen this handle's tell()
     * fail, so it stops asking: unlatched, the fallback pays a failed
     * tell() per byte on top of the one-byte read, which is more work
@@ -498,6 +502,8 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
    }
 
    output->err_flag      = false;
+   output->map_hint      = (hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+      && mode == RETRO_VFS_FILE_ACCESS_READ;
    output->rbuf_no_tell  = false;
    output->hfile         = fp;
    output->rbuf          = NULL;
@@ -1975,8 +1981,11 @@ const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
    {
       if (filestream_mapped_ptr_cb)
          return filestream_mapped_ptr_cb(stream->hfile, len);
-      /* A frontend- or core-supplied VFS is driven entirely through
-       * the callbacks and has no mapping this side of them. */
+      /* A v7 frontend lends its mapping of a file opened to be mapped,
+       * the one its open made; any other stream, or an older frontend,
+       * has none this side of the callbacks. */
+      if (stream->map_hint && filestream_map_cb)
+         return filestream_map_cb(stream->hfile, len);
       return NULL;
    }
    return retro_vfs_file_get_mapped_ptr_impl(
