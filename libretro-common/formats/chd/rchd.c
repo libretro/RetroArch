@@ -3213,7 +3213,14 @@ struct rchd_writer
    void         *ctx;
    uint32_t     *map;           /* one block index per hunk */
    uint8_t      *pad;           /* zero padding, one hunk */
+   /* A coded image: each hunk's map code, stored length and CRC-16,
+    * the hunks laid end to end from the header on, map last. */
+   uint8_t      *codes;
+   uint32_t     *lengths;
+   uint16_t     *crcs;
    uint64_t      logical_bytes;
+   uint64_t      data_end;      /* coded: where the next hunk goes */
+   uint32_t      compressors[4];
    uint32_t      hunk_bytes;
    uint32_t      unit_bytes;
    uint32_t      hunk_count;    /* hunks the logical size needs */
@@ -3221,6 +3228,23 @@ struct rchd_writer
    uint32_t      first_block;   /* first block holding hunk data */
    uint32_t      next_block;    /* next free block */
 };
+
+/* MSB-first bits into a buffer the caller sized. */
+typedef struct rchd_bitw
+{
+   uint8_t *data;
+   size_t   bit;
+} rchd_bitw_t;
+
+static void rchd_bitw_put(rchd_bitw_t *b, uint32_t v, uint32_t n)
+{
+   while (n--)
+   {
+      if ((v >> n) & 1)
+         b->data[b->bit >> 3] |= (uint8_t)(0x80 >> (b->bit & 7));
+      b->bit++;
+   }
+}
 
 static void rchd_wr32(uint8_t *p, uint32_t v)
 {
@@ -3279,10 +3303,61 @@ rchd_writer_t *rchd_write_new(uint64_t logical_bytes, uint32_t hunk_bytes,
    return w;
 }
 
+rchd_writer_t *rchd_write_new_coded(uint64_t logical_bytes,
+      uint32_t hunk_bytes, uint32_t unit_bytes,
+      const uint32_t compressors[4], rchd_write_fn sink, void *ctx)
+{
+   rchd_writer_t *w;
+
+   if (!compressors || compressors[0] == RCHD_CODEC_NONE)
+      return NULL;
+   if (!(w = rchd_write_new(logical_bytes, hunk_bytes, unit_bytes,
+               sink, ctx)))
+      return NULL;
+
+   w->codes   = (uint8_t*)calloc(w->hunk_count, 1);
+   w->lengths = (uint32_t*)calloc(w->hunk_count, sizeof(uint32_t));
+   w->crcs    = (uint16_t*)calloc(w->hunk_count, sizeof(uint16_t));
+   if (!w->codes || !w->lengths || !w->crcs)
+   {
+      rchd_write_free(w);
+      return NULL;
+   }
+   w->compressors[0] = compressors[0];
+   w->compressors[1] = compressors[1];
+   w->compressors[2] = compressors[2];
+   w->compressors[3] = compressors[3];
+   w->data_end       = RCHD_V5_HEADER_BYTES;
+   w->first_block    = 0;
+   return w;
+}
+
+int rchd_write_hunk_coded(rchd_writer_t *w, uint32_t compressor,
+      const uint8_t *blob, uint32_t len, uint16_t crc)
+{
+   if (!w || !w->codes || !blob || !len || len > 0xffffffu)
+      return RCHD_ERROR_DATA;
+   if (w->written >= w->hunk_count)
+      return RCHD_ERROR_DATA;
+   if (compressor > 3 || w->compressors[compressor] == RCHD_CODEC_NONE)
+      return RCHD_ERROR_DATA;
+
+   if (!w->sink(w->ctx, w->data_end, blob, len))
+      return RCHD_ERROR_STATE;
+   w->codes[w->written]   = (uint8_t)(RCHD_V5_TYPE_0 + compressor);
+   w->lengths[w->written] = len;
+   w->crcs[w->written]    = crc;
+   w->written++;
+   w->data_end           += len;
+   return RCHD_OK;
+}
+
 uint64_t rchd_write_prefix_size(const rchd_writer_t *w)
 {
    if (!w)
       return 0;
+   if (w->codes)
+      return RCHD_V5_HEADER_BYTES;
    return (uint64_t)w->first_block * w->hunk_bytes;
 }
 
@@ -3296,6 +3371,25 @@ int rchd_write_hunk(rchd_writer_t *w, const uint8_t *data, uint32_t len)
       return RCHD_ERROR_DATA;
    if (w->written >= w->hunk_count)
       return RCHD_ERROR_DATA;
+
+   /* A coded image has no holes: the hunk is stored as it is. */
+   if (w->codes)
+   {
+      uint16_t crc = encoding_crc16_ccitt(0xffff, data, len);
+
+      if (len < w->hunk_bytes)
+         crc = encoding_crc16_ccitt(crc, w->pad, w->hunk_bytes - len);
+      if (     !w->sink(w->ctx, w->data_end, data, len)
+            || (len < w->hunk_bytes && !w->sink(w->ctx, w->data_end + len,
+                  w->pad, w->hunk_bytes - len)))
+         return RCHD_ERROR_STATE;
+      w->codes[w->written]   = RCHD_V5_NONE;
+      w->lengths[w->written] = w->hunk_bytes;
+      w->crcs[w->written]    = crc;
+      w->written++;
+      w->data_end           += w->hunk_bytes;
+      return RCHD_OK;
+   }
 
    for (i = 0; i < len; i++)
    {
@@ -3325,6 +3419,97 @@ int rchd_write_hunk(rchd_writer_t *w, const uint8_t *data, uint32_t len)
    return RCHD_OK;
 }
 
+/* The compressed map (FORMAT.md 2.3) after the last hunk: a tree
+ * giving all sixteen codes four bits, so a code is written as itself,
+ * then one code per hunk with no runs, then each hunk's fields. */
+static int rchd_write_finish_coded(rchd_writer_t *w)
+{
+   uint8_t      hdr[RCHD_V5_HEADER_BYTES];
+   uint8_t      mh[16];
+   rchd_bitw_t  b;
+   uint8_t     *check;
+   size_t       bytes;
+   uint32_t     lengthbits = 1;
+   uint32_t     n;
+   uint64_t     offset     = RCHD_V5_HEADER_BYTES;
+   uint16_t     crc;
+   int          err        = RCHD_ERROR_STATE;
+
+   for (n = 0; n < w->hunk_count; n++)
+      while (lengthbits < 24 && (w->lengths[n] >> lengthbits))
+         lengthbits++;
+
+   bytes = (16 * 4 + (size_t)w->hunk_count * (4 + 24 + 16) + 7) / 8;
+   b.data = (uint8_t*)calloc(1, bytes);
+   b.bit  = 0;
+   check  = (uint8_t*)malloc((size_t)w->hunk_count * 12);
+   if (!b.data || !check)
+   {
+      free(b.data);
+      free(check);
+      return RCHD_ERROR_MEM;
+   }
+
+   for (n = 0; n < 16; n++)
+      rchd_bitw_put(&b, 4, 4);
+   for (n = 0; n < w->hunk_count; n++)
+      rchd_bitw_put(&b, w->codes[n], 4);
+   for (n = 0; n < w->hunk_count; n++)
+   {
+      uint8_t *slot = check + (size_t)n * 12;
+
+      if (w->codes[n] != RCHD_V5_NONE)
+         rchd_bitw_put(&b, w->lengths[n], lengthbits);
+      rchd_bitw_put(&b, w->crcs[n], 16);
+
+      slot[0]  = w->codes[n];
+      slot[1]  = (uint8_t)(w->lengths[n] >> 16);
+      slot[2]  = (uint8_t)(w->lengths[n] >> 8);
+      slot[3]  = (uint8_t)w->lengths[n];
+      slot[4]  = (uint8_t)(offset >> 40);
+      slot[5]  = (uint8_t)(offset >> 32);
+      slot[6]  = (uint8_t)(offset >> 24);
+      slot[7]  = (uint8_t)(offset >> 16);
+      slot[8]  = (uint8_t)(offset >> 8);
+      slot[9]  = (uint8_t)offset;
+      slot[10] = (uint8_t)(w->crcs[n] >> 8);
+      slot[11] = (uint8_t)w->crcs[n];
+      offset  += w->lengths[n];
+   }
+   crc   = encoding_crc16_ccitt(0xffff, check, (size_t)w->hunk_count * 12);
+   bytes = (b.bit + 7) / 8;
+
+   memset(mh, 0, sizeof(mh));
+   rchd_wr32(mh, (uint32_t)bytes);
+   mh[4]  = 0;
+   mh[5]  = 0;
+   rchd_wr32(mh + 6, RCHD_V5_HEADER_BYTES);  /* data start, 48 bits */
+   mh[10] = (uint8_t)(crc >> 8);
+   mh[11] = (uint8_t)crc;
+   mh[12] = (uint8_t)lengthbits;
+
+   memset(hdr, 0, sizeof(hdr));
+   memcpy(hdr, "MComprHD", 8);
+   rchd_wr32(hdr + 8,  RCHD_V5_HEADER_BYTES);
+   rchd_wr32(hdr + 12, 5);
+   for (n = 0; n < 4; n++)
+      rchd_wr32(hdr + 16 + n * 4, w->compressors[n]);
+   rchd_wr64(hdr + 32, w->logical_bytes);
+   rchd_wr64(hdr + 40, w->data_end);           /* map offset */
+   rchd_wr64(hdr + 48, 0);                     /* no metadata */
+   rchd_wr32(hdr + 56, w->hunk_bytes);
+   rchd_wr32(hdr + 60, w->unit_bytes);
+
+   if (     w->sink(w->ctx, w->data_end, mh, sizeof(mh))
+         && w->sink(w->ctx, w->data_end + sizeof(mh), b.data, bytes)
+         && w->sink(w->ctx, 0, hdr, sizeof(hdr)))
+      err = RCHD_OK;
+
+   free(b.data);
+   free(check);
+   return err;
+}
+
 int rchd_write_finish(rchd_writer_t *w)
 {
    uint8_t  hdr[RCHD_V5_HEADER_BYTES];
@@ -3335,6 +3520,9 @@ int rchd_write_finish(rchd_writer_t *w)
       return RCHD_ERROR_DATA;
    if (w->written != w->hunk_count)
       return RCHD_ERROR_DATA;
+
+   if (w->codes)
+      return rchd_write_finish_coded(w);
 
    memset(hdr, 0, sizeof(hdr));
    memcpy(hdr, "MComprHD", 8);
@@ -3368,5 +3556,8 @@ void rchd_write_free(rchd_writer_t *w)
       return;
    free(w->map);
    free(w->pad);
+   free(w->codes);
+   free(w->lengths);
+   free(w->crcs);
    free(w);
 }
