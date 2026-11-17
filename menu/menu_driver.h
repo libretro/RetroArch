@@ -80,6 +80,23 @@ RETRO_BEGIN_DECLS
 #define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
 #define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!((menu_st->flags & MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH) || !(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH)))
 
+/* How long a press marks a controller's rows */
+#define MENU_PAD_PRESSED_HOLD_US 1000000
+
+/* Whether a press on the controller in @slot marks its rows now */
+/* menu_state.frame_work: what a frame has to do beyond drawing */
+enum menu_frame_work
+{
+   /* a deferred playlist read (playlist_init_cached_deferred()) */
+   MENU_FRAME_WORK_PLAYLIST = (1 << 0),
+   /* presses to look for: two connected controllers show one name,
+    * or did at the last frame */
+   MENU_FRAME_WORK_PAD_FIND = (1 << 1)
+};
+
+#define MENU_PAD_MARKED(menu_st, slot) ((slot) < MAX_INPUT_DEVICES \
+      && (((menu_st)->pads_marked >> (slot)) & 1))
+
 #define MENU_SETTINGS_CORE_INFO_NONE             0xffff
 #define MENU_SETTINGS_CORE_OPTION_NONE           0xffff
 #define MENU_SETTINGS_CHEEVOS_NONE               0xffff
@@ -511,14 +528,14 @@ typedef struct
 
    /* The Controllers row to put the cursor back on: a controller's
     * row type less MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN, and one, or
-    * PLAYS_AS_ROW_LAYOUT plus a headset row's index
-    * (menu_displaylist.c); 0 for none. */
+    * PLAYS_AS_ROW_HEADSET for Headset Controls (menu_displaylist.c);
+    * 0 for none. */
    unsigned plays_as_row;
-   /* Port N Controls as last made, N, its controller rows and its
-    * links, while no other list was made since; N is 0 for none. */
+   /* Port N Controls > Controllers as last made, N and the index of
+    * its first link, while no other list was made since; N is 0 for
+    * none. */
    unsigned plays_as_page;
    unsigned plays_as_rows;
-   unsigned plays_as_links;
 } menu_handle_t;
 
 /* The text the menu's message box shows */
@@ -542,6 +559,11 @@ struct menu_state
    /* How long a held direction has been repeating, in real time: held
     * Left/Right on a number speeds up by it. Set by menu_event(). */
    retro_time_t action_press_time;
+
+   /* When each controller slot last had a button pressed while a list
+    * of the controllers was shown and two connected ones shared a
+    * name; 0 for not since */
+   retro_time_t pad_pressed_us[MAX_INPUT_DEVICES];
 
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
@@ -577,6 +599,10 @@ struct menu_state
    /* unsigned alignment */
    unsigned input_dialog_kb_idx;
    unsigned video_screen_selected;
+   /* The slots whose rows read "Pressed", a bit each */
+   uint32_t pads_marked;
+   /* Each slot's buttons and hats down at the last scan, folded */
+   uint32_t pad_down[MAX_INPUT_DEVICES];
    menu_dialog_t dialog_st;
    enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
@@ -626,6 +652,13 @@ struct menu_state
     * that frame at 4312 where this tree allows four thousand. One is
     * looked at a time, on the thread that iterates. */
    menu_entry_t iterate_entry;
+
+   /* A list of the controllers is shown and two connected ones show one
+    * name: Ozone's footer says a press finds one */
+   bool pad_find_hint;
+   /* enum menu_frame_work: a frame with none tests this alone */
+   uint8_t frame_work;
+
 };
 
 typedef struct menu_content_ctx_defer_info
@@ -726,6 +759,9 @@ void menu_explore_set_state(explore_state_t *state);
 #endif
 
 const char *menu_driver_ident(void);
+
+/* Two connected controllers came to show one name, or no longer do. */
+void menu_driver_pads_alike_changed(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 

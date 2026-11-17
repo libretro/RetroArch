@@ -322,6 +322,9 @@ static const char *test_joypad_phys(unsigned pad)
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)
 {
+   char phys[256];
+   const char *at;
+   char *uniq       = NULL;
    unsigned int vid = 0;
    unsigned int pid = 0;
    const char *tmp  = test_joypads[autoconf_pad].name
@@ -337,9 +340,23 @@ static void test_joypad_autodetect_add(unsigned autoconf_pad)
    }
    RARCH_DBG("[Test input] Autoconf vid/pid %x:%x.\n", vid, pid);
 
-   input_autoconfigure_connect(
+   /* "name@@port@@serial": the pad's own serial after where it is
+    * plugged in; a name alone tells it apart by nothing */
+   if ((at = test_joypad_phys(autoconf_pad)))
+   {
+      strlcpy(phys, at, sizeof(phys));
+      if ((uniq = strstr(phys, "@@")))
+      {
+         *uniq = '\0';
+         uniq += 2;
+      }
+      else
+         uniq = phys + strlen(phys);
+   }
+
+   input_autoconfigure_connect_uniq(
          test_joypad_name(autoconf_pad),
-         NULL, test_joypad_phys(autoconf_pad),
+         NULL, at ? phys : NULL, uniq,
          "test",
          autoconf_pad,
          vid,

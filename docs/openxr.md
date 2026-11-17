@@ -23,11 +23,11 @@ Output (OpenXR)**. Under it come Edit Screens, Snap to Screens, Snap to
 Angles, Hinge Gap, Edit Smoothing and While Editing Screens, described
 below, then Headset Refresh Rate, Headset Performance Boost, Screen
 Placement (Fixed in Room, Follow Head, Lazy Follow), Screen Distance and
-Screen Width. The controllers' rows end **Settings > Input >
-Controllers**: OpenXR Controller Layout, Laser Pointer, Laser Beam,
-Touch Hands, Touch Button and Touch Passthrough (see below). The
-Recenter Headset Screens, Laser Pointer (Toggle) and Edit Headset
-Screens hotkeys are unbound by default.
+Screen Width. The controllers' rows are under **Settings > Input >
+Controllers > Headset Controls**: OpenXR Controller Layout, Laser
+Pointer, Laser Beam, Touch Hands, Touch Button and Touch Passthrough
+(see below). The Recenter Headset Screens, Laser Pointer (Toggle) and
+Edit Headset Screens hotkeys are unbound by default.
 
 **Laser Beam** draws a thin line from each controller to its laser's
 dot, turned to face you. It shows only where the dot can: outside edit
