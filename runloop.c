@@ -137,6 +137,7 @@ bool android_get_vfs_authorized_locations(
 
 #include "runtime_file.h"
 #include "runloop.h"
+#include "calendar_time.h"
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
@@ -4687,6 +4688,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
 #endif
          break;
+      case RETRO_ENVIRONMENT_GET_CALENDAR_TIME_INTERFACE:
+         RARCH_LOG("[Environ] GET_CALENDAR_TIME_INTERFACE.\n");
+         if (!calendar_time_get_interface(
+                  (struct retro_calendar_time_interface*)data))
+            return false;
+         break;
       case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
          {
             struct retro_hw_render_context_negotiation_interface *iface =
@@ -5737,6 +5744,24 @@ static retro_time_t runloop_core_runtime_tick(
          &runloop_st->core_runtime_credit);
 }
 
+/* Netplay and replays need every run to see the same clock. */
+static bool runloop_calendar_held(void)
+{
+#ifdef HAVE_BSV_MOVIE
+   if (input_state_get_ptr()->bsv_movie_state.flags & (
+              BSV_FLAG_MOVIE_START_RECORDING
+            | BSV_FLAG_MOVIE_START_PLAYBACK
+            | BSV_FLAG_MOVIE_RECORDING
+            | BSV_FLAG_MOVIE_PLAYBACK))
+      return true;
+#endif
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return true;
+#endif
+   return false;
+}
+
 static bool core_unload_game(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
@@ -5770,6 +5795,8 @@ static bool core_unload_game(void)
       runloop_st->core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
       runloop_st->current_core.flags      &= ~RETRO_CORE_FLAG_GAME_LOADED;
    }
+
+   calendar_time_clear();
 
    /* A staged switch keeps the device running until its driver stage
     * sets it aside or closes it, so the menu's audio and its sounds
@@ -7868,6 +7895,7 @@ static bool display_menu_libretro(
          input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
 
       video_driver_ff_frameskip_decide(current_time);
+      calendar_time_set_held(runloop_calendar_held());
       core_run();
       runloop_load_deferred_auto_state();
       runloop_st->core_runtime_usec       +=
@@ -10421,6 +10449,8 @@ int runloop_iterate(void)
     * fast-forward drops */
    video_driver_ff_frameskip_decide(runloop_st->core_run_time);
 
+   calendar_time_set_held(runloop_calendar_held());
+
    {
 #ifdef HAVE_RUNAHEAD
       bool run_ahead_enabled            = settings->bools.run_ahead_enabled;
@@ -11200,6 +11230,9 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 #endif
 
    set_save_state_in_background(false);
+
+   calendar_time_set_held(runloop_calendar_held());
+   calendar_time_capture();
 
    if (load_info && load_info->special)
       game_loaded = runloop_st->current_core.retro_load_game_special(
