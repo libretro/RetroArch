@@ -186,6 +186,65 @@ static unsigned crc8(const uint8_t *p, size_t n)
    return c;
 }
 
+static void packet_headers(void)
+{
+   static const int expected[16] = {0, 192, 576, 1152, 2304, 4608,
+      38, 4661, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
+   static const uint8_t number[7] = {0, 0xc2, 0xe1, 0xf1, 0xf9, 0xfd, 0xfe};
+   uint8_t header[20];
+   unsigned code, rate, count, i;
+   size_t at, truncated;
+   CHECK(rflac_packet_frames(NULL, 100) == -1, "null packet header");
+   for (code = 1; code < 16; code++)
+      for (rate = 0; rate < 15; rate++)
+         for (count = 1; count <= 7; count++)
+         {
+            memset(header, 0, sizeof(header));
+            header[0] = 0xff; header[1] = 0xf9;
+            header[2] = (uint8_t)((code << 4) | rate);
+            header[3] = 8;
+            header[4] = number[count - 1];
+            for (i = 1; i < count; i++) header[4 + i] = 0x90;
+            at = 4 + count;
+            if (code == 6) header[at++] = 37;
+            if (code == 7) { header[at++] = 0x12; header[at++] = 0x34; }
+            if (rate == 12) header[at++] = 44;
+            if (rate >= 13) { header[at++] = 0x12; header[at++] = 0xc0; }
+            header[at] = (uint8_t)crc8(header, at);
+            CHECK(rflac_packet_frames(header, at + 1) == expected[code],
+                  "packet code %u rate %u number %u", code, rate, count);
+            for (truncated = 0; truncated <= at; truncated++)
+               CHECK(rflac_packet_frames(header, truncated) == -1,
+                     "truncated packet header %lu", (unsigned long)truncated);
+            header[at] ^= 1;
+            CHECK(rflac_packet_frames(header, at + 1) == -1, "packet CRC");
+            if (count > 1)
+            {
+               header[5] = 0;
+               header[at] = (uint8_t)crc8(header, at);
+               CHECK(rflac_packet_frames(header, at + 1) == -1, "number continuation");
+            }
+         }
+   memset(header, 0, sizeof(header));
+   header[0] = 0xff; header[1] = 0xf8; header[2] = 0x70; header[3] = 8;
+   header[5] = header[6] = 0xff;
+   header[7] = (uint8_t)crc8(header, 7);
+   CHECK(rflac_packet_frames(header, 8) == -1, "65536-frame packet rejected");
+   header[2] = 0x10;
+   for (i = 0; i < 6; i++)
+   {
+      header[1] = 0xf8; header[2] = 0x10; header[3] = 8;
+      if (i == 0) header[1] |= 2;
+      if (i == 1) header[2] = 0;
+      if (i == 2) header[2] |= 15;
+      if (i == 3) header[3] = 0xb8;
+      if (i == 4) header[3] = 6;
+      if (i == 5) header[3] |= 1;
+      header[5] = (uint8_t)crc8(header, 5);
+      CHECK(rflac_packet_frames(header, 6) == -1, "reserved header field %u", i);
+   }
+}
+
 static unsigned crc16(const uint8_t *p, size_t n)
 {
    unsigned c = 0;
@@ -338,6 +397,7 @@ int main(void)
 {
    int order;
 
+   packet_headers();
    predictor_order();
 
    for (order = -1; order <= 1; order++)

@@ -513,6 +513,54 @@ static INLINE uint8_t rflac_crc8_byte(uint8_t crc, uint8_t data)
    return rflac__crc8_table[crc ^ data];
 }
 
+int rflac_packet_frames(const uint8_t *packet, size_t size)
+{
+   unsigned code, rate, count = 1, i, frames;
+   size_t at;
+   uint8_t first, crc = 0;
+   if (!packet || size < 6 || packet[0] != 0xff
+         || (packet[1] & 0xfe) != 0xf8 || (packet[3] & 1)
+         || (packet[3] >> 4) > 10 || ((packet[3] >> 1) & 7) == 3)
+      return -1;
+   code = packet[2] >> 4;
+   rate = packet[2] & 15;
+   if (!code || rate == 15) return -1;
+   first = packet[4];
+   if (first & 0x80)
+   {
+      if ((first & 0xe0) == 0xc0) count = 2;
+      else if ((first & 0xf0) == 0xe0) count = 3;
+      else if ((first & 0xf8) == 0xf0) count = 4;
+      else if ((first & 0xfc) == 0xf8) count = 5;
+      else if ((first & 0xfe) == 0xfc) count = 6;
+      else if (first == 0xfe) count = 7;
+      else return -1;
+   }
+   at = 4 + count;
+   if (at >= size) return -1;
+   for (i = 1; i < count; i++)
+      if ((packet[4 + i] & 0xc0) != 0x80) return -1;
+   if (code == 1) frames = 192;
+   else if (code <= 5) frames = 576U << (code - 2);
+   else if (code == 6)
+   {
+      if (size - at < 2) return -1;
+      frames = (unsigned)packet[at++] + 1;
+   }
+   else if (code == 7)
+   {
+      if (size - at < 3) return -1;
+      frames = ((unsigned)packet[at] << 8) + packet[at + 1] + 1;
+      at += 2;
+      if (frames > RFLAC_MAX_BLOCK_SIZE) return -1;
+   }
+   else frames = 256U << (code - 8);
+   at += rate == 12 ? 1 : rate >= 13 ? 2 : 0;
+   if (at >= size) return -1;
+   for (i = 0; i < at; i++) crc = rflac_crc8_byte(crc, packet[i]);
+   return crc == packet[at] ? (int)frames : -1;
+}
+
 static INLINE uint8_t rflac_crc8(uint8_t crc, uint32_t data, uint32_t count)
 {
    uint32_t wholeBytes;

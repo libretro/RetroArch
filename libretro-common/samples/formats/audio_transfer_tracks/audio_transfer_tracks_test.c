@@ -94,7 +94,19 @@ static void fixture(const char *path, enum audio_type_enum type)
          assert(audio_transfer_container_track(decoder, type) == (choice < 0 ? 1 : choice));
          assert(!audio_transfer_set_container_track(decoder, type, -1));
          before = tone(decoder, type, choice == 2 ? 1 : 0);
-         assert(audio_transfer_seek(decoder, type, target));
+         if (type == AUDIO_TYPE_FLAC)
+         {
+            unsigned steps;
+            int result = 0;
+            assert(audio_transfer_seek_begin(decoder, type, target));
+            for (steps = 0; steps < 256 && !result; steps++)
+            {
+               audio_transfer_set_avail(decoder, type, length);
+               result = audio_transfer_seek_step(decoder, type);
+            }
+            assert(result == 1 && steps < 256);
+         }
+         else assert(audio_transfer_seek(decoder, type, target));
          /* A windowed seek withdraws the old resident media bound. */
          audio_transfer_set_avail(decoder, type, (size_t)length);
          assert(audio_transfer_container_track(decoder, type) == (choice < 0 ? 1 : choice));
@@ -117,6 +129,26 @@ static void fixture(const char *path, enum audio_type_enum type)
    free(data);
    printf("PASS selected container audio, tones, seek and invalid choices: %s\n", path);
 }
+static void flac_bad_packet(void)
+{
+   size_t length, got = 0;
+   uint8_t *data = load("fixtures/flac.bin", &length);
+   void *decoder = audio_transfer_new(AUDIO_TYPE_FLAC);
+   rwebm_t *demux = rwebm_open_memory(data, length);
+   rwebm_packet packet;
+   assert(decoder && demux && rwebm_read_packet_track(demux, 2, &packet) == 1);
+   assert(packet.size && packet.data >= data && packet.data < data + length);
+   data[packet.data - data] ^= 1;
+   rwebm_close(demux);
+   audio_transfer_set_buffer_ptr(decoder, AUDIO_TYPE_FLAC, data, length);
+   assert(audio_transfer_set_container_track(decoder, AUDIO_TYPE_FLAC, 2));
+   assert(audio_transfer_start(decoder, AUDIO_TYPE_FLAC));
+   assert(audio_transfer_read_f32(decoder, AUDIO_TYPE_FLAC, pcm, 512, &got)
+         == AUDIO_PROCESS_ERROR && !got);
+   audio_transfer_free(decoder, AUDIO_TYPE_FLAC);
+   free(data);
+   puts("PASS malformed FLAC packet is an error, not movie-tail silence");
+}
 static void flac_bounded_seek(void)
 {
    size_t length, full, remaining, wall;
@@ -136,8 +168,8 @@ static void flac_bounded_seek(void)
    assert(audio_transfer_set_container_track(decoder, AUDIO_TYPE_FLAC, 2));
    assert(audio_transfer_start(decoder, AUDIO_TYPE_FLAC));
    full = tone(decoder, AUDIO_TYPE_FLAC, 1);
-   assert(audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, 5000));
-   assert(audio_transfer_seek_begin_format(decoder, AUDIO_TYPE_FLAC, 2400, true));
+   assert(audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, 7000));
+   assert(audio_transfer_seek_begin_format(decoder, AUDIO_TYPE_FLAC, 5000, true));
    assert(!audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, (uint64_t)-1));
    audio_transfer_set_avail(decoder, AUDIO_TYPE_FLAC, wall);
    for (steps = 0; steps < 8; steps++)
@@ -151,9 +183,15 @@ static void flac_bounded_seek(void)
    assert(result == 1 && steps > 1 && steps < 256);
    assert(audio_transfer_seek_step(decoder, AUDIO_TYPE_FLAC) == -1);
    remaining = tone(decoder, AUDIO_TYPE_FLAC, 1);
-   assert(remaining + 2400 == full);
+   assert(remaining + 5000 == full);
    assert(audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, 0));
-   assert(audio_transfer_seek_step(decoder, AUDIO_TYPE_FLAC) == 1);
+   result = 0;
+   for (steps = 0; steps < 256 && !result; steps++)
+   {
+      audio_transfer_set_avail(decoder, AUDIO_TYPE_FLAC, length);
+      result = audio_transfer_seek_step(decoder, AUDIO_TYPE_FLAC);
+   }
+   assert(result == 1 && steps < 256);
    audio_transfer_set_avail(decoder, AUDIO_TYPE_FLAC, length);
    assert(tone(decoder, AUDIO_TYPE_FLAC, 1) == full);
    assert(!audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, full + 1));
@@ -213,6 +251,7 @@ int main(void)
    fixture("fixtures/opus.bin", AUDIO_TYPE_OPUS);
    fixture("fixtures/vorbis.bin", AUDIO_TYPE_VORBIS);
    fixture("fixtures/flac.bin", AUDIO_TYPE_FLAC);
+   flac_bad_packet();
    flac_bounded_seek();
    mixed();
    return 0;

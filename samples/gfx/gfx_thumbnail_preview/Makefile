@@ -299,16 +299,18 @@ audio-timeline-check: $(AUDIO_TIMELINE_TARGET)
 	   timeline-0.webm timeline-1.webm timeline-gap-libopus.webm \
 	   timeline-gap-libvorbis.webm timeline-overlap.webm \
 	   timeline-late-libopus.webm timeline-late-libvorbis.webm timeline-delayed-vorbis.webm \
-	   timeline-aac-0.mkv timeline-aac-1.mkv; do \
+	   timeline-aac-0.mkv timeline-aac-1.mkv timeline-flac-1.mkv timeline-flac-gap.mkv \
+	   timeline-flac-overlap.mkv timeline-flac-negative.mkv timeline-flac-late.mkv; do \
 	   file=fixtures/audio-movie-timeline/$$fixture; \
 	   echo "$$fixture"; \
 	   ./$(AUDIO_TIMELINE_TARGET) "$$file" "$$(cat "$$file.onset")" \
 	      "$$file.activity" "$$(cat "$$file.period")"; \
 	done
 	python3 audio_movie_edge_fixtures.py fixtures/audio-movie-timeline
-	@set -e; base=fixtures/audio-movie-timeline; for codec in opus vorbis aac; do \
+	@set -e; base=fixtures/audio-movie-timeline; for codec in opus vorbis aac flac; do \
 	   case "$$codec" in opus) source=timeline-0.webm;; \
-	      vorbis) source=timeline-delayed-vorbis.webm;; aac) source=timeline-aac-1.mkv;; esac; \
+	      vorbis) source=timeline-delayed-vorbis.webm;; aac) source=timeline-aac-1.mkv;; \
+	      flac) source=timeline-flac-1.mkv;; esac; \
 	   period=$$(cat "$$base/$$source.period"); \
 	   for flags in 1-0 0-1 1-1; do \
 	      unknown=$${flags%-*}; empty=$${flags#*-}; \

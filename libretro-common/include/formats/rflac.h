@@ -249,6 +249,10 @@ void rflac_set_eof(rflac_t *f);
  */
 const rflac_format_t *rflac_format(const rflac_t *f);
 
+/* PCM frames in one CRC-checked packet header, without decoding samples.
+ * Returns -1 for an invalid or incomplete header. */
+int rflac_packet_frames(const uint8_t *packet, size_t size);
+
 /**
  * rflac_total_frames:
  *
