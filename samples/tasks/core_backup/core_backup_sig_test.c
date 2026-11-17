@@ -78,9 +78,16 @@ void RARCH_ERR(const char *fmt, ...)
    va_end(ap);
 }
 
+/* Fixed texts: the worker calls it too */
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
-   (void)msg;
+   switch (msg)
+   {
+      case MSG_CORE_LOAD_TRUST_LIST_FULL:
+         return "load trust list full";
+      default:
+         break;
+   }
    return "msg";
 }
 
@@ -866,6 +873,40 @@ static void test_install_older_trust(void)
    CHECK(newest() == FX_TIME);
 }
 
+/* Install and Trust with the trusted list full: installed this once,
+ * and the user told */
+static void test_install_and_trust_full(void)
+{
+   static uint8_t data[3000];
+   struct core_check c;
+   char b[300];
+   unsigned i;
+   printf("[Install and Trust, trusted list full]\n");
+   memset(&c, 0, sizeof(c));
+   c.result = CORE_CHECK_UNSIGNED;
+   strlcpy(c.rec.name, "fill_libretro.so", sizeof(c.rec.name));
+   c.rec.sha256[2] = 0xa7;
+   for (i = 0; i < CORE_TRUST_MAX_HASHES; i++)
+   {
+      c.rec.sha256[0] = (uint8_t)i;
+      c.rec.sha256[1] = (uint8_t)(i >> 8);
+      if (!core_trust_runtime_always(&c))
+         break;
+   }
+   CHECK(i == CORE_TRUST_MAX_HASHES);
+   pump();
+   memset(data, 0xbb, sizeof(data));
+   install_old();
+   make_backup(b, sizeof(b), g_backups, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, true));
+   CHECK(warning(CORE_CHECK_UNSIGNED));
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   CHECK(same(g_core, data, sizeof(data)));
+   CHECK(!trusted(data, sizeof(data)));
+   CHECK(!strcmp(g_osd_last, msg_hash_to_str(MSG_CORE_LOAD_TRUST_LIST_FULL)));
+}
+
 #if defined(ANDROID)
 /* ---- a Play Store build ---- */
 
@@ -1034,6 +1075,10 @@ int main(void)
    test_play_cancel_keeps_core();
    test_other_link_refused();
 #endif
+   core_trust_runtime_deinit();
+   fill_pathname_join_special(store, TMP_DIR, "store3", sizeof(store));
+   CHECK(core_trust_runtime_init(store, g_cores, "so"));
+   test_install_and_trust_full();
 #else
    CHECK(!core_trust_runtime_init(store, g_cores, "so"));
    test_inactive();
@@ -1045,6 +1090,10 @@ int main(void)
    task_queue_init(true, NULL);
    test_backup_keeps_sig();
 #ifdef HAVE_CORE_SIGNING_TEST_KEY
+   /* A store with room, not the one the lanes above left */
+   core_trust_runtime_deinit();
+   fill_pathname_join_special(store, TMP_DIR, "store5", sizeof(store));
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
    test_restore_signed();
 #endif
    core_trust_runtime_deinit();

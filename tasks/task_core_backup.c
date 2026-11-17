@@ -1375,7 +1375,13 @@ static void cb_task_core_restore(
             core_trust_runtime_apply(&backup_handle->check.c);
             break;
          case CORE_RESTORE_OUTCOME_TRUSTED:
-            core_trust_runtime_always(&backup_handle->check.c);
+            if (!core_trust_runtime_always(&backup_handle->check.c))
+            {
+               const char *msg = msg_hash_to_str(MSG_CORE_LOAD_TRUST_LIST_FULL);
+               runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT,
+                     MESSAGE_QUEUE_CATEGORY_WARNING);
+            }
             break;
          case CORE_RESTORE_OUTCOME_WARN:
             core_restore_warn(backup_handle);

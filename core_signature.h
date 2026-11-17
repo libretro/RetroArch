@@ -248,6 +248,9 @@ void core_trust_set_put(core_trust_set_t *s);
  * drops its oldest build. */
 bool core_trust_apply(core_trust_t *t, const struct core_check *c);
 bool core_trust_always(core_trust_t *t, const struct core_check *c);
+/* Always refuses c on s only because the trusted hashes are full */
+bool core_trust_full_refuses(const core_trust_set_t *s,
+      const struct core_check *c);
 /* Untrusts the n hashes back to back at sha256 and retires every record
  * carrying one of them. False, changing nothing, when out of memory. */
 bool core_trust_forget(core_trust_t *t, const uint8_t *sha256, unsigned n);
@@ -264,6 +267,9 @@ unsigned core_trust_flags(const core_trust_set_t *s);
 bool core_trust_has_identity(const core_trust_set_t *s,
       const struct core_identity *id, const char *name);
 bool core_trust_has_hash(const core_trust_set_t *s, const uint8_t *sha256);
+/* The trusted hashes, i below core_trust_num_hashes() */
+unsigned core_trust_num_hashes(const core_trust_set_t *s);
+const uint8_t *core_trust_hash_at(const core_trust_set_t *s, unsigned i);
 /* 0 when the name was never seen in that folder */
 uint64_t core_trust_newest(const core_trust_set_t *s, const uint8_t *folder,
       const char *name);

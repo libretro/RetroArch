@@ -2153,6 +2153,136 @@ static void test_park_always_full(void)
    stop();
 }
 
+/* A seeded store of n fake hashes and nothing else */
+static bool write_hashes(const char *path, unsigned n)
+{
+   struct core_check c;
+   core_trust_t *t = core_trust_new();
+   size_t len      = 0;
+   uint8_t *buf    = NULL;
+   unsigned i;
+   bool ok         = t && core_trust_set_flag(t, CORE_TRUST_SEEDED, true);
+   memset(&c, 0, sizeof(c));
+   c.result = CORE_CHECK_UNSIGNED;
+   strlcpy(c.rec.name, "fill_libretro" LIB_EXT, sizeof(c.rec.name));
+   c.rec.sha256[2] = 0xa6;
+   for (i = 0; ok && i < n; i++)
+   {
+      c.rec.sha256[0] = (uint8_t)i;
+      c.rec.sha256[1] = (uint8_t)(i >> 8);
+      ok = core_trust_always(t, &c);
+   }
+   if (ok)
+      buf = core_trust_serialize(t, &len);
+   ok = buf && filestream_write_file(path, buf, (int64_t)len);
+   free(buf);
+   core_trust_free(t);
+   return ok;
+}
+
+/* start() on a store already written, with a seed folder */
+static void start_with(const char *store, const char *seed_dir)
+{
+   task_queue_init(false, NULL);
+   path_mkdir(TMP_DIR "/cores");
+   CHECK(core_trust_runtime_init(store, seed_dir, CORE_EXT));
+}
+
+static bool copy_core(const char *from, const char *to);
+
+/* Always Trust with the list full loads the core at once and waits on a
+ * sweep of the cores folder, which makes room: nothing to say */
+static void test_park_always_sweeps(void)
+{
+   struct core_check c;
+   char store[64];
+   char core[256];
+   unsigned shown;
+   size_t n            = 0;
+   const uint8_t *keys = core_sig_builtin_keys(&n);
+   core_trust_set_t *s = NULL;
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES));
+   path_mkdir(TMP_DIR "/sweep_cores");
+   strlcpy(core, TMP_DIR "/sweep_cores/sweep_libretro." CORE_EXT,
+         sizeof(core));
+   CHECK(copy_core("core_load_check_test_a" LIB_EXT, core));
+   start_with(store, TMP_DIR "/sweep_cores");
+   park_reset();
+   CHECK(park(core));
+   drain();
+   last_log[0] = '\0';
+   shown       = osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL);
+   CHECK(core_warning_choose(CORE_WARNING_ALWAYS_TRUST));
+   park_wait(1);
+   CHECK(reruns == 1);
+   CHECK(rerun_id == 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == shown);
+   drain();
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == shown);
+   CHECK(!strstr(last_log, "Could not trust"));
+   CHECK((s = core_trust_runtime_get()) != NULL);
+   if (s)
+   {
+      CHECK(core_check_file(s, keys, n, core, 0, &c) == CORE_CHECK_OK);
+      core_trust_set_put(s);
+   }
+   stop();
+}
+
+#ifdef COUNT_HASHES
+static enum core_trust_state state_now(const char *path)
+{
+   core_trust_set_t *s         = core_trust_runtime_get();
+   enum core_trust_state state = s ? core_trust_state_file(s, path, NULL)
+      : CORE_TRUST_STATE_UNCHECKED;
+   core_trust_set_put(s);
+   return state;
+}
+
+/* A sweep takes a recorded core's hash from its record, unread */
+static void test_sweep_uses_records(void)
+{
+   struct core_check c;
+   char store[64];
+   char x[256], y[256];
+   unsigned n;
+   size_t num_keys     = 0;
+   const uint8_t *keys = core_sig_builtin_keys(&num_keys);
+   core_trust_set_t *s;
+   memset(&c, 0, sizeof(c));
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES - 1));
+   path_mkdir(TMP_DIR "/sweep_records");
+   strlcpy(x, TMP_DIR "/sweep_records/x_libretro." CORE_EXT, sizeof(x));
+   strlcpy(y, TMP_DIR "/sweep_records/y_libretro." CORE_EXT, sizeof(y));
+   CHECK(copy_core("core_load_check_test_a" LIB_EXT, x));
+   CHECK(copy_core("core_load_check_test_b" LIB_EXT, y));
+   start_with(store, NULL);
+   CHECK(trust(x));
+   if (state_now(x) != CORE_TRUST_STATE_TRUSTED)
+   {
+      printf("note: test_sweep_uses_records skipped, no records on this filesystem\n");
+      stop();
+      return;
+   }
+   stop();
+   start_with(store, TMP_DIR "/sweep_records");
+   s = core_trust_runtime_get();
+   CHECK(s && core_check_file(s, keys, num_keys, y, 0, &c)
+         == CORE_CHECK_UNSIGNED);
+   core_trust_set_put(s);
+   n = hashes;
+   CHECK(core_trust_runtime_always(&c));
+   CHECK(state_now(y) != CORE_TRUST_STATE_TRUSTED);
+   drain();
+   CHECK(hashes - n == 1);
+   CHECK(state_now(x) == CORE_TRUST_STATE_TRUSTED);
+   CHECK(state_now(y) == CORE_TRUST_STATE_TRUSTED);
+   stop();
+}
+#endif
+
 static void test_park_cancel(void)
 {
    char core[256];
@@ -4114,6 +4244,10 @@ int main(int argc, char *argv[])
    test_park_load_once();
    test_park_always();
    test_park_always_full();
+   test_park_always_sweeps();
+#ifdef COUNT_HASHES
+   test_sweep_uses_records();
+#endif
    test_park_cancel();
    test_park_end_cancel();
    test_park_end_waits_for_load();

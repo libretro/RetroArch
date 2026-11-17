@@ -38,6 +38,19 @@ static struct
    bool seed_notice;
    bool seed_key_ok;
    uint8_t seed_key[CORE_SHA256_LEN];
+#ifdef HAVE_CORE_LOAD_CHECK
+   /* Kept for the sweep */
+   char seed_dir[PATH_MAX_LENGTH];
+   char core_ext[16];
+   /* What Always Trust let in this session, oldest first: no sweep
+    * drops it */
+   uint8_t session[CORE_TRUST_MAX_HASHES][CORE_SHA256_LEN];
+   unsigned num_session;
+   /* Refused only for a full list, waiting on the sweep running */
+   struct core_check sweep_wait[CORE_TRUST_SWEEP_WAIT_MAX];
+   unsigned num_sweep_wait;
+   bool sweeping;
+#endif
 #ifdef HAVE_CORE_SIGNING_TEST_KEY
    bool test_key_shown;
 #endif
@@ -211,16 +224,70 @@ struct core_trust_seed
    char dir[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
    char ext[16];
+   uint8_t folder[CORE_SHA256_LEN];
    struct RDIR *rdir;
    core_file_t *f;
    core_trust_set_t *set;
    /* At most CORE_TRUST_MAX_HASHES: no more can be trusted. The check
-    * is built in found[num_found], counted once it hashed in full */
+    * is built in found[num_found], counted once it hashed in full; a
+    * sweep's one is never counted */
    struct core_check *found;
+   /* The sweep's: which of set's hashes a core or this session holds,
+    * then the rest, to drop */
+   bool *live;
+   uint8_t (*drop)[CORE_SHA256_LEN];
+   unsigned num_drop;
    unsigned num_found;
    unsigned gen;
    bool opened;
+   bool sweep;
 };
+
+static void core_trust_sweep_live(struct core_trust_seed *sd,
+      const uint8_t *sha256)
+{
+   unsigned i;
+   unsigned n = core_trust_num_hashes(sd->set);
+   for (i = 0; i < n; i++)
+      if (!memcmp(core_trust_hash_at(sd->set, i), sha256, CORE_SHA256_LEN))
+         sd->live[i] = true;
+}
+
+/* What the record of the file open in sd says, unread: true when that
+ * settles it */
+static bool core_trust_sweep_known(struct core_trust_seed *sd,
+      struct core_check *c)
+{
+   uint8_t sha256[CORE_SHA256_LEN];
+   memcpy(c->folder, sd->folder, CORE_SHA256_LEN);
+   if (core_check_wants_verity(sd->set, c))
+      core_file_verity_measure(sd->f, &c->rec.id);
+   switch (core_trust_state_of(sd->set, c, sha256))
+   {
+      case CORE_TRUST_STATE_TRUSTED:
+         core_trust_sweep_live(sd, sha256);
+         return true;
+      case CORE_TRUST_STATE_SIGNED:
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+/* The walk's end: what nothing kept */
+static void core_trust_sweep_drops(struct core_trust_seed *sd)
+{
+   unsigned i;
+   unsigned n = core_trust_num_hashes(sd->set);
+   /* A folder that didn't open proves nothing */
+   if (!sd->rdir)
+      return;
+   for (i = 0; i < n; i++)
+      if (!sd->live[i])
+         memcpy(sd->drop[sd->num_drop++], core_trust_hash_at(sd->set, i),
+               CORE_SHA256_LEN);
+}
 
 /* One read, one directory entry or the folder's open: false when the
  * walk is over */
@@ -237,18 +304,30 @@ static bool core_trust_seed_step(struct core_trust_seed *sd)
       if (step == 0 && sd->h.done == c->rec.id.size)
       {
          core_hash_final(&sd->h, sha256);
-         core_check_finish(sd->set, NULL, 0, sha256, NULL, 0, 0, c);
-         sd->num_found++;
+         if (sd->sweep)
+            core_trust_sweep_live(sd, sha256);
+         else
+         {
+            core_check_finish(sd->set, NULL, 0, sha256, NULL, 0, 0, c);
+            sd->num_found++;
+         }
       }
       else
          core_hash_free(&sd->h);
       core_file_close(sd->f);
       sd->f = NULL;
-      return sd->num_found < CORE_TRUST_MAX_HASHES;
+      return sd->sweep || sd->num_found < CORE_TRUST_MAX_HASHES;
    }
    if (!sd->opened)
    {
       sd->opened = true;
+      if (sd->sweep)
+      {
+         /* Any name: the key is of the folder holding it */
+         fill_pathname_join_special(sd->path, sd->dir, "core",
+               sizeof(sd->path));
+         core_folder_key(sd->path, sd->folder);
+      }
       sd->rdir   = retro_opendir(sd->dir);
       return sd->rdir != NULL;
    }
@@ -273,6 +352,7 @@ static bool core_trust_seed_step(struct core_trust_seed *sd)
    if (!(sd->f = core_file_open(sd->path)))
       return true;
    if (     !core_file_identity(sd->f, &c->rec.id)
+         || (sd->sweep && core_trust_sweep_known(sd, c))
          || !core_hash_init(&sd->h))
    {
       core_file_close(sd->f);
@@ -295,6 +375,8 @@ static void core_trust_seed_handler(retro_task_t *task)
    {
       if (!core_trust_seed_step(sd))
       {
+         if (sd->sweep)
+            core_trust_sweep_drops(sd);
          task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
          break;
       }
@@ -338,6 +420,8 @@ static void core_trust_seed_free(struct core_trust_seed *sd)
       retro_closedir(sd->rdir);
    core_trust_set_put(sd->set);
    free(sd->found);
+   free(sd->live);
+   free(sd->drop);
    free(sd);
 }
 
@@ -397,6 +481,121 @@ static void core_trust_seed_start(const char *seed_dir,
    if (!core_trust_rt.seed_pending)
       core_trust_seed_free(sd);
 }
+
+static void core_trust_session_add(const uint8_t *sha256)
+{
+   unsigned i;
+   for (i = 0; i < core_trust_rt.num_session; i++)
+      if (!memcmp(core_trust_rt.session[i], sha256, CORE_SHA256_LEN))
+         return;
+   if (core_trust_rt.num_session == CORE_TRUST_MAX_HASHES)
+      memmove(core_trust_rt.session[0], core_trust_rt.session[1],
+            (CORE_TRUST_MAX_HASHES - 1) * CORE_SHA256_LEN);
+   else
+      core_trust_rt.num_session++;
+   memcpy(core_trust_rt.session[core_trust_rt.num_session - 1], sha256,
+         CORE_SHA256_LEN);
+}
+
+static void core_trust_session_drop(const uint8_t *sha256)
+{
+   unsigned i;
+   for (i = 0; i < core_trust_rt.num_session; i++)
+      if (!memcmp(core_trust_rt.session[i], sha256, CORE_SHA256_LEN))
+      {
+         memmove(core_trust_rt.session[i], core_trust_rt.session[i + 1],
+               (core_trust_rt.num_session - i - 1) * CORE_SHA256_LEN);
+         core_trust_rt.num_session--;
+         return;
+      }
+}
+
+static void core_trust_sweep_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   struct core_trust_seed *sd = (struct core_trust_seed*)task->state;
+   core_trust_set_t *before;
+   unsigned i, n;
+   unsigned refused = 0;
+   if (!core_trust_rt.t || sd->gen != core_trust_rt.gen)
+      return;
+   n                            = core_trust_rt.num_sweep_wait;
+   core_trust_rt.num_sweep_wait = 0;
+   core_trust_rt.sweeping       = false;
+   /* Cut short at quit: the waiting cores ask again next time */
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+      return;
+   before = core_trust_get(core_trust_rt.t);
+   core_trust_forget(core_trust_rt.t, sd->drop[0], sd->num_drop);
+   for (i = 0; i < n; i++)
+   {
+      if (core_trust_always(core_trust_rt.t, &core_trust_rt.sweep_wait[i]))
+         core_trust_session_add(core_trust_rt.sweep_wait[i].rec.sha256);
+      else
+         refused++;
+   }
+   if (refused)
+   {
+      const char *msg = msg_hash_to_str(MSG_CORE_LOAD_TRUST_LIST_FULL);
+      RARCH_WARN("[Core] Could not trust %u core(s) for good: the trusted "
+            "cores list is still full.\n", refused);
+      runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
+   core_trust_runtime_changed(before);
+}
+
+/* Walks the seed folder for the hashes no core there has */
+static bool core_trust_sweep_start(void)
+{
+   struct core_trust_seed *sd;
+   retro_task_t *task = NULL;
+   unsigned i, j, n;
+   if (     string_is_empty(core_trust_rt.seed_dir)
+         || string_is_empty(core_trust_rt.core_ext)
+         || !(sd = (struct core_trust_seed*)calloc(1, sizeof(*sd))))
+      return false;
+   sd->set = core_trust_get(core_trust_rt.t);
+   n       = core_trust_num_hashes(sd->set);
+   if (     !(sd->found = (struct core_check*)malloc(sizeof(*sd->found)))
+         || !(sd->live = (bool*)calloc(n, sizeof(*sd->live)))
+         || !(sd->drop = (uint8_t (*)[CORE_SHA256_LEN])malloc(
+               n * CORE_SHA256_LEN))
+         || !(task = task_init()))
+   {
+      core_trust_seed_free(sd);
+      return false;
+   }
+   strlcpy(sd->dir, core_trust_rt.seed_dir, sizeof(sd->dir));
+   strlcpy(sd->ext, core_trust_rt.core_ext, sizeof(sd->ext));
+   sd->gen   = core_trust_rt.gen;
+   sd->sweep = true;
+   /* This session's trusts, as they are now */
+   for (i = 0; i < n; i++)
+      for (j = 0; j < core_trust_rt.num_session && !sd->live[i]; j++)
+         sd->live[i] = !memcmp(core_trust_hash_at(sd->set, i),
+               core_trust_rt.session[j], CORE_SHA256_LEN);
+   task->state    = sd;
+   task->handler  = core_trust_seed_handler;
+   task->callback = core_trust_sweep_cb;
+   task->cleanup  = core_trust_seed_cleanup;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
+   core_trust_rt.sweeping = true;
+   return true;
+}
+
+/* c, refused by s: it waits on a sweep when only a full list refused it */
+static bool core_trust_sweep_wait(const core_trust_set_t *s,
+      const struct core_check *c)
+{
+   if (     !core_trust_full_refuses(s, c)
+         || core_trust_rt.num_sweep_wait == CORE_TRUST_SWEEP_WAIT_MAX
+         || (!core_trust_rt.sweeping && !core_trust_sweep_start()))
+      return false;
+   core_trust_rt.sweep_wait[core_trust_rt.num_sweep_wait++] = *c;
+   return true;
+}
 #endif
 
 static bool core_trust_runtime_default_path(char *s, size_t len)
@@ -443,6 +642,12 @@ bool core_trust_runtime_init(const char *path, const char *seed_dir,
       core_trust_rt.read_only = core_trust_load_file(core_trust_rt.t,
             core_trust_rt.path) == CORE_TRUST_LOAD_UNREADABLE;
 #ifdef HAVE_CORE_LOAD_CHECK
+   if (seed_dir)
+      strlcpy(core_trust_rt.seed_dir, seed_dir,
+            sizeof(core_trust_rt.seed_dir));
+   if (core_ext)
+      strlcpy(core_trust_rt.core_ext, core_ext,
+            sizeof(core_trust_rt.core_ext));
    core_trust_seed_start(seed_dir, core_ext);
 #else
    (void)seed_dir;
@@ -523,9 +728,16 @@ bool core_trust_runtime_always(const struct core_check *c)
    before = core_trust_get(core_trust_rt.t);
    if (!core_trust_always(core_trust_rt.t, c))
    {
+      bool waits = false;
+#ifdef HAVE_CORE_LOAD_CHECK
+      waits = core_trust_sweep_wait(before, c);
+#endif
       core_trust_set_put(before);
-      return false;
+      return waits;
    }
+#ifdef HAVE_CORE_LOAD_CHECK
+   core_trust_session_add(c->rec.sha256);
+#endif
    core_trust_runtime_changed(before);
    return true;
 }
@@ -546,6 +758,7 @@ bool core_trust_runtime_forget(const char *core_path)
    }
    core_trust_runtime_changed(before);
 #ifdef HAVE_CORE_LOAD_CHECK
+   core_trust_session_drop(sha256);
    core_load_check_untrust(core_path);
 #endif
    return true;

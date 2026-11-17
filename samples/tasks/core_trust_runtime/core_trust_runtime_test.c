@@ -1263,6 +1263,385 @@ static void test_seed_gen(void)
    CHECK(!trusted(core));
    core_trust_runtime_deinit();
 }
+
+/* A seeded store of n fake hashes and extra's, when given. Written with
+ * no device, so it holds no records. */
+static bool write_hashes(const char *path, unsigned n, const char *extra)
+{
+   struct core_check c;
+   core_trust_t *t = core_trust_new();
+   size_t len      = 0;
+   uint8_t *buf    = NULL;
+   unsigned i;
+   bool ok         = t && core_trust_set_flag(t, CORE_TRUST_SEEDED, true);
+   for (i = 0; ok && i < n; i++)
+   {
+      fake_check(&c, "fake_libretro.core", 0x5a, CORE_CHECK_UNSIGNED);
+      c.rec.sha256[0] = (uint8_t)i;
+      c.rec.sha256[1] = (uint8_t)(i >> 8);
+      ok = core_trust_always(t, &c);
+   }
+   if (ok && extra)
+   {
+      fake_check(&c, "extra_libretro.core", 0, CORE_CHECK_UNSIGNED);
+      file_sha(extra, c.rec.sha256);
+      ok = core_trust_always(t, &c);
+   }
+   if (ok)
+      buf = core_trust_serialize(t, &len);
+   ok = buf && filestream_write_file(path, buf, (int64_t)len);
+   free(buf);
+   core_trust_free(t);
+   return ok;
+}
+
+static unsigned hash_count(void)
+{
+   core_trust_set_t *s = core_trust_runtime_get();
+   unsigned n          = s ? core_trust_num_hashes(s) : 0;
+   core_trust_set_put(s);
+   return n;
+}
+
+/* The hashes in the store on disk, ~0u when it doesn't load */
+static unsigned disk_hashes(const char *path)
+{
+   core_trust_t *u = core_trust_new();
+   unsigned n      = ~0u;
+   core_trust_set_t *s;
+   if (core_trust_load_file(u, path) == CORE_TRUST_LOAD_OK)
+   {
+      s = core_trust_get(u);
+      n = core_trust_num_hashes(s);
+      core_trust_set_put(s);
+   }
+   core_trust_free(u);
+   return n;
+}
+
+static bool any_task(retro_task_t *task, void *ud)
+{
+   (void)task;
+   (void)ud;
+   return true;
+}
+
+/* Until no task is left, a sweep and its save included */
+static void pump_tasks(void)
+{
+   task_finder_data_t find;
+   unsigned n    = 0;
+   find.func     = any_task;
+   find.userdata = NULL;
+   if (task_thread)
+      task_queue_wait(NULL, NULL);
+   while (task_queue_find(&find) && n++ < 100000)
+      task_queue_check();
+}
+
+/* A full list: Always Trust waits on a sweep of the cores folder, which
+ * drops every hash no core there has */
+static void test_sweep_frees(void)
+{
+   uint8_t sha256[CORE_SHA256_LEN];
+   char dir[256], b[256], store[256];
+   strlcpy(dir, tmp("sweep_frees"), sizeof(dir));
+   strlcpy(store, tmp("sweep_frees_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(b, dir, "b_libretro.core", sizeof(b));
+   CHECK(put_file(b, 600, 3 * 65536 + 1));
+   file_sha(b, sha256);
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES, NULL));
+   osd_count = 0;
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(always_trust(b, true));
+   CHECK(!trusted(b));
+   pump_tasks();
+   CHECK(trusted(b));
+   CHECK(hash_count() == 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == 0);
+   core_trust_runtime_deinit();
+   CHECK(disk_hashes(store) == 1);
+   CHECK(disk_has_sha(store, sha256));
+}
+
+/* A core still in the folder keeps its hash, and so does one trusted
+ * this session from outside it */
+static void test_sweep_keeps_live(void)
+{
+   char dir[256], a[256], b[256], o[256], store[256];
+   strlcpy(dir, tmp("sweep_live"), sizeof(dir));
+   strlcpy(store, tmp("sweep_live_store"), sizeof(store));
+   strlcpy(o, tmp("sweep_outside.core"), sizeof(o));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(a, dir, "a_libretro.core", sizeof(a));
+   fill_pathname_join_special(b, dir, "b_libretro.core", sizeof(b));
+   CHECK(put_file(a, 601, 1000));
+   CHECK(put_file(b, 602, 1000));
+   CHECK(put_file(o, 603, 1000));
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES - 2, a));
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(always_trust(o, true));
+   CHECK(hash_count() == CORE_TRUST_MAX_HASHES);
+   CHECK(always_trust(b, true));
+   CHECK(!trusted(b));
+   pump_tasks();
+   CHECK(trusted(a));
+   CHECK(trusted(o));
+   CHECK(trusted(b));
+   CHECK(hash_count() == 3);
+   core_trust_runtime_deinit();
+}
+
+/* Every hash still has its core: the waiting trust is refused, once per
+ * sweep, and said so */
+static void test_sweep_still_full(void)
+{
+   char dir[256], core[256], u[256], name[32];
+   unsigned i;
+   strlcpy(dir, tmp("sweep_full"), sizeof(dir));
+   CHECK(path_mkdir(dir));
+   for (i = 0; i <= CORE_TRUST_MAX_HASHES; i++)
+   {
+      sprintf(name, "%03u_libretro.core", i);
+      fill_pathname_join_special(core, dir, name, sizeof(core));
+      CHECK(put_file(core, 700 + i, 8));
+   }
+   osd_count = 0;
+   CHECK(core_trust_runtime_init(tmp("sweep_full_store"), dir, "core"));
+   pump_seed();
+   u[0] = '\0';
+   for (i = 0; i <= CORE_TRUST_MAX_HASHES; i++)
+   {
+      sprintf(name, "%03u_libretro.core", i);
+      fill_pathname_join_special(core, dir, name, sizeof(core));
+      if (!trusted(core))
+         strlcpy(u, core, sizeof(u));
+   }
+   CHECK(*u);
+   CHECK(always_trust(u, true));
+   pump_tasks();
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == 1);
+   CHECK(!trusted(u));
+   CHECK(hash_count() == CORE_TRUST_MAX_HASHES);
+   CHECK(always_trust(u, true));
+   pump_tasks();
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == 2);
+   core_trust_runtime_deinit();
+}
+
+/* A trust refused while a sweep runs waits on that one */
+static void test_sweep_joins(void)
+{
+   char dir[256], b[256], d[256], store[256];
+   strlcpy(dir, tmp("sweep_joins"), sizeof(dir));
+   strlcpy(store, tmp("sweep_joins_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(b, dir, "b_libretro.core", sizeof(b));
+   fill_pathname_join_special(d, dir, "d_libretro.core", sizeof(d));
+   CHECK(put_file(b, 604, 1000));
+   CHECK(put_file(d, 605, 1000));
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES, NULL));
+   osd_count = 0;
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(always_trust(b, true));
+   CHECK(always_trust(d, true));
+   pump_tasks();
+   CHECK(trusted(b));
+   CHECK(trusted(d));
+   CHECK(hash_count() == 2);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == 0);
+   core_trust_runtime_deinit();
+}
+
+/* Cut short at quit: nothing dropped, and the waiting trust isn't kept */
+static void test_sweep_cancelled(void)
+{
+   uint8_t sha256[CORE_SHA256_LEN];
+   char dir[256], b[256], store[256];
+   strlcpy(dir, tmp("sweep_cancel"), sizeof(dir));
+   strlcpy(store, tmp("sweep_cancel_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(b, dir, "b_libretro.core", sizeof(b));
+   CHECK(put_file(b, 606, 3 * 65536));
+   file_sha(b, sha256);
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES, NULL));
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   window_items = 0;
+   CHECK(always_trust(b, true));
+   pump(1);
+   /* As quit does */
+   task_queue_reset();
+   pump(4);
+   window_items = 1000000;
+   CHECK(!trusted(b));
+   CHECK(hash_count() == CORE_TRUST_MAX_HASHES);
+   core_trust_runtime_deinit();
+   CHECK(disk_hashes(store) == CORE_TRUST_MAX_HASHES);
+   CHECK(!disk_has_sha(store, sha256));
+}
+
+/* No folder to sweep: a full list refuses at once */
+static void test_sweep_no_folder(void)
+{
+   char b[256], store[256];
+   strlcpy(b, tmp("sweep_none.core"), sizeof(b));
+   strlcpy(store, tmp("sweep_none_store"), sizeof(store));
+   CHECK(put_file(b, 607, 1000));
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES, NULL));
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
+   CHECK(!always_trust(b, true));
+   pump_tasks();
+   CHECK(!trusted(b));
+   core_trust_runtime_deinit();
+}
+
+/* At most CORE_TRUST_SWEEP_WAIT_MAX trusts wait on one sweep */
+static void test_sweep_wait_cap(void)
+{
+   struct core_check c;
+   char dir[256], store[256];
+   unsigned i;
+   strlcpy(dir, tmp("sweep_cap"), sizeof(dir));
+   strlcpy(store, tmp("sweep_cap_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES, NULL));
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   for (i = 0; i <= CORE_TRUST_SWEEP_WAIT_MAX; i++)
+   {
+      fake_check(&c, "wait_libretro.core", 0x77, CORE_CHECK_UNSIGNED);
+      c.rec.sha256[0] = (uint8_t)i;
+      CHECK(core_trust_runtime_always(&c)
+            == (i < CORE_TRUST_SWEEP_WAIT_MAX));
+   }
+   pump_tasks();
+   CHECK(hash_count() == CORE_TRUST_SWEEP_WAIT_MAX);
+   core_trust_runtime_deinit();
+}
+
+/* A core the sweep can't read proves nothing; a folder or a symlink
+ * named like a core is passed over */
+static void test_sweep_unreadable(void)
+{
+#ifdef _WIN32
+   printf("note: test_sweep_unreadable skipped, no unreadable file here\n");
+#else
+   uint8_t sha256[CORE_SHA256_LEN], out_sha[CORE_SHA256_LEN];
+   char dir[256], b[256], x[256], sub[256], lnk[256], out[256], store[256];
+   core_trust_set_t *s;
+   core_file_t *probe;
+   strlcpy(dir, tmp("sweep_unreadable"), sizeof(dir));
+   strlcpy(store, tmp("sweep_unreadable_store"), sizeof(store));
+   strlcpy(out, tmp("sweep_unreadable_out.core"), sizeof(out));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(b, dir, "b_libretro.core", sizeof(b));
+   fill_pathname_join_special(x, dir, "x_libretro.core", sizeof(x));
+   fill_pathname_join_special(sub, dir, "dir_libretro.core", sizeof(sub));
+   fill_pathname_join_special(lnk, dir, "link_libretro.core", sizeof(lnk));
+   CHECK(put_file(b, 608, 1000));
+   CHECK(put_file(x, 609, 1000));
+   file_sha(x, sha256);
+   CHECK(put_file(out, 610, 1000));
+   file_sha(out, out_sha);
+   CHECK(path_mkdir(sub));
+   CHECK(symlink("../sweep_unreadable_out.core", lnk) == 0);
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES - 2, x));
+   /* The link's target, trusted in an earlier session */
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
+   CHECK(always_trust(out, false));
+   pump_tasks();
+   core_trust_runtime_deinit();
+   CHECK(disk_has_sha(store, out_sha));
+   chmod(x, 0);
+   if ((probe = core_file_open(x)))
+   {
+      core_file_close(probe);
+      chmod(x, 0644);
+      printf("note: test_sweep_unreadable skipped, %s opens anyway\n", x);
+      return;
+   }
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   CHECK(always_trust(b, true));
+   pump_tasks();
+   CHECK(trusted(b));
+   s = core_trust_runtime_get();
+   CHECK(s && !core_trust_has_hash(s, sha256));
+   CHECK(s && !core_trust_has_hash(s, out_sha));
+   core_trust_set_put(s);
+   CHECK(hash_count() == 1);
+   core_trust_runtime_deinit();
+   chmod(x, 0644);
+#endif
+}
+
+/* A folder the sweep can't open proves nothing: nothing is dropped */
+static void test_sweep_unopened(void)
+{
+#ifdef _WIN32
+   printf("note: test_sweep_unopened skipped, no unopenable folder here\n");
+#else
+   struct core_check c;
+   char dir[256], store[256];
+   struct RDIR *probe;
+   strlcpy(dir, tmp("sweep_locked"), sizeof(dir));
+   strlcpy(store, tmp("sweep_locked_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES, NULL));
+   chmod(dir, 0);
+   if ((probe = retro_opendir(dir)))
+   {
+      retro_closedir(probe);
+      chmod(dir, 0755);
+      printf("note: test_sweep_unopened skipped, %s opens anyway\n", dir);
+      return;
+   }
+   osd_count = 0;
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   fake_check(&c, "locked_libretro.core", 0x78, CORE_CHECK_UNSIGNED);
+   CHECK(core_trust_runtime_always(&c));
+   pump_tasks();
+   chmod(dir, 0755);
+   CHECK(hash_count() == CORE_TRUST_MAX_HASHES);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == 1);
+   core_trust_runtime_deinit();
+#endif
+}
+
+/* The list can't be saved and a sweep frees nothing: the core was never
+ * trusted, so the list-full message all the same */
+static void test_sweep_cant_save(void)
+{
+   struct core_check c;
+   char dir[256], store[256];
+   unsigned i;
+   strlcpy(dir, tmp("sweep_cant_save"), sizeof(dir));
+   strlcpy(store, tmp("sweep_cant_save_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   CHECK(write_hashes(store, 0, NULL));
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   saves_fail(true);
+   /* Trusted this session: the sweep keeps them all */
+   for (i = 0; i < CORE_TRUST_MAX_HASHES; i++)
+   {
+      fake_check(&c, "live_libretro.core", 0x79, CORE_CHECK_UNSIGNED);
+      c.rec.sha256[0] = (uint8_t)i;
+      c.rec.sha256[1] = (uint8_t)(i >> 8);
+      if (!core_trust_runtime_always(&c))
+         break;
+   }
+   CHECK(i == CORE_TRUST_MAX_HASHES);
+   pump_tasks();
+   CHECK(!core_trust_runtime_can_save());
+   osd_count = 0;
+   fake_check(&c, "wait_libretro.core", 0x7a, CORE_CHECK_UNSIGNED);
+   CHECK(core_trust_runtime_always(&c));
+   pump_tasks();
+   CHECK(hash_count() == CORE_TRUST_MAX_HASHES);
+   CHECK(osd_count == 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == 1);
+   core_trust_runtime_deinit();
+   saves_fail(false);
+}
 #endif
 
 static void test_warning(void)
@@ -1463,16 +1842,29 @@ int main(void)
       test_seed_unopened();
       test_seed_save_fails();
       test_seed_gen();
+      test_sweep_frees();
+      test_sweep_keeps_live();
+      test_sweep_still_full();
+      test_sweep_joins();
+      test_sweep_cancelled();
+      test_sweep_no_folder();
+      test_sweep_wait_cap();
+      test_sweep_unreadable();
+      test_sweep_unopened();
+      test_sweep_cant_save();
 #endif
       test_warning();
       test_warning_choose_from_cancel();
       test_warning_text();
-      /* The worker's side of a save and of the seed */
+      /* The worker's side of a save, the seed and a sweep */
       task_queue_deinit();
       task_queue_init(true, NULL);
       task_thread = true;
       test_saves_chained();
       test_seed_walk();
+#ifdef HAVE_CORE_LOAD_CHECK
+      test_sweep_frees();
+#endif
       task_thread = false;
    }
    task_queue_deinit();

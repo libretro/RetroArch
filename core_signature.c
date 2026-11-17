@@ -317,6 +317,16 @@ bool core_trust_has_hash(const core_trust_set_t *s, const uint8_t *sha256)
    return false;
 }
 
+unsigned core_trust_num_hashes(const core_trust_set_t *s)
+{
+   return s->num_hashes;
+}
+
+const uint8_t *core_trust_hash_at(const core_trust_set_t *s, unsigned i)
+{
+   return s->hashes[i];
+}
+
 uint64_t core_trust_newest(const core_trust_set_t *s, const uint8_t *folder,
       const char *name)
 {
@@ -477,13 +487,27 @@ bool core_trust_apply(core_trust_t *t, const struct core_check *c)
    return true;
 }
 
+/* Always takes c when the trusted hashes have room */
+static bool core_trust_always_takes(const struct core_check *c)
+{
+   return !string_is_empty(c->rec.name)
+         && c->result != CORE_CHECK_ERROR
+         && c->rec.id.verity_len <= CORE_ID_VERITY_MAX;
+}
+
+bool core_trust_full_refuses(const core_trust_set_t *s,
+      const struct core_check *c)
+{
+   return core_trust_always_takes(c)
+         && s->num_hashes == CORE_TRUST_MAX_HASHES
+         && !core_trust_has_hash(s, c->rec.sha256);
+}
+
 bool core_trust_always(core_trust_t *t, const struct core_check *c)
 {
    core_trust_set_t *s;
    bool known = core_trust_has_hash(t->cur, c->rec.sha256);
-   if (     string_is_empty(c->rec.name)
-         || c->result == CORE_CHECK_ERROR
-         || c->rec.id.verity_len > CORE_ID_VERITY_MAX
+   if (     !core_trust_always_takes(c)
          || (!known && t->cur->num_hashes == CORE_TRUST_MAX_HASHES)
          || !(s = core_trust_set_clone(t->cur)))
       return false;

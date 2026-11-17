@@ -36,6 +36,10 @@ bool core_trust_runtime_can_save(void);
 core_trust_set_t *core_trust_runtime_get(void);
 /* core_trust_apply() and core_trust_always(), then saved */
 bool core_trust_runtime_apply(const struct core_check *c);
+#define CORE_TRUST_SWEEP_WAIT_MAX 8
+/* With the load check, also true when the list is full and c waits on
+ * a sweep of the seed folder, which drops the hashes no core there has
+ * and none trusted this session; at most CORE_TRUST_SWEEP_WAIT_MAX wait */
 bool core_trust_runtime_always(const struct core_check *c);
 /* Untrust: drops the hash of the core at core_path when its record says
  * the user trusted it, then ends the load check's passes for it. False,

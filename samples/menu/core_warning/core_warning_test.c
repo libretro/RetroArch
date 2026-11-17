@@ -39,7 +39,9 @@
  *    the row;
  *  - a load from outside the menu while the box is up is refused and
  *    says to answer first; the request and the paths stay as they were,
- *    and LOAD_CONTENT's core is not probed.
+ *    and LOAD_CONTENT's core is not probed;
+ *  - Manage Cores > a core > Delete core takes its hash off the trusted
+ *    list.
  *
  * Requires a completed non-Qt build:
  *
@@ -1842,6 +1844,91 @@ static void lane_outside_load(const char *dir)
 #endif
 }
 
+/* The first row of an entry type, NO_ROW if none */
+static size_t row_type(unsigned type)
+{
+   file_list_t *buf = selection_buf();
+   size_t i;
+   for (i = 0; buf && i < buf->size; i++)
+      if (buf->list[i].type == type)
+         return i;
+   return NO_ROW;
+}
+
+/* A Manage Cores entry's OK */
+static void push_core_page(const char *core)
+{
+   generic_action_ok_displaylist_push(core, NULL, "",
+         MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS, 0, 0,
+         ACTION_OK_DL_CORE_INFORMATION_LIST);
+   pump(3);
+}
+
+/* Manage Cores > core > Delete core drops the core's hash */
+static void lane_core_delete(const char *dir)
+{
+   static char data[4096];
+   struct core_check c;
+   char cores[512];
+   char core[512];
+   size_t num_keys     = 0;
+   const uint8_t *keys = core_sig_builtin_keys(&num_keys);
+   enum core_trust_state state = CORE_TRUST_STATE_UNCHECKED;
+   core_trust_set_t *s;
+   FILE *f;
+   memset(&c, 0, sizeof(c));
+   strlcpy(cores, dir, sizeof(cores));
+   strlcat(cores, "/cores", sizeof(cores));
+   strlcpy(core, cores, sizeof(core));
+   strlcat(core, "/del_libretro.so", sizeof(core));
+   memset(data, 0x5d, sizeof(data));
+   CHECK(path_mkdir(cores), "fixture: can't make the cores folder");
+   if ((f = fopen(core, "wb")))
+   {
+      CHECK(fwrite(data, 1, sizeof(data), f) == sizeof(data),
+            "fixture: can't write the core");
+      fclose(f);
+   }
+   if ((s = core_trust_runtime_get()))
+   {
+      core_check_file(s, keys, num_keys, core, 0, &c);
+      core_trust_set_put(s);
+      core_trust_runtime_always(&c);
+   }
+   if ((s = core_trust_runtime_get()))
+   {
+      state = core_trust_state_file(s, core, NULL);
+      core_trust_set_put(s);
+   }
+   if (state != CORE_TRUST_STATE_TRUSTED)
+   {
+      fprintf(stderr, "note: lane_core_delete skipped, no records in %s\n",
+            dir);
+      remove(core);
+      path_rmdir(cores);
+      return;
+   }
+   push_core_page(core);
+   CHECK(row_type(MENU_SETTING_ACTION_CORE_DELETE) != NO_ROW,
+         "fixture: the core's page has no Delete core");
+   ok_on(row_type(MENU_SETTING_ACTION_CORE_DELETE));
+   pump(3);
+   CHECK(!path_is_valid(core), "core delete: the core is still there");
+   s = core_trust_runtime_get();
+   CHECK(s && !core_trust_has_hash(s, c.rec.sha256),
+         "core delete: its hash is still trusted");
+   core_trust_set_put(s);
+   remove(core);
+   /* The page's backup list made its folder */
+   strlcpy(core, cores, sizeof(core));
+   strlcat(core, "/core_backups/del_libretro", sizeof(core));
+   path_rmdir(core);
+   strlcpy(core, cores, sizeof(core));
+   strlcat(core, "/core_backups", sizeof(core));
+   path_rmdir(core);
+   path_rmdir(cores);
+}
+
 static void lane_setting(const char *dir)
 {
    char path[512];
@@ -2008,6 +2095,7 @@ int main(int argc, char *argv[])
       lane_pointer();
       lane_held();
       lane_replaced();
+      lane_core_delete(dir);
       lane_setting(dir);
       synthetic_remove();
       lane_outside_load(dir);
