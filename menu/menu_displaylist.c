@@ -12954,7 +12954,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,  PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING, PARSE_ONLY_BOOL, false},
-#if defined(HAVE_D3DKMT) || defined(HAVE_KMS) || (defined(HAVE_X11) && defined(HAVE_XCB))
+#if defined(HAVE_D3DKMT) || defined(HAVE_KMS) || (defined(HAVE_X11) && defined(HAVE_XCB)) || (defined(HAVE_WAYLAND) && defined(__linux__))
                {MENU_ENUM_LABEL_VIDEO_THREADED_PACING_VBLANK, PARSE_ONLY_BOOL, false},
 #endif
                {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},

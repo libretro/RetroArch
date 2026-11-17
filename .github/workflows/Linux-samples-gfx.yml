@@ -251,6 +251,10 @@ jobs:
           # Then dispserv_kms.c's vblank clock on the same kernel: its
           # CRTC's vblanks counted one by one on a description that is
           # not the master's, whose page flip event is left to it.
+          # And gfx/common/drm_vblank.h as a compositor's client has
+          # it: a second opener of the card, not its master, finds the
+          # CRTC by its connector's kind and number and reads its
+          # vblanks while the master drives it.
           make SANITIZER=address,undefined
           make check SANITIZER=address,undefined
 
@@ -3379,6 +3383,13 @@ jobs:
           # screen's selection.
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/x11_present_immediate/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/x11_present_immediate/run.py
+          # And on Wayland: the connector a wl_output's name stands for,
+          # the CRTC behind it among made-up cards (never probing a
+          # connector), the display server's clock following the
+          # window's connector, and a present counted as tearing only
+          # where the compositor was asked and its feedback says so.
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/wayland_vblank/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/wayland_vblank/run.py
 
       - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
         shell: bash

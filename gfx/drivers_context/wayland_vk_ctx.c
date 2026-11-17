@@ -368,5 +368,12 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    NULL,
    NULL, /* create_surface */
    NULL  /* destroy_surface */,
-   gfx_ctx_wl_vk_presentable
+   gfx_ctx_wl_vk_presentable,
+   NULL, /* last_present_time */
+   NULL, /* release_current */
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL, /* shared_context_free */
+   NULL, /* windows */
+   gfx_ctx_wl_present_immediate_common
 };

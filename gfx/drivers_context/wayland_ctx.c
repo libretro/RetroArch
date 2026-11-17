@@ -791,10 +791,12 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
 #ifdef HAVE_EGL
    gfx_ctx_wl_shared_context_new,
    egl_shared_context_bind,
-   egl_shared_context_free
+   egl_shared_context_free,
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
 #endif
+   NULL, /* windows */
+   gfx_ctx_wl_present_immediate_common
 };

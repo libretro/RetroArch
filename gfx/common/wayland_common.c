@@ -455,8 +455,54 @@ static void shm_buffer_free(shm_buffer_t *buffer)
    free(buffer);
 }
 
+/* The kinds of connector by DRM_MODE_CONNECTOR_* value, as the
+ * kernel names them */
+static const char *const wl_connector_kinds[] = {
+   "Unknown", "VGA", "DVI-I", "DVI-D", "DVI-A", "Composite", "SVIDEO",
+   "LVDS", "Component", "DIN", "DP", "HDMI-A", "HDMI-B", "TV", "eDP",
+   "Virtual", "DSI", "DPI", "Writeback", "SPI", "USB"
+};
+
+unsigned gfx_ctx_wl_connector_code(const char *name)
+{
+   unsigned i;
+   unsigned number    = 0;
+   const char *dash   = name ? strrchr(name, '-') : NULL;
+   const char *digit  = dash ? dash + 1 : NULL;
+   size_t kind_len    = dash ? (size_t)(dash - name) : 0;
+   if (!kind_len || !*digit)
+      return 0;
+   for (; *digit; digit++)
+   {
+      if (*digit < '0' || *digit > '9' || number > 6553)
+         return 0;
+      number = number * 10 + (unsigned)(*digit - '0');
+   }
+   if (!number)
+      return 0;
+   for (i = 1; i < ARRAY_SIZE(wl_connector_kinds); i++)
+      if (     strlen(wl_connector_kinds[i]) == kind_len
+            && !memcmp(wl_connector_kinds[i], name, kind_len))
+         return (i << 16) | number;
+   /* either kind of HDMI: DRM_VBLANK_CONNECTOR_HDMI */
+   if (kind_len == 4 && !memcmp(name, "HDMI", 4))
+      return (0xffu << 16) | number;
+   return 0;
+}
+
+bool gfx_ctx_wl_present_immediate_common(void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return wl
+      && wl->tearing_control
+      && wl->swap_interval == 0
+      && !wl->suspended
+      && wl->present.tearing;
+}
+
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 {
+   gfx_ctx_wl_window_connector_set(0);
 #ifdef HAVE_XKBCOMMON
    free_xkb();
 #endif

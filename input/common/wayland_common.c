@@ -748,6 +748,8 @@ static output_info_t *wl_window_output;
 static void wl_report_window_output(gfx_ctx_wayland_data_t *wl)
 {
    wl_window_output = wl->current_output;
+   gfx_ctx_wl_window_connector_set(
+         wl->current_output ? wl->current_output->connector : 0);
    video_driver_set_window_refresh_rate(
          (wl->current_output && wl->current_output->refresh_rate > 0)
          ? (float)wl->current_output->refresh_rate / 1000.0f
@@ -926,7 +928,13 @@ static void wl_output_handle_done(void *data, struct wl_output *output) { }
 
 #ifdef WL_OUTPUT_NAME_SINCE_VERSION
 static void wl_output_handle_name(void *data,
-      struct wl_output *output, const char *name) { }
+      struct wl_output *output, const char *name)
+{
+   output_info_t *oi = (output_info_t*)data;
+   oi->connector     = gfx_ctx_wl_connector_code(name);
+   if (oi == wl_window_output)
+      gfx_ctx_wl_window_connector_set(oi->connector);
+}
 
 static void wl_output_handle_description(void *data,
       struct wl_output *output, const char *description) { }

@@ -198,6 +198,8 @@ typedef struct output_info
    /* The mode the output is running, packed. */
    unsigned dims;
    unsigned scale;
+   /* wl_output v4's name, as gfx_ctx_wl_connector_code() has it */
+   unsigned connector;
    char *make;
    char *model;
 } output_info_t;
@@ -462,6 +464,17 @@ extern const struct wl_touch_listener touch_listener;
 extern const struct wl_seat_listener seat_listener;
 
 extern const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener;
+
+/* A connector's name as compositors give it for a wl_output ("DP-2",
+ * "HDMI-A-1", Mutter's "HDMI-1"), as the kind and number DRM has for
+ * it (DRM_VBLANK_CONNECTOR_CODE); 0 for a name that is not one. */
+unsigned gfx_ctx_wl_connector_code(const char *name);
+
+/* The connector of the output the window is on, 0 for none or one
+ * with no name, for the display server's vblank clock, which keeps
+ * it. Set by the thread that runs the surface's events, read by any. */
+void gfx_ctx_wl_window_connector_set(unsigned code);
+unsigned gfx_ctx_wl_window_connector(void);
 
 extern const struct wl_surface_listener wl_surface_listener;
 

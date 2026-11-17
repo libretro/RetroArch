@@ -76,7 +76,7 @@ S_BOOL(video_threaded_pacing_vblank, VIDEO_THREADED_PACING_VBLANK,
       "video_threaded_pacing_vblank",
       DEFAULT_VIDEO_THREADED_PACING_VBLANK, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Display Pacing On VBlank Events",
-      "With Threaded Video Display Pacing, V-Sync off and fullscreen, release each core frame on the display's own vblank events instead of a timer. Applies where the display server has those events (Windows, KMS, X11) and the video driver's present tears rather than waits (Direct3D 11/12, Vulkan; OpenGL through DXGI, on KMS, or on X11 with no compositor); the timer paces everywhere else, and wherever the events stop or keep no fixed rate. The tear line then stays at one height. Off: the timer, as before.")
+      "With Threaded Video Display Pacing, V-Sync off and fullscreen, release each core frame on the display's own vblank events instead of a timer. Applies where the display server has those events (Windows, KMS, X11, Wayland) and the video driver's present tears rather than waits (Direct3D 11/12, Vulkan; OpenGL through DXGI, on KMS, or past the compositor); the timer paces elsewhere, and wherever the events stop or keep no fixed rate. The tear line then stays at one height. Off: the timer, as before.")
 S_BOOL(video_present_timing_from_display, VIDEO_PRESENT_TIMING_FROM_DISPLAY,
       "video_present_timing_from_display",
       DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,

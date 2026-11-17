@@ -70,6 +70,10 @@ bool gfx_ctx_wl_set_video_mode_common(gfx_ctx_wayland_data_t *wl,
 
 bool gfx_ctx_wl_has_focus(void *data);
 
+/* Whether a present with no swap interval tears: the compositor was
+ * asked to let it, and says the last one was not held for a vblank. */
+bool gfx_ctx_wl_present_immediate_common(void *data);
+
 void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
       void (*get_video_size)(void*, unsigned*), bool *quit,
       bool *resize, unsigned *dims);
