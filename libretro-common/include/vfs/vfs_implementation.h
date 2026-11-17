@@ -217,6 +217,23 @@ bool retro_vfs_file_volume_impl(libretro_vfs_implementation_file *stream,
 int retro_vfs_stat_volume_impl(const char *path, unsigned want,
       struct retro_vfs_volume *vol);
 
+/* fs-verity (Linux 5.4 on, Android 11 on): a file sealed for good, its
+ * contents checked by the kernel against a Merkle tree on every read.
+ * Descriptor streams only. */
+#define RETRO_VFS_VERITY_MAX 64
+
+/* The digest the kernel keeps for a sealed file into @digest (up to
+ * @cap octets): its length, or 0 where the file isn't sealed, @cap is
+ * too small or it can't be told. */
+size_t retro_vfs_file_verity_measure_impl(
+      libretro_vfs_implementation_file *stream, uint8_t *digest, size_t cap);
+
+/* Seal the file (SHA-256, 4 KiB blocks): 1 sealed, now or before; 0
+ * where it can't be here (filesystem, mount or kernel without it, a file
+ * not ours, or one open for writing somewhere); -1 failed otherwise. */
+int retro_vfs_file_verity_enable_impl(
+      libretro_vfs_implementation_file *stream);
+
 /* A stable open (RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE) that also
  * fills @id, from the query the open makes anyway to vouch for the file:
  * the identity as opened, without retro_vfs_file_identity_impl()'s own

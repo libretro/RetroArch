@@ -289,6 +289,7 @@ static void vfs_win32_warm_free(void *data);
 #include <sys/vfs.h>
 #include <sys/statvfs.h>
 #include <sys/syscall.h>
+#include <sys/ioctl.h>
 #define VFS_VOLUME_MAGIC 1
 #elif (defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) \
    || defined(__DragonFly__)) && !defined(ORBIS)
@@ -4628,6 +4629,100 @@ int retro_vfs_stat_volume_impl(const char *path, unsigned want,
 #else
    (void)want;
    return -1;
+#endif
+}
+
+#if defined(VFS_VOLUME_MAGIC)
+/* <linux/fsverity.h>'s, which older NDKs lack; the ioctl numbers carry
+ * their sizes */
+struct vfs_verity_enable
+{
+   uint32_t version;
+   uint32_t hash_algorithm;
+   uint32_t block_size;
+   uint32_t salt_size;
+   uint64_t salt_ptr;
+   uint32_t sig_size;
+   uint32_t reserved1;
+   uint64_t sig_ptr;
+   uint64_t reserved2[11];
+};
+struct vfs_verity_head   { uint16_t algorithm; uint16_t size; };
+struct vfs_verity_digest
+{
+   struct vfs_verity_head head;
+   uint8_t digest[RETRO_VFS_VERITY_MAX];
+};
+typedef char vfs_verity_enable_size[
+      sizeof(struct vfs_verity_enable) == 128 ? 1 : -1];
+typedef char vfs_verity_head_size[
+      sizeof(struct vfs_verity_head) == 4 ? 1 : -1];
+#define VFS_VERITY_SHA256         1
+#define VFS_FS_IOC_ENABLE_VERITY  _IOW('f', 133, struct vfs_verity_enable)
+#define VFS_FS_IOC_MEASURE_VERITY _IOWR('f', 134, struct vfs_verity_head)
+#endif
+
+size_t retro_vfs_file_verity_measure_impl(
+      libretro_vfs_implementation_file *stream, uint8_t *digest, size_t cap)
+{
+#if defined(VFS_VOLUME_MAGIC)
+   struct vfs_verity_digest d;
+   if (     !stream || !digest
+         || stream->scheme != VFS_SCHEME_NONE
+         || !(stream->hints & RFILE_HINT_UNBUFFERED)
+         || stream->fd < 0)
+      return 0;
+   memset(&d, 0, sizeof(d));
+   d.head.size = RETRO_VFS_VERITY_MAX;
+   if (     ioctl(stream->fd, VFS_FS_IOC_MEASURE_VERITY, &d) != 0
+         || !d.head.size
+         || d.head.size > RETRO_VFS_VERITY_MAX
+         || d.head.size > cap)
+      return 0;
+   memcpy(digest, d.digest, d.head.size);
+   return d.head.size;
+#else
+   (void)stream;
+   (void)digest;
+   (void)cap;
+   return 0;
+#endif
+}
+
+int retro_vfs_file_verity_enable_impl(
+      libretro_vfs_implementation_file *stream)
+{
+#if defined(VFS_VOLUME_MAGIC)
+   struct vfs_verity_enable arg;
+   if (     !stream
+         || stream->scheme != VFS_SCHEME_NONE
+         || !(stream->hints & RFILE_HINT_UNBUFFERED)
+         || stream->fd < 0)
+      return -1;
+   memset(&arg, 0, sizeof(arg));
+   arg.version        = 1;
+   arg.hash_algorithm = VFS_VERITY_SHA256;
+   arg.block_size     = 4096;
+   if (ioctl(stream->fd, VFS_FS_IOC_ENABLE_VERITY, &arg) == 0
+         || errno == EEXIST)
+      return 1;
+   switch (errno)
+   {
+      /* Not this filesystem, mount or kernel, not ours (Play's
+       * nativeLibraryDir), or open for writing somewhere */
+      case EOPNOTSUPP:
+      case ENOTTY:
+      case EROFS:
+      case EACCES:
+      case EPERM:
+      case ETXTBSY:
+         return 0;
+      default:
+         break;
+   }
+   return -1;
+#else
+   return stream ? 0 : -1;
 #endif
 }
 
