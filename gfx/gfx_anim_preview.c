@@ -48,7 +48,8 @@
  * it through the audio mixer while the animation is shown. */
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
 #define GFX_ANIM_PREVIEW_AUDIO 1
 #include <audio/audio_mixer.h>
 #include <formats/audio.h>
@@ -226,6 +227,9 @@ static void gfx_anim_preview_audio_catalog(gfx_anim_preview_t *p)
 #endif
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_RVORBIS)
          if (info.codec == VIDEO_AUDIO_VORBIS) track->supported = true;
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RFLAC)
+         if (info.codec == VIDEO_AUDIO_FLAC) track->supported = true;
 #endif
       }
    }
@@ -888,7 +892,7 @@ static gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_track(
    a->mixer_type = p->type == IMAGE_TYPE_WEBM
       ? AUDIO_MIXER_TYPE_WEBA : AUDIO_MIXER_TYPE_M4A;
    if (a->type != AUDIO_TYPE_AAC && a->type != AUDIO_TYPE_OPUS
-         && a->type != AUDIO_TYPE_VORBIS) goto failed;
+         && a->type != AUDIO_TYPE_VORBIS && a->type != AUDIO_TYPE_FLAC) goto failed;
    a->sound = a->mixer_type == AUDIO_MIXER_TYPE_WEBA
       ? audio_mixer_load_weba_track((void*)base, len, initial_hi, track)
       : audio_mixer_load_m4a_track((void*)base, len, track);
@@ -956,7 +960,7 @@ int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
    if (hi > len) hi = len;
    if (!data_transfer_window_extend(a->window->dt, hi)
          || !data_transfer_window_feed_budget(a->window->dt, anchor,
-            ahead, GFX_ANIM_PREVIEW_AUDIO_MARGIN,
+            ahead, a->type == AUDIO_TYPE_FLAC ? 0 : GFX_ANIM_PREVIEW_AUDIO_MARGIN,
             GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET, &res_hi))
       return -1;
    a->hi = res_hi;

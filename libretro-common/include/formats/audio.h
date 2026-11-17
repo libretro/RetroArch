@@ -351,16 +351,17 @@ bool  audio_transfer_seek(void *data, enum audio_type_enum type,
  * Targets use container movie frames, including gaps and the declared tail.
  * AAC maps <=256 sample-table timestamps per metadata slice, then selects
  * indexed preroll without reading media bytes. WebM steps header mapping
- * and decoder preroll separately. Step decodes at most one access unit or
- * examines <=256 packet/sample headers: -1 failure, 0 retry (including input
+ * and decoder preroll separately; FLAC discards at most one coded frame.
+ * Step decodes at most one access unit or examines <=256 packet/sample
+ * headers: -1 failure, 0 retry (including input
  * starvation), 1 positioned for the next read. Feed buffer_tell before
  * retrying a resident wall. A new successful begin replaces the request.
  * Do not interleave reads or legacy seek with an unfinished request.
  * Failure to begin leaves the previous request/decoder untouched. */
 bool audio_transfer_seek_begin(void *data, enum audio_type_enum type,
       uint64_t frame);
-/* Select the WebM pending PCM format before preparation (AAC is format
- * independent). The default begin above prepares float PCM. */
+/* Select the WebM pending PCM format before preparation (AAC and FLAC
+ * are format independent). The default begin above prepares float PCM. */
 bool audio_transfer_seek_begin_format(void *data, enum audio_type_enum type,
       uint64_t frame, bool s16);
 

@@ -1782,6 +1782,9 @@ static void audio_mixer_feed_publish(audio_mixer_voice_t *voice)
 #ifdef HAVE_RAAC
       case AUDIO_MIXER_TYPE_M4A: type = AUDIO_TYPE_AAC; break;
 #endif
+#ifdef HAVE_RFLAC
+      case AUDIO_MIXER_TYPE_FLAC: type = AUDIO_TYPE_FLAC; break;
+#endif
       default: break;
    }
    if (type != AUDIO_TYPE_NONE)

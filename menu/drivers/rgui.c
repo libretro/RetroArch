@@ -3173,7 +3173,8 @@ static bool rgui_media_seek(void *user, int64_t target_us, int64_t now)
    if (!rgui->media_player)
       return gfx_thumbnail_seek(&rgui->media_gpu, target_us, now);
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
    if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
       audio_driver_mixer_prepare_format(&rate, &s16);
 #endif
@@ -3194,7 +3195,8 @@ static bool rgui_media_audio(void *user, int index, int64_t now)
    bool s16 = false;
    if (!rgui->media_player) return gfx_thumbnail_select_audio(&rgui->media_gpu, index, now);
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
    if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
       audio_driver_mixer_prepare_format(&rate, &s16);
 #endif

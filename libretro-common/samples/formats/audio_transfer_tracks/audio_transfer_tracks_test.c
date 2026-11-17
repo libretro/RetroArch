@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <formats/audio.h>
+#include <formats/rwebm.h>
 static float pcm[512];
 static size_t tone(void *decoder, enum audio_type_enum type, unsigned wanted)
 {
@@ -116,6 +117,58 @@ static void fixture(const char *path, enum audio_type_enum type)
    free(data);
    printf("PASS selected container audio, tones, seek and invalid choices: %s\n", path);
 }
+static void flac_bounded_seek(void)
+{
+   size_t length, full, remaining, wall;
+   rwebm_t *demux;
+   rwebm_packet packet;
+   uint8_t *data = load("fixtures/flac.bin", &length);
+   void *decoder = audio_transfer_new(AUDIO_TYPE_FLAC);
+   unsigned steps;
+   int result = 0;
+   assert(decoder);
+   demux = rwebm_open_memory(data, length);
+   assert(demux && rwebm_read_packet_track(demux, 2, &packet) == 1
+         && packet.track == 2 && packet.size > 1);
+   wall = (size_t)(packet.data - data) + packet.size - 1;
+   rwebm_close(demux);
+   audio_transfer_set_buffer_ptr(decoder, AUDIO_TYPE_FLAC, data, length);
+   assert(audio_transfer_set_container_track(decoder, AUDIO_TYPE_FLAC, 2));
+   assert(audio_transfer_start(decoder, AUDIO_TYPE_FLAC));
+   full = tone(decoder, AUDIO_TYPE_FLAC, 1);
+   assert(audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, 5000));
+   assert(audio_transfer_seek_begin_format(decoder, AUDIO_TYPE_FLAC, 2400, true));
+   assert(!audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, (uint64_t)-1));
+   audio_transfer_set_avail(decoder, AUDIO_TYPE_FLAC, wall);
+   for (steps = 0; steps < 8; steps++)
+      assert(!audio_transfer_seek_step(decoder, AUDIO_TYPE_FLAC));
+   assert(audio_transfer_buffer_tell(decoder, AUDIO_TYPE_FLAC) > 0
+         && audio_transfer_buffer_read_end(decoder, AUDIO_TYPE_FLAC)
+            > audio_transfer_buffer_tell(decoder, AUDIO_TYPE_FLAC));
+   audio_transfer_set_avail(decoder, AUDIO_TYPE_FLAC, length);
+   for (steps = 0; steps < 256 && !result; steps++)
+      result = audio_transfer_seek_step(decoder, AUDIO_TYPE_FLAC);
+   assert(result == 1 && steps > 1 && steps < 256);
+   assert(audio_transfer_seek_step(decoder, AUDIO_TYPE_FLAC) == -1);
+   remaining = tone(decoder, AUDIO_TYPE_FLAC, 1);
+   assert(remaining + 2400 == full);
+   assert(audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, 0));
+   assert(audio_transfer_seek_step(decoder, AUDIO_TYPE_FLAC) == 1);
+   audio_transfer_set_avail(decoder, AUDIO_TYPE_FLAC, length);
+   assert(tone(decoder, AUDIO_TYPE_FLAC, 1) == full);
+   assert(!audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, full + 1));
+   assert(audio_transfer_seek_begin(decoder, AUDIO_TYPE_FLAC, full));
+   audio_transfer_set_avail(decoder, AUDIO_TYPE_FLAC, length);
+   result = 0;
+   for (steps = 0; steps < 256 && !result; steps++)
+      result = audio_transfer_seek_step(decoder, AUDIO_TYPE_FLAC);
+   assert(result == 1 && steps < 256);
+   assert(audio_transfer_read_f32(decoder, AUDIO_TYPE_FLAC, pcm, 512, &remaining)
+         == AUDIO_PROCESS_END && !remaining);
+   audio_transfer_free(decoder, AUDIO_TYPE_FLAC);
+   free(data);
+   puts("PASS bounded FLAC seek, replacement, resident wall, rejection, EOF and rewind");
+}
 static void mixed(void)
 {
    static const enum audio_type_enum types[] = {
@@ -160,6 +213,7 @@ int main(void)
    fixture("fixtures/opus.bin", AUDIO_TYPE_OPUS);
    fixture("fixtures/vorbis.bin", AUDIO_TYPE_VORBIS);
    fixture("fixtures/flac.bin", AUDIO_TYPE_FLAC);
+   flac_bounded_seek();
    mixed();
    return 0;
 }

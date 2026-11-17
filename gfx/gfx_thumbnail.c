@@ -47,7 +47,8 @@
 
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
 #ifdef HAVE_RWEBM
 #include <formats/rwebm_audio.h>
 #endif
@@ -464,7 +465,8 @@ static void gfx_thumbnail_init_fade(
  * it through the audio mixer while the animation is shown. */
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
 #define GFX_THUMB_PREVIEW_AUDIO 1
 /* The mixer streams the audio track and decodes on the flush, so no
  * PCM is buffered up front and the clip is not length-capped. */

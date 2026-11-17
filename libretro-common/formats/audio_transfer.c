@@ -615,6 +615,8 @@ struct audio_transfer_flac
     * with a mid-file rewind, and a second stall with releasing the
     * voice entirely. */
    uint8_t        wall;
+   uint8_t        seek_pending;
+   uint64_t       seek_remaining;
 };
 #endif
 
@@ -3629,6 +3631,8 @@ static int audio_transfer_flac_next(struct audio_transfer_flac *fl)
    if (fl->demux)
    {
       rwebm_packet pkt;
+      fl->cur = NULL;
+      fl->cur_len = 0;
       for (;;)
       {
          int r = rwebm_read_packet_track(fl->demux, fl->track_idx, &pkt);
@@ -4223,19 +4227,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             }
          }
 #ifdef HAVE_RWEBM
-         /* Matroska carrying A_FLAC.  Unlike the Vorbis and Opus
-          * containers, nothing has to be synthesised here: the
-          * CodecPrivate is a whole fLaC header, magic and metadata
-          * blocks, and every block is one raw frame, so the native
-          * stream rflac wants is those laid end to end.  What comes
-          * out is a real FLAC stream rather than a stand-in - the
-          * STREAMINFO states the exact length, and seeking and
-          * buffer_tell work on it as they do on a .flac file.
-          *
-          * The cost is a second copy of the audio, held for the life
-          * of the decoder; this is the only arm that keeps one.  The
-          * alternative is a packet entry point in rflac, which is the
-          * right fix and a larger one. */
+         /* Matroska lends CodecPrivate as the native header, then one
+          * borrowed FLAC frame per block. */
          if (fl->data && fl->size >= 4
                && ((const uint8_t*)fl->data)[0] == 0x1A
                && ((const uint8_t*)fl->data)[1] == 0x45
@@ -6496,6 +6489,29 @@ static void audio_transfer_vorbis_to_head(struct audio_transfer_vorbis *v);
 bool audio_transfer_seek_begin_format(void *data, enum audio_type_enum type,
       uint64_t frame, bool s16)
 {
+#ifdef HAVE_RFLAC
+   if (type == AUDIO_TYPE_FLAC)
+   {
+      struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
+      uint64_t total;
+      if (!fl || !fl->handle || frame > ((~(uint64_t)0) >> 1))
+         return false;
+      total = rflac_total_frames(fl->handle);
+      if ((total && frame > total) || !audio_transfer_flac_seek_to(fl, 0))
+         return false;
+#ifdef HAVE_RWEBM
+      if (fl->demux && fl->avail)
+      {
+         fl->avail = 1;
+         rwebm_set_avail(fl->demux, 1);
+      }
+#endif
+      fl->wall = 0;
+      fl->seek_remaining = frame;
+      fl->seek_pending = 1;
+      return true;
+   }
+#endif
 #if defined(HAVE_RVORBIS) && defined(HAVE_RWEBM)
    if (type == AUDIO_TYPE_VORBIS)
    {
@@ -6581,6 +6597,43 @@ bool audio_transfer_seek_begin(void *data, enum audio_type_enum type,
 
 int audio_transfer_seek_step(void *data, enum audio_type_enum type)
 {
+#ifdef HAVE_RFLAC
+   if (type == AUDIO_TYPE_FLAC)
+   {
+      struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
+      size_t read = 0, wrote = 0, want;
+      int result;
+      if (!fl || !fl->seek_pending) return -1;
+      if (!fl->seek_remaining)
+      {
+         fl->seek_pending = 0;
+         return 1;
+      }
+      want = fl->seek_remaining > (size_t)-1
+         ? (size_t)-1 : (size_t)fl->seek_remaining;
+      rflac_set_out_discard(fl->handle, want);
+      result = rflac_process(fl->handle, &read, &wrote);
+      fl->cursor += read;
+      fl->seek_remaining -= wrote;
+      if (!fl->seek_remaining)
+      {
+         fl->seek_pending = 0;
+         return 1;
+      }
+      if (result == RFLAC_PROCESS_ERROR || result == RFLAC_PROCESS_END)
+         goto flac_failed;
+      if (!wrote)
+      {
+         fl->wall = 0;
+         if (!audio_transfer_flac_feed(fl) && !fl->wall)
+            goto flac_failed;
+      }
+      return 0;
+flac_failed:
+      fl->seek_pending = 0;
+      return -1;
+   }
+#endif
 #if defined(HAVE_RVORBIS) && defined(HAVE_RWEBM)
    if (type == AUDIO_TYPE_VORBIS)
    {
@@ -7425,6 +7478,11 @@ size_t audio_transfer_buffer_read_end(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_WMA:
          return rwma_stream_read_end(((struct audio_transfer_wma*)data)->stream);
 #endif
+#if defined(HAVE_RWEBM) && defined(HAVE_RFLAC)
+      case AUDIO_TYPE_FLAC:
+         rwebm_read_span(((struct audio_transfer_flac*)data)->demux, &lo, &hi);
+         break;
+#endif
 #if defined(HAVE_RWEBM) && defined(HAVE_ROPUS)
       case AUDIO_TYPE_OPUS:
          rwebm_read_span(((struct audio_transfer_opus*)data)->demux, &lo, &hi);
@@ -7520,11 +7578,15 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
                (struct audio_transfer_flac*)data;
          if (!fl->handle)
             return 0;
-         /* One answer for every arm now.  The decoder reads nothing for
-          * itself, so what it has consumed is exactly what this side
-          * handed over, counted as it went.  The three per-arm cursors
-          * this replaced existed only because a pulling decoder cannot
-          * be asked where it is. */
+#ifdef HAVE_RWEBM
+         if (fl->demux)
+         {
+            /* The decoder borrows the current packet until its next feed. */
+            if (fl->cur)
+               return (size_t)(fl->cur - (const uint8_t*)fl->data);
+            return rwebm_tell(fl->demux);
+         }
+#endif
          return fl->cursor;
       }
 #endif

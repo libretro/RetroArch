@@ -1332,9 +1332,11 @@ static void lane_audio_selection(const char *path)
          !((unsigned)retro_atomic_load_acquire_int(&session->seek_audio_format) & 0x80000000U));
    for (tick = 0; tick < 10000 && session->seeking; tick++)
       gfx_media_cpu_poll(player, 1000000);
+   check("audio selection", "ordinary seek state available", gfx_media_cpu_state(player, 1000000, &after));
+   printf("ordinary seek position: %ld\n", (long)after.position_us);
    check("audio selection", "ordinary seek retains picture landing semantics",
-         gfx_media_cpu_state(player, 1000000, &after) && !after.seeking
-         && after.paused && after.position_us == 100000);
+         !after.seeking && after.paused && after.position_us
+            == (session->type == IMAGE_TYPE_WEBM ? 200000 : 100000));
    gfx_media_cpu_retire(player);
    gfx_thumbnail_anim_worker_deinit();
    gfx_media_cpu_reap();

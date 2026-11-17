@@ -314,6 +314,9 @@ jobs:
         run: |
           set -eu
           cp libretro-common/samples/formats/audio_transfer_tracks/fixtures/aac-mp4.bin samples/menu/rgui_media/audio-tracks.mp4
-          for driver in rgui ozone materialui xmb; do
-            MEDIA_TEST_AUDIO_TRACKS=1 python3 samples/menu/rgui_media/run.py --driver "$driver" samples/menu/rgui_media/audio-tracks.mp4
+          cp libretro-common/samples/formats/audio_transfer_tracks/fixtures/flac.bin samples/menu/rgui_media/audio-tracks.webm
+          for movie in samples/menu/rgui_media/audio-tracks.mp4 samples/menu/rgui_media/audio-tracks.webm; do
+            for driver in rgui ozone materialui xmb; do
+              MEDIA_TEST_AUDIO_TRACKS=1 python3 samples/menu/rgui_media/run.py --driver "$driver" "$movie"
+            done
           done
