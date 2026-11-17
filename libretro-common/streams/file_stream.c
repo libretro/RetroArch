@@ -199,6 +199,17 @@ static retro_vfs_copy_step_t  filestream_copy_step_cb  = NULL;
 static retro_vfs_copy_close_t filestream_copy_close_cb = NULL;
 static retro_vfs_read_at_t  filestream_read_at_cb  = NULL;
 static retro_vfs_write_at_t filestream_write_at_cb = NULL;
+/* VFS API v7. NULL where a frontend before it owns the files: each
+ * wrapper then answers "can't be told" rather than run the local _impl
+ * behind the frontend's back. */
+static retro_vfs_view_t           filestream_view_cb           = NULL;
+static retro_vfs_map_t            filestream_map_cb            = NULL;
+static retro_vfs_identity_t       filestream_identity_cb       = NULL;
+static retro_vfs_stat_identity_t  filestream_stat_identity_cb  = NULL;
+static retro_vfs_volume_t         filestream_volume_cb         = NULL;
+static retro_vfs_stat_volume_t    filestream_stat_volume_cb    = NULL;
+static retro_vfs_verity_measure_t filestream_verity_measure_cb = NULL;
+static retro_vfs_verity_enable_t  filestream_verity_enable_cb  = NULL;
 static bool filestream_copy_unavailable                = false;
 
 /* VFS Initialization */
@@ -225,6 +236,14 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_copy_close_cb = NULL;
    filestream_read_at_cb    = NULL;
    filestream_write_at_cb   = NULL;
+   filestream_view_cb           = NULL;
+   filestream_map_cb            = NULL;
+   filestream_identity_cb       = NULL;
+   filestream_stat_identity_cb  = NULL;
+   filestream_volume_cb         = NULL;
+   filestream_stat_volume_cb    = NULL;
+   filestream_verity_measure_cb = NULL;
+   filestream_verity_enable_cb  = NULL;
    filestream_copy_unavailable = false;
 
    if (
@@ -261,6 +280,19 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    {
       filestream_read_at_cb  = vfs_iface->read_at;
       filestream_write_at_cb = vfs_iface->write_at;
+   }
+
+   /* v7: lent reads, mappings, identity, volume, fs-verity */
+   if (vfs_info->required_interface_version >= 7)
+   {
+      filestream_view_cb           = vfs_iface->view;
+      filestream_map_cb            = vfs_iface->map;
+      filestream_identity_cb       = vfs_iface->identity;
+      filestream_stat_identity_cb  = vfs_iface->stat_identity;
+      filestream_volume_cb         = vfs_iface->volume;
+      filestream_stat_volume_cb    = vfs_iface->stat_volume;
+      filestream_verity_measure_cb = vfs_iface->verity_measure;
+      filestream_verity_enable_cb  = vfs_iface->verity_enable;
    }
 }
 
@@ -1983,7 +2015,15 @@ int64_t filestream_view(RFILE *stream, int64_t len, const uint8_t **ptr)
       /* a frontend's mapping, which starts at the start of the file */
       int64_t        mlen = 0;
       int64_t        pos;
-      const uint8_t *map  = filestream_mapped_ptr_cb
+      const uint8_t *map;
+      /* v7: the frontend lends them itself */
+      if (filestream_view_cb)
+      {
+         int64_t got = filestream_view_cb(stream->hfile, (uint64_t)len, ptr);
+         if (got >= 0 || !filestream_mapped_ptr_cb)
+            return got;
+      }
+      map = filestream_mapped_ptr_cb
          ? filestream_mapped_ptr_cb(stream->hfile, &mlen) : NULL;
       if (!map || (pos = filestream_raw_tell(stream)) < 0 || pos >= mlen)
          return -1;
@@ -2027,6 +2067,93 @@ int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
       stream->err_flag = true;
 
    return output;
+}
+
+const uint8_t *filestream_map(RFILE *stream, int64_t *len)
+{
+   if (len)
+      *len = 0;
+   if (!stream)
+      return NULL;
+   if (filestream_read_cb)
+      return filestream_map_cb ? filestream_map_cb(stream->hfile, len) : NULL;
+   return retro_vfs_file_map_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, len);
+}
+
+bool filestream_identity(RFILE *stream, struct retro_vfs_file_identity *id)
+{
+   if (!id)
+      return false;
+   memset(id, 0, sizeof(*id));
+   if (!stream)
+      return false;
+   if (filestream_read_cb)
+      return filestream_identity_cb
+         && filestream_identity_cb(stream->hfile, id);
+   return retro_vfs_file_identity_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, id);
+}
+
+int filestream_stat_identity(const char *path,
+      struct retro_vfs_file_identity *id)
+{
+   if (!id)
+      return -1;
+   memset(id, 0, sizeof(*id));
+   if (filestream_read_cb)
+      return filestream_stat_identity_cb
+         ? filestream_stat_identity_cb(path, id) : -1;
+   return retro_vfs_stat_identity_impl(path, id);
+}
+
+bool filestream_volume(RFILE *stream, unsigned want,
+      struct retro_vfs_volume *vol)
+{
+   if (!vol)
+      return false;
+   memset(vol, 0, sizeof(*vol));
+   if (!stream)
+      return false;
+   if (filestream_read_cb)
+      return filestream_volume_cb
+         && filestream_volume_cb(stream->hfile, want, vol);
+   return retro_vfs_file_volume_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, want, vol);
+}
+
+int filestream_stat_volume(const char *path, unsigned want,
+      struct retro_vfs_volume *vol)
+{
+   if (!vol)
+      return -1;
+   memset(vol, 0, sizeof(*vol));
+   if (filestream_read_cb)
+      return filestream_stat_volume_cb
+         ? filestream_stat_volume_cb(path, want, vol) : -1;
+   return retro_vfs_stat_volume_impl(path, want, vol);
+}
+
+size_t filestream_verity_measure(RFILE *stream, uint8_t *digest, size_t cap)
+{
+   if (!stream || !digest)
+      return 0;
+   if (filestream_read_cb)
+      return filestream_verity_measure_cb
+         ? filestream_verity_measure_cb(stream->hfile, digest, cap) : 0;
+   return retro_vfs_file_verity_measure_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, digest, cap);
+}
+
+int filestream_verity_enable(RFILE *stream)
+{
+   if (!stream)
+      return -1;
+   if (filestream_read_cb)
+      return filestream_verity_enable_cb
+         ? filestream_verity_enable_cb(stream->hfile) : 0;
+   return retro_vfs_file_verity_enable_impl(
+         (libretro_vfs_implementation_file*)stream->hfile);
 }
 
 int64_t filestream_read_at(RFILE *stream, void *data, int64_t len,

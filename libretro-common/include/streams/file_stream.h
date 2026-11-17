@@ -593,6 +593,29 @@ const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len);
  */
 int64_t filestream_view(RFILE *stream, int64_t len, const uint8_t **ptr);
 
+/**
+ * The whole file mapped read-only, on demand: retro_vfs_map_t's contract,
+ * and its warning (map only a file nothing else changes, on a fixed
+ * drive). The stream owns the mapping; NULL where it can't be mapped,
+ * including under a frontend before VFS API v7: the caller then reads.
+ **/
+const uint8_t *filestream_map(RFILE *stream, int64_t *len);
+
+/* VFS API v7's file facts, by stream or by path: retro_vfs_identity_t,
+ * retro_vfs_stat_identity_t, retro_vfs_volume_t, retro_vfs_stat_volume_t,
+ * retro_vfs_verity_measure_t and retro_vfs_verity_enable_t, with their
+ * answers. Under a frontend before v7 each says it can't be told (false,
+ * -1, 0, 0). */
+bool filestream_identity(RFILE *stream, struct retro_vfs_file_identity *id);
+int filestream_stat_identity(const char *path,
+      struct retro_vfs_file_identity *id);
+bool filestream_volume(RFILE *stream, unsigned want,
+      struct retro_vfs_volume *vol);
+int filestream_stat_volume(const char *path, unsigned want,
+      struct retro_vfs_volume *vol);
+size_t filestream_verity_measure(RFILE *stream, uint8_t *digest, size_t cap);
+int filestream_verity_enable(RFILE *stream);
+
 typedef const uint8_t *(*filestream_mapped_ptr_cb_t)(void *hfile, int64_t *len);
 void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb);
 
