@@ -1258,12 +1258,14 @@ size_t menu_entries_get_title(char *s, size_t len)
    const file_list_t *list    = menu_st->entries.list
       ? MENU_LIST_GET(menu_st->entries.list, 0)
       : NULL;
-   menu_file_list_cbs_t *cbs  = list
+   /* The stack is there but empty until the first list is pushed: a
+    * menu driver drawing its first frame before then has no title */
+   menu_file_list_cbs_t *cbs  = (list && list->size)
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
       : NULL;
    if (cbs && cbs->action_get_title)
    {
-      const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
+      const char *label       = list->list[list->size - 1].label;
 
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
@@ -1322,7 +1324,8 @@ size_t menu_entries_get_title(char *s, size_t len)
 static void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 {
    const file_list_t *list          = MENU_LIST_GET(menu_st->entries.list, 0);
-   const char *label                = list->list[list->size - 1].label;
+   const char *label                = (list && list->size)
+      ? list->list[list->size - 1].label : NULL;
 
 #ifdef HAVE_AUDIOMIXER
    /* Determine whether this is a help or info
@@ -2868,8 +2871,9 @@ static void menu_cbs_init(
    const char *menu_lbl           = NULL;
    file_list_t *menu_list         = MENU_LIST_GET(menu_st->entries.list, 0);
 #ifdef DEBUG_LOG
-   menu_file_list_cbs_t *menu_cbs = (menu_file_list_cbs_t*)
-      menu_list->list[list->size - 1].actiondata;
+   menu_file_list_cbs_t *menu_cbs = (menu_list && menu_list->size)
+      ? (menu_file_list_cbs_t*)menu_list->list[menu_list->size - 1].actiondata
+      : NULL;
    enum msg_hash_enums enum_idx   = menu_cbs ? menu_cbs->enum_idx : MSG_UNKNOWN;
 #endif
 
@@ -4588,7 +4592,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
          *entry_idx = list->list[list->size - 1].entry_idx;
    }
 
-   if (enum_idx)
+   if (enum_idx && list && list->size)
    {
       menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
          list->list[list->size - 1].actiondata;
