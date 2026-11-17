@@ -4706,7 +4706,7 @@ const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
 /* GetFileAttributesEx rather than GetFileAttributes: same availability
  * (Win98/NT4+), and it also hands back the last-write FILETIME, which
  * unlike the CRT's st_mtime can represent dates before 1970. */
-static int vfs_stat_win32_ansi(const char *path,
+static int vfs_stat_win32_ansi(const char *path, size_t trim,
       struct _stat64 *stat_buf, DWORD *file_info, FILETIME *mtime_ft)
 {
    WIN32_FILE_ATTRIBUTE_DATA ad;
@@ -4714,6 +4714,17 @@ static int vfs_stat_win32_ansi(const char *path,
 
    if (!path_local)
       return 0;
+
+   if (trim)
+   {
+      size_t length = strlen(path_local);
+      if (length < trim)
+      {
+         free(path_local);
+         return 0;
+      }
+      path_local[length - trim] = 0;
+   }
 
    if (!GetFileAttributesExA(path_local, GetFileExInfoStandard, &ad))
    {
@@ -4739,7 +4750,7 @@ static int vfs_stat_win32_ansi(const char *path,
 #endif
 
 #if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
-static int vfs_stat_win32_wide(const char *path,
+static int vfs_stat_win32_wide(const char *path, size_t trim,
       struct _stat64 *stat_buf, DWORD *file_info, FILETIME *mtime_ft)
 {
    WIN32_FILE_ATTRIBUTE_DATA ad;
@@ -4747,6 +4758,17 @@ static int vfs_stat_win32_wide(const char *path,
 
    if (!path_wide)
       return 0;
+
+   if (trim)
+   {
+      size_t length = wcslen(path_wide);
+      if (length < trim)
+      {
+         free(path_wide);
+         return 0;
+      }
+      path_wide[length - trim] = 0;
+   }
 
    if (!GetFileAttributesExW(path_wide, GetFileExInfoStandard, &ad))
    {
@@ -4851,41 +4873,40 @@ static int retro_vfs_stat_full(const char *path, int64_t *size, int64_t *mtime)
        * with a trailing backslash */
       struct _stat64 stat_buf;
       FILETIME       mtime_ft;
-      char path_buf[PATH_MAX_LENGTH];
-      const char *stat_path = path;
       DWORD file_info;
-      size_t _len = strlcpy(path_buf, path, sizeof(path_buf));
+      size_t length = strlen(path);
+      size_t end = length;
 
-      if (_len > 0 && _len < sizeof(path_buf))
+      if (length < PATH_MAX_LENGTH)
       {
-         while (_len > 0 && 
-               (path_buf[_len - 1] == '\\' || path_buf[_len - 1] == '/'))
+         while (end > 0 && (path[end - 1] == '\\' || path[end - 1] == '/'))
          {
-            /* Keep drive roots like "C:\" intact */
-            if (_len == 3 &&
-                  ((((path_buf[0] >= 'A') && (path_buf[0] <= 'Z')) ||
-                    ((path_buf[0] >= 'a') && (path_buf[0] <= 'z'))) &&
-                   path_buf[1] == ':' && path_buf[2] == '\\'))
+            /* Keep drive roots intact. */
+            if (end == 3 &&
+                  ((((path[0] >= 'A') && (path[0] <= 'Z')) ||
+                    ((path[0] >= 'a') && (path[0] <= 'z'))) &&
+                   path[1] == ':' && path[2] == '\\'))
                break;
-
-            path_buf[--_len] = '\0';
+            end--;
          }
-
-         stat_path = path_buf;
       }
+      if (!end)
+         return 0;
+      /* Trim the owned converted path, not a second UTF-8 staging copy.
+       * Count separators before conversion: a DBCS trail byte may be 0x5c. */
 #if defined(LEGACY_WIN32_RUNTIME)
       if (win32_needs_local_encoding())
       {
-         if (!vfs_stat_win32_ansi(stat_path, &stat_buf, &file_info, &mtime_ft))
+         if (!vfs_stat_win32_ansi(path, length - end, &stat_buf, &file_info, &mtime_ft))
             return 0;
       }
-      else if (!vfs_stat_win32_wide(stat_path, &stat_buf, &file_info, &mtime_ft))
+      else if (!vfs_stat_win32_wide(path, length - end, &stat_buf, &file_info, &mtime_ft))
          return 0;
 #elif defined(LEGACY_WIN32)
-      if (!vfs_stat_win32_ansi(stat_path, &stat_buf, &file_info, &mtime_ft))
+      if (!vfs_stat_win32_ansi(path, length - end, &stat_buf, &file_info, &mtime_ft))
          return 0;
 #else
-      if (!vfs_stat_win32_wide(stat_path, &stat_buf, &file_info, &mtime_ft))
+      if (!vfs_stat_win32_wide(path, length - end, &stat_buf, &file_info, &mtime_ft))
          return 0;
 #endif
 
