@@ -46,6 +46,19 @@ static int failures;
 #define RATE    48000
 #define LATENCY 64
 
+/* A crash under Wine run with WINEDEBUG=-all ends the process with no
+ * word at all: say what and where, and the case that was running. */
+static const char *running = "init";
+static LONG WINAPI crashed(EXCEPTION_POINTERS *ep)
+{
+   fprintf(stderr, "FAIL: exception 0x%08lx at %p in the %s case\n",
+         (unsigned long)ep->ExceptionRecord->ExceptionCode,
+         ep->ExceptionRecord->ExceptionAddress, running);
+   fflush(stderr);
+   fflush(stdout);
+   return EXCEPTION_EXECUTE_HANDLER;
+}
+
 int main(void)
 {
    static int16_t chunk[480 * 2];           /* 10 ms */
@@ -54,6 +67,8 @@ int main(void)
    size_t buffer, written_frames = 0, last_consumed = 0, consumed;
    DWORD t0, t1;
    void *wo;
+
+   SetUnhandledExceptionFilter(crashed);
 
    wo = audio_waveout.init(NULL, RATE, LATENCY, &new_rate);
    if (!wo)
@@ -182,15 +197,17 @@ int main(void)
 
    /* The block being filled, lent: whole frames, counted once published,
     * and a full block goes to the device. */
+   running = "lend";
    if ((wo = audio_waveout.init(NULL, RATE, LATENCY, &new_rate)))
    {
       void  *span = NULL;
-      size_t got, before;
+      size_t got, before, done_before;
       audio_waveout.set_nonblock_state(wo, true);
       for (n = 0; n < 40; n++)
       {
-         before = audio_waveout.write_avail(wo);
-         got    = audio_waveout.write_begin(wo, 4001, &span);
+         before      = audio_waveout.write_avail(wo);
+         done_before = ((waveout_t*)wo)->frames_done;
+         got         = audio_waveout.write_begin(wo, 4001, &span);
          if (!got)
             break;
          CHECK(span && !(got % 4) && got <= 4001,
@@ -198,7 +215,11 @@ int main(void)
          memset(span, 0, got);
          CHECK(audio_waveout.write_end(wo, got) == (ssize_t)got,
                "write_end did not take %u bytes", (unsigned)got);
-         CHECK(audio_waveout.write_avail(wo) <= before,
+         /* the lend takes its bytes; blocks the device handed back
+          * meanwhile give theirs */
+         CHECK(audio_waveout.write_avail(wo) + got <= before
+               + (((waveout_t*)wo)->frames_done - done_before)
+               * ((waveout_t*)wo)->frame_bytes,
                "room grew after a lend, %u to %u", (unsigned)before,
                (unsigned)audio_waveout.write_avail(wo));
       }
