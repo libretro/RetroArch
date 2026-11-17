@@ -407,10 +407,11 @@ static int32_t sdl_dingux_joypad_button(unsigned port, uint16_t joykey)
 {
    dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
 
-   if (port != 0)
+   /* the sixteen pad_state holds; past them a shift would wrap */
+   if (port != 0 || joykey >= 16)
       return 0;
 
-   return (joypad->pad_state & (1 << joykey));
+   return (joypad->pad_state >> joykey) & 1;
 }
 
 static void sdl_dingux_joypad_get_buttons(unsigned port, input_bits_t *state)
@@ -504,8 +505,8 @@ static int16_t sdl_dingux_joypad_state(
       const uint32_t joyaxis = joyaxes[i];
 #endif
 
-      if ((uint16_t)joykey != NO_BTN &&
-            (joypad->pad_state & (1 << (uint16_t)joykey)))
+      if ((uint16_t)joykey < 16 &&
+            ((joypad->pad_state >> (uint16_t)joykey) & 1))
          ret |= (1 << i);
 #if defined(SDL_DINGUX_HAS_ANALOG)
       else if (joyaxis != AXIS_NONE &&

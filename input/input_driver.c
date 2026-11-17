@@ -1098,12 +1098,35 @@ void input_driver_set_snapshot_bridge(bool on)
  *   LAST_KEYCODE. One hat, through button(); state() is the common
  *   loop.
  *
+ * - winmm (winmm_joypad.c, Windows' oldest joystick API). Its
+ *   get_buttons() hands over the thirty-two buttons button() reads;
+ *   its one hat answers through button(); state() is the common loop.
+ *
+ * - parport (parport_joypad.c, Linux). Its get_buttons() handed over
+ *   sixteen bits, and any port's; it hands over the thirteen buttons
+ *   button() reads, of the ports it reads. No axes; state() is the
+ *   common loop over the buttons alone, which is the same.
+ *
+ * - sdl (sdl1_joypad.c, SDL 1.2) and sdl_dingux (sdl_dingux_joypad.c,
+ *   OpenDingux). The first had no get_buttons(); it has one now, a
+ *   walk of the pad's buttons through the call button() makes, so
+ *   SDL is asked once a poll here too. The second's button() and
+ *   state() shifted by any bind, past the sixteen it keeps; they read
+ *   those sixteen now, as its get_buttons() hands over.
+ *
+ * - rwebpad (rwebpad_joypad.c, the web). Its get_buttons() set the
+ *   buttons down and left the rest as they were in what it was handed;
+ *   it clears them now. Its state() read the pad on the frontend's
+ *   port rather than the one asked for; button() and state() read no
+ *   further than the event holds.
+ *
  * - hid, with hidraw or WinUSB behind it: their handlers' state is
  *   what button(), axis() and get_buttons() answer, and they lend it.
  *   With a HID driver that does not lend, it is read directly.
  *
  * samples/input/joypad_bridge_checked holds udev, dinput, linuxraw,
- * sdl2, sdl3, android and the XInput-only driver to that: for random pads, binds
+ * sdl2, sdl3, android, winmm, parport, sdl, sdl_dingux, rwebpad and the
+ * XInput-only driver to that: for random pads, binds
  * and thresholds, what the bridge would make of the driver's answers
  * is what the driver's own state() says.
  *
@@ -1126,6 +1149,11 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
              || string_is_equal(drv->ident, "sdl2")
              || string_is_equal(drv->ident, "sdl3")
              || string_is_equal(drv->ident, "android")
+             || string_is_equal(drv->ident, "winmm")
+             || string_is_equal(drv->ident, "parport")
+             || string_is_equal(drv->ident, "sdl")
+             || string_is_equal(drv->ident, "sdl_dingux")
+             || string_is_equal(drv->ident, "rwebpad")
              /* HID's, where its HID driver lends its pads: the Mac's
               * does not, and its button() has pads its get_buttons()
               * does not */

@@ -373,17 +373,14 @@ static int16_t parport_joypad_state(
    return ret;
 }
 
+/* The buttons button() reads, and no more: a port it reads none of has
+ * none here */
 static void parport_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-	const struct parport_joypad *pad = (const struct parport_joypad*)
-      &parport_pads[port];
-
-	if (pad)
-   {
-		BITS_COPY16_PTR(state, pad->buttons);
-	}
-   else
-		BIT256_CLEAR_ALL_PTR(state);
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port < DEFAULT_MAX_PADS)
+      state->data[0] = parport_pads[port].buttons
+                     & ((UINT32_C(1) << PARPORT_NUM_BUTTONS) - 1);
 }
 
 static bool parport_joypad_query_pad(unsigned pad)

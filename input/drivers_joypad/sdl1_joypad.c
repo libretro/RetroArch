@@ -175,12 +175,32 @@ static int32_t sdl1_joypad_button_state(
 
 static int32_t sdl1_joypad_button(unsigned port, uint16_t joykey)
 {
-   sdl1_joypad_t *pad                   = (sdl1_joypad_t*)&sdl1_pads[port];
-   if (!pad || !pad->joypad)
-      return 0;
+   sdl1_joypad_t *pad;
    if (port >= MAX_USERS)
       return 0;
+   pad = &sdl1_pads[port];
+   if (!pad->joypad)
+      return 0;
    return sdl1_joypad_button_state(pad, port, joykey);
+}
+
+/* The buttons button() reads, all at once: a walk of the pad's buttons
+ * through the call button() makes, so the snapshot bridge asks SDL for
+ * each once a poll rather than every reader asking it again */
+static void sdl1_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned i, n;
+   const sdl1_joypad_t *pad;
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port >= MAX_USERS)
+      return;
+   pad = &sdl1_pads[port];
+   if (!pad->joypad)
+      return;
+   n = (pad->num_buttons < 256) ? pad->num_buttons : 256;
+   for (i = 0; i < n; i++)
+      if (SDL_JoystickGetButton(pad->joypad, i))
+         BIT256_SET_PTR(state, i);
 }
 
 static int16_t sdl1_joypad_axis_state(
@@ -210,9 +230,12 @@ static int16_t sdl1_joypad_axis_state(
 
 static int16_t sdl1_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   sdl1_joypad_t *pad = (sdl1_joypad_t*)&sdl1_pads[port];
-   if (!pad || !pad->joypad)
-      return false;
+   sdl1_joypad_t *pad;
+   if (port >= MAX_USERS)
+      return 0;
+   pad = &sdl1_pads[port];
+   if (!pad->joypad)
+      return 0;
    return sdl1_joypad_axis_state(pad, port, joyaxis);
 }
 
@@ -225,11 +248,12 @@ static int16_t sdl1_joypad_state(
    int i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
-   sdl1_joypad_t *pad                   = (sdl1_joypad_t*)&sdl1_pads[port_idx];
+   sdl1_joypad_t *pad;
 
-   if (!pad || !pad->joypad)
-      return 0;
    if (port_idx >= MAX_USERS)
+      return 0;
+   pad = &sdl1_pads[port_idx];
+   if (!pad->joypad)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -266,7 +290,7 @@ input_device_driver_t sdl1_joypad = {
    sdl1_joypad_destroy,
    sdl1_joypad_button,
    sdl1_joypad_state,
-   NULL,                   /* get_buttons */
+   sdl1_joypad_get_buttons,
    sdl1_joypad_axis,
    sdl1_joypad_poll,
    NULL,                   /* set_rumble */

@@ -112,46 +112,56 @@ static const char *rwebpad_joypad_name(unsigned port)
    return rwebpad_joypad_data->pads[port].id;
 }
 
-static int32_t rwebpad_joypad_button(unsigned port, uint16_t joykey)
+/* Whether button @joykey of the pad is down: one of the first
+ * numButtons the pad has, no more than the event holds */
+static INLINE bool rwebpad_joypad_button_down(
+      const EmscriptenGamepadEvent *gamepad_state, unsigned joykey)
 {
-   EmscriptenGamepadEvent gamepad_state;
-   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
-      return 0;
-   gamepad_state = rwebpad_joypad_data->pads[port];
-   if (joykey < gamepad_state.numButtons)
-      return gamepad_state.digitalButton[joykey];
-   return 0;
+   return    joykey < (unsigned)gamepad_state->numButtons
+          && joykey < ARRAY_SIZE(gamepad_state->digitalButton)
+          && gamepad_state->digitalButton[joykey];
 }
 
+static int32_t rwebpad_joypad_button(unsigned port, uint16_t joykey)
+{
+   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
+      return 0;
+   return rwebpad_joypad_button_down(&rwebpad_joypad_data->pads[port],
+         joykey);
+}
+
+/* The buttons button() reads, all at once, read where the poll put
+ * them; the rest clear, as a copy kept from the last poll is handed in */
 static void rwebpad_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-   EmscriptenGamepadEvent gamepad_state;
    unsigned i;
+   const EmscriptenGamepadEvent *gamepad_state;
+   BIT256_CLEAR_ALL_PTR(state);
    if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
-   {
-      BIT256_CLEAR_ALL_PTR(state);
       return;
-   }
-   gamepad_state = rwebpad_joypad_data->pads[port];
-   for (i = 0; i < gamepad_state.numButtons; i++)
-   {
-      if (gamepad_state.digitalButton[i])
+   gamepad_state = &rwebpad_joypad_data->pads[port];
+   for (i = 0; i < ARRAY_SIZE(gamepad_state->digitalButton); i++)
+      if (rwebpad_joypad_button_down(gamepad_state, i))
          BIT256_SET_PTR(state, i);
-   }
 }
 
 static int16_t rwebpad_joypad_axis_state(
-      EmscriptenGamepadEvent *gamepad_state,
+      const EmscriptenGamepadEvent *gamepad_state,
       unsigned port, uint32_t joyaxis)
 {
-   if (AXIS_NEG_GET(joyaxis) < gamepad_state->numAxes)
+   /* one of the first numAxes the pad has, no more than the event
+    * holds */
+   unsigned axes = (unsigned)gamepad_state->numAxes;
+   if (axes > ARRAY_SIZE(gamepad_state->axis))
+      axes = ARRAY_SIZE(gamepad_state->axis);
+   if (AXIS_NEG_GET(joyaxis) < axes)
    {
       int16_t val = CLAMPDOUBLE(
             gamepad_state->axis[AXIS_NEG_GET(joyaxis)]) * 0x7FFF;
       if (val < 0)
          return val;
    }
-   else if (AXIS_POS_GET(joyaxis) < gamepad_state->numAxes)
+   else if (AXIS_POS_GET(joyaxis) < axes)
    {
       int16_t val = CLAMPDOUBLE(
             gamepad_state->axis[AXIS_POS_GET(joyaxis)]) * 0x7FFF;
@@ -175,25 +185,24 @@ static int16_t rwebpad_joypad_state(
       unsigned port)
 {
    unsigned i;
-   EmscriptenGamepadEvent gamepad_state;
+   const EmscriptenGamepadEvent *gamepad_state;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
-   if (port_idx >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
+   if (port_idx >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port_idx])
       return 0;
-   gamepad_state = rwebpad_joypad_data->pads[port];
+   gamepad_state = &rwebpad_joypad_data->pads[port_idx];
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       const uint64_t joykey  = joykeys[i];
       const uint32_t joyaxis = joyaxes[i];
       if (
                (uint16_t)joykey != NO_BTN 
-            && (joykey < gamepad_state.numButtons)
-            && gamepad_state.digitalButton[(uint16_t)joykey]
+            && rwebpad_joypad_button_down(gamepad_state, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
             ((float)abs(rwebpad_joypad_axis_state(
-                  &gamepad_state, port_idx, joyaxis)) 
+                  gamepad_state, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
