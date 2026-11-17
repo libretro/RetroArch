@@ -93,7 +93,7 @@ static void test_keys(void)
    core_sig_key_id(k + (n - 1) * CORE_SIG_KEY_LEN, id);
    CHECK(!memcmp(id, test_key_id, sizeof(id)));
 #endif
-   /* p256_ecdh rejects a point off the curve */
+   /* Each key is a point on the curve: p256_ecdh accepts it */
    memset(one, 0, sizeof(one));
    one[sizeof(one) - 1] = 1;
    for (i = 0; i < 2; i++)

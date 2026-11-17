@@ -274,9 +274,10 @@ DEFINES += -DHAVE_VULKAN_CUSTOM_DRIVER
 endif
 
 # Play Store builds take their cores through Play; Quest passes
-# PLAY_STORE_BUILD=1 too but uses the buildbot.
+# PLAY_STORE_BUILD=1 too but uses the buildbot. Mirrors
+# play_feature_delivery_enabled().
 ifeq ($(PLAY_STORE_BUILD),1)
-   ifneq ($(HAVE_OPENXR),1)
+   ifneq ($(META_QUEST_BUILD),1)
       DEFINES += -DANDROID_PLAY_DELIVERY
    endif
 endif
