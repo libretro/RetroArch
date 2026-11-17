@@ -76,12 +76,22 @@ network_cmd_enable = "true"
 network_cmd_port = "{command_port}"
 ''')
     env = dict(os.environ, NATIVE_RECORD_RATE='48000', NATIVE_RECORD_LAYOUT='3')
+    pressure = None
+    if args.stall_seconds:
+        env['NATIVE_RECORD_NOISE'] = '1'
     with ExitStack() as stack, (root / 'receiver.log').open('wb') as receiver_log, log_path.open('wb') as log:
         server = subprocess.Popen([args.ffmpeg, '-v', 'error', '-listen', '1',
                                    '-timeout', '15', '-copyts', '-analyzeduration', '500000',
                                    '-i', url, '-map', '0', '-c', 'copy', '-f', 'flv', str(received)],
                                   stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                   stderr=receiver_log, creationflags=subprocess.CREATE_NO_WINDOW)
+        if args.stall_seconds:
+            from slow_peer import SlowPeer
+            from stream_faults import listening
+            wait_until(lambda: listening(server, stream_port), server)
+            slow = stack.enter_context(SlowPeer(stream_port))
+            config.write_text(config.read_text().replace(url,
+                              f'rtmp://127.0.0.1:{slow.port}/live/test'))
         if args.tls:
             relay = stack.enter_context(TlsRelay(root, stream_port, args.tls))
             tls_url = f'rtmps://localhost:{relay.port}/live/test'
@@ -115,6 +125,56 @@ network_cmd_port = "{command_port}"
 
                 wait_until(publishing, process, seconds=30)
                 time.sleep(2)
+                if args.stall_seconds:
+                    from slow_peer import frontend_handle, memory
+                    handle, close_handle = frontend_handle(process.pid, args.retroarch.name)
+                    stack.callback(close_handle)
+
+                    def current_frame():
+                        client.sendto(b'GET_OPTION frame_count\n', target)
+                        try:
+                            reply = client.recv(65536)
+                        except (socket.timeout, ConnectionResetError):
+                            return None
+                        return int(reply.split(b'\t')[1]) if reply.startswith(b'frame_count\t') else None
+
+                    first = [None]
+
+                    def frame_ready():
+                        first[0] = current_frame()
+                        return first[0] is not None
+
+                    wait_until(frame_ready, process)
+                    baseline = memory(handle)
+                    slow.pause.set()
+                    assert slow.paused.wait(1), 'relay pause was not acknowledged'
+                    time.sleep(.2)  # Let the bounded, already-read relay chunk finish.
+                    forwarded = slow.forwarded
+                    samples = []
+                    end = time.monotonic() + args.stall_seconds
+                    while time.monotonic() < end:
+                        assert process.poll() is None
+                        assert slow.error is None, slow.error
+                        samples.append(dict(memory(handle), frame=current_frame()))
+                        time.sleep(.1)
+                    assert slow.forwarded == forwarded, 'paused relay consumed media'
+                    latest = next(row['frame'] for row in reversed(samples) if row['frame'] is not None)
+                    assert latest - first[0] >= args.stall_seconds * 30, samples
+                    for field in ('private', 'working_set'):
+                        assert max(row[field] for row in samples) - baseline[field] < 64 * 1024 * 1024, samples
+                        tail = [row[field] for row in samples[len(samples) // 2:]]
+                        assert max(tail) - min(tail) < 16 * 1024 * 1024, samples
+                    (root / 'pressure-memory.json').write_text(json.dumps(samples, indent=2) + '\n')
+                    pressure = dict(seconds=args.stall_seconds, frames_during_stall=latest - first[0],
+                                    baseline=baseline, stalled_forwarded_bytes=forwarded,
+                                    peak_growth={field: max(row[field] for row in samples) - baseline[field]
+                                                 for field in ('private', 'working_set')},
+                                    late_spread={field: max(row[field] for row in samples[len(samples) // 2:])
+                                                 - min(row[field] for row in samples[len(samples) // 2:])
+                                                 for field in ('private', 'working_set')})
+                    slow.pause.clear()
+                    wait_until(lambda: slow.forwarded > forwarded + 65536, process)
+                    time.sleep(2)
                 if args.lifecycle == 'resize':
                     from window_lifecycle import resize_window
                     resize_window(process.pid, 820, 500)
@@ -204,15 +264,20 @@ network_cmd_port = "{command_port}"
         colors = [tuple(255 * pq(sum(weight * (value / 255) ** 2.4
                                      for weight, value in zip(row, color)) * 200 / 10000)
                         for row in matrix) for color in colors]
-    seen = set()
-    for i in range(0, len(pixels), 3):
-        pixel = pixels[i:i + 3]
-        errors = [sum(abs(a - b) for a, b in zip(pixel, color)) / 3 for color in colors]
-        assert min(errors) < (8 if args.hdr_mode else 12), (list(pixel), errors)
-        seen.add(errors.index(min(errors)))
-    assert len(seen) >= 3, seen
+    if args.stall_seconds:
+        assert all(105 <= value <= 150 for value in pixels), 'noise fixture mean is invalid'
+        pressure['largest_recorded_gap_seconds'] = max(b - a for a, b in zip(pts, pts[1:]))
+        assert pressure['largest_recorded_gap_seconds'] > .5, 'no actual encoder backpressure observed'
+    else:
+        seen = set()
+        for i in range(0, len(pixels), 3):
+            pixel = pixels[i:i + 3]
+            errors = [sum(abs(a - b) for a, b in zip(pixel, color)) / 3 for color in colors]
+            assert min(errors) < (8 if args.hdr_mode else 12), (list(pixel), errors)
+            seen.add(errors.index(min(errors)))
+        assert len(seen) >= 3, seen
     if not args.audio:
-        result = dict(driver=args.driver, bit_depth=args.bit_depth, hdr_mode=args.hdr_mode, tls=args.tls, lifecycle=args.lifecycle, threaded=threaded, codec=args.codec, video_frames=len(pts), audio=False)
+        result = dict(driver=args.driver, bit_depth=args.bit_depth, hdr_mode=args.hdr_mode, tls=args.tls, lifecycle=args.lifecycle, threaded=threaded, codec=args.codec, video_frames=len(pts), audio=False, pressure=pressure)
         (root / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
         print('PASS frontend video-only streaming and retirement: ' + json.dumps(result), flush=True)
         return
@@ -251,10 +316,14 @@ if __name__ == '__main__':
     parser.add_argument('--hdr-mode', type=int, choices=[0, 1, 2], default=0)
     parser.add_argument('--tls', choices=['1.2', '1.3'], help='requires build_stream_tls.py test entry for the local CA')
     parser.add_argument('--lifecycle', choices=['stop', 'resize', 'reinit'], default='stop')
+    parser.add_argument('--stall-seconds', type=float, default=0)
     parser.add_argument('--driver', choices=['nvenc', 'vulkan'], default='nvenc')
     parser.add_argument('--audio', action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument('--codec', choices=['h264', 'hevc'], default='h264')
     args = parser.parse_args()
+    if args.stall_seconds and (args.driver != 'vulkan' or args.audio or args.tls or args.hdr_mode
+                               or args.lifecycle != 'stop' or not 5 <= args.stall_seconds <= 12):
+        parser.error('slow-peer acceptance requires SDR video-only Vulkan stop, 5-12 seconds')
     if args.hdr_mode and (args.driver != 'vulkan' or args.codec != 'hevc' or args.bit_depth != 10):
         parser.error('HDR oracle requires Vulkan HEVC Main10')
     if args.codec == 'h264' and args.bit_depth != 8:

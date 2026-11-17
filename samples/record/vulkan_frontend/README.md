@@ -99,3 +99,20 @@ platform linker hooks. Resume must drain the accepted frames/samples; cancellati
 must retire all allocations. Both paths run with video alone and with audio.
 This is a bounded session/mux/queue contract with simulated encoder and transport;
 it does not replace native GPU/network slow-peer or operating-system memory tests.
+
+For native Windows slow-peer recovery, run the stream oracle with
+`--driver vulkan --no-audio --stall-seconds 8` and H.264 or HEVC. Build `--core`
+from the current `../nvenc_frontend/core.c`; the oracle enables its deterministic
+noise mode to fill socket buffers. A test-only relay has at most 64 KiB queued
+per direction and pauses reads from the frontend for the requested interval.
+The test requires continued core frame progress, no forwarded media during the
+pause, at least a half-second recording timestamp gap proving frame pressure,
+then resumed traffic, exact finalized/received frame counts and independent decode.
+It samples only the frontend child owned by its isolated desktop launcher:
+`pressure-memory.json` retains private-byte/working-set traces. Growth must stay
+below 64 MiB, and the latter half of the stall must span less than 16 MiB.
+These are bounded-interval process measurements, not GPU-memory accounting or a
+long-duration leak proof. Use a receiver build with native RTMP listen support;
+some external-librtmp FFmpeg builds ignore the listener option. Active audio
+exhaustion, shutdown while the peer remains stalled, TLS stalls and broader
+platform acceptance remain separate gates.
