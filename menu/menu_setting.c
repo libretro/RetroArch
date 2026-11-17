@@ -4007,9 +4007,6 @@ static char setting_video_menu_display_list[
       VIDEO_WINDOW_DISPLAYS_MAX * VIDEO_WINDOW_DISPLAY_NAME_SIZE + 1];
 /* The rows' copy of the published list, about 1 KiB, kept off the
  * stack; app thread */
-static video_window_display_t setting_video_screen_displays[
-      VIDEO_WINDOW_DISPLAYS_MAX];
-
 /* A key the values can hold: named, no '|' in it, and not Off's or
  * Main Window's */
 static bool setting_video_screen_display_offered(const char *key)
@@ -4022,9 +4019,9 @@ static bool setting_video_screen_display_offered(const char *key)
 #ifndef ANDROID
 bool menu_setting_video_screen_window_own(unsigned screen)
 {
-   video_window_display_t *displays = setting_video_screen_displays;
-   unsigned count = video_driver_get_window_displays(displays,
-         VIDEO_WINDOW_DISPLAYS_MAX);
+   unsigned count;
+   const video_window_display_t *displays =
+      video_driver_borrow_window_displays(&count);
    return video_windows_display_own(displays, count,
          config_get_ptr()->arrays.video_screen_display[screen], screen);
 }
@@ -4106,13 +4103,12 @@ void menu_setting_video_screen_windows_moved(void)
 
 void menu_setting_video_screen_display_values(void)
 {
-   video_window_display_t *displays = setting_video_screen_displays;
    char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
-   unsigned i;
+   unsigned i, count;
    size_t keys;
-   size_t len     = 0;
-   unsigned count = video_driver_get_window_displays(displays,
-         VIDEO_WINDOW_DISPLAYS_MAX);
+   size_t len                             = 0;
+   const video_window_display_t *displays =
+      video_driver_borrow_window_displays(&count);
    setting_video_screen_display_list[0] = '\0';
    if (video_windows_offer_main(displays, count))
       len = strlcpy(setting_video_screen_display_list,
@@ -4141,7 +4137,7 @@ void menu_setting_video_screen_display_values(void)
 static size_t setting_get_string_representation_video_screen_display(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   video_window_display_t *displays = setting_video_screen_displays;
+   const video_window_display_t *displays;
    char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
    unsigned i, count;
    size_t _len;
@@ -4163,8 +4159,7 @@ static size_t setting_get_string_representation_video_screen_display(
             MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_DISPLAY), value);
    if (_len >= len)
       return _len;
-   count = video_driver_get_window_displays(displays,
-         VIDEO_WINDOW_DISPLAYS_MAX);
+   displays = video_driver_borrow_window_displays(&count);
    for (i = 0; i < count; i++)
    {
       unsigned w = VIDEO_SCALE_W(displays[i].dims);
@@ -4191,7 +4186,7 @@ static size_t setting_get_string_representation_video_screen_display(
 static int setting_video_screen_display_step(rarch_setting_t *setting,
       bool right)
 {
-   video_window_display_t *displays = setting_video_screen_displays;
+   const video_window_display_t *displays;
    char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
    unsigned listed[VIDEO_WINDOW_DISPLAYS_MAX];
    unsigned i, count, pos, last, m;
@@ -4202,9 +4197,8 @@ static int setting_video_screen_display_step(rarch_setting_t *setting,
       return -1;
    value = setting->value.target.string;
    off   = setting->enum_idx != MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY;
-   count = video_driver_get_window_displays(displays,
-         VIDEO_WINDOW_DISPLAYS_MAX);
-   m     = (off && video_windows_offer_main(displays, count)) ? 1 : 0;
+   displays = video_driver_borrow_window_displays(&count);
+   m        = (off && video_windows_offer_main(displays, count)) ? 1 : 0;
    pos   = value[0] ? VIDEO_WINDOW_DISPLAYS_MAX + 3 : 0;
    for (i = 0; i < count; i++)
    {

@@ -1585,7 +1585,7 @@ static unsigned native_sdl_monitors_wait(const gfx_ctx_driver_t *ctx,
    unsigned n;
    for (;;)
    {
-      n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      n = window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
       if (native_sdl_monitors_match(primary, got, n, true))
          return n;
       if (cpu_features_get_time_usec() > deadline)
@@ -1683,7 +1683,7 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
 
    /* A display event and a main window move that change nothing:
     * nothing is republished */
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    restore = video_st->windows_restore;
    retry   = video_st->windows_retry;
    memset(&event, 0, sizeof(event));
@@ -1699,7 +1699,7 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
    SDL_GetWindowPosition(primary, &x, &y);
    native_sdl_push(primary, NATIVE_SDL_MOVED, x, y);
    native_window_settle(ctx, data, request, 50000);
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    CHECK(video_st->windows_retry == retry);
    CHECK(native_sdl_monitors_match(primary, got, n, true));
 
@@ -1775,7 +1775,7 @@ static void native_sdl_torn_down(const gfx_ctx_driver_t *ctx, bool again)
 {
    static video_window_display_t foreign[1];
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == 0);
    /* usable() answers from init, with no SDL call: SDL video is down */
    if (!SDL_WasInit(SDL_INIT_VIDEO))
@@ -3380,7 +3380,7 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    /* Published by set_video_mode, before anything pumped */
    {
       video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
-      unsigned n = video_driver_get_window_displays(got,
+      unsigned n = window_test_displays(got,
             VIDEO_WINDOW_DISPLAYS_MAX);
       fprintf(stderr, "native sdl: %u monitor(s) published at init%s\n", n,
             n && string_is_equal(got[0].name, "foreign")

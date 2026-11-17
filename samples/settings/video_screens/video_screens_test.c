@@ -53,6 +53,7 @@
 #ifdef HAVE_XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+
 #include "../../../gfx/common/x11_common.h"
 #include "../../../gfx/common/x11_monitors.h"
 #include "../../../gfx/common/dbus_common.h"
@@ -125,6 +126,20 @@ static char generated_path[2048];
          failures++; \
       } \
    } while (0)
+
+/* The newest list, copied as a test keeps it across publishes */
+static unsigned window_test_displays(video_window_display_t *out,
+      unsigned capacity)
+{
+   unsigned count;
+   const video_window_display_t *list =
+      video_driver_borrow_window_displays(&count);
+   if (count > capacity)
+      count = capacity;
+   if (count)
+      memcpy(out, list, count * sizeof(*out));
+   return count;
+}
 
 static void write_config(const char *path, const char *text)
 {
@@ -2096,14 +2111,19 @@ static void test_window_displays(void)
    video_driver_window_layout_screens(&window_test_seen, 3u,
          VIDEO_SCALE_PACK(400, 200), &layout);
    CHECK(layout.num_placements == 2);
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == 2);
    CHECK(got[1].ordinal == 2 && !strcmp(got[1].name, "Screen-2"));
    CHECK(got[1].dims == VIDEO_SCALE_PACK(1240, 1080));
-   memset(got, 0, sizeof(got));
-   CHECK(video_driver_get_window_displays(got, 1) == 1);
-   CHECK(got[0].ordinal == 1 && !strcmp(got[0].name, "Built-in Screen"));
-   CHECK(got[1].ordinal == 0);
+   /* Read in place: the slot stays put until another publish */
+   {
+      unsigned n;
+      const video_window_display_t *a =
+         video_driver_borrow_window_displays(&n);
+      CHECK(n == 2 && a[0].ordinal == 1
+            && !strcmp(a[0].name, "Built-in Screen"));
+      CHECK(video_driver_borrow_window_displays(&n) == a);
+   }
    /* A list is taken once */
    window_test_run();
    CHECK(window_test_seen.retry == retry + 1);
@@ -2208,7 +2228,7 @@ static void test_window_displays(void)
       window_test_display(&many[i], i + 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
             false, "Screen");
    video_driver_publish_window_displays(many, VIDEO_WINDOW_DISPLAYS_MAX + 1);
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX + 1)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX + 1)
          == VIDEO_WINDOW_DISPLAYS_MAX);
    CHECK(got[VIDEO_WINDOW_DISPLAYS_MAX - 1].ordinal
          == VIDEO_WINDOW_DISPLAYS_MAX);
@@ -2219,7 +2239,7 @@ static void test_window_displays(void)
    CHECK(window_test_seen.display == 0);
    CHECK(window_test_seen.plan.separate_mask == 2u);
    CHECK(window_test_seen.window_screens[1] == 2u);
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == 0);
    window_test_end();
 }

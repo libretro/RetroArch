@@ -408,8 +408,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       JNIEnv *env, jclass clazz, jint count, jobjectArray names,
       jobjectArray models)
 {
-   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
    jint i;
+   video_window_display_t *list;
    struct android_app *android_app = g_android_early;
    const android_second_shared_t *shared = android_second_shared;
 
@@ -418,6 +418,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    if (count > VIDEO_WINDOW_DISPLAYS_MAX)
       count = VIDEO_WINDOW_DISPLAYS_MAX;
 
+   list = video_driver_lend_window_displays();
    for (i = 0; i < count; i++)
    {
       video_window_display_t *d = &list[i];
@@ -445,7 +446,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       android_jni_string_at(env, models, i, d->model, sizeof(d->model));
    }
 
-   video_driver_publish_window_displays(list, (unsigned)count);
+   video_driver_publish_lent_window_displays(count < 0 ? 0 : (unsigned)count,
+         false);
    android_app_write_cmd(android_app, APP_CMD_SECOND_WINDOW_CHANGED);
 }
 

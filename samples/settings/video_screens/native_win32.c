@@ -240,7 +240,7 @@ static unsigned native_w32_monitors_wait(const gfx_ctx_driver_t *ctx,
    unsigned n;
    for (;;)
    {
-      n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      n = window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
       if (native_w32_monitors_match(monitors, want, got, n))
          return n;
       if (cpu_features_get_time_usec() > deadline)
@@ -299,7 +299,7 @@ static void native_w32_monitors_check(const gfx_ctx_driver_t *ctx,
 
    /* Moved within its monitor, and a display change that changes
     * nothing: nothing is republished */
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    restore = video_st->windows_restore;
    retry   = video_st->windows_retry;
    GetWindowRect(main_window.hwnd, &was);
@@ -313,7 +313,7 @@ static void native_w32_monitors_check(const gfx_ctx_driver_t *ctx,
          was.right - was.left, was.bottom - was.top,
          SWP_NOZORDER | SWP_NOACTIVATE);
    native_window_settle(ctx, data, request, 50000);
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    CHECK(video_st->windows_retry == retry);
 
    /* The main window's monitor follows it */
@@ -474,7 +474,7 @@ static void native_w32_torn_down(unsigned screen)
    WNDCLASSEX has;
    native_w32_monitor_t monitors[VIDEO_WINDOW_DISPLAYS_MAX];
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
-   unsigned n = video_driver_get_window_displays(got,
+   unsigned n = window_test_displays(got,
          VIDEO_WINDOW_DISPLAYS_MAX);
    has.cbSize = sizeof(has);
    CHECK(native_w32_titled(screen) == 0);
@@ -1510,7 +1510,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    {
       video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
       unsigned retry;
-      video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
       retry = video_state_get_ptr()->windows_retry;
       fprintf(stderr, "native win32: main window taken back,"
             " %u retries since it was kept\n",
@@ -1922,7 +1922,7 @@ static void native_w32_teardown(const char *ident, enum gfx_ctx_api api,
    strlcpy(foreign[0].name, "foreign", sizeof(foreign[0].name));
    video_driver_publish_window_displays(foreign, 1);
    win32_window_release_kept();
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == 1 && string_is_equal(got[0].name, "foreign"));
 #ifdef HAVE_VULKAN
    if (strcmp(ident, "vk_w") == 0)
@@ -1945,7 +1945,7 @@ static void native_w32_teardown(const char *ident, enum gfx_ctx_api api,
    }
    /* Before anything pumped */
    want = native_w32_monitors(monitors, VIDEO_WINDOW_DISPLAYS_MAX);
-   n    = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   n    = window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    fprintf(stderr, "native win32: %u monitor(s) published at init%s\n",
          n, n && string_is_equal(got[0].name, "foreign")
          ? ", the foreign list" : "");
@@ -1955,7 +1955,7 @@ static void native_w32_teardown(const char *ident, enum gfx_ctx_api api,
    runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
    ctx->destroy(data);
    runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SHUTDOWN_INITIATED;
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == 0);
 }
 #endif

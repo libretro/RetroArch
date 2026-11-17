@@ -1419,7 +1419,7 @@ static unsigned native_x11_monitors_wait(const gfx_ctx_driver_t *ctx,
    unsigned n;
    for (;;)
    {
-      n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      n = window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
       if (native_x11_monitors_match(monitors, want, own, got, n))
          return n;
       if (cpu_features_get_time_usec() > deadline)
@@ -1477,7 +1477,7 @@ static void native_x11_worker_gate(const gfx_ctx_driver_t *ctx,
    settings_t *settings = config_get_ptr();
    CHECK(!settings->bools.video_windows_enable);
    native_window_settle(ctx, data, request, 200000);
-   n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   n = window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    fprintf(stderr, "native x11: screen windows off: worker serial %u,"
          " state %d, %u monitor(s) published\n", x11_monitors_serial(),
          x11_monitors_state(), n);
@@ -1518,7 +1518,7 @@ static void native_x11_worker_gate(const gfx_ctx_driver_t *ctx,
    CHECK(again == first);
    window_test_end();
    /* Where the renderer makes it; with one monitor it does not move */
-   n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   n = window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    for (i = 0; i < n && first; i++)
       if (got[i].ordinal == first)
       {
@@ -1757,7 +1757,7 @@ static const gfx_ctx_driver_t *native_x11_located(
    if (heads < 2)
       return ctx;
    /* Before anything pumped: the init publish, not the foreign list */
-   n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   n = window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    fprintf(stderr, "native x11: %u monitor(s) published at init%s\n", n,
          n && string_is_equal(got[0].name, "foreign")
          ? ", the foreign list" : "");
@@ -1924,7 +1924,7 @@ static unsigned native_x11_published(const gfx_ctx_driver_t *ctx,
    unsigned saves        = 0;
    for (;;)
    {
-      unsigned count = video_driver_get_window_displays(got,
+      unsigned count = window_test_displays(got,
             VIDEO_WINDOW_DISPLAYS_MAX);
       if (count == n && (own < 0 || (own < (int)count && got[own].own)))
          return saves;
@@ -2176,7 +2176,7 @@ static void native_x11_monitors_check(const gfx_ctx_driver_t *ctx,
    /* Located again and again: the worker publishes, the list does not
     * change, nothing is republished */
    native_x11_located_wait();
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    restore = video_st->windows_restore;
    retry   = video_st->windows_retry;
    serial  = x11_monitors_serial();
@@ -2187,7 +2187,7 @@ static void native_x11_monitors_check(const gfx_ctx_driver_t *ctx,
    x11_monitors_window(g_x11_win);
    native_x11_serial_wait(serial);
    native_window_settle(ctx, data, request, 50000);
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    CHECK(video_st->windows_retry == retry);
 
    /* The main window's monitor follows it */
@@ -2223,7 +2223,7 @@ static void native_x11_torn_down(bool again)
 #ifdef RARCH_HAVE_X11_MONITORS
    static video_window_display_t foreign[1];
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == 0);
    if (!again)
       return;
@@ -2506,7 +2506,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    if (native_x11_foreign_up)
    {
       video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
-      unsigned n = video_driver_get_window_displays(got,
+      unsigned n = window_test_displays(got,
             VIDEO_WINDOW_DISPLAYS_MAX);
       native_x11_foreign_up = false;
       fprintf(stderr, "native x11: %u monitor(s) published at init%s\n",

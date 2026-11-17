@@ -2067,7 +2067,7 @@ static void x11_video_windows_replace(const video_window_rect_t *areas,
  * serial moves. */
 static void x11_video_monitors_publish(void)
 {
-   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_display_t *list;
    video_window_rect_t areas[VIDEO_WINDOW_DISPLAYS_MAX];
    const x11_monitors_t *snap;
    unsigned count  = 0;
@@ -2088,6 +2088,7 @@ static void x11_video_monitors_publish(void)
    if (     x11_video_monitors_published
          && serial == x11_video_monitors_serial)
       return;
+   list = video_driver_lend_window_displays();
    if ((snap = x11_monitors_get()))
    {
       unsigned i;
@@ -2141,11 +2142,11 @@ static void x11_video_monitors_publish(void)
     * the window is on, which decides where Auto puts them */
    if (x11_video_monitors_pending && !located)
    {
-      video_driver_publish_window_displays_pending(list, count);
+      video_driver_publish_lent_window_displays(count, true);
       return;
    }
    x11_video_monitors_pending   = false;
-   video_driver_publish_window_displays(list, count);
+   video_driver_publish_lent_window_displays(count, false);
 }
 
 /* A thread and an X connection, so only for the screens' windows.

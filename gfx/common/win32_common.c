@@ -586,11 +586,10 @@ static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 
 #if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
-/* The monitors last published for the screens' Display setting and
- * their handles, on the main window's thread. dirty: enumerate again;
- * own_dirty: the main window may be on another one; published: the
- * list up is this one, not another driver's. */
-static video_window_display_t win32_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+/* The monitors' handles and how many it published last for the
+ * screens' Display setting, on the main window's thread. dirty:
+ * enumerate again; own_dirty: the main window may be on another one;
+ * published: the list up is this one, not another driver's. */
 static HMONITOR win32_video_monitor_handles[VIDEO_WINDOW_DISPLAYS_MAX];
 static unsigned win32_video_monitor_count;
 static bool win32_video_monitors_dirty;
@@ -2677,17 +2676,36 @@ static BOOL CALLBACK win32_video_window_monitor(HMONITOR hm,
  * again. Published only when changed, or another list is up. */
 static void win32_video_monitors_publish(void)
 {
-   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
-   unsigned i;
-   unsigned count = win32_video_monitor_count;
-   HMONITOR own   = main_window.hwnd
+   unsigned i, was_count;
+   const video_window_display_t *was =
+      video_driver_published_window_displays(&was_count);
+   video_window_display_t *list      = video_driver_lend_window_displays();
+   unsigned count                    = win32_video_monitor_count;
+   HMONITOR own                      = main_window.hwnd
       ? MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST)
       : NULL;
 
-   if (win32_video_monitors_dirty)
+   if (!win32_video_monitors_published || was_count != count)
+      win32_video_monitors_dirty  = true;
+   win32_video_monitors_own_dirty = false;
+
+   if (!win32_video_monitors_dirty)
+   {
+      /* The same list: copied into a new slot only for a new owner */
+      for (i = 0; i < count; i++)
+         if (was[i].own != (win32_video_monitor_handles[i] == own))
+            break;
+      if (i == count)
+         return;
+      memcpy(list, was, count * sizeof(*list));
+      for (i = 0; i < count; i++)
+         list[i].own = win32_video_monitor_handles[i] == own;
+   }
+   else
    {
       win32_video_monitors_t monitors;
-      monitors.count = 0;
+      win32_video_monitors_dirty = false;
+      monitors.count             = 0;
       EnumDisplayMonitors(NULL, NULL, win32_video_window_monitor,
             (LPARAM)&monitors);
       count = monitors.count < VIDEO_WINDOW_DISPLAYS_MAX
@@ -2703,6 +2721,7 @@ static void win32_video_monitors_publish(void)
          info.cbSize                     = sizeof(info);
          win32_video_monitor_handles[i]  = monitors.all[i];
          display->ordinal                = i + 1;
+         display->own                    = monitors.all[i] == own;
          display->valid                  = true;
          display->on                     = true;
          display->physical               = true;
@@ -2717,21 +2736,14 @@ static void win32_video_monitors_publish(void)
             display->dims = VIDEO_SCALE_PACK(w, h);
       }
       win32_display_config_connectors(list, count);
+      if (     win32_video_monitors_published
+            && count == was_count
+            && (!count || !memcmp(list, was, count * sizeof(*list))))
+         return;
    }
-   else
-      memcpy(list, win32_video_monitors, count * sizeof(*list));
-   for (i = 0; i < count; i++)
-      list[i].own = win32_video_monitor_handles[i] == own;
-   win32_video_monitors_dirty     = false;
-   win32_video_monitors_own_dirty = false;
-   if (     win32_video_monitors_published
-         && count == win32_video_monitor_count
-         && !memcmp(list, win32_video_monitors, count * sizeof(*list)))
-      return;
-   memcpy(win32_video_monitors, list, count * sizeof(*list));
    win32_video_monitor_count      = count;
    win32_video_monitors_published = true;
-   video_driver_publish_window_displays(list, count);
+   video_driver_publish_lent_window_displays(count, false);
 }
 
 /* The window rect for 'settings' on the monitors there are now: on

@@ -98,8 +98,6 @@ struct gl2_views_prog
 struct gl2_window
 {
    video_window_native_t native;
-   /* As last drawn and published */
-   video_views_layout_t  layout;
    /* Anaglyph and interlaced draw both eyes into it first */
    struct gl2_views_fbo  canvas;
    video_views_target_t  canvas_target;

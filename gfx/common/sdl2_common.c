@@ -136,10 +136,9 @@ static unsigned sdl2_video_window_count;
 static retro_atomic_size_t sdl2_video_window_wins[RETRO_VIDEO_VIEWS_MAX];
 static retro_atomic_int_t  sdl2_video_window_gens[RETRO_VIDEO_VIEWS_MAX];
 
-/* The displays last published for the screens' Display setting, on the
- * context's thread. dirty: enumerate again; own_dirty: the main window
- * may be on another one. */
-static video_window_display_t sdl2_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+/* How many displays it published last for the screens' Display
+ * setting, on the context's thread. dirty: enumerate again; own_dirty:
+ * the main window may be on another one. */
 static unsigned sdl2_video_monitor_count;
 static bool sdl2_video_monitors_dirty;
 static bool sdl2_video_monitors_own_dirty;
@@ -328,20 +327,39 @@ void sdl2_video_monitors_moved(void)
  * another driver's may be up. */
 void sdl2_video_monitors_publish(SDL_Window *primary, bool init)
 {
-   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
-   unsigned i;
+   unsigned i, was_count;
    int own;
+   video_window_display_t *list;
+   const video_window_display_t *was;
    unsigned count = sdl2_video_monitor_count;
 
    if (init)
       sdl2_video_monitors_dirty = true;
    else if (!sdl2_video_monitors_dirty && !sdl2_video_monitors_own_dirty)
       return;
-   own = primary ? SDL_GetWindowDisplayIndex(primary) : -1;
+   own  = primary ? SDL_GetWindowDisplayIndex(primary) : -1;
+   was  = video_driver_published_window_displays(&was_count);
+   list = video_driver_lend_window_displays();
+   if (was_count != count)
+      sdl2_video_monitors_dirty = true;
+   sdl2_video_monitors_own_dirty = false;
 
-   if (sdl2_video_monitors_dirty)
+   if (!sdl2_video_monitors_dirty)
+   {
+      /* The same list: copied into a new slot only for a new owner */
+      for (i = 0; i < count; i++)
+         if (was[i].own != ((int)i == own))
+            break;
+      if (i == count)
+         return;
+      memcpy(list, was, count * sizeof(*list));
+      for (i = 0; i < count; i++)
+         list[i].own = (int)i == own;
+   }
+   else
    {
       int n = SDL_GetNumVideoDisplays();
+      sdl2_video_monitors_dirty = false;
       count = n > 0 ? (unsigned)n : 0;
       if (count > VIDEO_WINDOW_DISPLAYS_MAX)
          count = VIDEO_WINDOW_DISPLAYS_MAX;
@@ -352,6 +370,7 @@ void sdl2_video_monitors_publish(SDL_Window *primary, bool init)
          const char *name                = SDL_GetDisplayName((int)i);
          memset(display, 0, sizeof(*display));
          display->ordinal                = i + 1;
+         display->own                    = (int)i == own;
          display->valid                  = true;
          display->on                     = true;
          display->physical               = true;
@@ -363,20 +382,13 @@ void sdl2_video_monitors_publish(SDL_Window *primary, bool init)
                && VIDEO_SCALE_FITS(bounds.w, bounds.h))
             display->dims = VIDEO_SCALE_PACK(bounds.w, bounds.h);
       }
+      if (     !init
+            && count == was_count
+            && (!count || !memcmp(list, was, count * sizeof(*list))))
+         return;
    }
-   else
-      memcpy(list, sdl2_video_monitors, count * sizeof(*list));
-   for (i = 0; i < count; i++)
-      list[i].own = (int)i == own;
-   sdl2_video_monitors_dirty     = false;
-   sdl2_video_monitors_own_dirty = false;
-   if (     !init
-         && count == sdl2_video_monitor_count
-         && !memcmp(list, sdl2_video_monitors, count * sizeof(*list)))
-      return;
-   memcpy(sdl2_video_monitors, list, count * sizeof(*list));
    sdl2_video_monitor_count = count;
-   video_driver_publish_window_displays(list, count);
+   video_driver_publish_lent_window_displays(count, false);
 }
 
 /* Where 'settings' put a window, in SDL's window coordinates: on

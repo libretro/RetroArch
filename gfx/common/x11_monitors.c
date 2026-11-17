@@ -241,42 +241,66 @@ static int x11_monitors_locate(Display *dpy, Window win,
    return own;
 }
 
-/* One pass for @what into @next: published, or freed when nothing
- * changed. */
-static bool x11_monitors_pass(x11_monitors_ctl_t *ctl, Display *dpy,
-      bool names, const x11_monitors_t *last, int what,
-      x11_monitors_t *next)
+/* The window handed over last and the monitor it is on; a window
+ * handed over during the round trips is located instead */
+static int x11_monitors_own(x11_monitors_ctl_t *ctl, Display *dpy,
+      const x11_monitor_t *mon, unsigned count, Window *win)
 {
-   Window win;
-
-   if ((what & X11_MONITORS_ENUMERATE) || !last)
-      next->count = x11_monitors_enumerate(dpy, names, next->mon);
-   else
-   {
-      next->count = last->count;
-      memcpy(next->mon, last->mon, sizeof(next->mon));
-   }
-   /* A window handed over during the round trips is located instead */
+   int own;
    do
    {
-      win       = (Window)(unsigned)
+      *win = (Window)(unsigned)
          retro_atomic_load_acquire_int(&ctl->win);
-      next->own = x11_monitors_locate(dpy, win, next->mon, next->count);
-   } while (win != (Window)(unsigned)
+      own  = x11_monitors_locate(dpy, *win, mon, count);
+   } while (*win != (Window)(unsigned)
          retro_atomic_load_acquire_int(&ctl->win));
-   next->win = win;
+   return own;
+}
 
-   if (     last
-         && next->count == last->count
-         && next->own   == last->own
-         && next->win   == last->win
-         && !memcmp(next->mon, last->mon, sizeof(next->mon)))
+/* One pass for @what: 1 published, 0 nothing changed, -1 out of
+ * memory. A locate reads @last's list in place and copies it only for
+ * a new owner. */
+static int x11_monitors_pass(x11_monitors_ctl_t *ctl, Display *dpy,
+      bool names, const x11_monitors_t *last, int what,
+      const x11_monitors_t **out)
+{
+   Window win;
+   int own;
+   x11_monitors_t *next;
+
+   if ((what & X11_MONITORS_ENUMERATE) || !last)
    {
-      free(next);
-      return false;
+      if (!(next = (x11_monitors_t*)calloc(1, sizeof(*next))))
+         return -1;
+      next->count = x11_monitors_enumerate(dpy, names, next->mon);
+      next->own   = x11_monitors_own(ctl, dpy, next->mon, next->count,
+            &win);
+      next->win   = win;
+      if (     last
+            && next->count == last->count
+            && next->own   == last->own
+            && next->win   == last->win
+            && !memcmp(next->mon, last->mon, sizeof(next->mon)))
+      {
+         free(next);
+         return 0;
+      }
+   }
+   else
+   {
+      own = x11_monitors_own(ctl, dpy, last->mon, last->count, &win);
+      if (own == last->own && win == last->win)
+         return 0;
+      if (!(next = (x11_monitors_t*)malloc(sizeof(*next))))
+         return -1;
+      *next       = *last;
+      memset(&next->node, 0, sizeof(next->node));
+      next->own   = own;
+      next->win   = win;
    }
    x11_monitors_publish(ctl, next);
-   return true;
+   *out = next;
+   return 1;
 }
 
 /* Keeps a gone window's locate errors from the process's handler;
@@ -357,13 +381,8 @@ static void x11_monitors_worker(void *data)
       events = 0;
       if (what)
       {
-         x11_monitors_t *next = (x11_monitors_t*)calloc(1, sizeof(*next));
-         if (next)
-         {
-            if (x11_monitors_pass(ctl, dpy, names, last, what, next))
-               last = next;
+         if (x11_monitors_pass(ctl, dpy, names, last, what, &last) >= 0)
             continue;
-         }
          /* Out of memory: kept for the pass after the next wake */
          events = what;
       }

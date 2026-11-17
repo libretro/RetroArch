@@ -615,10 +615,22 @@ void video_driver_publish_window_displays(
 void video_driver_publish_window_displays_pending(
       const video_window_display_t *displays, unsigned count);
 
-/* App thread: the newest published list, at most @capacity entries;
- * returns how many. For the menu's picker. */
-unsigned video_driver_get_window_displays(video_window_display_t *out,
-      unsigned capacity);
+/* UI thread: the slot the next publish hands over, to build a list in
+ * place; unpublished, it stays the publisher's */
+video_window_display_t *video_driver_lend_window_displays(void);
+
+/* UI thread: publishes @count of the lent slot */
+void video_driver_publish_lent_window_displays(unsigned count,
+      bool pending);
+
+/* UI thread: the list it published last, NULL with *count 0 */
+const video_window_display_t *video_driver_published_window_displays(
+      unsigned *count);
+
+/* App thread: the newest published list, NULL with *count 0; read in
+ * place until the app thread's next take. For the menu's picker. */
+const video_window_display_t *video_driver_borrow_window_displays(
+      unsigned *count);
 
 /* A window showing @screens, from @frame's snapshot at @dims: the map
  * with every screen outside @screens left out. Any thread. */
@@ -647,6 +659,11 @@ void video_driver_publish_window_layout(unsigned window,
       const video_views_layout_t *layout,
       const video_views_map_t *core_map, unsigned core_dims,
       unsigned window_dims);
+
+/* As the publisher: where window @window's next layout goes, to lay it
+ * out in place and pass to the publish above. Valid until any publish
+ * for that window, bounds and focus included; NULL for no window. */
+video_views_layout_t *video_driver_lend_window_layout(unsigned window);
 
 /* The context's thread: window @window, showing @screens, was left at
  * @dims, and at @pos where @moved, while made for edit count @edit;

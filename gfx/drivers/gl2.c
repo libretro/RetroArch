@@ -7257,7 +7257,8 @@ static bool gl2_window_draw(gl2_t *gl,
    const video_windows_frame_t *f     = video_info->windows;
    const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
    struct gl2_window *win             = &gl->windows.win[w];
-   video_views_layout_t *layout       = &win->layout;
+   /* Laid out in the slot it is published in */
+   video_views_layout_t *layout       = video_driver_lend_window_layout(w);
    unsigned dims                      = win->native.dims;
    bool stock                         = !video_info->shader_active
       || !gl->views.preset;

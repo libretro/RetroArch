@@ -395,7 +395,9 @@ struct vk_window
 {
    video_window_native_t native;
    vulkan_output_t output;
-   video_views_layout_t layout;
+   /* Laid out in the slot it is published in, from its prepare to its
+    * present */
+   video_views_layout_t *layout;
    /* The views it draws this frame, each with its own chain */
    vulkan_filter_chain_t *chains[RETRO_VIDEO_VIEWS_MAX];
    void *surface;      /* native.surface the output was made from */
@@ -11993,6 +11995,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       }
       /* No free image is no failure: its last image stays */
       win->flags |= VK_WINDOW_FLAG_UP;
+      win->layout = video_driver_lend_window_layout(w);
       if (!state)
       {
          if (screens && new_frame)
@@ -12006,10 +12009,10 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       if (screens)
       {
          video_driver_window_layout_screens(f, f->window_screens[w],
-               out->dims, &win->layout);
+               out->dims, win->layout);
          screens = vulkan_vv_pick_chains(vk, &vk->views.chains,
-               &video_info->views, &win->layout, stock,
-               !win->layout.offscreen, out->dims, win->chains, rects);
+               &video_info->views, win->layout, stock,
+               !win->layout->offscreen, out->dims, win->chains, rects);
       }
       if (screens)
       {
@@ -12097,8 +12100,8 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       if (!screens)
       {
          /* Its touches map off-screen */
-         memset(&win->layout, 0, sizeof(win->layout));
-         win->layout.canvas_dims = out->dims;
+         memset(win->layout, 0, sizeof(*win->layout));
+         win->layout->canvas_dims = out->dims;
       }
 
       /* Its acquire fence has signalled: nothing reads it any more */
@@ -12126,8 +12129,8 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
       vk->tracker.pipeline = VK_NULL_HANDLE;
       if (screens)
-         vulkan_vv_draw_placements(vk, &d, &win->layout, win->chains,
-               !win->layout.offscreen, out->dims, d.direct != NULL);
+         vulkan_vv_draw_placements(vk, &d, win->layout, win->chains,
+               !win->layout->offscreen, out->dims, d.direct != NULL);
       if (vk->windows.ui_window == w)
       {
          if (vk->windows.ui_direct)
@@ -12206,7 +12209,7 @@ static void vulkan_windows_present(vk_t *vk,
       }
       if (f)
          video_driver_publish_window_layout(w, win->native.generation,
-               vk->windows.held.display[w], &win->layout, &f->core,
+               vk->windows.held.display[w], win->layout, &f->core,
                f->core_dims, win->native.dims);
    }
 }

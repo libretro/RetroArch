@@ -978,18 +978,17 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 #endif
 
 #ifdef HAVE_VIDEO_WINDOWS
-/* The outputs last published, on the context's thread */
-static video_window_display_t wl_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
-static unsigned wl_video_monitors_count;
-
 /* The outputs for the screens' Display setting, in the order the
  * fullscreen setting counts them (wl_output_at()). Published only when
  * they changed, or @always: another platform's list may be up. */
 static void wl_video_monitors_publish(gfx_ctx_wayland_data_t *wl,
       bool always)
 {
-   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned was_count;
    display_output_t *od;
+   const video_window_display_t *was =
+      video_driver_published_window_displays(&was_count);
+   video_window_display_t *list = video_driver_lend_window_displays();
    unsigned count               = 0;
    wl->video_monitors_dirty     = false;
    wl->video_monitors_own_dirty = false;
@@ -1015,12 +1014,10 @@ static void wl_video_monitors_publish(gfx_ctx_wayland_data_t *wl,
       display->dims     = oi->dims;
    }
    if (     !always
-         && count == wl_video_monitors_count
-         && !memcmp(list, wl_video_monitors, count * sizeof(*list)))
+         && count == was_count
+         && (!count || !memcmp(list, was, count * sizeof(*list))))
       return;
-   memcpy(wl_video_monitors, list, count * sizeof(*list));
-   wl_video_monitors_count = count;
-   video_driver_publish_window_displays(list, count);
+   video_driver_publish_lent_window_displays(count, false);
 }
 #endif
 
@@ -1077,7 +1074,6 @@ void gfx_ctx_wl_free_common(gfx_ctx_wayland_data_t *wl, bool may_keep)
    /* Its outputs go with it, from its own thread. A kept window let go
     * by gfx_ctx_wl_release_kept() publishes nothing: the next driver
     * may have published by then. */
-   wl_video_monitors_count = 0;
    video_driver_publish_window_displays(NULL, 0);
 #endif
    gfx_ctx_wl_destroy(wl);

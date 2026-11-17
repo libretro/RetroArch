@@ -778,7 +778,7 @@ static unsigned native_wl_monitors_wait(const gfx_ctx_driver_t *ctx,
    unsigned n;
    for (;;)
    {
-      n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      n = window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
       if (native_wl_monitors_match(wl, got, n))
          return n;
       if (cpu_features_get_time_usec() > deadline)
@@ -835,7 +835,7 @@ static void native_wl_monitors(const gfx_ctx_driver_t *ctx, void *data,
    retry   = video_st->windows_retry;
    output_listener.done(first, first->output);
    native_window_settle(ctx, data, request, 50000);
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    CHECK(video_st->windows_retry == retry);
 
    /* A new mode does, and so does going back */
@@ -864,7 +864,7 @@ static void native_wl_monitors(const gfx_ctx_driver_t *ctx, void *data,
          0);
    output_listener.done(first, first->output);
    native_window_settle(ctx, data, request, 50000);
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    fprintf(stderr, "native wayland: a %u-byte model published as %u\n",
          (unsigned)strlen(cut), (unsigned)strlen(got[0].model));
    CHECK(strlen(got[0].model) == sizeof(cut) - 3);
@@ -872,7 +872,7 @@ static void native_wl_monitors(const gfx_ctx_driver_t *ctx, void *data,
          model, 0);
    output_listener.done(first, first->output);
    native_window_settle(ctx, data, request, 50000);
-   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    CHECK(string_is_equal(got[0].model, published));
 
    /* The main window's own output follows it */
@@ -1405,7 +1405,7 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    /* Published at init, before anything pumped */
    {
       video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
-      CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+      CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
             == native_wl_outputs(wl));
    }
    native_wl_main_get(wl, &main_window);
@@ -1765,7 +1765,7 @@ static void native_wl_teardown(const char *ident, enum gfx_ctx_api api,
    strlcpy(foreign[0].name, "foreign", sizeof(foreign[0].name));
    video_driver_publish_window_displays(foreign, 1);
    gfx_ctx_wl_release_kept();
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == 1 && string_is_equal(got[0].name, "foreign"));
 #ifdef HAVE_VULKAN
    if (api == GFX_CTX_VULKAN_API)
@@ -1778,13 +1778,13 @@ static void native_wl_teardown(const char *ident, enum gfx_ctx_api api,
    CHECK(ctx != NULL);
    if (!ctx)
       return;
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == native_wl_outputs((gfx_ctx_wayland_data_t*)data));
    /* Quitting: not kept */
    runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
    ctx->destroy(data);
    runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SHUTDOWN_INITIATED;
-   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+   CHECK(window_test_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
          == 0);
 }
 #endif

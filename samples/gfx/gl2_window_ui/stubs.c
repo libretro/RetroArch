@@ -95,6 +95,11 @@ void video_driver_publish_window_layout(unsigned window,
       const video_views_map_t *core_map, unsigned core_dims,
       unsigned window_dims)
 { (void)window; (void)generation; (void)display; (void)layout; (void)core_map; (void)core_dims; (void)window_dims; }
+video_views_layout_t *video_driver_lend_window_layout(unsigned window)
+{
+   static video_views_layout_t slot[RETRO_VIDEO_VIEWS_MAX];
+   return (window && window < RETRO_VIDEO_VIEWS_MAX) ? &slot[window] : NULL;
+}
 void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 bool video_driver_test_all_flags(enum display_flags testflag) { (void)testflag; return false; }
 bool video_driver_thread_wrapper_active(void) { return false; }

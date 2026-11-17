@@ -1065,32 +1065,54 @@ static bool video_window_slot_take(retro_atomic_int_t *published,
    return true;
 }
 
-void video_driver_publish_window_displays(
-      const video_window_display_t *displays, unsigned count)
+video_window_display_t *video_driver_lend_window_displays(void)
+{
+   video_window_displays_t *box = &video_driver_st.window_displays;
+   return box->slot[box->next];
+}
+
+const video_window_display_t *video_driver_published_window_displays(
+      unsigned *count)
+{
+   video_window_displays_t *box = &video_driver_st.window_displays;
+   *count = box->last ? box->count[box->last - 1] : 0;
+   return box->last ? box->slot[box->last - 1] : NULL;
+}
+
+void video_driver_publish_lent_window_displays(unsigned count,
+      bool pending)
 {
    video_window_displays_t *box = &video_driver_st.window_displays;
    unsigned pub                 = box->next;
-   if (!displays || count > VIDEO_WINDOW_DISPLAYS_MAX)
-      count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
-   if (count)
-      memcpy(box->slot[pub], displays, count * sizeof(*displays));
-   box->count[pub]   = count;
-   box->pending[pub] = false;
+   box->count[pub]   = count < VIDEO_WINDOW_DISPLAYS_MAX
+      ? count : VIDEO_WINDOW_DISPLAYS_MAX;
+   box->pending[pub] = pending;
    video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+static void video_driver_publish_window_displays_as(
+      const video_window_display_t *displays, unsigned count, bool pending)
+{
+   if (!displays)
+      count = 0;
+   else if (count > VIDEO_WINDOW_DISPLAYS_MAX)
+      count = VIDEO_WINDOW_DISPLAYS_MAX;
+   if (count)
+      memcpy(video_driver_lend_window_displays(), displays,
+            count * sizeof(*displays));
+   video_driver_publish_lent_window_displays(count, pending);
+}
+
+void video_driver_publish_window_displays(
+      const video_window_display_t *displays, unsigned count)
+{
+   video_driver_publish_window_displays_as(displays, count, false);
 }
 
 void video_driver_publish_window_displays_pending(
       const video_window_display_t *displays, unsigned count)
 {
-   video_window_displays_t *box = &video_driver_st.window_displays;
-   unsigned pub                 = box->next;
-   if (!displays || count > VIDEO_WINDOW_DISPLAYS_MAX)
-      count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
-   if (count)
-      memcpy(box->slot[pub], displays, count * sizeof(*displays));
-   box->count[pub]   = count;
-   box->pending[pub] = true;
-   video_window_slot_publish(&box->published, &box->next, &box->last);
+   video_driver_publish_window_displays_as(displays, count, true);
 }
 
 /* App thread: the newest list, or NULL with *count 0. Taking a new one
@@ -1115,17 +1137,10 @@ static bool video_driver_window_displays_pending(
    return box->held && box->pending[box->held - 1];
 }
 
-unsigned video_driver_get_window_displays(video_window_display_t *out,
-      unsigned capacity)
+const video_window_display_t *video_driver_borrow_window_displays(
+      unsigned *count)
 {
-   unsigned count;
-   const video_window_display_t *list =
-      video_driver_take_window_displays(&video_driver_st, &count);
-   if (count > capacity)
-      count = capacity;
-   if (count)
-      memcpy(out, list, count * sizeof(*out));
-   return count;
+   return video_driver_take_window_displays(&video_driver_st, count);
 }
 
 /* windows_failed and windows_closed: the screens in the low byte, the
@@ -1181,7 +1196,8 @@ void video_driver_publish_window_layout(unsigned window,
    slot = &box->slot[box->next];
    if (layout && core_map)
    {
-      slot->layout      = *layout;
+      if (layout != &slot->layout)
+         slot->layout   = *layout;
       slot->core_map    = *core_map;
       slot->core_dims   = core_dims;
       slot->window_dims = window_dims;
@@ -1195,6 +1211,15 @@ void video_driver_publish_window_layout(unsigned window,
    slot->focused        = slot->generation
       && slot->generation == box->focus;
    video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+video_views_layout_t *video_driver_lend_window_layout(unsigned window)
+{
+   video_window_layouts_t *box;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
+      return NULL;
+   box = &video_driver_st.window_layouts[window - 1];
+   return &box->slot[box->next].layout;
 }
 
 /* The publisher's bounds and focus with the last layout, so input keeps
