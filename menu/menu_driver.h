@@ -896,6 +896,8 @@ void menu_driver_toggle(
 
 /* Queue a fullscreen file-browser launch; NULL cancels it. */
 bool menu_driver_media_open(const char *path);
+/* Whether menu_driver_media_open() would take path; queues nothing. */
+bool menu_driver_media_can_open(const char *path);
 /* Startup presentation is released only by the activated fullscreen view. */
 int menu_driver_media_startup_token(void);
 void menu_driver_media_startup_ready(int token);

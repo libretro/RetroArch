@@ -9815,6 +9815,52 @@ static void retroarch_find_drivers(settings_t *settings,
 #endif
 }
 
+enum rarch_core_type retroarch_builtin_core_type(const char *fullpath)
+{
+   settings_t *settings              = config_get_ptr();
+   enum rarch_content_type cont_type = path_is_media_type(fullpath);
+#ifdef HAVE_IMAGEVIEWER
+   bool builtin_imageviewer          = settings->bools.multimedia_builtin_imageviewer_enable;
+#endif
+   bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
+
+   switch (cont_type)
+   {
+      case RARCH_CONTENT_MOVIE:
+      case RARCH_CONTENT_MUSIC:
+         if (builtin_mediaplayer)
+         {
+            /* TODO/FIXME - it needs to become possible to
+             * switch between FFmpeg and MPV at runtime */
+#if defined(HAVE_MPV)
+            return CORE_TYPE_MPV;
+#elif defined(HAVE_FFMPEG)
+            return CORE_TYPE_FFMPEG;
+#elif defined(HAVE_WEBMPLAYER)
+            if (cont_type == RARCH_CONTENT_MOVIE
+#ifdef HAVE_RWMA
+                  || (cont_type == RARCH_CONTENT_MUSIC &&
+                     (string_is_equal_noncase(path_get_extension(fullpath), "wma") ||
+                      string_is_equal_noncase(path_get_extension(fullpath), "xwma") ||
+                      string_is_equal_noncase(path_get_extension(fullpath), "xma")))
+#endif
+               )
+               return CORE_TYPE_WEBM;
+#endif
+         }
+         break;
+#ifdef HAVE_IMAGEVIEWER
+      case RARCH_CONTENT_IMAGE:
+         if (builtin_imageviewer)
+            return CORE_TYPE_IMAGEVIEWER;
+         break;
+#endif
+      default:
+         break;
+   }
+   return CORE_TYPE_PLAIN;
+}
+
 bool retroarch_main_init_core(int argc, char *argv[],
       bool find_drivers, bool *verbosity)
 {
@@ -10078,12 +10124,6 @@ bool retroarch_main_init_core(int argc, char *argv[],
 #endif
       if (fullpath && *fullpath)
       {
-         enum rarch_content_type cont_type = path_is_media_type(fullpath);
-#ifdef HAVE_IMAGEVIEWER
-         bool builtin_imageviewer          = settings->bools.multimedia_builtin_imageviewer_enable;
-#endif
-         bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
-
 #ifdef HAVE_MENU
          if (!(runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
                && !retroarch_override_setting_is_set(
@@ -10096,47 +10136,14 @@ bool retroarch_main_init_core(int argc, char *argv[],
          }
          else
 #endif
-         switch (cont_type)
          {
-            case RARCH_CONTENT_MOVIE:
-            case RARCH_CONTENT_MUSIC:
-               if (builtin_mediaplayer)
-               {
-                  /* TODO/FIXME - it needs to become possible to
-                   * switch between FFmpeg and MPV at runtime */
-#if defined(HAVE_MPV)
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  runloop_set_current_core_type(CORE_TYPE_MPV, false);
-#elif defined(HAVE_FFMPEG)
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  runloop_set_current_core_type(CORE_TYPE_FFMPEG, false);
-#elif defined(HAVE_WEBMPLAYER)
-                  if (cont_type == RARCH_CONTENT_MOVIE
-#ifdef HAVE_RWMA
-                        || (cont_type == RARCH_CONTENT_MUSIC &&
-                           (string_is_equal_noncase(path_get_extension(fullpath), "wma") ||
-                            string_is_equal_noncase(path_get_extension(fullpath), "xwma") ||
-                            string_is_equal_noncase(path_get_extension(fullpath), "xma")))
-#endif
-                     )
-                  {
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                     runloop_set_current_core_type(CORE_TYPE_WEBM, false);
-                  }
-#endif
-               }
-               break;
-#ifdef HAVE_IMAGEVIEWER
-            case RARCH_CONTENT_IMAGE:
-               if (builtin_imageviewer)
-               {
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  runloop_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
-               }
-               break;
-#endif
-            default:
-               break;
+            enum rarch_core_type builtin_type =
+               retroarch_builtin_core_type(fullpath);
+            if (builtin_type != CORE_TYPE_PLAIN)
+            {
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+               runloop_set_current_core_type(builtin_type, false);
+            }
          }
       }
    }

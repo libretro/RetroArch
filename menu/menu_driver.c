@@ -9561,12 +9561,27 @@ static void menu_driver_media_launch_clear(void)
    menu_media_launch_browsing = false;
 }
 
-bool menu_driver_media_open(const char *path)
+bool menu_driver_media_can_open(const char *path)
 {
    settings_t *settings = config_get_ptr();
-   const menu_ctx_driver_t *driver;
-   const char *ident;
+   const menu_ctx_driver_t *driver = menu_driver_find_driver(settings,
+         "menu", false);
+   const char *ident = driver ? driver->ident : NULL;
    enum image_type_enum type;
+   if (!path)
+      return false;
+   type = image_texture_get_type(path);
+   return !(type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS
+         || strstr(path, "://") || path_contains_compressed_file(path)
+         || ((type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+            ? !settings->bools.multimedia_builtin_mediaplayer_enable
+            : !settings->bools.multimedia_builtin_imageviewer_enable)
+         || (!string_is_equal(ident, "ozone") && !string_is_equal(ident, "xmb")
+            && !string_is_equal(ident, "rgui") && !string_is_equal(ident, "glui")));
+}
+
+bool menu_driver_media_open(const char *path)
+{
    char *copy;
    if (!path)
    {
@@ -9575,16 +9590,7 @@ bool menu_driver_media_open(const char *path)
       retro_atomic_store_release_int(&menu_media_startup, 0);
       return false;
    }
-   driver = menu_driver_find_driver(settings, "menu", false);
-   ident = driver ? driver->ident : NULL;
-   type = image_texture_get_type(path);
-   if (type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS
-         || strstr(path, "://") || path_contains_compressed_file(path)
-         || ((type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
-            ? !settings->bools.multimedia_builtin_mediaplayer_enable
-            : !settings->bools.multimedia_builtin_imageviewer_enable)
-         || (!string_is_equal(ident, "ozone") && !string_is_equal(ident, "xmb")
-            && !string_is_equal(ident, "rgui") && !string_is_equal(ident, "glui")))
+   if (!menu_driver_media_can_open(path))
       return false;
    copy = (char *)malloc(PATH_MAX_LENGTH);
    if (!copy)

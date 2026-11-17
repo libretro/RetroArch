@@ -1753,6 +1753,19 @@ static void mode_builtin(void)
    CHECK(core_warning_choose(CORE_WARNING_CANCEL), "Cancel not taken");
    pump(10);
 }
+
+/* A built-in core's start runs no core RARCH_PATH_CORE names: no
+ * firmware box for that core */
+static void mode_fw_builtin(void)
+{
+   path_set(RARCH_PATH_CORE, fw_core);
+   start_pad();
+   CHECK(!fw_wait_box(600),
+         "a built-in core's start asked for the named core's firmware");
+   if (fw_box_up())
+      fw_answer(MENU_ACTION_OK);
+   CHECK(wait_for(pad_runs, 600), "the built-in core did not run");
+}
 #endif
 
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
@@ -2525,6 +2538,12 @@ int main(int argc, char *argv[])
          mode_builtin();
 #else
          fprintf(stderr, "builtin: not in this build\n");
+#endif
+      else if (string_is_equal(mode, "fw-builtin"))
+#ifdef HAVE_NETWORKGAMEPAD
+         mode_fw_builtin();
+#else
+         fprintf(stderr, "fw-builtin: not in this build\n");
 #endif
       else if (string_is_equal(mode, "runahead"))
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)

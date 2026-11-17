@@ -2892,9 +2892,10 @@ static void content_load_finish(struct content_load_job *job,
                (after & CONTENT_LOAD_AFTER_HISTORY_CLI)  != 0,
                (after & CONTENT_LOAD_AFTER_HISTORY_UI)   != 0);
 #ifdef HAVE_MENU
-      /* A refused load ends on the dummy core: its re-run asks */
+      /* Only a plain core is RARCH_PATH_CORE: a refused load ends on the
+       * dummy core (its re-run asks), media may run on a built-in one */
       if (     job->firmware_tell
-            && runloop_st->current_core_type != CORE_TYPE_DUMMY)
+            && runloop_st->current_core_type == CORE_TYPE_PLAIN)
          content_firmware_tell();
       if (after & CONTENT_LOAD_AFTER_QUICK_MENU)
       {
@@ -3449,6 +3450,31 @@ static bool content_load_push_stage(struct content_load_job *job)
    return task_queue_push(task);
 }
 
+#ifdef HAVE_MENU
+/* Whether the load runs a built-in core or the menu's media viewer
+ * instead of RARCH_PATH_CORE: retroarch_main_init()'s tests.  Its
+ * LIBRETRO override comes only from the -L the deinit stage passes,
+ * and that stage passes one only while the override is unset. */
+static bool content_firmware_builtin_core(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *fullpath        = path_get(RARCH_PATH_CONTENT);
+
+   if (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
+      return runloop_st->explicit_current_core_type != CORE_TYPE_PLAIN;
+   if (string_is_empty(fullpath))
+      return false;
+   if (
+#if defined(HAVE_DYNAMIC) && !defined(__HAIKU__)
+            retroarch_override_setting_is_set(
+               RARCH_OVERRIDE_SETTING_LIBRETRO, NULL) &&
+#endif
+            menu_driver_media_can_open(fullpath))
+      return true;
+   return retroarch_builtin_core_type(fullpath) != CORE_TYPE_PLAIN;
+}
+#endif
+
 /**
  * content_load:
  *
@@ -3500,7 +3526,8 @@ static bool content_load(content_ctx_info_t *info,
             && !(after & CONTENT_LOAD_AFTER_FIRMWARE_ASKED))
    {
       core_info_t *core = NULL;
-      if (core_info_find(path_get(RARCH_PATH_CORE), &core)
+      if (     !content_firmware_builtin_core()
+            && core_info_find(path_get(RARCH_PATH_CORE), &core)
             && core && core->firmware_count)
       {
          if (menu_core_warning_can_open())
