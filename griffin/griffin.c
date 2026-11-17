@@ -1682,6 +1682,7 @@ RETROARCH
 ============================================================ */
 #include "../retroarch.c"
 #include "../runloop.c"
+#include "../calendar_time.c"
 #ifdef HAVE_RUNAHEAD
 #include "../runahead.c"
 #endif
