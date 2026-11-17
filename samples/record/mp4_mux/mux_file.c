@@ -56,14 +56,27 @@ int main(int argc, char **argv)
    size_t audio_size = 0;
    uint64_t audio_pts = 0;
    int ok = 0;
-   if (argc != 4 && argc != 8) return 1;
+   if (argc != 4 && argc != 8 && argc != 10 && argc != 11) return 1;
    memset(&c, 0, sizeof(c));
-   if (argc == 8)
+   if (argc >= 8)
    {
       c.color_primaries = (unsigned)strtoul(argv[4], NULL, 10);
       c.transfer_characteristics = (unsigned)strtoul(argv[5], NULL, 10);
       c.matrix_coefficients = (unsigned)strtoul(argv[6], NULL, 10);
       c.full_range = strtoul(argv[7], NULL, 10) != 0;
+   }
+   if (argc >= 10)
+   {
+      c.max_cll = (unsigned)strtoul(argv[8], NULL, 10);
+      c.max_fall = (unsigned)strtoul(argv[9], NULL, 10);
+   }
+   if (argc == 11)
+   {
+      static const uint16_t coordinates[8] = {34000, 16000, 13250, 34500, 7500, 3000, 15635, 16450};
+      c.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+      memcpy(c.mastering.chromaticity, coordinates, sizeof(coordinates));
+      c.mastering.luminance_max = 10000000;
+      c.mastering.luminance_min = 50;
    }
    in = fopen(argv[1], "rb"); CHECK(in != NULL);
    for (i = 0; i < 10; i++) CHECK(read32(in, &h[i]));

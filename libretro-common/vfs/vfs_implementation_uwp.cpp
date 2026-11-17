@@ -872,6 +872,22 @@ int retro_vfs_stat_volume_impl(const char *path, unsigned want,
    return -1;
 }
 
+size_t retro_vfs_file_verity_measure_impl(
+      libretro_vfs_implementation_file *stream, uint8_t *digest, size_t cap)
+{
+   /* No fs-verity here */
+   (void)stream;
+   (void)digest;
+   (void)cap;
+   return 0;
+}
+
+int retro_vfs_file_verity_enable_impl(
+      libretro_vfs_implementation_file *stream)
+{
+   return stream ? 0 : -1;
+}
+
 const uint8_t *retro_vfs_file_map_impl(libretro_vfs_implementation_file *stream,
       int64_t *len)
 {

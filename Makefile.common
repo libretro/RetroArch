@@ -1250,7 +1250,6 @@ ifeq ($(TARGET), retroarch_wiiu)
 	   input/drivers_joypad/wiiu_joypad.o \
 	   input/drivers_joypad/wiiu/wpad_driver.o \
 	   input/drivers_joypad/wiiu/kpad_driver.o \
-	   input/drivers_joypad/wiiu/pad_functions.o \
 	   audio/drivers/wiiu_audio.o \
 	   frontend/drivers/platform_wiiu.o
 
@@ -1396,6 +1395,7 @@ ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
           input/drivers/x11_input.o \
           gfx/common/x11_common.o \
+          gfx/common/x11_monitors.o \
           gfx/common/xinerama_common.o \
           gfx/display_servers/dispserv_x11.o
 
@@ -2080,8 +2080,14 @@ ifeq ($(HAVE_MF_AUDIO), 1)
       OBJ += record/record_mf_audio.o
       ifeq ($(HAVE_RTMP), 1)
          ifeq ($(HAVE_RFLV), 1)
+            ifneq ($(filter 1,$(HAVE_D3D12) $(HAVE_RECORD_VULKAN)),)
+               OBJ += record/record_stream_gpu.o
+            endif
             ifeq ($(HAVE_D3D12), 1)
                OBJ += record/record_stream_d3d12.o
+            endif
+            ifeq ($(HAVE_RECORD_VULKAN), 1)
+               OBJ += record/record_stream_vulkan.o
             endif
          endif
       endif
@@ -3454,6 +3460,9 @@ ifeq ($(HAVE_RECORD_VULKAN), 1)
    VULKAN_RECORD_OBJ := record/drivers/record_vulkan.o \
       gfx/common/vulkan_encode_h264.o gfx/common/vulkan_encode_h264_session.o \
       gfx/common/vulkan_encode_h264_submit.o gfx/common/vulkan_encode_pool.o \
+      gfx/common/vulkan_encode_hevc.o gfx/common/vulkan_encode_hevc_session.o \
+      gfx/common/vulkan_encode_hevc_submit.o record/record_gpu_dispatch_vulkan_hevc.o \
+      record/record_gpu_session_vulkan_hevc.o record/record_gpu_worker_vulkan_hevc.o \
       gfx/common/vulkan_encode_capture.o gfx/common/vulkan_encode_capture_shader.o \
       record/record_gpu_dispatch_vulkan.o record/record_gpu_renderer_vulkan.o \
       record/record_gpu_session_vulkan.o record/record_gpu_worker_vulkan.o \

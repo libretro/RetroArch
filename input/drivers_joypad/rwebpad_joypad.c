@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
@@ -22,6 +23,7 @@
 #include "../../frontend/drivers/platform_emscripten.h"
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
@@ -40,6 +42,9 @@ struct rwebpad_joypad_rumble_state
 
 typedef struct
 {
+   /* each live pad as the poll left it, lent to the readers
+    * (input_pad_view.h): its buttons and its first sixteen axes */
+   input_pad_view_t views[DEFAULT_MAX_PADS];
    struct EmscriptenGamepadEvent pads[DEFAULT_MAX_PADS];
    struct rwebpad_joypad_rumble_state rumble[DEFAULT_MAX_PADS];
    bool live_pads[DEFAULT_MAX_PADS];
@@ -112,60 +117,82 @@ static const char *rwebpad_joypad_name(unsigned port)
    return rwebpad_joypad_data->pads[port].id;
 }
 
+/* An axis of the event, one of the first numAxes the pad has and no
+ * more than the event holds, as a stick's value; 0 past them */
+static int16_t rwebpad_joypad_event_axis(
+      const EmscriptenGamepadEvent *gamepad_state, unsigned i)
+{
+   unsigned axes = (unsigned)gamepad_state->numAxes;
+   if (axes > ARRAY_SIZE(gamepad_state->axis))
+      axes = ARRAY_SIZE(gamepad_state->axis);
+   if (i >= axes)
+      return 0;
+   return (int16_t)(CLAMPDOUBLE(gamepad_state->axis[i]) * 0x7FFF);
+}
+
+/* The view of what the poll read of the pad on @port */
+static void rwebpad_joypad_make_view(unsigned port)
+{
+   unsigned i, buttons;
+   const EmscriptenGamepadEvent *gamepad_state =
+      &rwebpad_joypad_data->pads[port];
+   input_pad_view_t *v = &rwebpad_joypad_data->views[port];
+
+   memset(v, 0, sizeof(*v));
+   /* one of the first numButtons the pad has, no more than the event
+    * holds */
+   buttons = (unsigned)gamepad_state->numButtons;
+   if (buttons > ARRAY_SIZE(gamepad_state->digitalButton))
+      buttons = ARRAY_SIZE(gamepad_state->digitalButton);
+   for (i = 0; i < buttons; i++)
+      if (gamepad_state->digitalButton[i])
+         BIT256_SET(v->buttons, i);
+   for (i = 0; i < INPUT_PAD_VIEW_AXES; i++)
+      v->axes[i] = rwebpad_joypad_event_axis(gamepad_state, i);
+}
+
+/* The live pad on @port's view; NULL with none there */
+static const input_pad_view_t *rwebpad_joypad_view(unsigned port)
+{
+   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
+      return NULL;
+   return &rwebpad_joypad_data->views[port];
+}
+
 static int32_t rwebpad_joypad_button(unsigned port, uint16_t joykey)
 {
-   EmscriptenGamepadEvent gamepad_state;
-   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
-      return 0;
-   gamepad_state = rwebpad_joypad_data->pads[port];
-   if (joykey < gamepad_state.numButtons)
-      return gamepad_state.digitalButton[joykey];
-   return 0;
+   const input_pad_view_t *v = rwebpad_joypad_view(port);
+   return v ? input_pad_view_button(v, joykey) : 0;
 }
 
 static void rwebpad_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-   EmscriptenGamepadEvent gamepad_state;
-   unsigned i;
-   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
-   {
+   const input_pad_view_t *v = rwebpad_joypad_view(port);
+   if (v)
+      *state = v->buttons;
+   else
       BIT256_CLEAR_ALL_PTR(state);
-      return;
-   }
-   gamepad_state = rwebpad_joypad_data->pads[port];
-   for (i = 0; i < gamepad_state.numButtons; i++)
-   {
-      if (gamepad_state.digitalButton[i])
-         BIT256_SET_PTR(state, i);
-   }
-}
-
-static int16_t rwebpad_joypad_axis_state(
-      EmscriptenGamepadEvent *gamepad_state,
-      unsigned port, uint32_t joyaxis)
-{
-   if (AXIS_NEG_GET(joyaxis) < gamepad_state->numAxes)
-   {
-      int16_t val = CLAMPDOUBLE(
-            gamepad_state->axis[AXIS_NEG_GET(joyaxis)]) * 0x7FFF;
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < gamepad_state->numAxes)
-   {
-      int16_t val = CLAMPDOUBLE(
-            gamepad_state->axis[AXIS_POS_GET(joyaxis)]) * 0x7FFF;
-      if (val > 0)
-         return val;
-   }
-   return 0;
 }
 
 static int16_t rwebpad_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
+   int16_t val;
+   const input_pad_view_t *v = rwebpad_joypad_view(port);
+   if (!v)
       return 0;
-   return rwebpad_joypad_axis_state(&rwebpad_joypad_data->pads[port], port, joyaxis);
+   if (     AXIS_NEG_GET(joyaxis) < INPUT_PAD_VIEW_AXES
+         || AXIS_POS_GET(joyaxis) < INPUT_PAD_VIEW_AXES)
+      return input_pad_view_axis(v, joyaxis);
+   /* the axes past the view's, from the event the poll read */
+   if (AXIS_NEG_GET(joyaxis) < 0xFFFF)
+   {
+      val = rwebpad_joypad_event_axis(&rwebpad_joypad_data->pads[port],
+            AXIS_NEG_GET(joyaxis));
+      return (val < 0) ? val : 0;
+   }
+   val = rwebpad_joypad_event_axis(&rwebpad_joypad_data->pads[port],
+         AXIS_POS_GET(joyaxis));
+   return (val > 0) ? val : 0;
 }
 
 static int16_t rwebpad_joypad_state(
@@ -175,29 +202,22 @@ static int16_t rwebpad_joypad_state(
       unsigned port)
 {
    unsigned i;
-   EmscriptenGamepadEvent gamepad_state;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-   if (port_idx >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
+   int16_t ret               = 0;
+   uint16_t port_idx         = joypad_info->joy_idx;
+   const input_pad_view_t *v = rwebpad_joypad_view(port_idx);
+   if (!v)
       return 0;
-   gamepad_state = rwebpad_joypad_data->pads[port];
+   /* the common loop, with the axes past the view's read from the
+    * event */
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (
-               (uint16_t)joykey != NO_BTN 
-            && (joykey < gamepad_state.numButtons)
-            && gamepad_state.digitalButton[(uint16_t)joykey]
-         )
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(rwebpad_joypad_axis_state(
-                  &gamepad_state, port_idx, joyaxis)) 
+      if (joykeys[i] != NO_BTN && input_pad_view_button(v, joykeys[i]))
+         ret |= (1 << i);
+      else if (joyaxes[i] != AXIS_NONE &&
+            ((float)abs(rwebpad_joypad_axis(port_idx, joyaxes[i]))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
-
    return ret;
 }
 
@@ -235,6 +255,7 @@ static void rwebpad_joypad_do_poll(void *data)
       if (!rwebpad_joypad_data->live_pads[port])
          continue;
       emscripten_get_gamepad_status(port, &rwebpad_joypad_data->pads[port]);
+      rwebpad_joypad_make_view(port);
       rwebpad_joypad_update_rumble(port);
    }
 }
@@ -286,4 +307,9 @@ input_device_driver_t rwebpad_joypad = {
    NULL, /* get_sensor_input */
    rwebpad_joypad_name,
    "rwebpad",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   rwebpad_joypad_view
 };

@@ -1497,6 +1497,7 @@ bool android_core_path_resolve(const char *path, char *s, size_t len)
 
 static unsigned dlext_loads;
 static unsigned dlext_moved;  /* loads from an fd not at offset 0 */
+static uint64_t dlext_flags;  /* the last load's */
 
 /* Android 5.0's linker, which core_load_file.c finds by dlsym: it
  * read()s the ELF header from the fd's offset (later ones pread at 0),
@@ -1508,6 +1509,7 @@ void *android_dlopen_ext(const char *name, int flags,
    char fd_path[32];
    (void)name;
    dlext_loads++;
+   dlext_flags = info->flags;
    if (lseek(info->library_fd, 0, SEEK_CUR) != 0)
       dlext_moved++;
    if (     read(info->library_fd, head, sizeof(head)) != (ssize_t)sizeof(head)
@@ -3235,6 +3237,111 @@ static void test_android_held_rewritten(void)
 
 /* Refused and gone: the open that fails next never reached the gate,
  * so it isn't the check's refusal */
+/* Built only into the Android objects (core_load_check_android.o,
+ * core_load_file_android.o): weak, so the desktop test links */
+__attribute__((weak)) core_file_t *core_load_check_instance_file(
+      const char *path, char **load_path);
+__attribute__((weak)) dylib_t core_load_file_instance(core_file_t *f,
+      const char *path);
+
+/* core_load_check_instance_file(), with the path it gives checked:
+ * path's real path, as the running core was loaded by */
+static core_file_t *instance_file(const char *path)
+{
+   char real[256];
+   char *load_path = NULL;
+   core_file_t *f  = core_load_check_instance_file(path, &load_path);
+   CHECK(!f == !load_path);
+   if (load_path)
+   {
+      strlcpy(real, path, sizeof(real));
+      CHECK(path_resolve_realpath(real, sizeof(real), true)
+            && string_is_equal(load_path, real));
+      free(load_path);
+   }
+   return f;
+}
+
+/* fd's file is path's */
+static bool fd_is_path(int fd, const char *path)
+{
+   struct stat a, b;
+   return   fstat(fd, &a) == 0 && stat(path, &b) == 0
+         && a.st_dev == b.st_dev && a.st_ino == b.st_ino;
+}
+
+/* Run-ahead's second instance on Android 6+: the running core's file,
+ * the one it passed from and unchanged, as a file of its own, loaded
+ * again as a new instance; none once the file is written, for another
+ * core, or with nothing running. Checks off: the path's file. */
+static void test_android_instance(void)
+{
+   dylib_t lib = NULL;
+   core_file_t *f;
+   core_file_t *g;
+   char core[256];
+   char other[256];
+   int i;
+   CHECK(core_load_check_instance_file && core_load_file_instance);
+   if (!core_load_check_instance_file || !core_load_file_instance)
+      return;
+   for (i = 0; i < 2; i++)
+   {
+      no_ctime_fs = i;
+      start(false);
+      CHECK(put_core(core, "inst_libretro" LIB_EXT, 'a'));
+      CHECK(put_core(other, "inst_other_libretro" LIB_EXT, 'b'));
+      CHECK(trust(core));
+      CHECK(!instance_file(core));
+      /* Hashed at its load, as a startup load is */
+      CHECK(put_core(core, "inst_libretro" LIB_EXT, 'a'));
+      core_load_check_set_startup(true);
+      CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_OPENED);
+      core_load_check_set_startup(false);
+      core_load_check_loaded();
+      f = instance_file(core);
+      g = instance_file(core);
+      CHECK(f && g && core_file_fd(f) != core_file_fd(g));
+      CHECK(f && fd_is_path(core_file_fd(f), core));
+      /* An offset of its own: moving one moves no other */
+      if (f && g)
+      {
+         CHECK(lseek(core_file_fd(f), 7, SEEK_SET) == 7);
+         CHECK(lseek(core_file_fd(g), 0, SEEK_CUR) == 0);
+      }
+      dlext_flags = 0;
+      if (f)
+      {
+         dylib_t again = core_load_file_instance(f, core);
+         CHECK(again != NULL);
+         CHECK(dlext_flags == (ANDROID_DLEXT_USE_LIBRARY_FD | 0x40));
+         CHECK(lseek(core_file_fd(f), 0, SEEK_CUR) != 7);
+         if (again)
+            dylib_close(again);
+      }
+      core_file_close(f);
+      core_file_close(g);
+      CHECK(!instance_file(other));
+      if (lib)
+         dylib_close(lib);
+      lib = NULL;
+      CHECK(write_in_place(core, 'c'));
+      CHECK(!instance_file(core));
+      core_load_check_unloaded();
+      CHECK(!instance_file(core));
+      stop();
+   }
+   no_ctime_fs = 0;
+   start(false);
+   CHECK(put_core(core, "inst_off_libretro" LIB_EXT, 'a'));
+   CHECK(core_trust_runtime_set_checks(false));
+   drain();
+   f = instance_file(core);
+   CHECK(f && fd_is_path(core_file_fd(f), core));
+   core_file_close(f);
+   stop();
+}
+
 static void test_android_refused_gone(void)
 {
    dylib_t lib = NULL;
@@ -3767,6 +3874,7 @@ int main(int argc, char *argv[])
       test_stage_rewritten();
       test_android_held_rewritten();
       test_android_refused_gone();
+      test_android_instance();
       printf("%u checks, %u failures\n", checks, failures);
       return failures ? 1 : 0;
    }

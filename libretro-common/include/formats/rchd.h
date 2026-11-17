@@ -482,7 +482,7 @@ size_t rchd_read_progress(const rchd_t *chd);
  * rchd_read_hunk_begin:
  * @chd        : opened decoder
  * @hunk       : hunk index, below rchd_info()->hunk_count
- * @dst        : destination, at least hunk_bytes
+ * @dst        : destination, at least hunk_bytes; or NULL
  *
  * Arms a read of one whole hunk, addressed by index rather than by byte
  * offset. Equivalent to arming a byte read of hunk_bytes at
@@ -490,9 +490,21 @@ size_t rchd_read_progress(const rchd_t *chd);
  * format is written against hunk indices; a consumer being ported does
  * not have to convert its call sites to offsets to use this one.
  *
+ * With @dst NULL nothing is copied: once the read completes the hunk is
+ * read where the decoder built it, through rchd_hunk_cache().
+ *
  * Returns: RCHD_OK, or RCHD_ERROR_PARAM if @hunk is out of range.
  */
 int rchd_read_hunk_begin(rchd_t *chd, uint32_t hunk, void *dst);
+
+/**
+ * rchd_hunk_cache:
+ *
+ * Returns: the hunk the decoder built last, hunk_bytes long - after a
+ * completed rchd_read_hunk_begin(chd, hunk, NULL), that hunk. Valid
+ * until the next read armed on @chd. NULL before the first read.
+ */
+const uint8_t *rchd_hunk_cache(const rchd_t *chd);
 
 /* -------- pipelining -------- */
 
@@ -682,10 +694,12 @@ int rchd_av_parse(const uint8_t *data, size_t len, rchd_av_frame_t *out);
  * caller writing to a stream that cannot seek should buffer the first
  * rchd_write_prefix_size(w) bytes and fill them in at the end.
  *
- * What this does NOT do is compress. The four compressor slots are
- * written as zero, which is what the format calls an uncompressed file,
- * so the codec paths (LZMA, zlib, FLAC, Huffman) are not exercised by
- * anything it produces. It is a fixture generator, not an archiver.
+ * What this does NOT do is compress. A writer from rchd_write_new
+ * leaves the four compressor slots zero, which is what the format calls
+ * an uncompressed file. One from rchd_write_new_coded names compressors
+ * and takes hunks the caller has already coded, so the codec paths can
+ * be exercised by images built in a test. It is a fixture generator,
+ * not an archiver.
  *
  * Usage:
  *
@@ -730,6 +744,36 @@ typedef int (*rchd_write_fn)(void *ctx, uint64_t offset,
  */
 rchd_writer_t *rchd_write_new(uint64_t logical_bytes, uint32_t hunk_bytes,
       uint32_t unit_bytes, rchd_write_fn sink, void *ctx);
+
+/**
+ * rchd_write_new_coded:
+ * @compressors  : the image's four compressor slots, RCHD_CODEC_*; the
+ *                 first must name one.
+ *
+ * As rchd_write_new, for an image with a compressed map. Hunks are laid
+ * end to end after the header in the order written and the map follows
+ * them, so the prefix is the header alone. rchd_write_hunk stores a
+ * hunk uncompressed, and an all-zero hunk is stored like any other.
+ *
+ * Returns: a writer, or NULL on bad arguments or allocation failure.
+ */
+rchd_writer_t *rchd_write_new_coded(uint64_t logical_bytes,
+      uint32_t hunk_bytes, uint32_t unit_bytes,
+      const uint32_t compressors[4], rchd_write_fn sink, void *ctx);
+
+/**
+ * rchd_write_hunk_coded:
+ * @w          : a writer from rchd_write_new_coded.
+ * @compressor : which of the four slots coded @blob, 0 to 3.
+ * @blob       : the hunk as that codec stores it.
+ * @len        : its length, under 16 MiB.
+ * @crc        : CRC-16-CCITT (initial 0xffff) of the decoded hunk.
+ *
+ * Returns: RCHD_OK, or an error if the slot names no compressor, every
+ * hunk is already written, or @sink failed.
+ */
+int rchd_write_hunk_coded(rchd_writer_t *w, uint32_t compressor,
+      const uint8_t *blob, uint32_t len, uint16_t crc);
 
 /**
  * rchd_write_prefix_size:

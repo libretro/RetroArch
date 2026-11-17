@@ -1770,12 +1770,29 @@ bool video_driver_get_vr_controller_poses(
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out);
 #endif
 
+/* A window's bounds as the user left them, for its screen's settings */
+typedef struct video_window_bounds
+{
+   unsigned pos;
+   unsigned dims;
+   /* The screens of the window they are from */
+   unsigned screens;
+   /* The edit count of what it was made for at the last save, and at
+    * the last move */
+   unsigned edit;
+   unsigned pos_edit;
+   /* Count moves, and moves or resizes; 0 for none yet */
+   unsigned moves;
+   unsigned sizes;
+} video_window_bounds_t;
+
 /* A screen's own window's layout, as its renderer last published it;
  * generation 0 for none */
 typedef struct video_window_layout
 {
    video_views_layout_t layout;
    video_views_map_t core_map;
+   video_window_bounds_t bounds;
    unsigned core_dims;
    unsigned window_dims;
    /* The display it was drawn on */
@@ -1783,6 +1800,8 @@ typedef struct video_window_layout
    /* The serial of the frame snapshot it was drawn from */
    unsigned serial;
    unsigned generation;
+   /* It had the keyboard focus */
+   bool focused;
 } video_window_layout_t;
 
 /* One window's published layouts, handed over by index as the window
@@ -1792,10 +1811,14 @@ typedef struct video_window_layout
 typedef struct video_window_layouts
 {
    video_window_layout_t slot[3];
+   video_window_bounds_t bounds;  /* the publisher's */
    retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
    unsigned next;                 /* the publisher's: slot to fill */
    unsigned last;                 /* the publisher's: slot + 1 */
+   unsigned focus;                /* the publisher's: focused generation */
    unsigned held;                 /* the main thread's: slot + 1 */
+   unsigned bounds_moves;         /* the main thread's: last taken */
+   unsigned bounds_sizes;
    /* The main thread's: the serial of the snapshot that last asked
     * for the window differently; a layout drawn before it is not
     * shown */
@@ -1813,7 +1836,19 @@ typedef struct video_window_displays
    unsigned next;                 /* the publisher's: slot to fill */
    unsigned last;                 /* the publisher's: slot + 1 */
    unsigned held;                 /* the app thread's: slot + 1 */
+   bool pending[3];               /* no list yet, one is coming */
 } video_window_displays_t;
+
+/* The app thread's route for a redraw, which may run on the video
+ * thread: video_window_displays_t's three slots */
+typedef struct video_windows_routes
+{
+   video_windows_route_t slot[3];
+   retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
+   unsigned next;                 /* the app thread's: slot to fill */
+   unsigned last;                 /* the app thread's: slot + 1 */
+   unsigned held;                 /* the redraw's: slot + 1 */
+} video_windows_routes_t;
 
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
@@ -2188,9 +2223,10 @@ typedef struct
    /* The video thread's redraw of the cached frame fills its own. */
    video_windows_frame_t windows_redraw;
 #endif
-   /* The main thread's last route, which a redraw keeps; written only
-    * when it changes, as Win32's redraws run beside the main thread */
+   /* The main thread's last route, and the redraw's copy of it,
+    * handed over when it changes */
    video_windows_route_t windows_route;
+   video_windows_routes_t windows_routes;
    /* RetroArch's moves between displays; app thread */
    video_windows_host_t windows_host;
    /* Each UI layer's target as this frame laid it out, and the next */
@@ -2203,17 +2239,37 @@ typedef struct
    /* The last video_driver_window_generation(); never reset, so a
     * replacement window never reuses one. */
    retro_atomic_int_t window_generation;
-   /* Screens video_driver_attach_windows() sent back, for the next
-    * frame */
+   /* Screens video_driver_attach_windows() and
+    * video_driver_close_windows() sent back, for the next frame */
    retro_atomic_int_t windows_failed;
+   retro_atomic_int_t windows_closed;
+   /* Each screen's edit count in the frame of its last close, as a
+    * VIDEO_WINDOWS_FAILED_TAG() */
+   retro_atomic_int_t windows_closed_edit[RETRO_VIDEO_VIEWS_MAX];
    unsigned windows_forced_attached;
+   unsigned windows_closed_attached;
    unsigned windows_restore;
+   unsigned windows_retry;
+   /* Each screen's video_window_settings_t::edit */
+   unsigned windows_edit[RETRO_VIDEO_VIEWS_MAX];
+#ifdef HAVE_MENU
+   /* A bit a screen: rows a take changed, and of them those that had
+    * no size before, until the menu reads them; main thread */
+   unsigned windows_rows_moved;
+   unsigned windows_rows_sized;
+#endif
    /* A bit a window id: those the last snapshot wanted, 0 while
     * windows are off; main thread */
    unsigned windows_wanted;
    /* The serial of the snapshot the driver draws: the video thread's
     * under the wrapper */
    unsigned windows_drawn;
+#ifdef ANDROID
+   /* Any thread sets it, the app thread takes it: the next frame sends
+    * Java the whole set, changed or not */
+   retro_atomic_int_t windows_blank_resend;
+   video_windows_blank_t windows_blank;
+#endif
 #endif
 } video_driver_state_t;
 
@@ -2637,6 +2693,11 @@ void video_driver_headset_recenter(void);
  * video_headset_view and return it; VIDEO_HEADSET_VIEW_LAST, unchanged,
  * without a presenting headset. */
 unsigned video_driver_headset_view_toggle(void);
+/* Main thread: flips Blank Unused Screens for the running content, sets
+ * @blanked to whether unused panels are covered now and @covered to how
+ * many there are to cover; false, with nothing changed, without content
+ * or off Android. */
+bool video_driver_blank_unused_toggle(bool *blanked, unsigned *covered);
 /* Main thread: the headset's edit mode, on or off, and its count of
  * let-go grabs, for the next frame snapshot. */
 void video_driver_headset_edit(bool editing, unsigned seq);
@@ -3306,6 +3367,11 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t gl_cg_backend;
+
+/* The screens' windows a driver left up that the next did not take go.
+ * On the thread of the context: after a driver's init, and once the
+ * last driver is gone. */
+void video_driver_release_kept_windows(void);
 
 RETRO_END_DECLS
 

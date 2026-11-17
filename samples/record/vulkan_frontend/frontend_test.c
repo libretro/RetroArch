@@ -5,6 +5,7 @@
 #include <string.h>
 #include <file/config_file.h>
 #include "../../../record/drivers/record_vulkan.h"
+#include "../../../record/record_gpu_dispatch_vulkan_hevc.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include "../../../audio/audio_driver.h"
@@ -28,11 +29,14 @@ static video_driver_state_t video;
 static struct retro_hdr_metadata hdr;
 static record_vulkan_device_t device;
 static vulkan_encode_h264_open_t offered;
+static vulkan_encode_hevc_open_t hevc_offered;
 static record_gpu_output_vulkan_config_t output;
 static const char *profile = "", *missing;
 static unsigned starts, finishes, frees, records, commits, audio_calls, deinit_calls, init_calls;
 static int finish_result, frame_result, audio_result;
 static bool asynchronous, wrapper, in_flight, renderer_fail;
+static unsigned stream_requests;
+static bool stream_legacy;
 settings_t *config_get_ptr(void)
 {
    return &settings;
@@ -101,11 +105,22 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL get_device_proc(VkDevice d, cons
    assert(d == device.device);
    return missing && !strcmp(name, missing) ? NULL : unused_proc;
 }
+static VKAPI_ATTR VkResult VKAPI_CALL hevc_capabilities(VkPhysicalDevice physical,
+      const VkVideoProfileInfoKHR *profile, VkVideoCapabilitiesKHR *caps)
+{
+   (void)physical;
+   (void)profile;
+   (void)caps;
+   assert(!"HEVC capabilities must be queried on the I/O worker");
+   return VK_ERROR_FORMAT_NOT_SUPPORTED;
+}
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL get_instance_proc(VkInstance i, const char *name)
 {
    assert(i == device.instance);
    if (!strcmp(name, "vkGetDeviceProcAddr"))
       return (PFN_vkVoidFunction)get_device_proc;
+   if (!strcmp(name, "vkGetPhysicalDeviceVideoCapabilitiesKHR"))
+      return (PFN_vkVoidFunction)hevc_capabilities;
    return unused_proc;
 }
 record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
@@ -120,6 +135,41 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
    job.state = RECORD_VKD_STARTING;
    return &job;
 }
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_hevc(
+      const vulkan_encode_hevc_open_t *encoder, const vulkan_encode_hevc_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *mux, const char *path,
+      const vulkan_encode_capture_ops_t *capture)
+{
+   assert(ops && ops->submit.submit && capture && capture->dispatch && path && *path);
+   hevc_offered = *encoder;
+   starts++;
+   output = *mux;
+   job.state = RECORD_VKD_STARTING;
+   return &job;
+}
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_stream(
+      const vulkan_encode_h264_open_t *e, const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *mux, const char *url,
+      const vulkan_encode_capture_ops_t *capture, bool legacy)
+{
+   assert(mux->video.codec == RECORD_MP4_H264 && mux->video.max_packet_size == 0xfffffa);
+   assert(!strncmp(url, "rtmp", 4));
+   stream_requests++;
+   stream_legacy = legacy;
+   return record_gpu_dispatch_vulkan_new_capture(e, ops, mux, url, capture);
+}
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_hevc_stream(
+      const vulkan_encode_hevc_open_t *e, const vulkan_encode_hevc_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *mux, const char *url,
+      const vulkan_encode_capture_ops_t *capture, bool legacy)
+{
+   assert(mux->video.codec == RECORD_MP4_HEVC && mux->video.max_packet_size == 0xfffff7);
+   assert(!strncmp(url, "rtmp", 4));
+   stream_requests++;
+   stream_legacy = legacy;
+   return record_gpu_dispatch_vulkan_new_hevc(e, ops, mux, url, capture);
+}
+
 record_gpu_renderer_vulkan_t *record_gpu_renderer_vulkan_new(record_gpu_dispatch_vulkan_t *j,
       unsigned duration, unsigned gop, PFN_vkGetSemaphoreCounterValue counter)
 {
@@ -273,7 +323,8 @@ static void reset(struct record_params *params)
    profile = "audio_enable = true\nvcodec = h264\nformat = mp4\nvideo_qp = 24\n";
    missing = NULL;
    starts = finishes = frees = records = commits = audio_calls = deinit_calls = init_calls = 0;
-   asynchronous = wrapper = in_flight = renderer_fail = false;
+   asynchronous = wrapper = in_flight = renderer_fail = stream_legacy = false;
+   stream_requests = 0;
    finish_result = frame_result = RECORD_GPU_QUEUE_OK;
    audio_result = RECORD_VULKAN_OUTPUT_PROGRESS;
 }
@@ -370,9 +421,125 @@ static void lifecycle(void)
    assert(init_calls == 1 && !record_vk_start_requested);
    free(info);
 }
+static void hevc_admission(void)
+{
+   struct record_params params;
+   record_vk_context_t *c;
+   unsigned depth;
+   for (depth = 8; depth <= 10; depth += 2)
+   {
+      reset(&params);
+      device.hevc = true;
+      profile = depth == 8 ? "vcodec = hevc\nvideo_bit_depth = 8\n"
+         : "vcodec = hevc\nvideo_bit_depth = 10\n";
+      c = (record_vk_context_t*)record_vulkan.init(&params);
+      assert(c && starts == 1 && hevc_offered.session.video.bit_depth == depth);
+      assert(hevc_offered.session.video.color == VULKAN_ENCODE_HEVC_BT709);
+      assert(!hevc_offered.session.video.ctb_size && hevc_offered.gop == 120);
+      assert(hevc_offered.session.video.fps_num == 60000 && hevc_offered.session.video.fps_den == 1001);
+      recording.data = c;
+      recording.driver = &record_vulkan;
+      close_recording();
+   }
+   reset(&params); device.hevc = true; profile = "vcodec = hevc\nvideo_bit_depth = 9\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   reset(&params); device.hevc = true; profile = "vcodec = h264\nvideo_bit_depth = 10\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   reset(&params); device.hevc = true; profile = "vcodec = hevc\n"; hdr.output_mode = 1;
+   assert(!record_vulkan.init(&params) && !starts);
+}
+static void hdr_lifecycle(void)
+{
+   struct record_params params;
+   record_vk_context_t *c;
+   vulkan_encode_capture_source_t source;
+   unsigned mode;
+   for (mode = 1; mode <= 2; mode++)
+   {
+      reset(&params);
+      device.hevc = true;
+      profile = "vcodec = hevc\nvideo_bit_depth = 10\n";
+      hdr.output_mode = mode;
+      c = (record_vk_context_t*)record_vulkan.init(&params);
+      assert(c && starts == 1 && c->output_mode == mode);
+      assert(hevc_offered.session.video.color == VULKAN_ENCODE_HEVC_PQ);
+      recording.data = c;
+      recording.driver = &record_vulkan;
+      job.state = RECORD_VKD_READY;
+      record_vulkan_poll();
+      assert(record_vk_active == c && !retro_atomic_load_acquire_int(&c->stop));
+      memset(&source, 0, sizeof(source));
+      source.output_mode = mode;
+      source.format = mode == 1 ? VK_FORMAT_A2B10G10R10_UNORM_PACK32 : VK_FORMAT_R16G16B16A16_SFLOAT;
+      assert(record_vulkan_gpu_capture(c, (VkCommandBuffer)(uintptr_t)5, &source, 0, c->dims, mode));
+      record_vulkan_gpu_submitted(c, VK_SUCCESS);
+      assert(!record_vulkan_gpu_capture(c, (VkCommandBuffer)(uintptr_t)5, &source, 1, c->dims, 0));
+      assert(retro_atomic_load_acquire_int(&c->stop));
+      close_recording();
+   }
+   reset(&params);
+   device.hevc = true;
+   profile = "vcodec = hevc\nvideo_bit_depth = 10\n";
+   hdr.output_mode = 1;
+   c = (record_vk_context_t*)record_vulkan.init(&params);
+   assert(c);
+   recording.data = c;
+   recording.driver = &record_vulkan;
+   job.state = RECORD_VKD_READY;
+   record_vulkan_poll();
+   hdr.output_mode = 2;
+   record_vulkan_poll();
+   assert(!record_vulkan_pending() && frees == 1 && job.cancelled);
+   reset(&params);
+   device.hevc = true;
+   profile = "vcodec = hevc\nvideo_bit_depth = 10\n";
+   hdr.output_mode = 3;
+   assert(!record_vulkan.init(&params) && !starts);
+}
+static void stream_admission(void)
+{
+   struct record_params params;
+   record_vk_context_t *c;
+   unsigned codec;
+   reset(&params);
+   profile = "rtmp_legacy_commands = true\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   for (codec = 0; codec < 3; codec++)
+   {
+      reset(&params);
+      recording.streaming_enable = true; params.filename = "rtmps://localhost/live/test";
+      device.hevc = true;
+      profile = codec == 0 ? "audio_enable = true\nvcodec = h264\nformat = flv\n"
+         : codec == 1 ? "audio_enable = true\nvcodec = hevc\nformat = flv\nvideo_bit_depth = 10\nrtmp_legacy_commands = true\n"
+         : "audio_enable = false\nvcodec = hevc\nformat = flv\n";
+      if (!record_vulkan_can_stream())
+      {
+         assert(!record_vulkan.init(&params) && !starts);
+         continue;
+      }
+      c = (record_vk_context_t*)record_vulkan.init(&params);
+      assert(c && stream_requests == 1 && stream_legacy == (codec == 1));
+      assert(c->streaming && c->audio_enabled == (codec != 2));
+      if (codec != 2) assert(output.audio_follow_video && output.audio_rate == 48000);
+      close_recording();
+   }
+   reset(&params); recording.streaming_enable = true; params.filename = "rtmp://localhost/live/test";
+   params.samplerate = 32000; profile = "format = flv\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   reset(&params); recording.streaming_enable = true; params.filename = "rtmp://localhost/live/test";
+   params.channels = 6; recording.layout = 0x607; profile = "format = flv\n";
+   assert(!record_vulkan.init(&params) && !starts);
+   reset(&params); recording.streaming_enable = true; params.filename = "rtmp://localhost/live/test";
+   profile = "format = mp4\n";
+   assert(!record_vulkan.init(&params) && !starts);
+}
+
 int main(void)
 {
    admission();
+   stream_admission();
+   hevc_admission();
+   hdr_lifecycle();
    lifecycle();
    puts("Vulkan frontend admission, PCM, frame snapshots and asynchronous retirement PASS");
    return 0;

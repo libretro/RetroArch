@@ -1,7 +1,10 @@
 /* The DirectInput joypad driver, held to what the snapshot bridge
  * assumes of a driver it serves (see bridge_view.h). The driver source
- * is included for its pad table, which is filled here by hand: no
- * device is opened, so it runs under Wine with none. */
+ * is included for its pad table: each pad's DIJOYSTATE2 is filled here
+ * by hand and made the pad's view as the poll makes it, and the view is
+ * held to what DirectInput's state says - a button down, a hat's
+ * eight ways, an axis's value. No device is opened, so it runs under
+ * Wine with none. */
 #include "../../../input/drivers_joypad/dinput_joypad.c"
 
 /* the frontend's; the user's list is the settings', here none */
@@ -9,6 +12,20 @@ bool input_device_ignored(uint16_t vid, uint16_t pid)
 { return input_ignore_devices_check(NULL, vid, pid); }
 
 #include "bridge_view.h"
+
+/* What a hat at @pov holds of direction @dir, as DirectInput puts it:
+ * the four ways and the four between them, nothing else */
+static int pov_holds(DWORD pov, uint16_t dir)
+{
+   switch (dir)
+   {
+      case HAT_UP_MASK:    return pov == 0     || pov == 4500  || pov == 31500;
+      case HAT_RIGHT_MASK: return pov == 9000  || pov == 4500  || pov == 13500;
+      case HAT_DOWN_MASK:  return pov == 18000 || pov == 13500 || pov == 22500;
+      case HAT_LEFT_MASK:  return pov == 27000 || pov == 22500 || pov == 31500;
+   }
+   return 0;
+}
 
 int main(void)
 {
@@ -41,19 +58,50 @@ int main(void)
                     : (r == 3) ? -0x8000
                     : (LONG)(int16_t)bv_rand();
       }
+      /* as the poll makes it */
+      dinput_pad_make_view(pad);
+      for (i = 0; i < ARRAY_SIZE_RGB_BUTTONS; i++)
+         if (     (dinput_joypad.button(n % 3, (uint16_t)i) != 0)
+               != (pad->joy_state.rgbButtons[i] != 0))
+            bad++;
+      for (i = 0; i < 4; i++)
+      {
+         static const uint16_t dirs[4] = {
+            HAT_UP_MASK, HAT_DOWN_MASK, HAT_LEFT_MASK, HAT_RIGHT_MASK };
+         unsigned d;
+         for (d = 0; d < 4; d++)
+            if (     (dinput_joypad.button(n % 3, (uint16_t)HAT_MAP(i, dirs[d])) != 0)
+                  != pov_holds(pad->joy_state.rgdwPOV[i], dirs[d]))
+               bad++;
+      }
+      for (i = 0; i < 8; i++)
+         if ((int16_t)(dinput_joypad.axis(n % 3, AXIS_POS(i))
+                  + dinput_joypad.axis(n % 3, AXIS_NEG(i))) != (int16_t)*axes[i])
+            bad++;
       bad += bv_compare(&dinput_joypad, n % 3);
+      bad += bv_compare_view(&dinput_joypad, n % 3);
    }
 
-   /* a port with no pad on it has no buttons */
+   /* a port with no pad on it has no buttons, and no view */
    {
       input_bits_t bits;
       g_pads[5].joypad = NULL;
       g_pads[5].joy_state.rgbButtons[3] = 0x80;
+      dinput_pad_make_view(&g_pads[5]);
+      if (dinput_joypad.view(5))
+         bad++;
       dinput_joypad_get_buttons(5, &bits);
       for (i = 0; i < 256; i++)
          if (BIT256_GET(bits, i))
             bad++;
    }
+
+   /* a pad that does not read holds nothing, its hats centred */
+   g_pads[0].joy_state.rgdwPOV[0] = 0;
+   dinput_pad_release_state(&g_pads[0]);
+   for (i = 0; i < 4; i++)
+      if (dinput_joypad.button(0, (uint16_t)HAT_MAP(0, HAT_UP_MASK)))
+         bad++;
 
    if (bad)
    {

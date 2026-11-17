@@ -32,6 +32,7 @@
 #include <string/stdstring.h>
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
@@ -41,11 +42,13 @@
 
 struct linuxraw_joypad
 {
-   int fd;
-   uint32_t buttons;
-   int16_t axes[NUM_AXES];
-
    char *ident;
+   /* the pad as its poll left it, lent to the readers (input_pad_view.h):
+    * its 32 buttons and its first 16 axes */
+   input_pad_view_t view;
+   int fd;
+   /* the axes past the view's */
+   int16_t axes_hi[NUM_AXES - INPUT_PAD_VIEW_AXES];
 };
 
 /* TODO/FIXME - static globals */
@@ -68,15 +71,17 @@ static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
             if (event.number < NUM_BUTTONS)
             {
                if (event.value)
-                  BIT32_SET(pad->buttons, event.number);
+                  BIT256_SET(pad->view.buttons, event.number);
                else
-                  BIT32_CLEAR(pad->buttons, event.number);
+                  BIT256_CLEAR(pad->view.buttons, event.number);
             }
             break;
 
          case JS_EVENT_AXIS:
-            if (event.number < NUM_AXES)
-               pad->axes[event.number] = event.value;
+            if (event.number < INPUT_PAD_VIEW_AXES)
+               pad->view.axes[event.number] = event.value;
+            else if (event.number < NUM_AXES)
+               pad->axes_hi[event.number - INPUT_PAD_VIEW_AXES] = event.value;
             break;
       }
    }
@@ -177,9 +182,10 @@ retry:
                      }
 
                      close(linuxraw_pads[idx].fd);
-                     linuxraw_pads[idx].buttons = 0;
-                     memset(linuxraw_pads[idx].axes, 0,
-                           sizeof(linuxraw_pads[idx].axes));
+                     memset(&linuxraw_pads[idx].view, 0,
+                           sizeof(linuxraw_pads[idx].view));
+                     memset(linuxraw_pads[idx].axes_hi, 0,
+                           sizeof(linuxraw_pads[idx].axes_hi));
                      linuxraw_pads[idx].fd = -1;
                      *linuxraw_pads[idx].ident = '\0';
 
@@ -308,55 +314,44 @@ static void linuxraw_joypad_destroy(void)
 
 static int32_t linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
-      &linuxraw_pads[port];
    if (port >= MAX_USERS)
       return 0;
-   if (joykey < NUM_BUTTONS)
-      return (BIT32_GET(pad->buttons, joykey));
-   return 0;
+   return input_pad_view_button(&linuxraw_pads[port].view, joykey);
 }
 
 static void linuxraw_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-	const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
-      &linuxraw_pads[port];
-
-	if (pad)
-   {
-		/* all thirty-two: button() reads that many, and this copied
-		 * sixteen - buttons 16 to 31 were not in what it handed over */
-		BITS_COPY32_PTR(state, pad->buttons);
-	}
+   if (port < MAX_USERS)
+      *state = linuxraw_pads[port].view.buttons;
    else
-		BIT256_CLEAR_ALL_PTR(state);
-}
-
-static int16_t linuxraw_joypad_axis_state(
-      const struct linuxraw_joypad *pad,
-      unsigned port, uint32_t joyaxis)
-{
-   if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
-   {
-      /* Kernel returns values in range [-0x7fff, 0x7fff]. */
-      int16_t val = pad->axes[AXIS_NEG_GET(joyaxis)];
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < NUM_AXES)
-   {
-      int16_t val = pad->axes[AXIS_POS_GET(joyaxis)];
-      if (val > 0)
-         return val;
-   }
-   return 0;
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
-      &linuxraw_pads[port];
-   return linuxraw_joypad_axis_state(pad, port, joyaxis);
+   const struct linuxraw_joypad *pad;
+   unsigned i;
+   int16_t val;
+   if (port >= MAX_USERS)
+      return 0;
+   pad = &linuxraw_pads[port];
+   /* Kernel returns values in range [-0x7fff, 0x7fff]. */
+   if (AXIS_NEG_GET(joyaxis) < INPUT_PAD_VIEW_AXES
+         || AXIS_POS_GET(joyaxis) < INPUT_PAD_VIEW_AXES)
+      return input_pad_view_axis(&pad->view, joyaxis);
+   if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
+   {
+      i   = AXIS_NEG_GET(joyaxis);
+      val = pad->axes_hi[i - INPUT_PAD_VIEW_AXES];
+      return (val < 0) ? val : 0;
+   }
+   if (AXIS_POS_GET(joyaxis) < NUM_AXES)
+   {
+      i   = AXIS_POS_GET(joyaxis);
+      val = pad->axes_hi[i - INPUT_PAD_VIEW_AXES];
+      return (val > 0) ? val : 0;
+   }
+   return 0;
 }
 
 static int16_t linuxraw_joypad_state(
@@ -366,29 +361,32 @@ static int16_t linuxraw_joypad_state(
       unsigned port)
 {
    int i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-   const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
-      &linuxraw_pads[port_idx];
+   int16_t ret       = 0;
+   uint16_t port_idx = joypad_info->joy_idx;
+   const input_pad_view_t *v;
 
    if (port_idx >= MAX_USERS)
       return 0;
+   v = &linuxraw_pads[port_idx].view;
 
+   /* the common loop, with the axes past the view's read from the pad */
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if ((uint16_t)joykey != NO_BTN &&
-            (joykey < NUM_BUTTONS)   &&
-            (BIT32_GET(pad->buttons, joykey)))
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(linuxraw_joypad_axis_state(pad, port_idx, joyaxis))
+      if (joykeys[i] != NO_BTN && input_pad_view_button(v, joykeys[i]))
+         ret |= (1 << i);
+      else if (joyaxes[i] != AXIS_NONE &&
+            ((float)abs(linuxraw_joypad_axis(port_idx, joyaxes[i]))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
 
    return ret;
+}
+
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *linuxraw_joypad_view(unsigned port)
+{
+   return (port < MAX_USERS) ? &linuxraw_pads[port].view : NULL;
 }
 
 static bool linuxraw_joypad_query_pad(unsigned pad)
@@ -411,4 +409,9 @@ input_device_driver_t linuxraw_joypad = {
    NULL, /* get_sensor_input */
    linuxraw_joypad_name,
    "linuxraw",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   linuxraw_joypad_view
 };

@@ -37,7 +37,19 @@
 #include <rthreads/retro_procbarrier.h>
 #include <rthreads/retro_asym_eventcount.h>
 
+static bool asym_eventcount_init_mode(retro_asym_eventcount_t *ec, int asymmetric);
+
 bool retro_asym_eventcount_init(retro_asym_eventcount_t *ec)
+{
+   return asym_eventcount_init_mode(ec, 1);
+}
+
+bool retro_asym_eventcount_init_symmetric(retro_asym_eventcount_t *ec)
+{
+   return asym_eventcount_init_mode(ec, 0);
+}
+
+static bool asym_eventcount_init_mode(retro_asym_eventcount_t *ec, int asymmetric)
 {
    if (!ec)
       return false;
@@ -60,7 +72,7 @@ bool retro_asym_eventcount_init(retro_asym_eventcount_t *ec)
    /* Decide the protocol once. A platform with no process-wide barrier
     * runs the symmetric pair for this object's whole life; alternating
     * would leave one side ordered and the other not. */
-   ec->asymmetric = (retro_procbarrier_init(0) != RETRO_PROCBARRIER_NONE);
+   ec->asymmetric = asymmetric && (retro_procbarrier_init(0) != RETRO_PROCBARRIER_NONE);
    return true;
 }
 

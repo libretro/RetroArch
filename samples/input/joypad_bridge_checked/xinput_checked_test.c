@@ -1,8 +1,10 @@
 /* The XInput-only joypad driver (UWP, Xbox, builds without
  * DirectInput), held to what the snapshot bridge assumes of a driver
  * it serves (see bridge_view.h). The driver source is included for its
- * state table, which is filled here by hand: XInput itself is not
- * called, so it runs under Wine with no controller. */
+ * state table: each pad's XINPUT_STATE is filled here by hand and made
+ * its view as the poll makes it, and the view held to what XInput's
+ * state says. XInput itself is not called, so it runs under Wine with
+ * no controller. */
 #include "../../../input/drivers_joypad/xinput_joypad.c"
 
 #include "bridge_view.h"
@@ -28,7 +30,23 @@ int main(void)
       pad->sThumbLY            = (SHORT)bv_rand();
       pad->sThumbRX            = (SHORT)bv_rand();
       pad->sThumbRY            = (SHORT)bv_rand();
+      /* as the poll makes it */
+      xinput_joypad_make_view(&g_xinput_states[port]);
+      for (i = 0; i < g_xinput_num_buttons; i++)
+         if (     (xinput_joypad.button(port, (uint16_t)i) != 0)
+               != ((pad->wButtons & button_index_to_bitmap_code[i]) != 0))
+            bad++;
+      if (     (xinput_joypad.button(port, HAT_MAP(0, HAT_DOWN_MASK)) != 0)
+            != ((pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0))
+         bad++;
+      if (xinput_joypad.axis(port, AXIS_POS(4)) != pad->bLeftTrigger * 32767 / 255)
+         bad++;
+      if (     xinput_joypad.axis(port, AXIS_NEG(0))
+            != ((pad->sThumbLX == -32768) ? -32767
+               : (pad->sThumbLX < 0) ? pad->sThumbLX : 0))
+         bad++;
       bad += bv_compare(&xinput_joypad, port);
+      bad += bv_compare_view(&xinput_joypad, port);
    }
 
    /* a port with no controller: no buttons, no axes, and nothing read

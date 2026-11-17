@@ -9,10 +9,10 @@ struct vulkan_encode_device_plan
    VkPhysicalDeviceTimelineSemaphoreFeatures timeline;
    VkPhysicalDeviceSynchronization2Features sync;
    VkDeviceQueueCreateInfo queues[65];
-   const char *extensions[517];
+   const char *extensions[518];
    float priorities[65];
    unsigned family, index;
-   bool storage;
+   bool storage, hevc;
 };
 struct vulkan_encode_device_probe
 {
@@ -211,6 +211,9 @@ vulkan_encode_device_plan_t *vulkan_encode_device_plan_new(
    ops->families(physical, &probe->count, probe->families);
    if (probe->count > capacity || !ved_queue(p, probe, graphics))
       goto fail;
+   p->hevc = (probe->video[p->family].videoCodecOperations
+         & VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR) != 0
+      && ved_extension(p, probe, VK_KHR_VIDEO_ENCODE_H265_EXTENSION_NAME);
    probe->features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
    probe->features.pNext = &probe->sync;
    probe->sync.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
@@ -241,6 +244,10 @@ bool vulkan_encode_device_plan_queue(const vulkan_encode_device_plan_t *p,
    *index = p->index;
    *storage = p->storage;
    return true;
+}
+bool vulkan_encode_device_plan_hevc(const vulkan_encode_device_plan_t *p)
+{
+   return p && p->hevc;
 }
 void vulkan_encode_device_plan_free(vulkan_encode_device_plan_t *p)
 {

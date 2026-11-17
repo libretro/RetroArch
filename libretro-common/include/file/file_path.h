@@ -301,7 +301,9 @@ size_t fill_pathname(char *s, const char *in_path,
  * - Calls strlcpy
  *
  **/
+#ifndef RETRO_DISABLE_HOST_CLOCK
 size_t fill_dated_filename(char *s, const char *ext, size_t len);
+#endif
 
 /**
  * fill_str_dated_filename:
@@ -324,7 +326,9 @@ size_t fill_dated_filename(char *s, const char *ext, size_t len);
  *
  * @return Length of the string copied into @s
  **/
+#ifndef RETRO_DISABLE_HOST_CLOCK
 size_t fill_str_dated_filename(char *s, const char *in_str, const char *ext, size_t len);
+#endif
 
 /**
  * find_last_slash:

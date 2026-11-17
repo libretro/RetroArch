@@ -50,10 +50,9 @@ static int32_t hidpad_button(unsigned port, uint16_t joykey)
 
 static void hidpad_get_buttons(unsigned port, input_bits_t *state)
 {
-   if (!hidpad_query_pad(port))
-      BIT256_CLEAR_ALL_PTR(state);
-
-   wiiu_hid.get_buttons(hid_driver_get_data(), port, state);
+   BIT256_CLEAR_ALL_PTR(state);
+   if (hidpad_query_pad(port))
+      wiiu_hid.get_buttons(hid_driver_get_data(), port, state);
 }
 
 static int16_t hidpad_axis(unsigned port, uint32_t axis)

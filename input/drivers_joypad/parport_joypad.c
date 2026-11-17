@@ -27,6 +27,7 @@
 #include <compat/strl.h>
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -40,8 +41,10 @@
 struct parport_joypad
 {
    char *ident;
+   /* the pad as its poll left it, lent to the readers (input_pad_view.h):
+    * its thirteen buttons */
+   input_pad_view_t view;
    int fd;
-   uint32_t buttons;
    char saved_data;
    char saved_control;
    bool button_enable[PARPORT_NUM_BUTTONS];
@@ -98,22 +101,22 @@ static void parport_poll_pad(struct parport_joypad *pad)
    for (i = 0; i < 8; i++)
    {
       if (!(data & UINT8_C(1 << i)) && pad->button_enable[i])
-         BIT32_SET(pad->buttons, i);
+         BIT32_SET(pad->view.buttons.data[0], i);
       else
-         BIT32_CLEAR(pad->buttons, i);
+         BIT32_CLEAR(pad->view.buttons.data[0], i);
    }
    for (i = 3; i < 8; i++)
    {
       if (!(status & UINT8_C(1 << i)) && pad->button_enable[i + 5])
-         BIT32_SET(pad->buttons, i + 5);
+         BIT32_SET(pad->view.buttons.data[0], i + 5);
       else
-         BIT32_CLEAR(pad->buttons, i + 5);
+         BIT32_CLEAR(pad->view.buttons.data[0], i + 5);
    }
 
-   if (BIT32_GET(pad->buttons, 12) && pad->button_enable[12])
-      BIT32_CLEAR(pad->buttons, 12);
+   if (BIT32_GET(pad->view.buttons.data[0], 12) && pad->button_enable[12])
+      BIT32_CLEAR(pad->view.buttons.data[0], 12);
    else
-      BIT32_SET(pad->buttons, 12);
+      BIT32_SET(pad->view.buttons.data[0], 12);
 }
 
 static bool parport_joypad_init_pad(
@@ -265,7 +268,7 @@ static void *parport_joypad_init(void *data)
 
          for (j = 0; j < PARPORT_NUM_BUTTONS; j++)
          {
-            if (!(BIT32_GET(pad->buttons, j)))
+            if (!(BIT32_GET(pad->view.buttons.data[0], j)))
             {
                pad->button_enable[j] = true;
                found_enabled_button = true;
@@ -333,13 +336,9 @@ static void parport_joypad_destroy(void)
 
 static int32_t parport_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct parport_joypad     *pad = (const struct parport_joypad*)
-      &parport_pads[port];
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   if (joykey < PARPORT_NUM_BUTTONS)
-      return BIT32_GET(pad->buttons, joykey);
-   return 0;
+   return input_pad_view_button(&parport_pads[port].view, joykey);
 }
 
 /* TODO/FIXME - Parport does not support analog sticks */
@@ -351,39 +350,25 @@ static int16_t parport_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-   const struct parport_joypad     *pad = (const struct parport_joypad*)
-      &parport_pads[port_idx];
-
+   uint16_t port_idx = joypad_info->joy_idx;
    if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      if (
-               (uint16_t)joykey != NO_BTN
-               && (joykey < PARPORT_NUM_BUTTONS)
-               && (BIT32_GET(pad->buttons, (uint16_t)joykey)))
-         ret |= ( 1 << i);
-   }
-
-   return ret;
+   return input_pad_view_state(&parport_pads[port_idx].view, joypad_info,
+         joykeys, joyaxes);
 }
 
 static void parport_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-	const struct parport_joypad *pad = (const struct parport_joypad*)
-      &parport_pads[port];
-
-	if (pad)
-   {
-		BITS_COPY16_PTR(state, pad->buttons);
-	}
+   if (port < DEFAULT_MAX_PADS)
+      *state = parport_pads[port].view.buttons;
    else
-		BIT256_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
+}
+
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *parport_joypad_view(unsigned port)
+{
+   return (port < DEFAULT_MAX_PADS) ? &parport_pads[port].view : NULL;
 }
 
 static bool parport_joypad_query_pad(unsigned pad)
@@ -414,4 +399,9 @@ input_device_driver_t parport_joypad = {
    NULL, /* get_sensor_input */
    parport_joypad_name,
    "parport",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   parport_joypad_view
 };

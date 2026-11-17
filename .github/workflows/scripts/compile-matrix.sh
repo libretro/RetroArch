@@ -1320,9 +1320,8 @@ check "image YUV: PS2 C89" "-DPS2 -DRARCH_CONSOLE $HOSTOFF -std=c89" \
    libretro-common/formats/image/image_yuv_blit.c
 
 echo "== screens' own windows: with HAVE_VIDEO_WINDOWS =="
-# Android builds the screens' windows and a desktop build does not, so
-# no other lane compiles the drivers' window code or the frontend's
-# with it; and without threads, as a --disable-threads build would.
+# The drivers' window code and the frontend's with GLES2, GLES3 and
+# without threads, which a default desktop build does not compile.
 WINDEFS="-DHAVE_VIDEO_WINDOWS -DHAVE_EGL"
 WINTU="gfx/video_driver.c gfx/video_thread_wrapper.c input/input_driver.c \
    configuration.c menu/menu_setting.c menu/menu_displaylist.c \
@@ -1365,7 +1364,7 @@ else
       | grep -vE '^(deps|samples|libretro-common/samples|tools|pkg|os|wiiu)/')
 fi
 SCE_CC=${SCE_CC:-clang}
-SCE_SYS="-isystem /usr/include"
+SCE_SYS="-isystem tools/platform_stubs/sce -isystem /usr/include"
 [ -d /usr/include/x86_64-linux-gnu ] \
    && SCE_SYS="$SCE_SYS -isystem /usr/include/x86_64-linux-gnu"
 SCE_DEFS="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_REWIND -DHAVE_CHEATS -D_BSD_SOURCE"

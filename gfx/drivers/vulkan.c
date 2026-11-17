@@ -75,6 +75,9 @@
 #endif
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "../common/win_vulkan_dxgi.h"
+#ifdef HAVE_D3DKMT
+#include "../common/win32_common.h"
+#endif
 #endif
 #include "../common/vulkan_memory_type.h"
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
@@ -392,7 +395,9 @@ struct vk_window
 {
    video_window_native_t native;
    vulkan_output_t output;
-   video_views_layout_t layout;
+   /* Laid out in the slot it is published in, from its prepare to its
+    * present */
+   video_views_layout_t *layout;
    /* The views it draws this frame, each with its own chain */
    vulkan_filter_chain_t *chains[RETRO_VIDEO_VIEWS_MAX];
    void *surface;      /* native.surface the output was made from */
@@ -420,6 +425,8 @@ typedef struct vk
     * (vulkan_present_immediate) */
    VkSwapchainKHR flips_asked;
    VkSwapchainKHR flips_for;
+   /* and win32_d3dkmt_generation() as it was asked */
+   unsigned flips_generation;
 #endif
    vulkan_filter_chain_t *filter_chain;
    vulkan_filter_chain_t *filter_chain_default;
@@ -8489,6 +8496,7 @@ static void *vulkan_init(const video_info_t *video)
       record->family = vk->context->recording_family;
       record->producer_family = vk->context->graphics_queue_index;
       record->storage_images = vk->context->recording_storage_images;
+      record->hevc = vk->context->recording_hevc;
       record->api_version = vk->context->instance_api_version;
       if (record->api_version > vk->context->gpu_properties.apiVersion)
          record->api_version = vk->context->gpu_properties.apiVersion;
@@ -10000,27 +10008,39 @@ static bool vulkan_present_immediate(void *data)
     * the presenter's own answer, for the interval it is given */
    {
       gfx_ctx_vulkan_data_t *ctx = VULKAN_CTX_DATA_FROM_CONTEXT(vk->context);
+#ifdef HAVE_D3DKMT
+      unsigned generation        = win32_d3dkmt_generation();
+#else
+      unsigned generation        = 0;
+#endif
       if (ctx->dxgi_presenter)
          return vk->context->swap_interval <= 0
             && ra_vulkan_dxgi_immediate(
-                  (ra_vulkan_dxgi_t*)ctx->dxgi_presenter);
+                  (ra_vulkan_dxgi_t*)ctx->dxgi_presenter, generation);
       /* A swapchain of its own tears only past the compositor: its
-       * window's output is asked, once a swapchain */
+       * window's output is asked, once a swapchain and once an output */
       if (     vk->context->swapchain_present_mode
             != VK_PRESENT_MODE_IMMEDIATE_KHR)
          return false;
-      if (vk->flips_asked != ctx->swapchain)
+      if (     vk->flips_asked      != ctx->swapchain
+            || vk->flips_generation != generation)
       {
-         vk->flips_asked = ctx->swapchain;
-         vk->flips_for   = ra_vulkan_dxgi_window_flips_fullscreen(
+         vk->flips_asked      = ctx->swapchain;
+         vk->flips_generation = generation;
+         vk->flips_for        = ra_vulkan_dxgi_window_flips_fullscreen(
                (HWND)ctx->dxgi_window) ? ctx->swapchain : VK_NULL_HANDLE;
       }
       return ctx->swapchain != VK_NULL_HANDLE
          && vk->flips_for == ctx->swapchain;
    }
 #else
+   /* and where the context can say a compositor shows the window
+    * instead, it does not tear */
    return vk->context->swapchain_present_mode
-      == VK_PRESENT_MODE_IMMEDIATE_KHR;
+         == VK_PRESENT_MODE_IMMEDIATE_KHR
+      && (   !vk->ctx_driver
+          || !vk->ctx_driver->present_immediate
+          || vk->ctx_driver->present_immediate(vk->ctx_data));
 #endif
 }
 
@@ -11498,15 +11518,40 @@ static void vulkan_window_retire(vk_t *vk, unsigned w, bool keep)
    vk->windows.held.live &= ~(1u << w);
 }
 
-/* Window @w's screens back in the main window, until the next restore
- * (video_driver_restore_windows()) */
+/* Window @w's screens back in the main window: closed by the @user
+ * until the next restore or an edit of their rows, failed until the
+ * next retry */
 static void vulkan_window_attach(vk_t *vk,
-      const video_windows_frame_t *f, unsigned w)
+      const video_windows_frame_t *f, unsigned w, bool user)
 {
-   if (f)
-      video_driver_attach_windows(f->window_screens[w], f->restore);
-   vk->windows.held.failed |= 1u << w;
+   if (user)
+   {
+      if (f)
+      {
+         video_driver_close_windows(f, f->window_screens[w]);
+         vk->windows.held.closed_edit[w] = f->settings[w].edit;
+      }
+      vk->windows.held.closed |= 1u << w;
+   }
+   else
+   {
+      if (f)
+         video_driver_attach_windows(f->window_screens[w], f->retry);
+      vk->windows.held.failed |= 1u << w;
+   }
    vulkan_window_retire(vk, w, false);
+}
+
+/* What @f asks of window @w, at the generation it has */
+static void vulkan_window_request(vk_t *vk, const video_windows_frame_t *f,
+      unsigned w, video_window_request_t *out)
+{
+   memset(out, 0, sizeof(*out));
+   out->screen     = w;
+   out->screens    = f->window_screens[w];
+   out->generation = vk->windows.win[w].native.generation;
+   out->settings   = f->settings[w];
+   out->display    = f->display;
 }
 
 /* Window @w for @f's screens there, on @f's display */
@@ -11516,12 +11561,9 @@ static bool vulkan_window_make(vk_t *vk, const video_windows_frame_t *f,
    video_window_request_t request;
    struct vk_window *win = &vk->windows.win[w];
 
-   memset(&request, 0, sizeof(request));
    memset(win, 0, sizeof(*win));
-   request.screen     = w;
+   vulkan_window_request(vk, f, w, &request);
    request.generation = video_driver_window_generation();
-   request.settings   = f->settings[w];
-   request.display    = f->display;
    if (     !request.generation
          || !vk->ctx_driver->windows->create(vk->ctx_data, &request,
             &win->native))
@@ -11818,6 +11860,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    unsigned w, i, retire, create;
    video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
    unsigned closed                    = 0;
+   unsigned user_closed               = 0;
    const video_windows_frame_t *f     = video_info->windows;
    const gfx_ctx_window_driver_t *ctx = vk->ctx_driver
       ? vk->ctx_driver->windows : NULL;
@@ -11833,12 +11876,33 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       for (i = 0; i < count; i++)
       {
          unsigned id = events[i].screen;
-         if (     events[i].kind == VIDEO_WINDOW_EVENT_CLOSE
-               && id && id < RETRO_VIDEO_VIEWS_MAX
-               && (vk->windows.held.live & (1u << id))
-               && vk->windows.win[id].native.generation
-                  == events[i].generation)
+         if (     !id || id >= RETRO_VIDEO_VIEWS_MAX
+               || !(vk->windows.held.live & (1u << id))
+               || vk->windows.win[id].native.generation
+                  != events[i].generation)
+            continue;
+         if (events[i].kind == VIDEO_WINDOW_EVENT_CLOSE)
+         {
             closed |= 1u << id;
+            if (events[i].user)
+               user_closed |= 1u << id;
+         }
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY
+                    && events[i].save_dims
+                    && (vk->windows.held.made_known & (1u << id)))
+         {
+            video_driver_publish_window_bounds(id,
+                  vk->windows.held.made_screens[id],
+                  vk->windows.held.made[id].edit, events[i].save_pos,
+                  events[i].save_dims, events[i].save_moved);
+            video_windows_held_saved(&vk->windows.held, id,
+                  events[i].save_pos, events[i].save_dims,
+                  events[i].save_moved);
+         }
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN
+                    || events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_LOSS)
+            video_driver_publish_window_focus(id, events[i].generation,
+                  events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN);
       }
       /* Those let go of on an earlier frame whose output is done now */
       for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
@@ -11852,11 +11916,11 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    if (!f)
       return;
    /* Marked after steps(), which clears the marks when this frame's
-    * restore count moved, so a closed window waits for the next one */
+    * counts moved, so a closed window waits for the next one */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (closed & (1u << w))
             && (f->window_screens[w] || f->window_ui[w]))
-         vulkan_window_attach(vk, f, w);
+         vulkan_window_attach(vk, f, w, (user_closed & (1u << w)) != 0);
    create &= ~closed;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
@@ -11867,8 +11931,17 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
          continue;
       RARCH_WARN("[Vulkan] A screen window can't be made. "
             "What it shows stays in the main window.\n");
-      vulkan_window_attach(vk, f, w);
+      vulkan_window_attach(vk, f, w, false);
    }
+   /* One still going is made again, from the frame's settings */
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (     (vk->windows.held.update & vk->windows.held.live & (1u << w))
+            && !(vk->windows.win[w].flags & VK_WINDOW_FLAG_CLOSE))
+      {
+         video_window_request_t request;
+         vulkan_window_request(vk, f, w, &request);
+         ctx->update(vk->ctx_data, &vk->windows.win[w].native, &request);
+      }
 
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
@@ -11917,11 +11990,12 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       {
          RARCH_WARN("[Vulkan] A screen window can't be drawn. "
                "What it shows stays in the main window.\n");
-         vulkan_window_attach(vk, f, w);
+         vulkan_window_attach(vk, f, w, false);
          continue;
       }
       /* No free image is no failure: its last image stays */
       win->flags |= VK_WINDOW_FLAG_UP;
+      win->layout = video_driver_lend_window_layout(w);
       if (!state)
       {
          if (screens && new_frame)
@@ -11935,10 +12009,10 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       if (screens)
       {
          video_driver_window_layout_screens(f, f->window_screens[w],
-               out->dims, &win->layout);
+               out->dims, win->layout);
          screens = vulkan_vv_pick_chains(vk, &vk->views.chains,
-               &video_info->views, &win->layout, stock,
-               !win->layout.offscreen, out->dims, win->chains, rects);
+               &video_info->views, win->layout, stock,
+               !win->layout->offscreen, out->dims, win->chains, rects);
       }
       if (screens)
       {
@@ -12026,8 +12100,8 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       if (!screens)
       {
          /* Its touches map off-screen */
-         memset(&win->layout, 0, sizeof(win->layout));
-         win->layout.canvas_dims = out->dims;
+         memset(win->layout, 0, sizeof(*win->layout));
+         win->layout->canvas_dims = out->dims;
       }
 
       /* Its acquire fence has signalled: nothing reads it any more */
@@ -12055,8 +12129,8 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
       vk->tracker.pipeline = VK_NULL_HANDLE;
       if (screens)
-         vulkan_vv_draw_placements(vk, &d, &win->layout, win->chains,
-               !win->layout.offscreen, out->dims, d.direct != NULL);
+         vulkan_vv_draw_placements(vk, &d, win->layout, win->chains,
+               !win->layout->offscreen, out->dims, d.direct != NULL);
       if (vk->windows.ui_window == w)
       {
          if (vk->windows.ui_direct)
@@ -12129,13 +12203,13 @@ static void vulkan_windows_present(vk_t *vk,
          {
             RARCH_WARN("[Vulkan] A screen window's surface is gone. "
                   "What it shows stays in the main window.\n");
-            vulkan_window_attach(vk, f, w);
+            vulkan_window_attach(vk, f, w, false);
          }
          continue;
       }
       if (f)
          video_driver_publish_window_layout(w, win->native.generation,
-               vk->windows.held.display[w], &win->layout, &f->core,
+               vk->windows.held.display[w], win->layout, &f->core,
                f->core_dims, win->native.dims);
    }
 }
@@ -12986,6 +13060,7 @@ static bool vulkan_record_native(vk_t *vk, const video_frame_info_t *info,
    source.valid_width = VIDEO_SCALE_W(vk->vp.dims);
    source.valid_height = VIDEO_SCALE_H(vk->vp.dims);
    source.limited_range = true;
+   source.output_mode = mode;
    return record_vulkan_gpu_capture(info->recording_gpu, vk->cmd, &source,
          info->recording_gpu_timestamp, vk->vp.dims, mode);
 }
@@ -17013,7 +17088,8 @@ static uint32_t vulkan_get_flags(void *data)
 #if defined(HAVE_VIDEO_WINDOWS) && !(defined(HAVE_OPENXR) && defined(ANDROID))
    /* Not the Quest's: its window is the headset's, and it has no
     * second display */
-   if (     vk && vk->ctx_driver && vk->ctx_driver->windows
+   if (     vk && vk->ctx_driver
+         && video_windows_usable(vk->ctx_driver->windows)
          && retro_atomic_load_acquire_int(&vk->views.allowed))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS);
 #endif

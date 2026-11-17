@@ -1721,8 +1721,8 @@ jobs:
           # task" - a NULL condition makes both queue implementations
           # loop until the queue is EMPTY.  A caller blocking on one
           # HTTP round trip therefore also waits out every unrelated
-          # task in flight: a content scan, a core download, a
-          # thumbnail pack.  Where a wait is still necessary it must
+          # task in flight: a content scan, a core download, an
+          # assets update.  Where a wait is still necessary it must
           # name a condition that describes the caller's own work, so
           # the block is bounded by that work and nothing else.
           #
@@ -2419,6 +2419,11 @@ jobs:
           # connection that keeps dropping (more than three resumes) fail
           # and remove the partial file. Every interrupted download used
           # to fail outright.
+          # A file already at the path is replaced only by a download that
+          # succeeds: a 404, a dropped or refused connection and a cancel
+          # leave it as it was and no temporary file behind. A storage
+          # that cannot rename over it (Android SAF) gets the finished
+          # download copied over it.
           make -f Makefile.resume clean SANITIZER=address,undefined && make -f Makefile.resume -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 300 \
@@ -2428,6 +2433,25 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./http_resume_test
           make -f Makefile.resume clean
           echo "[pass] http_resume_test (TSan)"
+
+      - name: Build and run http_webdav_headers_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # task_push_webdav_move/copy/put_stream against a loopback
+          # server: a Destination and a long Digest Authorization line
+          # (its uri= a long save path) reach the server whole, and the
+          # PUT body follows its Expect: 100-continue.
+          make -f Makefile.webdav_headers clean SANITIZER=address,undefined && make -f Makefile.webdav_headers -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 300 \
+             ./http_webdav_headers_test
+          echo "[pass] http_webdav_headers_test (ASan)"
+          make -f Makefile.webdav_headers clean SANITIZER=thread && make -f Makefile.webdav_headers -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./http_webdav_headers_test
+          make -f Makefile.webdav_headers clean
+          echo "[pass] http_webdav_headers_test (TSan)"
 
       - name: Build and run HTTP initialization failure test
         shell: bash

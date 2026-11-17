@@ -496,6 +496,7 @@ VIDEO CONTEXT
 
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
+#include "../gfx/common/x11_monitors.c"
 #include "../gfx/common/xinerama_common.c"
 #include "../gfx/display_servers/dispserv_x11.c"
 
@@ -782,8 +783,14 @@ VIDEO DRIVER
 
 #ifdef HAVE_MF_AUDIO
 #include "../record/record_mf_audio.c"
-#if defined(HAVE_D3D12) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#if (defined(HAVE_D3D12) || defined(HAVE_RECORD_VULKAN)) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#include "../record/record_stream_gpu.c"
+#ifdef HAVE_D3D12
 #include "../record/record_stream_d3d12.c"
+#endif
+#ifdef HAVE_RECORD_VULKAN
+#include "../record/record_stream_vulkan.c"
+#endif
 #endif
 #endif
 
@@ -1004,7 +1011,6 @@ INPUT
 #include "../input/drivers_joypad/wiiu/hidpad_driver.c"
 #include "../input/drivers_joypad/wiiu/kpad_driver.c"
 #include "../input/drivers_joypad/wiiu/wpad_driver.c"
-#include "../input/drivers_joypad/wiiu/pad_functions.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
 #ifdef _XBOX1

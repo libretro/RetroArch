@@ -10,6 +10,7 @@
 struct net_rtmp_client
 {
    net_rtmp_session_t *session;
+   int descriptor;
    bool blocked, wire_live, delay_discard, cancelled;
 };
 struct record_mf_audio
@@ -32,7 +33,7 @@ enum net_rtmp_client_state net_rtmp_client_step(net_rtmp_client_t *c,
    net_rtmp_span_t span;
    (void)time;
    view->session = c->session;
-   view->fd = -1;
+   view->fd = c->descriptor;
    view->read = true;
    view->write = view->again = false;
    if (c->cancelled)
@@ -162,6 +163,7 @@ static void make_config(struct net_rtmp_client *c,
 {
    static const uint8_t sets[] = { 0, 0, 0, 1, 103, 66, 0, 30, 0, 0, 1, 104 };
    memset(c, 0, sizeof(*c));
+   c->descriptor = -1;
    memset(w, 0, sizeof(*w));
    memset(config, 0, sizeof(*config));
    c->session = ready();
@@ -289,6 +291,147 @@ static record_stream_d3d12_t *make_stream(struct net_rtmp_client *c,
    return record_stream_d3d12_new(w, &config, c);
 }
 
+struct rtmp_clock_fixture
+{
+   struct net_rtmp_client client;
+   record_gpu_worker_d3d12_t worker;
+   record_gpu_output_config_t config;
+   record_stream_wait_t wait;
+};
+static void bounded_pcm(void)
+{
+   static const unsigned timescales[] = {60, 30000, 48000, 60};
+   static const unsigned durations[] = {1, 1001, 1, 1};
+   static const unsigned pictures[] = {1, 1, 1, 0};
+   static const unsigned expected[] = {735, 1471, 0, 0};
+   struct rtmp_clock_fixture *f = (struct rtmp_clock_fixture*)calloc(1, sizeof(*f));
+   record_stream_d3d12_t *stream;
+   unsigned which, i;
+   int result;
+   assert(f);
+   for (which = 0; which < sizeof(expected) / sizeof(expected[0]); which++)
+   {
+      make_config(&f->client, &f->worker, &f->config);
+      f->config.stream_audio_follow_video = true;
+      f->config.video.timescale = timescales[which];
+      f->worker.duration = durations[which];
+      f->worker.frames = pictures[which];
+      stream = record_stream_d3d12_new(&f->worker, &f->config, &f->client);
+      assert(stream);
+      assert(record_stream_d3d12_audio(stream, pcm, 2048) == RECORD_GPU_OUTPUT_PROGRESS);
+      assert(record_stream_d3d12_audio_finish(stream));
+      f->worker.busy = true;
+      for (i = 0; i < 20; i++)
+         assert(record_stream_d3d12_step(stream, 0, &f->wait) != RECORD_GPU_OUTPUT_ERROR);
+      assert(!submitted && !aac_owner->input && !aac_owner->finishing);
+      f->worker.busy = false;
+      if (!which)
+      {
+         for (i = 0; i < 1000 && !aac_owner->input; i++)
+            assert(record_stream_d3d12_step(stream, 0, &f->wait) != RECORD_GPU_OUTPUT_ERROR);
+         assert(i < 1000 && !submitted && !record_stream_gpu_audio_frames(stream));
+      }
+      submit_busy = 1;
+      result = RECORD_GPU_OUTPUT_BUSY;
+      for (i = 0; i < 10000 && result != RECORD_GPU_OUTPUT_END; i++)
+      {
+         result = record_stream_d3d12_step(stream, 0, &f->wait);
+         assert(result != RECORD_GPU_OUTPUT_ERROR);
+      }
+      assert(i < 10000 && submitted == expected[which]);
+      assert(record_stream_gpu_audio_frames(stream) == expected[which]);
+      assert(record_stream_d3d12_free(stream) && net_rtmp_session_free(f->client.session));
+   }
+   free(f);
+   puts("PASS stream PCM bounded to video, fractional clocks, short/empty tails and BUSY native input");
+}
+static void bounded_clock_overflow(void)
+{
+   struct rtmp_clock_fixture *f = (struct rtmp_clock_fixture*)calloc(1, sizeof(*f));
+   record_stream_d3d12_t *stream;
+   unsigned i;
+   int result = RECORD_GPU_OUTPUT_BUSY;
+   assert(f);
+   make_config(&f->client, &f->worker, &f->config);
+   f->config.stream_audio_follow_video = true;
+   f->config.video.timescale = 1;
+   f->worker.frames = 1;
+   f->worker.duration = (uint64_t)-1;
+   stream = record_stream_d3d12_new(&f->worker, &f->config, &f->client);
+   assert(stream && record_stream_d3d12_audio_finish(stream));
+   for (i = 0; i < 1000 && result != RECORD_GPU_OUTPUT_ERROR; i++)
+      result = record_stream_d3d12_step(stream, 0, &f->wait);
+   assert(i < 1000 && record_stream_d3d12_error(stream) == RECORD_GPU_OUTPUT_ERROR_AUDIO);
+   assert(record_stream_d3d12_step(stream, 0, &f->wait) == RECORD_GPU_OUTPUT_ERROR);
+   assert(f->worker.releases == 1 && !record_stream_gpu_audio_frames(stream));
+   assert(record_stream_d3d12_free(stream) && net_rtmp_session_free(f->client.session));
+   free(f);
+}
+static unsigned generic_calls;
+static int generic_result;
+static int generic_step(void *worker, record_stream_packet_t *packet)
+{
+   assert(worker && packet);
+   generic_calls++;
+   return generic_result;
+}
+static bool generic_release(void *worker)
+{
+   (void)worker;
+   assert(0); /* END and invalid results own no packet. */
+   return false;
+}
+static bool generic_retry(const void *worker)
+{
+   assert(worker);
+   return false;
+}
+static void generic_backend(void)
+{
+   struct net_rtmp_client client;
+   record_gpu_worker_d3d12_t worker;
+   record_gpu_output_config_t config;
+   record_stream_gpu_t *stream;
+   record_stream_worker_ops_t ops;
+   record_stream_wait_t wait;
+   unsigned i, invalid;
+   int result;
+   for (invalid = 0; invalid < 2; invalid++)
+   {
+      make_config(&client, &worker, &config);
+      config.audio_rate = config.audio_layout = config.audio_kbps = 0;
+      config.audio_fifo_frames = 0;
+      memset(&ops, 0, sizeof(ops));
+      assert(!record_stream_gpu_new(&worker, NULL, &config, &client));
+      assert(!record_stream_gpu_new(&worker, &ops, &config, &client));
+      ops.step = generic_step;
+      assert(!record_stream_gpu_new(&worker, &ops, &config, &client));
+      ops.release = generic_release;
+      assert(!record_stream_gpu_new(&worker, &ops, &config, &client));
+      ops.retry_needed = generic_retry;
+      generic_calls = 0;
+      generic_result = invalid ? 99 : RECORD_STREAM_WORKER_END;
+      stream = record_stream_gpu_new(&worker, &ops, &config, &client);
+      assert(stream);
+      memset(&ops, 0, sizeof(ops)); /* Constructor must copy the dispatch. */
+      result = RECORD_GPU_OUTPUT_BUSY;
+      for (i = 0; i < 1000; i++)
+      {
+         result = record_stream_gpu_step(stream, 0, &wait);
+         if (result == RECORD_GPU_OUTPUT_END || result == RECORD_GPU_OUTPUT_ERROR)
+            break;
+      }
+      assert(generic_calls == 1);
+      assert(result == (invalid ? RECORD_GPU_OUTPUT_ERROR : RECORD_GPU_OUTPUT_END));
+      if (invalid)
+      {
+         assert(record_stream_gpu_error(stream) == RECORD_GPU_OUTPUT_ERROR_VIDEO);
+         assert(record_stream_gpu_step(stream, 0, &wait) == RECORD_GPU_OUTPUT_ERROR);
+      }
+      assert(record_stream_gpu_free(stream) && net_rtmp_session_free(client.session));
+   }
+   puts("PASS generic GPU worker dispatch snapshot, admission, EOS and invalid results");
+}
 int main(void)
 {
    struct net_rtmp_client client;
@@ -304,6 +447,9 @@ int main(void)
       pcm[i] = 1234;
       pcm[i + 1] = -5678;
    }
+   generic_backend();
+   bounded_pcm();
+   bounded_clock_overflow();
    stream = make_stream(&client, &worker);
    assert(stream && !record_stream_d3d12_free(stream));
    assert(record_stream_d3d12_audio(stream, pcm, 2048) == RECORD_GPU_OUTPUT_PROGRESS);

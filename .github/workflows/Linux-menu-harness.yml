@@ -24,6 +24,11 @@ on:
       - 'samples/menu/playlist_nav/**'
       - 'samples/network/command_frames/**'
       - 'samples/menu/nav_repeat_stall/**'
+      - 'samples/menu/pad_tag_rows/**'
+      - 'input/input_pad_tag.h'
+      - 'input/input_driver.c'
+      - 'input/drivers_joypad/test_joypad.c'
+      - 'tasks/task_autodetect.c'
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
       - 'samples/menu/ozone_sublabel_scroll/**'
@@ -69,6 +74,11 @@ on:
       - 'samples/menu/playlist_nav/**'
       - 'samples/network/command_frames/**'
       - 'samples/menu/nav_repeat_stall/**'
+      - 'samples/menu/pad_tag_rows/**'
+      - 'input/input_pad_tag.h'
+      - 'input/input_driver.c'
+      - 'input/drivers_joypad/test_joypad.c'
+      - 'tasks/task_autodetect.c'
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
       - 'samples/menu/ozone_sublabel_scroll/**'
@@ -263,6 +273,27 @@ jobs:
           samples/menu/nav_repeat_stall/build.sh
           ./samples/menu/nav_repeat_stall/menu_nav_repeat_stall_test
           make -C samples/menu/nav_repeat_stall clean
+
+      - name: Build and run pad_tags_test
+        shell: bash
+        run: |
+          set -eu
+          # Two controllers shown with one name: each is told apart by
+          # a tag hashed from its own identity (its serial or address,
+          # none of which is shown, else its port, never the slot),
+          # numbered when two tags are the same, "#N" with no identity
+          # where no slot number is beside it. While two share a name,
+          # a press of a button or a pull of a trigger marks the pad's
+          # rows "Pressed" for a second and the rows' sublabels say a
+          # press finds one, except in Ozone, whose footer hint is up on
+          # the controller pages only. Test joypad pads through the real
+          # frame loop. Shares the non-Qt build made above. --bridge
+          # runs it all again with the pads read through the snapshot
+          # bridge, where a press is found in the view the poll left.
+          samples/menu/pad_tag_rows/build.sh
+          ./samples/menu/pad_tag_rows/pad_tags_test
+          ./samples/menu/pad_tag_rows/pad_tags_test --bridge
+          make -C samples/menu/pad_tag_rows clean
 
       - name: Build and run menu_icon_ownership_test
         shell: bash

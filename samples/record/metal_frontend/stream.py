@@ -209,7 +209,19 @@ def verify(args, root, threaded):
     decoded_frames = len(samples) // args.channels
     output_frames = int(finalized[2]) * output_rate / args.source_rate
     assert decoded_frames % 1024 == 0 and output_frames <= decoded_frames < output_frames + 4096
-    assert abs(decoded_frames / output_rate - (pts[-1] + 1001 / 60000)) < .06
+    # A live stream may drop a frame the encoder can't take in time
+    # (allow_drop); those at the end shorten the video, not the audio.
+    # The audio sets how many frames ran, the timestamps how many were
+    # sent and where: a drop mid-stream is a gap, one at the end is not.
+    ran = round(int(finalized[2]) / args.source_rate * 60000 / 1001)
+    spanned = round((pts[-1] - pts[0]) * 60000 / 1001) + 1
+    dropped, dropped_at_end = ran - len(pts), max(0, ran - spanned)
+    # Under load (a CI runner encoding HEVC, threaded) a quarter of the
+    # frames may go; half not arriving is video lost, not a busy encoder
+    assert 0 <= dropped <= ran // 2, (ran, len(pts), dropped)
+    assert abs(decoded_frames / output_rate
+               - (pts[-1] + (1 + dropped_at_end) * 1001 / 60000)) < .06, \
+        (decoded_frames / output_rate, pts[-1], dropped_at_end)
     amplitudes = []
     for channel, frequency in enumerate((440, 660)[:args.channels]):
         values = samples[4096:24000][channel::args.channels]
@@ -220,6 +232,7 @@ def verify(args, root, threaded):
         assert abs(amplitude - .2) < .04, (channel, amplitude)
         amplitudes.append(amplitude)
     result.update(pcm_frames=decoded_frames, amplitudes=amplitudes, audio_rate=output_rate,
+                  dropped_frames=dropped, dropped_at_end=dropped_at_end,
                   scope='Aligned quality; exact native AAC priming/SRC padding covered by the worker fixtures')
     (root / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
     print('PASS Metal frontend streaming start/stop, A/V and retirement: ' + json.dumps(result), flush=True)

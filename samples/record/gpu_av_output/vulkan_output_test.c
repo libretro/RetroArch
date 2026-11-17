@@ -60,6 +60,9 @@ static int wrapped_audio(void)
       c.audio_layout = channels == 3 ? 7 : 0x60f;
       c.audio_kbps = 448;
       c.audio_fifo_frames = 1536;
+      c.stream_client = (struct net_rtmp_client*)&c;
+      CHECK(!record_gpu_output_vulkan_new(&w, &c, "rtmp://must-not-create-file"));
+      c.stream_client = NULL;
       p = record_gpu_output_vulkan_new(&w, &c, "unused");
       CHECK(p && p->channels == channels);
       offset = p->audio.capacity / p->frame_bytes * p->frame_bytes;

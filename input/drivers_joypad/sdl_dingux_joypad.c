@@ -22,6 +22,7 @@
 #include <libretro.h>
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
@@ -160,9 +161,10 @@ typedef struct
 #if defined(SDL_DINGUX_HAS_RUMBLE)
    dingux_joypad_rumble_t rumble;
 #endif
+   /* the pad as its poll left it, lent to the readers (input_pad_view.h):
+    * the RetroPad's sixteen, axes 0-3 the sticks' x and y */
+   input_pad_view_t view;
    unsigned num_axes;
-   uint16_t pad_state;
-   int16_t analog_state[2][2];
    bool connected;
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
    bool menu_toggle;
@@ -405,82 +407,24 @@ static bool sdl_dingux_joypad_query_pad(unsigned port)
 
 static int32_t sdl_dingux_joypad_button(unsigned port, uint16_t joykey)
 {
-   dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
-
    if (port != 0)
       return 0;
-
-   return (joypad->pad_state & (1 << joykey));
+   return input_pad_view_button(&dingux_joypad.view, joykey);
 }
 
 static void sdl_dingux_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-   dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
-
-   /* Macros require braces here... */
    if (port == 0)
-   {
-      BITS_COPY16_PTR(state, joypad->pad_state);
-   }
+      *state = dingux_joypad.view.buttons;
    else
-   {
       BIT256_CLEAR_ALL_PTR(state);
-   }
-}
-
-static int16_t sdl_dingux_joypad_axis_state(unsigned port, uint32_t joyaxis)
-{
-#if defined(SDL_DINGUX_HAS_ANALOG)
-   if (port == 0)
-   {
-      dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
-      if (AXIS_NEG_GET(joyaxis) < 4)
-      {
-         int16_t val  = 0;
-         int16_t axis = AXIS_NEG_GET(joyaxis);
-         switch (axis)
-         {
-            case 0:
-            case 1:
-               val = joypad->analog_state[0][axis];
-               break;
-            case 2:
-            case 3:
-               val = joypad->analog_state[1][axis - 2];
-               break;
-         }
-         if (val < 0)
-            return val;
-      }
-      else if (AXIS_POS_GET(joyaxis) < 4)
-      {
-         int16_t val  = 0;
-         int16_t axis = AXIS_POS_GET(joyaxis);
-         switch (axis)
-         {
-            case 0:
-            case 1:
-               val = joypad->analog_state[0][axis];
-               break;
-            case 2:
-            case 3:
-               val = joypad->analog_state[1][axis - 2];
-               break;
-         }
-         if (val > 0)
-            return val;
-      }
-   }
-#endif
-   return 0;
 }
 
 static int16_t sdl_dingux_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (port != 0)
       return 0;
-
-   return sdl_dingux_joypad_axis_state(port, joyaxis);
+   return input_pad_view_axis(&dingux_joypad.view, joyaxis);
 }
 
 static int16_t sdl_dingux_joypad_state(
@@ -489,33 +433,16 @@ static int16_t sdl_dingux_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
-   uint16_t port_idx       = joypad_info->joy_idx;
-   int16_t ret             = 0;
-   size_t i;
-
-   if (port_idx != 0)
+   if (joypad_info->joy_idx != 0)
       return 0;
+   return input_pad_view_state(&dingux_joypad.view, joypad_info,
+         joykeys, joyaxes);
+}
 
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-#if defined(SDL_DINGUX_HAS_ANALOG)
-      const uint32_t joyaxis = joyaxes[i];
-#endif
-
-      if ((uint16_t)joykey != NO_BTN &&
-            (joypad->pad_state & (1 << (uint16_t)joykey)))
-         ret |= (1 << i);
-#if defined(SDL_DINGUX_HAS_ANALOG)
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(sdl_dingux_joypad_axis_state(port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-#endif
-   }
-
-   return ret;
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *sdl_dingux_joypad_view(unsigned port)
+{
+   return (port == 0) ? &dingux_joypad.view : NULL;
 }
 
 static void sdl_dingux_joypad_poll(void)
@@ -546,52 +473,52 @@ static void sdl_dingux_joypad_poll(void)
             switch (event.key.keysym.sym)
             {
                case SDL_DINGUX_SDLK_X:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_X);
                   break;
                case SDL_DINGUX_SDLK_A:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_A);
                   break;
                case SDL_DINGUX_SDLK_B:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_B);
                   break;
                case SDL_DINGUX_SDLK_Y:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_Y);
                   break;
                case SDL_DINGUX_SDLK_L:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_L);
                   break;
                case SDL_DINGUX_SDLK_R:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_R);
                   break;
                case SDL_DINGUX_SDLK_L2:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L2);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_L2);
                   break;
                case SDL_DINGUX_SDLK_R2:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R2);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_R2);
                   break;
                case SDL_DINGUX_SDLK_SELECT:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_SELECT);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_SELECT);
                   break;
                case SDL_DINGUX_SDLK_START:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_START);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_START);
                   break;
                case SDL_DINGUX_SDLK_L3:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L3);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_L3);
                   break;
                case SDL_DINGUX_SDLK_R3:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R3);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_R3);
                   break;
                case SDL_DINGUX_SDLK_UP:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_UP);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_UP);
                   break;
                case SDL_DINGUX_SDLK_RIGHT:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_RIGHT);
                   break;
                case SDL_DINGUX_SDLK_DOWN:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_DOWN);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_DOWN);
                   break;
                case SDL_DINGUX_SDLK_LEFT:
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  BIT32_SET(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_LEFT);
                   break;
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
                case SDL_DINGUX_SDLK_MENU:
@@ -607,52 +534,52 @@ static void sdl_dingux_joypad_poll(void)
             switch (event.key.keysym.sym)
             {
                case SDL_DINGUX_SDLK_X:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_X);
                   break;
                case SDL_DINGUX_SDLK_A:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_A);
                   break;
                case SDL_DINGUX_SDLK_B:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_B);
                   break;
                case SDL_DINGUX_SDLK_Y:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_Y);
                   break;
                case SDL_DINGUX_SDLK_L:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_L);
                   break;
                case SDL_DINGUX_SDLK_R:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_R);
                   break;
                case SDL_DINGUX_SDLK_L2:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L2);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_L2);
                   break;
                case SDL_DINGUX_SDLK_R2:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R2);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_R2);
                   break;
                case SDL_DINGUX_SDLK_SELECT:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_SELECT);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_SELECT);
                   break;
                case SDL_DINGUX_SDLK_START:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_START);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_START);
                   break;
                case SDL_DINGUX_SDLK_L3:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L3);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_L3);
                   break;
                case SDL_DINGUX_SDLK_R3:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R3);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_R3);
                   break;
                case SDL_DINGUX_SDLK_UP:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_UP);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_UP);
                   break;
                case SDL_DINGUX_SDLK_RIGHT:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_RIGHT);
                   break;
                case SDL_DINGUX_SDLK_DOWN:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_DOWN);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_DOWN);
                   break;
                case SDL_DINGUX_SDLK_LEFT:
-                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  BIT32_CLEAR(joypad->view.buttons.data[0], RETRO_DEVICE_ID_JOYPAD_LEFT);
                   break;
                default:
                   break;
@@ -676,28 +603,28 @@ static void sdl_dingux_joypad_poll(void)
       {
          axis_value = SDL_JoystickGetAxis(joypad->device, 0);
          /* -0x8000 can cause trouble if we later abs() it */
-         joypad->analog_state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] =
+         joypad->view.axes[0] =
                (axis_value < -0x7FFF) ? -0x7FFF : axis_value;
       }
 
       if (joypad->num_axes > 1)
       {
          axis_value = SDL_JoystickGetAxis(joypad->device, 1);
-         joypad->analog_state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] =
+         joypad->view.axes[1] =
                (axis_value < -0x7FFF) ? -0x7FFF : axis_value;
       }
 
       if (joypad->num_axes > 2)
       {
          axis_value = SDL_JoystickGetAxis(joypad->device, 2);
-         joypad->analog_state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] =
+         joypad->view.axes[2] =
                (axis_value < -0x7FFF) ? -0x7FFF : axis_value;
       }
 
       if (joypad->num_axes > 3)
       {
          axis_value = SDL_JoystickGetAxis(joypad->device, 3);
-         joypad->analog_state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] =
+         joypad->view.axes[3] =
                (axis_value < -0x7FFF) ? -0x7FFF : axis_value;
       }
    }
@@ -724,4 +651,9 @@ input_device_driver_t sdl_dingux_joypad = {
    NULL, /* get_sensor_input */
    sdl_dingux_joypad_name,
    "sdl_dingux",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   sdl_dingux_joypad_view
 };

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <boolean.h>
+#include <formats/video_color.h>
 #include <retro_common_api.h>
 RETRO_BEGIN_DECLS
 
@@ -31,6 +32,12 @@ typedef struct record_mp4_config
     * AV1 values must agree with that header. Never use display metadata. */
    unsigned color_primaries, transfer_characteristics, matrix_coefficients;
    bool full_range;
+   /* Coded content light levels in nits, 0 when unknown. Never substitute
+    * display peak/average luminance. Values must fit the 16-bit clli box. */
+   unsigned max_cll, max_fall;
+   /* Explicit source mastering display, complete or absent. Zero coordinates
+    * and zero minimum luminance remain valid when marked present. */
+   video_mastering_display_t mastering;
 } record_mp4_config_t;
 
 /* Single owner. Headers are Annex B SPS/PPS or VPS/SPS/PPS, or sized AV1

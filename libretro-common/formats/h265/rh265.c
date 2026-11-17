@@ -760,6 +760,7 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, int escaped, rh265_
    if (sps_id >= RH265_MAX_SPS) return -1;
    s->max_sub_layers_minus1 = max_sub_layers_minus1;
    s->chroma_format_idc = (int)rh265_ue(&b);
+   if (s->chroma_format_idc > 3) return -1;
    if (s->chroma_format_idc == 3)
       rh265_u1(&b);                      /* separate_colour_plane_flag */
    s->width  = (int)rh265_ue(&b);
@@ -770,10 +771,16 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, int escaped, rh265_
    conformance_window = (int)rh265_u1(&b);
    if (conformance_window)
    {
+      int sub_width_c  = (s->chroma_format_idc == 1 ||
+            s->chroma_format_idc == 2) ? 2 : 1;
+      int sub_height_c = s->chroma_format_idc == 1 ? 2 : 1;
       s->crop_left   = (int)rh265_ue(&b);
       s->crop_right  = (int)rh265_ue(&b);
       s->crop_top    = (int)rh265_ue(&b);
       s->crop_bottom = (int)rh265_ue(&b);
+      if (sub_width_c * ((int64_t)s->crop_left + s->crop_right) >= s->width ||
+          sub_height_c * ((int64_t)s->crop_top + s->crop_bottom) >= s->height)
+         return -1;
    }
    s->bit_depth_luma   = (int)rh265_ue(&b) + 8;
    s->bit_depth_chroma = (int)rh265_ue(&b) + 8;
@@ -5963,12 +5970,6 @@ int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
    if (p->sps_id < 0 || p->sps_id >= RH265_MAX_SPS || !v->sps[p->sps_id].valid)
       return -1;
    s = &v->sps[p->sps_id];
-   if (s->chroma_format_idc != 1 || s->bit_depth_luma != s->bit_depth_chroma
-         || (s->bit_depth_luma != 8 && s->bit_depth_luma != 10)
-         || s->crop_left < 0 || s->crop_right < 0 || s->crop_top < 0 || s->crop_bottom < 0
-         || 2 * ((int64_t)s->crop_left + s->crop_right) >= s->width
-         || 2 * ((int64_t)s->crop_top + s->crop_bottom) >= s->height)
-      return -1;
    out->pps_id = (int)pps_id;
    out->sps_id = p->sps_id;
    out->chroma_format_idc = s->chroma_format_idc;

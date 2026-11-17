@@ -1197,3 +1197,86 @@ uint64_t xxh3_digest(const xxh3_state_t *s)
    xxh3_stripe_scalar(acc, held + s->held - XXH3_STRIPE, sec + XXH3_LAST_KEY);
    return xxh3_merge_sec(acc, sec, s->total);
 }
+
+/* An aligned first span can be consumed directly, preserving the stripe
+ * position across both spans. The second span owns the complete final stripe. */
+#define XXH3_PAIR(name, KEYS, RUN, LAST) \
+static uint64_t name(const uint8_t *first, size_t first_len, \
+      const uint8_t *second, size_t second_len, uint64_t seed) \
+{ \
+   uint64_t acc[8]; \
+   uint8_t buf[XXH3_SECRET]; \
+   const uint8_t *sec = KEYS(buf, seed); \
+   unsigned pos = 0; \
+   memcpy(acc, xxh3_init_acc, sizeof(acc)); \
+   RUN(acc, first, first_len / XXH3_STRIPE, second, \
+         (second_len - 1) / XXH3_STRIPE, &pos, sec); \
+   LAST(acc, second + second_len - XXH3_STRIPE, \
+         sec + XXH3_LAST_KEY); \
+   return xxh3_merge_sec(acc, sec, first_len + second_len); \
+}
+
+XXH3_PAIR(xxh3_pair_scalar, xxh3_keys, xxh3_run_scalar, xxh3_stripe_scalar)
+#if defined(XXH3_HAVE_SSE2)
+XXH3_TARGET("sse2")
+XXH3_PAIR(xxh3_pair_sse2, xxh3_keys_sse2, xxh3_run_sse2, xxh3_stripe_scalar)
+#endif
+#if defined(XXH3_HAVE_AVX2)
+XXH3_TARGET("avx2")
+XXH3_PAIR(xxh3_pair_avx2, xxh3_keys_avx2, xxh3_run_avx2, xxh3_stripe_scalar)
+#endif
+#if defined(XXH3_HAVE_AVX512)
+XXH3_TARGET("avx512f")
+static INLINE void xxh3_pair_last_avx512(uint64_t *acc,
+      const uint8_t *input, const uint8_t *key)
+{
+   __m512i d = _mm512_loadu_si512((const void *)input);
+   __m512i dk = _mm512_xor_si512(d, _mm512_loadu_si512((const void *)key));
+   __m512i sum = _mm512_add_epi64(_mm512_loadu_si512((const void *)acc),
+         _mm512_mul_epu32(dk, _mm512_srli_epi64(dk, 32)));
+   _mm512_storeu_si512((void *)acc, _mm512_add_epi64(sum,
+         _mm512_shuffle_epi32(d, (_MM_PERM_ENUM)0x4E)));
+}
+XXH3_TARGET("avx512f")
+XXH3_PAIR(xxh3_pair_avx512, xxh3_keys, xxh3_run_avx512, xxh3_pair_last_avx512)
+#endif
+#if defined(XXH3_HAVE_NEON)
+XXH3_PAIR(xxh3_pair_neon, xxh3_keys_neon, xxh3_run_neon, xxh3_stripe_scalar)
+#endif
+#undef XXH3_PAIR
+
+uint64_t xxh3_64_pair(const void *first, size_t first_len,
+      const void *second, size_t second_len, uint64_t seed)
+{
+   xxh3_state_t state;
+   if (!first_len)
+      return xxh3_64(second, second_len, seed);
+   if (!second_len)
+      return xxh3_64(first, first_len, seed);
+   if (!(first_len & (XXH3_STRIPE - 1)) &&
+       second_len >= XXH3_STRIPE && first_len + second_len > 240)
+   {
+#if defined(XXH3_HAVE_SSE2)
+      int path = retro_atomic_load_acquire_int(&xxh3_path);
+      if (!path)
+         path = xxh3_choose();
+#if defined(XXH3_HAVE_AVX512)
+      if (path == 4)
+         return xxh3_pair_avx512(first, first_len, second, second_len, seed);
+#endif
+#if defined(XXH3_HAVE_AVX2)
+      if (path == 3)
+         return xxh3_pair_avx2(first, first_len, second, second_len, seed);
+#endif
+      if (path == 2)
+         return xxh3_pair_sse2(first, first_len, second, second_len, seed);
+#elif defined(XXH3_HAVE_NEON)
+      return xxh3_pair_neon(first, first_len, second, second_len, seed);
+#endif
+      return xxh3_pair_scalar(first, first_len, second, second_len, seed);
+   }
+   xxh3_reset(&state, seed);
+   xxh3_update(&state, first, first_len);
+   xxh3_update(&state, second, second_len);
+   return xxh3_digest(&state);
+}

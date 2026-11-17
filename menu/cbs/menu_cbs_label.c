@@ -103,6 +103,59 @@ static int action_bind_label_cheat_browse_address(
 }
 #endif
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+/* A screen's rows on its page, without "Game Screen N" */
+static int action_bind_label_video_screen_page(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   static const enum msg_hash_enums rows[][2] = {
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY,
+        MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_DISPLAY },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+        MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_FULLSCREEN },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X,
+        MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_X },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y,
+        MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_Y },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH,
+        MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT,
+        MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT }
+   };
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
+   unsigned r;
+   for (r = 0; r < ARRAY_SIZE(rows); r++)
+      if (     cbs->enum_idx >= rows[r][0]
+            && cbs->enum_idx <= rows[r][0] + RETRO_VIDEO_VIEWS_MAX)
+      {
+         strlcpy(s, msg_hash_to_str(rows[r][1]), len);
+         break;
+      }
+   return 0;
+}
+#endif
+
+#if defined(HAVE_VIDEO_WINDOWS) && defined(ANDROID)
+/* Game Screens lists each screen's Display as the screen itself */
+static int action_bind_label_video_screen_android(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
+   snprintf(s, len, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS),
+         (unsigned)(cbs->enum_idx - MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY) + 1);
+   return 0;
+}
+#endif
+
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -113,6 +166,23 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
 
    if (cbs->enum_idx == MSG_UNKNOWN)
       return 0;
+
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
+         && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT_LAST)
+   {
+      BIND_ACTION_LABEL(cbs, action_bind_label_video_screen_page);
+      return 0;
+   }
+#endif
+#if defined(HAVE_VIDEO_WINDOWS) && defined(ANDROID)
+   if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
+         && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_LAST)
+   {
+      BIND_ACTION_LABEL(cbs, action_bind_label_video_screen_android);
+      return 0;
+   }
+#endif
 
    switch (cbs->enum_idx)
    {

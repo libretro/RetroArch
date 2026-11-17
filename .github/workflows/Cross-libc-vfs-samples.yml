@@ -87,6 +87,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Windows stat normalization and conversion ownership
+        shell: bash
+        working-directory: libretro-common/samples/file/vfs
+        env:
+          ASAN_OPTIONS: ${{ matrix.asan_opts }}
+        run: make win32-stat-contract-check SANITIZER=address,undefined
+
       - name: Build and run
         shell: bash
         working-directory: libretro-common/samples/file/vfs

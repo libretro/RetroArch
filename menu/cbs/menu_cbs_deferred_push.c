@@ -164,6 +164,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_rdb_collection,                 DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_main_menu_list,                      DISPLAYLIST_MAIN_MENU)
 GENERIC_DEFERRED_PUSH(deferred_music_list,                          DISPLAYLIST_MUSIC_LIST)
 GENERIC_DEFERRED_PUSH(deferred_user_binds_list,                     DISPLAYLIST_USER_BINDS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_input_port_controllers_list,      DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_list,                  DISPLAYLIST_ACCOUNTS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_driver_settings_list,           DISPLAYLIST_DRIVER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_core_settings_list,             DISPLAYLIST_CORE_SETTINGS_LIST)
@@ -176,6 +177,11 @@ GENERIC_DEFERRED_PUSH(deferred_push_video_output_settings_list,    DISPLAYLIST_V
 GENERIC_DEFERRED_PUSH(deferred_push_video_scaling_settings_list,    DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_hdr_settings_list,        DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_stereo_settings_list,     DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_game_screens_settings_list, DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST)
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+GENERIC_DEFERRED_PUSH(deferred_push_video_screen_settings_list,     DISPLAYLIST_VIDEO_SCREEN_SETTINGS_LIST)
+#endif
+GENERIC_DEFERRED_PUSH(deferred_push_video_headset_settings_list,    DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_dlss_nr_settings_list,    DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_crt_switchres_settings_list,    DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
@@ -254,6 +260,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_list,          DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_settings,      DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS)
 GENERIC_DEFERRED_PUSH(deferred_push_input_retropad_binds_list,        DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_controllers_list,           DISPLAYLIST_INPUT_CONTROLLERS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_input_headset_controls_list,      DISPLAYLIST_INPUT_HEADSET_CONTROLS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
@@ -788,6 +795,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, deferred_push_video_scaling_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST, deferred_push_video_hdr_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST, deferred_push_video_stereo_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST, deferred_push_video_game_screens_settings_list},
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST, deferred_push_video_screen_settings_list},
+#endif
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST, deferred_push_video_headset_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST, deferred_push_video_dlss_nr_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST, deferred_push_crt_switchres_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST, deferred_push_audio_settings_list},
@@ -816,8 +828,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_INFORMATION, deferred_push_information},
       {MENU_ENUM_LABEL_SHADER_OPTIONS, deferred_push_shader_options},
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST, deferred_user_binds_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST, deferred_push_input_port_controllers_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST, deferred_push_input_retropad_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST, deferred_push_input_controllers_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_HEADSET_CONTROLS_LIST, deferred_push_input_headset_controls_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST, deferred_push_input_hotkey_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS, deferred_push_quick_menu_override_options},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST, deferred_push_accounts_youtube_list},
@@ -932,6 +946,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       static const deferred_push_enum_map_t deferred_push_map[] = {
          { MENU_ENUM_LABEL_MAIN_MENU, deferred_main_menu_list },
          { MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST, deferred_user_binds_list },
+         { MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST, deferred_push_input_port_controllers_list },
          { MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST, deferred_push_accounts_list },
          { MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST, deferred_push_playlist_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST, deferred_push_playlist_manager_list },
@@ -1012,6 +1027,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST, deferred_push_video_output_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST, deferred_push_video_hdr_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST, deferred_push_video_stereo_settings_list },
+         { MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST, deferred_push_video_game_screens_settings_list },
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+         { MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST, deferred_push_video_screen_settings_list },
+#endif
+         { MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST, deferred_push_video_headset_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST, deferred_push_video_dlss_nr_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, deferred_push_video_scaling_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST, deferred_push_crt_switchres_settings_list },

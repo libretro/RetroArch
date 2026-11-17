@@ -131,6 +131,8 @@ bool video_driver_translate_coord_viewport(struct video_viewport *vp,
 { (void)vp; (void)x; (void)y; (void)pos; (void)screen_pos; (void)oob;
   return false; }
 struct menu_state *menu_state_get_ptr(void) { return &t_menu_st; }
+/* names coming to be shared or parting: the menu is not linked */
+void menu_driver_pads_alike_changed(void) { }
 /* input_keymaps.c is not linked: the keys the entries here name */
 const struct input_key_map input_config_key_map[] = {
    { "f", RETROK_f },

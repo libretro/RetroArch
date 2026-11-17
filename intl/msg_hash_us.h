@@ -7922,16 +7922,8 @@ MSG_HASH(
    "Horizontal"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
-   "Attached"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    "Separate"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
-   "Hidden"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE_ANDROID,
@@ -7942,20 +7934,36 @@ MSG_HASH(
    "Let game screens and the menu use other displays. Off keeps everything in one window."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
    "Screen %u"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
-   "Attached keeps this screen with the others. Separate puts it on a window or display of its own. Hidden leaves it out."
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SETTINGS,
+   "Where this game screen appears, and its window's size and position."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
-   "Screen %u Display"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_DISPLAY,
+   "Display"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
-   "Where this screen goes when it has a window of its own. Auto picks a second display. The display RetroArch is on keeps the screen attached."
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_FULLSCREEN,
+   "Fullscreen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
+   "Window Width"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   "Window Height"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_X,
+   "Window X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_Y,
+   "Window Y"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_DISPLAY,
@@ -7964,6 +7972,50 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY,
    "The display this game screen appears on. Auto picks one; Off leaves it out."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY_DESKTOP,
+   "Where this game screen appears: in the main window, in a window of its own on a monitor, or nowhere. Auto keeps Game Screen 1 in the main window and gives the others a window on another monitor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   "Game Screen %u Fullscreen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   "Fill the monitor with this game screen's window."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_X,
+   "Game Screen %u Window X"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_X,
+   "Where this game screen's window starts from the left of the desktop, in pixels."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_Y,
+   "Game Screen %u Window Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_Y,
+   "Where this game screen's window starts from the top of the desktop, in pixels."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_WIDTH,
+   "Game Screen %u Window Width"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_WIDTH,
+   "The width of this game screen's window. Auto sizes it."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_HEIGHT,
+   "Game Screen %u Window Height"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_HEIGHT,
+   "The height of this game screen's window. Auto sizes it."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MENU_DISPLAY,
@@ -7982,12 +8034,20 @@ MSG_HASH(
    "Display: %s"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_MAIN,
+   "Main Window"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTIFICATIONS_WITH_GAME,
    "With the Game"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTIFICATIONS_WITH_MENU,
    "With the Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_GAMES,
+   "During Games"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
@@ -12704,6 +12764,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
    "Opens the companion WIMP (Windows, Icons, Menus, Pointer) desktop user interface."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_BLANK_UNUSED_TOGGLE,
+   "Blank Unused Screens (Toggle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_BLANK_UNUSED_TOGGLE,
+   "Blank or show the built-in screens RetroArch isn't using, for the running game only. The Blank Unused Screens setting stays as it is."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
@@ -12911,6 +12979,10 @@ MSG_HASH(
    "Auto (%u)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_PAD_PRESSED,
+   "Pressed"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD,
    "Add Controller"
    )
@@ -12949,6 +13021,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARED_BINDS,
    "Shared · binds in Port %u Controls"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PAD_FIND,
+   "Press a button on a controller to find it."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ADD,
+   "Pick a connected controller to play as Player %u. It moves here from the player it plays now."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
@@ -31658,10 +31738,6 @@ MSG_HASH(
    "Error"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
-   "Network Error"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
    "Please restart the program for the changes to take effect."
    )
@@ -31804,10 +31880,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
    "Could not delete file."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
-   "Could not rename file."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -31996,18 +32068,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
    "Download All Thumbnails"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   "Entire System"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
-   "This Playlist"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
-   "Thumbnails downloaded successfully."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
@@ -33310,6 +33370,18 @@ MSG_HASH(
    "Game Focus off"
    )
 MSG_HASH(
+   MSG_BLANK_UNUSED_SCREENS_ON,
+   "Blank Unused Screens on"
+   )
+MSG_HASH(
+   MSG_BLANK_UNUSED_SCREENS_OFF,
+   "Blank Unused Screens off"
+   )
+MSG_HASH(
+   MSG_BLANK_UNUSED_SCREENS_NONE,
+   "No unused screen to blank"
+   )
+MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
    "Libretro core is hardware rendered. Must use post-shaded recording as well."
    )
@@ -33624,6 +33696,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_COMBO_SET_BUTTONS,
    "Set Buttons"
+   )
+MSG_HASH(
+   MSG_INPUT_PAD_PRESS_TO_FIND,
+   "Press to Find"
    )
 MSG_HASH(
    MSG_INPUT_COMBO_CHOOSE_ACTION,

@@ -45,10 +45,13 @@ typedef struct gfx_ctx_sdl2_data
    int  height;
    int  new_width;
    int  new_height;
+   int  interval;
 
    bool full;
    bool resized;
    bool subsystem_inited;
+   /* A secondary's interval was set since the main one was */
+   bool window_interval;
 } gfx_ctx_sdl2_data_t;
 
 static void sdl2_ctx_destroy_resources(gfx_ctx_sdl2_data_t *sdl)
@@ -70,6 +73,11 @@ static void sdl2_ctx_destroy_resources(gfx_ctx_sdl2_data_t *sdl)
    sdl->win = NULL;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
+static void sdl2_ctx_window_destroy(void *data,
+      video_window_native_t *window);
+#endif
+
 static void sdl2_ctx_destroy(void *data)
 {
    gfx_ctx_sdl2_data_t *sdl = (gfx_ctx_sdl2_data_t*)data;
@@ -77,6 +85,9 @@ static void sdl2_ctx_destroy(void *data)
    if (!sdl)
       return;
 
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl2_video_windows_free(sdl, sdl2_ctx_window_destroy);
+#endif
    sdl2_ctx_destroy_resources(sdl);
 #ifndef WEBOS
    if (sdl->subsystem_inited)
@@ -110,12 +121,17 @@ static void *sdl2_ctx_init(void *video_driver)
       if (SDL_Init(SDL_INIT_VIDEO) < 0)
          goto error;
    }
-   else if ((sdl_subsystem_flags & SDL_INIT_VIDEO) == 0)
+   else
    {
+      /* A reference of its own with video up too: that may be a kept
+       * window's hold, which take() quits */
       if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
          goto error;
       sdl->subsystem_inited = true;
    }
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl2_video_windows_probe();
+#endif
 
    RARCH_LOG("[SDL GL] SDL %i.%i.%i gfx context driver initialized.\n",
          SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
@@ -157,6 +173,9 @@ static bool sdl2_ctx_bind_api(void *data,
 
 static void sdl2_ctx_swap_interval(void *data, int interval)
 {
+   gfx_ctx_sdl2_data_t *sdl = (gfx_ctx_sdl2_data_t*)data;
+   if (sdl)
+      sdl->interval = interval;
    SDL_GL_SetSwapInterval(interval);
 }
 
@@ -171,6 +190,9 @@ static bool sdl2_ctx_set_video_mode(void *data,
    settings_t *settings         = config_get_ptr();
    bool windowed_fullscreen     = settings->bools.video_windowed_fullscreen;
    unsigned video_monitor_index = settings->uints.video_monitor_index;
+#ifdef HAVE_VIDEO_WINDOWS
+   bool had_window              = sdl->win != NULL;
+#endif
 
    sdl->new_width               = width;
    sdl->new_height              = height;
@@ -198,6 +220,8 @@ static bool sdl2_ctx_set_video_mode(void *data,
             SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
             width, height,
             SDL_WINDOW_OPENGL | fsflag);
+      if (sdl->win)
+         sdl2_window_set_icon(sdl->win);
    }
 
    if (!sdl->win)
@@ -225,6 +249,11 @@ static bool sdl2_ctx_set_video_mode(void *data,
    sdl->full                    = fullscreen;
    sdl->width                   = width;
    sdl->height                  = height;
+
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Before the first frame lays the screens out */
+   sdl2_video_monitors_publish(sdl->win, !had_window);
+#endif
 
    return true;
 
@@ -275,6 +304,9 @@ static void sdl2_ctx_check_window(void *data, bool *quit,
    gfx_ctx_sdl2_data_t *sdl = (gfx_ctx_sdl2_data_t*)data;
 
    SDL_PumpEvents();
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl2_video_windows_judge();
+#endif
 
    while (SDL_PeepEvents(&event, 1,
             SDL_GETEVENT, SDL_QUIT, SDL_WINDOWEVENT) > 0)
@@ -285,7 +317,17 @@ static void sdl2_ctx_check_window(void *data, bool *quit,
          case SDL_APP_TERMINATING:
             *quit = true;
             break;
+#if defined(HAVE_VIDEO_WINDOWS) && SDL_VERSION_ATLEAST(2, 0, 14)
+         case SDL_DISPLAYEVENT:
+            sdl2_video_monitors_changed(
+                  event.display.event == SDL_DISPLAYEVENT_DISCONNECTED);
+            break;
+#endif
          case SDL_WINDOWEVENT:
+#ifdef HAVE_VIDEO_WINDOWS
+            if (sdl2_video_window_event(&event, quit))
+               break;
+#endif
             if (event.window.event == SDL_WINDOWEVENT_RESIZED)
             {
                sdl->resized    = true;
@@ -294,12 +336,24 @@ static void sdl2_ctx_check_window(void *data, bool *quit,
             }
             /* It may be on another display now */
             else if (event.window.event == SDL_WINDOWEVENT_MOVED)
+            {
                video_driver_window_output_changed();
+#ifdef HAVE_VIDEO_WINDOWS
+               sdl2_video_monitors_moved();
+#endif
+            }
+#if defined(HAVE_VIDEO_WINDOWS) && SDL_VERSION_ATLEAST(2, 0, 18)
+            else if (event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED)
+               sdl2_video_monitors_moved();
+#endif
             break;
          default:
             break;
       }
    }
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl2_video_monitors_publish(sdl->win, false);
+#endif
 
    if (sdl->resized)
    {
@@ -318,7 +372,13 @@ static bool sdl2_ctx_has_focus(void *data)
 #else
    unsigned flags           = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
 #endif
-   return (SDL_GetWindowFlags(sdl->win) & flags) == flags;
+   unsigned have            = SDL_GetWindowFlags(sdl->win);
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The keyboard on one of RetroArch's windows and the pointer over
+    * another still counts */
+   have                    |= sdl2_video_windows_flags();
+#endif
+   return (have & flags) == flags;
 }
 
 static void sdl2_ctx_swap_buffers(void *data)
@@ -393,6 +453,107 @@ static bool sdl2_ctx_presentable(void *data)
    return true;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* A secondary is drawn with the main window's context; NULL puts it
+ * back on the main window. The interval goes with the drawable, the
+ * context or the whole process depending on SDL's backend, and SDL's
+ * EGL path reads back only the value it last set: so a secondary's is
+ * set to 0 at each bind, and the main window's put back after. */
+static bool sdl2_ctx_window_bind_gl(void *data,
+      video_window_native_t *window)
+{
+   gfx_ctx_sdl2_data_t *sdl   = (gfx_ctx_sdl2_data_t*)data;
+   sdl2_video_window_t *state = window
+      ? (sdl2_video_window_t*)window->state : NULL;
+
+   if (!sdl || !sdl->win || !sdl->ctx)
+      return false;
+   if (!window)
+   {
+      if (SDL_GL_MakeCurrent(sdl->win, sdl->ctx) < 0)
+         return false;
+      if (sdl->window_interval)
+         SDL_GL_SetSwapInterval(sdl->interval);
+      sdl->window_interval = false;
+      return true;
+   }
+   if (!state || state->common.owner != data || state->common.closed)
+      return false;
+   if (SDL_GL_MakeCurrent(state->win, sdl->ctx) < 0)
+   {
+      sdl2_ctx_window_bind_gl(data, NULL);
+      video_window_mark_closed(&state->common);
+      return false;
+   }
+   SDL_GL_SetSwapInterval(0);
+   sdl->window_interval = true;
+   return true;
+}
+
+/* SDL 2 swaps only the current window and says nothing either way */
+static bool sdl2_ctx_window_present_gl(void *data,
+      video_window_native_t *window)
+{
+   sdl2_video_window_t *state = window
+      ? (sdl2_video_window_t*)window->state : NULL;
+   if (     !data || !state || state->common.owner != data
+         || state->common.closed || !window->presentable)
+      return false;
+   if (SDL_GL_GetCurrentWindow() != state->win)
+   {
+      video_window_mark_closed(&state->common);
+      return false;
+   }
+   SDL_GL_SwapWindow(state->win);
+   return true;
+}
+
+static void sdl2_ctx_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   sdl2_video_window_t *state = window
+      ? (sdl2_video_window_t*)window->state : NULL;
+   if (!data || !state || state->common.owner != data)
+      return;
+   if (SDL_GL_GetCurrentWindow() == state->win)
+      sdl2_ctx_window_bind_gl(data, NULL);
+   sdl2_video_window_destroy(data, window);
+}
+
+static void sdl2_ctx_window_keep(void *data,
+      video_window_native_t *window)
+{
+   sdl2_video_window_t *state = window
+      ? (sdl2_video_window_t*)window->state : NULL;
+   if (!data || !state || state->common.owner != data)
+      return;
+   if (SDL_GL_GetCurrentWindow() == state->win)
+      sdl2_ctx_window_bind_gl(data, NULL);
+   sdl2_video_window_keep(data, window);
+}
+
+static bool sdl2_ctx_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   gfx_ctx_sdl2_data_t *sdl = (gfx_ctx_sdl2_data_t*)data;
+   if (!sdl || !sdl->ctx)
+      return false;
+   return sdl2_video_window_create(data, sdl->win, request, window);
+}
+
+static const gfx_ctx_window_driver_t sdl2_ctx_windows = {
+   sdl2_ctx_window_create,
+   sdl2_video_window_update,
+   sdl2_video_window_poll,
+   sdl2_ctx_window_bind_gl,
+   sdl2_ctx_window_present_gl,
+   sdl2_ctx_window_destroy,
+   sdl2_ctx_window_keep,
+   sdl2_video_window_take,
+   sdl2_video_windows_supported
+};
+#endif
+
 const gfx_ctx_driver_t gfx_ctx_sdl2_gl =
 {
    sdl2_ctx_init,
@@ -428,5 +589,15 @@ const gfx_ctx_driver_t gfx_ctx_sdl2_gl =
    NULL,
    NULL, /* create_surface */
    NULL, /* destroy_surface */
-   sdl2_ctx_presentable
+   sdl2_ctx_presentable,
+   NULL, /* last_present_time */
+   NULL, /* release_current */
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL, /* shared_context_free */
+#ifdef HAVE_VIDEO_WINDOWS
+   &sdl2_ctx_windows
+#else
+   NULL  /* windows */
+#endif
 };

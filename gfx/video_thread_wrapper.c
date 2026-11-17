@@ -1291,6 +1291,7 @@ static bool video_thread_handle_packet(
          if (thr->driver && thr->driver->init)
          {
             thr->driver_data = thr->driver->init(&thr->info);
+            video_driver_release_kept_windows();
             if (thr->driver_data && thr->driver->poke_interface)
                thr->driver->poke_interface(thr->driver_data,
                      &thr->frame.mem_poke);
@@ -4325,6 +4326,18 @@ static VIDEO_NOINLINE bool video_thread_frame_replay(thread_video_t *thr,
    return false;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* The screens' windows' frame into ring slot @slot; out of the frame's
+ * body, as they are off by default */
+static VIDEO_NOINLINE void video_thread_windows_slot(thread_video_t *thr,
+      unsigned slot, const video_windows_frame_t *windows)
+{
+   thr->frame.slot[slot].windows            = *windows;
+   thr->frame.slot[slot].video_info.windows =
+      &thr->frame.slot[slot].windows;
+}
+#endif
+
 static bool video_thread_frame(void *data, const void *frame_,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -4721,11 +4734,7 @@ static bool video_thread_frame(void *data, const void *frame_,
             thr->frame.slot[slot].stat_text;
 #ifdef HAVE_VIDEO_WINDOWS
          if (video_info->windows)
-         {
-            thr->frame.slot[slot].windows            = *video_info->windows;
-            thr->frame.slot[slot].video_info.windows =
-               &thr->frame.slot[slot].windows;
-         }
+            video_thread_windows_slot(thr, slot, video_info->windows);
 #endif
 #ifdef HAVE_GFX_WIDGETS
          /* The widget paths, for the same reason: this thread may write

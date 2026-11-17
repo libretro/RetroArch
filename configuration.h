@@ -310,9 +310,9 @@ typedef struct settings
 #ifdef HAVE_VIDEO_WINDOWS
       unsigned video_screen_window_pos[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_screen_window_dims[RETRO_VIDEO_VIEWS_MAX];
-      unsigned video_screen_window_monitor[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_menu_follows;
       unsigned video_notifications_window;
+      unsigned video_blank_unused_screens;
 #endif
       unsigned video_openxr_refresh_rate;
       unsigned video_openxr_controllers;
@@ -710,6 +710,7 @@ typedef struct settings
 #ifdef HAVE_VIDEO_WINDOWS
       bool video_windows_enable;
       bool video_screen_window_fullscreen[RETRO_VIDEO_VIEWS_MAX];
+      bool video_screen_window_pos_set[RETRO_VIDEO_VIEWS_MAX];
 #endif
 
       /* Video */
@@ -953,10 +954,6 @@ typedef struct settings
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
-#if 0
-/* Thumbnailpack removal */
-      bool menu_show_legacy_thumbnail_updater;
-#endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
       bool menu_materialui_switch_icons;
@@ -1790,7 +1787,7 @@ void config_reset_video_menu_xr(settings_t *settings);
 
 struct video_screen_xr;
 /* Edit Screens' reads and writes of a screen's place, or the menu's,
- * as the Stereo 3D & Screens rows keep them. A write normalises, marks
+ * as the Headset rows keep them. A write normalises, marks
  * the settings modified and leaves Visible alone; NULL resets a screen
  * as Reset Screen does, or puts the menu back in front of screen 1. The
  * menu's read is false while it follows screen 1. */

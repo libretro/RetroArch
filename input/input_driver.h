@@ -350,8 +350,17 @@ struct rarch_joypad_info
 typedef struct
 {
    unsigned name_index;
+   /* the controller's own identity and its tag (input_pad_tag.h), 0
+    * and "" for none */
+   uint32_t ident;
    uint16_t vid;
    uint16_t pid;
+   char tag[7];
+   /* What follows its name where another connected controller shows
+    * the same one (input_config_get_device_tag()), "" for a name of
+    * its own: kept by input_config_retag_devices() as they connect,
+    * go and change, so a row that shows it only copies it. */
+   char shown_tag[16];
    char joypad_driver[32];
    char name[128];
    char display_name[128];
@@ -1215,6 +1224,7 @@ unsigned input_config_get_joypad_index(unsigned port);
 unsigned input_config_get_rumble_gain(void);
 bool input_config_get_nowinkey_enable(void);
 bool input_config_get_keyboard_background(void);
+bool input_config_get_video_windows_enable(void);
 bool input_config_get_winraw_xinput_enable(void);
 bool input_config_get_winraw_player_lights(void);
 bool input_config_get_sdl3_system_keyboard(void);
@@ -1623,6 +1633,10 @@ void input_driver_publish_window_touches(const uint32_t *pos,
  * has not shown (video_driver_window_shown()). App thread. */
 bool input_driver_window_touch(unsigned window, unsigned idx,
       uint32_t *screen_pos, bool *down);
+
+/* Screen window @window is gone: the buttons, motion and touches
+ * published in it are let go until the next poll. App thread. */
+void input_driver_release_window(unsigned window);
 #endif
 
 typedef struct input_pointer_view
@@ -1634,6 +1648,13 @@ typedef struct input_pointer_view
 } input_pointer_view_t;
 
 const input_pointer_view_t *input_driver_pointer_view(void);
+
+/* What each connected controller holds down, a word a slot, into
+ * @held[MAX_INPUT_DEVICES], and where its axes are, into
+ * @axes[MAX_INPUT_DEVICES], read where this poll left it; returns the
+ * slots that have a controller (input_driver.c) */
+uint32_t input_driver_pads_held(uint32_t *held,
+      int16_t (*axes)[INPUT_PAD_VIEW_AXES]);
 
 /* A controller as the controller has it, for the capture of a bind:
  * each array that is given is filled - @buttons with whether each is
@@ -1983,6 +2004,11 @@ void input_config_set_device_joypad_driver(unsigned port, const char *driver);
  */
 void input_config_set_device_phys(unsigned port, const char *phys);
 
+/* The identity of the controller in @port (input_pad_tag_ident()) and
+ * its tag (input_pad_tag_text()): 0 and NULL for none. */
+void input_config_set_device_ident(unsigned port, uint32_t ident,
+      const char *tag);
+
 /**
  * Set the vendor ID (vid) for the device in the specified port
  *
@@ -2216,6 +2242,25 @@ bool input_config_get_device_autoconfigured(unsigned port);
  * @return the name index for this device
  */
 unsigned input_config_get_device_name_index(unsigned port);
+
+uint32_t input_config_get_device_ident(unsigned port);
+const char *input_config_get_device_ident_tag(unsigned port);
+
+/* The slots whose input_device_info_t.shown_tag is set, a bit each:
+ * non-zero while two connected controllers show one name. Written only
+ * by input_driver.c as they connect, go and change; a global so that
+ * code run every frame tests it with one load. */
+extern uint32_t input_devices_tagged;
+#define INPUT_DEVICES_SHARE_NAME() (input_devices_tagged != 0)
+
+/* After the name of the controller in @port when another connected one
+ * shows the same name: " [9f2b7e]", its tag; " [9f2b7e #2]" when the
+ * other's tag is the same, in identity order; " (#2)", its place among
+ * those of that name, with no identity - unless @slot_shown, where the
+ * row already numbers the slot and that is what tells them apart. ""
+ * for a name of its own. Returns strlcpy()'s. */
+size_t input_config_get_device_tag(unsigned port, bool slot_shown,
+      char *s, size_t len);
 
 
 /*****************************************************************************/

@@ -1286,6 +1286,8 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    if (ioctl(fd, EVIOCGUNIQ(sizeof(pad->phys)-physlen), pad->phys+physlen) < 0)
        pad->phys[physlen] = '\0';  /* Clear if unavailable */
+   /* a string cut short comes back unterminated */
+   pad->phys[sizeof(pad->phys) - 1] = '\0';
 
    if (fstat(fd, &st) < 0)
       return -1;
@@ -1373,10 +1375,12 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    if (*pad->ident)
    {
-      input_autoconfigure_connect(
+      /* its own serial or Bluetooth address is what follows the port */
+      input_autoconfigure_connect_uniq(
                pad->ident,
                NULL,
                pad->phys,
+               pad->phys + physlen,
                udev_joypad.ident,
                p,
                pad->vid,

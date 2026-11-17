@@ -387,6 +387,7 @@ typedef struct vulkan_context
    uint32_t recording_queue_index;
    bool recording_device;
    bool recording_storage_images;
+   bool recording_hevc;
 } vulkan_context_t;
 
 /* The acquire thread behind emulated mailbox, and the thread that

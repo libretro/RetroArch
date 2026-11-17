@@ -31,6 +31,7 @@
 
 
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -48,6 +49,9 @@ typedef struct
 #ifdef HAVE_BB10
    screen_device_t handle;
 #endif
+   /* what its last event said, as the joypad driver lends it
+    * (input_pad_view.h): buttons 0-19, axes 0-3 the sticks' x and y */
+   input_pad_view_t view;
    int type;
    int analogCount;
    int buttonCount;
@@ -130,8 +134,22 @@ static void qnx_init_controller(
    controller->device      = -1;
    controller->index       = -1;
 
+   memset(&controller->view, 0, sizeof(controller->view));
    memset(controller->id, 0, sizeof(controller->id));
 }
+
+#ifdef HAVE_BB10
+/* The controller's state as its event left it, into its view */
+static void qnx_controller_view(qnx_input_device_t *controller)
+{
+   controller->view.buttons.data[0] = (uint32_t)controller->buttons
+                                    & ((UINT32_C(1) << 20) - 1);
+   controller->view.axes[0]         = (int16_t)controller->analog0[0];
+   controller->view.axes[1]         = (int16_t)controller->analog0[1];
+   controller->view.axes[2]         = (int16_t)controller->analog1[0];
+   controller->view.axes[3]         = (int16_t)controller->analog1[1];
+}
+#endif
 
 #ifdef HAVE_BB10
 bool prevMenu;
@@ -181,6 +199,7 @@ static void qnx_process_gamepad_event(
           controller->analog1[1] *= 256;
        }
    }
+   qnx_controller_view(controller);
 }
 
 static void qnx_process_joystick_event(qnx_input_t *qnx, screen_event_t screen_event, int type)
@@ -293,6 +312,7 @@ static void qnx_handle_device(qnx_input_t *qnx,
       if (!screen_get_device_property_iv(controller->handle,
                SCREEN_PROPERTY_ANALOG1, controller->analog1))
          ++controller->analogCount;
+      qnx_controller_view(controller);
    }
 
    /* Screen service will map supported controllers,
@@ -658,10 +678,9 @@ static void *qnx_input_init(const char *joypad_driver)
 #ifdef HAVE_BB10
    qnx_discover_controllers(qnx);
 #else
-   /* Initialize Playbook keyboard. */
+   /* The PlayBook's keyboard: not a gamepad, so no profile to find */
    strlcpy_lit(qnx->devices[0].id, "0A5C-8502",
          sizeof(qnx->devices[0].id));
-   qnx_input_autodetect_gamepad(qnx, &qnx->devices[0]);
    qnx->pads_connected = 1;
 #endif
 

@@ -70,7 +70,7 @@ jobs:
           make -C libretro-common/samples/formats/h265 rh265_slice_info_test CC=${{ matrix.cc }} SANITIZER=address,undefined
           libretro-common/samples/formats/h265/rh265_slice_info_test
       - name: Vulkan H264 encoder parameter contracts
-        run: make -C samples/gfx/vulkan_encode_h264 check hevc_native_capture_test CC=${{ matrix.cc }} SANITIZER=address,undefined
+        run: make -C samples/gfx/vulkan_encode_h264 check hevc_native_capture_test hevc_native_session_test hevc_native_dispatch_test hevc_native_hdr_test CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Execute sampled-plane conversion, foreign ownership and native pixel oracle
         run: ASAN_OPTIONS=detect_leaks=0 make -C samples/gfx/vaapi_hevc gpu-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Opaque VA producer and renderer return publication under TSan
@@ -251,6 +251,10 @@ jobs:
           # Then dispserv_kms.c's vblank clock on the same kernel: its
           # CRTC's vblanks counted one by one on a description that is
           # not the master's, whose page flip event is left to it.
+          # And gfx/common/drm_vblank.h as a compositor's client has
+          # it: a second opener of the card, not its master, finds the
+          # CRTC by its connector's kind and number and reads its
+          # vblanks while the master drives it.
           make SANITIZER=address,undefined
           make check SANITIZER=address,undefined
 
@@ -2046,6 +2050,29 @@ jobs:
                 setarch "$(uname -m)" -R timeout 120 ./run.sh)
           echo "[pass] mutter_displayconfig_test"
 
+      - name: X11 monitors on a worker thread (Xvfb, ASan + UBSan, TSan)
+        shell: bash
+        run: |
+          set -eu
+          # The screens' Display setting lists the X11 monitors and the
+          # one the main window is on. A worker thread on its own X
+          # connection asks the server, so the context thread makes no
+          # round trip for them; it publishes each snapshot by swapping
+          # a pointer and frees the one it replaced once no reader is
+          # inside it. run.sh starts a fresh Xvfb per case; the threads
+          # case reads from four threads while the RandR monitors flip,
+          # and freeing a snapshot a reader is in is a TSan data race.
+          (cd samples/gfx/x11_monitors \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 \
+                UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                timeout 300 ./run.sh)
+          (cd samples/gfx/x11_monitors \
+             && make clean all SANITIZER=thread \
+             && TSAN_OPTIONS=halt_on_error=1 THREADS_ONLY=1 \
+                setarch "$(uname -m)" -R timeout 120 ./run.sh)
+          echo "[pass] x11_monitors_test"
+
       - name: Build and run dbus_screensaver_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/dbus_screensaver
@@ -3373,6 +3400,19 @@ jobs:
           # once, and again after the chain is resized.
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/dxgi_present_immediate/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/dxgi_present_immediate/run.py
+          # The same question on X11: GLX and EGL with no swap interval,
+          # Vulkan in immediate mode, each only where no compositor shows
+          # the window - it asked to bypass one, or none owns the
+          # screen's selection.
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/x11_present_immediate/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/x11_present_immediate/run.py
+          # And on Wayland: the connector a wl_output's name stands for,
+          # the CRTC behind it among made-up cards (never probing a
+          # connector), the display server's clock following the
+          # window's connector, and a present counted as tearing only
+          # where the compositor was asked and its feedback says so.
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/wayland_vblank/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/wayland_vblank/run.py
 
       - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
         shell: bash

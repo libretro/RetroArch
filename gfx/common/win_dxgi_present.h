@@ -20,7 +20,7 @@ int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *bridge);
 /* Whether a present with no interval goes straight to the scanout: it
  * may tear, and the output flips a fullscreen window itself rather
  * than leave it to DWM. */
-int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *bridge);
+int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *bridge, unsigned generation);
 /* The output's part of that for a window presented some other way:
  * whether the output @window is on flips a fullscreen window itself.
  * Makes a DXGI factory to ask; not for every frame. */

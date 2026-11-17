@@ -147,7 +147,6 @@ DEFINES += -DRARCH_MOBILE \
 	   -DANDROID \
 	   -DHAVE_DYNAMIC \
 	   -DHAVE_OPENGL \
-	   -DHAVE_OVERLAY \
 	   -DHAVE_OPENGLES \
 	   -DGLSL_DEBUG \
 	   -DHAVE_DYLIB \
@@ -217,6 +216,10 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_CORE_INFO_CACHE \
 	   -DHAVE_SSL
 
+ifneq ($(META_QUEST_BUILD),1)
+   DEFINES += -DHAVE_OVERLAY
+endif
+
 ifeq ($(HAVE_RETROSSL),1)
    DEFINES += -DHAVE_RETROSSL
 endif
@@ -271,6 +274,15 @@ endif
 
 ifeq ($(HAVE_VULKAN_CUSTOM_DRIVER),1)
 DEFINES += -DHAVE_VULKAN_CUSTOM_DRIVER
+endif
+
+# Play Store builds take their cores through Play; Quest passes
+# PLAY_STORE_BUILD=1 too but uses the buildbot. Mirrors
+# play_feature_delivery_enabled().
+ifeq ($(PLAY_STORE_BUILD),1)
+   ifneq ($(META_QUEST_BUILD),1)
+      DEFINES += -DANDROID_PLAY_DELIVERY
+   endif
 endif
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)

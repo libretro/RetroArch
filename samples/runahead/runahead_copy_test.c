@@ -201,6 +201,65 @@ void RARCH_WARN(const char *fmt, ...)
 }
 #endif
 
+#ifdef RUNAHEAD_INSTANCE_LOAD
+#include "../../core_load_file.h"
+
+/* Android 6+'s second instance from the running core's own file: the
+ * file the check hands over (NULL: none to load from), then the linker,
+ * which can load a new instance (1), refuse (0), or hand back the
+ * running one (2), as one that ignored the request would. */
+static int      instance_file_mode;
+static int      instance_lib_mode;
+static unsigned instance_files, instance_closes, instance_loads;
+static char     instance_path[512];
+static void     primary_run(void) { }
+static void     instance_run(void) { }
+
+core_file_t *core_load_check_instance_file(const char *path,
+      char **load_path)
+{
+   *load_path = NULL;
+   if (!instance_file_mode)
+      return NULL;
+   instance_files++;
+   strlcpy(instance_path, path, sizeof(instance_path));
+   *load_path = strdup("/real/a_libretro.so");
+   return (core_file_t*)(uintptr_t)(0x3000 + instance_files);
+}
+
+void core_file_close(core_file_t *f)
+{
+   if (f)
+      instance_closes++;
+}
+
+static char instance_loaded_by[512];
+
+dylib_t core_load_file_instance(core_file_t *f, const char *path)
+{
+   (void)f;
+   strlcpy(instance_loaded_by, path, sizeof(instance_loaded_by));
+   instance_loads++;
+   if (!instance_lib_mode)
+      return NULL;
+   return (dylib_t)(uintptr_t)(instance_lib_mode == 2 ? 0x1fff : 0x2000);
+}
+
+function_t dylib_proc(dylib_t lib, const char *proc)
+{
+   (void)proc;
+   return (uintptr_t)lib == 0x1fff ? primary_run : instance_run;
+}
+
+static void reset_instance(int file_mode, int lib_mode)
+{
+   instance_file_mode = file_mode;
+   instance_lib_mode  = lib_mode;
+   instance_files     = instance_closes = instance_loads = 0;
+   instance_path[0]   = '\0';
+}
+#endif
+
 int filestream_delete(const char *path) { deleted++; fs_log_put('D'); strlcpy(last_deleted, path, sizeof(last_deleted)); return 0; }
 bool path_mkdir(const char *dir) { (void)dir; return true; }
 
@@ -433,10 +492,10 @@ static void t_copy_protocol(void)
    printf("   copy protocol: pending, then ready, one task at a time\n");
    reset_fs();
    task_queue_init(false, NULL);
-   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_PENDING, "first poll returned %d, not PENDING", (int)st);
    CHECK(runahead_copy_task_pending, "a task was not marked pending");
-   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_PENDING, "second poll before the task ran returned %d", (int)st);
    task_queue_check();                                     /* pass one: the destination is opened */
    CHECK(runahead_copy_task_pending, "the task finished in the pass that only opens the copy");
@@ -453,7 +512,7 @@ static void t_copy_protocol(void)
          "a step was offered %lld bytes, not the step bound", (long long)copy_step_bound);
    /* The task opened the copy, once, before the callback published */
    CHECK(lib_loads == 1, "the copy was opened %u times by the task", lib_loads);
-   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_READY && out != NULL, "poll after completion returned %d", (int)st);
    CHECK(lib != NULL, "the opened copy was not handed over");
    CHECK(out && string_is_equal(last_loaded, out),
@@ -476,9 +535,9 @@ static void t_open_refused(void)
    reset_fs();
    task_queue_init(false, NULL);
    lib_refuse = 1;
-   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    run_copy_to_completion();
-   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_READY && out != NULL,
          "a copy that would not open was not published: %d", (int)st);
    CHECK(lib == NULL, "a handle was handed over for a refused open");
@@ -495,7 +554,7 @@ static void t_generation_discard(void)
    printf("   copy_generation_discard: a reset while the task is in flight\n");
    reset_fs();
    task_queue_init(false, NULL);
-   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_PENDING, "poll returned %d", (int)st);
    runahead_copy_reset(true);          /* generation bumps; the in-flight result must be dropped */
    run_copy_to_completion();
@@ -503,10 +562,10 @@ static void t_generation_discard(void)
    CHECK(deleted >= 1, "the stale temp file was not deleted");
    CHECK(string_is_equal(fs_log, "LCD"),
          "the stale copy went %s, not opened, closed, then deleted", fs_log);
-   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_PENDING, "poll after a discarded result returned %d, not a fresh PENDING", (int)st);
    run_copy_to_completion();
-   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_READY, "the fresh copy did not complete: %d", (int)st);
    if (out) free(out);
    task_queue_deinit();
@@ -520,16 +579,16 @@ static void t_stale_src(void)
    printf("   stale_src_reset: a result for core A is dropped when core B is polled\n");
    reset_fs();
    task_queue_init(false, NULL);
-   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    run_copy_to_completion();
    CHECK(runahead_copy_slot_done, "core A's copy did not publish");
-   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_PENDING, "polling core B returned %d, not PENDING", (int)st);
    CHECK(deleted >= 1, "core A's temp file was not deleted");
    CHECK(string_is_equal(fs_log, "LCD"),
          "core A's copy went %s, not opened, closed, then deleted", fs_log);
    run_copy_to_completion();
-   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_READY, "core B's copy did not complete: %d", (int)st);
    if (out) free(out);
    task_queue_deinit();
@@ -546,10 +605,10 @@ static void t_tmp_dir_not_private(void)
    reset_fs();
    task_queue_init(false, NULL);
    tmp_dir_private = false;
-   runahead_copy_poll("/cores/c_libretro.so", "/tmpdir", &out, &lib);
+   runahead_copy_poll("/cores/c_libretro.so", "/tmpdir", NULL, &out, &lib);
    run_copy_to_completion();
    CHECK(dst_count == 0, "%u copies opened in a temp dir that is not private", dst_count);
-   st = runahead_copy_poll("/cores/c_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/c_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st != RUNAHEAD_COPY_READY, "a copy was reported ready");
    CHECK(lib == NULL, "a core was loaded from a temp dir that is not private");
    tmp_dir_private = true;
@@ -649,9 +708,9 @@ static void t_check_match(void)
    copy_mode    = CORE_LOAD_COPY_CHECK;
    match_result = 0;
    matches_made = matches_freed = match_steps = 0;
-   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    run_copy_to_completion();
-   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_READY && lib != NULL, "a matching copy was not handed over: %d", (int)st);
    CHECK(matches_made == 1 && matches_freed == 1, "%u matches made, %u freed", matches_made, matches_freed);
    CHECK(match_steps >= 3, "the match ran in %u step(s)", match_steps);
@@ -672,9 +731,9 @@ static void t_check_mismatch(void)
    copy_mode    = CORE_LOAD_COPY_CHECK;
    match_result = -1;
    warned[0]    = '\0';
-   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    run_copy_to_completion();
-   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_UNAVAILABLE, "a copy that didn't match gave %d", (int)st);
    CHECK(lib_loads == 0, "a copy that didn't match was opened");
    CHECK(deleted == 1, "the copy that didn't match was left on disk (%u deletes)", deleted);
@@ -697,15 +756,136 @@ static void t_check_noload(void)
    match_result = 0;
    lib_refuse   = 1;
    warned[0]    = '\0';
-   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    run_copy_to_completion();
-   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_UNAVAILABLE, "a copy that won't load gave %d", (int)st);
    CHECK(deleted == 1, "the copy that won't load was left on disk (%u deletes)", deleted);
    CHECK(strstr(warned, "won't load") != NULL, "no log line said why");
    copy_mode = CORE_LOAD_COPY_OFF;
    task_queue_deinit();
 }
+
+#ifdef RUNAHEAD_INSTANCE_LOAD
+/* A new instance of the running core's file: no copy opened, nothing
+ * hashed, READY with no path, and nothing deleted at teardown */
+static void t_instance_load(void)
+{
+   char *out   = (char*)1;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   instance_load: the second instance from the core's own file\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   copy_mode    = CORE_LOAD_COPY_CHECK;
+   matches_made = matches_freed = match_steps = 0;
+   reset_instance(1, 1);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_PENDING, "first poll returned %d", (int)st);
+   CHECK(instance_files == 1 && string_is_equal(instance_path, "/cores/a_libretro.so"),
+         "%u instance files taken, for %s", instance_files, instance_path);
+   task_queue_check();
+   CHECK(!runahead_copy_task_pending, "the load took more than its one pass");
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_READY, "poll after the load returned %d", (int)st);
+   CHECK(out == NULL, "an instance was handed over with a path to delete");
+   CHECK((uintptr_t)lib == 0x2000, "the new instance was not handed over");
+   CHECK(dst_count == 0 && copy_steps == 0, "%u copies opened, %u steps", dst_count, copy_steps);
+   CHECK(matches_made == 0, "%u matches made for an instance", matches_made);
+   CHECK(instance_loads == 1 && instance_closes == 1,
+         "%u loads, %u file closes", instance_loads, instance_closes);
+   CHECK(string_is_equal(instance_loaded_by, "/real/a_libretro.so"),
+         "loaded by %s, not the path the check gave", instance_loaded_by);
+   runahead_copy_reset(true);
+   CHECK(deleted == 0, "%u files deleted for an instance", deleted);
+   copy_mode = CORE_LOAD_COPY_OFF;
+   reset_instance(0, 0);
+   task_queue_deinit();
+}
+
+/* An older linker refuses, one that ignored the request hands back the
+ * running instance (closed again), or there is no file to load from:
+ * the copy is made as before */
+static void t_instance_fallback(int file_mode, int lib_mode, const char *what)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   instance_fallback: %s, the copy made\n", what);
+   reset_fs();
+   task_queue_init(false, NULL);
+   copy_mode    = CORE_LOAD_COPY_CHECK;
+   match_result = 0;
+   matches_made = matches_freed = match_steps = 0;
+   reset_instance(file_mode, lib_mode);
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   run_copy_to_completion();
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_READY && out != NULL && lib != NULL,
+         "the copy was not handed over: %d", (int)st);
+   CHECK(dst_count == 1 && matches_made == 1, "%u copies, %u matches", dst_count, matches_made);
+   CHECK(instance_loads == (file_mode ? 1u : 0u), "%u instance loads", instance_loads);
+   CHECK(instance_closes == instance_files, "%u files taken, %u closed",
+         instance_files, instance_closes);
+   CHECK(lib_closes == (lib_mode == 2 ? 1u : 0u),
+         "%u libraries closed", lib_closes);
+   if (out) free(out);
+   copy_mode = CORE_LOAD_COPY_OFF;
+   reset_instance(0, 0);
+   task_queue_deinit();
+}
+
+/* With no running retro_run to tell them apart, an instance is never
+ * taken: it could be the running one */
+static void t_instance_no_primary(void)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   instance_no_primary: nothing to compare with, the copy made\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   copy_mode    = CORE_LOAD_COPY_CHECK;
+   match_result = 0;
+   reset_instance(1, 1);
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
+   run_copy_to_completion();
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_READY && out != NULL, "the copy was not made: %d", (int)st);
+   CHECK(lib_closes == 1, "the unverified instance was kept (%u closes)", lib_closes);
+   if (out) free(out);
+   copy_mode = CORE_LOAD_COPY_OFF;
+   reset_instance(0, 0);
+   task_queue_deinit();
+}
+
+/* A teardown before the load's callback: the instance is closed, and
+ * no file deleted, as it has no path */
+static void t_instance_discard(void)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   printf("   instance_discard: a reset while the load is in flight\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   copy_mode = CORE_LOAD_COPY_CHECK;
+   reset_instance(1, 1);
+   runahead_copy_poll("/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   runahead_copy_reset(true);
+   run_copy_to_completion();
+   CHECK(!runahead_copy_slot_done, "a stale instance was published");
+   CHECK(lib_closes == 1 && deleted == 0, "%u closes, %u deletes", lib_closes, deleted);
+   CHECK(instance_closes == 1, "%u file closes", instance_closes);
+   copy_mode = CORE_LOAD_COPY_OFF;
+   reset_instance(0, 0);
+   task_queue_deinit();
+}
+#endif
 
 static void t_check_unknown(void)
 {
@@ -716,7 +896,7 @@ static void t_check_unknown(void)
    reset_fs();
    task_queue_init(false, NULL);
    copy_mode = CORE_LOAD_COPY_NONE;
-   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out, &lib);
+   st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", NULL, &out, &lib);
    CHECK(st == RUNAHEAD_COPY_UNAVAILABLE, "poll gave %d", (int)st);
    CHECK(!runahead_copy_task_pending, "a copy task was pushed");
    CHECK(dst_count == 0, "%u copies opened", dst_count);
@@ -749,6 +929,14 @@ int main(void)
    t_check_mismatch();
    t_check_noload();
    t_check_unknown();
+#endif
+#ifdef RUNAHEAD_INSTANCE_LOAD
+   t_instance_load();
+   t_instance_fallback(1, 0, "the linker refuses");
+   t_instance_fallback(1, 2, "the running instance handed back");
+   t_instance_fallback(0, 0, "no file to load from");
+   t_instance_no_primary();
+   t_instance_discard();
 #endif
    reset_fs();
    if (failures)

@@ -2,15 +2,9 @@
 #ifndef RECORD_STREAM_D3D12_H
 #define RECORD_STREAM_D3D12_H
 #include "record_gpu_output_d3d12.h"
-#include <net/net_rtmp_client.h>
+#include "record_stream_gpu.h"
 
-typedef struct record_stream_d3d12 record_stream_d3d12_t;
-typedef struct record_stream_wait
-{
-   net_rtmp_client_view_t network;
-   bool encoder_retry;
-} record_stream_wait_t;
-
+typedef record_stream_gpu_t record_stream_d3d12_t;
 RETRO_BEGIN_DECLS
 /* One recording I/O owner. Borrows an H.264/HEVC worker and a READY client until
  * free; this consumer alone drives the client meanwhile. AAC-LC is optional,

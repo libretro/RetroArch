@@ -92,6 +92,11 @@ typedef struct retro_asym_eventcount
 } retro_asym_eventcount_t;
 
 bool retro_asym_eventcount_init(retro_asym_eventcount_t *ec);
+/* The symmetric protocol whatever the platform offers: for a consumer
+ * that parks often, where the barrier a park pays outweighs what the
+ * producer saves, and for one whose producer is not the thread the
+ * asymmetric cost was taken off. */
+bool retro_asym_eventcount_init_symmetric(retro_asym_eventcount_t *ec);
 void retro_asym_eventcount_free(retro_asym_eventcount_t *ec);
 
 /* Producer side. A release store and a relaxed load when asymmetric.

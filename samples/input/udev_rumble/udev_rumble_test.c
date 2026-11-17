@@ -115,10 +115,10 @@ settings_t *config_get_ptr(void) { return &stub_settings; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
-bool input_autoconfigure_connect(const char *name, const char *display_name,
-      const char *phys, const char *driver, unsigned port, unsigned vid,
-      unsigned pid)
-{ (void)name; (void)display_name; (void)phys; (void)driver; (void)port; (void)vid; (void)pid; return true; }
+bool input_autoconfigure_connect_uniq(const char *name,
+      const char *display_name, const char *phys, const char *uniq,
+      const char *driver, unsigned port, unsigned vid, unsigned pid)
+{ (void)name; (void)display_name; (void)phys; (void)uniq; (void)driver; (void)port; (void)vid; (void)pid; return true; }
 bool input_autoconfigure_disconnect(unsigned port, const char *name)
 { (void)port; (void)name; return true; }
 const char *input_config_get_device_name(unsigned port) { (void)port; return NULL; }

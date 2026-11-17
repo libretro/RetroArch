@@ -408,6 +408,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST;
+      case ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST;
+      case ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST:
@@ -540,8 +544,12 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST;
+      case ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST;
       case ACTION_OK_DL_INPUT_CONTROLLERS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST;
+      case ACTION_OK_DL_INPUT_HEADSET_CONTROLS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_INPUT_HEADSET_CONTROLS_LIST;
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST;
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
@@ -1088,6 +1096,14 @@ int generic_action_ok_displaylist_push(
          info_path          = label;
          info_label         = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR;
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_VIDEO_SCREEN_SETTINGS_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = label;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_MUSIC:
@@ -1885,6 +1901,8 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST:
+      case ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST:
+      case ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
@@ -1958,7 +1976,9 @@ int generic_action_ok_displaylist_push(
 #endif
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST:
+      case ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST:
       case ACTION_OK_DL_INPUT_CONTROLLERS_LIST:
+      case ACTION_OK_DL_INPUT_HEADSET_CONTROLS_LIST:
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
@@ -2078,6 +2098,8 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS, ACTION_OK_DL_VIDEO_SCALING_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS, ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS, ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS, ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_DLSS_NR_SETTINGS, ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS, ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST },
    { MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS, ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST },
@@ -2093,6 +2115,7 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_RECORDING_SETTINGS, ACTION_OK_DL_RECORDING_SETTINGS_LIST },
    { MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS, ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST },
    { MENU_ENUM_LABEL_INPUT_CONTROLLERS, ACTION_OK_DL_INPUT_CONTROLLERS_LIST },
+   { MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS, ACTION_OK_DL_INPUT_HEADSET_CONTROLS_LIST },
    { MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST },
    { MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST },
    { MENU_ENUM_LABEL_ACCOUNTS_TWITCH, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST },
@@ -5890,8 +5913,6 @@ static const char *download_dir_for_transfer(
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         return settings->paths.directory_thumbnails;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          return settings->paths.directory_core_assets;
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
@@ -5953,17 +5974,16 @@ static const char *download_dir_for_transfer(
 }
 
 /* The kinds of transfer whose destination is known at push time and
- * whose body is streamed straight to it.  These are the bundles - a
- * thumbnail pack, assets.zip, cheats.zip - that run to tens or
- * hundreds of megabytes: holding one in memory until the transfer
- * completes is a large contiguous allocation on top of everything the
- * menu already has, which on a console is what fails or starves the
- * GPU allocator.  The rest are small and keep the in-memory hand-off. */
+ * whose body is streamed straight to it.  These are the bundles -
+ * assets.zip, cheats.zip - that run to tens or hundreds of megabytes:
+ * holding one in memory until the transfer completes is a large
+ * contiguous allocation on top of everything the menu already has,
+ * which on a console is what fails or starves the GPU allocator.  The
+ * rest are small and keep the in-memory hand-off. */
 static bool download_streams_to_disk(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
@@ -6288,9 +6308,6 @@ static int action_ok_download_generic(const char *path,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
          path = FILE_PATH_SHADERS_CG_ZIP;
          break;
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strlcpy(s, FILE_PATH_CORE_THUMBNAILPACKS_URL, sizeof(s));
-         break;
       default:
          strlcpy(s, network_buildbot_url, sizeof(s));
          break;
@@ -6509,7 +6526,6 @@ int action_ok_download_bundle(enum msg_hash_enums enum_idx)
 }
 
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_system_files_download, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
-DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
 #ifdef HAVE_LAKKA
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD)
@@ -7459,6 +7475,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_nfs_client_settings_list, ACTION_OK_DL_NFS_CLIENT_SETTINGS_LIST)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_screen_settings_list, ACTION_OK_DL_VIDEO_SCREEN_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
 #ifdef HAVE_LAKKA
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
@@ -9228,6 +9247,19 @@ static int action_ok_input_plays_as_dropdown_box_list(const char *path,
       ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_PLAYS_AS);
 }
 
+static int action_ok_push_input_port_controllers_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char port_str[12];
+   /* the list reads its port from its path */
+   snprintf(port_str, sizeof(port_str), "%u", (unsigned)entry_idx);
+   return generic_action_ok_displaylist_push(
+      port_str, NULL,
+      label, type,
+      idx, entry_idx,
+      ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST);
+}
+
 static int action_ok_input_plays_as_add_dropdown_box_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -10075,6 +10107,15 @@ static int action_ok_smb_browse(const char *path,
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS
+         && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS_LAST)
+   {
+      BIND_ACTION_OK(cbs, action_ok_push_video_screen_settings_list);
+      return 0;
+   }
+#endif
+
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       const char     *str = msg_hash_to_str(cbs->enum_idx);
@@ -10366,6 +10407,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,              action_ok_remap_file_remove_game},
          {MENU_ENUM_LABEL_REMAP_FILE_RESET,                    action_ok_remap_file_reset},
          {MENU_ENUM_LABEL_INPUT_REMAP_FIND,                    action_ok_input_remap_find},
+         {MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS,              action_ok_push_input_port_controllers_list},
          {MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD,                  action_ok_input_plays_as_add_dropdown_box_list},
          {MENU_ENUM_LABEL_REMAP_FILE_FLUSH,                    action_ok_remap_file_flush},
          {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,                  action_ok_override_file},
@@ -10888,11 +10930,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_core_system_files_download);
-#endif
-            break;
-         case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
-#ifdef HAVE_NETWORKING
-            BIND_ACTION_OK(cbs, action_ok_core_content_thumbnails);
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:

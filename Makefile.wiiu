@@ -115,7 +115,7 @@ endif
       INCDIRS +=
       # for stb, libfat, iosuhax
       INCDIRS += -Ideps -Ideps/libfat/include -Ios/wiiu/fs
-      # pad_functions uses wiiu/input.h
+      # the Wii U pad drivers use wiiu/input.h
       INCDIRS += -Iinput/include
 
       DEFINES += -DHAVE_AUDIOMIXER

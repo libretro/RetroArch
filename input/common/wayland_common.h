@@ -184,9 +184,14 @@ typedef struct
 
 typedef struct touch_pos
 {
+   /* The surface it went down on: a screen's own window's, or NULL */
+   struct wl_surface *surface;
    int32_t id;
    unsigned x;
    unsigned y;
+   /* The screen's own window it is in; 0 for the main window */
+   unsigned window;
+   unsigned generation;
    bool active;
 } touch_pos_t;
 
@@ -198,8 +203,15 @@ typedef struct output_info
    /* The mode the output is running, packed. */
    unsigned dims;
    unsigned scale;
+   /* wl_output v4's name, as gfx_ctx_wl_connector_code() has it */
+   unsigned connector;
    char *make;
    char *model;
+#ifdef HAVE_VIDEO_WINDOWS
+   struct gfx_ctx_wayland_data *wl;
+   /* wl_output v4's, e.g. "DP-2"; NULL below it */
+   char *name;
+#endif
 } output_info_t;
 
 typedef struct display_output
@@ -242,6 +254,9 @@ typedef struct input_ctx_wayland_data
    struct
    {
       struct wl_surface *surface;
+      /* The screen's own window it is in; 0 for the main window */
+      unsigned window;
+      unsigned generation;
       uint32_t last_pos;   /* VIDEO_POS_PACK */
       uint32_t pos;        /* VIDEO_POS_PACK */
       uint32_t delta;      /* VIDEO_POS_PACK */
@@ -253,6 +268,9 @@ typedef struct input_ctx_wayland_data
       bool axis_discrete;
       bool last_valid;
       bool focus;
+      /* Its place and wheel not taken, decided at enter: what is in
+       * flight for a window that has gone stays out */
+      bool gated;
       bool left, right, middle, side, extra;
       bool wu, wd, wl, wr;
    } mouse;
@@ -430,6 +448,12 @@ typedef struct gfx_ctx_wayland_data
    } cfg_pending;
    bool activated;
    bool reported_display_size;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The outputs to publish again: one changed, or the main window
+    * went to another */
+   bool video_monitors_dirty;
+   bool video_monitors_own_dirty;
+#endif
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_XKBCOMMON
@@ -449,6 +473,30 @@ void gfx_ctx_wl_cursor_load(gfx_ctx_wayland_data_t *wl);
 
 void flush_wayland_fd(void *data);
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* A keyboard enter or leave: one of a secondary screen's surfaces goes
+ * to its window (gfx/common/wayland_common.c), on the thread that runs
+ * the context. Called on whichever thread handles the seat's events. */
+void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface, bool focused);
+/* Whether a secondary screen's window is open and the surface is not
+ * the main window's: a screen's, or a decoration's. Any thread. */
+bool wl_video_windows_not_main(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface);
+/* The screen whose window @surface is, with its generation, and the
+ * place @sx,@sy on it as one in the window; 0 for none. Any thread. */
+unsigned wl_video_window_point(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy,
+      unsigned *generation, uint32_t *pos);
+/* An output's properties changed: secondary screens' windows on it
+ * take its scale again. On the thread that runs the context. */
+void wl_video_windows_rescale(void);
+/* An output changed or went away: what the compositor does to secondary
+ * screens' windows then is not the user's. On the thread that runs the
+ * context. */
+void wl_video_windows_unsettled(void);
+#endif
+
 extern const struct wl_keyboard_listener keyboard_listener;
 
 extern const struct wl_pointer_listener pointer_listener;
@@ -462,6 +510,17 @@ extern const struct wl_touch_listener touch_listener;
 extern const struct wl_seat_listener seat_listener;
 
 extern const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener;
+
+/* A connector's name as compositors give it for a wl_output ("DP-2",
+ * "HDMI-A-1", Mutter's "HDMI-1"), as the kind and number DRM has for
+ * it (DRM_VBLANK_CONNECTOR_CODE); 0 for a name that is not one. */
+unsigned gfx_ctx_wl_connector_code(const char *name);
+
+/* The connector of the output the window is on, 0 for none or one
+ * with no name, for the display server's vblank clock, which keeps
+ * it. Set by the thread that runs the surface's events, read by any. */
+void gfx_ctx_wl_window_connector_set(unsigned code);
+unsigned gfx_ctx_wl_window_connector(void);
 
 extern const struct wl_surface_listener wl_surface_listener;
 

@@ -2658,6 +2658,13 @@ void scond_free(scond_t *cond)
 #define SCOND_HAVE_UMWAIT 1
 #endif
 
+/* Core builds can require an iteration-only spin, including when a user
+ * requests a hardware timed-wait mode through the diagnostic environment. */
+#if defined(RTHREADS_SCOND_FIXED_SPIN)
+#undef SCOND_HAVE_MWAITX
+#undef SCOND_HAVE_UMWAIT
+#endif
+
 #if defined(SCOND_HAVE_X86_INTRIN) || defined(SCOND_HAVE_X86_ASM)
 #define SCOND_HAVE_X86 1
 #endif
@@ -2677,6 +2684,7 @@ static void scond_cpuid(unsigned leaf, unsigned sub, unsigned r[4])
 #endif
 }
 
+#if !defined(RTHREADS_SCOND_FIXED_SPIN)
 static INLINE unsigned __int64 scond_tsc(void)
 {
 #if defined(SCOND_HAVE_X86_INTRIN)
@@ -2687,6 +2695,7 @@ static INLINE unsigned __int64 scond_tsc(void)
    return ((unsigned __int64)hi << 32) | lo;
 #endif
 }
+#endif
 
 static INLINE void scond_pause(void)
 {
@@ -2830,7 +2839,7 @@ static void scond_global_resolve(void)
     * measuring against it. */
    scond_g.hires     = false;
    scond_g.tls_timer = TLS_OUT_OF_INDEXES;
-#if !defined(_XBOX) && !defined(__WINRT__) && !(defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#if !defined(RETRO_DISABLE_HOST_CLOCK) && !defined(_XBOX) && !defined(__WINRT__) && !(defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    env = getenv("RTHREADS_SCOND_HIRES");
    if (!(env && !strcmp(env, "0")))
    {
@@ -2918,6 +2927,12 @@ static void scond_global_resolve(void)
    scond_g.spin_iters  = cycles / 128u;
    if (!scond_g.spin_iters)
       scond_g.spin_iters = 1;
+#if defined(RTHREADS_SCOND_FIXED_SPIN)
+   if (scond_g.spin != SCOND_SPIN_NONE)
+      scond_g.spin = RTHREADS_SCOND_FIXED_SPIN ? SCOND_SPIN_PAUSE : SCOND_SPIN_NONE;
+   scond_g.spin_iters = RTHREADS_SCOND_FIXED_SPIN;
+   scond_g.spin_cycles = 0;
+#endif
 }
 
 static void scond_global_init(void)
@@ -3500,6 +3515,7 @@ void scond_signal(scond_t *cond)
 }
 
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
 #if defined(USE_WIN32_THREADS)
@@ -3756,6 +3772,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    return (pthread_cond_timedwait(&cond->cond, &lock->lock, &now) == 0);
 #endif
 }
+#endif /* RETRO_DISABLE_HOST_CLOCK */
 
 #ifdef HAVE_THREAD_STORAGE
 bool sthread_tls_create(sthread_tls_t *tls)

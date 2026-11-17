@@ -223,6 +223,10 @@ bool recording_driver_can_stream(const char *ident)
       return record_metal_can_stream();
    if (driver == &record_nvenc)
       return record_nvenc_can_stream();
+#ifdef HAVE_RECORD_VULKAN
+   if (driver == &record_vulkan)
+      return record_vulkan_can_stream();
+#endif
    return false;
 }
 

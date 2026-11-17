@@ -172,7 +172,6 @@ typedef struct
     * never through the video singleton - task workers reach no
     * getter. The read stays a single benign per-tick poll of a
     * monotonic counter. */
-   const uint64_t *frame_count;
    retro_task_callback_t done_cb; /* the caller's */
    char path[PATH_MAX_LENGTH];
 } save_task_state_t;
@@ -213,9 +212,6 @@ static bool save_state_in_background       = false;
  * not a task_queue_find().  State tasks are TASK_TYPE_BLOCKING, so at
  * most one is in flight; the rest of a count is held behind it. */
 static unsigned load_state_tasks_pending   = 0;
-
-/* How long a state load waiting for the core's second frame parks. */
-#define LOAD_STATE_FRAME_WAIT_USEC 8000
 static unsigned save_state_tasks_pending   = 0;
 static bool save_state_disable_undo        = false;
 
@@ -239,12 +235,63 @@ static bool state_task_in_flight(void)
           > state_tasks_held_count;
 }
 
+static void task_load_handler(retro_task_t *task);
+static void state_tasks_release(void);
+
+/* A core takes a state from its second frame on (Dolphin's CLI
+ * autoload asks sooner), so a load into the core is held until then.
+ * The frame loop wakes nothing as it counts frames: a task of its own
+ * thread's looks once a check, and no other thread reads the count. */
+static bool state_tasks_gated = false;
+
+static void state_gate_handler(retro_task_t *task)
+{
+   if (video_state_get_ptr()->frame_count >= 2)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void state_gate_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   state_tasks_gated = false;
+   state_tasks_release();
+}
+
+/* Whether @task is to stay held for the second frame, with the task
+ * that looks for it in the queue. */
+static bool state_task_waits_frames(retro_task_t *task)
+{
+   retro_task_t *gate;
+   save_task_state_t *state = (save_task_state_t*)task->state;
+   if (     task->handler != task_load_handler
+         || (state->flags & SAVE_TASK_FLAG_LOAD_TO_BACKUP_BUFF)
+         || video_state_get_ptr()->frame_count >= 2)
+      return false;
+   if (state_tasks_gated)
+      return true;
+   /* without the one that looks, the load is not kept waiting */
+   if (!(gate = task_init()))
+      return false;
+   gate->type     = TASK_TYPE_NONE;
+   gate->handler  = state_gate_handler;
+   gate->callback = state_gate_cb;
+   gate->flags   |= RETRO_TASK_FLG_MAIN_THREAD | RETRO_TASK_FLG_MUTE;
+   if (!task_queue_push(gate))
+   {
+      free(gate);
+      return false;
+   }
+   state_tasks_gated = true;
+   return true;
+}
+
 /* Pushes @task, or holds it behind the state task in flight; false
  * only when the hold is full. Anything already held goes first. */
 static bool state_task_push(retro_task_t *task)
 {
    if (     !state_tasks_held_count
          && !state_task_in_flight()
+         && !state_task_waits_frames(task)
          && task_queue_push(task))
       return true;
    if (state_tasks_held_count >= STATE_TASKS_HELD_MAX)
@@ -275,6 +322,7 @@ static void state_tasks_release(void)
    unsigned i;
    if (     !state_tasks_held_count
          || state_task_in_flight()
+         || state_task_waits_frames(state_tasks_held[0])
          || !task_queue_push(state_tasks_held[0]))
       return;
    for (i = 1; i < state_tasks_held_count; i++)
@@ -1209,16 +1257,6 @@ static void task_load_handler(retro_task_t *task)
    ssize_t remaining, bytes_read;
    save_task_state_t *state = (save_task_state_t*)task->state;
 
-   /* A core takes a state from its second frame on (Dolphin's CLI
-    * autoload reaches here sooner).  frame_count is advanced by the
-    * frame loop, which wakes no task, so the handler looks again after
-    * about a frame; the unthreaded queue looks once per check. */
-   if (*state->frame_count < 2)
-   {
-      task_queue_park(task, LOAD_STATE_FRAME_WAIT_USEC);
-      return;
-   }
-
    if (!state->file)
    {
 #if defined(HAVE_COMPRESSION)
@@ -2001,7 +2039,6 @@ static bool task_push_load_and_save_state(const char *path, void *data,
    if (!settings->bools.notification_show_save_state)
       state->flags             |= SAVE_TASK_FLAG_MUTE;
 
-   state->frame_count           = &video_state_get_ptr()->frame_count;
    task->state                  = state;
    task->type                   = TASK_TYPE_BLOCKING;
    task->handler                = task_load_handler;
@@ -2348,7 +2385,6 @@ bool content_load_state_notify(const char *path,
    if (!settings->bools.notification_show_save_state)
       state->flags             |= SAVE_TASK_FLAG_MUTE;
 
-   state->frame_count           = &video_state_get_ptr()->frame_count;
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
    task->handler                = task_load_handler;
@@ -2450,6 +2486,7 @@ static void state_tasks_discard_held(void)
 void content_reset_savestate_backups(void)
 {
    state_tasks_discard_held();
+   state_tasks_gated = false;
 
    if (undo_save_buf.data)
    {

@@ -132,6 +132,9 @@ enum {
 
 #include <boolean.h>
 
-uint8_t *android_keyboard_state_get(unsigned port);
+/* Pad @port as android_input.c's poll leaves it, its keys its buttons
+ * (input_pad_view.h); NULL past the pads */
+struct input_pad_view;
+struct input_pad_view *android_input_pad_view(unsigned port);
 
 #endif

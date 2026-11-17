@@ -1057,50 +1057,56 @@ void input_driver_set_snapshot_bridge(bool on)
  * loop over the binds.
  *
  * - xinput (xinput_hybrid_joypad.c, the Windows driver with XInput and
- *   DirectInput pads). Its state() compares an axis against the
- *   threshold as integers where the common loop divides; the two agree
- *   for every threshold below 1.0, and at 1.0 the driver's own wraps
- *   and reads every bound axis as pressed, which the bridge does not.
- *   The XInput-only driver of the same name has no get_buttons() and
- *   stays as it was.
+ *   DirectInput pads, and xinput_joypad.c, the XInput-only one: UWP,
+ *   Xbox, builds without DirectInput), dinput (dinput_joypad.c,
+ *   DirectInput only) and winmm (winmm_joypad.c). Each makes every pad
+ *   a view of what its poll read, an XInput pad's d-pad its hat 0, and
+ *   lends it.
  *
- * - winraw_joypad (winraw_joypad.c, the Windows RawInput driver). Its
- *   state() is the common loop with the button and axis reads written
- *   out in place, and compares an axis against the threshold as 32-bit
- *   integers, which agrees with the common loop at every threshold.
+ * - winraw_joypad (winraw_joypad.c, Windows RawInput). Its state()
+ *   compares an axis against the threshold as 32-bit integers, which
+ *   agrees with the common loop at every threshold.
  *
- * - udev (udev_joypad.c, Linux). get_buttons() hands over the same
- *   sixty-four bits button() reads, and its state() is the common
- *   loop as written. It has more axes than a copy holds; the ones
- *   past the sixteenth are read from the driver as before.
+ * - udev (udev_joypad.c) and linuxraw (linuxraw_joypad.c), Linux. Both
+ *   keep each pad as a view their events fill in the poll, and lend
+ *   it. Their pads can have more axes than a view holds; those past the
+ *   sixteenth are read from the driver.
  *
- * - dinput (dinput_joypad.c, the DirectInput-only Windows driver). It
- *   had no get_buttons(); it has one now, over the same button array
- *   button() reads. Its state() compares an axis against the
- *   threshold as 32-bit integers, as winraw_joypad's does.
+ * - sdl2, sdl3 and sdl (SDL 1.2). get_buttons() walks the pad's buttons
+ *   through the call button() makes, so SDL is asked once a poll. SDL
+ *   1.2 keeps the state, so its pads are copied: a view would ask it
+ *   for every pad open, read or not.
  *
- * - linuxraw (linuxraw_joypad.c, Linux). Its get_buttons() handed
- *   over sixteen of the thirty-two buttons button() reads; it hands
- *   over all of them now. No hats; state() is the common loop.
+ * - android, parport and sdl_dingux keep each pad as a view filled in
+ *   their polls (android's in its input driver's events, a pad's row of
+ *   keys the bytes of its buttons) and lend it, through
+ *   input_pad_view.h as the consoles below do; android's one hat is
+ *   the view's.
  *
- * - sdl2 (sdl2_joypad.c) and sdl3 (sdl3_joypad.c). Neither had a
- *   get_buttons(); each has one now, a walk of the pad's buttons
- *   through the call button() makes. state() is the common loop.
- *   With these drivers a read is a call into SDL, so here the copy
- *   also saves those.
+ * - rwebpad (the web) makes each live pad a view of the gamepad event
+ *   its poll read, on the browser's thread, and lends it; axes past the
+ *   sixteenth are read from the event.
  *
- * - xinput, the XInput-only driver (xinput_joypad.c: UWP, Xbox, and
- *   builds without DirectInput). It has a get_buttons() now, so it is
- *   served like the hybrid driver of the same name.
+ * - The consoles: gx (gekko_joypad.c and gx_joypad_libogc.c), ps2, ps3,
+ *   ps4, psp and vita (psp_joypad.c), switch, ctr, qnx, xdk, wiiu, mfi
+ *   (Apple's GameController pads) and dos, which reads no pad yet. Each
+ *   keeps its pads as views filled in its poll (qnx's in its input
+ *   driver's events) and answers its reads from them through
+ *   input_pad_view.h, so the bridge reads the driver's own state and
+ *   copies nothing. Of wiiu's, the GamePad's and the Wiimotes' are
+ *   lent; USB HID's pads are copied.
  *
- * - hid, with hidraw or WinUSB behind it: their handlers' state is
- *   what button(), axis() and get_buttons() answer, and they lend it.
- *   With a HID driver that does not lend, it is read directly.
+ * - hid, whichever HID driver is behind it: button(), axis() and
+ *   get_buttons() answer the pad's handler's state, or for a pad no
+ *   handler reads the driver's own. hidraw, WinUSB and IOHIDManager
+ *   take packets in the poll or between frames and lend that state;
+ *   libusb, BTstack and the Wii's and Wii U's take them on threads of
+ *   their own, so their pads are copied once a poll.
  *
- * samples/input/joypad_bridge_checked holds udev, dinput, linuxraw,
- * sdl2, sdl3 and the XInput-only driver to that: for random pads, binds
- * and thresholds, what the bridge would make of the driver's answers
- * is what the driver's own state() says.
+ * samples/input/joypad_bridge_checked holds every driver named here to
+ * that, the consoles' built on the host against their platforms'
+ * headers: for random pads, binds and thresholds, what the bridge would
+ * make of the driver's answers is what the driver's own state() says.
  *
  * Asked several times a frame, so the answer is kept with the driver
  * it was for. */
@@ -1120,10 +1126,26 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
              || string_is_equal(drv->ident, "linuxraw")
              || string_is_equal(drv->ident, "sdl2")
              || string_is_equal(drv->ident, "sdl3")
-             /* HID's, where its HID driver lends its pads: the Mac's
-              * does not, and its button() has pads its get_buttons()
-              * does not */
-             || (string_is_equal(drv->ident, "hid") && drv->view));
+             || string_is_equal(drv->ident, "android")
+             || string_is_equal(drv->ident, "winmm")
+             || string_is_equal(drv->ident, "parport")
+             || string_is_equal(drv->ident, "sdl")
+             || string_is_equal(drv->ident, "sdl_dingux")
+             || string_is_equal(drv->ident, "rwebpad")
+             || string_is_equal(drv->ident, "gx")
+             || string_is_equal(drv->ident, "ps2")
+             || string_is_equal(drv->ident, "ps3")
+             || string_is_equal(drv->ident, "ps4")
+             || string_is_equal(drv->ident, "psp")
+             || string_is_equal(drv->ident, "vita")
+             || string_is_equal(drv->ident, "switch")
+             || string_is_equal(drv->ident, "ctr")
+             || string_is_equal(drv->ident, "qnx")
+             || string_is_equal(drv->ident, "xdk")
+             || string_is_equal(drv->ident, "wiiu")
+             || string_is_equal(drv->ident, "mfi")
+             || string_is_equal(drv->ident, "dos")
+             || string_is_equal(drv->ident, "hid"));
       if (answer && drv->get_buttons && drv->button && drv->axis)
          RARCH_LOG("[Input] Controllers of the \"%s\" driver are read"
                " through a snapshot taken once a poll.\n", drv->ident);
@@ -1156,7 +1178,6 @@ static void input_snapshot_fetch_hat(const input_device_driver_t *real,
 
 /* The pad's copy for this frame, taken now if this is the first read
  * since the poll. */
-/* Takes the copy of a pad for this poll. */
 INPUT_NOINLINE static void input_snapshot_pad_take(unsigned pad)
 {
    unsigned m;
@@ -2264,6 +2285,15 @@ INPUT_NOINLINE static void input_combos_frame(
    }
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_MENU) && !defined(ANDROID)
+static int input_pointer_menu_window(void)
+{
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      return -1;
+   return (int)video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU);
+}
+#endif
+
 #include "input_pointer_frame.h"
 
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
@@ -2336,6 +2366,11 @@ bool input_driver_window_touch(unsigned window, unsigned idx,
       uint32_t *screen_pos, bool *down)
 {
    return input_pointer_window_touch(window, idx, screen_pos, down);
+}
+
+void input_driver_release_window(unsigned window)
+{
+   input_pointer_frames_forget(window);
 }
 #endif
 
@@ -10876,6 +10911,8 @@ static unsigned input_plays_as_gen;
  * starts and finds them again - so this is for a start, or for a reset
  * that is followed by one, and not for putting the settings back to
  * their defaults under a running driver. */
+static void input_config_retag_devices(input_driver_state_t *input_st);
+
 void input_config_forget_controllers(void)
 {
    unsigned i;
@@ -10894,11 +10931,14 @@ void input_config_forget_controllers(void)
       input_st->input_device_info[i].joypad_driver[0] = '\0';
       input_st->input_device_info[i].vid              = 0;
       input_st->input_device_info[i].pid              = 0;
+      input_st->input_device_info[i].ident            = 0;
+      input_st->input_device_info[i].tag[0]           = '\0';
       input_st->input_device_info[i].autoconfigured   = false;
       input_st->input_device_info[i].name_index       = 0;
 
       input_config_reset_autoconfig_binds(i);
    }
+   input_config_retag_devices(input_st);
 }
 
 void input_config_set_device(unsigned port, unsigned id)
@@ -12943,6 +12983,8 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
          }
       }
    }
+
+   input_config_retag_devices(input_st);
 }
 
 const char *input_config_get_device_name(unsigned port)
@@ -13007,6 +13049,115 @@ unsigned input_config_get_device_name_index(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
    return input_st->input_device_info[port].name_index;
+}
+
+uint32_t input_config_get_device_ident(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].ident;
+}
+
+const char *input_config_get_device_ident_tag(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].tag;
+}
+
+/* Pads whose tags clash are numbered by identity, not connect order:
+ * the hash, then the port path (a serial-less pad's identity), then
+ * the slot. */
+static bool input_device_ident_before(const input_device_info_t *a,
+      unsigned slot_a, const input_device_info_t *b, unsigned slot_b)
+{
+   int cmp;
+   if (a->ident != b->ident)
+      return a->ident < b->ident;
+   cmp = strcmp(a->phys, b->phys);
+   if (cmp)
+      return cmp < 0;
+   return slot_a < slot_b;
+}
+
+uint32_t input_devices_tagged = 0;
+
+/* Each connected controller's shown_tag, from the names shown and the
+ * tags: run as a name, display name, port path or identity changes,
+ * never as a row is drawn. */
+static void input_config_retag_devices(input_driver_state_t *input_st)
+{
+   unsigned port;
+   uint32_t tagged = 0;
+
+   for (port = 0; port < MAX_INPUT_DEVICES; port++)
+   {
+      unsigned i;
+      const char *shown;
+      input_device_info_t *d = &input_st->input_device_info[port];
+      unsigned same          = 0;
+      unsigned before        = 0;
+      unsigned clash         = 0;
+      unsigned clash_before  = 0;
+
+      d->shown_tag[0] = '\0';
+      if (!*d->name)
+         continue;
+      /* the name the menus show: a profile can give two names one */
+      shown = *d->display_name ? d->display_name : d->name;
+      for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      {
+         const input_device_info_t *o = &input_st->input_device_info[i];
+         if (     i == port
+               || !*o->name
+               || !string_is_equal(
+                     *o->display_name ? o->display_name : o->name, shown))
+            continue;
+         same++;
+         if (i < port)
+            before++;
+         if (*d->tag && string_is_equal(o->tag, d->tag))
+         {
+            clash++;
+            if (input_device_ident_before(o, i, d, port))
+               clash_before++;
+         }
+      }
+      if (!same)
+         continue;
+      if (!*d->tag)
+         snprintf(d->shown_tag, sizeof(d->shown_tag), " (#%u)", before + 1);
+      else if (clash)
+         snprintf(d->shown_tag, sizeof(d->shown_tag), " [%s #%u]",
+               d->tag, clash_before + 1);
+      else
+         snprintf(d->shown_tag, sizeof(d->shown_tag), " [%s]", d->tag);
+      tagged |= 1u << port;
+   }
+#ifdef HAVE_MENU
+   /* the menu's rows and frame look for presses only while names are
+    * shared: told as that starts or ends */
+   if (!input_devices_tagged != !tagged)
+   {
+      input_devices_tagged = tagged;
+      menu_driver_pads_alike_changed();
+      return;
+   }
+#endif
+   input_devices_tagged = tagged;
+}
+
+size_t input_config_get_device_tag(unsigned port, bool slot_shown,
+      char *s, size_t len)
+{
+   const char *tag;
+   if (len)
+      *s = '\0';
+   if (port >= MAX_INPUT_DEVICES)
+      return 0;
+   tag = input_driver_st.input_device_info[port].shown_tag;
+   /* " (#2)": a place among those of the name, the slot's number aside */
+   if (!*tag || (slot_shown && tag[1] == '('))
+      return 0;
+   return strlcpy(s, tag, len);
 }
 
 /* TODO/FIXME: This is required by linuxraw_joypad.c
@@ -13125,8 +13276,11 @@ void input_config_set_device_display_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
    if (name && *name)
+   {
       strlcpy(input_st->input_device_info[port].display_name, name,
             sizeof(input_st->input_device_info[port].display_name));
+      input_config_retag_devices(input_st);
+   }
 }
 
 void input_config_set_device_config_name(unsigned port, const char *name)
@@ -13153,6 +13307,17 @@ void input_config_set_device_phys(unsigned port, const char *phys)
             sizeof(input_st->input_device_info[port].phys));
    else
       input_st->input_device_info[port].phys[0] = '\0';
+   input_config_retag_devices(input_st);
+}
+
+void input_config_set_device_ident(unsigned port, uint32_t ident,
+      const char *tag)
+{
+   input_driver_state_t *input_st          = &input_driver_st;
+   input_st->input_device_info[port].ident = ident;
+   strlcpy(input_st->input_device_info[port].tag, tag ? tag : "",
+         sizeof(input_st->input_device_info[port].tag));
+   input_config_retag_devices(input_st);
 }
 
 void input_config_set_device_vid(unsigned port, uint16_t vid)
@@ -13191,6 +13356,7 @@ void input_config_clear_device_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
    input_st->input_device_info[port].display_name[0] = '\0';
+   input_config_retag_devices(input_st);
 }
 
 void input_config_clear_device_config_name(unsigned port)
@@ -16916,6 +17082,14 @@ bool input_config_get_nowinkey_enable(void)
 }
 #endif
 
+#ifdef HAVE_VIDEO_WINDOWS
+bool input_config_get_video_windows_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.video_windows_enable;
+}
+#endif
+
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
 bool input_config_get_keyboard_background(void)
 {
@@ -18199,6 +18373,94 @@ void input_driver_capture_pad(unsigned pad, bool poll,
                hats[i] |= HAT_RIGHT_MASK;
          }
    }
+}
+
+/* What each connected controller holds down, a word a slot, into
+ * @held[MAX_INPUT_DEVICES]: its buttons folded onto 32 bits, its hats'
+ * directions onto bits 28-31, so a new press sets a bit; and where its
+ * axes are, into @axes[MAX_INPUT_DEVICES], each signed as axis() gives
+ * its two directions. Returns the slots that have a controller.
+ *
+ * For the menu's look for a press, every frame two controllers show
+ * one name. A pad read through the snapshot bridge is read where this
+ * poll left it - the driver's own state where the driver lends it, or
+ * the copy the core's and the hotkeys' reads already took - so nothing
+ * is copied and the driver is not called again; a hat no reader asked
+ * for joins the copy from here on, as for any reader. The rest are
+ * asked as input_driver_capture_pad() asks them. */
+uint32_t input_driver_pads_held(uint32_t *held,
+      int16_t (*axes)[INPUT_PAD_VIEW_AXES])
+{
+   unsigned s;
+   uint32_t named                      = 0;
+   input_driver_state_t *input_st      = &input_driver_st;
+   const input_device_driver_t *joypad = INPUT_JOYPAD_FOR_READ(input_st,
+         input_st->primary_joypad);
+   bool bridged                        =
+         joypad == &input_snapshot_bridge.adapter;
+
+   for (s = 0; s < MAX_INPUT_DEVICES; s++)
+   {
+      unsigned w;
+      uint32_t down = 0;
+      uint32_t hats = 0;
+
+      if (!*input_st->input_device_info[s].name)
+         continue;
+      named |= 1u << s;
+      if (!joypad)
+      {
+         held[s] = 0;
+         memset(axes[s], 0, sizeof(axes[s]));
+         continue;
+      }
+      if (bridged && s < MAX_USERS)
+      {
+         const input_pad_view_t *view = input_snapshot_view(s);
+         input_pad_snapshot_t *snap   = &input_snapshot_bridge.pads[s];
+         /* a copy holds the hats and axes read before; a lent view,
+          * all */
+         if (view == &snap->copy)
+         {
+            unsigned h;
+            for (h = 0; h < INPUT_SNAPSHOT_HATS; h++)
+               if (!(snap->hats_known & (1 << h)))
+                  input_snapshot_fetch_hat(input_snapshot_bridge.real,
+                        &snap->copy, s, h);
+            for (h = 0; h < INPUT_SNAPSHOT_AXES; h++)
+               if (!(snap->axes_known & (1 << h)))
+                  input_snapshot_fetch_axis(input_snapshot_bridge.real,
+                        &snap->copy, s, h);
+            snap->hats_known = snap->hats_used =
+               (1 << INPUT_SNAPSHOT_HATS) - 1;
+            snap->axes_known = snap->axes_used =
+               (1 << INPUT_SNAPSHOT_AXES) - 1;
+         }
+         for (w = 0; w < ARRAY_SIZE(view->buttons.data); w++)
+            down |= view->buttons.data[w];
+         hats = view->hats;
+         memcpy(axes[s], view->axes, sizeof(axes[s]));
+      }
+      else
+      {
+         /* as the bind capture reads one: the buttons the menu binds */
+         uint16_t pad_hats[INPUT_PAD_VIEW_HATS];
+         input_bits_t buttons;
+         BIT256_CLEAR_ALL(buttons);
+         memset(pad_hats, 0, sizeof(pad_hats));
+         input_driver_capture_pad(s, false, &buttons, 219,
+               axes[s], INPUT_PAD_VIEW_AXES, pad_hats, INPUT_PAD_VIEW_HATS);
+         for (w = 0; w < ARRAY_SIZE(buttons.data); w++)
+            down |= buttons.data[w];
+         for (w = 0; w < INPUT_PAD_VIEW_HATS; w++)
+            hats |= (uint32_t)(pad_hats[w] >> HAT_RIGHT_SHIFT) << (w * 4);
+      }
+      /* every hat onto the same four bits */
+      hats   |= hats >> 8;
+      hats   |= hats >> 4;
+      held[s] = down | ((hats & 0xf) << 28);
+   }
+   return named;
 }
 
 /* The device drivers are polled, and nothing else of a poll is done:

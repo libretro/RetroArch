@@ -281,6 +281,24 @@ static bool rmp4w_track(record_mux_mp4_t *m, const record_mp4_config_t *c, unsig
          rmp4w_uint(m, c->full_range ? 128 : 0, 1);
          rmp4w_end(m, box);
       }
+      if (c->mastering.present)
+      {
+         static const unsigned order[8] = {2, 3, 4, 5, 0, 1, 6, 7};
+         unsigned coordinate;
+         box = rmp4w_box(m, "mdcv");
+         for (coordinate = 0; coordinate < 8; coordinate++)
+            rmp4w_uint(m, c->mastering.chromaticity[order[coordinate]], 2);
+         rmp4w_uint(m, c->mastering.luminance_max, 4);
+         rmp4w_uint(m, c->mastering.luminance_min, 4);
+         rmp4w_end(m, box);
+      }
+      if (c->max_cll || c->max_fall)
+      {
+         box = rmp4w_box(m, "clli");
+         rmp4w_uint(m, c->max_cll, 2);
+         rmp4w_uint(m, c->max_fall, 2);
+         rmp4w_end(m, box);
+      }
    }
    rmp4w_end(m, entry); rmp4w_end(m, stsd);
    box = rmp4w_full(m, "stts", 0); rmp4w_zero(m, 4); rmp4w_end(m, box);
@@ -308,6 +326,18 @@ record_mux_mp4_t *record_mux_mp4_new(const record_mp4_config_t *c)
             || !c->transfer_characteristics || c->transfer_characteristics > 65535
             || !c->matrix_coefficients || c->matrix_coefficients > 65535)
          return NULL;
+   if (c->max_cll > 65535 || c->max_fall > 65535
+         || (c->max_cll && c->max_fall > c->max_cll))
+      return NULL;
+   if (c->mastering.present)
+   {
+      if (c->mastering.present != VIDEO_MASTERING_DISPLAY_COMPLETE
+            || c->mastering.luminance_min > c->mastering.luminance_max)
+         return NULL;
+      for (i = 0; i < 8; i++)
+         if (c->mastering.chromaticity[i] > 50000)
+            return NULL;
+   }
    m = (record_mux_mp4_t*)calloc(1, sizeof(*m));
    if (!m) return NULL;
    m->capacity = c->max_packet_size + 4096 + c->headers_size;

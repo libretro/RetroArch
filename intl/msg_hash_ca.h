@@ -1703,7 +1703,6 @@ static const struct
    char s_a38500d8[13];
    char s_9544161a[8];
    char s_76ac1944[34];
-   char s_ded7e809[42];
    char s_d8820ed7[82];
    char s_4c11d465[14];
    char s_50a04cd9[19];
@@ -1711,8 +1710,6 @@ static const struct
    char s_11121f30[32];
    char s_01badaa0[28];
    char s_6127cc52[32];
-   char s_9d52f73c[15];
-   char s_bc30b87a[31];
    char s_2fd5302f[30];
    char s_2dff21ec[28];
    char s_a2a28187[24];
@@ -1773,7 +1770,6 @@ static const struct
    char s_f24476fa[10];
    char s_97d90c67[10];
    char s_6d08238d[4];
-   char s_033bf99f[15];
    char s_8076aea7[28];
    char s_a00583cf[37];
    char s_e8a86d57[7];
@@ -1813,7 +1809,6 @@ static const struct
    char s_b71e6907[24];
    char s_d725639f[10];
    char s_ea5b5020[8];
-   char s_fef383d2[47];
    char s_4707850d[20];
    char s_cbddcf50[19];
    char s_9abb40fc[30];
@@ -2562,7 +2557,6 @@ static const struct
    char s_f387bafb[27];
    char s_2c868ae4[12];
    char s_7f065006[9];
-   char s_5c12d979[12];
    char s_284873ec[20];
    char s_3220e9be[7];
    char s_3242e549[21];
@@ -2648,12 +2642,10 @@ static const struct
 #endif
    char s_84c46931[37];
    char s_ebf10493[14];
-   char s_539d5393[7];
    char s_a64b3a0b[31];
    char s_83e8dc72[31];
    char s_7cf985f0[45];
    char s_0f5266ce[23];
-   char s_0f97fdc1[6];
    char s_ea2674d3[41];
    char s_ea2674d4[38];
    char s_2d8cb7ce[24];
@@ -6692,7 +6684,6 @@ static const struct
    "<Pregunta'm>",
    "Versi\303\263",
    "No es pot esborrar aquest fitxer.",
-   "No es pot canviar el nom a aquest fitxer.",
    "S\342\200\231ha produ\303\257t un error en actualitzar l\342\200\231entrada de la llista de repr"
    "oducci\303\263.",
    "Shader actual",
@@ -6701,8 +6692,6 @@ static const struct
    "Esborrar llista de reproducci\303\263",
    "No mostris una altra vegada",
    "Descarrega totes les miniatures",
-   "Sistema sencer",
-   "Aquesta llista de reproducci\303\263",
    "Ja hi ha una baixada en curs.",
    "Obtingudes: %1 Fallades: %2",
    "Descarrega la miniatura",
@@ -6763,7 +6752,6 @@ static const struct
    "Mou avall",
    "Mou amunt",
    "Nom",
-   "Error de xarxa",
    "Nova llista de reproducci\303\263",
    "Element de la llista de reproducci\303\263",
    "Nucli:",
@@ -6810,7 +6798,6 @@ static const struct
    "Llistes de reproducci\303\263",
    "Car\303\240tula",
    "Logotip",
-   "Les miniatures s'han descarregat correctament.",
    "Captura de pantalla",
    "Pantalla de t\303\255tol",
    "Ha fallat l\342\200\231actualitzaci\303\263.",
@@ -7562,7 +7549,6 @@ static const struct
    "Disposici\303\263 de la pantalla",
    "Horitzontal",
    "Pantalla",
-   "Pantalla %u",
    "Edita les pantalles",
    "Timbre",
    "Reinicia la pantalla",
@@ -7648,12 +7634,10 @@ static const struct
 #endif
    "Mode de finestra a pantalla completa",
    "Mode finestra",
-   "Adjunt",
    "Al\303\247ada m\303\240xima de la finestra",
    "Amplada m\303\240xima de la finestra",
    "Utilitza una mida de finestra personalitzada",
    "Al\303\247ada de la finestra",
-   "Ocult",
    "Despla\303\247ament horitzontal de la pantalla",
    "Despla\303\247ament vertical de la pantalla",
    "Opacitat de la finestra",
@@ -10889,7 +10873,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243113u
+      (sizeof(msg_hash_ca_blob) == (242938u
 #ifdef ANDROID
        + 281u
 #endif
@@ -13136,7 +13120,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -13144,8 +13127,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -13206,7 +13187,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -13245,7 +13225,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
@@ -13994,7 +13973,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -14080,12 +14058,10 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,

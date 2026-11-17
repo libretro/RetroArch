@@ -145,6 +145,9 @@ jobs:
             snprintf
             unbase64_test
             crc32_test
+            # SHA-1/SHA-256 instructions against the scalar rounds; the
+            # cross lanes below run the ARM ones.
+            sha_hw_test
             # encoding_crc32.c through an assembler without VPCLMULQDQ,
             # and beside encoding_rzstd.c under an unguarded <cpuid.h>.
             crc32_gas_test
@@ -225,6 +228,7 @@ jobs:
             rtags_test
             # A file's audio_transfer arm from its bytes, and the folds.
             audio_transfer_sniff_test
+            audio_transfer_tracks_test
             # ATRAC3 and ATRAC3plus in WAVE and OpenMG through audio_transfer.
             audio_transfer_atrac_test
             # AVI and ASF headers: streams, codecs, sizes, rates, length.
@@ -336,6 +340,9 @@ jobs:
             chd_stream_threads_test
             chd_stream_ahead_test
             chd_map_alloc_test
+            rchd_hunk_cache_test
+            # rchd's cdfl, flac and A/V FLAC audio over coded images
+            rchd_flac_test
             rvz_test
             ciso_test
             xdvdfs_test
@@ -438,6 +445,11 @@ jobs:
             retro_atomic_test
             retro_atomic_extern_c_linkage_test
             retro_atomic_extern_c_linkage_test_cxx
+            # A core's own INLINE ("__inline static", FBNeo's) defined
+            # before the headers: C89, C++98 and C++11 still compile.
+            retro_atomic_inline_override_test
+            retro_atomic_inline_override_test_cxx98
+            retro_atomic_inline_override_test_cxx11
             # The C++11 backend's value macros given enumerators, and
             # parsed against a pre-P0558R1 <atomic> that deduces from
             # the value too, as libstdc++ 8 does.
@@ -450,12 +462,19 @@ jobs:
             # call, loads, stores and fences none.
             retro_atomic_wiiu_backend_test
             retro_spsc_test
+            # Pairs written whole, views lent across the wrap, reservations
+            retro_spsc_pair_test
             mpsc_stack_test
+            retro_mpsc_test
             # A frame handoff where neither side waits: no read sees a
             # buffer being filled, the reader ends on the last frame.
             retro_triple_buffer_test
             retro_waitable_spsc_test
             retro_eventcount_test
+            # init_lock_free, and the builds with no host clock
+            retro_eventcount_lock_free_test
+            retro_eventcount_lock_free_test_scond
+            retro_eventcount_lock_free_test_clockless
             # Parking on the value of words and waking by address, over
             # the eventcount: a lost wake leaves a thread asleep and the
             # test's alarm ends it.
@@ -2383,6 +2402,25 @@ jobs:
           set -u
           set -o pipefail
           ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./crc32_test
+
+      - name: Build and run sha_hw_test under qemu-user
+        shell: bash
+        working-directory: libretro-common/samples/hash/sha_hw
+        run: |
+          set -euo pipefail
+          # The ARM legs must run the SHA instructions (qemu's default
+          # CPU has them); armv7 needs NEON on, which the armhf
+          # toolchain leaves off. PowerPC runs the scalar rounds
+          # big-endian.
+          require=--require-hw
+          cflags="${{ matrix.cflags }}"
+          case "${{ matrix.name }}" in
+             armv7) cflags="$cflags -mfpu=neon" ;;
+             powerpc-big-endian) require= ;;
+          esac
+          make clean
+          CC="${{ matrix.cc }}" CFLAGS="$cflags" make all
+          ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./sha_hw_test $require
 
       - name: Build and run pixconv_test under qemu-user
         shell: bash

@@ -162,6 +162,294 @@ PFN_vkCreateDebugUtilsMessengerEXT vulkan_symbol_wrapper_vkCreateDebugUtilsMesse
 PFN_vkDestroyDebugUtilsMessengerEXT vulkan_symbol_wrapper_vkDestroyDebugUtilsMessengerEXT;
 PFN_vkSetDebugUtilsObjectNameEXT vulkan_symbol_wrapper_vkSetDebugUtilsObjectNameEXT;
 
+#ifdef VK_KHR_swapchain
+PFN_vkAcquireNextImage2KHR vulkan_symbol_wrapper_vkAcquireNextImage2KHR;
+PFN_vkGetDeviceGroupPresentCapabilitiesKHR vulkan_symbol_wrapper_vkGetDeviceGroupPresentCapabilitiesKHR;
+PFN_vkGetDeviceGroupSurfacePresentModesKHR vulkan_symbol_wrapper_vkGetDeviceGroupSurfacePresentModesKHR;
+PFN_vkGetPhysicalDevicePresentRectanglesKHR vulkan_symbol_wrapper_vkGetPhysicalDevicePresentRectanglesKHR;
+#endif
+#ifdef VK_INTEL_performance_query
+PFN_vkAcquirePerformanceConfigurationINTEL vulkan_symbol_wrapper_vkAcquirePerformanceConfigurationINTEL;
+PFN_vkCmdSetPerformanceMarkerINTEL vulkan_symbol_wrapper_vkCmdSetPerformanceMarkerINTEL;
+PFN_vkCmdSetPerformanceOverrideINTEL vulkan_symbol_wrapper_vkCmdSetPerformanceOverrideINTEL;
+PFN_vkCmdSetPerformanceStreamMarkerINTEL vulkan_symbol_wrapper_vkCmdSetPerformanceStreamMarkerINTEL;
+PFN_vkGetPerformanceParameterINTEL vulkan_symbol_wrapper_vkGetPerformanceParameterINTEL;
+PFN_vkInitializePerformanceApiINTEL vulkan_symbol_wrapper_vkInitializePerformanceApiINTEL;
+PFN_vkQueueSetPerformanceConfigurationINTEL vulkan_symbol_wrapper_vkQueueSetPerformanceConfigurationINTEL;
+PFN_vkReleasePerformanceConfigurationINTEL vulkan_symbol_wrapper_vkReleasePerformanceConfigurationINTEL;
+PFN_vkUninitializePerformanceApiINTEL vulkan_symbol_wrapper_vkUninitializePerformanceApiINTEL;
+#endif
+#ifdef VK_NV_ray_tracing
+PFN_vkBindAccelerationStructureMemoryNV vulkan_symbol_wrapper_vkBindAccelerationStructureMemoryNV;
+PFN_vkCmdBuildAccelerationStructureNV vulkan_symbol_wrapper_vkCmdBuildAccelerationStructureNV;
+PFN_vkCmdCopyAccelerationStructureNV vulkan_symbol_wrapper_vkCmdCopyAccelerationStructureNV;
+PFN_vkCmdTraceRaysNV vulkan_symbol_wrapper_vkCmdTraceRaysNV;
+PFN_vkCmdWriteAccelerationStructuresPropertiesNV vulkan_symbol_wrapper_vkCmdWriteAccelerationStructuresPropertiesNV;
+PFN_vkCompileDeferredNV vulkan_symbol_wrapper_vkCompileDeferredNV;
+PFN_vkCreateAccelerationStructureNV vulkan_symbol_wrapper_vkCreateAccelerationStructureNV;
+PFN_vkCreateRayTracingPipelinesNV vulkan_symbol_wrapper_vkCreateRayTracingPipelinesNV;
+PFN_vkDestroyAccelerationStructureNV vulkan_symbol_wrapper_vkDestroyAccelerationStructureNV;
+PFN_vkGetAccelerationStructureHandleNV vulkan_symbol_wrapper_vkGetAccelerationStructureHandleNV;
+PFN_vkGetAccelerationStructureMemoryRequirementsNV vulkan_symbol_wrapper_vkGetAccelerationStructureMemoryRequirementsNV;
+PFN_vkGetRayTracingShaderGroupHandlesNV vulkan_symbol_wrapper_vkGetRayTracingShaderGroupHandlesNV;
+#endif
+#ifdef VK_VERSION_1_1
+PFN_vkBindBufferMemory2 vulkan_symbol_wrapper_vkBindBufferMemory2;
+PFN_vkBindImageMemory2 vulkan_symbol_wrapper_vkBindImageMemory2;
+PFN_vkCmdDispatchBase vulkan_symbol_wrapper_vkCmdDispatchBase;
+PFN_vkCmdSetDeviceMask vulkan_symbol_wrapper_vkCmdSetDeviceMask;
+PFN_vkCreateDescriptorUpdateTemplate vulkan_symbol_wrapper_vkCreateDescriptorUpdateTemplate;
+PFN_vkCreateSamplerYcbcrConversion vulkan_symbol_wrapper_vkCreateSamplerYcbcrConversion;
+PFN_vkDestroyDescriptorUpdateTemplate vulkan_symbol_wrapper_vkDestroyDescriptorUpdateTemplate;
+PFN_vkDestroySamplerYcbcrConversion vulkan_symbol_wrapper_vkDestroySamplerYcbcrConversion;
+PFN_vkEnumeratePhysicalDeviceGroups vulkan_symbol_wrapper_vkEnumeratePhysicalDeviceGroups;
+PFN_vkGetBufferMemoryRequirements2 vulkan_symbol_wrapper_vkGetBufferMemoryRequirements2;
+PFN_vkGetDescriptorSetLayoutSupport vulkan_symbol_wrapper_vkGetDescriptorSetLayoutSupport;
+PFN_vkGetDeviceGroupPeerMemoryFeatures vulkan_symbol_wrapper_vkGetDeviceGroupPeerMemoryFeatures;
+PFN_vkGetDeviceQueue2 vulkan_symbol_wrapper_vkGetDeviceQueue2;
+PFN_vkGetImageMemoryRequirements2 vulkan_symbol_wrapper_vkGetImageMemoryRequirements2;
+PFN_vkGetImageSparseMemoryRequirements2 vulkan_symbol_wrapper_vkGetImageSparseMemoryRequirements2;
+PFN_vkGetPhysicalDeviceExternalBufferProperties vulkan_symbol_wrapper_vkGetPhysicalDeviceExternalBufferProperties;
+PFN_vkGetPhysicalDeviceExternalFenceProperties vulkan_symbol_wrapper_vkGetPhysicalDeviceExternalFenceProperties;
+PFN_vkGetPhysicalDeviceExternalSemaphoreProperties vulkan_symbol_wrapper_vkGetPhysicalDeviceExternalSemaphoreProperties;
+PFN_vkGetPhysicalDeviceFeatures2 vulkan_symbol_wrapper_vkGetPhysicalDeviceFeatures2;
+PFN_vkGetPhysicalDeviceFormatProperties2 vulkan_symbol_wrapper_vkGetPhysicalDeviceFormatProperties2;
+PFN_vkGetPhysicalDeviceImageFormatProperties2 vulkan_symbol_wrapper_vkGetPhysicalDeviceImageFormatProperties2;
+PFN_vkGetPhysicalDeviceMemoryProperties2 vulkan_symbol_wrapper_vkGetPhysicalDeviceMemoryProperties2;
+PFN_vkGetPhysicalDeviceProperties2 vulkan_symbol_wrapper_vkGetPhysicalDeviceProperties2;
+PFN_vkGetPhysicalDeviceQueueFamilyProperties2 vulkan_symbol_wrapper_vkGetPhysicalDeviceQueueFamilyProperties2;
+PFN_vkGetPhysicalDeviceSparseImageFormatProperties2 vulkan_symbol_wrapper_vkGetPhysicalDeviceSparseImageFormatProperties2;
+PFN_vkTrimCommandPool vulkan_symbol_wrapper_vkTrimCommandPool;
+PFN_vkUpdateDescriptorSetWithTemplate vulkan_symbol_wrapper_vkUpdateDescriptorSetWithTemplate;
+#endif
+#ifdef VK_KHR_bind_memory2
+PFN_vkBindBufferMemory2KHR vulkan_symbol_wrapper_vkBindBufferMemory2KHR;
+PFN_vkBindImageMemory2KHR vulkan_symbol_wrapper_vkBindImageMemory2KHR;
+#endif
+#ifdef VK_EXT_conditional_rendering
+PFN_vkCmdBeginConditionalRenderingEXT vulkan_symbol_wrapper_vkCmdBeginConditionalRenderingEXT;
+PFN_vkCmdEndConditionalRenderingEXT vulkan_symbol_wrapper_vkCmdEndConditionalRenderingEXT;
+#endif
+#ifdef VK_EXT_debug_utils
+PFN_vkCmdBeginDebugUtilsLabelEXT vulkan_symbol_wrapper_vkCmdBeginDebugUtilsLabelEXT;
+PFN_vkCmdEndDebugUtilsLabelEXT vulkan_symbol_wrapper_vkCmdEndDebugUtilsLabelEXT;
+PFN_vkCmdInsertDebugUtilsLabelEXT vulkan_symbol_wrapper_vkCmdInsertDebugUtilsLabelEXT;
+PFN_vkQueueBeginDebugUtilsLabelEXT vulkan_symbol_wrapper_vkQueueBeginDebugUtilsLabelEXT;
+PFN_vkQueueEndDebugUtilsLabelEXT vulkan_symbol_wrapper_vkQueueEndDebugUtilsLabelEXT;
+PFN_vkQueueInsertDebugUtilsLabelEXT vulkan_symbol_wrapper_vkQueueInsertDebugUtilsLabelEXT;
+PFN_vkSetDebugUtilsObjectTagEXT vulkan_symbol_wrapper_vkSetDebugUtilsObjectTagEXT;
+PFN_vkSubmitDebugUtilsMessageEXT vulkan_symbol_wrapper_vkSubmitDebugUtilsMessageEXT;
+#endif
+#ifdef VK_EXT_transform_feedback
+PFN_vkCmdBeginQueryIndexedEXT vulkan_symbol_wrapper_vkCmdBeginQueryIndexedEXT;
+PFN_vkCmdBeginTransformFeedbackEXT vulkan_symbol_wrapper_vkCmdBeginTransformFeedbackEXT;
+PFN_vkCmdBindTransformFeedbackBuffersEXT vulkan_symbol_wrapper_vkCmdBindTransformFeedbackBuffersEXT;
+PFN_vkCmdDrawIndirectByteCountEXT vulkan_symbol_wrapper_vkCmdDrawIndirectByteCountEXT;
+PFN_vkCmdEndQueryIndexedEXT vulkan_symbol_wrapper_vkCmdEndQueryIndexedEXT;
+PFN_vkCmdEndTransformFeedbackEXT vulkan_symbol_wrapper_vkCmdEndTransformFeedbackEXT;
+#endif
+#ifdef VK_KHR_create_renderpass2
+PFN_vkCmdBeginRenderPass2KHR vulkan_symbol_wrapper_vkCmdBeginRenderPass2KHR;
+PFN_vkCmdEndRenderPass2KHR vulkan_symbol_wrapper_vkCmdEndRenderPass2KHR;
+PFN_vkCmdNextSubpass2KHR vulkan_symbol_wrapper_vkCmdNextSubpass2KHR;
+PFN_vkCreateRenderPass2KHR vulkan_symbol_wrapper_vkCreateRenderPass2KHR;
+#endif
+#ifdef VK_NV_shading_rate_image
+PFN_vkCmdBindShadingRateImageNV vulkan_symbol_wrapper_vkCmdBindShadingRateImageNV;
+PFN_vkCmdSetCoarseSampleOrderNV vulkan_symbol_wrapper_vkCmdSetCoarseSampleOrderNV;
+PFN_vkCmdSetViewportShadingRatePaletteNV vulkan_symbol_wrapper_vkCmdSetViewportShadingRatePaletteNV;
+#endif
+#ifdef VK_EXT_debug_marker
+PFN_vkCmdDebugMarkerBeginEXT vulkan_symbol_wrapper_vkCmdDebugMarkerBeginEXT;
+PFN_vkCmdDebugMarkerEndEXT vulkan_symbol_wrapper_vkCmdDebugMarkerEndEXT;
+PFN_vkCmdDebugMarkerInsertEXT vulkan_symbol_wrapper_vkCmdDebugMarkerInsertEXT;
+PFN_vkDebugMarkerSetObjectNameEXT vulkan_symbol_wrapper_vkDebugMarkerSetObjectNameEXT;
+PFN_vkDebugMarkerSetObjectTagEXT vulkan_symbol_wrapper_vkDebugMarkerSetObjectTagEXT;
+#endif
+#ifdef VK_KHR_device_group
+PFN_vkCmdDispatchBaseKHR vulkan_symbol_wrapper_vkCmdDispatchBaseKHR;
+PFN_vkCmdSetDeviceMaskKHR vulkan_symbol_wrapper_vkCmdSetDeviceMaskKHR;
+PFN_vkGetDeviceGroupPeerMemoryFeaturesKHR vulkan_symbol_wrapper_vkGetDeviceGroupPeerMemoryFeaturesKHR;
+#endif
+#ifdef VK_AMD_draw_indirect_count
+PFN_vkCmdDrawIndexedIndirectCountAMD vulkan_symbol_wrapper_vkCmdDrawIndexedIndirectCountAMD;
+PFN_vkCmdDrawIndirectCountAMD vulkan_symbol_wrapper_vkCmdDrawIndirectCountAMD;
+#endif
+#ifdef VK_KHR_draw_indirect_count
+PFN_vkCmdDrawIndexedIndirectCountKHR vulkan_symbol_wrapper_vkCmdDrawIndexedIndirectCountKHR;
+PFN_vkCmdDrawIndirectCountKHR vulkan_symbol_wrapper_vkCmdDrawIndirectCountKHR;
+#endif
+#ifdef VK_NV_mesh_shader
+PFN_vkCmdDrawMeshTasksIndirectCountNV vulkan_symbol_wrapper_vkCmdDrawMeshTasksIndirectCountNV;
+PFN_vkCmdDrawMeshTasksIndirectNV vulkan_symbol_wrapper_vkCmdDrawMeshTasksIndirectNV;
+PFN_vkCmdDrawMeshTasksNV vulkan_symbol_wrapper_vkCmdDrawMeshTasksNV;
+#endif
+#ifdef VK_KHR_push_descriptor
+PFN_vkCmdPushDescriptorSetKHR vulkan_symbol_wrapper_vkCmdPushDescriptorSetKHR;
+PFN_vkCmdPushDescriptorSetWithTemplateKHR vulkan_symbol_wrapper_vkCmdPushDescriptorSetWithTemplateKHR;
+#endif
+#ifdef VK_NV_device_diagnostic_checkpoints
+PFN_vkCmdSetCheckpointNV vulkan_symbol_wrapper_vkCmdSetCheckpointNV;
+PFN_vkGetQueueCheckpointDataNV vulkan_symbol_wrapper_vkGetQueueCheckpointDataNV;
+#endif
+#ifdef VK_EXT_discard_rectangles
+PFN_vkCmdSetDiscardRectangleEXT vulkan_symbol_wrapper_vkCmdSetDiscardRectangleEXT;
+#endif
+#ifdef VK_NV_scissor_exclusive
+PFN_vkCmdSetExclusiveScissorNV vulkan_symbol_wrapper_vkCmdSetExclusiveScissorNV;
+#endif
+#ifdef VK_EXT_line_rasterization
+PFN_vkCmdSetLineStippleEXT vulkan_symbol_wrapper_vkCmdSetLineStippleEXT;
+#endif
+#ifdef VK_EXT_sample_locations
+PFN_vkCmdSetSampleLocationsEXT vulkan_symbol_wrapper_vkCmdSetSampleLocationsEXT;
+PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT vulkan_symbol_wrapper_vkGetPhysicalDeviceMultisamplePropertiesEXT;
+#endif
+#ifdef VK_NV_clip_space_w_scaling
+PFN_vkCmdSetViewportWScalingNV vulkan_symbol_wrapper_vkCmdSetViewportWScalingNV;
+#endif
+#ifdef VK_AMD_buffer_marker
+PFN_vkCmdWriteBufferMarkerAMD vulkan_symbol_wrapper_vkCmdWriteBufferMarkerAMD;
+#endif
+#ifdef VK_EXT_debug_report
+PFN_vkCreateDebugReportCallbackEXT vulkan_symbol_wrapper_vkCreateDebugReportCallbackEXT;
+PFN_vkDebugReportMessageEXT vulkan_symbol_wrapper_vkDebugReportMessageEXT;
+PFN_vkDestroyDebugReportCallbackEXT vulkan_symbol_wrapper_vkDestroyDebugReportCallbackEXT;
+#endif
+#ifdef VK_KHR_descriptor_update_template
+PFN_vkCreateDescriptorUpdateTemplateKHR vulkan_symbol_wrapper_vkCreateDescriptorUpdateTemplateKHR;
+PFN_vkDestroyDescriptorUpdateTemplateKHR vulkan_symbol_wrapper_vkDestroyDescriptorUpdateTemplateKHR;
+PFN_vkUpdateDescriptorSetWithTemplateKHR vulkan_symbol_wrapper_vkUpdateDescriptorSetWithTemplateKHR;
+#endif
+#ifdef VK_EXT_headless_surface
+PFN_vkCreateHeadlessSurfaceEXT vulkan_symbol_wrapper_vkCreateHeadlessSurfaceEXT;
+#endif
+#ifdef VK_KHR_sampler_ycbcr_conversion
+PFN_vkCreateSamplerYcbcrConversionKHR vulkan_symbol_wrapper_vkCreateSamplerYcbcrConversionKHR;
+PFN_vkDestroySamplerYcbcrConversionKHR vulkan_symbol_wrapper_vkDestroySamplerYcbcrConversionKHR;
+#endif
+#ifdef VK_EXT_validation_cache
+PFN_vkCreateValidationCacheEXT vulkan_symbol_wrapper_vkCreateValidationCacheEXT;
+PFN_vkDestroyValidationCacheEXT vulkan_symbol_wrapper_vkDestroyValidationCacheEXT;
+PFN_vkGetValidationCacheDataEXT vulkan_symbol_wrapper_vkGetValidationCacheDataEXT;
+PFN_vkMergeValidationCachesEXT vulkan_symbol_wrapper_vkMergeValidationCachesEXT;
+#endif
+#ifdef VK_EXT_display_control
+PFN_vkDisplayPowerControlEXT vulkan_symbol_wrapper_vkDisplayPowerControlEXT;
+PFN_vkGetSwapchainCounterEXT vulkan_symbol_wrapper_vkGetSwapchainCounterEXT;
+PFN_vkRegisterDeviceEventEXT vulkan_symbol_wrapper_vkRegisterDeviceEventEXT;
+PFN_vkRegisterDisplayEventEXT vulkan_symbol_wrapper_vkRegisterDisplayEventEXT;
+#endif
+#ifdef VK_KHR_device_group_creation
+PFN_vkEnumeratePhysicalDeviceGroupsKHR vulkan_symbol_wrapper_vkEnumeratePhysicalDeviceGroupsKHR;
+#endif
+#ifdef VK_EXT_buffer_device_address
+PFN_vkGetBufferDeviceAddressEXT vulkan_symbol_wrapper_vkGetBufferDeviceAddressEXT;
+#endif
+#ifdef VK_KHR_get_memory_requirements2
+PFN_vkGetBufferMemoryRequirements2KHR vulkan_symbol_wrapper_vkGetBufferMemoryRequirements2KHR;
+PFN_vkGetImageMemoryRequirements2KHR vulkan_symbol_wrapper_vkGetImageMemoryRequirements2KHR;
+PFN_vkGetImageSparseMemoryRequirements2KHR vulkan_symbol_wrapper_vkGetImageSparseMemoryRequirements2KHR;
+#endif
+#ifdef VK_EXT_calibrated_timestamps
+PFN_vkGetCalibratedTimestampsEXT vulkan_symbol_wrapper_vkGetCalibratedTimestampsEXT;
+PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT vulkan_symbol_wrapper_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT;
+#endif
+#ifdef VK_KHR_maintenance3
+PFN_vkGetDescriptorSetLayoutSupportKHR vulkan_symbol_wrapper_vkGetDescriptorSetLayoutSupportKHR;
+#endif
+#ifdef VK_KHR_get_display_properties2
+PFN_vkGetDisplayModeProperties2KHR vulkan_symbol_wrapper_vkGetDisplayModeProperties2KHR;
+PFN_vkGetDisplayPlaneCapabilities2KHR vulkan_symbol_wrapper_vkGetDisplayPlaneCapabilities2KHR;
+PFN_vkGetPhysicalDeviceDisplayPlaneProperties2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceDisplayPlaneProperties2KHR;
+PFN_vkGetPhysicalDeviceDisplayProperties2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceDisplayProperties2KHR;
+#endif
+#ifdef VK_KHR_external_fence_fd
+PFN_vkGetFenceFdKHR vulkan_symbol_wrapper_vkGetFenceFdKHR;
+PFN_vkImportFenceFdKHR vulkan_symbol_wrapper_vkImportFenceFdKHR;
+#endif
+#ifdef VK_EXT_image_drm_format_modifier
+PFN_vkGetImageDrmFormatModifierPropertiesEXT vulkan_symbol_wrapper_vkGetImageDrmFormatModifierPropertiesEXT;
+#endif
+#ifdef VK_NVX_image_view_handle
+PFN_vkGetImageViewHandleNVX vulkan_symbol_wrapper_vkGetImageViewHandleNVX;
+#endif
+#ifdef VK_KHR_external_memory_fd
+PFN_vkGetMemoryFdKHR vulkan_symbol_wrapper_vkGetMemoryFdKHR;
+PFN_vkGetMemoryFdPropertiesKHR vulkan_symbol_wrapper_vkGetMemoryFdPropertiesKHR;
+#endif
+#ifdef VK_EXT_external_memory_host
+PFN_vkGetMemoryHostPointerPropertiesEXT vulkan_symbol_wrapper_vkGetMemoryHostPointerPropertiesEXT;
+#endif
+#ifdef VK_GOOGLE_display_timing
+PFN_vkGetPastPresentationTimingGOOGLE vulkan_symbol_wrapper_vkGetPastPresentationTimingGOOGLE;
+PFN_vkGetRefreshCycleDurationGOOGLE vulkan_symbol_wrapper_vkGetRefreshCycleDurationGOOGLE;
+#endif
+#ifdef VK_NV_cooperative_matrix
+PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV vulkan_symbol_wrapper_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV;
+#endif
+#ifdef VK_KHR_external_memory_capabilities
+PFN_vkGetPhysicalDeviceExternalBufferPropertiesKHR vulkan_symbol_wrapper_vkGetPhysicalDeviceExternalBufferPropertiesKHR;
+#endif
+#ifdef VK_KHR_external_fence_capabilities
+PFN_vkGetPhysicalDeviceExternalFencePropertiesKHR vulkan_symbol_wrapper_vkGetPhysicalDeviceExternalFencePropertiesKHR;
+#endif
+#ifdef VK_NV_external_memory_capabilities
+PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV vulkan_symbol_wrapper_vkGetPhysicalDeviceExternalImageFormatPropertiesNV;
+#endif
+#ifdef VK_KHR_external_semaphore_capabilities
+PFN_vkGetPhysicalDeviceExternalSemaphorePropertiesKHR vulkan_symbol_wrapper_vkGetPhysicalDeviceExternalSemaphorePropertiesKHR;
+#endif
+#ifdef VK_KHR_get_physical_device_properties2
+PFN_vkGetPhysicalDeviceFeatures2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceFeatures2KHR;
+PFN_vkGetPhysicalDeviceFormatProperties2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceFormatProperties2KHR;
+PFN_vkGetPhysicalDeviceImageFormatProperties2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceImageFormatProperties2KHR;
+PFN_vkGetPhysicalDeviceMemoryProperties2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceMemoryProperties2KHR;
+PFN_vkGetPhysicalDeviceProperties2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceProperties2KHR;
+PFN_vkGetPhysicalDeviceQueueFamilyProperties2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceQueueFamilyProperties2KHR;
+PFN_vkGetPhysicalDeviceSparseImageFormatProperties2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceSparseImageFormatProperties2KHR;
+#endif
+#ifdef VK_NV_coverage_reduction_mode
+PFN_vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV vulkan_symbol_wrapper_vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV;
+#endif
+#ifdef VK_EXT_display_surface_counter
+PFN_vkGetPhysicalDeviceSurfaceCapabilities2EXT vulkan_symbol_wrapper_vkGetPhysicalDeviceSurfaceCapabilities2EXT;
+#endif
+#ifdef VK_KHR_get_surface_capabilities2
+PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceSurfaceCapabilities2KHR;
+PFN_vkGetPhysicalDeviceSurfaceFormats2KHR vulkan_symbol_wrapper_vkGetPhysicalDeviceSurfaceFormats2KHR;
+#endif
+#ifdef VK_KHR_pipeline_executable_properties
+PFN_vkGetPipelineExecutableInternalRepresentationsKHR vulkan_symbol_wrapper_vkGetPipelineExecutableInternalRepresentationsKHR;
+PFN_vkGetPipelineExecutablePropertiesKHR vulkan_symbol_wrapper_vkGetPipelineExecutablePropertiesKHR;
+PFN_vkGetPipelineExecutableStatisticsKHR vulkan_symbol_wrapper_vkGetPipelineExecutableStatisticsKHR;
+#endif
+#ifdef VK_KHR_external_semaphore_fd
+PFN_vkGetSemaphoreFdKHR vulkan_symbol_wrapper_vkGetSemaphoreFdKHR;
+PFN_vkImportSemaphoreFdKHR vulkan_symbol_wrapper_vkImportSemaphoreFdKHR;
+#endif
+#ifdef VK_AMD_shader_info
+PFN_vkGetShaderInfoAMD vulkan_symbol_wrapper_vkGetShaderInfoAMD;
+#endif
+#ifdef VK_KHR_shared_presentable_image
+PFN_vkGetSwapchainStatusKHR vulkan_symbol_wrapper_vkGetSwapchainStatusKHR;
+#endif
+#ifdef VK_EXT_direct_mode_display
+PFN_vkReleaseDisplayEXT vulkan_symbol_wrapper_vkReleaseDisplayEXT;
+#endif
+#ifdef VK_EXT_host_query_reset
+PFN_vkResetQueryPoolEXT vulkan_symbol_wrapper_vkResetQueryPoolEXT;
+#endif
+#ifdef VK_EXT_hdr_metadata
+PFN_vkSetHdrMetadataEXT vulkan_symbol_wrapper_vkSetHdrMetadataEXT;
+#endif
+#ifdef VK_AMD_display_native_hdr
+PFN_vkSetLocalDimmingAMD vulkan_symbol_wrapper_vkSetLocalDimmingAMD;
+#endif
+#ifdef VK_KHR_maintenance1
+PFN_vkTrimCommandPoolKHR vulkan_symbol_wrapper_vkTrimCommandPoolKHR;
+#endif
+
 static PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
 void vulkan_symbol_wrapper_init(PFN_vkGetInstanceProcAddr get_instance_proc_addr)
 {
@@ -476,4 +764,493 @@ VkBool32 vulkan_symbol_wrapper_load_core_device_symbols(VkDevice device)
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndRenderPass", vkCmdEndRenderPass)) return VK_FALSE;
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdExecuteCommands", vkCmdExecuteCommands)) return VK_FALSE;
     return VK_TRUE;
+}
+
+/* Every entry point above the driver has, from the instance and from the
+ * device; the ones it lacks stay NULL. Never fails: a core or driver path
+ * that uses one checks it is there, as for any extension. Either handle may
+ * be VK_NULL_HANDLE, and it may be called again once the other exists. */
+void vulkan_symbol_wrapper_load_extended_symbols(VkInstance instance, VkDevice device)
+{
+    (void)instance;
+    (void)device;
+#ifdef VK_KHR_swapchain
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDevicePresentRectanglesKHR", vkGetPhysicalDevicePresentRectanglesKHR);
+    }
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkAcquireNextImage2KHR", vkAcquireNextImage2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceGroupPresentCapabilitiesKHR", vkGetDeviceGroupPresentCapabilitiesKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceGroupSurfacePresentModesKHR", vkGetDeviceGroupSurfacePresentModesKHR);
+    }
+#endif
+#ifdef VK_INTEL_performance_query
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkAcquirePerformanceConfigurationINTEL", vkAcquirePerformanceConfigurationINTEL);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetPerformanceMarkerINTEL", vkCmdSetPerformanceMarkerINTEL);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetPerformanceOverrideINTEL", vkCmdSetPerformanceOverrideINTEL);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetPerformanceStreamMarkerINTEL", vkCmdSetPerformanceStreamMarkerINTEL);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetPerformanceParameterINTEL", vkGetPerformanceParameterINTEL);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkInitializePerformanceApiINTEL", vkInitializePerformanceApiINTEL);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkQueueSetPerformanceConfigurationINTEL", vkQueueSetPerformanceConfigurationINTEL);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkReleasePerformanceConfigurationINTEL", vkReleasePerformanceConfigurationINTEL);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkUninitializePerformanceApiINTEL", vkUninitializePerformanceApiINTEL);
+    }
+#endif
+#ifdef VK_NV_ray_tracing
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkBindAccelerationStructureMemoryNV", vkBindAccelerationStructureMemoryNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBuildAccelerationStructureNV", vkCmdBuildAccelerationStructureNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdCopyAccelerationStructureNV", vkCmdCopyAccelerationStructureNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdTraceRaysNV", vkCmdTraceRaysNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdWriteAccelerationStructuresPropertiesNV", vkCmdWriteAccelerationStructuresPropertiesNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCompileDeferredNV", vkCompileDeferredNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateAccelerationStructureNV", vkCreateAccelerationStructureNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateRayTracingPipelinesNV", vkCreateRayTracingPipelinesNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDestroyAccelerationStructureNV", vkDestroyAccelerationStructureNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetAccelerationStructureHandleNV", vkGetAccelerationStructureHandleNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetAccelerationStructureMemoryRequirementsNV", vkGetAccelerationStructureMemoryRequirementsNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetRayTracingShaderGroupHandlesNV", vkGetRayTracingShaderGroupHandlesNV);
+    }
+#endif
+#ifdef VK_VERSION_1_1
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkEnumeratePhysicalDeviceGroups", vkEnumeratePhysicalDeviceGroups);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceExternalBufferProperties", vkGetPhysicalDeviceExternalBufferProperties);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceExternalFenceProperties", vkGetPhysicalDeviceExternalFenceProperties);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceExternalSemaphoreProperties", vkGetPhysicalDeviceExternalSemaphoreProperties);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceFeatures2", vkGetPhysicalDeviceFeatures2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceFormatProperties2", vkGetPhysicalDeviceFormatProperties2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceImageFormatProperties2", vkGetPhysicalDeviceImageFormatProperties2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceMemoryProperties2", vkGetPhysicalDeviceMemoryProperties2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceProperties2", vkGetPhysicalDeviceProperties2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceQueueFamilyProperties2", vkGetPhysicalDeviceQueueFamilyProperties2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceSparseImageFormatProperties2", vkGetPhysicalDeviceSparseImageFormatProperties2);
+    }
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkBindBufferMemory2", vkBindBufferMemory2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkBindImageMemory2", vkBindImageMemory2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDispatchBase", vkCmdDispatchBase);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDeviceMask", vkCmdSetDeviceMask);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateDescriptorUpdateTemplate", vkCreateDescriptorUpdateTemplate);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateSamplerYcbcrConversion", vkCreateSamplerYcbcrConversion);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDestroyDescriptorUpdateTemplate", vkDestroyDescriptorUpdateTemplate);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDestroySamplerYcbcrConversion", vkDestroySamplerYcbcrConversion);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetBufferMemoryRequirements2", vkGetBufferMemoryRequirements2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDescriptorSetLayoutSupport", vkGetDescriptorSetLayoutSupport);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceGroupPeerMemoryFeatures", vkGetDeviceGroupPeerMemoryFeatures);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceQueue2", vkGetDeviceQueue2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetImageMemoryRequirements2", vkGetImageMemoryRequirements2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetImageSparseMemoryRequirements2", vkGetImageSparseMemoryRequirements2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkTrimCommandPool", vkTrimCommandPool);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkUpdateDescriptorSetWithTemplate", vkUpdateDescriptorSetWithTemplate);
+    }
+#endif
+#ifdef VK_KHR_bind_memory2
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkBindBufferMemory2KHR", vkBindBufferMemory2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkBindImageMemory2KHR", vkBindImageMemory2KHR);
+    }
+#endif
+#ifdef VK_EXT_conditional_rendering
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBeginConditionalRenderingEXT", vkCmdBeginConditionalRenderingEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndConditionalRenderingEXT", vkCmdEndConditionalRenderingEXT);
+    }
+#endif
+#ifdef VK_EXT_debug_utils
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkSubmitDebugUtilsMessageEXT", vkSubmitDebugUtilsMessageEXT);
+    }
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBeginDebugUtilsLabelEXT", vkCmdBeginDebugUtilsLabelEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndDebugUtilsLabelEXT", vkCmdEndDebugUtilsLabelEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdInsertDebugUtilsLabelEXT", vkCmdInsertDebugUtilsLabelEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkQueueBeginDebugUtilsLabelEXT", vkQueueBeginDebugUtilsLabelEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkQueueEndDebugUtilsLabelEXT", vkQueueEndDebugUtilsLabelEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkQueueInsertDebugUtilsLabelEXT", vkQueueInsertDebugUtilsLabelEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkSetDebugUtilsObjectTagEXT", vkSetDebugUtilsObjectTagEXT);
+    }
+#endif
+#ifdef VK_EXT_transform_feedback
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBeginQueryIndexedEXT", vkCmdBeginQueryIndexedEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBeginTransformFeedbackEXT", vkCmdBeginTransformFeedbackEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBindTransformFeedbackBuffersEXT", vkCmdBindTransformFeedbackBuffersEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawIndirectByteCountEXT", vkCmdDrawIndirectByteCountEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndQueryIndexedEXT", vkCmdEndQueryIndexedEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndTransformFeedbackEXT", vkCmdEndTransformFeedbackEXT);
+    }
+#endif
+#ifdef VK_KHR_create_renderpass2
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBeginRenderPass2KHR", vkCmdBeginRenderPass2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndRenderPass2KHR", vkCmdEndRenderPass2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdNextSubpass2KHR", vkCmdNextSubpass2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateRenderPass2KHR", vkCreateRenderPass2KHR);
+    }
+#endif
+#ifdef VK_NV_shading_rate_image
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBindShadingRateImageNV", vkCmdBindShadingRateImageNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCoarseSampleOrderNV", vkCmdSetCoarseSampleOrderNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetViewportShadingRatePaletteNV", vkCmdSetViewportShadingRatePaletteNV);
+    }
+#endif
+#ifdef VK_EXT_debug_marker
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDebugMarkerBeginEXT", vkCmdDebugMarkerBeginEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDebugMarkerEndEXT", vkCmdDebugMarkerEndEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDebugMarkerInsertEXT", vkCmdDebugMarkerInsertEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDebugMarkerSetObjectNameEXT", vkDebugMarkerSetObjectNameEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDebugMarkerSetObjectTagEXT", vkDebugMarkerSetObjectTagEXT);
+    }
+#endif
+#ifdef VK_KHR_device_group
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDispatchBaseKHR", vkCmdDispatchBaseKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDeviceMaskKHR", vkCmdSetDeviceMaskKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceGroupPeerMemoryFeaturesKHR", vkGetDeviceGroupPeerMemoryFeaturesKHR);
+    }
+#endif
+#ifdef VK_AMD_draw_indirect_count
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawIndexedIndirectCountAMD", vkCmdDrawIndexedIndirectCountAMD);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawIndirectCountAMD", vkCmdDrawIndirectCountAMD);
+    }
+#endif
+#ifdef VK_KHR_draw_indirect_count
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawIndexedIndirectCountKHR", vkCmdDrawIndexedIndirectCountKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawIndirectCountKHR", vkCmdDrawIndirectCountKHR);
+    }
+#endif
+#ifdef VK_NV_mesh_shader
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawMeshTasksIndirectCountNV", vkCmdDrawMeshTasksIndirectCountNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawMeshTasksIndirectNV", vkCmdDrawMeshTasksIndirectNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawMeshTasksNV", vkCmdDrawMeshTasksNV);
+    }
+#endif
+#ifdef VK_KHR_push_descriptor
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdPushDescriptorSetKHR", vkCmdPushDescriptorSetKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdPushDescriptorSetWithTemplateKHR", vkCmdPushDescriptorSetWithTemplateKHR);
+    }
+#endif
+#ifdef VK_NV_device_diagnostic_checkpoints
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCheckpointNV", vkCmdSetCheckpointNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetQueueCheckpointDataNV", vkGetQueueCheckpointDataNV);
+    }
+#endif
+#ifdef VK_EXT_discard_rectangles
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDiscardRectangleEXT", vkCmdSetDiscardRectangleEXT);
+    }
+#endif
+#ifdef VK_NV_scissor_exclusive
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetExclusiveScissorNV", vkCmdSetExclusiveScissorNV);
+    }
+#endif
+#ifdef VK_EXT_line_rasterization
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetLineStippleEXT", vkCmdSetLineStippleEXT);
+    }
+#endif
+#ifdef VK_EXT_sample_locations
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceMultisamplePropertiesEXT", vkGetPhysicalDeviceMultisamplePropertiesEXT);
+    }
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetSampleLocationsEXT", vkCmdSetSampleLocationsEXT);
+    }
+#endif
+#ifdef VK_NV_clip_space_w_scaling
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetViewportWScalingNV", vkCmdSetViewportWScalingNV);
+    }
+#endif
+#ifdef VK_AMD_buffer_marker
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdWriteBufferMarkerAMD", vkCmdWriteBufferMarkerAMD);
+    }
+#endif
+#ifdef VK_EXT_debug_report
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateDebugReportCallbackEXT", vkCreateDebugReportCallbackEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkDebugReportMessageEXT", vkDebugReportMessageEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkDestroyDebugReportCallbackEXT", vkDestroyDebugReportCallbackEXT);
+    }
+#endif
+#ifdef VK_KHR_descriptor_update_template
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateDescriptorUpdateTemplateKHR", vkCreateDescriptorUpdateTemplateKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDestroyDescriptorUpdateTemplateKHR", vkDestroyDescriptorUpdateTemplateKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkUpdateDescriptorSetWithTemplateKHR", vkUpdateDescriptorSetWithTemplateKHR);
+    }
+#endif
+#ifdef VK_EXT_headless_surface
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateHeadlessSurfaceEXT", vkCreateHeadlessSurfaceEXT);
+    }
+#endif
+#ifdef VK_KHR_sampler_ycbcr_conversion
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateSamplerYcbcrConversionKHR", vkCreateSamplerYcbcrConversionKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDestroySamplerYcbcrConversionKHR", vkDestroySamplerYcbcrConversionKHR);
+    }
+#endif
+#ifdef VK_EXT_validation_cache
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateValidationCacheEXT", vkCreateValidationCacheEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDestroyValidationCacheEXT", vkDestroyValidationCacheEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetValidationCacheDataEXT", vkGetValidationCacheDataEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkMergeValidationCachesEXT", vkMergeValidationCachesEXT);
+    }
+#endif
+#ifdef VK_EXT_display_control
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDisplayPowerControlEXT", vkDisplayPowerControlEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetSwapchainCounterEXT", vkGetSwapchainCounterEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkRegisterDeviceEventEXT", vkRegisterDeviceEventEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkRegisterDisplayEventEXT", vkRegisterDisplayEventEXT);
+    }
+#endif
+#ifdef VK_KHR_device_group_creation
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkEnumeratePhysicalDeviceGroupsKHR", vkEnumeratePhysicalDeviceGroupsKHR);
+    }
+#endif
+#ifdef VK_EXT_buffer_device_address
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetBufferDeviceAddressEXT", vkGetBufferDeviceAddressEXT);
+    }
+#endif
+#ifdef VK_KHR_get_memory_requirements2
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetBufferMemoryRequirements2KHR", vkGetBufferMemoryRequirements2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetImageMemoryRequirements2KHR", vkGetImageMemoryRequirements2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetImageSparseMemoryRequirements2KHR", vkGetImageSparseMemoryRequirements2KHR);
+    }
+#endif
+#ifdef VK_EXT_calibrated_timestamps
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT", vkGetPhysicalDeviceCalibrateableTimeDomainsEXT);
+    }
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetCalibratedTimestampsEXT", vkGetCalibratedTimestampsEXT);
+    }
+#endif
+#ifdef VK_KHR_maintenance3
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDescriptorSetLayoutSupportKHR", vkGetDescriptorSetLayoutSupportKHR);
+    }
+#endif
+#ifdef VK_KHR_get_display_properties2
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetDisplayModeProperties2KHR", vkGetDisplayModeProperties2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetDisplayPlaneCapabilities2KHR", vkGetDisplayPlaneCapabilities2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceDisplayPlaneProperties2KHR", vkGetPhysicalDeviceDisplayPlaneProperties2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceDisplayProperties2KHR", vkGetPhysicalDeviceDisplayProperties2KHR);
+    }
+#endif
+#ifdef VK_KHR_external_fence_fd
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetFenceFdKHR", vkGetFenceFdKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkImportFenceFdKHR", vkImportFenceFdKHR);
+    }
+#endif
+#ifdef VK_EXT_image_drm_format_modifier
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetImageDrmFormatModifierPropertiesEXT", vkGetImageDrmFormatModifierPropertiesEXT);
+    }
+#endif
+#ifdef VK_NVX_image_view_handle
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetImageViewHandleNVX", vkGetImageViewHandleNVX);
+    }
+#endif
+#ifdef VK_KHR_external_memory_fd
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetMemoryFdKHR", vkGetMemoryFdKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetMemoryFdPropertiesKHR", vkGetMemoryFdPropertiesKHR);
+    }
+#endif
+#ifdef VK_EXT_external_memory_host
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetMemoryHostPointerPropertiesEXT", vkGetMemoryHostPointerPropertiesEXT);
+    }
+#endif
+#ifdef VK_GOOGLE_display_timing
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetPastPresentationTimingGOOGLE", vkGetPastPresentationTimingGOOGLE);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetRefreshCycleDurationGOOGLE", vkGetRefreshCycleDurationGOOGLE);
+    }
+#endif
+#ifdef VK_NV_cooperative_matrix
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceCooperativeMatrixPropertiesNV", vkGetPhysicalDeviceCooperativeMatrixPropertiesNV);
+    }
+#endif
+#ifdef VK_KHR_external_memory_capabilities
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceExternalBufferPropertiesKHR", vkGetPhysicalDeviceExternalBufferPropertiesKHR);
+    }
+#endif
+#ifdef VK_KHR_external_fence_capabilities
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceExternalFencePropertiesKHR", vkGetPhysicalDeviceExternalFencePropertiesKHR);
+    }
+#endif
+#ifdef VK_NV_external_memory_capabilities
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceExternalImageFormatPropertiesNV", vkGetPhysicalDeviceExternalImageFormatPropertiesNV);
+    }
+#endif
+#ifdef VK_KHR_external_semaphore_capabilities
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR", vkGetPhysicalDeviceExternalSemaphorePropertiesKHR);
+    }
+#endif
+#ifdef VK_KHR_get_physical_device_properties2
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceFeatures2KHR", vkGetPhysicalDeviceFeatures2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceFormatProperties2KHR", vkGetPhysicalDeviceFormatProperties2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceImageFormatProperties2KHR", vkGetPhysicalDeviceImageFormatProperties2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceMemoryProperties2KHR", vkGetPhysicalDeviceMemoryProperties2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceProperties2KHR", vkGetPhysicalDeviceProperties2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceQueueFamilyProperties2KHR", vkGetPhysicalDeviceQueueFamilyProperties2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceSparseImageFormatProperties2KHR", vkGetPhysicalDeviceSparseImageFormatProperties2KHR);
+    }
+#endif
+#ifdef VK_NV_coverage_reduction_mode
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV", vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV);
+    }
+#endif
+#ifdef VK_EXT_display_surface_counter
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceSurfaceCapabilities2EXT", vkGetPhysicalDeviceSurfaceCapabilities2EXT);
+    }
+#endif
+#ifdef VK_KHR_get_surface_capabilities2
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceSurfaceCapabilities2KHR", vkGetPhysicalDeviceSurfaceCapabilities2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceSurfaceFormats2KHR", vkGetPhysicalDeviceSurfaceFormats2KHR);
+    }
+#endif
+#ifdef VK_KHR_pipeline_executable_properties
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetPipelineExecutableInternalRepresentationsKHR", vkGetPipelineExecutableInternalRepresentationsKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetPipelineExecutablePropertiesKHR", vkGetPipelineExecutablePropertiesKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetPipelineExecutableStatisticsKHR", vkGetPipelineExecutableStatisticsKHR);
+    }
+#endif
+#ifdef VK_KHR_external_semaphore_fd
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetSemaphoreFdKHR", vkGetSemaphoreFdKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkImportSemaphoreFdKHR", vkImportSemaphoreFdKHR);
+    }
+#endif
+#ifdef VK_AMD_shader_info
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetShaderInfoAMD", vkGetShaderInfoAMD);
+    }
+#endif
+#ifdef VK_KHR_shared_presentable_image
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetSwapchainStatusKHR", vkGetSwapchainStatusKHR);
+    }
+#endif
+#ifdef VK_EXT_direct_mode_display
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkReleaseDisplayEXT", vkReleaseDisplayEXT);
+    }
+#endif
+#ifdef VK_EXT_host_query_reset
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkResetQueryPoolEXT", vkResetQueryPoolEXT);
+    }
+#endif
+#ifdef VK_EXT_hdr_metadata
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkSetHdrMetadataEXT", vkSetHdrMetadataEXT);
+    }
+#endif
+#ifdef VK_AMD_display_native_hdr
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkSetLocalDimmingAMD", vkSetLocalDimmingAMD);
+    }
+#endif
+#ifdef VK_KHR_maintenance1
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkTrimCommandPoolKHR", vkTrimCommandPoolKHR);
+    }
+#endif
 }

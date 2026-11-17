@@ -32,6 +32,7 @@ void dylib_close(void *lib) { (void)lib; }
 
 #define CMD(name) int name(void) { return 0; }
 CMD(input_autoconfigure_connect_ex)
+CMD(input_autoconfigure_connect_uniq)
 CMD(fill_pathname_join)
 CMD(filestream_read_file)
 CMD(command_audio_reinit) CMD(command_close_content) CMD(command_drivers_reinit)

@@ -44,17 +44,6 @@ RETRO_BEGIN_DECLS
 
 typedef struct companion_core companion_core_t;
 
-enum companion_download_result
-{
-   COMPANION_DL_OK = 0,
-   COMPANION_DL_ERR_NETWORK,       /* HTTP failed / non-200 */
-   COMPANION_DL_ERR_WRITE,         /* could not write the file */
-   COMPANION_DL_ERR_RENAME,        /* could not rename .partial */
-   COMPANION_DL_ERR_ARCHIVE_EMPTY, /* pack held no files */
-   COMPANION_DL_ERR_DELETE,        /* could not replace an existing file */
-   COMPANION_DL_ERR_EXTRACT        /* decompression failed */
-};
-
 /* All callbacks are invoked on the main (UI) thread, from within the
  * request function that caused them or from companion_core_iterate().
  * Every member may be NULL. */
@@ -81,9 +70,6 @@ typedef struct companion_callbacks
    void (*on_thumbnail_downloaded)(void *ud, const char *db_name,
          const char *label, const char *subdir, const char *path,
          bool success);
-   /* A thumbnail pack download + extraction finished. */
-   void (*on_thumbnail_pack_finished)(void *ud,
-         enum companion_download_result result);
    /* A companion_core_browse_open() finished: the listing is in place.
     * Fired from companion_core_iterate() on the UI thread. (Last, so
     * existing positional tables stay valid; NULL if unused.) */
@@ -379,17 +365,13 @@ size_t companion_core_launch_options(companion_core_t *core,
 /* --- Thumbnail downloads (HAVE_NETWORKING) -------------------------- */
 
 /* Fetch <db_name>/<subdir>/<label>.png from the thumbnail server into
- * the repository (written via a .partial file, then renamed). One
+ * the repository, streamed to disk; a file already there is replaced
+ * only by a download that finishes cleanly. One
  * download is in flight at a time; a caller wanting several queues
  * them off on_thumbnail_downloaded. Returns false if the transfer could
  * not be started (no networking, or one is already running). */
 bool companion_core_thumbnail_download(companion_core_t *core,
       const char *db_name, const char *label, const char *subdir);
-/* Fetch the <db_name>.zip thumbnail pack and extract it over the
- * repository (existing files are replaced; ones that cannot be deleted
- * are renamed aside with .tmp). on_thumbnail_pack_finished reports. */
-bool companion_core_thumbnail_pack_download(companion_core_t *core,
-      const char *db_name);
 /* Cancel the transfer in flight, if any. */
 void companion_core_download_cancel(companion_core_t *core);
 bool companion_core_download_active(companion_core_t *core);

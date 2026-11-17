@@ -19,16 +19,21 @@ enum record_gpu_output_vulkan_error
    RECORD_VULKAN_OUTPUT_ERROR_AUDIO,
    RECORD_VULKAN_OUTPUT_ERROR_MUX,
    RECORD_VULKAN_OUTPUT_ERROR_FILE,
-   RECORD_VULKAN_OUTPUT_ERROR_ABORTED
+   RECORD_VULKAN_OUTPUT_ERROR_ABORTED,
+   RECORD_VULKAN_OUTPUT_ERROR_NETWORK
 };
 typedef struct record_gpu_output_vulkan record_gpu_output_vulkan_t;
+struct net_rtmp_client;
 typedef struct record_gpu_output_vulkan_config
 {
    record_mp4_config_t video;
+   /* Borrowed READY connection; NULL keeps native MP4/AC-3 file output. */
+   struct net_rtmp_client *stream_client;
    unsigned audio_rate, audio_kbps;
    uint32_t audio_layout;
    size_t audio_fifo_frames;
-   /* Bound consumed PCM to accepted video time. Drop queued trailing PCM at
+   /* Bound consumed PCM
+    * to accepted video time. Drop queued trailing PCM at
     * video EOS, before AC-3 padding; the worker never encodes ahead of video. */
    bool audio_follow_video;
 } record_gpu_output_vulkan_config_t;
@@ -38,7 +43,9 @@ typedef struct record_gpu_output_vulkan_config
  * PCM starts at zero; align video timestamps in the mux timescale. Audio is optional (rate=0), otherwise native
  * AC-3 at 32/44.1/48 kHz in its frontend speaker-mask order. No resampling.
  * video.ac3_header must be NULL. Creates a new UTF-8 named file. No scheduler
- * is installed here; task handlers may execute on the main thread. */
+ * is installed here; task handlers may execute on the main thread. A READY
+ * stream_client selects shared RTMP/AAC output and never creates a file.
+ * Streaming requires its native AAC build backend. */
 record_gpu_output_vulkan_t *
 record_gpu_output_vulkan_new(record_gpu_worker_vulkan_t *worker,
                              const record_gpu_output_vulkan_config_t *config,
@@ -74,5 +81,9 @@ int record_gpu_output_vulkan_file_error(const record_gpu_output_vulkan_t *output
 /* Refuses active output, an open PCM producer, or an outstanding file borrow.
  * Caller must ensure neither producer nor worker is inside an API call. */
 bool record_gpu_output_vulkan_free(record_gpu_output_vulkan_t *output);
+/* I/O-owner readiness hint after step. Does not service the client. False
+ * resets outputs and means no network descriptor; still honor retry_needed. */
+bool record_gpu_output_vulkan_network(const record_gpu_output_vulkan_t *output,
+      int *fd, bool *read, bool *write);
 RETRO_END_DECLS
 #endif

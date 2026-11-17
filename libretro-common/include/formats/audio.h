@@ -126,6 +126,21 @@ void *audio_transfer_new(enum audio_type_enum type);
 void  audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
       void *ptr, size_t len);
 
+/* Container audio selection, before start and after buffer/avail setup.
+ * -1 retains automatic first-supported selection; nonnegative values are
+ * zero-based demuxer track indices (including video/subtitle tracks).
+ * An explicit missing, non-audio or different-codec track makes start fail;
+ * it never silently substitutes another track. No allocation or input copy.
+ * Supports Matroska/WebM Opus/Vorbis/FLAC/AAC and MP4 AAC when compiled in.
+ * An active or partially opened decoder refuses changes: prepare a new
+ * decoder on its owning worker and adopt it through the caller's lifecycle. */
+bool audio_transfer_set_container_track(void *data, enum audio_type_enum type,
+      int track);
+/* Query after successful start: the actual container index, or -1 for raw
+ * input/unsupported codecs. Retained across seeks; it never exposes a request
+ * as an opened track before the codec has been constructed. */
+int audio_transfer_container_track(const void *data, enum audio_type_enum type);
+
 /* Point the context at a DEMUXED elementary stream instead of a
  * self-framed file: 'setup' is the codec's out-of-band configuration
  * (a container's CodecPrivate -- e.g. the Vorbis identification/comment/
@@ -217,6 +232,10 @@ enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
  * carries no supported track. */
 enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len);
+/* Same sniff restricted to an explicit demuxer index; -1 is automatic.
+ * Missing, non-audio, unsupported and out-of-range choices return NONE. */
+enum audio_type_enum audio_transfer_webm_audio_track_type(const void *buf,
+      size_t len, int track);
 
 /* The arm for a whole file, from its bytes: ID3v2 tags in front are
  * looked past, then FLAC, Ogg (audio_transfer_ogg_audio_type), WebM and

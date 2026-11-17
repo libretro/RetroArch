@@ -1258,12 +1258,14 @@ size_t menu_entries_get_title(char *s, size_t len)
    const file_list_t *list    = menu_st->entries.list
       ? MENU_LIST_GET(menu_st->entries.list, 0)
       : NULL;
-   menu_file_list_cbs_t *cbs  = list
+   /* The stack is there but empty until the first list is pushed: a
+    * menu driver drawing its first frame before then has no title */
+   menu_file_list_cbs_t *cbs  = (list && list->size)
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
       : NULL;
    if (cbs && cbs->action_get_title)
    {
-      const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
+      const char *label       = list->list[list->size - 1].label;
 
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
@@ -1322,7 +1324,8 @@ size_t menu_entries_get_title(char *s, size_t len)
 static void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 {
    const file_list_t *list          = MENU_LIST_GET(menu_st->entries.list, 0);
-   const char *label                = list->list[list->size - 1].label;
+   const char *label                = (list && list->size)
+      ? list->list[list->size - 1].label : NULL;
 
 #ifdef HAVE_AUDIOMIXER
    /* Determine whether this is a help or info
@@ -2868,8 +2871,9 @@ static void menu_cbs_init(
    const char *menu_lbl           = NULL;
    file_list_t *menu_list         = MENU_LIST_GET(menu_st->entries.list, 0);
 #ifdef DEBUG_LOG
-   menu_file_list_cbs_t *menu_cbs = (menu_file_list_cbs_t*)
-      menu_list->list[list->size - 1].actiondata;
+   menu_file_list_cbs_t *menu_cbs = (menu_list && menu_list->size)
+      ? (menu_file_list_cbs_t*)menu_list->list[menu_list->size - 1].actiondata
+      : NULL;
    enum msg_hash_enums enum_idx   = menu_cbs ? menu_cbs->enum_idx : MSG_UNKNOWN;
 #endif
 
@@ -4588,7 +4592,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
          *entry_idx = list->list[list->size - 1].entry_idx;
    }
 
-   if (enum_idx)
+   if (enum_idx && list && list->size)
    {
       menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
          list->list[list->size - 1].actiondata;
@@ -9668,6 +9672,168 @@ static enum menu_action menu_driver_media_launch(struct menu_state *menu_st,
    return action;
 }
 
+/* Whether the list shown lists the controllers: Controllers, Port N
+ * Controls and its Controllers, Add Controller, or a Device Index
+ * dropdown */
+static bool menu_driver_lists_pads(void)
+{
+   unsigned e;
+   const char *path  = NULL;
+   const char *label = NULL;
+   menu_entries_get_last_stack(&path, &label, NULL, NULL, NULL);
+   if (!label)
+      return false;
+   if (     string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_PLAYS_AS_ADD_STR))
+      return true;
+   if (     !path
+         || !string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_STR))
+      return false;
+   e = string_to_unsigned(path);
+   return e >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+       && e <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST;
+}
+
+/* Whether the list on screen lists the controllers, kept while two of
+ * them show one name: asked as a list is made and as names come to be
+ * shared, never as a frame runs. */
+static void menu_driver_pads_listed_update(struct menu_state *menu_st)
+{
+   bool listed = menu_driver_lists_pads();
+   /* the frame runs once more on a change, to begin or to clear */
+   if (listed != menu_st->pads_listed)
+      menu_st->frame_work |= MENU_FRAME_WORK_PAD_FIND;
+   menu_st->pads_listed = listed;
+}
+
+/* A list was made for the screen (menu_displaylist_process()) */
+void menu_driver_pads_list_made(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   if (INPUT_DEVICES_SHARE_NAME())
+      menu_driver_pads_listed_update(menu_st);
+}
+
+/* Two connected controllers came to show one name, or no longer do
+ * (input_config_retag_devices()): a list of the controllers on screen
+ * is made again, so its rows take or drop what a press marks, and the
+ * frame looks for presses while they are shared on such a list. */
+void menu_driver_pads_alike_changed(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   const char *label          = NULL;
+   if (!menu_st->entries.list)
+   {
+      menu_st->pads_listed = false;
+      return;
+   }
+   menu_driver_pads_listed_update(menu_st);
+   menu_st->frame_work |= MENU_FRAME_WORK_PAD_FIND;
+   /* the lists of the controllers, and those naming them with a tag */
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+   if (     menu_st->pads_listed
+         || string_is_equal(label, MENU_ENUM_LABEL_INPUT_INFORMATION_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR))
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                      | MENU_ST_FLAG_PREVENT_POPULATE;
+}
+
+/* While two connected controllers show one name on a list of them, and
+ * once more after, to clear what was kept then. Each pad is read where
+ * the poll left it (input_driver_pads_held()). RGUI draws only what
+ * changed, so a mark coming or going asks it to. */
+static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
+      gfx_display_t *p_disp, retro_time_t current_time)
+{
+   uint32_t marked = 0;
+   /* with no name shared, a mark would only hide the value */
+   bool share      = INPUT_DEVICES_SHARE_NAME() && menu_st->pads_listed;
+
+   if (share)
+   {
+      uint32_t held[MAX_INPUT_DEVICES];
+      int16_t axes[MAX_INPUT_DEVICES][INPUT_PAD_VIEW_AXES];
+      uint32_t named = input_driver_pads_held(held, axes);
+      unsigned s;
+      for (s = 0; s < MAX_INPUT_DEVICES; s++)
+      {
+         unsigned a;
+         uint16_t off = 0;
+         if (!(named & (1u << s)))
+         {
+            menu_st->pad_pressed_us[s] = 0;
+            menu_st->pad_down[s]       = 0;
+            menu_st->pad_axis_off[s]   = 0;
+            menu_st->pad_rest_known   &= ~(1u << s);
+            continue;
+         }
+         /* an axis is pressed half its range from where it rested */
+         if (!(menu_st->pad_rest_known & (1u << s)))
+         {
+            memcpy(menu_st->pad_axis_rest[s], axes[s], sizeof(axes[s]));
+            menu_st->pad_rest_known |= 1u << s;
+         }
+         for (a = 0; a < INPUT_PAD_VIEW_AXES; a++)
+         {
+            int d = axes[s][a] - menu_st->pad_axis_rest[s][a];
+            if (d > 0x4000 || d < -0x4000)
+               off |= (uint16_t)(1u << a);
+         }
+         /* only a new press marks: a button left down (a shifter in
+          * gear, a toggle) would hide the row's value */
+         if (     (held[s] & ~menu_st->pad_down[s])
+               || (off & ~menu_st->pad_axis_off[s]))
+            menu_st->pad_pressed_us[s] = current_time;
+         menu_st->pad_down[s]     = held[s];
+         menu_st->pad_axis_off[s] = off;
+         if (     menu_st->pad_pressed_us[s]
+               && current_time - menu_st->pad_pressed_us[s]
+                  < MENU_PAD_PRESSED_HOLD_US)
+            marked |= 1u << s;
+      }
+   }
+   else
+   {
+      /* unread here, so a button down when marks are back is new, and
+       * a press from before must not mark again */
+      memset(menu_st->pad_down, 0, sizeof(menu_st->pad_down));
+      memset(menu_st->pad_axis_off, 0, sizeof(menu_st->pad_axis_off));
+      memset(menu_st->pad_pressed_us, 0, sizeof(menu_st->pad_pressed_us));
+      menu_st->pad_rest_known = 0;
+      menu_st->frame_work &= ~MENU_FRAME_WORK_PAD_FIND;
+   }
+   menu_st->pad_find_hint = share;
+   if (marked != menu_st->pads_marked)
+   {
+      menu_st->pads_marked = marked;
+      p_disp->flags       |= GFX_DISP_FLAG_FB_DIRTY;
+   }
+}
+
+/* What a frame has to do beyond drawing, rarely: a deferred playlist
+ * read to advance, presses to look for. Kept apart so that a frame
+ * with neither tests one word. */
+static VIDEO_NOINLINE void menu_driver_frame_work(struct menu_state *menu_st,
+      gfx_display_t *p_disp, settings_t *settings, retro_time_t current_time)
+{
+   if (menu_st->frame_work & MENU_FRAME_WORK_PLAYLIST)
+   {
+      menu_driver_pump_pending(menu_st, settings);
+      if (!playlist_init_cached_pending())
+         menu_st->frame_work &= ~MENU_FRAME_WORK_PLAYLIST;
+   }
+   if (menu_st->frame_work & MENU_FRAME_WORK_PAD_FIND)
+      menu_driver_mark_pressed_pads(menu_st, p_disp, current_time);
+}
+
 bool menu_driver_iterate(
       struct menu_state *menu_st,
       gfx_display_t *p_disp,
@@ -9676,7 +9842,8 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time)
 {
-   menu_driver_pump_pending(menu_st, settings);
+   if (menu_st->frame_work)
+      menu_driver_frame_work(menu_st, p_disp, settings, current_time);
    action = menu_driver_media_launch(menu_st, action);
 
 #ifdef RETRO_ATOMIC_HAS_PTR

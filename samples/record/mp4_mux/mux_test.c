@@ -88,6 +88,29 @@ int main(void)
    CHECK(record_mux_mp4_finish(m)); record_mux_mp4_free(m);
    c.ac3_header = NULL; c.ac3_header_size = 0;
    c.max_packet_size = (size_t)-1; CHECK(!record_mux_mp4_new(&c));
+   c.max_packet_size = 4096;
+   c.max_cll = 65536; CHECK(!record_mux_mp4_new(&c));
+   c.max_cll = 1000; c.max_fall = 1001; CHECK(!record_mux_mp4_new(&c));
+   c.max_cll = 0; c.max_fall = 65536; CHECK(!record_mux_mp4_new(&c));
+   c.max_fall = 400;
+   m = record_mux_mp4_new(&c); CHECK(m != NULL); record_mux_mp4_free(m);
+   c.max_cll = 65535; c.max_fall = 65535;
+   m = record_mux_mp4_new(&c); CHECK(m != NULL); record_mux_mp4_free(m);
+   c.mastering.present = 1; CHECK(!record_mux_mp4_new(&c));
+   c.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+   c.mastering.luminance_max = 10000000; c.mastering.luminance_min = 10000001;
+   CHECK(!record_mux_mp4_new(&c));
+   c.mastering.luminance_min = 0;
+   for (i = 0; i < 8; i++)
+   {
+      c.mastering.chromaticity[i] = 50001;
+      CHECK(!record_mux_mp4_new(&c));
+      c.mastering.chromaticity[i] = 50000;
+   }
+   m = record_mux_mp4_new(&c); CHECK(m != NULL); record_mux_mp4_free(m);
+   memset(&c.mastering, 0, sizeof(c.mastering));
+   c.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+   m = record_mux_mp4_new(&c); CHECK(m != NULL); record_mux_mp4_free(m);
    puts("PASS: MP4 bounds, ownership, retries, 64-bit timing and finalization");
    return 0;
 }

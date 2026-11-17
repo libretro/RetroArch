@@ -22,8 +22,8 @@
 
 #include "../../include/wiiu/input.h"
 
-#define WIIU_PRO_BUTTON_MASK 0x3FC0000;
-#define CLASSIC_BUTTON_MASK  0xFF0000;
+#define WIIU_PRO_BUTTON_MASK 0x3FC0000
+#define CLASSIC_BUTTON_MASK  0xFF0000
 
 /* Forward declarations */
 static void kpad_poll(void);
@@ -77,40 +77,35 @@ static void kpad_destroy(void)
    joypad_state.kpad.ready = false;
 }
 
+/* The view of the Wiimote on @port; NULL for none */
+static const input_pad_view_t *kpad_view(unsigned port)
+{
+   int channel;
+   if (!kpad_query_pad(port))
+      return NULL;
+   channel = to_wiimote_channel(port);
+   return (channel >= 0) ? &joypad_state.kpad.wiimotes[channel].view : NULL;
+}
+
 static int32_t kpad_button(unsigned port, uint16_t joykey)
 {
-   if (kpad_query_pad(port))
-   {
-      int channel = to_wiimote_channel(port);
-      if (channel >= 0)
-         return (joypad_state.kpad.wiimotes[channel].button_state
-               & (UINT64_C(1) << joykey));
-   }
-   return 0;
+   const input_pad_view_t *v = kpad_view(port);
+   return v ? input_pad_view_button(v, joykey) : 0;
 }
 
 static void kpad_get_buttons(unsigned port, input_bits_t *state)
 {
-   int channel = to_wiimote_channel(port);
-
-   if (!kpad_query_pad(port) || channel < 0)
-      BIT256_CLEAR_ALL_PTR(state);
+   const input_pad_view_t *v = kpad_view(port);
+   if (v)
+      *state = v->buttons;
    else
-      BITS_COPY16_PTR(state, joypad_state.kpad.wiimotes[channel].button_state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t kpad_axis(unsigned port, uint32_t axis)
 {
-   axis_data data;
-   int channel = to_wiimote_channel(port);
-
-   if (!kpad_query_pad(port) || channel < 0)
-      return 0;
-
-   pad_functions.read_axis_data(axis, &data);
-   return pad_functions.get_axis_value(data.axis,
-         joypad_state.kpad.wiimotes[channel].analog_state,
-         data.is_negative);
+   const input_pad_view_t *v = kpad_view(port);
+   return v ? input_pad_view_axis(v, axis) : 0;
 }
 
 static int16_t kpad_state(
@@ -119,25 +114,8 @@ static int16_t kpad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int i;
-   int16_t ret       = 0;
-   uint16_t port_idx = joypad_info->joy_idx;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (
-               (uint16_t)joykey != NO_BTN
-            && kpad_button(port_idx, (uint16_t)joykey))
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(kpad_axis(port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-
-   return ret;
+   const input_pad_view_t *v = kpad_view(joypad_info->joy_idx);
+   return v ? input_pad_view_state(v, joypad_info, joykeys, joyaxes) : 0;
 }
 
 static void kpad_register(unsigned channel, uint8_t device_type)
@@ -169,45 +147,48 @@ static void kpad_register(unsigned channel, uint8_t device_type)
    }
 }
 
+/* A Wiimote's buttons and sticks, into its view */
+static void kpad_set_view(input_pad_view_t *v, uint32_t buttons,
+      int16_t left_x, int16_t left_y, int16_t right_x, int16_t right_y)
+{
+   v->buttons.data[0] = buttons;
+   v->axes[0]         = left_x;
+   v->axes[1]         = left_y;
+   v->axes[2]         = right_x;
+   v->axes[3]         = right_y;
+}
+
 static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
 {
+   input_pad_view_t *v = &joypad_state.kpad.wiimotes[channel].view;
    kpad_register(channel, kpad->device_type);
    switch (kpad->device_type)
    {
       case WIIMOTE_TYPE_PRO:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.btns_h
-            & ~WIIU_PRO_BUTTON_MASK;
-         pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
+         kpad_set_view(v, kpad->classic.btns_h & ~WIIU_PRO_BUTTON_MASK,
                WIIU_READ_STICK(kpad->classic.lstick_x),
                WIIU_READ_STICK(kpad->classic.lstick_y),
                WIIU_READ_STICK(kpad->classic.rstick_x),
-               WIIU_READ_STICK(kpad->classic.rstick_y), 0, 0);
+               WIIU_READ_STICK(kpad->classic.rstick_y));
          break;
       case WIIMOTE_TYPE_CLASSIC:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.btns_h
-            & ~CLASSIC_BUTTON_MASK;
-         pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
+         kpad_set_view(v, kpad->classic.btns_h & ~CLASSIC_BUTTON_MASK,
                WIIU_READ_STICK(kpad->classic.lstick_x),
                WIIU_READ_STICK(kpad->classic.lstick_y),
                WIIU_READ_STICK(kpad->classic.rstick_x),
-               WIIU_READ_STICK(kpad->classic.rstick_y), 0, 0);
+               WIIU_READ_STICK(kpad->classic.rstick_y));
          break;
       case WIIMOTE_TYPE_NUNCHUK:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->btns_h;
-         pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
+         kpad_set_view(v, kpad->btns_h,
                WIIU_READ_STICK(kpad->nunchuck.stick_x),
-               WIIU_READ_STICK(kpad->nunchuck.stick_y), 0, 0, 0, 0);
+               WIIU_READ_STICK(kpad->nunchuck.stick_y), 0, 0);
          break;
       case WIIMOTE_TYPE_WIIPLUS:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->btns_h;
-         pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
-               0, 0, 0, 0, 0, 0);
+         kpad_set_view(v, kpad->btns_h, 0, 0, 0, 0);
          break;
       default:
          /* A device this driver does not read holds nothing. */
-         joypad_state.kpad.wiimotes[channel].button_state = 0;
-         pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
-               0, 0, 0, 0, 0, 0);
+         kpad_set_view(v, 0, 0, 0, 0, 0);
          break;
    }
 }
@@ -301,4 +282,9 @@ input_device_driver_t kpad_driver =
    NULL, /* get_sensor_input */
    kpad_name,
    "wiimote",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   kpad_view
 };

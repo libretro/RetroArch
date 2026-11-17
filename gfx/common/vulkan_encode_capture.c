@@ -329,8 +329,12 @@ bool vulkan_encode_capture_record(vulkan_encode_capture_t *c,
    bool direct;
    if (!c || index >= c->pool->count || !command || !source ||
        !source->image || !source->view || !source->stage ||
-       (source->format != VK_FORMAT_R8G8B8A8_UNORM &&
-        source->format != VK_FORMAT_B8G8R8A8_UNORM) ||
+       source->output_mode > 2 ||
+       (source->output_mode && c->pool->format != VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16) ||
+       (source->output_mode == 2 ? source->format != VK_FORMAT_R16G16B16A16_SFLOAT
+        : source->output_mode == 1 ? (source->format != VK_FORMAT_A2B10G10R10_UNORM_PACK32 &&
+            source->format != VK_FORMAT_A2R10G10B10_UNORM_PACK32)
+        : (source->format != VK_FORMAT_R8G8B8A8_UNORM && source->format != VK_FORMAT_B8G8R8A8_UNORM)) ||
        (source->layout != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL &&
         source->layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL &&
         source->layout != VK_IMAGE_LAYOUT_GENERAL) ||
@@ -375,7 +379,7 @@ bool vulkan_encode_capture_record(vulkan_encode_capture_t *c,
    push[4] = source->valid_width;
    push[5] = source->valid_height;
    push[6] = source->limited_range ? 1 : 0;
-   push[7] = source->flip_y ? 1 : 0;
+   push[7] = (source->flip_y ? 1u : 0u) | (source->output_mode << 1);
    c->ops->bind_pipeline(command, VK_PIPELINE_BIND_POINT_COMPUTE, c->pipeline);
    c->ops->bind_sets(command, VK_PIPELINE_BIND_POINT_COMPUTE,
          c->layout, 0, 1, &c->sets[index], 0, NULL);

@@ -58,15 +58,25 @@ typedef struct x11_input
     * could not be opened. */
    Display *event_display;
    Window win;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* By screen, the window whose keys event_display has selected, and
+    * its generation */
+   Window key_windows[RETRO_VIDEO_VIEWS_MAX];
+   unsigned key_window_gens[RETRO_VIDEO_VIEWS_MAX];
+#endif
 
 #ifdef HAVE_XI2
    /* First request after a warp: older events are from before it. */
    unsigned long ptr_warp_serial[MAX_MOUSE_IDX];
+   /* By device, the window the pointer is in */
+   input_video_window_t ptr_window[MAX_MOUSE_IDX];
    int mouse_dev_list[MAX_MOUSE_IDX];
    int xi_opcode;
    /* Buttons held, bit n for button n. */
    unsigned ptr_buttons[MAX_MOUSE_IDX];
 #endif
+   /* By port, the window its mouse is in */
+   input_video_window_t mouse_window[MAX_MOUSE_IDX];
    int mouse_x[MAX_MOUSE_IDX];
    int mouse_y[MAX_MOUSE_IDX];
    int mouse_delta_x[MAX_MOUSE_IDX];
@@ -103,6 +113,13 @@ typedef struct x11_input
 extern retro_atomic_int_t g_x11_entered;
 extern retro_atomic_int_t g_x11_size;
 extern Window             g_x11_win;
+#ifdef HAVE_VIDEO_WINDOWS
+extern retro_atomic_int_t g_x11_key_windows[RETRO_VIDEO_VIEWS_MAX];
+extern retro_atomic_int_t g_x11_key_window_gens[RETRO_VIDEO_VIEWS_MAX];
+#endif
+
+#define X_EVENTS_MASK (KeyPressMask | KeyReleaseMask | FocusChangeMask \
+      | KeymapStateMask)
 
 /* The poll reads the keyboard from events on a connection of the
  * driver's own. Draining it is a non-blocking read, where a query on
@@ -122,8 +139,7 @@ static Display *x_events_open(x11_input_t *x11)
 
    /* KeymapNotify follows every FocusIn and EnterNotify with the
     * whole key vector. */
-   XSelectInput(dpy, x11->win, KeyPressMask | KeyReleaseMask
-         | FocusChangeMask | KeymapStateMask);
+   XSelectInput(dpy, x11->win, X_EVENTS_MASK);
 
    /* Keys already down. Events selected above that the query saw
     * are applied again in order, which leaves each key at its last
@@ -174,6 +190,25 @@ static int x_pointer_index(const x11_input_t *x11, int deviceid)
  * and gets the button events the pump would; the wheel is latched
  * from here instead. Each pointer is asked once, here, where it
  * starts. */
+#ifdef HAVE_VIDEO_WINDOWS
+/* A screen's own window's pointer events too */
+static void x_pointer_select(Display *dpy, Window win)
+{
+   XIEventMask event_mask;
+   unsigned char mask[XIMaskLen(XI_LASTEVENT)];
+   memset(mask, 0, sizeof(mask));
+   XISetMask(mask, XI_Motion);
+   XISetMask(mask, XI_ButtonPress);
+   XISetMask(mask, XI_ButtonRelease);
+   XISetMask(mask, XI_Enter);
+   XISetMask(mask, XI_Leave);
+   event_mask.deviceid = XIAllMasterDevices;
+   event_mask.mask_len = sizeof(mask);
+   event_mask.mask     = mask;
+   XISelectEvents(dpy, win, &event_mask, 1);
+}
+#endif
+
 static bool x_pointer_open(x11_input_t *x11, int xi_opcode)
 {
    int i;
@@ -253,10 +288,36 @@ static void x_pointer_move(x11_input_t *x11, int i,
 static void x_pointer_event(x11_input_t *x11, XGenericEventCookie *cookie)
 {
    int i;
+   input_video_window_t window;
    XIDeviceEvent *de = (XIDeviceEvent*)cookie->data;
 
-   if (de->event != x11->win || (i = x_pointer_index(x11, de->deviceid)) < 0)
+   window.window     = 0;
+   window.generation = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+   if (de->event != x11->win && de->event != None)
+   {
+      unsigned w;
+      for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+         if (x11->key_windows[w] == de->event)
+         {
+            window.window     = w;
+            window.generation = x11->key_window_gens[w];
+            break;
+         }
+      if (!window.window)
+         return;
+   }
+#else
+   if (de->event != x11->win)
       return;
+#endif
+   if ((i = x_pointer_index(x11, de->deviceid)) < 0)
+      return;
+   /* A leave from a window it has left already is no leave */
+   if (     de->evtype == XI_Leave
+         && x11->ptr_window[i].window != window.window)
+      return;
+   x11->ptr_window[i] = window;
 
    switch (de->evtype)
    {
@@ -320,6 +381,31 @@ static void x_pointer_event(x11_input_t *x11, XGenericEventCookie *cookie)
 static void x_events_drain(x11_input_t *x11)
 {
    Display *dpy = x11->event_display;
+#ifdef HAVE_VIDEO_WINDOWS
+   unsigned i;
+
+   /* A screen's own window's keys, from when it is new; the request
+    * goes out with XPending() below */
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      Window win = (Window)(unsigned)retro_atomic_load_acquire_int(
+            &g_x11_key_windows[i]);
+      if (win == x11->key_windows[i])
+         continue;
+      x11->key_windows[i]     = win;
+      x11->key_window_gens[i] = (unsigned)retro_atomic_load_acquire_int(
+            &g_x11_key_window_gens[i]);
+      if (win != None)
+      {
+         XSelectInput(dpy, win, X_EVENTS_MASK);
+#ifdef HAVE_XI2
+         /* and its pointers, as the main window's */
+         if (x11->ptr_events)
+            x_pointer_select(dpy, win);
+#endif
+      }
+   }
+#endif
 
    while (XPending(dpy))
    {
@@ -660,6 +746,9 @@ static void x_input_poll_devices(void *data)
 
    for (mouse_port = 0; mouse_port < mouse_ports; mouse_port++)
    {
+      input_video_window_t was = x11->mouse_window[mouse_port];
+      x11->mouse_window[mouse_port].window     = 0;
+      x11->mouse_window[mouse_port].generation = 0;
 #ifdef HAVE_XI2
       if (!x11->di)
       {
@@ -692,6 +781,8 @@ static void x_input_poll_devices(void *data)
 
             win_x = x11->ptr_x[mouse_dev_idx];
             win_y = x11->ptr_y[mouse_dev_idx];
+            /* in the window it is in, a screen's own or the main one */
+            x11->mouse_window[mouse_port] = x11->ptr_window[mouse_dev_idx];
             /* > Mouse buttons - fixed map (1,2,3,8,9) */
             x11->mouse_l[mouse_port] = (buttons & (1u << 1)) != 0;
             x11->mouse_m[mouse_port] = (buttons & (1u << 2)) != 0;
@@ -728,8 +819,8 @@ static void x_input_poll_devices(void *data)
          return;
 #endif
 
-      /* > Mouse pointer */
-      if (!x11->mouse_grabbed)
+      /* > Mouse pointer; in a screen's own window it is never held */
+      if (!x11->mouse_grabbed || x11->mouse_window[mouse_port].window)
       {
          /* Mouse is not grabbed - this corresponds
           * to 'conventional' pointer input, using
@@ -742,6 +833,13 @@ static void x_input_poll_devices(void *data)
 
       x11->mouse_delta_x[mouse_port] = x11->mouse_x[mouse_port] - mouse_last_x;
       x11->mouse_delta_y[mouse_port] = x11->mouse_y[mouse_port] - mouse_last_y;
+      /* no motion across windows */
+      if (     was.window     != x11->mouse_window[mouse_port].window
+            || was.generation != x11->mouse_window[mouse_port].generation)
+      {
+         x11->mouse_delta_x[mouse_port] = 0;
+         x11->mouse_delta_y[mouse_port] = 0;
+      }
       }
       else
       {
@@ -922,8 +1020,13 @@ static void x_input_poll(void *data)
       frame[i].buttons = (uint16_t)buttons;
    }
    (void)xi;
+#ifdef HAVE_VIDEO_WINDOWS
+   input_driver_publish_window_pointers(frame, x11->mouse_window, count,
+         INPUT_POINTERS_MOUSE_3_TOUCHES | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+#else
    input_driver_publish_pointers(frame, count,
          INPUT_POINTERS_MOUSE_3_TOUCHES | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+#endif
 }
 
 static void x_grab_mouse(void *data, bool state)

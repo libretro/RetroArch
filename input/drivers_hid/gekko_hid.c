@@ -470,35 +470,36 @@ static void gekko_hid_joypad_get_buttons(void *data, unsigned port,
       BIT256_CLEAR_ALL_PTR(state);
 }
 
-static int16_t gekko_hid_joypad_button(void *data, unsigned port,
-      uint16_t joykey)
+static int16_t gekko_hid_joypad_button(void *data,
+      unsigned port, uint16_t joykey)
 {
    input_bits_t buttons;
-   if (port >= DEFAULT_MAX_PADS || GET_HAT_DIR(joykey) || joykey >= 32)
+   /* every one get_buttons() says: a home button's menu toggle is past
+    * the first 32; no hat, the handlers give theirs as the D-pad */
+   if (port >= MAX_USERS || GET_HAT_DIR(joykey) || joykey >= 256)
       return 0;
    gekko_hid_joypad_get_buttons(data, port, &buttons);
    return BIT256_GET(buttons, joykey) != 0;
 }
 
-static int16_t gekko_hid_joypad_axis(void *data, unsigned port,
-      uint32_t joyaxis)
+static int16_t gekko_hid_joypad_axis(void *data,
+      unsigned port, uint32_t joyaxis)
 {
    gekko_hid_t *hid = (gekko_hid_t*)data;
+   int16_t val;
    if (!hid || port >= MAX_USERS)
       return 0;
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   /* the sticks, then what a handler has past them: a DualShock 3's
+    * pressures */
+   if (AXIS_NEG_GET(joyaxis) < 16)
    {
-      int16_t val = pad_connection_get_axis(&hid->connections[port], port,
-            AXIS_NEG_GET(joyaxis));
-      if (val < 0)
-         return val;
+      val = pad_connection_get_axis(&hid->connections[port], port, AXIS_NEG_GET(joyaxis));
+      return (val < 0) ? val : 0;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   if (AXIS_POS_GET(joyaxis) < 16)
    {
-      int16_t val = pad_connection_get_axis(&hid->connections[port], port,
-            AXIS_POS_GET(joyaxis));
-      if (val > 0)
-         return val;
+      val = pad_connection_get_axis(&hid->connections[port], port, AXIS_POS_GET(joyaxis));
+      return (val > 0) ? val : 0;
    }
    return 0;
 }

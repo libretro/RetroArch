@@ -256,6 +256,88 @@ static struct retro_vfs_interface iface_v6 =
    fe_read_at, fe_write_at
 };
 
+/* ---- v7 members: each answers with a mark of its own ---- */
+
+static int fe_v7_calls;
+static const uint8_t fe_bytes[4] = { 'P', 'Q', 'R', 'S' };
+
+static int64_t fe_view(struct retro_vfs_file_handle *s, uint64_t l,
+      const uint8_t **p)
+{ (void)s; fe_v7_calls++; *p = fe_bytes; return l < 4 ? (int64_t)l : 4; }
+static const uint8_t *fe_map(struct retro_vfs_file_handle *s, int64_t *l)
+{ (void)s; fe_v7_calls++; if (l) *l = 4; return fe_bytes; }
+static bool fe_identity(struct retro_vfs_file_handle *s,
+      struct retro_vfs_file_identity *id)
+{ (void)s; fe_v7_calls++; memset(id, 0, sizeof(*id)); id->size = 77; return true; }
+static int fe_stat_identity(const char *p, struct retro_vfs_file_identity *id)
+{ (void)p; fe_v7_calls++; memset(id, 0, sizeof(*id)); id->size = 78; return 1; }
+static bool fe_volume(struct retro_vfs_file_handle *s, unsigned w,
+      struct retro_vfs_volume *v)
+{ (void)s; (void)w; fe_v7_calls++; memset(v, 0, sizeof(*v));
+  v->kind = RETRO_VFS_VOLUME_REMOTE; return true; }
+static int fe_stat_volume(const char *p, unsigned w, struct retro_vfs_volume *v)
+{ (void)p; (void)w; fe_v7_calls++; memset(v, 0, sizeof(*v));
+  v->flags = RETRO_VFS_VOLUME_READ_ONLY; return 1; }
+static size_t fe_verity_measure(struct retro_vfs_file_handle *s, uint8_t *d,
+      size_t cap)
+{ (void)s; fe_v7_calls++; if (cap < 4) return 0; memcpy(d, fe_bytes, 4); return 4; }
+static int fe_verity_enable(struct retro_vfs_file_handle *s)
+{ (void)s; fe_v7_calls++; return 1; }
+
+/* The same members marking a call above the advertised version */
+static int64_t fe_view_poison(struct retro_vfs_file_handle *s, uint64_t l,
+      const uint8_t **p)
+{ fe_above_version = 1; return fe_view(s, l, p); }
+static const uint8_t *fe_map_poison(struct retro_vfs_file_handle *s, int64_t *l)
+{ fe_above_version = 1; return fe_map(s, l); }
+static bool fe_identity_poison(struct retro_vfs_file_handle *s,
+      struct retro_vfs_file_identity *id)
+{ fe_above_version = 1; return fe_identity(s, id); }
+static int fe_stat_identity_poison(const char *p,
+      struct retro_vfs_file_identity *id)
+{ fe_above_version = 1; return fe_stat_identity(p, id); }
+static bool fe_volume_poison(struct retro_vfs_file_handle *s, unsigned w,
+      struct retro_vfs_volume *v)
+{ fe_above_version = 1; return fe_volume(s, w, v); }
+static int fe_stat_volume_poison(const char *p, unsigned w,
+      struct retro_vfs_volume *v)
+{ fe_above_version = 1; return fe_stat_volume(p, w, v); }
+static size_t fe_verity_measure_poison(struct retro_vfs_file_handle *s,
+      uint8_t *d, size_t cap)
+{ fe_above_version = 1; return fe_verity_measure(s, d, cap); }
+static int fe_verity_enable_poison(struct retro_vfs_file_handle *s)
+{ fe_above_version = 1; return fe_verity_enable(s); }
+
+static struct retro_vfs_interface iface_v7 =
+{
+   fe_get_path, fe_open, fe_close, fe_size, fe_tell, fe_seek,
+   fe_read, fe_write, fe_flush, fe_remove, fe_rename,
+   fe_truncate,
+   fe_stat, fe_mkdir, fe_opendir, fe_readdir,
+   fe_dirent_name, fe_dirent_is_dir, fe_closedir,
+   NULL,
+   NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+   fe_read_at, fe_write_at,
+   fe_view, fe_map, fe_identity, fe_stat_identity,
+   fe_volume, fe_stat_volume, fe_verity_measure, fe_verity_enable
+};
+
+/* v6 advertised, v7 members present: none may be called */
+static struct retro_vfs_interface iface_v6_v7poison =
+{
+   fe_get_path, fe_open, fe_close, fe_size, fe_tell, fe_seek,
+   fe_read, fe_write, fe_flush, fe_remove, fe_rename,
+   fe_truncate,
+   fe_stat, fe_mkdir, fe_opendir, fe_readdir,
+   fe_dirent_name, fe_dirent_is_dir, fe_closedir,
+   NULL,
+   NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+   fe_read_at, fe_write_at,
+   fe_view_poison, fe_map_poison, fe_identity_poison,
+   fe_stat_identity_poison, fe_volume_poison, fe_stat_volume_poison,
+   fe_verity_measure_poison, fe_verity_enable_poison
+};
+
 static struct retro_vfs_interface *iface_in_use;
 
 static bool env_cb(unsigned cmd, void *data)
@@ -509,6 +591,155 @@ int main(void)
       CHECK(fe_files_live == 0, "v6: frontend file handles released");
 
       remove("hybrid_at.bin");
+   }
+
+   /* v7: lent reads, mappings, identity, volume, fs-verity */
+   {
+      RFILE *f;
+      const uint8_t *p;
+      int64_t len;
+      uint8_t d[RETRO_VFS_VERITY_MAX];
+      struct retro_vfs_file_identity id;
+      struct retro_vfs_volume vol;
+      {
+         FILE *w = fopen("hybrid_v7.bin", "wb");
+         fwrite("0123456789", 1, 10, w);
+         fclose(w);
+      }
+      fe_reset(7);
+      fe_v7_calls  = 0;
+      iface_in_use = &iface_v7;
+      vfs_hybrid_init(env_cb, NULL);
+
+      /* A plain path: the local implementation answers, never the
+       * frontend */
+      f = filestream_open("hybrid_v7.bin", RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+      CHECK(f != NULL, "v7 local: plain path opens");
+      if (f)
+      {
+         CHECK(filestream_identity(f, &id) && id.size == 10
+               && id.type == RETRO_VFS_IDENTITY_REGULAR,
+               "v7 local: identity from the open file");
+         CHECK(filestream_volume(f, RETRO_VFS_VOLUME_WANT_KIND, &vol),
+               "v7 local: volume answers");
+         CHECK(!filestream_verity_measure(f, d, sizeof(d)),
+               "v7 local: an unsealed file has no digest");
+         p = filestream_map(f, &len);
+#if defined(HAVE_MMAP) || defined(_WIN32)
+         CHECK(p && len == 10 && !memcmp(p, "0123456789", 10),
+               "v7 local: the mapping is the file");
+#else
+         CHECK(!p && !len, "v7 local: no mapping without mmap");
+#endif
+         filestream_close(f);
+      }
+      memset(&id, 0xaa, sizeof(id));
+      CHECK(filestream_stat_identity("hybrid_v7.bin", &id) == 1
+            && id.size == 10, "v7 local: identity by path");
+      CHECK(filestream_stat_identity("hybrid_v7_none.bin", &id) == 0
+            && !id.size, "v7 local: nothing there by path");
+      CHECK(filestream_stat_volume("hybrid_v7.bin",
+               RETRO_VFS_VOLUME_WANT_KIND, &vol) == 1,
+            "v7 local: volume by path");
+      f = filestream_open("hybrid_v7.bin", RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+      if (f)
+      {
+         len = filestream_view(f, 4, &p);
+#if defined(HAVE_MMAP) || defined(_WIN32)
+         CHECK(len == 4 && !memcmp(p, "0123", 4)
+               && filestream_tell(f) == 4,
+               "v7 local: view lends the mapped bytes and moves on");
+#else
+         CHECK(len == -1, "v7 local: nothing to lend without mmap");
+#endif
+         filestream_close(f);
+      }
+      CHECK(fe_v7_calls == 0, "v7 local: the frontend is not called");
+
+      /* A frontend path: the frontend's own answers */
+      f = filestream_open("content://media/item",
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      CHECK(f != NULL, "v7: uri path opens through the frontend");
+      if (f)
+      {
+         CHECK(filestream_identity(f, &id) && id.size == 77,
+               "v7: identity reaches the frontend's");
+         CHECK(filestream_volume(f, RETRO_VFS_VOLUME_WANT_KIND, &vol)
+               && vol.kind == RETRO_VFS_VOLUME_REMOTE,
+               "v7: volume reaches the frontend's");
+         CHECK(filestream_verity_measure(f, d, sizeof(d)) == 4
+               && !memcmp(d, fe_bytes, 4),
+               "v7: verity_measure reaches the frontend's");
+         CHECK(filestream_verity_enable(f) == 1,
+               "v7: verity_enable reaches the frontend's");
+         p = filestream_map(f, &len);
+         CHECK(p == fe_bytes && len == 4, "v7: map reaches the frontend's");
+         len = filestream_view(f, 2, &p);
+         CHECK(len == 2 && p == fe_bytes, "v7: view reaches the frontend's");
+         filestream_close(f);
+      }
+      CHECK(filestream_stat_identity("content://media/item", &id) == 1
+            && id.size == 78, "v7: identity by path reaches the frontend's");
+      /* filestream_get_mapped_ptr: the frontend's mapping of a file
+       * opened to be mapped, none of any other */
+      f = filestream_open("content://media/item",
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+      if (f)
+      {
+         p = filestream_get_mapped_ptr(f, &len);
+         CHECK(p == fe_bytes && len == 4,
+               "v7: a frontend file opened to be mapped lends its mapping");
+         filestream_close(f);
+      }
+      f = filestream_open("content://media/item",
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (f)
+      {
+         int calls = fe_v7_calls;
+         CHECK(!filestream_get_mapped_ptr(f, &len) && !len
+               && fe_v7_calls == calls,
+               "v7: one opened plainly is never mapped");
+         filestream_close(f);
+      }
+      CHECK(filestream_stat_volume("content://media/item",
+               RETRO_VFS_VOLUME_WANT_FLAGS, &vol) == 1
+            && (vol.flags & RETRO_VFS_VOLUME_READ_ONLY),
+            "v7: volume by path reaches the frontend's");
+
+      /* A v6 frontend: can't be told, and no member above v6 called */
+      fe_reset(6);
+      iface_in_use = &iface_v6_v7poison;
+      vfs_hybrid_init(env_cb, NULL);
+      f = filestream_open("content://media/item",
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      CHECK(f != NULL, "v6: uri path opens through the frontend");
+      if (f)
+      {
+         CHECK(!filestream_identity(f, &id) && !id.size,
+               "v6: no identity");
+         CHECK(!filestream_volume(f, RETRO_VFS_VOLUME_WANT_KIND, &vol),
+               "v6: no volume");
+         CHECK(!filestream_verity_measure(f, d, sizeof(d))
+               && filestream_verity_enable(f) == 0, "v6: no fs-verity");
+         CHECK(!filestream_map(f, &len) && !len, "v6: no mapping");
+         CHECK(!filestream_get_mapped_ptr(f, &len) && !len,
+               "v6: no mapped pointer either");
+         CHECK(filestream_view(f, 2, &p) == -1, "v6: nothing lent");
+         filestream_close(f);
+      }
+      CHECK(filestream_stat_identity("content://media/item", &id) == -1
+            && filestream_stat_volume("content://media/item",
+               RETRO_VFS_VOLUME_WANT_FLAGS, &vol) == -1,
+            "v6: nothing by path");
+      CHECK(!fe_above_version, "v6: no v7 member is called");
+      /* The local branch still answers in full */
+      CHECK(filestream_stat_identity("hybrid_v7.bin", &id) == 1,
+            "v6: a plain path still answers locally");
+      CHECK(fe_files_live == 0, "v7: frontend file handles released");
+      remove("hybrid_v7.bin");
    }
 
    if (test_fails)

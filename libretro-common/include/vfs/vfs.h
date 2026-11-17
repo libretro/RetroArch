@@ -98,9 +98,20 @@ typedef struct
  * Listed rather than assumed: the descriptor path compiles everywhere
  * but has only ever run on the mapping targets, so a platform joins
  * this list once its open()/read()/lseek() have been exercised.  A
- * target that is not listed keeps the behaviour it has today. */
+ * target that is not listed keeps the behaviour it has today.
+ *
+ * The POSIX desktops are listed for themselves too: RetroArch reaches
+ * the path on them with HAVE_MMAP, and a core built without it (most
+ * are) gets the same descriptor reads, and with them the identity,
+ * volume and fs-verity answers a stream needs a descriptor for. */
 #ifndef VFS_HAVE_DESCRIPTOR_IO
 #if defined(VFS_HAVE_FILE_MAPPING) \
+ || ((defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+      || defined(__NetBSD__) || defined(__OpenBSD__) \
+      || defined(__DragonFly__)) \
+     && !defined(ORBIS) && !defined(PS2) && !defined(PSP) \
+     && !defined(VITA) && !defined(__SWITCH__) && !defined(GEKKO) \
+     && !defined(_3DS) && !defined(WIIU)) \
  || defined(VITA) \
  || defined(_3DS) \
  || (defined(WIIU) && defined(HAVE_WIIU_DESCRIPTOR_IO)) \

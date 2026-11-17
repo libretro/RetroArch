@@ -124,6 +124,7 @@ CLOSE_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
 UNAME_S := $(shell uname -s 2>/dev/null)
 ifneq (,$(filter MINGW% MSYS% CYGWIN%,$(UNAME_S)))
    MMAP ?= 0
+   $(call sample_objs,$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o): CFLAGS += -Wframe-larger-than=2048 -Werror=frame-larger-than=2048
 else
    MMAP ?= 1
 endif
@@ -415,3 +416,7 @@ clean:
 		bulk_binary.bin bulk_threads.bin
 
 .PHONY: clean
+
+win32-stat-contract-check:
+	python3 win32_stat_test.py --cc "$(CC)" --sanitizer "$(SANITIZER)"
+.PHONY: win32-stat-contract-check

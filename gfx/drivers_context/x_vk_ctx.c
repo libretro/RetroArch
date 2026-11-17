@@ -48,6 +48,9 @@ typedef struct gfx_ctx_x_vk_data
    bool should_reset_mode;
 #endif
    bool is_fullscreen;
+   /* Whether a present goes past a compositor
+    * (gfx_ctx_x_vk_present_immediate) */
+   bool uncomposed;
 
    int interval;
 
@@ -68,6 +71,81 @@ typedef struct x_vk_hints
 
 
 static int x_vk_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
+
+#ifdef HAVE_VIDEO_WINDOWS
+static xcb_connection_t *gfx_ctx_x_vk_wsi_connection(
+      gfx_ctx_x_vk_data_t *x);
+
+/* On the visual the main window takes; what draws to the window, and
+ * how, is the video driver's. */
+static bool gfx_ctx_x_vk_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   XVisualInfo vi_template;
+   XVisualInfo *vi;
+   bool ok;
+   int nvisuals = 0;
+   if (!data || !g_x11_dpy)
+      return false;
+   memset(&vi_template, 0, sizeof(vi_template));
+   vi_template.screen = DefaultScreen(g_x11_dpy);
+   if (!(vi = XGetVisualInfo(g_x11_dpy, VisualScreenMask, &vi_template,
+               &nvisuals)))
+      return false;
+   ok = nvisuals > 0 && x11_video_window_create(data, request, window,
+         vi->visual, vi->depth);
+   XFree(vi);
+   if (ok)
+   {
+      /* As vulkan_surface_create() takes the main window's */
+      window->display = gfx_ctx_x_vk_wsi_connection(
+            (gfx_ctx_x_vk_data_t*)data);
+      window->surface = &((x11_video_window_t*)window->state)->handle;
+      x11_video_window_show(window, NULL, None);
+   }
+   return ok;
+}
+
+/* Kept by the last driver: adopted where it is on the visual a window
+ * made now would be on */
+static bool gfx_ctx_x_vk_window_take(void *data, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   XVisualInfo vi_template;
+   XVisualInfo *vi;
+   bool ok;
+   int nvisuals = 0;
+   if (!data || !g_x11_dpy)
+      return false;
+   memset(&vi_template, 0, sizeof(vi_template));
+   vi_template.screen = DefaultScreen(g_x11_dpy);
+   if (!(vi = XGetVisualInfo(g_x11_dpy, VisualScreenMask, &vi_template,
+               &nvisuals)))
+      return false;
+   ok = nvisuals > 0 && x11_video_window_take(data, screen, window,
+         display, vi->visualid);
+   XFree(vi);
+   if (ok)
+   {
+      window->display = gfx_ctx_x_vk_wsi_connection(
+            (gfx_ctx_x_vk_data_t*)data);
+      window->surface = &((x11_video_window_t*)window->state)->handle;
+      x11_video_window_taken(window);
+   }
+   return ok;
+}
+
+static const gfx_ctx_window_driver_t gfx_ctx_x_vk_windows = {
+   gfx_ctx_x_vk_window_create,
+   x11_video_window_update,
+   x11_video_window_poll,
+   NULL, /* bind_gl */
+   NULL, /* present_gl */
+   x11_video_window_destroy,
+   x11_video_window_keep,
+   gfx_ctx_x_vk_window_take
+};
+#endif
 
 /* The swapchain presents through a connection of its own. A software
  * WSI writes each frame into its connection as image data, and every
@@ -98,6 +176,10 @@ static xcb_connection_t *gfx_ctx_x_vk_wsi_connection(
 
 static void gfx_ctx_x_vk_destroy_resources(gfx_ctx_x_vk_data_t *x)
 {
+#ifdef HAVE_VIDEO_WINDOWS
+   if (g_x11_dpy)
+      x11_video_windows_free(x, x11_video_window_destroy);
+#endif
    x11_input_ctx_destroy();
 
    if (g_x11_dpy)
@@ -400,6 +482,8 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
    }
 
+   x->uncomposed = x11_window_uncomposed(fullscreen && disable_composition);
+
    if (opacity < (unsigned)-1)
    {
       Atom net_wm_opacity = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
@@ -582,6 +666,14 @@ static uint32_t gfx_ctx_x_vk_get_flags(void *data)
 
 static void gfx_ctx_x_vk_set_flags(void *data, uint32_t flags) { }
 
+/* The swapchain's mode is the driver's to know; whether a compositor
+ * shows the window is this context's. */
+static bool gfx_ctx_x_vk_present_immediate(void *data)
+{
+   gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
+   return x && x->uncomposed;
+}
+
 const gfx_ctx_driver_t gfx_ctx_vk_x = {
    gfx_ctx_x_vk_init,
    gfx_ctx_x_vk_destroy,
@@ -621,5 +713,16 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
    NULL, /* make_current */
    NULL, /* create_surface */
    NULL  /* destroy_surface */,
-   gfx_ctx_x_vk_presentable
+   gfx_ctx_x_vk_presentable,
+   NULL, /* last_present_time */
+   NULL, /* release_current */
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL, /* shared_context_free */
+#ifdef HAVE_VIDEO_WINDOWS
+   &gfx_ctx_x_vk_windows,
+#else
+   NULL, /* windows */
+#endif
+   gfx_ctx_x_vk_present_immediate
 };

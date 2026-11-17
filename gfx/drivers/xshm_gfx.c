@@ -549,6 +549,10 @@ static void *xshm_init(const video_info_t *video)
 
    XInitThreads();
 
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Kept screen windows go on the connection they were made on */
+   x11_video_windows_release_kept();
+#endif
    if (!(g_x11_dpy = XOpenDisplay(NULL)))
    {
       RARCH_ERR("[XSHM] Cannot connect to the X server.\n");

@@ -316,150 +316,33 @@ static BOOL CALLBACK enum_axes_cb(
    return DIENUM_CONTINUE;
 }
 
-/* Offset table for DIJOYSTATE2 axis fields — single bounds-check + indexed
- * load instead of a switch/jump-table.  All target fields are LONG. */
-static const size_t dinput_axis_offsets[8] = {
-   offsetof(DIJOYSTATE2, lX),
-   offsetof(DIJOYSTATE2, lY),
-   offsetof(DIJOYSTATE2, lZ),
-   offsetof(DIJOYSTATE2, lRx),
-   offsetof(DIJOYSTATE2, lRy),
-   offsetof(DIJOYSTATE2, lRz),
-   offsetof(DIJOYSTATE2, rglSlider[0]),
-   offsetof(DIJOYSTATE2, rglSlider[1]),
-};
-
-static int16_t dinput_joypad_get_axis_val(
-      const struct dinput_joypad_data *pad, unsigned axis)
+/* The pad on @port's view; NULL with none there */
+static const input_pad_view_t *dinput_joypad_view(unsigned port)
 {
-   if (axis < 8)
-      return (int16_t)(*(const LONG*)
-            ((const char*)&pad->joy_state + dinput_axis_offsets[axis]));
-   return 0;
-}
-
-/* Pre-computed diagonal POV values (hundredths of degrees).
- * Avoids repeated arithmetic in the hot path. */
-#define DINPUT_POV_NE  (JOY_POVRIGHT   / 2)                  /*  4500 */
-#define DINPUT_POV_SE  (JOY_POVRIGHT   + JOY_POVRIGHT / 2)   /* 13500 */
-#define DINPUT_POV_SW  (JOY_POVBACKWARD + JOY_POVRIGHT / 2)  /* 22500 */
-#define DINPUT_POV_NW  (JOY_POVLEFT    + JOY_POVRIGHT / 2)   /* 31500 */
-
-static int32_t dinput_joypad_button_state(
-      const struct dinput_joypad_data *pad,
-      uint16_t joykey)
-{
-   unsigned hat_dir = GET_HAT_DIR(joykey);
-
-   if (hat_dir)
-   {
-      unsigned h = GET_HAT(joykey);
-
-      if (h < 4)
-      {
-         /* 0xFFFFFFFF == centred, no direction active */
-         unsigned pov = pad->joy_state.rgdwPOV[h];
-         if (pov == DINPUT_POV_CENTERED)
-            return 0;
-
-         switch (hat_dir)
-         {
-            case HAT_UP_MASK:
-               return (pov == JOY_POVFORWARD)
-                   || (pov == DINPUT_POV_NE)
-                   || (pov == DINPUT_POV_NW);
-
-            case HAT_RIGHT_MASK:
-               return (pov == JOY_POVRIGHT)
-                   || (pov == DINPUT_POV_NE)
-                   || (pov == DINPUT_POV_SE);
-
-            case HAT_DOWN_MASK:
-               return (pov == JOY_POVBACKWARD)
-                   || (pov == DINPUT_POV_SE)
-                   || (pov == DINPUT_POV_SW);
-
-            case HAT_LEFT_MASK:
-               return (pov == JOY_POVLEFT)
-                   || (pov == DINPUT_POV_SW)
-                   || (pov == DINPUT_POV_NW);
-
-            default:
-               break;
-         }
-      }
-      /* hat requested but index out of range */
-      return 0;
-   }
-
-   if (joykey < ARRAY_SIZE_RGB_BUTTONS)
-      return pad->joy_state.rgbButtons[joykey] ? 1 : 0;
-
-   return 0;
-}
-
-static int16_t dinput_joypad_axis_state(
-      const struct dinput_joypad_data *pad,
-      uint32_t joyaxis)
-{
-   unsigned axis;
-   int16_t  val;
-
-   if (AXIS_NEG_GET(joyaxis) <= 7)
-   {
-      axis = (unsigned)AXIS_NEG_GET(joyaxis);
-      val  = dinput_joypad_get_axis_val(pad, axis);
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) <= 7)
-   {
-      axis = (unsigned)AXIS_POS_GET(joyaxis);
-      val  = dinput_joypad_get_axis_val(pad, axis);
-      if (val > 0)
-         return val;
-   }
-
-   return 0;
+   if (port >= MAX_USERS || !g_pads[port].joypad)
+      return NULL;
+   return &g_pads[port].view;
 }
 
 static int32_t dinput_joypad_button(unsigned port, uint16_t joykey)
 {
-   if (port >= MAX_USERS)
-      return 0;
-   if (!g_pads[port].joypad)
-      return 0;
-   return dinput_joypad_button_state(&g_pads[port], joykey);
+   const input_pad_view_t *v = dinput_joypad_view(port);
+   return v ? input_pad_view_button(v, joykey) : 0;
 }
 
-/* Every plain button of the pad at once, as dinput_joypad_button()
- * gives them one by one. Hats are not buttons here: they are read
- * through dinput_joypad_button() with a hat key. This is what lets the
- * frontend copy the pad once a poll (the snapshot bridge in
- * input_driver.c) instead of calling in for each button. */
 static void dinput_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-   unsigned i;
-   const struct dinput_joypad_data *pad;
-
-   BIT256_CLEAR_ALL_PTR(state);
-   if (port >= MAX_USERS)
-      return;
-   pad = &g_pads[port];
-   if (!pad->joypad)
-      return;
-   for (i = 0; i < ARRAY_SIZE_RGB_BUTTONS; i++)
-      if (pad->joy_state.rgbButtons[i])
-         BIT256_SET_PTR(state, i);
+   const input_pad_view_t *v = dinput_joypad_view(port);
+   if (v)
+      *state = v->buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t dinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   if (port >= MAX_USERS)
-      return 0;
-   if (!g_pads[port].joypad)
-      return 0;
-   return dinput_joypad_axis_state(&g_pads[port], joyaxis);
+   const input_pad_view_t *v = dinput_joypad_view(port);
+   return v ? input_pad_view_axis(v, joyaxis) : 0;
 }
 
 static int16_t dinput_joypad_state(
@@ -468,42 +351,8 @@ static int16_t dinput_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   unsigned i;
-   int16_t  ret;
-   uint16_t port_idx;
-   const struct dinput_joypad_data *pad;
-   /* Pre-convert the floating-point threshold to an integer value once,
-    * eliminating a float cast + division per bind per frame. */
-   int32_t  axis_thresh_abs;
-
-   (void)port; /* joy_idx from joypad_info is authoritative */
-
-   port_idx = joypad_info->joy_idx;
-   if (port_idx >= MAX_USERS)
-      return 0;
-
-   pad = &g_pads[port_idx];
-   if (!pad->joypad)
-      return 0;
-
-   axis_thresh_abs = (int32_t)(joypad_info->axis_threshold * 0x8000);
-
-   ret = 0;
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-
-      if (     (uint16_t)joykey != NO_BTN
-            && dinput_joypad_button_state(pad, (uint16_t)joykey))
-         ret |= (1 << i);
-      else if (joyaxis != AXIS_NONE
-            && abs(dinput_joypad_axis_state(pad, joyaxis))
-                  > axis_thresh_abs)
-         ret |= (1 << i);
-   }
-
-   return ret;
+   const input_pad_view_t *v = dinput_joypad_view(joypad_info->joy_idx);
+   return v ? input_pad_view_state(v, joypad_info, joykeys, joyaxes) : 0;
 }
 
 static bool dinput_joypad_query_pad(unsigned port)
@@ -636,7 +485,6 @@ static void dinput_joypad_poll(void)
    for (i = 0; i < g_joypad_cnt; i++)
    {
       HRESULT ret;
-      unsigned h;
       struct dinput_joypad_data *pad = &g_pads[i];
 
       if (!pad->joypad)
@@ -654,11 +502,7 @@ static void dinput_joypad_poll(void)
          if (  FAILED(IDirectInputDevice8_Acquire(pad->joypad))
             || FAILED(IDirectInputDevice8_Poll(pad->joypad)))
          {
-            memset(&pad->joy_state, 0, sizeof(pad->joy_state));
-            /* Centre all hats - zero is a valid POV direction
-             * (north), so memset alone would report 'up' held */
-            for (h = 0; h < ARRAY_SIZE(pad->joy_state.rgdwPOV); h++)
-               pad->joy_state.rgdwPOV[h] = DINPUT_POV_CENTERED;
+            dinput_pad_release_state(pad);
             continue;
          }
 
@@ -670,6 +514,8 @@ static void dinput_joypad_poll(void)
          input_autoconfigure_disconnect(i, g_pads[i].joy_friendly_name);
          dinput_joypad_cleanup_pad(i);
       }
+      else
+         dinput_pad_make_view(pad);
       /* GetDeviceState writes the full DIJOYSTATE2 on success, so no
        * pre-zeroing is needed.  On failure the pad is cleaned up above,
        * which zeroes the entire slot including joy_state. */
@@ -862,4 +708,9 @@ input_device_driver_t dinput_joypad = {
    NULL, /* get_sensor_input */
    dinput_joypad_name,
    "dinput",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   dinput_joypad_view
 };

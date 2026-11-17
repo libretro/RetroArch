@@ -284,6 +284,8 @@ samples/**/*_test
 libretro-common/test/formats/rxml_oom_test
 libretro-common/test/formats/rxml_write_test
 samples/**/*_test_*
+samples/input/joypad_bridge_checked/rwebpad_checked_test.js
+samples/input/joypad_bridge_checked/mfi_extract.inc
 # the media harnesses' link arguments and up-to-date keys
 samples/menu/*_media/link.args
 samples/menu/*_media/*_media_test.key

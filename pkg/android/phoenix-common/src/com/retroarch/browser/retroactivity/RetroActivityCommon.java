@@ -1945,6 +1945,20 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
+   * Covers the displays whose ids are in ids with black, and uncovers
+   * the rest. Called from native code on any thread; posts to the UI
+   * thread and returns.
+   */
+  public void setBlankDisplays(final int[] ids) {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        if (secondDisplay != null)
+          secondDisplay.blank(ids);
+      }
+    });
+  }
+
+  /**
    * Moves this Activity onto the display whose id is displayId; move
    * numbers the move. Called from native code on any thread; posts to
    * the UI thread and returns.

@@ -139,6 +139,29 @@ static int count_lines(const char *req, const char *name)
    return n;
 }
 
+/* net_http_urlencode_to: what net_http_urlencode makes, in place;
+ * truncated whole escapes at a time, and its length reported. */
+static void test_urlencode_to(void)
+{
+   static const char src[] = "saves/A b#c\xc3\xa9.srm";
+   static const char enc[] = "saves/A%20b%23c%C3%A9.srm";
+   char  buf[64];
+   char *dup = NULL;
+
+   net_http_urlencode(&dup, src);
+   CHECK(dup && !strcmp(dup, enc), "urlencode: escapes");
+   free(dup);
+   CHECK(net_http_urlencode_to(buf, sizeof(buf), src) == sizeof(enc) - 1
+         && !strcmp(buf, enc), "urlencode_to: whole");
+   /* "saves/A%20b" fits 12, the %23 after it does not */
+   CHECK(net_http_urlencode_to(buf, 13, src) == sizeof(enc) - 1
+         && !strcmp(buf, "saves/A%20b"), "urlencode_to: no half escape");
+   CHECK(net_http_urlencode_to(buf, 9, src) == sizeof(enc) - 1
+         && !strcmp(buf, "saves/A"), "urlencode_to: cut before an escape");
+   CHECK(net_http_urlencode_to(NULL, 0, src) == sizeof(enc) - 1,
+         "urlencode_to: length only");
+}
+
 int main(void)
 {
    struct server      s;
@@ -149,6 +172,8 @@ int main(void)
    char              *hdrs = NULL;
    unsigned           port;
    int                status;
+
+   test_urlencode_to();
 
    if (!network_init())
    {

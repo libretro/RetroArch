@@ -177,15 +177,6 @@ retro_time_t cpu_features_get_time_usec(void)
 unsigned cpu_features_get_core_amount(void) { return 2; }
 #endif
 
-/* task_save.c's parks, counted on the way into the real queue. */
-static unsigned park_calls = 0;
-void __real_task_queue_park(retro_task_t *task, retro_time_t horizon_usec);
-void __wrap_task_queue_park(retro_task_t *task, retro_time_t horizon_usec)
-{
-   __atomic_fetch_add(&park_calls, 1, __ATOMIC_RELAXED);
-   __real_task_queue_park(task, horizon_usec);
-}
-
 /* The other half of not linking features_cpu.c.  intfstream_get_crc()
  * pulls in encoding_crc32.c, which dispatches on this; nothing on the
  * savestate path calls it, and reporting no features keeps the scalar
@@ -965,66 +956,6 @@ static void test_threaded_roundtrip(void)
    filestream_delete(path);
 }
 
-/* A load pushed before the core's second frame waits for it parked, a
- * look about once a frame, and loads once the frame is in.  The clock
- * advances here so a park's horizon can pass. */
-static void test_threaded_load_waits_for_frames(void)
-{
-   const char *path = "sst_gate.state";
-   size_t sz        = 3 * TEST_SAVE_STATE_CHUNK + 5;
-   uint8_t *expect;
-   unsigned parks;
-   int i;
-
-   frontend_reset();
-   core_fill(sz);
-   expect = (uint8_t*)malloc(sz);
-   memcpy(expect, core_mem, sz);
-   filestream_delete(path);
-
-   content_save_state(path, true);
-   pump_threaded();
-   memset(core_mem, 0xA5, sz);
-
-   stub_video.frame_count = 0;
-   __atomic_store_n(&clock_step, 2000, __ATOMIC_RELAXED);
-   __atomic_store_n(&park_calls, 0, __ATOMIC_RELAXED);
-   content_load_state(path, false, false);
-   for (i = 0; i < 50; i++)
-   {
-      task_queue_check();
-      retro_sleep(1);
-   }
-   parks = __atomic_load_n(&park_calls, __ATOMIC_RELAXED);
-   okf(parks >= 1,
-       "threaded queue: a load before the second frame parks");
-   okf(parks <= 50,
-       "threaded queue: it looks about once a frame while it waits");
-   okf(memcmp(expect, core_mem, sz) != 0,
-       "threaded queue: nothing is loaded before the second frame");
-
-   /* With the clock stopped a parked task cannot come due, so once a
-    * pass in flight has settled the handler is not looking; a gather
-    * orders its last look before the write and the write before its
-    * next one. */
-   __atomic_store_n(&clock_step, 0, __ATOMIC_RELAXED);
-   for (i = 0; i < 20; i++)
-   {
-      task_queue_check();
-      retro_sleep(1);
-   }
-   stub_video.frame_count = 2;
-   task_queue_check();
-   __atomic_store_n(&clock_step, 2000, __ATOMIC_RELAXED);
-   pump_threaded();
-   okf(memcmp(expect, core_mem, sz) == 0,
-       "threaded queue: the state loads once the second frame is in");
-
-   __atomic_store_n(&clock_step, 0, __ATOMIC_RELAXED);
-   free(expect);
-   filestream_delete(path);
-}
-
 /* -----------------------------------------------------------------
  * 9. The undo snapshot reuses its allocation.
  *
@@ -1429,6 +1360,116 @@ static void test_undo_save_restores_file(void)
 }
 #endif
 
+/* -----------------------------------------------------------------
+ * A load into the core waits for the core's second frame.
+ *
+ *     Held on the frame thread, with a task of that thread's looking
+ *     at the frame count once a check: the load's own handler, on the
+ *     task thread, used to read the count itself as the frame loop
+ *     wrote it. Under either queue.
+ * ----------------------------------------------------------------- */
+static void gate_checks(bool threaded, int n)
+{
+   int i;
+   for (i = 0; i < n; i++)
+   {
+      task_queue_check();
+      /* time for a task thread to do what it should not */
+      if (threaded)
+         retro_sleep(1);
+   }
+}
+
+static void gate_settle(bool threaded)
+{
+   if (threaded)
+      pump_threaded();
+   else
+      pump(20000);
+}
+
+static void okl(int cond, const char *lane, const char *what)
+{
+   char msg[160];
+   snprintf(msg, sizeof(msg), "%s: %s", lane, what);
+   okf(cond, msg);
+}
+
+static void test_load_waits_for_frames(bool threaded)
+{
+   const char *path = "sst_gate.state";
+   const char *lane = threaded ? "threaded queue" : "queue";
+   size_t sz        = 3 * TEST_SAVE_STATE_CHUNK + 5;
+   uint8_t *expect;
+
+   frontend_reset();
+   core_fill(sz);
+   expect = (uint8_t*)malloc(sz);
+   memcpy(expect, core_mem, sz);
+   filestream_delete(path);
+
+   content_save_state(path, true);
+   gate_settle(threaded);
+   memset(core_mem, 0xA5, sz);
+
+   /* into the undo buffer is not into the core: no wait */
+   stub_video.frame_count = 0;
+   okl(content_load_state(path, true, false),
+       lane, "a load into the undo buffer is taken before the second frame");
+   gate_settle(threaded);
+   okl(!queue_busy() && !content_load_state_in_progress(NULL),
+       lane, "and does not wait for it");
+
+   told_calls = 0;
+   okl(content_load_state_notify(path, false, false, told_cb, NULL),
+       lane, "a load before the second frame is taken");
+   okl(content_load_state_in_progress(NULL),
+       lane, "and counts as pending");
+   gate_checks(threaded, 50);
+   okl(memcmp(expect, core_mem, sz) != 0 && !told_calls,
+       lane, "nothing is loaded before the first frame");
+   stub_video.frame_count = 1;
+   gate_checks(threaded, 50);
+   okl(memcmp(expect, core_mem, sz) != 0 && !told_calls
+         && content_load_state_in_progress(NULL),
+       lane, "nor before the second");
+
+   stub_video.frame_count = 2;
+   gate_settle(threaded);
+   okl(memcmp(expect, core_mem, sz) == 0,
+       lane, "the state loads once the second frame is in");
+   okl(told_calls == 1 && !told_error && !queue_busy()
+         && !content_load_state_in_progress(NULL),
+       lane, "its caller is told, and nothing is left waiting");
+
+   /* content closed while one waits: its caller is told it did not
+    * happen, and the next load is not kept waiting by what is left */
+   memset(core_mem, 0xA5, sz);
+   stub_video.frame_count = 0;
+   told_calls = 0;
+   okl(content_load_state_notify(path, false, false, told_cb, NULL),
+       lane, "a second load before the second frame is taken");
+   gate_checks(threaded, 5);
+   content_reset_savestate_backups();
+   okl(told_calls == 1 && told_error
+         && !content_load_state_in_progress(NULL),
+       lane, "a waiting load is told when the content goes");
+   stub_video.frame_count = 1000;
+   gate_settle(threaded);
+   okl(!queue_busy() && memcmp(expect, core_mem, sz) != 0,
+       lane, "and is not loaded afterwards");
+   told_calls = 0;
+   okl(content_load_state_notify(path, false, false, told_cb, NULL),
+       lane, "a load after that is taken");
+   gate_settle(threaded);
+   okl(told_calls == 1 && !told_error
+         && memcmp(expect, core_mem, sz) == 0,
+       lane, "and loads");
+
+   free(expect);
+   filestream_delete(path);
+}
+
 static int run_default_lane(void)
 {
    printf("== task_save.c I/O regression oracle ==\n");
@@ -1456,6 +1497,7 @@ static int run_default_lane(void)
    test_undo_allocates_nothing();
    test_notify_without_allocation();
    test_load_held_behind_save();
+   test_load_waits_for_frames(false);
 #ifdef HAVE_COMPRESSION
    test_undo_save_restores_file();
 #endif
@@ -1474,7 +1516,7 @@ static int run_threaded_lane(void)
    task_queue_init(true, msg_push_stub);
 
    test_threaded_roundtrip();
-   test_threaded_load_waits_for_frames();
+   test_load_waits_for_frames(true);
 
    content_reset_savestate_backups();
    task_queue_deinit();

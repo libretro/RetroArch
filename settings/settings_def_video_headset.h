@@ -4,9 +4,13 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-S_BOOL_EX(video_openxr_enable, VIDEO_OPENXR_ENABLE,
+S_ACTION(VIDEO_HEADSET_SETTINGS,
+      "video_headset_settings",
+      "Headset",
+      "Show content in an OpenXR headset, and place its screens and menu.")
+S_BOOL(video_openxr_enable, VIDEO_OPENXR_ENABLE,
       "video_openxr_enable",
-      false, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT, setting_bool_action_ok_video_openxr_enable, NULL, setting_action_start_video_openxr_enable, NULL, setting_bool_action_ok_video_openxr_enable, setting_bool_action_ok_video_openxr_enable, 0,
+      false, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT,
       "Headset Output (OpenXR)",
       "Also show content in an OpenXR headset: each screen as its own floating screen, with both eyes of stereo 3D, and the menu in front of them. Vulkan, or OpenGL on Linux. The window keeps its normal output.")
 S_UINT_EX(video_openxr_refresh_rate, VIDEO_OPENXR_REFRESH_RATE,
@@ -43,7 +47,7 @@ S_UINT_EX(video_openxr_controllers, VIDEO_OPENXR_CONTROLLERS,
       "video_openxr_controllers",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_controllers, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "OpenXR Controller Layout",
-      "How the headset's controllers appear. Combined makes both one gamepad. Separate makes each hand a gamepad of its own. Each plays as the player set for it above, player 1 unless set otherwise.")
+      "How the headset's controllers appear. Combined makes both one gamepad. Separate makes each hand a gamepad of its own. Each plays as the player set for it in Controllers, player 1 unless set otherwise.")
 S_UINT_EX(video_openxr_laser, VIDEO_OPENXR_LASER,
       "video_openxr_laser",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_laser, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

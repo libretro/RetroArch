@@ -20,6 +20,5 @@
 typedef struct wiiu_hid wiiu_hid_t;
 typedef struct wiiu_adapter wiiu_adapter_t;
 typedef struct wiiu_attach wiiu_attach_event;
-typedef struct _wiiu_pad_functions wiiu_pad_functions_t;
 
 #endif /* __WIIU_HID_TYPES__H */
