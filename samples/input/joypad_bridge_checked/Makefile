@@ -1,6 +1,7 @@
 # Joypad drivers held to what the snapshot bridge assumes of them: udev,
 # linuxraw, parport, SDL 1.2 and its Dingux driver, SDL2, SDL3 and
-# Android (their platforms stood in for) on the host, the web driver built with emcc and run under node (check-web), DirectInput and the XInput-only driver
+# Android (their platforms stood in for) and the test driver, run by a
+# script, on the host, the web driver built with emcc and run under node (check-web), DirectInput and the XInput-only driver
 # cross-built and run under Wine. Each test includes its driver's
 # source and fills the pad table by hand - or, for SDL2 and SDL3, which have
 # none, gives SDL virtual joysticks.
@@ -29,7 +30,7 @@ all: udev_checked_test linuxraw_checked_test sdl2_checked_test $(SDL3_TEST) \
      gx_libogc_checked_test ps2_checked_test ps3_checked_test \
      ps4_checked_test psp_checked_test vita_checked_test \
      switch_checked_test ctr_checked_test qnx_checked_test xdk_checked_test \
-     wiiu_checked_test mfi_checked_test dos_checked_test \
+     wiiu_checked_test mfi_checked_test dos_checked_test test_checked_test \
      dinput_checked_test.exe xinput_checked_test.exe winmm_checked_test.exe \
      xinput_hybrid_checked_test.exe
 
@@ -212,6 +213,15 @@ rwebpad_checked_test.js: rwebpad_checked_test.c bridge_view.h stubs.c $(REPO_ROO
 check-web: rwebpad_checked_test.js
 	$(NODE) ./rwebpad_checked_test.js
 
+LC := $(REPO_ROOT)/libretro-common
+test_checked_test: test_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/test_joypad.c
+	$(CC) -O1 -Wall -Wno-unused -DRARCH_INTERNAL -DHAVE_TEST_DRIVERS $(INCS) \
+	   -fsanitize=address,undefined -fno-sanitize-recover=all \
+	   -o $@ test_checked_test.c stubs.c \
+	   $(LC)/formats/json/rjson.c $(LC)/string/stdstring.c \
+	   $(LC)/encodings/encoding_utf.c $(LC)/compat/compat_strl.c \
+	   $(LC)/string/rstrtod.c
+
 linuxraw_checked_test: linuxraw_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/linuxraw_joypad.c
 	$(CC) -O1 -Wall -Wno-unused -DRARCH_INTERNAL $(INCS) \
 	   -o $@ linuxraw_checked_test.c stubs.c \
@@ -285,6 +295,7 @@ check: all
 	./wiiu_checked_test
 	./mfi_checked_test
 	./dos_checked_test
+	./test_checked_test
 	./sdl2_checked_test
 	@if [ -n "$(SDL3_TEST)" ]; then ./sdl3_checked_test && ./sdl3_webos_reject_test; \
 	 else echo "[skip] sdl3_checked_test, sdl3_webos_reject_test: no SDL3 here (pkg-config sdl3, or SDL3_CFLAGS and SDL3_LIBS)"; fi
@@ -294,7 +305,7 @@ check: all
 	WINEDEBUG=-all $(WINE) ./winmm_checked_test.exe
 
 clean:
-	rm -f udev_checked_test linuxraw_checked_test android_checked_test \
+	rm -f udev_checked_test linuxraw_checked_test test_checked_test android_checked_test \
 	   parport_checked_test sdl1_checked_test sdl_dingux_checked_test \
 	   gekko_checked_test gekko_dol_checked_test gx_libogc_checked_test \
 	   ps2_checked_test ps3_checked_test ps4_checked_test psp_checked_test \
