@@ -1012,6 +1012,8 @@ typedef struct menu_dialog_label_widths
  * that changed since c was filled */
 const int *menu_dialog_label_widths(menu_dialog_label_widths_t *c,
       const menu_dialog_buttons_t *b, font_data_t *font, float size);
+/* False when the driver shows no screens (null) */
+bool menu_core_warning_can_open(void);
 #ifdef HAVE_CORE_SIGNATURES
 /* Raises the Security Warning's box for the request pending, or takes
  * it down when none is; true on the frame it went up */

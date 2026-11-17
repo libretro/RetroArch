@@ -1193,6 +1193,91 @@ static void mode_fw_hidden_confirm(void)
          "the cancelled load did not keep the running core");
 }
 
+/* Drains the queue: whether it said harness/fw.bin is missing */
+static bool fw_told(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *missing         = msg_hash_to_str(MSG_CORE_FIRMWARE_MISSING);
+   msg_queue_entry_t entry;
+   bool found                  = false;
+   while (msg_queue_extract(&runloop_st->msg_queue, &entry))
+      if (     string_starts_with(entry.msg, missing)
+            && strstr(entry.msg, "harness/fw.bin"))
+         found = true;
+   runloop_st->msg_queue_size = 0;
+   return found;
+}
+
+static bool fw_raised(void)
+{
+   return menu_state_get_ptr()->dialog_st.confirm_cmd
+      == CMD_EVENT_CORE_FIRMWARE_DOWNLOAD;
+}
+
+/* A companion load of the seeded core with menu_driver "null": it runs
+ * with no box. True when it said the firmware is missing. */
+static bool fw_null_load(const char *content)
+{
+   content_ctx_info_t info;
+   bool raised = false;
+   bool ran;
+   unsigned i;
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_new_core_from_companion_ui(seeded,
+            content, NULL, NULL, NULL, &info, NULL, NULL),
+         "the companion load was not started");
+   ran = runloop_is_content_switching();
+   for (i = 0; i < 600 && runloop_is_content_switching(); i++)
+   {
+      pump(1);
+      if (fw_raised())
+         raised = true;
+   }
+   CHECK(ran && is_plain() && same_path(path_get(RARCH_PATH_CONTENT), content),
+         "the companion load did not run with menu_driver null");
+   CHECK(!raised, "a firmware box nothing draws was raised for the companion load");
+   return fw_told();
+}
+
+/* With menu_driver "null" nothing can ask: a load whose core's
+ * firmware is missing runs, and says so */
+static void mode_fw_null(void)
+{
+   settings_t *settings = config_get_ptr();
+   char other[300];
+   char fw[PATH_MAX_LENGTH];
+   bool raised          = false;
+   unsigned i;
+   for (i = 0; i < 1200 && !is_plain() && !quitting(); i++)
+   {
+      pump(1);
+      if (fw_raised())
+         raised = true;
+   }
+   CHECK(is_plain() && same_path(path_get(RARCH_PATH_CORE), seeded)
+         && !quitting(), "the startup load did not run with menu_driver null");
+   CHECK(!raised, "a firmware box nothing draws was raised");
+   CHECK(fw_told(), "missing firmware was not told");
+
+   snprintf(other, sizeof(other), "%s/other.bin", dir);
+   write_file(other);
+   CHECK(fw_null_load(other),
+         "missing firmware was not told for the companion load");
+
+   /* The file is there, or the notification is off: nothing to tell.
+    * Each load runs other content than the one before it. */
+   snprintf(fw, sizeof(fw), "%s/system/harness", dir);
+   path_mkdir(fw);
+   strlcat(fw, "/fw.bin", sizeof(fw));
+   write_file(fw);
+   CHECK(!fw_null_load(game), "firmware on disk was told missing");
+   remove(fw);
+   configuration_set_bool(settings,
+         settings->bools.core_firmware_notification_enable, false);
+   CHECK(!fw_null_load(other),
+         "missing firmware was told with its notification off");
+}
+
 #ifdef HAVE_NETWORKGAMEPAD
 static bool pad_runs(void) { return core_is(CORE_TYPE_NETRETROPAD); }
 
@@ -1434,10 +1519,15 @@ static void clean_run(void)
    remove_in(dir, "core_probe.cache");
    remove_in(dir, "core_info.cache");
    remove_in(dir, "fw_libretro.info");
+   remove_in(dir, "seeded_libretro.info");
+   remove_in(dir, "other.bin");
+   remove_in(dir, "system/harness/fw.bin");
    /* A netplay client's save folder; the fw- modes' system folder */
    {
       char path[PATH_MAX_LENGTH];
       snprintf(path, sizeof(path), "%s/.netplay", dir);
+      rmdir(path);
+      snprintf(path, sizeof(path), "%s/system/harness", dir);
       rmdir(path);
       snprintf(path, sizeof(path), "%s/system", dir);
       rmdir(path);
@@ -1569,17 +1659,13 @@ static void probe_earlier(const char *core)
    CHECK(path_is_valid(cache), "the earlier session's probe was not kept");
 }
 
-/* fw_core in a fw- mode: its info asks for a file the empty system
- * folder lacks */
-static bool fw_setup(const char *argv0)
+/* dir/name: core info that asks for a file the empty system folder
+ * lacks */
+static bool fw_info_write(const char *name)
 {
    char path[PATH_MAX_LENGTH];
    FILE *f;
-   snprintf(fw_core, sizeof(fw_core), "%s/fw_libretro.%s", cores, ext);
-   snprintf(path, sizeof(path), "%s/system", dir);
-   if (!path_mkdir(path) || !copy_beside(argv0, "harness_core.so", fw_core))
-      return false;
-   snprintf(path, sizeof(path), "%s/fw_libretro.info", dir);
+   snprintf(path, sizeof(path), "%s/%s", dir, name);
    if (!(f = fopen(path, "wb")))
       return false;
    fprintf(f, "display_name = \"Firmware harness\"\n");
@@ -1590,6 +1676,17 @@ static bool fw_setup(const char *argv0)
    fprintf(f, "firmware0_opt = \"false\"\n");
    fclose(f);
    return true;
+}
+
+/* fw_core in a fw- mode, with fw_info_write's info */
+static bool fw_setup(const char *argv0)
+{
+   char path[PATH_MAX_LENGTH];
+   snprintf(fw_core, sizeof(fw_core), "%s/fw_libretro.%s", cores, ext);
+   snprintf(path, sizeof(path), "%s/system", dir);
+   return path_mkdir(path)
+      && copy_beside(argv0, "harness_core.so", fw_core)
+      && fw_info_write("fw_libretro.info");
 }
 
 int main(int argc, char *argv[])
@@ -1612,10 +1709,12 @@ int main(int argc, char *argv[])
    bool startup_dummy   = false;
    bool no_menu         = string_is_equal(mode, "null-seed")
                        || string_is_equal(mode, "null-refused")
-                       || string_is_equal(mode, "null-load-core");
+                       || string_is_equal(mode, "null-load-core")
+                       || string_is_equal(mode, "fw-null");
    bool seed_mode       = string_is_equal(mode, "seed")
                        || string_is_equal(mode, "seed-said")
-                       || string_is_equal(mode, "null-seed");
+                       || string_is_equal(mode, "null-seed")
+                       || string_is_equal(mode, "fw-null");
    bool cached_startup  = string_is_equal(mode, "startup-cached")
                        || string_is_equal(mode, "startup-cached-always");
    bool outside         = cached_startup
@@ -1835,6 +1934,17 @@ int main(int argc, char *argv[])
       rarch_argv[rarch_argc++] = (char*)"-L";
       rarch_argv[rarch_argc++] = seeded;
       startup_dummy            = true;
+      if (string_is_equal(mode, "fw-null"))
+      {
+         snprintf(game, sizeof(game), "%s/title.bin", dir);
+         write_file(game);
+         rarch_argv[rarch_argc++] = game;
+         if (!fw_info_write("seeded_libretro.info"))
+         {
+            clean_run();
+            return 1;
+         }
+      }
    }
 
    if (cached_startup || string_is_equal(mode, "netplay-join-cached"))
@@ -1983,6 +2093,8 @@ int main(int argc, char *argv[])
          mode_fw_contentless();
       else if (string_is_equal(mode, "fw-hidden-confirm"))
          mode_fw_hidden_confirm();
+      else if (string_is_equal(mode, "fw-null"))
+         mode_fw_null();
       else if (string_is_equal(mode, "builtin"))
 #ifdef HAVE_NETWORKGAMEPAD
          mode_builtin();

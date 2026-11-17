@@ -10461,6 +10461,15 @@ const int *menu_dialog_label_widths(menu_dialog_label_widths_t *c,
    return c->w;
 }
 
+bool menu_core_warning_can_open(void)
+{
+   const char *ident = menu_driver_ident();
+   /* Before the drivers are chosen: the one the config names */
+   if (!ident)
+      ident = config_get_ptr()->arrays.menu_driver;
+   return !string_is_equal(ident, "null");
+}
+
 #ifdef HAVE_CORE_SIGNATURES
 /* core_warning_serial() of the request the box went up for, 0 for none */
 static unsigned menu_core_warning_shown = 0;
@@ -10607,15 +10616,6 @@ void menu_core_warning_open(void)
    if (     !(menu_driver_state.flags & MENU_ST_FLAG_ALIVE)
          && menu_driver_state.driver_data)
       retroarch_menu_running();
-}
-
-bool menu_core_warning_can_open(void)
-{
-   const char *ident = menu_driver_ident();
-   /* Before the drivers are chosen: the one the config names */
-   if (!ident)
-      ident = config_get_ptr()->arrays.menu_driver;
-   return !string_is_equal(ident, "null");
 }
 
 bool menu_core_warning_user_only(void)

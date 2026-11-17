@@ -2176,6 +2176,9 @@ struct content_load_job
    bool verbosity;
    bool ok;
    bool fell_back;  /* the core failed; the dummy core took its place */
+#ifdef HAVE_MENU
+   bool firmware_tell; /* not asked: say what firmware is missing */
+#endif
 #ifdef HAVE_CORE_LOAD_CHECK
    struct content_load_parked *parked;   /* to re-run if the core is refused */
    bool (*refused)(const char *core_path); /* or takes the refusal */
@@ -2238,6 +2241,18 @@ static void content_firmware_download_start(struct content_firmware *firmware,
 }
 #endif
 
+static void content_firmware_system_dir(char *s, size_t len,
+      const char *content)
+{
+   settings_t *settings = config_get_ptr();
+   if ((settings->bools.systemfiles_in_content_dir
+            || string_is_empty(settings->paths.directory_system))
+         && !string_is_empty(content))
+      fill_pathname_basedir(s, content, len);
+   else
+      strlcpy(s, settings->paths.directory_system, len);
+}
+
 static bool content_load_firmware(struct content_load_job *job)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -2258,6 +2273,7 @@ static bool content_load_firmware(struct content_load_job *job)
    /* A refused probe leaves load_no_content as the last core set it */
    if (!settings->bools.core_firmware_notification_enable
          || !menu_st->driver_data
+         || !menu_core_warning_can_open()
          || !core_info_find(path_get(RARCH_PATH_CORE), &core)
          || !core || !core->firmware_count
          || (string_is_empty(content)
@@ -2280,15 +2296,8 @@ static bool content_load_firmware(struct content_load_job *job)
          return true;
 
       job->firmware = firmware;
-
-      if ((settings->bools.systemfiles_in_content_dir
-               || string_is_empty(settings->paths.directory_system))
-            && !string_is_empty(content))
-         fill_pathname_basedir(firmware->system_dir, content,
-               sizeof(firmware->system_dir));
-      else
-         strlcpy(firmware->system_dir, settings->paths.directory_system,
-               sizeof(firmware->system_dir));
+      content_firmware_system_dir(firmware->system_dir,
+            sizeof(firmware->system_dir), content);
    }
 
    if (firmware->shown && !firmware->download_requested)
@@ -2427,6 +2436,64 @@ static bool content_load_firmware(struct content_load_job *job)
    }
 
    return false;
+}
+
+/* Off the stack, which holds the tell's two paths */
+static char content_firmware_tell_msg[PATH_MAX_LENGTH];
+
+/* The box's notice for a load nothing asked on: logs each required file
+ * the loaded core is missing, and puts the first on screen */
+static void content_firmware_tell(void)
+{
+   char system_dir[DIR_MAX_LENGTH];
+   char target[PATH_MAX_LENGTH];
+   core_info_t *core = NULL;
+   const char *first = NULL;
+   unsigned more     = 0;
+   size_t i;
+
+   if (     !config_get_ptr()->bools.core_firmware_notification_enable
+         || !core_info_find(path_get(RARCH_PATH_CORE), &core)
+         || !core || !core->firmware_count)
+      return;
+
+   content_firmware_system_dir(system_dir, sizeof(system_dir),
+         path_get(RARCH_PATH_CONTENT));
+
+   for (i = 0; i < core->firmware_count; i++)
+   {
+      core_info_firmware_t *entry = &core->firmware[i];
+      if (entry->optional || string_is_empty(entry->path))
+         continue;
+      fill_pathname_join(target, system_dir, entry->path, sizeof(target));
+      if (path_is_valid(target))
+         continue;
+      RARCH_WARN("[Content] Required firmware is missing: \"%s\".\n", target);
+      if (first)
+         more++;
+      else
+         first = entry->path;
+   }
+
+   if (!first)
+      return;
+
+   strlcpy(content_firmware_tell_msg,
+         msg_hash_to_str(MSG_CORE_FIRMWARE_MISSING),
+         sizeof(content_firmware_tell_msg));
+   strlcat(content_firmware_tell_msg, " ", sizeof(content_firmware_tell_msg));
+   strlcat(content_firmware_tell_msg, first,
+         sizeof(content_firmware_tell_msg));
+   if (more)
+   {
+      char number[32];
+      snprintf(number, sizeof(number), " (+%u)", more);
+      strlcat(content_firmware_tell_msg, number,
+            sizeof(content_firmware_tell_msg));
+   }
+   runloop_msg_queue_push(content_firmware_tell_msg,
+         strlen(content_firmware_tell_msg), 2, 360, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 }
 #endif
 
@@ -2687,6 +2754,10 @@ static void content_load_finish(struct content_load_job *job,
                (after & CONTENT_LOAD_AFTER_HISTORY_CLI)  != 0,
                (after & CONTENT_LOAD_AFTER_HISTORY_UI)   != 0);
 #ifdef HAVE_MENU
+      /* A refused load ends on the dummy core: its re-run asks */
+      if (     job->firmware_tell
+            && runloop_st->current_core_type != CORE_TYPE_DUMMY)
+         content_firmware_tell();
       if (after & CONTENT_LOAD_AFTER_QUICK_MENU)
       {
          bool flush_menu = !(after & CONTENT_LOAD_AFTER_QUICK_MENU_KEEP);
@@ -3271,12 +3342,21 @@ static bool content_load(content_ctx_info_t *info,
    job->staged    = staged;
    job->stage     = CONTENT_LOAD_STAGE_DEINIT;
 #ifdef HAVE_MENU
-   if (staged && config_get_ptr()->bools.core_firmware_notification_enable)
+   /* Unstaged, the core and the config are not read yet: the tell
+    * checks them when the load is through */
+   if (!staged)
+      job->firmware_tell = true;
+   else if (config_get_ptr()->bools.core_firmware_notification_enable)
    {
       core_info_t *core = NULL;
       if (core_info_find(path_get(RARCH_PATH_CORE), &core)
             && core && core->firmware_count)
-         job->stage = CONTENT_LOAD_STAGE_FIRMWARE;
+      {
+         if (menu_core_warning_can_open())
+            job->stage = CONTENT_LOAD_STAGE_FIRMWARE;
+         else
+            job->firmware_tell = true;
+      }
    }
 #endif
 
