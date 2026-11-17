@@ -10067,6 +10067,10 @@ unsigned menu_displaylist_build_list(
                           || key == RARCH_HEADSET_EDIT_SCREENS)
                   continue;
 #endif
+#if !(defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS))
+               else if (key == RARCH_BLANK_UNUSED_TOGGLE)
+                  continue;
+#endif
                /* Show combo entries before normal binds */
                else if (key == RARCH_MENU_TOGGLE)
                {
@@ -13295,6 +13299,12 @@ unsigned menu_displaylist_build_list(
 #endif
             }
          }
+#ifdef ANDROID
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+#endif
 #endif
          break;
       case DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST:

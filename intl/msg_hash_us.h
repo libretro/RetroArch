@@ -8046,6 +8046,10 @@ MSG_HASH(
    "With the Menu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_GAMES,
+   "During Games"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    "Combined"
    )
@@ -12759,6 +12763,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
    "Opens the companion WIMP (Windows, Icons, Menus, Pointer) desktop user interface."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_BLANK_UNUSED_TOGGLE,
+   "Blank Unused Screens (Toggle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_BLANK_UNUSED_TOGGLE,
+   "Blank or show the built-in screens RetroArch isn't using, for the running game only. The Blank Unused Screens setting stays as it is."
    )
 
 MSG_HASH(
@@ -33376,6 +33388,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
    "Game Focus off"
+   )
+MSG_HASH(
+   MSG_BLANK_UNUSED_SCREENS_ON,
+   "Blank Unused Screens on"
+   )
+MSG_HASH(
+   MSG_BLANK_UNUSED_SCREENS_OFF,
+   "Blank Unused Screens off"
+   )
+MSG_HASH(
+   MSG_BLANK_UNUSED_SCREENS_NONE,
+   "No unused screen to blank"
    )
 MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
