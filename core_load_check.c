@@ -1311,7 +1311,11 @@ void core_load_check_loaded(void)
    /* A load while a park waits, the same core's too: the re-run would
     * replace that session. The park's own re-run dropped it first. */
    if (core_load_rt.park.state != CORE_LOAD_PARK_NONE)
+   {
+      RARCH_WARN("[Core] Not loading \"%s\": another load replaced it.\n",
+            core_load_rt.park.path);
       core_load_park_cancel();
+   }
    /* Any other pass the slot keeps, such as a Load Once whose re-run
     * only probed, ends when a core loads */
    if (     core_load_rt.slot.pass
@@ -1640,7 +1644,11 @@ bool core_load_check_park(const char *path, core_load_rerun_t rerun,
    path = core_load_rt.check_path;
 #endif
    if (p->state != CORE_LOAD_PARK_NONE)
+   {
+      RARCH_WARN("[Core] Not loading \"%s\": another load replaced it.\n",
+            p->path);
       core_load_park_drop();
+   }
    core_load_abs(path, p->path, sizeof(p->path));
    /* Before the start can push: the older request's CANCEL, run inside
     * that push, must not match this park */

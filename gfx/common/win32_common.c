@@ -1316,6 +1316,10 @@ static LRESULT CALLBACK wnd_proc_common(
                switch (td->mode)
                {
                   case WIN32_BROWSER_MODE_LOAD_CORE:
+#ifdef HAVE_CORE_LOAD_CHECK
+                     if (task_content_warning_waits(td->path))
+                        break;
+#endif
                      content_info.argc        = 0;
                      content_info.argv        = NULL;
                      content_info.args        = NULL;

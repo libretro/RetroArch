@@ -5558,6 +5558,13 @@ bool command_load_core(command_t *cmd, const char* arg)
 #else
    strlcpy(path, arg, sizeof(path));
 #endif
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(path))
+   {
+      command_reply_error(cmd, "LOAD_CORE", "could not load %s", path);
+      return false;
+   }
+#endif
    if (!command_core_at(cmd, "LOAD_CORE", path))
       return false;
    if (!task_push_load_new_core(path, NULL,
@@ -5582,6 +5589,15 @@ bool command_load_core(command_t *cmd, const char* arg)
 bool command_start_core(command_t *cmd, const char* arg)
 {
    content_ctx_info_t content_info = {0};
+
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(path_get(RARCH_PATH_CORE)))
+   {
+      command_reply_error(cmd, "START_CORE", "could not start %s",
+            path_get(RARCH_PATH_CORE));
+      return false;
+   }
+#endif
 
    path_clear(RARCH_PATH_BASENAME);
 

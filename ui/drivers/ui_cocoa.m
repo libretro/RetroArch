@@ -1376,6 +1376,10 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
       return;
    if (!result)
       return;
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(state->result))
+      return;
+#endif
 
    path_set(RARCH_PATH_CORE, state->result);
 #ifdef HAVE_CORE_LOAD_CHECK
@@ -1416,6 +1420,10 @@ static void open_document_handler(
    else
 #endif
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      if (task_content_warning_waits(state->result))
+         return;
+#endif
       path_set(RARCH_PATH_CONTENT, state->result);
 
       if (core_name && *core_name)

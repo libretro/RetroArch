@@ -4626,6 +4626,23 @@ static bool task_load_content_internal_wrap(
    return false;
 }
 
+#ifdef HAVE_CORE_LOAD_CHECK
+/* The Security Warning is answered from the menu only: a load from
+ * outside would take its place and drop the core it asks about */
+bool task_content_warning_waits(const char *path)
+{
+   const char *msg;
+   if (!core_warning_pending(NULL, NULL))
+      return false;
+   RARCH_WARN("[Core] Not loading \"%s\": answer the Security Warning first.\n",
+         path);
+   msg = msg_hash_to_str(MSG_CORE_WARNING_ANSWER_FIRST);
+   runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   return true;
+}
+#endif
+
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
@@ -4639,6 +4656,10 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content = content_state_get_ptr();
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(core_path))
+      return false;
+#endif
    if (content_load_in_flight())
       return false;
 #ifdef HAVE_MENU
@@ -4728,6 +4749,11 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 {
    content_state_t  *p_content = content_state_get_ptr();
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(
+            fullpath ? fullpath : path_get(RARCH_PATH_CORE)))
+      return false;
+#endif
    if (content_load_in_flight())
       return false;
 #ifdef HAVE_MENU
