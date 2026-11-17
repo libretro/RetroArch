@@ -25,6 +25,7 @@
 #include "../../../command.h"
 #include "../../../configuration.h"
 #include "../../../content.h"
+#include "../../../core_info.h"
 #include "../../../core_load_check.h"
 #include "../../../core_trust_runtime.h"
 #include "../../../frontend/frontend.h"
@@ -70,6 +71,7 @@ static char nc_core[400];     /* needs content: untrusted until the mode trusts 
 static char seeded[400];      /* in the first run's seed folder */
 static char broken[400];      /* a core file with no library */
 static char fw_core[400];     /* good_core's bytes; its info asks for firmware */
+static char fwb_core[400];    /* bad_core's bytes, with the same info */
 static char game[400];
 static char sub_game[400];
 
@@ -1323,6 +1325,274 @@ static void mode_fw_null(void)
          "missing firmware was told with its notification off");
 }
 
+/* What a firmware Cancel leaves as it was */
+struct fw_session
+{
+   char core[PATH_MAX_LENGTH];
+   char core_last[PATH_MAX_LENGTH];
+   char content[PATH_MAX_LENGTH];
+   char label[PATH_MAX_LENGTH];
+   char db[PATH_MAX_LENGTH];
+   char crc[32];
+   char info[PATH_MAX_LENGTH];
+   char title[PATH_MAX_LENGTH];
+   enum rarch_core_type type;
+   enum rarch_core_type explicit_type;
+   bool has_set_core;
+   unsigned subsystems;
+   dylib_t handle;
+};
+
+static struct fw_session fw_ran;
+static struct fw_session fw_now;
+
+static void fw_record(struct fw_session *s)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   content_state_t *p_content  = content_state_get_ptr();
+   core_info_t *info           = NULL;
+   strlcpy(s->core, path_get(RARCH_PATH_CORE), sizeof(s->core));
+   strlcpy(s->core_last, path_get(RARCH_PATH_CORE_LAST),
+         sizeof(s->core_last));
+   strlcpy(s->content, path_get(RARCH_PATH_CONTENT), sizeof(s->content));
+   strlcpy(s->label, runloop_st->name.label, sizeof(s->label));
+   strlcpy(s->db, p_content->companion_ui_db_name, sizeof(s->db));
+   strlcpy(s->crc, p_content->companion_ui_crc32, sizeof(s->crc));
+   strlcpy(s->info,
+         (core_info_get_current_core(&info) && info && info->path)
+         ? info->path : "", sizeof(s->info));
+   menu_entries_get_core_title(s->title, sizeof(s->title));
+   s->type          = runloop_st->current_core_type;
+   s->explicit_type = runloop_st->explicit_current_core_type;
+   s->has_set_core  = (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE) ? true : false;
+   s->subsystems    = runloop_st->subsystem_current_count;
+   s->handle        = runloop_st->lib_handle;
+}
+
+/* 1 when name's value changed, printed when say is set */
+static unsigned fw_differs(bool say, const char *name, const char *was,
+      const char *now)
+{
+   if (string_is_equal(was, now))
+      return 0;
+   if (say)
+      fprintf(stderr, "  %s: \"%s\", was \"%s\"\n", name, now, was);
+   return 1;
+}
+
+/* How much of the session fw_ran recorded fw_now no longer has, the
+ * running core and the menu up included */
+static unsigned fw_changes(bool say)
+{
+   unsigned n = 0;
+   n += fw_differs(say, "core", fw_ran.core, fw_now.core);
+   n += fw_differs(say, "core_last", fw_ran.core_last, fw_now.core_last);
+   n += fw_differs(say, "content", fw_ran.content, fw_now.content);
+   n += fw_differs(say, "label", fw_ran.label, fw_now.label);
+   n += fw_differs(say, "db", fw_ran.db, fw_now.db);
+   n += fw_differs(say, "crc", fw_ran.crc, fw_now.crc);
+   n += fw_differs(say, "core info", fw_ran.info, fw_now.info);
+   n += fw_differs(say, "menu title", fw_ran.title, fw_now.title);
+   if (fw_now.type != fw_ran.type)
+   {
+      if (say)
+         fprintf(stderr, "  core type: %d, was %d\n", (int)fw_now.type,
+               (int)fw_ran.type);
+      n++;
+   }
+   if (     fw_now.explicit_type != fw_ran.explicit_type
+         || fw_now.has_set_core  != fw_ran.has_set_core)
+   {
+      if (say)
+         fprintf(stderr, "  explicit core type: %d (set %d), was %d (set %d)\n",
+               (int)fw_now.explicit_type, (int)fw_now.has_set_core,
+               (int)fw_ran.explicit_type, (int)fw_ran.has_set_core);
+      n++;
+   }
+   if (fw_now.subsystems != fw_ran.subsystems)
+   {
+      if (say)
+         fprintf(stderr, "  subsystem count: %u, was %u\n",
+               fw_now.subsystems, fw_ran.subsystems);
+      n++;
+   }
+   if (     fw_now.handle != fw_ran.handle
+         || !(content_state_get_ptr()->flags & CONTENT_ST_FLAG_IS_INITED))
+   {
+      if (say)
+         fprintf(stderr, "  the running core was closed\n");
+      n++;
+   }
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+   {
+      if (say)
+         fprintf(stderr, "  the menu is down\n");
+      n++;
+   }
+   return n;
+}
+
+/* The load just started asks for its firmware; Cancel ends it */
+static bool fw_cancelled(void)
+{
+   unsigned i;
+   if (!fw_wait_box(600))
+      return false;
+   fw_answer(MENU_ACTION_CANCEL);
+   for (i = 0; i < 600 && (task_content_load_pending()
+            || runloop_is_content_switching()); i++)
+      fw_pump(1);
+   return !task_content_load_pending();
+}
+
+/* That Cancel leaves the session fw_ran recorded as it was */
+static void fw_check_kept(const char *what)
+{
+   bool cancelled = fw_cancelled();
+   fw_record(&fw_now);
+   if (cancelled && !fw_changes(false))
+      return;
+   CHECK(false, what);
+   if (!cancelled)
+      fprintf(stderr, "  no firmware box, or its Cancel did not end the load\n");
+   fw_changes(true);
+}
+
+static bool fw_runs_game(void)
+{
+   return runs(fw_core) && same_path(path_get(RARCH_PATH_CONTENT), game);
+}
+
+/* fw_core's Run on the dummy session, cancelled at its box, leaves the
+ * dummy session and the core the menu names as they were */
+static void fw_check_dummy_kept(const char *what)
+{
+   content_ctx_info_t info;
+   unsigned i;
+   for (i = 0; i < 600 && task_content_load_pending(); i++)
+      fw_pump(1);
+   fw_record(&fw_ran);
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, game,
+            "fw", &info, NULL, NULL), "the playlist Run was not started");
+   CHECK(fw_cancelled(), "no firmware box, or its Cancel did not end the Run");
+   fw_record(&fw_now);
+   CHECK(   is_dummy()
+         && string_is_empty(path_get(RARCH_PATH_CONTENT))
+         && string_is_equal(fw_now.title, fw_ran.title)
+         && string_is_equal(fw_now.info, fw_ran.info), what);
+   fw_differs(true, "menu title", fw_ran.title, fw_now.title);
+   fw_differs(true, "core info", fw_ran.info, fw_now.info);
+}
+
+/* A firmware box's Cancel leaves the session as it was: the game that
+ * runs, or the dummy session */
+static void mode_fw_cancel_restores(void)
+{
+   content_ctx_info_t info;
+   char other[300];
+   char fw[PATH_MAX_LENGTH];
+   unsigned boxes;
+   unsigned i;
+   snprintf(game, sizeof(game), "%s/title.bin", dir);
+   snprintf(other, sizeof(other), "%s/other.bin", dir);
+   write_file(game);
+   write_file(other);
+
+   /* On the dummy session no core path comes back to probe */
+   fw_check_dummy_kept(
+         "a Cancel on the dummy session left the cancelled Run's session");
+
+   /* fw_core is trusted with it: the store matches by hash */
+   staged_trust(good_core);
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(good_core, game,
+            "first", &info, NULL, NULL), "the first Run was not started");
+   CHECK(wait_for(good_runs_game, 600), "the first Run did not run");
+   fw_record(&fw_ran);
+
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, other,
+            "other", &info, NULL, NULL), "the playlist Run was not started");
+   fw_check_kept("a cancelled playlist Run changed the session");
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_new_core_from_menu(fw_core, other,
+            &info, CORE_TYPE_PLAIN, NULL, NULL),
+         "the load with a core was not started");
+   fw_check_kept("a cancelled load with a core changed the session");
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_new_core_from_companion_ui(fw_core,
+            other, "other", "db", "crc", &info, NULL, NULL),
+         "the companion load was not started");
+   fw_check_kept("a cancelled companion load changed the session");
+   CHECK(task_push_load_contentless_core_from_menu(fw_core),
+         "the contentless load was not started");
+   fw_check_kept("a cancelled contentless load changed the session");
+
+   /* A request while the box is up writes the session's identity too,
+    * and is turned away */
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, other,
+            "other", &info, NULL, NULL), "the playlist Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box");
+   CHECK(!task_push_load_contentless_core_from_menu(fw_core),
+         "a load started while another waited on its firmware box");
+   fw_check_kept("a turned away request outlived the Cancel");
+
+   /* Loads into the running core */
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, game,
+            "fw", &info, NULL, NULL), "the firmware core's Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box for the firmware core's Run");
+   fw_answer(MENU_ACTION_OK);
+   for (i = 0; i < 600 && !fw_runs_game(); i++)
+   {
+      fw_pump(1);
+      if (warning_up())
+         CHECK(answer(CORE_WARNING_ALWAYS_TRUST), "Always Trust not taken");
+   }
+   CHECK(fw_runs_game(), "the firmware core did not run");
+   fw_record(&fw_ran);
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_core(other, &info, CORE_TYPE_PLAIN,
+            NULL, NULL), "the load into the running core was not started");
+   fw_check_kept("a cancelled load into the running core changed the session");
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_current_core_from_companion_ui(other,
+            &info, CORE_TYPE_PLAIN, NULL, NULL),
+         "the companion load into the running core was not started");
+   fw_check_kept("a cancelled companion load into the running core changed the session");
+
+   /* A core that ran is probed by its Run before the box asks */
+   unload();
+   fw_check_dummy_kept(
+         "a trusted core's cancelled Run left it in the dummy session");
+
+   /* Past its box a load closes the old game: a re-run that asks again
+    * and is cancelled ends on the dummy session */
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(good_core, game,
+            "first", &info, NULL, NULL), "the first Run was not started again");
+   CHECK(wait_for(good_runs_game, 600), "the first Run did not run again");
+   snprintf(fw, sizeof(fw), "%s/system/harness", dir);
+   path_mkdir(fw);
+   strlcat(fw, "/fw.bin", sizeof(fw));
+   write_file(fw);
+   boxes = fw_boxes;
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fwb_core, other,
+            "other", &info, NULL, NULL), "the untrusted Run was not started");
+   for (i = 0; i < 600 && !warning_up(); i++)
+      fw_pump(1);
+   CHECK(warning_up() && fw_boxes == boxes,
+         "no Security Warning, or a firmware box, for the untrusted Run");
+   remove(fw);
+   CHECK(answer(CORE_WARNING_ALWAYS_TRUST), "Always Trust not taken");
+   CHECK(fw_cancelled(), "the re-run did not ask for the firmware that went away");
+   CHECK(is_dummy() && !same_path(path_get(RARCH_PATH_CONTENT), game),
+         "a cancelled re-run left a phantom session or restored the closed game");
+}
+
 #ifdef HAVE_NETWORKGAMEPAD
 static bool pad_runs(void) { return core_is(CORE_TYPE_NETRETROPAD); }
 
@@ -1532,6 +1802,8 @@ static void clean_run(void)
       remove(broken);
    if (*fw_core)
       remove(fw_core);
+   if (*fwb_core)
+      remove(fwb_core);
    rmdir(cores);
    if (*seeded)
       remove(seeded);
@@ -1564,6 +1836,7 @@ static void clean_run(void)
    remove_in(dir, "core_probe.cache");
    remove_in(dir, "core_info.cache");
    remove_in(dir, "fw_libretro.info");
+   remove_in(dir, "fwb_libretro.info");
    remove_in(dir, "seeded_libretro.info");
    remove_in(dir, "other.bin");
    remove_in(dir, "system/harness/fw.bin");
@@ -1723,15 +1996,18 @@ static bool fw_info_write(const char *name)
    return true;
 }
 
-/* fw_core in a fw- mode, with fw_info_write's info */
+/* fw_core and fwb_core in a fw- mode, with fw_info_write's info */
 static bool fw_setup(const char *argv0)
 {
    char path[PATH_MAX_LENGTH];
    snprintf(fw_core, sizeof(fw_core), "%s/fw_libretro.%s", cores, ext);
+   snprintf(fwb_core, sizeof(fwb_core), "%s/fwb_libretro.%s", cores, ext);
    snprintf(path, sizeof(path), "%s/system", dir);
    return path_mkdir(path)
       && copy_beside(argv0, "harness_core.so", fw_core)
-      && fw_info_write("fw_libretro.info");
+      && copy_beside(argv0, "harness_core_b.so", fwb_core)
+      && fw_info_write("fw_libretro.info")
+      && fw_info_write("fwb_libretro.info");
 }
 
 int main(int argc, char *argv[])
@@ -2142,6 +2418,8 @@ int main(int argc, char *argv[])
          mode_fw_null();
       else if (string_is_equal(mode, "fw-twice"))
          mode_fw_twice();
+      else if (string_is_equal(mode, "fw-cancel-restores"))
+         mode_fw_cancel_restores();
       else if (string_is_equal(mode, "builtin"))
 #ifdef HAVE_NETWORKGAMEPAD
          mode_builtin();

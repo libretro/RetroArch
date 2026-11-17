@@ -12,7 +12,7 @@ MODES  := startup startup-always startup-outside startup-cached \
           load-core-moved load-core-broken null-load-core seed \
           seed-said runahead \
           load-once park-ends builtin fw-stack fw-contentless \
-          fw-hidden-confirm fw-null fw-twice
+          fw-hidden-confirm fw-null fw-twice fw-cancel-restores
 
 all:
 	@MAKE_ARGS="$(MAKE_ARGS)" ./build.sh

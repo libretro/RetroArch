@@ -2701,6 +2701,133 @@ bool task_content_load_pending(void)
    return content_load_job.stage != CONTENT_LOAD_STAGE_NONE;
 }
 
+#ifdef HAVE_MENU
+/* The session an entry point is about to write the next load's
+ * identity over: what a firmware Cancel puts back */
+static struct content_load_prev
+{
+   char core[PATH_MAX_LENGTH];
+   char core_last[PATH_MAX_LENGTH];
+   char content[PATH_MAX_LENGTH];
+   char label[PATH_MAX_LENGTH];
+   char db_name[PATH_MAX_LENGTH];
+   char crc32[32];
+   char library_name[NAME_MAX_LENGTH];
+   char library_version[64];
+   char valid_extensions[256];
+   char core_info_path[PATH_MAX_LENGTH];
+   struct retro_system_info sysinfo;
+   enum rarch_core_type type;
+   enum rarch_core_type explicit_type;
+   unsigned subsystem_current_count;
+   bool load_no_content;
+   bool has_set_core;
+   bool valid;
+} content_load_prev;
+
+/* A load in flight, or deferred, keeps the one taken for it: a second
+ * request writes over the session too, before content_load() turns it
+ * away. */
+static void content_load_prev_save(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   content_state_t *p_content  = content_state_get_ptr();
+   core_info_t *core_info      = NULL;
+   if (     task_content_load_pending()
+         || (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING))
+      return;
+   strlcpy(content_load_prev.core, path_get(RARCH_PATH_CORE),
+         sizeof(content_load_prev.core));
+   strlcpy(content_load_prev.core_last, path_get(RARCH_PATH_CORE_LAST),
+         sizeof(content_load_prev.core_last));
+   strlcpy(content_load_prev.content, path_get(RARCH_PATH_CONTENT),
+         sizeof(content_load_prev.content));
+   strlcpy(content_load_prev.label, runloop_st->name.label,
+         sizeof(content_load_prev.label));
+   strlcpy(content_load_prev.db_name, p_content->companion_ui_db_name,
+         sizeof(content_load_prev.db_name));
+   strlcpy(content_load_prev.crc32, p_content->companion_ui_crc32,
+         sizeof(content_load_prev.crc32));
+   strlcpy(content_load_prev.library_name, runloop_st->current_library_name,
+         sizeof(content_load_prev.library_name));
+   strlcpy(content_load_prev.library_version,
+         runloop_st->current_library_version,
+         sizeof(content_load_prev.library_version));
+   strlcpy(content_load_prev.valid_extensions,
+         runloop_st->current_valid_extensions,
+         sizeof(content_load_prev.valid_extensions));
+   core_info_get_current_core(&core_info);
+   strlcpy(content_load_prev.core_info_path,
+         (core_info && core_info->path) ? core_info->path : "",
+         sizeof(content_load_prev.core_info_path));
+   content_load_prev.sysinfo         = runloop_st->system.info;
+   content_load_prev.load_no_content = runloop_st->system.load_no_content;
+   content_load_prev.type          = runloop_st->current_core_type;
+   content_load_prev.explicit_type = runloop_st->explicit_current_core_type;
+   content_load_prev.has_set_core  =
+      (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE) ? true : false;
+   content_load_prev.subsystem_current_count =
+      runloop_st->subsystem_current_count;
+   content_load_prev.valid         = true;
+}
+
+static void content_load_prev_restore(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   content_state_t *p_content  = content_state_get_ptr();
+   if (!content_load_prev.valid)
+      return;
+   content_load_prev.valid = false;
+   path_set(RARCH_PATH_CORE, content_load_prev.core);
+   path_set(RARCH_PATH_CORE_LAST, content_load_prev.core_last);
+   path_set(RARCH_PATH_CONTENT, content_load_prev.content);
+   strlcpy(runloop_st->name.label, content_load_prev.label,
+         sizeof(runloop_st->name.label));
+   strlcpy(p_content->companion_ui_db_name, content_load_prev.db_name,
+         sizeof(p_content->companion_ui_db_name));
+   strlcpy(p_content->companion_ui_crc32, content_load_prev.crc32,
+         sizeof(p_content->companion_ui_crc32));
+   /* Directly: runloop_set_current_core_type() keeps the type an entry
+    * point set until the next core init */
+   runloop_st->current_core_type          = content_load_prev.type;
+   runloop_st->explicit_current_core_type = content_load_prev.explicit_type;
+   if (content_load_prev.has_set_core)
+      runloop_st->flags |=  RUNLOOP_FLAG_HAS_SET_CORE;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
+   /* The core the menu names, which the entry point's probe replaced.
+    * The strings sysinfo points at are these buffers, or the old
+    * core's own, still open until DEINIT. */
+   strlcpy(runloop_st->current_library_name, content_load_prev.library_name,
+         sizeof(runloop_st->current_library_name));
+   strlcpy(runloop_st->current_library_version,
+         content_load_prev.library_version,
+         sizeof(runloop_st->current_library_version));
+   strlcpy(runloop_st->current_valid_extensions,
+         content_load_prev.valid_extensions,
+         sizeof(runloop_st->current_valid_extensions));
+   runloop_st->system.info            = content_load_prev.sysinfo;
+   runloop_st->system.load_no_content = content_load_prev.load_no_content;
+   core_info_load(content_load_prev.core_info_path);
+#ifdef HAVE_DYNAMIC
+   /* Its subsystems, which the probe replaced too. A dummy session
+    * that named no core has none, and a refused core's open would
+    * only be refused again. */
+   if (     *content_load_prev.core
+         && !(   content_load_prev.type == CORE_TYPE_DUMMY
+              && !*content_load_prev.library_name)
+#ifdef HAVE_CORE_LOAD_CHECK
+         && !core_load_check_refused(content_load_prev.core)
+#endif
+      )
+      command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+   /* After the probe, which zeroes it */
+   runloop_st->subsystem_current_count =
+      content_load_prev.subsystem_current_count;
+}
+#endif
+
 /* The entry point's after-load work, and the job's end. */
 static void content_load_finish(struct content_load_job *job,
       content_state_t *p_content)
@@ -2713,6 +2840,7 @@ static void content_load_finish(struct content_load_job *job,
    /* A library opened for a core stage that never took it */
    runloop_core_preload_cancel();
 #ifdef HAVE_MENU
+   content_load_prev.valid = false;
    /* A Load State slot asked for with this load, left over when the
     * load failed before the content came up */
    {
@@ -2827,6 +2955,9 @@ static void content_load_parked_run(void *ud)
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    content_state_t *p_content    = content_state_get_ptr();
    int i;
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    path_set(RARCH_PATH_CORE, d->core_path);
    if (d->content_path)
       path_set(RARCH_PATH_CONTENT, d->content_path);
@@ -3144,10 +3275,13 @@ static void content_load_step(struct content_load_job *job,
             break;
          if (job->firmware && job->firmware->cancelled)
          {
+            content_load_prev_restore();
             job->after |= CONTENT_LOAD_AFTER_MENU_ON_FAIL;
             content_load_finish(job, p_content);
             break;
          }
+         /* The old session closes now: nothing to put back */
+         content_load_prev.valid = false;
 #endif
          job->stage = CONTENT_LOAD_STAGE_DEINIT;
          break;
@@ -3834,6 +3968,7 @@ bool task_push_load_content_from_playlist_from_menu(
    bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
 #endif
 
+   content_load_prev_save();
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
    if (label)
@@ -3926,6 +4061,9 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
    if (!content_info->environ_get)
@@ -4009,6 +4147,7 @@ bool task_push_load_contentless_core_from_menu(
    if (!core_path || !*core_path)
       return false;
 
+   content_load_prev_save();
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
    /* Set core path */
@@ -4326,6 +4465,7 @@ bool task_push_load_content_with_new_core_from_menu(
             type, cb, user_data);
 #endif
 
+   content_load_prev_save();
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
    runloop_st->name.label[0]               = '\0';
@@ -4459,6 +4599,9 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content = content_state_get_ptr();
 
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    p_content->companion_ui_db_name[0] = '\0';
    p_content->companion_ui_crc32[0]   = '\0';
 
@@ -4522,6 +4665,9 @@ bool task_push_load_content_with_core(
       retro_task_callback_t cb,
       void *user_data)
 {
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    path_set(RARCH_PATH_CONTENT, fullpath);
    return task_load_content_internal_wrap(content_info, type, false);
 }
@@ -4535,6 +4681,9 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 {
    content_state_t  *p_content = content_state_get_ptr();
 
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    /* TODO/FIXME: Enable setting of these values
     * via function arguments */
    p_content->companion_ui_db_name[0] = '\0';
@@ -4560,6 +4709,9 @@ bool task_push_load_subsystem_with_core(
    content_state_t  *p_content = content_state_get_ptr();
    runloop_state_t *runloop_st = runloop_state_get_ptr();
 
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    /* The content label is global state that survives until
     * the next content load overwrites it, and it is what
     * task_push_to_history_list() writes into the history
