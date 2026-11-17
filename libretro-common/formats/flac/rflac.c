@@ -6371,6 +6371,7 @@ struct rflac_ctx
    float             *out_f32;
    size_t             out_frames;
    size_t             out_done;
+   int                discard;      /* consume PCM without interleaving */
    int                ended;
    size_t             span_taken;    /* of the current span, last call   */
    int                eof_in;        /* caller has no more input to give */
@@ -6704,7 +6705,7 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
 
    if (!f->dec)
       return RFLAC_PROCESS_ERROR;
-   if (!f->out_s16 && !f->out_f32)
+   if (!f->discard && !f->out_s16 && !f->out_f32)
       return RFLAC_PROCESS_NEXT;
    if (f->out_done >= f->out_frames)
       return RFLAC_PROCESS_NEXT;
@@ -6749,7 +6750,9 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
 
    f->src.underrun = 0;
 
-   if (f->out_s16)
+   if (f->discard)
+      produced = (size_t)rflac_read_pcm_frames_s16(f->dec, want, NULL);
+   else if (f->out_s16)
       produced = (size_t)rflac_read_pcm_frames_s16(f->dec, want,
             f->out_s16 + f->out_done * f->fmt.channels);
    else
@@ -7024,6 +7027,7 @@ void rflac_set_out_s16(rflac_t *f, int16_t *out, size_t out_frames)
    f->out_f32    = NULL;
    f->out_frames = out_frames;
    f->out_done   = 0;
+   f->discard    = 0;
 }
 
 void rflac_set_out_f32(rflac_t *f, float *out, size_t out_frames)
@@ -7034,6 +7038,18 @@ void rflac_set_out_f32(rflac_t *f, float *out, size_t out_frames)
    f->out_s16    = NULL;
    f->out_frames = out_frames;
    f->out_done   = 0;
+   f->discard    = 0;
+}
+
+void rflac_set_out_discard(rflac_t *f, size_t frames)
+{
+   if (!f)
+      return;
+   f->out_s16    = NULL;
+   f->out_f32    = NULL;
+   f->out_frames = frames;
+   f->out_done   = 0;
+   f->discard    = 1;
 }
 
 const rflac_format_t *rflac_format(const rflac_t *f)

@@ -561,6 +561,7 @@ struct audio_transfer_flac
    const void *data;    /* encoded bytes from set_buffer_ptr (caller-owned) */
    size_t      size;
    rflac_t    *handle;  /* opened decoder, NULL until start() succeeds      */
+   unsigned requested_track; /* zero: automatic; otherwise container index + 1 */
    int         fed_hdr; /* setup bytes handed over                          */
    size_t      cursor;  /* bytes of the logical stream handed to the decoder*/
    /* FLAC inside a container.  rflac wants a native fLaC stream; a
@@ -725,6 +726,7 @@ struct audio_transfer_vorbis
    const void *data;
    size_t      size;
    rvorbis    *handle;
+   unsigned requested_track; /* zero: automatic; otherwise container index + 1 */
    int         channels; /* cached from rvorbis_get_info at start           */
    /* Demuxed-input path (set_demuxed_ptr): the container's CodecPrivate
     * (the 3 xiph-laced Vorbis headers) and the concatenated audio packets.
@@ -1019,6 +1021,7 @@ struct audio_transfer_opus
     * does. */
    const uint8_t *buf;
    size_t      buf_size;
+   unsigned requested_track; /* zero: automatic; otherwise container index + 1 */
    int         ogg;          /* buffer is an Ogg Opus stream             */
 #ifdef HAVE_RWEBM
    rwebm_t    *demux;        /* buffer is WebM audio (.weba)             */
@@ -1770,6 +1773,7 @@ struct audio_transfer_aac
    const uint32_t *pkt_sizes;
    size_t      num_packets;
    raac_t     *handle;
+   unsigned requested_track; /* zero: automatic; otherwise container index + 1 */
    unsigned    channels;
    size_t      pkt_index;   /* next packet to decode                     */
    size_t      pkt_offset;  /* byte offset of that packet                */
@@ -2239,7 +2243,7 @@ static bool audio_transfer_vorbis_stream_seek(
    size_t   hi  = v->size;
    unsigned ch  = (unsigned)((v->channels > 0 && v->channels <= 8)
          ? v->channels : 8);
-   size_t   cap = sizeof(scratch) / sizeof(scratch[0]) / ch;
+   size_t   cap = 2048 / ch;
    size_t   start;
    int      guard;
 
@@ -2898,8 +2902,8 @@ static rwebm_t *audio_transfer_webm_open(const uint8_t *data, size_t size,
 }
 #endif
 
-enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
-      size_t len)
+enum audio_type_enum audio_transfer_webm_audio_track_type(const void *buf,
+      size_t len, int track)
 {
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
  || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) || defined(HAVE_RFLAC))
@@ -2907,7 +2911,7 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
    int i;
    enum audio_type_enum found = AUDIO_TYPE_NONE;
    const uint8_t *b = (const uint8_t*)buf;
-   if (!b || len < 4
+   if (track < -1 || !b || len < 4
          || b[0] != 0x1A || b[1] != 0x45 || b[2] != 0xDF || b[3] != 0xA3)
       return AUDIO_TYPE_NONE;
    if (!(wm = audio_transfer_webm_open(b, len, 0)))
@@ -2915,7 +2919,7 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
    for (i = 0; i < rwebm_num_tracks(wm) && found == AUDIO_TYPE_NONE; i++)
    {
       const rwebm_track *t = rwebm_get_track(wm, i);
-      if (!t || t->type != RWEBM_TRACK_AUDIO || !t->codec_private_size)
+      if ((track >= 0 && i != track) || !t || t->type != RWEBM_TRACK_AUDIO || !t->codec_private_size)
          continue;
 #ifdef HAVE_ROPUS
       if (t->codec == RWEBM_CODEC_OPUS)
@@ -2939,8 +2943,158 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
 #else
    (void)buf;
    (void)len;
+   (void)track;
    return AUDIO_TYPE_NONE;
 #endif
+}
+
+enum audio_type_enum audio_transfer_webm_audio_type(const void *buf, size_t len)
+{
+   return audio_transfer_webm_audio_track_type(buf, len, -1);
+}
+
+/* Explicit choices use the demuxer's index, including non-audio entries.
+ * A different codec or missing track must fail instead of falling back. */
+#if (defined(HAVE_RWEBM) && (defined(HAVE_RFLAC) || defined(HAVE_RVORBIS) \
+      || defined(HAVE_ROPUS) || defined(HAVE_RAAC))) \
+      || (defined(HAVE_RMP4) && defined(HAVE_RAAC))
+static bool audio_transfer_track_container(const void *data, size_t size,
+      size_t avail, bool mp4)
+{
+   const uint8_t *bytes = (const uint8_t*)data;
+   if (!bytes || size < 4 || (avail && avail < 4))
+      return false;
+#ifdef HAVE_RWEBM
+   if (bytes[0] == 0x1a && bytes[1] == 0x45
+         && bytes[2] == 0xdf && bytes[3] == 0xa3)
+      return true;
+#endif
+#ifdef HAVE_RMP4
+   if (mp4 && size >= 8 && (!avail || avail >= 8))
+   {
+      uint32_t box = (uint32_t)bytes[0] << 24 | (uint32_t)bytes[1] << 16
+         | (uint32_t)bytes[2] << 8 | bytes[3];
+      return !box || box == 1 || (box >= 8 && box <= size);
+   }
+#else
+   (void)mp4;
+#endif
+   return false;
+}
+#endif
+
+bool audio_transfer_set_container_track(void *data, enum audio_type_enum type,
+      int track)
+{
+   if (!data || track < -1)
+      return false;
+   switch (type)
+   {
+#if defined(HAVE_RFLAC) && defined(HAVE_RWEBM)
+      case AUDIO_TYPE_FLAC:
+      {
+         struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
+         if (fl->handle || fl->demux || (track >= 0
+               && !audio_transfer_track_container(fl->data, fl->size, fl->avail, false)))
+            return false;
+         fl->requested_track = (unsigned)track + 1;
+         return true;
+      }
+#endif
+#if defined(HAVE_RVORBIS) && defined(HAVE_RWEBM)
+      case AUDIO_TYPE_VORBIS:
+      {
+         struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
+         if (v->handle || v->demux || (track >= 0
+               && !audio_transfer_track_container(v->data, v->size, v->avail, false)))
+            return false;
+         v->requested_track = (unsigned)track + 1;
+         return true;
+      }
+#endif
+#if defined(HAVE_ROPUS) && defined(HAVE_RWEBM)
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (op->handle || op->demux || (track >= 0
+               && !audio_transfer_track_container(op->buf, op->buf_size, op->avail, false)))
+            return false;
+         op->requested_track = (unsigned)track + 1;
+         return true;
+      }
+#endif
+#if defined(HAVE_RAAC) && (defined(HAVE_RWEBM) || defined(HAVE_RMP4))
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (ac->handle
+#ifdef HAVE_RWEBM
+               || ac->wdemux
+#endif
+#ifdef HAVE_RMP4
+               || ac->demux
+#endif
+               || (track >= 0 && !audio_transfer_track_container(ac->buf,
+                     ac->buf_size, ac->avail, true)))
+            return false;
+         ac->requested_track = (unsigned)track + 1;
+         return true;
+      }
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+int audio_transfer_container_track(const void *data, enum audio_type_enum type)
+{
+   if (!data)
+      return -1;
+   switch (type)
+   {
+#if defined(HAVE_RFLAC) && defined(HAVE_RWEBM)
+      case AUDIO_TYPE_FLAC:
+      {
+         const struct audio_transfer_flac *fl = (const struct audio_transfer_flac*)data;
+         return fl->handle && fl->demux ? fl->track_idx : -1;
+      }
+#endif
+#if defined(HAVE_RVORBIS) && defined(HAVE_RWEBM)
+      case AUDIO_TYPE_VORBIS:
+      {
+         const struct audio_transfer_vorbis *v = (const struct audio_transfer_vorbis*)data;
+         return v->handle && v->demux ? v->track_idx : -1;
+      }
+#endif
+#if defined(HAVE_ROPUS) && defined(HAVE_RWEBM)
+      case AUDIO_TYPE_OPUS:
+      {
+         const struct audio_transfer_opus *op = (const struct audio_transfer_opus*)data;
+         return op->handle && op->demux ? op->track_idx : -1;
+      }
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         const struct audio_transfer_aac *ac = (const struct audio_transfer_aac*)data;
+         if (!ac->handle)
+            return -1;
+#ifdef HAVE_RWEBM
+         if (ac->wdemux)
+            return ac->wtrack_idx;
+#endif
+#ifdef HAVE_RMP4
+         if (ac->demux)
+            return ac->track_idx;
+#endif
+         break;
+      }
+#endif
+      default:
+         break;
+   }
+   return -1;
 }
 
 /* ---- a file's arm from its bytes ------------------------------------ */
@@ -3578,7 +3732,9 @@ static size_t audio_transfer_flac_pull(struct audio_transfer_flac *fl,
 {
    size_t produced = 0;
 
-   if (as_float)
+   if (!out)
+      rflac_set_out_discard(fl->handle, frames);
+   else if (as_float)
       rflac_set_out_f32(fl->handle, (float*)out, frames);
    else
       rflac_set_out_s16(fl->handle, (int16_t*)out, frames);
@@ -3604,8 +3760,7 @@ static size_t audio_transfer_flac_pull(struct audio_transfer_flac *fl,
    return produced;
 }
 
-/* How many frames a decode-forward step may ask for into a scratch of
- * @samples s16: the scratch holds frames times channels, and FLAC goes
+/* Bound a decode-forward step to @samples across all channels. FLAC goes
  * up to eight channels.  Before the header is read the count is not
  * known, so the step assumes the most. */
 static size_t audio_transfer_flac_step_frames(
@@ -3622,7 +3777,6 @@ static size_t audio_transfer_flac_step_frames(
 static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
       uint64_t frame)
 {
-   int16_t scratch[1024 * 2];
    uint64_t at;
 
    if (!fl || !fl->handle)
@@ -3662,14 +3816,13 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
          landed = rflac_tell(fl->handle);
          for (; landed < frame; )
          {
-            int16_t skip[1024 * 2];
             size_t  want = (size_t)(frame - landed);
             size_t  most = audio_transfer_flac_step_frames(fl,
-                  sizeof(skip) / sizeof(skip[0]));
+                  2048);
             size_t  got;
             if (want > most)
                want = most;
-            got = audio_transfer_flac_pull(fl, skip, want, 0);
+            got = audio_transfer_flac_pull(fl, NULL, want, 0);
             if (!got)
                break;
             landed += got;
@@ -3698,11 +3851,11 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
    {
       size_t want = (size_t)(frame - at);
       size_t most = audio_transfer_flac_step_frames(fl,
-            sizeof(scratch) / sizeof(scratch[0]));
+            2048);
       size_t got;
       if (want > most)
          want = most;
-      got = audio_transfer_flac_pull(fl, scratch, want, 0);
+      got = audio_transfer_flac_pull(fl, NULL, want, 0);
       if (!got)
          return 0;
       at += got;
@@ -4018,7 +4171,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_FLAC:
       {
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
-         if (!fl)
+         if (!fl || (fl->requested_track && fl->setup))
             return false;
          /* A demuxed caller supplies no buffer, so the bytes have to
           * come from one source or the other. */
@@ -4098,7 +4251,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             for (i = 0; i < rwebm_num_tracks(fl->demux); i++)
             {
                const rwebm_track *t = rwebm_get_track(fl->demux, i);
-               if (t && t->type == RWEBM_TRACK_AUDIO
+               if ((!fl->requested_track || fl->requested_track - 1 == (unsigned)i)
+                     && t && t->type == RWEBM_TRACK_AUDIO
                      && t->codec == RWEBM_CODEC_FLAC
                      && t->codec_private_size >= 4)
                {
@@ -4133,7 +4287,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          int64_t duration_ns = 0;
 #endif
          int     err         = 0;
-         if (!v)
+         if (!v || (v->requested_track && v->setup))
             return false;
          v->limit   = -1;
          v->emitted = 0;
@@ -4160,7 +4314,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             for (i = 0; i < rwebm_num_tracks(v->demux); i++)
             {
                const rwebm_track *t = rwebm_get_track(v->demux, i);
-               if (t && t->type == RWEBM_TRACK_AUDIO
+               if ((!v->requested_track || v->requested_track - 1 == (unsigned)i)
+                     && t && t->type == RWEBM_TRACK_AUDIO
                      && t->codec == RWEBM_CODEC_VORBIS
                      && t->codec_private_size)
                {
@@ -4490,7 +4645,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_OPUS:
       {
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
-         if (!op)
+         if (!op || (op->requested_track && op->setup))
             return false;
          /* Unbounded unless a container says otherwise.  The two buffer
           * modes below work a bound out and overwrite this; the demuxed
@@ -4518,7 +4673,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             for (i = 0; i < rwebm_num_tracks(op->demux); i++)
             {
                const rwebm_track *t = rwebm_get_track(op->demux, i);
-               if (t && t->type == RWEBM_TRACK_AUDIO
+               if ((!op->requested_track || op->requested_track - 1 == (unsigned)i)
+                     && t && t->type == RWEBM_TRACK_AUDIO
                      && t->codec == RWEBM_CODEC_OPUS
                      && t->codec_private_size)
                {
@@ -4783,7 +4939,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
          raac_adts_t                adts;
-         if (!ac)
+         if (!ac || (ac->requested_track && ac->setup))
             return false;
          ac->limit = -1;   /* unbounded unless a container says otherwise */
          memset(&ac->time, 0, sizeof(ac->time));
@@ -4795,6 +4951,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                && raac_adts_parse(ac->buf, ac->buf_size, &adts) == 0)
          {
             unsigned chcfg = (adts.asc[1] >> 3) & 15;
+            if (ac->requested_track)
+               return false;
             if ((adts.asc[0] >> 3) != 2 || chcfg < 1 || chcfg > 2)
                return false;
             ac->handle = raac_open(adts.asc, sizeof(adts.asc));
@@ -4826,7 +4984,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             for (i = 0; i < rwebm_num_tracks(ac->wdemux); i++)
             {
                const rwebm_track *t = rwebm_get_track(ac->wdemux, i);
-               if (t && t->type == RWEBM_TRACK_AUDIO
+               if ((!ac->requested_track || ac->requested_track - 1 == (unsigned)i)
+                     && t && t->type == RWEBM_TRACK_AUDIO
                      && t->codec == RWEBM_CODEC_AAC
                      && t->codec_private_size)
                {
@@ -4881,7 +5040,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             for (i = 0; i < rmp4_num_tracks(ac->demux); i++)
             {
                const rmp4_track *t = rmp4_get_track(ac->demux, i);
-               if (t && t->type == RMP4_TRACK_AUDIO
+               if ((!ac->requested_track || ac->requested_track - 1 == (unsigned)i)
+                     && t && t->type == RMP4_TRACK_AUDIO
                      && t->codec == RMP4_CODEC_AAC
                      && t->codec_private_size)
                {
@@ -7599,7 +7759,7 @@ static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
     * counted here are the frames a playthrough emits. */
    while (v->emitted < target)
    {
-      size_t cap  = sizeof(skip) / sizeof(skip[0]) / (size_t)v->channels;
+      size_t cap  = 2048 / (size_t)v->channels;
       size_t want = (size_t)(target - v->emitted);
       if (!cap)
          return false;

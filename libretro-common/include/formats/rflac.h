@@ -160,6 +160,12 @@ void rflac_set_out_s16(rflac_t *f, int16_t *out, size_t out_frames);
  */
 void rflac_set_out_f32(rflac_t *f, float *out, size_t out_frames);
 
+/* Consume up to frames without converting/interleaving discarded PCM.
+ * rflac_process keeps its usual input, one-coded-frame work and rollback
+ * contracts; wrote reports discarded frames. The next set_out call replaces
+ * this mode. Useful for seek preroll without a scratch buffer or PCM copy. */
+void rflac_set_out_discard(rflac_t *f, size_t frames);
+
 /**
  * rflac_process:
  * @f          : decoder
