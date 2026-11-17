@@ -62,6 +62,12 @@ void net_rtmp_client_cancel(net_rtmp_client_t *c)
    c->wire_live = false;
 }
 
+uint32_t record_mf_audio_error(const record_mf_audio_t *e)
+{
+   (void)e;
+   return 0;
+}
+
 record_mf_audio_t *record_mf_audio_new(unsigned rate, unsigned channels, unsigned bitrate)
 {
    record_mf_audio_t *e;

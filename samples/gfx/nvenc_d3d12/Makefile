@@ -18,8 +18,8 @@ all: hdr_capture_test$(EXE) hdr_capture_test_sdk$(EXE) $(TARGET) $(SDK_TARGET) w
 ifeq ($(EXE),.exe)
 all: stream_device_test.exe
 endif
-stream_device_test.exe: $(SRC) $(CAPTURE) $(WORKER) $(MUX) $(OUTPUT) $(METADATA) output_pipeline.h $(RA)/record/record_stream_gpu.c $(RA)/record/record_stream_gpu.h $(RA)/record/record_gpu_output_config.h $(RA)/record/record_stream_d3d12.c $(RA)/record/record_mf_audio.c $(STREAM_NET) $(STREAM_COMMON)
-	$(CC) $(CFLAGS) -D_WIN32_WINNT=0x0601 -DNVENC_TEST_STREAM -DHAVE_D3D12 -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -DHAVE_CRYPTO -DHAVE_SSL -DHAVE_RETROSSL -flto -fwhole-program -ffunction-sections -fdata-sections -o $@ $(SRC) $(RA)/record/record_mf_audio.c $(STREAM_NET) $(STREAM_COMMON) $(LDFLAGS) -flto -Wl,--gc-sections -lm -ld3d12 -ldxguid -lws2_32
+stream_device_test.exe: $(SRC) $(CAPTURE) $(WORKER) $(MUX) $(OUTPUT) $(METADATA) output_pipeline.h $(RA)/record/record_stream_gpu.c $(RA)/record/record_aac_audio.c $(RA)/record/record_aac_audio.h $(RA)/record/record_mf_audio.h $(RA)/record/record_stream_gpu.h $(RA)/record/record_gpu_output_config.h $(RA)/record/record_stream_d3d12.c $(RA)/record/record_mf_audio.c $(STREAM_NET) $(STREAM_COMMON)
+	$(CC) $(CFLAGS) -D_WIN32_WINNT=0x0601 -DNVENC_TEST_STREAM -DHAVE_D3D12 -DHAVE_MF_AUDIO -DHAVE_RTMP -DHAVE_RFLV -DHAVE_CRYPTO -DHAVE_SSL -DHAVE_RETROSSL -flto -fwhole-program -ffunction-sections -fdata-sections -o $@ $(SRC) $(RA)/record/record_aac_audio.c $(RA)/record/record_mf_audio.c $(STREAM_NET) $(STREAM_COMMON) $(LDFLAGS) -flto -Wl,--gc-sections -lm -ld3d12 -ldxguid -lws2_32
 $(TARGET): $(SRC) $(CAPTURE) $(WORKER) $(MUX) $(OUTPUT) $(METADATA) $(RA)/record/record_gpu_queue.h $(RA)/gfx/common/nvenc_d3d12.c $(RA)/gfx/common/nvenc_d3d12.h $(RA)/deps/nvenc/nvEncodeAPI.h
 	$(CC) $(CFLAGS) -o $@ $(SRC) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),-ld3d12 -ldxguid,)
 $(SDK_TARGET): $(SRC) $(CAPTURE) $(WORKER) $(MUX) $(OUTPUT) $(METADATA) $(RA)/record/record_gpu_queue.h $(RA)/gfx/common/nvenc_d3d12.c $(RA)/gfx/common/nvenc_d3d12.h $(RA)/deps/nvenc/nvEncodeAPI.h

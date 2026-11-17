@@ -14,13 +14,13 @@ for d3d, vulkan, audio in ((0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1), (1, 1, 0)
                  HAVE_D3D12=d3d, HAVE_RECORD_VULKAN=vulkan, HAVE_MF_AUDIO=audio)
     source = 'OBJ :=\n' + ''.join(f'{key} := {value}\n' for key, value in flags.items())
     source += 'include Makefile.common\n.PHONY: probe\nprobe:\n'
-    source += '\t@echo $(filter record/record_stream_%.o,$(OBJ))\n'
+    source += '\t@echo $(filter record/record_stream_%.o record/record_aac_audio.o,$(OBJ))\n'
     result = subprocess.run([a.make, '--no-print-directory', '-f', '-', 'probe'],
                             cwd=root, input=source, text=True, capture_output=True, check=True)
     actual = result.stdout.split()
     expected = []
     if audio and (d3d or vulkan):
-        expected.append('record/record_stream_gpu.o')
+        expected += ['record/record_stream_gpu.o', 'record/record_aac_audio.o']
         if d3d:
             expected.append('record/record_stream_d3d12.o')
         if vulkan:
