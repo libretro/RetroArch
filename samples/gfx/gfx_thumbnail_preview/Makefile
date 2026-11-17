@@ -492,3 +492,13 @@ distclean: clean
 	rm -rf fixtures
 
 .PHONY: bench all check audio-timeline-check fixtures clean distclean
+
+# Checked-in two-tone, two-audio-track movies: no runtime encoder needed.
+audio-track-check: $(AUDIO_FEED_TARGET)
+	./$(AUDIO_FEED_TARGET) --selected-track mp4 $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/aac-mp4.bin
+	./$(AUDIO_FEED_TARGET) --selected-track webm $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/aac-webm.bin
+	./$(AUDIO_FEED_TARGET) --selected-track webm $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/opus.bin
+	./$(AUDIO_FEED_TARGET) --selected-track webm $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/vorbis.bin
+.PHONY: audio-track-check
+
+check: audio-track-check

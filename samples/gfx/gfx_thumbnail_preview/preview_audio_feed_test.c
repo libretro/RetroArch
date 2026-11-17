@@ -401,7 +401,7 @@ static int run_one(const char *path, unsigned rate)
 }
 
 static int prepared_session(const char *path, bool s16, bool webm,
-      int64_t target_us)
+      int64_t target_us, int track)
 {
    FILE *file = fopen(path, "rb");
    uint8_t *data = NULL;
@@ -425,10 +425,11 @@ static int prepared_session(const char *path, bool s16, bool webm,
    size = (size_t)length;
    data = (uint8_t*)malloc(size);
    if (!data || fread(data, 1, size, file) != size) goto done;
-   if (webm) type = audio_transfer_webm_audio_type(data, size);
+   if (webm) type = audio_transfer_webm_audio_track_type(data, size, track);
    reference = audio_transfer_new(type);
    if (!reference) goto done;
    audio_transfer_set_buffer_ptr(reference, type, data, size);
+   if (!audio_transfer_set_container_track(reference, type, track)) goto done;
    if (!audio_transfer_start(reference, type)
          || !audio_transfer_info(reference, type, &channels, &rate, NULL)
          || !channels || channels > 2) goto done;
@@ -448,7 +449,8 @@ static int prepared_session(const char *path, bool s16, bool webm,
    demux = webm ? (void*)rwebm_open_memory(data, size) : (void*)rmp4_open_memory(data, size);
    if (!demux) goto done;
    p = gfx_anim_preview_wrap(demux, container, NULL, data, size, false, path);
-   if (!p) goto done;
+   if (!p || !gfx_anim_preview_audio_set_track(p, track)
+         || gfx_anim_preview_audio_set_track(p, -2)) goto done;
    audio_mixer_init(rate);
    prepared_s16 = s16;
    gfx_anim_preview_set_paused(p, true);
@@ -469,6 +471,8 @@ static int prepared_session(const char *path, bool s16, bool webm,
       if (gfx_anim_preview_seek_step(p, target_us, true, &position)
             != VIDEO_PLAYER_SEEK_PROGRESS || p->seek_audio)
          goto mixer_done;
+      /* A later request cannot alter preparation already in this seek. */
+      if (track >= 0 && !gfx_anim_preview_audio_set_track(p, 1)) goto mixer_done;
       if (gfx_anim_preview_seek_step(p, target_us, false, &position)
             != VIDEO_PLAYER_SEEK_PROGRESS || !p->seek_audio)
          goto mixer_done;
@@ -1142,6 +1146,12 @@ int main(int argc, char **argv)
    int first_arg = prepared_only ? 2 : 1;
    int i, failed = argc <= first_arg;
    gfx_anim_preview_t fallback;
+   if (argc == 4 && !strcmp(argv[1], "--selected-track"))
+   {
+      bool selected_webm = !strcmp(argv[2], "webm");
+      return prepared_session(argv[3], false, selected_webm, 50000, 2)
+         | prepared_session(argv[3], true, selected_webm, 50000, 2);
+   }
    if (argc == 2 && !strcmp(argv[1], "--seek-batch")) return bounded_video_seek();
    failed |= bounded_video_seek();
    if (argc == 3 && !strcmp(argv[1], "--continuous-webm"))
@@ -1159,12 +1169,12 @@ int main(int argc, char **argv)
    if (gfx_anim_preview_clock(&fallback, 10000) != 3000) failed = 1;
    for (i = first_arg; i < argc; i++)
    {
-      failed |= prepared_session(argv[i], false, webm_only, 1250000);
-      failed |= prepared_session(argv[i], true, webm_only, 1250000);
+      failed |= prepared_session(argv[i], false, webm_only, 1250000, -1);
+      failed |= prepared_session(argv[i], true, webm_only, 1250000, -1);
       if (webm_only)
       {
-         failed |= prepared_session(argv[i], false, true, 3250000);
-         failed |= prepared_session(argv[i], true, true, 3250000);
+         failed |= prepared_session(argv[i], false, true, 3250000, -1);
+         failed |= prepared_session(argv[i], true, true, 3250000, -1);
          continue;
       }
       failed |= bounded_aac_seek(argv[i]);

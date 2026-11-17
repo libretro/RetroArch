@@ -126,6 +126,8 @@ typedef struct gfx_anim_preview
    bool seeking; /* main-thread transport hold, independent of user pause */
    bool seek_failed;
    retro_atomic_int_t seek_audio_format; /* main publishes, worker snapshots */
+   retro_atomic_int_t requested_audio_track; /* demux index + 1; zero automatic */
+   int seek_track; /* decoding-thread snapshot for this seek */
    unsigned seek_format, seek_phase; /* decoding-thread state below */
    size_t seek_feed_hi, seek_feed_anchor;
    int64_t seek_video_us;
@@ -203,7 +205,7 @@ bool gfx_anim_preview_windowed(const gfx_anim_preview_t *p);
  * mixer (WEBM / MP4 only; honours the menu_thumbnail_preview_audio
  * setting), feed its window per tick, stop it. Main thread. */
 /* Worker-owned preparation over an independent source window. Currently
- * MP4 AAC; mix_rate/s16 are the main thread's captured device format.
+ * MP4 AAC and WebM audio; mix_rate/s16 are the captured device format.
  * Step prepares at most one access unit with bounded source refill.
  * Transfer the object to the main thread only after step returns 1;
  * adopt consumes it on every outcome. Free cancels an unpublished seek.
@@ -214,6 +216,10 @@ int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a);
 void gfx_anim_preview_audio_prepare_free(gfx_anim_preview_audio_prepared_t *a);
 bool gfx_anim_preview_audio_adopt(gfx_anim_preview_t *p,
       gfx_anim_preview_audio_prepared_t *a);
+
+/* Main thread: select audio for the next seek, without seeking here.
+ * -1 restores automatic selection; other values are demux indices. */
+bool gfx_anim_preview_audio_set_track(gfx_anim_preview_t *p, int track);
 
 /* Main-thread request setup before the player is polled; rate0 disables
  * audio preparation. Step is a video_player seek callback on its decoder
