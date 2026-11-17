@@ -2268,14 +2268,7 @@ typedef struct
    /* Any thread sets it, the app thread takes it: the next frame sends
     * Java the whole set, changed or not */
    retro_atomic_int_t windows_blank_resend;
-   /* The displays Java was last asked to cover black, the ordinal that
-    * frame left alone, and the hotkey's flip of Blank Unused Screens for
-    * the content and the setting it flipped; app thread */
-   int windows_blank_ids[VIDEO_WINDOW_DISPLAYS_MAX];
-   unsigned windows_blank_count;
-   unsigned windows_blank_shown;
-   unsigned windows_blank_flip_mode;
-   bool windows_blank_flipped;
+   video_windows_blank_t windows_blank;
 #endif
 #endif
 } video_driver_state_t;

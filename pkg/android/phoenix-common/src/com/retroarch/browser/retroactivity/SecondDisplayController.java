@@ -149,8 +149,9 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private boolean topLostFocused;
   /* uptimeMillis() of the last top-resumed loss, -1 since onStop */
   private long topLostAt = -1;
+  private static final int[] NO_IDS = new int[0];
   /* The displays native code last asked to cover with black */
-  private int[] blankIds = new int[0];
+  private int[] blankIds = NO_IDS;
   /* The black Presentations by display id */
   private final SparseArray<Presentation> blanks =
       new SparseArray<Presentation>();
@@ -344,6 +345,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     {
       wantedId = -1;
       dismiss();
+      applyBlanks();
       return;
     }
     if (ordinal > published.ids.length)
@@ -353,15 +355,16 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       return;
     wantedId      = display.getDisplayId();
     wantedRequest = request;
+    applyBlanks();
     if (started)
       showOn(wantedId);
   }
 
   /** Covers the displays whose ids are @ids with black, and no others;
-   * never RetroArch's own display or a move's target. */
+   * never RetroArch's own display, a move's target or the game's. */
   void blank(int[] ids)
   {
-    blankIds = ids != null ? ids : new int[0];
+    blankIds = ids != null ? ids : NO_IDS;
     applyBlanks();
   }
 
@@ -871,8 +874,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     }
   }
 
-  /* Presentations sit above the Activity's window: never on its display
-   * or a move's target */
+  /* Never under the Activity's window or the game's Presentation, as the
+   * one shown last is on top */
   private void applyBlanks()
   {
     int own;
@@ -882,14 +885,14 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     for (int i = blanks.size() - 1; i >= 0; i--)
     {
       int id = blanks.keyAt(i);
-      if (id == own || id == movedId || !blankAsked(id))
+      if (id == own || id == movedId || id == wantedId || !blankAsked(id))
         dismissBlank(id);
     }
     for (int i = 0; i < blankIds.length; i++)
     {
       int id = blankIds[i];
-      if (id != own && id != movedId && blanks.get(id) == null
-          && !blankFailedIds.get(id))
+      if (id != own && id != movedId && id != wantedId
+          && blanks.get(id) == null && !blankFailedIds.get(id))
         showBlank(id);
     }
   }

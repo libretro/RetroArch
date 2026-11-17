@@ -1569,6 +1569,79 @@ static void test_blank_ids(void)
          == 7);
 }
 
+/* Frame to frame: Java hears of a set only when it changes */
+static void test_blank_state(void)
+{
+   video_window_display_t d[4];
+   video_windows_blank_t b;
+   unsigned i;
+   memset(&b, 0, sizeof(b));
+   blank_thor(d, 1);
+   CHECK(video_windows_blank_ids(d, 3, 0, NULL) == 1);
+   /* Off with nothing covered: the frame does not look */
+   CHECK(!video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+   CHECK(!video_windows_blank_active(&b, 3));
+   CHECK(video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_GAMES));
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            false, d, 3) && b.count == 1 && b.ids[0] == 4);
+   CHECK(!video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            false, d, 3));
+   /* A new controller gets the same set */
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            true, d, 3) && b.count == 1 && b.ids[0] == 4);
+   /* The Presentation placed on the bottom panel: from that frame */
+   b.placed = 2;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            false, d, 3) && b.count == 0);
+   b.placed = 0;
+   /* Turned off with a panel covered: looked at until it is uncovered */
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_GAMES, true,
+            false, d, 3) && b.count == 1);
+   CHECK(video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_OFF, true,
+            false, d, 3) && b.count == 0);
+   CHECK(!video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+
+   /* The hotkey covers for the content with the setting off */
+   CHECK(video_windows_blank_flip(&b, VIDEO_BLANK_UNUSED_OFF));
+   CHECK(video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_OFF, true,
+            false, d, 3) && b.count == 1);
+   /* Not without content */
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_OFF, false,
+            false, d, 3) && b.count == 0);
+   /* The setting changed: the flip goes, and is not back with it */
+   CHECK(video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_ALWAYS));
+   CHECK(!(b.flags & VIDEO_WINDOWS_BLANK_FLIPPED));
+   CHECK(!video_windows_blank_active(&b, VIDEO_BLANK_UNUSED_OFF));
+   /* Flipped twice, as it was */
+   CHECK(!video_windows_blank_flip(&b, VIDEO_BLANK_UNUSED_GAMES));
+   CHECK(video_windows_blank_flip(&b, VIDEO_BLANK_UNUSED_GAMES));
+
+   /* Rewritten in place as the set grows and shrinks */
+   memset(&b, 0, sizeof(b));
+   for (i = 0; i < 4; i++)
+   {
+      test_display(&d[i], i + 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, i == 0);
+      d[i].id   = 10 + (int)i;
+      d[i].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   }
+   b.placed = 3;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_ALWAYS, false,
+            false, d, 4) && b.count == 2 && b.ids[0] == 11 && b.ids[1] == 13);
+   b.placed = 0;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_ALWAYS, false,
+            false, d, 4) && b.count == 3
+         && b.ids[0] == 11 && b.ids[1] == 12 && b.ids[2] == 13);
+   b.placed = 2;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_ALWAYS, false,
+            false, d, 4) && b.count == 2 && b.ids[0] == 12 && b.ids[1] == 13);
+   /* Another display swapped in at the same place */
+   d[3].id = 20;
+   CHECK(video_windows_blank_update(&b, VIDEO_BLANK_UNUSED_ALWAYS, false,
+            false, d, 4) && b.count == 2 && b.ids[1] == 20);
+}
+
 static void test_selected_layout(void)
 {
    video_views_map_t map;
@@ -2801,6 +2874,7 @@ int main(void)
    test_place_no_ordinal();
    test_blank_wanted();
    test_blank_ids();
+   test_blank_state();
    test_selected_layout();
    test_second_output_touch();
    test_window_events();

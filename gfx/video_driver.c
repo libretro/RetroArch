@@ -4417,8 +4417,8 @@ void video_driver_clear_views(void)
    video_driver_restore_windows();
 #endif
 #if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
-   video_st->windows_blank_flipped   = false;
-   video_st->windows_blank_flip_mode = 0;
+   video_st->windows_blank.flags     = 0;
+   video_st->windows_blank.flip_mode = 0;
    retro_atomic_store_release_int(&video_st->windows_blank_resend, 1);
 #endif
 }
@@ -4572,24 +4572,19 @@ unsigned video_driver_headset_view_toggle(void)
 bool video_driver_blank_unused_toggle(bool *blanked, unsigned *covered)
 {
 #if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
-   int ids[VIDEO_WINDOW_DISPLAYS_MAX];
    unsigned count;
    const video_window_display_t *list;
    video_driver_state_t *video_st = &video_driver_st;
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
-   unsigned mode                  =
-      config_get_ptr()->uints.video_blank_unused_screens;
    if (     !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
          || runloop_st->current_core_type == CORE_TYPE_DUMMY
          || runloop_st->content_switching)
       return false;
-   video_st->windows_blank_flipped   = !video_st->windows_blank_flipped;
-   video_st->windows_blank_flip_mode = mode;
-   *blanked = video_windows_blank_wanted(mode, true,
-         video_st->windows_blank_flipped);
+   *blanked = video_windows_blank_flip(&video_st->windows_blank,
+         config_get_ptr()->uints.video_blank_unused_screens);
    list     = video_driver_take_window_displays(video_st, &count);
    *covered = *blanked ? video_windows_blank_ids(list, count,
-         video_st->windows_blank_shown, ids) : 0;
+         video_st->windows_blank.placed, NULL) : 0;
    return true;
 #else
    (void)blanked;
@@ -5009,39 +5004,25 @@ unsigned video_driver_window_rows_changed(unsigned *sized)
 #endif
 
 #ifdef ANDROID
-/* App thread: covers the built-in panels nothing uses while the
- * setting, or the hotkey's flip of it, asks; Java hears only of a
- * changed set, unless a resend was asked. @shown is the ordinal the
- * Presentation has drawn on, 0 for none. */
+/* App thread: sends Java the panels to cover when the set changed, or a
+ * new controller asked for it */
 static VIDEO_NOINLINE void video_driver_blank_unused(
       video_driver_state_t *video_st, settings_t *settings,
-      const video_window_display_t *list, unsigned count, unsigned shown)
+      const video_window_display_t *list, unsigned count)
 {
-   int ids[VIDEO_WINDOW_DISPLAYS_MAX];
-   unsigned n;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   bool game                   =
+   video_windows_blank_t *blank = &video_st->windows_blank;
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
+   bool game                    =
          (   (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
           && runloop_st->current_core_type != CORE_TYPE_DUMMY)
       || runloop_st->content_switching;
-   bool resend                 = retro_atomic_exchange_int(
-         &video_st->windows_blank_resend, 0) != 0;
-   /* A flip of another setting would invert this one */
-   if (settings->uints.video_blank_unused_screens
-         != video_st->windows_blank_flip_mode)
-      video_st->windows_blank_flipped = false;
-   video_st->windows_blank_shown = shown;
-   n = video_windows_blank_wanted(
-         settings->uints.video_blank_unused_screens, game,
-         video_st->windows_blank_flipped)
-      ? video_windows_blank_ids(list, count, shown, ids) : 0;
-   if (     !resend
-         && n == video_st->windows_blank_count
-         && !memcmp(ids, video_st->windows_blank_ids, n * sizeof(*ids)))
-      return;
-   memcpy(video_st->windows_blank_ids, ids, n * sizeof(*ids));
-   video_st->windows_blank_count = n;
-   android_blank_displays_request(ids, n);
+   bool resend                  =
+         retro_atomic_load_acquire_int(&video_st->windows_blank_resend)
+      && retro_atomic_exchange_int(&video_st->windows_blank_resend, 0);
+   if (video_windows_blank_update(blank,
+            settings->uints.video_blank_unused_screens, game, resend,
+            list, count))
+      android_blank_displays_request(blank->ids, blank->count);
 }
 #endif
 
@@ -5086,10 +5067,15 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
 #ifdef ANDROID
       if (!redraw)
       {
-         unsigned count;
-         const video_window_display_t *list =
-            video_driver_take_window_displays(video_st, &count);
-         video_driver_blank_unused(video_st, settings, list, count, 0);
+         video_st->windows_blank.placed = 0;
+         if (video_windows_blank_active(&video_st->windows_blank,
+                  settings->uints.video_blank_unused_screens))
+         {
+            unsigned count;
+            const video_window_display_t *list =
+               video_driver_take_window_displays(video_st, &count);
+            video_driver_blank_unused(video_st, settings, list, count);
+         }
       }
 #endif
       return NULL;
@@ -5198,9 +5184,10 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       video_driver_windows_ui(video_st, list, count, lent, &in, client,
             out);
 #ifdef ANDROID
-      video_driver_blank_unused(video_st, settings, list, count,
-            (lent->display && in.shown == lent->display)
-            ? lent->display : 0);
+      video_st->windows_blank.placed = lent->display;
+      if (video_windows_blank_active(&video_st->windows_blank,
+               settings->uints.video_blank_unused_screens))
+         video_driver_blank_unused(video_st, settings, list, count);
 #endif
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
          lent->edit[i] = video_st->windows_edit[i];
