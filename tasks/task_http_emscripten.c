@@ -588,18 +588,25 @@ static void *task_push_webdav_to_destination(const char *url,
       const char *method, const char *dest, bool mute, const char *headers,
       retro_task_callback_t cb, void *user_data)
 {
-   size_t _len;
-   char dest_header[PATH_MAX_LENGTH + 512];
+   void  *t;
+   size_t d_len = strlen(dest);
+   size_t h_len = headers ? strlen(headers) : 0;
+   size_t _len  = STRLEN_CONST("Destination: ");
+   char  *h     = (char*)malloc(_len + d_len + 2 + h_len + 1);
 
-   _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
-   _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);
-   _len += strlcpy_lit(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
-
-   if (headers)
-      strlcpy(dest_header + _len, headers, sizeof(dest_header) - _len);
-
-   return task_push_http_transfer_generic(url, method, NULL, 0, NULL,
-         dest_header, mute, NULL, cb, user_data);
+   if (!h)
+      return NULL;
+   memcpy(h, "Destination: ", _len);
+   memcpy(h + _len, dest, d_len);
+   _len      += d_len;
+   h[_len++]  = '\r';
+   h[_len++]  = '\n';
+   memcpy(h + _len, headers ? headers : "", h_len + 1);
+   /* Parsed into the request's own storage */
+   t = task_push_http_transfer_generic(url, method, NULL, 0, NULL,
+         h, mute, NULL, cb, user_data);
+   free(h);
+   return t;
 }
 
 void *task_push_webdav_move(const char *url,

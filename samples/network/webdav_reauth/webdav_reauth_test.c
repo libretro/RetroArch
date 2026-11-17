@@ -376,7 +376,7 @@ static void test_rejected_challenge_after_digest(void)
    {
       http_transfer_data_t resp;
       char  blk[256];
-      char *h;
+      const char *h;
       /* one-line header block: the line, its NUL, the closing NUL */
       size_t n = strlcpy(blk, digest_header, sizeof(blk) - 1);
 
@@ -387,7 +387,6 @@ static void test_rejected_challenge_after_digest(void)
       h = webdav_get_auth_header("GET", url);
       CHECK(h, "rejected[%u]: no header for an accepted challenge",
             (unsigned)i);
-      free(h);
 
       n = strlcpy(blk, rejected[i], sizeof(blk) - 1);
       blk[n + 1] = '\0';
@@ -396,7 +395,6 @@ static void test_rejected_challenge_after_digest(void)
       h = webdav_get_auth_header("GET", url);
       CHECK(!h, "rejected[%u]: a digest header was built from a "
             "rejected challenge", (unsigned)i);
-      free(h);
    }
    webdav_cleanup_digest();
 }
@@ -412,7 +410,7 @@ static void test_basic_auth_full_length(void)
    char            saved_user[sizeof(settings->arrays.webdav_username)];
    char            saved_pass[sizeof(settings->arrays.webdav_password)];
    unsigned char  *plain;
-   char           *h;
+   const char     *h;
    int             flen      = 0;
    size_t          n;
 
@@ -445,7 +443,6 @@ static void test_basic_auth_full_length(void)
             "basic: Base64 does not decode to user:password (%d bytes)",
             flen);
       free(plain);
-      free(h);
    }
 
    free(webdav_st->basic_auth_header);

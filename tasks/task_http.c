@@ -801,6 +801,43 @@ void* task_push_http_transfer(const char *url, bool mute,
    return NULL;
 }
 
+/* @a then @b, composed once and handed to @conn */
+static bool task_http_take_headers(struct http_connection_t *conn,
+      const char *a, const char *b)
+{
+   size_t a_len = strlen(a);
+   size_t b_len = strlen(b);
+   char  *h     = (char*)malloc(a_len + b_len + 1);
+
+   if (!h)
+      return false;
+   memcpy(h, a, a_len);
+   memcpy(h + a_len, b, b_len + 1);
+   net_http_connection_take_headers(conn, h);
+   return true;
+}
+
+/* "Destination: @dest" ahead of @headers, composed once */
+static bool task_http_take_destination(struct http_connection_t *conn,
+      const char *dest, const char *headers)
+{
+   size_t d_len = strlen(dest);
+   size_t h_len = headers ? strlen(headers) : 0;
+   size_t _len  = STRLEN_CONST("Destination: ");
+   char  *h     = (char*)malloc(_len + d_len + 2 + h_len + 1);
+
+   if (!h)
+      return false;
+   memcpy(h, "Destination: ", _len);
+   memcpy(h + _len, dest, d_len);
+   _len      += d_len;
+   h[_len++]  = '\r';
+   h[_len++]  = '\n';
+   memcpy(h + _len, headers ? headers : "", h_len + 1);
+   net_http_connection_take_headers(conn, h);
+   return true;
+}
+
 void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *user_data)
 {
@@ -842,8 +879,6 @@ void* task_push_webdav_put_stream(const char *url,
       const char *headers, retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t *conn;
-   char                      expect[1024]; /* TODO/FIXME - check size */
-   size_t                    _len;
 
    if (!url || !*url || !source)
       return NULL;
@@ -851,11 +886,11 @@ void* task_push_webdav_put_stream(const char *url,
    if (!(conn = net_http_connection_new(url, "PUT", NULL)))
       return NULL;
 
-   _len = strlcpy_lit(expect, "Expect: 100-continue\r\n", sizeof(expect));
-   if (headers)
+   if (headers && !task_http_take_headers(conn,
+            "Expect: 100-continue\r\n", headers))
    {
-      strlcpy(expect + _len, headers, sizeof(expect) - _len);
-      net_http_connection_set_headers(conn, expect);
+      net_http_connection_free(conn);
+      return NULL;
    }
 
    net_http_connection_set_content_source(conn, NULL, len,
@@ -888,9 +923,7 @@ static void *task_push_webdav_to_destination(const char *url,
       const char *method, const char *dest, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata)
 {
-   size_t _len;
    struct http_connection_t *conn;
-   char dest_header[PATH_MAX_LENGTH + 512];
 
    if (!url || !*url)
       return NULL;
@@ -898,14 +931,11 @@ static void *task_push_webdav_to_destination(const char *url,
    if (!(conn = net_http_connection_new(url, method, NULL)))
       return NULL;
 
-   _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
-   _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);
-   _len += strlcpy_lit(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
-
-   if (headers)
-      strlcpy(dest_header + _len, headers, sizeof(dest_header) - _len);
-
-   net_http_connection_set_headers(conn, dest_header);
+   if (!task_http_take_destination(conn, dest, headers))
+   {
+      net_http_connection_free(conn);
+      return NULL;
+   }
 
    return task_push_http_transfer_generic(conn, url, mute, false, cb, userdata);
 }

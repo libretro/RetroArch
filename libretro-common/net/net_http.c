@@ -458,7 +458,7 @@ static bool net_http_dns_entry_valid(struct dns_cache_entry *entry)
  * URL Encode a string
  * caller is responsible for deleting the destination buffer
  **/
-void net_http_urlencode(char **dest, const char *source)
+size_t net_http_urlencode_to(char *s, size_t len, const char *source)
 {
    /* Bitmask for unreserved chars: A-Z a-z 0-9 * - . / _ */
    static const uint32_t safe[4] = {
@@ -467,47 +467,46 @@ void net_http_urlencode(char **dest, const char *source)
       0x87FFFFFE, /* 64-95:  A-Z _          */
       0x07FFFFFE  /* 96-127: a-z            */
    };
+   static const char hex[] = "0123456789ABCDEF";
+   size_t _len = 0;
 
-   const char *s;
-   char *enc;
-   size_t len = 0;
-
-   /* First pass: compute exact output length */
-   for (s = source; *s; s++)
+   for (; *source; source++)
    {
-      unsigned char c = (unsigned char)*s;
+      unsigned char c = (unsigned char)*source;
       if (c < 128 && (safe[c >> 5] & (1u << (c & 31))))
-         len += 1;
-      else
-         len += 3;
-   }
-
-   enc   = (char*)malloc(len + 1);
-   *dest = enc;
-
-   /* Malloc failure: leave *dest NULL and bail.  Callers that
-    * dereference the result (common in URL-builder flows) will
-    * then hit a single deliberate NULL check instead of a random
-    * crash in the encoding loop below. */
-   if (!enc)
-      return;
-
-   /* Second pass: encode */
-   for (s = source; *s; s++)
-   {
-      unsigned char c = (unsigned char)*s;
-      if (c < 128 && (safe[c >> 5] & (1u << (c & 31))))
-         *enc++ = (char)c;
+      {
+         if (_len + 1 < len)
+            s[_len] = (char)c;
+         _len += 1;
+      }
       else
       {
-         static const char hex[] = "0123456789ABCDEF";
-         *enc++ = '%';
-         *enc++ = hex[c >> 4];
-         *enc++ = hex[c & 0x0F];
+         if (_len + 3 < len)
+         {
+            s[_len    ] = '%';
+            s[_len + 1] = hex[c >> 4];
+            s[_len + 2] = hex[c & 0x0F];
+         }
+         else if (_len < len)
+            len = _len + 1; /* no half escapes; nothing more fits */
+         _len += 3;
       }
    }
 
-   *enc = '\0';
+   if (len)
+      s[_len < len ? _len : len - 1] = '\0';
+   return _len;
+}
+
+void net_http_urlencode(char **dest, const char *source)
+{
+   size_t _len = net_http_urlencode_to(NULL, 0, source);
+
+   /* Malloc failure: leave *dest NULL.  Callers that dereference the
+    * result (common in URL-builder flows) then hit a single deliberate
+    * NULL check instead of a random crash. */
+   if ((*dest = (char*)malloc(_len + 1)))
+      net_http_urlencode_to(*dest, _len + 1, source);
 }
 
 /**
@@ -994,6 +993,13 @@ void net_http_connection_set_headers(
       free(conn->headers);
 
    conn->headers = headers ? strdup(headers) : NULL;
+}
+
+void net_http_connection_take_headers(
+      struct http_connection_t *conn, char *headers)
+{
+   free(conn->headers);
+   conn->headers = headers;
 }
 
 void net_http_connection_set_tls(struct http_connection_t *conn,
@@ -1495,7 +1501,9 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.source_rewind = conn->source_rewind;
    state->request.source_data   = conn->source_data;
    state->request.useragent= conn->useragent ? strdup(conn->useragent) : NULL;
-   state->request.headers  = conn->headers ? strdup(conn->headers) : NULL;
+   /* Moved like postdata above: conn is freed right after this */
+   state->request.headers  = conn->headers;
+   conn->headers           = NULL;
    state->request.auth     = conn->auth    ? strdup(conn->auth)    : NULL;
    state->request.port     = conn->port;
    state->no_redirect      = conn->no_redirect;
@@ -1527,7 +1535,6 @@ struct http_t *net_http_new(struct http_connection_t *conn)
        || !state->request.method
        || (conn->contenttype && !state->request.contenttype)
        || (conn->useragent && !state->request.useragent)
-       || (conn->headers   && !state->request.headers)
        || (conn->auth      && !state->request.auth))
    {
       /* Note: no postdata OOM check here.  Ownership of postdata is
