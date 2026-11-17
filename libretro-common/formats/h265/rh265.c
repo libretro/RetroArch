@@ -4113,6 +4113,7 @@ struct rh265_video
    /* pictures decode concurrently on the pool (frame threading); the
     * wavefront stays off then, the pool being the pictures' */
    int       threaded;
+   int       nal_seen;          /* an SPS, PPS or slice was handled */
    /* finished slice jobs between uses, each with its unescape buffer */
    rh265_slot_t job_pool[RH265_NAL_POOL];
    rh265_sps sps[RH265_MAX_SPS];
@@ -5138,6 +5139,14 @@ static void rh265_raw_parameter_store(rh265_nal_t *slot,
       const uint8_t *nal, size_t len)
 {
    uint8_t *copy = NULL;
+   /* a repeat keeps its bytes; a new set of the same size goes over
+    * the old in place */
+   if (slot->data && slot->size == len)
+   {
+      if (memcmp(slot->data, nal, len))
+         memcpy((uint8_t*)slot->data, nal, len);
+      return;
+   }
    if (len <= 65536)
       copy = (uint8_t*)malloc(len);
    if (copy) memcpy(copy, nal, len);
@@ -5224,20 +5233,15 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
        nal_type != RH265_NAL_SPS && nal_type != RH265_NAL_PPS)
       return 0;                         /* reserved/unknown: skip */
 
-   {
-      /* slices need the escape positions to translate WPP entry-point
-       * offsets; parameter sets never do */
-      rbsp = rh265_unescape_scratch(v, nal + 2, len - 2, &rbsp_size,
-            &esc_pos, &esc_count, RH265_IS_SLICE(nal_type));
-   }
-   if (!rbsp)
-      return -1;
-
+   /* parameter sets are read in place through the escapes; a slice is
+    * unescaped, its escape positions kept to translate WPP entry-point
+    * offsets */
+   v->nal_seen = 1;
    if (nal_type == RH265_NAL_SPS)
    {
       rh265_sps *sp = &v->sps_tmp;
       int id;
-      ret = rh265_parse_sps(rbsp, rbsp_size, 0, sp, &id);
+      ret = rh265_parse_sps(nal + 2, len - 2, 1, sp, &id);
       if (ret == 0)
       {
          if (sp->chroma_format_idc != 1 ||
@@ -5261,7 +5265,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
    {
       rh265_pps *pp = &v->pps_tmp;
       int id;
-      ret = rh265_parse_pps(rbsp, rbsp_size, 0, pp, &id);
+      ret = rh265_parse_pps(nal + 2, len - 2, 1, pp, &id);
       if (ret == 0)
       {
          if (v->raw_parameters)
@@ -5278,6 +5282,9 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
       /* slice segment */
       rh265_bits b;
       rh265_shdr *shp = &v->sh_tmp;
+      if (!(rbsp = rh265_unescape_scratch(v, nal + 2, len - 2, &rbsp_size,
+            &esc_pos, &esc_count, 1)))
+         return -1;
       rh265_bits_init(&b, rbsp, rbsp_size);
       ret = rh265_parse_slice_header(&b, nal_type, NULL, NULL,
             v->pps, v->sps, shp);
@@ -5694,7 +5701,7 @@ rh265_video *rh265_video_open(void)
 int rh265_video_retain_parameter_sets(rh265_video *v)
 {
    unsigned i;
-   if (!v || v->hw || v->nal_scratch) return -1;
+   if (!v || v->hw || v->nal_seen) return -1;
    if (v->raw_parameters) return 0;
    for (i = 0; i < 16; i++)
       if (v->vps_valid[i]) return -1;
@@ -5936,6 +5943,18 @@ static int rh265_parameter_repeat(rh265_video *v, unsigned type,
 {
    int id, ret;
    if (nal->size < 3 || nal->size > 65536) return -1;
+   /* the bytes of a set already taken are that set: no parse */
+   if (v->raw_parameters)
+   {
+      const rh265_nal_t *raw = type == RH265_NAL_SPS
+            ? v->raw_parameters->sps : v->raw_parameters->pps;
+      int n = type == RH265_NAL_SPS ? RH265_MAX_SPS : RH265_MAX_PPS;
+      for (id = 0; id < n; id++)
+         if (     raw[id].size == nal->size
+               && (type == RH265_NAL_SPS ? v->sps[id].valid : v->pps[id].valid)
+               && !memcmp(raw[id].data, nal->data, nal->size))
+            return 0;
+   }
    if (type == RH265_NAL_SPS)
    {
       ret = rh265_parse_sps(nal->data + 2, nal->size - 2, 1, &v->sps_tmp, &id);

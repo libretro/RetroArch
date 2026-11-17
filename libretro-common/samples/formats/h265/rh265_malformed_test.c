@@ -697,6 +697,78 @@ static void test_access_unit(void)
    rh265_video_close(v);
 }
 
+/* A VPS, mode 0 well formed; the VPS lane's other modes craft one
+ * field each */
+static void vps(bitw *w, unsigned mode)
+{
+   memset(w, 0, sizeof(*w));
+   putn(w, 0, 4); putn(w, 3, 2); putn(w, mode == 2, 6);
+   putn(w, mode == 6 ? 7 : 0, 3); put1(w, 1); putn(w, 65535, 16);
+   putn(w, 1, 8); putn(w, 0x60000000u, 32);
+   putn(w, 0xb0000000u, 32); putn(w, 0, 16); putn(w, 93, 8);
+   put1(w, 0); putue(w, mode == 7 ? 16 : 4); putue(w, mode == 8 ? 5 : 2);
+   putue(w, 0xfffffffeu);
+   putn(w, 0, 6); putue(w, 0);
+   put1(w, mode == 1 || mode == 3);
+   if (mode == 1 || mode == 3)
+   {
+      putn(w, 1001, 32); putn(w, 60000, 32);
+      put1(w, 1); putue(w, 0xfffffffeu); putue(w, mode == 3);
+   }
+   put1(w, mode == 4); trailing(w);
+}
+
+/* Retained parameter sets: a repeat whose bytes are a set already
+ * taken matches without a parse, one whose bytes differ but whose
+ * content does not still matches, a changed set is refused; and a new
+ * set of the same size replaces the retained bytes. */
+static void test_raw_repeat(void)
+{
+   static uint8_t unit[3][1024], buf[3300], packet[2200];
+   static rh265_access_unit_t out;
+   const uint8_t *units[3];
+   rh265_nal_t slices[2], raw[3];
+   bitw w;
+   size_t lens[3], n, first;
+   rh265_video *v = rh265_video_open();
+   if (!v) abort();
+   units[0] = unit[0]; units[1] = unit[1]; units[2] = unit[2];
+   expect("raw repeat retain", rh265_video_retain_parameter_sets(v), 0);
+   vps(&w, 0); lens[2] = nal(unit[2], 32, &w);
+   sps(&w, F_NONE, 8); lens[0] = nal(unit[0], 33, &w);
+   slice_pps(&w, 0, 0); lens[1] = nal(unit[1], 34, &w);
+   first = lens[0];
+   n = hvcc(buf, units, lens, 3);
+   expect("raw repeat input", rh265_video_set_extradata(v, buf, n), 0);
+   sps(&w, F_LT, 8); lens[0] = nal(unit[0], 33, &w);
+   if (lens[0] != first) failures++;  /* the same size, other content */
+   n = hvcc(buf, units, lens, 2);
+   expect("raw replacement input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("raw replacement chain", rh265_video_get_parameter_sets(v, 0, raw), 0);
+   if (raw[1].size != lens[0] || memcmp(raw[1].data, unit[0], lens[0]))
+      failures++;
+   /* length-prefixed, so a trailing zero stays inside the NAL */
+   packet[0] = 0; packet[1] = 0; packet[2] = 0; packet[3] = (uint8_t)lens[0];
+   memcpy(packet + 4, unit[0], lens[0]);
+   expect("raw repeat matches", rh265_video_get_access_unit(v, packet,
+         4 + lens[0], 4, slices, 2, &out), 0);
+   packet[3] = (uint8_t)(lens[0] + 1); packet[4 + lens[0]] = 0;
+   expect("raw repeat with other bytes matches", rh265_video_get_access_unit(v,
+         packet, 5 + lens[0], 4, slices, 2, &out), 0);
+   sps(&w, F_NONE, 8); lens[0] = nal(unit[0], 33, &w);
+   packet[3] = (uint8_t)lens[0]; memcpy(packet + 4, unit[0], lens[0]);
+   expect("raw repeat changed SPS refused", rh265_video_get_access_unit(v,
+         packet, 4 + lens[0], 4, slices, 2, &out), -2);
+   packet[3] = (uint8_t)lens[1]; memcpy(packet + 4, unit[1], lens[1]);
+   expect("raw repeat PPS matches", rh265_video_get_access_unit(v, packet,
+         4 + lens[1], 4, slices, 2, &out), 0);
+   slice_pps(&w, 0, 1); lens[1] = nal(unit[1], 34, &w);
+   packet[3] = (uint8_t)lens[1]; memcpy(packet + 4, unit[1], lens[1]);
+   expect("raw repeat changed PPS refused", rh265_video_get_access_unit(v,
+         packet, 4 + lens[1], 4, slices, 2, &out), -2);
+   rh265_video_close(v);
+}
+
 static void test_color_info(void)
 {
    static uint8_t units_buf[2][1024], buf[2200];
@@ -831,21 +903,7 @@ static void test_vps_info(void)
    expect("missing VPS", rh265_video_get_vps(v, 0, &out), -1);
    for (mode = 0; mode < 9; mode++)
    {
-      memset(&w, 0, sizeof(w));
-      putn(&w, 0, 4); putn(&w, 3, 2); putn(&w, mode == 2, 6);
-      putn(&w, mode == 6 ? 7 : 0, 3); put1(&w, 1); putn(&w, 65535, 16);
-      putn(&w, 1, 8); putn(&w, 0x60000000u, 32);
-      putn(&w, 0xb0000000u, 32); putn(&w, 0, 16); putn(&w, 93, 8);
-      put1(&w, 0); putue(&w, mode == 7 ? 16 : 4); putue(&w, mode == 8 ? 5 : 2);
-      putue(&w, 0xfffffffeu);
-      putn(&w, 0, 6); putue(&w, 0);
-      put1(&w, mode == 1 || mode == 3);
-      if (mode == 1 || mode == 3)
-      {
-         putn(&w, 1001, 32); putn(&w, 60000, 32);
-         put1(&w, 1); putue(&w, 0xfffffffeu); putue(&w, mode == 3);
-      }
-      put1(&w, mode == 4); trailing(&w);
+      vps(&w, mode);
       lens[0] = nal(units_buf[0], 32, &w);
       if (mode == 5) lens[0] = 3;
       n = hvcc(buf, units, lens, 3);
@@ -934,6 +992,7 @@ int main(void)
    test_annexb_extradata();
    test_nal_iterator(); test_access_unit();
    test_slice_info();
+   test_raw_repeat();
    test_color_info();
    test_params();
    test_sequence_info();
