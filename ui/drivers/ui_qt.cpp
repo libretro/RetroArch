@@ -33,6 +33,7 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QFileSystemModel>
+#include <QDirIterator>
 #include <QListWidgetItem>
 #include <QTableWidgetItem>
 #include <QHash>
@@ -46,6 +47,13 @@
 #include <QProgressDialog>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QThreadPool>
+#include <QRunnable>
+#include <QPointer>
+#include <QMetaType>
+#include <QAtomicInt>
+#include <QSharedPointer>
+#include <algorithm>
 
 #include "ui_qt.h"
 
@@ -107,6 +115,10 @@ companion_core_t *ui_companion_qt_core(void)
 #include "../../core_updater_list.h"
 #ifdef HAVE_CORE_LOAD_CHECK
 #include "../../core_load_check.h"
+
+#ifdef HAVE_CORE_SIGNATURES
+#include "../../core_install_check.h"
+#endif
 #endif
 #ifdef HAVE_GIT_VERSION
 #include "../../version_git.h"
@@ -1447,27 +1459,45 @@ void LogTextEdit::appendMessage(const QString& text)
 
 int BrowseTableModel::rowCount(const QModelIndex &parent) const
 {
-   return parent.isValid() ? 0 : m_rows.size();
+   if (parent.isValid())
+      return 0;
+   return m_recursiveSearch ? m_searchEntries.size() : m_rows.size();
 }
 
 long BrowseTableModel::browseIndex(const QModelIndex &index) const
 {
-   if (!index.isValid() || index.row() < 0 || index.row() >= m_rows.size())
+   if (m_recursiveSearch || !index.isValid()
+         || index.row() < 0 || index.row() >= m_rows.size())
       return -1;
    return m_rows.at(index.row());
 }
 
 QString BrowseTableModel::pathAt(const QModelIndex &index) const
 {
-   long bi = browseIndex(index);
-   const char *p = bi >= 0 ? companion_core_browse_path(ui_companion_qt_core(), (size_t)bi) : NULL;
-   return p ? QString::fromUtf8(p) : QString();
+   if (m_recursiveSearch)
+   {
+      if (!index.isValid() || index.row() < 0
+            || index.row() >= m_searchEntries.size())
+         return QString();
+      return m_searchEntries.at(index.row()).path;
+   }
+   {
+      long bi = browseIndex(index);
+      const char *p = bi >= 0 ? companion_core_browse_path(
+            ui_companion_qt_core(), (size_t)bi) : NULL;
+      return p ? QString::fromUtf8(p) : QString();
+   }
 }
 
 bool BrowseTableModel::isDirAt(const QModelIndex &index) const
 {
-   long bi = browseIndex(index);
-   return bi >= 0 && companion_core_browse_is_dir(ui_companion_qt_core(), (size_t)bi);
+   if (m_recursiveSearch)
+      return QFileInfo(pathAt(index)).isDir();
+   {
+      long bi = browseIndex(index);
+      return bi >= 0 && companion_core_browse_is_dir(
+            ui_companion_qt_core(), (size_t)bi);
+   }
 }
 
 QVariant BrowseTableModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -1489,6 +1519,44 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
    companion_core_t *core = ui_companion_qt_core();
    long bi = browseIndex(index);
    char buf[64];
+   if (m_recursiveSearch)
+   {
+      const BrowseSearchEntry &entry = m_searchEntries.at(index.row());
+      if (role == Qt::DisplayRole)
+      {
+         switch (index.column())
+         {
+            case 0: return entry.name;
+            case 1:
+               if (entry.isDir)
+                  return QString();
+               if (entry.size >= 1024LL * 1024 * 1024)
+                  return QString::number((double)entry.size / (1024.0 * 1024 * 1024), 'f', 1) + QStringLiteral(" GB");
+               if (entry.size >= 1024LL * 1024)
+                  return QString::number((double)entry.size / (1024.0 * 1024), 'f', 1) + QStringLiteral(" MB");
+               return QString::number((entry.size + 1023) / 1024) + QStringLiteral(" KB");
+            case 2: return entry.type;
+            case 3: return entry.modified.toString(QStringLiteral("yyyy-MM-dd hh:mm"));
+         }
+      }
+      else if (role == Qt::DecorationRole && index.column() == 0)
+      {
+         if (entry.isDir)
+         {
+            if (m_folderIcon.isNull())
+               const_cast<BrowseTableModel*>(this)->m_folderIcon =
+                  QApplication::style()->standardIcon(QStyle::SP_DirIcon);
+            return m_folderIcon;
+         }
+         if (m_fileIcon.isNull())
+            const_cast<BrowseTableModel*>(this)->m_fileIcon =
+               QApplication::style()->standardIcon(QStyle::SP_FileIcon);
+         return m_fileIcon;
+      }
+      else if (role == Qt::TextAlignmentRole && index.column() == 1)
+         return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+      return QVariant();
+   }
    if (bi < 0 || !core)
       return QVariant();
    if (role == Qt::DisplayRole)
@@ -1528,30 +1596,132 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
    return QVariant();
 }
 
+class BrowseSearchRunnable : public QRunnable
+{
+public:
+   BrowseSearchRunnable(QPointer<BrowseTableModel> model, QString root,
+         QRegularExpression filter, bool showHidden, quint64 generation,
+         QSharedPointer<QAtomicInt> cancel)
+      : m_model(model), m_root(root), m_filter(filter),
+        m_showHidden(showHidden), m_generation(generation), m_cancel(cancel) {}
+
+   void run()
+   {
+      QVector<BrowseSearchEntry> entries;
+      QDir::Filters filters = QDir::AllEntries | QDir::NoDotAndDotDot;
+      if (m_showHidden)
+         filters |= QDir::Hidden | QDir::System;
+      QDirIterator it(m_root, filters, QDirIterator::Subdirectories);
+      while (!m_cancel->loadAcquire() && it.hasNext())
+      {
+         const QString path = it.next();
+         const QFileInfo info = it.fileInfo();
+         if (!m_filter.match(info.fileName()).hasMatch())
+            continue;
+         BrowseSearchEntry entry;
+         entry.path = path;
+         entry.name = info.fileName();
+         entry.isDir = info.isDir();
+         entry.size = entry.isDir ? 0 : info.size();
+         entry.type = entry.isDir ? QStringLiteral("Folder") : info.suffix().toUpper();
+         entry.modified = info.lastModified();
+         entries.append(entry);
+      }
+      if (m_model)
+         QMetaObject::invokeMethod(m_model.data(), "setSearchResults",
+               Qt::QueuedConnection,
+               Q_ARG(QVector<BrowseSearchEntry>, entries),
+               Q_ARG(quint64, m_generation));
+   }
+private:
+   QPointer<BrowseTableModel> m_model;
+   QString m_root;
+   QRegularExpression m_filter;
+   bool m_showHidden;
+   quint64 m_generation;
+   QSharedPointer<QAtomicInt> m_cancel;
+};
+
 void BrowseTableModel::reload()
 {
    companion_core_t *core = ui_companion_qt_core();
    size_t i, n = core ? companion_core_browse_count(core) : 0;
+   const bool searching = m_filter.isValid() && !m_filter.pattern().isEmpty();
+   ++m_searchGeneration;
+   if (m_searchCancel)
+      m_searchCancel->storeRelease(1);
+   m_searchCancel.clear();
    beginResetModel();
    m_rows.clear();
-   m_rows.reserve((int)n);
-   for (i = 0; i < n; i++)
+   m_searchEntries.clear();
+   m_recursiveSearch = searching;
+   if (!searching)
    {
-      if (m_filter.isValid() && !m_filter.pattern().isEmpty())
-      {
-         const char *nm = companion_core_browse_name(core, i);
-         /* folders always show; files are filtered on their name */
-         if (!companion_core_browse_is_dir(core, i)
-               && !(nm && m_filter.match(QString::fromUtf8(nm)).hasMatch()))
-            continue;
-      }
-      m_rows.append((long)i);
+      m_rows.reserve((int)n);
+      for (i = 0; i < n; i++)
+         m_rows.append((long)i);
    }
+   endResetModel();
+   if (searching && core)
+   {
+      const char *browse_dir = companion_core_browse_dir(core);
+      if (browse_dir && *browse_dir)
+      {
+         qRegisterMetaType<QVector<BrowseSearchEntry> >("QVector<BrowseSearchEntry>");
+         m_searchCancel = QSharedPointer<QAtomicInt>(new QAtomicInt(0));
+         QThreadPool::globalInstance()->start(new BrowseSearchRunnable(
+            this, QString::fromUtf8(browse_dir), m_filter,
+            config_get_ptr()->bools.show_hidden_files,
+            m_searchGeneration, m_searchCancel));
+      }
+   }
+}
+
+void BrowseTableModel::setSearchResults(
+      const QVector<BrowseSearchEntry> &entries, quint64 generation)
+{
+   if (generation != m_searchGeneration || !m_recursiveSearch)
+      return;
+   beginResetModel();
+   m_searchEntries = entries;
+   m_applyingSearchResults = true;
+   sort(m_searchSortColumn, m_searchSortOrder);
+   m_applyingSearchResults = false;
    endResetModel();
 }
 
 void BrowseTableModel::sort(int column, Qt::SortOrder order)
 {
+   if (m_recursiveSearch)
+   {
+      m_searchSortColumn = column < 0 ? 0 : column > 3 ? 3 : column;
+      m_searchSortOrder = order;
+      if (!m_applyingSearchResults)
+         emit layoutAboutToBeChanged();
+      std::stable_sort(m_searchEntries.begin(), m_searchEntries.end(),
+            [this](const BrowseSearchEntry &a, const BrowseSearchEntry &b)
+            {
+               /* Keep matching folders ahead of files regardless of the
+                * selected sort column or direction. */
+               if (a.isDir != b.isDir)
+                  return a.isDir;
+
+               int cmp = 0;
+               switch (m_searchSortColumn)
+               {
+                  case 1: cmp = a.size < b.size ? -1 : a.size > b.size ? 1 : 0; break;
+                  case 2: cmp = QString::compare(a.type, b.type, Qt::CaseInsensitive); break;
+                  case 3: cmp = a.modified < b.modified ? -1 : a.modified > b.modified ? 1 : 0; break;
+                  default: cmp = QString::compare(a.name, b.name, Qt::CaseInsensitive); break;
+               }
+               if (cmp == 0)
+                  cmp = QString::compare(a.path, b.path, Qt::CaseInsensitive);
+               return m_searchSortOrder == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
+            });
+      if (!m_applyingSearchResults)
+         emit layoutChanged();
+      return;
+   }
    companion_core_t *core = ui_companion_qt_core();
    enum companion_browse_column col =
       (enum companion_browse_column)(column < 0 ? 0 : column > 3 ? 3 : column);
@@ -1574,6 +1744,73 @@ void BrowseTableModel::setFilter(const QRegularExpression &re)
    reload();
 }
 
+void PlaylistSearchProxyModel::setSearchRows(const QVector<int> &rows,
+      quint64 generation, bool active)
+{
+   if (generation < m_generation)
+      return;
+
+   m_generation = generation;
+   m_searchActive = active;
+   m_searchRows.clear();
+   for (int i = 0; i < rows.size(); i++)
+      m_searchRows.insert(rows.at(i));
+
+   invalidateFilter();
+   emit searchResultsChanged();
+}
+
+bool PlaylistSearchProxyModel::filterAcceptsRow(int sourceRow,
+      const QModelIndex &sourceParent) const
+{
+   (void)sourceParent;
+   return !m_searchActive || m_searchRows.contains(sourceRow);
+}
+
+class PlaylistSearchRunnable : public QRunnable
+{
+public:
+   PlaylistSearchRunnable(QPointer<PlaylistSearchProxyModel> proxy,
+         const QStringList &labels, const QRegularExpression &expression,
+         quint64 generation, const QSharedPointer<QAtomicInt> &cancel)
+      : m_proxy(proxy), m_labels(labels), m_expression(expression),
+        m_generation(generation), m_cancel(cancel)
+   {
+      setAutoDelete(true);
+   }
+
+   void run()
+   {
+      QVector<int> matches;
+      int i;
+
+      for (i = 0; i < m_labels.size(); i++)
+      {
+         if (m_cancel && m_cancel->loadAcquire())
+            return;
+         if (m_expression.match(m_labels.at(i)).hasMatch())
+            matches.append(i);
+      }
+
+      if (m_cancel && m_cancel->loadAcquire())
+         return;
+
+      if (m_proxy)
+         QMetaObject::invokeMethod(m_proxy.data(), "setSearchRows",
+               Qt::QueuedConnection,
+               Q_ARG(QVector<int>, matches),
+               Q_ARG(quint64, m_generation),
+               Q_ARG(bool, true));
+   }
+
+private:
+   QPointer<PlaylistSearchProxyModel> m_proxy;
+   QStringList m_labels;
+   QRegularExpression m_expression;
+   quint64 m_generation;
+   QSharedPointer<QAtomicInt> m_cancel;
+};
+
 MainWindow::MainWindow(QWidget *parent) :
    QMainWindow(parent)
    ,m_loadCoreWindow(new LoadCoreWindow(this))
@@ -1590,6 +1827,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_playlistViews(new FileDropWidget(this))
    ,m_searchWidget(new QWidget(this))
    ,m_searchLineEdit(new QLineEdit(this))
+   ,m_searchDebounceTimer(new QTimer(this))
    ,m_searchDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), this))
    ,m_playlistFiles()
    ,m_launchWithComboBox(new QComboBox(this))
@@ -1651,22 +1889,22 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_failedThumbnails(0)
    ,m_playlistThumbnailDownloadWasCanceled(false)
    ,m_hasBeenShown(false)
+   ,m_fileBrowserInitialized(false)
    ,m_pendingDirScrollPath()
    ,m_thumbnailTimer(new QTimer(this))
    ,m_persistTimer(new QTimer(this))
    ,m_gridItem(this)
    ,m_currentBrowser(BROWSER_TYPE_PLAYLISTS)
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    ,m_searchRegularExpression()
-#else
-   ,m_searchRegExp()
-#endif
    ,m_zoomWidget(new QWidget(this))
    ,m_itemsCountLiteral(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT))
    ,m_itemsCountLabel(new QLabel(this))
 {
    settings_t                   *settings = config_get_ptr();
    const char *path_dir_assets            = settings->paths.directory_assets;
+
+   m_searchDebounceTimer->setSingleShot(true);
+   m_searchDebounceTimer->setInterval(300);
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
    qRegisterMetaType<retro_task_callback_t>("retro_task_callback_t");
@@ -1866,9 +2104,11 @@ void MainWindow::setupPlaylistFooter()
 void MainWindow::setupModels()
 {
    m_playlistModel  = new PlaylistModel(this);
-   m_proxyModel     = new QSortFilterProxyModel(this);
+   m_proxyModel     = new PlaylistSearchProxyModel(this);
    m_proxyModel->setSourceModel(m_playlistModel);
    m_proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
+   connect(m_proxyModel, SIGNAL(searchResultsChanged()), this,
+         SLOT(onPlaylistSearchResultsReady()));
 
    m_browseModel = new BrowseTableModel(this);
 
@@ -1886,6 +2126,7 @@ void MainWindow::setupModels()
    m_tableView->setWordWrap(false);
 
    m_fileTableView->setModel(m_browseModel);
+   m_fileTableView->setContextMenuPolicy(Qt::CustomContextMenu);
    /* A header click asks the core to re-order its listing (one qsort
     * over an already gathered array); the view itself never sorts. */
    m_fileTableView->setSortingEnabled(true);
@@ -2019,6 +2260,8 @@ void MainWindow::setupSignalConnections()
          SLOT(onSearchEnterPressed()));
    connect(m_searchLineEdit, SIGNAL(textEdited(const QString&)), this,
          SLOT(onSearchLineEditEdited(const QString&)));
+   connect(m_searchDebounceTimer, SIGNAL(timeout()), this,
+         SLOT(onSearchEnterPressed()));
    connect(m_timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
    connect(m_loadCoreWindow, SIGNAL(coreLoaded()), this,
          SLOT(onCoreLoaded()));
@@ -2037,6 +2280,8 @@ void MainWindow::setupSignalConnections()
          SLOT(onTreeViewItemsSelected(QModelIndexList)));
    connect(m_dirTree, SIGNAL(customContextMenuRequested(const QPoint&)), this,
          SLOT(onFileBrowserTreeContextMenuRequested(const QPoint&)));
+   connect(m_fileTableView, SIGNAL(customContextMenuRequested(const QPoint&)),
+         this, SLOT(onFileBrowserTableContextMenuRequested(const QPoint&)));
    connect(m_listWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this,
          SLOT(onPlaylistWidgetContextMenuRequested(const QPoint&)));
    connect(m_launchWithComboBox, SIGNAL(currentIndexChanged(int)), this,
@@ -2132,6 +2377,8 @@ void MainWindow::setupSignalConnections()
 
 MainWindow::~MainWindow()
 {
+   if (m_playlistSearchCancel)
+      m_playlistSearchCancel->storeRelease(1);
 }
 
 void MainWindow::startTimer()
@@ -2466,6 +2713,74 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
          *dont_ask = checkbox->isChecked();
 
    return true;
+}
+
+void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
+{
+   QModelIndex index = m_fileTableView->indexAt(pos);
+   QString backupPath;
+   QFileInfo backupInfo;
+   QMenu menu(m_fileTableView);
+   QAction *restoreAction;
+   QAction *deleteAction;
+   QAction *selectedAction;
+   QByteArray backupPathArray;
+   settings_t *settings;
+   bool core_loaded = false;
+
+   if (!index.isValid() || m_browseModel->isDirAt(index))
+      return;
+
+   backupPath = m_browseModel->pathAt(index);
+   backupInfo.setFile(backupPath);
+   if (backupInfo.suffix().compare("lcbk", Qt::CaseInsensitive) != 0)
+      return;
+
+   m_fileTableView->setCurrentIndex(index);
+   restoreAction = menu.addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST));
+   deleteAction = menu.addAction(tr("Delete"));
+   selectedAction = menu.exec(m_fileTableView->viewport()->mapToGlobal(pos));
+
+   backupPathArray = QDir::toNativeSeparators(backupPath).toUtf8();
+   if (selectedAction == restoreAction)
+   {
+      settings = config_get_ptr();
+      if (!task_push_core_restore(backupPathArray.constData(),
+               settings->paths.directory_libretro, &core_loaded, true, NULL))
+         return;
+   }
+   else if (selectedAction == deleteAction)
+   {
+      QString message = tr("Are you sure you want to delete this backup?\n\n%1")
+         .arg(backupInfo.fileName());
+      if (QMessageBox::question(this, tr("Delete Backup"), message,
+               QMessageBox::Yes | QMessageBox::No,
+               QMessageBox::No) != QMessageBox::Yes)
+         return;
+
+      if (!path_is_valid(backupPathArray.constData())
+            || filestream_delete(backupPathArray.constData()) != 0)
+      {
+         QMessageBox::critical(this, tr("Delete Backup"),
+               tr("Failed to delete backup:\n%1").arg(backupPath));
+         return;
+      }
+#ifdef HAVE_CORE_SIGNATURES
+      core_install_drop_sig(backupPathArray.constData());
+#endif
+      QMessageBox::information(this, tr("Delete Backup"),
+            tr("Backup deleted successfully."));
+
+      /* Re-enumerate the current directory; reload() alone only rebuilds
+       * the model from the existing core-side listing. */
+      {
+         companion_core_t *core = ui_companion_qt_core();
+         const char *browseDir = companion_core_browse_dir(core);
+         if (browseDir)
+            companion_core_browse_open(core, browseDir);
+      }
+   }
 }
 
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
@@ -3258,6 +3573,13 @@ void MainWindow::onTabWidgetIndexChanged(int index)
       m_currentBrowser = BROWSER_TYPE_FILES;
       m_centralWidget->setCurrentWidget(m_fileTableView);
       onCurrentFileChanged(m_fileTableView->currentIndex());
+      if (!m_fileBrowserInitialized)
+      {
+         m_fileBrowserInitialized = true;
+         m_dirTree->selectionModel()->clearSelection();
+         m_dirTree->setCurrentIndex(QModelIndex());
+         QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
+      }
    }
    else if (str == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
@@ -3280,7 +3602,13 @@ void MainWindow::onTabWidgetIndexChanged(int index)
       m_centralWidget->setCurrentWidget(m_updaterEmptyWidget);
    }
 
-   applySearch();
+   if (m_searchDebounceTimer->isActive())
+   {
+      m_searchDebounceTimer->stop();
+      onSearchEnterPressed();
+   }
+   else
+      applySearch();
 
    setCoreActions();
 }
@@ -3290,85 +3618,84 @@ QToolButton* MainWindow::stopPushButton() { return m_stopPushButton; }
 QToolButton* MainWindow::startCorePushButton() { return m_startCorePushButton;}
 QComboBox* MainWindow::launchWithComboBox() { return m_launchWithComboBox; }
 
-void MainWindow::onSearchLineEditEdited(const QString &text)
+static QRegularExpression qt_search_expression(const QString &text)
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+   QStringList terms = text.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+#else
+   QStringList terms = text.split(QRegularExpression("\\s+"),
+         QString::SkipEmptyParts);
+#endif
+   QString pattern;
    int i;
-   QVector<char32_t> textHiraToKata;
-   QVector<char32_t> textKataToHira;
-   QVector<unsigned> textUnicode = text.toUcs4();
-   bool found_hiragana = false;
-   bool found_katakana = false;
 
-   for (i = 0; i < textUnicode.size(); i++)
+   for (i = 0; i < terms.size(); i++)
    {
-      unsigned code = textUnicode.at(i);
+      const QString &term = terms.at(i);
+      QVector<char32_t> hiraToKata;
+      QVector<char32_t> kataToHira;
+      QVector<unsigned> unicode = term.toUcs4();
+      QStringList alternatives;
+      bool foundHiragana = false;
+      bool foundKatakana = false;
+      int j;
 
-      if (code >= HIRAGANA_START && code <= HIRAGANA_END)
+      for (j = 0; j < unicode.size(); j++)
       {
-         found_hiragana  = true;
-         textHiraToKata += code + HIRA_KATA_OFFSET;
+         unsigned code = unicode.at(j);
+
+         if (code >= HIRAGANA_START && code <= HIRAGANA_END)
+         {
+            foundHiragana = true;
+            hiraToKata.append(code + HIRA_KATA_OFFSET);
+            kataToHira.append(code);
+         }
+         else if (code >= KATAKANA_START && code <= KATAKANA_END)
+         {
+            foundKatakana = true;
+            hiraToKata.append(code);
+            kataToHira.append(code - HIRA_KATA_OFFSET);
+         }
+         else
+         {
+            hiraToKata.append(code);
+            kataToHira.append(code);
+         }
       }
-      else if (code >= KATAKANA_START && code <= KATAKANA_END)
+
+      alternatives.append(QRegularExpression::escape(term));
+      if (foundHiragana)
       {
-         found_katakana  = true;
-         textKataToHira += code - HIRA_KATA_OFFSET;
+         QString converted = QString::fromUcs4(
+               hiraToKata.constData(), hiraToKata.size());
+         if (converted != term)
+            alternatives.append(QRegularExpression::escape(converted));
       }
-      else
+      if (foundKatakana)
       {
-         textHiraToKata += code;
-         textKataToHira += code;
+         QString converted = QString::fromUcs4(
+               kataToHira.constData(), kataToHira.size());
+         if (converted != term && !alternatives.contains(
+                  QRegularExpression::escape(converted)))
+            alternatives.append(QRegularExpression::escape(converted));
       }
+
+      pattern += "(?=.*(?:" + alternatives.join("|") + "))";
    }
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-   if (!found_hiragana && !found_katakana)
-      m_searchRegularExpression = QRegularExpression(text,
-            QRegularExpression::CaseInsensitiveOption);
-   else if (found_hiragana && !found_katakana)
-      m_searchRegularExpression = QRegularExpression(text
-            + QString("|")
-            + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size()),
-            QRegularExpression::CaseInsensitiveOption);
-   else if (!found_hiragana && found_katakana)
-      m_searchRegularExpression = QRegularExpression(text
-            + QString("|")
-            + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()),
-            QRegularExpression::CaseInsensitiveOption);
-   else
-      m_searchRegularExpression = QRegularExpression(text
-            + QString("|")
-            + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size())
-            + QString("|")
-            + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()),
-            QRegularExpression::CaseInsensitiveOption);
-#else
-   if (!found_hiragana && !found_katakana)
-      m_searchRegExp = QRegExp(text, Qt::CaseInsensitive);
-   else if (found_hiragana && !found_katakana)
-      m_searchRegExp = QRegExp(text
-            + QString("|")
-            + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size()), Qt::CaseInsensitive);
-   else if (!found_hiragana && found_katakana)
-      m_searchRegExp = QRegExp(text
-            + QString("|")
-            + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()), Qt::CaseInsensitive);
-   else
-      m_searchRegExp = QRegExp(text
-            + QString("|")
-            + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size())
-            + QString("|")
-            + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()), Qt::CaseInsensitive);
-#endif
+   if (pattern.isEmpty())
+      return QRegularExpression();
 
-   applySearch();
+   return QRegularExpression(pattern + ".*",
+         QRegularExpression::CaseInsensitiveOption);
+}
+
+void MainWindow::onSearchLineEditEdited(const QString &text)
+{
+   (void)text;
+   /* Wait until typing pauses before starting a potentially expensive
+    * playlist or recursive file-browser search. */
+   m_searchDebounceTimer->start();
 }
 
 void MainWindow::applySearch()
@@ -3376,28 +3703,45 @@ void MainWindow::applySearch()
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-         if (     m_proxyModel->filterRegularExpression()
-               != m_searchRegularExpression)
          {
-            m_proxyModel->setFilterRegularExpression(m_searchRegularExpression);
-            updateItemsCount();
+            QStringList labels;
+            QRegularExpression expression;
+            int row;
+            quint64 generation = ++m_playlistSearchGeneration;
+
+            if (m_playlistSearchCancel)
+               m_playlistSearchCancel->storeRelease(1);
+            m_playlistSearchCancel.clear();
+
+            expression = m_searchRegularExpression;
+            if (expression.pattern().isEmpty())
+            {
+               m_proxyModel->setSearchRows(QVector<int>(), generation, false);
+               break;
+            }
+
+            labels.reserve(m_playlistModel->rowCount());
+            for (row = 0; row < m_playlistModel->rowCount(); row++)
+               labels.append(m_playlistModel->index(row, 0)
+                     .data(Qt::DisplayRole).toString());
+
+            m_playlistSearchCancel = QSharedPointer<QAtomicInt>(new QAtomicInt(0));
+            QThreadPool::globalInstance()->start(new PlaylistSearchRunnable(
+                     m_proxyModel, labels, expression, generation,
+                     m_playlistSearchCancel));
          }
-#else
-         if (m_proxyModel->filterRegExp() != m_searchRegExp)
-         {
-            m_proxyModel->setFilterRegExp(m_searchRegExp);
-            updateItemsCount();
-         }
-#endif
          break;
       case BROWSER_TYPE_FILES:
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         /* A playlist search is no longer useful while the file browser
+          * is active. Invalidate any queued result as well as stopping
+          * the worker; the playlist query is restarted on tab return. */
+         ++m_playlistSearchGeneration;
+         if (m_playlistSearchCancel)
+            m_playlistSearchCancel->storeRelease(1);
+         m_playlistSearchCancel.clear();
+         m_proxyModel->setSearchRows(QVector<int>(),
+               m_playlistSearchGeneration, false);
          m_browseModel->setFilter(m_searchRegularExpression);
-#else
-         m_browseModel->setFilter(QRegularExpression(m_searchRegExp.pattern(),
-                  QRegularExpression::CaseInsensitiveOption));
-#endif
          break;
       case BROWSER_TYPE_UPDATER:
       {
@@ -3485,7 +3829,9 @@ void MainWindow::onShowHiddenDockWidgetAction()
 QLineEdit* MainWindow::searchLineEdit() { return m_searchLineEdit; }
 void MainWindow::onSearchEnterPressed()
 {
-   onSearchLineEditEdited(m_searchLineEdit->text());
+   m_searchDebounceTimer->stop();
+   m_searchRegularExpression = qt_search_expression(m_searchLineEdit->text());
+   applySearch();
 }
 
 void MainWindow::onCurrentTableItemDataChanged(const QModelIndex &topLeft,
@@ -4499,9 +4845,16 @@ void MainWindow::onUpdaterDirectoryClicked(QTreeWidgetItem *item, int column)
 
 void MainWindow::onBrowserStartClicked()
 {
-   m_dirTree->setCurrentIndex(
-         m_dirModel->index(config_get_ptr()->paths.directory_menu_content));
-   m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
+   QModelIndex index = m_dirModel->index(
+         config_get_ptr()->paths.directory_menu_content);
+
+   if (!index.isValid())
+      return;
+
+   m_dirTree->setCurrentIndex(index);
+   m_dirTree->selectionModel()->select(index,
+         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+   m_dirTree->scrollTo(index, QAbstractItemView::PositionAtTop);
 }
 
 ListWidget* MainWindow::playlistListWidget() { return m_listWidget; }
@@ -4701,6 +5054,7 @@ void MainWindow::onPlaylistModelLoaded()
    else
       m_proxyModel->sort(-1);
 
+   applySearch();
    updateItemsCount();
 
    m_gridView->scrollToTop();
@@ -4715,6 +5069,12 @@ void MainWindow::updateItemsCount()
 {
    m_itemsCountLabel->setText(
          m_itemsCountLiteral.arg(m_proxyModel->rowCount()));
+}
+
+void MainWindow::onPlaylistSearchResultsReady()
+{
+   if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS)
+      updateItemsCount();
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
