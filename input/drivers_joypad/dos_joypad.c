@@ -39,6 +39,12 @@ static int32_t dos_joypad_button(unsigned port_num, uint16_t joykey) { return 0;
 
 static int16_t dos_joypad_axis(unsigned port_num, uint32_t joyaxis) { return 0; }
 
+/* No pad holds a button */
+static void dos_joypad_get_buttons(unsigned port_num, input_bits_t *state)
+{
+   BIT256_CLEAR_ALL_PTR(state);
+}
+
 static int16_t dos_joypad_state(
       rarch_joypad_info_t *joypad_info,
       const uint16_t *joykeys,
@@ -66,7 +72,7 @@ input_device_driver_t dos_joypad = {
    dos_joypad_destroy,
    dos_joypad_button,
    dos_joypad_state,
-   NULL,
+   dos_joypad_get_buttons,
    dos_joypad_axis,
    dos_joypad_poll,
    NULL, /* set_rumble */

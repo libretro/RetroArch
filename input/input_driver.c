@@ -1143,6 +1143,8 @@ void input_driver_set_snapshot_bridge(bool on)
  *   with axis() answers only for the ports button() does - past
  *   MAX_USERS both read beyond their arrays. button() no longer shifts
  *   a 1 into an int's sign bit. Its d-pad is buttons.
+ * - dos, which reads no pad yet: every answer is none, and get_buttons()
+ *   now says so too.
  *
  * - hid, with hidraw or WinUSB behind it: their handlers' state is
  *   what button(), axis() and get_buttons() answer, and they lend it.
@@ -1189,6 +1191,7 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
              || string_is_equal(drv->ident, "xdk")
              || string_is_equal(drv->ident, "wiiu")
              || string_is_equal(drv->ident, "mfi")
+             || string_is_equal(drv->ident, "dos")
              /* HID's, where its HID driver lends its pads: the Mac's
               * does not, and its button() has pads its get_buttons()
               * does not */
