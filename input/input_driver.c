@@ -1096,9 +1096,12 @@ void input_driver_set_snapshot_bridge(bool on)
  *   copies nothing. Of wiiu's, the GamePad's and the Wiimotes' are
  *   lent; USB HID's pads are copied.
  *
- * - hid, with hidraw or WinUSB behind it: their handlers' state is
- *   what button(), axis() and get_buttons() answer, and they lend it.
- *   With a HID driver that does not lend, it is read directly.
+ * - hid, whichever HID driver is behind it: button(), axis() and
+ *   get_buttons() answer the pad's handler's state, or for a pad no
+ *   handler reads the driver's own. hidraw, WinUSB and IOHIDManager
+ *   take packets in the poll or between frames and lend that state;
+ *   libusb, BTstack and the Wii's and Wii U's take them on threads of
+ *   their own, so their pads are copied once a poll.
  *
  * samples/input/joypad_bridge_checked holds every driver named here to
  * that, the consoles' built on the host against their platforms'
@@ -1142,10 +1145,7 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
              || string_is_equal(drv->ident, "wiiu")
              || string_is_equal(drv->ident, "mfi")
              || string_is_equal(drv->ident, "dos")
-             /* HID's, where its HID driver lends its pads: the Mac's
-              * does not, and its button() has pads its get_buttons()
-              * does not */
-             || (string_is_equal(drv->ident, "hid") && drv->view));
+             || string_is_equal(drv->ident, "hid"));
       if (answer && drv->get_buttons && drv->button && drv->axis)
          RARCH_LOG("[Input] Controllers of the \"%s\" driver are read"
                " through a snapshot taken once a poll.\n", drv->ident);
