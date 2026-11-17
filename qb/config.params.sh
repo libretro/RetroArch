@@ -181,6 +181,7 @@ HAVE_SPIRV_CROSS=no        # the system's SPIRV-Cross, next to rslc (requires C+
 C89_SPIRV_CROSS=no
 HAVE_RSLC=yes              # rslc clean-room slang compiler (C89, libretro-common)
 HAVE_RECORD_VULKAN=auto    # Native desktop Vulkan H.264/AC-3 recording
+C89_RECORD_VULKAN=no
 
 # Audio drivers and resamplers
 HAVE_ALSA=auto             # ALSA support

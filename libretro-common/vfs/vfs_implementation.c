@@ -290,8 +290,8 @@ static void vfs_win32_warm_free(void *data);
 #include <sys/statvfs.h>
 #include <sys/syscall.h>
 #define VFS_VOLUME_MAGIC 1
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) \
-   || defined(__DragonFly__)
+#elif (defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) \
+   || defined(__DragonFly__)) && !defined(ORBIS)
 #include <sys/param.h>
 #include <sys/mount.h>
 #define VFS_VOLUME_NAME 1
