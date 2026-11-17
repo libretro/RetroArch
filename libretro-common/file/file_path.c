@@ -847,14 +847,11 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
    const char *buf_end;
    if (resolve_symlinks)
    {
-      char *real_path;
-      strlcpy(tmp, s, sizeof(tmp));
-      real_path = realpath(tmp, NULL);
+      /* realpath() reads @s and answers in its own buffer: @s is left
+       * as it was when it fails */
+      char *real_path = realpath(s, NULL);
       if (!real_path)
-      {
-         strlcpy(s, tmp, len);
          return NULL;
-      }
       strlcpy(s, real_path, len);
       free(real_path);
       return s;
