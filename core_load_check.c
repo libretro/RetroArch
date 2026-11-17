@@ -925,6 +925,7 @@ static void core_load_park_choice(enum core_warning_choice choice,
 {
    struct core_load_park *p = &core_load_rt.park;
    unsigned serial          = *(unsigned*)userdata;
+   bool took;
    (void)core_path;
    free(userdata);
    /* A newer push runs this with CANCEL inside itself, its request
@@ -941,14 +942,20 @@ static void core_load_park_choice(enum core_warning_choice choice,
          p->state = CORE_LOAD_PARK_IDLE;
          break;
       case CORE_WARNING_ALWAYS_TRUST:
-         /* Not recorded, so this once */
-         if (!core_trust_runtime_always(c))
+         /* Not recorded, or not kept, so this once */
+         if (     !(took = core_trust_runtime_always(c))
+               || (  !core_trust_runtime_can_save()
+                  && !core_trust_runtime_waits(c)))
          {
-            const char *msg = msg_hash_to_str(MSG_CORE_LOAD_TRUST_LIST_FULL);
+            const char *msg = msg_hash_to_str(took
+                  ? MSG_CORE_LOAD_TRUST_CANT_SAVE
+                  : MSG_CORE_LOAD_TRUST_LIST_FULL);
             RARCH_WARN("[Core] Could not trust \"%s\" for good: loading it once.\n",
                   p->path);
             runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            if (took)
+               core_trust_runtime_cant_save_told();
          }
          p->state = CORE_LOAD_PARK_IDLE;
          break;

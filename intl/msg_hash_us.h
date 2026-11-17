@@ -34074,6 +34074,38 @@ MSG_HASH(
    "Core no longer trusted: RetroArch checks it the next time it loads."
    )
 MSG_HASH(
+   MSG_CORE_LOAD_TRUST_CANT_SAVE,
+   "Core trusted for this session only: RetroArch can't save its trusted cores list."
+   )
+MSG_HASH(
+   MSG_CORE_TRUST_SAVE_FAILED,
+   "RetroArch couldn't save its trusted cores list: changes to trusted cores this session won't be kept."
+   )
+MSG_HASH(
+   MSG_CORE_TRUST_FORGOTTEN_CANT_SAVE,
+   "Core no longer trusted for this session only: RetroArch can't save its trusted cores list."
+   )
+MSG_HASH(
+   MSG_CORE_TRUST_NEWER,
+   "This can't be changed now: a newer version of RetroArch saved its list of trusted cores."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_STORE_UNREADABLE,
+   "RetroArch couldn't read its trusted cores list, so cores you trusted before will ask again."
+   )
+MSG_HASH(
+   MSG_CORE_WARNING_STORE_NEWER,
+   "A newer version of RetroArch saved its trusted cores list, so cores you trusted before will ask again."
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_TRUST_LIST_FULL,
+   "Core installed, but the trusted cores list is full, so RetroArch will ask again when the core loads."
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_TRUST_CANT_SAVE,
+   "Core installed and trusted for this session only: RetroArch can't save its trusted cores list."
+   )
+MSG_HASH(
    MSG_TO,
    "to"
    )

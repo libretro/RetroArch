@@ -1359,6 +1359,7 @@ static void cb_task_core_restore(
 #ifdef HAVE_CORE_SIGNATURES
    /* Still attached: task_core_backup_cleanup() runs after this */
    core_backup_handle_t *backup_handle = (core_backup_handle_t*)task->state;
+   bool took;
 #endif
    command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
@@ -1375,12 +1376,19 @@ static void cb_task_core_restore(
             core_trust_runtime_apply(&backup_handle->check.c);
             break;
          case CORE_RESTORE_OUTCOME_TRUSTED:
-            if (!core_trust_runtime_always(&backup_handle->check.c))
+            if (     !(took = core_trust_runtime_always(
+                        &backup_handle->check.c))
+                  || (  !core_trust_runtime_can_save()
+                     && !core_trust_runtime_waits(&backup_handle->check.c)))
             {
-               const char *msg = msg_hash_to_str(MSG_CORE_LOAD_TRUST_LIST_FULL);
+               const char *msg = msg_hash_to_str(took
+                     ? MSG_CORE_INSTALL_TRUST_CANT_SAVE
+                     : MSG_CORE_INSTALL_TRUST_LIST_FULL);
                runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT,
                      MESSAGE_QUEUE_CATEGORY_WARNING);
+               if (took)
+                  core_trust_runtime_cant_save_told();
             }
             break;
          case CORE_RESTORE_OUTCOME_WARN:

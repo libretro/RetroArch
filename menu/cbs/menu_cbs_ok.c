@@ -6746,7 +6746,9 @@ int action_ok_core_signature_check(const char *path,
                CMD_EVENT_CORE_SIGNATURE_CHECK_OFF);
          return action_ok_dialog_init(menu_st);
       case CORE_TRUST_TOGGLE_READ_ONLY:
-         msg = msg_hash_to_str(MSG_CORE_TRUST_READ_ONLY);
+         msg = msg_hash_to_str(core_trust_runtime_newer()
+               ? MSG_CORE_TRUST_NEWER
+               : MSG_CORE_TRUST_READ_ONLY);
          runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
          break;
@@ -9637,15 +9639,23 @@ int action_ok_core_trust(const char *path,
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    const char *msg;
+   bool kept;
    /* A row built before the trust changed shows what is so now */
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
    /* Does nothing else unless the core is Trusted by you */
    if (!core_trust_runtime_forget(path))
       return 0;
-   msg = msg_hash_to_str(MSG_CORE_TRUST_FORGOTTEN);
+   kept = core_trust_runtime_can_save();
+   msg  = msg_hash_to_str(kept
+         ? MSG_CORE_TRUST_FORGOTTEN
+         : MSG_CORE_TRUST_FORGOTTEN_CANT_SAVE);
    runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, kept
+         ? MESSAGE_QUEUE_CATEGORY_INFO
+         : MESSAGE_QUEUE_CATEGORY_WARNING);
+   if (!kept)
+      core_trust_runtime_cant_save_told();
    return 0;
 }
 #endif

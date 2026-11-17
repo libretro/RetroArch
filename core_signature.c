@@ -726,7 +726,10 @@ enum core_trust_load core_trust_parse(core_trust_t *t,
          && !memcmp(buf, CORE_TRUST_MAGIC, CORE_TRUST_VER_AT)
          && buf[CORE_TRUST_VER_AT] >  CORE_TRUST_MAGIC[CORE_TRUST_VER_AT]
          && buf[CORE_TRUST_VER_AT] <= '9')
-      goto unreadable;
+   {
+      t->read_only = true;
+      return CORE_TRUST_LOAD_NEWER;
+   }
    if (     len < CORE_TRUST_HEAD_LEN + CORE_SHA256_LEN
          || len > CORE_TRUST_FILE_MAX
          || memcmp(buf, CORE_TRUST_MAGIC, sizeof(CORE_TRUST_MAGIC) - 1))

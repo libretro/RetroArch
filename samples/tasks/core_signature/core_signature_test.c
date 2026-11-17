@@ -1076,7 +1076,7 @@ static void test_trust_file_kept(core_trust_t *t, core_trust_t *u)
    CHECK((buf = core_trust_serialize(t, &len)) != NULL);
    buf[sizeof(CORE_TRUST_MAGIC) - 2] = '2';
    CHECK(filestream_write_file(path, buf, (int64_t)len));
-   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_NEWER);
    if ((w = core_trust_write_begin(u)))
    {
       core_trust_write_end(u, w, false);
@@ -1085,7 +1085,7 @@ static void test_trust_file_kept(core_trust_t *t, core_trust_t *u)
    CHECK(file_is(path, buf, len));
    CHECK(file_is(bad, big, CORE_TRUST_FILE_MAX + 1));
    buf[sizeof(CORE_TRUST_MAGIC) - 2] = '9';
-   CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_NEWER);
    buf[sizeof(CORE_TRUST_MAGIC) - 2] = ':';
    CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_DAMAGED);
    buf[sizeof(CORE_TRUST_MAGIC) - 2] = '0';
@@ -1093,7 +1093,7 @@ static void test_trust_file_kept(core_trust_t *t, core_trust_t *u)
    free(buf);
    memcpy(big, "RACTRST2", 8);
    CHECK(filestream_write_file(path, big, CORE_TRUST_FILE_MAX + 1));
-   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_NEWER);
    CHECK(file_is(path, big, CORE_TRUST_FILE_MAX + 1));
    free(big);
 

@@ -192,6 +192,8 @@ enum core_trust_load
    /* Never written over, so nothing it holds is lost. The store's
     * flags mean nothing then: don't seed from it. */
    CORE_TRUST_LOAD_UNREADABLE,
+   /* A newer version's: as UNREADABLE, the file kept for it */
+   CORE_TRUST_LOAD_NEWER,
    /* Read, but not a store: from core_trust_parse only */
    CORE_TRUST_LOAD_DAMAGED,
    /* Was damaged, now <path>.bad; an empty store, every flag clear */

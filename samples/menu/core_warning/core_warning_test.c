@@ -45,7 +45,13 @@
  *    else changes anything; the row hides with the checks off or the
  *    store inactive;
  *  - Manage Cores > a core > Delete core takes its hash off the trusted
- *    list.
+ *    list;
+ *  - a store that couldn't be read, or that a newer RetroArch saved:
+ *    the box says why trusted cores ask again, Untrust says it lasts
+ *    for this session, and Check Core Signatures names the newer one;
+ *    with no store at all the box says neither;
+ *  - a store whose saves fail: Untrust says it lasts for this session,
+ *    and its own failed save adds nothing.
  *
  * Requires a completed non-Qt build:
  *
@@ -65,6 +71,7 @@
 #include <lists/file_list.h>
 #include <time/rtime.h>
 #include <queues/task_queue.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <retro_timers.h>
@@ -297,6 +304,9 @@ static void lane_open(void)
          && box_says(MSG_CORE_WARNING_FULL_ACCESS)
          && box_says(MSG_CORE_WARNING_TURN_OFF),
          "open: the box text lacks a part");
+   CHECK(   !box_says(MSG_CORE_WARNING_STORE_UNREADABLE)
+         && !box_says(MSG_CORE_WARNING_STORE_NEWER),
+         "open: the box blames a store that loaded");
    /* English is about 344 B of the 1024; a translation twice the bytes
     * still fits whole */
    CHECK(strlen(MENU_STATE_TEXT(menu_state_get_ptr()->driver_data)) < 512,
@@ -2134,6 +2144,233 @@ static void lane_core_delete(const char *dir)
    path_rmdir(cores);
 }
 
+/* A store that couldn't be read, then one a newer RetroArch saved, then
+ * none at all; the harness's own store is back at the end */
+static void lane_store_trouble(const char *dir)
+{
+   static char data[4096];
+   static char home[512];
+   static char xdg[512];
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   core_trust_t *t             = core_trust_new();
+   uint8_t *buf                = NULL;
+   size_t len                  = 0;
+   struct core_check c;
+   char store[512];
+   char cores[512];
+   char core[512];
+   const char *msg;
+   bool changed;
+   FILE *f;
+
+   strlcpy(store, dir, sizeof(store));
+   strlcat(store, "/unreadable_store", sizeof(store));
+   CHECK(path_mkdir(store), "fixture: can't make the unreadable store");
+   task_queue_wait(NULL, NULL);
+   core_trust_runtime_deinit();
+   CHECK(core_trust_runtime_init(store, NULL, NULL)
+         && core_trust_runtime_read_only(),
+         "fixture: the store isn't read-only");
+   push(&seen_a, CORE_WARNING_LOAD, 0x43, CORE_CHECK_UNSIGNED);
+   pump(3);
+   CHECK(   box_says(MSG_CORE_WARNING_STORE_UNREADABLE)
+         && !box_says(MSG_CORE_WARNING_STORE_NEWER),
+         "store trouble: the box doesn't say the list couldn't be read");
+   CHECK(strlen(MENU_STATE_TEXT(menu_state_get_ptr()->driver_data)) < 512,
+         "store trouble: the box text is near the buffer size");
+   answer(MENU_ACTION_CANCEL);
+
+   strlcpy(cores, dir, sizeof(cores));
+   strlcat(cores, "/cores", sizeof(cores));
+   strlcpy(core, cores, sizeof(core));
+   strlcat(core, "/trouble_libretro.so", sizeof(core));
+   memset(data, 0x6b, sizeof(data));
+   CHECK(path_mkdir(cores), "fixture: can't make the cores folder");
+   f = fopen(core, "wb");
+   CHECK(f && fwrite(data, 1, sizeof(data), f) == sizeof(data),
+         "fixture: can't write the core");
+   if (f)
+      fclose(f);
+   if (trust_core(core, &c) == CORE_TRUST_STATE_TRUSTED)
+   {
+      push_core_page(core);
+      msg = trust_row_press(MENU_ACTION_OK, &changed);
+      CHECK(msg && string_is_equal(msg,
+               msg_hash_to_str(MSG_CORE_TRUST_FORGOTTEN_CANT_SAVE)),
+            "store trouble: Untrust didn't say it lasts for this session");
+      CHECK(!hash_trusted(c.rec.sha256),
+            "store trouble: Untrust left its hash trusted");
+   }
+   else
+      fprintf(stderr, "note: lane_store_trouble's Untrust skipped, no "
+            "records in %s\n", dir);
+   remove(core);
+   remove_cores_folder(cores, "trouble_libretro");
+   core_trust_runtime_deinit();
+   path_rmdir(store);
+
+   strlcpy(store, dir, sizeof(store));
+   strlcat(store, "/newer_store", sizeof(store));
+   if (t)
+   {
+      buf = core_trust_serialize(t, &len);
+      core_trust_free(t);
+   }
+   CHECK(buf, "fixture: can't make a store");
+   if (buf)
+   {
+      buf[sizeof(CORE_TRUST_MAGIC) - 2] = '2';
+      f = fopen(store, "wb");
+      CHECK(f && fwrite(buf, 1, len, f) == len,
+            "fixture: can't write the newer store");
+      if (f)
+         fclose(f);
+      free(buf);
+   }
+   CHECK(core_trust_runtime_init(store, NULL, NULL)
+         && core_trust_runtime_newer(),
+         "fixture: the newer store isn't read-only as a newer one's");
+   push(&seen_a, CORE_WARNING_LOAD, 0x44, CORE_CHECK_UNSIGNED);
+   pump(3);
+   CHECK(   box_says(MSG_CORE_WARNING_STORE_NEWER)
+         && !box_says(MSG_CORE_WARNING_STORE_UNREADABLE),
+         "store trouble: the box doesn't say a newer RetroArch saved the list");
+   answer(MENU_ACTION_CANCEL);
+   push_core_settings();
+   msg_queue_clear(&runloop_st->msg_queue);
+   ok_on(row(MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK));
+   msg = msg_queue_pull(&runloop_st->msg_queue);
+   CHECK(msg && string_is_equal(msg, msg_hash_to_str(MSG_CORE_TRUST_NEWER)),
+         "store trouble: Check Core Signatures didn't name the newer one");
+   core_trust_runtime_deinit();
+   remove(store);
+
+   /* No folder for a store: nothing to read */
+   strlcpy(home, getenv("HOME") ? getenv("HOME") : "", sizeof(home));
+   strlcpy(xdg, getenv("XDG_CONFIG_HOME") ? getenv("XDG_CONFIG_HOME") : "",
+         sizeof(xdg));
+   unsetenv("HOME");
+   unsetenv("XDG_CONFIG_HOME");
+   CHECK(core_trust_runtime_init(NULL, NULL, NULL)
+         && core_trust_runtime_read_only()
+         && !core_trust_runtime_newer(),
+         "fixture: the store has a path");
+   if (*home)
+      setenv("HOME", home, 1);
+   if (*xdg)
+      setenv("XDG_CONFIG_HOME", xdg, 1);
+   push(&seen_a, CORE_WARNING_LOAD, 0x45, CORE_CHECK_UNSIGNED);
+   pump(3);
+   CHECK(   shown()
+         && !box_says(MSG_CORE_WARNING_STORE_UNREADABLE)
+         && !box_says(MSG_CORE_WARNING_STORE_NEWER),
+         "store trouble: with no list at all the box speaks of one");
+   answer(MENU_ACTION_CANCEL);
+   core_trust_runtime_deinit();
+
+   strlcpy(store, dir, sizeof(store));
+   strlcat(store, "/core_trust", sizeof(store));
+   CHECK(core_trust_runtime_init(store, NULL, NULL)
+         && !core_trust_runtime_read_only(),
+         "fixture: the harness's store didn't come back");
+}
+
+static int RETRO_CALLCONV refuse_rename(const char *old_path,
+      const char *new_path)
+{
+   (void)old_path;
+   (void)new_path;
+   return -1;
+}
+
+/* Every store save fails at its rename while on */
+static void saves_fail(bool on)
+{
+   static struct retro_vfs_interface iface;
+   struct retro_vfs_interface_info info;
+   iface.rename                    = refuse_rename;
+   info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+   info.iface                      = on ? &iface : NULL;
+   filestream_vfs_init(&info);
+}
+
+/* A store whose saves fail: Untrust says it lasts for this session, and
+ * nothing more when its own save fails too; the harness's own store is
+ * back at the end */
+static void lane_saves_fail(const char *dir)
+{
+   static char data[4096];
+   static const uint8_t folder[CORE_SHA256_LEN] = { 9 };
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   struct core_check c;
+   struct core_check n;
+   char store[512];
+   char cores[512];
+   char core[512];
+   const char *msg;
+   bool changed;
+   FILE *f;
+
+   strlcpy(store, dir, sizeof(store));
+   strlcat(store, "/saves_fail_store", sizeof(store));
+   task_queue_wait(NULL, NULL);
+   core_trust_runtime_deinit();
+   CHECK(core_trust_runtime_init(store, NULL, NULL),
+         "fixture: can't open a store");
+   strlcpy(cores, dir, sizeof(cores));
+   strlcat(cores, "/cores", sizeof(cores));
+   strlcpy(core, cores, sizeof(core));
+   strlcat(core, "/fails_libretro.so", sizeof(core));
+   memset(data, 0x4f, sizeof(data));
+   CHECK(path_mkdir(cores), "fixture: can't make the cores folder");
+   f = fopen(core, "wb");
+   CHECK(f && fwrite(data, 1, sizeof(data), f) == sizeof(data),
+         "fixture: can't write the core");
+   if (f)
+      fclose(f);
+   if (trust_core(core, &c) == CORE_TRUST_STATE_TRUSTED)
+   {
+      task_queue_wait(NULL, NULL);
+      saves_fail(true);
+      /* A failed save of no change of the user's says nothing */
+      fake_check(&n, "newest_libretro.so", 0x46, CORE_CHECK_OK);
+      memcpy(n.folder, folder, sizeof(folder));
+      n.rec.build_time = 5;
+      n.raise_newest   = true;
+      msg_queue_clear(&runloop_st->msg_queue);
+      CHECK(core_trust_runtime_apply(&n),
+            "fixture: can't raise the newest build");
+      task_queue_wait(NULL, NULL);
+      CHECK(   !core_trust_runtime_can_save()
+            && !msg_queue_pull(&runloop_st->msg_queue),
+            "fixture: the save didn't fail quietly");
+      push_core_page(core);
+      msg = trust_row_press(MENU_ACTION_OK, &changed);
+      CHECK(msg && string_is_equal(msg,
+               msg_hash_to_str(MSG_CORE_TRUST_FORGOTTEN_CANT_SAVE)),
+            "saves fail: Untrust didn't say it lasts for this session");
+      msg_queue_clear(&runloop_st->msg_queue);
+      task_queue_wait(NULL, NULL);
+      CHECK(!msg_queue_pull(&runloop_st->msg_queue),
+            "saves fail: Untrust's own failed save said more");
+      saves_fail(false);
+   }
+   else
+      fprintf(stderr, "note: lane_saves_fail skipped, no records in %s\n",
+            dir);
+   pump(3);
+   remove(core);
+   remove_cores_folder(cores, "fails_libretro");
+   core_trust_runtime_deinit();
+   remove(store);
+
+   strlcpy(store, dir, sizeof(store));
+   strlcat(store, "/core_trust", sizeof(store));
+   CHECK(core_trust_runtime_init(store, NULL, NULL)
+         && !core_trust_runtime_read_only(),
+         "fixture: the harness's store didn't come back");
+}
+
 static void lane_setting(const char *dir)
 {
    char path[512];
@@ -2313,6 +2550,8 @@ int main(int argc, char *argv[])
       lane_replaced();
       lane_core_trust(dir);
       lane_core_delete(dir);
+      lane_store_trouble(dir);
+      lane_saves_fail(dir);
       lane_setting(dir);
       synthetic_remove();
       lane_outside_load(dir);

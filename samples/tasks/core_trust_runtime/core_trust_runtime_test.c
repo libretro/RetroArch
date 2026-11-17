@@ -427,12 +427,52 @@ static void test_load_unreadable(void)
    CHECK(core_trust_runtime_init(path, NULL, NULL));
    CHECK(core_trust_runtime_active());
    CHECK(core_trust_runtime_read_only());
+   CHECK(core_trust_runtime_unreadable());
    CHECK(core_trust_runtime_checks_on());
    CHECK(!core_trust_runtime_set_checks(false));
    CHECK(core_trust_runtime_checks_on());
    pump(4);
    core_trust_runtime_deinit();
    CHECK(path_is_directory(path));
+}
+
+/* A newer RetroArch's store: read-only, and left as it is */
+static void test_load_newer(void)
+{
+   core_trust_t *t = core_trust_new();
+   uint8_t *buf    = NULL;
+   void *got       = NULL;
+   int64_t got_len = 0;
+   size_t len      = 0;
+   char path[256];
+   strlcpy(path, tmp("newer"), sizeof(path));
+   if (t)
+   {
+      buf = core_trust_serialize(t, &len);
+      core_trust_free(t);
+   }
+   CHECK(buf != NULL);
+   if (!buf)
+      return;
+   buf[sizeof(CORE_TRUST_MAGIC) - 2] = '2';
+   CHECK(filestream_write_file(path, buf, (int64_t)len));
+   CHECK(core_trust_runtime_init(path, NULL, NULL));
+   CHECK(   core_trust_runtime_read_only()
+         && core_trust_runtime_newer()
+         && !core_trust_runtime_can_save());
+   CHECK(core_trust_runtime_toggle_checks() == CORE_TRUST_TOGGLE_READ_ONLY);
+   pump(4);
+   core_trust_runtime_deinit();
+   CHECK(filestream_read_file(path, &got, &got_len));
+   CHECK(got && got_len == (int64_t)len && !memcmp(got, buf, len));
+   free(got);
+   free(buf);
+   /* One that can't be read isn't a newer one's */
+   strlcpy(path, tmp("newer_dir"), sizeof(path));
+   CHECK(path_mkdir(path));
+   CHECK(core_trust_runtime_init(path, NULL, NULL));
+   CHECK(core_trust_runtime_read_only() && !core_trust_runtime_newer());
+   core_trust_runtime_deinit();
 }
 
 static void test_toggle(void)
@@ -478,6 +518,64 @@ static void test_can_save(void)
    core_trust_runtime_deinit();
 }
 
+/* A save of the user's own change that fails says so, once a session */
+static void test_save_failed_once(void)
+{
+   struct core_check c;
+   char path[256];
+   unsigned warns;
+   strlcpy(path, tmp("save_failed"), sizeof(path));
+   CHECK(write_store(path, 0));
+   CHECK(core_trust_runtime_init(path, NULL, NULL));
+   osd_count = 0;
+   warns     = warn_count;
+   saves_fail(true);
+   fake_check(&c, "a_libretro.so", 1, CORE_CHECK_UNSIGNED);
+   CHECK(core_trust_runtime_always(&c));
+   pump(8);
+   CHECK(osd_shown(MSG_CORE_TRUST_SAVE_FAILED) == 1);
+   CHECK(!core_trust_runtime_can_save());
+   CHECK(warn_count > warns);
+   fake_check(&c, "b_libretro.so", 2, CORE_CHECK_UNSIGNED);
+   CHECK(core_trust_runtime_always(&c));
+   CHECK(core_trust_runtime_set_checks(false));
+   pump(8);
+   CHECK(osd_shown(MSG_CORE_TRUST_SAVE_FAILED) == 1);
+   saves_fail(false);
+   fake_check(&c, "c_libretro.so", 3, CORE_CHECK_UNSIGNED);
+   CHECK(core_trust_runtime_always(&c));
+   pump(8);
+   CHECK(core_trust_runtime_can_save());
+   core_trust_runtime_deinit();
+}
+
+/* Nothing on screen for a change the user didn't make, or at exit */
+static void test_save_failed_quiet(void)
+{
+   static const uint8_t folder[CORE_SHA256_LEN] = { 7 };
+   struct core_check c;
+   char path[256];
+   unsigned warns;
+   strlcpy(path, tmp("save_failed_quiet"), sizeof(path));
+   CHECK(write_store(path, 0));
+   CHECK(core_trust_runtime_init(path, NULL, NULL));
+   osd_count = 0;
+   saves_fail(true);
+   fake_check(&c, "s_libretro.so", 4, CORE_CHECK_OK);
+   memcpy(c.folder, folder, sizeof(folder));
+   c.rec.build_time = 5;
+   c.raise_newest   = true;
+   CHECK(core_trust_runtime_apply(&c));
+   pump(8);
+   CHECK(osd_shown(MSG_CORE_TRUST_SAVE_FAILED) == 0);
+   CHECK(!core_trust_runtime_can_save());
+   warns = warn_count;
+   core_trust_runtime_deinit();
+   CHECK(osd_shown(MSG_CORE_TRUST_SAVE_FAILED) == 0);
+   CHECK(warn_count > warns);
+   saves_fail(false);
+}
+
 /* NULL: the default path, a file of its own with the test key, or
  * read-only when there is none */
 static void test_default_path(void)
@@ -502,6 +600,8 @@ static void test_default_path(void)
    CHECK(core_trust_runtime_init(NULL, NULL, NULL));
    CHECK(core_trust_runtime_active());
    CHECK(core_trust_runtime_read_only());
+   /* No file, so none that couldn't be read */
+   CHECK(!core_trust_runtime_unreadable() && !core_trust_runtime_newer());
    CHECK(core_trust_runtime_checks_on());
    CHECK(!core_trust_runtime_set_checks(false));
    core_trust_runtime_deinit();
@@ -825,6 +925,45 @@ static void test_runtime_state(void)
    CHECK(core_trust_runtime_forget(a));
    CHECK(core_trust_runtime_state(a) == CORE_TRUST_STATE_UNCHECKED);
    pump(8);
+   core_trust_runtime_deinit();
+}
+
+/* Untrust alone, and the checks setting alone, are changes the user
+ * made: a failed save says so */
+static void test_save_failed_user(void)
+{
+   char path[256], dir[256], a[256];
+   strlcpy(path, tmp("save_failed_checks"), sizeof(path));
+   CHECK(write_store(path, 0));
+   CHECK(core_trust_runtime_init(path, NULL, NULL));
+   osd_count = 0;
+   saves_fail(true);
+   CHECK(core_trust_runtime_set_checks(false));
+   pump(8);
+   CHECK(osd_shown(MSG_CORE_TRUST_SAVE_FAILED) == 1);
+   saves_fail(false);
+   core_trust_runtime_deinit();
+   strlcpy(dir, tmp("save_failed_forget"), sizeof(dir));
+   strlcpy(path, tmp("save_failed_forget_store"), sizeof(path));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(a, dir, "a_libretro.core", sizeof(a));
+   CHECK(put_file(a, 24, 1000));
+   CHECK(core_trust_runtime_init(path, NULL, NULL));
+   CHECK(always_trust(a, true));
+   pump(8);
+   if (state_now(a) != CORE_TRUST_STATE_TRUSTED)
+   {
+      printf("note: test_save_failed_user's Untrust skipped, no records "
+            "on %s's filesystem\n", dir);
+      core_trust_runtime_deinit();
+      return;
+   }
+   osd_count = 0;
+   saves_fail(true);
+   CHECK(core_trust_runtime_forget(a));
+   pump(8);
+   CHECK(osd_shown(MSG_CORE_TRUST_SAVE_FAILED) == 1);
+   saves_fail(false);
    core_trust_runtime_deinit();
 }
 
@@ -1265,6 +1404,7 @@ static void test_seed_save_fails(void)
       CHECK(!core_trust_runtime_seed_pending());
       CHECK(!trusted(core));
       CHECK(osd_shown(MSG_CORE_TRUST_SEEDED) == 0);
+      CHECK(osd_shown(MSG_CORE_TRUST_SAVE_FAILED) == 0);
       CHECK(!core_trust_runtime_can_save());
       CHECK(warn_count == warns + 1);
       CHECK(!path_is_valid(store));
@@ -1847,14 +1987,18 @@ int main(void)
       test_load_good();
       test_load_damaged();
       test_load_unreadable();
+      test_load_newer();
       test_toggle();
       test_can_save();
+      test_save_failed_once();
+      test_save_failed_quiet();
       test_default_path();
       test_saves_chained();
       test_deinit_writes();
       test_apply_always();
       test_forget();
       test_runtime_state();
+      test_save_failed_user();
       test_snapshot_threads();
       test_test_key_notice();
       test_test_key_notice_off();

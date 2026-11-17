@@ -27,8 +27,16 @@ static struct
    /* Tells a task finishing after deinit it belongs to an older store */
    unsigned gen;
    bool read_only;
+   /* Read-only: a newer version's store */
+   bool newer;
+   /* Read-only: a store file that couldn't be read */
+   bool unreadable;
    /* Changed since the last write that went through */
    bool unsaved;
+   /* The user changed it, and no write has taken that out yet */
+   bool user_unsaved;
+   /* The user was told the list can't be saved */
+   bool cant_save_told;
    bool notify_ready;
    /* Deinit is cancelling the warning: no new one */
    bool closing;
@@ -79,6 +87,8 @@ struct core_trust_save
    /* The seed's own write: it walks once this went through */
    struct core_trust_seed *sd;
    unsigned gen;
+   /* Carries a change the user made */
+   bool user;
    bool written;
 };
 
@@ -87,6 +97,22 @@ static bool core_trust_runtime_save(struct core_trust_seed *sd);
 static void core_trust_seed_saved(struct core_trust_seed *sd, bool walk);
 static void core_trust_seed_free(struct core_trust_seed *sd);
 #endif
+
+/* Logged each time; on screen once a session, for a change the user
+ * made, unless they were told the list can't be saved */
+static void core_trust_save_failed(const char *path, bool user)
+{
+   const char *msg;
+   RARCH_WARN("[Core] Could not save \"%s\".\n", path);
+   if (!user)
+      return;
+   if (core_trust_rt.cant_save_told)
+      return;
+   core_trust_rt.cant_save_told = true;
+   msg = msg_hash_to_str(MSG_CORE_TRUST_SAVE_FAILED);
+   runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+}
 
 static void core_trust_save_handler(retro_task_t *task)
 {
@@ -106,6 +132,9 @@ static void core_trust_save_cb(retro_task_t *task, void *task_data,
    again = core_trust_write_end(core_trust_rt.t, st->w, st->written);
    st->w = NULL;
    core_trust_rt.write_failed = !st->written;
+   /* The seed's own is logged below */
+   if (!st->written && !st->sd)
+      core_trust_save_failed(st->path, st->user);
 #ifdef HAVE_CORE_LOAD_CHECK
    if (st->sd)
    {
@@ -161,24 +190,31 @@ static bool core_trust_runtime_save(struct core_trust_seed *sd)
    st->w          = w;
    st->sd         = sd;
    st->gen        = core_trust_rt.gen;
+   st->user       = core_trust_rt.user_unsaved;
    task->state    = st;
    task->handler  = core_trust_save_handler;
    task->callback = core_trust_save_cb;
    task->cleanup  = core_trust_save_cleanup;
    task->flags   |= RETRO_TASK_FLG_MUTE;
+   core_trust_rt.user_unsaved = false;
    task_queue_push(task);
    return true;
 }
 
-/* Saves when before is no longer the store's set */
-static bool core_trust_runtime_changed(core_trust_set_t *before)
+/* Saves when before is no longer the store's set; user when the user
+ * made the change */
+static bool core_trust_runtime_changed(core_trust_set_t *before, bool user)
 {
    core_trust_set_t *now = core_trust_get(core_trust_rt.t);
    bool changed          = now != before;
    core_trust_set_put(now);
    core_trust_set_put(before);
    if (changed)
+   {
+      if (user)
+         core_trust_rt.user_unsaved = true;
       core_trust_runtime_save(NULL);
+   }
    return changed;
 }
 
@@ -405,7 +441,7 @@ static void core_trust_seed_cb(retro_task_t *task, void *task_data,
       core_trust_set_flag(core_trust_rt.t, CORE_TRUST_NOTICE_SHOWN, true);
       core_trust_rt.seed_notice = true;
    }
-   core_trust_runtime_changed(before);
+   core_trust_runtime_changed(before, false);
    core_trust_runtime_show();
 }
 
@@ -542,7 +578,14 @@ static void core_trust_sweep_cb(retro_task_t *task, void *task_data,
       runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
    }
-   core_trust_runtime_changed(before);
+   if (refused < n && !core_trust_runtime_can_save())
+   {
+      const char *msg = msg_hash_to_str(MSG_CORE_LOAD_TRUST_CANT_SAVE);
+      runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      core_trust_runtime_cant_save_told();
+   }
+   core_trust_runtime_changed(before, refused < n);
 }
 
 /* Walks the seed folder for the hashes no core there has */
@@ -625,6 +668,7 @@ static bool core_trust_runtime_default_path(char *s, size_t len)
 bool core_trust_runtime_init(const char *path, const char *seed_dir,
       const char *core_ext)
 {
+   enum core_trust_load load;
    size_t num_keys;
    if (core_trust_rt.t)
       return true;
@@ -639,8 +683,13 @@ bool core_trust_runtime_init(const char *path, const char *seed_dir,
             sizeof(core_trust_rt.path)))
       core_trust_rt.read_only = true;
    else
-      core_trust_rt.read_only = core_trust_load_file(core_trust_rt.t,
-            core_trust_rt.path) == CORE_TRUST_LOAD_UNREADABLE;
+   {
+      load = core_trust_load_file(core_trust_rt.t, core_trust_rt.path);
+      core_trust_rt.newer      = load == CORE_TRUST_LOAD_NEWER;
+      core_trust_rt.unreadable = load == CORE_TRUST_LOAD_UNREADABLE;
+      core_trust_rt.read_only  = core_trust_rt.newer
+         || core_trust_rt.unreadable;
+   }
 #ifdef HAVE_CORE_LOAD_CHECK
    if (seed_dir)
       strlcpy(core_trust_rt.seed_dir, seed_dir,
@@ -670,8 +719,12 @@ void core_trust_runtime_deinit(void)
    if (     core_trust_rt.unsaved
          && !core_trust_rt.read_only
          && (w = core_trust_write_begin(core_trust_rt.t)))
-      core_trust_write_end(core_trust_rt.t, w,
-            core_trust_write_run(w, core_trust_rt.path));
+   {
+      bool written = core_trust_write_run(w, core_trust_rt.path);
+      if (!written)
+         core_trust_save_failed(core_trust_rt.path, false);
+      core_trust_write_end(core_trust_rt.t, w, written);
+   }
    core_trust_free(core_trust_rt.t);
    memset(&core_trust_rt, 0, sizeof(core_trust_rt));
    core_trust_rt.gen = gen;
@@ -693,11 +746,27 @@ bool core_trust_runtime_read_only(void)
    return core_trust_rt.read_only;
 }
 
+bool core_trust_runtime_newer(void)
+{
+   return core_trust_rt.newer;
+}
+
+bool core_trust_runtime_unreadable(void)
+{
+   return core_trust_rt.unreadable;
+}
+
 bool core_trust_runtime_can_save(void)
 {
    return   core_trust_rt.t
          && !core_trust_rt.read_only
          && !core_trust_rt.write_failed;
+}
+
+void core_trust_runtime_cant_save_told(void)
+{
+   if (core_trust_rt.t)
+      core_trust_rt.cant_save_told = true;
 }
 
 core_trust_set_t *core_trust_runtime_get(void)
@@ -716,7 +785,7 @@ bool core_trust_runtime_apply(const struct core_check *c)
       core_trust_set_put(before);
       return false;
    }
-   core_trust_runtime_changed(before);
+   core_trust_runtime_changed(before, false);
    return true;
 }
 
@@ -738,8 +807,22 @@ bool core_trust_runtime_always(const struct core_check *c)
 #ifdef HAVE_CORE_LOAD_CHECK
    core_trust_session_add(c->rec.sha256);
 #endif
-   core_trust_runtime_changed(before);
+   core_trust_runtime_changed(before, true);
    return true;
+}
+
+bool core_trust_runtime_waits(const struct core_check *c)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   unsigned i;
+   for (i = 0; i < core_trust_rt.num_sweep_wait; i++)
+      if (!memcmp(core_trust_rt.sweep_wait[i].rec.sha256, c->rec.sha256,
+               CORE_SHA256_LEN))
+         return true;
+#else
+   (void)c;
+#endif
+   return false;
 }
 
 bool core_trust_runtime_forget(const char *core_path)
@@ -756,7 +839,7 @@ bool core_trust_runtime_forget(const char *core_path)
       core_trust_set_put(before);
       return false;
    }
-   core_trust_runtime_changed(before);
+   core_trust_runtime_changed(before, true);
 #ifdef HAVE_CORE_LOAD_CHECK
    core_trust_session_drop(sha256);
    core_load_check_untrust(core_path);
@@ -793,7 +876,7 @@ bool core_trust_runtime_set_checks(bool on)
       core_trust_set_put(before);
       return false;
    }
-   core_trust_runtime_changed(before);
+   core_trust_runtime_changed(before, true);
    return true;
 }
 
