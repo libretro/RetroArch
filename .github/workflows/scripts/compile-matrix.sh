@@ -1365,7 +1365,7 @@ else
       | grep -vE '^(deps|samples|libretro-common/samples|tools|pkg|os|wiiu)/')
 fi
 SCE_CC=${SCE_CC:-clang}
-SCE_SYS="-isystem /usr/include"
+SCE_SYS="-isystem tools/platform_stubs/sce -isystem /usr/include"
 [ -d /usr/include/x86_64-linux-gnu ] \
    && SCE_SYS="$SCE_SYS -isystem /usr/include/x86_64-linux-gnu"
 SCE_DEFS="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_REWIND -DHAVE_CHEATS -D_BSD_SOURCE"
