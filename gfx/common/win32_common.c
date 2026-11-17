@@ -283,6 +283,8 @@ static HMONITOR d3dkmt_monitor;
 static retro_atomic_int_t d3dkmt_seq     = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t d3dkmt_adapter = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t d3dkmt_source  = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* Counts the monitors followed (win32_d3dkmt_generation) */
+static retro_atomic_int_t d3dkmt_moves   = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 static bool d3dkmt_bound(D3DKMT_HANDLE *adapter, UINT *source)
 {
@@ -370,20 +372,26 @@ void win32_d3dkmt_follow(HWND hwnd, bool force)
    UINT source           = 0;
    HMONITOR mon          = hwnd
       ? MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) : NULL;
-   /* Both exports are WDDM, absent under XDDM: nothing is bound, and
-    * d3dkmt_scanline_get() reports -1. */
-   if (     !pD3DKMTOpenAdapterFromHdc
-         || !mon
-         || (mon == d3dkmt_monitor && !force))
+   if (!mon || (mon == d3dkmt_monitor && !force))
       return;
    /* Whether or not it opens: a window being dragged asks on every
     * move */
    d3dkmt_monitor = mon;
+   retro_atomic_inc_int(&d3dkmt_moves);
+   /* Both exports are WDDM, absent under XDDM: nothing is bound, and
+    * d3dkmt_scanline_get() reports -1. */
+   if (!pD3DKMTOpenAdapterFromHdc)
+      return;
    memset(&info, 0, sizeof(info));
    info.cbSize    = sizeof(MONITORINFOEX);
    if (     GetMonitorInfo(mon, (LPMONITORINFO)&info)
          && d3dkmt_open(info.szDevice, &adapter, &source))
       d3dkmt_bind(adapter, source);
+}
+
+unsigned win32_d3dkmt_generation(void)
+{
+   return (unsigned)retro_atomic_load_relaxed_int(&d3dkmt_moves);
 }
 
 static void d3dkmt_init(void)

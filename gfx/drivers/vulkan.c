@@ -75,6 +75,9 @@
 #endif
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "../common/win_vulkan_dxgi.h"
+#ifdef HAVE_D3DKMT
+#include "../common/win32_common.h"
+#endif
 #endif
 #include "../common/vulkan_memory_type.h"
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
@@ -420,6 +423,8 @@ typedef struct vk
     * (vulkan_present_immediate) */
    VkSwapchainKHR flips_asked;
    VkSwapchainKHR flips_for;
+   /* and win32_d3dkmt_generation() as it was asked */
+   unsigned flips_generation;
 #endif
    vulkan_filter_chain_t *filter_chain;
    vulkan_filter_chain_t *filter_chain_default;
@@ -10001,19 +10006,26 @@ static bool vulkan_present_immediate(void *data)
     * the presenter's own answer, for the interval it is given */
    {
       gfx_ctx_vulkan_data_t *ctx = VULKAN_CTX_DATA_FROM_CONTEXT(vk->context);
+#ifdef HAVE_D3DKMT
+      unsigned generation        = win32_d3dkmt_generation();
+#else
+      unsigned generation        = 0;
+#endif
       if (ctx->dxgi_presenter)
          return vk->context->swap_interval <= 0
             && ra_vulkan_dxgi_immediate(
-                  (ra_vulkan_dxgi_t*)ctx->dxgi_presenter);
+                  (ra_vulkan_dxgi_t*)ctx->dxgi_presenter, generation);
       /* A swapchain of its own tears only past the compositor: its
-       * window's output is asked, once a swapchain */
+       * window's output is asked, once a swapchain and once an output */
       if (     vk->context->swapchain_present_mode
             != VK_PRESENT_MODE_IMMEDIATE_KHR)
          return false;
-      if (vk->flips_asked != ctx->swapchain)
+      if (     vk->flips_asked      != ctx->swapchain
+            || vk->flips_generation != generation)
       {
-         vk->flips_asked = ctx->swapchain;
-         vk->flips_for   = ra_vulkan_dxgi_window_flips_fullscreen(
+         vk->flips_asked      = ctx->swapchain;
+         vk->flips_generation = generation;
+         vk->flips_for        = ra_vulkan_dxgi_window_flips_fullscreen(
                (HWND)ctx->dxgi_window) ? ctx->swapchain : VK_NULL_HANDLE;
       }
       return ctx->swapchain != VK_NULL_HANDLE

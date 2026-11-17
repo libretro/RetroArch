@@ -1034,6 +1034,9 @@ typedef struct
       unsigned      retired_count;
    } record;
    d3d_driver_pacing_t driver_pacing;
+   /* win32_d3dkmt_generation() as the output was asked
+    * (D3D12_ST_FLAG_FLIPS_ASKED) */
+   unsigned            flips_generation;
 } d3d12_video_t;
 
 /* Every present of the swapchain, with Driver Pacing's markers
@@ -7804,7 +7807,15 @@ static bool d3d12_present_immediate(void *data)
    if (!d3d12 || (d3d12->flags & D3D12_ST_FLAG_VSYNC))
       return false;
 #if !defined(__WINRT__) && !defined(_XBOX)
-   /* ...and it tears only past the compositor */
+   /* ...and it tears only past the compositor: of the output the
+    * window is on now */
+#ifdef HAVE_D3DKMT
+   if (d3d12->flips_generation != win32_d3dkmt_generation())
+   {
+      d3d12->flips_generation = win32_d3dkmt_generation();
+      d3d12->flags           &= ~D3D12_ST_FLAG_FLIPS_ASKED;
+   }
+#endif
    if (!(d3d12->flags & D3D12_ST_FLAG_FLIPS_ASKED))
    {
       d3d12->flags |=  D3D12_ST_FLAG_FLIPS_ASKED;

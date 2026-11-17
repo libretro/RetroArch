@@ -339,6 +339,11 @@ unsigned d3dkmt_vblank_wait(unsigned seen, unsigned timeout_us,
  * window's thread whenever the window may have changed monitors;
  * @force rebinds the same monitor too, after a display change. */
 void win32_d3dkmt_follow(HWND hwnd, bool force);
+
+/* Changes whenever that happens - the window on another monitor, or
+ * its display changed: what a driver asked of the window's output is
+ * to be asked again. Any thread. */
+unsigned win32_d3dkmt_generation(void);
 #endif /* HAVE_D3DKMT */
 
 RETRO_END_DECLS

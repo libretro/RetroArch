@@ -1094,7 +1094,13 @@ static bool gfx_ctx_wgl_present_immediate(void *data)
 #else
    gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t *)data;
    return wgl && wgl->dxgi && win32_interval <= 0
-      && ra_wgl_dxgi_immediate((ra_wgl_dxgi_t *)wgl->dxgi);
+      && ra_wgl_dxgi_immediate((ra_wgl_dxgi_t *)wgl->dxgi,
+#ifdef HAVE_D3DKMT
+            win32_d3dkmt_generation()
+#else
+            0
+#endif
+            );
 #endif
 }
 

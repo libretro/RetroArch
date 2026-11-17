@@ -807,6 +807,9 @@ typedef struct
       bool            enable;
    } record;
    d3d_driver_pacing_t   driver_pacing;
+   /* win32_d3dkmt_generation() as the output was asked
+    * (D3D11_ST_FLAG_FLIPS_ASKED) */
+   unsigned              flips_generation;
 } d3d11_video_t;
 
 #ifdef D3D11_FRAME_IMPORT
@@ -5991,7 +5994,15 @@ static bool d3d11_present_immediate(void *data)
          ||  (d3d11->flags & D3D11_ST_FLAG_VSYNC))
       return false;
 #if !defined(__WINRT__) && !defined(_XBOX)
-   /* ...and it tears only past the compositor */
+   /* ...and it tears only past the compositor: of the output the
+    * window is on now */
+#ifdef HAVE_D3DKMT
+   if (d3d11->flips_generation != win32_d3dkmt_generation())
+   {
+      d3d11->flips_generation = win32_d3dkmt_generation();
+      d3d11->flags           &= ~D3D11_ST_FLAG_FLIPS_ASKED;
+   }
+#endif
    if (!(d3d11->flags & D3D11_ST_FLAG_FLIPS_ASKED))
    {
       d3d11->flags |=  D3D11_ST_FLAG_FLIPS_ASKED;
