@@ -55,6 +55,7 @@
 #include "verbosity.h"
 #ifdef HAVE_CORE_LOAD_CHECK
 #include "core_load_check.h"
+#include "core_load_file.h"
 #endif
 
 /* ===== BEGIN runahead dense input cache =====
@@ -504,6 +505,13 @@ static bool runahead_tmp_dir_private(const char *dir)
  * shared per-frame I/O window, not this. */
 #define RUNAHEAD_COPY_STEP_BYTES ((int64_t)4 * 1024 * 1024)
 
+/* Android 6+ maps the second instance from the running core's own
+ * file instead: no copy, nothing to hash */
+#if defined(ANDROID) && defined(HAVE_CORE_LOAD_CHECK) \
+      && !defined(RUNAHEAD_INSTANCE_LOAD)
+#define RUNAHEAD_INSTANCE_LOAD 1
+#endif
+
 /* Result slot, published by the task callback (main thread) */
 static char *runahead_copy_slot_path     = NULL;
 static char *runahead_copy_slot_src      = NULL; /* identity of the copy */
@@ -541,6 +549,11 @@ typedef struct runahead_copy_handle
    char *copy_dst;   /* destination the open copy is writing to */
    dylib_t lib;      /* out_path opened by the task; NULL if it
                       * could not be, and the caller opens it */
+#ifdef RUNAHEAD_INSTANCE_LOAD
+   core_file_t *instance;     /* the running core's file, loaded again */
+   char *instance_path;       /* the path it was loaded by */
+   function_t primary_run;    /* the running instance's retro_run */
+#endif
 #ifdef HAVE_CORE_LOAD_CHECK
    core_load_match_t *match;  /* the copy against the running core */
    struct core_load_source src;
@@ -711,6 +724,30 @@ static void runahead_copy_task_begin(runahead_copy_handle_t *h)
    free(tmpdir);
 }
 
+#ifdef RUNAHEAD_INSTANCE_LOAD
+/* A second instance from the running core's file, with no copy and
+ * nothing to hash. False to make the copy: an older linker refused,
+ * or one that ignored the request handed back the running instance,
+ * which its retro_run gives away. */
+static bool runahead_instance_load(runahead_copy_handle_t *h)
+{
+   dylib_t lib = core_load_file_instance(h->instance, h->instance_path);
+   core_file_close(h->instance);
+   h->instance = NULL;
+   if (!lib)
+      return false;
+   if (     !h->primary_run
+         || dylib_proc(lib, "retro_run") == h->primary_run)
+   {
+      dylib_close(lib);
+      return false;
+   }
+   h->lib    = lib;
+   h->failed = false;
+   return true;
+}
+#endif
+
 /* Advances the copy by one share of the shared per-frame I/O window
  * and returns.  The task is re-entered next tick until the copy
  * finishes, so a 40MB core never holds the handler for more than a
@@ -731,6 +768,13 @@ static void runahead_copy_task_handler(retro_task_t *task)
 
    if (!h->started)
    {
+#ifdef RUNAHEAD_INSTANCE_LOAD
+      if (h->instance && runahead_instance_load(h))
+      {
+         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+         return;
+      }
+#endif
       runahead_copy_task_begin(h);
       if (!h->copy)
       {
@@ -879,6 +923,10 @@ static void runahead_copy_task_free(retro_task_t *task)
 #ifdef HAVE_CORE_LOAD_CHECK
       core_load_match_free(h->match);
 #endif
+#ifdef RUNAHEAD_INSTANCE_LOAD
+      core_file_close(h->instance);
+      free(h->instance_path);
+#endif
       /* A task cancelled mid-copy still has one open: closing an
        * unfinished copy removes the partial destination. */
       if (h->copy)
@@ -944,10 +992,12 @@ static void runahead_copy_reset(bool delete_file)
  * - finished ok           -> READY; ownership of the temp path is
  *                            transferred to *out_path, and of its
  *                            open handle (NULL if the task could not
- *                            open it) to *out_lib */
+ *                            open it) to *out_lib; *out_path is NULL
+ *                            for an instance of the core's own file
+ * primary_run is the running instance's retro_run. */
 static enum runahead_copy_status runahead_copy_poll(
       const char *core_path, const char *dir_libretro,
-      char **out_path, dylib_t *out_lib)
+      function_t primary_run, char **out_path, dylib_t *out_lib)
 {
    /* A published result for a different core binary is stale
     * (e.g. core switched without an intervening teardown, or any
@@ -994,6 +1044,13 @@ static enum runahead_copy_status runahead_copy_poll(
             default:
                break;
          }
+#endif
+#ifdef RUNAHEAD_INSTANCE_LOAD
+         h->instance     = core_load_check_instance_file(core_path,
+               &h->instance_path);
+         h->primary_run  = primary_run;
+#else
+         (void)primary_run;
 #endif
 
          task->handler   = runahead_copy_task_handler;
@@ -1134,12 +1191,14 @@ static enum runahead_copy_status secondary_core_create(
     * single-instance fallback for the frame - no stall. */
    copy_status = runahead_copy_poll(
          path_get(RARCH_PATH_CORE), path_directory_libretro,
+         (function_t)runloop_st->current_core.retro_run,
          &copied_path, &copied_lib);
    if (copy_status != RUNAHEAD_COPY_READY)
       return copy_status;
 
    if (runloop_st->secondary_library_path)
       free(runloop_st->secondary_library_path);
+   /* NULL for an instance of the core's own file: nothing to delete */
    runloop_st->secondary_library_path = copied_path;
    /* Opened by the task; runloop_init_libretro_symbols takes it as
     * it is and opens the path itself only when this is NULL. */
@@ -1148,7 +1207,7 @@ static enum runahead_copy_status secondary_core_create(
    /* Load Core */
    if (!runloop_init_libretro_symbols(runloop_st,
             CORE_TYPE_PLAIN, &runloop_st->secondary_core,
-            runloop_st->secondary_library_path,
+            copied_path ? copied_path : path_get(RARCH_PATH_CORE),
             &runloop_st->secondary_lib_handle))
       return false;
 

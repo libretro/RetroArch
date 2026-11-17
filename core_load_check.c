@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef ANDROID
+#include <stdio.h>
 #include <unistd.h>
 #endif
 
@@ -1389,6 +1390,54 @@ enum core_load_copy core_load_check_copy_source(const char *path,
             CORE_SHA256_LEN);
    return CORE_LOAD_COPY_CHECK;
 }
+
+#ifdef ANDROID
+core_file_t *core_load_check_instance_file(const char *path,
+      char **load_path)
+{
+   char fd_path[32];
+   core_file_t *f    = NULL;
+   core_file_t *own  = NULL;
+   bool lent;
+   *load_path = NULL;
+   /* As the running core was loaded: by its real path */
+   if (android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      path = core_load_rt.check_path;
+   if (!core_trust_runtime_active() || !core_trust_runtime_checks_on())
+      own = core_file_open(path);
+   else
+   {
+      core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+      if (     !core_load_rt.running
+            || !core_load_rt.loaded.pass
+            || !core_load_slot_is(&core_load_rt.loaded, core_load_rt.path)
+            || !(f = core_load_slot_file(&core_load_rt.loaded,
+                  core_load_rt.check_path, &lent)))
+         return NULL;
+      if (!lent)
+         own = f;
+      else
+      {
+         /* The held file, opened again: an offset of the caller's own */
+         snprintf(fd_path, sizeof(fd_path), "/proc/self/fd/%d",
+               core_file_fd(f));
+         if (     (own = core_file_open(fd_path))
+               && !core_load_same_held(&core_load_rt.loaded.c.rec.id, own))
+         {
+            core_file_close(own);
+            own = NULL;
+         }
+      }
+   }
+   if (own && !(*load_path = strdup(path)))
+   {
+      core_file_close(own);
+      own = NULL;
+   }
+   return own;
+}
+#endif
 
 struct core_load_match
 {
