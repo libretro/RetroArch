@@ -73,6 +73,26 @@ static int32_t android_joypad_button(unsigned port, uint16_t joykey)
    return android_joypad_button_state(android_app, buf, port, joykey);
 }
 
+/* The keycodes button() reads, all at once: the pad's row of key
+ * state, LAST_KEYCODE bits, as the frontend's bits. Read a word at a
+ * time from the row's bytes, as BIT_GET() numbers them. */
+static void android_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned w;
+   const uint8_t *buf;
+
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port >= DEFAULT_MAX_PADS)
+      return;
+   buf = android_keyboard_state_get(port);
+   for (w = 0; w < (LAST_KEYCODE + 7) / 8; w++)
+      state->data[w >> 2] |= (uint32_t)buf[w] << ((w & 3) * 8);
+   /* button() reads none at or past LAST_KEYCODE */
+   if (LAST_KEYCODE & 31)
+      state->data[LAST_KEYCODE >> 5] &=
+         (UINT32_C(1) << (LAST_KEYCODE & 31)) - 1;
+}
+
 static int16_t android_joypad_axis_state(
       struct android_app *android_app,
       unsigned port, uint32_t joyaxis)
@@ -328,7 +348,7 @@ input_device_driver_t android_joypad = {
    android_joypad_destroy,
    android_joypad_button,
    android_joypad_state,
-   NULL,
+   android_joypad_get_buttons,
    android_joypad_axis,
    android_joypad_poll,
    android_joypad_rumble,

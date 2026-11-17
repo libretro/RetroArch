@@ -1093,12 +1093,17 @@ void input_driver_set_snapshot_bridge(bool on)
  *   builds without DirectInput). It has a get_buttons() now, so it is
  *   served like the hybrid driver of the same name.
  *
+ * - android (android_joypad.c). It had no get_buttons(); it has one
+ *   now, over the row of key state button() reads, keycodes below
+ *   LAST_KEYCODE. One hat, through button(); state() is the common
+ *   loop.
+ *
  * - hid, with hidraw or WinUSB behind it: their handlers' state is
  *   what button(), axis() and get_buttons() answer, and they lend it.
  *   With a HID driver that does not lend, it is read directly.
  *
  * samples/input/joypad_bridge_checked holds udev, dinput, linuxraw,
- * sdl2, sdl3 and the XInput-only driver to that: for random pads, binds
+ * sdl2, sdl3, android and the XInput-only driver to that: for random pads, binds
  * and thresholds, what the bridge would make of the driver's answers
  * is what the driver's own state() says.
  *
@@ -1120,6 +1125,7 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
              || string_is_equal(drv->ident, "linuxraw")
              || string_is_equal(drv->ident, "sdl2")
              || string_is_equal(drv->ident, "sdl3")
+             || string_is_equal(drv->ident, "android")
              /* HID's, where its HID driver lends its pads: the Mac's
               * does not, and its button() has pads its get_buttons()
               * does not */
