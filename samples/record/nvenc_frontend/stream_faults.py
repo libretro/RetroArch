@@ -52,7 +52,9 @@ def check(args, codec, fault, threaded):
     command_port = port(socket.SOCK_DGRAM)
     log_path, received = root / 'frontend.log', root / 'recovered.flv'
     native = root / 'stream.cfg'
-    native.write_text(f'audio_enable = true\nvcodec = "{codec}"\nformat = "flv"\nvideo_qp = 24\n')
+    pressure = fault in ('pressure-audio', 'pressure-stop', 'pressure-quit')
+    audio = fault not in ('pressure-stop', 'pressure-quit')
+    native.write_text(f'audio_enable = {str(audio).lower()}\nvcodec = "{codec}"\nformat = "flv"\nvideo_qp = 24\n')
     children = []
     with ExitStack() as stack, log_path.open('wb') as log:
         keeper = stack.enter_context(socket.socket())
@@ -90,7 +92,7 @@ network_cmd_port = "{command_port}"
 
         def receiver(path):
             output = stack.enter_context(path.with_suffix('.receiver.log').open('wb'))
-            child = subprocess.Popen([args.ffmpeg, '-v', 'error', '-listen', '1', '-timeout', '15',
+            child = subprocess.Popen([args.ffmpeg, '-v', 'error', '-listen', '1', '-timeout', '30' if pressure else '15',
                                       '-copyts', '-analyzeduration', '500000', '-i', url,
                                       '-map', '0', '-c', 'copy', '-f', 'flv', str(path)],
                                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -103,12 +105,19 @@ network_cmd_port = "{command_port}"
         if fault == 'silent':
             keeper.listen(1)
             keeper.setblocking(False)
-        elif fault == 'disconnect':
+        elif fault == 'disconnect' or pressure:
             keeper.close()
             original = receiver(root / 'interrupted.flv')
+        if pressure:
+            from slow_peer import SlowPeer
+            slow = stack.enter_context(SlowPeer(stream_port, allow_reset=True))
+            config.write_text(config.read_text().replace(url,
+                              f'rtmp://127.0.0.1:{slow.port}/live/test'))
         command = [str(args.retroarch.resolve()), '-v', '--config', str(config),
                    '-L', str(args.core.resolve()), '--max-frames', '36000']
         environment = dict(os.environ, NATIVE_RECORD_RATE='48000', NATIVE_RECORD_LAYOUT='3')
+        if pressure:
+            environment['NATIVE_RECORD_NOISE'] = '1'
         process = subprocess.Popen([str(args.desktop_runner.resolve()), subprocess.list2cmdline(command)],
                                    cwd=root, env=environment, stdin=subprocess.DEVNULL,
                                    stdout=log, stderr=subprocess.STDOUT,
@@ -168,18 +177,77 @@ network_cmd_port = "{command_port}"
                     assert hello[0] == 3
                     progress()
                     send('SET_OPTION streaming off')
+                elif pressure:
+                    interrupted = root / 'interrupted.flv'
+                    wait_until(lambda: interrupted.exists() and interrupted.stat().st_size > 262144,
+                               process, seconds=30)
+                    assert 'Recording failed (' not in log_path.read_text(errors='replace')
+                    slow.pause.set()
+                    assert slow.paused.wait(1)
+                    time.sleep(.2)
+                    forwarded = slow.forwarded
+                    started = time.monotonic()
+                    if fault in ('pressure-stop', 'pressure-quit'):
+                        # Keep the receiver open and silent beyond the worker's drain deadline.
+                        time.sleep(3)
+                        progress()
+                        assert 'Recording failed (' not in log_path.read_text(errors='replace')
+                        started = time.monotonic()
+                        send('QUIT' if fault == 'pressure-quit' else 'SET_OPTION streaming off')
                 elif fault == 'disconnect':
                     wait_until(lambda: (root / 'interrupted.flv').exists(), process, seconds=30)
                     progress()
                     original.kill()  # Deliberately close only this test's receiver transport.
                     original.wait(timeout=5)
-                wait_until(lambda: 'Recording failed (' in log_path.read_text(errors='replace'), process)
+                if fault == 'pressure-quit':
+                    wait_until(lambda: process.poll() is not None, process, seconds=15, allow_exit=True)
+                    elapsed = time.monotonic() - started
+                    assert process.wait(timeout=1) == 0
+                    text = log_path.read_text(errors='replace')
+                    assert elapsed < 15 and slow.forwarded == forwarded and slow.error is None
+                    assert text.count('Recording failed (') == 1
+                    assert re.search(r'Recording failed \(session \d+, file 1460, native 0\)', text)
+                    assert not re.search(r'VUID-|SYNC-HAZARD|Validation Error', text)
+                    assert 'Insert instance layer "VK_LAYER_KHRONOS_validation"' in text
+                    result = dict(driver='vulkan', codec=codec, fault=fault, threaded=threaded,
+                                  shutdown_seconds=elapsed, frontend_exit=0, validation_errors=0)
+                    (root / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
+                    print('PASS native stalled-peer process shutdown: ' + json.dumps(result), flush=True)
+                    return
+
+                failure_frames = []
+
+                def failed():
+                    if pressure:
+                        value = query('frame_count')
+                        if value is not None:
+                            failure_frames.append(int(value))
+                    return 'Recording failed (' in log_path.read_text(errors='replace')
+
+                wait_until(failed, process)
+                if pressure:
+                    failure_seconds = time.monotonic() - started
+                    assert failure_frames and failure_frames[-1] > failure_frames[0], failure_frames
+                    assert failure_seconds < (15 if fault == 'pressure-stop' else 8), failure_seconds
+                    assert slow.error is None, slow.error
+                    assert slow.forwarded == forwarded, 'receiver consumed media while stalled'
+                    if fault == 'pressure-stop':
+                        assert failure_frames and failure_frames[-1] - failure_frames[0] >= 60, (
+                            'frontend stalled during drain', failure_frames)
+                        assert re.search(r'Recording failed \(session \d+, file 1460, native 0\)',
+                                         log_path.read_text(errors='replace')), 'drain did not report ERROR_TIMEOUT'
                 progress()
                 wait_until(lambda: query('streaming') == 'off', process)
                 keeper.close()
                 if fault == 'silent':
                     peer[0].close()
-                recovered = receiver(received)
+                if pressure:
+                    slow.close()
+                    retire(original)
+                    recovered = receiver(received)
+                    slow = stack.enter_context(SlowPeer(stream_port, listen_port=slow.port))
+                else:
+                    recovered = receiver(received)
                 send('SET_OPTION streaming on')
                 wait_until(lambda: log_path.read_text(errors='replace').count('Starting native ') == 2, process)
                 wait_until(lambda: received.exists(), process, seconds=30)
@@ -214,10 +282,14 @@ network_cmd_port = "{command_port}"
     packets = [p for p in info['packets'] if p['stream_index'] == video['index']]
     assert len(packets) == int(final[1]) and abs(float(packets[0]['pts_time'])) < .0011
     subprocess.run([args.ffmpeg, '-v', 'error', '-xerror', '-i', str(received),
-                    '-map', '0:v:0', '-map', '0:a:0', '-fps_mode', 'passthrough', '-f', 'null', '-'],
+                    '-map', '0:v:0', '-map', '0:a:0?', '-fps_mode', 'passthrough', '-f', 'null', '-'],
                    check=True, timeout=20, capture_output=True)
+    assert any(s['codec_type'] == 'audio' for s in info['streams']) == audio
     result = dict(driver="vulkan", codec=codec, fault=fault, threaded=threaded, recovered_frames=len(packets),
                   handshake_bytes=len(hello), validation_errors=0)
+    if pressure:
+        result['failure_seconds'] = failure_seconds
+        result['frames_until_failure'] = failure_frames[-1] - failure_frames[0] if failure_frames else 0
     (root / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
     print('PASS native stream failure/cancellation and fresh-session recovery: ' + json.dumps(result), flush=True)
 
@@ -231,7 +303,8 @@ if __name__ == '__main__':
     parser.add_argument('--ffprobe', default='ffprobe')
     parser.add_argument('--output-dir', required=True, type=Path)
     parser.add_argument('--codecs', nargs='+', choices=['h264', 'hevc'], default=['h264', 'hevc'])
-    parser.add_argument('--faults', nargs='+', choices=['refused', 'silent', 'disconnect'],
+    parser.add_argument('--faults', nargs='+', choices=['refused', 'silent', 'disconnect',
+                                 'pressure-audio', 'pressure-stop', 'pressure-quit'],
                         default=['refused', 'silent', 'disconnect'])
     args = parser.parse_args()
     if os.name != 'nt':

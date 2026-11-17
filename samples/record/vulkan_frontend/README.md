@@ -116,3 +116,20 @@ long-duration leak proof. Use a receiver build with native RTMP listen support;
 some external-librtmp FFmpeg builds ignore the listener option. Active audio
 exhaustion, shutdown while the peer remains stalled, TLS stalls and broader
 platform acceptance remain separate gates.
+
+The failure oracle also accepts `--faults pressure-audio pressure-stop`.
+These cases keep the receiver connected but stop consuming data. Audio FIFO
+exhaustion must fail without waiting or silently dropping audio. Video-only stop
+must retire within the worker drain deadline and report Windows ERROR_TIMEOUT
+while core frame queries continue progressing. The receiver timeout is longer
+than the worker deadline; no receiver socket is closed to force this result.
+Both cases require automatic stream-state reset and a fresh successful stream
+in the same frontend process, with exact packet counts and independent decode.
+Supply the current noise-capable fixture core. Relay resets are tolerated only
+for the deliberately failed connection, and recovery uses the same owned port.
+
+`--faults pressure-quit` quits the frontend while the peer is still connected
+and stalled. It requires the worker timeout, zero native GPU errors and an
+unforced zero-status frontend exit within 15 seconds. Receiver teardown happens
+only after the owned frontend exits; it cannot manufacture a successful drain.
+This quit case has no same-process recovery requirement because that process exits.

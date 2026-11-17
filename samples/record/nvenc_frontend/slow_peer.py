@@ -7,10 +7,10 @@ import threading
 
 
 class SlowPeer:
-    def __init__(self, target):
+    def __init__(self, target, listen_port=0, allow_reset=False):
         self.listener = socket.socket()
         self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
-        self.listener.bind(('127.0.0.1', 0))
+        self.listener.bind(('127.0.0.1', listen_port))
         self.listener.listen(1)
         self.listener.settimeout(.1)
         self.port = self.listener.getsockname()[1]
@@ -20,6 +20,7 @@ class SlowPeer:
         self.stop = threading.Event()
         self.forwarded = 0
         self.error = None
+        self.allow_reset = allow_reset
         self.thread = threading.Thread(target=self.run, daemon=True)
 
     def __enter__(self):
@@ -72,14 +73,18 @@ class SlowPeer:
                     if len(eof) == 2 and not any(buffers.values()):
                         return
         except Exception as error:
-            if not self.stop.is_set():
+            if not self.stop.is_set() and not (
+                    self.allow_reset and isinstance(error, ConnectionResetError)):
                 self.error = error
 
-    def __exit__(self, *unused):
+    def close(self):
         self.stop.set()
         self.thread.join(6)
         self.listener.close()
         assert not self.thread.is_alive(), 'slow-peer relay did not retire'
+
+    def __exit__(self, *unused):
+        self.close()
         if not unused[0]:
             assert self.error is None, self.error
 
