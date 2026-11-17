@@ -21528,6 +21528,7 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
       /* Check if keyboard events should be blocked when
        * pressing hotkeys and RetroPad binds, but
        * - not with Game Focus
+       * - not in movie replay (as-if game focused)
        * - not from keyboard device type mappings
        * - not from overlay keyboard input
        * - with 'enable_hotkey' modifier set and unpressed.
@@ -21536,6 +21537,9 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
        * get stuck if Game Focus key is also pressing a key. */
       if (     down
             && !input_st->game_focus_state.enabled
+#ifdef HAVE_BSV_MOVIE
+            && !BSV_MOVIE_IS_PLAYBACK_ON()
+#endif
             && BIT512_GET(input_st->keyboard_mapping_bits, code)
             && device != RETRO_DEVICE_POINTER)
       {
