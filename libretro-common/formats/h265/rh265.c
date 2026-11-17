@@ -5970,12 +5970,6 @@ int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
    if (p->sps_id < 0 || p->sps_id >= RH265_MAX_SPS || !v->sps[p->sps_id].valid)
       return -1;
    s = &v->sps[p->sps_id];
-   if (s->chroma_format_idc != 1 || s->bit_depth_luma != s->bit_depth_chroma
-         || (s->bit_depth_luma != 8 && s->bit_depth_luma != 10)
-         || s->crop_left < 0 || s->crop_right < 0 || s->crop_top < 0 || s->crop_bottom < 0
-         || 2 * ((int64_t)s->crop_left + s->crop_right) >= s->width
-         || 2 * ((int64_t)s->crop_top + s->crop_bottom) >= s->height)
-      return -1;
    out->pps_id = (int)pps_id;
    out->sps_id = p->sps_id;
    out->chroma_format_idc = s->chroma_format_idc;
