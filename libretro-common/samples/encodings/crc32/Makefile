@@ -1,6 +1,9 @@
 include ../../sample_objdir.mk
 
 TARGET := crc32_test
+# The ARM instruction path against the table and a bitwise reference:
+# encoding_crc32.c included whole
+TARGET_TEST := crc32_hw_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -35,7 +38,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_TEST)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -47,8 +50,11 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST): crc32_hw_test.o $(call sample_objs,$(LIBRETRO_COMM_DIR)/features/features_cpu.o $(LIBRETRO_COMM_DIR)/compat/compat_strl.o)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJS) $(TARGET_TEST) crc32_hw_test.o
 
 .PHONY: clean
