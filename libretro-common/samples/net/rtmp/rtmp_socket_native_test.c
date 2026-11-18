@@ -277,8 +277,14 @@ static void *connect_tls(int fd)
    return ssl;
 }
 
-static void finish_tls(net_rtmp_socket_t *transport, int fd)
+/* Flushed, then closed as over TCP: the close notification, a
+ * half-close, and reads until the server closes. Closing with its last
+ * replies unread would reset the connection, which can discard the end
+ * of the stream before the server reads it. */
+static void finish_tls(net_rtmp_socket_t *transport, void *ssl, int fd)
 {
+   uint8_t input[256];
+   bool error = false;
    retro_time_t deadline = cpu_features_get_time_usec() + 5000000;
    int result;
    do
@@ -290,6 +296,20 @@ static void finish_tls(net_rtmp_socket_t *transport, int fd)
       if (!result)
          assert(socket_wait(fd, &read, &write, 1000));
    } while (!result);
+   assert(!ssl_socket_close_notify(ssl));
+#ifdef _WIN32
+   assert(!shutdown(fd, SD_SEND));
+#else
+   assert(!shutdown(fd, SHUT_WR));
+#endif
+   while (!error)
+   {
+      bool read = true, write = false;
+      assert(cpu_features_get_time_usec() < deadline);
+      if (!ssl_socket_receive_all_nonblocking(ssl, &error, input,
+               sizeof(input)) && !error)
+         socket_wait(fd, &read, &write, 10);
+   }
 }
 #endif
 
@@ -388,7 +408,7 @@ int main(int argc, char **argv)
             socket_wait(fd, &read, &write, 10);
       }
 #ifdef HAVE_SSL
-      finish_tls(transport, fd);
+      finish_tls(transport, ssl, fd);
 #else
       finish_transport(fd);
 #endif

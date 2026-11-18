@@ -83,6 +83,15 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *
  * delivery matters. The close notification is best effort and never waits. */
 void ssl_socket_close(void *state_data);
 
+/* Sends the close notification, once everything taken has been flushed,
+ * and leaves the connection open: the caller half-closes the socket for
+ * writing and reads until the peer closes, so the peer reads everything
+ * before the close.  Closing straight away with the peer's last replies
+ * unread resets the connection, and a reset can discard what the peer
+ * had not read yet.  0 when sent; -1 when not, and the caller closes.
+ * ssl_socket_close() then sends no second one. */
+int ssl_socket_close_notify(void *state_data);
+
 void ssl_socket_free(void *state_data);
 
 /* Certificate-verification policy hook. `mode` is a tls_verify_mode value

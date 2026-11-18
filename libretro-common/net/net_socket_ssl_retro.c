@@ -467,6 +467,7 @@ struct ssl_state
    uint8_t  tx_encrypted;
    uint8_t  handshake_done;
    uint8_t  closed;
+   uint8_t  notified;       /* close_notify sent: no more records out */
    bool connect_nonblock;
    bool connect_read;
    bool connect_write;
@@ -3575,20 +3576,29 @@ void ssl_socket_close(void *state_data)
    struct ssl_state *s = (struct ssl_state*)state_data;
    if (!s || s->fd < 0)
       return;
-   if (s->handshake_done && !s->closed && s->tx_off >= s->tx_len
-         && !retro_atomic_load_relaxed_int(&s->key_update)
-         && s->cork_off >= s->cork_len)
-   {
-      static const uint8_t alert[2] = {1, 0};
-      size_t length;
-      if (tls_set_block(s, false)
-            && tls_seal_record(s, TLS_CT_ALERT, alert, sizeof(alert),
-               s->cork, &length) == 0)
-         socket_send_all_nonblocking(s->fd, s->cork, length, true);
-   }
+   if (!s->notified)
+      ssl_socket_close_notify(s);
    socket_close(s->fd);
    s->fd = -1;
    s->closed = 1;
+}
+
+int ssl_socket_close_notify(void *state_data)
+{
+   static const uint8_t alert[2] = {1, 0};
+   struct ssl_state *s = (struct ssl_state*)state_data;
+   size_t length;
+   if (     !s || s->fd < 0 || !s->handshake_done || s->closed || s->notified
+         || s->tx_off < s->tx_len
+         || retro_atomic_load_relaxed_int(&s->key_update)
+         || s->cork_off < s->cork_len
+         || !tls_set_block(s, false)
+         || tls_seal_record(s, TLS_CT_ALERT, alert, sizeof(alert),
+               s->cork, &length) != 0)
+      return -1;
+   s->notified = 1;
+   return socket_send_all_nonblocking(s->fd, s->cork, length, true)
+      == (ssize_t)length ? 0 : -1;
 }
 
 void ssl_socket_free(void *state_data)

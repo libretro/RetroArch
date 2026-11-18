@@ -34,7 +34,8 @@
 struct ssl_state
 {
    int fd;
-   int handshake_state;
+   int handshake_state; /* 0: setup, 1: active, 2: complete,
+                         * 3: close_notify sent, -1: failed */
    char domain[256];
    br_ssl_client_context sc;
    br_x509_minimal_context xc;
@@ -392,7 +393,7 @@ int ssl_socket_handshake_step(void *state_data, bool *read, bool *write)
       *write = false;
    if (!state || state->handshake_state < 0)
       return -1;
-   if (state->handshake_state == 2)
+   if (state->handshake_state >= 2)
       return 1;
    if (!state->handshake_state)
    {
@@ -601,16 +602,25 @@ int ssl_socket_flush_nonblocking(void *state_data)
    }
 }
 
+int ssl_socket_close_notify(void *state_data)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   if (     !state || state->fd < 0 || state->handshake_state != 2
+         || !socket_set_block(state->fd, false))
+      return -1;
+   br_ssl_engine_close(&state->sc.eng);
+   process_inner(state, false);
+   /* Sent: no second one at the close */
+   state->handshake_state = 3;
+   return 0;
+}
+
 void ssl_socket_close(void *state_data)
 {
    struct ssl_state *state = (struct ssl_state*)state_data;
    if (!state || state->fd < 0)
       return;
-   if (state->handshake_state == 2 && socket_set_block(state->fd, false))
-   {
-      br_ssl_engine_close(&state->sc.eng);
-      process_inner(state, false);
-   }
+   ssl_socket_close_notify(state);
    socket_close(state->fd);
    state->fd = -1;
    state->handshake_state = -1;
