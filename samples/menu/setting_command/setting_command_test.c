@@ -54,6 +54,7 @@
 #include "../../../menu/menu_defines.h"
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_cbs.h"
+#include "../../../menu/menu_displaylist.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../msg_hash_lbl_str.h"
 #include "../../../msg_hash.h"
@@ -766,6 +767,210 @@ static void lane_minimum_audio_latency(void)
    video_st->poke = saved_poke;
 }
 
+static bool disc_ejected;
+static bool disc_fail_eject;
+static bool disc_fail_select;
+static unsigned disc_index;
+static unsigned disc_eject_calls;
+static unsigned disc_select_calls;
+
+static bool RETRO_CALLCONV disc_set_eject(bool eject)
+{
+   disc_eject_calls++;
+   if (disc_fail_eject)
+      return false;
+   disc_ejected = eject;
+   return true;
+}
+
+static bool RETRO_CALLCONV disc_get_eject(void) { return disc_ejected; }
+static unsigned RETRO_CALLCONV disc_get_index(void) { return disc_index; }
+static unsigned RETRO_CALLCONV disc_get_count(void) { return 3; }
+
+static bool RETRO_CALLCONV disc_set_index(unsigned index)
+{
+   disc_select_calls++;
+   if (disc_fail_select || !disc_ejected || index >= 3)
+      return false;
+   disc_index = index;
+   return true;
+}
+
+static bool RETRO_CALLCONV disc_get_label(unsigned index, char *s, size_t len)
+{
+   if (index != 2)
+      return false;
+   strlcpy(s, "VR-Disc", len);
+   return true;
+}
+
+static bool disc_preference(const char *label)
+{
+   return string_is_equal(label, "menu_auto_insert_disk")
+       || string_is_equal(label, "menu_insert_disk_resume");
+}
+
+static void lane_disc_insert(const char *dir)
+{
+   runloop_state_t *loop = runloop_state_get_ptr();
+   disk_control_interface_t saved = loop->system.disk_control;
+   disk_control_interface_t *disk = &loop->system.disk_control;
+   rarch_setting_t *automatic = menu_setting_find("menu_auto_insert_disk");
+   menu_file_list_cbs_t cbs;
+   unsigned index = 1;
+   bool quiet = false;
+   char path[640];
+   config_file_t *conf;
+   bool persisted = true;
+
+   CHECK(automatic && automatic->type == ST_BOOL,
+         "automatic disc insertion must have a boolean setting");
+   if (!automatic || automatic->type != ST_BOOL)
+      return;
+   CHECK(*automatic->value.target.boolean,
+         "automatic disc insertion must default to enabled");
+   memset(disk, 0, sizeof(*disk));
+   disk->cb.set_eject_state = disc_set_eject;
+   disk->cb.get_eject_state = disc_get_eject;
+   disk->cb.get_image_index = disc_get_index;
+   disk->cb.set_image_index = disc_set_index;
+   disk->cb.get_num_images = disc_get_count;
+   disk->cb.get_image_label = disc_get_label;
+
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      settings_t *settings = config_get_ptr();
+      bool advanced = settings->bools.menu_show_advanced_settings;
+      file_list_t *buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      menu_displaylist_info_t info;
+      size_t i;
+      unsigned preferences = 0;
+      bool labelled = false;
+      disc_index = 2;
+      menu_entries_clear(buf);
+      menu_displaylist_info_init(&info);
+      info.list = buf;
+      CHECK(menu_displaylist_ctl(DISPLAYLIST_OPTIONS_DISK, &info,
+               settings), "Disc Control list must build");
+      for (i = 0; i < buf->size; i++)
+      {
+         if (disc_preference(buf->list[i].label))
+            preferences++;
+         if (string_is_equal(buf->list[i].label, "core_disk_index"))
+         {
+            static menu_entry_t entry;
+            MENU_ENTRY_INITIALIZE(entry);
+            entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+            menu_entry_get(&entry, 0, i, NULL, true);
+            labelled = string_is_equal(entry.value, "3: VR-Disc");
+         }
+      }
+      CHECK(!preferences, "Disc Control must not list the disc preferences");
+      CHECK(labelled, "the current disc must show its number before its label");
+
+      settings->bools.menu_show_advanced_settings = true;
+      menu_entries_clear(buf);
+      menu_displaylist_info_init(&info);
+      info.list = buf;
+      CHECK(menu_displaylist_ctl(DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST,
+               &info, settings), "User Interface list must build");
+      for (i = 0; i < buf->size; i++)
+         if (disc_preference(buf->list[i].label))
+         {
+            static menu_entry_t entry;
+            MENU_ENTRY_INITIALIZE(entry);
+            entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+            menu_entry_get(&entry, 0, i, NULL, true);
+            CHECK(*entry.value, "disc preferences must display their values");
+            preferences++;
+         }
+      settings->bools.menu_show_advanced_settings = advanced;
+      CHECK(preferences == 2,
+            "User Interface must list both disc preferences with advanced settings");
+   }
+
+   disc_ejected = false;
+   disc_index = 0;
+   CHECK(command_event(CMD_EVENT_DISK_INDEX, &index),
+         "automatic selection must succeed with a closed tray");
+   CHECK(disc_ejected && disc_index == 1 && disc_eject_calls == 1
+         && disc_select_calls == 1 && loop->pending_disk_control_insert,
+         "automatic selection must eject, select, and schedule insertion");
+   CHECK(command_event(CMD_EVENT_DISK_EJECT_TOGGLE, &quiet),
+         "explicit insertion must succeed");
+   CHECK(!disc_ejected && !loop->pending_disk_control_insert,
+         "an explicit tray action must cancel automatic insertion");
+
+   disc_ejected = true;
+   index = 2;
+   CHECK(command_event(CMD_EVENT_DISK_INDEX, &index),
+         "automatic selection must succeed with an open tray");
+   CHECK(disc_index == 2 && loop->pending_disk_control_insert,
+         "an open tray must also schedule automatic insertion");
+
+   *automatic->value.target.boolean = false;
+   snprintf(path, sizeof(path), "%s/disc.cfg", dir);
+   CHECK(config_save_file(path), "disc preference must save");
+   conf = config_file_new(path);
+   CHECK(conf && config_get_bool(conf, "menu_auto_insert_disk", &persisted)
+         && !persisted, "manual disc mode must persist in configuration");
+   if (conf)
+      config_file_free(conf);
+   index = 0;
+   CHECK(command_event(CMD_EVENT_DISK_INDEX, &index),
+         "manual selection must succeed after ejecting");
+   CHECK(disc_ejected && disc_index == 0 && !loop->pending_disk_control_insert,
+         "manual selection must leave the tray open without a pending insert");
+   disc_ejected = false;
+   index = 1;
+   disc_eject_calls = disc_select_calls = 0;
+   CHECK(!command_event(CMD_EVENT_DISK_INDEX, &index),
+         "manual selection must refuse a closed tray");
+   CHECK(disc_index == 0 && !disc_ejected && !disc_eject_calls
+         && !disc_select_calls && !loop->pending_disk_control_insert,
+         "manual selection must not touch an inserted disc");
+
+   *automatic->value.target.boolean = true;
+   disc_fail_eject = true;
+   memset(&cbs, 0, sizeof(cbs));
+   menu_cbs_init_bind_ok(&cbs, NULL, "", 0,
+         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, "", 0);
+   CHECK(cbs.action_ok && cbs.action_ok("", "", 0, 0, 0) == 0,
+         "a failed tray action must keep the menu open");
+   CHECK(!command_event(CMD_EVENT_DISK_INDEX, &index),
+         "a failed eject must fail the selection");
+   CHECK(!disc_select_calls && !loop->pending_disk_control_insert,
+         "a failed eject must not select or schedule insertion");
+   disc_fail_eject = false;
+   disc_fail_select = true;
+   memset(&cbs, 0, sizeof(cbs));
+   menu_cbs_init_bind_ok(&cbs, NULL, "", 0,
+         MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX, 0, "", 0);
+   CHECK(cbs.action_ok && cbs.action_ok("", "", 0, index, 0) == 0,
+         "a failed dropdown selection must keep the menu open");
+   CHECK(!command_event(CMD_EVENT_DISK_INDEX, &index),
+         "a failed selection must reach the caller");
+   CHECK(disc_index == 0 && disc_ejected && !loop->pending_disk_control_insert,
+         "a failed selection must not insert the wrong disc");
+   disc_fail_select = false;
+   disc_eject_calls = disc_select_calls = 0;
+   index = 0;
+   CHECK(command_event(CMD_EVENT_DISK_INDEX, &index),
+         "choosing the same disc must be a successful no-op");
+   CHECK(!disc_eject_calls && !disc_select_calls
+         && !loop->pending_disk_control_insert,
+         "choosing the same disc must not eject or insert it");
+   disc_ejected = false;
+   CHECK(disk_control_set_index_next(disk, false)
+         && loop->pending_disk_control_insert,
+         "a next-disc hotkey must schedule insertion");
+   CHECK(disk_control_set_index_next(disk, false)
+         && disc_index == 2 && loop->pending_disk_control_insert,
+         "another next-disc hotkey must retain automatic insertion");
+   loop->pending_disk_control_insert = 0;
+   loop->system.disk_control = saved;
+}
+
 /* The frontend keeps more than the config beside it. */
 static void scratch_remove(const char *dir)
 {
@@ -869,6 +1074,7 @@ int main(int argc, char *argv[])
    lane_input_restart_scope();
    lane_font_fallback();
    lane_minimum_audio_latency();
+   lane_disc_insert(dir);
 
    scratch_remove(dir);
 

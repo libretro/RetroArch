@@ -347,9 +347,31 @@ bool disk_control_set_eject_state(
 
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
+   {
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      if (runloop_st)
+         runloop_st->pending_disk_control_insert = 0;
       _len = strlcpy(msg,
             eject ? msg_hash_to_str(MSG_DISK_EJECTED) : msg_hash_to_str(MSG_DISK_CLOSED),
             sizeof(msg));
+      if (     !eject
+            && disk_control->cb.get_image_index
+            && disk_control->cb.get_num_images)
+      {
+         unsigned index = disk_control->cb.get_image_index();
+         char image_label[128];
+         image_label[0] = '\0';
+         if (index < disk_control->cb.get_num_images())
+            disk_control_get_image_label(disk_control, index,
+                  image_label, sizeof(image_label));
+         if (*image_label)
+         {
+            strlcat(msg, " ", sizeof(msg));
+            strlcat(msg, image_label, sizeof(msg));
+            _len = strlen(msg);
+         }
+      }
+   }
    else
    {
       err  = true;
@@ -405,6 +427,7 @@ bool disk_control_set_index(
    bool err              = false;
    unsigned num_images   = 0;
    unsigned msg_duration = 0;
+   bool insert           = false;
    char msg[128];
 
    msg[0] = '\0';
@@ -420,14 +443,18 @@ bool disk_control_set_index(
    if (disk_control->cb.get_image_index() == index)
       return !err;
 
+   insert = runloop_state_get_ptr()->pending_disk_control_insert != 0;
+   runloop_state_get_ptr()->pending_disk_control_insert = 0;
+
    /* Do delayed disk insert if changing while not ejected */
    if (!disk_control->cb.get_eject_state())
    {
       runloop_state_t *runloop_st = runloop_state_get_ptr();
 
-      if (     runloop_st
-            && disk_control_set_eject_state(disk_control, true, false))
-         runloop_st->pending_disk_control_insert = 100;
+      if (    !runloop_st
+            || !disk_control_set_eject_state(disk_control, true, false))
+         return false;
+      insert = true;
    }
 
    /* Get current number of disk images */
@@ -435,6 +462,9 @@ bool disk_control_set_index(
 
    /* Perform 'set index' action */
    err = !disk_control->cb.set_image_index(index);
+
+   if (insert && !err)
+      runloop_state_get_ptr()->pending_disk_control_insert = 100;
 
    /* Get log/notification message */
    _len = disk_control_get_index_set_msg(
