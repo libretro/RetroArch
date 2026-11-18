@@ -44,6 +44,9 @@ CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -I$(LIBRETRO_COMM_DIR)/include
 
 LDFLAGS += -lpthread -lm
+# The recorder's truncations are counted (bsv_replay_init_test.c); kept
+# out of LDFLAGS so a command-line LDFLAGS does not drop it.
+WRAP_LDFLAGS := -Wl,--wrap=intfstream_truncate
 
 # STATESTREAM=1 adds the deduplicating checkpoint encoding, the default
 # on desktop builds.
@@ -99,7 +102,7 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(WRAP_LDFLAGS)
 
 # allocator_may_return_null lets a too-large allocation fail the way it
 # does outside ASan, so the test sees the NULL.

@@ -209,6 +209,16 @@ bool content_load_state_in_progress(void *data)
       load_asks++;
    return __atomic_load_n(&load_pending, __ATOMIC_RELAXED) != 0;
 }
+/* Every truncation the replay code asks of its file, counted. */
+static unsigned n_truncate = 0;
+int64_t __real_intfstream_truncate(intfstream_internal_t *intf, uint64_t len);
+int64_t __wrap_intfstream_truncate(intfstream_internal_t *intf, uint64_t len);
+int64_t __wrap_intfstream_truncate(intfstream_internal_t *intf, uint64_t len)
+{
+   n_truncate++;
+   return __real_intfstream_truncate(intf, len);
+}
+
 /* the core's key path, the shipping one */
 #include "core_key_event.inc"
 
@@ -364,6 +374,56 @@ static void truncate_file(const char *path, int64_t len)
 }
 
 /* ---- lanes ----------------------------------------------------------- */
+
+/* A recording cuts its file short only when it writes behind where
+ * the file reaches: not on every frame, and still after a seek back,
+ * which must leave nothing of the old timeline behind it. */
+static void lane_record_truncates(const char *path)
+{
+   unsigned i, played;
+   int64_t long_size, seek_size;
+   uint8_t start[STATE_SIZE];
+
+   reset_counters();
+   settings.bools.savestate_file_compression = false;
+   settings.uints.replay_checkpoint_interval = 0;
+   fill_state(7);
+   memcpy(start, core_state, STATE_SIZE);
+   CHECK(movie_start_record(&input_st, (char*)path), "start_record");
+   task_queue_check();
+   n_truncate = 0;
+   for (i = 0; i < 40; i++)
+   {
+      if (i == 10)
+         input_st.bsv_movie_state.flags |= BSV_FLAG_MOVIE_FORCE_CHECKPOINT;
+      frame(i);
+   }
+   CHECK(n_truncate <= 1, "%u truncations over 40 frames written in order",
+         n_truncate);
+   long_size = intfstream_get_size(input_st.bsv_movie_state_handle->file);
+
+   /* back to the checkpoint, then five frames of a new timeline */
+   CHECK(movie_seek_to_frame(&input_st, 20), "seek back while recording");
+   n_truncate = 0;
+   for (i = 0; i < 6; i++)
+      frame(100 + i);
+   CHECK(n_truncate >= 1, "no truncation after the seek back");
+   seek_size = intfstream_get_size(input_st.bsv_movie_state_handle->file);
+   CHECK(seek_size < long_size,
+         "the old timeline left behind: %d bytes, %d before the seek",
+         (int)seek_size, (int)long_size);
+   CHECK(movie_stop(&input_st), "halt");
+
+   /* and it plays back to its own end */
+   CHECK(play(path), "play the cut recording");
+   for (played = 0; played < 60 && !paused(); played++)
+      frame(200 + played);
+   CHECK(paused() && played < 30,
+         "the cut recording played %u frames", played);
+   unpause();
+   close_content();
+   lane_done("record_truncates", NULL);
+}
 
 /* On the threaded queue, a recording started while a state load is in
  * flight waits for it from the main thread, once per check, and starts
@@ -1600,6 +1660,7 @@ int main(int argc, char **argv)
    lane_short_block();
    lane_write_oom();
    lane_record_waits_for_load(path);
+   lane_record_truncates(path);
 #ifdef BSV_TEST_NETPLAY
    lane_netplay();
 #endif

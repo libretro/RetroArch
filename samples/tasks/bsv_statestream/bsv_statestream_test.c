@@ -153,6 +153,9 @@ void *__real_realloc(void *ptr, size_t size);
 /* While non-zero, allocations of at least this many bytes are counted */
 static size_t   big_alloc = 0;
 static unsigned n_big_allocs = 0;
+/* While set, every allocation is counted */
+static bool     count_allocs = false;
+static unsigned n_allocs = 0;
 /* statestream encoding buffers: half again the state */
 static unsigned n_encode_bufs = 0;
 
@@ -170,6 +173,7 @@ static bool alloc_fails(void)
 
 void *__wrap_malloc(size_t size)
 {
+   n_allocs += count_allocs;
    if (big_alloc && size >= big_alloc)
       n_big_allocs++;
    if (big_alloc && size == STATE_SIZE + STATE_SIZE / 2)
@@ -178,12 +182,14 @@ void *__wrap_malloc(size_t size)
 }
 void *__wrap_calloc(size_t n, size_t size)
 {
+   n_allocs += count_allocs;
    if (big_alloc && n * size >= big_alloc)
       n_big_allocs++;
    return alloc_fails() ? NULL : __real_calloc(n, size);
 }
 void *__wrap_realloc(void *ptr, size_t size)
 {
+   n_allocs += count_allocs;
    if (big_alloc && size >= big_alloc)
       n_big_allocs++;
    return alloc_fails() ? NULL : __real_realloc(ptr, size);
@@ -213,6 +219,12 @@ static void movie_free(bsv_movie_t *m)
    free(m->last_save);
    free(m->ckpt_scratch[0]);
    free(m->ckpt_scratch[1]);
+   free(m->ckpt_scratch[2]);
+   if (m->enc_stream)
+   {
+      intfstream_close(m->enc_stream);
+      free(m->enc_stream);
+   }
    free(m);
 }
 
@@ -587,6 +599,40 @@ static void lane_steady(void)
          "state-sized allocated after the first checkpoints)\n");
 }
 
+/* A statestream checkpoint of a state the indices already hold
+ * allocates nothing: the encoder's buffers and its output stream are
+ * the movie's, kept from the checkpoint before.  With every object
+ * hashing alike the index itself allocates as it looks up, so the
+ * lane is left out of that build. */
+#ifndef uint32s_hash_bytes
+static void lane_encoder_allocs(void)
+{
+   bsv_movie_t *w = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+   unsigned i, steady = 0;
+   fill_state(3);
+   for (i = 0; i < 6; i++)
+   {
+      int64_t n;
+      movie_set_stream(w, stream_buf, STREAM_CAP);
+      n_allocs     = 0;
+      count_allocs = true;
+      n = bsv_movie_write_checkpoint(w,
+            REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+            REPLAY_CHECKPOINT2_ENCODING_STATESTREAM);
+      count_allocs = false;
+      CHECK(n > 12, "encoder_allocs: checkpoint %u written", i);
+      /* the first two take the buffers */
+      if (i >= 2)
+         steady += n_allocs;
+   }
+   CHECK(!steady, "encoder_allocs: %u allocations over four checkpoints "
+         "of a known state", steady);
+   movie_free(w);
+   printf("[ok] encoder_allocs (a known state's checkpoint allocates "
+         "nothing)\n");
+}
+#endif
+
 /* With an argument, runs only the lane of that name. */
 int main(int argc, char **argv)
 {
@@ -610,6 +656,10 @@ int main(int argc, char **argv)
       lane_oom_load();
    if (!only || !strcmp(only, "steady"))
       lane_steady();
+#ifndef uint32s_hash_bytes
+   if (!only || !strcmp(only, "encoder_allocs"))
+      lane_encoder_allocs();
+#endif
    if (n_fail)
    {
       fprintf(stderr, "bsv_statestream_test: %u check(s) failed\n", n_fail);

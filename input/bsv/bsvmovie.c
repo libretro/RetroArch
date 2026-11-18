@@ -413,6 +413,8 @@ static bool bsv_movie_reset_recording_internal(bsv_movie_t *handle,
    uint8_t encoding       = REPLAY_CHECKPOINT2_ENCODING_RAW;
 #endif
    handle->cur_save_valid = false;
+   /* Whatever the file held past here, the next frame cuts it off */
+   handle->write_end      = UINT64_MAX;
 
    intfstream_seek(handle->file, REPLAY_HEADER_LEN_BYTES, SEEK_SET);
    intfstream_write(handle->file, &compression, 1);
@@ -1315,11 +1317,21 @@ static void bsv_movie_next_frame_internal(input_driver_state_t *input_st,
          /* write "next frame is not a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
       }
-      /* To support seeking forwards during a paused replay, we would
-         need to *not* truncate here if we are in the "just paused,
-         running a frame to get the updated image, then will pause
-         again" state. */
-      intfstream_truncate(handle->file, intfstream_tell(handle->file));
+      /* What was recorded past this frame is cut off: only when the
+         write position is short of where the file reaches, after a
+         rewind, a seek or a state load. To support seeking forwards
+         during a paused replay, we would need to *not* truncate here
+         if we are in the "just paused, running a frame to get the
+         updated image, then will pause again" state. */
+      {
+         int64_t pos = intfstream_tell(handle->file);
+         if (pos >= 0)
+         {
+            if ((uint64_t)pos < handle->write_end)
+               intfstream_truncate(handle->file, (uint64_t)pos);
+            handle->write_end = (uint64_t)pos;
+         }
+      }
    }
    else /* either playback or seeking while recording */
    {
@@ -1751,6 +1763,7 @@ bool replay_set_serialized_data(input_driver_state_t *input_st, void *buf,
 #endif
             intfstream_rewind(handle->file);
             intfstream_write(handle->file, header, loaded_len);
+            handle->write_end = UINT64_MAX;
             /* also need to update/reinit frame_pos,
                frame_counter--rewind won't work properly unless we do. */
             /* TODO: in the future, if same_timeline, don't clear
@@ -1774,6 +1787,7 @@ bool replay_set_serialized_data(input_driver_state_t *input_st, void *buf,
             bsv_movie_scan_from_start(handle, loaded_len);
             if (recording)
                intfstream_truncate(handle->file, loaded_len);
+            handle->write_end = UINT64_MAX;
          }
       }
       else
@@ -1838,37 +1852,52 @@ int16_t bsv_movie_read_state(input_driver_state_t *input_st,
 }
 
 #ifdef HAVE_STATESTREAM
+/* The encoder's stream over @output: one stream, kept by the movie
+ * for as long as the checkpoints are written to the same buffer. */
+static intfstream_t *bsv_movie_encode_stream(bsv_movie_t *movie,
+      uint8_t *output, size_t output_capacity)
+{
+   if (     movie->enc_stream
+         && (     movie->enc_stream_buf != output
+               || movie->enc_stream_cap != output_capacity))
+   {
+      intfstream_close(movie->enc_stream);
+      free(movie->enc_stream);
+      movie->enc_stream = NULL;
+   }
+   if (movie->enc_stream)
+   {
+      intfstream_seek(movie->enc_stream, 0, SEEK_SET);
+      return movie->enc_stream;
+   }
+   if (!(movie->enc_stream = intfstream_open_memory(output,
+               RETRO_VFS_FILE_ACCESS_READ_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE, output_capacity)))
+      return NULL;
+   movie->enc_stream_buf = output;
+   movie->enc_stream_cap = output_capacity;
+   return movie->enc_stream;
+}
+
 int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
       size_t state_size, uint8_t *output, size_t output_capacity)
 {
    uint32_t i;
    int64_t encoded_size;
    size_t superblock, block;
-   static uint32_t skipped_blocks     = 0;
-   static uint32_t memcmps            = 0, hashes = 0;
-   static uint32_t reused_blocks      = 0;
-   static uint32_t reused_superblocks = 0;
-   static uint32_t total_blocks       = 0;
-   static uint32_t total_superblocks  = 0;
-   static uint32_t total_checkpoints  = 0;
-   static uint32_t total_kbs_input    = 0;
-   static uint32_t total_kbs_written  = 0;
-   static retro_perf_tick_t total_encode_micros = 0;
-   retro_perf_tick_t start     = cpu_features_get_time_usec();
    size_t block_byte_size      = movie->blocks->object_size*4;
    size_t superblock_size      = movie->superblocks->object_size;
    size_t superblock_byte_size = superblock_size*block_byte_size;
    size_t superblock_count     = state_size / superblock_byte_size + (state_size % superblock_byte_size != 0);
    /* The superblock index list and the zero-padded tail block share one
-    * zeroed allocation per call; the padded block sits behind the list
-    * on a 64-byte boundary and is only touched by the final partial
+    * buffer the movie keeps; the padded block sits behind the list on a
+    * 64-byte boundary and is only touched by the final partial
     * superblock, if there is one. */
    size_t superblock_buf_bytes = ((superblock_size * sizeof(uint32_t)) + 63) & ~(size_t)63;
-   uint32_t *superblock_buf    = (uint32_t*)calloc(1, superblock_buf_bytes + block_byte_size);
+   uint32_t *superblock_buf    = (uint32_t*)bsv_movie_scratch(movie, 2,
+         superblock_buf_bytes + block_byte_size);
    uint8_t *padded_block       = (uint8_t*)superblock_buf + superblock_buf_bytes;
-   bool padded_block_used      = false;
-   intfstream_t *out_stream    = intfstream_open_memory(output,
-         RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE,
+   intfstream_t *out_stream    = bsv_movie_encode_stream(movie, output,
          output_capacity);
    bool can_compare_saves = movie->cur_save_valid && movie->last_save
       && movie->last_save_size >= state_size;
@@ -1894,7 +1923,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    for (superblock = 0; superblock < superblock_count; superblock++)
    {
       uint32s_insert_result_t found_block;
-      total_superblocks++;
+      movie->enc_superblocks++;
       for (block = 0; block < superblock_size; block++)
       {
          size_t block_start = superblock*superblock_byte_size+block*block_byte_size;
@@ -1906,12 +1935,12 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
             found_block.is_new = false;
          }
          else if (   can_compare_saves
-                  && (++memcmps)
+                  && (++movie->enc_memcmps)
                   && memcmp(movie->last_save + block_start,
                          state + block_start,
                          block_end-block_start) == 0)
          {
-            skipped_blocks++;
+            movie->enc_skipped_blocks++;
             found_block.index = uint32s_index_get(movie->superblocks,
                   movie->superblock_seq[superblock])[block];
             found_block.is_new = false;
@@ -1920,24 +1949,22 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
          }
          else if (block_start + block_byte_size > state_size)
          {
-            if (padded_block_used)
-               memset(padded_block + (state_size-block_start),
-                     0, block_byte_size-(state_size-block_start));
-            padded_block_used = true;
             memcpy(padded_block, state+block_start, state_size - block_start);
+            memset(padded_block + (state_size-block_start),
+                  0, block_byte_size-(state_size-block_start));
             found_block = uint32s_index_insert(movie->blocks,
                   (uint32_t*)padded_block,
                   movie->frame_counter);
-            hashes++;
+            movie->enc_hashes++;
          }
          else
          {
-            hashes++;
+            movie->enc_hashes++;
             found_block = uint32s_index_insert(movie->blocks,
                   (uint32_t*)(state+block_start),
                   movie->frame_counter);
          }
-         total_blocks++;
+         movie->enc_blocks++;
          if (found_block.index == UINT32S_INDEX_NONE)
             goto fail;
 
@@ -1950,7 +1977,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
             rmsgpack_write_bin(out_stream, (uint8_t*)uint32s_index_get(movie->blocks, found_block.index), (uint32_t)block_byte_size);
          }
          else
-            reused_blocks++;
+            movie->enc_reused_blocks++;
          superblock_buf[block] = found_block.index;
       }
       found_block = uint32s_index_insert(movie->superblocks, superblock_buf, movie->frame_counter);
@@ -1967,7 +1994,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
             rmsgpack_write_int(out_stream, superblock_buf[i]);
       }
       else
-         reused_superblocks++;
+         movie->enc_reused_superblocks++;
       movie->superblock_seq[superblock] = found_block.index;
    }
    uint32s_index_commit(movie->blocks);
@@ -1979,17 +2006,11 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    rmsgpack_write_array_header(out_stream, (uint32_t)superblock_count);
    for (i = 0; i < superblock_count; i++)
        rmsgpack_write_int(out_stream, movie->superblock_seq[i]);
-   free(superblock_buf);
    movie->cur_save_valid = true;
-   total_checkpoints++;
-   total_encode_micros += cpu_features_get_time_usec() - start;
-   total_kbs_input     += state_size / 1024;
-   encoded_size         = intfstream_tell(out_stream);
-   total_kbs_written   += encoded_size / 1024;
-   RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d skipped [%d checks], %d distinct [%d hashes])\n", total_checkpoints, total_blocks, reused_blocks, skipped_blocks, memcmps, uint32s_index_count(movie->blocks), hashes);
-   RARCH_DBG("[STATESTREAM] %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_kbs_input, total_kbs_written, ((float)total_encode_micros) / (float)1000000.0);
-   intfstream_close(out_stream);
-   free(out_stream);
+   encoded_size          = intfstream_tell(out_stream);
+   movie->enc_checkpoints++;
+   movie->enc_bytes_in  += state_size;
+   movie->enc_bytes_out += encoded_size;
    return encoded_size;
 
 fail:
@@ -1997,12 +2018,6 @@ fail:
     * the recording cannot go on; the caller ends it. */
    RARCH_ERR("[STATESTREAM] out of memory encoding checkpoint\n");
    movie->cur_save_valid = false;
-   free(superblock_buf);
-   if (out_stream)
-   {
-      intfstream_close(out_stream);
-      free(out_stream);
-   }
    return -1;
 }
 
@@ -2010,9 +2025,6 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
 {
    size_t i;
    struct rmsgpack_dom_value item;
-   static retro_perf_tick_t total_decode_micros = 0;
-   static retro_perf_tick_t total_decode_count  = 0;
-   retro_perf_tick_t start = cpu_features_get_time_usec();
    bool ret                = false;
    size_t state_size       = movie->cur_save_size;
    struct rmsgpack_dom_reader_state *reader_state = rmsgpack_dom_reader_state_new();
@@ -2044,7 +2056,7 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
       RARCH_ERR("[STATESTREAM] replay has no block layout\n");
       goto exit;
    }
-   total_decode_count++;
+   movie->dec_checkpoints++;
    rmsgpack_dom_read_with(read_mem, &item, reader_state);
    if (item.type != RDT_INT && item.type != RDT_UINT)
    {
@@ -2259,8 +2271,6 @@ exit:
       movie->cur_save_valid = false;
       return false;
    }
-   total_decode_micros += cpu_features_get_time_usec() - start;
-   RARCH_DBG("[STATESTREAM] Total statestream decodes %d ; net time (secs): %f\n", total_decode_count, (double)total_decode_micros / (1000000.0));
    return ret;
 }
 #endif

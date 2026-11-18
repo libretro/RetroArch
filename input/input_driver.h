@@ -279,6 +279,17 @@ struct bsv_movie
    uint32s_index_t *blocks;
    uint32_t *superblock_seq;
    size_t superblock_seq_len;
+   /* The checkpoint encoder's output stream, kept from one checkpoint
+    * to the next while it writes to the same buffer */
+   intfstream_t *enc_stream;
+   uint8_t *enc_stream_buf;
+   size_t enc_stream_cap;
+   /* What the encoder and decoder have done over the movie's life,
+    * logged once when it is freed */
+   uint64_t enc_bytes_in, enc_bytes_out;
+   uint32_t enc_checkpoints, enc_blocks, enc_reused_blocks;
+   uint32_t enc_skipped_blocks, enc_memcmps, enc_hashes;
+   uint32_t enc_superblocks, enc_reused_superblocks, dec_checkpoints;
    uint8_t commit_interval, commit_threshold;
 #endif
 
@@ -286,11 +297,15 @@ struct bsv_movie
 
    uint8_t *last_save, *cur_save;
    size_t last_save_size, cur_save_size;
+   /* How far the file is known to reach while recording; UINT64_MAX
+    * when it is not known, after a write from somewhere else */
+   uint64_t write_end;
 
-   /* A checkpoint's encoding [0] and compression [1] buffers, kept from
-    * one checkpoint to the next: see bsv_movie_scratch() */
-   uint8_t *ckpt_scratch[2];
-   size_t ckpt_scratch_cap[2];
+   /* A checkpoint's encoding [0] and compression [1] buffers, and the
+    * statestream encoder's superblock list and padded tail block [2],
+    * kept from one checkpoint to the next: see bsv_movie_scratch() */
+   uint8_t *ckpt_scratch[3];
+   size_t ckpt_scratch_cap[3];
 
    bool cur_save_valid;
 };

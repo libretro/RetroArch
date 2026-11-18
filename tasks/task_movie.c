@@ -223,6 +223,22 @@ void bsv_movie_free(bsv_movie_t *handle)
    free(handle->frame_pos);
 
 #ifdef HAVE_STATESTREAM
+   if (handle->enc_checkpoints || handle->dec_checkpoints)
+      RARCH_DBG("[STATESTREAM] %u checkpoints encoded: %u blocks (%u reused,"
+            " %u skipped after %u compares, %u hashed), %u superblocks"
+            " (%u reused), %u KB in, %u KB out; %u decoded.\n",
+            handle->enc_checkpoints, handle->enc_blocks,
+            handle->enc_reused_blocks, handle->enc_skipped_blocks,
+            handle->enc_memcmps, handle->enc_hashes,
+            handle->enc_superblocks, handle->enc_reused_superblocks,
+            (unsigned)(handle->enc_bytes_in / 1024),
+            (unsigned)(handle->enc_bytes_out / 1024),
+            handle->dec_checkpoints);
+   if (handle->enc_stream)
+   {
+      intfstream_close(handle->enc_stream);
+      free(handle->enc_stream);
+   }
    uint32s_index_free(handle->superblocks);
    uint32s_index_free(handle->blocks);
    free(handle->superblock_seq);
@@ -233,6 +249,7 @@ void bsv_movie_free(bsv_movie_t *handle)
       free(handle->cur_save);
    free(handle->ckpt_scratch[0]);
    free(handle->ckpt_scratch[1]);
+   free(handle->ckpt_scratch[2]);
 
    free(handle);
 }
@@ -252,6 +269,7 @@ static bsv_movie_t *bsv_movie_init_internal(const char *path, enum rarch_movie_t
 
    handle->frame_pos       = frame_pos;
    handle->frame_mask      = (1 << 20) - 1;
+   handle->write_end       = UINT64_MAX;
 
    if (type == RARCH_MOVIE_PLAYBACK)
    {
