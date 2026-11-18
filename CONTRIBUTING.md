@@ -49,7 +49,7 @@ When submitting a bug report, ensure that the report is submitted to the correct
  * For actual thumbnail images, submit an issue to
    [libretro-thumbnails](https://github.com/libretro-thumbnails/libretro-thumbnails) repo
    or ask in the _database_ channel on Discord.
- * For documentation, submit an issue to [libretro-docs](https://github.com/libretro/libretro-docs)
+ * For documentation, submit an issue to [libretro docs](https://github.com/libretro/docs)
    repo or ask in the _documentation_ channel.
  * For translations, please see [here](https://docs.libretro.com/development/retroarch/new-translations-crowdin/).
 
