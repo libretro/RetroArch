@@ -665,7 +665,15 @@ static void rslc_pp_skip_inactive(struct rslc_lex *l)
             l->pos++;
          continue;
       }
-      l->pos++;
+      /* The rest of the line up to what can change how it reads (a
+       * newline, a comment, a splice, a string): with the line under
+       * way, nothing else in it matters */
+      for (l->pos++; l->pos < l->len; l->pos++)
+      {
+         ch = l->src[l->pos];
+         if (ch == '\n' || ch == '/' || ch == '\\' || ch == '"')
+            break;
+      }
    }
 }
 
