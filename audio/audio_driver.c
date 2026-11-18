@@ -2240,6 +2240,35 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
    audio_driver_sink_apply(audio_st, now_usec, rate);
 }
 
+/* audio_driver_sink_update() from the write paths, without a clock
+ * read while the open window has time left: that is told from a mark,
+ * and the clock is read for the update that closes the window. With
+ * the estimate off there is no window and no reading. */
+static void audio_driver_sink_poll(audio_driver_state_t *audio_st)
+{
+   int64_t now_usec;
+
+   if (!(retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+         & AUDIO_SNAP_SINK_EST))
+   {
+      audio_driver_sink_update(audio_st, 0);
+      return;
+   }
+   if (audio_st->sink_started)
+   {
+      /* 0 for a span that is not: the mark's rate is not known yet,
+       * and the clock decides */
+      int64_t since = CPU_FEATURES_MARK_TO_USEC(
+            CPU_FEATURES_MARK() - audio_st->sink_poll_mark);
+      if (since > 0 && since < audio_st->sink_poll_span)
+         return;
+   }
+   now_usec = cpu_features_get_time_usec();
+   audio_driver_sink_update(audio_st, now_usec);
+   audio_st->sink_poll_mark = CPU_FEATURES_MARK_WITH(now_usec);
+   audio_st->sink_poll_span = audio_st->sink_window_at - now_usec;
+}
+
 /* Parts per million by which the driver's own approximation of the
  * device's consumption differs from the clock it actually reads, over
  * the last window. Zero where a driver has only the one number. */
@@ -3634,7 +3663,7 @@ static void audio_driver_write_identity_s16(audio_driver_state_t *audio_st,
    }
    audio_driver_sink_refused(audio_st);
    if (!audio_st->pipe_threaded)
-      audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+      audio_driver_sink_poll(audio_st);
 }
 
 /* One run of the flush's output stage: @in_now frames of the input from
@@ -3935,7 +3964,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       }
       audio_driver_sink_refused(audio_st);
       if (!audio_st->pipe_threaded)
-         audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+         audio_driver_sink_poll(audio_st);
       return;
    }
 
@@ -4217,7 +4246,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             }
             audio_driver_sink_refused(audio_st);
             if (!audio_st->pipe_threaded)
-               audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+               audio_driver_sink_poll(audio_st);
          }
          else
          {
@@ -4294,7 +4323,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             }
             audio_driver_sink_refused(audio_st);
             if (!audio_st->pipe_threaded)
-               audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+               audio_driver_sink_poll(audio_st);
          }
          return;
       }
@@ -4766,7 +4795,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       lend = NULL;
       audio_driver_sink_refused(audio_st);
       if (!audio_st->pipe_threaded)
-         audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+         audio_driver_sink_poll(audio_st);
    }
 }
 
@@ -7356,7 +7385,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
             }
          }
       }
-      audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+      audio_driver_sink_poll(audio_st);
       /* No wake here: the consumer is woken once per frame by
        * audio_driver_pipeline_signal(), from the frame end and from the
        * other per-frame producers. Waking per publish would have a core

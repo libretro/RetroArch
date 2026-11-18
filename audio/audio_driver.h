@@ -924,6 +924,10 @@ typedef struct
     * counter is what makes it testable. */
    unsigned sink_discarded;
    int64_t  sink_window_at;            /* usec; when the open window closes */
+   /* audio_driver_sink_poll(): a mark, and how long after it the open
+    * window closes - the clock is not read before then */
+   retro_perf_tick_t sink_poll_mark;
+   int64_t  sink_poll_span;
    double   sink_alt_ppm;              /* the driver's own approximation against its clock, ppm */
    int64_t  sink_apply_at;             /* usec; the next setting of the bias */
    audio_sink_mark_t sink_at_window;   /* the counts when the open window opened */
