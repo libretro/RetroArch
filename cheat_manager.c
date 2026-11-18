@@ -2032,11 +2032,12 @@ void cheat_manager_apply_retro_cheats(void)
    if ((!cheat_st->cheats))
       return;
 
-   /* One reading for the whole pass: every cheat in it is applied at
-    * the same instant, and the clock is a syscall on more than one
-    * platform - a large cheat file would otherwise pay for one per
-    * entry, per frame. */
-   current_time = cpu_features_get_time_usec();
+   /* One reading for the whole pass, and the runloop iteration's own
+    * where there is one: every cheat in it is applied at the same
+    * instant, and the clock is a syscall on more than one platform. */
+   current_time = runloop_state_get_ptr()->iter_time;
+   if (!current_time)
+      current_time = cpu_features_get_time_usec();
 
    for (i = 0; i < cheat_st->size; i++)
    {

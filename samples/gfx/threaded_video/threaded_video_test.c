@@ -119,6 +119,8 @@ static uintptr_t harness_clock_owner;
 static retro_time_t harness_clock_now;
 /* Reads the armed thread made; that thread's own to count */
 static unsigned harness_clock_reads;
+/* Reads the other threads made while the clock was left running (2) */
+static retro_atomic_int_t harness_clock_reads_off;
 retro_time_t __wrap_cpu_features_get_time_usec(void)
 {
    int armed = retro_atomic_load_acquire_int(&harness_clock_armed);
@@ -128,6 +130,8 @@ retro_time_t __wrap_cpu_features_get_time_usec(void)
       if (armed == 1)
          return harness_clock_now;
    }
+   else if (armed == 2)
+      retro_atomic_inc_int(&harness_clock_reads_off);
    return __real_cpu_features_get_time_usec();
 }
 
@@ -7776,6 +7780,57 @@ static void lane_handoff_clock(void)
 }
 #endif
 
+#if defined(HARNESS_WRAP_CLOCK) && defined(CPU_FEATURES_PERF_COUNTER_CHEAP)
+/* Display pacing's hold and the presenter's repeat deadline pace on the
+ * clock without a reading of their own: the hold tells "now" from the
+ * frame's reading, the video thread from the one it takes at each
+ * present. */
+#define PACING_CLOCK_FRAMES 60
+static void lane_pacing_clock(void)
+{
+   unsigned had         = failures;
+   settings_t *settings = config_get_ptr();
+   bool saved_pacing    = settings->bools.video_threaded_display_pacing;
+   bool saved_repeat    = settings->bools.video_threaded_present_repeat;
+   int repeat;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   settings->bools.video_threaded_display_pacing = true;
+   for (repeat = 0; repeat < 2; repeat++)
+   {
+      unsigned main_reads;
+      int other_reads;
+      settings->bools.video_threaded_present_repeat = repeat != 0;
+      set_threaded_via_setting(true);
+      run_frames(30);
+      expect_wrapper(true, "pacing clock lane");
+      retro_atomic_store_release_int(&harness_clock_reads_off, 0);
+      main_reads  = runloop_clock_reads(PACING_CLOCK_FRAMES, true);
+      other_reads = retro_atomic_load_acquire_int(&harness_clock_reads_off);
+      CHECK(main_reads <= PACING_CLOCK_FRAMES + 2,
+            "pacing clock lane (repeat %d): %u held iterations read the "
+            "clock %u times on the main thread, want at most %u", repeat,
+            PACING_CLOCK_FRAMES, main_reads, PACING_CLOCK_FRAMES + 2);
+      /* The video thread reads it once a present, to hold the display's
+       * timestamp against, and tells its other instants from that: a
+       * frame and its repeats, not a reading at each wake besides */
+      CHECK(other_reads <= PACING_CLOCK_FRAMES * 5 / 2,
+            "pacing clock lane (repeat %d): the other threads read the "
+            "clock %d times over %u frames, want at most %u", repeat,
+            other_reads, PACING_CLOCK_FRAMES, PACING_CLOCK_FRAMES * 5 / 2);
+   }
+   settings->bools.video_threaded_display_pacing = saved_pacing;
+   settings->bools.video_threaded_present_repeat = saved_repeat;
+   video_driver_cached_frame_invalidate();
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] pacing clock lane\n");
+}
+#endif
+
 static void lane_dupe_skip(bool threaded)
 {
    unsigned had                   = failures;
@@ -15307,6 +15362,9 @@ int main(int argc, char *argv[])
 #endif
 #if defined(__linux__) && !defined(ANDROID)
       lane_timer_slack();
+#endif
+#if defined(HARNESS_WRAP_CLOCK) && defined(CPU_FEATURES_PERF_COUNTER_CHEAP)
+      lane_pacing_clock();
 #endif
       lane_view_count_shrink();
       lane_movie_ring();

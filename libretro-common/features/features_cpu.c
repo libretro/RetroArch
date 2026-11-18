@@ -343,6 +343,7 @@ static retro_atomic_int_t cpu_perf_wanted;
 /* The calibrating thread's own: 0 not started, 1 stated, 2 measured */
 static int               cpu_perf_mode;
 static int               cpu_perf_anchored;
+static int               cpu_perf_settled;
 static retro_perf_tick_t cpu_perf_anchor_ticks;
 static retro_time_t      cpu_perf_anchor_us;
 
@@ -380,16 +381,23 @@ void cpu_features_perf_calibrate(retro_time_t now)
     * span is no measure, start a new one */
    if (us < 0 || ticks < cpu_perf_anchor_ticks)
    {
+      /* The rate there is stands until a whole second betters it */
+      if (retro_atomic_load_acquire_int(&cpu_perf_rate_ms))
+         cpu_perf_settled   = 1;
       cpu_perf_anchor_ticks = ticks;
       cpu_perf_anchor_us    = now;
       return;
    }
-   /* The first rate from a millisecond's span, then a second's: the
-    * clock's microsecond is then a part in a million of the measure */
-   if (us < (retro_atomic_load_acquire_int(&cpu_perf_rate_ms) ? 1000000 : 1000))
+   /* The first rate from a millisecond's span, bettered at each call as
+    * the span grows to a second; from then on a second's, of which the
+    * clock's microsecond is a part in a million */
+   if (us < (cpu_perf_settled ? 1000000 : 1000))
       return;
    retro_atomic_store_release_int(&cpu_perf_rate_ms,
          (int)((ticks - cpu_perf_anchor_ticks) * 1000 / (retro_perf_tick_t)us));
+   if (us < 1000000)
+      return;
+   cpu_perf_settled      = 1;
    cpu_perf_anchor_ticks = ticks;
    cpu_perf_anchor_us    = now;
 }

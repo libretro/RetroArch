@@ -144,6 +144,37 @@ static void video_thread_read_vp(thread_video_t *thr,
 #define VIDEO_THREAD_NOW(info) ((info)->frame_time \
       + CPU_FEATURES_MARK_TO_USEC(CPU_FEATURES_MARK() - (info)->frame_mark))
 
+/* How old the video thread's clock reading may get before its "now"
+ * is read again rather than told from it: what a mark's rate is off by
+ * over this long is far under a microsecond */
+#define VIDEO_THREAD_VT_ANCHOR_USEC 250000
+
+/* Video thread: an instant on cpu_features_get_time_usec()'s clock,
+ * told from the thread's last reading and a mark; read, and kept as
+ * the reading, when that one is old or its mark's span is not known. */
+static retro_time_t video_thread_vt_now(thread_video_t *thr)
+{
+   retro_perf_tick_t marks = CPU_FEATURES_MARK() - thr->vt_mark;
+   retro_time_t span       = CPU_FEATURES_MARK_TO_USEC(marks);
+   /* No span is the reading's own microsecond where the rate is known */
+   if (span > 0 ? span < VIDEO_THREAD_VT_ANCHOR_USEC
+         : (thr->vt_usec_marks && marks <= thr->vt_usec_marks))
+      return thr->vt_time + span;
+   thr->vt_time       = cpu_features_get_time_usec();
+   thr->vt_mark       = CPU_FEATURES_MARK_WITH(thr->vt_time);
+   thr->vt_usec_marks = CPU_FEATURES_USEC_TO_MARK(1);
+   return thr->vt_time;
+}
+
+/* Main thread, in the handover of a frame: the same from the frame's
+ * own reading, a frame's time old at most. */
+static retro_time_t video_thread_frame_now(const video_frame_info_t *info)
+{
+   retro_time_t span = CPU_FEATURES_MARK_TO_USEC(
+         CPU_FEATURES_MARK() - info->frame_mark);
+   return span > 0 ? info->frame_time + span : cpu_features_get_time_usec();
+}
+
 /* The frame ring's word: the sole synchronisation between the push and
  * the video thread's claim and completion. Every reader of the ring
  * loads it once and derives tail, pending and busy from the copy. */
@@ -2008,7 +2039,7 @@ static void video_thread_margin_learn(thread_video_t *thr, retro_time_t waited)
    if (period <= 0 || !retro_atomic_load_relaxed_int(&thr->display_pacing_pub))
       return;
    extra = retro_atomic_load_relaxed_int(&thr->margin_extra_us);
-   now   = cpu_features_get_time_usec();
+   now   = video_thread_vt_now(thr);
 
    if (waited > period / 2)
    {
@@ -2062,8 +2093,14 @@ static void video_thread_schedule_next(thread_video_t *thr)
          && thr->driver_data && thr->poke && thr->poke->get_last_present_time)
       base = thr->poke->get_last_present_time(thr->driver_data);
    /* The callback can cross a display tick: compare against its return
-    * time so a newly reported present is not mistaken for the future. */
-   now = cpu_features_get_time_usec();
+    * time so a newly reported present is not mistaken for the future.
+    * Held against the driver's own timestamp to the microsecond, so
+    * this is the clock itself; and it is the reading the thread's
+    * other instants are told from until the next present. */
+   now                = cpu_features_get_time_usec();
+   thr->vt_time       = now;
+   thr->vt_mark       = CPU_FEATURES_MARK_WITH(now);
+   thr->vt_usec_marks = CPU_FEATURES_USEC_TO_MARK(1);
    thr->phase_from_display = base > 0 && base <= now;
    if (!thr->phase_from_display)
       base = now;
@@ -2962,7 +2999,7 @@ static bool video_thread_work_due(thread_video_t *thr, int st,
       /* Taken whichever way the repeat falls due, so an ask that
        * coincides with the deadline is not a second repeat */
       bool asked = retro_atomic_fetch_and_int(&thr->repeat_request, 0) != 0;
-      if (asked || cpu_features_get_time_usec() >= thr->next_present)
+      if (asked || video_thread_vt_now(thr) >= thr->next_present)
       {
          *repeat_due = true;
          return true;
@@ -3028,7 +3065,7 @@ static void video_thread_loop(void *data)
           * nothing new is what a repeat is for. */
          if (thr->present_repeat && thr->present_period > 0)
          {
-            retro_time_t now = cpu_features_get_time_usec();
+            retro_time_t now = video_thread_vt_now(thr);
             if (thr->next_present > now)
                retro_eventcount_commit_wait_timeout(&thr->work, key,
                      thr->next_present - now);
@@ -3930,6 +3967,7 @@ static void video_thread_vblank_stand_down(thread_video_t *thr)
  * hold down - for good the second time running. False: the caller's
  * schedule. */
 static VIDEO_NOINLINE bool video_thread_hold_vblank(thread_video_t *thr,
+      const video_frame_info_t *info,
       retro_time_t now, retro_time_t content, retro_time_t period)
 {
    retro_time_t bound;
@@ -3973,7 +4011,7 @@ static VIDEO_NOINLINE bool video_thread_hold_vblank(thread_video_t *thr,
    while (at + period / 2 < thr->vblank_due)
    {
       unsigned seen     = n;
-      retro_time_t left = bound - cpu_features_get_time_usec();
+      retro_time_t left = bound - video_thread_frame_now(info);
       if (left > 0)
          n = thr->vblank_wait(seen, (unsigned)left, &at);
       if (left <= 0 || !n || n == seen)
@@ -4003,6 +4041,7 @@ static VIDEO_NOINLINE bool video_thread_hold_vblank(thread_video_t *thr,
 
 /* The hold's wait, to @target on the clock */
 static void video_thread_hold_until(thread_video_t *thr,
+      const video_frame_info_t *info,
       retro_time_t now, retro_time_t target)
 {
    while (now < target)
@@ -4022,7 +4061,7 @@ static void video_thread_hold_until(thread_video_t *thr,
       video_thread_ring_sleep(thr, video_thread_ring_load(thr),
             target - now);
 #endif
-      now = cpu_features_get_time_usec();
+      now = video_thread_frame_now(info);
    }
 }
 
@@ -4053,6 +4092,7 @@ static void video_thread_hold_until(thread_video_t *thr,
     * Without one - a grid laid from the clock - the hold stands aside
     * rather than sleep a second time. */
 static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
+      const video_frame_info_t *info,
       retro_time_t now, bool driver_released, retro_time_t display_period)
 {
    video_thread_stat_snap_t snap;
@@ -4134,7 +4174,7 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       if (     thr->vblank_pacing
             && thr->nonblock
             && (snap.flags & VIDEO_THREAD_STAT_F_PRESENT_IMMEDIATE)
-            && video_thread_hold_vblank(thr, now, content, period))
+            && video_thread_hold_vblank(thr, info, now, content, period))
          return;
       if (thr->content_due <= 0 || thr->content_due < now - content)
          thr->content_due = next;
@@ -4177,7 +4217,7 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
        * wrong. A drain holds one longer. */
       if (target > now + content * (drained ? 2 : 1))
          target = now + content * (drained ? 2 : 1);
-      video_thread_hold_until(thr, now, target);
+      video_thread_hold_until(thr, info, now, target);
    }
    else if (thr->nonblock && thr->run_start)
    {
@@ -4189,7 +4229,7 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       retro_time_t content = (thr->core_running || thr->menu_content_rate)
             && fps > 1.0 ? (retro_time_t)(1000000.0 / fps) : display_period;
       if (content > 0 && now - thr->run_start < content)
-         video_thread_hold_until(thr, now, thr->run_start + content);
+         video_thread_hold_until(thr, info, now, thr->run_start + content);
    }
 }
 
@@ -4814,7 +4854,8 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (!dropped)
       thr->hit_count++;
 
-   video_thread_pace_hold(thr, now, video_info->driver_pacing_id != 0,
+   video_thread_pace_hold(thr, video_info, now,
+         video_info->driver_pacing_id != 0,
          video_info->refresh_rate > 0.0f
          ? (retro_time_t)(1000000.0f / video_info->refresh_rate) : 0);
 
