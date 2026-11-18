@@ -337,6 +337,50 @@ static void test_open_user_tiny_block(void)
 
 int rjson_span_test(void);
 
+/* A document written in small pieces comes out whole, and taking it
+ * hands the buffer over: from the heap as written, or a copy of a short
+ * one the writer held inline; the writer goes on empty after either. */
+static void test_writer_take(void)
+{
+   rjsonwriter_t *w = rjsonwriter_open_memory();
+   char *out;
+   int   outlen = 0;
+   int   i;
+   bool  ok     = true;
+
+   if (!w) { printf("[ERROR] writer open failed\n"); failures++; return; }
+   for (i = 0; i < 20000; i++)
+      rjsonwriter_raw(w, "0123456789", 10);
+   out = rjsonwriter_take_memory_buffer(w, &outlen);
+   if (!out || outlen != 200000 || out[outlen] != '\0')
+      ok = false;
+   for (i = 0; ok && i < outlen; i++)
+      if (out[i] != '0' + i % 10)
+         ok = false;
+   free(out);
+   if (ok && rjsonwriter_count_memory_buffer(w) != 0)
+      ok = false;
+   /* short, so still in the writer's own buffer */
+   rjsonwriter_add_string(w, "after");
+   out = rjsonwriter_take_memory_buffer(w, &outlen);
+   if (!out || outlen != 7 || strcmp(out, "\"after\""))
+      ok = false;
+   free(out);
+   rjsonwriter_add_string(w, "again");
+   out = rjsonwriter_take_memory_buffer(w, &outlen);
+   if (!out || strcmp(out, "\"again\""))
+      ok = false;
+   free(out);
+   rjsonwriter_free(w);
+   if (!ok)
+   {
+      printf("[ERROR] writer take\n");
+      failures++;
+      return;
+   }
+   printf("[SUCCESS] writer take\n");
+}
+
 int main(void)
 {
    failures += rjson_span_test();
@@ -347,6 +391,7 @@ int main(void)
    test_writer_happy_path();
    test_writer_negative_len();
    test_open_user_tiny_block();
+   test_writer_take();
 
    if (failures)
    {

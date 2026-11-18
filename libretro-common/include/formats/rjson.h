@@ -223,6 +223,13 @@ rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data);
  * Returned buffer is only valid until writer is modified or freed. */
 char* rjsonwriter_get_memory_buffer(rjsonwriter_t *writer, int* len);
 
+/* When opened with rjsonwriter_open_memory, hands the generated JSON
+ * over rather than lending it: the caller owns the result and frees it
+ * with free(). It is null-terminated, so the byte past @len is the
+ * caller's to overwrite. The writer is left empty and still needs
+ * rjsonwriter_free. NULL where get_memory_buffer would give NULL. */
+char* rjsonwriter_take_memory_buffer(rjsonwriter_t *writer, int* len);
+
 /* When opened with rjsonwriter_open_memory, will return current length */
 int rjsonwriter_count_memory_buffer(rjsonwriter_t *writer);
 
