@@ -4729,6 +4729,9 @@ bool task_push_start_builtin_core(
    if (content_load_in_flight())
       return false;
 
+   /* Over the type a Load Core latched, whatever became of that core */
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
+
    /* Clear content path */
    path_clear(RARCH_PATH_CONTENT);
 
