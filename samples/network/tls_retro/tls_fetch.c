@@ -27,7 +27,6 @@ int main(int argc, char **argv)
    uint16_t    port = argc > 2 ? (uint16_t)atoi(argv[2]) : 443;
    unsigned    mode = argc > 3 ? (unsigned)atoi(argv[3]) : 0;
    const char *capem = argc > 4 && *argv[4] ? argv[4] : NULL;
-   char       *pem   = NULL;
    int         rounds = argc > 5 ? atoi(argv[5]) : 1;
    int         round;
    struct addrinfo *addr = NULL;
@@ -43,7 +42,9 @@ int main(int argc, char **argv)
    if (capem)
    {
       FILE *f = fopen(capem, "rb");
-      long  n;
+      char *pem;
+      long n;
+      bool loaded;
       if (!f)
          return 2;
       fseek(f, 0, SEEK_END);
@@ -54,7 +55,12 @@ int main(int argc, char **argv)
          return 2;
       pem[n] = '\0';
       fclose(f);
-      ssl_socket_retro_set_trust_pem(pem, (size_t)n);
+      loaded = ssl_socket_retro_load_trust_pem(pem, (size_t)n);
+      free(pem);
+      if (!loaded)
+         return 2;
+      /* Clearing a test override must not clear the preloaded store. */
+      ssl_socket_retro_set_trust_pem(NULL, 0);
    }
    for (round = 0; round < (rounds > 0 ? rounds : 1); round++)
    {

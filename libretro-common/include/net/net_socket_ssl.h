@@ -109,9 +109,15 @@ void ssl_socket_log_verify_fail(int mode_required, const char *domain,
       const char *verify_info);
 void ssl_socket_log_verify_disabled(const char *domain);
 
+/* net_socket_ssl_retro.c only: preload the process trust store from a
+ * system PEM bundle before starting any network clients. The caller can
+ * free @pem after return. An empty bundle leaves the built-in bundle in
+ * use; a trust store construction error does not fall back. */
+bool ssl_socket_retro_load_trust_pem(const char *pem, size_t len);
+
 /* net_socket_ssl_retro.c only: replace the built-in CA bundle with
  * @pem (concatenated PEM certificates) for the process, NULL to
- * restore. For tests against a local server. */
+ * restore. For standalone tests without system trust preloading. */
 void ssl_socket_retro_set_trust_pem(const char *pem, size_t len);
 /* net_socket_ssl_retro.c only: whether the last handshake on
  * @state_data resumed a cached session rather than running in full. */

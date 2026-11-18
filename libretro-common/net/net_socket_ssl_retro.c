@@ -365,13 +365,35 @@ static void tls_cache_put(const char *host, const struct tls_session_put *put,
 #endif
 }
 
-/* The trust bundle is net/cacert.h's DER parts unless a test swapped
- * a PEM in. */
 static const char *tls_test_pem     = NULL;
 static size_t      tls_test_pem_len = 0;
+static enum tls_trust_source
+{
+   TLS_TRUST_BUILTIN = 0,
+   TLS_TRUST_SYSTEM,
+   TLS_TRUST_ERROR
+} tls_trust_source;
+
+bool ssl_socket_retro_load_trust_pem(const char *pem, size_t len)
+{
+   /* The part table gives the store a stable source identity without
+    * retaining the caller's PEM buffer. */
+   static const char *parts[1];
+   int loaded;
+   if (tls_trust_source != TLS_TRUST_BUILTIN || tls_test_pem || !pem || !len)
+      return tls_trust_source == TLS_TRUST_SYSTEM;
+   parts[0] = pem;
+   loaded   = x509_trust_load_pem_parts(parts, &len, 1);
+   parts[0] = NULL;
+   if (loaded != 0)
+      tls_trust_source = loaded > 0 ? TLS_TRUST_SYSTEM : TLS_TRUST_ERROR;
+   return tls_trust_source == TLS_TRUST_SYSTEM;
+}
 
 void ssl_socket_retro_set_trust_pem(const char *pem, size_t len)
 {
+   if (tls_trust_source != TLS_TRUST_BUILTIN)
+      return;
    tls_test_pem     = pem;
    tls_test_pem_len = len;
 }
@@ -1933,7 +1955,7 @@ static int tls_verify_peer(struct ssl_state *s, const uint8_t **ders,
       ssl_socket_log_verify_disabled(s->domain);
       return 0;
    }
-   if (!s->cfg.trust)
+   if (!s->cfg.trust && tls_trust_source == TLS_TRUST_BUILTIN)
       tls_trust_load();
    info[0] = '\0';
    if (x509_verify_chain_ex(ders, lens, n, host, time(NULL),

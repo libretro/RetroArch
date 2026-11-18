@@ -81,6 +81,9 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
+#if defined(HAVE_RETROSSL) && defined(__linux__) && !defined(ANDROID)
+#include <net/net_socket_ssl.h>
+#endif
 #include <string/stdstring.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
@@ -4179,6 +4182,18 @@ static void frontend_unix_init(void *data)
     * timer slack later. The frame limiter spins what its sleep leaves
     * short of the deadline, so the slack was spun every frame. */
    prctl(PR_SET_TIMERSLACK, 1UL, 0UL, 0UL, 0UL);
+
+#ifdef HAVE_RETROSSL
+   /* Read the system CA bundle at startup, not from a handshake task. */
+   {
+      void *pem       = NULL;
+      int64_t pem_len = 0;
+      if (filestream_read_file("/etc/ssl/certs/ca-certificates.crt", &pem, &pem_len)
+            && pem_len > 0)
+         ssl_socket_retro_load_trust_pem((const char*)pem, (size_t)pem_len);
+      free(pem);
+   }
+#endif
 #endif
 }
 
