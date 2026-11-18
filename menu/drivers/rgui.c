@@ -3558,7 +3558,7 @@ RGUI_NOINLINE static void rgui_render_background(
 static void rgui_render_messagebox(
       rgui_t *rgui,
       const char *message,
-      size_t heading_len,
+      bool heading,
       unsigned fb_dims);
 
 RGUI_NOINLINE static void rgui_render_fs_thumbnail(
@@ -3663,7 +3663,7 @@ RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       if (     !(rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL))
          rgui_render_messagebox(rgui,
-            msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE), 0, fb_dims);
+            msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE), false, fb_dims);
    }
 }
 
@@ -5325,7 +5325,7 @@ static void rgui_set_message(void *data, const char *message)
 static void rgui_render_messagebox(
       rgui_t *rgui,
       const char *message,
-      size_t heading_len,
+      bool heading,
       unsigned fb_dims)
 {
    unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
@@ -5386,15 +5386,9 @@ static void rgui_render_messagebox(
    if (line_count == 0)
       return;
 
-   if (heading_len)
-   {
-      size_t d = word_wrap_offset(message, heading_len,
-            wrapped_message, wrapped_len);
-      for (rule_line = line_count - 1; rule_line > 0
-            && (size_t)(lines[rule_line] - wrapped_message) > d;
-            rule_line--);
-      rule_line++;
-   }
+   if (heading)
+      rule_line = menu_dialog_rule_line(message, wrapped_message,
+            wrapped_len, line_count);
 
    for (i = 0; i < line_count; i++)
    {
@@ -5785,7 +5779,7 @@ RGUI_NOINLINE static void rgui_render_osk(
       strlcpy_append(msg, sizeof(msg), &_len, input_label);
       strlcpy_append(msg, sizeof(msg), &_len, "\n");
       strlcpy_append(msg, sizeof(msg), &_len, input_str);
-      rgui_render_messagebox(rgui, msg, 0, fb_dims);
+      rgui_render_messagebox(rgui, msg, false, fb_dims);
       return;
    }
 
@@ -7277,8 +7271,7 @@ static void rgui_render(void *data, unsigned dims,
       const menu_dialog_t *d = &menu_st->dialog_st;
       /* Draw popup directly on top of the menu; the messagebox
        * paints its own opaque background within its footprint. */
-      rgui_render_messagebox(rgui, msgbox,
-            menu_dialog_heading_len(menu_st, msgbox),
+      rgui_render_messagebox(rgui, msgbox, menu_st->dialog_st.heading,
             p_disp->framebuf_dims);
       if (strcmp(rgui->msgbox_drawn, msgbox))
          strlcpy(rgui->msgbox_drawn, msgbox, sizeof(rgui->msgbox_drawn));

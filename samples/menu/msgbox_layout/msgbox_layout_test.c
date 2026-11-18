@@ -861,6 +861,7 @@ static void warning_buttons(const unsigned *label, unsigned count)
       menu_st->dialog_st.button_label[i] = label[i];
    menu_st->dialog_st.button_count     = (uint8_t)count;
    menu_st->dialog_st.button_highlight = 0;
+   menu_st->dialog_st.heading          = true;
    menu_st->dialog_st.button_epoch++;
 }
 

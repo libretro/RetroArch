@@ -10202,21 +10202,21 @@ const char *menu_dialog_firmware_path_line(const struct menu_state *menu_st,
    return NULL;
 }
 
-size_t menu_dialog_heading_len(const struct menu_state *menu_st,
-      const char *text)
+unsigned menu_dialog_rule_line(const char *text, const char *wrapped,
+      size_t wrapped_len, unsigned line_count)
 {
-   size_t _len;
-   bool heading = menu_st->dialog_st.confirm_msg
-         == MSG_CORE_FIRMWARE_MISSING;
-#ifdef HAVE_CORE_SIGNATURES
-   /* Only the Security Warning names its buttons */
-   if (menu_st->dialog_st.button_count)
-      heading = true;
-#endif
-   if (!heading || !text)
+   size_t i;
+   size_t d;
+   unsigned n  = 1;
+   size_t _len = strcspn(text, "\n");
+   if (!_len || text[_len] != '\n')
       return 0;
-   _len = strcspn(text, "\n");
-   return (_len && text[_len] == '\n') ? _len : 0;
+   d = word_wrap_offset(text, _len, wrapped, wrapped_len);
+   /* The heading ends on the line after every line end before it */
+   for (i = 0; i < d; i++)
+      if (wrapped[i] == '\0' || wrapped[i] == '\n')
+         n++;
+   return (n <= line_count) ? n : 0;
 }
 
 /* A path's underline as last measured: the line it is under and the
@@ -10305,10 +10305,8 @@ void menu_dialog_draw_path_underline(const struct menu_state *menu_st,
       rgba[i * 4 + 3] = FONT_COLOR_GET_ALPHA(color) / 255.0f;
    }
 
-   gfx_display_blend_begin(p_disp->dispctx, userdata);
    gfx_display_draw_quad(p_disp, userdata, video_dims, x, baseline + 1,
          VIDEO_SCALE_PACK(width, 1), video_dims, rgba, NULL);
-   gfx_display_blend_end(p_disp->dispctx, userdata);
 }
 
 static void menu_dialog_confirm_reset(struct menu_state *menu_st)
@@ -10322,6 +10320,7 @@ static void menu_dialog_confirm_reset(struct menu_state *menu_st)
    menu_st->dialog_st.button_count         = 0;
    menu_st->dialog_st.button_highlight     = -1;
    menu_st->dialog_st.button_hover         = -1;
+   menu_st->dialog_st.heading              = false;
 
    BIT64_CLEAR(menu_st->driver_data->state, MENU_STATE_RENDER_MESSAGEBOX);
    menu_st->driver_data->menu_state_msg[0] = '\0';
@@ -10342,6 +10341,7 @@ void menu_dialog_confirm_set(struct menu_state *menu_st, unsigned msg, unsigned 
    menu_st->dialog_st.confirm_msg = msg;
    menu_st->dialog_st.confirm_cmd = cmd;
    menu_st->dialog_st.pending_cmd = CMD_EVENT_NONE;
+   menu_st->dialog_st.heading     = (msg == MSG_CORE_FIRMWARE_MISSING);
 }
 
 void menu_dialog_confirm_clear(struct menu_state *menu_st)
@@ -10498,6 +10498,7 @@ static void menu_dialog_buttons_set(struct menu_state *menu_st,
    d->button_highlight   = 0;
    d->button_hover       = -1;
    d->button_announce    = true;
+   d->heading            = false;
    d->button_epoch++;
 }
 
@@ -10555,6 +10556,7 @@ static void menu_core_warning_raise(struct menu_state *menu_st)
    for (i = 0; i < n; i++)
       labels[i] = menu_core_warning_label(choices[i]);
    menu_dialog_buttons_set(menu_st, labels, n);
+   menu_st->dialog_st.heading = true;
    menu_core_warning_shown = core_warning_serial();
    /* It can come up mid-hold: what is down now waits to be let go */
    menu_event_starts_afresh = true;

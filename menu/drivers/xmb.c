@@ -522,7 +522,6 @@ typedef struct xmb_handle
       font_data_t *font;
       size_t len;
       size_t wrapped_len;
-      size_t heading_len;
       uint32_t font_generation;
       float font_size;
       float margins_dialog;
@@ -535,6 +534,7 @@ typedef struct xmb_handle
       int usable_width;
       int longest_width;
       bool assets_missing;
+      bool heading;
       char text[MENU_LABEL_MAX_LENGTH];
       char wrapped[MENU_LABEL_MAX_LENGTH];
    } box_wrap;
@@ -1391,10 +1391,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    bool text_only                      = false;
    bool stacked                        = false;
    bool input_dialog_display_kb        = false;
-   unsigned firmware_line_state        = 0;
    unsigned rule_line                  = 0;
    bool add_row                        = false;
-   size_t heading_len                  = 0;
+   bool heading                        = false;
    size_t wrapped_len                  = 0;
    size_t msg_len                      = strlen(message);
    char wrapped_buf[MENU_LABEL_MAX_LENGTH];
@@ -1408,7 +1407,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    menu_dialog_get_buttons(menu_st, &buttons);
    /* The input dialog's label is no heading */
    if (!draw_caret)
-      heading_len = menu_dialog_heading_len(menu_st, message);
+      heading = menu_st->dialog_st.heading;
 
    usable_width = (int)video_width - (xmb->margins_dialog * (landscape ? 4 : 1));
    if (usable_width < 1)
@@ -1485,7 +1484,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             && xmb->box_wrap.wideglyph_width == xmb->wideglyph_width
             && xmb->box_wrap.stack_h         == stack_h
             && xmb->box_wrap.assets_missing  == xmb->assets_missing
-            && xmb->box_wrap.heading_len     == heading_len
+            && xmb->box_wrap.heading         == heading
             && !memcmp(xmb->box_wrap.text, message, msg_len))
       {
          line_count    = xmb->box_wrap.line_count;
@@ -1566,15 +1565,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       if (line_count == 0)
          return;
 
-      if (heading_len)
-      {
-         size_t d = word_wrap_offset(message, heading_len,
-               wrapped_message, wrapped_len);
-         unsigned l;
-         for (l = line_count - 1;
-               l > 0 && (size_t)(lines[l] - wrapped_message) > d; l--);
-         rule_line = l + 1;
-      }
+      if (heading)
+         rule_line = menu_dialog_rule_line(message, wrapped_message,
+               wrapped_len, line_count);
 
       if (keep_wrap)
       {
@@ -1590,7 +1583,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          xmb->box_wrap.wideglyph_width = xmb->wideglyph_width;
          xmb->box_wrap.stack_h         = stack_h;
          xmb->box_wrap.assets_missing  = xmb->assets_missing;
-         xmb->box_wrap.heading_len     = heading_len;
+         xmb->box_wrap.heading         = heading;
          xmb->box_wrap.line_count      = line_count;
          xmb->box_wrap.rule_line       = rule_line;
          xmb->box_wrap.wrapped_len     = wrapped_len;
@@ -1743,53 +1736,55 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       xmb->osk_textbox_h = slice_h;
    }
 
-   if (input_dialog_display_kb && input_driver_keyboard_textbox_focus() && line_count > 1)
+   /* The box's slices in one blend group; quads blend on their own and
+    * are gathered into one strip ahead of the text */
+   if (     !xmb->assets_missing
+         || (input_dialog_display_kb
+            && input_driver_keyboard_textbox_focus() && line_count > 1))
    {
-      int cursor_offset = (xmb->margins_dialog + (xmb->margins_slice * 2)) / 3;
-
       gfx_display_blend_begin(dispctx, userdata);
 
-      gfx_display_draw_texture_slice(
-            p_disp,
-            userdata,
-            video_dims,
-            slice_x - cursor_offset,
-            slice_y - cursor_offset,
-            VIDEO_SCALE_PACK(256, 256),
-            VIDEO_SCALE_PACK(slice_w + (cursor_offset * 2),
-                  slice_h + (cursor_offset * 2)),
-            video_dims,
-            NULL,
-            xmb->margins_slice,
-            xmb->last_scale_factor,
-            GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_KEY_HOVER]),
-            mymat);
+      if (input_dialog_display_kb && input_driver_keyboard_textbox_focus() && line_count > 1)
+      {
+         int cursor_offset = (xmb->margins_dialog + (xmb->margins_slice * 2)) / 3;
+
+         gfx_display_draw_texture_slice(
+               p_disp,
+               userdata,
+               video_dims,
+               slice_x - cursor_offset,
+               slice_y - cursor_offset,
+               VIDEO_SCALE_PACK(256, 256),
+               VIDEO_SCALE_PACK(slice_w + (cursor_offset * 2),
+                     slice_h + (cursor_offset * 2)),
+               video_dims,
+               NULL,
+               xmb->margins_slice,
+               xmb->last_scale_factor,
+               GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_KEY_HOVER]),
+               mymat);
+      }
+
+      if (!xmb->assets_missing)
+         gfx_display_draw_texture_slice(
+               p_disp,
+               userdata,
+               video_dims,
+               slice_x,
+               slice_y,
+               VIDEO_SCALE_PACK(256, 256),
+               VIDEO_SCALE_PACK(slice_w, slice_h),
+               video_dims,
+               NULL,
+               xmb->margins_slice,
+               xmb->last_scale_factor,
+               GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]),
+               mymat);
 
       gfx_display_blend_end(dispctx, userdata);
    }
 
-   if (!xmb->assets_missing)
-   {
-      gfx_display_blend_begin(dispctx, userdata);
-
-      gfx_display_draw_texture_slice(
-            p_disp,
-            userdata,
-            video_dims,
-            slice_x,
-            slice_y,
-            VIDEO_SCALE_PACK(256, 256),
-            VIDEO_SCALE_PACK(slice_w, slice_h),
-            video_dims,
-            NULL,
-            xmb->margins_slice,
-            xmb->last_scale_factor,
-            GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]),
-            mymat);
-
-      gfx_display_blend_end(dispctx, userdata);
-   }
-   else
+   if (xmb->assets_missing)
    {
       /* Fallback background without assets */
       float frame_color[16]                  = {
@@ -1813,55 +1808,65 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             NULL);
    }
 
+   if (draw_selection)
+      for (i = selection_first_line; i < line_count; i++)
+      {
+         const char *msg = lines[i];
+         unsigned row    = (add_row && i >= rule_line) ? i + 1 : i;
+         if (msg && *msg)
+            gfx_display_draw_quad(p_disp, userdata, video_dims,
+                  x - (longest_width / 2.0), y + (row * line_height),
+                  VIDEO_SCALE_PACK(font_driver_get_message_width(
+                        xmb->font, msg, strlen(msg), 1.0f), line_height),
+                  video_dims, selection_color, NULL);
+      }
+
+   if (heading)
+   {
+      unsigned firmware_line_state = 0;
+
+      for (i = 0; i < line_count; i++)
+      {
+         unsigned row = (add_row && i >= rule_line) ? i + 1 : i;
+         menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+               lines[i], xmb->font, p_disp, userdata, video_dims,
+               x - (longest_width / 2.0), y + ((row + 0.85) * line_height),
+               0x444444ff);
+      }
+
+      if (rule_line)
+      {
+         /* The path underline's colour */
+         float rule_color[16] = {
+               0.27f, 0.27f, 0.27f, 1.0f,
+               0.27f, 0.27f, 0.27f, 1.0f,
+               0.27f, 0.27f, 0.27f, 1.0f,
+               0.27f, 0.27f, 0.27f, 1.0f,
+         };
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_dims,
+               x - (longest_width / 2.0),
+               y + ((rule_line + 0.6) * line_height),
+               VIDEO_SCALE_PACK(longest_width, 1),
+               video_dims,
+               rule_color,
+               NULL);
+      }
+   }
+
    for (i = 0; i < line_count; i++)
    {
       const char *msg = lines[i];
       unsigned row    = (add_row && i >= rule_line) ? i + 1 : i;
-      if (draw_selection && i >= selection_first_line && msg && *msg)
-      {
-         gfx_display_blend_begin(dispctx, userdata);
-         gfx_display_draw_quad(p_disp, userdata, video_dims,
-               x - (longest_width / 2.0), y + (row * line_height),
-               VIDEO_SCALE_PACK(font_driver_get_message_width(
-                     xmb->font, msg, strlen(msg), 1.0f), line_height),
-               video_dims, selection_color, NULL);
-         gfx_display_blend_end(dispctx, userdata);
-      }
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
                x - (longest_width / 2.0),
                y + ((row + 0.85) * line_height),
                video_dims, 0x444444ff,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
-
-      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
-            msg, xmb->font, p_disp, userdata, video_dims,
-            x - (longest_width / 2.0), y + ((row + 0.85) * line_height),
-            0x444444ff);
-   }
-
-   if (rule_line)
-   {
-      /* The path underline's colour */
-      float rule_color[16] = {
-            0.27f, 0.27f, 0.27f, 1.0f,
-            0.27f, 0.27f, 0.27f, 1.0f,
-            0.27f, 0.27f, 0.27f, 1.0f,
-            0.27f, 0.27f, 0.27f, 1.0f,
-      };
-
-      gfx_display_blend_begin(dispctx, userdata);
-      gfx_display_draw_quad(
-            p_disp,
-            userdata,
-            video_dims,
-            x - (longest_width / 2.0),
-            y + ((rule_line + 0.6) * line_height),
-            VIDEO_SCALE_PACK(longest_width, 1),
-            video_dims,
-            rule_color,
-            NULL);
-      gfx_display_blend_end(dispctx, userdata);
    }
 
    if (draw_caret && (cursor_line < line_count))

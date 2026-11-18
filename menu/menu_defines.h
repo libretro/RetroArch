@@ -620,6 +620,7 @@ struct menu_dialog
    bool                  confirm_hover_back;
    bool                  pending_push;
    bool                  button_announce;  /* speak the box's text again */
+   bool                  heading;          /* its text's first line heads it */
 };
 
 typedef struct menu_dialog menu_dialog_t;

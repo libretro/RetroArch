@@ -948,13 +948,16 @@ size_t menu_playlists_tab_random_selection(size_t selection);
 
 const char *menu_dialog_firmware_path_line(const struct menu_state *menu_st,
       const char *line, unsigned *state);
+/* One quad, gathered with the caller's: it opens no blend group */
 void menu_dialog_draw_path_underline(const struct menu_state *menu_st,
       unsigned *state, const char *line, font_data_t *font,
       gfx_display_t *p_disp, void *userdata, unsigned video_dims,
       float x, float baseline, uint32_t color);
-/* Length of the open confirm box's heading, its first line; 0 for none */
-size_t menu_dialog_heading_len(const struct menu_state *menu_st,
-      const char *text);
+/* The line, counted from 1, the heading of a box whose dialog has one
+ * (menu_dialog_t.heading) ends on once text is wrapped; 0 for a first
+ * line that is not a heading. Line ends in wrapped may be '\0'. */
+unsigned menu_dialog_rule_line(const char *text, const char *wrapped,
+      size_t wrapped_len, unsigned line_count);
 
 void menu_dialog_confirm_set(struct menu_state *menu_st,
       unsigned msg, unsigned cmd);

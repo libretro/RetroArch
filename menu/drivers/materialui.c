@@ -781,13 +781,13 @@ typedef struct materialui_handle
       font_data_t *font;
       size_t len;
       size_t wrapped_len;
-      size_t heading_len;
       uint32_t font_generation;
       unsigned columns;
       unsigned wideglyph_width;
       int line_count;
       int rule_line; /* where the heading's rule goes; 0 for none */
       int longest_width;
+      bool heading;
       char text[MENU_LABEL_MAX_LENGTH];
       char wrapped[MENU_LABEL_MAX_LENGTH];
    } box_wrap;
@@ -2893,10 +2893,9 @@ static void materialui_render_messagebox(
    int stack_h                = 0;
    bool text_only             = false;
    bool stacked               = false;
-   unsigned firmware_line_state = 0;
    int rule_line              = 0;
    bool add_row               = false;
-   size_t heading_len         = 0;
+   bool heading               = false;
 
    wrapped_buf[0] = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
@@ -2909,7 +2908,7 @@ static void materialui_render_messagebox(
 
    /* The input dialog's label is no heading */
    if (!draw_caret)
-      heading_len = menu_dialog_heading_len(menu_st, msg);
+      heading = menu_st->dialog_st.heading;
 
    usable_width = (int)video_width - (mui->margin * (landscape ? 4.0 : 1.0));
    if (usable_width < 1)
@@ -2933,7 +2932,7 @@ static void materialui_render_messagebox(
             && mui->box_wrap.columns == columns
             && mui->box_wrap.wideglyph_width
                == mui->font_data.list.wideglyph_width
-            && mui->box_wrap.heading_len == heading_len
+            && mui->box_wrap.heading == heading
             && !memcmp(mui->box_wrap.text, msg, msg_len))
       {
          line_count    = mui->box_wrap.line_count;
@@ -2996,15 +2995,9 @@ static void materialui_render_messagebox(
          }
       }
 
-      if (heading_len)
-      {
-         size_t d = word_wrap_offset(msg, heading_len,
-               wrapped_msg, wrapped_len);
-         int l;
-         for (l = line_count - 1;
-               l > 0 && (size_t)(lines[l] - wrapped_msg) > d; l--);
-         rule_line = l + 1;
-      }
+      if (heading)
+         rule_line = (int)menu_dialog_rule_line(msg, wrapped_msg,
+               wrapped_len, (unsigned)line_count);
 
       if (keep_wrap)
       {
@@ -3015,7 +3008,7 @@ static void materialui_render_messagebox(
          mui->box_wrap.font_generation = mui->font_data.list.metrics_generation;
          mui->box_wrap.columns         = columns;
          mui->box_wrap.wideglyph_width = mui->font_data.list.wideglyph_width;
-         mui->box_wrap.heading_len     = heading_len;
+         mui->box_wrap.heading         = heading;
          mui->box_wrap.line_count      = line_count;
          mui->box_wrap.rule_line       = rule_line;
          mui->box_wrap.wrapped_len     = wrapped_len;
@@ -3258,19 +3251,56 @@ static void materialui_render_messagebox(
       }
    }
 
+   /* What sits under the text, gathered into the background's strip
+    * ahead of it */
+   if (draw_selection)
+      for (i = (int)selection_first_line; i < line_count; i++)
+      {
+         int row = (add_row && i >= rule_line) ? i + 1 : i;
+         if (lengths[i] > 0)
+            gfx_display_draw_quad(p_disp, userdata, video_dims,
+                  x - longest_width / 2.0f,
+                  y + (row * mui->font_data.list.line_height),
+                  VIDEO_SCALE_PACK(font_driver_get_message_width(
+                        mui->font_data.list.font, lines[i], lengths[i],
+                        1.0f), mui->font_data.list.line_ascender),
+                  video_dims, selection_color, NULL);
+      }
+
+   if (heading)
+   {
+      unsigned firmware_line_state = 0;
+
+      for (i = 0; i < line_count; i++)
+      {
+         int row = (add_row && i >= rule_line) ? i + 1 : i;
+         menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+               lines[i], mui->font_data.list.font, p_disp, userdata,
+               video_dims, x - longest_width / 2.0f,
+               y + (row * mui->font_data.list.line_height)
+                  + mui->font_data.list.line_ascender,
+               mui->colors.list_text);
+      }
+
+      if (rule_line)
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_dims,
+               x - longest_width / 2.0f,
+               y + (rule_line + 0.5f) * mui->font_data.list.line_height
+                  - mui->entry_divider_width / 2,
+               VIDEO_SCALE_PACK((unsigned)longest_width,
+                  mui->entry_divider_width),
+               video_dims,
+               mui->colors.entry_divider,
+               NULL);
+   }
+
    /* Print each line of the message */
    for (i = 0; i < line_count; i++)
    {
       int row = (add_row && i >= rule_line) ? i + 1 : i;
-      if (draw_selection && (unsigned)i >= selection_first_line && lengths[i] > 0)
-         gfx_display_draw_quad(p_disp, userdata, video_dims,
-               x - longest_width / 2.0f,
-               y + (row * mui->font_data.list.line_height),
-               VIDEO_SCALE_PACK(font_driver_get_message_width(
-                     mui->font_data.list.font, lines[i], lengths[i], 1.0f),
-                     mui->font_data.list.line_ascender),
-               video_dims, selection_color, NULL);
-
       if (lengths[i] > 0)
          gfx_display_draw_text(
                mui->font_data.list.font, lines[i],
@@ -3279,28 +3309,7 @@ static void materialui_render_messagebox(
                   + mui->font_data.list.line_ascender,
                video_dims, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
-
-      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
-            lines[i], mui->font_data.list.font, p_disp, userdata, video_dims,
-            x - longest_width / 2.0f,
-            y + (row * mui->font_data.list.line_height)
-               + mui->font_data.list.line_ascender,
-            mui->colors.list_text);
    }
-
-   if (rule_line)
-      gfx_display_draw_quad(
-            p_disp,
-            userdata,
-            video_dims,
-            x - longest_width / 2.0f,
-            y + (rule_line + 0.5f) * mui->font_data.list.line_height
-               - mui->entry_divider_width / 2,
-            VIDEO_SCALE_PACK((unsigned)longest_width,
-               mui->entry_divider_width),
-            video_dims,
-            mui->colors.entry_divider,
-            NULL);
 
    if (draw_caret && (cursor_line < (unsigned)line_count))
       gfx_display_draw_quad(
