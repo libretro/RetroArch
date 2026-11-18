@@ -70,6 +70,7 @@ static char bad_core[400];    /* another build: never trusted */
 static char nc_core[400];     /* needs content: untrusted until the mode trusts it */
 static char seeded[400];      /* in the first run's seed folder */
 static char broken[400];      /* a core file with no library */
+static char cores[340];
 static char fw_core[400];     /* good_core's bytes; its info asks for firmware */
 static char fwb_core[400];    /* bad_core's bytes, with the same info */
 static char game[400];
@@ -1779,6 +1780,55 @@ static void mode_builtin(void)
    pump(10);
 }
 
+/* The first press starts what was asked for, with no warning on the way */
+static void builtin_first_press(const char *what)
+{
+   unsigned i;
+   start_pad();
+   for (i = 0; i < 600 && !pad_runs(); i++)
+   {
+      CHECK(!warning_up(), what);
+      pump(1);
+   }
+   CHECK(pad_runs(), what);
+   unload();
+}
+
+static void mode_builtin_first_press(void)
+{
+   content_ctx_info_t info;
+   unsigned i;
+   memset(&info, 0, sizeof(info));
+
+   CHECK(!task_push_load_new_core(bad_core, NULL, &info, CORE_TYPE_PLAIN,
+            NULL, NULL), "the untrusted Load Core opened");
+   CHECK(task_content_park_core_load(bad_core), "Load Core was not parked");
+   CHECK(wait_for(warning_up, 120), "no Security Warning");
+   CHECK(answer(CORE_WARNING_CANCEL), "Cancel not taken");
+   pump(10);
+   builtin_first_press("the first press after a cancelled Load Core");
+
+   snprintf(broken, sizeof(broken), "%s/broken_libretro.%s", cores, ext);
+   write_file(broken);
+   CHECK(!task_push_load_new_core(broken, NULL, &info, CORE_TYPE_PLAIN,
+            NULL, NULL), "a file that is no core opened");
+   CHECK(task_content_park_core_load(broken), "Load Core was not parked");
+   CHECK(wait_for(warning_up, 120), "no Security Warning");
+   CHECK(answer(CORE_WARNING_LOAD_ONCE), "Load Once not taken");
+   for (i = 0; i < 600 && !open_failed_queued(); i++)
+      pump(1);
+   builtin_first_press("the first press after a failed Load Core");
+
+   staged_trust(good_core);
+   unload();
+   CHECK(task_push_load_new_core(good_core, NULL, &info, CORE_TYPE_PLAIN,
+            NULL, NULL), "the trusted Load Core failed");
+   /* Not unload(): the latched plain type never reads as dummy here */
+   command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+   pump(10);
+   builtin_first_press("the first press after Unload Core");
+}
+
 /* A built-in core's start runs no core RARCH_PATH_CORE names: no
  * firmware box for that core */
 static void mode_fw_builtin(void)
@@ -1893,7 +1943,6 @@ static const char *const apple_dirs[] = {
 
 static char cfg_home[300];
 static char ra_dir[320];
-static char cores[340];
 static char ra_cores[340];
 #ifndef _WIN32
 /* Run-ahead's copy folder, in TMPDIR */
@@ -2592,6 +2641,12 @@ int main(int argc, char *argv[])
          mode_builtin();
 #else
          fprintf(stderr, "builtin: not in this build\n");
+#endif
+      else if (string_is_equal(mode, "builtin-first-press"))
+#ifdef HAVE_NETWORKGAMEPAD
+         mode_builtin_first_press();
+#else
+         fprintf(stderr, "builtin-first-press: not in this build\n");
 #endif
       else if (string_is_equal(mode, "fw-builtin"))
 #ifdef HAVE_NETWORKGAMEPAD
