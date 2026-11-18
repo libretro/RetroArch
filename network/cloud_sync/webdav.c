@@ -886,7 +886,7 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
 
       RARCH_DBG("[webdav] GET %s\n", url_encoded);
       auth_header = webdav_get_auth_header("GET", url_encoded);
-      task_push_http_download_file_with_headers(url_encoded,
+      task_push_http_download_staged_file(url_encoded,
             webdav_cb_st->file, true, NULL, auth_header,
             webdav_read_cb, webdav_cb_st);
       return;
@@ -946,7 +946,7 @@ static bool webdav_read(const char *path, const char *file,
    RARCH_DBG("[webdav] GET %s\n", url_encoded);
    auth_header = webdav_get_auth_header("GET", url_encoded);
    /* Downloaded straight to the file, as it arrives */
-   t = task_push_http_download_file_with_headers(url_encoded,
+   t = task_push_http_download_staged_file(url_encoded,
          webdav_cb_st->file, true, NULL, auth_header,
          webdav_read_cb, webdav_cb_st);
    return (t != NULL);

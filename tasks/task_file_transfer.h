@@ -135,6 +135,15 @@ void *task_push_http_download_file_with_headers(const char *url,
       const char *path, bool mute, const char *title, const char *headers,
       retro_task_callback_t cb, void *user_data);
 
+/* The same for a caller that downloads to a staging file of its own and
+ * puts it in place itself (cloud sync): written straight to @path, with
+ * no temporary file beside it, and removed if the transfer fails.  A
+ * process killed mid-download leaves a partial file there, which the
+ * caller's staging has to allow for. */
+void *task_push_http_download_staged_file(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data);
+
 void* task_push_http_transfer_file(const char* url, bool mute, const char* type,
       retro_task_callback_t cb, file_transfer_t* transfer_data);
 

@@ -1377,7 +1377,7 @@ static void gdrive_read_search_cb(retro_task_t *task, void *task_data,
    RARCH_DBG(GDPFX "GET %s\n", cb_st->path);
    headers = gdrive_get_headers(NULL);
    /* Downloaded straight to the file, as it arrives */
-   if (!task_push_http_download_file_with_headers(url, cb_st->file, true,
+   if (!task_push_http_download_staged_file(url, cb_st->file, true,
          NULL, headers, gdrive_read_download_cb, cb_st))
    {
       RARCH_WARN(GDPFX "Could not download %s\n", cb_st->path);

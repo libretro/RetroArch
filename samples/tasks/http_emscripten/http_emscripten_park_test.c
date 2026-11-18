@@ -270,6 +270,9 @@ static void lane_parks_until_settled(void)
 
 /* A download the browser settles with a 200; @cancel cancels it right
  * after the settle. */
+/* Pushed as a caller's staging file (task_push_http_download_staged_file) */
+static bool staged;
+
 static bool run_download_status(bool cancel, bool mute,
       unsigned short status)
 {
@@ -281,8 +284,11 @@ static bool run_download_status(bool cancel, bool mute,
    retro_atomic_store_release_int(&retired, 0);
    retro_atomic_store_release_int(&writes, 0);
    retro_atomic_store_release_int(&atomic_writes, 0);
-   t = (retro_task_t*)task_push_http_download_file(
-         "http://example.invalid/f", "/x/f.png", mute, NULL, on_done, NULL);
+   t = (retro_task_t*)(staged
+      ? task_push_http_download_staged_file("http://example.invalid/f",
+            "/x/f.png", mute, NULL, NULL, on_done, NULL)
+      : task_push_http_download_file("http://example.invalid/f",
+            "/x/f.png", mute, NULL, on_done, NULL));
    CHECK(t && in_flight, "the download did not start");
    if (!t || !in_flight)
       return false;
@@ -328,30 +334,8 @@ static void lane_download_written(void)
          retired_status, retired_body ? "kept" : "dropped", retired_err);
    CHECK(written_body == fetched_body,
          "the file was written from a copy, not the fetch's own body");
-   CHECK(retro_atomic_load_acquire_int(&atomic_writes) == 0,
-         "with no file there, it went through a temporary one");
    if (failures == had)
       fprintf(stderr, "[pass] a settled download is written\n");
-}
-
-/* A file already there is replaced through a temporary one */
-static void lane_download_replaces(void)
-{
-   unsigned had = failures;
-   fake_target(TARGET_OLD, 0, 0);
-   if (run_download(false, true))
-   {
-      CHECK(retro_atomic_load_acquire_int(&atomic_writes) == 1
-            && retro_atomic_load_acquire_int(&writes) == 1
-            && retro_atomic_load_acquire_int(&target) == TARGET_NEW,
-            "the existing file was replaced by %d atomic of %d writes, "
-            "now %d", retro_atomic_load_acquire_int(&atomic_writes),
-            retro_atomic_load_acquire_int(&writes),
-            retro_atomic_load_acquire_int(&target));
-   }
-   fake_target(TARGET_NONE, 0, 0);
-   if (failures == had)
-      fprintf(stderr, "[pass] an existing file is replaced through a temporary one\n");
 }
 
 static void lane_cancel_after_settle(void)
@@ -431,18 +415,42 @@ static void lane_download_error_body(void)
       fprintf(stderr, "[pass] a download's error page reaches its callback\n");
 }
 
+/* A caller's staging file is written straight to, even over a file
+ * already there: no temporary one beside it */
+static void lane_download_staged(void)
+{
+   unsigned had = failures;
+   fake_target(TARGET_OLD, 0, 0);
+   staged = true;
+   if (run_download(false, true))
+   {
+      CHECK(retro_atomic_load_acquire_int(&atomic_writes) == 0
+            && retro_atomic_load_acquire_int(&writes) == 1
+            && retro_atomic_load_acquire_int(&target) == TARGET_NEW
+            && written_body == fetched_body,
+            "the staging file took %d atomic of %d writes, now %d",
+            retro_atomic_load_acquire_int(&atomic_writes),
+            retro_atomic_load_acquire_int(&writes),
+            retro_atomic_load_acquire_int(&target));
+   }
+   staged = false;
+   fake_target(TARGET_NONE, 0, 0);
+   if (failures == had)
+      fprintf(stderr, "[pass] a staging file is written straight to\n");
+}
+
 int main(void)
 {
    task_queue_init(true, NULL);
    lane_parks_until_settled();
    lane_download_written();
-   lane_download_replaces();
    lane_cancel_after_settle();
    lane_write_fails_over_file(false);
    lane_write_fails_over_file(true);
    lane_write_fails_no_file(false);
    lane_write_fails_no_file(true);
    lane_download_error_body();
+   lane_download_staged();
    task_queue_deinit();
 
    if (failures)

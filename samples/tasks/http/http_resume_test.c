@@ -327,6 +327,9 @@ static long file_matches(int seed, int *ok)
    return n;
 }
 
+/* Pushed as a caller's staging file (task_push_http_download_staged_file) */
+static int g_staged;
+
 static void *push(const char *label, const struct step *script, int n,
       int port)
 {
@@ -346,7 +349,11 @@ static void *push(const char *label, const struct step *script, int n,
    net_http_deinit();
    net_http_init();
    snprintf(url, sizeof(url), "http://127.0.0.1:%d/file.bin", port);
-   if (!(t = task_push_http_download_file(url, g_path, true, NULL, done_cb, NULL)))
+   if (!(t = g_staged
+         ? task_push_http_download_staged_file(url, g_path, true, NULL,
+               NULL, done_cb, NULL)
+         : task_push_http_download_file(url, g_path, true, NULL, done_cb,
+               NULL)))
       CHECK(0, "%s: push refused", label);
    return t;
 }
@@ -684,28 +691,58 @@ int main(void)
          path_is_valid(g_temp) ? "left behind" : "removed");
    remove(g_path);
 
-   /* No file to lose: written in place, so nothing to rename or copy */
+   /* No file to lose, still written beside it: a process killed part
+    * way must not leave a part-written file where a whole one goes.
+    * Copied, as the rename is refused. */
    set_vfs(&vfs);
    g_renames = 0;
-   run("no existing file, written in place", s_full, 1);
+   run("no existing file, rename refused", s_full, 1);
+   set_vfs(NULL);
+   len = file_matches(2, &ok);
+   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok
+         && !path_is_valid(g_temp) && g_renames > 0,
+         "rename refused, copied: err=%d len=%ld ok=%d temporary file %s, "
+         "%d renames", g_obs.had_error, len, ok,
+         path_is_valid(g_temp) ? "left behind" : "removed", g_renames);
+   remove(g_path);
+
+   /* A caller's own staging file: written in place, nothing renamed */
+   g_staged  = 1;
+   g_renames = 0;
+   set_vfs(&vfs);
+   run("staging file", s_full, 1);
    set_vfs(NULL);
    len = file_matches(2, &ok);
    CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok
          && !path_is_valid(g_temp) && g_renames == 0,
-         "in place: err=%d len=%ld ok=%d temporary file %s, %d renames",
+         "staging file: err=%d len=%ld ok=%d temporary file %s, %d renames",
          g_obs.had_error, len, ok,
          path_is_valid(g_temp) ? "left behind" : "removed", g_renames);
    remove(g_path);
 
-   /* Written in place, the write fails part way: no file left */
+   /* A staging file whose write fails part way: removed */
    memset(&vfs, 0, sizeof(vfs));
    vfs.rename = refuse_rename;
    vfs.write  = short_write;
    set_vfs(&vfs);
-   run("no existing file, write fails", s_full, 1);
+   run("staging file, write fails", s_full, 1);
+   set_vfs(NULL);
+   g_staged = 0;
+   CHECK(g_obs.had_error && file_matches(2, &ok) < 0 && !path_is_valid(g_temp),
+         "staging write failed: err=%d, file is %ld bytes, temporary file %s",
+         g_obs.had_error, file_matches(2, &ok),
+         path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_path);
+
+   /* The copy fails part way */
+   memset(&vfs, 0, sizeof(vfs));
+   vfs.rename = refuse_rename;
+   vfs.write  = short_write;
+   set_vfs(&vfs);
+   run("no existing file, rename refused, copy fails", s_full, 1);
    set_vfs(NULL);
    CHECK(g_obs.had_error && file_matches(2, &ok) < 0 && !path_is_valid(g_temp),
-         "write failed: err=%d, file is %ld bytes, temporary file %s",
+         "copy failed: err=%d, file is %ld bytes, temporary file %s",
          g_obs.had_error, file_matches(2, &ok),
          path_is_valid(g_temp) ? "left behind" : "removed");
    remove(g_path);

@@ -924,7 +924,7 @@ static void s3_delete_cb(retro_task_t *task, void *task_data, void *user_data, c
 /* GET straight into @cb_state's file, as the body arrives */
 static bool s3_http_get_async(const char *url, const char *headers, s3_cb_state_t *cb_state)
 {
-   return task_push_http_download_file_with_headers(url, cb_state->file,
+   return task_push_http_download_staged_file(url, cb_state->file,
          true, NULL, headers, s3_read_cb, cb_state) != NULL;
 }
 

@@ -67,6 +67,7 @@ struct http_handle
     * two backends honour the same API contract: body on disk,
     * data == NULL in the callback unless the response was an error. */
    char                 *sink_path;
+   bool                  sink_in_place; /* the caller's staging file */
    /* Set by the fetch callbacks on the thread that started the fetch,
     * after the response; read by the handler, which may be on the
     * task worker. */
@@ -288,22 +289,27 @@ task_finished:
          bool failed    = false;
          int  status;
          /* Written here, past the cancel check.  Only a whole 2xx body
-          * replaces the file, through a temporary one; with no file to
-          * lose it is written in place.  An error response keeps the start of
-          * its body for the callback, as the native backend does. */
+          * replaces the file; it is written in place only when there
+          * is no file to lose, or it is the caller's staging file.  An
+          * error response keeps the start of its body for the callback,
+          * as the native backend does. */
          if (http->sink_path)
          {
             if (resp->status >= 200 && resp->status <= 299)
             {
                const char *body = resp->data ? resp->data : "";
-               if (path_is_valid(http->sink_path))
-                  failed = !filestream_write_file_atomic(http->sink_path,
-                        body, (int64_t)resp->len);
-               else if (!filestream_write_file(http->sink_path, body,
+               if (     http->sink_in_place
+                     || !filestream_write_file_atomic(http->sink_path, body,
                         (int64_t)resp->len))
                {
-                  filestream_delete(http->sink_path);
-                  failed = true;
+                  if (!http->sink_in_place && path_is_valid(http->sink_path))
+                     failed = true;
+                  else if (!filestream_write_file(http->sink_path, body,
+                           (int64_t)resp->len))
+                  {
+                     filestream_delete(http->sink_path);
+                     failed = true;
+                  }
                }
                free(resp->data);
                resp->data = NULL;
@@ -752,9 +758,9 @@ void *task_push_http_download_file(const char *url, const char *path,
          title, NULL, cb, user_data);
 }
 
-void *task_push_http_download_file_with_headers(const char *url,
+static void *task_push_http_download(const char *url,
       const char *path, bool mute, const char *title, const char *headers,
-      retro_task_callback_t cb, void *user_data)
+      bool in_place, retro_task_callback_t cb, void *user_data)
 {
    retro_task_t  *t;
    http_handle_t *http;
@@ -770,7 +776,26 @@ void *task_push_http_download_file_with_headers(const char *url,
     * settled yet, since its callbacks only run once this function
     * yields to the browser event loop. */
    if ((http = (http_handle_t*)t->state))
-      http->sink_path = strdup(path);
+   {
+      http->sink_path     = strdup(path);
+      http->sink_in_place = in_place;
+   }
 
    return t;
+}
+
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_http_download(url, path, mute, title, headers,
+         false, cb, user_data);
+}
+
+void *task_push_http_download_staged_file(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_http_download(url, path, mute, title, headers,
+         true, cb, user_data);
 }

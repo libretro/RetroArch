@@ -693,7 +693,7 @@ static bool task_http_finder(retro_task_t *task, void *user_data)
 static void *task_push_http_transfer_generic_titled(
       struct http_connection_t *conn,
       const char *url, bool mute, bool headers_accept_err,
-      const char *title, const char *sink_path,
+      const char *title, const char *sink_path, bool sink_in_place,
       retro_task_callback_t cb, void *user_data)
 {
    retro_task_t  *t        = NULL;
@@ -760,39 +760,49 @@ static void *task_push_http_transfer_generic_titled(
     * push rather than surfacing megabytes later, and arm the sink
     * before net_http_new() consumes the connection in
     * cb_http_conn_default(). */
-   if (sink_path)
+   if (sink_path && sink_in_place)
    {
+      /* The caller's own staging file: written straight to */
       size_t _len = strlen(sink_path) + 1;
-      /* No file to lose: written in place, a failed download removed
-       * as it ends.  Otherwise through a temporary name beside it, in
-       * the same allocation, and if that cannot be made the task fails
-       * as soon as it runs, leaving the file alone. */
-      if (!path_is_valid(sink_path))
-      {
-         if (!(http->sink_path = (char*)malloc(_len)))
-            goto error;
-         memcpy(http->sink_path, sink_path, _len);
-         if (!(http->sink_file = filestream_open(sink_path,
-                     RETRO_VFS_FILE_ACCESS_WRITE,
-                     RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
-            goto error;
-      }
-      else
-      {
-         if (!(http->sink_path = (char*)malloc(_len * 2 + sizeof(".tmp") - 1)))
-            goto error;
-         memcpy(http->sink_path, sink_path, _len);
-         if (filestream_atomic_temp_name(http->sink_path + _len,
-                  _len + sizeof(".tmp") - 1, sink_path))
-         {
-            http->sink_temp = http->sink_path + _len;
-            http->sink_file = filestream_open(http->sink_temp,
+      if (!(http->sink_path = (char*)malloc(_len)))
+         goto error;
+      memcpy(http->sink_path, sink_path, _len);
+      if (!(http->sink_file = filestream_open(sink_path,
                   RETRO_VFS_FILE_ACCESS_WRITE,
-                  RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
-         }
-         if (!http->sink_file)
+                  RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
+         goto error;
+      net_http_connection_set_sink_spans(conn,
+            task_http_file_sink_spans, http);
+   }
+   else if (sink_path)
+   {
+      /* One allocation: the path, then its temporary name */
+      size_t _len = strlen(sink_path) + 1;
+      if (!(http->sink_path = (char*)malloc(_len * 2 + sizeof(".tmp") - 1)))
+         goto error;
+      memcpy(http->sink_path, sink_path, _len);
+      if (filestream_atomic_temp_name(http->sink_path + _len,
+               _len + sizeof(".tmp") - 1, sink_path))
+      {
+         http->sink_temp = http->sink_path + _len;
+         http->sink_file = filestream_open(http->sink_temp,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+      }
+      if (!http->sink_file)
+      {
+         http->sink_temp = NULL;
+         /* No file to lose: write it in place.  Otherwise the task
+          * fails as soon as it runs, leaving that file alone. */
+         if (!path_is_valid(sink_path))
          {
-            http->sink_temp = NULL;
+            if (!(http->sink_file = filestream_open(sink_path,
+                        RETRO_VFS_FILE_ACCESS_WRITE,
+                        RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
+               goto error;
+         }
+         else
+         {
             free(http->sink_path);
             http->sink_path = NULL;
             http->error     = true;
@@ -858,7 +868,8 @@ static void *task_push_http_transfer_generic(
       retro_task_callback_t cb, void *user_data)
 {
    return task_push_http_transfer_generic_titled(
-         conn, url, mute, headers_accept_err, NULL, NULL, cb, user_data);
+         conn, url, mute, headers_accept_err, NULL, NULL, false,
+         cb, user_data);
 }
 
 void* task_push_http_transfer(const char *url, bool mute,
@@ -1060,7 +1071,7 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    /* should be using type but some callers now rely on type being ignored */
    return task_push_http_transfer_generic_titled(
          net_http_connection_new(url, "GET", NULL),
-         url, mute, false, tmp, NULL, cb, transfer_data);
+         url, mute, false, tmp, NULL, false, cb, transfer_data);
 }
 
 void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
@@ -1207,10 +1218,10 @@ void *task_push_http_transfer_with_source(const char *url,
  *
  * The completion callback receives an http_transfer_data_t with
  * status and headers populated but data == NULL and len == 0 -- the
- * body is already on disk.  A file already at @path is replaced only
- * once the transfer has finished cleanly with a 2xx, the body going to
- * a temporary file beside it until then; otherwise @path is left as it
- * was, and with nothing there before, nothing is.
+ * body is already on disk.  The body goes to a temporary file beside
+ * @path, which replaces @path only once the transfer has finished
+ * cleanly with a 2xx; otherwise it is removed and @path is left as
+ * it was.
  *
  * The output directory must exist; this does not create it.
  **/
@@ -1222,9 +1233,9 @@ void *task_push_http_download_file(const char *url, const char *path,
          title, NULL, cb, user_data);
 }
 
-void *task_push_http_download_file_with_headers(const char *url,
+static void *task_push_http_download(const char *url,
       const char *path, bool mute, const char *title, const char *headers,
-      retro_task_callback_t cb, void *user_data)
+      bool in_place, retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t *conn;
    if (!url || !*url || !path || !*path)
@@ -1234,5 +1245,21 @@ void *task_push_http_download_file_with_headers(const char *url,
    if (headers)
       net_http_connection_set_headers(conn, headers);
    return task_push_http_transfer_generic_titled(conn,
-         url, mute, false, title, path, cb, user_data);
+         url, mute, false, title, path, in_place, cb, user_data);
+}
+
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_http_download(url, path, mute, title, headers,
+         false, cb, user_data);
+}
+
+void *task_push_http_download_staged_file(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_http_download(url, path, mute, title, headers,
+         true, cb, user_data);
 }
