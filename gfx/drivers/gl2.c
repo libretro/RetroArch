@@ -7541,7 +7541,7 @@ static bool gl2_frame(void *data, const void *frame,
 #ifdef HAVE_GL_MENU_BLOOM
    /* Before the frame draws into any framebuffer of its own */
    if (gl->flags & GL2_FLAG_HAVE_FBO)
-      gfx_display_bloom_prepass(gl);
+      gfx_display_bloom_prepass(gl, video_info->frame_time);
 #endif
 
    gl->shader->use(gl, gl->shader_data, 1, true);

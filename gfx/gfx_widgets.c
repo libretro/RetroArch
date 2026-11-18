@@ -3141,7 +3141,7 @@ void gfx_widgets_worker_step(void *data,
    }
    /* What the frame carried, not what the setting says now: this runs
     * on the video thread under the threaded wrapper. */
-   gfx_animation_update_widgets(cpu_features_get_time_usec(),
+   gfx_animation_update_widgets(video_info->frame_time,
          video_info->menu_ticker_speed,
          widget_dims);
    /* What the frame carried, not the settings the main thread writes:

@@ -1020,7 +1020,7 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
          md->color[3]);
    draw.effect       = md->effect->program;
 
-   now = cpu_features_get_time_usec();
+   now = md->time;
    if (!p_disp->effect_start_time || now < p_disp->effect_start_time)
       p_disp->effect_start_time = now;
    p_disp->effect_time = (float)fmod(
@@ -1081,7 +1081,7 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
 #endif
 }
 
-void gfx_display_bloom_prepass(void *userdata)
+void gfx_display_bloom_prepass(void *userdata, retro_time_t now)
 {
 #ifdef HAVE_SHADERPIPELINE
    gfx_display_t *p_disp             = &dispgfx_st;
@@ -1103,7 +1103,7 @@ void gfx_display_bloom_prepass(void *userdata)
 
    p_disp->ribbon = &gfx_display_ribbon_st;
    menu_ribbon_update(p_disp->ribbon,
-         cpu_features_get_time_usec() * 0.000001,
+         now * 0.000001,
          VIDEO_SCALE_W(output_dims), VIDEO_SCALE_H(output_dims),
          p_disp->bloom_alpha);
    p_disp->ribbon_fresh = true;

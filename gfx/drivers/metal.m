@@ -6992,7 +6992,7 @@ static void metal_views_render(metal_views_t *vs,
          [_context begin];
 #ifdef HAVE_SHADERPIPELINE
          /* Before the frame's encoder: the glow splits no pass */
-         gfx_display_bloom_prepass((__bridge void*)self);
+         gfx_display_bloom_prepass((__bridge void*)self, video_info->frame_time);
 #endif
       }
 

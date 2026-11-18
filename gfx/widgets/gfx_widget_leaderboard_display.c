@@ -468,7 +468,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       if (     state->progress_tracker.show_until
             || state->progress_tracker.hold)
       {
-         retro_time_t now = cpu_features_get_time_usec();
+         retro_time_t now = video_info->frame_time;
 
          gfx_widget_progress_tracker_poll(&state->progress_tracker, now, false);
 

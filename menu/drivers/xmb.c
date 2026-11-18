@@ -8300,6 +8300,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_ctx_driver_t *dispctx,
       const gfx_display_mesh_t *ribbon_mesh,
       const gfx_display_effect_t *const *effects,
+      retro_time_t frame_time,
       unsigned video_dims,
       unsigned menu_shader_pipeline,
       unsigned xmb_color_theme,
@@ -8369,6 +8370,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       md.vertex_count = 0;
       md.program      = GFX_MESH_PROGRAM_EFFECT;
       md.effect       = NULL;
+      md.time         = frame_time;
       switch (menu_shader_pipeline)
       {
          case XMB_SHADER_PIPELINE_RIBBON:
@@ -9111,6 +9113,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 #else
             NULL,
 #endif
+            video_info->frame_time,
             video_info->dims,
             menu_shader_pipeline,
             color_theme,

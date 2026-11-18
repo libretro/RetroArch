@@ -354,6 +354,34 @@ static void test_worker_deinit(void)
    video_state_get_ptr()->thread_wrapper_active = false;
 }
 
+/* The worker animates the widgets by the time the frame carries, which
+ * video_driver_frame() read for it, and reads no clock of its own */
+extern retro_time_t stub_widgets_anim_time;
+extern unsigned stub_clock_reads;
+
+static void test_worker_frame_time(void)
+{
+   static video_frame_info_t frame;
+
+   video_state_get_ptr()->thread_wrapper_active = true;
+   CHECK(widgets_up(), "worker widgets initialize");
+   memset(&frame, 0, sizeof(frame));
+   frame.dims                = VIDEO_SCALE_PACK(960, 540);
+   frame.widget_scale_factor = 1.0f;
+   frame.widget_dir_assets   = "/tmp/nonexistent-assets";
+   frame.widget_path_font    = "";
+   frame.menu_ticker_speed   = 1.0f;
+   frame.frame_time          = 123456789;
+   stub_widgets_anim_time    = 0;
+   stub_clock_reads          = 0;
+   gfx_widgets_worker_step(&frame, "", 0);
+   CHECK(stub_widgets_anim_time == frame.frame_time,
+         "the worker animates by the frame's time");
+   CHECK(stub_clock_reads == 0, "the worker step reads no clock");
+   gfx_widgets_deinit(false);
+   video_state_get_ptr()->thread_wrapper_active = false;
+}
+
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 extern bool stub_win32_modal_active;
 
@@ -440,6 +468,7 @@ int main(void)
    test_queued_across_reinit();
    test_icon_draw_size();
    test_worker_deinit();
+   test_worker_frame_time();
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    test_modal_scale();
 #endif

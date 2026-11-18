@@ -59,8 +59,15 @@ font_data_t *font_driver_init_first(void *data, const char *path,
    return NULL;
 }
 
+/* The effects animate by the frame's time they are handed; the clock
+ * itself is not theirs to read, and a read here is counted. */
 static retro_time_t test_time = 1000000;
-retro_time_t cpu_features_get_time_usec(void) { return test_time; }
+static unsigned test_clock_reads;
+retro_time_t cpu_features_get_time_usec(void)
+{
+   test_clock_reads++;
+   return 0;
+}
 
 /* ---- a recording display driver ------------------------------------ */
 
@@ -381,6 +388,7 @@ int main(void)
    md.mvp = NULL; md.color = white; md.texture = 7; md.program = GFX_MESH_PROGRAM_TEXTURED;
    md.bloom = false;
    md.vertex_count = 0;
+   md.time = test_time;
    gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
    CHECK(rec_draws == 1 && rec_vertices == 10, "two triangles are ten strip vertices, one draw");
    CHECK(rec_texture == 7, "TEXTURED draws with its texture");
@@ -528,27 +536,33 @@ int main(void)
       md.program = GFX_MESH_PROGRAM_EFFECT;
       md.effect  = gfx_display_effect_install(&ribbon_desc);
       md.vertex_count = 0;
+      test_clock_reads = 0;
       for (rate = 0; rate < sizeof(rates) / sizeof(rates[0]); rate++)
       {
          p_disp->effect_start_time = 0;
          test_time = 1000000;
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          for (frame = 1; frame <= rates[rate]; frame++)
          {
             test_time = 1000000 + (retro_time_t)frame * 1000000 / rates[rate];
-            gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+            md.time = test_time;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          }
          CHECK(TEST_NEAR(rec_effect_time, 0.6f), "one second has the same phase at 30, 60 and 144 Hz");
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(TEST_NEAR(rec_effect_time, 0.6f), "a repeated timestamp does not advance the effect");
       }
       rec_ctx.bloom_begin = rec_bloom_begin;
       rec_ctx.bloom_end   = rec_bloom_end;
       rec_bloom_calls     = 0;
-      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      md.time = test_time;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
       CHECK(rec_bloom_calls == 0, "no glow unless the menu asks for it");
       md.bloom = true;
-      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      md.time = test_time;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
       CHECK(rec_bloom_calls == 1, "the glow is drawn when the menu asks for it");
       CHECK(TEST_NEAR(rec_effect_time, 0.6f) && TEST_NEAR(p_disp->effect_time, 0.6f),
             "bloom and base use the same phase despite time spent drawing");
@@ -559,25 +573,28 @@ int main(void)
          rec_ctx.bloom_composite = rec_bloom_composite;
          rec_bloom_check_time    = false;
          rec_bloom_calls = rec_bloom_deferred = rec_bloom_composites = 0;
-         gfx_display_bloom_prepass(NULL);
+         gfx_display_bloom_prepass(NULL, test_time);
          CHECK(rec_bloom_calls == 0, "no prepass before the ribbon asks for one");
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(rec_bloom_calls == 1 && rec_bloom_deferred == 0
                && rec_bloom_composites == 0,
                "the first frame draws its glow in place");
-         gfx_display_bloom_prepass(NULL);
+         gfx_display_bloom_prepass(NULL, test_time);
          CHECK(rec_bloom_calls == 2 && rec_bloom_deferred == 1,
                "the prepass draws the next frame's glow, deferred");
          draws = rec_draws;
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(rec_bloom_calls == 2 && rec_bloom_composites == 1
                && rec_bloom_draws_at_composite == draws,
                "the ribbon adds the ready glow in, before it is drawn");
          md.bloom = false;
-         gfx_display_bloom_prepass(NULL);
+         gfx_display_bloom_prepass(NULL, test_time);
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(rec_bloom_composites == 1, "nor is one added in without it");
-         gfx_display_bloom_prepass(NULL);
+         gfx_display_bloom_prepass(NULL, test_time);
          CHECK(rec_bloom_calls == 3, "a frame without the glow asks for none");
          rec_ctx.bloom_composite = NULL;
       }
@@ -585,8 +602,11 @@ int main(void)
       rec_ctx.bloom_begin = NULL;
       rec_ctx.bloom_end   = NULL;
       test_time = 500000;
-      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      md.time = test_time;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
       CHECK(TEST_NEAR(rec_effect_time, 0.0f), "a clock reset restarts the effect");
+      CHECK(test_clock_reads == 0,
+            "the effects and the glow animate by the frame's time, not the clock");
    }
 
    /* quads-only */

@@ -574,6 +574,10 @@ typedef struct video_frame_info
     * whichever thread it is on. */
    uint64_t driver_pacing_id;
    uint64_t recording_gpu_timestamp;
+   /* cpu_features_get_time_usec() as video_driver_frame() read it for
+    * this frame: what anything drawn with the frame animates by, on
+    * whichever thread draws it */
+   retro_time_t frame_time;
    void *recording_gpu;
    void *userdata;
    void *widgets_userdata;

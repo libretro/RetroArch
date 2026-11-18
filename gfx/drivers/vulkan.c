@@ -14312,7 +14312,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef HAVE_SHADERPIPELINE
    /* Outside any pass: the glow's small passes split none */
-   gfx_display_bloom_prepass(vk);
+   gfx_display_bloom_prepass(vk, video_info->frame_time);
 #endif
 
    /* Render to backbuffer. */

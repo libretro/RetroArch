@@ -543,6 +543,9 @@ typedef struct gfx_display_mesh_draw
     * programs (corner 0), and what the effects draw with */
    float *color;
    uintptr_t texture;
+   /* EFFECT: the frame's video_frame_info_t::frame_time, which the
+    * effect animates by */
+   retro_time_t time;
    enum gfx_display_mesh_program program;
    /* EFFECT: which; NULL draws nothing */
    const gfx_display_effect_t *effect;
@@ -584,7 +587,7 @@ gfx_display_effect_t *gfx_display_effect_install(
 void gfx_display_effects_lost(void);
 /* For a driver with bloom_composite: the glow's small passes for this
  * frame, outside the pass the menu is drawn in. Drawing thread. */
-void gfx_display_bloom_prepass(void *userdata);
+void gfx_display_bloom_prepass(void *userdata, retro_time_t now);
 void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
       unsigned video_dims, const gfx_display_mesh_t *mesh,
       const gfx_display_mesh_draw_t *draw);

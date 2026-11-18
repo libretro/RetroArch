@@ -7190,7 +7190,7 @@ static bool gl3_frame(void *data, const void *frame,
    glBindVertexArray(gl->vao);
 #ifdef HAVE_GL_MENU_BLOOM
    /* Before the frame draws into any framebuffer of its own */
-   gfx_display_bloom_prepass(gl);
+   gfx_display_bloom_prepass(gl, video_info->frame_time);
 #endif
 
    if (gl->chain.active)

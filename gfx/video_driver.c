@@ -10397,6 +10397,7 @@ void video_driver_frame(const void *data, unsigned width,
    core_dims = dims;
 
    video_driver_build_info(&video_info);
+   video_info.frame_time = new_time;
    recording_gpu_frame_info(&video_info, true);
 #ifdef HAVE_OPENXR
    /* The eyes the core drew this frame from, for the drawing thread */
