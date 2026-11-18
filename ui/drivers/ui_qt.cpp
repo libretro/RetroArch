@@ -2377,6 +2377,10 @@ void MainWindow::setupSignalConnections()
 
 MainWindow::~MainWindow()
 {
+#ifdef HAVE_MENU
+   if (m_viewOptionsDialog)
+      m_viewOptionsDialog->applyCurrentCategory();
+#endif
    if (m_playlistSearchCancel)
       m_playlistSearchCancel->storeRelease(1);
 }
@@ -3471,6 +3475,7 @@ void MainWindow::onRunClicked()
          entry = getFileContentEntry(m_fileTableView->currentIndex());
          break;
       case BROWSER_TYPE_UPDATER:
+      case BROWSER_TYPE_SETTINGS:
          return;
       case BROWSER_TYPE_PLAYLISTS:
          entry = getCurrentContentEntry();
@@ -3500,7 +3505,8 @@ void MainWindow::setCoreActions()
 
    m_launchWithComboBox->clear();
 
-   if (m_currentBrowser == BROWSER_TYPE_UPDATER)
+   if (m_currentBrowser == BROWSER_TYPE_UPDATER
+         || m_currentBrowser == BROWSER_TYPE_SETTINGS)
    {
       m_startCorePushButton->hide();
       m_runPushButton->hide();
@@ -3528,6 +3534,10 @@ void MainWindow::setCoreActions()
       case BROWSER_TYPE_FILES:
          currentPlaylistFileName = QFileInfo(QString::fromUtf8(
                   companion_core_browse_dir(ui_companion_qt_core()))).fileName();
+         break;
+      case BROWSER_TYPE_SETTINGS:
+         break;
+      case BROWSER_TYPE_UPDATER:
          break;
    }
    playlistName = currentPlaylistFileName.toUtf8();
@@ -3568,6 +3578,11 @@ void MainWindow::setCoreActions()
 void MainWindow::onTabWidgetIndexChanged(int index)
 {
    QString str = m_browserAndPlaylistTabWidget->tabText(index);
+#ifdef HAVE_MENU
+   if (m_currentBrowser == BROWSER_TYPE_SETTINGS
+         && str != QObject::tr("Settings"))
+      m_viewOptionsDialog->applyCurrentCategory();
+#endif
    if (str == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))
    {
       m_currentBrowser = BROWSER_TYPE_FILES;
@@ -3587,6 +3602,15 @@ void MainWindow::onTabWidgetIndexChanged(int index)
       m_centralWidget->setCurrentWidget(m_playlistViewsAndFooter);
       onCurrentItemChanged(m_tableView->currentIndex());
    }
+#ifdef HAVE_MENU
+   else if (str == QObject::tr("Settings"))
+   {
+      m_currentBrowser = BROWSER_TYPE_SETTINGS;
+      m_centralWidget->setCurrentWidget(m_viewOptionsDialog->categoryPagesWidget());
+      m_viewOptionsDialog->loadCategory(
+            m_viewOptionsDialog->categoryListWidget()->currentRow());
+   }
+#endif
    else
    {
       /* The updater actions live in the Content Browser dock. The main
@@ -3760,6 +3784,8 @@ void MainWindow::applySearch()
          }
          break;
       }
+      case BROWSER_TYPE_SETTINGS:
+         break;
    }
 }
 
@@ -6139,11 +6165,6 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
    viewMenu->addAction(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS),
             mainwindow->shortcutsDialog(), SLOT(showDialog()));
-   viewMenu->addSeparator();
-   viewMenu->addAction(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS),
-            mainwindow->viewOptionsDialog(), SLOT(showDialog()));
-
    helpMenu = menu->addMenu(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
    helpMenu->addAction(QString(msg_hash_to_str(
@@ -6299,6 +6320,11 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
       mainwindow->updaterDirectoryTree()->hide();
    }
    browserAndPlaylistTabWidget->addTab(updaterWidget, QObject::tr("Updater"));
+#endif
+#ifdef HAVE_MENU
+   browserAndPlaylistTabWidget->addTab(
+         mainwindow->viewOptionsDialog()->categoryListWidget(),
+         QObject::tr("Settings"));
 #endif
 
    browserAndPlaylistTabDock = new QDockWidget(msg_hash_to_str(
@@ -6597,6 +6623,15 @@ static void* ui_companion_qt_init(void)
    centralWidget->addWidget(mainwindow->fileTableView());
    centralWidget->addWidget(mainwindow->updaterContentWidget());
    centralWidget->addWidget(mainwindow->updaterEmptyWidget());
+#ifdef HAVE_MENU
+   /* The settings category list and page area are reparented out of the
+    * legacy dialog and embedded in the Content Browser / central stack. */
+   mainwindow->viewOptionsDialog()->layout()->removeWidget(
+         mainwindow->viewOptionsDialog()->categoryListWidget());
+   mainwindow->viewOptionsDialog()->layout()->removeWidget(
+         mainwindow->viewOptionsDialog()->categoryPagesWidget());
+   centralWidget->addWidget(mainwindow->viewOptionsDialog()->categoryPagesWidget());
+#endif
    mainwindow->setCentralWidget(centralWidget);
 
    qt_companion_build_menubar(mainwindow);

@@ -935,6 +935,12 @@ public:
 public slots:
    void showDialog();
    void hideDialog();
+#ifdef HAVE_MENU
+   QListWidget *categoryListWidget() const;
+   QWidget *categoryPagesWidget() const;
+   void loadCategory(int index);
+   void applyCurrentCategory();
+#endif
 private slots:
    void onRejected();
 protected:
@@ -952,6 +958,9 @@ private:
    QVector<OptionsCategory*> m_categoryList;
    QListWidget *m_optionsList;
    QStackedLayout *m_optionsStack;
+   QWidget *m_categoryPagesWidget;
+   QLabel *m_headerLabel;
+   int m_currentCategoryIndex;
 #else
    ViewOptionsWidget *m_viewOptionsWidget;
 #endif

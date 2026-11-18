@@ -2717,10 +2717,11 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
    QDialog(mainwindow)
    ,m_optionsList(new QListWidget(this))
    ,m_optionsStack(new QStackedLayout)
+   ,m_categoryPagesWidget(new QWidget(this))
+   ,m_headerLabel(new QLabel(m_categoryPagesWidget))
+   ,m_currentCategoryIndex(-1)
 {
-   int width;
    QGridLayout        *layout = new QGridLayout(this);
-   QLabel      *m_headerLabel = new QLabel(this);
    /* Header label with large font and a bit of spacing
     * (align with group boxes) */
    QFont      headerLabelFont = m_headerLabel->font();
@@ -2791,28 +2792,61 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
    addCategory(new UserCategory(this));
    addCategory(new DirectoryCategory(this));
 
-   width  =
-        m_optionsList->sizeHintForColumn(0)
-      + m_optionsList->frameWidth() * 2
-      + 5;
-   width += m_optionsList->verticalScrollBar()->sizeHint().width();
-
-   m_optionsList->setMaximumWidth(width);
-   m_optionsList->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
+   /* The category list is also embedded in the Content Browser dock.
+    * Let it use the available width there instead of sizing it only to
+    * the longest category label. */
+   m_optionsList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE));
 
-   layout->addWidget(m_optionsList, 0, 0, 2, 1);
-   layout->addLayout(headerHLayout, 0, 1);
-   layout->addLayout(m_optionsStack, 1, 1);
+   QVBoxLayout *categoryPagesLayout = new QVBoxLayout(m_categoryPagesWidget);
+   categoryPagesLayout->setContentsMargins(0, 0, 0, 0);
+   categoryPagesLayout->addLayout(headerHLayout);
+   categoryPagesLayout->addLayout(m_optionsStack);
+
+   layout->addWidget(m_optionsList, 0, 0);
+   layout->addWidget(m_categoryPagesWidget, 0, 1);
 
    connect(m_optionsList, SIGNAL(currentRowChanged(int)),
-         m_optionsStack, SLOT(setCurrentIndex(int)));
+         this, SLOT(loadCategory(int)));
    connect(m_optionsList, SIGNAL(currentTextChanged(const QString&)),
          m_headerLabel, SLOT(setText(const QString&)));
 
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
+   if (m_optionsList->count() > 0)
+      m_optionsList->setCurrentRow(0);
 }
+
+#ifdef HAVE_MENU
+QListWidget *ViewOptionsDialog::categoryListWidget() const
+{
+   return m_optionsList;
+}
+
+QWidget *ViewOptionsDialog::categoryPagesWidget() const
+{
+   return m_categoryPagesWidget;
+}
+
+void ViewOptionsDialog::loadCategory(int index)
+{
+   if (index < 0 || index >= m_categoryList.size())
+      return;
+   if (m_currentCategoryIndex >= 0
+         && m_currentCategoryIndex < m_categoryList.size())
+      m_categoryList.at(m_currentCategoryIndex)->apply();
+   m_currentCategoryIndex = index;
+   m_optionsStack->setCurrentIndex(index);
+   m_categoryList.at(index)->load();
+}
+
+void ViewOptionsDialog::applyCurrentCategory()
+{
+   if (m_currentCategoryIndex >= 0
+         && m_currentCategoryIndex < m_categoryList.size())
+      m_categoryList.at(m_currentCategoryIndex)->apply();
+}
+#endif
 
 QIcon getIcon(OptionsCategory *category)
 {
@@ -2891,10 +2925,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
 void ViewOptionsDialog::showDialog()
 {
 #ifdef HAVE_MENU
-   unsigned i;
-   size_t list_size = (size_t)m_categoryList.size();
-   for (i = 0; i < list_size; i++)
-      m_categoryList.at(i)->load();
+   loadCategory(m_optionsList->currentRow());
 #else
    m_viewOptionsWidget->loadViewOptions();
 #endif

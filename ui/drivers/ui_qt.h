@@ -486,7 +486,8 @@ public:
    {
       BROWSER_TYPE_PLAYLISTS,
       BROWSER_TYPE_FILES,
-      BROWSER_TYPE_UPDATER
+      BROWSER_TYPE_UPDATER,
+      BROWSER_TYPE_SETTINGS
    };
 
    enum Theme
