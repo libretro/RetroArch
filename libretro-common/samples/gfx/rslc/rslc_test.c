@@ -464,6 +464,32 @@ static void test_pp(void)
    CHECK(!pp_dump("#version 450\n#define NOPE\n#ifdef NOPE\nint a;\n##else\nint b;\n#endif\n",
       dump, sizeof(dump), err, sizeof(err)));
 
+   /* An inactive branch is skipped to its next directive without being
+    * lexed: what is in it still reads as lexing reads it. A '#' in a
+    * block comment, in a string, after a splice or not first on its line
+    * is no directive; a directive may be indented or follow a comment;
+    * lines are counted through all of it (__LINE__ after it is right). */
+   ok = pp_dump(
+      "#version 450\n"
+      "#ifdef NOPE\n"
+      "int a; /* # not a directive\n"
+      "#else in a comment */ int b;\n"
+      "\"a string with # and /* in it\" x;\n"
+      "y = 1; // #endif in a comment\n"
+      "  # define INNER 1\n"
+      "z \\\n"
+      "#endif after a splice\n"
+      "w # endif not first\n"
+      "/* c */ #elif 0\n"
+      "  /* d */  #endif\n"
+      "#ifdef INNER\nint inner;\n#endif\n"
+      "int c = __LINE__;\n",
+      dump, sizeof(dump), err, sizeof(err));
+   CHECK(ok);
+   pp_flat(dump, flat, sizeof(flat));
+   CHECK(!strcmp(flat, "int c = 16 ;"));
+   CHECK(strstr(dump, "16 int\n") != NULL);
+
    /* Predefined macros and #extension / #pragma pass-through. */
    ok = pp_dump(
       "#version 450\n#extension GL_GOOGLE_cpp_style_line_directive : require\n"

@@ -628,6 +628,47 @@ static bool rslc_tok_is_eol(const struct rslc_tok *t)
 #define RSLC_TXT(pp, t) rslc_tok_text((pp)->c, (t))
 #define RSLC_SYM(pp, t) rslc_tok_sym((pp)->c, (t))
 
+/* An inactive branch's text, from the start of a line to the next line
+ * that begins with '#' (or the end): what lexing it would have skipped,
+ * without making a token of it. Whitespace and comments are skipped by
+ * rslc_lex_skip, as for a token, so line counts, splices and comments
+ * come out as they would; a string is stepped over whole, as the lexer
+ * takes it; anything else is one character at a time, with nothing
+ * hashed or interned. Stops with the lexer where it would have read the
+ * '#' (or EOF): at the start of its line, the BOL flag as it was. */
+static void rslc_pp_skip_inactive(struct rslc_lex *l)
+{
+   for (;;)
+   {
+      bool space;
+      char ch;
+      rslc_lex_skip(l, &space);
+      if (l->pos >= l->len)
+         return;
+      ch = l->src[l->pos];
+      if (ch == '\n')
+      {
+         l->pos++;
+         l->line++;
+         l->bol = true;
+         continue;
+      }
+      if (ch == '#' && l->bol)
+         return;
+      l->bol = false;
+      if (ch == '"')
+      {
+         l->pos++;
+         while (l->pos < l->len && l->src[l->pos] != '"' && l->src[l->pos] != '\n')
+            l->pos++;
+         if (l->pos < l->len && l->src[l->pos] == '"')
+            l->pos++;
+         continue;
+      }
+      l->pos++;
+   }
+}
+
 /* Skips the rest of the current line in the raw stream. */
 static bool rslc_pp_skip_line(struct rslc_pp *pp)
 {
@@ -1662,6 +1703,12 @@ bool rslc_pp_run(struct rslc_ctx *c, const char *src, size_t len)
    {
       bool expanded;
       rslc_pp_settle(pp);
+      /* An inactive branch read straight from the source is skipped to
+       * its next directive without being lexed: a stage that includes a
+       * long library and switches most of it off (an emulator's
+       * decompiled programs) spent most of its compile there */
+      if (!rslc_pp_active(pp) && pp->nsrc == 0 && !pp->has_peek && pp->lex.bol)
+         rslc_pp_skip_inactive(&pp->lex);
       if (!rslc_pp_raw(pp, &t))
          return false;
       if (t.kind == RSLC_TK_EOF)
