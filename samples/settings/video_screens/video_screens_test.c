@@ -7458,6 +7458,42 @@ static void native_wl_kept_thread(const char *ident, enum gfx_ctx_api api,
 
 /* 'core': a 3.2 core GL context, as glcore asks for; else the
  * driver's default one, as gl does */
+/* A window manager started beside the run frames the main window when
+ * it comes up, moving it under the checks: wait for one to announce
+ * itself first. Bare X goes on after the time limit. */
+static void native_wait_wm(void)
+{
+#ifdef HAVE_X11
+   Display *dpy = XOpenDisplay(NULL);
+   retro_time_t deadline;
+   if (!dpy)
+      return;
+   deadline = cpu_features_get_time_usec() + 5000000;
+   for (;;)
+   {
+      Atom type;
+      int format;
+      unsigned long count, after;
+      unsigned char *prop = NULL;
+      bool up             = XGetWindowProperty(dpy, DefaultRootWindow(dpy),
+            XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False), 0, 1,
+            False, XA_WINDOW, &type, &format, &count, &after, &prop)
+         == Success && count == 1;
+      if (prop)
+         XFree(prop);
+      if (up)
+         break;
+      if (cpu_features_get_time_usec() > deadline)
+      {
+         fprintf(stderr, "native: no window manager on the display\n");
+         break;
+      }
+      retro_sleep(20);
+   }
+   XCloseDisplay(dpy);
+#endif
+}
+
 static void test_window_native_lifecycle(const char *ident, bool core)
 {
    video_window_request_t request;
@@ -7997,6 +8033,7 @@ int main(int argc, char **argv)
       config_set_defaults(config_get_ptr());
       retro_main_log_file_init(NULL, false);
       verbosity_enable();
+      native_wait_wm();
       test_window_native_lifecycle(argv[2],
             argc == 3 || strcmp(argv[3], "gl") != 0);
       if (failures)

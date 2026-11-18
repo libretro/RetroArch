@@ -826,40 +826,60 @@ def wm_ready_probe(timeout=10):
         x11.XCloseDisplay(display)
 
 
-def wm_start(env):
-    """openbox on env's display."""
-    p = subprocess.Popen(['openbox'], stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, env=env,
-                         start_new_session=True)
+def wm_start(env, starts=3):
+    """openbox on env's display. One that exits before it is ready is
+    started again, until the deadline."""
     deadline = time.monotonic() + 30
-    try:
-        while p.poll() is None and time.monotonic() < deadline:
-            # A probe that is slow to answer on a loaded runner, with
-            # the other cases' servers and players beside it, is not an
-            # answer: ask again until the deadline.
-            try:
-                probe = subprocess.run(
-                    ['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'], env=env,
-                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                    timeout=5, text=True)
-            except subprocess.TimeoutExpired:
-                continue
-            if probe.returncode == 0 and 'window id #' in probe.stdout:
-                ready = subprocess.run(
-                    [sys.executable, os.path.abspath(__file__), '--wm-ready'],
-                    env=env, timeout=max(0.1, deadline - time.monotonic()))
-                if ready.returncode == 0 and p.poll() is None:
-                    return p
-            time.sleep(0.05)
-        raise RuntimeError('openbox did not become ready on ' + env['DISPLAY'])
-    except BaseException:
-        p.terminate()
+    why = 'not ready in time'
+    for _ in range(starts):
+        log = tempfile.TemporaryFile()
+        p = subprocess.Popen(['openbox'], stdout=subprocess.DEVNULL,
+                             stderr=log, env=env, start_new_session=True)
         try:
-            p.wait(5)
-        except subprocess.TimeoutExpired:
-            p.kill()
-            p.wait()
-        raise
+            while p.poll() is None and time.monotonic() < deadline:
+                # A probe that is slow to answer on a loaded runner, with
+                # the other cases' servers and players beside it, is not
+                # an answer: ask again until the deadline.
+                try:
+                    probe = subprocess.run(
+                        ['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'],
+                        env=env, stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL, timeout=5, text=True)
+                except subprocess.TimeoutExpired:
+                    continue
+                if probe.returncode == 0 and 'window id #' in probe.stdout:
+                    ready = subprocess.run(
+                        [sys.executable, os.path.abspath(__file__),
+                         '--wm-ready'], env=env,
+                        timeout=max(0.1, deadline - time.monotonic()))
+                    if ready.returncode == 0 and p.poll() is None:
+                        log.close()
+                        return p
+                time.sleep(0.05)
+            code = p.poll()
+            if code is None:
+                raise RuntimeError('openbox did not become ready on ' +
+                                   env['DISPLAY'])
+            try:
+                log.seek(0)
+                said = log.read()[-500:].decode(errors='replace').strip()
+            except (OSError, AttributeError, TypeError):
+                said = ''
+            why = 'exited with %s%s' % (code, ': ' + said if said else '')
+        except BaseException:
+            p.terminate()
+            try:
+                p.wait(5)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                p.wait()
+            raise
+        finally:
+            log.close()
+        if time.monotonic() >= deadline:
+            break
+    raise RuntimeError('openbox did not become ready on %s: %s' %
+                       (env['DISPLAY'], why))
 
 
 def release_display(display):

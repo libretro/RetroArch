@@ -84,15 +84,26 @@ class WindowManagerReady(unittest.TestCase):
 
     def test_exited_manager_cannot_borrow_readiness(self):
         wm = Mock()
-        wm.poll.side_effect = [None, 0, 0]
+        wm.poll.side_effect = itertools.chain([None, 0, 0], itertools.repeat(0))
         identity = subprocess.CompletedProcess([], 0, 'window id # 0x10')
         ready = subprocess.CompletedProcess([], 0)
-        with patch.object(views.subprocess, 'Popen', return_value=wm), \
+        with patch.object(views.subprocess, 'Popen', return_value=wm) as start, \
                 patch.object(views.subprocess, 'run', side_effect=[identity, ready]):
-            with self.assertRaises(RuntimeError):
+            with self.assertRaisesRegex(RuntimeError, 'exited with 0'):
                 views.wm_start({'DISPLAY': ':99'})
-        wm.terminate.assert_called_once()
-        wm.wait.assert_called_once_with(5)
+        self.assertEqual(start.call_count, 3)
+        wm.terminate.assert_not_called()
+
+    def test_exited_manager_is_started_again(self):
+        gone, wm = Mock(), Mock()
+        gone.poll.return_value = 1
+        wm.poll.return_value = None
+        identity = subprocess.CompletedProcess([], 0, 'window id # 0x10')
+        ready = subprocess.CompletedProcess([], 0)
+        with patch.object(views.subprocess, 'Popen', side_effect=[gone, wm]), \
+                patch.object(views.subprocess, 'run', side_effect=[identity, ready]):
+            self.assertIs(views.wm_start({'DISPLAY': ':99'}), wm)
+        gone.terminate.assert_not_called()
 
     def test_exited_server_cannot_borrow_readiness(self):
         server = Mock()
