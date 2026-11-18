@@ -977,7 +977,10 @@ RefreshRateControl::RefreshRateControl(rarch_setting_t *setting, QWidget *parent
       m_dirty = true;
       m_spinBox->setValue((double)value / m_scale);
    });
-   connect(m_spinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+   /* QOverload needs Qt 5.7; the cast resolves the overload on every Qt. */
+   connect(m_spinBox,
+         static_cast<void (QDoubleSpinBox::*)(double)>(
+            &QDoubleSpinBox::valueChanged),
          this, [this](double value)
    {
       m_dirty = true;
