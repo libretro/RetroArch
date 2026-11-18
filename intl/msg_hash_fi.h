@@ -2037,6 +2037,8 @@ static const struct
    char s_4d7e9b13[23];
    char s_78585119[9];
    char s_69b801ef[9];
+   char s_34a16f69[16];
+   char s_7706edf0[15];
    char s_3253994e[7];
    char s_a9c8430e[17];
    char s_f5911f43[32];
@@ -5593,6 +5595,8 @@ static const struct
    "Skaalaa kokonaisluvuin",
    "\303\204lyk\303\244s",
    "Skaalaus",
+   "Ikkunan korkeus",
+   "Ikkunan leveys",
    "Skaala",
    "Videovarjostimet",
    "Automaattisen varjostimen viive",
@@ -7570,7 +7574,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123311u
+      (sizeof(msg_hash_fi_blob) == (123342u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9932,6 +9936,8 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,

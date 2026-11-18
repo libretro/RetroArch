@@ -2164,6 +2164,8 @@ static const struct
    char s_52e3d6ea[31];
    char s_2c868ae4[6];
    char s_9c535394[6];
+   char s_34a16f69[21];
+   char s_7706edf0[20];
    char s_3253994e[8];
    char s_a9c8430e[22];
    char s_f5911f43[35];
@@ -6423,6 +6425,8 @@ static const struct
    "D\303\266nen tarama \303\247izgisi taklidi",
    "Yatay",
    "Dikey",
+   "Pencere Y\303\274ksekli\304\237i",
+   "Pencere Geni\305\237li\304\237i",
    "\303\226l\303\247ek",
    "Video G\303\266lgelendirici",
    "Otomatik G\303\266lgelendirici Gecikmesi",
@@ -9168,7 +9172,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169024u
+      (sizeof(msg_hash_tr_blob) == (169065u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11687,6 +11691,8 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,

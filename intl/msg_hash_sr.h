@@ -310,6 +310,8 @@ static const struct
    char s_6c1369c6[16];
    char s_4d7e9b13[22];
    char s_69b801ef[11];
+   char s_34a16f69[15];
+   char s_7706edf0[16];
    char s_f5911f43[25];
    char s_ef3d53d8[18];
    char s_730df420[15];
@@ -768,6 +770,8 @@ static const struct
    "Razmera prozora",
    "Celobrojno skaliranje",
    "Skaliranje",
+   "Visina prozora",
+   "\305\240irina prozora",
    "Ka\305\241njenje auto-\305\241ejdera",
    "Bilinearni filter",
    "Sinhronizacija",
@@ -962,7 +966,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12110u
+      (sizeof(msg_hash_sr_blob) == (12141u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -1327,6 +1331,8 @@ static const msg_hash_id_t msg_hash_sr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,

@@ -306,6 +306,8 @@ static const struct
    char s_59f183c9[23];
    char s_57665cff[7];
    char s_69b801ef[27];
+   char s_34a16f69[18];
+   char s_7706edf0[18];
    char s_580e244f[11];
    char s_730df420[15];
    char s_bcddf275[15];
@@ -708,6 +710,8 @@ static const struct
    "\327\244\327\234\327\230",
    "\327\251\327\231\327\240\327\225\327\231 \327\247\327\240\327\224 \327\236\327\231\327\223\327"
    "\224",
+   "\327\222\327\225\327\221\327\224 \327\227\327\234\327\225\327\237",
+   "\327\250\327\225\327\227\327\221 \327\227\327\234\327\225\327\237",
    "\327\225\327\231\327\223\327\220\327\225",
    "\327\241\327\231\327\240\327\233\327\250\327\225\327\237",
    "\327\241\327\250\327\230\327\225\327\240\327\231\327\235",
@@ -778,7 +782,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6538u
+      (sizeof(msg_hash_he_blob) == (6574u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 20u
@@ -1108,6 +1112,8 @@ static const msg_hash_id_t msg_hash_he_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,

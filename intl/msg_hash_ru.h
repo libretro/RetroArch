@@ -2351,6 +2351,8 @@ static const struct
    char s_52e3d6ea[66];
    char s_2c868ae4[29];
    char s_9c535394[25];
+   char s_34a16f69[22];
+   char s_7706edf0[22];
    char s_3253994e[15];
    char s_580e244f[11];
    char s_a9c8430e[38];
@@ -10029,6 +10031,8 @@ static const struct
    "\320\223\320\276\321\200\320\270\320\267\320\276\320\275\321\202\320\260\320\273\321\214\320\275"
    "\320\260\321\217",
    "\320\222\320\265\321\200\321\202\320\270\320\272\320\260\320\273\321\214\320\275\320\260\321\217",
+   "\320\222\321\213\321\201\320\276\321\202\320\260 \320\276\320\272\320\275\320\260",
+   "\320\250\320\270\321\200\320\270\320\275\320\260 \320\276\320\272\320\275\320\260",
    "\320\234\320\260\321\201\321\210\321\202\320\260\320\261",
    "\320\222\320\270\320\264\320\265\320\276",
    "\320\223\321\200\320\260\321\204\320\270\321\207\320\265\321\201\320\272\320\270\320\265 \321"
@@ -19223,7 +19227,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ru_blob_check[
-      (sizeof(msg_hash_ru_blob) == (307605u
+      (sizeof(msg_hash_ru_blob) == (307649u
 #ifdef ANDROID
        + 547u
 #endif
@@ -21999,6 +22003,8 @@ static const msg_hash_id_t msg_hash_ru_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,

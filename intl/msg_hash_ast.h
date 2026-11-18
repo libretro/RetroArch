@@ -80,7 +80,7 @@ static const struct
    char s_565cbabb[8];
    char s_7fa7d966[16];
    char s_e3237f35[22];
-   char s_a8833b4e[22];
+   char s_a8833b4e[19];
    char s_460fbbcc[7];
    char s_215e6dd8[20];
    char s_152cd261[35];
@@ -275,6 +275,11 @@ static const struct
    char s_78a4033f[17];
    char s_cf8bbd75[8];
    char s_e4c4c0a2[28];
+   char s_31823fd3[6];
+   char s_e27a024b[9];
+   char s_bdbeed69[9];
+   char s_635d3210[9];
+   char s_fd51ab92[6];
    char s_b6172513[10];
    char s_e3d18a3d[17];
    char s_d15b342a[16];
@@ -355,10 +360,10 @@ static const struct
    char s_b4c3612a[42];
    char s_f638f238[29];
    char s_b00815b8[18];
-   char s_1ef8917a[26];
-   char s_ada81f6a[29];
-   char s_c85198e6[29];
-   char s_d264a13e[25];
+   char s_1ef8917a[23];
+   char s_ada81f6a[26];
+   char s_c85198e6[26];
+   char s_d264a13e[22];
    char s_1193e37b[47];
    char s_729a38da[39];
    char s_4ca32b24[16];
@@ -798,6 +803,8 @@ static const struct
    char s_f886ffa5[5];
    char s_4d7e9b13[17];
    char s_69b801ef[7];
+   char s_34a16f69[20];
+   char s_7706edf0[22];
    char s_580e244f[6];
    char s_a9c8430e[24];
    char s_f5911f43[37];
@@ -1152,7 +1159,7 @@ static const struct
    "Llogros",
    "Mou perdif\303\255cil",
    "Presencia arriquecida",
-   "Son\303\255u de desbloqu\303\251u",
+   "Son de desbloqu\303\251u",
    "Borrar",
    "Zarrar el conten\303\255u",
    "Activar la sincronizaci\303\263n na nube",
@@ -1348,6 +1355,11 @@ static const struct
    "Miniatura baxera",
    "Nucleos",
    "Informaci\303\263n de los nucleos",
+   "< 25%",
+   "25 ~ 49%",
+   "50 ~ 74%",
+   "75 ~ 95%",
+   "> 95%",
    "Historial",
    "Cargar conten\303\255u",
    "Cargar un discu",
@@ -1428,10 +1440,10 @@ static const struct
    "Amosar la opci\303\263n \302\253Reaniciar RetroArch\302\273",
    "Amosar la opci\303\263n \302\253Apagar\302\273",
    "Son\303\255os del men\303\272",
-   "Activar el son\303\255u \302\253BGM\302\273",
-   "Activar el son\303\255u \302\253Cancel\302\273",
-   "Activar el son\303\255u \302\253Notice\302\273",
-   "Activar el son\303\255u \302\253OK\302\273",
+   "Activar el son \302\253BGM\302\273",
+   "Activar el son \302\253Cancel\302\273",
+   "Activar el son \302\253Notice\302\273",
+   "Activar el son \302\253OK\302\273",
    "Usar l'estilu de colores prefer\303\255u pol sistema",
    "Visibilid\303\241 de los elementos del men\303\272",
    "Imaxe del fondu",
@@ -1872,6 +1884,8 @@ static const struct
    "90\302\272",
    "Escala d'enteros",
    "Escala",
+   "Altor de la ventana",
+   "Llargor de la ventana",
    "Videu",
    "Asolombradores de videu",
    "Retrasu del asolombrador autom\303\241ticu",
@@ -2201,7 +2215,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (25835u
+      (sizeof(msg_hash_ast_blob) == (25901u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2550,6 +2564,11 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_MINUS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_PLUS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_50_PLUS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_75_PLUS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_95_PLUS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -3073,6 +3092,8 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,

@@ -2556,7 +2556,10 @@ static const struct
    char s_52e3d6ea[47];
    char s_f387bafb[27];
    char s_2c868ae4[12];
+   char s_34a16f69[23];
+   char s_7706edf0[23];
    char s_7f065006[9];
+   char s_92c235ae[12];
    char s_284873ec[20];
    char s_3220e9be[7];
    char s_3242e549[21];
@@ -2597,7 +2600,6 @@ static const struct
    char s_33da1d6d[24];
    char s_33dae115[23];
    char s_b2b1563a[18];
-   char s_fa98dce0[27];
    char s_2bf7c29f[18];
    char s_48431da6[14];
    char s_d2fe3ed2[30];
@@ -4088,7 +4090,6 @@ static const struct
    char s_5b059407[137];
    char s_36033606[174];
    char s_5d342d82[298];
-   char s_bd0312ce[114];
    char s_3ba8b64d[171];
    char s_d62ed5dc[331];
    char s_2e69508b[424];
@@ -7548,7 +7549,10 @@ static const struct
    "Simulaci\303\263 de la l\303\255nia d'escaneig en moviment",
    "Disposici\303\263 de la pantalla",
    "Horitzontal",
+   "Al\303\247ada de la finestra",
+   "Amplada de la finestra",
    "Pantalla",
+   "Pantalla %u",
    "Edita les pantalles",
    "Timbre",
    "Reinicia la pantalla",
@@ -7589,7 +7593,6 @@ static const struct
    "En paral\302\267lel (Complet)",
    "En paral\302\267lel (Meitat)",
    "Superior-Inferior",
-   "So est\303\250reo 3D i Pantalles",
    "Intercanviar Ulls",
    "Personalitzat",
    "Qualitat de la retransmissi\303\263",
@@ -10073,8 +10076,6 @@ static const struct
    "e. De costat a costat (complet) \303\251s adequat per a aplicacions de visualitzaci\303\263 amb "
    "auriculars i visualitzaci\303\263 amb els ulls creuats; De costat a costat (mig) i superior-infe"
    "rior s\303\263n adequats per a televisors 3D.",
-   "Modifica la manera com es mostren l'estereo 3D i les pantalles m\303\272ltiples, en el cas dels "
-   "nuclis que els admeten.",
    "Intercanvia les imatges de l'ull esquerre i del dret. Utilitza-ho per a la visualitzaci\303\263 "
    "amb visi\303\263 encreuada, o quan una pantalla mostri els ulls o les files invertits.",
    "Profunditat en bits de la sortida quan el HDR est\303\240 apagat. 10-bit elimina les bandes de c"
@@ -10873,7 +10874,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (242938u
+      (sizeof(msg_hash_ca_blob) == (242855u
 #ifdef ANDROID
        + 281u
 #endif
@@ -13972,7 +13973,10 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -14013,7 +14017,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
@@ -15493,7 +15496,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,

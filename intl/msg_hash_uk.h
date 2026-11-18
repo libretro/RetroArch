@@ -2471,6 +2471,8 @@ static const struct
    char s_52e3d6ea[57];
    char s_2c868ae4[27];
    char s_9c535394[23];
+   char s_34a16f69[24];
+   char s_7706edf0[24];
    char s_3253994e[15];
    char s_c992346c[61];
    char s_580e244f[11];
@@ -10743,6 +10745,8 @@ static const struct
    "\320\223\320\276\321\200\320\270\320\267\320\276\320\275\321\202\320\260\320\273\321\214\320\275"
    "\320\276",
    "\320\222\320\265\321\200\321\202\320\270\320\272\320\260\320\273\321\214\320\275\320\276",
+   "\320\222\320\270\321\201\320\276\321\202\320\260 \320\262\321\226\320\272\320\275\320\260",
+   "\320\250\320\270\321\200\320\270\320\275\320\260 \320\262\321\226\320\272\320\275\320\260",
    "\320\234\320\260\321\201\321\210\321\202\320\260\320\261",
    "\320\237\320\265\321\200\320\265\320\274\320\270\320\272\320\260\320\275\320\275\321\217 \321"
    "\200\320\265\320\266\320\270\320\274\321\203 \320\267\320\276\320\261\321\200\320\260\320\266"
@@ -21322,7 +21326,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_uk_blob_check[
-      (sizeof(msg_hash_uk_blob) == (348601u
+      (sizeof(msg_hash_uk_blob) == (348649u
 #ifdef ANDROID
        + 610u
 #endif
@@ -24221,6 +24225,8 @@ static const msg_hash_id_t msg_hash_uk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,

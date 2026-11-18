@@ -868,6 +868,8 @@ static const struct
    char s_6c1369c6[12];
    char s_4d7e9b13[18];
    char s_69b801ef[10];
+   char s_34a16f69[13];
+   char s_7706edf0[13];
    char s_f5911f43[24];
    char s_ef3d53d8[21];
    char s_48431da6[13];
@@ -2144,6 +2146,8 @@ static const struct
    "Vindu skala",
    "Heltall skalering",
    "Skalering",
+   "Vindu h\303\270yde",
+   "Vindu bredde",
    "Auto-Shader Forsinkelse",
    "Biline\303\246r filtrering",
    "Egendefinert",
@@ -2619,7 +2623,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29168u
+      (sizeof(msg_hash_no_blob) == (29194u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3617,6 +3621,8 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,

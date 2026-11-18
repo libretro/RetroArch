@@ -2078,6 +2078,8 @@ static const struct
    char s_52e3d6ea[34];
    char s_2c868ae4[15];
    char s_9c535394[13];
+   char s_34a16f69[13];
+   char s_7706edf0[14];
    char s_3253994e[8];
    char s_a9c8430e[14];
    char s_f5911f43[22];
@@ -6150,6 +6152,8 @@ static const struct
    "Simulace valiv\303\251 skenovac\303\255 linie",
    "Horizont\303\241ln\303\255",
    "Vertik\303\241ln\303\255",
+   "V\303\275\305\241ka okna",
+   "\305\240\303\255\305\231ka okna",
    "\305\240k\303\241la",
    "Shadery videa",
    "Prodleva auto-shaderu",
@@ -8784,7 +8788,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (161254u
+      (sizeof(msg_hash_cs_blob) == (161281u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11208,6 +11212,8 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,

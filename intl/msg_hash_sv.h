@@ -573,6 +573,7 @@ static const struct
    char s_734d2a61[7];
    char s_a7a97316[46];
    char s_8b421107[29];
+   char s_2ddc6b1f[28];
 #ifdef HAVE_MIST
    char s_3e0f9900[18];
    char s_67b3c923[20];
@@ -586,6 +587,11 @@ static const struct
    char s_145f5880[15];
    char s_b1b9fd35[38];
    char s_0cc72b4d[28];
+   char s_d895f586[18];
+   char s_45fc8d17[29];
+   char s_9c10150b[7];
+   char s_1b848e1d[24];
+   char s_0d0d2449[17];
    char s_9af4bf52[15];
    char s_e5d096ab[12];
    char s_b3d0e60e[22];
@@ -1037,6 +1043,7 @@ static const struct
    char s_38cf005e[35];
    char s_7e9108fa[6];
    char s_f455cf63[4];
+   char s_05d74af2[15];
    char s_ce89e465[23];
    char s_88226df7[29];
    char s_4c92f60e[28];
@@ -2538,7 +2545,12 @@ static const struct
    char s_f387bafb[13];
    char s_2c868ae4[12];
    char s_9c535394[9];
+   char s_fcdb4d6c[10];
+   char s_34a16f69[14];
+   char s_7706edf0[14];
    char s_7f065006[7];
+   char s_92c235ae[10];
+   char s_85a13a6b[27];
    char s_284873ec[18];
    char s_3220e9be[9];
    char s_3242e549[19];
@@ -2588,7 +2600,6 @@ static const struct
    char s_33da1d6d[20];
    char s_33dae115[21];
    char s_b2b1563a[20];
-   char s_fa98dce0[30];
    char s_2bf7c29f[13];
    char s_48431da6[8];
    char s_21d7a1f6[6];
@@ -2657,6 +2668,7 @@ static const struct
    char s_7cf985f0[33];
    char s_cfc4e36b[15];
    char s_0f5266ce[14];
+   char s_a458159a[14];
    char s_ea2674d3[32];
    char s_ea2674d4[29];
    char s_2d8cb7ce[17];
@@ -4090,7 +4102,6 @@ static const struct
    char s_34400c7a[70];
    char s_4a09218b[39];
    char s_ee9c3e5d[75];
-   char s_dea334de[228];
    char s_cacc1492[52];
    char s_9382c86e[280];
    char s_774bb68a[196];
@@ -4182,7 +4193,6 @@ static const struct
    char s_d4b64f2d_1[97];
    char s_36033606[181];
    char s_5d342d82[234];
-   char s_bd0312ce[102];
    char s_3ba8b64d[124];
    char s_d62ed5dc[345];
    char s_2e69508b[331];
@@ -5705,6 +5715,7 @@ static const struct
    "K\303\244rna",
    "Uteslut fr\303\245n 'Inneh\303\245llsl\303\266sa k\303\244rnor'-menyn",
    "Starta en k\303\244rna automatiskt",
+   "Kontrollera k\303\244rnsignaturer",
 #ifdef HAVE_MIST
    "Installera k\303\244rna",
    "Avinstallera k\303\244rna",
@@ -5718,6 +5729,11 @@ static const struct
    "H\303\244mta k\303\244rnor",
    "Inst\303\244llningar f\303\266r k\303\244rnuppdateraren",
    "Visa experimentella k\303\244rnor",
+   "S\303\244kerhetsvarning",
+   "Lita alltid p\303\245 denna k\303\244rna",
+   "Avbryt",
+   "Installera och lita p\303\245",
+   "L\303\244s in en g\303\245ng",
    "CPU-arkitektur",
    "CPU-k\303\244rnor",
    "Maximal k\303\244rnfrekvens",
@@ -6172,6 +6188,7 @@ static const struct
    "Pollningsbeteende (omstart kr\303\244vs)",
    "Tidig",
    "Sen",
+   "Handkontroller",
    "F\303\266redra fr\303\244mre tryck",
    "Avsluta (spelkontroll kombo)",
    "Ommappningar f\303\266r inmatning",
@@ -7685,7 +7702,12 @@ static const struct
    "Sk\303\244rmlayout",
    "Horisontell",
    "Vertikal",
+   "Helsk\303\244rm",
+   "F\303\266nsterh\303\266jd",
+   "F\303\266nsterbredd",
    "Sk\303\244rm",
+   "Sk\303\244rm %u",
+   "\303\205terst\303\244ll sk\303\244rmf\303\266nster",
    "Redigera sk\303\244rmar",
    "Stigning",
    "\303\205terst\303\244ll sk\303\244rm",
@@ -7735,7 +7757,6 @@ static const struct
    "Sida vid sida (hel)",
    "Sida vid sida (halv)",
    "\303\226verst och nederst",
-   "Stereoskopisk 3D och sk\303\244rmar",
    "V\303\244xla \303\266gon",
    "Anpassa",
    "Lokal",
@@ -7804,6 +7825,7 @@ static const struct
    "Anv\303\244nd anpassad f\303\266nsterstorlek",
    "Bildsk\303\244rm: %s",
    "F\303\266nsterh\303\266jd",
+   "Huvudf\303\266nster",
    "Horisontell sk\303\244rmf\303\266rskjutning",
    "Vertikal sk\303\244rmf\303\266rskjutning",
    "F\303\266nsteropacitet",
@@ -10270,9 +10292,6 @@ static const struct
    "V\303\244lj vilken sk\303\244rm som ska anv\303\244ndas.",
    "Var aviseringar visas n\303\244r menyn finns p\303\245 en annan bildsk\303\244rm \303\244n spele"
    "t.",
-   "Hur headsetets handkontroller visas. Kombinerad g\303\266r b\303\245da till en handkontroll. Sep"
-   "arat g\303\266r varje hand till en egen handkontroll. Var och en spelar som spelaren som angetts"
-   " ovan f\303\266r den, spelare 1 om inget annat har angetts.",
    "Hur l\303\245ngt framf\303\266r dig headsetet visar sk\303\244rmarna.",
    "L\303\244mnar detta mellanrum mellan sk\303\244rmar som m\303\266ts kant mot kant, sida vid sida"
    ", i ett h\303\266rn eller g\303\245ngj\303\244rnsf\303\244st i en vinkel. En sk\303\244rm f\303"
@@ -10484,8 +10503,6 @@ static const struct
    "Hur b\303\245da \303\266gonen i stereoskopiskt 3D-inneh\303\245ll ska visas. 2D visar endast v"
    "\303\244nster \303\266ga. Sida vid sida (hel) passar appar f\303\266r headsetvisning och skel"
    "\303\266gd visning. Sida vid sida (halv) och \303\266verst och nederst passar 3D-tv-apparater.",
-   "\303\204ndra hur stereoskopiskt 3D-inneh\303\245ll och flera sk\303\244rmar fr\303\245n k\303"
-   "\244rnor som har st\303\266d f\303\266r dem visas.",
    "Byt v\303\244nster och h\303\266ger \303\266gonbild. Anv\303\244nds vid skel\303\266gd visning e"
    "ller n\303\244r en sk\303\244rm visar \303\266gonen eller raderna omv\303\244nda.",
    "Bitdjup f\303\266r den slutliga utmatningsytan n\303\244r HDR \303\244r av. 10 bitar minskar ban"
@@ -11384,7 +11401,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (235883u
+      (sizeof(msg_hash_sv_blob) == (235750u
 #ifdef ANDROID
        + 361u
 #endif
@@ -12522,6 +12539,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SIGNATURE_CHECK,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
@@ -12535,6 +12553,11 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_ALWAYS_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_INSTALL_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_LOAD_ONCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
@@ -12986,6 +13009,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PORT_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
@@ -14486,7 +14510,12 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_FULLSCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOWS_RESTORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -14536,7 +14565,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
@@ -14605,6 +14633,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_MAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -16029,7 +16058,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_NOTIFICATIONS_WINDOW,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_HINGE_GAP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_PAUSE,
@@ -16120,7 +16148,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SKIP_DUPE_FRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,

@@ -2062,6 +2062,8 @@ static const struct
    char s_52e3d6ea[61];
    char s_2c868ae4[7];
    char s_9c535394[7];
+   char s_34a16f69[25];
+   char s_7706edf0[22];
    char s_3253994e[7];
    char s_580e244f[10];
    char s_a9c8430e[25];
@@ -7676,6 +7678,8 @@ static const struct
    "\343\203\274\343\202\267\343\203\247\343\203\263",
    "\346\260\264\345\271\263",
    "\345\236\202\347\233\264",
+   "\343\202\246\343\202\243\343\203\263\343\203\211\343\202\246\343\201\256\351\253\230\343\201\225",
+   "\343\202\246\343\202\243\343\203\263\343\203\211\343\202\246\343\201\256\345\271\205",
    "\345\200\215\347\216\207",
    "\343\203\223\343\203\207\343\202\252",
    "\343\203\223\343\203\207\343\202\252\343\202\267\343\202\247\343\203\274\343\203\200\343\203\274",
@@ -13905,7 +13909,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (199030u
+      (sizeof(msg_hash_ja_blob) == (199077u
 #ifdef ANDROID
        + 484u
 #endif
@@ -16289,6 +16293,8 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,

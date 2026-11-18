@@ -589,6 +589,7 @@ static const struct
    char s_734d2a61[9];
    char s_a7a97316[45];
    char s_8b421107[36];
+   char s_2ddc6b1f[29];
 #ifdef HAVE_MIST
    char s_3e0f9900[17];
    char s_67b3c923[20];
@@ -602,6 +603,11 @@ static const struct
    char s_145f5880[24];
    char s_b1b9fd35[37];
    char s_0cc72b4d[32];
+   char s_d895f586[25];
+   char s_45fc8d17[32];
+   char s_9c10150b[9];
+   char s_1b848e1d[19];
+   char s_0d0d2449[20];
    char s_9af4bf52[23];
    char s_e5d096ab[19];
    char s_b3d0e60e[31];
@@ -1066,6 +1072,7 @@ static const struct
    char s_38cf005e[43];
    char s_7e9108fa[9];
    char s_f455cf63[8];
+   char s_05d74af2[7];
    char s_ce89e465[46];
    char s_88226df7[30];
    char s_4c92f60e[26];
@@ -2446,6 +2453,7 @@ static const struct
    char s_22ee45f4[48];
    char s_4577a14d[53];
    char s_4bceefff[33];
+   char s_d8aa6ca5[20];
    char s_752ce8b2[47];
 #ifdef HAVE_ODROIDGO2
 #else
@@ -2516,6 +2524,7 @@ static const struct
    char s_020e2bc5[18];
    char s_59f183c8[27];
    char s_59f183c9[26];
+   char s_0187751a[18];
    char s_6b395e21[16];
    char s_00ab7f5e[39];
    char s_71747541[18];
@@ -2545,7 +2554,7 @@ static const struct
    char s_e6ca3876[35];
    char s_c757f528[19];
    char s_6eca94f8[33];
-   char s_edc59557[21];
+   char s_edc59557[20];
    char s_1fba8831[45];
    char s_ff960910[24];
    char s_17690f5a[46];
@@ -2660,9 +2669,21 @@ static const struct
    char s_a40653a7[35];
    char s_e67b672d[63];
    char s_52e3d6ea[52];
-   char s_0eea4a53[31];
+   char s_0eea4a53[30];
    char s_f387bafb[26];
+   char s_8fb9d92f[9];
+   char s_fcdb4d6c[18];
+   char s_34a16f69[19];
+   char s_7706edf0[20];
+   char s_0356de68[13];
+   char s_0356de69[13];
    char s_7f065006[9];
+   char s_92c235ae[12];
+   char s_03660a67[40];
+   char s_9fd32b8d[28];
+   char s_df1fb594[29];
+   char s_6895740c[25];
+   char s_6895740d[25];
    char s_284873ec[17];
    char s_3220e9be[8];
    char s_3242e549[21];
@@ -2714,7 +2735,6 @@ static const struct
    char s_33da1d6d[25];
    char s_33dae115[25];
    char s_b2b1563a[22];
-   char s_fa98dce0[29];
    char s_2bf7c29f[18];
    char s_48431da6[14];
    char s_d2fe3ed2[21];
@@ -2783,12 +2803,13 @@ static const struct
    char s_84c46931[29];
    char s_ebf10493[8];
    char s_d15bd14f[37];
-   char s_79ea50ef[38];
+   char s_79ea50ef[37];
    char s_a64b3a0b[24];
    char s_83e8dc72[25];
    char s_7cf985f0[41];
    char s_cfc4e36b[13];
    char s_0f5266ce[19];
+   char s_a458159a[18];
    char s_ea2674d3[41];
    char s_ea2674d4[39];
    char s_2d8cb7ce[23];
@@ -3113,6 +3134,7 @@ static const struct
    char s_791acb32[99];
    char s_92cf524f[36];
    char s_48e88dc4[174];
+   char s_33c09b4d[142];
    char s_3d233cd0[72];
    char s_9198f1a0[229];
    char s_dfe733cb[333];
@@ -4196,6 +4218,7 @@ static const struct
    char s_0d96ed73[50];
    char s_9f0fd076[145];
    char s_9f0fd077[144];
+   char s_caa9e588[69];
    char s_c315b54c[491];
    char s_7a2050af[53];
    char s_d2859556[60];
@@ -4219,8 +4242,8 @@ static const struct
    char s_66f2b57e[62];
    char s_a776daeb[73];
    char s_88095324[73];
-   char s_0c7641d6[127];
-   char s_b3e8e1a6[153];
+   char s_0c7641d6[126];
+   char s_b3e8e1a6[151];
    char s_c0f9a2df[107];
    char s_ed06873e[55];
    char s_e08b7fc8[108];
@@ -4233,7 +4256,6 @@ static const struct
    char s_34400c7a[104];
    char s_4a09218b[31];
    char s_ee9c3e5d[108];
-   char s_dea334de[285];
    char s_cacc1492[91];
    char s_9382c86e[277];
    char s_774bb68a[196];
@@ -4274,9 +4296,16 @@ static const struct
    char s_8cee3615[327];
    char s_87ba81db[230];
    char s_58c80718[409];
-   char s_14ce7a81[136];
+   char s_14ce7a81[135];
+   char s_c94003ba[267];
    char s_dc6f9d69[71];
    char s_417085f4[52];
+   char s_552c6b9c[96];
+   char s_0eeecc15[46];
+   char s_4112463b[83];
+   char s_966f3282[84];
+   char s_2affa9fa[121];
+   char s_2affa9fb[120];
    char s_2e2ca41a[330];
    char s_f48b1fac[59];
    char s_f4ad1b37[95];
@@ -4325,7 +4354,6 @@ static const struct
    char s_d4b64f2d_1[307];
    char s_36033606[159];
    char s_5d342d82[315];
-   char s_bd0312ce[131];
    char s_3ba8b64d[164];
    char s_d62ed5dc[446];
    char s_2e69508b[433];
@@ -4367,7 +4395,7 @@ static const struct
    char s_3c13e61f[143];
    char s_d96182c1[37];
    char s_d740017d[96];
-   char s_675acf1d[148];
+   char s_675acf1d[147];
    char s_93bbb839[112];
    char s_4d0b4ce0[113];
    char s_f99a7d5e[278];
@@ -5871,6 +5899,7 @@ static const struct
    "N\303\272cleos",
    "Excluir del men\303\272 de n\303\272cleos sin contenidos",
    "Iniciar un n\303\272cleo autom\303\241ticamente",
+   "Verificar firmas del n\303\272cleo",
 #ifdef HAVE_MIST
    "Instalar n\303\272cleo",
    "Desinstalar n\303\272cleo",
@@ -5884,6 +5913,11 @@ static const struct
    "Descargador de n\303\272cleos",
    "Ajustes del actualizador de n\303\272cleos",
    "Mostrar n\303\272cleos experimentales",
+   "Advertencia de seguridad",
+   "Confiar siempre en este n\303\272cleo",
+   "Cancelar",
+   "Instalar y confiar",
+   "Cargar una sola vez",
    "Arquitectura de la CPU",
    "N\303\272cleos de la CPU",
    "Frecuencia m\303\241xima del n\303\272cleo",
@@ -6352,6 +6386,7 @@ static const struct
    "Sistema de sondeo (es necesario reiniciar)",
    "Temprano",
    "Tard\303\255o",
+   "Mandos",
    "Dar preferencia a la pantalla t\303\241ctil frontal",
    "Salir (combinaci\303\263n de mando)",
    "Reasignaciones de entrada",
@@ -7741,6 +7776,7 @@ static const struct
    "Solo en el modo de pantalla completa en ventana",
    "Insertar fotogramas negros (BFI): fotogramas oscuros",
    "Insertar fotogramas negros (BFI)",
+   "Durante una partida",
    "Recortar sobrebarrido (es necesario reiniciar)",
 #ifdef HAVE_ODROIDGO2
 #else
@@ -7812,6 +7848,7 @@ static const struct
    "Pantalla completa",
    "Ancho en pantalla completa",
    "Alto en pantalla completa",
+   "Ventanas de juego",
    "Gamma de v\303\255deo",
    "Soporte directo de SPIR-V (sugerencia)",
    "\303\215ndice de la GPU",
@@ -7841,7 +7878,7 @@ static const struct
    "M\303\241ximo de im\303\241genes en swap chain",
    "Pantalla del men\303\272",
    "Poner men\303\272 en pantalla de juego",
-   "Pantalla de juego %u",
+   "Ventana de juego %u",
    "Color del fondo de las notificaciones (azul)",
    "Fondo de notificaciones",
    "Color del fondo de las notificaciones (verde)",
@@ -7957,9 +7994,21 @@ static const struct
    "Sincronizar con l\303\255neas de barrido",
    "Desplazamiento de la sincronizaci\303\263n de las l\303\255neas de barrido",
    "Simulaci\303\263n de escalonamiento de l\303\255neas de barrido",
-   "Imagen de pantalla de juego %u",
+   "Imagen de ventana de juego %u",
    "Disposici\303\263n de pantallas",
    "Pantalla",
+   "Pantalla completa",
+   "Alto de la ventana",
+   "Ancho de la ventana",
+   "X de ventana",
+   "Y de ventana",
+   "Pantalla",
+   "Pantalla %u",
+   "Ventana de juego %u a pantalla completa",
+   "Alto de ventana de juego %u",
+   "Ancho de ventana de juego %u",
+   "X de ventana de juego %u",
+   "Y de ventana de juego %u",
    "Editar pantallas",
    "Cabeceo",
    "Restablecer pantalla",
@@ -8011,7 +8060,6 @@ static const struct
    "En paralelo (res. total)",
    "En paralelo (media res.)",
    "Por encima/por debajo",
-   "Estereoscopia 3D y pantallas",
    "Intercambiar ojos",
    "Personalizado",
    "Calidad de streaming",
@@ -8082,12 +8130,13 @@ static const struct
    "Pantalla completa en ventana",
    "Ventana",
    "Ventanas de pantallas independientes",
-   "Pantallas de juego en otras pantallas",
+   "Ventanas de juego en otras pantallas",
    "Alto m\303\241ximo de ventana",
    "Ancho m\303\241ximo de ventana",
    "Usar un tama\303\261o de ventana personalizado",
    "Pantalla: %s",
    "Alto de la ventana",
+   "Ventana principal",
    "Desplazamiento horizontal de la pantalla",
    "Desplazamiento vertical de la pantalla",
    "Opacidad de la ventana",
@@ -8592,6 +8641,8 @@ static const struct
    "Impide que este n\303\272cleo se muestre en la pesta\303\261a/men\303\272 N\303\272cleos sin con"
    "tenidos. Este ajuste se aplicar\303\241 solo cuando el modo de v\303\255deo est\303\251 configur"
    "ado como Personalizado.",
+   "Mostrar una advertencia antes de ejecutar un n\303\272cleo que no haya sido firmado por libretro"
+   " o que haya sido modificado desde su \303\272ltima firma.",
    "Sugiere los n\303\272cleos disponibles, aunque haya otro cargado manualmente.",
    "Crea autom\303\241ticamente una copia de seguridad de cualquier n\303\272cleo instalado al usar "
    "el actualizador en l\303\255nea. As\303\255 se puede recuperar f\303\241cilmente un n\303\272cle"
@@ -10496,6 +10547,7 @@ static const struct
    " valor, se usar\303\241 la resoluci\303\263n del escritorio.",
    "Establece una altura personalizada para la imagen a pantalla completa. En caso de no asignar un "
    "valor, se usar\303\241 la resoluci\303\263n del escritorio.",
+   "Organiza las ventanas de aquellos n\303\272cleos que muestren m\303\241s de una.",
    "Env\303\255a los shaders al controlador gr\303\241fico en formato SPIR-V en vez de hacer primero"
    " una compilaci\303\263n cruzada a GLSL, lo que podr\303\255a reducir los tiempos de carga de los"
    " preajustes de shaders. Esta opci\303\263n es solo una sugerencia para el emulador: necesita la "
@@ -10561,9 +10613,9 @@ static const struct
    "Informa al controlador de v\303\255deo que utilice un modo de b\303\272fer concreto.",
    "Informa al controlador de v\303\255deo que utilice un modo de b\303\272fer concreto.",
    "La pantalla en la que se mostrar\303\241 el men\303\272. El valor autom\303\241tico utilizar\303"
-   "\241 la opci\303\263n autom\303\241tica de la pantalla de juego 1.",
-   "Muestra el men\303\272 en la pantalla de esta pantalla de juego, tanto si se est\303\241 ejecuta"
-   "ndo un juego como si no. Independiente le dar\303\241 una pantalla aparte.",
+   "\241 la opci\303\263n autom\303\241tica de la ventana de juego 1.",
+   "Muestra el men\303\272 en la pantalla de esta ventana de juego, tanto si se est\303\241 ejecutan"
+   "do un juego como si no. Independiente le dar\303\241 una ventana aparte.",
    "Ajusta el valor azul del color del fondo de los mensajes en pantalla. Los valores v\303\241lidos"
    " son de 0 a 255.",
    "Permite colorear el fondo de los mensajes en pantalla.",
@@ -10586,10 +10638,6 @@ static const struct
    "Selecciona la pantalla a usar.",
    "Indica d\303\263nde se mostrar\303\241n las notificaciones si el men\303\272 se muestra en una p"
    "antalla ajena a la del juego.",
-   "Indica c\303\263mo se mostrar\303\241n los mandos de las gafas. Combinados los convertir\303\241"
-   " en un mismo mando. Independientes har\303\241 que cada mando sea un mando independiente. Ambas "
-   "opciones afectar\303\241n al jugador seleccionado m\303\241s arriba, que ser\303\241 el jugador "
-   "1 a menos que se indique lo contrario.",
    "Indica la distancia respecto a tu posici\303\263n con la que las gafas mostrar\303\241n las pant"
    "allas.",
    "Deja este espacio entre las pantallas que se conecten por sus bordes, de forma lateral, en una e"
@@ -10713,10 +10761,23 @@ static const struct
    "lidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barrido a lo l"
    "argo de varios subfotogramas dividendo la pantalla en partes verticales y renderizando cada una "
    "de las mismas en funci\303\263n de los subfotogramas que existan.",
-   "La pantalla en la que se mostrar\303\241 esta pantalla de juego. El valor autom\303\241tico eleg"
-   "ir\303\241 una, desactiva esta opci\303\263n para no mostrarla.",
+   "La pantalla en la que se mostrar\303\241 esta ventana de juego. El valor autom\303\241tico elegi"
+   "r\303\241 una, desactiva esta opci\303\263n para no mostrarla.",
+   "Indica d\303\263nde aparecer\303\241 esta ventana de juego: dentro de la ventana principal, en u"
+   "na ventana propia en un monitor o en ninguna parte. El valor autom\303\241tico mantendr\303\241 "
+   "la ventana de juego 1 dentro de la ventana principal y dar\303\241 al resto una ventana en otro "
+   "monitor.",
    "Establece la forma de colocar las pantallas en sistemas multipantalla.",
    "Selecciona la pantalla flotante que se modificar\303\241.",
+   "Indica d\303\263nde aparecer\303\241 esta ventana de juego, as\303\255 como el tama\303\261o y p"
+   "osici\303\263n de su ventana.",
+   "Rellena el monitor con esta ventana de juego.",
+   "Indica el alto de esta ventana de juego. El valor autom\303\241tico estirar\303\241 la imagen.",
+   "Indica el ancho de esta ventana de juego. El valor autom\303\241tico estirar\303\241 la imagen.",
+   "Indica el punto de inicio de esta ventana de juego contando a partir del extremo izquierdo del e"
+   "scritorio (en p\303\255xeles).",
+   "Indica el punto de inicio de esta ventana de juego contando a partir del extremo superior del es"
+   "critorio (en p\303\255xeles).",
    "Cierra el men\303\272 y permite reubicar las pantallas y el men\303\272 de las gafas con los man"
    "dos: usa el agarre para agarrar elementos, el gatillo para inclinar, el stick para cambiar la di"
    "stancia y el tama\303\261o, el stick de la mano libre para girar e inclinar, el bot\303\263n pri"
@@ -10809,8 +10870,6 @@ static const struct
    "\263picos. 2D mostrar\303\241 solo la imagen del ojo izquierdo. En paralelo (res. total) es idea"
    "l para aplicaciones de gafas de VR y visualizaci\303\263n cruzada; En paralelo (media res.) y Po"
    "r encima/por debajo son ideales para televisores 3D.",
-   "Cambia la forma de mostrar las im\303\241genes estereosc\303\263picas 3D y las pantallas m\303"
-   "\272ltiples en aquellos n\303\272cleos que sean compatibles.",
    "Intercambia las im\303\241genes de los ojos izquierdo y derecho. Utilizar en casos de visualizac"
    "i\303\263n cruzada o cuando una imagen muestre los ojos o las filas invertidos.",
    "Establece la profundidad de bits de la superficie final de salida cuando el modo HDR est\303\251"
@@ -10931,8 +10990,8 @@ static const struct
    "eto para no tener que cambiar entre modos de v\303\255deo.",
    "Cambia los ajustes del modo ventana.",
    "Permite que las pantallas secundarias puedan utilizar ventanas independientes en el escritorio.",
-   "Permite que las pantallas de juego y el men\303\272 se muestren en otras pantallas. Desactiva es"
-   "ta opci\303\263n para que se muestre todo en una misma ventana.",
+   "Permite que las ventanas de juego y el men\303\272 se muestren en otras pantallas. Desactiva est"
+   "a opci\303\263n para que se muestre todo en una misma ventana.",
    "Establece la altura m\303\241xima de la ventana al reescalarla autom\303\241ticamente seg\303"
    "\272n el valor de Escala en ventana.",
    "Establece la anchura m\303\241xima de la ventana al reescalarla autom\303\241ticamente seg\303"
@@ -11724,7 +11783,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (279260u
+      (sizeof(msg_hash_es_blob) == (280283u
 #ifdef ANDROID
        + 329u
 #endif
@@ -12879,6 +12938,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SIGNATURE_CHECK,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
@@ -12892,6 +12952,11 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_ALWAYS_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_INSTALL_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_LOAD_ONCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
@@ -13356,6 +13421,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PORT_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
@@ -14735,6 +14801,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLANK_UNUSED_GAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
 #ifdef HAVE_ODROIDGO2
 #else
@@ -14805,6 +14872,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAME_SCREENS_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
@@ -14951,7 +15019,19 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_DISPLAY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_FULLSCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_X,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_X,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -15003,7 +15083,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
@@ -15078,6 +15157,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_MAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -15393,6 +15473,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SIGNATURE_CHECK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
@@ -16469,6 +16550,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_GAME_SCREENS_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
@@ -16506,7 +16588,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_NOTIFICATIONS_WINDOW,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_HINGE_GAP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_PAUSE,
@@ -16548,8 +16629,15 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY_DESKTOP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_X,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,
@@ -16597,7 +16685,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SKIP_DUPE_FRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,

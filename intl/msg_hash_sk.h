@@ -592,6 +592,7 @@ static const struct
    char s_145f5880[18];
    char s_b1b9fd35[33];
    char s_0cc72b4d[32];
+   char s_9c10150b[9];
    char s_9af4bf52[18];
    char s_e5d096ab[11];
    char s_b3d0e60e[28];
@@ -1051,6 +1052,7 @@ static const struct
    char s_7e9108fa[6];
    char s_f455cf63[8];
    char s_66adee66[10];
+   char s_05d74af2[11];
    char s_ce89e465[28];
    char s_88226df7[36];
    char s_4c92f60e[20];
@@ -2569,7 +2571,10 @@ static const struct
    char s_f387bafb[23];
    char s_2c868ae4[10];
    char s_9c535394[7];
+   char s_34a16f69[13];
+   char s_7706edf0[13];
    char s_7f065006[10];
+   char s_92c235ae[13];
    char s_284873ec[19];
    char s_3220e9be[8];
    char s_3242e549[19];
@@ -2620,7 +2625,6 @@ static const struct
    char s_33da1d6d[20];
    char s_33dae115[26];
    char s_b2b1563a[10];
-   char s_fa98dce0[22];
    char s_2bf7c29f[14];
    char s_48431da6[9];
    char s_0050d725[20];
@@ -4119,7 +4123,6 @@ static const struct
    char s_34400c7a[76];
    char s_4a09218b[39];
    char s_ee9c3e5d[70];
-   char s_dea334de[222];
    char s_cacc1492[51];
    char s_9382c86e[246];
    char s_774bb68a[177];
@@ -4209,7 +4212,6 @@ static const struct
    char s_5b059407[144];
    char s_36033606[169];
    char s_5d342d82[229];
-   char s_bd0312ce[87];
    char s_3ba8b64d[127];
    char s_d62ed5dc[347];
    char s_2e69508b[316];
@@ -5792,6 +5794,7 @@ static const struct
    "Stiahnutie jadier",
    "Nastavenia aktualiz\303\241tora jadier",
    "Zobrazi\305\245 experiment\303\241lne cores",
+   "Zru\305\241i\305\245",
    "Architekt\303\272ra CPU",
    "CPU jadr\303\241",
    "Maxim\303\241lna frekvencia jadra",
@@ -6255,6 +6258,7 @@ static const struct
    "Skoro",
    "Neskoro",
    "Norm\303\241lne",
+   "Kontrolery",
    "Uprednostni\305\245 predn\303\275 dotyk",
    "Ukon\304\215enie (kombin\303\241cia kontroleru)",
    "Premapovania vstupu",
@@ -7792,7 +7796,10 @@ static const struct
    "Rozlo\305\276enie obrazoviek",
    "Vodorovne",
    "Zvislo",
+   "V\303\275\305\241ka okna",
+   "\305\240\303\255rka okna",
    "Obrazovka",
+   "Obrazovka %u",
    "Upravi\305\245 obrazovky",
    "N\303\241klon",
    "Obnovi\305\245 obrazovku",
@@ -7843,7 +7850,6 @@ static const struct
    "Ved\304\276a seba (pln\303\251)",
    "Ved\304\276a seba (polovi\304\215n\303\251)",
    "Nad sebou",
-   "Stereo 3D a obrazovky",
    "Vymeni\305\245 o\304\215i",
    "Vlastn\303\251",
    "Hranie na Facebooku",
@@ -10611,10 +10617,6 @@ static const struct
    "aj.",
    "Vybra\305\245 obrazovku, ktor\303\241 sa pou\305\276ije.",
    "Kde sa zobrazuj\303\272 upozornenia, ke\304\217 je menu na inom displeji ako hra.",
-   "Ako sa ovl\303\241da\304\215e headsetu javia. Spojen\303\251 z oboch urob\303\255 jeden gamepad."
-   " Oddelen\303\251 urob\303\255 z ka\305\276dej ruky vlastn\303\275 gamepad. Ka\305\276d\303\275 h"
-   "r\303\241 ako hr\303\241\304\215, ktor\303\275 je pre\305\210 nastaven\303\275 vy\305\241\305"
-   "\241ie, ak nie je nastaven\303\251 inak, hr\303\241\304\215 1.",
    "Ako \304\217aleko pred vami headset zobrazuje obrazovky.",
    "Ponech\303\241 t\303\272to medzeru medzi obrazovkami, ktor\303\251 sa stret\303\241vaj\303\272 h"
    "ranou k hrane, ved\304\276a seba, v rohu alebo na p\303\241nte pod uhlom. Do 1 cm obrazovka na "
@@ -10840,8 +10842,6 @@ static const struct
    "o. Ved\304\276a seba (pln\303\251) sa hod\303\255 pre aplik\303\241cie na prehliadanie v headset"
    "e a pozeranie kr\303\255\305\276om; Ved\304\276a seba (polovi\304\215n\303\251) a Nad sebou sa h"
    "odia pre 3D telev\303\255zory.",
-   "Zmeni\305\245, ako sa zobrazuje stereo 3D a viac obrazoviek z jadier, ktor\303\251 ich podporuj"
-   "\303\272.",
    "Vymeni\305\245 obraz \304\276av\303\251ho a prav\303\251ho oka. Pou\305\276ite pri pozeran\303"
    "\255 kr\303\255\305\276om alebo ke\304\217 displej zobrazuje o\304\215i alebo riadky naopak.",
    "Bitov\303\241 h\304\272bka kone\304\215n\303\251ho v\303\275stupn\303\251ho povrchu, ke\304\217 "
@@ -11769,7 +11769,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (236042u
+      (sizeof(msg_hash_sk_blob) == (235770u
 #ifdef ANDROID
        + 389u
 #endif
@@ -12923,6 +12923,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
@@ -13382,6 +13383,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PORT_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
@@ -14899,7 +14901,10 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -14950,7 +14955,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK,
@@ -16441,7 +16445,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_NOTIFICATIONS_WINDOW,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_HINGE_GAP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_PAUSE,
@@ -16531,7 +16534,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,

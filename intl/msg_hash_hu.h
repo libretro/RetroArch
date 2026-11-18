@@ -2251,6 +2251,8 @@ static const struct
    char s_52e3d6ea[40];
    char s_2c868ae4[12];
    char s_9c535394[13];
+   char s_34a16f69[17];
+   char s_7706edf0[19];
    char s_3253994e[12];
    char s_580e244f[5];
    char s_a9c8430e[14];
@@ -6727,6 +6729,8 @@ static const struct
    "G\303\266rd\303\274l\305\221 elektronsug\303\241r szimul\303\241l\303\241sa",
    "V\303\255zszintes",
    "F\303\274gg\305\221leges",
+   "Ablak magass\303\241ga",
+   "Ablak sz\303\251less\303\251ge",
    "M\303\251retez\303\251s",
    "K\303\251p",
    "Videoshaderek",
@@ -9783,7 +9787,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (186689u
+      (sizeof(msg_hash_hu_blob) == (186725u
 #ifdef ANDROID
        + 316u
 #endif
@@ -12459,6 +12463,8 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,

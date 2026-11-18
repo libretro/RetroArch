@@ -2470,6 +2470,9 @@ static const struct
    char s_52e3d6ea[26];
    char s_2c868ae4[8];
    char s_9c535394[8];
+   char s_34a16f69[16];
+   char s_7706edf0[17];
+   char s_92c235ae[9];
    char s_3253994e[6];
    char s_c992346c[39];
    char s_580e244f[6];
@@ -7217,6 +7220,9 @@ static const struct
    "Symulacja prze\305\233wietlania",
    "Poziomo",
    "Pionowo",
+   "Wysoko\305\233\304\207 okna",
+   "Szeroko\305\233\304\207 okna",
+   "Ekran %u",
    "Skala",
    "Prze\305\202\304\205czanie trybu wy\305\233wietlania SDL",
    "Wideo",
@@ -10220,7 +10226,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199370u
+      (sizeof(msg_hash_pl_blob) == (199412u
 #ifdef ANDROID
        + 385u
 #endif
@@ -13186,6 +13192,9 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,

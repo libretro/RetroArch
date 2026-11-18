@@ -2319,6 +2319,8 @@ static const struct
    char s_52e3d6ea[27];
    char s_2c868ae4[12];
    char s_9c535394[10];
+   char s_34a16f69[14];
+   char s_7706edf0[16];
    char s_3253994e[6];
    char s_a9c8430e[18];
    char s_f5911f43[32];
@@ -6720,6 +6722,8 @@ static const struct
    "Imito de rulanta skanlinio",
    "Horizontala",
    "Vertikala",
+   "Fenestra alto",
+   "Fenestra lar\304\235o",
    "Skalo",
    "Videaj ombrigiloj",
    "Prokrasti a\305\255tomatan ombrigilon",
@@ -9140,7 +9144,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (170351u
+      (sizeof(msg_hash_eo_blob) == (170381u
 #ifdef ANDROID
        + 312u
 #endif
@@ -11884,6 +11888,8 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,

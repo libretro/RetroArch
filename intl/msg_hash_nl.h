@@ -2182,6 +2182,8 @@ static const struct
    char s_69b801ef[8];
    char s_a40653a7[24];
    char s_52e3d6ea[28];
+   char s_34a16f69[14];
+   char s_7706edf0[15];
    char s_3253994e[7];
    char s_f5911f43[23];
    char s_55f488d2[14];
@@ -6348,6 +6350,8 @@ static const struct
    "Schalen",
    "Scanlijn Synchronisatie",
    "Rollende scanlijn simulatie",
+   "Window Hoogte",
+   "Window Breedte",
    "Schaal",
    "Auto-Shader Vertraging",
    "Shader passes",
@@ -8626,7 +8630,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (172122u
+      (sizeof(msg_hash_nl_blob) == (172151u
 #ifdef ANDROID
        + 375u
 #endif
@@ -11236,6 +11240,8 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,

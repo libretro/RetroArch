@@ -2111,6 +2111,8 @@ static const struct
    char s_78585119[10];
    char s_f57f6158[10];
    char s_69b801ef[7];
+   char s_34a16f69[13];
+   char s_7706edf0[13];
    char s_3253994e[7];
    char s_580e244f[7];
    char s_a9c8430e[16];
@@ -6638,6 +6640,8 @@ static const struct
    "\346\231\272\350\203\275\345\236\213",
    "\346\234\200\345\260\217\345\214\226",
    "\347\270\256\346\224\276",
+   "\350\246\226\347\252\227\351\253\230\345\272\246",
+   "\350\246\226\347\252\227\345\257\254\345\272\246",
    "\347\270\256\346\224\276",
    "\351\241\257\347\244\272",
    "\351\226\213\345\225\237\350\221\227\350\211\262\345\231\250",
@@ -10443,7 +10447,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (120045u
+      (sizeof(msg_hash_cht_blob) == (120071u
 #ifdef ANDROID
        + 157u
 #endif
@@ -12854,6 +12858,8 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,

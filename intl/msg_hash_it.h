@@ -2228,6 +2228,8 @@ static const struct
    char s_52e3d6ea[41];
    char s_2c868ae4[12];
    char s_9c535394[10];
+   char s_34a16f69[23];
+   char s_7706edf0[25];
    char s_3253994e[6];
    char s_a9c8430e[13];
    char s_f5911f43[20];
@@ -6473,6 +6475,8 @@ static const struct
    "Simulazione di righe di scansione mobili",
    "Orizzontale",
    "Verticale",
+   "Altezza della finestra",
+   "Larghezza della finestra",
    "Scala",
    "Shader video",
    "Ritardo auto-shader",
@@ -8813,7 +8817,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (181991u
+      (sizeof(msg_hash_it_blob) == (182039u
 #ifdef ANDROID
        + 376u
 #endif
@@ -11467,6 +11471,8 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,

@@ -2537,6 +2537,8 @@ static const struct
    char s_f387bafb[21];
    char s_2c868ae4[12];
    char s_9c535394[10];
+   char s_34a16f69[20];
+   char s_7706edf0[20];
    char s_3253994e[9];
    char s_c992346c[35];
    char s_580e244f[7];
@@ -2572,7 +2574,6 @@ static const struct
    char s_33da1d6d[27];
    char s_33dae115[25];
    char s_b2b1563a[9];
-   char s_fa98dce0[23];
    char s_2bf7c29f[19];
    char s_48431da6[14];
    char s_d2fe3ed2[26];
@@ -4056,7 +4057,6 @@ static const struct
    char s_5b059407[170];
    char s_36033606[190];
    char s_5d342d82[287];
-   char s_bd0312ce[111];
    char s_3ba8b64d[187];
    char s_d62ed5dc[451];
    char s_2e69508b[436];
@@ -7522,6 +7522,8 @@ static const struct
    "Disposition d'\303\251cran",
    "Horizontale",
    "Verticale",
+   "Hauteur de fen\303\252tre",
+   "Largeur de fen\303\252tre",
    "\303\211chelle",
    "Changement de mode d'affichage SDL",
    "Vid\303\251o",
@@ -7557,7 +7559,6 @@ static const struct
    "C\303\264te \303\240 c\303\264te (int\303\251gral)",
    "C\303\264te \303\240 c\303\264te (moiti\303\251)",
    "Haut-Bas",
-   "St\303\251r\303\251o 3D et \303\251crans",
    "\303\211changer les yeux",
    "Personnalis\303\251",
    "Qualit\303\251 de la diffusion ",
@@ -10203,8 +10204,6 @@ static const struct
    "\223il gauche. C\303\264te \303\240 c\303\264te (int\303\251gral) convient aux applications de v"
    "isionneuse de casque et \303\240 la visualisation avec les yeux crois\303\251s; C\303\264te \303"
    "\240 c\303\264te (moiti\303\251) et Haut-Bas conviennent aux t\303\251l\303\251viseurs 3D.",
-   "Changer la fa\303\247on dont les \303\251crans 3D st\303\251r\303\251o et plusieurs \303\251cran"
-   "s qui les prennent en charge sont affich\303\251s.",
    "Inverser les images des yeux gauche et droit. Utilisez cette option pour la visualisation en lou"
    "chant (vision crois\303\251e) ou lorsque l'affichage pr\303\251sente les yeux ou les lignes inve"
    "rs\303\251s.",
@@ -10992,7 +10991,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (257032u
+      (sizeof(msg_hash_fr_blob) == (256938u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14073,6 +14072,8 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -14108,7 +14109,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
@@ -15572,7 +15572,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,

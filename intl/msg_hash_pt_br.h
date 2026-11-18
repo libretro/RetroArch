@@ -2346,6 +2346,8 @@ static const struct
    char s_69b801ef[7];
    char s_a40653a7[28];
    char s_52e3d6ea[47];
+   char s_34a16f69[17];
+   char s_7706edf0[18];
    char s_3253994e[7];
    char s_580e244f[7];
    char s_a9c8430e[23];
@@ -6837,6 +6839,8 @@ static const struct
    "Escala",
    "Sincroniza\303\247\303\243o de Scanline",
    "Simula\303\247\303\243o do rolamento da linha de varredura",
+   "Altura da janela",
+   "Largura da janela",
    "Escala",
    "V\303\255deo",
    "Sombreadores de v\303\255deo",
@@ -9496,7 +9500,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193177u
+      (sizeof(msg_hash_pt_br_blob) == (193212u
 #ifdef ANDROID
        + 352u
 #endif
@@ -12296,6 +12300,8 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
