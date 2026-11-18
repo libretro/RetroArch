@@ -3095,8 +3095,12 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
 #endif
+#ifdef ANDROID
    SETTING_BOOL("input_android_system_keyboard", &settings->bools.input_android_system_keyboard, true, DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD, false);
+#endif
+#ifdef HAVE_SDL3
    SETTING_BOOL("input_sdl3_system_keyboard",    &settings->bools.input_sdl3_system_keyboard, true, DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD, false);
+#endif
 
 
 
