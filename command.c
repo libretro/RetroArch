@@ -134,6 +134,16 @@ void command_reply_error(command_t *cmd, const char *name,
    cmd->replier(cmd, msg, _len);
 }
 
+/* Room for a reply of up to @len bytes: the interface's own where it
+ * lends it, so the reply is written where it is sent from (@lent set,
+ * nothing to free), else from the heap. */
+static char *command_reply_alloc(command_t *cmd, size_t len, bool *lent)
+{
+   char *s = cmd->reply_room ? cmd->reply_room(cmd, len) : NULL;
+   *lent   = s != NULL;
+   return s ? s : (char*)malloc(len);
+}
+
 #ifdef HAVE_COMMAND
 /* a queued STEPS was dropped since the reply now sent began */
 static bool command_queue_ended;
@@ -814,12 +824,16 @@ static char *command_family_rename(const struct command_family *f,
 {
    size_t n    = strlen(f->name);
    size_t size = len + strlen(f->family) + strlen(f->word) + 3;
-   char  *s    = (char*)malloc(size);
+   bool   tail = len > n && !strncmp(msg, f->name, n)
+         && (msg[n] == ' ' || msg[n] == '\n' || msg[n] == ',');
+   char  *s;
    int    _len;
-   if (!s)
+   /* rows, which name nothing, are the tool's answer as they are */
+   if (!tail && !(len == n && !strncmp(msg, f->name, n)))
       return NULL;
-   if (     len > n && !strncmp(msg, f->name, n)
-         && (msg[n] == ' ' || msg[n] == '\n' || msg[n] == ','))
+   if (!(s = (char*)malloc(size)))
+      return NULL;
+   if (tail)
    {
       msg += n;
       len -= n;
@@ -829,14 +843,8 @@ static char *command_family_rename(const struct command_family *f,
          _len = snprintf(s, size, "%s %s%.*s", f->family, f->word,
                (int)len, msg);
    }
-   else if (len == n && !strncmp(msg, f->name, n))
-      _len = snprintf(s, size, "%s %s", f->family, f->word);
-   /* rows, which name nothing, are the tool's answer as they are */
    else
-   {
-      free(s);
-      return NULL;
-   }
+      _len = snprintf(s, size, "%s %s", f->family, f->word);
    if (_len <= 0 || (size_t)_len >= size)
    {
       free(s);
@@ -3073,6 +3081,7 @@ bool command_get_option(command_t *cmd, const char *arg)
    bool   one;
    size_t cap;
    char  *reply;
+   bool   lent;
 
    while (arg && *arg == ' ')
       arg++;
@@ -3082,7 +3091,7 @@ bool command_get_option(command_t *cmd, const char *arg)
    cap = one ? NAME_MAX_LENGTH + PATH_MAX_LENGTH + 2
              : COMMAND_LIST_REPLY_MAX;
 
-   if (!(reply = (char*)malloc(cap + 1)))
+   if (!(reply = command_reply_alloc(cmd, cap + 1, &lent)))
    {
       command_reply_error(cmd, "GET_OPTION", "out of memory");
       return false;
@@ -3102,7 +3111,8 @@ bool command_get_option(command_t *cmd, const char *arg)
        * read as the whole of it, so say so instead. */
       if (n < 0 || (size_t)n >= cap - _len)
       {
-         free(reply);
+         if (!lent)
+            free(reply);
          command_reply_error(cmd, "GET_OPTION",
                "the options did not fit one reply, stopping at %s",
                option_map[i].str);
@@ -3113,14 +3123,16 @@ bool command_get_option(command_t *cmd, const char *arg)
 
    if (!found)
    {
-      free(reply);
+      if (!lent)
+         free(reply);
       command_reply_error(cmd, "GET_OPTION",
             "no such option %s; OPTION show lists them", arg);
       return false;
    }
 
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 
@@ -3207,6 +3219,7 @@ bool command_get_log(command_t *cmd, const char *arg)
    size_t first, next, _len;
    unsigned since = 0;
    char  *reply;
+   bool   lent;
 
    while (arg && *arg == ' ')
       arg++;
@@ -3216,25 +3229,29 @@ bool command_get_log(command_t *cmd, const char *arg)
       return false;
    }
    verbosity_ring_arm();
-   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   if (!(reply = command_reply_alloc(cmd, COMMAND_LIST_REPLY_MAX + 1,
+               &lent)))
    {
       command_reply_error(cmd, "GET_LOG", "out of memory");
       return false;
    }
-   /* room kept for the SKIPPED and NEXT lines */
-   _len = verbosity_ring_read(since, reply + 32, COMMAND_LIST_REPLY_MAX - 64,
+   /* room kept for the SKIPPED and NEXT lines; the lines move for
+    * SKIPPED only where some were gone, which is seldom */
+   _len = verbosity_ring_read(since, reply, COMMAND_LIST_REPLY_MAX - 64,
          &first, &next);
    if (first > since)
    {
-      int n = snprintf(reply, 32, "SKIPPED %u\n", (unsigned)(first - since));
-      memmove(reply + n, reply + 32, _len);
+      char skipped[32];
+      int  n = snprintf(skipped, sizeof(skipped), "SKIPPED %u\n",
+            (unsigned)(first - since));
+      memmove(reply + n, reply, _len);
+      memcpy(reply, skipped, (size_t)n);
       _len += (size_t)n;
    }
-   else
-      memmove(reply, reply + 32, _len);
    _len += (size_t)snprintf(reply + _len, 32, "NEXT %u\n", (unsigned)next);
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 #endif
@@ -5169,13 +5186,15 @@ bool command_get_core_option(command_t *cmd, const char *arg)
    size_t _len                = 0;
    size_t i;
    char  *reply;
+   bool   lent;
 
    while (arg && *arg == ' ')
       arg++;
    if (!command_core_option_find(cmd, "GET_CORE_OPTION",
             arg && *arg ? arg : NULL, &opt, &idx))
       return false;
-   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   if (!(reply = command_reply_alloc(cmd, COMMAND_LIST_REPLY_MAX + 1,
+               &lent)))
    {
       command_reply_error(cmd, "GET_CORE_OPTION", "out of memory");
       return false;
@@ -5187,7 +5206,8 @@ bool command_get_core_option(command_t *cmd, const char *arg)
             COMMAND_LIST_REPLY_MAX + 1 - _len, arg && *arg);
       if (!n)
       {
-         free(reply);
+         if (!lent)
+            free(reply);
          command_reply_error(cmd, "GET_CORE_OPTION",
                "the options did not fit one reply, stopping at %s",
                opt->opts[i].key);
@@ -5199,7 +5219,8 @@ bool command_get_core_option(command_t *cmd, const char *arg)
    }
 
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 
@@ -6121,16 +6142,6 @@ static void command_hex(char *s, size_t v)
    while (n)
       *s++ = tmp[--n];
    *s = '\0';
-}
-
-/* Room for a reply of up to @len bytes: the interface's own where it
- * lends it, so the reply is written where it is sent from (@lent set,
- * nothing to free), else from the heap. */
-static char *command_reply_alloc(command_t *cmd, size_t len, bool *lent)
-{
-   char *s = cmd->reply_room ? cmd->reply_room(cmd, len) : NULL;
-   *lent   = s != NULL;
-   return s ? s : (char*)malloc(len);
 }
 
 /* GET_MEMORY_MAP

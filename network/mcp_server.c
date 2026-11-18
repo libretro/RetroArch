@@ -1555,12 +1555,11 @@ static void mcp_reply(command_t *cmd, const char *data, size_t len)
 }
 
 /* The end of the reply buffer, lent to a command to write its reply
- * in; only to one answering through mcp_reply itself, as a wrapped
- * replier may send something else. */
+ * in. */
 static char *mcp_reply_room(command_t *cmd, size_t len)
 {
    mcp_server_t *mcp = (mcp_server_t*)cmd->userptr;
-   if (cmd->replier != mcp_reply || !mcp_reply_grow(mcp, len))
+   if (!mcp_reply_grow(mcp, len))
       return NULL;
    return mcp->reply + mcp->reply_len;
 }

@@ -69,6 +69,17 @@ static void lend_receive(command_t *cmd, const char *data, size_t n)
    lend_in_place = data == lend_buf && n <= lend_asked;
    receive(cmd, data, n);
 }
+/* a whole reply, however long */
+static char   whole[65536];
+static size_t whole_len;
+static void whole_receive(command_t *cmd, const char *data, size_t n)
+{
+   if (cmd->reply_room)
+      lend_in_place = data == lend_buf && n <= lend_asked;
+   whole_len = n < sizeof(whole) ? n : sizeof(whole) - 1;
+   memcpy(whole, data, whole_len);
+   whole[whole_len] = '\0';
+}
 /* @line sent to the network command interface as a client would, read
  * through its own parser; the reply, if any, in @out. */
 #define UDP_PORT 55437
@@ -465,6 +476,42 @@ int main(int argc, char **argv)
    cmd.error=false; reply[0]=0; lend_in_place=false;
    CHECK(command_get_memory_map(&cmd,"") && lend_in_place
          && !strncmp(reply,"1000\t10\t1ff0\t0\tsystem\t",22));
+   /* through a family too: the rows go on as they are, still where
+    * they were lent */
+   reply[0]=0; lend_in_place=false;
+   CHECK(command_option(&cmd,"show pause") && lend_in_place
+         && !strncmp(reply,"pause\t",6));
+   reply[0]=0; lend_in_place=false;
+   CHECK(command_option(&cmd,"show") && lend_in_place
+         && strstr(reply,"pause\t"));
+   /* the log, with lines gone before they were read, the same from
+    * lent room as from a buffer of its own */
+   {
+      static char a[sizeof(whole)];
+      char     req[32];
+      unsigned k, since = 0;
+      const char *nx;
+      bool verbose = verbosity_is_enabled();
+      verbosity_enable();
+      cmd.replier=whole_receive; cmd.reply_room=NULL;
+      CHECK(command_get_log(&cmd,"") && (nx = strstr(whole,"NEXT ")));
+      since = nx ? (unsigned)strtoul(nx + 5, NULL, 10) : 0;
+      for (k=0;k<300;k++)
+         RARCH_LOG("[Test] lent log line %u\n", k);
+      snprintf(req,sizeof(req),"%u",since);
+      CHECK(command_get_log(&cmd,req) && !strncmp(whole,"SKIPPED ",8)
+            && strstr(whole,"lent log line 299\n"));
+      memcpy(a, whole, whole_len + 1);
+      cmd.reply_room=lend_room; lend_in_place=false;
+      CHECK(command_get_log(&cmd,req) && lend_in_place && !strcmp(a, whole));
+      /* and with none gone */
+      snprintf(req,sizeof(req),"%u",since + 290);
+      lend_in_place=false;
+      CHECK(command_get_log(&cmd,req) && lend_in_place
+            && !strncmp(whole,"[",1) && strstr(whole,"lent log line 299\nNEXT "));
+      if (!verbose)
+         verbosity_disable();
+   }
    cmd.replier=receive; cmd.reply_room=NULL;
 
    /* GET_INPUT reads what a player holds without changing it, which

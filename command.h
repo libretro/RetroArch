@@ -380,7 +380,9 @@ struct command_handler
    /* Room for @len bytes of the reply about to be sent, in the
     * interface's own buffer: a reply written there and handed to
     * replier is taken where it lies, without a copy. Good until the
-    * next reply; NULL where the interface lends none. */
+    * next reply; NULL where the interface lends none. A replier put in
+    * front of the interface's hands on what it is given as it is, or
+    * a copy made before it replies with anything. */
    command_reply_room_t reply_room;
    /* Where the reply to the command being handled goes, for a reply
     * sent after the handler has returned: a heap copy, released with
