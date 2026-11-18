@@ -6342,7 +6342,9 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
       enum rslc_stage stage,
       const struct rslc_opts *opts, struct rslc_result *result)
 {
-   struct rslc_ctx   c;
+   /* the context alone is most of a page: off the stack, beside the
+    * sanitizers' red zones */
+   struct rslc_ctx  *c;
    struct ing        g;
    struct rslc_prog *pr;
    struct rslc_pbuf  pb;
@@ -6351,31 +6353,36 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
 
    if (!words || !opts || !result)
       return false;
-   if (!rslc_ctx_init(&c, opts, stage))
+   if (!(c = (struct rslc_ctx*)malloc(sizeof(*c))))
       return false;
-   pr = &c.prog;
+   if (!rslc_ctx_init(c, opts, stage))
+   {
+      free(c);
+      return false;
+   }
+   pr = &c->prog;
 
    memset(&g, 0, sizeof(g));
-   g.c = &c;
+   g.c = c;
    g.w = words;
    g.n = (uint32_t)n;
    if (n < 5 || words[0] != RSLC_SPV_MAGIC)
-      rslc_err(&c, "not a SPIR-V module", NULL, 0);
+      rslc_err(c, "not a SPIR-V module", NULL, 0);
    else if ((words[1] >> 8) != 0x100)
-      rslc_err(&c, "SPIR-V version not 1.x", NULL, 0);
+      rslc_err(c, "SPIR-V version not 1.x", NULL, 0);
    else if (words[3] == 0 || words[3] > 0x10000)
-      rslc_err(&c, "SPIR-V id bound out of range", NULL, 0);
+      rslc_err(c, "SPIR-V id bound out of range", NULL, 0);
    else if (opts->dst != RSLC_DST_SPIRV && opts->dst != RSLC_DST_REFLECT)
-      rslc_err(&c, "a printed destination needs the GLSL, not a module", NULL, 0);
+      rslc_err(c, "a printed destination needs the GLSL, not a module", NULL, 0);
    else
    {
       uint32_t at, nf = 1;
       for (at = 5; at < n && (words[at] >> 16); at += words[at] >> 16)
          nf += (words[at] & 0xffffu) == SpvOpFunction;
       g.bound      = words[3];
-      g.ids        = (struct ing_id*)rslc_arena_zalloc(&c, (size_t)g.bound * sizeof(*g.ids));
-      g.func_at    = (uint32_t*)rslc_arena_zalloc(&c, nf * sizeof(uint32_t));
-      g.func_reach = (uint8_t*)rslc_arena_zalloc(&c, nf);
+      g.ids        = (struct ing_id*)rslc_arena_zalloc(c, (size_t)g.bound * sizeof(*g.ids));
+      g.func_at    = (uint32_t*)rslc_arena_zalloc(c, nf * sizeof(uint32_t));
+      g.func_reach = (uint8_t*)rslc_arena_zalloc(c, nf);
       if (g.ids && g.func_at && g.func_reach)
       {
          for (id = 0; id < g.bound; id++)
@@ -6447,7 +6454,7 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
                break;
             }
             g.block_var[k] = id;
-            g.active[k]    = (uint8_t*)rslc_arena_zalloc(&c, t->nfields ? t->nfields : 1);
+            g.active[k]    = (uint8_t*)rslc_arena_zalloc(c, t->nfields ? t->nfields : 1);
             if (!g.active[k])
                ok = false;
             break;
@@ -6473,7 +6480,7 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
             /* the reflection writer reads used[] by id */
             v->id = pr->nsamplers + 1;
             g.ids[id].sampler = (uint8_t)v->id;
-            ok = ing_push(&c, (void***)&pr->samplers, &pr->nsamplers, &pr->samplers_cap, v);
+            ok = ing_push(c, (void***)&pr->samplers, &pr->nsamplers, &pr->samplers_cap, v);
             break;
          case SPV_SC_INPUT:
          case SPV_SC_OUTPUT:
@@ -6496,7 +6503,7 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
                break;
             }
             v->storage = d->b == SPV_SC_INPUT ? RSLC_ST_IN : RSLC_ST_OUT;
-            ok = ing_push(&c, (void***)arr, cnt, cap, v);
+            ok = ing_push(c, (void***)arr, cnt, cap, v);
             break;
          }
          default:
@@ -6506,8 +6513,8 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
 
    if (ok)
    {
-      uint32_t *stack = (uint32_t*)rslc_arena_alloc(&c, g.nfuncs * sizeof(uint32_t));
-      g.used = (uint8_t*)rslc_arena_zalloc(&c, pr->nsamplers + 1);
+      uint32_t *stack = (uint32_t*)rslc_arena_alloc(c, g.nfuncs * sizeof(uint32_t));
+      g.used = (uint8_t*)rslc_arena_zalloc(c, pr->nsamplers + 1);
       if (!stack || !g.used)
          ok = false;
       else
@@ -6518,15 +6525,15 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
    if (ok)
    {
       size_t payload = opts->dst == RSLC_DST_SPIRV ? n * 4 : 0;
-      if (!rslc_blob_begin(&c, &pb, payload, g.active, g.used))
+      if (!rslc_blob_begin(c, &pb, payload, g.active, g.used))
          ok = false;
       else
       {
-         if (payload && !rslc_pbuf_put(&c, &pb, words, payload))
+         if (payload && !rslc_pbuf_put(c, &pb, words, payload))
             ok = false;
          else
          {
-            rslc_blob_end(&c, &pb, opts->dst, result);
+            rslc_blob_end(c, &pb, opts->dst, result);
             if (payload)
             {
                result->spirv     = (const uint32_t*)((uint8_t*)pb.data
@@ -6535,12 +6542,13 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
             }
          }
          if (!ok)
-            rslc_pbuf_free(&c, &pb);
+            rslc_pbuf_free(c, &pb);
       }
-      if (!ok && !c.failed)
-         rslc_err(&c, "out of memory", NULL, 0);
+      if (!ok && !c->failed)
+         rslc_err(c, "out of memory", NULL, 0);
    }
 
-   rslc_ctx_close(&c);
+   rslc_ctx_close(c);
+   free(c);
    return ok;
 }
