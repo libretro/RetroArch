@@ -10326,6 +10326,7 @@ void video_driver_frame(const void *data, unsigned width,
    bool convert_deferred          = false;
    bool convert_lent              = false;
    retro_time_t new_time;
+   retro_perf_tick_t new_ticks;
    video_frame_info_t video_info;
    size_t _len                    = 0;
    unsigned core_dims;
@@ -10376,6 +10377,7 @@ void video_driver_frame(const void *data, unsigned width,
       return;
 
    new_time                      = cpu_features_get_time_usec();
+   new_ticks                     = cpu_features_get_perf_counter();
    /* The frame's reading also tells the perf counter's rate, for the
     * durations the drivers and the video thread take on it */
    cpu_features_perf_calibrate(new_time);
@@ -10400,7 +10402,8 @@ void video_driver_frame(const void *data, unsigned width,
    core_dims = dims;
 
    video_driver_build_info(&video_info);
-   video_info.frame_time = new_time;
+   video_info.frame_time  = new_time;
+   video_info.frame_ticks = new_ticks;
    recording_gpu_frame_info(&video_info, true);
 #ifdef HAVE_OPENXR
    /* The eyes the core drew this frame from, for the drawing thread */

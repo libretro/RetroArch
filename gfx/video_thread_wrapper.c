@@ -138,6 +138,12 @@ static void video_thread_read_vp(thread_video_t *thr,
 #define VIDEO_THREAD_CMD_WAIT_LEAVE(thr) do { } while (0)
 #endif
 
+/* An instant on cpu_features_get_time_usec()'s clock without reading
+ * it: the frame's own reading moved on by the perf counter since */
+#define VIDEO_THREAD_NOW(info) ((info)->frame_time \
+      + cpu_features_perf_to_usec( \
+         cpu_features_get_perf_counter() - (info)->frame_ticks))
+
 /* The frame ring's word: the sole synchronisation between the push and
  * the video thread's claim and completion. Every reader of the ring
  * loads it once and derives tail, pending and busy from the copy. */
@@ -4408,12 +4414,12 @@ static bool video_thread_frame(void *data, const void *frame_,
    }
    thr->handoff.counting = timed;
 
-   /* One clock read for the handover. Everything below that wants
-    * "now" - the core-time sample, the slot's push time, the hold's
-    * start - means this instant, unless the ring wait below ran, in
-    * which case it is read again once after. The clock is a syscall
-    * on more than one console, and this is the paced path. */
-   now = cpu_features_get_time_usec();
+   /* No clock read for the handover: "now" - the core-time sample, the
+    * slot's push time, the hold's start - is the frame's own reading
+    * moved on by the perf counter since (VIDEO_THREAD_NOW), taken
+    * again once after the ring wait below if it ran. The clock is a
+    * syscall on more than one console, and this is the paced path. */
+   now = VIDEO_THREAD_NOW(video_info);
    if (timed)
    {
       /* Paired with the clock read above: the window's tick rate */
@@ -4473,7 +4479,7 @@ static bool video_thread_frame(void *data, const void *frame_,
     * was one; otherwise the entry read still is now. */
    if (waited)
    {
-      now = cpu_features_get_time_usec();
+      now = VIDEO_THREAD_NOW(video_info);
       if (timed)
          c_wait = (uint64_t)cpu_features_get_perf_counter() - c_in;
    }
@@ -4810,7 +4816,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (ctx_held)
       video_thread_hw_ctx_take(thr, false);
 
-   thr->last_time = cpu_features_get_time_usec();
+   thr->last_time = VIDEO_THREAD_NOW(video_info);
    thr->run_start = thr->last_time;
 
    if (timed)

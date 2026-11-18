@@ -116,11 +116,16 @@ retro_time_t __real_cpu_features_get_time_usec(void);
 static int harness_clock_armed;
 static uintptr_t harness_clock_owner;
 static retro_time_t harness_clock_now;
+/* Reads the armed thread made; that thread's own to count */
+static unsigned harness_clock_reads;
 retro_time_t __wrap_cpu_features_get_time_usec(void)
 {
    if (     retro_atomic_load_acquire_int(&harness_clock_armed)
          && sthread_get_current_thread_id() == harness_clock_owner)
+   {
+      harness_clock_reads++;
       return harness_clock_now;
+   }
    return __real_cpu_features_get_time_usec();
 }
 
@@ -7644,6 +7649,68 @@ static double skiplane_fps(const void *pix, bool threaded)
 }
 #endif
 
+#ifdef HARNESS_WRAP_CLOCK
+/* The clock reads one frame's push makes on the main thread, with the
+ * video thread idle before it so the push neither waits for the ring
+ * nor holds for the display. */
+#define HANDOFF_CLOCK_PUSHES 16
+static unsigned handoff_clock_reads(bool threaded)
+{
+   static uint8_t pix[32 * 32 * sizeof(uint32_t)];
+   unsigned reads = 0;
+   unsigned i;
+
+   set_threaded_via_setting(threaded);
+   run_frames(3);
+   expect_wrapper(threaded, "handoff clock lane");
+   if (threaded)
+      video_thread_wait_idle();
+   harness_clock_now   = __real_cpu_features_get_time_usec();
+   harness_clock_owner = sthread_get_current_thread_id();
+   for (i = 0; i < HANDOFF_CLOCK_PUSHES; i++)
+   {
+      memset(pix, (int)i, sizeof(pix));
+      harness_clock_now  += 16667;
+      harness_clock_reads = 0;
+      retro_atomic_store_release_int(&harness_clock_armed, 1);
+      video_driver_frame(pix, 32, 32, 32 * sizeof(uint32_t));
+      retro_atomic_store_release_int(&harness_clock_armed, 0);
+      reads += harness_clock_reads;
+      if (threaded)
+         video_thread_wait_idle();
+   }
+   return reads;
+}
+
+/* The handover to the video thread reads no clock: what it wants of
+ * "now" is the frame's own reading moved on by the perf counter */
+static void lane_handoff_clock(void)
+{
+   unsigned had           = failures;
+   settings_t *settings   = config_get_ptr();
+   bool saved_pacing      = settings->bools.video_threaded_display_pacing;
+   unsigned direct, handed;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   settings->bools.video_threaded_display_pacing = false;
+   direct = handoff_clock_reads(false);
+   handed = handoff_clock_reads(true);
+   settings->bools.video_threaded_display_pacing = saved_pacing;
+   video_driver_cached_frame_invalidate();
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   CHECK(handed == direct,
+         "handoff clock lane: %u pushes read the clock %u times threaded "
+         "and %u times direct, want the same", HANDOFF_CLOCK_PUSHES,
+         handed, direct);
+   if (failures == had)
+      fprintf(stderr, "[pass] handoff clock lane (%u clock reads in %u "
+            "pushes, threaded as direct)\n", handed, HANDOFF_CLOCK_PUSHES);
+}
+#endif
+
 static void lane_dupe_skip(bool threaded)
 {
    unsigned had                   = failures;
@@ -7925,11 +7992,21 @@ static int vshrink_find(char kind, unsigned value)
    return -1;
 }
 
+/* What video_driver_frame() stamps on the info it builds: the frame's
+ * clock reading and the perf counter's with it, which the handoff
+ * takes "now" from. A lane that pushes its own info takes them too. */
+static void harness_frame_stamp(video_frame_info_t *info)
+{
+   info->frame_time  = cpu_features_get_time_usec();
+   info->frame_ticks = cpu_features_get_perf_counter();
+}
+
 static void vshrink_push(video_frame_info_t *info, uint32_t *pixels,
       unsigned frame, unsigned views)
 {
    video_driver_state_t *video = video_state_get_ptr();
    info->views.num_views = views;
+   harness_frame_stamp(info);
    video->current_video->frame(video->data, pixels,
          VIDEO_SCALE_PACK(8, 8), frame, 32, NULL, info);
 }
@@ -12207,6 +12284,7 @@ static void record_gpu_stop_in_flight(void)
    info.recording_gpu = &rstop_driver;
    retro_atomic_store_release_int(&rstop_held, 0);
    retro_atomic_store_release_int(&rstop_hold, 1);
+   harness_frame_stamp(&info);
    video->current_video->frame(video->data, pixels, VIDEO_SCALE_PACK(8, 8),
          0, 32, NULL, &info);
    for (i = 0; i < 1000 && !retro_atomic_load_acquire_int(&rstop_held); i++)
@@ -12218,6 +12296,7 @@ static void record_gpu_stop_in_flight(void)
          thr->frame.slot[0].video_info.recording_gpu,
          thr->frame.slot[1].video_info.recording_gpu, (void*)&rstop_driver);
    info.recording_gpu = &rstop_hold;
+   harness_frame_stamp(&info);
    video->current_video->frame(video->data, pixels, VIDEO_SCALE_PACK(8, 8),
          1, 32, NULL, &info);
    CHECK(video_thread_record_gpu_in_flight(thr, &rstop_hold),
@@ -15152,6 +15231,9 @@ int main(int argc, char *argv[])
       lane_dupe_under_wrapper();
       lane_dupe_skip(false);
       lane_dupe_skip(true);
+#ifdef HARNESS_WRAP_CLOCK
+      lane_handoff_clock();
+#endif
       lane_view_count_shrink();
       lane_movie_ring();
       lane_suppress_screensaver();
