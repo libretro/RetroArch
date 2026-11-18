@@ -9,7 +9,7 @@
 #if defined(ANDROID) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL(android_input_disconnect_workaround, ANDROID_INPUT_DISCONNECT_WORKAROUND,
       "android_input_disconnect_workaround",
-      false, SD_FLAG_NONE, 0, 0,
-      "Android disconnect workaround",
+      true, SD_FLAG_NONE, 0, 0,
+      "Android Disconnect Workaround",
       "Workaround for controllers disconnecting and reconnecting. Impedes 2 players with the identical controllers.")
 #endif
