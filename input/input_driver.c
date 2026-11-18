@@ -21319,6 +21319,45 @@ static void input_keys_let_go(void)
                   RETRO_DEVICE_KEYBOARD);
 }
 
+/* ===== BEGIN input core key event ===== */
+/* A key for the core's keyboard callback, and for run-ahead's second
+ * instance, which polls on frames the running core does not and sees
+ * the key when it arrives there.
+ *
+ * While a replay plays, the core is given the recorded keys only:
+ * bsv_movie_poll() hands them over with @replayed set, and the input
+ * driver's keys are not passed on. A recording keeps what reaches the
+ * core here, after the frontend has taken its own, so on playback the
+ * keys go straight back to the core without passing that filter
+ * again. */
+void input_keyboard_event_core(bool down, unsigned code,
+      uint32_t character, uint16_t mod, bool replayed)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+#ifdef HAVE_BSV_MOVIE
+   input_driver_state_t *input_st = input_state_get_ptr();
+   if (BSV_MOVIE_IS_PLAYBACK_ON())
+   {
+      if (!replayed)
+         return;
+   }
+   else if (BSV_MOVIE_IS_RECORDING()
+         && !BSV_MOVIE_IS_NETPLAY(input_st->bsv_movie_state_handle)
+#ifdef HAVE_REWIND
+         && !state_manager_frame_is_reversed()
+#endif
+         )
+      bsv_movie_push_key_event(input_st->bsv_movie_state_handle,
+            down, mod, code, character);
+#endif
+   if (!runloop_st->frontend_key_event)
+      return;
+   runloop_st->frontend_key_event(down, code, character, mod);
+   if (runloop_st->secondary_key_event)
+      runloop_st->secondary_key_event(down, code, character, mod);
+}
+/* ===== END input core key event ===== */
+
 static void input_keyboard_event_now_act(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
@@ -21596,24 +21635,9 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
       if (*key_event)
       {
          if (*key_event == runloop_st->frontend_key_event)
-         {
-#ifdef HAVE_BSV_MOVIE
-            if (BSV_MOVIE_IS_RECORDING()
-                  && !BSV_MOVIE_IS_NETPLAY(input_st->bsv_movie_state_handle))
-#ifdef HAVE_REWIND
-               if (!state_manager_frame_is_reversed())
-#endif
-               bsv_movie_push_key_event(
-                     input_st->bsv_movie_state_handle, down, mod,
-                     code, character);
-#endif
-         }
-         (*key_event)(down, code, character, mod);
-         /* Run-ahead's second instance polls on frames the running
-          * core does not; it sees the event when it arrives there */
-         if (     *key_event == runloop_st->frontend_key_event
-               && runloop_st->secondary_key_event)
-            runloop_st->secondary_key_event(down, code, character, mod);
+            input_keyboard_event_core(down, code, character, mod, false);
+         else
+            (*key_event)(down, code, character, mod);
       }
    }
 }

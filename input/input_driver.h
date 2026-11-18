@@ -1850,6 +1850,12 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver);
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
+/* A key for the core's keyboard callback, on the frontend's thread,
+ * after the frontend has had it. @replayed is set for a key a replay
+ * gives back; while one plays, only those reach the core. */
+void input_keyboard_event_core(bool down, unsigned code,
+      uint32_t character, uint16_t mod, bool replayed);
+
 /* Keyboard events reported from another thread wait for the poll in a
  * queue (see input_keyboard_event() in input_driver.c); this is how
  * many were dropped because it was full. */

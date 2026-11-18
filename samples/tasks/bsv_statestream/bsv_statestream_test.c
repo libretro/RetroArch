@@ -113,8 +113,8 @@ input_driver_state_t *input_state_get_ptr(void) { return &input_st; }
 /* the replay is over: the frontend's call for it, on the state above */
 void bsv_movie_set_end(void) { input_st.bsv_movie_state.flags |= BSV_FLAG_MOVIE_END; }
 bool content_load_state_in_progress(void *data) { (void)data; return false; }
-void input_keyboard_event(bool down, unsigned code, uint32_t character,
-      uint16_t mod, unsigned device) { (void)down; (void)code; (void)character; (void)mod; (void)device; }
+void input_keyboard_event_core(bool down, unsigned code, uint32_t character,
+      uint16_t mod, bool replayed) { (void)down; (void)code; (void)character; (void)mod; (void)replayed; }
 const char *msg_hash_to_str(enum msg_hash_enums msg) { (void)msg; return "msg"; }
 void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned prio, unsigned duration, bool flush, char *title,
