@@ -13,7 +13,8 @@ MODES  := startup startup-always startup-outside startup-cached \
           seed-said runahead \
           load-once park-ends builtin builtin-first-press fw-stack fw-contentless \
           fw-hidden-confirm fw-null fw-twice fw-cancel-restores \
-          fw-load-once fw-builtin
+          fw-load-once fw-builtin \
+          warn-cancel-restores warn-cancel-live warn-cancel-startup fw-cancel-startup
 
 all:
 	@MAKE_ARGS="$(MAKE_ARGS)" ./build.sh
@@ -28,12 +29,13 @@ check: all
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe harness_core.so harness_core_b.so \
+	      harness_core_sub.so \
 	      needs_content_core.so retroarch_nomain.o harness_main.o \
 	      core_signature_testkey.o ui_cocoa_nomain.o \
 	      retroarch_nomain.d harness_main.d core_signature_testkey.d \
 	      ui_cocoa_nomain.d \
 	      check-*.log
 	rm -rf harness_core.so.dSYM harness_core_b.so.dSYM \
-	       needs_content_core.so.dSYM
+	       harness_core_sub.so.dSYM needs_content_core.so.dSYM
 
 .PHONY: all check clean

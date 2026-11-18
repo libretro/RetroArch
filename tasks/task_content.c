@@ -2713,7 +2713,7 @@ static bool content_load_in_flight(void)
 
 #ifdef HAVE_MENU
 /* The session an entry point is about to write the next load's
- * identity over: what a firmware Cancel puts back */
+ * identity over: what a firmware or Security Warning Cancel puts back */
 static struct content_load_prev
 {
    struct retro_system_info sysinfo;
@@ -2723,6 +2723,7 @@ static struct content_load_prev
    char core[PATH_MAX_LENGTH];
    char core_last[PATH_MAX_LENGTH];
    char content[PATH_MAX_LENGTH];
+   char basename[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
    char db_name[PATH_MAX_LENGTH];
    char crc32[32];
@@ -2733,6 +2734,8 @@ static struct content_load_prev
    bool load_no_content;
    bool has_set_core;
    bool valid;
+   bool parked;   /* its load waits on a Security Warning */
+   bool closed;   /* a load's DEINIT ran since the save */
 } content_load_prev;
 
 /* A deferred load keeps the one taken for it: its request wrote over
@@ -2744,12 +2747,21 @@ static void content_load_prev_save(void)
    core_info_t *core_info      = NULL;
    if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
       return;
+   /* The re-run of a parked load keeps the session that load replaced */
+   if (content_load_prev.parked)
+   {
+      content_load_prev.parked = false;
+      return;
+   }
+   content_load_prev.closed = false;
    strlcpy(content_load_prev.core, path_get(RARCH_PATH_CORE),
          sizeof(content_load_prev.core));
    strlcpy(content_load_prev.core_last, path_get(RARCH_PATH_CORE_LAST),
          sizeof(content_load_prev.core_last));
    strlcpy(content_load_prev.content, path_get(RARCH_PATH_CONTENT),
          sizeof(content_load_prev.content));
+   strlcpy(content_load_prev.basename, path_get(RARCH_PATH_BASENAME),
+         sizeof(content_load_prev.basename));
    strlcpy(content_load_prev.label, runloop_st->name.label,
          sizeof(content_load_prev.label));
    strlcpy(content_load_prev.db_name, p_content->companion_ui_db_name,
@@ -2779,16 +2791,93 @@ static void content_load_prev_save(void)
    content_load_prev.valid         = true;
 }
 
+/* A core really ran, as opposed to one only chosen */
+static bool content_load_prev_ran(void)
+{
+   return content_load_prev.type != CORE_TYPE_DUMMY
+      && !content_load_prev.has_set_core;
+}
+
+/* The closed library's name, and its strings, gone with it */
+static void content_load_prev_forget_library(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   content_load_prev.library_name[0]     = '\0';
+   content_load_prev.library_version[0]  = '\0';
+   content_load_prev.valid_extensions[0] = '\0';
+   content_load_prev.core_info_path[0]   = '\0';
+   memset(&content_load_prev.sysinfo, 0, sizeof(content_load_prev.sysinfo));
+   content_load_prev.sysinfo.library_name     =
+      runloop_st->current_library_name;
+   content_load_prev.sysinfo.library_version  =
+      runloop_st->current_library_version;
+   content_load_prev.sysinfo.valid_extensions =
+      runloop_st->current_valid_extensions;
+   content_load_prev.load_no_content     = false;
+}
+
+/* The closed game, from behind a core that stays chosen */
+static void content_load_prev_forget_game(void)
+{
+   content_load_prev.content[0]  = '\0';
+   content_load_prev.basename[0] = '\0';
+   content_load_prev.label[0]    = '\0';
+   content_load_prev.db_name[0]  = '\0';
+   content_load_prev.crc32[0]    = '\0';
+}
+
+/* As Close Content leaves a session */
+static void content_load_prev_forget(void)
+{
+   content_load_prev.core[0]                 = '\0';
+   content_load_prev_forget_game();
+   content_load_prev_forget_library();
+   content_load_prev.type                    = CORE_TYPE_DUMMY;
+   content_load_prev.explicit_type           = CORE_TYPE_DUMMY;
+   content_load_prev.has_set_core            = false;
+   content_load_prev.subsystem_current_count = 0;
+}
+
 static void content_load_prev_restore(void)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t *p_content  = content_state_get_ptr();
+#ifdef HAVE_DYNAMIC
+   bool reload                 = false;
+#endif
    if (!content_load_prev.valid)
       return;
    content_load_prev.valid = false;
+   if (content_load_prev.closed)
+   {
+      runloop_st->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
+      if (content_load_prev_ran())
+      {
+#ifdef HAVE_DYNAMIC
+         reload = *content_load_prev.core_last != '\0';
+#endif
+         content_load_prev_forget();
+      }
+      else
+      {
+         content_load_prev_forget_game();
+         /* No probe of the chosen core replaced the closed one's strings */
+         if (     content_load_prev.type != CORE_TYPE_DUMMY
+               && content_load_prev.sysinfo.library_name
+               != runloop_st->current_library_name)
+            content_load_prev_forget_library();
+      }
+   }
+#ifdef HAVE_DYNAMIC
+   /* Naming no core, its library name is a probe's from ahead of the
+    * save: LOAD_CONTENT's */
+   if (!*content_load_prev.core && content_load_prev.type == CORE_TYPE_DUMMY)
+      content_load_prev_forget_library();
+#endif
    path_set(RARCH_PATH_CORE, content_load_prev.core);
    path_set(RARCH_PATH_CORE_LAST, content_load_prev.core_last);
    path_set(RARCH_PATH_CONTENT, content_load_prev.content);
+   path_set(RARCH_PATH_BASENAME, content_load_prev.basename);
    strlcpy(runloop_st->name.label, content_load_prev.label,
          sizeof(runloop_st->name.label));
    strlcpy(p_content->companion_ui_db_name, content_load_prev.db_name,
@@ -2804,8 +2893,7 @@ static void content_load_prev_restore(void)
    else
       runloop_st->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
    /* The core the menu names, which the entry point's probe replaced.
-    * The strings sysinfo points at are these buffers, or the old
-    * core's own, still open until DEINIT. */
+    * sysinfo points at these buffers, or into a library still open. */
    strlcpy(runloop_st->current_library_name, content_load_prev.library_name,
          sizeof(runloop_st->current_library_name));
    strlcpy(runloop_st->current_library_version,
@@ -2831,6 +2919,8 @@ static void content_load_prev_restore(void)
 #endif
       )
       command_event(CMD_EVENT_LOAD_CORE, NULL);
+   if (reload)
+      menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
 #endif
    /* After the probe, which zeroes it */
    runloop_st->subsystem_current_count =
@@ -2850,7 +2940,8 @@ static void content_load_finish(struct content_load_job *job,
    /* A library opened for a core stage that never took it */
    runloop_core_preload_cancel();
 #ifdef HAVE_MENU
-   content_load_prev.valid = false;
+   if (!content_load_prev.parked)
+      content_load_prev.valid = false;
    /* A Load State slot asked for with this load, left over when the
     * load failed before the content came up */
    {
@@ -3055,6 +3146,38 @@ static struct content_load_parked *content_load_parked_new(
    return d;
 }
 
+#ifdef HAVE_MENU
+static void content_load_prev_park_end(enum core_load_park_end end)
+{
+   /* Adopted by a later load, which owns it now */
+   if (!content_load_prev.parked)
+      return;
+   content_load_prev.parked = false;
+   if (end == CORE_LOAD_PARK_END_CANCELLED)
+   {
+      content_load_prev_restore();
+      menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                  |  MENU_ST_FLAG_PREVENT_POPULATE;
+   }
+   else
+      content_load_prev.valid = false;
+}
+
+/* core_path's load waits on its warning: what a Cancel puts back */
+static void content_load_prev_park(const char *core_path)
+{
+   if (!content_load_prev.valid)
+      return;
+   if (string_is_equal(content_load_prev.core_last, core_path))
+      content_load_prev.core_last[0] = '\0';
+   if (     !content_load_prev_ran()
+         && string_is_equal(content_load_prev.core, core_path))
+      content_load_prev_forget();
+   content_load_prev.parked = true;
+   core_load_check_park_on_end(content_load_prev_park_end);
+}
+#endif
+
 /* After the core stage: parks the snapshot if that stage's open of the
  * core was refused, else drops it */
 static void content_load_park(struct content_load_job *job)
@@ -3067,6 +3190,10 @@ static void content_load_park(struct content_load_job *job)
          || !core_load_check_park(d->core_path, content_load_parked_run,
             content_load_parked_free, d))
       content_load_parked_free(d);
+#ifdef HAVE_MENU
+   else
+      content_load_prev_park(d->core_path);
+#endif
 }
 
 static bool content_load_park_core(const char *core_path,
@@ -3131,7 +3258,12 @@ static bool content_load_park_core(const char *core_path,
          || !(d = strdup(core_path)))
       return false;
    if (core_load_check_park(d, rerun, free, d))
+   {
+#ifdef HAVE_MENU
+      content_load_prev_park(core_path);
+#endif
       return true;
+   }
    free(d);
    return false;
 }
@@ -3150,6 +3282,11 @@ void task_content_load_core_start(const char *core_path)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool no_content             = runloop_st->system.load_no_content;
+#ifdef HAVE_MENU
+   bool saved                  = !task_content_load_pending();
+   if (saved)
+      content_load_prev_save();
+#endif
    path_set(RARCH_PATH_CORE, core_path);
    /* Set by the open only when it succeeds */
    runloop_st->system.load_no_content = false;
@@ -3159,7 +3296,39 @@ void task_content_load_core_start(const char *core_path)
    if (runloop_core_probe_live())
       runloop_st->system.load_no_content = no_content;
    if (!task_content_park_core_start(core_path))
+   {
+#ifdef HAVE_MENU
+      if (saved)
+         content_load_prev.valid = false;
+#endif
       content_load_core_start_no_content();
+   }
+}
+
+bool task_content_load_core(const char *core_path)
+{
+   bool ok;
+#ifdef HAVE_MENU
+   bool saved = !task_content_load_pending();
+   if (saved)
+      content_load_prev_save();
+#endif
+   path_set(RARCH_PATH_CORE, core_path);
+
+   command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+   core_info_init_current_core();
+
+   ok = command_event(CMD_EVENT_LOAD_CORE, NULL);
+   /* core_path may be the core list's, freed by the deinit above */
+   if (!ok && task_content_park_core_load(path_get(RARCH_PATH_CORE)))
+      return false;
+#ifdef HAVE_MENU
+   if (saved)
+      content_load_prev.valid = false;
+#endif
+   return ok;
 }
 
 bool task_content_core_refused_notify(const char *core_path)
@@ -3268,7 +3437,19 @@ bool task_content_park_startup(const char *core_path,
    }
    if (core_load_check_park(d->core_path, rerun,
             content_load_parked_free, d))
+   {
+#ifdef HAVE_MENU
+      /* No session before the startup load: Cancel ends on No Core */
+      if (!content_load_prev.valid)
+      {
+         memset(&content_load_prev, 0, sizeof(content_load_prev));
+         content_load_prev_forget();
+         content_load_prev.valid = true;
+      }
+      content_load_prev_park(core_path);
+#endif
       return true;
+   }
    content_load_parked_free(d);
    return false;
 }
@@ -3295,12 +3476,13 @@ static void content_load_step(struct content_load_job *job,
             content_load_finish(job, p_content);
             break;
          }
-         /* The old session closes now: nothing to put back */
-         content_load_prev.valid = false;
 #endif
          job->stage = CONTENT_LOAD_STAGE_DEINIT;
          break;
       case CONTENT_LOAD_STAGE_DEINIT:
+#ifdef HAVE_MENU
+         content_load_prev.closed = true;
+#endif
          if (!content_load_stage_deinit(job))
          {
             job->stage = (job->staged && runloop_core_preload_begin())
@@ -4145,6 +4327,11 @@ bool task_push_load_new_core(
       void *user_data)
 {
    bool ret;
+#if defined(HAVE_MENU) && defined(HAVE_CORE_LOAD_CHECK)
+   bool saved = !task_content_load_pending();
+   if (saved)
+      content_load_prev_save();
+#endif
 
    /* Set core path */
    path_set(RARCH_PATH_CORE, core_path);
@@ -4165,6 +4352,12 @@ bool task_push_load_new_core(
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
    runloop_set_current_core_type(type, true);
+
+#if defined(HAVE_MENU) && defined(HAVE_CORE_LOAD_CHECK)
+   /* Refused: the caller may park it, for a Cancel to put this back */
+   if (saved && !core_load_check_refused(core_path))
+      content_load_prev.valid = false;
+#endif
 
    return ret;
 }

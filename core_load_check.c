@@ -81,7 +81,8 @@ enum core_load_park_state
    CORE_LOAD_PARK_SEED,
    CORE_LOAD_PARK_CHECK,
    CORE_LOAD_PARK_USER,
-   CORE_LOAD_PARK_IDLE
+   CORE_LOAD_PARK_IDLE,
+   CORE_LOAD_PARK_CANCELLED
 };
 
 /* A refused user-started load, waiting to run again */
@@ -92,6 +93,7 @@ struct core_load_park
    void *userdata;
    core_load_rerun_t rerun;
    core_load_rerun_t free_cb;
+   core_load_park_end_t end;
    char path[PATH_MAX_LENGTH];
    enum core_load_park_state state;
    unsigned serial;
@@ -858,6 +860,7 @@ static void core_load_check_stage_result(const char *path, bool pass)
 static void core_load_park_drop(void)
 {
    struct core_load_park *p = &core_load_rt.park;
+   core_load_park_end_t end = p->end;
    unsigned serial          = p->serial;
    core_file_close(p->f);
    if (p->free_cb)
@@ -865,6 +868,8 @@ static void core_load_park_drop(void)
    memset(p, 0, sizeof(*p));
    p->serial                = serial;
    runloop_frame_work_set(RUNLOOP_WORK_CORE_PARK, false);
+   if (end)
+      end(CORE_LOAD_PARK_END_DROPPED);
 }
 
 /* Ended as the user's Cancel ends it: a warning up for it closes
@@ -952,7 +957,11 @@ static void core_load_park_choice(enum core_warning_choice choice,
          if (core_warning_pending(NULL, NULL))
             RARCH_WARN("[Core] Not loading \"%s\": another Security Warning replaced its warning.\n",
                   p->path);
-         core_load_park_drop();
+         /* Its end runs from the frame loop, outside this warning */
+         if (p->end)
+            p->state = CORE_LOAD_PARK_CANCELLED;
+         else
+            core_load_park_drop();
          break;
    }
 }
@@ -1097,6 +1106,7 @@ static void core_load_park_rerun(void)
    core_load_slot_set(&core_load_rt.slot, p->path, &p->c, &p->f, true);
    core_load_rt.slot.pass    = true;
    p->free_cb                = NULL;
+   p->end                    = NULL;
    core_load_park_drop();
    /* Only the re-run's own open may refuse it again */
    core_load_rt.refused[0]   = '\0';
@@ -1671,6 +1681,12 @@ bool core_load_check_park(const char *path, core_load_rerun_t rerun,
    return true;
 }
 
+void core_load_check_park_on_end(core_load_park_end_t end)
+{
+   if (core_load_rt.park.state != CORE_LOAD_PARK_NONE)
+      core_load_rt.park.end = end;
+}
+
 void core_load_check_iterate(void)
 {
    switch (core_load_rt.park.state)
@@ -1683,6 +1699,15 @@ void core_load_check_iterate(void)
          /* A refused staged load ends its own way first */
          if (!task_content_load_pending())
             core_load_park_rerun();
+         break;
+      case CORE_LOAD_PARK_CANCELLED:
+         if (!task_content_load_pending())
+         {
+            core_load_park_end_t end = core_load_rt.park.end;
+            core_load_rt.park.end    = NULL;
+            core_load_park_drop();
+            end(CORE_LOAD_PARK_END_CANCELLED);
+         }
          break;
       default:
          break;

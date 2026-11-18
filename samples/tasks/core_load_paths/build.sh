@@ -115,6 +115,8 @@ $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include \
    -o $out/harness_core.so samples/tasks/content_load/harness_core.c
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_NO_HW \
    -o $out/harness_core_b.so samples/tasks/content_load/harness_core.c
+$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_SUBSYSTEM \
+   -o $out/harness_core_sub.so samples/tasks/content_load/harness_core.c
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include \
    -o $out/needs_content_core.so $out/needs_content_core.c
 

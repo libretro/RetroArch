@@ -96,6 +96,9 @@ bool task_content_park_core_start(const char *core_path);
 /* The companion UI's Load Core: opens core_path, then parks it if the
  * check refused it, else starts it if it runs without content */
 void task_content_load_core_start(const char *core_path);
+/* The desktop companions' Load Core: opens core_path, then parks it if
+ * the check refused it. True if it opened. */
+bool task_content_load_core(const char *core_path);
 /* After a refused probe of core_path from a user's action that can't
  * park it: says it wasn't loaded and how to trust it. False when the
  * check didn't refuse it. */
