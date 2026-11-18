@@ -29,6 +29,8 @@
 #include <QResizeEvent>
 #include <QStyle>
 #include <QSettings>
+#include <QDir>
+#include <QFileInfo>
 #include <QString>
 #include <QTimer>
 #include <QLabel>
@@ -1531,8 +1533,23 @@ QVariant BrowseTableModel::headerData(int section, Qt::Orientation orientation, 
       case 1: return QStringLiteral("Size");
       case 2: return QStringLiteral("Type");
       case 3: return QStringLiteral("Date Modified");
+      case 4: return QStringLiteral("Path");
    }
    return QVariant();
+}
+
+static QString qt_browse_parent_path(const QString &fullPath)
+{
+   if (fullPath.isEmpty())
+      return QString();
+
+   QString path = QDir::toNativeSeparators(
+         QFileInfo(fullPath).absolutePath());
+
+   if (!path.endsWith(QDir::separator()))
+      path += QDir::separator();
+
+   return path;
 }
 
 QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
@@ -1558,6 +1575,7 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
                return QString::number((entry.size + 1023) / 1024) + QStringLiteral(" KB");
             case 2: return entry.type;
             case 3: return entry.modified.toString(QStringLiteral("yyyy-MM-dd hh:mm"));
+            case 4: return qt_browse_parent_path(entry.path);
          }
       }
       else if (role == Qt::DecorationRole && index.column() == 0)
@@ -1588,6 +1606,7 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
          case 1: return QString::fromUtf8(companion_core_browse_size_str(core, (size_t)bi, buf, sizeof(buf)));
          case 2: return QString::fromUtf8(companion_core_browse_type_str(core, (size_t)bi, buf, sizeof(buf)));
          case 3: return QString::fromUtf8(companion_core_browse_date_str(core, (size_t)bi, buf, sizeof(buf)));
+         case 4: return qt_browse_parent_path(QString::fromUtf8(companion_core_browse_path(core, (size_t)bi)));
       }
    }
    else if (role == Qt::DecorationRole && index.column() == 0)
@@ -1715,7 +1734,7 @@ void BrowseTableModel::sort(int column, Qt::SortOrder order)
 {
    if (m_recursiveSearch)
    {
-      m_searchSortColumn = column < 0 ? 0 : column > 3 ? 3 : column;
+      m_searchSortColumn = column < 0 ? 0 : column > 4 ? 4 : column;
       m_searchSortOrder = order;
       if (!m_applyingSearchResults)
          emit layoutAboutToBeChanged();
@@ -1733,6 +1752,7 @@ void BrowseTableModel::sort(int column, Qt::SortOrder order)
                   case 1: cmp = a.size < b.size ? -1 : a.size > b.size ? 1 : 0; break;
                   case 2: cmp = QString::compare(a.type, b.type, Qt::CaseInsensitive); break;
                   case 3: cmp = a.modified < b.modified ? -1 : a.modified > b.modified ? 1 : 0; break;
+                  case 4: cmp = QString::compare(a.path, b.path, Qt::CaseInsensitive); break;
                   default: cmp = QString::compare(a.name, b.name, Qt::CaseInsensitive); break;
                }
                if (cmp == 0)
@@ -1744,8 +1764,12 @@ void BrowseTableModel::sort(int column, Qt::SortOrder order)
       return;
    }
    companion_core_t *core = ui_companion_qt_core();
+
+   int core_column = column == 4 ? 0 : column;
    enum companion_browse_column col =
-      (enum companion_browse_column)(column < 0 ? 0 : column > 3 ? 3 : column);
+      (enum companion_browse_column)(core_column < 0 ? 0 :
+            core_column > 3 ? 3 : core_column);
+
    bool asc = (order == Qt::AscendingOrder);
    /* QTableView calls sort() again on every model reset (with the
     * header's current indicator); the core ignores an unchanged order,

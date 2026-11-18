@@ -385,7 +385,7 @@ class BrowseTableModel : public QAbstractTableModel
 public:
    BrowseTableModel(QObject *parent = 0) : QAbstractTableModel(parent) {}
    int rowCount(const QModelIndex &parent = QModelIndex()) const;
-   int columnCount(const QModelIndex &parent = QModelIndex()) const { (void)parent; return 4; }
+   int columnCount(const QModelIndex &parent = QModelIndex()) const { (void)parent; return 5; }
    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
    /* The core listing changed: rebuild the row map and reset. */
