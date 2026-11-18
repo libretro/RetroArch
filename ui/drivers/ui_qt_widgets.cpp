@@ -941,7 +941,9 @@ RefreshRateControl::RefreshRateControl(rarch_setting_t *setting, QWidget *parent
    ,m_synced(*setting->value.target.fraction)
    ,m_dirty(false)
 {
+   setObjectName("refreshRateControl");
    int i;
+   m_slider->setObjectName("refreshRateSlider");
    QPushButton *setButton = new QPushButton(QObject::tr("Set"), this);
    const char *fmt        = setting->aux.rounding_fraction;
    /* "%.Nf" - read N directly instead of compiling a regex per widget. */
@@ -3206,7 +3208,7 @@ void ViewOptionsWidget::loadViewOptions()
 
 void ViewOptionsWidget::showOrHideHighlightColor()
 {
-   if (m_mainwindow->theme() == MainWindow::THEME_DARK)
+   if (m_mainwindow->isDarkTheme())
    {
       m_highlightColorLabel->show();
       m_highlightColorPushButton->show();

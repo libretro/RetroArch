@@ -28,6 +28,7 @@
 #include <QCloseEvent>
 #include <QResizeEvent>
 #include <QStyle>
+#include <QSettings>
 #include <QString>
 #include <QTimer>
 #include <QLabel>
@@ -473,7 +474,7 @@ static const QString qt_theme_default_stylesheet = QString(R"(
       background-color:#d4d4d4;
       border:3px solid %1;
    }
-   QFrame#playlistWidget, QFrame#browserWidget, QFrame#logWidget {
+   QFrame#playlistWidget, QFrame#browserWidget, QFrame#updaterWidget, QListWidget#settingsWidget, QFrame#logWidget {
       padding: 8px;
    }
    QListWidget {
@@ -494,7 +495,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    QWidget:disabled {
       color:rgb(127,127,127);
    }
-   QFrame#playlistWidget, QFrame#browserWidget, QStackedWidget#centralWidget, QFrame#logWidget {
+   QFrame#playlistWidget, QFrame#browserWidget, QFrame#updaterWidget, QListWidget#settingsWidget, QStackedWidget#centralWidget, QFrame#logWidget {
       padding: 8px;
       background-color:rgb(66,66,66);
       border-top:1px solid rgba(175,175,175,50%);
@@ -502,8 +503,19 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       border-right:1px solid rgba(125,125,125,50%);
       border-bottom:1px solid rgba(25,25,25,75%);
    }
+   QFrame#settingsWidget {
+      padding: 8px;
+      background-color: rgb(66,66,66);
+      border-top:1px solid rgba(175,175,175,50%);
+      border-left:1px solid rgba(125,125,125,50%);
+      border-right:1px solid rgba(125,125,125,50%);
+      border-bottom:1px solid rgba(25,25,25,75%);
+   }
    QListWidget {
       icon-size: 32px;
+   }
+   QListWidget#settingsCategoryList {
+      background-color: rgb(19,19,19);
    }
    QLabel#dropIndicator {
       font-size: 9pt;
@@ -529,8 +541,14 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       border-top-left-radius:0px;
       border-top-right-radius:4px;
    }
+   QWidget#updaterHomeWidget {
+      background-color:rgb(19,19,19);
+   }
    QWidget#quickMenuPage {
       background-color:transparent;
+   }
+   QWidget#refreshRateControl {
+   background-color: transparent;
    }
    QGroupBox::title {
       min-height:28px;
@@ -921,6 +939,9 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       border-radius:2px;
       width:16px;
       margin:-4px 0;
+   }
+   QSlider#refreshRateSlider {
+      background-color: transparent;
    }
    QStatusBar {
       color:white;
@@ -3013,6 +3034,30 @@ const char *MainWindow::getThemeString(Theme theme)
 
 MainWindow::Theme MainWindow::theme() { return m_currentTheme; }
 
+/* Use the Windows app-theme preference rather than Qt's often-light
+ * widget palette, which does not consistently follow Windows dark mode. */
+static bool qt_system_uses_dark_theme(void)
+{
+#ifdef Q_OS_WIN
+   QSettings settings(QStringLiteral(
+         "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+         QSettings::NativeFormat);
+   QVariant appTheme = settings.value(QStringLiteral("AppsUseLightTheme"));
+   if (!appTheme.isValid())
+      appTheme = settings.value(QStringLiteral("SystemUsesLightTheme"), 1);
+   return appTheme.toInt() == 0;
+#else
+   return QApplication::palette().color(QPalette::Window).lightness() < 128;
+#endif
+}
+
+bool MainWindow::isDarkTheme() const
+{
+   return m_currentTheme == THEME_DARK
+      || (m_currentTheme == THEME_SYSTEM_DEFAULT
+         && qt_system_uses_dark_theme());
+}
+
 /* Highlight colour from retroarch.cfg, or Qt's palette highlight. */
 static QString qt_highlight_color(void)
 {
@@ -3029,8 +3074,12 @@ void MainWindow::setTheme(Theme theme)
    switch(theme)
    {
       case THEME_SYSTEM_DEFAULT:
-         qApp->setStyleSheet(qt_theme_default_stylesheet.arg(
-                  qt_highlight_color()));
+         if (qt_system_uses_dark_theme())
+            qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
+                     qt_highlight_color()));
+         else
+            qApp->setStyleSheet(qt_theme_default_stylesheet.arg(
+                     qt_highlight_color()));
          break;
       case THEME_DARK:
          qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
@@ -6182,6 +6231,7 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
    QFrame *playlistWidget               = new QFrame();
    QFrame *browserWidget                = new QFrame();
    QFrame *updaterWidget                = new QFrame();
+   updaterWidget->setObjectName("updaterWidget");
    QPushButton *browserDownloadsButton  = new QPushButton(msg_hash_to_str(
          MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY));
    QPushButton *browserUpButton         = new QPushButton(msg_hash_to_str(
@@ -6263,9 +6313,10 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
       unsigned i;
       updaterWidget->setLayout(new QVBoxLayout());
       updaterWidget->layout()->setContentsMargins(0, 0, 0, 0);
-      updaterWidget->layout()->setAlignment(Qt::AlignTop);
-      updaterLayout->setContentsMargins(0, 0, 0, 0);
+      updaterLayout->setContentsMargins(6, 6, 6, 6);
+      updaterLayout->setSpacing(6);
       mainwindow->updaterHomeWidget()->setLayout(updaterLayout);
+      mainwindow->updaterHomeWidget()->setObjectName("updaterHomeWidget");
       updaterWidget->layout()->addWidget(mainwindow->updaterHomeWidget());
       for (i = 0; i < sizeof(updaterLabels) / sizeof(updaterLabels[0]); i++)
       {
@@ -6276,13 +6327,15 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
             buttonText += QStringLiteral("...");
          QPushButton *button = new QPushButton(buttonText,
                mainwindow->updaterHomeWidget());
+         button->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
          button->setProperty("updater_action", (int)updaterActions[i]);
          updaterLayout->addWidget(button);
          QObject::connect(button, SIGNAL(clicked()), mainwindow,
                SLOT(onUpdaterActionClicked()));
       }
+      updaterLayout->addStretch(1);
       mainwindow->updaterHomeWidget()->setSizePolicy(
-            QSizePolicy::Preferred, QSizePolicy::Maximum);
+         QSizePolicy::Preferred, QSizePolicy::Expanding);
    }
    mainwindow->coreUpdaterTable()->setColumnCount(3);
    mainwindow->coreUpdaterTable()->setHorizontalHeaderLabels(QStringList()
@@ -6322,9 +6375,16 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
    browserAndPlaylistTabWidget->addTab(updaterWidget, QObject::tr("Updater"));
 #endif
 #ifdef HAVE_MENU
+   QFrame *settingsFrame = new QFrame;
+   settingsFrame->setObjectName("settingsWidget");
+
+   QVBoxLayout *settingsLayout = new QVBoxLayout(settingsFrame);
+   settingsLayout->setContentsMargins(0, 0, 0, 0);
+   settingsLayout->addWidget(
+         mainwindow->viewOptionsDialog()->categoryListWidget());
+
    browserAndPlaylistTabWidget->addTab(
-         mainwindow->viewOptionsDialog()->categoryListWidget(),
-         QObject::tr("Settings"));
+         settingsFrame, QObject::tr("Settings"));
 #endif
 
    browserAndPlaylistTabDock = new QDockWidget(msg_hash_to_str(
@@ -6630,6 +6690,8 @@ static void* ui_companion_qt_init(void)
          mainwindow->viewOptionsDialog()->categoryListWidget());
    mainwindow->viewOptionsDialog()->layout()->removeWidget(
          mainwindow->viewOptionsDialog()->categoryPagesWidget());
+   mainwindow->viewOptionsDialog()->categoryListWidget()
+      ->setObjectName("settingsCategoryList");
    centralWidget->addWidget(mainwindow->viewOptionsDialog()->categoryPagesWidget());
 #endif
    mainwindow->setCentralWidget(centralWidget);

@@ -492,9 +492,9 @@ public:
 
    enum Theme
    {
-      THEME_SYSTEM_DEFAULT,
-      THEME_DARK,
-      THEME_CUSTOM
+      THEME_SYSTEM_DEFAULT = 0,
+      THEME_DARK           = 1,
+      THEME_CUSTOM         = 2,
    };
 
    enum MessageBoxType
@@ -534,6 +534,7 @@ public:
    QVector<QHash<QString, QString> > getCoreInfo();
    void setTheme(Theme theme = THEME_SYSTEM_DEFAULT);
    Theme theme();
+   bool isDarkTheme() const;
    Theme getThemeFromString(QString themeString);
    const char *getThemeString(Theme theme);
    QString getSelectedCorePath();
