@@ -1785,9 +1785,8 @@ void bsv_movie_poll(input_driver_state_t *input_st)
 #ifdef HAVE_CHEEVOS
          rcheevos_pause_hardcore();
 #endif
-         input_keyboard_event(k->down, swap_if_big32(k->code),
-               swap_if_big32(k->character), swap_if_big16(k->mod),
-               RETRO_DEVICE_KEYBOARD);
+         input_keyboard_event_core(k->down, swap_if_big32(k->code),
+               swap_if_big32(k->character), swap_if_big16(k->mod), true);
       }
       /* Have to clear here so we don't double-apply key events */
       /* Zero out key events when playing back or recording */
