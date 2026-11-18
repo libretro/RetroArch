@@ -1155,7 +1155,7 @@ static void menu_source_run(void)
    retro_time_t failed_at, elapsed;
    video_state_get_ptr()->av_info.timing.sample_rate = CORE_RATE;
    video_state_get_ptr()->av_info.timing.fps = FPS;
-   audio_driver_menu_sample(false);
+   audio_driver_menu_sample(0);
    if (!(retro_atomic_load_acquire_int(&st->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE)
          || !wait_progress(wrote_since, &before))
    {
@@ -1209,7 +1209,7 @@ static void menu_source_run(void)
       fixture_failures++;
    }
    before = retro_atomic_load_acquire_size(&cnt_writes);
-   audio_driver_menu_sample(false);
+   audio_driver_menu_sample(0);
    if (!wait_progress(wrote_since, &before)) fixture_failures++;
    retro_atomic_store_release_int(&menu_wait_fail, 1);
    idle_wakes = retro_atomic_load_acquire_size(&cnt_wakes);

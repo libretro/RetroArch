@@ -4458,6 +4458,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       /* Pace against the worker claiming the previous frame, not
        * finishing it: the copy below then overlaps that render.
        * Ideally, use absolute time, but that is only a good idea on POSIX. */
+      retro_time_t slept_at          = 0;
       for (;;)
       {
          retro_time_t current;
@@ -4465,12 +4466,18 @@ static bool video_thread_frame(void *data, const void *frame_,
          int st = video_thread_ring_load(thr);
          if (!VIDEO_THREAD_RING_PENDING_OF(st))
             break;
-         current = cpu_features_get_time_usec();
+         current = VIDEO_THREAD_NOW(video_info);
          delta   = target - current;
-         waited  = true;
 
-         if (delta <= 0)
+         /* An instant that did not move across a sleep is the frame's
+          * own, its mark's rate not known yet: the sleep was the wait */
+         if (delta <= 0 || (waited && current == slept_at))
+         {
+            waited = true;
             break;
+         }
+         waited   = true;
+         slept_at = current;
 
          video_thread_ring_sleep(thr, st, delta);
       }

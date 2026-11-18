@@ -11902,7 +11902,7 @@ bool audio_compute_buffer_statistics(audio_statistics_t *stats)
 }
 
 #ifdef HAVE_MENU
-void audio_driver_menu_sample(bool by_clock)
+void audio_driver_menu_sample(retro_time_t now)
 {
    static int16_t samples_buf[1024]       = {0};
    settings_t *settings                   = config_get_ptr();
@@ -11947,13 +11947,12 @@ void audio_driver_menu_sample(bool by_clock)
          || info->sample_rate <= 0.0 || info->fps <= 0.0)
       return;
    frames = floor(info->sample_rate / info->fps);
-   if (by_clock)
+   if (now)
    {
       /* What has played since the last feed, carrying the part of a
        * frame that did not make a whole one. The first feed is one
        * content frame; a gap longer than a tenth of a second is a
        * stall or a return to the menu, not time to make up. */
-      retro_time_t now = cpu_features_get_time_usec();
       if (audio_st->menu_feed_last)
       {
          retro_time_t elapsed = now - audio_st->menu_feed_last;
@@ -11979,7 +11978,7 @@ void audio_driver_menu_sample(bool by_clock)
       return;
    sample_count = (unsigned)frames * 2;
    /* Less than a frame has played since the last feed */
-   if (by_clock && !sample_count)
+   if (now && !sample_count)
       return;
 
    if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED))
@@ -11998,7 +11997,7 @@ void audio_driver_menu_sample(bool by_clock)
     * from then on. Only what the device takes now is written, keeping
     * half its buffer as the blocking path does; time it could not take
     * is not made up. The recording still gets all of it. */
-   if (by_clock && device_count && audio_st->callback.callback)
+   if (now && device_count && audio_st->callback.callback)
    {
       const audio_driver_t *audio = audio_st->current_audio;
       size_t room = 0;

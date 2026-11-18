@@ -7731,16 +7731,17 @@ static void lane_handoff_clock(void)
          "and %u times direct, want none", HANDOFF_CLOCK_PUSHES,
          handed, direct);
    {
-      /* A whole iteration reads the clock once for the runloop - its
-       * anchor - and once for the dummy core's audio sink update */
+      /* A whole iteration reads the clock once, for the runloop's
+       * anchor; the audio sink estimate, where it is on, once a window
+       * on top */
       unsigned iter_reads;
       set_threaded_via_setting(false);
       run_frames(3);
       iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES, true);
-      CHECK(iter_reads <= 2 * HANDOFF_CLOCK_PUSHES,
+      CHECK(iter_reads <= HANDOFF_CLOCK_PUSHES + 2,
             "handoff clock lane: %u iterations read the clock %u times, "
             "want at most %u", HANDOFF_CLOCK_PUSHES, iter_reads,
-            2 * HANDOFF_CLOCK_PUSHES);
+            HANDOFF_CLOCK_PUSHES + 2);
 #ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
       /* The frame limiter spins to its deadline on the perf counter:
        * the clock is read for the sleep's own use at most (Windows and

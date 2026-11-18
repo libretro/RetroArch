@@ -1641,8 +1641,9 @@ size_t audio_driver_sample_batch_rewind(
 #ifdef HAVE_MENU
 /**
  * audio_driver_menu_sample:
- * @by_clock : feed the silence the clock says has played since the last
- *             feed, rather than one content frame of it.
+ * @now : the runloop iteration's clock reading, to feed the silence
+ *        that has played since the last feed; 0 to feed one content
+ *        frame of it.
  *
  * Feeds the device silence while the core is not running behind the
  * menu, with the menu sounds, the mixer and thumbnail audio mixed in.
@@ -1650,7 +1651,7 @@ size_t audio_driver_sample_batch_rewind(
  * rate; by the clock, with a non-blocking writer, the device is kept fed
  * at whatever rate the menu runs.
  **/
-void audio_driver_menu_sample(bool by_clock);
+void audio_driver_menu_sample(retro_time_t now);
 #endif
 
 extern audio_driver_t audio_rsound;

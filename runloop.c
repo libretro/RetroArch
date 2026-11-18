@@ -9104,7 +9104,7 @@ static enum runloop_state_enum runloop_check_state(
           * through audio_driver_flush(), which in the menu is driven only
           * from here. */
          if (!libretro_running)
-            audio_driver_menu_sample(display_rate);
+            audio_driver_menu_sample(display_rate ? current_time : 0);
       }
 
       /* Note: 'old_input' is recorded earlier, immediately after
