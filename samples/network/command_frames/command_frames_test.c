@@ -53,6 +53,22 @@ static void receive(command_t *cmd, const char *data, size_t n)
    if (n >= sizeof(reply)) n = sizeof(reply)-1;
    memcpy(reply,data,n); reply[n]=0;
 }
+/* An interface that lends its own buffer for a reply: what it was
+ * asked for, and whether the reply came back where it was lent. */
+static char   lend_buf[65536];
+static size_t lend_asked;
+static bool   lend_in_place;
+static char *lend_room(command_t *cmd, size_t n)
+{
+   (void)cmd;
+   lend_asked = n;
+   return n <= sizeof(lend_buf) ? lend_buf : NULL;
+}
+static void lend_receive(command_t *cmd, const char *data, size_t n)
+{
+   lend_in_place = data == lend_buf && n <= lend_asked;
+   receive(cmd, data, n);
+}
 /* @line sent to the network command interface as a client would, read
  * through its own parser; the reply, if any, in @out. */
 #define UDP_PORT 55437
@@ -411,6 +427,20 @@ int main(int argc, char **argv)
              * region where the core leaves it zero */
             "1000\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"
             "1010\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"));
+   /* where the interface lends room, a read and the map are written
+    * there and sent from it, the same bytes as from a copy */
+   cmd.replier=lend_receive; cmd.reply_room=lend_room;
+   cmd.error=false; reply[0]=0; lend_in_place=false;
+   CHECK(command_read_memory(&cmd,"1001 2 1010 3") && lend_in_place
+         && !strcmp(reply,"READ_CORE_MEMORY 1001 0F 10\n"
+            "READ_CORE_MEMORY 1010 10 11 12\n"));
+   reply[0]=0; lend_in_place=false;
+   CHECK(!command_read_memory(&cmd,"1000 1 20000 1") && lend_in_place
+         && !strncmp(reply,"READ_CORE_MEMORY 20000 -1",25));
+   cmd.error=false; reply[0]=0; lend_in_place=false;
+   CHECK(command_get_memory_map(&cmd,"") && lend_in_place
+         && !strncmp(reply,"1000\t10\t1ff0\t0\tsystem\t",22));
+   cmd.replier=receive; cmd.reply_room=NULL;
 
    /* GET_INPUT reads what a player holds without changing it, which
     * SET_INPUT cannot do and RELEASE_INPUT undoes before answering */

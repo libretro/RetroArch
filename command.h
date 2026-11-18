@@ -360,6 +360,8 @@ struct command_handler;
 typedef void (*command_poller_t)(struct command_handler *cmd);
 typedef void (*command_replier_t)(struct command_handler *cmd, const char * data, size_t len);
 typedef void (*command_destructor_t)(struct command_handler *cmd);
+typedef char *(*command_reply_room_t)(struct command_handler *cmd,
+      size_t len);
 typedef void *(*command_reply_dest_t)(struct command_handler *cmd);
 typedef void (*command_reply_to_t)(struct command_handler *cmd,
       void *dest, const char *data, size_t len);
@@ -375,6 +377,11 @@ struct command_handler
    command_poller_t poll;
    /* Interface to reply */
    command_replier_t replier;
+   /* Room for @len bytes of the reply about to be sent, in the
+    * interface's own buffer: a reply written there and handed to
+    * replier is taken where it lies, without a copy. Good until the
+    * next reply; NULL where the interface lends none. */
+   command_reply_room_t reply_room;
    /* Where the reply to the command being handled goes, for a reply
     * sent after the handler has returned: a heap copy, released with
     * free().  NULL on an interface whose replies all go one way. */

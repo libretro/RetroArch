@@ -301,6 +301,24 @@ static bool act_readm(command_t *cmd, const char *arg)
    return true;
 }
 
+/* a read written where the interface lends room, after a first part
+ * replied the ordinary way, as READ_CORE_MEMORY writes its lines */
+static bool lend_given;
+static bool act_lend(command_t *cmd, const char *arg)
+{
+   static const char rest[] = " AA BB\n";
+   char *room;
+   (void)arg;
+   cmd->replier(cmd, "READL 1000", 10);
+   room       = cmd->reply_room ? cmd->reply_room(cmd, 64) : NULL;
+   lend_given = room != NULL;
+   if (!room)
+      return false;
+   memcpy(room, rest, sizeof(rest) - 1);
+   cmd->replier(cmd, room, sizeof(rest) - 1);
+   return true;
+}
+
 /* the menu: its title opens the reply, and a closed one says so */
 #define MENUS_TEXT "MENU Main Menu\nPATH Main Menu > Settings\n" \
                    "0\tQuick Menu\t...\n1\tLoad Content\t\n" \
@@ -412,6 +430,7 @@ static struct cmd_action_map test_actions[] = {
    { "PREVE", act_preve, "No argument", "Answer as STEPS after a queue failed.", 0, NULL, &cmd_rows_steps },
    { "READT", act_readt, "No argument", "Answer as a read cut short.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "READM", act_readm, "No argument", "Answer as a read of several ranges.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
+   { "READL", act_lend,  "No argument", "Answer as a read written in lent room.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "MENUS", act_menus, "No argument", "Answer as MENU does.", 0, NULL, &cmd_rows_menu },
    { "MENUC", act_menuc, "No argument", "Answer as MENU does when closed.", 0, NULL, &cmd_rows_menu },
    { "MENUD", act_menud, "No argument", "Answer as MENU does over a dialog.", 0, NULL, &cmd_rows_menu },
@@ -962,9 +981,9 @@ int main(void)
             && strstr(rs, "\"next\":{\"type\":\"integer\""));
       /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
        * BARE, UNTIL, APART, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS,
-       * STEPS, STEP, PREVS, PREVF, PREVE, READT, READM, MENUS, MENUC and
-       * MENUD */
-      check("only the commands that answer rows declare one", n == 26);
+       * STEPS, STEP, PREVS, PREVF, PREVE, READT, READM, READL, MENUS, MENUC
+       * and MENUD */
+      check("only the commands that answer rows declare one", n == 27);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1301,6 +1320,13 @@ int main(void)
                "{\"address\":\"101e\",\"bytes\":\"1E 1F\","
                "\"truncated\":true,\"read\":2},"
                "{\"address\":\"1010\",\"bytes\":\"10\"}]}"));
+   lend_given = false;
+   st = post(cmd, PORT_OPEN, NULL, call("READL", NULL), out, sizeof(out), NULL);
+   check("a reply written in the room lent is answered whole",
+         st == 200 && json_valid(body_of(out)) && lend_given
+         && strstr(out, "\"text\":\"READL 1000 AA BB\\n\"")
+         && strstr(out, "\"structuredContent\":{\"address\":\"1000\","
+               "\"bytes\":\"AA BB\"}"));
    st = post(cmd, PORT_OPEN, NULL, call("MENUS", NULL), out, sizeof(out), NULL);
    check("the menu's title, path, and three closing lines",
          st == 200 && json_valid(body_of(out))

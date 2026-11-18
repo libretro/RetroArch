@@ -1521,21 +1521,48 @@ static void mcp_tool_result(struct mcp_conn *c, const char *id, bool modern,
 /* ------------------------------------------------------------------ */
 /* The command interface                                               */
 
+/* Room in the reply buffer for @len more bytes and a NUL. */
+static bool mcp_reply_grow(mcp_server_t *mcp, size_t len)
+{
+   size_t cap;
+   char  *nb;
+   if (mcp->reply_len + len + 1 <= mcp->reply_cap)
+      return true;
+   cap = (mcp->reply_len + len + 1) * 2;
+   if (!(nb = (char*)realloc(mcp->reply, cap)))
+      return false;
+   mcp->reply     = nb;
+   mcp->reply_cap = cap;
+   return true;
+}
+
 static void mcp_reply(command_t *cmd, const char *data, size_t len)
 {
    mcp_server_t *mcp = (mcp_server_t*)cmd->userptr;
-   if (mcp->reply_len + len + 1 > mcp->reply_cap)
+   /* written where mcp_reply_room lent it: already in place */
+   if (     data == mcp->reply + mcp->reply_len
+         && mcp->reply_len + len < mcp->reply_cap)
    {
-      size_t cap = (mcp->reply_len + len + 1) * 2;
-      char  *nb  = (char*)realloc(mcp->reply, cap);
-      if (!nb)
-         return;
-      mcp->reply     = nb;
-      mcp->reply_cap = cap;
+      mcp->reply_len += len;
+      mcp->reply[mcp->reply_len] = '\0';
+      return;
    }
+   if (!mcp_reply_grow(mcp, len))
+      return;
    memcpy(mcp->reply + mcp->reply_len, data, len);
    mcp->reply_len += len;
    mcp->reply[mcp->reply_len] = '\0';
+}
+
+/* The end of the reply buffer, lent to a command to write its reply
+ * in; only to one answering through mcp_reply itself, as a wrapped
+ * replier may send something else. */
+static char *mcp_reply_room(command_t *cmd, size_t len)
+{
+   mcp_server_t *mcp = (mcp_server_t*)cmd->userptr;
+   if (cmd->replier != mcp_reply || !mcp_reply_grow(mcp, len))
+      return NULL;
+   return mcp->reply + mcp->reply_len;
 }
 
 /* A command that answers after it returns asks where to; it is the
@@ -2623,6 +2650,7 @@ command_t *command_mcp_stdio_new(void)
    cmd->userptr        = mcp;
    cmd->poll           = mcp_poll;
    cmd->replier        = mcp_reply;
+   cmd->reply_room     = mcp_reply_room;
    cmd->reply_dest     = mcp_reply_dest;
    cmd->reply_to       = mcp_reply_to;
    cmd->reply_image_to = mcp_reply_image_to;
@@ -2679,6 +2707,7 @@ command_t *command_mcp_new(uint16_t port, const char *bind_address,
    cmd->userptr    = mcp;
    cmd->poll       = mcp_poll;
    cmd->replier    = mcp_reply;
+   cmd->reply_room = mcp_reply_room;
    cmd->reply_dest = mcp_reply_dest;
    cmd->reply_to   = mcp_reply_to;
    cmd->reply_image_to = mcp_reply_image_to;

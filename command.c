@@ -6101,6 +6101,16 @@ static void command_hex(char *s, size_t v)
    *s = '\0';
 }
 
+/* Room for a reply of up to @len bytes: the interface's own where it
+ * lends it, so the reply is written where it is sent from (@lent set,
+ * nothing to free), else from the heap. */
+static char *command_reply_alloc(command_t *cmd, size_t len, bool *lent)
+{
+   char *s = cmd->reply_room ? cmd->reply_room(cmd, len) : NULL;
+   *lent   = s != NULL;
+   return s ? s : (char*)malloc(len);
+}
+
 /* GET_MEMORY_MAP
  *
  * The running core's memory map, one region per line, tab separated:
@@ -6113,11 +6123,13 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
    unsigned i;
    size_t _len                     = 0;
    char *reply;
+   bool lent;
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    const rarch_memory_map_t *mmap  = runloop_st ? &runloop_st->system.mmaps
                                                 : NULL;
 
-   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   if (!(reply = command_reply_alloc(cmd, COMMAND_LIST_REPLY_MAX + 1,
+               &lent)))
    {
       command_reply_error(cmd, "GET_MEMORY_MAP", "out of memory");
       return false;
@@ -6142,13 +6154,15 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
       }
       if (!_len)
       {
-         free(reply);
+         if (!lent)
+            free(reply);
          command_reply_error(cmd, "GET_MEMORY_MAP",
                "the running core has no memory map, and hands over no RAM");
          return false;
       }
       cmd->replier(cmd, reply, _len);
-      free(reply);
+      if (!lent)
+         free(reply);
       return true;
    }
 
@@ -6174,7 +6188,8 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
             d->addrspace ? d->addrspace : "");
       if (n < 0 || (size_t)n >= COMMAND_LIST_REPLY_MAX + 1 - _len)
       {
-         free(reply);
+         if (!lent)
+            free(reply);
          command_reply_error(cmd, "GET_MEMORY_MAP",
                "the map did not fit one reply, stopping at region %u", i);
          return false;
@@ -6183,7 +6198,8 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
    }
 
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 
@@ -6281,6 +6297,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
    unsigned int address               = -1;
    size_t _len                        = 0;
    unsigned int max_bytes             = 0;
+   bool lent;
    struct command_mem mem;
 
    COMMAND_MEM_INIT(&mem);
@@ -6326,8 +6343,8 @@ bool command_read_memory(command_t *cmd, const char *arg)
 
    /* Ensure large enough to return all requested bytes or an error message */
    alloc_size = 96 * nranges + total * 3;
-   reply      = (char*)malloc(alloc_size);
-   
+   reply      = command_reply_alloc(cmd, alloc_size, &lent);
+
    if (!reply)
    {
       command_reply_error(cmd, "READ_CORE_MEMORY", "out of memory");
@@ -6383,7 +6400,8 @@ bool command_read_memory(command_t *cmd, const char *arg)
    }
 
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return !cmd->error;
 }
 
