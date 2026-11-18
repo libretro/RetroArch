@@ -3218,8 +3218,28 @@ bool command_get_log(command_t *cmd, const char *arg)
 #endif
 
 /* Where a system address lands, defined with the memory commands. */
-static uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* sys_info,
+struct command_ram_block
+{
+   uint8_t *data;
+   size_t   start;
+   size_t   size;
+};
+
+/* What memory lookups read through: the system's map, or, for a core
+ * that maps none, the RAM it hands over, asked of the core once for a
+ * whole request or frame rather than at every address. */
+struct command_mem
+{
+   const rarch_system_info_t *sys;
+   struct command_ram_block   blocks[2];
+   bool                       asked;
+   bool                       any;
+};
+
+#define COMMAND_MEM_INIT(m) \
+   ((m)->sys = &runloop_state_get_ptr()->system, (m)->asked = false)
+
+static uint8_t *command_memory_get_pointer(struct command_mem *m,
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len);
 
@@ -3264,28 +3284,27 @@ static int command_cond_address(const char *s, struct command_cond *c,
 }
 
 /* The byte at @lo, or with @wide the value @hi * 256 + @lo. */
-static bool command_cond_value(unsigned hi, unsigned lo, bool wide,
-      unsigned *out, char *why, size_t why_len)
+static bool command_cond_value(struct command_mem *m, unsigned hi,
+      unsigned lo, bool wide, unsigned *out, char *why, size_t why_len)
 {
    unsigned       avail = 0;
-   const rarch_system_info_t *sys = &runloop_state_get_ptr()->system;
-   const uint8_t *l     = command_memory_get_pointer(sys, lo, &avail, 0,
+   const uint8_t *l     = command_memory_get_pointer(m, lo, &avail, 0,
          why, why_len);
    const uint8_t *h     = NULL;
-   if (!l || (wide && !(h = command_memory_get_pointer(sys, hi,
+   if (!l || (wide && !(h = command_memory_get_pointer(m, hi,
                   &avail, 0, why, why_len))))
       return false;
    *out = h ? ((unsigned)*h << 8) | *l : *l;
    return true;
 }
 
-static bool command_cond_read(const struct command_cond *c,
-      int *out, char *why, size_t why_len)
+static bool command_cond_read(struct command_mem *m,
+      const struct command_cond *c, int *out, char *why, size_t why_len)
 {
    unsigned a = 0;
    unsigned b = 0;
-   if (     !command_cond_value(c->hi, c->lo, c->wide, &a, why, why_len)
-         || (c->diff && !command_cond_value(c->sub_hi, c->sub_lo,
+   if (     !command_cond_value(m, c->hi, c->lo, c->wide, &a, why, why_len)
+         || (c->diff && !command_cond_value(m, c->sub_hi, c->sub_lo,
                c->sub_wide, &b, why, why_len)))
       return false;
    if (c->mask)
@@ -3337,14 +3356,16 @@ static size_t command_watch_lines(char *s, size_t len)
    char      value[8];
    char      where[24];
    char      reason[128];
+   struct command_mem mem;
    size_t    _len = 0;
    unsigned  i;
+   COMMAND_MEM_INIT(&mem);
    for (i = 0; i < command_watch_count && _len + COMMAND_WATCH_LINE < len;
          i++)
    {
       const struct command_watch_entry *e = &command_watches[i];
       int now = 0;
-      if (command_cond_read(&e->where, &now, reason, sizeof(reason)))
+      if (command_cond_read(&mem, &e->where, &now, reason, sizeof(reason)))
          snprintf(value, sizeof(value), "%d", now);
       else
          strlcpy(value, "none", sizeof(value));
@@ -3529,8 +3550,10 @@ static bool command_cond_mapped(command_t *cmd, const char *name,
       const struct command_cond *c)
 {
    char     reason[128];
+   struct command_mem mem;
    int      now = 0;
-   if (command_cond_read(c, &now, reason, sizeof(reason)))
+   COMMAND_MEM_INIT(&mem);
+   if (command_cond_read(&mem, c, &now, reason, sizeof(reason)))
       return true;
    command_reply_error(cmd, name, "%s", command_memory_why(reason));
    return false;
@@ -3857,6 +3880,9 @@ static void command_run_frames_hold(const struct command_step *s)
 static void command_run_frames_enter(bool safe)
 {
    char     why[128];
+   /* no frame runs here, so what the core hands over stays put */
+   struct command_mem mem;
+   COMMAND_MEM_INIT(&mem);
    while (command_run_frames_st.cur < command_run_frames_st.count)
    {
       struct command_step *s =
@@ -3878,7 +3904,7 @@ static void command_run_frames_enter(bool safe)
             /* what it holds as it takes over, so one already true when
              * the list starts waits for it to stop holding first */
             command_run_frames_st.stop_was[s->idx - 1] =
-                  command_cond_read(&s->cond, &now, why, sizeof(why))
+                  command_cond_read(&mem, &s->cond, &now, why, sizeof(why))
                && command_cond_met(&s->cond, now);
          }
          command_run_frames_st.cur++;
@@ -3899,8 +3925,8 @@ static void command_run_frames_enter(bool safe)
       }
       if (s->kind == CMD_STEP_UNTIL)
       {
-         if (!command_cond_read(&s->cond, &command_run_frames_st.value,
-                  why, sizeof(why)))
+         if (!command_cond_read(&mem, &s->cond,
+                  &command_run_frames_st.value, why, sizeof(why)))
          {
             command_run_frames_cancel("nothing maps the address waited "
                   "on now");
@@ -4028,6 +4054,7 @@ void command_run_frames_between(void)
 void command_run_frames_tick(void)
 {
    char                 why[128];
+   struct command_mem   mem;
    int                  now = 0;
    unsigned             i;
    struct command_step *s;
@@ -4039,9 +4066,10 @@ void command_run_frames_tick(void)
    command_run_frames_st.ran++;
    if (command_run_frames_st.budget)
       command_run_frames_st.budget--;
+   COMMAND_MEM_INIT(&mem);
    for (i = 0; i < command_run_frames_st.nstops; i++)
    {
-      if (!command_cond_read(&command_run_frames_st.stops[i], &now, why,
+      if (!command_cond_read(&mem, &command_run_frames_st.stops[i], &now, why,
                sizeof(why)))
       {
          command_run_frames_cancel("nothing maps the stop address now");
@@ -4073,8 +4101,8 @@ void command_run_frames_tick(void)
       command_run_frames_enter(true);
    else if (s->kind == CMD_STEP_UNTIL)
    {
-      if (!command_cond_read(&s->cond, &command_run_frames_st.value, why,
-               sizeof(why)))
+      if (!command_cond_read(&mem, &s->cond, &command_run_frames_st.value,
+               why, sizeof(why)))
       {
          command_run_frames_cancel("nothing maps the address waited on "
                "now");
@@ -4403,12 +4431,14 @@ bool command_watch(command_t *cmd, const char *arg)
    char      reply[64 + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE];
    char      label[sizeof(next[0].label)];
    char      reason[128];
+   struct command_mem mem;
    size_t    _len  = 0;
    size_t    n;
    unsigned  count = command_watch_count;
    unsigned  i;
    const char *sp;
 
+   COMMAND_MEM_INIT(&mem);
    memcpy(next, command_watches, sizeof(command_watches));
    while (arg && *arg)
    {
@@ -4476,7 +4506,7 @@ bool command_watch(command_t *cmd, const char *arg)
          }
          /* found now, as RUN_UNTIL finds the byte it waits on, so an
           * address nothing maps is refused rather than read later */
-         if (!command_cond_read(&where, &now, reason, sizeof(reason)))
+         if (!command_cond_read(&mem, &where, &now, reason, sizeof(reason)))
          {
             command_reply_error(cmd, "WATCH", "%s: %s", label,
                   command_memory_why(reason));
@@ -5981,13 +6011,6 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
  * the SNES, the addresses RetroAchievements' notes give. Fills @blocks
  * (data, start, size) for the system and the save block, a NULL data
  * where the core has none; false where it has neither. */
-struct command_ram_block
-{
-   uint8_t *data;
-   size_t   start;
-   size_t   size;
-};
-
 static bool command_memory_core_blocks(struct command_ram_block blocks[2])
 {
    runloop_state_t        *runloop_st = runloop_state_get_ptr();
@@ -6015,16 +6038,20 @@ static bool command_memory_core_blocks(struct command_ram_block blocks[2])
    return blocks[0].data || blocks[1].data;
 }
 
-static uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* sys_info,
+static uint8_t *command_memory_get_pointer(struct command_mem *m,
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len)
 {
+   const rarch_system_info_t *sys_info = m->sys;
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
    {
-      struct command_ram_block blocks[2];
-      unsigned                 n;
-      bool                     any = command_memory_core_blocks(blocks);
+      const struct command_ram_block *blocks = m->blocks;
+      unsigned                        n;
+      if (!m->asked)
+      {
+         m->any   = command_memory_core_blocks(m->blocks);
+         m->asked = true;
+      }
       for (n = 0; n < 2; n++)
          if (     blocks[n].data && address >= blocks[n].start
                && address < blocks[n].start + blocks[n].size)
@@ -6033,7 +6060,7 @@ static uint8_t *command_memory_get_pointer(
                   - address);
             return blocks[n].data + (address - blocks[n].start);
          }
-      if (any)
+      if (m->any)
          strlcpy_lit(s, " -1 no descriptor for address\n", len);
       else
          strlcpy_lit(s, " -1 no memory map defined\n", len);
@@ -6254,9 +6281,9 @@ bool command_read_memory(command_t *cmd, const char *arg)
    unsigned int address               = -1;
    size_t _len                        = 0;
    unsigned int max_bytes             = 0;
-   runloop_state_t *runloop_st        = runloop_state_get_ptr();
-   const rarch_system_info_t* sys_info= &runloop_st->system;
+   struct command_mem mem;
 
+   COMMAND_MEM_INIT(&mem);
    while (arg && *arg)
    {
       char *end       = NULL;
@@ -6316,7 +6343,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
             "READ_CORE_MEMORY %x", address);
 
       if ((data = command_memory_get_pointer(
-                  sys_info, address, &max_bytes,
+                  &mem, address, &max_bytes,
                   0, reply_at, alloc_size - (size_t)(reply_at - reply))))
       {
          char         why[128];
@@ -6334,7 +6361,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
             read += n;
             if (read >= nbytes)
                break;
-            data  = command_memory_get_pointer(sys_info, address + read,
+            data  = command_memory_get_pointer(&mem, address + read,
                   &max_bytes, 0, why, sizeof(why));
          }
          *end++               = '\n';
@@ -6366,11 +6393,9 @@ bool command_write_memory(command_t *cmd, const char *arg)
    unsigned int max_bytes       = 0;
    char reply[128]              = "";
    char *end                    = NULL;
-   runloop_state_t *runloop_st  = runloop_state_get_ptr();
-   const rarch_system_info_t
-      *sys_info                 = &runloop_st->system;
    char *reply_at;
    uint8_t *data;
+   struct command_mem mem;
 
    if (     !command_parse_address(arg, &address, &end)
          || !command_bytes_valid(end))
@@ -6380,8 +6405,9 @@ bool command_write_memory(command_t *cmd, const char *arg)
       return false;
    }
    arg      = end;
+   COMMAND_MEM_INIT(&mem);
    reply_at = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
-   data     = command_memory_get_pointer(sys_info, address, &max_bytes, 1,
+   data     = command_memory_get_pointer(&mem, address, &max_bytes, 1,
          reply_at, sizeof(reply) - strlen(reply) - 1);
 
    if (data)
