@@ -43,6 +43,24 @@ each time a data path is written or touched, not only when asked.
   `./configure --disable-threads` build that links, not a single TU.
 - No logging inside pacing or sync paths.
 
+## Clocks
+
+No wall clocks and no spinning, as far as there is any way to avoid them.
+Each exception must be the only way, and say why in a comment.
+
+- Do not read the clock (`cpu_features_get_time_usec()`) on a per-frame or
+  real-time path. A frame has one reading, taken by `video_driver_frame()`
+  and carried in `video_frame_info_t::frame_time`; whatever draws or hands
+  over that frame takes "now" from it, moved on by the perf counter where
+  it needs a later instant.
+- Time a span on the perf counter (`cpu_features_get_perf_counter()`) and
+  convert it with `cpu_features_perf_to_usec()`, not with two clock reads.
+- Do not spin on the clock, or on anything else: no loop that polls a
+  time, a flag or a counter until it changes. Wait on the event that
+  ends the wait (a fence, a vblank, the device's notification, an
+  eventcount); a clock deadline is only a watchdog on that wait.
+- Do not pace on a timer where the hardware gives a signal to pace on.
+
 RetroArch contains deliberately complex, cross-file systems. Do not simplify, consolidate, refactor, or redesign an existing subsystem merely because its structure appears unnecessarily complicated.
 
 Complexity may exist for compatibility, platform, driver, or architectural reasons.
