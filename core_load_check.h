@@ -86,6 +86,25 @@ typedef void (*core_load_rerun_t)(void *userdata);
  * load error beyond its failed probe's. */
 bool core_load_check_park(const char *path, core_load_rerun_t rerun,
       core_load_rerun_t free_cb, void *userdata);
+
+enum core_load_park_end
+{
+   /* Its warning was cancelled or replaced: from the frame loop */
+   CORE_LOAD_PARK_END_CANCELLED = 0,
+   /* Another load took over, or the park could not go on */
+   CORE_LOAD_PARK_END_DROPPED,
+   /* Its re-run is about to start, the park already dropped */
+   CORE_LOAD_PARK_END_RERUN,
+   /* Its re-run has returned: always follows RERUN */
+   CORE_LOAD_PARK_END_RERAN
+};
+typedef void (*core_load_park_end_t)(enum core_load_park_end end);
+
+/* After a true core_load_check_park(): end runs once with CANCELLED or
+ * DROPPED, or with RERUN then RERAN around the re-run. It must not
+ * push or choose a warning. */
+void core_load_check_park_on_end(core_load_park_end_t end);
+
 /* Each frame while RUNLOOP_WORK_CORE_PARK is up, which a park raises
  * and its drop lowers: the parked request's waits */
 void core_load_check_iterate(void);

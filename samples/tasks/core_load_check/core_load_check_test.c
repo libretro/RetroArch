@@ -2656,6 +2656,122 @@ static void test_park_other_load(void)
    park_other_load(PARK_IN_SEED, false);
 }
 
+static unsigned ends_cancelled;
+static unsigned ends_dropped;
+
+static void end_fn(enum core_load_park_end end)
+{
+   if (end == CORE_LOAD_PARK_END_CANCELLED)
+      ends_cancelled++;
+   else
+      ends_dropped++;
+}
+
+/* A park with its end callback, its warning up */
+static void park_end_start(char *core, const char *name)
+{
+   start(false);
+   park_reset();
+   ends_cancelled = 0;
+   ends_dropped   = 0;
+   CHECK(put_core(core, name, 'a'));
+   CHECK(park(core));
+   core_load_check_park_on_end(end_fn);
+   drain();
+}
+
+/* Cancel ends the park from the frame loop, not inside the warning */
+static void test_park_end_cancel(void)
+{
+   char core[256];
+   park_end_start(core, "end_cancel_libretro" LIB_EXT);
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   CHECK(ends_cancelled == 0);
+   park_frames(1);
+   CHECK(ends_cancelled == 1);
+   CHECK(ends_dropped == 0);
+   CHECK(reruns == 0);
+   CHECK(frees == 1);
+   park_frames(3);
+   CHECK(ends_cancelled == 1);
+   stop();
+}
+
+/* A load on its way ends first */
+static void test_park_end_waits_for_load(void)
+{
+   char core[256];
+   park_end_start(core, "end_waits_libretro" LIB_EXT);
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   load_pending = true;
+   park_frames(3);
+   CHECK(ends_cancelled == 0);
+   load_pending = false;
+   park_frames(1);
+   CHECK(ends_cancelled == 1);
+   CHECK(ends_dropped == 0);
+   stop();
+}
+
+/* A newer warning over the park's ends it as a Cancel does */
+static void test_park_end_replaced_warning(void)
+{
+   char core[256];
+   struct core_check c;
+   park_end_start(core, "end_replaced_libretro" LIB_EXT);
+   memset(&c, 0, sizeof(c));
+   c.result = CORE_CHECK_UNSIGNED;
+   CHECK(core_warning_push(&c, CORE_WARNING_INSTALL, core,
+            other_choice, NULL));
+   CHECK(ends_cancelled == 0);
+   park_frames(1);
+   CHECK(ends_cancelled == 1);
+   CHECK(ends_dropped == 0);
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   stop();
+}
+
+/* Another core's load takes over: nothing is put back over it */
+static void test_park_end_other_load(void)
+{
+   char core[256];
+   char other[256];
+   park_end_start(core, "end_other_a_libretro" LIB_EXT);
+   CHECK(put_core(other, "end_other_b_libretro" LIB_EXT, 'b'));
+   CHECK(trust(other));
+   load_other(other, 2);
+   CHECK(ends_dropped == 1);
+   CHECK(ends_cancelled == 0);
+   CHECK(frees == 1);
+   park_frames(3);
+   CHECK(ends_dropped == 1);
+   CHECK(ends_cancelled == 0);
+   stop();
+}
+
+/* The re-run owns what the park kept: no end */
+static void test_park_end_rerun(void)
+{
+   char core[256];
+   park_end_start(core, "end_rerun_libretro" LIB_EXT);
+   CHECK(core_warning_choose(CORE_WARNING_LOAD_ONCE));
+   park_wait(1);
+   CHECK(reruns == 1);
+   CHECK(ends_cancelled == 0);
+   CHECK(ends_dropped == 0);
+   stop();
+}
+
+static void test_park_end_deinit(void)
+{
+   char core[256];
+   park_end_start(core, "end_deinit_libretro" LIB_EXT);
+   core_load_check_deinit();
+   CHECK(ends_dropped == 1);
+   CHECK(ends_cancelled == 0);
+   stop();
+}
+
 /* A built-in core's start is another core's load: it ends a waiting
  * park and the Load Once of the core loaded last */
 static void test_builtin_load(void)
@@ -3923,6 +4039,12 @@ int main(int argc, char *argv[])
    test_park_always();
    test_park_always_full();
    test_park_cancel();
+   test_park_end_cancel();
+   test_park_end_waits_for_load();
+   test_park_end_replaced_warning();
+   test_park_end_other_load();
+   test_park_end_rerun();
+   test_park_end_deinit();
    test_park_replaced_other();
    test_park_pass();
    test_park_stage_drift();

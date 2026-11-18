@@ -1366,6 +1366,7 @@ struct fw_session
    enum rarch_core_type type;
    enum rarch_core_type explicit_type;
    bool has_set_core;
+   bool core_running;
    unsigned subsystems;
    dylib_t handle;
 };
@@ -1393,6 +1394,7 @@ static void fw_record(struct fw_session *s)
    s->type          = runloop_st->current_core_type;
    s->explicit_type = runloop_st->explicit_current_core_type;
    s->has_set_core  = (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE) ? true : false;
+   s->core_running  = (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING) ? true : false;
    s->subsystems    = runloop_st->subsystem_current_count;
    s->handle        = runloop_st->lib_handle;
 }
@@ -1614,6 +1616,39 @@ static void fw_check_sub_cancel(const char *core, bool reprobe,
    (void)reprobe;
 #endif
 }
+#ifdef HAVE_COMMAND
+/* LOAD_CONTENT probes its core before the load saves the session: its
+ * firmware Cancel, on the No Core session a Security Warning Cancel
+ * left, names no core */
+static void fw_load_content_no_core(const char *other)
+{
+   content_ctx_info_t info;
+   command_t cmd;
+   char arg[sizeof(fw_core) + 300];
+   memset(&info, 0, sizeof(info));
+   memset(&cmd, 0, sizeof(cmd));
+   cmd.replier = fw_cmd_reply;
+   CHECK(task_push_load_content_from_playlist_from_menu(good_core, game,
+            "first", &info, NULL, NULL), "the first Run was not started again");
+   CHECK(wait_for(good_runs_game, 600), "the first Run did not run again");
+   snprintf(arg, sizeof(arg), "%s|%s", bad_core, other);
+   CHECK(command_load_content(&cmd, arg), "LOAD_CONTENT was not started");
+   CHECK(wait_for(warning_up, 600), "no Security Warning for LOAD_CONTENT");
+   CHECK(answer(CORE_WARNING_CANCEL), "Cancel not taken");
+   fw_pump(30);
+   snprintf(arg, sizeof(arg), "%s|%s", fw_core, game);
+   CHECK(command_load_content(&cmd, arg), "LOAD_CONTENT was not started");
+   CHECK(fw_cancelled(), "no firmware box for LOAD_CONTENT, or its Cancel did not end it");
+   fw_record(&fw_now);
+   CHECK(   is_dummy() && !*fw_now.core
+         && string_ends_with(fw_now.title,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)),
+         "a firmware Cancel through LOAD_CONTENT named a core");
+   fw_differs(true, "core", "", fw_now.core);
+   if (!string_ends_with(fw_now.title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+      fprintf(stderr, "  menu title: \"%s\"\n", fw_now.title);
+}
+#endif
 
 /* A firmware box's Cancel leaves the session as it was: the game that
  * runs, or the dummy session */
@@ -1748,6 +1783,9 @@ static void mode_fw_cancel_restores(void)
    unload();
    fw_check_dummy_kept(
          "a trusted core's cancelled Run left it in the dummy session");
+#ifdef HAVE_COMMAND
+   fw_load_content_no_core(other);
+#endif
 
    /* Past its box a load closes the old game: a re-run that asks again
     * and is cancelled ends on the dummy session */
@@ -1814,17 +1852,16 @@ static void mode_fw_load_once(void)
    CHECK(fw_wait_box(600), "no firmware box after Load Once");
    CHECK(fw_boxes == 1, "Load Once's launch asked for its firmware twice");
    CHECK(fw_cancelled(), "the firmware box's Cancel did not end the launch");
-   /* The refused startup's dummy session keeps its paths */
+   /* Nothing of the refused startup's core stays named */
    CHECK(is_dummy(), "a cancelled launch left a phantom session");
    CHECK(!warning_up() && !error_queued(),
          "the cancelled launch's core asked or failed on its way back");
    fw_record(&fw_now);
    CHECK(   string_ends_with(fw_now.title,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
-         && string_is_equal(fw_now.info, fw_ran.info),
+         && !*fw_now.core && !*fw_now.info,
          "the dummy session names the cancelled core");
    fw_differs(true, "menu title", fw_ran.title, fw_now.title);
-   fw_differs(true, "core info", fw_ran.info, fw_now.info);
 
    memset(&info, 0, sizeof(info));
    CHECK(task_push_load_content_with_new_core_from_companion_ui(fw_core,
@@ -2015,6 +2052,434 @@ static void mode_fw_builtin(void)
    CHECK(pad_runs(), "the built-in core stopped running");
 }
 #endif
+
+static void warn_cancel(const char *what)
+{
+   CHECK(wait_for(warning_up, 600), what);
+   CHECK(answer(CORE_WARNING_CANCEL), "Cancel not taken");
+   pump(30);
+}
+
+/* The dummy session, naming no core */
+static void warn_check_no_core(const char *what)
+{
+   static struct fw_session s;
+   fw_record(&s);
+   CHECK(   is_dummy() && !*s.core && !*s.core_last && !*s.content
+         && !*s.basename
+         && !*s.info && !s.has_set_core && !s.core_running
+         && string_ends_with(s.title,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)), what);
+   fw_differs(true, "core", "", s.core);
+   fw_differs(true, "basename", "", s.basename);
+   fw_differs(true, "core info", "", s.info);
+   if (!string_ends_with(s.title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+      fprintf(stderr, "  menu title: \"%s\"\n", s.title);
+}
+
+/* The chosen core fw_ran recorded, as it was */
+static void warn_check_kept(const char *what)
+{
+   fw_record(&fw_now);
+   CHECK(   string_is_equal(fw_now.core, fw_ran.core)
+         && string_is_equal(fw_now.core_last, fw_ran.core_last)
+         && string_is_equal(fw_now.content, fw_ran.content)
+         && string_is_equal(fw_now.basename, fw_ran.basename)
+         && string_is_equal(fw_now.title, fw_ran.title)
+         && string_is_equal(fw_now.info, fw_ran.info)
+         && fw_now.type == fw_ran.type
+         && fw_now.explicit_type == fw_ran.explicit_type
+         && fw_now.has_set_core == fw_ran.has_set_core, what);
+   fw_differs(true, "core", fw_ran.core, fw_now.core);
+   fw_differs(true, "core_last", fw_ran.core_last, fw_now.core_last);
+   fw_differs(true, "basename", fw_ran.basename, fw_now.basename);
+   fw_differs(true, "menu title", fw_ran.title, fw_now.title);
+   fw_differs(true, "core info", fw_ran.info, fw_now.info);
+}
+
+static bool warn_lc(const char *core, const char *path)
+{
+   content_ctx_info_t info;
+   memset(&info, 0, sizeof(info));
+   return task_push_load_content_with_new_core_from_menu(core, path, &info,
+         CORE_TYPE_PLAIN, NULL, NULL);
+}
+
+static bool warn_ln(const char *core)
+{
+   content_ctx_info_t info;
+   memset(&info, 0, sizeof(info));
+   return task_push_load_new_core(core, NULL, &info, CORE_TYPE_PLAIN,
+         NULL, NULL);
+}
+
+/* companion_core_load_core()'s body: the companions' objects are not
+ * in this build */
+static bool warn_companion_ln(const char *core)
+{
+   if (warn_ln(core))
+      return true;
+   task_content_park_core_load(core);
+   return false;
+}
+
+static void warn_reset(void)
+{
+   command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+   path_clear(RARCH_PATH_CORE_LAST);
+   pump(30);
+}
+
+static const char *const warn_probed_names[] = {
+   "Load Content", "the companion load", "History"
+#ifdef HAVE_COMMAND
+   , "LOAD_CONTENT"
+#endif
+};
+
+/* Entry e's load of path on bad_core after a probe of it, as
+ * LOAD_CONTENT makes its own */
+static bool warn_probed_load(unsigned e, const char *path)
+{
+   content_ctx_info_t info;
+   struct retro_system_info sysinfo;
+   bool no_game = false;
+   memset(&info, 0, sizeof(info));
+   if (e < 3)
+      CHECK(libretro_get_system_info(bad_core, &sysinfo, &no_game),
+            "the probe ahead of the load failed");
+   switch (e)
+   {
+      case 0:
+         return warn_lc(bad_core, path);
+      case 1:
+         return task_push_load_content_with_new_core_from_companion_ui(
+               bad_core, path, NULL, NULL, NULL, &info, NULL, NULL);
+      case 2:
+         return task_push_load_content_from_playlist_from_menu(bad_core,
+               path, "h", &info, NULL, NULL);
+#ifdef HAVE_COMMAND
+      case 3:
+         {
+            command_t cmd;
+            char arg[sizeof(bad_core) + 300];
+            memset(&cmd, 0, sizeof(cmd));
+            cmd.replier = fw_cmd_reply;
+            snprintf(arg, sizeof(arg), "%s|%s", bad_core, path);
+            return command_load_content(&cmd, arg);
+         }
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+/* Each way a load reaches the warning, then its Cancel */
+static void mode_warn_cancel_restores(void)
+{
+   content_ctx_info_t info;
+   char other[300];
+   unsigned i;
+   memset(&info, 0, sizeof(info));
+   snprintf(game, sizeof(game), "%s/title.bin", dir);
+   write_file(game);
+   snprintf(other, sizeof(other), "%s/other.bin", dir);
+   write_file(other);
+   staged_trust(good_core);
+   unload();
+   warn_reset();
+
+   /* R1 Load Content */
+   CHECK(warn_lc(bad_core, game), "Load Content was not started");
+   warn_cancel("no warning for Load Content");
+   warn_check_no_core("Load Content's Cancel left the core named");
+#ifdef HAVE_NETWORKGAMEPAD
+   start_pad();
+   CHECK(wait_for(pad_runs, 600), "the pad did not start");
+   CHECK(!*path_get(RARCH_PATH_CORE),
+         "the pad started under the cancelled core's name");
+   unload();
+#endif
+   warn_reset();
+
+   /* R2 The same load asks again */
+   CHECK(warn_lc(bad_core, game), "the second Load Content was not started");
+   warn_cancel("the second load did not ask");
+   warn_check_no_core("the second Cancel left the core named");
+   warn_reset();
+
+   /* R3 History */
+   CHECK(task_push_load_content_from_playlist_from_menu(bad_core, game, "h",
+            &info, NULL, NULL), "the History load was not started");
+   warn_cancel("no warning for History");
+   warn_check_no_core("History's Cancel left the core named");
+   warn_reset();
+
+   /* R4 Load Core, then Load Content */
+   CHECK(warn_ln(bad_core), "Load Core did not answer from the record");
+   CHECK(task_push_load_content_with_core(game, &info, CORE_TYPE_PLAIN,
+            NULL, NULL), "Load Content was not started");
+   warn_cancel("no warning for Load Core then Load Content");
+   warn_check_no_core("Load Core then Load Content's Cancel left the core named");
+   warn_reset();
+
+   /* R5 Start Core */
+   CHECK(warn_ln(bad_core), "Load Core did not answer from the record");
+   CHECK(task_push_start_current_core(&info), "Start Core was not started");
+   warn_cancel("no warning for Start Core");
+   warn_check_no_core("Start Core's Cancel left the core named");
+   warn_reset();
+
+   /* R6 Another core stays chosen. Run first: a volume that can't keep
+    * its record passes Load Core only for the core loaded last. */
+   load_quietly(good_core);
+   unload();
+   warn_reset();
+   CHECK(warn_ln(good_core), "the trusted Load Core failed");
+   fw_record(&fw_ran);
+   CHECK(warn_lc(bad_core, game), "Load Content was not started");
+   warn_cancel("no warning over the chosen core");
+   warn_check_kept("a Cancel lost the core Load Core had chosen");
+   warn_reset();
+
+   /* R7 A newer load replaces the park */
+   CHECK(task_push_load_contentless_core_from_menu(bad_core),
+         "the refused load was not started");
+   CHECK(wait_for(warning_up, 600), "no warning for the replaced park");
+   CHECK(wait_for(is_dummy, 120), "the refused load did not end");
+   CHECK(task_push_load_contentless_core_from_menu(good_core),
+         "the newer load was not started");
+   CHECK(wait_for(good_runs, 600), "the newer load did not run");
+   pump(120);
+   CHECK(good_runs(), "a dropped park's session came back");
+   warn_reset();
+
+   /* R8 The load closes a game, no core chosen */
+   CHECK(task_push_load_content_from_playlist_from_menu(good_core, game, "g",
+            &info, NULL, NULL), "the game was not started");
+   CHECK(wait_for(good_runs_game, 600), "the game did not run");
+   CHECK(warn_lc(bad_core, other), "Load Content was not started");
+   warn_cancel("no warning over the game");
+   warn_check_no_core("a Cancel named the game its load closed");
+   warn_reset();
+
+   /* R9 The load closes a game on a manually loaded core */
+   CHECK(warn_ln(good_core), "the trusted Load Core failed");
+   CHECK(task_push_load_content_with_core(game, &info, CORE_TYPE_PLAIN,
+            NULL, NULL), "the game was not started");
+   CHECK(wait_for(good_runs_game, 600), "the game did not run");
+   CHECK(warn_lc(bad_core, other), "Load Content was not started");
+   warn_cancel("no warning over the manual core's game");
+   pump(60);
+   fw_record(&fw_now);
+   CHECK(   is_dummy() && same_path(fw_now.core, good_core) && !*fw_now.content
+         && !*fw_now.basename && !fw_now.core_running
+         && !string_ends_with(fw_now.title,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)),
+         "a Cancel did not bring the manually loaded core back");
+   warn_reset();
+
+   /* R10 Load Once runs what was asked for */
+   CHECK(warn_lc(bad_core, game), "Load Content was not started");
+   CHECK(wait_for(warning_up, 600), "no warning for Load Once");
+   CHECK(answer(CORE_WARNING_LOAD_ONCE), "Load Once not taken");
+   CHECK(wait_for(bad_runs_game, 600), "Load Once did not run the core");
+   pump(120);
+   CHECK(bad_runs_game(), "a stale restore replaced the session Load Once ran");
+   warn_reset();
+
+   /* R12 A core that failed to open is latched over a game the load
+    * closes: the title reads no string of the closed library */
+   snprintf(broken, sizeof(broken), "%s/broken_libretro.%s", cores, ext);
+   write_file(broken);
+   CHECK(task_push_load_content_from_playlist_from_menu(good_core, game, "g",
+            &info, NULL, NULL), "the game was not started");
+   CHECK(wait_for(good_runs_game, 600), "the game did not run");
+   CHECK(!warn_ln(broken), "a file that is no core opened");
+   CHECK(task_content_park_core_load(broken), "Load Core was not parked");
+   CHECK(wait_for(warning_up, 600), "no warning for the broken core");
+   CHECK(answer(CORE_WARNING_LOAD_ONCE), "Load Once not taken");
+   for (i = 0; i < 600 && !open_failed_queued(); i++)
+      pump(1);
+   CHECK(warn_lc(bad_core, other), "Load Content was not started");
+   warn_cancel("no warning over the failed core's game");
+   fw_record(&fw_now);
+   CHECK(   !*fw_now.content && !*fw_now.basename && !*fw_now.label
+         && !*fw_now.info && !fw_now.core_running
+         && string_ends_with(fw_now.title,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)),
+         "a Cancel named the game closed behind a failed core");
+   fw_differs(true, "content", "", fw_now.content);
+   fw_differs(true, "basename", "", fw_now.basename);
+   fw_differs(true, "label", "", fw_now.label);
+   fw_differs(true, "core info", "", fw_now.info);
+   warn_reset();
+
+   /* R13 A core chosen over a game the load closes stays chosen, the
+    * game gone from behind it */
+   CHECK(task_push_load_content_from_playlist_from_menu(good_core, game, "g",
+            &info, NULL, NULL), "the game was not started");
+   CHECK(wait_for(good_runs_game, 600), "the game did not run");
+   CHECK(warn_ln(good_core), "the trusted Load Core failed");
+   CHECK(warn_lc(bad_core, other), "Load Content was not started");
+   warn_cancel("no warning over the chosen core's game");
+   fw_record(&fw_now);
+   CHECK(   same_path(fw_now.core, good_core) && !*fw_now.content
+         && !*fw_now.basename && !*fw_now.label && !fw_now.core_running
+         && !string_ends_with(fw_now.title,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)),
+         "a Cancel named the game closed behind a chosen core");
+   fw_differs(true, "content", "", fw_now.content);
+   fw_differs(true, "basename", "", fw_now.basename);
+   fw_differs(true, "label", "", fw_now.label);
+   warn_reset();
+
+   /* R14 A chosen core keeps the subsystem it declared */
+   staged_trust(sub_core);
+   unload();
+   warn_reset();
+   CHECK(warn_ln(sub_core), "the subsystem core's Load Core failed");
+   fw_record(&fw_ran);
+   CHECK(fw_ran.subsystems == 1, "the chosen core declared no subsystem");
+   CHECK(warn_lc(bad_core, game), "Load Content was not started");
+   warn_cancel("no warning over the subsystem core");
+   warn_check_kept("a Cancel lost the chosen subsystem core");
+   CHECK(fw_now.subsystems == 1, "a Cancel lost the chosen core's subsystem");
+   warn_reset();
+
+   /* R15 A probe of the refused core ahead of each load: the second
+    * Cancel, on the No Core session the first left, names no core */
+   for (i = 0; i < ARRAY_SIZE(warn_probed_names); i++)
+   {
+      char what[96];
+      unsigned j;
+      CHECK(task_push_load_content_from_playlist_from_menu(good_core, game,
+               "g", &info, NULL, NULL), "the game was not started");
+      CHECK(wait_for(good_runs_game, 600), "the game did not run");
+      for (j = 0; j < 2; j++)
+      {
+         CHECK(warn_probed_load(i, other), "the probed load was not started");
+         warn_cancel("no warning for the probed load");
+      }
+      snprintf(what, sizeof(what), "%s's second Cancel named a core",
+            warn_probed_names[i]);
+      warn_check_no_core(what);
+      warn_reset();
+   }
+
+   /* R11 Quit with the warning up: main_exit()'s deinit puts nothing back */
+   CHECK(warn_lc(nc_core, game), "Load Content was not started");
+   CHECK(wait_for(warning_up, 600), "no warning to quit under");
+   fw_record(&fw_ran);
+   core_load_check_deinit();
+   warn_check_kept("quitting under the warning restored the session");
+}
+
+/* A park no load saved for: its Cancel has nothing to put back */
+static void warn_check_nothing_kept(const char *what)
+{
+   path_set(RARCH_PATH_CORE, bad_core);
+   CHECK(!command_event(CMD_EVENT_LOAD_CORE, NULL), "the untrusted open succeeded");
+   CHECK(task_content_park_core_load(bad_core), "Load Core was not parked");
+   warn_cancel("no warning for the park");
+   CHECK(same_path(path_get(RARCH_PATH_CORE), bad_core), what);
+}
+
+/* No record: LOAD_CORE's refused open leaves the running game alone */
+static void mode_warn_cancel_live(void)
+{
+   content_ctx_info_t info;
+   char missing[400];
+   memset(&info, 0, sizeof(info));
+   snprintf(game, sizeof(game), "%s/title.bin", dir);
+   write_file(game);
+   staged_trust(good_core);
+   unload();
+   CHECK(task_push_load_content_from_playlist_from_menu(good_core, game, "g",
+            &info, NULL, NULL), "the game was not started");
+   CHECK(wait_for(good_runs_game, 600), "the game did not run");
+
+   /* L1 LOAD_CORE over a game */
+   fw_record(&fw_ran);
+   CHECK(!warn_ln(bad_core), "the untrusted Load Core opened");
+   CHECK(task_content_park_core_load(bad_core), "Load Core was not parked");
+   warn_cancel("no warning for LOAD_CORE");
+   fw_record(&fw_now);
+   CHECK(!fw_changes(false), "the LOAD_CORE Cancel changed the running session");
+   fw_changes(true);
+
+   /* C1 The companion UI's Load Core over a game */
+   CHECK(!warn_companion_ln(bad_core), "the companion Load Core opened");
+   warn_cancel("no warning for the companion Load Core");
+   fw_record(&fw_now);
+   CHECK(!fw_changes(false), "the companion Cancel changed the running session");
+   fw_changes(true);
+
+   /* L2 The game closes under the warning */
+   CHECK(!warn_ln(bad_core), "the untrusted Load Core opened");
+   CHECK(task_content_park_core_load(bad_core), "Load Core was not parked");
+   command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+   pump(120);
+   warn_cancel("no warning once the game closed");
+   warn_check_no_core("a Cancel named the game closed under its warning");
+
+   /* C2 The companion UI's Load Core, nothing chosen */
+   CHECK(!warn_companion_ln(bad_core), "the companion Load Core opened");
+   warn_cancel("no warning for the companion Load Core");
+   warn_check_no_core("the companion Cancel left the core named");
+
+   /* C3 Another core stays chosen */
+   CHECK(warn_companion_ln(good_core), "the trusted companion Load Core failed");
+   fw_record(&fw_ran);
+   CHECK(!warn_companion_ln(bad_core), "the companion Load Core opened");
+   warn_cancel("no warning over the chosen core");
+   warn_check_kept("a companion Cancel lost the chosen core");
+
+   /* C4 A load that opened keeps nothing for a later Cancel */
+   CHECK(warn_companion_ln(good_core), "the trusted companion Load Core failed");
+   warn_check_nothing_kept("a companion load that opened left its snapshot");
+
+   /* C5 Nor does one that failed without a warning */
+   snprintf(missing, sizeof(missing), "%s/missing_libretro.%s", cores, ext);
+   path_set(RARCH_PATH_CORE, good_core);
+   CHECK(!warn_companion_ln(missing), "a missing core opened");
+   CHECK(!warning_up(), "a missing core asked");
+   warn_check_nothing_kept("a companion load that failed left its snapshot");
+
+   /* C6 Nor does a refusal only reported, never parked (netplay) */
+   CHECK(warn_ln(good_core), "the trusted Load Core failed");
+   CHECK(!warn_ln(bad_core), "the untrusted Load Core opened");
+   CHECK(task_content_core_refused_notify(bad_core),
+         "the refusal was not reported");
+   warn_check_nothing_kept("a reported refusal left its snapshot");
+}
+
+static void mode_warn_cancel_startup(void)
+{
+   warn_cancel("no warning for the startup core");
+   warn_check_no_core("the startup core's Cancel left it named");
+}
+
+static void mode_fw_cancel_startup(void)
+{
+   content_ctx_info_t info;
+   memset(&info, 0, sizeof(info));
+
+   /* F1 Always Trust, firmware Cancel */
+   CHECK(wait_for(warning_up, 120), "no Security Warning for the startup core");
+   CHECK(answer(CORE_WARNING_ALWAYS_TRUST), "Always Trust not taken");
+   CHECK(fw_cancelled(), "the firmware box's Cancel did not end the launch");
+   warn_check_no_core("a firmware Cancel after Always Trust left the core named");
+
+   /* F2 Firmware OK, then Cancel */
+   CHECK(task_push_load_content_from_playlist_from_menu(fwb_core, game, "f",
+            &info, NULL, NULL), "the untrusted Run was not started");
+   CHECK(fw_wait_box(600), "no firmware box");
+   fw_answer(MENU_ACTION_OK);
+   warn_cancel("no warning after the firmware box's OK");
+   warn_check_no_core("a Cancel after the firmware box's OK left the core named");
+}
 
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
 /* Until the copy task has an answer: it reads and writes the whole
@@ -2510,6 +2975,16 @@ int main(int argc, char *argv[])
       clean_run();
       return 1;
    }
+   if (string_is_equal(mode, "warn-cancel-restores"))
+   {
+      snprintf(sub_core, sizeof(sub_core), "%s/sub_libretro.%s", cores, ext);
+      if (!copy_beside(argv[0], "harness_core_sub_a.so", sub_core))
+      {
+         fprintf(stderr, "FAIL: no subsystem core\n");
+         clean_run();
+         return 1;
+      }
+   }
 
    snprintf(cfg_path, sizeof(cfg_path), "%s/harness.cfg", dir);
    if (!(cfg = fopen(cfg_path, "wb")))
@@ -2569,7 +3044,8 @@ int main(int argc, char *argv[])
       rarch_argv[rarch_argc++] = bad_core;
       startup_dummy            = true;
    }
-   else if (string_is_equal(mode, "startup-content"))
+   else if (string_is_equal(mode, "startup-content")
+         || string_is_equal(mode, "warn-cancel-startup"))
    {
       snprintf(game, sizeof(game), "%s/title.bin", dir);
       write_file(game);
@@ -2585,7 +3061,8 @@ int main(int argc, char *argv[])
       rarch_argv[rarch_argc++] = nc_core;
       startup_dummy            = true;
    }
-   else if (string_is_equal(mode, "fw-load-once"))
+   else if (string_is_equal(mode, "fw-load-once")
+         || string_is_equal(mode, "fw-cancel-startup"))
    {
       snprintf(game, sizeof(game), "%s/title.bin", dir);
       write_file(game);
@@ -2636,8 +3113,12 @@ int main(int argc, char *argv[])
       }
    }
 
-   if (cached_startup || string_is_equal(mode, "netplay-join-cached"))
+   if (     cached_startup || string_is_equal(mode, "netplay-join-cached")
+         || string_is_equal(mode, "warn-cancel-restores")
+         || string_is_equal(mode, "warn-cancel-startup"))
       probe_earlier(bad_core);
+   if (string_is_equal(mode, "fw-cancel-startup"))
+      probe_earlier(fw_core);
    retroarch_user_dirs_hold();
    {
       /* As rarch_main() starts: the one load the check hashes in place */
@@ -2808,6 +3289,14 @@ int main(int argc, char *argv[])
 #else
          fprintf(stderr, "fw-builtin: not in this build\n");
 #endif
+      else if (string_is_equal(mode, "warn-cancel-restores"))
+         mode_warn_cancel_restores();
+      else if (string_is_equal(mode, "warn-cancel-live"))
+         mode_warn_cancel_live();
+      else if (string_is_equal(mode, "warn-cancel-startup"))
+         mode_warn_cancel_startup();
+      else if (string_is_equal(mode, "fw-cancel-startup"))
+         mode_fw_cancel_startup();
       else if (string_is_equal(mode, "runahead"))
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
          mode_runahead();

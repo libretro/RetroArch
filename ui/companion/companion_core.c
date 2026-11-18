@@ -1785,29 +1785,22 @@ bool companion_core_start_core(companion_core_t *core)
 bool companion_core_load_core(companion_core_t *core, const char *path)
 {
 #ifdef HAVE_DYNAMIC
+   content_ctx_info_t content_info;
    if (!core || string_is_empty(path))
       return false;
 #ifdef HAVE_CORE_LOAD_CHECK
    if (task_content_warning_waits(path))
       return false;
 #endif
-
-   path_set(RARCH_PATH_CORE, path);
-
-   command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-
-   core_info_init_current_core();
-
-#ifdef HAVE_CORE_LOAD_CHECK
-   if (command_event(CMD_EVENT_LOAD_CORE, NULL))
+   memset(&content_info, 0, sizeof(content_info));
+   /* As the menu's Load Core: the probe loads the core's info */
+   if (task_push_load_new_core(path, NULL, &content_info,
+            CORE_TYPE_PLAIN, NULL, NULL))
       return true;
-   /* path may be the core list's, freed by the deinit above */
-   task_content_park_core_load(path_get(RARCH_PATH_CORE));
-   return false;
-#else
-   return command_event(CMD_EVENT_LOAD_CORE, NULL);
+#ifdef HAVE_CORE_LOAD_CHECK
+   task_content_park_core_load(path);
 #endif
+   return false;
 #else
    (void)core;
    (void)path;
