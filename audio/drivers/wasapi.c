@@ -970,15 +970,15 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
           * the engine buffer in the statistics overlay against what the
           * device can do needs to know why it is 10 ms and not 3. */
          if (FAILED(hr))
-            RARCH_LOG("[WASAPI] IAudioClient3::GetSharedModeEnginePeriod failed: %s; using the engine's default period.\n",
+            RARCH_DBG("[WASAPI] IAudioClient3::GetSharedModeEnginePeriod failed: %s; using the engine's default period.\n",
                   mmdevice_hresult_name(hr));
          else if (!(p_min > 0 && p_min < p_default))
-            RARCH_LOG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; the minimum is not below the default, so the default period it is.\n",
+            RARCH_DBG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; the minimum is not below the default, so the default period it is.\n",
                   p_default, p_fundamental, p_min, p_max);
          else
          {
             UINT32 period = p_min;
-            RARCH_LOG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; asking for %u.\n",
+            RARCH_DBG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; asking for %u.\n",
                   p_default, p_fundamental, p_min, p_max, period);
             hr = _IAudioClient3_InitializeSharedAudioStream(client3,
                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK, period,
@@ -1318,7 +1318,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
             &mic_input, &frames_read, &buffer_status_flags, NULL, NULL);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] Failed to get capture device \"%s\"'s buffer: %s.\n",
+         RARCH_ERR("[WASAPI mic] Failed to get capture device \"%s\"'s buffer: %s.\n",
             mic->device_name, mmdevice_hresult_name(hr));
          return -1;
       }
@@ -1336,7 +1336,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
       hr = _IAudioCaptureClient_ReleaseBuffer(mic->capture, frames_read);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] Failed to release capture device \"%s\"'s buffer after consuming %u frames: %s.\n",
+         RARCH_ERR("[WASAPI mic] Failed to release capture device \"%s\"'s buffer after consuming %u frames: %s.\n",
             mic->device_name, frames_read, mmdevice_hresult_name(hr));
          return -1;
       }
@@ -1349,7 +1349,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
          /* Get the number of frames that the mic has for us. */
          if (FAILED(hr))
          {
-            RARCH_ERR("[WASAPI] Failed to get capture device \"%s\"'s next packet size: %s.\n",
+            RARCH_ERR("[WASAPI mic] Failed to get capture device \"%s\"'s next packet size: %s.\n",
                       mic->device_name, mmdevice_hresult_name(hr));
             return -1;
          }
@@ -1380,11 +1380,11 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
          return true;
       case WAIT_TIMEOUT:
          /* Time out; there's nothing here for us. */
-         RARCH_ERR("[WASAPI] Failed to wait for capture device \"%s\" event: Timeout after %ums.\n",
+         RARCH_ERR("[WASAPI mic] Failed to wait for capture device \"%s\" event: Timeout after %ums.\n",
                mic->device_name, timeout);
          break;
       default:
-         RARCH_ERR("[WASAPI] Failed to wait for capture device \"%s\" event: %s.\n",
+         RARCH_ERR("[WASAPI mic] Failed to wait for capture device \"%s\" event: %s.\n",
                mic->device_name, wasapi_error(GetLastError()));
          break;
    }
@@ -1547,20 +1547,20 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    /* If we requested a particular capture device, but couldn't open it... */
    if (device && !mic->device)
    {
-      RARCH_WARN("[WASAPI] Failed to open requested capture device \"%s\", attempting to open default device.\n",
+      RARCH_WARN("[WASAPI mic] Failed to open requested capture device \"%s\", attempting to open default device.\n",
             device);
       mic->device = (IMMDevice*)mmdevice_init_device(NULL, 1 /* eCapture */);
    }
 
    if (!mic->device)
    {
-      RARCH_ERR("[WASAPI] Failed to open capture device.\n");
+      RARCH_ERR("[WASAPI mic] Failed to open capture device.\n");
       goto error;
    }
 
    if (!(mic->device_name = mmdevice_name(mic->device)))
    {
-      RARCH_ERR("[WASAPI] Failed to get friendly name of capture device.\n");
+      RARCH_ERR("[WASAPI mic] Failed to get friendly name of capture device.\n");
       goto error;
    }
 
@@ -1569,14 +1569,14 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       AUDIO_LAYOUT_STEREO, NULL, NULL);
    if (!mic->client)
    {
-      RARCH_ERR("[WASAPI] Failed to open client for capture device \"%s\".\n", mic->device_name);
+      RARCH_ERR("[WASAPI mic] Failed to open client for capture device \"%s\".\n", mic->device_name);
       goto error;
    }
 
    hr = _IAudioClient_GetBufferSize(mic->client, &frame_count);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get buffer size of IAudioClient for capture device \"%s\": %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to get buffer size of IAudioClient for capture device \"%s\": %s.\n",
           mic->device_name, mmdevice_hresult_name(hr));
       goto error;
    }
@@ -1590,11 +1590,11 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       mic->buffer = fifo_new(mic->engine_buffer_size);
       if (!mic->buffer)
       {
-         RARCH_ERR("[WASAPI] Failed to initialize FIFO queue for capture device.\n");
+         RARCH_ERR("[WASAPI mic] Failed to initialize FIFO queue for capture device.\n");
          goto error;
       }
 
-      RARCH_LOG("[WASAPI] Intermediate exclusive-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
+      RARCH_LOG("[WASAPI mic] Intermediate exclusive-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
                 frame_count, (double)frame_count * 1000.0 / rate, mic->engine_buffer_size);
    }
    else
@@ -1619,7 +1619,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
          if (!(mic->buffer = fifo_new(fifo_bytes)))
             goto error;
 
-         RARCH_LOG("[WASAPI] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
+         RARCH_LOG("[WASAPI mic] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
                    (unsigned)fifo_frames, (double)fifo_frames * 1000.0 / rate,
                    (unsigned)fifo_bytes);
       }
@@ -1627,14 +1627,14 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
 
    if (!(mic->read_event = CreateEventA(NULL, FALSE, FALSE, NULL)))
    {
-      RARCH_ERR("[WASAPI] Failed to allocate capture device's event handle.\n");
+      RARCH_ERR("[WASAPI mic] Failed to allocate capture device's event handle.\n");
       goto error;
    }
 
    hr = _IAudioClient_SetEventHandle(mic->client, mic->read_event);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to set capture device's event handle: %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to set capture device's event handle: %s.\n",
             mmdevice_hresult_name(hr));
       goto error;
    }
@@ -1643,7 +1643,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
          IID_IAudioCaptureClient, (void**)&mic->capture);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get capture device's IAudioCaptureClient service: %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to get capture device's IAudioCaptureClient service: %s.\n",
             mmdevice_hresult_name(hr));
       goto error;
    }
@@ -1652,7 +1652,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    hr = _IAudioCaptureClient_GetBuffer(mic->capture, &dest, &frame_count, &flags, NULL, NULL);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get capture client buffer: %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to get capture client buffer: %s.\n",
             mmdevice_hresult_name(hr));
       goto error;
    }
@@ -1660,7 +1660,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    hr = _IAudioCaptureClient_ReleaseBuffer(mic->capture, 0);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to release capture client buffer: %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to release capture client buffer: %s.\n",
             mmdevice_hresult_name(hr));
       goto error;
    }
@@ -2825,14 +2825,14 @@ static void wasapi_free(void *wh)
    /* And what the device's clock was doing against nominal, for the
     * same reason the other drivers say it: logged, never acted on. */
    if (w && w->clk_valid)
-      RARCH_LOG("[WASAPI] Device clock, fitted against the QPC"
+      RARCH_DBG("[WASAPI] Device clock, fitted against the QPC"
             " timestamps: %+d ppm against %u Hz.\n", w->clk_ppm, w->rate);
 
    if (w)
    {
       size_t wakes = retro_atomic_load_acquire_size(&w->late_wakes);
       if (wakes)
-         RARCH_LOG("[WASAPI] Pump (%s): %u wake%s, %.2f ms late on average, %.2f ms at worst, %u a period or more late.\n",
+         RARCH_DBG("[WASAPI] Pump (%s): %u wake%s, %.2f ms late on average, %.2f ms at worst, %u a period or more late.\n",
                w->mmcss ? "Pro Audio" : "time-critical",
                (unsigned)wakes, wakes == 1 ? "" : "s",
                (double)retro_atomic_load_acquire_size(&w->late_usec_sum)

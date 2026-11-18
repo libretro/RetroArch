@@ -1392,7 +1392,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
        * The overlay has the count meanwhile. */
       size_t n = audio_driver_get_underruns();
       if (n)
-         RARCH_LOG("[Audio] Driver \"%s\": %u period%s of silence for want of audio this session.\n",
+         RARCH_DBG("[Audio] Driver \"%s\": %u period%s of silence for want of audio this session.\n",
                audio_driver_get_ident(), (unsigned)n, n == 1 ? "" : "s");
 #ifdef HAVE_THREADS
       /* And the consumer's side of it: whether the pipe ever ran
@@ -1403,7 +1403,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       {
          size_t waits = retro_atomic_load_acquire_size(&audio_st->pipe_source_waits);
          size_t low   = retro_atomic_load_acquire_size(&audio_st->pipe_held_min1) - 1;
-         RARCH_LOG("[Audio] Pipeline: waited for the core %u time%s after priming,"
+         RARCH_DBG("[Audio] Pipeline: waited for the core %u time%s after priming,"
                " %.2f ms at the longest; the pipe held %u frames (%.1f ms) at its lowest.\n",
                (unsigned)waits, waits == 1 ? "" : "s",
                (double)retro_atomic_load_acquire_size(&audio_st->pipe_source_wait_max_us) / 1000.0,
@@ -5288,7 +5288,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    if (     settings->bools.audio_threaded_pipeline
          && !audio_cb_inited
          && !audio_driver_st.current_audio->wait_writable)
-      RARCH_LOG("[Audio] Threaded pipeline requested, but driver \"%s\" "
+      RARCH_WARN("[Audio] Threaded pipeline requested, but driver \"%s\" "
             "has no wait_writable(); using the inline pipeline.\n",
             audio_driver_st.current_audio->ident);
 
