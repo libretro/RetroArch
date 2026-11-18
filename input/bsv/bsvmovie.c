@@ -299,27 +299,38 @@ bool bsv_movie_reset_playback(bsv_movie_t *handle)
    {
       size_t info_size;
       retro_ctx_serialize_info_t serial_info;
-      uint8_t *buf = (uint8_t*)malloc(state_size);
 
-      if (!buf)
+      /* The initial state is read into the checkpoint buffer, kept
+       * from one restart to the next. */
+      if (handle->cur_save_size < state_size)
+      {
+         free(handle->cur_save);
+         handle->cur_save      = NULL;
+         handle->cur_save_size = 0;
+      }
+      if (!handle->cur_save)
+      {
+         handle->cur_save      = (uint8_t*)malloc(state_size);
+         handle->cur_save_size = handle->cur_save ? state_size : 0;
+      }
+      if (!handle->cur_save)
          return false;
 
       /* The header used to be six ints long */
       intfstream_seek(handle->file, REPLAY_HEADER_V0V1_LEN_BYTES, SEEK_SET);
 
-      if (intfstream_read(handle->file, buf, state_size) != state_size)
+      if (intfstream_read(handle->file, handle->cur_save, state_size) != state_size)
       {
          RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
-         free(buf);
          return false;
       }
+      handle->cur_save_size  = state_size;
       info_size              = core_serialize_size();
       /* For cores like dosbox, the reported size is not always
          correct. So we just give a warning if they don't match up. */
-      serial_info.data_const = buf;
+      serial_info.data_const = handle->cur_save;
       serial_info.size       = state_size;
       core_unserialize(&serial_info);
-      free(buf);
       if (info_size != state_size)
          RARCH_WARN("[Replay] %s\n",
                msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
@@ -382,10 +393,10 @@ bool bsv_movie_reset_playback(bsv_movie_t *handle)
 }
 
 static int64_t bsv_movie_write_checkpoint_from_state(bsv_movie_t *handle,
-      uint8_t compression, uint8_t encoding, const void *state, size_t size);
+      uint8_t compression, uint8_t encoding, uint8_t **state, size_t *size);
 
 static bool bsv_movie_reset_recording_internal(bsv_movie_t *handle,
-      const void *state, size_t size)
+      uint8_t **state, size_t *size)
 {
    int64_t checkpoint_size;
    uint32_t state_size_;
@@ -428,13 +439,13 @@ static bool bsv_movie_reset_recording_internal(bsv_movie_t *handle,
 
 bool bsv_movie_reset_recording(bsv_movie_t *handle)
 {
-   return bsv_movie_reset_recording_internal(handle, NULL, 0);
+   return bsv_movie_reset_recording_internal(handle, NULL, NULL);
 }
 
 bool bsv_movie_reset_recording_from_state(bsv_movie_t *handle,
-      const void *state, size_t size)
+      uint8_t **state, size_t *size)
 {
-   if (!state || !size ||
+   if (!state || !*state || !size || !*size ||
          !bsv_movie_reset_recording_internal(handle, state, size))
       return false;
    handle->frame_pos[0] = handle->min_file_pos;
@@ -802,8 +813,11 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
    return ret;
 }
 
+/* With @state, the caller's buffer of *@size bytes holds the state and
+ * is taken as the checkpoint's own rather than copied: the caller is
+ * handed back the buffer it replaces, NULL or its own to free. */
 static int64_t bsv_movie_write_checkpoint_from_state(bsv_movie_t *handle,
-      uint8_t compression, uint8_t encoding, const void *state, size_t size)
+      uint8_t compression, uint8_t encoding, uint8_t **state, size_t *size)
 {
    uint8_t *swap;
    size_t size_swap;
@@ -811,27 +825,41 @@ static int64_t bsv_movie_write_checkpoint_from_state(bsv_movie_t *handle,
    uint32_t encoded_size = 0, compressed_encoded_size, size_ = 0;
    uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
    retro_ctx_serialize_info_t serial_info;
-   serial_info.size = state ? size : core_serialize_size();
-   if (handle->cur_save_size < serial_info.size)
+   if (state && *state)
    {
-      free(handle->cur_save);
-      handle->cur_save = NULL;
+      uint8_t *lent    = *state;
+      size_t lent_size = *size;
+      if (!handle->cur_save || handle->cur_save_size < lent_size)
+         handle->cur_save_valid = false;
+      *state                = handle->cur_save;
+      *size                 = handle->cur_save ? handle->cur_save_size : 0;
+      handle->cur_save      = lent;
+      handle->cur_save_size = lent_size;
+      serial_info.data      = lent;
+      serial_info.size      = lent_size;
    }
-   if (!handle->cur_save)
+   else
    {
-      /* Record the size only once a buffer backs it, as
-       * bsv_movie_load_checkpoint does. */
-      handle->cur_save       = (uint8_t*)malloc(serial_info.size);
-      handle->cur_save_size  = handle->cur_save ? serial_info.size : 0;
-      handle->cur_save_valid = false;
+      serial_info.size = core_serialize_size();
+      if (handle->cur_save_size < serial_info.size)
+      {
+         free(handle->cur_save);
+         handle->cur_save = NULL;
+      }
+      if (!handle->cur_save)
+      {
+         /* Record the size only once a buffer backs it, as
+          * bsv_movie_load_checkpoint does. */
+         handle->cur_save       = (uint8_t*)malloc(serial_info.size);
+         handle->cur_save_size  = handle->cur_save ? serial_info.size : 0;
+         handle->cur_save_valid = false;
+      }
+      if (!handle->cur_save)
+         goto exit;
+      serial_info.data = handle->cur_save;
+      if (!core_serialize(&serial_info))
+         goto exit;
    }
-   if (!handle->cur_save)
-      goto exit;
-   serial_info.data = handle->cur_save;
-   if (state)
-      memcpy(serial_info.data, state, size);
-   else if (!core_serialize(&serial_info))
-      goto exit;
    switch (encoding)
    {
       case REPLAY_CHECKPOINT2_ENCODING_RAW:
@@ -963,7 +991,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle,
       uint8_t compression, uint8_t encoding)
 {
    return bsv_movie_write_checkpoint_from_state(handle,
-         compression, encoding, NULL, 0);
+         compression, encoding, NULL, NULL);
 }
 
 bool bsv_movie_read_next_events(bsv_movie_t *handle,
@@ -1201,7 +1229,7 @@ void bsv_movie_scan_from_start(bsv_movie_t *movie, int32_t len)
 
 static void bsv_movie_next_frame_internal(input_driver_state_t *input_st,
       unsigned checkpoint_interval, bool checkpoint_deserialize,
-      bool external_state, const void *state, size_t size)
+      bool external_state, uint8_t **state, size_t *size)
 {
    /* If bsv_movie_state_next_handle is not NULL, deinit and set
       bsv_movie_state_handle to bsv_movie_state_next_handle and clear
@@ -1247,7 +1275,7 @@ static void bsv_movie_next_frame_internal(input_driver_state_t *input_st,
       handle->input_event_count = 0;
 
       /* Maybe record checkpoint */
-      if (external_state ? state != NULL :
+      if (external_state ? (state && *state) :
             ((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_FORCE_CHECKPOINT)
             || ((checkpoint_interval != 0)
             && (handle->frame_counter > 0)
@@ -1364,11 +1392,11 @@ void bsv_movie_next_frame(input_driver_state_t *input_st,
       unsigned checkpoint_interval, bool checkpoint_deserialize)
 {
    bsv_movie_next_frame_internal(input_st, checkpoint_interval,
-         checkpoint_deserialize, false, NULL, 0);
+         checkpoint_deserialize, false, NULL, NULL);
 }
 
 void bsv_movie_next_frame_from_state(input_driver_state_t *input_st,
-      const void *state, size_t size)
+      uint8_t **state, size_t *size)
 {
    bsv_movie_next_frame_internal(input_st, 0, false, true, state, size);
 }

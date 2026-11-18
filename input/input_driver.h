@@ -2530,7 +2530,7 @@ void bsv_movie_set_end(void);
 bsv_movie_t *input_driver_netplay_bsv_recording(void);
 void input_driver_netplay_bsv_stop(const char *reason, bool checkpoint_failed);
 bool input_driver_netplay_bsv_take_checkpoint(void);
-bool input_driver_netplay_bsv_next_frame(const void *state, size_t size,
+bool input_driver_netplay_bsv_next_frame(uint8_t **state, size_t *size,
       bool forced);
 bool input_driver_bsv_stop_recording(void);
 #endif

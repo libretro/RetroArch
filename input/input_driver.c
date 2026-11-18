@@ -17020,7 +17020,7 @@ bool input_driver_netplay_bsv_take_checkpoint(void)
    return true;
 }
 
-bool input_driver_netplay_bsv_next_frame(const void *state, size_t size,
+bool input_driver_netplay_bsv_next_frame(uint8_t **state, size_t *size,
       bool forced)
 {
    bool success;
