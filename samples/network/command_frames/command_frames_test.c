@@ -235,6 +235,31 @@ int main(int argc, char **argv)
       CHECK(ram7(&cmd) == ((at + 1) & 0xff));
       (void)want;
    }
+   /* checkpoints in turn, the second written beside the first and the
+    * third over it: each rolls back to its own state */
+   {
+      unsigned k, at;
+      for (k=0;k<3;k++)
+      {
+         reply[0]=0;
+         CHECK(command_state(&cmd,"checkpoint"));
+         for (i=0;i<8 && !reply[0];i++) { task_queue_check(); }
+         CHECK(!strcmp(reply,"STATE checkpoint"));
+         at=ram7(&cmd);
+         CHECK(command_run_frames(&cmd,"3"));
+         for (i=0;i<3;i++) runloop_iterate();
+         reply[0]=0;
+         CHECK(command_state(&cmd,"rollback"));
+         for (i=0;i<8 && !reply[0];i++) { task_queue_check(); }
+         CHECK(!strcmp(reply,"STATE rollback"));
+         CHECK(command_run_frames(&cmd,"1"));
+         runloop_iterate();
+         CHECK(ram7(&cmd) == ((at + 1) & 0xff));
+         /* on past it, so the next checkpoint holds another state */
+         CHECK(command_run_frames(&cmd,"2"));
+         for (i=0;i<2;i++) runloop_iterate();
+      }
+   }
 #ifdef HAVE_BSV_MOVIE
    /* a recording would go on from a state it never saw: refused, as a
     * load from a slot is */

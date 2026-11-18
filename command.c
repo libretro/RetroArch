@@ -2160,18 +2160,28 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
 }
 
 /* The state STATE checkpoint keeps, in memory rather than a slot's
- * file, for STATE rollback; dropped when the content closes. */
+ * file, for STATE rollback; dropped when the content closes. The next
+ * one is serialized into @spare and the two swap once it is whole, so
+ * a checkpoint reuses the buffer of the one before last and a failed
+ * one leaves the last as it was. */
 static struct
 {
    void  *data;
+   void  *spare;
    size_t size;
+   size_t cap;       /* what @data holds */
+   size_t spare_cap; /* what @spare holds */
 } command_checkpoint;
 
 void command_checkpoint_clear(void)
 {
    free(command_checkpoint.data);
-   command_checkpoint.data = NULL;
-   command_checkpoint.size = 0;
+   free(command_checkpoint.spare);
+   command_checkpoint.data      = NULL;
+   command_checkpoint.spare     = NULL;
+   command_checkpoint.size      = 0;
+   command_checkpoint.cap       = 0;
+   command_checkpoint.spare_cap = 0;
 }
 
 /* Keeps the core's state as the checkpoint. Serializing re-enters the
@@ -2180,18 +2190,30 @@ static bool command_checkpoint_take(void)
 {
    retro_ctx_serialize_info_t info;
    size_t len = core_serialize_size();
-   void  *buf = len ? malloc(len) : NULL;
-   info.data_const = NULL;
-   info.data       = buf;
-   info.size       = len;
-   if (!buf || !core_serialize(&info))
-   {
-      free(buf);
+   void  *buf;
+   if (!len)
       return false;
+   if (command_checkpoint.spare_cap < len)
+   {
+      /* nothing in it is kept, so no realloc to copy it */
+      free(command_checkpoint.spare);
+      command_checkpoint.spare     = malloc(len);
+      command_checkpoint.spare_cap = command_checkpoint.spare ? len : 0;
+      if (!command_checkpoint.spare)
+         return false;
    }
-   free(command_checkpoint.data);
-   command_checkpoint.data = buf;
-   command_checkpoint.size = len;
+   info.data_const = NULL;
+   info.data       = command_checkpoint.spare;
+   info.size       = len;
+   if (!core_serialize(&info))
+      return false;
+   buf                          = command_checkpoint.data;
+   command_checkpoint.data      = command_checkpoint.spare;
+   command_checkpoint.spare     = buf;
+   command_checkpoint.size      = len;
+   len                          = command_checkpoint.cap;
+   command_checkpoint.cap       = command_checkpoint.spare_cap;
+   command_checkpoint.spare_cap = len;
    return true;
 }
 
