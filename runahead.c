@@ -1291,6 +1291,8 @@ static enum runahead_copy_status secondary_core_create(
    runahead_clear_controller_port_map(runloop_st);
 #endif
 
+   /* Booted on its own: sync it before it runs */
+   runloop_st->flags |= RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
    return RUNAHEAD_COPY_READY;
 
 error:
@@ -1367,6 +1369,7 @@ static bool secondary_core_run_use_last_input(runloop_state_t *runloop_st)
          runloop_st->secondary_callbacks.state_cb);
 
    runloop_st->secondary_core.retro_run();
+   runloop_st->secondary_core.flags        |= RETRO_CORE_FLAG_HAS_RUN;
    runloop_st->secondary_callbacks.poll_cb  = old_poll_function;
    runloop_st->secondary_callbacks.state_cb = old_input_function;
 
@@ -1675,6 +1678,22 @@ static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_
 {
    retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
 
+   /* A MUST_INITIALIZE core takes no state before it has run once */
+   if (     !(runloop_st->secondary_core.flags & RETRO_CORE_FLAG_HAS_RUN)
+         &&  (core_serialization_quirks() & RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE))
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      audio_driver_state_t *audio_st = audio_state_get_ptr();
+      video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
+      secondary_core_run_use_last_input(runloop_st);
+      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
+      if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
+         video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
+      else
+         video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
+   }
+
    if (!secondary_core_deserialize(runloop_st, settings,
             info->data_const, info->size))
    {
@@ -1813,9 +1832,8 @@ bool runahead_run(void *data,
       /* PENDING: the copy task is still duplicating the core
        * binary. Run the single-instance savestate method for this
        * frame (identical output) and retry next frame; the
-       * secondary instance attaches seamlessly once ready, since
-       * it is (re)synchronised from a savestate every time it
-       * runs anyway. */
+       * secondary instance is synchronised from a savestate on
+       * the frame it attaches. */
    }
 #endif
 

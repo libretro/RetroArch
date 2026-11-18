@@ -10470,6 +10470,128 @@ static void lane_play_time(void)
       printf("[pass] play time counted, no more than the time that passed\n");
 }
 
+/* Run-ahead's second instance is a copy of the core that a task makes,
+ * so it attaches some frames after run-ahead starts. From the frame it
+ * attaches it must be the run-ahead frames ahead of the first instance,
+ * with no input change or pause to resync it; and a core that takes no
+ * state before it has run (MUST_INITIALIZE) must keep run-ahead on.
+ * The frame it attaches on shows one frame, like any other. Each
+ * instance counts its frames in its own state. */
+#define SECOND_AHEAD 2
+
+static void lane_runahead_second_instance(void)
+{
+#if !defined(HAVE_RUNAHEAD) || !defined(HAVE_DYNAMIC) || defined(_WIN32)
+   printf("[skip] run-ahead second instance: needs run-ahead, dynamic cores and dlopen\n");
+#else
+   unsigned had                = failures;
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool     saved_on           = settings->bools.run_ahead_enabled;
+   bool     saved_second       = settings->bools.run_ahead_secondary_instance;
+   bool     saved_hide         = settings->bools.run_ahead_hide_warnings;
+   unsigned saved_frames       = settings->uints.run_ahead_frames;
+   void    *core;
+   long   (*first)(void);
+   void   (*must_initialize)(int);
+   int      pass;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(first = (long (*)(void))dlsym(core, "harness_core_frame_number"))
+       || !(must_initialize = (void (*)(int))dlsym(core, "harness_core_must_initialize")))
+   {
+      CHECK(false, "run-ahead second instance: the harness core's entry points");
+      return;
+   }
+   CHECK(!(runloop_get_flags() & RUNLOOP_FLAG_PAUSED) && !menu_is_up(),
+         "run-ahead second instance: the loop is not running the core");
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      const char *what     = pass ? "MUST_INITIALIZE core" : "plain core";
+      long      (*second)(void) = NULL;
+      long        f        = 0;
+      long        s        = 0;
+      unsigned    i        = 0;
+      uint64_t    shown    = 0;
+      unsigned    waited;
+      char        why[256];
+
+      if (pass)
+      {
+         /* the copy takes the mode at load, the running core now */
+         setenv("HARNESS_CORE_MUST_INITIALIZE", "1", 1);
+         must_initialize(1);
+      }
+      runahead_clear_variables(runloop_st);
+      /* an input change resyncs it, and one an earlier lane made is
+       * still marked */
+      runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+      settings->bools.run_ahead_enabled            = true;
+      settings->bools.run_ahead_secondary_instance = true;
+      settings->bools.run_ahead_hide_warnings      = true;
+      settings->uints.run_ahead_frames             = SECOND_AHEAD;
+
+      for (waited = 0; waited < 3000 && !runloop_st->secondary_lib_handle; waited++)
+      {
+         shown = video_state_get_ptr()->frame_count;
+         runloop_iterate();
+         task_queue_check();
+      }
+      snprintf(why, sizeof(why), "run-ahead second instance, %s: it did not attach in %u frames",
+            what, waited);
+      CHECK(runloop_st->secondary_lib_handle != NULL, why);
+      if (runloop_st->secondary_lib_handle)
+      {
+         shown = video_state_get_ptr()->frame_count - shown;
+         snprintf(why, sizeof(why), "run-ahead second instance, %s: the frame it attached on"
+               " showed %u frame(s), not 1", what, (unsigned)shown);
+         CHECK(shown == 1, why);
+         second = (long (*)(void))dlsym(runloop_st->secondary_lib_handle,
+               "harness_core_frame_number");
+      }
+
+      /* the frame it attached on, and the frames after it */
+      if (second)
+      {
+         for (i = 0; i < 5; i++)
+         {
+            f = first();
+            s = second();
+            if (s != f + SECOND_AHEAD)
+               break;
+            runloop_iterate();
+            task_queue_check();
+         }
+         snprintf(why, sizeof(why), "run-ahead second instance, %s: %u frame(s) after it"
+               " attached the first instance is at frame %ld and the second at %ld, not %ld",
+               what, i, f, s, f + SECOND_AHEAD);
+         CHECK(i == 5, why);
+         printf("[info] run-ahead second instance, %s: attached after %u frames,"
+               " then %ld frames ahead\n", what, waited, s - f);
+      }
+      snprintf(why, sizeof(why), "run-ahead second instance, %s: run-ahead turned itself off",
+            what);
+      CHECK(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE, why);
+
+      settings->bools.run_ahead_enabled            = saved_on;
+      settings->bools.run_ahead_secondary_instance = saved_second;
+      settings->bools.run_ahead_hide_warnings      = saved_hide;
+      settings->uints.run_ahead_frames             = saved_frames;
+      runahead_secondary_core_destroy(runloop_st);
+      if (pass)
+      {
+         must_initialize(0);
+         unsetenv("HARNESS_CORE_MUST_INITIALIZE");
+      }
+   }
+   run_loop_frames(5);
+   if (failures == had)
+      printf("[pass] run-ahead second instance: %d frames ahead from the frame it attached\n",
+            SECOND_AHEAD);
+#endif
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -10707,6 +10829,7 @@ int main(int argc, char *argv[])
       lane_bind_mouse_device_index();
       lane_aim_stick();
       lane_touchpad();
+      lane_runahead_second_instance();
       lane_core_view();
       lane_key_events();
       lane_osk_chinese();
