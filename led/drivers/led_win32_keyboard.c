@@ -130,5 +130,5 @@ const led_driver_t keyboard_led_driver = {
    keyboard_init,
    keyboard_free,
    keyboard_set,
-   "Keyboard"
+   "keyboard"
 };

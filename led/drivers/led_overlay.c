@@ -28,5 +28,5 @@ const led_driver_t overlay_led_driver = {
    overlay_init,
    overlay_free,
    overlay_set,
-   "Overlay"
+   "overlay"
 };
