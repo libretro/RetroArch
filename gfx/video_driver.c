@@ -10376,6 +10376,9 @@ void video_driver_frame(const void *data, unsigned width,
       return;
 
    new_time                      = cpu_features_get_time_usec();
+   /* The frame's reading also tells the perf counter's rate, for the
+    * durations the drivers and the video thread take on it */
+   cpu_features_perf_calibrate(new_time);
    runloop_st->core_run_time     = new_time - runloop_st->core_run_time;
 
    if (     runloop_st->flags & RUNLOOP_FLAG_PAUSED

@@ -64,6 +64,33 @@ retro_perf_tick_t cpu_features_get_perf_counter(void);
 retro_time_t cpu_features_get_time_usec(void);
 #endif
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
+/**
+ * cpu_features_perf_calibrate:
+ * @now : a cpu_features_get_time_usec() reading the caller already
+ *        took, as close as it can to this call.
+ *
+ * Measures cpu_features_get_perf_counter()'s rate against @now where
+ * the platform does not state it, so that durations taken on the
+ * counter can be told in microseconds without reading the clock for
+ * them. One caller, on one thread, at a steady cadence (once a frame);
+ * where the rate is stated it is taken once and nothing is read.
+ */
+void cpu_features_perf_calibrate(retro_time_t now);
+
+/**
+ * cpu_features_perf_to_usec:
+ * @ticks : a difference of two cpu_features_get_perf_counter() readings.
+ *
+ * Any thread.
+ *
+ * @return @ticks in microseconds; 0 while the rate is not yet known
+ *         (before the second cpu_features_perf_calibrate() a
+ *         millisecond after the first, where it is measured).
+ */
+retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks);
+#endif
+
 /**
  * retro_sleep_until_us:
  * @deadline : an instant on cpu_features_get_time_usec()'s clock.

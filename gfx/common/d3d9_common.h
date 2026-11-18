@@ -330,7 +330,7 @@ static INLINE HRESULT d3d9_present(d3d9_video_t *d3d)
       HRESULT hr;
       const d3d9_dev_ex_vtbl_t *vt =
             (const d3d9_dev_ex_vtbl_t*)d3d->dev_ex->lpVtbl;
-      retro_time_t at = cpu_features_get_time_usec();
+      retro_perf_tick_t at = cpu_features_get_perf_counter();
       if (d3d->wait_for_vblank < 0)
       {
          vt->WaitForVBlank(d3d->dev_ex, 0);
@@ -344,7 +344,8 @@ static INLINE HRESULT d3d9_present(d3d9_video_t *d3d)
             vt->WaitForVBlank(d3d->dev_ex, 0);
       }
       d3d->present_wait  = d3d->video_info.vsync
-         ? cpu_features_get_time_usec() - at : 0;
+         ? cpu_features_perf_to_usec(cpu_features_get_perf_counter() - at)
+         : 0;
       d3d->present_shown = d3d->video_info.vsync
          && d3d->wait_for_vblank > 0;
       return hr;

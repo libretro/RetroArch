@@ -487,6 +487,9 @@ jobs:
             # microsecond clock; the late bound is loose for a loaded
             # runner.
             retro_sleep_until_test
+            # cpu_features_perf_to_usec: a span on the perf counter
+            # reads as the clock's, stated or measured rate
+            perf_to_usec_test
             # localtime() from four threads, before rtime_init() as
             # well as after: each must get its own fields back.
             rtime_localtime_test

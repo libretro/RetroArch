@@ -24,6 +24,9 @@ void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 static settings_t stub_settings;
 settings_t *config_get_ptr(void) { return &stub_settings; }
 retro_time_t cpu_features_get_time_usec(void) { return 0; }
+retro_perf_tick_t cpu_features_get_perf_counter(void) { return 0; }
+retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
+{ (void)ticks; return 0; }
 uint64_t cpu_features_get(void) { return 0; }
 uint32_t runloop_get_flags(void) { return 0; }
 static recording_state_t stub_recording;

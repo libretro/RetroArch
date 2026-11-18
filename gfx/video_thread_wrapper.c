@@ -3106,8 +3106,8 @@ static void video_thread_loop(void *data)
          struct video_viewport vp;
          uint64_t        presents = 0;
          float       refresh_rate = 0.0f;
-         retro_time_t render_start = 0;
-         retro_time_t render_took  = 0;
+         retro_perf_tick_t render_start = 0;
+         retro_time_t render_took       = 0;
          retro_time_t   new_period = 0;
          bool           new_repeat = false;
          bool              new_ask = false;
@@ -3184,7 +3184,7 @@ static void video_thread_loop(void *data)
                   && thr->poke && thr->poke->present_last
                   && video_info->shader_subframes <= 1;
 
-               render_start = cpu_features_get_time_usec();
+               render_start = cpu_features_get_perf_counter();
                /* This thread draws the frame's text, so the glyph
                 * caches' frame begins here, and its own fonts follow a
                 * language change before they draw */
@@ -3287,7 +3287,8 @@ static void video_thread_loop(void *data)
                }
 
                ret_frame  = ret;
-               render_took = cpu_features_get_time_usec() - render_start;
+               render_took = cpu_features_perf_to_usec(
+                     cpu_features_get_perf_counter() - render_start);
                /* The fonts this thread retired come due behind the
                 * frames that drew with them */
                font_driver_free_pending(false);

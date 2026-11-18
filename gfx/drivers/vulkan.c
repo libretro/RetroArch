@@ -15081,23 +15081,18 @@ static bool vulkan_frame(void *data, const void *frame,
    {
       /* timed: see vulkan_get_last_present_wait() and
        * vulkan_get_last_present_sync() */
-      retro_time_t      sync_at = cpu_features_get_time_usec();
-      retro_perf_tick_t c0      = cpu_features_get_perf_counter();
+      retro_perf_tick_t c0 = cpu_features_get_perf_counter();
       retro_perf_tick_t c1, c2;
-      retro_time_t      total;
       vulkan_await_frame_before_present(vk, frame_index);
       c1 = cpu_features_get_perf_counter();
       vk->ctx_driver->swap_buffers(vk->ctx_data);
-      c2    = cpu_features_get_perf_counter();
-      total = cpu_features_get_time_usec() - sync_at;
-      if (c2 > c0 && total > 0)
+      c2 = cpu_features_get_perf_counter();
+      if (c2 >= c1 && c1 >= c0)
       {
-         vulkan_fence_wait = (retro_time_t)((uint64_t)total
-               * (uint64_t)(c1 - c0) / (uint64_t)(c2 - c0));
-         vulkan_lock_wait  = (retro_time_t)((uint64_t)total
-               * (uint64_t)c_lock / (uint64_t)(c2 - c0));
+         vulkan_fence_wait   = cpu_features_perf_to_usec(c1 - c0);
+         vulkan_lock_wait    = cpu_features_perf_to_usec(c_lock);
+         vulkan_present_wait = cpu_features_perf_to_usec(c2 - c1);
       }
-      vulkan_present_wait = total - vulkan_fence_wait;
    }
    else
       vulkan_await_frame_before_present(vk, frame_index);

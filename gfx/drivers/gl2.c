@@ -8069,9 +8069,10 @@ static bool gl2_frame(void *data, const void *frame,
     if (gl->ctx_driver->swap_buffers)
     {
        /* timed: see gl2_get_last_present_wait() */
-       retro_time_t swap_at = cpu_features_get_time_usec();
+       retro_perf_tick_t swap_at = cpu_features_get_perf_counter();
        gl->ctx_driver->swap_buffers(gl->ctx_data);
-       gl2_present_wait = cpu_features_get_time_usec() - swap_at;
+       gl2_present_wait = cpu_features_perf_to_usec(
+             cpu_features_get_perf_counter() - swap_at);
     }
 
  /* Emscripten has to do black frame insertion in its main loop */

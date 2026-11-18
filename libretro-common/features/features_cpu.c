@@ -292,6 +292,102 @@ retro_time_t cpu_features_get_time_usec(void)
 #endif
 }
 
+/* Ticks of cpu_features_get_perf_counter() per millisecond where the
+ * counter runs at a rate the platform states, 0 where it has to be
+ * measured: a cycle counter (rdtsc, the ARMv6 PMU), a timebase whose
+ * rate the platform does not report (mftb, gettime, the console
+ * system ticks). Branches follow cpu_features_get_perf_counter()'s. */
+static int cpu_features_perf_rate_stated(void)
+{
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+   return 0;
+#elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+   return 0;
+#elif defined(__GNUC__) && defined(__aarch64__)
+   uint64_t hz;
+   __asm__ __volatile__ ("mrs %0, cntfrq_el0" : "=r" (hz));
+   return (int)(hz / 1000);
+#elif defined(__GNUC__) && defined(__ARM_ARCH_6__)
+   return 0;
+#elif defined(_WIN32)
+   LARGE_INTEGER hz;
+   if (!QueryPerformanceFrequency(&hz))
+      return 0;
+   return (int)(hz.QuadPart / 1000);
+#elif defined(GEKKO_NATIVE) || defined(GEKKO)
+   return 0;
+#elif !defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
+   return 0;
+#elif (defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0) || defined(__QNX__) || defined(ANDROID)
+   return 1000000; /* nanoseconds */
+#elif defined(PSP) || defined(VITA)
+   return 1000;    /* microseconds */
+#elif defined(__EMSCRIPTEN__)
+   return 1000;    /* microseconds */
+#else
+   return 0;
+#endif
+}
+
+/* The rate cpu_features_perf_to_usec() divides by, in ticks per
+ * millisecond; 0 until known. Published by the calibrating thread,
+ * read by any. */
+static int cpu_perf_rate_ms;
+/* The calibrating thread's own: 0 not started, 1 stated, 2 measured */
+static int               cpu_perf_mode;
+static retro_perf_tick_t cpu_perf_anchor_ticks;
+static retro_time_t      cpu_perf_anchor_us;
+
+void cpu_features_perf_calibrate(retro_time_t now)
+{
+   retro_perf_tick_t ticks;
+   retro_time_t      us;
+
+   if (cpu_perf_mode == 1)
+      return;
+   if (!cpu_perf_mode)
+   {
+      int stated = cpu_features_perf_rate_stated();
+      if (stated > 0)
+      {
+         retro_atomic_store_release_int(&cpu_perf_rate_ms, stated);
+         cpu_perf_mode = 1;
+         return;
+      }
+      cpu_perf_mode         = 2;
+      cpu_perf_anchor_ticks = cpu_features_get_perf_counter();
+      cpu_perf_anchor_us    = now;
+      return;
+   }
+
+   ticks = cpu_features_get_perf_counter();
+   us    = now - cpu_perf_anchor_us;
+   /* Either clock stepped back (a counter reset over a suspend): the
+    * span is no measure, start a new one */
+   if (us < 0 || ticks < cpu_perf_anchor_ticks)
+   {
+      cpu_perf_anchor_ticks = ticks;
+      cpu_perf_anchor_us    = now;
+      return;
+   }
+   /* The first rate from a millisecond's span, then a second's: the
+    * clock's microsecond is then a part in a million of the measure */
+   if (us < (retro_atomic_load_acquire_int(&cpu_perf_rate_ms) ? 1000000 : 1000))
+      return;
+   retro_atomic_store_release_int(&cpu_perf_rate_ms,
+         (int)((ticks - cpu_perf_anchor_ticks) * 1000 / (retro_perf_tick_t)us));
+   cpu_perf_anchor_ticks = ticks;
+   cpu_perf_anchor_us    = now;
+}
+
+retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
+{
+   int rate = retro_atomic_load_acquire_int(&cpu_perf_rate_ms);
+   if (rate <= 0 && (rate = cpu_features_perf_rate_stated()) <= 0)
+      return 0;
+   return (retro_time_t)(ticks * 1000 / (retro_perf_tick_t)rate);
+}
+
 #endif /* RETRO_DISABLE_HOST_CLOCK */
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)
