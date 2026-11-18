@@ -543,13 +543,13 @@ static void undo_save_state_cb(retro_task_t *task,
 
 bool content_finish_tmp(const char *path, bool ok)
 {
-   int ret = filestream_finish_atomic(path, ok);
+   int  ret;
+   char tmp_path[PATH_MAX_LENGTH];
+   if (!filestream_atomic_temp_name(tmp_path, sizeof(tmp_path), path))
+      return filestream_finish_atomic(path, ok) == 0;
+   ret = filestream_finish_atomic_temp(path, tmp_path, ok);
    if (ret == 1 && path_is_valid(path))
-   {
-      char tmp_path[PATH_MAX_LENGTH];
-      if (filestream_atomic_temp_name(tmp_path, sizeof(tmp_path), path))
-         filestream_delete(tmp_path);
-   }
+      filestream_delete(tmp_path);
    return ret == 0;
 }
 

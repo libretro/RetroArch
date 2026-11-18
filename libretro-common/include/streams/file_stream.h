@@ -401,6 +401,20 @@ bool filestream_atomic_temp_name(char *s, size_t len, const char *path);
 int filestream_finish_atomic(const char *path, bool ok);
 
 /**
+ * As filestream_finish_atomic(), with the temporary file's name the
+ * caller already holds, from filestream_atomic_temp_name(), rather than
+ * one made again from \c path.
+ *
+ * @param path      The file the atomic write replaces.
+ * @param temp_path Its temporary file, as filestream_atomic_temp_name()
+ *                  names it.
+ * @param ok        Whether to replace \c path.
+ * @return As filestream_commit_atomic().
+ */
+int filestream_finish_atomic_temp(const char *path, const char *temp_path,
+      bool ok);
+
+/**
  * Writes a single character to the given file.
  *
  * @param stream The file to write to.

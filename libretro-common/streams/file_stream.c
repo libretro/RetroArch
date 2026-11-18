@@ -2652,23 +2652,30 @@ int filestream_commit_atomic(RFILE *file, const char *path, bool ok)
 
 int filestream_finish_atomic(const char *path, bool ok)
 {
+   int   ret;
    char *temp_path;
 
    if (!path || !*path || !(temp_path = filestream_atomic_temp_path(path)))
+      return -1;
+   ret = filestream_finish_atomic_temp(path, temp_path, ok);
+   free(temp_path);
+   return ret;
+}
+
+int filestream_finish_atomic_temp(const char *path, const char *temp_path,
+      bool ok)
+{
+   if (!path || !*path || !temp_path || !*temp_path)
       return -1;
 
    if (!ok)
    {
       filestream_delete(temp_path);
-      free(temp_path);
       return -1;
    }
 
    if (filestream_rename(temp_path, path) == 0)
-   {
-      free(temp_path);
       return 0;
-   }
 
    /* The built-in rename replaces the destination on every platform,
     * and puts it back when its replacement cannot be moved in, so a
@@ -2679,39 +2686,40 @@ int filestream_finish_atomic(const char *path, bool ok)
    {
       filestream_delete(path);
       if (filestream_rename(temp_path, path) == 0)
-      {
-         free(temp_path);
          return 0;
-      }
    }
 
-   free(temp_path);
    return 1;
 }
 
 bool filestream_write_file_atomic(const char *path,
       const void *data, int64_t size)
 {
-   int ret;
-   RFILE *file = filestream_open_atomic(path);
+   int    ret;
+   bool   ok;
+   RFILE *file;
+   char  *temp_path;
 
-   if (!file)
+   if (!path || !*path || !(temp_path = filestream_atomic_temp_path(path)))
       return false;
+   if (!(file = filestream_open(temp_path,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
+   {
+      free(temp_path);
+      return false;
+   }
 
-   ret = filestream_commit_atomic(file, path,
-         filestream_write(file, data, size) == size);
+   ok = filestream_write(file, data, size) == size;
+   /* A buffered write reports a full disk at close, not at write */
+   if (filestream_close(file) != 0)
+      ok = false;
+   ret = filestream_finish_atomic_temp(path, temp_path, ok);
 
    /* Written but not renamed into place */
    if (ret == 1)
-   {
-      char *temp_path = filestream_atomic_temp_path(path);
-      if (temp_path)
-      {
-         filestream_delete(temp_path);
-         free(temp_path);
-      }
-   }
-
+      filestream_delete(temp_path);
+   free(temp_path);
    return ret == 0;
 }
 

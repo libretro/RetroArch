@@ -23,6 +23,9 @@
  *   restore_case - the same when only the letter case differs, as
  *               FAT volumes treat those as one name; a leftover aside
  *               is not touched.
+ *   lent      - filestream_finish_atomic_temp() puts in place the
+ *               temporary file it is handed, by that name, and on a
+ *               failed write removes it and leaves the old file.
  *   frontend  - under a frontend VFS whose rename refuses an existing
  *               destination, as the libretro VFS API allows, an
  *               existing file is still replaced.
@@ -59,6 +62,7 @@ static unsigned failures = 0;
 #define ASIDE    TARGET ".old"
 #define TEMP     TARGET ".tmp"
 #define ASIDE2   TARGET ".old2"
+#define LENT     TARGET ".part"
 #define UPPER    "RENAME_REPLACE.BIN.OLD"
 
 /* Wrapped libc */
@@ -265,6 +269,23 @@ int main(void)
          "restore_case lane left a file beside the target");
    printf("[restore_case] source matched regardless of case\n");
    __real_remove(ASIDE);
+
+   /* lent: the caller's own temporary name */
+   put(TARGET, "current");
+   put(LENT, "lent");
+   reset_counts();
+   CHECK(filestream_finish_atomic_temp(TARGET, LENT, true) == 0,
+         "finishing through a lent name failed");
+   print_counts("lent");
+   CHECK(content_is(TARGET, "lent"), "lent lane content wrong");
+   CHECK(!exists(LENT) && !exists(TEMP) && !exists(ASIDE),
+         "lent lane left a file beside the target");
+   put(LENT, "half written");
+   CHECK(filestream_finish_atomic_temp(TARGET, LENT, false) == -1,
+         "a failed write through a lent name was not reported");
+   CHECK(content_is(TARGET, "lent") && !exists(LENT),
+         "a failed write through a lent name touched the file or stayed");
+   __real_remove(TARGET);
 
    /* frontend */
    install_frontend_vfs();

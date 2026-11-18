@@ -349,7 +349,8 @@ static bool task_http_sink_close(http_handle_t *http, bool keep)
    }
    if (http->sink_temp)
    {
-      int ret = filestream_finish_atomic(http->sink_path, keep);
+      int ret = filestream_finish_atomic_temp(http->sink_path,
+            http->sink_temp, keep);
       /* A VFS that cannot rename over a file (Android SAF): the
        * temporary file holds the whole body, so it is copied over. */
       if (ret == 1)
