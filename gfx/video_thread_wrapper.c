@@ -4039,11 +4039,23 @@ static VIDEO_NOINLINE bool video_thread_hold_vblank(thread_video_t *thr,
    return true;
 }
 
-/* The hold's wait, to @target on the clock */
+/* The hold's wait, to @target on the clock. @now is from before the
+ * frame was handed over - its copy, a drain of the ring - and the
+ * sleep is for what is left of the wait once that is done: where a
+ * mark costs no clock read, the instant is told again first, and is
+ * kept if it did not move on (the mark's rate not known yet). */
 static void video_thread_hold_until(thread_video_t *thr,
       const video_frame_info_t *info,
       retro_time_t now, retro_time_t target)
 {
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+   if (now < target)
+   {
+      retro_time_t at = VIDEO_THREAD_NOW(info);
+      if (at > now)
+         now = at;
+   }
+#endif
    while (now < target)
    {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
