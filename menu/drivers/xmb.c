@@ -522,11 +522,13 @@ typedef struct xmb_handle
       font_data_t *font;
       size_t len;
       size_t wrapped_len;
+      size_t heading_len;
       uint32_t font_generation;
       float font_size;
       float margins_dialog;
       unsigned dims;
       unsigned line_count;
+      unsigned rule_line; /* where the heading's rule goes; 0 for none */
       unsigned buttons;
       int wideglyph_width;
       int stack_h;
@@ -1390,6 +1392,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    bool stacked                        = false;
    bool input_dialog_display_kb        = false;
    unsigned firmware_line_state        = 0;
+   unsigned rule_line                  = 0;
+   bool add_row                        = false;
+   size_t heading_len                  = 0;
    size_t wrapped_len                  = 0;
    size_t msg_len                      = strlen(message);
    char wrapped_buf[MENU_LABEL_MAX_LENGTH];
@@ -1401,6 +1406,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    char *start, *nl, *end;
 
    menu_dialog_get_buttons(menu_st, &buttons);
+   /* The input dialog's label is no heading */
+   if (!draw_caret)
+      heading_len = menu_dialog_heading_len(menu_st, message);
 
    usable_width = (int)video_width - (xmb->margins_dialog * (landscape ? 4 : 1));
    if (usable_width < 1)
@@ -1477,9 +1485,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             && xmb->box_wrap.wideglyph_width == xmb->wideglyph_width
             && xmb->box_wrap.stack_h         == stack_h
             && xmb->box_wrap.assets_missing  == xmb->assets_missing
+            && xmb->box_wrap.heading_len     == heading_len
             && !memcmp(xmb->box_wrap.text, message, msg_len))
       {
          line_count    = xmb->box_wrap.line_count;
+         rule_line     = xmb->box_wrap.rule_line;
          wrapped_len   = xmb->box_wrap.wrapped_len;
          usable_width  = xmb->box_wrap.usable_width;
          longest_width = xmb->box_wrap.longest_width;
@@ -1556,6 +1566,16 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       if (line_count == 0)
          return;
 
+      if (heading_len)
+      {
+         size_t d = word_wrap_offset(message, heading_len,
+               wrapped_message, wrapped_len);
+         unsigned l;
+         for (l = line_count - 1;
+               l > 0 && (size_t)(lines[l] - wrapped_message) > d; l--);
+         rule_line = l + 1;
+      }
+
       if (keep_wrap)
       {
          /* The input dialog may hand back the kept text itself */
@@ -1570,7 +1590,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          xmb->box_wrap.wideglyph_width = xmb->wideglyph_width;
          xmb->box_wrap.stack_h         = stack_h;
          xmb->box_wrap.assets_missing  = xmb->assets_missing;
+         xmb->box_wrap.heading_len     = heading_len;
          xmb->box_wrap.line_count      = line_count;
+         xmb->box_wrap.rule_line       = rule_line;
          xmb->box_wrap.wrapped_len     = wrapped_len;
          xmb->box_wrap.usable_width    = usable_width;
          xmb->box_wrap.longest_width   = longest_width;
@@ -1583,7 +1605,21 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    y_position              = (input_dialog_display_kb)
                            ? video_height / 4 : video_height / 2;
    x                       = video_width / 2;
-   y                       = y_position - (line_count - 1) * line_height / 2;
+
+   /* The heading's rule, in the blank line under it or in a row added
+    * there, only while the box fits the screen with it */
+   if (rule_line)
+   {
+      bool blank = rule_line < line_count && !*lines[rule_line];
+      if (     buttons.count
+            && xmb_confirm_box_h(xmb, line_height, line_count + !blank,
+                  stack_h, NULL) > (int)video_height)
+         rule_line = 0;
+      add_row    = rule_line && !blank;
+   }
+
+   y                       = y_position
+         - (line_count + add_row - 1) * line_height / 2;
 
    if (buttons.count)
    {
@@ -1636,7 +1672,8 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    slice_x                 = x - (longest_width / 2) - xmb->margins_dialog;
    slice_y                 = y + xmb->margins_slice - xmb->margins_dialog;
    slice_w                 = longest_width + (xmb->margins_dialog * 2);
-   slice_h                 = (line_height * line_count) + (xmb->margins_dialog * 2);
+   slice_h                 = (line_height * (line_count + add_row))
+         + (xmb->margins_dialog * 2);
 
    /* Extra room for confirm buttons */
    if (buttons.count)
@@ -1645,7 +1682,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       int box_top          = slice_y - (xmb->assets_missing
             ? 0 : (int)(xmb->margins_slice * xmb->last_scale_factor));
       int box_h            = xmb_confirm_box_h(xmb, line_height,
-            line_count, stack_h, &slice_h);
+            line_count + add_row, stack_h, &slice_h);
       /* Centred with its buttons, but not above the top */
       int lift             = box_top + box_h / 2 - (int)y_position;
       if (lift > box_top)
@@ -1779,11 +1816,12 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    for (i = 0; i < line_count; i++)
    {
       const char *msg = lines[i];
+      unsigned row    = (add_row && i >= rule_line) ? i + 1 : i;
       if (draw_selection && i >= selection_first_line && msg && *msg)
       {
          gfx_display_blend_begin(dispctx, userdata);
          gfx_display_draw_quad(p_disp, userdata, video_dims,
-               x - (longest_width / 2.0), y + (i * line_height),
+               x - (longest_width / 2.0), y + (row * line_height),
                VIDEO_SCALE_PACK(font_driver_get_message_width(
                      xmb->font, msg, strlen(msg), 1.0f), line_height),
                video_dims, selection_color, NULL);
@@ -1792,14 +1830,38 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
                x - (longest_width / 2.0),
-               y + ((i + 0.85) * line_height),
+               y + ((row + 0.85) * line_height),
                video_dims, 0x444444ff,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 
       menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
             msg, xmb->font, p_disp, userdata, video_dims,
-            x - (longest_width / 2.0), y + ((i + 0.85) * line_height),
+            x - (longest_width / 2.0), y + ((row + 0.85) * line_height),
             0x444444ff);
+   }
+
+   if (rule_line)
+   {
+      /* The path underline's colour */
+      float rule_color[16] = {
+            0.27f, 0.27f, 0.27f, 1.0f,
+            0.27f, 0.27f, 0.27f, 1.0f,
+            0.27f, 0.27f, 0.27f, 1.0f,
+            0.27f, 0.27f, 0.27f, 1.0f,
+      };
+
+      gfx_display_blend_begin(dispctx, userdata);
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_dims,
+            x - (longest_width / 2.0),
+            y + ((rule_line + 0.6) * line_height),
+            VIDEO_SCALE_PACK(longest_width, 1),
+            video_dims,
+            rule_color,
+            NULL);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    if (draw_caret && (cursor_line < line_count))

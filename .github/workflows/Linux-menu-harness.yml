@@ -336,6 +336,17 @@ jobs:
             ./samples/menu/msgbox_layout/msgbox_layout_test "$d" tall
             ./samples/menu/msgbox_layout/msgbox_layout_test "$d" firmware
           done
+          # A rule under the confirm box's heading, under its last line
+          # when it wraps; none without a heading, or where the box fits
+          # only without the rule's line, or under the input dialog's
+          # label.
+          for d in ozone xmb materialui; do
+            for l in heading heading_wrap heading_none heading_fit; do
+              ./samples/menu/msgbox_layout/msgbox_layout_test "$d" "$l"
+            done
+          done
+          ./samples/menu/msgbox_layout/msgbox_layout_test xmb heading_osk
+          ./samples/menu/msgbox_layout/msgbox_layout_test materialui heading_osk
           # The input dialog's caret, at the wrap's line breaks too.
           ./samples/menu/msgbox_layout/msgbox_layout_test xmb caret
           ./samples/menu/msgbox_layout/msgbox_layout_test materialui caret

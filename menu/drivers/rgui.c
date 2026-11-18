@@ -3558,6 +3558,7 @@ RGUI_NOINLINE static void rgui_render_background(
 static void rgui_render_messagebox(
       rgui_t *rgui,
       const char *message,
+      size_t heading_len,
       unsigned fb_dims);
 
 RGUI_NOINLINE static void rgui_render_fs_thumbnail(
@@ -3662,7 +3663,7 @@ RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       if (     !(rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL))
          rgui_render_messagebox(rgui,
-            msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE), fb_dims);
+            msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE), 0, fb_dims);
    }
 }
 
@@ -5324,6 +5325,7 @@ static void rgui_set_message(void *data, const char *message)
 static void rgui_render_messagebox(
       rgui_t *rgui,
       const char *message,
+      size_t heading_len,
       unsigned fb_dims)
 {
    unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
@@ -5348,6 +5350,8 @@ static void rgui_render_messagebox(
    int row_step               = 0;
    int rows_y                 = 0;
    unsigned firmware_line_state = 0;
+   unsigned rule_line         = 0;
+   bool add_row               = false;
 
    wrapped_message[0]         = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
@@ -5381,6 +5385,16 @@ static void rgui_render_messagebox(
 
    if (line_count == 0)
       return;
+
+   if (heading_len)
+   {
+      size_t d = word_wrap_offset(message, heading_len,
+            wrapped_message, wrapped_len);
+      for (rule_line = line_count - 1; rule_line > 0
+            && (size_t)(lines[rule_line] - wrapped_message) > d;
+            rule_line--);
+      rule_line++;
+   }
 
    for (i = 0; i < line_count; i++)
    {
@@ -5432,6 +5446,21 @@ static void rgui_render_messagebox(
    if (buttons.count)
       height               += (unsigned)(row_step * (int)button_rows)
             + rgui->font_height_stride;
+
+   /* The heading's rule, in the blank line under it or in a row added
+    * there, only while the box fits the screen with it */
+   if (rule_line)
+   {
+      unsigned row_h = (rule_line < line_count && !*lines[rule_line])
+            ? 0 : rgui->font_height_stride;
+      if (height + row_h > fb_height)
+         rule_line = 0;
+      else
+      {
+         height   += row_h;
+         add_row   = row_h > 0;
+      }
+   }
 
    x                        = ((int)fb_width  - (int)width) / 2;
    y                        = ((int)fb_height - (int)height) / 2;
@@ -5499,7 +5528,8 @@ static void rgui_render_messagebox(
          const char *path = menu_dialog_firmware_path_line(menu_st,
                msg, &firmware_line_state);
          int offset_x    = (int)(rgui->font_width_stride * (glyphs_width - glyphs[i]) / 2);
-         int offset_y    = (int)(rgui->font_height_stride * i);
+         int offset_y    = (int)(rgui->font_height_stride
+               * ((add_row && i >= rule_line) ? i + 1 : i));
          int text_x      = x + 8 + offset_x;
          int text_y      = y + 8 + offset_y;
 
@@ -5520,6 +5550,15 @@ static void rgui_render_messagebox(
                   text_y + VIDEO_SCALE_H(rgui->font_dims),
                   utf8len(path) * rgui->font_width_stride - 1, 1,
                   rgui->colors.normal_color);
+
+         /* Centred between the heading's glyphs and the next line */
+         if (i + 1 == rule_line)
+            rgui_fill_rect(frame_buf_data, fb_dims,
+                  x + 8,
+                  y + 8 + (rgui->font_height_stride * (2 * rule_line)
+                     + VIDEO_SCALE_H(rgui->font_dims)) / 2 - 1,
+                  glyphs_width * rgui->font_width_stride - 1, 2,
+                  border_dark_color, border_light_color, border_thickness);
       }
 
       if (buttons.count)
@@ -5746,7 +5785,7 @@ RGUI_NOINLINE static void rgui_render_osk(
       strlcpy_append(msg, sizeof(msg), &_len, input_label);
       strlcpy_append(msg, sizeof(msg), &_len, "\n");
       strlcpy_append(msg, sizeof(msg), &_len, input_str);
-      rgui_render_messagebox(rgui, msg, fb_dims);
+      rgui_render_messagebox(rgui, msg, 0, fb_dims);
       return;
    }
 
@@ -7238,7 +7277,9 @@ static void rgui_render(void *data, unsigned dims,
       const menu_dialog_t *d = &menu_st->dialog_st;
       /* Draw popup directly on top of the menu; the messagebox
        * paints its own opaque background within its footprint. */
-      rgui_render_messagebox(rgui, msgbox, p_disp->framebuf_dims);
+      rgui_render_messagebox(rgui, msgbox,
+            menu_dialog_heading_len(menu_st, msgbox),
+            p_disp->framebuf_dims);
       if (strcmp(rgui->msgbox_drawn, msgbox))
          strlcpy(rgui->msgbox_drawn, msgbox, sizeof(rgui->msgbox_drawn));
       rgui->msgbox_epoch     = d->button_epoch;

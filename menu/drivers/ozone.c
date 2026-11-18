@@ -756,9 +756,11 @@ struct ozone_handle
       font_data_t *font;
       size_t len;
       uint32_t font_generation;
+      size_t heading_len;
       unsigned columns;
       unsigned wideglyph_width;
       unsigned line_count;
+      unsigned rule_line; /* where the heading's rule goes; 0 for none */
       int longest_width;
       char text[MENU_LABEL_MAX_LENGTH];
       char wrapped[MENU_LABEL_MAX_LENGTH];
@@ -7900,6 +7902,20 @@ static bool ozone_osk_pointer_over_textbox(
    return false;
 }
 
+/* A confirm box's height with n lines of text and stack_h of stacked
+ * buttons; *text_h gets its height without the buttons */
+static unsigned ozone_confirm_box_h(float line_height, float scale_factor,
+      int ascender, unsigned n, int stack_h, unsigned *text_h)
+{
+   unsigned slice_margin = 50 * scale_factor;
+   unsigned h            = line_height * (n + 2) + (slice_margin / 2);
+   if (text_h)
+      *text_h            = h;
+   h                    += (line_height + ascender) * 2;
+   h                    += stack_h;
+   return h;
+}
+
 OZONE_NOINLINE static void ozone_draw_messagebox(
       ozone_handle_t *ozone,
       const video_frame_info_t *video_info,
@@ -7938,6 +7954,10 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    bool text_only             = false;
    bool stacked               = false;
    unsigned firmware_line_state = 0;
+   unsigned rule_line         = 0;
+   bool add_row               = false;
+   size_t heading_len;
+   size_t heading_end         = 0;
    gfx_display_ctx_driver_t
          *dispctx             = p_disp->dispctx;
    char *lines_buf[256];
@@ -7955,6 +7975,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       return;
 
    msg_len                  = strlen(message);
+   heading_len              = menu_dialog_heading_len(menu_st, message);
    scale_factor             = ozone->last_scale_factor;
    line_height              = font_data.line_height * 1.20f;
    usable_width             = (int)width - ((landscape ? 200 : 100) * scale_factor);
@@ -7978,9 +7999,11 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                == font_data.metrics_generation
             && ozone->box_wrap.columns         == columns
             && ozone->box_wrap.wideglyph_width == font_data.wideglyph_width
+            && ozone->box_wrap.heading_len     == heading_len
             && !memcmp(ozone->box_wrap.text, message, msg_len))
       {
          line_count    = ozone->box_wrap.line_count;
+         rule_line     = ozone->box_wrap.rule_line;
          longest_width = ozone->box_wrap.longest_width;
       }
    }
@@ -7998,6 +8021,9 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
             columns,
             font_data.wideglyph_width,
             0);
+      if (heading_len)
+         heading_end = word_wrap_offset(message, heading_len,
+               wrapped_message, remaining);
 
       line = wrapped_message;
       while (line && *line && line_count < 256)
@@ -8019,6 +8045,14 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       if (line_count == 0)
          return;
 
+      if (heading_len)
+      {
+         unsigned l;
+         for (l = line_count - 1; l > 0
+               && (size_t)(lines[l] - wrapped_message) > heading_end; l--);
+         rule_line = l + 1;
+      }
+
       /* Find the longest line width */
       for (i = 0; i < line_count; i++)
       {
@@ -8038,7 +8072,9 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
          ozone->box_wrap.font_generation = font_data.metrics_generation;
          ozone->box_wrap.columns         = columns;
          ozone->box_wrap.wideglyph_width = font_data.wideglyph_width;
+         ozone->box_wrap.heading_len     = heading_len;
          ozone->box_wrap.line_count      = line_count;
+         ozone->box_wrap.rule_line       = rule_line;
          ozone->box_wrap.longest_width   = longest_width;
          ozone->box_wrap.len             = msg_len;
       }
@@ -8049,7 +8085,6 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       y_position    = height / 4;
 
    x                = width  / 2;
-   y                = (int)(y_position - (line_count * line_height) / 2);
 
    if (buttons.count)
    {
@@ -8105,6 +8140,24 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
          longest_width = row_max;
    }
 
+   /* The heading's rule, in the blank line under it or in a row added
+    * there, only while the box fits the screen with it */
+   if (rule_line)
+   {
+      bool blank = rule_line < line_count && !line_lengths[rule_line];
+      if (     buttons.count
+            && (     ozone->flags  & OZONE_FLAG_HAS_ALL_ASSETS
+                  || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)
+            && ozone_confirm_box_h(line_height, scale_factor,
+                  font_data.line_ascender, line_count + !blank, stack_h,
+                  NULL) > height)
+         rule_line = 0;
+      add_row = rule_line && !blank;
+   }
+
+   y                = (int)(y_position
+         - ((line_count + add_row) * line_height) / 2);
+
    gfx_display_set_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
 
    /* Avoid drawing a black box if there's no assets */
@@ -8117,7 +8170,10 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
        *   size, draw size and scale factor... */
       unsigned slice_margin = 50 * scale_factor;
       unsigned slice_new_w  = longest_width + (slice_margin * 2);
-      unsigned slice_new_h  = line_height * (line_count + 2) + (slice_margin / 2);
+      unsigned slice_new_h;
+      unsigned box_h        = ozone_confirm_box_h(line_height, scale_factor,
+            font_data.line_ascender, line_count + add_row, stack_h,
+            &slice_new_h);
       /* The edge of dialog-slice.png, which is square */
       unsigned slice_size   = 256;
       int slice_x           = x - longest_width / 2 - (int)slice_margin;
@@ -8132,8 +8188,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       {
          int box_top;
          int lift;
-         slice_new_h       += (line_height + font_data.line_ascender) * 2;
-         slice_new_h       += stack_h;
+         slice_new_h        = box_h;
          box_top            = slice_y - (int)(16 * scale_factor);
          /* Centred with its buttons, but not above the top */
          lift               = box_top + (int)slice_new_h / 2
@@ -8214,18 +8269,19 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
    }
 
    if (buttons.count && !row_y)
-      row_y = (int)(y + (line_count + 1) * line_height);
+      row_y = (int)(y + (line_count + add_row + 1) * line_height);
 
    for (i = 0; i < line_count; i++)
    {
       const char *msg = lines[i];
+      unsigned row    = (add_row && i >= rule_line) ? i + 1 : i;
 
       if (msg)
          gfx_display_draw_text(
                font_data.font,
                msg,
                x - (longest_width / 2),
-               y + (i * line_height) + font_data.line_ascender,
+               y + (row * line_height) + font_data.line_ascender,
                video_dims,
                COLOR_TEXT_ALPHA(ozone->theme->text_rgba, (uint32_t)(ozone->animations.messagebox_alpha*255.0f)),
                TEXT_ALIGN_LEFT,
@@ -8237,9 +8293,30 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
             msg, font_data.font, p_disp, userdata, video_dims,
             x - (longest_width / 2),
-            y + (i * line_height) + font_data.line_ascender,
+            y + (row * line_height) + font_data.line_ascender,
             COLOR_TEXT_ALPHA(ozone->theme->text_rgba,
                (uint32_t)(ozone->animations.messagebox_alpha * 255.0f)));
+   }
+
+   if (rule_line)
+   {
+      float rule[16];
+      memcpy(rule, ozone->theme->header_footer_separator, sizeof(rule));
+      gfx_display_set_alpha(rule, ozone->animations.messagebox_alpha);
+      gfx_display_blend_begin(dispctx, userdata);
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_dims,
+            x - (longest_width / 2),
+            y + (int)((rule_line + 0.5f) * line_height)
+               - ozone->dimensions.spacer_1px / 2,
+            VIDEO_SCALE_PACK((unsigned)longest_width,
+               ozone->dimensions.spacer_1px),
+            video_dims,
+            rule,
+            NULL);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    if (buttons.count)
