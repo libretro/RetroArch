@@ -111,10 +111,10 @@ static bool dump_atip(libretro_vfs_implementation_file *file)
 { (void)file; return false; }
 static void *dump_alloc(size_t align, size_t bytes)
 { return alloc_fail ? NULL : memalign_alloc(align, bytes); }
-static int dump_finish(const char *path, bool ok)
+static int dump_finish(const char *path, const char *temp_path, bool ok)
 {
    if (ok && ++publish_calls == (unsigned)publish_fail) return 1;
-   return filestream_finish_atomic(path, ok);
+   return filestream_finish_atomic_temp(path, temp_path, ok);
 }
 static int64_t dump_size(RFILE *file)
 {
@@ -126,7 +126,7 @@ static int64_t dump_size(RFILE *file)
    return size;
 }
 #define filestream_get_size dump_size
-#define filestream_finish_atomic dump_finish
+#define filestream_finish_atomic_temp dump_finish
 #define filestream_open dump_open
 #define filestream_read dump_read
 #define filestream_write dump_write
@@ -138,7 +138,7 @@ static int64_t dump_size(RFILE *file)
 #define memalign_alloc dump_alloc
 #include "../../../../tasks/task_content_disc.c"
 #undef filestream_get_size
-#undef filestream_finish_atomic
+#undef filestream_finish_atomic_temp
 #undef filestream_open
 #undef filestream_read
 #undef filestream_write
@@ -210,8 +210,10 @@ static void run_dump(int cancel)
       if (medium == 0x10) verify("dump_result.iso", 17);
       else
       {
-         verify("dump_result (Track 01).bin", state->cur_track > 1 ? 4704 : 17);
-         verify("dump_result (Track 02).bin", state->cur_track > 2 ? 7056 : 17);
+         /* A failed dump publishes nothing; only a refused rename at
+          * the end can leave the tracks moved in before it. */
+         verify("dump_result (Track 01).bin", publish_fail > 1 ? 4704 : 17);
+         verify("dump_result (Track 02).bin", publish_fail > 2 ? 7056 : 17);
          verify("dump_result.cue", 17);
       }
       if ((output_close_fail || input_close_fail || short_read) && !cancel)
