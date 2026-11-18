@@ -10,6 +10,6 @@
 S_BOOL(menu_show_restart_retroarch, MENU_SHOW_RESTART_RETROARCH,
       "menu_show_restart_retroarch",
       DEFAULT_MENU_SHOW_RESTART, SD_FLAG_NONE, 0, 0,
-      "Show 'Restart RetroArch'",
-      "Show the 'Restart RetroArch' option in the Main Menu.")
+      "Show 'Restart'",
+      "Show the 'Restart' option in the Main Menu.")
 #endif

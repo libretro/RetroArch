@@ -18469,7 +18469,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-   "Show 'Quit RetroArch'"
+   "Show 'Quit'"
    )
 /* GENERATED REGION: restart visibility setting (see settings_def_menu_show_restart.h). */
 #define SETTINGS_DEF_STRINGS_PASS
