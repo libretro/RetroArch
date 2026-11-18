@@ -332,7 +332,7 @@ static int cpu_features_perf_rate_stated(void)
 /* The rate cpu_features_perf_to_usec() divides by, in ticks per
  * millisecond; 0 until known. Published by the calibrating thread,
  * read by any. */
-static int cpu_perf_rate_ms;
+static retro_atomic_int_t cpu_perf_rate_ms;
 /* The calibrating thread's own: 0 not started, 1 stated, 2 measured */
 static int               cpu_perf_mode;
 static retro_perf_tick_t cpu_perf_anchor_ticks;
