@@ -184,6 +184,8 @@ typedef struct
  * (a content load): a request half read and answers not yet written
  * carry over to the next one. */
 #define MCP_STDIO_OUT_MAX (32 * 1024 * 1024)
+/* room ahead of an answer's JSON for its HTTP status line and headers */
+#define MCP_HEAD_ROOM 512
 
 static const char *const mcp_log_levels[] = {
    "debug", "info", "notice", "warning", "error", "critical", "alert",
@@ -263,13 +265,48 @@ static void mcp_conn_close(struct mcp_conn *c)
    c->fd = -1;
 }
 
-/* Replaces the request in @c with an HTTP response and starts it
- * leaving. @body may be NULL for none. */
-static void mcp_respond(struct mcp_conn *c, int status, const char *reason,
-      const char *extra_headers, const char *body, size_t body_len)
+/* Queues @len bytes at @buf + @off for stdout, and a newline, taking
+ * @buf, which has a byte past them to hold it: an empty queue becomes
+ * @buf, so the answer leaves from where it was written. Dropped past
+ * @max. */
+static void mcp_stdio_queue(char *buf, size_t off, size_t len, size_t max)
 {
-   char   head[512];
-   char  *out;
+   if (mcp_stdio.out_len + len + 1 <= max)
+   {
+      if (!mcp_stdio.out_len)
+      {
+         buf[off + len]     = '\n';
+         free(mcp_stdio.out);
+         mcp_stdio.out      = buf;
+         mcp_stdio.out_sent = off;
+         mcp_stdio.out_len  = off + len + 1;
+         return;
+      }
+      {
+         char *nb = (char*)realloc(mcp_stdio.out,
+               mcp_stdio.out_len + len + 1);
+         if (nb)
+         {
+            memcpy(nb + mcp_stdio.out_len, buf + off, len);
+            nb[mcp_stdio.out_len + len] = '\n';
+            mcp_stdio.out      = nb;
+            mcp_stdio.out_len += len + 1;
+         }
+      }
+   }
+   free(buf);
+}
+
+/* Replaces the request in @c with an HTTP response and starts it
+ * leaving, taking @buf: the body is the @body_len bytes after @room
+ * bytes kept for the status line and headers, written in front of it
+ * there, so it is sent from where it was made. @buf may be NULL for no
+ * body. */
+static void mcp_respond_owned(struct mcp_conn *c, int status,
+      const char *reason, const char *extra_headers, char *buf,
+      size_t room, size_t body_len)
+{
+   char   head[MCP_HEAD_ROOM];
    int    n;
 
    /* stdio has no status line: an answer is its body and a newline,
@@ -279,18 +316,8 @@ static void mcp_respond(struct mcp_conn *c, int status, const char *reason,
       (void)status;
       (void)reason;
       (void)extra_headers;
-      if (body && mcp_stdio.out_len + body_len + 1 <= MCP_STDIO_OUT_MAX)
-      {
-         char *nb = (char*)realloc(mcp_stdio.out,
-               mcp_stdio.out_len + body_len + 1);
-         if (nb)
-         {
-            memcpy(nb + mcp_stdio.out_len, body, body_len);
-            nb[mcp_stdio.out_len + body_len] = '\n';
-            mcp_stdio.out      = nb;
-            mcp_stdio.out_len += body_len + 1;
-         }
-      }
+      if (buf)
+         mcp_stdio_queue(buf, room, body_len, MCP_STDIO_OUT_MAX);
       mcp_conn_close(c);
       return;
    }
@@ -303,39 +330,59 @@ static void mcp_respond(struct mcp_conn *c, int status, const char *reason,
          "Cache-Control: no-store\r\n"
          "Connection: close\r\n\r\n",
          status, reason, (unsigned)body_len,
-         body ? "Content-Type: application/json\r\n" : "",
+         buf ? "Content-Type: application/json\r\n" : "",
          extra_headers ? extra_headers : "");
    if (n < 0 || (size_t)n >= sizeof(head)
-         || !(out = (char*)malloc((size_t)n + body_len)))
+         || (buf && (size_t)n > room)
+         || (!buf && !(buf = (char*)malloc((size_t)n))))
    {
+      free(buf);
       mcp_conn_close(c);
       return;
    }
-   memcpy(out, head, (size_t)n);
-   if (body_len)
-      memcpy(out + n, body, body_len);
+   if (!body_len && !room)
+      room = (size_t)n;
+   memcpy(buf + room - (size_t)n, head, (size_t)n);
    free(c->buf);
-   c->buf   = out;
-   c->len   = (size_t)n + body_len;
-   c->sent  = 0;
+   c->buf   = buf;
+   c->len   = room + body_len;
+   c->sent  = room - (size_t)n;
    c->state = MCP_CONN_WRITING;
    c->since = cpu_features_get_time_usec();
 }
 
-static void mcp_respond_writer(struct mcp_conn *c, rjsonwriter_t *w)
+#define mcp_respond(c, status, reason, extra_headers) \
+   mcp_respond_owned((c), (status), (reason), (extra_headers), NULL, 0, 0)
+
+/* Answers with what @w wrote after mcp_envelope's room, and frees it. */
+static void mcp_respond_json(struct mcp_conn *c, int status,
+      const char *reason, rjsonwriter_t *w)
 {
    int   len  = 0;
-   char *body = rjsonwriter_get_memory_buffer(w, &len);
-   mcp_respond(c, 200, "OK", NULL, body, body ? (size_t)len : 0);
+   char *buf  = rjsonwriter_take_memory_buffer(w, &len);
    rjsonwriter_free(w);
+   if (buf && len >= MCP_HEAD_ROOM)
+      mcp_respond_owned(c, status, reason, NULL, buf, MCP_HEAD_ROOM,
+            (size_t)len - MCP_HEAD_ROOM);
+   else
+   {
+      free(buf);
+      mcp_respond(c, status, reason, NULL);
+   }
 }
+
+#define mcp_respond_writer(c, w) mcp_respond_json((c), 200, "OK", (w))
 
 /* {"jsonrpc":"2.0","id":<id>, */
 static rjsonwriter_t *mcp_envelope(const char *id)
 {
+   static const char room[MCP_HEAD_ROOM] = { 0 };
    rjsonwriter_t *w = rjsonwriter_open_memory();
    if (!w)
       return NULL;
+   /* where the HTTP status line and headers go once the length is
+    * known, so the answer is not copied to put them in front */
+   rjsonwriter_raw(w, room, MCP_HEAD_ROOM);
    MCP_RAW(w, "{\"jsonrpc\":\"2.0\",\"id\":");
    rjsonwriter_raw(w, id && *id ? id : "null", (int)strlen(id && *id ? id : "null"));
    MCP_RAW(w, ",");
@@ -368,14 +415,9 @@ static void mcp_error(struct mcp_conn *c, const char *id, int code,
    MCP_RAW(w, "}}");
    /* HeaderMismatch is a 400; every other error is an answer */
    if (code == MCP_ERR_HEADER_MISMATCH)
-   {
-      int   len  = 0;
-      char *body = rjsonwriter_get_memory_buffer(w, &len);
-      mcp_respond(c, 400, "Bad Request", NULL, body, body ? (size_t)len : 0);
-      rjsonwriter_free(w);
-      return;
-   }
-   mcp_respond_writer(c, w);
+      mcp_respond_json(c, 400, "Bad Request", w);
+   else
+      mcp_respond_writer(c, w);
 }
 
 /* The result's closing: resultType and the server's identity in _meta
@@ -1866,7 +1908,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
    /* notifications (no id) are acknowledged and otherwise ignored */
    if (!r.has_id)
    {
-      mcp_respond(c, 202, "Accepted", NULL, NULL, 0);
+      mcp_respond(c, 202, "Accepted", NULL);
       goto end;
    }
    /* an id too long to answer with: nothing the client could match */
@@ -2121,23 +2163,23 @@ static void mcp_request(mcp_server_t *mcp, command_t *cmd, int ci)
 
    if (strncmp(head, "POST ", 5) != 0)
    {
-      mcp_respond(c, 405, "Method Not Allowed", "Allow: POST\r\n", NULL, 0);
+      mcp_respond(c, 405, "Method Not Allowed", "Allow: POST\r\n");
       return;
    }
    if (strncmp(head + 5, "/mcp ", 5) != 0 && strncmp(head + 5, "/ ", 2) != 0)
    {
-      mcp_respond(c, 404, "Not Found", NULL, NULL, 0);
+      mcp_respond(c, 404, "Not Found", NULL);
       return;
    }
    if ((v = mcp_header(head, "Origin")) && !mcp_origin_ok(v))
    {
-      mcp_respond(c, 403, "Forbidden", NULL, NULL, 0);
+      mcp_respond(c, 403, "Forbidden", NULL);
       return;
    }
    if (!mcp_token_ok(mcp, mcp_header(head, "Authorization")))
    {
       mcp_respond(c, 401, "Unauthorized",
-            "WWW-Authenticate: Bearer realm=\"RetroArch\"\r\n", NULL, 0);
+            "WWW-Authenticate: Bearer realm=\"RetroArch\"\r\n");
       return;
    }
    body_len = c->len - (size_t)(end + 4 - c->buf);
@@ -2287,20 +2329,9 @@ static void mcp_stdio_log(void)
             free(fixed);
          }
          MCP_RAW(w, "}}");
-         if ((body = rjsonwriter_get_memory_buffer(w, &wl)) && wl > 0
-               /* half the queue at most, so an answer always has room */
-               && mcp_stdio.out_len + (size_t)wl + 1 <= MCP_STDIO_OUT_MAX / 2)
-         {
-            char *nb = (char*)realloc(mcp_stdio.out,
-                  mcp_stdio.out_len + (size_t)wl + 1);
-            if (nb)
-            {
-               memcpy(nb + mcp_stdio.out_len, body, (size_t)wl);
-               nb[mcp_stdio.out_len + (size_t)wl] = '\n';
-               mcp_stdio.out      = nb;
-               mcp_stdio.out_len += (size_t)wl + 1;
-            }
-         }
+         /* half the queue at most, so an answer always has room */
+         if ((body = rjsonwriter_take_memory_buffer(w, &wl)))
+            mcp_stdio_queue(body, 0, (size_t)wl, MCP_STDIO_OUT_MAX / 2);
          rjsonwriter_free(w);
       }
       s = eol + 1;
@@ -2482,7 +2513,7 @@ static void mcp_poll(command_t *cmd)
                }
                c->buf[c->len] = '\0';
                if ((want = mcp_want(c)) == -2)
-                  mcp_respond(c, 413, "Payload Too Large", NULL, NULL, 0);
+                  mcp_respond(c, 413, "Payload Too Large", NULL);
                else if (want >= 0)
                {
                   mcp_request(mcp, cmd, i);
