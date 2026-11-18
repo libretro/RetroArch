@@ -59,7 +59,9 @@
  * and written a sample at a time: sampler2DMS and image2DMS with their
  * i and u forms (SPIR-V only), the two-channel and 16-bit image
  * formats, and a write-only image that leaves its format out (SPIR-V
- * only).
+ * only), and specialization constants: layout(constant_id) on a global
+ * const bool, int, uint or float, and local_size_x_id to _z_id (SPIR-V
+ * only; never folded to their defaults).
  * Without it
  * none of that is accepted, nothing is compiled in for it, and every
  * destination is word for word what it was. RSLC_NO_DXBC omits the

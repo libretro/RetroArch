@@ -1796,6 +1796,8 @@ struct rslc_quals
    bool     coherent;
    uint8_t  img_fmt;          /* RSLC_IMGFMT_* */
    uint32_t cs_local[3];
+   uint32_t cs_local_id[3];   /* local_size_*_id plus one; 0 when unsaid */
+   uint32_t spec_id;          /* constant_id plus one; 0 when unsaid */
    bool     early_fragment_tests;
    uint8_t  gs_prim;          /* RSLC_GS_* named in the layout */
    uint32_t index;
@@ -4054,6 +4056,12 @@ static uint32_t rslc_p_var_ref(struct rslc_parser *p, struct rslc_var *v, uint32
       p->c->prog.spirv_only = v->name->str;
 #endif
    e = rslc_p_mk(p, RSLC_OP_VAR, v->type, v->id, 0, 0, 0, line, v->precision);
+#ifdef RSLC_EXTENDED
+   /* a specialization constant is set when the pipeline is made: never
+    * folded to its default, so neither is what is made from it */
+   if (e && v->spec)
+      rslc_p_node(p, e)->nonconstant = 1;
+#endif
    if (e && v->storage == RSLC_ST_MEMBER)
    {
       /* A bare block member reads through the block. */
@@ -4149,7 +4157,13 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
          for (k = 0; k < 3; k++)
          {
             uint32_t n = p->c->prog.cs_local[k];
-            if (!(args[k] = rslc_p_const_uint(p, n ? n : 1, line)))
+            if (p->c->prog.cs_local_spec[k])
+            {
+               /* the specialization constant: what it is set to */
+               if (!(args[k] = rslc_p_var_ref(p, p->c->prog.cs_local_spec[k], line)))
+                  return 0;
+            }
+            else if (!(args[k] = rslc_p_const_uint(p, n ? n : 1, line)))
                return 0;
          }
          return rslc_p_construct(p, rslc_ty_vecn(p, RSLC_BASE_UINT, 3), args, 3, line);
@@ -4764,6 +4778,9 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       const char            *s;
       uint32_t               len;
       uint32_t              *slot = NULL;
+#ifdef RSLC_EXTENDED
+      bool                   plus_one = false;
+#endif
       if (t->kind != RSLC_TK_IDENT)
          return rslc_p_fail(p, "bad layout qualifier", NULL);
       s   = rslc_tok_text(p->c, t);
@@ -4798,6 +4815,12 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       else if (len == 12 && !memcmp(s, "local_size_x", 12)) slot = &q->cs_local[0];
       else if (len == 12 && !memcmp(s, "local_size_y", 12)) slot = &q->cs_local[1];
       else if (len == 12 && !memcmp(s, "local_size_z", 12)) slot = &q->cs_local[2];
+      /* specialization constants (SPIR-V only): the value is the id, kept
+       * plus one so that 0 says none */
+      else if (len == 15 && !memcmp(s, "local_size_x_id", 15)) { slot = &q->cs_local_id[0]; plus_one = true; }
+      else if (len == 15 && !memcmp(s, "local_size_y_id", 15)) { slot = &q->cs_local_id[1]; plus_one = true; }
+      else if (len == 15 && !memcmp(s, "local_size_z_id", 15)) { slot = &q->cs_local_id[2]; plus_one = true; }
+      else if (len == 11 && !memcmp(s, "constant_id", 11)) { slot = &q->spec_id; plus_one = true; }
       else if (len == 22 && !memcmp(s, "input_attachment_index", 22)) slot = &q->input_att;
       else if (rslc_p_image_format(s, len, &q->img_fmt)) { }
 #endif
@@ -4814,6 +4837,10 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
             return rslc_p_fail(p, "layout value must be a non-negative constant", NULL);
          if (slot)
             *slot = (uint32_t)v;
+#ifdef RSLC_EXTENDED
+         if (plus_one)
+            *slot = (uint32_t)v + 1u;
+#endif
       }
       else if (slot)
          return rslc_p_fail(p, "layout qualifier needs a value", NULL);
@@ -6267,8 +6294,10 @@ static bool rslc_p_stage_layout(struct rslc_parser *p, const struct rslc_quals *
       p->c->prog.early_fragment_tests = true;
       return true;
    }
-   /* layout(local_size_x = 8, local_size_y = 8) in; */
-   if (q->cs_local[0] || q->cs_local[1] || q->cs_local[2])
+   /* layout(local_size_x = 8, local_size_y = 8) in;
+    * layout(local_size_x_id = 0, local_size_y = 8) in; */
+   if (     q->cs_local[0] || q->cs_local[1] || q->cs_local[2]
+         || q->cs_local_id[0] || q->cs_local_id[1] || q->cs_local_id[2])
    {
       unsigned k;
       if (!global || !q->is_in || p->c->stage != RSLC_STAGE_COMPUTE)
@@ -6276,6 +6305,29 @@ static bool rslc_p_stage_layout(struct rslc_parser *p, const struct rslc_quals *
       for (k = 0; k < 3; k++)
          if (q->cs_local[k])
             p->c->prog.cs_local[k] = q->cs_local[k];
+      for (k = 0; k < 3; k++)
+      {
+         /* a size given by a specialization constant: one of its own,
+          * its default the size said (1 where none was), unnamed */
+         struct rslc_var *v;
+         uint32_t         n;
+         if (!q->cs_local_id[k])
+            continue;
+         if (p->c->prog.cs_local_spec[k])
+            return rslc_p_fail(p, "a local size's id said twice", NULL);
+         n = p->c->prog.cs_local[k];
+         v = rslc_p_new_var(p, NULL, rslc_ty_vecn(p, RSLC_BASE_UINT, 1), P_LINE(p));
+         if (!v)
+            return false;
+         v->storage = RSLC_ST_CONST;
+         v->global  = 1;
+         v->spec    = q->cs_local_id[k];
+         v->init    = rslc_p_const_uint(p, n ? n : 1, P_LINE(p));
+         if (!v->init)
+            return false;
+         p->c->prog.cs_local_spec[k] = v;
+         p->c->prog.spirv_only       = "a specialization constant";
+      }
       return true;
    }
    /* layout(lines, invocations = 2) in;  layout(triangle_strip, max_vertices = 4) out; */
@@ -6345,6 +6397,18 @@ static struct rslc_var *rslc_p_var_make(struct rslc_parser *p, const struct rslc
    v->quals     = q->vq;
    v->location  = q->location;
 #ifdef RSLC_EXTENDED
+   if (q->spec_id)
+   {
+      /* layout(constant_id = N) const T name = literal; */
+      if (     !global || !q->is_const || vt->kind != RSLC_TY_SCALAR
+            || vt->base == RSLC_BASE_DOUBLE || vt->base == RSLC_BASE_VOID)
+      {
+         rslc_p_fail(p, "a specialization constant is a global const bool, int, uint or float: ", name->str);
+         return NULL;
+      }
+      v->spec               = q->spec_id;
+      p->c->prog.spirv_only = "a specialization constant";
+   }
    if (q->index > 1)
    {
       rslc_p_fail(p, "a fragment output's index is 0 or 1", NULL);
@@ -6551,6 +6615,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    /* layout(early_fragment_tests) in;  layout(local_size_x = 8) in;
     * layout(triangles) in;  layout(triangle_strip, max_vertices = 4) out; */
    if (q.early_fragment_tests || q.cs_local[0] || q.cs_local[1] || q.cs_local[2]
+         || q.cs_local_id[0] || q.cs_local_id[1] || q.cs_local_id[2]
          || q.gs_prim || q.gs_invocations || q.gs_max_vertices)
       return rslc_p_stage_layout(p, &q, global) && rslc_p_expect(p, RSLC_P_SEMI, "';'") ? 1 : 0;
 #endif
@@ -6652,6 +6717,10 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       }
       else if (v->storage == RSLC_ST_CONST)
          return rslc_p_fail(p, "const without an initialiser: ", name->str);
+#ifdef RSLC_EXTENDED
+      if (v->spec && v->storage != RSLC_ST_CONST)
+         return rslc_p_fail(p, "a specialization constant's default is a constant: ", name->str);
+#endif
 
       if (!rslc_p_var_commit(p, v, name, vline))
          return 0;

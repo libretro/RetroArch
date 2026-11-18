@@ -430,6 +430,8 @@ struct rslc_var
    uint8_t                 builtin;    /* RSLC_BI_* for RSLC_ST_BUILTIN */
    uint8_t                 global;     /* declared at file scope */
    uint8_t                 index;      /* RSLC_EXTENDED: a fragment output's blend source */
+   uint32_t                spec;       /* RSLC_EXTENDED: a specialization constant's
+                                        * layout(constant_id) plus one; 0 when not one */
 };
 
 /* Builtin variables. */
@@ -699,6 +701,8 @@ struct rslc_prog
    uint32_t                gs_invocations;   /* 0: one */
    uint32_t                gs_max_vertices;
    uint32_t                cs_local[3];      /* RSLC_EXTENDED, compute: 0 is unset */
+   struct rslc_var        *cs_local_spec[3]; /* RSLC_EXTENDED, compute: the specialization
+                                              * constant local_size_*_id made, or NULL */
 #ifdef RSLC_EXTENDED
    /* geometry: gl_in's members, made with the input primitive layout,
     * and one past the highest clip / cull element it reads */

@@ -1069,6 +1069,7 @@ enum spv_section
 #define SPV_DEC_ARRAYSTRIDE  6
 #define SPV_DEC_MATRIXSTRIDE 7
 #define SPV_DEC_BUILTIN      11
+#define SPV_DEC_SPECID       1
 #define SPV_DEC_NOPERSPECTIVE 13
 #define SPV_DEC_FLAT         14
 #define SPV_DEC_CENTROID     16
@@ -1095,6 +1096,7 @@ enum spv_section
 #define SPV_BI_LAYER         9
 #define SPV_BI_NUMWORKGROUPS 24
 #define SPV_BI_WORKGROUPID   26
+#define SPV_BI_WORKGROUPSIZE 25
 #define SPV_BI_LOCALINVOCATIONID 27
 #define SPV_BI_GLOBALINVOCATIONID 28
 #define SPV_BI_LOCALINVOCATIONINDEX 29
@@ -1114,6 +1116,8 @@ enum spv_op
    SpvOpTypePointer = 32, SpvOpTypeFunction = 33,
    SpvOpConstantTrue = 41, SpvOpConstantFalse = 42, SpvOpConstant = 43,
    SpvOpConstantComposite = 44,
+   SpvOpSpecConstantTrue = 48, SpvOpSpecConstantFalse = 49, SpvOpSpecConstant = 50,
+   SpvOpSpecConstantComposite = 51,
    SpvOpFunction = 54, SpvOpFunctionParameter = 55, SpvOpFunctionEnd = 56,
    SpvOpFunctionCall = 57, SpvOpVariable = 59, SpvOpLoad = 61, SpvOpStore = 62, SpvOpCopyMemory = 63,
    SpvOpAccessChain = 65, SpvOpInBoundsAccessChain = 66, SpvOpDecorate = 71, SpvOpMemberDecorate = 72,
@@ -2023,6 +2027,32 @@ static uint32_t spv_const_var(struct spv_emit *e, const struct rslc_var *v)
    struct spv_var *sv = &e->vars[v->id];
    if (sv->id)
       return sv->id;
+#ifdef RSLC_EXTENDED
+   if (v->spec)
+   {
+      /* a specialization constant: its default, the id it is set by, and
+       * never shared with a constant of the same value */
+      struct rslc_cval cv;
+      uint32_t         tid = spv_type(e, v->type);
+      uint32_t         id;
+      if (!tid || !rslc_const_eval(e->c, v->init, &cv))
+         return 0;
+      id = spv_id(e);
+      if (v->type->base == RSLC_BASE_BOOL)
+      {
+         if (!spv_inst2(e, SPV_SEC_TYPES, cv.v[0] ? SpvOpSpecConstantTrue : SpvOpSpecConstantFalse, tid, id))
+            return 0;
+      }
+      else if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpSpecConstant, tid, id, cv.v[0]))
+         return 0;
+      if (!spv_decorate1(e, id, SPV_DEC_SPECID, v->spec - 1u))
+         return 0;
+      if (v->name && !spv_name(e, id, v->name->str))
+         return 0;
+      sv->id = id;
+      return id;
+   }
+#endif
    sv->id = spv_const_node(e, v->init);
    if (sv->id && v->name && v->type->kind != RSLC_TY_SCALAR && !spv_name(e, sv->id, v->name->str))
       return 0;
@@ -5599,6 +5629,29 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
          w[2 + k] = c->prog.cs_local[k] ? c->prog.cs_local[k] : 1;
       if (!spv_inst(e, SPV_SEC_ENTRY, SpvOpExecutionMode, w, 5))
          return false;
+      if (c->prog.cs_local_spec[0] || c->prog.cs_local_spec[1] || c->prog.cs_local_spec[2])
+      {
+         /* A size set by a specialization constant: the WorkgroupSize
+          * builtin, made of them (and the sizes said), is what the
+          * pipeline runs at; the mode above is what it would be unset */
+         uint32_t wc[5];
+         const struct rslc_type *u1 = rslc_type_basic(c, RSLC_TY_SCALAR, RSLC_BASE_UINT, 1, 1);
+         const struct rslc_type *u3 = rslc_type_basic(c, RSLC_TY_VEC, RSLC_BASE_UINT, 3, 1);
+         if (!u1 || !u3 || !(wc[0] = spv_type(e, u3)))
+            return false;
+         for (k = 0; k < 3; k++)
+         {
+            wc[2 + k] = c->prog.cs_local_spec[k]
+               ? spv_const_var(e, c->prog.cs_local_spec[k])
+               : spv_const_bits(e, u1, w[2 + k]);
+            if (!wc[2 + k])
+               return false;
+         }
+         wc[1] = spv_id(e);
+         if (     !spv_inst(e, SPV_SEC_TYPES, SpvOpSpecConstantComposite, wc, 5)
+               || !spv_decorate1(e, wc[1], SPV_DEC_BUILTIN, SPV_BI_WORKGROUPSIZE))
+            return false;
+      }
    }
 #endif
    if (c->stage == RSLC_STAGE_GEOMETRY)

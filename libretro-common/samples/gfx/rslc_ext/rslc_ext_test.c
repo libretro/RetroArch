@@ -602,6 +602,38 @@ static const char cs_work_group[] =
    "   data[at] = gl_WorkGroupSize.x + gl_WorkGroupSize.y * 100u + gl_WorkGroupSize.z * 10000u;\n"
    "}\n";
 
+/* Specialization constants: set when the pipeline is made, so never
+ * folded to their defaults - a work group size by local_size_x_id, and
+ * a bool, an int, a uint and a float by constant_id. */
+static const char cs_spec[] =
+   "#version 450\n"
+   "layout(local_size_x_id = 3, local_size_y = 4) in;\n"
+   "layout(constant_id = 0) const uint KERNEL_SIZE = 8u;\n"
+   "layout(constant_id = 1) const bool SWAP = true;\n"
+   "layout(constant_id = 2) const float SCALE = 0.5;\n"
+   "layout(constant_id = 4) const int BIAS = -3;\n"
+   "layout(std430, set = 0, binding = 0) buffer ssbo { uint data[]; };\n"
+   "void main()\n"
+   "{\n"
+   "   uint row = gl_NumWorkGroups.x * gl_WorkGroupSize.x;\n"
+   "   uint at  = gl_GlobalInvocationID.y * row + gl_GlobalInvocationID.x;\n"
+   "   uint v   = 0u;\n"
+   "   for (uint i = 0u; i < KERNEL_SIZE; i++)\n"
+   "      v += i;\n"
+   "   if (SWAP)\n"
+   "      v = ~v;\n"
+   "   data[at] = v + uint(float(at) * SCALE) + uint(BIAS + 3);\n"
+   "   if (at == 0u)\n"
+   "      data[0] = KERNEL_SIZE * 2u + gl_WorkGroupSize.x;\n"
+   "}\n";
+
+/* constant_id only on a global const scalar */
+static const char cs_spec_local[] =
+   "#version 450\n"
+   "layout(local_size_x = 1) in;\n"
+   "layout(constant_id = 0) const vec2 TWO = vec2(1.0);\n"
+   "void main() { }\n";
+
 static const char vs_unsized_uniform[] =
    "#version 450\n"
    "#extension GL_EXT_scalar_block_layout : require\n"
@@ -1625,6 +1657,58 @@ int main(int argc, char **argv)
       CHECK(compile(cs_work_group, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
       if (r.blob)
          rslc_result_free(&r, &o);
+
+      /* Specialization constants: OpSpecConstant (50) for the uint, the
+       * float, the int and the x size (default 1, none said), OpSpecConstantTrue
+       * (48) for the bool, each decorated SpecId (1) with its id; the
+       * WorkgroupSize builtin (25) an OpSpecConstantComposite (51) of
+       * them; and nothing folded - no 16 or 17 made of KERNEL_SIZE, no
+       * 0 made of BIAS + 3 */
+      cur_stage = RSLC_STAGE_COMPUTE;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(cs_spec, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "spec: %s\n", err);
+      if (r.blob)
+      {
+         size_t   i = 5;
+         unsigned spec_ids = 0, folded = 0, wgs_builtin = 0, defaults = 0;
+         uint32_t composite = 0;
+         CHECK(count_op(r.spirv, r.spirv_len, 50, NULL) == 4);
+         CHECK(count_op(r.spirv, r.spirv_len, 48, NULL) == 1);
+         CHECK(count_op(r.spirv, r.spirv_len, 51, &at) == 1);
+         if (at)
+            composite = r.spirv[at + 1];
+         while (i < r.spirv_len && (r.spirv[i] >> 16))
+         {
+            const uint32_t op = r.spirv[i] & 0xffffu, len = r.spirv[i] >> 16;
+            if (op == 71 && len == 4 && r.spirv[i + 2] == 1)
+               spec_ids |= 1u << r.spirv[i + 3];
+            if (op == 71 && len == 4 && r.spirv[i + 1] == composite
+                  && r.spirv[i + 2] == 11 && r.spirv[i + 3] == 25)
+               wgs_builtin++;
+            if (op == 43 && len == 4 && (r.spirv[i + 3] == 16 || r.spirv[i + 3] == 17))
+               folded++;
+            if (op == 50 && len == 4)
+               defaults += r.spirv[i + 3] == 8 || r.spirv[i + 3] == 0x3f000000u
+                  || r.spirv[i + 3] == (uint32_t)-3 || r.spirv[i + 3] == 1;
+            i += len;
+         }
+         CHECK(spec_ids == 0x1fu);
+         CHECK(wgs_builtin == 1);
+         CHECK(folded == 0);
+         CHECK(defaults == 4);
+         write_spirv(dir, "spec", &r);
+         rslc_result_free(&r, &o);
+      }
+      /* SPIR-V only */
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(cs_spec, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "specialization constant") != NULL);
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(cs_spec_local, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "specialization constant") != NULL);
+      at = 0;
 
       /* 410 is still not this dialect */
       cur_stage = RSLC_STAGE_FRAGMENT;
