@@ -128,14 +128,19 @@ retro_perf_tick_t cpu_features_perf_from_usec(retro_time_t usec);
  * it is not, so a span costs the cheaper of the two reads */
 /* CPU_FEATURES_MARK_WITH(now): the mark for the instant a
  * cpu_features_get_time_usec() reading @now was taken, read beside it */
+/* CPU_FEATURES_USEC_TO_MARK(usec): a span above 0 as marks, to hold
+ * the difference of two marks against; 0 while that is not known, and
+ * the clock has to bound the wait */
 #ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
 #define CPU_FEATURES_MARK()             cpu_features_get_perf_counter()
 #define CPU_FEATURES_MARK_WITH(now)     cpu_features_get_perf_counter()
 #define CPU_FEATURES_MARK_TO_USEC(span) cpu_features_perf_to_usec(span)
+#define CPU_FEATURES_USEC_TO_MARK(usec) cpu_features_perf_from_usec(usec)
 #else
 #define CPU_FEATURES_MARK()             ((retro_perf_tick_t)cpu_features_get_time_usec())
 #define CPU_FEATURES_MARK_WITH(now)     ((retro_perf_tick_t)(now))
 #define CPU_FEATURES_MARK_TO_USEC(span) ((retro_time_t)(span))
+#define CPU_FEATURES_USEC_TO_MARK(usec) ((retro_perf_tick_t)(usec))
 #endif
 #endif
 

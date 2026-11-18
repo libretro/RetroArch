@@ -11985,7 +11985,9 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   retro_time_t deadline;
+   retro_time_t deadline    = 0;
+   retro_perf_tick_t mark;
+   retro_perf_tick_t span;
    uint16_t scanline_target = video_st->scanline[SCANLINE_TARGET];
    uint16_t scanline_active = video_st->scanline[SCANLINE_ACTIVE];
    int16_t scanline_last    = -1;
@@ -12012,8 +12014,12 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       retro_sleep(sleep);
    }
 
-   /* Lockup prevention */
-   deadline = cpu_features_get_time_usec() + frame_time_target;
+   /* Lockup prevention: a frame's time from here, held against marks;
+    * against the clock while a mark's rate is not known */
+   span = CPU_FEATURES_USEC_TO_MARK(frame_time_target);
+   mark = CPU_FEATURES_MARK();
+   if (!span)
+      deadline = cpu_features_get_time_usec() + frame_time_target;
 
    while (wait)
    {
@@ -12038,7 +12044,9 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
          break;
       scanline_last = scanline;
 
-      if (cpu_features_get_time_usec() >= deadline)
+      if (span
+            ? (CPU_FEATURES_MARK() - mark >= span)
+            : (cpu_features_get_time_usec() >= deadline))
          break;
    }
 
