@@ -623,15 +623,33 @@ void rslc_ctx_close(struct rslc_ctx *c)
 
 /* IR */
 
+/* Types are interned: found by what they are in a hash of them, not by
+ * a walk of every type made (which was a few percent of a compile's
+ * time for a long stage). A struct is never found this way. */
+#define RSLC_TYPE_HASH 128
+
+static unsigned rslc_type_bucket(enum rslc_tkind kind, enum rslc_base base,
+      unsigned rows, unsigned cols, const struct rslc_type *elem,
+      uint32_t array_len)
+{
+   uint32_t h = (uint32_t)kind * 0x9e3779b1u;
+   h ^= ((uint32_t)base << 16) ^ (rows << 8) ^ cols;
+   h ^= (uint32_t)((size_t)elem >> 4) * 0x85ebca6bu;
+   h ^= array_len * 0xc2b2ae35u;
+   h ^= h >> 15;
+   return (unsigned)(h & (RSLC_TYPE_HASH - 1));
+}
+
 static struct rslc_type *rslc_type_find(struct rslc_ctx *c, enum rslc_tkind kind,
       enum rslc_base base, unsigned rows, unsigned cols,
       const struct rslc_type *elem, uint32_t array_len)
 {
    struct rslc_type *t;
-   for (t = c->type_chain; t; t = t->next)
+   if (kind == RSLC_TY_STRUCT || !c->type_hash)
+      return NULL;
+   for (t = c->type_hash[rslc_type_bucket(kind, base, rows, cols, elem, array_len)]; t; t = t->hnext)
       if (t->kind == kind && t->base == base && t->rows == rows
-            && t->cols == cols && t->elem == elem && t->array_len == array_len
-            && t->kind != RSLC_TY_STRUCT)
+            && t->cols == cols && t->elem == elem && t->array_len == array_len)
          return t;
    return NULL;
 }
@@ -640,7 +658,15 @@ static struct rslc_type *rslc_type_add(struct rslc_ctx *c, enum rslc_tkind kind,
       enum rslc_base base, unsigned rows, unsigned cols,
       const struct rslc_type *elem, uint32_t array_len)
 {
-   struct rslc_type *t = (struct rslc_type*)rslc_arena_zalloc(c, sizeof(*t));
+   struct rslc_type *t;
+   if (!c->type_hash)
+   {
+      c->type_hash = (struct rslc_type**)rslc_arena_zalloc(c,
+            RSLC_TYPE_HASH * sizeof(*c->type_hash));
+      if (!c->type_hash)
+         return NULL;
+   }
+   t = (struct rslc_type*)rslc_arena_zalloc(c, sizeof(*t));
    if (!t)
       return NULL;
    t->kind      = (uint8_t)kind;
@@ -652,6 +678,12 @@ static struct rslc_type *rslc_type_add(struct rslc_ctx *c, enum rslc_tkind kind,
    t->id        = ++c->ntypes;
    t->next      = c->type_chain;
    c->type_chain = t;
+   if (kind != RSLC_TY_STRUCT)
+   {
+      struct rslc_type **bucket = &c->type_hash[rslc_type_bucket(kind, base, rows, cols, elem, array_len)];
+      t->hnext = *bucket;
+      *bucket  = t;
+   }
    return t;
 }
 

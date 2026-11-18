@@ -352,6 +352,7 @@ struct rslc_type
    const struct rslc_field *fields;    /* STRUCT */
    struct rslc_sym         *name;      /* STRUCT */
    struct rslc_type        *next;      /* intern chain */
+   struct rslc_type        *hnext;     /* in its bucket of rslc_ctx.type_hash */
    uint32_t                 id;
    uint32_t                 array_len; /* ARRAY; 0 = unsized */
    uint32_t                 nfields;
@@ -739,6 +740,8 @@ struct rslc_ctx
    struct rslc_node      **node_chunks;
    uint32_t               *lists;      /* node lists, see enum rslc_op */
    struct rslc_type       *type_chain; /* interned types */
+   struct rslc_type      **type_hash;  /* RSLC_TYPE_HASH buckets of them, made
+                                          with the first */
    struct rslc_prog        prog;
    const char             *src;        /* the stage source, for token text */
    char                   *synth;      /* preprocessor-made spellings */
