@@ -10710,7 +10710,7 @@ end:
 #else
             /* Sleep short of the deadline by the measured margin,
              * then spin the remainder: the sleep decides how much is
-             * spun, the clock decides where the frame lands. The
+             * spun, the deadline decides where the frame lands. The
              * sleep is absolute - retro_sleep_until_us re-arms
              * against the deadline itself - so the time between
              * reading the clock and entering the kernel, and any
@@ -10719,16 +10719,38 @@ end:
              * kernel's own overshoot, which is what it was for. */
             const retro_time_t deadline = runloop_st->frame_limit_anchor_ns / 1000;
             retro_time_t now            = end_frame_time;
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+            /* The deadline as a perf counter reading: the spin and the
+             * margin's sample then read a register, not the clock. 0
+             * while the counter's rate is not known yet. */
+            retro_perf_tick_t until     = cpu_features_perf_from_usec(
+                  deadline - runloop_st->iter_time);
+            if (until)
+               until                   += runloop_st->iter_mark;
+#endif
             if (to_sleep_us > runloop_st->frame_limit_margin)
             {
                const retro_time_t asked_until =
                      deadline - runloop_st->frame_limit_margin;
                retro_sleep_until_us(asked_until);
-               now = cpu_features_get_time_usec();
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+               if (until)
+                  now = RUNLOOP_NOW(runloop_st, CPU_FEATURES_MARK());
+               else
+#endif
+                  now = cpu_features_get_time_usec();
                runloop_st->frame_limit_margin = runloop_pace_margin_update(
                      runloop_st->frame_limit_margin,
                      now - asked_until, frame_limit_min);
             }
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+            if (until)
+            {
+               while ((int64_t)(until - cpu_features_get_perf_counter()) > 0)
+                  retro_cpu_relax();
+            }
+            else
+#endif
             while (now < deadline)
             {
                retro_cpu_relax();

@@ -94,6 +94,19 @@ void cpu_features_perf_calibrate(retro_time_t now);
  */
 retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks);
 
+/**
+ * cpu_features_perf_from_usec:
+ * @usec : a span in microseconds.
+ *
+ * Any thread.
+ *
+ * @return @usec in cpu_features_get_perf_counter() ticks, to add to a
+ *         reading for the reading a wait ends at; 0 for a span not
+ *         above 0 and while the rate is not yet known, as
+ *         cpu_features_perf_to_usec() has it.
+ */
+retro_perf_tick_t cpu_features_perf_from_usec(retro_time_t usec);
+
 /* Where cpu_features_get_perf_counter() is a register read, cheaper
  * than cpu_features_get_time_usec(): the x86 time-stamp counter, the
  * ARMv8 virtual counter, the PowerPC timebase. Elsewhere the counter is

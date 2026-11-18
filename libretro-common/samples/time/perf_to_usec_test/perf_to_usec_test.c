@@ -65,6 +65,22 @@ int main(void)
    CHECK(within(cpu_features_perf_to_usec(p1 - p0), want),
          "a clock stepped back leaves the rate as it was");
 
+   /* A span turned into ticks and back is the span, and a wait spun to
+    * a counter reading ends at the clock's instant for it */
+   {
+      retro_perf_tick_t span = cpu_features_perf_from_usec(20000);
+      retro_perf_tick_t t0   = cpu_features_get_perf_counter();
+      retro_time_t c0        = cpu_features_get_time_usec();
+      CHECK(span > 0 && within(cpu_features_perf_to_usec(span), 20000),
+            "20 ms in ticks converts back to 20 ms");
+      CHECK(cpu_features_perf_from_usec(0) == 0
+            && cpu_features_perf_from_usec(-5) == 0,
+            "no span, no ticks");
+      while ((int64_t)(t0 + span - cpu_features_get_perf_counter()) > 0) { }
+      CHECK(within(cpu_features_get_time_usec() - c0, 20000),
+            "a spin to a counter reading 20 ms on ends 20 ms on");
+   }
+
    /* A mark span reads as the clock's whichever a mark is here */
    {
       retro_perf_tick_t m0 = CPU_FEATURES_MARK();

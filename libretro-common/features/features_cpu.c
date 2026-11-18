@@ -408,6 +408,20 @@ retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
    return (retro_time_t)(ticks * 1000 / (retro_perf_tick_t)rate);
 }
 
+retro_perf_tick_t cpu_features_perf_from_usec(retro_time_t usec)
+{
+   int rate = retro_atomic_load_acquire_int(&cpu_perf_rate_ms);
+   if (usec <= 0)
+      return 0;
+   if (rate <= 0 && (rate = cpu_features_perf_rate_stated()) <= 0)
+   {
+      if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
+         retro_atomic_store_release_int(&cpu_perf_wanted, 1);
+      return 0;
+   }
+   return (retro_perf_tick_t)usec * (retro_perf_tick_t)rate / 1000;
+}
+
 #endif /* RETRO_DISABLE_HOST_CLOCK */
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)

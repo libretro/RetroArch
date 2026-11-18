@@ -7686,15 +7686,16 @@ static unsigned handoff_clock_reads(bool threaded)
 
 /* The clock reads the main thread makes over @n runloop iterations,
  * the clock left running */
-static unsigned runloop_clock_reads(unsigned n)
+static unsigned runloop_clock_reads(unsigned n, bool vsync)
 {
    settings_t *settings = config_get_ptr();
    bool saved_vsync     = settings->bools.video_vsync;
    unsigned reads;
-   /* With vsync on the display paces: the runloop's own frame limiter,
-    * which waits on the clock, stays out of the count */
-   settings->bools.video_vsync = true;
-   run_frames(2);
+   /* With vsync on the display paces; with it off the runloop's own
+    * frame limiter does, sleeping and then spinning to its deadline.
+    * The frames before the count let the perf counter's rate settle. */
+   settings->bools.video_vsync = vsync;
+   run_frames(8);
    harness_clock_owner = sthread_get_current_thread_id();
    harness_clock_reads = 0;
    retro_atomic_store_release_int(&harness_clock_armed, 2);
@@ -7735,11 +7736,21 @@ static void lane_handoff_clock(void)
       unsigned iter_reads;
       set_threaded_via_setting(false);
       run_frames(3);
-      iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES);
+      iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES, true);
       CHECK(iter_reads <= 2 * HANDOFF_CLOCK_PUSHES,
             "handoff clock lane: %u iterations read the clock %u times, "
             "want at most %u", HANDOFF_CLOCK_PUSHES, iter_reads,
             2 * HANDOFF_CLOCK_PUSHES);
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+      /* The frame limiter spins to its deadline on the perf counter:
+       * the clock is read for the sleep's own use at most (Windows and
+       * Darwin read it to arm the sleep), never once a turn of the spin */
+      iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES, false);
+      CHECK(iter_reads <= 6 * HANDOFF_CLOCK_PUSHES,
+            "handoff clock lane: %u iterations paced by the frame limiter "
+            "read the clock %u times, want at most %u",
+            HANDOFF_CLOCK_PUSHES, iter_reads, 6 * HANDOFF_CLOCK_PUSHES);
+#endif
    }
    if (failures == had)
       fprintf(stderr, "[pass] handoff clock lane (no clock read in %u "
