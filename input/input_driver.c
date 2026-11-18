@@ -17110,11 +17110,13 @@ bool input_config_get_winraw_player_lights(void)
 }
 #endif
 
+#ifdef HAVE_SDL3
 bool input_config_get_sdl3_system_keyboard(void)
 {
    settings_t *settings = config_get_ptr();
    return settings && settings->bools.input_sdl3_system_keyboard;
 }
+#endif
 
 /* Sensors are allowed; and they are, until the settings say not. */
 bool input_config_get_sensors_enable(void)
