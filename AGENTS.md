@@ -51,10 +51,13 @@ Each exception must be the only way, and say why in a comment.
 - Do not read the clock (`cpu_features_get_time_usec()`) on a per-frame or
   real-time path. A frame has one reading, taken by `video_driver_frame()`
   and carried in `video_frame_info_t::frame_time`; whatever draws or hands
-  over that frame takes "now" from it, moved on by the perf counter where
-  it needs a later instant.
-- Time a span on the perf counter (`cpu_features_get_perf_counter()`) and
-  convert it with `cpu_features_perf_to_usec()`, not with two clock reads.
+  over that frame takes "now" from it, moved on by a mark where it needs
+  a later instant. A runloop iteration likewise has one reading,
+  `runloop_state_t::iter_time`, and `RUNLOOP_NOW()` moves it on.
+- Time a span with `CPU_FEATURES_MARK()` at each end and
+  `CPU_FEATURES_MARK_TO_USEC()` of the difference, not with two clock
+  reads: a mark is the perf counter where that is a register read, the
+  clock where it is not.
 - Do not spin on the clock, or on anything else: no loop that polls a
   time, a flag or a counter until it changes. Wait on the event that
   ends the wait (a fence, a vblank, the device's notification, an

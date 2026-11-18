@@ -10326,7 +10326,7 @@ void video_driver_frame(const void *data, unsigned width,
    bool convert_deferred          = false;
    bool convert_lent              = false;
    retro_time_t new_time;
-   retro_perf_tick_t new_ticks;
+   retro_perf_tick_t new_mark;
    video_frame_info_t video_info;
    size_t _len                    = 0;
    unsigned core_dims;
@@ -10376,11 +10376,18 @@ void video_driver_frame(const void *data, unsigned width,
    if (!video_driver_active)
       return;
 
-   new_time                      = cpu_features_get_time_usec();
-   new_ticks                     = cpu_features_get_perf_counter();
-   /* The frame's reading also tells the perf counter's rate, for the
-    * durations the drivers and the video thread take on it */
-   cpu_features_perf_calibrate(new_time);
+   /* The frame's time: the iteration's reading moved on to this
+    * instant, or a reading of its own outside an iteration */
+   if (runloop_st->iter_time)
+   {
+      new_mark                   = CPU_FEATURES_MARK();
+      new_time                   = RUNLOOP_NOW(runloop_st, new_mark);
+   }
+   else
+   {
+      new_time                   = cpu_features_get_time_usec();
+      new_mark                   = CPU_FEATURES_MARK_WITH(new_time);
+   }
    runloop_st->core_run_time     = new_time - runloop_st->core_run_time;
 
    if (     runloop_st->flags & RUNLOOP_FLAG_PAUSED
@@ -10403,7 +10410,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_build_info(&video_info);
    video_info.frame_time  = new_time;
-   video_info.frame_ticks = new_ticks;
+   video_info.frame_mark  = new_mark;
    recording_gpu_frame_info(&video_info, true);
 #ifdef HAVE_OPENXR
    /* The eyes the core drew this frame from, for the drawing thread */

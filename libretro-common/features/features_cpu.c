@@ -217,7 +217,10 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = gettime();
 #elif !defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
    time_ticks = __mftb();
-#elif (defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0) || defined(__QNX__) || defined(ANDROID)
+#elif (defined(_POSIX_MONOTONIC_CLOCK) && (_POSIX_MONOTONIC_CLOCK > 0 \
+         || defined(__GLIBC__))) || defined(__QNX__) || defined(ANDROID)
+   /* glibc (uClibc too) defines _POSIX_MONOTONIC_CLOCK as 0, "ask at
+    * run time"; the monotonic clock is there on every Linux it runs */
    {
       struct timespec tv;
       if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
@@ -318,7 +321,8 @@ static int cpu_features_perf_rate_stated(void)
    return 0;
 #elif !defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
    return 0;
-#elif (defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0) || defined(__QNX__) || defined(ANDROID)
+#elif (defined(_POSIX_MONOTONIC_CLOCK) && (_POSIX_MONOTONIC_CLOCK > 0 \
+         || defined(__GLIBC__))) || defined(__QNX__) || defined(ANDROID)
    return 1000000; /* nanoseconds */
 #elif defined(PSP) || defined(VITA)
    return 1000;    /* microseconds */
@@ -333,8 +337,12 @@ static int cpu_features_perf_rate_stated(void)
  * millisecond; 0 until known. Published by the calibrating thread,
  * read by any. */
 static retro_atomic_int_t cpu_perf_rate_ms;
+/* Set by a conversion asked for before the rate is known: until then a
+ * measured rate is not measured, and the counter not read for it */
+static retro_atomic_int_t cpu_perf_wanted;
 /* The calibrating thread's own: 0 not started, 1 stated, 2 measured */
 static int               cpu_perf_mode;
+static int               cpu_perf_anchored;
 static retro_perf_tick_t cpu_perf_anchor_ticks;
 static retro_time_t      cpu_perf_anchor_us;
 
@@ -354,13 +362,19 @@ void cpu_features_perf_calibrate(retro_time_t now)
          cpu_perf_mode = 1;
          return;
       }
-      cpu_perf_mode         = 2;
-      cpu_perf_anchor_ticks = cpu_features_get_perf_counter();
+      cpu_perf_mode = 2;
+   }
+   if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
+      return;
+
+   ticks = cpu_features_get_perf_counter();
+   if (!cpu_perf_anchored)
+   {
+      cpu_perf_anchored     = 1;
+      cpu_perf_anchor_ticks = ticks;
       cpu_perf_anchor_us    = now;
       return;
    }
-
-   ticks = cpu_features_get_perf_counter();
    us    = now - cpu_perf_anchor_us;
    /* Either clock stepped back (a counter reset over a suspend): the
     * span is no measure, start a new one */
@@ -383,8 +397,14 @@ void cpu_features_perf_calibrate(retro_time_t now)
 retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
 {
    int rate = retro_atomic_load_acquire_int(&cpu_perf_rate_ms);
-   if (rate <= 0 && (rate = cpu_features_perf_rate_stated()) <= 0)
+   if (ticks >> 63)
       return 0;
+   if (rate <= 0 && (rate = cpu_features_perf_rate_stated()) <= 0)
+   {
+      if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
+         retro_atomic_store_release_int(&cpu_perf_wanted, 1);
+      return 0;
+   }
    return (retro_time_t)(ticks * 1000 / (retro_perf_tick_t)rate);
 }
 

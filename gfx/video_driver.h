@@ -578,10 +578,10 @@ typedef struct video_frame_info
     * this frame: what anything drawn with the frame animates by, on
     * whichever thread draws it */
    retro_time_t frame_time;
-   /* cpu_features_get_perf_counter() read with frame_time: a later
-    * instant is frame_time plus cpu_features_perf_to_usec() of the
-    * counter since, with no clock read for it */
-   retro_perf_tick_t frame_ticks;
+   /* The CPU_FEATURES_MARK() frame_time is the instant of: a later
+    * instant is frame_time plus CPU_FEATURES_MARK_TO_USEC() of the span
+    * since, with no clock read for it where the perf counter is cheap */
+   retro_perf_tick_t frame_mark;
    void *recording_gpu;
    void *userdata;
    void *widgets_userdata;

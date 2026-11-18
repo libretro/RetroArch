@@ -74,7 +74,9 @@ retro_time_t cpu_features_get_time_usec(void);
  * the platform does not state it, so that durations taken on the
  * counter can be told in microseconds without reading the clock for
  * them. One caller, on one thread, at a steady cadence (once a frame);
- * where the rate is stated it is taken once and nothing is read.
+ * where the rate is stated it is taken once and nothing is read, and
+ * where it is measured the counter is read only once a conversion has
+ * been asked for.
  */
 void cpu_features_perf_calibrate(retro_time_t now);
 
@@ -84,11 +86,44 @@ void cpu_features_perf_calibrate(retro_time_t now);
  *
  * Any thread.
  *
- * @return @ticks in microseconds; 0 while the rate is not yet known
- *         (before the second cpu_features_perf_calibrate() a
- *         millisecond after the first, where it is measured).
+ * @return @ticks in microseconds; 0 for a span that runs backwards
+ *         (a counter not kept in step across cores), and 0 while the
+ *         rate is not yet known: where it is measured, from the first
+ *         conversion asked for until two cpu_features_perf_calibrate()
+ *         calls a millisecond apart after it.
  */
 retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks);
+
+/* Where cpu_features_get_perf_counter() is a register read, cheaper
+ * than cpu_features_get_time_usec(): the x86 time-stamp counter, the
+ * ARMv8 virtual counter, the PowerPC timebase. Elsewhere the counter is
+ * the clock itself, a system call, or absent. Follows the counter's own
+ * branches in features_cpu.c. */
+#if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))) \
+   || (defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__) \
+         || defined(__aarch64__))) \
+   || defined(GEKKO_NATIVE) || defined(GEKKO) \
+   || (!defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) \
+         || defined(__powerpc__) || defined(__ppc__) \
+         || defined(__POWERPC__) || defined(__PSL1GHT__) \
+         || defined(__PPC64__) || defined(__powerpc64__)))
+#define CPU_FEATURES_PERF_COUNTER_CHEAP 1
+#endif
+
+/* A mark to time a span by, and the span between two marks in
+ * microseconds: the perf counter where it is cheap, the clock where
+ * it is not, so a span costs the cheaper of the two reads */
+/* CPU_FEATURES_MARK_WITH(now): the mark for the instant a
+ * cpu_features_get_time_usec() reading @now was taken, read beside it */
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+#define CPU_FEATURES_MARK()             cpu_features_get_perf_counter()
+#define CPU_FEATURES_MARK_WITH(now)     cpu_features_get_perf_counter()
+#define CPU_FEATURES_MARK_TO_USEC(span) cpu_features_perf_to_usec(span)
+#else
+#define CPU_FEATURES_MARK()             ((retro_perf_tick_t)cpu_features_get_time_usec())
+#define CPU_FEATURES_MARK_WITH(now)     ((retro_perf_tick_t)(now))
+#define CPU_FEATURES_MARK_TO_USEC(span) ((retro_time_t)(span))
+#endif
 #endif
 
 /**

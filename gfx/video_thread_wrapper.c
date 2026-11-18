@@ -138,11 +138,11 @@ static void video_thread_read_vp(thread_video_t *thr,
 #define VIDEO_THREAD_CMD_WAIT_LEAVE(thr) do { } while (0)
 #endif
 
-/* An instant on cpu_features_get_time_usec()'s clock without reading
- * it: the frame's own reading moved on by the perf counter since */
+/* An instant on cpu_features_get_time_usec()'s clock: the frame's own
+ * reading moved on to now - no clock read where the perf counter is
+ * cheap */
 #define VIDEO_THREAD_NOW(info) ((info)->frame_time \
-      + cpu_features_perf_to_usec( \
-         cpu_features_get_perf_counter() - (info)->frame_ticks))
+      + CPU_FEATURES_MARK_TO_USEC(CPU_FEATURES_MARK() - (info)->frame_mark))
 
 /* The frame ring's word: the sole synchronisation between the push and
  * the video thread's claim and completion. Every reader of the ring
@@ -3190,7 +3190,7 @@ static void video_thread_loop(void *data)
                   && thr->poke && thr->poke->present_last
                   && video_info->shader_subframes <= 1;
 
-               render_start = cpu_features_get_perf_counter();
+               render_start = CPU_FEATURES_MARK();
                /* This thread draws the frame's text, so the glyph
                 * caches' frame begins here, and its own fonts follow a
                 * language change before they draw */
@@ -3293,8 +3293,8 @@ static void video_thread_loop(void *data)
                }
 
                ret_frame  = ret;
-               render_took = cpu_features_perf_to_usec(
-                     cpu_features_get_perf_counter() - render_start);
+               render_took = CPU_FEATURES_MARK_TO_USEC(
+                     CPU_FEATURES_MARK() - render_start);
                /* The fonts this thread retired come due behind the
                 * frames that drew with them */
                font_driver_free_pending(false);
@@ -4414,11 +4414,11 @@ static bool video_thread_frame(void *data, const void *frame_,
    }
    thr->handoff.counting = timed;
 
-   /* No clock read for the handover: "now" - the core-time sample, the
-    * slot's push time, the hold's start - is the frame's own reading
-    * moved on by the perf counter since (VIDEO_THREAD_NOW), taken
-    * again once after the ring wait below if it ran. The clock is a
-    * syscall on more than one console, and this is the paced path. */
+   /* "now" - the core-time sample, the slot's push time, the hold's
+    * start - is the frame's own reading moved on to this instant
+    * (VIDEO_THREAD_NOW), taken again once after the ring wait below if
+    * it ran. The clock is a syscall on more than one console, and this
+    * is the paced path. */
    now = VIDEO_THREAD_NOW(video_info);
    if (timed)
    {

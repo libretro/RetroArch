@@ -10038,7 +10038,7 @@ int runloop_iterate(void)
    settings_t *settings                   = config_get_ptr();
    runloop_state_t *runloop_st            = &runloop_state;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
-   retro_time_t current_time              = cpu_features_get_time_usec();
+   retro_time_t current_time;
 
 #ifdef HAVE_NETWORKING
    bool netplay_is_enabled                = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
@@ -10060,6 +10060,15 @@ int runloop_iterate(void)
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
    bool frame_advanced                    = false;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
+
+   /* The iteration's one clock reading, and the perf counter's with it:
+    * the core's start, the frame's time and the iteration's end are
+    * this moved on by the counter (RUNLOOP_NOW), and the pair tells the
+    * counter's rate where the platform does not state it */
+   current_time               = cpu_features_get_time_usec();
+   runloop_st->iter_mark      = CPU_FEATURES_MARK_WITH(current_time);
+   runloop_st->iter_time      = current_time;
+   cpu_features_perf_calibrate(current_time);
 
    recording_gpu_poll();
    runloop_msg_queue_drain_deferred();
@@ -10415,7 +10424,7 @@ int runloop_iterate(void)
 #endif
 
    /* Measure the time between core_run() and video_driver_frame() */
-   runloop_st->core_run_time = cpu_features_get_time_usec();
+   runloop_st->core_run_time = RUNLOOP_NOW(runloop_st, CPU_FEATURES_MARK());
    /* Whether this frame is presented, before the core makes it: a core
     * that asks (GET_AUDIO_VIDEO_ENABLE) need not render a frame that
     * fast-forward drops */
@@ -10551,17 +10560,15 @@ end:
     * video_driver_frame(), which runs between the top and here, and a
     * reset there made it read NONE on every frame. Paths that return
     * before this block set it themselves, through the same function. */
-   /* How long the last iteration actually took, smoothed. One clock
-    * read on a path that already takes several, and the only way to
-    * tell a source that is holding the loop from one that merely says
-    * it is - headless SDL2 with no vblank sets the vsync bit and
+   /* How long the last iteration actually took, smoothed: the only way
+    * to tell a source that is holding the loop from one that merely
+    * says it is - headless SDL2 with no vblank sets the vsync bit and
     * blocks on nothing.
     *
-    * The reading stands for the whole block below: the pace gather and
+    * This instant stands for the whole block below: the pace gather and
     * the decision between here and the limiter are flag tests, so the
-    * frame's end is this instant and the limiter schedules against it
-    * rather than taking the clock a second time. */
-   pace_now = cpu_features_get_time_usec();
+    * frame's end is this instant and the limiter schedules against it. */
+   pace_now = RUNLOOP_NOW(runloop_st, CPU_FEATURES_MARK());
    if (runloop_st->pace_iter_last)
    {
       retro_time_t delta = pace_now - runloop_st->pace_iter_last;

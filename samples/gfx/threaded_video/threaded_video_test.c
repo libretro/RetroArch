@@ -108,23 +108,25 @@ void *__wrap_calloc(size_t nmemb, size_t size)
    return __real_calloc(nmemb, size);
 }
 
-/* cpu_features_get_time_usec() through the same --wrap: armed, the
+/* cpu_features_get_time_usec() through the same --wrap: armed (1), the
  * thread that armed it reads harness_clock_now, which the lane moves
- * itself; every other thread reads the real clock. */
+ * itself; counting (2), it reads the real clock; either way its reads
+ * are counted. Every other thread reads the real clock. */
 #define HARNESS_WRAP_CLOCK 1
 retro_time_t __real_cpu_features_get_time_usec(void);
-static int harness_clock_armed;
+static retro_atomic_int_t harness_clock_armed;
 static uintptr_t harness_clock_owner;
 static retro_time_t harness_clock_now;
 /* Reads the armed thread made; that thread's own to count */
 static unsigned harness_clock_reads;
 retro_time_t __wrap_cpu_features_get_time_usec(void)
 {
-   if (     retro_atomic_load_acquire_int(&harness_clock_armed)
-         && sthread_get_current_thread_id() == harness_clock_owner)
+   int armed = retro_atomic_load_acquire_int(&harness_clock_armed);
+   if (armed && sthread_get_current_thread_id() == harness_clock_owner)
    {
       harness_clock_reads++;
-      return harness_clock_now;
+      if (armed == 1)
+         return harness_clock_now;
    }
    return __real_cpu_features_get_time_usec();
 }
@@ -7682,8 +7684,30 @@ static unsigned handoff_clock_reads(bool threaded)
    return reads;
 }
 
-/* The handover to the video thread reads no clock: what it wants of
- * "now" is the frame's own reading moved on by the perf counter */
+/* The clock reads the main thread makes over @n runloop iterations,
+ * the clock left running */
+static unsigned runloop_clock_reads(unsigned n)
+{
+   settings_t *settings = config_get_ptr();
+   bool saved_vsync     = settings->bools.video_vsync;
+   unsigned reads;
+   /* With vsync on the display paces: the runloop's own frame limiter,
+    * which waits on the clock, stays out of the count */
+   settings->bools.video_vsync = true;
+   run_frames(2);
+   harness_clock_owner = sthread_get_current_thread_id();
+   harness_clock_reads = 0;
+   retro_atomic_store_release_int(&harness_clock_armed, 2);
+   run_frames(n);
+   retro_atomic_store_release_int(&harness_clock_armed, 0);
+   reads = harness_clock_reads;
+   settings->bools.video_vsync = saved_vsync;
+   return reads;
+}
+
+/* A frame pushed inside an iteration reads no clock, and the handover
+ * to the video thread none either: what they want of "now" is the
+ * iteration's own reading moved on by the perf counter */
 static void lane_handoff_clock(void)
 {
    unsigned had           = failures;
@@ -7701,13 +7725,26 @@ static void lane_handoff_clock(void)
    if (!menu_is_up())
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    run_frames(2);
-   CHECK(handed == direct,
+   CHECK(handed == 0 && direct == 0,
          "handoff clock lane: %u pushes read the clock %u times threaded "
-         "and %u times direct, want the same", HANDOFF_CLOCK_PUSHES,
+         "and %u times direct, want none", HANDOFF_CLOCK_PUSHES,
          handed, direct);
+   {
+      /* A whole iteration reads the clock once for the runloop - its
+       * anchor - and once for the dummy core's audio sink update */
+      unsigned iter_reads;
+      set_threaded_via_setting(false);
+      run_frames(3);
+      iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES);
+      CHECK(iter_reads <= 2 * HANDOFF_CLOCK_PUSHES,
+            "handoff clock lane: %u iterations read the clock %u times, "
+            "want at most %u", HANDOFF_CLOCK_PUSHES, iter_reads,
+            2 * HANDOFF_CLOCK_PUSHES);
+   }
    if (failures == had)
-      fprintf(stderr, "[pass] handoff clock lane (%u clock reads in %u "
-            "pushes, threaded as direct)\n", handed, HANDOFF_CLOCK_PUSHES);
+      fprintf(stderr, "[pass] handoff clock lane (no clock read in %u "
+            "pushes, threaded or direct; one per iteration for the "
+            "runloop)\n", HANDOFF_CLOCK_PUSHES);
 }
 #endif
 
@@ -7784,8 +7821,13 @@ static void lane_dupe_skip(bool threaded)
       bool saved_fps_show     = settings->bools.video_fps_show;
       unsigned saved_interval = settings->uints.fps_update_interval;
       double on, off;
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      retro_time_t saved_iter     = runloop_st->iter_time;
       settings->bools.video_fps_show      = true;
       settings->uints.fps_update_interval = SKIPLANE_FPS_INTERVAL;
+      /* Outside an iteration: video_driver_frame() reads the clock the
+       * lane moves for the frame's time */
+      runloop_st->iter_time = 0;
       harness_clock_now   = __real_cpu_features_get_time_usec();
       harness_clock_owner = sthread_get_current_thread_id();
       retro_atomic_store_release_int(&harness_clock_armed, 1);
@@ -7793,6 +7835,7 @@ static void lane_dupe_skip(bool threaded)
       settings->bools.video_skip_dupe_frames = false;
       off = skiplane_fps(pix_a, threaded);
       retro_atomic_store_release_int(&harness_clock_armed, 0);
+      runloop_st->iter_time = saved_iter;
       settings->bools.video_skip_dupe_frames = true;
       settings->bools.video_fps_show      = saved_fps_show;
       settings->uints.fps_update_interval = saved_interval;
@@ -7993,12 +8036,12 @@ static int vshrink_find(char kind, unsigned value)
 }
 
 /* What video_driver_frame() stamps on the info it builds: the frame's
- * clock reading and the perf counter's with it, which the handoff
- * takes "now" from. A lane that pushes its own info takes them too. */
+ * time and its mark, which the handoff takes "now" from. A lane that
+ * pushes its own info takes them too. */
 static void harness_frame_stamp(video_frame_info_t *info)
 {
-   info->frame_time  = cpu_features_get_time_usec();
-   info->frame_ticks = cpu_features_get_perf_counter();
+   info->frame_time = cpu_features_get_time_usec();
+   info->frame_mark = CPU_FEATURES_MARK_WITH(info->frame_time);
 }
 
 static void vshrink_push(video_frame_info_t *info, uint32_t *pixels,
