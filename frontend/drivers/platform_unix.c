@@ -30,6 +30,10 @@
 #include <sys/wait.h>
 
 #ifdef __linux__
+#include <sys/prctl.h>
+#ifndef PR_SET_TIMERSLACK
+#define PR_SET_TIMERSLACK 29
+#endif
 #include <linux/version.h>
 #endif
 
@@ -4168,6 +4172,13 @@ static void frontend_unix_init(void *data)
    /* Set automatic default values per device */
    if (device_is_xperia_play(device_model))
       g_platform_android_flags       |= PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE;
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+   /* The runloop's thread, and the threads it makes after this: a timed
+    * sleep returns when it was asked to, not up to the default 50 us of
+    * timer slack later. The frame limiter spins what its sleep leaves
+    * short of the deadline, so the slack was spun every frame. */
+   prctl(PR_SET_TIMERSLACK, 1UL, 0UL, 0UL, 0UL);
 #endif
 }
 

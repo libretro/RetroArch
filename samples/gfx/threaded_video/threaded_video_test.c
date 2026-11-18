@@ -7651,6 +7651,22 @@ static double skiplane_fps(const void *pix, bool threaded)
 }
 #endif
 
+#if defined(__linux__) && !defined(ANDROID)
+#include <sys/prctl.h>
+/* The frontend's thread sleeps without the default timer slack, which
+ * the frame limiter would otherwise spin through every frame */
+static void lane_timer_slack(void)
+{
+#ifdef PR_GET_TIMERSLACK
+   int slack = prctl(PR_GET_TIMERSLACK, 0UL, 0UL, 0UL, 0UL);
+   CHECK(slack == 1, "timer slack lane: the frontend's thread has %d ns "
+         "of timer slack, want 1", slack);
+   if (slack == 1)
+      fprintf(stderr, "[pass] timer slack lane\n");
+#endif
+}
+#endif
+
 #ifdef HARNESS_WRAP_CLOCK
 /* The clock reads one frame's push makes on the main thread, with the
  * video thread idle before it so the push neither waits for the ring
@@ -15288,6 +15304,9 @@ int main(int argc, char *argv[])
       lane_dupe_skip(true);
 #ifdef HARNESS_WRAP_CLOCK
       lane_handoff_clock();
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+      lane_timer_slack();
 #endif
       lane_view_count_shrink();
       lane_movie_ring();
