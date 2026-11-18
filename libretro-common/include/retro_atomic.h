@@ -589,7 +589,11 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
  * and the call fail to compile. The casts are C++ casts, so that a
  * project built with -Werror=old-style-cast (RPCS3's) can include this
  * header. */
-#define retro_atomic_int_init(p, v)    std::atomic_init((p), static_cast<int>(v))
+/* Initialization is a relaxed store: std::atomic_init is deprecated from
+ * C++20 on, where the default constructor already value-initializes, and
+ * nothing else can see the object while it is being initialized. */
+#define retro_atomic_int_init(p, v) \
+   (p)->store(static_cast<int>(v), std::memory_order_relaxed)
 
 /* Static/aggregate initializer for a retro_atomic_int_t member.
  * std::atomic<int> is a class type, so it must be brace-initialized
@@ -597,7 +601,8 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
  * plain scalars and must NOT be braced, or GCC/Clang emit
  * -Wbraces-around-scalar-init. */
 #define RETRO_ATOMIC_INT_INITIALIZER(v)  { (v) }
-#define retro_atomic_size_init(p, v)   std::atomic_init((p), static_cast<std::size_t>(v))
+#define retro_atomic_size_init(p, v) \
+   (p)->store(static_cast<std::size_t>(v), std::memory_order_relaxed)
 
 #define retro_atomic_load_acquire_int(p) \
    std::atomic_load_explicit((p), std::memory_order_acquire)
