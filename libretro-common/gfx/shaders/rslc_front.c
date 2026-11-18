@@ -160,11 +160,12 @@ static unsigned rslc_lex_punct(const char *s, size_t avail, uint8_t *kind)
 #define RSLC_CH_DIGIT       2u
 #define RSLC_CH_SPACE       4u /* ' ' '\t' '\r' '\f' '\v' */
 #define RSLC_CH_LINE_STOP   8u /* what changes how a line reads: '\n' '/' '\\' '"' */
+#define RSLC_CH_SKIP       16u /* where rslc_lex_skip has something to do: whitespace, '/' '\\' */
 static const uint8_t rslc_ch_class[256] =
 {
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 8, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   4, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0,
-   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 8, 0, 0, 1,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 8, 20, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   20, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0,
+   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 24, 0, 0, 1,
    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -301,7 +302,12 @@ static bool rslc_lex_next(struct rslc_lex *l, struct rslc_tok *t)
    char   ch;
    size_t start;
 
-   rslc_lex_skip(l, &space);
+   /* Most tokens follow nothing to skip: the call only when the next
+    * byte could start whitespace, a comment or a splice */
+   if (l->pos < l->len && !(RSLC_CH(l->src[l->pos]) & RSLC_CH_SKIP))
+      space = false;
+   else
+      rslc_lex_skip(l, &space);
    memset(t, 0, sizeof(*t));
    t->line  = l->line;
    t->file  = l->file;
