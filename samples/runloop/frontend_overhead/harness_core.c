@@ -34,6 +34,12 @@ static unsigned runs;
  * first retro_run(). */
 static unsigned long frame_number;
 static int           must_initialize;
+/* An instance loaded while HARNESS_CORE_REFUSE_STATES is set refuses
+ * every state it is given. */
+static int           refuse_states;
+/* No states: size 0 and none goes in or out, as from a core that
+ * cannot save one. */
+static int           no_states;
 
 /* input measurement, driven by harness_core_input_measure() */
 static unsigned           in_queries;     /* 0: the one read of normal mode */
@@ -148,6 +154,8 @@ void harness_core_must_initialize(int on)
    if (environ_cb)
       environ_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &quirks);
 }
+
+void harness_core_no_states(int on) { no_states = on; }
 
 /* What was measured since: frames, and nanoseconds in input_poll, in
  * each frame's first input_state call (which carries the poll when the
@@ -361,15 +369,16 @@ bool   retro_load_game(const struct retro_game_info *game)
    harness_core_describe();
    if (getenv("HARNESS_CORE_MUST_INITIALIZE"))
       harness_core_must_initialize(1);
+   refuse_states = getenv("HARNESS_CORE_REFUSE_STATES") != NULL;
    return true;
 }
 void   retro_unload_game(void) { }
 unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }
 bool   retro_load_game_special(unsigned t, const struct retro_game_info *i, size_t n) { (void)t; (void)i; (void)n; return false; }
-size_t retro_serialize_size(void) { return sizeof(frame) + sizeof(frame_number); }
+size_t retro_serialize_size(void) { return no_states ? 0 : sizeof(frame) + sizeof(frame_number); }
 bool   retro_serialize(void *d, size_t n)
 {
-   if (n < retro_serialize_size() || (must_initialize && !runs))
+   if (no_states || n < retro_serialize_size() || (must_initialize && !runs))
       return false;
    memcpy(d, frame, sizeof(frame));
    memcpy((uint8_t*)d + sizeof(frame), &frame_number, sizeof(frame_number));
@@ -377,7 +386,7 @@ bool   retro_serialize(void *d, size_t n)
 }
 bool   retro_unserialize(const void *d, size_t n)
 {
-   if (n < retro_serialize_size() || (must_initialize && !runs))
+   if (no_states || n < retro_serialize_size() || (must_initialize && !runs) || refuse_states)
       return false;
    memcpy(frame, d, sizeof(frame));
    memcpy(&frame_number, (const uint8_t*)d + sizeof(frame), sizeof(frame_number));

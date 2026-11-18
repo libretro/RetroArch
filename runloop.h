@@ -1142,9 +1142,10 @@ void runloop_task_msg_queue_push(
 
 /* Status of the asynchronous secondary-core binary copy. Only
  * RUNAHEAD_COPY_READY means the secondary instance exists and its
- * function pointers are safe to call; PENDING means the copy task
- * is still running (callers should skip quietly and retry later,
- * NOT tear the secondary state down). */
+ * function pointers are safe to call; PENDING means it cannot be
+ * made yet, with the copy task running or no core up (callers
+ * should skip quietly and retry later, NOT tear the secondary
+ * state down). */
 enum runahead_copy_status
 {
    RUNAHEAD_COPY_UNAVAILABLE = 0,

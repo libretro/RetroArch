@@ -316,6 +316,7 @@ void runahead_set_load_content_info(void *data,
 /* enum runahead_copy_status lives in runloop.h (shared with the
  * secondary_core_ensure_exists() callers) */
 static void runahead_copy_reset(bool delete_file);
+static void runahead_add_closing_hooks(runloop_state_t *runloop_st);
 
 static void strcat_alloc(char **dst, const char *s)
 {
@@ -1185,10 +1186,17 @@ static enum runahead_copy_status secondary_core_create(
    rarch_system_info_t *sys_info = &runloop_st->system;
    uint8_t flags                 = content_get_flags();
 
+   /* Between the cores of a content switch: the next core asks again */
+   if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED))
+      return RUNAHEAD_COPY_PENDING;
+
    if (     (last_core_type != CORE_TYPE_PLAIN)
          || (!runloop_st->load_content_info)
          || ( runloop_st->load_content_info->special))
       return RUNAHEAD_COPY_UNAVAILABLE;
+
+   /* The menu can start a copy before run-ahead hooks the core */
+   runahead_add_closing_hooks(runloop_st);
 
    /* The core binary is duplicated by a task; until the copy
     * completes this reports PENDING and the caller runs the
@@ -1596,7 +1604,7 @@ static void runahead_deinit_hook(void)
       runloop_st->current_core.retro_deinit();
 }
 
-static void runahead_add_hooks(runloop_state_t *runloop_st)
+static void runahead_add_closing_hooks(runloop_state_t *runloop_st)
 {
    if (!runloop_st->original_retro_deinit)
    {
@@ -1610,6 +1618,11 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
       runloop_st->original_retro_unload          = runloop_st->current_core.retro_unload_game;
       runloop_st->current_core.retro_unload_game = runahead_unload_hook;
    }
+}
+
+static void runahead_add_hooks(runloop_state_t *runloop_st)
+{
+   runahead_add_closing_hooks(runloop_st);
    runahead_add_input_state_hook(runloop_st);
 }
 
@@ -1619,7 +1632,8 @@ static void runahead_err(runloop_state_t *runloop_st)
 {
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_AVAILABLE;
    runahead_savestate_info_free(runloop_st);
-   runahead_remove_hooks(runloop_st);
+   /* The unload and deinit hooks stay: they close the second instance */
+   runahead_remove_input_state_hook(runloop_st);
    runloop_st->flags                         |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
 }
 
