@@ -33,6 +33,7 @@
 #include <QStyle>
 #include <QStyleOption>
 #include <QTimer>
+#include <QWhatsThis>
 
 #include "ui_qt_widgets.h"
 #include "ui_qt.h"
@@ -131,10 +132,23 @@ static inline void add_sublabel_and_whats_this(
       widget->setToolTip(wrapped_tooltip(tmp));
 
    msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
-         tmp, sizeof(tmp));
+      tmp, sizeof(tmp));
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
+   {
       widget->setWhatsThis(tmp);
+      QAction *whatsThisAction = new QAction(
+      QObject::tr("What's This?"), widget);
+
+      QObject::connect(whatsThisAction, &QAction::triggered,
+            widget, [widget]()
+            {
+               QWhatsThis::enterWhatsThisMode();
+            });
+
+      widget->addAction(whatsThisAction);
+      widget->setContextMenuPolicy(Qt::ActionsContextMenu);
+   }
 }
 
 /* A setting's range is stored as float; converting a float outside
