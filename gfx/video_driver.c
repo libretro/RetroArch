@@ -3689,18 +3689,10 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data)
    return true;
 }
 
-#if defined(__SWITCH2__) && defined(HAVE_THREADS)
-void sw2_gl_ctx_ensure_at(int site);
-#endif
-
 uintptr_t video_driver_get_current_framebuffer(void)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
-#if defined(__SWITCH2__) && defined(HAVE_THREADS)
-   /* the core is about to render into it: its thread has the context */
-   sw2_gl_ctx_ensure_at(1);
-#endif
    if (poke && poke->get_current_framebuffer)
       return poke->get_current_framebuffer(video_st->data);
    return 0;

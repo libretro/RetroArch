@@ -19,9 +19,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(__SWITCH2__) && defined(HAVE_THREADS)
-void sw2_gl_ctx_defer_core_take(void);
-#endif
 #include <memory/mem_stats.h>
 #include "input/input_driver.h"
 #ifdef HAVE_OPENXR
@@ -6063,12 +6060,12 @@ void runloop_event_deinit_core(void)
 #ifdef HAVE_RUNAHEAD
       serialization_close();
 #endif
-#if defined(__SWITCH2__) && defined(HAVE_THREADS)
-      /* The core may still use its GL context in retro_deinit() */
+#ifdef HAVE_THREADS
+      /* The core may still free its GL objects in retro_deinit() */
       video_thread_core_context_take();
 #endif
       runloop_st->current_core.retro_deinit();
-#if defined(__SWITCH2__) && defined(HAVE_THREADS)
+#ifdef HAVE_THREADS
       video_thread_core_context_release();
 #endif
 #if TARGET_OS_IPHONE
@@ -11577,12 +11574,7 @@ bool core_run(void)
 #ifdef HAVE_THREADS
       /* One GL context handed between the threads: the core's for the
        * frame, the video thread's between frames. */
-#ifdef __SWITCH2__
-      /* taken by the core's first use of it in the frame, not here */
-      sw2_gl_ctx_defer_core_take();
-#else
       video_thread_core_context_take();
-#endif
 #endif
       current_core->retro_run();
 #ifdef HAVE_THREADS

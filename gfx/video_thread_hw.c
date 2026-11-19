@@ -1648,22 +1648,6 @@ void video_thread_hw_ctx_take(thread_video_t *thr, bool video_thread)
    video_context_driver_bind_hw_render(!video_thread);
 }
 
-#ifdef __SWITCH2__
-/* Whether the video thread has the context now (it gives it up at the end
- * of its pass): a take now would wait for that. */
-int video_thread_hw_ctx_owner(thread_video_t *thr)
-{
-   hw_ring_t *ring = hw_handoff_ring(thr);
-   return ring ? retro_atomic_load_acquire_int(&ring->ctx_owner) : -1;
-}
-bool video_thread_hw_ctx_video_holds(thread_video_t *thr)
-{
-   hw_ring_t *ring = hw_handoff_ring(thr);
-   return ring && (retro_atomic_load_acquire_int(&ring->ctx_owner)
-         & HW_CTX_HOLDER) == HW_CTX_VIDEO;
-}
-#endif
-
 /* Whether the main thread holds the context. */
 bool video_thread_hw_ctx_held(thread_video_t *thr)
 {
