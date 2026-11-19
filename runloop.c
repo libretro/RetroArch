@@ -2218,6 +2218,20 @@ static void runloop_video_decode_close(void *decoder)
 }
 #endif
 
+/* Log core resolution, aspect, fps and sample rate */
+static void runloop_log_av_info(
+      const struct retro_game_geometry *geometry,
+      double fps,
+      double sample_rate)
+{
+   RARCH_LOG("[Core] Geometry: %ux%u, Aspect: %.4f, FPS: %.4f, Sample rate: %.0f Hz.\n",
+         geometry->base_width,
+         geometry->base_height,
+         geometry->aspect_ratio,
+         fps,
+         sample_rate);
+}
+
 /* Whether the core's aspect hint affects the displayed viewport. */
 static bool runloop_uses_core_aspect_hint(const settings_t *settings)
 {
@@ -3798,6 +3812,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      && video_st->poke->show_mouse)
                   video_st->poke->show_mouse(video_st->data, false);
             }
+
+            runloop_log_av_info(&av_info->geometry, av_info->timing.fps, av_info->timing.sample_rate);
 
             return true;
          }
@@ -6876,11 +6892,7 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
 
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
 
-   RARCH_LOG("[Core] Geometry: %ux%u, Aspect: %.4f, FPS: %.4f, Sample rate: %.0f Hz.\n",
-         video_st->av_info.geometry.base_width, video_st->av_info.geometry.base_height,
-         video_st->av_info.geometry.aspect_ratio,
-         video_st->av_info.timing.fps,
-         video_st->av_info.timing.sample_rate);
+   runloop_log_av_info(&video_st->av_info.geometry, video_st->av_info.timing.fps, video_st->av_info.timing.sample_rate);
 
    return true;
 }
