@@ -16,4 +16,10 @@ extern u64 mock_tick;
 extern u32 mock_sample_pos;
 extern u32 mock_frames_per_sleep;
 
+/* svcSleepThread() calls, and waits on the NDSP frame event; a stopped
+ * DSP plays nothing and never calls back. */
+extern unsigned mock_sleeps;
+extern unsigned mock_event_waits;
+extern bool     mock_dsp_stopped;
+
 #endif

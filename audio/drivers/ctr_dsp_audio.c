@@ -43,7 +43,12 @@ typedef struct
    uint32_t pos;
    /* Signalled from the DSP frame callback so a waiter wakes once per
     * DSP frame instead of sleeping and polling the sample position. */
+#ifdef USE_CTRULIB_2
    LightEvent frame_event;
+#else
+   /* A kernel event: libctru 1.x's LightEvent has no bounded wait */
+   Handle frame_event;
+#endif
    /* The channel's sample position last time the frame callback looked,
     * and the frames it has played since the channel started, for the
     * sink rate estimate. ndspChnGetSamplePos() wraps at
@@ -152,7 +157,11 @@ static void ctr_dsp_audio_frame_cb(void *data)
 
    ctr_dsp_audio_clock_sample(ctr, frames);
 
+#ifdef USE_CTRULIB_2
    LightEvent_Signal(&ctr->frame_event);
+#else
+   svcSignalEvent(ctr->frame_event);
+#endif
 }
 
 /* Frames the channel has played since it started; see the note on
@@ -185,7 +194,16 @@ static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned late
       return NULL;
    }
    retro_atomic_int_init(&ctr->clk_ppm, AUDIO_CLOCK_PPM_NONE);
+#ifdef USE_CTRULIB_2
    LightEvent_Init(&ctr->frame_event, RESET_ONESHOT);
+#else
+   if (svcCreateEvent(&ctr->frame_event, RESET_ONESHOT) != 0)
+   {
+      free(ctr);
+      ndspExit();
+      return NULL;
+   }
+#endif
    ndspSetCallback(ctr_dsp_audio_frame_cb, ctr);
 
    *new_rate    = CTR_DSP_AUDIO_RATE;
@@ -224,44 +242,35 @@ static void ctr_dsp_audio_free(void *data)
    ndspSetCallback(NULL, NULL);
    ndspChnWaveBufClear(ctr->channel);
    linearFree(ctr->dsp_buf.data_pcm16);
+#ifndef USE_CTRULIB_2
+   svcCloseHandle(ctr->frame_event);
+#endif
    free(ctr);
    ndspExit();
 }
 
-/* How many 100 ms polls a blocking write waits for the channel to
- * advance before giving up on it. */
-#define CTR_DSP_AUDIO_WAIT_LAPS 20
+/* How many DSP frames a blocking write waits for the room it wants:
+ * half the ring, 1024 frames, is under eight of NDSP's 160-frame
+ * frames, so a running DSP frees it inside the bound. */
+#define CTR_DSP_AUDIO_WAIT_LAPS 16
 
-/* LightEvent_Wait() has no timeout, so a DSP that has stopped
- * signalling its frame event - reset, or the channel dropped coming
- * back from sleep - never returns from it. Never reached while the DSP
- * runs: it signals every frame, so this only decides how long a
- * stopped one takes to be noticed. */
+/* How long a wait on the frame event lasts at most: a DSP that has
+ * stopped signalling it - reset, or the channel dropped coming back
+ * from sleep - would otherwise never let it return. Never reached
+ * while the DSP runs: it signals every frame, so this only decides how
+ * long a stopped one takes to be noticed. */
 #define CTR_DSP_AUDIO_STALL_TIMEOUT_NS 256000000LL
 #define CTR_DSP_AUDIO_WAIT_WRITABLE_LAPS 8
 
-/* LightEvent_WaitTimeout() is libctru 2's; on 1.x the wait is the
- * try-wait polled in slices short against the DSP's frame. Non-zero is
- * the timeout either way. */
+/* The next DSP frame, bounded: LightEvent_WaitTimeout() on libctru 2,
+ * the kernel event's own bounded wait on 1.x. Non-zero is the timeout
+ * either way. */
 #ifdef USE_CTRULIB_2
 #define ctr_dsp_audio_frame_wait(ctr, ns) \
    LightEvent_WaitTimeout(&(ctr)->frame_event, (ns))
 #else
-#define CTR_DSP_AUDIO_POLL_SLICE_NS 500000LL
-
-static int ctr_dsp_audio_frame_wait(ctr_dsp_audio_t *ctr, s64 timeout_ns)
-{
-   s64 left = timeout_ns;
-
-   while (left > 0)
-   {
-      if (LightEvent_TryWait(&ctr->frame_event))
-         return 0;
-      svcSleepThread(CTR_DSP_AUDIO_POLL_SLICE_NS);
-      left -= CTR_DSP_AUDIO_POLL_SLICE_NS;
-   }
-   return 1;
-}
+#define ctr_dsp_audio_frame_wait(ctr, ns) \
+   (svcWaitSynchronization((ctr)->frame_event, (ns)) != 0)
 #endif
 
 static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
@@ -284,15 +293,17 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
          ctr->pos = (sample_pos + (CTR_DSP_AUDIO_COUNT >> 1)) & CTR_DSP_AUDIO_COUNT_MASK;
       else
       {
-         /* Poll the channel position while the DSP plays this out. A
-          * channel that has stopped advancing - the DSP reset, the
-          * system back from sleep with the channel dropped - never
-          * satisfies the test below, so the poll is capped and the
-          * write then returns having written nothing. */
+         /* Each DSP frame while the DSP plays this out. A channel
+          * that has stopped advancing - the DSP reset, the system back
+          * from sleep with the channel dropped - never satisfies the
+          * test below, so the wait is capped and the write then
+          * returns having written nothing. */
          int laps = CTR_DSP_AUDIO_WAIT_LAPS;
          do
          {
-            svcSleepThread(100000);
+            if (ctr_dsp_audio_frame_wait(ctr,
+                     CTR_DSP_AUDIO_STALL_TIMEOUT_NS))
+               return 0;
 
             /* Run aptMainLoop to update APT state if DSP state
              * changed, this prevents a hang on sleep. */

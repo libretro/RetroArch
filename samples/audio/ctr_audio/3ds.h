@@ -62,6 +62,7 @@ Result GSPGPU_FlushDataCache(const void *adr, u32 size);
 
 u64    svcGetSystemTick(void);
 void   svcSleepThread(s64 ns);
+typedef u32 Handle;
 
 /* NDSP */
 enum { NDSP_OUTPUT_STEREO = 1 };
@@ -109,5 +110,11 @@ int  LightEvent_TryWait(LightEvent *event);
 int  LightEvent_WaitTimeout(LightEvent *event, s64 timeout_ns);
 
 bool aptMainLoop(void);
+
+/* Kernel events */
+Result svcCreateEvent(Handle *event, ResetType reset_type);
+Result svcSignalEvent(Handle handle);
+Result svcWaitSynchronization(Handle handle, s64 nanoseconds);
+Result svcCloseHandle(Handle handle);
 
 #endif

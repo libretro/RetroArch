@@ -158,12 +158,27 @@ static void test_dsp(void)
    CHECK(wrote == (ssize_t)HALF_RING, "a long write across the wrap takes half the ring",
          wrote, HALF_RING);
 
-   /* Blocking: the write waits for the channel to play and takes half
-    * the ring. */
+   /* Blocking: the write waits on the DSP's frame event for the channel
+    * to play, and takes half the ring; nothing sleeps. */
    drv->set_nonblock_state(h, false);
+   mock_sleeps = mock_event_waits = 0;
    wrote = drv->write(h, big, sizeof(big));
    CHECK(wrote == (ssize_t)HALF_RING, "a blocking long write takes half the ring",
          wrote, HALF_RING);
+   CHECK(mock_sleeps == 0, "the blocking write never sleeps",
+         mock_sleeps, 0);
+   CHECK(mock_event_waits > 0, "it waits on the frame event",
+         mock_event_waits, 1);
+
+   /* A DSP that has stopped: the write gives up having written nothing,
+    * one bounded wait at a time */
+   mock_dsp_stopped = true;
+   mock_event_waits = 0;
+   wrote = drv->write(h, big, sizeof(big));
+   CHECK(wrote == 0, "a write to a stopped DSP returns nothing", wrote, 0);
+   CHECK(mock_event_waits == 1, "after one wait runs out",
+         mock_event_waits, 1);
+   mock_dsp_stopped = false;
 
    /* Whole frames only. */
    drv->set_nonblock_state(h, true);

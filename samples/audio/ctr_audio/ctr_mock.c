@@ -87,15 +87,24 @@ u64 svcGetSystemTick(void) { return mock_tick; }
 u32 mock_sample_pos       = 0;
 u32 mock_frames_per_sleep = 64;
 
+unsigned mock_sleeps = 0;
+
 void svcSleepThread(s64 ns)
 {
    (void)ns;
+   mock_sleeps++;
    mock_sample_pos = (mock_sample_pos + mock_frames_per_sleep) & 2047u;
 }
 
 Result ndspInit(void) { return 0; }
 void   ndspExit(void) { }
-void   ndspSetCallback(ndspCallback callback, void *data) { (void)callback; (void)data; }
+static ndspCallback mock_ndsp_cb;
+static void        *mock_ndsp_data;
+void   ndspSetCallback(ndspCallback callback, void *data)
+{
+   mock_ndsp_cb   = callback;
+   mock_ndsp_data = data;
+}
 void   ndspSetOutputMode(int mode) { (void)mode; }
 void   ndspSetClippingMode(int mode) { (void)mode; }
 void   ndspSetOutputCount(int count) { (void)count; }
@@ -129,6 +138,49 @@ int  LightEvent_WaitTimeout(LightEvent *event, s64 timeout_ns)
 }
 
 bool aptMainLoop(void) { return true; }
+
+/* One kernel event, one-shot. A wait on it is a DSP frame: the channel
+ * plays mock_frames_per_sleep frames and NDSP calls back, unless
+ * mock_dsp_stopped, when the wait runs out. */
+bool     mock_dsp_stopped = false;
+unsigned mock_event_waits = 0;
+static int mock_event_live, mock_event_signalled;
+Result svcCreateEvent(Handle *event, ResetType reset_type)
+{
+   (void)reset_type;
+   mock_event_live      = 1;
+   mock_event_signalled = 0;
+   *event = 1;
+   return 0;
+}
+Result svcSignalEvent(Handle handle)
+{
+   (void)handle;
+   mock_event_signalled = 1;
+   return 0;
+}
+Result svcWaitSynchronization(Handle handle, s64 nanoseconds)
+{
+   (void)handle;
+   (void)nanoseconds;
+   mock_event_waits++;
+   if (!mock_dsp_stopped)
+   {
+      mock_sample_pos = (mock_sample_pos + mock_frames_per_sleep) & 2047u;
+      if (mock_ndsp_cb)
+         mock_ndsp_cb(mock_ndsp_data);
+   }
+   if (!mock_event_signalled)
+      return (Result)0x09401BFE; /* timeout */
+   mock_event_signalled = 0;
+   return 0;
+}
+Result svcCloseHandle(Handle handle)
+{
+   (void)handle;
+   mock_event_live = 0;
+   return 0;
+}
 
 /* The frontend and libretro-common symbols the drivers reach. */
 bool retroarch_main_quit(void) { return true; }
