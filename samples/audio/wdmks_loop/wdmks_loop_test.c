@@ -48,6 +48,17 @@ static bool test_wait_timeout(retro_eventcount_t *ec, int key, int64_t usec);
 #include <features/features_cpu.h>
 retro_time_t test_time_usec(void);
 #define cpu_features_get_time_usec test_time_usec
+/* The spans the driver times on the perf counter, on the same clock:
+ * the modelled one counts its marks in microseconds */
+retro_perf_tick_t test_mark(void);
+retro_perf_tick_t test_usec_to_mark(retro_time_t usec);
+retro_time_t      test_mark_to_usec(retro_perf_tick_t span);
+#undef  CPU_FEATURES_MARK
+#undef  CPU_FEATURES_USEC_TO_MARK
+#undef  CPU_FEATURES_MARK_TO_USEC
+#define CPU_FEATURES_MARK()             test_mark()
+#define CPU_FEATURES_USEC_TO_MARK(usec) test_usec_to_mark(usec)
+#define CPU_FEATURES_MARK_TO_USEC(span) test_mark_to_usec(span)
 
 /* A packet goes to a device that takes it at once. */
 static unsigned ioctl_calls;
@@ -80,6 +91,35 @@ static retro_time_t model_usec = 1000000;
 retro_time_t test_time_usec(void)
 {
    return real_clock ? cpu_features_get_time_usec() : model_usec;
+}
+
+retro_perf_tick_t test_mark(void)
+{
+   return real_clock ? cpu_features_get_perf_counter()
+      : (retro_perf_tick_t)model_usec;
+}
+
+retro_perf_tick_t test_usec_to_mark(retro_time_t usec)
+{
+   return real_clock ? cpu_features_perf_from_usec(usec)
+      : (retro_perf_tick_t)usec;
+}
+
+retro_time_t test_mark_to_usec(retro_perf_tick_t span)
+{
+   return real_clock ? cpu_features_perf_to_usec(span) : (retro_time_t)span;
+}
+
+/* The counter's rate, measured as the runloop measures it once a frame */
+static void perf_rate_measure(void)
+{
+   int i;
+   cpu_features_perf_from_usec(1);
+   for (i = 0; i < 3; i++)
+   {
+      cpu_features_perf_calibrate(cpu_features_get_time_usec());
+      retro_sleep_us(2000);
+   }
 }
 
 /* What the driver reaches for in RetroArch. */
@@ -397,7 +437,7 @@ static void run_contract(const char *name, put_fn put, bool pump)
    /* The lost-lap watchdog: the register could not be watched round.
     * What played meanwhile was never seen, so the loop is cleared and
     * the cursor resynced. */
-   w.rt_last_usec -= (retro_time_t)LOOP_FRAMES * 1000000 / RATE * 2;
+   w.rt_last_mark -= (retro_perf_tick_t)LOOP_FRAMES * 1000000 / RATE * 2;
    hw_play(LOOP_BYTES / 3);
    sample(&w, pump);
    check(region_is_silent(&w, 0, LOOP_BYTES),
@@ -628,7 +668,7 @@ static void run_capture_loop(void)
 
    /* A lap went by unobserved: the read cursor comes up to the
     * hardware and nothing stale is delivered. */
-   m.rt_last_usec -= (retro_time_t)LOOP_FRAMES * 1000000 / RATE * 2;
+   m.rt_last_mark -= (retro_perf_tick_t)LOOP_FRAMES * 1000000 / RATE * 2;
    hw_play(LOOP_BYTES / 3);
    check(wdmks_mic_rt_drain(&m) && FIFO_READ_AVAIL(m.fifo) == 0
          && m.rt_read == fake_pos, "laps lost: the cursor moves up to the hardware");
@@ -733,6 +773,7 @@ static void run_refill_thread(bool priority, bool mmcss)
    printf("-- refill thread, priority %s, Pro Audio class %s --\n",
          priority ? "on" : "off", mmcss ? "on" : "off");
    real_clock = true;
+   perf_rate_measure();
    loop_setup(&w);
    w.thread_priority = priority;
    w.mmcss           = mmcss;
@@ -762,7 +803,8 @@ static void run_refill_thread(bool priority, bool mmcss)
          "it passed at least a quarter as often as a quarter-loop cadence");
    check(w.rt_passes <= expect * 3,
          "and not more often than the slice floor allows");
-   check(w.rt_gap_max_usec > 0 && w.rt_gap_max_usec < 1000000,
+   check(test_mark_to_usec(w.rt_gap_max) > 0
+         && test_mark_to_usec(w.rt_gap_max) < 1000000,
          "the worst gap between passes is recorded");
    loop_teardown(&w);
    real_clock = false;

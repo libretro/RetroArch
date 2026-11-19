@@ -1696,7 +1696,7 @@ typedef struct
     * longest gap between two of its passes and how many gaps were a
     * loop or more, which is the count of laps the position could not
     * be followed across. */
-   retro_time_t        rt_gap_max_usec;
+   retro_perf_tick_t   rt_gap_max;    /* in perf counter marks */
    size_t              rt_gaps_over;
    size_t              rt_passes;
    const char         *rt_sched;   /* what the refill thread ran under */
@@ -1706,7 +1706,10 @@ typedef struct
    volatile ULONG *rt_pos;      /* byte position, updated by the device */
    bool            rt_pos_wide; /* the register is 64 bits, not 32 */
    bool            rt_presentation;
-   retro_time_t    rt_last_usec;  /* when the cursor was last read */
+   /* When the cursor was last read, and the loop's span, as perf
+    * counter marks; the span 0 until the counter's rate is known */
+   retro_perf_tick_t rt_last_mark;
+   retro_perf_tick_t rt_ring_marks;
    HANDLE          rt_event;    /* signalled per notification, if offered */
    /* The register wraps, so what it is worth as a count is the sum of
     * its steps - and that is only right while it is read more often
@@ -1915,6 +1918,7 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
 
    w->rt_buf     = (unsigned char*)out.BufferAddress;
    w->rt_size    = (size_t)out.ActualBufferSize;
+   w->rt_ring_marks = 0;
    w->rt_barrier = out.CallMemoryBarrier ? true : false;
 
    /* The ring is the driver's and wraps where the driver wraps it, so
@@ -2135,7 +2139,6 @@ static size_t wdmks_rt_ring_room(wdmks_t *w);
 
 static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
 {
-   retro_time_t deadline;
    retro_time_t period_usec;
 
    if (w->rt_event)
@@ -2192,9 +2195,7 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
          period_usec = ring_usec;
    }
 
-   deadline = cpu_features_get_time_usec() + period_usec;
-
-   /* How the deadline is waited out depends on what asking the device
+   /* How the period is waited out depends on what asking the device
     * where it is actually costs, and the two are not close - but
     * neither case yields in a loop any more. SwitchToThread with
     * nothing else runnable returns immediately, which turned a
@@ -2203,16 +2204,16 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
     * cases now sleep in the kernel.
     *
     * With a mapped position register - a volatile word, free to read
-    * - the deadline is walked in millisecond slices, the register
+    * - the period is walked in millisecond slices, the register
     * re-read after each, so room found early is still taken early:
     * the resolution moves from a yield to a millisecond, which is
     * noise against a period floored at half of one.
     *
     * Without one, every ask is a DeviceIoControl - a kernel
-    * transition - so the deadline is slept out whole and the device
-    * is asked once at the end, exactly as before: the deadline was
-    * computed from the cursor and the rate precisely so that it does
-    * not need checking on the way. */
+    * transition - so the period is slept out whole and the device
+    * is asked once at the end: it was computed from the cursor and
+    * the rate precisely so that it does not need checking on the
+    * way. */
    /* retro_sleep_us on desktop Windows is the high-resolution
     * waitable timer in rtime.c, per thread - the object these waits
     * want. Sleep(1) was not a millisecond: it was the global timer
@@ -2220,27 +2221,20 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
     * very hole the old yield-spin existed to avoid. */
    if (w->rt_pos)
    {
-      /* Wake when the cursor has moved or a millisecond has passed,
-       * whichever is sooner, against the real clock. */
-      for (;;)
+      /* The period in slices of at most a millisecond, the register
+       * read before each: the cursor ends the wait, not a clock */
+      while (period_usec > 0 && !wdmks_rt_free(w))
       {
-         retro_time_t now = cpu_features_get_time_usec();
-         retro_time_t remain;
-         if (now >= deadline || wdmks_rt_free(w))
-            return;
-         remain = deadline - now;
-         retro_sleep_us(remain < 1000 ? (unsigned)remain : 1000);
+         unsigned slice = period_usec < 1000 ? (unsigned)period_usec : 1000;
+         retro_sleep_us(slice);
+         period_usec   -= slice;
       }
+      return;
    }
 
-   {
-      /* No register: one wait, the whole computed interval, not a
-       * tick-rounded one - the deadline exists so nothing is asked
-       * on the way. */
-      retro_time_t now = cpu_features_get_time_usec();
-      if (deadline > now)
-         retro_sleep_us((unsigned)(deadline - now));
-   }
+   /* No register: one wait, the whole computed interval - it was
+    * computed so that nothing is asked on the way */
+   retro_sleep_us((unsigned)period_usec);
 }
 
 /* The event the driver signals as it passes each notification point.
@@ -2407,20 +2401,21 @@ static void wdmks_rt_advance(wdmks_t *w, ULONG v)
     * were measured. One stall would otherwise move the fitted rate by
     * as much as the stall was long. */
    {
-      retro_time_t now_usec  = cpu_features_get_time_usec();
-      retro_time_t ring_usec = (w->frame_bytes && w->rate)
-         ? (retro_time_t)(w->rt_size / w->frame_bytes) * 1000000 / w->rate
-         : 0;
+      retro_perf_tick_t now = CPU_FEATURES_MARK();
+      if (!w->rt_ring_marks && w->frame_bytes && w->rate)
+         w->rt_ring_marks   = CPU_FEATURES_USEC_TO_MARK(
+               (retro_time_t)(w->rt_size / w->frame_bytes)
+               * 1000000 / w->rate);
 
-      if (     w->rt_have_last && ring_usec
-            && now_usec - w->rt_last_usec > ring_usec)
+      if (     w->rt_have_last && w->rt_ring_marks
+            && now - w->rt_last_mark > w->rt_ring_marks)
       {
          w->rt_have_last    = false;
          w->clk_have_anchor = false;
          w->clk_n           = 0.0;
          lost               = true;
       }
-      w->rt_last_usec = now_usec;
+      w->rt_last_mark = now;
    }
 
    if (!w->rt_have_last)
@@ -2752,8 +2747,9 @@ static void wdmks_rt_refill_thread(void *data)
 {
    wdmks_t     *w          = (wdmks_t*)data;
    retro_time_t loop_usec  = 0;
-   retro_time_t last       = 0;
    retro_time_t slice_usec = 1000;
+   retro_perf_tick_t last  = 0;
+   retro_perf_tick_t loop  = 0;
    HMODULE      avrt       = NULL;
    HANDLE       mmtask     = NULL;
 
@@ -2816,7 +2812,7 @@ static void wdmks_rt_refill_thread(void *data)
 
    while (retro_atomic_load_acquire_int(&w->rt_run))
    {
-      retro_time_t now;
+      retro_perf_tick_t now;
       if (w->rt_event)
          WaitForSingleObject(w->rt_event,
                wdmks_watchdog_ms(w, w->rt_size));
@@ -2826,13 +2822,15 @@ static void wdmks_rt_refill_thread(void *data)
          break;
       /* The gap since the last pass, which is what the position's
        * wrap window is measured against. */
-      now = cpu_features_get_time_usec();
+      now = CPU_FEATURES_MARK();
+      if (!loop && loop_usec)
+         loop = CPU_FEATURES_USEC_TO_MARK(loop_usec);
       if (last)
       {
-         retro_time_t gap = now - last;
-         if (gap > w->rt_gap_max_usec)
-            w->rt_gap_max_usec = gap;
-         if (loop_usec && gap >= loop_usec)
+         retro_perf_tick_t gap = now - last;
+         if (gap > w->rt_gap_max)
+            w->rt_gap_max = gap;
+         if (loop && gap >= loop)
             w->rt_gaps_over++;
       }
       last = now;
@@ -3577,7 +3575,7 @@ static void wdmks_free(void *data)
             " worst, %u a loop or more apart.\n",
             w->rt_sched ? w->rt_sched : "normal priority",
             (unsigned)w->rt_passes, w->rt_passes == 1 ? "" : "es",
-            (double)w->rt_gap_max_usec / 1000.0,
+            (double)CPU_FEATURES_MARK_TO_USEC(w->rt_gap_max) / 1000.0,
             (unsigned)w->rt_gaps_over);
 #endif
 
@@ -4157,7 +4155,8 @@ typedef struct
    size_t           rt_read;
    uint64_t         rt_captured;   /* bytes the hardware has written */
    uint64_t         rt_taken;      /* of those, bytes read out */
-   retro_time_t     rt_last_usec;
+   retro_perf_tick_t rt_last_mark;
+   retro_perf_tick_t rt_ring_marks;
    ULONG            rt_last_pos;
    unsigned         next;          /* the packet that completes next */
    unsigned         frame_bytes;   /* the pin's frame */
@@ -4353,11 +4352,9 @@ static bool wdmks_mic_packets_drain(wdmks_mic_t *m)
  * the hardware and the count with it. */
 static bool wdmks_mic_rt_sample(wdmks_mic_t *m)
 {
-   ULONG        v;
-   retro_time_t now_usec  = cpu_features_get_time_usec();
-   retro_time_t ring_usec = (retro_time_t)(m->rt_size / m->frame_bytes)
-      * 1000000 / m->rate;
-   bool         lost      = false;
+   ULONG             v;
+   retro_perf_tick_t now  = CPU_FEATURES_MARK();
+   bool              lost = false;
 
    if (m->rt_pos)
       v = wdmks_rt_register_value(m->rt_pos, m->rt_pos_wide, m->rt_size);
@@ -4379,9 +4376,13 @@ static bool wdmks_mic_rt_sample(wdmks_mic_t *m)
    if (v >= (ULONG)m->rt_size)
       v %= (ULONG)m->rt_size;
 
-   if (m->rt_have_last && now_usec - m->rt_last_usec > ring_usec)
+   if (!m->rt_ring_marks)
+      m->rt_ring_marks = CPU_FEATURES_USEC_TO_MARK(
+            (retro_time_t)(m->rt_size / m->frame_bytes) * 1000000 / m->rate);
+   if (     m->rt_have_last && m->rt_ring_marks
+         && now - m->rt_last_mark > m->rt_ring_marks)
       lost = true;
-   m->rt_last_usec = now_usec;
+   m->rt_last_mark = now;
 
    if (!m->rt_have_last)
    {
@@ -4782,6 +4783,7 @@ static void *wdmks_mic_open(void *driver_context, const char *device,
       }
       m->rt_buf     = (unsigned char*)buf.BufferAddress;
       m->rt_size    = (size_t)buf.ActualBufferSize;
+      m->rt_ring_marks = 0;
       m->rt_barrier = buf.CallMemoryBarrier ? true : false;
       if (wdmks_rt_register_request(m->stream.handle, &reg))
       {
