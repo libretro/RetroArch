@@ -378,25 +378,17 @@ static retro_atomic_int_t tls_trust_logged;
 #define TLS_LOG_TRUST_STORE ssl_socket_log_trust_store
 #endif
 
-int ssl_socket_retro_load_trust_pem(const char *pem, size_t len,
+int ssl_socket_retro_adopt_trust_pem(char *pem, size_t len,
       const char *name)
 {
-   /* The part table gives the store a stable source identity without
-    * retaining the caller's PEM buffer. */
-   static const char *parts[1];
    int loaded;
    if (tls_system_anchors || tls_test_pem || !pem || !len)
-      return tls_system_anchors;
-   parts[0] = pem;
-   loaded   = x509_trust_load_pem_parts(parts, &len, 1);
-   parts[0] = NULL;
-   if (loaded <= 0)
    {
-      /* An empty store published under the table's identity would be
-       * taken for the next bundle tried through the same table. */
-      x509_trust_free();
-      return 0;
+      free(pem);
+      return tls_system_anchors;
    }
+   if ((loaded = x509_trust_adopt_pem(pem, len)) <= 0)
+      return 0;
    tls_system_anchors = loaded;
    strlcpy(tls_system_source, name ? name : "",
          sizeof(tls_system_source));

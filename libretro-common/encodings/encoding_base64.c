@@ -169,3 +169,70 @@ unsigned char* unbase64(const char* ascii, int len, int *flen)
    return bin;
 }
 
+/* unbase64_into(): 0-63 a sextet, 64 whitespace (skipped), 128 '=' or
+ * a character outside the alphabet (the end of the run). */
+static const unsigned char unb64_into[256] = {
+  128,128,128,128,128,128,128,128,128, 64, 64,128,128, 64,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+   64,128,128,128,128,128,128,128,128,128,128, 62,128,128,128, 63,
+   52, 53, 54, 55, 56, 57, 58, 59, 60, 61,128,128,128,128,128,128,
+  128,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+   15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,128,128,128,128,128,
+  128, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+   41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,128,128,128,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+  128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
+};
+
+size_t unbase64_into(const char *ascii, size_t len, unsigned char *out)
+{
+   const unsigned char *in  = (const unsigned char*)ascii;
+   const unsigned char *end = in + len;
+   unsigned char       *o   = out;
+   unsigned long        acc = 0;
+   unsigned             n   = 0;
+
+   /* Each group of three is written after its fourth character is
+    * read, so with @out at or before @ascii the writes stay behind
+    * the reads. */
+   for (; in < end; in++)
+   {
+      unsigned v = unb64_into[*in];
+      if (v & 64)
+         continue;
+      if (v & 128)
+         break;
+      acc = (acc << 6) | v;
+      if (++n == 4)
+      {
+         o[0] = (unsigned char)(acc >> 16);
+         o[1] = (unsigned char)(acc >> 8);
+         o[2] = (unsigned char)acc;
+         o   += 3;
+         acc  = 0;
+         n    = 0;
+      }
+   }
+   if (in < end && *in != '=')
+      return (size_t)-1;
+   switch (n)
+   {
+      case 1:
+         return (size_t)-1;
+      case 2:
+         *o++ = (unsigned char)(acc >> 4);
+         break;
+      case 3:
+         o[0] = (unsigned char)(acc >> 10);
+         o[1] = (unsigned char)(acc >> 2);
+         o   += 2;
+         break;
+   }
+   return (size_t)(o - out);
+}

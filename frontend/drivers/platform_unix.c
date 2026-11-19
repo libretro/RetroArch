@@ -3999,13 +3999,10 @@ static void frontend_unix_load_system_ca(void)
       const char *path = (env && *env) ? env : bundles[i];
       void *pem        = NULL;
       int64_t pem_len  = 0;
-      int loaded       = 0;
+      /* the read buffer is handed over, decoded where it lies */
       if (     filestream_read_file(path, &pem, &pem_len)
-            && pem_len > 0)
-         loaded = ssl_socket_retro_load_trust_pem((const char*)pem,
-               (size_t)pem_len, path);
-      free(pem);
-      if (loaded > 0)
+            && ssl_socket_retro_adopt_trust_pem((char*)pem,
+               (size_t)pem_len, path) > 0)
          break;
    }
 }

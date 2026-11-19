@@ -115,13 +115,14 @@ void ssl_socket_log_trust_store(const char *source, int anchors);
 
 /* net_socket_ssl_retro.c only: the certificates in the system PEM
  * bundle @pem, named @name, become the process trust store in place of
- * the built-in one. Called before any network client starts; @pem can
- * be freed on return. Returns the number of system roots in use: 0
- * when @pem holds none this code can use or memory runs out, which
- * leaves the built-in bundle to load at the first verify, so another
- * bundle can be tried. Once a bundle is in, later calls change nothing
- * and return its count. */
-int ssl_socket_retro_load_trust_pem(const char *pem, size_t len,
+ * the built-in one. Called before any network client starts. @pem is a
+ * malloc()ed buffer this takes whatever the outcome: it is decoded in
+ * place and kept as the store's DER, or freed. Returns the number of
+ * system roots in use: 0 when @pem holds none this code can use or
+ * memory runs out, which leaves the built-in bundle to load at the
+ * first verify, so another bundle can be tried. Once a bundle is in,
+ * later calls change nothing and return its count. */
+int ssl_socket_retro_adopt_trust_pem(char *pem, size_t len,
       const char *name);
 
 /* net_socket_ssl_retro.c only: replace the built-in CA bundle with

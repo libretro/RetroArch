@@ -55,8 +55,7 @@ int main(int argc, char **argv)
          return 2;
       pem[n] = '\0';
       fclose(f);
-      loaded = ssl_socket_retro_load_trust_pem(pem, (size_t)n, capem);
-      free(pem);
+      loaded = ssl_socket_retro_adopt_trust_pem(pem, (size_t)n, capem);
       if (loaded <= 0)
          return 2;
    }

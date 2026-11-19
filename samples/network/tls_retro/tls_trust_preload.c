@@ -5,6 +5,7 @@
  * cannot replace it, and the store in use is logged once. */
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <crypto/x509.h>
 
@@ -63,6 +64,15 @@ static const char unusable_pem[] =
    "AAAAAAAA\n"
    "-----END CERTIFICATE-----\n";
 
+/* The frontend hands over the buffer it read the bundle into. */
+static int adopt(const char *pem, size_t len, const char *name)
+{
+   char *copy = (char*)malloc(len + 1);
+   assert(copy);
+   memcpy(copy, pem, len + 1);
+   return ssl_socket_retro_adopt_trust_pem(copy, len, name);
+}
+
 /* One verify as a connection without its own anchors runs it. */
 static void verify_once(void)
 {
@@ -78,12 +88,12 @@ int main(void)
 
    /* a test's PEM keeps the system bundle out */
    ssl_socket_retro_set_trust_pem(root_pem, sizeof(root_pem) - 1);
-   assert(ssl_socket_retro_load_trust_pem(root_pem,
+   assert(adopt(root_pem,
             sizeof(root_pem) - 1, "refused") == 0);
    ssl_socket_retro_set_trust_pem(NULL, 0);
 
    /* no usable roots: the built-in bundle loads at the first verify */
-   assert(ssl_socket_retro_load_trust_pem(empty_pem,
+   assert(adopt(empty_pem,
             sizeof(empty_pem) - 1, "empty") == 0);
    verify_once();
    verify_once();
@@ -96,16 +106,16 @@ int main(void)
    der_loads = logs = 0;
 
    /* a bundle whose certificates are all unusable lets the next in */
-   assert(ssl_socket_retro_load_trust_pem(unusable_pem,
+   assert(adopt(unusable_pem,
             sizeof(unusable_pem) - 1, "unusable") == 0);
-   assert(ssl_socket_retro_load_trust_pem(root_pem,
+   assert(adopt(root_pem,
             sizeof(root_pem) - 1, "first") == 1);
    assert(!strcmp(tls_system_source, "first"));
 
    /* the first usable bundle stays */
    ssl_socket_retro_set_trust_pem(other_pem, sizeof(other_pem) - 1);
    assert(!tls_test_pem);
-   assert(ssl_socket_retro_load_trust_pem(other_pem,
+   assert(adopt(other_pem,
             sizeof(other_pem) - 1, "second") == 1);
    assert(!strcmp(tls_system_source, "first"));
 

@@ -82,6 +82,29 @@ static void expect_decode(const char *ascii, int len,
    free(out);
 }
 
+/* unbase64_into() into a separate buffer and in place: the same bytes,
+ * or (size_t)-1 for want_len -1. */
+static void expect_into(const char *ascii, const char *want, int want_len)
+{
+   size_t        len = strlen(ascii);
+   unsigned char sep[64];
+   char          inplace[64];
+   size_t        a, b;
+   memcpy(inplace, ascii, len + 1);
+   a = unbase64_into(ascii, len, sep);
+   b = unbase64_into(inplace, len, (unsigned char*)inplace);
+   if (want_len < 0
+         ? (a != (size_t)-1 || b != (size_t)-1)
+         : (a != (size_t)want_len || b != (size_t)want_len
+            || memcmp(sep, want, want_len) || memcmp(inplace, want, want_len)))
+   {
+      printf("[FAILED] unbase64_into \"%s\"\n", ascii);
+      failures++;
+      return;
+   }
+   printf("[SUCCESS] unbase64_into \"%s\"\n", ascii);
+}
+
 int main(void)
 {
    /* --- Malformed inputs that used to overflow or misbehave --- */
@@ -100,6 +123,16 @@ int main(void)
    expect_decode("SGk=",     4, "Hi",     2);   /* 1 pad      */
    expect_decode("QQ==",     4, "A",      1);   /* 2 pad      */
    expect_decode("QUI=",     4, "AB",     2);   /* 2 pad      */
+
+   /* --- unbase64_into: whitespace skipped, '=' ends, in place --- */
+   expect_into("SGVsbG8h",           "Hello!", 6);
+   expect_into("SGVs\r\nbG8h\n",     "Hello!", 6);   /* PEM line breaks */
+   expect_into(" S G V s bG8=",      "Hello",  5);
+   expect_into("QQ==",               "A",      1);
+   expect_into("QUI",                "AB",     2);   /* unpadded tail */
+   expect_into("",                   "",       0);
+   expect_into("Q",                  "",      -1);   /* one into a group */
+   expect_into("SGV*bG8h",           "",      -1);   /* outside the alphabet */
 
    if (failures)
    {
