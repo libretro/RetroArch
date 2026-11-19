@@ -1455,7 +1455,16 @@ static char *mcp_utf8_repair(const char *s, size_t len, size_t *out_len)
    size_t n;
    size_t o = 0;
    char  *out;
-   for (i = 0; i < len; i += n)
+   /* a word at a time while every byte is ASCII, which is nearly every
+    * reply, then a character at a time from the word that is not */
+   for (i = 0; i + sizeof(size_t) <= len; i += sizeof(size_t))
+   {
+      size_t w;
+      memcpy(&w, p + i, sizeof(w));
+      if (w & ((size_t)-1 / 0xFF * 0x80))
+         break;
+   }
+   for (; i < len; i += n)
       if (!(n = mcp_utf8_len(p + i, len - i)))
          break;
    if (i >= len || !(out = (char*)malloc(len * 3 + 1)))

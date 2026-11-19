@@ -69,6 +69,27 @@ static bool act_ping(command_t *cmd, const char *arg)
 #define MOJI_TEXT "caf\xC3\xA9 \xE6\x97\n"
 static bool act_moji(command_t *cmd, const char *arg)
 { (void)arg; cmd->replier(cmd, MOJI_TEXT, sizeof(MOJI_TEXT) - 1); return true; }
+/* "MOJIAT <at>": ASCII with one byte that is not UTF-8 at @at, or, as
+ * "v<at>", a two-byte character there that is, then ASCII to the end */
+#define MOJIAT_LEN 100
+static bool act_mojiat(command_t *cmd, const char *arg)
+{
+   char   text[MOJIAT_LEN + 2];
+   bool   valid = arg && *arg == 'v';
+   size_t at    = (size_t)strtoul(arg ? arg + valid : "0", NULL, 10);
+   size_t i;
+   for (i = 0; i < MOJIAT_LEN; i++)
+      text[i] = 'a' + (char)(i % 26);
+   if (valid)
+   {
+      text[at]     = '\xC3';
+      text[at + 1] = '\xA9';
+   }
+   else
+      text[at] = '\xFF';
+   cmd->replier(cmd, text, MOJIAT_LEN);
+   return true;
+}
 /* a status with a comma in the name, and a read, as the real commands
  * answer */
 #define STAT_TEXT "GET_STATUS PLAYING nes,Mario, Luigi & Co.nes\n"
@@ -110,6 +131,10 @@ static bool act_later(command_t *cmd, const char *arg)
  * set the schema offers as an enum. */
 static const struct cmd_param test_params_wipe[] = {
    { "what", "What to wipe.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param test_params_mojiat[] = {
+   { "at", "Where.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param test_params_join[] = {
@@ -407,6 +432,7 @@ static struct cmd_action_map test_actions[] = {
    { "GET_STATUS", act_stat, "No argument", "Report the status.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
    { "READ_CORE_MEMORY", act_read, "No argument", "Read bytes.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "MOJI",  act_moji,  "No argument", "Answer text that is not all UTF-8.", 0, NULL },
+   { "MOJIAT", act_mojiat, "<at>", "Answer ASCII with one character at a place.", 0, test_params_mojiat },
    { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0, NULL },
    { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
    { "ROWS",  act_rows,  "No argument", "Answer rows of named columns.", CMD_INFO_READ_ONLY, NULL, &test_rows },
@@ -1517,6 +1543,49 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "caf\xC3\xA9 \xEF\xBF\xBD\xEF\xBF\xBD\\n")
          && !strstr(out, "\xE6\x97"));
+   /* past a stretch of ASCII read a word at a time: the byte that is
+    * not UTF-8 at the start, inside a word, on a word's edge or in the
+    * short tail is found all the same, and a character that is is kept */
+   {
+      static const unsigned ats[] = { 0, 3, 7, 8, 9, 63, 64, 95, 99 };
+      unsigned k;
+      bool     ok = true;
+      for (k = 0; k < sizeof(ats) / sizeof(ats[0]); k++)
+      {
+         char args[64], want[MOJIAT_LEN + 4];
+         size_t i, o = 0;
+         for (i = 0; i < MOJIAT_LEN; i++)
+            if (i == ats[k])
+            {
+               memcpy(want + o, "\xEF\xBF\xBD", 3);
+               o += 3;
+            }
+            else
+               want[o++] = 'a' + (char)(i % 26);
+         want[o] = '\0';
+         snprintf(args, sizeof(args), "{\"at\":\"%u\"}", ats[k]);
+         st = post(cmd, PORT_OPEN, NULL, call("MOJIAT", args), out,
+               sizeof(out), NULL);
+         if (st != 200 || !json_valid(body_of(out)) || !strstr(out, want))
+         {
+            printf("  byte at %u not repaired\n", ats[k]);
+            ok = false;
+         }
+         if (ats[k] + 1 < MOJIAT_LEN)
+         {
+            snprintf(args, sizeof(args), "{\"at\":\"v%u\"}", ats[k]);
+            st = post(cmd, PORT_OPEN, NULL, call("MOJIAT", args), out,
+                  sizeof(out), NULL);
+            if (st != 200 || !json_valid(body_of(out))
+                  || strstr(out, "\xEF\xBF\xBD") || !strstr(out, "\xC3\xA9"))
+            {
+               printf("  character at %u not kept\n", ats[k]);
+               ok = false;
+            }
+         }
+      }
+      check("past ASCII, what is not UTF-8 is found wherever it falls", ok);
+   }
    {
       char req[1024];
       const char *b = call("PING", NULL);
