@@ -365,13 +365,48 @@ static void tls_cache_put(const char *host, const struct tls_session_put *put,
 #endif
 }
 
-/* The trust bundle is net/cacert.h's DER parts unless a test swapped
- * a PEM in. */
-static const char *tls_test_pem     = NULL;
-static size_t      tls_test_pem_len = 0;
+/* The trust bundle is net/cacert.h's DER parts, a system bundle
+ * preloaded at startup, or a test's PEM. Both statics are written
+ * before any network thread exists. */
+static const char *tls_test_pem       = NULL;
+static size_t      tls_test_pem_len   = 0;
+static int         tls_system_anchors = 0;
+static char        tls_system_source[PATH_MAX_LENGTH];
+static retro_atomic_int_t tls_trust_logged;
+
+#ifndef TLS_LOG_TRUST_STORE
+#define TLS_LOG_TRUST_STORE ssl_socket_log_trust_store
+#endif
+
+int ssl_socket_retro_load_trust_pem(const char *pem, size_t len,
+      const char *name)
+{
+   /* The part table gives the store a stable source identity without
+    * retaining the caller's PEM buffer. */
+   static const char *parts[1];
+   int loaded;
+   if (tls_system_anchors || tls_test_pem || !pem || !len)
+      return tls_system_anchors;
+   parts[0] = pem;
+   loaded   = x509_trust_load_pem_parts(parts, &len, 1);
+   parts[0] = NULL;
+   if (loaded <= 0)
+   {
+      /* An empty store published under the table's identity would be
+       * taken for the next bundle tried through the same table. */
+      x509_trust_free();
+      return 0;
+   }
+   tls_system_anchors = loaded;
+   strlcpy(tls_system_source, name ? name : "",
+         sizeof(tls_system_source));
+   return loaded;
+}
 
 void ssl_socket_retro_set_trust_pem(const char *pem, size_t len)
 {
+   if (tls_system_anchors)
+      return;
    tls_test_pem     = pem;
    tls_test_pem_len = len;
 }
@@ -1934,7 +1969,13 @@ static int tls_verify_peer(struct ssl_state *s, const uint8_t **ders,
       return 0;
    }
    if (!s->cfg.trust)
-      tls_trust_load();
+   {
+      if (!tls_system_anchors)
+         tls_trust_load();
+      if (retro_atomic_cas_int(&tls_trust_logged, 0, 1))
+         TLS_LOG_TRUST_STORE(tls_system_anchors ? tls_system_source : NULL,
+               tls_system_anchors);
+   }
    info[0] = '\0';
    if (x509_verify_chain_ex(ders, lens, n, host, time(NULL),
             s->cfg.trust, s->cfg.trust_lens, s->cfg.trust_count,
@@ -3638,5 +3679,12 @@ __attribute__((weak))
 void ssl_socket_log_verify_disabled(const char *domain)
 {
    (void)domain;
+}
+
+__attribute__((weak))
+void ssl_socket_log_trust_store(const char *source, int anchors)
+{
+   (void)source;
+   (void)anchors;
 }
 #endif
