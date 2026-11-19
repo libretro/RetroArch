@@ -8,7 +8,10 @@ LIBRETRO_COMM_DIR := ../../../libretro-common
 # in the test, and runs for real under Node in `make check`.
 INCDIRS := -I../../../tools/platform_stubs/emscripten -I$(LIBRETRO_COMM_DIR)/include -I../../.. -I../../../deps
 
-CFLAGS  += -std=gnu99 -Wall $(INCDIRS) -DRARCH_INTERNAL -D_GNU_SOURCE
+# Built as the published web player is: the external block, faked by
+# going back to the browser's main loop.
+CFLAGS  += -std=gnu99 -Wall $(INCDIRS) -DRARCH_INTERNAL -D_GNU_SOURCE \
+           -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK -DEMSCRIPTEN_AUDIO_FAKE_BLOCK
 LDFLAGS += -lm
 
 ifneq ($(SANITIZER),)

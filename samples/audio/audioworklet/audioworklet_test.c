@@ -25,8 +25,12 @@
 #include <rthreads/rthreads.h>
 #include <retro_timers.h>
 
-/* Short enough that a missed wake shows as a slow test, not a hung one. */
+/* Short enough that a missed wake shows as a slow test, not a hung one.
+ * The park's watchdog is long enough that only a missed wake runs it
+ * out, not a loaded machine scheduling the worklet's thread late. */
 #define AUDIOWORKLET_INIT_WAIT_MS 2000
+#define AUDIOWORKLET_PARK_WAIT_NS 100000000
+#define BURST_GAP_MS              150
 
 /* The context's JavaScript answers: a 48 kHz context, running. */
 #include <emscripten.h>
@@ -156,7 +160,7 @@ static void worklet_run(void *data)
          worklet_pull();
          worklet_pull();
          worklet_pull();
-         retro_sleep(10);
+         retro_sleep(BURST_GAP_MS);
       }
       worklet_pull();
    }
@@ -413,7 +417,12 @@ static void test_init_and_lifetime(void)
 
    retro_atomic_int_init(&worklet_pulls, 0);
    worklet_start(WORKLET_FREE_RUN);
-   for (cycle = 0; cycle < 3000; cycle++)
+   /* Until the worklet has pulled through a good share of them too:
+    * on a loaded machine its thread can start late. */
+   for (cycle = 0;
+           cycle < 3000
+        || (retro_atomic_load_seq_cst_int(&worklet_pulls) < 2000 && cycle < 3000000);
+        cycle++)
    {
       audioworklet_write(aw, samples, sizeof(samples));
       audioworklet_free(aw);
@@ -425,8 +434,8 @@ static void test_init_and_lifetime(void)
       aw->context_running = true;
    }
    worklet_end();
-   CHECK(retro_atomic_load_seq_cst_int(&worklet_pulls) > 0,
-         "the worklet pulled throughout", retro_atomic_load_seq_cst_int(&worklet_pulls), 0);
+   CHECK(retro_atomic_load_seq_cst_int(&worklet_pulls) >= 2000,
+         "the worklet pulled throughout", retro_atomic_load_seq_cst_int(&worklet_pulls), 2000);
 
    audioworklet_free(aw);
    CHECK(aw->ring == NULL && aw->retired == NULL,

@@ -217,8 +217,6 @@ Here is a non-exhaustive list of compile-time settings (makefile variables).
 
 `HAVE_AL` (default: 0): Enables the OpenAL audio driver. Requires `ASYNC` or `PROXY_TO_PTHREAD`. Prefer another driver.
 
-`ALLOW_AUDIO_BUSYWAIT` (default: 0): Deprecated; not recommended to use this.
-
 ### Async settings
 
 `ASYNC` (default: 0): Enables asyncify, which enables sleeping on the browser thread and fibers.

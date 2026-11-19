@@ -158,7 +158,7 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 
    if (!rwebaudio->nonblock)
    {
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
       if (RWebAudioWriteAvailFrames() == 0)
       {
@@ -167,8 +167,7 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
       }
 #endif
       /* async external block doesn't need to do anything else */
-#else
-#ifdef EMSCRIPTEN_FULL_ASYNCIFY
+#elif defined(EMSCRIPTEN_FULL_ASYNCIFY)
       {
          /* Each retro_sleep() hands the page's thread back to the
           * browser's event loop, where the sources' ended callbacks
@@ -185,14 +184,6 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
             RWebAudioResumeCtx();
          }
       }
-#else
-      /* Without ASYNCIFY nothing on the page's own thread can wait:
-       * the context is nudged in case it is suspended, and a write
-       * with no room drops, as a non-blocking one does, rather than
-       * spinning */
-      if (RWebAudioWriteAvailFrames() == 0)
-         RWebAudioResumeCtx();
-#endif
 #endif
    }
 
@@ -220,7 +211,6 @@ bool rwebaudio_external_block(void)
       return false;
 #endif
 
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
    {
       unsigned laps = RWEBAUDIO_WAIT_LAPS;
       while (!rwebaudio->nonblock && RWebAudioWriteAvailFrames() == 0)
@@ -237,7 +227,6 @@ bool rwebaudio_external_block(void)
 #endif
       }
    }
-#endif
 
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
    rwebaudio->block_requested = false;

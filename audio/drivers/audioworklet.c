@@ -34,13 +34,13 @@
 
 /* Builds whose writer parks on the worklet's pulls for room: the
  * threaded one on its own thread, the asyncify ones on the browser
- * thread. The rest go back to the browser or, opted into, spin. */
+ * thread. The fake-block build goes back to the browser instead. */
 #if defined(PROXY_TO_PTHREAD) || defined(EMSCRIPTEN_FULL_ASYNCIFY) \
-   || (defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK) && defined(EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK))
+   || defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK)
 #define AUDIOWORKLET_PARKS 1
 #endif
 
-/* additional buffer size (for EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK only) */
+/* additional buffer size (for EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK only) */
 /* if this is too small, frames may be dropped and content could run too fast. */
 /* very large slow-motion rate values may be too large for this; avoid anything higher than 6 or 7. */
 #define EXTERNAL_BLOCK_BUFFER_MS 128
@@ -80,7 +80,7 @@ typedef struct audioworklet_data
     * pull_seq the free reads as odd. */
    retro_atomic_ptr_t pull_ring;
    size_t visible_buffer_size;
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
    size_t write_avail_diff;
 #endif
    size_t ring_size;
@@ -292,7 +292,7 @@ static void audioworklet_alloc_buffer(void *data)
 
    audioworklet->visible_buffer_size = (audioworklet->latency * audioworklet->rate * 2 * sizeof(float)) / 1000;
    buffer_size = audioworklet->visible_buffer_size;
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
    audioworklet->write_avail_diff = (EXTERNAL_BLOCK_BUFFER_MS * audioworklet->rate * 2 * sizeof(float)) / 1000;
    buffer_size += audioworklet->write_avail_diff;
 #endif
@@ -397,10 +397,8 @@ static bool audioworklet_resume_ctx(void *data)
 }
 
 /* Bounds. A wait for room gives up after this many park watchdogs in a
- * row with no pull; the busy-wait build spins at most this many resume
- * attempts per retry; init waits this long for the worklet module. */
+ * row with no pull; init waits this long for the worklet module. */
 #define AUDIOWORKLET_WAIT_LAPS       8
-#define AUDIOWORKLET_BUSYWAIT_SPINS  100000
 #ifndef AUDIOWORKLET_INIT_WAIT_MS
 #define AUDIOWORKLET_INIT_WAIT_MS    30000
 #endif
@@ -566,7 +564,7 @@ static size_t audioworklet_write_begin(void *data, size_t len, void **region)
    if (!audioworklet->driver_running || !audioworklet_resume_ctx(audioworklet))
       return 0;
    max_write = audioworklet_room(audioworklet);
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
    if (audioworklet->nonblock)
    {
       if (max_write > audioworklet->write_avail_diff)
@@ -595,7 +593,7 @@ static ssize_t audioworklet_write_end(void *data, size_t len)
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
    len -= len % (2 * sizeof(float));
    retro_spsc_write_end(&audioworklet->ring->q, len);
-#if defined(EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK) && defined(EMSCRIPTEN_AUDIO_FAKE_BLOCK)
+#ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
    if (audioworklet_room(audioworklet) < audioworklet->write_avail_diff)
    {
       audioworklet->block_requested = true;
@@ -615,7 +613,9 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
    const float *samples = (const float*)s;
    size_t num_frames    = ss / 2 / sizeof(float);
+#ifndef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
    int laps             = AUDIOWORKLET_WAIT_LAPS;
+#endif
 
    /* too early! might happen with external blocking */
    if (!audioworklet->driver_running)
@@ -630,7 +630,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
       /* No lock: SPSC, and this thread is the producer. */
       avail = audioworklet_room(audioworklet);
       max_write = avail;
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
       /* make sure we don't write into the blocking buffer for nonblock */
       if (audioworklet->nonblock)
       {
@@ -651,7 +651,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
          _len       += to_write_bytes;
       }
 
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
       /* see if we're over the threshold to go to fake block */
       if (avail < audioworklet->write_avail_diff)
@@ -663,34 +663,23 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
       if (num_frames && !audioworklet->nonblock)
          retro_atomic_fetch_add_size(&audioworklet->dropped, num_frames);
       break;
-#endif
+#else
       if (audioworklet->nonblock || !num_frames)
          break;
-      /* Bounded overall, whichever way the wait below is made: a
-       * context that will not run - suspended by the autoplay policy
-       * until the page is clicked, or by the browser for a background
-       * tab - frees nothing, and this returns what went rather than
-       * holding the thread. On the busy-wait build that thread is the
-       * page's, and holding it froze the tab. */
+      /* Bounded: a context that will not run - suspended by the
+       * autoplay policy until the page is clicked, or by the browser
+       * for a background tab - frees nothing, and this returns what
+       * went rather than holding the thread. */
       if (--laps < 0)
       {
          retro_atomic_fetch_add_size(&audioworklet->dropped, num_frames);
          break;
       }
-#if defined(PROXY_TO_PTHREAD) || defined(EMSCRIPTEN_FULL_ASYNCIFY)
       if (audioworklet_park(audioworklet, 2 * sizeof(float)))
          laps = AUDIOWORKLET_WAIT_LAPS;
-#else /* equivalent to defined(EMSCRIPTEN_AUDIO_BUSYWAIT) */
-      {
-         /* The spin cannot sleep on this thread; it can at least end. */
-         unsigned spins = AUDIOWORKLET_BUSYWAIT_SPINS;
-         while (   audioworklet_room(audioworklet) < 2 * sizeof(float)
-                && spins--)
-            audioworklet_resume_ctx(audioworklet);
-      }
-#endif
       /* try resuming, on the off chance that the context was interrupted while blocking */
       audioworklet_resume_ctx(audioworklet);
+#endif
    }
 
    return _len;
@@ -730,7 +719,6 @@ bool audioworklet_external_block(void)
          }
          audioworklet_publish(audioworklet);
       }
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
       if (!audioworklet->driver_running)
          return false;
 
@@ -756,7 +744,6 @@ bool audioworklet_external_block(void)
          audioworklet_resume_ctx(audioworklet);
          return true;
       }
-#endif
 #endif
 
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
@@ -836,7 +823,7 @@ static size_t audioworklet_write_avail(void *data)
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
 
    size_t avail = audioworklet_room(audioworklet);
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
    if (avail > audioworklet->write_avail_diff)
       return avail - audioworklet->write_avail_diff;
    return 0;

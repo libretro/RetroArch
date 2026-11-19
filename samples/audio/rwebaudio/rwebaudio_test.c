@@ -55,15 +55,21 @@ size_t RWebAudioBufferSizeFrames(void) { return 3072; }
 void RWebAudioRecalibrateTime(void) { }
 bool RWebAudioResumeCtx(void) { resumes++; return true; }
 
-/* A blocking write to a page with no room, on a build without ASYNCIFY,
- * where nothing on the page's thread can wait: it does not spin asking,
- * it nudges the context once and drops */
+/* The main loop's block, as the published player fakes it. */
+static unsigned blocks_entered, blocks_left;
+void platform_emscripten_enter_fake_block(int ms) { (void)ms; blocks_entered++; }
+void platform_emscripten_exit_fake_block(void) { blocks_left++; }
+
+/* A blocking write to a page with no room, on the published player's
+ * build, where nothing on the page's thread can wait: the write asks
+ * the main loop to block and returns, and the block goes back to the
+ * browser until there is room - neither spins asking */
 static void run_full(void)
 {
    static float in[480 * 2];
    unsigned new_rate = 0;
    void *h;
-   printf("   a blocking write to a full page, no ASYNCIFY\n");
+   printf("   a blocking write to a full page, the main loop's block\n");
    want_layout = AUDIO_LAYOUT_STEREO;
    page_max    = 2;
    h = audio_rwebaudio.init(NULL, 48000, 64, &new_rate);
@@ -71,12 +77,24 @@ static void run_full(void)
    if (!h)
       return;
    audio_rwebaudio.set_nonblock_state(h, false);
-   page_avail = 0;
-   avail_asks = resumes = 0;
+   page_avail     = 0;
+   avail_asks     = resumes = 0;
+   blocks_entered = blocks_left = 0;
    audio_rwebaudio.write(h, in, sizeof(in));
+   CHECK(blocks_entered == 1, "the write asked for the block %u times", blocks_entered);
    CHECK(avail_asks <= 4, "the page was asked for room %u times", avail_asks);
-   CHECK(resumes <= 1, "the context was resumed %u times", resumes);
+
+   /* No room yet: back to the browser, after one look. */
+   avail_asks = 0;
+   CHECK(rwebaudio_external_block(), "the block ended with no room");
+   CHECK(avail_asks <= 2, "the block asked for room %u times", avail_asks);
+   CHECK(blocks_left == 0, "the block was left with no room");
+
+   /* Room: the block is left, once. */
    page_avail = 4800;
+   rwebaudio_external_block();
+   CHECK(blocks_left == 1, "the block was left %u times", blocks_left);
+   CHECK(!rwebaudio_external_block(), "a block nobody asked for went on");
    audio_rwebaudio.free(h);
 }
 
