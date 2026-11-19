@@ -11,8 +11,13 @@ port=${PORT:-8765}
 chrome=${CHROME:-google-chrome}
 status=0
 
+# The park's watchdog is longer than the ring here, so a writer the
+# worklet's pulls fail to wake starves the context and the run fails on
+# its throughput, instead of being carried by a watchdog about as short
+# as a quantum.
 common="-O2 -std=gnu99 -pthread -sAUDIO_WORKLET -sWASM_WORKERS \
  -DHAVE_THREADS -DHAVE_AUDIOWORKLET -DRARCH_INTERNAL \
+ -DAUDIOWORKLET_PARK_WAIT_NS=500000000 \
  -I$root -I$root/libretro-common/include -I$root/deps \
  $here/aw_browser.c $root/libretro-common/queues/retro_spsc.c \
  --pre-js $here/pre.js -sEXIT_RUNTIME=0 -sINITIAL_MEMORY=64MB -lm"
@@ -26,7 +31,11 @@ build() {
 build proxy    -sPROXY_TO_PTHREAD -DPROXY_TO_PTHREAD
 build async    -sASYNCIFY -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_FULL_ASYNCIFY
 build jspi     -sJSPI -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_FULL_ASYNCIFY -DEMSCRIPTEN_JSPI
-build minasync -sASYNCIFY -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_MIN_ASYNCIFY \
+# Makefile.emscripten's own asyncify flags for MIN_ASYNC, with the
+# harness's main in the list where the frontend has emscripten_mainloop.
+build minasync -sASYNCIFY -sASYNCIFY_STACK_SIZE=8192 -sASYNCIFY_IGNORE_INDIRECT=1 \
+               "-sASYNCIFY_ADD=dynCall_*,main" \
+               -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_MIN_ASYNCIFY \
                -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK -DEMSCRIPTEN_AUDIO_ASYNC_BLOCK \
                -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
 

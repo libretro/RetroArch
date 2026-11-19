@@ -1,7 +1,8 @@
 /* audio/drivers/audioworklet.c in a real browser, by hand: run.sh
  * builds it for each of the driver's build shapes and runs it in
  * headless Chrome.  Each run brings the driver up, plays three seconds
- * of tone through the worklet with blocking writes, then takes the
+ * of tone through the worklet with blocking writes - the writer parked
+ * on the worklet's pulls, never sleeping - then takes the
  * driver down and up again while the worklet pulls.  The init is to be
  * woken by the worklet's report, the writes paced by its pulls with
  * nothing dropped, and every retired ring freed.  Lines go to the
@@ -95,9 +96,6 @@ int main(void)
       audioworklet_external_block();
 #endif
       frames_out += (unsigned)(w / (2 * sizeof(float)));
-#ifndef PROXY_TO_PTHREAD
-      emscripten_sleep(0);
-#endif
    }
    t1      = emscripten_get_now();
    dropped = (unsigned)retro_atomic_load_acquire_size(&aw->dropped);

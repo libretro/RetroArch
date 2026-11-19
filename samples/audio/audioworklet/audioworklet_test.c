@@ -23,6 +23,7 @@
 #include <stdarg.h>
 
 #include <rthreads/rthreads.h>
+#include <retro_timers.h>
 
 /* Short enough that a missed wake shows as a slow test, not a hung one. */
 #define AUDIOWORKLET_INIT_WAIT_MS 2000

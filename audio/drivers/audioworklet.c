@@ -26,12 +26,19 @@
 #include "../../frontend/drivers/platform_emscripten.h"
 
 #include <retro_spsc.h>
-#include <retro_timers.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #define WORKLET_STACK_SIZE 4096
+
+/* Builds whose writer parks on the worklet's pulls for room: the
+ * threaded one on its own thread, the asyncify ones on the browser
+ * thread. The rest go back to the browser or, opted into, spin. */
+#if defined(PROXY_TO_PTHREAD) || defined(EMSCRIPTEN_FULL_ASYNCIFY) \
+   || (defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK) && defined(EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK))
+#define AUDIOWORKLET_PARKS 1
+#endif
 
 /* additional buffer size (for EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK only) */
 /* if this is too small, frames may be dropped and content could run too fast. */
@@ -92,7 +99,7 @@ typedef struct audioworklet_data
    /* AUDIOWORKLET_INIT_*, stored by the init callbacks on the browser
     * thread and notified there; the threaded build's init waits on it. */
    uint32_t init_state;
-#ifdef PROXY_TO_PTHREAD
+#ifdef AUDIOWORKLET_PARKS
    /* Bumped by the worklet after every pull; a writer out of room
     * parks on it, with waiting set so the worklet notifies only then. */
    uint32_t wake_seq;
@@ -178,7 +185,7 @@ static bool audioworklet_process_cb(int numInputs, const AudioSampleFrame *input
 
    if (ring)
    {
-#ifdef PROXY_TO_PTHREAD
+#ifdef AUDIOWORKLET_PARKS
       emscripten_atomic_add_u32(&audioworklet->wake_seq, 1);
       if (emscripten_atomic_load_u32(&audioworklet->waiting))
          emscripten_atomic_notify(&audioworklet->wake_seq, 1);
@@ -389,16 +396,53 @@ static bool audioworklet_resume_ctx(void *data)
    return audioworklet->context_running;
 }
 
-/* Bounds. The write retries its wait this many times before dropping
- * the rest; the busy-wait build spins at most this many resume attempts
- * per retry; init waits this long for the worklet module. */
+/* Bounds. A wait for room gives up after this many park watchdogs in a
+ * row with no pull; the busy-wait build spins at most this many resume
+ * attempts per retry; init waits this long for the worklet module. */
 #define AUDIOWORKLET_WAIT_LAPS       8
 #define AUDIOWORKLET_BUSYWAIT_SPINS  100000
 #ifndef AUDIOWORKLET_INIT_WAIT_MS
 #define AUDIOWORKLET_INIT_WAIT_MS    30000
 #endif
-#define AUDIOWORKLET_BLOCK_WAIT_MS   2000
+#ifndef AUDIOWORKLET_PARK_WAIT_NS
 #define AUDIOWORKLET_PARK_WAIT_NS    3000000
+#endif
+
+#ifdef AUDIOWORKLET_PARKS
+#ifndef PROXY_TO_PTHREAD
+/* The browser thread cannot Atomics.wait; it awaits the same notify.
+ * Returns whether the watchdog ended it. */
+EM_ASYNC_JS(int, audioworklet_park_js, (uint32_t *seq, uint32_t key, int ms), {
+   var r = Atomics.waitAsync(HEAP32, seq >> 2, key | 0, ms);
+   return (r.async ? await r.value : r.value) == 'timed-out';
+});
+#endif
+
+/* Parks until the worklet's next pull, while there is less room than
+ * @need. waiting goes up before the key is read and the room checked
+ * again, so a pull that frees room either shows in that check or
+ * notifies; the timeout is a watchdog. Returns false when only the
+ * watchdog ended it: callers spend their laps on those alone, since a
+ * pull freed room and the browser runs its quanta in bursts, so a gap
+ * between them is not the context stopping. */
+static bool audioworklet_park(audioworklet_data_t *audioworklet, size_t need)
+{
+   uint32_t key;
+   bool pulled = true;
+   emscripten_atomic_store_u32(&audioworklet->waiting, 1);
+   key = emscripten_atomic_load_u32(&audioworklet->wake_seq);
+   if (audioworklet_room(audioworklet) < need)
+#ifdef PROXY_TO_PTHREAD
+      pulled = emscripten_atomic_wait_u32(&audioworklet->wake_seq, key,
+            AUDIOWORKLET_PARK_WAIT_NS) != ATOMICS_WAIT_TIMED_OUT;
+#else
+      pulled = !audioworklet_park_js(&audioworklet->wake_seq, key,
+            (int)(AUDIOWORKLET_PARK_WAIT_NS / 1000000));
+#endif
+   emscripten_atomic_store_u32(&audioworklet->waiting, 0);
+   return pulled;
+}
+#endif
 
 #if defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
 /* The asyncify builds wait on the browser thread, where the init
@@ -633,25 +677,9 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
          retro_atomic_fetch_add_size(&audioworklet->dropped, num_frames);
          break;
       }
-#if defined(PROXY_TO_PTHREAD)
-      {
-         /* Parks until the worklet's next pull. waiting goes up before
-          * the key is read and the room checked again, so a pull that
-          * frees room either shows in that check or notifies; the
-          * timeout is a watchdog. Only watchdogs in a row spend the
-          * laps: a pull freed room, and the browser runs its quanta in
-          * bursts, so a gap between them is not the context stopping. */
-         uint32_t key;
-         emscripten_atomic_store_u32(&audioworklet->waiting, 1);
-         key = emscripten_atomic_load_u32(&audioworklet->wake_seq);
-         if (     audioworklet_room(audioworklet) >= 2 * sizeof(float)
-               || emscripten_atomic_wait_u32(&audioworklet->wake_seq, key,
-                  AUDIOWORKLET_PARK_WAIT_NS) != ATOMICS_WAIT_TIMED_OUT)
-            laps = AUDIOWORKLET_WAIT_LAPS;
-         emscripten_atomic_store_u32(&audioworklet->waiting, 0);
-      }
-#elif defined(EMSCRIPTEN_FULL_ASYNCIFY)
-      retro_sleep(1);
+#if defined(PROXY_TO_PTHREAD) || defined(EMSCRIPTEN_FULL_ASYNCIFY)
+      if (audioworklet_park(audioworklet, 2 * sizeof(float)))
+         laps = AUDIOWORKLET_WAIT_LAPS;
 #else /* equivalent to defined(EMSCRIPTEN_AUDIO_BUSYWAIT) */
       {
          /* The spin cannot sleep on this thread; it can at least end. */
@@ -708,15 +736,18 @@ bool audioworklet_external_block(void)
 
 #ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
       {
-         /* Bounded: a context that will not run frees nothing, and the
+         /* Parks on the worklet's pulls until the reserve is free.
+          * Bounded: a context that will not run frees nothing, and the
           * block ends with the audio dropped rather than never. */
-         unsigned waited_ms = 0;
-         while (audioworklet_room(audioworklet) < audioworklet->write_avail_diff)
+         int laps = AUDIOWORKLET_WAIT_LAPS;
+         while (     laps >= 0
+               && audioworklet_room(audioworklet) < audioworklet->write_avail_diff)
          {
             audioworklet_resume_ctx(audioworklet);
-            retro_sleep(1);
-            if (++waited_ms >= AUDIOWORKLET_BLOCK_WAIT_MS)
-               break;
+            if (audioworklet_park(audioworklet, audioworklet->write_avail_diff))
+               laps = AUDIOWORKLET_WAIT_LAPS;
+            else
+               laps--;
          }
       }
 #else
