@@ -3,7 +3,11 @@
  * length up to 100 at odd offsets so each vector body, the AVX-512
  * masked tail and the scalar remainder run, with a guard word after
  * each buffer. Every tier the CPU has (SSE2, AVX2, AVX-512) is pinned
- * in turn; all must give the same float for the same sample. */
+ * in turn; all must give the same float for the same sample.
+ *
+ * Input and output are also placed at every offset within 16 bytes: a
+ * vector body that only takes aligned operands has to leave the others
+ * to the scalar loop. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,10 +22,11 @@ extern int s16_to_float_tier_cap;
 
 static unsigned failures;
 
-static void check(const int16_t *in, size_t n, float gain,
+static void check(const int16_t *in, size_t n, size_t out_off, float gain,
       const char *what, int tier)
 {
-   float   *out  = (float*)malloc((n + 1) * sizeof(*out));
+   float   *base = (float*)malloc((out_off + n + 1) * sizeof(*base));
+   float   *out  = base + out_off;
    float    g    = gain / 0x8000;
    uint32_t guard = 0x5A5A5A5Au;
    size_t   i;
@@ -43,7 +48,7 @@ static void check(const int16_t *in, size_t n, float gain,
       bad++;
    }
    failures += bad ? 1 : 0;
-   free(out);
+   free(base);
 }
 
 int main(void)
@@ -68,12 +73,15 @@ int main(void)
          break;
 #endif
       for (g = 0; g < sizeof(gains) / sizeof(gains[0]); g++)
-         check(in, 65536, gains[g], "every value", tier);
+         check(in, 65536, 0, gains[g], "every value", tier);
       for (n = 0; n <= 100; n++)
       {
-         check(in, n, 1.0f, "length", tier);
-         check(in + 1 + (n % 7), n, 0.75f, "offset", tier);
+         check(in, n, 0, 1.0f, "length", tier);
+         check(in + 1 + (n % 7), n, 0, 0.75f, "offset", tier);
       }
+      for (n = 0; n < 4; n++)
+         for (i = 0; i < 8; i++)
+            check(in + i, 40 + i, n, 0.75f, "placement", tier);
    }
 
    free(in);

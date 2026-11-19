@@ -248,13 +248,6 @@ static void convert_s16_to_float_base(float *s,
    gain   /= 0x8000;
 
 #if defined(_MIPS_ARCH_ALLEGREX)
-#ifdef DEBUG
-   /* Make sure the buffer is 16 byte aligned, this should be the
-    * default behaviour of malloc in the PSPSDK.
-    * Only the output buffer can be assumed to be 16-byte aligned. */
-   retro_assert(((uintptr_t)s & 0xf) == 0);
-#endif
-
    __asm__ (
          ".set    push                    \n"
          ".set    noreorder               \n"
@@ -262,40 +255,46 @@ static void convert_s16_to_float_base(float *s,
          ".set    pop                     \n"
          ::"r"(gain));
 
-   for (i = 0; i + 16 <= len; i += 16)
+   /* sv.q faults on hardware unless the address is 16-byte aligned,
+    * lv.s unless it is 4-byte aligned. Anything else takes the scalar
+    * loop below. */
+   if (!((uintptr_t)s & 0xf) && !((uintptr_t)in & 0x3))
    {
-      __asm__ (
-            ".set    push                 \n"
-            ".set    noreorder            \n"
+      for (i = 0; i + 16 <= len; i += 16)
+      {
+         __asm__ (
+               ".set    push                 \n"
+               ".set    noreorder            \n"
 
-            "lv.s    s100,  0(%0)         \n"
-            "lv.s    s101,  4(%0)         \n"
-            "lv.s    s110,  8(%0)         \n"
-            "lv.s    s111, 12(%0)         \n"
-            "lv.s    s120, 16(%0)         \n"
-            "lv.s    s121, 20(%0)         \n"
-            "lv.s    s130, 24(%0)         \n"
-            "lv.s    s131, 28(%0)         \n"
+               "lv.s    s100,  0(%0)         \n"
+               "lv.s    s101,  4(%0)         \n"
+               "lv.s    s110,  8(%0)         \n"
+               "lv.s    s111, 12(%0)         \n"
+               "lv.s    s120, 16(%0)         \n"
+               "lv.s    s121, 20(%0)         \n"
+               "lv.s    s130, 24(%0)         \n"
+               "lv.s    s131, 28(%0)         \n"
 
-            "vs2i.p  c100, c100           \n"
-            "vs2i.p  c110, c110           \n"
-            "vs2i.p  c120, c120           \n"
-            "vs2i.p  c130, c130           \n"
+               "vs2i.p  c100, c100           \n"
+               "vs2i.p  c110, c110           \n"
+               "vs2i.p  c120, c120           \n"
+               "vs2i.p  c130, c130           \n"
 
-            "vi2f.q  c100, c100, 16       \n"
-            "vi2f.q  c110, c110, 16       \n"
-            "vi2f.q  c120, c120, 16       \n"
-            "vi2f.q  c130, c130, 16       \n"
+               "vi2f.q  c100, c100, 16       \n"
+               "vi2f.q  c110, c110, 16       \n"
+               "vi2f.q  c120, c120, 16       \n"
+               "vi2f.q  c130, c130, 16       \n"
 
-            "vmscl.q e100, e100, s200     \n"
+               "vmscl.q e100, e100, s200     \n"
 
-            "sv.q    c100,  0(%1)         \n"
-            "sv.q    c110, 16(%1)         \n"
-            "sv.q    c120, 32(%1)         \n"
-            "sv.q    c130, 48(%1)         \n"
+               "sv.q    c100,  0(%1)         \n"
+               "sv.q    c110, 16(%1)         \n"
+               "sv.q    c120, 32(%1)         \n"
+               "sv.q    c130, 48(%1)         \n"
 
-            ".set    pop                  \n"
-            :: "r"(in + i), "r"(s + i));
+               ".set    pop                  \n"
+               :: "r"(in + i), "r"(s + i));
+      }
    }
 #endif
 

@@ -5,7 +5,11 @@
  * it, infinities, NaNs of either sign, denormals - and at every length
  * up to 100, so each vector body, the AVX-512 masked tail and the scalar
  * remainder are exercised. A guard word after each buffer must survive.
- * Every target must give the same s16 for the same float. */
+ * Every target must give the same s16 for the same float.
+ *
+ * Callers convert into spans of a ring, so input and output are also
+ * placed at every offset within 16 bytes: a vector body that only takes
+ * aligned operands has to leave the others to the scalar loop. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,9 +46,11 @@ static float from_bits(uint32_t b)
    return f;
 }
 
-static void check(const float *in, size_t n, const char *what, int tier)
+static void check(const float *in, size_t n, size_t out_off,
+      const char *what, int tier)
 {
-   int16_t *out = (int16_t*)malloc((n + 1) * sizeof(*out));
+   int16_t *base = (int16_t*)malloc((out_off + n + 1) * sizeof(*base));
+   int16_t *out  = base + out_off;
    size_t   i;
    unsigned bad = 0;
    out[n]       = 0x5A5A;
@@ -66,7 +72,7 @@ static void check(const float *in, size_t n, const char *what, int tier)
       bad++;
    }
    failures += bad ? 1 : 0;
-   free(out);
+   free(base);
 }
 
 int main(void)
@@ -111,12 +117,15 @@ int main(void)
       if (tier)
          break;
 #endif
-      check(in, 4096, "corpus", tier);
+      check(in, 4096, 0, "corpus", tier);
       for (n = 0; n <= 100; n++)
       {
-         check(in, n, "length", tier);
-         check(in + 1 + (n % 7), n, "offset", tier);
+         check(in, n, 0, "length", tier);
+         check(in + 1 + (n % 7), n, 0, "offset", tier);
       }
+      for (n = 0; n < 8; n++)
+         for (i = 0; i < 4; i++)
+            check(in + i, 40 + n, n, "placement", tier);
    }
 
    free(in);

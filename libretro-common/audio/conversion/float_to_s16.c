@@ -341,32 +341,30 @@ static void convert_float_to_s16_base(int16_t *s, const float *in, size_t len)
    len               = samples_in;
    i                 = 0;
 #elif defined(_MIPS_ARCH_ALLEGREX)
-#ifdef DEBUG
-   /* Make sure the buffers are 16 byte aligned, this should be
-    * the default behaviour of malloc in the PSPSDK.
-    * Assume alignment. */
-   retro_assert(((uintptr_t)in  & 0xf) == 0);
-   retro_assert(((uintptr_t)s & 0xf) == 0);
-#endif
-
-   for (i = 0; i + 8 <= len; i += 8)
+   /* lv.q and sv.q fault on hardware unless the address is 16-byte
+    * aligned. Callers convert into ring and lent regions at any
+    * offset; those take the scalar loop below. */
+   if (!(((uintptr_t)in | (uintptr_t)s) & 0xf))
    {
-      __asm__ (
-            ".set    push                 \n"
-            ".set    noreorder            \n"
+      for (i = 0; i + 8 <= len; i += 8)
+      {
+         __asm__ (
+               ".set    push                 \n"
+               ".set    noreorder            \n"
 
-            "lv.q    c100,  0(%0)         \n"
-            "lv.q    c110,  16(%0)        \n"
+               "lv.q    c100,  0(%0)         \n"
+               "lv.q    c110,  16(%0)        \n"
 
-            "vf2in.q c100, c100, 31       \n"
-            "vf2in.q c110, c110, 31       \n"
-            "vi2s.q  c100, c100           \n"
-            "vi2s.q  c102, c110           \n"
+               "vf2in.q c100, c100, 31       \n"
+               "vf2in.q c110, c110, 31       \n"
+               "vi2s.q  c100, c100           \n"
+               "vi2s.q  c102, c110           \n"
 
-            "sv.q    c100,  0(%1)         \n"
+               "sv.q    c100,  0(%1)         \n"
 
-            ".set    pop                  \n"
-            :: "r"(in + i), "r"(s + i));
+               ".set    pop                  \n"
+               :: "r"(in + i), "r"(s + i));
+      }
    }
 #endif
 
