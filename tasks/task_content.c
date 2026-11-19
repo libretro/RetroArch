@@ -2263,6 +2263,7 @@ static bool content_load_firmware(struct content_load_job *job)
    core_info_t *core          = NULL;
    core_info_firmware_t *entry;
    bool download_available   = false;
+   bool waits;
    const char *content       = path_get(RARCH_PATH_CONTENT);
 #if defined(HAVE_NETWORKING)
    const char *url           = NULL;
@@ -2272,18 +2273,23 @@ static bool content_load_firmware(struct content_load_job *job)
    if (firmware && firmware->downloading)
       return false;
 
-   /* A refused probe leaves load_no_content as the last core set it */
-   if (!settings->bools.core_firmware_notification_enable
-         || !menu_st->driver_data
-         || !menu_core_warning_can_open()
-         || !core_info_find(path_get(RARCH_PATH_CORE), &core)
-         || !core || !core->firmware_count
-         || (string_is_empty(content)
-            && !runloop_state_get_ptr()->system.load_no_content
-            && !(core->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)))
+   waits = menu_st->dialog_st.confirm_cmd || menu_st->dialog_st.pending_cmd;
+
+   /* A refused probe leaves load_no_content as the last core set it.
+    * Once passed, a wait behind a confirm, this box's own included,
+    * asks nothing again until the confirm is answered. */
+   if (     !(firmware && waits)
+         && (   !settings->bools.core_firmware_notification_enable
+             || !menu_st->driver_data
+             || !menu_core_warning_can_open()
+             || !core_info_find(path_get(RARCH_PATH_CORE), &core)
+             || !core || !core->firmware_count
+             || (string_is_empty(content)
+                && !runloop_state_get_ptr()->system.load_no_content
+                && !(core->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))))
       return true;
 
-   if (menu_st->dialog_st.confirm_cmd || menu_st->dialog_st.pending_cmd)
+   if (waits)
    {
       /* Show the confirm this waits behind */
       if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
@@ -2783,6 +2789,7 @@ static void content_load_prev_restore(void)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t *p_content  = content_state_get_ptr();
+   bool reprobe                = false;
    if (!content_load_prev.valid)
       return;
    content_load_prev.valid = false;
@@ -2816,22 +2823,29 @@ static void content_load_prev_restore(void)
          sizeof(runloop_st->current_valid_extensions));
    runloop_st->system.info            = content_load_prev.sysinfo;
    runloop_st->system.load_no_content = content_load_prev.load_no_content;
-   core_info_load(content_load_prev.core_info_path);
 #ifdef HAVE_DYNAMIC
-   /* Its subsystems, which the probe replaced too. Only a plain core,
-    * or a dummy session that names one, is RARCH_PATH_CORE: a built-in
-    * core runs under whatever path was named before it. A refused
-    * core's open would only be refused again. */
-   if (     *content_load_prev.core
-         && (   content_load_prev.type == CORE_TYPE_PLAIN
-             || (   content_load_prev.type == CORE_TYPE_DUMMY
-                 && *content_load_prev.library_name))
+   /* The probe's subsystem tables, the one thing not kept here: a
+    * running core's own are what the menu reads, so they matter only
+    * for a core Load Core named, read again when the session had some
+    * and the entry point's probe wrote others over them. Only a plain
+    * core, or a dummy session that names one, is RARCH_PATH_CORE: a
+    * built-in core runs under whatever path was named before it. A
+    * refused core's open would only be refused again. */
+   reprobe = content_load_prev.subsystem_current_count
+      && runloop_st->subsystem_current_count
+      && !runloop_st->system.subsystem.data
+      && *content_load_prev.core
+      && (   content_load_prev.type == CORE_TYPE_PLAIN
+          || (   content_load_prev.type == CORE_TYPE_DUMMY
+              && *content_load_prev.library_name))
 #ifdef HAVE_CORE_LOAD_CHECK
-         && !core_load_check_refused(content_load_prev.core)
+      && !core_load_check_refused(content_load_prev.core)
 #endif
-      )
-      command_event(CMD_EVENT_LOAD_CORE, NULL);
+      ;
 #endif
+   /* The probe loads the core's info itself */
+   if (!reprobe || !command_event(CMD_EVENT_LOAD_CORE, NULL))
+      core_info_load(content_load_prev.core_info_path);
    /* After the probe, which zeroes it */
    runloop_st->subsystem_current_count =
       content_load_prev.subsystem_current_count;

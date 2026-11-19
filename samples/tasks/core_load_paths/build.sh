@@ -57,7 +57,7 @@ wrap_cflags=
 wrap_ldflags=
 if [ "$(uname -s)" != Darwin ]; then
    wrap_cflags=-DCORE_LOAD_PATHS_WRAP
-   wrap_ldflags=-Wl,--wrap=core_check_quick
+   wrap_ldflags=-Wl,--wrap=core_check_quick,--wrap=libretro_get_system_info,--wrap=core_info_find
 fi
 
 sed -e "s#-o $objdir/retroarch\.o#$wrap_cflags -o $out/harness_main.o#" \
@@ -115,6 +115,12 @@ $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include \
    -o $out/harness_core.so samples/tasks/content_load/harness_core.c
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_NO_HW \
    -o $out/harness_core_b.so samples/tasks/content_load/harness_core.c
+$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_NO_HW \
+   -DHARNESS_CORE_SUBSYSTEM='"harness_sub_a"' \
+   -o $out/harness_core_sub_a.so samples/tasks/content_load/harness_core.c
+$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_NO_HW \
+   -DHARNESS_CORE_SUBSYSTEM='"harness_sub_b"' \
+   -o $out/harness_core_sub_b.so samples/tasks/content_load/harness_core.c
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include \
    -o $out/needs_content_core.so $out/needs_content_core.c
 

@@ -72,6 +72,8 @@ static char seeded[400];      /* in the first run's seed folder */
 static char broken[400];      /* a core file with no library */
 static char fw_core[400];     /* good_core's bytes; its info asks for firmware */
 static char fwb_core[400];    /* bad_core's bytes, with the same info */
+static char sub_core[400];    /* declares subsystem harness_sub_a; no info */
+static char fws_core[400];    /* declares harness_sub_b; fw_core's info */
 static char game[400];
 static char sub_game[400];
 
@@ -1034,6 +1036,29 @@ static void mode_park_ends(void)
          "the parked core replaced the session");
 }
 
+#ifdef CORE_LOAD_PATHS_WRAP
+/* Counted across the frontend's objects: probes of a core's system
+ * info, and core info lookups */
+static unsigned sysinfo_probes;
+static unsigned info_finds;
+
+bool __real_libretro_get_system_info(const char *path,
+      struct retro_system_info *sysinfo, bool *load_no_content);
+bool __wrap_libretro_get_system_info(const char *path,
+      struct retro_system_info *sysinfo, bool *load_no_content)
+{
+   sysinfo_probes++;
+   return __real_libretro_get_system_info(path, sysinfo, load_no_content);
+}
+
+bool __real_core_info_find(const char *core_path, core_info_t **core_info);
+bool __wrap_core_info_find(const char *core_path, core_info_t **core_info)
+{
+   info_finds++;
+   return __real_core_info_find(core_path, core_info);
+}
+#endif
+
 static bool fw_box_up(void)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -1451,6 +1476,15 @@ static bool fw_cancelled(void)
    unsigned i;
    if (!fw_wait_box(600))
       return false;
+#ifdef CORE_LOAD_PATHS_WRAP
+   /* Waiting on its answer looks nothing up */
+   {
+      unsigned finds = info_finds;
+      fw_pump(30);
+      CHECK(fw_box_up() && info_finds == finds,
+            "the firmware stage looked its core up while its box waited");
+   }
+#endif
    fw_answer(MENU_ACTION_CANCEL);
    for (i = 0; i < 600 && (task_content_load_pending()
             || runloop_is_content_switching()); i++)
@@ -1458,10 +1492,23 @@ static bool fw_cancelled(void)
    return !task_content_load_pending();
 }
 
-/* That Cancel leaves the session fw_ran recorded as it was */
+/* Probes of a core's system info fw_check_kept's Cancel made */
+static unsigned fw_restore_probes;
+
+/* That Cancel leaves the session fw_ran recorded as it was. With no
+ * subsystems to put back the restore opens no core. */
 static void fw_check_kept(const char *what)
 {
-   bool cancelled = fw_cancelled();
+   bool cancelled;
+#ifdef CORE_LOAD_PATHS_WRAP
+   unsigned probes   = sysinfo_probes;
+#endif
+   cancelled         = fw_cancelled();
+#ifdef CORE_LOAD_PATHS_WRAP
+   fw_restore_probes = sysinfo_probes - probes;
+   CHECK(fw_ran.subsystems || !fw_restore_probes,
+         "a Cancel probed a core with no subsystems to put back");
+#endif
    fw_record(&fw_now);
    if (cancelled && !fw_changes(false))
       return;
@@ -1496,6 +1543,75 @@ static void fw_check_dummy_kept(const char *what)
          && string_is_equal(fw_now.info, fw_ran.info), what);
    fw_differs(true, "menu title", fw_ran.title, fw_now.title);
    fw_differs(true, "core info", fw_ran.info, fw_now.info);
+}
+
+/* core runs content, through its firmware box and its Security Warning */
+static void fw_run_trusting(const char *core, const char *content,
+      const char *label)
+{
+   content_ctx_info_t info;
+   unsigned i;
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(core, content,
+            label, &info, NULL, NULL), "the Run was not started");
+   for (i = 0; i < 1200 && !(runs(core)
+            && same_path(path_get(RARCH_PATH_CONTENT), content)); i++)
+   {
+      fw_pump(1);
+      if (fw_box_up())
+         fw_answer(MENU_ACTION_OK);
+      if (warning_up())
+         CHECK(answer(CORE_WARNING_ALWAYS_TRUST), "Always Trust not taken");
+   }
+   CHECK(runs(core) && same_path(path_get(RARCH_PATH_CONTENT), content),
+         "the Run did not run");
+}
+
+/* The session's one subsystem, as the menu reads it, is ident: a
+ * running core's own, else the probe's */
+static bool fw_sub_ident_is(const char *ident)
+{
+   runloop_state_t *runloop_st             = runloop_state_get_ptr();
+   const struct retro_subsystem_info *subs = runloop_st->system.subsystem.data
+      ? runloop_st->system.subsystem.data : runloop_st->subsystem_data;
+   return runloop_st->subsystem_current_count == 1
+      && subs[0].ident
+      && string_is_equal(subs[0].ident, ident);
+}
+
+/* core's Run, cancelled at its box, leaves the session fw_ran
+ * recorded, the running core or the dummy session, and its subsystem;
+ * the restore probes a core only if reprobe */
+static void fw_check_sub_cancel(const char *core, bool reprobe,
+      const char *what)
+{
+   content_ctx_info_t info;
+   bool cancelled;
+#ifdef CORE_LOAD_PATHS_WRAP
+   unsigned probes;
+#endif
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(core, game,
+            "fw", &info, NULL, NULL), "the playlist Run was not started");
+#ifdef CORE_LOAD_PATHS_WRAP
+   probes    = sysinfo_probes;
+#endif
+   cancelled = fw_cancelled();
+   fw_record(&fw_now);
+   CHECK(   cancelled
+         && fw_now.handle     == fw_ran.handle
+         && fw_now.type       == fw_ran.type
+         && fw_now.subsystems == fw_ran.subsystems
+         && string_is_equal(fw_now.core,  fw_ran.core)
+         && string_is_equal(fw_now.title, fw_ran.title)
+         && string_is_equal(fw_now.info,  fw_ran.info)
+         && fw_sub_ident_is("harness_sub_a"), what);
+#ifdef CORE_LOAD_PATHS_WRAP
+   probes = sysinfo_probes - probes;
+   CHECK(reprobe ? probes != 0 : probes == 0, what);
+#else
+   (void)reprobe;
+#endif
 }
 
 /* A firmware box's Cancel leaves the session as it was: the game that
@@ -1655,6 +1771,34 @@ static void mode_fw_cancel_restores(void)
    CHECK(fw_cancelled(), "the re-run did not ask for the firmware that went away");
    CHECK(is_dummy() && !same_path(path_get(RARCH_PATH_CONTENT), game),
          "a cancelled re-run left a phantom session or restored the closed game");
+
+   /* Subsystems. A running core's own declare them; the restore opens
+    * no core for it */
+   fw_run_trusting(fws_core, other, "fws");
+   fw_run_trusting(sub_core, game, "sub");
+   /* Trusted now, each Run's probe opens its core and reads its tables */
+   fw_run_trusting(fws_core, other, "fws");
+   fw_run_trusting(sub_core, game, "sub");
+   fw_record(&fw_ran);
+   CHECK(fw_sub_ident_is("harness_sub_a"),
+         "the running subsystem core's subsystems are not its own");
+   fw_check_sub_cancel(fws_core, false,
+         "a cancelled Run of another subsystem core over a running one");
+   fw_check_sub_cancel(fw_core, false,
+         "a cancelled Run of a core with no subsystems over a running one");
+
+   /* A core Load Core named, not started: its tables are the probe's,
+    * opened again only when another core's probe wrote over them */
+   unload();
+   path_set(RARCH_PATH_CORE, sub_core);
+   CHECK(command_event(CMD_EVENT_LOAD_CORE, NULL), "Load Core's probe failed");
+   fw_record(&fw_ran);
+   CHECK(is_dummy() && fw_sub_ident_is("harness_sub_a"),
+         "the named subsystem core's probe left no subsystems");
+   fw_check_sub_cancel(fws_core, true,
+         "a cancelled Run of another subsystem core over a named one");
+   fw_check_sub_cancel(fw_core, false,
+         "a cancelled Run of a core with no subsystems over a named one");
 }
 
 /* A firmware Cancel ends the launch a Load Once was given for: the
@@ -1960,6 +2104,10 @@ static void clean_run(void)
       remove(fw_core);
    if (*fwb_core)
       remove(fwb_core);
+   if (*sub_core)
+      remove(sub_core);
+   if (*fws_core)
+      remove(fws_core);
    rmdir(cores);
    if (*seeded)
       remove(seeded);
@@ -1993,6 +2141,7 @@ static void clean_run(void)
    remove_in(dir, "core_info.cache");
    remove_in(dir, "fw_libretro.info");
    remove_in(dir, "fwb_libretro.info");
+   remove_in(dir, "fws_libretro.info");
    remove_in(dir, "seeded_libretro.info");
    remove_in(dir, "other.bin");
    remove_in(dir, "system/harness/fw.bin");
@@ -2158,12 +2307,17 @@ static bool fw_setup(const char *argv0)
    char path[PATH_MAX_LENGTH];
    snprintf(fw_core, sizeof(fw_core), "%s/fw_libretro.%s", cores, ext);
    snprintf(fwb_core, sizeof(fwb_core), "%s/fwb_libretro.%s", cores, ext);
+   snprintf(sub_core, sizeof(sub_core), "%s/sub_libretro.%s", cores, ext);
+   snprintf(fws_core, sizeof(fws_core), "%s/fws_libretro.%s", cores, ext);
    snprintf(path, sizeof(path), "%s/system", dir);
    return path_mkdir(path)
       && copy_beside(argv0, "harness_core.so", fw_core)
       && copy_beside(argv0, "harness_core_b.so", fwb_core)
+      && copy_beside(argv0, "harness_core_sub_a.so", sub_core)
+      && copy_beside(argv0, "harness_core_sub_b.so", fws_core)
       && fw_info_write("fw_libretro.info")
-      && fw_info_write("fwb_libretro.info");
+      && fw_info_write("fwb_libretro.info")
+      && fw_info_write("fws_libretro.info");
 }
 
 int main(int argc, char *argv[])
