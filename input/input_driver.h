@@ -279,11 +279,9 @@ struct bsv_movie
    uint32s_index_t *blocks;
    uint32_t *superblock_seq;
    size_t superblock_seq_len;
-   /* The checkpoint encoder's output stream, kept from one checkpoint
-    * to the next while it writes to the same buffer */
-   intfstream_t *enc_stream;
-   uint8_t *enc_stream_buf;
-   size_t enc_stream_cap;
+   /* The checkpoint encoder's [0] and decoder's [1] streams, kept for
+    * the movie's life and pointed at each checkpoint's buffer */
+   intfstream_t *mem_stream[2];
    /* What the encoder and decoder have done over the movie's life,
     * logged once when it is freed */
    uint64_t enc_bytes_in, enc_bytes_out;

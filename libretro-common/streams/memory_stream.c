@@ -67,6 +67,32 @@ uint64_t memstream_get_ptr(memstream_t *stream)
    return stream->ptr;
 }
 
+int64_t memstream_view(memstream_t *stream, uint64_t len,
+      const uint8_t **ptr)
+{
+   uint64_t avail;
+   if (!stream || stream->ptr >= stream->size)
+      return 0;
+   avail = stream->size - stream->ptr;
+   if (len > avail)
+      len = avail;
+   *ptr         = stream->buf + stream->ptr;
+   stream->ptr += len;
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr = stream->ptr;
+   return (int64_t)len;
+}
+
+void memstream_set_buffer(memstream_t *stream, uint8_t *buf, uint64_t size,
+      unsigned writing)
+{
+   stream->ptr     = 0;
+   stream->max_ptr = 0;
+   stream->writing = writing;
+   stream->buf     = buf;
+   stream->size    = size;
+}
+
 uint64_t memstream_get_size(memstream_t *stream)
 {
    return stream->size;

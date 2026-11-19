@@ -220,10 +220,15 @@ static void movie_free(bsv_movie_t *m)
    free(m->ckpt_scratch[0]);
    free(m->ckpt_scratch[1]);
    free(m->ckpt_scratch[2]);
-   if (m->enc_stream)
+   if (m->mem_stream[0])
    {
-      intfstream_close(m->enc_stream);
-      free(m->enc_stream);
+      intfstream_close(m->mem_stream[0]);
+      free(m->mem_stream[0]);
+   }
+   if (m->mem_stream[1])
+   {
+      intfstream_close(m->mem_stream[1]);
+      free(m->mem_stream[1]);
    }
    free(m);
 }
@@ -631,6 +636,46 @@ static void lane_encoder_allocs(void)
    printf("[ok] encoder_allocs (a known state's checkpoint allocates "
          "nothing)\n");
 }
+
+/* Nor does reading one back: the decoder's stream is the movie's, the
+ * checkpoint's numbers are read where they lie, and only blocks and
+ * superblocks the replay has not seen are allocated (the index keeps
+ * them). */
+static void lane_decoder_allocs(void)
+{
+   bsv_movie_t *w = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+   bsv_movie_t *r = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+   unsigned i, steady = 0;
+   fill_state(5);
+   for (i = 0; i < 6; i++)
+   {
+      int64_t n;
+      bool ok;
+      movie_set_stream(w, stream_buf, STREAM_CAP);
+      n = bsv_movie_write_checkpoint(w,
+            REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+            REPLAY_CHECKPOINT2_ENCODING_STATESTREAM);
+      movie_set_stream(r, stream_buf, n > 0 ? (size_t)n : 0);
+      n_allocs     = 0;
+      count_allocs = true;
+      ok = n > 12 && bsv_movie_load_checkpoint(r,
+            REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+            REPLAY_CHECKPOINT2_ENCODING_STATESTREAM,
+            REPLAY_CPBEHAVIOR_DESERIALIZE);
+      count_allocs = false;
+      CHECK(ok && r->cur_save && !memcmp(r->cur_save, core_state, STATE_SIZE),
+            "decoder_allocs: checkpoint %u decodes", i);
+      /* the first two take the buffers */
+      if (i >= 2)
+         steady += n_allocs;
+   }
+   CHECK(!steady, "decoder_allocs: %u allocations over four checkpoints "
+         "of a known state", steady);
+   movie_free(w);
+   movie_free(r);
+   printf("[ok] decoder_allocs (a known state's checkpoint reads back "
+         "with no allocation)\n");
+}
 #endif
 
 /* With an argument, runs only the lane of that name. */
@@ -659,6 +704,8 @@ int main(int argc, char **argv)
 #ifndef uint32s_hash_bytes
    if (!only || !strcmp(only, "encoder_allocs"))
       lane_encoder_allocs();
+   if (!only || !strcmp(only, "decoder_allocs"))
+      lane_decoder_allocs();
 #endif
    if (n_fail)
    {

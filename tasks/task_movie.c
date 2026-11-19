@@ -217,6 +217,9 @@ static bool bsv_movie_init_record(
 
 void bsv_movie_free(bsv_movie_t *handle)
 {
+#ifdef HAVE_STATESTREAM
+   unsigned i;
+#endif
    intfstream_close(handle->file);
    free(handle->file);
 
@@ -234,10 +237,12 @@ void bsv_movie_free(bsv_movie_t *handle)
             (unsigned)(handle->enc_bytes_in / 1024),
             (unsigned)(handle->enc_bytes_out / 1024),
             handle->dec_checkpoints);
-   if (handle->enc_stream)
+   for (i = 0; i < 2; i++)
    {
-      intfstream_close(handle->enc_stream);
-      free(handle->enc_stream);
+      if (!handle->mem_stream[i])
+         continue;
+      intfstream_close(handle->mem_stream[i]);
+      free(handle->mem_stream[i]);
    }
    uint32s_index_free(handle->superblocks);
    uint32s_index_free(handle->blocks);
