@@ -5785,6 +5785,32 @@ static bool vfs_cfr_untrusted = false;
  * h->done with no state in the kernel between steps.  Returns 1 if it
  * is in use after this call, 0 if the kernel declined before any byte
  * moved (caller falls back to the portable path), -1 on error. */
+/* A descriptor for one end of a kernel copy. A SAF document is opened
+ * by its provider, which hands back a descriptor like any other: the
+ * kernel copies between it and the other end with no buffer here,
+ * and declines with an error the step turns into the portable path
+ * when the provider's descriptor is not a file (a pipe, a socket). */
+static int vfs_copy_open_fd(const char *path, bool write)
+{
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (path_is_saf(path))
+   {
+      struct libretro_vfs_implementation_saf_path_split_result split;
+      int fd;
+      if (!retro_vfs_path_split_saf(&split, path))
+         return -1;
+      fd = retro_vfs_file_open_saf(split.tree, split.path,
+            write ? RETRO_VFS_FILE_ACCESS_WRITE : RETRO_VFS_FILE_ACCESS_READ);
+      free(split.path);
+      free(split.tree);
+      return fd;
+   }
+#endif
+   return write
+      ? open(path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666)
+      : open(path, O_RDONLY | O_CLOEXEC);
+}
+
 static int vfs_copy_open_linux(struct retro_vfs_copy_handle *h)
 {
    if (vfs_cfr_untrusted)
@@ -5792,10 +5818,10 @@ static int vfs_copy_open_linux(struct retro_vfs_copy_handle *h)
       VFS_COPY_DBG("open: kernel path retired, portable\n");
       return 0;
    }
-   h->in_fd = open(h->src, O_RDONLY | O_CLOEXEC);
+   h->in_fd = vfs_copy_open_fd(h->src, false);
    if (h->in_fd < 0)
       return 0;
-   h->out_fd = open(h->dst, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+   h->out_fd = vfs_copy_open_fd(h->dst, true);
    if (h->out_fd < 0)
    {
       close(h->in_fd);
@@ -5911,7 +5937,8 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
    struct retro_vfs_copy_handle *h = NULL;
    int64_t src_size = 0;
    int     sflags, dflags;
-   bool    native   = true;
+   bool    native   = true; /* both ends are plain paths */
+   bool    kernel   = true; /* both ends have descriptors */
 
    if (!src || !*src || !dst || !*dst)
       return NULL;
@@ -5989,13 +6016,15 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
    /* Fast paths only when both ends are native. */
 #if defined(HAVE_SMBCLIENT)
    if (path_is_smb(src) || path_is_smb(dst))
-      native = false;
+      native = kernel = false;
 #endif
 #if defined(HAVE_NFSCLIENT)
    if (path_is_nfs(src) || path_is_nfs(dst))
-      native = false;
+      native = kernel = false;
 #endif
 #if defined(ANDROID) && defined(HAVE_SAF)
+   /* SAF ends still reach the kernel path, through their provider's
+    * descriptors; only the path-based fast paths are out */
    if (path_is_saf(src) || path_is_saf(dst))
       native = false;
 #endif
@@ -6013,7 +6042,7 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
    }
 #endif
 #if defined(VFS_HAVE_COPY_FILE_RANGE)
-   if (native)
+   if (kernel)
    {
       int r = vfs_copy_open_linux(h);
       if (r < 0)
@@ -6024,6 +6053,7 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
    }
 #endif
    (void)native;
+   (void)kernel;
    if (vfs_copy_open_portable(h, false) != 0)
       goto fail;
    return h;

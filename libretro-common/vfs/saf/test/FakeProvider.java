@@ -5,7 +5,12 @@ import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.provider.DocumentsContract.Document;
 
+import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -35,6 +40,35 @@ final class FakeProvider implements ContentResolver.Provider
    Runnable beforeCreate;
    /* Misbehaving provider: a create hands back an existing document of the sanitized name */
    boolean createReturnsExisting;
+   /* With a directory here, files are real files in it and opens hand out real descriptors,
+    * as ExternalStorageProvider's do */
+   File backing;
+   private final List<RandomAccessFile> lent = new ArrayList<RandomAccessFile>();
+
+   File backingFile(String id)
+   {
+      return new File(backing, id.replace(':', '_').replace('/', '_'));
+   }
+
+   /* The descriptor number, owned by the caller from now on: the Java side forgets it and the
+    * stream is kept reachable so nothing ever closes it behind the caller's back */
+   private int lend(RandomAccessFile file) throws IOException
+   {
+      try
+      {
+         final FileDescriptor fd = file.getFD();
+         final Field field = FileDescriptor.class.getDeclaredField("fd");
+         field.setAccessible(true);
+         final int n = field.getInt(fd);
+         field.setInt(fd, -1);
+         lent.add(file);
+         return n;
+      }
+      catch (ReflectiveOperationException e)
+      {
+         throw new IOException(e);
+      }
+   }
 
    FakeProvider()
    {
@@ -153,12 +187,25 @@ final class FakeProvider implements ContentResolver.Provider
    public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException
    {
       ++transactions;
-      final Node node = docs.get(idOf(uri));
+      final String id = idOf(uri);
+      final Node node = docs.get(id);
       if (node == null || node.dir)
          throw new FileNotFoundException(uri.toString());
       if (mode.indexOf('t') >= 0)
          node.size = 0;
-      return new ParcelFileDescriptor(nextFd++);
+      if (backing == null)
+         return new ParcelFileDescriptor(nextFd++);
+      try
+      {
+         final RandomAccessFile file = new RandomAccessFile(backingFile(id), mode.indexOf('w') >= 0 ? "rw" : "r");
+         if (mode.indexOf('t') >= 0)
+            file.setLength(0);
+         return new ParcelFileDescriptor(lend(file));
+      }
+      catch (IOException e)
+      {
+         throw new FileNotFoundException(e.getMessage());
+      }
    }
 
    @Override
@@ -270,7 +317,7 @@ final class FakeProvider implements ContentResolver.Provider
          if (c.equals(Document.COLUMN_DISPLAY_NAME))
             return nameOf(id);
          if (c.equals(Document.COLUMN_SIZE))
-            return node.dir ? null : Long.valueOf(node.size);
+            return node.dir ? null : Long.valueOf(provider.backing != null ? provider.backingFile(id).length() : node.size);
          throw new IllegalArgumentException(c);
       }
 

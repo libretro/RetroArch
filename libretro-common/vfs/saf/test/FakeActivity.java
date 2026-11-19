@@ -9,6 +9,9 @@ public final class FakeActivity
 
    public FakeActivity()
    {
+      final String backing = System.getProperty("saf.backing");
+      if (backing != null)
+         provider.backing = new java.io.File(backing);
       provider.mkdir("primary:Tree");
       provider.file("primary:Tree/big.bin", 5000000000L);
       provider.mkdir("primary:Tree/roms");
@@ -17,6 +20,14 @@ public final class FakeActivity
       provider.file("primary:Tree/roms/café 🎮 \u0000x", 1);
       provider.mkdir("primary:Tree/roms/sub");
       provider.mkdir("primary:Tree/empty");
+      if (backing != null)
+         provider.file("primary:Tree/src.bin", 0);
+   }
+
+   /* jni_copy_test fills src.bin's backing file before copying it */
+   public String backingPath(String id)
+   {
+      return provider.backingFile(id).getPath();
    }
 
    public ClassLoader getClassLoader()
