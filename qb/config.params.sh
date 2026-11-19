@@ -96,6 +96,7 @@ C89_SSL=no
 HAVE_RETROSSL=auto         # Use built-in TLS client on libretro-common/crypto (needs HAVE_CRYPTO)
 HAVE_MBEDTLS=no            # Use a system mbedTLS for TLS in place of the built-in client
 HAVE_BEARSSL=no            # Use a system BearSSL for TLS in place of the built-in client
+HAVE_SYSTEM_CA=yes         # Built-in TLS client trusts the system CA bundle (needs HAVE_RETROSSL)
 HAVE_RETRONFS=auto         # Built-in NFSv3 client and nfs:// support (needs networking)
 HAVE_SMBCLIENT=auto        # SMB client support
 HAVE_RETROSMB=auto         # Built-in SMB2/3 client (needs HAVE_CRYPTO), used unless a libsmb2 is asked for

@@ -81,7 +81,10 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#if defined(HAVE_RETROSSL) && defined(__linux__) && !defined(ANDROID)
+/* Configure builds for desktop systems; a device firmware's bundle can
+ * be older than the built-in one, so its makefiles leave this off. */
+#if defined(HAVE_RETROSSL) && defined(HAVE_SYSTEM_CA) && !defined(ANDROID)
+#define UNIX_SYSTEM_CA
 #include <net/net_socket_ssl.h>
 #endif
 #include <string/stdstring.h>
@@ -3970,6 +3973,44 @@ static void frontend_unix_deinit(void *data)
 #endif
 }
 
+#ifdef UNIX_SYSTEM_CA
+/* The system's CA bundle as the TLS trust store, read before any
+ * network task starts: the file SSL_CERT_FILE names when it is set,
+ * otherwise the first bundle with usable roots where distributions
+ * keep one. With none, the built-in bundle stays. */
+static void frontend_unix_load_system_ca(void)
+{
+   static const char *const bundles[] = {
+      "/etc/ssl/certs/ca-certificates.crt",                /* Debian, Arch, Gentoo, Alpine */
+      "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", /* Fedora, RHEL */
+      "/etc/pki/tls/certs/ca-bundle.crt",                  /* older Fedora, RHEL */
+      "/etc/ssl/ca-bundle.pem",                            /* openSUSE */
+      "/etc/ssl/cert.pem",                                 /* OpenBSD, FreeBSD */
+      "/usr/local/share/certs/ca-root-nss.crt"             /* FreeBSD ca_root_nss */
+   };
+   const char *env = getenv("SSL_CERT_FILE");
+   size_t count    = ARRAY_SIZE(bundles);
+   size_t i;
+
+   if (env && *env)
+      count = 1;
+   for (i = 0; i < count; i++)
+   {
+      const char *path = (env && *env) ? env : bundles[i];
+      void *pem        = NULL;
+      int64_t pem_len  = 0;
+      int loaded       = 0;
+      if (     filestream_read_file(path, &pem, &pem_len)
+            && pem_len > 0)
+         loaded = ssl_socket_retro_load_trust_pem((const char*)pem,
+               (size_t)pem_len, path);
+      free(pem);
+      if (loaded > 0)
+         break;
+   }
+}
+#endif
+
 static void frontend_unix_init(void *data)
 {
 #ifdef ANDROID
@@ -4182,18 +4223,9 @@ static void frontend_unix_init(void *data)
     * timer slack later. The frame limiter spins what its sleep leaves
     * short of the deadline, so the slack was spun every frame. */
    prctl(PR_SET_TIMERSLACK, 1UL, 0UL, 0UL, 0UL);
-
-#ifdef HAVE_RETROSSL
-   /* Read the system CA bundle at startup, not from a handshake task. */
-   {
-      void *pem       = NULL;
-      int64_t pem_len = 0;
-      if (filestream_read_file("/etc/ssl/certs/ca-certificates.crt", &pem, &pem_len)
-            && pem_len > 0)
-         ssl_socket_retro_load_trust_pem((const char*)pem, (size_t)pem_len);
-      free(pem);
-   }
 #endif
+#ifdef UNIX_SYSTEM_CA
+   frontend_unix_load_system_ca();
 #endif
 }
 

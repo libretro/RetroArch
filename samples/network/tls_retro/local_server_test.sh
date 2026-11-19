@@ -17,6 +17,8 @@ if [ -z "${TLS_TEST_DUPLEX_ONLY:-}" ]; then
 make -s tls_fetch
 make -s tls_partial
 $RUN ./tls_partial$EXE
+make -s tls_trust_preload
+$RUN ./tls_trust_preload$EXE
 make -s tls_partial_threads tls_partial_flag
 $RUN ./tls_partial_threads$EXE
 $RUN ./tls_partial_flag$EXE

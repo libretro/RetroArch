@@ -656,6 +656,9 @@ endif
 ifeq ($(HAVE_RETROSSL), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL -DHAVE_RETROSSL
+   ifeq ($(HAVE_SYSTEM_CA), 1)
+      DEFINES += -DHAVE_SYSTEM_CA
+   endif
 else ifeq ($(HAVE_BEARSSL), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL -DHAVE_BEARSSL

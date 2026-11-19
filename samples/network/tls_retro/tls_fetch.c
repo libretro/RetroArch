@@ -44,7 +44,7 @@ int main(int argc, char **argv)
       FILE *f = fopen(capem, "rb");
       char *pem;
       long n;
-      bool loaded;
+      int  loaded;
       if (!f)
          return 2;
       fseek(f, 0, SEEK_END);
@@ -55,12 +55,10 @@ int main(int argc, char **argv)
          return 2;
       pem[n] = '\0';
       fclose(f);
-      loaded = ssl_socket_retro_load_trust_pem(pem, (size_t)n);
+      loaded = ssl_socket_retro_load_trust_pem(pem, (size_t)n, capem);
       free(pem);
-      if (!loaded)
+      if (loaded <= 0)
          return 2;
-      /* Clearing a test override must not clear the preloaded store. */
-      ssl_socket_retro_set_trust_pem(NULL, 0);
    }
    for (round = 0; round < (rounds > 0 ? rounds : 1); round++)
    {

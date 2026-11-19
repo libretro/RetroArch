@@ -626,6 +626,7 @@ if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_RETROSSL" = "auto" ]; then
   SSL_BACKEND_CHOSEN=yes
 fi
 if [ "$HAVE_RETROSSL" = "auto" ]; then HAVE_RETROSSL=no; fi
+check_enabled RETROSSL SYSTEM_CA 'system CA bundle' 'retro ssl is' false
 if [ "$HAVE_MBEDX509" = "auto" ]; then HAVE_MBEDX509=no; fi
 if [ "$HAVE_MBEDCRYPTO" = "auto" ]; then HAVE_MBEDCRYPTO=no; fi
 
