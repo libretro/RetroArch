@@ -75,11 +75,14 @@
 #include "../../tasks/tasks_internal.h"
 #endif
 
-/* The GPU path: the Switch's channel interface. The Switch 2's libnx
- * stand-in has the calls but not a working channel, and presents a
- * CPU window instead. */
-#if defined(HAVE_LIBNX) && !defined(__SWITCH2__) && !defined(SWITCH_NX_CPU_ONLY)
+/* The GPU path: a channel to the GPU's 2D engine. On the Switch through
+ * libnx's channel interface; on the Switch 2 through GSV, whose channel,
+ * memory and display calls libounce provides, as drako3d does it. */
+#if defined(HAVE_LIBNX) && !defined(SWITCH_NX_CPU_ONLY)
 #define SWITCH_NX_GPU 1
+#ifdef __SWITCH2__
+#define NXG_S2 1
+#endif
 #endif
 
 #define SW_ALIGN(v, a) (((v) + ((a) - 1)) & ~((a) - 1))
@@ -90,22 +93,40 @@
 #define SW_ALIGNED_FREE(p)            free(p)
 #endif
 
-/* What the 2D engine takes as a pitch-linear source or destination */
+/* What the 2D engine takes as a pitch-linear source: its base and its
+ * pitch. Ampere's is 256 bytes */
+#ifdef NXG_S2
+#define SW_PITCH_ALIGN 256
+#else
 #define SW_PITCH_ALIGN 32
+#endif
+
+#ifdef SWITCH_NX_GPU
+/* CPU memory the GPU maps */
+typedef struct nxg_mem
+{
+#ifdef NXG_S2
+   uint32_t range_id;
+#else
+   NvMap    map;
+#endif
+   uint8_t *cpu;
+   uint64_t iova;
+   uint32_t size;
+} nxg_mem_t;
+#endif
 
 /* An image the driver draws from: premultiplied RGBA8, R in the low
  * byte as the framebuffer has it. With the GPU it lives in memory the
  * channel maps, and pixels is that memory's CPU view. */
 typedef struct sw_surf
 {
-   uint8_t *pixels;
+   uint8_t  *pixels;
 #ifdef SWITCH_NX_GPU
-   NvMap    map;
-   uint64_t iova;
-   uint32_t mem_size;
+   nxg_mem_t mem;
 #endif
-   uint32_t pitch;
-   unsigned dims;
+   uint32_t  pitch;
+   unsigned  dims;
 } sw_surf_t;
 
 /* One draw: a source rectangle in texels (a negative size flips it),
@@ -205,13 +226,20 @@ static INLINE uint32_t sw_over(uint32_t s, uint32_t d)
 
 #define NXG_SUB_3D      0
 #define NXG_SUB_2D      3
+#ifdef NXG_S2
+#define NXG_CLASS_3D    0xC797 /* AMPERE_B */
+#else
 #define NXG_CLASS_3D    0xB197 /* MAXWELL_B */
+#endif
 #define NXG_CLASS_2D    0x902D /* FERMI_TWOD_A */
 
 /* Host methods */
+#define NXG_HOST_MEMOP_A        0x00A
 #define NXG_HOST_SYNCPT_PAYLOAD 0x01C
+#define NXG_HOST_WFI            0x01E
+#define NXG_MEMOP_L2_FLUSH_DIRTY (16u << 27)
 
-/* MAXWELL_B: what the end of a frame signals with */
+/* The 3D class: what the end of a frame signals with on the Switch */
 #define NXG_3D_SYNCPT_ACTION    0x0B2
 #define NXG_3D_FLUSH            0x451
 #define NXG_SYNCPT_FLUSH        (1u << 16)
@@ -242,13 +270,52 @@ static INLINE uint32_t sw_over(uint32_t s, uint32_t d)
 #define NXG_FMT_BGRX8           0xE6
 #define NXG_FMT_B5G6R5          0xE8
 
-typedef struct nxg_mem
+#ifdef NXG_S2
+/* nvhost ioctls, as drako3d issues them (dir << 30 | size << 16 |
+ * type << 8 | nr) */
+#define NXG_IOC(dir, size, type, nr) \
+   (((u32)(dir) << 30) | ((u32)(size) << 16) | ((u32)(type) << 8) | (u32)(nr))
+#define NXG_GP_GET_CHARACTERISTICS NXG_IOC(3, 0xE8, 0x47, 0x05)
+#define NXG_GP_SET_CLIENT_HANDLE   NXG_IOC(1, 0x08, 0x47, 0x14)
+#define NXG_GP_GET_ENGINE_LIST     NXG_IOC(3, 0x10, 0x47, 0x1F)
+#define NXG_AS_BIND_CHANNEL        NXG_IOC(1, 0x04, 0x41, 0x01)
+#define NXG_AS_GET_VA_REGIONS      NXG_IOC(3, 0x40, 0x41, 0x08)
+#define NXG_AS_INITIALIZE_EX       NXG_IOC(1, 0x28, 0x41, 0x09)
+#define NXG_CH_SET_TIMEOUT         NXG_IOC(1, 0x04, 0x48, 0x03)
+#define NXG_CH_ALLOC_OBJ_CTX       NXG_IOC(3, 0x10, 0x48, 0x09)
+#define NXG_CH_SET_ERROR_NOTIFIER  NXG_IOC(3, 0x18, 0x48, 0x0C)
+#define NXG_CH_ALLOC_GPFIFO_EX2    NXG_IOC(3, 0x20, 0x48, 0x1A)
+#define NXG_CH_KICKOFF_PB          NXG_IOC(3, 0x18, 0x48, 0x1B)
+#define NXG_CH_SETUP_USERD         NXG_IOC(3, 0x10, 0x48, 0x1E)
+#define NXG_CH_SET_GR_MODE         NXG_IOC(3, 0x08, 0x48, 0x1F)
+#define NXG_CH_SET_ENGINE          NXG_IOC(1, 0x04, 0x48, 0x20)
+#define NXG_TSG_SET_TIMESLICE      NXG_IOC(3, 0x04, 0x54, 0x08)
+#define NXG_TSG_BIND_CHANNEL_EX    NXG_IOC(3, 0x18, 0x54, 0x0B)
+#define NXG_KICKOFF_FLAGS          0x6 /* fence out, base */
+#define NXG_GPFIFO_ENTRIES         0x800
+#define NXG_KIND_GENERIC           0x06
+#define NXG_CLIENT_NAME            0x78616e7872ULL /* "rxnax" */
+#define NXG_INVALID_FD             0xffffffffu
+
+typedef struct nxg_va
 {
-   NvMap    map;
-   uint8_t *cpu;
-   uint64_t iova;
-   uint32_t size;
-} nxg_mem_t;
+   struct nxg_va *next;
+   uint64_t start;
+   uint64_t end;
+} nxg_va_t;
+
+/* A window buffer as the display knows it */
+typedef struct nxg_s2_buf
+{
+   GsvNativeSync release;
+   uint32_t      mem_id;
+   uint32_t      image_id;
+   uint8_t       layer_slot;
+   bool          has_mem;
+   bool          has_image;
+   bool          has_alias;
+} nxg_s2_buf_t;
+#endif
 
 typedef struct nxg_frame
 {
@@ -282,17 +349,49 @@ typedef struct nxg
    nxg_linear_t    rgui[NXG_RGUI_SLOTS];
    nxg_linear_t    frame_mem[NXG_FRAME_MEM];
    nxg_mem_t       fb;
+   sw_surf_t       white;
+#ifdef NXG_S2
+   nxg_s2_buf_t    bufs[NXG_BUFFERS];
+   GsvGpu          gpu;
+   GsvSync         sync;
+   Event           worker_event;
+   Event           map_event;
+   Event           wait_event;
+   Vi2Layer       *layer;
+   nxg_va_t       *va_free;
+   uint32_t        worker_slot;
+   uint32_t        map_slot;
+   uint32_t        wait_slot;
+   uint32_t        vm_id;
+   uint32_t        ctrl_fd;
+   uint32_t        as_fd;
+   uint32_t        tsg_fd;
+   uint32_t        ch_fd;
+   uint32_t        engine_id;
+   uint32_t        producer_id;
+   uint8_t         client;
+   bool            sync_open;
+   bool            gpu_open;
+   bool            worker_event_open;
+   bool            map_event_open;
+   bool            wait_slot_open;
+   bool            client_open;
+   bool            layer_open;
+#else
    NvAddressSpace  as;
    NvGpuChannel    ch;
-   sw_surf_t       white;
-   uint64_t        serial;
-   uint64_t        done_serial;
+   bool            as_open;
+   bool            ch_open;
+   bool            win_configured;
+#endif
    /* What the last frame was blitted from, for a dupe */
    nxg_linear_t   *last_owner;
    uint64_t        last_iova;
    uint32_t        last_pitch;
    unsigned        last_dims;
    unsigned        last_x;
+   uint64_t        serial;
+   uint64_t        done_serial;
    unsigned        out_dims;
    unsigned        src_dims;
    uint32_t        src_pitch;
@@ -305,16 +404,531 @@ typedef struct nxg
    int             sw_lent;
    int             rgui_last;
    bool            nv_open;
-   bool            as_open;
-   bool            ch_open;
-   bool            win_configured;
    bool            src_valid;
    bool            recording;
    bool            swap_interval_set;
 } nxg_t;
 
+static unsigned nxg_mode_dims(int op_mode)
+{
+   return op_mode == AppletOperationMode_Console
+      ? VIDEO_SCALE_PACK(1920, 1080) : VIDEO_SCALE_PACK(1280, 720);
+}
+
+/* ---- the platform: memory, fences, the channel, the window ------------ */
+#ifdef NXG_S2
+
+/* The VM's addresses, first fit, in 64 KiB units */
+static uint64_t nxg_va_alloc(nxg_t *g, uint64_t size)
+{
+   nxg_va_t **pp;
+   size = SW_ALIGN(size, 0x10000);
+   for (pp = &g->va_free; *pp; pp = &(*pp)->next)
+   {
+      nxg_va_t *r = *pp;
+      if (r->end - r->start >= size)
+      {
+         uint64_t va = r->start;
+         r->start   += size;
+         if (r->start == r->end)
+         {
+            *pp = r->next;
+            free(r);
+         }
+         return va;
+      }
+   }
+   return 0;
+}
+
+static void nxg_va_free(nxg_t *g, uint64_t va, uint64_t size)
+{
+   nxg_va_t **pp = &g->va_free;
+   nxg_va_t *prev = NULL, *n;
+   size = SW_ALIGN(size, 0x10000);
+   while (*pp && (*pp)->start < va)
+   {
+      prev = *pp;
+      pp   = &(*pp)->next;
+   }
+   if (prev && prev->end == va)
+   {
+      prev->end += size;
+      if (prev->next && prev->end == prev->next->start)
+      {
+         n          = prev->next;
+         prev->end  = n->end;
+         prev->next = n->next;
+         free(n);
+      }
+      return;
+   }
+   if (*pp && va + size == (*pp)->start)
+   {
+      (*pp)->start = va;
+      return;
+   }
+   if (!(n = (nxg_va_t*)malloc(sizeof(*n))))
+      return;
+   n->start = va;
+   n->end   = va + size;
+   n->next  = *pp;
+   *pp      = n;
+}
+
+/* The worker's answer to a mapping request */
+static void nxg_map_wait(nxg_t *g)
+{
+   if (g->map_event_open)
+      eventWait(&g->map_event, 5000000000ULL);
+   else
+   {
+      eventWait(&g->worker_event, 5000000000ULL);
+      eventClear(&g->worker_event);
+   }
+}
+
 static bool nxg_mem_new(nxg_t *g, nxg_mem_t *m, uint32_t size,
-      bool gpu_cached, NvKind kind)
+      bool gpu_cached, bool block_linear)
+{
+   GsvGpuMapping mapping;
+   u8 kind = 0;
+   (void)block_linear; /* one generic kind for both on Ampere */
+   size = SW_ALIGN(size, 0x10000);
+   memset(m, 0, sizeof(*m));
+   if (!(m->cpu = (uint8_t*)SW_ALIGNED_ALLOC(0x1000, size)))
+      return false;
+   armDCacheFlush(m->cpu, size);
+   if (R_FAILED(svcUnknown80(m->cpu, size, 0x20, 0x20)))
+      goto fail_cpu;
+   if (R_FAILED(gsvGpuRegisterMemory(&g->gpu, (u64)(uintptr_t)m->cpu,
+               size, g->client, &m->range_id)))
+      goto fail_attr;
+   if (!(m->iova = nxg_va_alloc(g, size)))
+      goto fail_reg;
+   memset(&mapping, 0, sizeof(mapping));
+   mapping.vm_id         = g->vm_id;
+   mapping.va            = m->iova;
+   mapping.size          = size;
+   mapping.range_id      = m->range_id;
+   mapping.range_offset  = 0;
+   mapping.kind          = NXG_KIND_GENERIC;
+   mapping.fallback_kind = NXG_KIND_GENERIC;
+   mapping.gpu_cacheable = gpu_cached;
+   mapping.client        = g->client;
+   if (R_FAILED(gsvGpuMap(&g->gpu, &mapping, g->map_slot, &kind)))
+      goto fail_va;
+   nxg_map_wait(g);
+   m->size = size;
+   return true;
+
+fail_va:
+   nxg_va_free(g, m->iova, size);
+fail_reg:
+   if (R_SUCCEEDED(gsvGpuUnregisterMemory(&g->gpu, m->range_id, g->map_slot)))
+      nxg_map_wait(g);
+fail_attr:
+   svcUnknown80(m->cpu, size, 0x20, 0);
+fail_cpu:
+   SW_ALIGNED_FREE(m->cpu);
+   m->cpu = NULL;
+   return false;
+}
+
+static void nxg_mem_free(nxg_t *g, nxg_mem_t *m)
+{
+   if (!m->cpu)
+      return;
+   if (R_SUCCEEDED(gsvGpuUnmap(&g->gpu, g->vm_id, m->iova, m->size,
+               g->map_slot)))
+      nxg_map_wait(g);
+   nxg_va_free(g, m->iova, m->size);
+   if (R_SUCCEEDED(gsvGpuUnregisterMemory(&g->gpu, m->range_id,
+               g->map_slot)))
+      nxg_map_wait(g);
+   svcUnknown80(m->cpu, m->size, 0x20, 0);
+   SW_ALIGNED_FREE(m->cpu);
+   m->cpu  = NULL;
+   m->size = 0;
+}
+
+/* A producer counter's target in the form the sync session compares:
+ * 64 bits when the counter is, around its current value */
+static void nxg_fence_target(nxg_t *g, const NvFence *f, u64 *target,
+      u8 *mode)
+{
+   u64 cur = 0;
+   *target = f->value;
+   *mode   = 0;
+   if (     R_SUCCEEDED(gsvSyncReadCounter(&g->sync, f->id, &cur, mode))
+         && *mode == 1 && cur != UINT64_MAX)
+      *target = cur + (u64)(s64)(s32)(f->value - (u32)cur);
+   else
+      *mode = 0;
+}
+
+static bool nxg_fence_done(nxg_t *g, const NvFence *f)
+{
+   u64 v = 0;
+   if ((s32)f->id < 0)
+      return true;
+   if (     R_FAILED(gsvSyncReadCounter(&g->sync, f->id, &v, NULL))
+         || v == UINT64_MAX)
+      return true;
+   return (s32)((u32)v - f->value) >= 0;
+}
+
+/* Blocks on an event the sync session signals at the target: no sleep */
+static void nxg_fence_wait(nxg_t *g, const NvFence *f)
+{
+   while (!nxg_fence_done(g, f))
+   {
+      u64 target;
+      u8 mode;
+      if (!g->wait_slot_open)
+      {
+         svcSleepThread(50000);
+         continue;
+      }
+      nxg_fence_target(g, f, &target, &mode);
+      if (R_FAILED(gsvSyncArmEvent(&g->sync, g->wait_slot, f->id, target,
+                  mode)))
+      {
+         svcSleepThread(50000);
+         continue;
+      }
+      if (!nxg_fence_done(g, f))
+         eventWait(&g->wait_event, 1000000000ULL);
+      gsvSyncDisarmEvent(&g->sync, g->wait_slot);
+   }
+}
+
+static void nxg_native_from_fence(nxg_t *g, const NvFence *f,
+      GsvNativeSync *out)
+{
+   u32 id = ~f->id;
+   u64 target;
+   u8 mode;
+   nxg_fence_target(g, f, &target, &mode);
+   memset(out, 0, sizeof(*out));
+   memcpy(&out->data[0], &id, sizeof(id));
+   out->data[4] = mode;
+   memcpy(&out->data[8], &target, sizeof(target));
+}
+
+static void nxg_native_wait(nxg_t *g, GsvNativeSync *s)
+{
+   unsigned i;
+   bool any = false;
+   for (i = 0; i < sizeof(s->data); i++)
+      any |= s->data[i] != 0;
+   if (!any)
+      return;
+   {
+      u32 id;
+      u64 target;
+      NvFence f;
+      memcpy(&id, &s->data[0], sizeof(id));
+      memcpy(&target, &s->data[8], sizeof(target));
+      if (s->data[4] <= 1)
+      {
+         f.id    = ~id;
+         f.value = (u32)target;
+         nxg_fence_wait(g, &f);
+      }
+      else
+         gsvSyncWaitNative(&g->sync, s, UINT64_MAX);
+   }
+   memset(s, 0, sizeof(*s));
+}
+
+static bool nxg_device_init(nxg_t *g)
+{
+   GsvGpuVaRange ranges[4];
+   u32 nranges = 0, last_slot = 0;
+   g->ctrl_fd = g->as_fd = g->tsg_fd = g->ch_fd = NXG_INVALID_FD;
+
+   if (R_FAILED(nvInitialize()))
+      return false;
+   g->nv_open = true;
+   if (R_FAILED(gsvOpenSync(&g->sync)))
+      return false;
+   g->sync_open = true;
+   /* The window's layer may have registered already */
+   gsvRegisterFrame(2, NULL);
+   if (R_FAILED(gsvOpenGpu(&g->gpu)))
+      return false;
+   g->gpu_open = true;
+   if (     R_FAILED(gsvGpuGetSlotRange(&g->gpu, &g->worker_slot, &last_slot))
+         || last_slot < g->worker_slot)
+      return false;
+   if (R_FAILED(gsvGpuCreateSlotEvent(&g->gpu, g->worker_slot,
+               &g->worker_event, false)))
+      return false;
+   g->worker_event_open = true;
+   if (R_FAILED(gsvGpuOpenWorker(&g->gpu, g->worker_slot, &g->worker_event)))
+      return false;
+   g->map_slot = g->worker_slot;
+   if (     last_slot > g->worker_slot
+         && R_SUCCEEDED(gsvGpuCreateSlotEvent(&g->gpu, g->worker_slot + 1,
+               &g->map_event, true)))
+   {
+      g->map_slot       = g->worker_slot + 1;
+      g->map_event_open = true;
+   }
+   if (     R_SUCCEEDED(gsvSyncAllocateSlot(&g->sync, &g->wait_slot))
+         && R_SUCCEEDED(gsvSyncCreateEvent(&g->sync, g->wait_slot,
+               &g->wait_event, true)))
+      g->wait_slot_open = true;
+   if (R_FAILED(gsvGpuRegisterClient(&g->gpu, NXG_CLIENT_NAME, &g->client)))
+      return false;
+   g->client_open = true;
+   if (R_FAILED(gsvGpuCreateVm(&g->gpu, &g->vm_id)))
+      return false;
+   memset(ranges, 0, sizeof(ranges));
+   if (     R_FAILED(gsvGpuGetVmUserRanges(&g->gpu, g->vm_id, ranges, &nranges))
+         || !nranges)
+      return false;
+   if (R_FAILED(gsvRegisterVm(g->vm_id)))
+      return false;
+
+   if (R_FAILED(nvOpen(&g->ctrl_fd, "/dev/nvhost-ctrl-gpu")))
+      return false;
+   {
+      /* The graphics engine: the entry with both type words zero */
+      struct { u32 a, b, id, c; } engines[0x400 / 16];
+      u32 req[4], i, n;
+      memset(engines, 0, sizeof(engines));
+      memset(req, 0, sizeof(req));
+      if (R_FAILED(nvIoctl3(g->ctrl_fd, NXG_GP_GET_ENGINE_LIST, req,
+                  engines, sizeof(engines))))
+         return false;
+      n            = req[0] / sizeof(engines[0]);
+      g->engine_id = NXG_INVALID_FD;
+      for (i = 0; i < n && i < ARRAY_SIZE(engines); i++)
+         if (!engines[i].a && !engines[i].b)
+            g->engine_id = engines[i].id;
+      if (g->engine_id == NXG_INVALID_FD)
+         return false;
+   }
+
+   /* The VM imported as the address space, its regions the heap */
+   if (R_FAILED(nvOpen(&g->as_fd, "/dev/nvhost-as-gpu")))
+      return false;
+   {
+      struct
+      {
+         u32 flags, vm_id, big_page_size, reserved;
+         u64 va_range_start, va_range_end, va_range_split;
+      } init;
+      struct
+      {
+         u64 buf_addr;
+         u32 buf_size;
+         u32 reserved;
+         u8  inline_regions[0x30];
+      } query;
+      struct { u64 offset; u32 page_size; u32 reserved; u64 pages; } regions[2];
+      u32 size, i;
+      memset(&init, 0, sizeof(init));
+      init.flags          = 5;
+      init.vm_id          = g->vm_id;
+      init.va_range_start = ranges[0].first;
+      init.va_range_end   = ranges[0].last + 1;
+      if (R_FAILED(nvIoctl(g->as_fd, NXG_AS_INITIALIZE_EX, &init)))
+         return false;
+      memset(&query, 0, sizeof(query));
+      if (R_FAILED(nvIoctl(g->as_fd, NXG_AS_GET_VA_REGIONS, &query)))
+         return false;
+      size = query.buf_size;
+      if (size != sizeof(regions[0]) && size != sizeof(regions))
+         return false;
+      memset(&query, 0, sizeof(query));
+      memset(regions, 0, sizeof(regions));
+      query.buf_size = size;
+      if (R_FAILED(nvIoctl3(g->as_fd, NXG_AS_GET_VA_REGIONS, &query,
+                  regions, size)))
+         return false;
+      for (i = 0; i < size / sizeof(regions[0]); i++)
+      {
+         uint64_t start = SW_ALIGN(regions[i].offset, 0x10000ULL);
+         uint64_t end   = regions[i].offset
+            + regions[i].pages * regions[i].page_size;
+         if (start < ranges[0].first)
+            start = SW_ALIGN(ranges[0].first, 0x10000ULL);
+         if (end > ranges[0].last + 1)
+            end = ranges[0].last + 1;
+         end &= ~(uint64_t)0xffff;
+         if (start < end)
+            nxg_va_free(g, start, end - start);
+      }
+      if (!g->va_free)
+         return false;
+   }
+
+   /* The channel: a TSG on the graphics engine, the 3D class allocated,
+    * the 2D class bound in the stream */
+   if (R_FAILED(nvOpen(&g->tsg_fd, "/dev/nvhost-tsg-gpu")))
+      return false;
+   if (R_FAILED(nvOpen(&g->ch_fd, "/dev/nvhost-gpu")))
+      return false;
+   {
+      u32 bind[6], timeout = 1000, timeslice = 1024, mode[2];
+      u64 userd[2], cookie = (u64)(uintptr_t)g;
+      struct { u32 num_entries, num_jobs, flags, producer_id; u32 reserved[4]; } alloc;
+      struct { u32 class_num, flags; u64 obj_id; } obj;
+      struct { u64 offset, size; u32 mem, padding; } notifier;
+      if (R_FAILED(nvIoctl(g->ch_fd, NXG_CH_SET_ENGINE, &g->engine_id)))
+         return false;
+      if (R_FAILED(nvIoctl(g->as_fd, NXG_AS_BIND_CHANNEL, &g->ch_fd)))
+         return false;
+      memset(bind, 0, sizeof(bind));
+      bind[0] = g->ch_fd;
+      if (R_FAILED(nvIoctl(g->tsg_fd, NXG_TSG_BIND_CHANNEL_EX, bind)))
+         return false;
+      memset(&alloc, 0, sizeof(alloc));
+      alloc.num_entries = NXG_GPFIFO_ENTRIES;
+      alloc.num_jobs    = 8;
+      alloc.flags       = 2;
+      if (     R_FAILED(nvIoctl(g->ch_fd, NXG_CH_ALLOC_GPFIFO_EX2, &alloc))
+            || !alloc.producer_id)
+         return false;
+      g->producer_id = alloc.producer_id;
+      memset(userd, 0, sizeof(userd));
+      if (     R_FAILED(nvIoctl(g->ch_fd, NXG_CH_SETUP_USERD, userd))
+            || !userd[0])
+         return false;
+      memset(&obj, 0, sizeof(obj));
+      obj.class_num = NXG_CLASS_3D;
+      obj.obj_id    = 0xDEADBEEF;
+      if (R_FAILED(nvIoctl(g->ch_fd, NXG_CH_ALLOC_OBJ_CTX, &obj)))
+         return false;
+      memset(&notifier, 0, sizeof(notifier));
+      notifier.size = 0x1000;
+      notifier.mem  = 1;
+      nvIoctl(g->ch_fd, NXG_CH_SET_ERROR_NOTIFIER, &notifier);
+      nvIoctl(g->ch_fd, NXG_GP_SET_CLIENT_HANDLE, &cookie);
+      nvIoctl(g->ch_fd, NXG_CH_SET_TIMEOUT, &timeout);
+      mode[0] = 0;
+      mode[1] = 2;
+      nvIoctl(g->ch_fd, NXG_CH_SET_GR_MODE, mode);
+      nvIoctl(g->tsg_fd, NXG_TSG_SET_TIMESLICE, &timeslice);
+   }
+   return true;
+}
+
+/* Each window buffer registered with the display, a slot of the
+ * layer each */
+static bool nxg_window_init(nxg_t *g, NWindow *win)
+{
+   GsvImageLayout layout;
+   u64 size = 0, avail = 0;
+   unsigned i;
+   gsvMakeImageLayout(&layout, NXG_FB_W, NXG_FB_H, NXG_BLOCK_LOG2 + 3,
+         NXG_FB_PITCH / 64, 1 /* RGBA8 */, 1 /* block-linear */, 0);
+   if (R_FAILED(gsvGetImageSize(&layout, &size)) || size > NXG_FB_SIZE)
+      return false;
+   if (R_FAILED(nwindowGetVi2Layer(win, &g->layer)))
+      return false;
+   g->layer_open = true;
+   if (R_FAILED(vi2GetLayerAvailability(g->layer, &avail)))
+      return false;
+   for (i = 0; i < NXG_BUFFERS; i++)
+   {
+      nxg_s2_buf_t *b = &g->bufs[i];
+      u64 off         = (u64)i * NXG_FB_SIZE;
+      if (!avail)
+         return false;
+      b->layer_slot = (uint8_t)__builtin_ctzll(avail);
+      avail        &= avail - 1;
+      if (R_FAILED(gsvReserveImageMemory(3, size, &b->mem_id)))
+         return false;
+      b->has_mem = true;
+      if (R_FAILED(gsvRegisterImageMemory(b->mem_id,
+                  (u64)(uintptr_t)g->fb.cpu + off, size, g->fb.range_id, off)))
+         return false;
+      if (R_FAILED(gsvCreateImage(&layout, b->mem_id, &b->image_id)))
+         return false;
+      b->has_image = true;
+      if (R_FAILED(gsvCreateDisplayAlias(b->image_id, 1)))
+         return false;
+      b->has_alias = true;
+   }
+   return true;
+}
+
+static void nxg_platform_free(nxg_t *g, NWindow *win)
+{
+   unsigned i;
+   if (g->layer_open)
+   {
+      Vi2PresentOptions o;
+      u64 slots = 0;
+      GsvNativeSync release;
+      if (R_SUCCEEDED(vi2GetLayerAvailability(g->layer, &slots)) && slots)
+      {
+         vi2MakeBasicPresentOptions(&o, NXG_FB_W, NXG_FB_H,
+               armGetSystemTick());
+         o.flags &= ~1ULL;
+         memset(&release, 0, sizeof(release));
+         vi2UnregisterLayerImage(g->layer, (u8)__builtin_ctzll(slots), &o,
+               &slots, &release);
+      }
+   }
+   for (i = 0; i < NXG_BUFFERS; i++)
+   {
+      nxg_s2_buf_t *b = &g->bufs[i];
+      nxg_native_wait(g, &b->release);
+      if (b->has_alias)
+         gsvDestroyDisplayAlias(b->image_id);
+      if (b->has_image)
+         gsvDestroyImage(b->image_id);
+      if (b->has_mem)
+         gsvReleaseImageMemory(b->mem_id);
+   }
+   if (g->layer_open)
+      nwindowReleaseVi2Layer(win);
+}
+
+static void nxg_device_free(nxg_t *g)
+{
+   while (g->va_free)
+   {
+      nxg_va_t *n = g->va_free->next;
+      free(g->va_free);
+      g->va_free = n;
+   }
+   if (g->ch_fd != NXG_INVALID_FD)
+      nvClose(g->ch_fd);
+   if (g->tsg_fd != NXG_INVALID_FD)
+      nvClose(g->tsg_fd);
+   if (g->as_fd != NXG_INVALID_FD)
+      nvClose(g->as_fd);
+   if (g->ctrl_fd != NXG_INVALID_FD)
+      nvClose(g->ctrl_fd);
+   if (g->client_open)
+      gsvGpuReleaseClient(&g->gpu, g->client);
+   if (g->wait_slot_open)
+   {
+      eventClose(&g->wait_event);
+      gsvSyncFreeSlot(&g->sync, g->wait_slot);
+   }
+   if (g->map_event_open)
+      eventClose(&g->map_event);
+   if (g->worker_event_open)
+      eventClose(&g->worker_event);
+   if (g->gpu_open)
+      gsvGpuClose(&g->gpu);
+   if (g->sync_open)
+      gsvSyncClose(&g->sync);
+   if (g->nv_open)
+      nvExit();
+}
+
+#else /* the Switch */
+
+static bool nxg_mem_new(nxg_t *g, nxg_mem_t *m, uint32_t size,
+      bool gpu_cached, bool block_linear)
 {
    size = SW_ALIGN(size, 0x1000);
    memset(m, 0, sizeof(*m));
@@ -328,7 +942,8 @@ static bool nxg_mem_new(nxg_t *g, nxg_mem_t *m, uint32_t size,
       return false;
    }
    if (R_FAILED(nvAddressSpaceMap(&g->as, nvMapGetHandle(&m->map),
-               gpu_cached, kind, &m->iova)))
+               gpu_cached, block_linear ? NvKind_Generic_16BX2 : NvKind_Pitch,
+               &m->iova)))
    {
       nvMapClose(&m->map);
       SW_ALIGNED_FREE(m->cpu);
@@ -350,81 +965,62 @@ static void nxg_mem_free(nxg_t *g, nxg_mem_t *m)
    m->size = 0;
 }
 
-/* Let go of once the frame being recorded has passed: no frame still
- * on the GPU reads it then */
-static void nxg_retire(nxg_t *g, nxg_mem_t *m)
+static bool nxg_fence_done(nxg_t *g, const NvFence *f)
 {
-   nxg_frame_t *f = &g->frames[g->cur];
-   if (!m->cpu)
-      return;
-   if (f->retire_count == f->retire_cap)
+   NvFence c = *f;
+   (void)g;
+   return R_SUCCEEDED(nvFenceWait(&c, 0));
+}
+
+static void nxg_fence_wait(nxg_t *g, const NvFence *f)
+{
+   NvFence c = *f;
+   (void)g;
+   nvFenceWait(&c, -1);
+}
+
+static bool nxg_device_init(nxg_t *g)
+{
+   const nvioctl_gpu_characteristics *chars;
+   if (R_FAILED(nvInitialize()))
+      return false;
+   if (R_FAILED(nvGpuInit()))
    {
-      unsigned   cap = f->retire_cap ? f->retire_cap * 2 : 16;
-      nxg_mem_t *r   = (nxg_mem_t*)realloc(f->retire, cap * sizeof(*r));
-      if (!r)
-      {
-         /* Nowhere to park it: every frame is waited out instead */
-         unsigned i;
-         for (i = 0; i < NXG_FRAMES; i++)
-            if (g->frames[i].fence_valid)
-               nvFenceWait(&g->frames[i].fence, -1);
-         nxg_mem_free(g, m);
-         return;
-      }
-      f->retire     = r;
-      f->retire_cap = cap;
+      nvExit();
+      return false;
    }
-   f->retire[f->retire_count++] = *m;
-   m->cpu = NULL;
-}
-
-static void nxg_poll_done(nxg_t *g)
-{
-   unsigned i;
-   for (i = 0; i < NXG_FRAMES; i++)
+   if (R_FAILED(nvFenceInit()))
    {
-      nxg_frame_t *f = &g->frames[i];
-      if (     f->fence_valid
-            && f->serial > g->done_serial
-            && R_SUCCEEDED(nvFenceWait(&f->fence, 0)))
-         g->done_serial = f->serial;
+      nvGpuExit();
+      nvExit();
+      return false;
    }
-}
-
-/* Room for @n words in the frame's commands; NULL drops the draw */
-static uint32_t *nxg_cmd(nxg_t *g, unsigned n)
-{
-   nxg_frame_t *f = &g->frames[g->cur];
-   uint32_t *p;
-   if (f->used + n > NXG_CMD_WORDS)
-      return NULL;
-   p        = (uint32_t*)f->cmd.cpu + f->used;
-   f->used += n;
-   return p;
-}
-
-/* The one wait on the frame path: the slot about to be recorded */
-static void nxg_frame_recycle(nxg_t *g, unsigned i)
-{
-   nxg_frame_t *f = &g->frames[i];
-   unsigned j;
-   if (f->fence_valid)
+   if (R_FAILED(nvMapInit()))
    {
-      nvFenceWait(&f->fence, -1);
-      if (f->serial > g->done_serial)
-         g->done_serial = f->serial;
+      nvFenceExit();
+      nvGpuExit();
+      nvExit();
+      return false;
    }
-   for (j = 0; j < f->retire_count; j++)
-      nxg_mem_free(g, &f->retire[j]);
-   f->retire_count = 0;
-   f->used         = 0;
-   f->arena_off    = 0;
+   g->nv_open = true;
+   chars      = nvGpuGetCharacteristics();
+   if (R_FAILED(nvAddressSpaceCreate(&g->as,
+               chars ? chars->big_page_size : 0x20000)))
+      return false;
+   g->as_open = true;
+   if (R_FAILED(nvGpuChannelCreate(&g->ch, &g->as, NvChannelPriority_Medium)))
+      return false;
+   g->ch_open = true;
+   return true;
 }
 
-static void nxg_window_buffers(nxg_t *g, NWindow *win)
+/* The window's buffers, block-linear, as libnx's framebuffer makes them */
+static bool nxg_window_init(nxg_t *g, NWindow *win)
 {
    NvGraphicBuffer grbuf;
    unsigned i;
+   if (R_FAILED(nwindowSetDimensions(win, NXG_FB_W, NXG_FB_H)))
+      return false;
    memset(&grbuf, 0, sizeof(grbuf));
    grbuf.header.num_ints           = (sizeof(NvGraphicBuffer)
          - sizeof(NativeHandle)) / 4;
@@ -451,15 +1047,106 @@ static void nxg_window_buffers(nxg_t *g, NWindow *win)
    {
       grbuf.planes[0].offset = i * NXG_FB_SIZE;
       if (R_FAILED(nwindowConfigureBuffer(win, (s32)i, &grbuf)))
-         return;
+         return false;
    }
    g->win_configured = true;
+   return true;
 }
 
-static unsigned nxg_mode_dims(int op_mode)
+static void nxg_platform_free(nxg_t *g, NWindow *win)
 {
-   return op_mode == AppletOperationMode_Console
-      ? VIDEO_SCALE_PACK(1920, 1080) : VIDEO_SCALE_PACK(1280, 720);
+   if (g->win_configured)
+      nwindowReleaseBuffers(win);
+}
+
+static void nxg_device_free(nxg_t *g)
+{
+   if (g->ch_open)
+      nvGpuChannelClose(&g->ch);
+   if (g->as_open)
+      nvAddressSpaceClose(&g->as);
+   if (g->nv_open)
+   {
+      nvMapExit();
+      nvFenceExit();
+      nvGpuExit();
+      nvExit();
+   }
+}
+
+#endif
+
+/* ---- frames ------------------------------------------------------------ */
+
+/* Let go of once the frame being recorded has passed: no frame still
+ * on the GPU reads it then */
+static void nxg_retire(nxg_t *g, nxg_mem_t *m)
+{
+   nxg_frame_t *f = &g->frames[g->cur];
+   if (!m->cpu)
+      return;
+   if (f->retire_count == f->retire_cap)
+   {
+      unsigned   cap = f->retire_cap ? f->retire_cap * 2 : 16;
+      nxg_mem_t *r   = (nxg_mem_t*)realloc(f->retire, cap * sizeof(*r));
+      if (!r)
+      {
+         /* Nowhere to park it: every frame is waited out instead */
+         unsigned i;
+         for (i = 0; i < NXG_FRAMES; i++)
+            if (g->frames[i].fence_valid)
+               nxg_fence_wait(g, &g->frames[i].fence);
+         nxg_mem_free(g, m);
+         return;
+      }
+      f->retire     = r;
+      f->retire_cap = cap;
+   }
+   f->retire[f->retire_count++] = *m;
+   m->cpu = NULL;
+}
+
+static void nxg_poll_done(nxg_t *g)
+{
+   unsigned i;
+   for (i = 0; i < NXG_FRAMES; i++)
+   {
+      nxg_frame_t *f = &g->frames[i];
+      if (     f->fence_valid
+            && f->serial > g->done_serial
+            && nxg_fence_done(g, &f->fence))
+         g->done_serial = f->serial;
+   }
+}
+
+/* Room for @n words in the frame's commands; NULL drops the draw */
+static uint32_t *nxg_cmd(nxg_t *g, unsigned n)
+{
+   nxg_frame_t *f = &g->frames[g->cur];
+   uint32_t *p;
+   if (f->used + n > NXG_CMD_WORDS)
+      return NULL;
+   p        = (uint32_t*)f->cmd.cpu + f->used;
+   f->used += n;
+   return p;
+}
+
+/* The one wait on the frame path: the slot about to be recorded */
+static void nxg_frame_recycle(nxg_t *g, unsigned i)
+{
+   nxg_frame_t *f = &g->frames[i];
+   unsigned j;
+   if (f->fence_valid)
+   {
+      nxg_fence_wait(g, &f->fence);
+      if (f->serial > g->done_serial)
+         g->done_serial = f->serial;
+   }
+   for (j = 0; j < f->retire_count; j++)
+      nxg_mem_free(g, &f->retire[j]);
+   f->retire_count = 0;
+   f->used         = 0;
+   f->arena_off    = 0;
 }
 
 static void nxg_free(nxg_t *g, NWindow *win)
@@ -469,9 +1156,8 @@ static void nxg_free(nxg_t *g, NWindow *win)
       return;
    for (i = 0; i < NXG_FRAMES; i++)
       if (g->frames[i].fence_valid)
-         nvFenceWait(&g->frames[i].fence, -1);
-   if (g->win_configured)
-      nwindowReleaseBuffers(win);
+         nxg_fence_wait(g, &g->frames[i].fence);
+   nxg_platform_free(g, win);
    for (i = 0; i < NXG_FRAMES; i++)
    {
       nxg_frame_t *f = &g->frames[i];
@@ -488,24 +1174,9 @@ static void nxg_free(nxg_t *g, NWindow *win)
       nxg_mem_free(g, &g->rgui[i].mem);
    for (i = 0; i < NXG_FRAME_MEM; i++)
       nxg_mem_free(g, &g->frame_mem[i].mem);
-   if (g->white.pixels)
-   {
-      nvAddressSpaceUnmap(&g->as, g->white.iova);
-      nvMapClose(&g->white.map);
-      SW_ALIGNED_FREE(g->white.pixels);
-   }
+   nxg_mem_free(g, &g->white.mem);
    nxg_mem_free(g, &g->fb);
-   if (g->ch_open)
-      nvGpuChannelClose(&g->ch);
-   if (g->as_open)
-      nvAddressSpaceClose(&g->as);
-   if (g->nv_open)
-   {
-      nvMapExit();
-      nvFenceExit();
-      nvGpuExit();
-      nvExit();
-   }
+   nxg_device_free(g);
    free(g);
 }
 
@@ -525,7 +1196,6 @@ static void nxg_bind_engines(nxg_t *g)
 
 static nxg_t *nxg_init(NWindow *win)
 {
-   const nvioctl_gpu_characteristics *chars;
    nxg_t *g = (nxg_t*)calloc(1, sizeof(*g));
    unsigned i;
    if (!g)
@@ -535,87 +1205,37 @@ static nxg_t *nxg_init(NWindow *win)
    g->rgui_last = -1;
    g->slot      = -1;
 
-   if (R_FAILED(nvInitialize()))
+   if (!nxg_device_init(g))
       goto error;
-   if (R_FAILED(nvGpuInit()))
-   {
-      nvExit();
-      goto error;
-   }
-   if (R_FAILED(nvFenceInit()))
-   {
-      nvGpuExit();
-      nvExit();
-      goto error;
-   }
-   if (R_FAILED(nvMapInit()))
-   {
-      nvFenceExit();
-      nvGpuExit();
-      nvExit();
-      goto error;
-   }
-   g->nv_open = true;
-   chars      = nvGpuGetCharacteristics();
-   if (R_FAILED(nvAddressSpaceCreate(&g->as,
-               chars ? chars->big_page_size : 0x20000)))
-      goto error;
-   g->as_open = true;
-   if (R_FAILED(nvGpuChannelCreate(&g->ch, &g->as, NvChannelPriority_Medium)))
-      goto error;
-   g->ch_open = true;
-
    for (i = 0; i < NXG_FRAMES; i++)
    {
       if (!nxg_mem_new(g, &g->frames[i].cmd, NXG_CMD_WORDS * 4, false,
-               NvKind_Pitch))
+               false))
          goto error;
       if (!nxg_mem_new(g, &g->frames[i].arena, NXG_ARENA_SIZE, false,
-               NvKind_Pitch))
+               false))
          goto error;
    }
-   /* The window's buffers, block-linear for the compositor */
-   if (!nxg_mem_new(g, &g->fb, NXG_BUFFERS * NXG_FB_SIZE, true,
-            NvKind_Generic_16BX2))
+   if (!nxg_mem_new(g, &g->fb, NXG_BUFFERS * NXG_FB_SIZE, true, true))
       goto error;
-   if (R_FAILED(nwindowSetDimensions(win, NXG_FB_W, NXG_FB_H)))
-      goto error;
-   nxg_window_buffers(g, win);
-   if (!g->win_configured)
+   if (!nxg_window_init(g, win))
       goto error;
 
    g->op_mode  = (int)appletGetOperationMode();
    g->out_dims = nxg_mode_dims(g->op_mode);
+#ifndef NXG_S2
    nwindowSetCrop(win, 0, 0, VIDEO_SCALE_W(g->out_dims),
          VIDEO_SCALE_H(g->out_dims));
+#endif
 
    /* The 1x1 white a fill samples */
-   {
-      uint32_t size = 0x1000;
-      g->white.pixels = (uint8_t*)SW_ALIGNED_ALLOC(0x1000, size);
-      if (!g->white.pixels)
-         goto error;
-      memset(g->white.pixels, 0xff, size);
-      armDCacheFlush(g->white.pixels, size);
-      if (R_FAILED(nvMapCreate(&g->white.map, g->white.pixels, size,
-                  0x20000, NvKind_Pitch, true)))
-      {
-         SW_ALIGNED_FREE(g->white.pixels);
-         g->white.pixels = NULL;
-         goto error;
-      }
-      if (R_FAILED(nvAddressSpaceMap(&g->as, nvMapGetHandle(&g->white.map),
-                  false, NvKind_Pitch, &g->white.iova)))
-      {
-         nvMapClose(&g->white.map);
-         SW_ALIGNED_FREE(g->white.pixels);
-         g->white.pixels = NULL;
-         goto error;
-      }
-      g->white.mem_size = size;
-      g->white.pitch    = SW_PITCH_ALIGN;
-      g->white.dims     = VIDEO_SCALE_PACK(1, 1);
-   }
+   if (!nxg_mem_new(g, &g->white.mem, 0x1000, false, false))
+      goto error;
+   memset(g->white.mem.cpu, 0xff, 0x1000);
+   armDCacheFlush(g->white.mem.cpu, 0x1000);
+   g->white.pixels = g->white.mem.cpu;
+   g->white.pitch  = SW_PITCH_ALIGN;
+   g->white.dims   = VIDEO_SCALE_PACK(1, 1);
 
    nxg_frame_recycle(g, 0);
    nxg_bind_engines(g);
@@ -692,28 +1312,42 @@ static void nxg_blit(nxg_t *g, int op, uint32_t beta4, bool filter,
    nxg_fixed(&w[15], sy + dv * 0.5);
 }
 
-/* The frame's destination: window buffer @slot */
-static void nxg_frame_begin(nxg_t *g, int slot, const NvMultiFence *mf)
+/* A window buffer to draw into, and the wait for the display to have
+ * let go of it: on the GPU on the Switch, on the CPU (an event, not a
+ * sleep) on the Switch 2 */
+static bool nxg_frame_begin(nxg_t *g, NWindow *win)
 {
-   uint64_t iova = g->fb.iova + (uint64_t)slot * NXG_FB_SIZE;
+   uint64_t iova;
    uint32_t *w;
+#ifdef NXG_S2
+   (void)win;
+   g->slot = (g->slot + 1) % NXG_BUFFERS;
+   if (g->slot < 0)
+      g->slot = 0;
+   nxg_native_wait(g, &g->bufs[g->slot].release);
+#else
+   NvMultiFence mf;
+   s32 slot;
    unsigned i;
-   g->slot      = slot;
-   g->src_valid = false;
-   g->recording = true;
-   /* The compositor's release of the buffer, waited on the GPU */
-   for (i = 0; mf && i < mf->num_fences; i++)
+   if (R_FAILED(nwindowDequeueBuffer(win, &slot, &mf)))
+      return false;
+   g->slot = slot;
+   for (i = 0; i < mf.num_fences; i++)
    {
-      if ((s32)mf->fences[i].id < 0)
+      if ((s32)mf.fences[i].id < 0)
          continue;
       if (!(w = nxg_cmd(g, 3)))
          break;
       w[0] = NXG_HDR(NXG_INCR, 2, NXG_SUB_3D, NXG_HOST_SYNCPT_PAYLOAD);
-      w[1] = mf->fences[i].value;
-      w[2] = 0u /* wait */ | (1u << 4) | (mf->fences[i].id << 8);
+      w[1] = mf.fences[i].value;
+      w[2] = 0u /* wait */ | (1u << 4) | (mf.fences[i].id << 8);
    }
+#endif
+   iova         = g->fb.iova + (uint64_t)g->slot * NXG_FB_SIZE;
+   g->src_valid = false;
+   g->recording = true;
    if (!(w = nxg_cmd(g, 12)))
-      return;
+      return true;
    /* CPU-written sources are read through the texture cache */
    w[0]  = NXG_HDR(NXG_INLINE, 2, NXG_SUB_2D, NXG_2D_TEX_INVALIDATE);
    w[1]  = NXG_HDR(NXG_INCR, 5, NXG_SUB_2D, NXG_2D_DST_FORMAT);
@@ -727,16 +1361,82 @@ static void nxg_frame_begin(nxg_t *g, int slot, const NvMultiFence *mf)
    w[9]  = NXG_FB_H;
    w[10] = (uint32_t)(iova >> 32);
    w[11] = (uint32_t)iova;
+   return true;
 }
 
-/* Signal, submit and show: the window waits the fence, not the CPU */
+/* Flush, submit and show: the display waits the frame's fence, not the
+ * CPU */
 static void nxg_frame_end(nxg_t *g, NWindow *win)
 {
    nxg_frame_t *f = &g->frames[g->cur];
-   uint32_t id    = nvGpuChannelGetSyncpointId(&g->ch);
-   NvMultiFence mf;
    uint32_t *w;
+#ifdef NXG_S2
+   u32 entry[2];
+   struct { u64 reserved; u32 num_entries; u32 flags; u64 fence; } data;
+   Vi2PresentOptions o;
+   GsvNativeSync producer;
+   u64 slots = 0;
+   u16 num = 0, den = 0;
+   nxg_s2_buf_t *b = &g->bufs[g->slot];
+   g->recording = false;
+   /* The fence is the kernel's, at the end of the work; the writes
+    * reach memory before it */
+   if ((w = nxg_cmd(g, 7)))
+   {
+      w[0] = NXG_HDR(NXG_INCR, 1, NXG_SUB_3D, NXG_HOST_WFI);
+      w[1] = 1; /* all */
+      w[2] = NXG_HDR(NXG_INCR, 4, NXG_SUB_3D, NXG_HOST_MEMOP_A);
+      w[3] = 0;
+      w[4] = 0;
+      w[5] = 0;
+      w[6] = NXG_MEMOP_L2_FLUSH_DIRTY;
+   }
+   armDCacheFlush(f->cmd.cpu, f->used * 4);
+   if (f->arena_off)
+      armDCacheFlush(f->arena.cpu, f->arena_off);
+   entry[0] = (u32)f->cmd.iova;
+   entry[1] = (u32)(f->cmd.iova >> 32) | (1u << 9) /* not main */
+            | (f->used << 10);
+   memset(&data, 0, sizeof(data));
+   data.num_entries = 1;
+   data.flags       = NXG_KICKOFF_FLAGS;
+   if (R_SUCCEEDED(nvIoctl2(g->ch_fd, NXG_CH_KICKOFF_PB, &data, entry,
+               sizeof(entry))))
+   {
+      f->fence.id    = (u32)data.fence;
+      f->fence.value = (u32)(data.fence >> 32);
+      f->fence_valid = true;
+   }
+   else
+      f->fence_valid = false;
+   f->serial = ++g->serial;
 
+   vi2MakeBasicPresentOptions(&o, NXG_FB_W, NXG_FB_H, armGetSystemTick());
+   o.crop_left             = 0;
+   o.crop_top              = 0;
+   o.crop_right_inclusive  = (u16)(VIDEO_SCALE_W(g->out_dims) - 1);
+   o.crop_bottom_inclusive = (u16)(VIDEO_SCALE_H(g->out_dims) - 1);
+   if (R_SUCCEEDED(nwindowGetPresentInterval(win, &num, &den)))
+   {
+      o.interval_numerator   = num;
+      o.interval_denominator = num ? den : 1;
+   }
+   memset(&producer, 0, sizeof(producer));
+   if (f->fence_valid)
+      nxg_native_from_fence(g, &f->fence, &producer);
+   if (R_FAILED(vi2PresentLayer(g->layer, b->layer_slot, b->image_id, &o,
+               &producer, &slots, &b->release)))
+   {
+      /* Shown once done, then */
+      if (f->fence_valid)
+         nxg_fence_wait(g, &f->fence);
+      memset(&producer, 0, sizeof(producer));
+      vi2PresentLayer(g->layer, b->layer_slot, b->image_id, &o,
+            &producer, &slots, &b->release);
+   }
+#else
+   uint32_t id = nvGpuChannelGetSyncpointId(&g->ch);
+   NvMultiFence mf;
    g->recording = false;
    if ((w = nxg_cmd(g, 6)))
    {
@@ -761,8 +1461,7 @@ static void nxg_frame_end(nxg_t *g, NWindow *win)
    f->fence_valid = true;
    nvMultiFenceCreate(&mf, &f->fence);
    nwindowQueueBuffer(win, g->slot, &mf);
-   g->slot = -1;
-
+#endif
    g->cur = (g->cur + 1) % NXG_FRAMES;
    nxg_frame_recycle(g, g->cur);
 }
@@ -798,7 +1497,7 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
    nxg_mem_t mem;
    if (l->mem.cpu && l->mem.size >= size)
       return true;
-   if (!nxg_mem_new(g, &mem, size, false, NvKind_Pitch))
+   if (!nxg_mem_new(g, &mem, size, false, false))
       return false;
    if (l->mem.cpu)
       nxg_retire(g, &l->mem);
@@ -825,17 +1524,12 @@ static sw_surf_t *sw_surf_new(switch_video_t *sw, unsigned dims)
 #ifdef SWITCH_NX_GPU
    if (sw->gpu)
    {
-      nxg_t *g = (nxg_t*)sw->gpu;
-      nxg_mem_t m;
-      if (!nxg_mem_new(g, &m, size, false, NvKind_Pitch))
+      if (!nxg_mem_new((nxg_t*)sw->gpu, &s->mem, size, false, false))
       {
          free(s);
          return NULL;
       }
-      s->pixels   = m.cpu;
-      s->map      = m.map;
-      s->iova     = m.iova;
-      s->mem_size = m.size;
+      s->pixels = s->mem.cpu;
       return s;
    }
 #endif
@@ -855,12 +1549,7 @@ static void sw_surf_free(switch_video_t *sw, sw_surf_t *s)
 #ifdef SWITCH_NX_GPU
    if (sw->gpu)
    {
-      nxg_mem_t m;
-      m.map  = s->map;
-      m.cpu  = s->pixels;
-      m.iova = s->iova;
-      m.size = s->mem_size;
-      nxg_retire((nxg_t*)sw->gpu, &m);
+      nxg_retire((nxg_t*)sw->gpu, &s->mem);
       free(s);
       return;
    }
@@ -1151,7 +1840,7 @@ static void sw_op_gpu(switch_video_t *sw, const sw_op_t *op)
       ssh    = 1.0;
       filter = false;
    }
-   if (!nxg_source(g, s->iova, s->pitch, s->dims, NXG_FMT_RGBA8))
+   if (!nxg_source(g, s->mem.iova, s->pitch, s->dims, NXG_FMT_RGBA8))
       return;
    nxg_blit(g, mode, beta, filter,
          (int)op->dx, (int)op->dy, (int)op->dw, (int)op->dh,
@@ -2154,7 +2843,7 @@ static void *nxg_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
       nxg_linear_t *l = &g->frame_mem[i];
       if (l->used)
          continue;
-      if (!nxg_mem_new(g, &l->mem, (uint32_t)size, false, NvKind_Pitch))
+      if (!nxg_mem_new(g, &l->mem, (uint32_t)size, false, false))
          return NULL;
       l->use_serial = 0;
       l->used       = true;
@@ -2296,8 +2985,6 @@ static bool nxg_frame(switch_video_t *sw, const void *frame,
    bool menu_alive     = (video_info->menu_st_flags
          & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
-   NvMultiFence mf;
-   s32 slot;
    int op_mode         = (int)appletGetOperationMode();
    bool full;
 
@@ -2305,8 +2992,10 @@ static bool nxg_frame(switch_video_t *sw, const void *frame,
    {
       g->op_mode        = op_mode;
       g->out_dims       = nxg_mode_dims(op_mode);
+#ifndef NXG_S2
       nwindowSetCrop(sw->win, 0, 0, VIDEO_SCALE_W(g->out_dims),
             VIDEO_SCALE_H(g->out_dims));
+#endif
       sw->should_resize = true;
    }
    sw->out_dims = g->out_dims;
@@ -2340,9 +3029,8 @@ static bool nxg_frame(switch_video_t *sw, const void *frame,
    if (frame && dims)
       nxg_content(sw, frame, dims, pitch);
 
-   if (R_FAILED(nwindowDequeueBuffer(sw->win, &slot, &mf)))
+   if (!nxg_frame_begin(g, sw->win))
       return false;
-   nxg_frame_begin(g, slot, &mf);
    sw->scissor_on = false;
    sw->blend      = false;
 

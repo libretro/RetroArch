@@ -12,7 +12,12 @@
  * by a colour, blending and the scissor; text with its shadow; the
  * overlay; RGUI over the frame; docking; the fences each frame is
  * shown behind; and every word of the stream decoding to a method the
- * engine model knows. */
+ * engine model knows.
+ *
+ * Built twice: for the Switch (libnx's channel, nvmap and window queue)
+ * and with __SWITCH2__ for the Switch 2 (GSV memory and VM, the nvhost
+ * channel ioctls, KICKOFF_PB and a VI2 layer), the same lanes over the
+ * same command stream. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,10 +116,28 @@ Result nvAddressSpaceUnmap(NvAddressSpace *a, iova_t iova)
 
 void armDCacheFlush(void *addr, size_t size) { (void)addr; (void)size; }
 
+/* The Switch 2's VM: GPU addresses the driver chose, mapped to CPU
+ * memory; on the Switch the iova is the host address */
+#define MAX_VMAPS 256
+static struct { uint64_t va, size; uint8_t *cpu; bool live; } vmaps[MAX_VMAPS];
+
+static uint8_t *xlat(uint64_t iova)
+{
+   unsigned i;
+   for (i = 0; i < MAX_VMAPS; i++)
+      if (vmaps[i].live && iova >= vmaps[i].va
+            && iova < vmaps[i].va + vmaps[i].size)
+         return vmaps[i].cpu + (iova - vmaps[i].va);
+   return (uint8_t*)(uintptr_t)iova;
+}
+
 /* --- the 2D engine model --------------------------------------------- */
 
 static uint32_t reg2d[0x800];
 static uint32_t syncpt_value;
+#ifdef __SWITCH2__
+static unsigned host_wfi, host_flush;
+#endif
 static unsigned bad_words, blits, words_run;
 
 /* libnx's 16Bx2 GOB layout, sixteen GOBs a block */
@@ -140,7 +163,7 @@ static double fx32(unsigned frac_reg)
 static uint32_t fetch(unsigned x, unsigned y)
 {
    uint64_t iova = ((uint64_t)reg2d[0x094] << 32) | reg2d[0x095];
-   uint8_t *row  = (uint8_t*)(uintptr_t)iova + (size_t)y * reg2d[0x091];
+   uint8_t *row  = xlat(iova) + (size_t)y * reg2d[0x091];
    switch (reg2d[0x08C])
    {
       case NXG_FMT_RGBA8:
@@ -201,7 +224,7 @@ static uint32_t sample(double u, double v, bool bilinear)
 static void run_blit(void)
 {
    uint64_t dst_iova = ((uint64_t)reg2d[0x088] << 32) | reg2d[0x089];
-   uint8_t *dst      = (uint8_t*)(uintptr_t)dst_iova;
+   uint8_t *dst      = xlat(dst_iova);
    unsigned dx = reg2d[0x22C], dy = reg2d[0x22D];
    unsigned dw = reg2d[0x22E], dh = reg2d[0x22F];
    double du = fx32(0x230), dv = fx32(0x232);
@@ -256,9 +279,19 @@ static void method(unsigned sub, unsigned m, uint32_t v)
    }
    if (m < 0x40)
    {
+#ifdef __SWITCH2__
+      /* host: the wait for idle and the L2 flush before the fence */
+      if (m == NXG_HOST_WFI)
+         host_wfi++;
+      else if (m == NXG_HOST_MEMOP_A + 3 && v == NXG_MEMOP_L2_FLUSH_DIRTY)
+         host_flush++;
+      else if (m < NXG_HOST_MEMOP_A || m > NXG_HOST_MEMOP_A + 3)
+         bad_words++;
+#else
       /* host: the syncpoint wait */
       if (m != NXG_HOST_SYNCPT_PAYLOAD && m != NXG_HOST_SYNCPT_PAYLOAD + 1)
          bad_words++;
+#endif
       return;
    }
    if (sub == NXG_SUB_3D)
@@ -345,7 +378,7 @@ Result nvGpuChannelKickoff(NvGpuChannel *c)
 {
    unsigned i;
    for (i = 0; i < num_entries; i++)
-      run_words((const uint32_t*)(uintptr_t)entries[i].at, entries[i].n);
+      run_words((const uint32_t*)xlat(entries[i].at), entries[i].n);
    num_entries     = 0;
    c->fence.value += c->fence_incr;
    c->fence_incr   = 0;
@@ -421,6 +454,247 @@ Result nwindowSetCrop(NWindow *nw, s32 l, s32 t, s32 r, s32 b)
 }
 Result nwindowSetSwapInterval(NWindow *nw, u32 v) { (void)nw; swap_interval = v; return 0; }
 AppletOperationMode appletGetOperationMode(void) { return op_mode; }
+
+#ifdef __SWITCH2__
+/* --- the Switch 2: GSV, nvhost and VI2 ----------------------------------- */
+static struct { uint8_t *cpu; uint64_t size; bool live; } ranges[MAX_VMAPS];
+static uint32_t producer_counter, kickoffs;
+static unsigned images_live, image_mem_live, layer_held, regs_bad;
+static Vi2PresentOptions last_opts;
+static Vi2Dependency last_producer;
+static struct Vi2Layer { int dummy; } the_layer;
+
+Result svcUnknown80(void *a, u64 s, u32 m, u32 v) { (void)a; (void)s; (void)m; (void)v; return 0; }
+void   svcSleepThread(s64 n) { (void)n; }
+u64    armGetSystemTick(void) { return 1; }
+Result eventWait(Event *t, u64 to) { (void)t; (void)to; return 0; }
+Result eventClear(Event *t) { (void)t; return 0; }
+void   eventClose(Event *t) { (void)t; }
+
+Result nvOpen(u32 *fd, const char *path)
+{
+   if (!strcmp(path, "/dev/nvhost-ctrl-gpu")) *fd = 1;
+   else if (!strcmp(path, "/dev/nvhost-as-gpu")) *fd = 2;
+   else if (!strcmp(path, "/dev/nvhost-tsg-gpu")) *fd = 3;
+   else if (!strcmp(path, "/dev/nvhost-gpu")) *fd = 4;
+   else return 1;
+   return 0;
+}
+Result nvClose(u32 fd) { (void)fd; return 0; }
+Result nvIoctl(u32 fd, u32 req, void *argp)
+{
+   if (req == NXG_AS_GET_VA_REGIONS)
+      ((u32*)argp)[2] = 24; /* one region */
+   else if (req == NXG_CH_ALLOC_GPFIFO_EX2)
+      ((u32*)argp)[3] = 5;  /* producer id */
+   else if (req == NXG_CH_SETUP_USERD)
+      ((u64*)argp)[0] = 0x1000;
+   else if (req == NXG_CH_ALLOC_OBJ_CTX && ((u32*)argp)[0] != NXG_CLASS_3D)
+      regs_bad++;
+   else if (req == NXG_AS_INITIALIZE_EX && ((u32*)argp)[0] != 5)
+      regs_bad++;
+   (void)fd;
+   return 0;
+}
+Result nvIoctl3(u32 fd, u32 req, void *argp, void *out, size_t n)
+{
+   (void)fd; (void)n;
+   if (req == NXG_GP_GET_ENGINE_LIST)
+   {
+      u32 *e = (u32*)out;
+      ((u32*)argp)[0] = 32; /* two records: a copy engine, then graphics */
+      e[0] = 1; e[1] = 0; e[2] = 3; e[3] = 0;
+      e[4] = 0; e[5] = 0; e[6] = 7; e[7] = 0;
+   }
+   else if (req == NXG_AS_GET_VA_REGIONS)
+   {
+      struct { u64 offset; u32 page_size; u32 r; u64 pages; } *rg = out;
+      rg->offset    = 0x100000000ULL;
+      rg->page_size = 0x10000;
+      rg->pages     = 0x10000;
+   }
+   return 0;
+}
+Result nvIoctl2(u32 fd, u32 req, void *argp, const void *in, size_t n)
+{
+   struct { u64 reserved; u32 num_entries; u32 flags; u64 fence; } *d = argp;
+   const u32 *e = (const u32*)in;
+   u32 i;
+   if (fd != 4 || req != NXG_CH_KICKOFF_PB || d->flags != NXG_KICKOFF_FLAGS
+         || n != d->num_entries * 8)
+   {
+      bad_words++;
+      return 1;
+   }
+   for (i = 0; i < d->num_entries; i++)
+   {
+      uint64_t iova = e[2 * i] | ((uint64_t)(e[2 * i + 1] & 0xff) << 32);
+      if (!(e[2 * i + 1] & (1u << 9)))
+         bad_words++;
+      run_words((const uint32_t*)xlat(iova), (e[2 * i + 1] >> 10) & 0x1fffff);
+   }
+   kickoffs++;
+   producer_counter++;
+   syncpt_value = producer_counter;
+   d->fence     = 5u | ((u64)producer_counter << 32);
+   return 0;
+}
+
+Result gsvRegisterFrame(u64 m, u64 *o) { (void)m; (void)o; return 0; }
+Result gsvRegisterVm(u32 v) { (void)v; return 0; }
+void   gsvMakeImageLayout(GsvImageLayout *o, u32 w, u32 h, u32 bh, u32 pg,
+      u32 fmt, u8 bf, u16 l)
+{
+   memset(o, 0, sizeof(*o));
+   if (w != NXG_FB_W || h != NXG_FB_H || bh != 7 || pg != NXG_FB_PITCH / 64
+         || fmt != 1 || bf != 1 || l)
+      regs_bad++;
+}
+Result gsvGetImageSize(const GsvImageLayout *l, u64 *s) { (void)l; *s = NXG_FB_SIZE; return 0; }
+Result gsvReserveImageMemory(u8 t, u64 s, u32 *id)
+{
+   static u32 next = 50;
+   if (t != 3 || s != NXG_FB_SIZE)
+      regs_bad++;
+   *id = next++;
+   image_mem_live++;
+   return 0;
+}
+Result gsvRegisterImageMemory(u32 id, u64 cpu, u64 size, u32 range, u64 off)
+{
+   (void)id; (void)size;
+   if (!ranges[range].live || (uint8_t*)(uintptr_t)cpu != ranges[range].cpu + off)
+      regs_bad++;
+   return 0;
+}
+static u32 next_image = 100;
+Result gsvCreateImage(const GsvImageLayout *l, u32 m, u32 *id) { (void)l; (void)m; *id = next_image++; images_live++; return 0; }
+Result gsvCreateDisplayAlias(u32 i, u32 c) { (void)i; (void)c; return 0; }
+Result gsvDestroyDisplayAlias(u32 i) { (void)i; return 0; }
+Result gsvDestroyImage(u32 i) { (void)i; images_live--; return 0; }
+Result gsvReleaseImageMemory(u32 m) { (void)m; image_mem_live--; return 0; }
+Result gsvOpenSync(GsvSync *o) { memset(o, 0, sizeof(*o)); return 0; }
+void   gsvSyncClose(GsvSync *s) { (void)s; }
+Result gsvSyncAllocateSlot(GsvSync *s, u32 *o) { (void)s; *o = 2; return 0; }
+void   gsvSyncFreeSlot(GsvSync *s, u32 slot) { (void)s; (void)slot; }
+Result gsvSyncReadCounter(GsvSync *s, u32 id, u64 *v, u8 *mode)
+{
+   (void)s;
+   if (id != 5)
+      regs_bad++;
+   *v = producer_counter;
+   if (mode)
+      *mode = 0;
+   return 0;
+}
+Result gsvSyncCreateEvent(GsvSync *s, u32 sl, Event *e, bool a) { (void)s; (void)sl; (void)e; (void)a; return 0; }
+Result gsvSyncArmEvent(GsvSync *s, u32 sl, u32 id, u64 t, u8 m) { (void)s; (void)sl; (void)id; (void)t; (void)m; return 0; }
+Result gsvSyncDisarmEvent(GsvSync *s, u32 sl) { (void)s; (void)sl; return 0; }
+Result gsvSyncWaitNative(GsvSync *s, const GsvNativeSync *n, u64 t) { (void)s; (void)n; (void)t; return 0; }
+Result gsvOpenGpu(GsvGpu *o) { memset(o, 0, sizeof(*o)); return 0; }
+void   gsvGpuClose(GsvGpu *g) { (void)g; }
+Result gsvGpuGetSlotRange(GsvGpu *g, u32 *f, u32 *l) { (void)g; *f = 0; *l = 1; return 0; }
+Result gsvGpuCreateSlotEvent(GsvGpu *g, u32 s, Event *e, bool a) { (void)g; (void)s; (void)e; (void)a; return 0; }
+Result gsvGpuOpenWorker(GsvGpu *g, u32 s, Event *e) { (void)g; (void)s; (void)e; return 0; }
+Result gsvGpuRegisterClient(GsvGpu *g, u64 n, u8 *c) { (void)g; (void)n; *c = 3; return 0; }
+Result gsvGpuReleaseClient(GsvGpu *g, u8 c) { (void)g; (void)c; return 0; }
+Result gsvGpuCreateVm(GsvGpu *g, u32 *vm) { (void)g; *vm = 11; return 0; }
+Result gsvGpuGetVmUserRanges(GsvGpu *g, u32 vm, GsvGpuVaRange r[4], u32 *n)
+{
+   (void)g; (void)vm;
+   r[0].first = 0x100000000ULL;
+   r[0].last  = 0x1ffffffffULL;
+   *n         = 1;
+   return 0;
+}
+Result gsvGpuRegisterMemory(GsvGpu *g, u64 addr, u64 size, u8 c, u32 *id)
+{
+   unsigned i;
+   (void)g;
+   if (c != 3 || (addr & 0xfff) || (size & 0xfff))
+      regs_bad++;
+   for (i = 1; i < MAX_VMAPS; i++)
+      if (!ranges[i].live)
+      {
+         ranges[i].cpu  = (uint8_t*)(uintptr_t)addr;
+         ranges[i].size = size;
+         ranges[i].live = true;
+         maps_live++;
+         *id = i;
+         return 0;
+      }
+   return 1;
+}
+Result gsvGpuUnregisterMemory(GsvGpu *g, u32 id, u32 slot)
+{
+   (void)g; (void)slot;
+   if (id < MAX_VMAPS && ranges[id].live)
+   {
+      ranges[id].live = false;
+      maps_live--;
+   }
+   return 0;
+}
+Result gsvGpuMap(GsvGpu *g, const GsvGpuMapping *m, u32 slot, u8 *kind)
+{
+   unsigned i;
+   (void)g; (void)slot;
+   if (     m->vm_id != 11 || !ranges[m->range_id].live || (m->va & 0xffff)
+         || m->kind != NXG_KIND_GENERIC || m->va < 0x100000000ULL
+         || m->va + m->size > 0x200000000ULL)
+      regs_bad++;
+   for (i = 0; i < MAX_VMAPS; i++)
+      if (vmaps[i].live && m->va < vmaps[i].va + vmaps[i].size
+            && vmaps[i].va < m->va + m->size)
+         regs_bad++; /* overlapping a live mapping */
+   for (i = 0; i < MAX_VMAPS; i++)
+      if (!vmaps[i].live)
+      {
+         vmaps[i].va   = m->va;
+         vmaps[i].size = m->size;
+         vmaps[i].cpu  = ranges[m->range_id].cpu + m->range_offset;
+         vmaps[i].live = true;
+         break;
+      }
+   *kind = m->kind;
+   return 0;
+}
+Result gsvGpuUnmap(GsvGpu *g, u32 vm, u64 va, u64 size, u32 slot)
+{
+   unsigned i;
+   (void)g; (void)vm; (void)size; (void)slot;
+   for (i = 0; i < MAX_VMAPS; i++)
+      if (vmaps[i].live && vmaps[i].va == va)
+         vmaps[i].live = false;
+   return 0;
+}
+void vi2MakeBasicPresentOptions(Vi2PresentOptions *o, u32 w, u32 h, u64 t)
+{
+   memset(o, 0, sizeof(*o));
+   o->crop_right_inclusive  = (u16)(w - 1);
+   o->crop_bottom_inclusive = (u16)(h - 1);
+   o->flags                 = 3;
+   o->system_tick           = t;
+}
+Result vi2GetLayerAvailability(Vi2Layer *l, u64 *s) { (void)l; *s = 0xf; return 0; }
+Result vi2PresentLayer(Vi2Layer *l, u8 slot, u32 image, const Vi2PresentOptions *o,
+      const Vi2Dependency *producer, u64 *slots, Vi2Dependency *release)
+{
+   (void)l; (void)slot;
+   last_opts     = *o;
+   last_producer = *producer;
+   queued_slot   = (int)((image - 100) % NXG_BUFFERS);
+   queued_count++;
+   *slots = 0xf;
+   memset(release, 0, sizeof(*release));
+   return 0;
+}
+Result vi2UnregisterLayerImage(Vi2Layer *l, u8 s, const Vi2PresentOptions *o,
+      u64 *slots, Vi2Dependency *r) { (void)l; (void)s; (void)o; *slots = 0xf; memset(r, 0, sizeof(*r)); return 0; }
+Result nwindowGetVi2Layer(NWindow *nw, Vi2Layer **out) { (void)nw; *out = &the_layer; layer_held++; return 0; }
+Result nwindowReleaseVi2Layer(NWindow *nw) { (void)nw; layer_held--; return 0; }
+Result nwindowGetPresentInterval(NWindow *nw, u16 *n, u16 *d) { (void)nw; *n = 1; *d = 60; return 0; }
+#endif
 
 /* The CPU path's, never reached here */
 Result framebufferCreate(Framebuffer *fb, NWindow *win, u32 w, u32 h,
@@ -585,6 +859,20 @@ static void lane_window(void)
 {
    switch_video_t *sw = driver_new(256, 224, true);
    CHECK(sw && sw->gpu, "no GPU path");
+#ifdef __SWITCH2__
+   CHECK(images_live == NXG_BUFFERS && image_mem_live == NXG_BUFFERS
+         && layer_held == 1, "%u images, %u image memories, layer %u",
+         images_live, image_mem_live, layer_held);
+   frame(sw, core_frame, 256, 224, 1024);
+   CHECK(last_opts.crop_right_inclusive == 1279
+         && last_opts.crop_bottom_inclusive == 719
+         && last_opts.interval_numerator == 1, "handheld present crop %ux%u",
+         last_opts.crop_right_inclusive + 1, last_opts.crop_bottom_inclusive + 1);
+   driver_free(sw);
+   CHECK(!images_live && !image_mem_live && !layer_held,
+         "display images or layer left at free");
+   CHECK(!regs_bad, "%u GSV or nvhost calls with bad arguments", regs_bad);
+#else
    CHECK(configured == NXG_BUFFERS, "%u buffers configured", configured);
    CHECK(buf_cfg.planes[0].layout == NvLayout_BlockLinear
          && buf_cfg.planes[0].kind == NvKind_Generic_16BX2
@@ -597,6 +885,7 @@ static void lane_window(void)
    CHECK(crop_w == 1280 && crop_h == 720, "handheld crop %ux%u", crop_w, crop_h);
    driver_free(sw);
    CHECK(!configured, "buffers not released");
+#endif
    CHECK(maps_live == 0, "%u maps left at free", maps_live);
    printf("[pass] window buffers, crop and teardown\n");
 }
@@ -666,7 +955,8 @@ static void lane_in_place(void)
          ((uint32_t*)((uint8_t*)fb.data + y * fb.pitch))[x] = 0x00102030u;
    frame(sw, fb.data, 320, 240, fb.pitch);
    CHECK(g->last_owner >= g->sw && g->last_owner < g->sw + NXG_SW_SLOTS
-         && g->last_iova == (uint64_t)(uintptr_t)fb.data,
+         && g->last_owner->mem.cpu == (uint8_t*)fb.data
+         && g->last_iova == g->last_owner->mem.iova,
          "the lent framebuffer was copied");
    CHECK(at(sw, 640, 360) == 0x302010u, "lent frame drawn as %06x",
          at(sw, 640, 360));
@@ -892,6 +1182,24 @@ static void lane_dock_and_fences(void)
 {
    switch_video_t *sw = driver_new(256, 224, true);
    uint32_t v0;
+#ifdef __SWITCH2__
+   u32 id;
+   uint64_t target;
+   frame(sw, core_frame, 256, 224, 1024);
+   memcpy(&id, &last_producer.data[0], 4);
+   memcpy(&target, &last_producer.data[8], 8);
+   CHECK(~id == 5u && last_producer.data[4] == 0,
+         "shown behind producer %u mode %u", ~id, last_producer.data[4]);
+   v0 = (uint32_t)target;
+   CHECK(producer_counter >= v0, "the frame's fence never signalled");
+   CHECK(host_wfi && host_flush, "no wait for idle or L2 flush before the fence");
+   op_mode = AppletOperationMode_Console;
+   frame(sw, core_frame, 256, 224, 1024);
+   CHECK(last_opts.crop_right_inclusive == 1919
+         && last_opts.crop_bottom_inclusive == 1079, "docked present crop");
+   memcpy(&target, &last_producer.data[8], 8);
+   CHECK((uint32_t)target == v0 + 1, "fence went %u -> %u", v0, (uint32_t)target);
+#else
    frame(sw, core_frame, 256, 224, 1024);
    CHECK(queued_fence.num_fences == 1 && queued_fence.fences[0].id == 9,
          "shown behind fence %u", queued_fence.fences[0].id);
@@ -902,10 +1210,18 @@ static void lane_dock_and_fences(void)
    CHECK(crop_w == 1920 && crop_h == 1080, "docked crop %ux%u", crop_w, crop_h);
    CHECK(queued_fence.fences[0].value == v0 + 2, "fence went %u -> %u",
          v0, queued_fence.fences[0].value);
-   CHECK(at(sw, (1920 - 256) / 2 + 3, (1080 - 224) / 2 + 3) == 0
-         || 1, "docked frame");
+#endif
+   /* The blue frame lane_rgui left, centred at 1080p */
+   CHECK(at(sw, (1920 - 256) / 2, (1080 - 224) / 2) == 0xff0000
+         && at(sw, (1920 - 256) / 2 - 1, (1080 - 224) / 2) == 0
+         && at(sw, (1920 + 256) / 2 - 1, (1080 + 224) / 2 - 1) == 0xff0000
+         && at(sw, (1920 + 256) / 2, (1080 + 224) / 2 - 1) == 0,
+         "docked frame not centred at 1080p");
    op_mode = AppletOperationMode_Handheld;
    CHECK(swap_interval == 1, "swap interval %u", swap_interval);
+#ifdef __SWITCH2__
+   CHECK(!regs_bad, "%u GSV or nvhost calls with bad arguments", regs_bad);
+#endif
    driver_free(sw);
    printf("[pass] docking, and frames shown behind their fences\n");
 }
@@ -922,12 +1238,17 @@ int main(void)
    lane_rgui();
    lane_dock_and_fences();
    CHECK(!bad_words, "%u words or blits the engine model rejected", bad_words);
+#ifdef __SWITCH2__
+#define HARNESS "switch_nx_2d_test (Switch 2)"
+#else
+#define HARNESS "switch_nx_2d_test"
+#endif
    printf("[info] %u words run, %u blits\n", words_run, blits);
    if (failures)
    {
-      printf("FAIL switch_nx_2d_test (%d)\n", failures);
+      printf("FAIL " HARNESS " (%d)\n", failures);
       return 1;
    }
-   printf("PASS switch_nx_2d_test\n");
+   printf("PASS " HARNESS "\n");
    return 0;
 }

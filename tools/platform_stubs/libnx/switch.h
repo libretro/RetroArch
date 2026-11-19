@@ -113,6 +113,109 @@ void   nvGpuChannelGetFence(NvGpuChannel *c, NvFence *fence_out);
 void   nvGpuChannelIncrFence(NvGpuChannel *c);
 void   nvMultiFenceCreate(NvMultiFence *mf, const NvFence *fence);
 
+/* The Switch 2's: GSV, VI2 and the nvhost devices, as libounce
+ * declares them */
+#ifdef __SWITCH2__
+typedef u32 Handle;
+typedef struct { Handle revent; Handle wevent; bool autoclear; } Event;
+typedef struct { Handle session; } TipcService;
+typedef struct { TipcService s; u32 capacity; u32 generation; } GsvSync;
+typedef struct { TipcService main; TipcService worker; } GsvGpu;
+typedef struct { u64 first; u64 last; } GsvGpuVaRange;
+typedef struct
+{
+   u32 vm_id;
+   u64 va;
+   u64 size;
+   u32 range_id;
+   u64 range_offset;
+   u8 kind;
+   u8 fallback_kind;
+   bool gpu_cacheable;
+   u8 client;
+} GsvGpuMapping;
+typedef struct { u8 data[64]; } GsvImageLayout;
+typedef struct GsvNativeSync { u8 data[16]; } GsvNativeSync;
+typedef GsvNativeSync Vi2Dependency;
+typedef struct Vi2Layer Vi2Layer;
+typedef struct Vi2PresentOptions
+{
+   u16 crop_left;
+   u16 crop_top;
+   u16 crop_right_inclusive;
+   u16 crop_bottom_inclusive;
+   u64 flags;
+   u64 system_tick;
+   u16 interval_denominator;
+   u16 interval_numerator;
+   u32 unk_x1c;
+   u8 metadata[0x20];
+} Vi2PresentOptions;
+
+typedef int64_t s64;
+
+Result svcUnknown80(void *address, u64 size, u32 mask, u32 value);
+void   svcSleepThread(s64 nano);
+u64    armGetSystemTick(void);
+Result eventWait(Event *t, u64 timeout);
+Result eventClear(Event *t);
+void   eventClose(Event *t);
+
+Result nvOpen(u32 *fd, const char *devicepath);
+Result nvIoctl(u32 fd, u32 request, void *argp);
+Result nvIoctl2(u32 fd, u32 request, void *argp, const void *inbuf, size_t inbuf_size);
+Result nvIoctl3(u32 fd, u32 request, void *argp, void *outbuf, size_t outbuf_size);
+Result nvClose(u32 fd);
+
+Result gsvRegisterFrame(u64 mode, u64 *out_permitted_mode);
+Result gsvRegisterVm(u32 vm_id);
+void   gsvMakeImageLayout(GsvImageLayout *out, u32 width, u32 height,
+      u32 block_height_log2, u32 pitch_gobs, u32 pixel_format,
+      u8 block_format, u16 luminance);
+Result gsvGetImageSize(const GsvImageLayout *layout, u64 *out_size);
+Result gsvReserveImageMemory(u8 type, u64 size, u32 *out_memory_id);
+Result gsvRegisterImageMemory(u32 memory_id, u64 cpu_address, u64 size,
+      u32 gpu_memory_handle, u64 offset);
+Result gsvCreateImage(const GsvImageLayout *layout, u32 memory_id, u32 *out_image_id);
+Result gsvCreateDisplayAlias(u32 image_id, u32 count);
+Result gsvDestroyDisplayAlias(u32 image_id);
+Result gsvDestroyImage(u32 image_id);
+Result gsvReleaseImageMemory(u32 memory_id);
+Result gsvOpenSync(GsvSync *out);
+void   gsvSyncClose(GsvSync *s);
+Result gsvSyncAllocateSlot(GsvSync *s, u32 *out_slot);
+void   gsvSyncFreeSlot(GsvSync *s, u32 slot);
+Result gsvSyncReadCounter(GsvSync *s, u32 producer_id, u64 *out_value, u8 *out_mode);
+Result gsvSyncCreateEvent(GsvSync *s, u32 slot, Event *out_event, bool autoclear);
+Result gsvSyncArmEvent(GsvSync *s, u32 slot, u32 producer_id, u64 target, u8 mode);
+Result gsvSyncDisarmEvent(GsvSync *s, u32 slot);
+Result gsvSyncWaitNative(GsvSync *s, const GsvNativeSync *sync, u64 timeout_ns);
+Result gsvOpenGpu(GsvGpu *out);
+void   gsvGpuClose(GsvGpu *g);
+Result gsvGpuGetSlotRange(GsvGpu *g, u32 *out_first, u32 *out_last);
+Result gsvGpuCreateSlotEvent(GsvGpu *g, u32 slot, Event *out_event, bool autoclear);
+Result gsvGpuOpenWorker(GsvGpu *g, u32 slot, Event *slot_event);
+Result gsvGpuRegisterClient(GsvGpu *g, u64 name, u8 *out_client);
+Result gsvGpuReleaseClient(GsvGpu *g, u8 client);
+Result gsvGpuCreateVm(GsvGpu *g, u32 *out_vm_id);
+Result gsvGpuGetVmUserRanges(GsvGpu *g, u32 vm_id, GsvGpuVaRange out_ranges[4], u32 *out_count);
+Result gsvGpuRegisterMemory(GsvGpu *g, u64 address, u64 size, u8 client, u32 *out_range_id);
+Result gsvGpuUnregisterMemory(GsvGpu *g, u32 range_id, u32 slot);
+Result gsvGpuMap(GsvGpu *g, const GsvGpuMapping *mapping, u32 slot, u8 *out_kind);
+Result gsvGpuUnmap(GsvGpu *g, u32 vm_id, u64 va, u64 size, u32 slot);
+
+void   vi2MakeBasicPresentOptions(Vi2PresentOptions *out, u32 width, u32 height, u64 system_tick);
+Result vi2GetLayerAvailability(Vi2Layer *layer, u64 *out_slots);
+Result vi2PresentLayer(Vi2Layer *layer, u8 slot, u32 image_id,
+      const Vi2PresentOptions *options, const Vi2Dependency *producer,
+      u64 *out_slots, Vi2Dependency *out_release);
+Result vi2UnregisterLayerImage(Vi2Layer *layer, u8 slot,
+      const Vi2PresentOptions *options, u64 *out_slots, Vi2Dependency *out_release);
+Result nwindowGetVi2Layer(NWindow *nw, Vi2Layer **out_layer);
+Result nwindowReleaseVi2Layer(NWindow *nw);
+Result nwindowGetPresentInterval(NWindow *nw, u16 *out_numerator, u16 *out_denominator);
+#endif
+
 /* libnx's own: the window's buffers, as its framebuffer makes them */
 typedef struct { int num_fds; int num_ints; } NativeHandle;
 typedef struct
