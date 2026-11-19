@@ -17,11 +17,6 @@
 
 #include <stdlib.h>
 
-#include <features/features_cpu.h>
-#include <compat/strl.h>
-#include <string/stdstring.h>
-#include <retro_timers.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -32,7 +27,6 @@
 #include "../common/vulkan_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
-#include "../../configuration.h"
 
 /* TODO/FIXME - global referenced */
 extern bool platform_switch_has_focus;
@@ -48,18 +42,10 @@ typedef struct
    unsigned refresh_rate_x1000;
 } switch_vk_ctx_data_t;
 
-/* The size the console's output has now: handheld or docked */
+/* The output size, handheld and docked alike */
 static unsigned switch_vk_ctx_mode_dims(void)
 {
-   switch (appletGetOperationMode())
-   {
-      case AppletOperationMode_Console:
-         return VIDEO_SCALE_PACK(1920, 1080);
-      case AppletOperationMode_Handheld:
-      default:
-         break;
-   }
-   return VIDEO_SCALE_PACK(1280, 720);
+   return VIDEO_SCALE_PACK(1920, 1080);
 }
 
 static void switch_vk_ctx_destroy(void *data)
@@ -95,7 +81,8 @@ static void *switch_vk_ctx_init(void *video_driver)
    if (!ctx)
       return NULL;
 
-   ctx->win = nwindowGetDefault();
+   ctx->win                = nwindowGetDefault();
+   ctx->refresh_rate_x1000 = 60000;
    ctx->dims = switch_vk_ctx_mode_dims();
    nwindowSetDimensions(ctx->win, VIDEO_SCALE_W(ctx->dims), VIDEO_SCALE_H(ctx->dims));
 
