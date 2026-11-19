@@ -14,9 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef __SWITCH2__
-#include <features/features_cpu.h>
-#endif
 #include <stdlib.h>
 
 #include <string/stdstring.h>

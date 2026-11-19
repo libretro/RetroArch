@@ -42,10 +42,7 @@ typedef struct
 } switch_vk_ctx_data_t;
 
 /* The output size, handheld and docked alike */
-static unsigned switch_vk_ctx_mode_dims(void)
-{
-   return VIDEO_SCALE_PACK(1920, 1080);
-}
+#define SWITCH_VK_CTX_DIMS VIDEO_SCALE_PACK(1920, 1080)
 
 static void switch_vk_ctx_destroy(void *data)
 {
@@ -64,7 +61,7 @@ static void switch_vk_ctx_destroy(void *data)
 static void switch_vk_ctx_get_video_size(void *data, unsigned *dims)
 {
    switch_vk_ctx_data_t *ctx = (switch_vk_ctx_data_t*)data;
-   *dims = ctx ? ctx->dims : switch_vk_ctx_mode_dims();
+   *dims = ctx ? ctx->dims : SWITCH_VK_CTX_DIMS;
 }
 
 static float switch_vk_ctx_get_refresh_rate(void *data)
@@ -82,7 +79,7 @@ static void *switch_vk_ctx_init(void *video_driver)
 
    ctx->win                = nwindowGetDefault();
    ctx->refresh_rate_x1000 = 60000;
-   ctx->dims = switch_vk_ctx_mode_dims();
+   ctx->dims = SWITCH_VK_CTX_DIMS;
    nwindowSetDimensions(ctx->win, VIDEO_SCALE_W(ctx->dims), VIDEO_SCALE_H(ctx->dims));
 
    if (!vulkan_context_init(&ctx->vk, VULKAN_WSI_SWITCH))
@@ -102,16 +99,9 @@ static void switch_vk_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
    switch_vk_ctx_data_t *ctx = (switch_vk_ctx_data_t*)data;
-   unsigned new_dims         = switch_vk_ctx_mode_dims();
 
    *resize = (ctx->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
-   if (new_dims != ctx->dims)
-   {
-      ctx->dims = new_dims;
-      nwindowSetDimensions(ctx->win, VIDEO_SCALE_W(new_dims), VIDEO_SCALE_H(new_dims));
-      *resize   = true;
-   }
    if (*dims != ctx->dims)
    {
       *dims   = ctx->dims;
@@ -147,7 +137,7 @@ static bool switch_vk_ctx_set_video_mode(void *data,
 {
    switch_vk_ctx_data_t *ctx = (switch_vk_ctx_data_t*)data;
 
-   ctx->dims = switch_vk_ctx_mode_dims();
+   ctx->dims = SWITCH_VK_CTX_DIMS;
    nwindowSetDimensions(ctx->win, VIDEO_SCALE_W(ctx->dims), VIDEO_SCALE_H(ctx->dims));
 
    if (!vulkan_surface_create(&ctx->vk, VULKAN_WSI_SWITCH,
@@ -161,7 +151,6 @@ static bool switch_vk_ctx_set_video_mode(void *data,
    /* the swapchain may have come out another size */
    if (ctx->vk.context.swapchain_dims)
       ctx->dims = ctx->vk.context.swapchain_dims;
-   ctx->refresh_rate_x1000 = 60000;
 
    return true;
 }
