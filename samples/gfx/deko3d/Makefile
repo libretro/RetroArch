@@ -12,7 +12,7 @@ CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -I$(ROOT)/tools/platform_stubs/libnx -I$(ROOT) \
            -I$(LRC)/include -I$(ROOT)/deps \
            -DHAVE_LIBNX -DSWITCH -D__SWITCH__ -DHAVE_DEKO3D \
-           -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_THREADS
+           -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_THREADS -DHAVE_SHADERPIPELINE
 LDFLAGS += -lm
 
 ifneq ($(SANITIZER),)

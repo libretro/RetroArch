@@ -387,7 +387,8 @@ typedef enum
    DkBlendFactor_Zero        = 1,
    DkBlendFactor_One         = 2,
    DkBlendFactor_SrcAlpha    = 5,
-   DkBlendFactor_InvSrcAlpha = 6
+   DkBlendFactor_InvSrcAlpha = 6,
+   DkBlendFactor_DstColor    = 9
 } DkBlendFactor;
 
 typedef struct DkBlendState

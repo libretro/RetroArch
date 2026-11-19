@@ -80,6 +80,15 @@
 #define DK3D_SAMPLER_NEAREST 1
 
 #define DK3D_ALIGN(v, a) (((v) + ((a) - 1)) & ~((a) - 1))
+/* The frame's uniforms: the menu's matrix, or an effect's - the
+ * ribbon's 816 bytes the most */
+#define DK3D_UBO_SIZE       0x400
+
+#ifdef HAVE_SHADERPIPELINE
+#define DK3D_FX_MAX         16
+#define DK3D_FX_CODE        0x10000
+#define DK3D_FX_MESHES      4
+#endif
 
 enum dk3d_blend
 {
@@ -136,6 +145,24 @@ typedef struct dk3d_retire
    DkMemBlock  mem;
    dk3d_tex_t *tex;
 } dk3d_retire_t;
+
+#ifdef HAVE_SHADERPIPELINE
+/* A menu effect's programs, as effect_install made them */
+typedef struct dk3d_fx
+{
+   DkShader vsh;
+   DkShader fsh;
+   unsigned flags;
+} dk3d_fx_t;
+
+/* An effect mesh's positions where the GPU reads them */
+typedef struct dk3d_mesh
+{
+   DkMemBlock mem;
+   uint32_t   id;
+   unsigned   count;
+} dk3d_mesh_t;
+#endif
 
 typedef struct dk3d_frame
 {
@@ -207,6 +234,14 @@ typedef struct dk3d
    DkQueue           queue;
    DkSwapchain       swapchain;
    DkMemBlock        shader_mem;
+#ifdef HAVE_SHADERPIPELINE
+   dk3d_fx_t         fx[DK3D_FX_MAX];
+   dk3d_mesh_t       meshes[DK3D_FX_MESHES];
+   DkMemBlock        fx_mem;
+   uint32_t          fx_used;
+   unsigned          fx_count;
+   unsigned          mesh_next;
+#endif
    DkMemBlock        desc_mem;
    DkMemBlock        sampler_mem;
    DkImageDescriptor *desc_cpu;
@@ -499,7 +534,7 @@ static bool dk3d_frames_init(dk3d_t *dk)
       if (!(f->vbo_mem = dk3d_mem_new(dk->device, DK3D_VBO_SIZE,
                   DkMemBlockFlags_CpuUncached | DkMemBlockFlags_GpuCached)))
          return false;
-      if (!(f->ubo_mem = dk3d_mem_new(dk->device, DK_UNIFORM_BUF_ALIGNMENT,
+      if (!(f->ubo_mem = dk3d_mem_new(dk->device, DK3D_UBO_SIZE,
                   DkMemBlockFlags_CpuUncached | DkMemBlockFlags_GpuCached)))
          return false;
       dkCmdBufMakerDefaults(&cm, dk->device);
@@ -922,7 +957,12 @@ static void dk3d_draw_bind(dk3d_t *dk)
    vb.divisor = 0;
    dkCmdBufBindVtxBufferState(cmd, &vb, 1);
    dkCmdBufBindUniformBuffer(cmd, DkStage_Vertex, 0,
-         dk->frames[dk->cur].ubo_gpu, DK_UNIFORM_BUF_ALIGNMENT);
+         dk->frames[dk->cur].ubo_gpu, DK3D_UBO_SIZE);
+#ifdef HAVE_SHADERPIPELINE
+   /* The effects' fragment programs read it too; the menu's never */
+   dkCmdBufBindUniformBuffer(cmd, DkStage_Fragment, 0,
+         dk->frames[dk->cur].ubo_gpu, DK3D_UBO_SIZE);
+#endif
    dkCmdBufBindImageDescriptorSet(cmd, dk->desc_gpu, DK3D_DESC_COUNT);
    dkCmdBufBindSamplerDescriptorSet(cmd, dk->sampler_gpu, 2);
    dkRasterizerStateDefaults(&rs);
@@ -970,7 +1010,7 @@ static void dk3d_draw_mvp(dk3d_t *dk, const float *mvp)
    if (dk->mvp_valid && !memcmp(dk->last_mvp, mvp, sizeof(dk->last_mvp)))
       return;
    memcpy(dk->last_mvp, mvp, sizeof(dk->last_mvp));
-   dkCmdBufPushConstants(f->cmdbuf, f->ubo_gpu, DK_UNIFORM_BUF_ALIGNMENT,
+   dkCmdBufPushConstants(f->cmdbuf, f->ubo_gpu, DK3D_UBO_SIZE,
          0, sizeof(dk->last_mvp), dk->last_mvp);
    dk->mvp_valid = true;
 }
@@ -1318,7 +1358,8 @@ static void gfx_display_dk3d_draw(gfx_display_ctx_draw_t *draw,
    float *v;
    (void)video_dims;
 
-   if (!dk || !dk->recording || !draw || !draw->coords)
+   /* An effect: drawn by draw_pipeline */
+   if (!dk || !dk->recording || !draw || !draw->coords || draw->effect)
       return;
    if (!(n = draw->coords->vertices))
       return;
@@ -1360,6 +1401,198 @@ static void gfx_display_dk3d_draw(gfx_display_ctx_draw_t *draw,
          t ? t->sampler : DK3D_SAMPLER_LINEAR);
 }
 
+#ifdef HAVE_SHADERPIPELINE
+/* ---- menu effects ------------------------------------------------------
+ *
+ * The menu's effects from the DKSH their descriptions carry (the same
+ * header the Switch driver draws them from): programs appended to a
+ * code block of their own, drawn over the effect mesh's positions -
+ * kept on the GPU once per mesh - with the uniforms and blends the
+ * other drivers give them. The origin is lower left, as GL's: GL's y
+ * flips. */
+
+static uint32_t dk3d_le32(const uint8_t *p)
+{
+   return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16)
+      | ((uint32_t)p[3] << 24);
+}
+
+/* A program from @blob, its code appended to the effects' block */
+static bool dk3d_fx_shader(dk3d_t *dk, const uint8_t *blob, size_t size,
+      DkShader *out)
+{
+   DkShaderMaker sm;
+   uint32_t ctrl, code, off;
+   if (size < 24 || dk3d_le32(blob) != 0x48534B44u)
+      return false;
+   ctrl = dk3d_le32(blob + 8);
+   code = dk3d_le32(blob + 12);
+   off  = DK3D_ALIGN(dk->fx_used, DK_SHADER_CODE_ALIGNMENT);
+   if (ctrl + code > size || off + code > DK3D_FX_CODE)
+      return false;
+   memcpy((uint8_t*)dkMemBlockGetCpuAddr(dk->fx_mem) + off, blob + ctrl,
+         code);
+   dkShaderMakerDefaults(&sm, dk->fx_mem, off);
+   sm.control = blob;
+   dkShaderInitialize(out, &sm);
+   dk->fx_used = off + code;
+   return true;
+}
+
+static void *gfx_display_dk3d_effect_install(void *data,
+      const gfx_display_effect_desc_t *desc)
+{
+   dk3d_t *dk = (dk3d_t*)data;
+   dk3d_fx_t *fx;
+   uint32_t used;
+   if (     !dk || !desc || !desc->dksh_vertex || !desc->dksh_fragment
+         || dk->fx_count >= DK3D_FX_MAX)
+      return NULL;
+   if (!dk->fx_mem && !(dk->fx_mem = dk3d_mem_new(dk->device,
+               DK3D_FX_CODE + DK_SHADER_CODE_UNUSABLE_SIZE,
+               DkMemBlockFlags_CpuUncached | DkMemBlockFlags_GpuCached
+               | DkMemBlockFlags_Code)))
+      return NULL;
+   fx   = &dk->fx[dk->fx_count];
+   used = dk->fx_used;
+   if (     !dk3d_fx_shader(dk, desc->dksh_vertex, desc->dksh_vertex_size,
+               &fx->vsh)
+         || !dk3d_fx_shader(dk, desc->dksh_fragment,
+               desc->dksh_fragment_size, &fx->fsh))
+   {
+      dk->fx_used = used;
+      return NULL;
+   }
+   fx->flags = desc->flags;
+   dk->fx_count++;
+   return fx;
+}
+
+/* @mesh's positions where the GPU reads them: made once per mesh, the
+ * oldest let go of with the frame */
+static const dk3d_mesh_t *dk3d_fx_mesh(dk3d_t *dk,
+      const gfx_display_mesh_t *mesh)
+{
+   dk3d_mesh_t *m;
+   unsigned i;
+   for (i = 0; i < DK3D_FX_MESHES; i++)
+      if (     dk->meshes[i].mem && dk->meshes[i].id == mesh->id
+            && dk->meshes[i].count == mesh->vertex_count)
+         return &dk->meshes[i];
+   m             = &dk->meshes[dk->mesh_next];
+   dk->mesh_next = (dk->mesh_next + 1) % DK3D_FX_MESHES;
+   if (m->mem)
+      dk3d_retire(dk, m->mem, NULL);
+   if (!(m->mem = dk3d_mem_new(dk->device, mesh->vertex_count * 8,
+               DkMemBlockFlags_CpuUncached | DkMemBlockFlags_GpuCached)))
+      return NULL;
+   memcpy(dkMemBlockGetCpuAddr(m->mem), mesh->positions,
+         mesh->vertex_count * 8);
+   m->id    = mesh->id;
+   m->count = mesh->vertex_count;
+   return m;
+}
+
+static void gfx_display_dk3d_draw_pipeline(gfx_display_ctx_draw_t *draw,
+      gfx_display_t *p_disp, void *data, unsigned video_dims)
+{
+   static const DkVtxAttribState attrib = {
+      0, 0, 0, DkVtxAttribSize_2x32, DkVtxAttribType_Float, 0
+   };
+   dk3d_t *dk          = (dk3d_t*)data;
+   const dk3d_fx_t *fx = draw ? (const dk3d_fx_t*)draw->effect : NULL;
+   const gfx_display_mesh_t *mesh;
+   const dk3d_mesh_t *m;
+   DkShader const *shaders[2];
+   DkVtxBufferState vb;
+   DkColorState cs;
+   DkBlendState bs;
+   dk3d_frame_t *f;
+   const float *ubo;
+   float u[4];
+   unsigned n, nubo, off;
+
+   if (!dk || !dk->recording || !fx || !p_disp)
+      return;
+   mesh = p_disp->effect_mesh;
+   n    = p_disp->effect_vertices;
+   if (!mesh || !mesh->positions || n < 3 || n > mesh->vertex_count)
+      return;
+   if (fx->flags & GFX_EFFECT_RIBBON)
+   {
+      /* time, y flip, alpha, then the ribbon's 50 vec4s */
+      if (!(ubo = gfx_display_ribbon_ubo(p_disp, 1.0f)))
+         return;
+      nubo = 204;
+      off  = 0;
+   }
+   else if (fx->flags & GFX_EFFECT_MESH)
+   {
+      u[0] = p_disp->effect_time;
+      u[1] = 1.0f;
+      u[2] = draw->color ? draw->color[3] : 1.0f;
+      ubo  = u;
+      nubo = 3;
+      off  = 0;
+   }
+   else
+   {
+      /* After the MVP these do not read: OutputSize, time, y flip */
+      u[0] = (float)VIDEO_SCALE_W(video_dims);
+      u[1] = (float)VIDEO_SCALE_H(video_dims);
+      u[2] = p_disp->effect_time;
+      u[3] = (fx->flags & GFX_EFFECT_YFLIP) ? 1.0f : 0.0f;
+      ubo  = u;
+      nubo = 4;
+      off  = 64;
+   }
+   if (!(m = dk3d_fx_mesh(dk, mesh)))
+      return;
+   /* The frame's state, then the effect's over the menu's */
+   dk3d_draw_bind(dk);
+   f          = &dk->frames[dk->cur];
+   shaders[0] = &fx->vsh;
+   shaders[1] = &fx->fsh;
+   dkCmdBufBindShaders(f->cmdbuf, DkStageFlag_GraphicsMask, shaders, 2);
+   dkCmdBufBindVtxAttribState(f->cmdbuf, &attrib, 1);
+   vb.stride  = 8;
+   vb.divisor = 0;
+   dkCmdBufBindVtxBufferState(f->cmdbuf, &vb, 1);
+   dkCmdBufBindVtxBuffer(f->cmdbuf, 0, dkMemBlockGetGpuAddr(m->mem), n * 8);
+   dkCmdBufPushConstants(f->cmdbuf, f->ubo_gpu, DK3D_UBO_SIZE, off,
+         nubo * sizeof(float), ubo);
+   dkColorStateDefaults(&cs);
+   dkColorStateSetBlendEnable(&cs, 0, true);
+   dkCmdBufBindColorState(f->cmdbuf, &cs);
+   dkBlendStateDefaults(&bs);
+   if (fx->flags & GFX_EFFECT_BLEND_ADD)
+   {
+      bs.srcColorBlendFactor = DkBlendFactor_One;
+      bs.dstColorBlendFactor = DkBlendFactor_One;
+      bs.srcAlphaBlendFactor = DkBlendFactor_One;
+      bs.dstAlphaBlendFactor = DkBlendFactor_One;
+   }
+   else if (fx->flags & GFX_EFFECT_BLEND_SCREEN)
+   {
+      bs.srcColorBlendFactor = DkBlendFactor_DstColor;
+      bs.dstColorBlendFactor = DkBlendFactor_One;
+      bs.srcAlphaBlendFactor = DkBlendFactor_Zero;
+      bs.dstAlphaBlendFactor = DkBlendFactor_One;
+   }
+   else
+   {
+      bs.srcColorBlendFactor = DkBlendFactor_SrcAlpha;
+      bs.dstColorBlendFactor = DkBlendFactor_InvSrcAlpha;
+      bs.srcAlphaBlendFactor = DkBlendFactor_One;
+      bs.dstAlphaBlendFactor = DkBlendFactor_InvSrcAlpha;
+   }
+   dkCmdBufBindBlendStates(f->cmdbuf, 0, &bs, 1);
+   dk3d_draw_rect(dk, VIDEO_POS_PACK(0, 0), video_dims);
+   dkCmdBufDraw(f->cmdbuf, DkPrimitive_TriangleStrip, n, 1, 0, 0);
+   /* The menu's next draw binds its own pipeline, blend and matrix */
+   dk->draw_bound = false;
+}
+#else
 static void gfx_display_dk3d_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp, void *data, unsigned video_dims)
 {
@@ -1368,6 +1601,7 @@ static void gfx_display_dk3d_draw_pipeline(gfx_display_ctx_draw_t *draw,
    (void)data;
    (void)video_dims;
 }
+#endif
 
 gfx_display_ctx_driver_t gfx_display_ctx_deko3d = {
    gfx_display_dk3d_draw,
@@ -1383,7 +1617,16 @@ gfx_display_ctx_driver_t gfx_display_ctx_deko3d = {
    false,
    true,
    gfx_display_dk3d_scissor_begin,
-   gfx_display_dk3d_scissor_end
+   gfx_display_dk3d_scissor_end,
+   NULL, /* mesh_draw */
+   NULL, /* bloom_begin: no glow */
+   NULL, /* bloom_end */
+   NULL, /* bloom_composite */
+#ifdef HAVE_SHADERPIPELINE
+   gfx_display_dk3d_effect_install
+#else
+   NULL  /* effect_install */
+#endif
 };
 
 /* ---- RGUI ------------------------------------------------------------- */
@@ -2316,6 +2559,13 @@ static void dk3d_free(void *data)
       dkMemBlockDestroy(dk->desc_mem);
    if (dk->shader_mem)
       dkMemBlockDestroy(dk->shader_mem);
+#ifdef HAVE_SHADERPIPELINE
+   if (dk->fx_mem)
+      dkMemBlockDestroy(dk->fx_mem);
+   for (i = 0; i < DK3D_FX_MESHES; i++)
+      if (dk->meshes[i].mem)
+         dkMemBlockDestroy(dk->meshes[i].mem);
+#endif
    dk3d_swapchain_free(dk);
    if (dk->queue)
       dkQueueDestroy(dk->queue);

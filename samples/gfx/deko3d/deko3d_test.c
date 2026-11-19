@@ -12,7 +12,8 @@
  * upright; text from an atlas that keeps its cells for frames in
  * flight; RGUI rendered into a lent slot and into the threaded
  * wrapper's menu memory, sampled from there; one wait a frame, on the
- * next slot; and the threaded ring's fence. */
+ * next slot; the threaded ring's fence; and the menu's effects - their
+ * programs, blends, uniforms and meshes, and the menu drawn after them. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,7 @@
 #include <stdarg.h>
 
 #include "../../../gfx/drivers/deko3d.c"
+#include "../../../gfx/drivers/deko3d_shaders/menu_effects_dksh.h"
 
 static int failures;
 #define CHECK(c, ...) do { if (!(c)) { failures++; \
@@ -47,6 +49,15 @@ typedef struct
    DkImageRect sr, dr;
    uint32_t flags;
    DkFence *fence;
+   /* A draw's pipeline: its programs' DKSH, vertex layout, blend and
+    * the uniforms each stage reads */
+   const void *vs, *fs;
+   DkGpuAddr vbo;
+   uint32_t stride, attribs, vbo_size;
+   DkBlendState blend;
+   bool     blend_on;
+   float    ubo_v[204], ubo_f[204];
+   uint32_t ubo_v_size, ubo_f_size;
 } op_t;
 
 #define MAX_OPS 512
@@ -128,20 +139,41 @@ static op_t *push(DkCmdBuf c, int kind)
 }
 void dkCmdBufSignalFence(DkCmdBuf c, DkFence *f, bool flush) { (void)flush; push(c, OP_SIGNAL)->fence = f; }
 void dkCmdBufBarrier(DkCmdBuf c, DkBarrier m, uint32_t fl) { (void)m; push(c, OP_BARRIER)->flags = fl; }
-void dkCmdBufBindShaders(DkCmdBuf c, uint32_t s, DkShader const *const sh[], uint32_t n) { (void)c; (void)s; (void)sh; (void)n; }
-void dkCmdBufBindUniformBuffers(DkCmdBuf c, DkStage s, uint32_t f, DkBufExtents const b[], uint32_t n) { (void)c; (void)s; (void)f; (void)b; (void)n; }
+/* The pipeline state draws are recorded with */
+static const void *cur_vs, *cur_fs;
+static uint32_t cur_stride, cur_attribs;
+static DkBlendState cur_blend;
+static bool cur_blend_on;
+static DkBufExtents cur_ubo[5];
+void dkCmdBufBindShaders(DkCmdBuf c, uint32_t s, DkShader const *const sh[], uint32_t n)
+{
+   (void)c; (void)s;
+   if (n == 2)
+   {
+      cur_vs = sh[0]->control;
+      cur_fs = sh[1]->control;
+   }
+   else
+      failures++;
+}
+void dkCmdBufBindUniformBuffers(DkCmdBuf c, DkStage s, uint32_t f, DkBufExtents const b[], uint32_t n)
+{
+   (void)c;
+   if (f == 0 && n == 1 && (unsigned)s < 5)
+      cur_ubo[s] = b[0];
+}
 static DkResHandle bound_tex;
 void dkCmdBufBindTextures(DkCmdBuf c, DkStage s, uint32_t f, DkResHandle const h[], uint32_t n) { (void)c; (void)s; (void)f; (void)n; bound_tex = h[0]; }
 void dkCmdBufBindImageDescriptorSet(DkCmdBuf c, DkGpuAddr a, uint32_t n) { (void)c; (void)a; (void)n; }
 void dkCmdBufBindSamplerDescriptorSet(DkCmdBuf c, DkGpuAddr a, uint32_t n) { (void)c; (void)a; (void)n; }
 void dkCmdBufBindRenderTargets(DkCmdBuf c, DkImageView const *const t[], uint32_t n, DkImageView const *d) { (void)c; (void)t; (void)n; (void)d; }
 void dkCmdBufBindRasterizerState(DkCmdBuf c, DkRasterizerState const *s) { (void)c; (void)s; }
-void dkCmdBufBindColorState(DkCmdBuf c, DkColorState const *s) { (void)c; (void)s; }
+void dkCmdBufBindColorState(DkCmdBuf c, DkColorState const *s) { (void)c; cur_blend_on = (s->blendEnableMask & 1) != 0; }
 void dkCmdBufBindColorWriteState(DkCmdBuf c, DkColorWriteState const *s) { (void)c; (void)s; }
-void dkCmdBufBindBlendStates(DkCmdBuf c, uint32_t f, DkBlendState const s[], uint32_t n) { (void)c; (void)f; (void)s; (void)n; }
+void dkCmdBufBindBlendStates(DkCmdBuf c, uint32_t f, DkBlendState const s[], uint32_t n) { (void)c; (void)f; (void)n; cur_blend = s[0]; }
 void dkCmdBufBindDepthStencilState(DkCmdBuf c, DkDepthStencilState const *s) { (void)c; (void)s; }
-void dkCmdBufBindVtxAttribState(DkCmdBuf c, DkVtxAttribState const a[], uint32_t n) { (void)c; (void)a; (void)n; }
-void dkCmdBufBindVtxBufferState(DkCmdBuf c, DkVtxBufferState const b[], uint32_t n) { (void)c; (void)b; (void)n; }
+void dkCmdBufBindVtxAttribState(DkCmdBuf c, DkVtxAttribState const a[], uint32_t n) { (void)c; (void)a; cur_attribs = n; }
+void dkCmdBufBindVtxBufferState(DkCmdBuf c, DkVtxBufferState const b[], uint32_t n) { (void)c; (void)n; cur_stride = b[0].stride; }
 void dkCmdBufBindVtxBuffers(DkCmdBuf c, uint32_t f, DkBufExtents const b[], uint32_t n) { (void)f; (void)n; c->vbo = b[0].addr; c->vbo_size = b[0].size; }
 void dkCmdBufSetViewports(DkCmdBuf c, uint32_t f, DkViewport const v[], uint32_t n) { (void)c; (void)f; (void)v; (void)n; }
 void dkCmdBufSetScissors(DkCmdBuf c, uint32_t f, DkScissor const s[], uint32_t n) { (void)c; (void)f; (void)s; (void)n; }
@@ -153,11 +185,36 @@ void dkCmdBufDraw(DkCmdBuf c, DkPrimitive p, uint32_t n, uint32_t i, uint32_t fv
    o->count  = n;
    o->handle = bound_tex;
    memcpy(o->vtx, (const void*)(uintptr_t)c->vbo,
-         sizeof(float) * 8 * (n < 6 ? n : 6));
+         MIN(sizeof(float) * 8 * (n < 6 ? n : 6), c->vbo_size));
+   o->vs       = cur_vs;
+   o->fs       = cur_fs;
+   o->vbo      = c->vbo;
+   o->vbo_size = c->vbo_size;
+   o->stride   = cur_stride;
+   o->attribs  = cur_attribs;
+   o->blend    = cur_blend;
+   o->blend_on = cur_blend_on;
+   o->ubo_v_size = cur_ubo[DkStage_Vertex].size;
+   o->ubo_f_size = cur_ubo[DkStage_Fragment].size;
+   if (cur_ubo[DkStage_Vertex].size >= sizeof(o->ubo_v))
+      memcpy(o->ubo_v, (const void*)(uintptr_t)cur_ubo[DkStage_Vertex].addr,
+            sizeof(o->ubo_v));
+   if (cur_ubo[DkStage_Fragment].size >= sizeof(o->ubo_f))
+      memcpy(o->ubo_f, (const void*)(uintptr_t)cur_ubo[DkStage_Fragment].addr,
+            sizeof(o->ubo_f));
    last_draw = *o;
    draws++;
 }
-void dkCmdBufPushConstants(DkCmdBuf c, DkGpuAddr a, uint32_t s, uint32_t o, uint32_t n, const void *d) { (void)c; (void)a; (void)s; (void)o; (void)n; (void)d; }
+/* Into the buffer, in order with the draws: the model runs them as
+ * they are recorded */
+void dkCmdBufPushConstants(DkCmdBuf c, DkGpuAddr a, uint32_t s, uint32_t o, uint32_t n, const void *d)
+{
+   (void)c;
+   if (o + n > s)
+      failures++;
+   else
+      memcpy((uint8_t*)(uintptr_t)a + o, d, n);
+}
 void dkCmdBufBlitImage(DkCmdBuf c, DkImageView const *sv, DkImageRect const *sr,
       DkImageView const *dv, DkImageRect const *dr, uint32_t flags, uint32_t factor)
 {
@@ -603,6 +660,190 @@ static void lane_sync(void)
    printf("[pass] one wait a frame, frames in flight bounded; the ring's fence\n");
 }
 
+/* --- the menu's effects ------------------------------------------------ */
+
+/* The ribbon's uniforms, a pattern; the y flip the driver asks for */
+static float ribbon_pat[204];
+static float ribbon_yflip_asked;
+const float *gfx_display_ribbon_ubo(gfx_display_t *p_disp, float yflip)
+{
+   unsigned i;
+   (void)p_disp;
+   for (i = 0; i < 204; i++)
+      ribbon_pat[i] = (float)i * 0.5f;
+   ribbon_pat[1]      = yflip;
+   ribbon_yflip_asked = yflip;
+   return ribbon_pat;
+}
+
+static gfx_display_effect_desc_t fxd[6];
+static void *fxh[6];
+static gfx_display_t fx_disp;
+static gfx_display_mesh_t fx_ribbon, fx_quad;
+static float fx_ribbon_pos[24];
+static float fx_quad_pos[8] = { -1, -1, 1, -1, -1, 1, 1, 1 };
+static float fx_color[16];
+static op_t fx_ops[8];
+static unsigned fx_nops;
+
+static void draws_fx(dk3d_t *dk)
+{
+   gfx_display_ctx_draw_t d;
+   struct video_coords c;
+   unsigned e, d0;
+   memset(&c, 0, sizeof(c));
+   memset(&d, 0, sizeof(d));
+   c.vertices     = 4;
+   c.color        = fx_color;
+   d.coords       = &c;
+   d.scale_factor = 1.0f;
+   d.color        = fx_color;
+   d.dims         = VIDEO_SCALE_PACK(1280, 720);
+   fx_nops        = 0;
+   for (e = 0; e < 6; e++)
+   {
+      fx_disp.effect_mesh     = e < 2 ? &fx_ribbon : &fx_quad;
+      fx_disp.effect_vertices = e < 2 ? 10 : 4;
+      d.effect                = fxh[e];
+      d0                      = draws;
+      gfx_display_ctx_deko3d.draw_pipeline(&d, &fx_disp, dk,
+            VIDEO_SCALE_PACK(1280, 720));
+      /* and the draw after it, which an effect leaves to the pipeline */
+      gfx_display_ctx_deko3d.draw(&d, dk, VIDEO_SCALE_PACK(1280, 720));
+      if (draws - d0 == 1)
+         fx_ops[fx_nops++] = last_draw;
+   }
+   /* a menu quad after them */
+   d.effect = NULL;
+   d.pos    = VIDEO_POS_PACK(10, 10);
+   d.dims   = VIDEO_SCALE_PACK(16, 16);
+   gfx_display_ctx_deko3d.draw(&d, dk, VIDEO_SCALE_PACK(1280, 720));
+   fx_ops[fx_nops++] = last_draw;
+}
+
+static void lane_effects(void)
+{
+#define FXD(e, f, v, fr) \
+   fxd[e].flags = f; \
+   fxd[e].dksh_vertex = v; fxd[e].dksh_vertex_size = sizeof(v); \
+   fxd[e].dksh_fragment = fr; fxd[e].dksh_fragment_size = sizeof(fr)
+   static const DkBlendFactor blend[6][4] = {
+      { DkBlendFactor_One, DkBlendFactor_One, DkBlendFactor_One, DkBlendFactor_One },
+      { DkBlendFactor_DstColor, DkBlendFactor_One, DkBlendFactor_Zero, DkBlendFactor_One },
+      { DkBlendFactor_SrcAlpha, DkBlendFactor_InvSrcAlpha, DkBlendFactor_One, DkBlendFactor_InvSrcAlpha },
+      { DkBlendFactor_SrcAlpha, DkBlendFactor_InvSrcAlpha, DkBlendFactor_One, DkBlendFactor_InvSrcAlpha },
+      { DkBlendFactor_SrcAlpha, DkBlendFactor_InvSrcAlpha, DkBlendFactor_One, DkBlendFactor_InvSrcAlpha },
+      { DkBlendFactor_SrcAlpha, DkBlendFactor_InvSrcAlpha, DkBlendFactor_One, DkBlendFactor_InvSrcAlpha }
+   };
+   unsigned e, i;
+   DkGpuAddr ribbon_vbo;
+   dk3d_t *dk = driver_new(1280, 720, true);
+   FXD(0, GFX_EFFECT_MESH | GFX_EFFECT_BLEND_ADD | GFX_EFFECT_RIBBON,
+         deko3d_fx_ribbon_vert_dksh, deko3d_fx_ribbon_frag_dksh);
+   FXD(1, GFX_EFFECT_MESH | GFX_EFFECT_BLEND_SCREEN,
+         deko3d_fx_ribbon_simple_vert_dksh, deko3d_fx_ribbon_simple_frag_dksh);
+   FXD(2, 0, deko3d_fx_quad_vert_dksh, deko3d_fx_snow_simple_frag_dksh);
+   FXD(3, 0, deko3d_fx_quad_vert_dksh, deko3d_fx_snow_frag_dksh);
+   FXD(4, GFX_EFFECT_YFLIP, deko3d_fx_quad_vert_dksh, deko3d_fx_bokeh_frag_dksh);
+   FXD(5, GFX_EFFECT_YFLIP, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_snowflake_frag_dksh);
+#undef FXD
+   for (i = 0; i < 12; i++)
+   {
+      fx_ribbon_pos[2 * i]     = (float)i * 0.1f;
+      fx_ribbon_pos[2 * i + 1] = 1.0f - (float)i * 0.05f;
+   }
+   fx_ribbon.positions    = fx_ribbon_pos;
+   fx_ribbon.vertex_count = 12;
+   fx_ribbon.id           = 77;
+   fx_quad.positions      = fx_quad_pos;
+   fx_quad.vertex_count   = 4;
+   fx_quad.id             = 1;
+   fx_disp.effect_time    = 1.5f;
+   for (i = 0; i < 16; i++)
+      fx_color[i] = (i & 3) == 3 ? 0.75f : 1.0f;
+   for (e = 0; e < 6; e++)
+   {
+      fxh[e] = gfx_display_ctx_deko3d.effect_install(dk, &fxd[e]);
+      CHECK(fxh[e], "effect %u not installed", e);
+   }
+   /* the programs' code in the effects' block, where the shaders say */
+   for (e = 0; e < 6 && fxh[e]; e++)
+   {
+      const dk3d_fx_t *fx = (const dk3d_fx_t*)fxh[e];
+      CHECK(fx->vsh.control == fxd[e].dksh_vertex
+            && fx->fsh.control == fxd[e].dksh_fragment
+            && !memcmp(dk->fx_mem->cpu + fx->fsh.offset,
+               fxd[e].dksh_fragment + dk3d_le32(fxd[e].dksh_fragment + 8),
+               dk3d_le32(fxd[e].dksh_fragment + 12))
+            && fx->fsh.offset % DK_SHADER_CODE_ALIGNMENT == 0,
+            "effect %u's programs", e);
+   }
+   CHECK(dk->fx_used + DK_SHADER_CODE_UNUSABLE_SIZE <= dk->fx_mem->size,
+         "the effects' code reaches the unusable tail");
+   vfi.menu_st_flags = MENU_ST_FLAG_ALIVE;
+   menu_draws        = draws_fx;
+   frame(dk, NULL, 0, 0, 0);
+   CHECK(fx_nops == 7, "%u draws, not 6 effects and a quad", fx_nops);
+   for (e = 0; e < 6 && fx_nops == 7; e++)
+   {
+      const op_t *o = &fx_ops[e];
+      unsigned n    = e < 2 ? 10 : 4;
+      const float *pos = e < 2 ? fx_ribbon_pos : fx_quad_pos;
+      CHECK(o->vs == fxd[e].dksh_vertex && o->fs == fxd[e].dksh_fragment,
+            "effect %u drawn with other programs", e);
+      CHECK(o->stride == 8 && o->attribs == 1 && o->count == n
+            && o->vbo_size == n * 8
+            && !memcmp((const void*)(uintptr_t)o->vbo, pos, n * 8),
+            "effect %u: vertices", e);
+      CHECK(o->blend_on && o->blend.srcColorBlendFactor == blend[e][0]
+            && o->blend.dstColorBlendFactor == blend[e][1]
+            && o->blend.srcAlphaBlendFactor == blend[e][2]
+            && o->blend.dstAlphaBlendFactor == blend[e][3],
+            "effect %u: blend", e);
+      CHECK(o->ubo_v_size >= 0x400 && o->ubo_f_size >= 0x400
+            && !memcmp(o->ubo_v, o->ubo_f, sizeof(o->ubo_v)),
+            "effect %u: uniforms not bound to both stages", e);
+      if (e == 0)
+         CHECK(!memcmp(o->ubo_v, ribbon_pat, sizeof(ribbon_pat))
+               && ribbon_yflip_asked == 1.0f, "ribbon uniforms");
+      else if (e == 1)
+         CHECK(o->ubo_v[0] == 1.5f && o->ubo_v[1] == 1.0f
+               && o->ubo_v[2] == 0.75f, "ribbon simple uniforms");
+      else
+         CHECK(o->ubo_v[16] == 1280.0f && o->ubo_v[17] == 720.0f
+               && o->ubo_v[18] == 1.5f
+               && o->ubo_v[19] == (e >= 4 ? 1.0f : 0.0f),
+               "effect %u uniforms %g %g %g %g", e, o->ubo_v[16],
+               o->ubo_v[17], o->ubo_v[18], o->ubo_v[19]);
+   }
+   /* the menu's quad after them: its own pipeline, and its matrix sent
+    * again over the ribbon's uniforms */
+   if (fx_nops == 7)
+   {
+      const op_t *o = &fx_ops[6];
+      CHECK(o->vs == deko3d_menu_vsh_dksh && o->fs == deko3d_menu_fsh_dksh
+            && o->stride == 32 && o->attribs == 3
+            && !memcmp(o->ubo_v, dk->mvp_default.data, 64),
+            "the menu's quad after the effects");
+   }
+   /* the next frame: the mesh where it was */
+   ribbon_vbo = fx_ops[0].vbo;
+   frame(dk, NULL, 0, 0, 0);
+   CHECK(fx_nops == 7 && fx_ops[0].vbo == ribbon_vbo,
+         "the ribbon's positions made again");
+   menu_draws        = NULL;
+   vfi.menu_st_flags = 0;
+   for (i = 0; i < 32; i++)
+      if (!gfx_display_ctx_deko3d.effect_install(dk, &fxd[5]))
+         break;
+   CHECK(i < 32 && dk->fx_count <= DK3D_FX_MAX
+         && dk->fx_used <= DK3D_FX_CODE, "installs past the code block");
+   driver_free(dk);
+   CHECK(!blocks_live, "%u memory blocks left at free", blocks_live);
+   printf("[pass] effects: programs, blends, uniforms and meshes, the menu after them\n");
+}
+
 int main(void)
 {
    lane_init();
@@ -612,6 +853,7 @@ int main(void)
    lane_text();
    lane_rgui();
    lane_sync();
+   lane_effects();
    if (failures)
    {
       printf("FAIL deko3d_test (%d)\n", failures);
