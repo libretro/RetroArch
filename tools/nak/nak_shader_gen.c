@@ -1,0 +1,183 @@
+/*  RetroArch - A frontend for libretro.
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/* The Switch 2's menu shaders: SPIR-V stages compiled by Mesa's NAK for
+ * SM 8.6 (T239, AMPERE_B), written out as the C header the Switch driver
+ * embeds - each program its 128-byte header then its code, as the 3D
+ * engine reads them - with what the driver binds it with.
+ *
+ * Run by tools/gen_nak_shaders.sh, which builds NAK and links this with
+ * the bridge it applies to Mesa (tools/nak/nak_rarch_bridge.patch): the
+ * bridge holds what needs Mesa's own headers, this holds the rest, and
+ * neither is part of RetroArch's build.
+ *
+ * Usage: nak_shader_gen out.h name vert|frag file.spv [name stage file]... */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* As the bridge defines it */
+struct nak_rarch_shader
+{
+   unsigned        num_gprs;
+   unsigned        slm_size;
+   unsigned        code_size;
+   unsigned        early_fragment_tests;
+   unsigned int    hdr[32];
+   const unsigned int *code;
+   const char     *asm_str;
+};
+
+int nak_rarch_compile(const unsigned int *spirv, size_t words, int frag,
+      struct nak_rarch_shader *out);
+
+static unsigned int *read_spirv(const char *path, size_t *words)
+{
+   FILE *f = fopen(path, "rb");
+   unsigned int *w;
+   long n;
+   if (!f)
+      return NULL;
+   if (fseek(f, 0, SEEK_END) || (n = ftell(f)) <= 0 || (n & 3)
+         || fseek(f, 0, SEEK_SET))
+   {
+      fclose(f);
+      return NULL;
+   }
+   if (!(w = (unsigned int*)malloc((size_t)n))
+         || fread(w, 1, (size_t)n, f) != (size_t)n || w[0] != 0x07230203u)
+   {
+      free(w);
+      fclose(f);
+      return NULL;
+   }
+   fclose(f);
+   *words = (size_t)n / 4;
+   return w;
+}
+
+/* NAK's assembly as a comment, so the header can be read without a
+ * disassembler */
+static void emit_asm(FILE *o, const char *s)
+{
+   fputs("/*\n", o);
+   while (s && *s)
+   {
+      if (s[0] == '*' && s[1] == '/')
+      {
+         fputs("* /", o);
+         s += 2;
+         continue;
+      }
+      fputc(*s++, o);
+   }
+   fputs("*/\n", o);
+}
+
+/* @src as an upper-case identifier */
+static void upper(char *dst, const char *src, size_t cap)
+{
+   size_t i;
+   for (i = 0; i + 1 < cap && src[i]; i++)
+   {
+      char c = src[i];
+      if (c >= 'a' && c <= 'z')
+         c = (char)(c - 'a' + 'A');
+      else if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
+         c = '_';
+      dst[i] = c;
+   }
+   dst[i] = '\0';
+}
+
+static int emit(FILE *o, const char *name, int frag, const char *path)
+{
+   struct nak_rarch_shader sh;
+   unsigned int *spirv;
+   size_t words;
+   unsigned i, n;
+   char up[128];
+
+   if (!(spirv = read_spirv(path, &words)))
+   {
+      fprintf(stderr, "nak_shader_gen: cannot read SPIR-V %s\n", path);
+      return -1;
+   }
+   memset(&sh, 0, sizeof(sh));
+   if (nak_rarch_compile(spirv, words, frag, &sh))
+   {
+      fprintf(stderr, "nak_shader_gen: NAK did not compile %s\n", path);
+      free(spirv);
+      return -1;
+   }
+   free(spirv);
+   /* What the driver runs them with: no scratch, code in whole words */
+   if (sh.slm_size || !sh.code_size || (sh.code_size & 3) || !sh.num_gprs)
+   {
+      fprintf(stderr, "nak_shader_gen: %s needs %u bytes of scratch,"
+            " %u bytes of code\n", path, sh.slm_size, sh.code_size);
+      return -1;
+   }
+   upper(up, name, sizeof(up));
+   n = 32 + sh.code_size / 4;
+   emit_asm(o, sh.asm_str);
+   fprintf(o, "#define %s_GPRS %u\n", up, sh.num_gprs);
+   if (frag)
+      fprintf(o, "#define %s_EARLY_FRAGMENT %u\n", up,
+            sh.early_fragment_tests);
+   fprintf(o, "static const uint32_t %s[%u] = {\n", name, n);
+   for (i = 0; i < n; i++)
+      fprintf(o, "%s0x%08x%s", (i % 6) ? " " : "   ",
+            i < 32 ? sh.hdr[i] : sh.code[i - 32],
+            (i + 1 == n) ? "\n" : ((i % 6) == 5 ? ",\n" : ","));
+   fputs("};\n\n", o);
+   return 0;
+}
+
+int main(int argc, char **argv)
+{
+   const char *base;
+   char guard[128];
+   FILE *o;
+   int i;
+   if (argc < 5 || (argc - 2) % 3)
+   {
+      fprintf(stderr, "usage: nak_shader_gen out.h name vert|frag file.spv"
+            " [name stage file]...\n");
+      return 1;
+   }
+   if (!(o = fopen(argv[1], "w")))
+      return 1;
+   /* The guard from the file's name */
+   base = strrchr(argv[1], '/');
+   upper(guard, base ? base + 1 : argv[1], sizeof(guard));
+   fputs("/* Generated by tools/gen_nak_shaders.sh with Mesa's NAK for SM 8.6\n"
+         " * (the Switch 2's T239): each program its 128-byte header, then\n"
+         " * its code. The same resources as the Switch's DKSH: uniform\n"
+         " * block 0 in c[2], the fragment stage's texture by the handle at\n"
+         " * c[0][0x690]. Do not edit; change the GLSL and run the script\n"
+         " * again. */\n", o);
+   fprintf(o, "#ifndef %s__\n#define %s__\n\n#include <stdint.h>\n\n",
+         guard, guard);
+   for (i = 2; i + 2 < argc; i += 3)
+      if (emit(o, argv[i], !strcmp(argv[i + 1], "frag"), argv[i + 2]))
+      {
+         fclose(o);
+         remove(argv[1]);
+         return 1;
+      }
+   fputs("#endif\n", o);
+   return fclose(o) ? 1 : 0;
+}

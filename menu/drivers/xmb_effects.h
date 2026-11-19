@@ -102,7 +102,10 @@ static const char *xmb_effect_ribbon_sm4(void)
 #include "../../gfx/drivers/gx2_shaders/menu_shaders.h"
 #endif
 
-#ifdef HAVE_LIBNX
+#if defined(HAVE_LIBNX) && defined(__SWITCH2__)
+#define XMB_EFFECTS_SM86
+#include "../../gfx/drivers/deko3d_shaders/menu_effects_sm86.h"
+#elif defined(HAVE_LIBNX)
 #define XMB_EFFECTS_DKSH
 #include "../../gfx/drivers/deko3d_shaders/menu_effects_dksh.h"
 #endif
@@ -296,6 +299,35 @@ static void xmb_effects_describe(void)
    XMB_DKSH(XMB_EFFECT_SNOWFLAKE, deko3d_fx_quad_vert_dksh,
          deko3d_fx_snowflake_frag_dksh);
 #undef XMB_DKSH
+#endif
+
+#ifdef XMB_EFFECTS_SM86
+#define XMB_SM86(e, v, vg, f, fg) \
+   d[e].sm86_vertex        = v; \
+   d[e].sm86_vertex_size   = sizeof(v); \
+   d[e].sm86_vertex_gprs   = vg; \
+   d[e].sm86_fragment      = f; \
+   d[e].sm86_fragment_size = sizeof(f); \
+   d[e].sm86_fragment_gprs = fg
+   XMB_SM86(XMB_EFFECT_RIBBON,
+         nxg_s2_fx_ribbon_vert, NXG_S2_FX_RIBBON_VERT_GPRS,
+         nxg_s2_fx_ribbon_frag, NXG_S2_FX_RIBBON_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_RIBBON_SIMPLE,
+         nxg_s2_fx_ribbon_simple_vert, NXG_S2_FX_RIBBON_SIMPLE_VERT_GPRS,
+         nxg_s2_fx_ribbon_simple_frag, NXG_S2_FX_RIBBON_SIMPLE_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_SNOW_SIMPLE,
+         nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snow_simple_frag, NXG_S2_FX_SNOW_SIMPLE_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_SNOW,
+         nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snow_frag, NXG_S2_FX_SNOW_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_BOKEH,
+         nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_bokeh_frag, NXG_S2_FX_BOKEH_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_SNOWFLAKE,
+         nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snowflake_frag, NXG_S2_FX_SNOWFLAKE_FRAG_GPRS);
+#undef XMB_SM86
 #endif
 
 #ifdef WIIU

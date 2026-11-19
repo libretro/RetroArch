@@ -208,11 +208,19 @@ static INLINE uint32_t sw_over(uint32_t s, uint32_t d)
 /* ---- the GPU ---------------------------------------------------------- */
 #ifdef SWITCH_NX_GPU
 
-#ifndef NXG_S2
-/* The 3D engine draws what the 2D engine cannot; not yet on the
- * Switch 2 */
+/* The 3D engine draws what the 2D engine cannot. On the Switch 2 only
+ * with NXG_S2_3D, until it has been seen to run on one: its programs
+ * from NAK (deko3d_shaders/menu_sm86.h), the rest as the Switch's. */
+#if !defined(NXG_S2)
 #define NXG_3D
 #include "deko3d_shaders/menu_dksh.h"
+#elif defined(NXG_S2_3D)
+#define NXG_3D
+#include "deko3d_shaders/menu_sm86.h"
+#endif
+/* The menu's effects: DKSH on the Switch, NAK's on the Switch 2 */
+#if defined(NXG_3D) && defined(HAVE_SHADERPIPELINE)
+#define NXG_3D_FX
 #endif
 
 #define NXG_FRAMES      3
@@ -388,6 +396,10 @@ typedef struct nxg_linear
 /* A program as the 3D engine is told of it */
 typedef struct nxg_prog
 {
+#ifdef NXG_S2
+   uint64_t addr;       /* of its header */
+   uint32_t prefetch;   /* 256-byte units */
+#endif
    uint32_t offset;     /* of its entry, in the code memory */
    uint32_t gprs;
    uint32_t end;        /* of its code */
@@ -399,7 +411,7 @@ typedef struct nxg_prog
    bool     per_sample;
 } nxg_prog_t;
 
-#ifdef HAVE_SHADERPIPELINE
+#ifdef NXG_3D_FX
 #define NXG_3D_EFFECTS 16
 #define NXG_3D_MESHES  4
 
@@ -450,7 +462,7 @@ typedef struct nxg
    bool            has3d;
    bool            engine3d;
    bool            mvp3d_valid;
-#ifdef HAVE_SHADERPIPELINE
+#ifdef NXG_3D_FX
    nxg_fx_t        fx[NXG_3D_EFFECTS];
    nxg_mesh_t      meshes[NXG_3D_MESHES];
    uint32_t        code3d_used;
@@ -1402,7 +1414,7 @@ static void nxg_free(nxg_t *g, NWindow *win)
       nxg_mem_free(g, &g->frame_mem[i].mem);
    nxg_mem_free(g, &g->white.mem);
 #ifdef NXG_3D
-#ifdef HAVE_SHADERPIPELINE
+#ifdef NXG_3D_FX
    for (i = 0; i < NXG_3D_MESHES; i++)
       nxg_mem_free(g, &g->meshes[i].mem);
 #endif
@@ -1785,6 +1797,7 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
 #define NXG_3D_MME_IRAM          0x045 /* position, then words to 0x046 */
 #define NXG_3D_MME_START         0x047 /* macro, then its start to 0x048 */
 #define NXG_3D_EARLY_FRAGMENT    0x084
+#define NXG_3D_SPA_VERSION       0x0C4
 #define NXG_3D_FRAGMENT_D8       0x0D8
 #define NXG_3D_RASTERIZER        0x0DF
 #define NXG_3D_SAMPLE_SHADING    0x1D5
@@ -1835,6 +1848,9 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
 #define NXG_3D_FRAGMENT_65B      0x65B
 #define NXG_3D_LOGIC_OP          0x671
 #define NXG_3D_COLOR_MASK        0x680
+#define NXG_3D_Z_COMPRESSION     0x673
+#define NXG_3D_COLOR_COMPRESSION 0x678
+#define NXG_3D_VERTEX_SIZE       0x180 /* AMPERE_B: a buffer's size */
 #define NXG_3D_PIPE_NOP          0x68B
 #define NXG_3D_VERTEX_ARRAY      0x700 /* config, address */
 #define NXG_3D_BLEND             0x781 /* equation, src, dst; alpha's */
@@ -1864,7 +1880,7 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
 /* Memory: code and its tail no code may sit in; the sampler and the
  * frames' texture descriptors; constants and the vertex runout */
 #define NXG_3D_CODE_ALIGN        0x100
-#ifdef HAVE_SHADERPIPELINE
+#ifdef NXG_3D_FX
 #define NXG_3D_CODE_SIZE         0x10000 /* and the menu effects' */
 #else
 #define NXG_3D_CODE_SIZE         0x1000
@@ -1895,17 +1911,21 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
  *    6  send r2               15  bnz r1, -4 (no delay)
  *    7  send r3               16  maddr 0x040, exit
  *    8  maddr 0x8C4           17  send 0 */
+#ifndef NXG_S2
 static const uint32_t nxg_3d_mme_hw_reg[18] = {
    0x00110021, 0x00000041, 0x00000201, 0x00000301, 0x07400021, 0x00000041,
    0x00001041, 0x00001841, 0x02310021, 0x00000841, 0x04000411, 0x03400115,
    0xFFFFE411, 0x0000E027, 0xFFFFC911, 0xFFFF0837, 0x001000A1, 0x00000041
 };
+#endif
 
+#ifndef NXG_S2
 static uint32_t nxg_le32(const uint8_t *p)
 {
    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16)
       | ((uint32_t)p[3] << 24);
 }
+#endif
 
 static uint32_t nxg_f32(float v)
 {
@@ -1917,6 +1937,30 @@ static uint32_t nxg_f32(float v)
 /* A program of @type from DKSH @blob, its code copied to @off of the
  * code memory. Only what these shaders need: no compiler constants, no
  * scratch, no VertexA, no fragment table - anything else stays 2D. */
+#ifdef NXG_S2
+/* A program as NAK made it - its 128-byte header, then its code - copied
+ * to @off of the code memory. What its fragment stage runs with: one
+ * sample, the menu's single target */
+static bool nxg_3d_program_sm86(nxg_t *g, const uint32_t *words,
+      size_t size, unsigned gprs, bool early, uint32_t off, nxg_prog_t *p)
+{
+   if (size <= 128 || off + size > g->code3d.size)
+      return false;
+   memcpy(g->code3d.cpu + off, words, size);
+   p->addr       = g->code3d.iova + off;
+   p->prefetch   = (uint32_t)MIN((size + 255) / 256, 127);
+   p->offset     = off;
+   p->gprs       = gprs;
+   p->end        = off + (uint32_t)size;
+   p->early      = early;
+   p->post_depth = false;
+   p->per_sample = false;
+   p->param_d8   = 0x087F6080;
+   p->param_65b  = 0;
+   p->param_489  = 0;
+   return true;
+}
+#else
 static bool nxg_3d_program(nxg_t *g, const uint8_t *blob, size_t size,
       uint32_t type, uint32_t off, nxg_prog_t *p)
 {
@@ -1951,6 +1995,7 @@ static bool nxg_3d_program(nxg_t *g, const uint8_t *blob, size_t size,
    }
    return true;
 }
+#endif
 
 static uint32_t *nxg_3d_m(uint32_t *w, unsigned m, uint32_t v)
 {
@@ -1992,12 +2037,27 @@ static void nxg_cmd_trim(nxg_t *g, const uint32_t *start, unsigned n,
 static uint32_t *nxg_3d_bind_program(uint32_t *w, unsigned slot,
       const nxg_prog_t *p)
 {
+#ifdef NXG_S2
+   /* AMPERE_B: config, registers, binding, its header's address, how
+    * much of it to fetch ahead */
+   *w++ = NXG_HDR(NXG_INCR, 1, NXG_SUB_3D,
+         NXG_3D_PROGRAM + slot * NXG_3D_PROGRAM_STRIDE);
+   *w++ = 1u | (slot << 4);
+   *w++ = NXG_HDR(NXG_INCR, 5, NXG_SUB_3D,
+         NXG_3D_PROGRAM + slot * NXG_3D_PROGRAM_STRIDE + 3);
+   *w++ = p->gprs;
+   *w++ = slot - 1;
+   *w++ = (uint32_t)(p->addr >> 32);
+   *w++ = (uint32_t)p->addr;
+   *w++ = p->prefetch;
+#else
    *w++ = NXG_HDR(NXG_INCR, 2, NXG_SUB_3D,
          NXG_3D_PROGRAM + slot * NXG_3D_PROGRAM_STRIDE);
    *w++ = 1u | (slot << 4); /* enabled, its stage */
    *w++ = p->offset;
    w    = nxg_3d_m(w, NXG_3D_PROGRAM + slot * NXG_3D_PROGRAM_STRIDE + 3,
          p->gprs);
+#endif
    /* No compiler constants: c[1] unbound */
    return nxg_3d_m(w, NXG_3D_CB_BIND + (slot - 1) * 8, 1u << 4);
 }
@@ -2087,6 +2147,7 @@ static uint32_t *nxg_3d_put_scissor(nxg_t *g, uint32_t *c,
    return c;
 }
 
+#ifndef NXG_S2
 /* A register written by the firmware, through the macro */
 static uint32_t *nxg_3d_hw_reg(uint32_t *w, uint32_t reg, uint32_t v,
       uint32_t mask)
@@ -2097,6 +2158,7 @@ static uint32_t *nxg_3d_hw_reg(uint32_t *w, uint32_t reg, uint32_t v,
    *w++ = mask;
    return w;
 }
+#endif
 
 /* The engine's state, once: what deko3d's queue sets up - its register
  * writes through the firmware, less the tile cache's (the tiled cache
@@ -2109,6 +2171,14 @@ static void nxg_3d_setup(nxg_t *g)
    unsigned i;
    if (!w)
       return;
+#ifdef NXG_S2
+   /* AMPERE_B: SPA 8.6; no compression, the buffers have no tags; every
+    * vertex buffer empty */
+   w = nxg_3d_m(w, NXG_3D_SPA_VERSION, (8u << 8) | 6u);
+   w = nxg_3d_m(w, NXG_3D_Z_COMPRESSION, 0);
+   w = nxg_3d_fill(w, NXG_3D_COLOR_COMPRESSION, 8, 0);
+   w = nxg_3d_fill(w, NXG_3D_VERTEX_SIZE, 32, 0);
+#else
    *w++ = NXG_HDR(NXG_ONCE, 19, NXG_SUB_3D, NXG_3D_MME_IRAM);
    *w++ = 0;
    for (i = 0; i < 18; i++)
@@ -2122,6 +2192,7 @@ static void nxg_3d_setup(nxg_t *g)
    w = nxg_3d_hw_reg(w, 0x00404468, 0x07FFFFFF, 0x3FFFFFFF);
    w = nxg_3d_hw_reg(w, 0x00419A04, 0x00000001, 0x00000001);
    w = nxg_3d_hw_reg(w, 0x00419A04, 0x00000002, 0x00000002);
+#endif
    /* No zcull storage is bound to the channel */
    w = nxg_3d_m(w, NXG_3D_ZCULL_REGION, 0x3F);
    w = nxg_3d_m(w, NXG_3D_MULTISAMPLE, 0);
@@ -2129,7 +2200,9 @@ static void nxg_3d_setup(nxg_t *g)
    w = nxg_3d_fill(w, NXG_3D_WINDOW_RECTS, 16, 0);
    w = nxg_3d_fill(w, NXG_3D_PER_INSTANCE, 16, 0);
    w = nxg_3d_fill(w, NXG_3D_SAMPLE_MASK, 4, 0xFFFF);
+#ifndef NXG_S2
    w = nxg_3d_m(w, NXG_3D_BINDLESS_SLOT, 0);
+#endif
    w = nxg_3d_m(w, NXG_3D_INDEPENDENT_BLEND, 1);
    w = nxg_3d_m(w, NXG_3D_VIEWPORT_ENABLE, 1);
    w = nxg_3d_m(w, NXG_3D_CLIP_CONTROL, 0x181D); /* deko3d's, no clamp */
@@ -2196,14 +2269,16 @@ static void nxg_3d_setup(nxg_t *g)
    *w++ = (uint32_t)((cb + NXG_3D_UBO_OFF) >> 32);
    *w++ = (uint32_t)(cb + NXG_3D_UBO_OFF);
    w = nxg_3d_m(w, NXG_3D_CB_BIND, 1u | (NXG_3D_UBO_SLOT << 4));
-#ifdef HAVE_SHADERPIPELINE
+#ifdef NXG_3D_FX
    /* The effects' fragment programs read it too; the menu's never */
    w = nxg_3d_m(w, NXG_3D_CB_BIND + (NXG_3D_STAGE_FRAGMENT - 1) * 8,
          1u | (NXG_3D_UBO_SLOT << 4));
 #endif
    /* The programs: vertex and fragment on, VertexA and the stages
     * between them off */
+#ifndef NXG_S2
    w = nxg_3d_addr(w, NXG_3D_PROGRAM_REGION, g->code3d.iova);
+#endif
    w = nxg_3d_m(w, NXG_3D_PROGRAM, 0);
    for (i = 2; i < NXG_3D_STAGE_FRAGMENT; i++)
       w = nxg_3d_m(w, NXG_3D_PROGRAM + i * NXG_3D_PROGRAM_STRIDE, i << 4);
@@ -2220,6 +2295,16 @@ static bool nxg_3d_init(nxg_t *g)
    uint32_t fsh_off;
    if (!nxg_mem_new(g, &g->code3d, NXG_3D_CODE_SIZE, false, false))
       return false;
+#ifdef NXG_S2
+   fsh_off = SW_ALIGN(sizeof(nxg_s2_menu_vsh), NXG_3D_CODE_ALIGN);
+   if (     !nxg_3d_program_sm86(g, nxg_s2_menu_vsh, sizeof(nxg_s2_menu_vsh),
+               NXG_S2_MENU_VSH_GPRS, false, 0, &g->vsh)
+         || !nxg_3d_program_sm86(g, nxg_s2_menu_fsh,
+               sizeof(nxg_s2_menu_fsh), NXG_S2_MENU_FSH_GPRS,
+               NXG_S2_MENU_FSH_EARLY_FRAGMENT, fsh_off, &g->fsh)
+         || g->fsh.end + NXG_3D_CODE_TAIL > g->code3d.size)
+      return false;
+#else
    fsh_off = SW_ALIGN(nxg_le32(deko3d_menu_vsh_dksh + 12), NXG_3D_CODE_ALIGN);
    if (     !nxg_3d_program(g, deko3d_menu_vsh_dksh,
                sizeof(deko3d_menu_vsh_dksh), 0, 0, &g->vsh)
@@ -2227,6 +2312,7 @@ static bool nxg_3d_init(nxg_t *g)
                sizeof(deko3d_menu_fsh_dksh), 1, fsh_off, &g->fsh)
          || g->fsh.end + NXG_3D_CODE_TAIL > g->code3d.size)
       return false;
+#endif
    armDCacheFlush(g->code3d.cpu, g->code3d.size);
    if (     !nxg_mem_new(g, &g->pool3d, NXG_3D_POOL_SIZE, false, false)
          || !nxg_mem_new(g, &g->cb3d, NXG_3D_CB_MEM, false, false))
@@ -2250,7 +2336,7 @@ static bool nxg_3d_init(nxg_t *g)
    g->tex_handle   = ~0u;
    g->blend3d      = -1;
    g->scissor3d[0] = g->scissor3d[1] = ~0u;
-#ifdef HAVE_SHADERPIPELINE
+#ifdef NXG_3D_FX
    g->code3d_used  = g->fsh.end;
    g->prog3d       = -1;
    g->blendfn3d    = NXG_BLENDFN_PREMUL;
@@ -2365,7 +2451,7 @@ static bool nxg_3d_draw(switch_video_t *sw, const float *vert,
    if (!(c0 = nxg_cmd(g, 100)))
       return false;
    c = c0;
-#ifdef HAVE_SHADERPIPELINE
+#ifdef NXG_3D_FX
    /* The menu's own state again, after an effect */
    if (g->prog3d != -1)
    {
@@ -2430,8 +2516,12 @@ static bool nxg_3d_draw(switch_video_t *sw, const float *vert,
       g->tex_handle = handle;
    }
    c = nxg_3d_addr(c, NXG_3D_VERTEX_ARRAY + 1, iova);
+#ifdef NXG_S2
+   c = nxg_3d_addr(c, NXG_3D_VERTEX_SIZE, n * NXG_3D_VTX_FLOATS * 4);
+#else
    c = nxg_3d_addr(c, NXG_3D_VERTEX_LIMIT,
          iova + n * NXG_3D_VTX_FLOATS * 4 - 1);
+#endif
    c = nxg_3d_m(c, NXG_3D_VERTEX_BEGIN, NXG_3D_PRIM_STRIP);
    c = nxg_3d_m(c, NXG_3D_DRAW_COUNT, n);
    c = nxg_3d_m(c, NXG_3D_VERTEX_END, 0);
@@ -3036,11 +3126,12 @@ static void gfx_display_switch_draw(gfx_display_ctx_draw_t *draw,
    sw_op_draw(sw, &op);
 }
 
-#if defined(NXG_3D) && defined(HAVE_SHADERPIPELINE)
+#ifdef NXG_3D_FX
 /* ---- menu effects ------------------------------------------------------
  *
  * The menu's effects on the 3D engine: their programs from the DKSH
- * the description carries, appended to the code memory; drawn over the
+ * the description carries - NAK's SM 8.6 on the Switch 2 - appended to
+ * the code memory; drawn over the
  * effect mesh's positions, which the GPU keeps a copy of per mesh, with
  * the uniforms the Vulkan driver gives them. Clip y points up here and
  * gl_FragCoord runs down: the ribbons take GL's y flip, the effects
@@ -3053,15 +3144,31 @@ static void *gfx_display_switch_effect_install(void *data,
    nxg_t *g;
    nxg_fx_t *fx;
    uint32_t start;
+#ifdef NXG_S2
+   if (     !sw || !sw->gpu || !desc
+         || !desc->sm86_vertex || !desc->sm86_fragment)
+      return NULL;
+#else
    if (     !sw || !sw->gpu || !desc
          || !desc->dksh_vertex || !desc->dksh_fragment)
       return NULL;
+#endif
    g = (nxg_t*)sw->gpu;
    if (!g->has3d || g->fx_count >= NXG_3D_EFFECTS)
       return NULL;
    fx    = &g->fx[g->fx_count];
    start = SW_ALIGN(g->code3d_used, NXG_3D_CODE_ALIGN);
    /* Past the code frames in flight run: written while they run */
+#ifdef NXG_S2
+   if (     !nxg_3d_program_sm86(g, desc->sm86_vertex,
+               desc->sm86_vertex_size, desc->sm86_vertex_gprs, false,
+               start, &fx->vsh)
+         || !nxg_3d_program_sm86(g, desc->sm86_fragment,
+               desc->sm86_fragment_size, desc->sm86_fragment_gprs, false,
+               SW_ALIGN(fx->vsh.end, NXG_3D_CODE_ALIGN), &fx->fsh)
+         || fx->fsh.end + NXG_3D_CODE_TAIL > g->code3d.size)
+      return NULL;
+#else
    if (     !nxg_3d_program(g, desc->dksh_vertex, desc->dksh_vertex_size,
                0, start, &fx->vsh)
          || !nxg_3d_program(g, desc->dksh_fragment,
@@ -3069,6 +3176,7 @@ static void *gfx_display_switch_effect_install(void *data,
                SW_ALIGN(fx->vsh.end, NXG_3D_CODE_ALIGN), &fx->fsh)
          || fx->fsh.end + NXG_3D_CODE_TAIL > g->code3d.size)
       return NULL;
+#endif
    armDCacheFlush(g->code3d.cpu + start, fx->fsh.end - start);
    fx->flags       = desc->flags;
    g->code3d_used  = fx->fsh.end;
@@ -3210,7 +3318,11 @@ static void gfx_display_switch_draw_pipeline(gfx_display_ctx_draw_t *draw,
       g->layout_fx = true;
    }
    c = nxg_3d_addr(c, NXG_3D_VERTEX_ARRAY + 1, m->mem.iova);
+#ifdef NXG_S2
+   c = nxg_3d_addr(c, NXG_3D_VERTEX_SIZE, n * 8);
+#else
    c = nxg_3d_addr(c, NXG_3D_VERTEX_LIMIT, m->mem.iova + n * 8 - 1);
+#endif
    c = nxg_3d_m(c, NXG_3D_VERTEX_BEGIN, NXG_3D_PRIM_STRIP);
    c = nxg_3d_m(c, NXG_3D_DRAW_COUNT, n);
    c = nxg_3d_m(c, NXG_3D_VERTEX_END, 0);
@@ -5003,7 +5115,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    NULL,  /* bloom_begin: no glow */
    NULL,  /* bloom_end */
    NULL,  /* bloom_composite */
-#if defined(NXG_3D) && defined(HAVE_SHADERPIPELINE)
+#ifdef NXG_3D_FX
    gfx_display_switch_effect_install
 #else
    NULL   /* effect_install */

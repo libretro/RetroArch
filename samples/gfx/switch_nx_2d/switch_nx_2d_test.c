@@ -19,10 +19,12 @@
  * the frames' descriptor slices - and the macro engine its setup's
  * firmware register writes run through.
  *
- * Built twice: for the Switch (libnx's channel, nvmap and window queue)
- * and with __SWITCH2__ for the Switch 2 (GSV memory and VM, the nvhost
- * channel ioctls, KICKOFF_PB and a VI2 layer), the same lanes over the
- * same command stream. */
+ * Built three times: for the Switch (libnx's channel, nvmap and window
+ * queue); with __SWITCH2__ for the Switch 2 (GSV memory and VM, the
+ * nvhost channel ioctls, KICKOFF_PB and a VI2 layer), the same lanes
+ * over the same command stream; and with NXG_S2_3D, the Switch 2's 3D
+ * engine - NAK's programs by address, AMPERE_B's method map, where a
+ * method only MAXWELL_B has is rejected. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +38,9 @@
 #endif
 
 #include "../../../gfx/drivers/switch_nx_gfx.c"
-#ifndef __SWITCH2__
+#if defined(NXG_3D_FX) && defined(__SWITCH2__)
+#include "../../../gfx/drivers/deko3d_shaders/menu_effects_sm86.h"
+#elif defined(NXG_3D_FX)
 #include "../../../gfx/drivers/deko3d_shaders/menu_effects_dksh.h"
 #endif
 
@@ -147,7 +151,7 @@ static uint32_t syncpt_value;
 static unsigned host_wfi, host_flush;
 #endif
 static unsigned bad_words, blits, words_run;
-#ifndef __SWITCH2__
+#ifdef NXG_3D
 /* The 3D engine model's counts; an engine that drew before the other
  * with no wait for idle between is a hazard */
 static unsigned draws3d, wfi3d, hazards, bad3d, tic_slice_bad;
@@ -248,7 +252,7 @@ static void run_blit(void)
    unsigned op = reg2d[0x0AB], beta = reg2d[0x0AA];
    unsigned x, y, ch;
    blits++;
-#ifndef __SWITCH2__
+#ifdef NXG_3D
    if (pending3d)
       hazards++;
    pending2d = true;
@@ -288,7 +292,7 @@ static void run_blit(void)
       }
 }
 
-#ifndef __SWITCH2__
+#ifdef NXG_3D
 /* --- the 3D engine model ----------------------------------------------
  *
  * MAXWELL_B as deko3d defines it (engine_3d.def, the TIC and TSC
@@ -320,10 +324,12 @@ static void bad_state(const char *what)
       printf("[info] 3D state: %s\n", what);
 }
 
+#ifndef __SWITCH2__
 static const uint8_t *prog_hdr(const uint8_t *b)
 {
    return b + nxg_le32(b + 16);
 }
+#endif
 
 /* The state every menu draw takes, as the driver must have set it */
 static bool check_state(void)
@@ -334,8 +340,10 @@ static bool check_state(void)
       0u | (16u << 7) | (0x01u << 21) | (7u << 27)
    };
    unsigned i;
+#ifndef __SWITCH2__
    const uint8_t *vb = deko3d_menu_vsh_dksh, *fb = deko3d_menu_fsh_dksh;
    uint64_t region = raddr(0x582);
+#endif
    bool ok = true;
 #define WANT(c, what) do { if (!(c)) { bad_state(what); ok = false; } } while (0)
    WANT(reg3d[0x204] == 0xD5 && reg3d[0x205] == (NXG_BLOCK_LOG2 << 4)
@@ -348,6 +356,24 @@ static bool check_state(void)
    WANT(reg3d[0x810] == 0x11 && reg3d[0x850] == 0x51, "program config");
    for (i = 2; i < 5; i++)
       WANT(reg3d[0x800 + i * 0x10] == i << 4, "a stage between");
+#ifdef __SWITCH2__
+   /* AMPERE_B: each program by its header's address, NAK's words there */
+   WANT(reg3d[0x813] == NXG_S2_MENU_VSH_GPRS
+         && reg3d[0x853] == NXG_S2_MENU_FSH_GPRS, "registers");
+   WANT(reg3d[0x814] == 0 && reg3d[0x854] == 4, "program bindings");
+   WANT(reg3d[0x817] == (sizeof(nxg_s2_menu_vsh) + 255) / 256
+         && reg3d[0x857] == (sizeof(nxg_s2_menu_fsh) + 255) / 256,
+         "program prefetch");
+   WANT(!(raddr(0x815) & 0x7F) && !(raddr(0x855) & 0x7F)
+         && !memcmp(xlat(raddr(0x815)), nxg_s2_menu_vsh,
+            sizeof(nxg_s2_menu_vsh))
+         && !memcmp(xlat(raddr(0x855)), nxg_s2_menu_fsh,
+            sizeof(nxg_s2_menu_fsh)), "program code");
+   WANT(reg3d[0x0C4] == 0x806, "SPA version");
+   for (i = 0x678; i < 0x680; i++)
+      WANT(!reg3d[i], "colour compression");
+   WANT(!reg3d[0x673], "depth compression");
+#else
    WANT(reg3d[0x813] == nxg_le32(prog_hdr(vb) + 8)
          && reg3d[0x853] == nxg_le32(prog_hdr(fb) + 8), "registers");
    /* The code the programs point at is the blobs' */
@@ -356,9 +382,11 @@ static bool check_state(void)
          && !memcmp(xlat(region + reg3d[0x851]
                - nxg_le32(prog_hdr(fb) + 4)),
             fb + nxg_le32(fb + 8), nxg_le32(fb + 12)), "program code");
+   WANT(reg3d[0x0D8] == nxg_le32(prog_hdr(fb) + 44), "fragment D8");
+   WANT(reg3d[0x982] == 0, "texture handles not in c[0]");
+#endif
    WANT(!cbs[0][1].valid && !cbs[4][1].valid, "compiler constants bound");
-   WANT(reg3d[0x0D8] == nxg_le32(prog_hdr(fb) + 44)
-         && reg3d[0x0D9] == 0x20 && reg3d[0x1D5] == 1
+   WANT(reg3d[0x0D9] == 0x20 && reg3d[0x1D5] == 1
          && reg3d[0x3D0] == 0, "fragment parameters");
    for (i = 0; i < 3; i++)
       WANT(reg3d[0x458 + i] == attribs[i], "vertex attribute");
@@ -376,7 +404,6 @@ static bool check_state(void)
          && reg3d[0x36B] == 0x1B02 && reg3d[0x36C] == 0x1B02, "raster");
    WANT(!reg3d[0x646] && !reg3d[0x54E] && !reg3d[0x4B3] && !reg3d[0x4E0]
          && !reg3d[0x4BB] && !reg3d[0x671] && !reg3d[0x54D], "tests off");
-   WANT(reg3d[0x982] == 0, "texture handles not in c[0]");
    WANT(cbs[0][0].valid && cbs[4][0].valid && cbs[0][2].valid
          && cbs[0][2].size >= 64, "constant buffers");
    WANT(reg3d[0x380] == 1, "scissor off");
@@ -462,7 +489,11 @@ static void vertex3d(unsigned i, vtx3d_t *o)
       uint64_t at = base + (uint64_t)i * (reg3d[0x700] & 0xFFF)
                   + ((s >> 7) & 0x3FFF);
       const float *f = (const float*)xlat(at);
+#ifdef __SWITCH2__
+      if (at + n * 4 > base + raddr(0x180))
+#else
       if (at + n * 4 - 1 > raddr(0x7C0))
+#endif
          bad_state("vertex beyond its limit");
       for (k = 0; k < 4; k++)
          in[a][k] = k < n ? f[k] : (k == 3 ? 1.0 : 0.0);
@@ -552,7 +583,18 @@ static void triangle3d(const vtx3d_t *v0, const vtx3d_t *v1,
       }
 }
 
+#ifdef NXG_3D_FX
+#ifdef __SWITCH2__
+/* Whether the program in @slot is @words' header and code */
+typedef const uint32_t *fxblob_t;
+static bool program_is(unsigned slot, const uint32_t *words, size_t size)
+{
+   return !memcmp(xlat(raddr(0x805 + slot * 0x10)), words, size);
+}
+#define PROGRAM_IS(slot, a) program_is(slot, a, sizeof(a))
+#else
 /* Whether the program in @slot is @blob's code */
+typedef const uint8_t *fxblob_t;
 static bool program_is(unsigned slot, const uint8_t *blob)
 {
    uint64_t region = raddr(0x582);
@@ -562,14 +604,17 @@ static bool program_is(unsigned slot, const uint8_t *blob)
          blob + nxg_le32(blob + 8), nxg_le32(blob + 12))
       && reg3d[0x803 + slot * 0x10] == nxg_le32(prog_hdr(blob) + 8);
 }
+#define PROGRAM_IS(slot, a) program_is(slot, a)
+#endif
 
 /* An effect's draw as the engine saw it, for the lanes to read */
 typedef struct
 {
-   const uint8_t *vs, *fs;
+   fxblob_t vs, fs;
    uint64_t va, limit, ubo_v, ubo_f;
    uint32_t blend[6], blend_en, va_cfg, attr[2], count, sc[2];
    uint32_t ubo_size_v, ubo_size_f, d8;
+   uint32_t gprs[2], prefetch[2], binding[2];
    float    xf[6];
    float    ubo[204];
    unsigned shader_invalidates;
@@ -580,24 +625,36 @@ static unsigned fxrecs, shader_invalidates;
 
 static void effect3d(void)
 {
-   static const uint8_t *const vs[3] = {
-      deko3d_fx_quad_vert_dksh, deko3d_fx_ribbon_vert_dksh,
-      deko3d_fx_ribbon_simple_vert_dksh
-   };
-   static const uint8_t *const fs[6] = {
-      deko3d_fx_ribbon_frag_dksh, deko3d_fx_ribbon_simple_frag_dksh,
-      deko3d_fx_snow_simple_frag_dksh, deko3d_fx_snow_frag_dksh,
-      deko3d_fx_bokeh_frag_dksh, deko3d_fx_snowflake_frag_dksh
-   };
    fxrec_t *r = &fxrec[fxrecs++ & 15];
    unsigned i;
    memset(r, 0, sizeof(*r));
-   for (i = 0; i < 3; i++)
-      if (program_is(1, vs[i]))
-         r->vs = vs[i];
-   for (i = 0; i < 6; i++)
-      if (program_is(5, fs[i]))
-         r->fs = fs[i];
+#ifdef __SWITCH2__
+#define FX_VS(a) if (PROGRAM_IS(1, a)) r->vs = a
+#define FX_FS(a) if (PROGRAM_IS(5, a)) r->fs = a
+   FX_VS(nxg_s2_fx_quad_vert);
+   FX_VS(nxg_s2_fx_ribbon_vert);
+   FX_VS(nxg_s2_fx_ribbon_simple_vert);
+   FX_FS(nxg_s2_fx_ribbon_frag);
+   FX_FS(nxg_s2_fx_ribbon_simple_frag);
+   FX_FS(nxg_s2_fx_snow_simple_frag);
+   FX_FS(nxg_s2_fx_snow_frag);
+   FX_FS(nxg_s2_fx_bokeh_frag);
+   FX_FS(nxg_s2_fx_snowflake_frag);
+#else
+#define FX_VS(a) if (PROGRAM_IS(1, a)) r->vs = a
+#define FX_FS(a) if (PROGRAM_IS(5, a)) r->fs = a
+   FX_VS(deko3d_fx_quad_vert_dksh);
+   FX_VS(deko3d_fx_ribbon_vert_dksh);
+   FX_VS(deko3d_fx_ribbon_simple_vert_dksh);
+   FX_FS(deko3d_fx_ribbon_frag_dksh);
+   FX_FS(deko3d_fx_ribbon_simple_frag_dksh);
+   FX_FS(deko3d_fx_snow_simple_frag_dksh);
+   FX_FS(deko3d_fx_snow_frag_dksh);
+   FX_FS(deko3d_fx_bokeh_frag_dksh);
+   FX_FS(deko3d_fx_snowflake_frag_dksh);
+#endif
+#undef FX_VS
+#undef FX_FS
    for (i = 0; i < 6; i++)
       r->blend[i] = reg3d[0x781 + i];
    for (i = 0; i < 6; i++)
@@ -607,11 +664,21 @@ static void effect3d(void)
    r->attr[0]    = reg3d[0x459];
    r->attr[1]    = reg3d[0x45A];
    r->va         = raddr(0x701);
+#ifdef __SWITCH2__
+   r->limit      = r->va + raddr(0x180) - 1;
+#else
    r->limit      = raddr(0x7C0);
+#endif
    r->count      = reg3d[0x35E];
    r->sc[0]      = reg3d[0x381];
    r->sc[1]      = reg3d[0x382];
    r->d8         = reg3d[0x0D8];
+   r->gprs[0]    = reg3d[0x813];
+   r->gprs[1]    = reg3d[0x853];
+   r->prefetch[0] = reg3d[0x817];
+   r->prefetch[1] = reg3d[0x857];
+   r->binding[0] = reg3d[0x814];
+   r->binding[1] = reg3d[0x854];
    r->ubo_v      = cbs[0][2].valid ? cbs[0][2].addr : 0;
    r->ubo_f      = cbs[4][2].valid ? cbs[4][2].addr : 0;
    r->ubo_size_v = cbs[0][2].size;
@@ -624,6 +691,8 @@ static void effect3d(void)
         && reg3d[0x3D0] == 0 && reg3d[0x380] == 1;
 }
 
+#endif
+
 static void draw3d(void)
 {
    unsigned n = reg3d[0x35E], i;
@@ -632,13 +701,20 @@ static void draw3d(void)
    if (pending2d)
       hazards++;
    pending3d = true;
+#ifdef NXG_3D_FX
    /* An effect's programs: its state recorded, not shaded */
+#ifdef __SWITCH2__
+   if (     !PROGRAM_IS(1, nxg_s2_menu_vsh)
+         || !PROGRAM_IS(5, nxg_s2_menu_fsh))
+#else
    if (     !program_is(1, deko3d_menu_vsh_dksh)
          || !program_is(5, deko3d_menu_fsh_dksh))
+#endif
    {
       effect3d();
       return;
    }
+#endif
    if (reg3d[0x586] != NXG_3D_PRIM_STRIP || reg3d[0x35D] != 0 || n < 3
          || !check_state())
    {
@@ -778,6 +854,19 @@ static void method3d(unsigned m, uint32_t v)
       bad_words++;
       return;
    }
+#ifdef __SWITCH2__
+   /* AMPERE_B has none of these: the program region and offsets, the
+    * vertex limits, the bindless slot, the Fermi macro engine and the
+    * firmware calls */
+   if (     m == 0x582 || m == 0x583 || (m >= 0x7C0 && m < 0x7E0)
+         || m == 0x982 || (m >= 0x800 && m < 0x860 && (m & 0xF) == 1)
+         || (m >= 0x045 && m <= 0x048) || (m >= 0x8C0 && m < 0x8E0))
+   {
+      bad_state("a method AMPERE_B does not have");
+      bad_words++;
+      return;
+   }
+#endif
    if (m == NXG_3D_CB_DATA)
    {
       /* Into the selected buffer, the offset stepping */
@@ -790,6 +879,7 @@ static void method3d(unsigned m, uint32_t v)
       reg3d[0x8E3] = of + 4;
       return;
    }
+#ifndef __SWITCH2__
    if (m == NXG_3D_MME_IRAM + 1)
    {
       mme_iram[mme_iram_pos++ & 0x3FF] = v;
@@ -805,6 +895,11 @@ static void method3d(unsigned m, uint32_t v)
       mme_iram_pos = v;
    else if (m == NXG_3D_MME_START)
       mme_start_pos = v;
+#else
+   reg3d[m] = v;
+   if (0)
+      ;
+#endif
    else if (m >= 0x904 && m < 0x904 + 5 * 8 && !((m - 0x904) & 7))
    {
       unsigned st = (m - 0x904) / 8, idx = (v >> 4) & 31;
@@ -824,8 +919,10 @@ static void method3d(unsigned m, uint32_t v)
    }
    else if (m == NXG_3D_INVALIDATE_TIC)
       tic_fresh = true;
+#ifdef NXG_3D_FX
    else if (m == NXG_3D_INVALIDATE_SHADER)
       shader_invalidates++;
+#endif
    else if (m == NXG_3D_INVALIDATE_TEX)
       tex_fresh = true;
    else if (m == NXG_3D_VERTEX_END)
@@ -869,10 +966,10 @@ static void method(unsigned sub, unsigned m, uint32_t v)
             bad_words++;
       }
       else if (m != NXG_3D_FLUSH)
-#ifdef __SWITCH2__
-         bad_words++;
-#else
+#ifdef NXG_3D
          method3d(m, v);
+#else
+         bad_words++;
 #endif
       return;
    }
@@ -961,7 +1058,7 @@ Result nvGpuChannelAppendEntry(NvGpuChannel *c, iova_t start, size_t n,
 Result nvGpuChannelKickoff(NvGpuChannel *c)
 {
    unsigned i;
-#ifndef __SWITCH2__
+#ifdef NXG_3D
    /* A frame: its descriptors and textures fresh from its own
     * invalidates, its pool slice one; its own buffer, so no engine
     * waits on the last frame's */
@@ -1112,6 +1209,11 @@ Result nvIoctl2(u32 fd, u32 req, void *argp, const void *in, size_t n)
    struct { u64 reserved; u32 num_entries; u32 flags; u64 fence; } *d = argp;
    const u32 *e = (const u32*)in;
    u32 i;
+#ifdef NXG_3D
+   tic_fresh   = tex_fresh = false;
+   pending2d   = pending3d = false;
+   frame_slice = -1;
+#endif
    if (fd != 4 || req != NXG_CH_KICKOFF_PB || d->flags != NXG_KICKOFF_FLAGS
          || n != d->num_entries * 8)
    {
@@ -1854,7 +1956,7 @@ static void lane_heap(void)
    printf("[pass] surfaces share mapped blocks; the atlas keeps in-flight cells\n");
 }
 
-#ifndef __SWITCH2__
+#ifdef NXG_3D
 /* --- the 3D engine's draws ------------------------------------------- */
 
 /* Box space turned a quarter left about its centre, then the default
@@ -1981,6 +2083,7 @@ static void lane_3d(void)
    };
    uint32_t white[16];
    unsigned d0, b0, top, bot, mid, t;
+#ifndef __SWITCH2__
    static const uint32_t fw_want[6][3] = {
       { 0x00418800, 0x00000001, 0x00000001 },
       { 0x00419A08, 0x00000000, 0x00000010 },
@@ -1990,6 +2093,7 @@ static void lane_3d(void)
       { 0x00419A04, 0x00000002, 0x00000002 }
    };
    unsigned fw0 = fw_count, i;
+#endif
    switch_video_t *sw = driver_new(1280, 720, true);
    nxg_t *g           = (nxg_t*)sw->gpu;
    CHECK(g && g->has3d, "no 3D engine");
@@ -2008,6 +2112,7 @@ static void lane_3d(void)
    vfi.menu_st_flags = 0;
    CHECK(draws3d - d0 == 5, "%u draws on the 3D engine, not 5",
          draws3d - d0);
+#ifndef __SWITCH2__
    /* deko3d's register writes, through the firmware, in its order */
    CHECK(fw_count - fw0 == 6, "%u firmware register writes, not 6",
          fw_count - fw0);
@@ -2022,6 +2127,7 @@ static void lane_3d(void)
          "macro: %u faults, %u calls past an unacknowledged one",
          mme_bad, fw_acks_late);
    CHECK(reg3d[0x564] == 0x3F, "zcull region %x", reg3d[0x564]);
+#endif
    CHECK(blits - b0 >= 2, "the default quads left the 2D engine");
    CHECK(!bad3d, "%u draws with state the model rejects", bad3d);
    CHECK(!hazards, "%u draws with no wait for the other engine", hazards);
@@ -2159,6 +2265,7 @@ static void lane_3d_pool(void)
    CHECK(maps_live == 0, "%u maps left", maps_live);
    printf("[pass] descriptors: a slice a frame, the rest of a full one on the 2D engine\n");
 }
+#ifndef __SWITCH2__
 /* A firmware that never answers: each call gives up after its 4096
  * reads, and the frames still go out */
 static void lane_3d_firmware_mute(void)
@@ -2181,6 +2288,9 @@ static void lane_3d_firmware_mute(void)
    driver_free(sw);
    printf("[pass] firmware writes: deko3d's six through the macro, bounded with no answer\n");
 }
+#endif
+
+#ifdef NXG_3D_FX
 /* --- the menu's effects ------------------------------------------------ */
 
 /* The ribbon's uniforms, a pattern; the y flip the driver asks for */
@@ -2205,6 +2315,36 @@ static float fx_ribbon_pos[24];
 static float fx_quad_pos[8] = { -1, -1, 1, -1, -1, 1, 1, 1 };
 static float fx_color[16];
 
+#ifdef __SWITCH2__
+#define FX_V(e) fxd[e].sm86_vertex
+#define FX_F(e) fxd[e].sm86_fragment
+static void fx_describe(void)
+{
+#define FXD(e, f, v, vg, fr, fg) \
+   fxd[e].flags = f; \
+   fxd[e].sm86_vertex = v; fxd[e].sm86_vertex_size = sizeof(v); \
+   fxd[e].sm86_vertex_gprs = vg; \
+   fxd[e].sm86_fragment = fr; fxd[e].sm86_fragment_size = sizeof(fr); \
+   fxd[e].sm86_fragment_gprs = fg
+   FXD(0, GFX_EFFECT_MESH | GFX_EFFECT_BLEND_ADD | GFX_EFFECT_RIBBON,
+         nxg_s2_fx_ribbon_vert, NXG_S2_FX_RIBBON_VERT_GPRS,
+         nxg_s2_fx_ribbon_frag, NXG_S2_FX_RIBBON_FRAG_GPRS);
+   FXD(1, GFX_EFFECT_MESH | GFX_EFFECT_BLEND_SCREEN,
+         nxg_s2_fx_ribbon_simple_vert, NXG_S2_FX_RIBBON_SIMPLE_VERT_GPRS,
+         nxg_s2_fx_ribbon_simple_frag, NXG_S2_FX_RIBBON_SIMPLE_FRAG_GPRS);
+   FXD(2, 0, nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snow_simple_frag, NXG_S2_FX_SNOW_SIMPLE_FRAG_GPRS);
+   FXD(3, 0, nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snow_frag, NXG_S2_FX_SNOW_FRAG_GPRS);
+   FXD(4, GFX_EFFECT_YFLIP, nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_bokeh_frag, NXG_S2_FX_BOKEH_FRAG_GPRS);
+   FXD(5, GFX_EFFECT_YFLIP, nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snowflake_frag, NXG_S2_FX_SNOWFLAKE_FRAG_GPRS);
+#undef FXD
+}
+#else
+#define FX_V(e) fxd[e].dksh_vertex
+#define FX_F(e) fxd[e].dksh_fragment
 static void fx_describe(void)
 {
 #define FXD(e, f, v, fr) \
@@ -2222,6 +2362,7 @@ static void fx_describe(void)
          deko3d_fx_snowflake_frag_dksh);
 #undef FXD
 }
+#endif
 
 static void draws_fx(switch_video_t *sw)
 {
@@ -2326,10 +2467,20 @@ static void lane_3d_effects(void)
       const fxrec_t *r = &fxrec[(r0 + e) & 15];
       const gfx_display_mesh_t *mesh = e < 2 ? &fx_ribbon : &fx_quad;
       unsigned n = e < 2 ? 10 : 4;
-      CHECK(r->ok && r->vs == fxd[e].dksh_vertex
-            && r->fs == fxd[e].dksh_fragment
-            && r->d8 == nxg_le32(prog_hdr(fxd[e].dksh_fragment) + 44),
+#ifdef __SWITCH2__
+      CHECK(r->ok && r->vs == FX_V(e) && r->fs == FX_F(e)
+            && r->d8 == 0x087F6080, "effect %u: programs or state", e);
+      CHECK(r->gprs[0] == fxd[e].sm86_vertex_gprs
+            && r->gprs[1] == fxd[e].sm86_fragment_gprs
+            && r->prefetch[0] == (fxd[e].sm86_vertex_size + 255) / 256
+            && r->prefetch[1] == (fxd[e].sm86_fragment_size + 255) / 256
+            && r->binding[0] == 0 && r->binding[1] == 4,
+            "effect %u: registers, prefetch or binding", e);
+#else
+      CHECK(r->ok && r->vs == FX_V(e) && r->fs == FX_F(e)
+            && r->d8 == nxg_le32(prog_hdr(FX_F(e)) + 44),
             "effect %u: programs or state", e);
+#endif
       CHECK(!memcmp(r->blend, blend[e], sizeof(blend[e])) && r->blend_en,
             "effect %u: blend %u %u %u / %u %u %u", e, r->blend[0],
             r->blend[1], r->blend[2], r->blend[3], r->blend[4], r->blend[5]);
@@ -2388,6 +2539,7 @@ static void lane_3d_effects(void)
    CHECK(maps_live == 0, "%u maps left", maps_live);
    printf("[pass] effects: programs, blends, uniforms and the meshes, the menu after them\n");
 }
+#endif
 #else
 /* The Switch 2 keeps the 2D engine's terms */
 static void lane_3d(void)
@@ -2405,6 +2557,13 @@ static void lane_3d(void)
 
 int main(void)
 {
+#if defined(__SWITCH2__) && defined(NXG_3D)
+   /* What AMPERE_B's golden context may hold: the setup must write it */
+   unsigned r;
+   reg3d[0x0C4] = reg3d[0x673] = 0xDEADBEEFu;
+   for (r = 0x678; r < 0x680; r++)
+      reg3d[r] = 0xDEADBEEFu;
+#endif
    lane_window();
    lane_frame(true);
    lane_frame(false);
@@ -2416,18 +2575,24 @@ int main(void)
    lane_dock_and_fences();
    lane_heap();
    lane_3d();
-#ifndef __SWITCH2__
+#ifdef NXG_3D
    lane_3d_pool();
+#endif
+#ifndef __SWITCH2__
    lane_3d_firmware_mute();
+#endif
+#ifdef NXG_3D_FX
    lane_3d_effects();
 #endif
    CHECK(!bad_words, "%u words or blits the engine model rejected", bad_words);
-#ifdef __SWITCH2__
+#if defined(__SWITCH2__) && defined(NXG_3D)
+#define HARNESS "switch_nx_2d_test (Switch 2, 3D)"
+#elif defined(__SWITCH2__)
 #define HARNESS "switch_nx_2d_test (Switch 2)"
 #else
 #define HARNESS "switch_nx_2d_test"
 #endif
-#ifndef __SWITCH2__
+#ifdef NXG_3D
    printf("[info] %u words run, %u blits, %u 3D draws\n", words_run, blits,
          draws3d);
 #else
