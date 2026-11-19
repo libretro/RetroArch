@@ -32,6 +32,28 @@ each time a data path is written or touched, not only when asked.
   the memory before the reader is done, or uncached memory would be read
   back).
 
+## Real time
+
+RetroArch is a soft real-time system. The main, video and audio paths
+must stay within a frame's budget, and a lock, a sleep or a blocking wait
+on them shows up as jitter, audio underruns or extra frames of latency -
+which run-ahead, hard sync and the low-latency modes cannot absorb.
+
+The primitives allowed are the ones the concurrency actually needs:
+
+- SPSC rings for a producer-consumer handoff (core to video, the audio
+  callbacks and the like).
+- Atomics for flags and simple shared state.
+- Eventcounts for a wait that neither spins nor puts a sleep in front of
+  the caller.
+
+Spinlocks and busy-waiting are out: they burn power, hurt the caches and
+invert priorities. Needing to block means the design is wrong; reshape it
+around lends and borrows, slots allocated ahead and progress that never
+waits, as the Copies section does for data. Pacing follows the same rule:
+frames are timed by the audio clock or the display's vsync, never by
+wall-clock sleeps, so nothing drifts and no latency is added.
+
 ## Threads
 
 - Nothing may block: no sleeping, busy-waiting, wait-for-idle or round-trip
