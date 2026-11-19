@@ -7762,6 +7762,22 @@ static void lane_handoff_clock(void)
             "handoff clock lane: %u iterations read the clock %u times, "
             "want at most %u", HANDOFF_CLOCK_PUSHES, iter_reads,
             HANDOFF_CLOCK_PUSHES + 2);
+      {
+         /* Automatic frame delay times each iteration's leftover from
+          * the iteration's own reading, moved on by a mark */
+         settings_t *st        = config_get_ptr();
+         bool saved_auto       = st->bools.video_frame_delay_auto;
+         unsigned saved_delay  = st->uints.video_frame_delay;
+         st->bools.video_frame_delay_auto = true;
+         st->uints.video_frame_delay      = 0;
+         iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES, true);
+         st->bools.video_frame_delay_auto = saved_auto;
+         st->uints.video_frame_delay      = saved_delay;
+         CHECK(iter_reads <= HANDOFF_CLOCK_PUSHES + 2,
+               "handoff clock lane: %u iterations under automatic frame "
+               "delay read the clock %u times, want at most %u",
+               HANDOFF_CLOCK_PUSHES, iter_reads, HANDOFF_CLOCK_PUSHES + 2);
+      }
 #ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
       /* The frame limiter spins to its deadline on the perf counter:
        * the clock is read for the sleep's own use at most (Windows and

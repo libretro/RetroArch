@@ -26,7 +26,6 @@
 #include <string/stdstring.h>
 #include <memcpy_nt.h>
 #include <encodings/utf.h>
-#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -786,7 +785,8 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
     * will cause bad frame pacing) */
    if (unlikely(video_info->input_driver_nonblock_state))
    {
-      retro_time_t current_time = cpu_features_get_time_usec();
+      /* The frame's own reading */
+      retro_time_t current_time = video_info->frame_time;
 
       if ((current_time - vid->last_frame_time) <
             vid->ff_frame_time_min)

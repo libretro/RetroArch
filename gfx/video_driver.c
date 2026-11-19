@@ -11354,7 +11354,8 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
       uint8_t *skip_update,
       uint8_t *video_frame_delay_effective)
 {
-   retro_time_t time_now         = cpu_features_get_time_usec();
+   /* The iteration's reading, moved on to here by a mark */
+   retro_time_t time_now         = RUNLOOP_NOW(runloop_st, CPU_FEATURES_MARK());
    static retro_time_t time_prev = 0;
    retro_time_t core_run_time    = (runloop_st->core_run_time) ? runloop_st->core_run_time : 500;
    static int16_t frame_time_dev = 0;
