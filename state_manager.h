@@ -37,7 +37,13 @@ enum state_manager_rewind_st_flags
    STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED    = (1 << 3),
    /* A load wants the buffer: it is set up on the frame after,
     * before the core runs, rather than inside the load */
-   STATE_MGR_REWIND_ST_FLAG_INIT_PENDING          = (1 << 4)
+   STATE_MGR_REWIND_ST_FLAG_INIT_PENDING          = (1 << 4),
+   /* Set by the runloop ahead of the check while the preemptive
+    * frames run: the frame's push is left for their save point, where
+    * one serialize serves both */
+   STATE_MGR_REWIND_ST_FLAG_DEFER_PUSH            = (1 << 5),
+   /* A push the check left for state_manager_push_deferred() */
+   STATE_MGR_REWIND_ST_FLAG_PUSH_PENDING          = (1 << 6)
 };
 
 struct state_manager
@@ -106,6 +112,23 @@ bool state_manager_check_rewind(
       bool pressed,
       unsigned rewind_granularity, bool is_paused,
       char *s, size_t len, unsigned *time);
+
+/**
+ * state_manager_push_deferred:
+ * @core      : where the pushed state's core block is copied, or NULL.
+ * @core_size : the size @core takes.
+ *
+ * Makes the push the frame's check left pending, if any. The pushed
+ * state's core block is copied into @core when it is @core_size bytes,
+ * so a caller saving the same state at the same point needs no second
+ * serialize.
+ *
+ * Returns: true when @core holds the state, false when it does not and
+ * the caller serializes for itself.
+ **/
+bool state_manager_push_deferred(
+      struct state_manager_rewind_state *rewind_st,
+      void *core, size_t core_size);
 
 RETRO_END_DECLS
 

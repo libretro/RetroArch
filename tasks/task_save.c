@@ -860,6 +860,27 @@ bool content_serialize_state_rewind(void* buffer, size_t buffer_size)
    return content_write_serialized_state(buffer, &size, true);
 }
 
+const void *content_rewind_state_core(const void *state, size_t len,
+      size_t *core_size)
+{
+   /* A rewind state carries no replay block: the identifier, then the
+    * core's block */
+   const unsigned char *p = (const unsigned char*)state;
+   size_t block_size;
+   if (     !p || len < 16
+         || memcmp(p, "RASTATE", 7)
+         || memcmp(p + 8, RASTATE_MEM_BLOCK, 4))
+      return NULL;
+   block_size = (size_t)(  ((uint32_t)p[15] << 24)
+                         | ((uint32_t)p[14] << 16)
+                         | ((uint32_t)p[13] <<  8)
+                         |  (uint32_t)p[12]);
+   if (block_size > len - 16)
+      return NULL;
+   *core_size = block_size;
+   return p + 16;
+}
+
 static void *content_get_serialized_data(size_t *serial_size)
 {
    size_t _len;

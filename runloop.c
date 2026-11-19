@@ -9267,6 +9267,15 @@ static enum runloop_state_enum runloop_check_state(
          if (runloop_st->rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_INIT_PENDING)
             runloop_rewind_init_pending(runloop_st);
 
+#ifdef HAVE_RUNAHEAD
+         /* The preemptive frames save the same state before the frame
+          * runs: the push waits for that save and shares its serialize */
+         if (runloop_st->preempt_data)
+            runloop_st->rewind_st.flags |=  STATE_MGR_REWIND_ST_FLAG_DEFER_PUSH;
+         else
+            runloop_st->rewind_st.flags &= ~STATE_MGR_REWIND_ST_FLAG_DEFER_PUSH;
+#endif
+
          rewinding           = state_manager_check_rewind(
                &runloop_st->rewind_st,
                &runloop_st->current_core,
@@ -10456,6 +10465,11 @@ int runloop_iterate(void)
 #endif
          frame_advanced = core_run();
    }
+
+#ifdef HAVE_REWIND
+   /* A push the preemptive frames did not get to take */
+   state_manager_push_deferred(&runloop_st->rewind_st, NULL, 0);
+#endif
 
    runloop_load_deferred_auto_state();
 

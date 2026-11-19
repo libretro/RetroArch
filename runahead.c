@@ -2336,12 +2336,21 @@ bool preempt_run(preempt_t *preempt, void *data)
       video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
    }
 
-   /* Save current state and set start_ptr to oldest state */
-   if (!current_core->retro_serialize(
-         preempt->buffer[preempt->start_ptr], preempt->state_size))
+   /* Save current state and set start_ptr to oldest state. A rewind
+    * push left for this point serializes it for both. */
    {
-      _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
-      goto error;
+      bool saved = false;
+#ifdef HAVE_REWIND
+      saved      = state_manager_push_deferred(&runloop_st->rewind_st,
+            preempt->buffer[preempt->start_ptr], preempt->state_size);
+#endif
+      if (     !saved
+            && !current_core->retro_serialize(
+               preempt->buffer[preempt->start_ptr], preempt->state_size))
+      {
+         _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+         goto error;
+      }
    }
 
    preempt->start_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);

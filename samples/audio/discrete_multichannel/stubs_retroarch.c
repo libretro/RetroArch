@@ -331,6 +331,9 @@ bool content_serialize_state_rewind(void *data, size_t size)
    memcpy(data, &test_rewind_core_frame, size);
    return true;
 }
+const void *content_rewind_state_core(const void *state, size_t len,
+      size_t *core_size)
+{ *core_size = len; return state; }
 bool content_deserialize_state(const void *data, size_t size)
 {
    if (!data || size != sizeof(test_rewind_core_frame)) return false;
