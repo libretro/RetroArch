@@ -647,6 +647,13 @@ static void mode_playlist_sub(void)
          "the playlist entry's refused core was not said");
 }
 
+static bool good_runs_game(void)
+{
+   return good_runs()
+      && (content_state_get_ptr()->flags & CONTENT_ST_FLAG_IS_INITED)
+      && same_path(path_get(RARCH_PATH_CONTENT), game);
+}
+
 #ifdef HAVE_NETWORKING
 /* Netplay's reload of a session with subsystem content probes its core
  * with no load after it to park: a refused core is said, not loaded */
@@ -682,13 +689,6 @@ static void mode_netplay_sub(void)
    CHECK(is_dummy(), "netplay's unload did not end on the dummy core");
    check_refusal_said(said, error,
          "netplay's refused core was not said");
-}
-
-static bool good_runs_game(void)
-{
-   return good_runs()
-      && (content_state_get_ptr()->flags & CONTENT_ST_FLAG_IS_INITED)
-      && same_path(path_get(RARCH_PATH_CONTENT), game);
 }
 
 /* A lobby join of a refused core is said, not parked, and leaves no
