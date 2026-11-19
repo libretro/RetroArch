@@ -773,6 +773,9 @@ const video_driver_t *video_drivers[] = {
 #ifdef _3DS
    &video_ctr,
 #endif
+#ifdef HAVE_DEKO3D
+   &video_deko3d,
+#endif
 #ifdef SWITCH
    &video_switch,
 #endif
@@ -2172,6 +2175,10 @@ video_driver_t *hw_render_context_driver(
       case RETRO_HW_CONTEXT_RSX:
          return &video_gcm;
 #endif
+#ifdef HAVE_DEKO3D
+      case RETRO_HW_CONTEXT_DEKO3D:
+         return &video_deko3d;
+#endif
       case RETRO_HW_CONTEXT_VULKAN:
 #if defined(HAVE_VULKAN)
          return &video_vulkan;
@@ -2232,6 +2239,10 @@ const char *hw_render_context_name(
    if (type == RETRO_HW_CONTEXT_RSX)
       return "rsx";
 #endif
+#ifdef HAVE_DEKO3D
+   if (type == RETRO_HW_CONTEXT_DEKO3D)
+      return "deko3d";
+#endif
    return "N/A";
 }
 
@@ -2272,6 +2283,10 @@ static enum retro_hw_context_type hw_render_context_type(const char *s)
 #ifdef HAVE_GCM
    if (string_is_equal(s, "rsx"))
       return RETRO_HW_CONTEXT_RSX;
+#endif
+#ifdef HAVE_DEKO3D
+   if (string_is_equal(s, "deko3d"))
+      return RETRO_HW_CONTEXT_DEKO3D;
 #endif
    return RETRO_HW_CONTEXT_NONE;
 }
@@ -6556,13 +6571,16 @@ bool video_driver_find_driver(
 #ifdef HAVE_GCM
             case RETRO_HW_CONTEXT_RSX:
 #endif
+#ifdef HAVE_DEKO3D
+            case RETRO_HW_CONTEXT_DEKO3D:
+#endif
             case RETRO_HW_CONTEXT_OPENGL_CORE:
             case RETRO_HW_CONTEXT_VULKAN:
             case RETRO_HW_CONTEXT_D3D9:
             case RETRO_HW_CONTEXT_D3D10:
             case RETRO_HW_CONTEXT_D3D11:
             case RETRO_HW_CONTEXT_D3D12:
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D9) || defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(HAVE_OPENGL_CORE) || defined(HAVE_GCM)
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D9) || defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(HAVE_OPENGL_CORE) || defined(HAVE_GCM) || defined(HAVE_DEKO3D)
                RARCH_LOG("[Video] Using HW render, %s driver forced.\n",
                      rdr_context_name);
 

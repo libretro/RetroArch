@@ -1270,6 +1270,14 @@ ifneq ($(filter retroarch_switch retroarch_switch2,$(TARGET)),)
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/switch_vk_ctx.o
    endif
+   ifeq ($(TARGET), retroarch_switch)
+      ifeq ($(HAVE_DEKO3D), 1)
+         DEFINES += -DHAVE_DEKO3D
+         OBJ += gfx/drivers/deko3d.o \
+                gfx/drivers/deko3d_menu_vsh.dksh.o \
+                gfx/drivers/deko3d_menu_fsh.dksh.o
+      endif
+   endif
    OBJ += audio/drivers/switch_audio.o \
           input/drivers/switch_input.o \
           input/drivers_joypad/switch_joypad.o \

@@ -104,6 +104,9 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef HAVE_GCM
    &gfx_display_ctx_rsx,
 #endif
+#ifdef HAVE_DEKO3D
+   &gfx_display_ctx_deko3d,
+#endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
    &gfx_display_ctx_gdi,

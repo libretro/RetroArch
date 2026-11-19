@@ -1379,6 +1379,12 @@ static bool dynamic_verify_hw_context(
                return false;
             break;
 #endif
+#ifdef HAVE_DEKO3D
+         case RETRO_HW_CONTEXT_DEKO3D:
+            if (!(len == 6 && memcmp(video_ident, "deko3d", 6) == 0))
+               return false;
+            break;
+#endif
          case RETRO_HW_CONTEXT_VULKAN:
             if (!(len == 6 && memcmp(video_ident, "vulkan", 6) == 0))
                return false;
@@ -1463,6 +1469,12 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 #ifdef HAVE_GCM
       case RETRO_HW_CONTEXT_RSX:
          RARCH_LOG("[HW] Requesting RSX context.\n");
+         break;
+#endif
+
+#ifdef HAVE_DEKO3D
+      case RETRO_HW_CONTEXT_DEKO3D:
+         RARCH_LOG("[HW] Requesting deko3d context.\n");
          break;
 #endif
 
