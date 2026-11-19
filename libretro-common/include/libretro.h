@@ -4846,6 +4846,12 @@ enum retro_hw_render_interface_type
     */
    RETRO_HW_RENDER_INTERFACE_RSX        = 6,
 
+   /**
+    * Indicates a \c retro_hw_render_interface for deko3d (Nintendo Switch).
+    * @see retro_hw_render_interface_deko3d in libretro_deko3d.h
+    */
+   RETRO_HW_RENDER_INTERFACE_DEKO3D     = 7,
+
    /** @private Defined to ensure <tt>sizeof(retro_hw_render_interface_type) == sizeof(int)</tt>.
     * Do not use. */
    RETRO_HW_RENDER_INTERFACE_DUMMY      = INT_MAX
@@ -6992,6 +6998,9 @@ enum retro_hw_context_type
 
    /* PlayStation 3 RSX, see libretro_rsx.h */
    RETRO_HW_CONTEXT_RSX              = 11,
+
+   /* Nintendo Switch deko3d, see libretro_deko3d.h */
+   RETRO_HW_CONTEXT_DEKO3D           = 12,
 
    /** Dummy value to ensure sizeof(enum retro_hw_context_type) == sizeof(int). Do not use. */
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
