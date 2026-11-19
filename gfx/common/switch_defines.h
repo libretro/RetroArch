@@ -64,8 +64,6 @@ typedef struct
    /* The overlay image column each screen column samples, for the
     * image being drawn */
    uint16_t overlay_cols[1280];
-   uint32_t image[1280 * 720];
-   uint32_t tmp_image[1280 * 720];
    u32 cnt;
    struct scaler_ctx scaler;
    /* The frame size the scaler was last built for, packed. */

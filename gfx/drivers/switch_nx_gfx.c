@@ -268,35 +268,49 @@ static bool switch_font_get_line_metrics(void* data, struct font_line_metrics **
  * VIDEO DRIVER
  */
 
-static void gfx_cpy_dsp_buf(uint32_t *buffer, uint32_t *image, int w, int h, uint32_t stride, bool blend)
+/* Black around @pos/@dims inside @screen_dims, @pitch pixels a row:
+ * the frame is scaled straight into the framebuffer, whose border
+ * still holds the last frame's OSD and overlay. */
+static void switch_clear_border(uint32_t *buf, unsigned pitch,
+      unsigned screen_dims, unsigned pos, unsigned dims)
 {
-    uint32_t *dest = buffer;
-    uint32_t *src = image;
-    uint32_t y, x;
-    for (y = 0; y < (uint32_t)h; y ++)
-    {
-        for (x = 0; x < (uint32_t)w; x ++)
-        {
-            uint32_t pos = y * stride / sizeof(uint32_t) + x;
-            uint32_t pixel = *src;
-
-            if (blend) /* supercheap masking */
-            {
-                uint32_t dst = dest[pos];
-                uint8_t src_a = ((pixel & 0xFF000000) >> 24);
-
-                if (src_a > 0)
-                    pixel &= 0x00FFFFFF;
-                else
-                    pixel = dst;
-            }
-
-            dest[pos] = pixel;
-
-            src++;
-        }
-    }
+   unsigned sw = VIDEO_SCALE_W(screen_dims);
+   unsigned sh = VIDEO_SCALE_H(screen_dims);
+   unsigned x0 = VIDEO_POS_X(pos);
+   unsigned y0 = VIDEO_POS_Y(pos);
+   unsigned x1 = x0 + VIDEO_SCALE_W(dims);
+   unsigned y1 = y0 + VIDEO_SCALE_H(dims);
+   unsigned y;
+   if (y0)
+      memset(buf, 0, (size_t)pitch * y0 * sizeof(uint32_t));
+   for (y = y0; y < y1; y++)
+   {
+      uint32_t *row = buf + (size_t)y * pitch;
+      if (x0)
+         memset(row, 0, x0 * sizeof(uint32_t));
+      if (x1 < sw)
+         memset(row + x1, 0, (sw - x1) * sizeof(uint32_t));
+   }
+   if (y1 < sh)
+      memset(buf + (size_t)y1 * pitch, 0,
+            (size_t)pitch * (sh - y1) * sizeof(uint32_t));
 }
+
+#ifdef HAVE_MENU
+/* The menu's texels without alpha black, the rest opaque colour with
+ * the alpha byte cleared, in place over its rectangle */
+static void switch_menu_mask(uint32_t *buf, unsigned pitch,
+      unsigned w, unsigned h)
+{
+   unsigned x, y;
+   for (y = 0; y < h; y++, buf += pitch)
+      for (x = 0; x < w; x++)
+      {
+         uint32_t p = buf[x];
+         buf[x]     = (p >> 24) ? (p & 0x00ffffffu) : 0;
+      }
+}
+#endif
 
 /* needed to clear surface completely as hw scaling doesn't always scale to full resolution perflectly */
 static void clear_screen(switch_video_t *sw)
@@ -792,38 +806,43 @@ static bool switch_frame(void *data, const void *frame,
 
       if (sw->menu_texture.pixels)
       {
-         memset(out_buffer, 0, stride * VIDEO_SCALE_H(sw->vp.full_dims));
-         scaler_ctx_scale(&sw->menu_texture.scaler,
-                 sw->tmp_image
+         unsigned pitch     = stride / sizeof(uint32_t);
+         uint32_t *menu_out = out_buffer
                + ((VIDEO_SCALE_H(sw->vp.full_dims)
                      - VIDEO_SCALE_H(sw->menu_texture.tgt_dims)) / 2)
-               * VIDEO_SCALE_W(sw->vp.full_dims)
+               * pitch
                + ((VIDEO_SCALE_W(sw->vp.full_dims)
-                     - VIDEO_SCALE_W(sw->menu_texture.tgt_dims)) / 2),
+                     - VIDEO_SCALE_W(sw->menu_texture.tgt_dims)) / 2);
+         memset(out_buffer, 0, stride * VIDEO_SCALE_H(sw->vp.full_dims));
+         sw->menu_texture.scaler.out_stride = stride;
+         scaler_ctx_scale(&sw->menu_texture.scaler, menu_out,
                sw->menu_texture.pixels);
-         gfx_cpy_dsp_buf(out_buffer, sw->tmp_image, VIDEO_SCALE_W(sw->vp.full_dims), VIDEO_SCALE_H(sw->vp.full_dims), stride, true);
+         switch_menu_mask(menu_out, pitch,
+               VIDEO_SCALE_W(sw->menu_texture.tgt_dims),
+               VIDEO_SCALE_H(sw->menu_texture.tgt_dims));
       }
    }
    else
 #endif
       if (sw->smooth) /* bilinear */
       {
-         int w, h;
-         unsigned x, y;
+         /* The frame at its own size at x_offset: the compositor
+          * scales the window up */
          struct scaler_ctx *ctx = &sw->scaler;
-         scaler_ctx_scale_direct(ctx, sw->image, frame);
-         w = sw->scaler.out_width;
-         h = sw->scaler.out_height;
-
-         for (y = 0; y < h; y++)
-            for (x = 0; x < w; x++)
-               out_buffer[y * stride / sizeof(uint32_t) + (x + sw->hw_scale.x_offset)] = sw->image[y * w + x];
+         ctx->out_stride        = stride;
+         scaler_ctx_scale_direct(ctx, out_buffer + sw->hw_scale.x_offset,
+               frame);
       }
       else
       {
          struct scaler_ctx *ctx = &sw->scaler;
-         scaler_ctx_scale(ctx, sw->image + (VIDEO_POS_Y(sw->vp.pos) * VIDEO_SCALE_W(sw->vp.full_dims)) + VIDEO_POS_X(sw->vp.pos), frame);
-         gfx_cpy_dsp_buf(out_buffer, sw->image, VIDEO_SCALE_W(sw->vp.full_dims), VIDEO_SCALE_H(sw->vp.full_dims), stride, false);
+         unsigned pitch         = stride / sizeof(uint32_t);
+         switch_clear_border(out_buffer, pitch, sw->vp.full_dims,
+               sw->vp.pos, sw->vp.dims);
+         ctx->out_stride        = stride;
+         scaler_ctx_scale(ctx, out_buffer
+               + VIDEO_POS_Y(sw->vp.pos) * pitch
+               + VIDEO_POS_X(sw->vp.pos), frame);
       }
 
 #ifdef HAVE_OVERLAY
