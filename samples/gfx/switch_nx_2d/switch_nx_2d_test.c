@@ -38,7 +38,9 @@
 #endif
 
 #include "../../../gfx/drivers/switch_nx_gfx.c"
-#ifdef NXG_3D_FX
+#if defined(NXG_3D_FX) && defined(__SWITCH2__)
+#include "../../../gfx/drivers/deko3d_shaders/menu_effects_sm86.h"
+#elif defined(NXG_3D_FX)
 #include "../../../gfx/drivers/deko3d_shaders/menu_effects_dksh.h"
 #endif
 
@@ -582,7 +584,17 @@ static void triangle3d(const vtx3d_t *v0, const vtx3d_t *v1,
 }
 
 #ifdef NXG_3D_FX
+#ifdef __SWITCH2__
+/* Whether the program in @slot is @words' header and code */
+typedef const uint32_t *fxblob_t;
+static bool program_is(unsigned slot, const uint32_t *words, size_t size)
+{
+   return !memcmp(xlat(raddr(0x805 + slot * 0x10)), words, size);
+}
+#define PROGRAM_IS(slot, a) program_is(slot, a, sizeof(a))
+#else
 /* Whether the program in @slot is @blob's code */
+typedef const uint8_t *fxblob_t;
 static bool program_is(unsigned slot, const uint8_t *blob)
 {
    uint64_t region = raddr(0x582);
@@ -592,14 +604,17 @@ static bool program_is(unsigned slot, const uint8_t *blob)
          blob + nxg_le32(blob + 8), nxg_le32(blob + 12))
       && reg3d[0x803 + slot * 0x10] == nxg_le32(prog_hdr(blob) + 8);
 }
+#define PROGRAM_IS(slot, a) program_is(slot, a)
+#endif
 
 /* An effect's draw as the engine saw it, for the lanes to read */
 typedef struct
 {
-   const uint8_t *vs, *fs;
+   fxblob_t vs, fs;
    uint64_t va, limit, ubo_v, ubo_f;
    uint32_t blend[6], blend_en, va_cfg, attr[2], count, sc[2];
    uint32_t ubo_size_v, ubo_size_f, d8;
+   uint32_t gprs[2], prefetch[2], binding[2];
    float    xf[6];
    float    ubo[204];
    unsigned shader_invalidates;
@@ -610,24 +625,36 @@ static unsigned fxrecs, shader_invalidates;
 
 static void effect3d(void)
 {
-   static const uint8_t *const vs[3] = {
-      deko3d_fx_quad_vert_dksh, deko3d_fx_ribbon_vert_dksh,
-      deko3d_fx_ribbon_simple_vert_dksh
-   };
-   static const uint8_t *const fs[6] = {
-      deko3d_fx_ribbon_frag_dksh, deko3d_fx_ribbon_simple_frag_dksh,
-      deko3d_fx_snow_simple_frag_dksh, deko3d_fx_snow_frag_dksh,
-      deko3d_fx_bokeh_frag_dksh, deko3d_fx_snowflake_frag_dksh
-   };
    fxrec_t *r = &fxrec[fxrecs++ & 15];
    unsigned i;
    memset(r, 0, sizeof(*r));
-   for (i = 0; i < 3; i++)
-      if (program_is(1, vs[i]))
-         r->vs = vs[i];
-   for (i = 0; i < 6; i++)
-      if (program_is(5, fs[i]))
-         r->fs = fs[i];
+#ifdef __SWITCH2__
+#define FX_VS(a) if (PROGRAM_IS(1, a)) r->vs = a
+#define FX_FS(a) if (PROGRAM_IS(5, a)) r->fs = a
+   FX_VS(nxg_s2_fx_quad_vert);
+   FX_VS(nxg_s2_fx_ribbon_vert);
+   FX_VS(nxg_s2_fx_ribbon_simple_vert);
+   FX_FS(nxg_s2_fx_ribbon_frag);
+   FX_FS(nxg_s2_fx_ribbon_simple_frag);
+   FX_FS(nxg_s2_fx_snow_simple_frag);
+   FX_FS(nxg_s2_fx_snow_frag);
+   FX_FS(nxg_s2_fx_bokeh_frag);
+   FX_FS(nxg_s2_fx_snowflake_frag);
+#else
+#define FX_VS(a) if (PROGRAM_IS(1, a)) r->vs = a
+#define FX_FS(a) if (PROGRAM_IS(5, a)) r->fs = a
+   FX_VS(deko3d_fx_quad_vert_dksh);
+   FX_VS(deko3d_fx_ribbon_vert_dksh);
+   FX_VS(deko3d_fx_ribbon_simple_vert_dksh);
+   FX_FS(deko3d_fx_ribbon_frag_dksh);
+   FX_FS(deko3d_fx_ribbon_simple_frag_dksh);
+   FX_FS(deko3d_fx_snow_simple_frag_dksh);
+   FX_FS(deko3d_fx_snow_frag_dksh);
+   FX_FS(deko3d_fx_bokeh_frag_dksh);
+   FX_FS(deko3d_fx_snowflake_frag_dksh);
+#endif
+#undef FX_VS
+#undef FX_FS
    for (i = 0; i < 6; i++)
       r->blend[i] = reg3d[0x781 + i];
    for (i = 0; i < 6; i++)
@@ -637,11 +664,21 @@ static void effect3d(void)
    r->attr[0]    = reg3d[0x459];
    r->attr[1]    = reg3d[0x45A];
    r->va         = raddr(0x701);
+#ifdef __SWITCH2__
+   r->limit      = r->va + raddr(0x180) - 1;
+#else
    r->limit      = raddr(0x7C0);
+#endif
    r->count      = reg3d[0x35E];
    r->sc[0]      = reg3d[0x381];
    r->sc[1]      = reg3d[0x382];
    r->d8         = reg3d[0x0D8];
+   r->gprs[0]    = reg3d[0x813];
+   r->gprs[1]    = reg3d[0x853];
+   r->prefetch[0] = reg3d[0x817];
+   r->prefetch[1] = reg3d[0x857];
+   r->binding[0] = reg3d[0x814];
+   r->binding[1] = reg3d[0x854];
    r->ubo_v      = cbs[0][2].valid ? cbs[0][2].addr : 0;
    r->ubo_f      = cbs[4][2].valid ? cbs[4][2].addr : 0;
    r->ubo_size_v = cbs[0][2].size;
@@ -666,8 +703,13 @@ static void draw3d(void)
    pending3d = true;
 #ifdef NXG_3D_FX
    /* An effect's programs: its state recorded, not shaded */
+#ifdef __SWITCH2__
+   if (     !PROGRAM_IS(1, nxg_s2_menu_vsh)
+         || !PROGRAM_IS(5, nxg_s2_menu_fsh))
+#else
    if (     !program_is(1, deko3d_menu_vsh_dksh)
          || !program_is(5, deko3d_menu_fsh_dksh))
+#endif
    {
       effect3d();
       return;
@@ -2273,6 +2315,36 @@ static float fx_ribbon_pos[24];
 static float fx_quad_pos[8] = { -1, -1, 1, -1, -1, 1, 1, 1 };
 static float fx_color[16];
 
+#ifdef __SWITCH2__
+#define FX_V(e) fxd[e].sm86_vertex
+#define FX_F(e) fxd[e].sm86_fragment
+static void fx_describe(void)
+{
+#define FXD(e, f, v, vg, fr, fg) \
+   fxd[e].flags = f; \
+   fxd[e].sm86_vertex = v; fxd[e].sm86_vertex_size = sizeof(v); \
+   fxd[e].sm86_vertex_gprs = vg; \
+   fxd[e].sm86_fragment = fr; fxd[e].sm86_fragment_size = sizeof(fr); \
+   fxd[e].sm86_fragment_gprs = fg
+   FXD(0, GFX_EFFECT_MESH | GFX_EFFECT_BLEND_ADD | GFX_EFFECT_RIBBON,
+         nxg_s2_fx_ribbon_vert, NXG_S2_FX_RIBBON_VERT_GPRS,
+         nxg_s2_fx_ribbon_frag, NXG_S2_FX_RIBBON_FRAG_GPRS);
+   FXD(1, GFX_EFFECT_MESH | GFX_EFFECT_BLEND_SCREEN,
+         nxg_s2_fx_ribbon_simple_vert, NXG_S2_FX_RIBBON_SIMPLE_VERT_GPRS,
+         nxg_s2_fx_ribbon_simple_frag, NXG_S2_FX_RIBBON_SIMPLE_FRAG_GPRS);
+   FXD(2, 0, nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snow_simple_frag, NXG_S2_FX_SNOW_SIMPLE_FRAG_GPRS);
+   FXD(3, 0, nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snow_frag, NXG_S2_FX_SNOW_FRAG_GPRS);
+   FXD(4, GFX_EFFECT_YFLIP, nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_bokeh_frag, NXG_S2_FX_BOKEH_FRAG_GPRS);
+   FXD(5, GFX_EFFECT_YFLIP, nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snowflake_frag, NXG_S2_FX_SNOWFLAKE_FRAG_GPRS);
+#undef FXD
+}
+#else
+#define FX_V(e) fxd[e].dksh_vertex
+#define FX_F(e) fxd[e].dksh_fragment
 static void fx_describe(void)
 {
 #define FXD(e, f, v, fr) \
@@ -2290,6 +2362,7 @@ static void fx_describe(void)
          deko3d_fx_snowflake_frag_dksh);
 #undef FXD
 }
+#endif
 
 static void draws_fx(switch_video_t *sw)
 {
@@ -2394,10 +2467,20 @@ static void lane_3d_effects(void)
       const fxrec_t *r = &fxrec[(r0 + e) & 15];
       const gfx_display_mesh_t *mesh = e < 2 ? &fx_ribbon : &fx_quad;
       unsigned n = e < 2 ? 10 : 4;
-      CHECK(r->ok && r->vs == fxd[e].dksh_vertex
-            && r->fs == fxd[e].dksh_fragment
-            && r->d8 == nxg_le32(prog_hdr(fxd[e].dksh_fragment) + 44),
+#ifdef __SWITCH2__
+      CHECK(r->ok && r->vs == FX_V(e) && r->fs == FX_F(e)
+            && r->d8 == 0x087F6080, "effect %u: programs or state", e);
+      CHECK(r->gprs[0] == fxd[e].sm86_vertex_gprs
+            && r->gprs[1] == fxd[e].sm86_fragment_gprs
+            && r->prefetch[0] == (fxd[e].sm86_vertex_size + 255) / 256
+            && r->prefetch[1] == (fxd[e].sm86_fragment_size + 255) / 256
+            && r->binding[0] == 0 && r->binding[1] == 4,
+            "effect %u: registers, prefetch or binding", e);
+#else
+      CHECK(r->ok && r->vs == FX_V(e) && r->fs == FX_F(e)
+            && r->d8 == nxg_le32(prog_hdr(FX_F(e)) + 44),
             "effect %u: programs or state", e);
+#endif
       CHECK(!memcmp(r->blend, blend[e], sizeof(blend[e])) && r->blend_en,
             "effect %u: blend %u %u %u / %u %u %u", e, r->blend[0],
             r->blend[1], r->blend[2], r->blend[3], r->blend[4], r->blend[5]);

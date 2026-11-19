@@ -218,8 +218,8 @@ static INLINE uint32_t sw_over(uint32_t s, uint32_t d)
 #define NXG_3D
 #include "deko3d_shaders/menu_sm86.h"
 #endif
-/* The menu's effects: DKSH, the Switch's programs */
-#if defined(NXG_3D) && defined(HAVE_SHADERPIPELINE) && !defined(NXG_S2)
+/* The menu's effects: DKSH on the Switch, NAK's on the Switch 2 */
+#if defined(NXG_3D) && defined(HAVE_SHADERPIPELINE)
 #define NXG_3D_FX
 #endif
 
@@ -3130,7 +3130,8 @@ static void gfx_display_switch_draw(gfx_display_ctx_draw_t *draw,
 /* ---- menu effects ------------------------------------------------------
  *
  * The menu's effects on the 3D engine: their programs from the DKSH
- * the description carries, appended to the code memory; drawn over the
+ * the description carries - NAK's SM 8.6 on the Switch 2 - appended to
+ * the code memory; drawn over the
  * effect mesh's positions, which the GPU keeps a copy of per mesh, with
  * the uniforms the Vulkan driver gives them. Clip y points up here and
  * gl_FragCoord runs down: the ribbons take GL's y flip, the effects
@@ -3143,15 +3144,31 @@ static void *gfx_display_switch_effect_install(void *data,
    nxg_t *g;
    nxg_fx_t *fx;
    uint32_t start;
+#ifdef NXG_S2
+   if (     !sw || !sw->gpu || !desc
+         || !desc->sm86_vertex || !desc->sm86_fragment)
+      return NULL;
+#else
    if (     !sw || !sw->gpu || !desc
          || !desc->dksh_vertex || !desc->dksh_fragment)
       return NULL;
+#endif
    g = (nxg_t*)sw->gpu;
    if (!g->has3d || g->fx_count >= NXG_3D_EFFECTS)
       return NULL;
    fx    = &g->fx[g->fx_count];
    start = SW_ALIGN(g->code3d_used, NXG_3D_CODE_ALIGN);
    /* Past the code frames in flight run: written while they run */
+#ifdef NXG_S2
+   if (     !nxg_3d_program_sm86(g, desc->sm86_vertex,
+               desc->sm86_vertex_size, desc->sm86_vertex_gprs, false,
+               start, &fx->vsh)
+         || !nxg_3d_program_sm86(g, desc->sm86_fragment,
+               desc->sm86_fragment_size, desc->sm86_fragment_gprs, false,
+               SW_ALIGN(fx->vsh.end, NXG_3D_CODE_ALIGN), &fx->fsh)
+         || fx->fsh.end + NXG_3D_CODE_TAIL > g->code3d.size)
+      return NULL;
+#else
    if (     !nxg_3d_program(g, desc->dksh_vertex, desc->dksh_vertex_size,
                0, start, &fx->vsh)
          || !nxg_3d_program(g, desc->dksh_fragment,
@@ -3159,6 +3176,7 @@ static void *gfx_display_switch_effect_install(void *data,
                SW_ALIGN(fx->vsh.end, NXG_3D_CODE_ALIGN), &fx->fsh)
          || fx->fsh.end + NXG_3D_CODE_TAIL > g->code3d.size)
       return NULL;
+#endif
    armDCacheFlush(g->code3d.cpu + start, fx->fsh.end - start);
    fx->flags       = desc->flags;
    g->code3d_used  = fx->fsh.end;
@@ -3300,7 +3318,11 @@ static void gfx_display_switch_draw_pipeline(gfx_display_ctx_draw_t *draw,
       g->layout_fx = true;
    }
    c = nxg_3d_addr(c, NXG_3D_VERTEX_ARRAY + 1, m->mem.iova);
+#ifdef NXG_S2
+   c = nxg_3d_addr(c, NXG_3D_VERTEX_SIZE, n * 8);
+#else
    c = nxg_3d_addr(c, NXG_3D_VERTEX_LIMIT, m->mem.iova + n * 8 - 1);
+#endif
    c = nxg_3d_m(c, NXG_3D_VERTEX_BEGIN, NXG_3D_PRIM_STRIP);
    c = nxg_3d_m(c, NXG_3D_DRAW_COUNT, n);
    c = nxg_3d_m(c, NXG_3D_VERTEX_END, 0);

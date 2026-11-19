@@ -2,7 +2,9 @@
 # Regenerates gfx/drivers/deko3d_shaders/menu_sm86.h: the Switch driver's
 # menu shaders (deko3d_menu_vsh.glsl, deko3d_menu_fsh.glsl) for the
 # Switch 2, compiled by Mesa's NAK for SM 8.6 - the compiler the Switch 2
-# Vulkan port (OunceVK) runs on the console.
+# Vulkan port (OunceVK) runs on the console. And menu_effects_sm86.h: the
+# menu effects from the Vulkan driver's GLSL, with pipeline_quad.vert
+# for the effects drawn over the screen's quad.
 #
 # Needs a Mesa source tree with NAK (26.2 or later; OunceVK's is the one
 # this was made with) in MESA, and meson, ninja, python3 with mako, a
@@ -18,6 +20,8 @@ BUILD="${MESA_BUILD:-$MESA/build-rarch}"
 ROOT=$(pwd)
 DIR=gfx/drivers/deko3d_shaders
 OUT="$DIR/menu_sm86.h"
+FX_OUT="$DIR/menu_effects_sm86.h"
+VK=gfx/drivers/vulkan_shaders
 TMP="${TMPDIR:-/tmp}/gen_nak_shaders.$$"
 CC="${CC:-cc}"
 
@@ -79,4 +83,28 @@ glslangValidator -V -S frag -o "$TMP/fsh.spv" "$DIR/deko3d_menu_fsh.glsl"
    nxg_s2_menu_vsh vert "$TMP/vsh.spv" \
    nxg_s2_menu_fsh frag "$TMP/fsh.spv"
 
-echo "wrote $OUT"
+# The effects: Vulkan GLSL as glslang takes it
+fx() {
+   glslangValidator -V -S "$1" -o "$TMP/$2.spv" "$3"
+}
+fx vert fx_quad_vert          "$DIR/pipeline_quad.vert"
+fx vert fx_ribbon_vert        "$VK/pipeline_ribbon.vert"
+fx frag fx_ribbon_frag        "$VK/pipeline_ribbon.frag"
+fx vert fx_ribbon_simple_vert "$VK/pipeline_ribbon_simple.vert"
+fx frag fx_ribbon_simple_frag "$VK/pipeline_ribbon_simple.frag"
+fx frag fx_snow_simple_frag   "$VK/pipeline_snow_simple.frag"
+fx frag fx_snow_frag          "$VK/pipeline_snow.frag"
+fx frag fx_bokeh_frag         "$VK/pipeline_bokeh.frag"
+fx frag fx_snowflake_frag     "$VK/pipeline_snowflake.frag"
+"$TMP/nak_shader_gen" "$FX_OUT" \
+   nxg_s2_fx_quad_vert          vert "$TMP/fx_quad_vert.spv" \
+   nxg_s2_fx_ribbon_vert        vert "$TMP/fx_ribbon_vert.spv" \
+   nxg_s2_fx_ribbon_frag        frag "$TMP/fx_ribbon_frag.spv" \
+   nxg_s2_fx_ribbon_simple_vert vert "$TMP/fx_ribbon_simple_vert.spv" \
+   nxg_s2_fx_ribbon_simple_frag frag "$TMP/fx_ribbon_simple_frag.spv" \
+   nxg_s2_fx_snow_simple_frag   frag "$TMP/fx_snow_simple_frag.spv" \
+   nxg_s2_fx_snow_frag          frag "$TMP/fx_snow_frag.spv" \
+   nxg_s2_fx_bokeh_frag         frag "$TMP/fx_bokeh_frag.spv" \
+   nxg_s2_fx_snowflake_frag     frag "$TMP/fx_snowflake_frag.spv"
+
+echo "wrote $OUT and $FX_OUT"

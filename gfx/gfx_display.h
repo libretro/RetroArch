@@ -174,6 +174,15 @@ typedef struct gfx_display_effect_desc
    const uint8_t *dksh_fragment;
    size_t dksh_vertex_size;
    size_t dksh_fragment_size;
+   /* SM 8.6 from NAK (deko3d_shaders/menu_effects_sm86.h): each
+    * program's 128-byte header then its code, and its registers, for
+    * the Switch 2 driver's 3D engine */
+   const uint32_t *sm86_vertex;
+   const uint32_t *sm86_fragment;
+   size_t sm86_vertex_size;
+   size_t sm86_fragment_size;
+   unsigned sm86_vertex_gprs;
+   unsigned sm86_fragment_gprs;
 } gfx_display_effect_desc_t;
 
 typedef struct gfx_display_effect gfx_display_effect_t;
