@@ -146,8 +146,8 @@ public final class VfsImplementationSaf
             if (parentPath == null)
                return -1;
             final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPath.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPath);
-            if (createDocumentExact(content, parentUri, "application/octet-stream", getPathFileName(path)) == null)
-               return -1;
+            // A create that did not land under this name may have lost to another creator of it, so the open is tried once more either way
+            createDocumentExact(content, parentUri, "application/octet-stream", getPathFileName(path));
          }
       }
    }
@@ -241,13 +241,19 @@ public final class VfsImplementationSaf
     * if the name cannot be read from the end of a path-style document ID.
     */
    private static boolean hasName(ContentResolver content, Uri fileUri, String name) {
-      final String id = DocumentsContract.getDocumentId(fileUri);
-      final int separator = id.length() - name.length() - 1;
-
-      if (separator >= 0 && id.endsWith(name) && (id.charAt(separator) == '/' || id.charAt(separator) == ':'))
+      if (idHasName(DocumentsContract.getDocumentId(fileUri), name))
          return true;
 
       return name.equals(getDisplayName(content, fileUri));
+   }
+
+   /**
+    * Whether or not a path-style document ID ends in the component name.
+    * False does not mean the name differs: opaque IDs say nothing about it.
+    */
+   private static boolean idHasName(String id, String name) {
+      final int separator = id.length() - name.length() - 1;
+      return separator >= 0 && id.endsWith(name) && (id.charAt(separator) == '/' || id.charAt(separator) == ':');
    }
 
    /**
@@ -283,34 +289,104 @@ public final class VfsImplementationSaf
       return null;
    }
 
+   private static final String[] QUERY_ARGS_CREATED = {
+      Document.COLUMN_DISPLAY_NAME,
+      Document.COLUMN_MIME_TYPE,
+      Document.COLUMN_SIZE,
+   };
+
+   private static final String[] QUERY_ARGS_DOCUMENT_ID = {
+      Document.COLUMN_DOCUMENT_ID,
+   };
+
+   /**
+    * Whether or not a directory has no children, false if it could not be listed.
+    */
+   private static boolean isEmptyDirectory(ContentResolver content, Uri directoryUri) {
+      final Cursor cursor;
+      try
+      {
+         cursor = content.query(DocumentsContract.buildChildDocumentsUriUsingTree(directoryUri, DocumentsContract.getDocumentId(directoryUri)), QUERY_ARGS_DOCUMENT_ID, null, null, null);
+      }
+      catch (RuntimeException e)
+      {
+         return false;
+      }
+
+      if (cursor == null)
+         return false;
+
+      try
+      {
+         return !cursor.moveToNext();
+      }
+      finally
+      {
+         cursor.close();
+      }
+   }
+
    /**
     * Create a document, returning its URI if it was created named exactly name or null if not.
     * Some providers change the name (such as "name (1)", or '_' for ':') instead of failing,
-    * so a document created under another name is deleted.
+    * so a document created under another name is deleted, but only while it is still what a create leaves:
+    * an empty directory or an empty file. A provider that hands back an existing document keeps it.
     */
    private static Uri createDocumentExact(ContentResolver content, Uri parentUri, String mimeType, String name) {
       final Uri createdUri;
       try
       {
          createdUri = DocumentsContract.createDocument(content, parentUri, mimeType, name);
+         if (createdUri == null)
+            return null;
+         if (idHasName(DocumentsContract.getDocumentId(createdUri), name))
+            return createdUri;
       }
       catch (FileNotFoundException | RuntimeException e)
       {
          return null;
       }
 
-      if (createdUri == null)
-         return null;
-
-      if (hasName(content, createdUri, name))
-         return createdUri;
-
+      // One query answers both whether the name is right after all and whether the document is safe to delete
+      final Cursor cursor;
       try
       {
-         DocumentsContract.deleteDocument(content, createdUri);
+         cursor = content.query(createdUri, QUERY_ARGS_CREATED, null, null, null);
       }
-      catch (FileNotFoundException | RuntimeException e)
-      {}
+      catch (RuntimeException e)
+      {
+         return null;
+      }
+
+      if (cursor == null)
+         return null;
+
+      final boolean fresh;
+      try
+      {
+         if (!cursor.moveToNext())
+            return null;
+         if (name.equals(cursor.getString(0)))
+            return createdUri;
+         if (Document.MIME_TYPE_DIR.equals(cursor.getString(1)))
+            fresh = isEmptyDirectory(content, createdUri);
+         else
+            fresh = !cursor.isNull(2) && cursor.getLong(2) == 0;
+      }
+      finally
+      {
+         cursor.close();
+      }
+
+      if (fresh)
+      {
+         try
+         {
+            DocumentsContract.deleteDocument(content, createdUri);
+         }
+         catch (FileNotFoundException | RuntimeException e)
+         {}
+      }
 
       return null;
    }
@@ -613,9 +689,11 @@ public final class VfsImplementationSaf
       if (parentPath == null)
          return -1;
       final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPath.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPath);
-      if (createDocumentExact(content, parentUri, Document.MIME_TYPE_DIR, getPathFileName(path)) == null)
-         return -1;
-      return 0;
+      if (createDocumentExact(content, parentUri, Document.MIME_TYPE_DIR, getPathFileName(path)) != null)
+         return 0;
+      // Another creator may have made it between the query and the create
+      final String mimeType = queryMimeType(content, directoryUri);
+      return Document.MIME_TYPE_DIR.equals(mimeType) ? -2 : -1;
    }
 
    public static class SafDirectory implements Closeable
