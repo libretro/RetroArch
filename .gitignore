@@ -213,7 +213,7 @@ obj-emscripten/
 /*.js
 
 # Switch
-gfx/drivers/*.dksh
+gfx/drivers/deko3d_shaders/*.dksh
 *.d
 exefs/*
 retroarch_switch.pfs0

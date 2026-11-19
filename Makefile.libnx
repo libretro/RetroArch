@@ -277,7 +277,7 @@ endif
 $(OUTPUT).elf	:	$(OBJ)
 
 clean:
-	rm -f $(DEPENDS) $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf gfx/drivers/*.dksh
+	rm -f $(DEPENDS) $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf gfx/drivers/deko3d_shaders/*.dksh
 
 #---------------------------------------------------------------------------------
 # deko3d shaders: GLSL compiled by uam, embedded with bin2s
