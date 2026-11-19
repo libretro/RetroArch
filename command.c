@@ -5684,6 +5684,17 @@ bool command_load_content(command_t *cmd, const char* arg)
       goto end;
    }
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   /* Before the core's probe, which would put it through the load
+    * check while the Security Warning waits */
+   if (task_content_warning_waits(content_path))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "could not load %s",
+            content_path);
+      goto end;
+   }
+#endif
+
    /* A playlist entry with no core of its own carries DETECT, so take
     * that, and nothing at all, as a request for a core that supports
     * the content.  The menu asks the user to pick one where the

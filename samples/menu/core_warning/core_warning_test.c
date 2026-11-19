@@ -35,7 +35,8 @@
  *    nothing; a read-only store changes nothing; an inactive one hides
  *    the row;
  *  - a load from outside the menu while the box is up is refused and
- *    says to answer first; the request and the paths stay as they were.
+ *    says to answer first; the request and the paths stay as they were,
+ *    and LOAD_CONTENT's core is not probed.
  *
  * Requires a completed non-Qt build:
  *
@@ -77,6 +78,7 @@
 #include "../../../msg_hash.h"
 #include "../../../msg_hash_lbl_str.h"
 #include "../../../core_trust_runtime.h"
+#include "../../../core_load_check.h"
 #include "../../../paths.h"
 #include "../../../tasks/task_content.h"
 
@@ -1413,8 +1415,10 @@ static void lane_outside_load(const char *dir)
    bool current_core;
    bool load_core  = false;
    bool start_core = false;
+   bool load_content = false;
 #ifdef HAVE_COMMAND
    char outside_core[512];
+   char load_arg[1040];
    command_t cmd;
    FILE *f;
 #endif
@@ -1509,12 +1513,40 @@ static void lane_outside_load(const char *dir)
    CHECK(string_starts_with(syn_reply, "START_CORE ERROR"),
          "outside: a refused START_CORE didn't reply with an error");
    path_set(RARCH_PATH_CONTENT, content);
+
+   /* Refused before its core is probed: the probe would put that core
+    * through the load check while the box waits */
+   if ((f = fopen(outside, "wb")))
+   {
+      fputs("content", f);
+      fclose(f);
+   }
+   snprintf(load_arg, sizeof(load_arg), "%s|%s", outside_core, outside);
+   strlcpy(core, path_get(RARCH_PATH_CORE), sizeof(core));
+   strlcpy(content, path_get(RARCH_PATH_CONTENT), sizeof(content));
+   syn_reply[0] = '\0';
+   load_content = command_load_content(&cmd, load_arg);
+   pump(3);
+   CHECK(!load_content, "LOAD_CONTENT went ahead under a Security Warning");
+   CHECK(!core_load_check_refused(outside_core),
+         "outside: a refused LOAD_CONTENT probed its core first");
+   CHECK(     string_is_equal(path_get(RARCH_PATH_CORE), core)
+           && string_is_equal(path_get(RARCH_PATH_CONTENT), content),
+         "outside: a refused LOAD_CONTENT wrote the paths");
+   CHECK(seen_a.calls == 0 && core_warning_pending(NULL, NULL),
+         "outside: LOAD_CONTENT dropped the request");
+   CHECK(osd_queued(MSG_CORE_WARNING_ANSWER_FIRST),
+         "outside: LOAD_CONTENT didn't say to answer first");
+   CHECK(string_starts_with(syn_reply, "LOAD_CONTENT ERROR"),
+         "outside: a refused LOAD_CONTENT didn't reply with an error");
+   remove(outside);
 #endif
 
    answer(MENU_ACTION_CANCEL);
    CHECK(seen_a.calls == 1 && seen_a.choice == CORE_WARNING_CANCEL,
          "outside: Back didn't answer the request once");
-   for (i = 0; (new_core || current_core || load_core || start_core)
+   for (i = 0; (new_core || current_core || load_core || start_core
+         || load_content)
          && i < 600 && task_content_load_pending(); i++)
       pump(1);
 #ifdef HAVE_COMMAND
