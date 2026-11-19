@@ -20,6 +20,7 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../network/netplay/netplay.h"
 #include "../../../menu/menu_driver.h"
+#include "../../../verbosity.h"
 static unsigned failures;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "FAIL %u: %s\n", (unsigned)__LINE__, #c); failures++; } } while (0)
 static bool blocked;
