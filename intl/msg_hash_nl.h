@@ -251,7 +251,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[45];
 #endif
-   char s_4e447c6c[54];
    char s_d9a51d02[14];
    char s_98760b94[29];
    char s_da068369[15];
@@ -1103,9 +1102,7 @@ static const struct
    char s_dcbf8b04[17];
    char s_dcbffdfe[17];
    char s_7816d5d5[22];
-   char s_2b1f17e8[23];
    char s_36c3acc7[16];
-   char s_b4c3612a[26];
    char s_f638f238[17];
    char s_f3358a59[21];
    char s_0d7d9688[27];
@@ -2857,9 +2854,7 @@ static const struct
    char s_c5a76d72[44];
    char s_c5a7e06c[44];
    char s_37d36d03[49];
-   char s_eadbaf16[54];
    char s_54eaf5f5[26];
-   char s_7de5d198[55];
    char s_3b573ee6[27];
    char s_dc1d6cc7[44];
    char s_aebcb136[145];
@@ -4412,7 +4407,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Herlaad de Core Altijd bij \"Inhoud Invoeren\"",
 #endif
-   "Tijdelijke oplossing voor het loskoppelen van Android",
    "App-pictogram",
    "Open het ASIO Controlepaneel",
    "Audio Apparaat",
@@ -5264,9 +5258,7 @@ static const struct
    "Toon 'Laad Core'",
    "Toon 'Laad Disc'",
    "Toon \"Online Updater\"",
-   "Toon \"Sluit RetroArch\"",
    "Toon \"Herstart\"",
-   "Toon 'Herstart RetroArch'",
    "Toon \"Afsluiten\"",
    "Toon Menu Sub-Labels",
    "Enkele-klik Afspeellijsten",
@@ -7226,9 +7218,7 @@ static const struct
    "Toon de 'Laad Core' optie in het Hoofdmenu.",
    "Toon de 'Laad Disc' optie in het Hoofdmenu.",
    "Toon de \"Online Updater\" optie in het hoofdmenu.",
-   "Toon de 'RetroArch Afsluiten' optie in het Hoofdmenu.",
    "Toon de \"Herstart\" optie.",
-   "Toon de 'RetroArch herstarten' optie in het hoofdmenu.",
    "Toon de \"Afsluiten\" optie.",
    "Toon aanvullende informatie voor menu-items",
    "Sla het 'Uitvoeren' menu over bij het starten van afspeellijsten. Druk op D-Pad terwijl je OK in"
@@ -8630,7 +8620,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (172151u
+      (sizeof(msg_hash_nl_blob) == (171939u
 #ifdef ANDROID
        + 375u
 #endif
@@ -9310,7 +9300,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -10162,9 +10151,7 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
@@ -11915,9 +11902,7 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,

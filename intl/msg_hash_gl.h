@@ -261,7 +261,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[45];
 #endif
-   char s_4e447c6c[49];
    char s_d9a51d02[21];
    char s_12e77e8f[8];
    char s_98760b94[28];
@@ -1242,9 +1241,7 @@ static const struct
    char s_dcbf8b04[25];
    char s_dcbffdfe[23];
    char s_7816d5d5[32];
-   char s_2b1f17e8[29];
    char s_36c3acc7[20];
-   char s_b4c3612a[30];
    char s_f638f238[17];
    char s_f3358a59[30];
    char s_f8098721[57];
@@ -3130,9 +3127,7 @@ static const struct
    char s_c5a76d72[54];
    char s_c5a7e06c[52];
    char s_37d36d03[61];
-   char s_eadbaf16[58];
    char s_54eaf5f5[30];
-   char s_7de5d198[59];
    char s_3b573ee6[27];
    char s_dc1d6cc7[58];
    char s_28543dcf[79];
@@ -4836,7 +4831,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Recarga sempre o n\303\272cleo ao executar contido",
 #endif
-   "Soluci\303\263n alternativa de desconexi\303\263n de Android",
    "Icona da aplicaci\303\263n",
    "Activos",
    "Abrir panel de control ASIO",
@@ -5821,9 +5815,7 @@ static const struct
    "Mostrar \"Cargar n\303\272cleo\"",
    "Mostrar \"Cargar disco\"",
    "Mostrar \"Actualizador en li\303\261a\"",
-   "Mostrar \"Sa\303\255r de RetroArch\"",
    "Mostrar \"Reiniciar\"",
-   "Mostrar \"Reiniciar RetroArch\"",
    "Mostrar \"Apagar\"",
    "Mostrar subetiquetas do men\303\272",
    "Amosar subt\303\255tulos do men\303\272 s\303\263 para a selecci\303\263n actual",
@@ -8092,9 +8084,7 @@ static const struct
    "Mostra a opci\303\263n \"Cargar n\303\272cleo\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Cargar disco\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Actualizador en li\303\261a\" no men\303\272 principal.",
-   "Mostra a opci\303\263n \"Sa\303\255r de RetroArch\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Reiniciar\".",
-   "Mostra a opci\303\263n \"Reiniciar RetroArch\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Apagar\".",
    "Mostra informaci\303\263n adicional para os elementos do men\303\272.",
    "Amosar un subt\303\255tulo unicamente para a entrada do men\303\272 actualmente resaltada.",
@@ -9766,7 +9756,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (210456u
+      (sizeof(msg_hash_gl_blob) == (210231u
 #ifdef ANDROID
        + 365u
 #endif
@@ -10469,7 +10459,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -11450,9 +11439,7 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -13331,9 +13318,7 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,

@@ -355,9 +355,7 @@ static const struct
    char s_dcbf8b04[39];
    char s_dcbffdfe[38];
    char s_7816d5d5[31];
-   char s_2b1f17e8[41];
    char s_36c3acc7[32];
-   char s_b4c3612a[42];
    char s_f638f238[29];
    char s_b00815b8[18];
    char s_1ef8917a[23];
@@ -1435,9 +1433,7 @@ static const struct
    "Amosar la opci\303\263n \302\253Cargar un nucleu\302\273",
    "Amosar la opci\303\263n \302\253Cargar un discu\302\273",
    "Amosar la opci\303\263n \302\253Anovador\302\273",
-   "Amosar la opci\303\263n \302\253Colar de RetroArch\302\273",
    "Amosar la opci\303\263n \302\253Reaniciar\302\273",
-   "Amosar la opci\303\263n \302\253Reaniciar RetroArch\302\273",
    "Amosar la opci\303\263n \302\253Apagar\302\273",
    "Son\303\255os del men\303\272",
    "Activar el son \302\253BGM\302\273",
@@ -2215,7 +2211,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (25901u
+      (sizeof(msg_hash_ast_blob) == (25818u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2644,9 +2640,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,

@@ -176,7 +176,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[52];
 #endif
-   char s_4e447c6c[38];
    char s_d9a51d02[19];
    char s_12e77e8f[10];
    char s_da068369[6];
@@ -982,9 +981,7 @@ static const struct
    char s_dcbf8b04[21];
    char s_dcbffdfe[21];
    char s_7816d5d5[30];
-   char s_2b1f17e8[26];
    char s_36c3acc7[32];
-   char s_b4c3612a[42];
    char s_f638f238[18];
    char s_f3358a59[30];
    char s_0d7d9688[32];
@@ -2555,9 +2552,7 @@ static const struct
    char s_c5a76d72[45];
    char s_c5a7e06c[45];
    char s_37d36d03[54];
-   char s_eadbaf16[50];
    char s_54eaf5f5[41];
-   char s_7de5d198[66];
    char s_3b573ee6[27];
    char s_dc1d6cc7[40];
    char s_8b636a26[31];
@@ -3722,7 +3717,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Lataa ydin aina uudelleen kun sis\303\244lt\303\266 suoritetaan",
 #endif
-   "Android-yhteyden katkaisun kiertotapa",
    "Sovelluksen kuvake",
    "Resurssit",
    "Laite",
@@ -4530,9 +4524,7 @@ static const struct
    "N\303\244yt\303\244 \"Lataa ydin\"",
    "N\303\244yt\303\244 \"Lataa levy\"",
    "N\303\244yt\303\244 \"Verkkop\303\244ivitt\303\244j\303\244\"",
-   "N\303\244yt\303\244 \"Sulje RetroArch\"",
    "N\303\244yt\303\244 \"K\303\244ynnist\303\244 uudelleen\"",
-   "N\303\244yt\303\244 \"K\303\244ynnist\303\244 RetroArch uudelleen\"",
    "N\303\244yt\303\244 'Sammuta'",
    "N\303\244yt\303\244 valikon alatunnisteet",
    "Yhden napsautuksen soittolistat",
@@ -6323,10 +6315,7 @@ static const struct
    "N\303\244yt\303\244 \"Lataa levy\"-valinta p\303\244\303\244valikossa.",
    "N\303\244yt\303\244 \"Verkkop\303\244ivitt\303\244j\303\244\"-valinta p\303\244\303\244valikossa"
    ".",
-   "N\303\244yt\303\244 \"Sulje RetroArch\"-valinta p\303\244\303\244valikossa.",
    "N\303\244yt\303\244 \"K\303\244ynnist\303\244 uudelleen\"-valinta.",
-   "N\303\244yt\303\244 \"K\303\244ynnist\303\244 RetroArch uudelleen\"-valinta p\303\244\303\244val"
-   "ikossa.",
    "N\303\244yt\303\244 \"Sammuta\"-valinta.",
    "N\303\244yt\303\244 lis\303\244tietoja valikon kohteille.",
    "Muuta valikon \303\244\303\244niasetuksia.",
@@ -7574,7 +7563,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123342u
+      (sizeof(msg_hash_fi_blob) == (123120u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -8076,7 +8065,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -8882,9 +8870,7 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
@@ -10454,9 +10440,7 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,

@@ -260,7 +260,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[42];
 #endif
-   char s_4e447c6c[41];
    char s_d9a51d02[21];
    char s_12e77e8f[9];
    char s_98760b94[29];
@@ -1174,9 +1173,7 @@ static const struct
    char s_dcbf8b04[23];
    char s_dcbffdfe[23];
    char s_7816d5d5[29];
-   char s_2b1f17e8[27];
    char s_36c3acc7[20];
-   char s_b4c3612a[30];
    char s_f638f238[15];
    char s_f3358a59[28];
    char s_0d7d9688[30];
@@ -3030,9 +3027,7 @@ static const struct
    char s_c5a76d72[52];
    char s_c5a7e06c[52];
    char s_37d36d03[58];
-   char s_eadbaf16[56];
    char s_54eaf5f5[31];
-   char s_7de5d198[59];
    char s_3b573ee6[26];
    char s_dc1d6cc7[40];
    char s_aebcb136[130];
@@ -4654,7 +4649,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "\304\210iam re\305\235argi kernon \304\211e rulante enhavon",
 #endif
-   "Provizora solvo de malkonekto de Android",
    "Aplika\304\265a piktogramo",
    "Hava\304\265oj",
    "Malfermi stirpanelon de ASIO",
@@ -5568,9 +5562,7 @@ static const struct
    "Montri \"\305\234argi kernon\"",
    "Montri \"\305\234argi diskon\"",
    "Montri \"Enreta \304\235isdatigilo\"",
-   "Montri \"Forlasi RetroArch\"",
    "Montri \"Sestartigo\"",
-   "Montri \"Restartigi RetroArch\"",
    "Montri \"Fermi\"",
    "Montri menuajn subetikedojn",
    "Ludlistoj per ununura alklako",
@@ -7652,9 +7644,7 @@ static const struct
    "Montri la opcion \"\305\234argi kernon\" en la \304\210efa menuo.",
    "Montri la opcion \"\305\234argi diskon\" en la \304\210efa menuo.",
    "Montri la opcion \"Enreta \304\235isdatigilo\" en la \304\210efa menuo.",
-   "Montri la opcion \"Forlasi RetroArch\" en la \304\210efa menuo.",
    "Montri la opcion \"Restartigo\".",
-   "Montri la opcion \"Restartigi RetroArch\" en la \304\210efa menuo.",
    "Montri la opcion \"Fermi\".",
    "Montri kroman informon por menuaj eroj.",
    "Preterlasi la menuon \"Lan\304\211i\" kiam lan\304\211ante ludlisterojn. Premu la direktokrucon "
@@ -9144,7 +9134,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (170381u
+      (sizeof(msg_hash_eo_blob) == (170168u
 #ifdef ANDROID
        + 312u
 #endif
@@ -9830,7 +9820,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -10744,9 +10733,7 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
@@ -12599,9 +12586,7 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,

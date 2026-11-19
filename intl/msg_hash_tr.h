@@ -254,7 +254,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[59];
 #endif
-   char s_4e447c6c[48];
    char s_d9a51d02[17];
    char s_12e77e8f[12];
    char s_da068369[7];
@@ -1125,9 +1124,7 @@ static const struct
    char s_dcbf8b04[27];
    char s_dcbffdfe[22];
    char s_7816d5d5[36];
-   char s_2b1f17e8[30];
    char s_36c3acc7[28];
-   char s_b4c3612a[36];
    char s_f638f238[18];
    char s_f3358a59[31];
    char s_0d7d9688[34];
@@ -2816,9 +2813,7 @@ static const struct
    char s_c5a76d72[55];
    char s_c5a7e06c[50];
    char s_37d36d03[64];
-   char s_eadbaf16[58];
    char s_54eaf5f5[42];
-   char s_7de5d198[64];
    char s_3b573ee6[30];
    char s_dc1d6cc7[45];
    char s_aebcb136[165];
@@ -4480,7 +4475,6 @@ static const struct
    "Her \303\207al\304\261\305\237t\304\261rmada \304\260\303\247erik \303\207ekirde\304\237ini Yeni"
    "den Y\303\274kle",
 #endif
-   "Android ba\304\237lant\304\261 kesilmesi ge\303\247ici \303\247\303\266z\303\274m\303\274",
    "Uygulama Simgesi",
    "\304\260\303\247erikler",
    "Ayg\304\261t",
@@ -5359,9 +5353,7 @@ static const struct
    "'\303\207ekirdek Y\303\274kle' G\303\266ster",
    "'Disk Y\303\274kle' G\303\266ster",
    "'\303\207evrimi\303\247i G\303\274ncelleyici' G\303\266ster",
-   "'RetroArch \303\207\304\261k\304\261\305\237' G\303\266ster",
    "'Yeniden Ba\305\237lat'\304\261 G\303\266ster",
-   "'RetroArch Yeniden Ba\305\237lat' G\303\266ster",
    "'Kapat\304\261' G\303\266ster",
    "Men\303\274 Alt Etiketlerini G\303\266ster",
    "Tek T\304\261klamal\304\261 Oynatma Listeleri",
@@ -7504,10 +7496,7 @@ static const struct
    "Ana Men\303\274de 'Disk Y\303\274kle' se\303\247ene\304\237ini g\303\266sterin.",
    "Ana Men\303\274de '\303\207evrimi\303\247i G\303\274ncelleyici' se\303\247ene\304\237ini g\303"
    "\266sterin.",
-   "Ana Men\303\274de 'RetroArch \303\207\304\261k\304\261\305\237' se\303\247ene\304\237ini g\303"
-   "\266sterin.",
    "'Yeniden Ba\305\237lat' se\303\247ene\304\237ini g\303\266sterir.",
-   "Ana Men\303\274de 'RetroArch Yeniden Ba\305\237lat' se\303\247ene\304\237ini g\303\266sterin.",
    "'Kapat' se\303\247ene\304\237ini g\303\266ster.",
    "Men\303\274 \303\266geleri i\303\247in ek bilgileri g\303\266sterin.",
    "Oynatma listesi giri\305\237lerini ba\305\237lat\304\261rken '\303\207al\304\261\305\237t\304"
@@ -9172,7 +9161,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169065u
+      (sizeof(msg_hash_tr_blob) == (168829u
 #ifdef ANDROID
        + 340u
 #endif
@@ -9782,7 +9771,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -10653,9 +10641,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
@@ -12343,9 +12329,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,

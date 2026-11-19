@@ -262,7 +262,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[47];
 #endif
-   char s_4e447c6c[53];
    char s_d9a51d02[10];
    char s_98760b94[27];
    char s_b81eb68d[20];
@@ -1307,9 +1306,7 @@ static const struct
    char s_dcbf8b04[22];
    char s_dcbffdfe[22];
    char s_7816d5d5[26];
-   char s_2b1f17e8[29];
    char s_36c3acc7[20];
-   char s_b4c3612a[33];
    char s_f638f238[16];
    char s_f3358a59[26];
    char s_f8098721[67];
@@ -3451,9 +3448,7 @@ static const struct
    char s_c5a76d72[48];
    char s_c5a7e06c[48];
    char s_37d36d03[52];
-   char s_eadbaf16[55];
    char s_54eaf5f5[32];
-   char s_7de5d198[59];
    char s_3b573ee6[28];
    char s_dc1d6cc7[56];
    char s_28543dcf[82];
@@ -5403,7 +5398,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Core beim Starten von Inhalten immer neu laden",
 #endif
-   "Problemumgehung f\303\274r Verbindungstrennung auf Android",
    "Appsymbol",
    "ASIO Control Panel \303\266ffnen",
    "ASIO-Ausgabekan\303\244le",
@@ -6452,9 +6446,7 @@ static const struct
    "\"Core laden\" anzeigen",
    "\"Disc laden\" anzeigen",
    "\"Online-Updater\" anzeigen",
-   "\"RetroArch beenden\" anzeigen",
    "\"Neustart\" anzeigen",
-   "\"RetroArch neu starten\" anzeigen",
    "Zeige 'Beenden'",
    "Zeige Men\303\274beschreibungen",
    "Unterbezeichnungen im Men\303\274 nur f\303\274r die aktuelle Auswahl anzeigen",
@@ -9114,9 +9106,7 @@ static const struct
    "Die Option \"Core laden\" im Hauptmen\303\274 anzeigen.",
    "Die Option \"Disc laden\" im Hauptmen\303\274 anzeigen.",
    "Die Option \"Online-Updater\" im Hauptmen\303\274 anzeigen.",
-   "Die Option \"RetroArch beenden\" im Hauptmen\303\274 anzeigen.",
    "Die Option \"Neustart\" anzeigen.",
-   "Die Option \"RetroArch neu starten\" im Hauptmen\303\274 anzeigen.",
    "Zeige die Option 'Beenden'.",
    "Zus\303\244tzliche Informationen zu Men\303\274eintr\303\244gen anzeigen.",
    "Nur eine Unterbezeichnung f\303\274r den aktuell hervorgehobenen Men\303\274eintrag anzeigen.",
@@ -11293,7 +11283,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (257739u
+      (sizeof(msg_hash_de_blob) == (257510u
 #ifdef ANDROID
        + 358u
 #endif
@@ -12121,7 +12111,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
@@ -13166,9 +13155,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -15298,9 +15285,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,

@@ -261,7 +261,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[48];
 #endif
-   char s_4e447c6c[36];
    char s_d9a51d02[12];
    char s_12e77e8f[9];
    char s_98760b94[26];
@@ -1318,9 +1317,7 @@ static const struct
    char s_dcbf8b04[22];
    char s_dcbffdfe[21];
    char s_7816d5d5[26];
-   char s_2b1f17e8[25];
    char s_36c3acc7[17];
-   char s_b4c3612a[27];
    char s_f638f238[17];
    char s_f3358a59[22];
    char s_f8098721[53];
@@ -3445,9 +3442,7 @@ static const struct
    char s_c5a76d72[49];
    char s_c5a7e06c[48];
    char s_37d36d03[53];
-   char s_eadbaf16[52];
    char s_54eaf5f5[31];
-   char s_7de5d198[54];
    char s_3b573ee6[31];
    char s_dc1d6cc7[46];
    char s_28543dcf[63];
@@ -5403,7 +5398,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "L\303\244s alltid om k\303\244rna n\303\244r inneh\303\245ll ska k\303\266ras",
 #endif
-   "\303\205tg\303\244rd f\303\266r Android kopplas fr\303\245n",
    "Programikon",
    "Resurser",
    "\303\226ppna ASIO-kontrollpanel",
@@ -6464,9 +6458,7 @@ static const struct
    "Visa 'L\303\244s in k\303\244rna'",
    "Visa 'L\303\244s in skiva'",
    "Visa 'Online-uppdaterare'",
-   "Visa 'Avsluta RetroArch'",
    "Visa 'Starta om'",
-   "Visa 'Starta om RetroArch'",
    "Visa 'St\303\244ng av'",
    "Visa Meny-undertitlar",
    "Visa menyunderrubriker endast f\303\266r aktuell markering",
@@ -9176,9 +9168,7 @@ static const struct
    "Visa alternativet 'L\303\244s in k\303\244rna' i huvudmenyn.",
    "Visa alternativet 'L\303\244s in skiva' i huvudmenyn.",
    "Visa alternativet 'Online-uppdaterare' i huvudmenyn.",
-   "Visa alternativet 'Avsluta RetroArch' i huvudmenyn.",
    "Visa alternativet 'Starta om'.",
-   "Visa alternativet 'Starta om RetroArch' i huvudmenyn.",
    "Visa alternativet 'St\303\244ng av'.",
    "Visa ytterligare information f\303\266r menyobjekt.",
    "Visa endast en underrubrik f\303\266r den menypost som \303\244r markerad.",
@@ -11401,7 +11391,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (235750u
+      (sizeof(msg_hash_sv_blob) == (235556u
 #ifdef ANDROID
        + 361u
 #endif
@@ -12227,7 +12217,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -13284,9 +13273,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -15402,9 +15389,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,

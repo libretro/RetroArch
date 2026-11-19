@@ -261,7 +261,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[63];
 #endif
-   char s_4e447c6c[40];
    char s_d9a51d02[16];
    char s_12e77e8f[7];
    char s_98760b94[30];
@@ -1277,9 +1276,7 @@ static const struct
    char s_dcbf8b04[25];
    char s_dcbffdfe[26];
    char s_7816d5d5[29];
-   char s_2b1f17e8[27];
    char s_36c3acc7[26];
-   char s_b4c3612a[36];
    char s_f638f238[17];
    char s_f3358a59[32];
    char s_f8098721[53];
@@ -3235,9 +3232,7 @@ static const struct
    char s_c5a76d72[50];
    char s_c5a7e06c[51];
    char s_37d36d03[54];
-   char s_eadbaf16[53];
    char s_54eaf5f5[34];
-   char s_7de5d198[61];
    char s_3b573ee6[29];
    char s_dc1d6cc7[49];
    char s_28543dcf[76];
@@ -4992,7 +4987,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Zawsze \305\202aduj ponownie rdze\305\204 podczas uruchamiania zawarto\305\233ci",
 #endif
-   "Obej\305\233cie roz\305\202\304\205czania systemu Android",
    "Ikona aplikacji",
    "Assety",
    "Otw\303\263rz panel sterowania ASIO",
@@ -6012,9 +6006,7 @@ static const struct
    "Poka\305\274 'Za\305\202aduj rdze\305\204'",
    "Poka\305\274 'Za\305\202aduj p\305\202yt\304\231'",
    "Poka\305\274 'Aktualizator Online'",
-   "Poka\305\274 'Zamknij RetroArch'",
    "Poka\305\274 'Uruchom Ponownie'",
-   "Poka\305\274 'Uruchom ponownie RetroArch'",
    "Poka\305\274 'Zamknij'",
    "Poka\305\274 etykiety podrz\304\231dne menu",
    "Poka\305\274 podedtykiety menu tylko dla aktualnego wyboru",
@@ -8407,9 +8399,7 @@ static const struct
    "Poka\305\274 opcj\304\231 \"Za\305\202aduj Rdze\305\204\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Za\305\202aduj p\305\202yt\304\231\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Aktualizator Online\" w menu g\305\202\303\263wnym.",
-   "Poka\305\274 opcj\304\231 \"Wyjd\305\272 z RetroArch\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Uruchom ponownie\".",
-   "Poka\305\274 opcj\304\231 'Uruchom ponownie RetroArch' w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Zamkni\304\231cie\".",
    "Poka\305\274 dodatkowe informacje dla element\303\263w menu.",
    "Wy\305\233wietlaj podetykiet\304\231 tylko dla aktualnego pod\305\233wietlonego wpisu w menu.",
@@ -10226,7 +10216,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199412u
+      (sizeof(msg_hash_pl_blob) == (199195u
 #ifdef ANDROID
        + 385u
 #endif
@@ -10984,7 +10974,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -12000,9 +11989,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -13954,9 +13941,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,

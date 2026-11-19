@@ -261,7 +261,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[49];
 #endif
-   char s_4e447c6c[34];
    char s_d9a51d02[17];
    char s_12e77e8f[7];
    char s_98760b94[31];
@@ -1319,9 +1318,7 @@ static const struct
    char s_dcbf8b04[29];
    char s_dcbffdfe[28];
    char s_7816d5d5[33];
-   char s_2b1f17e8[32];
    char s_36c3acc7[21];
-   char s_b4c3612a[36];
    char s_f638f238[21];
    char s_f3358a59[26];
    char s_f8098721[51];
@@ -3466,9 +3463,7 @@ static const struct
    char s_c5a76d72[54];
    char s_c5a7e06c[53];
    char s_37d36d03[58];
-   char s_eadbaf16[57];
    char s_54eaf5f5[29];
-   char s_7de5d198[61];
    char s_3b573ee6[28];
    char s_dc1d6cc7[53];
    char s_28543dcf[62];
@@ -5459,7 +5454,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "V\305\276dy znova na\304\215\303\255ta\305\245 core pri spusten\303\255 obsahu",
 #endif
-   "Workaround pre odp\303\241janie Android",
    "Ikona aplik\303\241cie",
    "Assety",
    "Otvori\305\245 ovl\303\241dac\303\255 panel ASIO",
@@ -6526,9 +6520,7 @@ static const struct
    "Zobrazi\305\245 'Na\304\215\303\255ta\305\245 jadro'",
    "Zobrazi\305\245 'Na\304\215\303\255ta\305\245 disk'",
    "Zobrazi\305\245 'Online aktualiz\303\241cie'",
-   "Zobrazi\305\245 'Ukon\304\215i\305\245 RetroArch'",
    "Zobrazi\305\245 'Re\305\241tart'",
-   "Zobrazi\305\245 'Re\305\241tartova\305\245 RetroArch'",
    "Zobrazi\305\245 'Vypn\303\272\305\245'",
    "Zobrazi\305\245 pod-popisy menu",
    "Zobrazi\305\245 pod-popisy menu len pre aktu\303\241lny v\303\275ber",
@@ -9384,9 +9376,7 @@ static const struct
    "Zobrazi\305\245 vo\304\276bu 'Na\304\215\303\255ta\305\245 jadro' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Na\304\215\303\255ta\305\245 disk' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Online aktualiz\303\241cie' v hlavnej ponuke.",
-   "Zobrazi\305\245 vo\304\276bu 'Ukon\304\215i\305\245 RetroArch' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Re\305\241tart'.",
-   "Zobrazi\305\245 vo\304\276bu 'Re\305\241tartova\305\245 RetroArch' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Vypn\303\272t'.",
    "Zobrazi\305\245 dodato\304\215n\303\251 inform\303\241cie pre polo\305\276ky menu.",
    "Zobraz\303\255 pod-popis len pre pr\303\241ve zv\303\275raznen\303\272 polo\305\276ku menu.",
@@ -11769,7 +11759,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (235770u
+      (sizeof(msg_hash_sk_blob) == (235550u
 #ifdef ANDROID
        + 389u
 #endif
@@ -12592,7 +12582,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -13650,9 +13639,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -15789,9 +15776,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,

@@ -257,7 +257,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[42];
 #endif
-   char s_4e447c6c[49];
    char s_d9a51d02[22];
    char s_12e77e8f[26];
    char s_98760b94[31];
@@ -1151,9 +1150,7 @@ static const struct
    char s_dcbf8b04[28];
    char s_dcbffdfe[30];
    char s_7816d5d5[30];
-   char s_2b1f17e8[39];
    char s_36c3acc7[27];
-   char s_b4c3612a[38];
    char s_f638f238[25];
    char s_f3358a59[33];
    char s_0d7d9688[32];
@@ -2944,9 +2941,7 @@ static const struct
    char s_c5a76d72[60];
    char s_c5a7e06c[62];
    char s_37d36d03[63];
-   char s_eadbaf16[71];
    char s_54eaf5f5[46];
-   char s_7de5d198[70];
    char s_3b573ee6[43];
    char s_dc1d6cc7[57];
    char s_aebcb136[154];
@@ -4682,7 +4677,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Mag \303\272jrat\303\266lt\303\251se tartalom futtat\303\241sakor",
 #endif
-   "Ker\303\274l\305\221 megold\303\241s az Androidos lecsatlakoz\303\241sra",
    "Az alkalmaz\303\241s ikonja",
    "Be\303\251p\303\255tett m\303\251diaf\303\241jlok",
    "ASIO vez\303\251rl\305\221pult megnyit\303\241sa",
@@ -5590,9 +5584,7 @@ static const struct
    "\"Mag bet\303\266lt\303\251se\" l\303\241that\303\263",
    "\"Lemez bet\303\266lt\303\251se\" l\303\241that\303\263",
    "\"Online friss\303\255t\305\221\" l\303\241that\303\263",
-   "\"Kil\303\251p\303\251s a RetroArch-b\303\263l\" l\303\241that\303\263",
    "\"\303\232jraind\303\255t\303\241s\" l\303\241that\303\263",
-   "\"RetroArch \303\272jraind\303\255t\303\241sa\" l\303\241that\303\263",
    "\"Le\303\241ll\303\255t\303\241s\" l\303\241that\303\263",
    "Men\303\274 alc\303\255mk\303\251k megjelen\303\255t\303\251se",
    "Egy kattint\303\241sos j\303\241t\303\251klist\303\241k",
@@ -7923,11 +7915,7 @@ static const struct
    "en.",
    "Az \"Online friss\303\255t\305\221\" lehet\305\221s\303\251g jelenjen meg a f\305\221men\303\274"
    "ben.",
-   "A \"Kil\303\251p\303\251s a RetroArch-b\303\263l\" lehet\305\221s\303\251g jelenjen meg a f\305"
-   "\221men\303\274ben.",
    "Az \"\303\232jraind\303\255t\303\241s\" lehet\305\221s\303\251g jelenjen meg.",
-   "A \"RetroArch \303\272jraind\303\255t\303\241sa\" lehet\305\221s\303\251g jelenjen meg a f\305"
-   "\221men\303\274ben.",
    "A \"Le\303\241ll\303\255t\303\241s\" lehet\305\221s\303\251g jelenjen meg.",
    "A men\303\274 elemeihez tov\303\241bbi inform\303\241ci\303\263 megjelen\303\255t\303\251se.",
    "A \"Futtat\303\241s\" men\303\274 kihagy\303\241sa j\303\241t\303\251klist\303\241b\303\263l t"
@@ -9787,7 +9775,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (186725u
+      (sizeof(msg_hash_hu_blob) == (186458u
 #ifdef ANDROID
        + 316u
 #endif
@@ -10470,7 +10458,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -11364,9 +11351,7 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
@@ -13154,9 +13139,7 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,

@@ -266,7 +266,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[43];
 #endif
-   char s_4e447c6c[34];
    char s_d9a51d02[15];
    char s_12e77e8f[13];
    char s_98760b94[31];
@@ -1369,9 +1368,7 @@ static const struct
    char s_dcbf8b04[28];
    char s_dcbffdfe[30];
    char s_7816d5d5[39];
-   char s_2b1f17e8[29];
    char s_36c3acc7[22];
-   char s_b4c3612a[32];
    char s_f638f238[22];
    char s_f3358a59[37];
    char s_f8098721[61];
@@ -3625,9 +3622,7 @@ static const struct
    char s_c5a76d72[61];
    char s_c5a7e06c[63];
    char s_37d36d03[72];
-   char s_eadbaf16[62];
    char s_54eaf5f5[32];
-   char s_7de5d198[65];
    char s_3b573ee6[32];
    char s_dc1d6cc7[64];
    char s_28543dcf[80];
@@ -5746,7 +5741,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Athl\303\263d\303\241il Croi ar \303\201bhar Rith i gc\303\263na\303\255",
 #endif
-   "R\303\251iteach ar dh\303\255cheangal Android",
    "Deilbh\303\255n Aipe",
    "S\303\263cmhainn\303\255",
    "Oscail Pain\303\251al Rialaithe ASIO",
@@ -6860,9 +6854,7 @@ static const struct
    "Taispe\303\241in 'L\303\263d\303\241il Cro\303\255'",
    "Taispe\303\241in 'Luchtaigh Diosca'",
    "Taispe\303\241in 'Nuashonraitheoir Ar L\303\255ne'",
-   "Taispe\303\241in 'Scoir RetroArch'",
    "Taispe\303\241in 'Atosaigh'",
-   "Taispe\303\241in 'Atosaigh RetroArch'",
    "Taispe\303\241in 'M\303\272chadh'",
    "Taispe\303\241in Fo-lip\303\251id an Roghchl\303\241ir",
    "Taispe\303\241in Fo-Lip\303\251id Roghchl\303\241ir don Roghn\303\272 Reatha amh\303\241in",
@@ -9962,9 +9954,7 @@ static const struct
    "Taispe\303\241in an rogha 'L\303\263d\303\241il Cro\303\255' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in an rogha 'Luchtaigh Diosca' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in an rogha 'Nuashonraitheoir Ar L\303\255ne' sa Phr\303\255omh-Roghchl\303\241r.",
-   "Taispe\303\241in an rogha 'Scoir RetroArch' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in an rogha 'Atosaigh'.",
-   "Taispe\303\241in an rogha 'Atosaigh RetroArch' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in an rogha 'M\303\272chadh'.",
    "Taispe\303\241in faisn\303\251is bhreise le haghaidh m\303\255reanna roghchl\303\241ir.",
    "N\303\241 taispe\303\241in ach folip\303\251ad don iontr\303\241il roghchl\303\241ir aibhsithe f"
@@ -12687,7 +12677,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (281961u
+      (sizeof(msg_hash_ga_blob) == (281739u
 #ifdef ANDROID
        + 390u
 #endif
@@ -13515,7 +13505,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -14618,9 +14607,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -16861,9 +16848,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
