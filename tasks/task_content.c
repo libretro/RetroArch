@@ -2058,7 +2058,9 @@ enum content_load_after
    CONTENT_LOAD_AFTER_QUICK_MENU_KEEP  = 1 << 5, /* without a menu flush */
    CONTENT_LOAD_AFTER_MENU_ON_FAIL     = 1 << 6, /* retroarch_menu_running */
    CONTENT_LOAD_AFTER_DUMMY_IS_FAIL    = 1 << 7, /* the dummy core counts as failure */
-   CONTENT_LOAD_AFTER_QUIT_ON_FAIL     = 1 << 8  /* retroarch_main_quit_failure */
+   CONTENT_LOAD_AFTER_QUIT_ON_FAIL     = 1 << 8, /* retroarch_main_quit_failure */
+   /* Not after-work: a re-run whose box was up skips the firmware stage */
+   CONTENT_LOAD_AFTER_FIRMWARE_ASKED   = 1 << 9
 };
 
 #ifdef HAVE_CORE_LOAD_CHECK
@@ -2176,6 +2178,9 @@ struct content_load_job
    bool verbosity;
    bool ok;
    bool fell_back;  /* the core failed; the dummy core took its place */
+#ifdef HAVE_MENU
+   bool firmware_tell; /* not asked: say what firmware is missing */
+#endif
 #ifdef HAVE_CORE_LOAD_CHECK
    struct content_load_parked *parked;   /* to re-run if the core is refused */
    bool (*refused)(const char *core_path); /* or takes the refusal */
@@ -2238,6 +2243,18 @@ static void content_firmware_download_start(struct content_firmware *firmware,
 }
 #endif
 
+static void content_firmware_system_dir(char *s, size_t len,
+      const char *content)
+{
+   settings_t *settings = config_get_ptr();
+   if ((settings->bools.systemfiles_in_content_dir
+            || string_is_empty(settings->paths.directory_system))
+         && !string_is_empty(content))
+      fill_pathname_basedir(s, content, len);
+   else
+      strlcpy(s, settings->paths.directory_system, len);
+}
+
 static bool content_load_firmware(struct content_load_job *job)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -2255,16 +2272,24 @@ static bool content_load_firmware(struct content_load_job *job)
    if (firmware && firmware->downloading)
       return false;
 
+   /* A refused probe leaves load_no_content as the last core set it */
    if (!settings->bools.core_firmware_notification_enable
          || !menu_st->driver_data
-         || (string_is_empty(content)
-            && !runloop_state_get_ptr()->system.load_no_content)
+         || !menu_core_warning_can_open()
          || !core_info_find(path_get(RARCH_PATH_CORE), &core)
-         || !core || !core->firmware_count)
+         || !core || !core->firmware_count
+         || (string_is_empty(content)
+            && !runloop_state_get_ptr()->system.load_no_content
+            && !(core->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)))
       return true;
 
    if (menu_st->dialog_st.confirm_cmd || menu_st->dialog_st.pending_cmd)
+   {
+      /* Show the confirm this waits behind */
+      if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+         retroarch_menu_running();
       return false;
+   }
 
    if (!firmware)
    {
@@ -2273,15 +2298,8 @@ static bool content_load_firmware(struct content_load_job *job)
          return true;
 
       job->firmware = firmware;
-
-      if ((settings->bools.systemfiles_in_content_dir
-               || string_is_empty(settings->paths.directory_system))
-            && !string_is_empty(content))
-         fill_pathname_basedir(firmware->system_dir, content,
-               sizeof(firmware->system_dir));
-      else
-         strlcpy(firmware->system_dir, settings->paths.directory_system,
-               sizeof(firmware->system_dir));
+      content_firmware_system_dir(firmware->system_dir,
+            sizeof(firmware->system_dir), content);
    }
 
    if (firmware->shown && !firmware->download_requested)
@@ -2420,6 +2438,64 @@ static bool content_load_firmware(struct content_load_job *job)
    }
 
    return false;
+}
+
+/* Off the stack, which holds the tell's two paths */
+static char content_firmware_tell_msg[PATH_MAX_LENGTH];
+
+/* The box's notice for a load nothing asked on: logs each required file
+ * the loaded core is missing, and puts the first on screen */
+static void content_firmware_tell(void)
+{
+   char system_dir[DIR_MAX_LENGTH];
+   char target[PATH_MAX_LENGTH];
+   core_info_t *core = NULL;
+   const char *first = NULL;
+   unsigned more     = 0;
+   size_t i;
+
+   if (     !config_get_ptr()->bools.core_firmware_notification_enable
+         || !core_info_find(path_get(RARCH_PATH_CORE), &core)
+         || !core || !core->firmware_count)
+      return;
+
+   content_firmware_system_dir(system_dir, sizeof(system_dir),
+         path_get(RARCH_PATH_CONTENT));
+
+   for (i = 0; i < core->firmware_count; i++)
+   {
+      core_info_firmware_t *entry = &core->firmware[i];
+      if (entry->optional || string_is_empty(entry->path))
+         continue;
+      fill_pathname_join(target, system_dir, entry->path, sizeof(target));
+      if (path_is_valid(target))
+         continue;
+      RARCH_WARN("[Content] Required firmware is missing: \"%s\".\n", target);
+      if (first)
+         more++;
+      else
+         first = entry->path;
+   }
+
+   if (!first)
+      return;
+
+   strlcpy(content_firmware_tell_msg,
+         msg_hash_to_str(MSG_CORE_FIRMWARE_MISSING),
+         sizeof(content_firmware_tell_msg));
+   strlcat(content_firmware_tell_msg, " ", sizeof(content_firmware_tell_msg));
+   strlcat(content_firmware_tell_msg, first,
+         sizeof(content_firmware_tell_msg));
+   if (more)
+   {
+      char number[32];
+      snprintf(number, sizeof(number), " (+%u)", more);
+      strlcat(content_firmware_tell_msg, number,
+            sizeof(content_firmware_tell_msg));
+   }
+   runloop_msg_queue_push(content_firmware_tell_msg,
+         strlen(content_firmware_tell_msg), 2, 360, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 }
 #endif
 
@@ -2625,6 +2701,143 @@ bool task_content_load_pending(void)
    return content_load_job.stage != CONTENT_LOAD_STAGE_NONE;
 }
 
+/* Asked before a request writes anything: the load in flight still
+ * reads the paths and state it would write */
+static bool content_load_in_flight(void)
+{
+   if (!task_content_load_pending())
+      return false;
+   RARCH_LOG("[Content] A content load is already in flight.\n");
+   return true;
+}
+
+#ifdef HAVE_MENU
+/* The session an entry point is about to write the next load's
+ * identity over: what a firmware Cancel puts back */
+static struct content_load_prev
+{
+   struct retro_system_info sysinfo;
+   enum rarch_core_type type;
+   enum rarch_core_type explicit_type;
+   unsigned subsystem_current_count;
+   char core[PATH_MAX_LENGTH];
+   char core_last[PATH_MAX_LENGTH];
+   char content[PATH_MAX_LENGTH];
+   char label[PATH_MAX_LENGTH];
+   char db_name[PATH_MAX_LENGTH];
+   char crc32[32];
+   char library_name[NAME_MAX_LENGTH];
+   char library_version[64];
+   char valid_extensions[256];
+   char core_info_path[PATH_MAX_LENGTH];
+   bool load_no_content;
+   bool has_set_core;
+   bool valid;
+} content_load_prev;
+
+/* A deferred load keeps the one taken for it: its request wrote over
+ * the session already */
+static void content_load_prev_save(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   content_state_t *p_content  = content_state_get_ptr();
+   core_info_t *core_info      = NULL;
+   if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
+      return;
+   strlcpy(content_load_prev.core, path_get(RARCH_PATH_CORE),
+         sizeof(content_load_prev.core));
+   strlcpy(content_load_prev.core_last, path_get(RARCH_PATH_CORE_LAST),
+         sizeof(content_load_prev.core_last));
+   strlcpy(content_load_prev.content, path_get(RARCH_PATH_CONTENT),
+         sizeof(content_load_prev.content));
+   strlcpy(content_load_prev.label, runloop_st->name.label,
+         sizeof(content_load_prev.label));
+   strlcpy(content_load_prev.db_name, p_content->companion_ui_db_name,
+         sizeof(content_load_prev.db_name));
+   strlcpy(content_load_prev.crc32, p_content->companion_ui_crc32,
+         sizeof(content_load_prev.crc32));
+   strlcpy(content_load_prev.library_name, runloop_st->current_library_name,
+         sizeof(content_load_prev.library_name));
+   strlcpy(content_load_prev.library_version,
+         runloop_st->current_library_version,
+         sizeof(content_load_prev.library_version));
+   strlcpy(content_load_prev.valid_extensions,
+         runloop_st->current_valid_extensions,
+         sizeof(content_load_prev.valid_extensions));
+   core_info_get_current_core(&core_info);
+   strlcpy(content_load_prev.core_info_path,
+         (core_info && core_info->path) ? core_info->path : "",
+         sizeof(content_load_prev.core_info_path));
+   content_load_prev.sysinfo         = runloop_st->system.info;
+   content_load_prev.load_no_content = runloop_st->system.load_no_content;
+   content_load_prev.type          = runloop_st->current_core_type;
+   content_load_prev.explicit_type = runloop_st->explicit_current_core_type;
+   content_load_prev.has_set_core  =
+      (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE) ? true : false;
+   content_load_prev.subsystem_current_count =
+      runloop_st->subsystem_current_count;
+   content_load_prev.valid         = true;
+}
+
+static void content_load_prev_restore(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   content_state_t *p_content  = content_state_get_ptr();
+   if (!content_load_prev.valid)
+      return;
+   content_load_prev.valid = false;
+   path_set(RARCH_PATH_CORE, content_load_prev.core);
+   path_set(RARCH_PATH_CORE_LAST, content_load_prev.core_last);
+   path_set(RARCH_PATH_CONTENT, content_load_prev.content);
+   strlcpy(runloop_st->name.label, content_load_prev.label,
+         sizeof(runloop_st->name.label));
+   strlcpy(p_content->companion_ui_db_name, content_load_prev.db_name,
+         sizeof(p_content->companion_ui_db_name));
+   strlcpy(p_content->companion_ui_crc32, content_load_prev.crc32,
+         sizeof(p_content->companion_ui_crc32));
+   /* Directly: runloop_set_current_core_type() keeps the type an entry
+    * point set until the next core init */
+   runloop_st->current_core_type          = content_load_prev.type;
+   runloop_st->explicit_current_core_type = content_load_prev.explicit_type;
+   if (content_load_prev.has_set_core)
+      runloop_st->flags |=  RUNLOOP_FLAG_HAS_SET_CORE;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
+   /* The core the menu names, which the entry point's probe replaced.
+    * The strings sysinfo points at are these buffers, or the old
+    * core's own, still open until DEINIT. */
+   strlcpy(runloop_st->current_library_name, content_load_prev.library_name,
+         sizeof(runloop_st->current_library_name));
+   strlcpy(runloop_st->current_library_version,
+         content_load_prev.library_version,
+         sizeof(runloop_st->current_library_version));
+   strlcpy(runloop_st->current_valid_extensions,
+         content_load_prev.valid_extensions,
+         sizeof(runloop_st->current_valid_extensions));
+   runloop_st->system.info            = content_load_prev.sysinfo;
+   runloop_st->system.load_no_content = content_load_prev.load_no_content;
+   core_info_load(content_load_prev.core_info_path);
+#ifdef HAVE_DYNAMIC
+   /* Its subsystems, which the probe replaced too. Only a plain core,
+    * or a dummy session that names one, is RARCH_PATH_CORE: a built-in
+    * core runs under whatever path was named before it. A refused
+    * core's open would only be refused again. */
+   if (     *content_load_prev.core
+         && (   content_load_prev.type == CORE_TYPE_PLAIN
+             || (   content_load_prev.type == CORE_TYPE_DUMMY
+                 && *content_load_prev.library_name))
+#ifdef HAVE_CORE_LOAD_CHECK
+         && !core_load_check_refused(content_load_prev.core)
+#endif
+      )
+      command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+   /* After the probe, which zeroes it */
+   runloop_st->subsystem_current_count =
+      content_load_prev.subsystem_current_count;
+}
+#endif
+
 /* The entry point's after-load work, and the job's end. */
 static void content_load_finish(struct content_load_job *job,
       content_state_t *p_content)
@@ -2637,6 +2850,7 @@ static void content_load_finish(struct content_load_job *job,
    /* A library opened for a core stage that never took it */
    runloop_core_preload_cancel();
 #ifdef HAVE_MENU
+   content_load_prev.valid = false;
    /* A Load State slot asked for with this load, left over when the
     * load failed before the content came up */
    {
@@ -2680,6 +2894,11 @@ static void content_load_finish(struct content_load_job *job,
                (after & CONTENT_LOAD_AFTER_HISTORY_CLI)  != 0,
                (after & CONTENT_LOAD_AFTER_HISTORY_UI)   != 0);
 #ifdef HAVE_MENU
+      /* Only a plain core is RARCH_PATH_CORE: a refused load ends on the
+       * dummy core (its re-run asks), media may run on a built-in one */
+      if (     job->firmware_tell
+            && runloop_st->current_core_type == CORE_TYPE_PLAIN)
+         content_firmware_tell();
       if (after & CONTENT_LOAD_AFTER_QUICK_MENU)
       {
          bool flush_menu = !(after & CONTENT_LOAD_AFTER_QUICK_MENU_KEEP);
@@ -2747,6 +2966,9 @@ static void content_load_parked_run(void *ud)
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    content_state_t *p_content    = content_state_get_ptr();
    int i;
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    path_set(RARCH_PATH_CORE, d->core_path);
    if (d->content_path)
       path_set(RARCH_PATH_CONTENT, d->content_path);
@@ -2804,6 +3026,11 @@ static struct content_load_parked *content_load_parked_new(
    /* A menu load again: no startup argv */
    d->info.environ_get   = job->info.environ_get;
    d->after              = job->after;
+#ifdef HAVE_MENU
+   /* Asked before the Security Warning: its answer does not ask again */
+   if (job->firmware && job->firmware->shown)
+      d->after          |= CONTENT_LOAD_AFTER_FIRMWARE_ASKED;
+#endif
    d->core_path          = strdup(core_path ? core_path : "");
    d->content_path       = (content_path && *content_path)
       ? strdup(content_path) : NULL;
@@ -3059,10 +3286,17 @@ static void content_load_step(struct content_load_job *job,
             break;
          if (job->firmware && job->firmware->cancelled)
          {
+#ifdef HAVE_CORE_LOAD_CHECK
+            /* A Load Once ends with the launch it was for */
+            core_load_check_forget(path_get(RARCH_PATH_CORE));
+#endif
+            content_load_prev_restore();
             job->after |= CONTENT_LOAD_AFTER_MENU_ON_FAIL;
             content_load_finish(job, p_content);
             break;
          }
+         /* The old session closes now: nothing to put back */
+         content_load_prev.valid = false;
 #endif
          job->stage = CONTENT_LOAD_STAGE_DEINIT;
          break;
@@ -3218,6 +3452,31 @@ static bool content_load_push_stage(struct content_load_job *job)
    return task_queue_push(task);
 }
 
+#ifdef HAVE_MENU
+/* Whether the load runs a built-in core or the menu's media viewer
+ * instead of RARCH_PATH_CORE: retroarch_main_init()'s tests.  Its
+ * LIBRETRO override comes only from the -L the deinit stage passes,
+ * and that stage passes one only while the override is unset. */
+static bool content_firmware_builtin_core(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *fullpath        = path_get(RARCH_PATH_CONTENT);
+
+   if (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
+      return runloop_st->explicit_current_core_type != CORE_TYPE_PLAIN;
+   if (string_is_empty(fullpath))
+      return false;
+   if (
+#if defined(HAVE_DYNAMIC) && !defined(__HAIKU__)
+            retroarch_override_setting_is_set(
+               RARCH_OVERRIDE_SETTING_LIBRETRO, NULL) &&
+#endif
+            menu_driver_media_can_open(fullpath))
+      return true;
+   return retroarch_builtin_core_type(fullpath) != CORE_TYPE_PLAIN;
+}
+#endif
+
 /**
  * content_load:
  *
@@ -3237,11 +3496,8 @@ static bool content_load(content_ctx_info_t *info,
    struct content_load_job *job      = &content_load_job;
    struct rarch_main_wrap *wrap_args = NULL;
 
-   if (job->stage != CONTENT_LOAD_STAGE_NONE)
-   {
-      RARCH_LOG("[Content] A content load is already in flight.\n");
+   if (content_load_in_flight())
       return false;
-   }
    if (!(wrap_args = (struct rarch_main_wrap*)
       malloc(sizeof(*wrap_args))))
       return false;
@@ -3264,12 +3520,23 @@ static bool content_load(content_ctx_info_t *info,
    job->staged    = staged;
    job->stage     = CONTENT_LOAD_STAGE_DEINIT;
 #ifdef HAVE_MENU
-   if (staged && config_get_ptr()->bools.core_firmware_notification_enable)
+   /* Unstaged, the core and the config are not read yet: the tell
+    * checks them when the load is through */
+   if (!staged)
+      job->firmware_tell = true;
+   else if (     config_get_ptr()->bools.core_firmware_notification_enable
+            && !(after & CONTENT_LOAD_AFTER_FIRMWARE_ASKED))
    {
       core_info_t *core = NULL;
-      if (core_info_find(path_get(RARCH_PATH_CORE), &core)
+      if (     !content_firmware_builtin_core()
+            && core_info_find(path_get(RARCH_PATH_CORE), &core)
             && core && core->firmware_count)
-         job->stage = CONTENT_LOAD_STAGE_FIRMWARE;
+      {
+         if (menu_core_warning_can_open())
+            job->stage = CONTENT_LOAD_STAGE_FIRMWARE;
+         else
+            job->firmware_tell = true;
+      }
    }
 #endif
 
@@ -3695,7 +3962,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
    rarch_system_info_t *sys_info           = &runloop_st->system;
 
-   if (!content_info)
+   if (!content_info || content_load_in_flight())
       return false;
 
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
@@ -3739,6 +4006,9 @@ bool task_push_load_content_from_playlist_from_menu(
    bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
 #endif
 
+   if (content_load_in_flight())
+      return false;
+   content_load_prev_save();
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
    if (label)
@@ -3828,9 +4098,12 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    settings_t *settings               = config_get_ptr();
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
 
-   if (!content_info)
+   if (!content_info || content_load_in_flight())
       return false;
 
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
    if (!content_info->environ_get)
@@ -3911,9 +4184,10 @@ bool task_push_load_contentless_core_from_menu(
    bool flush_menu                       = true;
    const char *menu_label                = NULL;
 
-   if (!core_path || !*core_path)
+   if (!core_path || !*core_path || content_load_in_flight())
       return false;
 
+   content_load_prev_save();
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
    /* Set core path */
@@ -4231,6 +4505,9 @@ bool task_push_load_content_with_new_core_from_menu(
             type, cb, user_data);
 #endif
 
+   if (content_load_in_flight())
+      return false;
+   content_load_prev_save();
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
 
    runloop_st->name.label[0]               = '\0';
@@ -4351,6 +4628,23 @@ static bool task_load_content_internal_wrap(
    return false;
 }
 
+#ifdef HAVE_CORE_LOAD_CHECK
+/* The Security Warning is answered from the menu only: a load from
+ * outside would take its place and drop the core it asks about */
+bool task_content_warning_waits(const char *path)
+{
+   const char *msg;
+   if (!core_warning_pending(NULL, NULL))
+      return false;
+   RARCH_WARN("[Core] Not loading \"%s\": answer the Security Warning first.\n",
+         path);
+   msg = msg_hash_to_str(MSG_CORE_WARNING_ANSWER_FIRST);
+   runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   return true;
+}
+#endif
+
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
@@ -4364,6 +4658,15 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content = content_state_get_ptr();
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(core_path))
+      return false;
+#endif
+   if (content_load_in_flight())
+      return false;
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    p_content->companion_ui_db_name[0] = '\0';
    p_content->companion_ui_crc32[0]   = '\0';
 
@@ -4409,6 +4712,9 @@ bool task_push_start_builtin_core(
       retro_task_callback_t cb,
       void *user_data)
 {
+   if (content_load_in_flight())
+      return false;
+
    /* Clear content path */
    path_clear(RARCH_PATH_CONTENT);
 
@@ -4427,6 +4733,11 @@ bool task_push_load_content_with_core(
       retro_task_callback_t cb,
       void *user_data)
 {
+   if (content_load_in_flight())
+      return false;
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    path_set(RARCH_PATH_CONTENT, fullpath);
    return task_load_content_internal_wrap(content_info, type, false);
 }
@@ -4440,6 +4751,16 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 {
    content_state_t  *p_content = content_state_get_ptr();
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(
+            fullpath ? fullpath : path_get(RARCH_PATH_CORE)))
+      return false;
+#endif
+   if (content_load_in_flight())
+      return false;
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    /* TODO/FIXME: Enable setting of these values
     * via function arguments */
    p_content->companion_ui_db_name[0] = '\0';
@@ -4465,6 +4786,11 @@ bool task_push_load_subsystem_with_core(
    content_state_t  *p_content = content_state_get_ptr();
    runloop_state_t *runloop_st = runloop_state_get_ptr();
 
+   if (content_load_in_flight())
+      return false;
+#ifdef HAVE_MENU
+   content_load_prev_save();
+#endif
    /* The content label is global state that survives until
     * the next content load overwrites it, and it is what
     * task_push_to_history_list() writes into the history

@@ -36,7 +36,10 @@
  *  - Settings > Core > Check Core Signatures: Off asks even with
  *    confirmations off and Back keeps the checks; On and Start ask
  *    nothing; a read-only store changes nothing; an inactive one hides
- *    the row.
+ *    the row;
+ *  - a load from outside the menu while the box is up is refused and
+ *    says to answer first; the request and the paths stay as they were,
+ *    and LOAD_CONTENT's core is not probed.
  *
  * Requires a completed non-Qt build:
  *
@@ -79,6 +82,9 @@
 #include "../../../msg_hash.h"
 #include "../../../msg_hash_lbl_str.h"
 #include "../../../core_trust_runtime.h"
+#include "../../../core_load_check.h"
+#include "../../../paths.h"
+#include "../../../tasks/task_content.h"
 
 static unsigned failures = 0;
 
@@ -1670,6 +1676,172 @@ static void lane_narration(void)
 }
 #endif
 
+/* Drains the OSD queue: whether it held msg */
+static bool osd_queued(enum msg_hash_enums msg)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *want            = msg_hash_to_str(msg);
+   msg_queue_entry_t entry;
+   bool found                  = false;
+   while (msg_queue_extract(&runloop_st->msg_queue, &entry))
+      if (string_is_equal(entry.msg, want))
+         found = true;
+   runloop_st->msg_queue_size = 0;
+   return found;
+}
+
+/* A companion UI's or a network command's load while the box is up is
+ * refused before it writes anything */
+static void lane_outside_load(const char *dir)
+{
+   char core[512];
+   char content[512];
+   char store[512];
+   char outside[512];
+   content_ctx_info_t info;
+   bool new_core;
+   bool current_core;
+   bool load_core  = false;
+   bool start_core = false;
+   bool load_content = false;
+#ifdef HAVE_COMMAND
+   char outside_core[512];
+   char load_arg[1040];
+   command_t cmd;
+   FILE *f;
+#endif
+   unsigned i;
+
+   /* lane_setting closed the store */
+   strlcpy(store, dir, sizeof(store));
+   strlcat(store, "/core_trust", sizeof(store));
+   CHECK(core_trust_runtime_init(store, NULL, NULL)
+         && core_trust_runtime_active(),
+         "fixture: the store didn't open again");
+   memset(&info, 0, sizeof(info));
+   strlcpy(outside, dir, sizeof(outside));
+   strlcat(outside, "/outside.bin", sizeof(outside));
+   menu_entries_flush_stack(MENU_ENUM_LABEL_MAIN_MENU_STR, 0);
+   push(&seen_a, CORE_WARNING_LOAD, 0x80, CORE_CHECK_UNSIGNED);
+   pump(3);
+   CHECK(shown(), "outside: the box isn't up");
+   strlcpy(core, path_get(RARCH_PATH_CORE), sizeof(core));
+   strlcpy(content, path_get(RARCH_PATH_CONTENT), sizeof(content));
+   osd_queued(MSG_CORE_WARNING_ANSWER_FIRST);
+
+   new_core = task_push_load_content_with_new_core_from_companion_ui(
+         "/cores/x_libretro.so", outside, NULL, NULL, NULL, &info,
+         NULL, NULL);
+   CHECK(!new_core, "an outside load went ahead under a Security Warning");
+   CHECK(     string_is_equal(path_get(RARCH_PATH_CORE), core)
+           && string_is_equal(path_get(RARCH_PATH_CONTENT), content),
+         "outside: a refused load with a new core wrote the paths");
+   CHECK(core_warning_pending(NULL, NULL),
+         "outside: a load with a new core dropped the request");
+   CHECK(osd_queued(MSG_CORE_WARNING_ANSWER_FIRST),
+         "outside: a load with a new core didn't say to answer first");
+
+   strlcpy(core, path_get(RARCH_PATH_CORE), sizeof(core));
+   strlcpy(content, path_get(RARCH_PATH_CONTENT), sizeof(content));
+   current_core = task_push_load_content_with_current_core_from_companion_ui(
+         outside, &info, CORE_TYPE_PLAIN, NULL, NULL);
+   CHECK(!current_core,
+         "an outside load went ahead under a Security Warning");
+   CHECK(     string_is_equal(path_get(RARCH_PATH_CORE), core)
+           && string_is_equal(path_get(RARCH_PATH_CONTENT), content),
+         "outside: a refused load with the current core wrote the paths");
+   CHECK(core_warning_pending(NULL, NULL),
+         "outside: a load with the current core dropped the request");
+   CHECK(osd_queued(MSG_CORE_WARNING_ANSWER_FIRST),
+         "outside: a load with the current core didn't say to answer first");
+
+#ifdef HAVE_COMMAND
+   /* Unsigned: its probe is refused and its load parks */
+   strlcpy(outside_core, dir, sizeof(outside_core));
+   strlcat(outside_core, "/outside_libretro.so", sizeof(outside_core));
+   if ((f = fopen(outside_core, "wb")))
+   {
+      fputs("not a core", f);
+      fclose(f);
+   }
+   memset(&cmd, 0, sizeof(cmd));
+   cmd.replier = syn_cmd_reply;
+
+   strlcpy(core, path_get(RARCH_PATH_CORE), sizeof(core));
+   strlcpy(content, path_get(RARCH_PATH_CONTENT), sizeof(content));
+   syn_reply[0] = '\0';
+   load_core    = command_load_core(&cmd, outside_core);
+   pump(3);
+   CHECK(!load_core, "LOAD_CORE went ahead under a Security Warning");
+   CHECK(     string_is_equal(path_get(RARCH_PATH_CORE), core)
+           && string_is_equal(path_get(RARCH_PATH_CONTENT), content),
+         "outside: a refused LOAD_CORE wrote the paths");
+   CHECK(seen_a.calls == 0 && core_warning_pending(NULL, NULL),
+         "outside: LOAD_CORE dropped the request");
+   CHECK(osd_queued(MSG_CORE_WARNING_ANSWER_FIRST),
+         "outside: LOAD_CORE didn't say to answer first");
+   CHECK(string_starts_with(syn_reply, "LOAD_CORE ERROR"),
+         "outside: a refused LOAD_CORE didn't reply with an error");
+
+   /* A running game's, which Start Core would clear */
+   strlcpy(core, path_get(RARCH_PATH_CORE), sizeof(core));
+   strlcpy(content, path_get(RARCH_PATH_CONTENT), sizeof(content));
+   path_set(RARCH_PATH_CONTENT, outside);
+   syn_reply[0] = '\0';
+   start_core   = command_start_core(&cmd, "");
+   pump(3);
+   CHECK(!start_core, "START_CORE went ahead under a Security Warning");
+   CHECK(     string_is_equal(path_get(RARCH_PATH_CORE), core)
+           && string_is_equal(path_get(RARCH_PATH_CONTENT), outside),
+         "outside: a refused START_CORE wrote the paths");
+   CHECK(seen_a.calls == 0 && core_warning_pending(NULL, NULL),
+         "outside: START_CORE dropped the request");
+   CHECK(osd_queued(MSG_CORE_WARNING_ANSWER_FIRST),
+         "outside: START_CORE didn't say to answer first");
+   CHECK(string_starts_with(syn_reply, "START_CORE ERROR"),
+         "outside: a refused START_CORE didn't reply with an error");
+   path_set(RARCH_PATH_CONTENT, content);
+
+   /* Refused before its core is probed: the probe would put that core
+    * through the load check while the box waits */
+   if ((f = fopen(outside, "wb")))
+   {
+      fputs("content", f);
+      fclose(f);
+   }
+   snprintf(load_arg, sizeof(load_arg), "%s|%s", outside_core, outside);
+   strlcpy(core, path_get(RARCH_PATH_CORE), sizeof(core));
+   strlcpy(content, path_get(RARCH_PATH_CONTENT), sizeof(content));
+   syn_reply[0] = '\0';
+   load_content = command_load_content(&cmd, load_arg);
+   pump(3);
+   CHECK(!load_content, "LOAD_CONTENT went ahead under a Security Warning");
+   CHECK(!core_load_check_refused(outside_core),
+         "outside: a refused LOAD_CONTENT probed its core first");
+   CHECK(     string_is_equal(path_get(RARCH_PATH_CORE), core)
+           && string_is_equal(path_get(RARCH_PATH_CONTENT), content),
+         "outside: a refused LOAD_CONTENT wrote the paths");
+   CHECK(seen_a.calls == 0 && core_warning_pending(NULL, NULL),
+         "outside: LOAD_CONTENT dropped the request");
+   CHECK(osd_queued(MSG_CORE_WARNING_ANSWER_FIRST),
+         "outside: LOAD_CONTENT didn't say to answer first");
+   CHECK(string_starts_with(syn_reply, "LOAD_CONTENT ERROR"),
+         "outside: a refused LOAD_CONTENT didn't reply with an error");
+   remove(outside);
+#endif
+
+   answer(MENU_ACTION_CANCEL);
+   CHECK(seen_a.calls == 1 && seen_a.choice == CORE_WARNING_CANCEL,
+         "outside: Back didn't answer the request once");
+   for (i = 0; (new_core || current_core || load_core || start_core
+         || load_content)
+         && i < 600 && task_content_load_pending(); i++)
+      pump(1);
+#ifdef HAVE_COMMAND
+   remove(outside_core);
+#endif
+}
+
 static void lane_setting(const char *dir)
 {
    char path[512];
@@ -1838,6 +2010,7 @@ int main(int argc, char *argv[])
       lane_replaced();
       lane_setting(dir);
       synthetic_remove();
+      lane_outside_load(dir);
    }
 
    main_exit(NULL);

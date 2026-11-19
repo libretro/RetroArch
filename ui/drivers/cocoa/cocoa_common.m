@@ -2412,6 +2412,10 @@ bool cocoa_launch_game_by_filename(NSString *filename)
 
    RARCH_LOG("Found %zu compatible core(s) for '%s'\n", list_size, full_path);
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(full_path))
+      return NO;
+#endif
    path_set(RARCH_PATH_CONTENT, full_path);
 
    /* Strategy 2a: Check if current core supports this content */

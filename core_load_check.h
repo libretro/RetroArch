@@ -35,6 +35,9 @@ bool core_load_verbatim_dot(const char *path);
 bool core_load_check_refused(const char *path);
 /* That refusal waits only for the first run's seed */
 bool core_load_check_refused_seed(const char *path);
+/* path's launch ended before a core loaded: its pass ends, and the
+ * next open of path is checked again */
+void core_load_check_forget(const char *path);
 /* The core the last core_load_check_open() opened is now running. A
  * waiting park ends, as the user's Cancel would end it. */
 void core_load_check_loaded(void);

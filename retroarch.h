@@ -148,6 +148,10 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
+/* The built-in core retroarch_main_init() runs @fullpath on in place of
+ * the configured one, or CORE_TYPE_PLAIN. */
+enum rarch_core_type retroarch_builtin_core_type(const char *fullpath);
+
 const char* video_shader_get_current_shader_preset(void);
 
 /* The platform is taking the application away and may not give it

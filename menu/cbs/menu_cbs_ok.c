@@ -8866,7 +8866,6 @@ static int action_ok_start_core(const char *path,
       menu_st->driver_ctx->list_cache(menu_st->userdata,
             MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
-   path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))
       return -1;
 
@@ -8921,7 +8920,6 @@ static int action_ok_contentless_core_run(const char *path,
    menu_st->contentless_core_ptr    = selection;
 
    /* Load and start core */
-   path_clear(RARCH_PATH_BASENAME);
    if (!task_push_load_contentless_core_from_menu(core_path))
    {
       if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
