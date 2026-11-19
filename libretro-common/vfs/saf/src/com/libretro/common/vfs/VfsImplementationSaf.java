@@ -146,14 +146,8 @@ public final class VfsImplementationSaf
             if (parentPath == null)
                return -1;
             final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPath.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPath);
-            try
-            {
-               DocumentsContract.createDocument(content, parentUri, "application/octet-stream", getPathFileName(path));
-            }
-            catch (FileNotFoundException | IllegalArgumentException f)
-            {
+            if (createDocumentExact(content, parentUri, "application/octet-stream", getPathFileName(path)) == null)
                return -1;
-            }
          }
       }
    }
@@ -282,6 +276,38 @@ public final class VfsImplementationSaf
       try
       {
          DocumentsContract.renameDocument(content, renamedUri, originalName);
+      }
+      catch (FileNotFoundException | RuntimeException e)
+      {}
+
+      return null;
+   }
+
+   /**
+    * Create a document, returning its URI if it was created named exactly name or null if not.
+    * Some providers change the name (such as "name (1)", or '_' for ':') instead of failing,
+    * so a document created under another name is deleted.
+    */
+   private static Uri createDocumentExact(ContentResolver content, Uri parentUri, String mimeType, String name) {
+      final Uri createdUri;
+      try
+      {
+         createdUri = DocumentsContract.createDocument(content, parentUri, mimeType, name);
+      }
+      catch (FileNotFoundException | RuntimeException e)
+      {
+         return null;
+      }
+
+      if (createdUri == null)
+         return null;
+
+      if (hasName(content, createdUri, name))
+         return createdUri;
+
+      try
+      {
+         DocumentsContract.deleteDocument(content, createdUri);
       }
       catch (FileNotFoundException | RuntimeException e)
       {}
@@ -587,15 +613,8 @@ public final class VfsImplementationSaf
       if (parentPath == null)
          return -1;
       final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPath.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPath);
-      try
-      {
-         if (DocumentsContract.createDocument(content, parentUri, Document.MIME_TYPE_DIR, getPathFileName(path)) == null)
-            return -1;
-      }
-      catch (FileNotFoundException | IllegalArgumentException e)
-      {
+      if (createDocumentExact(content, parentUri, Document.MIME_TYPE_DIR, getPathFileName(path)) == null)
          return -1;
-      }
       return 0;
    }
 
