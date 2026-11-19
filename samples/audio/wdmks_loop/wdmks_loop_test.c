@@ -46,6 +46,7 @@ static bool test_wait_timeout(retro_eventcount_t *ec, int key, int64_t usec);
  * that moves only as the model waits; the refill thread runs on the
  * real one. */
 #include <features/features_cpu.h>
+#include <retro_timers.h>
 retro_time_t test_time_usec(void);
 #define cpu_features_get_time_usec test_time_usec
 /* The spans the driver times on the perf counter, on the same clock:
@@ -753,9 +754,9 @@ static void run_wide_pcm_pin(void)
 }
 
 /* ------------------------------------------------------------------ */
-/* The refill thread itself, on the fake register with no event: it   */
-/* samples at a quarter of the loop, runs time-critical where the      */
-/* setting asks for it, and keeps its own account of how it woke.      */
+/* The refill thread itself, on the fake register: it passes once a   */
+/* notification, runs time-critical where the setting asks for it,    */
+/* and keeps its own account of how it woke.                          */
 /* ------------------------------------------------------------------ */
 
 static void run_refill_thread(bool priority, bool mmcss)
@@ -777,6 +778,7 @@ static void run_refill_thread(bool priority, bool mmcss)
    loop_setup(&w);
    w.thread_priority = priority;
    w.mmcss           = mmcss;
+   w.rt_event        = CreateEvent(NULL, FALSE, FALSE, NULL);
    retro_atomic_store_release_int(&w.rt_run, 1);
    t = sthread_create(wdmks_rt_refill_thread, &w);
    check(t != NULL, "the refill thread starts");
@@ -791,18 +793,27 @@ static void run_refill_thread(bool priority, bool mmcss)
          break;
       retro_sleep_us(1000);
    }
-   retro_sleep_us((unsigned)run_usec);
+   /* The device's notifications, a slice apart */
+   for (waited = 0; waited < expect; waited++)
+   {
+      retro_sleep_us((unsigned)(run_usec / expect));
+      SetEvent(w.rt_event);
+   }
+   retro_sleep_us((unsigned)slice);
    retro_atomic_store_release_int(&w.rt_run, 0);
+   SetEvent(w.rt_event);
    sthread_join(t);
+   CloseHandle(w.rt_event);
+   w.rt_event = NULL;
 
    check(w.rt_sched && (strcmp(w.rt_sched, "normal priority") != 0) == priority,
          priority ? "it raised itself" : "it left its priority alone");
    if (priority)
       printf("  (ran under %s)\n", w.rt_sched);
    check(w.rt_passes >= expect / 4,
-         "it passed at least a quarter as often as a quarter-loop cadence");
-   check(w.rt_passes <= expect * 3,
-         "and not more often than the slice floor allows");
+         "it passed at least a quarter as often as it was notified");
+   check(w.rt_passes <= expect + 1,
+         "and only when notified: no pass of its own");
    check(test_mark_to_usec(w.rt_gap_max) > 0
          && test_mark_to_usec(w.rt_gap_max) < 1000000,
          "the worst gap between passes is recorded");
@@ -833,12 +844,9 @@ static void run_held_ahead(void)
    margin     = wdmks_rt_margin(&w);
    check(margin == (48 + RATE / 2000) * FRAME,
          "the margin is the FIFO's, not cut to a quarter of the audio held");
-   /* The notification fires twice a loop - every two settings' worth
-    * here - so it cannot pace the refill and must not be taken. */
-   w.rt_event = (HANDLE)(uintptr_t)1;
-   wdmks_rt_register_event(&w);
-   check(w.rt_event == NULL,
-         "the notification event is not taken: it fires too seldom to pace");
+   /* The notification is what paces every wait: it is taken */
+   check(wdmks_rt_register_event(&w) && w.rt_event != NULL,
+         "the notification event is taken");
 
    hw_play(RATE / 125 * FRAME);
    fill_tone(tone, sizeof(tone), 0x20);
@@ -866,8 +874,21 @@ static void run_held_ahead(void)
    check(!region_is_silent(&w, (fake_pos + LOOP_BYTES / 2) % LOOP_BYTES, FRAME * 16),
          "the loop was not cleared whole");
 
+   wdmks_rt_unregister_event(&w);
    loop_teardown(&w);
    fifo_frames = 0;
+
+   /* A loop the driver made larger than two fragments: the notification
+    * fires twice a loop, so half the loop is held ahead */
+   loop_setup(&w);
+   w.rt_ahead = ahead;
+   wdmks_rt_ahead_for_loop(&w);
+   check(w.rt_ahead == LOOP_BYTES / 2 - (LOOP_BYTES / 2) % FRAME,
+         "a loop of more than two fragments holds half of it ahead");
+   w.rt_ahead = LOOP_BYTES / 2;
+   wdmks_rt_ahead_for_loop(&w);
+   check(w.rt_ahead == LOOP_BYTES / 2, "a loop of two fragments is left as asked");
+   loop_teardown(&w);
 }
 
 /* ------------------------------------------------------------------ */
