@@ -98,6 +98,63 @@ static void run_full(void)
    audio_rwebaudio.free(h);
 }
 
+/* The JavaScript half's wait for room, as the asyncify builds await
+ * it: each call is one of the context's clock events - a source ended,
+ * which frees room only once enough have - or, for a context that will
+ * not run, its watchdog. */
+extern audio_driver_t audio_rwebaudio_asyncify;
+static unsigned waits, wakes_before_room;
+static bool     context_stopped;
+int RWebAudioWaitRoom(unsigned ms)
+{
+   (void)ms;
+   waits++;
+   if (context_stopped)
+      return 0;
+   if (waits > wakes_before_room)
+      page_avail = 4800;
+   return 1;
+}
+
+static void run_asyncify(void)
+{
+   static float in[480 * 2];
+   unsigned new_rate = 0;
+   void *h;
+   printf("   a blocking write to a full page, awaiting the context's clock\n");
+   want_layout = AUDIO_LAYOUT_STEREO;
+   page_max    = 2;
+   h = audio_rwebaudio_asyncify.init(NULL, 48000, 64, &new_rate);
+   CHECK(h != NULL, "init failed");
+   if (!h)
+      return;
+   audio_rwebaudio_asyncify.set_nonblock_state(h, false);
+
+   /* Sources end one by one, and the twentieth frees room: the write
+    * waits through all of them, each a wake rather than a watchdog. */
+   page_avail        = 0;
+   waits             = 0;
+   wakes_before_room = 20;
+   context_stopped   = false;
+   blocks_entered    = 0;
+   audio_rwebaudio_asyncify.write(h, in, sizeof(in));
+   CHECK(waits == 21, "the write waited %u times for 21 clock events", waits);
+   CHECK(page_avail == 4800, "the write gave up before the room came");
+   CHECK(blocks_entered == 0, "the asyncify write asked for the main loop's block");
+
+   /* A context that will not run: watchdogs only, and the write gives
+    * up after its laps rather than holding the page. */
+   page_avail      = 0;
+   waits           = 0;
+   context_stopped = true;
+   audio_rwebaudio_asyncify.write(h, in, sizeof(in));
+   CHECK(waits > 1 && waits <= 16, "a stopped context was waited on %u times", waits);
+
+   page_avail      = 4800;
+   context_stopped = false;
+   audio_rwebaudio_asyncify.free(h);
+}
+
 static void run(const char *what, uint32_t asked, unsigned max,
       unsigned expect_ch, uint32_t expect_layout)
 {
@@ -138,6 +195,7 @@ int main(void)
    run("a 7.1 page, 7.1 asked for", AUDIO_LAYOUT_7POINT1, 8, 8, AUDIO_LAYOUT_7POINT1);
    run("a 7.1 page, quad asked for", AUDIO_LAYOUT_QUAD, 8, 4, AUDIO_LAYOUT_QUAD);
    run_full();
+   run_asyncify();
    if (failures)
    {
       printf("%u failure(s)\n", failures);

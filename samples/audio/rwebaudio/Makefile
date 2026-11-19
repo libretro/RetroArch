@@ -19,7 +19,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(call sample_objs,rwebaudio_test.o ../../../audio/audio_upmix.o)
+OBJS := $(call sample_objs,rwebaudio_test.o rwebaudio_asyncify_case.o ../../../audio/audio_upmix.o)
 
 all: $(TARGET)
 
@@ -27,6 +27,9 @@ $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 rwebaudio_test.o: rwebaudio_test.c ../../../audio/drivers/rwebaudio.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+rwebaudio_asyncify_case.o: rwebaudio_asyncify_case.c ../../../audio/drivers/rwebaudio.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
