@@ -346,6 +346,11 @@
 #define DEFAULT_WINDOW_AUTO_WIDTH_MAX  1920
 #define DEFAULT_WINDOW_AUTO_HEIGHT_MAX 1080
 
+/* Fitting the window to the display overrides the sizes above */
+#define DEFAULT_WINDOW_FIT_DISPLAY false
+#define DEFAULT_WINDOW_FIT_ASPECT_RATIO_IDX ASPECT_RATIO_FULL
+#define DEFAULT_WINDOW_FIT_MARGIN 64
+
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
 #if defined(DINGUX)

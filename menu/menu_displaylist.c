@@ -12774,6 +12774,7 @@ unsigned menu_displaylist_build_list(
 #else
             bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
 #endif
+            bool window_fit_display        = settings->bools.video_window_fit_display;
             static menu_displaylist_build_info_selective_t build_list[] = {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
@@ -12782,6 +12783,9 @@ unsigned menu_displaylist_build_list(
 #else
                {MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE, PARSE_ONLY_BOOL,  true },
 #endif
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_DISPLAY,        PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_ASPECT_RATIO_INDEX, PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_MARGIN,         PARSE_ONLY_UINT,  false},
                {MENU_ENUM_LABEL_VIDEO_SCALE,                     PARSE_ONLY_UINT,  false},
                {MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,              PARSE_ONLY_UINT,  false},
                {MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,             PARSE_ONLY_UINT,  false},
@@ -12796,16 +12800,32 @@ unsigned menu_displaylist_build_list(
             {
                switch (build_list[i].enum_idx)
                {
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
+    (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3) && !defined(WEBOS)
+                  case MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION:
+#else
+                  case MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE:
+#endif
+                     build_list[i].checked = !window_fit_display;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_ASPECT_RATIO_INDEX:
+                  case MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_MARGIN:
+                     build_list[i].checked = window_fit_display;
+                     break;
                   case MENU_ENUM_LABEL_VIDEO_SCALE:
-                     build_list[i].checked = !window_custom_size_enable;
+                     build_list[i].checked = !window_fit_display
+                        && !window_custom_size_enable;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH:
                   case MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT:
-                     build_list[i].checked = window_custom_size_enable;
+                     build_list[i].checked = !window_fit_display
+                        && window_custom_size_enable;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX:
                   case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX:
-                     build_list[i].checked = !window_custom_size_enable;
+                     build_list[i].checked = !window_fit_display
+                        && !window_custom_size_enable;
                      break;
                   default:
                      break;
