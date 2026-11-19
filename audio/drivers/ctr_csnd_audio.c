@@ -165,8 +165,8 @@ static void ctr_csnd_audio_free(void *data)
    free(ctr);
 }
 
-/* How many 1 ms polls a blocking write waits for the play position to
- * advance before giving up on it. */
+/* How many computed waits a blocking write makes for the play position
+ * to advance before giving up on it. */
 #define CTR_CSND_AUDIO_WAIT_LAPS 2000
 
 static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
@@ -192,9 +192,12 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
          ctr->pos = (ctr->playpos + (CTR_CSND_AUDIO_COUNT >> 1)) & CTR_CSND_AUDIO_COUNT_MASK;
       else
       {
-         /* Poll the play position while CSND plays this out, capped: a
-          * position that has stopped advancing never satisfies the test
-          * below, and the write then returns having written nothing. */
+         /* Wait while CSND plays this out, capped: a position that has
+          * stopped advancing never satisfies the test below, and the
+          * write then returns having written nothing. The one timed
+          * wait in the driver, and the only way: CSND offers no
+          * interrupt, event or callback, and it is the sound a 3DS
+          * without the DSP firmware has. */
          int laps = CTR_CSND_AUDIO_WAIT_LAPS;
          do
          {
