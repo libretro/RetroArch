@@ -4252,9 +4252,37 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_EXECUTION_PHASE:
+         if (data)
+         {
+            enum retro_execution_phase phase = RETRO_EXECUTION_PHASE_RETAINED;
+#ifdef HAVE_RUNAHEAD
+            phase = runahead_get_execution_phase();
+#endif
+#ifdef HAVE_NETWORKING
+            /* Netplay never runs ahead: its replays are the only ones. */
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_REPLAYING, NULL))
+               phase = RETRO_EXECUTION_PHASE_REPLAY;
+#endif
+            *(enum retro_execution_phase*)data = phase;
+         }
+         return true;
+
+#ifdef HAVE_RUNAHEAD
+      case RETRO_ENVIRONMENT_SET_SAVESTATE_LIFETIME:
+         return serialization_register((const struct retro_savestate_lifetime*)data);
+#endif
       case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT:
       {
          int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
+#ifdef HAVE_RUNAHEAD
+         if (serialization_owned_context())
+         {
+            if (data)
+               *(int*)data = RETRO_SAVESTATE_CONTEXT_SAME_INSTANCE_MANAGED;
+            break;
+         }
+#endif
 
 #if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
          if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
@@ -5741,6 +5769,9 @@ static bool core_unload_game(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
 
+#ifdef HAVE_RUNAHEAD
+   serialization_clear_history();
+#endif
    video_driver_free_hw_context();
 #ifdef HAVE_TEMPORAL_UPSCALER
    video_upscaler_clear_wanted();
@@ -6026,6 +6057,9 @@ void runloop_event_deinit_core(void)
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
       RARCH_LOG("[Core] Unloading core...\n");
+#ifdef HAVE_RUNAHEAD
+      serialization_close();
+#endif
       runloop_st->current_core.retro_deinit();
 #if TARGET_OS_IPHONE
       exec_mem_ledger_free_all();
@@ -10453,6 +10487,12 @@ int runloop_iterate(void)
       want_runahead                     = want_runahead && !netplay_is_enabled;
 #endif
 
+      /* GET_VARIABLE consumes the update. Until then, history is dropped
+       * each frame and Preemptive Frames cannot build a replay window. */
+      if ((!want_runahead && runloop_st->runahead_state_owned) ||
+          (runloop_st->core_options && runloop_st->core_options->updated))
+         serialization_clear_history();
+
       if (want_runahead)
          frame_advanced = runahead_run(
                runloop_st,
@@ -11205,6 +11245,7 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
          sizeof(input_st->touchpad_requested));
 
 #if defined(HAVE_RUNAHEAD)
+   serialization_clear_history();
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    runahead_remember_controller_port_device(runloop_st, pad->port, pad->device);
 #endif
@@ -11302,6 +11343,9 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
    if (!ok)
       return false;
 
+#ifdef HAVE_RUNAHEAD
+   serialization_clear_history();
+#endif
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, info);
 #endif
@@ -11382,6 +11426,10 @@ uint64_t core_serialization_quirks(void)
 void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
+
+#ifdef HAVE_RUNAHEAD
+   serialization_clear_history();
+#endif
 
    /* Drop video-driver caches of core-owned GPU resources before
     * retro_reset() is allowed to destroy them. No-op on software

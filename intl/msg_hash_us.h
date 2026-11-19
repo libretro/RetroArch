@@ -34310,6 +34310,10 @@ MSG_HASH(
    "Failed to load state. Run-Ahead has been disabled."
    )
 MSG_HASH(
+   MSG_RUNAHEAD_CORE_RESET,
+   "Run-Ahead could not restore the core's state. The core was reset and Run-Ahead has been disabled."
+   )
+MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
    "Failed to create second instance. Run-Ahead will now use only one instance."
    )
