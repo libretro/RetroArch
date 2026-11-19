@@ -1859,6 +1859,9 @@ void drivers_init(
          if (!video_driver_hw_render_interface_kept())
          {
             video_driver_invalidate_hw_render_cache();
+#ifdef HAVE_RUNAHEAD
+            serialization_clear_history();
+#endif
             if (hwr->context_destroy)
                hwr->context_destroy();
             video_driver_hw_render_interface_note(NULL);
@@ -2278,6 +2281,12 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
             video_st->data);
       if (lifetime_flags & DRIVER_LIFETIME_SESSION_SWITCH)
          video_driver_modify_disp_flags(VIDEO_FLAG_KEEP_VULKAN_SESSION, 0);
+#ifdef HAVE_RUNAHEAD
+      /* Managed states may hold objects of the hardware context the
+       * core is about to destroy. */
+      if (flags & DRIVER_VIDEO_MASK)
+         serialization_clear_history();
+#endif
       video_driver_free_internal();
       video_driver_modify_disp_flags(0, VIDEO_FLAG_KEEP_VULKAN_SESSION);
 #ifdef HAVE_THREADS

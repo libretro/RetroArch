@@ -57,10 +57,8 @@ typedef struct preemptive_frames_data
 
 RETRO_BEGIN_DECLS
 
-enum retro_savestate_phase runahead_get_savestate_phase(void);
+enum retro_execution_phase runahead_get_execution_phase(void);
 bool serialization_register(const struct retro_savestate_lifetime *iface);
-bool serialization_usable(void);
-bool serialization_check(void);
 bool serialization_owned_context(void);
 void serialization_clear_history(void);
 void serialization_close(void);

@@ -15,7 +15,8 @@ import time
 CASES = {
     "release_once": ("single", "release_once", False),
     "failed_save": ("single", "failed_save", False),
-    "halt": ("single", "halt", False),
+    "load_refused_once": ("single", "load_refused_once", False),
+    "load_refused_twice": ("single", "load_refused_twice", False),
     "registration_after_init": ("single", "late_registration", False),
     "secondary_disabled": ("single", "release_once", True),
     "secondary_control": ("single", "unregistered", True),
@@ -24,7 +25,10 @@ CASES = {
     "preempt_load_error": ("preemptive", "preempt_load_error", False),
     "options_pending": ("preemptive", "options_pending", False),
     "reset_history": ("preemptive", "reset", False),
-    "old_version": ("single", "old_version", False),
+    "unknown_version": ("single", "unknown_version", False),
+    "video_reinit": ("preemptive", "release_once", False),
+    "preempt_rewind": ("preemptive", "preempt_rewind", False),
+    "background_save": ("single", "background_save", False),
 }
 
 
@@ -47,6 +51,24 @@ def movie(path):
                           (i // 6) % 2, 0, 1, 0, 0, 0, (i // 6) % 2) + b"f"
               for i in range(180)]
     path.write_bytes(header + b"".join(frames))
+
+
+def reinit_cleared(rows):
+    """Every live managed state released at some point before unload,
+    with saves before and after: only a history clear does that."""
+    live = set()
+    saved_before = False
+    for event, instance, value, frame, phase in rows:
+        if event == "SAVE":
+            if saved_before and not live:
+                return True
+            live.add((instance, value))
+        elif event == "RELEASE":
+            live.discard((instance, value))
+            saved_before = True
+        elif event == "UNLOAD":
+            return False
+    return False
 
 
 def check_trace(name, rows, replies, log):
@@ -72,29 +94,28 @@ def check_trace(name, rows, replies, log):
             require(not any(owner == instance for owner, _ in live),
                     "state outlived its core")
     require(not live and saved == released, "successful saves were not released exactly once")
-    if name in ("old_version", "registration_after_init", "secondary_control"):
+    if name in ("unknown_version", "registration_after_init", "secondary_control"):
         require(not saved, "unsupported registration produced managed states")
     else:
         require(len(saved) >= 3, "managed saves did not execute")
     if name == "failed_save":
         require("REFUSE_SAVE" in names, "save refusal was not reached")
-    if name == "halt":
-        require("UNSAFE" in names, "unsafe transition was not reached")
-        tail = names[names.index("UNSAFE") + 1:]
-        require(all(e in ("RELEASE", "UNLOAD", "DEINIT") for e in tail),
-                "core called after becoming unsafe")
-        require("Core state could not be recovered. Close and reload content." in log,
-                "missing recovery message")
-        require(any("core memory unavailable" in reply for reply in replies),
-                "blocked memory read was not observed")
-        require(any(reply.startswith("READ_CORE_MEMORY ") and "-1" not in reply
-                    for reply in replies), "healthy memory descriptor was not exercised")
-        require(any(reply.startswith("WRITE_CORE_MEMORY ") and "unavailable" in reply
-                    for reply in replies), "cached memory write was not blocked")
-        require(any("SAVE_STATE_SLOT ERROR" in reply for reply in replies),
-                "blocked persistence was not observed")
-        require(any("GET_STATUS PAUSED" in reply for reply in replies),
-                "unpause did not return to the stopped state")
+    if name == "load_refused_once":
+        require("REFUSE_LOAD" in names, "load refusal was not reached")
+        tail = names[names.index("REFUSE_LOAD") + 1:]
+        require(tail and tail[0] == "LOAD", "a refused load was not tried again")
+        require("RESET" not in names, "a load that succeeded on retry reset the core")
+        require("SAVE" in tail, "Run-Ahead stopped after a load that succeeded on retry")
+    if name == "load_refused_twice":
+        require(names.count("REFUSE_LOAD") == 2, "the load was not refused twice")
+        tail = names[names.index("REFUSE_LOAD") + 1:]
+        require(tail[0] == "REFUSE_LOAD", "the second try was not the next core call")
+        require("RESET" in tail, "a core left on a speculative state was not reset")
+        after = tail[tail.index("RESET") + 1:]
+        require("SAVE" not in after, "Run-Ahead stayed on after the reset")
+        require(after.count("RUN") >= 30, "the core did not go on running after the reset")
+        require("Run-Ahead could not restore the core's state" in log,
+                "missing reset message")
     if name == "registration_after_init":
         require("LATE_REJECTED" in names, "late registration was not attempted")
     if name in ("secondary_disabled", "secondary_control"):
@@ -114,7 +135,7 @@ def check_trace(name, rows, replies, log):
         require(any(row[0] == "RUN" for row in tail[last_release + 1:]),
                 "owned states were retained until shutdown instead of error cleanup")
         if name == "preempt_save_error":
-            canonical = [int(r[3]) for r in rows if r[0] == "RUN" and r[4] != "2"]
+            canonical = [int(r[3]) for r in rows if r[0] == "RUN" and r[4] == "0"]
             require(canonical == list(range(1, len(canonical) + 1)),
                     "save refusal skipped or repeated a canonical frame")
     if name == "options_pending":
@@ -127,8 +148,21 @@ def check_trace(name, rows, replies, log):
         next_save = names.index("SAVE", start)
         require(names[start + 1:next_save].count("RELEASE") >= 3,
                 "pending option did not release populated history")
+    phases = {row[4] for row in rows if row[0] == "RUN"}
+    if name == "release_once":
+        require(phases == {"0", "2"}, "run-ahead reported phases %s" % sorted(phases))
+    if name == "preempt_deinit":
+        require(phases == {"0", "1"}, "Preemptive Frames reported phases %s" % sorted(phases))
+    if name == "preempt_rewind":
+        require("ORDINARY_SAVE" in names, "rewind did not push a state")
+    if name == "video_reinit":
+        require(reinit_cleared(rows), "a video reinit kept managed states alive")
     if name == "reset_history":
         require("RESET" in names, "reset was not reached")
+    if name == "background_save":
+        require("ORDINARY_SAVE" in names, "slot save did not reach the core")
+        require(any(reply.startswith("SAVE_STATE_SLOT 1") and "ERROR" not in reply
+                    for reply in replies), "slot save was not answered")
     return {"saves": sum(saved.values()), "releases": sum(released.values()),
             "runs": names.count("RUN"), "loads": names.count("LOAD")}
 
@@ -156,6 +190,7 @@ def run_case(args, name, root):
         "run_ahead_enabled": mode == "single", "run_ahead_frames": 3,
         "run_ahead_secondary_instance": secondary,
         "preemptive_frames_enable": mode == "preemptive",
+        "rewind_enable": name == "preempt_rewind", "rewind_granularity": 1,
         "network_cmd_enable": True, "network_cmd_port": port,
         "network_cmd_bind_address": "127.0.0.1", "savestate_file_compression": False,
         "core_options_path": (folder / "options.cfg").as_posix(), "user_language": 0,
@@ -169,9 +204,7 @@ def run_case(args, name, root):
                                  for key, value in settings.items()) + "\n")
     environment = dict(os.environ, LIFETIME_TEST_TRACE=str(trace), LIFETIME_TEST_CASE=fault)
     replies = []
-    unsafe_at = None
-    last_unpause = 0
-    status_asked = reset_sent = stopping = memory_primed = False
+    reset_sent = stopping = slot_saved = False
     log_path = folder / "frontend.log"
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as control, log_path.open("wb") as log:
         control.settimeout(0.001)
@@ -189,28 +222,17 @@ def run_case(args, name, root):
                 rows = read_events(trace)
                 now = time.monotonic()
                 names = [row[0] for row in rows]
-                if name == "halt" and not memory_primed and names.count("RUN") >= 15:
-                    send("READ_CORE_MEMORY 0 4")
-                    memory_primed = True
+                if name == "video_reinit" and not reset_sent and names.count("RUN") >= 45:
+                    send("REINIT video")
+                    reset_sent = True
+                if name == "background_save" and not slot_saved and names.count("RUN") >= 30:
+                    send("SAVE_STATE_SLOT 1")
+                    slot_saved = True
                 if name == "reset_history" and not reset_sent and names.count("RUN") >= 45:
                     send("RESET off")
                     reset_sent = True
-                if "UNSAFE" in names:
-                    if unsafe_at is None:
-                        unsafe_at = now
-                        for command in ("READ_CORE_MEMORY 0 4", "WRITE_CORE_MEMORY 0 00",
-                                        "SAVE_STATE_SLOT 2", "RESET off"):
-                            send(command)
-                    if now - last_unpause > 0.16:
-                        send("SET_OPTION pause off")
-                        last_unpause = now
-                        status_asked = False
-                    elif not status_asked and now - last_unpause > 0.08:
-                        send("GET_STATUS")
-                        status_asked = True
-                canonical = sum(row[0] == "RUN" and row[4] != "2" for row in rows)
-                if not stopping and ((unsafe_at is not None and now - unsafe_at > 0.6)
-                                     or canonical >= 100):
+                canonical = sum(row[0] == "RUN" and row[4] == "0" for row in rows)
+                if not stopping and canonical >= 100:
                     send("QUIT")
                     stopping = True
                 require(now - start < 30, "frontend timed out")

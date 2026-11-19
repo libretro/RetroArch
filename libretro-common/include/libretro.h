@@ -2480,26 +2480,28 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT (72 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
- * Queries the prediction phase on the core thread, independently of lifetime
- * registration.
- *
- * @param[out] data <tt>enum retro_savestate_phase *</tt>,
- * or \c NULL to probe support.
- * @returns true if the query is supported.
- * @see retro_savestate_phase
- */
-#define RETRO_ENVIRONMENT_GET_SAVESTATE_PHASE (106 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-
-/**
- * Registers same-instance savestate lifetime callbacks from retro_set_environment
- * or retro_init, on the core thread.
+ * Registers same-instance savestate lifetime callbacks.
+ * Called from retro_set_environment or retro_init, on the core thread.
  *
  * @param[in] data <tt>const struct retro_savestate_lifetime *</tt>.
  * The frontend copies the callbacks and keeps them until core deinitialization.
  * @returns true if the frontend accepts the registration.
- * @see RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT
+ * @see retro_savestate_lifetime
+ * @see RETRO_SAVESTATE_CONTEXT_SAME_INSTANCE_MANAGED
  */
 #define RETRO_ENVIRONMENT_SET_SAVESTATE_LIFETIME (105 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries what the frontend will do with the state the current
+ * retro_run() produces. Independent of lifetime registration.
+ *
+ * @param[out] data <tt>enum retro_execution_phase *</tt>,
+ * or \c NULL to probe support.
+ * @returns true if the query is supported. A frontend that never runs a
+ * frame twice reports RETRO_EXECUTION_PHASE_RETAINED.
+ * @see retro_execution_phase
+ */
+#define RETRO_ENVIRONMENT_GET_EXECUTION_PHASE (106 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
  * Before calling \c SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE, will query which interface is supported.
@@ -7674,11 +7676,12 @@ enum retro_savestate_context
    RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY       = 3,
 
    /**
-    * Returned only during managed size, save and load calls.
+    * Returned only during managed size, save and load calls, and only to a
+    * core whose RETRO_ENVIRONMENT_SET_SAVESTATE_LIFETIME was accepted.
     * States stay in the same core instance and may reference its resources.
     * They are never written to disk or sent over a network.
     */
-   RETRO_SAVESTATE_CONTEXT_RUNAHEAD_MANAGED       = 4,
+   RETRO_SAVESTATE_CONTEXT_SAME_INSTANCE_MANAGED  = 4,
 
    /**
     * @private Defined to ensure <tt>sizeof(retro_savestate_context) == sizeof(int)</tt>.
@@ -7688,49 +7691,82 @@ enum retro_savestate_context
 };
 
 /**
- * Frontend prediction phase. GET_AUDIO_VIDEO_ENABLE separately controls output.
+ * What the frontend does with the state a retro_run() produces.
+ * Output is controlled separately, by RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE.
+ * @see RETRO_ENVIRONMENT_GET_EXECUTION_PHASE
  */
-enum retro_savestate_phase
+enum retro_execution_phase
 {
-   /** Outside frontend Run-Ahead and Preemptive Frames execution. */
-   RETRO_SAVESTATE_PHASE_NORMAL,
-   /** Execution that advances retained state. */
-   RETRO_SAVESTATE_PHASE_CANONICAL,
-   /** Replay or discardable execution. */
-   RETRO_SAVESTATE_PHASE_SPECULATIVE,
-   RETRO_SAVESTATE_PHASE_UNKNOWN = INT_MAX
+   /**
+    * The frame is kept, and this is the first time this frame is run.
+    * The frontend may still run it again later as a replay (Preemptive
+    * Frames, netplay); nothing here says a frame is final.
+    */
+   RETRO_EXECUTION_PHASE_RETAINED    = 0,
+
+   /**
+    * A frame already run as RETRO_EXECUTION_PHASE_RETAINED, run again with
+    * corrected input. Its state is kept in place of the earlier run's.
+    * Effects already emitted for this frame should not be emitted again.
+    */
+   RETRO_EXECUTION_PHASE_REPLAY      = 1,
+
+   /** The state this run produces is always discarded. */
+   RETRO_EXECUTION_PHASE_SPECULATIVE = 2,
+
+   /**
+    * @private Defined to ensure <tt>sizeof(retro_execution_phase) == sizeof(int)</tt>.
+    * Do not use.
+    */
+   RETRO_EXECUTION_PHASE_UNKNOWN     = INT_MAX
 };
 
-#define RETRO_SAVESTATE_LIFETIME_VERSION 3
+/**
+ * The newest version of struct retro_savestate_lifetime. A frontend accepts
+ * every version from 1 to the newest it knows; later versions only append
+ * members.
+ */
+#define RETRO_SAVESTATE_LIFETIME_VERSION 1
 
 /**
- * Optional lifetime callbacks for existing serialization calls.
- * Core callbacks run on the core execution thread. Release has the core's
- * hardware context when available.
- * Managed saves must survive byte-for-byte copies to a different address.
- * The core must initialize all bytes read by load or release; unused bytes
- * are unspecified. A refused save or load must leave live state unchanged,
- * or report an unsafe state through is_usable.
+ * Releases a managed state.
+ * @param data The state's bytes, as the core saved them.
+ * @param size The size the core was asked to save.
+ */
+typedef void (RETRO_CALLCONV *retro_savestate_release_t)(const void *data, size_t size);
+
+/**
+ * Lifetime callbacks for states saved and loaded in
+ * RETRO_SAVESTATE_CONTEXT_SAME_INSTANCE_MANAGED.
+ *
+ * - The callbacks run on the core thread. Release has the core's hardware
+ *   context when there is one.
+ * - The frontend keeps at most 16 managed states at a time.
+ * - A state may be loaded any number of times, in any order, until its
+ *   release. A buffer's state is released before another is saved into it.
+ * - Every managed state is released before the frontend calls the core's
+ *   hardware context_destroy, before retro_unload_game, and before
+ *   retro_deinit. A lost device is recovered that way too: the managed
+ *   states go, then context_destroy and context_reset; the emulated
+ *   machine carries on.
+ * - The core initializes every byte that load or release reads; unused
+ *   bytes are unspecified.
+ * - A refused save or load leaves the live state unchanged. The frontend
+ *   then turns prediction off; left with no kept state to go on from, it
+ *   resets the core. A core that cannot continue at all calls
+ *   RETRO_ENVIRONMENT_SHUTDOWN.
  */
 struct retro_savestate_lifetime
 {
-   /** Set to RETRO_SAVESTATE_LIFETIME_VERSION. */
+   /** The version the core was built against: RETRO_SAVESTATE_LIFETIME_VERSION. */
    unsigned version;
-   /** Set to sizeof(struct retro_savestate_lifetime). */
-   unsigned size;
 
    /**
-    * Releases each successful managed save once, with intact bytes, after
-    * its last use. Copies borrow the same state. Loads do not consume it.
-    * Failed saves are never released. Invalidated saves remain releasable.
+    * Called once for each successful managed save, after its last use, with
+    * its bytes intact. Loads do not consume a state. A failed save is never
+    * released. A state the core can no longer load is still released.
     */
-   void (RETRO_CALLCONV *release)(const void *data, size_t size);
-
-   /**
-    * Return false if emulation or memory access becomes unsafe. Execution
-    * and memory consumers stop until core deinitialization.
-    */
-   bool (RETRO_CALLCONV *is_usable)(void);
+   retro_savestate_release_t release;
 };
 
 /** @} */

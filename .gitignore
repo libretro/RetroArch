@@ -415,4 +415,3 @@ samples/runahead/lifetime/plain-no-threads/
 samples/runahead/lifetime/sanitized/
 samples/runahead/lifetime/sanitized-no-threads/
 samples/runahead/lifetime/windows/
-samples/runahead/lifetime/mutants/

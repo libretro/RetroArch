@@ -6092,14 +6092,6 @@ static uint8_t *command_memory_get_pointer(struct command_mem *m,
       int for_write, char *s, size_t len)
 {
    const rarch_system_info_t *sys_info = m->sys;
-#ifdef HAVE_RUNAHEAD
-   if (!serialization_usable())
-   {
-      strlcpy_lit(s, " -1 core memory unavailable\n", len);
-      *max_bytes = 0;
-      return NULL;
-   }
-#endif
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
    {
       const struct command_ram_block *blocks = m->blocks;

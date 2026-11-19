@@ -45,7 +45,6 @@
 
 #include "tasks/tasks_internal.h"
 #include "configuration.h"
-#include "command.h"
 #include "content.h"
 #include "core.h"
 #include "dynamic.h"
@@ -64,13 +63,11 @@
 #endif
 
 static struct retro_savestate_lifetime serialization_interface;
-static void *serialization_stage;
-static size_t serialization_stage_size;
-static enum retro_savestate_phase serialization_phase_value;
+static enum retro_execution_phase serialization_phase_value;
 static bool serialization_managed;
-static retro_atomic_int_t serialization_blocked = RETRO_ATOMIC_INT_INITIALIZER(0);
+static bool serialization_secondary_logged;
 
-enum retro_savestate_phase runahead_get_savestate_phase(void)
+enum retro_execution_phase runahead_get_execution_phase(void)
 {
    return serialization_phase_value;
 }
@@ -80,37 +77,14 @@ bool serialization_owned_context(void)
    return serialization_managed;
 }
 
-bool serialization_usable(void)
-{
-   return !retro_atomic_load_acquire_int(&serialization_blocked);
-}
-
-static void serialization_block(void)
-{
-   if (serialization_usable())
-   {
-      const char *msg = msg_hash_to_str(MSG_CORE_STATE_UNRECOVERABLE);
-      retro_atomic_store_release_int(&serialization_blocked, 1);
-      runloop_msg_queue_push(msg, strlen(msg), 2, 10 * 60, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-      RARCH_ERR("[Run-Ahead] %s\n", msg);
-      command_event(CMD_EVENT_PAUSE, NULL);
-   }
-}
-
-bool serialization_check(void)
-{
-   if (serialization_interface.is_usable && !serialization_interface.is_usable())
-      serialization_block();
-   return serialization_usable();
-}
-
 bool serialization_register(const struct retro_savestate_lifetime *iface)
 {
-   if (!iface || iface->version != RETRO_SAVESTATE_LIFETIME_VERSION ||
-       iface->size < sizeof(*iface) || !iface->release || !iface->is_usable ||
-       serialization_interface.release ||
-       (runloop_state_get_ptr()->current_core.flags & RETRO_CORE_FLAG_INITED))
+   /* Version 1 is all there is: a later one copies only its own members. */
+   if (!iface || iface->version < 1
+         || iface->version > RETRO_SAVESTATE_LIFETIME_VERSION
+         || !iface->release
+         || serialization_interface.release
+         || (runloop_state_get_ptr()->current_core.flags & RETRO_CORE_FLAG_INITED))
       return false;
    serialization_interface = *iface;
    return true;
@@ -125,7 +99,6 @@ static void serialization_release_buffer(void *data, size_t size, bool *owned)
    video_thread_core_context_take();
 #endif
    serialization_interface.release(data, size);
-   serialization_check();
 #ifdef HAVE_THREADS
    video_thread_core_context_release();
 #endif
@@ -153,52 +126,41 @@ void serialization_clear_history(void)
 void serialization_close(void)
 {
    serialization_clear_history();
-   free(serialization_stage);
-   serialization_stage = NULL;
-   serialization_stage_size = 0;
    memset(&serialization_interface, 0, sizeof(serialization_interface));
-   serialization_phase_value = RETRO_SAVESTATE_PHASE_NORMAL;
+   serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
    serialization_managed = false;
-   retro_atomic_store_release_int(&serialization_blocked, 0);
+   serialization_secondary_logged = false;
 }
 
+/* The state a buffer holds is released before the new one is saved
+ * into it, in place: no copy, and the core may reuse what it frees. */
 static bool serialization_save(void *data, size_t size, bool *owned)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool ret;
    bool special = (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE) != 0;
-   void *destination = data;
    if (!serialization_interface.release)
       return runloop_st->current_core.retro_serialize(data, size);
-   if (!serialization_usable())
-      return false;
-
-   if (*owned)
-      destination = serialization_stage;
 
    runloop_st->flags |= RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 #ifdef HAVE_THREADS
    video_thread_core_context_take();
 #endif
-   serialization_managed = true;
-   ret = runloop_st->current_core.retro_serialize(destination, size);
-   serialization_managed = false;
-   if (ret)
+   if (*owned)
    {
-      if (*owned)
-      {
-         serialization_interface.release(data, size);
-         memcpy(data, destination, size);
-      }
-      *owned = true;
+      *owned = false;
+      serialization_interface.release(data, size);
    }
-   serialization_check();
+   serialization_managed = true;
+   ret = runloop_st->current_core.retro_serialize(data, size);
+   serialization_managed = false;
+   *owned = ret;
 #ifdef HAVE_THREADS
    video_thread_core_context_release();
 #endif
    if (!special)
       runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-   return ret && serialization_usable();
+   return ret;
 }
 
 static bool serialization_load(const void *data, size_t size)
@@ -208,8 +170,6 @@ static bool serialization_load(const void *data, size_t size)
    bool special = (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE) != 0;
    if (!serialization_interface.release)
       return runloop_st->current_core.retro_unserialize(data, size);
-   if (!serialization_usable())
-      return false;
 
    runloop_st->flags |= RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 #ifdef HAVE_THREADS
@@ -218,15 +178,12 @@ static bool serialization_load(const void *data, size_t size)
    serialization_managed = true;
    ret = runloop_st->current_core.retro_unserialize(data, size);
    serialization_managed = false;
-   if (serialization_check() && !ret &&
-       serialization_phase_value == RETRO_SAVESTATE_PHASE_SPECULATIVE)
-      serialization_block();
 #ifdef HAVE_THREADS
    video_thread_core_context_release();
 #endif
    if (!special)
       runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-   return ret && serialization_usable();
+   return ret;
 }
 
 static void serialization_run(struct retro_core_t *core)
@@ -236,13 +193,10 @@ static void serialization_run(struct retro_core_t *core)
       core->retro_run();
       return;
    }
-   if (!serialization_usable())
-      return;
 #ifdef HAVE_THREADS
    video_thread_core_context_take();
 #endif
    core->retro_run();
-   serialization_check();
 #ifdef HAVE_THREADS
    video_thread_core_context_release();
 #endif
@@ -254,14 +208,6 @@ static size_t serialization_size(void)
    serialization_managed = serialization_interface.release != NULL;
    size = core_serialize_size_special();
    serialization_managed = false;
-   if (serialization_interface.release && size > serialization_stage_size)
-   {
-      void *next = realloc(serialization_stage, size);
-      if (!next)
-         return 0;
-      serialization_stage = next;
-      serialization_stage_size = size;
-   }
    return size;
 }
 
@@ -1870,8 +1816,19 @@ static bool runahead_load_state(runloop_state_t *runloop_st)
 {
    retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
    bool last_dirty                  = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
-   bool ret                         = serialization_interface.release
-      ? serialization_load(info->data_const, info->size) : core_unserialize_special(info);
+   bool reset                       = false;
+   bool ret;
+   if (serialization_interface.release)
+   {
+      /* A load does not consume the state, so it is tried twice.
+       * Refused both times, the core is left on a speculative frame's
+       * state, which it need not be able to go on from: it is reset. */
+      ret   =  serialization_load(info->data_const, info->size)
+            || serialization_load(info->data_const, info->size);
+      reset = !ret;
+   }
+   else
+      ret = core_unserialize_special(info);
    if (last_dirty)
       runloop_st->flags             |=  RUNLOOP_FLAG_INPUT_IS_DIRTY;
    else
@@ -1879,6 +1836,15 @@ static bool runahead_load_state(runloop_state_t *runloop_st)
 
    if (!ret)
       runahead_err(runloop_st);
+
+   if (reset)
+   {
+      const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_CORE_RESET);
+      runloop_msg_queue_push(_msg, strlen(_msg), 2, 5 * 60, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      RARCH_ERR("[Run-Ahead] %s\n", _msg);
+      core_reset();
+   }
 
    return ret;
 }
@@ -1991,7 +1957,7 @@ static bool runahead_run_impl(void *data,
       {
          const char *_msg =
             msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES);
-         if (!runahead_hide_warnings && serialization_usable())
+         if (!runahead_hide_warnings)
             runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          RARCH_WARN("[Run-Ahead] %s\n", _msg);
@@ -2051,7 +2017,7 @@ static bool runahead_run_impl(void *data,
          }
 
          serialization_phase_value = frame_number == 0
-               ? RETRO_SAVESTATE_PHASE_CANONICAL : RETRO_SAVESTATE_PHASE_SPECULATIVE;
+               ? RETRO_EXECUTION_PHASE_RETAINED : RETRO_EXECUTION_PHASE_SPECULATIVE;
          if (frame_number == 0)
             advanced = core_run();
          else
@@ -2076,9 +2042,8 @@ static bool runahead_run_impl(void *data,
             {
                const char *_msg =
                   msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-               if (serialization_usable())
-                  runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
-                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_WARN("[Run-Ahead] %s\n", _msg);
                return advanced;
             }
@@ -2086,12 +2051,12 @@ static bool runahead_run_impl(void *data,
 
          if (last_frame)
          {
+            serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
             if (!runahead_load_state(runloop_st))
             {
                const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-               if (serialization_usable())
-                  runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
-                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_WARN("[Run-Ahead] %s\n", _msg);
                return advanced;
             }
@@ -2104,7 +2069,7 @@ static bool runahead_run_impl(void *data,
       /* sec_status == RUNAHEAD_COPY_READY here (checked above) */
 
       /* run main core with video suspended */
-      serialization_phase_value = RETRO_SAVESTATE_PHASE_CANONICAL;
+      serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
       video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
       advanced = core_run();
       if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
@@ -2129,7 +2094,7 @@ static bool runahead_run_impl(void *data,
             return advanced;
          }
 
-         serialization_phase_value = RETRO_SAVESTATE_PHASE_SPECULATIVE;
+         serialization_phase_value = RETRO_EXECUTION_PHASE_SPECULATIVE;
          if (!runahead_load_state_secondary(runloop_st, settings))
          {
             const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
@@ -2154,7 +2119,7 @@ static bool runahead_run_impl(void *data,
                video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
          }
       }
-      serialization_phase_value = RETRO_SAVESTATE_PHASE_SPECULATIVE;
+      serialization_phase_value = RETRO_EXECUTION_PHASE_SPECULATIVE;
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
       if (secondary_core_run_use_last_input(runloop_st))
          runloop_st->flags              |=  RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
@@ -2167,7 +2132,7 @@ static bool runahead_run_impl(void *data,
    return advanced;
 
 force_input_dirty:
-   serialization_phase_value = RETRO_SAVESTATE_PHASE_NORMAL;
+   serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
    advanced = core_run();
    runloop_st->flags |=  RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
    return advanced;
@@ -2374,7 +2339,7 @@ bool preempt_init(void *data)
 error:
    preempt_deinit(runloop_st);
 
-   if (!run_ahead_hide_warnings && serialization_usable())
+   if (!run_ahead_hide_warnings)
       runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_WARN("[Run-Ahead Preemptive] %s\n", _msg);
@@ -2521,9 +2486,7 @@ static bool preempt_run_impl(preempt_t *preempt, void *data)
    bool run_ahead_hide_warnings      = settings->bools.run_ahead_hide_warnings;
    bool replay_save_failed          = false;
 
-   if (!serialization_usable())
-      return false;
-   serialization_phase_value = RETRO_SAVESTATE_PHASE_CANONICAL;
+   serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
 
    /* Poll and check for dirty input */
    preempt_input_poll(preempt, runloop_st, input_max_users);
@@ -2537,6 +2500,7 @@ static bool preempt_run_impl(preempt_t *preempt, void *data)
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
       video_state_get_ptr()->main_flags &= ~VIDEO_FLAG_ACTIVE;
 
+      /* A refused load leaves the live, kept state as it was. */
       if (!serialization_load(
             preempt->buffer[preempt->start_ptr], preempt->state_size))
       {
@@ -2544,7 +2508,9 @@ static bool preempt_run_impl(preempt_t *preempt, void *data)
          goto error;
       }
 
-      serialization_phase_value = RETRO_SAVESTATE_PHASE_SPECULATIVE;
+      /* The frames since start_ptr again, with the input that changed:
+       * kept in place of their first run. */
+      serialization_phase_value = RETRO_EXECUTION_PHASE_REPLAY;
       serialization_run(current_core);
       if (runloop_st->auto_state_load_pending)
          runloop_st->auto_state_load_core_ran = true;
@@ -2557,7 +2523,7 @@ static bool preempt_run_impl(preempt_t *preempt, void *data)
                &preempt->state_owned[preempt->replay_ptr]))
          {
             _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
-            if (!serialization_interface.release || !serialization_usable())
+            if (!serialization_interface.release)
                goto error;
             replay_save_failed = true;
          }
@@ -2574,14 +2540,11 @@ static bool preempt_run_impl(preempt_t *preempt, void *data)
          goto error;
    }
 
-   serialization_phase_value = RETRO_SAVESTATE_PHASE_CANONICAL;
+   serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
    /* Save current state and set start_ptr to oldest state. A rewind
     * push left for this point serializes it for both; a managed state
     * is no rewind state, so a core that registered lifetime callbacks
-    * has its push made after the frame.
-    * Release after the last possible load so capture can reuse memory. */
-   serialization_release_buffer(preempt->buffer[preempt->start_ptr],
-         preempt->state_size, &preempt->state_owned[preempt->start_ptr]);
+    * has its push made after the frame. */
    {
       bool saved = false;
 #ifdef HAVE_REWIND
@@ -2618,14 +2581,14 @@ error:
    video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
    preempt_deinit(runloop_st);
 
-   if (!run_ahead_hide_warnings && serialization_usable())
+   if (!run_ahead_hide_warnings)
       runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_ERR("[Run-Ahead Preemptive] %s\n", _msg);
    /* A refused save leaves replay intact; finish it before falling back. */
    if (replay_save_failed)
    {
-      serialization_phase_value = RETRO_SAVESTATE_PHASE_CANONICAL;
+      serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
       return core_run();
    }
    return false;
@@ -2646,15 +2609,22 @@ bool runahead_run(void *data, int count, bool hide, bool secondary)
 {
    bool result;
    /* Managed states belong to one core instance. */
-   if (serialization_interface.release)
+   if (secondary && serialization_interface.release)
+   {
+      if (!serialization_secondary_logged)
+      {
+         RARCH_LOG("[Run-Ahead] Core keeps its states in one instance; not using a second instance.\n");
+         serialization_secondary_logged = true;
+      }
       secondary = false;
+   }
    result = runahead_run_impl(data, count, hide, secondary);
-   serialization_phase_value = RETRO_SAVESTATE_PHASE_NORMAL;
-   return serialization_usable() && result;
+   serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
+   return result;
 }
 bool preempt_run(preempt_t *preempt, void *data)
 {
    bool result = preempt_run_impl(preempt, data);
-   serialization_phase_value = RETRO_SAVESTATE_PHASE_NORMAL;
-   return serialization_usable() && result;
+   serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
+   return result;
 }
