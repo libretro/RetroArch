@@ -123,7 +123,11 @@ typedef struct sw_surf
 {
    uint8_t  *pixels;
 #ifdef SWITCH_NX_GPU
+   /* Its memory: a range of a heap block (heap set), or a mapping of
+    * its own */
    nxg_mem_t mem;
+   uint16_t  block;
+   bool      heap;
 #endif
    uint32_t  pitch;
    unsigned  dims;
@@ -208,6 +212,9 @@ static INLINE uint32_t sw_over(uint32_t s, uint32_t d)
 #define NXG_FRAME_MEM   8
 #define NXG_CMD_WORDS   (256 * 1024)
 #define NXG_ARENA_SIZE  (64 * 1024)
+/* Surfaces share blocks mapped once: no map call per texture */
+#define NXG_HEAP_BLOCK  (8 * 1024 * 1024)
+#define NXG_HEAP_BLOCKS 16
 #define NXG_FB_W        1920
 #define NXG_FB_H        1080
 /* Sixteen GOBs a block, as libnx's own framebuffer and the TRM have */
@@ -317,6 +324,27 @@ typedef struct nxg_s2_buf
 } nxg_s2_buf_t;
 #endif
 
+/* A free range of a heap block, and a range let go of with a frame */
+typedef struct nxg_range
+{
+   struct nxg_range *next;
+   uint32_t off;
+   uint32_t size;
+} nxg_range_t;
+
+typedef struct nxg_heap
+{
+   nxg_mem_t    mem;
+   nxg_range_t *free;
+} nxg_heap_t;
+
+typedef struct nxg_hretire
+{
+   uint32_t off;
+   uint32_t size;
+   uint16_t block;
+} nxg_hretire_t;
+
 typedef struct nxg_frame
 {
    NvFence    fence;
@@ -324,8 +352,11 @@ typedef struct nxg_frame
    nxg_mem_t  cmd;
    nxg_mem_t  arena;
    nxg_mem_t *retire;
+   nxg_hretire_t *hretire;
    unsigned   retire_count;
    unsigned   retire_cap;
+   unsigned   hretire_count;
+   unsigned   hretire_cap;
    uint32_t   used;
    uint32_t   arena_off;
    bool       fence_valid;
@@ -348,6 +379,7 @@ typedef struct nxg
    nxg_linear_t    sw[NXG_SW_SLOTS];
    nxg_linear_t    rgui[NXG_RGUI_SLOTS];
    nxg_linear_t    frame_mem[NXG_FRAME_MEM];
+   nxg_heap_t      heap[NXG_HEAP_BLOCKS];
    nxg_mem_t       fb;
    sw_surf_t       white;
 #ifdef NXG_S2
@@ -1106,6 +1138,113 @@ static void nxg_retire(nxg_t *g, nxg_mem_t *m)
    m->cpu = NULL;
 }
 
+/* First fit in the heap's blocks, @size rounded to the 2D engine's
+ * alignment; a block is mapped when none has room */
+static bool nxg_heap_alloc(nxg_t *g, uint32_t size, uint16_t *block,
+      uint32_t *off)
+{
+   unsigned i;
+   size = SW_ALIGN(size, 256);
+   for (i = 0; i < NXG_HEAP_BLOCKS; i++)
+   {
+      nxg_heap_t *b = &g->heap[i];
+      nxg_range_t **pp;
+      if (!b->mem.cpu)
+      {
+         if (!nxg_mem_new(g, &b->mem, NXG_HEAP_BLOCK, false, false))
+            return false;
+         if (!(b->free = (nxg_range_t*)malloc(sizeof(*b->free))))
+            return false;
+         b->free->next = NULL;
+         b->free->off  = 0;
+         b->free->size = NXG_HEAP_BLOCK;
+      }
+      for (pp = &b->free; *pp; pp = &(*pp)->next)
+      {
+         nxg_range_t *r = *pp;
+         if (r->size < size)
+            continue;
+         *block   = (uint16_t)i;
+         *off     = r->off;
+         r->off  += size;
+         r->size -= size;
+         if (!r->size)
+         {
+            *pp = r->next;
+            free(r);
+         }
+         return true;
+      }
+   }
+   return false;
+}
+
+static void nxg_heap_free(nxg_t *g, uint16_t block, uint32_t off,
+      uint32_t size)
+{
+   nxg_heap_t *b       = &g->heap[block];
+   nxg_range_t **pp    = &b->free;
+   nxg_range_t *prev   = NULL, *n;
+   size = SW_ALIGN(size, 256);
+   while (*pp && (*pp)->off < off)
+   {
+      prev = *pp;
+      pp   = &(*pp)->next;
+   }
+   if (prev && prev->off + prev->size == off)
+   {
+      prev->size += size;
+      if (prev->next && prev->off + prev->size == prev->next->off)
+      {
+         n           = prev->next;
+         prev->size += n->size;
+         prev->next  = n->next;
+         free(n);
+      }
+      return;
+   }
+   if (*pp && off + size == (*pp)->off)
+   {
+      (*pp)->off   = off;
+      (*pp)->size += size;
+      return;
+   }
+   if (!(n = (nxg_range_t*)malloc(sizeof(*n))))
+      return;
+   n->off  = off;
+   n->size = size;
+   n->next = *pp;
+   *pp     = n;
+}
+
+/* A heap range let go of once the frame being recorded has passed */
+static void nxg_heap_retire(nxg_t *g, uint16_t block, uint32_t off,
+      uint32_t size)
+{
+   nxg_frame_t *f = &g->frames[g->cur];
+   if (f->hretire_count == f->hretire_cap)
+   {
+      unsigned cap     = f->hretire_cap ? f->hretire_cap * 2 : 16;
+      nxg_hretire_t *r = (nxg_hretire_t*)realloc(f->hretire,
+            cap * sizeof(*r));
+      if (!r)
+      {
+         unsigned i;
+         for (i = 0; i < NXG_FRAMES; i++)
+            if (g->frames[i].fence_valid)
+               nxg_fence_wait(g, &g->frames[i].fence);
+         nxg_heap_free(g, block, off, size);
+         return;
+      }
+      f->hretire     = r;
+      f->hretire_cap = cap;
+   }
+   f->hretire[f->hretire_count].block = block;
+   f->hretire[f->hretire_count].off   = off;
+   f->hretire[f->hretire_count].size  = size;
+   f->hretire_count++;
+}
+
 static void nxg_poll_done(nxg_t *g)
 {
    unsigned i;
@@ -1144,9 +1283,13 @@ static void nxg_frame_recycle(nxg_t *g, unsigned i)
    }
    for (j = 0; j < f->retire_count; j++)
       nxg_mem_free(g, &f->retire[j]);
-   f->retire_count = 0;
-   f->used         = 0;
-   f->arena_off    = 0;
+   for (j = 0; j < f->hretire_count; j++)
+      nxg_heap_free(g, f->hretire[j].block, f->hretire[j].off,
+            f->hretire[j].size);
+   f->retire_count  = 0;
+   f->hretire_count = 0;
+   f->used          = 0;
+   f->arena_off     = 0;
 }
 
 static void nxg_free(nxg_t *g, NWindow *win)
@@ -1165,6 +1308,7 @@ static void nxg_free(nxg_t *g, NWindow *win)
       for (j = 0; j < f->retire_count; j++)
          nxg_mem_free(g, &f->retire[j]);
       free(f->retire);
+      free(f->hretire);
       nxg_mem_free(g, &f->arena);
       nxg_mem_free(g, &f->cmd);
    }
@@ -1175,6 +1319,16 @@ static void nxg_free(nxg_t *g, NWindow *win)
    for (i = 0; i < NXG_FRAME_MEM; i++)
       nxg_mem_free(g, &g->frame_mem[i].mem);
    nxg_mem_free(g, &g->white.mem);
+   for (i = 0; i < NXG_HEAP_BLOCKS; i++)
+   {
+      while (g->heap[i].free)
+      {
+         nxg_range_t *n = g->heap[i].free->next;
+         free(g->heap[i].free);
+         g->heap[i].free = n;
+      }
+      nxg_mem_free(g, &g->heap[i].mem);
+   }
    nxg_mem_free(g, &g->fb);
    nxg_device_free(g);
    free(g);
@@ -1524,7 +1678,16 @@ static sw_surf_t *sw_surf_new(switch_video_t *sw, unsigned dims)
 #ifdef SWITCH_NX_GPU
    if (sw->gpu)
    {
-      if (!nxg_mem_new((nxg_t*)sw->gpu, &s->mem, size, false, false))
+      nxg_t *g = (nxg_t*)sw->gpu;
+      uint32_t off;
+      if (size <= NXG_HEAP_BLOCK / 2 && nxg_heap_alloc(g, size, &s->block, &off))
+      {
+         s->heap     = true;
+         s->mem.cpu  = g->heap[s->block].mem.cpu + off;
+         s->mem.iova = g->heap[s->block].mem.iova + off;
+         s->mem.size = size;
+      }
+      else if (!nxg_mem_new(g, &s->mem, size, false, false))
       {
          free(s);
          return NULL;
@@ -1549,7 +1712,13 @@ static void sw_surf_free(switch_video_t *sw, sw_surf_t *s)
 #ifdef SWITCH_NX_GPU
    if (sw->gpu)
    {
-      nxg_retire((nxg_t*)sw->gpu, &s->mem);
+      nxg_t *g = (nxg_t*)sw->gpu;
+      if (s->heap)
+         nxg_heap_retire(g, s->block,
+               (uint32_t)(s->mem.cpu - g->heap[s->block].mem.cpu),
+               s->mem.size);
+      else
+         nxg_retire(g, &s->mem);
       free(s);
       return;
    }
@@ -2107,6 +2276,19 @@ static void *switch_font_init(void *data, const char *font_path,
       return NULL;
    }
    font->sw = (switch_video_t*)data;
+   {
+      struct font_atlas *a = font->font_driver->get_atlas(font->font_data);
+      if (a)
+      {
+         /* It may grow, the surface following; with the GPU its cells
+          * are copied where frames still in flight may be reading */
+         a->max_dims = VIDEO_SCALE_PACK(2048, 2048);
+#ifdef SWITCH_NX_GPU
+         if (font->sw && font->sw->gpu)
+            a->inflight = NXG_FRAMES;
+#endif
+      }
+   }
    return font;
 }
 

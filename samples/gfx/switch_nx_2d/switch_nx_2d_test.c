@@ -1226,6 +1226,42 @@ static void lane_dock_and_fences(void)
    printf("[pass] docking, and frames shown behind their fences\n");
 }
 
+/* Textures share mapped blocks: loading and freeing many maps once */
+static void lane_heap(void)
+{
+   struct texture_image img;
+   uint32_t px[16 * 16];
+   uintptr_t t[64];
+   unsigned i, before;
+   switch_video_t *sw = driver_new(256, 224, true);
+   memset(px, 0x80, sizeof(px));
+   memset(&img, 0, sizeof(img));
+   img.pixels = px;
+   img.width  = 16;
+   img.height = 16;
+   CHECK(atlas.inflight == NXG_FRAMES,
+         "the atlas keeps cells for %u frames, not %u",
+         atlas.inflight, NXG_FRAMES);
+   before = maps_live;
+   for (i = 0; i < 64; i++)
+      t[i] = poke->load_texture(sw, &img, false, TEXTURE_FILTER_LINEAR);
+   CHECK(maps_live <= before + 1, "64 textures took %u mappings",
+         maps_live - before);
+   for (i = 0; i < 64; i++)
+      poke->unload_texture(sw, false, t[i]);
+   for (i = 0; i < NXG_FRAMES + 1; i++)
+      frame(sw, NULL, 0, 0, 0);
+   t[0] = poke->load_texture(sw, &img, false, TEXTURE_FILTER_LINEAR);
+   CHECK(t[0] && ((sw_surf_t*)t[0])->heap
+         && ((nxg_t*)sw->gpu)->heap[0].free
+         && ((nxg_t*)sw->gpu)->heap[0].free->next == NULL,
+         "freed ranges not joined back");
+   poke->unload_texture(sw, false, t[0]);
+   driver_free(sw);
+   CHECK(maps_live == 0, "%u maps left", maps_live);
+   printf("[pass] surfaces share mapped blocks; the atlas keeps in-flight cells\n");
+}
+
 int main(void)
 {
    lane_window();
@@ -1237,6 +1273,7 @@ int main(void)
    lane_overlay();
    lane_rgui();
    lane_dock_and_fences();
+   lane_heap();
    CHECK(!bad_words, "%u words or blits the engine model rejected", bad_words);
 #ifdef __SWITCH2__
 #define HARNESS "switch_nx_2d_test (Switch 2)"
