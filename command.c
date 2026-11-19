@@ -5319,12 +5319,17 @@ bool command_list_cores(command_t *cmd, const char *arg)
    size_t             count = 0;
    size_t i, len = 0;
    char  *reply;
+   bool   lent;
 
    while (arg && *arg == ' ')
       arg++;
 
-   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 64)))
+   if (!(reply = command_reply_alloc(cmd, COMMAND_LIST_REPLY_MAX + 64,
+               &lent)))
+   {
+      command_reply_error(cmd, "LIST_CORES", "out of memory");
       return false;
+   }
    reply[0] = '\0';
    if (core_info_get_list(&list) && list)
    {
@@ -5354,7 +5359,8 @@ bool command_list_cores(command_t *cmd, const char *arg)
    if (!len)
       len = strlcpy(reply, "LIST_CORES none\n", COMMAND_LIST_REPLY_MAX);
    cmd->replier(cmd, reply, len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 

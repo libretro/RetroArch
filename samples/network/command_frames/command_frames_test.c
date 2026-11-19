@@ -484,6 +484,9 @@ int main(int argc, char **argv)
    reply[0]=0; lend_in_place=false;
    CHECK(command_option(&cmd,"show") && lend_in_place
          && strstr(reply,"pause\t"));
+   reply[0]=0; lend_in_place=false;
+   CHECK(command_list_cores(&cmd,"") && lend_in_place
+         && (strstr(reply,"\t") || !strcmp(reply,"LIST_CORES none\n")));
    /* the log, with lines gone before they were read, the same from
     * lent room as from a buffer of its own */
    {
