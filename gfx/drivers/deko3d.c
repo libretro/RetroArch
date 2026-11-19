@@ -66,7 +66,6 @@
 #define DK3D_FRAME_MEM_MAX  8
 #define DK3D_CMDMEM_SIZE    (256 * 1024)
 #define DK3D_VBO_SIZE       (1024 * 1024)
-#define DK3D_STAGE_SIZE     (4 * 1024 * 1024)
 #define DK3D_HEAP_BLOCK     (16 * 1024 * 1024)
 #define DK3D_HEAP_BLOCKS    16
 #define DK3D_DESC_COUNT     1024
@@ -111,17 +110,24 @@ typedef struct dk3d_heap_block
    dk3d_range_t *free;
 } dk3d_heap_block_t;
 
-/* A texture: its image in a heap block (or a block of its own when it
- * is larger than one), its descriptor and its sampler */
+/* A texture: a pitch-linear image the CPU writes where the GPU samples
+ * it, in a heap block (or a block of its own when it is larger than
+ * one), its descriptor, its sampler, and the last frame drawing it */
 typedef struct dk3d_tex
 {
    DkImage    image;
+   uint64_t   use_serial;
    DkMemBlock own;
+   uint8_t   *cpu;
    uint32_t   off;
    uint32_t   size;
+   uint32_t   pitch;
+   unsigned   dims;
    uint16_t   block;
    uint16_t   desc;
    uint8_t    sampler;
+   uint8_t    bpp;
+   bool       lent;
 } dk3d_tex_t;
 
 /* What a frame slot lets go of once its fence has passed */
@@ -139,15 +145,11 @@ typedef struct dk3d_frame
    DkMemBlock     cmd_mem;
    DkMemBlock     vbo_mem;
    DkMemBlock     ubo_mem;
-   DkMemBlock     stage_mem;
    dk3d_retire_t *retire;
    uint8_t       *vbo_cpu;
-   uint8_t       *stage_cpu;
    DkGpuAddr      vbo_gpu;
    DkGpuAddr      ubo_gpu;
-   DkGpuAddr      stage_gpu;
    uint32_t       vbo_off;
-   uint32_t       stage_off;
    unsigned       retire_count;
    unsigned       retire_cap;
    bool           done_valid;
@@ -231,6 +233,10 @@ typedef struct dk3d
    int               sw_last;
    int               sw_lent;
    int               rgui_last;
+   int               rgui_lent;
+   /* The memory the last RGUI frame is sampled from: its ring slot,
+    * or the threaded wrapper's menu memory */
+   dk3d_linear_t    *rgui_owner;
    int               blend;
    int               src_kind;
    float             menu_alpha;
@@ -349,7 +355,7 @@ static bool dk3d_heap_alloc(dk3d_t *dk, uint32_t size, uint32_t align,
       if (!b->mem)
       {
          if (!(b->mem = dk3d_mem_new(dk->device, DK3D_HEAP_BLOCK,
-                     DkMemBlockFlags_GpuCached | DkMemBlockFlags_Image)))
+                     DkMemBlockFlags_CpuCached | DkMemBlockFlags_GpuCached)))
             return false;
          if (!(b->free = (dk3d_range_t*)malloc(sizeof(*b->free))))
             return false;
@@ -443,55 +449,6 @@ static void dk3d_tex_destroy(dk3d_t *dk, dk3d_tex_t *t)
    free(t);
 }
 
-/* @size bytes of the recording slot's staging the GPU copies from;
- * past its end, a block of its own retired with the slot */
-static uint8_t *dk3d_stage_alloc(dk3d_t *dk, uint32_t size,
-      DkGpuAddr *gpu)
-{
-   dk3d_frame_t *f = &dk->frames[dk->cur];
-   uint32_t off    = DK3D_ALIGN(f->stage_off, DK_IMAGE_LINEAR_STRIDE_ALIGNMENT);
-   DkMemBlock mem;
-   if (off + size <= DK3D_STAGE_SIZE)
-   {
-      f->stage_off = off + size;
-      *gpu         = f->stage_gpu + off;
-      return f->stage_cpu + off;
-   }
-   if (!(mem = dk3d_mem_new(dk->device, size,
-               DkMemBlockFlags_CpuUncached | DkMemBlockFlags_GpuCached)))
-      return NULL;
-   dk3d_retire(dk, mem, NULL);
-   *gpu = dkMemBlockGetGpuAddr(mem);
-   return (uint8_t*)dkMemBlockGetCpuAddr(mem);
-}
-
-/* Copies @rows of @row_bytes at @src_pitch into @dst_view's @rect,
- * through the recording slot's staging */
-static bool dk3d_upload(dk3d_t *dk, const DkImageView *dst_view,
-      const DkImageRect *rect, const uint8_t *src, size_t src_pitch,
-      uint32_t row_bytes)
-{
-   uint32_t pitch = DK3D_ALIGN(row_bytes, DK_IMAGE_LINEAR_STRIDE_ALIGNMENT);
-   DkCopyBuf cb;
-   DkGpuAddr gpu;
-   unsigned y;
-   uint8_t *dst   = dk3d_stage_alloc(dk, pitch * rect->height, &gpu);
-   if (!dst)
-      return false;
-   if (pitch == src_pitch)
-      memcpy(dst, src, (size_t)pitch * rect->height);
-   else
-      for (y = 0; y < rect->height; y++)
-         memcpy(dst + (size_t)y * pitch, src + y * src_pitch, row_bytes);
-   cb.addr        = gpu;
-   cb.rowLength   = pitch;
-   cb.imageHeight = 0;
-   dkCmdBufCopyBufferToImage(dk->frames[dk->cur].cmdbuf, &cb, dst_view,
-         rect, 0);
-   dk->pending_barrier = true;
-   return true;
-}
-
 /* ---- frame slots ------------------------------------------------------ */
 
 static void dk3d_poll_done(dk3d_t *dk)
@@ -529,7 +486,6 @@ static void dk3d_slot_recycle(dk3d_t *dk, unsigned i)
    f->retire_count = 0;
    dkCmdBufClear(f->cmdbuf);
    f->vbo_off      = 0;
-   f->stage_off    = 0;
 }
 
 static bool dk3d_frames_init(dk3d_t *dk)
@@ -548,9 +504,6 @@ static bool dk3d_frames_init(dk3d_t *dk)
       if (!(f->ubo_mem = dk3d_mem_new(dk->device, DK_UNIFORM_BUF_ALIGNMENT,
                   DkMemBlockFlags_CpuUncached | DkMemBlockFlags_GpuCached)))
          return false;
-      if (!(f->stage_mem = dk3d_mem_new(dk->device, DK3D_STAGE_SIZE,
-                  DkMemBlockFlags_CpuUncached | DkMemBlockFlags_GpuCached)))
-         return false;
       dkCmdBufMakerDefaults(&cm, dk->device);
       if (!(f->cmdbuf = dkCmdBufCreate(&cm)))
          return false;
@@ -558,8 +511,6 @@ static bool dk3d_frames_init(dk3d_t *dk)
       f->vbo_cpu   = (uint8_t*)dkMemBlockGetCpuAddr(f->vbo_mem);
       f->vbo_gpu   = dkMemBlockGetGpuAddr(f->vbo_mem);
       f->ubo_gpu   = dkMemBlockGetGpuAddr(f->ubo_mem);
-      f->stage_cpu = (uint8_t*)dkMemBlockGetCpuAddr(f->stage_mem);
-      f->stage_gpu = dkMemBlockGetGpuAddr(f->stage_mem);
    }
    return true;
 }
@@ -580,8 +531,6 @@ static void dk3d_frames_free(dk3d_t *dk)
       free(f->retire);
       if (f->cmdbuf)
          dkCmdBufDestroy(f->cmdbuf);
-      if (f->stage_mem)
-         dkMemBlockDestroy(f->stage_mem);
       if (f->ubo_mem)
          dkMemBlockDestroy(f->ubo_mem);
       if (f->vbo_mem)
@@ -859,16 +808,12 @@ static bool dk3d_get_current_sw_framebuffer(void *data,
    return true;
 }
 
-/* The threaded wrapper's frame buffers, read by the GPU where they lie */
-static void *dk3d_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
-      bool *cached, unsigned *pitch_align)
+/* A block of frame memory, id 1-based, for the wrapper's frames and
+ * menu uploads alike: read by the GPU where they lie */
+static void *dk3d_frame_mem_new(dk3d_t *dk, size_t size, uintptr_t *id)
 {
-   dk3d_t *dk = (dk3d_t*)data;
-   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    unsigned i;
-   /* A hardware core's frames are images, not memory */
-   if (     !dk || size > 0xffffffffu
-         || (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE))
+   if (size > 0xffffffffu)
       return NULL;
    for (i = 0; i < DK3D_FRAME_MEM_MAX; i++)
    {
@@ -883,11 +828,34 @@ static void *dk3d_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
       l->use_serial = 0;
       l->used       = true;
       *id           = i + 1;
-      *cached       = true;
-      *pitch_align  = DK_IMAGE_LINEAR_STRIDE_ALIGNMENT;
       return l->cpu;
    }
    return NULL;
+}
+
+static void *dk3d_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   dk3d_t *dk = (dk3d_t*)data;
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+   void *p;
+   /* A hardware core's frames are images, not memory */
+   if (!dk || (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE))
+      return NULL;
+   if ((p = dk3d_frame_mem_new(dk, size, id)))
+   {
+      *cached      = true;
+      *pitch_align = DK_IMAGE_LINEAR_STRIDE_ALIGNMENT;
+   }
+   return p;
+}
+
+/* The wrapper's RGUI uploads, rows DK_IMAGE_LINEAR_STRIDE_ALIGNMENT
+ * apart (menu_mem_pitch_align), sampled where they lie */
+static void *dk3d_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   dk3d_t *dk = (dk3d_t*)data;
+   return dk ? dk3d_frame_mem_new(dk, size, id) : NULL;
 }
 
 static bool dk3d_frame_mem_ready(void *data, uintptr_t id)
@@ -908,6 +876,12 @@ static void dk3d_frame_mem_free(void *data, uintptr_t id)
    if (!dk || !id || id > DK3D_FRAME_MEM_MAX)
       return;
    l = &dk->frame_mem[id - 1];
+   if (dk->rgui_owner == l)
+   {
+      /* RGUI's last frame went with it: nothing to draw until the next */
+      dk->rgui_owner = NULL;
+      dk->rgui_last  = -1;
+   }
    if (l->mem)
       dk3d_retire(dk, l->mem, NULL);
    l->mem  = NULL;
@@ -1091,44 +1065,50 @@ static void dk3d_draw_vertices(dk3d_t *dk, DkPrimitive prim,
 
 /* ---- textures --------------------------------------------------------- */
 
+/* A pitch-linear texture in CPU-visible memory: written where it is
+ * sampled, with no staging and no copy on the GPU */
 static dk3d_tex_t *dk3d_tex_new(dk3d_t *dk, unsigned dims,
-      DkImageFormat fmt, unsigned desc)
+      DkImageFormat fmt, unsigned bpp, unsigned desc)
 {
-   DkImageLayoutMaker lm;
-   DkImageLayout      layout;
-   DkImageView        view;
-   uint32_t size, align;
-   dk3d_tex_t *t = (dk3d_tex_t*)calloc(1, sizeof(*t));
-   if (!t)
+   DkImageView view;
+   DkMemBlock  mem;
+   uint32_t    pitch = DK3D_ALIGN(VIDEO_SCALE_W(dims) * bpp,
+         DK_IMAGE_LINEAR_STRIDE_ALIGNMENT);
+   uint32_t    size  = pitch * VIDEO_SCALE_H(dims);
+   dk3d_tex_t *t     = (dk3d_tex_t*)calloc(1, sizeof(*t));
+   if (!t || !size)
+   {
+      free(t);
       return NULL;
-   dkImageLayoutMakerDefaults(&lm, dk->device);
-   lm.format        = fmt;
-   lm.dimensions[0] = VIDEO_SCALE_W(dims);
-   lm.dimensions[1] = VIDEO_SCALE_H(dims);
-   dkImageLayoutInitialize(&layout, &lm);
-   size  = (uint32_t)dkImageLayoutGetSize(&layout);
-   align = dkImageLayoutGetAlignment(&layout);
+   }
    if (size > DK3D_HEAP_BLOCK / 2)
    {
       if (!(t->own = dk3d_mem_new(dk->device, size,
-                  DkMemBlockFlags_GpuCached | DkMemBlockFlags_Image)))
+                  DkMemBlockFlags_CpuCached | DkMemBlockFlags_GpuCached)))
       {
          free(t);
          return NULL;
       }
-      dkImageInitialize(&t->image, &layout, t->own, 0);
+      mem = t->own;
    }
    else
    {
-      if (!dk3d_heap_alloc(dk, size, align, &t->block, &t->off))
+      if (!dk3d_heap_alloc(dk, size, DK_IMAGE_LINEAR_STRIDE_ALIGNMENT,
+               &t->block, &t->off))
       {
          free(t);
          return NULL;
       }
       t->size = size;
-      dkImageInitialize(&t->image, &layout, dk->heap[t->block].mem, t->off);
+      mem     = dk->heap[t->block].mem;
    }
-   t->desc = (uint16_t)desc;
+   t->cpu   = (uint8_t*)dkMemBlockGetCpuAddr(mem) + t->off;
+   t->pitch = pitch;
+   t->dims  = dims;
+   t->bpp   = (uint8_t)bpp;
+   t->desc  = (uint16_t)desc;
+   dk3d_linear_image(dk->device, &t->image, mem, t->off, pitch, dims, fmt,
+         bpp, 0);
    dkImageViewDefaults(&view, &t->image);
    if (fmt == DkImageFormat_R8_Unorm)
    {
@@ -1143,6 +1123,36 @@ static dk3d_tex_t *dk3d_tex_new(dk3d_t *dk, unsigned dims,
    return t;
 }
 
+/* Rows @y0.. of @t written by the CPU, flushed for the GPU to sample */
+static void dk3d_tex_flush(dk3d_t *dk, dk3d_tex_t *t, unsigned y0,
+      unsigned rows)
+{
+   DkMemBlock mem = t->own ? t->own : dk->heap[t->block].mem;
+   if (!rows)
+      return;
+   dkMemBlockFlushCpuCache(mem, t->off + y0 * t->pitch, rows * t->pitch);
+   dk->pending_barrier = true;
+}
+
+/* @src's rows into @t, unless @src is @t's own memory, lent */
+static void dk3d_tex_write(dk3d_t *dk, dk3d_tex_t *t, const void *src,
+      size_t src_pitch)
+{
+   unsigned w = VIDEO_SCALE_W(t->dims) * t->bpp;
+   unsigned h = VIDEO_SCALE_H(t->dims);
+   unsigned y;
+   if ((const uint8_t*)src != t->cpu)
+   {
+      if (src_pitch == t->pitch)
+         memcpy(t->cpu, src, (size_t)t->pitch * h);
+      else
+         for (y = 0; y < h; y++)
+            memcpy(t->cpu + (size_t)y * t->pitch,
+                  (const uint8_t*)src + y * src_pitch, w);
+   }
+   dk3d_tex_flush(dk, t, 0, h);
+}
+
 static unsigned dk3d_desc_take(dk3d_t *dk)
 {
    return dk->desc_free_count ? dk->desc_free[--dk->desc_free_count] : 0;
@@ -1153,18 +1163,18 @@ static uintptr_t dk3d_load_texture(void *video_data, void *data,
 {
    dk3d_t *dk                 = (dk3d_t*)video_data;
    struct texture_image *img  = (struct texture_image*)data;
-   DkImageView view;
-   DkImageRect rect;
    dk3d_tex_t *t;
    unsigned desc;
    (void)threaded;
-   if (!dk || !img || !img->pixels || !img->width || !img->height)
+   if (     !dk || !img || !img->pixels || !img->width || !img->height
+         || !VIDEO_SCALE_FITS(img->width, img->height))
       return 0;
    if (!(desc = dk3d_desc_take(dk)))
       return 0;
-   /* Loaders' ARGB words are B,G,R,A in memory */
+   /* Loaders' ARGB words are B,G,R,A in memory; RGBA ones R,G,B,A */
    if (!(t = dk3d_tex_new(dk, VIDEO_SCALE_PACK(img->width, img->height),
-               DkImageFormat_BGRA8_Unorm, desc)))
+               img->supports_rgba ? DkImageFormat_RGBA8_Unorm
+                                  : DkImageFormat_BGRA8_Unorm, 4, desc)))
    {
       dk->desc_free[dk->desc_free_count++] = (uint16_t)desc;
       return 0;
@@ -1172,20 +1182,64 @@ static uintptr_t dk3d_load_texture(void *video_data, void *data,
    t->sampler = (     filter_type == TEXTURE_FILTER_NEAREST
                    || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
       ? DK3D_SAMPLER_NEAREST : DK3D_SAMPLER_LINEAR;
-   dkImageViewDefaults(&view, &t->image);
-   rect.x      = 0;
-   rect.y      = 0;
-   rect.z      = 0;
-   rect.width  = img->width;
-   rect.height = img->height;
-   rect.depth  = 1;
-   if (!dk3d_upload(dk, &view, &rect, (const uint8_t*)img->pixels,
-            img->width * 4, img->width * 4))
-   {
-      dk3d_tex_destroy(dk, t);
-      return 0;
-   }
+   dk3d_tex_write(dk, t, img->pixels, (size_t)img->width * 4);
    return (uintptr_t)t;
+}
+
+static bool dk3d_tex_idle(dk3d_t *dk, const dk3d_tex_t *t)
+{
+   if (t->use_serial <= dk->done_serial)
+      return true;
+   dk3d_poll_done(dk);
+   return t->use_serial <= dk->done_serial;
+}
+
+/* In place, the handle and its descriptor kept; dropped rather than
+ * waited for while a frame in flight still samples it */
+static enum video_texture_update dk3d_update_texture(void *data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   dk3d_t *dk    = (dk3d_t*)data;
+   dk3d_tex_t *t = (dk3d_tex_t*)id;
+   (void)threaded;
+   if (!dk || !t || !ti || !ti->pixels || t->bpp != 4
+         || t->dims != VIDEO_SCALE_PACK(ti->width, ti->height))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   /* Lent, its one slot is the producer's: nothing else is written */
+   if (     !dk3d_tex_idle(dk, t)
+         || (t->lent && (const uint8_t*)ti->pixels != t->cpu))
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+   dk3d_tex_write(dk, t, ti->pixels, (size_t)ti->width * 4);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+/* The texture's own memory, slot 0: a producer writes the frame where
+ * it is sampled, and update_texture only flushes it */
+static void *dk3d_texture_lend(void *data, uintptr_t id, unsigned slot,
+      size_t pitch, size_t *out_pitch)
+{
+   dk3d_tex_t *t = (dk3d_tex_t*)id;
+   if (!data || !t || slot || t->bpp != 4)
+      return NULL;
+   if (out_pitch)
+   {
+      if (pitch > t->pitch)
+         return NULL;
+      *out_pitch = t->pitch;
+   }
+   else if (pitch != t->pitch)
+      return NULL;
+   t->lent = true;
+   return t->cpu;
+}
+
+static bool dk3d_texture_lend_ready(void *data, uintptr_t id, unsigned slot)
+{
+   dk3d_t *dk    = (dk3d_t*)data;
+   dk3d_tex_t *t = (dk3d_tex_t*)id;
+   if (!dk || !t || slot)
+      return false;
+   return dk3d_tex_idle(dk, t);
 }
 
 static void dk3d_unload_texture(void *data, bool threaded, uintptr_t handle)
@@ -1259,7 +1313,7 @@ static void gfx_display_dk3d_draw(gfx_display_ctx_draw_t *draw,
 {
    dk3d_t *dk         = (dk3d_t*)data;
    const float *vert, *tc, *col;
-   const dk3d_tex_t *t;
+   dk3d_tex_t *t;
    unsigned n, i;
    DkGpuAddr gpu;
    uint32_t bytes;
@@ -1284,15 +1338,19 @@ static void gfx_display_dk3d_draw(gfx_display_ctx_draw_t *draw,
    {
       v[0] = vert[2 * i + 0];
       v[1] = vert[2 * i + 1];
-      /* Texture rows run top-down, the menu's coordinates bottom-up */
+      /* As GL takes them: row 0 is the quad's top, where the
+       * menu's coordinates put v = 0, as the text and RGUI quads do */
       v[2] = tc[2 * i + 0];
-      v[3] = 1.0f - tc[2 * i + 1];
+      v[3] = tc[2 * i + 1];
       v[4] = col[4 * i + 0];
       v[5] = col[4 * i + 1];
       v[6] = col[4 * i + 2];
       v[7] = col[4 * i + 3];
    }
-   t = (const dk3d_tex_t*)draw->texture;
+   t = (dk3d_tex_t*)draw->texture;
+   /* Sampled by the frame being recorded: not written until it is done */
+   if (t)
+      t->use_serial = dk->serial + 1;
    dk3d_draw_bind(dk);
    if (dk->blend == DK3D_BLEND_UNSET)
       dk3d_draw_blend(dk, DK3D_BLEND_OFF);
@@ -1332,6 +1390,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_deko3d = {
 
 /* ---- RGUI ------------------------------------------------------------- */
 
+/* RGUI's frame, sampled where it lies: a ring slot it rendered into
+ * (get_menu_framebuffer), the threaded wrapper's menu memory, or a
+ * ring slot it is copied into once. RGUI's RGBA4444 has red in the
+ * high nibble, the format the low one. */
 static void dk3d_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
 {
@@ -1340,30 +1402,63 @@ static void dk3d_set_texture_frame(void *data, const void *frame,
    unsigned w   = VIDEO_SCALE_W(dims);
    unsigned h   = VIDEO_SCALE_H(dims);
    uint32_t pt  = DK3D_ALIGN(w * bpp, DK_IMAGE_LINEAR_STRIDE_ALIGNMENT);
+   const uint8_t *p = (const uint8_t*)frame;
+   dk3d_linear_t *owner = NULL;
    DkImageView view;
+   DkImage *img;
    dk3d_linear_t *l;
-   unsigned y;
+   uint32_t off = 0;
+   unsigned y, i;
    int s;
 
    if (!dk || !frame || !w || !h)
       return;
    dk->menu_alpha = alpha;
-   if ((s = dk3d_linear_pick(dk, dk->rgui, dk->rgui_last, -1)) < 0)
+   /* The descriptor's slot: none in flight reads it */
+   if (     dk->rgui_lent >= 0
+         && p == dk->rgui[dk->rgui_lent].cpu
+         && dk->rgui[dk->rgui_lent].dims == dims)
+   {
+      s     = dk->rgui_lent;
+      owner = &dk->rgui[s];
+      pt    = owner->pitch;
+   }
+   else if ((s = dk3d_linear_pick(dk, dk->rgui, dk->rgui_last,
+               dk->rgui_lent)) < 0)
       return;
+   dk->rgui_lent = -1;
    l = &dk->rgui[s];
-   if (!dk3d_linear_fit(dk, l, dims, pt))
-      return;
-   for (y = 0; y < h; y++)
-      memcpy(l->cpu + (size_t)y * pt,
-            (const uint8_t*)frame + (size_t)y * w * bpp, w * bpp);
-   dkMemBlockFlushCpuCache(l->mem, 0, pt * h);
-   l->bpp = (uint8_t)bpp;
-   /* Sampled where it lies: RGUI's RGBA4444 has red in the high nibble,
-    * the format the low one */
-   dk3d_linear_image(dk->device, &l->image, l->mem, 0, pt, dims,
+
+   if (!owner)
+      for (i = 0; i < DK3D_FRAME_MEM_MAX; i++)
+      {
+         dk3d_linear_t *m = &dk->frame_mem[i];
+         if (     m->mem && p >= m->cpu
+               && p + (size_t)pt * h <= m->cpu + m->size
+               && !((p - m->cpu) % DK_IMAGE_LINEAR_STRIDE_ALIGNMENT))
+         {
+            owner = m;
+            off   = (uint32_t)(p - m->cpu);
+            break;
+         }
+      }
+   if (!owner)
+   {
+      if (!dk3d_linear_fit(dk, l, dims, pt))
+         return;
+      for (y = 0; y < h; y++)
+         memcpy(l->cpu + (size_t)y * pt, p + (size_t)y * w * bpp, w * bpp);
+      owner = l;
+   }
+   dkMemBlockFlushCpuCache(owner->mem, off, pt * h);
+   l->bpp   = (uint8_t)bpp;
+   l->pitch = pt;
+   l->dims  = dims;
+   img      = &l->image;
+   dk3d_linear_image(dk->device, img, owner->mem, off, pt, dims,
          rgb32 ? DkImageFormat_BGRA8_Unorm : DkImageFormat_RGBA4_Unorm,
          bpp, 0);
-   dkImageViewDefaults(&view, &l->image);
+   dkImageViewDefaults(&view, img);
    if (!rgb32)
    {
       view.swizzle[0] = DkImageSwizzle_Alpha;
@@ -1375,6 +1470,28 @@ static void dk3d_set_texture_frame(void *data, const void *frame,
          false, false);
    dk->pending_barrier = true;
    dk->rgui_last       = s;
+   dk->rgui_owner      = owner;
+}
+
+/* A ring slot for RGUI to render its next frame into, handed back by
+ * set_texture_frame with no copy */
+static void *dk3d_get_menu_framebuffer(void *data, bool rgb32,
+      unsigned dims, size_t *pitch)
+{
+   dk3d_t *dk   = (dk3d_t*)data;
+   unsigned bpp = rgb32 ? 4 : 2;
+   uint32_t pt;
+   int s;
+   if (!dk || !pitch || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return NULL;
+   pt = DK3D_ALIGN(VIDEO_SCALE_W(dims) * bpp, DK_IMAGE_LINEAR_STRIDE_ALIGNMENT);
+   if ((s = dk3d_linear_pick(dk, dk->rgui, dk->rgui_last, -1)) < 0)
+      return NULL;
+   if (!dk3d_linear_fit(dk, &dk->rgui[s], dims, pt))
+      return NULL;
+   dk->rgui_lent = s;
+   *pitch        = pt;
+   return dk->rgui[s].cpu;
 }
 
 static void dk3d_set_texture_enable(void *data, bool enable,
@@ -1458,6 +1575,13 @@ static void *dk3d_font_init(void *data, const char *font_path,
       return NULL;
    }
    f->atlas = f->drv->get_atlas(f->data);
+   if (f->atlas)
+   {
+      /* It may grow, the texture following; and its cells are written
+       * where frames still on the GPU may be sampling them */
+      f->atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
+      f->atlas->inflight = f->dk->num_frames;
+   }
    return f;
 }
 
@@ -1481,7 +1605,6 @@ static bool dk3d_font_upload(dk3d_font_t *f)
    dk3d_t *dk               = f->dk;
    struct font_atlas *a     = f->drv->get_atlas(f->data);
    unsigned dims, i, n;
-   DkImageView view;
    f->atlas = a;
    if (!a || !a->buffer || !a->width || !a->height)
       return false;
@@ -1496,7 +1619,7 @@ static bool dk3d_font_upload(dk3d_font_t *f)
          return false;
       if (f->tex)
          dk3d_retire(dk, NULL, f->tex);
-      if (!(t = dk3d_tex_new(dk, dims, DkImageFormat_R8_Unorm, desc)))
+      if (!(t = dk3d_tex_new(dk, dims, DkImageFormat_R8_Unorm, 1, desc)))
       {
          f->tex = NULL;
          return false;
@@ -1510,25 +1633,23 @@ static bool dk3d_font_upload(dk3d_font_t *f)
    }
    if (!a->dirty)
       return true;
-   dkImageViewDefaults(&view, &f->tex->image);
+   /* The cells straight into the image the GPU samples; the atlas keeps
+    * the cells frames in flight read (atlas->inflight) */
    n = font_atlas_dirty_rects(a);
    for (i = 0; i < n; i++)
    {
-      unsigned xy0, xy1;
-      DkImageRect rect;
+      unsigned xy0, xy1, x0, y0, x1, y1, y;
       font_atlas_dirty_rect(a, i, &xy0, &xy1);
-      if (     VIDEO_SCALE_W(xy1) <= VIDEO_SCALE_W(xy0)
-            || VIDEO_SCALE_H(xy1) <= VIDEO_SCALE_H(xy0))
+      x0 = VIDEO_SCALE_W(xy0);
+      y0 = VIDEO_SCALE_H(xy0);
+      x1 = MIN(VIDEO_SCALE_W(xy1), a->width);
+      y1 = MIN(VIDEO_SCALE_H(xy1), a->height);
+      if (x1 <= x0 || y1 <= y0)
          continue;
-      rect.x      = VIDEO_SCALE_W(xy0);
-      rect.y      = VIDEO_SCALE_H(xy0);
-      rect.z      = 0;
-      rect.width  = VIDEO_SCALE_W(xy1) - rect.x;
-      rect.height = VIDEO_SCALE_H(xy1) - rect.y;
-      rect.depth  = 1;
-      dk3d_upload(dk, &view, &rect,
-            a->buffer + (size_t)rect.y * a->width + rect.x,
-            a->width, rect.width);
+      for (y = y0; y < y1; y++)
+         memcpy(f->tex->cpu + (size_t)y * f->tex->pitch + x0,
+               a->buffer + (size_t)y * a->width + x0, x1 - x0);
+      dk3d_tex_flush(dk, f->tex, y0, y1 - y0);
    }
    a->dirty       = false;
    a->dirty_rects = 0;
@@ -2045,7 +2166,11 @@ static bool dk3d_frame(void *data, const void *frame, unsigned dims,
    if (owner)
       owner->use_serial = dk->serial;
    if (rgui)
+   {
       rgui->use_serial  = dk->serial;
+      if (dk->rgui_owner)
+         dk->rgui_owner->use_serial = dk->serial;
+   }
 
    /* Hard sync: no more than hard_sync_frames behind. Waiting the next
     * slot below already holds the GPU to num_frames - 1 */
@@ -2150,23 +2275,18 @@ static bool dk3d_descriptors_init(dk3d_t *dk)
    return true;
 }
 
-/* The 1x1 white the menu samples when it names no texture, sent with
- * the first frame */
+/* The 1x1 white the menu samples when it names no texture */
 static bool dk3d_blank_init(dk3d_t *dk)
 {
    static const uint32_t white = 0xffffffffu;
-   DkImageView view;
-   DkImageRect rect;
    dk3d_tex_t *t = dk3d_tex_new(dk, VIDEO_SCALE_PACK(1, 1),
-         DkImageFormat_BGRA8_Unorm, DK3D_DESC_BLANK);
+         DkImageFormat_BGRA8_Unorm, 4, DK3D_DESC_BLANK);
    if (!t)
       return false;
+   dk3d_tex_write(dk, t, &white, 4);
    dk->blank = *t;
    free(t);
-   dkImageViewDefaults(&view, &dk->blank.image);
-   rect.x = rect.y = rect.z = 0;
-   rect.width = rect.height = rect.depth = 1;
-   return dk3d_upload(dk, &view, &rect, (const uint8_t*)&white, 4, 4);
+   return true;
 }
 
 static void dk3d_free(void *data)
@@ -2237,6 +2357,7 @@ static void *dk3d_init(const video_info_t *video)
    dk->sw_last          = -1;
    dk->sw_lent          = -1;
    dk->rgui_last        = -1;
+   dk->rgui_lent        = -1;
    dk->menu_alpha       = 1.0f;
    dk->hw_bottom_left   = hwr && hwr->bottom_left_origin;
    dk->win              = nwindowGetDefault();
@@ -2402,10 +2523,10 @@ static const video_poke_interface_t dk3d_poke_interface = {
    NULL, /* hw_ring_context_new */
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
-   NULL, /* update_texture */
+   dk3d_update_texture,
    NULL, /* get_swap_interval_cap */
-   NULL, /* texture_lend */
-   NULL, /* texture_lend_ready */
+   dk3d_texture_lend,
+   dk3d_texture_lend_ready,
    NULL, /* get_last_present_wait */
    NULL, /* set_view_count */
    NULL, /* hw_context_destroying */
@@ -2413,7 +2534,16 @@ static const video_poke_interface_t dk3d_poke_interface = {
    NULL, /* set_frame_format */
    dk3d_frame_mem_alloc,
    dk3d_frame_mem_ready,
-   dk3d_frame_mem_free
+   dk3d_frame_mem_free,
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   dk3d_get_menu_framebuffer,
+   dk3d_menu_mem_alloc,
+   DK_IMAGE_LINEAR_STRIDE_ALIGNMENT, /* menu_mem_pitch_align */
+   false  /* texture_lend_per_write */
 };
 
 static void dk3d_get_poke_interface(void *data,
