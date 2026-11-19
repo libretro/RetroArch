@@ -931,7 +931,6 @@ static bool ps2_cond_withdraw(scond_t *cond, struct ps2_cond_waiter *w)
 static Mutex     switch_reap_lock;
 static sthread_t *switch_reap_list;
 
-#ifdef __SWITCH2__
 static retro_atomic_int_t switch_next_core;
 
 /* A core the process may run on other than the creator's, in turn, so
@@ -961,7 +960,6 @@ static int switch_worker_core(void)
          return i;
    return -2;
 }
-#endif
 
 static void switch_reap(void)
 {
@@ -1288,15 +1286,14 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
        * within whatever band the process is allowed; 0x2C is where
        * the main thread runs. Workers inherit the creator's priority,
        * and an explicit rthreads priority maps across 0x1C..0x3F,
-       * falling back to inheriting if the kernel refuses it. libnx
-       * allocates and maps the stack itself, so the thread lands on
-       * the process's default core. */
+       * falling back to inheriting if the kernel refuses it. Equal
+       * priorities do not time-slice on a core, so a worker sharing
+       * the creator's would wait for it to block: it goes to another
+       * core the process may use. libnx allocates and maps the stack
+       * itself. */
       s32 prio = 0x2C;
       Result rc;
-      int core = -2;
-#ifdef __SWITCH2__
-      core = switch_worker_core();
-#endif
+      int core = switch_worker_core();
 
       switch_reap();
       svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
@@ -1312,11 +1309,9 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
       else
          rc       = threadCreate(&thread->t, thread_wrap, data,
                NULL, stack, prio, core);
-#ifdef __SWITCH2__
       if (R_FAILED(rc) && core != -2)
          rc = threadCreate(&thread->t, thread_wrap, data,
                NULL, stack, prio, -2);
-#endif
 
       if (R_SUCCEEDED(rc))
       {
