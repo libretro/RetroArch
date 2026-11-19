@@ -69,8 +69,9 @@ HAVE_AUDIOWORKLET ?= 0
 # doesn't work on PROXY_TO_PTHREAD
 HAVE_RWEBAUDIO ?= 1
 
-# requires ASYNC or PROXY_TO_PTHREAD. Prefer another driver.
-HAVE_AL ?= 0
+# no OpenAL: the web's has no completion events to wait on, and the
+# audioworklet and rwebaudio drivers wait on theirs.
+override HAVE_AL = 0
 
 # asyncify: enable fibers and sleeping on the browser thread,
 # this has a noticeable impact on compile time, output wasm size, and speed.
@@ -172,9 +173,6 @@ ifeq ($(PROXY_TO_PTHREAD), 1)
    override WASM_WORKERS = 1
    # use the default stack size for the browser thread; the RetroArch thread will be created with the specified stack size
    override STACK_SIZE = 4194304
-else ifeq ($(HAVE_AL), 1)
-   override ASYNC = 1
-   override MIN_ASYNC = 0
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -224,11 +222,6 @@ ifeq ($(HAVE_AUDIOWORKLET), 1)
    ifeq ($(HAVE_THREADS), 0)
       $(error ERROR: AUDIOWORKLET requires HAVE_THREADS)
    endif
-endif
-
-ifeq ($(HAVE_AL), 1)
-   LDFLAGS += -lopenal
-   DEFINES += -DHAVE_AL
 endif
 
 ifeq ($(PROXY_TO_PTHREAD), 1)

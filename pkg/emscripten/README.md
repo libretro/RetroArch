@@ -215,8 +215,6 @@ Here is a non-exhaustive list of compile-time settings (makefile variables).
 
 `HAVE_RWEBAUDIO` (default: 1): Enables the RWebAudio audio driver. Currently incompatible with `PROXY_TO_PTHREAD`.
 
-`HAVE_AL` (default: 0): Enables the OpenAL audio driver. Requires `ASYNC` or `PROXY_TO_PTHREAD`. Prefer another driver.
-
 ### Async settings
 
 `ASYNC` (default: 0): Enables asyncify, which enables sleeping on the browser thread and fibers.
