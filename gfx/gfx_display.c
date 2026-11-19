@@ -126,6 +126,39 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    NULL,
 };
 
+/* The compositor's desktop scale, as the desktop's pixels
+ * per logical unit. Where a display server reports one, it
+ * is the size people chose, so it stands in for the DPI. */
+static bool gfx_display_get_desktop_scale(float *desktop_scale)
+{
+   static const enum display_metric_types types[4] = {
+      DISPLAY_METRIC_PIXEL_WIDTH,   DISPLAY_METRIC_PIXEL_HEIGHT,
+      DISPLAY_METRIC_LOGICAL_WIDTH, DISPLAY_METRIC_LOGICAL_HEIGHT
+   };
+   float values[4];
+   float pixels;
+   float logical;
+   gfx_ctx_metrics_t metrics;
+   unsigned i;
+
+   for (i = 0; i < 4; i++)
+   {
+      metrics.type  = types[i];
+      metrics.value = &values[i];
+      if (!video_context_driver_get_metrics(&metrics))
+         return false;
+   }
+
+   /* The longer sides, so a rotated output still matches */
+   pixels  = (values[0] > values[1]) ? values[0] : values[1];
+   logical = (values[2] > values[3]) ? values[2] : values[3];
+   if (pixels < 1.0f || logical < 1.0f)
+      return false;
+
+   *desktop_scale = pixels / logical;
+   return true;
+}
+
 static float gfx_display_get_dpi_scale_internal(unsigned dims)
 {
    float dpi;
@@ -157,6 +190,11 @@ static float gfx_display_get_dpi_scale_internal(unsigned dims)
    {
       float display_size;
       float dpi_scale;
+      float desktop_scale;
+
+      /* Follow the desktop's scale, as X11 does through 96 DPI */
+      if (gfx_display_get_desktop_scale(&desktop_scale))
+         dpi = REFERENCE_DPI * desktop_scale;
 
 #if defined(ANDROID) || defined(HAVE_COCOATOUCH)
       /* Android/iOS devices tell complete lies when
