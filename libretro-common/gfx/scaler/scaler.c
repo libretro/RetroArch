@@ -66,14 +66,38 @@ static size_t frame_bytes(size_t stride, size_t rows)
    return stride * rows;
 }
 
-static bool point_can_convert_direct(const struct scaler_ctx *ctx)
+/* At most a quarter of the input's pixels are read: converting just
+ * those beats converting the whole input with SIMD. */
+static bool point_is_reduction(const struct scaler_ctx *ctx)
+{
+   return ctx->out_width     <= ctx->in_width
+      && ctx->out_height     <= ctx->in_height
+      && (uint64_t)ctx->out_width * ctx->out_height
+         <= (uint64_t)ctx->in_width * ctx->in_height / 4;
+}
+
+/* Into ABGR8888 reading more than that: the whole input is converted
+ * once (SIMD) into the input frame, and the selection is plain copies
+ * straight into the destination. */
+static bool point_abgr_preconvert(const struct scaler_ctx *ctx)
 {
    return ctx->scaler_type == SCALER_TYPE_POINT
-      && ctx->out_width <= ctx->in_width
-      && ctx->out_height <= ctx->in_height
-      /* Near unity, full-frame SIMD conversion is cheaper. */
-      && (uint64_t)ctx->out_width * ctx->out_height
-         <= (uint64_t)ctx->in_width * ctx->in_height / 4
+      && ctx->out_fmt      == SCALER_FMT_ABGR8888
+      && (     ctx->in_fmt == SCALER_FMT_RGB565
+            || ctx->in_fmt == SCALER_FMT_ARGB8888)
+      && !point_is_reduction(ctx);
+}
+
+static bool point_can_convert_direct(const struct scaler_ctx *ctx)
+{
+   if (ctx->scaler_type != SCALER_TYPE_POINT)
+      return false;
+   /* Into ABGR8888 the selection writes the destination itself: no
+    * scaled output in the frame arena and no pass converting it. */
+   if (ctx->out_fmt == SCALER_FMT_ABGR8888)
+      return ctx->in_fmt == SCALER_FMT_ARGB8888
+         || ctx->in_fmt == SCALER_FMT_RGB565;
+   return point_is_reduction(ctx)
       && ((ctx->in_fmt == SCALER_FMT_RGB565
                && (ctx->out_fmt == SCALER_FMT_ARGB8888
                   || ctx->out_fmt == SCALER_FMT_BGR24))
@@ -99,6 +123,19 @@ static void scaler_point_convert(const struct scaler_ctx *ctx,
    int output_step = ctx->out_fmt == SCALER_FMT_BGR24 ? out_stride
       : (ctx->out_fmt == SCALER_FMT_RGB565
          ? (out_stride >> 1) * 2 : (out_stride >> 2) * 4);
+   bool copy32     = point_abgr_preconvert(ctx);
+
+   if (copy32)
+   {
+      if (ctx->in_fmt == SCALER_FMT_RGB565)
+         conv_rgb565_abgr8888(ctx->input.frame, input_, in_width, in_height,
+               ctx->input.stride, in_stride);
+      else
+         conv_argb8888_abgr8888(ctx->input.frame, input_, in_width, in_height,
+               ctx->input.stride, in_stride);
+      input      = (const uint8_t*)ctx->input.frame;
+      input_step = ctx->input.stride;
+   }
 
    for (y = 0; y < out_height; y++, output += output_step)
    {
@@ -124,6 +161,33 @@ static void scaler_point_convert(const struct scaler_ctx *ctx,
                const uint8_t *p = row + (size_t)ctx->horiz.filter_pos[x] * 3;
                dst[x] = (uint16_t)(((p[2] & 0xf8) << 8)
                      | ((p[1] & 0xfc) << 3) | (p[0] >> 3));
+            }
+         }
+      }
+      else if (ctx->out_fmt == SCALER_FMT_ABGR8888)
+      {
+         uint32_t *dst = (uint32_t*)output;
+         if (copy32)
+         {
+            const uint32_t *src = (const uint32_t*)row;
+            for (x = 0; x < out_width; x++)
+               dst[x] = src[ctx->horiz.filter_pos[x]];
+         }
+         else if (ctx->in_fmt == SCALER_FMT_RGB565)
+         {
+            const uint16_t *src = (const uint16_t*)row;
+            for (x = 0; x < out_width; x++)
+               dst[x] = 0xff000000u | pixconv_rgb565_to_xbgr8888(
+                     src[ctx->horiz.filter_pos[x]]);
+         }
+         else
+         {
+            const uint32_t *src = (const uint32_t*)row;
+            for (x = 0; x < out_width; x++)
+            {
+               uint32_t p = src[ctx->horiz.filter_pos[x]];
+               dst[x] = (p & 0xff00ff00u) | ((p >> 16) & 0xffu)
+                  | ((p & 0xffu) << 16);
             }
          }
       }
@@ -213,9 +277,22 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    if (!scaled_bytes && !input_bytes && !output_bytes)
       return true;
 
-   /* Convert only the selected pixels, straight into the destination. */
+   /* Convert only the selected pixels, straight into the destination;
+    * a pre-converted input keeps only its input frame. */
    if (point_can_convert_direct(ctx))
-      return true;
+   {
+      if (!point_abgr_preconvert(ctx))
+         return true;
+      output_bytes = 0;
+      if (!input_bytes)
+      {
+         stride           = (((size_t)ctx->in_width + 7) & ~(size_t)7)
+                          * sizeof(uint32_t);
+         if (!(input_bytes = frame_bytes(stride, (size_t)ctx->in_height)))
+            return false;
+         ctx->input.stride = (int)stride;
+      }
+   }
 
    /* One block for all three, laid out scaled | input | output with the
     * regions that are not needed given zero size. Each frame_bytes()
