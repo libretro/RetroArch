@@ -34,6 +34,8 @@
 
 #include "rslc_share.h"
 
+#include <gfx/shaders/spirv_words.h>
+
 #define RSLC_INTERN_INITIAL 256u /* slots; power of two */
 
 /* Allocator wrappers */
@@ -1033,14 +1035,9 @@ uint32_t rslc_layout_field_offset(const struct rslc_type *t, uint32_t field,
 /* SPIR-V emitter                                                      */
 /* ------------------------------------------------------------------ */
 
-/* Word buffers for the module's sections; concatenated at the end in
- * the order the spec requires. */
-struct rslc_wbuf
-{
-   uint32_t *v;
-   uint32_t  n;
-   uint32_t  cap;
-};
+/* Word buffers for the module's sections (gfx/shaders/spirv_words.h);
+ * joined at the end in the order the spec requires. */
+#define rslc_wbuf spirv_words_buf
 
 enum spv_section
 {
@@ -1054,7 +1051,6 @@ enum spv_section
 };
 
 /* SPIR-V enumerants used here. */
-#define SPV_MAGIC            0x07230203u
 #define SPV_VERSION_1_0      0x00010000u
 #define SPV_CAP_SHADER       1
 #define SPV_CAP_IMAGEQUERY   50
@@ -1278,6 +1274,7 @@ struct spv_ctl
 struct spv_emit
 {
    struct rslc_ctx     *c;
+   struct spirv_words   words;        /* the sections' memory: the arena */
    struct rslc_wbuf     sec[SPV_SEC_COUNT];
    struct spv_tinfo    *tinfo;        /* by type id */
    struct spv_var      *vars;         /* by var id */
@@ -1324,21 +1321,19 @@ struct spv_emit
    bool                 in_main;
 };
 
+/* A buffer's storage grown from the arena, the words it held copied
+ * over: the arena frees nothing until the compile is done. */
+static void *spv_grow(void *user, void *old, size_t old_bytes, size_t new_bytes)
+{
+   void *nv = rslc_arena_alloc((struct rslc_ctx*)user, new_bytes);
+   if (nv && old_bytes)
+      memcpy(nv, old, old_bytes);
+   return nv;
+}
+
 static bool spv_w(struct spv_emit *e, struct rslc_wbuf *b, uint32_t w)
 {
-   if (b->n == b->cap)
-   {
-      uint32_t  ncap = b->cap ? b->cap * 2 : 256;
-      uint32_t *nv   = (uint32_t*)rslc_arena_alloc(e->c, ncap * sizeof(*nv));
-      if (!nv)
-         return false;
-      if (b->n)
-         memcpy(nv, b->v, b->n * sizeof(*nv));
-      b->v   = nv;
-      b->cap = ncap;
-   }
-   b->v[b->n++] = w;
-   return true;
+   return spirv_words_put(&e->words, b, w);
 }
 
 /* Emits an instruction: opcode, then the given words.  n includes
@@ -1346,14 +1341,7 @@ static bool spv_w(struct spv_emit *e, struct rslc_wbuf *b, uint32_t w)
 static bool spv_inst(struct spv_emit *e, enum spv_section s, enum spv_op op,
       const uint32_t *words, uint32_t n)
 {
-   struct rslc_wbuf *b = &e->sec[s];
-   uint32_t i;
-   if (!spv_w(e, b, ((n + 1) << 16) | (uint32_t)op))
-      return false;
-   for (i = 0; i < n; i++)
-      if (!spv_w(e, b, words[i]))
-         return false;
-   return true;
+   return spirv_words_op(&e->words, &e->sec[s], (uint32_t)op, words, n);
 }
 
 static bool spv_inst1(struct spv_emit *e, enum spv_section s, enum spv_op op, uint32_t a)
@@ -1391,32 +1379,8 @@ static uint32_t spv_id(struct spv_emit *e)
 static bool spv_inst_str(struct spv_emit *e, enum spv_section s, enum spv_op op,
       const uint32_t *pre, uint32_t npre, const char *str, const uint32_t *post, uint32_t npost)
 {
-   uint32_t len    = (uint32_t)strlen(str);
-   uint32_t nwords = len / 4 + 1;
-   uint32_t i;
-   struct rslc_wbuf *b = &e->sec[s];
-   if (!spv_w(e, b, ((npre + nwords + npost + 1) << 16) | (uint32_t)op))
-      return false;
-   for (i = 0; i < npre; i++)
-      if (!spv_w(e, b, pre[i]))
-         return false;
-   for (i = 0; i < nwords; i++)
-   {
-      uint32_t w = 0;
-      uint32_t k;
-      for (k = 0; k < 4; k++)
-      {
-         uint32_t idx = i * 4 + k;
-         if (idx < len)
-            w |= (uint32_t)(uint8_t)str[idx] << (8 * k);
-      }
-      if (!spv_w(e, b, w))
-         return false;
-   }
-   for (i = 0; i < npost; i++)
-      if (!spv_w(e, b, post[i]))
-         return false;
-   return true;
+   return spirv_words_op_str(&e->words, &e->sec[s], (uint32_t)op,
+         pre, npre, str, post, npost);
 }
 
 static bool spv_name(struct spv_emit *e, uint32_t id, const char *name)
@@ -2131,16 +2095,17 @@ static bool spv_fn_inst(struct spv_emit *e, enum spv_op op, const uint32_t *w, u
 static uint32_t spv_fn_result(struct spv_emit *e, enum spv_op op, uint32_t tid,
       const uint32_t *ops, uint32_t nops, uint8_t prec)
 {
-   uint32_t i, id;
-   struct rslc_wbuf *b = &e->sec[SPV_SEC_FUNCS];
+   uint32_t id;
+   uint32_t *p;
    if (!spv_ensure_block(e))
       return 0;
    id = spv_id(e);
-   if (!spv_w(e, b, ((nops + 3) << 16) | (uint32_t)op) || !spv_w(e, b, tid) || !spv_w(e, b, id))
+   if (!(p = spirv_words_op_at(&e->words, &e->sec[SPV_SEC_FUNCS], (uint32_t)op, nops + 2)))
       return 0;
-   for (i = 0; i < nops; i++)
-      if (!spv_w(e, b, ops[i]))
-         return 0;
+   p[0] = tid;
+   p[1] = id;
+   if (nops)
+      memcpy(p + 2, ops, nops * sizeof(*ops));
    if (prec == RSLC_PREC_LOW || prec == RSLC_PREC_MEDIUM)
       if (!spv_decorate(e, id, SPV_DEC_RELAXEDPRECISION))
          return 0;
@@ -4809,22 +4774,9 @@ static bool spv_function(struct spv_emit *e, const struct rslc_func *f)
       return false;
 
    /* splice the hoisted OpVariables after the entry label */
-   if (e->func_vars.n)
-   {
-      uint32_t n = e->func_vars.n;
-      uint32_t tail = fb->n - entry_pos;
-      uint32_t *tmp = (uint32_t*)rslc_scratch_alloc(e->c, tail * sizeof(*tmp));
-      if (!tmp)
-         return false;
-      memcpy(tmp, fb->v + entry_pos, tail * sizeof(*tmp));
-      fb->n = entry_pos;
-      for (i = 0; i < n; i++)
-         if (!spv_w(e, fb, e->func_vars.v[i]))
-            return false;
-      for (i = 0; i < tail; i++)
-         if (!spv_w(e, fb, tmp[i]))
-            return false;
-   }
+   if (e->func_vars.n && !spirv_words_insert(&e->words, fb, entry_pos,
+            e->func_vars.v, e->func_vars.n))
+      return false;
    return true;
 }
 
@@ -5469,6 +5421,8 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    rslc_scratch_mark(c, &mark);
    e->c     = c;
    e->bound = 1;
+   e->words.grow = spv_grow;
+   e->words.user = c;
    e->tinfo = (struct spv_tinfo*)rslc_arena_zalloc(c, (c->ntypes + 1 + 64) * sizeof(*e->tinfo));
    e->vars  = (struct spv_var*)rslc_arena_zalloc(c, (pr->nvars + 1) * sizeof(*e->vars));
    e->func_ids   = (uint32_t*)rslc_arena_zalloc(c, (pr->nfuncs + 1) * sizeof(uint32_t));
@@ -5719,29 +5673,20 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
 
    /* assemble the blob: header, reflection, SPIR-V words */
    {
-      uint32_t words = 5;
-      uint32_t s;
+      uint32_t words = (uint32_t)spirv_words_total(e->sec, SPV_SEC_COUNT);
       struct rslc_pbuf pb;
-      uint32_t *out;
-      for (s = 0; s < SPV_SEC_COUNT; s++)
-         words += e->sec[s].n;
       if (!rslc_blob_begin(c, &pb, words * 4, e->member_active, used))
          return false;
-      out = (uint32_t*)(pb.data + pb.len);
-      out[0] = SPV_MAGIC;
+      /* The module joined straight into the payload the blob made room for */
+      spirv_words_join((uint32_t*)(pb.data + pb.len), e->sec, SPV_SEC_COUNT,
 #ifdef RSLC_EXTENDED
-      /* the subgroup operations are SPIR-V 1.3's */
-      out[1] = e->need_groupnonuniform ? SPV_VERSION_1_3 : SPV_VERSION_1_0;
+            /* the subgroup operations are SPIR-V 1.3's */
+            e->need_groupnonuniform ? SPV_VERSION_1_3 : SPV_VERSION_1_0,
 #else
-      out[1] = SPV_VERSION_1_0;
+            SPV_VERSION_1_0,
 #endif
-      out[2] = 0;             /* generator */
-      out[3] = e->bound;
-      out[4] = 0;
-      pb.len += 5 * 4;
-      for (s = 0; s < SPV_SEC_COUNT; s++)
-         if (e->sec[s].n && !rslc_pbuf_put(c, &pb, e->sec[s].v, e->sec[s].n * 4))
-            return false;
+            0 /* generator */, e->bound);
+      pb.len += (size_t)words * 4;
       rslc_blob_end(c, &pb, RSLC_DST_SPIRV, result);
       result->spirv     = (const uint32_t*)(pb.data + ((struct rslc_blob_hdr*)pb.data)->payload_off);
       result->spirv_len = words;
