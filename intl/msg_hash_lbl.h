@@ -1172,6 +1172,10 @@ MSG_HASH(
    "deferred_video_output_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_THREADING_SETTINGS_LIST,
+   "deferred_video_threading_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST,
    "deferred_video_scaling_settings_list"
    )
@@ -3817,6 +3821,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST,
    "deferred_audio_output_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_AUDIO_THREADING_SETTINGS_LIST,
+   "deferred_audio_threading_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,

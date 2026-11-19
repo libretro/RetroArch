@@ -41,6 +41,10 @@ S_ACTION(AUDIO_OUTPUT_SETTINGS,
       "audio_output_settings",
       "Output",
       "Change audio output settings.")
+S_ACTION(AUDIO_THREADING_SETTINGS,
+      "audio_threading_settings",
+      "Threading",
+      "Change audio threading settings.")
 #ifdef HAVE_MICROPHONE
 S_ACTION(MICROPHONE_SETTINGS,
       "microphone_settings",
