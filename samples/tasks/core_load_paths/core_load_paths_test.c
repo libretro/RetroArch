@@ -1758,6 +1758,8 @@ static void mode_builtin(void)
  * firmware box for that core */
 static void mode_fw_builtin(void)
 {
+   content_ctx_info_t info;
+   char library[NAME_MAX_LENGTH];
    path_set(RARCH_PATH_CORE, fw_core);
    start_pad();
    CHECK(!fw_wait_box(600),
@@ -1765,6 +1767,33 @@ static void mode_fw_builtin(void)
    if (fw_box_up())
       fw_answer(MENU_ACTION_OK);
    CHECK(wait_for(pad_runs, 600), "the built-in core did not run");
+
+   /* A Cancel over the built-in core keeps its identity: a trusted core
+    * Load Core named before it started is not probed in its place */
+   snprintf(game, sizeof(game), "%s/title.bin", dir);
+   write_file(game);
+   staged_trust(good_core);
+   unload();
+   /* Load Core names it, then the built-in core is started */
+   path_set(RARCH_PATH_CORE, good_core);
+   CHECK(command_event(CMD_EVENT_LOAD_CORE, NULL), "Load Core's probe failed");
+   start_pad();
+   CHECK(wait_for(pad_runs, 600), "the built-in core did not run again");
+   CHECK(same_path(path_get(RARCH_PATH_CORE), good_core),
+         "the built-in core's start left another core named");
+   fw_record(&fw_ran);
+   strlcpy(library, runloop_state_get_ptr()->system.info.library_name
+         ? runloop_state_get_ptr()->system.info.library_name : "",
+         sizeof(library));
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_from_playlist_from_menu(fw_core, game,
+            "fw", &info, NULL, NULL), "the playlist Run was not started");
+   fw_check_kept("a cancelled Run over the built-in core changed the session");
+   CHECK(string_is_equal(library,
+            runloop_state_get_ptr()->system.info.library_name
+            ? runloop_state_get_ptr()->system.info.library_name : ""),
+         "a cancelled Run over the built-in core renamed it");
+   CHECK(pad_runs(), "the built-in core stopped running");
 }
 #endif
 

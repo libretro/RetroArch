@@ -2818,12 +2818,14 @@ static void content_load_prev_restore(void)
    runloop_st->system.load_no_content = content_load_prev.load_no_content;
    core_info_load(content_load_prev.core_info_path);
 #ifdef HAVE_DYNAMIC
-   /* Its subsystems, which the probe replaced too. A dummy session
-    * that named no core has none, and a refused core's open would
-    * only be refused again. */
+   /* Its subsystems, which the probe replaced too. Only a plain core,
+    * or a dummy session that names one, is RARCH_PATH_CORE: a built-in
+    * core runs under whatever path was named before it. A refused
+    * core's open would only be refused again. */
    if (     *content_load_prev.core
-         && !(   content_load_prev.type == CORE_TYPE_DUMMY
-              && !*content_load_prev.library_name)
+         && (   content_load_prev.type == CORE_TYPE_PLAIN
+             || (   content_load_prev.type == CORE_TYPE_DUMMY
+                 && *content_load_prev.library_name))
 #ifdef HAVE_CORE_LOAD_CHECK
          && !core_load_check_refused(content_load_prev.core)
 #endif
