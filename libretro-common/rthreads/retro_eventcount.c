@@ -199,11 +199,8 @@ static unsigned           ec_linux_spin;
 static bool ec_switch_has_arbiter(void)
 {
 #ifdef __SWITCH2__
-   /* Switch 2: svcSignalToAddress may fail to wake a thread waiting on
-    * the arbiter promptly. This was observed during video frame handoff
-    * and GL context synchronization, causing delays of around 30 ms.
-    * Use condition variables instead to avoid missed frames and stalls
-    * in subsequent GL operations. */
+   /* Switch 2 parks on the condition variable: a wake through the
+    * address arbiter can arrive a frame or more late there */
    return false;
 #else
    return hosversionAtLeast(4, 0, 0);
@@ -2028,6 +2025,8 @@ const char *retro_eventcount_backend_name(void)
 {
 #if defined(RETRO_EC_ADDR_LINUX)
    return "futex";
+#elif defined(RETRO_EC_ADDR_SWITCH) && defined(__SWITCH2__)
+   return "scond";
 #elif defined(RETRO_EC_ADDR_SWITCH)
    return ec_switch_has_arbiter()
       ? "horizon address arbiter" : "scond (firmware before 4.0.0)";

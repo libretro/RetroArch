@@ -930,6 +930,36 @@ static bool ps2_cond_withdraw(scond_t *cond, struct ps2_cond_waiter *w)
 static Mutex     switch_reap_lock;
 static sthread_t *switch_reap_list;
 
+#ifdef __SWITCH2__
+static retro_atomic_int_t switch_next_core;
+
+/* A core the process may run on other than the creator's, in turn, so
+ * a worker never waits behind the thread that runs the emulator flat
+ * out; -2 (the default core) when there is no other. */
+static int switch_worker_core(void)
+{
+   u64 mask = 0;
+   int self = (int)svcGetCurrentProcessorNumber();
+   int n    = 0;
+   int pick;
+   int i;
+   if (R_FAILED(svcGetInfo(&mask, InfoType_CoreMask,
+               CUR_PROCESS_HANDLE, 0)))
+      return -2;
+   mask &= ~((u64)1 << self);
+   for (i = 0; i < 64; i++)
+      n += (int)((mask >> i) & 1);
+   if (!n)
+      return -2;
+   pick = (int)((unsigned)retro_atomic_fetch_add_int(
+            &switch_next_core, 1) % (unsigned)n);
+   for (i = 0; i < 64; i++)
+      if (((mask >> i) & 1) && !pick--)
+         return i;
+   return -2;
+}
+#endif
+
 static void switch_reap(void)
 {
    sthread_t **pp;
@@ -1262,10 +1292,7 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
       Result rc;
       int core = -2;
 #ifdef __SWITCH2__
-      /* waits for the main thread to block before it
-       * runs, and the main thread runs the emulator flat out */
-      static unsigned sw2_next_core;
-      core = 1 + (int)(sw2_next_core++ % 2);
+      core = switch_worker_core();
 #endif
 
       switch_reap();
@@ -1284,11 +1311,8 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
                NULL, stack, prio, core);
 #ifdef __SWITCH2__
       if (R_FAILED(rc) && core != -2)
-      {
-         core = -2;
-         rc   = threadCreate(&thread->t, thread_wrap, data,
+         rc = threadCreate(&thread->t, thread_wrap, data,
                NULL, stack, prio, -2);
-      }
 #endif
 
       if (R_SUCCEEDED(rc))
