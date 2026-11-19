@@ -23,7 +23,6 @@
 
 #include <switch.h>
 
-#include "../common/switch_defines.h"
 #include "../common/vulkan_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
