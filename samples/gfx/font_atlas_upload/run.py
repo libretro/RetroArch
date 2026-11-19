@@ -2,8 +2,8 @@
 """Run the font atlas uploads of the GX2, GXM, RSX, D3D10 and D3D11 drivers,
 extracted from the shipping sources, against textures in memory that
 are exactly their size, and against a D3D11 device whose texture
-creation can be made to fail; and the GX2 frame texture's upload and
-software framebuffer lend."""
+creation can be made to fail; the GX2 frame texture's upload and
+software framebuffer lend; and the RSX flip wait and lend."""
 import os
 from pathlib import Path
 import shlex
@@ -47,6 +47,18 @@ parts = {
     'gx2_frame.inc': ('gfx/drivers/gx2_gfx.c',
                       ('gx2_frame_upload(',
                        'gx2_get_current_software_framebuffer(')),
+    'rsx_frame.inc': ('gfx/drivers/rsx_gfx.c',
+                      ('rsx_flip_handler(', 'rsx_wait_flip(',
+                       'rsx_get_current_software_framebuffer(')),
+}
+
+# What each test links beyond itself
+lc = root / 'libretro-common'
+extra = {
+    'rsx_frame': [lc / 'rthreads/rthreads.c',
+                  lc / 'rthreads/retro_eventcount.c',
+                  lc / 'features/features_cpu.c',
+                  lc / 'time/rtime.c'],
 }
 
 with tempfile.TemporaryDirectory() as directory:
@@ -57,13 +69,15 @@ with tempfile.TemporaryDirectory() as directory:
     cc = shlex.split(os.environ.get('CC', 'cc'))
     flags = shlex.split(os.environ.get('CFLAGS',
         '-O1 -g -std=c89 -Wall -Wextra -Werror=declaration-after-statement'))
-    for test in ('test', 'gx2_frame'):
+    for test in ('test', 'gx2_frame', 'rsx_frame'):
         exe = tmp / (test + '.exe' if os.name == 'nt' or 'mingw' in cc[0]
                      else test)
+        libs = ['-lpthread'] if test in extra and 'mingw' not in cc[0] else []
         subprocess.run(cc + flags + ['-I' + str(tmp),
                        '-I' + str(root / 'libretro-common/include'),
-                       str(Path(__file__).with_name(test + '.c')),
-                       '-o', str(exe)],
+                       str(Path(__file__).with_name(test + '.c'))]
+                       + [str(f) for f in extra.get(test, [])]
+                       + ['-o', str(exe)] + libs,
                        check=True)
         subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)],
                        check=True)
