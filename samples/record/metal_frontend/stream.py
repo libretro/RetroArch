@@ -213,9 +213,11 @@ def verify(args, root, threaded):
     # (allow_drop); those at the end shorten the video, not the audio.
     # The audio sets how many frames ran, the timestamps how many were
     # sent and where: a drop mid-stream is a gap, one at the end is not.
+    # The audio starts at zero and the video at its epoch, so the frames
+    # before pts[0] are not at the end either.
     ran = round(int(finalized[2]) / args.source_rate * 60000 / 1001)
-    spanned = round((pts[-1] - pts[0]) * 60000 / 1001) + 1
-    dropped, dropped_at_end = ran - len(pts), max(0, ran - spanned)
+    reached = round(pts[-1] * 60000 / 1001) + 1
+    dropped, dropped_at_end = ran - len(pts), max(0, ran - reached)
     # Under load (a CI runner encoding HEVC, threaded) a quarter of the
     # frames may go; half not arriving is video lost, not a busy encoder
     assert 0 <= dropped <= ran // 2, (ran, len(pts), dropped)
