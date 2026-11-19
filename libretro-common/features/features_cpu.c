@@ -1272,8 +1272,19 @@ unsigned cpu_features_get_core_amount(void)
    return 1; /* Only one PPU, SPUs don't really count */
 #elif defined(VITA)
    return 4;
-#elif defined(HAVE_LIBNX) || defined(SWITCH)
-   return 4;
+#elif defined(HAVE_LIBNX)
+   {
+      /* The cores the process may run on, not the console's */
+      uint64_t mask = 0;
+      uint32_t rc;
+      unsigned n    = 0;
+      RETRO_HORIZON_CORE_MASK(rc, mask);
+      if (rc)
+         return 3;
+      for (; mask; mask &= mask - 1)
+         n++;
+      return n ? n : 1;
+   }
 #elif defined(_3DS)
    u8 device_model = 0xFF;
    CFGU_GetSystemModel(&device_model);/*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
