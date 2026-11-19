@@ -168,6 +168,12 @@ typedef struct gfx_display_effect_desc
    unsigned metal_constant_count;
    /* Wii U: the GX2 shader group */
    const void *gx2;
+   /* DKSH from uam (deko3d_shaders/menu_effects_dksh.h), for deko3d
+    * and the Switch driver's 3D engine */
+   const uint8_t *dksh_vertex;
+   const uint8_t *dksh_fragment;
+   size_t dksh_vertex_size;
+   size_t dksh_fragment_size;
 } gfx_display_effect_desc_t;
 
 typedef struct gfx_display_effect gfx_display_effect_t;

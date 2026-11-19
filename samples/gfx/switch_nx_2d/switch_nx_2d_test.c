@@ -36,6 +36,9 @@
 #endif
 
 #include "../../../gfx/drivers/switch_nx_gfx.c"
+#ifndef __SWITCH2__
+#include "../../../gfx/drivers/deko3d_shaders/menu_effects_dksh.h"
+#endif
 
 static int failures;
 #define CHECK(c, ...) do { if (!(c)) { failures++; \
@@ -549,6 +552,78 @@ static void triangle3d(const vtx3d_t *v0, const vtx3d_t *v1,
       }
 }
 
+/* Whether the program in @slot is @blob's code */
+static bool program_is(unsigned slot, const uint8_t *blob)
+{
+   uint64_t region = raddr(0x582);
+   uint32_t off    = reg3d[0x801 + slot * 0x10];
+   uint32_t entry  = nxg_le32(prog_hdr(blob) + 4);
+   return off >= entry && !memcmp(xlat(region + off - entry),
+         blob + nxg_le32(blob + 8), nxg_le32(blob + 12))
+      && reg3d[0x803 + slot * 0x10] == nxg_le32(prog_hdr(blob) + 8);
+}
+
+/* An effect's draw as the engine saw it, for the lanes to read */
+typedef struct
+{
+   const uint8_t *vs, *fs;
+   uint64_t va, limit, ubo_v, ubo_f;
+   uint32_t blend[6], blend_en, va_cfg, attr[2], count, sc[2];
+   uint32_t ubo_size_v, ubo_size_f, d8;
+   float    xf[6];
+   float    ubo[204];
+   unsigned shader_invalidates;
+   bool     ok;
+} fxrec_t;
+static fxrec_t fxrec[16];
+static unsigned fxrecs, shader_invalidates;
+
+static void effect3d(void)
+{
+   static const uint8_t *const vs[3] = {
+      deko3d_fx_quad_vert_dksh, deko3d_fx_ribbon_vert_dksh,
+      deko3d_fx_ribbon_simple_vert_dksh
+   };
+   static const uint8_t *const fs[6] = {
+      deko3d_fx_ribbon_frag_dksh, deko3d_fx_ribbon_simple_frag_dksh,
+      deko3d_fx_snow_simple_frag_dksh, deko3d_fx_snow_frag_dksh,
+      deko3d_fx_bokeh_frag_dksh, deko3d_fx_snowflake_frag_dksh
+   };
+   fxrec_t *r = &fxrec[fxrecs++ & 15];
+   unsigned i;
+   memset(r, 0, sizeof(*r));
+   for (i = 0; i < 3; i++)
+      if (program_is(1, vs[i]))
+         r->vs = vs[i];
+   for (i = 0; i < 6; i++)
+      if (program_is(5, fs[i]))
+         r->fs = fs[i];
+   for (i = 0; i < 6; i++)
+      r->blend[i] = reg3d[0x781 + i];
+   for (i = 0; i < 6; i++)
+      r->xf[i] = rf(0x280 + i);
+   r->blend_en   = reg3d[0x4D8];
+   r->va_cfg     = reg3d[0x700];
+   r->attr[0]    = reg3d[0x459];
+   r->attr[1]    = reg3d[0x45A];
+   r->va         = raddr(0x701);
+   r->limit      = raddr(0x7C0);
+   r->count      = reg3d[0x35E];
+   r->sc[0]      = reg3d[0x381];
+   r->sc[1]      = reg3d[0x382];
+   r->d8         = reg3d[0x0D8];
+   r->ubo_v      = cbs[0][2].valid ? cbs[0][2].addr : 0;
+   r->ubo_f      = cbs[4][2].valid ? cbs[4][2].addr : 0;
+   r->ubo_size_v = cbs[0][2].size;
+   r->ubo_size_f = cbs[4][2].size;
+   r->shader_invalidates = shader_invalidates;
+   if (r->ubo_v)
+      memcpy(r->ubo, xlat(r->ubo_v), sizeof(r->ubo));
+   r->ok = r->vs && r->fs && !cbs[0][1].valid && !cbs[4][1].valid
+        && reg3d[0x586] == NXG_3D_PRIM_STRIP && reg3d[0x35D] == 0
+        && reg3d[0x3D0] == 0 && reg3d[0x380] == 1;
+}
+
 static void draw3d(void)
 {
    unsigned n = reg3d[0x35E], i;
@@ -557,6 +632,13 @@ static void draw3d(void)
    if (pending2d)
       hazards++;
    pending3d = true;
+   /* An effect's programs: its state recorded, not shaded */
+   if (     !program_is(1, deko3d_menu_vsh_dksh)
+         || !program_is(5, deko3d_menu_fsh_dksh))
+   {
+      effect3d();
+      return;
+   }
    if (reg3d[0x586] != NXG_3D_PRIM_STRIP || reg3d[0x35D] != 0 || n < 3
          || !check_state())
    {
@@ -742,6 +824,8 @@ static void method3d(unsigned m, uint32_t v)
    }
    else if (m == NXG_3D_INVALIDATE_TIC)
       tic_fresh = true;
+   else if (m == NXG_3D_INVALIDATE_SHADER)
+      shader_invalidates++;
    else if (m == NXG_3D_INVALIDATE_TEX)
       tex_fresh = true;
    else if (m == NXG_3D_VERTEX_END)
@@ -2097,6 +2181,213 @@ static void lane_3d_firmware_mute(void)
    driver_free(sw);
    printf("[pass] firmware writes: deko3d's six through the macro, bounded with no answer\n");
 }
+/* --- the menu's effects ------------------------------------------------ */
+
+/* The ribbon's uniforms, a pattern; the y flip the driver asks for */
+static float ribbon_pat[204];
+static float ribbon_yflip_asked;
+const float *gfx_display_ribbon_ubo(gfx_display_t *p_disp, float yflip)
+{
+   unsigned i;
+   (void)p_disp;
+   for (i = 0; i < 204; i++)
+      ribbon_pat[i] = (float)i * 0.5f;
+   ribbon_pat[1]      = yflip;
+   ribbon_yflip_asked = yflip;
+   return ribbon_pat;
+}
+
+static gfx_display_effect_desc_t fxd[6];
+static void *fxh[6];
+static gfx_display_t fx_disp;
+static gfx_display_mesh_t fx_ribbon, fx_quad;
+static float fx_ribbon_pos[24];
+static float fx_quad_pos[8] = { -1, -1, 1, -1, -1, 1, 1, 1 };
+static float fx_color[16];
+
+static void fx_describe(void)
+{
+#define FXD(e, f, v, fr) \
+   fxd[e].flags = f; \
+   fxd[e].dksh_vertex = v; fxd[e].dksh_vertex_size = sizeof(v); \
+   fxd[e].dksh_fragment = fr; fxd[e].dksh_fragment_size = sizeof(fr)
+   FXD(0, GFX_EFFECT_MESH | GFX_EFFECT_BLEND_ADD | GFX_EFFECT_RIBBON,
+         deko3d_fx_ribbon_vert_dksh, deko3d_fx_ribbon_frag_dksh);
+   FXD(1, GFX_EFFECT_MESH | GFX_EFFECT_BLEND_SCREEN,
+         deko3d_fx_ribbon_simple_vert_dksh, deko3d_fx_ribbon_simple_frag_dksh);
+   FXD(2, 0, deko3d_fx_quad_vert_dksh, deko3d_fx_snow_simple_frag_dksh);
+   FXD(3, 0, deko3d_fx_quad_vert_dksh, deko3d_fx_snow_frag_dksh);
+   FXD(4, GFX_EFFECT_YFLIP, deko3d_fx_quad_vert_dksh, deko3d_fx_bokeh_frag_dksh);
+   FXD(5, GFX_EFFECT_YFLIP, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_snowflake_frag_dksh);
+#undef FXD
+}
+
+static void draws_fx(switch_video_t *sw)
+{
+   gfx_display_ctx_draw_t d;
+   struct video_coords c;
+   math_matrix_4x4 m;
+   unsigned e;
+   memset(&c, 0, sizeof(c));
+   memset(&d, 0, sizeof(d));
+   c.vertices     = 4;
+   c.color        = fx_color;
+   d.coords       = &c;
+   d.scale_factor = 1.0f;
+   d.color        = fx_color;
+   /* the menu's matrix sent before the effects, which write over it */
+   memcpy(m.data, quarter, sizeof(quarter));
+   d.texture      = tex4;
+   d.matrix_data  = &m;
+   d.pos          = VIDEO_POS_PACK(300, 720 - 364);
+   d.dims         = VIDEO_SCALE_PACK(64, 64);
+   c.color        = NULL;
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+   c.color        = fx_color;
+   d.texture      = 0;
+   d.matrix_data  = NULL;
+   d.pos          = VIDEO_POS_PACK(0, 0);
+   d.dims         = VIDEO_SCALE_PACK(1280, 720);
+   for (e = 0; e < 6; e++)
+   {
+      fx_disp.effect_mesh     = e < 2 ? &fx_ribbon : &fx_quad;
+      fx_disp.effect_vertices = e < 2 ? 10 : 4;
+      d.effect                = fxh[e];
+      gfx_display_ctx_switch.draw_pipeline(&d, &fx_disp, sw,
+            VIDEO_SCALE_PACK(1280, 720));
+      /* and the draw after it, which an effect leaves to the pipeline */
+      gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+   }
+   /* a menu draw after the effects: its own state again */
+   c.color       = NULL;
+   d.effect      = NULL;
+   d.texture     = tex4;
+   d.matrix_data = &m;
+   d.pos         = VIDEO_POS_PACK(200, 720 - 264);
+   d.dims        = VIDEO_SCALE_PACK(64, 64);
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+}
+
+static void lane_3d_effects(void)
+{
+   static const uint32_t px4[4] = {
+      0xffff0000u, 0xff00ff00u, 0xff0000ffu, 0xffffffffu
+   };
+   /* blend factors by effect: ribbon adds, ribbon simple screens, the
+    * rest by their alpha */
+   static const uint32_t blend[6][6] = {
+      { 1, 2, 2, 1, 2, 2 }, { 1, 9, 2, 1, 1, 2 }, { 1, 5, 6, 1, 2, 6 },
+      { 1, 5, 6, 1, 2, 6 }, { 1, 5, 6, 1, 2, 6 }, { 1, 5, 6, 1, 2, 6 }
+   };
+   unsigned e, i, r0, d0, inv0;
+   uint64_t ribbon_va;
+   uint32_t used;
+   switch_video_t *sw = driver_new(1280, 720, true);
+   nxg_t *g           = (nxg_t*)sw->gpu;
+
+   fx_describe();
+   for (i = 0; i < 12; i++)
+   {
+      fx_ribbon_pos[2 * i]     = (float)i * 0.1f;
+      fx_ribbon_pos[2 * i + 1] = 1.0f - (float)i * 0.05f;
+   }
+   fx_ribbon.positions    = fx_ribbon_pos;
+   fx_ribbon.vertex_count = 12;
+   fx_ribbon.id           = 77;
+   fx_quad.positions      = fx_quad_pos;
+   fx_quad.vertex_count   = 4;
+   fx_quad.id             = 1;
+   fx_disp.effect_time    = 1.5f;
+   for (i = 0; i < 16; i++)
+      fx_color[i] = (i & 3) == 3 ? 0.75f : 1.0f;
+   tex4 = load_px(sw, px4, 2, 2);
+   /* the setup's own invalidate out of the way */
+   frame(sw, NULL, 0, 0, 0);
+   inv0 = shader_invalidates;
+   for (e = 0; e < 6; e++)
+   {
+      fxh[e] = gfx_display_ctx_switch.effect_install(sw, &fxd[e]);
+      CHECK(fxh[e], "effect %u not installed", e);
+   }
+   r0 = fxrecs;
+   d0 = draws3d;
+   vfi.menu_st_flags = MENU_ST_FLAG_ALIVE;
+   menu_draws        = draws_fx;
+   frame(sw, NULL, 0, 0, 0);
+   CHECK(fxrecs - r0 == 6 && draws3d - d0 == 8,
+         "%u effect draws and %u draws, not 6 and 8", fxrecs - r0,
+         draws3d - d0);
+   /* the draw after each effect left to the pipeline: nothing else */
+   CHECK(at(sw, 100, 100) == 0 && at(sw, 900, 600) == 0,
+         "an effect drawn as a quad too: %06x", at(sw, 100, 100));
+   for (e = 0; e < 6 && fxrecs - r0 == 6; e++)
+   {
+      const fxrec_t *r = &fxrec[(r0 + e) & 15];
+      const gfx_display_mesh_t *mesh = e < 2 ? &fx_ribbon : &fx_quad;
+      unsigned n = e < 2 ? 10 : 4;
+      CHECK(r->ok && r->vs == fxd[e].dksh_vertex
+            && r->fs == fxd[e].dksh_fragment
+            && r->d8 == nxg_le32(prog_hdr(fxd[e].dksh_fragment) + 44),
+            "effect %u: programs or state", e);
+      CHECK(!memcmp(r->blend, blend[e], sizeof(blend[e])) && r->blend_en,
+            "effect %u: blend %u %u %u / %u %u %u", e, r->blend[0],
+            r->blend[1], r->blend[2], r->blend[3], r->blend[4], r->blend[5]);
+      CHECK(r->va_cfg == ((1u << 12) | 8)
+            && r->attr[0] == ((1u << 6) | (0x12u << 21) | (7u << 27))
+            && r->attr[1] == r->attr[0], "effect %u: vertex layout", e);
+      CHECK(r->count == n && r->limit == r->va + n * 8 - 1
+            && !memcmp(xlat(r->va), mesh->positions, n * 8),
+            "effect %u: %u vertices", e, r->count);
+      CHECK(r->ubo_v && r->ubo_v == r->ubo_f && r->ubo_size_v >= 0x400
+            && r->ubo_size_f >= 0x400, "effect %u: uniforms not bound", e);
+      CHECK(r->xf[0] == 640.0f && r->xf[1] == -360.0f && r->xf[3] == 640.0f
+            && r->xf[4] == 360.0f, "effect %u: viewport", e);
+      CHECK(r->shader_invalidates > inv0, "effect %u: code not invalidated",
+            e);
+      if (e == 0)
+         CHECK(!memcmp(r->ubo, ribbon_pat, sizeof(ribbon_pat))
+               && ribbon_yflip_asked == 1.0f, "ribbon uniforms");
+      else if (e == 1)
+         CHECK(r->ubo[0] == 1.5f && r->ubo[1] == 1.0f && r->ubo[2] == 0.75f,
+               "ribbon simple uniforms %f %f %f", r->ubo[0], r->ubo[1],
+               r->ubo[2]);
+      else
+         CHECK(r->ubo[16] == 1280.0f && r->ubo[17] == 720.0f
+               && r->ubo[18] == 1.5f
+               && r->ubo[19] == (e >= 4 ? -1.0f : 1.0f),
+               "effect %u uniforms %f %f %f %f", e, r->ubo[16], r->ubo[17],
+               r->ubo[18], r->ubo[19]);
+   }
+   /* the menu's draw after them: its state and its pixels */
+   CHECK(!bad3d && !hazards, "state %u, hazards %u", bad3d, hazards);
+   CHECK(at(sw, 202, 202) == 0x00ff00 && at(sw, 261, 261) == 0xff0000
+         && at(sw, 302, 302) == 0x00ff00,
+         "the menu after the effects: %06x %06x", at(sw, 202, 202),
+         at(sw, 261, 261));
+   /* the next frame: the mesh where it was, not made again */
+   ribbon_va = fxrec[r0 & 15].va;
+   r0        = fxrecs;
+   frame(sw, NULL, 0, 0, 0);
+   CHECK(fxrecs - r0 == 6 && fxrec[r0 & 15].va == ribbon_va,
+         "the ribbon's positions made again");
+   menu_draws        = NULL;
+   vfi.menu_st_flags = 0;
+   /* installs stop where the code memory or the table ends */
+   used = g->code3d_used;
+   for (i = 0; i < 32; i++)
+      if (!gfx_display_ctx_switch.effect_install(sw, &fxd[5]))
+         break;
+   CHECK(i < 32 && g->fx_count <= NXG_3D_EFFECTS
+         && g->code3d_used + NXG_3D_CODE_TAIL <= g->code3d.size
+         && g->code3d_used >= used,
+         "installs past the code memory: %u, %u of %u bytes", i,
+         g->code3d_used, g->code3d.size);
+   poke->unload_texture(sw, false, tex4);
+   driver_free(sw);
+   CHECK(maps_live == 0, "%u maps left", maps_live);
+   printf("[pass] effects: programs, blends, uniforms and the meshes, the menu after them\n");
+}
 #else
 /* The Switch 2 keeps the 2D engine's terms */
 static void lane_3d(void)
@@ -2105,6 +2396,8 @@ static void lane_3d(void)
    CHECK(gfx_display_ctx_switch.handles_transform
          && !gfx_display_ctx_switch.handles_vertex_strip,
          "the menus hand over matrices with no 3D engine");
+   CHECK(!gfx_display_ctx_switch.effect_install,
+         "effects offered with no 3D engine");
    driver_free(sw);
    printf("[pass] no 3D engine: the menus hand over values and quads\n");
 }
@@ -2126,6 +2419,7 @@ int main(void)
 #ifndef __SWITCH2__
    lane_3d_pool();
    lane_3d_firmware_mute();
+   lane_3d_effects();
 #endif
    CHECK(!bad_words, "%u words or blits the engine model rejected", bad_words);
 #ifdef __SWITCH2__

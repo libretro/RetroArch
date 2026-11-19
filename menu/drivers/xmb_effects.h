@@ -102,6 +102,11 @@ static const char *xmb_effect_ribbon_sm4(void)
 #include "../../gfx/drivers/gx2_shaders/menu_shaders.h"
 #endif
 
+#ifdef HAVE_LIBNX
+#define XMB_EFFECTS_DKSH
+#include "../../gfx/drivers/deko3d_shaders/menu_effects_dksh.h"
+#endif
+
 /* Cg for GL, which gl2 draws with where it has no GLSL */
 #if defined(HAVE_CG) && defined(HAVE_OPENGL) && !defined(HAVE_OPENGLES)
 #define XMB_EFFECTS_CG_GL
@@ -270,6 +275,27 @@ static void xmb_effects_describe(void)
    d[XMB_EFFECT_SNOW].metal_constant_count        = 3;
    d[XMB_EFFECT_BOKEH].metal_fragment             = "bokeh_fragment";
    d[XMB_EFFECT_SNOWFLAKE].metal_fragment         = "snowflake_fragment";
+#endif
+
+#ifdef XMB_EFFECTS_DKSH
+#define XMB_DKSH(e, v, f) \
+   d[e].dksh_vertex        = v; \
+   d[e].dksh_vertex_size   = sizeof(v); \
+   d[e].dksh_fragment      = f; \
+   d[e].dksh_fragment_size = sizeof(f)
+   XMB_DKSH(XMB_EFFECT_RIBBON, deko3d_fx_ribbon_vert_dksh,
+         deko3d_fx_ribbon_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_RIBBON_SIMPLE, deko3d_fx_ribbon_simple_vert_dksh,
+         deko3d_fx_ribbon_simple_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_SNOW_SIMPLE, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_snow_simple_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_SNOW, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_snow_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_BOKEH, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_bokeh_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_SNOWFLAKE, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_snowflake_frag_dksh);
+#undef XMB_DKSH
 #endif
 
 #ifdef WIIU
