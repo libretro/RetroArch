@@ -11438,6 +11438,7 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
       {"sk", RETRO_LANGUAGE_SLOVAK},
       {"fa", RETRO_LANGUAGE_PERSIAN},
       {"he", RETRO_LANGUAGE_HEBREW},
+      {"iw", RETRO_LANGUAGE_HEBREW}, /* Java and Android name Hebrew "iw" */
       {"ast", RETRO_LANGUAGE_ASTURIAN},
       {"fi", RETRO_LANGUAGE_FINNISH},
       {"id", RETRO_LANGUAGE_INDONESIAN},
