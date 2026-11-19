@@ -389,11 +389,8 @@ static void switch_handle_touch_mouse(switch_input_t *sw)
 {
    unsigned int i;
    int finger_id         = 0;
-#ifdef __SWITCH2__
-   uint64_t current_time = armTicksToNs(armGetSystemTick()) / 1000000;
-#else
-   uint64_t current_time = svcGetSystemTick() * 1000 / 19200000;
-#endif
+   uint64_t current_time = armGetSystemTick()
+      / (armGetSystemTickFreq() / 1000);
 
    switch_finish_simulated_mouse_clicks(sw, current_time);
 
