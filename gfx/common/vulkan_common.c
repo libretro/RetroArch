@@ -60,6 +60,15 @@
 #include "vulkan_swapchain_extent.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
+#ifdef __SWITCH2__
+#include "../include/vulkan/vulkan_vi.h"
+extern VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance, const char *pName);
+static VkSurfaceKHR sw2_kept_surface;
+static VkInstance   sw2_kept_instance;
+static VkSwapchainKHR sw2_kept_swapchain;
+static VkDevice       sw2_kept_device;
+static bool           sw2_keep_swapchain_now;
+#endif
 #ifdef HAVE_OPENXR
 #include "vulkan_openxr.h"
 #endif
@@ -2746,6 +2755,9 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       case VULKAN_WSI_DISPLAY:
          required_extensions[required_extension_count++] = "VK_KHR_display";
          break;
+      case VULKAN_WSI_SWITCH:
+         required_extensions[required_extension_count++] = "VK_NN_vi_surface";
+         break;
       case VULKAN_WSI_MVK_MACOS:
       case VULKAN_WSI_MVK_IOS:
          required_extensions[required_extension_count++] = "VK_EXT_metal_surface";
@@ -3176,6 +3188,29 @@ static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
       vkResetFences(vk->context.device, 1, &vk->context.present_fence);
 }
 
+#ifdef __SWITCH2__
+/* Destroys what a teardown kept for the next context on this device
+ * (the swapchain) and on this instance (the surface, when asked). */
+static void sw2_kept_release(gfx_ctx_vulkan_data_t *vk, bool surface)
+{
+   if (     sw2_kept_swapchain != VK_NULL_HANDLE
+         && sw2_kept_device    == vk->context.device)
+   {
+      vkDestroySwapchainKHR(sw2_kept_device, sw2_kept_swapchain, NULL);
+      sw2_kept_swapchain = VK_NULL_HANDLE;
+      sw2_kept_device    = VK_NULL_HANDLE;
+   }
+   if (     surface
+         && sw2_kept_surface  != VK_NULL_HANDLE
+         && sw2_kept_instance == vk->context.instance)
+   {
+      vkDestroySurfaceKHR(sw2_kept_instance, sw2_kept_surface, NULL);
+      sw2_kept_surface  = VK_NULL_HANDLE;
+      sw2_kept_instance = VK_NULL_HANDLE;
+   }
+}
+#endif
+
 static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
@@ -3211,6 +3246,14 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
        * a rebuild after an out-of-date acquire, or a resize, does
        * not, and a threaded hardware core's work goes on. */
       vulkan_context_wait_frames(vk);
+#ifdef __SWITCH2__
+      if (sw2_keep_swapchain_now)
+      {
+         sw2_kept_swapchain = vk->swapchain;
+         sw2_kept_device    = vk->context.device;
+      }
+      else
+#endif
       vulkan_low_latency_retire(vk, vk->swapchain);
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
       vk->swapchain                      = VK_NULL_HANDLE;
@@ -3698,6 +3741,33 @@ static bool vulkan_wsi_surface_create(VkInstance instance,
          }
 #endif
          break;
+      case VULKAN_WSI_SWITCH:
+#ifdef __SWITCH2__
+         {
+            VkViSurfaceCreateInfoNN surf_info;
+            PFN_vkCreateViSurfaceNN create;
+            if (sw2_kept_surface && sw2_kept_instance == instance)
+            {
+               *out = sw2_kept_surface;
+               sw2_kept_surface = VK_NULL_HANDLE;
+               sw2_kept_instance = VK_NULL_HANDLE;
+               break;
+            }
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateViSurfaceNN", create))
+               return false;
+
+            surf_info.sType  = VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN;
+            surf_info.pNext  = NULL;
+            surf_info.flags  = 0;
+            surf_info.window = surface;
+
+            if (create(instance, &surf_info, NULL, out) == VK_SUCCESS)
+               break;
+            RARCH_ERR("[Vulkan] Failed to create the Switch surface.\n");
+            return false;
+         }
+#endif
+         break;
       case VULKAN_WSI_DISPLAY:
       case VULKAN_WSI_NONE:
       default:
@@ -3767,6 +3837,10 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 error_swapchain:
    vulkan_destroy_swapchain(vk);
 error_surface:
+#ifdef __SWITCH2__
+   /* a kept swapchain on the surface goes before it */
+   sw2_kept_release(vk, false);
+#endif
    if (vk->vk_surface != VK_NULL_HANDLE)
    {
       vkDestroySurfaceKHR(vk->context.instance,
@@ -5292,6 +5366,15 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       composite                = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
 
    old_swapchain               = vk->swapchain;
+#ifdef __SWITCH2__
+   if (     old_swapchain == VK_NULL_HANDLE
+         && sw2_kept_swapchain != VK_NULL_HANDLE
+         && sw2_kept_device == vk->context.device)
+   {
+      old_swapchain      = sw2_kept_swapchain;
+      sw2_kept_swapchain = VK_NULL_HANDLE;
+   }
+#endif
 
 #if defined(_WIN32) && !defined(__WINRT__)
    if (ss->dxgi_present && !vk->dxgi_failed && vk->wsi_type == VULKAN_WSI_WIN32)
@@ -5904,6 +5987,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       vulkan_custom_driver_kept();
 #endif
 
+#ifdef __SWITCH2__
+   /* OunceVK is linked in: there is no loader to open */
+   GetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)vkGetInstanceProcAddr;
+#else
    if (!vulkan_library)
    {
 #ifdef _WIN32
@@ -5954,6 +6041,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #endif
       return false;
    }
+
+#endif
 
    vulkan_symbol_wrapper_init(GetInstanceProcAddr);
 
@@ -6133,6 +6222,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    uint32_t video_st_flags        = 0;
+#ifdef __SWITCH2__
+   bool sw2_keep                  = false;
+#endif
 #ifdef VULKAN_SESSION_CACHE
    VkResult session_idle = VK_NOT_READY;
 #endif
@@ -6190,7 +6282,19 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    /* Drained above; the fence would only be waited on again. */
    vk->context.present_pending = false;
 
+#ifdef __SWITCH2__
+   /* The default NWindow takes one producer: the surface and its
+    * swapchain stay for the next Vulkan context, and only for one */
+   sw2_keep = destroy_surface
+      && vk->vk_surface != VK_NULL_HANDLE
+      && !(vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
+      && string_is_equal(config_get_ptr()->arrays.video_driver, "vulkan");
+   sw2_keep_swapchain_now = sw2_keep;
+#endif
    vulkan_destroy_swapchain(vk);
+#ifdef __SWITCH2__
+   sw2_keep_swapchain_now = false;
+#endif
    vulkan_low_latency_device_deinit(vk);
 
    if (vk->context.present_fence != VK_NULL_HANDLE)
@@ -6202,8 +6306,22 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    if (     destroy_surface
          && (vk->vk_surface != VK_NULL_HANDLE))
    {
+#ifdef __SWITCH2__
+      if (sw2_keep)
+      {
+         sw2_kept_surface  = vk->vk_surface;
+         sw2_kept_instance = vk->context.instance;
+      }
+      else
+      {
+         sw2_kept_release(vk, false);
+         vkDestroySurfaceKHR(vk->context.instance,
+               vk->vk_surface, NULL);
+      }
+#else
       vkDestroySurfaceKHR(vk->context.instance,
             vk->vk_surface, NULL);
+#endif
       vk->vk_surface = VK_NULL_HANDLE;
    }
 
@@ -6230,6 +6348,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
    if (vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
       video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+#ifdef __SWITCH2__
+   if (sw2_keep)
+      video_st_flags |= VIDEO_FLAG_CACHE_CONTEXT;
+#endif
 #ifdef VULKAN_SESSION_CACHE
    if (kept_dlss_borrowed_instance == vk->context.instance
          || !(video_st_flags & VIDEO_FLAG_KEEP_VULKAN_SESSION)
@@ -6340,6 +6462,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #ifdef HAVE_VAAPI
          vaapi_hevc_vulkan_cache_device_destroying(vk->context.device);
 #endif
+#ifdef __SWITCH2__
+         sw2_kept_release(vk, false);
+#endif
          vkDestroyDevice(vk->context.device, NULL);
 #if defined(ANDROID) && defined(HAVE_THREADS)
          record_android_capture_device_destroyed(vk->context.device);
@@ -6357,9 +6482,13 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
       if (vk->context.instance)
       {
+#ifdef __SWITCH2__
+         sw2_kept_release(vk, true);
+#endif
          vkDestroyInstance(vk->context.instance, NULL);
          vk->context.instance = NULL;
 
+#ifndef __SWITCH2__
          if (vulkan_library
 #ifdef VULKAN_SESSION_CACHE
                && !kept_dlss_session.instance
@@ -6376,6 +6505,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
             vulkan_library = NULL;
          }
+#endif
       }
    }
 

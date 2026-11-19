@@ -192,7 +192,8 @@ enum vulkan_wsi_type
    VULKAN_WSI_DISPLAY,
    VULKAN_WSI_MVK_MACOS,
    VULKAN_WSI_MVK_IOS,
-   VULKAN_WSI_SDL3
+   VULKAN_WSI_SDL3,
+   VULKAN_WSI_SWITCH
 };
 
 enum vulkan_context_flags

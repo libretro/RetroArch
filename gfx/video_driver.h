@@ -3364,6 +3364,7 @@ extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten_webgl;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
+extern const gfx_ctx_driver_t gfx_ctx_switch_vk;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_fpga;
 extern const gfx_ctx_driver_t gfx_ctx_sixel;

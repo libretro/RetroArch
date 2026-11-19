@@ -220,6 +220,13 @@ retroarch_switch.lst
 retroarch_switch.nacp
 retroarch_switch.nro
 retroarch_switch.nso
+retroarch_switch2.elf
+retroarch_switch2.map
+retroarch_switch2.pfs0
+retroarch_switch2.lst
+retroarch_switch2.nacp
+retroarch_switch2.nro
+retroarch_switch2.nso
 
 # PS2
 *_irx.c

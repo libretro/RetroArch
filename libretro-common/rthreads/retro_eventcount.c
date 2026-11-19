@@ -198,7 +198,13 @@ static unsigned           ec_linux_spin;
  * version at startup, and this is asked once per object at init. */
 static bool ec_switch_has_arbiter(void)
 {
+#ifdef __SWITCH2__
+   /* Switch 2 parks on the condition variable: a wake through the
+    * address arbiter can arrive a frame or more late there */
+   return false;
+#else
    return hosversionAtLeast(4, 0, 0);
+#endif
 }
 
 /* Waits while the epoch still reads @key, for @timeout_ns (negative:
@@ -2019,6 +2025,8 @@ const char *retro_eventcount_backend_name(void)
 {
 #if defined(RETRO_EC_ADDR_LINUX)
    return "futex";
+#elif defined(RETRO_EC_ADDR_SWITCH) && defined(__SWITCH2__)
+   return "scond";
 #elif defined(RETRO_EC_ADDR_SWITCH)
    return ec_switch_has_arbiter()
       ? "horizon address arbiter" : "scond (firmware before 4.0.0)";

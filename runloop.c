@@ -6060,7 +6060,14 @@ void runloop_event_deinit_core(void)
 #ifdef HAVE_RUNAHEAD
       serialization_close();
 #endif
+#ifdef HAVE_THREADS
+      /* The core may still free its GL objects in retro_deinit() */
+      video_thread_core_context_take();
+#endif
       runloop_st->current_core.retro_deinit();
+#ifdef HAVE_THREADS
+      video_thread_core_context_release();
+#endif
 #if TARGET_OS_IPHONE
       exec_mem_ledger_free_all();
 #endif

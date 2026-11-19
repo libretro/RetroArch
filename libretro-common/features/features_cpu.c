@@ -201,6 +201,9 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
       __asm__ __volatile__ ("rdtsc" : "=a" (a), "=d" (d));
       time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
    }
+#elif defined(HAVE_LIBNX)
+   /* cntpct_el0: the counter Horizon gives the process */
+   time_ticks = armGetSystemTick();
 #elif defined(__GNUC__) && defined(__aarch64__)
    __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (time_ticks));
 #elif defined(__GNUC__) && defined(__ARM_ARCH_6__)
@@ -237,8 +240,6 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
    time_ticks = OSGetSystemTime();
-#elif defined(HAVE_LIBNX)
-   time_ticks = armGetSystemTick();
 #elif defined(__EMSCRIPTEN__)
    time_ticks = emscripten_get_now() * 1000;
 #endif
@@ -270,7 +271,13 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(WIIU)
    return ticks_to_us(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
-   return (svcGetSystemTick() * 10) / 192;
+   {
+      /* At the counter's own rate: 19.2 MHz on the Switch, 31.25 MHz
+       * on the Switch 2. Split so the scale cannot overflow. */
+      u64 t = armGetSystemTick();
+      u64 f = armGetSystemTickFreq();
+      return (retro_time_t)((t / f) * 1000000 + ((t % f) * 1000000) / f);
+   }
 #elif defined(_3DS)
    return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
@@ -306,6 +313,8 @@ static int cpu_features_perf_rate_stated(void)
    return 0;
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
    return 0;
+#elif defined(HAVE_LIBNX)
+   return (int)(armGetSystemTickFreq() / 1000);
 #elif defined(__GNUC__) && defined(__aarch64__)
    uint64_t hz;
    __asm__ __volatile__ ("mrs %0, cntfrq_el0" : "=r" (hz));

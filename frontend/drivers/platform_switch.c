@@ -106,8 +106,71 @@ static AppletHookCookie applet_hook_cookie;
 extern bool nxlink_connected;
 #endif
 
+/* Display metrics for the Switch's video contexts */
+bool switch_ctx_get_metrics(void *data,
+   enum display_metric_types type, float *value)
+{
+   switch (type)
+   {
+      case DISPLAY_METRIC_DPI:
+         /* FIXME: DPI values should be obtained by querying
+          * the hardware - these hard-coded values are a kludge */
+         switch (appletGetOperationMode())
+         {
+            case AppletOperationMode_Console:
+               /* Docked mode
+                * > Resolution:  1920x1080
+                * > Screen Size: 39 inch
+                *   - Have to make an assumption here. We select
+                *     a 'default' screen size of 39 inches which
+                *     corresponds to the optimal diagonal screen
+                *     size for HD television as reported in:
+                *       "HDTV displays: subjective effects of scanning
+                *       standards and domestic picture sizes,"
+                *       N. E. Tanton and M. A. Stone,
+                *       BBC Research Department Report 1989/09,
+                *       January 1989
+                *     This agrees with the median recorded TV
+                *     size in:
+                *       "A Survey of UK Television Viewing Conditions,"
+                *       Katy C. Noland and Louise H. Truong,
+                *       BBC R&D White Paper WHP 287 January 2015
+                * > DPI:         sqrt((1920 * 1920) + (1080 * 1080)) / 39
+                */
+               *value = 56.48480f;
+               break;
+            case AppletOperationMode_Handheld:
+            default:
+#ifdef __SWITCH2__
+               /* Handheld mode
+                * > Resolution:  1920x1080
+                * > Screen size: 7.9 inch
+                * > DPI:         sqrt((1920 * 1920) + (1080 * 1080)) / 7.9
+                */
+               *value = 278.8495f;
+#else
+               /* Handheld mode
+                * > Resolution:  1280x720
+                * > Screen size: 6.2 inch
+                * > DPI:         sqrt((1280 * 1280) + (720 * 720)) / 6.2
+                */
+               *value = 236.8717f;
+#endif
+               break;
+         }
+         return true;
+      default:
+         break;
+   }
+
+   return false;
+}
+
 void libnx_apply_overclock(void)
 {
+#ifdef __SWITCH2__
+   return;
+#else
    const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)
       / sizeof(SWITCH_CPU_PROFILES[1]) - 1;
    settings_t *settings        = config_get_ptr();
@@ -128,6 +191,7 @@ void libnx_apply_overclock(void)
          clkrstCloseSession(&session);
       }
    }
+#endif
 }
 
 static void on_applet_hook(AppletHookType hook, void *param)
@@ -146,6 +210,7 @@ static void on_applet_hook(AppletHookType hook, void *param)
          focus_state = appletGetFocusState();
          platform_switch_has_focus = focus_state == AppletFocusState_InFocus;
 
+#ifndef __SWITCH2__
          if (!platform_switch_has_focus)
          {
             if (hosversionBefore(8, 0, 0))
@@ -162,6 +227,7 @@ static void on_applet_hook(AppletHookType hook, void *param)
          }
          else
             libnx_apply_overclock();
+#endif
          break;
 
          /* Performance mode */
@@ -216,7 +282,7 @@ static void frontend_switch_get_env(
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init(SD_PREFIX "/retroarch-log.txt");
+   retro_main_log_file_init(SD_PREFIX "/retroarch-log.txt", false);
 #endif
 #endif
 
@@ -311,7 +377,9 @@ static void frontend_switch_deinit(void *data)
 {
    (void)data;
 
+#ifndef __SWITCH2__
    nifmExit();
+#endif
 
    if (hosversionBefore(8, 0, 0))
    {
@@ -320,10 +388,12 @@ static void frontend_switch_deinit(void *data)
    }
    else
    {
+#ifndef __SWITCH2__
       ClkrstSession session = {0};
       clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
       clkrstSetClockRate(&session, 1020000000);
       clkrstCloseSession(&session);
+#endif
       clkrstExit();
    }
 
@@ -572,6 +642,11 @@ error:
 static void frontend_switch_shutdown(bool unused)
 {
    (void)unused;
+
+#ifdef __SWITCH2__
+   /* nifm is shut down here: closing it in deinit crashes */
+   nifmExit();
+#endif
 }
 
 /* runloop_get_system_info isnt initialized that early.. */

@@ -389,7 +389,8 @@ static void switch_handle_touch_mouse(switch_input_t *sw)
 {
    unsigned int i;
    int finger_id         = 0;
-   uint64_t current_time = svcGetSystemTick() * 1000 / 19200000;
+   uint64_t current_time = armGetSystemTick()
+      / (armGetSystemTickFreq() / 1000);
 
    switch_finish_simulated_mouse_clicks(sw, current_time);
 
@@ -706,10 +707,12 @@ static void switch_process_touch_mouse_finger_motion(switch_input_t *sw, TouchEv
          sw->touch_mouse_speed_factor;
       int dy        = event->tfinger.dy * TOUCH_MAX_Y * 256 * 
          sw->touch_mouse_speed_factor;
+      int x_rel;
+      int y_rel;
       sw->hires_dx += dx;
       sw->hires_dy += dy;
-      int x_rel     = sw->hires_dx / 256;
-      int y_rel     = sw->hires_dy / 256;
+      x_rel         = sw->hires_dx / 256;
+      y_rel         = sw->hires_dy / 256;
       if (x_rel || y_rel)
       {
          sw->mouse_delta = VIDEO_POS_PACK(x_rel, y_rel);

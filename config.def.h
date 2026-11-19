@@ -2335,6 +2335,8 @@
 #endif
 #elif defined(WIIU)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/"
+#elif defined(__SWITCH2__)
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/switch2/libounce/latest/"
 #elif defined(HAVE_LIBNX)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/"
 #elif defined(_3DS)
