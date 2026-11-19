@@ -47,10 +47,38 @@ bool RWebAudioStop(void) { return true; }
 bool RWebAudioStart(void) { return true; }
 void RWebAudioSetNonblockState(bool state) { (void)state; }
 void RWebAudioFree(void) { }
-size_t RWebAudioWriteAvailFrames(void) { return 4800; }
+/* what the page reports free, and how often it was asked */
+static size_t   page_avail = 4800;
+static unsigned avail_asks, resumes;
+size_t RWebAudioWriteAvailFrames(void) { avail_asks++; return page_avail; }
 size_t RWebAudioBufferSizeFrames(void) { return 3072; }
 void RWebAudioRecalibrateTime(void) { }
-bool RWebAudioResumeCtx(void) { return true; }
+bool RWebAudioResumeCtx(void) { resumes++; return true; }
+
+/* A blocking write to a page with no room, on a build without ASYNCIFY,
+ * where nothing on the page's thread can wait: it does not spin asking,
+ * it nudges the context once and drops */
+static void run_full(void)
+{
+   static float in[480 * 2];
+   unsigned new_rate = 0;
+   void *h;
+   printf("   a blocking write to a full page, no ASYNCIFY\n");
+   want_layout = AUDIO_LAYOUT_STEREO;
+   page_max    = 2;
+   h = audio_rwebaudio.init(NULL, 48000, 64, &new_rate);
+   CHECK(h != NULL, "init failed");
+   if (!h)
+      return;
+   audio_rwebaudio.set_nonblock_state(h, false);
+   page_avail = 0;
+   avail_asks = resumes = 0;
+   audio_rwebaudio.write(h, in, sizeof(in));
+   CHECK(avail_asks <= 4, "the page was asked for room %u times", avail_asks);
+   CHECK(resumes <= 1, "the context was resumed %u times", resumes);
+   page_avail = 4800;
+   audio_rwebaudio.free(h);
+}
 
 static void run(const char *what, uint32_t asked, unsigned max,
       unsigned expect_ch, uint32_t expect_layout)
@@ -91,6 +119,7 @@ int main(void)
    run("a 5.1 page, 7.1 asked for: 5.1", AUDIO_LAYOUT_7POINT1, 6, 6, AUDIO_LAYOUT_5POINT1);
    run("a 7.1 page, 7.1 asked for", AUDIO_LAYOUT_7POINT1, 8, 8, AUDIO_LAYOUT_7POINT1);
    run("a 7.1 page, quad asked for", AUDIO_LAYOUT_QUAD, 8, 4, AUDIO_LAYOUT_QUAD);
+   run_full();
    if (failures)
    {
       printf("%u failure(s)\n", failures);

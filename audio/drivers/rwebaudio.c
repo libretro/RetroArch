@@ -120,16 +120,11 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    return rwebaudio;
 }
 
-/* How many times a blocking write asks the context for room before
- * dropping the rest. With ASYNCIFY each lap sleeps a millisecond, so
- * this is about two seconds; without it the laps are resume attempts
- * back to back on the page's thread, so it is a count that ends the
- * spin within a few milliseconds. */
-#if defined(EMSCRIPTEN_FULL_ASYNCIFY) || defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK)
+/* How many times a blocking write yields to the browser for room
+ * before dropping the rest: each lap is a millisecond's yield, so about
+ * two seconds. Only where ASYNCIFY lets the page's thread yield at
+ * all; without it a write with no room drops at once. */
 #define RWEBAUDIO_WAIT_LAPS 2000
-#else
-#define RWEBAUDIO_WAIT_LAPS 100000
-#endif
 
 static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 {
@@ -173,21 +168,31 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 #endif
       /* async external block doesn't need to do anything else */
 #else
+#ifdef EMSCRIPTEN_FULL_ASYNCIFY
       {
-         /* Bounded: a context that will not run - suspended by the
-          * autoplay policy until the page is clicked, or by the browser
-          * for a background tab - frees nothing, and without ASYNCIFY
-          * this loop is a spin on the page's own thread. It ends, and
-          * the audio is dropped, rather than the tab freezing. */
+         /* Each retro_sleep() hands the page's thread back to the
+          * browser's event loop, where the sources' ended callbacks
+          * that free room run; it is a yield, not a timer, and the
+          * only way to let them run from here. Bounded: a context that
+          * will not run - suspended by the autoplay policy until the
+          * page is clicked, or by the browser for a background tab -
+          * frees nothing, and the audio is then dropped rather than
+          * the tab freezing. */
          unsigned laps = RWEBAUDIO_WAIT_LAPS;
          while (RWebAudioWriteAvailFrames() == 0 && laps--)
          {
-#ifdef EMSCRIPTEN_FULL_ASYNCIFY
             retro_sleep(1);
-#endif
             RWebAudioResumeCtx();
          }
       }
+#else
+      /* Without ASYNCIFY nothing on the page's own thread can wait:
+       * the context is nudged in case it is suspended, and a write
+       * with no room drops, as a non-blocking one does, rather than
+       * spinning */
+      if (RWebAudioWriteAvailFrames() == 0)
+         RWebAudioResumeCtx();
+#endif
 #endif
    }
 
