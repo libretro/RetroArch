@@ -6835,7 +6835,8 @@ static bool check_menu_driver_compatibility(settings_t *settings)
           * of the runtime SDL version. sdl3 always has
           * SDL_RenderGeometry. */
          return (memcmp(video_driver, "sdl2",   4) == 0 && video_driver[4] == '\0')
-             || (memcmp(video_driver, "sdl3",   4) == 0 && video_driver[4] == '\0');
+             || (memcmp(video_driver, "sdl3",   4) == 0 && video_driver[4] == '\0')
+             || (memcmp(video_driver, "switch", 6) == 0 && video_driver[6] == '\0');
       case 'c':
          return (memcmp(video_driver, "ctr",    3) == 0 && video_driver[3] == '\0');
       default:

@@ -59,6 +59,15 @@ void framebufferClose(Framebuffer *fb) { (void)fb; }
 /* --- the frontend ------------------------------------------------ */
 
 uint64_t cpu_features_get(void) { return 0; }
+AppletOperationMode appletGetOperationMode(void)
+{
+   return AppletOperationMode_Handheld;
+}
+bool video_context_driver_set(const gfx_ctx_driver_t *data)
+{
+   (void)data;
+   return true;
+}
 
 void video_driver_update_viewport(struct video_viewport *vp,
       bool force_full, bool keep_aspect, bool y_down)

@@ -104,6 +104,9 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef HAVE_GCM
    &gfx_display_ctx_rsx,
 #endif
+#ifdef HAVE_LIBNX
+   &gfx_display_ctx_switch,
+#endif
 #ifdef HAVE_DEKO3D
    &gfx_display_ctx_deko3d,
 #endif

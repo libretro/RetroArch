@@ -45,6 +45,123 @@ typedef enum
 NWindow *nwindowGetDefault(void);
 Result   nwindowSetDimensions(NWindow *nw, u32 width, u32 height);
 
+/* Docked or handheld */
+typedef enum
+{
+   AppletOperationMode_Handheld = 0,
+   AppletOperationMode_Console  = 1
+} AppletOperationMode;
+AppletOperationMode appletGetOperationMode(void);
+
+void armDCacheFlush(void *addr, size_t size);
+
+/* The GPU channel the Switch video driver draws through */
+typedef uint64_t iova_t;
+typedef enum { NvKind_Pitch = 0x0, NvKind_Generic_16BX2 = 0xfe } NvKind;
+typedef enum { NvChannelPriority_Low = 50, NvChannelPriority_Medium = 100,
+   NvChannelPriority_High = 150 } NvChannelPriority;
+typedef enum { NvColorFormat_A8B8G8R8 = 0x0000000100008D00ull } NvColorFormat;
+typedef enum { NvLayout_Pitch = 1, NvLayout_Tiled = 2,
+   NvLayout_BlockLinear = 3 } NvLayout;
+
+typedef struct { u32 id; u32 value; } NvFence;
+typedef struct { u32 num_fences; NvFence fences[4]; } NvMultiFence;
+typedef struct { u32 handle; u32 id; u32 size; void *cpu_addr;
+   NvKind kind; bool has_init; bool is_cpu_cacheable; } NvMap;
+typedef struct { u32 fd; u32 page_size; bool has_init; } NvAddressSpace;
+typedef struct { u32 id; u32 value; } NvGpuFenceState;
+typedef struct
+{
+   u32 fd;
+   bool has_init;
+   NvFence fence;
+   u32 fence_incr;
+   u32 num_entries;
+} NvGpuChannel;
+typedef struct { u32 big_page_size; } nvioctl_gpu_characteristics;
+
+#define GPFIFO_ENTRY_NOT_MAIN (1u << 9)
+
+Result nvInitialize(void);
+void   nvExit(void);
+Result nvGpuInit(void);
+void   nvGpuExit(void);
+const nvioctl_gpu_characteristics *nvGpuGetCharacteristics(void);
+Result nvFenceInit(void);
+void   nvFenceExit(void);
+Result nvFenceWait(NvFence *f, s32 timeout_us);
+Result nvMapInit(void);
+void   nvMapExit(void);
+Result nvMapCreate(NvMap *m, void *cpu_addr, u32 size, u32 align,
+      NvKind kind, bool is_cpu_cacheable);
+void   nvMapClose(NvMap *m);
+u32    nvMapGetHandle(NvMap *m);
+u32    nvMapGetId(NvMap *m);
+Result nvAddressSpaceCreate(NvAddressSpace *a, u32 page_size);
+void   nvAddressSpaceClose(NvAddressSpace *a);
+Result nvAddressSpaceMap(NvAddressSpace *a, u32 nvmap_handle,
+      bool is_gpu_cacheable, NvKind kind, iova_t *iova_out);
+Result nvAddressSpaceUnmap(NvAddressSpace *a, iova_t iova);
+Result nvGpuChannelCreate(NvGpuChannel *c, NvAddressSpace *as,
+      NvChannelPriority prio);
+void   nvGpuChannelClose(NvGpuChannel *c);
+Result nvGpuChannelAppendEntry(NvGpuChannel *c, iova_t start,
+      size_t num_cmds, u32 flags, u32 flush_threshold);
+Result nvGpuChannelKickoff(NvGpuChannel *c);
+u32    nvGpuChannelGetSyncpointId(NvGpuChannel *c);
+void   nvGpuChannelGetFence(NvGpuChannel *c, NvFence *fence_out);
+void   nvGpuChannelIncrFence(NvGpuChannel *c);
+void   nvMultiFenceCreate(NvMultiFence *mf, const NvFence *fence);
+
+/* libnx's own: the window's buffers, as its framebuffer makes them */
+typedef struct { int num_fds; int num_ints; } NativeHandle;
+typedef struct
+{
+   u32 width;
+   u32 height;
+   NvColorFormat color_format;
+   NvLayout layout;
+   u32 pitch;
+   u32 unused;
+   u32 offset;
+   NvKind kind;
+   u32 block_height_log2;
+   u32 scan;
+   u32 second_field_offset;
+   u64 flags;
+   u64 size;
+   u32 unk[6];
+} NvSurface;
+typedef struct
+{
+   NativeHandle header;
+   s32 unk0;
+   s32 nvmap_id;
+   u32 unk2;
+   u32 magic;
+   u32 pid;
+   u32 type;
+   u32 usage;
+   u32 format;
+   u32 ext_format;
+   u32 stride;
+   u32 total_size;
+   u32 num_planes;
+   u32 unk12;
+   NvSurface planes[3];
+   u64 unused;
+} NvGraphicBuffer;
+#define GRALLOC_USAGE_HW_TEXTURE  0x00000100
+#define GRALLOC_USAGE_HW_RENDER   0x00000200
+#define GRALLOC_USAGE_HW_COMPOSER 0x00000800
+
+Result nwindowConfigureBuffer(NWindow *nw, s32 slot, NvGraphicBuffer *buf);
+Result nwindowDequeueBuffer(NWindow *nw, s32 *out_slot, NvMultiFence *out_fence);
+Result nwindowQueueBuffer(NWindow *nw, s32 slot, const NvMultiFence *fence);
+Result nwindowReleaseBuffers(NWindow *nw);
+Result nwindowSetCrop(NWindow *nw, s32 left, s32 top, s32 right, s32 bottom);
+Result nwindowSetSwapInterval(NWindow *nw, u32 swap_interval);
+
 Result   framebufferCreate(Framebuffer *fb, NWindow *win,
       u32 width, u32 height, u32 format, u32 num_fbs);
 Result   framebufferMakeLinear(Framebuffer *fb);
