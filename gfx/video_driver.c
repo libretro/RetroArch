@@ -9017,6 +9017,22 @@ static void video_driver_window_size(settings_t *settings,
                }
             }
 
+            /* Where the compositor scales, windows are sized in its
+             * units, not the display's pixels */
+            {
+               float logical_w = 0.0f;
+               float logical_h = 0.0f;
+               if (     video_display_server_get_metrics(
+                           DISPLAY_METRIC_LOGICAL_WIDTH,  &logical_w)
+                     && video_display_server_get_metrics(
+                           DISPLAY_METRIC_LOGICAL_HEIGHT, &logical_h)
+                     && logical_w >= 1.0f
+                     && logical_h >= 1.0f)
+                  max_win_dims = VIDEO_SCALE_PACK(
+                        MIN(VIDEO_SCALE_W(max_win_dims), (unsigned)logical_w),
+                        MIN(VIDEO_SCALE_H(max_win_dims), (unsigned)logical_h));
+            }
+
             /* rotated games send unrotated width/height and
              * require special handling here because of it */
             if (rotation % 2)
