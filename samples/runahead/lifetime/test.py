@@ -116,6 +116,7 @@ def check_trace(name, rows, replies, log):
         require(after.count("RUN") >= 30, "the core did not go on running after the reset")
         require("Run-Ahead could not restore the core's state" in log,
                 "missing reset message")
+        require("Failed to load state" not in log, "the reset was reported twice")
     if name == "registration_after_init":
         require("LATE_REJECTED" in names, "late registration was not attempted")
     if name in ("secondary_disabled", "secondary_control"):

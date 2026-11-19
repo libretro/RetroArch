@@ -41,7 +41,6 @@
 #include <time/rtime.h>
 
 #include <compat/strl.h>
-#include <retro_atomic.h>
 
 #include "tasks/tasks_internal.h"
 #include "configuration.h"
@@ -1812,20 +1811,20 @@ static bool runahead_save_state(runloop_state_t *runloop_st)
    return false;
 }
 
-static bool runahead_load_state(runloop_state_t *runloop_st)
+/* @reset: set when the core had to be reset */
+static bool runahead_load_state(runloop_state_t *runloop_st, bool *reset)
 {
    retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
    bool last_dirty                  = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
-   bool reset                       = false;
    bool ret;
    if (serialization_interface.release)
    {
       /* A load does not consume the state, so it is tried twice.
        * Refused both times, the core is left on a speculative frame's
        * state, which it need not be able to go on from: it is reset. */
-      ret   =  serialization_load(info->data_const, info->size)
-            || serialization_load(info->data_const, info->size);
-      reset = !ret;
+      ret    =  serialization_load(info->data_const, info->size)
+             || serialization_load(info->data_const, info->size);
+      *reset = !ret;
    }
    else
       ret = core_unserialize_special(info);
@@ -1837,14 +1836,8 @@ static bool runahead_load_state(runloop_state_t *runloop_st)
    if (!ret)
       runahead_err(runloop_st);
 
-   if (reset)
-   {
-      const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_CORE_RESET);
-      runloop_msg_queue_push(_msg, strlen(_msg), 2, 5 * 60, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-      RARCH_ERR("[Run-Ahead] %s\n", _msg);
+   if (*reset)
       core_reset();
-   }
 
    return ret;
 }
@@ -2051,12 +2044,15 @@ static bool runahead_run_impl(void *data,
 
          if (last_frame)
          {
+            bool reset = false;
             serialization_phase_value = RETRO_EXECUTION_PHASE_RETAINED;
-            if (!runahead_load_state(runloop_st))
+            if (!runahead_load_state(runloop_st, &reset))
             {
-               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+               const char *_msg = msg_hash_to_str(reset
+                     ? MSG_RUNAHEAD_CORE_RESET : MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
                runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     MESSAGE_QUEUE_ICON_DEFAULT, reset
+                     ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_WARN("[Run-Ahead] %s\n", _msg);
                return advanced;
             }

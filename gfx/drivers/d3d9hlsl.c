@@ -7371,6 +7371,10 @@ static void d3d9_hlsl_hw_context_destroy(d3d9_video_t *d3d)
    d3d9_hlsl_hw_take_texture(d3d, NULL);
    d3d->hw.lost = true;
    hwr          = video_driver_get_hw_context();
+#ifdef HAVE_RUNAHEAD
+   /* Managed states may hold objects of the context about to go */
+   serialization_clear_history();
+#endif
    if (hwr->context_destroy)
       hwr->context_destroy();
 }

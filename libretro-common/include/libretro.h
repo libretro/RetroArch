@@ -7752,9 +7752,9 @@ typedef void (RETRO_CALLCONV *retro_savestate_release_t)(const void *data, size_
  * - The core initializes every byte that load or release reads; unused
  *   bytes are unspecified.
  * - A refused save or load leaves the live state unchanged. The frontend
- *   then turns prediction off; left with no kept state to go on from, it
- *   resets the core. A core that cannot continue at all calls
- *   RETRO_ENVIRONMENT_SHUTDOWN.
+ *   may try a refused load again; otherwise it turns prediction off, and
+ *   left with no kept state to go on from, it resets the core. A core that
+ *   cannot continue at all calls RETRO_ENVIRONMENT_SHUTDOWN.
  */
 struct retro_savestate_lifetime
 {
