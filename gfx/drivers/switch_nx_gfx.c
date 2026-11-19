@@ -237,6 +237,7 @@ static INLINE uint32_t sw_over(uint32_t s, uint32_t d)
 #define NXG_INCR        1
 #define NXG_NONINCR     3
 #define NXG_INLINE      4
+#define NXG_ONCE        5 /* the first word to the method, the rest to the next */
 #define NXG_HDR(mode, count, sub, method) \
    ((uint32_t)(method) | ((uint32_t)(sub) << 13) \
     | ((uint32_t)(count) << 16) | ((uint32_t)(mode) << 29))
@@ -1743,6 +1744,8 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
 
 /* MAXWELL_B methods, word offsets, named as deko3d's engine_3d.def */
 #define NXG_3D_WAIT_FOR_IDLE     0x044
+#define NXG_3D_MME_IRAM          0x045 /* position, then words to 0x046 */
+#define NXG_3D_MME_START         0x047 /* macro, then its start to 0x048 */
 #define NXG_3D_EARLY_FRAGMENT    0x084
 #define NXG_3D_FRAGMENT_D8       0x0D8
 #define NXG_3D_RASTERIZER        0x0DF
@@ -1782,6 +1785,7 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
 #define NXG_3D_DEPTH_TARGET      0x54E
 #define NXG_3D_TSC_POOL          0x557 /* address, highest index */
 #define NXG_3D_TIC_POOL          0x55D
+#define NXG_3D_ZCULL_REGION      0x564
 #define NXG_3D_MULTISAMPLE_MODE  0x574
 #define NXG_3D_PROGRAM_REGION    0x582
 #define NXG_3D_VERTEX_END        0x585
@@ -1803,6 +1807,7 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
 #define NXG_3D_CB_DATA           0x8E4
 #define NXG_3D_CB_BIND           0x904 /* a stage's, eight apart */
 #define NXG_3D_BINDLESS_SLOT     0x982
+#define NXG_3D_MACRO0            0xE00 /* register; value, mask to 0xE01 */
 
 #define NXG_3D_PRIM_STRIP        5
 #define NXG_3D_FILL              0x1B02
@@ -1833,6 +1838,27 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
 #define NXG_3D_VTX_FLOATS        8 /* position, texture, colour */
 
 #define NXG_3D_DKSH_MAGIC        0x48534B44u
+
+/* deko3d's WriteHardwareReg (pgraph.mme) for the Fermi MME: wait for
+ * idle, the value and mask to the firmware's arguments, the register to
+ * FirmwareCall[4], then read the first argument until the firmware
+ * sets it to 1 - giving up after 4096 reads, as NVK's does, rather
+ * than hold the channel. Assembled by hand: no prebuilt table exists,
+ * deko3d builds its own; decoded with mesa's mme_fermi as
+ *    0  maddr 0x044            9  send r1
+ *    1  send 0                10  r4 = 4096
+ *    2  parm r2               11  r1 = state[0xD00]
+ *    3  parm r3               12  r4 -= 1
+ *    4  maddr 0xD00, +1       13  bz r4, +3 (no delay)
+ *    5  send 0                14  r1 -= 1
+ *    6  send r2               15  bnz r1, -4 (no delay)
+ *    7  send r3               16  maddr 0x040, exit
+ *    8  maddr 0x8C4           17  send 0 */
+static const uint32_t nxg_3d_mme_hw_reg[18] = {
+   0x00110021, 0x00000041, 0x00000201, 0x00000301, 0x07400021, 0x00000041,
+   0x00001041, 0x00001841, 0x02310021, 0x00000841, 0x04000411, 0x03400115,
+   0xFFFFE411, 0x0000E027, 0xFFFFC911, 0xFFFF0837, 0x001000A1, 0x00000041
+};
 
 static uint32_t nxg_le32(const uint8_t *p)
 {
@@ -1935,15 +1961,43 @@ static uint32_t *nxg_3d_bind_program(uint32_t *w, unsigned slot,
    return nxg_3d_m(w, NXG_3D_CB_BIND + (slot - 1) * 8, 1u << 4);
 }
 
-/* The engine's state, once: what deko3d's queue sets up, less its
- * macros and firmware calls, and the pipeline the menu draws with */
+/* A register written by the firmware, through the macro */
+static uint32_t *nxg_3d_hw_reg(uint32_t *w, uint32_t reg, uint32_t v,
+      uint32_t mask)
+{
+   *w++ = NXG_HDR(NXG_ONCE, 3, NXG_SUB_3D, NXG_3D_MACRO0);
+   *w++ = reg;
+   *w++ = v;
+   *w++ = mask;
+   return w;
+}
+
+/* The engine's state, once: what deko3d's queue sets up - its register
+ * writes through the firmware, less the tile cache's (the tiled cache
+ * stays off) and its other macros - and the pipeline the menu draws
+ * with */
 static void nxg_3d_setup(nxg_t *g)
 {
-   uint32_t *w0 = nxg_cmd(g, 320), *w = w0;
+   uint32_t *w0 = nxg_cmd(g, 368), *w = w0;
    uint64_t cb  = g->cb3d.iova;
    unsigned i;
    if (!w)
       return;
+   *w++ = NXG_HDR(NXG_ONCE, 19, NXG_SUB_3D, NXG_3D_MME_IRAM);
+   *w++ = 0;
+   for (i = 0; i < 18; i++)
+      *w++ = nxg_3d_mme_hw_reg[i];
+   *w++ = NXG_HDR(NXG_INCR, 2, NXG_SUB_3D, NXG_3D_MME_START);
+   *w++ = 0; /* macro 0 ... */
+   *w++ = 0; /* ... from position 0 */
+   w = nxg_3d_hw_reg(w, 0x00418800, 0x00000001, 0x00000001);
+   w = nxg_3d_hw_reg(w, 0x00419A08, 0x00000000, 0x00000010);
+   w = nxg_3d_hw_reg(w, 0x00419F78, 0x00000000, 0x00000008);
+   w = nxg_3d_hw_reg(w, 0x00404468, 0x07FFFFFF, 0x3FFFFFFF);
+   w = nxg_3d_hw_reg(w, 0x00419A04, 0x00000001, 0x00000001);
+   w = nxg_3d_hw_reg(w, 0x00419A04, 0x00000002, 0x00000002);
+   /* No zcull storage is bound to the channel */
+   w = nxg_3d_m(w, NXG_3D_ZCULL_REGION, 0x3F);
    w = nxg_3d_m(w, NXG_3D_MULTISAMPLE, 0);
    w = nxg_3d_m(w, NXG_3D_MULTISAMPLE_MODE, 0);
    w = nxg_3d_fill(w, NXG_3D_WINDOW_RECTS, 16, 0);
@@ -2041,7 +2095,7 @@ static void nxg_3d_setup(nxg_t *g)
    w = nxg_3d_m(w, NXG_3D_FRAGMENT_65B, g->fsh.param_65b);
    w = nxg_3d_m(w, NXG_3D_SAMPLE_SHADING, g->fsh.per_sample ? 0x30 : 0x01);
    w = nxg_3d_m(w, NXG_3D_INVALIDATE_SHADER, 1u | (1u << 4) | (1u << 12));
-   nxg_cmd_trim(g, w0, 320, w);
+   nxg_cmd_trim(g, w0, 368, w);
 }
 
 /* The memory, the shaders and the sampler; false leaves the menu 2D */

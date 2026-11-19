@@ -16,7 +16,8 @@
  * deko3d's definitions: its state checked at every draw, the menu
  * shaders' arithmetic run over the strip - turned textures, strips,
  * vertex shading, blending, the scissor, the wait between engines and
- * the frames' descriptor slices.
+ * the frames' descriptor slices - and the macro engine its setup's
+ * firmware register writes run through.
  *
  * Built twice: for the Switch (libnx's channel, nvmap and window queue)
  * and with __SWITCH2__ for the Switch 2 (GSV memory and VM, the nvhost
@@ -573,6 +574,121 @@ static void draw3d(void)
    }
 }
 
+#ifndef __SWITCH2__
+/* --- the MME, and the firmware behind it ------------------------------
+ *
+ * The Fermi macro engine as envytools and mesa's mme_fermi describe it,
+ * the ops the driver's macro may use: add immediate, read shadow state,
+ * branch. Sends go to the 3D engine's methods; a write to
+ * FirmwareCall[4] is a firmware register write, recorded with the
+ * arguments then in MmeFirmwareArgs[1..2], acknowledged by setting
+ * MmeFirmwareArgs[0] to 1 two reads later. */
+
+static uint32_t mme_iram[0x400], mme_start[0x80];
+static unsigned mme_iram_pos, mme_start_pos, mme_bad, fw_acks_late;
+static struct { uint32_t reg, v, mask; } fw_calls[16];
+static unsigned fw_count, mme_reads;
+static int fw_ack_in = -1;
+static bool fw_mute;
+
+static void method3d(unsigned m, uint32_t v);
+
+static void mme_send(uint32_t *maddr, uint32_t v)
+{
+   unsigned m = *maddr & 0xFFF;
+   if (m == 0x8C4)
+   {
+      fw_calls[fw_count & 15].reg  = v;
+      fw_calls[fw_count & 15].v    = reg3d[0xD01];
+      fw_calls[fw_count & 15].mask = reg3d[0xD02];
+      fw_count++;
+      fw_ack_in = fw_mute ? -1 : 2;
+   }
+   else
+      method3d(m, v);
+   *maddr = (*maddr & ~0xFFFu) | ((m + ((*maddr >> 12) & 0x3F)) & 0xFFF);
+}
+
+static void mme_run(unsigned id, const uint32_t *par, unsigned np)
+{
+   uint32_t r[8], maddr = 0;
+   unsigned pc = mme_start[id & 0x7F], pi = 1, steps = 0;
+   bool exiting = false;
+   memset(r, 0, sizeof(r));
+   r[1] = np ? par[0] : 0;
+   for (;;)
+   {
+      uint32_t o = mme_iram[pc & 0x3FF], v = 0;
+      unsigned op = o & 7, res = (o >> 4) & 7, d = (o >> 8) & 7;
+      unsigned a = (o >> 11) & 7;
+      int imm = (int)(o >> 14);
+      if (imm & 0x20000)
+         imm -= 0x40000;
+      if (++steps > 100000)
+      {
+         mme_bad++;
+         return;
+      }
+      if (op == 7)
+      {
+         bool t = ((o >> 4) & 1) ? r[a] != 0 : r[a] == 0;
+         if ((o & 0x80) || !((o >> 5) & 1))
+         {
+            mme_bad++; /* the macro's branches carry no delay slot */
+            return;
+         }
+         pc = t ? pc + imm : pc + 1;
+         continue;
+      }
+      if (op == 1)
+         v = r[a] + (uint32_t)imm;
+      else if (op == 5)
+      {
+         v = reg3d[(r[a] + (uint32_t)imm) & 0xFFF];
+         mme_reads++;
+         if (fw_ack_in > 0 && --fw_ack_in == 0)
+            reg3d[0xD00] = 1;
+      }
+      else
+      {
+         mme_bad++;
+         return;
+      }
+      switch (res)
+      {
+         case 0: /* the next parameter */
+            if (d)
+               r[d] = pi < np ? par[pi++] : 0;
+            break;
+         case 1:
+            if (d) r[d] = v;
+            break;
+         case 2:
+            if (d) r[d] = v;
+            maddr = v;
+            break;
+         case 4:
+            if (d) r[d] = v;
+            mme_send(&maddr, v);
+            break;
+         default:
+            mme_bad++;
+            return;
+      }
+      if (exiting)
+         break;
+      if (o & 0x80)
+         exiting = true;
+      pc++;
+   }
+   /* The next call may not overwrite arguments not yet acknowledged */
+   if (reg3d[0xD00] != 1)
+      fw_acks_late++;
+   if (pi < np)
+      mme_bad++;
+}
+#endif
+
 static void method3d(unsigned m, uint32_t v)
 {
    if (m >= 0x1000)
@@ -592,8 +708,22 @@ static void method3d(unsigned m, uint32_t v)
       reg3d[0x8E3] = of + 4;
       return;
    }
+   if (m == NXG_3D_MME_IRAM + 1)
+   {
+      mme_iram[mme_iram_pos++ & 0x3FF] = v;
+      return;
+   }
+   if (m == NXG_3D_MME_START + 1)
+   {
+      mme_start[mme_start_pos++ & 0x7F] = v;
+      return;
+   }
    reg3d[m] = v;
-   if (m >= 0x904 && m < 0x904 + 5 * 8 && !((m - 0x904) & 7))
+   if (m == NXG_3D_MME_IRAM)
+      mme_iram_pos = v;
+   else if (m == NXG_3D_MME_START)
+      mme_start_pos = v;
+   else if (m >= 0x904 && m < 0x904 + 5 * 8 && !((m - 0x904) & 7))
    {
       unsigned st = (m - 0x904) / 8, idx = (v >> 4) & 31;
       if (idx >= 18)
@@ -683,6 +813,21 @@ static void run_words(const uint32_t *w, unsigned n)
       words_run++;
       if (mode == NXG_INLINE)
          method(sub, m, cnt);
+#ifndef __SWITCH2__
+      else if (mode == NXG_ONCE && sub == NXG_SUB_3D && m >= 0xE00
+            && !(m & 1) && cnt && i + cnt <= n)
+      {
+         /* A macro call: its parameters, then the macro */
+         mme_run((m - 0xE00) / 2, &w[i], cnt);
+         i += cnt;
+      }
+      else if (mode == NXG_ONCE && sub == NXG_SUB_3D && m < 0xE00
+            && cnt && i + cnt <= n)
+      {
+         for (k = 0; k < cnt; k++)
+            method(sub, k ? m + 1 : m, w[i++]);
+      }
+#endif
       else if (mode == NXG_INCR || mode == NXG_NONINCR)
       {
          if (i + cnt > n)
@@ -1752,6 +1897,15 @@ static void lane_3d(void)
    };
    uint32_t white[16];
    unsigned d0, b0, top, bot, mid, t;
+   static const uint32_t fw_want[6][3] = {
+      { 0x00418800, 0x00000001, 0x00000001 },
+      { 0x00419A08, 0x00000000, 0x00000010 },
+      { 0x00419F78, 0x00000000, 0x00000008 },
+      { 0x00404468, 0x07FFFFFF, 0x3FFFFFFF },
+      { 0x00419A04, 0x00000001, 0x00000001 },
+      { 0x00419A04, 0x00000002, 0x00000002 }
+   };
+   unsigned fw0 = fw_count, i;
    switch_video_t *sw = driver_new(1280, 720, true);
    nxg_t *g           = (nxg_t*)sw->gpu;
    CHECK(g && g->has3d, "no 3D engine");
@@ -1770,6 +1924,20 @@ static void lane_3d(void)
    vfi.menu_st_flags = 0;
    CHECK(draws3d - d0 == 5, "%u draws on the 3D engine, not 5",
          draws3d - d0);
+   /* deko3d's register writes, through the firmware, in its order */
+   CHECK(fw_count - fw0 == 6, "%u firmware register writes, not 6",
+         fw_count - fw0);
+   for (i = 0; i < 6; i++)
+      CHECK(fw_calls[(fw0 + i) & 15].reg == fw_want[i][0]
+            && fw_calls[(fw0 + i) & 15].v == fw_want[i][1]
+            && fw_calls[(fw0 + i) & 15].mask == fw_want[i][2],
+            "firmware write %u: %06x = %08x / %08x", i,
+            fw_calls[(fw0 + i) & 15].reg, fw_calls[(fw0 + i) & 15].v,
+            fw_calls[(fw0 + i) & 15].mask);
+   CHECK(!mme_bad && !fw_acks_late,
+         "macro: %u faults, %u calls past an unacknowledged one",
+         mme_bad, fw_acks_late);
+   CHECK(reg3d[0x564] == 0x3F, "zcull region %x", reg3d[0x564]);
    CHECK(blits - b0 >= 2, "the default quads left the 2D engine");
    CHECK(!bad3d, "%u draws with state the model rejects", bad3d);
    CHECK(!hazards, "%u draws with no wait for the other engine", hazards);
@@ -1907,6 +2075,28 @@ static void lane_3d_pool(void)
    CHECK(maps_live == 0, "%u maps left", maps_live);
    printf("[pass] descriptors: a slice a frame, the rest of a full one on the 2D engine\n");
 }
+/* A firmware that never answers: each call gives up after its 4096
+ * reads, and the frames still go out */
+static void lane_3d_firmware_mute(void)
+{
+   unsigned r0, f0;
+   switch_video_t *sw;
+   fw_mute = true;
+   r0      = mme_reads;
+   f0      = fw_count;
+   sw      = driver_new(256, 224, true);
+   frame(sw, NULL, 0, 0, 0);
+   frame(sw, NULL, 0, 0, 0);
+   fw_mute = false;
+   CHECK(fw_count - f0 == 6 && mme_reads - r0 == 6 * 4096,
+         "unanswered firmware: %u calls, %u reads", fw_count - f0,
+         mme_reads - r0);
+   CHECK(!mme_bad, "%u macro faults", mme_bad);
+   CHECK(syncpt_value >= ((nxg_t*)sw->gpu)->frames[0].fence.value,
+         "frames stopped behind the firmware");
+   driver_free(sw);
+   printf("[pass] firmware writes: deko3d's six through the macro, bounded with no answer\n");
+}
 #else
 /* The Switch 2 keeps the 2D engine's terms */
 static void lane_3d(void)
@@ -1935,6 +2125,7 @@ int main(void)
    lane_3d();
 #ifndef __SWITCH2__
    lane_3d_pool();
+   lane_3d_firmware_mute();
 #endif
    CHECK(!bad_words, "%u words or blits the engine model rejected", bad_words);
 #ifdef __SWITCH2__
