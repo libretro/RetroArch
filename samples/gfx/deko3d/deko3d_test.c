@@ -226,22 +226,6 @@ DkSwapchain dkSwapchainCreate(DkSwapchainMaker const *m)
 void dkSwapchainDestroy(DkSwapchain s) { free(s); }
 void dkSwapchainSetSwapInterval(DkSwapchain s, uint32_t i) { (void)s; (void)i; }
 
-/* Shaders: DKSH blobs as bin2s lays them out, start and end labels
- * around one block - a 256-byte control section, then 256 of code */
-#define DKSH_BLOB(name) \
-   ".balign 8\n.global " name "\n" name ":\n" \
-   ".long 0x48534B44, 24, 256, 256\n.fill 496, 1, 0\n" \
-   ".global " name "_end\n" name "_end:\n"
-#ifdef _WIN32
-__asm__(".section .rdata,\"dr\"\n"
-      DKSH_BLOB("deko3d_menu_vsh_dksh") DKSH_BLOB("deko3d_menu_fsh_dksh")
-      ".text\n");
-#else
-__asm__(".section .rodata\n"
-      DKSH_BLOB("deko3d_menu_vsh_dksh") DKSH_BLOB("deko3d_menu_fsh_dksh")
-      ".text\n");
-#endif
-
 /* --- the console and the frontend ------------------------------------- */
 
 NWindow *nwindowGetDefault(void) { return (NWindow*)&the_device; }
@@ -372,6 +356,17 @@ static void lane_init(void)
          && (dk->sc_images[0].layout.maker.flags & DkImageFlags_UsagePresent)
          && (dk->sc_images[0].layout.maker.flags & DkImageFlags_Usage2DEngine),
          "swapchain images");
+   /* The generated DKSH: control sections kept, code where the shaders
+    * name it */
+   CHECK(dk->vsh.control == deko3d_menu_vsh_dksh
+         && dk->fsh.control == deko3d_menu_fsh_dksh
+         && !memcmp(dk->shader_mem->cpu + dk->vsh.offset,
+               deko3d_menu_vsh_dksh + 256, 512)
+         && !memcmp(dk->shader_mem->cpu + dk->fsh.offset,
+               deko3d_menu_fsh_dksh + 256, 512)
+         && dk->fsh.offset + 512 + DK_SHADER_CODE_UNUSABLE_SIZE
+            <= dk->shader_mem->size,
+         "the menu shaders not loaded from the generated DKSH");
    driver_free(dk);
    CHECK(!blocks_live, "%u memory blocks left at free", blocks_live);
    printf("[pass] init and teardown\n");

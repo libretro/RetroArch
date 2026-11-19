@@ -268,11 +268,9 @@ typedef struct dk3d_font
    unsigned                      tex_dims;
 } dk3d_font_t;
 
-/* The menu shaders, GLSL compiled by uam and embedded by bin2s */
-extern const uint8_t deko3d_menu_vsh_dksh[];
-extern const uint8_t deko3d_menu_vsh_dksh_end[];
-extern const uint8_t deko3d_menu_fsh_dksh[];
-extern const uint8_t deko3d_menu_fsh_dksh_end[];
+/* The menu shaders: the GLSL beside it, compiled by uam into DKSH
+ * (tools/gen_deko3d_shaders.sh) */
+#include "deko3d_shaders/menu_dksh.h"
 
 /* (pos, uv, color) as the menu vertex shader reads them */
 static const DkVtxAttribState dk3d_menu_attribs[3] = {
@@ -2214,8 +2212,8 @@ static bool dk3d_shaders_init(dk3d_t *dk)
 
    blobs[0] = deko3d_menu_vsh_dksh;
    blobs[1] = deko3d_menu_fsh_dksh;
-   sizes[0] = (uint32_t)(deko3d_menu_vsh_dksh_end - deko3d_menu_vsh_dksh);
-   sizes[1] = (uint32_t)(deko3d_menu_fsh_dksh_end - deko3d_menu_fsh_dksh);
+   sizes[0] = (uint32_t)sizeof(deko3d_menu_vsh_dksh);
+   sizes[1] = (uint32_t)sizeof(deko3d_menu_fsh_dksh);
    out[0]   = &dk->vsh;
    out[1]   = &dk->fsh;
    for (i = 0; i < 2; i++)
