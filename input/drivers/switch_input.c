@@ -707,10 +707,12 @@ static void switch_process_touch_mouse_finger_motion(switch_input_t *sw, TouchEv
          sw->touch_mouse_speed_factor;
       int dy        = event->tfinger.dy * TOUCH_MAX_Y * 256 * 
          sw->touch_mouse_speed_factor;
+      int x_rel;
+      int y_rel;
       sw->hires_dx += dx;
       sw->hires_dy += dy;
-      int x_rel     = sw->hires_dx / 256;
-      int y_rel     = sw->hires_dy / 256;
+      x_rel         = sw->hires_dx / 256;
+      y_rel         = sw->hires_dy / 256;
       if (x_rel || y_rel)
       {
          sw->mouse_delta = VIDEO_POS_PACK(x_rel, y_rel);
