@@ -25,6 +25,13 @@ static HidVibrationDeviceHandle vibration_handles[DEFAULT_MAX_PADS][2];
 static HidVibrationDeviceHandle vibration_handleheld[2];
 static HidVibrationValue vibration_values[DEFAULT_MAX_PADS][2];
 static HidVibrationValue vibration_stop;
+/* What each pad's motors were last sent, on which handles, and what
+ * the controller answered: a send is an IPC round trip, and the
+ * frontend writes a motor every frame a core sets it, mostly to what
+ * it already holds. */
+static HidVibrationValue vibration_sent[DEFAULT_MAX_PADS][2];
+static const HidVibrationDeviceHandle *vibration_sent_to[DEFAULT_MAX_PADS];
+static bool vibration_sent_ok[DEFAULT_MAX_PADS];
 static int previous_handheld                         = -1;
 /* 1 = handheld, 0 = docked, -1 = first use */
 static unsigned previous_split_joycon_setting[MAX_USERS] = { 0 };
@@ -77,6 +84,7 @@ static void *switch_joypad_init(void *data)
    }
    hidInitializeVibrationDevices(vibration_handleheld,
          2, HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld | HidNpadStyleTag_NpadJoyDual);
+   memset(vibration_sent_to, 0, sizeof(vibration_sent_to));
 
    return (void*)-1;
 }
@@ -145,6 +153,7 @@ static void switch_joypad_destroy(void)
       hidSendVibrationValues(vibration_handles[i], vibration_values[i], 2);
    }
    hidSendVibrationValues(vibration_handleheld, vibration_values[0], 2);
+   memset(vibration_sent_to, 0, sizeof(vibration_sent_to));
 }
 
 static void switch_joypad_poll(void)
@@ -338,7 +347,16 @@ bool switch_joypad_set_rumble(unsigned pad,
 
    handle = (pad == 0 && !padIsNpadActive(&pad_states[0], HidNpadIdType_No1))
       ? vibration_handleheld : vibration_handles[pad];
-   return R_SUCCEEDED(hidSendVibrationValues(handle, vibration_values[pad], 2));
+   if (     vibration_sent_to[pad] == handle
+         && !memcmp(vibration_sent[pad], vibration_values[pad],
+               sizeof(vibration_sent[pad])))
+      return vibration_sent_ok[pad];
+   vibration_sent_ok[pad] = R_SUCCEEDED(
+         hidSendVibrationValues(handle, vibration_values[pad], 2));
+   vibration_sent_to[pad] = handle;
+   memcpy(vibration_sent[pad], vibration_values[pad],
+         sizeof(vibration_sent[pad]));
+   return vibration_sent_ok[pad];
 }
 
 input_device_driver_t switch_joypad = {
