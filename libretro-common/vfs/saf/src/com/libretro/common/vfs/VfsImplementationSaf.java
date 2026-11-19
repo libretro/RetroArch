@@ -30,9 +30,8 @@ import android.provider.DocumentsContract;
 import android.provider.DocumentsContract.Document;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 public final class VfsImplementationSaf
@@ -45,51 +44,117 @@ public final class VfsImplementationSaf
       Document.COLUMN_DISPLAY_NAME,
    };
 
+   /**
+    * A tree URI taken apart once. Nearly every call names the same tree, so the last one is kept;
+    * the holder is immutable, so threads only ever see a whole one.
+    */
+   private static final class Tree
+   {
+      final String string;
+      final Uri uri;
+      final boolean isDocument;
+      final String documentId;
+
+      Tree(String string)
+      {
+         this.string = string;
+         uri = Uri.parse(string);
+         final List<String> segments = uri.getPathSegments();
+         isDocument = (segments.size() >= 2 && segments.get(0).equals("document"))
+            || (segments.size() >= 4 && segments.get(0).equals("tree") && segments.get(2).equals("document"));
+         documentId = segments.size() >= 2 && segments.get(0).equals("tree") ? segments.get(1) : null;
+      }
+
+      /**
+       * The document URI of a canonical path inside this tree, or null if the tree has no such path.
+       */
+      Uri documentUri(String path)
+      {
+         if (isDocument)
+            return path.length() == 1 ? uri : null;
+         return documentId == null ? null : DocumentsContract.buildDocumentUriUsingTree(uri, path.length() == 1 ? documentId : documentId.concat(path));
+      }
+   }
+
+   private static volatile Tree lastTree;
+
+   private static Tree getTree(String string) {
+      Tree tree = lastTree;
+      if (tree == null || !tree.string.equals(string))
+         lastTree = tree = new Tree(string);
+      return tree;
+   }
+
+   /**
+    * Whether or not a path is already in the form normalizePath returns.
+    */
+   private static boolean isCanonical(String path) {
+      final int length = path.length();
+      if (length == 0 || path.charAt(0) != '/')
+         return false;
+      if (length == 1)
+         return true;
+      if (path.charAt(length - 1) == '/')
+         return false;
+      for (int i = 0; i < length; ++i)
+      {
+         if (path.charAt(i) != '/')
+            continue;
+         // A component that is empty, "." or ".."
+         final int end = path.indexOf('/', i + 1);
+         final int componentLength = (end < 0 ? length : end) - i - 1;
+         if (componentLength == 0
+               || (componentLength == 1 && path.charAt(i + 1) == '.')
+               || (componentLength == 2 && path.charAt(i + 1) == '.' && path.charAt(i + 2) == '.'))
+            return false;
+      }
+      return true;
+   }
+
+   /**
+    * The path relative to the root of the tree as "/a/b": empty and "." components dropped, ".." resolved, never above the root.
+    * Only the string is looked at: a path inside a tree has nothing to do with the device's own filesystem.
+    */
    private static String normalizePath(String path) {
-      try
+      if (isCanonical(path))
+         return path;
+      final String[] components = path.split("/");
+      int count = 0;
+      for (String component : components)
       {
-         return new File("/" + path).getCanonicalPath();
+         if (component.isEmpty() || component.equals("."))
+            continue;
+         if (component.equals(".."))
+         {
+            if (count > 0)
+               --count;
+            continue;
+         }
+         components[count++] = component;
       }
-      catch (IOException e)
-      {
+      if (count == 0)
          return "/";
-      }
+      final StringBuilder builder = new StringBuilder(path.length() + 1);
+      for (int i = 0; i < count; ++i)
+         builder.append('/').append(components[i]);
+      return builder.toString();
    }
 
+   /**
+    * The parent of a canonical path, or null for the root.
+    */
    private static String getPathParent(String path) {
-      try
-      {
-         return new File("/" + path).getCanonicalFile().getParent();
-      }
-      catch (IOException e)
-      {
+      final int slash = path.lastIndexOf('/');
+      if (path.length() == 1)
          return null;
-      }
+      return slash == 0 ? "/" : path.substring(0, slash);
    }
 
+   /**
+    * The last component of a canonical path, empty for the root.
+    */
    private static String getPathFileName(String path) {
-      try
-      {
-         return new File("/" + path).getCanonicalFile().getName();
-      }
-      catch (IOException e)
-      {
-         return null;
-      }
-   }
-
-   private static boolean isDocument(Uri treeUri) {
-      final List<String> segments = treeUri.getPathSegments();
-      return (
-         (
-            segments.size() >= 2
-               && segments.get(0).equals("document")
-         ) || (
-            segments.size() >= 4
-               && segments.get(0).equals("tree")
-               && segments.get(2).equals("document")
-         )
-      );
+      return path.substring(path.lastIndexOf('/') + 1);
    }
 
    /**
@@ -106,48 +171,35 @@ public final class VfsImplementationSaf
    {
       if (Build.VERSION.SDK_INT < 21)
          return -1;
+      final Tree t = getTree(tree);
       path = normalizePath(path);
+      final Uri fileUri = t.documentUri(path);
+      if (fileUri == null)
+         return -1;
+      final String mode;
+      if (!write)
+         mode = "r";
+      else if (!read)
+         mode = truncate ? "wt" : "wa";
+      else
+         mode = truncate ? "rwt" : "rw";
       boolean createdFile = false;
       while (true)
       {
-         final Uri treeUri = Uri.parse(tree);
-         if (isDocument(treeUri) && !path.equals("/"))
-            return -1;
-         final Uri fileUri = isDocument(treeUri)
-            ? treeUri
-            : DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
-         final String mode;
-         if (!write)
-            mode = "r";
-         else if (!read)
-         {
-            if (truncate)
-               mode = "wt";
-            else
-               mode = "wa";
-         }
-         else
-         {
-            if (truncate)
-               mode = "rwt";
-            else
-               mode = "rw";
-         }
          try
          {
             return content.openFileDescriptor(fileUri, mode).detachFd();
          }
          catch (FileNotFoundException | IllegalArgumentException e)
          {
-            if (createdFile || !write || !truncate || isDocument(treeUri))
+            if (createdFile || !write || !truncate || t.isDocument)
                return -1;
             createdFile = true;
             final String parentPath = getPathParent(path);
             if (parentPath == null)
                return -1;
-            final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPath.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPath);
             // A create that did not land under this name may have lost to another creator of it, so the open is tried once more either way
-            createDocumentExact(content, parentUri, "application/octet-stream", getPathFileName(path));
+            createDocumentExact(content, t.documentUri(parentPath), "application/octet-stream", getPathFileName(path));
          }
       }
    }
@@ -162,13 +214,9 @@ public final class VfsImplementationSaf
    {
       if (Build.VERSION.SDK_INT < 21)
          return false;
-      final Uri treeUri = Uri.parse(tree);
-      path = normalizePath(path);
-      if (isDocument(treeUri) && !path.equals("/"))
+      final Uri fileUri = getTree(tree).documentUri(normalizePath(path));
+      if (fileUri == null)
          return false;
-      final Uri fileUri = isDocument(treeUri)
-         ? treeUri
-         : DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
       try
       {
          DocumentsContract.deleteDocument(content, fileUri);
@@ -178,10 +226,6 @@ public final class VfsImplementationSaf
          return false;
       }
       return true;
-   }
-
-   private static Uri getDocumentUri(Uri treeUri, String path) {
-      return DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
    }
 
    /**
@@ -471,18 +515,18 @@ public final class VfsImplementationSaf
       if (Build.VERSION.SDK_INT < 21)
          return false;
 
-      final Uri treeUri = Uri.parse(tree);
+      final Tree t = getTree(tree);
 
-      if (isDocument(treeUri))
+      if (t.isDocument || t.documentId == null)
          return false;
 
       oldPath = normalizePath(oldPath);
       newPath = normalizePath(newPath);
 
       if (oldPath.equals(newPath))
-         return new SafStat(content, tree, oldPath, false).getIsOpen();
+         return queryMimeType(content, t.documentUri(oldPath)) != null;
 
-      // Both paths are canonical now, so they can be taken apart without going back to the filesystem
+      // Both paths are canonical now, so they can be taken apart as strings
       final int oldSlash = oldPath.lastIndexOf('/');
       final int newSlash = newPath.lastIndexOf('/');
 
@@ -496,7 +540,7 @@ public final class VfsImplementationSaf
 
       final String oldName = oldPath.substring(oldSlash + 1);
       final String newName = newPath.substring(newSlash + 1);
-      final Uri newUri = getDocumentUri(treeUri, newPath);
+      final Uri newUri = t.documentUri(newPath);
       String asideName = null;
       Uri asideUri = null;
 
@@ -514,7 +558,7 @@ public final class VfsImplementationSaf
          {
             // Most likely a leftover from an earlier rename that could not clean up, which is rare enough to only look for now.
             // Deleting a directory would delete everything in it, so anything but a file stays where it is.
-            final Uri leftoverUri = getDocumentUri(treeUri, newPath.substring(0, newSlash + 1).concat(asideName));
+            final Uri leftoverUri = t.documentUri(newPath.substring(0, newSlash + 1).concat(asideName));
             final String leftoverMimeType = queryMimeType(content, leftoverUri);
 
             if (leftoverMimeType == null || leftoverMimeType.equals(Document.MIME_TYPE_DIR))
@@ -535,15 +579,15 @@ public final class VfsImplementationSaf
          }
       }
 
-      final Uri oldUri = getDocumentUri(treeUri, oldPath);
+      final Uri oldUri = t.documentUri(oldPath);
       final boolean placed;
 
       if (sameDirectory)
          placed = renameDocumentExact(content, oldUri, newName, oldName) != null;
       else
          placed = moveAndRenameDocument(content, oldUri,
-               getDocumentUri(treeUri, oldSlash == 0 ? "/" : oldPath.substring(0, oldSlash)),
-               getDocumentUri(treeUri, newSlash == 0 ? "/" : newPath.substring(0, newSlash)),
+               t.documentUri(oldSlash == 0 ? "/" : oldPath.substring(0, oldSlash)),
+               t.documentUri(newSlash == 0 ? "/" : newPath.substring(0, newSlash)),
                oldName, newName);
 
       if (placed)
@@ -567,87 +611,48 @@ public final class VfsImplementationSaf
       return false;
    }
 
-   public static class SafStat
+   private static final String[] QUERY_ARGS_STAT_WITH_SIZE = {
+      Document.COLUMN_MIME_TYPE,
+      Document.COLUMN_SIZE,
+   };
+
+   /**
+    * Stat a Storage Access Framework file or directory in one call: Long.MIN_VALUE if it could not be queried,
+    * otherwise its size shifted left by one with the low bit set for a directory.
+    * The size is 0 if includeSize is false or the provider does not know it.
+    * @param content the content resolver returned by getContentResolver()
+    * @param tree the URI returned by the ACTION_OPEN_DOCUMENT_TREE intent action
+    * @param path path of the file or directory, relative to the root directory of the tree
+    * @param includeSize whether or not to query the size
+    */
+   public static long statSaf(ContentResolver content, String tree, String path, boolean includeSize)
    {
-      private static final String[] QUERY_ARGS_WITH_SIZE = {
-         Document.COLUMN_MIME_TYPE,
-         Document.COLUMN_SIZE,
-      };
-
-      private static final String[] QUERY_ARGS_WITHOUT_SIZE = {
-         Document.COLUMN_MIME_TYPE,
-      };
-
-      private boolean isOpen = false;
-      private boolean isDirectory = false;
-      private long size = -1;
-
-      /**
-       * Retrieves metadata about a Storage Access Framework file or directory.
-       * @param content the content resolver returned by getContentResolver()
-       * @param tree the URI returned by the ACTION_OPEN_DOCUMENT_TREE intent action
-       * @param path path of the file or directory to open, relative to the root directory of the tree
-       * @param includeSize whether or not to query the size of the file or directory
-       */
-      public SafStat(ContentResolver content, String tree, String path, boolean includeSize)
+      if (Build.VERSION.SDK_INT < 21)
+         return Long.MIN_VALUE;
+      final Uri fileUri = getTree(tree).documentUri(normalizePath(path));
+      if (fileUri == null)
+         return Long.MIN_VALUE;
+      final Cursor cursor;
+      try
       {
-         if (Build.VERSION.SDK_INT < 21)
-            return;
-         final Uri treeUri = Uri.parse(tree);
-         path = normalizePath(path);
-         if (isDocument(treeUri) && !path.equals("/"))
-            return;
-         final Uri fileUri = isDocument(treeUri)
-            ? treeUri
-            : DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
-         final Cursor cursor;
-         try
-         {
-            cursor = content.query(fileUri, includeSize ? QUERY_ARGS_WITH_SIZE : QUERY_ARGS_WITHOUT_SIZE, null, null, null);
-         }
-         catch (IllegalArgumentException e)
-         {
-            return;
-         }
-         if (cursor == null)
-            return;
-         try
-         {
-            if (!cursor.moveToNext())
-               return;
-            isDirectory = cursor.getString(0).equals(Document.MIME_TYPE_DIR);
-            size = includeSize ? cursor.getLong(1) : 0;
-            isOpen = true;
-         }
-         finally
-         {
-            cursor.close();
-         }
+         cursor = content.query(fileUri, includeSize ? QUERY_ARGS_STAT_WITH_SIZE : QUERY_ARGS_MIME_TYPE, null, null, null);
       }
-
-      /**
-       * Get whether or not the file or directory was able to be queried.
-       */
-      public boolean getIsOpen()
+      catch (IllegalArgumentException e)
       {
-         return isOpen;
+         return Long.MIN_VALUE;
       }
-
-      /**
-       * Get whether or not the file or directory is a directory, or false if there was an error opening the file or directory.
-       */
-      public boolean getIsDirectory()
+      if (cursor == null)
+         return Long.MIN_VALUE;
+      try
       {
-         return isOpen ? isDirectory : false;
+         if (!cursor.moveToNext())
+            return Long.MIN_VALUE;
+         final long size = includeSize ? Math.max(cursor.getLong(1), 0) : 0;
+         return (size << 1) | (Document.MIME_TYPE_DIR.equals(cursor.getString(0)) ? 1 : 0);
       }
-
-      /**
-       * Get the size of the file or directory, or -1 if there was an error opening the file or directory.
-       * If this object was initialized without includeSize, the size will be 0 if the file or directory was opened successfully or -1 if not.
-       */
-      public long getSize()
+      finally
       {
-         return isOpen ? size : -1;
+         cursor.close();
       }
    }
 
@@ -661,38 +666,23 @@ public final class VfsImplementationSaf
    {
       if (Build.VERSION.SDK_INT < 21)
          return -1;
-      final Uri treeUri = Uri.parse(tree);
-      path = normalizePath(path);
-      if (isDocument(treeUri))
+      final Tree t = getTree(tree);
+      if (t.isDocument)
          return -1;
-      final Uri directoryUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
-      Cursor cursor = null;
-      try
-      {
-         cursor = content.query(directoryUri, QUERY_ARGS_MIME_TYPE, null, null, null);
-      }
-      catch (IllegalArgumentException e)
-      {}
-      if (cursor != null)
-      {
-         try
-         {
-            if (cursor.moveToNext())
-               return cursor.getString(0).equals(Document.MIME_TYPE_DIR) ? -2 : -1;
-         }
-         finally
-         {
-            cursor.close();
-         }
-      }
+      path = normalizePath(path);
+      final Uri directoryUri = t.documentUri(path);
+      if (directoryUri == null)
+         return -1;
+      String mimeType = queryMimeType(content, directoryUri);
+      if (mimeType != null)
+         return mimeType.equals(Document.MIME_TYPE_DIR) ? -2 : -1;
       final String parentPath = getPathParent(path);
       if (parentPath == null)
          return -1;
-      final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPath.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPath);
-      if (createDocumentExact(content, parentUri, Document.MIME_TYPE_DIR, getPathFileName(path)) != null)
+      if (createDocumentExact(content, t.documentUri(parentPath), Document.MIME_TYPE_DIR, getPathFileName(path)) != null)
          return 0;
       // Another creator may have made it between the query and the create
-      final String mimeType = queryMimeType(content, directoryUri);
+      mimeType = queryMimeType(content, directoryUri);
       return Document.MIME_TYPE_DIR.equals(mimeType) ? -2 : -1;
    }
 
@@ -705,9 +695,7 @@ public final class VfsImplementationSaf
 
       private int prefixLength;
       private Cursor cursor = null;
-      private String direntName = null;
-      private boolean direntIsDirectory = false;
-      private boolean[] batchIsDir = new boolean[0];
+      private byte[] scratch = new byte[0];
 
       /**
        * Open a Storage Access Framework directory to list its contents.
@@ -719,16 +707,15 @@ public final class VfsImplementationSaf
       {
          if (Build.VERSION.SDK_INT < 21)
             return;
-         final Uri treeUri = Uri.parse(tree);
-         path = normalizePath(path);
-         if (isDocument(treeUri))
+         final Tree t = getTree(tree);
+         if (t.isDocument || t.documentId == null)
             return;
-         path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
-         prefixLength = path.length();
-         final Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, path);
+         path = normalizePath(path);
+         final String documentId = path.length() == 1 ? t.documentId : t.documentId.concat(path);
+         prefixLength = documentId.length();
          try
          {
-            cursor = content.query(childrenUri, QUERY_ARGS, null, null, null);
+            cursor = content.query(DocumentsContract.buildChildDocumentsUriUsingTree(t.uri, documentId), QUERY_ARGS, null, null, null);
          }
          catch (IllegalArgumentException e)
          {}
@@ -745,101 +732,61 @@ public final class VfsImplementationSaf
       }
 
       /**
-       * Get the next child (could be a file or directory) of this directory, returning true if successful or false if there are no more children.
+       * Drain up to max children into one byte array, so the native side copies a whole batch in one JNI call:
+       * per child, 1 for a directory or 0 for a file, its name in modified UTF-8 (the encoding GetStringUTFChars
+       * produces, which never contains a zero byte) and a terminating 0. Fewer than max children means the
+       * directory is exhausted, and an empty array that there are none left.
        */
-      public boolean readdir()
+      public byte[] readdirBatch(int max)
       {
-         if (Build.VERSION.SDK_INT < 21)
-            return false;
-         if (cursor == null)
-            return false;
-         if (cursor.moveToNext())
-         {
-            direntName = cursor.getString(0).substring(prefixLength);
-            // Remove leading slashes
-            int slashIndex = 0;
-            while (slashIndex < direntName.length() && direntName.charAt(slashIndex) == '/')
-               ++slashIndex;
-            direntName = direntName.substring(slashIndex);
-            // Remove trailing slashes
-            slashIndex = direntName.length();
-            while (slashIndex > 0 && direntName.charAt(slashIndex - 1) == '/')
-               --slashIndex;
-            direntName = direntName.substring(0, slashIndex);
-            direntIsDirectory = cursor.getString(1).equals(Document.MIME_TYPE_DIR);
-            return true;
-         }
-         else
-         {
-            direntName = null;
-            direntIsDirectory = false;
-            close();
-            return false;
-         }
-      }
-
-      /**
-       * Drain up to max children into arrays, so the native side can walk a
-       * whole batch without a JNI round trip per entry. Returns the names;
-       * getBatchIsDirectory() returns the parallel directory flags for the
-       * same batch. A zero-length result means the directory is exhausted.
-       *
-       * readdir()/getDirentName()/getDirentIsDirectory() remain for callers
-       * that step one entry at a time.
-       */
-      public String[] readdirBatch(int max)
-      {
+         int length = 0;
          int n = 0;
-         String[] names;
 
-         if (max <= 0)
-            max = 1;
+         if (cursor == null)
+            return new byte[0];
 
-         names        = new String[max];
-         batchIsDir   = new boolean[max];
-
-         while (n < max && readdir())
+         while (n < max && cursor.moveToNext())
          {
-            names[n]      = direntName;
-            batchIsDir[n] = direntIsDirectory;
+            // The name is the document ID past the directory's own, without slashes on either end
+            final String id = cursor.getString(0);
+            int start = prefixLength;
+            int end = id.length();
+            while (start < end && id.charAt(start) == '/')
+               ++start;
+            while (end > start && id.charAt(end - 1) == '/')
+               --end;
+
+            // Each UTF-16 unit takes at most three bytes, plus the flag and the terminator
+            final int need = length + 3 * (end - start) + 2;
+            if (need > scratch.length)
+               scratch = Arrays.copyOf(scratch, Math.max(need, 2 * scratch.length));
+
+            scratch[length++] = (byte)(Document.MIME_TYPE_DIR.equals(cursor.getString(1)) ? 1 : 0);
+            for (int i = start; i < end; ++i)
+            {
+               final char c = id.charAt(i);
+               if (c != 0 && c < 0x80)
+                  scratch[length++] = (byte)c;
+               else if (c < 0x800)
+               {
+                  scratch[length++] = (byte)(0xc0 | (c >> 6));
+                  scratch[length++] = (byte)(0x80 | (c & 0x3f));
+               }
+               else
+               {
+                  scratch[length++] = (byte)(0xe0 | (c >> 12));
+                  scratch[length++] = (byte)(0x80 | ((c >> 6) & 0x3f));
+                  scratch[length++] = (byte)(0x80 | (c & 0x3f));
+               }
+            }
+            scratch[length++] = 0;
             ++n;
          }
 
          if (n < max)
-         {
-            String[] shrunkNames  = new String[n];
-            boolean[] shrunkFlags = new boolean[n];
-            System.arraycopy(names, 0, shrunkNames, 0, n);
-            System.arraycopy(batchIsDir, 0, shrunkFlags, 0, n);
-            names      = shrunkNames;
-            batchIsDir = shrunkFlags;
-         }
+            close();
 
-         return names;
-      }
-
-      /**
-       * Directory flags for the batch returned by the last readdirBatch().
-       */
-      public boolean[] getBatchIsDirectory()
-      {
-         return batchIsDir;
-      }
-
-      /**
-       * Return the name of the child that was most recently retrieved by readdir(), or null if readdir() hasn't been called yet or readdir() ran out of children.
-       */
-      public String getDirentName()
-      {
-         return direntName;
-      }
-
-      /**
-       * Return whether or not the child that was most recently retrieved by readdir() is a directory, or false if readdir() hasn't been called yet or readdir() ran out of children.
-       */
-      public boolean getDirentIsDirectory()
-      {
-         return direntIsDirectory;
+         return Arrays.copyOf(scratch, length);
       }
    }
 }

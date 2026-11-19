@@ -33,26 +33,26 @@
 
 RETRO_BEGIN_DECLS
 
-/* Entries pulled from Java per readdirBatch() call. Each batch costs two
- * JNI calls regardless of size, so this only has to be large enough that
- * the per-batch cost disappears; the names are copied into native memory
- * immediately, so a larger value mostly just holds more of them at once. */
+/* Entries pulled from Java per readdirBatch() call. A batch costs one
+ * JNI call and one copy into the arena whatever its size, so this only
+ * has to be large enough that the per-batch cost disappears. */
 #define RETRO_VFS_SAF_DIRENT_BATCH 256
 
 typedef struct libretro_vfs_implementation_saf_dir
 {
    jobject directory_object;
+   const char *dirent_name;
 
-   /* Current batch, copied out of Java so that walking it costs nothing.
-    * @batch_name[i] is owned by this struct and freed on refill/close. */
-   char   *batch_name[RETRO_VFS_SAF_DIRENT_BATCH];
-   bool    batch_is_dir[RETRO_VFS_SAF_DIRENT_BATCH];
+   /* The current batch as Java packed it, copied once. @batch_name[i]
+    * points into it and is lent out until the next fill or close. */
+   char   *arena;
+   size_t  arena_size;
+   const char *batch_name[RETRO_VFS_SAF_DIRENT_BATCH];
    int     batch_count;
    int     batch_pos;
+   bool    batch_is_dir[RETRO_VFS_SAF_DIRENT_BATCH];
    bool    exhausted;
-
-   const char *dirent_name;
-   bool dirent_is_dir;
+   bool    dirent_is_dir;
 } libretro_vfs_implementation_saf_dir;
 
 struct libretro_vfs_implementation_saf_path_split_result
