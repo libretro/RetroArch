@@ -122,6 +122,7 @@ extern long syscall(long number, ...);
 
 #if defined(HAVE_LIBNX)
 #include <switch.h>
+#include <retro_horizon.h>
 #endif
 
 #if defined(_3DS)
@@ -203,7 +204,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    }
 #elif defined(HAVE_LIBNX)
    /* cntpct_el0: the counter Horizon gives the process */
-   time_ticks = armGetSystemTick();
+   RETRO_HORIZON_TICK(time_ticks);
 #elif defined(__GNUC__) && defined(__aarch64__)
    __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (time_ticks));
 #elif defined(__GNUC__) && defined(__ARM_ARCH_6__)
@@ -274,8 +275,10 @@ retro_time_t cpu_features_get_time_usec(void)
    {
       /* At the counter's own rate: 19.2 MHz on the Switch, 31.25 MHz
        * on the Switch 2. Split so the scale cannot overflow. */
-      u64 t = armGetSystemTick();
-      u64 f = armGetSystemTickFreq();
+      uint64_t t;
+      uint64_t f;
+      RETRO_HORIZON_TICK(t);
+      RETRO_HORIZON_TICK_FREQ(f);
       return (retro_time_t)((t / f) * 1000000 + ((t % f) * 1000000) / f);
    }
 #elif defined(_3DS)
@@ -314,7 +317,9 @@ static int cpu_features_perf_rate_stated(void)
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
    return 0;
 #elif defined(HAVE_LIBNX)
-   return (int)(armGetSystemTickFreq() / 1000);
+   uint64_t hz;
+   RETRO_HORIZON_TICK_FREQ(hz);
+   return (int)(hz / 1000);
 #elif defined(__GNUC__) && defined(__aarch64__)
    uint64_t hz;
    __asm__ __volatile__ ("mrs %0, cntfrq_el0" : "=r" (hz));

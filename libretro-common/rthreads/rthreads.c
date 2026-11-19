@@ -220,6 +220,7 @@ static INLINE int rthreads_gk_cond_broadcast(gk_cond_t *c)
 #elif defined(__SWITCH__)
 #define USE_SWITCH_THREADS
 #include <switch.h>
+#include <retro_horizon.h>
 #define STACKSIZE (128 * 1024)
 #elif defined(VITA)
 #define USE_VITA_THREADS
@@ -938,15 +939,17 @@ static retro_atomic_int_t switch_next_core;
  * out; -2 (the default core) when there is no other. */
 static int switch_worker_core(void)
 {
-   u64 mask = 0;
-   int self = (int)svcGetCurrentProcessorNumber();
+   uint64_t mask = 0;
+   uint32_t rc;
+   int self;
    int n    = 0;
    int pick;
    int i;
-   if (R_FAILED(svcGetInfo(&mask, InfoType_CoreMask,
-               CUR_PROCESS_HANDLE, 0)))
+   RETRO_HORIZON_CORE_MASK(rc, mask);
+   if (rc)
       return -2;
-   mask &= ~((u64)1 << self);
+   RETRO_HORIZON_CURRENT_CORE(self);
+   mask &= ~((uint64_t)1 << self);
    for (i = 0; i < 64; i++)
       n += (int)((mask >> i) & 1);
    if (!n)
