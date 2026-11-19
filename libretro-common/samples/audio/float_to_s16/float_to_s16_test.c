@@ -8,8 +8,9 @@
  * Every target must give the same s16 for the same float.
  *
  * Callers convert into spans of a ring, so input and output are also
- * placed at every offset within 16 bytes: a vector body that only takes
- * aligned operands has to leave the others to the scalar loop. */
+ * placed at every offset within 16 bytes and every length up to 48:
+ * a vector body that takes only aligned operands has to reach them
+ * through a scalar head, and convert the head, body and tail alike. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,7 +92,7 @@ int main(void)
       32767.5f / 32768, -32768.5f / 32768, 0.49999997f / 32768
    };
    float   *in = (float*)malloc(4096 * sizeof(float));
-   size_t   i, n, k = 0;
+   size_t   i, n, o, k = 0;
    uint32_t seed = 0x1234567u;
    int      tier;
 
@@ -123,9 +124,12 @@ int main(void)
          check(in, n, 0, "length", tier);
          check(in + 1 + (n % 7), n, 0, "offset", tier);
       }
-      for (n = 0; n < 8; n++)
+      /* Every output and input placement within 16 bytes, at every
+       * length a scalar head, a vector body and a tail can split. */
+      for (o = 0; o < 8; o++)
          for (i = 0; i < 4; i++)
-            check(in + i, 40 + n, n, "placement", tier);
+            for (n = 0; n <= 48; n++)
+               check(in + i, n, o, "placement", tier);
    }
 
    free(in);

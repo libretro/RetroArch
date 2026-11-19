@@ -5,9 +5,10 @@
  * each buffer. Every tier the CPU has (SSE2, AVX2, AVX-512) is pinned
  * in turn; all must give the same float for the same sample.
  *
- * Input and output are also placed at every offset within 16 bytes: a
- * vector body that only takes aligned operands has to leave the others
- * to the scalar loop. */
+ * Input and output are also placed at every offset within 16 bytes and
+ * every length up to 48: a vector body that takes only aligned
+ * operands has to reach them through a scalar head, and convert the
+ * head, body and tail alike. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +57,7 @@ int main(void)
    static const float gains[] = { 1.0f, 0.5f, 0.0f, 1.37f, 3.98107f,
       0.000123f };
    int16_t *in = (int16_t*)malloc(65536 * sizeof(int16_t));
-   size_t   i, n, g;
+   size_t   i, n, o, g;
    int      tier;
 
    for (i = 0; i < 65536; i++)
@@ -79,9 +80,12 @@ int main(void)
          check(in, n, 0, 1.0f, "length", tier);
          check(in + 1 + (n % 7), n, 0, 0.75f, "offset", tier);
       }
-      for (n = 0; n < 4; n++)
+      /* Every output and input placement within 16 bytes, at every
+       * length a scalar head, a vector body and a tail can split. */
+      for (o = 0; o < 4; o++)
          for (i = 0; i < 8; i++)
-            check(in + i, 40 + i, n, 0.75f, "placement", tier);
+            for (n = 0; n <= 48; n++)
+               check(in + i, n, o, 0.75f, "placement", tier);
    }
 
    free(in);
