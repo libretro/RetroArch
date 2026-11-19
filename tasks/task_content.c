@@ -2716,6 +2716,10 @@ static bool content_load_in_flight(void)
  * identity over: what a firmware Cancel puts back */
 static struct content_load_prev
 {
+   struct retro_system_info sysinfo;
+   enum rarch_core_type type;
+   enum rarch_core_type explicit_type;
+   unsigned subsystem_current_count;
    char core[PATH_MAX_LENGTH];
    char core_last[PATH_MAX_LENGTH];
    char content[PATH_MAX_LENGTH];
@@ -2726,10 +2730,6 @@ static struct content_load_prev
    char library_version[64];
    char valid_extensions[256];
    char core_info_path[PATH_MAX_LENGTH];
-   struct retro_system_info sysinfo;
-   enum rarch_core_type type;
-   enum rarch_core_type explicit_type;
-   unsigned subsystem_current_count;
    bool load_no_content;
    bool has_set_core;
    bool valid;
