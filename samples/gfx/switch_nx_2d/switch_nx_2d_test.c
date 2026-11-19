@@ -12,7 +12,11 @@
  * by a colour, blending and the scissor; text with its shadow; the
  * overlay; RGUI over the frame; docking; the fences each frame is
  * shown behind; and every word of the stream decoding to a method the
- * engine model knows.
+ * engine model knows. On the Switch the 3D engine is modelled too, from
+ * deko3d's definitions: its state checked at every draw, the menu
+ * shaders' arithmetic run over the strip - turned textures, strips,
+ * vertex shading, blending, the scissor, the wait between engines and
+ * the frames' descriptor slices.
  *
  * Built twice: for the Switch (libnx's channel, nvmap and window queue)
  * and with __SWITCH2__ for the Switch 2 (GSV memory and VM, the nvhost
@@ -139,6 +143,13 @@ static uint32_t syncpt_value;
 static unsigned host_wfi, host_flush;
 #endif
 static unsigned bad_words, blits, words_run;
+#ifndef __SWITCH2__
+/* The 3D engine model's counts; an engine that drew before the other
+ * with no wait for idle between is a hazard */
+static unsigned draws3d, wfi3d, hazards, bad3d, tic_slice_bad;
+static bool pending3d, pending2d, tic_fresh, tex_fresh;
+static int frame_slice = -1;
+#endif
 
 /* libnx's 16Bx2 GOB layout, sixteen GOBs a block */
 static uint8_t *bl_addr(uint8_t *base, unsigned pitch, unsigned x_bytes,
@@ -233,6 +244,11 @@ static void run_blit(void)
    unsigned op = reg2d[0x0AB], beta = reg2d[0x0AA];
    unsigned x, y, ch;
    blits++;
+#ifndef __SWITCH2__
+   if (pending3d)
+      hazards++;
+   pending2d = true;
+#endif
    if (     reg2d[0x080] != NXG_FMT_RGBA8 || reg2d[0x081] != 0
          || reg2d[0x082] != (NXG_BLOCK_LOG2 << 4) || reg2d[0x08D] != 1
          || !(reg2d[0x223] & NXG_SAMPLE_CORNER)
@@ -267,6 +283,341 @@ static void run_blit(void)
          *d = o;
       }
 }
+
+#ifndef __SWITCH2__
+/* --- the 3D engine model ----------------------------------------------
+ *
+ * MAXWELL_B as deko3d defines it (engine_3d.def, the TIC and TSC
+ * layouts, uam's resource layout), decoded here on its own terms: the
+ * state a draw needs is checked word by word, then the strip is run
+ * through what the menu shaders compute - gl_Position = mvp * pos from
+ * the vertex stage's c[2], the texture by the handle at c[0][0x690] of
+ * the fragment stage times the colour - rasterised at pixel centres
+ * with a top-left rule, blended, into the block-linear target. */
+
+static uint32_t reg3d[0x1000];
+static struct { uint64_t addr; uint32_t size; bool valid; } cbs[5][18];
+
+static float rf(unsigned m)
+{
+   float f;
+   memcpy(&f, &reg3d[m], 4);
+   return f;
+}
+
+static uint64_t raddr(unsigned m)
+{
+   return ((uint64_t)reg3d[m] << 32) | reg3d[m + 1];
+}
+
+static void bad_state(const char *what)
+{
+   if (bad3d++ < 8)
+      printf("[info] 3D state: %s\n", what);
+}
+
+static const uint8_t *prog_hdr(const uint8_t *b)
+{
+   return b + nxg_le32(b + 16);
+}
+
+/* The state every menu draw takes, as the driver must have set it */
+static bool check_state(void)
+{
+   static const uint32_t attribs[3] = {
+      0u | (0u << 7) | (0x04u << 21) | (7u << 27),
+      0u | (8u << 7) | (0x04u << 21) | (7u << 27),
+      0u | (16u << 7) | (0x01u << 21) | (7u << 27)
+   };
+   unsigned i;
+   const uint8_t *vb = deko3d_menu_vsh_dksh, *fb = deko3d_menu_fsh_dksh;
+   uint64_t region = raddr(0x582);
+   bool ok = true;
+#define WANT(c, what) do { if (!(c)) { bad_state(what); ok = false; } } while (0)
+   WANT(reg3d[0x204] == 0xD5 && reg3d[0x205] == (NXG_BLOCK_LOG2 << 4)
+         && reg3d[0x202] == NXG_FB_W && reg3d[0x203] == NXG_FB_H
+         && reg3d[0x206] == 1, "render target");
+   WANT(reg3d[0x487] == (1u | (076543210u << 4)), "render target control");
+   for (i = 1; i < 8; i++)
+      WANT(reg3d[0x204 + i * 0x10] == 0, "another render target");
+   WANT(reg3d[0x800] == 0, "VertexA");
+   WANT(reg3d[0x810] == 0x11 && reg3d[0x850] == 0x51, "program config");
+   for (i = 2; i < 5; i++)
+      WANT(reg3d[0x800 + i * 0x10] == i << 4, "a stage between");
+   WANT(reg3d[0x813] == nxg_le32(prog_hdr(vb) + 8)
+         && reg3d[0x853] == nxg_le32(prog_hdr(fb) + 8), "registers");
+   /* The code the programs point at is the blobs' */
+   WANT(!memcmp(xlat(region + reg3d[0x811] - nxg_le32(prog_hdr(vb) + 4)),
+            vb + nxg_le32(vb + 8), nxg_le32(vb + 12))
+         && !memcmp(xlat(region + reg3d[0x851]
+               - nxg_le32(prog_hdr(fb) + 4)),
+            fb + nxg_le32(fb + 8), nxg_le32(fb + 12)), "program code");
+   WANT(!cbs[0][1].valid && !cbs[4][1].valid, "compiler constants bound");
+   WANT(reg3d[0x0D8] == nxg_le32(prog_hdr(fb) + 44)
+         && reg3d[0x0D9] == 0x20 && reg3d[0x1D5] == 1
+         && reg3d[0x3D0] == 0, "fragment parameters");
+   for (i = 0; i < 3; i++)
+      WANT(reg3d[0x458 + i] == attribs[i], "vertex attribute");
+   for (i = 3; i < 32; i++)
+      WANT(reg3d[0x458 + i] == ((1u << 6) | (0x12u << 21) | (7u << 27)),
+            "a fixed attribute");
+   WANT(reg3d[0x700] == ((1u << 12) | 32), "vertex array 0");
+   for (i = 1; i < 16; i++)
+      WANT(!(reg3d[0x700 + i * 4] & (1u << 12)), "another vertex array");
+   WANT(reg3d[0x781] == 1 && reg3d[0x782] == 2 && reg3d[0x783] == 6
+         && reg3d[0x784] == 1 && reg3d[0x785] == 2 && reg3d[0x786] == 6
+         && reg3d[0x4B9] == 1, "premultiplied blend");
+   WANT(reg3d[0x680] == 0x1111, "colour writes");
+   WANT(reg3d[0x4EB] == 0 && reg3d[0x64B] == 1 && reg3d[0x0DF] == 1
+         && reg3d[0x36B] == 0x1B02 && reg3d[0x36C] == 0x1B02, "raster");
+   WANT(!reg3d[0x646] && !reg3d[0x54E] && !reg3d[0x4B3] && !reg3d[0x4E0]
+         && !reg3d[0x4BB] && !reg3d[0x671] && !reg3d[0x54D], "tests off");
+   WANT(reg3d[0x982] == 0, "texture handles not in c[0]");
+   WANT(cbs[0][0].valid && cbs[4][0].valid && cbs[0][2].valid
+         && cbs[0][2].size >= 64, "constant buffers");
+   WANT(reg3d[0x380] == 1, "scissor off");
+   WANT(rf(0x302) == 0.0f && rf(0x303) == 1.0f, "depth range");
+   return ok;
+#undef WANT
+}
+
+/* A texel of a pitch-linear A8R8G8B8 image at @t, clamped */
+static void texel(const uint32_t *t, int x, int y, double *out)
+{
+   uint64_t a = t[1] | ((uint64_t)(t[2] & 0xFFFF) << 32);
+   unsigned pitch = (t[3] & 0xFFFF) << 5;
+   int w = (int)(t[4] & 0xFFFF) + 1, h = (int)(t[5] & 0xFFFF) + 1;
+   uint32_t p;
+   unsigned ch;
+   x = x < 0 ? 0 : x >= w ? w - 1 : x;
+   y = y < 0 ? 0 : y >= h ? h - 1 : y;
+   p = ((const uint32_t*)(xlat(a) + (size_t)y * pitch))[x];
+   for (ch = 0; ch < 4; ch++)
+      out[ch] = ((p >> (ch * 8)) & 255) / 255.0;
+}
+
+static void sample3d(double u, double v, double *out)
+{
+   uint32_t h = *(uint32_t*)xlat(cbs[4][0].addr + 0x690);
+   unsigned ti = h & 0xFFFFF, si = h >> 20;
+   const uint32_t *t = (const uint32_t*)xlat(raddr(0x55D) + ti * 32);
+   const uint32_t *s = (const uint32_t*)xlat(raddr(0x557) + si * 32);
+   int w, hh, x0, y0;
+   double fu, fv, ax, ay, a[4], b[4], c[4], d[4];
+   unsigned ch;
+   if (ti > reg3d[0x55F] || si > reg3d[0x559])
+   {
+      bad_state("descriptor out of its pool");
+      memset(out, 0, 4 * sizeof(double));
+      return;
+   }
+   if (!tic_fresh || !tex_fresh)
+      bad_state("descriptors or textures not invalidated this frame");
+   if (frame_slice < 0)
+      frame_slice = (int)(ti / NXG_3D_TICS);
+   else if (frame_slice != (int)(ti / NXG_3D_TICS))
+      tic_slice_bad++;
+   if (     t[0] != (0x08u | (2u << 7) | (2u << 10) | (2u << 13) | (2u << 16)
+               | (2u << 19) | (3u << 22) | (4u << 25) | (5u << 28))
+         || ((t[2] >> 21) & 7) != 2 || ((t[4] >> 23) & 15) != 7
+         || !(t[5] >> 31) || (t[1] & 31) || (((t[3] & 0xFFFF) << 5) & 31))
+      bad_state("texture descriptor");
+   if ((s[0] & 0x1FF) != (2u | (2u << 3) | (2u << 6))
+         || (s[1] & 3) != 2 || ((s[1] >> 4) & 3) != 2)
+      bad_state("sampler descriptor");
+   w  = (int)(t[4] & 0xFFFF) + 1;
+   hh = (int)(t[5] & 0xFFFF) + 1;
+   fu = u * w - 0.5;
+   fv = v * hh - 0.5;
+   x0 = (int)floor(fu);
+   y0 = (int)floor(fv);
+   ax = fu - x0;
+   ay = fv - y0;
+   texel(t, x0, y0, a);
+   texel(t, x0 + 1, y0, b);
+   texel(t, x0, y0 + 1, c);
+   texel(t, x0 + 1, y0 + 1, d);
+   for (ch = 0; ch < 4; ch++)
+      out[ch] = (a[ch] * (1 - ax) + b[ch] * ax) * (1 - ay)
+              + (c[ch] * (1 - ax) + d[ch] * ax) * ay;
+}
+
+typedef struct { double x, y, u, v, c[4]; } vtx3d_t;
+
+static void vertex3d(unsigned i, vtx3d_t *o)
+{
+   const float *m = (const float*)xlat(cbs[0][2].addr);
+   uint64_t base  = raddr(0x701);
+   double in[3][4];
+   double p[4];
+   unsigned a, k, r;
+   for (a = 0; a < 3; a++)
+   {
+      uint32_t s = reg3d[0x458 + a];
+      unsigned n = ((s >> 21) & 63) == 0x04 ? 2 : 4;
+      uint64_t at = base + (uint64_t)i * (reg3d[0x700] & 0xFFF)
+                  + ((s >> 7) & 0x3FFF);
+      const float *f = (const float*)xlat(at);
+      if (at + n * 4 - 1 > raddr(0x7C0))
+         bad_state("vertex beyond its limit");
+      for (k = 0; k < 4; k++)
+         in[a][k] = k < n ? f[k] : (k == 3 ? 1.0 : 0.0);
+   }
+   /* mvp * vec4(pos, 0, 1), the matrix column-major */
+   for (r = 0; r < 4; r++)
+      p[r] = m[r] * in[0][0] + m[4 + r] * in[0][1] + m[12 + r];
+   o->x = rf(0x280) * (p[0] / p[3]) + rf(0x283);
+   o->y = rf(0x281) * (p[1] / p[3]) + rf(0x284);
+   o->u = in[1][0];
+   o->v = in[1][1];
+   for (k = 0; k < 4; k++)
+      o->c[k] = in[2][k];
+}
+
+static double edge3d(const vtx3d_t *a, const vtx3d_t *b, double px, double py)
+{
+   return (b->x - a->x) * (py - a->y) - (b->y - a->y) * (px - a->x);
+}
+
+static bool top_left(const vtx3d_t *a, const vtx3d_t *b)
+{
+   double dx = b->x - a->x, dy = b->y - a->y;
+   return dy > 0 || (dy == 0 && dx < 0);
+}
+
+static void triangle3d(const vtx3d_t *v0, const vtx3d_t *v1,
+      const vtx3d_t *v2)
+{
+   uint8_t *dst = xlat(raddr(0x200));
+   unsigned pitch = SW_ALIGN(reg3d[0x202] * 4, 64);
+   double area = edge3d(v0, v1, v2->x, v2->y);
+   int x, y, x0, x1, y0, y1;
+   int clx0 = (int)(reg3d[0x381] & 0xFFFF), clx1 = (int)(reg3d[0x381] >> 16);
+   int cly0 = (int)(reg3d[0x382] & 0xFFFF), cly1 = (int)(reg3d[0x382] >> 16);
+   if (area == 0)
+      return;
+   if (area < 0)
+   {
+      const vtx3d_t *t = v1;
+      v1   = v2;
+      v2   = t;
+      area = -area;
+   }
+   if (clx1 > (int)(reg3d[0x3FD] >> 16)) clx1 = (int)(reg3d[0x3FD] >> 16);
+   if (cly1 > (int)(reg3d[0x3FE] >> 16)) cly1 = (int)(reg3d[0x3FE] >> 16);
+   x0 = (int)floor(MIN(v0->x, MIN(v1->x, v2->x)));
+   x1 = (int)ceil(MAX(v0->x, MAX(v1->x, v2->x)));
+   y0 = (int)floor(MIN(v0->y, MIN(v1->y, v2->y)));
+   y1 = (int)ceil(MAX(v0->y, MAX(v1->y, v2->y)));
+   if (x0 < clx0) x0 = clx0;
+   if (y0 < cly0) y0 = cly0;
+   if (x1 > clx1) x1 = clx1;
+   if (y1 > cly1) y1 = cly1;
+   for (y = y0; y < y1; y++)
+      for (x = x0; x < x1; x++)
+      {
+         double px = x + 0.5, py = y + 0.5;
+         double w0 = edge3d(v1, v2, px, py);
+         double w1 = edge3d(v2, v0, px, py);
+         double w2 = edge3d(v0, v1, px, py);
+         double t[4], s[4];
+         uint32_t *d, o = 0;
+         unsigned ch;
+         if (     (w0 < 0 || (w0 == 0 && !top_left(v1, v2)))
+               || (w1 < 0 || (w1 == 0 && !top_left(v2, v0)))
+               || (w2 < 0 || (w2 == 0 && !top_left(v0, v1))))
+            continue;
+         w0 /= area;
+         w1 /= area;
+         w2 /= area;
+         sample3d(w0 * v0->u + w1 * v1->u + w2 * v2->u,
+               w0 * v0->v + w1 * v1->v + w2 * v2->v, t);
+         for (ch = 0; ch < 4; ch++)
+            s[ch] = t[ch] * (w0 * v0->c[ch] + w1 * v1->c[ch]
+                  + w2 * v2->c[ch]);
+         d = (uint32_t*)bl_addr(dst, pitch, (unsigned)x * 4, (unsigned)y);
+         for (ch = 0; ch < 4; ch++)
+         {
+            double v = s[ch];
+            if (reg3d[0x4D8])
+               v += ((*d >> (ch * 8)) & 255) / 255.0 * (1.0 - s[3]);
+            v = v < 0 ? 0 : v > 1 ? 1 : v;
+            o |= (uint32_t)(v * 255.0 + 0.5) << (ch * 8);
+         }
+         *d = o;
+      }
+}
+
+static void draw3d(void)
+{
+   unsigned n = reg3d[0x35E], i;
+   vtx3d_t a, b, c;
+   draws3d++;
+   if (pending2d)
+      hazards++;
+   pending3d = true;
+   if (reg3d[0x586] != NXG_3D_PRIM_STRIP || reg3d[0x35D] != 0 || n < 3
+         || !check_state())
+   {
+      bad_words++;
+      return;
+   }
+   vertex3d(0, &a);
+   vertex3d(1, &b);
+   for (i = 2; i < n; i++)
+   {
+      vertex3d(i, &c);
+      triangle3d(&a, &b, &c);
+      a = b;
+      b = c;
+   }
+}
+
+static void method3d(unsigned m, uint32_t v)
+{
+   if (m >= 0x1000)
+   {
+      bad_words++;
+      return;
+   }
+   if (m == NXG_3D_CB_DATA)
+   {
+      /* Into the selected buffer, the offset stepping */
+      uint64_t a  = raddr(0x8E1);
+      uint32_t of = reg3d[0x8E3];
+      if ((a & 0xFF) || of + 4 > reg3d[0x8E0])
+         bad_words++;
+      else
+         memcpy(xlat(a + of), &v, 4);
+      reg3d[0x8E3] = of + 4;
+      return;
+   }
+   reg3d[m] = v;
+   if (m >= 0x904 && m < 0x904 + 5 * 8 && !((m - 0x904) & 7))
+   {
+      unsigned st = (m - 0x904) / 8, idx = (v >> 4) & 31;
+      if (idx >= 18)
+         bad_words++;
+      else
+      {
+         cbs[st][idx].valid = v & 1;
+         cbs[st][idx].addr  = raddr(0x8E1);
+         cbs[st][idx].size  = reg3d[0x8E0];
+      }
+   }
+   else if (m == NXG_3D_WAIT_FOR_IDLE)
+   {
+      wfi3d++;
+      pending2d = pending3d = false;
+   }
+   else if (m == NXG_3D_INVALIDATE_TIC)
+      tic_fresh = true;
+   else if (m == NXG_3D_INVALIDATE_TEX)
+      tex_fresh = true;
+   else if (m == NXG_3D_VERTEX_END)
+      draw3d();
+}
+#endif
 
 static void method(unsigned sub, unsigned m, uint32_t v)
 {
@@ -304,7 +655,11 @@ static void method(unsigned sub, unsigned m, uint32_t v)
             bad_words++;
       }
       else if (m != NXG_3D_FLUSH)
+#ifdef __SWITCH2__
          bad_words++;
+#else
+         method3d(m, v);
+#endif
       return;
    }
    if (sub != NXG_SUB_2D || m >= 0x800)
@@ -377,6 +732,14 @@ Result nvGpuChannelAppendEntry(NvGpuChannel *c, iova_t start, size_t n,
 Result nvGpuChannelKickoff(NvGpuChannel *c)
 {
    unsigned i;
+#ifndef __SWITCH2__
+   /* A frame: its descriptors and textures fresh from its own
+    * invalidates, its pool slice one; its own buffer, so no engine
+    * waits on the last frame's */
+   tic_fresh   = tex_fresh = false;
+   pending2d   = pending3d = false;
+   frame_slice = -1;
+#endif
    for (i = 0; i < num_entries; i++)
       run_words((const uint32_t*)xlat(entries[i].at), entries[i].n);
    num_entries     = 0;
@@ -1262,6 +1625,301 @@ static void lane_heap(void)
    printf("[pass] surfaces share mapped blocks; the atlas keeps in-flight cells\n");
 }
 
+#ifndef __SWITCH2__
+/* --- the 3D engine's draws ------------------------------------------- */
+
+/* Box space turned a quarter left about its centre, then the default
+ * projection: (x, y) -> (1 - y, x) */
+static const float quarter[16] = {
+   0.0f, 2.0f, 0.0f, 0.0f,
+  -2.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, -1.0f, 0.0f,
+   1.0f, -1.0f, 0.0f, 1.0f
+};
+static uintptr_t tex4, white_tex;
+
+static void draws_3d(switch_video_t *sw)
+{
+   gfx_display_ctx_draw_t d;
+   struct video_coords c;
+   math_matrix_4x4 m;
+   float half_white[16], red[16], blue[16], shade[16];
+   /* two quads joined: BL BR TL TR, the join, BL BR TL TR */
+   static const float sv[20] = {
+      0.0f, 0.0f, 0.25f, 0.0f, 0.0f, 1.0f, 0.25f, 1.0f,
+      0.25f, 1.0f, 0.5f, 0.0f,
+      0.5f, 0.0f, 0.75f, 0.0f, 0.5f, 1.0f, 0.75f, 1.0f
+   };
+   static const float st[20] = { 0 };
+   float sc[40];
+   unsigned i;
+   memcpy(m.data, quarter, sizeof(quarter));
+   for (i = 0; i < 4; i++)
+   {
+      half_white[4 * i] = 1; half_white[4 * i + 1] = 1;
+      half_white[4 * i + 2] = 1; half_white[4 * i + 3] = 0.5f;
+      blue[4 * i] = 0; blue[4 * i + 1] = 0; blue[4 * i + 2] = 1; blue[4 * i + 3] = 1;
+      red[4 * i] = 1; red[4 * i + 1] = 0; red[4 * i + 2] = 0; red[4 * i + 3] = 1;
+      /* bottom blue, top red: BL BR TL TR */
+      shade[4 * i]     = i >= 2 ? 1.0f : 0.0f;
+      shade[4 * i + 1] = 0.0f;
+      shade[4 * i + 2] = i >= 2 ? 0.0f : 1.0f;
+      shade[4 * i + 3] = 1.0f;
+   }
+   for (i = 0; i < 10; i++)
+   {
+      sc[4 * i] = i < 5 ? 1.0f : 0.0f; sc[4 * i + 1] = i < 5 ? 0.0f : 1.0f;
+      sc[4 * i + 2] = 0.0f; sc[4 * i + 3] = 1.0f;
+   }
+   memset(&c, 0, sizeof(c));
+   memset(&d, 0, sizeof(d));
+   c.vertices     = 4;
+   d.coords       = &c;
+   d.scale_factor = 1.0f;
+
+   /* the 2x2 texture turned a quarter, at (200, 200) 64x64 */
+   d.texture   = tex4;
+   d.matrix_data = &m;
+   d.pos       = VIDEO_POS_PACK(200, 720 - 264);
+   d.dims      = VIDEO_SCALE_PACK(64, 64);
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+
+   /* a strip of two quads, at (400, 200) 100x50: red, then green */
+   d.texture     = 0;
+   d.matrix_data = NULL;
+   c.vertices    = 10;
+   c.vertex      = sv;
+   c.tex_coord   = st;
+   c.color       = sc;
+   d.pos         = VIDEO_POS_PACK(400, 720 - 250);
+   d.dims        = VIDEO_SCALE_PACK(100, 50);
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+
+   /* a white texture shaded red at the top, blue at the bottom */
+   c.vertices  = 4;
+   c.vertex    = NULL;
+   c.tex_coord = NULL;
+   c.color     = shade;
+   d.texture   = white_tex;
+   d.pos       = VIDEO_POS_PACK(600, 720 - 164);
+   d.dims      = VIDEO_SCALE_PACK(64, 64);
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+
+   /* blue by the 2D engine, half white turned over it by the 3D engine,
+    * then red by the 2D engine over its right half */
+   d.texture = 0;
+   c.color   = blue;
+   d.pos     = VIDEO_POS_PACK(800, 720 - 264);
+   d.dims    = VIDEO_SCALE_PACK(64, 64);
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+   gfx_display_ctx_switch.blend_begin(sw);
+   c.color       = half_white;
+   d.matrix_data = &m;
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+   gfx_display_ctx_switch.blend_end(sw);
+   c.color       = red;
+   d.matrix_data = NULL;
+   d.pos         = VIDEO_POS_PACK(832, 720 - 264);
+   d.dims        = VIDEO_SCALE_PACK(32, 64);
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+
+   /* the scissor cuts a turned fill to its left half */
+   gfx_display_ctx_switch.scissor_begin(sw, VIDEO_SCALE_PACK(1280, 720),
+         1000, 200, VIDEO_SCALE_PACK(32, 64));
+   d.matrix_data = &m;
+   d.pos         = VIDEO_POS_PACK(1000, 720 - 264);
+   d.dims        = VIDEO_SCALE_PACK(64, 64);
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+   gfx_display_ctx_switch.scissor_end(sw, VIDEO_SCALE_PACK(1280, 720));
+}
+
+static uintptr_t load_px(switch_video_t *sw, const uint32_t *px,
+      unsigned w, unsigned h)
+{
+   struct texture_image img;
+   memset(&img, 0, sizeof(img));
+   img.pixels = (uint32_t*)px;
+   img.width  = w;
+   img.height = h;
+   return poke->load_texture(sw, &img, false, TEXTURE_FILTER_LINEAR);
+}
+
+static void lane_3d(void)
+{
+   /* ARGB: red, green / blue, white */
+   static const uint32_t px4[4] = {
+      0xffff0000u, 0xff00ff00u, 0xff0000ffu, 0xffffffffu
+   };
+   uint32_t white[16];
+   unsigned d0, b0, top, bot, mid, t;
+   switch_video_t *sw = driver_new(1280, 720, true);
+   nxg_t *g           = (nxg_t*)sw->gpu;
+   CHECK(g && g->has3d, "no 3D engine");
+   CHECK(!gfx_display_ctx_switch.handles_transform
+         && gfx_display_ctx_switch.handles_vertex_strip,
+         "the menus still hand over values and quads");
+   memset(white, 0xff, sizeof(white));
+   tex4      = load_px(sw, px4, 2, 2);
+   white_tex = load_px(sw, white, 4, 4);
+   d0 = draws3d;
+   b0 = blits;
+   vfi.menu_st_flags = MENU_ST_FLAG_ALIVE;
+   menu_draws        = draws_3d;
+   frame(sw, NULL, 0, 0, 0);
+   menu_draws        = NULL;
+   vfi.menu_st_flags = 0;
+   CHECK(draws3d - d0 == 5, "%u draws on the 3D engine, not 5",
+         draws3d - d0);
+   CHECK(blits - b0 >= 2, "the default quads left the 2D engine");
+   CHECK(!bad3d, "%u draws with state the model rejects", bad3d);
+   CHECK(!hazards, "%u draws with no wait for the other engine", hazards);
+
+   /* turned a quarter left: red bottom left, green top left, white top
+    * right, blue bottom right */
+   CHECK(at(sw, 202, 202) == 0x00ff00 && at(sw, 261, 202) == 0xffffff
+         && at(sw, 202, 261) == 0x0000ff && at(sw, 261, 261) == 0xff0000,
+         "turned texture %06x %06x / %06x %06x", at(sw, 202, 202),
+         at(sw, 261, 202), at(sw, 202, 261), at(sw, 261, 261));
+   CHECK(at(sw, 199, 230) == 0 && at(sw, 264, 230) == 0
+         && at(sw, 230, 199) == 0 && at(sw, 230, 264) == 0,
+         "turned texture outside its box");
+
+   /* the strip: [400, 425) red, [425, 450) not drawn, [450, 475) green */
+   CHECK(at(sw, 400, 210) == 0x0000ff && at(sw, 424, 249) == 0x0000ff
+         && at(sw, 425, 210) == 0 && at(sw, 449, 230) == 0
+         && at(sw, 450, 210) == 0x00ff00 && at(sw, 474, 249) == 0x00ff00
+         && at(sw, 475, 210) == 0,
+         "strip %06x %06x %06x", at(sw, 410, 210), at(sw, 437, 210),
+         at(sw, 460, 210));
+
+   /* shaded vertex by vertex */
+   top = at(sw, 630, 100);
+   bot = at(sw, 630, 163);
+   mid = at(sw, 630, 132);
+   CHECK(near(top, 0x0000ff, 6) && near(bot, 0xff0000, 6)
+         && near(mid, 0x7f007f, 6),
+         "shading %06x / %06x / %06x", top, mid, bot);
+
+   /* half white over blue, premultiplied; then red on the right */
+   t = SW_MUL255(255u, 128u, t);
+   CHECK(near(at(sw, 810, 230), t | (t << 8) | (0xffu << 16), 2),
+         "blended %06x", at(sw, 810, 230));
+   CHECK(at(sw, 840, 230) == 0x0000ff, "the 2D engine's draw after: %06x",
+         at(sw, 840, 230));
+
+   /* the scissor */
+   CHECK(near(at(sw, 1031, 230), 0x0000ff, 0) && at(sw, 1032, 230) == 0,
+         "scissor on the 3D engine: %06x | %06x", at(sw, 1031, 230),
+         at(sw, 1032, 230));
+
+   poke->unload_texture(sw, false, tex4);
+   poke->unload_texture(sw, false, white_tex);
+   driver_free(sw);
+   CHECK(gfx_display_ctx_switch.handles_transform
+         && !gfx_display_ctx_switch.handles_vertex_strip,
+         "the menus' flags not restored at free");
+   CHECK(maps_live == 0, "%u maps left", maps_live);
+   printf("[pass] the 3D engine: turned textures, strips, shading, blending, scissor\n");
+}
+
+/* A frame with more textures than its descriptor slice: the rest fall
+ * back to the 2D engine; frames take turns at the slices */
+static uintptr_t many[NXG_3D_TICS + 8];
+static void draws_many(switch_video_t *sw)
+{
+   gfx_display_ctx_draw_t d;
+   struct video_coords c;
+   math_matrix_4x4 m;
+   unsigned i;
+   memcpy(m.data, quarter, sizeof(quarter));
+   memset(&c, 0, sizeof(c));
+   memset(&d, 0, sizeof(d));
+   c.vertices     = 4;
+   d.coords       = &c;
+   d.scale_factor = 1.0f;
+   d.matrix_data  = &m;
+   d.dims         = VIDEO_SCALE_PACK(4, 4);
+   for (i = 0; i < NXG_3D_TICS + 8; i++)
+   {
+      d.texture = many[i];
+      d.pos     = VIDEO_POS_PACK((i % 256) * 5, 720 - 8 - (i / 256) * 5);
+      gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+   }
+   /* the same texture again: its descriptor again */
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+}
+
+static void draws_one(switch_video_t *sw)
+{
+   gfx_display_ctx_draw_t d;
+   struct video_coords c;
+   math_matrix_4x4 m;
+   memcpy(m.data, quarter, sizeof(quarter));
+   memset(&c, 0, sizeof(c));
+   memset(&d, 0, sizeof(d));
+   c.vertices     = 4;
+   d.coords       = &c;
+   d.scale_factor = 1.0f;
+   d.matrix_data  = &m;
+   d.texture      = many[0];
+   d.pos          = VIDEO_POS_PACK(10, 10);
+   d.dims         = VIDEO_SCALE_PACK(4, 4);
+   gfx_display_ctx_switch.draw(&d, sw, VIDEO_SCALE_PACK(1280, 720));
+}
+
+static void lane_3d_pool(void)
+{
+   uint32_t px = 0xff808080u;
+   unsigned i, d0, b0;
+   int slices[NXG_FRAMES + 1];
+   switch_video_t *sw = driver_new(1280, 720, true);
+   nxg_t *g           = (nxg_t*)sw->gpu;
+   for (i = 0; i < NXG_3D_TICS + 8; i++)
+      many[i] = load_px(sw, &px, 1, 1);
+   d0 = draws3d;
+   b0 = blits;
+   vfi.menu_st_flags = MENU_ST_FLAG_ALIVE;
+   menu_draws        = draws_many;
+   frame(sw, NULL, 0, 0, 0);
+   CHECK(draws3d - d0 == NXG_3D_TICS, "%u draws on the 3D engine, not %u",
+         draws3d - d0, NXG_3D_TICS);
+   CHECK(blits - b0 >= 9, "%u textures past the slice not drawn by the 2D engine",
+         blits - b0);
+   CHECK(g->tic_used == NXG_3D_TICS, "%u descriptors written", g->tic_used);
+   menu_draws = draws_one;
+   for (i = 0; i < NXG_FRAMES + 1; i++)
+   {
+      frame(sw, NULL, 0, 0, 0);
+      slices[i] = frame_slice;
+   }
+   menu_draws        = NULL;
+   vfi.menu_st_flags = 0;
+   for (i = 1; i < NXG_FRAMES + 1; i++)
+      CHECK(slices[i] == (slices[i - 1] + 1) % NXG_FRAMES,
+            "frame %u drew from slice %d after %d", i, slices[i],
+            slices[i - 1]);
+   CHECK(!tic_slice_bad, "%u draws outside their frame's slice",
+         tic_slice_bad);
+   CHECK(!bad3d && !hazards, "state %u, hazards %u", bad3d, hazards);
+   for (i = 0; i < NXG_3D_TICS + 8; i++)
+      poke->unload_texture(sw, false, many[i]);
+   driver_free(sw);
+   CHECK(maps_live == 0, "%u maps left", maps_live);
+   printf("[pass] descriptors: a slice a frame, the rest of a full one on the 2D engine\n");
+}
+#else
+/* The Switch 2 keeps the 2D engine's terms */
+static void lane_3d(void)
+{
+   switch_video_t *sw = driver_new(1280, 720, true);
+   CHECK(gfx_display_ctx_switch.handles_transform
+         && !gfx_display_ctx_switch.handles_vertex_strip,
+         "the menus hand over matrices with no 3D engine");
+   driver_free(sw);
+   printf("[pass] no 3D engine: the menus hand over values and quads\n");
+}
+#endif
+
 int main(void)
 {
    lane_window();
@@ -1274,13 +1932,22 @@ int main(void)
    lane_rgui();
    lane_dock_and_fences();
    lane_heap();
+   lane_3d();
+#ifndef __SWITCH2__
+   lane_3d_pool();
+#endif
    CHECK(!bad_words, "%u words or blits the engine model rejected", bad_words);
 #ifdef __SWITCH2__
 #define HARNESS "switch_nx_2d_test (Switch 2)"
 #else
 #define HARNESS "switch_nx_2d_test"
 #endif
+#ifndef __SWITCH2__
+   printf("[info] %u words run, %u blits, %u 3D draws\n", words_run, blits,
+         draws3d);
+#else
    printf("[info] %u words run, %u blits\n", words_run, blits);
+#endif
    if (failures)
    {
       printf("FAIL " HARNESS " (%d)\n", failures);

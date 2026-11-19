@@ -23,6 +23,9 @@
  * by the same engine from premultiplied surfaces. The window is shown
  * behind the channel's fence, so no CPU pass touches a pixel of the
  * screen and nothing waits on the GPU but the oldest frame in flight.
+ * What the 2D engine cannot draw - a rotated or scaled quad, a strip, a
+ * texture shaded vertex by vertex - the same channel's 3D engine does,
+ * with deko3d's menu shaders.
  *
  * Where there is no such channel (the Switch 2, or a channel that
  * cannot be opened) the same drawing runs on the CPU into the libnx
@@ -205,13 +208,20 @@ static INLINE uint32_t sw_over(uint32_t s, uint32_t d)
 /* ---- the GPU ---------------------------------------------------------- */
 #ifdef SWITCH_NX_GPU
 
+#ifndef NXG_S2
+/* The 3D engine draws what the 2D engine cannot; not yet on the
+ * Switch 2 */
+#define NXG_3D
+#include "deko3d_shaders/menu_dksh.h"
+#endif
+
 #define NXG_FRAMES      3
 #define NXG_BUFFERS     3
 #define NXG_SW_SLOTS    (NXG_FRAMES + 2)
 #define NXG_RGUI_SLOTS  (NXG_FRAMES + 1)
 #define NXG_FRAME_MEM   8
 #define NXG_CMD_WORDS   (256 * 1024)
-#define NXG_ARENA_SIZE  (64 * 1024)
+#define NXG_ARENA_SIZE  (512 * 1024)
 /* Surfaces share blocks mapped once: no map call per texture */
 #define NXG_HEAP_BLOCK  (8 * 1024 * 1024)
 #define NXG_HEAP_BLOCKS 16
@@ -373,6 +383,22 @@ typedef struct nxg_linear
    bool       used;
 } nxg_linear_t;
 
+#ifdef NXG_3D
+/* A program as the 3D engine is told of it */
+typedef struct nxg_prog
+{
+   uint32_t offset;     /* of its entry, in the code memory */
+   uint32_t gprs;
+   uint32_t end;        /* of its code */
+   uint32_t param_d8;
+   uint32_t param_65b;
+   uint32_t param_489;
+   bool     early;
+   bool     post_depth;
+   bool     per_sample;
+} nxg_prog_t;
+#endif
+
 typedef struct nxg
 {
    nxg_frame_t     frames[NXG_FRAMES];
@@ -382,6 +408,27 @@ typedef struct nxg
    nxg_heap_t      heap[NXG_HEAP_BLOCKS];
    nxg_mem_t       fb;
    sw_surf_t       white;
+#ifdef NXG_3D
+   nxg_mem_t       code3d;
+   nxg_mem_t       pool3d;
+   nxg_mem_t       cb3d;
+   nxg_prog_t      vsh;
+   nxg_prog_t      fsh;
+   /* The frame's descriptors, the last one written; what the engine
+    * was last given */
+   const sw_surf_t *tic_surf;
+   uint64_t        tic_iova;
+   unsigned        tic_dims;
+   uint32_t        tic_last;
+   uint32_t        tic_used;
+   uint32_t        tex_handle;
+   uint32_t        scissor3d[2];
+   float           mvp3d[16];
+   int             blend3d;
+   bool            has3d;
+   bool            engine3d;
+   bool            mvp3d_valid;
+#endif
 #ifdef NXG_S2
    nxg_s2_buf_t    bufs[NXG_BUFFERS];
    GsvGpu          gpu;
@@ -1319,6 +1366,11 @@ static void nxg_free(nxg_t *g, NWindow *win)
    for (i = 0; i < NXG_FRAME_MEM; i++)
       nxg_mem_free(g, &g->frame_mem[i].mem);
    nxg_mem_free(g, &g->white.mem);
+#ifdef NXG_3D
+   nxg_mem_free(g, &g->code3d);
+   nxg_mem_free(g, &g->pool3d);
+   nxg_mem_free(g, &g->cb3d);
+#endif
    for (i = 0; i < NXG_HEAP_BLOCKS; i++)
    {
       while (g->heap[i].free)
@@ -1333,6 +1385,12 @@ static void nxg_free(nxg_t *g, NWindow *win)
    nxg_device_free(g);
    free(g);
 }
+
+#ifdef NXG_3D
+static void nxg_3d_turn(nxg_t *g, bool to3d);
+static void nxg_3d_frame_begin(nxg_t *g, uint64_t fb);
+static bool nxg_3d_init(nxg_t *g);
+#endif
 
 static void nxg_bind_engines(nxg_t *g)
 {
@@ -1393,6 +1451,11 @@ static nxg_t *nxg_init(NWindow *win)
 
    nxg_frame_recycle(g, 0);
    nxg_bind_engines(g);
+#ifdef NXG_3D
+   if (nxg_3d_init(g))
+      RARCH_LOG("[Switch] Video on the GPU's 2D engine, menus' geometry on its 3D engine.\n");
+   else
+#endif
    RARCH_LOG("[Switch] Video on the GPU's 2D engine.\n");
    return g;
 
@@ -1446,6 +1509,9 @@ static void nxg_blit(nxg_t *g, int op, uint32_t beta4, bool filter,
    uint32_t *w;
    if (dw <= 0 || dh <= 0)
       return;
+#ifdef NXG_3D
+   nxg_3d_turn(g, false);
+#endif
    if (!(w = nxg_cmd(g, 17)))
       return;
    w[0]  = NXG_HDR(NXG_INLINE, op, NXG_SUB_2D, NXG_2D_OPERATION);
@@ -1500,6 +1566,10 @@ static bool nxg_frame_begin(nxg_t *g, NWindow *win)
    iova         = g->fb.iova + (uint64_t)g->slot * NXG_FB_SIZE;
    g->src_valid = false;
    g->recording = true;
+#ifdef NXG_3D
+   if (g->has3d)
+      nxg_3d_frame_begin(g, iova);
+#endif
    if (!(w = nxg_cmd(g, 12)))
       return true;
    /* CPU-written sources are read through the texture cache */
@@ -1620,12 +1690,13 @@ static void nxg_frame_end(nxg_t *g, NWindow *win)
    nxg_frame_recycle(g, g->cur);
 }
 
-/* @size bytes of the frame's own memory, rows on the 2D engine's
- * pitch, for a draw's small source */
-static uint8_t *nxg_arena(nxg_t *g, uint32_t size, uint64_t *iova)
+/* @size bytes of the frame's own memory, @align apart, for a draw's
+ * small source or its vertices */
+static uint8_t *nxg_arena(nxg_t *g, uint32_t size, uint32_t align,
+      uint64_t *iova)
 {
    nxg_frame_t *f = &g->frames[g->cur];
-   uint32_t off   = SW_ALIGN(f->arena_off, 256);
+   uint32_t off   = SW_ALIGN(f->arena_off, align);
    if (off + size > NXG_ARENA_SIZE)
       return NULL;
    f->arena_off = off + size;
@@ -1658,6 +1729,543 @@ static bool nxg_linear_fit(nxg_t *g, nxg_linear_t *l, uint32_t size)
    l->mem = mem;
    return true;
 }
+
+#ifdef NXG_3D
+/* ---- the 3D engine ----------------------------------------------------
+ *
+ * What the 2D engine cannot draw - a rotated quad, a strip, a texture
+ * shaded vertex by vertex - goes to the 3D engine of the same channel,
+ * methods written here as deko3d writes them, with no macros: the menu
+ * shaders deko3d draws with (DKSH, deko3d_shaders/menu_dksh.h), their
+ * texture descriptors in a pool of the frame's own, the draw a strip
+ * from the frame's arena. The engines take turns, a wait for idle
+ * between them. */
+
+/* MAXWELL_B methods, word offsets, named as deko3d's engine_3d.def */
+#define NXG_3D_WAIT_FOR_IDLE     0x044
+#define NXG_3D_EARLY_FRAGMENT    0x084
+#define NXG_3D_FRAGMENT_D8       0x0D8
+#define NXG_3D_RASTERIZER        0x0DF
+#define NXG_3D_SAMPLE_SHADING    0x1D5
+#define NXG_3D_RT0               0x200 /* address, size, format, tiling */
+#define NXG_3D_RT_STRIDE         0x10
+#define NXG_3D_VIEWPORT_XFORM    0x280 /* scale xyz, translate xyz */
+#define NXG_3D_VIEWPORT          0x300 /* x/w, y/h, near, far */
+#define NXG_3D_WINDOW_RECTS      0x340
+#define NXG_3D_DRAW_FIRST        0x35D
+#define NXG_3D_DRAW_COUNT        0x35E
+#define NXG_3D_DEPTH_MODE        0x35F
+#define NXG_3D_INVALIDATE_SHADER 0x369
+#define NXG_3D_POLYGON_FRONT     0x36B
+#define NXG_3D_POLYGON_BACK      0x36C
+#define NXG_3D_SCISSOR           0x380 /* enable, x min/max, y min/max */
+#define NXG_3D_POST_DEPTH        0x3C7
+#define NXG_3D_FRAGMENT_TABLE    0x3D0
+#define NXG_3D_VERTEX_RUNOUT     0x3E1
+#define NXG_3D_SAMPLE_MASK       0x3EF
+#define NXG_3D_SCREEN_SCISSOR    0x3FD
+#define NXG_3D_ATTRIBS           0x458
+#define NXG_3D_GEOMETRY_47C      0x47C
+#define NXG_3D_RT_CONTROL        0x487
+#define NXG_3D_FRAGMENT_489      0x489
+#define NXG_3D_INVALIDATE_TEX    0x4A2
+#define NXG_3D_DEPTH_TEST        0x4B3
+#define NXG_3D_INDEPENDENT_BLEND 0x4B9
+#define NXG_3D_DEPTH_WRITE       0x4BA
+#define NXG_3D_ALPHA_TEST        0x4BB
+#define NXG_3D_BLEND_ENABLE      0x4D8
+#define NXG_3D_STENCIL           0x4E0
+#define NXG_3D_WINDOW_ORIGIN     0x4EB
+#define NXG_3D_INVALIDATE_TSC    0x509
+#define NXG_3D_INVALIDATE_TIC    0x50A
+#define NXG_3D_MULTISAMPLE       0x54D
+#define NXG_3D_DEPTH_TARGET      0x54E
+#define NXG_3D_TSC_POOL          0x557 /* address, highest index */
+#define NXG_3D_TIC_POOL          0x55D
+#define NXG_3D_MULTISAMPLE_MODE  0x574
+#define NXG_3D_PROGRAM_REGION    0x582
+#define NXG_3D_VERTEX_END        0x585
+#define NXG_3D_VERTEX_BEGIN      0x586
+#define NXG_3D_PER_INSTANCE      0x620
+#define NXG_3D_CULL              0x646
+#define NXG_3D_VIEWPORT_ENABLE   0x64B
+#define NXG_3D_CLIP_CONTROL      0x64F
+#define NXG_3D_FRAGMENT_65B      0x65B
+#define NXG_3D_LOGIC_OP          0x671
+#define NXG_3D_COLOR_MASK        0x680
+#define NXG_3D_PIPE_NOP          0x68B
+#define NXG_3D_VERTEX_ARRAY      0x700 /* config, address */
+#define NXG_3D_BLEND             0x781 /* equation, src, dst; alpha's */
+#define NXG_3D_VERTEX_LIMIT      0x7C0
+#define NXG_3D_PROGRAM           0x800 /* config, offset, -, registers */
+#define NXG_3D_PROGRAM_STRIDE    0x10
+#define NXG_3D_CB_SELECT         0x8E0 /* size, address, offset */
+#define NXG_3D_CB_DATA           0x8E4
+#define NXG_3D_CB_BIND           0x904 /* a stage's, eight apart */
+#define NXG_3D_BINDLESS_SLOT     0x982
+
+#define NXG_3D_PRIM_STRIP        5
+#define NXG_3D_FILL              0x1B02
+#define NXG_3D_BLEND_ADD         1
+#define NXG_3D_BLEND_ONE         2
+#define NXG_3D_BLEND_INV_SRC_A   6
+#define NXG_3D_STAGE_VERTEX      1 /* program slots: 0 is VertexA */
+#define NXG_3D_STAGE_FRAGMENT    5
+
+/* The shaders' resources, where uam's code finds them: textures by
+ * handle in the driver's c[0], the fragment stage's from 0x690;
+ * uniform block 0 in c[2] */
+#define NXG_3D_DRIVER_CB_SIZE    0x1000
+#define NXG_3D_FRAGMENT_TEXTURE  0x690
+#define NXG_3D_UBO_SIZE          0x100
+#define NXG_3D_UBO_SLOT          2
+
+/* Memory: code and its tail no code may sit in; the sampler and the
+ * frames' texture descriptors; constants and the vertex runout */
+#define NXG_3D_CODE_ALIGN        0x100
+#define NXG_3D_CODE_TAIL         0x400
+#define NXG_3D_TICS              512
+#define NXG_3D_TIC_OFF           0x100
+#define NXG_3D_POOL_SIZE         (NXG_3D_TIC_OFF + NXG_FRAMES * NXG_3D_TICS * 32)
+#define NXG_3D_UBO_OFF           NXG_3D_DRIVER_CB_SIZE
+#define NXG_3D_RUNOUT_OFF        (NXG_3D_UBO_OFF + NXG_3D_UBO_SIZE)
+#define NXG_3D_CB_MEM            (NXG_3D_RUNOUT_OFF + 0x100)
+#define NXG_3D_VTX_FLOATS        8 /* position, texture, colour */
+
+#define NXG_3D_DKSH_MAGIC        0x48534B44u
+
+static uint32_t nxg_le32(const uint8_t *p)
+{
+   return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16)
+      | ((uint32_t)p[3] << 24);
+}
+
+static uint32_t nxg_f32(float v)
+{
+   uint32_t u;
+   memcpy(&u, &v, 4);
+   return u;
+}
+
+/* A program of @type from DKSH @blob, its code copied to @off of the
+ * code memory. Only what these shaders need: no compiler constants, no
+ * scratch, no VertexA, no fragment table - anything else stays 2D. */
+static bool nxg_3d_program(nxg_t *g, const uint8_t *blob, size_t size,
+      uint32_t type, uint32_t off, nxg_prog_t *p)
+{
+   uint32_t ctrl, code, progs;
+   const uint8_t *h;
+   if (size < 24 || nxg_le32(blob) != NXG_3D_DKSH_MAGIC)
+      return false;
+   ctrl  = nxg_le32(blob + 8);
+   code  = nxg_le32(blob + 12);
+   progs = nxg_le32(blob + 16);
+   if (     !nxg_le32(blob + 20) || progs + 64 > ctrl
+         || ctrl + code > size || off + code > g->code3d.size)
+      return false;
+   h = blob + progs;
+   if (     nxg_le32(h) != type
+         || nxg_le32(h + 16) /* constants */ || nxg_le32(h + 20) /* scratch */
+         || (type == 0 && nxg_le32(h + 28)) /* VertexA */
+         || (type == 1 && h[24]) /* fragment table */)
+      return false;
+   memcpy(g->code3d.cpu + off, blob + ctrl, code);
+   p->offset    = off + nxg_le32(h + 4);
+   p->gprs      = nxg_le32(h + 8);
+   p->end       = off + code;
+   if (type == 1)
+   {
+      p->early     = h[25];
+      p->post_depth = h[26];
+      p->per_sample = h[27];
+      p->param_d8  = nxg_le32(h + 44);
+      p->param_65b = (uint32_t)h[48] | ((uint32_t)h[49] << 8);
+      p->param_489 = (uint32_t)h[50] | ((uint32_t)h[51] << 8);
+   }
+   return true;
+}
+
+static uint32_t *nxg_3d_m(uint32_t *w, unsigned m, uint32_t v)
+{
+   if (v < 0x2000)
+      *w++ = NXG_HDR(NXG_INLINE, v, NXG_SUB_3D, m);
+   else
+   {
+      *w++ = NXG_HDR(NXG_INCR, 1, NXG_SUB_3D, m);
+      *w++ = v;
+   }
+   return w;
+}
+
+static uint32_t *nxg_3d_addr(uint32_t *w, unsigned m, uint64_t iova)
+{
+   *w++ = NXG_HDR(NXG_INCR, 2, NXG_SUB_3D, m);
+   *w++ = (uint32_t)(iova >> 32);
+   *w++ = (uint32_t)iova;
+   return w;
+}
+
+/* @n words in a run from @m, all @v */
+static uint32_t *nxg_3d_fill(uint32_t *w, unsigned m, unsigned n, uint32_t v)
+{
+   unsigned i;
+   *w++ = NXG_HDR(NXG_INCR, n, NXG_SUB_3D, m);
+   for (i = 0; i < n; i++)
+      *w++ = v;
+   return w;
+}
+
+/* Hands back what a reservation of @n words at @start did not use */
+static void nxg_cmd_trim(nxg_t *g, const uint32_t *start, unsigned n,
+      const uint32_t *end)
+{
+   g->frames[g->cur].used -= n - (unsigned)(end - start);
+}
+
+static uint32_t *nxg_3d_bind_program(uint32_t *w, unsigned slot,
+      const nxg_prog_t *p)
+{
+   *w++ = NXG_HDR(NXG_INCR, 2, NXG_SUB_3D,
+         NXG_3D_PROGRAM + slot * NXG_3D_PROGRAM_STRIDE);
+   *w++ = 1u | (slot << 4); /* enabled, its stage */
+   *w++ = p->offset;
+   w    = nxg_3d_m(w, NXG_3D_PROGRAM + slot * NXG_3D_PROGRAM_STRIDE + 3,
+         p->gprs);
+   /* No compiler constants: c[1] unbound */
+   return nxg_3d_m(w, NXG_3D_CB_BIND + (slot - 1) * 8, 1u << 4);
+}
+
+/* The engine's state, once: what deko3d's queue sets up, less its
+ * macros and firmware calls, and the pipeline the menu draws with */
+static void nxg_3d_setup(nxg_t *g)
+{
+   uint32_t *w0 = nxg_cmd(g, 320), *w = w0;
+   uint64_t cb  = g->cb3d.iova;
+   unsigned i;
+   if (!w)
+      return;
+   w = nxg_3d_m(w, NXG_3D_MULTISAMPLE, 0);
+   w = nxg_3d_m(w, NXG_3D_MULTISAMPLE_MODE, 0);
+   w = nxg_3d_fill(w, NXG_3D_WINDOW_RECTS, 16, 0);
+   w = nxg_3d_fill(w, NXG_3D_PER_INSTANCE, 16, 0);
+   w = nxg_3d_fill(w, NXG_3D_SAMPLE_MASK, 4, 0xFFFF);
+   w = nxg_3d_m(w, NXG_3D_BINDLESS_SLOT, 0);
+   w = nxg_3d_m(w, NXG_3D_INDEPENDENT_BLEND, 1);
+   w = nxg_3d_m(w, NXG_3D_VIEWPORT_ENABLE, 1);
+   w = nxg_3d_m(w, NXG_3D_CLIP_CONTROL, 0x181D); /* deko3d's, no clamp */
+   w = nxg_3d_m(w, NXG_3D_DEPTH_MODE, 0); /* -1..1 */
+   w = nxg_3d_m(w, NXG_3D_WINDOW_ORIGIN, 0); /* top-down, as the buffer */
+   w = nxg_3d_m(w, NXG_3D_RASTERIZER, 1);
+   w = nxg_3d_m(w, NXG_3D_POLYGON_FRONT, NXG_3D_FILL);
+   w = nxg_3d_m(w, NXG_3D_POLYGON_BACK, NXG_3D_FILL);
+   w = nxg_3d_m(w, NXG_3D_CULL, 0);
+   w = nxg_3d_m(w, NXG_3D_DEPTH_TARGET, 0);
+   w = nxg_3d_m(w, NXG_3D_DEPTH_TEST, 0);
+   w = nxg_3d_m(w, NXG_3D_DEPTH_WRITE, 0);
+   w = nxg_3d_m(w, NXG_3D_STENCIL, 0);
+   w = nxg_3d_m(w, NXG_3D_ALPHA_TEST, 0);
+   w = nxg_3d_m(w, NXG_3D_LOGIC_OP, 0);
+   w = nxg_3d_m(w, NXG_3D_COLOR_MASK, 0x1111);
+   /* Premultiplied: one, one less the source's alpha */
+   *w++ = NXG_HDR(NXG_INCR, 6, NXG_SUB_3D, NXG_3D_BLEND);
+   *w++ = NXG_3D_BLEND_ADD;
+   *w++ = NXG_3D_BLEND_ONE;
+   *w++ = NXG_3D_BLEND_INV_SRC_A;
+   *w++ = NXG_3D_BLEND_ADD;
+   *w++ = NXG_3D_BLEND_ONE;
+   *w++ = NXG_3D_BLEND_INV_SRC_A;
+   w = nxg_3d_m(w, NXG_3D_BLEND_ENABLE, 0);
+   /* One target, the window's buffer, sixteen GOBs a block; the rest
+    * off */
+   w = nxg_3d_m(w, NXG_3D_RT_CONTROL, 1u | (076543210u << 4));
+   for (i = 1; i < 8; i++)
+      w = nxg_3d_m(w, NXG_3D_RT0 + i * NXG_3D_RT_STRIDE + 4, 0);
+   *w++ = NXG_HDR(NXG_INCR, 2, NXG_SUB_3D, NXG_3D_SCREEN_SCISSOR);
+   *w++ = (uint32_t)NXG_FB_W << 16;
+   *w++ = (uint32_t)NXG_FB_H << 16;
+   /* The viewport's bounds the whole buffer, depth 0..1 from -1..1; its
+    * transform each draw's */
+   *w++ = NXG_HDR(NXG_INCR, 4, NXG_SUB_3D, NXG_3D_VIEWPORT);
+   *w++ = (uint32_t)NXG_FB_W << 16;
+   *w++ = (uint32_t)NXG_FB_H << 16;
+   *w++ = nxg_f32(0.0f);
+   *w++ = nxg_f32(1.0f);
+   w = nxg_3d_m(w, NXG_3D_SCISSOR, 1);
+   /* Vertices: buffer 0, 32 bytes apart; the other attributes fixed */
+   *w++ = NXG_HDR(NXG_INCR, 32, NXG_SUB_3D, NXG_3D_ATTRIBS);
+   *w++ = 0 | (0u << 7) | (0x04u << 21) | (7u << 27);  /* vec2 at 0 */
+   *w++ = 0 | (8u << 7) | (0x04u << 21) | (7u << 27);  /* vec2 at 8 */
+   *w++ = 0 | (16u << 7) | (0x01u << 21) | (7u << 27); /* vec4 at 16 */
+   for (i = 3; i < 32; i++)
+      *w++ = (1u << 6) | (0x12u << 21) | (7u << 27);
+   w = nxg_3d_m(w, NXG_3D_VERTEX_ARRAY,
+         (1u << 12) | (NXG_3D_VTX_FLOATS * 4));
+   for (i = 1; i < 16; i++)
+      w = nxg_3d_m(w, NXG_3D_VERTEX_ARRAY + i * 4, 0);
+   w = nxg_3d_m(w, NXG_3D_DRAW_FIRST, 0);
+   w = nxg_3d_addr(w, NXG_3D_VERTEX_RUNOUT, cb + NXG_3D_RUNOUT_OFF);
+   /* Descriptors: the sampler, the frames' textures */
+   w = nxg_3d_addr(w, NXG_3D_TSC_POOL, g->pool3d.iova);
+   w = nxg_3d_m(w, NXG_3D_TSC_POOL + 2, 0);
+   w = nxg_3d_addr(w, NXG_3D_TIC_POOL, g->pool3d.iova + NXG_3D_TIC_OFF);
+   w = nxg_3d_m(w, NXG_3D_TIC_POOL + 2, NXG_FRAMES * NXG_3D_TICS - 1);
+   /* Constants: the driver's c[0] in every stage, the vertex stage's
+    * uniform block in c[2] */
+   *w++ = NXG_HDR(NXG_INCR, 3, NXG_SUB_3D, NXG_3D_CB_SELECT);
+   *w++ = NXG_3D_DRIVER_CB_SIZE;
+   *w++ = (uint32_t)(cb >> 32);
+   *w++ = (uint32_t)cb;
+   for (i = 0; i < 5; i++)
+      w = nxg_3d_m(w, NXG_3D_CB_BIND + i * 8, 1u);
+   *w++ = NXG_HDR(NXG_INCR, 3, NXG_SUB_3D, NXG_3D_CB_SELECT);
+   *w++ = NXG_3D_UBO_SIZE;
+   *w++ = (uint32_t)((cb + NXG_3D_UBO_OFF) >> 32);
+   *w++ = (uint32_t)(cb + NXG_3D_UBO_OFF);
+   w = nxg_3d_m(w, NXG_3D_CB_BIND, 1u | (NXG_3D_UBO_SLOT << 4));
+   /* The programs: vertex and fragment on, VertexA and the stages
+    * between them off */
+   w = nxg_3d_addr(w, NXG_3D_PROGRAM_REGION, g->code3d.iova);
+   w = nxg_3d_m(w, NXG_3D_PROGRAM, 0);
+   w = nxg_3d_bind_program(w, NXG_3D_STAGE_VERTEX, &g->vsh);
+   for (i = 2; i < NXG_3D_STAGE_FRAGMENT; i++)
+      w = nxg_3d_m(w, NXG_3D_PROGRAM + i * NXG_3D_PROGRAM_STRIDE, i << 4);
+   w = nxg_3d_m(w, NXG_3D_GEOMETRY_47C, 0);
+   w = nxg_3d_bind_program(w, NXG_3D_STAGE_FRAGMENT, &g->fsh);
+   w = nxg_3d_m(w, NXG_3D_FRAGMENT_TABLE, 0);
+   w = nxg_3d_m(w, NXG_3D_EARLY_FRAGMENT, g->fsh.early);
+   w = nxg_3d_m(w, NXG_3D_POST_DEPTH, g->fsh.post_depth);
+   *w++ = NXG_HDR(NXG_INCR, 2, NXG_SUB_3D, NXG_3D_FRAGMENT_D8);
+   *w++ = g->fsh.param_d8;
+   *w++ = 0x20;
+   w = nxg_3d_m(w, NXG_3D_FRAGMENT_489, g->fsh.param_489);
+   w = nxg_3d_m(w, NXG_3D_FRAGMENT_65B, g->fsh.param_65b);
+   w = nxg_3d_m(w, NXG_3D_SAMPLE_SHADING, g->fsh.per_sample ? 0x30 : 0x01);
+   w = nxg_3d_m(w, NXG_3D_INVALIDATE_SHADER, 1u | (1u << 4) | (1u << 12));
+   nxg_cmd_trim(g, w0, 320, w);
+}
+
+/* The memory, the shaders and the sampler; false leaves the menu 2D */
+static bool nxg_3d_init(nxg_t *g)
+{
+   uint32_t *tsc;
+   uint32_t fsh_off;
+   if (!nxg_mem_new(g, &g->code3d, 0x1000, false, false))
+      return false;
+   fsh_off = SW_ALIGN(nxg_le32(deko3d_menu_vsh_dksh + 12), NXG_3D_CODE_ALIGN);
+   if (     !nxg_3d_program(g, deko3d_menu_vsh_dksh,
+               sizeof(deko3d_menu_vsh_dksh), 0, 0, &g->vsh)
+         || !nxg_3d_program(g, deko3d_menu_fsh_dksh,
+               sizeof(deko3d_menu_fsh_dksh), 1, fsh_off, &g->fsh)
+         || g->fsh.end + NXG_3D_CODE_TAIL > g->code3d.size)
+      return false;
+   armDCacheFlush(g->code3d.cpu, g->code3d.size);
+   if (     !nxg_mem_new(g, &g->pool3d, NXG_3D_POOL_SIZE, false, false)
+         || !nxg_mem_new(g, &g->cb3d, NXG_3D_CB_MEM, false, false))
+      return false;
+   /* Linear, clamped to the edge, no mipmaps: deko3d's descriptor for
+    * that sampler */
+   memset(g->pool3d.cpu, 0, NXG_3D_TIC_OFF);
+   tsc    = (uint32_t*)g->pool3d.cpu;
+   tsc[0] = 2u | (2u << 3) | (2u << 6) /* clamp to edge */
+          | (1u << 10) /* compare op Less, compare off */
+          | (1u << 13) /* sRGB conversion */
+          | (1u << 14) | (1u << 17); /* font filter 1x1 */
+   tsc[1] = 2u /* mag linear */ | (2u << 4) /* min linear */
+          | (1u << 6) /* no mip */ | (1u << 8) | (1u << 9);
+   tsc[2] = (15u * 256u) << 12; /* lod clamp 0..15 */
+   armDCacheFlush(g->pool3d.cpu, NXG_3D_TIC_OFF);
+   memset(g->cb3d.cpu, 0, g->cb3d.size);
+   armDCacheFlush(g->cb3d.cpu, g->cb3d.size);
+   /* The engine's state is the channel's, frame to frame: what it was
+    * given is known from here on */
+   g->tex_handle   = ~0u;
+   g->blend3d      = -1;
+   g->scissor3d[0] = g->scissor3d[1] = ~0u;
+   g->has3d        = true;
+   nxg_3d_setup(g);
+   return true;
+}
+
+/* The frame's buffer as the target, its slice of descriptors and the
+ * textures the CPU wrote fresh to the engine */
+static void nxg_3d_frame_begin(nxg_t *g, uint64_t fb)
+{
+   uint32_t *w;
+   g->engine3d = false;
+   g->tic_used = 0;
+   g->tic_surf = NULL;
+   if (!(w = nxg_cmd(g, 12)))
+      return;
+   w[0]  = NXG_HDR(NXG_INCR, 8, NXG_SUB_3D, NXG_3D_RT0);
+   w[1]  = (uint32_t)(fb >> 32);
+   w[2]  = (uint32_t)fb;
+   w[3]  = NXG_FB_W; /* a multiple of the 16 pixels a GOB is wide */
+   w[4]  = NXG_FB_H;
+   w[5]  = NXG_FMT_RGBA8;
+   w[6]  = NXG_BLOCK_LOG2 << 4;
+   w[7]  = 1;
+   w[8]  = NXG_FB_SIZE >> 2;
+   w[9]  = NXG_HDR(NXG_INLINE, 0, NXG_SUB_3D, NXG_3D_INVALIDATE_TIC);
+   w[10] = NXG_HDR(NXG_INLINE, 0, NXG_SUB_3D, NXG_3D_INVALIDATE_TSC);
+   w[11] = NXG_HDR(NXG_INLINE, 0, NXG_SUB_3D, NXG_3D_INVALIDATE_TEX);
+}
+
+/* The engines take turns over the buffer */
+static void nxg_3d_turn(nxg_t *g, bool to3d)
+{
+   uint32_t *w;
+   if (g->engine3d == to3d || !(w = nxg_cmd(g, 1)))
+      return;
+   w[0]        = NXG_HDR(NXG_INLINE, 0, NXG_SUB_3D, NXG_3D_WAIT_FOR_IDLE);
+   g->engine3d = to3d;
+}
+
+/* @s's descriptor in the frame's pool: pitch-linear premultiplied
+ * RGBA8, deko3d's for such an image; ~0 when the frame has no room */
+static uint32_t nxg_3d_tic(nxg_t *g, const sw_surf_t *s)
+{
+   uint32_t idx, *t;
+   if (     g->tic_surf == s && g->tic_iova == s->mem.iova
+         && g->tic_dims == s->dims)
+      return g->tic_last;
+   if (g->tic_used >= NXG_3D_TICS)
+      return ~0u;
+   idx = g->cur * NXG_3D_TICS + g->tic_used++;
+   t   = (uint32_t*)(g->pool3d.cpu + NXG_3D_TIC_OFF + idx * 32);
+   /* A8R8G8B8, unorm, swizzled R G B A */
+   t[0] = 0x08u | (2u << 7) | (2u << 10) | (2u << 13) | (2u << 16)
+        | (2u << 19) | (3u << 22) | (4u << 25) | (5u << 28);
+   t[1] = (uint32_t)s->mem.iova;
+   t[2] = (uint32_t)(s->mem.iova >> 32) | (2u << 21); /* pitch */
+   t[3] = s->pitch >> 5;
+   t[4] = (VIDEO_SCALE_W(s->dims) - 1) | (7u << 23) /* 2D, no mips */
+        | (7u << 29); /* border: the sampler's */
+   t[5] = (VIDEO_SCALE_H(s->dims) - 1) | (1u << 31); /* normalized */
+   t[6] = (2u << 23) | (1u << 25); /* anisotropy spread: two, one */
+   t[7] = 0;
+   armDCacheFlush(t, 32);
+   g->tic_surf = s;
+   g->tic_iova = s->mem.iova;
+   g->tic_dims = s->dims;
+   g->tic_last = idx;
+   return idx;
+}
+
+/* A strip of @n vertices in the 0..1 box at @pos/@dims (bottom-up, on
+ * an output @out_h high) by @mvp; the colours straight, @tex
+ * premultiplied or none. False when the frame has no room for it. */
+static bool nxg_3d_draw(switch_video_t *sw, const float *vert,
+      const float *tc, const float *col, unsigned n, const float *mvp,
+      unsigned pos, unsigned dims, float out_h, const sw_surf_t *tex)
+{
+   nxg_t *g = (nxg_t*)sw->gpu;
+   float x  = (float)VIDEO_POS_X(pos), y = (float)VIDEO_POS_Y(pos);
+   float w  = (float)VIDEO_SCALE_W(dims), h = (float)VIDEO_SCALE_H(dims);
+   int sx0 = 0, sy0 = 0;
+   int sx1 = (int)VIDEO_SCALE_W(sw->out_dims);
+   int sy1 = (int)VIDEO_SCALE_H(sw->out_dims);
+   uint32_t handle, sc[2], *c0, *c;
+   uint64_t iova;
+   float *v;
+   unsigned i;
+
+   if (!g->has3d || !g->recording)
+      return false;
+   if (sw->scissor_on)
+   {
+      int x0 = VIDEO_POS_X(sw->scissor_pos);
+      int y0 = VIDEO_POS_Y(sw->scissor_pos);
+      int x1 = x0 + (int)VIDEO_SCALE_W(sw->scissor_dims);
+      int y1 = y0 + (int)VIDEO_SCALE_H(sw->scissor_dims);
+      if (x0 > sx0) sx0 = x0;
+      if (y0 > sy0) sy0 = y0;
+      if (x1 < sx1) sx1 = x1;
+      if (y1 < sy1) sy1 = y1;
+   }
+   if (sx1 <= sx0 || sy1 <= sy0)
+      return true;
+   if ((handle = nxg_3d_tic(g, tex ? tex : &g->white)) == ~0u)
+      return false;
+   if (!(v = (float*)nxg_arena(g, n * NXG_3D_VTX_FLOATS * 4, 16, &iova)))
+      return false;
+   /* Premultiplied, as the surfaces are */
+   for (i = 0; i < n; i++, v += NXG_3D_VTX_FLOATS)
+   {
+      float a = col ? col[4 * i + 3] : 1.0f;
+      v[0] = vert[2 * i];
+      v[1] = vert[2 * i + 1];
+      v[2] = tc[2 * i];
+      v[3] = tc[2 * i + 1];
+      v[4] = col ? col[4 * i]     * a : 1.0f;
+      v[5] = col ? col[4 * i + 1] * a : 1.0f;
+      v[6] = col ? col[4 * i + 2] * a : 1.0f;
+      v[7] = a;
+   }
+   nxg_3d_turn(g, true);
+   if (!(c0 = nxg_cmd(g, 56)))
+      return false;
+   c = c0;
+   if (g->blend3d != (int)sw->blend)
+   {
+      c          = nxg_3d_m(c, NXG_3D_BLEND_ENABLE, sw->blend);
+      g->blend3d = sw->blend;
+   }
+   sc[0] = (uint32_t)sx0 | ((uint32_t)sx1 << 16);
+   sc[1] = (uint32_t)sy0 | ((uint32_t)sy1 << 16);
+   if (sc[0] != g->scissor3d[0] || sc[1] != g->scissor3d[1])
+   {
+      *c++ = NXG_HDR(NXG_INCR, 2, NXG_SUB_3D, NXG_3D_SCISSOR + 1);
+      *c++ = sc[0];
+      *c++ = sc[1];
+      g->scissor3d[0] = sc[0];
+      g->scissor3d[1] = sc[1];
+   }
+   /* The box's -1..1 onto its pixels, top-down */
+   *c++ = NXG_HDR(NXG_INCR, 6, NXG_SUB_3D, NXG_3D_VIEWPORT_XFORM);
+   *c++ = nxg_f32(w * 0.5f);
+   *c++ = nxg_f32(-h * 0.5f);
+   *c++ = nxg_f32(0.5f);
+   *c++ = nxg_f32(x + w * 0.5f);
+   *c++ = nxg_f32(out_h - y - h * 0.5f);
+   *c++ = nxg_f32(0.5f);
+   if (!g->mvp3d_valid || memcmp(g->mvp3d, mvp, sizeof(g->mvp3d)))
+   {
+      uint64_t ubo = g->cb3d.iova + NXG_3D_UBO_OFF;
+      *c++ = NXG_HDR(NXG_INCR, 4, NXG_SUB_3D, NXG_3D_CB_SELECT);
+      *c++ = NXG_3D_UBO_SIZE;
+      *c++ = (uint32_t)(ubo >> 32);
+      *c++ = (uint32_t)ubo;
+      *c++ = 0;
+      *c++ = NXG_HDR(NXG_INLINE, 0, NXG_SUB_3D, NXG_3D_PIPE_NOP);
+      *c++ = NXG_HDR(NXG_NONINCR, 16, NXG_SUB_3D, NXG_3D_CB_DATA);
+      memcpy(c, mvp, 16 * sizeof(float));
+      c += 16;
+      memcpy(g->mvp3d, mvp, sizeof(g->mvp3d));
+      g->mvp3d_valid = true;
+   }
+   /* Image and sampler 0 */
+   if (handle != g->tex_handle)
+   {
+      *c++ = NXG_HDR(NXG_INCR, 4, NXG_SUB_3D, NXG_3D_CB_SELECT);
+      *c++ = NXG_3D_DRIVER_CB_SIZE;
+      *c++ = (uint32_t)(g->cb3d.iova >> 32);
+      *c++ = (uint32_t)g->cb3d.iova;
+      *c++ = NXG_3D_FRAGMENT_TEXTURE;
+      *c++ = NXG_HDR(NXG_INLINE, 0, NXG_SUB_3D, NXG_3D_PIPE_NOP);
+      *c++ = NXG_HDR(NXG_NONINCR, 1, NXG_SUB_3D, NXG_3D_CB_DATA);
+      *c++ = handle;
+      g->tex_handle = handle;
+   }
+   c = nxg_3d_addr(c, NXG_3D_VERTEX_ARRAY + 1, iova);
+   c = nxg_3d_addr(c, NXG_3D_VERTEX_LIMIT,
+         iova + n * NXG_3D_VTX_FLOATS * 4 - 1);
+   c = nxg_3d_m(c, NXG_3D_VERTEX_BEGIN, NXG_3D_PRIM_STRIP);
+   c = nxg_3d_m(c, NXG_3D_DRAW_COUNT, n);
+   c = nxg_3d_m(c, NXG_3D_VERTEX_END, 0);
+   nxg_cmd_trim(g, c0, 56, c);
+   return true;
+}
+#endif /* NXG_3D */
 
 #endif /* SWITCH_NX_GPU */
 
@@ -1987,7 +2595,7 @@ static void sw_op_gpu(switch_video_t *sw, const sw_op_t *op)
          /* The corners as a 2x2 image stretched centre to centre:
           * bilinear is the gradient */
          uint64_t iova;
-         uint32_t *p = (uint32_t*)nxg_arena(g, 2 * SW_PITCH_ALIGN, &iova);
+         uint32_t *p = (uint32_t*)nxg_arena(g, 2 * SW_PITCH_ALIGN, SW_PITCH_ALIGN, &iova);
          if (!p)
             return;
          p[0]                      = op->color[0];
@@ -2092,6 +2700,38 @@ static void gfx_display_switch_scissor_end(void *data, unsigned video_dims)
       sw->scissor_on = false;
 }
 
+#ifdef NXG_3D
+/* What the 2D engine cannot draw, drawn by the 3D engine: a strip, a
+ * matrix that is not the default (rotated, scaled), a texture shaded
+ * by more than one colour. True when it is done with (drawn, or a strip
+ * there was no room for). */
+static bool gfx_display_switch_draw_3d(gfx_display_ctx_draw_t *draw,
+      switch_video_t *sw, unsigned video_dims)
+{
+   const struct video_coords *c = draw->coords;
+   const float *mvp = draw->matrix_data
+      ? ((const math_matrix_4x4*)draw->matrix_data)->data : sw->mvp.data;
+   const float *vert = c->vertex    ? c->vertex    : sw_default_vertices;
+   const float *tc   = c->tex_coord ? c->tex_coord : sw_default_tex_coords;
+   unsigned n        = c->vertices, i;
+   bool need;
+   if (!sw->gpu || !((nxg_t*)sw->gpu)->has3d || !n)
+      return false;
+   need = n != 4 || memcmp(mvp, sw->mvp.data, sizeof(sw->mvp.data));
+   if (!need && draw->texture && c->color)
+      for (i = 4; i < 16 && !need; i++)
+         need = c->color[i] != c->color[i & 3];
+   if (!need)
+      return false;
+   /* The defaults are one quad's */
+   if (n > 4 && (vert == sw_default_vertices || tc == sw_default_tex_coords))
+      return true;
+   return nxg_3d_draw(sw, vert, tc, c->color, n, mvp, draw->pos,
+         draw->dims, (float)VIDEO_SCALE_H(video_dims ? video_dims
+            : sw->out_dims), (const sw_surf_t*)draw->texture) || n != 4;
+}
+#endif
+
 /* One quad, as an operation. The quad is placed by its vertices in the
  * draw's rectangle, bottom-up; its texels by the texture coordinates,
  * top-down. A rotation the 2D engine cannot draw keeps its bounds;
@@ -2108,7 +2748,13 @@ static void gfx_display_switch_draw(gfx_display_ctx_draw_t *draw,
    float out_h;
    sw_op_t op;
 
-   if (!sw || !draw || !draw->coords || draw->coords->vertices != 4)
+   if (!sw || !draw || !draw->coords)
+      return;
+#ifdef NXG_3D
+   if (gfx_display_switch_draw_3d(draw, sw, video_dims))
+      return;
+#endif
+   if (draw->coords->vertices != 4)
       return;
    vert  = draw->coords->vertex    ? draw->coords->vertex    : sw_default_vertices;
    tc    = draw->coords->tex_coord ? draw->coords->tex_coord : sw_default_tex_coords;
@@ -3323,6 +3969,14 @@ static void *switch_init(const video_info_t *video)
 #ifdef SWITCH_NX_GPU
     sw->gpu = nxg_init(sw->win);
 #endif
+#ifdef NXG_3D
+    /* With the 3D engine the menus hand over matrices and strips */
+    if (sw->gpu && ((nxg_t*)sw->gpu)->has3d)
+    {
+       gfx_display_ctx_switch.handles_transform    = false;
+       gfx_display_ctx_switch.handles_vertex_strip = true;
+    }
+#endif
     if (!sw->gpu)
     {
        framebufferCreate(&sw->fb, sw->win, 1280, 720, PIXEL_FORMAT_RGBA_8888, 2);
@@ -3656,6 +4310,8 @@ static void switch_free(void *data)
     else
 #endif
        framebufferClose(&sw->fb);
+    gfx_display_ctx_switch.handles_transform    = true;
+    gfx_display_ctx_switch.handles_vertex_strip = false;
     scaler_ctx_gen_reset(&sw->scaler);
     scaler_ctx_gen_reset(&sw->menu_texture.scaler);
 
@@ -3981,8 +4637,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    &switch_font,
    GFX_VIDEO_DRIVER_SWITCH,
    "switch",
-   true,  /* handles_transform: rotation and scale come as values */
-   false, /* handles_vertex_strip: a quad at a time */
+   /* As the 2D engine draws: rotation and scale as values, a quad at a
+    * time. With the 3D engine up, matrices and strips (switch_init). */
+   true,  /* handles_transform */
+   false, /* handles_vertex_strip */
    gfx_display_switch_scissor_begin,
    gfx_display_switch_scissor_end
 };
