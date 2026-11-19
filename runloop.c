@@ -378,6 +378,9 @@ static void runloop_game_ai_think_cb(void *userdata,
 #endif
 
 #define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
+#ifdef HAVE_PYROWAVE
+#define SYMBOL_PYROWAVE(x) current_core->x = libretro_pyrowave_##x
+#endif
 
 #ifdef HAVE_FFMPEG
 #define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
@@ -5515,6 +5518,11 @@ bool runloop_init_libretro_symbols(
          break;
       case CORE_TYPE_DUMMY:
          CORE_SYMBOLS(SYMBOL_DUMMY);
+         break;
+      case CORE_TYPE_PYROWAVE:
+#ifdef HAVE_PYROWAVE
+         CORE_SYMBOLS(SYMBOL_PYROWAVE);
+#endif
          break;
       case CORE_TYPE_FFMPEG:
 #ifdef HAVE_FFMPEG

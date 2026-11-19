@@ -26,6 +26,7 @@
 #include <retro_common_api.h>
 #include <retro_spsc.h>
 #include <retro_atomic.h>
+#include "audio_presentation.h"
 /* Outside the HAVE_THREADS guard below: its struct is a value member of
  * the state, needs only retro_atomic, and a build without threads never
  * calls into it - so the type has to exist there even though nothing
@@ -467,6 +468,14 @@ typedef struct audio_driver
     * NULL and keeps the copy inside write(). */
    size_t  (*write_begin)(void *data, size_t len, void **region);
    ssize_t (*write_end)(void *data, size_t len);
+   /* Optional, called only by the device's write owner. Counts refer to
+    * PCM frames accepted by write/write_end, including partial writes.
+    * valid maps actual presentation to those frames; device-inserted silence
+    * is invalid. Frontend-inserted silence needs its own provenance.
+    * drained proves the accepted tail played, without mapping silence.
+    * A discarded device queue changes epoch before any new valid position.
+    * False means unsupported, rather than a guessed playback position. */
+   bool (*presentation_position)(void *data, audio_presentation_position_t *position);
 } audio_driver_t;
 
 /* What a driver's device-clock word holds until it has an estimate.

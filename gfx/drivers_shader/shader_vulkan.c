@@ -342,10 +342,10 @@ typedef struct vulkan_filter_chain_create_info vulkan_filter_chain_create_info;
    {
       VkImageCopy region;
 
-      /* The destination transitions from UNDEFINED (contents discarded),
-       * so there is no data dependency on prior fragment work.
-       * TOP_OF_PIPE_BIT with srcAccessMask 0 is the correct minimal
-       * barrier — same pattern used by vulkan_framebuffer_clear(). */
+      /* Discarding contents removes the data dependency, but a recycled
+       * history image must still finish its previous shader reads before
+       * this layout transition and overwrite. Include earlier transfers
+       * too; UNDEFINED does not remove their execution dependency. */
       VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
             cmd,
             image,
@@ -354,7 +354,7 @@ typedef struct vulkan_filter_chain_create_info vulkan_filter_chain_create_info;
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             0,
             VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_QUEUE_FAMILY_IGNORED,
             VK_QUEUE_FAMILY_IGNORED);

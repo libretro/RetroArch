@@ -17,6 +17,7 @@ static void pool(unsigned slots)
    record_gpu_frame_t frame = {0}, got;
    unsigned i, slot = 99;
    CHECK(q != NULL);
+   CHECK(record_gpu_queue_peek(q, &got) == RECORD_GPU_QUEUE_BUSY);
    CHECK(record_gpu_queue_take(q, &got) == RECORD_GPU_QUEUE_BUSY);
    CHECK(!record_gpu_queue_submit(q, &frame));
    CHECK(!record_gpu_queue_cancel(q));
@@ -45,6 +46,10 @@ static void pool(unsigned slots)
    CHECK(record_gpu_queue_acquire(q, &slot) == RECORD_GPU_QUEUE_END);
    for (i = 0; i < slots; i++)
    {
+      CHECK(record_gpu_queue_peek(q, &got) == RECORD_GPU_QUEUE_OK);
+      CHECK(got.slot == i && got.timestamp == i && got.duration == 2);
+      CHECK(!record_gpu_queue_release(q, got.slot));
+      CHECK(record_gpu_queue_peek(q, &got) == RECORD_GPU_QUEUE_OK && got.slot == i);
       CHECK(record_gpu_queue_take(q, &got) == RECORD_GPU_QUEUE_OK);
       CHECK(got.slot == i && got.timestamp == i && got.duration == 2);
       CHECK(got.ready_value == i + 10 && got.keyframe == (i == 0));
@@ -52,6 +57,7 @@ static void pool(unsigned slots)
    }
    /* EOS must reach the worker before outstanding GPU outputs drain. */
    CHECK(record_gpu_queue_take(q, &got) == RECORD_GPU_QUEUE_END);
+   CHECK(record_gpu_queue_peek(q, &got) == RECORD_GPU_QUEUE_END);
    CHECK(!record_gpu_queue_release(q, slots));
    for (i = slots; i > 0; i--)
    {

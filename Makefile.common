@@ -2821,9 +2821,44 @@ endif
 
 
 # Things that depend on network availability
+ifeq ($(HAVE_PYROWAVE), 1)
+   ifneq ($(HAVE_NETWORKING), 1)
+      $(error PyroWave streaming requires networking)
+   endif
+endif
 
 ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
+   ifeq ($(HAVE_PYROWAVE), 1)
+      DEFINES += -DHAVE_PYROWAVE
+      PYROWAVE_OBJ := $(LIBRETRO_COMM_DIR)/formats/pyrowave/rpyrowave.o \
+         $(LIBRETRO_COMM_DIR)/formats/pyrowave/rpyrowave_image.o \
+         $(LIBRETRO_COMM_DIR)/formats/pyrowave/rpyrowave_gpu.o \
+         $(LIBRETRO_COMM_DIR)/formats/pyrowave/rpyrowave_stream.o \
+         $(LIBRETRO_COMM_DIR)/net/rpyrowave_socket.o \
+         record/record_gpu_queue.o record/record_pyrowave_pcm.o \
+         record/record_pyrowave_clock.o record/record_pyrowave_audio_clock.o \
+         record/record_pyrowave_session.o \
+         record/record_pyrowave_connection.o record/record_pyrowave_dispatch.o
+      PYROWAVE_OBJ += record/drivers/record_pyrowave.o cores/libretro-pyrowave/pyrowave_core.o
+      PYROWAVE_OBJ += record/record_pyrowave_source.o record/record_pyrowave_source_d3d12.o
+      ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES3)),)
+         PYROWAVE_OBJ += record/record_pyrowave_gl.o
+      endif
+      ifeq ($(HAVE_OPENGL_CORE), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_source_gl.o
+      endif
+      ifeq ($(HAVE_VULKAN), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_vulkan.o record/record_pyrowave_source_vulkan.o
+      endif
+      ifeq ($(HAVE_D3D12), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_d3d12.o
+      endif
+      ifeq ($(HAVE_METAL), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_metal.o record/record_pyrowave_metal_runtime.o
+      endif
+      OBJ += $(filter-out $(OBJ),$(PYROWAVE_OBJ))
+   endif
    ifeq ($(HAVE_RTMP), 1)
       DEFINES += -DHAVE_RTMP
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_rtmp_chunk.o \

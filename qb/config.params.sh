@@ -245,6 +245,7 @@ HAVE_GAMEMODE=yes          # Game Mode support (Linux)
 HAVE_FREETYPE=auto         # FreeType support
 HAVE_STB_IMAGE=yes         # stb image loading support
 HAVE_RPNG=yes              # RPNG support
+HAVE_PYROWAVE=no           # PyroWave codec and streaming infrastructure
 HAVE_RBMP=yes              # RBMP support
 HAVE_RJPEG=yes             # RJPEG support
 HAVE_RTGA=yes              # RTGA support

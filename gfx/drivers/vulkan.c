@@ -101,6 +101,11 @@
 
 #include "../../record/record_driver.h"
 #include "../../record/drivers/record_vulkan.h"
+#ifdef HAVE_PYROWAVE
+#include "../../record/drivers/record_pyrowave.h"
+#include "../../record/record_pyrowave_vulkan.h"
+#include "../../cores/libretro-pyrowave/pyrowave_core.h"
+#endif
 #if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
 #include "../../record/record_android_capture_renderer.h"
 #endif
@@ -418,6 +423,10 @@ enum vulkan_texture_support
 
 typedef struct vk
 {
+#ifdef HAVE_PYROWAVE
+   retro_atomic_int_t pyrowave_format;
+   bool pyrowave_quiescing;
+#endif
    retro_time_t presented_at;
 #if defined(_WIN32) && !defined(__WINRT__)
    /* The swapchain whose window's output was last asked whether it
@@ -8375,6 +8384,9 @@ static void *vulkan_init(const video_info_t *video)
 
    if (!(vk = (vk_t*)calloc(1, sizeof(*vk))))
       return NULL;
+#ifdef HAVE_PYROWAVE
+   retro_atomic_int_init(&vk->pyrowave_format, 0);
+#endif
 
    /* Seed the raw rotation latch inside the blocking CMD_INIT;
     * set_rotation keeps it current from here on. */
@@ -8712,6 +8724,9 @@ static void *vulkan_init(const video_info_t *video)
    vulkan_views_publish(vk);
 #ifdef HAVE_VIDEO_WINDOWS
    vulkan_windows_take(vk);
+#endif
+#ifdef HAVE_PYROWAVE
+   retro_atomic_store_release_int(&vk->pyrowave_format, (int)vk->context->swapchain_format);
 #endif
    return vk;
 
@@ -10685,7 +10700,8 @@ static void vulkan_apply_pending_resize(vk_t *vk,
       /* The resize may skip an acquired image before capture sees its new
        * dimensions. Close admission now, before audio gets another frame. */
       if (video_info->dims != vk->vp.full_dims)
-         record_vulkan_gpu_reconfigure(video_info->recording_gpu);
+         if (!video_info->recording_pyrowave)
+            record_vulkan_gpu_reconfigure(video_info->recording_gpu);
 #endif
       if (vk->ctx_driver->set_resize)
          vk->ctx_driver->set_resize(vk->ctx_data, video_info->dims);
@@ -13039,7 +13055,7 @@ static bool vulkan_record_native(vk_t *vk, const video_frame_info_t *info,
 {
    vulkan_encode_capture_source_t source;
    unsigned mode = 0;
-   if (!info->recording_gpu || !info->recording_gpu_capture || info->frame_repeat
+   if (info->recording_pyrowave || !info->recording_gpu || !info->recording_gpu_capture || info->frame_repeat
          || !backbuffer->image || !backbuffer->view || !vk->cmd
          || !(vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
          || (vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)
@@ -13197,6 +13213,77 @@ static bool vulkan_hw_level_view(vk_t *vk, struct vk_per_frame *slot)
          &slot->hw_level_view) == VK_SUCCESS;
 }
 
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+int video_vulkan_pyrowave_quiesce(void *renderer, VkFence marker, bool *submitted)
+{
+   vk_t *vk = (vk_t*)renderer;
+   VkResult result;
+   unsigned i;
+   if (!vk || !vk->context || !marker || !submitted) return -1;
+   vk->pyrowave_quiescing = true;
+   if (!*submitted)
+   {
+      /* Order retirement after the queued decode and display work. */
+      vulkan_lock_queue(vk);
+      result = vkQueueSubmit(vk->context->queue, 0, NULL, marker);
+      vulkan_unlock_queue(vk);
+      if (result == VK_ERROR_DEVICE_LOST) vulkan_check_device_lost(vk, result);
+      if (result == VK_ERROR_OUT_OF_HOST_MEMORY || result == VK_ERROR_OUT_OF_DEVICE_MEMORY) return 0;
+      if (result != VK_SUCCESS && result != VK_ERROR_DEVICE_LOST) return -1;
+      *submitted = true;
+   }
+   result = vkGetFenceStatus(vk->context->device, marker);
+   if (result == VK_NOT_READY) return 0;
+   if (result == VK_ERROR_DEVICE_LOST) vulkan_check_device_lost(vk, result);
+   else if (result != VK_SUCCESS) return -1;
+   for (i = 0; i < vk->num_frame_resources; i++)
+      if (vk->swapchain[i].cmd)
+      {
+         result = vkResetCommandBuffer(vk->swapchain[i].cmd, 0);
+         if (result == VK_ERROR_DEVICE_LOST) vulkan_check_device_lost(vk, result);
+         else if (result != VK_SUCCESS) return -1;
+      }
+   vk->cmd = VK_NULL_HANDLE;
+   return 1;
+}
+
+void video_vulkan_pyrowave_resume(void *renderer)
+{
+   vk_t *vk = (vk_t*)renderer;
+   if (vk) vk->pyrowave_quiescing = (vk->flags & VK_FLAG_DEVICE_LOST_REPORTED) != 0;
+}
+
+static void vulkan_pyrowave_submitted(vk_t *vk, const video_frame_info_t *info,
+      VkFence fence, VkResult result, bool discarded)
+{
+   if (info->recording_pyrowave_receive)
+   {
+      if (result != VK_SUCCESS && !discarded) vk->pyrowave_quiescing = true;
+      libretro_pyrowave_vulkan_submitted(info->recording_gpu, fence, result, discarded);
+   }
+   else if (discarded)
+      record_pyrowave_vulkan_unsubmitted(info->recording_gpu, fence);
+   else
+   {
+      if (result != VK_SUCCESS && !discarded) vk->pyrowave_quiescing = true;
+      record_pyrowave_vulkan_submitted(info->recording_gpu, fence, result);
+   }
+}
+
+static void vulkan_pyrowave_unsubmitted(vk_t *vk,
+      const video_frame_info_t *info, VkFence fence, VkResult result)
+{
+   if (!info->recording_pyrowave) return;
+   /* Device loss cannot prove that other submissions stopped using loans. */
+   if (result != VK_ERROR_DEVICE_LOST
+         && vkResetCommandBuffer(vk->cmd, 0) == VK_SUCCESS)
+      vulkan_pyrowave_submitted(vk, info, fence, result, true);
+   else
+      vulkan_pyrowave_submitted(vk, info, fence, VK_ERROR_DEVICE_LOST, false);
+   vk->cmd = VK_NULL_HANDLE;
+}
+#endif
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -13212,6 +13299,12 @@ static bool vulkan_frame(void *data, const void *frame,
    VkSemaphore signal_semaphores[2 + RETRO_VIDEO_VIEWS_MAX];
 #ifdef HAVE_RECORD_VULKAN
    bool native_recording = false;
+#endif
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+   VkFence pyrowave_fence = VK_NULL_HANDLE;
+   record_pyrowave_vulkan_image_t pyrowave_image;
+   unsigned pyrowave_dims = 0;
+   bool pyrowave_ready = false;
 #endif
 #if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
    record_android_capture_renderer_t *recording = NULL;
@@ -13325,7 +13418,11 @@ static bool vulkan_frame(void *data, const void *frame,
    bool xr_window = (vk->flags & VK_FLAG_OPEN_XR) != 0;
    bool xr_inline = xr_window && vk->context->xr
       && !(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK);
-
+#endif
+#ifdef HAVE_PYROWAVE
+   if (vk->pyrowave_quiescing) return true;
+#endif
+#ifdef HAVE_OPENXR
    if (xr_inline)
       vulkan_openxr_begin_frame(vk->context->xr);
    /* The window's images are always there to draw in. */
@@ -13539,6 +13636,9 @@ static bool vulkan_frame(void *data, const void *frame,
     * validation layer rejects, and only kept working because the old
     * texture's memory was silently reused. The texture that is there
     * stays, and draws as it did. */
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+   if (video_info->recording_pyrowave_receive) frame = NULL;
+#endif
    if (     frame && VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims)
          && !(vk->flags & VK_FLAG_HW_ENABLE)
          && (frame_mem = vulkan_frame_mem_find(vk, frame, dims, pitch,
@@ -14080,6 +14180,14 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif /* VULKAN_HDR_SWAPCHAIN */
    }
 
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+   if (video_info->recording_pyrowave_receive)
+      pyrowave_ready = libretro_pyrowave_vulkan_frame(video_info->recording_gpu, vk->cmd,
+            &pyrowave_image, &pyrowave_fence, &pyrowave_dims,
+            video_info->recording_gpu_capture
+            && !(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK), video_info);
+#endif
+
    /* Render offscreen filter chain passes. */
    {
       /* Set the source texture in the filter chain */
@@ -14088,6 +14196,24 @@ static bool vulkan_frame(void *data, const void *frame,
       input.padded_dims = 0;
       input.origin      = 0;
 
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+      if (video_info->recording_pyrowave_receive)
+      {
+         if (pyrowave_ready)
+         {
+            input.dims = pyrowave_dims; input.padded_dims = pyrowave_dims;
+            input.image = pyrowave_image.image; input.view = pyrowave_image.view;
+            input.layout = pyrowave_image.layout; input.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+         }
+         else
+         {
+            input.dims = vk->default_texture.dims; input.image = vk->default_texture.image;
+            input.view = vk->default_texture.view; input.layout = vk->default_texture.layout;
+            input.format = vk->default_texture.format;
+         }
+      }
+      else
+#endif
       if (vk->movie_texture)
          vulkan_movie_input((struct vk_texture*)vk->movie_texture, &input);
       else if (vk->flags & VK_FLAG_HW_ENABLE)
@@ -14687,6 +14813,24 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_RECORD_VULKAN
    native_recording = vulkan_record_native(vk, video_info, backbuffer);
 #endif
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+   retro_atomic_store_release_int(&vk->pyrowave_format, (int)vk->context->swapchain_format);
+   if (video_info->recording_pyrowave && !video_info->recording_pyrowave_receive)
+   {
+      unsigned mode = 0;
+      bool capture = video_info->recording_gpu_capture && !video_info->frame_repeat
+         && backbuffer->image && vk->cmd && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         && !(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)
+         && !(vk->flags & VK_FLAG_OPEN_XR);
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         mode = vk->context->flags & VK_CTX_FLAG_HDR_SCRGB ? 2 : 1;
+#endif
+      pyrowave_fence = record_pyrowave_vulkan_frame(video_info->recording_gpu, vk->cmd, backbuffer->image,
+            vk->context->swapchain_format, vk->vp.full_dims, vk->vp.pos, vk->vp.dims,
+            mode, video_info->recording_gpu_timestamp, video_info->recording_pyrowave_duration, capture);
+   }
+#endif
 
    if (
             (backbuffer->image != VK_NULL_HANDLE)
@@ -14856,7 +15000,21 @@ static bool vulkan_frame(void *data, const void *frame,
             vk->context->graphics_queue_index, vk->hw.src_queue_family);
    }
 
-   vkEndCommandBuffer(vk->cmd);
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+   if (video_info->recording_pyrowave)
+   {
+      VkResult result = vkEndCommandBuffer(vk->cmd);
+      if (result != VK_SUCCESS)
+      {
+         vulkan_pyrowave_unsubmitted(vk, video_info, pyrowave_fence, result);
+         vk->context->swapchain_fences_signalled[frame_index] = false;
+         vulkan_check_device_lost(vk, result);
+         return !video_info->recording_pyrowave_receive;
+      }
+   }
+   else
+#endif
+      vkEndCommandBuffer(vk->cmd);
 
    /* Submit command buffers to GPU. */
    submit_info.sType                 = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -14987,15 +15145,20 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 #else
 #ifdef HAVE_VAAPI
-   if (vulkan_android_queue_flush(&vk->vaapi_submissions, vkQueueSubmit)
-         != VK_SUCCESS)
    {
+      VkResult result = vulkan_android_queue_flush(&vk->vaapi_submissions, vkQueueSubmit);
+      if (result != VK_SUCCESS)
+      {
 #ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
+         slock_unlock(vk->context->queue_lock);
 #endif
-      vk->context->swapchain_fences_signalled[frame_index] = false;
-      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
-      return false;
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+         vulkan_pyrowave_unsubmitted(vk, video_info, pyrowave_fence, result);
+#endif
+         vk->context->swapchain_fences_signalled[frame_index] = false;
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+         return false;
+      }
    }
 #endif
 #ifdef HAVE_RECORD_VULKAN
@@ -15031,9 +15194,46 @@ static bool vulkan_frame(void *data, const void *frame,
    else
 #endif
    {
-      vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
-            &submit_info, vk->context->swapchain_fences[frame_index]));
+      VkFence fence = vk->context->swapchain_fences[frame_index];
+      VkResult result;
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+      VkFence capture_fence = pyrowave_fence;
+      if (capture_fence) fence = capture_fence;
+#endif
+      result = vkQueueSubmit(vk->context->queue, 1, &submit_info, fence);
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+      if (video_info->recording_pyrowave)
+      {
+         if (result == VK_ERROR_OUT_OF_HOST_MEMORY || result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
+         {
+            VkResult reset = vkResetCommandBuffer(vk->cmd, 0);
+            if (reset != VK_SUCCESS) result = reset == VK_ERROR_DEVICE_LOST
+               ? VK_ERROR_DEVICE_LOST : VK_ERROR_INITIALIZATION_FAILED;
+            vk->cmd = VK_NULL_HANDLE;
+         }
+         vulkan_pyrowave_submitted(vk, video_info, capture_fence, result,
+               result == VK_ERROR_OUT_OF_HOST_MEMORY || result == VK_ERROR_OUT_OF_DEVICE_MEMORY);
+         /* The primary's private fence survives renderer frame recycling.
+          * Its work also precedes this signal of the ordinary frame fence. */
+         if (capture_fence && result == VK_SUCCESS)
+         {
+            result = vkQueueSubmit(vk->context->queue, 0, NULL, vk->context->swapchain_fences[frame_index]);
+            if (result != VK_SUCCESS) vulkan_pyrowave_submitted(vk, video_info, VK_NULL_HANDLE, result, false);
+         }
+      }
+#endif
+      vulkan_check_device_lost(vk, result);
       vk->context->swapchain_fences_signalled[frame_index] = true;
+#ifdef HAVE_RECORD_PYROWAVE_VULKAN
+      if (video_info->recording_pyrowave && result != VK_SUCCESS)
+      {
+         vk->context->swapchain_fences_signalled[frame_index] = false;
+#ifdef HAVE_THREADS
+         slock_unlock(vk->context->queue_lock);
+#endif
+         return !video_info->recording_pyrowave_receive;
+      }
+#endif
    }
 #endif
 #ifdef HAVE_TEMPORAL_UPSCALER
@@ -16831,6 +17031,9 @@ static enum video_texture_update vulkan_import_movie_frame(void *data,
 static bool vulkan_get_device(void *data, video_device_info_t *info)
 {
    vk_t *vk = (vk_t*)data;
+#ifdef HAVE_PYROWAVE
+   unsigned format;
+#endif
    if (     !vk || !vk->context || !info
          || vk->context->device == VK_NULL_HANDLE)
       return false;
@@ -16841,6 +17044,12 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->get_instance_proc_addr = (retro_proc_address_t)
       vulkan_symbol_wrapper_instance_proc_addr();
    info->queue_family           = vk->context->graphics_queue_index;
+#ifdef HAVE_PYROWAVE
+   format = (unsigned)retro_atomic_load_acquire_int(&vk->pyrowave_format);
+   info->output_format = format;
+   info->output_bit_depth = format == VK_FORMAT_R16G16B16A16_SFLOAT ? 16
+      : format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32 ? 10 : 8;
+#endif
    info->queue                  = (void*)vk->context->queue;
    info->queue_lock             = NULL;
    info->recording_caps         = 0;

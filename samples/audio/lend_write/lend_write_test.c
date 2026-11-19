@@ -27,6 +27,11 @@ static uint8_t captured[CAPTURE * 8 * sizeof(float)];
 static size_t  captured_bytes, device_bytes;
 static bool    device_float;
 static unsigned failures;
+#ifdef HAVE_PYROWAVE
+static bool pyrowave_test_active, pyrowave_test_complete;
+static size_t pyrowave_test_limit;
+static uint64_t pyrowave_test_played, pyrowave_test_epoch;
+#endif
 
 /* The scripted device: a flat capture area lent span by span. */
 static size_t  lent_at, lent_len;   /* outstanding lend */
@@ -64,6 +69,10 @@ static ssize_t test_write(void *data, const void *buf, size_t len)
    (void)data;
    if (lending)
       abort();          /* write() inside an outstanding lend */
+#ifdef HAVE_PYROWAVE
+   if (pyrowave_test_active && pyrowave_test_limit && len > pyrowave_test_limit)
+      len = pyrowave_test_limit;
+#endif
    if (captured_bytes + len > sizeof(captured))
       abort();
    memcpy(captured + captured_bytes, buf, len);
@@ -322,6 +331,10 @@ static void fit_case(void)
             fit_checked);
 }
 
+#ifdef HAVE_PYROWAVE
+#include "pyrowave_output_test.h"
+#endif
+
 int main(void)
 {
    size_t i;
@@ -338,6 +351,9 @@ int main(void)
       source_i[i] = (int16_t)((int)(i % 1000) - 500);
    for (i = 0; i < FRAMES * 6; i++)
       source_51[i] = (int16_t)((int)((i * (7 + i % 6)) % 2000) - 1000);
+#ifdef HAVE_PYROWAVE
+   pyrowave_output_cases();
+#endif
 
    fit_case();
 

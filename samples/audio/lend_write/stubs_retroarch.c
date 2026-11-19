@@ -5,6 +5,9 @@
 #undef audio_init_thread
 #undef audio_thread_parked
 #undef command_event
+#ifdef HAVE_PYROWAVE
+void libretro_pyrowave_audio_control(bool exiting) { (void)exiting; }
+#endif
 
 /* These fixtures have no wrapper worker: it is always parked. */
 bool audio_thread_parked(void *data)

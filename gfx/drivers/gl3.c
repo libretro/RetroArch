@@ -77,6 +77,10 @@
 
 #include "../font_driver.h"
 #include "../../record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "../../record/drivers/record_pyrowave.h"
+#include "../../cores/libretro-pyrowave/pyrowave_core.h"
+#endif
 
 /* Headset output: the slang chains draw its screens. */
 #if defined(HAVE_OPENXR_GL) && defined(HAVE_SLANG)
@@ -132,6 +136,9 @@ typedef struct gl3
    gl_menu_bloom_t *menu_bloom;
 #endif
    const gfx_ctx_driver_t *ctx_driver;
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   retro_atomic_int_t pyrowave_format;
+#endif
    void *ctx_data;
    /* The frame's swap: how long it took, and whether it was one that
     * waits for the vertical blank (a swap interval set). For
@@ -566,6 +573,10 @@ static void gl3_publish_texture_formats(gl3_t *gl)
 static void gl3_publish_flags(gl3_t *gl)
 {
    gl3_publish_texture_formats(gl);
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   retro_atomic_store_release_int(&gl->pyrowave_format,
+         gl->scrgb.active ? GL_RGBA16F : GL_RGBA8);
+#endif
 #ifdef HAVE_SLANG
    retro_atomic_store_release_int(&gl->scrgb.active_published,
          gl->scrgb.active ? 1 : 0);
@@ -3974,6 +3985,7 @@ static void gl3_begin_debug(gl3_t *gl)
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
       glEnable(GL_DEBUG_OUTPUT);
 #endif
+      RARCH_LOG("[GLCore] GL debugging enabled.\n");
    }
    else
       RARCH_ERR("[GLCore] Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
@@ -4011,6 +4023,9 @@ static void *gl3_init(const video_info_t *video)
    /* gl must exist before the context lookup writes its flags. */
    if (!gl || !(ctx_driver = gl3_get_context(gl)))
       goto error;
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   retro_atomic_int_init(&gl->pyrowave_format, 0);
+#endif
 
    /* Latched here, inside the wrapper's blocking CMD_INIT (the main
     * thread is parked in send-and-wait, so the settings read is
@@ -7180,6 +7195,9 @@ static bool gl3_frame(void *data, const void *frame,
 
    /* Whether to read frames back travels with the frame, so this thread
     * does not read the recording state the main thread writes. */
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   if (video_info->recording_pyrowave_receive) frame = NULL;
+#endif
    if (video_info->gpu_recording)
       gl->flags |=  GL3_FLAG_GPU_RECORDING;
    else
@@ -7345,6 +7363,19 @@ static bool gl3_frame(void *data, const void *frame,
       texture.padded_dims   = streamed->dims;
    }
 
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   if (video_info->recording_pyrowave_receive)
+   {
+      unsigned receiver_dims = 0;
+      unsigned receiver_texture = libretro_pyrowave_gl_frame(video_info->recording_gpu, &receiver_dims,
+            video_info->recording_gpu_capture && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK), video_info);
+      if (receiver_texture)
+      {
+         texture.image = receiver_texture; texture.dims = receiver_dims;
+         texture.padded_dims = receiver_dims; texture.format = GL_RGBA32F;
+      }
+   }
+#endif
 #ifdef HAVE_GL3_XR
    /* Each view the headset shows has a chain of its own there. */
    if (xr_draw && video_info->views.num_views)
@@ -8004,8 +8035,29 @@ static bool gl3_frame(void *data, const void *frame,
             && !gl->video_info.source_hdr10)
          glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
    }
-   else if (!video_info->record_game_only || gl->scrgb.active)
+   else if (
+#ifdef HAVE_RECORD_PYROWAVE_GL
+         !video_info->recording_pyrowave &&
+#endif
+         (!video_info->record_game_only || gl->scrgb.active))
       gl3_record_readback(gl, !video_info->record_game_only);
+
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   if (video_info->recording_pyrowave && !video_info->recording_pyrowave_receive)
+   {
+      unsigned format = gl->scrgb.active ? GL_RGBA16F : GL_RGBA8;
+      unsigned mode = gl->scrgb.active ? (gl->scrgb.pq_out ? 1 : 2) : 0;
+      bool capture = video_info->recording_gpu_capture && !video_info->frame_repeat
+         && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK);
+#ifdef HAVE_GL3_XR
+      if (gl->xr.host) capture = false;
+#endif
+      retro_atomic_store_release_int(&gl->pyrowave_format, format);
+      record_pyrowave_gl_frame(video_info->recording_gpu, format,
+            gl->vp.full_dims, gl->vp.pos, gl->vp.dims, mode,
+            video_info->recording_gpu_timestamp, video_info->recording_pyrowave_duration, capture);
+   }
+#endif
 
 #ifdef HAVE_GL3_XR
    if (xr_draw)
@@ -8853,6 +8905,29 @@ static retro_proc_address_t gl3_get_proc_address(
    return NULL;
 }
 
+#ifdef HAVE_RECORD_PYROWAVE_GL
+static void gl3_pyrowave_bind(void *data, bool enter)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, !enter);
+}
+static bool gl3_get_device(void *data, video_device_info_t *info)
+{
+   gl3_t *gl = (gl3_t*)data;
+   unsigned format;
+   if (!gl || !info || !gl->ctx_driver->get_proc_address) return false;
+   format = (unsigned)retro_atomic_load_acquire_int(&gl->pyrowave_format);
+   if (!format) return false;
+   memset(info, 0, sizeof(*info));
+   info->api = VIDEO_DEVICE_OPENGL; info->device = gl;
+   info->get_gl_proc_address = gl->ctx_driver->get_proc_address;
+   info->bind_gl_context = gl3_pyrowave_bind;
+   info->output_format = format; info->output_bit_depth = format == GL_RGBA8 ? 8 : 16;
+   return true;
+}
+#endif
+
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
 #endif
@@ -9180,11 +9255,16 @@ static const video_poke_interface_t gl3_poke_interface = {
 #ifdef HAVE_GL_FRAME_MEM
    gl3_frame_mem_alloc,
    gl3_frame_mem_ready,
-   gl3_frame_mem_free
+   gl3_frame_mem_free,
 #else
    NULL, /* frame_mem_alloc */
    NULL, /* frame_mem_ready */
-   NULL  /* frame_mem_free */
+   NULL, /* frame_mem_free */
+#endif
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   gl3_get_device
+#else
+   NULL /* get_device */
 #endif
 };
 

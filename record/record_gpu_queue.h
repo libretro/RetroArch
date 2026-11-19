@@ -41,6 +41,8 @@ bool record_gpu_queue_finish(record_gpu_queue_t *queue);
  * A taken descriptor remains the worker's across encoder BUSY. Release only
  * after the GPU and packet no longer reference the slot. */
 int record_gpu_queue_take(record_gpu_queue_t *queue, record_gpu_frame_t *frame);
+/* Same consumer, metadata only; does not take a slot or advance the queue. */
+int record_gpu_queue_peek(record_gpu_queue_t *queue, record_gpu_frame_t *frame);
 bool record_gpu_queue_release(record_gpu_queue_t *queue, unsigned slot);
 /* Both sides quiesced. Refuses reserved, queued or worker-owned slots. */
 bool record_gpu_queue_free(record_gpu_queue_t *queue);

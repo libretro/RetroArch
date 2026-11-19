@@ -422,3 +422,13 @@ samples/runahead/lifetime/plain-no-threads/
 samples/runahead/lifetime/sanitized/
 samples/runahead/lifetime/sanitized-no-threads/
 samples/runahead/lifetime/windows/
+/samples/gfx/pyrowave_gl/.pyrowave-shaders/
+/samples/gfx/pyrowave_metal/.metal-shaders/
+/samples/gfx/pyrowave_metal/.native/
+/samples/gfx/pyrowave_d3d12/.pyrowave-dxbc/
+/samples/gfx/pyrowave_d3d12/.pyrowave-player-vfs/
+/samples/gfx/pyrowave_vulkan/.pyrowave-shaders/
+/samples/audio/pyrowave_presentation/alsa_presentation_test
+/samples/audio/pyrowave_presentation/obj-msvc/
+/samples/audio/lend_write/obj-pyrowave/
+/samples/audio/lend_write/pyrowave_output_test

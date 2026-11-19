@@ -45,6 +45,10 @@
 #include "drivers/record_mediacodec.h"
 #include "drivers/record_avfoundation.h"
 #include "drivers/record_vulkan.h"
+#ifdef HAVE_PYROWAVE
+#include "drivers/record_pyrowave.h"
+#include "../cores/libretro-pyrowave/pyrowave_core.h"
+#endif
 
 static recording_state_t recording_state = {0};
 #ifdef HAVE_RECORD_VULKAN
@@ -80,12 +84,24 @@ const record_driver_t *record_drivers[] = {
 #ifdef HAVE_RECORD_VULKAN
    &record_vulkan,
 #endif
+#ifdef HAVE_PYROWAVE
+   &record_pyrowave,
+#endif
    &record_null,
    NULL,
 };
 
 void recording_gpu_frame_info(struct video_frame_info *info,bool capture)
 {
+   info->recording_pyrowave_receive = false;
+   info->recording_pyrowave_clock_valid = false;
+#ifdef HAVE_PYROWAVE
+   if (libretro_pyrowave_frame_info(info, capture)) return;
+   if (record_pyrowave_frame_info(info, capture))
+      return;
+#else
+   info->recording_pyrowave = false;
+#endif
 #ifdef HAVE_RECORD_VULKAN
    if (record_vulkan_frame_info(info, capture))
       return;
@@ -100,6 +116,10 @@ void recording_gpu_frame_info(struct video_frame_info *info,bool capture)
 }
 void recording_gpu_poll(void)
 {
+#ifdef HAVE_PYROWAVE
+   record_pyrowave_poll();
+   libretro_pyrowave_poll();
+#endif
    if (recording_state.start_pending)
    {
       runloop_state_t *loop = runloop_state_get_ptr();
@@ -134,6 +154,10 @@ void recording_start_frame(void)
 }
 void recording_gpu_stop(void)
 {
+#ifdef HAVE_PYROWAVE
+   record_pyrowave_stop();
+   libretro_pyrowave_stop();
+#endif
    record_nvenc_stop();
    record_metal_stop();
    record_mediacodec_stop();
@@ -143,6 +167,10 @@ void recording_gpu_stop(void)
 }
 bool recording_gpu_pending(void)
 {
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_pending() || libretro_pyrowave_pending())
+      return true;
+#endif
 #ifdef HAVE_RECORD_VULKAN
    if (record_vulkan_pending())
       return true;
@@ -152,6 +180,10 @@ bool recording_gpu_pending(void)
 }
 bool recording_gpu_reset_pending(void)
 {
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_pending() || libretro_pyrowave_pending())
+      return true;
+#endif
 #ifdef HAVE_RECORD_VULKAN
    if (record_vulkan_pending())
       return true;
@@ -165,15 +197,26 @@ bool recording_gpu_cancel_start(void)
    bool nvenc=record_nvenc_cancel_start();
    bool metal=record_metal_cancel_start();
    bool mediacodec = record_mediacodec_cancel_start();
+#ifdef HAVE_PYROWAVE
+   bool pyrowave = record_pyrowave_cancel_start();
+#endif
 #ifdef HAVE_RECORD_VULKAN
    bool vulkan = record_vulkan_cancel_start();
    if (vulkan)
       return true;
 #endif
-   return nvenc || metal || mediacodec;
+   return nvenc || metal || mediacodec
+#ifdef HAVE_PYROWAVE
+      || pyrowave
+#endif
+      ;
 }
 bool recording_gpu_defer_start(const record_driver_t *driver)
 {
+#ifdef HAVE_PYROWAVE
+   if (driver == &record_pyrowave)
+      return record_pyrowave_defer_start();
+#endif
 #ifdef HAVE_RECORD_VULKAN
    if (driver == &record_vulkan)
       return record_vulkan_defer_start();
@@ -219,6 +262,10 @@ bool recording_driver_can_stream(const char *ident)
       return false;
    if (strcmp(driver->ident, "ffmpeg") == 0)
       return true;
+#ifdef HAVE_PYROWAVE
+   if (driver == &record_pyrowave)
+      return true;
+#endif
    if (driver == &record_metal)
       return record_metal_can_stream();
    if (driver == &record_nvenc)
@@ -234,6 +281,8 @@ bool recording_driver_streaming_mode_supported(const char *ident, unsigned mode)
 {
    if (mode > STREAMING_MODE_CUSTOM || !recording_driver_can_stream(ident))
       return false;
+   if (strcmp(ident, "pyrowave") == 0)
+      return mode == STREAMING_MODE_CUSTOM;
    if (strcmp(ident, "ffmpeg") == 0)
       return true;
    if (mode == STREAMING_MODE_LOCAL)
@@ -393,7 +442,8 @@ bool recording_init(void)
    bool metal_native = string_is_equal(settings->arrays.record_driver,"metal");
    bool mc_native = string_is_equal(settings->arrays.record_driver,"mediacodec");
    bool vk_native = string_is_equal(settings->arrays.record_driver, "vulkan");
-   bool gpu_native = nvenc_native || metal_native || mc_native || vk_native;
+   bool pyrowave_native = string_is_equal(settings->arrays.record_driver, "pyrowave");
+   bool gpu_native = nvenc_native || metal_native || mc_native || vk_native || pyrowave_native;
    bool menu_source = false;
 #ifdef HAVE_RECORD_MEDIACODEC
    menu_source = mc_native && current_core_type == CORE_TYPE_DUMMY;
@@ -401,6 +451,9 @@ bool recording_init(void)
 
    if (!recording_enable)
       return false;
+#ifdef HAVE_PYROWAVE
+   if (libretro_pyrowave_pending()) return false;
+#endif
 
    if (content_load_state_in_progress(NULL)
          || runloop_st->auto_state_load_pending
@@ -418,6 +471,13 @@ bool recording_init(void)
    if (nvenc_native)
    {
       RARCH_ERR("[Recording] Native NVENC recording is unavailable in this build.\n");
+      return false;
+   }
+#endif
+#ifndef HAVE_RECORD_PYROWAVE_SOURCE
+   if (pyrowave_native)
+   {
+      RARCH_ERR("[Recording] PyroWave capture is unavailable for this build.\n");
       return false;
    }
 #endif
@@ -443,7 +503,7 @@ bool recording_init(void)
    }
 #endif
    if (gpu_native) video_gpu_record = true;
-   if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F)
+   if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F && !pyrowave_native)
    {
       RARCH_ERR("[Recording] Native FP16 core recording is not supported.\n");
       return false;
@@ -623,6 +683,10 @@ bool recording_init(void)
             if (vk_native)
                recording_st->driver = &record_vulkan;
 #endif
+#ifdef HAVE_PYROWAVE
+            if (pyrowave_native)
+               recording_st->driver = &record_pyrowave;
+#endif
             return recording_gpu_defer_start(recording_st->driver);
          }
          params.out_dims     = vp.full_dims;
@@ -637,6 +701,10 @@ bool recording_init(void)
 #ifdef HAVE_RECORD_VULKAN
             if (vk_native)
                recording_st->driver = &record_vulkan;
+#endif
+#ifdef HAVE_PYROWAVE
+            if (pyrowave_native)
+               recording_st->driver = &record_pyrowave;
 #endif
             return recording_gpu_defer_start(recording_st->driver);
          }

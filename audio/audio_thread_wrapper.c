@@ -548,6 +548,14 @@ static enum audio_thread_grant audio_thread_thread_grant(void *data)
    return thr->driver->thread_grant(thr->driver_data);
 }
 
+static bool audio_thread_presentation_position(void *data,
+      audio_presentation_position_t *position)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   return thr && thr->driver_data && thr->driver->presentation_position
+      && thr->driver->presentation_position(thr->driver_data, position);
+}
+
 static size_t audio_thread_frames_consumed(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -676,7 +684,8 @@ static const audio_driver_t audio_thread = {
    audio_thread_device_clock_ppm,
    audio_thread_thread_grant,
    audio_thread_write_begin,
-   audio_thread_write_end
+   audio_thread_write_end,
+   audio_thread_presentation_position
 };
 
 /**

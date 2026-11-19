@@ -27,6 +27,7 @@
  * build with only HAVE_TINYALSA never sees an alsa-lib header. */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <lists/string_list.h>
 #include <retro_atomic.h>
@@ -398,6 +399,7 @@ typedef struct alsa
    /* Frames snd_pcm_writei() accepted since open; less what the device
     * still holds, it is what the device has consumed. */
    uint64_t frames_written;
+   uint64_t presentation_epoch, presentation_first;
    /* Xruns the device reported on the write path: -EPIPE is the
     * device having run out of audio, which -EINTR and -ESTRPIPE
     * beside it are not. */
@@ -457,9 +459,17 @@ typedef struct alsa
    retro_atomic_int_t clk_rebase;
 } alsa_t;
 
+static void alsa_presentation_reset(alsa_t *alsa)
+{
+   if (alsa->presentation_epoch != (uint64_t)-1)
+      alsa->presentation_epoch++;
+   alsa->presentation_first = alsa->frames_written;
+}
+
 static int alsa_recover(alsa_t *alsa, int err)
 {
    retro_atomic_store_release_int(&alsa->clk_rebase, 1);
+   if (err != -EINTR) alsa_presentation_reset(alsa);
    return snd_pcm_recover(alsa->pcm, err, 1);
 }
 
@@ -545,7 +555,10 @@ static bool alsa_start(void *data, bool is_shutdown)
    if (alsa->held)
       ret = snd_pcm_pause(alsa->pcm, 0);
    else
+   {
+      alsa_presentation_reset(alsa);
       ret = snd_pcm_prepare(alsa->pcm);
+   }
    if (ret < 0)
    {
       RARCH_ERR("[ALSA] Failed to %s: %s.\n",
@@ -702,6 +715,7 @@ static bool alsa_stop(void *data)
    }
    alsa->is_paused = true;
    alsa->held      = false;
+   alsa_presentation_reset(alsa);
    retro_atomic_store_release_int(&alsa->clk_rebase, 1);
    return true;
 }
@@ -1019,6 +1033,40 @@ static bool alsa_device_clock_ppm(void *data, double *ppm)
    return false;
 }
 
+static bool alsa_presentation_position(void *data,
+      audio_presentation_position_t *position)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   snd_pcm_sframes_t delay = 0;
+   snd_pcm_state_t state;
+   if (!alsa || !alsa->pcm || !position) return false;
+   memset(position, 0, sizeof(*position));
+   position->epoch = alsa->presentation_epoch + 1;
+   position->written = alsa->frames_written;
+   state = snd_pcm_state(alsa->pcm);
+   position->failed = state == SND_PCM_STATE_DISCONNECTED
+      || alsa->presentation_epoch == (uint64_t)-1;
+   if (position->failed) return true;
+   /* Virtual and mmap PCMs may accept the start threshold while still
+    * reporting a completely writable buffer. Start natively before claiming
+    * presentation, rather than deadlocking a clocked stream in PREPARED. */
+   if (state == SND_PCM_STATE_PREPARED && !alsa->is_paused
+         && alsa->stream_info.start_frames
+         && alsa->frames_written - alsa->presentation_first >= alsa->stream_info.start_frames)
+   {
+      if (snd_pcm_start(alsa->pcm) < 0)
+      { position->failed = true; return true; }
+      state = snd_pcm_state(alsa->pcm);
+   }
+   if (state != SND_PCM_STATE_RUNNING && state != SND_PCM_STATE_PAUSED) return true;
+   if (snd_pcm_delay(alsa->pcm, &delay) < 0 || delay < 0
+         || (uint64_t)delay > alsa->frames_written - alsa->presentation_first) return true;
+   position->played = alsa->frames_written - (uint64_t)delay;
+   position->valid = alsa->frames_written > alsa->presentation_first;
+   position->drained = position->valid && !delay;
+   return true;
+}
+
 static size_t alsa_frames_consumed(void *data)
 {
    alsa_t *alsa            = (alsa_t*)data;
@@ -1127,7 +1175,8 @@ audio_driver_t audio_alsa = {
    alsa_device_clock_ppm,
    NULL, /* thread_grant */
    alsa_write_begin,
-   alsa_write_end
+   alsa_write_end,
+   alsa_presentation_position
 };
 
 #endif /* HAVE_ALSA */

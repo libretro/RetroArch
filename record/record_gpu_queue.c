@@ -89,6 +89,16 @@ bool record_gpu_queue_finish(record_gpu_queue_t *q)
    return true;
 }
 
+int record_gpu_queue_peek(record_gpu_queue_t *q, record_gpu_frame_t *frame)
+{
+   int closed;
+   if (!q || !frame) return RECORD_GPU_QUEUE_ERROR;
+   closed = retro_atomic_load_acquire_int(&q->closed);
+   if (retro_spsc_peek(&q->ready, frame, sizeof(*frame)) != sizeof(*frame))
+      return closed ? RECORD_GPU_QUEUE_END : RECORD_GPU_QUEUE_BUSY;
+   return RECORD_GPU_QUEUE_OK;
+}
+
 int record_gpu_queue_take(record_gpu_queue_t *q, record_gpu_frame_t *frame)
 {
    int closed;

@@ -574,6 +574,7 @@ typedef struct video_frame_info
     * whichever thread it is on. */
    uint64_t driver_pacing_id;
    uint64_t recording_gpu_timestamp;
+   uint64_t recording_pyrowave_duration;
    /* cpu_features_get_time_usec() as video_driver_frame() read it for
     * this frame: what anything drawn with the frame animates by, on
     * whichever thread draws it */
@@ -788,6 +789,9 @@ typedef struct video_frame_info
    bool gpu_recording;
    bool recording_gpu_pending;
    bool recording_gpu_capture;
+   bool recording_pyrowave;
+   bool recording_pyrowave_receive;
+   bool recording_pyrowave_clock_valid;
    /* Record Game Only: the driver reads the recording's frame back
     * before drawing any UI over it. */
    bool record_game_only;
@@ -1084,7 +1088,8 @@ enum video_device_api
    VIDEO_DEVICE_VULKAN,
    VIDEO_DEVICE_D3D11,
    VIDEO_DEVICE_D3D12,
-   VIDEO_DEVICE_METAL
+   VIDEO_DEVICE_METAL,
+   VIDEO_DEVICE_OPENGL
 };
 
 enum video_device_recording_cap
@@ -1110,9 +1115,14 @@ typedef struct video_device_info
    /* Optional immutable recording device descriptor, owned by the renderer. */
    const void *recording;
    retro_proc_address_t get_instance_proc_addr;
+   retro_proc_address_t (*get_gl_proc_address)(const char *name);
+   /* Render-owner jobs: enter frontend context, then restore core context. */
+   void (*bind_gl_context)(void *data, bool enter);
    /* The driver's queue family: an image the driver imports is either
     * exclusive to it or shared with it (concurrent). */
    unsigned queue_family;
+   /* API-specific final output format and precision, for cold capture setup. */
+   unsigned output_format, output_bit_depth;
    /* image_pixfmt bits import_texture takes; 0 when it takes none. */
    uint32_t import_formats;
    uint32_t recording_caps;

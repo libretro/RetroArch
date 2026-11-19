@@ -8365,6 +8365,13 @@ static void retroarch_parse_input_libretro_path(
          runloop_set_current_core_type(CORE_TYPE_MPV, true);
          return;
       }
+#ifdef HAVE_PYROWAVE
+      else if (!strcmp(path, "pyrowave"))
+      {
+         runloop_set_current_core_type(CORE_TYPE_PYROWAVE, true);
+         return;
+      }
+#endif
       else if (!memcmp(path, "webm", STRLEN_CONST("webm")))
       {
          runloop_set_current_core_type(CORE_TYPE_WEBM, true);

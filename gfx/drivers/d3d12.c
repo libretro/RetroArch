@@ -61,6 +61,11 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../record/drivers/record_nvenc.h"
+#ifdef HAVE_PYROWAVE
+#include "../../record/drivers/record_pyrowave.h"
+#include "../../record/record_pyrowave_player_d3d12.h"
+#include "../../cores/libretro-pyrowave/pyrowave_core.h"
+#endif
 #include "../../retroarch.h"
 #include "../common/menu_bloom.h"
 #include "../font_driver.h"
@@ -988,6 +993,19 @@ typedef struct
 #endif
    uint32_t flags;
    retro_atomic_int_t texture_hdr_enabled;
+#ifdef HAVE_PYROWAVE
+   retro_atomic_int_t pyrowave_format;
+   /* Borrow decoder resources until all display loans retire. */
+   void *pyrowave_player;
+   /* Render-owner borrow, cleared by detach before the client is freed. */
+   void *pyrowave_receiver, *pyrowave_sender;
+   void *pyrowave_last_image;
+   D3D12Fence pyrowave_marker;
+   D3D12GraphicsCommandList pyrowave_spare_cmd;
+   D3D12CommandAllocator pyrowave_spare_allocator;
+   bool pyrowave_quiescing, pyrowave_marker_submitted, pyrowave_retired;
+   D3D12_CPU_DESCRIPTOR_HANDLE pyrowave_views[3];
+#endif
    /* settings->uints.video_swapchain_bit_depth, seeded at init and
     * refreshed in apply_state_changes (a blocking command, so the
     * settings read inside it cannot race main): the frame's resize
@@ -1409,6 +1427,18 @@ static VIDEO_NOINLINE void d3d12_device_removed(d3d12_video_t *d3d12,
          d3d12->device);
    if (SUCCEEDED(reason))
       return;
+#ifdef HAVE_PYROWAVE
+   if (d3d12->pyrowave_receiver)
+   {
+      d3d12->pyrowave_quiescing = true;
+      libretro_pyrowave_d3d12_failed(d3d12->pyrowave_receiver);
+   }
+   if (d3d12->pyrowave_sender)
+   {
+      d3d12->pyrowave_quiescing = true;
+      record_pyrowave_failed(d3d12->pyrowave_sender);
+   }
+#endif
    if (!(d3d12->flags & D3D12_ST_FLAG_DEVICE_REMOVED))
    {
       d3d12->flags |= D3D12_ST_FLAG_DEVICE_REMOVED;
@@ -6748,6 +6778,185 @@ static bool d3d12_hw_direct_lookup(d3d12_video_t *d3d12,
    return true;
 }
 
+#ifdef HAVE_PYROWAVE
+void video_d3d12_pyrowave_detach(void *data, void *codec)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   unsigned i;
+   if (!d3d12 || d3d12->pyrowave_player != codec) return;
+   for (i = 0; i < countof(d3d12->pyrowave_views); i++)
+      if (d3d12->pyrowave_views[i].ptr)
+      {
+         unsigned k;
+         for (k = 0; k < countof(d3d12->hw_direct.cache); k++)
+            if (d3d12->hw_direct.cache[k].cpu.ptr == d3d12->pyrowave_views[i].ptr)
+            {
+               d3d12_hw_direct_slot_free(d3d12, k);
+               break;
+            }
+         d3d12->pyrowave_views[i].ptr = 0;
+      }
+   if (d3d12->pyrowave_last_image && d3d12->hw_render_texture == d3d12->pyrowave_last_image)
+   {
+      d3d12->hw_render_texture = NULL;
+      d3d12->flags &= ~D3D12_ST_FLAG_HW_IFACE_ENABLE;
+   }
+   d3d12->pyrowave_last_image = NULL;
+   d3d12->hw_direct.current = NULL;
+   d3d12->hw_direct.current_gpu.ptr = 0;
+   Release(d3d12->pyrowave_spare_cmd);
+   Release(d3d12->pyrowave_spare_allocator);
+   Release(d3d12->pyrowave_marker);
+   d3d12->pyrowave_spare_cmd = NULL;
+   d3d12->pyrowave_spare_allocator = NULL;
+   d3d12->pyrowave_marker = NULL;
+   d3d12->pyrowave_quiescing = true;
+   d3d12->pyrowave_marker_submitted = d3d12->pyrowave_retired = false;
+   d3d12->pyrowave_player = NULL;
+   d3d12->pyrowave_receiver = d3d12->pyrowave_sender = NULL;
+}
+
+void video_d3d12_pyrowave_resume(void *data)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   HRESULT removed;
+   if (!d3d12 || !d3d12->device) return;
+   removed = d3d12->device->lpVtbl->GetDeviceRemovedReason(d3d12->device);
+   if (FAILED(removed)) d3d12_device_removed(d3d12, removed);
+   d3d12->pyrowave_quiescing = (d3d12->flags & D3D12_ST_FLAG_DEVICE_REMOVED) != 0;
+}
+
+static bool d3d12_pyrowave_attach(void *data, void *codec, bool source)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   unsigned i;
+   if (!d3d12 || !codec || d3d12->pyrowave_player) return false;
+   d3d12->pyrowave_player = codec;
+   i = countof(d3d12->pyrowave_views);
+   if (!source)
+   for (i = 0; i < countof(d3d12->pyrowave_views); i++)
+   {
+      ID3D12Resource *resource = record_pyrowave_d3d12_texture(codec, i);
+      D3D12_GPU_DESCRIPTOR_HANDLE gpu;
+      unsigned k;
+      if (!resource) break;
+      /* Only vacant cache entries: cold registration never invokes the
+       * HW-core lookup's eviction/drain fallback. */
+      for (k = 0; k < countof(d3d12->hw_direct.cache); k++)
+         if (!d3d12->hw_direct.cache[k].resource) break;
+      if (k == countof(d3d12->hw_direct.cache)) break;
+      d3d12->hw_direct.next = k;
+      if (!d3d12_hw_direct_lookup(d3d12, resource, DXGI_FORMAT_R32G32B32A32_FLOAT, &gpu)) break;
+      d3d12->pyrowave_views[i] = d3d12->hw_direct.cache[k].cpu;
+   }
+   if (i == countof(d3d12->pyrowave_views)
+         && SUCCEEDED(d3d12->device->lpVtbl->CreateFence(d3d12->device, 0,
+            D3D12_FENCE_FLAG_NONE, uuidof(ID3D12Fence), (void**)&d3d12->pyrowave_marker))
+         && SUCCEEDED(d3d12->device->lpVtbl->CreateCommandAllocator(d3d12->device,
+            D3D12_COMMAND_LIST_TYPE_DIRECT, uuidof(ID3D12CommandAllocator),
+            (void**)&d3d12->pyrowave_spare_allocator))
+         && SUCCEEDED(d3d12->device->lpVtbl->CreateCommandList(d3d12->device, 0,
+            D3D12_COMMAND_LIST_TYPE_DIRECT, d3d12->pyrowave_spare_allocator, NULL,
+            uuidof(ID3D12GraphicsCommandList), (void**)&d3d12->pyrowave_spare_cmd))
+         && SUCCEEDED(d3d12->pyrowave_spare_cmd->lpVtbl->Close(d3d12->pyrowave_spare_cmd)))
+      return true;
+   video_d3d12_pyrowave_detach(data, codec);
+   video_d3d12_pyrowave_resume(data);
+   return false;
+}
+
+bool video_d3d12_pyrowave_attach(void *data, void *codec)
+{ return d3d12_pyrowave_attach(data, codec, false); }
+
+bool video_d3d12_pyrowave_source_attach(void *data, void *codec, void *context)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12_pyrowave_attach(data, codec, true)) return false;
+   d3d12->pyrowave_sender = context;
+   return true;
+}
+
+int video_d3d12_pyrowave_quiesce(void *data, void *codec)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   UINT64 done;
+   HRESULT result, removed;
+   unsigned slot;
+   if (!d3d12 || !codec || d3d12->pyrowave_player != codec || !d3d12->pyrowave_marker) return -1;
+   if (d3d12->pyrowave_retired) return 1;
+   d3d12->pyrowave_quiescing = true;
+   removed = d3d12->device->lpVtbl->GetDeviceRemovedReason(d3d12->device);
+   if (SUCCEEDED(removed))
+   {
+      if (!d3d12->pyrowave_marker_submitted)
+      {
+         result = d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, d3d12->pyrowave_marker, 1);
+         if (FAILED(result))
+         {
+            removed = d3d12->device->lpVtbl->GetDeviceRemovedReason(d3d12->device);
+            if (SUCCEEDED(removed)) return result == E_OUTOFMEMORY ? 0 : -1;
+         }
+         else d3d12->pyrowave_marker_submitted = true;
+      }
+      if (SUCCEEDED(removed))
+      {
+         done = d3d12->pyrowave_marker->lpVtbl->GetCompletedValue(d3d12->pyrowave_marker);
+         if (done == ~(UINT64)0)
+         {
+            removed = d3d12->device->lpVtbl->GetDeviceRemovedReason(d3d12->device);
+            if (SUCCEEDED(removed)) return -1;
+         }
+         else if (done < 1) return 0;
+      }
+   }
+   if (SUCCEEDED(removed))
+   {
+      /* Other renderer lends may already name the abandoned list's next
+       * signal, even when Close failed before frameSignal was assigned.
+       * The queue marker proves all work retired. Skip that label too so
+       * its borrows retire, and future submissions cannot reuse its value. */
+      if (d3d12->queue.fenceValue == ~(UINT64)0) return -1;
+      result = d3d12->queue.fence->lpVtbl->Signal(d3d12->queue.fence,
+            d3d12->queue.fenceValue + 1);
+      if (FAILED(result)) return -1;
+      d3d12->queue.frameSignal = ++d3d12->queue.fenceValue;
+   }
+   else d3d12_device_removed(d3d12, removed);
+   if (!d3d12->pyrowave_spare_cmd || !d3d12->pyrowave_spare_allocator) return -1;
+   slot = d3d12->queue.slot;
+   Release(d3d12->queue.cmd);
+   Release(d3d12->queue.allocator[slot]);
+   d3d12->queue.cmd = d3d12->pyrowave_spare_cmd;
+   d3d12->queue.allocator[slot] = d3d12->pyrowave_spare_allocator;
+   d3d12->pyrowave_spare_cmd = NULL;
+   d3d12->pyrowave_spare_allocator = NULL;
+   d3d12->pyrowave_retired = true;
+   return 1;
+}
+
+static bool d3d12_pyrowave_execute(d3d12_video_t *d3d12, void *receiver)
+{
+   HRESULT result = d3d12->queue.cmd->lpVtbl->Close(d3d12->queue.cmd);
+   if (SUCCEEDED(result))
+   {
+      d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+            (ID3D12CommandList* const*)&d3d12->queue.cmd);
+      d3d12->queue.frameSignal = ++d3d12->queue.fenceValue;
+      d3d12->queue.slotSignal[d3d12->queue.slot] = d3d12->queue.frameSignal;
+      result = d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+            d3d12->queue.fence, d3d12->queue.frameSignal);
+   }
+   if (SUCCEEDED(result)) return true;
+   if (d3d12->pyrowave_player)
+   {
+      d3d12->pyrowave_quiescing = true;
+      if (receiver) libretro_pyrowave_d3d12_failed(receiver);
+      else record_pyrowave_failed(d3d12->pyrowave_sender);
+   }
+   return false;
+}
+#endif
+
 /* Whether a preset's passes may read the frame where the core leaves
  * it, @desc's texture, as Original and as the first pass's Source: when
  * the preset keeps no history, which is copied out of filter.history[0],
@@ -7198,6 +7407,9 @@ static void *d3d12_gfx_init(const video_info_t* video)
    d3d12_frame_import_init(d3d12);
 #endif
    d3d12_views_publish(d3d12);
+#ifdef HAVE_PYROWAVE
+   retro_atomic_int_init(&d3d12->pyrowave_format, (int)d3d12->chain.formats[d3d12->chain.bit_depth]);
+#endif
    return d3d12;
 
 error:
@@ -9826,6 +10038,9 @@ static bool d3d12_gfx_frame_body(
    bool views_ui                  = false;
    bool message_visible;
    bool draw_direct               = false;
+#ifdef HAVE_PYROWAVE
+   ID3D12Resource *pyrowave_image = NULL;
+#endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_visible           = video_info->widgets_visible;
 #endif
@@ -9872,6 +10087,17 @@ static bool d3d12_gfx_frame_body(
     * the frame, not the settings */
    d3d12->hdr.display_peak        = video_info->hdr_display_peak;
 #endif
+#ifdef HAVE_PYROWAVE
+   if (video_info->recording_pyrowave_receive)
+      d3d12->pyrowave_receiver = video_info->recording_gpu;
+   if ((d3d12->flags & D3D12_ST_FLAG_DEVICE_REMOVED) && d3d12->pyrowave_player
+         && video_info->recording_pyrowave_receive)
+   {
+      libretro_pyrowave_d3d12_failed(video_info->recording_gpu);
+      d3d12->pyrowave_quiescing = true;
+   }
+   if (d3d12->pyrowave_quiescing) return true;
+#endif
    cmd                            = d3d12->queue.cmd;
 
    /* The released frame's simulation ends where its Direct3D work
@@ -9894,6 +10120,10 @@ static bool d3d12_gfx_frame_body(
    d3d12->queue.depth = d3d_driver_pacing_paced(&d3d12->driver_pacing,
          video_info->driver_pacing_id) ? D3D12_FRAMES : 1;
    d3d12_slot_begin(d3d12);
+#ifdef HAVE_PYROWAVE
+   /* Waiting for the previous slot can discover asynchronous removal. */
+   if (d3d12->pyrowave_quiescing) return true;
+#endif
    d3d12_retired_tick(d3d12);
 
 #ifdef HAVE_DXGI_HDR
@@ -9949,7 +10179,8 @@ static bool d3d12_gfx_frame_body(
          {
             UINT swapchain_flags        = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
             if (video_info->recording_gpu_pending
-                  || !record_nvenc_gpu_reap(video_info->recording_gpu))
+                  || (!video_info->recording_pyrowave
+                     && !record_nvenc_gpu_reap(video_info->recording_gpu)))
                goto recording_resize_deferred;
 
             if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
@@ -10130,6 +10361,39 @@ recording_resize_deferred:;
 #endif
 
    d3d12_cmd_begin(d3d12, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+
+#ifdef HAVE_PYROWAVE
+   if (video_info->recording_pyrowave_receive)
+   {
+      unsigned dims = 0;
+      pyrowave_image = libretro_pyrowave_d3d12_frame(video_info->recording_gpu, cmd,
+            d3d12->queue.fence, d3d12->queue.fenceValue + 1, &dims,
+            video_info->recording_gpu_capture && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK), video_info);
+      /* Each new decoder image uses the existing native-input path.
+       * It samples in place, copying only where shader history needs its
+       * own lasting frame. Replays retain the last input without rotating. */
+      frame = NULL;
+      if (pyrowave_image)
+      {
+         width = VIDEO_SCALE_W(dims); height = VIDEO_SCALE_H(dims);
+         if (d3d12->pyrowave_last_image != pyrowave_image)
+         {
+            frame = RETRO_HW_FRAME_BUFFER_VALID;
+            d3d12->hw_render_texture = pyrowave_image;
+            d3d12->hw_render_texture_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+            d3d12->hw_direct.eligible = true;
+            d3d12->pyrowave_last_image = pyrowave_image;
+         }
+         D3D12_RESOURCE_TRANSITION(cmd, pyrowave_image,
+               D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+      }
+      else
+      {
+         d3d12->hw_direct.current = NULL;
+         d3d12->hw_direct.current_gpu.ptr = 0;
+      }
+   }
+#endif
 
    {
       D3D12DescriptorHeap desc_heaps[] = { d3d12->desc.srv_heap.handle,
@@ -11078,12 +11342,34 @@ recording_resize_deferred:;
    else if (!video_info->gpu_recording && d3d12->record.enable)
       d3d12_record_free(d3d12);
 
-   d3d12_cmd_execute(d3d12);
+#ifdef HAVE_PYROWAVE
+   retro_atomic_store_release_int(&d3d12->pyrowave_format, (int)d3d12->chain.formats[d3d12->chain.bit_depth]);
+   if (video_info->recording_pyrowave && !video_info->recording_pyrowave_receive)
+      record_pyrowave_d3d12_frame(video_info->recording_gpu, cmd,
+            d3d12->queue.fence, d3d12->queue.fenceValue + 1,
+            d3d12->chain.renderTargets[d3d12->chain.frame_index],
+            d3d12->chain.formats[d3d12->chain.bit_depth], d3d12->vp.full_dims,
+            d3d12->vp.pos, d3d12->vp.dims, d3d12_hdr_output_mode(d3d12),
+            video_info->recording_gpu_timestamp, video_info->recording_pyrowave_duration,
+            video_info->recording_gpu_capture && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK));
+   if (pyrowave_image)
+      D3D12_RESOURCE_TRANSITION(cmd, pyrowave_image,
+            D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+#endif
+#ifdef HAVE_PYROWAVE
+   if (video_info->recording_pyrowave)
+   {
+      if (!d3d12_pyrowave_execute(d3d12, video_info->recording_pyrowave_receive
+               ? video_info->recording_gpu : NULL)) return true;
+   }
+   else
+#endif
+      d3d12_cmd_execute(d3d12);
 #ifdef HAVE_TEMPORAL_UPSCALER
    if (d3d12->ngx)
       d3d12_upscaler_frame_done(d3d12->ngx);
 #endif
-   if (video_info->recording_gpu_capture
+   if (!video_info->recording_pyrowave && video_info->recording_gpu_capture
          && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
       record_nvenc_gpu_capture(video_info->recording_gpu,
             d3d12->chain.renderTargets[d3d12->chain.frame_index],
@@ -12544,11 +12830,20 @@ static void d3d12_frame_import_deinit(d3d12_video_t *d3d12)
 static bool d3d12_get_device(void *data, video_device_info_t *info)
 {
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+#ifdef HAVE_PYROWAVE
+   unsigned format;
+#endif
    if (!d3d12 || !d3d12->device || !info)
       return false;
    info->api            = VIDEO_DEVICE_D3D12;
    info->device         = (void*)d3d12->device;
    info->queue          = (void*)d3d12->queue.handle;
+#ifdef HAVE_PYROWAVE
+   format = (unsigned)retro_atomic_load_acquire_int(&d3d12->pyrowave_format);
+   info->output_format = format;
+   info->output_bit_depth = format == DXGI_FORMAT_R16G16B16A16_FLOAT ? 16
+      : format == DXGI_FORMAT_R10G10B10A2_UNORM ? 10 : 8;
+#endif
 #ifdef D3D12_FRAME_IMPORT
    info->import_formats = d3d12->video_decode ? d3d12->import_formats : 0;
 #endif
