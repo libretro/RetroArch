@@ -5599,8 +5599,6 @@ bool command_start_core(command_t *cmd, const char* arg)
    }
 #endif
 
-   path_clear(RARCH_PATH_BASENAME);
-
    if (!task_push_start_current_core(&content_info))
       return false;
    return command_content_reply(cmd, "START_CORE", false, true, false);

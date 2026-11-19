@@ -1779,7 +1779,6 @@ bool companion_core_start_core(companion_core_t *core)
       return false;
 #endif
    memset(&content_info, 0, sizeof(content_info));
-   path_clear(RARCH_PATH_BASENAME);
    return task_push_start_current_core(&content_info);
 }
 

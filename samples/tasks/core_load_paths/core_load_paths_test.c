@@ -1331,6 +1331,7 @@ struct fw_session
    char core[PATH_MAX_LENGTH];
    char core_last[PATH_MAX_LENGTH];
    char content[PATH_MAX_LENGTH];
+   char basename[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
    char db[PATH_MAX_LENGTH];
    char crc[32];
@@ -1355,6 +1356,7 @@ static void fw_record(struct fw_session *s)
    strlcpy(s->core_last, path_get(RARCH_PATH_CORE_LAST),
          sizeof(s->core_last));
    strlcpy(s->content, path_get(RARCH_PATH_CONTENT), sizeof(s->content));
+   strlcpy(s->basename, path_get(RARCH_PATH_BASENAME), sizeof(s->basename));
    strlcpy(s->label, runloop_st->name.label, sizeof(s->label));
    strlcpy(s->db, p_content->companion_ui_db_name, sizeof(s->db));
    strlcpy(s->crc, p_content->companion_ui_crc32, sizeof(s->crc));
@@ -1388,6 +1390,7 @@ static unsigned fw_changes(bool say)
    n += fw_differs(say, "core", fw_ran.core, fw_now.core);
    n += fw_differs(say, "core_last", fw_ran.core_last, fw_now.core_last);
    n += fw_differs(say, "content", fw_ran.content, fw_now.content);
+   n += fw_differs(say, "basename", fw_ran.basename, fw_now.basename);
    n += fw_differs(say, "label", fw_ran.label, fw_now.label);
    n += fw_differs(say, "db", fw_ran.db, fw_now.db);
    n += fw_differs(say, "crc", fw_ran.crc, fw_now.crc);
@@ -1431,6 +1434,16 @@ static unsigned fw_changes(bool say)
    }
    return n;
 }
+
+#ifdef HAVE_COMMAND
+static void fw_cmd_reply(struct command_handler *cmd, const char *data,
+      size_t len)
+{
+   (void)cmd;
+   (void)data;
+   (void)len;
+}
+#endif
 
 /* The load just started asks for its firmware; Cancel ends it */
 static bool fw_cancelled(void)
@@ -1582,6 +1595,18 @@ static void mode_fw_cancel_restores(void)
             &info, CORE_TYPE_PLAIN, NULL, NULL),
          "the companion load into the running core was not started");
    fw_check_kept("a cancelled companion load into the running core changed the session");
+#ifdef HAVE_COMMAND
+   /* START_CORE starts the running core with no content: the game's
+    * save names stay its own until a load is past the box */
+   {
+      command_t cmd;
+      memset(&cmd, 0, sizeof(cmd));
+      cmd.replier = fw_cmd_reply;
+      CHECK(*fw_ran.basename, "the running game names no saves");
+      CHECK(command_start_core(&cmd, ""), "START_CORE was not started");
+      fw_check_kept("a cancelled START_CORE changed the session");
+   }
+#endif
 
    /* The box's OK loads what it asked about, not a request turned away
     * while it waited */
