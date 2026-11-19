@@ -25,6 +25,108 @@ static rglgen_func_t get_proc(const char *name)
    return (rglgen_func_t)eglGetProcAddress(name);
 }
 
+/* A software core's BGRX frame on GLES 3 without BGRA8888: uploaded as
+ * it is into an RGBA texture that swaps R and B as it is sampled
+ * (gl2's GL2_CHAIN_FLAG_FRAME_SWIZZLE), at a pitch wider than the frame,
+ * samples as the frame - what the CPU conversion it replaces made. */
+static GLuint swizzle_shader(GLenum type, const char *src)
+{
+   GLint ok = 0;
+   GLuint sh = glCreateShader(type);
+   glShaderSource(sh, 1, &src, NULL);
+   glCompileShader(sh);
+   glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
+   assert(ok);
+   return sh;
+}
+
+static void swizzle_check(void)
+{
+   static const char *vs =
+      "#version 300 es\n"
+      "void main() {\n"
+      "   vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));\n"
+      "   gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);\n"
+      "}\n";
+   static const char *fs =
+      "#version 300 es\n"
+      "precision mediump float;\n"
+      "uniform mediump sampler2D tex;\n"
+      "out vec4 color;\n"
+      "void main() { color = texelFetch(tex, ivec2(gl_FragCoord.xy), 0); }\n";
+   enum { W = 4, H = 2, PITCH_PX = 6 };
+   unsigned char frame[PITCH_PX * H * 4], want[W * H * 4], result[W * H * 4];
+   GLuint src, dst, fbo, prog, vao;
+   GLint ok = 0;
+   unsigned x, y, c;
+
+   for (y = 0; y < H; y++)
+      for (x = 0; x < PITCH_PX; x++)
+         for (c = 0; c < 4; c++)
+            frame[(y * PITCH_PX + x) * 4 + c] =
+               (unsigned char)(17 + y * 61 + x * 29 + c * 7);
+   /* B, G, R, X in memory; R, G, B, X sampled */
+   for (y = 0; y < H; y++)
+      for (x = 0; x < W; x++)
+      {
+         const unsigned char *in = frame + (y * PITCH_PX + x) * 4;
+         unsigned char *out      = want  + (y * W + x) * 4;
+         out[0] = in[2]; out[1] = in[1]; out[2] = in[0]; out[3] = in[3];
+      }
+
+   glGenTextures(1, &src);
+   glBindTexture(GL_TEXTURE_2D, src);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W, H, 0,
+         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, PITCH_PX);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, W, H,
+         GL_RGBA, GL_UNSIGNED_BYTE, frame);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+   glGenTextures(1, &dst);
+   glBindTexture(GL_TEXTURE_2D, dst);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, W, H, 0,
+         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   glGenFramebuffers(1, &fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, dst, 0);
+   assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+   prog = glCreateProgram();
+   glAttachShader(prog, swizzle_shader(GL_VERTEX_SHADER, vs));
+   glAttachShader(prog, swizzle_shader(GL_FRAGMENT_SHADER, fs));
+   glLinkProgram(prog);
+   glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+   assert(ok);
+   glUseProgram(prog);
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, src);
+   glUniform1i(glGetUniformLocation(prog, "tex"), 0);
+   glGenVertexArrays(1, &vao);
+   glBindVertexArray(vao);
+   glViewport(0, 0, W, H);
+   glDrawArrays(GL_TRIANGLES, 0, 3);
+   /* Synchronization and readback belong only to this pixel oracle. */
+   glFinish();
+   glReadPixels(0, 0, W, H, GL_RGBA, GL_UNSIGNED_BYTE, result);
+   assert(glGetError() == GL_NO_ERROR);
+   assert(!memcmp(result, want, sizeof(want)));
+
+   glDeleteVertexArrays(1, &vao);
+   glDeleteProgram(prog);
+   glDeleteFramebuffers(1, &fbo);
+   glDeleteTextures(1, &dst);
+   glDeleteTextures(1, &src);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   puts("PASS GLES swizzled frame texture: BGRX uploaded as it is samples as RGBX");
+}
+
 int main(void)
 {
    static const EGLint config_attrs[] = {EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
@@ -89,6 +191,7 @@ int main(void)
       assert(!memcmp(result, pixels[slot], 32));
    }
    gl_texture_lend_free(&list);
+   swizzle_check();
    glDeleteFramebuffers(1, &fbo);
    glDeleteTextures(1, &texture);
    assert(glGetError() == GL_NO_ERROR);
