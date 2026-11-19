@@ -150,6 +150,7 @@ static void on_applet_hook(AppletHookType hook, void *param)
          focus_state = appletGetFocusState();
          platform_switch_has_focus = focus_state == AppletFocusState_InFocus;
 
+#ifndef __SWITCH2__
          if (!platform_switch_has_focus)
          {
             if (hosversionBefore(8, 0, 0))
@@ -166,6 +167,7 @@ static void on_applet_hook(AppletHookType hook, void *param)
          }
          else
             libnx_apply_overclock();
+#endif
          break;
 
          /* Performance mode */
@@ -582,7 +584,7 @@ static void frontend_switch_shutdown(bool unused)
    (void)unused;
 
 #ifdef __SWITCH2__
-   // do this here instead to prevent a crash on shutdown
+   /* nifm is shut down here: closing it in deinit crashes */
    nifmExit();
 #endif
 }

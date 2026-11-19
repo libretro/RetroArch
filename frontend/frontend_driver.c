@@ -257,6 +257,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 #elif defined(DJGPP)
    strlcpy_lit(s, "retrodos.exe", len);
    return true;
+#elif defined(__SWITCH2__)
+   strlcpy_lit(s, "retroarch_switch2.nro", len);
+   return true;
 #elif defined(SWITCH)
    strlcpy_lit(s, "retroarch_switch.nro", len);
    return true;
