@@ -203,6 +203,11 @@ typedef struct
 
    wiiu_render_mode_t render_mode;
    video_viewport_t vp;
+   /* The frame texture's two images: the one the last frame shows is
+    * texture.surface.image, and the other is written next - by the
+    * copy, or by a core it was lent to */
+   void *frame_image[2];
+   unsigned frame_slot;
    int frames;
    OSTime last_vsync;
    unsigned rotation;
@@ -2013,7 +2018,9 @@ static void gx2_free(void *data)
 
    MEM2_free(wiiu->ctx_state);
    MEM2_free(wiiu->cmd_buffer);
-   MEM2_free(wiiu->texture.surface.image);
+   video_driver_cached_frame_retire();
+   MEM2_free(wiiu->frame_image[0]);
+   MEM2_free(wiiu->frame_image[1]);
    MEM2_free(wiiu->menu.texture.surface.image);
    if (wiiu->white_texture)
    {
@@ -2043,7 +2050,13 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 {
    unsigned i;
 
-   MEM2_free(wiiu->texture.surface.image);
+   /* The cached frame may be a lent image */
+   if (wiiu->frame_image[0] || wiiu->frame_image[1])
+      video_driver_cached_frame_retire();
+   MEM2_free(wiiu->frame_image[0]);
+   MEM2_free(wiiu->frame_image[1]);
+   wiiu->frame_image[0] = wiiu->frame_image[1] = NULL;
+   wiiu->texture.surface.image = NULL;
 
    if (wiiu->shader_preset)
    {
@@ -2081,11 +2094,18 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
    GX2CalcSurfaceSizeAndAlignment(&wiiu->texture.surface);
    GX2InitTextureRegs(&wiiu->texture);
 
-   wiiu->texture.surface.image = MEM2_alloc(wiiu->texture.surface.imageSize,
-                                 wiiu->texture.surface.alignment);
-   memset(wiiu->texture.surface.image, 0x0, wiiu->texture.surface.imageSize);
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->texture.surface.image,
-                 wiiu->texture.surface.imageSize);
+   for (i = 0; i < 2; i++)
+   {
+      if (!(wiiu->frame_image[i] = MEM2_alloc(
+                  wiiu->texture.surface.imageSize,
+                  wiiu->texture.surface.alignment)))
+         continue;
+      memset(wiiu->frame_image[i], 0x0, wiiu->texture.surface.imageSize);
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->frame_image[i],
+            wiiu->texture.surface.imageSize);
+   }
+   wiiu->frame_slot            = 0;
+   wiiu->texture.surface.image = wiiu->frame_image[0];
 
    if (wiiu->shader_preset)
    {
@@ -2408,6 +2428,73 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, ubo, size);
 }
 
+/* A frame into the frame texture's image the last frame does not show,
+ * which then becomes the shown one: copied there, or already there when
+ * the core wrote it into that image as lent. */
+static void gx2_frame_upload(wiiu_video_t *wiiu, const void *frame,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   unsigned i;
+   unsigned next = wiiu->frame_slot ^ 1;
+   /* A frame the core wrote into the image it was lent is shown
+    * from there */
+   bool     lent = wiiu->frame_image[next]
+      && frame == wiiu->frame_image[next]
+      && pitch == wiiu->texture.surface.pitch * sizeof(uint32_t);
+
+   if (     !lent
+         && (    (width  != wiiu->texture.surface.width)
+              || (height != wiiu->texture.surface.height)))
+   {
+      wiiu_init_frame_textures(wiiu, width, height);
+      next = wiiu->frame_slot ^ 1;
+   }
+
+   wiiu->width  = width;
+   wiiu->height = height;
+
+   if (!wiiu->frame_image[next])
+      next = wiiu->frame_slot;
+
+   if (!wiiu->frame_image[next] || lent)
+      ;
+   else if (wiiu->rgb32)
+   {
+      const uint8_t *src = (const uint8_t*)frame;
+      uint8_t       *dst = (uint8_t*)wiiu->frame_image[next];
+      size_t   dst_pitch = wiiu->texture.surface.pitch * sizeof(uint32_t);
+
+      for (i = 0; i < height; i++)
+      {
+         memcpy(dst, src, width * sizeof(uint32_t));
+         dst += dst_pitch;
+         src += pitch;
+      }
+   }
+   else
+   {
+      const uint16_t *src = frame;
+      uint16_t       *dst = (uint16_t *)wiiu->frame_image[next];
+
+      for (i = 0; i < height; i++)
+      {
+         unsigned j;
+
+         for (j = 0; j < width; j++)
+            dst[j] = __builtin_bswap16(src[j]);
+
+         dst += wiiu->texture.surface.pitch;
+         src += pitch / 2;
+      }
+   }
+
+   if (wiiu->frame_image[next])
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+            wiiu->frame_image[next], wiiu->texture.surface.imageSize);
+   wiiu->frame_slot            = next;
+   wiiu->texture.surface.image = wiiu->frame_image[next];
+}
+
 static bool gx2_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -2466,49 +2553,7 @@ static bool gx2_frame(void *data, const void *frame,
 
    if (frame)
    {
-      if (    (width  != wiiu->texture.surface.width)
-           || (height != wiiu->texture.surface.height))
-         wiiu_init_frame_textures(wiiu, width, height);
-
-      wiiu->width  = width;
-      wiiu->height = height;
-
-      if (wiiu->rgb32)
-      {
-         const uint32_t *src = frame;
-         uint32_t       *dst = (uint32_t *)wiiu->texture.surface.image;
-
-         for (i = 0; i < height; i++)
-         {
-            uint32_t j;
-
-            for (j = 0; j < width; j++)
-               dst[j] = src[j];
-
-            dst += wiiu->texture.surface.pitch;
-            src += pitch / 4;
-         }
-      }
-      else
-      {
-         const uint16_t *src = frame;
-         uint16_t       *dst = (uint16_t *)wiiu->texture.surface.image;
-
-         for (i = 0; i < height; i++)
-         {
-            unsigned j;
-
-            for (j = 0; j < width; j++)
-               dst[j] = __builtin_bswap16(src[j]);
-
-            dst += wiiu->texture.surface.pitch;
-            src += pitch / 2;
-         }
-      }
-
-      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->texture.surface.image,
-                    wiiu->texture.surface.imageSize);
-
+      gx2_frame_upload(wiiu, frame, width, height, pitch);
       gx2_set_tex_coords(wiiu->v, &wiiu->texture, 0, 0, width, height, wiiu->rotation);
    }
 
@@ -3135,6 +3180,30 @@ static uintptr_t gx2_load_texture_compressed(void *video_data,
    return (uintptr_t)texture;
 }
 
+/* The frame texture's image the last frame does not show: the frame
+ * before it, which GX2WaitForFlip() in that last frame saw finished.
+ * XRGB8888 only, at the texture's own size - an RGB565 frame is
+ * byte-swapped on its way in. */
+static bool gx2_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   wiiu_video_t *wiiu = (wiiu_video_t*)data;
+   unsigned next;
+
+   if (     !wiiu || !fb || !wiiu->rgb32
+         || fb->width  != wiiu->texture.surface.width
+         || fb->height != wiiu->texture.surface.height)
+      return false;
+   next = wiiu->frame_slot ^ 1;
+   if (!wiiu->frame_image[next])
+      return false;
+   fb->data         = wiiu->frame_image[next];
+   fb->pitch        = wiiu->texture.surface.pitch * sizeof(uint32_t);
+   fb->format       = RETRO_PIXEL_FORMAT_XRGB8888;
+   fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
+   return true;
+}
+
 static const video_poke_interface_t gx2_poke_interface = {
    gx2_get_flags,
    gx2_load_texture,
@@ -3155,7 +3224,7 @@ static const video_poke_interface_t gx2_poke_interface = {
    NULL, /* show_mouse */
    NULL, /* grab_mouse_toggle */
    gx2_get_current_shader,
-   NULL, /* get_current_software_framebuffer */
+   gx2_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
