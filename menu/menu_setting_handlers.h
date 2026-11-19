@@ -59,6 +59,7 @@ SDX(LEFT, setting_uint_action_left_custom_vp_width)
 SDX(LEFT, setting_uint_action_left_custom_vp_height)
 SDX(LEFT, setting_uint_action_left_video_openxr_refresh_rate)
 SDX(LEFT, setting_uint_action_left_video_openxr_touch_button)
+SDX(LEFT, setting_string_action_sort_savestates_precedence)
 #ifdef HAVE_OZONE
 SDX(LEFT, setting_string_action_left_ozone_menu_color_theme)
 #endif
@@ -83,6 +84,7 @@ SDX(RIGHT, setting_uint_action_right_custom_vp_width)
 SDX(RIGHT, setting_uint_action_right_custom_vp_height)
 SDX(RIGHT, setting_uint_action_right_video_openxr_refresh_rate)
 SDX(RIGHT, setting_uint_action_right_video_openxr_touch_button)
+SDX(RIGHT, setting_string_action_sort_savestates_precedence)
 #ifdef HAVE_OZONE
 SDX(RIGHT, setting_string_action_right_ozone_menu_color_theme)
 #endif
