@@ -4,18 +4,22 @@ TARGET := audioworklet_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
 # The driver is #included by the test and built against the tree's
-# compile-only emscripten stand-ins.
+# compile-only emscripten stand-ins, as its threaded (PROXY_TO_PTHREAD)
+# build; the test plays the browser's threads with rthreads.
 INCDIRS := -I../../../tools/platform_stubs/emscripten -I$(LIBRETRO_COMM_DIR)/include -I../../.. -I../../../deps
 
-CFLAGS  += -std=gnu99 -Wall $(INCDIRS) -DRARCH_INTERNAL -D_GNU_SOURCE
-LDFLAGS += -lm
+CFLAGS  += -std=gnu99 -Wall $(INCDIRS) -DRARCH_INTERNAL -D_GNU_SOURCE \
+           -DHAVE_THREADS -DPROXY_TO_PTHREAD
+LDFLAGS += -lm -lpthread
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1 $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(call sample_objs,audioworklet_test.o $(LIBRETRO_COMM_DIR)/queues/retro_spsc.o)
+OBJS := $(call sample_objs,audioworklet_test.o \
+	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.o \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.o)
 
 all: $(TARGET)
 
