@@ -69,8 +69,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL capabilities(VkPhysicalDevice physical,
       return status;
    caps->minCodedExtent.width = malformed == 12 ? 208 : 160; caps->minCodedExtent.height = 64;
    caps->maxCodedExtent.width = malformed == 13 ? 160 : 4096; caps->maxCodedExtent.height = 4096;
-   caps->pictureAccessGranularity.width = malformed == 3 ? 0 : malformed == 14 ? 128 : 16;
-   caps->pictureAccessGranularity.height = 16;
+   caps->pictureAccessGranularity.width = malformed == 3 ? 0 : malformed == 14 ? 16384 : 16;
+   caps->pictureAccessGranularity.height = 32;
    caps->maxDpbSlots = malformed == 4 ? 1 : 2;
    caps->maxActiveReferencePictures = malformed == 9 ? 0 : 1;
    caps->stdHeaderVersion.specVersion = VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_SPEC_VERSION;
@@ -118,7 +118,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL create_session(VkDevice device,
    VkResult status = result();
    assert(device == HANDLE(VkDevice, 2) && !allocator && !live_session);
    assert(info->maxDpbSlots == 2 && info->maxActiveReferencePictures == 1);
-   assert(info->maxCodedExtent.width == 192 && info->maxCodedExtent.height == 128);
+   assert((info->maxCodedExtent.width == 192 && info->maxCodedExtent.height == 128)
+         || (info->maxCodedExtent.width == 3840 && info->maxCodedExtent.height == 2176));
    *session = HANDLE(VkVideoSessionKHR, status == VK_SUCCESS ? 3 : 999);
    if (status == VK_SUCCESS)
       live_session = 1;
@@ -200,7 +201,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL parameters(VkDevice device,
    VkResult status = result();
    assert(device == HANDLE(VkDevice, 2) && !allocator && live_session && bound);
    assert(info->videoSession == HANDLE(VkVideoSessionKHR, 3));
-   assert(sps->pSequenceParameterSetVui->vui_time_scale == 12);
+   assert(sps->pSequenceParameterSetVui->vui_time_scale == 12
+         || sps->pSequenceParameterSetVui->vui_time_scale == 60);
    assert(codec->maxStdVPSCount == 1 && codec->pParametersAddInfo->stdVPSCount == 1);
    assert(codec->pParametersAddInfo->pStdVPSs->pProfileTierLevel == sps->pProfileTierLevel);
    assert(sps->pProfileTierLevel->general_profile_idc == (depth == 10
@@ -328,6 +330,19 @@ int main(void)
    assert(session && session->format == VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16);
    assert(session->params.vui.transfer_characteristics == 16);
    assert(vulkan_encode_hevc_session_headers(session, data, sizeof(data), &size));
+   vulkan_encode_hevc_session_free(session);
+   reset();
+   config.video.width = 3840;
+   config.video.height = 2160;
+   config.video.fps_num = 60;
+   config.video.bit_depth = depth = 10;
+   config.video.color = VULKAN_ENCODE_HEVC_PQ;
+   session = vulkan_encode_hevc_session_new(&config, &ops);
+   assert(session && session->params.coded_height == 2176);
+   assert(session->params.sps.flags.conformance_window_flag);
+   assert(session->params.sps.conf_win_bottom_offset == 8);
+   assert(session->params.sps.pic_height_in_luma_samples
+         - 2 * session->params.sps.conf_win_bottom_offset == 2160);
    vulkan_encode_hevc_session_free(session);
    puts("Vulkan HEVC Main/Main10 session admission, partial failure and header ownership PASS");
    return 0;
