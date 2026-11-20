@@ -229,6 +229,15 @@ int rmp4_video_stream_can_planar(const rmp4_video_stream_t *stream);
 int rmp4_video_stream_set_planar(rmp4_video_stream_t *stream, int planar);
 unsigned rmp4_video_stream_planar_yuv(const rmp4_video_stream_t *stream);
 
+/* The picture the last step showed, as its decoded 8-bit 4:2:0 planes
+ * where they lie in the decoder - lent until the next call that decodes
+ * - with the IMAGE_YUV_FLAG_* of its matrix and range and its size
+ * clipped to the track's. 0 for a picture that is not so, or in
+ * BT.2020, which the caller then renders. */
+int rmp4_video_stream_planes(const rmp4_video_stream_t *stream,
+      const uint8_t *planes[3], unsigned strides[3],
+      unsigned *width, unsigned *height, unsigned *yuv);
+
 /* Convert decoded frames in @bands row bands on @pool (an rthreads
  * tpool_t of at least bands - 1 threads; the calling thread takes one
  * band and joins the rest), and decode a VP9 frame's tile columns on

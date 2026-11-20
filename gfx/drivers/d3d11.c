@@ -622,6 +622,7 @@ typedef struct
    ID3D11DeviceContext4 *context4;
    uintptr_t movie_texture;
    bool movie_pending;
+   bool movie_cpu;      /* movie_texture holds frames from memory */
    unsigned              import_formats;
    bool                  video_decode;
 #endif
@@ -9894,6 +9895,45 @@ static enum video_texture_update d3d11_import_texture(void *data,
 /* Frames from another device's decoders, where both ends can share
  * them: the driver's device and context at the 11.4 interfaces, NV12/P010
  * shared and read in a shader */
+static uintptr_t d3d11_gfx_load_texture_internal(
+      d3d11_video_t* d3d11, struct texture_image* image,
+      enum texture_filter_type filter_type);
+static enum video_texture_update d3d11_gfx_update_texture_internal(
+      d3d11_video_t *d3d11, uintptr_t handle,
+      const struct texture_image *image);
+static bool d3d11_gfx_supports_texture_format(void* data,
+      enum texture_gpu_format fmt);
+
+/* A movie frame in memory: its planes through the planar upload, which
+ * copies them, into a texture of their own; released once copied. */
+static enum video_texture_update d3d11_import_movie_planes(d3d11_video_t *v,
+      const video_frame_import_t *f)
+{
+   struct texture_image img;
+   enum video_texture_update result = VIDEO_TEXTURE_UPDATE_DONE;
+   if (!d3d11_gfx_supports_texture_format(v, TEXTURE_GPU_FORMAT_YUV420))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   memset(&img, 0, sizeof(img));
+   img.width  = VIDEO_SCALE_W(f->dims);
+   img.height = VIDEO_SCALE_H(f->dims);
+   img.planar = &f->planar;
+   if (v->movie_texture && (!v->movie_cpu
+            || ((d3d11_texture_t*)v->movie_texture)->desc.Width  != img.width
+            || ((d3d11_texture_t*)v->movie_texture)->desc.Height != img.height))
+      d3d11_import_movie_frame(v, NULL);
+   if (v->movie_texture)
+      result = d3d11_gfx_update_texture_internal(v, v->movie_texture, &img);
+   else if (!(v->movie_texture = d3d11_gfx_load_texture_internal(v, &img, TEXTURE_FILTER_LINEAR)))
+      result = VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (result != VIDEO_TEXTURE_UPDATE_DONE)
+      return result;
+   v->movie_cpu     = true;
+   v->movie_pending = true;
+   if (f->abandon)
+      f->abandon(f->owner, f->done, f->done_value);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static enum video_texture_update d3d11_import_movie_frame(void *data,
       const video_frame_import_t *f)
 {
@@ -9913,9 +9953,15 @@ static enum video_texture_update d3d11_import_movie_frame(void *data,
       d3d11_gfx_unload_texture_internal(v, v->movie_texture);
       v->movie_texture = 0;
       v->movie_pending = false;
+      v->movie_cpu     = false;
       v->hw_direct.view = NULL;
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
+   if (VIDEO_FRAME_IMPORT_IS_CPU(f))
+      return d3d11_import_movie_planes(v, f);
+   /* a decoder's frame imports into a texture made for it */
+   if (v->movie_texture && v->movie_cpu)
+      d3d11_import_movie_frame(v, NULL);
    result = d3d11_import_texture(v, &v->movie_texture, f, TEXTURE_FILTER_LINEAR);
    if (result == VIDEO_TEXTURE_UPDATE_DONE)
       v->movie_pending = true;
@@ -10013,6 +10059,9 @@ static bool d3d11_get_device(void *data, video_device_info_t *info)
 #endif
 #ifdef D3D11_FRAME_IMPORT
    info->import_formats = d3d11->import_formats;
+   /* movie frames in memory, through the planar upload */
+   if (d3d11_gfx_supports_texture_format(d3d11, TEXTURE_GPU_FORMAT_YUV420))
+      info->import_formats |= IMAGE_PIXFMT_I420;
 #endif
    return true;
 }

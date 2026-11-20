@@ -1163,10 +1163,20 @@ typedef struct video_frame_import
    unsigned crop_x, crop_y;
    /* The producer's, for a consumer that will not have the frame read
     * after all: signals @done in the driver's place. The driver never
-    * calls it. NULL: nothing to do. */
+    * calls it for a GPU frame. NULL: nothing to do. */
    void (*abandon)(void *owner, uint64_t done, uint64_t done_value);
    void *owner;
+   /* A frame in memory (@planar.planes[0] set, @image 0): 8-bit 4:2:0
+    * planes the producer lends, @planar.yuv its colour space. Only
+    * import_movie_frame takes one, from a driver listing
+    * IMAGE_PIXFMT_I420 in video_device_info_t::import_formats; @abandon
+    * is the planes' release, which that driver calls once its upload
+    * has copied them, when it returns DONE - for any other answer the
+    * caller releases or retries them, as it would a GPU frame. */
+   struct texture_planar planar;
 } video_frame_import_t;
+
+#define VIDEO_FRAME_IMPORT_IS_CPU(f) ((f)->planar.planes[0] != NULL)
 
 /* A mapping is valid until frame() consumes it; renew on the driver thread. */
 typedef struct video_frame_memory
@@ -2931,6 +2941,9 @@ void *video_driver_get_menu_framebuffer(unsigned dims, bool rgb32,
 bool video_driver_get_device(video_device_info_t *info);
 struct video_hw_frame;
 bool video_driver_movie_refresh(void *user, const struct video_hw_frame *frame);
+/* The same for a frame in memory (video_hw_frame_t::planes): NULL asks
+ * whether the driver takes such frames now. */
+bool video_driver_movie_planes(void *user, const struct video_hw_frame *frame);
 void video_driver_movie_clear(void);
 
 enum video_texture_update video_driver_texture_import(uintptr_t *id,

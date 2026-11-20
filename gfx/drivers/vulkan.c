@@ -905,6 +905,7 @@ typedef struct vk
 #endif
    uintptr_t movie_texture;
    bool movie_pending;
+   bool movie_cpu;      /* movie_texture holds frames from memory */
    /* The threaded wrapper's frame buffers (frame_mem_alloc): mapped
     * host buffers a frame is copied out of on the GPU, never by the
     * CPU. index is the frame fence the last copy out of one was
@@ -985,6 +986,8 @@ static unsigned track_seq;
 
 static enum video_texture_update vulkan_import_movie_frame(void *data,
       const video_frame_import_t *f);
+static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
+      uintptr_t texture, const struct texture_image *image);
 
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
 static void vulkan_track_alloc(VkImage image)
@@ -17058,6 +17061,38 @@ static enum video_texture_update vulkan_prepare_import_texture(void *data,
 }
 #endif
 
+static bool vulkan_supports_texture_format(void *data,
+      enum texture_gpu_format fmt);
+
+/* A movie frame in memory: its planes through the planar upload, which
+ * copies them, into a texture of their own; released once copied. */
+static enum video_texture_update vulkan_import_movie_planes(vk_t *vk,
+      const video_frame_import_t *f)
+{
+   struct texture_image img;
+   enum video_texture_update result = VIDEO_TEXTURE_UPDATE_DONE;
+   if (!vulkan_supports_texture_format(vk, TEXTURE_GPU_FORMAT_YUV420))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   memset(&img, 0, sizeof(img));
+   img.width  = VIDEO_SCALE_W(f->dims);
+   img.height = VIDEO_SCALE_H(f->dims);
+   img.planar = &f->planar;
+   if (vk->movie_texture && !vk->movie_cpu)
+      vulkan_import_movie_frame(vk, NULL);
+   if (vk->movie_texture)
+      result = vulkan_update_texture_internal(vk, vk->movie_texture, &img);
+   else if (!(vk->movie_texture = vulkan_load_texture_internal(vk, &img,
+               TEXTURE_FILTER_LINEAR)))
+      result = VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (result != VIDEO_TEXTURE_UPDATE_DONE)
+      return result;
+   vk->movie_cpu     = true;
+   vk->movie_pending = true;
+   if (f->abandon)
+      f->abandon(f->owner, f->done, f->done_value);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static enum video_texture_update vulkan_import_movie_frame(void *data,
       const video_frame_import_t *f)
 {
@@ -17070,12 +17105,18 @@ static enum video_texture_update vulkan_import_movie_frame(void *data,
       vulkan_unload_texture_internal(vk, vk->movie_texture);
       vk->movie_texture = 0;
       vk->movie_pending = false;
+      vk->movie_cpu     = false;
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
    if (vk->flags & VK_FLAG_HW_ENABLE)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (vk->movie_texture
          && ((struct vk_texture*)vk->movie_texture)->dims != f->dims)
+      vulkan_import_movie_frame(vk, NULL);
+   if (VIDEO_FRAME_IMPORT_IS_CPU(f))
+      return vulkan_import_movie_planes(vk, f);
+   /* a decoder's frame imports into a texture made for it */
+   if (vk->movie_texture && vk->movie_cpu)
       vulkan_import_movie_frame(vk, NULL);
 #if defined(HAVE_VAAPI) || (defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
@@ -17148,6 +17189,9 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
             && vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE)
       ? (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010) : 0;
 #endif
+   /* movie frames in memory, through the planar upload */
+   if (vulkan_supports_texture_format(vk, TEXTURE_GPU_FORMAT_YUV420))
+      info->import_formats |= IMAGE_PIXFMT_I420;
    return true;
 }
 

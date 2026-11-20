@@ -861,6 +861,7 @@ typedef struct
    unsigned                        import_next;
    uintptr_t movie_texture;
    bool movie_pending;
+   bool movie_cpu;      /* movie_texture holds frames from memory */
    bool movie_importing;
    unsigned                        import_formats;
    bool                            video_decode;
@@ -12712,6 +12713,45 @@ static enum video_texture_update d3d12_import_texture(void *data,
 
 /* Frames from D3D11 video, where they can be read: NV12/P010
  * sampled in a shader, and the conversion's pipeline made */
+static uintptr_t d3d12_gfx_load_texture_internal(
+      d3d12_video_t* d3d12, struct texture_image* image,
+      enum texture_filter_type filter_type);
+static enum video_texture_update d3d12_gfx_update_texture_internal(
+      d3d12_video_t *d3d12, uintptr_t handle,
+      const struct texture_image *image);
+static bool d3d12_gfx_supports_texture_format(void* data,
+      enum texture_gpu_format fmt);
+
+/* A movie frame in memory: its planes through the planar upload, which
+ * copies them, into a texture of their own; released once copied. */
+static enum video_texture_update d3d12_import_movie_planes(d3d12_video_t *v,
+      const video_frame_import_t *f)
+{
+   struct texture_image img;
+   enum video_texture_update result = VIDEO_TEXTURE_UPDATE_DONE;
+   if (!d3d12_gfx_supports_texture_format(v, TEXTURE_GPU_FORMAT_YUV420))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   memset(&img, 0, sizeof(img));
+   img.width  = VIDEO_SCALE_W(f->dims);
+   img.height = VIDEO_SCALE_H(f->dims);
+   img.planar = &f->planar;
+   if (v->movie_texture && (!v->movie_cpu
+            || ((d3d12_texture_t*)v->movie_texture)->desc.Width  != img.width
+            || ((d3d12_texture_t*)v->movie_texture)->desc.Height != img.height))
+      d3d12_import_movie_frame(v, NULL);
+   if (v->movie_texture)
+      result = d3d12_gfx_update_texture_internal(v, v->movie_texture, &img);
+   else if (!(v->movie_texture = d3d12_gfx_load_texture_internal(v, &img, TEXTURE_FILTER_LINEAR)))
+      result = VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (result != VIDEO_TEXTURE_UPDATE_DONE)
+      return result;
+   v->movie_cpu     = true;
+   v->movie_pending = true;
+   if (f->abandon)
+      f->abandon(f->owner, f->done, f->done_value);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static enum video_texture_update d3d12_import_movie_frame(void *data,
       const video_frame_import_t *f)
 {
@@ -12729,10 +12769,16 @@ static enum video_texture_update d3d12_import_movie_frame(void *data,
       d3d12_gfx_unload_texture_internal(v, v->movie_texture);
       v->movie_texture = 0;
       v->movie_pending = false;
+      v->movie_cpu     = false;
       v->hw_direct.current = NULL;
       v->hw_direct.current_gpu.ptr = 0;
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
+   if (VIDEO_FRAME_IMPORT_IS_CPU(f))
+      return d3d12_import_movie_planes(v, f);
+   /* a decoder's frame imports into a texture made for it */
+   if (v->movie_texture && v->movie_cpu)
+      d3d12_import_movie_frame(v, NULL);
    v->movie_importing = true;
    result = d3d12_import_texture(v, &v->movie_texture, f, TEXTURE_FILTER_LINEAR);
    v->movie_importing = false;
@@ -12836,6 +12882,9 @@ static bool d3d12_get_device(void *data, video_device_info_t *info)
 #endif
 #ifdef D3D12_FRAME_IMPORT
    info->import_formats = d3d12->video_decode ? d3d12->import_formats : 0;
+   /* movie frames in memory, through the planar upload */
+   if (d3d12_gfx_supports_texture_format(d3d12, TEXTURE_GPU_FORMAT_YUV420))
+      info->import_formats |= IMAGE_PIXFMT_I420;
 #endif
    return true;
 }

@@ -5819,6 +5819,7 @@ static bool core_unload_game(void)
       if (runloop_st->current_core_type == CORE_TYPE_WEBM)
       {
          libretro_media_set_video_hw_refresh(NULL, NULL);
+         libretro_media_set_video_planes_refresh(NULL, NULL);
          video_driver_movie_clear();
       }
 #endif
@@ -11311,7 +11312,11 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    video_driver_cached_frame_invalidate();
 #ifdef HAVE_WEBMPLAYER
    if (runloop_st->current_core_type == CORE_TYPE_WEBM)
+   {
       libretro_media_set_video_hw_refresh(video_driver_movie_refresh, NULL);
+      libretro_media_set_video_planes_refresh(video_driver_movie_planes,
+            NULL);
+   }
 #endif
 
 #ifdef HAVE_RUNAHEAD

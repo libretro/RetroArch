@@ -21,6 +21,7 @@
 #include <math.h>
 
 #include <retro_atomic.h>
+#include <formats/image_yuv_blit.h>
 #include <queues/retro_triple_buffer.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
@@ -4033,6 +4034,10 @@ static uintptr_t video_driver_windows_logo_texture(bool want)
 }
 #endif
 
+#ifdef HAVE_THREADS
+static void video_driver_movie_blocks_free(void);
+#endif
+
 void video_driver_free_internal(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
@@ -4100,6 +4105,9 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
+#ifdef HAVE_THREADS
+   video_driver_movie_blocks_free();
+#endif
    /* The effect programs went with it */
    gfx_display_effects_lost();
    /* No driver follows to take what this one left up */
@@ -6987,33 +6995,153 @@ bool video_driver_get_device(video_device_info_t *info)
       && poke->get_device(video_st->data, info);
 }
 
+/* Whether a movie frame of @pixfmt can be shown in the core frame's
+ * place now: the driver imports it and nothing needs the frame's
+ * pixels on the CPU. */
+static bool video_driver_movie_ready(uint32_t pixfmt)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_device_info_t info;
+   if (     !video_st->data || !video_st->poke
+         || !video_st->poke->import_movie_frame || video_st->movie_refused)
+      return false;
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active() && !video_thread_movie_supported())
+      return false;
+#endif
+#ifdef HAVE_VIDEO_FILTER
+   if (video_st->state_filter)
+      return false;
+#endif
+   return video_driver_get_device(&info) && (info.import_formats & pixfmt)
+      && ((!recording_state_get_ptr()->enable
+            && !recording_state_get_ptr()->streaming_enable)
+         || video_st->record_gpu_buffer);
+}
+
+#ifdef HAVE_THREADS
+/* Frames in memory for the threaded wrapper. The producer lends its
+ * planes only for the call, and the video thread uploads them later,
+ * so they are copied into a block it gives back once its upload has
+ * read them. A block's word: 0 free, 1 lent, 2 lent with the pool gone,
+ * in which case the release frees it. */
+#define VIDEO_MOVIE_BLOCKS 3
+
+typedef struct video_movie_block
+{
+   retro_atomic_int_t state;
+   size_t size;
+} video_movie_block_t;
+
+static video_movie_block_t *video_movie_blocks[VIDEO_MOVIE_BLOCKS];
+
+static void video_driver_movie_block_release(void *owner, uint64_t done,
+      uint64_t done_value)
+{
+   video_movie_block_t *b = (video_movie_block_t*)owner;
+   (void)done;
+   (void)done_value;
+   if (!retro_atomic_cas_int(&b->state, 1, 0))
+      free(b);
+}
+
+/* A free block of at least @size bytes, lent to the caller; NULL while
+ * every block is still being read. Main thread. */
+static video_movie_block_t *video_driver_movie_block(size_t size)
+{
+   unsigned i;
+   for (i = 0; i < VIDEO_MOVIE_BLOCKS; i++)
+   {
+      video_movie_block_t *b = video_movie_blocks[i];
+      if (b && !retro_atomic_cas_int(&b->state, 0, 1))
+         continue;
+      if (!b || b->size < size)
+      {
+         free(b);
+         video_movie_blocks[i] = NULL;
+         if (size > SIZE_MAX - sizeof(*b)
+               || !(b = (video_movie_block_t*)malloc(sizeof(*b) + size)))
+            return NULL;
+         retro_atomic_int_init(&b->state, 1);
+         b->size = size;
+         video_movie_blocks[i] = b;
+      }
+      return b;
+   }
+   return NULL;
+}
+
+/* With the driver gone: a block still lent is the release's to free. */
+static void video_driver_movie_blocks_free(void)
+{
+   unsigned i;
+   for (i = 0; i < VIDEO_MOVIE_BLOCKS; i++)
+   {
+      video_movie_block_t *b = video_movie_blocks[i];
+      video_movie_blocks[i]  = NULL;
+      while (b)
+      {
+         if (retro_atomic_cas_int(&b->state, 0, 2))
+         {
+            free(b);
+            break;
+         }
+         if (retro_atomic_cas_int(&b->state, 1, 2))
+            break;
+      }
+   }
+}
+#endif
+
+bool video_driver_movie_planes(void *user, const video_hw_frame_t *hw)
+{
+   if (!hw)
+      return video_driver_movie_ready(IMAGE_PIXFMT_I420);
+   if (!hw->planes[0] || !hw->planes[1] || !hw->planes[2]
+         || hw->chroma_step != 1)
+      return false;
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+   {
+      video_hw_frame_t copy  = *hw;
+      unsigned w             = hw->width, h = hw->height;
+      unsigned cw            = (w + 1) / 2;
+      video_movie_block_t *b = video_driver_movie_block(
+            IMAGE_PIXFMT_FRAME_SIZE(IMAGE_PIXFMT_I420, w, h));
+      uint8_t *planes;
+      bool taken;
+      if (!b)
+         return false;
+      planes = (uint8_t*)(b + 1);
+      image_yuv_420_pack(planes, w, h, hw->planes[0], hw->strides[0],
+            hw->planes[1], hw->planes[2], hw->strides[1], w, h);
+      copy.planes[0]  = planes;
+      copy.planes[1]  = planes + (size_t)w * h;
+      copy.planes[2]  = copy.planes[1] + (size_t)cw * ((h + 1) / 2);
+      copy.strides[0] = w;
+      copy.strides[1] = copy.strides[2] = cw;
+      copy.abandon    = video_driver_movie_block_release;
+      copy.owner      = b;
+      /* Not taken (DROPPED) leaves the block lent to us */
+      if (!(taken = video_driver_movie_refresh(user, &copy)))
+         video_driver_movie_block_release(b, 0, 0);
+      return taken;
+   }
+#endif
+   return video_driver_movie_refresh(user, hw);
+}
+
 bool video_driver_movie_refresh(void *user, const video_hw_frame_t *hw)
 {
    video_driver_state_t *video_st = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
    video_frame_import_t f;
-   video_device_info_t info;
    enum video_texture_update result;
    (void)user;
+   if (!hw)
+      return video_driver_movie_ready(IMAGE_PIXFMT_NV12);
    if (!video_st->data || !poke || !poke->import_movie_frame)
       return false;
-   if (!hw)
-   {
-      if (video_st->movie_refused)
-         return false;
-#ifdef HAVE_THREADS
-      if (video_driver_thread_wrapper_active() && !video_thread_movie_supported())
-         return false;
-#endif
-#ifdef HAVE_VIDEO_FILTER
-      if (video_st->state_filter)
-         return false;
-#endif
-      return video_driver_get_device(&info) && (info.import_formats & IMAGE_PIXFMT_NV12)
-         && ((!recording_state_get_ptr()->enable
-               && !recording_state_get_ptr()->streaming_enable)
-            || video_st->record_gpu_buffer);
-   }
    memset(&f, 0, sizeof(f));
    f.image = hw->image;
    f.plane_views[0] = hw->plane_views[0];
@@ -7032,6 +7160,18 @@ bool video_driver_movie_refresh(void *user, const video_hw_frame_t *hw)
    f.crop_y = hw->crop_y;
    f.abandon = hw->abandon;
    f.owner = hw->owner;
+   if (hw->planes[0])
+   {
+      unsigned i;
+      for (i = 0; i < 3; i++)
+      {
+         f.planar.planes[i]  = hw->planes[i];
+         f.planar.strides[i] = hw->strides[i];
+      }
+      f.planar.chroma_step = hw->chroma_step;
+      f.planar.yuv         = hw->yuv;
+      f.pixfmt             = IMAGE_PIXFMT_I420;
+   }
    result = video_st->movie_refused ? VIDEO_TEXTURE_UPDATE_REFUSED
       : poke->import_movie_frame(video_st->data, &f);
    if (result == VIDEO_TEXTURE_UPDATE_DROPPED)

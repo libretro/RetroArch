@@ -2433,13 +2433,18 @@ int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s)
    return (s && s->demux) ? rmp4_duration_ns(s->demux) : 0;
 }
 
-/* The shown picture's planes copied into the caller's frame as packed
- * I420, in the matrix and range the RGB blit would have used. */
-static const uint32_t *rmp4_video_render_planar(rmp4_video_stream_t *s)
+/* The shown picture's 8-bit 4:2:0 planes where they lie in the decoder
+ * and the IMAGE_YUV_FLAG_* of the matrix and range the RGB blit would
+ * use: 0 for a picture that is not so, or in BT.2020. */
+static int rmp4_video_shown_planes(const rmp4_video_stream_t *s,
+      const uint8_t *planes[3], unsigned strides[3],
+      unsigned *width, unsigned *height, unsigned *yuv)
 {
    const uint8_t *y = NULL, *u = NULL, *v = NULL;
    int ys = 0, uvs = 0, w = 0, h = 0, cw = 0, ch = 0;
    unsigned matrix = s->matrix;
+   if (s->h265_picture_pending)
+      return 0;
    switch (s->rndr_kind)
    {
       case 1:
@@ -2453,7 +2458,7 @@ static const uint32_t *rmp4_video_render_planar(rmp4_video_stream_t *s)
          const rvp9_fb *fb = &s->vp9->fbs[s->rndr_vp9_show];
          if (     s->vp9->hd.bit_depth != 8
                || !s->vp9->hd.subsampling_x || !s->vp9->hd.subsampling_y)
-            return NULL;
+            return 0;
          y   = fb->y;
          u   = fb->u;
          v   = fb->v;
@@ -2468,35 +2473,64 @@ static const uint32_t *rmp4_video_render_planar(rmp4_video_stream_t *s)
 #endif
       case 3:
          if (rh264_video_bit_depth(s->h264) != 8)
-            return NULL;
+            return 0;
          y = rh264_video_plane(s->h264, 0, &ys,  &w,  &h);
          u = rh264_video_plane(s->h264, 1, &uvs, &cw, &ch);
          v = rh264_video_plane(s->h264, 2, &uvs, &cw, &ch);
          break;
       case 4:
          if (rh265_video_bit_depth(s->h265) != 8)
-            return NULL;
+            return 0;
          y = rh265_video_plane(s->h265, 0, &ys,  &w,  &h);
          u = rh265_video_plane(s->h265, 1, &uvs, &cw, &ch);
          v = rh265_video_plane(s->h265, 2, &uvs, &cw, &ch);
          break;
       default:
-         return NULL;
+         return 0;
    }
    if (     !y || !u || !v || w <= 0 || h <= 0
          || cw != (w + 1) / 2 || ch != (h + 1) / 2)
-      return NULL;
+      return 0;
+   if ((unsigned)w > s->width)
+      w = (int)s->width;
    if ((unsigned)h > s->height)
       h = (int)s->height;
    if (!(matrix == 1 || matrix == 5 || matrix == 6
             || matrix == 9 || matrix == 10))
       matrix = h >= 720 ? 1 : 5;
    if (matrix == 9 || matrix == 10)
+      return 0;
+   planes[0]  = y;
+   planes[1]  = u;
+   planes[2]  = v;
+   strides[0] = (unsigned)ys;
+   strides[1] = strides[2] = (unsigned)uvs;
+   *width     = (unsigned)w;
+   *height    = (unsigned)h;
+   *yuv       = (matrix == 1 ? IMAGE_YUV_FLAG_BT709 : 0)
+      | (s->range ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
+   return 1;
+}
+
+int rmp4_video_stream_planes(const rmp4_video_stream_t *s,
+      const uint8_t *planes[3], unsigned strides[3],
+      unsigned *width, unsigned *height, unsigned *yuv)
+{
+   return s && planes && strides && width && height && yuv
+      && rmp4_video_shown_planes(s, planes, strides, width, height, yuv);
+}
+
+/* The shown picture's planes copied into the caller's frame as packed
+ * I420. */
+static const uint32_t *rmp4_video_render_planar(rmp4_video_stream_t *s)
+{
+   const uint8_t *planes[3];
+   unsigned strides[3], w, h, yuv;
+   if (!rmp4_video_shown_planes(s, planes, strides, &w, &h, &yuv))
       return NULL;
    image_yuv_420_pack((uint8_t*)s->out, s->width, s->height,
-         y, (unsigned)ys, u, v, (unsigned)uvs, (unsigned)w, (unsigned)h);
-   s->planar_yuv = (matrix == 1 ? IMAGE_YUV_FLAG_BT709 : 0)
-      | (s->range ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
+         planes[0], strides[0], planes[1], planes[2], strides[1], w, h);
+   s->planar_yuv = yuv;
    return s->out;
 }
 
