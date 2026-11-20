@@ -34,7 +34,7 @@ typedef struct d3d_builtin_record
 #else
 #define D3D_BUILTIN_SOURCE(hash, bytes)
 #endif
-#include <d3d_builtin_data.h>
+#include "d3d_builtin_data.h"
 typedef struct d3d_builtin_blob
 {
    ID3DBlob iface;

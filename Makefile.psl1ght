@@ -68,7 +68,6 @@ PYTHON ?= python3
 RSX_SHADER_DIR := gfx/drivers/rsx_shaders/precompiled
 RSX_SHADER_BINARIES := $(addprefix $(RSX_SHADER_DIR)/,modern_opaque.vpo modern_opaque.fpo modern_alpha_blend.vpo modern_alpha_blend.fpo)
 SHADER_OBJS := $(addsuffix .o,$(RSX_SHADER_BINARIES))
-RSX_SHADER_CHECK := .rsx-shaders/verified
 RSX_SHADER_SOURCES := $(wildcard gfx/drivers/rsx_shaders/modern_*.vcg gfx/drivers/rsx_shaders/modern_*.fcg)
 
 LIBCO_OBJ = libretro-common/libco/ps3.o
@@ -170,15 +169,13 @@ clean:
 	@$(if $(Q), echo $@,)
 	$(Q)rm -f $(ELF_TARGET)
 	$(Q)rm -f $(OBJ)
-	$(Q)rm -f $(RSX_SHADER_CHECK)
 
 .PHONY: clean
 
-$(RSX_SHADER_CHECK): tools/rsx_shaders.py $(RSX_SHADER_DIR)/manifest.json $(RSX_SHADER_BINARIES) $(RSX_SHADER_SOURCES)
+.PHONY: check-rsx-shaders
+check-rsx-shaders:
 	$(PYTHON) tools/rsx_shaders.py --check
-	mkdir -p $(dir $@)
-	touch $@
 
 # Keep the binary as $< for the SDK's bin2o macro and preserve symbol names.
-$(SHADER_OBJS): %.o: % $(RSX_SHADER_CHECK)
+$(SHADER_OBJS): %.o: %
 	$(bin2o)

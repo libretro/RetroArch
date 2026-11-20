@@ -4,11 +4,27 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from pyrowave_embed_shaders import SOURCE, assets
 
 class Artifacts(unittest.TestCase):
+    def test_committed_headers_reject_stale_data(self):
+        repo = Path(__file__).resolve().parents[1]
+        for tool, header in (
+                ('pyrowave_embed_shaders.py', SOURCE / 'rpyrowave_shaders.h'),
+                ('d3d_shader_embed.py', repo / 'gfx/common/d3d_builtin_data.h')):
+            with self.subTest(tool=tool):
+                command = [sys.executable, str(repo / 'tools' / tool), '--check', '--output']
+                subprocess.run(command + [str(header)], check=True, capture_output=True)
+                stale = self.root / tool.replace('.py', '.h')
+                stale.write_bytes(header.read_bytes() + b'\n/* stale */\n')
+                result = subprocess.run(command + [str(stale)], capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('header is stale', result.stderr)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix='pyrowave-artifacts-')
         self.root = Path(self.temporary.name)

@@ -7,7 +7,7 @@
 #include <string.h>
 #include <streams/file_stream.h>
 
-/* Generated at build time; no runtime file, allocation or copy for defaults. */
+/* Committed executable data; no build-time generator or runtime files. */
 #if defined(HAVE_OPENGL_CORE)
 #define RPYROWAVE_SHADER_GLSL
 #endif
@@ -23,7 +23,7 @@
 #if defined(HAVE_METAL)
 #define RPYROWAVE_SHADER_METAL
 #endif
-#include <rpyrowave_shaders.h>
+#include "../libretro-common/formats/pyrowave/shaders/rpyrowave_shaders.h"
 
 typedef struct record_pyrowave_builtin_shader
 {

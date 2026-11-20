@@ -80,11 +80,11 @@ include Makefile.common
 
 # Set shader include paths before sanitizer flags snapshot CFLAGS/CXXFLAGS.
 ifeq ($(HAVE_PYROWAVE),1)
-PYROWAVE_GENERATED_DIR := $(OBJDIR)/pyrowave
+PYROWAVE_GENERATED_DIR := libretro-common/formats/pyrowave/shaders
 DEF_FLAGS += -I$(PYROWAVE_GENERATED_DIR)
 endif
 ifneq ($(filter 1,$(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
-D3D_SHADER_GENERATED_DIR := $(OBJDIR)/d3d-shaders
+D3D_SHADER_GENERATED_DIR := gfx/common
 DEF_FLAGS += -I$(D3D_SHADER_GENERATED_DIR)
 endif
 

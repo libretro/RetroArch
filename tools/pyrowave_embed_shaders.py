@@ -60,7 +60,7 @@ def main():
     bundle = assets(a.input)
     if not a.output and not a.check: p.error('Pass --output or --check')
     if a.output:
-        lines = ['/* Generated from committed PyroWave artifacts. Do not commit build output. */',
+        lines = ['/* Committed shader data. Regenerate offline with tools/pyrowave_embed_shaders.py. */',
                  '#ifndef RPYROWAVE_EMBEDDED_SHADER_ASSETS_H', '#define RPYROWAVE_EMBEDDED_SHADER_ASSETS_H',
                  '#include <stdint.h>']
         for language in ('GLSL', 'GLES', 'SPIRV', 'D3D', 'METAL'):
@@ -79,7 +79,12 @@ def main():
                 if dxil: lines.append('#endif')
             lines.append('#endif')
         lines.append('#endif\n')
-        write_changed(a.output, '\n'.join(lines).encode('ascii'))
+        encoded = '\n'.join(lines).encode('ascii')
+        if a.check:
+            if not a.output.is_file() or a.output.read_bytes().replace(b'\r\n', b'\n') != encoded:
+                raise ValueError('Committed PyroWave header is stale: ' + str(a.output))
+        else:
+            write_changed(a.output, encoded)
     print('Verified precompiled PyroWave artifacts' + (': ' + str(a.output) if a.output else ''))
 
 if __name__ == '__main__':

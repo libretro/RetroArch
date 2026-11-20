@@ -63,7 +63,7 @@ def main():
     shaders=records()
     if not a.output and not a.check:p.error('Pass --output or --check')
     if a.output:
-        lines=['/* Generated from committed native bytecode. */']
+        lines=['/* Committed shader data. Regenerate offline with tools/d3d_shader_embed.py. */']
         for model in range(2,7):
             lines.append('#ifdef D3D_BUILTIN_SM%d'%model)
             for m,item,data in shaders:
@@ -85,7 +85,12 @@ def main():
                 lines.append('#endif')
             lines.append('#endif')
         lines+=['   { D3D_BUILTIN_SOURCE(0, 0) NULL, NULL, NULL, NULL, 0 }','};','']
-        write_changed(a.output,'\n'.join(lines).encode('ascii'))
+        encoded = '\n'.join(lines).encode('ascii')
+        if a.check:
+            if not a.output.is_file() or a.output.read_bytes().replace(b'\r\n', b'\n') != encoded:
+                raise ValueError('Committed D3D header is stale: ' + str(a.output))
+        else:
+            write_changed(a.output, encoded)
     if a.test_output:
         rows = []
         for model, item, data in shaders:

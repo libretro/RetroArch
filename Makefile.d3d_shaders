@@ -1,8 +1,8 @@
+# Ordinary builds consume committed shader data, with no generator.
 PYTHON ?= python3
-D3D_SHADER_GENERATED_DIR ?= .d3d-shaders
+D3D_SHADER_GENERATED_DIR := gfx/common
 D3D_SHADER_GENERATED_HEADER := $(D3D_SHADER_GENERATED_DIR)/d3d_builtin_data.h
-D3D_SHADER_MANIFESTS := $(wildcard gfx/drivers/d3d_sm*_shaders/manifest.json)
-D3D_SHADER_BLOBS := $(wildcard gfx/drivers/d3d_sm*_shaders/precompiled/* gfx/drivers/d3d_sm*_shaders/effects/precompiled/*)
-D3D_SHADER_SOURCES := $(wildcard gfx/drivers/d3d_sm*_shaders/*.h gfx/drivers/d3d_sm*_shaders/*.hlsl gfx/drivers/d3d_sm*_shaders/effects/*.h gfx/drivers/d3d_sm*_shaders/effects/*.hlsl)
-$(D3D_SHADER_GENERATED_HEADER): tools/d3d_shader_embed.py tools/pyrowave_shaders.py $(D3D_SHADER_MANIFESTS) $(D3D_SHADER_BLOBS) $(D3D_SHADER_SOURCES) tools/d3d_shader_sources.c gfx/common/xmb_plastic.h gfx/drivers/xmb_plastic.h gfx/common/menu_ribbon_shader.h gfx/drivers/menu_ribbon_shader.h gfx/drivers_shader/video_hdr.inc
-	$(PYTHON) tools/d3d_shader_embed.py --output $@
+
+.PHONY: regenerate-d3d-shaders
+regenerate-d3d-shaders:
+	$(PYTHON) tools/d3d_shader_embed.py --output $(D3D_SHADER_GENERATED_HEADER)
