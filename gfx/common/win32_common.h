@@ -219,8 +219,9 @@ void win32_video_window_update(void *owner, video_window_native_t *window,
 unsigned win32_video_window_poll(void *owner, video_window_event_t *events,
       unsigned capacity);
 void win32_video_window_destroy(void *owner, video_window_native_t *window);
-/* Left up for the next driver on the main thread, which outlasts it;
- * on another the window goes with its thread, so it is destroyed */
+/* Left up for the next driver. The window goes with its thread: off
+ * the main thread the video thread is held for that driver
+ * (video_thread_host_hold()), and where it cannot be, it is destroyed. */
 void win32_video_window_keep(void *owner, video_window_native_t *window);
 /* Taken only with 'format' as its pixel format, 0 for none */
 bool win32_video_window_take(void *owner, unsigned screen,
@@ -228,6 +229,8 @@ bool win32_video_window_take(void *owner, unsigned screen,
 /* Hands each window 'owner' still has to 'destroy'. */
 void win32_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window));
+/* Kept windows of this thread that no driver took go */
+void win32_video_windows_release_kept(void);
 /* Whether 'hwnd' is an open screen's own window of this process; any
  * thread */
 bool win32_video_window_open(HWND hwnd);

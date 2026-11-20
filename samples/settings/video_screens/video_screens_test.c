@@ -7458,6 +7458,176 @@ static void native_wl_kept_thread(const char *ident, enum gfx_ctx_api api,
 }
 #endif
 
+#if defined(NATIVE_WIN32) && defined(HAVE_THREADS)
+/* What a threaded driver does with screen 1's window, on the video
+ * thread: init makes it, takes the last driver's, or neither; free
+ * keeps it */
+enum native_w32_thread_init
+{
+   NATIVE_W32_THREAD_MAKE = 0,
+   NATIVE_W32_THREAD_TAKE,
+   NATIVE_W32_THREAD_NONE
+};
+
+typedef struct
+{
+   const char *ident;
+   enum gfx_ctx_api api;
+   unsigned major;
+   unsigned minor;
+   enum native_w32_thread_init init;
+   const gfx_ctx_driver_t *ctx;
+   void *data;
+   video_window_request_t request;
+   video_window_native_t window;
+   bool took;
+} native_w32_thread_t;
+
+static native_w32_thread_t native_w32_thread;
+
+static void *native_w32_thread_init(const video_info_t *info)
+{
+   native_w32_thread_t *job = &native_w32_thread;
+   unsigned display         = 0;
+   (void)info;
+   job->data = NULL;
+   job->took = false;
+   if (!(job->ctx = native_context(job->ident, job->api, job->major,
+         job->minor, &job->data)))
+      return NULL;
+   native_window_input = native_w32_pump;
+   if (job->init == NATIVE_W32_THREAD_TAKE)
+      job->took = job->ctx->windows->take(job->data, job->request.screen,
+            &job->window, &display);
+   else if (job->init == NATIVE_W32_THREAD_MAKE)
+   {
+      memset(&job->window, 0, sizeof(job->window));
+      job->request.generation = video_driver_window_generation();
+      if (job->ctx->windows->create(job->data, &job->request,
+            &job->window))
+         native_window_wait(job->ctx, job->data, &job->request,
+               &job->window, NATIVE_EVENT(RESUME), 0);
+   }
+   return job;
+}
+
+static bool native_w32_thread_frame(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+   return true;
+}
+
+static void native_w32_thread_free(void *data)
+{
+   native_w32_thread_t *job = (native_w32_thread_t*)data;
+   if (job->window.state)
+      job->ctx->windows->keep(job->data, &job->window);
+   job->ctx->destroy(job->data);
+   native_window_input = NULL;
+}
+
+/* A threaded driver up, its init being 'init'; its data in *data */
+static const video_driver_t *native_w32_thread_up(
+      enum native_w32_thread_init init, void **data)
+{
+   static video_driver_t driver;
+   const video_driver_t *threaded = NULL;
+   video_info_t info;
+   memset(&driver, 0, sizeof(driver));
+   memset(&info, 0, sizeof(info));
+   driver.init            = native_w32_thread_init;
+   driver.frame           = native_w32_thread_frame;
+   driver.free            = native_w32_thread_free;
+   driver.ident           = "native_w32_thread";
+   info.input_scale       = 1;
+   info.rgb32             = true;
+   native_w32_thread.init = init;
+   *data                  = NULL;
+   if (!video_init_thread(&threaded, data, &driver, info))
+   {
+      CHECK(!"threaded driver up");
+      return NULL;
+   }
+   return threaded;
+}
+
+/* Threaded video restarted with a screen's window up: it is kept on the
+ * video thread, held for the next driver, which takes it there as it
+ * was. One the next driver does not take goes once that driver is up;
+ * with the next driver not threaded, it goes with the thread, also when
+ * no main window was kept to hold it. */
+static void native_w32_kept_thread(const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
+{
+   const video_driver_t *threaded;
+   void *data = NULL;
+   void *state;
+   HWND hwnd, main_hwnd;
+   memset(&native_w32_thread, 0, sizeof(native_w32_thread));
+   native_w32_thread.ident                  = ident;
+   native_w32_thread.api                    = api;
+   native_w32_thread.major                  = major;
+   native_w32_thread.minor                  = minor;
+   native_w32_thread.request.screen         = 1;
+   native_w32_thread.request.settings.mode  = VIDEO_WINDOW_SEPARATE;
+   native_w32_thread.request.settings.dims  = VIDEO_SCALE_PACK(320, 240);
+   win32_window_release_kept();
+
+   if (!(threaded = native_w32_thread_up(NATIVE_W32_THREAD_MAKE, &data)))
+      return;
+   state     = native_w32_thread.window.state;
+   hwnd      = native_w32_window(&native_w32_thread.window);
+   main_hwnd = main_window.hwnd;
+   threaded->free(data);
+   CHECK(video_thread_host_is_held());
+   CHECK(IsWindow(hwnd));
+   if (!(threaded = native_w32_thread_up(NATIVE_W32_THREAD_TAKE, &data)))
+      return;
+   fprintf(stderr, "native %s: threaded restart, screen window %s\n",
+         ident, native_w32_thread.took ? "kept" : "made again");
+   CHECK(native_w32_thread.took);
+   CHECK(main_window.hwnd == main_hwnd);
+   CHECK(native_w32_thread.window.state == state);
+   CHECK(native_w32_window(&native_w32_thread.window) == hwnd);
+   CHECK(IsWindow(hwnd));
+
+   /* Not taken by the next driver */
+   threaded->free(data);
+   if (!(threaded = native_w32_thread_up(NATIVE_W32_THREAD_NONE, &data)))
+      return;
+   fprintf(stderr, "native %s: threaded restart not taking it: %s\n",
+         ident, IsWindow(hwnd) ? "still up" : "gone");
+   CHECK(!IsWindow(hwnd));
+   threaded->free(data);
+   win32_window_release_kept();
+   CHECK(!video_thread_host_is_held());
+
+   /* Only a screen's window kept, then video not threaded */
+   _putenv("RETROARCH_WINDOW_KEEP=0");
+   if ((threaded = native_w32_thread_up(NATIVE_W32_THREAD_MAKE, &data)))
+   {
+      hwnd = native_w32_window(&native_w32_thread.window);
+      threaded->free(data);
+      CHECK(IsWindow(hwnd) && video_thread_host_is_held());
+      win32_window_release_kept();
+      fprintf(stderr, "native %s: kept alone, video not threaded: %s\n",
+            ident, IsWindow(hwnd) ? "still up" : "gone");
+      CHECK(!IsWindow(hwnd));
+      CHECK(!video_thread_host_is_held());
+      if ((threaded = native_w32_thread_up(NATIVE_W32_THREAD_MAKE, &data)))
+      {
+         fprintf(stderr, "native %s: screen 1 made again after: %s\n",
+               ident, native_w32_thread.window.state ? "yes" : "no");
+         CHECK(native_w32_thread.window.state != NULL);
+         threaded->free(data);
+         win32_window_release_kept();
+      }
+   }
+   _putenv("RETROARCH_WINDOW_KEEP=");
+}
+#endif
+
 /* 'core': a 3.2 core GL context, as glcore asks for; else the
  * driver's default one, as gl does */
 /* A window manager started beside the run frames the main window when
@@ -7736,6 +7906,12 @@ static void test_window_native_lifecycle(const char *ident, bool core)
       native_window_kept_gone(ident, api,
             api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
             api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+#if defined(NATIVE_WIN32) && defined(HAVE_THREADS)
+   if (native_w32_ident(ident) && strcmp(ident, "d3d") != 0)
+      native_w32_kept_thread(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+#endif
 #ifdef HAVE_WAYLAND
    if (native_wl_ident(ident))
       native_wl_kept_thread(ident, api,

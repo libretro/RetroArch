@@ -228,6 +228,10 @@ void video_driver_release_kept_windows(void)
 #if defined(HAVE_WAYLAND) && defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
    wl_video_windows_release_kept(NULL);
 #endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) \
+      && defined(HAVE_VIDEO_WINDOWS)
+   win32_video_windows_release_kept();
+#endif
 }
 
 /* A window the last driver left up for this one

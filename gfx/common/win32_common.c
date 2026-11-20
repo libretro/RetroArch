@@ -2047,10 +2047,13 @@ static int win32_window_keep_mode(void)
 }
 
 /* the hook of video_thread_host_hold(): the video thread is ending
- * with the kept window still on it */
+ * with kept windows still on it */
 static void win32_window_kept_thread_ends(void)
 {
    HWND hwnd = win32_kept_hwnd;
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   win32_video_windows_release_kept();
+#endif
    if (hwnd && win32_kept_tid == GetCurrentThreadId())
    {
       win32_kept_hwnd = NULL;
@@ -2103,10 +2106,6 @@ bool win32_window_keep(void)
    return true;
 }
 
-#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
-static void win32_video_windows_release_kept(void);
-#endif
-
 void win32_window_release_kept(void)
 {
    HWND hwnd = win32_kept_hwnd;
@@ -2116,7 +2115,14 @@ void win32_window_release_kept(void)
    win32_video_windows_release_kept();
 #endif
    if (!hwnd)
+   {
+#ifdef HAVE_THREADS
+      /* screens' windows alone may hold it: they go as it ends */
+      if (video_thread_host_is_held())
+         video_thread_host_stop();
+#endif
       return;
+   }
    if (!IsWindow(hwnd))
       win32_kept_hwnd = NULL;
    else if (win32_kept_tid == GetCurrentThreadId())
@@ -3084,7 +3090,7 @@ static void win32_video_window_let_go(win32_video_window_t *state)
    win32_video_window_destroy(NULL, &window);
 }
 
-static void win32_video_windows_release_kept(void)
+void win32_video_windows_release_kept(void)
 {
    unsigned i;
    for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -3098,11 +3104,23 @@ void win32_video_window_keep(void *owner, video_window_native_t *window)
       ? (win32_video_window_t*)window->state : NULL;
    if (!state || state->common.owner != owner)
       return;
-   if (     !task_is_on_main_thread()
-         || (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+   if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+   {
       win32_video_window_destroy(owner, window);
-   else
-      video_window_hold(&state->common, window);
+      return;
+   }
+   /* it lasts only as long as its thread does */
+   if (!task_is_on_main_thread())
+   {
+#ifdef HAVE_THREADS
+      if (!video_thread_host_hold(win32_window_kept_thread_ends))
+#endif
+      {
+         win32_video_window_destroy(owner, window);
+         return;
+      }
+   }
+   video_window_hold(&state->common, window);
 }
 
 bool win32_video_window_take(void *owner, unsigned screen,
