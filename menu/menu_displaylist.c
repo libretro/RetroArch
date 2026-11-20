@@ -18650,11 +18650,6 @@ static bool menu_displaylist_ctl_internal(
             break;
          case DISPLAYLIST_MAIN_MENU:
             menu_entries_clear(info->list);
-#ifdef HAVE_PYROWAVE
-            if (menu_entries_append(info->list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES),
-                     MENU_ENUM_LABEL_PYROWAVE_DEVICES_STR, MENU_ENUM_LABEL_PYROWAVE_DEVICES,
-                     MENU_SETTING_ACTION, 0, 0, NULL)) count++;
-#endif
             {
                rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
                const char *menu_ident        = menu_driver_ident();
@@ -18887,6 +18882,12 @@ static bool menu_displaylist_ctl_internal(
                            MENU_ENUM_LABEL_INFORMATION_LIST,
                            PARSE_ACTION, false) == 0)
                      count++;
+
+#ifdef HAVE_PYROWAVE
+               if (menu_entries_append(info->list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES),
+                        MENU_ENUM_LABEL_PYROWAVE_DEVICES_STR, MENU_ENUM_LABEL_PYROWAVE_DEVICES,
+                        MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+#endif
 
 #ifdef HAVE_CONFIGFILE
                if (      settings->bools.menu_show_configurations
