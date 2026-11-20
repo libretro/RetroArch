@@ -1482,10 +1482,14 @@ static char verity_write[256];
 static unsigned verity_enables;
 static bool verity_moved;
 
-/* As the app's: the real path, here wherever it is */
+/* As the app's: the real path, here wherever it is; refused while
+ * resolve_refused is set, as for a path that leads out of the app's
+ * folders */
+static bool resolve_refused;
 bool android_core_path_resolve(const char *path, char *s, size_t len)
 {
-   if (     !path || !*path || strlcpy(s, path, len) >= len
+   if (     resolve_refused
+         || !path || !*path || strlcpy(s, path, len) >= len
          || !path_resolve_realpath(s, len, true))
    {
       if (len)
@@ -3768,7 +3772,8 @@ static bool fd_is_path(int fd, const char *path)
 /* Run-ahead's second instance on Android 6+: the running core's file,
  * the one it passed from and unchanged, as a file of its own, loaded
  * again as a new instance; none once the file is written, for another
- * core, or with nothing running. Checks off: the path's file. */
+ * core, or with nothing running. Checks off: the path's file, and
+ * none once the path no longer resolves into the app's folders. */
 static void test_android_instance(void)
 {
    dylib_t lib = NULL;
@@ -3833,6 +3838,11 @@ static void test_android_instance(void)
    drain();
    f = instance_file(core);
    CHECK(f && fd_is_path(core_file_fd(f), core));
+   core_file_close(f);
+   resolve_refused = true;
+   f = instance_file(core);
+   resolve_refused = false;
+   CHECK(!f);
    core_file_close(f);
    stop();
 }

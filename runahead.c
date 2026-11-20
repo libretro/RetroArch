@@ -60,6 +60,9 @@
 #include "core_load_check.h"
 #include "core_load_file.h"
 #endif
+#ifdef ANDROID
+#include "frontend/drivers/platform_unix.h"
+#endif
 
 static struct retro_savestate_lifetime serialization_interface;
 static enum retro_execution_phase serialization_phase_value;
@@ -697,6 +700,9 @@ static bool runahead_copy_task_pending   = false;
 typedef struct runahead_copy_handle
 {
    char *src_path;
+#ifdef ANDROID
+   char *read_path;  /* the file the copy reads: src_path, resolved */
+#endif
    char *dir_libretro;
    char *out_path;   /* produced temp file on success */
    /* In-flight VFS copy, advanced one window's worth per handler
@@ -844,10 +850,25 @@ static void runahead_copy_task_begin(runahead_copy_handle_t *h)
    char tmp_path[PATH_MAX_LENGTH];
    char *tmpdir          = NULL;
    char *dst             = NULL;
+   const char *src       = h->src_path;
    const char *core_base = path_basename_nocompression(h->src_path);
 
    h->started = true;
    h->failed  = true;
+
+#ifdef ANDROID
+   /* Read from where the check resolves the core, as its open did: its
+    * path may lead elsewhere by now. The copy keeps the path's name. */
+   if (!android_core_path_resolve(h->src_path, tmp_path, sizeof(tmp_path)))
+   {
+      RARCH_WARN("[Run-Ahead] Not copying \"%s\": not found in the app's own folders.\n",
+            h->src_path);
+      return;
+   }
+   if (!(h->read_path = strdup(tmp_path)))
+      return;
+   src = h->read_path;
+#endif
 
    if (     !core_base || !*core_base
          || !(tmpdir = get_tmpdir_alloc(h->dir_libretro)))
@@ -862,7 +883,7 @@ static void runahead_copy_task_begin(runahead_copy_handle_t *h)
       strcat_alloc(&dst, PATH_DEFAULT_SLASH());
       strcat_alloc(&dst, core_base);
 
-      if ((h->copy = filestream_copy_begin(h->src_path, dst,
+      if ((h->copy = filestream_copy_begin(src, dst,
                   RETRO_VFS_COPY_OVERWRITE)))
       {
          h->copy_dst = dst;
@@ -872,7 +893,7 @@ static void runahead_copy_task_begin(runahead_copy_handle_t *h)
       /* Basename taken (another instance is running this core):
        * fall back to a random name under the same directory. */
       else if ((h->copy = copy_begin_with_random_name(&dst, tmp_path,
-                  h->src_path)))
+                  src)))
       {
          h->copy_dst = dst;
          dst         = NULL;
@@ -999,8 +1020,13 @@ static void runahead_copy_task_handler(retro_task_t *task)
 #ifdef HAVE_CORE_LOAD_CHECK
       if (h->check)
       {
+#ifdef ANDROID
+         const char *read_path = h->read_path;
+#else
+         const char *read_path = h->src_path;
+#endif
          /* Hashed over the next ticks, then loaded from the file hashed */
-         if ((h->match = core_load_match_new(h->out_path, h->src_path,
+         if ((h->match = core_load_match_new(h->out_path, read_path,
                      &h->src)))
             return;
          h->mismatch = true;
@@ -1098,6 +1124,10 @@ static void runahead_copy_task_free(retro_task_t *task)
          free(h->copy_dst);
       if (h->src_path)
          free(h->src_path);
+#ifdef ANDROID
+      if (h->read_path)
+         free(h->read_path);
+#endif
       if (h->dir_libretro)
          free(h->dir_libretro);
       if (h->out_path)
