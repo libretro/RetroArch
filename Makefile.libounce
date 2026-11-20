@@ -11,7 +11,7 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libounce/switch2_rules
 
-TARGET := retroarch_switch2
+TARGET := retroarch
 
 DEBUG                  ?= 0
 WHOLE_ARCHIVE_LINK      = 0
@@ -27,6 +27,7 @@ HAVE_SCREENSHOTS = 1
 HAVE_REWIND = 1
 HAVE_AUDIOMIXER = 1
 HAVE_CC_RESAMPLER = 1
+HAVE_DYNAMIC ?= 1
 HAVE_MENU_COMMON = 1
 HAVE_RTGA = 1
 HAVE_RGIF = 1
@@ -42,7 +43,16 @@ HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
 HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
-HAVE_STATIC_CORES = 1
+
+ifeq ($(HAVE_DYNAMIC),1)
+  DEFINES += -DHAVE_DYNAMIC
+  ifeq ($(HAVE_LIBOUNCE_MODULE_TRACE),1)
+    DEFINES += -DHAVE_LIBOUNCE_MODULE_TRACE
+  endif
+else
+  HAVE_STATIC_CORES = 1
+endif
+
 HAVE_FILTERS_BUILTIN = 1
 HAVE_MENU = 1
 HAVE_CONFIGFILE = 1
@@ -106,6 +116,11 @@ BLACKLIST :=
 
 OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
+ifeq ($(HAVE_DYNAMIC),1)
+  OBJ := $(filter-out $(LIBRETRO_COMM_DIR)/dynamic/dylib.o,$(OBJ))
+  OBJ += $(LIBRETRO_COMM_DIR)/dynamic/libounce/dylib_libounce.o
+endif
+
 BUILD := build
 SOURCES := $(CURDIR)/source
 DATA := data
@@ -141,10 +156,22 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libounce/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 
+ifeq ($(HAVE_DYNAMIC),1)
+  LDFLAGS += -Wl,--export-dynamic,--hash-style=sysv
+  LDFLAGS += -Wl,-T,$(LIBRETRO_COMM_DIR)/dynamic/libounce/libounce_runtime.exports
+endif
+
 # add things from Makefile.common
 CFLAGS += $(DEF_FLAGS)
 
 LIBS := -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lnx -lm
+
+ifeq ($(HAVE_DYNAMIC),1)
+  # Keep the runtime ABI independent of the cores installed.
+  LIBS := $(filter-out -lstdc++ -lz,$(LIBS))
+  LIBS += -Wl,--whole-archive -lstdc++ -lz -Wl,--no-whole-archive -lm -lc -lnx
+  LIBS += $(PORTLIBS_SWITCH2)/lib/kaihen-jit.o
+endif
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lGLESv2 -lEGL -lglapi -ldrm_nouveau $(LIBS)
@@ -196,7 +223,9 @@ endif
 export OFILES 	:=	$(OBJ)
 
 ifeq ($(strip $(HAVE_STATIC_DUMMY)),)
-  OFILES += libretro_libounce.a
+  ifneq ($(HAVE_DYNAMIC),1)
+    OFILES += libretro_libounce.a
+  endif
 endif
 
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
@@ -259,6 +288,9 @@ $(OUTPUT).nro	:	$(OUTPUT).elf
 endif
 
 $(OUTPUT).elf	:	$(OBJ)
+ifeq ($(HAVE_DYNAMIC),1)
+  $(OUTPUT).elf: $(LIBRETRO_COMM_DIR)/dynamic/libounce/libounce_runtime.exports
+endif
 
 clean:
 	rm -f $(DEPENDS) $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf

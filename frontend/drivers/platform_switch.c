@@ -419,7 +419,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
       if (should_load_game)
       {
          const char *content = path_get(RARCH_PATH_CONTENT);
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING) && !defined(HAVE_DYNAMIC)
          char *arg_data[NETPLAY_FORK_MAX_ARGS];
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
                (void*)arg_data))
@@ -458,6 +458,10 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
 #ifndef IS_SALAMANDER
 static bool frontend_switch_set_fork(enum frontend_fork fork_mode)
 {
+#ifdef HAVE_DYNAMIC
+   (void)fork_mode;
+   return false;
+#else
    switch (fork_mode)
    {
    case FRONTEND_FORK_CORE:
@@ -477,6 +481,7 @@ static bool frontend_switch_set_fork(enum frontend_fork fork_mode)
    }
 
    return true;
+#endif
 }
 #endif
 
@@ -771,6 +776,7 @@ static void frontend_switch_get_name(char *s, size_t len)
 
 void frontend_switch_process_args(int *argc, char *argv[])
 {
+#ifndef HAVE_DYNAMIC
    /* When launched through hbloader (hbmenu, a forwarder, or a
     * fork via envSetNextLoad), argv[0] is the path of the NRO
     * this process is running and is the authoritative core
@@ -783,6 +789,10 @@ void frontend_switch_process_args(int *argc, char *argv[])
    if (     (*argc >= 1)
          && string_is_equal_noncase(path_get_extension(argv[0]), "nro"))
       path_set(RARCH_PATH_CORE, argv[0]);
+#else
+   (void)argc;
+   (void)argv;
+#endif
 }
 
 frontend_ctx_driver_t frontend_ctx_switch =
