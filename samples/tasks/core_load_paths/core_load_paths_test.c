@@ -1815,6 +1815,10 @@ static void mode_fw_cancel_restores(void)
     * no core for it */
    fw_run_trusting(fws_core, other, "fws");
    fw_run_trusting(sub_core, game, "sub");
+   /* Checked on its way in, so no probe read its tables: the running
+    * core's own declaration lists them */
+   CHECK(fw_sub_ident_is("harness_sub_a"),
+         "a checked subsystem core's subsystems are not listed");
    /* Trusted now, each Run's probe opens its core and reads its tables */
    fw_run_trusting(fws_core, other, "fws");
    fw_run_trusting(sub_core, game, "sub");

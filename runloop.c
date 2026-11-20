@@ -3832,6 +3832,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             memcpy(sys_info->subsystem.data, info,
                   i * sizeof(*sys_info->subsystem.data));
             sys_info->subsystem.size                 = (unsigned)i;
+            /* The menu lists these, the running core's own, whether or
+             * not a probe read them first (a checked load's doesn't) */
+            runloop_st->subsystem_current_count      =
+                  i <= SUBSYSTEM_MAX_SUBSYSTEMS
+                  ? (unsigned)i
+                  : SUBSYSTEM_MAX_SUBSYSTEMS;
             runloop_st->current_core.flags          |=
                   RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS;
          }
