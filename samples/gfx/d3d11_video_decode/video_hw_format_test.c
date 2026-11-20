@@ -40,6 +40,8 @@ bool gfx_surface_wants_rgba(void)
 { failures++; return false; }
 bool image_transfer_anim_stream_is_hdr(const void *stream, enum image_type_enum type)
 { (void)stream; (void)type; failures++; return false; }
+bool image_transfer_anim_stream_can_planar(const void *stream, enum image_type_enum type)
+{ (void)stream; (void)type; failures++; return false; }
 video_player_t *video_player_new(void *stream, enum image_type_enum type,
       int loops, const video_player_sink_t *sink, unsigned flags)
 { (void)stream; (void)type; (void)loops; (void)sink; (void)flags; failures++; return NULL; }

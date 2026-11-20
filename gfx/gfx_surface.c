@@ -127,6 +127,10 @@ bool gfx_surface_query_requirements(unsigned width,
    if (     video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F)
          && video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_SCRGB))
       req->formats |= IMAGE_PIXFMT_FP16;
+   /* 8-bit 4:2:0 planes the driver converts itself: a planar
+    * producer hands those over unconverted (gfx_surface_submit_planes) */
+   if (video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_YUV420))
+      req->formats |= IMAGE_PIXFMT_I420 | IMAGE_PIXFMT_NV12;
    if (req->formats & IMAGE_PIXFMT_FP16)
       req->preferred = IMAGE_PIXFMT_FP16;
    else if (req->formats & IMAGE_PIXFMT_2101010)

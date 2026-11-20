@@ -112,6 +112,14 @@ typedef struct
    int catchup_sets;
    int argb;
    bool direct;        /* decodes into the output when given one */
+   /* Planar output: whether the stream can, whether asked, how often
+    * asked, and the last frame's colour flags. A planar frame k is
+    * luma k + 1 throughout, flagged BT709 and, for odd k, FULL_RANGE. */
+   bool planar_can;
+   bool planar_on;
+   int planar_sets;
+   unsigned planar_yuv;
+   bool want_fp16;
    bool honours_order;
    bool fp16;
    /* GPU frames: whether the stream can, whether asked, how many were
@@ -202,6 +210,16 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
       f->pos++;
       *duration_ms = f->duration_ms;
       return f->canvas;
+   }
+   if (f->planar_on && f->direct && f->out)
+   {
+      uint8_t *planes = (uint8_t*)f->out;
+      memset(planes, f->pos + 1, N);
+      memset(planes + N, 0x80, 2 * ((W + 1) / 2) * ((H + 1) / 2));
+      f->planar_yuv = (1u << 2) | ((f->pos & 1) ? (1u << 1) : 0u);
+      f->pos++;
+      *duration_ms = f->duration_ms;
+      return f->out;
    }
    dst = (f->direct && f->out) ? f->out : f->canvas;
    for (i = 0; i < N; i++)
@@ -305,9 +323,34 @@ void image_transfer_anim_stream_set_catchup(void *stream,
 void image_transfer_anim_stream_set_want_fp16(void *stream,
       enum image_type_enum type, bool want)
 {
-   (void)stream;
    (void)type;
-   (void)want;
+   ((fake_t*)stream)->want_fp16 = want;
+}
+
+bool image_transfer_anim_stream_can_planar(const void *stream,
+      enum image_type_enum type)
+{
+   (void)type;
+   return ((const fake_t*)stream)->planar_can;
+}
+
+bool image_transfer_anim_stream_set_planar(void *stream,
+      enum image_type_enum type, bool planar)
+{
+   fake_t *f = (fake_t*)stream;
+   (void)type;
+   if (planar && !f->planar_can)
+      return false;
+   f->planar_on = planar;
+   f->planar_sets++;
+   return true;
+}
+
+unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
+      enum image_type_enum type)
+{
+   (void)type;
+   return ((const fake_t*)stream)->planar_yuv;
 }
 
 bool image_transfer_anim_stream_is_fp16(const void *stream,
@@ -659,6 +702,116 @@ static void lane_fp16(void)
    p = video_player_new(&f, IMAGE_TYPE_MP4, 0, &s, VIDEO_PLAYER_INLINE);
    CHECK(video_player_poll(p, 0) == VIDEO_PLAYER_PLAYING && k.nseen == 1,
          "fp16: a direct frame was refused");
+   video_player_free(p);
+}
+
+/* Planar frames: what the sink was told about each, the colour flags
+ * of the frame in that very slot, through both jobs on the worker. */
+static int planar_seen, planar_bad;
+
+static enum video_player_present sink_present_planar(void *user,
+      const video_player_frame_t *fr)
+{
+   sink_t *k             = (sink_t*)user;
+   const uint8_t *planes = (const uint8_t*)k->slots[fr->slot];
+   int idx               = (int)planes[0] - 1;
+   unsigned want         = (1u << 2) | ((idx & 1) ? (1u << 1) : 0u);
+   CHECK(!k->begun[fr->slot], "planar: slot still being written");
+   if (     fr->pixels || fr->how != VIDEO_PLAYER_DIRECT || fr->yuv != want
+         || planes[N] != 0x80)
+      planar_bad++;
+   if (k->nseen < MAX_SEEN)
+      k->seen[k->nseen] = idx;
+   k->nseen++;
+   planar_seen++;
+   if (k->queue_every && (k->nseen % k->queue_every) == 0)
+   {
+      k->held = (int)fr->slot;
+      return VIDEO_PLAYER_PRESENT_QUEUED;
+   }
+   return VIDEO_PLAYER_PRESENT_DONE;
+}
+
+/* A sink that asks for planes gets each frame as the stream's planes
+ * in its slot, with that frame's own colour flags, ahead of any half
+ * float request; a frame that does not come into the slot, or a stream
+ * that cannot hand planes out, ends the playback with nothing shown. */
+static void lane_planar(bool threaded)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   int64_t now = 0;
+   int polls   = 0;
+   enum video_player_state st;
+
+   fake_init(&f, 5, 5);
+   f.direct     = true;
+   f.planar_can = true;
+   sink_init(&k, &s, true);
+   s.present     = sink_present_planar;
+   k.start_flags = VIDEO_PLAYER_I420 | VIDEO_PLAYER_FP16;
+   k.queue_every = threaded ? 2 : 0;
+   planar_seen   = planar_bad = 0;
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 2, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   do
+   {
+      st = video_player_poll(p, now);
+      if (k.held >= 0)
+      {
+         video_player_slot_released(p, (unsigned)k.held);
+         k.held = -1;
+      }
+      now += 6000;
+      if (threaded)
+         retro_sleep(1);
+   } while (st == VIDEO_PLAYER_PLAYING && ++polls < 5000);
+   CHECK(f.planar_on && !f.want_fp16,
+         "planar%s: stream not asked for planes alone",
+         threaded ? " threaded" : "");
+   CHECK(planar_seen == 10 && seen_in_order(&k, 5),
+         "planar%s: %d frames for two loops of 5",
+         threaded ? " threaded" : "", planar_seen);
+   CHECK(planar_bad == 0, "planar%s: %d frames described wrongly",
+         threaded ? " threaded" : "", planar_bad);
+   video_player_free(p);
+   CHECK(!k.begun[0] && !k.begun[1], "planar: a slot not ended");
+
+   /* frames out of the stream's canvas cannot be planes */
+   fake_init(&f, 5, 5);
+   f.planar_can = true;
+   sink_init(&k, &s, true);
+   s.present     = sink_present_planar;
+   k.start_flags = VIDEO_PLAYER_I420;
+   planar_seen   = 0;
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 0, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   polls = 0;
+   do
+   {
+      st = video_player_poll(p, now);
+      now += 6000;
+      if (threaded)
+         retro_sleep(1);
+   } while (st == VIDEO_PLAYER_PLAYING && ++polls < 5000);
+   CHECK(st == VIDEO_PLAYER_ENDED && planar_seen == 0,
+         "planar: a canvas frame was shown as planes");
+   video_player_free(p);
+
+   /* a stream that refuses planes ends before decoding anything */
+   fake_init(&f, 5, 5);
+   f.direct = true;
+   sink_init(&k, &s, true);
+   s.present     = sink_present_planar;
+   k.start_flags = VIDEO_PLAYER_I420;
+   planar_seen   = 0;
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 0, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(video_player_poll(p, now) == VIDEO_PLAYER_ENDED
+         && planar_seen == 0 && f.pos == 0,
+         "planar: a stream without planes was decoded");
    video_player_free(p);
 }
 
@@ -2358,12 +2511,14 @@ int main(void)
    lane_catchup();
    lane_order_and_default();
    lane_fp16();
+   lane_planar(false);
    lane_hw_inline();
 #ifdef HAVE_THREADS
    lane_delayed_slot_releases();
    lane_hw_threaded();
    lane_threaded(true);
    lane_threaded(false);
+   lane_planar(true);
    lane_churn();
 #endif
 recovery_only:

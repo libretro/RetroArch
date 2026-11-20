@@ -218,6 +218,17 @@ void rmp4_video_stream_set_want_fp16(rmp4_video_stream_t *stream,
 int rmp4_video_stream_is_fp16(const rmp4_video_stream_t *stream);
 int rmp4_video_stream_is_hdr(const rmp4_video_stream_t *stream);
 
+/* The decoded planes of an 8-bit 4:2:0 SDR source, for a caller whose
+ * GPU converts them: can_planar answers from the container before any
+ * decode; with set_planar on (0 where the stream cannot), each frame
+ * decoded into the caller's frame (rmp4_video_stream_set_output) is
+ * packed I420 of the stream's size - Y, then Cb, then Cr - and a
+ * frame that cannot be so ends the stream. planar_yuv is that
+ * frame's IMAGE_YUV_FLAG_* (BT709, FULL_RANGE). */
+int rmp4_video_stream_can_planar(const rmp4_video_stream_t *stream);
+int rmp4_video_stream_set_planar(rmp4_video_stream_t *stream, int planar);
+unsigned rmp4_video_stream_planar_yuv(const rmp4_video_stream_t *stream);
+
 /* Convert decoded frames in @bands row bands on @pool (an rthreads
  * tpool_t of at least bands - 1 threads; the calling thread takes one
  * band and joins the rest), and decode a VP9 frame's tile columns on

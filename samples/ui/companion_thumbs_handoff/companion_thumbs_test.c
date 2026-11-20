@@ -323,6 +323,21 @@ void image_transfer_anim_stream_set_want_fp16(void *stream,
 {
    (void)stream; (void)type; (void)want;
 }
+bool image_transfer_anim_stream_can_planar(const void *stream,
+      enum image_type_enum type)
+{
+   (void)stream; (void)type; return false;
+}
+bool image_transfer_anim_stream_set_planar(void *stream,
+      enum image_type_enum type, bool planar)
+{
+   (void)stream; (void)type; return !planar;
+}
+unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
+      enum image_type_enum type)
+{
+   (void)stream; (void)type; return 0;
+}
 bool image_transfer_anim_stream_is_fp16(const void *stream,
       enum image_type_enum type)
 {

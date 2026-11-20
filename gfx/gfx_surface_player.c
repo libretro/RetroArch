@@ -22,7 +22,10 @@
 
 /* An animation's frames are linear scRGB half floats where the source
  * is HDR and the driver offers such a texture (only while the output
- * is HDR); 8888 everywhere else. */
+ * is HDR); the decoded planes, packed I420, where the source is 8-bit
+ * 4:2:0 SDR and the driver converts planes itself, so neither the
+ * decode nor the upload pays for RGB; 8888 everywhere else - a driver
+ * without the planar path keeps the decoder's SIMD conversion. */
 static int gfx_surface_player_start(void *user, unsigned width,
       unsigned height, unsigned num_slots)
 {
@@ -37,6 +40,9 @@ static int gfx_surface_player_start(void *user, unsigned width,
    if (     have_req && (req.formats & IMAGE_PIXFMT_FP16)
          && image_transfer_anim_stream_is_hdr(gsp->stream, gsp->type))
       pixfmt = IMAGE_PIXFMT_FP16;
+   else if (have_req && (req.formats & IMAGE_PIXFMT_I420)
+         && image_transfer_anim_stream_can_planar(gsp->stream, gsp->type))
+      pixfmt = IMAGE_PIXFMT_I420;
    if (!(s = gsp->cb.surface(gsp->cb.user,
          VIDEO_SCALE_PACK(width, height), num_slots, pixfmt)))
       return -1;
@@ -44,7 +50,8 @@ static int gfx_surface_player_start(void *user, unsigned width,
    gsp->rgba     = have_req && req.rgba;
    gsp->threaded = num_slots > 1;
    return (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
-        | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0);
+        | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0)
+        | (s->pixfmt == IMAGE_PIXFMT_I420 ? VIDEO_PLAYER_I420 : 0);
 }
 
 /* On the worker a slot is taken until its job settles, so the memory
@@ -182,6 +189,10 @@ static enum video_player_present gfx_surface_player_present(void *user,
    }
    if (fr->hw)
       return gfx_surface_player_present_hw(gsp, s, fr);
+   /* the frame's colour space, read by the submit that takes it; one
+    * still in flight answers BUSY and keeps its own */
+   if (GFX_SURFACE_IS_PLANAR(s) && !s->inflight)
+      gfx_surface_set_yuv(s, fr->yuv);
    res = fr->pixels
       ? gfx_surface_submit_pixels(s, fr->pixels, gsp->rgba)
       : gfx_surface_submit(s, fr->slot, gsp->rgba);

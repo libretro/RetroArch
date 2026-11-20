@@ -65,7 +65,14 @@ enum video_player_flags
     * ends the playback on the last good frame. */
    VIDEO_PLAYER_FP16   = (1 << 1),
    /* Decode frames on the polling thread; cold hardware setup may use the worker. */
-   VIDEO_PLAYER_INLINE = (1 << 2)
+   VIDEO_PLAYER_INLINE = (1 << 2),
+   /* Frames as the decoded planes, packed I420 of the frame's size in
+    * the slot (image_transfer_anim_stream_set_planar), each with its
+    * video_player_frame_t::yuv. Only for a stream that can
+    * (image_transfer_anim_stream_can_planar) and a sink with slots;
+    * any frame that does not come out so ends the playback. Takes
+    * precedence over VIDEO_PLAYER_FP16. */
+   VIDEO_PLAYER_I420   = (1 << 3)
 };
 
 /* How a frame reached its buffer. */
@@ -115,6 +122,9 @@ typedef struct video_player_frame
     * by the player. A movie frame decoded ahead on the polling thread
     * is also retained for retry until taken, replaced by a seek or freed. */
    const video_hw_frame_t *hw;
+   /* A VIDEO_PLAYER_I420 frame's IMAGE_YUV_FLAG_* (BT709, FULL_RANGE);
+    * 0 otherwise. */
+   unsigned yuv;
 } video_player_frame_t;
 
 typedef struct video_player_sink

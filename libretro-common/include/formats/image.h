@@ -632,6 +632,23 @@ void image_transfer_anim_stream_set_want_fp16(void *stream,
 bool image_transfer_anim_stream_is_fp16(const void *stream,
       enum image_type_enum type);
 
+/* 8-bit 4:2:0 SDR video sources: whether the stream can hand its
+ * frames out as their decoded planes rather than converted pixels, so
+ * the caller's GPU does the colour conversion - known from the
+ * container before any decode. With set_planar on, each frame goes
+ * into the caller's frame (image_transfer_anim_stream_set_output) as
+ * packed I420 of the stream's size (IMAGE_PIXFMT_FRAME_SIZE of
+ * IMAGE_PIXFMT_I420) instead; set_planar is false where the stream
+ * cannot. planar_yuv is the IMAGE_YUV_FLAG_* (BT709, FULL_RANGE) of
+ * the last frame so decoded. A frame that cannot be handed out so
+ * ends the stream there. */
+bool image_transfer_anim_stream_can_planar(const void *stream,
+      enum image_type_enum type);
+bool image_transfer_anim_stream_set_planar(void *stream,
+      enum image_type_enum type, bool planar);
+unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
+      enum image_type_enum type);
+
 bool image_transfer_anim_stream_set_output(void *stream,
       enum image_type_enum type, uint32_t *out);
 

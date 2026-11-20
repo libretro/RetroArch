@@ -235,7 +235,9 @@ typedef struct
     * first, as image_pixfmt bits: IMAGE_PIXFMT_8888 and
     * whatever the driver adds to it. A format is only listed
     * when a submit of it reaches the GPU as that format - a scRGB
-    * framebuffer is not by itself a reason to list FP16. */
+    * framebuffer is not by itself a reason to list FP16. I420 and
+    * NV12 are listed where the driver converts the planes itself;
+    * never @preferred, being a choice only a planar source has. */
    uint32_t formats;
    /* The one of @formats worth decoding into when the producer has a
     * choice: the widest the driver takes that its source can fill.

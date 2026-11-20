@@ -1184,6 +1184,82 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
    return false;
 }
 
+/* Only the video streams decode planes; APNG and WEBP compose RGB. */
+bool image_transfer_anim_stream_can_planar(const void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_can_planar(
+               (const rwebm_video_stream_t*)stream) != 0;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_can_planar(
+               (const rmp4_video_stream_t*)stream) != 0;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+bool image_transfer_anim_stream_set_planar(void *stream,
+      enum image_type_enum type, bool planar)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_set_planar(
+               (rwebm_video_stream_t*)stream, planar) != 0;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_set_planar(
+               (rmp4_video_stream_t*)stream, planar) != 0;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return !planar;
+}
+
+unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_planar_yuv(
+               (const rwebm_video_stream_t*)stream);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_planar_yuv(
+               (const rmp4_video_stream_t*)stream);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return 0;
+}
+
 bool image_transfer_anim_stream_set_output(void *stream,
       enum image_type_enum type, uint32_t *out)
 {

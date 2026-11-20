@@ -48,8 +48,11 @@ with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     source = (root / 'gfx/gfx_surface_player.c').read_text(encoding='utf-8')
     (tmp / 'surface.inc').write_text('\n'.join(body(source, s) for s in
-        ('static int gfx_surface_player_start_hw(',
+        ('static int gfx_surface_player_start(',
+         'static int gfx_surface_player_start_hw(',
          'static enum video_player_present gfx_surface_player_present_hw(',
+         'static unsigned gfx_surface_player_slot_stride(',
+         'static enum video_player_present gfx_surface_player_present(',
          'bool gfx_surface_player_release(',
          'static int gfx_surface_player_restart_software(',
          'gfx_surface_player_t *gfx_surface_player_new(')))

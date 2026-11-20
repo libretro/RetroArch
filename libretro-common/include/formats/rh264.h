@@ -66,6 +66,7 @@
 #include <stddef.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 #include <formats/video_hw_frame.h>
 
@@ -342,6 +343,37 @@ int rh264_video_is_hw(const rh264_video *v);
 /* The picture decode or drain made ready, as a hardware frame; 0 when
  * there is one. rh264_video_plane has none to give then. */
 int rh264_video_hw_frame(const rh264_video *v, video_hw_frame_t *out);
+
+/* Whether an avcC record (ISO/IEC 14496-15) describes 8-bit 4:2:0
+ * pictures: the High-profile extension's chroma format and bit depths
+ * where the record carries them, otherwise a profile that has nothing
+ * else. 0 for a record too short to say. */
+static INLINE int rh264_avcc_is_420_8bit(const uint8_t *b, size_t size)
+{
+   size_t off = 6;
+   unsigned n, i, profile;
+   if (!b || size < 7 || b[0] != 1)
+      return 0;
+   profile = b[1];
+   /* the SPS list, then the PPS list with its count byte ahead */
+   for (i = 0; i < 2; i++)
+   {
+      if (off >= size)
+         return 0;
+      n    = i ? b[off++] : (b[5] & 0x1Fu);
+      while (n--)
+      {
+         if (off + 2 > size)
+            return 0;
+         off += 2 + (((size_t)b[off] << 8) | b[off + 1]);
+      }
+   }
+   if (off + 3 <= size && (profile == 100 || profile == 110
+            || profile == 122 || profile == 144 || profile == 244))
+      return (b[off] & 3) == 1 && !(b[off + 1] & 7) && !(b[off + 2] & 7);
+   return profile == 66 || profile == 77 || profile == 88
+      || profile == 100;
+}
 
 RETRO_END_DECLS
 

@@ -146,6 +146,12 @@ struct video_player
    int32_t loops_left;     /* -1 forever                            */
    enum image_type_enum type;
    uint8_t upload;         /* the job whose frame is shown next     */
+   /* VIDEO_PLAYER_I420: set at start, before any decode is posted, and
+    * read-only while decodes run */
+   bool planar;
+   /* Each job's READY frame's IMAGE_YUV_FLAG_*, published with it as
+    * the job's own fields are */
+   unsigned planar_yuv[2];
    /* GPU frames, one per job (or [0] decoding in line): written by
     * the side that decodes, as the job's frame is */
    video_hw_frame_t hw[2];
@@ -519,7 +525,16 @@ static int vp_job_step(vp_job_t *job)
    }
    job->time_us = vp_frame_time(p, false);
 
-   if (job->fp16)
+   if (p->planar)
+   {
+      /* planes only come from a decode into the slot itself */
+      if (!direct || frame != job->frame)
+         return false;
+      p->planar_yuv[(job == p->job[1]) ? 1 : 0] =
+            image_transfer_anim_stream_planar_yuv(stream, type);
+      how = VIDEO_PLAYER_DIRECT;
+   }
+   else if (job->fp16)
    {
       /* half floats only come from a decode into the slot itself */
       if (     !direct || frame != job->frame
@@ -918,6 +933,7 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
    fr.how         = VIDEO_PLAYER_DIRECT;
    fr.native      = true;
    fr.hw          = ju->hw ? &p->hw[p->upload] : NULL;
+   fr.yuv         = (p->planar && !fr.hw) ? p->planar_yuv[p->upload] : 0;
    res            = p->sink.present(p->sink.user, &fr);
    if (res == VIDEO_PLAYER_PRESENT_BUSY)
       return VIDEO_PLAYER_PLAYING;
@@ -1013,6 +1029,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       fr.native      = true;
       fr.how         = VIDEO_PLAYER_DIRECT;
       fr.hw          = &p->hw[0];
+      fr.yuv         = 0;
       goto decoded_frame;
    }
 
@@ -1051,7 +1068,15 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    fr.height      = p->height;
    fr.duration_ms = duration_ms;
    fr.native      = true;
-   if (p->flags & VIDEO_PLAYER_FP16)
+   fr.yuv         = 0;
+   if (p->planar)
+   {
+      if (!direct || frame != buf)
+         goto ended;
+      fr.how = VIDEO_PLAYER_DIRECT;
+      fr.yuv = image_transfer_anim_stream_planar_yuv(p->stream, p->type);
+   }
+   else if (p->flags & VIDEO_PLAYER_FP16)
    {
       if (     !direct || frame != buf
             || !image_transfer_anim_stream_is_fp16(p->stream, p->type))
@@ -1465,7 +1490,18 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
          return VIDEO_PLAYER_PLAYING;
       p->flags = (p->flags & VIDEO_PLAYER_INLINE) | (hw ? VP_HW
          : ((unsigned)r & (VIDEO_PLAYER_RGBA | VIDEO_PLAYER_FP16)));
+      /* planes need a slot to go to, and are one format or the other */
+      p->planar = !hw && ((unsigned)r & VIDEO_PLAYER_I420)
+         && p->sink.slot_begin;
+      if (p->planar)
+         p->flags &= ~(unsigned)VIDEO_PLAYER_FP16;
       /* told once, before any decode */
+      if (!image_transfer_anim_stream_set_planar(p->stream, p->type,
+               p->planar))
+      {
+         p->flags |= VP_STOPPED;
+         return VIDEO_PLAYER_ENDED;
+      }
       image_transfer_anim_stream_set_want_fp16(p->stream, p->type,
             (p->flags & VIDEO_PLAYER_FP16) ? true : false);
       if (!p->preserve_origin) p->origin_us = now_us;

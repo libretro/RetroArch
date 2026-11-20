@@ -38,6 +38,7 @@
 #include <formats/video_hw_frame.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
@@ -360,6 +361,14 @@ int rh265_video_set_hw(rh265_video *v, int enable);
 int rh265_video_is_hw(const rh265_video *v);
 /* Transfer the displayed lease once; caller imports or abandons it. */
 int rh265_video_hw_frame(rh265_video *v, video_hw_frame_t *out);
+
+/* Whether an hvcC record (ISO/IEC 14496-15) describes 8-bit 4:2:0
+ * pictures: its chromaFormat and both bit depths. */
+static INLINE int rh265_hvcc_is_420_8bit(const uint8_t *b, size_t size)
+{
+   return b && size >= 23 && b[0] == 1 && (b[16] & 3) == 1
+      && !(b[17] & 7) && !(b[18] & 7);
+}
 
 RETRO_END_DECLS
 
