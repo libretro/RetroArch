@@ -756,6 +756,26 @@ build-static-retroarch-dummy-libnx-aarch64:
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f pkg/libnx/retroarch.jpg ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
+build-static-retroarch-libounce-aarch64:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libounce-devkitpro:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 10 min
+  dependencies: []
+  needs:
+    # Static dummy builds without a core so its a good check if it properly builds
+    - build-static-retroarch-dummy-libounce-aarch64
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.libounce -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
 build-static-retroarch-dummy-libounce-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libounce-devkitpro:latest
   stage: build
