@@ -1011,6 +1011,13 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
          need_lo, need_hi)))
       goto fail;
 
+   /* The video timeline and seek table are immutable after open. */
+   if (!rmp4_index_complete(s->demux))
+   {
+      if (need_more) *need_more = 1;
+      goto fail;
+   }
+
    s->input = buf;
    s->input_len = len;
    s->input_avail = avail > len ? len : avail;

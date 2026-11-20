@@ -1361,7 +1361,8 @@ static uint64_t audio_transfer_ac3_count(struct audio_transfer_ac3 *a)
       rmp4_track_pts(a->demux, a->track_idx, &count);
       rmp4_rewind(a->demux);
       a->pos = a->packet_end = 0;
-      return (uint64_t)count * 1536;
+      /* A prefix is not the duration of the complete recording. */
+      return rmp4_index_complete(a->demux) ? (uint64_t)count * 1536 : 0;
    }
 #endif
    while (pos < end)

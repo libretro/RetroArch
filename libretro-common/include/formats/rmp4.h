@@ -134,6 +134,9 @@ rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size);
 
 void rmp4_close(rmp4_t *mp4);
 
+/* False while later fragment sample tables have not been indexed. */
+int rmp4_index_complete(const rmp4_t *mp4);
+
 /* Track enumeration. */
 int               rmp4_num_tracks(const rmp4_t *mp4);
 

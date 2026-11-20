@@ -1209,6 +1209,9 @@ int main(int argc, char **argv)
       return prepared_session(argv[3], false, selected_webm, 50000, 2)
          | prepared_session(argv[3], true, selected_webm, 50000, 2);
    }
+   if (argc == 3 && !strcmp(argv[1], "--ac3-seek"))
+      return prepared_session(argv[2], false, false, 3000000, -1)
+         | prepared_session(argv[2], true, false, 1000000, -1);
    if (argc == 3 && !strcmp(argv[1], "--startup"))
       return startup_session(argv[2]);
    if (argc == 3 && !strcmp(argv[1], "--ac3"))

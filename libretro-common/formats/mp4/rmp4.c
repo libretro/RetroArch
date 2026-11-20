@@ -1536,6 +1536,11 @@ void rmp4_close(rmp4_t *m)
    free(m);
 }
 
+int rmp4_index_complete(const rmp4_t *m)
+{
+   return m && (!m->fragmented || m->fragment_pos >= m->len);
+}
+
 int rmp4_num_tracks(const rmp4_t *m)
 {
    return m ? m->num_tracks : 0;

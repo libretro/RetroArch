@@ -56,3 +56,29 @@ with tempfile.TemporaryDirectory(prefix='mp4-ac3-') as name:
             if any('wine' in part for part in runner):
                 path = subprocess.check_output(['winepath', '-w', path], text=True).strip()
             subprocess.run(runner + [str(a.preview_test.resolve()), '--startup', path], check=True)
+
+            seek_source = root / 'seek-source.mp4'
+            subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',
+                'sine=frequency=440:sample_rate=48000', '-t', '4', '-ac', '2',
+                '-c:a', 'ac3', '-b:a', '192k', '-movflags',
+                'empty_moov+delay_moov+default_base_moof', '-frag_duration',
+                '100000', str(seek_source)], check=True)
+            raw = seek_source.read_bytes()
+            seek_movie = root / 'seek-window.mp4'
+            with seek_movie.open('wb') as out:
+                offset = fragments = 0
+                while offset < len(raw):
+                    length = int.from_bytes(raw[offset:offset + 4], 'big')
+                    assert length >= 8 and length <= len(raw) - offset
+                    if raw[offset + 4:offset + 8] == b'moof':
+                        fragments += 1
+                        if fragments == 4:
+                            out.write((8 * 1024 * 1024).to_bytes(4, 'big') + b'free')
+                            out.seek(8 * 1024 * 1024 - 8, 1)
+                    out.write(raw[offset:offset + length])
+                    offset += length
+                assert fragments > 4
+            path = str(seek_movie.resolve())
+            if any('wine' in part for part in runner):
+                path = subprocess.check_output(['winepath', '-w', path], text=True).strip()
+            subprocess.run(runner + [str(a.preview_test.resolve()), '--ac3-seek', path], check=True)
