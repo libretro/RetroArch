@@ -518,6 +518,7 @@ static void sdl2_video_windows_lost(bool removed)
             VIDEO_SCALE_PACK(rect.w, rect.h), now);
       SDL_SetWindowSize(state->win, rect.w, rect.h);
       SDL_SetWindowPosition(state->win, rect.x, rect.y);
+      state->put_dims = 0;
       /* SDL 2 has it where it was put without an event to say so */
       sdl2_video_window_check(state);
    }
@@ -536,6 +537,47 @@ static bool sdl2_video_window_framed(SDL_Window *win)
 #else
    return false;
 #endif
+}
+
+/* Puts it at @rect as a window. What it was put at last is asked for
+ * again only where SDL has it neither there nor where it was before or
+ * after it was last asked, which is an ask still out or one the window
+ * manager kept it from: SDL 2.26+'s x11 waits up to 100 ms on each of
+ * those, and has the manager's answer after it if one came. */
+static void sdl2_video_window_put(sdl2_video_window_t *state,
+      const SDL_Rect *rect)
+{
+   int x, y, w, h;
+   unsigned at, size;
+   unsigned pos  = VIDEO_POS_PACK(rect->x, rect->y);
+   unsigned dims = VIDEO_SCALE_PACK(rect->w, rect->h);
+   /* nothing to go by once the user's bounds are saved */
+   bool known    = state->put_dims && state->common.placed_dims;
+   SDL_GetWindowPosition(state->win, &x, &y);
+   SDL_GetWindowSize(state->win, &w, &h);
+   at   = VIDEO_POS_PACK(x, y);
+   size = VIDEO_SCALE_PACK(w, h);
+   video_window_placed(&state->common, pos, dims,
+         cpu_features_get_time_usec());
+   if (     !known || dims != state->put_dims
+         || (     size != dims && size != state->had_dims
+               && size != state->got_dims))
+   {
+      SDL_SetWindowSize(state->win, rect->w, rect->h);
+      SDL_GetWindowSize(state->win, &w, &h);
+      state->had_dims = size;
+      state->got_dims = VIDEO_SCALE_PACK(w, h);
+   }
+   if (     !known || pos != state->put_pos
+         || (at != pos && at != state->had_pos && at != state->got_pos))
+   {
+      SDL_SetWindowPosition(state->win, rect->x, rect->y);
+      SDL_GetWindowPosition(state->win, &x, &y);
+      state->had_pos = at;
+      state->got_pos = VIDEO_POS_PACK(x, y);
+   }
+   state->put_pos  = pos;
+   state->put_dims = dims;
 }
 
 /* Puts the window where its request has it */
@@ -561,6 +603,7 @@ static void sdl2_video_window_apply(sdl2_video_window_t *state)
          return;
       video_window_placed(&state->common, VIDEO_POS_PACK(rect.x, rect.y),
             VIDEO_SCALE_PACK(rect.w, rect.h), cpu_features_get_time_usec());
+      state->put_dims = 0;
       /* window managers keep a fullscreen window where it is, so it
        * moves by way of a window, a step at a time: SDL 3's x11 under
        * sdl2-compat waits for a step to be answered before it takes the
@@ -624,10 +667,7 @@ static void sdl2_video_window_apply(sdl2_video_window_t *state)
          sdl2_video_window_place(state->primary, &place, -1, &rect);
       }
       state->windowed_set = false;
-      video_window_placed(&state->common, VIDEO_POS_PACK(rect.x, rect.y),
-            VIDEO_SCALE_PACK(rect.w, rect.h), cpu_features_get_time_usec());
-      SDL_SetWindowSize(win, rect.w, rect.h);
-      SDL_SetWindowPosition(win, rect.x, rect.y);
+      sdl2_video_window_put(state, &rect);
    }
    state->fullscreen = now->fullscreen;
    /* SDL 2 has it where it was put without an event to say so */
@@ -790,6 +830,15 @@ bool sdl2_video_window_create(void *owner, SDL_Window *primary,
    window->dims = VIDEO_SCALE_PACK(rect.w, rect.h);
    video_window_placed(&state->common, state->common.pos, window->dims,
          cpu_features_get_time_usec());
+   if (!request->settings.fullscreen)
+   {
+      state->put_pos  = state->common.pos;
+      state->put_dims = window->dims;
+      state->had_pos  = state->put_pos;
+      state->had_dims = state->put_dims;
+      state->got_pos  = state->put_pos;
+      state->got_dims = state->put_dims;
+   }
    sdl2_video_window_check(state);
    return true;
 }

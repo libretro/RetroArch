@@ -2500,6 +2500,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    fprintf(stderr, "native x11: %u monitor(s), window manager %s\n",
          count, wm ? wm : "none");
    free(wm);
+   CHECK(managed || !getenv("NATIVE_WM"));
 #ifdef RARCH_HAVE_X11_MONITORS
    /* The worker kept its snapshot: published at init, before anything
     * pumped, in place of the foreign list */

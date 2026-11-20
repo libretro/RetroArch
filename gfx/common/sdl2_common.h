@@ -223,6 +223,15 @@ typedef struct sdl2_video_window
    /* Bounds the next pump judges, where 'judge' */
    unsigned judge_pos;
    unsigned judge_dims;
+   /* Where it was last put as a window, as common.placed_pos and
+    * placed_dims, and where SDL had it before and after it was last
+    * asked to move it and to size it; put_dims 0 for nothing to go by */
+   unsigned put_pos;
+   unsigned put_dims;
+   unsigned had_pos;
+   unsigned had_dims;
+   unsigned got_pos;
+   unsigned got_dims;
    bool fullscreen;
    bool windowed_set;
    /* It left fullscreen on its way to a fullscreen request's display:

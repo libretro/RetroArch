@@ -283,6 +283,10 @@ jobs:
 
       - name: Native windows on X11 (Xvfb, Openbox, llvmpipe, lavapipe)
         shell: bash
+        env:
+          # Openbox has to be up: the fixture fails where it finds no
+          # window manager.
+          NATIVE_WM: 1
         run: |
           set -eu
           # Each context's secondary-screen windows through its table,
@@ -300,6 +304,18 @@ jobs:
                    --native-windows $c
              done
              kill %1'
+
+      - name: Native windows of SDL with no window manager (Xvfb, lavapipe)
+        shell: bash
+        run: |
+          set -eu
+          # The fixture plays the window manager and checks which bounds
+          # each edit asks SDL for. No client holds the server while it
+          # remakes the context, hence -noreset.
+          export SDL_VIDEODRIVER=x11 SDL_VIDEO_DRIVER=x11
+          xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX -noreset" \
+             timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+             --native-windows vk_sdl3
 
       - name: Native windows on Wayland (Weston headless, llvmpipe, lavapipe)
         shell: bash
@@ -418,6 +434,9 @@ jobs:
 
       - name: Native windows of the SDL2 context (Xvfb, Openbox, llvmpipe)
         shell: bash
+        env:
+          # Openbox has to be up, as in the Vulkan job
+          NATIVE_WM: 1
         run: |
           set -eu
           # The distribution's SDL 2; the Vulkan job's build has SDL 3
@@ -429,6 +448,19 @@ jobs:
              timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
                 --native-windows gl_sdl
              kill %1'
+
+      - name: Native windows of the SDL2 context with no window manager (Xvfb, llvmpipe)
+        shell: bash
+        run: |
+          set -eu
+          # As in the Vulkan job: the fixture plays the window manager,
+          # and -noreset keeps the server up while the context is remade.
+          # SDL 2 waits on the manager's answers.
+          export LIBGL_ALWAYS_SOFTWARE=1 SDL_VIDEODRIVER=x11 SDL_VIDEO_DRIVER=x11 \
+             SDL_VIDEO_X11_FORCE_EGL=1
+          xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX -noreset" \
+             timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+             --native-windows gl_sdl
 
       - name: Build and run stereo_headset_test
         shell: bash

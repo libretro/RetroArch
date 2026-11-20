@@ -7057,7 +7057,9 @@ static void native_window_kept(const char *ident, enum gfx_ctx_api api,
             native_w32_focus(ctx, data, &request, &window, true);
 #endif
 #ifdef NATIVE_SDL
-         if (native_sdl_ident(ident))
+         if (     native_sdl_ident(ident)
+               && (     !native_sdl_driver("x11")
+                     || native_sdl_managed((SDL_Window*)window.surface)))
             native_sdl_focus(ctx, data, &request, &window, true);
 #endif
 #ifdef HAVE_WAYLAND
