@@ -13259,7 +13259,7 @@ int video_vulkan_pyrowave_quiesce(void *renderer, VkFence marker, bool *submitte
    {
       /* Order retirement after the queued decode and display work. */
       vulkan_lock_queue(vk);
-      result = vkQueueSubmit(vk->context->queue, 0, NULL, marker);
+      result = vulkan_queue_signal_fence(vk->context->queue, marker);
       vulkan_unlock_queue(vk);
       if (result == VK_ERROR_DEVICE_LOST) vulkan_check_device_lost(vk, result);
       if (result == VK_ERROR_OUT_OF_HOST_MEMORY || result == VK_ERROR_OUT_OF_DEVICE_MEMORY) return 0;
@@ -15270,7 +15270,7 @@ static bool vulkan_frame(void *data, const void *frame,
           * Its work also precedes this signal of the ordinary frame fence. */
          if (capture_fence && result == VK_SUCCESS)
          {
-            result = vkQueueSubmit(vk->context->queue, 0, NULL, vk->context->swapchain_fences[frame_index]);
+            result = vulkan_queue_signal_fence(vk->context->queue, vk->context->swapchain_fences[frame_index]);
             if (result != VK_SUCCESS) vulkan_pyrowave_submitted(vk, video_info, VK_NULL_HANDLE, result, false);
          }
       }

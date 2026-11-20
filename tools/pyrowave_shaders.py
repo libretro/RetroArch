@@ -86,7 +86,9 @@ def main():
                  "--msl-decoration-binding", "--rename-entry-point", "main", "rpyrowave_main", "comp",
                  "--output", metal])
             if args.metal_sdk:
-                run(["xcrun", "--sdk", args.metal_sdk, "metal", "-std=metal2.1", "-c", metal,
+                run(["xcrun", "--sdk", args.metal_sdk, "metal",
+                     "-std=" + ("macos-metal2.1" if args.metal_sdk == "macosx" else "ios-metal2.1"),
+                     "-c", metal,
                      "-o", directory / (name + ".air")])
             data = metal.read_bytes().replace(b"\r\n", b"\n")
             groups["METAL"].append(text_array("rpyrowave_shader_" + name + "_metal", data))
