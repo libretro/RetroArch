@@ -5258,6 +5258,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * has audio brought up by that reinit and again by drivers_init(). */
    if (audio_driver_st.context_audio_data)
       audio_driver_deinit_for_reinit();
+   /* A device brought up while away is stopped again before the
+    * runloop next waits */
+   audio_driver_st.away_stopped = false;
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
@@ -11971,6 +11974,24 @@ bool audio_driver_stop(void)
    }
 
    return stopped;
+}
+
+void audio_driver_set_away(bool away)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (away)
+   {
+      if (     !audio_st->away_stopped
+            && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
+            && audio_driver_stop())
+         audio_st->away_stopped = true;
+   }
+   else if (audio_st->away_stopped)
+   {
+      audio_st->away_stopped = false;
+      if (audio_st->context_audio_data)
+         audio_driver_start(false);
+   }
 }
 
 #ifdef HAVE_REWIND

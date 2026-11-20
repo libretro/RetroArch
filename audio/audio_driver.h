@@ -887,6 +887,9 @@ typedef struct
    retro_time_t menu_feed_last;
    double menu_feed_frac;
    bool menu_source_enabled;
+   /* Main thread: the device was stopped by audio_driver_set_away() and
+    * is started again when the application comes back. */
+   bool away_stopped;
 
    /* Rate-limit state for the DRC compute.
     *
@@ -1553,6 +1556,19 @@ void audio_driver_load_system_sounds(void);
 bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
+
+/**
+ * audio_driver_set_away:
+ * @away : the platform has taken the application away (RUNLOOP_FLAG_IDLE)
+ *
+ * Main thread, outside the core. A device left playing while the
+ * application is away holds the platform's audio wake lock and keeps it
+ * from suspending, whether it is fed silence by the threaded pipeline's
+ * menu source or by a driver's own data callback. A running device is
+ * stopped while away and started again on return; one already stopped
+ * stays stopped.
+ **/
+void audio_driver_set_away(bool away);
 
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */

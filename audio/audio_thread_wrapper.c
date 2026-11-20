@@ -399,25 +399,17 @@ static void audio_thread_free(void *data)
    /* The audio driver is done, clean up the thread itself. */
 }
 
+/* Main thread. is_paused is written only by stop() and start(), on this
+ * thread, so it is read without parking the audio thread: a park and
+ * release would stop and restart the device, and on a stopped thread
+ * the release would set it running again. A thread that has ended
+ * after a failed write reports the device as not alive. */
 static bool audio_thread_alive(void *data)
 {
-   bool alive          = false;
    audio_thread_t *thr = (audio_thread_t*)data;
-
-   if (!thr)
-      return false;
-
-   /* A thread that has ended after a failed write reports the device
-    * as not alive, which is what it is; block() below is a no-op then,
-    * and the answer has to come from somewhere. */
-   if (!retro_atomic_load_acquire_int(&thr->alive))
-      return false;
-
-   audio_thread_block(thr);
-   alive = !thr->is_paused;
-   audio_thread_unblock(thr);
-
-   return alive;
+   return thr
+      && retro_atomic_load_acquire_int(&thr->alive)
+      && !thr->is_paused;
 }
 
 bool audio_thread_parked(void *data)

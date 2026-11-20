@@ -10299,6 +10299,13 @@ int runloop_iterate(void)
 #endif
    }
 
+   /* Away, the audio device is stopped before the runloop waits for the
+    * platform: after the reinit above, which brings a device up running,
+    * and after the background flush, whose save can restart it. */
+   if (     !(runloop_st->flags & RUNLOOP_FLAG_IDLE)
+         != !audio_st->away_stopped)
+      audio_driver_set_away((runloop_st->flags & RUNLOOP_FLAG_IDLE) != 0);
+
 #ifdef HAVE_THREADS
    if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
       autosave_check();
