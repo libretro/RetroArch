@@ -1337,7 +1337,7 @@ static unsigned int invader_png_len = 4008;
 
 static ui_window_qt_t ui_window = {0};
 
-static const QPixmap getInvader(void)
+QPixmap getInvader(void)
 {
    QPixmap pix;
    pix.loadFromData(invader_png, invader_png_len, "PNG");
@@ -2234,6 +2234,8 @@ void MainWindow::setupFileSystemBrowser()
 #endif
 
    m_dirTree->setModel(m_dirModel);
+   connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this,
+         SLOT(onFileSystemDirLoaded(const QString&)));
    m_dirTree->setSelectionMode(QAbstractItemView::SingleSelection);
    m_dirTree->header()->setVisible(false);
 
@@ -2244,6 +2246,61 @@ void MainWindow::setupFileSystemBrowser()
       m_dirTree->hideColumn(2);  /* type */
       m_dirTree->hideColumn(3);  /* date modified */
    }
+}
+
+/* Capture only expanded branches; walking every cached directory would
+ * defeat the reason the filesystem tree avoids recursive enumeration. */
+static void qt_collect_expanded_browser_paths(QTreeView *tree,
+      QFileSystemModel *model, const QModelIndex &parent, QStringList &paths)
+{
+   int i;
+   int count = model->rowCount(parent);
+   for (i = 0; i < count; i++)
+   {
+      QModelIndex index = model->index(i, 0, parent);
+      if (tree->isExpanded(index))
+      {
+         paths.append(model->filePath(index));
+         qt_collect_expanded_browser_paths(tree, model, index, paths);
+      }
+   }
+}
+
+void MainWindow::refreshFileSystemBrowserTree()
+{
+   QString currentPath = m_dirModel->filePath(m_dirTree->currentIndex());
+   QStringList expandedPaths;
+   int scrollPosition = m_dirTree->verticalScrollBar()->value();
+   QFileSystemModel *oldModel = m_dirModel;
+   int i;
+
+   qt_collect_expanded_browser_paths(m_dirTree, oldModel,
+         QModelIndex(), expandedPaths);
+
+   /* QFileSystemModel has no public directory-refresh API. Recreating it
+    * is the reliable way to discard its stale cache while retaining the
+    * lightweight no-watcher configuration. */
+   disconnect(oldModel, SIGNAL(directoryLoaded(const QString&)), this,
+         SLOT(onFileSystemDirLoaded(const QString&)));
+   m_dirModel = new QFileSystemModel(m_dirTree);
+   setupFileSystemBrowser();
+
+   for (i = 0; i < expandedPaths.size(); i++)
+   {
+      QModelIndex index = m_dirModel->index(expandedPaths.at(i));
+      if (index.isValid())
+         m_dirTree->setExpanded(index, true);
+   }
+
+   if (!currentPath.isEmpty())
+   {
+      QModelIndex currentIndex = m_dirModel->index(currentPath);
+      if (currentIndex.isValid())
+         m_dirTree->setCurrentIndex(currentIndex);
+   }
+
+   m_dirTree->verticalScrollBar()->setValue(scrollPosition);
+   oldModel->deleteLater();
 }
 
 /* Build the search / core-info / log dock widgets and their
@@ -2333,9 +2390,6 @@ void MainWindow::setupSignalConnections()
          SLOT(onLaunchWithComboBoxIndexChanged(int)));
    connect(m_zoomSlider, SIGNAL(valueChanged(int)), this,
          SLOT(onZoomValueChanged(int)));
-   connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this,
-         SLOT(onFileSystemDirLoaded(const QString&)));
-
    m_dirTree->setCurrentIndex(m_dirModel->index(path_dir_menu_content));
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
    m_dirTree->expand(m_dirTree->currentIndex());
@@ -2767,67 +2821,106 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
 void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
 {
    QModelIndex index = m_fileTableView->indexAt(pos);
-   QString backupPath;
-   QFileInfo backupInfo;
+   QString targetPath;
+   QString targetName;
+   QFileInfo targetInfo;
    QMenu menu(m_fileTableView);
-   QAction *restoreAction;
+   QAction *restoreAction = NULL;
    QAction *deleteAction;
    QAction *selectedAction;
-   QByteArray backupPathArray;
-   settings_t *settings;
+   QByteArray targetPathArray;
+   bool isBackup;
+   bool isDirectory;
    bool core_loaded = false;
 
-   if (!index.isValid() || m_browseModel->isDirAt(index))
+   if (!index.isValid())
       return;
 
-   backupPath = m_browseModel->pathAt(index);
-   backupInfo.setFile(backupPath);
-   if (backupInfo.suffix().compare("lcbk", Qt::CaseInsensitive) != 0)
+   targetPath = m_browseModel->pathAt(index);
+   targetName = m_browseModel->data(index.sibling(index.row(), 0),
+         Qt::DisplayRole).toString();
+   /* Never offer destructive actions for the parent-directory entry or
+    * a filesystem root. */
+   if (targetPath.isEmpty() || targetName == QStringLiteral("..")
+         || targetName == QStringLiteral("."))
       return;
+
+   targetInfo.setFile(targetPath);
+   isDirectory = m_browseModel->isDirAt(index);
+   if (isDirectory && !targetInfo.isSymLink() && QDir(targetPath).isRoot())
+      return;
+   isBackup = !isDirectory
+         && targetInfo.suffix().compare("lcbk", Qt::CaseInsensitive) == 0;
 
    m_fileTableView->setCurrentIndex(index);
-   restoreAction = menu.addAction(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST));
+   if (isBackup)
+      restoreAction = menu.addAction(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST));
    deleteAction = menu.addAction(tr("Delete"));
    selectedAction = menu.exec(m_fileTableView->viewport()->mapToGlobal(pos));
 
-   backupPathArray = QDir::toNativeSeparators(backupPath).toUtf8();
-   if (selectedAction == restoreAction)
+   if (!selectedAction)
+      return;
+
+   targetPathArray = QDir::toNativeSeparators(targetPath).toUtf8();
+   if (selectedAction == restoreAction && restoreAction)
    {
-      settings = config_get_ptr();
-      if (!task_push_core_restore(backupPathArray.constData(),
+      settings_t *settings = config_get_ptr();
+      if (!task_push_core_restore(targetPathArray.constData(),
                settings->paths.directory_libretro, &core_loaded, true, NULL))
          return;
    }
    else if (selectedAction == deleteAction)
    {
-      QString message = tr("Are you sure you want to delete this backup?\n\n%1")
-         .arg(backupInfo.fileName());
-      if (QMessageBox::question(this, tr("Delete Backup"), message,
+      QString itemType = isDirectory ? tr("folder") : tr("file");
+      QString title = isBackup ? tr("Delete Backup") : tr("Delete");
+      QString message = isBackup
+         ? tr("Are you sure you want to delete this backup?\n\n%1")
+            .arg(targetName)
+         : (isDirectory
+            ? tr("Are you sure you want to delete this folder and all of its contents?\n\n%1")
+               .arg(targetName)
+            : tr("Are you sure you want to delete this file?\n\n%1")
+               .arg(targetName));
+
+      if (QMessageBox::question(this, title, message,
                QMessageBox::Yes | QMessageBox::No,
                QMessageBox::No) != QMessageBox::Yes)
          return;
 
-      if (!path_is_valid(backupPathArray.constData())
-            || filestream_delete(backupPathArray.constData()) != 0)
+      if (!path_is_valid(targetPathArray.constData())
+            || (targetInfo.isSymLink()
+               ? filestream_delete(targetPathArray.constData()) != 0
+               : (isDirectory
+                  ? !QDir(targetPath).removeRecursively()
+                  : filestream_delete(targetPathArray.constData()) != 0)))
       {
-         QMessageBox::critical(this, tr("Delete Backup"),
-               tr("Failed to delete backup:\n%1").arg(backupPath));
+         QMessageBox::critical(this, title,
+               tr("Failed to delete %1:\n%2").arg(itemType, targetPath));
          return;
       }
 #ifdef HAVE_CORE_SIGNATURES
-      core_install_drop_sig(backupPathArray.constData());
+      if (isBackup)
+         core_install_drop_sig(targetPathArray.constData());
 #endif
-      QMessageBox::information(this, tr("Delete Backup"),
-            tr("Backup deleted successfully."));
+      QMessageBox::information(this, title,
+            isBackup ? tr("Backup deleted successfully.")
+                     : tr("%1 deleted successfully.").arg(
+                        isDirectory ? tr("Folder") : tr("File")));
 
+      /* Rebuild the filesystem tree because QFileSystemModel watching is
+       * disabled for performance. Preserve its current path and expansions. */
+      refreshFileSystemBrowserTree();
       /* Re-enumerate the current directory; reload() alone only rebuilds
        * the model from the existing core-side listing. */
       {
          companion_core_t *core = ui_companion_qt_core();
          const char *browseDir = companion_core_browse_dir(core);
-         if (browseDir)
-            companion_core_browse_open(core, browseDir);
+         if (browseDir && *browseDir)
+         {
+            QByteArray browsePath(browseDir);
+            companion_core_browse_open(core, browsePath.constData());
+         }
       }
    }
 }
@@ -4239,6 +4332,7 @@ struct QtUpdaterDownloadData
    QString fileName;
    QString outputPath;
    bool autoExtract;
+   bool refreshFileBrowser;
 };
 
 static QString qt_updater_wrap_tooltip(const QString &text, int lineLength)
@@ -4351,6 +4445,38 @@ static bool qt_updater_request_listing(MainWindow *window,
    return true;
 }
 
+#ifdef HAVE_COMPRESSION
+static void qt_updater_decompress_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+   QtUpdaterDownloadData *download = (QtUpdaterDownloadData*)user_data;
+   bool success = dec && !err;
+   QString refreshPath;
+
+   /* Match the internal menu's cb_decompressed(): remove the downloaded
+    * archive after extraction has finished, then release task data. */
+   if (dec)
+   {
+      if (dec->source_file && *dec->source_file
+            && filestream_exists(dec->source_file))
+         filestream_delete(dec->source_file);
+      free(dec->source_file);
+      free(dec);
+   }
+
+   if (download && download->refreshFileBrowser)
+      refreshPath = QFileInfo(download->outputPath).absolutePath();
+
+   if (download && download->window)
+      QMetaObject::invokeMethod(download->window.data(),
+            "onUpdaterDownloadFinished", Qt::QueuedConnection,
+            Q_ARG(QString, download->fileName), Q_ARG(bool, success),
+            Q_ARG(QString, refreshPath));
+   delete download;
+}
+#endif
+
 static void qt_updater_download_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
@@ -4367,21 +4493,30 @@ static void qt_updater_download_callback(retro_task_t *task,
          fill_pathname_basedir(dirPath, outputPath.constData(), sizeof(dirPath));
          if (task_check_decompress(outputPath.constData())
                || !task_push_decompress(outputPath.constData(), dirPath,
-                  NULL, NULL, NULL, NULL, NULL, NULL, false))
+                  NULL, NULL, NULL, qt_updater_decompress_callback,
+                  download, NULL, false))
             success = false;
+         else
+            return; /* The decompression callback owns download now. */
       }
    }
 #endif
-   if (download && download->window)
-      QMetaObject::invokeMethod(download->window.data(), "onUpdaterDownloadFinished",
-            Qt::QueuedConnection, Q_ARG(QString, download->fileName),
-            Q_ARG(bool, success));
+   {
+      QString refreshPath;
+      if (success && download && download->refreshFileBrowser)
+         refreshPath = QFileInfo(download->outputPath).absolutePath();
+      if (download && download->window)
+         QMetaObject::invokeMethod(download->window.data(),
+               "onUpdaterDownloadFinished", Qt::QueuedConnection,
+               Q_ARG(QString, download->fileName), Q_ARG(bool, success),
+               Q_ARG(QString, refreshPath));
+   }
    delete download;
 }
 
 static bool qt_updater_download_file(MainWindow *window,
       const QString &remoteRelativePath, const QString &localBaseDirectory,
-      const QString &displayName)
+      const QString &displayName, bool refreshFileBrowser)
 {
    settings_t *settings = config_get_ptr();
    char url[PATH_MAX_LENGTH];
@@ -4418,6 +4553,7 @@ static bool qt_updater_download_file(MainWindow *window,
    download->window = window;
    download->fileName = displayName;
    download->outputPath = QString::fromUtf8(outputPath);
+   download->refreshFileBrowser = refreshFileBrowser;
 #ifdef HAVE_COMPRESSION
    download->autoExtract = settings->bools.network_buildbot_auto_extract_archive;
 #else
@@ -4711,48 +4847,7 @@ void MainWindow::onCoreUpdaterTableContextMenuRequested(const QPoint &pos)
       action = menu.addAction(tr("Download"));
    if (menu.exec(m_coreUpdaterTable->viewport()->mapToGlobal(pos)) != action)
       return;
-   if (m_updaterViewType == 1)
-   {
-      core_updater_list_t *coreList = core_updater_list_get_cached();
-      QByteArray filename = item->data(Qt::UserRole).toString().toUtf8();
-      settings_t *settings = config_get_ptr();
-      if (coreList && !filename.isEmpty())
-      {
-#if defined(ANDROID)
-         if (play_feature_delivery_enabled())
-            task_push_play_feature_delivery_core_install(coreList, filename.constData(), false);
-         else
-#endif
-            task_push_core_updater_download(coreList, filename.constData(), 0, false,
-                  settings->bools.core_updater_auto_backup,
-                  (size_t)settings->uints.core_updater_auto_backup_history_size,
-                  settings->paths.directory_libretro,
-                  settings->paths.directory_core_assets);
-      }
-   }
-   else if (m_updaterViewType == 2)
-   {
-      QString fileName = item->text();
-      if (!qt_updater_download_file(this, QStringLiteral("system/") + fileName,
-               QString::fromUtf8(config_get_ptr()->paths.directory_system), fileName))
-         showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
-   }
-   else if (m_updaterViewType == 3)
-   {
-      QString name = item->text();
-      if (entryType == QStringLiteral("content-directory"))
-      {
-         m_updaterContentPath += QLatin1Char('/') + name;
-         qt_updater_request_content_listing(this, m_updaterContentPath, 4);
-      }
-      else
-      {
-         QString remotePath = m_updaterContentPath + QLatin1Char('/') + name;
-         if (!qt_updater_download_file(this, remotePath,
-                  QString::fromUtf8(config_get_ptr()->paths.directory_core_assets), name))
-            showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
-      }
-   }
+   onUpdaterTableDoubleClicked(index);
 #else
    (void)pos;
 #endif
@@ -4854,10 +4949,28 @@ void MainWindow::onUpdaterListingFinished(QStringList entries, int type, QString
    applySearch();
 }
 
-void MainWindow::onUpdaterDownloadFinished(QString fileName, bool success)
+void MainWindow::onUpdaterDownloadFinished(QString fileName, bool success,
+      QString refreshPath)
 {
    if (success)
+   {
       showStatusMessage(tr("Downloaded: %1").arg(fileName), 1, 4000, true);
+      if (!refreshPath.isEmpty())
+      {
+         /* Rebuild the filesystem tree because directory watching is
+          * disabled; the new extraction folders are now visible. */
+         refreshFileSystemBrowserTree();
+         /* The table uses the companion core's own listing, not the
+          * QFileSystemModel. Re-enumerate its current directory as well. */
+         companion_core_t *core = ui_companion_qt_core();
+         const char *browseDir = companion_core_browse_dir(core);
+         if (browseDir && *browseDir)
+         {
+            QByteArray browsePath(browseDir);
+            companion_core_browse_open(core, browsePath.constData());
+         }
+      }
+   }
    else
       showMessageBox(tr("Download failed: %1").arg(fileName), MSGBOX_TYPE_ERROR);
 }
@@ -4900,7 +5013,66 @@ void MainWindow::onUpdaterTopClicked()
 
 void MainWindow::onUpdaterTableDoubleClicked(const QModelIndex &index)
 {
+#ifdef HAVE_NETWORKING
+   QTableWidgetItem *item = index.isValid()
+         ? m_coreUpdaterTable->item(index.row(), 0) : NULL;
+   QString entryType;
+
+   if (!item)
+      return;
+   entryType = item->data(Qt::UserRole + 1).toString();
+   if (entryType == QStringLiteral("empty"))
+      return;
+
+   if (m_updaterViewType == 1)
+   {
+      core_updater_list_t *coreList = core_updater_list_get_cached();
+      QByteArray filename = item->data(Qt::UserRole).toString().toUtf8();
+      settings_t *settings = config_get_ptr();
+      if (coreList && !filename.isEmpty())
+      {
+#if defined(ANDROID)
+         if (play_feature_delivery_enabled())
+            task_push_play_feature_delivery_core_install(coreList,
+                  filename.constData(), false);
+         else
+#endif
+            task_push_core_updater_download(coreList, filename.constData(), 0,
+                  false, settings->bools.core_updater_auto_backup,
+                  (size_t)settings->uints.core_updater_auto_backup_history_size,
+                  settings->paths.directory_libretro,
+                  settings->paths.directory_core_assets);
+      }
+   }
+   else if (m_updaterViewType == 2)
+   {
+      QString fileName = item->text();
+      if (!qt_updater_download_file(this,
+               QStringLiteral("system/") + fileName,
+               QString::fromUtf8(config_get_ptr()->paths.directory_system),
+               fileName, false))
+         showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
+   }
+   else if (m_updaterViewType == 3)
+   {
+      QString name = item->text();
+      if (entryType == QStringLiteral("content-directory"))
+      {
+         m_updaterContentPath += QLatin1Char('/') + name;
+         qt_updater_request_content_listing(this, m_updaterContentPath, 4);
+      }
+      else
+      {
+         QString remotePath = m_updaterContentPath + QLatin1Char('/') + name;
+         if (!qt_updater_download_file(this, remotePath,
+                  QString::fromUtf8(config_get_ptr()->paths.directory_core_assets),
+                  name, true))
+            showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
+      }
+   }
+#else
    (void)index;
+#endif
 }
 
 void MainWindow::onUpdaterDirectoryExpanded(QTreeWidgetItem *item)
@@ -5508,54 +5680,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
       }
    }
    return QMainWindow::eventFilter(obj, event);
-}
-
-void MainWindow::showAbout()
-{
-   QScopedPointer<QDialog> dialog(new QDialog());
-   QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
-   QString text = QString("RetroArch ")
-      + QString(PACKAGE_VERSION)
-      + QString("<br><br>")
-      + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
-         "<br><br>"
-      + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
-#ifdef HAVE_GIT_VERSION
-         "<br><br>"
-      + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION)
-      + QString(": ")
-      + retroarch_git_version
-#endif
-      + QString("<br>")
-      + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE)
-      + QString(": ")
-      + __DATE__;
-   QLabel *label = new QLabel(text, dialog.data());
-   QPixmap pix = getInvader();
-   QLabel *pixLabel = new QLabel(dialog.data());
-   connect(buttonBox, SIGNAL(accepted()), dialog.data(), SLOT(accept()));
-   connect(buttonBox, SIGNAL(rejected()), dialog.data(), SLOT(reject()));
-
-   label->setTextFormat(Qt::RichText);
-   label->setAlignment(Qt::AlignCenter);
-   label->setTextInteractionFlags(Qt::TextBrowserInteraction);
-   label->setOpenExternalLinks(true);
-
-   pixLabel->setAlignment(Qt::AlignCenter);
-   pixLabel->setPixmap(pix);
-
-   dialog->setWindowTitle(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
-   dialog->setLayout(new QVBoxLayout());
-
-   dialog->layout()->addWidget(pixLabel);
-   dialog->layout()->addWidget(label);
-
-   dialog->layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum,
-            QSizePolicy::Expanding));
-   dialog->layout()->addWidget(buttonBox);
-
-   dialog->exec();
 }
 
 void MainWindow::showDocs()
@@ -6243,9 +6367,6 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
    helpMenu->addAction(QString(msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION)),
                mainwindow, SLOT(showDocs()));
-   helpMenu->addAction(QString(msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT))
-              + QString("..."), mainwindow, SLOT(showAbout()));
 }
 
 /* Build the playlist + file-browser tab dock. Returns the dock so the

@@ -583,7 +583,7 @@ public slots:
    void onCoreUpdaterTableContextMenuRequested(const QPoint &pos);
    void onCoreUpdaterListPoll();
    void onUpdaterListingFinished(QStringList entries, int type, QString path);
-   void onUpdaterDownloadFinished(QString fileName, bool success);
+   void onUpdaterDownloadFinished(QString fileName, bool success, QString refreshPath);
    void onUpdaterBackClicked();
    void onUpdaterUpClicked();
    void onUpdaterTopClicked();
@@ -632,7 +632,6 @@ public slots:
    void onTabWidgetIndexChanged(int index);
    void deleteCurrentPlaylistItem();
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
-   void showAbout();
    void showDocs();
    /* companion core download results (see ui_companion_qt_core_callbacks) */
    void onCoreThumbnailDownloaded(QString system, QString title, QString path, bool success);
@@ -713,6 +712,7 @@ private:
    void setupPlaylistFooter();
    void setupModels();
    void setupFileSystemBrowser();
+   void refreshFileSystemBrowserTree();
    void setupDockWidgets();
    void setupSignalConnections();
 
