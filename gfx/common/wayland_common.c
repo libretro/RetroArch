@@ -1836,9 +1836,15 @@ typedef struct
    /* A generation whose focus loss found the queue full */
    retro_atomic_int_t  lost;
    /* The surface's size and its buffer's, packed: what turns a place
-    * on the surface into one in the window */
+    * on the surface into one in the window. One store where there is
+    * one that wide: the seat's handlers, on another thread, never pair
+    * a new size with the old buffer */
+#ifdef RETRO_ATOMIC_HAS_64
+   retro_atomic_64_t   dims;            /* the buffer's in the high half */
+#else
    retro_atomic_int_t  surface_dims;
    retro_atomic_int_t  buffer_dims;
+#endif
 } wl_video_window_ids_t;
 
 static wl_video_window_t *wl_video_windows[RETRO_VIDEO_VIEWS_MAX];
@@ -1929,8 +1935,16 @@ unsigned wl_video_window_point(gfx_ctx_wayland_data_t *wl,
             || retro_atomic_load_acquire_size(&ids->surface)
                != (size_t)(uintptr_t)surface)
          continue;
+#ifdef RETRO_ATOMIC_HAS_64
+      {
+         uint64_t dims = (uint64_t)retro_atomic_load_acquire_64(&ids->dims);
+         sd            = (unsigned)(dims & 0xffffffffu);
+         bd            = (unsigned)(dims >> 32);
+      }
+#else
       sd = (unsigned)retro_atomic_load_acquire_int(&ids->surface_dims);
       bd = (unsigned)retro_atomic_load_acquire_int(&ids->buffer_dims);
+#endif
       if (VIDEO_SCALE_W(sd) && VIDEO_SCALE_H(sd))
          *pos = VIDEO_POS_PACK(
                (int)((double)wl_fixed_to_double(sx)
@@ -2039,8 +2053,13 @@ static void wl_video_window_resized(wl_video_window_t *state)
    {
       wl_video_window_ids_t *ids =
          &wl_video_window_ids[state->common.request.screen];
+#ifdef RETRO_ATOMIC_HAS_64
+      retro_atomic_store_release_64(&ids->dims,
+            (int64_t)(((uint64_t)dims << 32) | state->dims));
+#else
       retro_atomic_store_release_int(&ids->surface_dims, (int)state->dims);
       retro_atomic_store_release_int(&ids->buffer_dims, (int)dims);
+#endif
    }
    if (dims != window->dims)
    {
