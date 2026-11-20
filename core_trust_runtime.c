@@ -140,9 +140,14 @@ static void core_trust_save_cb(retro_task_t *task, void *task_data,
 #ifdef HAVE_CORE_LOAD_CHECK
    if (st->sd)
    {
+      /* Unseeded in memory too, or a later write or the exit write
+       * would put SEEDED on disk with nothing seeded */
       if (!st->written)
+      {
          RARCH_WARN("[Core] Could not save \"%s\": the cores already "
                "installed are not trusted.\n", st->path);
+         core_trust_set_flag(core_trust_rt.t, CORE_TRUST_SEEDED, false);
+      }
       core_trust_seed_saved(st->sd, st->written
             && !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED));
       st->sd = NULL;

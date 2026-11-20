@@ -1431,7 +1431,7 @@ static void test_seed_unopened(void)
 /* A store that can't be saved: no seed and no message, at every start */
 static void test_seed_save_fails(void)
 {
-   char dir[256], core[256], store[256];
+   char dir[256], core[256], store[256], other[256];
    unsigned i, warns;
    strlcpy(dir, tmp("nosave"), sizeof(dir));
    strlcpy(store, tmp("nosave_store"), sizeof(store));
@@ -1456,8 +1456,23 @@ static void test_seed_save_fails(void)
       CHECK(warn_count == warns + 1);
       CHECK(!path_is_valid(store));
    }
+   /* A write that goes through later this session, and the exit
+    * write, keep the store unseeded: the next start seeds */
+   strlcpy(other, tmp("nosave_other.core"), sizeof(other));
+   CHECK(put_file(other, 14, 100));
    saves_fail(false);
+   CHECK(always_trust(other, true));
+   pump(8);
+   CHECK(path_is_valid(store));
+   CHECK(!(disk_flags(store) & CORE_TRUST_SEEDED));
    core_trust_runtime_deinit();
+   CHECK(!(disk_flags(store) & CORE_TRUST_SEEDED));
+   CHECK(core_trust_runtime_init(store, dir, "core"));
+   pump_seed();
+   CHECK(trusted(core));
+   CHECK(trusted(other));
+   core_trust_runtime_deinit();
+   CHECK(disk_flags(store) & CORE_TRUST_SEEDED);
 }
 
 /* A seed that ends after its store is gone leaves the next store alone */
