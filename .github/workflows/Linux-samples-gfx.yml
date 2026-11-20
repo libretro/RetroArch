@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      APT_PKGS: build-essential pkg-config xvfb xauth python3-pil ffmpeg libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers libgl1-mesa-dev libegl1-mesa-dev glslang-tools spirv-tools spirv-cross zlib1g-dev
+      APT_PKGS: build-essential pkg-config xvfb xauth python3-pil ffmpeg libasound2-dev libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers libgl1-mesa-dev libegl1-mesa-dev glslang-tools spirv-tools spirv-cross zlib1g-dev
     steps:
       - uses: actions/checkout@v6
       - name: Apt cache key
@@ -61,6 +61,7 @@ jobs:
       - name: Build the source frontend and independent fixtures
         run: |
           ./configure --enable-pyrowave --enable-vulkan --enable-x11 --enable-opengl --enable-opengl_core --enable-menu --enable-rgui --disable-qt --disable-wayland --disable-ffmpeg --disable-cheevos --disable-discord --disable-ssl --disable-sdl2 --disable-sdl --enable-alsa --disable-pulse --disable-jack --disable-oss --disable-udev --disable-dbus
+          grep -q '^HAVE_XCB = 1' config.mk
           make -j2 GL_DEBUG=1
           python3 tools/pyrowave_embed_shaders.py --check
           python3 tools/pyrowave_embed_shaders_test.py
