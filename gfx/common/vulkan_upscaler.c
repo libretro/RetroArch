@@ -574,9 +574,15 @@ bool vulkan_upscaler_pending(vulkan_upscaler_t *up)
 VkResult vulkan_upscaler_signal_reload(vulkan_upscaler_t *up, VkQueue queue)
 {
    VkResult res;
+   VkSubmitInfo submit;
    if (!up || !up->nr_reload || up->nr_signalled)
       return VK_SUCCESS;
-   res = vkQueueSubmit(queue, 0, NULL, up->reload_fence);
+   /* An empty submit: the fence signals once the queue's work so far is
+    * done. Filled here, as vulkan_queue_signal_fence() does, so this file
+    * keeps linking without vulkan_common.c. */
+   memset(&submit, 0, sizeof(submit));
+   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   res = vkQueueSubmit(queue, 1, &submit, up->reload_fence);
    if (res == VK_SUCCESS)
       up->nr_signalled = true;
    else
