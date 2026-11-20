@@ -4061,6 +4061,66 @@ static void test_window_pointer_release(void)
    window_test_end();
 }
 
+/* The menu up in the main window, a finger resting on Screen 2's own
+ * window and a tap on the main window: the menu reads the tap */
+static void test_window_menu_main_touch(void)
+{
+   static input_driver_t driver;
+   struct video_viewport vp;
+   input_pointer_frame_t frame;
+   input_video_window_t windows[2];
+   uint32_t touches[2];
+   const input_pointer_view_t *view;
+   uint32_t pos                   = 0;
+   uint32_t screen_pos            = 0;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   input_driver_t *saved_driver   = input_st->current_driver;
+   uint16_t saved_menu_flags      = menu_st->flags;
+   video_window_ui_target_t saved_ui =
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU];
+
+   memset(&driver, 0, sizeof(driver));
+   driver.input_state    = menu_test_input_state;
+   driver.ident          = "menu_main_touch_test";
+   memset(&frame, 0, sizeof(frame));
+   memset(&vp, 0, sizeof(vp));
+   windows[0].window     = 1;
+   windows[0].generation = video_driver_window_generation();
+   windows[1].window     = 0;
+   windows[1].generation = 0;
+   touches[0]            = VIDEO_POS_PACK(10, 10);
+   touches[1]            = VIDEO_POS_PACK(600, 120);
+
+   window_test_begin();
+   window_test_run();
+   CHECK(video_st->windows_wanted == 2u);
+   window_test_draw_window(1, windows[0].generation);
+   input_st->current_driver = &driver;
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   menu_st->flags          |= MENU_ST_FLAG_ALIVE;
+   input_driver_publish_window_pointers(&frame, NULL, 1, 0);
+   input_driver_publish_window_touches(touches, windows, 2, 3u, 3u);
+   input_driver_poll_devices();
+   view = input_driver_pointer_view();
+   CHECK(video_driver_get_viewport_info(&vp));
+   CHECK(video_driver_translate_coord_viewport(&vp, 600, 120, &pos,
+            &screen_pos, false));
+   CHECK(view->flags & INPUT_PTR_VIEW_SCR_PRESSED);
+   CHECK(view->scr_pos == screen_pos);
+   CHECK(view->flags & INPUT_PTR_VIEW_PTR_PRESSED);
+   CHECK(view->ptr_pos == pos);
+
+   menu_st->flags           = saved_menu_flags;
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU] = saved_ui;
+   input_st->current_driver = saved_driver;
+   input_driver_publish_window_pointers(&frame, NULL, 0, 0);
+   input_driver_publish_window_touches(touches, NULL, 0, 0, 0);
+   input_driver_poll_devices();
+   window_test_end();
+}
+
 /* Game Screen 2's window turned: drawn again at the swapped size, the menu
  * lays out at that size */
 static void test_window_turned(void)
@@ -8438,6 +8498,7 @@ int main(int argc, char **argv)
    test_window_turned_waiting();
    test_window_pointer_mapping();
    test_window_pointer_release();
+   test_window_menu_main_touch();
    test_window_menu_touch_window();
    test_window_menu_mouse_kept();
    test_window_generation();

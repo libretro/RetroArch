@@ -34,6 +34,8 @@
  *     once the window is gone; motion, buttons and ports as on the
  *     main window; while the menu is up they press nothing, the main
  *     window's still do, and so do those of a window the menu is in;
+ *     the menu in the main window reads that window's first touch
+ *     slot, 0 with no screen windows;
  * 16. the flags that keep a driver's own answers (Android's), each off
  *     and on: pressed only inside, the second list, the mouse and
  *     the ids left to the driver, touch slots; and a touch read over
@@ -1281,8 +1283,12 @@ int main(void)
          window_generation = 5;
          input_pointer_frames_set(f, NULL, 1, INPUT_POINTERS_GUN_AT_TOUCH);
          input_pointer_touches_set(touch, NULL, 2, 3, 3);
-         CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60,
+         CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60
+            &&  input_pointer_main_window_touch() == 0,
                "touches published with no windows are the main window's");
+         input_pointer_touches_set(touch, NULL, 2, 2, 2);
+         CHECK( input_pointer_main_window_touch() == 0,
+               "with no windows the menu reads slot 0, empty or not");
          /* the menu up: nothing in a screen's window presses */
          tw[0].generation = 5;
          menu_up          = true;
@@ -1296,6 +1302,10 @@ int main(void)
             &&  input_pointers.touch_present == 3
             &&  input_pointers.touch_down == 2,
                "menu up: a screen window's buttons and touches press nothing, the main window's do");
+         CHECK( input_pointer_main_window_touch() == 1
+            &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_X) == 1080
+            &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
+               "the menu's touch is the main window's, not one resting in a screen's window");
          /* the menu in window 1: that window's press its own */
          menu_window  = 1;
          input_pointer_frames_set(f, w, 2, 0);

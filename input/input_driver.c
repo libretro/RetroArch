@@ -18155,6 +18155,7 @@ const input_pointer_view_t *input_driver_pointer_view(void)
 {
    static input_pointer_view_t view;
    static unsigned             compiled;
+   unsigned idx = 0;
 #ifdef HAVE_VIDEO_WINDOWS
    /* the menu's window's touch, and the main window's mouse: their
     * last places */
@@ -18192,19 +18193,23 @@ const input_pointer_view_t *input_driver_pointer_view(void)
             RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN))
       view.flags |= INPUT_PTR_VIEW_HWHEEL_DOWN;
 
-   view.ptr_pos   = input_driver_device_pos(0, RETRO_DEVICE_POINTER, 0);
-   if (input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+#ifdef HAVE_VIDEO_WINDOWS
+   idx            = input_pointer_main_window_touch();
+#endif
+   view.ptr_pos   = input_driver_device_pos(0, RETRO_DEVICE_POINTER, idx);
+   if (input_driver_device_state(0, RETRO_DEVICE_POINTER, idx,
             RETRO_DEVICE_ID_POINTER_PRESSED))
       view.flags |= INPUT_PTR_VIEW_PTR_PRESSED;
-   if (input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+   if (input_driver_device_state(0, RETRO_DEVICE_POINTER, idx,
             RARCH_DEVICE_ID_POINTER_BACK))
       view.flags |= INPUT_PTR_VIEW_PTR_BACK;
 
-   view.scr_pos   = input_driver_device_pos(0, RARCH_DEVICE_POINTER_SCREEN, 0);
-   if (input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
+   view.scr_pos   = input_driver_device_pos(0, RARCH_DEVICE_POINTER_SCREEN,
+         idx);
+   if (input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, idx,
             RETRO_DEVICE_ID_POINTER_PRESSED))
       view.flags |= INPUT_PTR_VIEW_SCR_PRESSED;
-   if (input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
+   if (input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, idx,
             RARCH_DEVICE_ID_POINTER_BACK))
       view.flags |= INPUT_PTR_VIEW_SCR_BACK;
 #ifdef HAVE_VIDEO_WINDOWS

@@ -838,6 +838,22 @@ static bool input_pointer_window_touch(unsigned window, unsigned idx,
    return false;
 }
 
+/* The index of the first touch slot not in a screen's window, present
+ * or not, for a reader of the main window alone: one in a screen's own
+ * window has no place there, and with no screen windows it is slot 0.
+ * 0 if every slot is in one, and with WINDOWS_SECOND, whose main list
+ * is that window's already. */
+static unsigned input_pointer_main_window_touch(void)
+{
+   unsigned t;
+   if (input_pointers.flags & INPUT_POINTERS_WINDOWS_SECOND)
+      return 0;
+   for (t = 0; t < input_pointers.touch_count; t++)
+      if (!(input_pointers.touch_in_window & ((uint32_t)1 << t)))
+         return t;
+   return 0;
+}
+
 /* Screen window @window gone: what its devices and touches hold down,
  * and their motion, let go */
 static void input_pointer_frames_forget(unsigned window)
