@@ -15,6 +15,7 @@ DEFS_webos := -DWEBOS
 PLATFORMS    += android
 DEFS_android := -DANDROID
 
+PLATFORMS += ps3 ps4
 DEFS_ps3  := -D__PS3__
 DEFS_ps4  := -DORBIS
 
