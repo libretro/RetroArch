@@ -154,13 +154,13 @@ static void input_wl_poll(void *data)
       for (id = 0; id < MAX_TOUCHES; id++)
       {
          touch_pos[id] = VIDEO_POS_PACK(wl->touches[id].x, wl->touches[id].y);
-         /* A place at 0,0 is not a touch here: a mouse button is
-          * reported on the desktop as one there, and the mouse answers
-          * for it. A touch that has lifted keeps its place. */
-         if (wl->touches[id].x || wl->touches[id].y)
-            present   |= (1 << id);
+         /* A touch that lifts is cleared, place and all: one is there
+          * while it is down, at 0,0 too */
          if (wl->touches[id].active)
+         {
+            present   |= (1 << id);
             down      |= (1 << id);
+         }
       }
       /* the one mouse is every port's; it stands for three touches */
 #ifdef HAVE_VIDEO_WINDOWS

@@ -498,6 +498,15 @@ static void native_wl_pointer(gfx_ctx_wayland_data_t *wl,
    CHECK(wl->num_active_touches == touches + 1);
    touch_listener.up(wl, NULL, 9, 0, 7);
    CHECK(wl->num_active_touches == touches);
+   /* A touch at the window's corner is a touch, as the input driver's
+    * poll hands it on */
+   wl->input.gfx = wl;
+   touch_listener.down(wl, NULL, 21, 0, wl->surface, 7, 0, 0);
+   input_wayland.poll(&wl->input);
+   CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+            RETRO_DEVICE_ID_POINTER_COUNT) == 1);
+   touch_listener.up(wl, NULL, 22, 0, 7);
+   input_wayland.poll(&wl->input);
    pointer_listener.leave(wl, wl->wl_pointer, 10, wl->surface);
    wl_surface_destroy(other);
 
