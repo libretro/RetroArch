@@ -7461,12 +7461,14 @@ static void native_wl_kept_thread(const char *ident, enum gfx_ctx_api api,
 #if defined(NATIVE_WIN32) && defined(HAVE_THREADS)
 /* What a threaded driver does with screen 1's window, on the video
  * thread: init makes it, takes the last driver's, or neither; free
- * keeps it */
+ * keeps it. FOREIGN is a driver of another kind (SDL): no Win32
+ * context, and its free holds the thread with a hook of its own. */
 enum native_w32_thread_init
 {
    NATIVE_W32_THREAD_MAKE = 0,
    NATIVE_W32_THREAD_TAKE,
-   NATIVE_W32_THREAD_NONE
+   NATIVE_W32_THREAD_NONE,
+   NATIVE_W32_THREAD_FOREIGN
 };
 
 typedef struct
@@ -7481,6 +7483,7 @@ typedef struct
    video_window_request_t request;
    video_window_native_t window;
    bool took;
+   bool foreign_ended;
 } native_w32_thread_t;
 
 static native_w32_thread_t native_w32_thread;
@@ -7492,6 +7495,9 @@ static void *native_w32_thread_init(const video_info_t *info)
    (void)info;
    job->data = NULL;
    job->took = false;
+   job->ctx  = NULL;
+   if (job->init == NATIVE_W32_THREAD_FOREIGN)
+      return job;
    if (!(job->ctx = native_context(job->ident, job->api, job->major,
          job->minor, &job->data)))
       return NULL;
@@ -7518,9 +7524,19 @@ static bool native_w32_thread_frame(void *data, const void *frame,
    return true;
 }
 
+static void native_w32_thread_foreign_ends(void)
+{
+   native_w32_thread.foreign_ended = true;
+}
+
 static void native_w32_thread_free(void *data)
 {
    native_w32_thread_t *job = (native_w32_thread_t*)data;
+   if (!job->ctx)
+   {
+      video_thread_host_hold(native_w32_thread_foreign_ends);
+      return;
+   }
    if (job->window.state)
       job->ctx->windows->keep(job->data, &job->window);
    job->ctx->destroy(job->data);
@@ -7602,6 +7618,30 @@ static void native_w32_kept_thread(const char *ident,
    threaded->free(data);
    win32_window_release_kept();
    CHECK(!video_thread_host_is_held());
+
+   /* The next driver of another kind, whose keep holds the thread with
+    * a hook of its own: the main window it cannot take goes once it is
+    * up, as its own teardown does */
+   if ((threaded = native_w32_thread_up(NATIVE_W32_THREAD_MAKE, &data)))
+   {
+      main_hwnd = main_window.hwnd;
+      threaded->free(data);
+      CHECK(IsWindow(main_hwnd) && video_thread_host_is_held());
+      native_w32_thread.foreign_ended = false;
+      if ((threaded = native_w32_thread_up(NATIVE_W32_THREAD_FOREIGN,
+            &data)))
+      {
+         fprintf(stderr, "native %s: another kind of driver up, the main "
+               "window left: %s\n", ident,
+               IsWindow(main_hwnd) ? "still up" : "gone");
+         CHECK(!IsWindow(main_hwnd));
+         threaded->free(data);
+         CHECK(video_thread_host_is_held());
+         win32_window_release_kept();
+         CHECK(native_w32_thread.foreign_ended);
+         CHECK(!video_thread_host_is_held());
+      }
+   }
 
    /* Only a screen's window kept, then video not threaded */
    _putenv("RETROARCH_WINDOW_KEEP=0");

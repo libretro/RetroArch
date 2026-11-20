@@ -113,6 +113,12 @@ static void video_thread_read_vp(thread_video_t *thr,
 
 #include "video_thread_hw.h"
 
+#include <retro_environment.h>
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+/* gfx/common/win32_common.c */
+void win32_window_release_kept(void);
+#endif
+
 /* The reply carries one command's answer, so at most one thread may
  * wait for it; see the note in video_thread_wrapper.h. Every reply
  * wait is bracketed by these; only the poster slot's owner waits, so
@@ -1329,6 +1335,15 @@ static bool video_thread_handle_packet(
          {
             thr->driver_data = thr->driver->init(&thr->info);
             video_driver_release_kept_windows();
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+            /* and a main window kept on this thread that init did not
+             * take: a driver of another kind (SDL) never takes it, and
+             * its own keep replaces the hook that would let it go. Not
+             * when a failed init kept its window and so held the thread:
+             * stopping it would join this one. */
+            if (!video_thread_host_is_held())
+               win32_window_release_kept();
+#endif
             if (thr->driver_data && thr->driver->poke_interface)
                thr->driver->poke_interface(thr->driver_data,
                      &thr->frame.mem_poke);
