@@ -31,6 +31,9 @@
 
 #include "sdl2_common.h"
 #include "../../retroarch.h"
+#if defined(_WIN32) && defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_THREADS)
+#include "../video_thread_wrapper.h"
+#endif
 
 #include "SDL.h"
 #include "SDL_syswm.h"
@@ -962,14 +965,29 @@ unsigned sdl2_video_window_screen(const SDL_Window *win,
 }
 
 /* On Windows a window is its thread's, which alone takes it or lets it
- * go; only the main thread keeps one, as that outlasts the driver */
+ * go */
 static bool sdl2_video_window_foreign(const sdl2_video_window_t *state)
 {
 #ifdef _WIN32
-   return state->thread != SDL_ThreadID() || !task_is_on_main_thread();
+   return state->thread != SDL_ThreadID();
 #else
    return false;
 #endif
+}
+
+/* and it goes with its thread: off the main thread the video thread is
+ * held for the next driver */
+static bool sdl2_video_window_outlasts(void)
+{
+#ifdef _WIN32
+   if (!task_is_on_main_thread())
+#ifdef HAVE_THREADS
+      return video_thread_host_hold(sdl2_video_windows_release_kept);
+#else
+      return false;
+#endif
+#endif
+   return true;
 }
 
 static void sdl2_video_window_let_go(sdl2_video_window_t *state)
@@ -998,6 +1016,7 @@ void sdl2_video_window_keep(void *owner, video_window_native_t *window)
    if (!state || state->common.owner != owner)
       return;
    if (     sdl2_video_window_foreign(state)
+         || !sdl2_video_window_outlasts()
          || SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
       sdl2_video_window_destroy(owner, window);
    else
