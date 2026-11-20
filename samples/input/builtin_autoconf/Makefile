@@ -19,6 +19,7 @@ PLATFORMS += ps3 ps4
 DEFS_ps3  := -D__PS3__
 DEFS_ps4  := -DORBIS
 
+PLATFORMS     += gamecube wii
 DEFS_gamecube := -DGEKKO
 DEFS_wii      := -DGEKKO -DHW_RVL
 
